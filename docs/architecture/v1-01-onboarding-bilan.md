@@ -69,23 +69,29 @@ sont mis à jour plus tard.
 | id | uuid | PK |
 | transport_mode_id | text | FK → transport_modes |
 | kg_co2_per_km | numeric(8,4) | |
-| source | text | default `'ADEME Base Carbone'` |
+| source | text | default `'ADEME Base Empreinte (via API Impact CO2)'` |
+| source_ref | text | nullable — id/nom du mode côté API source, pour traçabilité |
 | valid_from | date | |
 | | | unique(transport_mode_id, valid_from) |
 
-**Valeurs par défaut** — indicatives, à confirmer/rafraîchir via l'API publique ADEME
-(Base Carbone / Impact CO2) avant mise en production, cf. question ouverte spec §9 :
+**Source retenue (question ouverte spec §9 tranchée)** : **ADEME Base Empreinte** (ex-Base
+Carbone), consommée via l'**API Impact CO2** (`impactco2.fr`, projet officiel de
+l'incubateur ADEME/DINUM, endpoint `GET /api/v1/transport`) plutôt qu'une saisie manuelle —
+c'est la source publique de référence en France, régulièrement mise à jour par l'ADEME
+elle-même, donc pas de valeur à maintenir/justifier nous-mêmes.
 
-| Mode | kg CO2/km (indicatif) |
-|---|---|
-| voiture_thermique | 0.218 |
-| voiture_electrique | 0.103 |
-| deux_roues_motorise | 0.150 |
-| bus | 0.103 |
-| train | 0.003 |
-| avion_court_moyen_courrier | 0.243 |
-| avion_long_courrier | 0.195 |
-| velo_marche | 0 |
+**Mécanisme de mise à jour** : un job planifié (Supabase Edge Function + `pg_cron`, cadence
+trimestrielle — les facteurs ADEME ne bougent pas plus souvent) interroge l'API et fait un
+upsert dans `emission_factors` avec `valid_from` = date du run. Aucune valeur n'est jamais
+écrasée : un ancien bilan reste calculé avec les facteurs en vigueur à sa date, cf. §3.
+Aucune valeur n'est codée en dur dans le document ou l'application — la table se peuple au
+premier déploiement via ce même job (voir §5 pour la clé API requise).
+
+**Mapping prévu** `transport_modes.id` → mode Impact CO2 (à finaliser au moment du seed,
+l'API expose une liste de modes plus fine que notre référentiel V1 — ex. plusieurs variantes
+de voiture par gabarit/motorisation à regrouper sous `voiture_thermique` / `voiture_electrique`) :
+`voiture_thermique`, `voiture_electrique`, `deux_roues_motorise`, `bus`, `train`,
+`avion_court_moyen_courrier`, `avion_long_courrier`, `velo_marche`.
 
 ### `assessments`
 
@@ -204,8 +210,25 @@ spec §7.
 
 | Besoin | Quand | Qui fournit |
 |---|---|---|
-| Token Expo (EAS) pour builder/publier en CLI sans compte GUI | Phase build mobile | Compte Expo gratuit à créer, puis `EXPO_TOKEN` à me transmettre en variable d'env |
-| Service account Google Play (upload AAB automatisé via EAS Submit) | Phase publication Play Store | Créé côté Google Play Console + Google Cloud, JSON à me transmettre en variable d'env |
+| Token Expo (EAS) pour builder/publier en CLI sans compte GUI | Phase build mobile | Compte Expo créé — token à générer, voir mode opératoire ci-dessous |
+| Clé API Impact CO2 (facteurs d'émission ADEME) | Seed initial de `emission_factors`, avant tout calcul de bilan réel | Clé gratuite à demander sur impactco2.fr — sans clé la réponse API est limitée/dégradée |
+| Service account Google Play (upload AAB automatisé via EAS Submit) | Phase publication Play Store | Créé côté Google Play Console + Google Cloud |
 | Rien côté GitHub / Supabase / Vercel | — | Déjà connectés dans cette session |
 
-Rien de tout ça n'est requis pour la suite immédiate (scaffold du projet + schéma DB).
+Rien de tout ça n'est bloquant pour le scaffold du projet et l'application du schéma DB.
+La clé Impact CO2 devient nécessaire dès qu'on veut des facteurs réels (pas des zéros/placeholders)
+dans `emission_factors`.
+
+### Où récupérer le token Expo (EAS)
+
+1. Se connecter sur `expo.dev` avec le compte créé.
+2. Aller dans **Account settings → Access tokens** (`https://expo.dev/accounts/<ton-compte>/settings/access-tokens`).
+3. **Create token**, lui donner un nom (ex. `traceverte-ci`).
+
+**Ne pas coller le token dans le chat** — un token EAS a les mêmes droits que ton compte
+(build, submit) et une conversation n'est pas un canal fait pour stocker un secret durable.
+Le dépôt via **secret GitHub Actions** au lieu de me le transmettre directement : Settings →
+Secrets and variables → Actions → **New repository secret**, nom `EXPO_TOKEN`, coller la
+valeur. Les commandes `eas build`/`eas submit` que je déclencherai tourneront alors en CI
+(GitHub Actions) et liront ce secret sans que j'aie jamais besoin de le voir en clair — même
+principe pour le futur service account Google Play (secret `GOOGLE_PLAY_SERVICE_ACCOUNT`).
