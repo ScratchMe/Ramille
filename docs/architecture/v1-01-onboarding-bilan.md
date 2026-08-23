@@ -143,6 +143,10 @@ Supporte l'intermodalité (ex. voiture + train sur un même trajet déclaré).
 RLS sur `assessments`, `assessment_trips`, `assessment_trip_modes`, `assessment_results` :
 accès restreint au propriétaire via jointure sur `user_id = auth.uid()`.
 
+`transport_modes` et `emission_factors` sont des référentiels non sensibles (aucune donnée
+utilisateur) : lecture ouverte à `anon` et `authenticated`, pas de raison de les cacher
+avant connexion.
+
 ## 3. Formules de calcul
 
 Constantes (configurables, pas en dur dans le code applicatif — table `app_config` clé/valeur
