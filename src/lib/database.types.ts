@@ -193,6 +193,57 @@ export type Database = {
           },
         ];
       };
+      monthly_checkins: {
+        Row: {
+          created_at: string;
+          dominant_trip_id: string;
+          id: string;
+          period_month: string;
+          responded_at: string | null;
+          response: boolean | null;
+          status: string;
+          trip_label: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          dominant_trip_id: string;
+          id?: string;
+          period_month: string;
+          responded_at?: string | null;
+          response?: boolean | null;
+          status?: string;
+          trip_label: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          dominant_trip_id?: string;
+          id?: string;
+          period_month?: string;
+          responded_at?: string | null;
+          response?: boolean | null;
+          status?: string;
+          trip_label?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'monthly_checkins_dominant_trip_id_fkey';
+            columns: ['dominant_trip_id'];
+            isOneToOne: false;
+            referencedRelation: 'assessment_trips';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'monthly_checkins_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
           cadence_type: string;
@@ -240,7 +291,9 @@ export type Database = {
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      generate_monthly_checkins: { Args: never; Returns: undefined };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };
