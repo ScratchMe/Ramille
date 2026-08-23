@@ -7,20 +7,44 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+// Tokens issus du handoff design (design_handoff_traceverte_v1, écrans V1).
+// Le vert #1F6F4A remplace le bleu #208AEF du scaffold initial — décision produit
+// prise le 23/08/2026, cohérente avec les 20 écrans déjà validés côté design.
+//
+// Le handoff ne définit que la palette light — pas de mode sombre spécifié.
+// V1 fonctionne en light uniquement (app.json: userInterfaceStyle "light"), les
+// valeurs dark ci-dessous sont des équivalents provisoires pour la sûreté de
+// typage, pas un mode sombre livré ou validé.
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#131612',
+    textSecondary: '#39403B',
+    textTertiary: '#5E655F',
+    background: '#FFFFFF',
+    backgroundTinted: '#F3F8F4',
+    backgroundElement: '#F0F1EC',
+    backgroundElement2: '#F6F8F3',
+    backgroundSelected: '#E4EFE8',
+    accent: '#1F6F4A',
+    accentText: '#14563A',
+    accentMuted: '#A9C8B6',
+    border: '#DDE0D9',
+    paginationInactive: '#CDD7CF',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
+    text: '#FFFFFF',
     textSecondary: '#B0B4BA',
+    textTertiary: '#8A9088',
+    background: '#000000',
+    backgroundTinted: '#0F1410',
+    backgroundElement: '#212225',
+    backgroundElement2: '#1A1C1A',
+    backgroundSelected: '#1C2E22',
+    accent: '#3D9B6F',
+    accentText: '#8FCBA9',
+    accentMuted: '#3A5245',
+    border: '#2E3135',
+    paginationInactive: '#3A3D3A',
   },
 } as const;
 
