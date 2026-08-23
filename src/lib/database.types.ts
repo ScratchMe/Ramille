@@ -10,10 +10,29 @@ export type Database = {
   };
   public: {
     Tables: {
+      action_templates: {
+        Row: {
+          action_text: string;
+          id: string;
+          transport_mode_category: string;
+        };
+        Insert: {
+          action_text: string;
+          id?: string;
+          transport_mode_category: string;
+        };
+        Update: {
+          action_text?: string;
+          id?: string;
+          transport_mode_category?: string;
+        };
+        Relationships: [];
+      };
       assessment_results: {
         Row: {
           assessment_id: string;
           computed_at: string;
+          dominant_trip_co2_kg_year: number | null;
           dominant_trip_id: string;
           id: string;
           total_co2_kg_year: number;
@@ -21,6 +40,7 @@ export type Database = {
         Insert: {
           assessment_id: string;
           computed_at?: string;
+          dominant_trip_co2_kg_year?: number | null;
           dominant_trip_id: string;
           id?: string;
           total_co2_kg_year: number;
@@ -28,6 +48,7 @@ export type Database = {
         Update: {
           assessment_id?: string;
           computed_at?: string;
+          dominant_trip_co2_kg_year?: number | null;
           dominant_trip_id?: string;
           id?: string;
           total_co2_kg_year?: number;
@@ -244,6 +265,99 @@ export type Database = {
           },
         ];
       };
+      plan_actions: {
+        Row: {
+          action_template_id: string;
+          created_at: string;
+          id: string;
+          plan_cycle_id: string;
+        };
+        Insert: {
+          action_template_id: string;
+          created_at?: string;
+          id?: string;
+          plan_cycle_id: string;
+        };
+        Update: {
+          action_template_id?: string;
+          created_at?: string;
+          id?: string;
+          plan_cycle_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'plan_actions_action_template_id_fkey';
+            columns: ['action_template_id'];
+            isOneToOne: false;
+            referencedRelation: 'action_templates';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'plan_actions_plan_cycle_id_fkey';
+            columns: ['plan_cycle_id'];
+            isOneToOne: false;
+            referencedRelation: 'plan_cycles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      plan_cycles: {
+        Row: {
+          baseline_co2_kg_year: number | null;
+          cadence_type: string;
+          created_at: string;
+          dominant_trip_id: string;
+          id: string;
+          period_end: string;
+          period_label: string;
+          period_start: string;
+          target_reduction_pct: number;
+          trip_label: string;
+          user_id: string;
+        };
+        Insert: {
+          baseline_co2_kg_year?: number | null;
+          cadence_type: string;
+          created_at?: string;
+          dominant_trip_id: string;
+          id?: string;
+          period_end: string;
+          period_label: string;
+          period_start: string;
+          target_reduction_pct: number;
+          trip_label: string;
+          user_id: string;
+        };
+        Update: {
+          baseline_co2_kg_year?: number | null;
+          cadence_type?: string;
+          created_at?: string;
+          dominant_trip_id?: string;
+          id?: string;
+          period_end?: string;
+          period_label?: string;
+          period_start?: string;
+          target_reduction_pct?: number;
+          trip_label?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'plan_cycles_dominant_trip_id_fkey';
+            columns: ['dominant_trip_id'];
+            isOneToOne: false;
+            referencedRelation: 'assessment_trips';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'plan_cycles_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
           cadence_type: string;
@@ -293,6 +407,15 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       generate_monthly_checkins: { Args: never; Returns: undefined };
+      generate_plan_cycles: { Args: never; Returns: undefined };
+      rolling_quarter_bounds: {
+        Args: { anchor: string; d: string };
+        Returns: { label: string; period_end: string; period_start: string }[];
+      };
+      season_bounds: {
+        Args: { d: string };
+        Returns: { label: string; period_end: string; period_start: string }[];
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
