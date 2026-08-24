@@ -50,6 +50,17 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
+// Spline Sans (handoff design, poids 400/500/600/700) — chargée via
+// @expo-google-fonts/spline-sans dans _layout.tsx. Une fontFamily explicite par poids
+// est nécessaire (pas juste fontWeight) : sans police variable, Android ignore
+// fontWeight sur une police custom chargée comme fichiers séparés par poids.
+export const FontFamily = {
+  regular: 'SplineSans_400Regular',
+  medium: 'SplineSans_500Medium',
+  semibold: 'SplineSans_600SemiBold',
+  bold: 'SplineSans_700Bold',
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

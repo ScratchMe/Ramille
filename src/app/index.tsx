@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -50,6 +51,12 @@ export default function HomeScreen() {
             </ThemedText>
           )}
         </ThemedView>
+
+        {/* Navigation temporaire pour la revue — pas la logique de routing finale
+            (qui dépendra de l'état auth/onboarding une fois construit). */}
+        <Pressable onPress={() => router.push('/onboarding')}>
+          <ThemedText type="linkPrimary">Voir l&apos;onboarding →</ThemedText>
+        </Pressable>
       </SafeAreaView>
     </ThemedView>
   );
