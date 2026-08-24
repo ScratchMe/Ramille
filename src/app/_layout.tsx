@@ -10,6 +10,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { ensureSession } from '@/lib/supabase';
+
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -26,6 +28,15 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  // Fire-and-forget : la session anonyme n'a pas besoin d'exister avant le premier
+  // rendu (rien à l'écran ne la lit tout de suite), seulement avant la première écriture
+  // bilan — re-garantie à ce moment-là de toute façon (cf. ensureSession).
+  useEffect(() => {
+    ensureSession().catch((error) => {
+      console.error('ensureSession() a échoué au démarrage :', error);
+    });
+  }, []);
 
   // Ne jamais bloquer tout l'arbre sur le chargement de la police : sur le rendu
   // statique web (expo export), useFonts ne résout jamais pendant la génération —
