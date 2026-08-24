@@ -20,13 +20,30 @@ npm install
 npm run web                # ou: npm run android / npm run ios
 npx tsc --noEmit           # typecheck — à lancer après tout changement
 npm run lint                # eslint (config Expo)
+npm test                   # tests unitaires Jest (logique pure, cf. Tests ci-dessous)
 expo export --platform web # build statique web (= script vercel-build), utile pour
                             # vérification visuelle via Playwright sans device
 ```
 
-Il n'y a pas de suite de tests automatisés dans ce repo à ce jour — la vérification se fait
-par `tsc`/`lint`, et manuellement (build web statique + Playwright, ou test réel sur mobile
-par l'utilisateur).
+### Tests
+
+Deux suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
+(chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
+bout-en-bout (écrans, flux de connexion) :
+
+- **Jest** (`npm test`) sur la logique pure côté client — aujourd'hui `src/types/bilan.ts`
+  (dérivation de navigation et de complétude du wizard). Colocalisés en `*.test.ts` à côté du
+  fichier testé.
+- **pgTAP** (`supabase/tests/database/*.sql`) sur les fonctions SQL de calcul —
+  `compute_assessment_results`, `generate_plan_cycle_for_user`, `season_bounds`/
+  `rolling_quarter_bounds`. Tourne via `supabase test db`, qui démarre une stack Postgres
+  locale (Docker) à partir de `supabase/config.toml` + `supabase/migrations/` — indépendante
+  du projet Supabase distant `TraceVerte-v1` utilisé pour le développement applicatif
+  courant. Nécessite le CLI Supabase (`npx supabase@latest`) et Docker ; non exécutable dans
+  cet environnement (pas de daemon Docker) — validé à la place via des transactions
+  `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
+
+Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
 
 ## Architecture
 

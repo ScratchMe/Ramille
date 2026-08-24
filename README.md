@@ -21,7 +21,12 @@ npm run web             # ou: npm run android / npm run ios
 ```bash
 npx tsc --noEmit   # typecheck
 npm run lint       # eslint (config Expo)
+npm test           # tests unitaires (Jest)
 ```
+
+Tests SQL (`compute_assessment_results`, `generate_plan_cycle_for_user`, bornes de
+période) : `npx supabase@latest db start` puis `npx supabase@latest test db` (nécessite
+Docker). Voir `CLAUDE.md` pour le détail des deux suites de tests.
 
 ## Base de données
 
