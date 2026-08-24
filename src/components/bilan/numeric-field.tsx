@@ -47,6 +47,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     paddingHorizontal: 20,
   },
-  input: { flex: 1, fontSize: 28, fontFamily: FontFamily.semibold, padding: 0 },
-  unit: { fontSize: 17 },
+  // `minWidth: 0` est nécessaire sur web : un <input> a une largeur intrinsèque que
+  // flexbox ne réduit pas automatiquement (contrairement à RN natif), donc sans ça le
+  // champ refuse de rétrécir et pousse "km" à cheval sur son bord droit.
+  input: { flex: 1, minWidth: 0, fontSize: 28, fontFamily: FontFamily.semibold, padding: 0 },
+  unit: { fontSize: 17, flexShrink: 0 },
 });
