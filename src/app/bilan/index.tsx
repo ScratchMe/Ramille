@@ -1,30 +1,162 @@
-import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { CommuteDaysDistanceStep } from '@/components/bilan/steps/commute-days-distance';
+import { CommuteExtraStep } from '@/components/bilan/steps/commute-extra';
+import { CommuteHasTripStep } from '@/components/bilan/steps/commute-has-trip';
+import { CommuteModeStep } from '@/components/bilan/steps/commute-mode';
+import { ContextStep } from '@/components/bilan/steps/context';
+import { FlightsStep } from '@/components/bilan/steps/flights';
+import { LeisureDetailStep } from '@/components/bilan/steps/leisure-detail';
+import { LeisureFrequencyStep } from '@/components/bilan/steps/leisure-frequency';
+import { LongTripsStep } from '@/components/bilan/steps/long-trips';
+import { StepShell } from '@/components/bilan/step-shell';
+import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
+import { ensureSession, supabase } from '@/lib/supabase';
+import {
+  BILAN_SECTION_LABEL,
+  EMPTY_BILAN_ANSWERS,
+  isStepComplete,
+  nextStep,
+  previousStep,
+  visibleSteps,
+  type BilanAnswers,
+  type BilanStepId,
+} from '@/types/bilan';
 
-// Placeholder — le questionnaire (9 étapes) n'est pas encore implémenté : la maquette
-// ne détaille que 2 des 9 écrans, en attente d'une mise à jour de Claude Design pour
-// le reste de la séquence. Cf. discussion increment 5.
-export default function BilanPlaceholder() {
+// Questionnaire du bilan (9 pas maximum, branchements B1.1/B2.1) — état local pour
+// toute la traversée, un seul aller-retour serveur à la soumission (cf. commentaire
+// bilan-draft.ts : `assessment_answers.leisure_frequency` est NOT NULL sans défaut, un
+// upsert partiel avant l'étape 5 échouerait de toute façon). La reprise après
+// interruption est couverte par un brouillon local (AsyncStorage), pas par un état
+// serveur intermédiaire.
+export default function BilanQuestionnaire() {
+  const [answers, setAnswers] = useState<BilanAnswers>(EMPTY_BILAN_ANSWERS);
+  const [step, setStep] = useState<BilanStepId>('commute_has_trip');
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadBilanDraft().then((draft) => {
+      if (draft) {
+        setAnswers(draft.answers);
+        setStep(draft.step);
+      }
+      setDraftLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    saveBilanDraft({ answers, step });
+  }, [answers, step, draftLoaded]);
+
+  const update = (patch: Partial<BilanAnswers>) => setAnswers((prev) => ({ ...prev, ...patch }));
+
+  const visible = visibleSteps(answers);
+  const stepNumber = Math.max(visible.indexOf(step) + 1, 1);
+  const total = visible.length;
+  const section = BILAN_SECTION_LABEL[step];
+  const isLastStep = step === 'context';
+
+  const handleBack = () => {
+    const prev = previousStep(step, answers);
+    if (prev) {
+      setStep(prev);
+    } else {
+      router.back();
+    }
+  };
+
+  const handleNext = async () => {
+    if (!isLastStep) {
+      const next = nextStep(step, answers);
+      if (next) setStep(next);
+      return;
+    }
+    await submit();
+  };
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      const session = await ensureSession();
+      const userId = session?.user.id;
+      if (!userId) throw new Error('Session introuvable.');
+
+      const { data: assessment, error: assessmentError } = await supabase
+        .from('assessments')
+        .insert({ user_id: userId, status: 'completed', submitted_at: new Date().toISOString() })
+        .select('id')
+        .single();
+      if (assessmentError || !assessment) throw assessmentError ?? new Error('Création du bilan impossible.');
+
+      const { error: answersError } = await supabase.from('assessment_answers').insert({
+        assessment_id: assessment.id,
+        commute_has_regular_trip: answers.commute_has_regular_trip ?? false,
+        commute_days_per_week: answers.commute_days_per_week,
+        commute_distance_km: answers.commute_distance_km,
+        commute_distance_bracket: answers.commute_distance_bracket,
+        commute_mode: answers.commute_mode,
+        commute_is_carpool: answers.commute_is_carpool,
+        commute_carpool_size: answers.commute_carpool_size,
+        commute_second_mode_used: answers.commute_second_mode_used,
+        commute_second_mode: answers.commute_second_mode,
+        leisure_frequency: answers.leisure_frequency ?? 'rarely',
+        leisure_mode: answers.leisure_mode,
+        leisure_distance_bracket: answers.leisure_distance_bracket,
+        flights_total_per_year: answers.flights_total_per_year,
+        flights_short_per_year: answers.flights_short_per_year,
+        train_long_trips_per_year: answers.train_long_trips_per_year,
+        car_long_trips_per_year: answers.car_long_trips_per_year,
+        zone_type: answers.zone_type,
+        tc_access: answers.tc_access,
+        household_vehicles: answers.household_vehicles,
+      });
+      if (answersError) throw answersError;
+
+      const { error: computeError } = await supabase.rpc('compute_assessment_results', {
+        p_assessment_id: assessment.id,
+      });
+      if (computeError) throw computeError;
+
+      await clearBilanDraft();
+      router.replace({ pathname: '/bilan/resultat', params: { id: assessment.id } });
+    } catch (error) {
+      Alert.alert(
+        'Une erreur est survenue',
+        error instanceof Error ? error.message : 'Impossible d’enregistrer ton bilan pour le moment.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Ne jamais bloquer le premier rendu sur la lecture du brouillon (AsyncStorage) : sur
+  // l'export web statique, cette lecture async ne résout jamais pendant la génération —
+  // même piège que le chargement des polices dans _layout.tsx. Le pas 1 s'affiche
+  // immédiatement avec l'état par défaut, puis bascule sur le brouillon dès qu'il
+  // arrive (quasi instantané en pratique, AsyncStorage local).
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="title" weight={600} style={styles.title}>
-          Bientôt disponible
-        </ThemedText>
-        <ThemedText weight={400} themeColor="textSecondary">
-          Le questionnaire du bilan est en cours de construction.
-        </ThemedText>
-      </SafeAreaView>
-    </ThemedView>
+    <StepShell
+      section={section}
+      step={stepNumber}
+      total={total}
+      onBack={handleBack}
+      onNext={handleNext}
+      nextLabel={isLastStep ? (submitting ? 'Enregistrement…' : 'Voir mon bilan') : 'Suivant'}
+      nextDisabled={submitting || !isStepComplete(step, answers)}
+    >
+      {step === 'commute_has_trip' && <CommuteHasTripStep answers={answers} update={update} />}
+      {step === 'commute_days_distance' && <CommuteDaysDistanceStep answers={answers} update={update} />}
+      {step === 'commute_mode' && <CommuteModeStep answers={answers} update={update} />}
+      {step === 'commute_extra' && <CommuteExtraStep answers={answers} update={update} />}
+      {step === 'leisure_frequency' && <LeisureFrequencyStep answers={answers} update={update} total={total} />}
+      {step === 'leisure_detail' && <LeisureDetailStep answers={answers} update={update} />}
+      {step === 'flights' && <FlightsStep answers={answers} update={update} />}
+      {step === 'long_trips' && <LongTripsStep answers={answers} update={update} />}
+      {step === 'context' && <ContextStep answers={answers} update={update} />}
+    </StepShell>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
-  title: { fontSize: 30, lineHeight: 36 },
-});

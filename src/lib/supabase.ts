@@ -24,3 +24,20 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: Platform.OS === 'web',
   },
 });
+
+// Chaque visiteur a besoin d'un `user_id` réel dès l'entrée dans l'app (RLS owner-scoped
+// sur tout ce qui touche au bilan) — cf. docs/architecture/v1-04-authentification.md.
+// Idempotent : ne crée une session anonyme que si aucune session (anonyme ou non)
+// n'existe déjà. Appelée au démarrage (_layout.tsx, en fire-and-forget) et re-vérifiée
+// avant toute écriture bilan pour couvrir un démarrage à froid trop rapide ou un
+// deep-link direct vers /bilan.
+export async function ensureSession() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session) return session;
+
+  const { data, error } = await supabase.auth.signInAnonymously();
+  if (error) throw error;
+  return data.session;
+}
