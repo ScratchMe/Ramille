@@ -58,19 +58,99 @@ C'est un choix délibéré : la valeur du produit se joue dans le moment de pris
 
 **Objectif** : obtenir une estimation déclarative complète, suffisamment précise pour servir de socle factuel à la prise de conscience. C'est le "moment de vérité" du produit — il peut se permettre plus de friction qu'ailleurs (interaction unique, pas répétée).
 
-**Données à collecter** :
-- Trajet domicile-travail : distance approximative, fréquence hebdomadaire, mode(s) utilisé(s)
-- Trajets weekend / loisirs : fréquence type, mode dominant
-- Voyages annuels (national / international) : nombre, mode (avion / train / voiture), distance approximative
-- Contexte structurel : zone rurale / urbaine, accès perçu aux transports en commun
+**Structure générale** : 4 sections séquentielles, chacune composée d'étapes atomiques (une question ou un petit groupe de champs liés par écran). Logique conditionnelle activée : une étape n'apparaît que si sa condition est remplie. Ordre des sections : Domicile-travail → Weekend/loisirs → Voyages annuels → Contexte structurel.
 
-Le contexte structurel n'est pas décoratif : il sert à ne pas traiter un profil rural sans alternative comme un "mauvais élève" dans la restitution.
+### Écran B0 — Transition
 
-**Calcul** : convertir les déclarations en estimation d'émissions annuelles liées au transport, à partir de facteurs d'émission reconnus (ex. Base Carbone ADEME — la source précise est un détail d'implémentation, voir questions ouvertes).
+Contenu : rappel du temps estimé ("~5 min"), message de réassurance ("pas de jugement, réponses approximatives acceptées"). CTA : "Commencer mon bilan".
 
-**Sortie clé** : identifier **la décision de transport dominante** — celle qui pèse le plus dans le bilan de l'utilisateur. Cette décision sert d'ancrage unique à la boucle mensuelle (brique 4).
+### Section 1 — Trajet domicile-travail / études
+
+| Étape | Question | Type de champ | Options / validation | Condition d'affichage |
+|---|---|---|---|---|
+| B1.1 | As-tu un trajet régulier pour le travail ou les études ? | Choix unique | Oui / Non (télétravail total, sans emploi, retraité, autre) | Toujours |
+| B1.2 | Combien de jours par semaine effectues-tu ce trajet en présentiel ? | Nombre (slider ou stepper) | 1 à 7, défaut 5 | Si B1.1 = Oui |
+| B1.3 | Quelle est la distance aller de ce trajet ? | Nombre (km) avec option "Je ne sais pas" | Si "Je ne sais pas" → sélection par tranche : <5 km / 5-15 km / 15-30 km / 30-50 km / 50 km+ | Si B1.1 = Oui |
+| B1.4 | Quel est ton mode de transport principal pour ce trajet ? | Choix unique | Voiture (seul) / Voiture (covoiturage) / Bus / Train ou RER / Métro ou tram / Vélo / Marche / Deux-roues motorisé / Trottinette ou mobilité douce | Si B1.1 = Oui |
+| B1.5 | Combien de personnes partagez-vous en moyenne ce trajet ? | Nombre | 2 à 6+ | Si B1.4 = Voiture (covoiturage) |
+| B1.6 | Utilises-tu un second mode de transport en complément (ex : vélo + train) ? | Choix unique | Oui / Non | Si B1.1 = Oui |
+| B1.7 | Lequel ? | Choix unique | Même liste que B1.4 (sans l'option déjà choisie) | Si B1.6 = Oui |
+
+Si B1.1 = Non : la section entière est ignorée, contribution domicile-travail = 0, passage direct à la Section 2.
+
+### Section 2 — Trajets weekend / loisirs
+
+| Étape | Question | Type de champ | Options / validation | Condition d'affichage |
+|---|---|---|---|---|
+| B2.1 | À quelle fréquence fais-tu des trajets loisirs le weekend (sport, sorties, famille) ? | Choix unique | Rarement (mensuel ou moins) / Une fois par semaine / Plusieurs fois par semaine | Toujours |
+| B2.2 | Quel est le mode de transport principal pour ces trajets ? | Choix unique | Même liste que B1.4 | Si B2.1 ≠ Rarement |
+| B2.3 | Quelle est la distance aller typique de ces trajets ? | Choix unique par tranche | <5 km / 5-15 km / 15-30 km / 30 km+ | Si B2.1 ≠ Rarement |
+
+Si B2.1 = Rarement : contribution loisirs calculée sur une base résiduelle faible (voir calcul), pas de question de mode/distance.
+
+### Section 3 — Voyages annuels (hors quotidien)
+
+| Étape | Question | Type de champ | Options / validation | Condition d'affichage |
+|---|---|---|---|---|
+| B3.1 | Combien de fois prends-tu l'avion dans une année type ? | Nombre | 0 à 10+ | Toujours |
+| B3.2 | Sur ces vols, combien sont courts (Europe, moins de 3h) ? | Nombre | 0 à B3.1, le reste étant classé long-courrier | Si B3.1 > 0 |
+| B3.3 | Combien de fois par an fais-tu un trajet longue distance (>300 km) en train ? | Nombre | 0 à 10+ | Toujours |
+| B3.4 | Combien de fois par an fais-tu un trajet longue distance (>300 km) en voiture ? | Nombre | 0 à 10+ | Toujours |
+
+Les distances moyennes par trajet ne sont pas demandées individuellement (trop de friction) — des distances moyennes par défaut sont utilisées dans le calcul (voir plus bas), configurables sans changer le flow.
+
+### Section 4 — Contexte structurel
+
+| Étape | Question | Type de champ | Options / validation | Condition d'affichage |
+|---|---|---|---|---|
+| B4.1 | Dans quel type de zone vis-tu ? | Choix unique | Urbain dense / Périurbain / Rural | Toujours |
+| B4.2 | Comment perçois-tu l'accès aux transports en commun près de chez toi ? | Choix unique | Bon / Limité / Inexistant | Toujours |
+| B4.3 | Combien de véhicules motorisés possède ton foyer ? | Choix unique | 0 / 1 / 2 ou plus | Toujours |
+
+Cette section n'entre pas dans le calcul d'émissions — elle sert uniquement à contextualiser la restitution et à éviter de traiter un profil rural sans alternative comme un "mauvais élève".
+
+### Logique de calcul
+
+Émissions annuelles = somme de trois postes, chacun en kgCO2e/an :
+
+**Poste domicile-travail** (0 si B1.1 = Non) :
+`distance_aller (km) × 2 × jours_semaine (B1.2) × 45 semaines/an × facteur_émission(mode B1.4) ÷ nb_personnes (si covoiturage, B1.5)`
+— 45 semaines retient un an de travail typique hors congés/jours fériés, valeur par défaut ajustable.
+Si second mode déclaré (B1.6/B1.7), répartir 50/50 la distance entre les deux modes, à ajuster si besoin.
+
+**Poste loisirs** :
+`distance_typique (km, milieu de tranche B2.3) × 2 × fréquence_hebdo_équivalente × 52 × facteur_émission(mode B2.2)`
+— fréquence_hebdo_équivalente : Rarement = 0,25 ; Une fois/semaine = 1 ; Plusieurs fois/semaine = 3 (valeurs par défaut à valider, voir questions ouvertes).
+Si B2.1 = Rarement, utiliser une distance et un mode par défaut (voiture, 15 km) pour une contribution résiduelle faible plutôt que zéro.
+
+**Poste voyages annuels** :
+`(nb_vols_courts × 1500 km × facteur_avion_court) + (nb_vols_longs × 9000 km × facteur_avion_long) + (nb_trajets_train × 800 km × facteur_train) + (nb_trajets_voiture_longue × 700 km × facteur_voiture)`
+— distances moyennes par défaut (1500 / 9000 / 800 / 700 km) à valider, configurables sans changer le questionnaire.
+
+### Table des facteurs d'émission (valeurs indicatives — à valider avant mise en production)
+
+| Mode | Facteur (kgCO2e/km/passager) |
+|---|---|
+| Voiture (thermique moyenne) | ~0,20 |
+| Bus | ~0,10 |
+| Train / RER | ~0,02 |
+| Métro / tram | ~0,005 |
+| Vélo / marche / trottinette | ~0 |
+| Deux-roues motorisé | ~0,10 |
+| Avion court-courrier | ~0,20 |
+| Avion long-courrier | ~0,15 |
+
+⚠️ **Ces valeurs sont des ordres de grandeur pour permettre un premier développement fonctionnel, pas des données sourcées et validées.** Elles doivent être remplacées par les valeurs officielles de la Base Empreinte® ADEME avant toute mise en production — voir questions ouvertes.
+
+### Sortie clé — Décision de transport dominante
+
+Comparer les trois postes (domicile-travail, loisirs, voyages) : le poste le plus élevé devient la **décision de transport dominante**, formulée à partir du mode principal associé (ex. : "trajet domicile-travail en voiture solo").
+
+**Règle de départage en cas d'égalité stricte (ou quasi-égalité, écart < 5%)** : priorité au poste le plus régulier — domicile-travail > loisirs > voyages — car c'est celui sur lequel la boucle mensuelle (Brique 4) aura le plus de prise actionable. *Ceci résout la question ouverte correspondante posée dans la spec UI/UX.*
 
 **Restitution** : présenter le résultat sans classement ni comparaison à d'autres utilisateurs. Contextualiser par rapport à la moyenne nationale et à la cible 2050, sans ton culpabilisant.
+
+
 
 ## 6. Brique 3 — Plan de réduction (version simplifiée V1)
 
@@ -142,7 +222,8 @@ L'absence de preuve causale de changement de comportement n'invalide pas le proj
 | Question | Qui tranche |
 |---|---|
 | Cadence par défaut à implémenter : saisons calendaires (piste privilégiée) ou trimestre glissant ? Le paramètre doit rester configurable dans tous les cas. | Produit |
-| Quelle source de facteurs d'émission utiliser pour le calcul du bilan (Base Carbone ADEME ou autre) ? | Data / implémentation |
+| Quelle source de facteurs d'émission utiliser pour le calcul du bilan ? Les valeurs de ce document sont des ordres de grandeur indicatifs, **pas des données sourcées** — à remplacer par la Base Empreinte® ADEME (ou équivalent) avant mise en production | Data / implémentation |
+| Les distances moyennes par défaut pour les voyages (1500 km vol court, 9000 km vol long, 800 km train longue distance, 700 km voiture longue distance) et les fréquences hebdomadaires équivalentes pour les loisirs (0,25 / 1 / 3) sont des hypothèses de travail — à valider ou ajuster | Produit / data |
 | Faut-il un champ de retour qualitatif libre pour compenser l'absence de preuve causale ? | Produit |
 | Le module de mobilisation citoyenne locale est explicitement hors scope V1 — à spécifier séparément si le principe de l'app se confirme | Produit |
 | Faut-il une méthode de connexion alternative à Google, pour ne pas exclure les profils moins équipés ou méfiants d'un compte Google unique — précisément le segment rural/moins connecté que le produit veut inclure ? | ~~Produit~~ *Résolu : ajout d'une connexion classique email + mot de passe en complément.* |

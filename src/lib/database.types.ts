@@ -28,30 +28,146 @@ export type Database = {
         };
         Relationships: [];
       };
-      assessment_results: {
+      assessment_answers: {
         Row: {
           assessment_id: string;
-          computed_at: string;
-          dominant_trip_co2_kg_year: number | null;
-          dominant_trip_id: string;
-          id: string;
-          total_co2_kg_year: number;
+          car_long_trips_per_year: number;
+          commute_carpool_size: number | null;
+          commute_days_per_week: number | null;
+          commute_distance_bracket: string | null;
+          commute_distance_km: number | null;
+          commute_has_regular_trip: boolean;
+          commute_is_carpool: boolean;
+          commute_mode: string | null;
+          commute_second_mode: string | null;
+          commute_second_mode_used: boolean;
+          flights_short_per_year: number | null;
+          flights_total_per_year: number;
+          household_vehicles: string | null;
+          leisure_distance_bracket: string | null;
+          leisure_frequency: string;
+          leisure_mode: string | null;
+          tc_access: string | null;
+          train_long_trips_per_year: number;
+          updated_at: string;
+          zone_type: string | null;
         };
         Insert: {
           assessment_id: string;
-          computed_at?: string;
-          dominant_trip_co2_kg_year?: number | null;
-          dominant_trip_id: string;
-          id?: string;
-          total_co2_kg_year: number;
+          car_long_trips_per_year?: number;
+          commute_carpool_size?: number | null;
+          commute_days_per_week?: number | null;
+          commute_distance_bracket?: string | null;
+          commute_distance_km?: number | null;
+          commute_has_regular_trip: boolean;
+          commute_is_carpool?: boolean;
+          commute_mode?: string | null;
+          commute_second_mode?: string | null;
+          commute_second_mode_used?: boolean;
+          flights_short_per_year?: number | null;
+          flights_total_per_year?: number;
+          household_vehicles?: string | null;
+          leisure_distance_bracket?: string | null;
+          leisure_frequency: string;
+          leisure_mode?: string | null;
+          tc_access?: string | null;
+          train_long_trips_per_year?: number;
+          updated_at?: string;
+          zone_type?: string | null;
         };
         Update: {
           assessment_id?: string;
+          car_long_trips_per_year?: number;
+          commute_carpool_size?: number | null;
+          commute_days_per_week?: number | null;
+          commute_distance_bracket?: string | null;
+          commute_distance_km?: number | null;
+          commute_has_regular_trip?: boolean;
+          commute_is_carpool?: boolean;
+          commute_mode?: string | null;
+          commute_second_mode?: string | null;
+          commute_second_mode_used?: boolean;
+          flights_short_per_year?: number | null;
+          flights_total_per_year?: number;
+          household_vehicles?: string | null;
+          leisure_distance_bracket?: string | null;
+          leisure_frequency?: string;
+          leisure_mode?: string | null;
+          tc_access?: string | null;
+          train_long_trips_per_year?: number;
+          updated_at?: string;
+          zone_type?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'assessment_answers_assessment_id_fkey';
+            columns: ['assessment_id'];
+            isOneToOne: true;
+            referencedRelation: 'assessments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_answers_commute_mode_fkey';
+            columns: ['commute_mode'];
+            isOneToOne: false;
+            referencedRelation: 'transport_modes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_answers_commute_second_mode_fkey';
+            columns: ['commute_second_mode'];
+            isOneToOne: false;
+            referencedRelation: 'transport_modes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_answers_leisure_mode_fkey';
+            columns: ['leisure_mode'];
+            isOneToOne: false;
+            referencedRelation: 'transport_modes';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      assessment_results: {
+        Row: {
+          assessment_id: string;
+          commute_co2_kg_year: number;
+          computed_at: string;
+          dominant_poste: string;
+          dominant_poste_co2_kg_year: number;
+          dominant_poste_label: string;
+          dominant_poste_mode: string | null;
+          id: string;
+          leisure_co2_kg_year: number;
+          total_co2_kg_year: number;
+          travel_co2_kg_year: number;
+        };
+        Insert: {
+          assessment_id: string;
+          commute_co2_kg_year: number;
           computed_at?: string;
-          dominant_trip_co2_kg_year?: number | null;
-          dominant_trip_id?: string;
+          dominant_poste: string;
+          dominant_poste_co2_kg_year: number;
+          dominant_poste_label: string;
+          dominant_poste_mode?: string | null;
           id?: string;
+          leisure_co2_kg_year: number;
+          total_co2_kg_year: number;
+          travel_co2_kg_year: number;
+        };
+        Update: {
+          assessment_id?: string;
+          commute_co2_kg_year?: number;
+          computed_at?: string;
+          dominant_poste?: string;
+          dominant_poste_co2_kg_year?: number;
+          dominant_poste_label?: string;
+          dominant_poste_mode?: string | null;
+          id?: string;
+          leisure_co2_kg_year?: number;
           total_co2_kg_year?: number;
+          travel_co2_kg_year?: number;
         };
         Relationships: [
           {
@@ -62,87 +178,10 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'assessment_results_dominant_trip_id_fkey';
-            columns: ['dominant_trip_id'];
-            isOneToOne: false;
-            referencedRelation: 'assessment_trips';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      assessment_trip_modes: {
-        Row: {
-          assessment_trip_id: string;
-          id: string;
-          share_percent: number;
-          transport_mode_id: string;
-        };
-        Insert: {
-          assessment_trip_id: string;
-          id?: string;
-          share_percent?: number;
-          transport_mode_id: string;
-        };
-        Update: {
-          assessment_trip_id?: string;
-          id?: string;
-          share_percent?: number;
-          transport_mode_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'assessment_trip_modes_assessment_trip_id_fkey';
-            columns: ['assessment_trip_id'];
-            isOneToOne: false;
-            referencedRelation: 'assessment_trips';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'assessment_trip_modes_transport_mode_id_fkey';
-            columns: ['transport_mode_id'];
+            foreignKeyName: 'assessment_results_dominant_poste_mode_fkey';
+            columns: ['dominant_poste_mode'];
             isOneToOne: false;
             referencedRelation: 'transport_modes';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      assessment_trips: {
-        Row: {
-          assessment_id: string;
-          distance_km: number;
-          frequency_unit: string;
-          frequency_value: number;
-          id: string;
-          label: string | null;
-          trip_scope: string | null;
-          trip_type: string;
-        };
-        Insert: {
-          assessment_id: string;
-          distance_km: number;
-          frequency_unit: string;
-          frequency_value: number;
-          id?: string;
-          label?: string | null;
-          trip_scope?: string | null;
-          trip_type: string;
-        };
-        Update: {
-          assessment_id?: string;
-          distance_km?: number;
-          frequency_unit?: string;
-          frequency_value?: number;
-          id?: string;
-          label?: string | null;
-          trip_scope?: string | null;
-          trip_type?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'assessment_trips_assessment_id_fkey';
-            columns: ['assessment_id'];
-            isOneToOne: false;
-            referencedRelation: 'assessments';
             referencedColumns: ['id'];
           },
         ];
@@ -217,7 +256,6 @@ export type Database = {
       monthly_checkins: {
         Row: {
           created_at: string;
-          dominant_trip_id: string;
           id: string;
           period_month: string;
           responded_at: string | null;
@@ -228,7 +266,6 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
-          dominant_trip_id: string;
           id?: string;
           period_month: string;
           responded_at?: string | null;
@@ -239,7 +276,6 @@ export type Database = {
         };
         Update: {
           created_at?: string;
-          dominant_trip_id?: string;
           id?: string;
           period_month?: string;
           responded_at?: string | null;
@@ -249,13 +285,6 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: 'monthly_checkins_dominant_trip_id_fkey';
-            columns: ['dominant_trip_id'];
-            isOneToOne: false;
-            referencedRelation: 'assessment_trips';
-            referencedColumns: ['id'];
-          },
           {
             foreignKeyName: 'monthly_checkins_user_id_fkey';
             columns: ['user_id'];
@@ -306,7 +335,6 @@ export type Database = {
           baseline_co2_kg_year: number | null;
           cadence_type: string;
           created_at: string;
-          dominant_trip_id: string;
           id: string;
           period_end: string;
           period_label: string;
@@ -319,7 +347,6 @@ export type Database = {
           baseline_co2_kg_year?: number | null;
           cadence_type: string;
           created_at?: string;
-          dominant_trip_id: string;
           id?: string;
           period_end: string;
           period_label: string;
@@ -332,7 +359,6 @@ export type Database = {
           baseline_co2_kg_year?: number | null;
           cadence_type?: string;
           created_at?: string;
-          dominant_trip_id?: string;
           id?: string;
           period_end?: string;
           period_label?: string;
@@ -342,13 +368,6 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: 'plan_cycles_dominant_trip_id_fkey';
-            columns: ['dominant_trip_id'];
-            isOneToOne: false;
-            referencedRelation: 'assessment_trips';
-            referencedColumns: ['id'];
-          },
           {
             foreignKeyName: 'plan_cycles_user_id_fkey';
             columns: ['user_id'];
@@ -406,8 +425,13 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      compute_assessment_results: {
+        Args: { p_assessment_id: string };
+        Returns: undefined;
+      };
       generate_monthly_checkins: { Args: never; Returns: undefined };
       generate_plan_cycles: { Args: never; Returns: undefined };
+      purge_stale_anonymous_accounts: { Args: never; Returns: undefined };
       rolling_quarter_bounds: {
         Args: { anchor: string; d: string };
         Returns: { label: string; period_end: string; period_start: string }[];
