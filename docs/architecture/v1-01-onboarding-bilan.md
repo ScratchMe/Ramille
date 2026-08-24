@@ -1,5 +1,11 @@
 # TraceVerte — Architecture technique V1 (increment 1/2)
 
+> ⚠️ **Le schéma du bilan décrit en §2-3 (tables `assessment_trips`/`assessment_trip_modes`,
+> formules par trajet générique) est obsolète, remplacé par `v1-05-bilan-v2.md`** suite à la
+> mise à jour de la spec fonctionnelle avec le détail complet des champs B1.1→B4.3. Le reste
+> de ce document (stack, onboarding, RLS générales) reste valide. Conservé pour l'historique
+> des décisions, pas comme référence du schéma actuel.
+
 **Périmètre de ce document** : Brique 2 (Bilan initial) + socle minimal Brique 1 (Onboarding).
 Les briques 3 (Plan) et 4 (Boucle mensuelle) sont volontairement laissées hors de cet
 increment — elles seront spécifiées une fois ce socle validé, en respectant l'ordre de

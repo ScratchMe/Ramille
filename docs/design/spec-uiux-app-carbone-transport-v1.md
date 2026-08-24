@@ -23,11 +23,13 @@
 
 ## 2. Bilan initial — soin maximal
 
-**Format** : questionnaire séquentiel (une question ou un petit groupe à la fois), pas un long formulaire scrollable d'un coup. Réduit la charge perçue malgré la friction acceptée sur cette brique.
+**Format** : questionnaire séquentiel (une question ou un petit groupe à la fois), pas un long formulaire scrollable d'un coup. Réduit la charge perçue malgré la friction acceptée sur cette brique. Le détail exhaustif écran par écran, champ par champ et la logique conditionnelle sont spécifiés dans la spec fonctionnelle, Brique 2 — cette section-ci ne couvre que l'intention visuelle et d'interaction, pas la liste des champs.
 
-**Barre de progression visible** — contrairement à l'onboarding, c'est ici un vrai parcours à compléter ; l'utilisateur doit savoir combien d'étapes restent.
+**Barre de progression visible**, calculée sur le nombre d'étapes réellement affichées à cet utilisateur (pas sur le total théorique) — puisque des étapes sont sautées selon les réponses (ex. : pas de trajet domicile-travail déclaré), la barre ne doit pas se figer ni sauter de façon incohérente quand une section entière est ignorée.
 
 **Ordre des sections** : domicile-travail → weekend/loisirs → voyages annuels → contexte structurel (en dernier, pour ne pas donner l'impression que c'est une justification a posteriori).
+
+**Champs conditionnels** (ex. : mode de covoiturage, second mode de transport) : n'apparaissent qu'après la réponse qui les déclenche, jamais affichés grisés/désactivés à l'avance — pour ne pas surcharger visuellement l'écran de champs non pertinents.
 
 **Champ contexte structurel** (rural/urbain, accès perçu aux transports en commun) : formulation neutre — "Quel est ton contexte de mobilité ?" plutôt qu'une question qui sonne comme une demande d'excuse.
 
@@ -98,7 +100,7 @@
 
 | Question | Qui tranche |
 |---|---|
-| Que faire visuellement en cas d'ex-aequo entre deux décisions de transport dominantes au bilan ? | Produit / design |
+| Que faire visuellement en cas d'ex-aequo entre deux décisions de transport dominantes au bilan ? | ~~Produit / design~~ *Résolu côté fonctionnel : en cas d'égalité ou quasi-égalité (<5%), priorité au poste le plus régulier (domicile-travail > loisirs > voyages) — voir spec fonctionnelle, Brique 2. Aucun traitement visuel spécifique d'égalité n'est donc nécessaire.* |
 | Illustration originale pour l'onboarding et le bilan, ou visuels génériques suffisants pour cette V1 ? | Design |
 | La mention "2 check-ins consécutifs" peut-elle rester purement textuelle sans risquer de recréer, même involontairement, la logique badge/trophée écartée au niveau du contenu ? | Produit |
 | Le CTA "Continuer sans compte" doit-il rester visible en permanence, ou apparaître après un court délai pour ne pas donner l'impression que le compte est négligeable ? | Design |
