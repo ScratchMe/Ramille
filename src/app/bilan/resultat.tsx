@@ -9,6 +9,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
+import { formatTonnes } from '@/lib/format';
+import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
 import type { Database } from '@/lib/database.types';
 
 type AssessmentResults = Database['public']['Tables']['assessment_results']['Row'];
@@ -25,22 +27,24 @@ const DOMINANT_HEADLINE: Record<string, string> = {
   travel: 'Tes voyages',
 };
 
-function formatTonnes(kg: number): string {
-  const tonnes = (kg / 1000).toFixed(1).replace('.', ',');
-  return `${tonnes} t CO₂e`;
-}
-
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'ok'; results: AssessmentResults };
 
+// Anonyme et pas encore proposé un compte : au clic sur le CTA, on passe d'abord par la
+// proposition plein écran (cf. maquette "Connexion — proposition après bilan", qui
+// apparaît explicitement *après* avoir vu ce résultat). Anonyme et déjà décliné une fois :
+// bandeau discret ("Bilan anonyme — relance douce") plutôt que de réinterrompre à chaque
+// retour, le CTA va alors directement au plan.
 export default function BilanResultat() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [state, setState] = useState<LoadState>(
     id ? { status: 'loading' } : { status: 'error', message: 'Bilan introuvable.' }
   );
+  const [showBanner, setShowBanner] = useState(false);
+  const [proposalSeen, setProposalSeen] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -57,6 +61,27 @@ export default function BilanResultat() {
         setState({ status: 'ok', results: data });
       });
   }, [id]);
+
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user?.is_anonymous) return;
+
+      const seen = await hasSeenConnexionProposal();
+      setProposalSeen(seen);
+      setShowBanner(seen);
+    })();
+  }, []);
+
+  const goToPlan = () => {
+    if (!proposalSeen) {
+      router.push({ pathname: '/connexion', params: { id } });
+      return;
+    }
+    router.push('/plan');
+  };
 
   if (state.status === 'loading') {
     return (
@@ -90,6 +115,20 @@ export default function BilanResultat() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {showBanner && (
+            <Pressable
+              onPress={() => router.push({ pathname: '/connexion', params: { id } })}
+              style={[styles.banner, { backgroundColor: theme.backgroundElement }]}
+            >
+              <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
+                Ce bilan n&apos;est enregistré que sur cet appareil.
+              </ThemedText>
+              <ThemedText type="small" weight={600} themeColor="accentText">
+                Le garder
+              </ThemedText>
+            </Pressable>
+          )}
+
           <ThemedText type="small" themeColor="textTertiary">
             Ton bilan transport
           </ThemedText>
@@ -142,7 +181,7 @@ export default function BilanResultat() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button title="Voir ce que je peux faire" onPress={() => router.push('/plan')} />
+          <Button title="Voir ce que je peux faire" onPress={goToPlan} />
           <Pressable onPress={() => router.push('/bilan')}>
             <ThemedText type="small" themeColor="textTertiary" style={styles.editLink}>
               Modifier mes réponses
@@ -190,6 +229,16 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { padding: Spacing.four, gap: Spacing.four },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.three,
+  },
+  bannerText: { flex: 1 },
   dominantCard: { borderRadius: 24, padding: 22, gap: 10 },
   dominantLabel: { fontSize: 14, lineHeight: 20 },
   dominantHeadline: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
