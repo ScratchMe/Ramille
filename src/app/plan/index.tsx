@@ -26,8 +26,8 @@ type LoadState =
   // pratique (compute_assessment_results le génère désormais immédiatement, cf.
   // migration 20260824190000), gardé comme filet pour les bilans complétés avant elle
   // et pas encore repris par le cron quotidien.
-  | { status: 'pending' }
-  | { status: 'ok'; cycle: PlanCycle };
+  | { status: 'pending'; assessmentId: string }
+  | { status: 'ok'; cycle: PlanCycle; assessmentId: string };
 
 // B "Plan de réduction" — le mockup n'a qu'une seule carte teintée par cap/action
 // (copy fixe : "240 kg CO₂e", "30 % du trajet en train"...) : `action_templates` ne
@@ -42,20 +42,9 @@ export default function Plan() {
     let cancelled = false;
 
     (async () => {
-      const { data: cycle, error: cycleError } = await supabase
-        .from('plan_cycles')
-        .select('id, period_label, trip_label, plan_actions(id, action_templates(action_text))')
-        .order('period_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (!cycleError && cycle) {
-        setState({ status: 'ok', cycle: cycle as PlanCycle });
-        return;
-      }
-
+      // Le lien "Revenir à mon bilan" pointe vers la restitution du dernier bilan
+      // complété (elle-même donne accès à "Modifier mes réponses") — il faut donc son
+      // id systématiquement, pas seulement dans le cas filet ci-dessous.
       const { data: assessment } = await supabase
         .from('assessments')
         .select('id')
@@ -65,7 +54,26 @@ export default function Plan() {
         .maybeSingle();
 
       if (cancelled) return;
-      setState(assessment ? { status: 'pending' } : { status: 'no_assessment' });
+
+      if (!assessment) {
+        setState({ status: 'no_assessment' });
+        return;
+      }
+
+      const { data: cycle, error: cycleError } = await supabase
+        .from('plan_cycles')
+        .select('id, period_label, trip_label, plan_actions(id, action_templates(action_text))')
+        .order('period_start', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      setState(
+        !cycleError && cycle
+          ? { status: 'ok', cycle: cycle as PlanCycle, assessmentId: assessment.id }
+          : { status: 'pending', assessmentId: assessment.id }
+      );
     })();
 
     return () => {
@@ -111,7 +119,7 @@ export default function Plan() {
     );
   }
 
-  const { cycle } = state;
+  const { cycle, assessmentId } = state;
 
   return (
     <ThemedView style={styles.container}>
@@ -154,7 +162,7 @@ export default function Plan() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Pressable onPress={() => router.push('/bilan')}>
+          <Pressable onPress={() => router.push({ pathname: '/bilan/resultat', params: { id: assessmentId } })}>
             <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
               Revenir à mon bilan
             </ThemedText>
