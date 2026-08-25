@@ -36,7 +36,9 @@ bout-en-bout (écrans, flux de connexion) :
   fichier testé.
 - **pgTAP** (`supabase/tests/database/*.sql`) sur les fonctions SQL de calcul —
   `compute_assessment_results`, `generate_plan_cycle_for_user`, `season_bounds`/
-  `rolling_quarter_bounds`. Tourne via `supabase test db`, qui démarre une stack Postgres
+  `rolling_quarter_bounds` — et sur les policies RLS (isolation stricte par utilisateur en
+  lecture/écriture, verrouillage des tables à écriture serveur-only, lecture publique des
+  référentiels). Tourne via `supabase test db`, qui démarre une stack Postgres
   locale (Docker) à partir de `supabase/config.toml` + `supabase/migrations/` — indépendante
   du projet Supabase distant `TraceVerte-v1` utilisé pour le développement applicatif
   courant. Nécessite le CLI Supabase (`npx supabase@latest`) et Docker ; non exécutable dans
