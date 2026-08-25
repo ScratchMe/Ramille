@@ -17,13 +17,20 @@ export type AuthResult = { error: Error | null };
 
 // Lie l'identité Google à la session anonyme courante. Web : redirect plein écran
 // classique (detectSessionInUrl déjà activé côté client sur web, cf. supabase.ts — la
-// session se met à jour automatiquement au retour). Natif : flow "skipBrowserRedirect" +
+// session se met à jour automatiquement au retour) ; redirectTo explicite vers /plan
+// plutôt que de dépendre du Site URL par défaut du dashboard Supabase (qui ramènerait
+// sur l'origine nue, cf. l'ancien cul-de-sac de `/` avant sa réécriture en redirection
+// onboarding/plan) — nécessite que cette origine soit dans la liste des Redirect URLs
+// autorisées côté dashboard (fait le 25/08/2026). Natif : flow "skipBrowserRedirect" +
 // WebBrowser + extraction manuelle des tokens depuis l'URL de retour, pattern
 // recommandé par la doc Supabase pour Expo (pas de config OAuth native type
 // google_sign_in — un seul chemin à maintenir, web et natif).
 export async function linkGoogleIdentity(): Promise<AuthResult> {
   if (Platform.OS === 'web') {
-    const { error } = await supabase.auth.linkIdentity({ provider: 'google' });
+    const { error } = await supabase.auth.linkIdentity({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/plan` },
+    });
     return { error };
   }
 
