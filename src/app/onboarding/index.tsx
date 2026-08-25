@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { IllustrationPlaceholder } from '@/components/illustration-placeholder';
+import { OnboardingHeroIllustration } from '@/components/illustrations/onboarding-hero-illustration';
 import { OnboardingDots } from '@/components/onboarding-dots';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -15,10 +15,7 @@ export default function OnboardingAccroche() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <IllustrationPlaceholder
-          caption={'illustration — une personne\net ses trajets du quotidien'}
-          style={styles.illustration}
-        />
+        <OnboardingHeroIllustration style={styles.illustration} />
         <View style={styles.textBlock}>
           <ThemedText type="title" weight={600} style={styles.title}>
             Comprendre tes trajets, sans te juger.

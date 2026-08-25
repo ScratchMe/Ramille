@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { IllustrationPlaceholder } from '@/components/illustration-placeholder';
+import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -95,7 +95,7 @@ export default function Plan() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.emptySafeArea}>
-          <IllustrationPlaceholder caption="illustration — état vide" style={styles.emptyIllustration} />
+          <EmptyStateIllustration style={styles.emptyIllustration} />
           <ThemedText type="title" weight={600} style={styles.emptyTitle}>
             Ton bilan n&apos;est pas encore fait
           </ThemedText>
