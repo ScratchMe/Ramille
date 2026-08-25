@@ -23,12 +23,14 @@ extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
-# Controls whether new tables, views, sequences and functions created in the `public` schema by
-# `postgres` are reachable through the Data API roles (`anon`, `authenticated`, `service_role`)
-# without explicit GRANTs. When unset, new entities are NOT auto-exposed, matching the new cloud
-# default. Set to `true` to keep the legacy behaviour of auto-exposing new entities; this is
-# deprecated and the field is removed on 2026-10-30 once the always-revoked behaviour is permanent.
-# auto_expose_new_tables = true
+# Le projet distant TraceVerte-v1 expose déjà nos tables à `authenticated` sans GRANT explicite
+# dans nos migrations (comportement plateforme standard à sa création) — nos policies RLS sont
+# la seule couche d'autorisation écrite dans supabase/migrations/. Sans ce flag, la stack locale
+# (utilisée par `supabase test db`) part d'un état plus strict et renvoie "permission denied"
+# avant même d'atteindre RLS, ce qui a fait échouer 01_compute_assessment_results.test.sql en CI
+# (l'erreur venait du GRANT manquant, pas de la logique testée). À revoir avant la suppression de
+# ce flag (2026-10-30) — ajouter des GRANTs explicites dans une migration si toujours nécessaire.
+auto_expose_new_tables = true
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.
