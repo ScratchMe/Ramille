@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { IllustrationPlaceholder } from '@/components/illustration-placeholder';
+import { ReassuranceIllustration } from '@/components/illustrations/reassurance-illustration';
 import { OnboardingDots } from '@/components/onboarding-dots';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -17,10 +17,7 @@ export default function OnboardingReassurance() {
     <ThemedView type="backgroundTinted" style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
-          <IllustrationPlaceholder
-            caption={'illustration — scène calme,\npaysage / matin'}
-            style={styles.illustration}
-          />
+          <ReassuranceIllustration style={styles.illustration} />
           <View style={styles.textBlock}>
             <ThemedText type="title" weight={600} style={styles.title}>
               Pas de jugement. Un état des lieux honnête.
