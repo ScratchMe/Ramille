@@ -4,6 +4,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
+import { Logo } from '@/components/logo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -53,6 +54,11 @@ export default function ConnexionProposition() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
+          {/* Marque visible avant le bouton Google : un utilisateur qui vient d'arriver sur
+              son bilan doit reconnaître que c'est bien TraceVerte qui lui propose de se
+              connecter, pas un tiers — le bouton Google lui-même reste non personnalisé
+              (cf. spec-uiux §5, "respecter le branding standard Google"). */}
+          <Logo size={44} style={styles.logo} />
           <View style={styles.textBlock}>
             <ThemedText type="title" weight={600} style={styles.title}>
               Garde ce résultat et suis ta progression
@@ -104,6 +110,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   content: { flex: 1, justifyContent: 'center', padding: Spacing.four, gap: Spacing.four },
+  logo: { marginBottom: Spacing.one },
   textBlock: { gap: Spacing.two },
   title: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   body: { fontSize: 16, lineHeight: 24 },
