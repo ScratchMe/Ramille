@@ -2,7 +2,10 @@
   <!-- TraceVerte — feuille + trajet : la nervure centrale, décalée et courbe plutôt que
        droite, se lit comme un itinéraire tracé jusqu'à un point d'arrivée (le point en
        bas). Couleurs : Colors.light.accent (#1F6F4A) / backgroundSelected (#E4EFE8),
-       cf. src/constants/theme.ts — source de vérité pour toute régénération. -->
+       cf. src/constants/theme.ts.
+       Source de vérité pour favicon.png uniquement (un visage ne se lit plus à la taille
+       d'un favicon, < ~40px) — pour icon.png/android-icon-*.png/splash-icon.png (mascotte
+       avec visage), voir mascot-mark.svg. -->
   <path d="M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z" fill="#1F6F4A" />
   <path d="M50,20 C42,44 42,64 50,82" stroke="#E4EFE8" stroke-width="4.5" stroke-linecap="round" fill="none" />
   <circle cx="50" cy="82" r="5" fill="#E4EFE8" />
