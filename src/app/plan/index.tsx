@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -27,7 +28,7 @@ type LoadState =
   // migration 20260824190000), gardé comme filet pour les bilans complétés avant elle
   // et pas encore repris par le cron quotidien.
   | { status: 'pending'; assessmentId: string }
-  | { status: 'ok'; cycle: PlanCycle; assessmentId: string };
+  | { status: 'ok'; cycle: PlanCycle; assessmentId: string; checkins: EngagementCheckin[] };
 
 // B "Plan de réduction" — le mockup n'a qu'une seule carte teintée par cap/action
 // (copy fixe : "240 kg CO₂e", "30 % du trajet en train"...) : `action_templates` ne
@@ -69,11 +70,27 @@ export default function Plan() {
 
       if (cancelled) return;
 
-      setState(
-        !cycleError && cycle
-          ? { status: 'ok', cycle: cycle as PlanCycle, assessmentId: assessment.id }
-          : { status: 'pending', assessmentId: assessment.id }
-      );
+      if (cycleError || !cycle) {
+        setState({ status: 'pending', assessmentId: assessment.id });
+        return;
+      }
+
+      // Check-ins en attente (boucle hebdo domicile-travail + boucle mensuelle extras,
+      // cf. generate_commute_checkins/generate_extras_checkins) — jamais plus d'un par
+      // boucle à la fois (contrainte unique(user_id, loop_type, period_start)).
+      const { data: checkins } = await supabase
+        .from('engagement_checkins')
+        .select('id, loop_type, period_label, trip_label')
+        .eq('status', 'pending');
+
+      if (cancelled) return;
+
+      setState({
+        status: 'ok',
+        cycle: cycle as PlanCycle,
+        assessmentId: assessment.id,
+        checkins: (checkins as EngagementCheckin[] | null) ?? [],
+      });
     })();
 
     return () => {
@@ -119,7 +136,7 @@ export default function Plan() {
     );
   }
 
-  const { cycle, assessmentId } = state;
+  const { cycle, assessmentId, checkins } = state;
 
   return (
     <ThemedView style={styles.container}>
@@ -131,8 +148,7 @@ export default function Plan() {
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.body}>
               {cycle.plan_actions.length > 1 ? 'Deux actions' : 'Une action'} liée
-              {cycle.plan_actions.length > 1 ? 's' : ''} à {cycle.trip_label}. Rien d&apos;autre à
-              suivre.
+              {cycle.plan_actions.length > 1 ? 's' : ''} à {cycle.trip_label}.
             </ThemedText>
             <ThemedView type="backgroundElement" style={styles.cadenceChip}>
               <ThemedText type="small" weight={600}>
@@ -151,14 +167,17 @@ export default function Plan() {
             ))}
           </View>
 
-          <ThemedView type="backgroundElement" style={styles.nextPoint}>
-            <ThemedText weight={600} type="small">
-              Prochain point
-            </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Une question, une fois par mois. Tu peux la passer.
-            </ThemedText>
-          </ThemedView>
+          {checkins.length > 0 && (
+            <View style={styles.checkins}>
+              {checkins.map((checkin) => (
+                <CheckinCard
+                  key={checkin.id}
+                  checkin={checkin}
+                  emphasize={checkin.trip_label === cycle.trip_label}
+                />
+              ))}
+            </View>
+          )}
         </ScrollView>
 
         <View style={styles.footer}>
@@ -185,7 +204,7 @@ const styles = StyleSheet.create({
   actions: { gap: Spacing.two + 2 },
   actionCard: { borderRadius: 18, borderWidth: 1, padding: 20, gap: 8 },
   actionText: { fontSize: 17, lineHeight: 24 },
-  nextPoint: { borderRadius: 16, padding: 18, gap: 6 },
+  checkins: { gap: Spacing.two + 2 },
   footer: { padding: Spacing.four },
   footerLink: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },

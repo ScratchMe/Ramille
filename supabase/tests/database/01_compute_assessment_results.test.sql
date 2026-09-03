@@ -10,7 +10,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(14);
 
 -- ── Fixtures : 4 utilisateurs, 1 bilan chacun ───────────────────────────────────────────
 
@@ -77,6 +77,14 @@ select is(
   'scénario 1 : total = commute (4 500 km/an à 0,1106) + loisirs par défaut'
 );
 
+-- Libellés par poste (increment 11, boucles hebdo/mensuelle) : persistés indépendamment de
+-- la décision dominante globale, cf. migration 20260827090000_engagement_checkins.sql.
+select results_eq(
+  $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '21111111-1111-1111-1111-111111111111' $$,
+  $$ values ('Trajet domicile-travail (Voiture)'::text, 'Trajets loisirs (Voiture)'::text) $$,
+  'scénario 1 : libellés commute/extras persistés indépendamment du poste dominant'
+);
+
 -- ── Scénario 2 : covoiturage + intermodalité ────────────────────────────────────────────
 
 select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111112', 'role', 'authenticated')::text, true);
@@ -92,6 +100,12 @@ select is(
   (select dominant_poste_mode from public.assessment_results where assessment_id = '22222222-2222-2222-2222-222222222222'),
   'voiture',
   'scénario 2 : le mode dominant affiché reste le mode primaire, pas le second mode'
+);
+
+select is(
+  (select commute_poste_label from public.assessment_results where assessment_id = '22222222-2222-2222-2222-222222222222'),
+  'Trajet domicile-travail (Voiture)',
+  'scénario 2 : le libellé commute utilise aussi le mode primaire, pas le second mode'
 );
 
 -- Idempotence : rappeler la fonction met à jour la ligne existante (on conflict do update),
@@ -115,6 +129,12 @@ select results_eq(
   'scénario 3 : sans trajet domicile-travail, 5 longs trajets voiture/an dominent'
 );
 
+select results_eq(
+  $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '23333333-3333-3333-3333-333333333333' $$,
+  $$ values (null::text, 'Voyages (Voiture)'::text) $$,
+  'scénario 3 : pas de trajet domicile-travail -> commute_poste_label reste null ; extras = voyages (dominant du duo loisirs/voyages)'
+);
+
 -- ── Scénario 4 : loisirs dominants ──────────────────────────────────────────────────────
 
 select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111114', 'role', 'authenticated')::text, true);
@@ -130,6 +150,12 @@ select is(
   (select round(leisure_co2_kg_year::numeric, 2) from public.assessment_results where assessment_id = '24444444-4444-4444-4444-444444444444'),
   1416.48::numeric,
   'scénario 4 : 40 km, 2 trajets, 3x/semaine, 52 semaines, bus à 0,1135'
+);
+
+select results_eq(
+  $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '24444444-4444-4444-4444-444444444444' $$,
+  $$ values (null::text, 'Trajets loisirs (Bus)'::text) $$,
+  'scénario 4 : loisirs dominants -> extras_poste_label reflète loisirs même sans voyages concurrents'
 );
 
 -- ── Garde d'accès ────────────────────────────────────────────────────────────────────────
