@@ -21,11 +21,44 @@ type AssessmentResults = Database['public']['Tables']['assessment_results']['Row
 const FRANCE_AVERAGE_TRANSPORT_T = 2.9;
 const TARGET_2050_TRANSPORT_T = 0.5;
 
-const DOMINANT_HEADLINE: Record<string, string> = {
+// "Tes voyages" seul ne dit pas de quoi il s'agit — on précise toujours le mode réel
+// (`dominant_poste_mode`, déjà en base) plutôt que le seul nom du poste. Table tenue à jour
+// avec `transport_modes` (cf. seed) ; un mode absent ou inconnu retombe sur le libellé
+// backend `dominant_poste_label`, jamais un texte vide.
+const MODE_PREPOSITION: Partial<Record<string, string>> = {
+  voiture: 'en voiture',
+  train: 'en train',
+  bus: 'en bus',
+  metro_tram: 'en métro ou tram',
+  velo: 'à vélo',
+  marche: 'à pied',
+  trottinette: 'en trottinette',
+  deux_roues_motorise: 'en deux-roues motorisé',
+  avion_court_moyen_courrier: 'en avion (court/moyen-courrier)',
+  avion_long_courrier: 'en avion long-courrier',
+};
+
+const POSTE_SUBJECT: Record<string, string> = {
   commute: 'Ton trajet domicile-travail',
   leisure: 'Tes trajets loisirs',
   travel: 'Tes voyages',
 };
+
+const POSTE_BREAKDOWN: {
+  key: 'commute' | 'leisure' | 'travel';
+  label: string;
+  co2Key: 'commute_co2_kg_year' | 'leisure_co2_kg_year' | 'travel_co2_kg_year';
+}[] = [
+  { key: 'commute', label: 'Trajet domicile-travail', co2Key: 'commute_co2_kg_year' },
+  { key: 'leisure', label: 'Trajets loisirs', co2Key: 'leisure_co2_kg_year' },
+  { key: 'travel', label: 'Voyages', co2Key: 'travel_co2_kg_year' },
+];
+
+function dominantHeadline(results: AssessmentResults): string {
+  const subject = POSTE_SUBJECT[results.dominant_poste] ?? results.dominant_poste_label;
+  const preposition = results.dominant_poste_mode ? MODE_PREPOSITION[results.dominant_poste_mode] : undefined;
+  return preposition ? `${subject} ${preposition}` : subject;
+}
 
 type LoadState =
   | { status: 'loading' }
@@ -138,12 +171,30 @@ export default function BilanResultat() {
               Le déplacement qui pèse le plus
             </ThemedText>
             <ThemedText type="subtitle" weight={600} style={styles.dominantHeadline}>
-              {DOMINANT_HEADLINE[results.dominant_poste] ?? results.dominant_poste_label}
+              {dominantHeadline(results)}
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
               {formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit {dominantPercent} % de ton empreinte
               transport.
             </ThemedText>
+          </ThemedView>
+
+          <ThemedView type="backgroundElement" style={styles.compareCard}>
+            <ThemedText weight={600} type="small">
+              Répartition par poste
+            </ThemedText>
+            <View style={styles.bars}>
+              {POSTE_BREAKDOWN.map((poste) => (
+                <CompareRow
+                  key={poste.key}
+                  label={poste.label}
+                  value={formatTonnes(results[poste.co2Key])}
+                  percent={Math.max((results[poste.co2Key] / results.total_co2_kg_year) * 100, 3)}
+                  bold={poste.key === results.dominant_poste}
+                  accentColor={poste.key === results.dominant_poste ? theme.accent : theme.accentMuted}
+                />
+              ))}
+            </View>
           </ThemedView>
 
           <View style={styles.totalBlock}>
