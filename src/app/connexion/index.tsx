@@ -4,7 +4,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
-import { Logo } from '@/components/logo';
+import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -57,8 +57,10 @@ export default function ConnexionProposition() {
           {/* Marque visible avant le bouton Google : un utilisateur qui vient d'arriver sur
               son bilan doit reconnaître que c'est bien TraceVerte qui lui propose de se
               connecter, pas un tiers — le bouton Google lui-même reste non personnalisé
-              (cf. spec-uiux §5, "respecter le branding standard Google"). */}
-          <Logo size={44} style={styles.logo} />
+              (cf. spec-uiux §5, "respecter le branding standard Google"). Mascotte plutôt
+              que le logo abstrait seul (cf. mascot.tsx) : même rôle de marque de confiance,
+              plus chaleureux. */}
+          <Mascot mood="calm" size={44} style={styles.logo} />
           <View style={styles.textBlock}>
             <ThemedText type="title" weight={600} style={styles.title}>
               Garde ce résultat et suis ta progression
