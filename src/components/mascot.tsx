@@ -24,9 +24,11 @@ export type MascotMood = 'calm' | 'happy' | 'encouraging';
 //   - `encouraging` : réponse négative à un check-in — yeux mi-clos et petit sourire,
 //     jamais un visage triste ou déçu (aucun sourcil froncé, aucune bouche tombante).
 //
-// L'icône/favicon/app icon (assets/images/logo-mark.svg) restent volontairement le trait
-// pur sans visage : un visage ne se lit plus en dessous d'environ 40px (vérifié
-// visuellement), la taille à laquelle ces assets sont affichés.
+// assets/images/mascot-mark.svg est la version statique de la variante `calm` ci-dessous —
+// source de vérité pour la régénération de icon.png/android-icon-*.png/splash-icon.png, qui
+// doit rester visuellement identique à ce composant si l'un des deux est retouché.
+// favicon.png reste dérivé du logo sans visage (assets/images/logo-mark.svg) : un visage ne
+// se lit plus en dessous d'environ 40px (vérifié visuellement), la taille d'un favicon.
 const FACE_BY_MOOD: Record<MascotMood, { eyes: 'dots' | 'happy' | 'soft'; mouth: string; blushOpacity: number; blushR: number; blushCy: number }> = {
   calm: { eyes: 'dots', mouth: 'M42,62 Q50,68 58,62', blushOpacity: 0.55, blushR: 5, blushCy: 60 },
   happy: { eyes: 'happy', mouth: 'M40,60 Q50,72 60,60', blushOpacity: 0.6, blushR: 5.4, blushCy: 59 },
