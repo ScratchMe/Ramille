@@ -108,9 +108,22 @@ Deux mécanismes de génération server-side qu'il faut garder synchronisés si 
   `profiles.cadence_type = 'rolling_quarter'`.
 
 `assessment_results` fige le résultat calculé au moment du bilan (jamais recalculé à la
-volée côté client) — même logique pour `monthly_checkins.trip_label`, snapshotté pour ne
+volée côté client) — même logique pour `engagement_checkins.trip_label`, snapshotté pour ne
 pas changer rétroactivement le wording d'un check-in déjà généré si l'utilisateur refait un
 bilan plus tard.
+
+La boucle mensuelle (brique 4) est en réalité **deux boucles indépendantes**, toutes deux
+proposées à tout utilisateur concerné (l'UI recommande de se concentrer sur le poste
+dominant sans jamais fermer l'autre) : une hebdomadaire ancrée sur le trajet domicile-travail
+(`loop_type = 'commute'`, générée par `generate_commute_checkins()`) et une mensuelle ancrée
+sur le poste "extras" — loisirs ou voyages, quel que soit celui qui pèse le plus, même
+départage que la décision dominante du bilan (`loop_type = 'extras'`, générée par
+`generate_extras_checkins()`). Les deux écrivent dans la même table `engagement_checkins`
+(contrainte `unique(user_id, loop_type, period_start)`), lisent les libellés snapshotés par
+`compute_assessment_results` sur `assessment_results.commute_poste_label` /
+`.extras_poste_label`, et sont plannifiées par `pg_cron` séparément (lundi 6h pour la boucle
+hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
+`docs/architecture/v1-02-boucle-engagement.md`.
 
 ### Conventions front notables
 

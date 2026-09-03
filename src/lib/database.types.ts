@@ -8,7 +8,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -135,11 +135,14 @@ export type Database = {
         Row: {
           assessment_id: string
           commute_co2_kg_year: number
+          commute_poste_label: string | null
           computed_at: string
           dominant_poste: string
           dominant_poste_co2_kg_year: number
           dominant_poste_label: string
           dominant_poste_mode: string | null
+          extras_poste_co2_kg_year: number | null
+          extras_poste_label: string | null
           id: string
           leisure_co2_kg_year: number
           total_co2_kg_year: number
@@ -148,11 +151,14 @@ export type Database = {
         Insert: {
           assessment_id: string
           commute_co2_kg_year: number
+          commute_poste_label?: string | null
           computed_at?: string
           dominant_poste: string
           dominant_poste_co2_kg_year: number
           dominant_poste_label: string
           dominant_poste_mode?: string | null
+          extras_poste_co2_kg_year?: number | null
+          extras_poste_label?: string | null
           id?: string
           leisure_co2_kg_year: number
           total_co2_kg_year: number
@@ -161,11 +167,14 @@ export type Database = {
         Update: {
           assessment_id?: string
           commute_co2_kg_year?: number
+          commute_poste_label?: string | null
           computed_at?: string
           dominant_poste?: string
           dominant_poste_co2_kg_year?: number
           dominant_poste_label?: string
           dominant_poste_mode?: string | null
+          extras_poste_co2_kg_year?: number | null
+          extras_poste_label?: string | null
           id?: string
           leisure_co2_kg_year?: number
           total_co2_kg_year?: number
@@ -255,11 +264,13 @@ export type Database = {
           },
         ]
       }
-      monthly_checkins: {
+      engagement_checkins: {
         Row: {
           created_at: string
           id: string
-          period_month: string
+          loop_type: string
+          period_label: string
+          period_start: string
           responded_at: string | null
           response: boolean | null
           status: string
@@ -269,7 +280,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          period_month: string
+          loop_type: string
+          period_label: string
+          period_start: string
           responded_at?: string | null
           response?: boolean | null
           status?: string
@@ -279,7 +292,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          period_month?: string
+          loop_type?: string
+          period_label?: string
+          period_start?: string
           responded_at?: string | null
           response?: boolean | null
           status?: string
@@ -288,7 +303,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "monthly_checkins_user_id_fkey"
+            foreignKeyName: "engagement_checkins_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -433,7 +448,8 @@ export type Database = {
         Args: { p_assessment_id: string }
         Returns: undefined
       }
-      generate_monthly_checkins: { Args: never; Returns: undefined }
+      generate_commute_checkins: { Args: never; Returns: undefined }
+      generate_extras_checkins: { Args: never; Returns: undefined }
       generate_plan_cycle_for_user: {
         Args: { p_user_id: string }
         Returns: undefined

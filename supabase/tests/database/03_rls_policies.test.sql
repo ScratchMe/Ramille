@@ -1,9 +1,9 @@
 -- Tests pgTAP des policies RLS (supabase/migrations/20260823094900_rls_policies.sql et
 -- suivantes) — l'isolation stricte par utilisateur qui protège tout le bilan, le plan de
--- réduction et la boucle mensuelle. `compute_assessment_results` et
+-- réduction et la boucle d'engagement. `compute_assessment_results` et
 -- `generate_plan_cycle_for_user` (01/02) exercent déjà une partie de ces policies en creux ;
 -- ce fichier les teste directement, table par table, y compris les tables que ces deux
--- fonctions ne touchent jamais (profiles, monthly_checkins).
+-- fonctions ne touchent jamais (profiles, engagement_checkins).
 --
 -- Quatre catégories de garde-fous couverts :
 --   A. Lecture (SELECT) : un tiers ne doit jamais voir la ligne d'un autre utilisateur.
@@ -11,7 +11,7 @@
 --      d'un tiers (silencieusement sans effet, RLS filtre la ligne cible avant l'UPDATE).
 --   C. Verrouillage serveur-only : assessment_results/plan_cycles/plan_actions n'ont aucune
 --      policy insert pour `authenticated` (écriture réservée aux fonctions security definer) ;
---      monthly_checkins va plus loin avec un `revoke insert` explicite.
+--      engagement_checkins va plus loin avec un `revoke insert` explicite.
 --   D. Référentiels publics : transport_modes/emission_factors/action_templates restent
 --      lisibles même sans authentification (anon), cf. 20260823095200_public_reference_data.sql.
 begin;
@@ -45,8 +45,8 @@ insert into public.assessment_results (
   '61111111-1111-1111-1111-111111111111', 500, 500, 0, 0, 'commute', 500, 'voiture', 'Trajet domicile-travail (Voiture)'
 );
 
-insert into public.monthly_checkins (user_id, period_month, trip_label, status) values
-  ('51111111-1111-1111-1111-111111111111', date_trunc('month', now())::date, 'Trajet domicile-travail (Voiture)', 'pending');
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, status) values
+  ('51111111-1111-1111-1111-111111111111', 'commute', date_trunc('week', now())::date, 'Semaine du test', 'Trajet domicile-travail (Voiture)', 'pending');
 
 -- Génère un vrai plan_cycle + ses actions via la fonction serveur (comme en prod), plutôt
 -- qu'un insert direct — exerce le même chemin que compute_assessment_results en production.
@@ -61,7 +61,7 @@ select is((select count(*) from public.profiles where id = '51111111-1111-1111-1
 select is((select count(*) from public.assessments where id = '61111111-1111-1111-1111-111111111111')::int, 1, 'assessments: le propriétaire voit son bilan');
 select is((select count(*) from public.assessment_answers where assessment_id = '61111111-1111-1111-1111-111111111111')::int, 1, 'assessment_answers: le propriétaire voit ses réponses');
 select is((select count(*) from public.assessment_results where assessment_id = '61111111-1111-1111-1111-111111111111')::int, 1, 'assessment_results: le propriétaire voit son résultat');
-select is((select count(*) from public.monthly_checkins where user_id = '51111111-1111-1111-1111-111111111111')::int, 1, 'monthly_checkins: le propriétaire voit son check-in');
+select is((select count(*) from public.engagement_checkins where user_id = '51111111-1111-1111-1111-111111111111')::int, 1, 'engagement_checkins: le propriétaire voit son check-in');
 select is((select count(*) from public.plan_cycles where user_id = '51111111-1111-1111-1111-111111111111')::int, 1, 'plan_cycles: le propriétaire voit son cycle');
 select is((select count(*) from public.plan_actions where plan_cycle_id in (select id from public.plan_cycles where user_id = '51111111-1111-1111-1111-111111111111'))::int > 0, true, 'plan_actions: le propriétaire voit les actions de son cycle');
 
@@ -71,7 +71,7 @@ select is((select count(*) from public.profiles where id = '51111111-1111-1111-1
 select is((select count(*) from public.assessments where id = '61111111-1111-1111-1111-111111111111')::int, 0, 'assessments: un tiers ne voit pas le bilan du propriétaire');
 select is((select count(*) from public.assessment_answers where assessment_id = '61111111-1111-1111-1111-111111111111')::int, 0, 'assessment_answers: un tiers ne voit pas les réponses du propriétaire');
 select is((select count(*) from public.assessment_results where assessment_id = '61111111-1111-1111-1111-111111111111')::int, 0, 'assessment_results: un tiers ne voit pas le résultat du propriétaire');
-select is((select count(*) from public.monthly_checkins where user_id = '51111111-1111-1111-1111-111111111111')::int, 0, 'monthly_checkins: un tiers ne voit pas le check-in du propriétaire');
+select is((select count(*) from public.engagement_checkins where user_id = '51111111-1111-1111-1111-111111111111')::int, 0, 'engagement_checkins: un tiers ne voit pas le check-in du propriétaire');
 select is((select count(*) from public.plan_cycles where user_id = '51111111-1111-1111-1111-111111111111')::int, 0, 'plan_cycles: un tiers ne voit pas le cycle du propriétaire');
 select is((select count(*) from public.plan_actions where plan_cycle_id in (select id from public.plan_cycles where user_id = '51111111-1111-1111-1111-111111111111'))::int, 0, 'plan_actions: un tiers ne voit pas les actions du cycle du propriétaire');
 
@@ -96,14 +96,14 @@ select throws_ok(
 -- 0 ligne affectée plutôt qu'une erreur — vérifié ci-dessous en repassant en contexte A.
 update public.assessments set status = 'in_progress' where id = '61111111-1111-1111-1111-111111111111';
 update public.assessment_answers set commute_days_per_week = 1 where assessment_id = '61111111-1111-1111-1111-111111111111';
-update public.monthly_checkins set status = 'answered', response = true where user_id = '51111111-1111-1111-1111-111111111111';
+update public.engagement_checkins set status = 'answered', response = true where user_id = '51111111-1111-1111-1111-111111111111';
 update public.profiles set zone_type = 'urbain' where id = '51111111-1111-1111-1111-111111111111';
 
 select set_config('request.jwt.claims', json_build_object('sub', '51111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 
 select is((select status from public.assessments where id = '61111111-1111-1111-1111-111111111111'), 'completed', 'assessments: l''UPDATE d''un tiers sur le bilan du propriétaire est sans effet');
 select is((select commute_days_per_week from public.assessment_answers where assessment_id = '61111111-1111-1111-1111-111111111111'), 5::smallint, 'assessment_answers: l''UPDATE d''un tiers sur les réponses du propriétaire est sans effet');
-select is((select status from public.monthly_checkins where user_id = '51111111-1111-1111-1111-111111111111'), 'pending', 'monthly_checkins: l''UPDATE d''un tiers sur le check-in du propriétaire est sans effet');
+select is((select status from public.engagement_checkins where user_id = '51111111-1111-1111-1111-111111111111'), 'pending', 'engagement_checkins: l''UPDATE d''un tiers sur le check-in du propriétaire est sans effet');
 select is((select zone_type from public.profiles where id = '51111111-1111-1111-1111-111111111111'), null::text, 'profiles: l''UPDATE d''un tiers sur le profil du propriétaire est sans effet');
 
 -- ── Section C : verrouillage écriture serveur-only (aucune policy insert) ──────────────
@@ -132,10 +132,10 @@ select throws_ok(
   'plan_actions: authenticated ne peut pas insérer directement (génération serveur uniquement)'
 );
 select throws_ok(
-  $stmt$ insert into public.monthly_checkins (user_id, period_month, trip_label) values ('51111111-1111-1111-1111-111111111111', current_date, 'x') $stmt$,
+  $stmt$ insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label) values ('51111111-1111-1111-1111-111111111111', 'commute', current_date, 'x', 'x') $stmt$,
   '42501',
-  'permission denied for table monthly_checkins',
-  'monthly_checkins: authenticated ne peut pas insérer directement (revoke insert explicite, cf. migration)'
+  'permission denied for table engagement_checkins',
+  'engagement_checkins: authenticated ne peut pas insérer directement (revoke insert explicite, cf. migration)'
 );
 
 -- ── Section D : référentiels publics, lisibles même sans authentification ──────────────

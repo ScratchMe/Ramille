@@ -1,0 +1,77 @@
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import { Button } from '@/components/button';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/theme';
+import { supabase } from '@/lib/supabase';
+
+export type EngagementCheckin = {
+  id: string;
+  loop_type: 'commute' | 'extras';
+  period_label: string;
+  trip_label: string;
+};
+
+const QUESTION_UNIT: Record<EngagementCheckin['loop_type'], string> = {
+  commute: 'cette semaine',
+  extras: 'ce mois-ci',
+};
+
+// Contenu et comportement adaptatif minimal cf. spec-fonctionnelle §7 : une question
+// fermée ancrée sur un fait précis (pas d'auto-évaluation globale floue), réponse positive
+// = renforcement bref, réponse négative = relance factuelle non culpabilisante — jamais de
+// notification insistante ni répétée (une seule question par période, générée côté serveur
+// par generate_commute_checkins/generate_extras_checkins, jamais par le client).
+//
+// `emphasize` matérialise la recommandation "concentre-toi sur ton poste dominant" (décision
+// produit du 27/08/2026, les deux boucles restent proposées) sans jamais masquer l'autre.
+export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin; emphasize: boolean }) {
+  const [answered, setAnswered] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const answer = async (response: boolean) => {
+    if (saving) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from('engagement_checkins')
+      .update({ status: 'answered', response, responded_at: new Date().toISOString() })
+      .eq('id', checkin.id);
+    setSaving(false);
+    if (!error) setAnswered(response);
+  };
+
+  return (
+    <ThemedView type={emphasize ? 'backgroundSelected' : 'backgroundElement'} style={styles.card}>
+      <ThemedText type="small" themeColor={emphasize ? 'accentText' : 'textTertiary'} weight={600}>
+        {checkin.period_label}
+      </ThemedText>
+      {answered === null ? (
+        <>
+          <ThemedText weight={600} style={styles.question}>
+            As-tu changé de mode de transport au moins une fois {QUESTION_UNIT[checkin.loop_type]} pour{' '}
+            {checkin.trip_label} ?
+          </ThemedText>
+          <View style={styles.actions}>
+            <Button title="Non" variant="secondary" onPress={() => answer(false)} disabled={saving} flex />
+            <Button title="Oui" onPress={() => answer(true)} disabled={saving} flex />
+          </View>
+        </>
+      ) : (
+        <ThemedText themeColor="textSecondary" style={styles.feedback}>
+          {answered
+            ? 'Bien joué — chaque changement compte.'
+            : 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.'}
+        </ThemedText>
+      )}
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { borderRadius: 18, padding: 18, gap: 10 },
+  question: { fontSize: 16, lineHeight: 23 },
+  actions: { flexDirection: 'row', gap: Spacing.two },
+  feedback: { fontSize: 15, lineHeight: 22 },
+});
