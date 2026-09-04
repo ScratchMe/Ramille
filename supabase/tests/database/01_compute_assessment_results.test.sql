@@ -92,10 +92,20 @@ select results_eq(
 select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111112', 'role', 'authenticated')::text, true);
 select public.compute_assessment_results('22222222-2222-2222-2222-222222222222');
 
+-- Valeur attendue révisée le 04/09/2026 (v1-07 T13, migration 20260904140000) : le
+-- covoiturage ne divise plus que la jambe voiture. Cette assertion figeait l'ancien
+-- comportement, qui divisait le CO2 de TOUT le trajet — donc aussi la jambe en train, que
+-- les 4 passagers ne partagent évidemment pas. B1.5 (« combien de personnes partagez-vous
+-- ce trajet ? ») porte sur la voiture de B1.4, pas sur le second mode intermodal.
+--
+--   km_année = 20 × 2 × 4 j × 45 sem = 7200, réparti 50/50 entre les deux modes
+--   jambe voiture : 3600 × 0,1106 = 398,16, covoiturée à 4 -> 99,54
+--   jambe train   : 3600 × 0,0229 =  82,44, jamais covoiturée
+--   total = 181,98        (ancienne valeur, erronée : 480,60 / 4 = 120,15)
 select is(
   (select round(commute_co2_kg_year::numeric, 3) from public.assessment_results where assessment_id = '22222222-2222-2222-2222-222222222222'),
-  120.150::numeric,
-  'scénario 2 : distance moitié voiture/moitié train, puis divisée par 4 passagers'
+  181.980::numeric,
+  'scénario 2 : distance moitié voiture/moitié train, le covoiturage ne divisant que la jambe voiture'
 );
 
 select is(
