@@ -67,6 +67,17 @@ function dominantHeadline(results: AssessmentResults): string {
   return preposition ? `${subject} ${preposition}` : subject;
 }
 
+// Variante neutre de dominantHeadline (sans "Tes"/"Ton") pour la carte de partage : lue par
+// les destinataires du lien, pas adressée à l'utilisateur qui partage — cf. shareResult
+// ci-dessous. dominant_poste_label seul (ex. "Voyages longue distance (Avion long-courrier)")
+// ne dit pas qu'il s'agit du poste dominant ; combiné à dominantPercent sur la carte, le
+// pourcentage lui donne un sens (retour utilisateur du 04/09/2026).
+function dominantShareLabel(results: AssessmentResults): string {
+  const posteLabel = POSTE_BREAKDOWN.find((p) => p.key === results.dominant_poste)?.label ?? results.dominant_poste_label;
+  const preposition = results.dominant_poste_mode ? MODE_PREPOSITION[results.dominant_poste_mode] : undefined;
+  return preposition ? `${posteLabel} ${preposition}` : posteLabel;
+}
+
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -132,8 +143,10 @@ export default function BilanResultat() {
   // explicitement de partager.
   const shareResult = () => {
     if (state.status !== 'ok') return;
-    const totalTonnes = (state.results.total_co2_kg_year / 1000).toFixed(1);
-    const params = new URLSearchParams({ total: totalTonnes, poste: state.results.dominant_poste_label });
+    const { results } = state;
+    const totalTonnes = (results.total_co2_kg_year / 1000).toFixed(1);
+    const percent = String(Math.round((results.dominant_poste_co2_kg_year / results.total_co2_kg_year) * 100));
+    const params = new URLSearchParams({ total: totalTonnes, poste: dominantShareLabel(results), percent });
     const shareUrl = `${APP_URL}/api/partage?${params.toString()}`;
     Share.share({
       message: `Mon empreinte transport : ${formatTonnes(state.results.total_co2_kg_year)} par an. Fais la tienne sur TraceVerte : ${shareUrl}`,
