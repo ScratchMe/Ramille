@@ -38,10 +38,14 @@ const MODE_PREPOSITION: Partial<Record<string, string>> = {
   avion_long_courrier: 'en avion long-courrier',
 };
 
+// "Trajets loisirs"/"Voyages" seuls ne distinguent pas les deux postes (retour
+// utilisateur du 03/09/2026) : ce sont deux postes bien distincts du bilan (B2 "Week-ends
+// et loisirs" vs B3 "Voyages sur l'année", cf. onboarding/transition.tsx) — même wording
+// que les libellés persistés côté serveur, cf. migration 20260903120000_precise_poste_labels.sql.
 const POSTE_SUBJECT: Record<string, string> = {
   commute: 'Ton trajet domicile-travail',
-  leisure: 'Tes trajets loisirs',
-  travel: 'Tes voyages',
+  leisure: 'Tes loisirs du week-end',
+  travel: 'Tes voyages longue distance',
 };
 
 const POSTE_BREAKDOWN: {
@@ -50,8 +54,8 @@ const POSTE_BREAKDOWN: {
   co2Key: 'commute_co2_kg_year' | 'leisure_co2_kg_year' | 'travel_co2_kg_year';
 }[] = [
   { key: 'commute', label: 'Trajet domicile-travail', co2Key: 'commute_co2_kg_year' },
-  { key: 'leisure', label: 'Trajets loisirs', co2Key: 'leisure_co2_kg_year' },
-  { key: 'travel', label: 'Voyages', co2Key: 'travel_co2_kg_year' },
+  { key: 'leisure', label: 'Loisirs du week-end', co2Key: 'leisure_co2_kg_year' },
+  { key: 'travel', label: 'Voyages longue distance', co2Key: 'travel_co2_kg_year' },
 ];
 
 function dominantHeadline(results: AssessmentResults): string {

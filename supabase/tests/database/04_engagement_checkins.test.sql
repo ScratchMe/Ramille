@@ -33,10 +33,10 @@ insert into public.assessment_results (
 ) values
   -- A : trajet domicile-travail régulier + poste extras identifié -> les deux boucles.
   ('81111111-1111-1111-1111-111111111111', 600, 500, 100, 0, 'commute', 500, 'voiture', 'Trajet domicile-travail (Voiture)',
-   'Trajet domicile-travail (Voiture)', 100, 'Trajets loisirs (Voiture)'),
+   'Trajet domicile-travail (Voiture)', 100, 'Loisirs du week-end (Voiture)'),
   -- B : pas de trajet domicile-travail régulier -> commute_poste_label null.
-  ('82222222-2222-2222-2222-222222222222', 300, 0, 0, 300, 'travel', 300, 'train', 'Voyages (Train)',
-   null, 300, 'Voyages (Train)'),
+  ('82222222-2222-2222-2222-222222222222', 300, 0, 0, 300, 'travel', 300, 'train', 'Voyages longue distance (Train)',
+   null, 300, 'Voyages longue distance (Train)'),
   -- C : trajet domicile-travail régulier mais poste extras jamais calculé (cas défensif).
   ('83333333-3333-3333-3333-333333333333', 400, 400, 0, 0, 'commute', 400, 'bus', 'Trajet domicile-travail (Bus)',
    'Trajet domicile-travail (Bus)', null, null);
@@ -75,7 +75,7 @@ select results_eq(
   $$ select 'extras'::text, date_trunc('month', now())::date,
      (array['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'])[extract(month from date_trunc('month', now()))::int]
        || ' ' || extract(year from date_trunc('month', now()))::text,
-     'Trajets loisirs (Voiture)'::text, 'pending'::text $$,
+     'Loisirs du week-end (Voiture)'::text, 'pending'::text $$,
   'boucle extras : mois calendaire courant, libellé français et trip_label repris de extras_poste_label'
 );
 
