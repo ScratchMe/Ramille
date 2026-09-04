@@ -220,6 +220,12 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
 
 ### Conventions front notables
 
+- **Tout repère chiffré affiché à l'utilisateur vit dans `src/constants/carbon-reference.ts`**,
+  jamais en dur dans un écran : moyenne française, objectif 2050, décomposition par poste,
+  repère transport. Chaque valeur y porte sa source (ADEME pour la moyenne et la cible, SDES
+  pour la décomposition) et son année. `TARGET_2050_TRANSPORT_T` est une **dérivation**
+  explicitement signalée — aucune source publique ne donne d'objectif 2050 par poste
+  d'empreinte individuelle — d'où le libellé « Repère » et non « Objectif » à l'écran.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir

@@ -306,6 +306,38 @@ Au passage : `FRANCE_AVERAGE_TRANSPORT_T = 2.9` et `TARGET_2050_TRANSPORT_T = 0.
 les deux repères sur lesquels repose tout le message de la restitution : à sourcer avant mise
 en production.
 
+**Fait le 04/09/2026** (décision produit : « ça ne peut pas rester comme ça »). Tous les
+repères chiffrés vivent désormais dans `src/constants/carbon-reference.ts`, chacun avec sa
+source, et les deux écrans qui les affichaient en dur (`onboarding/contexte.tsx`,
+`bilan/resultat.tsx`) les importent :
+
+| Repère | Avant | Après | Source |
+|---|---|---|---|
+| Moyenne française, tous postes | 10 t | **9,3 t** | ADEME, `impactco2.fr/outils/caspratiques/2050` |
+| Objectif 2050, tous postes | 2 t | 2 t (confirmé) | ADEME, même page |
+| Décomposition par poste | 2,9 / 2,4 / 2,2 / 2,5 t | **2,8 / 2,2 / 2,1 / 1,5 / 0,9 t** | SDES, données 2017, publication oct. 2021 |
+| Moyenne transport | 2,9 t | **2,8 t** | SDES, idem |
+| Repère transport 2050 | 0,5 t | **0,6 t** | *dérivé, voir ci-dessous* |
+
+Trois points à connaître :
+
+- **La spec §4 annonçait « ~10 t »**, la valeur publiée est 9,3 t. L'écart vient de ce que la
+  spec donnait un ordre de grandeur arrondi, ce que le handoff design signalait déjà. Le
+  contenu factuel obligatoire de la spec (moyenne actuelle, cible 2050, transport premier
+  poste) reste intégralement respecté.
+- **Le repère transport 2050 est une dérivation, pas une cible officielle.** Aucune source
+  publique ne donne d'objectif 2050 par poste d'empreinte individuelle : la SNBC raisonne par
+  secteur d'activité, pas par poste de consommation. On applique donc à la cible de 2 t la
+  part que le transport représente aujourd'hui (29,5 %), ce qui suppose que tous les postes
+  baissent dans les mêmes proportions. C'est une hypothèse, et c'est pour cela que l'écran dit
+  désormais « Repère transport 2050 » et non « Part transport compatible 2050 ».
+- **Deux publications d'années différentes coexistent** : la moyenne totale (9,3 t) et la
+  décomposition (9,5 t au total). L'écart est normal et documenté dans le module ; les deux ne
+  sont jamais mélangées dans un même graphique.
+
+La source est désormais **affichée à l'écran** sous les graphiques concernés. Sur un produit
+qui vise un registre institutionnel, un chiffre sans source n'engage personne.
+
 ### 3.5 Deux points de ton
 
 - « **Tu es à 150 % de la moyenne française** » (`bilan/resultat.tsx:180`) est un jugement
