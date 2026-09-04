@@ -194,6 +194,17 @@ volée côté client) — même logique pour `engagement_checkins.trip_label`, s
 pas changer rétroactivement le wording d'un check-in déjà généré si l'utilisateur refait un
 bilan plus tard.
 
+**Rappel par email** : `enqueue_checkin_reminders()` remplit `notification_outbox` à chaque
+génération de check-in, `send_pending_reminders()` (cron quotidien 7h UTC) l'envoie via
+l'extension `http`. **La garantie anti-relance de la spec §7 est structurelle** :
+`unique(checkin_id)` sur la boîte d'envoi — un check-in, un email, jamais deux, quel que soit
+le nombre de passages du cron. Quatre conditions d'éligibilité, toutes nécessaires : compte
+rattaché, email **confirmé**, rappels non désactivés (`profiles.email_reminders_enabled`,
+opt-out réglable depuis `/suivi`), check-in encore `pending`. **L'envoi est inactif tant que
+les secrets Vault `resend_api_key` et `reminder_from_address` n'existent pas** — la fonction
+sort sans rien toucher, les rappels restent en attente. Voir `v1-07` §3.1 pour la mise en
+service.
+
 La boucle mensuelle (brique 4) est en réalité **deux boucles indépendantes**, toutes deux
 proposées à tout utilisateur concerné (l'UI recommande de se concentrer sur le poste
 dominant sans jamais fermer l'autre) : une hebdomadaire ancrée sur le trajet domicile-travail
