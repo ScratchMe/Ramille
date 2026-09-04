@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -19,6 +19,7 @@ import {
   type CheckinRecord,
 } from '@/types/suivi';
 import { formatTonnes } from '@/lib/format';
+import { loadReminderPrefs, setReminderPrefs, type ReminderPrefs } from '@/lib/notification-prefs';
 
 // Écran « Mon suivi » — la brique qui manquait pour que le produit accompagne réellement
 // dans la durée (v1-07 §3.2). Jusqu'ici on répondait à un check-in, la carte disparaissait,
@@ -61,13 +62,19 @@ type LoadState =
 export default function Suivi() {
   const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  const [reminders, setReminders] = useState<ReminderPrefs>({ canReceive: false, enabled: false });
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      const [history, checkins] = await Promise.all([loadAssessmentHistory(), loadAnsweredCheckins()]);
+      const [history, checkins, prefs] = await Promise.all([
+        loadAssessmentHistory(),
+        loadAnsweredCheckins(),
+        loadReminderPrefs(),
+      ]);
       if (cancelled) return;
+      setReminders(prefs);
       setState(history.length === 0 ? { status: 'empty' } : { status: 'ok', history, checkins });
     })();
 
@@ -75,6 +82,14 @@ export default function Suivi() {
       cancelled = true;
     };
   }, []);
+
+  // Optimiste, avec retour arrière si l'écriture échoue : un interrupteur qui ne bouge pas
+  // au doigt donne l'impression d'être cassé.
+  const toggleReminders = async (enabled: boolean) => {
+    setReminders((prev) => ({ ...prev, enabled }));
+    const ok = await setReminderPrefs(enabled);
+    if (!ok) setReminders((prev) => ({ ...prev, enabled: !enabled }));
+  };
 
   if (state.status === 'loading') {
     return (
@@ -213,6 +228,31 @@ export default function Suivi() {
             </ThemedView>
           )}
 
+          {/* Le rappel par email n'existe que pour un compte rattaché : une session anonyme
+              n'a aucune adresse où écrire. Afficher l'interrupteur à quelqu'un qui ne peut
+              pas en bénéficier ne ferait que soulever une question sans réponse. */}
+          {reminders.canReceive && (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <View style={styles.reminderRow}>
+                <View style={styles.reminderText}>
+                  <ThemedText weight={600} type="small">
+                    Recevoir un rappel par email
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Une question par semaine pour ton trajet domicile-travail, une par mois pour
+                    tes loisirs et voyages. Rien d’autre.
+                  </ThemedText>
+                </View>
+                <Switch
+                  value={reminders.enabled}
+                  onValueChange={toggleReminders}
+                  trackColor={{ false: theme.paginationInactive, true: theme.accent }}
+                  thumbColor={theme.background}
+                />
+              </View>
+            </ThemedView>
+          )}
+
           {suggestRebilan && (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText weight={600} type="small">
@@ -260,6 +300,8 @@ const styles = StyleSheet.create({
   historyHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   barRail: { height: 14, borderRadius: 7, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 7 },
+  reminderRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  reminderText: { flex: 1, gap: 4 },
   checkinsHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   checkinsHeaderText: { flex: 1, gap: 2 },
   checkinList: { gap: Spacing.two },

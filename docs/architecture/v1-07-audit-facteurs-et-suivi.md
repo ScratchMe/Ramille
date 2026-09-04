@@ -199,6 +199,43 @@ d'un rappel périodique. Un email mensuel n'entre pas en conflit avec lui.
 pour les comptes rattachés, coût d'infra quasi nul), le push Expo restant un increment
 ultérieur. Opt-out explicite, une fréquence alignée sur celle du check-in, jamais plus.
 
+**Construit à l'étape 5** (migration `20260904200000`), en SQL pur comme la synchronisation
+ADEME :
+
+- **Une boîte d'envoi** (`notification_outbox`) plutôt qu'un envoi direct depuis la
+  génération. Elle sépare « qui doit être prévenu » — décision produit, testable — de
+  « l'email est parti » — appel réseau, faillible. Un fournisseur indisponible ne fait perdre
+  aucun rappel.
+- **La garantie anti-relance est structurelle** : `unique(checkin_id)` sur la boîte d'envoi.
+  Un check-in ne peut donner lieu qu'à **un seul** email, quel que soit le nombre de passages
+  du cron. Ce n'est pas une précaution applicative qu'on pourrait contourner par erreur, c'est
+  une contrainte de la base. Le non-goal de la spec §7 vise la relance insistante après une
+  réponse négative, pas l'existence d'un rappel périodique.
+- **Quatre conditions d'éligibilité**, toutes nécessaires : compte rattaché (une session
+  anonyme n'a pas d'adresse), email **confirmé** (on n'écrit jamais à une adresse simplement
+  déclarée), rappels non désactivés, et check-in encore en attente.
+- **Opt-out, pas opt-in** : le rappel n'est pas une promotion, c'est le mécanisme même de la
+  brique 4, et quelqu'un qui rattache son compte demande précisément à ce que son suivi lui
+  survive. Désactivable en un geste depuis l'écran de suivi.
+
+### Ce qui manque pour que le premier email parte
+
+L'envoi ne peut pas être terminé sans une décision et deux actions de compte, hors du code :
+
+1. **choisir un fournisseur d'envoi** — `send_pending_reminders()` est écrite pour l'API
+   Resend (`POST /emails`), choix provisoire volontairement isolé dans cette seule fonction ;
+2. **vérifier un domaine d'envoi** côté fournisseur, sans quoi il refuse d'écrire à des
+   adresses arbitraires ;
+3. **déposer deux secrets dans Vault** : `resend_api_key` et `reminder_from_address`.
+
+Tant que ces secrets sont absents, `send_pending_reminders()` **ne fait rien** : les rappels
+restent en attente, aucun n'est perdu, aucune tentative n'est consommée (comportement testé).
+C'est l'état du projet aujourd'hui. Le reste du pipeline — éligibilité, mise en file,
+anti-relance, réglage utilisateur — est construit et vérifié.
+
+Le push Expo reste hors scope : `v1-02` §5 le décrit comme une brique d'infra à part entière
+(tokens par device, credentials Google Play), et l'email couvre le besoin sans rien de tout ça.
+
 ### 3.2 Rien ne s'accumule, donc rien ne se voit
 
 On répond au check-in, la carte disparaît, il ne reste rien. Le « signal d'engagement : 2
@@ -297,7 +334,7 @@ la boucle existante, ensuite seulement construire ce qui manque.
 | 2 | Synchronisation ADEME automatisée | T3, #27 | **fait** — migration `20260904160000` |
 | 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | **fait** — migration `20260904180000` |
 | 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2 | **fait** — `src/app/suivi.tsx`, `src/types/suivi.ts` |
-| 5 | Canal de rappel email | §3.1 | à faire |
+| 5 | Canal de rappel email | §3.1 | **fait** — migration `20260904200000` (envoi en attente d'un fournisseur, cf. §3.1) |
 | 6 | Actions chiffrées et sélectionnables + exploitation du contexte B4 | T9, T10, §3.3 | à faire |
 | 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | à faire |
 

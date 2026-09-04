@@ -373,6 +373,63 @@ export type Database = {
           },
         ]
       }
+      notification_outbox: {
+        Row: {
+          attempts: number
+          body: string
+          checkin_id: string
+          created_at: string
+          id: string
+          last_error: string | null
+          recipient_email: string
+          sent_at: string | null
+          status: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          checkin_id: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          recipient_email: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          checkin_id?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_outbox_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: true
+            referencedRelation: "engagement_checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_outbox_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_actions: {
         Row: {
           action_template_id: string
@@ -460,6 +517,7 @@ export type Database = {
         Row: {
           cadence_type: string
           created_at: string
+          email_reminders_enabled: boolean
           id: string
           onboarding_completed_at: string | null
           tc_access: string | null
@@ -468,6 +526,7 @@ export type Database = {
         Insert: {
           cadence_type?: string
           created_at?: string
+          email_reminders_enabled?: boolean
           id: string
           onboarding_completed_at?: string | null
           tc_access?: string | null
@@ -476,6 +535,7 @@ export type Database = {
         Update: {
           cadence_type?: string
           created_at?: string
+          email_reminders_enabled?: boolean
           id?: string
           onboarding_completed_at?: string | null
           tc_access?: string | null
@@ -514,6 +574,7 @@ export type Database = {
         Args: { p_mode_id: string; p_on_date: string }
         Returns: number
       }
+      enqueue_checkin_reminders: { Args: never; Returns: undefined }
       generate_commute_checkins: { Args: never; Returns: undefined }
       generate_extras_checkins: { Args: never; Returns: undefined }
       generate_plan_cycle_for_user: {
@@ -546,6 +607,7 @@ export type Database = {
           period_start: string
         }[]
       }
+      send_pending_reminders: { Args: never; Returns: undefined }
       sync_emission_factors: { Args: never; Returns: undefined }
     }
     Enums: {
