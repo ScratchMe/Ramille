@@ -53,6 +53,23 @@ Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull requ
 (Postgres + Auth + RLS) · Vercel (déploiement web, build via `vercel-build` →
 `expo export --platform web` → `dist/`) · EAS (build/publish Android uniquement).
 
+**`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
+la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de route Expo
+Router. Tsconfig dédié (`api/tsconfig.json`, exclu du tsconfig racine, `types: ["node"]`) : ce
+contexte tourne en Web Fetch API (Request/Response), pas dans React Native ; `api/partage.ts`
+en runtime Edge, `api/share-card.ts` en runtime Node.js (accès `fs`/`process.cwd()` — voir
+pourquoi dans son commentaire d'en-tête, ça n'est pas un choix par défaut). **`api/package.json`
+(`{"type": "module"}`)** est nécessaire pour toute Function en runtime Node.js : Vercel compile
+`api/*.ts` en ESM (cf. `module: ESNext` dans `api/tsconfig.json`) mais Node charge un `.js`
+comme CommonJS par défaut tant que le `package.json` le plus proche ne déclare pas ce module
+type — la racine du repo ne le fait pas (Metro/Expo suppose CommonJS) ; sans ce fichier,
+n'importe quelle Function Node.js plante au premier appel (`FUNCTION_INVOCATION_FAILED`, aucun
+détail exposé côté client — seuls les logs runtime réels, via `vercel logs`, le révèlent).
+Utilisé pour `api/partage.ts`/`api/share-card.ts` (carte de bilan partageable, cf.
+`bilan/resultat.tsx` "Partager mon bilan" — rendu via `satori`/`@resvg/resvg-wasm` en direct,
+pas `@vercel/og`) —
+voir leurs commentaires d'en-tête pour le détail.
+
 **Routing** : `src/app/` (Expo Router, file-based). Flux : `/` → `/onboarding/*` →
 `/bilan` (questionnaire) → `/bilan/resultat` (restitution) → `/plan` (plan de réduction),
 avec `/connexion/*` atteignable depuis la restitution et le plan.

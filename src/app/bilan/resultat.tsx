@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
+import { APP_URL } from '@/lib/app-url';
 import { formatTonnes } from '@/lib/format';
 import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
 import type { Database } from '@/lib/database.types';
@@ -120,6 +121,24 @@ export default function BilanResultat() {
       return;
     }
     router.push('/plan');
+  };
+
+  // Boucle de croissance (décision produit du 04/09/2026) : un lien vers /api/partage
+  // (Vercel Edge Function, hors export statique Expo — cf. son commentaire d'en-tête) plutôt
+  // qu'un lien direct vers /bilan/resultat, pour que l'aperçu affiché par les apps de
+  // messagerie (WhatsApp, iMessage…) montre une vraie image de résultat, pas une page vide.
+  // Chiffres transmis uniquement via l'URL (ce que l'utilisateur voit déjà à l'écran) —
+  // aucune nouvelle lecture serveur, aucune exposition de données au-delà de ce qu'il choisit
+  // explicitement de partager.
+  const shareResult = () => {
+    if (state.status !== 'ok') return;
+    const totalTonnes = (state.results.total_co2_kg_year / 1000).toFixed(1);
+    const params = new URLSearchParams({ total: totalTonnes, poste: state.results.dominant_poste_label });
+    const shareUrl = `${APP_URL}/api/partage?${params.toString()}`;
+    Share.share({
+      message: `Mon empreinte transport : ${formatTonnes(state.results.total_co2_kg_year)} par an. Fais la tienne sur TraceVerte : ${shareUrl}`,
+      url: shareUrl,
+    }).catch(() => {});
   };
 
   if (state.status === 'loading') {
@@ -239,6 +258,11 @@ export default function BilanResultat() {
 
         <View style={styles.footer}>
           <Button title="Voir ce que je peux faire" onPress={goToPlan} />
+          <Pressable onPress={shareResult}>
+            <ThemedText type="small" weight={600} themeColor="accentText" style={styles.editLink}>
+              Partager mon bilan
+            </ThemedText>
+          </Pressable>
           <Pressable onPress={() => router.push('/bilan')}>
             <ThemedText type="small" themeColor="textTertiary" style={styles.editLink}>
               Modifier mes réponses

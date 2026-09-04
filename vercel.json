@@ -1,5 +1,11 @@
 {
   "framework": null,
   "buildCommand": "npm run vercel-build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "functions": {
+    "api/share-card.ts": {
+      "includeFiles": "node_modules/harfbuzzjs/hb.wasm",
+      "maxDuration": 30
+    }
+  }
 }
