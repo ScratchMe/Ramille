@@ -86,6 +86,14 @@ produit par rapport à ce handoff (les deux plus importants : §1 de
 (comparaison entre utilisateurs) vs. ce qui a été révisé, et le détail des Vercel Functions en
 runtime Node.js §3).
 
+**Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
+plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
+suivi dans la durée qui manque). Son §1 corrige deux erreurs de chiffre documentées ailleurs
+comme des choix assumés : l'API Impact CO2 **distingue bien** court/moyen/long-courrier (la
+valeur du mode avion dépend du paramètre `km` de la requête, contrairement à ce qu'affirme le
+commentaire du seed initial), et le poste voyages en train était calculé au facteur TER. Son §2
+liste les défauts vérifiés (T1-T13) auxquels les autres documents renvoient.
+
 **Backlog / idées identifiées mais non planifiées** : pas de fichier ROADMAP dédié — suivi via
 les GitHub Issues de ce repo (ex. #27-30 : synchronisation automatique des facteurs ADEME,
 trajectoire 2050 sur l'écran de restitution, canal de feedback utilisateur, tracking
