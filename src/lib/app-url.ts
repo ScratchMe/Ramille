@@ -4,8 +4,9 @@ import { Platform } from 'react-native';
 // bilan/resultat.tsx "Partager mon bilan", qui pointe vers /api/partage). Sur web, l'origine
 // réelle de la page (marche aussi bien en prod qu'en preview Vercel, même logique que
 // `redirectTo` dans lib/auth.ts) ; sur Android, pas de `window`, on retombe sur le domaine
-// de production connu — pas encore de domaine personnalisé en V1.
+// de production. `www` et non l'apex : c'est le domaine canonique côté Vercel, l'apex
+// redirige en 308 vers lui.
 export const APP_URL =
   Platform.OS === 'web' && typeof window !== 'undefined'
     ? window.location.origin
-    : 'https://traceverte-me-c4a3.vercel.app';
+    : 'https://www.traceverte.fr';
