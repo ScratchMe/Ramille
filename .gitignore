@@ -46,3 +46,7 @@ example
 # Supabase CLI (stack locale démarrée par `supabase db start`, cf. supabase/config.toml)
 supabase/.branches
 supabase/.temp
+
+# Canvas de design assemblé (payload de ~2,5 Mo régénéré par la commande de seed) —
+# les sources sont dans docs/design/v1-07-*/, le livrable vit dans son Artifact publié.
+traceverte-*.html

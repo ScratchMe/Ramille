@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, -apple-system, sans-serif; background: #FFFFFF; }
+    a { color: #14563A; text-decoration: none; }
+    a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #FFFFFF; padding: 28px 24px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px;">
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-size: 26px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em; color: #131612;">Ton plan</div>
+    <div style="font-size: 15px; line-height: 22px; font-weight: 400; color: #39403B;">Deux actions liées à tes voyages longue distance en avion.</div>
+    <div style="align-self: flex-start; background: #F0F1EC; border-radius: 8px; padding: 6px 12px;">
+      <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612;">Cadence : Printemps 2028</div>
+    </div>
+  </div>
+
+  <!-- Le cap chiffré, enfin affiché. `target_reduction_pct` existait en base depuis
+       l'increment 3 sans qu'aucun écran ne le lise. -->
+  <div style="background: #E4EFE8; border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A;">Ton cap pour cette saison</div>
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <div style="font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.02em; color: #131612;">− 320 kg</div>
+      <div style="font-size: 15px; line-height: 22px; font-weight: 500; color: #39403B;">soit − 20 %</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="height: 14px; border-radius: 7px; background: #FFFFFF; overflow: hidden; display: flex;">
+        <div style="width: 80%; background: #1F6F4A;"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <div style="font-size: 11px; line-height: 16px; font-weight: 500; color: #5E655F;">Objectif 1,28 t</div>
+        <div style="font-size: 11px; line-height: 16px; font-weight: 500; color: #5E655F;">Aujourd’hui 1,60 t</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612;">Choisis ce que tu veux tenter</div>
+
+    <!-- Action 1 — chiffrée à partir du bilan réel de la personne, pas d'un texte générique.
+         Sélectionnable : une intention d'implémentation est le levier comportemental le mieux
+         établi, et le plan était jusqu'ici en lecture seule. -->
+    <div onClick="{{ pickA }}" style="{{ cardAStyle }}">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612;">Remplacer un aller-retour en avion par le train</div>
+        <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+          <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A;">− 780 kg CO₂e</div>
+          <div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F;">par an · 33 % de ton empreinte</div>
+        </div>
+        <div style="font-size: 15px; line-height: 22px; font-weight: 400; color: #39403B;">Sur tes 2 vols long-courriers déclarés.</div>
+        <sc-if value="{{ selectedA }}" hint-placeholder-val="{{ true }}">
+          <div style="align-self: flex-start; background: #1F6F4A; border-radius: 22px; padding: 8px 16px;">
+            <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #FFFFFF;">Je m’y engage</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notSelectedA }}" hint-placeholder-val="{{ true }}">
+          <div style="align-self: flex-start; background: #F0F1EC; border-radius: 22px; padding: 8px 16px;">
+            <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612;">Choisir cette action</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- Action 2 -->
+    <div onClick="{{ pickB }}" style="{{ cardBStyle }}">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612;">Grouper deux déplacements professionnels en un seul</div>
+        <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+          <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A;">− 390 kg CO₂e</div>
+          <div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F;">par an · 16 % de ton empreinte</div>
+        </div>
+        <div style="font-size: 15px; line-height: 22px; font-weight: 400; color: #39403B;">Un vol court-courrier en moins sur l’année.</div>
+        <sc-if value="{{ selectedB }}" hint-placeholder-val="{{ true }}">
+          <div style="align-self: flex-start; background: #1F6F4A; border-radius: 22px; padding: 8px 16px;">
+            <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #FFFFFF;">Je m’y engage</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notSelectedB }}" hint-placeholder-val="{{ true }}">
+          <div style="align-self: flex-start; background: #F0F1EC; border-radius: 22px; padding: 8px 16px;">
+            <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612;">Choisir cette action</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <div style="font-size: 14px; line-height: 20px; font-weight: 400; color: #5E655F;">Rien ne t’oblige à choisir. Le plan reste le même si tu passes ton chemin.</div>
+  </div>
+
+  <!-- Check-in de la période courante — au plus un par boucle, jamais une pile. -->
+  <div style="background: #E4EFE8; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A;">Semaine du 02/03</div>
+    <div style="font-size: 16px; line-height: 23px; font-weight: 600; color: #131612;">As-tu changé de mode de transport au moins une fois cette semaine pour ton trajet domicile-travail ?</div>
+    <div style="display: flex; gap: 8px;">
+      <div style="flex-grow: 1; height: 54px; border-radius: 27px; background: #F0F1EC; display: flex; align-items: center; justify-content: center;">
+        <div style="font-size: 16px; font-weight: 500; color: #131612;">Non</div>
+      </div>
+      <div style="flex-grow: 1; height: 54px; border-radius: 27px; background: #1F6F4A; display: flex; align-items: center; justify-content: center;">
+        <div style="font-size: 16px; font-weight: 600; color: #FFFFFF;">Oui</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A; text-align: center;">Voir mon suivi</div>
+    <div style="font-size: 14px; line-height: 20px; font-weight: 400; color: #5E655F; text-align: center;">Revenir à mon bilan</div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":1320}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { picked: 'a' };
+  }
+
+  cardStyle(isSelected) {
+    var base = 'border-radius: 18px; padding: 20px; cursor: pointer; border: 1.5px solid ';
+    return isSelected
+      ? base + '#1F6F4A; background: #E4EFE8;'
+      : base + '#DDE0D9; background: #FFFFFF;';
+  }
+
+  renderVals() {
+    var self = this;
+    var picked = this.state.picked;
+    return {
+      pickA: function () { self.setState({ picked: picked === 'a' ? null : 'a' }); },
+      pickB: function () { self.setState({ picked: picked === 'b' ? null : 'b' }); },
+      selectedA: picked === 'a',
+      notSelectedA: picked !== 'a',
+      selectedB: picked === 'b',
+      notSelectedB: picked !== 'b',
+      cardAStyle: this.cardStyle(picked === 'a'),
+      cardBStyle: this.cardStyle(picked === 'b'),
+    };
+  }
+}
+</script>
+</body>
+</html>

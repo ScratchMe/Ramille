@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, -apple-system, sans-serif; background: #FFFFFF; }
+    a { color: #14563A; text-decoration: none; }
+    a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+
+<div style="width: 390px; background: #FFFFFF; padding: 28px 24px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px;">
+
+  <div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F;">Ton bilan transport</div>
+
+  <div style="background: #E4EFE8; border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A;">Le déplacement qui pèse le plus</div>
+    <div style="font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.02em; color: #131612;">Tes voyages longue distance en avion</div>
+    <div style="font-size: 16px; line-height: 24px; font-weight: 400; color: #39403B;">1,6 t par an, soit 55 % de ton empreinte transport.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 4px;">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F;">Estimation annuelle, tous déplacements</div>
+    <div style="font-size: 26px; line-height: 32px; font-weight: 600; color: #131612;">2,9 t CO₂e</div>
+  </div>
+
+  <!-- LA trajectoire 2050, remplaçant la barre statique à 0,5 t.
+       Un écart ×6 présenté frontalement décourage — la spec §4 le dit explicitement : le
+       registre anxiogène paralyse plutôt qu'il ne mobilise. Découpé en paliers, le même
+       écart devient une marche à la fois, et seule la marche de cette année est mise en
+       avant. Aucune couleur de jugement : l'accent marque la marche actionnable. -->
+  <div style="background: #F0F1EC; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612;">D’ici 2050, une marche à la fois</div>
+      <div style="font-size: 14px; line-height: 20px; font-weight: 400; color: #39403B;">La cible n’est pas pour demain. Celle de cette année, si.</div>
+    </div>
+
+    <svg width="302" height="150" viewBox="0 0 302 150" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+      <!-- Paliers : chaque marche est une année. La première est celle qui compte. -->
+      <rect x="0" y="18" width="44" height="96" rx="6" fill="#1F6F4A" />
+      <rect x="52" y="34" width="44" height="80" rx="6" fill="#A9C8B6" />
+      <rect x="104" y="48" width="44" height="66" rx="6" fill="#A9C8B6" fill-opacity="0.75" />
+      <rect x="156" y="62" width="44" height="52" rx="6" fill="#A9C8B6" fill-opacity="0.55" />
+      <rect x="208" y="76" width="44" height="38" rx="6" fill="#A9C8B6" fill-opacity="0.4" />
+      <rect x="258" y="96" width="44" height="18" rx="6" fill="#A9C8B6" fill-opacity="0.3" />
+
+      <!-- Sol -->
+      <line x1="0" y1="114" x2="302" y2="114" stroke="#DDE0D9" stroke-width="1.5" />
+
+      <text x="22" y="12" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="12" font-weight="600" fill="#14563A">2,9</text>
+      <text x="74" y="28" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">2,6</text>
+      <text x="126" y="42" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">2,2</text>
+      <text x="178" y="56" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">1,7</text>
+      <text x="230" y="70" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">1,1</text>
+      <text x="280" y="90" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">0,5</text>
+
+      <text x="22" y="132" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="600" fill="#131612">2026</text>
+      <text x="74" y="132" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">2031</text>
+      <text x="126" y="132" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">2036</text>
+      <text x="178" y="132" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">2041</text>
+      <text x="230" y="132" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">2046</text>
+      <text x="280" y="132" text-anchor="middle" font-family="'Spline Sans', system-ui, sans-serif" font-size="11" font-weight="500" fill="#5E655F">2050</text>
+
+      <text x="0" y="148" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" fill="#5E655F">t CO₂e / an · part transport</text>
+    </svg>
+
+    <!-- La marche de cette année, énoncée en clair et rapportée à un geste concret. -->
+    <div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A;">Ta marche pour cette année</div>
+      <div style="font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em; color: #131612;">− 0,3 t, soit 2,6 t</div>
+      <div style="font-size: 15px; line-height: 22px; font-weight: 400; color: #39403B;">L’équivalent d’un aller-retour Paris–Marseille en train plutôt qu’en avion.</div>
+    </div>
+  </div>
+
+  <!-- Le repère national reste, sans score. « Tu es à 150 % de la moyenne » était un jugement
+       déguisé en fait, servi à quelqu'un qui n'a parfois aucune alternative. -->
+  <div style="background: #F0F1EC; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612;">Où tu te situes</div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between;">
+          <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612;">Toi</div>
+          <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612;">2,9 t</div>
+        </div>
+        <div style="height: 14px; border-radius: 7px; background: #DDE0D9; overflow: hidden; display: flex;">
+          <div style="width: 85%; background: #1F6F4A;"></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between;">
+          <div style="font-size: 14px; line-height: 20px; font-weight: 400; color: #39403B;">Moyenne en France</div>
+          <div style="font-size: 14px; line-height: 20px; font-weight: 400; color: #39403B;">2,9 t</div>
+        </div>
+        <div style="height: 14px; border-radius: 7px; background: #DDE0D9; overflow: hidden; display: flex;">
+          <div style="width: 85%; background: #A9C8B6;"></div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 14px; line-height: 20px; font-weight: 400; color: #39403B;">Tu es dans la moyenne française. L’essentiel se joue sur un seul poste, celui du haut.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="height: 54px; border-radius: 27px; background: #1F6F4A; display: flex; align-items: center; justify-content: center;">
+      <div style="font-size: 16px; font-weight: 600; color: #FFFFFF;">Voir ce que je peux faire</div>
+    </div>
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A; text-align: center;">Partager mon bilan</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
