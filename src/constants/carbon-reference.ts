@@ -7,36 +7,40 @@
 //
 // Règle : **toute valeur ici est soit publiée par une source officielle citée, soit une
 // dérivation explicitement signalée comme telle.** Rien d'approximé en silence.
+//
+// ## Pourquoi le SDES et pas la moyenne affichée par Impact CO2
+//
+// Il circule au moins quatre chiffres officiels pour « l'empreinte carbone moyenne d'un
+// Français », dont deux sur le site de l'ADEME lui-même :
+//
+// | Source | Valeur |
+// |---|---|
+// | `impactco2.fr/outils/caspratiques/francais` (ADEME, via Nos Gestes Climat) | 9,1 t |
+// | `impactco2.fr/outils/caspratiques/2050` (ADEME, même outil) | 9,3 t |
+// | SDES, décomposition par postes (données 2017) | 9,5 t |
+// | SDES, série empreinte carbone | 9,4 t (2023), 8,2 t (2024) |
+//
+// Une première version de ce fichier prenait 9,3 t pour le total (page ADEME « 2050 ») et
+// 2,8 t pour le poste transport (SDES) : deux sources mélangées, donc un total qui ne
+// correspondait pas à la somme de ses propres postes. On ne tranche pas entre 9,1 et 9,3 —
+// **on cesse de citer cette moyenne-là**. Le total affiché est celui du SDES, c'est-à-dire
+// la somme des cinq postes que le même tableau publie : une seule source, une seule année,
+// des chiffres qui s'additionnent par construction.
+//
+// La seule valeur qui ne vienne pas du SDES est la cible 2050 (ADEME) : c'est un objectif
+// normatif, pas une mesure concurrente, donc aucune contradiction possible avec le total.
 
 /** Étiquette de source affichée sous les graphiques qui utilisent ces repères. */
-export const CARBON_SOURCE_LABEL = 'ADEME · SDES (données 2017)';
+export const CARBON_SOURCE_LABEL = 'SDES, données 2017 · cible 2050 : ADEME';
 
 /**
- * Empreinte carbone moyenne d'un Français, tous postes confondus.
- * ADEME, via impactco2.fr/outils/caspratiques/2050 — « près de 9,3 tonnes de CO2 par an ».
+ * Décomposition de l'empreinte carbone par poste de consommation.
+ * SDES (service statistique du ministère de la Transition écologique), « La décomposition de
+ * l'empreinte carbone de la demande finale de la France par postes de consommation »,
+ * données 2017, publication du 26/07/2022.
  *
- * La spec fonctionnelle §4 annonçait « ~10 t » : c'était un ordre de grandeur arrondi, que
- * le handoff design signalait déjà comme à confirmer. On retient la valeur publiée.
- */
-export const FRANCE_AVERAGE_TOTAL_T = 9.3;
-
-/**
- * Objectif par personne à l'horizon 2050.
- * ADEME, même page — « un objectif maximum de 2 tonnes de CO₂e par personne par an d'ici 2050 ».
- * Cohérent avec la SNBC-3, qui vise une empreinte française de 2,3 à 3,1 t/habitant en 2050 ;
- * les 2 t sont la cible de sobriété individuelle, plus exigeante que la trajectoire nationale.
- */
-export const TARGET_2050_TOTAL_T = 2;
-
-/**
- * Décomposition de l'empreinte par poste de consommation.
- * SDES (service statistique du ministère de la Transition écologique), données 2017,
- * publication d'octobre 2021 — « la décomposition de l'empreinte carbone de la demande
- * finale de la France par postes de consommation ».
- *
- * Le total de ces postes (9,5 t) diffère légèrement de FRANCE_AVERAGE_TOTAL_T (9,3 t) :
- * ce sont deux publications d'années différentes. On ne les mélange donc pas dans un même
- * graphique — l'onboarding montre la décomposition, la restitution montre la moyenne.
+ * C'est la **seule publication officielle qui donne à la fois un total et sa ventilation**
+ * par poste de vie — d'où son statut de source unique ici (cf. en-tête du fichier).
  */
 export const CONSUMPTION_POSTES = [
   { key: 'transport', label: 'Transport', valueT: 2.8 },
@@ -47,16 +51,38 @@ export const CONSUMPTION_POSTES = [
 ] as const;
 
 /** Somme des postes ci-dessus — 9,5 t selon le SDES. Calculée, jamais recopiée. */
-export const CONSUMPTION_POSTES_TOTAL_T = CONSUMPTION_POSTES.reduce(
-  (total, poste) => total + poste.valueT,
-  0
-);
+export const CONSUMPTION_POSTES_TOTAL_T =
+  Math.round(CONSUMPTION_POSTES.reduce((total, poste) => total + poste.valueT, 0) * 10) / 10;
 
 /**
- * Part transport de l'empreinte moyenne : 2,8 t, soit 30 % du total (SDES, 2017).
+ * Empreinte carbone moyenne d'un Français, tous postes confondus.
+ *
+ * Volontairement **définie comme la somme des postes ci-dessus** plutôt que recopiée d'une
+ * autre publication : c'est ce qui garantit que l'onboarding (qui montre la ventilation) et
+ * la restitution (qui montre le total) ne peuvent pas se contredire.
+ *
+ * La spec fonctionnelle §4 annonçait « ~10 t » : c'était un ordre de grandeur arrondi, que
+ * le handoff design signalait déjà comme à confirmer.
+ */
+export const FRANCE_AVERAGE_TOTAL_T = CONSUMPTION_POSTES_TOTAL_T;
+
+/**
+ * Part transport de l'empreinte moyenne : 2,8 t, soit 30 % du total (SDES, données 2017).
  * C'est le repère auquel la restitution compare le bilan de l'utilisateur.
  */
-export const FRANCE_AVERAGE_TRANSPORT_T = 2.8;
+export const FRANCE_AVERAGE_TRANSPORT_T = CONSUMPTION_POSTES[0].valueT;
+
+/**
+ * Objectif par personne à l'horizon 2050.
+ * ADEME, `impactco2.fr/outils/caspratiques/2050` — « un objectif maximum de 2 tonnes de CO₂e
+ * par personne par an d'ici 2050 ». Cohérent avec la SNBC-3, qui vise une empreinte française
+ * de 2,3 à 3,1 t/habitant en 2050 ; les 2 t sont la cible de sobriété individuelle, plus
+ * exigeante que la trajectoire nationale.
+ *
+ * Seule valeur de ce fichier qui ne vienne pas du SDES — et la seule qui puisse l'être sans
+ * incohérence, parce que c'est une cible et non une mesure.
+ */
+export const TARGET_2050_TOTAL_T = 2;
 
 /**
  * Part transport compatible avec l'objectif 2050.

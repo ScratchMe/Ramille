@@ -22,8 +22,10 @@ import { useTheme } from '@/hooks/use-theme';
 // marqués « à confirmer » depuis le handoff design.
 //
 // La spec fonctionnelle §4 annonçait « ~10 t » : c'était un ordre de grandeur arrondi. On
-// affiche la valeur publiée (9,3 t), le contenu factuel obligatoire de la spec restant
-// respecté — moyenne actuelle, cible 2050, transport premier poste.
+// affiche le total publié par le SDES, qui est aussi la somme des postes montrés juste en
+// dessous — le contenu factuel obligatoire de la spec reste respecté (moyenne, cible 2050,
+// transport premier poste). Les données du SDES sont celles de 2017 : d'où « en moyenne »
+// et non « aujourd'hui » dans le titre, et l'étiquette de source sous les barres.
 export default function OnboardingContexte() {
   const theme = useTheme();
 
@@ -33,7 +35,7 @@ export default function OnboardingContexte() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.textBlock}>
             <ThemedText type="title" weight={600} style={styles.title}>
-              {formatTonnesShort(FRANCE_AVERAGE_TOTAL_T).replace(' t', ' tonnes')} aujourd&apos;hui,{' '}
+              {formatTonnesShort(FRANCE_AVERAGE_TOTAL_T).replace(' t', ' tonnes')} en moyenne,{' '}
               {TARGET_2050_TOTAL_T} tonnes visées en 2050
             </ThemedText>
             <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
@@ -44,7 +46,7 @@ export default function OnboardingContexte() {
 
           <View style={styles.barsBlock}>
             <ComparisonRow
-              label="Aujourd'hui"
+              label="Moyenne française"
               value={`${formatTonnesShort(FRANCE_AVERAGE_TOTAL_T)} CO₂e`}
               percent={100}
               height={22}

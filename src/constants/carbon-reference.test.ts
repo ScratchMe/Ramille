@@ -12,21 +12,32 @@ import {
 } from '@/constants/carbon-reference';
 
 describe('repères carbone', () => {
-  it('le poste transport de la décomposition est bien celui utilisé comme repère', () => {
-    // Deux constantes distinctes pour deux écrans, mais une seule réalité : si l'une bouge
-    // sans l'autre, la restitution et l'onboarding se contrediraient.
-    const transport = CONSUMPTION_POSTES.find((poste) => poste.key === 'transport');
-    expect(transport?.valueT).toBe(FRANCE_AVERAGE_TRANSPORT_T);
-  });
-
-  it('la somme des postes correspond à la publication SDES (9,5 t)', () => {
+  it('reprend les valeurs publiées par le SDES pour chaque poste', () => {
+    // Épingle les chiffres de la publication (données 2017) : si quelqu'un les retouche
+    // « au feeling », le test tombe et l'oblige à revenir à la source.
+    expect(CONSUMPTION_POSTES.map((poste) => [poste.key, poste.valueT])).toEqual([
+      ['transport', 2.8],
+      ['logement', 2.2],
+      ['alimentation', 2.1],
+      ['services', 1.5],
+      ['equipements', 0.9],
+    ]);
     expect(CONSUMPTION_POSTES_TOTAL_T).toBeCloseTo(9.5, 5);
   });
 
-  it('la moyenne totale et la décomposition restent du même ordre de grandeur', () => {
-    // Elles viennent de deux publications d'années différentes : un écart est normal, un
-    // écart important signalerait qu'on a mélangé deux sources incompatibles.
-    expect(Math.abs(CONSUMPTION_POSTES_TOTAL_T - FRANCE_AVERAGE_TOTAL_T)).toBeLessThan(1);
+  it('les postes sont classés du plus lourd au plus léger', () => {
+    // L'onboarding dimensionne ses barres sur CONSUMPTION_POSTES[0] et annonce que le
+    // transport est le premier poste : un ordre cassé rendrait l'écran faux sans planter.
+    const values = CONSUMPTION_POSTES.map((poste) => poste.valueT);
+    expect([...values].sort((a, b) => b - a)).toEqual(values);
+  });
+
+  it('le total affiché est exactement la somme des postes affichés', () => {
+    // Le cœur de l'arbitrage de source (cf. en-tête de carbon-reference.ts) : l'onboarding
+    // montre la ventilation, la restitution montre le total, et les deux doivent venir de
+    // la même publication. Un total repris d'une autre source rouvrirait l'incohérence.
+    expect(FRANCE_AVERAGE_TOTAL_T).toBe(CONSUMPTION_POSTES_TOTAL_T);
+    expect(FRANCE_AVERAGE_TRANSPORT_T).toBe(CONSUMPTION_POSTES[0].valueT);
   });
 
   it('le repère transport 2050 est bien la part actuelle appliquée à la cible', () => {
