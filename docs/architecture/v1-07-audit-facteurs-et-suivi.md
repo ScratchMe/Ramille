@@ -102,8 +102,11 @@ facteurs en vigueur à sa date »). Tant qu'il n'existe qu'une version par mode,
 invisible. Le jour où le job de synchronisation tourne, tout recalcul d'un ancien bilan
 dérive silencieusement, et la promesse de reproductibilité tombe.
 
-**Décision** : ajouter `and valid_from <= <date du bilan>` à tous les lookups **dans la même
-étape** que la mise en place du job, jamais après.
+**Décision** : ajouter `and valid_from <= <date du bilan>` à tous les lookups **avant** la mise
+en place du job, jamais après. *Fait à l'étape 1* : les huit sous-requêtes sont remplacées par
+`public.emission_factor(mode, date)`, qui porte la borne en un seul endroit — la fonction de
+calcul étant de toute façon réécrite, il aurait été absurde de repasser sur les huit
+occurrences une seconde fois à l'étape 2.
 
 ---
 
@@ -243,8 +246,8 @@ la boucle existante, ensuite seulement construire ce qui manque.
 
 | Étape | Contenu | Traite | Statut |
 |---|---|---|---|
-| 1 | Facteurs avion long-courrier et train longue distance | T1, T2 | à faire |
-| 2 | Synchronisation ADEME automatisée + borne `valid_from` | T3, T4, #27 | à faire |
+| 1 | Facteurs avion long-courrier et train longue distance | T1, T2, T4, T13 | **fait** — migration `20260904140000` |
+| 2 | Synchronisation ADEME automatisée | T3, #27 | à faire |
 | 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | à faire |
 | 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2, §3.6 | à faire |
 | 5 | Canal de rappel email | §3.1 | à faire |

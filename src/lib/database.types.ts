@@ -457,6 +457,10 @@ export type Database = {
         Args: { p_assessment_id: string }
         Returns: undefined
       }
+      emission_factor: {
+        Args: { p_mode_id: string; p_on_date: string }
+        Returns: number
+      }
       generate_commute_checkins: { Args: never; Returns: undefined }
       generate_extras_checkins: { Args: never; Returns: undefined }
       generate_plan_cycle_for_user: {
@@ -465,6 +469,10 @@ export type Database = {
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
       purge_stale_anonymous_accounts: { Args: never; Returns: undefined }
+      recompute_assessment_results: {
+        Args: { p_assessment_id: string }
+        Returns: undefined
+      }
       resolve_car_mode: {
         Args: { p_engine: string; p_mode_id: string }
         Returns: string

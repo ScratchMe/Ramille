@@ -141,6 +141,29 @@ lookup de facteur/libellé dans `compute_assessment_results` ; moteur non rensei
 soumis avant cette migration) retombe sur le générique `voiture`. Voir
 `supabase/migrations/20260904090000_car_engine.sql`.
 
+**Tout lookup de facteur d'émission passe par `public.emission_factor(mode_id, date)`** —
+jamais un `select ... order by valid_from desc limit 1` écrit à la main. La fonction borne le
+facteur à la **date du bilan** (un bilan reste reproductible après une mise à jour ADEME, cf.
+`v1-01` §3), retombe sur la version la plus ancienne si le mode a été ajouté au référentiel
+après le bilan, et lève une erreur explicite si le mode n'a aucun facteur — un `NULL` ici
+contaminerait tout le total. Voir
+`supabase/migrations/20260904140000_fix_flight_and_long_distance_train_factors.sql`.
+
+Cette migration porte aussi deux corrections de chiffre à connaître : le facteur **avion**
+dépend de la distance côté API Impact CO2 (relevé à 1500 km pour le court/moyen-courrier,
+9000 km pour le long-courrier — les distances de référence du calcul, à réutiliser telles
+quelles pour toute mise à jour), et le poste **voyages en train** (B3.3, « > 300 km ») utilise
+`train_longue_distance` (TGV, 0,0023) et non le mode générique `train` qui reste le TER du
+trajet quotidien B1.4. `train_longue_distance` n'est jamais sélectionnable dans le
+questionnaire — il n'apparaît donc pas dans `src/constants/transport-modes.ts`, mais bien dans
+`MODE_PREPOSITION` (`bilan/resultat.tsx`) puisqu'il peut être le `dominant_poste_mode`.
+
+Le calcul du bilan est séparé en deux fonctions : `recompute_assessment_results(assessment_id)`
+porte le calcul (interne, revoked de anon/authenticated, appelable côté serveur), et
+`compute_assessment_results(assessment_id)` est le RPC client qui vérifie la propriété du bilan
+puis délègue. Toute reprise de calcul en masse (correction de facteur, migration) passe par la
+première — la seconde exige un `auth.uid()` et ne peut pas tourner hors session client.
+
 Deux mécanismes de génération server-side qu'il faut garder synchronisés si on les touche :
 - `generate_plan_cycle_for_user(p_user_id)` (security definer, revoked de anon/authenticated)
   génère le plan de réduction d'un utilisateur. Appelée à la fois par le cron nightly

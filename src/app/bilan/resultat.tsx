@@ -31,6 +31,9 @@ const MODE_PREPOSITION: Partial<Record<string, string>> = {
   voiture_thermique: 'en voiture thermique',
   voiture_electrique: 'en voiture électrique',
   train: 'en train',
+  // Mode du poste voyages uniquement (B3.3, trajets > 300 km) — jamais sélectionnable dans
+  // les listes du questionnaire, cf. migration 20260904140000.
+  train_longue_distance: 'en TGV',
   bus: 'en bus',
   metro_tram: 'en métro ou tram',
   velo: 'à vélo',
