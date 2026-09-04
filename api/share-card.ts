@@ -103,7 +103,14 @@ function formatTonnes(raw: string | null): string {
   return n.toFixed(1).replace('.', ',');
 }
 
-export default async function handler(request: Request): Promise<Response> {
+// `export function GET` plutôt qu'un export par défaut : en runtime Node.js (contrairement à
+// Edge, toujours fetch-style), un export par défaut est traité par Vercel comme l'ancienne
+// signature `(req, res) => void` — notre valeur de retour (`Response`) était silencieusement
+// ignorée, laissant la requête indéfiniment en attente jusqu'au timeout (confirmé via les logs
+// runtime réels : "WARN: default export returned a `Response`... You likely meant the Web
+// `fetch`-style API"). Un export nommé par méthode HTTP est la convention que Vercel reconnaît
+// explicitement comme fetch-style, quel que soit le runtime.
+export async function GET(request: Request): Promise<Response> {
   await ensureWasm();
 
   // Base factice : contrairement au runtime Edge, `request.url` en Function Node.js est un
