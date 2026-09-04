@@ -201,6 +201,11 @@ export default function Plan() {
         </ScrollView>
 
         <View style={styles.footer}>
+          <Pressable onPress={() => router.push('/suivi')}>
+            <ThemedText type="small" weight={600} themeColor="accentText" style={styles.footerLink}>
+              Voir mon suivi
+            </ThemedText>
+          </Pressable>
           <Pressable onPress={() => router.push({ pathname: '/bilan/resultat', params: { id: assessmentId } })}>
             <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
               Revenir à mon bilan
@@ -225,7 +230,7 @@ const styles = StyleSheet.create({
   actionCard: { borderRadius: 18, borderWidth: 1, padding: 20, gap: 8 },
   actionText: { fontSize: 17, lineHeight: 24 },
   checkins: { gap: Spacing.two + 2 },
-  footer: { padding: Spacing.four },
+  footer: { padding: Spacing.four, gap: Spacing.three },
   footerLink: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   emptyIllustration: { height: 140 },

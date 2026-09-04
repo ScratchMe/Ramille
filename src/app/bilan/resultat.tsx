@@ -301,9 +301,13 @@ export default function BilanResultat() {
               Partager mon bilan
             </ThemedText>
           </Pressable>
+          {/* « Modifier mes réponses » promettait une édition, alors que le questionnaire
+              insère toujours un nouveau bilan — et repartait d'écrans vides. Le
+              préremplissage (v1-07 T7) rend l'action peu coûteuse ; le libellé dit
+              maintenant ce qu'elle fait vraiment. */}
           <Pressable onPress={() => router.push('/bilan')}>
             <ThemedText type="small" themeColor="textTertiary" style={styles.editLink}>
-              Modifier mes réponses
+              Refaire mon bilan
             </ThemedText>
           </Pressable>
         </View>
