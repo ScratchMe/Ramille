@@ -238,6 +238,59 @@ export type Database = {
           },
         ]
       }
+      emission_factor_sources: {
+        Row: {
+          impactco2_ids: number[]
+          note: string | null
+          reference_km: number
+          transport_mode_id: string
+        }
+        Insert: {
+          impactco2_ids: number[]
+          note?: string | null
+          reference_km?: number
+          transport_mode_id: string
+        }
+        Update: {
+          impactco2_ids?: number[]
+          note?: string | null
+          reference_km?: number
+          transport_mode_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emission_factor_sources_transport_mode_id_fkey"
+            columns: ["transport_mode_id"]
+            isOneToOne: true
+            referencedRelation: "transport_modes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emission_factor_sync_runs: {
+        Row: {
+          detail: string | null
+          id: string
+          modes_updated: number
+          ran_at: string
+          status: string
+        }
+        Insert: {
+          detail?: string | null
+          id?: string
+          modes_updated?: number
+          ran_at?: string
+          status: string
+        }
+        Update: {
+          detail?: string | null
+          id?: string
+          modes_updated?: number
+          ran_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       emission_factors: {
         Row: {
           id: string
@@ -493,6 +546,7 @@ export type Database = {
           period_start: string
         }[]
       }
+      sync_emission_factors: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

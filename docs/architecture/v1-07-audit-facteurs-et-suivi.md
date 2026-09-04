@@ -87,6 +87,30 @@ Le mécanisme de mise à jour trimestrielle décrit dès `v1-01` §2 n'a jamais 
 (suivi par l'issue #27). Le schéma est prêt (`unique(transport_mode_id, valid_from)`,
 versionnement par date), il n'est simplement jamais alimenté.
 
+**Construit à l'étape 2** (migration `20260904160000`), avec trois écarts assumés par rapport
+à ce que `v1-01` §2 anticipait :
+
+- **SQL pur, pas d'Edge Function.** `v1-01` supposait qu'un appel HTTP imposait de sortir de
+  Postgres. L'extension `http` (synchrone) rend l'Edge Function inutile : pas de secret à
+  partager entre le cron et la fonction, pas de déploiement séparé, et le même modèle que
+  tous les autres mécanismes serveur du produit (`v1-02` §3). Trois requêtes par trimestre
+  vers une API publique ne justifient pas une brique de plus.
+- **Le mapping vit en table** (`emission_factor_sources`), pas en dur dans la fonction :
+  ajouter un mode au produit ne doit pas demander de réécrire la synchronisation. Sa colonne
+  `reference_km` porte la règle du §1.1 — les deux modes avion sont relevés à 1500 et 9000 km,
+  tous les autres à une distance neutre.
+- **Un journal** (`emission_factor_sync_runs`) et **un garde-fou**. Le journal parce qu'une
+  synchronisation qui ne tourne pas est autrement indétectable — c'est très exactement ce qui
+  s'est passé ici. Le garde-fou parce qu'un écart de plus de 50 % s'explique bien plus
+  probablement par une rupture côté API (renumérotation d'id, changement d'unité) que par une
+  révision de la Base Empreinte : une telle valeur est **signalée pour relecture humaine, pas
+  appliquée**. Appliquer aveuglément fausserait le bilan de tous les utilisateurs sans que
+  personne ne s'en aperçoive, sur le seul chiffre dont dépend la crédibilité du produit.
+
+Auto-vérification à la mise en service : la première exécution réelle contre l'API a relevé
+les 13 modes et trouvé **zéro écart** avec les valeurs en place — ce qui valide d'un coup le
+mapping des identifiants Impact CO2 et la règle des distances de référence.
+
 ### 1.4 Piège à corriger **avant** d'activer la synchronisation
 
 Les huit lookups de facteur de `compute_assessment_results` sont écrits ainsi :
@@ -247,7 +271,7 @@ la boucle existante, ensuite seulement construire ce qui manque.
 | Étape | Contenu | Traite | Statut |
 |---|---|---|---|
 | 1 | Facteurs avion long-courrier et train longue distance | T1, T2, T4, T13 | **fait** — migration `20260904140000` |
-| 2 | Synchronisation ADEME automatisée | T3, #27 | à faire |
+| 2 | Synchronisation ADEME automatisée | T3, #27 | **fait** — migration `20260904160000` |
 | 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | à faire |
 | 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2, §3.6 | à faire |
 | 5 | Canal de rappel email | §3.1 | à faire |

@@ -158,6 +158,17 @@ trajet quotidien B1.4. `train_longue_distance` n'est jamais sélectionnable dans
 questionnaire — il n'apparaît donc pas dans `src/constants/transport-modes.ts`, mais bien dans
 `MODE_PREPOSITION` (`bilan/resultat.tsx`) puisqu'il peut être le `dominant_poste_mode`.
 
+**Les facteurs se resynchronisent seuls** : `sync_emission_factors()` (SQL pur via l'extension
+`http`, pas d'Edge Function — pas de secret à gérer, même modèle que les autres crons)
+interroge l'API Impact CO2 chaque trimestre et **insère une nouvelle version** dans
+`emission_factors`, sans jamais écraser. Le mapping vers les identifiants Impact CO2 vit dans
+`emission_factor_sources` (avec `reference_km` — 1500/9000 pour l'avion, cf. ci-dessus), pas en
+dur dans la fonction : **ajouter un mode au produit impose d'y ajouter une ligne**, sinon il
+reste figé à sa valeur de seed en silence (un test pgTAP garde ce point). Un écart de plus de
+50 % n'est jamais appliqué automatiquement — il est signalé dans `emission_factor_sync_runs`
+pour relecture. Ce journal est la seule façon de voir que la synchronisation tourne
+vraiment : le mécanisme prévu dès `v1-01` §2 n'avait jamais été construit et rien ne le disait.
+
 Le calcul du bilan est séparé en deux fonctions : `recompute_assessment_results(assessment_id)`
 porte le calcul (interne, revoked de anon/authenticated, appelable côté serveur), et
 `compute_assessment_results(assessment_id)` est le RPC client qui vérifie la propriété du bilan
