@@ -43,9 +43,12 @@
 // node_modules, pour ne pas dépendre de la structure interne du paquet.
 //
 // Paramètres (query string) : `total` (tonnes CO2e/an, ex. "4.2"), `poste` (libellé du poste
-// dominant, déjà en français depuis la restitution — cf. bilan/resultat.tsx). Les deux sont
-// optionnels côté rendu (valeurs de repli) : ce endpoint ne doit jamais planter sur une URL
-// mal formée, y compris construite par un tiers.
+// dominant, déjà en français et sans pronom — cf. dominantShareLabel dans bilan/resultat.tsx),
+// `percent` (part du poste dominant dans l'empreinte totale, entier 0-100). `poste` seul, sans
+// préciser qu'il s'agit du poste dominant ni sa part, ne voulait rien dire pour qui reçoit le
+// lien (retour utilisateur du 04/09/2026) — `percent` lui donne un sens réel. Tous optionnels
+// côté rendu (valeurs de repli) : ce endpoint ne doit jamais planter sur une URL mal formée, y
+// compris construite par un tiers.
 import fs from 'node:fs';
 import path from 'node:path';
 import { createElement as h } from 'react';
@@ -103,6 +106,11 @@ function formatTonnes(raw: string | null): string {
   return n.toFixed(1).replace('.', ',');
 }
 
+function formatPercent(raw: string | null): number | null {
+  const n = raw ? Number.parseInt(raw, 10) : NaN;
+  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
+}
+
 // `export function GET` plutôt qu'un export par défaut : en runtime Node.js (contrairement à
 // Edge, toujours fetch-style), un export par défaut est traité par Vercel comme l'ancienne
 // signature `(req, res) => void` — notre valeur de retour (`Response`) était silencieusement
@@ -119,6 +127,7 @@ export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url, 'http://localhost');
   const total = formatTonnes(searchParams.get('total'));
   const poste = (searchParams.get('poste') ?? '').slice(0, 120);
+  const percent = formatPercent(searchParams.get('percent'));
 
   const element = h(
     'div',
@@ -146,11 +155,18 @@ export async function GET(request: Request): Promise<Response> {
       `${total} t CO₂e / an`
     ),
     poste
-      ? h('div', { style: { display: 'flex', fontSize: 34, color: TEXT_SECONDARY, marginTop: 20 } }, poste)
+      ? h(
+          'div',
+          { style: { display: 'flex', fontSize: 24, fontWeight: 600, color: ACCENT_TEXT, marginTop: 24 } },
+          percent !== null ? `Poste principal — ${percent} %` : 'Poste principal'
+        )
+      : null,
+    poste
+      ? h('div', { style: { display: 'flex', fontSize: 32, color: TEXT_SECONDARY, marginTop: 6 } }, poste)
       : null,
     h(
       'div',
-      { style: { display: 'flex', fontSize: 26, color: TEXT_SECONDARY, marginTop: 56 } },
+      { style: { display: 'flex', fontSize: 26, color: TEXT_SECONDARY, marginTop: 40 } },
       'TraceVerte · fais ton bilan en 5 minutes'
     )
   );

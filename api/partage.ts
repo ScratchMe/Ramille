@@ -34,6 +34,8 @@ export default function handler(request: Request) {
   const url = new URL(request.url);
   const total = url.searchParams.get('total');
   const poste = (url.searchParams.get('poste') ?? '').slice(0, 120);
+  const percentRaw = Number.parseInt(url.searchParams.get('percent') ?? '', 10);
+  const percent = Number.isFinite(percentRaw) && percentRaw >= 0 && percentRaw <= 100 ? percentRaw : null;
   const tonnes = total ? Number.parseFloat(total) : NaN;
   const totalLabel = Number.isFinite(tonnes) ? `${tonnes.toFixed(1).replace('.', ',')} t CO₂e` : null;
 
@@ -41,8 +43,15 @@ export default function handler(request: Request) {
   const appUrl = url.origin;
 
   const title = totalLabel ? `${totalLabel} par an — mon empreinte transport` : 'Mon empreinte transport';
+  // percent donne un sens réel à `poste` (ex. "58 % de l'empreinte") — sans lui, "Poste
+  // principal : Voyages longue distance..." ne dit pas ce que ce poste représente (retour
+  // utilisateur du 04/09/2026).
   const description = totalLabel
-    ? `Poste principal : ${poste || 'à voir dans le détail'}. Calcule la tienne en 5 minutes sur TraceVerte.`
+    ? poste
+      ? percent !== null
+        ? `Poste principal (${percent} % de l'empreinte) : ${poste}. Calcule la tienne en 5 minutes sur TraceVerte.`
+        : `Poste principal : ${poste}. Calcule la tienne en 5 minutes sur TraceVerte.`
+      : 'Calcule la tienne en 5 minutes sur TraceVerte.'
     : 'Calcule ton empreinte carbone transport en 5 minutes sur TraceVerte.';
 
   const html = `<!doctype html>
