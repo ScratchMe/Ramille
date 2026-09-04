@@ -72,6 +72,7 @@ exhaustive de ce qu'il faut activer manuellement, une fois, avant que l'auth fon
 | Automatic linking | Authentication → Providers → Advanced Settings | Décision produit actée en §2 |
 | Confirmation email obligatoire | Authentication → Providers → Email | Garde-fou de sécurité pour la fusion automatique (§2) |
 | Redirect URLs | Authentication → URL Configuration | `traceverte://` (mobile, déjà dans `app.json`) + le domaine Vercel (web) |
+| Protection contre les mots de passe compromis | Authentication → Policies (Password strength) | Vérification contre HaveIBeenPwned. Signalé par l'advisor sécurité Supabase (`auth_leaked_password_protection`) au 04/09/2026 — pertinent puisque la connexion email + mot de passe est proposée (§2). Réglage de dashboard, pas une migration. Cf. `v1-07` §5. |
 
 Pour le Client ID/Secret Google : Google Cloud Console → APIs & Services → Credentials →
 Create OAuth client ID (type "Web application" pour Supabase, qui gère la redirection) — je
