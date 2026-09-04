@@ -1,0 +1,38 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 1300, "title": "Suivi — /suivi" },
+    { "file": "Plan.dc.html", "x": 510, "y": 0, "w": 390, "h": 1340, "title": "Plan refondu — /plan", "is_interactive": true },
+    { "file": "Trajectoire.dc.html", "x": 1020, "y": 0, "w": 390, "h": 1180, "title": "Trajectoire 2050 — /bilan/resultat" }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -220,
+      "w": 500,
+      "text": "TraceVerte — trois écrans issus de l'audit du 04/09/2026.\n\nSystème de design repris tel quel du handoff (docs/design/README.md) : Spline Sans, accent #1F6F4A, padding écran 24px, bouton 54px/rayon 27, carte 24 / panneau 20 / bordée 18 / chip 22.\n\nRègle du handoff tenue partout : aucune sémantique vert = bon / rouge = mauvais. L'accent marque ce qui est dominant ou actionnable, jamais un jugement. Pas de rouge, pas d'orange, aucune icône d'alerte."
+    },
+    {
+      "id": "note-suivi",
+      "x": 0,
+      "y": 1360,
+      "w": 390,
+      "text": "SUIVI — ce qui change par rapport à l'écran livré.\n\nLes barres horizontales empilées deviennent une courbe temporelle : c'est la forme qui laisse voir une trajectoire, et c'est la promesse de long terme du produit.\n\nAucune mécanique d'échec : on compte les fois où la personne a répondu, jamais celles où elle a laissé passer. Aucune série, aucun compteur de régularité."
+    },
+    {
+      "id": "note-plan",
+      "x": 510,
+      "y": 1400,
+      "w": 390,
+      "text": "PLAN — étape 6, à construire.\n\nLes actions sont chiffrées à partir du bilan réel (− 780 kg CO₂e / an · 33 % de l'empreinte) au lieu d'un texte générique, et le cap −20 % est enfin affiché : target_reduction_pct existe en base depuis l'increment 3 sans qu'aucun écran ne le lise.\n\nLes cartes sont SÉLECTIONNABLES (cliquer pour essayer) : une intention d'implémentation est le levier comportemental le mieux établi, et le plan était en lecture seule.\n\n« Rien ne t'oblige à choisir » est délibéré : proposer sans enjoindre."
+    },
+    {
+      "id": "note-trajectoire",
+      "x": 1020,
+      "y": 1240,
+      "w": 390,
+      "text": "TRAJECTOIRE 2050 — étape 7, issue #28.\n\nLa barre statique à 0,5 t face à 2,9 t présente un écart ×6 frontalement. La spec §4 dit explicitement que ce registre paralyse plutôt qu'il ne mobilise.\n\nDécoupé en paliers, le même écart devient une marche à la fois, et seule celle de cette année est mise en avant — rapportée à un geste concret.\n\nÀ VÉRIFIER AVANT PROD : les chiffres 2,9 t (moyenne transport France) et 0,5 t (part compatible 2050) sont encore des placeholders codés en dur, marqués « à confirmer » dans le code comme dans le handoff. Les paliers intermédiaires sont une interpolation, pas une trajectoire ADEME sourcée."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}
