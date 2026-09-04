@@ -222,10 +222,17 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
 
 - **Tout repère chiffré affiché à l'utilisateur vit dans `src/constants/carbon-reference.ts`**,
   jamais en dur dans un écran : moyenne française, objectif 2050, décomposition par poste,
-  repère transport. Chaque valeur y porte sa source (ADEME pour la moyenne et la cible, SDES
-  pour la décomposition) et son année. `TARGET_2050_TRANSPORT_T` est une **dérivation**
-  explicitement signalée — aucune source publique ne donne d'objectif 2050 par poste
-  d'empreinte individuelle — d'où le libellé « Repère » et non « Objectif » à l'écran.
+  repère transport. **Une seule source statistique, le SDES** (décomposition par postes de
+  consommation, données 2017) : le total affiché est *défini* comme la somme des postes, jamais
+  recopié d'ailleurs. C'est délibéré — il circule au moins quatre chiffres officiels pour « la
+  moyenne d'un Français », dont deux contradictoires sur le site de l'ADEME lui-même (9,1 t et
+  9,3 t), et une première version mélangeait ce 9,3 t avec la ventilation SDES. Ne pas
+  « rafraîchir » le total avec une valeur plus récente sans reprendre aussi la ventilation :
+  l'arbitrage complet est en `v1-07` §3.4 et un test épingle l'invariant. Seule exception, la
+  cible 2050 (2 t, ADEME) — un objectif normatif ne concurrence pas une mesure.
+  `TARGET_2050_TRANSPORT_T` est une **dérivation** explicitement signalée — aucune source
+  publique ne donne d'objectif 2050 par poste d'empreinte individuelle — d'où le libellé
+  « Repère » et non « Objectif » à l'écran.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir
