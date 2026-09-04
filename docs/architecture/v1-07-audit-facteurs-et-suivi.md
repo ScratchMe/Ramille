@@ -272,7 +272,7 @@ la boucle existante, ensuite seulement construire ce qui manque.
 |---|---|---|---|
 | 1 | Facteurs avion long-courrier et train longue distance | T1, T2, T4, T13 | **fait** — migration `20260904140000` |
 | 2 | Synchronisation ADEME automatisée | T3, #27 | **fait** — migration `20260904160000` |
-| 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | à faire |
+| 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | **fait** — migration `20260904180000` |
 | 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2, §3.6 | à faire |
 | 5 | Canal de rappel email | §3.1 | à faire |
 | 6 | Actions chiffrées et sélectionnables + exploitation du contexte B4 | T9, T10, §3.3 | à faire |
@@ -285,7 +285,36 @@ Les issues #29 (canal de feedback) et #30 (tracking d'usage) restent suivies sé
 utiles, mais elles n'améliorent ni un chiffre ni l'accompagnement, et n'ont donc pas de place
 dans cet ordonnancement.
 
-## 5. Non-goals réaffirmés par cet audit
+## 5. Advisors Supabase — triage du 04/09/2026
+
+Relus sur les deux catégories à la demande produit. Consigné ici pour ne pas re-trier les
+mêmes lignes à chaque passage : ce qui reste remonté est **connu et voulu**, sauf la dernière
+ligne.
+
+### Corrigé
+
+- `function_search_path_mutable` sur `resolve_car_mode` → `search_path` explicite (migration
+  `20260904160000`). Plus remonté.
+
+### Volontaire — ne pas « corriger »
+
+| Signalement | Pourquoi c'est voulu |
+|---|---|
+| `auth_allow_anonymous_sign_ins` sur `assessments`, `assessment_answers`, `assessment_results`, `engagement_checkins`, `plan_cycles`, `plan_actions`, `profiles` (WARN ×7) | C'est le modèle d'authentification du produit, pas un trou : chaque visiteur reçoit une session anonyme dès l'ouverture (`v1-04` §1) et son bilan vit sous les mêmes policies owner-scoped que n'importe quel compte. Les policies sont toutes en `user_id = auth.uid()` — un utilisateur anonyme ne voit que ses propres lignes. L'advisor signale le motif, pas une fuite. |
+| `authenticated_security_definer_function_executable` sur `compute_assessment_results` (WARN) | Volontaire et documenté (`v1-05` §4) : ce RPC est appelé par le client après soumission du questionnaire, donc il doit rester ouvert à `authenticated`. La protection est la vérification de propriété du bilan **dans** la fonction, pas un REVOKE. Le calcul lui-même vit dans `recompute_assessment_results`, elle bien révoquée. |
+| `rls_enabled_no_policy` sur `emission_factor_sync_runs` (INFO) | C'est l'objectif : RLS active **sans** policy = rien n'est lisible côté client. Journal d'exploitation, pas une donnée produit. |
+| `auth_allow_anonymous_sign_ins` sur `cron.job` / `cron.job_run_details` (WARN ×2) | Schéma de Supabase lui-même, sa policy restreint déjà au propriétaire du job. Pas à nous. |
+| `unindexed_foreign_keys` sur `assessment_answers.commute_mode` / `.commute_second_mode` / `.leisure_mode` et `assessment_results.dominant_poste_mode` (INFO ×4) | Les quatre pointent vers `transport_modes`. **Aucune requête du produit ne filtre ni ne joint sur ces colonnes** — les libellés se lisent par clé primaire de `transport_modes`. La table référencée est un référentiel de 13 lignes qui ne bouge qu'en migration. Quatre index de plus coûteraient à chaque insertion de bilan pour un gain de lecture nul : on ne les crée pas. À revoir si un écran vient un jour filtrer les bilans par mode. |
+| `unused_index` sur `plan_actions_action_template_id_idx` (INFO) | « Jamais utilisé » sur une base qui compte une douzaine de bilans de test ne veut rien dire. Cet index couvre la jointure `plan_actions → action_templates` que l'écran `/plan` traverse à chaque affichage. Conservé. |
+
+### Reste à faire, hors du code
+
+`auth_leaked_password_protection` (WARN) : la vérification des mots de passe compromis contre
+HaveIBeenPwned est désactivée. Le produit propose bien une connexion email + mot de passe
+(`v1-04` §2), donc ce garde-fou a du sens. C'est un réglage de dashboard, pas une migration —
+ajouté à la checklist `v1-04` §4.
+
+## 6. Non-goals réaffirmés par cet audit
 
 Rien dans ce plan ne rouvre les non-goals de la spec §2 :
 

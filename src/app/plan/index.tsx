@@ -19,6 +19,19 @@ type PlanCycle = {
   plan_actions: { id: string; action_templates: { action_text: string } | null }[];
 };
 
+type PendingCheckin = EngagementCheckin & { period_start: string };
+
+// Une seule question vivante par boucle, la plus récente. La requête est déjà triée par
+// `period_start` décroissant, donc le premier vu de chaque `loop_type` est le bon.
+function keepLatestPerLoop(checkins: PendingCheckin[]): EngagementCheckin[] {
+  const seen = new Set<EngagementCheckin['loop_type']>();
+  return checkins.filter((checkin) => {
+    if (seen.has(checkin.loop_type)) return false;
+    seen.add(checkin.loop_type);
+    return true;
+  });
+}
+
 type LoadState =
   | { status: 'loading' }
   // Aucun bilan complété — écran "État vide" de la maquette.
@@ -76,12 +89,19 @@ export default function Plan() {
       }
 
       // Check-ins en attente (boucle hebdo domicile-travail + boucle mensuelle extras,
-      // cf. generate_commute_checkins/generate_extras_checkins) — jamais plus d'un par
-      // boucle à la fois (contrainte unique(user_id, loop_type, period_start)).
+      // cf. generate_commute_checkins/generate_extras_checkins). Les périodes révolues sont
+      // clôturées côté serveur en `expired` (migration 20260904180000) : sans ça, un
+      // utilisateur absent huit semaines retrouvait huit cartes identiques.
+      //
+      // Le `keepLatestPerLoop` ci-dessous est une ceinture en plus de cette bretelle : si un
+      // passage de cron était manqué, la table pourrait de nouveau porter deux périodes en
+      // attente pour une même boucle. On n'affiche jamais qu'une question vivante par boucle,
+      // la plus récente — une pile de rappels est le contraire de ce que cette boucle promet.
       const { data: checkins } = await supabase
         .from('engagement_checkins')
-        .select('id, loop_type, period_label, trip_label')
-        .eq('status', 'pending');
+        .select('id, loop_type, period_label, trip_label, period_start')
+        .eq('status', 'pending')
+        .order('period_start', { ascending: false });
 
       if (cancelled) return;
 
@@ -89,7 +109,7 @@ export default function Plan() {
         status: 'ok',
         cycle: cycle as PlanCycle,
         assessmentId: assessment.id,
-        checkins: (checkins as EngagementCheckin[] | null) ?? [],
+        checkins: keepLatestPerLoop((checkins as PendingCheckin[] | null) ?? []),
       });
     })();
 

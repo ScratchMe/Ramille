@@ -81,6 +81,21 @@ function dominantShareLabel(results: AssessmentResults): string {
   return preposition ? `${posteLabel} ${preposition}` : posteLabel;
 }
 
+// « Tu es à 150 % de la moyenne française » était un jugement déguisé en fait : un score, avec
+// un bon et un mauvais côté, servi à quelqu'un qui n'a parfois aucune alternative (rural, pas
+// de transports en commun). La spec demande de contextualiser « sans ton culpabilisant » (§5)
+// et de ne pas traiter ces profils en mauvais élèves (§2). Les barres au-dessus montrent déjà
+// l'écart : la phrase se contente de le nommer et d'ouvrir sur la suite. Cf. v1-07 §3.5.
+function comparisonNote(totalT: number): string {
+  if (totalT <= TARGET_2050_TRANSPORT_T) {
+    return 'Tu es déjà sous la part transport compatible avec 2050.';
+  }
+  if (totalT <= FRANCE_AVERAGE_TRANSPORT_T) {
+    return 'Tu es en dessous de la moyenne française. Il reste du chemin jusqu’à 2050, comme pour tout le monde.';
+  }
+  return `La moyenne française est de ${FRANCE_AVERAGE_TRANSPORT_T.toFixed(1).replace('.', ',')} t. L’essentiel se joue sur un seul poste, celui du haut.`;
+}
+
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -179,8 +194,14 @@ export default function BilanResultat() {
 
   const { results } = state;
   const totalT = results.total_co2_kg_year / 1000;
-  const dominantPercent = Math.round((results.dominant_poste_co2_kg_year / results.total_co2_kg_year) * 100);
-  const vsAveragePercent = Math.round((totalT / FRANCE_AVERAGE_TRANSPORT_T) * 100);
+
+  // Un total nul est atteignable — quelqu'un qui n'a que du vélo ou de la marche, sans avion
+  // ni trajet longue distance. C'est le profil que le produit devrait féliciter, et il
+  // tombait jusqu'ici sur un « NaN % » : toutes les parts se divisent par le total.
+  // Cf. v1-07 T8.
+  const hasEmissions = results.total_co2_kg_year > 0;
+  const shareOfTotal = (kg: number) => (hasEmissions ? (kg / results.total_co2_kg_year) * 100 : 0);
+  const dominantPercent = Math.round(shareOfTotal(results.dominant_poste_co2_kg_year));
 
   const domain = Math.max(totalT, FRANCE_AVERAGE_TRANSPORT_T, TARGET_2050_TRANSPORT_T) / 0.85;
   const barPercent = (value: number) => Math.max((value / domain) * 100, 3);
@@ -215,8 +236,9 @@ export default function BilanResultat() {
               {dominantHeadline(results)}
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
-              {formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit {dominantPercent} % de ton empreinte
-              transport.
+              {hasEmissions
+                ? `${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`
+                : 'Tes déplacements n’émettent quasiment rien. C’est rare, et c’est une bonne nouvelle.'}
             </ThemedText>
           </ThemedView>
 
@@ -230,7 +252,7 @@ export default function BilanResultat() {
                   key={poste.key}
                   label={poste.label}
                   value={formatTonnes(results[poste.co2Key])}
-                  percent={Math.max((results[poste.co2Key] / results.total_co2_kg_year) * 100, 3)}
+                  percent={Math.max(shareOfTotal(results[poste.co2Key]), 3)}
                   bold={poste.key === results.dominant_poste}
                   accentColor={poste.key === results.dominant_poste ? theme.accent : theme.accentMuted}
                 />
@@ -267,7 +289,7 @@ export default function BilanResultat() {
               />
             </View>
             <ThemedText type="small" themeColor="textSecondary">
-              Tu es à {vsAveragePercent} % de la moyenne française.
+              {comparisonNote(totalT)}
             </ThemedText>
           </ThemedView>
         </ScrollView>
