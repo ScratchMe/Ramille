@@ -97,6 +97,16 @@ une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par 
 `BilanAnswers` (`src/types/bilan.ts`) est un miroir direct des colonnes de la table, pour un
 insert sans transformation.
 
+Le mode "voiture" ne distingue jamais thermique/électrique dans les listes de sélection
+(B1.4/B1.7/B2.2 restent "Voiture (seul)"/"Voiture (covoiturage)", jamais 4 entrées) — une
+question de suivi ("Thermique ou électrique ?") s'affiche en nested reveal dès que "voiture"
+est choisi, dans 3 champs indépendants (`commute_car_engine`, `leisure_car_engine`,
+`car_long_trips_engine`). `public.resolve_car_mode(mode_id, engine)` résout vers
+`voiture_thermique`/`voiture_electrique` (facteurs ADEME réels, ~9x d'écart) avant tout
+lookup de facteur/libellé dans `compute_assessment_results` ; moteur non renseigné (bilans
+soumis avant cette migration) retombe sur le générique `voiture`. Voir
+`supabase/migrations/20260904090000_car_engine.sql`.
+
 Deux mécanismes de génération server-side qu'il faut garder synchronisés si on les touche :
 - `generate_plan_cycle_for_user(p_user_id)` (security definer, revoked de anon/authenticated)
   génère le plan de réduction d'un utilisateur. Appelée à la fois par le cron nightly

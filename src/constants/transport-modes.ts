@@ -58,3 +58,10 @@ export const LEISURE_MODE_CHOICES_MORE: CommuteModeChoice[] = [
   { key: 'deux_roues_motorise', modeId: 'deux_roues_motorise', carpool: false, label: 'Deux-roues motorisé' },
   { key: 'trottinette', modeId: 'trottinette', carpool: false, label: 'Trottinette ou mobilité douce' },
 ];
+
+// Question de suivi affichée dès que "voiture" est choisi (B1.4/B1.7/B2.2/B3.4) — jamais
+// une entrée de plus dans les listes ci-dessus, cf. types/bilan.ts CarEngine.
+export const CAR_ENGINE_OPTIONS: { value: 'thermique' | 'electrique'; label: string }[] = [
+  { value: 'thermique', label: 'Thermique' },
+  { value: 'electrique', label: 'Électrique' },
+];

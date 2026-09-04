@@ -22,6 +22,15 @@ type. `assessment_trips`/`assessment_trip_modes` sont donc supprimées au profit
 
 ## 2. `transport_modes` — réaligné sur les 9 modes B1.4/B2.2
 
+> **Mise à jour du 04/09/2026** : le paragraphe ci-dessous ("pas de distinction
+> thermique/électrique pour la voiture") a été révisé — voir
+> `supabase/migrations/20260904090000_car_engine.sql`. Les 9 modes sélectionnables restent
+> inchangés (toujours "Voiture (seul)"/"Voiture (covoiturage)", jamais 4 entrées), mais une
+> question de suivi ("Thermique ou électrique ?") s'affiche désormais dès que "voiture" est
+> choisi, dans les 3 contextes où ce mode peut apparaître (domicile-travail, loisirs,
+> voyages longue distance) — le facteur d'émission diffère d'un facteur ~9 entre les deux
+> (0,1106 vs 0,0121 kgCO2/km), trop pour laisser le bilan aussi imprécis sur ce poste.
+
 La spec liste 9 modes sélectionnables précis, différents du référentiel à 6 catégories
 d'increment 1 (pas de distinction thermique/électrique pour la voiture — seulement
 solo/covoiturage ; vélo et marche désormais séparés ; métro/tram et trottinette ajoutés) :

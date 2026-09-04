@@ -27,6 +27,8 @@ const TARGET_2050_TRANSPORT_T = 0.5;
 // backend `dominant_poste_label`, jamais un texte vide.
 const MODE_PREPOSITION: Partial<Record<string, string>> = {
   voiture: 'en voiture',
+  voiture_thermique: 'en voiture thermique',
+  voiture_electrique: 'en voiture électrique',
   train: 'en train',
   bus: 'en bus',
   metro_tram: 'en métro ou tram',

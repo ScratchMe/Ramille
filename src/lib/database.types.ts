@@ -33,7 +33,9 @@ export type Database = {
       assessment_answers: {
         Row: {
           assessment_id: string
+          car_long_trips_engine: string | null
           car_long_trips_per_year: number
+          commute_car_engine: string | null
           commute_carpool_size: number | null
           commute_days_per_week: number | null
           commute_distance_bracket: string | null
@@ -46,6 +48,7 @@ export type Database = {
           flights_short_per_year: number | null
           flights_total_per_year: number
           household_vehicles: string | null
+          leisure_car_engine: string | null
           leisure_distance_bracket: string | null
           leisure_frequency: string
           leisure_mode: string | null
@@ -56,7 +59,9 @@ export type Database = {
         }
         Insert: {
           assessment_id: string
+          car_long_trips_engine?: string | null
           car_long_trips_per_year?: number
+          commute_car_engine?: string | null
           commute_carpool_size?: number | null
           commute_days_per_week?: number | null
           commute_distance_bracket?: string | null
@@ -69,6 +74,7 @@ export type Database = {
           flights_short_per_year?: number | null
           flights_total_per_year?: number
           household_vehicles?: string | null
+          leisure_car_engine?: string | null
           leisure_distance_bracket?: string | null
           leisure_frequency: string
           leisure_mode?: string | null
@@ -79,7 +85,9 @@ export type Database = {
         }
         Update: {
           assessment_id?: string
+          car_long_trips_engine?: string | null
           car_long_trips_per_year?: number
+          commute_car_engine?: string | null
           commute_carpool_size?: number | null
           commute_days_per_week?: number | null
           commute_distance_bracket?: string | null
@@ -92,6 +100,7 @@ export type Database = {
           flights_short_per_year?: number | null
           flights_total_per_year?: number
           household_vehicles?: string | null
+          leisure_car_engine?: string | null
           leisure_distance_bracket?: string | null
           leisure_frequency?: string
           leisure_mode?: string | null
@@ -456,6 +465,10 @@ export type Database = {
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
       purge_stale_anonymous_accounts: { Args: never; Returns: undefined }
+      resolve_car_mode: {
+        Args: { p_engine: string; p_mode_id: string }
+        Returns: string
+      }
       rolling_quarter_bounds: {
         Args: { anchor: string; d: string }
         Returns: {

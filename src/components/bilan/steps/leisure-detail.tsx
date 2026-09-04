@@ -4,8 +4,13 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Chip } from '@/components/bilan/chip';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { LEISURE_MODE_CHOICES_MORE, LEISURE_MODE_CHOICES_PRIMARY } from '@/constants/transport-modes';
+import {
+  CAR_ENGINE_OPTIONS,
+  LEISURE_MODE_CHOICES_MORE,
+  LEISURE_MODE_CHOICES_PRIMARY,
+} from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
 import type { BilanAnswers, LeisureDistanceBracket } from '@/types/bilan';
 
@@ -53,7 +58,10 @@ export function LeisureDetailStep({
               selected={selectedKey === choice.key}
               onPress={() => {
                 setSelectedKey(choice.key);
-                update({ leisure_mode: choice.modeId });
+                update({
+                  leisure_mode: choice.modeId,
+                  leisure_car_engine: choice.modeId === 'voiture' ? answers.leisure_car_engine : null,
+                });
               }}
             />
           ))}
@@ -63,6 +71,27 @@ export function LeisureDetailStep({
             </Pressable>
           )}
         </View>
+
+        {answers.leisure_mode === 'voiture' && (
+          <ThemedView type="backgroundElement" style={styles.nestedBox}>
+            <ThemedText type="small" themeColor="textTertiary">
+              Thermique ou électrique ?
+            </ThemedText>
+            <View style={styles.row}>
+              {CAR_ENGINE_OPTIONS.map((option) => (
+                <Chip
+                  key={option.value}
+                  label={option.label}
+                  selected={answers.leisure_car_engine === option.value}
+                  onPress={() => update({ leisure_car_engine: option.value })}
+                  flex
+                  radius={16}
+                  selectedStyle="outline"
+                />
+              ))}
+            </View>
+          </ThemedView>
+        )}
       </View>
 
       <View style={[styles.separator, { backgroundColor: theme.border }]} />
@@ -94,4 +123,6 @@ const styles = StyleSheet.create({
   list: { gap: Spacing.two },
   separator: { height: 1 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two, marginTop: Spacing.two },
+  row: { flexDirection: 'row', gap: Spacing.two },
 });
