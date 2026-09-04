@@ -13,6 +13,12 @@
 // (retrait complet de @vercel/og → déploiement réussi ; JSX vs createElement sans JSX,
 // testés tous les deux, n'y changeait rien). Les fonctions Node.js n'ont pas cette limite.
 //
+// @vercel/og épinglé en 0.8.6 (pas la dernière, 1.0.2) : l'entrée Node.js (`dist/index.node.js`)
+// des versions 0.9+/1.x plante systématiquement au premier appel (`Dynamic require of "fs" is
+// not supported`, dans le loader WASM de harfbuzzjs) — reproduit aussi bien en local que sur le
+// déploiement Vercel réel (FUNCTION_INVOCATION_FAILED). 0.8.6, antérieure à cette dépendance,
+// fonctionne (vérifié en local avec le rendu réel de cette carte avant de figer la version).
+//
 // Écrit sans JSX (`React.createElement` via l'alias `h`) : en zero-config (pas de framework
 // Next.js pour fournir la transformation JSX au build), une syntaxe JSX n'est pas garantie
 // d'être transpilée par le bundler de Vercel — `createElement` est du JS pur.
@@ -90,7 +96,10 @@ export default function handler(request: Request) {
       h(
         'div',
         { style: { display: 'flex', fontSize: 104, fontWeight: 700, color: INK, marginTop: 12 } },
-        `${total} t CO₂e / an`
+        // "CO2e" en chiffre normal, pas "CO₂e" (indice unicode ₂) : la police par défaut de
+        // Satori/@vercel/og n'a pas ce glyphe et l'affiche en tofu — vérifié visuellement sur
+        // un rendu réel avant ce correctif. Le reste de l'app (hors carte image) garde ₂.
+        `${total} t CO2e / an`
       ),
       poste
         ? h('div', { style: { display: 'flex', fontSize: 34, color: TEXT_SECONDARY, marginTop: 20 } }, poste)
