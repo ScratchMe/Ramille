@@ -102,6 +102,25 @@ export default function ConnexionProposition() {
               Ton résultat reste accessible sur cet appareil.
             </ThemedText>
           </View>
+
+          {/* Les deux pages légales sont accessibles là où quelqu'un s'apprête à créer un
+              compte — c'est le moment où elles l'engagent. Leurs URL publiques sont aussi
+              exigées par l'écran de consentement Google OAuth et par la fiche Play Store. */}
+          <View style={styles.legal}>
+            <Pressable onPress={() => router.push('/confidentialite')}>
+              <ThemedText type="code" themeColor="textTertiary">
+                Confidentialité
+              </ThemedText>
+            </Pressable>
+            <ThemedText type="code" themeColor="textTertiary">
+              ·
+            </ThemedText>
+            <Pressable onPress={() => router.push('/conditions')}>
+              <ThemedText type="code" themeColor="textTertiary">
+                Conditions d’utilisation
+              </ThemedText>
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
     </ThemedView>
@@ -122,4 +141,5 @@ const styles = StyleSheet.create({
   emailLink: { textAlign: 'center' },
   skip: { marginTop: Spacing.two, alignItems: 'center', gap: 10 },
   skipHint: { textAlign: 'center' },
+  legal: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: Spacing.two },
 });

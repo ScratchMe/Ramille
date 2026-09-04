@@ -306,6 +306,73 @@ Au passage : `FRANCE_AVERAGE_TRANSPORT_T = 2.9` et `TARGET_2050_TRANSPORT_T = 0.
 les deux repères sur lesquels repose tout le message de la restitution : à sourcer avant mise
 en production.
 
+**Fait le 04/09/2026** (décision produit : « ça ne peut pas rester comme ça »). Tous les
+repères chiffrés vivent désormais dans `src/constants/carbon-reference.ts`, chacun avec sa
+source, et les deux écrans qui les affichaient en dur (`onboarding/contexte.tsx`,
+`bilan/resultat.tsx`) les importent :
+
+| Repère | Avant | Après | Source |
+|---|---|---|---|
+| Moyenne française, tous postes | 10 t | **9,5 t** | SDES, décomposition par postes, données 2017 (publication 26/07/2022) |
+| Objectif 2050, tous postes | 2 t | 2 t (confirmé) | ADEME, `impactco2.fr/outils/caspratiques/2050` |
+| Décomposition par poste | 2,9 / 2,4 / 2,2 / 2,5 t | **2,8 / 2,2 / 2,1 / 1,5 / 0,9 t** | SDES, idem |
+| Moyenne transport | 2,9 t | **2,8 t** | SDES, idem |
+| Repère transport 2050 | 0,5 t | **0,6 t** | *dérivé, voir ci-dessous* |
+
+#### Arbitrage de source : pourquoi pas la moyenne affichée par Impact CO2
+
+Une première version de ce travail retenait **9,3 t** pour la moyenne (page ADEME « objectif
+citoyen 2050 ») tout en prenant **2,8 t** pour le poste transport (SDES) : deux sources
+mélangées, donc un total qui ne correspondait pas à la somme de ses propres postes. Incohérence
+relevée en revue le 04/09/2026 et corrigée.
+
+Il circule au moins quatre chiffres officiels pour « l'empreinte carbone moyenne d'un
+Français », dont **deux sur le site de l'ADEME lui-même** :
+
+| Source | Valeur | Ce qu'elle publie |
+|---|---|---|
+| `impactco2.fr/outils/caspratiques/francais` (ADEME, via Nos Gestes Climat) | 9,1 t | la moyenne seule |
+| `impactco2.fr/outils/caspratiques/2050` (ADEME, même outil) | 9,3 t | la moyenne seule |
+| SDES, décomposition par postes (données 2017) | **9,5 t** | la moyenne **et ses 5 postes** |
+| SDES, série empreinte carbone | 9,4 t (2023), 8,2 t (2024) | la moyenne seule |
+
+**On ne tranche pas entre 9,1 et 9,3 — on cesse de citer cette moyenne-là.** Le SDES est la
+seule publication qui donne à la fois un total et sa ventilation par poste de vie ; en le
+prenant comme source unique, le total affiché sur la restitution *est* la somme des postes
+affichés sur l'onboarding, par construction. Un test épingle cet invariant
+(`carbon-reference.test.ts`), pour qu'un futur « on remet 9,3, c'est plus récent » rouvre le
+débat plutôt que l'incohérence.
+
+Contrepartie assumée : les données du SDES sont celles de **2017**, alors que la série
+statistique donne 8,2 t pour 2024. Deux raisons de vivre avec :
+
+1. aucune publication postérieure ne redonne la ventilation par poste — anchor le total sur
+   2024 obligerait à *dériver* les cinq postes, donc à afficher des chiffres qui ne figurent
+   dans aucune publication, ce qui est pire pour la crédibilité ;
+2. les **parts** (30 % transport, 23 % habitat…) sont bien plus stables d'une année sur
+   l'autre que le total, et c'est la part qui porte le message de l'onboarding.
+
+L'écran dit donc « 9,5 tonnes **en moyenne** » et non « aujourd'hui », et l'étiquette de source
+affichée sous les barres précise l'année. À revoir si le SDES republie une décomposition.
+
+Deux autres points à connaître :
+
+- **La spec §4 annonçait « ~10 t »**, la valeur publiée est 9,5 t. L'écart vient de ce que la
+  spec donnait un ordre de grandeur arrondi, ce que le handoff design signalait déjà. Le
+  contenu factuel obligatoire de la spec (moyenne actuelle, cible 2050, transport premier
+  poste) reste intégralement respecté.
+- **Le repère transport 2050 est une dérivation, pas une cible officielle.** Aucune source
+  publique ne donne d'objectif 2050 par poste d'empreinte individuelle : la SNBC raisonne par
+  secteur d'activité, pas par poste de consommation. On applique donc à la cible de 2 t la
+  part que le transport représente aujourd'hui (29,5 %), ce qui suppose que tous les postes
+  baissent dans les mêmes proportions. C'est une hypothèse, et c'est pour cela que l'écran dit
+  désormais « Repère transport 2050 » et non « Part transport compatible 2050 ». La cible de
+  2 t est le seul chiffre non-SDES du module — c'est un objectif normatif, pas une mesure
+  concurrente, donc il ne peut pas contredire le total.
+
+La source est désormais **affichée à l'écran** sous les graphiques concernés. Sur un produit
+qui vise un registre institutionnel, un chiffre sans source n'engage personne.
+
 ### 3.5 Deux points de ton
 
 - « **Tu es à 150 % de la moyenne française** » (`bilan/resultat.tsx:180`) est un jugement

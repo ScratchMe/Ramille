@@ -1,0 +1,232 @@
+import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
+
+// Politique de confidentialité — URL exigée par l'écran de consentement Google OAuth et par
+// la fiche Google Play.
+//
+// Règle de rédaction : **ne décrire que ce que le produit fait réellement**. Chaque
+// affirmation ci-dessous est vérifiable dans le code ou le schéma :
+//   - session anonyme dès l'ouverture -> `ensureSession()` (src/lib/supabase.ts), v1-04 §1 ;
+//   - champs collectés -> colonnes de `assessment_answers` (v1-05 §3) ;
+//   - rappels par email -> `notification_outbox` + opt-out `profiles.email_reminders_enabled` ;
+//   - purge à 90 jours -> `purge_stale_anonymous_accounts()`, cron quotidien ;
+//   - aucune géolocalisation -> non-goal explicite de la spec §2 ;
+//   - carte de partage sans lecture serveur -> v1-06 §2.
+//
+// Les mentions entre crochets sont des informations d'éditeur que seul le responsable de
+// traitement peut fournir : elles doivent être remplies avant toute mise en production.
+// Un texte qui promettrait un mécanisme inexistant serait pire que pas de texte du tout.
+
+const UPDATED_AT = '4 septembre 2026';
+
+const SECTIONS: LegalSection[] = [
+  {
+    heading: 'Qui est responsable de tes données',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          'TraceVerte est édité par [À COMPLÉTER : nom de l’éditeur, statut juridique, adresse]. ' +
+          'Pour toute question sur tes données, ou pour exercer les droits décrits plus bas, écris à ' +
+          '[À COMPLÉTER : adresse email de contact].',
+      },
+    ],
+  },
+  {
+    heading: 'Ce que nous collectons, et pourquoi',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          'TraceVerte estime l’empreinte carbone de tes déplacements à partir de ce que tu déclares. ' +
+          'Nous ne collectons rien d’autre que ce qui sert à produire ce résultat et à te le restituer dans le temps.',
+      },
+      {
+        kind: 'definitions',
+        items: [
+          {
+            term: 'Tes réponses au bilan',
+            text:
+              'Existence d’un trajet domicile-travail régulier, nombre de jours par semaine, distance, mode ou modes de transport, ' +
+              'type de motorisation, covoiturage et nombre de personnes, fréquence et distance de tes trajets loisirs, ' +
+              'nombre de vols, de trajets longue distance en train et en voiture par an, type de zone d’habitation, ' +
+              'accès perçu aux transports en commun, nombre de véhicules du foyer.',
+          },
+          {
+            term: 'Les résultats calculés',
+            text:
+              'Le total annuel estimé, sa répartition par poste, le poste qui pèse le plus, et le plan de réduction associé. ' +
+              'Ces résultats sont figés au moment du calcul pour rester comparables dans le temps.',
+          },
+          {
+            term: 'Tes réponses aux points de suivi',
+            text: 'Une réponse par oui ou par non à la question périodique, et sa date.',
+          },
+          {
+            term: 'Ton compte, si tu en crées un',
+            text:
+              'Ton adresse email. Si tu passes par Google, nous recevons l’adresse email et l’identifiant du compte Google, ' +
+              'rien de plus — ni tes contacts, ni ton agenda, ni aucune autre donnée Google.',
+          },
+        ],
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'La base légale est l’exécution du service que tu demandes. Pour les rappels par email, c’est notre intérêt légitime ' +
+          'à maintenir le suivi que tu as commencé — tu peux les désactiver à tout moment depuis ton suivi.',
+      },
+    ],
+  },
+  {
+    heading: 'Ce que nous ne collectons pas',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: 'Cette liste n’est pas une intention, c’est une description du produit tel qu’il est construit.',
+      },
+      {
+        kind: 'bullets',
+        items: [
+          'Aucune géolocalisation, aucun suivi automatique de tes déplacements. Le produit repose sur ce que tu déclares, parce que la prise de conscience passe par le moment où tu choisis, pas par une mesure passive.',
+          'Aucun traceur publicitaire, aucun cookie de mesure d’audience tierce.',
+          'Aucune revente, location ou cession de tes données à qui que ce soit.',
+          'Aucune comparaison entre utilisateurs. Ton bilan n’est jamais rapproché de celui de quelqu’un d’autre, ni classé.',
+        ],
+      },
+    ],
+  },
+  {
+    heading: 'Avant même que tu crées un compte',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          'Dès l’ouverture de l’application, une session anonyme est créée pour que ton bilan puisse être enregistré et te ' +
+          'revenir si tu fermes puis rouvres l’app. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
+          'numéro de téléphone.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'Si tu ne rattaches jamais cette session à un compte, elle et toutes les données associées sont supprimées ' +
+          'automatiquement après 90 jours. Si tu crées un compte, ton bilan déjà effectué reste attaché à toi : rien n’est ' +
+          'à ressaisir.',
+      },
+    ],
+  },
+  {
+    heading: 'Où sont tes données, et qui les traite pour nous',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          'Tes données sont hébergées dans l’Union européenne. Nous faisons appel aux prestataires suivants, chacun pour ' +
+          'une fonction précise :',
+      },
+      {
+        kind: 'definitions',
+        items: [
+          {
+            term: 'Supabase',
+            text: 'Base de données, authentification et hébergement des données applicatives. Serveurs situés à Paris (région eu-west-3).',
+          },
+          { term: 'Vercel', text: 'Hébergement de la version web de l’application.' },
+          { term: 'Resend', text: 'Envoi des emails de rappel, uniquement si tu les as laissés activés.' },
+          {
+            term: 'Google',
+            text: 'Uniquement si tu choisis de te connecter avec un compte Google, pour vérifier ton identité.',
+          },
+        ],
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'L’accès à tes données est cloisonné au niveau de la base : les règles de sécurité n’autorisent la lecture et ' +
+          'l’écriture de tes lignes qu’à toi. Aucun autre utilisateur ne peut y accéder.',
+      },
+    ],
+  },
+  {
+    heading: 'Combien de temps nous les gardons',
+    blocks: [
+      {
+        kind: 'bullets',
+        items: [
+          'Session anonyme jamais rattachée à un compte : supprimée automatiquement 90 jours après sa création.',
+          'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
+          'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi et plans est supprimé.',
+        ],
+      },
+    ],
+  },
+  {
+    heading: 'Cookies et stockage local',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          'TraceVerte n’utilise aucun cookie publicitaire ni aucun outil de mesure d’audience tierce. Le stockage utilisé ' +
+          'sur ton appareil est strictement nécessaire au fonctionnement : il conserve ta session, le brouillon du ' +
+          'questionnaire en cours, et quelques préférences d’affichage. C’est la raison pour laquelle aucune bannière de ' +
+          'consentement ne t’est présentée : il n’y a rien à consentir.',
+      },
+    ],
+  },
+  {
+    heading: 'Tes droits',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          'Conformément au RGPD, tu disposes d’un droit d’accès, de rectification, d’effacement, de portabilité, ' +
+          'de limitation et d’opposition sur tes données. Tu peux les exercer en écrivant à ' +
+          '[À COMPLÉTER : adresse email de contact]. Nous répondons dans un délai d’un mois.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'Tu peux désactiver les rappels par email à tout moment depuis l’écran « Mon suivi », sans avoir à nous écrire.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'Si tu estimes que tes droits ne sont pas respectés, tu peux introduire une réclamation auprès de la CNIL ' +
+          '(Commission nationale de l’informatique et des libertés), 3 place de Fontenoy, 75007 Paris, ou sur cnil.fr.',
+      },
+    ],
+  },
+  {
+    heading: 'Les chiffres que nous affichons',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          'Les facteurs d’émission utilisés proviennent de la Base Empreinte de l’ADEME, consultée via l’API publique ' +
+          'Impact CO2. Ton bilan est une estimation déclarative, pas une mesure : il sert à faire apparaître des ordres ' +
+          'de grandeur et le poste sur lequel tu as le plus de prise, pas à produire un chiffre exact.',
+      },
+    ],
+  },
+  {
+    heading: 'Évolutions de ce document',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text:
+          'Si cette politique change de manière significative, nous t’en informerons dans l’application avant que le ' +
+          'changement prenne effet. La date de dernière mise à jour figure en haut de cette page.',
+      },
+    ],
+  },
+];
+
+export default function Confidentialite() {
+  return (
+    <LegalPage
+      title="Politique de confidentialité"
+      updatedAt={UPDATED_AT}
+      intro="TraceVerte collecte le strict nécessaire pour estimer l’empreinte carbone de tes déplacements et t’accompagner dans la durée. Cette page dit précisément quoi, pourquoi, pendant combien de temps, et ce que tu peux exiger."
+      sections={SECTIONS}
+    />
+  );
+}

@@ -10,17 +10,18 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { APP_URL } from '@/lib/app-url';
+import {
+  CARBON_SOURCE_LABEL,
+  FRANCE_AVERAGE_TRANSPORT_T,
+  TARGET_2050_TRANSPORT_T,
+  formatTonnesShort,
+} from '@/constants/carbon-reference';
 import { formatTonnes } from '@/lib/format';
 import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
 import type { Database } from '@/lib/database.types';
 
 type AssessmentResults = Database['public']['Tables']['assessment_results']['Row'];
 
-// Placeholders — mêmes valeurs que docs/architecture (et onboarding/contexte.tsx pour la
-// moyenne transport), à confirmer sur la Base Carbone ADEME. Pas encore une source
-// dédiée par utilisateur (zone, profil) : un seul repère national pour tous en V1.
-const FRANCE_AVERAGE_TRANSPORT_T = 2.9;
-const TARGET_2050_TRANSPORT_T = 0.5;
 
 // "Tes voyages" seul ne dit pas de quoi il s'agit — on précise toujours le mode réel
 // (`dominant_poste_mode`, déjà en base) plutôt que le seul nom du poste. Table tenue à jour
@@ -93,7 +94,7 @@ function comparisonNote(totalT: number): string {
   if (totalT <= FRANCE_AVERAGE_TRANSPORT_T) {
     return 'Tu es en dessous de la moyenne française. Il reste du chemin jusqu’à 2050, comme pour tout le monde.';
   }
-  return `La moyenne française est de ${FRANCE_AVERAGE_TRANSPORT_T.toFixed(1).replace('.', ',')} t. L’essentiel se joue sur un seul poste, celui du haut.`;
+  return `La moyenne française est de ${formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}. L’essentiel se joue sur un seul poste, celui du haut.`;
 }
 
 type LoadState =
@@ -274,22 +275,25 @@ export default function BilanResultat() {
               Où tu te situes
             </ThemedText>
             <View style={styles.bars}>
-              <CompareRow label="Toi" value={`${totalT.toFixed(1).replace('.', ',')} t`} percent={barPercent(totalT)} bold accentColor={theme.accent} />
+              <CompareRow label="Toi" value={formatTonnesShort(totalT)} percent={barPercent(totalT)} bold accentColor={theme.accent} />
               <CompareRow
                 label="Moyenne en France"
-                value={`${FRANCE_AVERAGE_TRANSPORT_T.toFixed(1).replace('.', ',')} t`}
+                value={formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}
                 percent={barPercent(FRANCE_AVERAGE_TRANSPORT_T)}
                 accentColor={theme.accentMuted}
               />
               <CompareRow
-                label="Part transport compatible 2050"
-                value={`${TARGET_2050_TRANSPORT_T.toFixed(1).replace('.', ',')} t`}
+                label="Repère transport 2050"
+                value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}
                 percent={barPercent(TARGET_2050_TRANSPORT_T)}
                 accentColor={theme.accentMuted}
               />
             </View>
             <ThemedText type="small" themeColor="textSecondary">
               {comparisonNote(totalT)}
+            </ThemedText>
+            <ThemedText type="code" themeColor="textTertiary">
+              {CARBON_SOURCE_LABEL}
             </ThemedText>
           </ThemedView>
         </ScrollView>
