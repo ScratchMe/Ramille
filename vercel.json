@@ -4,7 +4,8 @@
   "outputDirectory": "dist",
   "functions": {
     "api/share-card.ts": {
-      "includeFiles": "node_modules/harfbuzzjs/hb.wasm"
+      "includeFiles": "node_modules/harfbuzzjs/hb.wasm",
+      "maxDuration": 30
     }
   }
 }
