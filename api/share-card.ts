@@ -23,6 +23,17 @@
 // du repo ne fait pas (Expo/Metro suppose CommonJS). D'où api/package.json (`{"type": "module"}`),
 // qui ne s'applique qu'au dossier api/ sans toucher au reste du repo.
 //
+// Une fois ce fichier chargé, un second problème apparaissait (toujours confirmé via les vrais
+// logs runtime) : `harfbuzzjs` (dépendance directe de `satori`, utilisée pour le rendu du texte)
+// charge son binaire `hb.wasm` via un mécanisme interne à `node_modules/harfbuzzjs/hb.js` non
+// détecté par le tracing de fichiers de la Function Node.js (@vercel/nft) — contrairement au
+// binaire de `@resvg/resvg-wasm` ci-dessous, chargé nous-mêmes via un `fs.readFileSync` littéral,
+// `hb.wasm` finissait absent du bundle déployé (`ENOENT: .../node_modules/harfbuzzjs/hb.wasm`).
+// Satori n'expose pas de point d'injection pour ce binaire (son export `init()` est un no-op
+// dans cette version) — corrigé côté `vercel.json` (`functions["api/share-card.ts"].includeFiles`),
+// l'option documentée par Vercel pour forcer l'inclusion d'un fichier que le tracing automatique
+// rate.
+//
 // La police et le binaire WASM de resvg sont chargés nous-mêmes via `fs.readFileSync` sur un
 // chemin littéral (`path.join(process.cwd(), ...)`) — le pattern documenté par Vercel pour
 // garantir qu'un asset est bien tracé et inclus dans le bundle d'une Function Node.js (cf.
