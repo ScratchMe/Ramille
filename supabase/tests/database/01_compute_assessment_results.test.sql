@@ -79,9 +79,11 @@ select is(
 
 -- Libellés par poste (increment 11, boucles hebdo/mensuelle) : persistés indépendamment de
 -- la décision dominante globale, cf. migration 20260827090000_engagement_checkins.sql.
+-- Libellés précis ("Loisirs du week-end"/"Voyages longue distance", pas juste "Trajets
+-- loisirs"/"Voyages") depuis 20260903120000_precise_poste_labels.sql.
 select results_eq(
   $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '21111111-1111-1111-1111-111111111111' $$,
-  $$ values ('Trajet domicile-travail (Voiture)'::text, 'Trajets loisirs (Voiture)'::text) $$,
+  $$ values ('Trajet domicile-travail (Voiture)'::text, 'Loisirs du week-end (Voiture)'::text) $$,
   'scénario 1 : libellés commute/extras persistés indépendamment du poste dominant'
 );
 
@@ -125,13 +127,13 @@ select public.compute_assessment_results('23333333-3333-3333-3333-333333333333')
 
 select results_eq(
   $$ select commute_co2_kg_year, dominant_poste, dominant_poste_mode, dominant_poste_label from public.assessment_results where assessment_id = '23333333-3333-3333-3333-333333333333' $$,
-  $$ values (0::numeric, 'travel'::text, 'voiture'::text, 'Voyages (Voiture)'::text) $$,
+  $$ values (0::numeric, 'travel'::text, 'voiture'::text, 'Voyages longue distance (Voiture)'::text) $$,
   'scénario 3 : sans trajet domicile-travail, 5 longs trajets voiture/an dominent'
 );
 
 select results_eq(
   $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '23333333-3333-3333-3333-333333333333' $$,
-  $$ values (null::text, 'Voyages (Voiture)'::text) $$,
+  $$ values (null::text, 'Voyages longue distance (Voiture)'::text) $$,
   'scénario 3 : pas de trajet domicile-travail -> commute_poste_label reste null ; extras = voyages (dominant du duo loisirs/voyages)'
 );
 
@@ -154,7 +156,7 @@ select is(
 
 select results_eq(
   $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '24444444-4444-4444-4444-444444444444' $$,
-  $$ values (null::text, 'Trajets loisirs (Bus)'::text) $$,
+  $$ values (null::text, 'Loisirs du week-end (Bus)'::text) $$,
   'scénario 4 : loisirs dominants -> extras_poste_label reflète loisirs même sans voyages concurrents'
 );
 
