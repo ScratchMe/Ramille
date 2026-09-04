@@ -162,6 +162,12 @@ select cmp_ok(
 -- Sans cette borne, la première synchronisation ADEME ferait dériver silencieusement tous
 -- les bilans passés au moindre recalcul (v1-01 §3 promet l'inverse).
 
+-- Les scénarios ci-dessus tournent sous le rôle `authenticated` : `emission_factors` est un
+-- référentiel en lecture seule pour lui (aucune policy d'insertion, l'écriture est réservée
+-- au serveur). On repasse donc au rôle par défaut avant de manipuler le référentiel — même
+-- pattern que 03_rls_policies.test.sql.
+reset role;
+
 insert into public.emission_factors (transport_mode_id, kg_co2_per_km, source, source_ref, valid_from)
 values ('voiture', 0.9999, 'test', 'pgtap', current_date + 1);
 
