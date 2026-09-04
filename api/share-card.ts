@@ -106,7 +106,10 @@ function formatTonnes(raw: string | null): string {
 export default async function handler(request: Request): Promise<Response> {
   await ensureWasm();
 
-  const { searchParams } = new URL(request.url);
+  // Base factice : contrairement au runtime Edge, `request.url` en Function Node.js est un
+  // chemin relatif (path + query, sans protocole/host) — seuls les searchParams nous
+  // intéressent ici, la base n'est jamais utilisée pour construire une URL de sortie.
+  const { searchParams } = new URL(request.url, 'http://localhost');
   const total = formatTonnes(searchParams.get('total'));
   const poste = (searchParams.get('poste') ?? '').slice(0, 120);
 
