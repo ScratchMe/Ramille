@@ -8,20 +8,23 @@
 //
 // Satori (mise en page + rendu SVG) + @resvg/resvg-wasm (rasterisation SVG → PNG) en direct,
 // plutôt que le paquet @vercel/og qui les enveloppe habituellement — celui-ci s'est révélé
-// inutilisable ici après une longue séance de diagnostic sur de vrais déploiements preview :
-//   - runtime Edge : le bundle de @vercel/og (Satori + resvg.wasm + yoga.wasm + police par
-//     défaut, ~2,4 Mo non compressés) dépasse la limite de taille des Edge Functions du plan
-//     Hobby de ce projet (confirmé par bisection : sans @vercel/og, le déploiement passe).
-//   - runtime Node.js : @vercel/og 1.0.2 plante au premier appel (FUNCTION_INVOCATION_FAILED
-//     réel sur Vercel ; reproduit en local — "Dynamic require of \"fs\" is not supported" dans
-//     le loader WASM de harfbuzzjs). La version 0.8.6 (antérieure à cette dépendance) fonctionne
-//     en local mais plante malgré tout sur le vrai déploiement Vercel (FUNCTION_INVOCATION_FAILED
-//     confirmé sur un déploiement frais, cache MISS) — cause la plus probable : le tracing de
-//     fichiers de la Function Node.js (@vercel/nft) ne détecte pas les assets WASM/police que
-//     @vercel/og charge en interne via un mécanisme non statiquement analysable.
+// inutilisable en runtime Edge (le bundle de @vercel/og, Satori + resvg.wasm + yoga.wasm +
+// police par défaut, ~2,4 Mo non compressés, dépasse la limite de taille des Edge Functions du
+// plan Hobby de ce projet — confirmé par bisection : sans @vercel/og, le déploiement Edge
+// passe).
 //
-// Ici, la police et le binaire WASM de resvg sont chargés nous-mêmes via `fs.readFileSync` sur
-// un chemin littéral (`path.join(process.cwd(), ...)`) — le pattern documenté par Vercel pour
+// La vraie cause des échecs en runtime Node.js (aussi bien avec @vercel/og qu'avec une première
+// version de ce fichier écrite en satori+resvg-wasm) n'était ni @vercel/og ni ces deux libs :
+// FUNCTION_INVOCATION_FAILED sans détail exploitable côté client, confirmée par les logs runtime
+// réels (`vercel logs`, accessibles seulement après avoir obtenu un token Vercel) — "Cannot use
+// import statement outside a module" sur le fichier compilé. Vercel compile api/*.ts en ESM
+// (cf. api/tsconfig.json, `module: ESNext`) mais Node charge un `.js` comme CommonJS par défaut
+// tant que le `package.json` le plus proche ne déclare pas `"type": "module"` — ce que la racine
+// du repo ne fait pas (Expo/Metro suppose CommonJS). D'où api/package.json (`{"type": "module"}`),
+// qui ne s'applique qu'au dossier api/ sans toucher au reste du repo.
+//
+// La police et le binaire WASM de resvg sont chargés nous-mêmes via `fs.readFileSync` sur un
+// chemin littéral (`path.join(process.cwd(), ...)`) — le pattern documenté par Vercel pour
 // garantir qu'un asset est bien tracé et inclus dans le bundle d'une Function Node.js (cf.
 // "Load Local Image with Node.js fs.readFile" / exemple WASM, vercel.com/docs/og-image-generation
 // et vercel.com/docs/functions/runtimes/wasm). Police : Spline Sans (SemiBold/Bold), déjà celle
