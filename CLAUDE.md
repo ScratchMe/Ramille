@@ -53,12 +53,15 @@ Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull requ
 (Postgres + Auth + RLS) · Vercel (déploiement web, build via `vercel-build` →
 `expo export --platform web` → `dist/`) · EAS (build/publish Android uniquement).
 
-**`api/`** : Vercel Edge Functions, détectées automatiquement par la plateforme (dossier
-`/api` à la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de
-route Expo Router. Tsconfig dédié (`api/tsconfig.json`, exclu du tsconfig racine) : ce
-contexte tourne dans le runtime Edge (Web Fetch API), pas dans React Native. Utilisé pour
-`api/partage.ts`/`api/share-card.tsx` (carte de bilan partageable, cf. `bilan/resultat.tsx`
-"Partager mon bilan") — voir leurs commentaires d'en-tête pour le détail.
+**`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
+la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de route Expo
+Router. Tsconfig dédié (`api/tsconfig.json`, exclu du tsconfig racine, `types: ["node"]`) : ce
+contexte tourne en Web Fetch API (Request/Response), pas dans React Native ; `api/partage.ts`
+en runtime Edge, `api/share-card.ts` en runtime Node.js (accès `fs`/`process.cwd()` — voir
+pourquoi dans son commentaire d'en-tête, ça n'est pas un choix par défaut). Utilisé pour
+`api/partage.ts`/`api/share-card.ts` (carte de bilan partageable, cf. `bilan/resultat.tsx`
+"Partager mon bilan" — rendu via `satori`/`@resvg/resvg-wasm` en direct, pas `@vercel/og`) —
+voir leurs commentaires d'en-tête pour le détail.
 
 **Routing** : `src/app/` (Expo Router, file-based). Flux : `/` → `/onboarding/*` →
 `/bilan` (questionnaire) → `/bilan/resultat` (restitution) → `/plan` (plan de réduction),
