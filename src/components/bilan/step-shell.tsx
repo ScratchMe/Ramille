@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProgressHeader } from '@/components/bilan/progress-header';
 import { Button } from '@/components/button';
+import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
@@ -19,6 +20,7 @@ export function StepShell({
   onNext,
   nextLabel = 'Suivant',
   nextDisabled,
+  notice,
 }: {
   section: string;
   step: number;
@@ -28,12 +30,21 @@ export function StepShell({
   onNext: () => void;
   nextLabel?: string;
   nextDisabled?: boolean;
+  /** Bandeau discret sous l'en-tête (ex. « réponses pré-remplies » lors d'un re-bilan). */
+  notice?: string;
 }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.headerBlock}>
           <ProgressHeader section={section} step={step} total={total} />
+          {notice && (
+            <ThemedView type="backgroundSelected" style={styles.notice}>
+              <ThemedText type="small" themeColor="accentText">
+                {notice}
+              </ThemedText>
+            </ThemedView>
+          )}
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {children}
@@ -50,7 +61,8 @@ export function StepShell({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  headerBlock: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
+  headerBlock: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
+  notice: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: Spacing.three },
   scrollContent: { padding: Spacing.four, gap: Spacing.five, flexGrow: 1 },
   footer: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center', padding: Spacing.four },
 });

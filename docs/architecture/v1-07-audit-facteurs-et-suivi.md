@@ -216,6 +216,29 @@ Corollaire : **proposer un re-bilan périodique (~6 mois), prérempli**. « Ton 
 passée de 3,1 à 2,7 t » est le moment de renforcement le plus fort que ce produit puisse
 offrir, et il est aujourd'hui inatteignable (T7).
 
+**Construit à l'étape 4.** L'écran `/suivi` montre l'évolution de l'empreinte bilan après
+bilan, l'écart avec le précédent, et les check-ins auxquels la personne a répondu. Deux règles
+de fond y sont tenues :
+
+- **Aucune mécanique d'échec.** Pas de streak, pas de série cassée, pas de score. Une période
+  sans réponse n'apparaît pas comme un manquement — elle n'apparaît pas du tout (les check-ins
+  non répondus sont clos en `expired` par l'étape 3 et jamais relus ici). Ce qui est compté,
+  ce sont les fois où la personne a répondu, pas celles où elle a laissé passer. La révision du
+  04/09/2026 (`v1-06` §1) rouvre les mécaniques de progression **non comparatives** ; elle ne
+  rouvre pas les mécaniques punitives.
+- **Une hausse n'est jamais une faute.** `variationNote()` dit le fait et ajoute « une année
+  n'est pas l'autre » : un bilan qui monte peut venir d'un déménagement, d'un changement de
+  travail ou d'un voyage familial.
+
+Le questionnaire se préremplit désormais depuis le dernier bilan complété (priorité :
+brouillon local > dernier bilan > vide), avec un bandeau qui le dit. Au passage, « Modifier
+mes réponses » devient « Refaire mon bilan » : le libellé promettait une édition alors que le
+questionnaire insère toujours un nouveau bilan. L'historique ne garde qu'un point par jour —
+corriger une réponse juste après avoir soumis créait sinon deux barres à la même date, ce qui
+se lit comme un bug plutôt que comme une correction.
+
+Le check-in quantitatif (§3.6) reste à instruire : il n'est pas dans cette étape.
+
 ### 3.3 Le plan de réduction est décoratif
 
 Trois manques, par ordre d'impact :
@@ -273,7 +296,7 @@ la boucle existante, ensuite seulement construire ce qui manque.
 | 1 | Facteurs avion long-courrier et train longue distance | T1, T2, T4, T13 | **fait** — migration `20260904140000` |
 | 2 | Synchronisation ADEME automatisée | T3, #27 | **fait** — migration `20260904160000` |
 | 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | **fait** — migration `20260904180000` |
-| 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2, §3.6 | à faire |
+| 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2 | **fait** — `src/app/suivi.tsx`, `src/types/suivi.ts` |
 | 5 | Canal de rappel email | §3.1 | à faire |
 | 6 | Actions chiffrées et sélectionnables + exploitation du contexte B4 | T9, T10, §3.3 | à faire |
 | 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | à faire |
@@ -307,12 +330,16 @@ ligne.
 | `unindexed_foreign_keys` sur `assessment_answers.commute_mode` / `.commute_second_mode` / `.leisure_mode` et `assessment_results.dominant_poste_mode` (INFO ×4) | Les quatre pointent vers `transport_modes`. **Aucune requête du produit ne filtre ni ne joint sur ces colonnes** — les libellés se lisent par clé primaire de `transport_modes`. La table référencée est un référentiel de 13 lignes qui ne bouge qu'en migration. Quatre index de plus coûteraient à chaque insertion de bilan pour un gain de lecture nul : on ne les crée pas. À revoir si un écran vient un jour filtrer les bilans par mode. |
 | `unused_index` sur `plan_actions_action_template_id_idx` (INFO) | « Jamais utilisé » sur une base qui compte une douzaine de bilans de test ne veut rien dire. Cet index couvre la jointure `plan_actions → action_templates` que l'écran `/plan` traverse à chaque affichage. Conservé. |
 
-### Reste à faire, hors du code
+### Écarté pour cette V1
 
 `auth_leaked_password_protection` (WARN) : la vérification des mots de passe compromis contre
-HaveIBeenPwned est désactivée. Le produit propose bien une connexion email + mot de passe
-(`v1-04` §2), donc ce garde-fou a du sens. C'est un réglage de dashboard, pas une migration —
-ajouté à la checklist `v1-04` §4.
+HaveIBeenPwned est désactivée. Pertinente sur le principe — le produit propose bien une
+connexion email + mot de passe (`v1-04` §2) — mais **réservée au plan payant Supabase**.
+Décision produit du 04/09/2026 : on ne la prend pas pour cette V1. Cet advisor continuera donc
+à remonter, c'est attendu ; à réévaluer le jour où le projet passe sur un plan payant pour
+d'autres raisons.
+
+Aucun autre signalement ne demande d'action à ce jour.
 
 ## 6. Non-goals réaffirmés par cet audit
 

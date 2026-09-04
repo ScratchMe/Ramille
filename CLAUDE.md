@@ -32,8 +32,11 @@ Deux suites de tests automatisés, ciblées sur la logique où un bug est le plu
 bout-en-bout (écrans, flux de connexion) :
 
 - **Jest** (`npm test`) sur la logique pure côté client — aujourd'hui `src/types/bilan.ts`
-  (dérivation de navigation et de complétude du wizard). Colocalisés en `*.test.ts` à côté du
-  fichier testé.
+  (dérivation de navigation et de complétude du wizard) et `src/types/suivi.ts` (écart entre
+  deux bilans, dédoublonnage de l'historique). Colocalisés en `*.test.ts` à côté du fichier
+  testé. **Un module testé ne doit pas importer `@/lib/supabase`** : son constructeur lève
+  sans variables d'environnement et fait échouer toute la suite — d'où la séparation
+  `src/types/*` (pur, testé) / `src/lib/*` (requêtes).
 - **pgTAP** (`supabase/tests/database/*.sql`) sur les fonctions SQL de calcul —
   `compute_assessment_results`, `generate_plan_cycle_for_user`, `season_bounds`/
   `rolling_quarter_bounds` — et sur les policies RLS (isolation stricte par utilisateur en
@@ -71,7 +74,8 @@ pourquoi, et comment les vrais logs runtime Vercel ont permis de les diagnostiqu
 
 **Routing** : `src/app/` (Expo Router, file-based). Flux : `/` → `/onboarding/*` →
 `/bilan` (questionnaire) → `/bilan/resultat` (restitution) → `/plan` (plan de réduction),
-avec `/connexion/*` atteignable depuis la restitution et le plan.
+avec `/connexion/*` atteignable depuis la restitution et le plan, et `/suivi` (historique des
+bilans et des check-ins) depuis le plan.
 
 **Documentation de référence — à lire avant toute modification de schéma ou de flux** :
 `docs/architecture/v1-0N-*.md`. Ce sont des décisions actées, pas des brouillons ; chaque
@@ -217,6 +221,19 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
   connexion") via AsyncStorage — explicitement device-local, pas de sync multi-device tant
   que le compte n'est pas rattaché. Voir `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`.
+- Le questionnaire se préremplit dans cet ordre : **brouillon local > dernier bilan complété >
+  vide** (`src/lib/bilan-history.ts`). Le brouillon prime car il est plus récent par
+  construction. Un re-bilan prérempli est ce qui rend le suivi dans la durée praticable — sans
+  lui, comparer deux bilans demandait de retaper les neuf étapes.
+- La logique **pure** du suivi (écart entre deux bilans, dédoublonnage par jour, ancienneté)
+  vit dans `src/types/suivi.ts`, séparée des requêtes de `src/lib/bilan-history.ts` : importer
+  `@/lib/supabase` dans un module testé le fait échouer hors environnement configuré. Même
+  découpage que `src/types/bilan.ts`.
+- **L'écran `/suivi` n'a aucune mécanique d'échec** : ni streak, ni série cassée, ni score. Une
+  période sans réponse n'y apparaît pas du tout (les check-ins non répondus sont clos en
+  `expired` côté serveur et jamais relus). On compte les fois où la personne a répondu, jamais
+  celles où elle a laissé passer — et une hausse d'empreinte est toujours présentée comme un
+  fait, jamais comme une faute.
 - Le wizard du bilan (`src/app/bilan/index.tsx` + `src/components/bilan/steps/*`) dérive
   entièrement sa navigation ("Étape N sur M", saut conditionnel d'étapes) de l'état courant
   des réponses via `isStepVisible`/`nextStep`/`previousStep`/`isStepComplete` dans

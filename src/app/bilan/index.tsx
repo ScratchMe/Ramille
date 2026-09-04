@@ -13,6 +13,7 @@ import { LeisureFrequencyStep } from '@/components/bilan/steps/leisure-frequency
 import { LongTripsStep } from '@/components/bilan/steps/long-trips';
 import { StepShell } from '@/components/bilan/step-shell';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
+import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
 import { ensureSession, supabase } from '@/lib/supabase';
 import {
   BILAN_SECTION_LABEL,
@@ -35,16 +36,46 @@ export default function BilanQuestionnaire() {
   const [answers, setAnswers] = useState<BilanAnswers>(EMPTY_BILAN_ANSWERS);
   const [step, setStep] = useState<BilanStepId>('commute_has_trip');
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Trois sources possibles, dans cet ordre de priorité :
+  //
+  //  1. un brouillon local, s'il y en a un — un questionnaire interrompu se reprend là où
+  //     il s'est arrêté, promesse déjà faite dans l'onboarding ;
+  //  2. sinon, les réponses du dernier bilan complété — c'est le re-bilan (v1-07 T7). Sans
+  //     ça, « Modifier mes réponses » et le re-bilan périodique repartaient d'un
+  //     questionnaire vide : neuf étapes à retaper pour corriger une ligne, alors que
+  //     comparer deux bilans dans le temps est précisément ce que le suivi promet ;
+  //  3. sinon, un questionnaire vide (premier bilan).
+  //
+  // Le brouillon prime sur le dernier bilan : il est plus récent par construction, et il
+  // porte peut-être déjà des modifications que la personne est en train de faire.
   useEffect(() => {
-    loadBilanDraft().then((draft) => {
+    let cancelled = false;
+
+    (async () => {
+      const draft = await loadBilanDraft();
+      if (cancelled) return;
       if (draft) {
         setAnswers(draft.answers);
         setStep(draft.step);
+        setDraftLoaded(true);
+        return;
+      }
+
+      const previousAnswers = await loadLastSubmittedAnswers();
+      if (cancelled) return;
+      if (previousAnswers) {
+        setAnswers(previousAnswers);
+        setPrefilled(true);
       }
       setDraftLoaded(true);
-    });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -150,6 +181,7 @@ export default function BilanQuestionnaire() {
       onNext={handleNext}
       nextLabel={isLastStep ? (submitting ? 'Enregistrement…' : 'Voir mon bilan') : 'Suivant'}
       nextDisabled={submitting || !isStepComplete(step, answers)}
+      notice={prefilled ? 'Tes réponses précédentes sont pré-remplies. Modifie ce qui a changé.' : undefined}
     >
       {step === 'commute_has_trip' && <CommuteHasTripStep answers={answers} update={update} />}
       {step === 'commute_days_distance' && <CommuteDaysDistanceStep answers={answers} update={update} />}
