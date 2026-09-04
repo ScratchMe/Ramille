@@ -38,6 +38,7 @@ export function CommuteHasTripStep({
               commute_carpool_size: null,
               commute_second_mode_used: false,
               commute_second_mode: null,
+              commute_car_engine: null,
             })
           }
         />

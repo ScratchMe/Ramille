@@ -148,10 +148,52 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
-  it('leisure_detail : mode et distance requis', () => {
+  it('commute_mode / commute_extra : "voiture" exige en plus le type de moteur', () => {
+    expect(isStepComplete('commute_mode', answers({ commute_mode: 'bus' }))).toBe(true);
+    expect(isStepComplete('commute_mode', answers({ commute_mode: 'voiture', commute_car_engine: null }))).toBe(
+      false
+    );
+    expect(
+      isStepComplete('commute_mode', answers({ commute_mode: 'voiture', commute_car_engine: 'electrique' }))
+    ).toBe(true);
+    expect(
+      isStepComplete(
+        'commute_extra',
+        answers({ commute_second_mode_used: true, commute_second_mode: 'voiture', commute_car_engine: null })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'commute_extra',
+        answers({
+          commute_second_mode_used: true,
+          commute_second_mode: 'voiture',
+          commute_car_engine: 'thermique',
+        })
+      )
+    ).toBe(true);
+  });
+
+  it('leisure_detail : mode et distance requis, plus le type de moteur si "voiture"', () => {
     expect(isStepComplete('leisure_detail', answers({ leisure_mode: 'velo' }))).toBe(false);
     expect(
       isStepComplete('leisure_detail', answers({ leisure_mode: 'velo', leisure_distance_bracket: 'lt_5' }))
+    ).toBe(true);
+    expect(
+      isStepComplete(
+        'leisure_detail',
+        answers({ leisure_mode: 'voiture', leisure_distance_bracket: 'lt_5', leisure_car_engine: null })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'leisure_detail',
+        answers({
+          leisure_mode: 'voiture',
+          leisure_distance_bracket: 'lt_5',
+          leisure_car_engine: 'electrique',
+        })
+      )
     ).toBe(true);
   });
 
@@ -165,8 +207,15 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
-  it('long_trips : toujours complet (champs à 0 par défaut, jamais bloquant)', () => {
+  it('long_trips : complet par défaut (0 trajet), exige le type de moteur dès qu’un trajet voiture est déclaré', () => {
     expect(isStepComplete('long_trips', answers({}))).toBe(true);
+    expect(isStepComplete('long_trips', answers({ car_long_trips_per_year: 3 }))).toBe(false);
+    expect(
+      isStepComplete(
+        'long_trips',
+        answers({ car_long_trips_per_year: 3, car_long_trips_engine: 'thermique' })
+      )
+    ).toBe(true);
   });
 
   it('context : les 3 champs sont requis', () => {

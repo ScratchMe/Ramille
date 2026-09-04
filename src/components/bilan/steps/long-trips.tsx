@@ -2,7 +2,9 @@ import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
 import type { BilanAnswers } from '@/types/bilan';
 
 const COUNT_CHOICES = [0, 1, 2, 3, 4, 5, 6];
@@ -53,11 +55,34 @@ export function LongTripsStep({
               key={n}
               label={n === 6 ? '6+' : String(n)}
               selected={answers.car_long_trips_per_year === n}
-              onPress={() => update({ car_long_trips_per_year: n })}
+              onPress={() =>
+                update({ car_long_trips_per_year: n, car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null })
+              }
               radius={14}
             />
           ))}
         </View>
+
+        {answers.car_long_trips_per_year > 0 && (
+          <ThemedView type="backgroundElement" style={styles.nestedBox}>
+            <ThemedText type="small" themeColor="textTertiary">
+              Thermique ou électrique ?
+            </ThemedText>
+            <View style={styles.row}>
+              {CAR_ENGINE_OPTIONS.map((option) => (
+                <Chip
+                  key={option.value}
+                  label={option.label}
+                  selected={answers.car_long_trips_engine === option.value}
+                  onPress={() => update({ car_long_trips_engine: option.value })}
+                  flex
+                  radius={16}
+                  selectedStyle="outline"
+                />
+              ))}
+            </View>
+          </ThemedView>
+        )}
       </View>
 
       <ThemedText type="code" themeColor="textTertiary">
@@ -73,4 +98,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   field: { gap: Spacing.two + 2 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two, marginTop: 4 },
+  row: { flexDirection: 'row', gap: Spacing.two },
 });

@@ -9,6 +9,11 @@ export type LeisureFrequency = 'rarely' | 'weekly' | 'multiple_weekly';
 export type ZoneType = 'urbain_dense' | 'periurbain' | 'rural';
 export type TcAccess = 'bon' | 'limite' | 'inexistant';
 export type HouseholdVehicles = '0' | '1' | '2_plus';
+// Thermique/électrique change fortement le calcul (facteur ~9x plus faible pour
+// l'électrique, cf. migration 20260904*_car_engine.sql) — une seule question de suivi,
+// jamais une entrée séparée dans les listes de mode (qui resteraient "Voiture (seul)" /
+// "Voiture (covoiturage)"), posée à chaque endroit où "voiture" peut être choisi.
+export type CarEngine = 'thermique' | 'electrique';
 
 export type BilanAnswers = {
   commute_has_regular_trip: boolean | null;
@@ -20,15 +25,21 @@ export type BilanAnswers = {
   commute_carpool_size: number | null;
   commute_second_mode_used: boolean;
   commute_second_mode: TransportModeId | null;
+  // Un seul champ pour les deux jambes (principale/second mode) : elles ne peuvent pas
+  // valoir "voiture" toutes les deux à la fois (B1.7 exclut le mode déjà choisi en B1.4),
+  // donc au plus une jambe est concernée à un instant donné.
+  commute_car_engine: CarEngine | null;
 
   leisure_frequency: LeisureFrequency | null;
   leisure_mode: TransportModeId | null;
   leisure_distance_bracket: LeisureDistanceBracket | null;
+  leisure_car_engine: CarEngine | null;
 
   flights_total_per_year: number;
   flights_short_per_year: number | null;
   train_long_trips_per_year: number;
   car_long_trips_per_year: number;
+  car_long_trips_engine: CarEngine | null;
 
   zone_type: ZoneType | null;
   tc_access: TcAccess | null;
@@ -45,15 +56,18 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   commute_carpool_size: null,
   commute_second_mode_used: false,
   commute_second_mode: null,
+  commute_car_engine: null,
 
   leisure_frequency: null,
   leisure_mode: null,
   leisure_distance_bracket: null,
+  leisure_car_engine: null,
 
   flights_total_per_year: 0,
   flights_short_per_year: null,
   train_long_trips_per_year: 0,
   car_long_trips_per_year: 0,
+  car_long_trips_engine: null,
 
   zone_type: null,
   tc_access: null,
@@ -139,19 +153,25 @@ export function isStepComplete(step: BilanStepId, answers: BilanAnswers): boolea
         (answers.commute_distance_km !== null || answers.commute_distance_bracket !== null)
       );
     case 'commute_mode':
-      return answers.commute_mode !== null;
+      if (answers.commute_mode === null) return false;
+      if (answers.commute_mode === 'voiture' && answers.commute_car_engine === null) return false;
+      return true;
     case 'commute_extra':
       if (answers.commute_is_carpool && answers.commute_carpool_size === null) return false;
       if (answers.commute_second_mode_used && answers.commute_second_mode === null) return false;
+      if (answers.commute_second_mode === 'voiture' && answers.commute_car_engine === null) return false;
       return true;
     case 'leisure_frequency':
       return answers.leisure_frequency !== null;
     case 'leisure_detail':
-      return answers.leisure_mode !== null && answers.leisure_distance_bracket !== null;
+      if (answers.leisure_mode === null || answers.leisure_distance_bracket === null) return false;
+      if (answers.leisure_mode === 'voiture' && answers.leisure_car_engine === null) return false;
+      return true;
     case 'flights':
       if (answers.flights_total_per_year > 0) return answers.flights_short_per_year !== null;
       return true;
     case 'long_trips':
+      if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_engine === null) return false;
       return true;
     case 'context':
       return answers.zone_type !== null && answers.tc_access !== null && answers.household_vehicles !== null;

@@ -5,7 +5,7 @@ import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { TRANSPORT_MODE_LABELS, type TransportModeId } from '@/constants/transport-modes';
+import { CAR_ENGINE_OPTIONS, TRANSPORT_MODE_LABELS, type TransportModeId } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
 import type { BilanAnswers } from '@/types/bilan';
 
@@ -93,11 +93,41 @@ export function CommuteExtraStep({
                   key={modeId}
                   label={TRANSPORT_MODE_LABELS[modeId]}
                   selected={answers.commute_second_mode === modeId}
-                  onPress={() => update({ commute_second_mode: modeId })}
+                  onPress={() =>
+                    update({
+                      commute_second_mode: modeId,
+                      // Un seul champ moteur pour les deux jambes (cf. types/bilan.ts) :
+                      // on ne le réinitialise que si ni le mode principal ni ce second
+                      // mode ne valent "voiture" après ce choix.
+                      commute_car_engine:
+                        modeId === 'voiture' || answers.commute_mode === 'voiture' ? answers.commute_car_engine : null,
+                    })
+                  }
                   nestedBackground
                 />
               ))}
             </View>
+
+            {answers.commute_second_mode === 'voiture' && (
+              <View style={styles.nestedEngine}>
+                <ThemedText type="small" themeColor="textTertiary">
+                  Thermique ou électrique ?
+                </ThemedText>
+                <View style={styles.row}>
+                  {CAR_ENGINE_OPTIONS.map((option) => (
+                    <Chip
+                      key={option.value}
+                      label={option.label}
+                      selected={answers.commute_car_engine === option.value}
+                      onPress={() => update({ commute_car_engine: option.value })}
+                      flex
+                      radius={16}
+                      selectedStyle="outline"
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
           </ThemedView>
         )}
       </View>
@@ -114,4 +144,5 @@ const styles = StyleSheet.create({
   separator: { height: 1 },
   nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   nestedList: { gap: Spacing.two },
+  nestedEngine: { gap: Spacing.two, marginTop: Spacing.two },
 });
