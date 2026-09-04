@@ -23,6 +23,17 @@ Ce document est **fonctionnel** : il décrit le comportement attendu du produit,
 | Preuve causale d'impact (avant/après mesuré) | Hors scope pour cette V1 : le critère de succès est la qualité du moment de prise de conscience, pas une métrique d'impact prouvée. |
 | Module de mobilisation citoyenne locale (pousser sa mairie, etc.) | Théorie du changement distincte (collectif vs individuel), à spécifier séparément si le principe de l'app se confirme. |
 
+> **Mise à jour du 04/09/2026** (réflexion produit sur les leviers de croissance — voir
+> `docs/architecture/v1-06-partage-social.md`) : le non-goal **"comparaison entre
+> utilisateurs"** reste ferme et non négociable, même raison qu'à l'origine (risque de honte
+> comparative pour les profils captifs de la voiture) — aucune fonctionnalité de classement ou
+> de compétition entre utilisateurs ne sera construite. Le non-goal **"streak/points/badges"**
+> est en revanche révisé, pas supprimé : des mécaniques de **progression ou de récompense non
+> comparatives** (l'utilisateur face à son propre historique, jamais face à d'autres
+> utilisateurs) redeviennent envisageables au cas par cas — première application : la carte de
+> bilan partageable (`bilan/resultat.tsx` "Partager mon bilan"), où l'utilisateur partage
+> volontairement son propre résultat, jamais un classement.
+
 ## 3. Périmètre V1 : niveau de soin par brique
 
 | Brique | Niveau d'effort attendu |

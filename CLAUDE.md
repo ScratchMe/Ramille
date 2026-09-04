@@ -56,19 +56,18 @@ Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull requ
 **`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
 la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de route Expo
 Router. Tsconfig dédié (`api/tsconfig.json`, exclu du tsconfig racine, `types: ["node"]`) : ce
-contexte tourne en Web Fetch API (Request/Response), pas dans React Native ; `api/partage.ts`
-en runtime Edge, `api/share-card.ts` en runtime Node.js (accès `fs`/`process.cwd()` — voir
-pourquoi dans son commentaire d'en-tête, ça n'est pas un choix par défaut). **`api/package.json`
-(`{"type": "module"}`)** est nécessaire pour toute Function en runtime Node.js : Vercel compile
-`api/*.ts` en ESM (cf. `module: ESNext` dans `api/tsconfig.json`) mais Node charge un `.js`
-comme CommonJS par défaut tant que le `package.json` le plus proche ne déclare pas ce module
-type — la racine du repo ne le fait pas (Metro/Expo suppose CommonJS) ; sans ce fichier,
-n'importe quelle Function Node.js plante au premier appel (`FUNCTION_INVOCATION_FAILED`, aucun
-détail exposé côté client — seuls les logs runtime réels, via `vercel logs`, le révèlent).
-Utilisé pour `api/partage.ts`/`api/share-card.ts` (carte de bilan partageable, cf.
-`bilan/resultat.tsx` "Partager mon bilan" — rendu via `satori`/`@resvg/resvg-wasm` en direct,
-pas `@vercel/og`) —
-voir leurs commentaires d'en-tête pour le détail.
+contexte tourne en Web Fetch API (Request/Response), pas dans React Native. Utilisé pour
+`api/partage.ts` (runtime Edge) et `api/share-card.ts` (runtime Node.js, rendu d'image via
+`satori`/`@resvg/resvg-wasm`) — carte de bilan partageable, cf. `bilan/resultat.tsx` "Partager
+mon bilan". **Une Vercel Function en runtime Node.js dans ce repo a une checklist non
+négociable** (`api/package.json` en `"type": "module"`, `vercel.json` →
+`functions["<chemin>"].includeFiles` pour tout asset chargé par une dépendance transitive,
+`request.url` toujours relatif donc à parser avec une base factice, export **nommé**
+`GET`/`POST`/… jamais `export default`, `maxDuration` à surveiller si cold start lourd) — sans
+elle, une Function échoue silencieusement (`FUNCTION_INVOCATION_FAILED`/`_TIMEOUT` générique,
+aucun détail côté client) sans que le code lui-même soit en cause. Détail de chaque point,
+pourquoi, et comment les vrais logs runtime Vercel ont permis de les diagnostiquer :
+`docs/architecture/v1-06-partage-social.md` §3.
 
 **Routing** : `src/app/` (Expo Router, file-based). Flux : `/` → `/onboarding/*` →
 `/bilan` (questionnaire) → `/bilan/resultat` (restitution) → `/plan` (plan de réduction),
@@ -79,9 +78,19 @@ avec `/connexion/*` atteignable depuis la restitution et le plan.
 fichier documente son propre statut (ex. `v1-01` a un bandeau indiquant que son §2-3 est
 obsolète, remplacé par `v1-05-bilan-v2.md` — toujours vérifier qu'un document n'a pas été
 supersédé par un increment plus récent avant de s'y fier). `docs/design/` contient le
-handoff design/UX d'origine (spec fonctionnelle, maquettes) ; les fichiers `v1-0N` dans
-`docs/architecture/` documentent les écarts assumés entre ce handoff et l'implémentation
-réelle (le plus important : §1 de `v1-04-authentification.md`, voir plus bas).
+handoff design/UX d'origine (spec fonctionnelle, maquettes) — figé tel quel, jamais réécrit ;
+les fichiers `v1-0N` dans `docs/architecture/` documentent les écarts assumés et révisions
+produit par rapport à ce handoff (les deux plus importants : §1 de
+`v1-04-authentification.md`, voir plus bas, et `v1-06-partage-social.md` — décisions du
+04/09/2026 sur les leviers de croissance/engagement, ce qui reste un non-goal ferme
+(comparaison entre utilisateurs) vs. ce qui a été révisé, et le détail des Vercel Functions en
+runtime Node.js §3).
+
+**Backlog / idées identifiées mais non planifiées** : pas de fichier ROADMAP dédié — suivi via
+les GitHub Issues de ce repo (ex. #27-30 : synchronisation automatique des facteurs ADEME,
+trajectoire 2050 sur l'écran de restitution, canal de feedback utilisateur, tracking
+d'usage/segmentation). Le jeu "pas = monnaie" évoqué le 04/09/2026 est explicitement hors
+roadmap de ce repo (projet à part, voir `v1-06-partage-social.md` §1).
 
 ### Modèle d'authentification (à connaître avant de toucher à l'auth ou au bilan)
 
@@ -170,3 +179,8 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   entièrement sa navigation ("Étape N sur M", saut conditionnel d'étapes) de l'état courant
   des réponses via `isStepVisible`/`nextStep`/`previousStep`/`isStepComplete` dans
   `src/types/bilan.ts` — pas de machine à états séparée à maintenir en parallèle.
+- `bilan/resultat.tsx` a deux variantes de libellé pour le poste dominant, jamais
+  interchangeables : `dominantHeadline()` (2ᵉ personne, "Tes voyages…", affichée à l'écran,
+  adressée à l'utilisateur) et `dominantShareLabel()` (neutre, sans pronom, transmise à
+  `/api/partage` — lue par les destinataires du lien partagé, pas par l'utilisateur qui
+  partage). Voir `docs/architecture/v1-06-partage-social.md` §2.
