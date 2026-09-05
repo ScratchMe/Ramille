@@ -13,7 +13,7 @@ export type HouseholdVehicles = '0' | '1' | '2_plus';
 // l'électrique, cf. migration 20260904*_car_engine.sql) — une seule question de suivi,
 // jamais une entrée séparée dans les listes de mode (qui resteraient "Voiture (seul)" /
 // "Voiture (covoiturage)"), posée à chaque endroit où "voiture" peut être choisi.
-export type CarEngine = 'thermique' | 'electrique';
+export type CarEngine = 'thermique' | 'hybride' | 'hybride_rechargeable' | 'electrique';
 
 export type BilanAnswers = {
   commute_has_regular_trip: boolean | null;
