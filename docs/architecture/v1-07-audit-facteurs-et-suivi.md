@@ -490,6 +490,34 @@ abstrait et lointain, et le registre anxiogène tend à paralyser plutôt qu'à 
 **Décision** : décliner la trajectoire en **paliers atteignables** (« ton palier de cette
 année »), qui transforment un gouffre en marche franchissable. Traité avec l'issue #28.
 
+#### Ce que les données ont tranché (05/09/2026)
+
+Les treize bilans en base vont de **15,82 t à 0,06 t** — un facteur 264. C'est cette amplitude
+qui a décidé de la mécanique, deux candidates s'y effondrant :
+
+| Mécanique | Ce qu'elle donne | Pourquoi écartée |
+|---|---|---|
+| Trajectoire linéaire jusqu'en 2050 | −0,609 t/an à 15,8 t, **−6 kg/an** à 0,76 t | Le pas dépend du point de départ : elle récompense le retard et rend la sobriété invisible. Un palier de −0,8 % n'est visable par aucune action du plan. |
+| Marches absolues partagées (2,8 → 2,0 → 1,4 → 1,0 → 0,6) | Première marche à **−82 %** pour 15,8 t | Remplace un gouffre par un gouffre. Et les marches intermédiaires seraient arbitraires : aucune source publique ne donne de jalons par poste. |
+
+**Retenu : le palier est le cap de la saison**, déjà calculé et figé sur `plan_cycles`. Même
+effort relatif pour tout le monde, atteignable par construction (les actions du plan sont
+chiffrées pour y mener), et **aucun nouveau chiffre à sourcer** — ce qui compte après
+l'incohérence 9,1 / 9,3 t décrite plus bas.
+
+Deux décisions de forme qui vont avec :
+
+- **La barre « Repère 2050 » cède sa place au palier.** Mettre « Toi : 15,8 t » à côté de
+  « 0,6 t » affichait un rapport de 1 à 26 qu'aucune formulation ne rattrape. 2050 reste, en
+  mots, sous les barres. Le palier est placé **juste sous « Toi »**, avant la moyenne : rendu en
+  troisième position, les deux barres presque identiques d'une empreinte élevée donnaient
+  l'impression que la marche ne servait à rien — vérifié au rendu, c'est ce qui a fait changer
+  l'ordre.
+- **Aucun palier pour qui est déjà sous le repère** (4 des 13 bilans). Leur demander −20 % de
+  plus serait exiger toujours plus de ceux qui font déjà le plus, ce que `/plan` refuse déjà
+  avec son état « Tu fais déjà l'essentiel sur ce poste ». Et **on n'affiche jamais le nombre
+  de paliers restants** : « il t'en reste 15 » est une autre façon d'écrire le gouffre.
+
 Au passage : `FRANCE_AVERAGE_TRANSPORT_T = 2.9` et `TARGET_2050_TRANSPORT_T = 0.5`
 (`bilan/resultat.tsx`) sont des placeholders codés en dur, marqués « à confirmer ». Ce sont
 les deux repères sur lesquels repose tout le message de la restitution : à sourcer avant mise
@@ -600,7 +628,7 @@ de signe entre les deux bases.
 | 5 | Canal de rappel email | §3.1 | **fait** — migration `20260904200000` (envoi en attente d'un fournisseur, cf. §3.1) |
 | 6a | Actions chiffrées, cap affiché, contexte B4 exploité | T9, T10, §3.3 (1 et 3) | **fait** — migration `20260905130000` |
 | 6b | Choisir une action et s'y engager | §3.3 (2) | **fait** — migration `20260905190000` |
-| 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | **suppression, export et accessibilité faits** ; trajectoire par paliers à faire |
+| 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | **fait** — suppression et export (`20260905210000`), accessibilité, paliers |
 
 Hors tableau, traité le 05/09/2026 dans la foulée de l'étape 0 : la **cylindrée du deux-roues**
 (migration `20260905200000`). Le mode `deux_roues_motorise` valait le facteur du scooter

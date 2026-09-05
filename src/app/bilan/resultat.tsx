@@ -21,6 +21,7 @@ import {
   formatTonnesShort,
 } from '@/constants/carbon-reference';
 import { formatTonnes } from '@/lib/format';
+import { nextPalier, type Palier } from '@/types/palier';
 import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
 import type { Database } from '@/lib/database.types';
 
@@ -103,10 +104,27 @@ function comparisonNote(totalT: number): string {
   return `La moyenne française est de ${formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}. L’essentiel se joue sur un seul poste, celui du haut.`;
 }
 
+// La phrase qui accompagne le palier. Elle nomme la marche et situe 2050 comme un horizon,
+// jamais comme une mesure de l'écart : c'est précisément ce que la barre faisait, et ce que la
+// spec §4 demande d'éviter (« le registre anxiogène tend à paralyser plutôt qu'à mobiliser »).
+//
+// Aucune formulation d'échec : on ne dit pas combien de paliers restent. « Il t'en reste 15 »
+// est une autre façon d'écrire le gouffre.
+function palierNote(palier: Palier): string {
+  const reduction = formatTonnes(palier.reductionKg);
+  if (palier.reachesTarget2050) {
+    return `Ce palier te met sous le repère transport 2050. Il demande ${reduction} de moins sur l’année.`;
+  }
+  return `Une marche à ${reduction} de moins sur l’année. Le plan qui suit propose de quoi la franchir ; 2050 se joue palier après palier.`;
+}
+
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ok'; results: AssessmentResults };
+  // `capKg` vient du cycle de plan, généré par `compute_assessment_results` au moment de la
+  // soumission : il existe donc déjà quand cet écran s'affiche. `null` si le plan n'a rien
+  // trouvé à proposer — on ne montre alors pas de palier.
+  | { status: 'ok'; results: AssessmentResults; capKg: number | null };
 
 // Anonyme et pas encore proposé un compte : au clic sur le CTA, on passe d'abord par la
 // proposition plein écran (cf. maquette "Connexion — proposition après bilan", qui
@@ -126,18 +144,43 @@ export default function BilanResultat() {
 
   useEffect(() => {
     if (!id) return;
-    supabase
-      .from('assessment_results')
-      .select('*')
-      .eq('assessment_id', id)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setState({ status: 'error', message: error?.message ?? 'Bilan introuvable.' });
-          return;
-        }
-        setState({ status: 'ok', results: data });
-      });
+    let cancelled = false;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from('assessment_results')
+        .select('*')
+        .eq('assessment_id', id)
+        .single();
+
+      if (cancelled) return;
+      if (error || !data) {
+        setState({ status: 'error', message: error?.message ?? 'Bilan introuvable.' });
+        return;
+      }
+
+      // Le cap de la saison en cours. Le palier n'est pas un nouveau chiffre : c'est celui que
+      // `/plan` affiche déjà, figé à la génération du cycle. Son absence n'est pas une erreur —
+      // l'écran se contente alors de ne pas proposer de marche.
+      const { data: cycle } = await supabase
+        .from('plan_cycles')
+        .select('baseline_co2_kg_year, target_reduction_pct')
+        .order('period_start', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cancelled) return;
+      const capKg =
+        cycle?.baseline_co2_kg_year != null
+          ? (cycle.baseline_co2_kg_year * cycle.target_reduction_pct) / 100
+          : null;
+
+      setState({ status: 'ok', results: data, capKg });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -201,8 +244,12 @@ export default function BilanResultat() {
     );
   }
 
-  const { results } = state;
+  const { results, capKg } = state;
   const totalT = results.total_co2_kg_year / 1000;
+
+  // Le palier remplace la barre « Repère 2050 » : mettre 15,8 t à côté de 0,6 t affichait un
+  // rapport de 1 à 26 qu'aucune formulation ne rattrape. 2050 reste, en mots, sous les barres.
+  const palier = nextPalier(results.total_co2_kg_year, capKg, TARGET_2050_TRANSPORT_T * 1000);
 
   // Un total nul est atteignable — quelqu'un qui n'a que du vélo ou de la marche, sans avion
   // ni trajet longue distance. C'est le profil que le produit devrait féliciter, et il
@@ -212,7 +259,7 @@ export default function BilanResultat() {
   const shareOfTotal = (kg: number) => (hasEmissions ? (kg / results.total_co2_kg_year) * 100 : 0);
   const dominantPercent = Math.round(shareOfTotal(results.dominant_poste_co2_kg_year));
 
-  const domain = Math.max(totalT, FRANCE_AVERAGE_TRANSPORT_T, TARGET_2050_TRANSPORT_T) / 0.85;
+  const domain = Math.max(totalT, FRANCE_AVERAGE_TRANSPORT_T) / 0.85;
   const barPercent = (value: number) => Math.max((value / domain) * 100, 3);
 
   return (
@@ -302,21 +349,36 @@ export default function BilanResultat() {
             </ThemedText>
             <View style={styles.bars}>
               <CompareRow label="Toi" value={formatTonnesShort(totalT)} percent={barPercent(totalT)} bold accentColor={theme.accent} />
+              {/* Le palier vient juste après « Toi », avant la moyenne : la comparaison qui
+                  compte est celle entre où l'on est et où l'on va, pas avec le pays. Rendu à
+                  la troisième place, la paire se lisait comme deux repères sans rapport, et
+                  pour une empreinte élevée les deux barres presque identiques donnaient
+                  l'impression que la marche ne servait à rien. */}
+              {palier && (
+                <CompareRow
+                  label="Ton prochain palier"
+                  value={formatTonnesShort(palier.targetKg / 1000)}
+                  percent={barPercent(palier.targetKg / 1000)}
+                  accentColor={theme.accentText}
+                />
+              )}
               <CompareRow
                 label="Moyenne en France"
                 value={formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}
                 percent={barPercent(FRANCE_AVERAGE_TRANSPORT_T)}
                 accentColor={theme.accentMuted}
               />
-              <CompareRow
-                label="Repère transport 2050"
-                value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}
-                percent={barPercent(TARGET_2050_TRANSPORT_T)}
-                accentColor={theme.accentMuted}
-              />
+              {!palier && (
+                <CompareRow
+                  label="Repère transport 2050"
+                  value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}
+                  percent={barPercent(TARGET_2050_TRANSPORT_T)}
+                  accentColor={theme.accentMuted}
+                />
+              )}
             </View>
             <ThemedText type="small" themeColor="textSecondary">
-              {comparisonNote(totalT)}
+              {palier ? palierNote(palier) : comparisonNote(totalT)}
             </ThemedText>
             <ThemedText type="code" themeColor="textTertiary">
               {CARBON_SOURCE_LABEL}
