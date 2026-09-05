@@ -50,6 +50,16 @@ bout-en-bout (écrans, flux de connexion) :
 
 Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
 
+**Toucher à un facteur d'émission invalide TOUTES les valeurs attendues de la suite pgTAP,
+pas seulement celles qui citent ce facteur.** Une quinzaine d'assertions chiffrées sont
+réparties dans `01`, `05`, `06` et `08`, et beaucoup dérivent d'un facteur sans le nommer.
+Chercher l'ancienne valeur littérale dans les fichiers ne suffit donc pas — c'est ainsi que
+la CI est tombée deux fois (PR #34, puis PR #41). La méthode qui marche : lister toutes les
+assertions (`grep -n '::numeric,' supabase/tests/database/`), recalculer chacune **par une
+requête sur la base** plutôt qu'à la main, et n'écrire dans le test que des valeurs ainsi
+vérifiées. Le piège se referme d'autant plus facilement que la validation sur le projet
+distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des tests.
+
 ## Architecture
 
 **Stack** : Expo (React Native + Expo Router, un seul codebase mobile+web) · Supabase

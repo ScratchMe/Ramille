@@ -73,8 +73,8 @@ select results_eq(
 
 select is(
   (select round(total_co2_kg_year::numeric, 3) from public.assessment_results where assessment_id = '21111111-1111-1111-1111-111111111111'),
-  540.834::numeric,
-  'scénario 1 : total = commute (4 500 km/an à 0,1106) + loisirs par défaut'
+  695.617::numeric,  -- 4500 × 0,142253 = 640,1385 + loisirs par défaut 390 × 0,142253 = 55,4787
+  'scénario 1 : total = commute (4 500 km/an à 0,142253) + loisirs par défaut'
 );
 
 -- Libellés par poste (increment 11, boucles hebdo/mensuelle) : persistés indépendamment de
@@ -164,8 +164,8 @@ select results_eq(
 
 select is(
   (select round(leisure_co2_kg_year::numeric, 2) from public.assessment_results where assessment_id = '24444444-4444-4444-4444-444444444444'),
-  1416.48::numeric,
-  'scénario 4 : 40 km, 2 trajets, 3x/semaine, 52 semaines, bus à 0,1135'
+  1527.80::numeric,  -- 12 480 km × 0,122420
+  'scénario 4 : 40 km, 2 trajets, 3x/semaine, 52 semaines, bus à 0,122420'
 );
 
 select results_eq(
