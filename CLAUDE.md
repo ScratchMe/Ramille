@@ -66,6 +66,15 @@ distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des 
 (Postgres + Auth + RLS) · Vercel (déploiement web, build via `vercel-build` →
 `expo export --platform web` → `dist/`) · EAS (build/publish Android uniquement).
 
+**`vercel.json` porte `cleanUrls: true`, et ce n'est pas cosmétique.** L'export statique
+d'Expo Router produit deux formes : un **répertoire** `plan/index.html` pour une route qui a
+des enfants, un **fichier plat** `suivi.html` sinon. Sans `cleanUrls`, Vercel sert les
+premières et renvoie 404 sur les secondes — `/suivi`, `/confidentialite`, `/feedback` et
+surtout **`/bilan/resultat`**, la restitution, étaient inaccessibles en production sans que
+rien ne le signale (l'export local contenait bien les fichiers, et les routes en répertoire
+marchaient). Toute nouvelle route sans enfants tombe dans ce cas : si `cleanUrls` disparaît un
+jour de ce fichier, la moitié de l'app repasse en 404 silencieusement.
+
 **`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
 la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de route Expo
 Router. Tsconfig dédié (`api/tsconfig.json`, exclu du tsconfig racine, `types: ["node"]`) : ce
