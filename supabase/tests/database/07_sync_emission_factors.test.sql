@@ -18,7 +18,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(10);
 
 -- ── Complétude du mapping ───────────────────────────────────────────────────────────────
 -- Le vrai risque de régression : ajouter un mode au produit sans lui donner de source, ce
@@ -43,22 +43,37 @@ select is_empty(
   'Tout mode mappé a au moins une valeur en base — la synchronisation compare toujours à un existant'
 );
 
--- ── La règle des distances de référence (v1-07 §1.1) ───────────────────────────────────
--- Le mode avion est le seul dont la valeur renvoyée par l'API dépend du km demandé. Le
--- relevé doit se faire aux distances que le calcul utilise réellement, sinon on réintroduit
--- exactement le bug corrigé à l'étape 1.
+-- ── Le segment aérien reste cohérent avec les distances du calcul (v1-07 §1.5) ─────────
+-- `reference_km` a disparu avec le passage à l'endpoint ACV, qui publie les segments aériens
+-- comme des entrées distinctes. Mais la règle de fond survit : le slug retenu doit
+-- correspondre à la distance que `recompute_assessment_results` utilise réellement
+-- (dist_flight_short = 1500 km, donc un MOYEN-courrier ; dist_flight_long = 9000 km). Se
+-- tromper de slug réintroduirait exactement le bug corrigé à l'étape 1.
 
 select results_eq(
-  $$ select transport_mode_id, reference_km from public.emission_factor_sources
-     where reference_km <> 100 order by transport_mode_id $$,
-  $$ values ('avion_court_moyen_courrier'::text, 1500), ('avion_long_courrier'::text, 9000) $$,
-  'Seuls les deux modes avion sont relevés à une distance particulière, et ce sont celles du calcul (1500 / 9000 km)'
+  $$ select transport_mode_id, impactco2_slugs from public.emission_factor_sources
+     where transport_mode_id like 'avion%' order by transport_mode_id $$,
+  $$ values ('avion_court_moyen_courrier'::text, array['avion-moyencourrier']),
+            ('avion_long_courrier'::text,        array['avion-longcourrier']) $$,
+  'Les deux modes avion pointent sur les segments correspondant aux distances du calcul'
 );
 
-select is(
-  (select reference_km from public.emission_factor_sources where transport_mode_id = 'train_longue_distance'),
-  100,
-  'Le TGV est un facteur proportionnel ordinaire : relevé à la distance neutre'
+-- ── Aucun facteur ne doit rester sur la phase d'usage seule (v1-07 §1.5) ───────────────
+-- Le défaut trouvé le 05/09/2026 : `/api/v1/transport` ne renvoie que la composante usage,
+-- sans la fabrication. Il était invisible parce que les valeurs renvoyées étaient elles-mêmes
+-- correctes — c'est l'endpoint qui était le mauvais. Cette assertion épingle donc la source,
+-- pas la valeur : c'est le seul endroit où l'erreur était détectable.
+select is_empty(
+  $$ select transport_mode_id from public.emission_factors
+     where source not like '%ACV complète%' $$,
+  'Tout facteur en base porte l''ACV complète, jamais la seule phase d''usage'
+);
+
+-- Le vélo est le cas qui rend le défaut visible à l'œil nu : usage nul, ACV non nulle. Tant
+-- qu'il vaut 0, c'est que la source lue est la mauvaise.
+select ok(
+  public.emission_factor('velo', current_date) > 0,
+  'Le vélo mécanique porte l''impact de sa fabrication, et non zéro'
 );
 
 -- ── Verrouillage des accès ──────────────────────────────────────────────────────────────

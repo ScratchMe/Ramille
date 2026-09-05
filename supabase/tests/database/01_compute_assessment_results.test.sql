@@ -73,8 +73,8 @@ select results_eq(
 
 select is(
   (select round(total_co2_kg_year::numeric, 3) from public.assessment_results where assessment_id = '21111111-1111-1111-1111-111111111111'),
-  540.834::numeric,
-  'scénario 1 : total = commute (4 500 km/an à 0,1106) + loisirs par défaut'
+  695.617::numeric,  -- 4500 × 0,142253 = 640,1385 + loisirs par défaut 390 × 0,142253 = 55,4787
+  'scénario 1 : total = commute (4 500 km/an à 0,142253) + loisirs par défaut'
 );
 
 -- Libellés par poste (increment 11, boucles hebdo/mensuelle) : persistés indépendamment de
@@ -99,12 +99,16 @@ select public.compute_assessment_results('22222222-2222-2222-2222-222222222222')
 -- ce trajet ? ») porte sur la voiture de B1.4, pas sur le second mode intermodal.
 --
 --   km_année = 20 × 2 × 4 j × 45 sem = 7200, réparti 50/50 entre les deux modes
---   jambe voiture : 3600 × 0,1106 = 398,16, covoiturée à 4 -> 99,54
---   jambe train   : 3600 × 0,0229 =  82,44, jamais covoiturée
---   total = 181,98        (ancienne valeur, erronée : 480,60 / 4 = 120,15)
+--   jambe voiture : 3600 × 0,142253 = 512,1108, covoiturée à 4 -> 128,0277
+--   jambe train   : 3600 × 0,027690 =  99,684,  jamais covoiturée
+--   total = 227,712
+--
+-- Facteurs révisés le 05/09/2026 (v1-07 §1.5, migration 20260905100000) : ils portent
+-- désormais l'ACV complète et non la seule phase d'usage. Les valeurs précédentes de cette
+-- assertion (0,1106 et 0,0229, total 181,98) étaient les composantes d'usage seules.
 select is(
   (select round(commute_co2_kg_year::numeric, 3) from public.assessment_results where assessment_id = '22222222-2222-2222-2222-222222222222'),
-  181.980::numeric,
+  227.712::numeric,
   'scénario 2 : distance moitié voiture/moitié train, le covoiturage ne divisant que la jambe voiture'
 );
 
@@ -160,8 +164,8 @@ select results_eq(
 
 select is(
   (select round(leisure_co2_kg_year::numeric, 2) from public.assessment_results where assessment_id = '24444444-4444-4444-4444-444444444444'),
-  1416.48::numeric,
-  'scénario 4 : 40 km, 2 trajets, 3x/semaine, 52 semaines, bus à 0,1135'
+  1527.80::numeric,  -- 12 480 km × 0,122420
+  'scénario 4 : 40 km, 2 trajets, 3x/semaine, 52 semaines, bus à 0,122420'
 );
 
 select results_eq(

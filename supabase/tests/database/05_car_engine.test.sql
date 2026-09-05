@@ -78,8 +78,11 @@ select public.compute_assessment_results('d1111111-1111-1111-1111-111111111111')
 
 select results_eq(
   $$ select round(commute_co2_kg_year::numeric, 3), dominant_poste_mode, dominant_poste_label from public.assessment_results where assessment_id = 'd1111111-1111-1111-1111-111111111111' $$,
-  $$ values (54.45::numeric, 'voiture_electrique'::text, 'Trajet domicile-travail (Voiture électrique)'::text) $$,
-  'A : commute voiture électrique -> facteur 0,0121 (~9x plus faible que thermique), libellé précis'
+  $$ values (303.143::numeric, 'voiture_electrique'::text, 'Trajet domicile-travail (Voiture électrique)'::text) $$,
+  -- 4500 km × 0,067365. L'écart avec le thermique (0,142253) est de 2,1x et non de 9x comme
+  -- l'affirmait cette assertion : la version précédente comparait deux facteurs d'usage seul,
+  -- qui effaçaient la fabrication de la batterie. Cf. v1-07 §1.5.
+  'A : commute voiture électrique -> facteur ACV 0,067365 (2,1x plus faible que thermique), libellé précis'
 );
 
 -- ── Scénario B : repli générique (non-régression) ───────────────────────────────────────
@@ -89,8 +92,8 @@ select public.compute_assessment_results('d1111111-1111-1111-1111-111111111112')
 
 select results_eq(
   $$ select round(commute_co2_kg_year::numeric, 3), dominant_poste_mode from public.assessment_results where assessment_id = 'd1111111-1111-1111-1111-111111111112' $$,
-  $$ values (497.7::numeric, 'voiture'::text) $$,
-  'B : commute voiture sans moteur renseigné -> repli sur le facteur générique voiture (0,1106), comportement inchangé'
+  $$ values (640.139::numeric, 'voiture'::text) $$,  -- 4500 km × 0,142253
+  'B : commute voiture sans moteur renseigné -> repli sur le facteur générique voiture (0,142253), comportement inchangé'
 );
 
 -- ── Scénario C : intermodalité, moteur sur la jambe secondaire ─────────────────────────
@@ -100,7 +103,7 @@ select public.compute_assessment_results('d1111111-1111-1111-1111-111111111113')
 
 select is(
   (select round(commute_co2_kg_year::numeric, 3) from public.assessment_results where assessment_id = 'd1111111-1111-1111-1111-111111111113'),
-  600.75::numeric,
+  764.744::numeric,  -- 4500 × 0,027690 (train) + 4500 × 0,142253 (voiture thermique)
   'C : intermodal train + voiture thermique (second mode) -> la moitié voiture utilise le facteur thermique, pas le générique'
 );
 

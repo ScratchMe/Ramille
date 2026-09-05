@@ -132,8 +132,8 @@ select is(
 
 select is(
   (select round(baseline_co2_kg_year::numeric, 1) from public.plan_cycles where user_id = 'c8111111-1111-1111-1111-111111111112'),
-  3196.8::numeric,
-  'B : la baseline est celle du nouveau poste dominant (2 × 9000 km × 0,1776), pas l''ancienne'
+  3202.1::numeric,
+  'B : la baseline est celle du nouveau poste dominant (2 × 9000 km × 0,177894), pas l''ancienne'
 );
 
 select is(
