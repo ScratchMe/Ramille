@@ -211,8 +211,22 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Conformément au RGPD, tu disposes d’un droit d’accès, de rectification, d’effacement, de portabilité, ' +
-          'de limitation et d’opposition sur tes données. Tu peux les exercer en écrivant à ' +
-          `${CONTACT_EMAIL}. Nous répondons dans un délai d’un mois.`,
+          'de limitation et d’opposition sur tes données.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'Deux d’entre eux s’exercent directement dans l’application, sans avoir à écrire à qui que ce soit, ' +
+          'depuis l’écran « Mon suivi », section « Mes données » : télécharger l’intégralité de ce que nous ' +
+          'conservons sur toi dans un fichier JSON, et supprimer définitivement ton compte. La suppression est ' +
+          'immédiate et sans confirmation par email — tes bilans, ton plan, tes points de suivi, tes retours et ' +
+          'tes repères de parcours disparaissent avec elle.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          `Pour tout le reste, ou si tu n’as plus l’application installée, écris à ${CONTACT_EMAIL}. ` +
+          'Nous répondons dans un délai d’un mois.',
       },
       {
         kind: 'paragraph',

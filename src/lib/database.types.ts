@@ -749,10 +749,12 @@ export type Database = {
         Args: { p_assessment_id: string }
         Returns: undefined
       }
+      delete_my_account: { Args: never; Returns: undefined }
       emission_factor: {
         Args: { p_mode_id: string; p_on_date: string }
         Returns: number
       }
+      export_my_data: { Args: never; Returns: Json }
       enqueue_checkin_reminders: { Args: never; Returns: undefined }
       estimate_action_savings: {
         Args: { p_assessment_id: string }

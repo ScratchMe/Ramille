@@ -309,6 +309,16 @@ Trois pièges vérifiés en construisant cette table, tous silencieux :
   toutes nulles en base et parfaitement vivantes. Ce qui qualifie une colonne morte, c'est
   qu'aucun code ne l'écrit.
 
+**Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
+Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
+l'app, et TraceVerte en crée un dès l'ouverture, session anonyme comprise. **La suppression
+efface une seule ligne, `auth.users`, et laisse la cascade faire le reste** : une fonction qui
+énumérerait les tables deviendrait fausse à la prochaine migration, en silence. Ne jamais
+rattacher une table à `profiles` avec autre chose que `on delete cascade` — un test pgTAP
+vérifie la chaîne niveau par niveau. L'export est `security definer` pour une autre raison :
+`usage_events` n'ayant aucune policy de lecture, une fonction en `security invoker` rendrait un
+export silencieusement incomplet.
+
 **Canal de retour** (`feedback`, issue #29) : la seule table où un client écrit du texte
 libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à
 `authenticated` revient à l'ouvrir à quiconque sait appeler l'API — d'où le trigger

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
+import { MonCompte } from '@/components/compte/mon-compte';
 import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -294,6 +295,11 @@ export default function Suivi() {
               <Button title="Refaire mon bilan" onPress={() => router.push('/bilan')} />
             </ThemedView>
           )}
+
+          {/* Export et suppression (T12). Placés ici et pas sur un écran « Réglages » dédié :
+              /suivi est la seule surface du produit qui parle du compte dans la durée, et un
+              écran de plus pour deux boutons serait un écran de plus à trouver. */}
+          <MonCompte />
         </ScrollView>
 
         <View style={styles.footer}>
