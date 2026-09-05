@@ -4,10 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Le produit
 
-TraceVerte est une app de sensibilisation à l'empreinte carbone des transports, pour la
+Ramille est une app de sensibilisation à l'empreinte carbone des transports, pour la
 France (public et interface exclusivement en français, y compris tout code produit :
 messages d'erreur, commentaires métier, contenu). V1 = Google Play uniquement (pas d'App
 Store, pas de Sign in with Apple).
+
+**Le produit s'est appelé TraceVerte jusqu'au 05/09/2026, et ce nom ne doit pas revenir** :
+il est porté depuis 25 ans par une entreprise alsacienne de vélo et de mobilité douce
+(traceverte.com) — même mot, secteur voisin, même public, le cumul qui fonde une action en
+concurrence déloyale sans qu'aucune marque soit déposée. Ramille est **aussi le nom de la
+mascotte** : produit et personnage ne font qu'un. Le nom vit dans `src/constants/produit.ts`
+(`APP_NAME`) et nulle part en dur dans un écran ; `api/` et les SVG le répètent en littéral,
+faute de pouvoir importer `src/`. Trois choses gardent volontairement l'ancien nom : les
+**clés AsyncStorage** (`traceverte.*` — les renommer effacerait les brouillons), les
+**migrations appliquées**, et le **projet Supabase distant**, toujours `TraceVerte-v1` dans
+son tableau de bord. Les documents `docs/architecture/v1-01` à `v1-08` parlent de TraceVerte :
+ce sont des décisions datées, on ne les réécrit pas. Détail en `v1-09-renommage-ramille.md`.
 
 Trois briques dans l'ordre de priorité produit : Bilan initial (2) > Onboarding (1) >
 Boucle mensuelle (4) > Plan de réduction (3).
@@ -119,7 +131,7 @@ produit par rapport à ce handoff (les deux plus importants : §1 de
 (comparaison entre utilisateurs) vs. ce qui a été révisé, et le détail des Vercel Functions en
 runtime Node.js §3).
 
-Le dernier increment en date est `v1-08-mesure-usage.md` (mesure d'usage, 05/09/2026).
+Le dernier increment en date est `v1-09-renommage-ramille.md` (renommage TraceVerte → Ramille, 05/09/2026).
 
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
@@ -321,7 +333,7 @@ Trois pièges vérifiés en construisant cette table, tous silencieux :
 
 **Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
 Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
-l'app, et TraceVerte en crée un dès l'ouverture, session anonyme comprise. **La suppression
+l'app, et Ramille en crée un dès l'ouverture, session anonyme comprise. **La suppression
 efface une seule ligne, `auth.users`, et laisse la cascade faire le reste** : une fonction qui
 énumérerait les tables deviendrait fausse à la prochaine migration, en silence. Ne jamais
 rattacher une table à `profiles` avec autre chose que `on delete cascade` — un test pgTAP
@@ -444,7 +456,7 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `expo export`, même piège silencieux que `cleanUrls`. Seul cas aujourd'hui : le lien vers la
   page personnelle de l'éditeur (`EDITOR_CV_URL`) au pied des deux pages légales, qui sont les
   seules surfaces publiques du produit (leurs URL sont données à Google Play et à l'écran de
-  consentement Google). Le sens du lien est délibéré — TraceVerte vers le CV — et il ne porte
+  consentement Google). Le sens du lien est délibéré — Ramille vers le CV — et il ne porte
   pas de `nofollow`.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin

@@ -68,7 +68,7 @@ export default function ConnexionProposition() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           {/* Marque visible avant le bouton Google : un utilisateur qui vient d'arriver sur
-              son bilan doit reconnaître que c'est bien TraceVerte qui lui propose de se
+              son bilan doit reconnaître que c'est bien Ramille qui lui propose de se
               connecter, pas un tiers — le bouton Google lui-même reste non personnalisé
               (cf. spec-uiux §5, "respecter le branding standard Google"). Mascotte plutôt
               que le logo abstrait seul (cf. mascot.tsx) : même rôle de marque de confiance,

@@ -24,6 +24,7 @@ import { formatTonnes } from '@/lib/format';
 import { nextPalier, showsTarget2050, type Palier } from '@/types/palier';
 import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
 import type { Database } from '@/lib/database.types';
+import { APP_NAME } from '@/constants/produit';
 
 type AssessmentResults = Database['public']['Tables']['assessment_results']['Row'];
 
@@ -238,7 +239,7 @@ export default function BilanResultat() {
     const params = new URLSearchParams({ total: totalTonnes, poste: dominantShareLabel(results), percent });
     const shareUrl = `${APP_URL}/api/partage?${params.toString()}`;
     Share.share({
-      message: `Mon empreinte transport : ${formatTonnes(state.results.total_co2_kg_year)} par an. Fais la tienne sur TraceVerte : ${shareUrl}`,
+      message: `Mon empreinte transport : ${formatTonnes(state.results.total_co2_kg_year)} par an. Fais la tienne sur ${APP_NAME} : ${shareUrl}`,
       url: shareUrl,
     }).catch(() => {});
   };

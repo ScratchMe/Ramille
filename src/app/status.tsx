@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { APP_NAME } from '@/constants/produit';
 
 // Écran de diagnostic — ancien contenu de `/` (smoke test app -> Supabase -> RLS lecture
 // publique du référentiel), déplacé ici une fois la vraie logique de routing de la racine
@@ -35,7 +36,7 @@ export default function StatusScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedText type="title" style={styles.title}>
-          TraceVerte — diagnostic
+          {APP_NAME} — diagnostic
         </ThemedText>
 
         <ThemedView type="backgroundElement" style={styles.status}>

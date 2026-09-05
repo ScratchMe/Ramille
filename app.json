@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "TraceVerte",
-    "slug": "traceverte",
+    "name": "Ramille",
+    "slug": "ramille",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "traceverte",
+    "scheme": "ramille",
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "fr.traceverte.app",
+      "package": "fr.ramille.app",
       "adaptiveIcon": {
         "backgroundColor": "#E4EFE8",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

@@ -6,6 +6,7 @@
 // rationale que src/lib/bilan-draft.ts.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Préfixe historique conservé au renommage en Ramille, comme DRAFT_KEY dans bilan-draft.ts.
 const SEEN_KEY = 'traceverte.connexion_proposal_seen.v1';
 
 export async function hasSeenConnexionProposal(): Promise<boolean> {

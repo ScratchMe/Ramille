@@ -167,7 +167,7 @@ export async function GET(request: Request): Promise<Response> {
     h(
       'div',
       { style: { display: 'flex', fontSize: 26, color: TEXT_SECONDARY, marginTop: 40 } },
-      'TraceVerte · fais ton bilan en 5 minutes'
+      'Ramille · fais ton bilan en 5 minutes'
     )
   );
 

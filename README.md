@@ -1,6 +1,7 @@
-# TraceVerte
+# Ramille
 
-App de sensibilisation à l'empreinte carbone transport. Voir `docs/architecture/` pour les
+App de sensibilisation à l'empreinte carbone transport (anciennement TraceVerte, renommée le
+05/09/2026 — voir `docs/architecture/v1-09-renommage-ramille.md`). Voir `docs/architecture/` pour les
 décisions techniques (stack, MCD, formules de calcul) et la spec fonctionnelle associée.
 
 ## Stack

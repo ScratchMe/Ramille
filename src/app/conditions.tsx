@@ -1,5 +1,6 @@
 import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
 import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
+import { APP_NAME } from '@/constants/produit';
 
 // Conditions générales d'utilisation — exigées par la fiche Google Play au même titre que la
 // politique de confidentialité, et attendues par l'écran de consentement Google OAuth.
@@ -24,7 +25,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'TraceVerte est un service gratuit qui estime l’empreinte carbone de tes déplacements à partir de ce que tu ' +
+          `${APP_NAME} est un service gratuit qui estime l’empreinte carbone de tes déplacements à partir de ce que tu ` +
           'déclares, t’indique le poste sur lequel tu as le plus de prise, et te propose un suivi périodique pour ' +
           'accompagner un changement d’habitude dans la durée.',
       },
@@ -32,7 +33,7 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Ces conditions régissent l’utilisation du service, accessible sur le web et sur Android. En utilisant ' +
-          'TraceVerte, tu les acceptes.',
+          `${APP_NAME}, tu les acceptes.`,
       },
     ],
   },
@@ -42,7 +43,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'Le chiffre que TraceVerte t’affiche est une estimation construite à partir de tes réponses et de facteurs ' +
+          `Le chiffre que ${APP_NAME} t’affiche est une estimation construite à partir de tes réponses et de facteurs ` +
           'd’émission moyens publiés par l’ADEME. Ce n’est pas une mesure de tes émissions réelles.',
       },
       {
@@ -56,7 +57,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'TraceVerte ne fournit ni conseil professionnel, ni prestation de conseil en mobilité. Les actions proposées ' +
+          `${APP_NAME} ne fournit ni conseil professionnel, ni prestation de conseil en mobilité. Les actions proposées ` +
           'sont des suggestions, jamais des injonctions : tu restes seul juge de ce qui est possible dans ta situation.',
       },
     ],
@@ -111,7 +112,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'TraceVerte ne saurait être tenu responsable des décisions que tu prends sur la base des estimations et ' +
+          `${APP_NAME} ne saurait être tenu responsable des décisions que tu prends sur la base des estimations et ` +
           'suggestions affichées, ni des conséquences d’une indisponibilité du service. Aucune limitation ci-dessus ne ' +
           'vise à écarter une responsabilité qui ne peut légalement l’être.',
       },
@@ -123,7 +124,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'Le nom TraceVerte, son identité visuelle, ses textes et son interface sont protégés. Les facteurs d’émission ' +
+          `Le nom ${APP_NAME}, son identité visuelle, ses textes et son interface sont protégés. Les facteurs d’émission ` +
           'proviennent de la Base Empreinte de l’ADEME et restent soumis aux conditions de réutilisation de cette source.',
       },
       {
@@ -172,7 +173,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          `TraceVerte est édité par ${EDITOR_NAME}, à titre non professionnel et sans but lucratif. ` +
+          `${APP_NAME} est édité par ${EDITOR_NAME}, à titre non professionnel et sans but lucratif. ` +
           `Contact : ${CONTACT_EMAIL}.`,
       },
       {
@@ -198,7 +199,7 @@ export default function Conditions() {
     <LegalPage
       title="Conditions d’utilisation"
       updatedAt={UPDATED_AT}
-      intro="TraceVerte est gratuit et sans publicité. Cette page dit ce que le service fait, ce qu’il ne prétend pas faire, et ce sur quoi chacun s’engage."
+      intro={`${APP_NAME} est gratuit et sans publicité. Cette page dit ce que le service fait, ce qu’il ne prétend pas faire, et ce sur quoi chacun s’engage.`}
       sections={SECTIONS}
     />
   );

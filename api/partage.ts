@@ -49,10 +49,10 @@ export default function handler(request: Request) {
   const description = totalLabel
     ? poste
       ? percent !== null
-        ? `Poste principal (${percent} % de l'empreinte) : ${poste}. Calcule la tienne en 5 minutes sur TraceVerte.`
-        : `Poste principal : ${poste}. Calcule la tienne en 5 minutes sur TraceVerte.`
-      : 'Calcule la tienne en 5 minutes sur TraceVerte.'
-    : 'Calcule ton empreinte carbone transport en 5 minutes sur TraceVerte.';
+        ? `Poste principal (${percent} % de l'empreinte) : ${poste}. Calcule la tienne en 5 minutes sur Ramille.`
+        : `Poste principal : ${poste}. Calcule la tienne en 5 minutes sur Ramille.`
+      : 'Calcule la tienne en 5 minutes sur Ramille.'
+    : 'Calcule ton empreinte carbone transport en 5 minutes sur Ramille.';
 
   const html = `<!doctype html>
 <html lang="fr">

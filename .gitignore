@@ -50,4 +50,6 @@ supabase/.temp
 # Canvas de design assemblés (payload de ~2,5 Mo régénéré par la commande de seed) —
 # les sources sont dans docs/design/v1-0N-*/, le livrable vit dans son Artifact publié.
 traceverte-*.html
+ramille-*.html
 mascotte-traceverte.html
+mascotte-ramille.html

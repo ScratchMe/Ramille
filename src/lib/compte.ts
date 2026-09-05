@@ -2,12 +2,13 @@
 // Réf. migration `supabase/migrations/20260905210000_suppression_et_export_compte.sql`.
 //
 // La suppression est un bloqueur Google Play : depuis 2023, toute app permettant de créer un
-// compte doit offrir un chemin de suppression **dans l'app**. TraceVerte en crée un pour chaque
+// compte doit offrir un chemin de suppression **dans l'app**. Ramille en crée un pour chaque
 // visiteur dès l'ouverture (session anonyme), donc la règle s'applique même à quelqu'un qui ne
 // s'est jamais inscrit.
 import { Platform, Share } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
+import { APP_NAME } from '@/constants/produit';
 
 export type CompteResult = { ok: true } | { ok: false; message: string };
 
@@ -19,7 +20,7 @@ export async function exportMyData(): Promise<CompteResult> {
   }
 
   const json = JSON.stringify(data, null, 2);
-  const nom = `traceverte-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`;
+  const nom = `${APP_NAME.toLowerCase()}-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`;
 
   if (Platform.OS === 'web') {
     // Téléchargement réel plutôt qu'une dépendance de plus : `react-native-web` tourne dans un

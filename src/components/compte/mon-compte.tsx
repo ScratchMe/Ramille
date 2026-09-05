@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { deleteMyAccount, exportMyData } from '@/lib/compte';
+import { APP_NAME } from '@/constants/produit';
 
 // Section « Mes données » de /suivi — droit d'accès, de portabilité et à l'effacement
 // (RGPD art. 15, 20, 17), et **bloqueur Google Play** pour la suppression (T12).
@@ -55,7 +56,7 @@ export function MonCompte() {
       </ThemedText>
 
       <ThemedText type="small" themeColor="textSecondary">
-        Tu peux récupérer l’intégralité de ce que TraceVerte sait de toi, dans un fichier JSON, ou
+        Tu peux récupérer l’intégralité de ce que {APP_NAME} sait de toi, dans un fichier JSON, ou
         tout supprimer définitivement.
       </ThemedText>
 
