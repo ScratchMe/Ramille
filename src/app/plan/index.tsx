@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
+import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -263,9 +264,12 @@ export default function Plan() {
               d'efforts. Même principe que le T8 de l'audit sur la restitution. */}
           {actionsCount === 0 && (
             <ThemedView type="backgroundElement" style={styles.emptyActionsCard}>
-              <ThemedText weight={600} style={styles.actionText}>
-                Tu fais déjà l’essentiel sur ce poste.
-              </ThemedText>
+              <View style={styles.praiseRow}>
+                <Mascot mood="happy" size={36} />
+                <ThemedText weight={600} style={styles.praiseText}>
+                  Tu fais déjà l’essentiel sur ce poste.
+                </ThemedText>
+              </View>
               <ThemedText type="small" themeColor="textSecondary" style={styles.body}>
                 Aucun changement de mode ne te ferait gagner assez pour valoir la peine d’être
                 proposé. Le check-in reste là si tu veux garder un œil dessus.
@@ -329,6 +333,8 @@ const styles = StyleSheet.create({
   savingRow: { gap: 2 },
   savingValue: { fontSize: 20, lineHeight: 26 },
   emptyActionsCard: { borderRadius: 18, padding: 20, gap: 8 },
+  praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  praiseText: { fontSize: 17, lineHeight: 24, flex: 1, minWidth: 0 },
   disclaimer: { lineHeight: 18 },
   actionText: { fontSize: 17, lineHeight: 24 },
   checkins: { gap: Spacing.two + 2 },

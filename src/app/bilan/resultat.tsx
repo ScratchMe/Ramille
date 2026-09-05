@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -238,11 +239,22 @@ export default function BilanResultat() {
             <ThemedText type="subtitle" weight={600} style={styles.dominantHeadline}>
               {dominantHeadline(results)}
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
-              {hasEmissions
-                ? `${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`
-                : 'Tes déplacements n’émettent quasiment rien. C’est rare, et c’est une bonne nouvelle.'}
-            </ThemedText>
+            {hasEmissions ? (
+              <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
+                {`${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`}
+              </ThemedText>
+            ) : (
+              // Profil quasi nul (100 % vélo/marche, aucun trajet longue distance) : c'est le
+              // seul endroit de la restitution qui est une félicitation, et le seul où la
+              // mascotte a quelque chose à ajouter au texte.
+              <View style={styles.dominantPraise}>
+                <Mascot mood="happy" size={36} />
+                <ThemedText themeColor="textSecondary" style={styles.dominantPraiseText}>
+                  Tes déplacements n’émettent quasiment rien. C’est rare, et c’est une bonne
+                  nouvelle.
+                </ThemedText>
+              </View>
+            )}
           </ThemedView>
 
           <ThemedView type="backgroundElement" style={styles.compareCard}>
@@ -371,6 +383,8 @@ const styles = StyleSheet.create({
   dominantCard: { borderRadius: 24, padding: 22, gap: 10 },
   dominantLabel: { fontSize: 14, lineHeight: 20 },
   dominantHeadline: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
+  dominantPraise: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  dominantPraiseText: { flex: 1, minWidth: 0 },
   dominantBody: { fontSize: 16, lineHeight: 24 },
   totalBlock: { gap: 4 },
   totalValue: { fontSize: 26, lineHeight: 32 },
