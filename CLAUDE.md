@@ -310,6 +310,22 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   responsable de traitement, regroupés dans `src/constants/editeur.ts` — un seul endroit à
   remplir, jamais de mention en dur dans un écran. Ce régime tomberait si le projet devenait
   une activité professionnelle.
+- **La mascotte ne se redimensionne pas proportionnellement : sa géométrie est calculée**
+  (`src/types/mascot.ts`, `mascotFaceGeometry`), et `src/components/mascot.tsx` ne fait que
+  dessiner ce qu'elle rend. Le visage vit dans un `viewBox` 0 0 100 100, donc une unité vaut
+  `size / 100` pixels : au trait nominal de 3,2 unités, la bouche mesurait **0,70 px** à
+  `size={22}` dans l'en-tête du questionnaire et l'antialiasing n'en laissait qu'une tache
+  grise — la mascotte y coûtait sa place sans rien rendre. La compensation optique épaissit
+  donc les traits à mesure que `size` diminue (les positions ne suivent qu'à 20 %, sinon
+  l'œil sort de la feuille), et sous `MASCOT_MIN_FACE_SIZE` le composant rend la feuille
+  seule plutôt qu'un visage illisible. Ne jamais réintroduire de chemin SVG figé dans le
+  composant, et ne jamais passer un `size` inférieur à cette constante. Deux pièges vérifiés :
+  le point de contrôle d'une quadratique est à **2×** la flèche voulue (s'y tromper double la
+  courbure des yeux, ce que ni le typecheck ni les assertions de lisibilité ne voient — seul
+  un rendu visuel l'a montré, d'où le test de conformité aux chemins d'origine), et arrondir
+  `50 ± offset` casse la symétrie d'un centième, d'où l'arrondi sur l'écart et non sur la
+  coordonnée. Les joues affleurent le bord de la silhouette dès la taille nominale : le
+  visage est découpé par un `clipPath`, sans quoi elles flottent hors du vert.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir
