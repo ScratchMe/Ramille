@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { RAMILLE } from '@/constants/mascotte';
 import { Spacing } from '@/constants/theme';
 
 // Écran d'attente pendant le calcul du bilan (canvas docs/design/v1-08-mascotte, artboard
@@ -26,7 +27,7 @@ export function CalculEnCours() {
         <View style={styles.content}>
           <Mascot mood="thinking" size={72} />
           <ThemedText type="subtitle" weight={600} style={styles.title}>
-            On calcule ton bilan…
+            {RAMILLE.calcul}
           </ThemedText>
           <ThemedText themeColor="textTertiary" style={styles.body}>
             Tes réponses, croisées avec les facteurs d’émission de l’ADEME. Quelques secondes.

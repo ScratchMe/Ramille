@@ -23,6 +23,7 @@ import {
 } from '@/types/suivi';
 import { formatTonnes } from '@/lib/format';
 import { loadReminderPrefs, setReminderPrefs, type ReminderPrefs } from '@/lib/notification-prefs';
+import { RAMILLE } from '@/constants/mascotte';
 
 // Écran « Mon suivi » — la brique qui manquait pour que le produit accompagne réellement
 // dans la durée (v1-07 §3.2). Jusqu'ici on répondait à un check-in, la carte disparaissait,
@@ -213,9 +214,9 @@ export default function Suivi() {
               <View style={styles.checkinsHeader}>
                 <Mascot mood="resting" size={40} />
                 <View style={styles.checkinsHeaderText}>
-                  <ThemedText weight={600}>Rien à rattraper.</ThemedText>
+                  <ThemedText weight={600}>{RAMILLE.periodeCalme}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    Tes points de suivi arrivent d’eux-mêmes, à leur rythme.
+                    {RAMILLE.periodeCalmeDetail}
                   </ThemedText>
                 </View>
               </View>

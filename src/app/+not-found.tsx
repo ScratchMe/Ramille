@@ -3,9 +3,11 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { RamilleDit } from '@/components/ramille-dit';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TitreDePage } from '@/components/titre-de-page';
+import { RAMILLE } from '@/constants/mascotte';
 import { NOT_FOUND_PAGE_TITLE } from '@/constants/page-titles';
 import { Spacing } from '@/constants/theme';
 
@@ -27,9 +29,9 @@ export default function NotFound() {
             Cette page n’existe pas
           </ThemedText>
           <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
-            Le lien est peut-être incomplet, ou la page a changé d’adresse. Rien n’est perdu :
-            ton bilan et ton plan sont là où tu les as laissés.
+            Le lien est peut-être incomplet, ou la page a changé d’adresse.
           </ThemedText>
+          <RamilleDit ligne={RAMILLE.introuvable} mood="calm" size={44} tilt={-7} />
         </View>
         <View style={styles.footer}>
           <Button title="Revenir à l’accueil" onPress={() => router.replace('/')} />
