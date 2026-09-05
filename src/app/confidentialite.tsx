@@ -1,4 +1,5 @@
 import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
+import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
 
 // Politique de confidentialité — URL exigée par l'écran de consentement Google OAuth et par
 // la fiche Google Play.
@@ -12,11 +13,12 @@ import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
 //   - aucune géolocalisation -> non-goal explicite de la spec §2 ;
 //   - carte de partage sans lecture serveur -> v1-06 §2.
 //
-// Les mentions entre crochets sont des informations d'éditeur que seul le responsable de
-// traitement peut fournir : elles doivent être remplies avant toute mise en production.
-// Un texte qui promettrait un mécanisme inexistant serait pire que pas de texte du tout.
+// Les deux seules informations que cette page ne peut pas déduire — nom du responsable de
+// traitement et email de contact — vivent dans `@/constants/editeur`, où le régime juridique
+// applicable (édition non professionnelle) est expliqué. Un texte qui promettrait un
+// mécanisme inexistant serait pire que pas de texte du tout.
 
-const UPDATED_AT = '4 septembre 2026';
+const UPDATED_AT = '5 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -25,9 +27,15 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'TraceVerte est édité par [À COMPLÉTER : nom de l’éditeur, statut juridique, adresse]. ' +
+          `TraceVerte est un projet personnel, développé et publié par ${EDITOR_NAME} à titre non ` +
+          'professionnel et sans but lucratif. C’est donc une personne physique, et non une société, ' +
+          'qui est responsable du traitement de tes données.',
+      },
+      {
+        kind: 'paragraph',
+        text:
           'Pour toute question sur tes données, ou pour exercer les droits décrits plus bas, écris à ' +
-          '[À COMPLÉTER : adresse email de contact].',
+          `${CONTACT_EMAIL}.`,
       },
     ],
   },
@@ -180,7 +188,7 @@ const SECTIONS: LegalSection[] = [
         text:
           'Conformément au RGPD, tu disposes d’un droit d’accès, de rectification, d’effacement, de portabilité, ' +
           'de limitation et d’opposition sur tes données. Tu peux les exercer en écrivant à ' +
-          '[À COMPLÉTER : adresse email de contact]. Nous répondons dans un délai d’un mois.',
+          `${CONTACT_EMAIL}. Nous répondons dans un délai d’un mois.`,
       },
       {
         kind: 'paragraph',

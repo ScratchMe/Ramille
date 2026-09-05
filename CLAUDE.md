@@ -256,6 +256,16 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `TARGET_2050_TRANSPORT_T` est une **dérivation** explicitement signalée — aucune source
   publique ne donne d'objectif 2050 par poste d'empreinte individuelle — d'où le libellé
   « Repère » et non « Objectif » à l'écran.
+- **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
+  faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
+  professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne
+  publier que les coordonnées de l'hébergeur, et le médiateur de la consommation (code de la
+  consommation L612-1) ne s'applique pas du tout — il ne vise que les professionnels. D'où
+  l'absence assumée de statut juridique, d'adresse postale, d'immatriculation et de directeur
+  de la publication. Seul le RGPD (art. 13) reste incompressible : nom et coordonnées du
+  responsable de traitement, regroupés dans `src/constants/editeur.ts` — un seul endroit à
+  remplir, jamais de mention en dur dans un écran. Ce régime tomberait si le projet devenait
+  une activité professionnelle.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir

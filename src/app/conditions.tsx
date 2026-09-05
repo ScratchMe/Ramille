@@ -1,4 +1,5 @@
 import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
+import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
 
 // Conditions générales d'utilisation — exigées par la fiche Google Play au même titre que la
 // politique de confidentialité, et attendues par l'écran de consentement Google OAuth.
@@ -9,10 +10,12 @@ import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
 // (« estimation déclarative ») et ce que l'audit v1-07 a confirmé sur la précision réelle des
 // facteurs.
 //
-// Les mentions entre crochets relèvent de l'éditeur et doivent être remplies avant toute
-// mise en production.
+// L'identité de l'éditeur vit dans `@/constants/editeur`, qui explique aussi pourquoi cette
+// page ne porte ni statut juridique, ni adresse postale, ni directeur de la publication, ni
+// médiateur de la consommation : le projet est édité à titre non professionnel, régime prévu
+// par l'article 6 III-2 de la LCEN. Ce sont des absences motivées, pas des oublis.
 
-const UPDATED_AT = '4 septembre 2026';
+const UPDATED_AT = '5 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -136,7 +139,7 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Tu peux cesser d’utiliser le service à tout moment et demander la suppression de ton compte et de tes données ' +
-          'en écrivant à [À COMPLÉTER : adresse email de contact]. Nous pouvons suspendre un compte en cas de ' +
+          `en écrivant à ${CONTACT_EMAIL}. Nous pouvons suspendre un compte en cas de ` +
           'manquement caractérisé aux règles ci-dessus.',
       },
     ],
@@ -159,14 +162,7 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Ces conditions sont soumises au droit français. En cas de différend, une solution amiable sera recherchée en ' +
-          'priorité, en écrivant à [À COMPLÉTER : adresse email de contact].',
-      },
-      {
-        kind: 'paragraph',
-        text:
-          'Conformément au code de la consommation, tu peux recourir gratuitement à un médiateur de la consommation : ' +
-          '[À COMPLÉTER : nom et coordonnées du médiateur retenu]. La plateforme européenne de règlement en ligne des ' +
-          'litiges est également accessible.',
+          `priorité, en écrivant à ${CONTACT_EMAIL}.`,
       },
     ],
   },
@@ -176,14 +172,22 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'TraceVerte est édité par [À COMPLÉTER : nom, statut juridique, adresse, numéro d’immatriculation le cas ' +
-          'échéant]. Directeur de la publication : [À COMPLÉTER]. Contact : [À COMPLÉTER : adresse email].',
+          `TraceVerte est édité par ${EDITOR_NAME}, à titre non professionnel et sans but lucratif. ` +
+          `Contact : ${CONTACT_EMAIL}.`,
       },
       {
         kind: 'paragraph',
         text:
           'Hébergement des données applicatives : Supabase, serveurs situés dans l’Union européenne. Hébergement de la ' +
           'version web : Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'L’article 6 III-2 de la loi du 21 juin 2004 pour la confiance dans l’économie numérique permet à une personne ' +
+          'éditant un service en ligne à titre non professionnel de ne rendre publiques que les coordonnées de son ' +
+          'hébergeur, celles-ci étant indiquées ci-dessus. Les éléments d’identification de l’éditeur ont été communiqués ' +
+          'aux hébergeurs et restent à la disposition de l’autorité judiciaire.',
       },
     ],
   },
