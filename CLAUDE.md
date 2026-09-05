@@ -50,8 +50,18 @@ bout-en-bout (écrans, flux de connexion) :
 
 Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
 
-**Toucher à un facteur d'émission invalide TOUTES les valeurs attendues de la suite pgTAP,
-pas seulement celles qui citent ce facteur.** Une quinzaine d'assertions chiffrées sont
+**Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
+pas seulement celles qui citent le facteur touché — et « toucher » inclut en AJOUTER un.**
+Le fichier `07` porte trois gardes qui balaient les tables entières (tout mode a une source,
+toute source a un facteur, tout facteur porte l'ACV complète) : quatre modes ajoutés les
+traversent sans être nommés nulle part. C'est ainsi que la CI est tombée une troisième fois
+(PR #48). En particulier, `emission_factors.source` doit valoir **exactement**
+`'ADEME Base Empreinte — ACV complète (via API Impact CO2)'` : ce n'est pas une étiquette
+décorative mais le seul endroit où l'on enregistre quel endpoint a été interrogé — la valeur
+seule ne distingue pas un facteur ACV d'un facteur d'usage, les deux endpoints renvoyant des
+nombres également plausibles.
+
+**Le corollaire sur les valeurs :** Une quinzaine d'assertions chiffrées sont
 réparties dans `01`, `05`, `06` et `08`, et beaucoup dérivent d'un facteur sans le nommer.
 Chercher l'ancienne valeur littérale dans les fichiers ne suffit donc pas — c'est ainsi que
 la CI est tombée deux fois (PR #34, puis PR #41). La méthode qui marche : lister toutes les
