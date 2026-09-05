@@ -7,6 +7,8 @@ import { OnboardingDots } from '@/components/onboarding-dots';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTrackView } from '@/hooks/use-track-view';
+import { track } from '@/lib/analytics';
 
 const SECTIONS = [
   '1 — Trajets domicile-travail',
@@ -18,6 +20,8 @@ const SECTIONS = [
 // Onboarding 4/4 — Transition bilan. La durée est annoncée avant l'entrée dans le
 // bilan : la friction est assumée, pas dissimulée (handoff design).
 export default function OnboardingTransition() {
+  useTrackView('onboarding_step_view', { step: 'transition' });
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -46,7 +50,16 @@ export default function OnboardingTransition() {
           </View>
         </View>
         <View style={styles.footer}>
-          <Button title="Commencer mon bilan" onPress={() => router.push('/bilan')} />
+          <Button
+            title="Commencer mon bilan"
+            onPress={() => {
+              // Fin de l'onboarding : `profiles.onboarding_completed_at` existe dans le
+              // schéma mais n'est écrit par aucun code du produit, donc c'est ici — et
+              // seulement ici — que le franchissement se lit.
+              track('onboarding_complete');
+              router.push('/bilan');
+            }}
+          />
           <OnboardingDots total={4} activeIndex={3} />
         </View>
       </SafeAreaView>

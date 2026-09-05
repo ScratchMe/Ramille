@@ -9,6 +9,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useTrackView } from '@/hooks/use-track-view';
+import { track } from '@/lib/analytics';
 import { supabase } from '@/lib/supabase';
 import { APP_URL } from '@/lib/app-url';
 import {
@@ -111,6 +113,8 @@ type LoadState =
 // bandeau discret ("Bilan anonyme — relance douce") plutôt que de réinterrompre à chaque
 // retour, le CTA va alors directement au plan.
 export default function BilanResultat() {
+  useTrackView('resultat_view');
+
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [state, setState] = useState<LoadState>(
@@ -150,7 +154,7 @@ export default function BilanResultat() {
 
   const goToPlan = () => {
     if (!proposalSeen) {
-      router.push({ pathname: '/connexion', params: { id } });
+      router.push({ pathname: '/connexion', params: { id, source: 'resultat_transition' } });
       return;
     }
     router.push('/plan');
@@ -216,7 +220,9 @@ export default function BilanResultat() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {showBanner && (
             <Pressable
-              onPress={() => router.push({ pathname: '/connexion', params: { id } })}
+              onPress={() =>
+                router.push({ pathname: '/connexion', params: { id, source: 'resultat_cta' } })
+              }
               style={[styles.banner, { backgroundColor: theme.backgroundElement }]}
             >
               <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
@@ -314,7 +320,12 @@ export default function BilanResultat() {
 
         <View style={styles.footer}>
           <Button title="Voir ce que je peux faire" onPress={goToPlan} />
-          <Pressable onPress={shareResult}>
+          <Pressable
+            onPress={() => {
+              track('resultat_share');
+              shareResult();
+            }}
+          >
             <ThemedText type="small" weight={600} themeColor="accentText" style={styles.editLink}>
               Partager mon bilan
             </ThemedText>

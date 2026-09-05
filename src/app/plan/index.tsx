@@ -12,6 +12,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { formatTonnes } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
+import { useTrackView } from '@/hooks/use-track-view';
 import { supabase } from '@/lib/supabase';
 
 type PlanAction = {
@@ -70,6 +71,8 @@ type LoadState =
 // signe que la personne fait déjà l'essentiel — l'état correspondant la félicite au lieu de
 // lui présenter une liste vide.
 export default function Plan() {
+  useTrackView('plan_view');
+
   const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
 

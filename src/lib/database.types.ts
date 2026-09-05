@@ -667,11 +667,69 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_event_types: {
+        Row: {
+          description: string
+          name: string
+        }
+        Insert: {
+          description: string
+          name: string
+        }
+        Update: {
+          description?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      usage_events: {
+        Row: {
+          id: number
+          name: string
+          occurred_at: string
+          platform: string
+          props: Json
+          user_id: string
+        }
+        Insert: {
+          id?: never
+          name: string
+          occurred_at?: string
+          platform: string
+          props?: Json
+          user_id: string
+        }
+        Update: {
+          id?: never
+          name?: string
+          occurred_at?: string
+          platform?: string
+          props?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_events_name_fkey"
+            columns: ["name"]
+            isOneToOne: false
+            referencedRelation: "usage_event_types"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "usage_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
       compute_assessment_results: {
         Args: { p_assessment_id: string }
         Returns: undefined
@@ -693,6 +751,7 @@ export type Database = {
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
       purge_stale_anonymous_accounts: { Args: never; Returns: undefined }
+      purge_usage_events: { Args: never; Returns: undefined }
       recompute_assessment_results: {
         Args: { p_assessment_id: string }
         Returns: undefined

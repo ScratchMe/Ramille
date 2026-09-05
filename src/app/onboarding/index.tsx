@@ -8,10 +8,13 @@ import { OnboardingDots } from '@/components/onboarding-dots';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTrackView } from '@/hooks/use-track-view';
 
 // Onboarding 1/4 — Accroche. Aucun chiffre : la spec impose d'ouvrir sur un bénéfice
 // concret, pas sur l'écart à combler (docs/design/README.md §1.1).
 export default function OnboardingAccroche() {
+  useTrackView('onboarding_step_view', { step: 'accroche' });
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>

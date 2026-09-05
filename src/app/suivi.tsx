@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useTrackView } from '@/hooks/use-track-view';
 import { loadAnsweredCheckins, loadAssessmentHistory } from '@/lib/bilan-history';
 import {
   daysSince,
@@ -60,6 +61,8 @@ type LoadState =
   | { status: 'ok'; history: AssessmentSnapshot[]; checkins: CheckinRecord[] };
 
 export default function Suivi() {
+  useTrackView('suivi_view');
+
   const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [reminders, setReminders] = useState<ReminderPrefs>({ canReceive: false, enabled: false });

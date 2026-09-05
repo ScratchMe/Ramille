@@ -8,6 +8,7 @@ import { TextField } from '@/components/auth/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { track } from '@/lib/analytics';
 import { linkEmailPassword } from '@/lib/auth';
 import { markConnexionProposalSeen } from '@/lib/connexion-prefs';
 
@@ -43,6 +44,9 @@ export default function ConnexionEmail() {
       return;
     }
 
+    // Le rattachement est effectif ici — `linkEmailPassword` a réussi. La confirmation
+    // d'adresse qui suit conditionne les rappels par email, pas le compte lui-même.
+    track('connexion_success', { method: 'email' });
     await markConnexionProposalSeen();
     setSent(true);
   };

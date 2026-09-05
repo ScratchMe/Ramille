@@ -109,6 +109,8 @@ produit par rapport à ce handoff (les deux plus importants : §1 de
 (comparaison entre utilisateurs) vs. ce qui a été révisé, et le détail des Vercel Functions en
 runtime Node.js §3).
 
+Le dernier increment en date est `v1-08-mesure-usage.md` (mesure d'usage, 05/09/2026).
+
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
 suivi dans la durée qui manque). Son §1 corrige deux erreurs de chiffre documentées ailleurs
@@ -247,6 +249,35 @@ Deux mécanismes de génération server-side qu'il faut garder synchronisés si 
 volée côté client) — même logique pour `engagement_checkins.trip_label`, snapshotté pour ne
 pas changer rétroactivement le wording d'un check-in déjà généré si l'utilisateur refait un
 bilan plus tard.
+
+**Mesure d'usage** (`usage_events`, issue #30, cf. `v1-08-mesure-usage.md`) : **on n'instrumente
+jamais ce que le schéma enregistre déjà.** Pas d'événement `bilan_submit` (c'est
+`assessments.submitted_at`), `checkin_answer` (c'est `engagement_checkins.response`) ni
+`feedback_submit` — dupliquer un fait garantit deux chiffres divergents le jour où l'un des
+chemins échoue, et un test pgTAP interdit de les réintroduire. Les axes de segmentation
+(`zone_type`, `tc_access`, poste dominant, cadence) sont **déjà en base** : c'est ce qui a écarté
+PostHog. La liste des événements vit dans `public.usage_event_types` avec une clé étrangère
+depuis `usage_events` — **ajouter un événement impose une ligne par migration ET une entrée dans
+`src/types/analytics.ts`**, sinon l'insert est rejeté et l'événement perdu en silence (même
+mécanique que `emission_factor_sources`). Un événement déclaré mais qu'aucun code n'émet doit
+être retiré : il ne se lit pas « pas encore instrumenté », il se lit **zéro**.
+
+Trois pièges vérifiés en construisant cette table, tous silencieux :
+- **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
+  `security definer`.** `usage_events` n'a aucune policy de lecture ; sans `security definer`, le
+  `select` de comptage du garde-fou de volume ne voyait rien depuis `authenticated` et le quota
+  ne se déclenchait **jamais**. Corollaire pour les tests : remplir un quota sous `postgres` par
+  commodité, c'est le tester dans le seul rôle où il ne sert à rien.
+- **`revoke execute ... from anon, authenticated` ne révoque rien** : PostgreSQL accorde
+  `EXECUTE` à **PUBLIC** à la création, et les deux rôles en héritent. Il faut
+  `from public, anon, authenticated` — sans quoi n'importe quel visiteur appelait
+  `/rest/v1/rpc/purge_usage_events`.
+- **`profiles.zone_type` et `profiles.tc_access` sont des colonnes mortes.** Le contexte B4 vit
+  dans `assessment_answers` depuis le schéma bilan v2 ; ces deux-là n'ont jamais été retirées et
+  ne sont écrites par rien. Une vue d'analyse branchée dessus segmente tout le monde sur `NULL`
+  sans lever d'erreur. Vérifier qu'une colonne est alimentée avant de s'y fier — et se méfier des
+  valeurs de statut écrites de mémoire (`assessments.status` vaut `completed`, jamais
+  `submitted`).
 
 **Canal de retour** (`feedback`, issue #29) : la seule table où un client écrit du texte
 libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à

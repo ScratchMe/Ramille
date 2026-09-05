@@ -14,6 +14,7 @@ import {
   formatTonnesShort,
 } from '@/constants/carbon-reference';
 import { Spacing } from '@/constants/theme';
+import { useTrackView } from '@/hooks/use-track-view';
 import { useTheme } from '@/hooks/use-theme';
 
 // Onboarding 2/4 — Contexte chiffré. Tous les chiffres de cet écran viennent désormais de
@@ -27,6 +28,8 @@ import { useTheme } from '@/hooks/use-theme';
 // transport premier poste). Les données du SDES sont celles de 2017 : d'où « en moyenne »
 // et non « aujourd'hui » dans le titre, et l'étiquette de source sous les barres.
 export default function OnboardingContexte() {
+  useTrackView('onboarding_step_view', { step: 'contexte' });
+
   const theme = useTheme();
 
   return (

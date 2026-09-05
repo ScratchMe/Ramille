@@ -9,7 +9,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { markConnexionProposalSeen } from '@/lib/connexion-prefs';
+import { useTrackView } from '@/hooks/use-track-view';
 import { formatTonnes } from '@/lib/format';
+import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
@@ -19,7 +21,15 @@ type Recap = { total_co2_kg_year: number; dominant_poste_label: string } | null;
 // design) : affichée une seule fois, juste après que l'utilisateur ait vu sa restitution
 // (cf. bilan/resultat.tsx, qui route ici tant que la proposition n'a pas été vue/déclinée).
 export default function ConnexionProposition() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
+
+  // `resultat_transition` par défaut : c'est le chemin historique, et un paramètre absent
+  // (lien direct, retour arrière) vaut mieux compté là que perdu.
+  useTrackView('connexion_view', {
+    source: source === 'resultat_cta' || source === 'plan' || source === 'suivi'
+      ? source
+      : 'resultat_transition',
+  });
   const [recap, setRecap] = useState<Recap>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -34,6 +44,7 @@ export default function ConnexionProposition() {
   }, [id]);
 
   const dismiss = async () => {
+    track('connexion_dismiss');
     await markConnexionProposalSeen();
     router.replace('/plan');
   };
@@ -46,6 +57,7 @@ export default function ConnexionProposition() {
       Alert.alert('Connexion impossible', error.message);
       return;
     }
+    track('connexion_success', { method: 'google' });
     await markConnexionProposalSeen();
     router.replace('/plan');
   };
