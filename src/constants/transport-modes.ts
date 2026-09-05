@@ -61,7 +61,20 @@ export const LEISURE_MODE_CHOICES_MORE: CommuteModeChoice[] = [
 
 // Question de suivi affichée dès que "voiture" est choisi (B1.4/B1.7/B2.2/B3.4) — jamais
 // une entrée de plus dans les listes ci-dessus, cf. types/bilan.ts CarEngine.
-export const CAR_ENGINE_OPTIONS: { value: 'thermique' | 'electrique'; label: string }[] = [
+// Quatre motorisations, au même niveau — pas de second « rechargeable ou non ? » imbriqué :
+// la profondeur coûte plus cher en abandon qu'une puce de plus, et les deux hybrides sont
+// assez éloignées (9,5 %) pour mériter d'être distinguées.
+//
+// Ordre volontaire, du plus émetteur au moins émetteur en ACV complète — et il n'est pas
+// celui qu'on attend : l'hybride non rechargeable (0,146579) émet **plus** que la thermique
+// de référence (0,142253), qui est une compacte diesel sobre à l'usage. Cf. migration
+// 20260905140000_motorisation_hybride.sql.
+export const CAR_ENGINE_OPTIONS: {
+  value: 'thermique' | 'hybride' | 'hybride_rechargeable' | 'electrique';
+  label: string;
+}[] = [
   { value: 'thermique', label: 'Thermique' },
+  { value: 'hybride', label: 'Hybride' },
+  { value: 'hybride_rechargeable', label: 'Hybride rechargeable' },
   { value: 'electrique', label: 'Électrique' },
 ];

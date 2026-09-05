@@ -111,16 +111,15 @@ export function CommuteExtraStep({
             {answers.commute_second_mode === 'voiture' && (
               <View style={styles.nestedEngine}>
                 <ThemedText type="small" themeColor="textTertiary">
-                  Thermique ou électrique ?
+                  Quelle motorisation ?
                 </ThemedText>
-                <View style={styles.row}>
-                  {CAR_ENGINE_OPTIONS.map((option) => (
+                <View style={styles.engineRow}>
+              {CAR_ENGINE_OPTIONS.map((option) => (
                     <Chip
                       key={option.value}
                       label={option.label}
                       selected={answers.commute_car_engine === option.value}
                       onPress={() => update({ commute_car_engine: option.value })}
-                      flex
                       radius={16}
                       selectedStyle="outline"
                     />
@@ -141,6 +140,9 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   row: { flexDirection: 'row', gap: Spacing.two },
+  // Quatre motorisations : équiréparties, « Hybride rechargeable » écraserait les
+  // trois autres. Largeur naturelle et retour à la ligne.
+  engineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   separator: { height: 1 },
   nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   nestedList: { gap: Spacing.two },

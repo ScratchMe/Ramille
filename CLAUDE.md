@@ -145,15 +145,24 @@ une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par 
 `BilanAnswers` (`src/types/bilan.ts`) est un miroir direct des colonnes de la table, pour un
 insert sans transformation.
 
-Le mode "voiture" ne distingue jamais thermique/électrique dans les listes de sélection
-(B1.4/B1.7/B2.2 restent "Voiture (seul)"/"Voiture (covoiturage)", jamais 4 entrées) — une
-question de suivi ("Thermique ou électrique ?") s'affiche en nested reveal dès que "voiture"
-est choisi, dans 3 champs indépendants (`commute_car_engine`, `leisure_car_engine`,
-`car_long_trips_engine`). `public.resolve_car_mode(mode_id, engine)` résout vers
-`voiture_thermique`/`voiture_electrique` (facteurs ADEME réels, 2,1x d'écart en ACV) avant tout
+Le mode "voiture" ne distingue jamais la motorisation dans les listes de sélection
+(B1.4/B1.7/B2.2 restent "Voiture (seul)"/"Voiture (covoiturage)", jamais une entrée par
+motorisation) — une question de suivi ("Quelle motorisation ?") s'affiche en nested reveal dès
+que "voiture" est choisi, dans 3 champs indépendants (`commute_car_engine`,
+`leisure_car_engine`, `car_long_trips_engine`). **Quatre réponses au même niveau** — thermique,
+hybride, hybride rechargeable, électrique — et surtout pas un second niveau « rechargeable ou
+non ? » : la profondeur coûte plus cher en abandon qu'une puce de plus.
+`public.resolve_car_mode(mode_id, engine)` résout vers les modes correspondants avant tout
 lookup de facteur/libellé dans `compute_assessment_results` ; moteur non renseigné (bilans
-soumis avant cette migration) retombe sur le générique `voiture`. Voir
-`supabase/migrations/20260904090000_car_engine.sql`.
+soumis avant ces migrations) retombe sur le générique `voiture`. Voir
+`supabase/migrations/20260904090000_car_engine.sql` puis `20260905140000_motorisation_hybride.sql`.
+
+**L'ordre des motorisations en ACV n'est pas celui qu'on attend, et un test pgTAP l'épingle
+pour qu'on ne le « corrige » pas** : hybride (0,146579) > thermique (0,142253) > hybride
+rechargeable (0,133900) > électrique (0,067365). La thermique de référence de l'ADEME est une
+compacte diesel, sobre à l'usage, tandis que l'hybride non rechargeable ajoute une batterie à
+fabriquer sans jamais la recharger sur le réseau. Ranger « hybride » du côté de l'électrique
+par réflexe se trompe de 10 %, et dans le mauvais sens.
 
 **Tout lookup de facteur d'émission passe par `public.emission_factor(mode_id, date)`** —
 jamais un `select ... order by valid_from desc limit 1` écrit à la main. La fonction borne le

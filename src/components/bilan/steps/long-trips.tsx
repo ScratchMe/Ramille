@@ -66,16 +66,15 @@ export function LongTripsStep({
         {answers.car_long_trips_per_year > 0 && (
           <ThemedView type="backgroundElement" style={styles.nestedBox}>
             <ThemedText type="small" themeColor="textTertiary">
-              Thermique ou électrique ?
+              Quelle motorisation ?
             </ThemedText>
-            <View style={styles.row}>
+            <View style={styles.engineRow}>
               {CAR_ENGINE_OPTIONS.map((option) => (
                 <Chip
                   key={option.value}
                   label={option.label}
                   selected={answers.car_long_trips_engine === option.value}
                   onPress={() => update({ car_long_trips_engine: option.value })}
-                  flex
                   radius={16}
                   selectedStyle="outline"
                 />
@@ -100,4 +99,7 @@ const styles = StyleSheet.create({
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two, marginTop: 4 },
   row: { flexDirection: 'row', gap: Spacing.two },
+  // Quatre motorisations : équiréparties, « Hybride rechargeable » écraserait les
+  // trois autres. Largeur naturelle et retour à la ligne.
+  engineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 });
