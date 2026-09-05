@@ -134,6 +134,109 @@ occurrences une seconde fois à l'étape 2.
 
 ---
 
+### 1.5 Tous les facteurs ne portaient que la phase d'usage, pas le cycle de vie
+
+**Trouvé le 05/09/2026, sur une remarque produit** : « l'API ne renverrait-elle que les
+émissions d'usage et pas celles de fabrication ? ». Vérifié : oui.
+
+`/api/v1/transport`, interrogé par le seed initial puis par `sync_emission_factors()`, ne
+renvoie **que la phase d'usage** — la combustion ou l'électricité consommée en roulant. La
+fabrication du véhicule et des infrastructures en est absente.
+
+La preuve est arithmétique. L'endpoint `/api/v1/thematiques/ecv/transport` décompose chaque
+mode en composantes (`footprintDetail` : id5 = fabrication, id6 = usage, id7 = forçage
+radiatif pour l'avion). Nos valeurs stockées correspondaient **exactement à id6**, jamais au
+total :
+
+| Mode | fabrication (id5) | usage (id6) | ACV totale | ce qu'on stockait |
+|---|---|---|---|---|
+| Voiture thermique | 0,031696 | **0,110558** | 0,142253 | 0,1106 |
+| Voiture électrique | 0,055277 | **0,012088** | 0,067365 | 0,0121 |
+| TGV | 0,000630 | **0,002300** | 0,002930 | 0,0023 |
+| Vélo mécanique | 0,000170 | **0** | 0,000170 | 0,0000 |
+
+Le vélo est le cas qui rend le défaut visible à l'œil nu : usage nul, ACV non nulle.
+
+#### Ampleur, par mode
+
+| Mode | avant (usage) | après (ACV) | rapport |
+|---|---|---|---|
+| Avion court / long | 0,1843 / 0,1776 | 0,184661 / 0,177894 | ×1,00 |
+| Bus thermique | 0,1135 | 0,122420 | ×1,08 |
+| Métro / tram | 0,0040 | 0,004360 | ×1,09 |
+| TER | 0,0229 | 0,027690 | ×1,21 |
+| Scooter thermique | 0,0604 | 0,076300 | ×1,26 |
+| TGV | 0,0023 | 0,002930 | ×1,27 |
+| Voiture thermique | 0,1106 | 0,142253 | ×1,29 |
+| **Voiture électrique** | 0,0121 | 0,067365 | **×5,57** |
+| **Trottinette** | 0,0020 | 0,024900 | **×12,45** |
+
+L'avion ne bouge pas : sa fabrication est négligeable devant sa combustion (0,000361 sur
+0,184661), et le forçage radiatif était déjà compris dans la valeur d'usage.
+
+#### Pourquoi c'était grave, et pas seulement imprécis
+
+1. **On comparait des choux et des carottes.** Le repère de 2,8 t affiché sur la restitution
+   (SDES, cf. §3.4) est une empreinte carbone **ACV complète**. On y confrontait un total
+   calculé en usage seul : le produit flattait systématiquement l'utilisateur, sur l'écran
+   même dont dépend sa prise de conscience.
+2. **Deux conclusions s'inversaient.** En usage seul, le bus thermique urbain (0,1135)
+   émettait plus que la voiture thermique (0,1106) ; en ACV c'est l'inverse (0,1224 contre
+   0,1423), le bus gagne 14 %. Et l'écart électrique / thermique passe de **×9 à ×2,1** : on
+   effaçait la fabrication de la batterie, qui est précisément l'objection que tout le monde
+   oppose à la voiture électrique. `v1-05` §1 et `CLAUDE.md` annonçaient ce ×9 ; les deux
+   sont corrigés.
+3. **Le conseil devenait faux.** Recommander le vélo ou la trottinette comme « zéro
+   émission » alors que leur impact est à 100 % et 92 % en fabrication est le genre de
+   raccourci qui décrédibilise le reste.
+
+#### Pourquoi une correction en place et non une nouvelle version
+
+`emission_factor(mode, date)` borne chaque bilan aux facteurs de sa date, pour qu'une révision
+ADEME ne réécrive jamais un résultat déjà montré (`v1-01` §3). Ce mécanisme ne devait **pas**
+s'appliquer ici : ce n'est pas une révision de la Base Empreinte, c'est une erreur de source
+de notre côté. Versionner aurait fait apparaître, entre un bilan d'avant et un bilan d'après,
+un bond de +29 % ne correspondant à aucun changement d'habitude — exactement ce que `/suivi`
+promet de ne jamais faire. Même raisonnement et même traitement qu'en §1.1 : on corrige les
+lignes et on recalcule tout.
+
+#### Ce que la correction a changé sur les bilans réels
+
+Les 13 bilans de la base ont été recalculés. Tous montent, de façon très inégale :
+
+| Total avant | après | écart |
+|---|---|---|
+| 136 kg (profil voiture électrique) | 756 kg | **+456 %** |
+| 3 405 kg (commute voiture thermique) | 4 380 kg | +29 % |
+| 1 628 kg (avion court-courrier) | 1 937 kg | +19 % |
+| 14 329 kg (avion long-courrier) | 15 817 kg | +10 % |
+
+Le profil « voiture électrique » est celui que la base usage-seul flattait le plus : c'est à
+lui seul la justification de la reprise.
+
+#### Correctif
+
+Migration `20260905100000_facteurs_acv_complete.sql`. `emission_factor_sources` se clé
+désormais sur des **slugs** et non des identifiants numériques, et `sync_emission_factors()`
+interroge l'endpoint ACV. Trois simplifications au passage : un seul appel HTTP au lieu de
+trois, plus de division par `reference_km`, et surtout **`reference_km` disparaît** — il
+n'existait que parce que `/transport` faisait dépendre la valeur de l'avion du km demandé,
+alors que l'ACV publie les segments aériens comme des entrées distinctes.
+
+Deux gardes ajoutés en pgTAP, parce que le garde-fou des ±50 % ne pouvait rien voir ici :
+l'erreur portait sur l'endpoint interrogé, pas sur la valeur renvoyée. Le premier épingle la
+**source** de chaque facteur (`source like '%ACV complète%'`), le second vérifie que le vélo
+est non nul. Vérification de bout en bout : la synchronisation repointée a été exécutée pour
+de vrai et rend `success` avec **zéro écart** sur les 13 modes — l'API confirme elle-même le
+mapping.
+
+#### Reste ouvert
+
+L'ACV publiée pour le vélo (0,000170) est presque nulle, mais la question de fond demeure :
+`velo` et `marche` sont les deux seuls modes que le produit recommande, et afficher « 0 » pour
+la marche est une vérité, pour le vélo une approximation. Le chiffre est désormais le bon ;
+c'est le discours à l'écran qui devra éviter le mot « zéro ».
+
 ## 2. Défauts techniques vérifiés
 
 Classés par gravité. Tous constatés dans le code ou en base, pas déduits.
@@ -395,8 +498,15 @@ un décompte en est un). À instruire au moment de l'étape 4.
 L'ordre suit une règle simple : **d'abord ne plus afficher de chiffres faux**, ensuite réparer
 la boucle existante, ensuite seulement construire ce qui manque.
 
+L'étape 0 a été insérée le 05/09/2026, après les étapes 1 à 5 : elle porte un défaut plus
+profond que ceux de l'audit initial (§1.5), trouvé alors que l'étape 6 était déjà en cours. Elle
+la précède dans le tableau parce que c'est son ordre logique — chiffrer les actions du plan
+n'a aucun sens sur des facteurs qui ignorent la fabrication, et deux recommandations changeaient
+de signe entre les deux bases.
+
 | Étape | Contenu | Traite | Statut |
 |---|---|---|---|
+| 0 | Passage de tous les facteurs à l'ACV complète | §1.5 | **fait** — migration `20260905100000` |
 | 1 | Facteurs avion long-courrier et train longue distance | T1, T2, T4, T13 | **fait** — migration `20260904140000` |
 | 2 | Synchronisation ADEME automatisée | T3, #27 | **fait** — migration `20260904160000` |
 | 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | **fait** — migration `20260904180000` |

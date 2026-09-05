@@ -28,8 +28,15 @@ type. `assessment_trips`/`assessment_trip_modes` sont donc supprimées au profit
 > inchangés (toujours "Voiture (seul)"/"Voiture (covoiturage)", jamais 4 entrées), mais une
 > question de suivi ("Thermique ou électrique ?") s'affiche désormais dès que "voiture" est
 > choisi, dans les 3 contextes où ce mode peut apparaître (domicile-travail, loisirs,
-> voyages longue distance) — le facteur d'émission diffère d'un facteur ~9 entre les deux
-> (0,1106 vs 0,0121 kgCO2/km), trop pour laisser le bilan aussi imprécis sur ce poste.
+> voyages longue distance) — le facteur d'émission diffère nettement entre les deux, trop
+> pour laisser le bilan aussi imprécis sur ce poste.
+>
+> **Chiffres révisés le 05/09/2026** (`v1-07` §1.5) : ce paragraphe annonçait « un facteur ~9
+> (0,1106 vs 0,0121) ». C'étaient les composantes d'**usage seul**. En ACV complète l'écart
+> est de **2,1** (0,142253 vs 0,067365) : la fabrication de la batterie pèse 82 % de
+> l'empreinte d'une voiture électrique. La décision de poser la question reste entièrement
+> justifiée — un facteur 2 sur le poste dominant de la plupart des bilans —, mais l'argument
+> ne doit plus être présenté comme un ordre de grandeur.
 
 La spec liste 9 modes sélectionnables précis, différents du référentiel à 6 catégories
 d'increment 1 (pas de distinction thermique/électrique pour la voiture — seulement

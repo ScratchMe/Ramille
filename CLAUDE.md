@@ -140,7 +140,7 @@ Le mode "voiture" ne distingue jamais thermique/électrique dans les listes de s
 question de suivi ("Thermique ou électrique ?") s'affiche en nested reveal dès que "voiture"
 est choisi, dans 3 champs indépendants (`commute_car_engine`, `leisure_car_engine`,
 `car_long_trips_engine`). `public.resolve_car_mode(mode_id, engine)` résout vers
-`voiture_thermique`/`voiture_electrique` (facteurs ADEME réels, ~9x d'écart) avant tout
+`voiture_thermique`/`voiture_electrique` (facteurs ADEME réels, 2,1x d'écart en ACV) avant tout
 lookup de facteur/libellé dans `compute_assessment_results` ; moteur non renseigné (bilans
 soumis avant cette migration) retombe sur le générique `voiture`. Voir
 `supabase/migrations/20260904090000_car_engine.sql`.
@@ -154,21 +154,34 @@ contaminerait tout le total. Voir
 `supabase/migrations/20260904140000_fix_flight_and_long_distance_train_factors.sql`.
 
 Cette migration porte aussi deux corrections de chiffre à connaître : le facteur **avion**
-dépend de la distance côté API Impact CO2 (relevé à 1500 km pour le court/moyen-courrier,
-9000 km pour le long-courrier — les distances de référence du calcul, à réutiliser telles
-quelles pour toute mise à jour), et le poste **voyages en train** (B3.3, « > 300 km ») utilise
-`train_longue_distance` (TGV, 0,0023) et non le mode générique `train` qui reste le TER du
+dépend du segment (court / moyen / long-courrier), relevé aux distances de référence du calcul
+— `dist_flight_short` = 1500 km, donc un *moyen*-courrier au sens ADEME, et `dist_flight_long`
+= 9000 km ; et le poste **voyages en train** (B3.3, « > 300 km ») utilise
+`train_longue_distance` (TGV) et non le mode générique `train` qui reste le TER du
 trajet quotidien B1.4. `train_longue_distance` n'est jamais sélectionnable dans le
 questionnaire — il n'apparaît donc pas dans `src/constants/transport-modes.ts`, mais bien dans
 `MODE_PREPOSITION` (`bilan/resultat.tsx`) puisqu'il peut être le `dominant_poste_mode`.
 
+**Tous les facteurs portent l'ACV complète — usage + fabrication — jamais la seule phase
+d'usage.** C'est la distinction la plus coûteuse du produit et elle n'est pas visible dans les
+valeurs elles-mêmes : l'endpoint `/api/v1/transport` de l'API Impact CO2 renvoie des chiffres
+parfaitement corrects, mais qui n'incluent pas la fabrication. Le seul endpoint à utiliser est
+`/api/v1/thematiques/ecv/transport`, champ `ecv`. Un facteur d'usage seul sous-estime de 29 %
+une voiture thermique, de **457 % une voiture électrique** (la batterie), et affiche le vélo à
+zéro ; et il rend incomparable le total au repère national de `carbon-reference.ts`, qui est
+une empreinte ACV. Deux tests pgTAP épinglent la **source** de chaque facteur et le fait que
+le vélo soit non nul — le garde-fou des ±50 % ne peut rien voir ici, puisque l'erreur porte sur
+l'endpoint interrogé et non sur la valeur renvoyée. Historique complet en `v1-07` §1.5.
+
 **Les facteurs se resynchronisent seuls** : `sync_emission_factors()` (SQL pur via l'extension
 `http`, pas d'Edge Function — pas de secret à gérer, même modèle que les autres crons)
-interroge l'API Impact CO2 chaque trimestre et **insère une nouvelle version** dans
-`emission_factors`, sans jamais écraser. Le mapping vers les identifiants Impact CO2 vit dans
-`emission_factor_sources` (avec `reference_km` — 1500/9000 pour l'avion, cf. ci-dessus), pas en
-dur dans la fonction : **ajouter un mode au produit impose d'y ajouter une ligne**, sinon il
-reste figé à sa valeur de seed en silence (un test pgTAP garde ce point). Un écart de plus de
+interroge cet endpoint chaque trimestre et **insère une nouvelle version** dans
+`emission_factors`, sans jamais écraser. Le mapping vers les **slugs** Impact CO2 vit dans
+`emission_factor_sources`, pas en dur dans la fonction : **ajouter un mode au produit impose
+d'y ajouter une ligne**, sinon il reste figé à sa valeur de seed en silence (un test pgTAP
+garde ce point). Pour l'avion, le slug retenu doit rester cohérent avec les distances codées
+dans `recompute_assessment_results` (`avion-moyencourrier` pour 1500 km,
+`avion-longcourrier` pour 9000). Un écart de plus de
 50 % n'est jamais appliqué automatiquement — il est signalé dans `emission_factor_sync_runs`
 pour relecture. Ce journal est la seule façon de voir que la synchronisation tourne
 vraiment : le mécanisme prévu dès `v1-01` §2 n'avait jamais été construit et rien ne le disait.

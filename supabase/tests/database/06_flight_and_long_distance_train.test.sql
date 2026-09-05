@@ -173,7 +173,7 @@ values ('voiture', 0.9999, 'test', 'pgtap', current_date + 1);
 
 select is(
   public.emission_factor('voiture', current_date),
-  0.1106::numeric,
+  0.142253::numeric,
   'emission_factor : un facteur postérieur à la date du bilan est ignoré'
 );
 
@@ -185,7 +185,7 @@ select is(
 
 select is(
   public.emission_factor('voiture', current_date - 3650),
-  0.1106::numeric,
+  0.142253::numeric,
   'emission_factor : bilan antérieur à toute version connue -> repli sur la plus ancienne, jamais NULL'
 );
 

@@ -240,21 +240,18 @@ export type Database = {
       }
       emission_factor_sources: {
         Row: {
-          impactco2_ids: number[]
+          impactco2_slugs: string[]
           note: string | null
-          reference_km: number
           transport_mode_id: string
         }
         Insert: {
-          impactco2_ids: number[]
+          impactco2_slugs: string[]
           note?: string | null
-          reference_km?: number
           transport_mode_id: string
         }
         Update: {
-          impactco2_ids?: number[]
+          impactco2_slugs?: string[]
           note?: string | null
-          reference_km?: number
           transport_mode_id?: string
         }
         Relationships: [

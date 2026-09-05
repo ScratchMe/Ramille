@@ -99,12 +99,16 @@ select public.compute_assessment_results('22222222-2222-2222-2222-222222222222')
 -- ce trajet ? ») porte sur la voiture de B1.4, pas sur le second mode intermodal.
 --
 --   km_année = 20 × 2 × 4 j × 45 sem = 7200, réparti 50/50 entre les deux modes
---   jambe voiture : 3600 × 0,1106 = 398,16, covoiturée à 4 -> 99,54
---   jambe train   : 3600 × 0,0229 =  82,44, jamais covoiturée
---   total = 181,98        (ancienne valeur, erronée : 480,60 / 4 = 120,15)
+--   jambe voiture : 3600 × 0,142253 = 512,1108, covoiturée à 4 -> 128,0277
+--   jambe train   : 3600 × 0,027690 =  99,684,  jamais covoiturée
+--   total = 227,712
+--
+-- Facteurs révisés le 05/09/2026 (v1-07 §1.5, migration 20260905100000) : ils portent
+-- désormais l'ACV complète et non la seule phase d'usage. Les valeurs précédentes de cette
+-- assertion (0,1106 et 0,0229, total 181,98) étaient les composantes d'usage seules.
 select is(
   (select round(commute_co2_kg_year::numeric, 3) from public.assessment_results where assessment_id = '22222222-2222-2222-2222-222222222222'),
-  181.980::numeric,
+  227.712::numeric,
   'scénario 2 : distance moitié voiture/moitié train, le covoiturage ne divisant que la jambe voiture'
 );
 
