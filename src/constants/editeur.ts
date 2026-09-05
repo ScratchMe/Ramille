@@ -39,3 +39,21 @@ export const EDITOR_NAME = 'Antoine Berthaud';
  */
 export const CONTACT_EMAIL = 'contact@traceverte.fr';
 
+
+/**
+ * Page personnelle de l'éditeur, liée depuis le pied des pages légales.
+ *
+ * Le lien va **de TraceVerte vers le CV**, et pas l'inverse : c'est le CV qu'il s'agit de
+ * référencer. Deux conditions pour qu'il serve à quelque chose, et aucune n'est acquise par
+ * défaut ici :
+ *
+ * - il doit être rendu comme une vraie balise `<a href>`. Un `onPress` sur du texte produit un
+ *   `<div>` en react-native-web : cliquable, mais invisible pour un crawler. D'où le `Link`
+ *   d'Expo Router dans `legal-page.tsx`, et pas un `Pressable` ;
+ * - il doit être présent dans le HTML **statique** exporté, pas seulement après hydratation.
+ *   Vérifié en cherchant l'URL dans `dist/conditions.html` — c'est le même genre de piège
+ *   silencieux que `cleanUrls` (cf. CLAUDE.md).
+ *
+ * Pas de `rel="nofollow"` : on veut précisément que le lien transmette quelque chose.
+ */
+export const EDITOR_CV_URL = 'https://cv.antoine.berthaud.me/';

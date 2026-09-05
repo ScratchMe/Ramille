@@ -373,6 +373,15 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `50 ± offset` casse la symétrie d'un centième, d'où l'arrondi sur l'écart et non sur la
   coordonnée. Les joues affleurent le bord de la silhouette dès la taille nominale : le
   visage est découpé par un `clipPath`, sans quoi elles flottent hors du vert.
+- **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
+  par un `onPress`.** `react-native-web` rend un `onPress` sur du texte en `<div>` : cliquable
+  pour un humain, inexistant pour un crawler. Et il ne suffit pas que l'ancrage soit correct, il
+  doit se retrouver dans le HTML **statique** — à vérifier dans `dist/*.html` après
+  `expo export`, même piège silencieux que `cleanUrls`. Seul cas aujourd'hui : le lien vers la
+  page personnelle de l'éditeur (`EDITOR_CV_URL`) au pied des deux pages légales, qui sont les
+  seules surfaces publiques du produit (leurs URL sont données à Google Play et à l'écran de
+  consentement Google). Le sens du lien est délibéré — TraceVerte vers le CV — et il ne porte
+  pas de `nofollow`.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir
