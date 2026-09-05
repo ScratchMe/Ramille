@@ -745,6 +745,16 @@ revoke execute on function public.generate_plan_cycle_for_user(uuid) from public
 
 delete from public.plan_cycles;
 
+-- Premier passage : remplir l'instantané de chaque bilan.
+--
+-- Les plans que ce passage génère au vol sont **incomplets**, et c'est inévitable :
+-- `recompute_assessment_results` appelle `generate_plan_cycle_for_user`, qui estime les gains
+-- sur le **dernier** bilan de la personne — lequel n'a pas encore son instantané tant que la
+-- boucle ne l'a pas atteint. L'estimateur ne voit alors que des NULL et ne rend aucune action.
+-- Le garde d'idempotence fige ensuite ce plan vide, puisqu'il a été construit après le bilan.
+--
+-- C'est une particularité de la reprise, pas du fonctionnement normal : en régime établi,
+-- l'instantané est toujours écrit avant l'appel, dans la même transaction.
 do $$
 declare
   rec record;
@@ -756,7 +766,27 @@ begin
     perform public.recompute_assessment_results(rec.id);
     v_count := v_count + 1;
   end loop;
-  raise notice 'Bilans recalculés avec instantané et plan chiffré : %', v_count;
+  raise notice 'Bilans recalculés avec instantané : %', v_count;
+end;
+$$;
+
+-- Second passage : reconstruire les plans, maintenant que tous les instantanés existent.
+-- La purge est nécessaire — sans elle, le garde d'idempotence considérerait les plans vides
+-- du premier passage comme à jour et ne les toucherait pas.
+delete from public.plan_cycles;
+
+do $$
+declare
+  rec record;
+  v_count integer := 0;
+begin
+  for rec in
+    select distinct user_id from public.assessments where status = 'completed'
+  loop
+    perform public.generate_plan_cycle_for_user(rec.user_id);
+    v_count := v_count + 1;
+  end loop;
+  raise notice 'Plans régénérés avec actions chiffrées : %', v_count;
 end;
 $$;
 

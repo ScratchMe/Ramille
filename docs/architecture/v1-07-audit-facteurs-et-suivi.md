@@ -395,6 +395,62 @@ Trois manques, par ordre d'impact :
 Ces trois points restent dans l'esprit « fonctionnel simple » de la spec §3 : aucune mécanique
 de sous-objectifs, aucun plan mois par mois.
 
+**Fait le 05/09/2026 pour les points 1 et 3** (migration `20260905130000`). Le point 2, la
+sélection d'une action et l'intention d'implémentation, est décalé en étape 6b : il ajoute de
+l'écriture côté client et mérite sa propre relecture.
+
+`action_templates` a cessé d'être une phrase pour devenir une **opération** — substituer un
+mode sur une part du poste, partager le véhicule, supprimer un trajet ou un jour de
+déplacement. Le gain est alors le produit de deux quantités : le CO2 de la part touchée, et la
+fraction qui disparaît. Écrit ainsi, covoiturer un trajet déjà covoituré ou passer au vélo
+quand on pédale déjà donnent zéro sans cas particulier.
+
+#### Ce que le chiffrage a révélé, et qu'un texte générique cachait
+
+Aux facteurs ACV (§1.5), toutes les substitutions ne se valent pas, et l'écart est bien plus
+grand que ce que « prends les transports en commun » laisse entendre :
+
+| Substitution depuis la voiture thermique (0,142253) | Gain |
+|---|---|
+| métro / tram (0,004360) | 33 fois moins |
+| TER (0,027690) | 5 fois moins |
+| **bus thermique urbain (0,122420)** | **14 % seulement** |
+
+D'où la règle appliquée : **aucune action dont le gain calculé n'est pas franchement positif
+n'est proposée** (seuil à 5 kg/an, en dessous c'est du bruit), et aucun template ne propose le
+bus en substitution. Un texte générique ne peut pas faire cette différence.
+
+#### Le contexte B4 sert enfin (T9)
+
+Vérifié en base sur un même trajet, en ne changeant que le contexte :
+
+| Profil | Actions proposées |
+|---|---|
+| Urbain dense, desserte correcte | métro/tram −1489 kg, train/RER −1237 kg, vélo, covoiturage, télétravail |
+| Rural, `tc_access = inexistant` | covoiturage −960 kg, télétravail −768 kg, train longue distance, regroupement de sorties |
+
+Les deux actions en transports en commun **disparaissent** pour le second profil, et le plan
+reste alimenté par des leviers qu'il peut réellement actionner. C'est exactement ce que la
+spec §5 demandait : « éviter de traiter un profil rural sans alternative comme un mauvais
+élève ». `assessment_results.mobility_constrained` porte le même constat pour la restitution
+(§3.5), où il servira à retirer la comparaison à la moyenne nationale.
+
+#### Un piège de reprise qui ne se voyait pas dans un « migration appliquée »
+
+La boucle de reprise recalculait les bilans du plus ancien au plus récent, mais
+`generate_plan_cycle_for_user` estime les gains sur le **dernier** bilan de la personne —
+dont l'instantané n'était pas encore rempli à ce moment-là. L'estimateur ne voyait que des
+`NULL`, ne rendait rien, et le garde d'idempotence figeait ensuite ce plan vide. La migration
+répondait `success` avec zéro action générée. D'où les **deux passages** de la section 8 :
+remplir tous les instantanés, puis purger et régénérer les plans.
+
+#### Reste ouvert
+
+Le cap est affiché en kg sur `/plan`, en part du poste dominant et non du total — annoncer
+−20 % de l'empreinte entière serait une promesse fausse. Reste à décider si le cumul des deux
+actions proposées doit être comparé explicitement au cap : c'est informatif, mais le montrer
+comme un « objectif non atteint » retomberait dans le registre que le produit refuse.
+
 ### 3.4 La trajectoire 2050 doit être progressive, pas frontale
 
 Aujourd'hui la restitution affiche une barre statique à 0,5 t face à 2,9 t. Présenté brut, un
@@ -512,7 +568,8 @@ de signe entre les deux bases.
 | 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | **fait** — migration `20260904180000` |
 | 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2 | **fait** — `src/app/suivi.tsx`, `src/types/suivi.ts` |
 | 5 | Canal de rappel email | §3.1 | **fait** — migration `20260904200000` (envoi en attente d'un fournisseur, cf. §3.1) |
-| 6 | Actions chiffrées et sélectionnables + exploitation du contexte B4 | T9, T10, §3.3 | à faire |
+| 6a | Actions chiffrées, cap affiché, contexte B4 exploité | T9, T10, §3.3 (1 et 3) | **fait** — migration `20260905130000` |
+| 6b | Choisir une action et s'y engager | §3.3 (2) | à faire |
 | 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | à faire |
 
 T13 (covoiturage appliqué au second mode) est corrigé au passage de l'étape 1, la fonction
