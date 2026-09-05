@@ -1,6 +1,6 @@
 // Identité de l'éditeur — les deux seules informations que le code ne peut pas déduire.
 //
-// TraceVerte est édité par une personne physique, **à titre non professionnel et sans but
+// Ramille est édité par une personne physique, **à titre non professionnel et sans but
 // lucratif**. Ce statut change ce que la loi impose d'afficher, et il l'allège beaucoup :
 //
 // - **LCEN (loi n° 2004-575), article 6 III-2** : une personne qui édite un service de
@@ -43,7 +43,7 @@ export const CONTACT_EMAIL = 'contact@traceverte.fr';
 /**
  * Page personnelle de l'éditeur, liée depuis le pied des pages légales.
  *
- * Le lien va **de TraceVerte vers le CV**, et pas l'inverse : c'est le CV qu'il s'agit de
+ * Le lien va **de Ramille vers le CV**, et pas l'inverse : c'est le CV qu'il s'agit de
  * référencer. Deux conditions pour qu'il serve à quelque chose, et aucune n'est acquise par
  * défaut ici :
  *

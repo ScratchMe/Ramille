@@ -9,4 +9,4 @@ import { Platform } from 'react-native';
 export const APP_URL =
   Platform.OS === 'web' && typeof window !== 'undefined'
     ? window.location.origin
-    : 'https://www.traceverte.fr';
+    : 'https://www.ramille.fr';

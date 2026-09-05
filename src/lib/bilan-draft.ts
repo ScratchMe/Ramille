@@ -11,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { BilanAnswers, BilanStepId } from '@/types/bilan';
 
+// Préfixe historique conservé au renommage en Ramille : la clé est invisible, et la changer
+// effacerait le brouillon de quiconque en a un (cf. src/constants/produit.ts).
 const DRAFT_KEY = 'traceverte.bilan_draft.v1';
 
 export type BilanDraft = { step: BilanStepId; answers: BilanAnswers };

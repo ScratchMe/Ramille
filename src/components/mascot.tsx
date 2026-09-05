@@ -15,7 +15,7 @@ import { mascotFaceGeometry, type MascotMood } from '@/types/mascot';
 
 export type { MascotMood } from '@/types/mascot';
 
-// Mascotte TraceVerte — la silhouette du logo (assets/images/logo-mark.svg, feuille +
+// Ramille — la mascotte, et le nom du produit (src/constants/produit.ts) : la silhouette du logo (assets/images/logo-mark.svg, feuille +
 // nervure inchangées) à laquelle on ajoute un visage, pour incarner les moments de
 // feedback de la boucle d'engagement sans jamais culpabiliser (décision produit du
 // 03/09/2026, cf. CLAUDE.md "factuelle, non culpabilisante") :

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- TraceVerte — feuille + trajet : la nervure centrale, décalée et courbe plutôt que
+  <!-- Ramille — feuille + trajet : la nervure centrale, décalée et courbe plutôt que
        droite, se lit comme un itinéraire tracé jusqu'à un point d'arrivée (le point en
        bas). Couleurs : Colors.light.accent (#1F6F4A) / backgroundSelected (#E4EFE8),
        cf. src/constants/theme.ts.

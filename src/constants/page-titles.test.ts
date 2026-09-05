@@ -1,4 +1,5 @@
 import { DEFAULT_PAGE_TITLE, PAGE_TITLES, pageTitle } from './page-titles';
+import { APP_NAME } from './produit';
 
 // La garde qui compte — « toute page exportée a bien un titre dans son HTML » — ne peut pas
 // se jouer ici : elle demande de lire `dist/`, et le tsconfig racine tient volontairement
@@ -15,7 +16,7 @@ describe('PAGE_TITLES', () => {
   });
 
   it('nomme le produit dans chaque titre', () => {
-    expect(Object.values(PAGE_TITLES).every((titre) => titre.includes('TraceVerte'))).toBe(true);
+    expect(Object.values(PAGE_TITLES).every((titre) => titre.includes(APP_NAME))).toBe(true);
   });
 
   it('indexe des chemins absolus, jamais des noms de fichier de route', () => {

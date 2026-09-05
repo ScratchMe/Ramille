@@ -1,5 +1,6 @@
 import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
 import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
+import { APP_NAME } from '@/constants/produit';
 
 // Politique de confidentialité — URL exigée par l'écran de consentement Google OAuth et par
 // la fiche Google Play.
@@ -28,7 +29,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          `TraceVerte est un projet personnel, développé et publié par ${EDITOR_NAME} à titre non ` +
+          `${APP_NAME} est un projet personnel, développé et publié par ${EDITOR_NAME} à titre non ` +
           'professionnel et sans but lucratif. C’est donc une personne physique, et non une société, ' +
           'qui est responsable du traitement de tes données.',
       },
@@ -46,7 +47,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'TraceVerte estime l’empreinte carbone de tes déplacements à partir de ce que tu déclares. ' +
+          `${APP_NAME} estime l’empreinte carbone de tes déplacements à partir de ce que tu déclares. ` +
           'Nous ne collectons rien d’autre que ce qui sert à produire ce résultat et à te le restituer dans le temps.',
       },
       {
@@ -195,7 +196,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'TraceVerte n’utilise aucun cookie publicitaire ni aucun outil de mesure d’audience tierce. Le stockage utilisé ' +
+          `${APP_NAME} n’utilise aucun cookie publicitaire ni aucun outil de mesure d’audience tierce. Le stockage utilisé ` +
           'sur ton appareil est strictement nécessaire au fonctionnement : il conserve ta session, le brouillon du ' +
           'questionnaire en cours, et quelques préférences d’affichage. Les repères de parcours décrits plus haut ' +
           'n’écrivent rien de plus sur ton appareil : ils sont enregistrés côté serveur, rattachés à la session que le ' +
@@ -271,7 +272,7 @@ export default function Confidentialite() {
     <LegalPage
       title="Politique de confidentialité"
       updatedAt={UPDATED_AT}
-      intro="TraceVerte collecte le strict nécessaire pour estimer l’empreinte carbone de tes déplacements et t’accompagner dans la durée. Cette page dit précisément quoi, pourquoi, pendant combien de temps, et ce que tu peux exiger."
+      intro={`${APP_NAME} collecte le strict nécessaire pour estimer l’empreinte carbone de tes déplacements et t’accompagner dans la durée. Cette page dit précisément quoi, pourquoi, pendant combien de temps, et ce que tu peux exiger.`}
       sections={SECTIONS}
     />
   );
