@@ -1,5 +1,6 @@
 {
   "framework": null,
+  "cleanUrls": true,
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist",
   "functions": {
