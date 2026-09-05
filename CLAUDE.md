@@ -235,6 +235,16 @@ répondu qu'il n'y en a pas. L'estimateur lit l'instantané par segment figé su
 jamais recalculer les km ailleurs**, les deux implémentations divergeraient. Les gains sont
 ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
 
+**L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
+`plan_actions` porte des chiffres figés à la génération, et `authenticated` a déjà le privilège
+`UPDATE` au niveau table (grant Supabase par défaut) — inoffensif tant qu'aucune policy UPDATE
+n'existe, mais **en ajouter une ouvrirait toutes les colonnes** : la RLS filtre des lignes,
+jamais des colonnes. D'où `commit_plan_action` / `clear_plan_action_commitment`
+(`security definer`, propriété vérifiée à l'intérieur), et un test pgTAP qui épingle qu'un
+`update` direct sur `saving_kg_year` reste sans effet. Une seule action engagée par cycle
+(index unique partiel), intention obligatoire, en jours de la semaine pour le poste
+domicile-travail et en échéance fermée pour les autres — jamais de saisie libre.
+
 Deux mécanismes de génération server-side qu'il faut garder synchronisés si on les touche :
 - `generate_plan_cycle_for_user(p_user_id)` (security definer, revoked de anon/authenticated)
   génère le plan de réduction d'un utilisateur. Appelée à la fois par le cron nightly

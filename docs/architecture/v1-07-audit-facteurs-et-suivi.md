@@ -395,9 +395,39 @@ Trois manques, par ordre d'impact :
 Ces trois points restent dans l'esprit « fonctionnel simple » de la spec §3 : aucune mécanique
 de sous-objectifs, aucun plan mois par mois.
 
-**Fait le 05/09/2026 pour les points 1 et 3** (migration `20260905130000`). Le point 2, la
-sélection d'une action et l'intention d'implémentation, est décalé en étape 6b : il ajoute de
-l'écriture côté client et mérite sa propre relecture.
+**Fait le 05/09/2026 pour les points 1 et 3** (migration `20260905130000`), puis pour le
+point 2 (migration `20260905190000`, étape 6b).
+
+#### L'engagement passe par un RPC, et ce n'est pas un détail d'implémentation
+
+`plan_actions` porte des chiffres **figés à la génération** — `saving_kg_year`,
+`saving_share_percent` — au même titre que `assessment_results` fige le bilan. Or
+`authenticated` possède déjà le privilège `UPDATE` au niveau table (grant par défaut de
+Supabase), aujourd'hui sans effet parce qu'aucune policy UPDATE n'existe. **Ajouter une policy
+pour permettre l'engagement aurait donc ouvert l'écriture sur toutes les colonnes** : la RLS
+filtre des lignes, jamais des colonnes. Le chiffre affiché à la personne serait devenu
+réinscriptible depuis une clé anonyme.
+
+D'où `commit_plan_action` / `clear_plan_action_commitment`, `security definer` avec
+vérification de propriété à l'intérieur — le modèle déjà retenu pour
+`compute_assessment_results` (v1-05 §4). Un test pgTAP vérifie qu'un `update` direct sur
+`saving_kg_year` reste sans effet, y compris pour le propriétaire : si cette assertion tombe un
+jour, c'est qu'une policy UPDATE a été ajoutée.
+
+**Une seule action engagée à la fois**, garantie par un index unique partiel : s'engager sur
+les deux revient à ne s'engager sur aucune. Le RPC libère la précédente dans la même
+transaction, donc pas de fenêtre à deux engagements ni d'aller-retour côté client.
+
+**L'intention est obligatoire**, et prend deux formes selon le poste : des jours de la semaine
+pour le domicile-travail (seul poste au rythme hebdomadaire), une échéance fermée pour les
+loisirs et les voyages — demander un jour de la semaine pour un voyage produirait une intention
+que personne ne peut tenir. Les deux formes s'excluent, la contrainte
+`plan_actions_engagement_coherent` le vérifie. Aucune saisie libre : `feedback` reste la seule
+table où un client écrit une phrase.
+
+Et **aucune mécanique d'échec** : pas de « tenu / pas tenu », pas de série, pas de score. On
+change d'action ou on retire son engagement sans que rien ne le compte contre soi — même
+registre que `/suivi`.
 
 `action_templates` a cessé d'être une phrase pour devenir une **opération** — substituer un
 mode sur une part du poste, partager le véhicule, supprimer un trajet ou un jour de
@@ -569,7 +599,7 @@ de signe entre les deux bases.
 | 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2 | **fait** — `src/app/suivi.tsx`, `src/types/suivi.ts` |
 | 5 | Canal de rappel email | §3.1 | **fait** — migration `20260904200000` (envoi en attente d'un fournisseur, cf. §3.1) |
 | 6a | Actions chiffrées, cap affiché, contexte B4 exploité | T9, T10, §3.3 (1 et 3) | **fait** — migration `20260905130000` |
-| 6b | Choisir une action et s'y engager | §3.3 (2) | à faire |
+| 6b | Choisir une action et s'y engager | §3.3 (2) | **fait** — migration `20260905190000` |
 | 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | à faire |
 
 T13 (covoiturage appliqué au second mode) est corrigé au passage de l'étape 1, la fonction

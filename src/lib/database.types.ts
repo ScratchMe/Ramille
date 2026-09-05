@@ -527,9 +527,12 @@ export type Database = {
       plan_actions: {
         Row: {
           action_template_id: string
+          committed_at: string | null
           created_at: string
           detail_text: string | null
           id: string
+          intention_days: number[] | null
+          intention_timing: string | null
           plan_cycle_id: string
           rank: number | null
           saving_kg_year: number | null
@@ -537,9 +540,12 @@ export type Database = {
         }
         Insert: {
           action_template_id: string
+          committed_at?: string | null
           created_at?: string
           detail_text?: string | null
           id?: string
+          intention_days?: number[] | null
+          intention_timing?: string | null
           plan_cycle_id: string
           rank?: number | null
           saving_kg_year?: number | null
@@ -547,9 +553,12 @@ export type Database = {
         }
         Update: {
           action_template_id?: string
+          committed_at?: string | null
           created_at?: string
           detail_text?: string | null
           id?: string
+          intention_days?: number[] | null
+          intention_timing?: string | null
           plan_cycle_id?: string
           rank?: number | null
           saving_kg_year?: number | null
@@ -720,7 +729,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_intention_days: { Args: { p_days: number[] }; Returns: boolean }
       check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
+      clear_plan_action_commitment: {
+        Args: { p_plan_action_id: string }
+        Returns: undefined
+      }
+      commit_plan_action: {
+        Args: { p_days?: number[]; p_plan_action_id: string; p_timing?: string }
+        Returns: undefined
+      }
       compute_assessment_results: {
         Args: { p_assessment_id: string }
         Returns: undefined

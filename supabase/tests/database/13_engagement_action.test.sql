@@ -1,0 +1,134 @@
+-- Tests pgTAP de l'engagement sur une action du plan (étape 6b, migration 20260905190000).
+--
+-- Ce que ce fichier défend en priorité n'est pas l'engagement lui-même mais **ce qu'il ne doit
+-- pas ouvrir** : `plan_actions` porte des chiffres figés à la génération (`saving_kg_year`,
+-- `saving_share_percent`), au même titre que `assessment_results` fige le bilan. `authenticated`
+-- possède déjà le privilège UPDATE au niveau table — un grant par défaut de Supabase, sans
+-- effet tant qu'aucune policy UPDATE n'existe. C'est pourquoi l'engagement passe par un RPC
+-- `security definer` et non par une policy : une policy UPDATE aurait ouvert **toutes** les
+-- colonnes, la RLS raisonnant par ligne et jamais par colonne.
+begin;
+create extension if not exists pgtap with schema extensions;
+
+select plan(10);
+
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
+  ('71111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-eng-a@test.local', 'x', now(), now()),
+  ('71111111-1111-1111-1111-111111111112', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-eng-b@test.local', 'x', now(), now());
+
+insert into public.assessments (id, user_id, status, submitted_at) values
+  ('72222222-2222-2222-2222-222222222222', '71111111-1111-1111-1111-111111111111', 'completed', now());
+
+-- Contexte urbain dense avec bonne desserte : garantit que `estimate_action_savings` rend au
+-- moins deux actions, sans quoi le test de bascule n'aurait rien à basculer.
+insert into public.assessment_answers (
+  assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
+  commute_is_carpool, commute_second_mode_used, leisure_frequency, zone_type, tc_access, household_vehicles
+) values ('72222222-2222-2222-2222-222222222222', true, 5, 20, 'voiture', false, false, 'rarely', 'urbain_dense', 'bon', '1');
+
+insert into public.assessment_results (
+  assessment_id, total_co2_kg_year, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year,
+  dominant_poste, dominant_poste_co2_kg_year, dominant_poste_mode, dominant_poste_label,
+  commute_main_leg_km_year, commute_main_leg_co2_kg_year, commute_trip_distance_km,
+  leisure_km_year, mobility_constrained
+)
+select '72222222-2222-2222-2222-222222222222', f.co2, f.co2, 0, 0,
+       'commute', f.co2, 'voiture', 'Trajet domicile-travail (Voiture)',
+       9000, f.co2, 20, 0, false
+from (select 9000 * public.emission_factor('voiture', current_date) as co2) f;
+
+select public.generate_plan_cycle_for_user('71111111-1111-1111-1111-111111111111');
+
+-- Portée explicite au cycle de l'utilisateur A : cette assertion s'exécute encore sous
+-- `postgres`, donc hors RLS, et un `count(*)` nu compterait les actions de toute la base. Elle
+-- passerait en CI (base vierge) tout en ne vérifiant rien — c'est une assertion qui ne tombe
+-- que sur un environnement peuplé, donc jamais là où on la lit.
+select is(
+  (select count(*) from public.plan_actions pa
+   join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+   where pc.user_id = '71111111-1111-1111-1111-111111111111')::int,
+  2,
+  'le cycle porte bien deux actions à départager'
+);
+
+select set_config('role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', '71111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+
+-- ── Le chemin nominal ───────────────────────────────────────────────────────────────────
+
+select lives_ok(
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), array[2,4]::smallint[], null) $stmt$,
+  's''engager sur une action avec des jours de la semaine'
+);
+
+select is(
+  (select array_to_string(intention_days, '-') from public.plan_actions where committed_at is not null),
+  '2-4',
+  'l''intention d''implémentation est conservée telle quelle'
+);
+
+-- ── Une seule action engagée à la fois ──────────────────────────────────────────────────
+-- « Choisir une action » est le mécanisme, pas une contrainte d'écran : s'engager sur les deux
+-- revient à ne s'engager sur aucune. Le RPC libère la précédente dans la même transaction —
+-- l'index unique partiel refuserait sinon la seconde ligne.
+
+select lives_ok(
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank desc limit 1), null, 'ce_mois') $stmt$,
+  'basculer l''engagement sur l''autre action'
+);
+
+select is(
+  (select count(*) from public.plan_actions where committed_at is not null)::int,
+  1,
+  'une seule action reste engagée après la bascule'
+);
+
+-- ── Ce qu'une intention ne peut pas être ────────────────────────────────────────────────
+-- Un engagement sans « quand » n'est pas un engagement : c'est le moment choisi qui fait le
+-- levier, pas la case cochée.
+
+select throws_ok(
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), array[2]::smallint[], 'ce_mois') $stmt$,
+  '23514', null, 'jours ET échéance ensemble : refusé (les deux formes s''excluent)'
+);
+
+select throws_ok(
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), null, null) $stmt$,
+  '23514', null, 'un engagement sans intention est refusé'
+);
+
+select throws_ok(
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), array[2,2]::smallint[], null) $stmt$,
+  '23514', null, 'un jour en double dans l''intention est refusé'
+);
+
+-- ── Ce que l'engagement ne doit surtout pas ouvrir ──────────────────────────────────────
+-- Le gain est figé à la génération. Si cette assertion tombe un jour, c'est qu'une policy
+-- UPDATE a été ajoutée sur `plan_actions` : la RLS ne filtre que des lignes, elle laisserait
+-- alors réécrire n'importe quelle colonne.
+
+-- Sous la session de A : la RLS limite déjà la portée à ses propres lignes.
+update public.plan_actions set saving_kg_year = 99999;
+
+select is(
+  (select count(*) from public.plan_actions where saving_kg_year = 99999)::int,
+  0,
+  'un UPDATE direct sur le gain figé reste sans effet, même pour le propriétaire'
+);
+
+-- ── Isolation ───────────────────────────────────────────────────────────────────────────
+-- L'identifiant est capturé **avant** de basculer sur le tiers. Sans ça, la sous-requête
+-- s'exécuterait sous la RLS de B, ne verrait rien, passerait NULL au RPC — qui échouerait sans
+-- avoir jamais éprouvé la vérification de propriété qu'on veut tester ici.
+
+select set_config('test.action_id', (select id::text from public.plan_actions order by rank limit 1), true);
+
+select set_config('request.jwt.claims', json_build_object('sub', '71111111-1111-1111-1111-111111111112', 'role', 'authenticated')::text, true);
+
+select throws_ok(
+  $stmt$ select public.commit_plan_action(current_setting('test.action_id')::uuid, array[1]::smallint[], null) $stmt$,
+  'P0002', null, 'un tiers ne peut pas s''engager sur l''action de quelqu''un d''autre'
+);
+
+select * from finish();
+rollback;
