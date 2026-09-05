@@ -61,9 +61,13 @@ select is(
 -- de passer sans rien éprouver.
 select set_config('request.jwt.claims', json_build_object('sub', 'f1111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 
+-- Forme à QUATRE arguments (sql, errcode, errmsg, description). À trois, pgTAP résout vers
+-- (sql, errcode, errmsg) et prend le libellé du test pour le message attendu — le test échoue
+-- alors en annonçant qu'il voulait sa propre description.
 select throws_ok(
   $stmt$ insert into public.feedback (user_id, kind, message) values ('f1111111-1111-1111-1111-111111111111', 'autre', '  a  ') $stmt$,
   '23514',
+  'new row for relation "feedback" violates check constraint "feedback_message_check"',
   'un message vide ou quasi vide est refusé par la contrainte de longueur'
 );
 
