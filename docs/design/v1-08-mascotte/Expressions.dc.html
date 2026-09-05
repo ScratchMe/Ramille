@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, -apple-system, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+<div style="width: 100%; min-height: 100%; box-sizing: border-box; background: #FFFFFF; padding: 40px">
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px">
+    <div style="font-size: 12px; font-weight: 500; color: #5E655F; letter-spacing: 0.04em; text-transform: uppercase">Vocabulaire d’expressions</div>
+    <div style="font-size: 32px; line-height: 40px; font-weight: 600; color: #131612; letter-spacing: -0.5px">Trois expressions livrées, deux proposées</div>
+    <div style="font-size: 16px; line-height: 24px; color: #39403B; max-width: 640px; text-wrap: pretty">
+      La silhouette ne change jamais — c’est la feuille du logo. Seuls les yeux, la bouche et
+      l’intensité des joues varient. Aucune expression négative : ni sourcil froncé, ni bouche
+      tombante. Le produit ne reproche rien.
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 18px; background: #F3F8F4; border: 1.5px solid #DDE0D9">
+      <dc-import name="Mascot" mood="calm" size="{{ 64 }}" hint-size="64px,64px"></dc-import>
+      <div style="font-size: 15px; font-weight: 600; color: #131612">calm</div>
+      <div style="font-size: 11px; font-weight: 600; color: #14563A; letter-spacing: 0.04em">LIVRÉE</div>
+      <div style="font-size: 13px; line-height: 19px; color: #39403B">Marque de confiance et présence neutre. En-tête du questionnaire, écran de connexion.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 18px; background: #F3F8F4; border: 1.5px solid #DDE0D9">
+      <dc-import name="Mascot" mood="happy" size="{{ 64 }}" hint-size="64px,64px"></dc-import>
+      <div style="font-size: 15px; font-weight: 600; color: #131612">happy</div>
+      <div style="font-size: 11px; font-weight: 600; color: #14563A; letter-spacing: 0.04em">LIVRÉE</div>
+      <div style="font-size: 13px; line-height: 19px; color: #39403B">Félicitation. Check-in répondu oui, profil déjà vertueux, dernière étape du questionnaire.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 18px; background: #F3F8F4; border: 1.5px solid #DDE0D9">
+      <dc-import name="Mascot" mood="encouraging" size="{{ 64 }}" hint-size="64px,64px"></dc-import>
+      <div style="font-size: 15px; font-weight: 600; color: #131612">encouraging</div>
+      <div style="font-size: 11px; font-weight: 600; color: #14563A; letter-spacing: 0.04em">LIVRÉE</div>
+      <div style="font-size: 13px; line-height: 19px; color: #39403B">Check-in répondu non. Yeux mi-clos, petit sourire — jamais de déception.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 18px; background: #FFFFFF; border: 1.5px dashed #1F6F4A">
+      <dc-import name="Mascot" mood="thinking" size="{{ 64 }}" hint-size="64px,64px"></dc-import>
+      <div style="font-size: 15px; font-weight: 600; color: #131612">thinking</div>
+      <div style="font-size: 11px; font-weight: 600; color: #1F6F4A; letter-spacing: 0.04em">PROPOSÉE</div>
+      <div style="font-size: 13px; line-height: 19px; color: #39403B">Regard levé, bouche neutre. Le seul moment d’attente du produit : le calcul du bilan.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 18px; background: #FFFFFF; border: 1.5px dashed #1F6F4A">
+      <dc-import name="Mascot" mood="resting" size="{{ 64 }}" hint-size="64px,64px"></dc-import>
+      <div style="font-size: 15px; font-weight: 600; color: #131612">resting</div>
+      <div style="font-size: 11px; font-weight: 600; color: #1F6F4A; letter-spacing: 0.04em">PROPOSÉE</div>
+      <div style="font-size: 13px; line-height: 19px; color: #39403B">Yeux clos, paisible. Périodes calmes de /suivi : rien à faire n’est pas un échec.</div>
+    </div>
+  </div>
+
+  <div style="margin-top: 36px; padding: 24px; border-radius: 20px; background: #E4EFE8; display: flex; gap: 24px; align-items: center">
+    <div style="display: flex; gap: 16px; align-items: flex-end">
+      <dc-import name="Mascot" mood="calm" size="{{ 44 }}" tilt="{{ -8 }}" hint-size="44px,44px"></dc-import>
+      <dc-import name="Mascot" mood="calm" size="{{ 44 }}" tilt="{{ 0 }}" hint-size="44px,44px"></dc-import>
+      <dc-import name="Mascot" mood="calm" size="{{ 44 }}" tilt="{{ 8 }}" hint-size="44px,44px"></dc-import>
+    </div>
+    <div style="flex: 1; min-width: 0">
+      <div style="font-size: 15px; font-weight: 600; color: #14563A; margin-bottom: 4px">Un second axe, gratuit : l’inclinaison</div>
+      <div style="font-size: 14px; line-height: 21px; color: #39403B; text-wrap: pretty">
+        Quelques degrés de rotation suffisent à changer le registre sans dessiner un seul
+        visage de plus. Une feuille penchée regarde ; une feuille droite accompagne. C’est ce
+        qui permet d’avoir un accueil chaleureux et un en-tête sobre avec la même expression.
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

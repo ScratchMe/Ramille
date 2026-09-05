@@ -239,6 +239,19 @@ volée côté client) — même logique pour `engagement_checkins.trip_label`, s
 pas changer rétroactivement le wording d'un check-in déjà généré si l'utilisateur refait un
 bilan plus tard.
 
+**Canal de retour** (`feedback`, issue #29) : la seule table où un client écrit du texte
+libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à
+`authenticated` revient à l'ouvrir à quiconque sait appeler l'API — d'où le trigger
+`enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et les bornes de longueur.
+**Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
+passer sans rien éprouver de **deux** façons, et les deux se sont produites. Après la
+saturation du quota, c'est le trigger `before insert` qui refuse — il s'exécute avant
+l'évaluation des CHECK et lève lui aussi un `23514`. Et depuis la session d'un tiers, c'est la
+RLS (`42501`). Elle doit donc venir avant le remplissage du quota **et** sous la session du
+propriétaire. Plus généralement, pour valider un test pgTAP en base, rejouer la **séquence
+entière** du fichier, bascules de `request.jwt.claims` comprises — un scénario extrait de son
+contexte ne reproduit pas le rôle sous lequel il tournera.
+
 **Rappel par email** : `enqueue_checkin_reminders()` remplit `notification_outbox` à chaque
 génération de check-in, `send_pending_reminders()` (cron quotidien 7h UTC) l'envoie via
 l'extension `http`. **La garantie anti-relance de la spec §7 est structurelle** :

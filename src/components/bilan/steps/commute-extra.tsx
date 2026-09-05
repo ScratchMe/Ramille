@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -130,6 +131,7 @@ export function CommuteExtraStep({
           </ThemedView>
         )}
       </View>
+      <MissingModeLink context="B1.7 second mode domicile-travail" />
     </View>
   );
 }
