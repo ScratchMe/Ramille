@@ -24,10 +24,24 @@ n'est arrondi à une grille.
 Livré (PR #45) : en-tête du questionnaire, cartes de check-in, félicitation du profil vertueux
 sur la restitution et sur `/plan`.
 
-Proposé, et donc **non implémenté** : l'accueil de l'onboarding, le moment de calcul, les
-périodes calmes de `/suivi`, plus deux expressions — `thinking` (regard levé, pour l'attente)
-et `resting` (yeux clos, pour « rien à faire cette semaine »). Et un second axe sans nouveau
-dessin : l'inclinaison de quelques degrés.
+**Le reste a été validé et implémenté le 05/09/2026** : accueil de l'onboarding, écran de calcul,
+périodes calmes de `/suivi`, les deux expressions `thinking` et `resting`, et l'inclinaison.
+
+Trois écarts assumés entre l'artboard et l'implémentation, chacun parce que l'artboard était une
+esquisse de placement et pas un brief complet :
+
+- **L'accueil garde son illustration.** L'artboard remplaçait `OnboardingHeroIllustration` par la
+  mascotte seule et changeait le titre en « Tes déplacements, en chiffres ». L'illustration porte
+  « une personne et ses trajets du quotidien », spécifié par le handoff design §1.1, que la
+  mascotte ne rend pas ; et le titre proposé ouvre sur les chiffres, ce que la même spec interdit.
+  La mascotte est donc ajoutée au-dessus du titre existant, à 48 px et inclinée de −7°.
+- **L'écran de calcul n'a pas de barre de progression.** L'artboard en montrait une à 62 %. On ne
+  sait pas où en est le calcul : une barre qui avance sans rien mesurer est un mensonge
+  d'interface. Le souffle de la mascotte suffit.
+- **Aucun décompte dans les textes.** L'artboard annonçait « neuf réponses, treize facteurs
+  d'émission » : le référentiel en comptait déjà quinze le lendemain (motorisations hybrides), et
+  le nombre d'étapes visibles dépend des réponses. Même raison, l'artboard des périodes calmes
+  annonçait « ton prochain point arrive lundi » — la cadence dépend de la boucle.
 
 ## La règle qui tient l'ensemble
 

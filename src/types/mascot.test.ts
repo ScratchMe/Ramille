@@ -5,7 +5,7 @@ import {
   type MascotMood,
 } from './mascot';
 
-const MOODS: MascotMood[] = ['calm', 'happy', 'encouraging'];
+const MOODS: MascotMood[] = ['calm', 'happy', 'encouraging', 'thinking', 'resting'];
 
 // Tailles réellement utilisées dans l'app (grep `<Mascot`), plus les bornes.
 const USED_SIZES = [28, 36, 40, 44, 56];
@@ -98,11 +98,16 @@ describe('mascotFaceGeometry', () => {
     }
   });
 
-  it('reste symétrique par rapport à l\'axe vertical', () => {
+  it('reste symétrique, au décalage de regard près', () => {
+    // `thinking` porte la seule asymétrie assumée du visage : le regard est décalé d'une unité
+    // sur le côté, ce qui le fait lire « elle réfléchit » plutôt que « elle fixe le plafond ».
+    // Le test tolère donc un petit décalage commun aux deux yeux, mais rien d'autre : les
+    // joues restent exactement symétriques, et les deux yeux gardent la même hauteur.
     for (const mood of MOODS) {
       for (const size of USED_SIZES) {
         const face = mascotFaceGeometry(mood, size);
-        expect(face.eyeCircles[0].cx + face.eyeCircles[1].cx).toBeCloseTo(100, 5);
+        const centreDuRegard = (face.eyeCircles[0].cx + face.eyeCircles[1].cx) / 2;
+        expect(Math.abs(centreDuRegard - 50)).toBeLessThanOrEqual(mood === 'thinking' ? 1.5 : 0.01);
         expect(face.blushCircles[0].cx + face.blushCircles[1].cx).toBeCloseTo(100, 5);
         expect(face.eyeCircles[0].cy).toBeCloseTo(face.eyeCircles[1].cy, 5);
       }
@@ -160,10 +165,17 @@ function leafRightEdgeAt(y: number): number {
 // d'une quadratique est à 2× la flèche voulue, ce qui avait doublé la courbure des yeux
 // `happy`), et le calcul seul ne pouvait pas le voir — seul l'œil, puis ce test.
 describe('mascotFaceGeometry — conformité au dessin d\'origine', () => {
+  // `calm`, `happy` et `encouraging` viennent des chemins écrits à la main dans le composant
+  // d'origine ; `thinking` et `resting` du canvas de design (docs/design/v1-08-mascotte,
+  // Mascot.dc.html), qui fait référence pour elles. La bouche de `thinking` y est écrite
+  // `M45,63 L55,63` : une quadratique de flèche nulle rend le même trait droit, et on ne
+  // maintient qu'une seule construction.
   const ORIGINAL = {
     calm: { mouth: 'M42,62 Q50,68 58,62', eyeCircles: [{ cx: 39, cy: 50, r: 4.2 }, { cx: 61, cy: 50, r: 4.2 }] },
     happy: { mouth: 'M40,60 Q50,72 60,60', eyeArcs: ['M34,49 Q39,44 44,49', 'M56,49 Q61,44 66,49'] },
     encouraging: { mouth: 'M43,63 Q50,66 57,63', eyeArcs: ['M35,51 Q39,54 43,51', 'M57,51 Q61,54 65,51'] },
+    thinking: { mouth: 'M45,63 Q50,63 55,63', eyeCircles: [{ cx: 38, cy: 47, r: 4.2 }, { cx: 60, cy: 47, r: 4.2 }] },
+    resting: { mouth: 'M44,63 Q50,66 56,63', eyeArcs: ['M34,50 Q39,55 44,50', 'M56,50 Q61,55 66,50'] },
   };
 
   it('rend exactement les chemins historiques à taille nominale', () => {
@@ -171,7 +183,9 @@ describe('mascotFaceGeometry — conformité au dessin d\'origine', () => {
       const face = mascotFaceGeometry(mood, 56);
       expect(face.mouthPath).toBe(ORIGINAL[mood].mouth);
       if (face.eyes === 'dots') {
-        expect(face.eyeCircles).toEqual(ORIGINAL.calm.eyeCircles);
+        expect(face.eyeCircles).toEqual(
+          (ORIGINAL[mood] as { eyeCircles: { cx: number; cy: number; r: number }[] }).eyeCircles
+        );
       } else {
         expect(face.eyeArcs).toEqual((ORIGINAL[mood] as { eyeArcs: string[] }).eyeArcs);
       }
@@ -179,6 +193,17 @@ describe('mascotFaceGeometry — conformité au dessin d\'origine', () => {
       expect(face.mouthStrokeWidth).toBe(3.2);
       expect(face.veinStrokeWidth).toBe(4);
     }
+  });
+
+  it('conserve les joues de chaque expression à taille nominale', () => {
+    expect(mascotFaceGeometry('thinking', 56).blushCircles).toEqual([
+      { cx: 33, cy: 61, r: 4.6 },
+      { cx: 67, cy: 61, r: 4.6 },
+    ]);
+    expect(mascotFaceGeometry('resting', 56).blushCircles).toEqual([
+      { cx: 33, cy: 60, r: 5 },
+      { cx: 67, cy: 60, r: 5 },
+    ]);
   });
 
   it('conserve les joues historiques à taille nominale', () => {

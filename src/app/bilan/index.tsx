@@ -11,6 +11,7 @@ import { FlightsStep } from '@/components/bilan/steps/flights';
 import { LeisureDetailStep } from '@/components/bilan/steps/leisure-detail';
 import { LeisureFrequencyStep } from '@/components/bilan/steps/leisure-frequency';
 import { LongTripsStep } from '@/components/bilan/steps/long-trips';
+import { CalculEnCours } from '@/components/bilan/calcul-en-cours';
 import { StepShell } from '@/components/bilan/step-shell';
 import { track } from '@/lib/analytics';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
@@ -186,6 +187,11 @@ export default function BilanQuestionnaire() {
   // même piège que le chargement des polices dans _layout.tsx. Le pas 1 s'affiche
   // immédiatement avec l'état par défaut, puis bascule sur le brouillon dès qu'il
   // arrive (quasi instantané en pratique, AsyncStorage local).
+  // Le calcul prend le pas sur le questionnaire : trois écritures puis
+  // `compute_assessment_results`, qui génère aussi le plan. Laisser le wizard à l'écran avec un
+  // bouton grisé fait paraître l'app bloquée.
+  if (submitting) return <CalculEnCours />;
+
   return (
     <StepShell
       section={section}

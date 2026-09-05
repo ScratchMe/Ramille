@@ -24,6 +24,17 @@ export type { MascotMood } from '@/types/mascot';
 //   - `happy` : réponse positive à un check-in — grand sourire, yeux en ^^.
 //   - `encouraging` : réponse négative à un check-in — yeux mi-clos et petit sourire,
 //     jamais un visage triste ou déçu (aucun sourcil froncé, aucune bouche tombante).
+//   - `thinking` : le calcul du bilan, seul moment d'attente du produit — regard levé et
+//     porté de côté, bouche neutre. Elle réfléchit, elle ne se réjouit pas d'un chiffre
+//     qu'elle n'a pas encore.
+//   - `resting` : périodes calmes de `/suivi` — yeux clos, paisible. « Rien à faire cette
+//     semaine » n'est pas un échec, et le visage ne doit pas le présenter comme une attente
+//     déçue.
+//
+// **Aucune expression négative, et il ne faut pas en ajouter.** Le registre triste n'existe
+// pas ici par construction (canvas `docs/design/v1-08-mascotte`), et la mascotte n'apparaît
+// jamais à côté d'un chiffre lourd : y mettre un visage serait commenter, et le produit ne
+// commente pas.
 //
 // **Le visage n'est PAS dessiné à l'échelle du reste.** Toute la géométrie vient de
 // `mascotFaceGeometry` (src/types/mascot.ts), qui épaissit les traits à mesure que `size`
@@ -42,11 +53,16 @@ const LEAF_PATH = 'M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z';
 export function Mascot({
   mood = 'calm',
   size = 40,
+  tilt = 0,
   animated = true,
   style,
 }: {
   mood?: MascotMood;
   size?: number;
+  /** Inclinaison en degrés. Un second registre sans redessiner un visage : une feuille
+   *  penchée regarde, une feuille droite accompagne. Quelques degrés suffisent — au-delà
+   *  d'une douzaine, la silhouette cesse de se lire comme une feuille. */
+  tilt?: number;
   animated?: boolean;
   style?: ViewStyle;
 }) {
@@ -69,8 +85,14 @@ export function Mascot({
     );
   }, [animated, breathe]);
 
+  const clampedTilt = Math.max(-12, Math.min(12, tilt));
+
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + breathe.value * 0.035 }, { translateY: -breathe.value * 1.5 }],
+    transform: [
+      { rotate: `${clampedTilt}deg` },
+      { scale: 1 + breathe.value * 0.035 },
+      { translateY: -breathe.value * 1.5 },
+    ],
   }));
 
   return (

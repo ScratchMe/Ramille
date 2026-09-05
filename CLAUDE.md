@@ -373,6 +373,12 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `50 ± offset` casse la symétrie d'un centième, d'où l'arrondi sur l'écart et non sur la
   coordonnée. Les joues affleurent le bord de la silhouette dès la taille nominale : le
   visage est découpé par un `clipPath`, sans quoi elles flottent hors du vert.
+  Cinq expressions, **aucune négative et il ne faut pas en ajouter** : `calm`, `happy`,
+  `encouraging`, `thinking` (attente du calcul — seule asymétrie assumée, le regard est décalé
+  d'une unité) et `resting` (périodes calmes de `/suivi`). Un second registre s'obtient sans
+  redessiner, par la prop `tilt` : une feuille penchée regarde, une feuille droite accompagne.
+  **La mascotte n'apparaît jamais à côté d'un chiffre lourd** — ni près du total, ni près d'une
+  empreinte élevée : y mettre un visage serait commenter, et le produit ne commente pas.
 - **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
   par un `onPress`.** `react-native-web` rend un `onPress` sur du texte en `<div>` : cliquable
   pour un humain, inexistant pour un crawler. Et il ne suffit pas que l'ancrage soit correct, il

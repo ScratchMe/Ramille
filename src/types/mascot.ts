@@ -33,7 +33,7 @@ const POSITION_SHARE = 0.2;
 const FACE_CENTER_Y = 58;
 const FACE_AXIS_X = 50;
 
-export type MascotMood = 'calm' | 'happy' | 'encouraging';
+export type MascotMood = 'calm' | 'happy' | 'encouraging' | 'thinking' | 'resting';
 
 type EyeShape = 'dots' | 'happy' | 'soft';
 
@@ -44,6 +44,10 @@ const NOMINAL_FACE: Record<
   {
     eyes: EyeShape;
     eyeSpread: number; // demi-écartement des yeux, depuis l'axe
+    // Décalage horizontal du regard. Seul `thinking` s'en sert : le regard levé est aussi
+    // légèrement porté de côté, ce qui suffit à le lire comme « elle réfléchit » plutôt que
+    // « elle fixe le plafond ». C'est la seule asymétrie assumée du visage.
+    eyeShiftX: number;
     eyeY: number;
     eyeRadius: number; // yeux `dots`
     eyeArcHalfWidth: number; // yeux `happy` / `soft`
@@ -60,6 +64,7 @@ const NOMINAL_FACE: Record<
   calm: {
     eyes: 'dots',
     eyeSpread: 11,
+    eyeShiftX: 0,
     eyeY: 50,
     eyeRadius: 4.2,
     eyeArcHalfWidth: 5,
@@ -75,6 +80,7 @@ const NOMINAL_FACE: Record<
   happy: {
     eyes: 'happy',
     eyeSpread: 11,
+    eyeShiftX: 0,
     eyeY: 49,
     eyeRadius: 4.2,
     eyeArcHalfWidth: 5,
@@ -90,6 +96,7 @@ const NOMINAL_FACE: Record<
   encouraging: {
     eyes: 'soft',
     eyeSpread: 11,
+    eyeShiftX: 0,
     eyeY: 51,
     eyeRadius: 4.2,
     eyeArcHalfWidth: 4,
@@ -101,6 +108,46 @@ const NOMINAL_FACE: Record<
     blushY: 60,
     blushRadius: 5,
     blushOpacity: 0.55,
+  },
+  // Attente du calcul du bilan — le seul moment où le produit fait patienter. Regard levé et
+  // porté de côté, bouche neutre : elle réfléchit, elle ne se réjouit pas d'un chiffre qu'elle
+  // n'a pas encore. Joues plus discrètes que partout ailleurs, pour la même raison.
+  thinking: {
+    eyes: 'dots',
+    eyeSpread: 11,
+    eyeShiftX: -1,
+    eyeY: 47,
+    eyeRadius: 4.2,
+    eyeArcHalfWidth: 5,
+    eyeArcDepth: 0,
+    mouthHalfWidth: 5,
+    // Flèche nulle : la bouche est un trait droit. Une quadratique sans déflexion rend
+    // exactement la même chose qu'un segment, on garde donc une seule construction.
+    mouthY: 63,
+    mouthDepth: 0,
+    blushSpread: 17,
+    blushY: 61,
+    blushRadius: 4.6,
+    blushOpacity: 0.4,
+  },
+  // Périodes calmes du suivi : « rien à faire cette semaine » n'est pas un échec, et le visage
+  // ne doit pas le présenter comme une attente déçue. Yeux clos, paisible — arcs plus larges et
+  // plus creusés que `encouraging`, qui a les yeux mi-clos et non fermés.
+  resting: {
+    eyes: 'soft',
+    eyeSpread: 11,
+    eyeShiftX: 0,
+    eyeY: 50,
+    eyeRadius: 4.2,
+    eyeArcHalfWidth: 5,
+    eyeArcDepth: 2.5,
+    mouthHalfWidth: 6,
+    mouthY: 63,
+    mouthDepth: 1.5,
+    blushSpread: 17,
+    blushY: 60,
+    blushRadius: 5,
+    blushOpacity: 0.5,
   },
 };
 
@@ -156,6 +203,7 @@ export function mascotFaceGeometry(mood: MascotMood, size: number): MascotFaceGe
   const mouthY = FACE_CENTER_Y + (face.mouthY - FACE_CENTER_Y) * kPos;
   const blushY = FACE_CENTER_Y + (face.blushY - FACE_CENTER_Y) * kPos;
   const eyeSpread = face.eyeSpread * kPos;
+  const eyeShiftX = face.eyeShiftX * kPos;
   const blushSpread = face.blushSpread;
 
   const sides: (-1 | 1)[] = [-1, 1];
@@ -164,12 +212,17 @@ export function mascotFaceGeometry(mood: MascotMood, size: number): MascotFaceGe
     visible: size >= MASCOT_MIN_FACE_SIZE,
     eyes: face.eyes,
     eyeCircles: sides.map((side) => ({
-      cx: mirrored(eyeSpread, side),
+      cx: round(mirrored(eyeSpread, side) + eyeShiftX),
       cy: round(eyeY),
       r: round(face.eyeRadius * k),
     })),
     eyeArcs: sides.map((side) =>
-      quadratic(mirrored(eyeSpread, side), face.eyeArcHalfWidth * k, eyeY, face.eyeArcDepth * k)
+      quadratic(
+        mirrored(eyeSpread, side) + eyeShiftX,
+        face.eyeArcHalfWidth * k,
+        eyeY,
+        face.eyeArcDepth * k
+      )
     ),
     eyeStrokeWidth: round(NOMINAL_STROKE_EYE * k),
     mouthPath: quadratic(FACE_AXIS_X, face.mouthHalfWidth * k, mouthY, face.mouthDepth * k),

@@ -198,6 +198,32 @@ export default function Suivi() {
             )}
           </ThemedView>
 
+          {/* Période calme : la personne a des bilans mais aucun point de suivi répondu. Jusqu'ici
+              l'écran ne montrait rien du tout à cet endroit, ce qui se lit comme un manque —
+              alors que c'est exactement le contraire qu'il faut dire. Yeux clos, registre
+              paisible (canvas docs/design/v1-08-mascotte, artboard « États calmes »).
+
+              La maquette annonçait « ton prochain point arrive lundi » : on ne le dit pas, la
+              cadence dépend de la boucle (hebdomadaire pour le domicile-travail, mensuelle pour
+              les extras) et une date fausse serait pire que pas de date. */}
+          {checkins.length === 0 && (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <View style={styles.checkinsHeader}>
+                <Mascot mood="resting" size={40} />
+                <View style={styles.checkinsHeaderText}>
+                  <ThemedText weight={600}>Rien à rattraper.</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Tes points de suivi arrivent d’eux-mêmes, à leur rythme.
+                  </ThemedText>
+                </View>
+              </View>
+              <ThemedText type="small" themeColor="textTertiary">
+                Une période sans réponse ne se voit pas ici : on ne compte que les fois où tu as
+                répondu, jamais celles où tu as laissé passer.
+              </ThemedText>
+            </ThemedView>
+          )}
+
           {/* Ce que la personne a fait, jamais ce qu'elle a manqué. */}
           {checkins.length > 0 && (
             <ThemedView type="backgroundSelected" style={styles.card}>
