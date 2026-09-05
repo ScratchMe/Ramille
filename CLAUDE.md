@@ -50,8 +50,18 @@ bout-en-bout (écrans, flux de connexion) :
 
 Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
 
-**Toucher à un facteur d'émission invalide TOUTES les valeurs attendues de la suite pgTAP,
-pas seulement celles qui citent ce facteur.** Une quinzaine d'assertions chiffrées sont
+**Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
+pas seulement celles qui citent le facteur touché — et « toucher » inclut en AJOUTER un.**
+Le fichier `07` porte trois gardes qui balaient les tables entières (tout mode a une source,
+toute source a un facteur, tout facteur porte l'ACV complète) : quatre modes ajoutés les
+traversent sans être nommés nulle part. C'est ainsi que la CI est tombée une troisième fois
+(PR #48). En particulier, `emission_factors.source` doit valoir **exactement**
+`'ADEME Base Empreinte — ACV complète (via API Impact CO2)'` : ce n'est pas une étiquette
+décorative mais le seul endroit où l'on enregistre quel endpoint a été interrogé — la valeur
+seule ne distingue pas un facteur ACV d'un facteur d'usage, les deux endpoints renvoyant des
+nombres également plausibles.
+
+**Le corollaire sur les valeurs :** Une quinzaine d'assertions chiffrées sont
 réparties dans `01`, `05`, `06` et `08`, et beaucoup dérivent d'un facteur sans le nommer.
 Chercher l'ancienne valeur littérale dans les fichiers ne suffit donc pas — c'est ainsi que
 la CI est tombée deux fois (PR #34, puis PR #41). La méthode qui marche : lister toutes les
@@ -109,6 +119,8 @@ produit par rapport à ce handoff (les deux plus importants : §1 de
 (comparaison entre utilisateurs) vs. ce qui a été révisé, et le détail des Vercel Functions en
 runtime Node.js §3).
 
+Le dernier increment en date est `v1-08-mesure-usage.md` (mesure d'usage, 05/09/2026).
+
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
 suivi dans la durée qui manque). Son §1 corrige deux erreurs de chiffre documentées ailleurs
@@ -161,10 +173,24 @@ que "voiture" est choisi, dans 3 champs indépendants (`commute_car_engine`,
 `leisure_car_engine`, `car_long_trips_engine`). **Quatre réponses au même niveau** — thermique,
 hybride, hybride rechargeable, électrique — et surtout pas un second niveau « rechargeable ou
 non ? » : la profondeur coûte plus cher en abandon qu'une puce de plus.
-`public.resolve_car_mode(mode_id, engine)` résout vers les modes correspondants avant tout
-lookup de facteur/libellé dans `compute_assessment_results` ; moteur non renseigné (bilans
-soumis avant ces migrations) retombe sur le générique `voiture`. Voir
-`supabase/migrations/20260904090000_car_engine.sql` puis `20260905140000_motorisation_hybride.sql`.
+**Le deux-roues motorisé suit exactement la même mécanique** (`commute_two_wheeler_type`,
+`leisure_two_wheeler_type`, quatre réponses au même niveau : scooter thermique, scooter
+électrique, moto petite cylindrée, moto grosse cylindrée), et pour une raison plus forte encore :
+**une grosse moto émet 0,2147 kg/km, soit une fois et demie une voiture thermique** et 2,8 fois
+un scooter. Les quatre étaient comptés au tarif du scooter, ce qui sous-estimait de 64 %
+l'empreinte d'un motard — dans le sens qui fait passer le deux-roues pour vertueux. Un test
+pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe. Piège de relevé :
+l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
+distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
+
+**Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine, type)`**,
+qui compose `resolve_car_mode` et `resolve_two_wheeler_mode`. Ne jamais rappeler les deux
+fonctions spécialisées en imbriqué dans `recompute_assessment_results` ou
+`estimate_action_savings` : elles y sont appelées à six endroits, et un oubli serait silencieux
+— le mode générique existe, son facteur existe, le calcul rendrait un nombre. Moteur ou type non
+renseigné (bilans soumis avant ces migrations) retombe sur le générique. Voir
+`supabase/migrations/20260904090000_car_engine.sql`, `20260905140000_motorisation_hybride.sql`
+puis `20260905200000_cylindree_deux_roues.sql`.
 
 **L'ordre des motorisations en ACV n'est pas celui qu'on attend, et un test pgTAP l'épingle
 pour qu'on ne le « corrige » pas** : hybride (0,146579) > thermique (0,142253) > hybride
@@ -233,6 +259,16 @@ répondu qu'il n'y en a pas. L'estimateur lit l'instantané par segment figé su
 jamais recalculer les km ailleurs**, les deux implémentations divergeraient. Les gains sont
 ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
 
+**L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
+`plan_actions` porte des chiffres figés à la génération, et `authenticated` a déjà le privilège
+`UPDATE` au niveau table (grant Supabase par défaut) — inoffensif tant qu'aucune policy UPDATE
+n'existe, mais **en ajouter une ouvrirait toutes les colonnes** : la RLS filtre des lignes,
+jamais des colonnes. D'où `commit_plan_action` / `clear_plan_action_commitment`
+(`security definer`, propriété vérifiée à l'intérieur), et un test pgTAP qui épingle qu'un
+`update` direct sur `saving_kg_year` reste sans effet. Une seule action engagée par cycle
+(index unique partiel), intention obligatoire, en jours de la semaine pour le poste
+domicile-travail et en échéance fermée pour les autres — jamais de saisie libre.
+
 Deux mécanismes de génération server-side qu'il faut garder synchronisés si on les touche :
 - `generate_plan_cycle_for_user(p_user_id)` (security definer, revoked de anon/authenticated)
   génère le plan de réduction d'un utilisateur. Appelée à la fois par le cron nightly
@@ -247,6 +283,51 @@ Deux mécanismes de génération server-side qu'il faut garder synchronisés si 
 volée côté client) — même logique pour `engagement_checkins.trip_label`, snapshotté pour ne
 pas changer rétroactivement le wording d'un check-in déjà généré si l'utilisateur refait un
 bilan plus tard.
+
+**Mesure d'usage** (`usage_events`, issue #30, cf. `v1-08-mesure-usage.md`) : **on n'instrumente
+jamais ce que le schéma enregistre déjà.** Pas d'événement `bilan_submit` (c'est
+`assessments.submitted_at`), `checkin_answer` (c'est `engagement_checkins.response`) ni
+`feedback_submit` — dupliquer un fait garantit deux chiffres divergents le jour où l'un des
+chemins échoue, et un test pgTAP interdit de les réintroduire. Les axes de segmentation
+(`zone_type`, `tc_access`, poste dominant, cadence) sont **déjà en base** : c'est ce qui a écarté
+PostHog. La liste des événements vit dans `public.usage_event_types` avec une clé étrangère
+depuis `usage_events` — **ajouter un événement impose une ligne par migration ET une entrée dans
+`src/types/analytics.ts`**, sinon l'insert est rejeté et l'événement perdu en silence (même
+mécanique que `emission_factor_sources`). Un événement déclaré mais qu'aucun code n'émet doit
+être retiré : il ne se lit pas « pas encore instrumenté », il se lit **zéro**.
+
+Trois pièges vérifiés en construisant cette table, tous silencieux :
+- **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
+  `security definer`.** `usage_events` n'a aucune policy de lecture ; sans `security definer`, le
+  `select` de comptage du garde-fou de volume ne voyait rien depuis `authenticated` et le quota
+  ne se déclenchait **jamais**. Corollaire pour les tests : remplir un quota sous `postgres` par
+  commodité, c'est le tester dans le seul rôle où il ne sert à rien.
+- **`revoke execute ... from anon, authenticated` ne révoque rien** : PostgreSQL accorde
+  `EXECUTE` à **PUBLIC** à la création, et les deux rôles en héritent. Il faut
+  `from public, anon, authenticated` — sans quoi n'importe quel visiteur appelait
+  `/rest/v1/rpc/purge_usage_events`.
+- **Le contexte B4 vit dans `assessment_answers`, et nulle part ailleurs.** `profiles` portait
+  des colonnes homonymes `zone_type`/`tc_access` héritées du schéma initial, avec un vocabulaire
+  *différent* (`urbain`/`aucun` au lieu de `urbain_dense`/`periurbain`/`rural` et `inexistant`) :
+  une vue d'analyse branchée dessus segmentait 136 utilisateurs sur `NULL` sans lever d'erreur.
+  Elles ont été supprimées (`20260905180000`), avec `profiles.onboarding_completed_at` qu'aucun
+  code n'écrivait. Vérifier qu'une colonne est *alimentée* avant de s'y fier — et se méfier des
+  valeurs de statut écrites de mémoire (`assessments.status` vaut `completed`, jamais
+  `submitted` ; c'est aussi ce que teste la racine de l'app pour router vers le plan).
+  **Une colonne vide n'est pas une colonne morte** : `emission_factor_sync_runs.detail`,
+  `notification_outbox.last_error`, `commute_carpool_size` et `commute_distance_bracket` sont
+  toutes nulles en base et parfaitement vivantes. Ce qui qualifie une colonne morte, c'est
+  qu'aucun code ne l'écrit.
+
+**Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
+Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
+l'app, et TraceVerte en crée un dès l'ouverture, session anonyme comprise. **La suppression
+efface une seule ligne, `auth.users`, et laisse la cascade faire le reste** : une fonction qui
+énumérerait les tables deviendrait fausse à la prochaine migration, en silence. Ne jamais
+rattacher une table à `profiles` avec autre chose que `on delete cascade` — un test pgTAP
+vérifie la chaîne niveau par niveau. L'export est `security definer` pour une autre raison :
+`usage_events` n'ayant aucune policy de lecture, une fonction en `security invoker` rendrait un
+export silencieusement incomplet.
 
 **Canal de retour** (`feedback`, issue #29) : la seule table où un client écrit du texte
 libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à
@@ -300,6 +381,18 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `TARGET_2050_TRANSPORT_T` est une **dérivation** explicitement signalée — aucune source
   publique ne donne d'objectif 2050 par poste d'empreinte individuelle — d'où le libellé
   « Repère » et non « Objectif » à l'écran.
+- **Le palier de la restitution est le cap de la saison, jamais une marche inventée**
+  (`src/types/palier.ts`). La barre « Repère 2050 » lui a cédé sa place : afficher 15,8 t à côté
+  de 0,6 t donnait un rapport de 1 à 26 que le texte ne rattrape pas, et 2050 tient désormais
+  en mots. Deux mécaniques ont été écartées sur les données réelles et ne doivent pas revenir :
+  la trajectoire linéaire (le pas dépend du point de départ — −609 kg/an à 15,8 t contre
+  **−6 kg/an** à 0,76 t) et les marches absolues partagées (première marche à −82 %). Le repère
+  2050 réapparaît **dès qu'on passe sous la moyenne française** (`showsTarget2050`) : au-dessus
+  c'est un gouffre, en dessous un horizon crédible à un facteur 2 à 4. Quand le palier tombe
+  pile sur le repère, c'est le **repère** qui est affiché — c'est l'objectif final, pas une
+  étape. Être déjà sous le repère ne coupe pas la proposition : la marche reste offerte, dans un
+  registre de contribution (« ce que tu n'émets pas laisse de la marge ailleurs ») et jamais
+  d'exigence. **Le nombre de paliers restants ne s'affiche jamais.**
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
   faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
   professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne
@@ -310,6 +403,49 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   responsable de traitement, regroupés dans `src/constants/editeur.ts` — un seul endroit à
   remplir, jamais de mention en dur dans un écran. Ce régime tomberait si le projet devenait
   une activité professionnelle.
+- **La mascotte ne se redimensionne pas proportionnellement : sa géométrie est calculée**
+  (`src/types/mascot.ts`, `mascotFaceGeometry`), et `src/components/mascot.tsx` ne fait que
+  dessiner ce qu'elle rend. Le visage vit dans un `viewBox` 0 0 100 100, donc une unité vaut
+  `size / 100` pixels : au trait nominal de 3,2 unités, la bouche mesurait **0,70 px** à
+  `size={22}` dans l'en-tête du questionnaire et l'antialiasing n'en laissait qu'une tache
+  grise — la mascotte y coûtait sa place sans rien rendre. La compensation optique épaissit
+  donc les traits à mesure que `size` diminue (les positions ne suivent qu'à 20 %, sinon
+  l'œil sort de la feuille), et sous `MASCOT_MIN_FACE_SIZE` le composant rend la feuille
+  seule plutôt qu'un visage illisible. Ne jamais réintroduire de chemin SVG figé dans le
+  composant, et ne jamais passer un `size` inférieur à cette constante. Deux pièges vérifiés :
+  le point de contrôle d'une quadratique est à **2×** la flèche voulue (s'y tromper double la
+  courbure des yeux, ce que ni le typecheck ni les assertions de lisibilité ne voient — seul
+  un rendu visuel l'a montré, d'où le test de conformité aux chemins d'origine), et arrondir
+  `50 ± offset` casse la symétrie d'un centième, d'où l'arrondi sur l'écart et non sur la
+  coordonnée. Les joues affleurent le bord de la silhouette dès la taille nominale : le
+  visage est découpé par un `clipPath`, sans quoi elles flottent hors du vert.
+  Cinq expressions, **aucune négative et il ne faut pas en ajouter** : `calm`, `happy`,
+  `encouraging`, `thinking` (attente du calcul — seule asymétrie assumée, le regard est décalé
+  d'une unité) et `resting` (périodes calmes de `/suivi`). Un second registre s'obtient sans
+  redessiner, par la prop `tilt` : une feuille penchée regarde, une feuille droite accompagne.
+  **La mascotte n'apparaît jamais à côté d'un chiffre lourd** — ni près du total, ni près d'une
+  empreinte élevée : y mettre un visage serait commenter, et le produit ne commente pas.
+- **Un texte cliquable passe par `TextLink`, jamais par un `Pressable` enveloppant un
+  `ThemedText`.** L'audit T11 avait relevé **zéro attribut d'accessibilité dans tout `src/`**, et
+  ce motif y comptait pour une vingtaine d'occurrences. Le composant existe pour que le libellé
+  annoncé **soit** le texte affiché — un `accessibilityLabel` recopié à côté du texte visible
+  finit toujours par ne plus lui correspondre — et pour porter la cible tactile de 44 px sans
+  déplacer le texte. Trois règles qui vont avec : les titres sont annoncés comme en-têtes
+  **par leur `type`** (`title`/`subtitle` dans `ThemedText`), pas écran par écran ; les listes
+  de choix exclusifs (`ModeListItem`, `ChoiceRow`) sont des `radio` et non des `button`, seul
+  rôle qui annonce « sélectionné » ; et la mascotte comme les illustrations sont masquées
+  (`aria-hidden`, `accessibilityElementsHidden`) — elles accompagnent un texte qui dit déjà
+  tout. Un `Pressable` nu reste légitime quand la cible porte plusieurs textes (la bannière de
+  `bilan/resultat.tsx`), à condition de lui donner un `accessibilityLabel` qui les recompose.
+- **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
+  par un `onPress`.** `react-native-web` rend un `onPress` sur du texte en `<div>` : cliquable
+  pour un humain, inexistant pour un crawler. Et il ne suffit pas que l'ancrage soit correct, il
+  doit se retrouver dans le HTML **statique** — à vérifier dans `dist/*.html` après
+  `expo export`, même piège silencieux que `cleanUrls`. Seul cas aujourd'hui : le lien vers la
+  page personnelle de l'éditeur (`EDITOR_CV_URL`) au pied des deux pages légales, qui sont les
+  seules surfaces publiques du produit (leurs URL sont données à Google Play et à l'écran de
+  consentement Google). Le sens du lien est délibéré — TraceVerte vers le CV — et il ne porte
+  pas de `nofollow`.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir

@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
 import { Mascot } from '@/components/mascot';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -139,11 +140,13 @@ export default function Feedback() {
             faire. Rien d’autre.
           </ThemedText>
 
-          <Pressable onPress={() => router.back()}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.cancel}>
-              Annuler
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label="Annuler"
+            onPress={() => router.back()}
+            type="small"
+            themeColor="textTertiary"
+            style={styles.cancel}
+          />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

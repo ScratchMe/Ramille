@@ -111,11 +111,15 @@ export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
     commute_second_mode_used: answers.commute_second_mode_used,
     commute_second_mode: answers.commute_second_mode as BilanAnswers['commute_second_mode'],
     commute_car_engine: answers.commute_car_engine as BilanAnswers['commute_car_engine'],
+    commute_two_wheeler_type:
+      answers.commute_two_wheeler_type as BilanAnswers['commute_two_wheeler_type'],
 
     leisure_frequency: answers.leisure_frequency as BilanAnswers['leisure_frequency'],
     leisure_mode: answers.leisure_mode as BilanAnswers['leisure_mode'],
     leisure_distance_bracket: answers.leisure_distance_bracket as BilanAnswers['leisure_distance_bracket'],
     leisure_car_engine: answers.leisure_car_engine as BilanAnswers['leisure_car_engine'],
+    leisure_two_wheeler_type:
+      answers.leisure_two_wheeler_type as BilanAnswers['leisure_two_wheeler_type'],
 
     flights_total_per_year: answers.flights_total_per_year,
     flights_short_per_year: answers.flights_short_per_year,

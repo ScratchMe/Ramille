@@ -106,14 +106,19 @@ select throws_ok(
 update public.assessments set status = 'in_progress' where id = '61111111-1111-1111-1111-111111111111';
 update public.assessment_answers set commute_days_per_week = 1 where assessment_id = '61111111-1111-1111-1111-111111111111';
 update public.engagement_checkins set status = 'answered', response = true where user_id = '51111111-1111-1111-1111-111111111111';
-update public.profiles set zone_type = 'urbain' where id = '51111111-1111-1111-1111-111111111111';
+update public.profiles set cadence_type = 'rolling_quarter' where id = '51111111-1111-1111-1111-111111111111';
 
 select set_config('request.jwt.claims', json_build_object('sub', '51111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 
 select is((select status from public.assessments where id = '61111111-1111-1111-1111-111111111111'), 'completed', 'assessments: l''UPDATE d''un tiers sur le bilan du propriétaire est sans effet');
 select is((select commute_days_per_week from public.assessment_answers where assessment_id = '61111111-1111-1111-1111-111111111111'), 5::smallint, 'assessment_answers: l''UPDATE d''un tiers sur les réponses du propriétaire est sans effet');
 select is((select status from public.engagement_checkins where user_id = '51111111-1111-1111-1111-111111111111'), 'pending', 'engagement_checkins: l''UPDATE d''un tiers sur le check-in du propriétaire est sans effet');
-select is((select zone_type from public.profiles where id = '51111111-1111-1111-1111-111111111111'), null::text, 'profiles: l''UPDATE d''un tiers sur le profil du propriétaire est sans effet');
+-- `cadence_type` plutôt qu'une colonne nullable : sa valeur par défaut est 'season', donc
+-- l'assertion distingue « l'UPDATE n'a rien fait » de « la colonne n'a jamais rien contenu ».
+-- La version précédente vérifiait que `profiles.zone_type` restait NULL — une colonne qui
+-- était nulle pour tout le monde, et qui a depuis été supprimée comme colonne morte
+-- (cf. 20260905180000).
+select is((select cadence_type from public.profiles where id = '51111111-1111-1111-1111-111111111111'), 'season', 'profiles: l''UPDATE d''un tiers sur le profil du propriétaire est sans effet');
 
 -- ── Section C : verrouillage écriture serveur-only (aucune policy insert) ──────────────
 -- Toujours en tant que A (le propriétaire lui-même) : ces tables ne sont jamais écrites

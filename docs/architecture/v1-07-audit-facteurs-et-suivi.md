@@ -253,7 +253,7 @@ Classés par gravité. Tous constatés dans le code ou en base, pas déduits.
 | T8 | Division par zéro → `NaN %` affiché | `bilan/resultat.tsx:179` | **Écran cassé** |
 | T9 | Section B4 collectée et jamais utilisée | `assessment_answers`, `profiles` | Friction inutile |
 | T10 | `target_reduction_pct` (le cap −20 %) n'est lu par aucun écran | `plan/index.tsx` | Fonctionnalité morte |
-| T11 | Zéro attribut d'accessibilité dans tout `src/` | tous les `Pressable` | Exclusion |
+| T11 | Zéro attribut d'accessibilité dans tout `src/` | tous les `Pressable` | Exclusion — **corrigé le 05/09/2026** |
 | T12 | Pas de suppression de compte ni d'export | — | **Bloqueur Play Store** |
 | T13 | Division covoiturage appliquée aussi à la jambe du second mode | `compute_assessment_results` | Mineur |
 
@@ -395,9 +395,39 @@ Trois manques, par ordre d'impact :
 Ces trois points restent dans l'esprit « fonctionnel simple » de la spec §3 : aucune mécanique
 de sous-objectifs, aucun plan mois par mois.
 
-**Fait le 05/09/2026 pour les points 1 et 3** (migration `20260905130000`). Le point 2, la
-sélection d'une action et l'intention d'implémentation, est décalé en étape 6b : il ajoute de
-l'écriture côté client et mérite sa propre relecture.
+**Fait le 05/09/2026 pour les points 1 et 3** (migration `20260905130000`), puis pour le
+point 2 (migration `20260905190000`, étape 6b).
+
+#### L'engagement passe par un RPC, et ce n'est pas un détail d'implémentation
+
+`plan_actions` porte des chiffres **figés à la génération** — `saving_kg_year`,
+`saving_share_percent` — au même titre que `assessment_results` fige le bilan. Or
+`authenticated` possède déjà le privilège `UPDATE` au niveau table (grant par défaut de
+Supabase), aujourd'hui sans effet parce qu'aucune policy UPDATE n'existe. **Ajouter une policy
+pour permettre l'engagement aurait donc ouvert l'écriture sur toutes les colonnes** : la RLS
+filtre des lignes, jamais des colonnes. Le chiffre affiché à la personne serait devenu
+réinscriptible depuis une clé anonyme.
+
+D'où `commit_plan_action` / `clear_plan_action_commitment`, `security definer` avec
+vérification de propriété à l'intérieur — le modèle déjà retenu pour
+`compute_assessment_results` (v1-05 §4). Un test pgTAP vérifie qu'un `update` direct sur
+`saving_kg_year` reste sans effet, y compris pour le propriétaire : si cette assertion tombe un
+jour, c'est qu'une policy UPDATE a été ajoutée.
+
+**Une seule action engagée à la fois**, garantie par un index unique partiel : s'engager sur
+les deux revient à ne s'engager sur aucune. Le RPC libère la précédente dans la même
+transaction, donc pas de fenêtre à deux engagements ni d'aller-retour côté client.
+
+**L'intention est obligatoire**, et prend deux formes selon le poste : des jours de la semaine
+pour le domicile-travail (seul poste au rythme hebdomadaire), une échéance fermée pour les
+loisirs et les voyages — demander un jour de la semaine pour un voyage produirait une intention
+que personne ne peut tenir. Les deux formes s'excluent, la contrainte
+`plan_actions_engagement_coherent` le vérifie. Aucune saisie libre : `feedback` reste la seule
+table où un client écrit une phrase.
+
+Et **aucune mécanique d'échec** : pas de « tenu / pas tenu », pas de série, pas de score. On
+change d'action ou on retire son engagement sans que rien ne le compte contre soi — même
+registre que `/suivi`.
 
 `action_templates` a cessé d'être une phrase pour devenir une **opération** — substituer un
 mode sur une part du poste, partager le véhicule, supprimer un trajet ou un jour de
@@ -459,6 +489,48 @@ abstrait et lointain, et le registre anxiogène tend à paralyser plutôt qu'à 
 
 **Décision** : décliner la trajectoire en **paliers atteignables** (« ton palier de cette
 année »), qui transforment un gouffre en marche franchissable. Traité avec l'issue #28.
+
+#### Ce que les données ont tranché (05/09/2026)
+
+Les treize bilans en base vont de **15,82 t à 0,06 t** — un facteur 264. C'est cette amplitude
+qui a décidé de la mécanique, deux candidates s'y effondrant :
+
+| Mécanique | Ce qu'elle donne | Pourquoi écartée |
+|---|---|---|
+| Trajectoire linéaire jusqu'en 2050 | −0,609 t/an à 15,8 t, **−6 kg/an** à 0,76 t | Le pas dépend du point de départ : elle récompense le retard et rend la sobriété invisible. Un palier de −0,8 % n'est visable par aucune action du plan. |
+| Marches absolues partagées (2,8 → 2,0 → 1,4 → 1,0 → 0,6) | Première marche à **−82 %** pour 15,8 t | Remplace un gouffre par un gouffre. Et les marches intermédiaires seraient arbitraires : aucune source publique ne donne de jalons par poste. |
+
+**Retenu : le palier est le cap de la saison**, déjà calculé et figé sur `plan_cycles`. Même
+effort relatif pour tout le monde, atteignable par construction (les actions du plan sont
+chiffrées pour y mener), et **aucun nouveau chiffre à sourcer** — ce qui compte après
+l'incohérence 9,1 / 9,3 t décrite plus bas.
+
+Deux décisions de forme qui vont avec :
+
+- **La barre « Repère 2050 » cède sa place au palier — mais seulement au-dessus de la moyenne
+  française.** Le repère n'a pas le même sens des deux côtés de cette ligne : au-dessus, l'écart
+  est un gouffre (15,8 t contre 0,6 t, un rapport de 1 à 26) et le montrer décourage ; en
+  dessous, il tombe à un facteur 2 à 4, redevient un horizon crédible, et le masquer priverait
+  de sa cible celui qui en est le plus près. Décision produit du 05/09/2026. Le palier, lui,
+  reste affiché des deux côtés : c'est la marche actionnable, et la retirer l'enlèverait
+  précisément à ceux qui sont le mieux placés pour la franchir. Quand le palier **est** le
+  repère (le cap dépasse ce qui les sépare), c'est la barre du palier qui prend le nom du
+  repère : l'appeler « ton prochain palier » sous-vendrait ce que c'est — l'objectif final, pas
+  une étape de plus.
+- **Être déjà sous le repère ne coupe plus la proposition.** Une première version ne montrait
+  alors aucune marche, au motif qu'exiger plus de ceux qui font déjà le plus serait déplacé.
+  Décision produit corrigée le 05/09/2026 : **ce qu'on n'émet pas laisse de la marge ailleurs**,
+  pour les autres postes de sa propre empreinte comme pour les personnes dont la mobilité est
+  contrainte. La marche est donc toujours offerte, mais dans un registre entièrement différent —
+  une proposition adossée à une raison collective, jamais une exigence, et sans aucune
+  formulation qui ferait d'un profil sobre quelqu'un qui n'en fait pas encore assez. Le palier est placé **juste sous « Toi »**, avant la moyenne : rendu en
+  troisième position, les deux barres presque identiques d'une empreinte élevée donnaient
+  l'impression que la marche ne servait à rien — vérifié au rendu, c'est ce qui a fait changer
+  l'ordre.
+- **Aucun palier pour qui est déjà sous le repère** (4 des 13 bilans). Leur demander −20 % de
+  plus serait exiger toujours plus de ceux qui font déjà le plus, ce que `/plan` refuse déjà
+  avec son état « Tu fais déjà l'essentiel sur ce poste ». Et **on n'affiche jamais le nombre
+  de paliers restants** : « il t'en reste 15 » est une autre façon d'écrire le gouffre.
 
 Au passage : `FRANCE_AVERAGE_TRANSPORT_T = 2.9` et `TARGET_2050_TRANSPORT_T = 0.5`
 (`bilan/resultat.tsx`) sont des placeholders codés en dur, marqués « à confirmer ». Ce sont
@@ -569,8 +641,15 @@ de signe entre les deux bases.
 | 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2 | **fait** — `src/app/suivi.tsx`, `src/types/suivi.ts` |
 | 5 | Canal de rappel email | §3.1 | **fait** — migration `20260904200000` (envoi en attente d'un fournisseur, cf. §3.1) |
 | 6a | Actions chiffrées, cap affiché, contexte B4 exploité | T9, T10, §3.3 (1 et 3) | **fait** — migration `20260905130000` |
-| 6b | Choisir une action et s'y engager | §3.3 (2) | à faire |
-| 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | à faire |
+| 6b | Choisir une action et s'y engager | §3.3 (2) | **fait** — migration `20260905190000` |
+| 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | **fait** — suppression et export (`20260905210000`), accessibilité, paliers |
+
+Hors tableau, traité le 05/09/2026 dans la foulée de l'étape 0 : la **cylindrée du deux-roues**
+(migration `20260905200000`). Le mode `deux_roues_motorise` valait le facteur du scooter
+thermique pour tout le monde, alors que l'endpoint ACV distingue quatre véhicules dont l'écart
+va de 0,059300 à 0,214700 — **une grosse moto dépasse la voiture thermique de 51 %**. Un motard
+voyait son poste domicile-travail sous-estimé de 64 %, dans le sens qui fait passer le deux-roues
+pour vertueux. C'est le dernier écart de cette ampleur dans le référentiel.
 
 T13 (covoiturage appliqué au second mode) est corrigé au passage de l'étape 1, la fonction
 étant de toute façon réécrite.
@@ -595,8 +674,8 @@ ligne.
 | Signalement | Pourquoi c'est voulu |
 |---|---|
 | `auth_allow_anonymous_sign_ins` sur `assessments`, `assessment_answers`, `assessment_results`, `engagement_checkins`, `plan_cycles`, `plan_actions`, `profiles` (WARN ×7) | C'est le modèle d'authentification du produit, pas un trou : chaque visiteur reçoit une session anonyme dès l'ouverture (`v1-04` §1) et son bilan vit sous les mêmes policies owner-scoped que n'importe quel compte. Les policies sont toutes en `user_id = auth.uid()` — un utilisateur anonyme ne voit que ses propres lignes. L'advisor signale le motif, pas une fuite. |
-| `authenticated_security_definer_function_executable` sur `compute_assessment_results` (WARN) | Volontaire et documenté (`v1-05` §4) : ce RPC est appelé par le client après soumission du questionnaire, donc il doit rester ouvert à `authenticated`. La protection est la vérification de propriété du bilan **dans** la fonction, pas un REVOKE. Le calcul lui-même vit dans `recompute_assessment_results`, elle bien révoquée. |
-| `rls_enabled_no_policy` sur `emission_factor_sync_runs` (INFO) | C'est l'objectif : RLS active **sans** policy = rien n'est lisible côté client. Journal d'exploitation, pas une donnée produit. |
+| `authenticated_security_definer_function_executable` sur `compute_assessment_results`, `commit_plan_action`, `clear_plan_action_commitment`, `delete_my_account`, `export_my_data` (WARN ×5) | Volontaire, et c'est le même motif pour les cinq : ce sont des RPC appelés par le client, donc ils doivent rester ouverts à `authenticated`. **La protection est la vérification de propriété à l'intérieur de la fonction, pas un REVOKE.** Chacune lit `auth.uid()` et refuse si la ligne visée ne lui appartient pas. Le calcul lui-même vit dans `recompute_assessment_results`, elle bien révoquée. À l'inverse `anon` n'a accès à aucune des cinq — vérifié par `has_function_privilege` dans le test 15. |
+| `rls_enabled_no_policy` sur `emission_factor_sync_runs`, `notification_outbox`, `usage_event_types` (INFO ×3) | C'est l'objectif : RLS active **sans** policy = rien n'est lisible côté client. Journal d'exploitation, boîte d'envoi et référentiel d'événements — aucune donnée que l'app ait besoin de relire. |
 | `auth_allow_anonymous_sign_ins` sur `cron.job` / `cron.job_run_details` (WARN ×2) | Schéma de Supabase lui-même, sa policy restreint déjà au propriétaire du job. Pas à nous. |
 | `unindexed_foreign_keys` sur `assessment_answers.commute_mode` / `.commute_second_mode` / `.leisure_mode` et `assessment_results.dominant_poste_mode` (INFO ×4) | Les quatre pointent vers `transport_modes`. **Aucune requête du produit ne filtre ni ne joint sur ces colonnes** — les libellés se lisent par clé primaire de `transport_modes`. La table référencée est un référentiel de 13 lignes qui ne bouge qu'en migration. Quatre index de plus coûteraient à chaque insertion de bilan pour un gain de lecture nul : on ne les crée pas. À revoir si un écran vient un jour filtrer les bilans par mode. |
 | `unused_index` sur `plan_actions_action_template_id_idx` (INFO) | « Jamais utilisé » sur une base qui compte une douzaine de bilans de test ne veut rien dire. Cet index couvre la jointure `plan_actions → action_templates` que l'écran `/plan` traverse à chaque affichage. Conservé. |

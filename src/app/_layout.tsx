@@ -10,6 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { useTrackView } from '@/hooks/use-track-view';
 import { ensureSession } from '@/lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
@@ -37,6 +38,11 @@ export default function RootLayout() {
       console.error('ensureSession() a échoué au démarrage :', error);
     });
   }, []);
+
+  // Dénominateur de tous les entonnoirs. Émis après `ensureSession()` dans l'ordre des
+  // effets, mais sans dépendre de lui : si la session n'est pas encore là, `track` renonce
+  // et l'événement est perdu — un défaut assumé, préférable à une file d'attente.
+  useTrackView('app_open');
 
   // Ne jamais bloquer tout l'arbre sur le chargement de la police : sur le rendu
   // statique web (expo export), useFonts ne résout jamais pendant la génération —

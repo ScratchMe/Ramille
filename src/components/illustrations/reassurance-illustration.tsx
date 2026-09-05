@@ -11,7 +11,12 @@ export function ReassuranceIllustration({ style }: { style?: ViewStyle }) {
   const c = Colors.light;
 
   return (
-    <View style={[styles.container, style]}>
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      aria-hidden
+      style={[styles.container, style]}
+    >
       <Svg width="100%" height="100%" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice">
         <Path d="M0 0H360V200H0Z" fill={c.backgroundElement2} />
 

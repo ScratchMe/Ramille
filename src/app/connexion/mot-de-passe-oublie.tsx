@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { TextField } from '@/components/auth/text-field';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -41,9 +42,12 @@ export default function MotDePasseOublie() {
             <ThemedText themeColor="textSecondary" style={styles.body}>
               Si un compte existe pour {email}, un lien de réinitialisation vient d&apos;être envoyé.
             </ThemedText>
-            <Pressable onPress={() => router.push('/connexion')}>
-              <ThemedText type="linkPrimary">Revenir à la connexion</ThemedText>
-            </Pressable>
+            <TextLink
+              label="Revenir à la connexion"
+              onPress={() => router.push('/connexion')}
+              role="link"
+              type="linkPrimary"
+            />
           </View>
         </SafeAreaView>
       </ThemedView>
@@ -71,11 +75,14 @@ export default function MotDePasseOublie() {
             placeholder="camille@exemple.fr"
           />
           <Button title="Envoyer le lien" onPress={onSubmit} disabled={!EMAIL_RE.test(email) || submitting} />
-          <Pressable onPress={() => router.back()}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.backLink}>
-              Revenir à la connexion
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label="Revenir à la connexion"
+            onPress={() => router.back()}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.backLink}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>

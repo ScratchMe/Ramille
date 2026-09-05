@@ -14,7 +14,12 @@ export function OnboardingHeroIllustration({ style }: { style?: ViewStyle }) {
   const c = Colors.light;
 
   return (
-    <View style={[styles.container, style]}>
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      aria-hidden
+      style={[styles.container, style]}
+    >
       <Svg width="100%" height="100%" viewBox="0 0 360 360" preserveAspectRatio="xMidYMid slice">
         <Path d="M0 0H360V360H0Z" fill={c.backgroundSelected} />
 

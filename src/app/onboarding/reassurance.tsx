@@ -8,11 +8,14 @@ import { OnboardingDots } from '@/components/onboarding-dots';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTrackView } from '@/hooks/use-track-view';
 
 // Onboarding 3/4 — Réassurance. Seul écran à fond teinté de l'onboarding, corps de
 // texte plus généreux (17/26 au lieu de 16/24) — le seul écran « chaleureux »,
 // cf. handoff design.
 export default function OnboardingReassurance() {
+  useTrackView('onboarding_step_view', { step: 'reassurance' });
+
   return (
     <ThemedView type="backgroundTinted" style={styles.container}>
       <SafeAreaView style={styles.safeArea}>

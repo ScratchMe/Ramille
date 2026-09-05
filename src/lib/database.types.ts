@@ -71,6 +71,7 @@ export type Database = {
           car_long_trips_engine: string | null
           car_long_trips_per_year: number
           commute_car_engine: string | null
+          commute_two_wheeler_type: string | null
           commute_carpool_size: number | null
           commute_days_per_week: number | null
           commute_distance_bracket: string | null
@@ -84,6 +85,7 @@ export type Database = {
           flights_total_per_year: number
           household_vehicles: string | null
           leisure_car_engine: string | null
+          leisure_two_wheeler_type: string | null
           leisure_distance_bracket: string | null
           leisure_frequency: string
           leisure_mode: string | null
@@ -97,6 +99,7 @@ export type Database = {
           car_long_trips_engine?: string | null
           car_long_trips_per_year?: number
           commute_car_engine?: string | null
+          commute_two_wheeler_type?: string | null
           commute_carpool_size?: number | null
           commute_days_per_week?: number | null
           commute_distance_bracket?: string | null
@@ -110,6 +113,7 @@ export type Database = {
           flights_total_per_year?: number
           household_vehicles?: string | null
           leisure_car_engine?: string | null
+          leisure_two_wheeler_type?: string | null
           leisure_distance_bracket?: string | null
           leisure_frequency: string
           leisure_mode?: string | null
@@ -123,6 +127,7 @@ export type Database = {
           car_long_trips_engine?: string | null
           car_long_trips_per_year?: number
           commute_car_engine?: string | null
+          commute_two_wheeler_type?: string | null
           commute_carpool_size?: number | null
           commute_days_per_week?: number | null
           commute_distance_bracket?: string | null
@@ -136,6 +141,7 @@ export type Database = {
           flights_total_per_year?: number
           household_vehicles?: string | null
           leisure_car_engine?: string | null
+          leisure_two_wheeler_type?: string | null
           leisure_distance_bracket?: string | null
           leisure_frequency?: string
           leisure_mode?: string | null
@@ -527,9 +533,12 @@ export type Database = {
       plan_actions: {
         Row: {
           action_template_id: string
+          committed_at: string | null
           created_at: string
           detail_text: string | null
           id: string
+          intention_days: number[] | null
+          intention_timing: string | null
           plan_cycle_id: string
           rank: number | null
           saving_kg_year: number | null
@@ -537,9 +546,12 @@ export type Database = {
         }
         Insert: {
           action_template_id: string
+          committed_at?: string | null
           created_at?: string
           detail_text?: string | null
           id?: string
+          intention_days?: number[] | null
+          intention_timing?: string | null
           plan_cycle_id: string
           rank?: number | null
           saving_kg_year?: number | null
@@ -547,9 +559,12 @@ export type Database = {
         }
         Update: {
           action_template_id?: string
+          committed_at?: string | null
           created_at?: string
           detail_text?: string | null
           id?: string
+          intention_days?: number[] | null
+          intention_timing?: string | null
           plan_cycle_id?: string
           rank?: number | null
           saving_kg_year?: number | null
@@ -625,27 +640,18 @@ export type Database = {
           created_at: string
           email_reminders_enabled: boolean
           id: string
-          onboarding_completed_at: string | null
-          tc_access: string | null
-          zone_type: string | null
         }
         Insert: {
           cadence_type?: string
           created_at?: string
           email_reminders_enabled?: boolean
           id: string
-          onboarding_completed_at?: string | null
-          tc_access?: string | null
-          zone_type?: string | null
         }
         Update: {
           cadence_type?: string
           created_at?: string
           email_reminders_enabled?: boolean
           id?: string
-          onboarding_completed_at?: string | null
-          tc_access?: string | null
-          zone_type?: string | null
         }
         Relationships: []
       }
@@ -667,19 +673,88 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_event_types: {
+        Row: {
+          description: string
+          name: string
+        }
+        Insert: {
+          description: string
+          name: string
+        }
+        Update: {
+          description?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      usage_events: {
+        Row: {
+          id: number
+          name: string
+          occurred_at: string
+          platform: string
+          props: Json
+          user_id: string
+        }
+        Insert: {
+          id?: never
+          name: string
+          occurred_at?: string
+          platform: string
+          props?: Json
+          user_id: string
+        }
+        Update: {
+          id?: never
+          name?: string
+          occurred_at?: string
+          platform?: string
+          props?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_events_name_fkey"
+            columns: ["name"]
+            isOneToOne: false
+            referencedRelation: "usage_event_types"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "usage_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_intention_days: { Args: { p_days: number[] }; Returns: boolean }
+      check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
+      clear_plan_action_commitment: {
+        Args: { p_plan_action_id: string }
+        Returns: undefined
+      }
+      commit_plan_action: {
+        Args: { p_days?: number[]; p_plan_action_id: string; p_timing?: string }
+        Returns: undefined
+      }
       compute_assessment_results: {
         Args: { p_assessment_id: string }
         Returns: undefined
       }
+      delete_my_account: { Args: never; Returns: undefined }
       emission_factor: {
         Args: { p_mode_id: string; p_on_date: string }
         Returns: number
       }
+      export_my_data: { Args: never; Returns: Json }
       enqueue_checkin_reminders: { Args: never; Returns: undefined }
       estimate_action_savings: {
         Args: { p_assessment_id: string }
@@ -693,12 +768,21 @@ export type Database = {
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
       purge_stale_anonymous_accounts: { Args: never; Returns: undefined }
+      purge_usage_events: { Args: never; Returns: undefined }
       recompute_assessment_results: {
         Args: { p_assessment_id: string }
         Returns: undefined
       }
       resolve_car_mode: {
         Args: { p_engine: string; p_mode_id: string }
+        Returns: string
+      }
+      resolve_mode: {
+        Args: { p_car_engine: string; p_mode_id: string; p_two_wheeler_type: string }
+        Returns: string
+      }
+      resolve_two_wheeler_mode: {
+        Args: { p_mode_id: string; p_type: string }
         Returns: string
       }
       rolling_quarter_bounds: {

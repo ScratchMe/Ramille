@@ -1,9 +1,11 @@
-import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Link, router } from 'expo-router';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { EDITOR_CV_URL, EDITOR_NAME } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 // Coquille commune aux pages légales (/confidentialite, /conditions). Ces pages ne sont pas
@@ -63,11 +65,32 @@ export function LegalPage({
               </View>
             ))}
 
-            <Pressable onPress={() => router.back()} style={styles.backLink}>
-              <ThemedText type="small" weight={600} themeColor="accentText">
-                Retour
+            <TextLink
+              label="Retour"
+              onPress={() => router.back()}
+              role="link"
+              type="small"
+              weight={600}
+              themeColor="accentText"
+              containerStyle={styles.backLink}
+            />
+
+            {/* Ces deux pages sont les seules surfaces publiques du produit : leurs URL sont
+                données à Google Play et à l'écran de consentement Google, et elles se lisent
+                hors app, sans session. C'est donc le seul endroit où un pied de page a du sens
+                — les écrans du parcours n'en ont pas, et la racine n'est qu'une redirection.
+
+                `Link` et pas `Pressable` : react-native-web rend un `onPress` en `<div>`, qui
+                n'est pas un lien pour un crawler. Le nom en toute lettre sert d'ancre. */}
+            <View style={styles.footer}>
+              <ThemedText type="small" themeColor="textTertiary">
+                Un projet personnel d’
+                <Link href={EDITOR_CV_URL} target="_blank" rel="noopener" style={styles.cvLink}>
+                  {EDITOR_NAME}
+                </Link>
+                .
               </ThemedText>
-            </Pressable>
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -118,6 +141,8 @@ function LegalBlockView({ block }: { block: LegalBlock }) {
 }
 
 const styles = StyleSheet.create({
+  footer: { marginTop: Spacing.five },
+  cvLink: { textDecorationLine: 'underline' },
   container: { flex: 1 },
   safeArea: { flex: 1 },
   scrollContent: { padding: Spacing.four, paddingBottom: Spacing.six },

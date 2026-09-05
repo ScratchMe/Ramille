@@ -1,15 +1,18 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
 import { Mascot } from '@/components/mascot';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { markConnexionProposalSeen } from '@/lib/connexion-prefs';
+import { useTrackView } from '@/hooks/use-track-view';
 import { formatTonnes } from '@/lib/format';
+import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
@@ -19,7 +22,15 @@ type Recap = { total_co2_kg_year: number; dominant_poste_label: string } | null;
 // design) : affichée une seule fois, juste après que l'utilisateur ait vu sa restitution
 // (cf. bilan/resultat.tsx, qui route ici tant que la proposition n'a pas été vue/déclinée).
 export default function ConnexionProposition() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
+
+  // `resultat_transition` par défaut : c'est le chemin historique, et un paramètre absent
+  // (lien direct, retour arrière) vaut mieux compté là que perdu.
+  useTrackView('connexion_view', {
+    source: source === 'resultat_cta' || source === 'plan' || source === 'suivi'
+      ? source
+      : 'resultat_transition',
+  });
   const [recap, setRecap] = useState<Recap>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -34,6 +45,7 @@ export default function ConnexionProposition() {
   }, [id]);
 
   const dismiss = async () => {
+    track('connexion_dismiss');
     await markConnexionProposalSeen();
     router.replace('/plan');
   };
@@ -46,6 +58,7 @@ export default function ConnexionProposition() {
       Alert.alert('Connexion impossible', error.message);
       return;
     }
+    track('connexion_success', { method: 'google' });
     await markConnexionProposalSeen();
     router.replace('/plan');
   };
@@ -85,19 +98,23 @@ export default function ConnexionProposition() {
 
           <View style={styles.options}>
             <GoogleButton onPress={onGoogle} loading={googleLoading} />
-            <Pressable onPress={() => router.push({ pathname: '/connexion/email', params: { id } })}>
-              <ThemedText type="linkPrimary" style={styles.emailLink}>
-                Utiliser un email à la place
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Utiliser un email à la place"
+              onPress={() => router.push({ pathname: '/connexion/email', params: { id } })}
+              role="link"
+              type="linkPrimary"
+              style={styles.emailLink}
+            />
           </View>
 
           <View style={styles.skip}>
-            <Pressable onPress={dismiss}>
-              <ThemedText type="small" themeColor="textTertiary">
-                Continuer sans compte
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Continuer sans compte"
+              hint="Ton résultat reste accessible sur cet appareil"
+              onPress={dismiss}
+              type="small"
+              themeColor="textTertiary"
+            />
             <ThemedText type="code" themeColor="textTertiary" style={styles.skipHint}>
               Ton résultat reste accessible sur cet appareil.
             </ThemedText>
@@ -107,19 +124,23 @@ export default function ConnexionProposition() {
               compte — c'est le moment où elles l'engagent. Leurs URL publiques sont aussi
               exigées par l'écran de consentement Google OAuth et par la fiche Play Store. */}
           <View style={styles.legal}>
-            <Pressable onPress={() => router.push('/confidentialite')}>
-              <ThemedText type="code" themeColor="textTertiary">
-                Confidentialité
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Confidentialité"
+              onPress={() => router.push('/confidentialite')}
+              role="link"
+              type="code"
+              themeColor="textTertiary"
+            />
             <ThemedText type="code" themeColor="textTertiary">
               ·
             </ThemedText>
-            <Pressable onPress={() => router.push('/conditions')}>
-              <ThemedText type="code" themeColor="textTertiary">
-                Conditions d’utilisation
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Conditions d’utilisation"
+              onPress={() => router.push('/conditions')}
+              role="link"
+              type="code"
+              themeColor="textTertiary"
+            />
           </View>
         </View>
       </SafeAreaView>

@@ -1,17 +1,20 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { Mascot } from '@/components/mascot';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { formatTonnes } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
+import { useTrackView } from '@/hooks/use-track-view';
+import { ActionCommitment } from '@/components/plan/action-commitment';
 import { supabase } from '@/lib/supabase';
 
 type PlanAction = {
@@ -20,7 +23,10 @@ type PlanAction = {
   saving_share_percent: number | null;
   detail_text: string | null;
   rank: number | null;
-  action_templates: { action_text: string } | null;
+  committed_at: string | null;
+  intention_days: number[] | null;
+  intention_timing: string | null;
+  action_templates: { action_text: string; poste: string | null } | null;
 };
 
 type PlanCycle = {
@@ -70,8 +76,13 @@ type LoadState =
 // signe que la personne fait déjà l'essentiel — l'état correspondant la félicite au lieu de
 // lui présenter une liste vide.
 export default function Plan() {
+  useTrackView('plan_view');
+
   const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
+  // jour ne se déduit pas de l'action qu'on vient de toucher — il faut relire le cycle.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +112,7 @@ export default function Plan() {
           // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
           // type du résultat en analysant ce littéral au niveau des types. Une concaténation
           // lui rend un `string` opaque et le typage du retour est perdu.
-          'id, period_label, trip_label, baseline_co2_kg_year, target_reduction_pct, plan_actions(id, saving_kg_year, saving_share_percent, detail_text, rank, action_templates(action_text))'
+          'id, period_label, trip_label, baseline_co2_kg_year, target_reduction_pct, plan_actions(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, action_templates(action_text, poste))'
         )
         .order('period_start', { ascending: false })
         .limit(1)
@@ -142,7 +153,7 @@ export default function Plan() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshKey]);
 
   if (state.status === 'loading') {
     return (
@@ -184,6 +195,7 @@ export default function Plan() {
 
   const { cycle, assessmentId, checkins } = state;
   const actionsCount = cycle.plan_actions.length;
+  const committedActionId = cycle.plan_actions.find((a) => a.committed_at !== null)?.id ?? null;
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.
@@ -255,6 +267,20 @@ export default function Plan() {
                     {action.detail_text}
                   </ThemedText>
                 )}
+                {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la
+                    fois par cycle — s'engager sur les deux revient à ne s'engager sur aucune,
+                    et la base le garantit par un index unique partiel. */}
+                <ActionCommitment
+                  actionId={action.id}
+                  poste={action.action_templates?.poste ?? null}
+                  committed={action.committed_at !== null}
+                  intentionDays={action.intention_days}
+                  intentionTiming={action.intention_timing}
+                  otherActionCommitted={
+                    committedActionId !== null && committedActionId !== action.id
+                  }
+                  onChanged={() => setRefreshKey((key) => key + 1)}
+                />
               </View>
             ))}
           </View>
@@ -301,16 +327,23 @@ export default function Plan() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Pressable onPress={() => router.push('/suivi')}>
-            <ThemedText type="small" weight={600} themeColor="accentText" style={styles.footerLink}>
-              Voir mon suivi
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={() => router.push({ pathname: '/bilan/resultat', params: { id: assessmentId } })}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
-              Revenir à mon bilan
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label="Voir mon suivi"
+            onPress={() => router.push('/suivi')}
+            role="link"
+            type="small"
+            weight={600}
+            themeColor="accentText"
+            style={styles.footerLink}
+          />
+          <TextLink
+            label="Revenir à mon bilan"
+            onPress={() => router.push({ pathname: '/bilan/resultat', params: { id: assessmentId } })}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.footerLink}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>

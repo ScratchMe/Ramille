@@ -10,10 +10,14 @@ export function NumericField({
   value,
   onChange,
   unit,
+  label,
 }: {
   value: number | null;
   onChange: (value: number | null) => void;
   unit: string;
+  /** Ce que le champ demande. L'unité affichée à droite n'est pas un label : « km » seul ne
+   *  dit pas ce qu'on saisit, et un lecteur d'écran n'a que ça à annoncer sans elle. */
+  label: string;
 }) {
   const theme = useTheme();
 
@@ -26,6 +30,7 @@ export function NumericField({
           onChange(cleaned === '' ? null : Number(cleaned));
         }}
         keyboardType="number-pad"
+        accessibilityLabel={`${label}, en ${unit}`}
         placeholder="0"
         placeholderTextColor={theme.textTertiary}
         style={[styles.input, { color: theme.text }]}

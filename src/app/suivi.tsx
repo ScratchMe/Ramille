@@ -1,15 +1,18 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
+import { MonCompte } from '@/components/compte/mon-compte';
 import { Mascot } from '@/components/mascot';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useTrackView } from '@/hooks/use-track-view';
 import { loadAnsweredCheckins, loadAssessmentHistory } from '@/lib/bilan-history';
 import {
   daysSince,
@@ -60,6 +63,8 @@ type LoadState =
   | { status: 'ok'; history: AssessmentSnapshot[]; checkins: CheckinRecord[] };
 
 export default function Suivi() {
+  useTrackView('suivi_view');
+
   const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [reminders, setReminders] = useState<ReminderPrefs>({ canReceive: false, enabled: false });
@@ -195,6 +200,32 @@ export default function Suivi() {
             )}
           </ThemedView>
 
+          {/* Période calme : la personne a des bilans mais aucun point de suivi répondu. Jusqu'ici
+              l'écran ne montrait rien du tout à cet endroit, ce qui se lit comme un manque —
+              alors que c'est exactement le contraire qu'il faut dire. Yeux clos, registre
+              paisible (canvas docs/design/v1-08-mascotte, artboard « États calmes »).
+
+              La maquette annonçait « ton prochain point arrive lundi » : on ne le dit pas, la
+              cadence dépend de la boucle (hebdomadaire pour le domicile-travail, mensuelle pour
+              les extras) et une date fausse serait pire que pas de date. */}
+          {checkins.length === 0 && (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <View style={styles.checkinsHeader}>
+                <Mascot mood="resting" size={40} />
+                <View style={styles.checkinsHeaderText}>
+                  <ThemedText weight={600}>Rien à rattraper.</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Tes points de suivi arrivent d’eux-mêmes, à leur rythme.
+                  </ThemedText>
+                </View>
+              </View>
+              <ThemedText type="small" themeColor="textTertiary">
+                Une période sans réponse ne se voit pas ici : on ne compte que les fois où tu as
+                répondu, jamais celles où tu as laissé passer.
+              </ThemedText>
+            </ThemedView>
+          )}
+
           {/* Ce que la personne a fait, jamais ce qu'elle a manqué. */}
           {checkins.length > 0 && (
             <ThemedView type="backgroundSelected" style={styles.card}>
@@ -246,6 +277,11 @@ export default function Suivi() {
                 <Switch
                   value={reminders.enabled}
                   onValueChange={toggleReminders}
+                  // Un interrupteur nu s'annonce « activé » sans dire de quoi. Le texte à sa
+                  // gauche n'est pas rattaché : c'est un frère dans l'arbre, pas un label.
+                  accessibilityRole="switch"
+                  accessibilityLabel="Rappels par email"
+                  accessibilityState={{ checked: reminders.enabled }}
                   trackColor={{ false: theme.paginationInactive, true: theme.accent }}
                   thumbColor={theme.background}
                 />
@@ -265,29 +301,44 @@ export default function Suivi() {
               <Button title="Refaire mon bilan" onPress={() => router.push('/bilan')} />
             </ThemedView>
           )}
+
+          {/* Export et suppression (T12). Placés ici et pas sur un écran « Réglages » dédié :
+              /suivi est la seule surface du produit qui parle du compte dans la durée, et un
+              écran de plus pour deux boutons serait un écran de plus à trouver. */}
+          <MonCompte />
         </ScrollView>
 
         <View style={styles.footer}>
           {!suggestRebilan && (
-            <Pressable onPress={() => router.push('/bilan')}>
-              <ThemedText type="small" weight={600} themeColor="accentText" style={styles.footerLink}>
-                Refaire mon bilan
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Refaire mon bilan"
+              onPress={() => router.push('/bilan')}
+              role="link"
+              type="small"
+              weight={600}
+              themeColor="accentText"
+              style={styles.footerLink}
+            />
           )}
           {/* Point d'entrée général du canal de retour (issue #29). Il vit ici plutôt que
               dans un réglage caché : /suivi est l'écran où l'on revient, donc celui où l'on
               a quelque chose à dire. */}
-          <Pressable onPress={() => router.push('/feedback')}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
-              Un retour à nous faire ?
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={() => router.push('/plan')}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
-              Revenir à mon plan
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label="Un retour à nous faire ?"
+            onPress={() => router.push('/feedback')}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.footerLink}
+          />
+          <TextLink
+            label="Revenir à mon plan"
+            onPress={() => router.push('/plan')}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.footerLink}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>

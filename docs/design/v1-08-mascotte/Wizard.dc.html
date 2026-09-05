@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, -apple-system, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; padding: 24px; padding-top: 56px; gap: 24px">
+  <div style="display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px">
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <div style="display: flex; align-items: center; gap: 8px">
+        <dc-import name="Mascot" mood="calm" size="{{ 22 }}" hint-size="22px,22px"></dc-import>
+        <div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">Trajet domicile-travail</div>
+      </div>
+      <div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">Étape 4 sur 9</div>
+    </div>
+    <div style="height: 6px; border-radius: 3px; background: #DDE0D9; overflow: hidden">
+      <div style="width: 44%; height: 100%; border-radius: 3px; background: #1F6F4A"></div>
+    </div>
+  </div>
+
+  <div style="font-size: 32px; line-height: 40px; font-weight: 600; color: #131612; letter-spacing: -0.5px; text-wrap: pretty">
+    Comment fais-tu ce trajet le plus souvent ?
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="height: 56px; border-radius: 16px; background: #E4EFE8; border: 1.5px solid #1F6F4A; display: flex; align-items: center; padding: 0 18px">
+      <div style="font-size: 16px; font-weight: 600; color: #131612">Voiture (seul)</div>
+    </div>
+    <div style="height: 56px; border-radius: 16px; background: #F0F1EC; display: flex; align-items: center; padding: 0 18px">
+      <div style="font-size: 16px; color: #131612">Voiture (covoiturage)</div>
+    </div>
+    <div style="height: 56px; border-radius: 16px; background: #F0F1EC; display: flex; align-items: center; padding: 0 18px">
+      <div style="font-size: 16px; color: #131612">Train ou RER</div>
+    </div>
+  </div>
+
+  <div style="border-radius: 18px; background: #F0F1EC; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">Quelle motorisation ?</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <div style="padding: 12px 18px; border-radius: 16px; background: #E4EFE8; border: 1.5px solid #1F6F4A; font-size: 15px; font-weight: 600; color: #131612">Thermique</div>
+      <div style="padding: 12px 18px; border-radius: 16px; background: #F0F1EC; border: 1.5px solid transparent; font-size: 15px; color: #131612">Hybride</div>
+      <div style="padding: 12px 18px; border-radius: 16px; background: #F0F1EC; border: 1.5px solid transparent; font-size: 15px; color: #131612">Hybride rechargeable</div>
+      <div style="padding: 12px 18px; border-radius: 16px; background: #F0F1EC; border: 1.5px solid transparent; font-size: 15px; color: #131612">Électrique</div>
+    </div>
+  </div>
+
+  <div style="font-size: 12px; line-height: 18px; color: #5E655F; text-align: center">
+    Ton mode n’est pas dans la liste ? Dis-le-nous.
+  </div>
+
+  <div style="flex-grow: 1"></div>
+  <div style="height: 54px; border-radius: 27px; background: #1F6F4A; display: flex; align-items: center; justify-content: center">
+    <div style="font-size: 16px; font-weight: 600; color: #FFFFFF">Continuer</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

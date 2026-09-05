@@ -6,7 +6,12 @@ import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { CAR_ENGINE_OPTIONS, TRANSPORT_MODE_LABELS, type TransportModeId } from '@/constants/transport-modes';
+import {
+  CAR_ENGINE_OPTIONS,
+  TRANSPORT_MODE_LABELS,
+  TWO_WHEELER_TYPE_OPTIONS,
+  type TransportModeId,
+} from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
 import type { BilanAnswers } from '@/types/bilan';
 
@@ -102,6 +107,10 @@ export function CommuteExtraStep({
                       // mode ne valent "voiture" après ce choix.
                       commute_car_engine:
                         modeId === 'voiture' || answers.commute_mode === 'voiture' ? answers.commute_car_engine : null,
+                      commute_two_wheeler_type:
+                        modeId === 'deux_roues_motorise' || answers.commute_mode === 'deux_roues_motorise'
+                          ? answers.commute_two_wheeler_type
+                          : null,
                     })
                   }
                   nestedBackground
@@ -121,6 +130,26 @@ export function CommuteExtraStep({
                       label={option.label}
                       selected={answers.commute_car_engine === option.value}
                       onPress={() => update({ commute_car_engine: option.value })}
+                      radius={16}
+                      selectedStyle="outline"
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {answers.commute_second_mode === 'deux_roues_motorise' && (
+              <View style={styles.nestedEngine}>
+                <ThemedText type="small" themeColor="textTertiary">
+                  Quel type de deux-roues ?
+                </ThemedText>
+                <View style={styles.engineRow}>
+                  {TWO_WHEELER_TYPE_OPTIONS.map((option) => (
+                    <Chip
+                      key={option.value}
+                      label={option.label}
+                      selected={answers.commute_two_wheeler_type === option.value}
+                      onPress={() => update({ commute_two_wheeler_type: option.value })}
                       radius={16}
                       selectedStyle="outline"
                     />

@@ -174,6 +174,68 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
+  it('commute_mode / commute_extra : "deux-roues motorisé" exige en plus le type', () => {
+    // Même règle que la motorisation voiture, et pour une raison plus forte : entre un scooter
+    // électrique et une grosse cylindrée il y a un facteur 3,6, et la grosse moto dépasse la
+    // voiture thermique. Laisser la question facultative reviendrait à compter tout le monde
+    // au tarif du scooter, ce que le produit faisait jusqu'ici.
+    expect(
+      isStepComplete(
+        'commute_mode',
+        answers({ commute_mode: 'deux_roues_motorise', commute_two_wheeler_type: null })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'commute_mode',
+        answers({ commute_mode: 'deux_roues_motorise', commute_two_wheeler_type: 'moto_grosse' })
+      )
+    ).toBe(true);
+    expect(
+      isStepComplete(
+        'commute_extra',
+        answers({
+          commute_second_mode_used: true,
+          commute_second_mode: 'deux_roues_motorise',
+          commute_two_wheeler_type: null,
+        })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'commute_extra',
+        answers({
+          commute_second_mode_used: true,
+          commute_second_mode: 'deux_roues_motorise',
+          commute_two_wheeler_type: 'scooter_electrique',
+        })
+      )
+    ).toBe(true);
+  });
+
+  it('leisure_detail : mode et distance requis, plus le type de deux-roues si besoin', () => {
+    expect(
+      isStepComplete(
+        'leisure_detail',
+        answers({
+          leisure_mode: 'deux_roues_motorise',
+          leisure_distance_bracket: 'lt_5',
+          leisure_two_wheeler_type: null,
+        })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'leisure_detail',
+        answers({
+          leisure_mode: 'deux_roues_motorise',
+          leisure_distance_bracket: 'lt_5',
+          leisure_two_wheeler_type: 'moto_petite',
+        })
+      )
+    ).toBe(true);
+  });
+
   it('leisure_detail : mode et distance requis, plus le type de moteur si "voiture"', () => {
     expect(isStepComplete('leisure_detail', answers({ leisure_mode: 'velo' }))).toBe(false);
     expect(

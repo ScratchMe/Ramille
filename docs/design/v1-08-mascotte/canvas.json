@@ -1,0 +1,39 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Parcours" },
+    { "id": "page-2", "name": "Vocabulaire" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html",        "x": 0,    "y": 0,    "w": 390, "h": 844, "page": "page-1", "title": "Onboarding — accueil" },
+    { "file": "Wizard.dc.html",      "x": 470,  "y": 0,    "w": 390, "h": 844, "page": "page-1", "title": "Questionnaire — étape 4" },
+    { "file": "Calcul.dc.html",      "x": 940,  "y": 0,    "w": 390, "h": 844, "page": "page-1", "title": "Calcul du bilan" },
+    { "file": "Restitution.dc.html", "x": 0,    "y": 1000, "w": 390, "h": 844, "page": "page-1", "title": "Restitution" },
+    { "file": "Boucle.dc.html",      "x": 470,  "y": 1000, "w": 390, "h": 844, "page": "page-1", "title": "Plan et check-ins" },
+    { "file": "EtatsCalmes.dc.html", "x": 940,  "y": 1000, "w": 390, "h": 844, "page": "page-1", "title": "Suivi — périodes calmes" },
+    { "file": "Expressions.dc.html", "x": 0,    "y": 0,    "w": 1400, "h": 720, "page": "page-2", "title": "Vocabulaire d’expressions" },
+    { "file": "Mascot.dc.html",      "x": 1500, "y": 0,    "w": 240,  "h": 240, "page": "page-2", "title": "Composant Mascot" }
+  ],
+  "annotations": [
+    {
+      "id": "note-livre",
+      "x": 0, "y": -150, "w": 860, "page": "page-1",
+      "text": "DÉJÀ LIVRÉ\nEn-tête du questionnaire (calm, statique, happy à la dernière étape), cartes de check-in, félicitation du profil vertueux sur la restitution et sur /plan."
+    },
+    {
+      "id": "note-propose",
+      "x": 940, "y": -150, "w": 390, "page": "page-1",
+      "text": "PROPOSÉ\nAccueil, moment de calcul, périodes calmes de /suivi. Trois moments où l'écran ne dit rien aujourd'hui."
+    },
+    {
+      "id": "note-regle",
+      "x": 0, "y": 1900, "w": 1330, "page": "page-1",
+      "text": "LA RÈGLE QUI TIENT L'ENSEMBLE\nLa mascotte apparaît là où le produit accompagne, félicite ou fait patienter — jamais là où il annonce un chiffre lourd. Elle n'est jamais présente sur l'écran qui donne le total, ni à côté d'une empreinte élevée : ce serait commenter, et le produit ne commente pas."
+    },
+    {
+      "id": "note-vocab",
+      "x": 0, "y": -130, "w": 900, "page": "page-2",
+      "text": "Trois expressions sont livrées, deux sont proposées. La silhouette ne change jamais — c'est la feuille du logo. Aucune expression négative n'existe et aucune ne doit être ajoutée."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

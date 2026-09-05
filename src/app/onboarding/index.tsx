@@ -4,19 +4,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { OnboardingHeroIllustration } from '@/components/illustrations/onboarding-hero-illustration';
+import { Mascot } from '@/components/mascot';
 import { OnboardingDots } from '@/components/onboarding-dots';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTrackView } from '@/hooks/use-track-view';
 
 // Onboarding 1/4 — Accroche. Aucun chiffre : la spec impose d'ouvrir sur un bénéfice
 // concret, pas sur l'écart à combler (docs/design/README.md §1.1).
 export default function OnboardingAccroche() {
+  useTrackView('onboarding_step_view', { step: 'accroche' });
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <OnboardingHeroIllustration style={styles.illustration} />
         <View style={styles.textBlock}>
+          {/* Première apparition de la mascotte dans le parcours : elle salue avant que le
+              questionnaire ne la reprenne, plus petite et droite, dans son en-tête.
+              L'inclinaison fait tout le travail — une feuille penchée regarde, une feuille
+              droite accompagne (cf. canvas docs/design/v1-08-mascotte).
+
+              L'artboard remplaçait l'illustration d'accueil par la mascotte seule. On la garde :
+              elle porte « une personne et ses trajets du quotidien », spécifié par le handoff
+              design §1.1, que la mascotte ne rend pas. */}
+          <Mascot mood="calm" size={48} tilt={-7} />
           <ThemedText type="title" weight={600} style={styles.title}>
             Comprendre tes trajets, sans te juger.
           </ThemedText>

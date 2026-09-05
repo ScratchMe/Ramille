@@ -69,6 +69,20 @@ export const LEISURE_MODE_CHOICES_MORE: CommuteModeChoice[] = [
 // celui qu'on attend : l'hybride non rechargeable (0,146579) émet **plus** que la thermique
 // de référence (0,142253), qui est une compacte diesel sobre à l'usage. Cf. migration
 // 20260905140000_motorisation_hybride.sql.
+// Quatre réponses au même niveau, comme la motorisation voiture — surtout pas un premier
+// niveau « scooter ou moto ? » suivi d'un second sur la cylindrée. La frontière ADEME est à
+// 250 cm³ ; le libellé garde le vocabulaire courant, la correspondance exacte vit dans
+// `emission_factor_sources`.
+export const TWO_WHEELER_TYPE_OPTIONS: {
+  value: 'scooter_thermique' | 'scooter_electrique' | 'moto_petite' | 'moto_grosse';
+  label: string;
+}[] = [
+  { value: 'scooter_thermique', label: 'Scooter thermique' },
+  { value: 'scooter_electrique', label: 'Scooter électrique' },
+  { value: 'moto_petite', label: 'Moto, petite cylindrée' },
+  { value: 'moto_grosse', label: 'Moto, grosse cylindrée' },
+];
+
 export const CAR_ENGINE_OPTIONS: {
   value: 'thermique' | 'hybride' | 'hybride_rechargeable' | 'electrique';
   label: string;

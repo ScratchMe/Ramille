@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { MASCOT_MIN_FACE_SIZE } from '@/types/mascot';
 import { useTheme } from '@/hooks/use-theme';
 
 // En-tête commun à tous les écrans du questionnaire (B1.1→B4) : mascotte, libellé de section,
@@ -15,6 +16,10 @@ import { useTheme } from '@/hooks/use-theme';
 // deuxième écran — et ne passe en `happy` qu'à la dernière étape. Ce n'est pas une
 // récompense au sens des non-goals (aucun point, aucun badge, rien à perdre) : juste un
 // visage qui accompagne, et qui sourit quand on arrive au bout.
+//
+// La taille est calée sur MASCOT_MIN_FACE_SIZE et pas en dessous : à 22px, la taille
+// initiale, le trait de la bouche mesurait 0,70px et le visage se réduisait à une tache —
+// l'en-tête portait donc le coût d'une mascotte sans en tirer le bénéfice.
 export function ProgressHeader({ section, step, total }: { section: string; step: number; total: number }) {
   const theme = useTheme();
   const percent = total > 0 ? Math.round((step / total) * 100) : 0;
@@ -23,7 +28,7 @@ export function ProgressHeader({ section, step, total }: { section: string; step
     <View style={styles.container}>
       <View style={styles.row}>
         <View style={styles.sectionRow}>
-          <Mascot mood={step >= total ? 'happy' : 'calm'} size={22} animated={false} />
+          <Mascot mood={step >= total ? 'happy' : 'calm'} size={MASCOT_MIN_FACE_SIZE} animated={false} />
           <ThemedText type="small" themeColor="textTertiary">
             {section}
           </ThemedText>

@@ -88,8 +88,18 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'La base légale est l’exécution du service que tu demandes. Pour les rappels par email, c’est notre intérêt légitime ' +
-          'à maintenir le suivi que tu as commencé — tu peux les désactiver à tout moment depuis ton suivi.',
+          'Nous enregistrons aussi quelques repères de parcours dans l’application : quels écrans tu as ouverts, à quelle ' +
+          'étape du questionnaire tu es arrivé, si tu as rattaché un compte. Rien d’autre — pas de texte que tu aurais ' +
+          'saisi, pas d’adresse IP, pas d’identifiant d’appareil, et aucun suivi de ce que tu fais ailleurs. Ces repères ' +
+          'servent à une seule chose : voir où le produit décroche pour le réparer. Ils restent chez notre hébergeur, ' +
+          'aucun outil d’analyse tiers ne les reçoit.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'La base légale est l’exécution du service que tu demandes. Pour les rappels par email et pour les repères de ' +
+          'parcours, c’est notre intérêt légitime — maintenir le suivi que tu as commencé dans un cas, corriger ce qui ne ' +
+          'fonctionne pas dans l’autre. Tu peux désactiver les rappels à tout moment depuis ton suivi.',
       },
     ],
   },
@@ -104,7 +114,8 @@ const SECTIONS: LegalSection[] = [
         kind: 'bullets',
         items: [
           'Aucune géolocalisation, aucun suivi automatique de tes déplacements. Le produit repose sur ce que tu déclares, parce que la prise de conscience passe par le moment où tu choisis, pas par une mesure passive.',
-          'Aucun traceur publicitaire, aucun cookie de mesure d’audience tierce.',
+          'Aucun traceur publicitaire, aucun cookie de mesure d’audience tierce. Les repères de parcours décrits plus ' +
+            'haut ne quittent pas notre hébergeur et ne permettent de te suivre sur aucun autre site.',
           'Aucune revente, location ou cession de tes données à qui que ce soit.',
           'Aucune comparaison entre utilisateurs. Ton bilan n’est jamais rapproché de celui de quelqu’un d’autre, ni classé.',
         ],
@@ -170,7 +181,10 @@ const SECTIONS: LegalSection[] = [
         items: [
           'Session anonyme jamais rattachée à un compte : supprimée automatiquement 90 jours après sa création.',
           'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
-          'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans et retours est supprimé.',
+          'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
+            'produit tel qu’il est.',
+          'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours et ' +
+            'repères de parcours est supprimé.',
         ],
       },
     ],
@@ -183,8 +197,10 @@ const SECTIONS: LegalSection[] = [
         text:
           'TraceVerte n’utilise aucun cookie publicitaire ni aucun outil de mesure d’audience tierce. Le stockage utilisé ' +
           'sur ton appareil est strictement nécessaire au fonctionnement : il conserve ta session, le brouillon du ' +
-          'questionnaire en cours, et quelques préférences d’affichage. C’est la raison pour laquelle aucune bannière de ' +
-          'consentement ne t’est présentée : il n’y a rien à consentir.',
+          'questionnaire en cours, et quelques préférences d’affichage. Les repères de parcours décrits plus haut ' +
+          'n’écrivent rien de plus sur ton appareil : ils sont enregistrés côté serveur, rattachés à la session que le ' +
+          'produit a déjà besoin de conserver. C’est la raison pour laquelle aucune bannière de consentement ne t’est ' +
+          'présentée : il n’y a rien à consentir.',
       },
     ],
   },
@@ -195,8 +211,22 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Conformément au RGPD, tu disposes d’un droit d’accès, de rectification, d’effacement, de portabilité, ' +
-          'de limitation et d’opposition sur tes données. Tu peux les exercer en écrivant à ' +
-          `${CONTACT_EMAIL}. Nous répondons dans un délai d’un mois.`,
+          'de limitation et d’opposition sur tes données.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'Deux d’entre eux s’exercent directement dans l’application, sans avoir à écrire à qui que ce soit, ' +
+          'depuis l’écran « Mon suivi », section « Mes données » : télécharger l’intégralité de ce que nous ' +
+          'conservons sur toi dans un fichier JSON, et supprimer définitivement ton compte. La suppression est ' +
+          'immédiate et sans confirmation par email — tes bilans, ton plan, tes points de suivi, tes retours et ' +
+          'tes repères de parcours disparaissent avec elle.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          `Pour tout le reste, ou si tu n’as plus l’application installée, écris à ${CONTACT_EMAIL}. ` +
+          'Nous répondons dans un délai d’un mois.',
       },
       {
         kind: 'paragraph',

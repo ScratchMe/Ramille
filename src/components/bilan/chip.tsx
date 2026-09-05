@@ -14,12 +14,23 @@ export type ChipProps = {
    *  teinté + bordure accent (Oui/Non, mode sélectionné dans une liste). */
   selectedStyle?: 'solid' | 'outline';
   radius?: number;
+  /** Quand le libellé visible est une abréviation ambiguë — deux jours de la semaine portent
+   *  l'initiale « M » — le lecteur d'écran doit entendre le mot entier. */
+  accessibilityLabel?: string;
 };
 
 // Chip générique — couvre les pickers numériques/tranches (B1.3, B2.2, B3.*) et les
 // choix binaires équirépartis (B1.5/B1.6) de la maquette, qui ne partagent que la forme
 // pilule/carré-arrondi, pas le même traitement de sélection.
-export function Chip({ label, selected, onPress, flex, selectedStyle = 'solid', radius = 22 }: ChipProps) {
+export function Chip({
+  label,
+  selected,
+  onPress,
+  flex,
+  selectedStyle = 'solid',
+  radius = 22,
+  accessibilityLabel,
+}: ChipProps) {
   const theme = useTheme();
 
   const backgroundColor = selected
@@ -33,6 +44,9 @@ export function Chip({ label, selected, onPress, flex, selectedStyle = 'solid', 
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ selected }}
       style={[
         styles.base,
         { borderRadius: radius, backgroundColor, borderColor, flex: flex ? 1 : undefined },

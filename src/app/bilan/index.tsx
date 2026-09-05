@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { CommuteDaysDistanceStep } from '@/components/bilan/steps/commute-days-distance';
@@ -11,7 +11,9 @@ import { FlightsStep } from '@/components/bilan/steps/flights';
 import { LeisureDetailStep } from '@/components/bilan/steps/leisure-detail';
 import { LeisureFrequencyStep } from '@/components/bilan/steps/leisure-frequency';
 import { LongTripsStep } from '@/components/bilan/steps/long-trips';
+import { CalculEnCours } from '@/components/bilan/calcul-en-cours';
 import { StepShell } from '@/components/bilan/step-shell';
+import { track } from '@/lib/analytics';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
 import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
 import { ensureSession, supabase } from '@/lib/supabase';
@@ -83,6 +85,19 @@ export default function BilanQuestionnaire() {
     saveBilanDraft({ answers, step });
   }, [answers, step, draftLoaded]);
 
+  // Entonnoir du questionnaire (issue #30). Deux précautions, chacune corrige un biais
+  // qui serait invisible dans les chiffres :
+  //   - attendre `draftLoaded`, sinon un brouillon repris à l'étape 6 émettrait d'abord
+  //     l'étape 1 (l'état initial), et l'entonnoir montrerait un abandon qui n'a pas eu lieu ;
+  //   - ne compter chaque étape qu'une fois par visite, sinon un aller-retour Précédent /
+  //     Suivant gonfle le volume sans rien apprendre — et mange le garde-fou de 500/24 h.
+  const etapesVues = useRef(new Set<BilanStepId>());
+  useEffect(() => {
+    if (!draftLoaded || etapesVues.current.has(step)) return;
+    etapesVues.current.add(step);
+    track('bilan_step_view', { step });
+  }, [step, draftLoaded]);
+
   const update = (patch: Partial<BilanAnswers>) => setAnswers((prev) => ({ ...prev, ...patch }));
 
   const visible = visibleSteps(answers);
@@ -135,10 +150,12 @@ export default function BilanQuestionnaire() {
         commute_second_mode_used: answers.commute_second_mode_used,
         commute_second_mode: answers.commute_second_mode,
         commute_car_engine: answers.commute_car_engine,
+        commute_two_wheeler_type: answers.commute_two_wheeler_type,
         leisure_frequency: answers.leisure_frequency ?? 'rarely',
         leisure_mode: answers.leisure_mode,
         leisure_distance_bracket: answers.leisure_distance_bracket,
         leisure_car_engine: answers.leisure_car_engine,
+        leisure_two_wheeler_type: answers.leisure_two_wheeler_type,
         flights_total_per_year: answers.flights_total_per_year,
         flights_short_per_year: answers.flights_short_per_year,
         train_long_trips_per_year: answers.train_long_trips_per_year,
@@ -172,6 +189,11 @@ export default function BilanQuestionnaire() {
   // même piège que le chargement des polices dans _layout.tsx. Le pas 1 s'affiche
   // immédiatement avec l'état par défaut, puis bascule sur le brouillon dès qu'il
   // arrive (quasi instantané en pratique, AsyncStorage local).
+  // Le calcul prend le pas sur le questionnaire : trois écritures puis
+  // `compute_assessment_results`, qui génère aussi le plan. Laisser le wizard à l'écran avec un
+  // bouton grisé fait paraître l'app bloquée.
+  if (submitting) return <CalculEnCours />;
+
   return (
     <StepShell
       section={section}
