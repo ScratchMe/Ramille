@@ -163,10 +163,24 @@ que "voiture" est choisi, dans 3 champs indépendants (`commute_car_engine`,
 `leisure_car_engine`, `car_long_trips_engine`). **Quatre réponses au même niveau** — thermique,
 hybride, hybride rechargeable, électrique — et surtout pas un second niveau « rechargeable ou
 non ? » : la profondeur coûte plus cher en abandon qu'une puce de plus.
-`public.resolve_car_mode(mode_id, engine)` résout vers les modes correspondants avant tout
-lookup de facteur/libellé dans `compute_assessment_results` ; moteur non renseigné (bilans
-soumis avant ces migrations) retombe sur le générique `voiture`. Voir
-`supabase/migrations/20260904090000_car_engine.sql` puis `20260905140000_motorisation_hybride.sql`.
+**Le deux-roues motorisé suit exactement la même mécanique** (`commute_two_wheeler_type`,
+`leisure_two_wheeler_type`, quatre réponses au même niveau : scooter thermique, scooter
+électrique, moto petite cylindrée, moto grosse cylindrée), et pour une raison plus forte encore :
+**une grosse moto émet 0,2147 kg/km, soit une fois et demie une voiture thermique** et 2,8 fois
+un scooter. Les quatre étaient comptés au tarif du scooter, ce qui sous-estimait de 64 %
+l'empreinte d'un motard — dans le sens qui fait passer le deux-roues pour vertueux. Un test
+pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe. Piège de relevé :
+l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
+distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
+
+**Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine, type)`**,
+qui compose `resolve_car_mode` et `resolve_two_wheeler_mode`. Ne jamais rappeler les deux
+fonctions spécialisées en imbriqué dans `recompute_assessment_results` ou
+`estimate_action_savings` : elles y sont appelées à six endroits, et un oubli serait silencieux
+— le mode générique existe, son facteur existe, le calcul rendrait un nombre. Moteur ou type non
+renseigné (bilans soumis avant ces migrations) retombe sur le générique. Voir
+`supabase/migrations/20260904090000_car_engine.sql`, `20260905140000_motorisation_hybride.sql`
+puis `20260905200000_cylindree_deux_roues.sql`.
 
 **L'ordre des motorisations en ACV n'est pas celui qu'on attend, et un test pgTAP l'épingle
 pour qu'on ne le « corrige » pas** : hybride (0,146579) > thermique (0,142253) > hybride

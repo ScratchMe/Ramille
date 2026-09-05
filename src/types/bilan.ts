@@ -15,6 +15,17 @@ export type HouseholdVehicles = '0' | '1' | '2_plus';
 // "Voiture (covoiturage)"), posée à chaque endroit où "voiture" peut être choisi.
 export type CarEngine = 'thermique' | 'hybride' | 'hybride_rechargeable' | 'electrique';
 
+// Même mécanique pour le deux-roues, et pour une raison plus forte encore : l'écart entre un
+// scooter électrique et une grosse cylindrée est d'un facteur 3,6 (0,0593 contre 0,2147), et
+// **une grosse moto émet une fois et demie plus qu'une voiture thermique**. Compter les quatre
+// au tarif du scooter, comme le produit le faisait, sous-estimait de 64 % l'empreinte d'un
+// motard — dans le sens qui fait passer le deux-roues pour vertueux (cf. migration
+// 20260905200000_cylindree_deux_roues.sql).
+//
+// Les libellés ne montrent pas la cylindrée brute : la frontière ADEME est à 250 cm³, mais
+// c'est la distinction « petite / grosse cylindrée » que les gens ont en tête.
+export type TwoWheelerType = 'scooter_thermique' | 'scooter_electrique' | 'moto_petite' | 'moto_grosse';
+
 export type BilanAnswers = {
   commute_has_regular_trip: boolean | null;
   commute_days_per_week: number | null;
@@ -29,11 +40,13 @@ export type BilanAnswers = {
   // valoir "voiture" toutes les deux à la fois (B1.7 exclut le mode déjà choisi en B1.4),
   // donc au plus une jambe est concernée à un instant donné.
   commute_car_engine: CarEngine | null;
+  commute_two_wheeler_type: TwoWheelerType | null;
 
   leisure_frequency: LeisureFrequency | null;
   leisure_mode: TransportModeId | null;
   leisure_distance_bracket: LeisureDistanceBracket | null;
   leisure_car_engine: CarEngine | null;
+  leisure_two_wheeler_type: TwoWheelerType | null;
 
   flights_total_per_year: number;
   flights_short_per_year: number | null;
@@ -57,11 +70,13 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   commute_second_mode_used: false,
   commute_second_mode: null,
   commute_car_engine: null,
+  commute_two_wheeler_type: null,
 
   leisure_frequency: null,
   leisure_mode: null,
   leisure_distance_bracket: null,
   leisure_car_engine: null,
+  leisure_two_wheeler_type: null,
 
   flights_total_per_year: 0,
   flights_short_per_year: null,
@@ -155,17 +170,26 @@ export function isStepComplete(step: BilanStepId, answers: BilanAnswers): boolea
     case 'commute_mode':
       if (answers.commute_mode === null) return false;
       if (answers.commute_mode === 'voiture' && answers.commute_car_engine === null) return false;
+      if (answers.commute_mode === 'deux_roues_motorise' && answers.commute_two_wheeler_type === null)
+        return false;
       return true;
     case 'commute_extra':
       if (answers.commute_is_carpool && answers.commute_carpool_size === null) return false;
       if (answers.commute_second_mode_used && answers.commute_second_mode === null) return false;
       if (answers.commute_second_mode === 'voiture' && answers.commute_car_engine === null) return false;
+      if (
+        answers.commute_second_mode === 'deux_roues_motorise' &&
+        answers.commute_two_wheeler_type === null
+      )
+        return false;
       return true;
     case 'leisure_frequency':
       return answers.leisure_frequency !== null;
     case 'leisure_detail':
       if (answers.leisure_mode === null || answers.leisure_distance_bracket === null) return false;
       if (answers.leisure_mode === 'voiture' && answers.leisure_car_engine === null) return false;
+      if (answers.leisure_mode === 'deux_roues_motorise' && answers.leisure_two_wheeler_type === null)
+        return false;
       return true;
     case 'flights':
       if (answers.flights_total_per_year > 0) return answers.flights_short_per_year !== null;

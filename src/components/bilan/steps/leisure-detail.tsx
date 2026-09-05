@@ -11,6 +11,7 @@ import {
   CAR_ENGINE_OPTIONS,
   LEISURE_MODE_CHOICES_MORE,
   LEISURE_MODE_CHOICES_PRIMARY,
+  TWO_WHEELER_TYPE_OPTIONS,
 } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
 import type { BilanAnswers, LeisureDistanceBracket } from '@/types/bilan';
@@ -62,6 +63,8 @@ export function LeisureDetailStep({
                 update({
                   leisure_mode: choice.modeId,
                   leisure_car_engine: choice.modeId === 'voiture' ? answers.leisure_car_engine : null,
+                  leisure_two_wheeler_type:
+                    choice.modeId === 'deux_roues_motorise' ? answers.leisure_two_wheeler_type : null,
                 });
               }}
             />
@@ -85,6 +88,26 @@ export function LeisureDetailStep({
                   label={option.label}
                   selected={answers.leisure_car_engine === option.value}
                   onPress={() => update({ leisure_car_engine: option.value })}
+                  radius={16}
+                  selectedStyle="outline"
+                />
+              ))}
+            </View>
+          </ThemedView>
+        )}
+
+        {answers.leisure_mode === 'deux_roues_motorise' && (
+          <ThemedView type="backgroundElement" style={styles.nestedBox}>
+            <ThemedText type="small" themeColor="textTertiary">
+              Quel type de deux-roues ?
+            </ThemedText>
+            <View style={styles.engineRow}>
+              {TWO_WHEELER_TYPE_OPTIONS.map((option) => (
+                <Chip
+                  key={option.value}
+                  label={option.label}
+                  selected={answers.leisure_two_wheeler_type === option.value}
+                  onPress={() => update({ leisure_two_wheeler_type: option.value })}
                   radius={16}
                   selectedStyle="outline"
                 />

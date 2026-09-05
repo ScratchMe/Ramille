@@ -602,6 +602,13 @@ de signe entre les deux bases.
 | 6b | Choisir une action et s'y engager | §3.3 (2) | **fait** — migration `20260905190000` |
 | 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | à faire |
 
+Hors tableau, traité le 05/09/2026 dans la foulée de l'étape 0 : la **cylindrée du deux-roues**
+(migration `20260905200000`). Le mode `deux_roues_motorise` valait le facteur du scooter
+thermique pour tout le monde, alors que l'endpoint ACV distingue quatre véhicules dont l'écart
+va de 0,059300 à 0,214700 — **une grosse moto dépasse la voiture thermique de 51 %**. Un motard
+voyait son poste domicile-travail sous-estimé de 64 %, dans le sens qui fait passer le deux-roues
+pour vertueux. C'est le dernier écart de cette ampleur dans le référentiel.
+
 T13 (covoiturage appliqué au second mode) est corrigé au passage de l'étape 1, la fonction
 étant de toute façon réécrite.
 

@@ -5,7 +5,11 @@ import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { CAR_ENGINE_OPTIONS, COMMUTE_MODE_CHOICES } from '@/constants/transport-modes';
+import {
+  CAR_ENGINE_OPTIONS,
+  COMMUTE_MODE_CHOICES,
+  TWO_WHEELER_TYPE_OPTIONS,
+} from '@/constants/transport-modes';
 import { Spacing } from '@/constants/theme';
 import type { BilanAnswers } from '@/types/bilan';
 
@@ -39,6 +43,13 @@ export function CommuteModeStep({
                   commute_is_carpool: choice.carpool,
                   commute_carpool_size: choice.carpool ? answers.commute_carpool_size : null,
                   commute_car_engine: choice.modeId === 'voiture' ? answers.commute_car_engine : null,
+                  // Même règle que la motorisation : on n'efface le type de deux-roues que si
+                  // aucune des deux jambes du trajet n'en utilise plus.
+                  commute_two_wheeler_type:
+                    choice.modeId === 'deux_roues_motorise' ||
+                    answers.commute_second_mode === 'deux_roues_motorise'
+                      ? answers.commute_two_wheeler_type
+                      : null,
                 })
               }
             />
@@ -58,6 +69,26 @@ export function CommuteModeStep({
                 label={option.label}
                 selected={answers.commute_car_engine === option.value}
                 onPress={() => update({ commute_car_engine: option.value })}
+                radius={16}
+                selectedStyle="outline"
+              />
+            ))}
+          </View>
+        </ThemedView>
+      )}
+
+      {answers.commute_mode === 'deux_roues_motorise' && (
+        <ThemedView type="backgroundElement" style={styles.nestedBox}>
+          <ThemedText type="small" themeColor="textTertiary">
+            Quel type de deux-roues ?
+          </ThemedText>
+          <View style={styles.engineRow}>
+            {TWO_WHEELER_TYPE_OPTIONS.map((option) => (
+              <Chip
+                key={option.value}
+                label={option.label}
+                selected={answers.commute_two_wheeler_type === option.value}
+                onPress={() => update({ commute_two_wheeler_type: option.value })}
                 radius={16}
                 selectedStyle="outline"
               />
