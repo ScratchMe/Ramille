@@ -514,8 +514,16 @@ Deux décisions de forme qui vont avec :
   de sa cible celui qui en est le plus près. Décision produit du 05/09/2026. Le palier, lui,
   reste affiché des deux côtés : c'est la marche actionnable, et la retirer l'enlèverait
   précisément à ceux qui sont le mieux placés pour la franchir. Quand le palier **est** le
-  repère (le cap dépasse ce qui les sépare), la barre du repère disparaît : deux barres de même
-  valeur n'apprennent rien, et la phrase le dit. Le palier est placé **juste sous « Toi »**, avant la moyenne : rendu en
+  repère (le cap dépasse ce qui les sépare), c'est la barre du palier qui prend le nom du
+  repère : l'appeler « ton prochain palier » sous-vendrait ce que c'est — l'objectif final, pas
+  une étape de plus.
+- **Être déjà sous le repère ne coupe plus la proposition.** Une première version ne montrait
+  alors aucune marche, au motif qu'exiger plus de ceux qui font déjà le plus serait déplacé.
+  Décision produit corrigée le 05/09/2026 : **ce qu'on n'émet pas laisse de la marge ailleurs**,
+  pour les autres postes de sa propre empreinte comme pour les personnes dont la mobilité est
+  contrainte. La marche est donc toujours offerte, mais dans un registre entièrement différent —
+  une proposition adossée à une raison collective, jamais une exigence, et sans aucune
+  formulation qui ferait d'un profil sobre quelqu'un qui n'en fait pas encore assez. Le palier est placé **juste sous « Toi »**, avant la moyenne : rendu en
   troisième position, les deux barres presque identiques d'une empreinte élevée donnaient
   l'impression que la marche ne servait à rien — vérifié au rendu, c'est ce qui a fait changer
   l'ordre.

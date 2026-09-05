@@ -112,9 +112,24 @@ function comparisonNote(totalT: number): string {
 // est une autre façon d'écrire le gouffre.
 function palierNote(palier: Palier, repereVisible: boolean): string {
   const reduction = formatTonnes(palier.reductionKg);
-  if (palier.reachesTarget2050) {
-    return `Ce palier te met sous le repère transport 2050. Il demande ${reduction} de moins sur l’année.`;
+
+  // Déjà sous le repère. Le registre bascule : ce n'est plus une marche à franchir mais une
+  // marge qui profite ailleurs. Rien n'est demandé, rien n'est attendu — et surtout aucune
+  // formulation qui ferait d'un profil déjà sobre quelqu'un qui n'en fait pas encore assez.
+  if (palier.beyondTarget2050) {
+    return (
+      `Tu es déjà sous le repère transport 2050. Ce que tu n’émets pas laisse de la marge ` +
+      `ailleurs — pour tes autres postes, ou pour ceux dont les déplacements sont contraints. ` +
+      `S’il te reste de l’envie : ${reduction} de moins sur l’année.`
+    );
   }
+
+  // Le palier tombe pile sur le repère : la barre porte alors son vrai nom, et la phrase dit
+  // ce qu'il faut pour l'atteindre.
+  if (palier.isTarget2050) {
+    return `Le repère 2050 est à ta portée : ${reduction} de moins sur l’année, et tu y es.`;
+  }
+
   if (repereVisible) {
     // Le repère est déjà sur l'écran : la phrase n'a pas à le rappeler, elle nomme la marche.
     return `Une marche à ${reduction} de moins sur l’année. Le plan qui suit propose de quoi la franchir.`;
@@ -361,9 +376,12 @@ export default function BilanResultat() {
                   la troisième place, la paire se lisait comme deux repères sans rapport, et
                   pour une empreinte élevée les deux barres presque identiques donnaient
                   l'impression que la marche ne servait à rien. */}
+              {/* Quand le palier tombe pile sur le repère, la barre porte son vrai nom :
+                  l'appeler « ton prochain palier » sous-vendrait ce que c'est — l'objectif
+                  final, pas une étape de plus. */}
               {palier && (
                 <CompareRow
-                  label="Ton prochain palier"
+                  label={palier.isTarget2050 ? 'Repère transport 2050' : 'Ton prochain palier'}
                   value={formatTonnesShort(palier.targetKg / 1000)}
                   percent={barPercent(palier.targetKg / 1000)}
                   accentColor={theme.accentText}
@@ -375,9 +393,9 @@ export default function BilanResultat() {
                 percent={barPercent(FRANCE_AVERAGE_TRANSPORT_T)}
                 accentColor={theme.accentMuted}
               />
-              {/* Sauf quand le palier EST le repère : deux barres de même valeur l'une sous
-                  l'autre n'apprennent rien, et la phrase sous les barres le dit déjà. */}
-              {(montreRepere2050 || !palier) && !palier?.reachesTarget2050 && (
+              {/* Sauf quand le palier EST le repère : il porte déjà son nom juste au-dessus,
+                  deux barres de même valeur n'apprendraient rien. */}
+              {(montreRepere2050 || !palier) && !palier?.isTarget2050 && (
                 <CompareRow
                   label="Repère transport 2050"
                   value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}

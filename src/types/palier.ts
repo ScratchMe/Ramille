@@ -28,38 +28,64 @@ export type Palier = {
   targetKg: number;
   /** Ce qu'il faut retirer pour l'atteindre. */
   reductionKg: number;
-  /** Le palier fait-il passer sous le repère 2050 ? Change la phrase, pas le chiffre. */
-  reachesTarget2050: boolean;
+  /**
+   * Le palier tombe sur le repère 2050 : ce n'est plus une étape, c'est l'objectif final.
+   * L'écran l'annonce alors comme le repère et non comme « ton prochain palier » — l'appeler
+   * une marche sous-vendrait ce que c'est.
+   */
+  isTarget2050: boolean;
+  /**
+   * La personne est **déjà** sous le repère, et le palier va au-delà. Ce n'est plus un dû mais
+   * une marge offerte : ce qu'elle n'émet pas laisse de la place ailleurs, pour d'autres postes
+   * de son empreinte ou pour ceux dont la mobilité est contrainte. La phrase change
+   * complètement de registre — proposition, jamais exigence.
+   */
+  beyondTarget2050: boolean;
 };
 
 /**
- * Le prochain palier, ou `null` quand il ne faut pas en montrer.
+ * Le prochain palier, ou `null` quand il n'y a rien à proposer.
  *
- * Deux cas rendent `null`, et ce sont des décisions produit, pas des cas d'erreur :
+ * Un seul cas rend `null` : **aucun cap disponible** (pas de cycle de plan, ou cap nul). Sans
+ * cap il n'existe pas de marche atteignable à proposer, et on préfère ne rien dire qu'en
+ * inventer une. C'est notamment le cas du profil que `/plan` accueille par « Tu fais déjà
+ * l'essentiel sur ce poste » : aucune action ne gagne assez pour valoir la peine.
  *
- *   - **déjà sous le repère 2050.** Quatre des treize bilans en base le sont. Leur proposer
- *     −20 % reviendrait à demander toujours plus à ceux qui font déjà le plus — exactement ce
- *     que `/plan` refuse avec son état « Tu fais déjà l'essentiel sur ce poste ».
- *   - **aucun cap disponible** (pas de cycle de plan, ou cap nul) : sans cap il n'y a pas de
- *     palier atteignable à proposer, et on préfère ne rien dire qu'inventer une marche.
+ * Être déjà sous le repère 2050 ne rend **pas** `null` — décision produit du 05/09/2026. Ce
+ * qu'on n'émet pas laisse de la marge ailleurs, et le proposer à quelqu'un qui est déjà sobre
+ * n'est pas lui en demander plus : c'est reconnaître que sa marge profite à d'autres. Le
+ * drapeau `beyondTarget2050` fait basculer la phrase dans ce registre.
  */
 export function nextPalier(
   totalKg: number,
   capKg: number | null | undefined,
   target2050Kg: number
 ): Palier | null {
-  if (totalKg <= target2050Kg) return null;
   if (!capKg || capKg <= 0) return null;
 
-  // Le cap peut dépasser ce qui sépare la personne du repère 2050 : on ne propose alors pas un
-  // palier « sous 2050 », qui n'aurait pas de sens comme étape — le repère devient le palier.
+  // Déjà sous le repère : la marche continue, bornée à zéro — on ne propose pas une empreinte
+  // négative, qui n'aurait aucun sens pour un total de déplacements.
+  if (totalKg <= target2050Kg) {
+    const targetKg = Math.max(totalKg - capKg, 0);
+    if (targetKg >= totalKg) return null;
+    return {
+      targetKg,
+      reductionKg: totalKg - targetKg,
+      isTarget2050: false,
+      beyondTarget2050: true,
+    };
+  }
+
+  // Le cap peut dépasser ce qui sépare la personne du repère : le palier s'y arrête, et devient
+  // alors l'objectif final plutôt qu'une étape de plus.
   const brut = totalKg - capKg;
   const targetKg = Math.max(brut, target2050Kg);
 
   return {
     targetKg,
     reductionKg: totalKg - targetKg,
-    reachesTarget2050: targetKg <= target2050Kg,
+    isTarget2050: targetKg <= target2050Kg,
+    beyondTarget2050: false,
   };
 }
 
