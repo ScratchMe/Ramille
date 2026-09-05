@@ -507,9 +507,15 @@ l'incohérence 9,1 / 9,3 t décrite plus bas.
 
 Deux décisions de forme qui vont avec :
 
-- **La barre « Repère 2050 » cède sa place au palier.** Mettre « Toi : 15,8 t » à côté de
-  « 0,6 t » affichait un rapport de 1 à 26 qu'aucune formulation ne rattrape. 2050 reste, en
-  mots, sous les barres. Le palier est placé **juste sous « Toi »**, avant la moyenne : rendu en
+- **La barre « Repère 2050 » cède sa place au palier — mais seulement au-dessus de la moyenne
+  française.** Le repère n'a pas le même sens des deux côtés de cette ligne : au-dessus, l'écart
+  est un gouffre (15,8 t contre 0,6 t, un rapport de 1 à 26) et le montrer décourage ; en
+  dessous, il tombe à un facteur 2 à 4, redevient un horizon crédible, et le masquer priverait
+  de sa cible celui qui en est le plus près. Décision produit du 05/09/2026. Le palier, lui,
+  reste affiché des deux côtés : c'est la marche actionnable, et la retirer l'enlèverait
+  précisément à ceux qui sont le mieux placés pour la franchir. Quand le palier **est** le
+  repère (le cap dépasse ce qui les sépare), la barre du repère disparaît : deux barres de même
+  valeur n'apprennent rien, et la phrase le dit. Le palier est placé **juste sous « Toi »**, avant la moyenne : rendu en
   troisième position, les deux barres presque identiques d'une empreinte élevée donnaient
   l'impression que la marche ne servait à rien — vérifié au rendu, c'est ce qui a fait changer
   l'ordre.

@@ -21,7 +21,7 @@ import {
   formatTonnesShort,
 } from '@/constants/carbon-reference';
 import { formatTonnes } from '@/lib/format';
-import { nextPalier, type Palier } from '@/types/palier';
+import { nextPalier, showsTarget2050, type Palier } from '@/types/palier';
 import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
 import type { Database } from '@/lib/database.types';
 
@@ -110,10 +110,14 @@ function comparisonNote(totalT: number): string {
 //
 // Aucune formulation d'échec : on ne dit pas combien de paliers restent. « Il t'en reste 15 »
 // est une autre façon d'écrire le gouffre.
-function palierNote(palier: Palier): string {
+function palierNote(palier: Palier, repereVisible: boolean): string {
   const reduction = formatTonnes(palier.reductionKg);
   if (palier.reachesTarget2050) {
     return `Ce palier te met sous le repère transport 2050. Il demande ${reduction} de moins sur l’année.`;
+  }
+  if (repereVisible) {
+    // Le repère est déjà sur l'écran : la phrase n'a pas à le rappeler, elle nomme la marche.
+    return `Une marche à ${reduction} de moins sur l’année. Le plan qui suit propose de quoi la franchir.`;
   }
   return `Une marche à ${reduction} de moins sur l’année. Le plan qui suit propose de quoi la franchir ; 2050 se joue palier après palier.`;
 }
@@ -250,6 +254,9 @@ export default function BilanResultat() {
   // Le palier remplace la barre « Repère 2050 » : mettre 15,8 t à côté de 0,6 t affichait un
   // rapport de 1 à 26 qu'aucune formulation ne rattrape. 2050 reste, en mots, sous les barres.
   const palier = nextPalier(results.total_co2_kg_year, capKg, TARGET_2050_TRANSPORT_T * 1000);
+  // Le repère 2050 revient dès qu'on passe sous la moyenne : au-dessus il est un gouffre, en
+  // dessous un horizon crédible. Cf. `showsTarget2050`.
+  const montreRepere2050 = showsTarget2050(results.total_co2_kg_year, FRANCE_AVERAGE_TRANSPORT_T * 1000);
 
   // Un total nul est atteignable — quelqu'un qui n'a que du vélo ou de la marche, sans avion
   // ni trajet longue distance. C'est le profil que le produit devrait féliciter, et il
@@ -368,7 +375,9 @@ export default function BilanResultat() {
                 percent={barPercent(FRANCE_AVERAGE_TRANSPORT_T)}
                 accentColor={theme.accentMuted}
               />
-              {!palier && (
+              {/* Sauf quand le palier EST le repère : deux barres de même valeur l'une sous
+                  l'autre n'apprennent rien, et la phrase sous les barres le dit déjà. */}
+              {(montreRepere2050 || !palier) && !palier?.reachesTarget2050 && (
                 <CompareRow
                   label="Repère transport 2050"
                   value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}
@@ -378,7 +387,7 @@ export default function BilanResultat() {
               )}
             </View>
             <ThemedText type="small" themeColor="textSecondary">
-              {palier ? palierNote(palier) : comparisonNote(totalT)}
+              {palier ? palierNote(palier, montreRepere2050) : comparisonNote(totalT)}
             </ThemedText>
             <ThemedText type="code" themeColor="textTertiary">
               {CARBON_SOURCE_LABEL}

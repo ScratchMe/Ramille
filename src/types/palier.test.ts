@@ -1,4 +1,4 @@
-import { nextPalier } from './palier';
+import { nextPalier, showsTarget2050 } from './palier';
 
 // 0,6 t — le repère transport 2050, cf. `carbon-reference.ts`. Écrit en dur ici pour que le
 // test dise ce qu'il éprouve plutôt que de recopier la dérivation.
@@ -47,5 +47,27 @@ describe('nextPalier', () => {
       expect(palier!.targetKg).toBeGreaterThanOrEqual(CIBLE);
       expect(palier!.reductionKg).toBeLessThanOrEqual(total - CIBLE);
     }
+  });
+});
+
+describe('showsTarget2050', () => {
+  const MOYENNE = 2800;
+
+  it('cache le repère au-dessus de la moyenne, où il est un gouffre', () => {
+    // 15,8 t contre 0,6 t : un rapport de 1 à 26 qu'aucune formulation ne rattrape.
+    expect(showsTarget2050(15820, MOYENNE)).toBe(false);
+    expect(showsTarget2050(4380, MOYENNE)).toBe(false);
+  });
+
+  it('le remontre en dessous, où il redevient un horizon crédible', () => {
+    // 1,33 t contre 0,6 t : un facteur 2,2. Le masquer priverait de sa cible celui qui en est
+    // le plus près.
+    expect(showsTarget2050(2440, MOYENNE)).toBe(true);
+    expect(showsTarget2050(1330, MOYENNE)).toBe(true);
+    expect(showsTarget2050(260, MOYENNE)).toBe(true);
+  });
+
+  it('range la moyenne elle-même du côté visible', () => {
+    expect(showsTarget2050(MOYENNE, MOYENNE)).toBe(true);
   });
 });

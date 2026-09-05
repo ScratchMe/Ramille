@@ -376,9 +376,11 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   de 0,6 t donnait un rapport de 1 à 26 que le texte ne rattrape pas, et 2050 tient désormais
   en mots. Deux mécaniques ont été écartées sur les données réelles et ne doivent pas revenir :
   la trajectoire linéaire (le pas dépend du point de départ — −609 kg/an à 15,8 t contre
-  **−6 kg/an** à 0,76 t) et les marches absolues partagées (première marche à −82 %). Aucun
-  palier n'est proposé à qui est déjà sous le repère, et **le nombre de paliers restants ne
-  s'affiche jamais**.
+  **−6 kg/an** à 0,76 t) et les marches absolues partagées (première marche à −82 %). Le repère
+  2050 réapparaît **dès qu'on passe sous la moyenne française** (`showsTarget2050`) : au-dessus
+  c'est un gouffre, en dessous un horizon crédible à un facteur 2 à 4. Aucun palier n'est
+  proposé à qui est déjà sous le repère, et **le nombre de paliers restants ne s'affiche
+  jamais**.
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
   faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
   professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne

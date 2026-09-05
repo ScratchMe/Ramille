@@ -62,3 +62,23 @@ export function nextPalier(
     reachesTarget2050: targetKg <= target2050Kg,
   };
 }
+
+/**
+ * Faut-il aussi montrer le repère 2050 ?
+ *
+ * **Oui dès qu'on est sous la moyenne française.** Le repère n'a pas le même sens des deux
+ * côtés de cette ligne, et c'est ce qui justifie de le traiter différemment :
+ *
+ *   - **au-dessus**, l'écart est un gouffre — 15,8 t contre 0,6 t, un rapport de 1 à 26 que
+ *     rien ne rattrape. Le montrer décourage, et c'est exactement ce que la spec §4 demande
+ *     d'éviter. Seul le palier a du sens là.
+ *   - **en dessous**, l'écart tombe à un facteur 2 à 4. Il redevient un horizon crédible pour
+ *     quelqu'un qui a déjà fait du chemin, et le masquer reviendrait à priver de sa cible
+ *     celui qui est le plus près de l'atteindre.
+ *
+ * Le palier reste affiché dans les deux cas : c'est la marche actionnable, et la retirer
+ * l'enlèverait précisément à ceux qui sont le mieux placés pour la franchir.
+ */
+export function showsTarget2050(totalKg: number, franceAverageKg: number): boolean {
+  return totalKg <= franceAverageKg;
+}
