@@ -9,14 +9,26 @@ import { EmptyStateIllustration } from '@/components/illustrations/empty-state-i
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { formatTonnes } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
+
+type PlanAction = {
+  id: string;
+  saving_kg_year: number | null;
+  saving_share_percent: number | null;
+  detail_text: string | null;
+  rank: number | null;
+  action_templates: { action_text: string } | null;
+};
 
 type PlanCycle = {
   id: string;
   period_label: string;
   trip_label: string;
-  plan_actions: { id: string; action_templates: { action_text: string } | null }[];
+  baseline_co2_kg_year: number | null;
+  target_reduction_pct: number;
+  plan_actions: PlanAction[];
 };
 
 type PendingCheckin = EngagementCheckin & { period_start: string };
@@ -43,11 +55,19 @@ type LoadState =
   | { status: 'pending'; assessmentId: string }
   | { status: 'ok'; cycle: PlanCycle; assessmentId: string; checkins: EngagementCheckin[] };
 
-// B "Plan de réduction" — le mockup n'a qu'une seule carte teintée par cap/action
-// (copy fixe : "240 kg CO₂e", "30 % du trajet en train"...) : `action_templates` ne
-// porte que du texte générique par catégorie de mode (cf. v1-03 §3, "copy volontairement
-// minimale") — pas de chiffrage individualisé par action en base pour cette V1. Chaque
-// carte affiche donc uniquement `action_text`, sans les phrases chiffrées de la maquette.
+// B "Plan de réduction". Depuis l'étape 6a (v1-07 §3.3), chaque action porte son gain estimé,
+// figé à la génération du cycle : `plan_actions.saving_kg_year` et `.saving_share_percent`.
+// L'écran ne calcule donc rien — il affiche ce que `estimate_action_savings` a arrêté au
+// moment du bilan, pour qu'un chiffre montré ne bouge pas sous les yeux de la personne au gré
+// d'une mise à jour ADEME.
+//
+// Le cap de la saison (`target_reduction_pct`, -20 %) était stocké depuis l'increment 3 et
+// lu par aucun écran (T10 de l'audit). Il est affiché ici, avec l'objectif qu'il implique.
+//
+// Deux formulations à ne pas durcir : le gain est une **estimation** déclarative fondée sur
+// des moyennes ADEME, jamais une mesure ; et un plan sans action n'est pas un échec mais le
+// signe que la personne fait déjà l'essentiel — l'état correspondant la félicite au lieu de
+// lui présenter une liste vide.
 export default function Plan() {
   const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
@@ -76,7 +96,12 @@ export default function Plan() {
 
       const { data: cycle, error: cycleError } = await supabase
         .from('plan_cycles')
-        .select('id, period_label, trip_label, plan_actions(id, action_templates(action_text))')
+        .select(
+          // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
+          // type du résultat en analysant ce littéral au niveau des types. Une concaténation
+          // lui rend un `string` opaque et le typage du retour est perdu.
+          'id, period_label, trip_label, baseline_co2_kg_year, target_reduction_pct, plan_actions(id, saving_kg_year, saving_share_percent, detail_text, rank, action_templates(action_text))'
+        )
         .order('period_start', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -157,6 +182,14 @@ export default function Plan() {
   }
 
   const { cycle, assessmentId, checkins } = state;
+  const actionsCount = cycle.plan_actions.length;
+  const baselineKg = cycle.baseline_co2_kg_year;
+  // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
+  // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.
+  const capKg =
+    baselineKg !== null && baselineKg > 0
+      ? Math.round((baselineKg * cycle.target_reduction_pct) / 100)
+      : null;
 
   return (
     <ThemedView style={styles.container}>
@@ -167,8 +200,9 @@ export default function Plan() {
               Ton plan
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.body}>
-              {cycle.plan_actions.length > 1 ? 'Deux actions' : 'Une action'} liée
-              {cycle.plan_actions.length > 1 ? 's' : ''} à {cycle.trip_label}.
+              {actionsCount === 0
+                ? `Rien à alléger sur ${cycle.trip_label}.`
+                : `${actionsCount > 1 ? 'Deux actions liées' : 'Une action liée'} à ${cycle.trip_label}.`}
             </ThemedText>
             <ThemedView type="backgroundElement" style={styles.cadenceChip}>
               <ThemedText type="small" weight={600}>
@@ -177,15 +211,77 @@ export default function Plan() {
             </ThemedView>
           </View>
 
+          {/* Le cap de la saison (T10). Affiché en kg parce que c'est l'unité des actions
+              juste en dessous : la personne doit pouvoir voir d'un coup d'œil qu'en cumulant
+              deux actions elle l'atteint — ou ne l'atteint pas, ce qui est une information
+              tout aussi utile et jamais présentée comme un échec. */}
+          {capKg !== null && (
+            <ThemedView type="backgroundSelected" style={styles.capCard}>
+              <ThemedText type="small" weight={600} themeColor="accentText">
+                Ton cap pour cette période
+              </ThemedText>
+              <ThemedText weight={600} style={styles.capValue}>
+                − {capKg} kg
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                soit − {Math.round(cycle.target_reduction_pct)} % de {cycle.trip_label.toLowerCase()}
+                {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
+              </ThemedText>
+            </ThemedView>
+          )}
+
           <View style={styles.actions}>
             {cycle.plan_actions.map((action) => (
               <View key={action.id} style={[styles.actionCard, { borderColor: theme.border }]}>
                 <ThemedText weight={600} style={styles.actionText}>
                   {action.action_templates?.action_text ?? 'Action à préciser.'}
                 </ThemedText>
+                {action.saving_kg_year !== null && (
+                  <View style={styles.savingRow}>
+                    <ThemedText weight={600} themeColor="accentText" style={styles.savingValue}>
+                      − {Math.round(action.saving_kg_year)} kg CO₂e
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      par an
+                      {action.saving_share_percent !== null
+                        ? ` · ${Math.round(action.saving_share_percent)} % de ton empreinte`
+                        : ''}
+                    </ThemedText>
+                  </View>
+                )}
+                {action.detail_text && (
+                  <ThemedText type="small" themeColor="textTertiary">
+                    {action.detail_text}
+                  </ThemedText>
+                )}
               </View>
             ))}
           </View>
+
+          {/* Profil qui n'a plus rien à céder sur son poste dominant. Le pire accueil
+              possible serait une liste vide : c'est la personne qui fait déjà le plus
+              d'efforts. Même principe que le T8 de l'audit sur la restitution. */}
+          {actionsCount === 0 && (
+            <ThemedView type="backgroundElement" style={styles.emptyActionsCard}>
+              <ThemedText weight={600} style={styles.actionText}>
+                Tu fais déjà l’essentiel sur ce poste.
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.body}>
+                Aucun changement de mode ne te ferait gagner assez pour valoir la peine d’être
+                proposé. Le check-in reste là si tu veux garder un œil dessus.
+              </ThemedText>
+            </ThemedView>
+          )}
+
+          {/* La provenance du chiffre, à l'endroit où il engage le plus. Le produit vise un
+              registre institutionnel : une estimation présentée comme une mesure serait le
+              premier endroit où la crédibilité se casse. */}
+          {actionsCount > 0 && (
+            <ThemedText type="code" themeColor="textTertiary" style={styles.disclaimer}>
+              Estimations sur la base des facteurs ADEME et de tes réponses. Un ordre de
+              grandeur pour choisir, pas une mesure.
+            </ThemedText>
+          )}
 
           {checkins.length > 0 && (
             <View style={styles.checkins}>
@@ -226,8 +322,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   body: { fontSize: 15, lineHeight: 22 },
   cadenceChip: { alignSelf: 'flex-start', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 },
+  capCard: { borderRadius: 18, padding: 20, gap: 6 },
+  capValue: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   actions: { gap: Spacing.two + 2 },
   actionCard: { borderRadius: 18, borderWidth: 1, padding: 20, gap: 8 },
+  savingRow: { gap: 2 },
+  savingValue: { fontSize: 20, lineHeight: 26 },
+  emptyActionsCard: { borderRadius: 18, padding: 20, gap: 8 },
+  disclaimer: { lineHeight: 18 },
   actionText: { fontSize: 17, lineHeight: 24 },
   checkins: { gap: Spacing.two + 2 },
   footer: { padding: Spacing.four, gap: Spacing.three },

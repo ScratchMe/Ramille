@@ -15,20 +15,55 @@ export type Database = {
       action_templates: {
         Row: {
           action_text: string
+          detail_kind: string | null
           id: string
-          transport_mode_category: string
+          max_distance_km: number | null
+          operation: string | null
+          poste: string | null
+          requires_car: boolean
+          requires_tc: boolean
+          segment: string | null
+          share: number | null
+          substitute_mode_id: string | null
+          trips: number | null
         }
         Insert: {
           action_text: string
+          detail_kind?: string | null
           id?: string
-          transport_mode_category: string
+          max_distance_km?: number | null
+          operation?: string | null
+          poste?: string | null
+          requires_car?: boolean
+          requires_tc?: boolean
+          segment?: string | null
+          share?: number | null
+          substitute_mode_id?: string | null
+          trips?: number | null
         }
         Update: {
           action_text?: string
+          detail_kind?: string | null
           id?: string
-          transport_mode_category?: string
+          max_distance_km?: number | null
+          operation?: string | null
+          poste?: string | null
+          requires_car?: boolean
+          requires_tc?: boolean
+          segment?: string | null
+          share?: number | null
+          substitute_mode_id?: string | null
+          trips?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "action_templates_substitute_mode_id_fkey"
+            columns: ["substitute_mode_id"]
+            isOneToOne: false
+            referencedRelation: "transport_modes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assessment_answers: {
         Row: {
@@ -144,7 +179,10 @@ export type Database = {
         Row: {
           assessment_id: string
           commute_co2_kg_year: number
+          commute_main_leg_co2_kg_year: number | null
+          commute_main_leg_km_year: number | null
           commute_poste_label: string | null
+          commute_trip_distance_km: number | null
           computed_at: string
           dominant_poste: string
           dominant_poste_co2_kg_year: number
@@ -154,8 +192,15 @@ export type Database = {
           extras_poste_label: string | null
           id: string
           leisure_co2_kg_year: number
+          leisure_km_year: number | null
+          leisure_trip_distance_km: number | null
+          mobility_constrained: boolean | null
           total_co2_kg_year: number
+          travel_car_co2_kg_year: number | null
           travel_co2_kg_year: number
+          travel_flight_long_co2_kg_year: number | null
+          travel_flight_short_co2_kg_year: number | null
+          travel_train_co2_kg_year: number | null
         }
         Insert: {
           assessment_id: string
@@ -170,13 +215,23 @@ export type Database = {
           extras_poste_label?: string | null
           id?: string
           leisure_co2_kg_year: number
+          leisure_km_year: number | null
+          leisure_trip_distance_km: number | null
+          mobility_constrained: boolean | null
           total_co2_kg_year: number
+          travel_car_co2_kg_year: number | null
           travel_co2_kg_year: number
+          travel_flight_long_co2_kg_year: number | null
+          travel_flight_short_co2_kg_year: number | null
+          travel_train_co2_kg_year: number | null
         }
         Update: {
           assessment_id?: string
           commute_co2_kg_year?: number
+          commute_main_leg_co2_kg_year?: number | null
+          commute_main_leg_km_year?: number | null
           commute_poste_label?: string | null
+          commute_trip_distance_km?: number | null
           computed_at?: string
           dominant_poste?: string
           dominant_poste_co2_kg_year?: number
@@ -186,8 +241,15 @@ export type Database = {
           extras_poste_label?: string | null
           id?: string
           leisure_co2_kg_year?: number
+          leisure_km_year?: number | null
+          leisure_trip_distance_km?: number | null
+          mobility_constrained?: boolean | null
           total_co2_kg_year?: number
+          travel_car_co2_kg_year?: number | null
           travel_co2_kg_year?: number
+          travel_flight_long_co2_kg_year?: number | null
+          travel_flight_short_co2_kg_year?: number | null
+          travel_train_co2_kg_year?: number | null
         }
         Relationships: [
           {
@@ -431,20 +493,32 @@ export type Database = {
         Row: {
           action_template_id: string
           created_at: string
+          detail_text: string | null
           id: string
           plan_cycle_id: string
+          rank: number | null
+          saving_kg_year: number | null
+          saving_share_percent: number | null
         }
         Insert: {
           action_template_id: string
           created_at?: string
+          detail_text?: string | null
           id?: string
           plan_cycle_id: string
+          rank?: number | null
+          saving_kg_year?: number | null
+          saving_share_percent?: number | null
         }
         Update: {
           action_template_id?: string
           created_at?: string
+          detail_text?: string | null
           id?: string
           plan_cycle_id?: string
+          rank?: number | null
+          saving_kg_year?: number | null
+          saving_share_percent?: number | null
         }
         Relationships: [
           {
@@ -572,6 +646,10 @@ export type Database = {
         Returns: number
       }
       enqueue_checkin_reminders: { Args: never; Returns: undefined }
+      estimate_action_savings: {
+        Args: { p_assessment_id: string }
+        Returns: Database["public"]["CompositeTypes"]["action_saving"][]
+      }
       generate_commute_checkins: { Args: never; Returns: undefined }
       generate_extras_checkins: { Args: never; Returns: undefined }
       generate_plan_cycle_for_user: {
@@ -611,7 +689,13 @@ export type Database = {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      action_saving: {
+        action_template_id: string | null
+        poste: string | null
+        action_text: string | null
+        detail_text: string | null
+        saving_kg_year: number | null
+      }
     }
   }
 }

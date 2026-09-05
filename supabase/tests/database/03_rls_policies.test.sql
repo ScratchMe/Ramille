@@ -38,12 +38,21 @@ insert into public.assessment_answers (
   '61111111-1111-1111-1111-111111111111', true, 5, 10, 'voiture', false, false, 'rarely'
 );
 
+-- L'instantané par segment est obligatoire depuis l'étape 6a : sans lui,
+-- `estimate_action_savings` ne rend aucune action et le cycle généré plus bas serait vide —
+-- il n'y aurait alors rien à protéger, et l'assertion RLS sur `plan_actions` passerait pour
+-- une mauvaise raison. Valeurs dérivées du facteur, jamais écrites en dur (cf. CLAUDE.md).
 insert into public.assessment_results (
   assessment_id, total_co2_kg_year, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year,
-  dominant_poste, dominant_poste_co2_kg_year, dominant_poste_mode, dominant_poste_label
-) values (
-  '61111111-1111-1111-1111-111111111111', 500, 500, 0, 0, 'commute', 500, 'voiture', 'Trajet domicile-travail (Voiture)'
-);
+  dominant_poste, dominant_poste_co2_kg_year, dominant_poste_mode, dominant_poste_label,
+  commute_main_leg_km_year, commute_main_leg_co2_kg_year, commute_trip_distance_km,
+  leisure_km_year, mobility_constrained
+)
+select
+  '61111111-1111-1111-1111-111111111111', f.co2, f.co2, 0, 0,
+  'commute', f.co2, 'voiture', 'Trajet domicile-travail (Voiture)',
+  4500, f.co2, 10, 0, false
+from (select 4500 * public.emission_factor('voiture', current_date) as co2) f;
 
 insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, status) values
   ('51111111-1111-1111-1111-111111111111', 'commute', date_trunc('week', now())::date, 'Semaine du test', 'Trajet domicile-travail (Voiture)', 'pending');

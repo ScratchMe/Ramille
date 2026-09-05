@@ -26,14 +26,16 @@
  * Exigé par le RGPD art. 13 : il doit permettre d'identifier le responsable, donc un pseudonyme
  * seul ne convient pas.
  */
-export const EDITOR_NAME = '[À COMPLÉTER : prénom et nom]';
+export const EDITOR_NAME = 'Antoine Berthaud';
 
 /**
  * Adresse de contact pour toute question et pour l'exercice des droits RGPD.
- * Le domaine traceverte.fr est déjà vérifié côté Resend : un alias `contact@` y est immédiat.
+ *
+ * **Cette adresse doit pouvoir RECEVOIR du courrier**, pas seulement en émettre. La
+ * vérification du domaine déjà faite chez Resend ne couvre que l'envoi (SPF/DKIM) : la
+ * réception demande un enregistrement MX distinct. Une adresse de contact qui n'arrive nulle
+ * part serait un manquement au RGPD art. 12, qui impose de répondre sous un mois — et le pire
+ * des cas, puisque l'utilisateur croirait avoir écrit.
  */
-export const CONTACT_EMAIL = '[À COMPLÉTER : adresse email de contact]';
+export const CONTACT_EMAIL = 'contact@traceverte.fr';
 
-/** Vrai tant que l'éditeur n'a pas renseigné les deux valeurs ci-dessus. */
-export const EDITOR_DETAILS_MISSING =
-  EDITOR_NAME.startsWith('[') || CONTACT_EMAIL.startsWith('[');

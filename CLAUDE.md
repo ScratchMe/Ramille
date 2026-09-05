@@ -202,6 +202,19 @@ porte le calcul (interne, revoked de anon/authenticated, appelable côté serveu
 puis délègue. Toute reprise de calcul en masse (correction de facteur, migration) passe par la
 première — la seconde exige un `auth.uid()` et ne peut pas tourner hors session client.
 
+**Les actions du plan sont des opérations, pas des phrases.** `action_templates` porte un
+`poste`, un `segment`, une `operation` (`substitute` / `share_vehicle` / `remove_trip` /
+`remove_day`) et sa quantité ; `estimate_action_savings(assessment_id)` les applique à un bilan
+et rend les gains en kg/an, triés. Deux règles non négociables : **aucune action au gain
+inférieur à 5 kg/an n'est proposée** (aux facteurs ACV, substituer une voiture par un bus urbain
+ne gagne que 14 %, contre 33× pour le métro — c'est invisible sans le calcul, d'où l'absence de
+tout template proposant le bus), et le **contexte B4** (`zone_type`, `tc_access`,
+`household_vehicles`) filtre l'impossible : pas de transports en commun là où la personne a
+répondu qu'il n'y en a pas. L'estimateur lit l'instantané par segment figé sur
+`assessment_results` (`commute_main_leg_km_year`, `travel_flight_long_co2_kg_year`…) — **ne
+jamais recalculer les km ailleurs**, les deux implémentations divergeraient. Les gains sont
+ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
+
 Deux mécanismes de génération server-side qu'il faut garder synchronisés si on les touche :
 - `generate_plan_cycle_for_user(p_user_id)` (security definer, revoked de anon/authenticated)
   génère le plan de réduction d'un utilisateur. Appelée à la fois par le cron nightly
