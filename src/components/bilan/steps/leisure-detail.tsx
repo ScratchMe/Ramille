@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -110,6 +111,7 @@ export function LeisureDetailStep({
           ))}
         </View>
       </View>
+      <MissingModeLink context="B2.2 mode loisirs" />
     </View>
   );
 }

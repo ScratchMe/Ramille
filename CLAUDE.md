@@ -239,6 +239,14 @@ volée côté client) — même logique pour `engagement_checkins.trip_label`, s
 pas changer rétroactivement le wording d'un check-in déjà généré si l'utilisateur refait un
 bilan plus tard.
 
+**Canal de retour** (`feedback`, issue #29) : la seule table où un client écrit du texte
+libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à
+`authenticated` revient à l'ouvrir à quiconque sait appeler l'API — d'où le trigger
+`enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et les bornes de longueur.
+**Attention en écrivant des tests dessus** : ce trigger `before insert` se déclenche AVANT
+l'évaluation des CHECK et lève lui aussi un `23514`, donc toute assertion sur la contrainte de
+longueur doit venir avant la saturation du quota, sinon elle passe sans rien éprouver.
+
 **Rappel par email** : `enqueue_checkin_reminders()` remplit `notification_outbox` à chaque
 génération de check-in, `send_pending_reminders()` (cron quotidien 7h UTC) l'envoie via
 l'extension `http`. **La garantie anti-relance de la spec §7 est structurelle** :

@@ -275,6 +275,14 @@ export default function Suivi() {
               </ThemedText>
             </Pressable>
           )}
+          {/* Point d'entrée général du canal de retour (issue #29). Il vit ici plutôt que
+              dans un réglage caché : /suivi est l'écran où l'on revient, donc celui où l'on
+              a quelque chose à dire. */}
+          <Pressable onPress={() => router.push('/feedback')}>
+            <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
+              Un retour à nous faire ?
+            </ThemedText>
+          </Pressable>
           <Pressable onPress={() => router.push('/plan')}>
             <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
               Revenir à mon plan

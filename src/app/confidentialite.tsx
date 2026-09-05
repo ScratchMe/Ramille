@@ -11,7 +11,8 @@ import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
 //   - rappels par email -> `notification_outbox` + opt-out `profiles.email_reminders_enabled` ;
 //   - purge à 90 jours -> `purge_stale_anonymous_accounts()`, cron quotidien ;
 //   - aucune géolocalisation -> non-goal explicite de la spec §2 ;
-//   - carte de partage sans lecture serveur -> v1-06 §2.
+//   - carte de partage sans lecture serveur -> v1-06 §2 ;
+//   - retours utilisateur -> table `feedback`, insert-only côté client, issue #29.
 //
 // Les deux seules informations que cette page ne peut pas déduire — nom du responsable de
 // traitement et email de contact — vivent dans `@/constants/editeur`, où le régime juridique
@@ -76,6 +77,13 @@ const SECTIONS: LegalSection[] = [
               'rien de plus — ni tes contacts, ni ton agenda, ni aucune autre donnée Google.',
           },
         ],
+      },
+      {
+        kind: 'paragraph',
+        text:
+          'Si tu nous envoies un retour, nous enregistrons ton message, la catégorie que tu as choisie et, le cas ' +
+          'échéant, l’écran d’où tu es parti — rattachés à ton compte pour pouvoir te recontacter si tu nous as laissé ' +
+          'un moyen de le faire. Ces retours sont lus à la main et ne déclenchent aucune réponse automatique.',
       },
       {
         kind: 'paragraph',
@@ -162,7 +170,7 @@ const SECTIONS: LegalSection[] = [
         items: [
           'Session anonyme jamais rattachée à un compte : supprimée automatiquement 90 jours après sa création.',
           'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
-          'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi et plans est supprimé.',
+          'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans et retours est supprimé.',
         ],
       },
     ],
