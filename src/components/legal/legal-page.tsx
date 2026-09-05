@@ -56,7 +56,12 @@ export function LegalPage({
 
             {sections.map((section) => (
               <View key={section.heading} style={styles.section}>
-                <ThemedText weight={600} style={styles.heading}>
+                {/* Ces titres de section ne peuvent pas passer par `type="subtitle"`, qui
+                    porterait le rôle d'en-tête mais aussi ses 32 px : ici la hiérarchie
+                    visuelle tient en 18 px. Le rôle est donc écrit à la main — cas prévu par
+                    la surcharge de `ThemedText`. Sans lui, ces deux pages, les plus longues
+                    du produit, ne se parcourent qu'en lisant tout. */}
+                <ThemedText weight={600} style={styles.heading} accessibilityRole="header">
                   {section.heading}
                 </ThemedText>
                 {section.blocks.map((block, index) => (
