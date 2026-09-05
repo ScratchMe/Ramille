@@ -121,9 +121,22 @@ sur `status = 'submitted'`, valeur qui n'a jamais existé (la contrainte n'autor
 `in_progress` et `completed`) — le filtre porte maintenant sur `submitted_at is not null`, qui
 est un fait et non un mot.
 
-> **Deux colonnes homonymes dont une morte sont un piège permanent.** Retirer
-> `profiles.zone_type` / `.tc_access` reste à faire ; ce n'est pas fait ici parce qu'un
-> `drop column` sort du périmètre d'un increment de mesure.
+> **Deux colonnes homonymes dont une morte sont un piège permanent.** `profiles.zone_type`,
+> `profiles.tc_access` et `profiles.onboarding_completed_at` ont été supprimées le 05/09/2026
+> (`20260905180000`) : 0 valeur non nulle sur 136 profils, aucune dépendance dans `pg_depend`,
+> aucune occurrence dans le code client. Le balayage a aussi trouvé quatre autres colonnes
+> entièrement nulles — **conservées**, parce qu'elles sont vivantes et simplement pas encore
+> alimentées (`emission_factor_sync_runs.detail` et `notification_outbox.last_error` ne
+> s'écrivent qu'en cas d'échec ; `commute_carpool_size` et `commute_distance_bracket` sont
+> câblées de bout en bout, mais aucun des treize bilans de test n'a utilisé le covoiturage ni
+> la tranche « je ne sais pas »). Une colonne vide n'est pas une colonne morte : ce qui la
+> qualifie, c'est qu'aucun code ne l'écrit.
+>
+> Le test RLS `03` vérifiait jusque-là que `profiles.zone_type` restait `NULL` après l'UPDATE
+> d'un tiers — une assertion qui passait pour la mauvaise raison, la colonne étant nulle pour
+> tout le monde. Elle porte maintenant sur `cadence_type`, dont la valeur par défaut est
+> `season` : « l'UPDATE n'a rien fait » se distingue enfin de « la colonne n'a jamais rien
+> contenu ».
 
 ## 6. Lecture
 

@@ -272,12 +272,18 @@ Trois pièges vérifiés en construisant cette table, tous silencieux :
   `EXECUTE` à **PUBLIC** à la création, et les deux rôles en héritent. Il faut
   `from public, anon, authenticated` — sans quoi n'importe quel visiteur appelait
   `/rest/v1/rpc/purge_usage_events`.
-- **`profiles.zone_type` et `profiles.tc_access` sont des colonnes mortes.** Le contexte B4 vit
-  dans `assessment_answers` depuis le schéma bilan v2 ; ces deux-là n'ont jamais été retirées et
-  ne sont écrites par rien. Une vue d'analyse branchée dessus segmente tout le monde sur `NULL`
-  sans lever d'erreur. Vérifier qu'une colonne est alimentée avant de s'y fier — et se méfier des
+- **Le contexte B4 vit dans `assessment_answers`, et nulle part ailleurs.** `profiles` portait
+  des colonnes homonymes `zone_type`/`tc_access` héritées du schéma initial, avec un vocabulaire
+  *différent* (`urbain`/`aucun` au lieu de `urbain_dense`/`periurbain`/`rural` et `inexistant`) :
+  une vue d'analyse branchée dessus segmentait 136 utilisateurs sur `NULL` sans lever d'erreur.
+  Elles ont été supprimées (`20260905180000`), avec `profiles.onboarding_completed_at` qu'aucun
+  code n'écrivait. Vérifier qu'une colonne est *alimentée* avant de s'y fier — et se méfier des
   valeurs de statut écrites de mémoire (`assessments.status` vaut `completed`, jamais
-  `submitted`).
+  `submitted` ; c'est aussi ce que teste la racine de l'app pour router vers le plan).
+  **Une colonne vide n'est pas une colonne morte** : `emission_factor_sync_runs.detail`,
+  `notification_outbox.last_error`, `commute_carpool_size` et `commute_distance_bracket` sont
+  toutes nulles en base et parfaitement vivantes. Ce qui qualifie une colonne morte, c'est
+  qu'aucun code ne l'écrit.
 
 **Canal de retour** (`feedback`, issue #29) : la seule table où un client écrit du texte
 libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à

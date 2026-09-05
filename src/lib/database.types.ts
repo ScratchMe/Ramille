@@ -625,27 +625,18 @@ export type Database = {
           created_at: string
           email_reminders_enabled: boolean
           id: string
-          onboarding_completed_at: string | null
-          tc_access: string | null
-          zone_type: string | null
         }
         Insert: {
           cadence_type?: string
           created_at?: string
           email_reminders_enabled?: boolean
           id: string
-          onboarding_completed_at?: string | null
-          tc_access?: string | null
-          zone_type?: string | null
         }
         Update: {
           cadence_type?: string
           created_at?: string
           email_reminders_enabled?: boolean
           id?: string
-          onboarding_completed_at?: string | null
-          tc_access?: string | null
-          zone_type?: string | null
         }
         Relationships: []
       }
