@@ -96,7 +96,14 @@ export function Mascot({
   }));
 
   return (
-    <Animated.View style={[{ width: size, height: size }, style, animatedStyle]}>
+    <Animated.View
+      // Purement décorative : elle accompagne un texte qui dit déjà tout. L'annoncer
+      // ajouterait un « image » sans contenu entre chaque phrase.
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      aria-hidden
+      style={[{ width: size, height: size }, style, animatedStyle]}
+    >
       <Svg width={size} height={size} viewBox="0 0 100 100">
         <Defs>
           {/* Le visage est découpé par la silhouette : les joues affleurent le bord de la

@@ -55,8 +55,24 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
             {checkin.trip_label} ?
           </ThemedText>
           <View style={styles.actions}>
-            <Button title="Non" variant="secondary" onPress={() => answer(false)} disabled={saving} flex />
-            <Button title="Oui" onPress={() => answer(true)} disabled={saving} flex />
+            {/* « Oui » et « Non » hors contexte ne veulent rien dire : le lecteur d'écran
+                annonce la question juste avant, mais rien ne garantit qu'elle soit encore en
+                mémoire au moment du geste. Le hint la rappelle sur chaque bouton. */}
+            <Button
+              title="Non"
+              variant="secondary"
+              onPress={() => answer(false)}
+              disabled={saving}
+              flex
+              accessibilityHint={`Répondre non pour ${checkin.trip_label}`}
+            />
+            <Button
+              title="Oui"
+              onPress={() => answer(true)}
+              disabled={saving}
+              flex
+              accessibilityHint={`Répondre oui pour ${checkin.trip_label}`}
+            />
           </View>
         </>
       ) : (

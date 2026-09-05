@@ -253,7 +253,7 @@ Classés par gravité. Tous constatés dans le code ou en base, pas déduits.
 | T8 | Division par zéro → `NaN %` affiché | `bilan/resultat.tsx:179` | **Écran cassé** |
 | T9 | Section B4 collectée et jamais utilisée | `assessment_answers`, `profiles` | Friction inutile |
 | T10 | `target_reduction_pct` (le cap −20 %) n'est lu par aucun écran | `plan/index.tsx` | Fonctionnalité morte |
-| T11 | Zéro attribut d'accessibilité dans tout `src/` | tous les `Pressable` | Exclusion |
+| T11 | Zéro attribut d'accessibilité dans tout `src/` | tous les `Pressable` | Exclusion — **corrigé le 05/09/2026** |
 | T12 | Pas de suppression de compte ni d'export | — | **Bloqueur Play Store** |
 | T13 | Division covoiturage appliquée aussi à la jambe du second mode | `compute_assessment_results` | Mineur |
 
@@ -600,7 +600,7 @@ de signe entre les deux bases.
 | 5 | Canal de rappel email | §3.1 | **fait** — migration `20260904200000` (envoi en attente d'un fournisseur, cf. §3.1) |
 | 6a | Actions chiffrées, cap affiché, contexte B4 exploité | T9, T10, §3.3 (1 et 3) | **fait** — migration `20260905130000` |
 | 6b | Choisir une action et s'y engager | §3.3 (2) | **fait** — migration `20260905190000` |
-| 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | **suppression et export faits** (`20260905210000`) ; trajectoire par paliers et accessibilité à faire |
+| 7 | Trajectoire 2050 par paliers, suppression de compte, accessibilité | T11, T12, §3.4, #28 | **suppression, export et accessibilité faits** ; trajectoire par paliers à faire |
 
 Hors tableau, traité le 05/09/2026 dans la foulée de l'étape 0 : la **cylindrée du deux-roues**
 (migration `20260905200000`). Le mode `deux_roues_motorise` valait le facteur du scooter

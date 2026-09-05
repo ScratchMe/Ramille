@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -52,9 +53,7 @@ export default function StatusScreen() {
           )}
         </ThemedView>
 
-        <Pressable onPress={() => router.push('/')}>
-          <ThemedText type="linkPrimary">Revenir à l&apos;app →</ThemedText>
-        </Pressable>
+        <TextLink label="Revenir à l’app →" onPress={() => router.push('/')} role="link" type="linkPrimary" />
       </SafeAreaView>
     </ThemedView>
   );

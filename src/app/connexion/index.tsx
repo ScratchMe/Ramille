@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
 import { Mascot } from '@/components/mascot';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -97,19 +98,23 @@ export default function ConnexionProposition() {
 
           <View style={styles.options}>
             <GoogleButton onPress={onGoogle} loading={googleLoading} />
-            <Pressable onPress={() => router.push({ pathname: '/connexion/email', params: { id } })}>
-              <ThemedText type="linkPrimary" style={styles.emailLink}>
-                Utiliser un email à la place
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Utiliser un email à la place"
+              onPress={() => router.push({ pathname: '/connexion/email', params: { id } })}
+              role="link"
+              type="linkPrimary"
+              style={styles.emailLink}
+            />
           </View>
 
           <View style={styles.skip}>
-            <Pressable onPress={dismiss}>
-              <ThemedText type="small" themeColor="textTertiary">
-                Continuer sans compte
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Continuer sans compte"
+              hint="Ton résultat reste accessible sur cet appareil"
+              onPress={dismiss}
+              type="small"
+              themeColor="textTertiary"
+            />
             <ThemedText type="code" themeColor="textTertiary" style={styles.skipHint}>
               Ton résultat reste accessible sur cet appareil.
             </ThemedText>
@@ -119,19 +124,23 @@ export default function ConnexionProposition() {
               compte — c'est le moment où elles l'engagent. Leurs URL publiques sont aussi
               exigées par l'écran de consentement Google OAuth et par la fiche Play Store. */}
           <View style={styles.legal}>
-            <Pressable onPress={() => router.push('/confidentialite')}>
-              <ThemedText type="code" themeColor="textTertiary">
-                Confidentialité
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Confidentialité"
+              onPress={() => router.push('/confidentialite')}
+              role="link"
+              type="code"
+              themeColor="textTertiary"
+            />
             <ThemedText type="code" themeColor="textTertiary">
               ·
             </ThemedText>
-            <Pressable onPress={() => router.push('/conditions')}>
-              <ThemedText type="code" themeColor="textTertiary">
-                Conditions d’utilisation
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Conditions d’utilisation"
+              onPress={() => router.push('/conditions')}
+              role="link"
+              type="code"
+              themeColor="textTertiary"
+            />
           </View>
         </View>
       </SafeAreaView>

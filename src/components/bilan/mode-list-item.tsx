@@ -25,6 +25,12 @@ export function ModeListItem({
   return (
     <Pressable
       onPress={onPress}
+      // `radio` et non `button` : ces items sont des choix exclusifs dans une liste. Un
+      // lecteur d'écran annonce alors « sélectionné / non sélectionné », ce que `button`
+      // ne dit pas — et c'est justement l'information dont on a besoin ici.
+      accessibilityRole="radio"
+      accessibilityLabel={label}
+      accessibilityState={{ selected, checked: selected }}
       style={[
         styles.item,
         {

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -70,9 +71,11 @@ export function LeisureDetailStep({
             />
           ))}
           {!showMore && (
-            <Pressable onPress={() => setShowMore(true)}>
-              <ThemedText type="linkPrimary">Voir les autres modes</ThemedText>
-            </Pressable>
+            <TextLink
+              label="Voir les autres modes"
+              onPress={() => setShowMore(true)}
+              type="linkPrimary"
+            />
           )}
         </View>
 

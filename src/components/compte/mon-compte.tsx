@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -67,14 +68,15 @@ export function MonCompte() {
         />
 
         {!confirmation ? (
-          <ThemedText
+          <TextLink
+            label="Supprimer mon compte"
+            hint="Demande une confirmation avant de supprimer quoi que ce soit"
+            onPress={() => setConfirmation(true)}
+            disabled={busy !== null}
             type="small"
             themeColor="textTertiary"
             style={styles.link}
-            onPress={busy ? undefined : () => setConfirmation(true)}
-          >
-            Supprimer mon compte
-          </ThemedText>
+          />
         ) : (
           <View style={styles.confirmation}>
             <ThemedText type="small" themeColor="textSecondary">
@@ -82,14 +84,14 @@ export function MonCompte() {
               définitivement. Cette action est irréversible.
             </ThemedText>
             <View style={styles.confirmationActions}>
-              <ThemedText
+              <TextLink
+                label="Annuler"
+                onPress={() => setConfirmation(false)}
+                disabled={busy !== null}
                 type="small"
                 themeColor="textTertiary"
                 style={styles.link}
-                onPress={busy ? undefined : () => setConfirmation(false)}
-              >
-                Annuler
-              </ThemedText>
+              />
               <Button
                 title={busy === 'suppression' ? 'Suppression…' : 'Supprimer définitivement'}
                 onPress={supprimer}

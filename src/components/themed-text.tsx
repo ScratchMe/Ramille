@@ -35,6 +35,14 @@ export function ThemedText({ style, type = 'default', themeColor, weight, ...res
   const theme = useTheme();
   const resolvedWeight = weight ?? defaultWeightByType[type];
 
+  // `title` et `subtitle` sont les deux types qui portent un titre d'écran ou de section :
+  // ils sont donc annoncés comme en-têtes, ce qui permet de naviguer de titre en titre au
+  // lecteur d'écran plutôt que de tout parcourir. Le déduire du type plutôt que de l'écrire
+  // sur chaque écran évite qu'un futur titre soit oublié — l'audit T11 avait relevé zéro
+  // attribut d'accessibilité dans tout `src/`, précisément parce que rien ne les portait par
+  // défaut. Reste surchargeable pour le cas où un `title` ne serait pas un titre.
+  const roleParDefaut = type === 'title' || type === 'subtitle' ? ('header' as const) : undefined;
+
   return (
     <Text
       style={[
@@ -49,6 +57,7 @@ export function ThemedText({ style, type = 'default', themeColor, weight, ...res
         type === 'code' && [baseSizes.code, { fontFamily: Fonts.mono }],
         style,
       ]}
+      accessibilityRole={rest.accessibilityRole ?? roleParDefaut}
       {...rest}
     />
   );

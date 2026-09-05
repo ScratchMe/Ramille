@@ -16,6 +16,8 @@ export function MissingModeLink({ context }: { context: string }) {
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/feedback', params: { kind: 'mode_manquant', context } })}
+      accessibilityRole="link"
+      accessibilityLabel="Signaler un mode de transport manquant"
     >
       <ThemedText type="code" themeColor="textTertiary" style={styles.link}>
         Ton mode n’est pas dans la liste ? Dis-le-nous.

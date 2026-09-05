@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { Mascot } from '@/components/mascot';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -326,16 +327,23 @@ export default function Plan() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Pressable onPress={() => router.push('/suivi')}>
-            <ThemedText type="small" weight={600} themeColor="accentText" style={styles.footerLink}>
-              Voir mon suivi
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={() => router.push({ pathname: '/bilan/resultat', params: { id: assessmentId } })}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
-              Revenir à mon bilan
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label="Voir mon suivi"
+            onPress={() => router.push('/suivi')}
+            role="link"
+            type="small"
+            weight={600}
+            themeColor="accentText"
+            style={styles.footerLink}
+          />
+          <TextLink
+            label="Revenir à mon bilan"
+            onPress={() => router.push({ pathname: '/bilan/resultat', params: { id: assessmentId } })}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.footerLink}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>

@@ -1,7 +1,8 @@
 import { Link, router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { EDITOR_CV_URL, EDITOR_NAME } from '@/constants/editeur';
@@ -64,11 +65,15 @@ export function LegalPage({
               </View>
             ))}
 
-            <Pressable onPress={() => router.back()} style={styles.backLink}>
-              <ThemedText type="small" weight={600} themeColor="accentText">
-                Retour
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Retour"
+              onPress={() => router.back()}
+              role="link"
+              type="small"
+              weight={600}
+              themeColor="accentText"
+              containerStyle={styles.backLink}
+            />
 
             {/* Ces deux pages sont les seules surfaces publiques du produit : leurs URL sont
                 données à Google Play et à l'écran de consentement Google, et elles se lisent

@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { MonCompte } from '@/components/compte/mon-compte';
 import { Mascot } from '@/components/mascot';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -276,6 +277,11 @@ export default function Suivi() {
                 <Switch
                   value={reminders.enabled}
                   onValueChange={toggleReminders}
+                  // Un interrupteur nu s'annonce « activé » sans dire de quoi. Le texte à sa
+                  // gauche n'est pas rattaché : c'est un frère dans l'arbre, pas un label.
+                  accessibilityRole="switch"
+                  accessibilityLabel="Rappels par email"
+                  accessibilityState={{ checked: reminders.enabled }}
                   trackColor={{ false: theme.paginationInactive, true: theme.accent }}
                   thumbColor={theme.background}
                 />
@@ -304,25 +310,35 @@ export default function Suivi() {
 
         <View style={styles.footer}>
           {!suggestRebilan && (
-            <Pressable onPress={() => router.push('/bilan')}>
-              <ThemedText type="small" weight={600} themeColor="accentText" style={styles.footerLink}>
-                Refaire mon bilan
-              </ThemedText>
-            </Pressable>
+            <TextLink
+              label="Refaire mon bilan"
+              onPress={() => router.push('/bilan')}
+              role="link"
+              type="small"
+              weight={600}
+              themeColor="accentText"
+              style={styles.footerLink}
+            />
           )}
           {/* Point d'entrée général du canal de retour (issue #29). Il vit ici plutôt que
               dans un réglage caché : /suivi est l'écran où l'on revient, donc celui où l'on
               a quelque chose à dire. */}
-          <Pressable onPress={() => router.push('/feedback')}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
-              Un retour à nous faire ?
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={() => router.push('/plan')}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.footerLink}>
-              Revenir à mon plan
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label="Un retour à nous faire ?"
+            onPress={() => router.push('/feedback')}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.footerLink}
+          />
+          <TextLink
+            label="Revenir à mon plan"
+            onPress={() => router.push('/plan')}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.footerLink}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>

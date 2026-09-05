@@ -19,6 +19,9 @@ export function ChoiceRow({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityLabel={label}
+      accessibilityState={{ selected, checked: selected }}
       style={[
         styles.row,
         {

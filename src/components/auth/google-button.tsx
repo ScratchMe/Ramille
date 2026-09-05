@@ -14,6 +14,9 @@ export function GoogleButton({ onPress, loading }: { onPress: () => void; loadin
     <Pressable
       onPress={onPress}
       disabled={loading}
+      accessibilityRole="button"
+      accessibilityLabel="Continuer avec Google"
+      accessibilityState={{ disabled: !!loading, busy: !!loading }}
       style={[styles.button, { backgroundColor: theme.background, borderColor: theme.border }]}
     >
       {loading ? (

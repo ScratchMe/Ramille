@@ -403,6 +403,18 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   redessiner, par la prop `tilt` : une feuille penchée regarde, une feuille droite accompagne.
   **La mascotte n'apparaît jamais à côté d'un chiffre lourd** — ni près du total, ni près d'une
   empreinte élevée : y mettre un visage serait commenter, et le produit ne commente pas.
+- **Un texte cliquable passe par `TextLink`, jamais par un `Pressable` enveloppant un
+  `ThemedText`.** L'audit T11 avait relevé **zéro attribut d'accessibilité dans tout `src/`**, et
+  ce motif y comptait pour une vingtaine d'occurrences. Le composant existe pour que le libellé
+  annoncé **soit** le texte affiché — un `accessibilityLabel` recopié à côté du texte visible
+  finit toujours par ne plus lui correspondre — et pour porter la cible tactile de 44 px sans
+  déplacer le texte. Trois règles qui vont avec : les titres sont annoncés comme en-têtes
+  **par leur `type`** (`title`/`subtitle` dans `ThemedText`), pas écran par écran ; les listes
+  de choix exclusifs (`ModeListItem`, `ChoiceRow`) sont des `radio` et non des `button`, seul
+  rôle qui annonce « sélectionné » ; et la mascotte comme les illustrations sont masquées
+  (`aria-hidden`, `accessibilityElementsHidden`) — elles accompagnent un texte qui dit déjà
+  tout. Un `Pressable` nu reste légitime quand la cible porte plusieurs textes (la bannière de
+  `bilan/resultat.tsx`), à condition de lui donner un `accessibilityLabel` qui les recompose.
 - **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
   par un `onPress`.** `react-native-web` rend un `onPress` sur du texte en `<div>` : cliquable
   pour un humain, inexistant pour un crawler. Et il ne suffit pas que l'ancrage soit correct, il

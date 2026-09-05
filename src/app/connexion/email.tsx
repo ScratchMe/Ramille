@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { TextField } from '@/components/auth/text-field';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -100,19 +101,25 @@ export default function ConnexionEmail() {
               onRightAction={() => setShowPassword((v) => !v)}
               helperText="Le mot de passe doit contenir au moins 8 caractères."
             />
-            <Pressable onPress={() => router.push({ pathname: '/connexion/mot-de-passe-oublie', params: { id } })}>
-              <ThemedText type="linkPrimary">Mot de passe oublié</ThemedText>
-            </Pressable>
+            <TextLink
+              label="Mot de passe oublié"
+              onPress={() => router.push({ pathname: '/connexion/mot-de-passe-oublie', params: { id } })}
+              role="link"
+              type="linkPrimary"
+            />
           </View>
         </View>
 
         <View style={styles.footer}>
           <Button title="Créer mon compte" onPress={onSubmit} disabled={!valid || submitting} />
-          <Pressable onPress={() => router.back()}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.backLink}>
-              Revenir aux autres options
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label="Revenir aux autres options"
+            onPress={() => router.back()}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.backLink}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>

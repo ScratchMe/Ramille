@@ -3,10 +3,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import {
   formatIntention,
@@ -48,7 +48,6 @@ export function ActionCommitment({
   otherActionCommitted: boolean;
   onChanged: () => void;
 }) {
-  const theme = useTheme();
   const kind = intentionKindForPoste(poste);
 
   const [picking, setPicking] = useState(false);
@@ -97,14 +96,15 @@ export function ActionCommitment({
         <ThemedText type="small" weight={600} themeColor="accentText">
           {phrase ? `C’est ton choix pour cette période, ${phrase}.` : 'C’est ton choix pour cette période.'}
         </ThemedText>
-        <ThemedText
+        <TextLink
+          label="Changer d’avis"
+          hint="Libère cette action ; tu pourras en choisir une autre"
+          onPress={release}
+          disabled={busy}
           type="small"
           themeColor="textTertiary"
-          onPress={busy ? undefined : release}
           style={styles.link}
-        >
-          Changer d’avis
-        </ThemedText>
+        />
         {error && (
           <ThemedText type="small" themeColor="textSecondary">
             {error}
@@ -170,14 +170,14 @@ export function ActionCommitment({
       )}
 
       <View style={styles.pickerActions}>
-        <ThemedText
+        <TextLink
+          label="Annuler"
+          onPress={() => setPicking(false)}
+          disabled={busy}
           type="small"
           themeColor="textTertiary"
-          onPress={busy ? undefined : () => setPicking(false)}
-          style={[styles.link, { borderColor: theme.border }]}
-        >
-          Annuler
-        </ThemedText>
+          style={styles.link}
+        />
         <Button
           title="C’est noté"
           onPress={submit}

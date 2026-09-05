@@ -10,11 +10,22 @@ export type ButtonProps = {
   disabled?: boolean;
   flex?: boolean;
   style?: ViewStyle;
+  /** Précision annoncée après le titre, quand celui-ci ne suffit pas hors contexte
+   *  (« Oui » / « Non » d'un check-in, par exemple). */
+  accessibilityHint?: string;
 };
 
 // Bouton pleine largeur, hauteur 54px, rayon 27px — cf. design tokens du handoff.
 // `flex` sert au cas "Retour" (largeur auto) + "Suivant" (flex:1) côte à côte.
-export function Button({ title, onPress, variant = 'primary', disabled, flex, style }: ButtonProps) {
+export function Button({
+  title,
+  onPress,
+  variant = 'primary',
+  disabled,
+  flex,
+  style,
+  accessibilityHint,
+}: ButtonProps) {
   const theme = useTheme();
 
   const backgroundColor = disabled
@@ -28,6 +39,10 @@ export function Button({ title, onPress, variant = 'primary', disabled, flex, st
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: !!disabled }}
       style={[styles.base, { backgroundColor, flex: flex ? 1 : undefined }, style]}
     >
       <ThemedText weight={variant === 'secondary' ? 500 : 600} style={{ color: textColor, fontSize: 16 }}>

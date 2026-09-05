@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -49,6 +50,10 @@ export function TextField({
         <TextInput
           value={value}
           onChangeText={onChangeText}
+          // Le libellé au-dessus est un frère dans l'arbre, pas un `<label for>` : sans cette
+          // ligne, le champ s'annonce sans nom.
+          accessibilityLabel={label}
+          accessibilityHint={helperText}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -57,11 +62,13 @@ export function TextField({
           style={[styles.input, { color: theme.text }]}
         />
         {rightActionLabel && (
-          <Pressable onPress={onRightAction}>
-            <ThemedText type="small" weight={600} themeColor="accentText">
-              {rightActionLabel}
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label={rightActionLabel}
+            onPress={() => onRightAction?.()}
+            type="small"
+            weight={600}
+            themeColor="accentText"
+          />
         )}
       </View>
       {helperText && (

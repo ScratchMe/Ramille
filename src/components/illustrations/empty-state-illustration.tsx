@@ -19,7 +19,12 @@ export function EmptyStateIllustration({ style }: { style?: ViewStyle }) {
   const c = Colors.light;
 
   return (
-    <View style={[styles.container, style]}>
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      aria-hidden
+      style={[styles.container, style]}
+    >
       <Svg width="100%" height="100%" viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} preserveAspectRatio="xMidYMid slice">
         <Rect x={0} y={0} width={VIEWBOX_SIZE} height={VIEWBOX_SIZE} fill={c.backgroundElement} />
         <G rotation={135} origin={`${VIEWBOX_SIZE / 2}, ${VIEWBOX_SIZE / 2}`}>

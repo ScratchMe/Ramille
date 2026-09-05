@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { Mascot } from '@/components/mascot';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -223,6 +224,11 @@ export default function BilanResultat() {
               onPress={() =>
                 router.push({ pathname: '/connexion', params: { id, source: 'resultat_cta' } })
               }
+              // La bannière porte deux textes mais un seul geste : sans libellé explicite, un
+              // lecteur d'écran les annoncerait l'un après l'autre sans dire qu'il s'agit d'une
+              // seule cible. Le libellé les recompose en une phrase.
+              accessibilityRole="link"
+              accessibilityLabel="Ce bilan n’est enregistré que sur cet appareil. Le garder en créant un compte."
               style={[styles.banner, { backgroundColor: theme.backgroundElement }]}
             >
               <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
@@ -320,25 +326,29 @@ export default function BilanResultat() {
 
         <View style={styles.footer}>
           <Button title="Voir ce que je peux faire" onPress={goToPlan} />
-          <Pressable
+          <TextLink
+            label="Partager mon bilan"
             onPress={() => {
               track('resultat_share');
               shareResult();
             }}
-          >
-            <ThemedText type="small" weight={600} themeColor="accentText" style={styles.editLink}>
-              Partager mon bilan
-            </ThemedText>
-          </Pressable>
+            type="small"
+            weight={600}
+            themeColor="accentText"
+            style={styles.editLink}
+          />
           {/* « Modifier mes réponses » promettait une édition, alors que le questionnaire
               insère toujours un nouveau bilan — et repartait d'écrans vides. Le
               préremplissage (v1-07 T7) rend l'action peu coûteuse ; le libellé dit
               maintenant ce qu'elle fait vraiment. */}
-          <Pressable onPress={() => router.push('/bilan')}>
-            <ThemedText type="small" themeColor="textTertiary" style={styles.editLink}>
-              Refaire mon bilan
-            </ThemedText>
-          </Pressable>
+          <TextLink
+            label="Refaire mon bilan"
+            onPress={() => router.push('/bilan')}
+            role="link"
+            type="small"
+            themeColor="textTertiary"
+            style={styles.editLink}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>

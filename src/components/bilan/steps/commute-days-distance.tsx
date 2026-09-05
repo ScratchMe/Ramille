@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { Chip } from '@/components/bilan/chip';
 import { NumericField } from '@/components/bilan/numeric-field';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -86,15 +87,17 @@ export function CommuteDaysDistanceStep({
             value={answers.commute_distance_km}
             onChange={(value) => update({ commute_distance_km: value })}
             unit="km"
+            label="Distance pour un aller"
           />
-          <Pressable
+          <TextLink
+            label="Je ne sais pas"
+            hint="Propose des tranches de distance à la place"
             onPress={() => {
               setUnknown(true);
               update({ commute_distance_km: null });
             }}
-          >
-            <ThemedText type="linkPrimary">Je ne sais pas</ThemedText>
-          </Pressable>
+            type="linkPrimary"
+          />
         </View>
       )}
     </View>
