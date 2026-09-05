@@ -37,6 +37,27 @@ jobs:
       - run: npm ci
       - run: npm test -- --ci
 
+  web-export:
+    name: Export web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # L'export est la seule façon de voir ce que le navigateur recevra vraiment. Deux
+      # défauts s'y sont déjà cachés sans qu'aucun autre contrôle ne bronche : les routes
+      # sans enfants renvoyaient 404 en production faute de `cleanUrls`, et les dix-huit
+      # pages sortaient avec un `<title>` vide alors que le titre était bien déclaré (les
+      # options du `Stack` n'agissent qu'après hydratation).
+      - run: npx expo export --platform web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://exemple.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: cle-factice-pour-le-build
+      - run: node scripts/verifier-titres-export.mjs
+
   db-tests:
     name: Tests base de données (pgTAP)
     runs-on: ubuntu-latest
