@@ -54,6 +54,12 @@ select is(
 -- un `23514` : une fois le quota atteint, ce test passerait sans jamais éprouver la contrainte
 -- de longueur. Vérifié en base — c'est exactement ce qui se produisait dans la première
 -- version de ce fichier.
+--
+-- Et elle doit repasser sous la session du PROPRIÉTAIRE : le scénario précédent bascule sur
+-- un tiers, et depuis cette session-là c'est la RLS (42501) qui refuse en premier — la
+-- contrainte de longueur ne serait jamais atteinte. Deuxième façon, pour la même assertion,
+-- de passer sans rien éprouver.
+select set_config('request.jwt.claims', json_build_object('sub', 'f1111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 
 select throws_ok(
   $stmt$ insert into public.feedback (user_id, kind, message) values ('f1111111-1111-1111-1111-111111111111', 'autre', '  a  ') $stmt$,
@@ -64,8 +70,6 @@ select throws_ok(
 -- ── Garde-fou de volume ─────────────────────────────────────────────────────────────────
 -- Dix par 24 h. Assez large pour que personne de bonne foi ne le rencontre, assez bas pour
 -- qu'un script n'en fasse rien.
-
-select set_config('request.jwt.claims', json_build_object('sub', 'f1111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 
 insert into public.feedback (user_id, kind, message)
 select 'f1111111-1111-1111-1111-111111111111', 'idee', 'retour ' || g from generate_series(1, 9) g;
