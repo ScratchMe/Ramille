@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- TraceVerte — mascotte, variante favicon. Source de vérité pour favicon.png, dont Expo
+       tire un favicon.ico à trois tailles : 16, 32 et 48 px. C'est donc 16 px qu'il faut
+       tenir, soit 0,16 px par unité de ce viewBox.
+
+       Ce n'est pas mascot-mark.svg redimensionné, et ça ne peut pas l'être : à 16 px ses
+       yeux (r = 4,2) mesureraient 1,3 px de diamètre et sa bouche (trait 3,2) 0,5 px — la
+       même tache grise que celle qui avait imposé la compensation optique de
+       src/types/mascot.ts. Trois écarts assumés, vérifiés au rendu réel aux trois tailles :
+
+         - yeux et bouche épaissis d'environ 50 % (r 4,2 -> 6,2, trait 3,2 -> 5,8), soit le
+           plafond que le composant s'autorise lui-même (MAX_OPTICAL_SCALE) ;
+         - joues et nervure supprimées. C'est ce qui rend le reste possible : le composant,
+           lui, doit les garder, et c'est pourquoi il retombe sur la feuille seule sous
+           MASCOT_MIN_FACE_SIZE plutôt que de tenter un visage. À 16 px la joue (#A9C8B6 à
+           55 % sur le vert) ne se distingue plus du fond et la nervure entre en concurrence
+           avec les yeux ;
+         - feuille agrandie de 16 % pour occuper le cadre — un favicon n'a pas de marge à
+           offrir, et chaque pixel gagné sur la silhouette l'est aussi sur le visage.
+
+       Les traits restent #131612 sur le vert et non #E4EFE8 : la version claire est plus
+       contrastée à 32 et 48 px, mais à 16 px les trois taches se rejoignent en un bloc
+       blanc. Vérifié sur fond d'onglet clair comme sombre. -->
+  <g transform="translate(50 50) scale(1.16) translate(-50 -50)">
+    <path d="M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z" fill="#1F6F4A" />
+    <circle cx="37.8" cy="50.5" r="6.2" fill="#131612" />
+    <circle cx="62.2" cy="50.5" r="6.2" fill="#131612" />
+    <path d="M39.5,64.5 Q50,71.8 60.5,64.5" stroke="#131612" stroke-width="5.8" stroke-linecap="round" fill="none" />
+  </g>
+</svg>

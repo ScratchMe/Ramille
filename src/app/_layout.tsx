@@ -10,6 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
 import { ensureSession } from '@/lib/supabase';
 
@@ -52,6 +53,7 @@ export default function RootLayout() {
   // sur Spline Sans dès que le chargement aboutit, natif comme web.
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <TitreDePage />
       <Stack screenOptions={{ headerShown: false }} />
     </ThemeProvider>
   );

@@ -17,8 +17,10 @@
 const NOMINAL_SIZE = 42;
 
 // En dessous, aucune compensation ne suffit — deux yeux et une bouche ne tiennent pas dans
-// les ~34 unités de large du visage. On rend alors la feuille seule (même arbitrage que le
-// favicon, cf. mascot.tsx), plutôt qu'un visage réduit à une tache.
+// les ~34 unités de large du visage, joues et nervure comprises. On rend alors la feuille
+// seule plutôt qu'un visage réduit à une tache. Le favicon y arrive à 16 px, mais en
+// abandonnant joues et nervure (cf. assets/images/favicon-mark.svg) : un dessin figé peut
+// se simplifier, ce composant doit rester le même visage à toutes ses tailles.
 export const MASCOT_MIN_FACE_SIZE = 28;
 
 // Plafond du grossissement : au-delà, les joues sortent de la silhouette et les yeux

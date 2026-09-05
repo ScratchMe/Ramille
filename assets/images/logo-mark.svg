@@ -3,9 +3,12 @@
        droite, se lit comme un itinéraire tracé jusqu'à un point d'arrivée (le point en
        bas). Couleurs : Colors.light.accent (#1F6F4A) / backgroundSelected (#E4EFE8),
        cf. src/constants/theme.ts.
-       Source de vérité pour favicon.png uniquement (un visage ne se lit plus à la taille
-       d'un favicon, < ~40px) — pour icon.png/android-icon-*.png/splash-icon.png (mascotte
-       avec visage), voir mascot-mark.svg. -->
+       Ne génère plus aucun fichier : le favicon porte désormais la mascotte
+       (favicon-mark.svg), et icon.png/android-icon-*.png/splash-icon.png viennent de
+       mascot-mark.svg. Ce dessin reste la marque sans visage — c'est-à-dire exactement ce
+       que rend src/components/mascot.tsx sous MASCOT_MIN_FACE_SIZE, où le visage n'est plus
+       lisible. Le garder ici évite d'avoir à le redessiner le jour où une surface trop
+       petite en aura besoin. -->
   <path d="M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z" fill="#1F6F4A" />
   <path d="M50,20 C42,44 42,64 50,82" stroke="#E4EFE8" stroke-width="4.5" stroke-linecap="round" fill="none" />
   <circle cx="50" cy="82" r="5" fill="#E4EFE8" />

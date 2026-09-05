@@ -46,9 +46,15 @@ export type { MascotMood } from '@/types/mascot';
 // assets/images/mascot-mark.svg est la version statique de la variante `calm` à taille
 // nominale — source de vérité pour la régénération de icon.png/android-icon-*.png/
 // splash-icon.png, qui doit rester visuellement identique à ce composant si l'un des deux
-// est retouché. favicon.png reste dérivé du logo sans visage (assets/images/logo-mark.svg) :
-// en dessous de MASCOT_MIN_FACE_SIZE, aucune compensation ne rend deux yeux et une bouche
-// lisibles, et ce composant retombe lui aussi sur la feuille seule.
+// est retouché.
+//
+// Le favicon porte lui aussi la mascotte, mais **pas ce dessin-là** : sa source est
+// assets/images/favicon-mark.svg, qui pousse la compensation à son plafond ET supprime les
+// joues et la nervure. C'est cette suppression qui rend un visage lisible à 16 px, et c'est
+// précisément ce que ce composant ne peut pas faire — d'où le repli sur la feuille seule
+// sous MASCOT_MIN_FACE_SIZE, qui reste la bonne règle ici. Les deux ne se contredisent pas :
+// un favicon est un dessin figé qu'on peut simplifier, un composant doit rester le même
+// visage à toutes ses tailles.
 const LEAF_PATH = 'M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z';
 export function Mascot({
   mood = 'calm',
