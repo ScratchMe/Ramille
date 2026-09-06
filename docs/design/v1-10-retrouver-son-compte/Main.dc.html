@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, -apple-system, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; padding: 24px; gap: 24px">
+
+  <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; min-height: 0">
+    <svg viewBox="0 0 360 360" width="100%" height="100%" style="max-height: 320px" aria-hidden="true">
+      <path d="M0 0H360V360H0Z" fill="#E4EFE8"></path>
+      <path d="M0 280 Q90 246 180 270 T360 258 V360 H0 Z" fill="#A9C8B6" opacity="0.45"></path>
+      <circle cx="96" cy="198" r="17" fill="#1F6F4A"></circle>
+      <path d="M74 222 Q96 212 118 222 L122 274 Q96 282 70 274 Z" fill="#1F6F4A"></path>
+      <path d="M222 96 l8 -16 h20 l8 16 Z" fill="#14563A" opacity="0.9"></path>
+      <circle cx="218" cy="118" r="6" fill="#FFFFFF"></circle>
+      <circle cx="258" cy="118" r="6" fill="#FFFFFF"></circle>
+      <circle cx="216" cy="258" r="18" stroke="#14563A" stroke-width="4" fill="none"></circle>
+      <circle cx="270" cy="258" r="18" stroke="#14563A" stroke-width="4" fill="none"></circle>
+      <path d="M64 132 Q80 120 88 136 Q72 146 64 132 Z" fill="#1F6F4A" opacity="0.55"></path>
+      <line x1="64" y1="132" x2="82" y2="134" stroke="#FFFFFF" stroke-width="1.5" opacity="0.7"></line>
+      <path d="M290 176 Q306 164 314 180 Q298 190 290 176 Z" fill="#1F6F4A" opacity="0.4"></path>
+    </svg>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <dc-import name="Mascot" mood="calm" size="{{ 48 }}" tilt="{{ -7 }}" hint-size="48px,48px"></dc-import>
+    <div style="font-size: 14px; line-height: 20px; color: #5E655F; margin-top: -4px">
+      Moi, c’est Ramille. Je serai là à chaque saison, à ton rythme.
+    </div>
+    <div style="font-size: 34px; line-height: 40px; font-weight: 600; color: #131612; letter-spacing: -0.68px; text-wrap: pretty">
+      Comprendre tes trajets, sans te juger.
+    </div>
+    <div style="font-size: 16px; line-height: 24px; color: #39403B; text-wrap: pretty">
+      En quelques minutes, tu vois quel déplacement pèse le plus dans ton empreinte — et ce que
+      tu peux faire de concret.
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 32px">
+    <div style="height: 54px; border-radius: 27px; background: #1F6F4A; display: flex; align-items: center; justify-content: center">
+      <div style="font-size: 16px; font-weight: 600; color: #FFFFFF">Découvrir mon impact</div>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 8px">
+      <div style="width: 8px; height: 8px; border-radius: 4px; background: #1F6F4A"></div>
+      <div style="width: 8px; height: 8px; border-radius: 4px; background: #CDD7CF"></div>
+      <div style="width: 8px; height: 8px; border-radius: 4px; background: #CDD7CF"></div>
+      <div style="width: 8px; height: 8px; border-radius: 4px; background: #CDD7CF"></div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: -16px">
+      <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #5E655F">J’ai déjà un compte</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

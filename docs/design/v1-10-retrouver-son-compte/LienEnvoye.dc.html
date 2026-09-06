@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, -apple-system, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; padding: 24px; padding-top: 56px; gap: 24px">
+
+  <div style="display: flex; align-items: center; min-height: 44px">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A">Retour</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <dc-import name="Mascot" mood="calm" size="{{ 48 }}" tilt="{{ -7 }}" hint-size="48px,48px"></dc-import>
+    <div style="font-size: 32px; line-height: 38px; font-weight: 600; color: #131612; letter-spacing: -0.64px; text-wrap: pretty">
+      Regarde tes emails
+    </div>
+    <div style="font-size: 16px; line-height: 24px; color: #39403B; text-wrap: pretty">
+      Si un compte Ramille existe avec cette adresse, un lien vient d’y être envoyé.
+      Ouvre-le depuis cet appareil : c’est lui qui te reconnecte.
+    </div>
+  </div>
+
+  <div style="border-radius: 18px; background: #E4EFE8; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612">Le lien ne crée jamais de compte</div>
+    <div style="font-size: 14px; line-height: 21px; color: #39403B; text-wrap: pretty">
+      S’il n’y en a pas à cette adresse, rien ne part et rien n’est créé. On ne dit pas non
+      plus si l’adresse en a un — ce serait dire qui utilise Ramille.
+    </div>
+  </div>
+
+  <div style="flex-grow: 1"></div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <div style="height: 54px; border-radius: 27px; background: #F0F1EC; display: flex; align-items: center; justify-content: center">
+      <div style="font-size: 16px; font-weight: 500; color: #131612">Utiliser une autre adresse</div>
+    </div>
+    <div style="font-size: 14px; line-height: 21px; color: #5E655F; text-align: center; text-wrap: pretty">
+      Le lien expire au bout d’un moment. S’il ne marche plus, redemandes-en un.
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

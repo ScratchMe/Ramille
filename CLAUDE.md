@@ -131,7 +131,12 @@ produit par rapport à ce handoff (les deux plus importants : §1 de
 (comparaison entre utilisateurs) vs. ce qui a été révisé, et le détail des Vercel Functions en
 runtime Node.js §3).
 
-Le dernier increment en date est `v1-09-renommage-ramille.md` (renommage TraceVerte → Ramille, 05/09/2026).
+Le dernier increment livré est `v1-09-renommage-ramille.md` (renommage TraceVerte → Ramille,
+05/09/2026). **Le prochain est planifié dans `v1-10-connexion-et-rappels.md`** (06/09/2026) :
+connexion par lien sans mot de passe, rappels par push, et deux correctifs qui le
+conditionnent — l'étalement du pic d'envoi du lundi et la purge des sessions anonymes, qui
+supprime aujourd'hui sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur
+l'**inactivité**. Son compagnon design est `docs/design/v1-10-retrouver-son-compte/`.
 
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →

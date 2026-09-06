@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, -apple-system, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; padding: 24px; padding-top: 56px; gap: 24px">
+
+  <div style="display: flex; align-items: center; min-height: 44px">
+    <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A">Retour</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <div style="font-size: 32px; line-height: 38px; font-weight: 600; color: #131612; letter-spacing: -0.64px; text-wrap: pretty">
+      Ce téléphone porte déjà un bilan
+    </div>
+    <div style="font-size: 16px; line-height: 24px; color: #39403B; text-wrap: pretty">
+      Tu as répondu au questionnaire ici, sans compte. En retrouvant le tien, c’est son
+      historique qui s’ouvre — ce bilan-ci ne le rejoindra pas.
+    </div>
+  </div>
+
+  <div style="border-radius: 18px; background: #F0F1EC; padding: 20px; display: flex; align-items: center; gap: 12px">
+    <dc-import name="Mascot" mood="calm" size="{{ 40 }}" tilt="{{ -7 }}" hint-size="40px,40px"></dc-import>
+    <div style="flex: 1; min-width: 0; font-size: 15px; line-height: 22px; color: #39403B; text-wrap: pretty">
+      On peut le refaire ensemble après, ça va vite.
+    </div>
+  </div>
+
+  <div style="flex-grow: 1"></div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <div style="height: 54px; border-radius: 27px; background: #1F6F4A; display: flex; align-items: center; justify-content: center">
+      <div style="font-size: 16px; font-weight: 600; color: #FFFFFF">Retrouver mon compte</div>
+    </div>
+    <div style="height: 54px; border-radius: 27px; background: #F0F1EC; display: flex; align-items: center; justify-content: center">
+      <div style="font-size: 16px; font-weight: 500; color: #131612">Garder ce bilan sur cet appareil</div>
+    </div>
+    <div style="font-size: 14px; line-height: 21px; color: #5E655F; text-align: center; text-wrap: pretty">
+      Garder ce bilan te laisse sans compte : il restera sur ce téléphone, et là seulement.
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>
