@@ -240,3 +240,37 @@ glisser n'importe où.
 Répondu le 06/09 : **la purge emporte tout**, compte permanent compris (§2.H). Et le plan
 Resend est le gratuit, donc **100 emails par jour** — c'est ce plafond, et non le quota
 mensuel, qui fixe l'urgence du chantier A.
+
+## 7. Piste ouverte — ne pas créer de session avant que la personne agisse
+
+Relevée le 07/09 en mesurant l'effet d'une nuit : **127 sessions anonymes créées en une nuit,
+266 au total, dont 4 seulement portent un bilan** et 59 ont émis le moindre événement d'usage.
+Près de 200 lignes `auth.users` vides.
+
+C'est le fonctionnement nominal : `ensureSession()` est appelée en fire-and-forget depuis
+`_layout.tsx` à chaque ouverture, donc **tout visiteur reçoit un utilisateur** — un crawler, un
+aperçu de lien dans une messagerie, un onglet privé. Rien n'est cassé, mais trois conséquences :
+
+- **la purge nettoie un compteur qui se remplit tout seul.** Purger 266 lignes aujourd'hui
+  n'empêche pas d'en avoir autant la semaine prochaine ;
+- **tous les dénominateurs sont faux.** « 266 utilisateurs » n'a aucun sens, et le taux de
+  complétion du bilan est divisé par du bruit ;
+- **le plus sérieux : Supabase limite les inscriptions anonymes** (`rate_limit.anonymous_users`).
+  À l'échelle, un crawler un peu insistant peut consommer le quota et **empêcher un vrai
+  visiteur d'obtenir une session** — donc de faire son bilan.
+
+L'alternative : créer la session **paresseusement**, au premier geste qui a besoin d'un
+`user_id` — c'est-à-dire à la première écriture du bilan. Le mécanisme existe déjà :
+`ensureSession` est décrite comme « re-vérifiée avant toute écriture bilan pour couvrir un
+démarrage à froid » (cf. `src/lib/supabase.ts`). L'appel de `_layout.tsx` serait donc
+supprimable sans rien réécrire d'autre.
+
+**Ce que ça coûte, et pourquoi ce n'est pas tranché ici** : `usage_events` exige un `user_id`,
+donc `app_open` ne serait plus enregistré pour un visiteur qui n'a rien fait — or c'est
+précisément le dénominateur de tous les entonnoirs (`v1-08`). On échangerait un compteur
+d'utilisateurs faux contre un compteur de visites incomplet. Trancher demande de décider
+lequel des deux on veut juste, et éventuellement de mesurer les visites autrement que par une
+table exigeant un compte.
+
+À instruire dans un increment dédié, pas dans celui-ci : c'est une modification du modèle
+d'authentification acté en `v1-04` §1, pas un correctif.
