@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { Mascot } from '@/components/mascot';
+import { RamilleDit } from '@/components/ramille-dit';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { RAMILLE } from '@/constants/mascotte';
 import { Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
@@ -76,14 +77,10 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
           </View>
         </>
       ) : (
-        <View style={styles.feedbackRow}>
-          <Mascot mood={answered ? 'happy' : 'encouraging'} size={40} />
-          <ThemedText themeColor="textSecondary" style={styles.feedback}>
-            {answered
-              ? 'Bien joué — chaque changement compte.'
-              : 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.'}
-          </ThemedText>
-        </View>
+        <RamilleDit
+          mood={answered ? 'happy' : 'encouraging'}
+          ligne={answered ? RAMILLE.checkinOui : RAMILLE.checkinNon}
+        />
       )}
     </ThemedView>
   );
@@ -93,6 +90,4 @@ const styles = StyleSheet.create({
   card: { borderRadius: 18, padding: 18, gap: 10 },
   question: { fontSize: 16, lineHeight: 23 },
   actions: { flexDirection: 'row', gap: Spacing.two },
-  feedbackRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  feedback: { flex: 1, fontSize: 15, lineHeight: 22 },
 });

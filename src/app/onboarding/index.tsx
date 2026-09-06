@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTrackView } from '@/hooks/use-track-view';
+import { RAMILLE } from '@/constants/mascotte';
 
 // Onboarding 1/4 — Accroche. Aucun chiffre : la spec impose d'ouvrir sur un bénéfice
 // concret, pas sur l'écart à combler (docs/design/README.md §1.1).
@@ -30,6 +31,11 @@ export default function OnboardingAccroche() {
               elle porte « une personne et ses trajets du quotidien », spécifié par le handoff
               design §1.1, que la mascotte ne rend pas. */}
           <Mascot mood="calm" size={48} tilt={-7} />
+          {/* Elle se présente une fois, ici : la promesse d'accompagnement dans la durée, dite
+              par celle qui la tient. Son nom est aussi celui du produit. */}
+          <ThemedText type="small" themeColor="textTertiary" style={styles.presentation}>
+            {RAMILLE.presentation}
+          </ThemedText>
           <ThemedText type="title" weight={600} style={styles.title}>
             Comprendre tes trajets, sans te juger.
           </ThemedText>
@@ -52,6 +58,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, padding: Spacing.four, gap: Spacing.four },
   illustration: { flex: 1 },
   textBlock: { gap: Spacing.three },
+  presentation: { marginTop: -Spacing.one },
   title: { fontSize: 34, lineHeight: 40, letterSpacing: -0.68 },
   body: { fontSize: 16, lineHeight: 24 },
   footer: { gap: Spacing.five },

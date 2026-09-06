@@ -431,6 +431,13 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `50 ± offset` casse la symétrie d'un centième, d'où l'arrondi sur l'écart et non sur la
   coordonnée. Les joues affleurent le bord de la silhouette dès la taille nominale : le
   visage est découpé par un `clipPath`, sans quoi elles flottent hors du vert.
+  **Elle parle, et tout ce qu'elle dit vit dans `src/constants/mascotte.ts`** (`RAMILLE`),
+  rendu par `RamilleDit` — jamais une phrase écrite dans un écran. Trois règles, gardées par
+  un test : première personne et tutoiement ; **jamais un nombre dans sa bouche** (les
+  chiffres restent au produit, c'est ce qui garantit qu'elle ne commente jamais une
+  empreinte) ; jamais « tu devrais » ni « il faut ». Les rappels par email sont un mot
+  d'elle, signé (`enqueue_checkin_reminders`). Les répliques de check-in et de période calme
+  viennent des maquettes validées et ne se réécrivent pas.
   Cinq expressions, **aucune négative et il ne faut pas en ajouter** : `calm`, `happy`,
   `encouraging`, `thinking` (attente du calcul — seule asymétrie assumée, le regard est décalé
   d'une unité) et `resting` (périodes calmes de `/suivi`). Un second registre s'obtient sans
