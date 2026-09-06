@@ -40,6 +40,9 @@ export const RAMILLE = {
   periodeCalme: 'Rien à rattraper.',
   periodeCalmeDetail: 'Tes points de suivi arrivent d’eux-mêmes, à leur rythme.',
 
+  /** Suppression de compte effectuée : on ne retient pas, on salue. */
+  auRevoir: 'Merci d’être passé. Si tu reviens, on repart de zéro, tranquillement.',
+
   /** Page 404 — la seule page qu'on atteint sans l'avoir voulu : elle rend la main. */
   introuvable: 'Cette page n’existe pas. Ton bilan et ton plan, si — je te ramène.',
 } as const;

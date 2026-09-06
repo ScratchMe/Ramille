@@ -73,6 +73,31 @@ export async function linkEmailPassword(email: string, password: string): Promis
   return { error };
 }
 
+/**
+ * Envoie un lien d'accès à usage unique à l'adresse d'un compte **déjà existant**.
+ *
+ * C'est le seul endroit du produit qui *connecte* à un compte au lieu d'en rattacher un :
+ * tout le reste de ce fichier lie une identité à la session anonyme courante. La page web de
+ * suppression en a besoin, et elle seule — quelqu'un qui a désinstallé l'app arrive dans un
+ * navigateur neuf, où `ensureSession` vient de lui donner une session anonyme vide qui n'est
+ * pas son compte. Ni `linkIdentity` ni `updateUser` ne peuvent l'aider : la première échoue
+ * si l'identité appartient déjà à quelqu'un, la seconde modifierait la session vide.
+ *
+ * **`shouldCreateUser: false` est la garantie centrale** : sans lui, saisir n'importe quelle
+ * adresse créerait un compte, et une page de suppression qui fabrique des comptes serait
+ * exactement le contraire de ce qu'on affiche.
+ *
+ * Le retour ne distingue jamais « adresse inconnue » de « lien envoyé » — répondre
+ * différemment transformerait la page en outil pour savoir qui utilise Ramille.
+ */
+export async function sendAccountAccessLink(email: string, redirectTo: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim(),
+    options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
+  });
+  return { error };
+}
+
 export async function requestPasswordReset(email: string): Promise<AuthResult> {
   const redirectTo = Platform.OS === 'web' ? undefined : makeRedirectUri();
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });

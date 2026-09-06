@@ -1,6 +1,7 @@
 import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
 import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
 import { APP_NAME } from '@/constants/produit';
+import { APP_URL } from '@/lib/app-url';
 
 // Politique de confidentialité — URL exigée par l'écran de consentement Google OAuth et par
 // la fiche Google Play.
@@ -226,8 +227,14 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          `Pour tout le reste, ou si tu n’as plus l’application installée, écris à ${CONTACT_EMAIL}. ` +
-          'Nous répondons dans un délai d’un mois.',
+          'Si tu n’as plus l’application installée, la suppression reste possible depuis un navigateur, ' +
+          `sur ${APP_URL}/compte/suppression : on t’y envoie un lien à l’adresse de ton compte, et la ` +
+          'suppression se confirme sur place. Cette page ne peut jamais créer de compte.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          `Pour tout le reste, écris à ${CONTACT_EMAIL}. Nous répondons dans un délai d’un mois.`,
       },
       {
         kind: 'paragraph',

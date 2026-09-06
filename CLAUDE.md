@@ -333,7 +333,27 @@ Trois pièges vérifiés en construisant cette table, tous silencieux :
 
 **Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
 Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
-l'app, et Ramille en crée un dès l'ouverture, session anonyme comprise. **La suppression
+l'app, et Ramille en crée un dès l'ouverture, session anonyme comprise. Play exige **en plus**
+une URL web atteignable sans l'app : `/compte/suppression`.
+
+Cette page a imposé la seule fonction du produit qui **connecte à un compte existant** au lieu
+d'en rattacher un (`sendAccountAccessLink`, lien à usage unique par email). Tout le reste de
+`src/lib/auth.ts` lie une identité à la session anonyme courante — ce qui ne peut pas aider
+quelqu'un qui a désinstallé l'app et arrive dans un navigateur neuf, où `ensureSession` vient
+de lui créer une session anonyme **vide qui n'est pas son compte**. Deux garde-fous non
+négociables : `shouldCreateUser: false` (une page de suppression qui fabrique des comptes
+serait le contraire de ce qu'elle affiche), et **aucune réponse différenciée** selon que
+l'adresse a un compte ou non — une adresse inconnue renvoie un 422 `otp_disabled` qu'il faut
+traiter comme un succès, sinon la page devient un moyen de savoir qui utilise Ramille. La
+limite d'envoi, elle, se reconnaît au **code** `over_email_send_rate_limit` : le message de
+Supabase ne contient pas le mot « rate ».
+
+Et le piège central, dérivé dans `src/types/compte-suppression.ts` : **une session anonyme
+vide n'est pas un compte à supprimer.** Sans le test « porte-t-elle au moins un bilan ? », la
+page effacerait la session créée par sa propre ouverture et annoncerait une suppression qui
+n'a rien supprimé. Le test épingle aussi qu'une session anonyme portant déjà une adresse non
+confirmée (entre `updateUser({ email })` et le clic de confirmation) n'est **pas** un compte
+rattaché. **La suppression
 efface une seule ligne, `auth.users`, et laisse la cascade faire le reste** : une fonction qui
 énumérerait les tables deviendrait fausse à la prochaine migration, en silence. Ne jamais
 rattacher une table à `profiles` avec autre chose que `on delete cascade` — un test pgTAP

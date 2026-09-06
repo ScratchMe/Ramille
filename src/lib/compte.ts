@@ -9,6 +9,7 @@ import { Platform, Share } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import { APP_NAME } from '@/constants/produit';
+import { etatDuCompte, type EtatSuppression } from '@/types/compte-suppression';
 
 export type CompteResult = { ok: true } | { ok: false; message: string };
 
@@ -45,6 +46,32 @@ export async function exportMyData(): Promise<CompteResult> {
   } catch {
     return { ok: false, message: 'Le partage a été interrompu.' };
   }
+}
+
+/**
+ * Ce que la page web de suppression peut affirmer de la session courante.
+ *
+ * Le comptage des bilans n'est pas décoratif : sous RLS, `assessments` ne rend que les
+ * lignes de la session, donc « zéro bilan » sur une session anonyme veut dire « ce n'est
+ * pas un compte, c'est une session créée par l'ouverture de la page ». Sans ce test, la
+ * page proposerait de supprimer un compte vide et confirmerait une suppression qui n'a rien
+ * supprimé — l'échec le plus coûteux possible ici, parce qu'il est silencieux et que la
+ * personne repart en croyant ses données effacées.
+ */
+export async function lireEtatDuCompte(): Promise<EtatSuppression> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return etatDuCompte(null);
+
+  // Une seule ligne suffit à répondre « il y a quelque chose ».
+  const { data } = await supabase.from('assessments').select('id').limit(1);
+
+  return etatDuCompte({
+    isAnonymous: user.is_anonymous === true,
+    email: user.email ?? null,
+    aDesDonnees: (data?.length ?? 0) > 0,
+  });
 }
 
 export async function deleteMyAccount(): Promise<CompteResult> {
