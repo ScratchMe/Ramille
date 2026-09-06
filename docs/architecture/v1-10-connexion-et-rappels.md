@@ -89,15 +89,22 @@ Ne pas toucher aux **référentiels**, qui ne sont pas des données utilisateur 
 `usage_event_types`. Ni à `emission_factor_sync_runs`, qui est le journal d'exploitation de la
 synchronisation ADEME — la seule façon de voir qu'elle tourne vraiment.
 
-**Une décision à prendre avant d'exécuter** : le compte permanent (Google, créé le 24/08)
-porte 4 bilans, 2 check-ins et 2 actions de plan, et c'est lui qui a reçu les 2 rappels
-envoyés. C'est donc **la seule preuve de bout en bout que la chaîne d'envoi fonctionne** —
-génération du check-in, mise en boîte, envoi par Resend. Le supprimer est sans risque
-(l'identité Google se recrée en un geste) mais fait perdre cette trace et l'historique qui
-donne du contenu à `/suivi`. À trancher : purger tout, ou tout sauf lui.
+**Décision du 06/09 : on purge tout, compte permanent compris.** Il portait 4 bilans,
+2 check-ins, 2 actions et les 2 rappels envoyés — donc la seule preuve de bout en bout que la
+chaîne d'envoi fonctionne. C'est un coût accepté : l'identité Google se recrée en un geste, et
+la recréer a même une vertu, puisqu'elle **rejoue le flux OAuth sur `ramille.fr` avec le
+nouvel écran de consentement** — une vérification qu'il faut faire de toute façon depuis le
+renommage.
+
+**Ce ne sera pas la dernière.** D'autres purges suivront d'ici l'ouverture au grand public,
+donc l'opération mérite d'être écrite une fois correctement plutôt que retapée à chaque fois :
+la liste des référentiels à ne pas toucher est le seul endroit où une erreur ferait mal, et
+c'est précisément ce qu'on ne veut pas réinventer sous pression.
 
 Vérification après coup, la même qu'à la construction de `delete_my_account` : compter les
-lignes restantes table par table plutôt que de faire confiance à la cascade sur parole.
+lignes restantes table par table plutôt que de faire confiance à la cascade sur parole. Et
+recompter les référentiels **avant et après** — c'est le seul contrôle qui attrape une purge
+trop large.
 
 ### Cœur
 
@@ -229,8 +236,7 @@ glisser n'importe où.
 - La collision du nouvel appareil : le canvas recommande de la dire et de laisser choisir,
   plutôt que de transférer les lignes vers le compte permanent — cette dernière option reste
   la vraie réponse à terme, écartée pour la V1 faute de justifier son coût serveur.
-- La purge : tout, ou tout sauf le compte permanent qui porte la seule preuve de bout en bout
-  de la chaîne d'envoi (§2.H).
 
-Répondu le 06/09 : le plan Resend est le gratuit, donc **100 emails par jour**. C'est ce
-plafond, et non le quota mensuel, qui fixe l'urgence du chantier A.
+Répondu le 06/09 : **la purge emporte tout**, compte permanent compris (§2.H). Et le plan
+Resend est le gratuit, donc **100 emails par jour** — c'est ce plafond, et non le quota
+mensuel, qui fixe l'urgence du chantier A.
