@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="flex-grow: 1; overflow: hidden; padding: 56px 24px 16px; display: flex; flex-direction: column; gap: 16px">
+
+    <sc-if value="{{ estBilan }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="font-size: 26px; line-height: 32px; letter-spacing: -0.26px; font-weight: 600; color: #131612">Ton empreinte</div>
+        <div style="font-size: 15px; line-height: 22px; color: #39403B">Calculée le 6 septembre, à partir de tes neuf réponses.</div>
+        <div style="border-radius: 18px; background: #E4EFE8; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+          <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A">Transports, par an</div>
+          <div style="font-size: 44px; line-height: 48px; letter-spacing: -0.9px; font-weight: 600; color: #131612">2,4 t</div>
+          <div style="font-size: 14px; line-height: 20px; color: #39403B">Ton poste principal : les trajets domicile-travail.</div>
+        </div>
+        <div style="border-radius: 18px; border: 1px solid #DDE0D9; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+          <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #5E655F">Ta marche pour cette saison</div>
+          <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #131612">2,2 t</div>
+          <div style="font-size: 14px; line-height: 20px; color: #39403B">Une marche, pas une pente. On la reprend à chaque saison.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ estPlan }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="font-size: 26px; line-height: 32px; letter-spacing: -0.26px; font-weight: 600; color: #131612">Ton plan</div>
+        <div style="font-size: 15px; line-height: 22px; color: #39403B">Deux actions liées à tes trajets domicile-travail.</div>
+
+        <div style="border-radius: 18px; border: 2px solid #1F6F4A; background: #F3F8F4; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <div style="width: 20px; height: 20px; border-radius: 10px; background: #1F6F4A; display: flex; align-items: center; justify-content: center">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div style="font-size: 13px; line-height: 18px; font-weight: 700; color: #14563A; letter-spacing: 0.3px; text-transform: uppercase">Tu t’y es engagé</div>
+          </div>
+          <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Faire deux trajets par semaine à vélo plutôt qu’en voiture.</div>
+          <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A">− 184 kg CO₂e</div>
+          <div style="font-size: 14px; line-height: 20px; color: #39403B">Le mardi et le jeudi · par an, 7 % de ton empreinte</div>
+        </div>
+
+        <div style="border-radius: 18px; border: 1px solid #DDE0D9; padding: 20px; display: flex; flex-direction: column; gap: 8px; opacity: 0.72">
+          <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Prendre le train pour tes trajets de plus de 300 km.</div>
+          <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A">− 96 kg CO₂e</div>
+          <div style="font-size: 14px; line-height: 20px; color: #39403B">par an · 4 % de ton empreinte</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ estSuivi }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="font-size: 26px; line-height: 32px; letter-spacing: -0.26px; font-weight: 600; color: #131612">Ton suivi</div>
+        <div style="font-size: 15px; line-height: 22px; color: #39403B">Deux bilans, et les fois où tu as répondu.</div>
+        <div style="border-radius: 18px; background: #F0F1EC; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+          <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #5E655F">Depuis ton premier bilan</div>
+          <div style="font-size: 30px; line-height: 36px; letter-spacing: -0.6px; font-weight: 600; color: #131612">− 0,3 t</div>
+          <div style="font-size: 14px; line-height: 20px; color: #39403B">2,7 t en juin, 2,4 t aujourd’hui.</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="border-radius: 16px; border: 1px solid #DDE0D9; padding: 16px; display: flex; flex-direction: column; gap: 4px">
+            <div style="font-size: 14px; line-height: 20px; color: #5E655F">Semaine du 1ᵉʳ septembre</div>
+            <div style="font-size: 15px; line-height: 22px; font-weight: 600; color: #131612">Tu as changé de mode au moins une fois.</div>
+          </div>
+          <div style="border-radius: 16px; border: 1px solid #DDE0D9; padding: 16px; display: flex; flex-direction: column; gap: 4px">
+            <div style="font-size: 14px; line-height: 20px; color: #5E655F">Semaine du 25 août</div>
+            <div style="font-size: 15px; line-height: 22px; font-weight: 600; color: #131612">Tu as changé de mode au moins une fois.</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <div style="border-top: 1px solid #DDE0D9; background: #FFFFFF; padding: 8px 12px 20px; display: flex; gap: 4px">
+    <sc-for list="{{ onglets }}" as="onglet" hint-placeholder-count="3">
+      <div onClick="{{ onglet.choisir }}" style="flex-grow: 1; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; border-radius: 14px">
+        <div style="width: 56px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: {{onglet.pastille}}">
+          <sc-if value="{{ onglet.estBilan }}" hint-placeholder-val="{{ true }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="{{onglet.couleur}}" stroke-width="1.9" stroke-linecap="round"/></svg>
+          </sc-if>
+          <sc-if value="{{ onglet.estPlan }}" hint-placeholder-val="{{ false }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12l4.5 4.5L19 7" stroke="{{onglet.couleur}}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke="{{onglet.couleur}}" stroke-width="1.9" stroke-linecap="round"/></svg>
+          </sc-if>
+          <sc-if value="{{ onglet.estSuivi }}" hint-placeholder-val="{{ false }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="{{onglet.couleur}}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="7" r="1.6" fill="{{onglet.couleur}}"/></svg>
+          </sc-if>
+        </div>
+        <div style="font-size: 12px; line-height: 16px; font-weight: {{onglet.graisse}}; color: {{onglet.couleur}}">{{ onglet.libelle }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"depart":{"editor":"enum","options":["bilan","plan","suivi"],"default":"plan","section":"Prototype"}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { actif: null };
+  }
+  renderVals() {
+    const actif = this.state.actif ?? this.props.depart ?? 'plan';
+    const defs = [
+      { cle: 'bilan', libelle: 'Bilan' },
+      { cle: 'plan', libelle: 'Plan' },
+      { cle: 'suivi', libelle: 'Suivi' },
+    ];
+    return {
+      estBilan: actif === 'bilan',
+      estPlan: actif === 'plan',
+      estSuivi: actif === 'suivi',
+      onglets: defs.map((d) => ({
+        libelle: d.libelle,
+        estBilan: d.cle === 'bilan',
+        estPlan: d.cle === 'plan',
+        estSuivi: d.cle === 'suivi',
+        couleur: actif === d.cle ? '#1F6F4A' : '#5E655F',
+        graisse: actif === d.cle ? '600' : '500',
+        pastille: actif === d.cle ? '#E4EFE8' : 'transparent',
+        choisir: () => this.setState({ actif: d.cle }),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

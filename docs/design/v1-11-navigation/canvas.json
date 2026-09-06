@@ -1,0 +1,120 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Navigation"
+    },
+    {
+      "id": "page-2",
+      "name": "Plan"
+    },
+    {
+      "id": "page-3",
+      "name": "Système"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "A — Barre d’onglets",
+      "is_interactive": true
+    },
+    {
+      "file": "OptionB.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "B — Segment en tête",
+      "is_interactive": true
+    },
+    {
+      "file": "OptionC.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "C — Fil de saison",
+      "is_interactive": true
+    },
+    {
+      "file": "PlanComparaison.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 860,
+      "h": 700,
+      "page": "page-2",
+      "title": "Action engagée — avant / proposé"
+    },
+    {
+      "file": "Systeme.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 900,
+      "h": 1180,
+      "page": "page-3",
+      "title": "Vocabulaire visuel"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "nav-intro",
+      "x": 0,
+      "y": -180,
+      "w": 500,
+      "page": "page-1",
+      "text": "Trois façons de dire « où je suis ». Les trois sont cliquables : tape les onglets.\n\nMême contenu partout pour que la comparaison porte sur la navigation, pas sur les écrans."
+    },
+    {
+      "id": "nav-a",
+      "x": 0,
+      "y": 900,
+      "w": 390,
+      "page": "page-1",
+      "text": "A — Barre d’onglets basse\n\nLa convention Android, atteignable au pouce, toujours visible. Trois destinations de rang égal.\n\nCoût : 76 px pris en bas de chaque écran, et le questionnaire devra la masquer."
+    },
+    {
+      "id": "nav-b",
+      "x": 490,
+      "y": 900,
+      "w": 390,
+      "page": "page-1",
+      "text": "B — Segment en tête\n\nLibère le bas de l’écran et laisse la marque visible. Plus léger visuellement.\n\nCoût : loin du pouce sur un grand téléphone, et le segment se confond avec un filtre plutôt qu’avec une navigation."
+    },
+    {
+      "id": "nav-c",
+      "x": 980,
+      "y": 900,
+      "w": 390,
+      "page": "page-1",
+      "text": "C — Fil de saison\n\nLa navigation raconte le parcours plutôt que trois lieux égaux : bilan → plan → suivi, ancré dans la saison en cours. C’est le seul des trois qui porte la promesse d’accompagnement dans la durée.\n\nCoût : suggère un ordre obligatoire, et vieillit mal quand on revient au troisième mois sans vouloir refaire son bilan."
+    },
+    {
+      "id": "plan-note",
+      "x": 0,
+      "y": -140,
+      "w": 500,
+      "page": "page-2",
+      "text": "Le fait saillant du plan, c’est l’action engagée — une seule par cycle, garantie par la base.\n\nÀ gauche l’état actuel, à droite la proposition. Rien n’est retiré : l’action non retenue reste lisible et sélectionnable."
+    },
+    {
+      "id": "sys-note",
+      "x": 0,
+      "y": -140,
+      "w": 520,
+      "page": "page-3",
+      "text": "Relevé de ce qui existe, pas une proposition de nouvelle palette.\n\nLe travail utile n’est pas d’inventer des valeurs mais de nommer celles qui sont déjà là et se répètent en dur dans les écrans."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}
