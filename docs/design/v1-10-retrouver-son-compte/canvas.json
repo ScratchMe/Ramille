@@ -1,0 +1,46 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Les trois entrées" },
+    { "id": "page-2", "name": "Composant" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html",       "x": 0,    "y": 0, "w": 390, "h": 844, "page": "page-1", "title": "1 — Accueil, avec la porte d’entrée ajoutée" },
+    { "file": "Retrouver.dc.html",  "x": 470,  "y": 0, "w": 390, "h": 844, "page": "page-1", "title": "3 — Retrouver mon compte" },
+    { "file": "LienEnvoye.dc.html", "x": 940,  "y": 0, "w": 390, "h": 844, "page": "page-1", "title": "3 — Lien envoyé" },
+    { "file": "Collision.dc.html",  "x": 1410, "y": 0, "w": 390, "h": 844, "page": "page-1", "title": "La collision — à trancher" },
+    { "file": "Mascot.dc.html",     "x": 0,    "y": 0, "w": 240, "h": 240, "page": "page-2", "title": "Composant Mascot (repris de v1-08)" }
+  ],
+  "annotations": [
+    {
+      "id": "note-probleme",
+      "x": 0, "y": -230, "w": 860, "page": "page-1",
+      "text": "LE TROU\nLe produit n'a aucun chemin de connexion à un compte existant. Tout src/lib/auth.ts rattache une identité à la session anonyme courante — pas un signInWithPassword ni un signInWithOAuth dans tout src/.\n\nSur un nouvel appareil, la personne reçoit une session anonyme vide qui n'est pas son compte. Avec Google seul, rien ne la ramène. Deux promesses en dépendent : l'écran /connexion dit « il te suit d'un appareil à l'autre », et v1-04 §1 affirme que la synchro multi-appareil fonctionne après rattachement."
+    },
+    {
+      "id": "note-entree-1",
+      "x": 0, "y": 900, "w": 390, "page": "page-1",
+      "text": "ENTRÉE 1 — PREMIER LANCEMENT\nInchangée, sauf une ligne. Tout reste accessible sans compte : onboarding, bilan, restitution. La proposition de connexion arrive après, sur /connexion.\n\nCE QUI EST AJOUTÉ : « J'ai déjà un compte », discret, sous les puces. C'est la seule modification d'un écran existant, et c'est elle qui évite la collision — proposée ici, elle attrape la personne AVANT qu'elle refasse un bilan."
+    },
+    {
+      "id": "note-entree-2",
+      "x": 470, "y": 900, "w": 390, "page": "page-1",
+      "text": "ENTRÉE 2 — RETOUR SUR LE MÊME APPAREIL\nPas d'artboard, et c'est le propos : aucun écran ne s'interpose. La session persiste, la racine route vers /plan si un bilan complété existe, sinon vers l'onboarding.\n\nCe flux marche déjà. Il ne faut rien lui ajouter : un écran de connexion qui s'intercalerait ici casserait ce qui fonctionne."
+    },
+    {
+      "id": "note-entree-3",
+      "x": 940, "y": 900, "w": 390, "page": "page-1",
+      "text": "ENTRÉE 3 — NOUVEL APPAREIL\nLa brique existe déjà : sendAccountAccessLink, livrée aujourd'hui pour la page de suppression. signInWithOtp avec shouldCreateUser:false — un lien à usage unique, valable pour un compte Google comme email.\n\nDeux règles vérifiées contre l'API : une adresse sans compte renvoie 422 otp_disabled, donc la page ne peut pas fabriquer de compte ; et elle ne répond jamais différemment selon que l'adresse en a un, sinon elle dit qui utilise Ramille.\n\nLa carte « Tu t'es connecté avec Google ? » n'est pas décorative : quelqu'un qui n'a jamais tapé de mot de passe ne pense pas à chercher une « adresse email »."
+    },
+    {
+      "id": "note-collision",
+      "x": 1410, "y": 900, "w": 390, "page": "page-1",
+      "text": "LA COLLISION — CE QU'IL FAUT TRANCHER\nSi la personne a commencé un bilan anonyme sur ce téléphone avant de vouloir retrouver son compte, Supabase ne peut pas fusionner deux utilisateurs. Il faut choisir.\n\nÉCARTÉ — bloquer la connexion tant qu'un bilan local existe : ça piège la personne dans un compte vide.\n\nÉCARTÉ POUR V1 — transférer les lignes du bilan vers le compte permanent (un RPC qui réassigne user_id, appelé en tenant la preuve des deux sessions). C'est la vraie réponse à terme, mais c'est du travail serveur et un chemin de plus à sécuriser.\n\nRECOMMANDÉ — le dire, et laisser choisir. Ce qui se perd n'est pas « des données » : c'est le quart d'heure de réponses. Le questionnaire se refait, et il se prérempli depuis le dernier bilan du compte retrouvé."
+    },
+    {
+      "id": "note-registre",
+      "x": 0, "y": 1500, "w": 1800, "page": "page-1",
+      "text": "LE REGISTRE TIENT PARTOUT\nAucun écran ne reproche, aucun ne bloque, aucun ne compte les échecs. La collision se dit en fait — « ce bilan-ci ne le rejoindra pas » — jamais en faute, et les deux issues sont offertes au même niveau.\n\nRamille n'apparaît que là où le produit accompagne : sur l'accueil, sur les deux écrans de reconnexion, et sur la collision où sa seule réplique désamorce la perte. Elle ne dit aucun nombre — « ça va vite » est à elle, « cinq minutes » resterait au produit."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

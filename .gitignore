@@ -49,6 +49,13 @@ supabase/.temp
 
 # Canvas de design assemblés (payload de ~2,5 Mo régénéré par la commande de seed) —
 # les sources sont dans docs/design/v1-0N-*/, le livrable vit dans son Artifact publié.
+#
+# Règle structurelle plutôt qu'une liste de noms : dans un dossier de canvas, tout .html
+# est un payload assemblé SAUF les sources .dc.html. Lister les payloads un par un
+# revenait à en oublier un au canvas suivant.
+docs/design/*/*.html
+!docs/design/*/*.dc.html
+# Payloads laissés à la racine par les canvas antérieurs à cette règle.
 traceverte-*.html
 ramille-*.html
 mascotte-traceverte.html
