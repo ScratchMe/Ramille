@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(11);
 
 -- Quatre profils qui couvrent les quatre conditions d'éligibilité.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
@@ -97,6 +97,52 @@ select is(
   (select count(*)::int from public.notification_outbox),
   0,
   'Un check-in déjà répondu ne déclenche pas de rappel'
+);
+
+-- ── L'étalement de l'envoi ─────────────────────────────────────────────────────────────
+-- Le pic hebdomadaire est nivelé par un décalage stable de 0 à 4 jours dérivé du `user_id`
+-- (migration 20260907090000). Deux propriétés comptent : le décalage tient dans la fenêtre,
+-- et il est **stable** — un décalage qui changerait d'un passage à l'autre ferait sauter un
+-- rappel ou en doublerait un.
+
+delete from public.notification_outbox;
+update public.engagement_checkins set status = 'pending', response = null, responded_at = null
+where user_id = 'ba111111-1111-1111-1111-111111111111';
+
+select public.enqueue_checkin_reminders();
+
+select ok(
+  (select send_after between now() - interval '1 minute' and now() + interval '5 days'
+   from public.notification_outbox),
+  'Le rappel part dans les cinq jours, jamais au-delà de la semaine qu''il concerne'
+);
+
+select is(
+  (select date_trunc('day', send_after) from public.notification_outbox),
+  (select date_trunc('day', now() + make_interval(days =>
+     (('x' || substr(md5('ba111111-1111-1111-1111-111111111111'), 1, 7))::bit(28)::int % 5)))),
+  'Le décalage est dérivé du user_id, donc stable d''un passage à l''autre'
+);
+
+-- ── Un rappel devenu caduc ─────────────────────────────────────────────────────────────
+-- La file est servie à cent par jour : un rappel peut y attendre plusieurs jours. Entre-temps
+-- `generate_commute_checkins()` périme les check-ins de la semaine précédente. Poser une
+-- question à laquelle on ne peut plus répondre serait le pire email possible pour un produit
+-- qui promet de ne jamais insister pour rien.
+--
+-- Vérifié **sans clé API** : l'annulation est une vérité sur les données, pas une étape
+-- d'expédition, et doit donc valoir même quand l'envoi est inactif — l'état du projet tant
+-- que la clé n'est pas déposée.
+
+update public.engagement_checkins set status = 'expired'
+where user_id = 'ba111111-1111-1111-1111-111111111111';
+
+select public.send_pending_reminders();
+
+select results_eq(
+  $$ select status from public.notification_outbox $$,
+  $$ values ('cancelled'::text) $$,
+  'Un rappel dont le check-in est périmé est annulé, et non envoyé — même sans fournisseur configuré'
 );
 
 -- ── Verrouillage ───────────────────────────────────────────────────────────────────────
