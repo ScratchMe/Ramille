@@ -36,8 +36,13 @@ export const EDITOR_NAME = 'Antoine Berthaud';
  * réception demande un enregistrement MX distinct. Une adresse de contact qui n'arrive nulle
  * part serait un manquement au RGPD art. 12, qui impose de répondre sous un mois — et le pire
  * des cas, puisque l'utilisateur croirait avoir écrit.
+ *
+ * C'est pour ça qu'elle a basculé sur ramille.fr **après** le reste du renommage et pas avec
+ * lui : afficher `contact@ramille.fr` avant que la boîte n'existe aurait été pire que de
+ * laisser l'ancien nom. Vérifié au moment de la bascule : MX présents sur le domaine, et
+ * réception confirmée par l'éditeur (les MX prouvent le routage, pas l'existence de la boîte).
  */
-export const CONTACT_EMAIL = 'contact@traceverte.fr';
+export const CONTACT_EMAIL = 'contact@ramille.fr';
 
 
 /**

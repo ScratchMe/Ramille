@@ -93,9 +93,20 @@ le domaine soit servi :
   ne sert que sur Android, où aucun build n'existe.
 - **PR B — le domaine**, quand `www.ramille.fr` répond sur Vercel et que la boîte
   `contact@ramille.fr` existe : `CONTACT_EMAIL` (contact RGPD des pages légales — un
-  courriel qui rebondit est pire qu'un ancien nom), et une migration pour le lien des
-  rappels par email, composé côté SQL — un rappel qui pointe vers un domaine mort casserait
-  la seule boucle de réengagement du produit.
+  courriel qui rebondit est pire qu'un ancien nom).
+
+  Le lien des rappels par email, lui, n'a pas eu besoin d'attendre : il vient du secret Vault
+  `app_url`, pas du code. La migration `20260905230000` n'a changé que le **repli** utilisé en
+  l'absence du secret ; la bascule réelle s'est faite en mettant à jour le Vault. C'était le
+  seul point où un domaine pas encore servi aurait pu casser la boucle de réengagement.
+
+**Bascule effectuée le 06/09/2026.** État vérifié de l'extérieur à ce moment-là :
+`www.ramille.fr` en 200 et l'apex en 308 vers `www` ; pages titrées « … — Ramille » et
+`lang="fr"` ; DKIM Resend et `send.ramille.fr` en place ; MX présents ; Vault portant
+`app_url = https://www.ramille.fr` et `reminder_from_address = Ramille <rappels@ramille.fr>` ;
+`traceverte.fr` toujours servi, donc les liens déjà envoyés continuent de marcher. Les deux
+Vercel Functions répondent sur le nouveau domaine, carte de partage comprise — c'est le seul
+rendu visuel qui ait pu être inspecté directement pendant tout ce renommage.
 
 Les étapes manuelles de l'éditeur, dans l'ordre où elles se débloquent, sont tenues dans le
 document de coordination remis le 05/09 (Vercel, Resend, OAuth, Supabase, INPI, Play).
