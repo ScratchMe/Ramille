@@ -1,5 +1,12 @@
 # TraceVerte — Architecture technique V1 (increment 4/4)
 
+> **Mise à jour du 07/09/2026** — le mot de passe a disparu (`v1-10-connexion-et-rappels.md`
+> §2.D) : la conversion email se fait par `updateUser({ email })` seul, et la reconnexion sur un
+> nouvel appareil par lien à usage unique (`/connexion/retrouver`). Les mentions « email +
+> mot de passe » de ce document (§4 : protection contre les mots de passe compromis, §5 : écran
+> « mot de passe oublié ») décrivent l'état du 23/08 et ne s'appliquent plus ; le modèle
+> anonyme-d'abord du §1 et la purge du §3 (corrigée en `v1-10` §2.B) restent en vigueur.
+
 **Périmètre** : Brique 5 (Authentification), issue du handoff design
 `design_handoff_traceverte_v1/`. Décisions produit actées le 23/08/2026 : fusion automatique
 Google/email sur email identique, purge des bilans anonymes après délai, palette verte.

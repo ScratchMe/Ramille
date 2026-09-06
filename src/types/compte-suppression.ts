@@ -37,16 +37,3 @@ export function etatDuCompte(session: SessionCompte | null): EtatSuppression {
 
   return session.aDesDonnees ? { kind: 'anonyme-avec-donnees' } : { kind: 'inconnu' };
 }
-
-/**
- * Validation d'adresse volontairement large — le seul but est d'éviter d'appeler l'API pour
- * une saisie manifestement incomplète. Toute règle plus stricte finit par refuser une
- * adresse valide, et c'est l'utilisateur qui paie l'erreur.
- */
-export function adresseSemblePlausible(email: string): boolean {
-  const valeur = email.trim();
-  if (valeur.length < 5 || /\s/.test(valeur)) return false;
-  const [locale, domaine, ...reste] = valeur.split('@');
-  if (reste.length > 0) return false;
-  return Boolean(locale) && Boolean(domaine) && domaine.includes('.') && !domaine.endsWith('.');
-}

@@ -72,7 +72,8 @@ par heure pour tout le projet** et déconseillé en production. Sans ce réglage
 par lien ne fonctionne pas au-delà de quelques essais. Le domaine `ramille.fr` est déjà
 vérifié chez Resend avec DKIM en place : il reste à créer des identifiants SMTP et à les
 renseigner dans Supabase → Authentication → SMTP. **Réglage de tableau de bord, prérequis du
-chantier D.**
+chantier D.** Les valeurs exactes, le plafond d'envoi à relever, les URL de redirection à
+déclarer et les gabarits d'email à traduire sont en **annexe §8**.
 
 **H. Purger les données de test.** Les 223 profils en base sont des profils de test : rien de
 ce qu'ils portent n'a de valeur, et tout fausse ce qui suivra. Les purger avant d'attaquer
@@ -136,6 +137,30 @@ construire un. Disparaissent : le champ mot de passe, sa validation, `requestPas
 Le reste vient du canvas : la porte d'entrée « J'ai déjà un compte » sur l'accueil de
 l'onboarding (la seule modification d'un écran existant, et celle qui supprime la collision
 au lieu de la gérer), l'écran de reconnexion, son état d'attente, et l'écran de collision.
+
+**Livré le 07/09.** `linkEmail` remplace `linkEmailPassword`, `requestPasswordReset` et
+l'écran `mot-de-passe-oublie` disparaissent, `/connexion/retrouver` porte les quatre états du
+canvas, et la logique partagée avec la page de suppression (limite d'envoi, adresse
+plausible) vit dans `src/types/connexion.ts`, testée. Deux points qui n'étaient pas dans le
+canvas :
+
+- **`/connexion/email` renvoie de lui-même vers « retrouver »** quand `updateUser` répond
+  `422 email_exists` : c'est la personne qui a un compte et qui a pris l'entrée « créer » sur
+  un nouvel appareil — au mauvais écran, pas en erreur. L'adresse est passée en paramètre
+  pour ne pas la faire retaper. Ce chemin révèle qu'une adresse a un compte, mais c'est
+  Supabase qui le dit dans sa réponse, pas l'écran : rien à protéger ici qui ne le soit déjà.
+- **Sur natif, le lien arrive hors de l'app.** Contrairement au retour Google, personne
+  n'attend cette URL : `_layout.tsx` écoute `Linking.useURL()` et ouvre la session dès qu'un
+  fragment porte `access_token`, puis renvoie sur la racine qui route. Le scheme `ramille://`
+  doit figurer dans les Redirect URLs (§8.4) — à faire avec le build EAS (chantier F), il n'y
+  a pas d'app native pour l'exercer avant.
+
+La collision n'est détectée qu'à l'entrée de `/connexion/retrouver` (session anonyme portant
+un bilan, même test que la page de suppression). Le cas symétrique — un compte Google
+existant et un bilan anonyme sur le nouvel appareil, puis « Continuer avec Google » depuis
+`/connexion` — échoue toujours sur `linkIdentity` (l'identité appartient à un autre
+utilisateur) avec un message brut. C'est le cas que la porte d'entrée sur l'onboarding vise
+à rendre rare ; à traiter si les chiffres montrent qu'il ne l'est pas.
 
 **E. Push en canal principal, email en repli.** `v1-02` §5 rangeait les notifications push en
 « increment dédié avec validation d'outil au préalable » : c'est cet increment.
@@ -274,3 +299,105 @@ table exigeant un compte.
 
 À instruire dans un increment dédié, pas dans celui-ci : c'est une modification du modèle
 d'authentification acté en `v1-04` §1, pas un correctif.
+
+## 8. Annexe — réglages du chantier C (SMTP de Supabase Auth)
+
+Le chantier C (§2.C) n'est que du tableau de bord, mais il porte cinq réglages dont **quatre
+ne se voient pas** tant que le chantier D n'est pas livré : ils sont écrits ici pour ne pas
+être redécouverts un par un le jour où la connexion par lien tombera en panne.
+
+**8.1 — Un identifiant SMTP distinct de celui du cron.** Chez Resend, le mot de passe SMTP
+*est* une clé d'API. En réutiliser une seule pour les deux canaux lierait leur sort : révoquer
+la clé des rappels couperait aussi la connexion. Créer donc une **seconde** clé, dédiée à
+Supabase Auth, avec permission d'envoi et si possible restreinte au domaine `ramille.fr`. Le
+secret Vault `resend_api_key` (rappels via l'extension `http`) reste inchangé.
+
+**8.2 — Les valeurs à saisir** dans Supabase → Project Settings → Authentication → SMTP
+Settings (« Enable Custom SMTP ») :
+
+| Champ | Valeur |
+| --- | --- |
+| Host | `smtp.resend.com` |
+| Port | `465` (TLS implicite) — `587` en STARTTLS si `465` est filtré |
+| Username | `resend` (littéral, ce n'est pas une adresse) |
+| Password | la clé d'API créée en 8.1 |
+| Sender email | `connexion@ramille.fr` (domaine vérifié, aucune boîte requise) |
+| Sender name | `Ramille` |
+
+**8.3 — Le plafond d'envoi de Supabase Auth, à relever.** Sans SMTP personnalisé, Supabase
+limite les emails d'authentification à **2 par heure pour tout le projet** (`email_sent`).
+Brancher le SMTP ne suffit pas : le plafond reste un réglage à part, sous Authentication →
+Rate Limits. Il faut le porter à une valeur cohérente avec Resend — dont le plan gratuit donne
+**100 emails par jour, partagés avec les rappels du cron**. Un plafond horaire d'une trentaine
+laisse de la marge sans pouvoir vider le quota quotidien en un incident.
+
+**8.4 — Les URL de redirection, sinon le lien renvoie sur la racine.** `sendAccountAccessLink`
+passe `emailRedirectTo` (`${APP_URL}/compte/suppression`, et demain les écrans du chantier D).
+Supabase **ignore silencieusement** toute redirection absente de la liste d'autorisation et
+retombe sur la Site URL : le lien marche, mais atterrit au mauvais endroit. À déclarer sous
+Authentication → URL Configuration : Site URL `https://www.ramille.fr`, et en Redirect URLs
+`https://www.ramille.fr/**` plus `https://*.vercel.app/**` pour les previews. Avec le build
+natif (chantier F) s'ajoutera `ramille://**` : le lien de connexion ouvert depuis la
+messagerie du téléphone revient par ce scheme (`makeRedirectUri()` dans
+`/connexion/retrouver`).
+
+**8.5 — Les gabarits d'email sont en anglais par défaut.** Le produit est exclusivement
+francophone : un « Confirm your signup » signé Supabase est le premier email que recevra un
+utilisateur. Les quatre gabarits à réécrire sous Authentication → Emails sont *Magic Link*,
+*Confirm signup*, *Change Email Address* et *Reset Password* — les quatre, parce que le
+gabarit retenu pour la conversion d'une session anonyme en compte permanent dépend du chemin
+emprunté (`updateUser({ email })` vs. lien de connexion) et qu'un gabarit non traduit ne se
+signale pas.
+
+La voix est celle des rappels (`20260905240000_rappels_signes_ramille.sql`) : tutoiement,
+première personne, aucune injonction, signature. *Reset Password* disparaîtra avec le
+chantier D, mais il est câblé aujourd'hui (`resetPasswordForEmail`) et doit donc être traduit
+en attendant.
+
+Magic Link — objet « Ton lien de connexion » :
+
+```html
+<p>Bonjour,</p>
+<p>Voici ton lien pour retrouver ton compte Ramille :</p>
+<p><a href="{{ .ConfirmationURL }}">Me connecter</a></p>
+<p>Il ne fonctionne qu'une fois, et seulement pendant une heure. Si tu n'as rien demandé, tu
+peux ignorer ce message : personne ne peut entrer sans ce lien.</p>
+<p>— Ramille</p>
+```
+
+Confirm signup — objet « Confirme ton adresse » :
+
+```html
+<p>Bonjour,</p>
+<p>Encore un geste et ton bilan te suivra d'un appareil à l'autre :</p>
+<p><a href="{{ .ConfirmationURL }}">Confirmer mon adresse</a></p>
+<p>Si tu n'as rien demandé, tu peux ignorer ce message.</p>
+<p>— Ramille</p>
+```
+
+Change Email Address — objet « Confirme ta nouvelle adresse » :
+
+```html
+<p>Bonjour,</p>
+<p>Tu as demandé à utiliser {{ .NewEmail }} pour ton compte Ramille. Confirme-le ici :</p>
+<p><a href="{{ .ConfirmationURL }}">Confirmer</a></p>
+<p>Si tu n'as rien demandé, ignore ce message : ton adresse actuelle reste en place.</p>
+<p>— Ramille</p>
+```
+
+Reset Password — objet « Réinitialiser ton mot de passe » :
+
+```html
+<p>Bonjour,</p>
+<p>Voici ton lien pour choisir un nouveau mot de passe :</p>
+<p><a href="{{ .ConfirmationURL }}">Choisir un nouveau mot de passe</a></p>
+<p>Si tu n'as rien demandé, ignore ce message : ton mot de passe actuel reste valable.</p>
+<p>— Ramille</p>
+```
+
+**8.6 — Vérification.** Ouvrir `/compte/suppression` en production, saisir l'adresse du compte
+Google recréé après la purge, et vérifier trois choses : l'email arrive (donc le SMTP est
+branché), il est en français et signé Ramille (donc les gabarits sont pris), et le lien ramène
+bien sur `/compte/suppression` et non sur la racine (donc 8.4 est fait). Une adresse inconnue
+doit, elle, afficher exactement le même message — c'est le garde-fou de non-divulgation, il ne
+dépend pas du SMTP mais se re-vérifie gratuitement au passage.

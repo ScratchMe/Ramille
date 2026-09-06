@@ -1,4 +1,4 @@
-import { adresseSemblePlausible, etatDuCompte } from './compte-suppression';
+import { etatDuCompte } from './compte-suppression';
 
 describe('etatDuCompte', () => {
   it('sans session, rien n’est identifiable', () => {
@@ -40,19 +40,5 @@ describe('etatDuCompte', () => {
     expect(etatDuCompte({ isAnonymous: true, email: null, aDesDonnees: false })).toEqual({
       kind: 'inconnu',
     });
-  });
-});
-
-describe('adresseSemblePlausible', () => {
-  it('accepte les adresses ordinaires', () => {
-    for (const valeur of ['a@b.fr', 'prenom.nom@exemple.co.uk', ' a@b.fr ', 'a+tag@b.io']) {
-      expect({ valeur, ok: adresseSemblePlausible(valeur) }).toEqual({ valeur, ok: true });
-    }
-  });
-
-  it('refuse ce qui ne peut pas être une adresse', () => {
-    for (const valeur of ['', '   ', 'sansarobase.fr', 'a@b', 'a@b.', '@b.fr', 'a@', 'a b@c.fr', 'a@b@c.fr']) {
-      expect({ valeur, ok: adresseSemblePlausible(valeur) }).toEqual({ valeur, ok: false });
-    }
   });
 });

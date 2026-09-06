@@ -5,13 +5,15 @@ import {
   SplineSans_700Bold,
   useFonts,
 } from '@expo-google-fonts/spline-sans';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import * as Linking from 'expo-linking';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
+import { createSessionFromUrl } from '@/lib/auth';
 import { ensureSession } from '@/lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
@@ -39,6 +41,23 @@ export default function RootLayout() {
       console.error('ensureSession() a échoué au démarrage :', error);
     });
   }, []);
+
+  // Lien de connexion par email ouvert depuis la messagerie du téléphone : il revient par le
+  // scheme `ramille://` avec les jetons dans le fragment, et personne n'attend cette URL —
+  // contrairement au retour Google, qui passe par `openAuthSessionAsync`. Sur web,
+  // `detectSessionInUrl` s'en charge et ce hook ne fait rien. Une fois la session ouverte, la
+  // racine route vers le plan ou l'onboarding selon ce que porte le compte retrouvé.
+  const urlEntrante = Linking.useURL();
+  useEffect(() => {
+    if (Platform.OS === 'web' || !urlEntrante || !urlEntrante.includes('access_token=')) return;
+    createSessionFromUrl(urlEntrante).then(({ error }) => {
+      if (error) {
+        console.error('Le lien de connexion n’a pas pu ouvrir de session :', error);
+        return;
+      }
+      router.replace('/');
+    });
+  }, [urlEntrante]);
 
   // Dénominateur de tous les entonnoirs. Émis après `ensureSession()` dans l'ordre des
   // effets, mais sans dépendre de lui : si la session n'est pas encore là, `track` renonce

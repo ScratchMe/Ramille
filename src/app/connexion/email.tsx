@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -10,49 +10,55 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
-import { linkEmailPassword } from '@/lib/auth';
+import { linkEmail } from '@/lib/auth';
 import { markConnexionProposalSeen } from '@/lib/connexion-prefs';
+import { adresseDejaRattachee, adresseSemblePlausible, estLimiteDEnvoi } from '@/types/connexion';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD_LENGTH = 8;
-
-// "Connexion — email et mot de passe" — lie l'email/mot de passe à la session anonyme en
-// cours (cf. src/lib/auth.ts) : toujours le cas "créer mon compte" ici, jamais une
-// connexion à un compte existant distinct (ce second cas — écran "session expirée" —
-// suit avec la boucle mensuelle, qui est le premier endroit où une session peut
-// réellement expirer sur cet appareil).
+// "Connexion — email" — lie l'adresse à la session anonyme en cours (cf. src/lib/auth.ts) :
+// toujours le cas "créer mon compte" ici, jamais une connexion à un compte existant, qui
+// passe par /connexion/retrouver. Une adresse, rien d'autre : le mot de passe a disparu avec
+// v1-10 §2.D — il n'a jamais servi, et la confirmation par email faisait déjà tout le travail.
 export default function ConnexionEmail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  // État inline plutôt qu'un Alert.alert avec callback sur le bouton : sur web,
-  // react-native-web retombe sur window.alert(), qui n'invoque pas onPress — même
-  // parti pris que l'écran "mot de passe oublié".
-  const [sent, setSent] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  // États inline plutôt qu'un Alert.alert avec callback sur le bouton : sur web,
+  // react-native-web retombe sur window.alert(), qui n'invoque pas onPress.
+  const [phase, setPhase] = useState<'saisie' | 'envoye' | 'deja-un-compte'>('saisie');
 
-  const valid = EMAIL_RE.test(email) && password.length >= MIN_PASSWORD_LENGTH;
+  const valid = adresseSemblePlausible(email);
 
   const onSubmit = async () => {
     if (!valid || submitting) return;
+    setMessage(null);
     setSubmitting(true);
-    const { error } = await linkEmailPassword(email, password);
+    const { error } = await linkEmail(email);
     setSubmitting(false);
 
+    // L'adresse a déjà un compte : la personne est au mauvais écran, pas en erreur. On le
+    // dit et on l'envoie vers « retrouver » avec l'adresse déjà saisie.
+    if (adresseDejaRattachee(error)) {
+      setPhase('deja-un-compte');
+      return;
+    }
+    if (estLimiteDEnvoi(error)) {
+      setMessage('Trop de demandes coup sur coup. Réessaie dans quelques minutes.');
+      return;
+    }
     if (error) {
-      Alert.alert('Impossible de créer le compte', error.message);
+      setMessage('L’envoi n’a pas abouti. Vérifie l’adresse et réessaie.');
       return;
     }
 
-    // Le rattachement est effectif ici — `linkEmailPassword` a réussi. La confirmation
-    // d'adresse qui suit conditionne les rappels par email, pas le compte lui-même.
+    // Le rattachement est effectif ici — `linkEmail` a réussi. La confirmation d'adresse
+    // qui suit conditionne les rappels par email, pas le compte lui-même.
     track('connexion_success', { method: 'email' });
     await markConnexionProposalSeen();
-    setSent(true);
+    setPhase('envoye');
   };
 
-  if (sent) {
+  if (phase === 'envoye') {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
@@ -61,10 +67,40 @@ export default function ConnexionEmail() {
               Vérifie tes emails
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.body}>
-              Un lien de confirmation vient d&apos;être envoyé à {email}. Ton bilan reste accessible en
-              attendant.
+              Un lien de confirmation vient d&apos;être envoyé à {email.trim()}. Ton bilan reste
+              accessible en attendant.
             </ThemedText>
             <Button title="Continuer" onPress={() => router.replace('/plan')} style={styles.continueButton} />
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  if (phase === 'deja-un-compte') {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.centered}>
+            <ThemedText type="title" weight={600} style={styles.title}>
+              Cette adresse a déjà un compte
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.body}>
+              Le bilan que tu viens de faire ne peut pas le rejoindre, mais tu peux retrouver ton
+              compte : on t&apos;envoie un lien qui te reconnecte ici.
+            </ThemedText>
+            <Button
+              title="Retrouver mon compte"
+              onPress={() => router.replace({ pathname: '/connexion/retrouver', params: { email: email.trim() } })}
+              style={styles.continueButton}
+            />
+            <TextLink
+              label="Garder ce bilan sans compte"
+              onPress={() => router.replace('/plan')}
+              type="small"
+              themeColor="textTertiary"
+              style={styles.backLink}
+            />
           </View>
         </SafeAreaView>
       </ThemedView>
@@ -80,7 +116,8 @@ export default function ConnexionEmail() {
               Continuer avec un email
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.body}>
-              Deux champs, rien de plus. Ton bilan est rattaché automatiquement.
+              Une adresse, rien de plus — pas de mot de passe. Ton bilan est rattaché
+              automatiquement.
             </ThemedText>
           </View>
 
@@ -92,18 +129,14 @@ export default function ConnexionEmail() {
               keyboardType="email-address"
               placeholder="camille@exemple.fr"
             />
-            <TextField
-              label="Mot de passe"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              rightActionLabel={showPassword ? 'Masquer' : 'Afficher'}
-              onRightAction={() => setShowPassword((v) => !v)}
-              helperText="Le mot de passe doit contenir au moins 8 caractères."
-            />
+            {message && (
+              <ThemedText type="small" themeColor="textSecondary">
+                {message}
+              </ThemedText>
+            )}
             <TextLink
-              label="Mot de passe oublié"
-              onPress={() => router.push({ pathname: '/connexion/mot-de-passe-oublie', params: { id } })}
+              label="J’ai déjà un compte"
+              onPress={() => router.push({ pathname: '/connexion/retrouver', params: { id } })}
               role="link"
               type="linkPrimary"
             />
@@ -111,7 +144,11 @@ export default function ConnexionEmail() {
         </View>
 
         <View style={styles.footer}>
-          <Button title="Créer mon compte" onPress={onSubmit} disabled={!valid || submitting} />
+          <Button
+            title={submitting ? 'Envoi…' : 'Recevoir le lien'}
+            onPress={onSubmit}
+            disabled={!valid || submitting}
+          />
           <TextLink
             label="Revenir aux autres options"
             onPress={() => router.back()}

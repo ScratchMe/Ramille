@@ -51,7 +51,11 @@ export async function linkGoogleIdentity(): Promise<AuthResult> {
   return createSessionFromUrl(result.url);
 }
 
-async function createSessionFromUrl(url: string): Promise<AuthResult> {
+// Ouvre la session portée par une URL de retour (`#access_token=…&refresh_token=…`). Deux
+// appelants sur natif : le retour Google ci-dessus, et le lien de connexion par email, qui
+// arrive hors de l'app (ouvert depuis la messagerie) et remonte par `Linking.useURL()` dans
+// `_layout.tsx`. Sur web, `detectSessionInUrl` fait ce travail tout seul.
+export async function createSessionFromUrl(url: string): Promise<AuthResult> {
   const { params, errorCode } = QueryParams.getQueryParams(url);
   if (errorCode) return { error: new Error(errorCode) };
 
@@ -64,12 +68,19 @@ async function createSessionFromUrl(url: string): Promise<AuthResult> {
   return { error };
 }
 
-// Lie email + mot de passe à la session anonyme courante (conversion en compte permanent,
-// cf. doc §1 — pas signUp, qui créerait un utilisateur séparé). Envoie un email de
-// confirmation si le garde-fou "confirmation obligatoire" est actif côté dashboard
-// (cf. doc §2) ; `is_anonymous` ne bascule à `false` qu'une fois confirmé.
-export async function linkEmailPassword(email: string, password: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.updateUser({ email, password });
+// Lie une adresse email à la session anonyme courante (conversion en compte permanent, cf.
+// doc §1 — pas signUp ni signInWithOtp, qui créeraient un utilisateur séparé et perdraient
+// le bilan). **Sans mot de passe** depuis v1-10 §2.D : il n'a jamais servi — aucun
+// `signInWithPassword` dans le produit, zéro compte sur 223 n'en portait. Supabase envoie un
+// email de confirmation, et `is_anonymous` ne bascule à `false` qu'une fois le lien cliqué.
+// Retrouver le compte plus tard se fait par lien (`sendAccountAccessLink`), jamais par
+// secret.
+//
+// Une adresse déjà rattachée à un autre compte renvoie `422 email_exists` — ce n'est pas une
+// erreur à afficher, c'est le signe que la personne cherchait l'écran « retrouver »
+// (cf. `adresseDejaRattachee` dans `src/types/connexion.ts`).
+export async function linkEmail(email: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.updateUser({ email: email.trim() });
   return { error };
 }
 
@@ -77,29 +88,28 @@ export async function linkEmailPassword(email: string, password: string): Promis
  * Envoie un lien d'accès à usage unique à l'adresse d'un compte **déjà existant**.
  *
  * C'est le seul endroit du produit qui *connecte* à un compte au lieu d'en rattacher un :
- * tout le reste de ce fichier lie une identité à la session anonyme courante. La page web de
- * suppression en a besoin, et elle seule — quelqu'un qui a désinstallé l'app arrive dans un
- * navigateur neuf, où `ensureSession` vient de lui donner une session anonyme vide qui n'est
- * pas son compte. Ni `linkIdentity` ni `updateUser` ne peuvent l'aider : la première échoue
- * si l'identité appartient déjà à quelqu'un, la seconde modifierait la session vide.
+ * tout le reste de ce fichier lie une identité à la session anonyme courante. Né pour la page
+ * web de suppression, c'est depuis v1-10 §2.D **le** chemin de reconnexion du produit
+ * (`/connexion/retrouver`) — quelqu'un qui arrive sur un nouvel appareil y reçoit une session
+ * anonyme vide qui n'est pas son compte, et ni `linkIdentity` ni `updateUser` ne peuvent
+ * l'aider : la première échoue si l'identité appartient déjà à quelqu'un, la seconde
+ * modifierait la session vide. Le lien vaut pour un compte Google comme pour un compte
+ * email : les deux portent une adresse sur `auth.users`.
  *
  * **`shouldCreateUser: false` est la garantie centrale** : sans lui, saisir n'importe quelle
- * adresse créerait un compte, et une page de suppression qui fabrique des comptes serait
+ * adresse créerait un compte — et une page de suppression qui fabrique des comptes serait
  * exactement le contraire de ce qu'on affiche.
  *
  * Le retour ne distingue jamais « adresse inconnue » de « lien envoyé » — répondre
- * différemment transformerait la page en outil pour savoir qui utilise Ramille.
+ * différemment transformerait l'écran en outil pour savoir qui utilise Ramille.
+ *
+ * `redirectTo` doit figurer dans la liste des Redirect URLs du tableau de bord Supabase,
+ * sinon il est ignoré en silence et le lien retombe sur la Site URL (`v1-10` §8.4).
  */
 export async function sendAccountAccessLink(email: string, redirectTo: string): Promise<AuthResult> {
   const { error } = await supabase.auth.signInWithOtp({
     email: email.trim(),
     options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
   });
-  return { error };
-}
-
-export async function requestPasswordReset(email: string): Promise<AuthResult> {
-  const redirectTo = Platform.OS === 'web' ? undefined : makeRedirectUri();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   return { error };
 }
