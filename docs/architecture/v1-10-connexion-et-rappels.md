@@ -401,3 +401,110 @@ branché), il est en français et signé Ramille (donc les gabarits sont pris), 
 bien sur `/compte/suppression` et non sur la racine (donc 8.4 est fait). Une adresse inconnue
 doit, elle, afficher exactement le même message — c'est le garde-fou de non-divulgation, il ne
 dépend pas du SMTP mais se re-vérifie gratuitement au passage.
+
+## 9. État des lieux du 07/09 — après les chantiers A, B, C, D
+
+Tour rapide demandé après la livraison du chantier D (PR #57), pour vérifier que rien ne
+traîne avant d'attaquer F et E.
+
+**Rien à réparer.** `main` propre, CI verte, production à jour (`/connexion/retrouver`
+répond, la porte d'entrée est visible sur l'accueil). Les sept crons sont actifs ; les quatre
+qui devaient tourner dans la nuit ont réussi, les trois autres (lundi, 1er du mois, trimestre)
+n'ont simplement pas encore eu leur tour. Zéro TODO, zéro `console.log`, bundle web à 2,4 Mo.
+Les advisors Supabase ne remontent que du connu : les policies ouvertes aux anonymes sont le
+modèle d'auth de `v1-04` §1, et **`auth_leaked_password_protection` est désormais sans objet**
+— il n'y a plus de mot de passe à protéger (§2.D). Il continuera d'être signalé ; c'est attendu.
+
+**Ce qui a été relevé, et où ça vit** — le backlog est dans les issues GitHub, pas ici :
+
+| Issue | Quoi | Pourquoi maintenant |
+| --- | --- | --- |
+| #58 | Mettre à jour les dépendances Expo SDK 57 (patchs) | avant le premier build EAS, pour ne pas figer un SDK en retard |
+| #59 | Remplacer les cinq `Alert.alert` restants par un message inline | `window.alert()` sur web, boîte système grise en plein produit |
+| #60 | Collision Google : bilan anonyme + « Continuer avec Google » sur un compte existant | le chemin email est couvert depuis #57, pas le chemin Google |
+| #61 | Instrumenter `/connexion/retrouver` | sans ça, la question ouverte de §2.D (« est-ce rare ? ») n'aura jamais de réponse |
+| #62 | Dire à l'écran que le compte est rattaché après confirmation | la boucle ouverte par « Vérifie tes emails » ne se ferme jamais |
+
+**Ce qui a été relevé et volontairement laissé** :
+
+- Trois vulnérabilités npm transitives (`uuid`, `fflate` via `satori`, `decode-uri-component`),
+  toutes « déni de service sur entrée malformée », aucune exploitable dans notre usage. Le
+  `npm audit fix --force` proposé casserait `satori` (carte de partage). À revoir avec #58.
+- Deux index inutilisés et cinq clés étrangères non indexées, en INFO. Sans effet à cette
+  échelle ; à reprendre quand la base pèsera quelque chose.
+
+## 10. Annexe — procédure du chantier F (premier build Android avec EAS)
+
+Écrite pour quelqu'un qui travaille dans un navigateur et n'a pas l'habitude d'un terminal.
+Vérifiée contre la documentation Expo le 07/09/2026. **Une seule session de terminal est
+incontournable** : la doc « Build from GitHub » exige d'avoir « successfully run a build from
+your computer for each platform » avant de pouvoir déclencher des builds depuis le site — c'est
+là que le keystore Android est généré et confié à EAS. Tout le reste se fait dans le navigateur,
+avant comme après.
+
+**10.1 — Ce que ça produit.** Un fichier APK installable sur un téléphone Android (profil
+`preview` d'`eas.json`), construit dans le cloud d'Expo. Pas encore le bundle AAB pour Google
+Play (profil `production`) : il suppose le compte Play Console, qui est un chantier à part.
+
+**10.2 — Dans le navigateur, avant.**
+
+1. Créer un compte sur expo.dev. Le plan gratuit suffit : 15 builds Android par mois, file
+   d'attente basse priorité (jusqu'à 90 minutes aux heures de pointe), 45 minutes par build.
+2. Installer Node.js LTS depuis nodejs.org (l'installateur, version 22). C'est le seul
+   logiciel à installer.
+3. Installer GitHub Desktop (desktop.github.com), se connecter, et cloner
+   `ScratchMe/TraceVerte` (File → Clone repository). C'est lui qui servira à ouvrir un terminal
+   au bon endroit et à envoyer le commit final, sans `git` à taper.
+
+**10.3 — Dans le terminal, une fois.** Depuis GitHub Desktop : Repository → « Open in
+Terminal » (Mac) ou « Open in Command Prompt » (Windows). Puis, ligne par ligne :
+
+```
+npm install
+npx eas-cli@latest login
+npx eas-cli@latest init
+```
+
+`init` crée le projet `ramille` sur expo.dev et écrit son identifiant dans `app.json`
+(`extra.eas.projectId`, et `owner`). Ces deux lignes doivent être **commitées** — c'est
+l'étape 10.5.
+
+**10.4 — Dans le navigateur, les variables d'environnement.** Le fichier `.env` local n'est
+pas envoyé au build (il est ignoré par git, EAS ne le voit pas). Sans les deux variables,
+l'app plante à l'ouverture (« doivent être définies », cf. `src/lib/supabase.ts`). Sur
+expo.dev → projet → Environment variables, créer `EXPO_PUBLIC_SUPABASE_URL` et
+`EXPO_PUBLIC_SUPABASE_ANON_KEY`, environnements `preview` **et** `production`, visibilité
+« Plain text » (elles finissent dans le code client de toute façon). Les valeurs sont celles
+du tableau de bord Supabase (Project Settings → API) — déjà en place chez Vercel.
+
+**10.5 — Le premier build, dans le terminal.**
+
+```
+npx eas-cli@latest build --platform android --profile preview
+```
+
+À la question sur le keystore, répondre **oui, laisser EAS en générer un**. Il est stocké chez
+Expo et réutilisé pour tous les builds suivants — c'est ce qui rend la commande unique. Le
+terminal donne un lien vers la page du build ; on peut fermer le terminal, la suite se suit sur
+expo.dev. Compter dix à vingt minutes hors file d'attente.
+
+Puis, dans GitHub Desktop : `app.json` apparaît modifié. Commit (« Lier le projet EAS »), Push.
+Sans ça, les builds depuis GitHub ne sauront pas à quel projet Expo ils appartiennent.
+
+**10.6 — Installer l'APK.** Sur la page du build, bouton « Install » : un QR code à scanner
+avec le téléphone, ou un lien à s'envoyer. Android demande une fois d'autoriser l'installation
+depuis cette source. L'app s'ouvre sur l'onboarding ; le bilan et la restitution doivent
+fonctionner exactement comme sur le web.
+
+**10.7 — Dans le navigateur, pour ne plus jamais rouvrir le terminal.** Sur expo.dev → projet
+→ Settings → GitHub : installer l'app GitHub d'Expo sur `ScratchMe/TraceVerte` et lier le
+dépôt. Dès lors, le bouton « Build from GitHub » de la page Builds prend une branche, une
+plateforme et un profil — c'est tout. `eas.json` porte déjà l'`image: latest` que cette voie
+exige.
+
+**10.8 — Ce que ça débloque, et ce que ça ne fait pas encore.** Le chantier E (push) ajoute
+`expo-notifications`, donc un nouveau build à chaque fois qu'une dépendance native entre —
+depuis GitHub, en un clic. Il demandera aussi un projet Firebase (navigateur) pour les
+identifiants FCM, à téléverser sur expo.dev → Credentials ; détail dans le chantier E le moment
+venu. La publication sur Google Play (compte développeur, 25 $ une fois, fiche, AAB de
+production) reste un chantier à part.
