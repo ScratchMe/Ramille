@@ -9,21 +9,24 @@
       "android": {
         "buildType": "apk",
         "image": "latest"
-      }
+      },
+      "environment": "development"
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk",
         "image": "latest"
-      }
+      },
+      "environment": "preview"
     },
     "production": {
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle",
         "image": "latest"
-      }
+      },
+      "environment": "production"
     }
   },
   "submit": {
