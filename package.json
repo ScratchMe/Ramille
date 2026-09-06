@@ -5,7 +5,7 @@
   "dependencies": {
     "@expo-google-fonts/spline-sans": "^0.4.2",
     "@expo/ui": "~57.0.12",
-    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@resvg/resvg-wasm": "^2.6.2",
     "@supabase/supabase-js": "^2.112.3",
     "expo": "~57.0.15",
