@@ -43,6 +43,10 @@ export const PAGE_TITLES: Record<string, string> = {
   '/confidentialite': `Politique de confidentialité — ${APP_NAME}`,
   '/conditions': `Conditions d’utilisation — ${APP_NAME}`,
 
+  // Exigée par Google Play : une URL de suppression atteignable sans l'app, donc une page
+  // publique à part entière, avec son titre.
+  '/compte/suppression': `Supprimer mon compte — ${APP_NAME}`,
+
   '/status': `Diagnostic — ${APP_NAME}`,
 };
 
