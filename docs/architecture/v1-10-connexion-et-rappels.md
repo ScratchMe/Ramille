@@ -39,9 +39,10 @@ suppression et fournit la brique manquante.
 
 **A. Étaler le pic du lundi.** Les check-ins hebdomadaires sont générés le lundi 6 h, le cron
 d'envoi passe à 7 h et vide la boîte d'un coup : tout le volume de la semaine part dans une
-seule salve. Le plan gratuit Resend plafonne à 100 emails/jour — le mur est donc vers **une
-centaine d'utilisateurs rattachés**, pas vers les 560 que laisserait croire le quota mensuel
-de 3 000. Correctif : ancrer le jour du check-in hebdomadaire sur une valeur dérivée de
+seule salve. **Le plan Resend est le gratuit** (confirmé le 06/09) : 3 000 emails/mois, mais
+surtout **100 par jour**. Le mur n'est donc pas vers les 560 utilisateurs rattachés que
+laisserait croire le quota mensuel, mais vers **une centaine, un lundi matin** — et le 1er du
+mois tombant un lundi, les deux boucles se cumulent et il arrive deux fois plus vite. Correctif : ancrer le jour du check-in hebdomadaire sur une valeur dérivée de
 `user_id` plutôt que sur lundi pour tout le monde. Une ligne de calcul, invisible pour
 l'utilisateur, la cadence reste hebdomadaire. **Indépendant de tout le reste — à faire en
 premier**, il protège le canal email tant qu'il est seul.
@@ -72,6 +73,31 @@ par lien ne fonctionne pas au-delà de quelques essais. Le domaine `ramille.fr` 
 vérifié chez Resend avec DKIM en place : il reste à créer des identifiants SMTP et à les
 renseigner dans Supabase → Authentication → SMTP. **Réglage de tableau de bord, prérequis du
 chantier D.**
+
+**H. Purger les données de test.** Les 223 profils en base sont des profils de test : rien de
+ce qu'ils portent n'a de valeur, et tout fausse ce qui suivra. Les purger avant d'attaquer
+l'increment rend mesurable tout ce qu'on livrera ensuite, et lève au passage deux gênes : la
+base analytique de `usage_events` repart propre, et les 223 `email_reminders_enabled = true`
+qui rendraient tout le monde éligible d'un coup disparaissent.
+
+**La méthode est déjà écrite** : `delete from auth.users`, et la cascade fait le reste. Ne
+jamais énumérer les tables — c'est exactement la doctrine de `delete_my_account`, et une
+fonction qui listerait les tables deviendrait fausse à la prochaine migration, en silence.
+
+Ne pas toucher aux **référentiels**, qui ne sont pas des données utilisateur :
+`transport_modes`, `emission_factors`, `emission_factor_sources`, `action_templates`,
+`usage_event_types`. Ni à `emission_factor_sync_runs`, qui est le journal d'exploitation de la
+synchronisation ADEME — la seule façon de voir qu'elle tourne vraiment.
+
+**Une décision à prendre avant d'exécuter** : le compte permanent (Google, créé le 24/08)
+porte 4 bilans, 2 check-ins et 2 actions de plan, et c'est lui qui a reçu les 2 rappels
+envoyés. C'est donc **la seule preuve de bout en bout que la chaîne d'envoi fonctionne** —
+génération du check-in, mise en boîte, envoi par Resend. Le supprimer est sans risque
+(l'identité Google se recrée en un geste) mais fait perdre cette trace et l'historique qui
+donne du contenu à `/suivi`. À trancher : purger tout, ou tout sauf lui.
+
+Vérification après coup, la même qu'à la construction de `delete_my_account` : compter les
+lignes restantes table par table plutôt que de faire confiance à la cascade sur parole.
 
 ### Cœur
 
@@ -182,6 +208,7 @@ Sept points relevés en préparant ce document, absents de l'énoncé initial.
 
 | Ordre | Chantier | Nature | Débloque |
 | --- | --- | --- | --- |
+| 0 | H — purger les données de test | SQL | rend mesurable tout ce qui suit |
 | 1 | A — étaler le pic du lundi | SQL | rien, mais protège l'email tant qu'il est seul |
 | 2 | B — purge sur l'inactivité | SQL | le chantier E |
 | 3 | C — SMTP Supabase Auth | tableau de bord | le chantier D |
@@ -190,9 +217,10 @@ Sept points relevés en préparant ce document, absents de l'énoncé initial.
 | 6 | E — push | code + SQL | la boucle d'engagement, enfin atteignable |
 | 7 | G — renommage GitHub | logistique | rien |
 
-A et B sont du SQL pur, sans build ni décision produit : ils peuvent partir immédiatement et
-indépendamment. C est un réglage de quelques minutes qui conditionne tout D. G peut se glisser
-n'importe où.
+H, A et B sont du SQL pur, sans build : ils peuvent partir immédiatement. H vient en premier
+parce qu'il repart d'une base propre — mesurer l'effet de A ou de B sur 223 profils de test
+n'apprendrait rien. C est un réglage de quelques minutes qui conditionne tout D. G peut se
+glisser n'importe où.
 
 ## 6. Ce qui reste à décider
 
@@ -201,5 +229,8 @@ n'importe où.
 - La collision du nouvel appareil : le canvas recommande de la dire et de laisser choisir,
   plutôt que de transférer les lignes vers le compte permanent — cette dernière option reste
   la vraie réponse à terme, écartée pour la V1 faute de justifier son coût serveur.
-- Le plan Resend exact : le plafond journalier de 100 emails vaut pour l'offre gratuite, et
-  c'est lui qui fixe l'urgence du chantier A.
+- La purge : tout, ou tout sauf le compte permanent qui porte la seule preuve de bout en bout
+  de la chaîne d'envoi (§2.H).
+
+Répondu le 06/09 : le plan Resend est le gratuit, donc **100 emails par jour**. C'est ce
+plafond, et non le quota mensuel, qui fixe l'urgence du chantier A.
