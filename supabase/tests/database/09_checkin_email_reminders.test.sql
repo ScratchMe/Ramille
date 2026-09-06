@@ -105,10 +105,18 @@ select is(
 -- et il est **stable** — un décalage qui changerait d'un passage à l'autre ferait sauter un
 -- rappel ou en doublerait un.
 
-delete from public.notification_outbox;
-update public.engagement_checkins set status = 'pending', response = null, responded_at = null
-where user_id = 'ba111111-1111-1111-1111-111111111111';
+-- Un cinquième profil plutôt que de ressusciter A : `prevent_answered_checkin_update`
+-- interdit de modifier un check-in déjà répondu, et c'est une bonne règle — une réponse est
+-- définitive. Ce trigger n'apparaît qu'en rejouant le fichier **en entier** : la première
+-- version de ce bloc remettait A à `pending` et n'a échoué qu'en CI.
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
+  ('ba111111-1111-1111-1111-111111111115', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-etalement@test.local', 'x', now(), now(), now(), false);
 
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label)
+values ('ba111111-1111-1111-1111-111111111115', 'commute', date_trunc('week', now())::date,
+        'Semaine du 31/08', 'Trajet domicile-travail (Voiture)');
+
+delete from public.notification_outbox;
 select public.enqueue_checkin_reminders();
 
 select ok(
@@ -120,7 +128,7 @@ select ok(
 select is(
   (select date_trunc('day', send_after) from public.notification_outbox),
   (select date_trunc('day', now() + make_interval(days =>
-     (('x' || substr(md5('ba111111-1111-1111-1111-111111111111'), 1, 7))::bit(28)::int % 5)))),
+     (('x' || substr(md5('ba111111-1111-1111-1111-111111111115'), 1, 7))::bit(28)::int % 5)))),
   'Le décalage est dérivé du user_id, donc stable d''un passage à l''autre'
 );
 
@@ -135,7 +143,7 @@ select is(
 -- que la clé n'est pas déposée.
 
 update public.engagement_checkins set status = 'expired'
-where user_id = 'ba111111-1111-1111-1111-111111111111';
+where user_id = 'ba111111-1111-1111-1111-111111111115';
 
 select public.send_pending_reminders();
 
