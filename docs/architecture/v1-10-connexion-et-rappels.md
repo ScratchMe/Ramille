@@ -469,19 +469,53 @@ npx eas-cli@latest init
 (`extra.eas.projectId`, et `owner`). Ces deux lignes doivent être **commitées** — c'est
 l'étape 10.5.
 
-**10.4 — Dans le navigateur, les variables d'environnement.** Le fichier `.env` local n'est
-pas envoyé au build (il est ignoré par git, EAS ne le voit pas). Sans les deux variables,
-l'app plante à l'ouverture (« doivent être définies », cf. `src/lib/supabase.ts`). Sur
-expo.dev → projet → Environment variables, créer `EXPO_PUBLIC_SUPABASE_URL` et
+**10.4 — Dans le navigateur, les variables d'environnement. À faire AVANT de lancer le
+build.** Le fichier `.env` local n'est pas envoyé au build (il est ignoré par git, EAS ne le
+voit pas). Sur expo.dev → projet → Environment variables, créer `EXPO_PUBLIC_SUPABASE_URL` et
 `EXPO_PUBLIC_SUPABASE_ANON_KEY`, environnements `preview` **et** `production`, visibilité
 « Plain text » (elles finissent dans le code client de toute façon). Les valeurs sont celles
 du tableau de bord Supabase (Project Settings → API) — déjà en place chez Vercel.
+
+**Ce point a coûté un build le 07/09, et il n'est pas une question de rigueur : la panne
+qu'il produit ne dit rien.** `src/lib/supabase.ts` lève dès son chargement quand les deux
+variables manquent — avant le premier rendu, donc avant qu'un écran puisse exister. Dans un
+build de production, cette exception n'a nulle part où s'afficher : **l'app s'ouvre et se
+ferme instantanément, sans message, sans trace visible sur le téléphone.** Rien ne distingue
+ce cas d'un plantage natif, et le journal du build est vert puisque la construction, elle,
+a parfaitement réussi.
+
+Deux corollaires :
+
+- **Les variables sont figées dans le code au moment du build** (c'est tout le sens du préfixe
+  `EXPO_PUBLIC_`). Les créer après coup ne répare rien : il faut reconstruire.
+- **Le diagnostic ne se fait pas sur le téléphone mais sur la page du build**, section
+  « Environment variables », qui liste ce que la construction a réellement utilisé. C'est le
+  seul endroit où l'absence se voit.
+
+L'environnement visé n'est plus laissé à la déduction : chaque profil d'`eas.json` porte
+désormais une clé `environment` explicite. Sans elle, EAS le devine — `production` si
+`distribution: store`, `development` si `developmentClient`, `preview` sinon — une règle
+exacte mais invisible, qui suffit à ranger les variables au mauvais endroit sans que rien ne
+proteste.
 
 **10.5 — Le premier build, dans le terminal.**
 
 ```
 npx eas-cli@latest build --platform android --profile preview
 ```
+
+**Piège vérifié le 07/09 : EAS n'envoie pas l'état commité, il envoie le dossier de travail**
+— modifications non commitées comprises (`cli.requireCommit` vaut `false` par défaut). Or
+`npm install` réécrit volontiers `package-lock.json` quand la version locale de npm diffère
+de celle qui l'a produit. Le build échoue alors sur `npm ci`, avec des paquets « missing from
+lock file » (`@emnapi/*`, épinglés par `@unrs/resolver-binding-wasm32-wasi`) — alors que le
+lockfile du dépôt, lui, est parfaitement sain : la CI le prouve à chaque PR, `npm ci` y passe.
+
+Le message accuse donc un fichier qui n'est pas celui qu'on lit. La méthode qui tranche en
+une minute : vérifier si le paquet dit manquant existe dans le `package-lock.json` du dépôt.
+S'il y est, le fichier envoyé n'était pas celui-là. Correctif : annuler la modification locale
+du lockfile (GitHub Desktop → clic droit sur le fichier → « Discard changes »), et ne jamais
+le commiter avec une autre version de npm que celle de la CI (Node 22).
 
 À la question sur le keystore, répondre **oui, laisser EAS en générer un**. Il est stocké chez
 Expo et réutilisé pour tous les builds suivants — c'est ce qui rend la commande unique. Le
