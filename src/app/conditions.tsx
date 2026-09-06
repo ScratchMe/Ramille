@@ -74,8 +74,8 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'bullets',
         items: [
-          'Tu peux créer un compte avec ton adresse email et un mot de passe, ou en passant par ton compte Google.',
-          'Tu es responsable de la confidentialité de ton mot de passe et des actions effectuées depuis ton compte.',
+          'Tu peux créer un compte avec ton adresse email, ou en passant par ton compte Google. Il n’y a pas de mot de passe : la connexion se fait par un lien envoyé à ton adresse.',
+          'Tu es responsable de l’accès à ta boîte email et des actions effectuées depuis ton compte.',
           'Sans rattachement à un compte, ton bilan reste lié à l’appareil et au navigateur utilisés, et il est supprimé automatiquement après 90 jours.',
         ],
       },

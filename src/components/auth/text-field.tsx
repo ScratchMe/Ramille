@@ -4,7 +4,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 
-// Champ labellisé des écrans de connexion (email, mot de passe) — rayon 16, fond teinté,
+// Champ labellisé des écrans de connexion (adresse email) — rayon 16, fond teinté,
 // bordure accent uniquement quand le champ a du contenu ou une action associée (mot de
 // passe), pour rester proche de la maquette sans dupliquer un style par écran.
 export function TextField({

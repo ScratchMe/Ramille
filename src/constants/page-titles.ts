@@ -33,7 +33,7 @@ export const PAGE_TITLES: Record<string, string> = {
 
   '/connexion': `Se connecter — ${APP_NAME}`,
   '/connexion/email': `Continuer avec un email — ${APP_NAME}`,
-  '/connexion/mot-de-passe-oublie': `Mot de passe oublié — ${APP_NAME}`,
+  '/connexion/retrouver': `Retrouver mon compte — ${APP_NAME}`,
 
   '/feedback': `Nous faire un retour — ${APP_NAME}`,
 

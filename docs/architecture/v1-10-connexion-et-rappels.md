@@ -138,6 +138,30 @@ Le reste vient du canvas : la porte d'entrée « J'ai déjà un compte » sur l'
 l'onboarding (la seule modification d'un écran existant, et celle qui supprime la collision
 au lieu de la gérer), l'écran de reconnexion, son état d'attente, et l'écran de collision.
 
+**Livré le 07/09.** `linkEmail` remplace `linkEmailPassword`, `requestPasswordReset` et
+l'écran `mot-de-passe-oublie` disparaissent, `/connexion/retrouver` porte les quatre états du
+canvas, et la logique partagée avec la page de suppression (limite d'envoi, adresse
+plausible) vit dans `src/types/connexion.ts`, testée. Deux points qui n'étaient pas dans le
+canvas :
+
+- **`/connexion/email` renvoie de lui-même vers « retrouver »** quand `updateUser` répond
+  `422 email_exists` : c'est la personne qui a un compte et qui a pris l'entrée « créer » sur
+  un nouvel appareil — au mauvais écran, pas en erreur. L'adresse est passée en paramètre
+  pour ne pas la faire retaper. Ce chemin révèle qu'une adresse a un compte, mais c'est
+  Supabase qui le dit dans sa réponse, pas l'écran : rien à protéger ici qui ne le soit déjà.
+- **Sur natif, le lien arrive hors de l'app.** Contrairement au retour Google, personne
+  n'attend cette URL : `_layout.tsx` écoute `Linking.useURL()` et ouvre la session dès qu'un
+  fragment porte `access_token`, puis renvoie sur la racine qui route. Le scheme `ramille://`
+  doit figurer dans les Redirect URLs (§8.4) — à faire avec le build EAS (chantier F), il n'y
+  a pas d'app native pour l'exercer avant.
+
+La collision n'est détectée qu'à l'entrée de `/connexion/retrouver` (session anonyme portant
+un bilan, même test que la page de suppression). Le cas symétrique — un compte Google
+existant et un bilan anonyme sur le nouvel appareil, puis « Continuer avec Google » depuis
+`/connexion` — échoue toujours sur `linkIdentity` (l'identité appartient à un autre
+utilisateur) avec un message brut. C'est le cas que la porte d'entrée sur l'onboarding vise
+à rendre rare ; à traiter si les chiffres montrent qu'il ne l'est pas.
+
 **E. Push en canal principal, email en repli.** `v1-02` §5 rangeait les notifications push en
 « increment dédié avec validation d'outil au préalable » : c'est cet increment.
 
@@ -312,7 +336,10 @@ passe `emailRedirectTo` (`${APP_URL}/compte/suppression`, et demain les écrans 
 Supabase **ignore silencieusement** toute redirection absente de la liste d'autorisation et
 retombe sur la Site URL : le lien marche, mais atterrit au mauvais endroit. À déclarer sous
 Authentication → URL Configuration : Site URL `https://www.ramille.fr`, et en Redirect URLs
-`https://www.ramille.fr/**` plus `https://*.vercel.app/**` pour les previews.
+`https://www.ramille.fr/**` plus `https://*.vercel.app/**` pour les previews. Avec le build
+natif (chantier F) s'ajoutera `ramille://**` : le lien de connexion ouvert depuis la
+messagerie du téléphone revient par ce scheme (`makeRedirectUri()` dans
+`/connexion/retrouver`).
 
 **8.5 — Les gabarits d'email sont en anglais par défaut.** Le produit est exclusivement
 francophone : un « Confirm your signup » signé Supabase est le premier email que recevra un

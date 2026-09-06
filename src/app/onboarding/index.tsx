@@ -6,6 +6,7 @@ import { Button } from '@/components/button';
 import { OnboardingHeroIllustration } from '@/components/illustrations/onboarding-hero-illustration';
 import { Mascot } from '@/components/mascot';
 import { OnboardingDots } from '@/components/onboarding-dots';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -47,6 +48,21 @@ export default function OnboardingAccroche() {
         <View style={styles.footer}>
           <Button title="Découvrir mon impact" onPress={() => router.push('/onboarding/contexte')} />
           <OnboardingDots total={4} activeIndex={0} />
+          {/* La seule mention de compte avant le bilan, et volontairement discrète — jamais un
+              bouton — sur un écran dont la promesse est « pas besoin de compte ». Elle est
+              pourtant ce qui fait le gros du travail de v1-10 : proposée ici, elle attrape la
+              personne qui change d'appareil **avant** qu'elle refasse un bilan, donc elle
+              supprime la collision au lieu de la gérer (docs/design/v1-10-retrouver-son-compte). */}
+          <TextLink
+            label="J’ai déjà un compte"
+            onPress={() => router.push('/connexion/retrouver')}
+            role="link"
+            type="small"
+            weight={600}
+            themeColor="textSecondary"
+            style={styles.dejaUnCompte}
+            containerStyle={styles.dejaUnCompteCible}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>
@@ -62,4 +78,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 34, lineHeight: 40, letterSpacing: -0.68 },
   body: { fontSize: 16, lineHeight: 24 },
   footer: { gap: Spacing.five },
+  dejaUnCompte: { textAlign: 'center' },
+  dejaUnCompteCible: { marginTop: -Spacing.four },
 });

@@ -162,12 +162,26 @@ anonyme vit donc normalement dans `assessments`/`assessment_answers` etc., prot�
 mêmes policies RLS owner-scoped que n'importe quel utilisateur (`user_id not null` jamais
 assoupli).
 
-La connexion (Google via `linkIdentity()`, email/mot de passe via `updateUser()`) **convertit
+La connexion (Google via `linkIdentity()`, email via `updateUser({ email })`) **convertit
 la session anonyme en session permanente en conservant le même `user_id`** — jamais
 `signInWithOAuth`/`signUp`, qui créeraient un utilisateur distinct et perdraient le
 rattachement du bilan déjà stocké. Voir `src/lib/auth.ts`. Sur natif, le flux OAuth suit le
 pattern Expo documenté par Supabase : `makeRedirectUri()` + `WebBrowser.openAuthSessionAsync`
 (`skipBrowserRedirect`) + `QueryParams.getQueryParams()` + `supabase.auth.setSession(...)`.
+
+**Il n'y a pas de mot de passe** (`v1-10` §2.D, 07/09/2026) : il n'a jamais servi — aucun
+`signInWithPassword` dans le produit, zéro compte n'en portait — et la confirmation d'email
+faisait déjà tout le travail. Le seul chemin vers un compte **existant** (nouvel appareil) est
+`sendAccountAccessLink` (`signInWithOtp` avec `shouldCreateUser: false`), écran
+`/connexion/retrouver`, atteignable depuis l'accueil de l'onboarding (« J'ai déjà un compte »)
+et depuis `/connexion/email` — qui y renvoie aussi de lui-même quand `updateUser` répond
+`email_exists`. Trois règles gardées par `src/types/connexion.ts` : une adresse inconnue
+(`422 otp_disabled`) mène au **même** écran qu'un envoi réussi, sinon l'écran dit qui utilise
+Ramille ; la limite d'envoi se reconnaît au **code** `over_email_send_rate_limit`, jamais au
+message ; et un appareil qui porte déjà un bilan anonyme voit l'écran de collision avant le
+formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laisse choisir. Sur
+natif, le lien arrive hors de l'app (messagerie) et remonte par `Linking.useURL()` dans
+`_layout.tsx` ; le scheme `ramille://` doit donc figurer dans les Redirect URLs Supabase.
 
 ### Base de données
 
@@ -498,7 +512,7 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `onPress`** — pour tout flux qui doit exécuter une action après fermeture de l'alerte,
   utiliser un état de composant inline (écran à plusieurs états visuels) plutôt qu'un
   callback de bouton d'`Alert`. Voir `src/app/connexion/email.tsx` et
-  `src/app/connexion/mot-de-passe-oublie.tsx`.
+  `src/app/connexion/retrouver.tsx`.
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
   connexion") via AsyncStorage — explicitement device-local, pas de sync multi-device tant
   que le compte n'est pas rattaché. Voir `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`.

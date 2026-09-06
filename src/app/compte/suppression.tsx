@@ -15,7 +15,8 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { APP_URL } from '@/lib/app-url';
 import { sendAccountAccessLink } from '@/lib/auth';
 import { deleteMyAccount, lireEtatDuCompte } from '@/lib/compte';
-import { adresseSemblePlausible, type EtatSuppression } from '@/types/compte-suppression';
+import { type EtatSuppression } from '@/types/compte-suppression';
+import { adresseSemblePlausible, estLimiteDEnvoi } from '@/types/connexion';
 
 // Page publique de suppression de compte — **exigée par Google Play** en plus du chemin
 // dans l'app : la fiche réclame une URL atteignable depuis un navigateur, par quelqu'un qui
@@ -77,14 +78,8 @@ export default function SuppressionCompte() {
     setBusy(false);
 
     // Un seul cas mérite un message distinct : la limite d'envoi, où réessayer tout de suite
-    // ne servirait à rien. Elle se reconnaît au **code**, pas au message — Supabase répond
-    // « For security purposes, you can only request this after N seconds », qui ne contient
-    // pas le mot « rate » (vérifié contre l'API).
-    const bride =
-      error !== null &&
-      (('code' in error && error.code === 'over_email_send_rate_limit') ||
-        ('status' in error && error.status === 429));
-    if (bride) {
+    // ne servirait à rien (cf. `estLimiteDEnvoi`, partagée avec `/connexion/retrouver`).
+    if (estLimiteDEnvoi(error)) {
       setMessage('Trop de demandes coup sur coup. Réessaie dans quelques minutes.');
       return;
     }
