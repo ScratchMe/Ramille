@@ -1,6 +1,6 @@
 import { Text, type TextProps } from 'react-native';
 
-import { Fonts, FontFamily, ThemeColor } from '@/constants/theme';
+import { Fonts, FontFamily, ThemeColor, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const weightToFamily: Record<400 | 500 | 600 | 700, string> = {
@@ -23,6 +23,13 @@ const defaultWeightByType = {
   link: 500,
   linkPrimary: 600,
   code: 500,
+  // Quatre types adossés à `TypeScale` (cf. theme.ts) : ils portent les tailles que les
+  // écrans redéclaraient un par un. `title`/`subtitle` restent tels quels — les migrer est
+  // le lot 4 de `v1-11`, pas celui-ci.
+  screenTitle: 600,
+  salient: 600,
+  cardTitle: 600,
+  body: 500,
 } as const;
 
 export type ThemedTextProps = TextProps & {
@@ -41,7 +48,11 @@ export function ThemedText({ style, type = 'default', themeColor, weight, ...res
   // sur chaque écran évite qu'un futur titre soit oublié — l'audit T11 avait relevé zéro
   // attribut d'accessibilité dans tout `src/`, précisément parce que rien ne les portait par
   // défaut. Reste surchargeable pour le cas où un `title` ne serait pas un titre.
-  const roleParDefaut = type === 'title' || type === 'subtitle' ? ('header' as const) : undefined;
+  // `screenTitle` rejoint la liste : sans lui, migrer un écran vers ce type ferait perdre au
+  // lecteur d'écran la navigation de titre en titre — ce que l'audit T11 avait mis du temps à
+  // obtenir. Le rôle suit la taille, il ne se redéclare pas écran par écran.
+  const roleParDefaut =
+    type === 'title' || type === 'subtitle' || type === 'screenTitle' ? ('header' as const) : undefined;
 
   return (
     <Text
@@ -55,6 +66,10 @@ export function ThemedText({ style, type = 'default', themeColor, weight, ...res
         type === 'link' && baseSizes.link,
         type === 'linkPrimary' && [baseSizes.linkPrimary, { color: theme.accentText }],
         type === 'code' && [baseSizes.code, { fontFamily: Fonts.mono }],
+        type === 'screenTitle' && baseSizes.screenTitle,
+        type === 'salient' && baseSizes.salient,
+        type === 'cardTitle' && baseSizes.cardTitle,
+        type === 'body' && baseSizes.body,
         style,
       ]}
       accessibilityRole={rest.accessibilityRole ?? roleParDefaut}
@@ -72,4 +87,8 @@ const baseSizes = {
   link: { lineHeight: 30, fontSize: 14 },
   linkPrimary: { lineHeight: 30, fontSize: 14 },
   code: { fontSize: 12 },
+  screenTitle: TypeScale.screen,
+  salient: TypeScale.salient,
+  cardTitle: TypeScale.card,
+  body: TypeScale.body,
 } as const;

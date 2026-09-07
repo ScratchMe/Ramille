@@ -125,12 +125,18 @@ export const TypeScale = {
   salient: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },   // chiffre saillant (cap, écart)
   card:    { fontSize: 17, lineHeight: 24 },                         // titre de carte
   body:    { fontSize: 15, lineHeight: 22 },                         // corps d'écran
-  label:   { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },     // étiquette (avec uppercase)
 } as const;
 
-export const Radius = { chip: 8, field: 14, card: 18, button: 27 } as const;
-export const ControlHeight = { target: 44, chip: 46, button: 54 } as const;
+export const Radius = { chip: 8, field: 16, card: 18, button: 27 } as const;
+export const ControlHeight = { target: 44, button: 54, field: 56 } as const;
 ```
+
+**Deux corrections apportées au moment d'écrire le code, contre le relevé réel** (livré ainsi
+le 07/09) : le rayon des champs vaut **16 et non 14** — c'est la valeur la plus fréquente du
+produit, douze usages — et l'échelle `label` à 13 px **n'existe nulle part** ; elle venait de
+la page Système du canvas, pas du code. Elle n'est donc pas déclarée : inventer un jeton pour
+une valeur que personne n'emploie, c'est fabriquer du vocabulaire mort. De même `ControlHeight.chip`
+(46) n'existe pas — une puce se dimensionne par son padding, pas par une hauteur fixe.
 
 `src/components/themed-text.tsx` — ajouter quatre `type` : `screenTitle` (TypeScale.screen,
 600, **rôle header** comme `title`), `salient` (TypeScale.salient, 600), `cardTitle`
@@ -147,8 +153,15 @@ hauteur).
 
 **Tests.** Aucun nouveau test unitaire : des constantes n'ont rien à prouver. **Le critère
 d'acceptation est la non-régression visuelle** : `expo export` avant et après, capture Playwright
-des 18 pages à 390 dp, comparaison pixel à pixel (`pixelmatch` n'est pas installé — comparer
-les PNG par `cmp` ou un script Pillow dans le scratchpad). Zéro différence attendue.
+des 18 pages à 390 dp, comparaison pixel à pixel via Pillow dans le scratchpad.
+
+**Attention en lisant le résultat, vérifié le 07/09 : la capture n'est pas déterministe.** Le
+rendu SVG de la mascotte varie d'une capture à l'autre — jusqu'à 56/255 d'écart sur environ
+175 pixels, toujours dans son cadre. Trois pages sur dix-huit en portent une. **Le contrôle qui
+tranche est de recapturer le même build deux fois** : ce qui bouge aussi entre deux captures
+identiques est du bruit, ce qui ne bouge que d'un build à l'autre est une régression. Sans ce
+contrôle, on conclut à une régression là où il n'y en a pas — ou pire, on prend l'habitude
+d'ignorer trois pages.
 
 **Pièges.** `type="title"` porte `accessibilityRole="header"` par défaut ; `screenTitle` doit
 le porter aussi, sinon la migration du lot 4 ferait perdre la navigation de titre en titre au

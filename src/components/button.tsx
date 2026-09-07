@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { ControlHeight, Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ButtonProps = {
@@ -54,8 +55,8 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    height: 54,
-    borderRadius: 27,
+    height: ControlHeight.button,
+    borderRadius: Radius.button,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,

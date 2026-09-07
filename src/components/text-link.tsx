@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ThemedText, type ThemedTextProps } from '@/components/themed-text';
+import { ControlHeight } from '@/constants/theme';
 
 // Texte cliquable — le motif le plus répandu du produit (retours, liens de pied d'écran,
 // « Je ne sais pas », « Voir les autres modes »…), présent une vingtaine de fois.
@@ -52,5 +53,5 @@ export function TextLink({
 }
 
 const styles = StyleSheet.create({
-  cible: { minHeight: 44, justifyContent: 'center' },
+  cible: { minHeight: ControlHeight.target, justifyContent: 'center' },
 });
