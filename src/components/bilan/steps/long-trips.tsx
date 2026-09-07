@@ -1,9 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
 import type { BilanAnswers } from '@/types/bilan';
 
@@ -63,24 +63,17 @@ export function LongTripsStep({
           ))}
         </View>
 
+        {/* La précision s'ouvre sous les puces qui la déclenchent — cf.
+            `precision-mode.tsx`. */}
         {answers.car_long_trips_per_year > 0 && (
-          <ThemedView type="backgroundElement" style={styles.nestedBox}>
-            <ThemedText type="small" themeColor="textTertiary">
-              Quelle motorisation ?
-            </ThemedText>
-            <View style={styles.engineRow}>
-              {CAR_ENGINE_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={option.label}
-                  selected={answers.car_long_trips_engine === option.value}
-                  onPress={() => update({ car_long_trips_engine: option.value })}
-                  radius={16}
-                  selectedStyle="outline"
-                />
-              ))}
-            </View>
-          </ThemedView>
+          <View style={styles.precision}>
+            <PrecisionMode
+              question="Quelle motorisation ?"
+              options={CAR_ENGINE_OPTIONS}
+              valeur={answers.car_long_trips_engine}
+              onChange={(value) => update({ car_long_trips_engine: value })}
+            />
+          </View>
         )}
       </View>
 
@@ -96,9 +89,5 @@ const styles = StyleSheet.create({
   block: { gap: Spacing.two },
   field: { gap: Spacing.two + 2 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two, marginTop: 4 },
-  row: { flexDirection: 'row', gap: Spacing.two },
-  // Quatre motorisations : équiréparties, « Hybride rechargeable » écraserait les
-  // trois autres. Largeur naturelle et retour à la ligne.
-  engineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  precision: { marginTop: 4 },
 });

@@ -57,7 +57,16 @@ export default function OnboardingTransition() {
               // schéma mais n'est écrit par aucun code du produit, donc c'est ici — et
               // seulement ici — que le franchissement se lit.
               track('onboarding_complete');
-              router.push('/bilan');
+              // **On vide la pile en quittant l'onboarding, on n'empile pas le questionnaire
+              // par-dessus.** Sans cela, au tout premier lancement, le retour matériel Android
+              // depuis `/plan` remontait les quatre écrans d'onboarding un par un au lieu de
+              // quitter l'app (retour d'appareil du 07/09/2026) — et seulement au premier
+              // lancement, puisque ensuite la racine route directement vers `/plan`. La règle
+              // de `v1-11` §8 (le retour depuis le plan quitte l'app) ne se tient pas en
+              // interceptant le bouton retour, mais en n'accumulant pas d'historique derrière
+              // un flux terminé : l'onboarding ne se rejoue pas.
+              if (router.canDismiss()) router.dismissAll();
+              router.replace('/bilan');
             }}
           />
           <OnboardingDots total={4} activeIndex={3} />

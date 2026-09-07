@@ -7,6 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "ramille",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#E4EFE8",
     "ios": {
       "icon": "./assets/expo.icon"
     },

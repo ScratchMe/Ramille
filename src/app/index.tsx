@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { EcranLancement } from '@/components/ecran-lancement';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useTheme } from '@/hooks/use-theme';
 import { ensureSession, supabase } from '@/lib/supabase';
 
 // Racine de l'app — jamais un écran visible en pratique (redirection immédiate dès que la
@@ -24,7 +24,6 @@ import { ensureSession, supabase } from '@/lib/supabase';
 // message, sans requête réseau, donc sans trace nulle part. Une redirection qui n'aboutit
 // pas doit se voir : c'est le seul écran par lequel tout le monde passe.
 export default function Index() {
-  const theme = useTheme();
   const [echec, setEchec] = useState<string | null>(null);
 
   // Le `setState` d'échec vit **après** un `await`, dans une fonction asynchrone : une
@@ -91,18 +90,11 @@ export default function Index() {
     );
   }
 
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeAreaCentre}>
-        <ActivityIndicator color={theme.textTertiary} />
-      </SafeAreaView>
-    </ThemedView>
-  );
+  return <EcranLancement />;
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeAreaCentre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   safeArea: { flex: 1, justifyContent: 'center', padding: 24 },
   bloc: { gap: 16 },
   detail: { fontSize: 12, lineHeight: 18 },
