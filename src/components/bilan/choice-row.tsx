@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Rangée de choix pleine largeur — B1.1, B1.3 (tranches), B2.1 (fréquence).
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   row: {
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,
-    borderRadius: 16,
+    borderRadius: Radius.field,
     borderWidth: 1.5,
   },
   label: { fontSize: 16, lineHeight: 22 },

@@ -6,7 +6,7 @@ import { RamilleDit } from '@/components/ramille-dit';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { RAMILLE } from '@/constants/mascotte';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
 export type EngagementCheckin = {
@@ -87,7 +87,7 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 18, padding: 18, gap: 10 },
+  card: { borderRadius: Radius.card, padding: 18, gap: 10 },
   question: { fontSize: 16, lineHeight: 23 },
   actions: { flexDirection: 'row', gap: Spacing.two },
 });

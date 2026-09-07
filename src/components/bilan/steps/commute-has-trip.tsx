@@ -15,7 +15,7 @@ export function CommuteHasTripStep({
 }) {
   return (
     <View style={styles.container}>
-      <ThemedText type="title" weight={600} style={styles.title}>
+      <ThemedText type="screenTitle">
         As-tu un trajet régulier pour le travail ou les études ?
       </ThemedText>
       <View style={styles.choices}>
@@ -53,7 +53,6 @@ export function CommuteHasTripStep({
 
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   choices: { gap: Spacing.two + 2 },
   helper: { lineHeight: 21 },
 });

@@ -31,7 +31,7 @@ export function RamilleDit({
   return (
     <View style={[styles.row, style]}>
       <Mascot mood={mood} size={size} tilt={tilt} />
-      <ThemedText themeColor={themeColor} style={styles.text}>
+      <ThemedText type="body" themeColor={themeColor} style={styles.text}>
         {ligne}
       </ThemedText>
     </View>
@@ -40,5 +40,5 @@ export function RamilleDit({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  text: { flex: 1, fontSize: 15, lineHeight: 22 },
+  text: { flex: 1, minWidth: 0 },
 });

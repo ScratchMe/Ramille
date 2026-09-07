@@ -6,7 +6,7 @@ import { Chip } from '@/components/bilan/chip';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import {
   INTENTION_DAYS,
@@ -189,7 +189,7 @@ export function ActionCommitment({
 
 const styles = StyleSheet.create({
   footer: { marginTop: Spacing.three },
-  picker: { marginTop: Spacing.three, borderRadius: 16, padding: Spacing.four, gap: Spacing.three },
+  picker: { marginTop: Spacing.three, borderRadius: Radius.field, padding: Spacing.four, gap: Spacing.three },
   dayRow: { flexDirection: 'row', gap: 6 },
   timingColumn: { gap: Spacing.two },
   pickerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },

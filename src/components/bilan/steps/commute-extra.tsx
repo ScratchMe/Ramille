@@ -5,7 +5,7 @@ import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import {
   CAR_ENGINE_OPTIONS,
   TRANSPORT_MODE_LABELS,
@@ -42,7 +42,7 @@ export function CommuteExtraStep({
       {answers.commute_is_carpool && (
         <>
           <View style={styles.block}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="screenTitle">
               Vous êtes combien à partager ce trajet ?
             </ThemedText>
             <View style={styles.row}>
@@ -168,14 +168,13 @@ export function CommuteExtraStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   row: { flexDirection: 'row', gap: Spacing.two },
   // Quatre motorisations : équiréparties, « Hybride rechargeable » écraserait les
   // trois autres. Largeur naturelle et retour à la ligne.
   engineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   separator: { height: 1 },
-  nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
+  nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
   nestedList: { gap: Spacing.two },
   nestedEngine: { gap: Spacing.two, marginTop: Spacing.two },
 });

@@ -34,7 +34,7 @@ export function ContextStep({
   return (
     <View style={styles.container}>
       <View style={styles.intro}>
-        <ThemedText type="title" weight={600} style={styles.title}>
+        <ThemedText type="screenTitle">
           Quel est ton contexte de mobilité ?
         </ThemedText>
         <ThemedText type="small" themeColor="textTertiary">
@@ -103,7 +103,6 @@ export function ContextStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.four },
   intro: { gap: Spacing.two },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   field: { gap: Spacing.two + 2 },
   row: { flexDirection: 'row', gap: Spacing.two },
 });

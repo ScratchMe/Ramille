@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import type { BilanAnswers, LeisureFrequency } from '@/types/bilan';
 
 const OPTIONS: { value: LeisureFrequency; label: string }[] = [
@@ -28,7 +28,7 @@ export function LeisureFrequencyStep({
 
   return (
     <View style={styles.container}>
-      <ThemedText type="title" weight={600} style={styles.title}>
+      <ThemedText type="screenTitle">
         À quelle fréquence fais-tu des trajets loisirs le weekend ?
       </ThemedText>
       {!commuteSkipped && (
@@ -64,8 +64,7 @@ export function LeisureFrequencyStep({
 
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   choices: { gap: Spacing.two + 2 },
-  notice: { borderRadius: 16, padding: Spacing.three },
+  notice: { borderRadius: Radius.field, padding: Spacing.three },
   noticeText: { lineHeight: 21 },
 });

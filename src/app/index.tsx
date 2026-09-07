@@ -71,10 +71,10 @@ export default function Index() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.bloc}>
-            <ThemedText type="title" weight={600} style={styles.titre}>
+            <ThemedText type="screenTitle">
               Le démarrage a échoué
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.corps}>
+            <ThemedText type="body" themeColor="textSecondary">
               Vérifie ta connexion et réessaie. Si ça se reproduit, cette précision aidera à
               comprendre :
             </ThemedText>
@@ -105,8 +105,6 @@ const styles = StyleSheet.create({
   safeAreaCentre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   safeArea: { flex: 1, justifyContent: 'center', padding: 24 },
   bloc: { gap: 16 },
-  titre: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
-  corps: { fontSize: 15, lineHeight: 22 },
   detail: { fontSize: 12, lineHeight: 18 },
   bouton: { marginTop: 8 },
 });
