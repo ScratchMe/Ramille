@@ -16,6 +16,7 @@ import { APP_URL } from '@/lib/app-url';
 import { sendAccountAccessLink } from '@/lib/auth';
 import { lireEtatDuCompte } from '@/lib/compte';
 import { adresseSemblePlausible, estLimiteDEnvoi } from '@/types/connexion';
+import { track } from '@/lib/analytics';
 
 // "Retrouver mon compte" — l'écran qui manquait (docs/design/v1-10-retrouver-son-compte) :
 // jusqu'à v1-10, le produit n'avait aucun chemin vers un compte *existant*. Sur un nouvel
@@ -36,9 +37,19 @@ import { adresseSemblePlausible, estLimiteDEnvoi } from '@/types/connexion';
 //   - `chargement` : le temps de savoir s'il y a collision.
 type Phase = 'chargement' | 'collision' | 'saisie' | 'envoye';
 
+/** Un paramètre d'URL vient de l'extérieur : on ne le relaie pas tel quel dans une mesure. */
+function sourceMesuree(source: string | undefined): 'onboarding' | 'email' | 'google' {
+  if (source === 'email') return 'email';
+  if (source === 'google') return 'google';
+  return 'onboarding';
+}
+
 export default function RetrouverMonCompte() {
-  // `email` prérempli quand on arrive de /connexion/email après un `email_exists`.
-  const params = useLocalSearchParams<{ email?: string }>();
+  // `email` prérempli quand on arrive de /connexion/email après un `email_exists`. `source`
+  // dit par quelle porte on est entré — l'accueil de l'onboarding ou l'écran email — et c'est
+  // la moitié de ce qu'on cherche à savoir : combien de personnes changent d'appareil **avant**
+  // de refaire un bilan, la porte qui doit rendre la collision rare (v1-10 §2.D).
+  const params = useLocalSearchParams<{ email?: string; source?: string }>();
   const [phase, setPhase] = useState<Phase>('chargement');
   const [email, setEmail] = useState(params.email ?? '');
   const [busy, setBusy] = useState(false);
@@ -48,7 +59,13 @@ export default function RetrouverMonCompte() {
     let annule = false;
     lireEtatDuCompte()
       .then((etat) => {
-        if (!annule) setPhase(etat.kind === 'anonyme-avec-donnees' ? 'collision' : 'saisie');
+        if (annule) return;
+        const collision = etat.kind === 'anonyme-avec-donnees';
+        setPhase(collision ? 'collision' : 'saisie');
+        // **L'affichage se mesure ici, pas au montage.** L'écran ne sait pas encore, en
+        // arrivant, s'il y a collision — et c'est ce booléen qui porte toute la valeur de la
+        // mesure. `useTrackView` émettrait trop tôt, avec la moitié de l'information.
+        track('retrouver_view', { source: sourceMesuree(params.source), collision });
       })
       .catch(() => {
         if (!annule) setPhase('saisie');
@@ -56,6 +73,8 @@ export default function RetrouverMonCompte() {
     return () => {
       annule = true;
     };
+    // Volontairement au montage seul : `params.source` ne change pas pendant la vie de l'écran.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const envoyerLeLien = async () => {
@@ -65,6 +84,10 @@ export default function RetrouverMonCompte() {
       return;
     }
     setBusy(true);
+    // Émis à la demande, pas au résultat : la réponse est volontairement la même que l'adresse
+    // ait un compte ou non, et compter les envois « réussis » reviendrait à enregistrer une
+    // information que l'écran refuse d'afficher.
+    track('retrouver_send');
     // Le lien ramène à la racine, qui route vers le plan si le compte retrouvé porte un bilan
     // complété, vers l'onboarding sinon (cf. src/app/index.tsx). Sur natif, le lien s'ouvre
     // depuis la messagerie et revient par le scheme `ramille://`, traité dans _layout.tsx —

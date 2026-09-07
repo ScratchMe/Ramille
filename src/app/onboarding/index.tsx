@@ -55,7 +55,7 @@ export default function OnboardingAccroche() {
               supprime la collision au lieu de la gérer (docs/design/v1-10-retrouver-son-compte). */}
           <TextLink
             label="J’ai déjà un compte"
-            onPress={() => router.push('/connexion/retrouver')}
+            onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'onboarding' } })}
             role="link"
             type="small"
             weight={600}

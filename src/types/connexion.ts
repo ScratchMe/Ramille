@@ -36,6 +36,22 @@ export function adresseDejaRattachee(error: ErreurAuth): boolean {
 }
 
 /**
+ * L'identité Google appartient déjà à un autre compte — le pendant exact de
+ * `adresseDejaRattachee`, pour le chemin Google : quelqu'un qui a un compte Ramille, change
+ * d'appareil, refait un bilan sans passer par « J'ai déjà un compte », puis tape
+ * « Continuer avec Google ». `linkIdentity` ne peut pas rattacher une identité déjà prise.
+ *
+ * Reconnue au **code**, jamais au message, et le code est vérifié contre la liste officielle
+ * de l'API Auth (07/09/2026) : `identity_already_exists` — « The identity to which the API
+ * relates is already linked to a user. » Même règle que pour `email_exists` et
+ * `over_email_send_rate_limit`, et pour la même raison : un message change sans prévenir, et
+ * une détection qui s'appuie dessus cesse de fonctionner en silence.
+ */
+export function identiteDejaRattachee(error: ErreurAuth): boolean {
+  return error?.code === 'identity_already_exists';
+}
+
+/**
  * Validation d'adresse volontairement large — le seul but est d'éviter d'appeler l'API pour
  * une saisie manifestement incomplète. Toute règle plus stricte finit par refuser une
  * adresse valide, et c'est l'utilisateur qui paie l'erreur.
