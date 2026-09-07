@@ -10,7 +10,7 @@ import { APP_URL } from '@/lib/app-url';
 // affirmation ci-dessous est vérifiable dans le code ou le schéma :
 //   - session anonyme dès l'ouverture -> `ensureSession()` (src/lib/supabase.ts), v1-04 §1 ;
 //   - champs collectés -> colonnes de `assessment_answers` (v1-05 §3) ;
-//   - rappels par email -> `notification_outbox` + opt-out `profiles.email_reminders_enabled` ;
+//   - rappels par notification ou par email -> `notification_outbox` + `profiles.reminder_channel` ;
 //   - purge à 90 jours -> `purge_stale_anonymous_accounts()`, cron quotidien ;
 //   - aucune géolocalisation -> non-goal explicite de la spec §2 ;
 //   - carte de partage sans lecture serveur -> v1-06 §2 ;

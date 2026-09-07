@@ -411,10 +411,17 @@ contexte ne reproduit pas le rôle sous lequel il tournera.
 **Rappel par email** : `enqueue_checkin_reminders()` remplit `notification_outbox` à chaque
 génération de check-in, `send_pending_reminders()` (cron quotidien 7h UTC) l'envoie via
 l'extension `http`. **La garantie anti-relance de la spec §7 est structurelle** :
-`unique(checkin_id)` sur la boîte d'envoi — un check-in, un email, jamais deux, quel que soit
-le nombre de passages du cron. Quatre conditions d'éligibilité, toutes nécessaires : compte
-rattaché, email **confirmé**, rappels non désactivés (`profiles.email_reminders_enabled`,
-opt-out réglable depuis `/suivi`), check-in encore `pending`. **L'envoi est inactif tant que
+`unique(checkin_id)` sur la boîte d'envoi — un check-in, un message, jamais deux, quel que
+soit le canal et le nombre de passages du cron ; le repli push → email est une **mise à jour de
+la même ligne**, jamais une seconde. Le canal effectif se résout en un seul endroit,
+`reminder_channel_for()` (v1-12 §3), dont la table de vérité est **écrite deux fois** — SQL
+pour ce qui part, `src/types/rappels.ts` pour ce que l'app affiche — et épinglée des deux côtés
+(`17_rappels_canal.test.sql`, `rappels.test.ts`) : toucher à l'une sans l'autre est le défaut
+que cette paire existe pour attraper. La préférence vit dans `profiles.reminder_channel`
+(`push` / `email` / `none`, réglable depuis « Toi », **sessions anonymes comprises** — le push
+n'a besoin que d'un jeton d'appareil), et elle **ne se dégrade jamais d'elle-même** : un `push`
+sans jeton actif part par email sans que rien ne soit réécrit, pour que rouvrir les
+notifications dans les réglages du téléphone suffise à le faire repartir. **L'envoi est inactif tant que
 les secrets Vault `resend_api_key` et `reminder_from_address` n'existent pas** — la fonction
 sort sans rien toucher, les rappels restent en attente. Voir `v1-07` §3.1 pour la mise en
 service.

@@ -22,7 +22,9 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, c
   -- D : rattaché mais a désactivé les rappels
   ('ba111111-1111-1111-1111-111111111114', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-optout@test.local', 'x', now(), now(), now(), false);
 
-update public.profiles set email_reminders_enabled = false
+-- Le canal à trois valeurs a remplacé le booléen (v1-12 §4.1) : avec deux canaux, le
+-- « non » de l'email n'est plus le « non » du rappel.
+update public.profiles set reminder_channel = 'none'
 where id = 'ba111111-1111-1111-1111-111111111114';
 
 insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label)
@@ -55,8 +57,8 @@ select is_empty(
 select is_empty(
   $$ select 1 from public.notification_outbox o
      join public.profiles p on p.id = o.user_id
-     where not p.email_reminders_enabled $$,
-  'Aucun rappel pour quelqu''un qui les a désactivés'
+     where p.reminder_channel = 'none' $$,
+  'Aucun rappel pour quelqu''un qui les a coupés'
 );
 
 -- ── La garantie anti-relance ───────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 # v1-12 — Rappels : notification, email, ou rien
 
-**Date** : 07/09/2026. **Statut** : document d'implémentation du chantier E de v1-10, **en
-attente de Go — rien n'est implémenté**. Il acte les décisions prises le 07/09 et le canvas qui
+**Date** : 07/09/2026. **Statut** : document d'implémentation du chantier E de v1-10. Go donné
+le 07/09 sur la direction B ; **PR 1 livrée** (base et réglage, §4 et §6.4), PR 2 et 3 à venir. Il acte les décisions prises le 07/09 et le canvas qui
 en découle ; il ne remplace ni `v1-02` (la boucle), ni `v1-07` §3.1 (le canal email), ni
 `v1-10` §2.E (le plan initial du push) — il les prolonge.
 
@@ -84,7 +84,8 @@ Une migration, `supabase/migrations/2026090[8-9]…_rappels_canal.sql`, puis ré
 ### 4.1 `profiles.reminder_channel` remplace `email_reminders_enabled`
 
 `reminder_channel text not null default 'email' check (reminder_channel in ('push', 'email',
-'none'))`. Migration des 223 profils existants : `false → 'none'`, `true → 'email'` — le
+'none'))`. Migration des profils existants (109 au 07/09, la purge sur inactivité étant
+passée depuis le comptage de v1-10) : `false → 'none'`, `true → 'email'` — le
 comportement d'aujourd'hui, à l'identique (un `'email'` sans compte rattaché ne part pas, comme
 avant). Puis `drop column email_reminders_enabled` **dans la même migration** : aucune app n'est
 sur Play, les seuls builds natifs sont les APK de test, et faire coexister deux colonnes pour
@@ -141,6 +142,16 @@ alter table public.notification_outbox
   add column provider_ticket text,               -- id de ticket Expo, pour les reçus (§4.5)
   alter column recipient_email drop not null;    -- null pour un push
 ```
+
+**Écart assumé avec le plan initial, décidé à l'implémentation** : le corps du push vit dans
+une colonne **`push_body`** à côté de `body` (l'email complet, signé), au lieu que `body` porte
+l'un ou l'autre selon le canal. Sans cela, le repli push → email devrait reconstruire le texte
+de l'email au moment de l'envoi — et le message ne serait plus celui figé à la génération, ce
+qui est précisément ce que la boîte d'envoi existe pour garantir. Même raison pour
+`recipient_email`, renseignée **même sur une ligne push** dès qu'une adresse est utilisable :
+le repli n'a alors rien à relire dans `auth.users`. Et `provider_ticket` est un `jsonb`
+`{id du ticket: jeton}` plutôt qu'un texte : les reçus (§4.5) ne rendent que des identifiants
+de ticket, sans cette correspondance ils ne pourraient désactiver aucun jeton.
 
 `enqueue_checkin_reminders()` applique la table du §3, une ligne par point : `channel`,
 `recipient_email` (email seulement), `send_after` = `now()` pour un push (pas d'étalement), le
@@ -379,13 +390,16 @@ tester une RPC qui vérifie `auth.uid()` — même erreur que le garde-fou de vo
 
 ## 9. Ce qui reste ouvert
 
-- **Le jeton dans l'export.** Une adresse technique d'appareil, pas une donnée de la
-  personne : exporter la plateforme et les dates, pas le jeton — à confirmer.
+**Tranché le 07/09**, et retiré de cette liste : le jeton **n'est pas exporté en entier** — la
+plateforme, les dates et les six derniers caractères suffisent à reconnaître un appareil, là
+où la chaîne complète est l'adresse à laquelle on peut lui pousser une notification, sans
+aucune valeur de portabilité (elle ne se réimporte nulle part et meurt à la désinstallation).
+Trois assertions du test `15` l'épinglent. Et la base sera **repurgée avant l'ouverture** :
+la question de ce que les comptes existants verront à leur prochain engagement ne se pose
+plus.
+
 - **Le rayon de la feuille** : 24 sur le canvas, absent de `Radius`. Rabattre sur `card`
   (18) ou nommer `sheet` — trancher à l'implémentation, pas recopier en dur.
-- **Les 223 profils existants verront la feuille à leur prochain engagement**, une fois. C'est
-  voulu — c'est le moment de leur proposer la notification — mais c'est une décision, pas un
-  effet de bord.
 - **La sécurité renforcée du push** (jeton d'accès Expo) : recommandée, pas requise pour le
   premier test.
 
@@ -393,10 +407,15 @@ tester une RPC qui vérifie `auth.uid()` — même erreur que le garde-fou de vo
 
 Une PR par étage, chacune verte seule ; le push depuis GitHub en un clic après la seconde.
 
-1. **La base et le réglage** — migration (§4), types régénérés, `notification-prefs.ts` au
-   canal, « Toi » à trois lignes (§6.4), `src/types/rappels.ts` + tests, pgTAP `17` et les
-   mises à jour de `03`, `12`, `15`, `16`. L'app continue de marcher sans `expo-notifications` :
-   `push_tokens` est simplement vide, la table du §3 retombe sur l'email.
+1. **La base et le réglage** — *livrée le 07/09*. Migration (§4), types régénérés,
+   `notification-prefs.ts` au canal, « Toi » à trois lignes (§6.4), `src/types/rappels.ts` +
+   tests, pgTAP `17` et les mises à jour de `09`, `15`, `16`. L'app continue de marcher sans
+   `expo-notifications` : `push_tokens` est simplement vide, la table du §3 retombe sur
+   l'email. Deux écarts avec le plan : l'interrupteur de rappel qui subsistait **aussi** sur
+   `/suivi` a été retiré (le réglage vit sur « Toi », qui est le lieu du compte depuis v1-11
+   §2.5), et la RLS de `push_tokens` est couverte par `17` plutôt que par `03` — elle est
+   inséparable du RPC qui remplace la policy INSERT, et la séparer aurait donné deux tests qui
+   ne se lisent qu'ensemble.
 2. **Le natif et le moment** — `expo-notifications`, `rappels.ts` (§5.3), le retour (§5.4), la
    feuille (§6.1), la carte d'attente (§6.2), `mascotte.ts` (§6.3), la page de
    confidentialité (§6.5), l'événement `rappels_view`, et les retouches de `CLAUDE.md`
