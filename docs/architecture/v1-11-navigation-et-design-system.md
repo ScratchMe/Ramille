@@ -661,3 +661,23 @@ raccourci vers un autre. Il perd sa hauteur inutile (bordure fine, moitié moins
 verticale, même traitement que le pied de `/suivi/bilan`) et surtout **il ne se rend plus du
 tout quand il est vide** — la condition vivait à l'intérieur, et quand la proposition de
 re-bilan s'affichait plus haut dans la page, il restait une bande vide de 48 px collée en bas.
+
+### 9.8 Le nom perdait son dernier « e »
+
+Sur appareil, l'écran d'ouverture affichait « Ramill ». Ce n'est pas une faute de frappe : le
+nom vient de `APP_NAME`, il n'y a pas d'endroit où l'écrire de travers.
+
+`_layout.tsx` **ne retient pas le premier rendu en attendant `useFonts`** — il ne s'en sert
+que pour masquer le splash. L'écran d'ouverture est donc le seul du produit à se dessiner
+pendant que Spline Sans charge : il se mesure avec la police de repli, puis se redessine en
+SemiBold, plus large. La boîte du texte, cousue à la mesure d'origine, rognait le glyphe qui
+dépassait. Le reste du produit ne peut pas connaître ce défaut : quand ces écrans arrivent,
+la police est là.
+
+Le bloc du nom prend maintenant toute la largeur et le texte se centre dedans — **un texte
+qui ne tire pas sa largeur de sa propre mesure ne peut pas se faire couper**. Mesuré au
+rendu : boîte de 390 px pour un écran de 390, aucun débordement.
+
+La correction tentante — retenir le premier rendu jusqu'à `useFonts` — est précisément ce que
+le commentaire de `_layout.tsx` interdit : `useFonts` ne résout jamais pendant la génération
+statique de l'export web, et l'app ne se rendrait plus du tout.

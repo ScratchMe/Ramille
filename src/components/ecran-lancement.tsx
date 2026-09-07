@@ -106,7 +106,14 @@ export function EcranLancement() {
       <Animated.View style={styleMascotte}>
         <Mascot mood={humeur} size={TAILLE} tilt={0} />
       </Animated.View>
-      <Animated.View style={styleNom}>
+      {/* Le bloc du nom prend **toute la largeur**, et le texte se centre dedans. Cousu à sa
+          propre largeur, il perdait son dernier « e » sur appareil : `_layout.tsx` ne retient
+          pas le premier rendu en attendant `useFonts` (il ne s'en sert que pour masquer le
+          splash), donc cet écran-ci — le tout premier — se mesure avec la police de repli
+          puis se redessine en Spline Sans SemiBold, plus large. La boîte, elle, gardait
+          l'ancienne mesure et rognait le glyphe qui dépassait. Un texte qui ne tire pas sa
+          largeur de sa propre mesure ne peut pas se faire couper. */}
+      <Animated.View style={[styles.blocNom, styleNom]}>
         <ThemedText weight={600} themeColor="accentText" style={styles.nom}>
           {APP_NAME}
         </ThemedText>
@@ -125,5 +132,6 @@ const styles = StyleSheet.create({
   // encoche comprise. L'écart mascotte/nom est réservé en dur : il ne doit pas bouger quand
   // le nom s'anime, sinon la feuille se déplace avec lui.
   ecran: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  nom: { fontSize: 30, lineHeight: 38, letterSpacing: -0.6 },
+  blocNom: { alignSelf: 'stretch' },
+  nom: { fontSize: 30, lineHeight: 38, letterSpacing: -0.6, textAlign: 'center' },
 });
