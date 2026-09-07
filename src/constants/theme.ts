@@ -96,5 +96,54 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+/**
+ * Échelle typographique **réellement en vigueur dans les écrans**, relevée le 07/09/2026
+ * (canvas `docs/design/v1-11-navigation/`, page Système ; plan `v1-11` lot 0).
+ *
+ * Ce n'est pas une proposition : c'est le constat que quatre tailles se répètent en dur d'un
+ * écran à l'autre — 26/32 dix-huit fois, 15/22 treize fois — alors que `ThemedText` ne connaît
+ * que `title` (48) et `subtitle` (32), tailles du handoff initial qu'**aucun écran n'affiche
+ * sans les surcharger**. Le rôle d'en-tête accessible était donc porté par le `type`, et la
+ * taille par l'écran : ces jetons referment cette dissociation.
+ *
+ * Les tailles uniques restent en dur là où elles vivent (34 de l'accroche d'onboarding, 48 du
+ * total de la restitution) : les nommer serait du bruit, pas du vocabulaire.
+ */
+export const TypeScale = {
+  /** Titre d'écran. */
+  screen: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
+  /** Chiffre saillant d'une carte : cap de la saison, écart entre deux bilans. */
+  salient: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
+  /** Titre de carte : intitulé d'une action, d'un check-in. */
+  card: { fontSize: 17, lineHeight: 24 },
+  /** Corps d'écran, sous un titre. Plus resserré que le `default` de ThemedText (16/24). */
+  body: { fontSize: 15, lineHeight: 22 },
+} as const;
+
+/**
+ * Rayons. `field` vaut **16 et non 14** — la valeur du canvas était fausse, le relevé du code
+ * la corrige : c'est le rayon le plus fréquent du produit (douze usages), partagé par les
+ * champs de saisie et les blocs internes d'une carte.
+ */
+export const Radius = {
+  /** Petite puce d'information (cadence du plan). */
+  chip: 8,
+  /** Champ de saisie, bloc interne d'une carte. */
+  field: 16,
+  /** Carte. */
+  card: 18,
+  /** Bouton pleine largeur. */
+  button: 27,
+} as const;
+
+/**
+ * Hauteurs de contrôle. `target` est le minimum tactile (WCAG 2.5.8 / Material), porté par
+ * `TextLink` sans déplacer le texte.
+ */
+export const ControlHeight = {
+  target: 44,
+  button: 54,
+  field: 56,
+} as const;
+
 export const MaxContentWidth = 800;
