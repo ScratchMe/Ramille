@@ -401,21 +401,23 @@ export default function Plan() {
             </ThemedView>
           )}
 
-        </ScrollView>
-
-        {/* « Voir mon suivi » a disparu : la barre le porte, et un lien qui double un onglet
-            apprend à ne pas se servir de la barre. Le renvoi vers le bilan reste — ce n'est
-            pas une destination de la barre, c'est le détail d'une entrée du suivi. */}
-        <View style={styles.footer}>
+          {/* « Voir mon suivi » a disparu : la barre le porte, et un lien qui double un onglet
+              apprend à ne pas se servir de la barre. Le renvoi vers le bilan reste — ce n'est
+              pas une destination de la barre, c'est le détail d'une entrée du suivi.
+              **Mais il ne vaut pas un bandeau collant** (retour d'appareil du 07/09/2026) :
+              il occupait ~68 px en permanence sur l'écran où l'on revient le plus souvent,
+              pour un geste que l'onglet Suivi économise à peine — une entrée permanente dans
+              la chrome, soit exactement la troisième destination que le modèle à deux onglets
+              a refusée. En fin de flux, il ne coûte rien. */}
           <TextLink
-            label="Revenir à mon bilan"
+            label="Revoir mon bilan"
             onPress={() => router.push({ pathname: '/suivi/bilan', params: { id: assessmentId } })}
             role="link"
             type="small"
             themeColor="textTertiary"
-            style={styles.footerLink}
+            style={styles.lienBilan}
           />
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -439,8 +441,7 @@ const styles = StyleSheet.create({
   rebilanCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
   calmeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   calmeTexte: { flex: 1, minWidth: 0, gap: 2 },
-  footer: { padding: Spacing.four, gap: Spacing.three },
-  footerLink: { textAlign: 'center' },
+  lienBilan: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   emptyIllustration: { height: 140 },
   emptyBody: { fontSize: 16, lineHeight: 24 },

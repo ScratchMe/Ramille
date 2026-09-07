@@ -332,8 +332,14 @@ export default function Suivi() {
 
         </ScrollView>
 
-        <View style={styles.footer}>
-          {!suggestRebilan && (
+        {/* Le bandeau ne se rend que s'il porte quelque chose : la condition vivait à
+            l'intérieur, et quand la proposition de re-bilan s'affichait plus haut, il restait
+            une bande vide de 48 px collée en bas. Et il ne porte plus que sa hauteur, avec un
+            filet plutôt qu'une rupture — même traitement que le pied de `/suivi/bilan`.
+            Le canal de retour et le compte ont rejoint l'écran « Toi » (v1-11 §2.5) : le
+            suivi retrouve son sujet — les bilans et les points répondus. */}
+        {!suggestRebilan && (
+          <View style={[styles.footer, { borderTopColor: theme.border }]}>
             <TextLink
               label="Refaire mon bilan"
               onPress={() => router.push('/bilan')}
@@ -343,10 +349,8 @@ export default function Suivi() {
               themeColor="accentText"
               style={styles.footerLink}
             />
-          )}
-          {/* Le canal de retour et le compte ont rejoint l'écran « Toi » (v1-11 §2.5) : le
-              suivi retrouve son sujet — les bilans et les points répondus. */}
-        </View>
+          </View>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -371,7 +375,7 @@ const styles = StyleSheet.create({
   checkinList: { gap: Spacing.two },
   checkinRow: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
   checkinPeriod: { flex: 1 },
-  footer: { gap: Spacing.three, padding: Spacing.four },
+  footer: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
   footerLink: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   emptyIllustration: { height: 140 },
