@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProgressHeader } from '@/components/bilan/progress-header';
 import { Button } from '@/components/button';
+import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -21,6 +22,7 @@ export function StepShell({
   nextLabel = 'Suivant',
   nextDisabled,
   notice,
+  message,
 }: {
   section: string;
   step: number;
@@ -32,6 +34,9 @@ export function StepShell({
   nextDisabled?: boolean;
   /** Bandeau discret sous l'en-tête (ex. « réponses pré-remplies » lors d'un re-bilan). */
   notice?: string;
+  /** Échec de la dernière tentative, affiché juste au-dessus des boutons — là où l'action a
+   *  été déclenchée, et dans la zone collante, donc sans avoir à faire défiler. */
+  message?: string | null;
 }) {
   return (
     <ThemedView style={styles.container}>
@@ -49,9 +54,12 @@ export function StepShell({
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {children}
         </ScrollView>
-        <View style={styles.footer}>
-          {onBack && <Button title="Retour" variant="secondary" onPress={onBack} />}
-          <Button title={nextLabel} onPress={onNext} disabled={nextDisabled} flex />
+        <View style={styles.footerBlock}>
+          <MessageInline message={message ?? null} />
+          <View style={styles.footer}>
+            {onBack && <Button title="Retour" variant="secondary" onPress={onBack} />}
+            <Button title={nextLabel} onPress={onNext} disabled={nextDisabled} flex />
+          </View>
         </View>
       </SafeAreaView>
     </ThemedView>
@@ -64,5 +72,8 @@ const styles = StyleSheet.create({
   headerBlock: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
   notice: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: Spacing.three },
   scrollContent: { padding: Spacing.four, gap: Spacing.five, flexGrow: 1 },
-  footer: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center', padding: Spacing.four },
+  // Le padding vit sur le bloc, pas sur la rangée : le message doit être aligné sur les
+  // boutons et non collé au bord.
+  footerBlock: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.four, gap: Spacing.two },
+  footer: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
 });
