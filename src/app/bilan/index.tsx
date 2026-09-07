@@ -20,6 +20,7 @@ import {
   BILAN_SECTION_LABEL,
   EMPTY_BILAN_ANSWERS,
   isStepComplete,
+  manqueDeLEtape,
   nextStep,
   previousStep,
   visibleSteps,
@@ -211,6 +212,7 @@ export default function BilanQuestionnaire() {
       onNext={handleNext}
       nextLabel={isLastStep ? (submitting ? 'Enregistrement…' : 'Voir mon bilan') : 'Suivant'}
       nextDisabled={submitting || !isStepComplete(step, answers)}
+      manque={submitting ? null : manqueDeLEtape(step, answers)}
       notice={prefilled ? 'Tes réponses précédentes sont pré-remplies. Modifie ce qui a changé.' : undefined}
       message={message}
     >

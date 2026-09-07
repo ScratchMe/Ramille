@@ -158,48 +158,80 @@ export function previousStep(current: BilanStepId, answers: BilanAnswers): Bilan
 // Conditionne l'activation du bouton "Suivant" — un pas est complet quand tous les
 // champs qu'il affiche (compte tenu de ses propres sous-conditions internes) sont
 // renseignés.
-export function isStepComplete(step: BilanStepId, answers: BilanAnswers): boolean {
+/**
+ * Ce qui manque encore à une étape, nommé — ou `null` si elle est complète.
+ *
+ * Existe parce qu'un bouton grisé ne dit pas pourquoi. Sur l'étape loisirs, choisir
+ * « Voiture » déplie la question de motorisation, qui repousse la tranche de distance sous la
+ * ligne de flottaison : « Suivant » reste inactif, la personne voit une étape qu'elle croit
+ * finie, et rien n'indique qu'il reste un champ plus bas (retour d'appareil du 07/09/2026).
+ * Le même défaut guette partout où une étape porte plusieurs champs.
+ *
+ * **`isStepComplete` en dérive**, et ce n'est pas un raffinement : deux listes de conditions
+ * tenues en parallèle finiraient par diverger, et l'écart serait silencieux — un bouton actif
+ * sur une étape incomplète, ou un message qui réclame un champ déjà rempli.
+ */
+export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string | null {
   switch (step) {
     case 'commute_has_trip':
-      return answers.commute_has_regular_trip !== null;
+      return answers.commute_has_regular_trip === null ? 'une réponse' : null;
     case 'commute_days_distance':
-      return (
-        answers.commute_days_per_week !== null &&
-        (answers.commute_distance_km !== null || answers.commute_distance_bracket !== null)
-      );
+      if (answers.commute_days_per_week === null) return 'le nombre de jours par semaine';
+      if (answers.commute_distance_km === null && answers.commute_distance_bracket === null)
+        return 'la distance';
+      return null;
     case 'commute_mode':
-      if (answers.commute_mode === null) return false;
-      if (answers.commute_mode === 'voiture' && answers.commute_car_engine === null) return false;
+      if (answers.commute_mode === null) return 'ton mode de transport';
+      if (answers.commute_mode === 'voiture' && answers.commute_car_engine === null)
+        return 'la motorisation';
       if (answers.commute_mode === 'deux_roues_motorise' && answers.commute_two_wheeler_type === null)
-        return false;
-      return true;
+        return 'le type de deux-roues';
+      return null;
     case 'commute_extra':
-      if (answers.commute_is_carpool && answers.commute_carpool_size === null) return false;
-      if (answers.commute_second_mode_used && answers.commute_second_mode === null) return false;
-      if (answers.commute_second_mode === 'voiture' && answers.commute_car_engine === null) return false;
+      if (answers.commute_is_carpool && answers.commute_carpool_size === null)
+        return 'le nombre de personnes dans la voiture';
+      if (answers.commute_second_mode_used && answers.commute_second_mode === null)
+        return 'le second mode';
+      if (answers.commute_second_mode === 'voiture' && answers.commute_car_engine === null)
+        return 'la motorisation';
       if (
         answers.commute_second_mode === 'deux_roues_motorise' &&
         answers.commute_two_wheeler_type === null
       )
-        return false;
-      return true;
+        return 'le type de deux-roues';
+      return null;
     case 'leisure_frequency':
-      return answers.leisure_frequency !== null;
+      return answers.leisure_frequency === null ? 'ta fréquence' : null;
     case 'leisure_detail':
-      if (answers.leisure_mode === null || answers.leisure_distance_bracket === null) return false;
-      if (answers.leisure_mode === 'voiture' && answers.leisure_car_engine === null) return false;
+      if (answers.leisure_mode === null) return 'ton mode de transport';
+      if (answers.leisure_mode === 'voiture' && answers.leisure_car_engine === null)
+        return 'la motorisation';
       if (answers.leisure_mode === 'deux_roues_motorise' && answers.leisure_two_wheeler_type === null)
-        return false;
-      return true;
+        return 'le type de deux-roues';
+      // En dernier, et c'est voulu : la distance est plus bas dans la page que la précision
+      // du mode, donc on ne l'annonce qu'une fois le reste rempli — on nomme ce qu'il reste
+      // à faire, dans l'ordre où on le rencontre.
+      if (answers.leisure_distance_bracket === null) return 'la distance habituelle';
+      return null;
     case 'flights':
-      if (answers.flights_total_per_year > 0) return answers.flights_short_per_year !== null;
-      return true;
+      if (answers.flights_total_per_year > 0 && answers.flights_short_per_year === null)
+        return 'la part de vols courts';
+      return null;
     case 'long_trips':
-      if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_engine === null) return false;
-      return true;
+      if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_engine === null)
+        return 'la motorisation';
+      return null;
     case 'context':
-      return answers.zone_type !== null && answers.tc_access !== null && answers.household_vehicles !== null;
+      if (answers.zone_type === null) return 'ton type de zone';
+      if (answers.tc_access === null) return 'l’accès aux transports en commun';
+      if (answers.household_vehicles === null) return 'le nombre de véhicules du foyer';
+      return null;
   }
+}
+
+// Dérivé, jamais réécrit — cf. `manqueDeLEtape`.
+export function isStepComplete(step: BilanStepId, answers: BilanAnswers): boolean {
+  return manqueDeLEtape(step, answers) === null;
 }
 
 export function distanceBracketMidpointKm(bracket: DistanceBracket): number {

@@ -3,10 +3,12 @@
 // questionnaire (saut d'étapes, activation du bouton "Suivant") — un bug ici casse un
 // flux entier sans qu'aucun typecheck ne le voie.
 import {
+  BILAN_STEP_ORDER,
   EMPTY_BILAN_ANSWERS,
   distanceBracketMidpointKm,
   isStepComplete,
   isStepVisible,
+  manqueDeLEtape,
   nextStep,
   previousStep,
   visibleSteps,
@@ -298,5 +300,62 @@ describe('distanceBracketMidpointKm', () => {
     expect(distanceBracketMidpointKm('15_30')).toBe(22.5);
     expect(distanceBracketMidpointKm('30_50')).toBe(40);
     expect(distanceBracketMidpointKm('50_plus')).toBe(60);
+  });
+});
+
+describe('manqueDeLEtape', () => {
+  it('rend null quand l’étape est complète', () => {
+    expect(manqueDeLEtape('commute_has_trip', answers({ commute_has_regular_trip: false }))).toBeNull();
+  });
+
+  it('nomme la motorisation quand une voiture est choisie sans elle', () => {
+    expect(manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture' }))).toBe(
+      'la motorisation'
+    );
+  });
+
+  // L'ordre compte : c'est le défaut relevé sur appareil le 07/09/2026. La précision du mode
+  // se déplie au-dessus de la tranche de distance, donc on la réclame d'abord — on nomme ce
+  // qu'il reste à faire dans l'ordre où on le rencontre en descendant la page.
+  it('réclame la distance seulement une fois la motorisation renseignée', () => {
+    expect(manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture' }))).toBe(
+      'la motorisation'
+    );
+    expect(
+      manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture', leisure_car_engine: 'thermique' }))
+    ).toBe('la distance habituelle');
+    expect(
+      manqueDeLEtape(
+        'leisure_detail',
+        answers({
+          leisure_mode: 'voiture',
+          leisure_car_engine: 'thermique',
+          leisure_distance_bracket: '5_15',
+        })
+      )
+    ).toBeNull();
+  });
+
+  it('nomme le type de deux-roues', () => {
+    expect(manqueDeLEtape('commute_mode', answers({ commute_mode: 'deux_roues_motorise' }))).toBe(
+      'le type de deux-roues'
+    );
+  });
+
+  // Le garde-fou qui empêche les deux dérivations de diverger : `isStepComplete` n'est plus
+  // qu'une lecture de celle-ci, et ce test le vérifie sur toutes les étapes.
+  it('isStepComplete dit exactement l’inverse, sur toutes les étapes', () => {
+    const cas: BilanAnswers[] = [
+      EMPTY_BILAN_ANSWERS,
+      answers({ commute_mode: 'voiture' }),
+      answers({ leisure_mode: 'deux_roues_motorise' }),
+      answers({ car_long_trips_per_year: 2 }),
+      answers({ flights_total_per_year: 3 }),
+    ];
+    for (const cas_ of cas) {
+      for (const step of BILAN_STEP_ORDER) {
+        expect(isStepComplete(step, cas_)).toBe(manqueDeLEtape(step, cas_) === null);
+      }
+    }
   });
 });

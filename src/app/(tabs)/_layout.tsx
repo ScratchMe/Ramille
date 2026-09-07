@@ -60,6 +60,17 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused, color }) => <OngletIcone nom="suivi" focused={focused} color={color} />,
           tabBarLabel: ({ focused, color }) => <Libelle texte="Suivi" focused={focused} color={color} />,
         }}
+        // **L'onglet ramène toujours à la racine de sa pile.** Par défaut, une pile imbriquée
+        // dans un onglet garde son sommet d'une visite à l'autre : après avoir ouvert un
+        // bilan, toucher « Suivi » rouvrait ce bilan au lieu du suivi (retour d'appareil du
+        // 07/09/2026). Un onglet est un lieu, pas un signet — d'autant qu'avec un seul bilan
+        // en base, on n'atteignait plus jamais le vrai écran de suivi.
+        listeners={({ navigation }) => ({
+          tabPress: (evenement) => {
+            evenement.preventDefault();
+            navigation.navigate('suivi', { screen: 'index' });
+          },
+        })}
       />
     </Tabs>
   );
