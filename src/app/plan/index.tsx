@@ -12,9 +12,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { formatTonnes } from '@/lib/format';
-import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
+import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
+import { formatIntention } from '@/types/plan';
 import { supabase } from '@/lib/supabase';
 
 type PlanAction = {
@@ -78,7 +79,6 @@ type LoadState =
 export default function Plan() {
   useTrackView('plan_view');
 
-  const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
   // jour ne se déduit pas de l'action qu'on vient de toucher — il faut relire le cycle.
@@ -196,6 +196,10 @@ export default function Plan() {
   const { cycle, assessmentId, checkins } = state;
   const actionsCount = cycle.plan_actions.length;
   const committedActionId = cycle.plan_actions.find((a) => a.committed_at !== null)?.id ?? null;
+  // Copie avant tri : `sort` mute, et `cycle` vient du state.
+  const actionsOrdonnees = [...cycle.plan_actions].sort(
+    (a, b) => Number(b.committed_at !== null) - Number(a.committed_at !== null)
+  );
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.
@@ -243,30 +247,21 @@ export default function Plan() {
             </ThemedView>
           )}
 
+          {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce
+              moment ? », elle n'a pas à être cherchée. Le reste garde l'ordre du serveur, qui
+              trie déjà par gain décroissant (`estimate_action_savings`). */}
           <View style={styles.actions}>
-            {cycle.plan_actions.map((action) => (
-              <View key={action.id} style={[styles.actionCard, { borderColor: theme.border }]}>
-                <ThemedText weight={600} style={styles.actionText}>
-                  {action.action_templates?.action_text ?? 'Action à préciser.'}
-                </ThemedText>
-                {action.saving_kg_year !== null && (
-                  <View style={styles.savingRow}>
-                    <ThemedText weight={600} themeColor="accentText" style={styles.savingValue}>
-                      − {Math.round(action.saving_kg_year)} kg CO₂e
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      par an
-                      {action.saving_share_percent !== null
-                        ? ` · ${Math.round(action.saving_share_percent)} % de ton empreinte`
-                        : ''}
-                    </ThemedText>
-                  </View>
-                )}
-                {action.detail_text && (
-                  <ThemedText type="small" themeColor="textTertiary">
-                    {action.detail_text}
-                  </ThemedText>
-                )}
+            {actionsOrdonnees.map((action) => (
+              <ActionCard
+                key={action.id}
+                titre={action.action_templates?.action_text ?? 'Action à préciser.'}
+                gainKg={action.saving_kg_year}
+                partPercent={action.saving_share_percent}
+                detail={action.detail_text}
+                intention={formatIntention(action.intention_days, action.intention_timing)}
+                engagee={action.committed_at !== null}
+                estompee={committedActionId !== null && committedActionId !== action.id}
+              >
                 {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la
                     fois par cycle — s'engager sur les deux revient à ne s'engager sur aucune,
                     et la base le garantit par un index unique partiel. */}
@@ -281,7 +276,7 @@ export default function Plan() {
                   }
                   onChanged={() => setRefreshKey((key) => key + 1)}
                 />
-              </View>
+              </ActionCard>
             ))}
           </View>
 
@@ -362,14 +357,10 @@ const styles = StyleSheet.create({
   capCard: { borderRadius: 18, padding: 20, gap: 6 },
   capValue: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   actions: { gap: Spacing.two + 2 },
-  actionCard: { borderRadius: 18, borderWidth: 1, padding: 20, gap: 8 },
-  savingRow: { gap: 2 },
-  savingValue: { fontSize: 20, lineHeight: 26 },
   emptyActionsCard: { borderRadius: 18, padding: 20, gap: 8 },
   praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   praiseText: { fontSize: 17, lineHeight: 24, flex: 1, minWidth: 0 },
   disclaimer: { lineHeight: 18 },
-  actionText: { fontSize: 17, lineHeight: 24 },
   checkins: { gap: Spacing.two + 2 },
   footer: { padding: Spacing.four, gap: Spacing.three },
   footerLink: { textAlign: 'center' },

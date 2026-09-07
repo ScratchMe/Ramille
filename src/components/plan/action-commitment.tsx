@@ -9,7 +9,6 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import {
-  formatIntention,
   INTENTION_DAYS,
   INTENTION_TIMINGS,
   intentionKindForPoste,
@@ -89,13 +88,12 @@ export function ActionCommitment({
     onChanged();
   };
 
+  // L'engagement se lit désormais sur la carte elle-même — bordure, fond, étiquette et
+  // intention (cf. `action-card.tsx`, v1-11 lot 1). Ce composant ne garde donc que ce qu'il
+  // est seul à pouvoir faire ici : rendre la main.
   if (committed) {
-    const phrase = formatIntention(intentionDays, intentionTiming);
     return (
-      <ThemedView type="backgroundSelected" style={styles.committedBox}>
-        <ThemedText type="small" weight={600} themeColor="accentText">
-          {phrase ? `C’est ton choix pour cette période, ${phrase}.` : 'C’est ton choix pour cette période.'}
-        </ThemedText>
+      <View style={styles.footer}>
         <TextLink
           label="Changer d’avis"
           hint="Libère cette action ; tu pourras en choisir une autre"
@@ -110,7 +108,7 @@ export function ActionCommitment({
             {error}
           </ThemedText>
         )}
-      </ThemedView>
+      </View>
     );
   }
 
@@ -195,6 +193,5 @@ const styles = StyleSheet.create({
   dayRow: { flexDirection: 'row', gap: 6 },
   timingColumn: { gap: Spacing.two },
   pickerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
-  committedBox: { marginTop: Spacing.three, borderRadius: 16, padding: Spacing.four, gap: Spacing.two },
   link: { textDecorationLine: 'underline' },
 });
