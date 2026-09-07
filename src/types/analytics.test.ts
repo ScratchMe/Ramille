@@ -24,6 +24,7 @@ describe('USAGE_EVENT_NAMES', () => {
       'connexion_dismiss',
       'plan_view',
       'suivi_view',
+      'compte_view',
     ]);
   });
 
@@ -52,6 +53,7 @@ describe('USAGE_EVENT_NAMES', () => {
       connexion_dismiss: 'connexion_dismiss',
       plan_view: 'plan_view',
       suivi_view: 'suivi_view',
+      compte_view: 'compte_view',
     };
     expect(Object.keys(_exhaustif)).toHaveLength(USAGE_EVENT_NAMES.length);
   });

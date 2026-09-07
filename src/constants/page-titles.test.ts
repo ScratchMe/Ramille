@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_TITLE, PAGE_TITLES, pageTitle } from './page-titles';
+import { DEFAULT_PAGE_TITLE, PAGE_TITLES, pageTitle, PAGES_ALIAS } from './page-titles';
 import { APP_NAME } from './produit';
 
 // La garde qui compte — « toute page exportée a bien un titre dans son HTML » — ne peut pas
@@ -12,7 +12,21 @@ describe('PAGE_TITLES', () => {
   it('donne à chaque page un titre distinct et non vide', () => {
     const titres = Object.values(PAGE_TITLES);
     expect(titres.every((titre) => titre.trim().length > 0)).toBe(true);
-    expect(new Set(titres).size).toBe(titres.length);
+
+    // Les alias sont exclus : une adresse historique conservée en redirection porte le titre
+    // de sa cible, et c'est voulu. Partout ailleurs, deux titres identiques trahissent un
+    // copier-coller — c'est ce que cette assertion attrape.
+    const titresDePages = Object.entries(PAGE_TITLES)
+      .filter(([chemin]) => !PAGES_ALIAS.has(chemin))
+      .map(([, titre]) => titre);
+    expect(new Set(titresDePages).size).toBe(titresDePages.length);
+  });
+
+  it('ne déclare comme alias que des chemins qui ont un titre', () => {
+    for (const alias of PAGES_ALIAS) {
+      expect({ alias, titre: PAGE_TITLES[alias] }).toEqual({ alias, titre: PAGE_TITLES[alias] });
+      expect(PAGE_TITLES[alias]).toBeDefined();
+    }
   });
 
   it('nomme le produit dans chaque titre', () => {

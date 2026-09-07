@@ -28,6 +28,7 @@ export const USAGE_EVENT_NAMES = [
   'connexion_dismiss',
   'plan_view',
   'suivi_view',
+  'compte_view',
 ] as const;
 
 export type UsageEventName = (typeof USAGE_EVENT_NAMES)[number];
@@ -48,11 +49,12 @@ export type UsageEventPropsByName = {
   // Les deux entrées vers /connexion ne disent pas la même chose : `resultat_transition`
   // est l'interstitiel imposé en allant au plan, `resultat_cta` un clic délibéré. Comparer
   // leurs taux de conversion, c'est répondre à « l'interstitiel mérite-t-il sa friction ? ».
-  connexion_view: { source: 'resultat_transition' | 'resultat_cta' | 'plan' | 'suivi' };
+  connexion_view: { source: 'resultat_transition' | 'resultat_cta' | 'plan' | 'suivi' | 'compte' };
   connexion_success: { method: 'google' | 'email' };
   connexion_dismiss: never;
   plan_view: never;
   suivi_view: never;
+  compte_view: never;
 };
 
 // Bornes de `public.check_usage_event_props`, répliquées ici pour ne jamais émettre un insert

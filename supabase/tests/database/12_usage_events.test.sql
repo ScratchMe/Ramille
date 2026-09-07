@@ -146,8 +146,8 @@ select bag_eq(
   $$ select name from public.usage_event_types $$,
   $$ values ('app_open'), ('onboarding_step_view'), ('onboarding_complete'), ('bilan_step_view'),
             ('resultat_view'), ('resultat_share'), ('connexion_view'), ('connexion_success'),
-            ('connexion_dismiss'), ('plan_view'), ('suivi_view') $$,
-  'le référentiel contient exactement les onze événements du produit'
+            ('connexion_dismiss'), ('plan_view'), ('suivi_view'), ('compte_view') $$,
+  'le référentiel contient exactement les douze événements du produit'
 );
 
 -- On n'instrumente jamais ce que le schéma enregistre déjà : `assessments.submitted_at`,

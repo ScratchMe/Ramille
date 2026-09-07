@@ -5,14 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
-import { MonCompte } from '@/components/compte/mon-compte';
 import { Mascot } from '@/components/mascot';
+import { CompteBouton } from '@/components/compte-bouton';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useTrackView } from '@/hooks/use-track-view';
+import { useTrackFocus } from '@/hooks/use-track-focus';
 import { loadAnsweredCheckins, loadAssessmentHistory } from '@/lib/bilan-history';
 import {
   daysSince,
@@ -64,7 +64,11 @@ type LoadState =
   | { status: 'ok'; history: AssessmentSnapshot[]; checkins: CheckinRecord[] };
 
 export default function Suivi() {
-  useTrackView('suivi_view');
+  // **Émis au focus et non au montage** : dans une barre d'onglets, react-navigation garde
+  // l'écran monté quand on passe à l'autre. Avec `useTrackView`, l'événement ne partirait
+  // qu'à la première ouverture de la session — et le taux de retour, qui est la question
+  // même que la navigation pose, deviendrait invisible (v1-11 §2, piège relevé au plan).
+  useTrackFocus('suivi_view');
 
   const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
@@ -141,6 +145,7 @@ export default function Suivi() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <CompteBouton />
           <View style={styles.intro}>
             <ThemedText type="title" weight={600} style={styles.title}>
               Ton suivi
@@ -303,10 +308,6 @@ export default function Suivi() {
             </ThemedView>
           )}
 
-          {/* Export et suppression (T12). Placés ici et pas sur un écran « Réglages » dédié :
-              /suivi est la seule surface du produit qui parle du compte dans la durée, et un
-              écran de plus pour deux boutons serait un écran de plus à trouver. */}
-          <MonCompte />
         </ScrollView>
 
         <View style={styles.footer}>
@@ -321,25 +322,8 @@ export default function Suivi() {
               style={styles.footerLink}
             />
           )}
-          {/* Point d'entrée général du canal de retour (issue #29). Il vit ici plutôt que
-              dans un réglage caché : /suivi est l'écran où l'on revient, donc celui où l'on
-              a quelque chose à dire. */}
-          <TextLink
-            label="Un retour à nous faire ?"
-            onPress={() => router.push('/feedback')}
-            role="link"
-            type="small"
-            themeColor="textTertiary"
-            style={styles.footerLink}
-          />
-          <TextLink
-            label="Revenir à mon plan"
-            onPress={() => router.push('/plan')}
-            role="link"
-            type="small"
-            themeColor="textTertiary"
-            style={styles.footerLink}
-          />
+          {/* Le canal de retour et le compte ont rejoint l'écran « Toi » (v1-11 §2.5) : le
+              suivi retrouve son sujet — les bilans et les points répondus. */}
         </View>
       </SafeAreaView>
     </ThemedView>
