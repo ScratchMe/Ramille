@@ -15,6 +15,7 @@ import { useTrackView } from '@/hooks/use-track-view';
 import { formatTonnes } from '@/lib/format';
 import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
+import { identiteDejaRattachee } from '@/types/connexion';
 import { supabase } from '@/lib/supabase';
 
 type Recap = { total_co2_kg_year: number; dominant_poste_label: string } | null;
@@ -58,6 +59,17 @@ export default function ConnexionProposition() {
     const { error } = await linkGoogleIdentity();
     setGoogleLoading(false);
     if (error) {
+      // **L'identité Google déjà prise n'est pas un échec, c'est un aiguillage** (#60) :
+      // quelqu'un qui a un compte Ramille, change d'appareil, refait un bilan sans passer par
+      // « J'ai déjà un compte », puis tape « Continuer avec Google ». Le chemin email était
+      // couvert depuis #57 (`email_exists`), pas celui-là — il affichait le message brut de
+      // Supabase, en anglais, sans rien à faire ensuite. `/connexion/retrouver` sait déjà
+      // tout dire : la collision, le choix entre retrouver et garder ce bilan, et l'envoi du
+      // lien. L'adresse Google en est une, le geste est le même.
+      if (identiteDejaRattachee(error)) {
+        router.push({ pathname: '/connexion/retrouver', params: { id, source: 'google' } });
+        return;
+      }
       // Le message de Supabase est repris tel quel : il est en anglais et technique, mais
       // c'est le seul indice disponible sur ce qui a échoué, et un texte rassurant à la
       // place laisserait la personne sans rien pour comprendre ni pour nous le rapporter.

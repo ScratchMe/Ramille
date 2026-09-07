@@ -60,7 +60,7 @@ export type UsageEventPropsByName = {
   // Les deux seules mesures d'un écran dont le schéma ne garde aucune trace : `signInWithOtp`
   // n'écrit que dans `auth`. `collision` dit que l'appareil portait déjà un bilan anonyme —
   // c'est ce chiffre-là qui décide si la collision Google (#60) mérite un écran dédié.
-  retrouver_view: { source: 'onboarding' | 'email'; collision: boolean };
+  retrouver_view: { source: 'onboarding' | 'email' | 'google'; collision: boolean };
   // Le clic sur « Recevoir le lien », sans distinguer adresse connue ou inconnue : la réponse
   // est volontairement la même dans les deux cas, sans quoi l'écran dirait qui utilise Ramille.
   retrouver_send: never;

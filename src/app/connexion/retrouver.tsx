@@ -38,8 +38,10 @@ import { track } from '@/lib/analytics';
 type Phase = 'chargement' | 'collision' | 'saisie' | 'envoye';
 
 /** Un paramètre d'URL vient de l'extérieur : on ne le relaie pas tel quel dans une mesure. */
-function sourceMesuree(source: string | undefined): 'onboarding' | 'email' {
-  return source === 'email' ? 'email' : 'onboarding';
+function sourceMesuree(source: string | undefined): 'onboarding' | 'email' | 'google' {
+  if (source === 'email') return 'email';
+  if (source === 'google') return 'google';
+  return 'onboarding';
 }
 
 export default function RetrouverMonCompte() {
