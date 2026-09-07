@@ -138,11 +138,11 @@ engagée saillante, jetons de design — cinq lots ordonnés, une PR chacun. Le 
 tranché est `docs/design/v1-11-navigation/`.
 
 L'increment précédent, `v1-10-connexion-et-rappels.md` (06/09/2026), est livré pour ses
-chantiers A à D et F ; il reste E (push) et G (renommage GitHub). Il portait :
-connexion par lien sans mot de passe, rappels par push, et deux correctifs qui le
-conditionnent — l'étalement du pic d'envoi du lundi et la purge des sessions anonymes, qui
-supprime aujourd'hui sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur
-l'**inactivité**. Son compagnon design est `docs/design/v1-10-retrouver-son-compte/`.
+chantiers A à D et F ; il reste E (push) et G (renommage GitHub). Il portait la connexion
+par lien sans mot de passe, les rappels par push, et deux correctifs livrés qui les
+conditionnaient — l'étalement du pic d'envoi du lundi, et la purge des sessions anonymes qui
+supprimait sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur l'**inactivité**
+(corrigée, `v1-10` §2.B). Son compagnon design est `docs/design/v1-10-retrouver-son-compte/`.
 
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
