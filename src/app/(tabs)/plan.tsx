@@ -11,12 +11,14 @@ import { CompteBouton } from '@/components/compte-bouton';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { RAMILLE } from '@/constants/mascotte';
 import { formatTonnes } from '@/lib/format';
 import { useTrackFocus } from '@/hooks/use-track-focus';
 import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
 import { formatIntention } from '@/types/plan';
+import { daysSince, REBILAN_SUGGESTION_DAYS } from '@/types/suivi';
 import { supabase } from '@/lib/supabase';
 
 type PlanAction = {
@@ -62,7 +64,14 @@ type LoadState =
   // migration 20260824190000), gardé comme filet pour les bilans complétés avant elle
   // et pas encore repris par le cron quotidien.
   | { status: 'pending'; assessmentId: string }
-  | { status: 'ok'; cycle: PlanCycle; assessmentId: string; checkins: EngagementCheckin[] };
+  | {
+      status: 'ok';
+      cycle: PlanCycle;
+      assessmentId: string;
+      /** Date du dernier bilan complété — sert la proposition de re-bilan. */
+      assessmentDate: string | null;
+      checkins: EngagementCheckin[];
+    };
 
 // B "Plan de réduction". Depuis l'étape 6a (v1-07 §3.3), chaque action porte son gain estimé,
 // figé à la génération du cycle : `plan_actions.saving_kg_year` et `.saving_share_percent`.
@@ -98,7 +107,7 @@ export default function Plan() {
       // id systématiquement, pas seulement dans le cas filet ci-dessous.
       const { data: assessment } = await supabase
         .from('assessments')
-        .select('id')
+        .select('id, submitted_at')
         .eq('status', 'completed')
         .order('submitted_at', { ascending: false })
         .limit(1)
@@ -151,6 +160,7 @@ export default function Plan() {
         status: 'ok',
         cycle: cycle as PlanCycle,
         assessmentId: assessment.id,
+        assessmentDate: assessment.submitted_at,
         checkins: keepLatestPerLoop((checkins as PendingCheckin[] | null) ?? []),
       });
     })();
@@ -198,7 +208,7 @@ export default function Plan() {
     );
   }
 
-  const { cycle, assessmentId, checkins } = state;
+  const { cycle, assessmentId, assessmentDate, checkins } = state;
   const actionsCount = cycle.plan_actions.length;
   const committedActionId = cycle.plan_actions.find((a) => a.committed_at !== null)?.id ?? null;
   // Copie avant tri : `sort` mute, et `cycle` vient du state.
@@ -208,6 +218,12 @@ export default function Plan() {
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.
+  // Même seuil et même lien que sur le suivi : une seule règle, deux endroits où la
+  // rencontrer. Le plan est celui où l'on revient le plus souvent — c'est donc là qu'une
+  // proposition de re-bilan a le plus de chances d'être vue, alors qu'elle n'existait que
+  // sur le suivi.
+  const bilanAncien = assessmentDate !== null && daysSince(assessmentDate) >= REBILAN_SUGGESTION_DAYS;
+
   const capKg =
     baselineKg !== null && baselineKg > 0
       ? Math.round((baselineKg * cycle.target_reduction_pct) / 100)
@@ -233,6 +249,43 @@ export default function Plan() {
               </ThemedText>
             </ThemedView>
           </View>
+
+          {/* **Le point de la semaine passe en tête** (v1-11 flux 4) : répondre à un rappel est
+              la raison de revenir la plus fréquente, et la question vivait sous les actions,
+              après le cap — il fallait faire défiler pour la trouver. Une question qu'on ne
+              voit pas est une question à laquelle on ne répond pas. */}
+          {checkins.length > 0 && (
+            <View style={styles.checkins}>
+              {checkins.map((checkin) => (
+                <CheckinCard
+                  key={checkin.id}
+                  checkin={checkin}
+                  emphasize={checkin.trip_label === cycle.trip_label}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Période calme (v1-11 flux 6) : rien à faire n'est pas un échec, et le silence à
+              cet endroit se lit comme un manque. Le mot de Ramille prend la place de la
+              question — ses répliques vivent dans `mascotte.ts`, on n'en écrit pas ici.
+
+              Elle est posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte
+              près d'un chiffre lourd » vise l'empreinte, mais un cap en kilos juste sous son
+              visage donnerait l'impression qu'elle le commente. */}
+          {checkins.length === 0 && (
+            <ThemedView type="backgroundElement" style={styles.calmeCard}>
+              <View style={styles.calmeRow}>
+                <Mascot mood="resting" size={40} />
+                <View style={styles.calmeTexte}>
+                  <ThemedText weight={600}>{RAMILLE.periodeCalme}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {RAMILLE.periodeCalmeDetail}
+                  </ThemedText>
+                </View>
+              </View>
+            </ThemedView>
+          )}
 
           {/* Le cap de la saison (T10). Affiché en kg parce que c'est l'unité des actions
               juste en dessous : la personne doit pouvoir voir d'un coup d'œil qu'en cumulant
@@ -314,17 +367,30 @@ export default function Plan() {
             </ThemedText>
           )}
 
-          {checkins.length > 0 && (
-            <View style={styles.checkins}>
-              {checkins.map((checkin) => (
-                <CheckinCard
-                  key={checkin.id}
-                  checkin={checkin}
-                  emphasize={checkin.trip_label === cycle.trip_label}
-                />
-              ))}
-            </View>
+          {/* La proposition de re-bilan ferme l'écran (v1-11 flux 2). Elle apparaît au plus
+              deux fois par an : la faire passer devant la question de la semaine ou devant
+              l'action engagée inverserait l'urgence. « Une proposition, jamais un rappel
+              insistant » — même règle que sur le suivi, même seuil, même lien. */}
+          {bilanAncien && (
+            <ThemedView type="backgroundSelected" style={styles.rebilanCard}>
+              <ThemedText type="small" weight={600}>
+                Une nouvelle saison a commencé
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Ton bilan date d’un moment. Le refaire prend moins de temps que la première
+                fois : tes réponses sont préremplies.
+              </ThemedText>
+              <TextLink
+                label="Refaire mon bilan"
+                onPress={() => router.push('/bilan')}
+                role="link"
+                type="small"
+                weight={600}
+                themeColor="accentText"
+              />
+            </ThemedView>
           )}
+
         </ScrollView>
 
         {/* « Voir mon suivi » a disparu : la barre le porte, et un lien qui double un onglet
@@ -362,6 +428,10 @@ const styles = StyleSheet.create({
   praiseText: { fontSize: 17, lineHeight: 24, flex: 1, minWidth: 0 },
   disclaimer: { lineHeight: 18 },
   checkins: { gap: Spacing.two + 2 },
+  calmeCard: { borderRadius: Radius.card, padding: 20 },
+  rebilanCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
+  calmeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  calmeTexte: { flex: 1, minWidth: 0, gap: 2 },
   footer: { padding: Spacing.four, gap: Spacing.three },
   footerLink: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },

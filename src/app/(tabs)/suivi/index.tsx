@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -165,7 +165,22 @@ export default function Suivi() {
             </ThemedText>
             <View style={styles.bars}>
               {history.map((snapshot, index) => (
-                <View key={snapshot.assessmentId} style={styles.historyRow}>
+                // Chaque bilan s'ouvre en relecture (v1-11 flux 3) : l'écran de résultat prend
+                // déjà un identifiant, seul le lien manquait — une entrée de l'historique
+                // qu'on ne peut pas ouvrir est une impasse.
+                //
+                // `Pressable` nu et non `TextLink` : la cible porte trois textes et une barre,
+                // et le libellé annoncé doit les recomposer (cf. CLAUDE.md).
+                <Pressable
+                  key={snapshot.assessmentId}
+                  onPress={() =>
+                    router.push({ pathname: '/suivi/bilan', params: { id: snapshot.assessmentId } })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`Bilan du ${formatDate(snapshot.submittedAt)}, ${formatTonnes(snapshot.totalKg)}`}
+                  accessibilityHint="Ouvre le détail de ce bilan"
+                  style={styles.historyRow}
+                >
                   <View style={styles.historyHeader}>
                     <ThemedText
                       type="small"
@@ -196,7 +211,7 @@ export default function Suivi() {
                   <ThemedText type="small" themeColor="textTertiary">
                     Poste principal : {POSTE_LABEL[snapshot.dominantPoste] ?? snapshot.dominantLabel}
                   </ThemedText>
-                </View>
+                </Pressable>
               ))}
             </View>
             {previous && (
