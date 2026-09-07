@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,14 +7,16 @@ import { OnboardingDots } from '@/components/onboarding-dots';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTrackView } from '@/hooks/use-track-view';
 
-// Onboarding 3/4 — Réassurance. Seul écran à fond teinté de l'onboarding, corps de
+// Étape 3/4 de l'onboarding, rendue par le pager de `src/app/onboarding/index.tsx`.
+//
+// C'était une route à part entière jusqu'au 07/09/2026 ; les quatre étapes vivent maintenant
+// dans un seul écran qui se balaie au doigt (issue #68). Le contenu n'a pas bougé.
+//
+// Onboarding — Réassurance. Seul écran à fond teinté de l'onboarding, corps de
 // texte plus généreux (17/26 au lieu de 16/24) — le seul écran « chaleureux »,
 // cf. handoff design.
-export default function OnboardingReassurance() {
-  useTrackView('onboarding_step_view', { step: 'reassurance' });
-
+export function EtapeReassurance({ onSuivant }: { onSuivant: () => void }) {
   return (
     <ThemedView type="backgroundTinted" style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -36,7 +37,7 @@ export default function OnboardingReassurance() {
           </View>
         </View>
         <View style={styles.footer}>
-          <Button title="Continuer" onPress={() => router.push('/onboarding/transition')} />
+          <Button title="Continuer" onPress={() => onSuivant()} />
           <OnboardingDots total={4} activeIndex={2} onTint />
         </View>
       </SafeAreaView>

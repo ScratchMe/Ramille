@@ -529,6 +529,14 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   La dérivation vit dans `src/types/configuration.ts` (module pur, testé), qui refuse aussi une
   URL portant un chemin — `.../rest/v1` collé à la place de l'URL du projet a coûté un cycle de
   build. L'écran s'adresse à la personne qui développe : ni la voix de Ramille, ni la mascotte.
+- **Un état qui diffère entre le serveur et le client doit démarrer à la valeur du serveur et
+  changer après hydratation** — sinon le DOM garde l'attribut `style` du HTML statique pour
+  toujours. L'hydratation ne vérifie que le texte : elle adopte les attributs tels quels. Une
+  largeur lue dans `Dimensions` dès le premier rendu client (390) laisse React croire qu'il
+  tient déjà `width: 390` alors que le HTML dit `0px`, et rien ne le corrige jamais — ni
+  `onLayout`, ni `key`, ni le compilateur. C'est ce qui a fait échouer la première tentative
+  du pager d'onboarding (v1-11 §9.10). `useSyncExternalStore` avec un instantané serveur
+  distinct fait voir le passage à React ; `useWindowDimensions` ne le fait pas.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir

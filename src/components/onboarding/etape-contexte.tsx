@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,10 +13,14 @@ import {
   formatTonnesShort,
 } from '@/constants/carbon-reference';
 import { Spacing } from '@/constants/theme';
-import { useTrackView } from '@/hooks/use-track-view';
 import { useTheme } from '@/hooks/use-theme';
 
-// Onboarding 2/4 — Contexte chiffré. Tous les chiffres de cet écran viennent désormais de
+// Étape 2/4 de l'onboarding, rendue par le pager de `src/app/onboarding/index.tsx`.
+//
+// C'était une route à part entière jusqu'au 07/09/2026 ; les quatre étapes vivent maintenant
+// dans un seul écran qui se balaie au doigt (issue #68). Le contenu n'a pas bougé.
+//
+// Onboarding — Contexte chiffré. Tous les chiffres de cet écran viennent désormais de
 // `@/constants/carbon-reference`, où chacun porte sa source (ADEME pour la moyenne et la
 // cible, SDES pour la décomposition par poste). Ils étaient auparavant codés en dur ici et
 // marqués « à confirmer » depuis le handoff design.
@@ -27,9 +30,7 @@ import { useTheme } from '@/hooks/use-theme';
 // dessous — le contenu factuel obligatoire de la spec reste respecté (moyenne, cible 2050,
 // transport premier poste). Les données du SDES sont celles de 2017 : d'où « en moyenne »
 // et non « aujourd'hui » dans le titre, et l'étiquette de source sous les barres.
-export default function OnboardingContexte() {
-  useTrackView('onboarding_step_view', { step: 'contexte' });
-
+export function EtapeContexte({ onSuivant }: { onSuivant: () => void }) {
   const theme = useTheme();
 
   return (
@@ -90,7 +91,7 @@ export default function OnboardingContexte() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button title="Continuer" onPress={() => router.push('/onboarding/reassurance')} />
+          <Button title="Continuer" onPress={() => onSuivant()} />
           <OnboardingDots total={4} activeIndex={1} />
         </View>
       </SafeAreaView>

@@ -705,3 +705,43 @@ risque plus d'être rogné — le piège de `baseFlex` dans `chip.tsx`.
 Le rôle d'accessibilité suit gratuitement, et c'était un défaut silencieux : ces réponses sont
 des choix exclusifs, elles s'annonçaient en `button`. `ModeListItem` s'annonce en `radio`,
 seul rôle qui dit « sélectionné » — la règle du CLAUDE.md, que les puces enfreignaient ici.
+
+### 9.10 L'onboarding se balaie au doigt — et ce que l'hydratation adopte sans le dire
+
+Retour d'appareil du 07/09/2026 (issue #68) : les puces de progression promettaient un
+balayage que les quatre routes ne fournissaient pas, et rien ne permettait de revenir en
+arrière au doigt. Les quatre étapes vivent maintenant dans un seul écran (`/onboarding`),
+un `ScrollView` horizontal à pages ; chaque étape garde son pied, son bouton et ses puces,
+qui glissent donc avec la page à la vitesse du geste. Sur Android, le retour matériel
+recule d'une page au lieu de quitter l'onboarding.
+
+**La mesure a changé de mécanique, et c'était le vrai piège.** `onboarding_step_view`
+partait de `useTrackView`, une fois par montage ; un pager monte les quatre pages d'un coup et
+aurait émis les quatre événements à l'ouverture — un entonnoir à 100 % de franchissement,
+plausible et faux. L'émission suit la page réellement affichée, une fois par étape et par
+passage : on compte les personnes qui ont atteint l'étape, pas leurs allers-retours.
+
+**La première tentative a échoué sur un mécanisme qui vaut d'être connu.** Sur l'export web,
+les pages restaient à 0 px de large quoi qu'on fasse — `useWindowDimensions`, `Dimensions`
+dans un effet, `onLayout`, `key`, `'use no memo'` — alors qu'un redimensionnement, ou un
+simple `<Text>` affichant la largeur, réparait tout. La cause n'est ni le compilateur ni la
+mémoïsation : c'est **l'hydratation, qui ne vérifie que le texte et adopte les attributs
+`style` du HTML statique tels quels.** Le serveur écrit `width: 0px` (pas de fenêtre à la
+génération) ; dans le navigateur, `Dimensions` vaut 390 dès le premier rendu, donc React
+croit déjà tenir `width: 390` et ne corrige jamais le DOM. Le texte de diagnostic mettait
+l'hydratation en échec — un écart de *texte*, le seul qu'elle voit — et forçait une
+reconstruction complète.
+
+Le correctif est de faire **voir le passage à React** : `useSyncExternalStore` avec un
+instantané serveur à 0 et un instantané client à la vraie largeur. Pendant l'hydratation,
+React rend 0 (identique au HTML), relit le client, voit 390, et rerend — un vrai changement
+que le DOM reçoit. Sur natif, sans hydratation, l'instantané client est lu directement.
+Règle générale, ajoutée au CLAUDE.md : un état qui diffère entre serveur et client doit
+démarrer à la valeur serveur et changer après hydratation.
+
+Un second maillon, plus discret : les enveloppes de page s'étiraient bien à la hauteur du
+défileur, mais l'écran d'étape qu'elles contiennent porte `flex: 1`, et une hauteur obtenue
+par étirement n'est pas « définie » au sens du moteur de rendu — chaque étape prenait la
+hauteur de son contenu (bandeau blanc sous la page teintée, 24 px de débordement sur les deux
+premières). La hauteur du défileur est donc mesurée au `onLayout` et passée en nombre. Cet
+état-là part de 0 des deux côtés : rien à adopter de travers pour l'hydratation.

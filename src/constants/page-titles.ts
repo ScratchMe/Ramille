@@ -21,9 +21,6 @@ export const PAGE_TITLES: Record<string, string> = {
   '/': APP_NAME,
 
   '/onboarding': `Bienvenue — ${APP_NAME}`,
-  '/onboarding/contexte': `Où en est la France — ${APP_NAME}`,
-  '/onboarding/reassurance': `Comment ça marche — ${APP_NAME}`,
-  '/onboarding/transition': `On passe à ton bilan — ${APP_NAME}`,
 
   '/bilan': `Ton bilan transport — ${APP_NAME}`,
   '/suivi/bilan': `Ton résultat — ${APP_NAME}`,
