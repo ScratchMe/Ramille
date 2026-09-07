@@ -681,3 +681,27 @@ rendu : boîte de 390 px pour un écran de 390, aucun débordement.
 La correction tentante — retenir le premier rendu jusqu'à `useFonts` — est précisément ce que
 le commentaire de `_layout.tsx` interdit : `useFonts` ne résout jamais pendant la génération
 statique de l'export web, et l'app ne se rendrait plus du tout.
+
+### 9.9 Les réponses de précision sont des rangées, pas des puces
+
+Le dépli du §9.1 était au bon endroit, mais mal fait. Deux défauts se cumulaient dans la
+boîte, relevés sur le build suivant.
+
+**On ne distinguait pas les réponses.** Une puce non sélectionnée porte le fond
+`backgroundElement` — celui-là même de la boîte qui la contient. Les quatre motorisations se
+lisaient comme du texte, sans rien qui dise qu'on peut appuyer dessus.
+
+**Elles n'étaient pas ordonnées.** Quatre libellés de largeurs très inégales (« Hybride »
+contre « Hybride rechargeable ») donnaient un retour à la ligne en escalier : deux puces, puis
+une, puis une.
+
+Les deux se règlent avec un composant qui existait déjà, et une décision déjà prise :
+`ModeListItem` porte un `nestedBackground` qui repasse en blanc le fond non sélectionné d'un
+item posé dans un encart teinté — exactement ce problème, résolu pour le « Lequel ? » imbriqué
+de `commute-extra.tsx`, à deux composants de là. Une réponse par rangée, l'alignement devient
+régulier (mesuré : quatre rangées à x = 56, largeur 294, pas de 60 px) et un libellé long ne
+risque plus d'être rogné — le piège de `baseFlex` dans `chip.tsx`.
+
+Le rôle d'accessibilité suit gratuitement, et c'était un défaut silencieux : ces réponses sont
+des choix exclusifs, elles s'annonçaient en `button`. `ModeListItem` s'annonce en `radio`,
+seul rôle qui dit « sélectionné » — la règle du CLAUDE.md, que les puces enfreignaient ici.
