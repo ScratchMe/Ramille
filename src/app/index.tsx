@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { EcranLancement } from '@/components/ecran-lancement';
+import { DUREE_ANIMATION_LANCEMENT, EcranLancement } from '@/components/ecran-lancement';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ensureSession, supabase } from '@/lib/supabase';
@@ -33,6 +33,7 @@ export default function Index() {
 
   useEffect(() => {
     let annule = false;
+    const depart = Date.now();
 
     (async () => {
       try {
@@ -44,6 +45,14 @@ export default function Index() {
           .limit(1)
           .maybeSingle();
         if (error) throw error;
+        if (annule) return;
+        // **Plancher d'affichage, pas délai ajouté.** Une session déjà en cache répond en
+        // ~200 ms : l'écran d'ouverture était payé — un temps d'arrêt à chaque lancement —
+        // sans jamais être vu. On complète jusqu'à la fin de l'animation, et un démarrage
+        // plus lent que ça n'attend rien de plus. L'échec, lui, n'attend jamais : mieux vaut
+        // le dire tout de suite.
+        const reste = DUREE_ANIMATION_LANCEMENT - (Date.now() - depart);
+        if (reste > 0) await new Promise((resoudre) => setTimeout(resoudre, reste));
         if (annule) return;
         router.replace(data ? '/plan' : '/onboarding');
       } catch (erreur) {

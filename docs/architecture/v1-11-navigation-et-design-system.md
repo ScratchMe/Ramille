@@ -623,3 +623,41 @@ Elle était blanche, ce qui remettait exactement le flash qu'on venait de retire
 
 L'état d'échec du démarrage, lui, reste blanc et brut : c'est un message technique destiné à
 être recopié, pas une surface de produit.
+
+### 9.6 Le réveil se voyait à peine, et la coupe se voyait trop
+
+Deux défauts de la première version du §9.5, relevés sur le build suivant.
+
+**On ne voyait pas l'animation.** Une session déjà en cache répond en ~200 ms : l'écran
+d'ouverture était payé — un temps d'arrêt à chaque lancement — sans être vu. La racine tient
+donc un **plancher d'affichage** de 1450 ms (`DUREE_ANIMATION_LANCEMENT`, exporté par le
+composant pour que le plancher suive l'animation) : l'animation dure ~1080 ms, et il reste
+~400 ms de visage souriant avant la redirection. Ce n'est pas un délai ajouté au chargement —
+un démarrage plus lent que ce plancher n'attend rien de plus. L'échec, lui, n'attend jamais.
+
+**On voyait la coupe.** L'expression changeait par simple changement d'état, et le
+remplacement des yeux (points → arcs) sautait à l'écran. Un fondu n'aurait fait que rendre le
+saut mou. La feuille donne maintenant un petit à-coup — elle s'étire de 7 %, se tasse à 97,5 %,
+revient — et **l'expression change au sommet de cet à-coup** : l'œil suit le mouvement, pas la
+substitution. C'est le principe du clignement qui masque une coupe, en animation
+traditionnelle. L'arrivée elle-même passe en `Easing.out(Easing.back)` : la feuille dépasse
+légèrement puis se pose, au lieu d'un fondu linéaire.
+
+### 9.7 Le dernier bandeau collant du plan
+
+`/plan` gardait un bandeau collant de ~68 px pour un seul lien tertiaire, « Revenir à mon
+bilan ». Le commentaire qui l'accompagnait défendait sa présence : le détail d'un bilan n'est
+pas une destination de la barre, donc le lien doit exister. C'est juste — mais ça ne justifie
+pas la **chrome permanente**. L'onglet Suivi mène au même contenu en un geste de plus, sur
+l'écran où l'on revient le plus souvent, et une entrée permanente dans le bas de l'écran est
+exactement la troisième destination que le modèle à deux onglets a refusée (§1).
+
+Le bandeau disparaît, le lien reste — en fin de flux, sous le contenu, où il ne coûte rien.
+Il s'appelle maintenant « Revoir mon bilan » : « revenir » supposait qu'on en venait, ce qui
+n'est vrai qu'au premier passage.
+
+Le bandeau de `/suivi` reste, lui : « Refaire mon bilan » est l'action de cet écran, pas un
+raccourci vers un autre. Il perd sa hauteur inutile (bordure fine, moitié moins de marge
+verticale, même traitement que le pied de `/suivi/bilan`) et surtout **il ne se rend plus du
+tout quand il est vide** — la condition vivait à l'intérieur, et quand la proposition de
+re-bilan s'affichait plus haut dans la page, il restait une bande vide de 48 px collée en bas.
