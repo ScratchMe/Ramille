@@ -10,6 +10,7 @@ import { Platform, Share } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { APP_NAME } from '@/constants/produit';
 import { etatDuCompte, type EtatSuppression } from '@/types/compte-suppression';
+import { etatDuRattachement, type EtatRattachement } from '@/types/compte';
 
 export type CompteResult = { ok: true } | { ok: false; message: string };
 
@@ -58,6 +59,24 @@ export async function exportMyData(): Promise<CompteResult> {
  * supprimé — l'échec le plus coûteux possible ici, parce qu'il est silencieux et que la
  * personne repart en croyant ses données effacées.
  */
+/**
+ * État du rattachement pour l'affichage — plus léger que `lireEtatDuCompte`, qui interroge
+ * en plus `assessments` parce que la page de suppression a besoin de savoir si la session
+ * porte quelque chose. Ici, non : on ne fait que dire ce qu'il en est.
+ *
+ * `getUser()` et non `getSession()` : la session en cache peut encore porter
+ * `is_anonymous: true` juste après la confirmation de l'adresse, et c'est exactement
+ * l'instant qu'on cherche à rendre visible.
+ */
+export async function lireEtatDuRattachement(): Promise<EtatRattachement> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return etatDuRattachement(null);
+
+  return etatDuRattachement({ isAnonymous: user.is_anonymous === true, email: user.email ?? null });
+}
+
 export async function lireEtatDuCompte(): Promise<EtatSuppression> {
   const {
     data: { user },

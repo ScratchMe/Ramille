@@ -24,3 +24,28 @@ export async function markConnexionProposalSeen(): Promise<void> {
     // best-effort : au pire la proposition plein écran réapparaît une fois de plus.
   }
 }
+
+// Marque locale « on a déjà annoncé que le compte est rattaché ».
+//
+// Le rattachement se termine hors de l'app : la personne clique le lien de confirmation dans
+// sa messagerie et revient sur `/plan`. Sans cette marque, il n'y avait aucune surface pour
+// lui dire que ça avait marché (issue #62) — et avec une marque, l'annonce se fait **une
+// seule fois** : c'est une nouvelle, pas un état permanent à afficher en tête du plan. Qui
+// veut le revoir le trouve sur « Toi ».
+const RATTACHEMENT_KEY = 'traceverte.rattachement_annonce.v1';
+
+export async function aVuRattachementAnnonce(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(RATTACHEMENT_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function marquerRattachementAnnonce(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(RATTACHEMENT_KEY, '1');
+  } catch {
+    // best-effort : au pire l'annonce réapparaît une fois.
+  }
+}
