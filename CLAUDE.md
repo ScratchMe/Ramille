@@ -147,6 +147,12 @@ conditionnaient — l'étalement du pic d'envoi du lundi, et la purge des sessio
 supprimait sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur l'**inactivité**
 (corrigée, `v1-10` §2.B). Son compagnon design est `docs/design/v1-10-retrouver-son-compte/`.
 
+**Le chantier E est préparé, pas livré** : `v1-12-rappels.md` (07/09/2026) est son document
+d'implémentation — résolution du canal en une table de vérité écrite deux fois (SQL et
+TypeScript) et épinglée des deux côtés, jeton qui suit la personne par RPC, un point un
+message quel que soit le canal — en attente de Go, avec son canvas cliquable
+`docs/design/v1-12-rappels/` (direction B, la feuille après « C'est noté »).
+
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
 suivi dans la durée qui manque). Son §1 corrige deux erreurs de chiffre documentées ailleurs

@@ -1,0 +1,146 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Le moment"
+    },
+    {
+      "id": "page-2",
+      "name": "Attente"
+    },
+    {
+      "id": "page-3",
+      "name": "Rappel"
+    },
+    {
+      "id": "page-4",
+      "name": "Réglage"
+    },
+    {
+      "id": "page-5",
+      "name": "Refus"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "B — La feuille (cliquable)",
+      "is_interactive": true
+    },
+    {
+      "file": "MomentEnPlace.dc.html",
+      "x": 500,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "A — En place, sous la carte"
+    },
+    {
+      "file": "MomentFondu.dc.html",
+      "x": 1000,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "C — Fondu dans la carte d’attente"
+    },
+    {
+      "file": "Attente.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2",
+      "title": "La carte d’attente — quatre états",
+      "is_interactive": true
+    },
+    {
+      "file": "Rappel.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 900,
+      "h": 600,
+      "page": "page-3",
+      "title": "Le rappel — notification et email"
+    },
+    {
+      "file": "Toi.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4",
+      "title": "« Toi » — le réglage à trois",
+      "is_interactive": true
+    },
+    {
+      "file": "Refus.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1370,
+      "h": 1060,
+      "page": "page-5",
+      "title": "Le refus, en trois temps"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "moment-intro",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "page-1",
+      "text": "Le moment : juste après « C’est noté ». Trois directions, même contenu — ce qui va se passer, le choix du canal, le dialogue système seulement si la personne a dit oui.\n\nB, la feuille, est la candidate : un espace à elle, sans aucun chiffre, donc le visage est possible ; une cérémonie assumée pour la première fois. Cliquable de bout en bout : « C’est noté », le choix, « Autoriser » ou « Ne pas autoriser », puis la carte d’attente. Les deux réglages en tête changent la boucle (lundi / début du mois) et la présence d’un compte."
+    },
+    {
+      "id": "moment-prix",
+      "x": 500,
+      "y": -230,
+      "w": 890,
+      "page": "page-1",
+      "text": "A — en place : dans le contexte, mais au milieu des kilos, donc sans visage, et la carte devient très haute. C — fondu : le plus discret, mais l’explication est mince et le choix se cache derrière deux liens. Dans les deux, la permission est demandée sans qu’on ait vraiment dit ce qui va se passer."
+    },
+    {
+      "id": "attente-note",
+      "x": 480,
+      "y": 0,
+      "w": 460,
+      "page": "page-2",
+      "text": "Ce qui remplace « Rien à rattraper ». Ramille dit l’attente, pas le vide : « Je te fais signe lundi » quand un rappel partira, « On se retrouve ici lundi » sinon — elle revient dans l’app de toute façon.\n\nJamais un nombre dans sa bouche : le rythme est fixe, elle nomme le jour. Le réglage « canal » montre les quatre états ; « boucle » bascule sur le point mensuel.\n\nPosée au-dessus du cap, comme aujourd’hui : la règle « jamais près d’un chiffre lourd » vise l’empreinte, mais c’est à vérifier sur appareil (v1-11 §8)."
+    },
+    {
+      "id": "rappel-note",
+      "x": 0,
+      "y": -130,
+      "w": 620,
+      "page": "page-3",
+      "text": "Contenu seulement. Un point, un message, jamais deux : la boîte d’envoi garantit déjà l’unicité par point, le canal en devient une colonne."
+    },
+    {
+      "id": "toi-note",
+      "x": 480,
+      "y": 0,
+      "w": 460,
+      "page": "page-4",
+      "text": "Le réglage à trois. Notification par défaut si elle est possible, email sinon, aucun toujours possible.\n\nLes indisponibilités disent pourquoi : « Rattache un compte » pour l’email, « Coupées dans les réglages du téléphone » pour la notification après un refus. Le réglage « situation » passe en revue les quatre cas — sur web, la notification n’existe pas et rien ne l’explique.\n\nCe bloc s’ouvre à tout le monde, sessions anonymes comprises : le push n’a pas besoin de compte."
+    },
+    {
+      "id": "refus-note",
+      "x": 0,
+      "y": -130,
+      "w": 620,
+      "page": "page-5",
+      "text": "Le cas qu’on oublie. Avec un compte rattaché, l’email prend le relais tout seul et la carte le dit. Sans compte, la carte nomme les deux portes — les réglages du téléphone, ou un compte — une fois, sans insister."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}
