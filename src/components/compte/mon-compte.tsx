@@ -6,7 +6,7 @@ import { Button } from '@/components/button';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { deleteMyAccount, exportMyData } from '@/lib/compte';
 import { APP_NAME } from '@/constants/produit';
 
@@ -114,7 +114,7 @@ export function MonCompte() {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 18, padding: Spacing.four, gap: Spacing.two },
+  card: { borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.two },
   actions: { gap: Spacing.three, marginTop: Spacing.two },
   confirmation: { gap: Spacing.three },
   confirmationActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },

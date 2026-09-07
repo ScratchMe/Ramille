@@ -8,7 +8,7 @@ import { Mascot } from '@/components/mascot';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
 import { modeResultat } from '@/types/resultat';
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.three,
-    borderRadius: 16,
+    borderRadius: Radius.field,
     paddingVertical: 14,
     paddingHorizontal: Spacing.three,
   },

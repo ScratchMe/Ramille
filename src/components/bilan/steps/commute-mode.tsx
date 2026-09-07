@@ -10,7 +10,7 @@ import {
   COMMUTE_MODE_CHOICES,
   TWO_WHEELER_TYPE_OPTIONS,
 } from '@/constants/transport-modes';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import type { BilanAnswers } from '@/types/bilan';
 
 // B1.4. Le moteur (B1.4bis, hors spec d'origine — cf. migration
@@ -26,7 +26,7 @@ export function CommuteModeStep({
 }) {
   return (
     <View style={styles.container}>
-      <ThemedText type="title" weight={600} style={styles.title}>
+      <ThemedText type="screenTitle">
         Quel est ton mode de transport principal pour ce trajet ?
       </ThemedText>
       <View style={styles.list}>
@@ -103,9 +103,8 @@ export function CommuteModeStep({
 
 const styles = StyleSheet.create({
   container: { gap: Spacing.four },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   list: { gap: Spacing.two },
-  nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
+  nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
   row: { flexDirection: 'row', gap: Spacing.two },
   // Quatre motorisations : équiréparties, « Hybride rechargeable » écraserait les
   // trois autres. Largeur naturelle et retour à la ligne.

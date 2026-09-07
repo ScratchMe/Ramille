@@ -185,7 +185,7 @@ export default function Plan() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.emptySafeArea}>
           <EmptyStateIllustration style={styles.emptyIllustration} />
-          <ThemedText type="title" weight={600} style={styles.emptyTitle}>
+          <ThemedText type="screenTitle">
             Ton bilan n&apos;est pas encore fait
           </ThemedText>
           <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
@@ -235,10 +235,10 @@ export default function Plan() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <CompteBouton />
           <View style={styles.intro}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="screenTitle">
               Ton plan
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.body}>
+            <ThemedText type="body" themeColor="textSecondary">
               {actionsCount === 0
                 ? `Rien à alléger sur ${cycle.trip_label}.`
                 : `${actionsCount > 1 ? 'Deux actions liées' : 'Une action liée'} à ${cycle.trip_label}.`}
@@ -296,7 +296,7 @@ export default function Plan() {
               <ThemedText type="small" weight={600} themeColor="accentText">
                 Ton cap pour cette période
               </ThemedText>
-              <ThemedText weight={600} style={styles.capValue}>
+              <ThemedText type="salient">
                 − {capKg} kg
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
@@ -346,11 +346,11 @@ export default function Plan() {
             <ThemedView type="backgroundElement" style={styles.emptyActionsCard}>
               <View style={styles.praiseRow}>
                 <Mascot mood="happy" size={36} />
-                <ThemedText weight={600} style={styles.praiseText}>
+                <ThemedText type="cardTitle" style={styles.praiseText}>
                   Tu fais déjà l’essentiel sur ce poste.
                 </ThemedText>
               </View>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.body}>
+              <ThemedText type="body" themeColor="textSecondary">
                 Aucun changement de mode ne te ferait gagner assez pour valoir la peine d’être
                 proposé. Le check-in reste là si tu veux garder un œil dessus.
               </ThemedText>
@@ -417,15 +417,12 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   scrollContent: { padding: Spacing.four, gap: Spacing.four },
   intro: { gap: Spacing.two },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
-  body: { fontSize: 15, lineHeight: 22 },
-  cadenceChip: { alignSelf: 'flex-start', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 },
-  capCard: { borderRadius: 18, padding: 20, gap: 6 },
-  capValue: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
+  cadenceChip: { alignSelf: 'flex-start', borderRadius: Radius.chip, paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 },
+  capCard: { borderRadius: Radius.card, padding: 20, gap: 6 },
   actions: { gap: Spacing.two + 2 },
-  emptyActionsCard: { borderRadius: 18, padding: 20, gap: 8 },
+  emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
   praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  praiseText: { fontSize: 17, lineHeight: 24, flex: 1, minWidth: 0 },
+  praiseText: { flex: 1, minWidth: 0 },
   disclaimer: { lineHeight: 18 },
   checkins: { gap: Spacing.two + 2 },
   calmeCard: { borderRadius: Radius.card, padding: 20 },
@@ -436,7 +433,6 @@ const styles = StyleSheet.create({
   footerLink: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   emptyIllustration: { height: 140 },
-  emptyTitle: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   emptyBody: { fontSize: 16, lineHeight: 24 },
   emptyButton: { marginTop: 12 },
 });

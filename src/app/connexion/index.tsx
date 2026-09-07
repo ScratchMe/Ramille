@@ -8,7 +8,7 @@ import { Mascot } from '@/components/mascot';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { markConnexionProposalSeen } from '@/lib/connexion-prefs';
 import { useTrackView } from '@/hooks/use-track-view';
 import { formatTonnes } from '@/lib/format';
@@ -89,7 +89,7 @@ export default function ConnexionProposition() {
               <ThemedText weight={600} themeColor="accentText" type="small">
                 Ce qui est déjà enregistré
               </ThemedText>
-              <ThemedText themeColor="textSecondary" style={styles.recapBody}>
+              <ThemedText type="body" themeColor="textSecondary">
                 {formatTonnes(recap.total_co2_kg_year)} par an · {recap.dominant_poste_label} identifié comme
                 poste principal
               </ThemedText>
@@ -156,8 +156,7 @@ const styles = StyleSheet.create({
   textBlock: { gap: Spacing.two },
   title: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   body: { fontSize: 16, lineHeight: 24 },
-  recapCard: { borderRadius: 18, padding: 18, gap: 8 },
-  recapBody: { fontSize: 15, lineHeight: 22 },
+  recapCard: { borderRadius: Radius.card, padding: 18, gap: 8 },
   options: { gap: Spacing.three },
   emailLink: { textAlign: 'center' },
   skip: { marginTop: Spacing.two, alignItems: 'center', gap: 10 },

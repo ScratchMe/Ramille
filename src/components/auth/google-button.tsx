@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Bouton "Se connecter avec Google" — pastille neutre en placeholder dans la maquette,
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     height: 54,
-    borderRadius: 27,
+    borderRadius: Radius.button,
     borderWidth: 1,
   },
   dot: { width: 20, height: 20, borderRadius: 10 },

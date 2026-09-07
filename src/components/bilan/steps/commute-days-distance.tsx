@@ -40,7 +40,7 @@ export function CommuteDaysDistanceStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="title" weight={600} style={styles.title}>
+        <ThemedText type="screenTitle">
           Ce trajet, tu le fais combien de jours par semaine ?
         </ThemedText>
         <View style={styles.daysRow}>
@@ -107,7 +107,6 @@ export function CommuteDaysDistanceStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   daysRow: { flexDirection: 'row', gap: Spacing.two },
   separator: { height: 1 },

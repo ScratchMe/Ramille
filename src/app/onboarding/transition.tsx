@@ -43,7 +43,7 @@ export default function OnboardingTransition() {
           </ThemedView>
           <View style={styles.sections}>
             {SECTIONS.map((section) => (
-              <ThemedText key={section} weight={400} themeColor="textSecondary" style={styles.sectionItem}>
+              <ThemedText type="body" key={section} weight={400} themeColor="textSecondary">
                 {section}
               </ThemedText>
             ))}
@@ -76,6 +76,5 @@ const styles = StyleSheet.create({
   durationBlock: { borderRadius: 20, padding: Spacing.four, gap: 2 },
   duration: { fontSize: 24, lineHeight: 30 },
   sections: { gap: 10 },
-  sectionItem: { fontSize: 15, lineHeight: 22 },
   footer: { gap: Spacing.five },
 });

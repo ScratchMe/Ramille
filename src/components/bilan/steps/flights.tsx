@@ -26,7 +26,7 @@ export function FlightsStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="title" weight={600} style={styles.title}>
+        <ThemedText type="screenTitle">
           Combien de fois prends-tu l’avion dans une année type ?
         </ThemedText>
         <View style={styles.chipsWrap}>
@@ -88,7 +88,6 @@ export function FlightsStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },

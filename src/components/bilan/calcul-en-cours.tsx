@@ -29,7 +29,7 @@ export function CalculEnCours() {
           <ThemedText type="subtitle" weight={600} style={styles.title}>
             {RAMILLE.calcul}
           </ThemedText>
-          <ThemedText themeColor="textTertiary" style={styles.body}>
+          <ThemedText type="body" themeColor="textTertiary" style={styles.body}>
             Tes réponses, croisées avec les facteurs d’émission de l’ADEME. Quelques secondes.
           </ThemedText>
         </View>
@@ -49,5 +49,5 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   title: { textAlign: 'center' },
-  body: { fontSize: 15, lineHeight: 22, textAlign: 'center', maxWidth: 280 },
+  body: { textAlign: 'center', maxWidth: 280 },
 });

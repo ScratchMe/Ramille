@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { FontFamily } from '@/constants/theme';
+import { Radius, FontFamily } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Champ numérique encadré (B1.2/B1.3 "Quelle distance pour un aller ?") — bordure
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     height: 64,
-    borderRadius: 16,
+    borderRadius: Radius.field,
     borderWidth: 1.5,
     paddingHorizontal: 20,
   },

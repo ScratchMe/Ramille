@@ -7,7 +7,7 @@ import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import {
   CAR_ENGINE_OPTIONS,
   LEISURE_MODE_CHOICES_MORE,
@@ -50,7 +50,7 @@ export function LeisureDetailStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="title" weight={600} style={styles.title}>
+        <ThemedText type="screenTitle">
           Avec quel mode, principalement ?
         </ThemedText>
         <View style={styles.list}>
@@ -145,12 +145,11 @@ export function LeisureDetailStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   list: { gap: Spacing.two },
   separator: { height: 1 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two, marginTop: Spacing.two },
+  nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two, marginTop: Spacing.two },
   row: { flexDirection: 'row', gap: Spacing.two },
   // Quatre motorisations : équiréparties, « Hybride rechargeable » écraserait les
   // trois autres. Largeur naturelle et retour à la ligne.

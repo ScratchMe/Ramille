@@ -10,7 +10,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { APP_NAME } from '@/constants/produit';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { APP_URL } from '@/lib/app-url';
 import { sendAccountAccessLink } from '@/lib/auth';
 import { lireEtatDuCompte } from '@/lib/compte';
@@ -92,14 +92,14 @@ export default function RetrouverMonCompte() {
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.content}>
             <View style={styles.textBlock}>
-              <ThemedText type="title" weight={600} style={styles.title}>
+              <ThemedText type="screenTitle">
                 Cet appareil porte déjà un bilan
               </ThemedText>
-              <ThemedText themeColor="textSecondary" style={styles.body}>
+              <ThemedText type="body" themeColor="textSecondary">
                 Tu as répondu au questionnaire ici, sans compte. En retrouvant le tien, c&apos;est
                 son historique qui s&apos;ouvre — ce bilan-ci ne le rejoindra pas.
               </ThemedText>
-              <ThemedText themeColor="textSecondary" style={styles.body}>
+              <ThemedText type="body" themeColor="textSecondary">
                 On peut le refaire ensemble après, ça va vite.
               </ThemedText>
             </View>
@@ -122,10 +122,10 @@ export default function RetrouverMonCompte() {
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.content}>
             <View style={styles.textBlock}>
-              <ThemedText type="title" weight={600} style={styles.title}>
+              <ThemedText type="screenTitle">
                 Regarde tes emails
               </ThemedText>
-              <ThemedText themeColor="textSecondary" style={styles.body}>
+              <ThemedText type="body" themeColor="textSecondary">
                 Si un compte {APP_NAME} existe avec cette adresse, un lien vient d&apos;y être envoyé.
                 Ouvre-le depuis cet appareil : c&apos;est lui qui te reconnecte.
               </ThemedText>
@@ -161,10 +161,10 @@ export default function RetrouverMonCompte() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.textBlock}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="screenTitle">
               Retrouver mon compte
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.body}>
+            <ThemedText type="body" themeColor="textSecondary">
               Indique l&apos;adresse de ton compte. On t&apos;envoie un lien qui te reconnecte ici, sur
               cet appareil, avec tes bilans et ton plan.
             </ThemedText>
@@ -224,10 +224,8 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
   content: { gap: Spacing.four, marginTop: Spacing.two },
   textBlock: { gap: 10 },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
-  body: { fontSize: 15, lineHeight: 22 },
   fields: { gap: Spacing.three },
-  card: { borderRadius: 18, padding: 20, gap: 8 },
+  card: { borderRadius: Radius.card, padding: 20, gap: 8 },
   footer: { gap: Spacing.three },
   hint: { textAlign: 'center' },
 });

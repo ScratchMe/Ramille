@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Chip } from '@/components/bilan/chip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
 import type { BilanAnswers } from '@/types/bilan';
 
@@ -20,7 +20,7 @@ export function LongTripsStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="title" weight={600} style={styles.title}>
+        <ThemedText type="screenTitle">
           Et les trajets de plus de 300 km ?
         </ThemedText>
         <ThemedText type="small" themeColor="textTertiary">
@@ -94,10 +94,9 @@ export function LongTripsStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.two },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   field: { gap: Spacing.two + 2 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  nestedBox: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two, marginTop: 4 },
+  nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two, marginTop: 4 },
   row: { flexDirection: 'row', gap: Spacing.two },
   // Quatre motorisations : équiréparties, « Hybride rechargeable » écraserait les
   // trois autres. Largeur naturelle et retour à la ligne.

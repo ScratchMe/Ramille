@@ -9,7 +9,7 @@ import { Mascot } from '@/components/mascot';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   FEEDBACK_KINDS,
@@ -63,10 +63,10 @@ export default function Feedback() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.sentSafeArea}>
           <Mascot mood="happy" size={56} />
-          <ThemedText type="title" weight={600} style={styles.sentTitle}>
+          <ThemedText type="screenTitle" style={styles.sentTitle}>
             C’est envoyé, merci.
           </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.body}>
+          <ThemedText type="body" themeColor="textSecondary">
             Ton retour est lu à la main. Il n’y aura pas de réponse automatique — on préfère te
             le dire plutôt que de te laisser l’attendre.
           </ThemedText>
@@ -81,10 +81,10 @@ export default function Feedback() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.intro}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="screenTitle">
               Un retour à nous faire ?
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.body}>
+            <ThemedText type="body" themeColor="textSecondary">
               Un mode de transport qui manque, un chiffre qui te semble faux, une idée. Tout est
               utile — c’est le seul moyen qu’on a de le savoir.
             </ThemedText>
@@ -158,13 +158,11 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scrollContent: { padding: Spacing.four, gap: Spacing.three },
   intro: { gap: Spacing.two },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
-  body: { fontSize: 15, lineHeight: 22 },
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   fieldBlock: { gap: 8 },
   input: {
     minHeight: 140,
-    borderRadius: 16,
+    borderRadius: Radius.field,
     borderWidth: 1.5,
     padding: 16,
     fontSize: 16,
@@ -175,6 +173,6 @@ const styles = StyleSheet.create({
   privacy: { lineHeight: 18 },
   cancel: { textAlign: 'center' },
   sentSafeArea: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
-  sentTitle: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26, textAlign: 'center' },
+  sentTitle: { textAlign: 'center' },
   sentButton: { marginTop: Spacing.two, alignSelf: 'stretch' },
 });

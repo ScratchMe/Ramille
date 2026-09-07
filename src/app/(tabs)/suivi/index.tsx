@@ -116,7 +116,7 @@ export default function Suivi() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.emptySafeArea}>
           <EmptyStateIllustration style={styles.emptyIllustration} />
-          <ThemedText type="title" weight={600} style={styles.emptyTitle}>
+          <ThemedText type="screenTitle">
             Ton suivi commence au premier bilan
           </ThemedText>
           <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
@@ -147,10 +147,10 @@ export default function Suivi() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <CompteBouton />
           <View style={styles.intro}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="screenTitle">
               Ton suivi
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.body}>
+            <ThemedText type="body" themeColor="textSecondary">
               {history.length === 1
                 ? 'Ton point de départ. Refais ton bilan quand tes habitudes changent : tu verras l’écart ici.'
                 : `${history.length} bilans depuis le ${formatDate(first.submittedAt)}.`}
@@ -351,8 +351,6 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   scrollContent: { padding: Spacing.four, gap: Spacing.four },
   intro: { gap: Spacing.two },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
-  body: { fontSize: 15, lineHeight: 22 },
   card: { borderRadius: 20, padding: 20, gap: 14 },
   bars: { gap: Spacing.three },
   historyRow: { gap: 6 },
@@ -370,7 +368,6 @@ const styles = StyleSheet.create({
   footerLink: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   emptyIllustration: { height: 140 },
-  emptyTitle: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   emptyBody: { fontSize: 16, lineHeight: 24 },
   emptyButton: { marginTop: 12 },
 });

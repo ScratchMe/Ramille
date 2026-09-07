@@ -63,10 +63,10 @@ export default function ConnexionEmail() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.centered}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="screenTitle">
               Vérifie tes emails
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.body}>
+            <ThemedText type="body" themeColor="textSecondary">
               Un lien de confirmation vient d&apos;être envoyé à {email.trim()}. Ton bilan reste
               accessible en attendant.
             </ThemedText>
@@ -82,10 +82,10 @@ export default function ConnexionEmail() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.centered}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="screenTitle">
               Cette adresse a déjà un compte
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.body}>
+            <ThemedText type="body" themeColor="textSecondary">
               Le bilan que tu viens de faire ne peut pas le rejoindre, mais tu peux retrouver ton
               compte : on t&apos;envoie un lien qui te reconnecte ici.
             </ThemedText>
@@ -112,10 +112,10 @@ export default function ConnexionEmail() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.textBlock}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="screenTitle">
               Continuer avec un email
             </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.body}>
+            <ThemedText type="body" themeColor="textSecondary">
               Une adresse, rien de plus — pas de mot de passe. Ton bilan est rattaché
               automatiquement.
             </ThemedText>
@@ -168,8 +168,6 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
   content: { gap: Spacing.four, marginTop: Spacing.two },
   textBlock: { gap: 10 },
-  title: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
-  body: { fontSize: 15, lineHeight: 22 },
   fields: { gap: Spacing.four },
   footer: { gap: Spacing.four },
   backLink: { textAlign: 'center' },
