@@ -7,7 +7,6 @@ import { OnboardingDots } from '@/components/onboarding-dots';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTrackView } from '@/hooks/use-track-view';
 import { track } from '@/lib/analytics';
 
 const SECTIONS = [
@@ -17,11 +16,14 @@ const SECTIONS = [
   '4 — Ton contexte de mobilité',
 ];
 
-// Onboarding 4/4 — Transition bilan. La durée est annoncée avant l'entrée dans le
+// Étape 4/4 de l'onboarding, rendue par le pager de `src/app/onboarding/index.tsx`.
+//
+// C'était une route à part entière jusqu'au 07/09/2026 ; les quatre étapes vivent maintenant
+// dans un seul écran qui se balaie au doigt (issue #68). Le contenu n'a pas bougé.
+//
+// Onboarding — Transition bilan. La durée est annoncée avant l'entrée dans le
 // bilan : la friction est assumée, pas dissimulée (handoff design).
-export default function OnboardingTransition() {
-  useTrackView('onboarding_step_view', { step: 'transition' });
-
+export function EtapeTransition() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
