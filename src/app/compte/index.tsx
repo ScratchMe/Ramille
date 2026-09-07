@@ -12,9 +12,9 @@ import { CONTACT_EMAIL } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
-import { lireEtatDuCompte } from '@/lib/compte';
+import { lireEtatDuRattachement } from '@/lib/compte';
 import { loadReminderPrefs, setReminderPrefs, type ReminderPrefs } from '@/lib/notification-prefs';
-import { type EtatSuppression } from '@/types/compte-suppression';
+import { type EtatRattachement } from '@/types/compte';
 
 // « Toi » — tout ce qui touche au compte, sorti de /suivi (v1-11 §2.5).
 //
@@ -29,14 +29,14 @@ export default function Compte() {
   useTrackView('compte_view');
 
   const theme = useTheme();
-  const [etat, setEtat] = useState<EtatSuppression | null>(null);
+  const [etat, setEtat] = useState<EtatRattachement | null>(null);
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
 
   useEffect(() => {
     let annule = false;
-    lireEtatDuCompte()
+    lireEtatDuRattachement()
       .then((e) => !annule && setEtat(e))
-      .catch(() => !annule && setEtat({ kind: 'inconnu' }));
+      .catch(() => !annule && setEtat({ kind: 'local' }));
     loadReminderPrefs()
       .then((p) => !annule && setRappels(p))
       .catch(() => undefined);
@@ -50,7 +50,6 @@ export default function Compte() {
     await setReminderPrefs(valeur);
   };
 
-  const rattache = etat?.kind === 'rattache';
 
   return (
     <ThemedView style={styles.container}>
@@ -67,16 +66,32 @@ export default function Compte() {
             />
             <ThemedText type="screenTitle">Toi</ThemedText>
 
-            {/* `etatDuCompte` distingue une adresse écrite d'une adresse confirmée : entre
-                `updateUser({ email })` et le clic de confirmation, la ligne porte déjà
-                l'adresse alors que le compte n'est pas rattaché. */}
-            {rattache ? (
+            {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et le clic
+                de confirmation, la ligne porte déjà l'adresse alors que le compte n'est pas
+                rattaché : cet écran proposait alors de « rattacher un compte », comme si la
+                demande n'avait jamais eu lieu — et la boucle ouverte par « Vérifie tes
+                emails » ne se refermait nulle part. `etatDuRattachement` nomme cet
+                entre-deux, là où `etatDuCompte` a raison de le confondre avec l'anonymat.
+
+                Registre : un fait, jamais une relance. Pas de « pense à confirmer », pas de
+                bouton pour renvoyer l'email — la personne a déjà ce qu'il lui faut dans sa
+                messagerie, et rien ici ne doit se lire comme un reproche. */}
+            {etat?.kind === 'rattache' && (
               <ThemedText type="body" themeColor="textSecondary">
                 {etat.email
                   ? `Ton compte est rattaché à ${etat.email}. Ton bilan te suit d’un appareil à l’autre.`
                   : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
               </ThemedText>
-            ) : (
+            )}
+
+            {etat?.kind === 'a_confirmer' && (
+              <ThemedText type="body" themeColor="textSecondary">
+                Adresse à confirmer : {etat.email}. Le lien est parti par email ; ton bilan te
+                suivra d’un appareil à l’autre une fois que tu auras cliqué dessus.
+              </ThemedText>
+            )}
+
+            {etat?.kind === 'local' && (
               <>
                 <ThemedText type="body" themeColor="textSecondary">
                   Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs.

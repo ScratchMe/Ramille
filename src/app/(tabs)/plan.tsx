@@ -19,6 +19,8 @@ import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
 import { formatIntention } from '@/types/plan';
 import { daysSince, REBILAN_SUGGESTION_DAYS } from '@/types/suivi';
+import { aVuRattachementAnnonce, marquerRattachementAnnonce } from '@/lib/connexion-prefs';
+import { lireEtatDuRattachement } from '@/lib/compte';
 import { supabase } from '@/lib/supabase';
 
 type PlanAction = {
@@ -97,6 +99,30 @@ export default function Plan() {
   // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
   // jour ne se déduit pas de l'action qu'on vient de toucher — il faut relire le cycle.
   const [refreshKey, setRefreshKey] = useState(0);
+  // Annonce du rattachement : `null` tant qu'on ne sait pas, une adresse (ou la chaîne vide
+  // quand Google ne la remonte pas) quand il y a quelque chose à dire.
+  const [rattachement, setRattachement] = useState<string | null>(null);
+
+  // **La confirmation se termine hors de l'app** : la personne clique le lien reçu par email
+  // et revient ici, `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la
+  // boucle ouverte par « Vérifie tes emails » ne se refermait nulle part. On l'annonce une
+  // seule fois : c'est une nouvelle, pas un état permanent en tête du plan. Qui veut le
+  // revoir le trouve sur « Toi ».
+  useEffect(() => {
+    let annule = false;
+
+    (async () => {
+      if (await aVuRattachementAnnonce()) return;
+      const etat = await lireEtatDuRattachement().catch(() => null);
+      if (annule || etat?.kind !== 'rattache') return;
+      setRattachement(etat.email ?? '');
+      await marquerRattachementAnnonce();
+    })();
+
+    return () => {
+      annule = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -244,6 +270,17 @@ export default function Plan() {
         {/* Hors du ScrollView : la bande ne défile pas (cf. bande-haute.tsx). */}
         <BandeHaute />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Un fait, pas une félicitation : ni mascotte (elle ne commente pas l'état du
+              compte), ni exclamation, ni action à faire. */}
+          {rattachement !== null && (
+            <ThemedView type="backgroundSelected" style={styles.rattachement}>
+              <ThemedText type="small" themeColor="accentText">
+                {rattachement
+                  ? `Ton compte est rattaché à ${rattachement}. Ton bilan te suit d’un appareil à l’autre.`
+                  : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
+              </ThemedText>
+            </ThemedView>
+          )}
           <View style={styles.intro}>
             <ThemedText type="screenTitle">
               Ton plan
@@ -429,6 +466,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   scrollContent: { padding: Spacing.four, gap: Spacing.four },
   intro: { gap: Spacing.two },
+  rattachement: { borderRadius: Radius.field, paddingVertical: 12, paddingHorizontal: Spacing.three },
   cadenceChip: { alignSelf: 'flex-start', borderRadius: Radius.chip, paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 },
   capCard: { borderRadius: Radius.card, padding: 20, gap: 6 },
   actions: { gap: Spacing.two + 2 },
