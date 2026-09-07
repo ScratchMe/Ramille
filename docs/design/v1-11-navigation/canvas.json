@@ -1,0 +1,182 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Navigation"
+    },
+    {
+      "id": "page-2",
+      "name": "Flux"
+    },
+    {
+      "id": "page-3",
+      "name": "Plan"
+    },
+    {
+      "id": "page-4",
+      "name": "Système"
+    },
+    {
+      "id": "page-5",
+      "name": "Écartées"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "Plan / Suivi — barre à deux onglets",
+      "is_interactive": true
+    },
+    {
+      "file": "PlanComparaison.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 860,
+      "h": 700,
+      "page": "page-3",
+      "title": "Action engagée — avant / proposé"
+    },
+    {
+      "file": "Systeme.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 900,
+      "h": 1180,
+      "page": "page-4",
+      "title": "Vocabulaire visuel"
+    },
+    {
+      "file": "OptionB.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5",
+      "title": "B — Segment en tête (écartée)",
+      "is_interactive": true
+    },
+    {
+      "file": "OptionC.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-5",
+      "title": "C — Fil de saison (écartée)",
+      "is_interactive": true
+    },
+    {
+      "file": "Flux1.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 874,
+      "h": 720,
+      "page": "page-2",
+      "title": "1 · Fin du questionnaire"
+    },
+    {
+      "file": "Flux2.dc.html",
+      "x": 0,
+      "y": 840,
+      "w": 1172,
+      "h": 720,
+      "page": "page-2",
+      "title": "2 · Refaire un bilan"
+    },
+    {
+      "file": "Flux3.dc.html",
+      "x": 0,
+      "y": 1680,
+      "w": 576,
+      "h": 720,
+      "page": "page-2",
+      "title": "3 · Ouvrir un bilan passé"
+    },
+    {
+      "file": "Flux4.dc.html",
+      "x": 0,
+      "y": 2520,
+      "w": 874,
+      "h": 720,
+      "page": "page-2",
+      "title": "4 · Répondre à un check-in"
+    },
+    {
+      "file": "Flux5.dc.html",
+      "x": 0,
+      "y": 3360,
+      "w": 1172,
+      "h": 720,
+      "page": "page-2",
+      "title": "5 · Reconnexion sur un nouvel appareil"
+    },
+    {
+      "file": "Flux6.dc.html",
+      "x": 0,
+      "y": 4200,
+      "w": 576,
+      "h": 720,
+      "page": "page-2",
+      "title": "6 · Période calme"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "nav-intro",
+      "x": 480,
+      "y": 0,
+      "w": 420,
+      "page": "page-1",
+      "text": "Direction retenue : la barre basse (A), à deux onglets.\n\nDeux lieux, pas trois : le Plan (maintenant, cette saison) et le Suivi (dans la durée). Le questionnaire est un flux, pas un lieu ; le résultat est le détail d’un bilan.\n\nLe compte vit derrière l’icône en haut à droite — un onglet permanent contredirait « pas besoin de compte ».\n\nTout est cliquable : les deux onglets, et l’icône."
+    },
+    {
+      "id": "nav-bilan",
+      "x": 480,
+      "y": 330,
+      "w": 420,
+      "page": "page-1",
+      "text": "Ce qui a changé depuis la première version : « Bilan » n’est plus une destination. Il n’avait aucun contenu propre — soit la dernière page d’un formulaire, soit le détail d’une entrée du suivi.\n\nEt le point de la semaine passe en tête du plan quand il est en attente : c’est la raison de revenir la plus fréquente."
+    },
+    {
+      "id": "flux-intro",
+      "x": 0,
+      "y": -150,
+      "w": 620,
+      "page": "page-2",
+      "text": "Six flux, écran par écran. Les cadres en pointillé sont hors de l’app (notification, email).\n\nLa règle d’arrivée est la même partout : la racine envoie sur le plan dès qu’un bilan existe. Ce qui manquait n’était pas la page d’atterrissage, c’était la sortie visible vers le suivi."
+    },
+    {
+      "id": "plan-note",
+      "x": 0,
+      "y": -140,
+      "w": 500,
+      "page": "page-3",
+      "text": "Validé. L’action engagée : bordure accent, fond teinté, étiquette en tête. L’autre s’efface sans disparaître."
+    },
+    {
+      "id": "sys-note",
+      "x": 0,
+      "y": -140,
+      "w": 520,
+      "page": "page-4",
+      "text": "Validé. Relevé de ce qui existe, pas une nouvelle palette : nommer les valeurs qui se répètent déjà en dur."
+    },
+    {
+      "id": "ecartees",
+      "x": 0,
+      "y": -150,
+      "w": 520,
+      "page": "page-5",
+      "text": "Les deux directions non retenues, gardées pour mémoire.\n\nB — le segment se lit comme un filtre et vit loin du pouce. C — le fil suggère un ordre obligatoire et vieillit mal au troisième mois. Et toutes deux portaient encore trois lieux."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}

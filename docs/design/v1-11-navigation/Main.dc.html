@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="padding: 52px 24px 0; display: flex; justify-content: flex-end">
+    <div onClick="{{ ouvrirCompte }}" style="width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: {{fondCompte}}">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="3.6" stroke="{{couleurCompte}}" stroke-width="1.9"/><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="{{couleurCompte}}" stroke-width="1.9" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; overflow: hidden; padding: 4px 24px 16px; display: flex; flex-direction: column; gap: 16px">
+
+    <sc-if value="{{ estPlan }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 26px; line-height: 32px; letter-spacing: -0.26px; font-weight: 600; color: #131612">Ton plan</div>
+
+        <div style="border-radius: 18px; background: #E4EFE8; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+          <div style="font-size: 13px; line-height: 18px; font-weight: 700; color: #14563A; letter-spacing: 0.3px; text-transform: uppercase">Ton point de la semaine</div>
+          <div style="font-size: 16px; line-height: 23px; font-weight: 600; color: #131612">As-tu changé de mode de transport au moins une fois cette semaine pour tes trajets domicile-travail ?</div>
+          <div style="display: flex; gap: 10px">
+            <div style="flex-grow: 1; height: 46px; border-radius: 23px; background: #1F6F4A; display: flex; align-items: center; justify-content: center"><div style="font-size: 15px; font-weight: 600; color: #FFFFFF">Oui</div></div>
+            <div style="flex-grow: 1; height: 46px; border-radius: 23px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><div style="font-size: 15px; font-weight: 500; color: #131612">Non</div></div>
+          </div>
+        </div>
+
+        <div style="border-radius: 18px; border: 2px solid #1F6F4A; background: #F3F8F4; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <div style="width: 20px; height: 20px; border-radius: 10px; background: #1F6F4A; display: flex; align-items: center; justify-content: center">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div style="font-size: 13px; line-height: 18px; font-weight: 700; color: #14563A; letter-spacing: 0.3px; text-transform: uppercase">Tu t’y es engagé</div>
+          </div>
+          <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Faire deux trajets par semaine à vélo plutôt qu’en voiture.</div>
+          <div style="font-size: 14px; line-height: 20px; color: #39403B">Le mardi et le jeudi · − 184 kg CO₂e par an</div>
+        </div>
+
+        <div style="border-radius: 18px; border: 1px solid #DDE0D9; padding: 18px; display: flex; flex-direction: column; gap: 6px; opacity: 0.72">
+          <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Prendre le train pour tes trajets de plus de 300 km.</div>
+          <div style="font-size: 14px; line-height: 20px; color: #39403B">− 96 kg CO₂e par an</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ estSuivi }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 26px; line-height: 32px; letter-spacing: -0.26px; font-weight: 600; color: #131612">Ton suivi</div>
+        <div style="border-radius: 18px; background: #F0F1EC; padding: 18px; display: flex; flex-direction: column; gap: 4px">
+          <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #5E655F">Depuis ton premier bilan</div>
+          <div style="font-size: 30px; line-height: 36px; letter-spacing: -0.6px; font-weight: 600; color: #131612">− 0,3 t</div>
+          <div style="font-size: 14px; line-height: 20px; color: #39403B">2,7 t en juin, 2,4 t aujourd’hui.</div>
+        </div>
+
+        <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #5E655F; margin-top: 4px">Tes bilans</div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="min-height: 56px; border-radius: 16px; border: 1px solid #DDE0D9; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer">
+            <div style="display: flex; flex-direction: column; gap: 1px"><div style="font-size: 15px; line-height: 22px; font-weight: 600; color: #131612">6 septembre</div><div style="font-size: 13px; line-height: 18px; color: #5E655F">2,4 t · domicile-travail</div></div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#5E655F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div style="min-height: 56px; border-radius: 16px; border: 1px solid #DDE0D9; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer">
+            <div style="display: flex; flex-direction: column; gap: 1px"><div style="font-size: 15px; line-height: 22px; font-weight: 600; color: #131612">12 juin</div><div style="font-size: 13px; line-height: 18px; color: #5E655F">2,7 t · domicile-travail</div></div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#5E655F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A">Refaire mon bilan</div>
+
+        <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #5E655F; margin-top: 4px">Tes points répondus</div>
+        <div style="border-radius: 16px; border: 1px solid #DDE0D9; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px">
+          <div style="font-size: 13px; line-height: 18px; color: #5E655F">Semaine du 1ᵉʳ septembre</div>
+          <div style="font-size: 15px; line-height: 22px; font-weight: 600; color: #131612">Tu as changé de mode au moins une fois.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ estCompte }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font-size: 26px; line-height: 32px; letter-spacing: -0.26px; font-weight: 600; color: #131612">Toi</div>
+        <div style="font-size: 15px; line-height: 22px; color: #39403B">Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs.</div>
+        <div style="height: 54px; border-radius: 27px; background: #1F6F4A; display: flex; align-items: center; justify-content: center"><div style="font-size: 16px; font-weight: 600; color: #FFFFFF">Rattacher un compte</div></div>
+        <div style="display: flex; flex-direction: column; margin-top: 8px">
+          <div style="min-height: 52px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #DDE0D9"><div style="font-size: 15px; color: #131612">Rappels</div><div style="font-size: 14px; color: #5E655F">Notification</div></div>
+          <div style="min-height: 52px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #DDE0D9"><div style="font-size: 15px; color: #131612">Exporter mes données</div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#5E655F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div style="min-height: 52px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #DDE0D9"><div style="font-size: 15px; color: #131612">Nous faire un retour</div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#5E655F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div style="min-height: 52px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #DDE0D9"><div style="font-size: 15px; color: #131612">Confidentialité et conditions</div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#5E655F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div style="min-height: 52px; display: flex; align-items: center; justify-content: space-between"><div style="font-size: 15px; color: #5E655F">Supprimer mon compte</div></div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <div style="border-top: 1px solid #DDE0D9; background: #FFFFFF; padding: 8px 40px 20px; display: flex; gap: 4px">
+    <sc-for list="{{ onglets }}" as="onglet" hint-placeholder-count="2">
+      <div onClick="{{ onglet.choisir }}" style="flex-grow: 1; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; border-radius: 14px">
+        <div style="width: 56px; height: 30px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: {{onglet.pastille}}">
+          <sc-if value="{{ onglet.estPlan }}" hint-placeholder-val="{{ true }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12l4.5 4.5L19 7" stroke="{{onglet.couleur}}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke="{{onglet.couleur}}" stroke-width="1.9" stroke-linecap="round"/></svg>
+          </sc-if>
+          <sc-if value="{{ onglet.estSuivi }}" hint-placeholder-val="{{ false }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="{{onglet.couleur}}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="7" r="1.6" fill="{{onglet.couleur}}"/></svg>
+          </sc-if>
+        </div>
+        <div style="font-size: 12px; line-height: 16px; font-weight: {{onglet.graisse}}; color: {{onglet.couleur}}">{{ onglet.libelle }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"depart":{"editor":"enum","options":["plan","suivi","compte"],"default":"plan","section":"Prototype"}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { actif: null };
+  }
+  renderVals() {
+    const actif = this.state.actif ?? this.props.depart ?? 'plan';
+    const defs = [
+      { cle: 'plan', libelle: 'Plan' },
+      { cle: 'suivi', libelle: 'Suivi' },
+    ];
+    const compte = actif === 'compte';
+    return {
+      estPlan: actif === 'plan',
+      estSuivi: actif === 'suivi',
+      estCompte: compte,
+      fondCompte: compte ? '#E4EFE8' : 'transparent',
+      couleurCompte: compte ? '#1F6F4A' : '#5E655F',
+      ouvrirCompte: () => this.setState({ actif: compte ? 'plan' : 'compte' }),
+      onglets: defs.map((d) => ({
+        libelle: d.libelle,
+        estPlan: d.cle === 'plan',
+        estSuivi: d.cle === 'suivi',
+        couleur: actif === d.cle ? '#1F6F4A' : '#5E655F',
+        graisse: actif === d.cle ? '600' : '500',
+        pastille: actif === d.cle ? '#E4EFE8' : 'transparent',
+        choisir: () => this.setState({ actif: d.cle }),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

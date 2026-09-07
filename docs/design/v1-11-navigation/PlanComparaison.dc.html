@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+
+<div style="width: 860px; height: 700px; box-sizing: border-box; background: #FAFAF8; padding: 28px; display: flex; gap: 40px">
+
+  <div style="width: 366px; display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 13px; line-height: 18px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #5E655F">Aujourd’hui</div>
+    <div style="font-size: 14px; line-height: 20px; color: #39403B">Les deux cartes sont identiques. L’engagement n’apparaît qu’en lisant le pavé du bas.</div>
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; border: 1px solid #DDE0D9">
+      <div style="border-radius: 18px; border: 1px solid #DDE0D9; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Faire deux trajets par semaine à vélo plutôt qu’en voiture.</div>
+        <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A">− 184 kg CO₂e</div>
+        <div style="font-size: 14px; line-height: 20px; color: #39403B">par an · 7 % de ton empreinte</div>
+        <div style="margin-top: 8px; border-radius: 16px; background: #E4EFE8; padding: 16px; display: flex; flex-direction: column; gap: 6px">
+          <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612">Tu t’y es engagé pour le mardi et le jeudi.</div>
+          <div style="font-size: 14px; line-height: 20px; color: #14563A; text-decoration: underline">Changer d’action</div>
+        </div>
+      </div>
+      <div style="border-radius: 18px; border: 1px solid #DDE0D9; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Prendre le train pour tes trajets de plus de 300 km.</div>
+        <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A">− 96 kg CO₂e</div>
+        <div style="font-size: 14px; line-height: 20px; color: #39403B">par an · 4 % de ton empreinte</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 366px; display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 13px; line-height: 18px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #14563A">Proposé</div>
+    <div style="font-size: 14px; line-height: 20px; color: #39403B">Bordure accent, fond teinté, étiquette en tête. L’autre s’efface sans disparaître.</div>
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; border: 1px solid #DDE0D9">
+      <div style="border-radius: 18px; border: 2px solid #1F6F4A; background: #F3F8F4; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <div style="width: 20px; height: 20px; border-radius: 10px; background: #1F6F4A; display: flex; align-items: center; justify-content: center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div style="font-size: 13px; line-height: 18px; font-weight: 700; color: #14563A; letter-spacing: 0.3px; text-transform: uppercase">Tu t’y es engagé</div>
+        </div>
+        <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Faire deux trajets par semaine à vélo plutôt qu’en voiture.</div>
+        <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A">− 184 kg CO₂e</div>
+        <div style="font-size: 14px; line-height: 20px; color: #39403B">Le mardi et le jeudi · par an, 7 % de ton empreinte</div>
+        <div style="font-size: 14px; line-height: 20px; color: #14563A; text-decoration: underline">Changer d’action</div>
+      </div>
+      <div style="border-radius: 18px; border: 1px solid #DDE0D9; padding: 18px; display: flex; flex-direction: column; gap: 8px; opacity: 0.72">
+        <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Prendre le train pour tes trajets de plus de 300 km.</div>
+        <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A">− 96 kg CO₂e</div>
+        <div style="font-size: 14px; line-height: 20px; color: #39403B">par an · 4 % de ton empreinte</div>
+      </div>
+    </div>
+    <div style="font-size: 13px; line-height: 19px; color: #5E655F; text-wrap: pretty">L’action non retenue reste lisible et sélectionnable : une seule est engagée par cycle, et changer d’avis ne doit jamais ressembler à un renoncement.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -49,6 +49,7 @@ export function Chip({
       accessibilityState={{ selected }}
       style={[
         styles.base,
+        flex ? styles.baseFlex : styles.basePilule,
         { borderRadius: radius, backgroundColor, borderColor, flex: flex ? 1 : undefined },
       ]}
     >
@@ -62,10 +63,19 @@ export function Chip({
 const styles = StyleSheet.create({
   base: {
     paddingVertical: 12,
-    paddingHorizontal: 18,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Une puce à largeur naturelle tire sa forme de pilule de son padding : c'est lui qui fait
+  // la largeur.
+  basePilule: { paddingHorizontal: 18 },
+  // Une puce équirépartie tire sa largeur du `flex`, et le padding ne fait que **retirer**
+  // de la place au texte. À 18 de chaque côté, les sept puces de « jours par semaine » ne
+  // laissaient que 3 dp au chiffre sur un écran de 390 dp, pour ~9 nécessaires : Android
+  // rognait le glyphe au lieu de le laisser déborder, et les chiffres apparaissaient coupés.
+  // Même famille que le `minWidth: 0` des champs de saisie (cf. CLAUDE.md) : un enfant flex
+  // qui ne peut pas contenir son contenu ne le signale pas, il le tronque.
+  baseFlex: { paddingHorizontal: 4 },
   label: { fontSize: 15, lineHeight: 20 },
 });

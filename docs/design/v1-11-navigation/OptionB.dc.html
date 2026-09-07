@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="padding: 56px 24px 12px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 8px">
+      <svg width="22" height="26" viewBox="0 0 100 100" aria-hidden="true"><path d="M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z" fill="#1F6F4A"/><circle cx="37.8" cy="50.5" r="6.2" fill="#131612"/><circle cx="62.2" cy="50.5" r="6.2" fill="#131612"/><path d="M39.5,64.5 Q50,71.8 60.5,64.5" stroke="#131612" stroke-width="5.8" stroke-linecap="round" fill="none"/></svg>
+      <div style="font-size: 15px; line-height: 22px; font-weight: 600; color: #5E655F">Ramille</div>
+    </div>
+    <div style="background: #F0F1EC; border-radius: 14px; padding: 4px; display: flex; gap: 4px">
+      <sc-for list="{{ onglets }}" as="onglet" hint-placeholder-count="3">
+        <div onClick="{{ onglet.choisir }}" style="flex-grow: 1; min-height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: {{onglet.fond}}">
+          <div style="font-size: 15px; line-height: 22px; font-weight: {{onglet.graisse}}; color: {{onglet.couleur}}">{{ onglet.libelle }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; overflow: hidden; padding: 8px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+    <div style="font-size: 26px; line-height: 32px; letter-spacing: -0.26px; font-weight: 600; color: #131612">{{ titre }}</div>
+    <div style="font-size: 15px; line-height: 22px; color: #39403B">{{ soustitre }}</div>
+
+    <sc-if value="{{ estPlan }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="border-radius: 18px; border: 2px solid #1F6F4A; background: #F3F8F4; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <div style="width: 20px; height: 20px; border-radius: 10px; background: #1F6F4A; display: flex; align-items: center; justify-content: center">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div style="font-size: 13px; line-height: 18px; font-weight: 700; color: #14563A; letter-spacing: 0.3px; text-transform: uppercase">Tu t’y es engagé</div>
+          </div>
+          <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Faire deux trajets par semaine à vélo plutôt qu’en voiture.</div>
+          <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A">− 184 kg CO₂e</div>
+        </div>
+        <div style="border-radius: 18px; border: 1px solid #DDE0D9; padding: 20px; display: flex; flex-direction: column; gap: 8px; opacity: 0.72">
+          <div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Prendre le train pour tes trajets de plus de 300 km.</div>
+          <div style="font-size: 20px; line-height: 26px; font-weight: 600; color: #14563A">− 96 kg CO₂e</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ estBilan }}" hint-placeholder-val="{{ false }}">
+      <div style="border-radius: 18px; background: #E4EFE8; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+        <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A">Transports, par an</div>
+        <div style="font-size: 44px; line-height: 48px; letter-spacing: -0.9px; font-weight: 600; color: #131612">2,4 t</div>
+        <div style="font-size: 14px; line-height: 20px; color: #39403B">Ton poste principal : les trajets domicile-travail.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ estSuivi }}" hint-placeholder-val="{{ false }}">
+      <div style="border-radius: 18px; background: #F0F1EC; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+        <div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #5E655F">Depuis ton premier bilan</div>
+        <div style="font-size: 30px; line-height: 36px; letter-spacing: -0.6px; font-weight: 600; color: #131612">− 0,3 t</div>
+        <div style="font-size: 14px; line-height: 20px; color: #39403B">2,7 t en juin, 2,4 t aujourd’hui.</div>
+      </div>
+    </sc-if>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"depart":{"editor":"enum","options":["bilan","plan","suivi"],"default":"plan","section":"Prototype"}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { actif: null };
+  }
+  renderVals() {
+    const actif = this.state.actif ?? this.props.depart ?? 'plan';
+    const textes = {
+      bilan: { titre: 'Ton empreinte', soustitre: 'Calculée le 6 septembre, à partir de tes neuf réponses.' },
+      plan: { titre: 'Ton plan', soustitre: 'Deux actions liées à tes trajets domicile-travail.' },
+      suivi: { titre: 'Ton suivi', soustitre: 'Deux bilans, et les fois où tu as répondu.' },
+    };
+    const defs = [
+      { cle: 'bilan', libelle: 'Bilan' },
+      { cle: 'plan', libelle: 'Plan' },
+      { cle: 'suivi', libelle: 'Suivi' },
+    ];
+    return {
+      titre: textes[actif].titre,
+      soustitre: textes[actif].soustitre,
+      estBilan: actif === 'bilan',
+      estPlan: actif === 'plan',
+      estSuivi: actif === 'suivi',
+      onglets: defs.map((d) => ({
+        libelle: d.libelle,
+        fond: actif === d.cle ? '#FFFFFF' : 'transparent',
+        couleur: actif === d.cle ? '#14563A' : '#5E655F',
+        graisse: actif === d.cle ? '600' : '500',
+        choisir: () => this.setState({ actif: d.cle }),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+    .lbl { font-size: 12px; line-height: 16px; color: #5E655F; font-family: ui-monospace, monospace; }
+    .sec { font-size: 15px; line-height: 22px; font-weight: 700; color: #131612; letter-spacing: 0.2px; text-transform: uppercase; }
+  </style>
+</helmet>
+
+<div style="width: 900px; height: 1180px; box-sizing: border-box; background: #FFFFFF; padding: 40px; display: flex; flex-direction: column; gap: 28px">
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <div style="font-size: 30px; line-height: 36px; letter-spacing: -0.6px; font-weight: 600; color: #131612">Vocabulaire visuel de Ramille</div>
+    <div style="font-size: 15px; line-height: 22px; color: #39403B">Relevé des valeurs réellement en vigueur dans <span style="font-family: ui-monospace, monospace; font-size: 13px">src/constants/theme.ts</span> et les écrans. Ce qui est marqué « à consolider » vit aujourd’hui en dur dans un écran.</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div class="sec">Couleurs</div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #1F6F4A"></div><div class="lbl">accent<br>#1F6F4A</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #14563A"></div><div class="lbl">accentText<br>#14563A</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #A9C8B6"></div><div class="lbl">accentMuted<br>#A9C8B6</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #E4EFE8"></div><div class="lbl">backgroundSelected<br>#E4EFE8</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #F3F8F4"></div><div class="lbl">backgroundTinted<br>#F3F8F4</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #F0F1EC"></div><div class="lbl">backgroundElement<br>#F0F1EC</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #131612"></div><div class="lbl">text<br>#131612</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #39403B"></div><div class="lbl">textSecondary<br>#39403B</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #5E655F"></div><div class="lbl">textTertiary<br>#5E655F</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #DDE0D9"></div><div class="lbl">border<br>#DDE0D9</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #CDD7CF"></div><div class="lbl">paginationInactive<br>#CDD7CF</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 56px; border-radius: 12px; background: #FFFFFF; border: 1px solid #DDE0D9"></div><div class="lbl">background<br>#FFFFFF</div></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div class="sec">Typographie · Spline Sans</div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: baseline; gap: 20px"><div class="lbl" style="width: 190px">titre d’écran · 26/32 · 600</div><div style="font-size: 26px; line-height: 32px; letter-spacing: -0.26px; font-weight: 600; color: #131612">Ton plan</div></div>
+      <div style="display: flex; align-items: baseline; gap: 20px"><div class="lbl" style="width: 190px">chiffre saillant · 30/36 · 600</div><div style="font-size: 30px; line-height: 36px; letter-spacing: -0.6px; font-weight: 600; color: #131612">− 184 kg</div></div>
+      <div style="display: flex; align-items: baseline; gap: 20px"><div class="lbl" style="width: 190px">titre de carte · 17/24 · 600</div><div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Faire deux trajets à vélo</div></div>
+      <div style="display: flex; align-items: baseline; gap: 20px"><div class="lbl" style="width: 190px">corps · 15/22 · 500</div><div style="font-size: 15px; line-height: 22px; font-weight: 500; color: #39403B">Deux actions liées à tes trajets domicile-travail.</div></div>
+      <div style="display: flex; align-items: baseline; gap: 20px"><div class="lbl" style="width: 190px">annexe · 14/20 · 500</div><div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">par an · 7 % de ton empreinte</div></div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 12px; flex-grow: 1">
+      <div class="sec">Espacement</div>
+      <div style="display: flex; align-items: flex-end; gap: 14px">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 4px; height: 4px; background: #1F6F4A"></div><div class="lbl">one·4</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 8px; height: 8px; background: #1F6F4A"></div><div class="lbl">two·8</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 16px; height: 16px; background: #1F6F4A"></div><div class="lbl">three·16</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 24px; height: 24px; background: #1F6F4A"></div><div class="lbl">four·24</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 32px; height: 32px; background: #1F6F4A"></div><div class="lbl">five·32</div></div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; flex-grow: 1">
+      <div class="sec">Rayons</div>
+      <div style="display: flex; align-items: flex-end; gap: 14px">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 52px; height: 40px; border-radius: 8px; background: #F0F1EC; border: 1px solid #DDE0D9"></div><div class="lbl">8 · puce</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 52px; height: 40px; border-radius: 14px; background: #F0F1EC; border: 1px solid #DDE0D9"></div><div class="lbl">14 · champ</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 52px; height: 40px; border-radius: 18px; background: #F0F1EC; border: 1px solid #DDE0D9"></div><div class="lbl">18 · carte</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 52px; height: 40px; border-radius: 27px; background: #1F6F4A"></div><div class="lbl">27 · bouton</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div class="sec">Composants et états</div>
+    <div style="display: flex; gap: 16px; align-items: flex-start">
+      <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 54px; padding: 0 28px; border-radius: 27px; background: #1F6F4A; display: flex; align-items: center; justify-content: center"><div style="font-size: 16px; font-weight: 600; color: #FFFFFF">Bouton principal</div></div><div class="lbl">54 · rayon 27</div></div>
+      <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 54px; padding: 0 28px; border-radius: 27px; background: #F0F1EC; display: flex; align-items: center; justify-content: center"><div style="font-size: 16px; font-weight: 500; color: #131612">Secondaire</div></div><div class="lbl">variant secondary</div></div>
+      <div style="display: flex; flex-direction: column; gap: 8px"><div style="height: 54px; padding: 0 28px; border-radius: 27px; background: #F0F1EC; display: flex; align-items: center; justify-content: center"><div style="font-size: 16px; font-weight: 600; color: #5E655F">Désactivé</div></div><div class="lbl">disabled</div></div>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px">
+      <div style="min-width: 44px; height: 46px; padding: 0 4px; border-radius: 14px; background: #1F6F4A; display: flex; align-items: center; justify-content: center"><div style="font-size: 15px; font-weight: 600; color: #FFFFFF">3</div></div>
+      <div style="min-width: 44px; height: 46px; padding: 0 4px; border-radius: 14px; background: #F0F1EC; display: flex; align-items: center; justify-content: center"><div style="font-size: 15px; font-weight: 400; color: #131612">4</div></div>
+      <div style="height: 46px; padding: 0 18px; border-radius: 22px; background: #E4EFE8; border: 1.5px solid #1F6F4A; display: flex; align-items: center; justify-content: center"><div style="font-size: 15px; font-weight: 600; color: #131612">Oui</div></div>
+      <div style="height: 46px; padding: 0 18px; border-radius: 22px; background: #F0F1EC; display: flex; align-items: center; justify-content: center"><div style="font-size: 15px; font-weight: 400; color: #131612">Non</div></div>
+      <div class="lbl" style="margin-left: 8px">puce équirépartie (padding 4) · puce pilule (padding 18)</div>
+    </div>
+  </div>
+
+  <div style="border-radius: 16px; background: #F3F8F4; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 15px; line-height: 22px; font-weight: 600; color: #131612">Ce qui reste à consolider</div>
+    <div style="font-size: 14px; line-height: 21px; color: #39403B; text-wrap: pretty">Les tailles de titre d’écran (26/32), de chiffre saillant (30/36) et de titre de carte (17/24) sont aujourd’hui redéclarées dans chaque écran, alors que <span style="font-family: ui-monospace, monospace; font-size: 12px">ThemedText</span> ne connaît que 48/32/16/14. Les rayons 8, 14, 18 et 27 et les hauteurs 46 et 54 vivent de même en dur. Les nommer une fois et les consommer partout est le vrai objet du chantier.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
