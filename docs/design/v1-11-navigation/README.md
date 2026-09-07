@@ -21,47 +21,72 @@ sans savoir que son suivi existe. Détail en issue #69.
 
 ## Ce que le canvas contient
 
-Trois pages. Les artboards de la page **Navigation** sont cliquables : c'est le seul moyen de
-juger une navigation, le sentiment de « où je suis » ne se voit pas sur une image fixe.
+Cinq pages. La direction a été tranchée le 07/09 après une première version à trois options
+et trois lieux : **la barre basse (A), à deux onglets**. Les artboards de la page Navigation
+sont cliquables — le sentiment de « où je suis » ne se voit pas sur une image fixe.
 
 | Page | Artboard | Rôle |
 | --- | --- | --- |
-| Navigation | `Main.dc.html` | A — barre d'onglets basse |
-| Navigation | `OptionB.dc.html` | B — segment en tête |
-| Navigation | `OptionC.dc.html` | C — fil de saison |
-| Plan | `PlanComparaison.dc.html` | l'action engagée, avant et proposé |
-| Système | `Systeme.dc.html` | relevé du vocabulaire visuel en vigueur |
+| Navigation | `Main.dc.html` | Plan / Suivi, compte derrière l’icône — cliquable |
+| Flux | `Flux1` à `Flux6.dc.html` | les six flux, écran par écran |
+| Plan | `PlanComparaison.dc.html` | l’action engagée, avant et proposé — validé |
+| Système | `Systeme.dc.html` | relevé du vocabulaire visuel — validé |
+| Écartées | `OptionB.dc.html`, `OptionC.dc.html` | les deux directions non retenues, pour mémoire |
 
-Les trois options portent **le même contenu**, pour que la comparaison porte sur la
-navigation et non sur les écrans. Les valeurs viennent du code réel (`src/constants/theme.ts`,
-`button.tsx`, `chip.tsx`, `plan/index.tsx`) : Spline Sans, accent `#1F6F4A`, bouton 54 /
-rayon 27, carte rayon 18, échelle 4/8/16/24/32. Rien n'est arrondi à une grille.
+Les valeurs viennent du code réel (`src/constants/theme.ts`, `button.tsx`, `chip.tsx`,
+`plan/index.tsx`, `checkin-card.tsx`, `mascotte.ts`) : Spline Sans, accent `#1F6F4A`, bouton
+54 / rayon 27, carte rayon 18, échelle 4/8/16/24/32, libellés « Oui » / « Non » du check-in et
+répliques de Ramille mot pour mot. Rien n'est arrondi à une grille. Les mini-écrans des flux
+sont à 230 × 498 (390 × 844 × 0,59), typographie réduite en proportion, générés par un script
+plutôt qu'écrits à la main pour que les six restent cohérents entre eux.
 
-## Les trois directions, et leur coût
+## Le modèle retenu : le présent et la trace
 
-- **A — barre d'onglets basse.** La convention Android, atteignable au pouce, toujours
-  visible. Coût : 76 px pris en bas de chaque écran, et le questionnaire devra la masquer.
-- **B — segment en tête.** Libère le bas de l'écran, garde la marque visible. Coût : loin du
-  pouce sur un grand téléphone, et un segment se lit comme un filtre plutôt que comme une
-  navigation.
-- **C — fil de saison.** La navigation raconte le parcours (bilan → plan → suivi) ancré dans
-  la saison en cours, plutôt que trois lieux de rang égal. Seule des trois à porter la
-  promesse d'accompagnement. Coût : elle suggère un ordre obligatoire, et vieillit mal au
-  troisième mois, quand on revient sans vouloir refaire son bilan.
+- **Plan** = maintenant, cette saison. L'action engagée, le cap, le point de la semaine à
+  répondre — en tête quand il est en attente, c'est la raison de revenir la plus fréquente.
+- **Suivi** = dans la durée. Les bilans comme instantanés qu'on peut ouvrir, les écarts, les
+  points répondus. Jamais les points laissés passer.
+- **Le questionnaire n'est pas un lieu, c'est un flux.** Plein écran, barre masquée, entré
+  depuis le suivi (« Refaire mon bilan ») ou depuis un état vide. Il se termine sur le
+  résultat, qui est *aussi* le détail d'un bilan ouvert depuis le suivi : un seul écran, deux
+  entrées. C'est ce qui a fait tomber « Bilan » comme destination — il n'avait aucun contenu
+  propre.
+- **Le compte** vit derrière une icône en haut à droite des deux écrans. Un onglet permanent
+  contredirait « pas besoin de compte ».
 
-## Une décision prise en dessinant, à valider
+**La règle d'arrivée ne change pas** : la racine envoie sur le plan dès qu'un bilan existe
+(`src/app/index.tsx`). Ce qui manquait n'était pas la page d'atterrissage mais la sortie
+visible vers le suivi.
 
-**L'onglet « Bilan » mène au résultat, pas au questionnaire.** Un onglet permanent vers les
-neuf étapes inviterait à tout recommencer — l'inverse exact du suivi dans la durée. C'est le
-seul écart au vocabulaire existant que ce canvas introduit de lui-même.
+## Les six flux
+
+1. **Fin du questionnaire** — la barre apparaît au résultat, premier moment où la personne a
+   quelque chose dans les deux onglets. Onglet Suivi actif ; le bouton emmène au plan.
+2. **Refaire un bilan** — depuis le suivi, ou depuis le plan au changement de saison.
+   Questionnaire prérempli ; la nouvelle entrée en tête du suivi.
+3. **Ouvrir un bilan passé** — l'écran de résultat prend déjà un `id` ; seul le lien manque.
+4. **Répondre à un check-in** — le rappel ouvre le plan, point en tête ; répondu, Ramille dit
+   un mot et le plan reprend sa forme.
+5. **Reconnexion sur un nouvel appareil** — le chemin de v1-10, qui aboutit au plan par la
+   même règle que tout le monde.
+6. **Période calme** — le plan le dit par un mot de Ramille et garde l'action engagée ; le
+   suivi ne montre aucun trou.
+
+## Ce qui a été écarté, et pourquoi
+
+- **B — segment en tête** : se lit comme un filtre, vit loin du pouce sur un grand téléphone.
+- **C — fil de saison** : suggère un ordre obligatoire et vieillit mal au troisième mois.
+- **Trois lieux** (la première version de A) : « Bilan » n'était que la fin d'un flux ou le
+  détail d'une entrée du suivi.
+- **Un troisième onglet pour meubler** : une barre à deux entrées est inhabituelle, mais le
+  seul candidat était le compte, et lui donner un onglet permanent contredit la promesse.
 
 ## Ce que le canvas ne fait pas
 
 Il ne propose **aucune nouvelle couleur ni taille**. La page Système est un relevé de ce qui
 existe : le travail utile n'est pas d'inventer des valeurs mais de nommer celles qui se
-répètent déjà en dur dans les écrans. Les tailles 26/32, 30/36 et 17/24, les rayons 8, 14, 18
-et 27 et les hauteurs 46 et 54 sont redéclarées écran par écran, alors que `ThemedText` ne
-connaît que 48/32/16/14.
+répètent déjà en dur dans les écrans (26/32, 30/36, 17/24, rayons 8/14/18/27, hauteurs 46/54)
+alors que `ThemedText` ne connaît que 48/32/16/14.
 
 Il ne touche pas non plus aux partis pris acquis : aucune mécanique d'échec sur le suivi (ni
 série, ni score, ni période manquée), aucun chiffre dans la bouche de Ramille, et pas de
