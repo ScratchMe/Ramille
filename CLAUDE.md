@@ -513,6 +513,22 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   seules surfaces publiques du produit (leurs URL sont données à Google Play et à l'écran de
   consentement Google). Le sens du lien est délibéré — Ramille vers le CV — et il ne porte
   pas de `nofollow`.
+- **Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche.**
+  `babel-preset-expo` remplace `process.env.EXPO_PUBLIC_X` par sa valeur littérale — **sauf**
+  quand l'accès est écrit directement comme valeur d'une propriété d'objet dont la clé porte ce
+  même nom, où il rend `void 0` (vérifié en A/B, `.env` inchangé entre les deux exports). Lire
+  la variable dans un `const` d'abord, jamais la replier dans une expression. Le typecheck
+  passe, les tests passent, l'export réussit, et l'app démarre sur une configuration vide :
+  `scripts/verifier-configuration-export.mjs` garde ce point en CI, même famille que les gardes
+  `cleanUrls` et titres de page.
+- **La configuration Supabase absente ou fautive s'affiche, elle ne plante plus.**
+  `src/lib/supabase.ts` ne lève plus au chargement du module mais à la première utilisation
+  (mandataire) : le contrat ne change pas — aucun écran ne fonctionne sans configuration — mais
+  le layout racine peut rendre `ConfigurationManquante` au lieu de laisser l'app s'ouvrir et se
+  refermer sans un mot, ce qui n'était lisible **nulle part** sur un build natif de production.
+  La dérivation vit dans `src/types/configuration.ts` (module pur, testé), qui refuse aussi une
+  URL portant un chemin — `.../rest/v1` collé à la place de l'URL du projet a coûté un cycle de
+  build. L'écran s'adresse à la personne qui développe : ni la voix de Ramille, ni la mascotte.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir

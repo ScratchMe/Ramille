@@ -1,29 +1,72 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 import type { Database } from '@/lib/database.types';
+import { decrireProbleme, lireConfigurationSupabase } from '@/types/configuration';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+/**
+ * **Ces deux `const` ne sont pas du confort, et il ne faut pas les replier dans l'appel
+ * ci-dessous.** `babel-preset-expo` remplace `process.env.EXPO_PUBLIC_X` par sa valeur
+ * littérale — sauf quand l'accès est écrit directement comme valeur d'une propriété d'objet
+ * dont la clé porte ce même nom, où il rend `void 0`. Vérifié en A/B le 07/09/2026, `.env`
+ * inchangé entre les deux exports :
+ *
+ *   { EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL }
+ *     → bundle : EXPO_PUBLIC_SUPABASE_URL:void 0
+ *   const urlBrute = process.env.EXPO_PUBLIC_SUPABASE_URL; { EXPO_PUBLIC_SUPABASE_URL: urlBrute }
+ *     → bundle : EXPO_PUBLIC_SUPABASE_URL:"https://…"
+ *
+ * Le typecheck passe, les tests passent, l'export réussit — et l'app affiche
+ * « Configuration manquante » à tout le monde, `.env` parfaitement rempli compris.
+ * `scripts/verifier-configuration-export.mjs` garde ce point en CI.
+ *
+ * Et l'accès reste écrit en toutes lettres : une lecture dynamique (`env[nom]`) n'est jamais
+ * remplacée du tout.
+ */
+const urlBrute = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const cleBrute = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY doivent être définies (voir .env.example).'
-  );
+export const configurationSupabase = lireConfigurationSupabase({
+  EXPO_PUBLIC_SUPABASE_URL: urlBrute,
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: cleBrute,
+});
+
+/**
+ * **Ce module ne lève plus au chargement, il lève à la première utilisation.** Le contrat ne
+ * change pas d'un pouce — aucun écran ne fonctionne sans configuration, aucune requête ne
+ * part vers un client à moitié construit — mais l'exception ne se déclenche plus avant le
+ * premier rendu. C'est ce qui permet au layout racine d'afficher `ConfigurationManquante` au
+ * lieu de laisser l'app s'ouvrir et se refermer sans un mot (issue #65).
+ *
+ * Le mandataire lève sur **n'importe quel** accès, y compris une simple lecture de
+ * propriété : il n'existe aucun usage inoffensif d'un client qu'on ne peut pas construire.
+ */
+function clientAbsent(): SupabaseClient<Database> {
+  const cause =
+    configurationSupabase.complete === false
+      ? configurationSupabase.problemes.map(decrireProbleme).join(' ')
+      : '';
+  return new Proxy({} as SupabaseClient<Database>, {
+    get() {
+      throw new Error(`Configuration Supabase incomplète — ${cause} (voir .env.example).`);
+    },
+  });
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    // AsyncStorage n'a pas de sens sur web (session gérée par le navigateur) ; le SDK
-    // Supabase gère déjà le fallback web via localStorage quand storage est omis.
-    storage: Platform.OS === 'web' ? undefined : AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: Platform.OS === 'web',
-  },
-});
+export const supabase = configurationSupabase.complete
+  ? createClient<Database>(configurationSupabase.url, configurationSupabase.anonKey, {
+      auth: {
+        // AsyncStorage n'a pas de sens sur web (session gérée par le navigateur) ; le SDK
+        // Supabase gère déjà le fallback web via localStorage quand storage est omis.
+        storage: Platform.OS === 'web' ? undefined : AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: Platform.OS === 'web',
+      },
+    })
+  : clientAbsent();
 
 // Chaque visiteur a besoin d'un `user_id` réel dès l'entrée dans l'app (RLS owner-scoped
 // sur tout ce qui touche au bilan) — cf. docs/architecture/v1-04-authentification.md.
