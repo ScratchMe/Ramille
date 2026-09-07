@@ -532,3 +532,65 @@ Rien de tout cela ne se vérifie sur l'export web :
   reprise.
 - **Le lien de connexion par email** (`ramille://`) doit rouvrir l'app et aboutir sur le plan,
   barre comprise. Ce chemin n'a jamais été exercé faute d'app native jusqu'au 07/09.
+
+## 9. Retours d'appareil du 07/09/2026 (builds lots 2 puis 3-4)
+
+Quatre défauts relevés en usage réel, tous invisibles sur l'export web. Les trois premiers
+viennent du build du lot 2, le quatrième de celui des lots 3 et 4.
+
+### 9.1 La précision de mode tombait hors champ
+
+Choisir « Voiture » n'ouvrait rien de visible : la question de motorisation se rendait **après
+la liste entière**. Sur 390 × 844, avec neuf modes, elle tombait à **y = 774 px** pour un
+conteneur de 684 — 242 px hors champ, sous le pied collant. La personne voyait un mode coché,
+un « Suivant » grisé, et une liste qui semblait complète.
+
+La question s'ouvre désormais **sous l'élément qui la déclenche**, à l'intérieur de la liste
+(`src/components/bilan/precision-mode.tsx`, partagé par les quatre étapes concernées) :
+mesurée à **y = 238** pour « Voiture (seul) », **y = 298** pour « Voiture (covoiturage) ».
+
+Deux points qui ne sont pas des détails :
+
+- **« Voiture (seul) » et « Voiture (covoiturage) » sont deux rangées**, et chacune ouvre sa
+  propre précision. La condition porte donc sur la rangée cochée, pas sur `*_mode === 'voiture'`
+  qui serait vrai pour les deux. Côté loisirs, où les deux options écrivent le même
+  `leisure_mode`, c'est la clé locale `selectedKey` qui tranche — la valeur en base ne le peut
+  pas.
+- **Le deux-roues motorisé suit la même mécanique**, comme partout ailleurs dans le produit.
+
+Le défilement automatique aurait été un pansement : il ne dit rien au retour sur l'étape, quand
+la sélection est déjà faite.
+
+### 9.2 Une bande haute qui ne défile pas
+
+L'accès au compte défilait avec le contenu et disparaissait au premier geste. Une bande fixe
+(`src/components/bande-haute.tsx`) le garde atteignable, sur les deux onglets **et** sur
+`/suivi/bilan`, dans tous les états de l'écran — chargement et état vide compris, sinon la
+chrome apparaît après le chargement et l'écran saute.
+
+**Elle porte le nom, pas le visage.** La règle de la mascotte (« jamais à côté d'un chiffre
+lourd ») interdit un visage en permanence au-dessus du cap de la saison ou de l'empreinte d'un
+bilan. Le mot « Ramille » n'accompagne rien et ne commente rien.
+
+Trois créneaux de largeur égale : le nom est centré sur l'écran et non sur ce qui reste, et le
+créneau de gauche attend le bouton retour dont iOS aura besoin.
+
+### 9.3 Un pied collant qui prenait un cinquième de l'écran
+
+Sur `/suivi/bilan`, trois éléments empilés dans le pied fixe occupaient ~170 px sur 844, avec
+une cassure franche au milieu du contenu. « Partager mon bilan » et « Refaire mon bilan » sont
+passés dans le flux ; ne reste collé que le seul pas suivant — et **en relecture, plus rien
+n'est collé**, puisqu'il n'y a plus de pas suivant à proposer. Le pied restant porte une
+bordure fine plutôt qu'une rupture.
+
+### 9.4 Le retour matériel rejouait l'onboarding, au premier lancement seulement
+
+§8 demandait que le retour depuis `/plan` quitte l'app : c'est le cas — sauf au **tout premier
+lancement**, où il remontait les quatre écrans d'onboarding un par un. Ils étaient empilés
+(`push`) sous le questionnaire, et la racine ne route directement vers `/plan` qu'à partir du
+deuxième lancement, ce qui explique que le défaut disparaisse ensuite.
+
+La règle ne se tient pas en interceptant le bouton retour, mais en **n'accumulant pas
+d'historique derrière un flux terminé** : quitter l'onboarding vide la pile
+(`router.dismissAll()` puis `replace('/bilan')`, dans `onboarding/transition.tsx`).
+L'onboarding ne se rejoue pas.

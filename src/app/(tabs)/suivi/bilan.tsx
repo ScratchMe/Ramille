@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BandeHaute } from '@/components/bande-haute';
 import { Button } from '@/components/button';
 import { Mascot } from '@/components/mascot';
 import { TextLink } from '@/components/text-link';
@@ -294,7 +295,10 @@ export default function BilanResultat() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        {/* Même bande que les deux onglets : elle ne défile pas, et c'est là que viendra le
+            bouton retour dont iOS aura besoin sur cet écran de détail. */}
+        <BandeHaute />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {showBanner && (
             <Pressable
@@ -419,48 +423,55 @@ export default function BilanResultat() {
               {CARBON_SOURCE_LABEL}
             </ThemedText>
           </ThemedView>
-        </ScrollView>
-
-        <View style={styles.footer}>
-          {mode === 'nouveau' ? (
-            <Button title="Voir ce que je peux faire" onPress={goToPlan} />
-          ) : (
-            // En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
-            // plan à un onglet de là.
+          {/* Actions secondaires dans le flux, et non collées en bas — retour d'appareil du
+              07/09/2026. Trois éléments empilés dans un pied fixe occupaient ~170 px sur
+              844 : un cinquième de l'écran retiré à la restitution, et une cassure franche
+              au milieu du contenu. Ce qui reste collé, c'est le seul pas suivant. */}
+          <View style={styles.actionsSecondaires}>
             <TextLink
-              label="Revenir à mon suivi"
-              onPress={() => router.back()}
-              role="link"
+              label="Partager mon bilan"
+              onPress={() => {
+                track('resultat_share');
+                shareResult();
+              }}
               type="small"
               weight={600}
               themeColor="accentText"
               style={styles.editLink}
             />
-          )}
-          <TextLink
-            label="Partager mon bilan"
-            onPress={() => {
-              track('resultat_share');
-              shareResult();
-            }}
-            type="small"
-            weight={600}
-            themeColor="accentText"
-            style={styles.editLink}
-          />
-          {/* « Modifier mes réponses » promettait une édition, alors que le questionnaire
-              insère toujours un nouveau bilan — et repartait d'écrans vides. Le
-              préremplissage (v1-07 T7) rend l'action peu coûteuse ; le libellé dit
-              maintenant ce qu'elle fait vraiment. */}
-          <TextLink
-            label="Refaire mon bilan"
-            onPress={() => router.push('/bilan')}
-            role="link"
-            type="small"
-            themeColor="textTertiary"
-            style={styles.editLink}
-          />
-        </View>
+            {/* « Modifier mes réponses » promettait une édition, alors que le questionnaire
+                insère toujours un nouveau bilan — et repartait d'écrans vides. Le
+                préremplissage (v1-07 T7) rend l'action peu coûteuse ; le libellé dit
+                maintenant ce qu'elle fait vraiment. */}
+            <TextLink
+              label="Refaire mon bilan"
+              onPress={() => router.push('/bilan')}
+              role="link"
+              type="small"
+              themeColor="textTertiary"
+              style={styles.editLink}
+            />
+            {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
+                plan à un onglet de là — donc rien de collé en bas non plus. */}
+            {mode !== 'nouveau' && (
+              <TextLink
+                label="Revenir à mon suivi"
+                onPress={() => router.back()}
+                role="link"
+                type="small"
+                weight={600}
+                themeColor="accentText"
+                style={styles.editLink}
+              />
+            )}
+          </View>
+        </ScrollView>
+
+        {mode === 'nouveau' && (
+          <View style={[styles.footer, { borderTopColor: theme.border }]}>
+            <Button title="Voir ce que je peux faire" onPress={goToPlan} />
+          </View>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -526,6 +537,9 @@ const styles = StyleSheet.create({
   compareHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   barRail: { height: 14, borderRadius: 7, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 7 },
-  footer: { gap: Spacing.three, padding: Spacing.four },
+  // Un seul bouton, une bordure fine plutôt qu'une rupture nette : le pied ne pèse plus que
+  // sa propre hauteur, et se lit comme posé sur le contenu au lieu de le trancher.
+  footer: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
+  actionsSecondaires: { gap: Spacing.three, alignItems: 'stretch', paddingTop: Spacing.two },
   editLink: { textAlign: 'center' },
 });

@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BandeHaute } from '@/components/bande-haute';
 import { Button } from '@/components/button';
 import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { Mascot } from '@/components/mascot';
-import { CompteBouton } from '@/components/compte-bouton';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -173,8 +173,11 @@ export default function Plan() {
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centered}>
-          <ThemedText themeColor="textSecondary">Chargement de ton plan…</ThemedText>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            <ThemedText themeColor="textSecondary">Chargement de ton plan…</ThemedText>
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -183,16 +186,19 @@ export default function Plan() {
   if (state.status === 'no_assessment') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.emptySafeArea}>
-          <EmptyStateIllustration style={styles.emptyIllustration} />
-          <ThemedText type="screenTitle">
-            Ton bilan n&apos;est pas encore fait
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
-            Sans bilan, on ne peut pas savoir quel déplacement compte le plus pour toi. Environ 5
-            minutes.
-          </ThemedText>
-          <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.emptySafeArea}>
+            <EmptyStateIllustration style={styles.emptyIllustration} />
+            <ThemedText type="screenTitle">
+              Ton bilan n&apos;est pas encore fait
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
+              Sans bilan, on ne peut pas savoir quel déplacement compte le plus pour toi. Environ 5
+              minutes.
+            </ThemedText>
+            <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -201,8 +207,11 @@ export default function Plan() {
   if (state.status === 'pending') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centered}>
-          <ThemedText themeColor="textSecondary">Ton plan est en cours de préparation, reviens dans un instant.</ThemedText>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            <ThemedText themeColor="textSecondary">Ton plan est en cours de préparation, reviens dans un instant.</ThemedText>
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -231,9 +240,10 @@ export default function Plan() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        {/* Hors du ScrollView : la bande ne défile pas (cf. bande-haute.tsx). */}
+        <BandeHaute />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <CompteBouton />
           <View style={styles.intro}>
             <ThemedText type="screenTitle">
               Ton plan

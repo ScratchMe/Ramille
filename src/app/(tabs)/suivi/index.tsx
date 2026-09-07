@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BandeHaute } from '@/components/bande-haute';
 import { Button } from '@/components/button';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { Mascot } from '@/components/mascot';
-import { CompteBouton } from '@/components/compte-bouton';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -104,8 +104,11 @@ export default function Suivi() {
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centered}>
-          <ThemedText themeColor="textSecondary">Chargement de ton suivi…</ThemedText>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            <ThemedText themeColor="textSecondary">Chargement de ton suivi…</ThemedText>
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -114,16 +117,19 @@ export default function Suivi() {
   if (state.status === 'empty') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.emptySafeArea}>
-          <EmptyStateIllustration style={styles.emptyIllustration} />
-          <ThemedText type="screenTitle">
-            Ton suivi commence au premier bilan
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
-            C’est lui qui donne le point de départ. Ensuite, tu verras ton empreinte évoluer
-            dans le temps. Environ 5 minutes.
-          </ThemedText>
-          <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.emptySafeArea}>
+            <EmptyStateIllustration style={styles.emptyIllustration} />
+            <ThemedText type="screenTitle">
+              Ton suivi commence au premier bilan
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
+              C’est lui qui donne le point de départ. Ensuite, tu verras ton empreinte évoluer
+              dans le temps. Environ 5 minutes.
+            </ThemedText>
+            <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -143,9 +149,10 @@ export default function Suivi() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        {/* Hors du ScrollView : la bande ne défile pas (cf. bande-haute.tsx). */}
+        <BandeHaute />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <CompteBouton />
           <View style={styles.intro}>
             <ThemedText type="screenTitle">
               Ton suivi

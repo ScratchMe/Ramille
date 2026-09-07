@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Chip } from '@/components/bilan/chip';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
+import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
@@ -95,8 +96,8 @@ export function CommuteExtraStep({
             </ThemedText>
             <View style={styles.nestedList}>
               {secondModeChoices.map((modeId) => (
+                <View key={modeId}>
                 <ModeListItem
-                  key={modeId}
                   label={TRANSPORT_MODE_LABELS[modeId]}
                   selected={answers.commute_second_mode === modeId}
                   onPress={() =>
@@ -115,48 +116,34 @@ export function CommuteExtraStep({
                   }
                   nestedBackground
                 />
+
+                {/* La précision sous l'élément choisi, jamais après la liste (cf.
+                    `precision-mode.tsx`). */}
+                {answers.commute_second_mode === modeId && modeId === 'voiture' && (
+                  <View style={styles.precision}>
+                    <PrecisionMode
+                      question="Quelle motorisation ?"
+                      options={CAR_ENGINE_OPTIONS}
+                      valeur={answers.commute_car_engine}
+                      onChange={(value) => update({ commute_car_engine: value })}
+                    />
+                  </View>
+                )}
+
+                {answers.commute_second_mode === modeId && modeId === 'deux_roues_motorise' && (
+                  <View style={styles.precision}>
+                    <PrecisionMode
+                      question="Quel type de deux-roues ?"
+                      options={TWO_WHEELER_TYPE_OPTIONS}
+                      valeur={answers.commute_two_wheeler_type}
+                      onChange={(value) => update({ commute_two_wheeler_type: value })}
+                    />
+                  </View>
+                )}
+                </View>
               ))}
             </View>
 
-            {answers.commute_second_mode === 'voiture' && (
-              <View style={styles.nestedEngine}>
-                <ThemedText type="small" themeColor="textTertiary">
-                  Quelle motorisation ?
-                </ThemedText>
-                <View style={styles.engineRow}>
-              {CAR_ENGINE_OPTIONS.map((option) => (
-                    <Chip
-                      key={option.value}
-                      label={option.label}
-                      selected={answers.commute_car_engine === option.value}
-                      onPress={() => update({ commute_car_engine: option.value })}
-                      radius={16}
-                      selectedStyle="outline"
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {answers.commute_second_mode === 'deux_roues_motorise' && (
-              <View style={styles.nestedEngine}>
-                <ThemedText type="small" themeColor="textTertiary">
-                  Quel type de deux-roues ?
-                </ThemedText>
-                <View style={styles.engineRow}>
-                  {TWO_WHEELER_TYPE_OPTIONS.map((option) => (
-                    <Chip
-                      key={option.value}
-                      label={option.label}
-                      selected={answers.commute_two_wheeler_type === option.value}
-                      onPress={() => update({ commute_two_wheeler_type: option.value })}
-                      radius={16}
-                      selectedStyle="outline"
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
           </ThemedView>
         )}
       </View>
@@ -170,11 +157,8 @@ const styles = StyleSheet.create({
   block: { gap: Spacing.three },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   row: { flexDirection: 'row', gap: Spacing.two },
-  // Quatre motorisations : équiréparties, « Hybride rechargeable » écraserait les
-  // trois autres. Largeur naturelle et retour à la ligne.
-  engineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   separator: { height: 1 },
   nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
   nestedList: { gap: Spacing.two },
-  nestedEngine: { gap: Spacing.two, marginTop: Spacing.two },
+  precision: { marginTop: Spacing.two },
 });
