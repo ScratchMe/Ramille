@@ -131,11 +131,14 @@ produit par rapport à ce handoff (les deux plus importants : §1 de
 (comparaison entre utilisateurs) vs. ce qui a été révisé, et le détail des Vercel Functions en
 runtime Node.js §3).
 
-**Le prochain increment est planifié dans `v1-11-navigation-et-design-system.md`**
-(07/09/2026, implémentation non commencée, feu vert produit requis) : barre à deux onglets
-Plan / Suivi, résultat sous le suivi (`/suivi/bilan?id=`), compte derrière une icône, action
-engagée saillante, jetons de design — cinq lots ordonnés, une PR chacun. Le canvas qui l'a
-tranché est `docs/design/v1-11-navigation/`.
+**Le dernier increment livré est `v1-11-navigation-et-design-system.md`** (07/09/2026, cinq
+lots) : **barre à deux onglets Plan / Suivi**, le questionnaire et le compte hors de la barre,
+résultat sous le suivi (`/suivi/bilan?id=`, deux entrées dérivées dans `src/types/resultat.ts`,
+`/bilan/resultat` conservée en redirection), action engagée saillante, et les jetons
+`TypeScale`/`Radius`/`ControlHeight` que les écrans consomment au lieu de redéclarer une taille.
+Son canvas est `docs/design/v1-11-navigation/`, ses écarts d'implémentation sa §7. **Trois
+points restent à vérifier sur appareil** (§8) — dont le retour matériel Android, qui doit
+quitter l'app depuis `/plan` et ne pas être « corrigé ».
 
 L'increment précédent, `v1-10-connexion-et-rappels.md` (06/09/2026), est livré pour ses
 chantiers A à D et F ; il reste E (push) et G (renommage GitHub). Il portait la connexion
@@ -535,6 +538,23 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `expired` côté serveur et jamais relus). On compte les fois où la personne a répondu, jamais
   celles où elle a laissé passer — et une hausse d'empreinte est toujours présentée comme un
   fait, jamais comme une faute.
+- **La barre d'onglets ne porte que deux destinations, et le reste n'est pas un lieu.** Le
+  groupe `src/app/(tabs)/` contient le plan et la pile du suivi ; tout ce qui vit ailleurs
+  s'affiche en plein écran, sans barre — le questionnaire et l'onboarding sont des flux, le
+  compte est un détour, les pages légales des surfaces publiques. Ajouter une route dans
+  `(tabs)/` lui donne un onglet : c'est presque toujours une erreur. **Ne jamais créer de route
+  dynamique `[id]`** : l'export statique exige `generateStaticParams`, sans quoi la page n'est
+  pas produite et Vercel répond 404 sans rien signaler — d'où `?id=` partout.
+- **Un écran d'onglet mesure ses affichages avec `useTrackFocus`, jamais `useTrackView`.**
+  react-navigation garde l'écran monté quand on change d'onglet : au montage, l'événement ne
+  part qu'une fois par session. Le compteur ne tombe pas à zéro, ce qui se verrait — il rend un
+  chiffre plausible et faux.
+- **Les tailles et rayons qui se répètent vivent dans `TypeScale`/`Radius`/`ControlHeight`**
+  (`src/constants/theme.ts`), consommés par les types `screenTitle`/`salient`/`cardTitle`/`body`
+  de `ThemedText`. Une taille unique reste en dur là où elle vit — la nommer serait du bruit.
+  Deux titres valent 30 px, la même valeur que `salient` qui nomme un **chiffre** : ils restent
+  en dur, ce type sur un titre encoderait une fausse équivalence. `title`/`subtitle` (48/32)
+  sont les tailles du handoff initial, qu'aucun écran n'affiche sans les surcharger.
 - Le wizard du bilan (`src/app/bilan/index.tsx` + `src/components/bilan/steps/*`) dérive
   entièrement sa navigation ("Étape N sur M", saut conditionnel d'étapes) de l'état courant
   des réponses via `isStepVisible`/`nextStep`/`previousStep`/`isStepComplete` dans
