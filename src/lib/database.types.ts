@@ -477,11 +477,16 @@ export type Database = {
         Row: {
           attempts: number
           body: string
+          channel: string
           checkin_id: string
           created_at: string
           id: string
           last_error: string | null
-          recipient_email: string
+          provider_ticket: Json | null
+          push_body: string | null
+          receipts_checked_at: string | null
+          recipient_email: string | null
+          send_after: string
           sent_at: string | null
           status: string
           subject: string
@@ -490,11 +495,16 @@ export type Database = {
         Insert: {
           attempts?: number
           body: string
+          channel?: string
           checkin_id: string
           created_at?: string
           id?: string
           last_error?: string | null
-          recipient_email: string
+          provider_ticket?: Json | null
+          push_body?: string | null
+          receipts_checked_at?: string | null
+          recipient_email?: string | null
+          send_after?: string
           sent_at?: string | null
           status?: string
           subject: string
@@ -503,11 +513,16 @@ export type Database = {
         Update: {
           attempts?: number
           body?: string
+          channel?: string
           checkin_id?: string
           created_at?: string
           id?: string
           last_error?: string | null
-          recipient_email?: string
+          provider_ticket?: Json | null
+          push_body?: string | null
+          receipts_checked_at?: string | null
+          recipient_email?: string | null
+          send_after?: string
           sent_at?: string | null
           status?: string
           subject?: string
@@ -638,22 +653,60 @@ export type Database = {
         Row: {
           cadence_type: string
           created_at: string
-          email_reminders_enabled: boolean
           id: string
+          reminder_channel: string
         }
         Insert: {
           cadence_type?: string
           created_at?: string
-          email_reminders_enabled?: boolean
           id: string
+          reminder_channel?: string
         }
         Update: {
           cadence_type?: string
           created_at?: string
-          email_reminders_enabled?: boolean
           id?: string
+          reminder_channel?: string
         }
         Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          created_at: string
+          disabled_at: string | null
+          disabled_reason: string | null
+          last_seen_at: string
+          platform: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          disabled_at?: string | null
+          disabled_reason?: string | null
+          last_seen_at?: string
+          platform: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          disabled_at?: string | null
+          disabled_reason?: string | null
+          last_seen_at?: string
+          platform?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transport_modes: {
         Row: {
@@ -741,6 +794,7 @@ export type Database = {
         Args: { p_plan_action_id: string }
         Returns: undefined
       }
+      collect_push_receipts: { Args: never; Returns: undefined }
       commit_plan_action: {
         Args: { p_days?: number[]; p_plan_action_id: string; p_timing?: string }
         Returns: undefined
@@ -773,6 +827,15 @@ export type Database = {
         Args: { p_assessment_id: string }
         Returns: undefined
       }
+      register_push_token: {
+        Args: { p_platform: string; p_token: string }
+        Returns: undefined
+      }
+      reminder_channel_for: { Args: { p_user_id: string }; Returns: string }
+      replier_rappel_sur_email: {
+        Args: { p_outbox_id: string; p_raison: string }
+        Returns: undefined
+      }
       resolve_car_mode: {
         Args: { p_engine: string; p_mode_id: string }
         Returns: string
@@ -803,6 +866,7 @@ export type Database = {
       }
       send_pending_reminders: { Args: never; Returns: undefined }
       sync_emission_factors: { Args: never; Returns: undefined }
+      unregister_push_token: { Args: { p_token: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

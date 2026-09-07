@@ -1,20 +1,21 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { ChoixDeRappel } from '@/components/compte/choix-de-rappel';
 import { MonCompte } from '@/components/compte/mon-compte';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CONTACT_EMAIL } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement } from '@/lib/compte';
-import { loadReminderPrefs, setReminderPrefs, type ReminderPrefs } from '@/lib/notification-prefs';
+import { loadReminderPrefs, setReminderChannel, type ReminderPrefs } from '@/lib/notification-prefs';
 import { type EtatRattachement } from '@/types/compte';
+import { type CanalPrefere } from '@/types/rappels';
 
 // « Toi » — tout ce qui touche au compte, sorti de /suivi (v1-11 §2.5).
 //
@@ -28,7 +29,6 @@ import { type EtatRattachement } from '@/types/compte';
 export default function Compte() {
   useTrackView('compte_view');
 
-  const theme = useTheme();
   const [etat, setEtat] = useState<EtatRattachement | null>(null);
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
 
@@ -45,9 +45,13 @@ export default function Compte() {
     };
   }, []);
 
-  const basculerRappels = async (valeur: boolean) => {
-    setRappels((p) => (p ? { ...p, enabled: valeur } : p));
-    await setReminderPrefs(valeur);
+  // Optimiste puis corrigé : le réglage doit répondre au doigt, et une écriture qui échoue
+  // remet la ligne où elle était plutôt que de laisser croire à un choix enregistré.
+  const choisirLeCanal = async (canal: CanalPrefere) => {
+    const avant = rappels;
+    setRappels((p) => (p ? { ...p, prefere: canal } : p));
+    const ok = await setReminderChannel(canal);
+    if (!ok) setRappels(avant);
   };
 
 
@@ -104,23 +108,10 @@ export default function Compte() {
               </>
             )}
 
-            {rappels?.canReceive && (
-              <View style={[styles.ligne, { borderBottomColor: theme.border }]}>
-                <View style={styles.ligneTexte}>
-                  <ThemedText weight={600} type="small">
-                    Rappels par email
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Un mot à chaque point de suivi, jamais plus.
-                  </ThemedText>
-                </View>
-                <Switch
-                  value={rappels.enabled}
-                  onValueChange={basculerRappels}
-                  accessibilityLabel="Recevoir les rappels par email"
-                />
-              </View>
-            )}
+            {/* Le réglage s'affiche pour tout le monde, y compris une session anonyme : le
+                push n'a besoin que d'un jeton d'appareil (v1-12 §2.5). C'était l'inverse
+                avant, l'interrupteur email n'apparaissant qu'avec un compte rattaché. */}
+            {rappels && <ChoixDeRappel prefs={rappels} onChoisir={choisirLeCanal} />}
 
             <MonCompte />
 
@@ -165,14 +156,6 @@ const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.three },
   retour: { alignSelf: 'flex-start' },
   bouton: { marginTop: Spacing.one },
-  ligne: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.three,
-    borderBottomWidth: 1,
-  },
-  ligneTexte: { flex: 1, minWidth: 0, gap: 2 },
   liens: { gap: Spacing.one, marginTop: Spacing.two },
   contact: { marginTop: Spacing.two },
 });

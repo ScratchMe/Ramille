@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(16);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-suppr-a@test.local', 'x', now(), now()),
@@ -47,6 +47,11 @@ select ok(
   'anon ne peut pas appeler export_my_data'
 );
 
+-- Un appareil enregistré : c'est une table de plus rattachée à `profiles`, donc un niveau
+-- de plus dans la chaîne de cascade, et une clé de plus dans l'export.
+insert into public.push_tokens (token, user_id, platform) values
+  ('ExponentPushToken[pgtap-suppression-0001]', '90000000-0000-0000-0000-000000000001', 'android');
+
 -- ── L'export ────────────────────────────────────────────────────────────────────────────
 
 select set_config('role', 'authenticated', true);
@@ -64,6 +69,26 @@ select is(
   jsonb_array_length(public.export_my_data() -> 'reperes_de_parcours'),
   1,
   'l''export contient les repères de parcours, que la RLS rend pourtant illisibles au client'
+);
+
+-- Le jeton lui-même n'est **pas** exporté : c'est l'adresse du téléphone, pas une donnée
+-- sur la personne — quiconque l'a peut lui envoyer une notification. On rend de quoi
+-- reconnaître l'appareil, jamais de quoi le joindre (v1-12 §9).
+select is(
+  jsonb_array_length(public.export_my_data() -> 'appareils_pour_les_rappels'),
+  1,
+  'l''export nomme les appareils qui reçoivent les rappels'
+);
+
+select is(
+  public.export_my_data() #>> '{appareils_pour_les_rappels,0,jeton_derniers_caracteres}',
+  '-0001]',
+  'l''export ne rend que la fin du jeton, jamais le jeton entier'
+);
+
+select is_empty(
+  $$ select 1 where public.export_my_data()::text like '%ExponentPushToken[pgtap-suppression-0001]%' $$,
+  'le jeton complet n''apparaît nulle part dans l''export'
 );
 
 select is(
@@ -113,6 +138,10 @@ select is_empty(
   $$ select id from public.engagement_checkins where user_id = '90000000-0000-0000-0000-000000000001'
      union all select id from public.feedback where user_id = '90000000-0000-0000-0000-000000000001' $$,
   'les points de suivi et les retours suivent'
+);
+select is_empty(
+  $$ select token from public.push_tokens where user_id = '90000000-0000-0000-0000-000000000001' $$,
+  'les jetons d''appareil suivent — sinon un rappel partirait vers un compte supprimé'
 );
 select is(
   (select count(*) from public.usage_events where user_id = '90000000-0000-0000-0000-000000000001')::int,

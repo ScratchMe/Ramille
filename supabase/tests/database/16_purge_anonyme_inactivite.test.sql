@@ -13,7 +13,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(7);
 
 -- Cinq sessions anonymes, toutes créées il y a cent jours sauf la dernière : seule
 -- l'activité les distingue.
@@ -31,6 +31,12 @@ insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, up
 
 insert into public.usage_events (user_id, name, platform, occurred_at)
 values ('c6111111-1111-1111-1111-111111111112', 'app_open', 'web', now() - interval '3 days');
+
+-- A porte un jeton d'appareil : le push n'a pas besoin de compte, donc une session anonyme
+-- peut en avoir un. Il doit partir avec elle, sinon un rappel continuerait d'être poussé
+-- vers un téléphone dont le compte n'existe plus (v1-12 §4.2).
+insert into public.push_tokens (token, user_id, platform)
+values ('ExponentPushToken[pgtap-purge-anonyme]', 'c6111111-1111-1111-1111-111111111111', 'android');
 
 insert into public.assessments (user_id, status, created_at)
 values ('c6111111-1111-1111-1111-111111111113', 'in_progress', now() - interval '10 days');
@@ -78,6 +84,11 @@ select ok(
   not has_function_privilege('authenticated', 'public.purge_stale_anonymous_accounts()', 'execute')
     and not has_function_privilege('anon', 'public.purge_stale_anonymous_accounts()', 'execute'),
   'La purge n''est déclenchable ni par anon ni par authenticated'
+);
+
+select is_empty(
+  $$ select token from public.push_tokens where token = 'ExponentPushToken[pgtap-purge-anonyme]' $$,
+  'le jeton d''appareil d''une session purgée part avec elle'
 );
 
 select * from finish();

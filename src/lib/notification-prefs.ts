@@ -1,15 +1,18 @@
-// Préférence de rappel par email — `profiles.email_reminders_enabled`.
-// Réf. docs/architecture/v1-07-audit-facteurs-et-suivi.md §3.1.
+// Le canal de rappel — `profiles.reminder_channel` et les jetons d'appareil.
+// Réf. docs/architecture/v1-12-rappels.md §3 et §6.4.
 //
-// Le rappel est en opt-out : il n'est pas une promotion, c'est le mécanisme même de la
-// brique 4, et quelqu'un qui rattache son compte demande précisément à ce que son suivi lui
-// survive. Il doit rester désactivable en un geste — d'où ce réglage sur l'écran de suivi.
+// Ce fichier ne décide rien : il lit l'état et écrit la préférence. **La règle vit dans
+// `src/types/rappels.ts`** (module pur, testé), avec son pendant SQL `reminder_channel_for()`.
+//
+// Le rappel reste en opt-out — il n'est pas une promotion, c'est le mécanisme même de la
+// brique 4 — mais il n'est plus réservé aux comptes rattachés : un jeton d'appareil suffit
+// pour la notification, donc le réglage s'ouvre aussi aux sessions anonymes.
 import { supabase } from '@/lib/supabase';
+import type { CanalPrefere, EtatDesRappels } from '@/types/rappels';
 
-export type ReminderPrefs = {
-  /** Faux pour une session anonyme : sans compte rattaché, il n'y a pas d'adresse où écrire. */
-  canReceive: boolean;
-  enabled: boolean;
+export type ReminderPrefs = EtatDesRappels & {
+  /** L'adresse à afficher sur la ligne « Par email », quand elle est utilisable. */
+  email: string | null;
 };
 
 export async function loadReminderPrefs(): Promise<ReminderPrefs> {
@@ -17,21 +20,27 @@ export async function loadReminderPrefs(): Promise<ReminderPrefs> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || user.is_anonymous || !user.email) {
-    return { canReceive: false, enabled: false };
-  }
+  if (!user) return { prefere: 'none', jetonActif: false, emailPossible: false, email: null };
 
-  const { data } = await supabase
-    .from('profiles')
-    .select('email_reminders_enabled')
-    .eq('id', user.id)
-    .maybeSingle();
+  // Un compte rattaché **et** confirmé : les deux, jamais l'un sans l'autre — on n'écrit
+  // jamais à une adresse seulement déclarée (v1-07 §3.1).
+  const emailPossible = !user.is_anonymous && !!user.email && !!user.email_confirmed_at;
 
-  return { canReceive: true, enabled: data?.email_reminders_enabled ?? true };
+  const [profil, jetons] = await Promise.all([
+    supabase.from('profiles').select('reminder_channel').eq('id', user.id).maybeSingle(),
+    supabase.from('push_tokens').select('token').is('disabled_at', null).limit(1),
+  ]);
+
+  return {
+    prefere: (profil.data?.reminder_channel as CanalPrefere) ?? 'email',
+    jetonActif: (jetons.data?.length ?? 0) > 0,
+    emailPossible,
+    email: emailPossible ? (user.email ?? null) : null,
+  };
 }
 
-/** Renvoie `true` si l'écriture a abouti — l'appelant remet l'interrupteur en place sinon. */
-export async function setReminderPrefs(enabled: boolean): Promise<boolean> {
+/** Renvoie `true` si l'écriture a abouti — l'appelant remet le réglage en place sinon. */
+export async function setReminderChannel(canal: CanalPrefere): Promise<boolean> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -39,7 +48,7 @@ export async function setReminderPrefs(enabled: boolean): Promise<boolean> {
 
   const { error } = await supabase
     .from('profiles')
-    .update({ email_reminders_enabled: enabled })
+    .update({ reminder_channel: canal })
     .eq('id', user.id);
 
   return !error;
