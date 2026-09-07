@@ -29,6 +29,8 @@ export const USAGE_EVENT_NAMES = [
   'plan_view',
   'suivi_view',
   'compte_view',
+  'retrouver_view',
+  'retrouver_send',
 ] as const;
 
 export type UsageEventName = (typeof USAGE_EVENT_NAMES)[number];
@@ -55,6 +57,13 @@ export type UsageEventPropsByName = {
   plan_view: never;
   suivi_view: never;
   compte_view: never;
+  // Les deux seules mesures d'un écran dont le schéma ne garde aucune trace : `signInWithOtp`
+  // n'écrit que dans `auth`. `collision` dit que l'appareil portait déjà un bilan anonyme —
+  // c'est ce chiffre-là qui décide si la collision Google (#60) mérite un écran dédié.
+  retrouver_view: { source: 'onboarding' | 'email'; collision: boolean };
+  // Le clic sur « Recevoir le lien », sans distinguer adresse connue ou inconnue : la réponse
+  // est volontairement la même dans les deux cas, sans quoi l'écran dirait qui utilise Ramille.
+  retrouver_send: never;
 };
 
 // Bornes de `public.check_usage_event_props`, répliquées ici pour ne jamais émettre un insert

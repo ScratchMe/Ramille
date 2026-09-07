@@ -92,7 +92,7 @@ export default function ConnexionEmail() {
             </ThemedText>
             <Button
               title="Retrouver mon compte"
-              onPress={() => router.replace({ pathname: '/connexion/retrouver', params: { email: email.trim() } })}
+              onPress={() => router.replace({ pathname: '/connexion/retrouver', params: { email: email.trim(), source: 'email' } })}
               style={styles.continueButton}
             />
             <TextLink
@@ -133,7 +133,7 @@ export default function ConnexionEmail() {
             <MessageInline message={message} />
             <TextLink
               label="J’ai déjà un compte"
-              onPress={() => router.push({ pathname: '/connexion/retrouver', params: { id } })}
+              onPress={() => router.push({ pathname: '/connexion/retrouver', params: { id, source: 'email' } })}
               role="link"
               type="linkPrimary"
             />
