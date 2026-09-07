@@ -1,7 +1,12 @@
 # Ramille — Increment v1-11 : navigation, action engagée, design system
 
-**Date** : 07/09/2026. **Statut** : plan d'exécution validé sur le canvas, **implémentation
-non commencée** — ne pas démarrer sans feu vert produit.
+**Date** : 07/09/2026. **Statut** : **les cinq lots sont livrés** (PR #71, #72, #73, #74, #75),
+mergés le 07/09. Reste la vérification sur appareil, qui demande un build EAS — §7.
+
+Le plan ci-dessous est conservé tel qu'il a été écrit *avant* l'implémentation, corrections
+incluses : il vaut autant comme trace de ce qui a été prévu que de ce qui a résisté. Les cinq
+écarts constatés en codant sont relevés en §7, et corrigés en place dans les sections
+concernées.
 
 **Origine** : premier test de l'app sur téléphone (build EAS du 07/09, `v1-10` §10). Deux
 retours structurels : « je peine à saisir où je suis entre le bilan, le plan et le suivi », et
@@ -96,13 +101,13 @@ Cinq lots, une PR chacun, dans cet ordre. Le lot 0 est additif et sans effet vis
 existe pour que les lots 1 à 3 s'écrivent avec les jetons plutôt que d'être migrés ensuite.
 Le lot 4 est mécanique et peut traîner.
 
-| Lot | Contenu | Taille | Dépend de |
-| --- | --- | --- | --- |
-| 0 | Jetons de design (additifs) | petit | — |
-| 1 | Action engagée sur le plan | petit | 0 |
-| 2 | Barre à deux onglets, compte, résultat sous suivi | moyen | 0 |
-| 3 | Flux : bilans ouvrables, point en tête, période calme, saison | moyen | 2 |
-| 4 | Migration des écrans vers les jetons | mécanique | 0 |
+| Lot | Contenu | Taille | Dépend de | Livré |
+| --- | --- | --- | --- | --- |
+| 0 | Jetons de design (additifs) | petit | — | PR #71 |
+| 1 | Action engagée sur le plan | petit | 0 | PR #72 |
+| 2 | Barre à deux onglets, compte, résultat sous suivi | moyen | 0 | PR #73 |
+| 3 | Flux : bilans ouvrables, point en tête, période calme, saison | moyen | 2 | PR #74 |
+| 4 | Migration des écrans vers les jetons | mécanique | 0 | PR #75 |
 
 ### Lot 0 — Jetons de design (additif, zéro changement visuel)
 
@@ -468,3 +473,62 @@ Volontairement laissé de côté, avec l'issue qui le porte :
 Les lots 0 et 1 peuvent partir dès le feu vert. Le lot 2 est le cœur et le seul risqué :
 déplacements de fichiers, nouvelle route, changement de sens d'un événement. Le lot 3 n'a de
 sens qu'après lui. Le lot 4 se glisse n'importe où après le 0.
+
+---
+
+## 7. Ce que l'implémentation a corrigé
+
+Cinq écarts entre ce plan et le code réel, tous constatés en écrivant. Ils sont corrigés en
+place dans les sections ci-dessus ; ils sont rassemblés ici parce que **quatre d'entre eux
+viennent d'avoir lu le canvas au lieu du code**, et que c'est la leçon à retenir pour le
+prochain increment.
+
+**1. `formatIntention` existait déjà.** Le lot 1 prévoyait de créer `src/types/engagement.ts`
+pour formater « le mardi et le jeudi ». La fonction vivait dans `src/types/plan.ts`, testée.
+Elle est réutilisée telle quelle, avec une mise en majuscule locale — la source est écrite pour
+le milieu d'une phrase, pas pour une tête de ligne.
+
+**2. Le rayon des champs vaut 16, pas 14.** Le 14 venait de la page Système du canvas, où je
+l'avais dessiné de mémoire. Le relevé du code donne 16, douze usages — la valeur la plus
+fréquente du produit.
+
+**3. L'échelle `label` (13 px) n'existe nulle part.** Elle non plus ne venait pas du code. Elle
+n'est pas déclarée : un jeton pour une valeur que personne n'emploie est du vocabulaire mort.
+Idem `ControlHeight.chip` (46) — une puce se dimensionne par son padding.
+
+**4. Une migration mécanique doit filtrer par valeur, jamais par nom de clé.** Le premier
+passage du lot 4 remplaçait tout `style={styles.title}` par `type="screenTitle"` (26 px). Or
+`styles.title` vaut 32 px dans la page 404, 34 dans l'accroche d'onboarding, 30 dans les pages
+légales : sept titres auraient rétréci. Ce n'est pas la comparaison d'images qui l'a rattrapé,
+mais **un scan des entrées de style devenues orphelines** — une entrée que plus personne ne
+référence signale soit du code mort, soit une propriété perdue au passage. À refaire dans cet
+ordre la prochaine fois : orphelines d'abord, pixels ensuite.
+
+**5. Le piège de mesure était bien réel, et le plan l'avait vu.** `plan_view` / `suivi_view`
+sont passés à `useTrackFocus` : dans une barre d'onglets, react-navigation garde l'écran monté
+quand on change d'onglet, et l'événement ne serait parti qu'une fois par session. Le compteur
+n'aurait pas chuté à zéro — ce qui se serait vu — il aurait donné un chiffre plausible et faux.
+
+### Deux choses que le canvas avait raison de dire
+
+L'onglet « Bilan » ne devait pas exister : le code l'a confirmé sèchement — l'écran de résultat
+prend un identifiant de bilan, et **rien dans le suivi ne menait à un bilan passé**. La
+destination n'avait aucun contenu propre. Et la barre à deux entrées, inhabituelle, s'est
+révélée le bon compromis : le seul troisième candidat était le compte, et lui donner un onglet
+permanent aurait contredit « pas besoin de compte ».
+
+## 8. Ce qui reste, et qui demande un appareil
+
+Rien de tout cela ne se vérifie sur l'export web :
+
+- **Le retour matériel Android depuis `/plan`** doit quitter l'app. C'est le comportement
+  attendu d'une racine à onglets ; ne pas le « corriger » par réflexe.
+- **TalkBack** doit annoncer « Plan, onglet, sélectionné ». Les attributs viennent du
+  navigateur, ils n'ont pas été entendus.
+- **La carte de période calme** est posée au-dessus du cap de la saison, donc à deux blocs d'un
+  chiffre en kilos. La règle « jamais la mascotte près d'un chiffre lourd » vise l'empreinte et
+  non une réduction, et c'est la place que lui donne le canvas — mais si le rendu réel la fait
+  paraître commenter le cap, elle descend sous les actions. Déplacement d'un bloc, pas une
+  reprise.
+- **Le lien de connexion par email** (`ramille://`) doit rouvrir l'app et aboutir sur le plan,
+  barre comprise. Ce chemin n'a jamais été exercé faute d'app native jusqu'au 07/09.
