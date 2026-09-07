@@ -456,7 +456,11 @@ export default function BilanResultat() {
             {mode !== 'nouveau' && (
               <TextLink
                 label="Revenir à mon suivi"
-                onPress={() => router.back()}
+                // **Une destination, pas un dépilement.** `router.back()` ramenait à l'écran
+                // précédent, qui n'est pas toujours le suivi : « Revoir mon bilan » ouvre
+                // cette page depuis le plan, et le lien renvoyait donc… au plan (retour
+                // d'appareil du 07/09/2026). Un lien qui nomme sa destination doit y aller.
+                onPress={() => router.replace('/suivi')}
                 role="link"
                 type="small"
                 weight={600}
