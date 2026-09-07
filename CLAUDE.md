@@ -131,12 +131,18 @@ produit par rapport à ce handoff (les deux plus importants : §1 de
 (comparaison entre utilisateurs) vs. ce qui a été révisé, et le détail des Vercel Functions en
 runtime Node.js §3).
 
-Le dernier increment livré est `v1-09-renommage-ramille.md` (renommage TraceVerte → Ramille,
-05/09/2026). **Le prochain est planifié dans `v1-10-connexion-et-rappels.md`** (06/09/2026) :
-connexion par lien sans mot de passe, rappels par push, et deux correctifs qui le
-conditionnent — l'étalement du pic d'envoi du lundi et la purge des sessions anonymes, qui
-supprime aujourd'hui sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur
-l'**inactivité**. Son compagnon design est `docs/design/v1-10-retrouver-son-compte/`.
+**Le prochain increment est planifié dans `v1-11-navigation-et-design-system.md`**
+(07/09/2026, implémentation non commencée, feu vert produit requis) : barre à deux onglets
+Plan / Suivi, résultat sous le suivi (`/suivi/bilan?id=`), compte derrière une icône, action
+engagée saillante, jetons de design — cinq lots ordonnés, une PR chacun. Le canvas qui l'a
+tranché est `docs/design/v1-11-navigation/`.
+
+L'increment précédent, `v1-10-connexion-et-rappels.md` (06/09/2026), est livré pour ses
+chantiers A à D et F ; il reste E (push) et G (renommage GitHub). Il portait la connexion
+par lien sans mot de passe, les rappels par push, et deux correctifs livrés qui les
+conditionnaient — l'étalement du pic d'envoi du lundi, et la purge des sessions anonymes qui
+supprimait sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur l'**inactivité**
+(corrigée, `v1-10` §2.B). Son compagnon design est `docs/design/v1-10-retrouver-son-compte/`.
 
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
