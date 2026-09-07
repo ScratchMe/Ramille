@@ -173,7 +173,10 @@ export default function BilanQuestionnaire() {
       if (computeError) throw computeError;
 
       await clearBilanDraft();
-      router.replace({ pathname: '/bilan/resultat', params: { id: assessment.id } });
+      // `nouveau=1` distingue l'aboutissement du questionnaire d'une relecture depuis le
+      // suivi : c'est ce paramètre, et lui seul, qui autorise la proposition de compte et le
+      // bouton vers le plan (cf. `src/types/resultat.ts`).
+      router.replace({ pathname: '/suivi/bilan', params: { id: assessment.id, nouveau: '1' } });
     } catch (error) {
       Alert.alert(
         'Une erreur est survenue',

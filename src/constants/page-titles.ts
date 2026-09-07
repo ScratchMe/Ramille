@@ -26,6 +26,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/onboarding/transition': `On passe à ton bilan — ${APP_NAME}`,
 
   '/bilan': `Ton bilan transport — ${APP_NAME}`,
+  '/suivi/bilan': `Ton résultat — ${APP_NAME}`,
   '/bilan/resultat': `Ton résultat — ${APP_NAME}`,
 
   '/plan': `Ton plan — ${APP_NAME}`,
@@ -34,6 +35,8 @@ export const PAGE_TITLES: Record<string, string> = {
   '/connexion': `Se connecter — ${APP_NAME}`,
   '/connexion/email': `Continuer avec un email — ${APP_NAME}`,
   '/connexion/retrouver': `Retrouver mon compte — ${APP_NAME}`,
+
+  '/compte': `Toi — ${APP_NAME}`,
 
   '/feedback': `Nous faire un retour — ${APP_NAME}`,
 
@@ -56,6 +59,18 @@ export const PAGE_TITLES: Record<string, string> = {
  * L'écran le pose donc lui-même (cf. `src/app/+not-found.tsx`), mais le texte reste ici,
  * avec les autres.
  */
+/**
+ * Chemins qui ne sont pas des pages mais des **alias** : une adresse historique conservée en
+ * redirection vers la page qui porte désormais le contenu. Ils partagent donc légitimement le
+ * titre de leur cible, alors que deux vraies pages ne le doivent jamais (un titre dupliqué est
+ * presque toujours un copier-coller oublié — c'est ce que le test épingle).
+ *
+ * `/bilan/resultat` a été l'adresse du résultat jusqu'à v1-11, où l'écran a rejoint la pile de
+ * l'onglet Suivi. Elle survit parce qu'elle est citée dans les liens déjà partagés, dans les
+ * favoris, et dans l'en-tête d'`api/partage.ts`.
+ */
+export const PAGES_ALIAS = new Set(['/bilan/resultat']);
+
 export const NOT_FOUND_PAGE_TITLE = `Page introuvable — ${APP_NAME}`;
 
 /**

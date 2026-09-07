@@ -7,12 +7,13 @@ import { Button } from '@/components/button';
 import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { Mascot } from '@/components/mascot';
+import { CompteBouton } from '@/components/compte-bouton';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { formatTonnes } from '@/lib/format';
-import { useTrackView } from '@/hooks/use-track-view';
+import { useTrackFocus } from '@/hooks/use-track-focus';
 import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
 import { formatIntention } from '@/types/plan';
@@ -77,7 +78,11 @@ type LoadState =
 // signe que la personne fait déjà l'essentiel — l'état correspondant la félicite au lieu de
 // lui présenter une liste vide.
 export default function Plan() {
-  useTrackView('plan_view');
+  // **Émis au focus et non au montage** : dans une barre d'onglets, react-navigation garde
+  // l'écran monté quand on passe à l'autre. Avec `useTrackView`, l'événement ne partirait
+  // qu'à la première ouverture de la session — et le taux de retour, qui est la question
+  // même que la navigation pose, deviendrait invisible (v1-11 §2, piège relevé au plan).
+  useTrackFocus('plan_view');
 
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
@@ -212,6 +217,7 @@ export default function Plan() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <CompteBouton />
           <View style={styles.intro}>
             <ThemedText type="title" weight={600} style={styles.title}>
               Ton plan
@@ -321,19 +327,13 @@ export default function Plan() {
           )}
         </ScrollView>
 
+        {/* « Voir mon suivi » a disparu : la barre le porte, et un lien qui double un onglet
+            apprend à ne pas se servir de la barre. Le renvoi vers le bilan reste — ce n'est
+            pas une destination de la barre, c'est le détail d'une entrée du suivi. */}
         <View style={styles.footer}>
           <TextLink
-            label="Voir mon suivi"
-            onPress={() => router.push('/suivi')}
-            role="link"
-            type="small"
-            weight={600}
-            themeColor="accentText"
-            style={styles.footerLink}
-          />
-          <TextLink
             label="Revenir à mon bilan"
-            onPress={() => router.push({ pathname: '/bilan/resultat', params: { id: assessmentId } })}
+            onPress={() => router.push({ pathname: '/suivi/bilan', params: { id: assessmentId } })}
             role="link"
             type="small"
             themeColor="textTertiary"
