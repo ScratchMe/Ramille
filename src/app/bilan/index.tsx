@@ -1,6 +1,5 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { CommuteDaysDistanceStep } from '@/components/bilan/steps/commute-days-distance';
 import { CommuteExtraStep } from '@/components/bilan/steps/commute-extra';
@@ -40,6 +39,7 @@ export default function BilanQuestionnaire() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   // Trois sources possibles, dans cet ordre de priorité :
   //
@@ -126,6 +126,7 @@ export default function BilanQuestionnaire() {
 
   const submit = async () => {
     setSubmitting(true);
+    setMessage(null);
     try {
       const session = await ensureSession();
       const userId = session?.user.id;
@@ -178,9 +179,13 @@ export default function BilanQuestionnaire() {
       // bouton vers le plan (cf. `src/types/resultat.ts`).
       router.replace({ pathname: '/suivi/bilan', params: { id: assessment.id, nouveau: '1' } });
     } catch (error) {
-      Alert.alert(
-        'Une erreur est survenue',
-        error instanceof Error ? error.message : 'Impossible d’enregistrer ton bilan pour le moment.'
+      // Le message revient sur le dernier pas du questionnaire, juste au-dessus du bouton :
+      // les réponses sont toujours là, il n'y a qu'à réessayer. Une boîte système disait la
+      // même chose en bloquant le fil et sans rien laisser à l'écran une fois fermée.
+      setMessage(
+        error instanceof Error
+          ? `Ton bilan n’a pas pu être enregistré. ${error.message}`
+          : 'Ton bilan n’a pas pu être enregistré. Réessaie dans un instant.'
       );
     } finally {
       setSubmitting(false);
@@ -207,6 +212,7 @@ export default function BilanQuestionnaire() {
       nextLabel={isLastStep ? (submitting ? 'Enregistrement…' : 'Voir mon bilan') : 'Suivant'}
       nextDisabled={submitting || !isStepComplete(step, answers)}
       notice={prefilled ? 'Tes réponses précédentes sont pré-remplies. Modifie ce qui a changé.' : undefined}
+      message={message}
     >
       {step === 'commute_has_trip' && <CommuteHasTripStep answers={answers} update={update} />}
       {step === 'commute_days_distance' && <CommuteDaysDistanceStep answers={answers} update={update} />}

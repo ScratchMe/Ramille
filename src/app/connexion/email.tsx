@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { TextField } from '@/components/auth/text-field';
 import { TextLink } from '@/components/text-link';
+import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -129,11 +130,7 @@ export default function ConnexionEmail() {
               keyboardType="email-address"
               placeholder="camille@exemple.fr"
             />
-            {message && (
-              <ThemedText type="small" themeColor="textSecondary">
-                {message}
-              </ThemedText>
-            )}
+            <MessageInline message={message} />
             <TextLink
               label="J’ai déjà un compte"
               onPress={() => router.push({ pathname: '/connexion/retrouver', params: { id } })}

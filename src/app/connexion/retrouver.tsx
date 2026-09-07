@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { TextField } from '@/components/auth/text-field';
 import { TextLink } from '@/components/text-link';
+import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { APP_NAME } from '@/constants/produit';
@@ -177,11 +178,7 @@ export default function RetrouverMonCompte() {
               keyboardType="email-address"
               placeholder="toi@exemple.fr"
             />
-            {message && (
-              <ThemedText type="small" themeColor="textSecondary">
-                {message}
-              </ThemedText>
-            )}
+            <MessageInline message={message} />
             <Button
               title={busy ? 'Envoi…' : 'Recevoir le lien'}
               onPress={envoyerLeLien}

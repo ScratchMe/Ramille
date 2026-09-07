@@ -6,6 +6,7 @@ import { TextField } from '@/components/auth/text-field';
 import { Button } from '@/components/button';
 import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
+import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CONTACT_EMAIL } from '@/constants/editeur';
@@ -194,11 +195,7 @@ export default function SuppressionCompte() {
               </>
             )}
 
-            {message && (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.corps}>
-                {message}
-              </ThemedText>
-            )}
+            <MessageInline message={message} style={styles.corps} />
 
             <ThemedText type="small" themeColor="textTertiary" style={styles.pied}>
               Une question, ou un blocage ? Écris à {CONTACT_EMAIL}.

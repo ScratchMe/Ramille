@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
+import { MessageInline } from '@/components/message-inline';
 import { Mascot } from '@/components/mascot';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
@@ -33,6 +34,7 @@ export default function ConnexionProposition() {
   });
   const [recap, setRecap] = useState<Recap>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -52,10 +54,14 @@ export default function ConnexionProposition() {
 
   const onGoogle = async () => {
     setGoogleLoading(true);
+    setMessage(null);
     const { error } = await linkGoogleIdentity();
     setGoogleLoading(false);
     if (error) {
-      Alert.alert('Connexion impossible', error.message);
+      // Le message de Supabase est repris tel quel : il est en anglais et technique, mais
+      // c'est le seul indice disponible sur ce qui a échoué, et un texte rassurant à la
+      // place laisserait la personne sans rien pour comprendre ni pour nous le rapporter.
+      setMessage(`La connexion avec Google n’a pas abouti. ${error.message}`);
       return;
     }
     track('connexion_success', { method: 'google' });
@@ -98,6 +104,7 @@ export default function ConnexionProposition() {
 
           <View style={styles.options}>
             <GoogleButton onPress={onGoogle} loading={googleLoading} />
+            <MessageInline message={message} />
             <TextLink
               label="Utiliser un email à la place"
               onPress={() => router.push({ pathname: '/connexion/email', params: { id } })}
