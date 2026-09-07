@@ -594,3 +594,32 @@ La règle ne se tient pas en interceptant le bouton retour, mais en **n'accumula
 d'historique derrière un flux terminé** : quitter l'onboarding vide la pile
 (`router.dismissAll()` puis `replace('/bilan')`, dans `onboarding/transition.tsx`).
 L'onboarding ne se rejoue pas.
+
+### 9.5 L'écran d'ouverture se vidait au lieu de s'annoncer
+
+Au lancement, le splash natif (fond `#E4EFE8`, la mascotte — `app.json` →
+`expo-splash-screen`) cédait la place à un fond **blanc** portant un `ActivityIndicator` de
+16 px. Le produit s'annonçait, puis se vidait, et c'est le seul écran par lequel tout le monde
+passe à chaque ouverture.
+
+`src/components/ecran-lancement.tsx` le remplace : même fond que le splash
+(`backgroundSelected` vaut exactement `#E4EFE8` en clair, et l'app est verrouillée en clair sur
+natif), la mascotte à **168 px** — la taille qui lui donne la hauteur qu'elle a sur le splash,
+puisque la silhouette occupe 84 % de sa boîte et que `imageWidth: 180` la rend à ~142 px — et
+le nom sous elle.
+
+L'animation tient en une phrase : la feuille se pose (elle monte de 14 px en se redressant de
+7°, 520 ms), le nom apparaît avec elle, et à **380 ms elle passe de `calm` à `happy`**. Elle
+arrive avec le visage même du splash et se réveille.
+
+**Elle sourit, elle ne fait pas de clin d'œil** : ce serait une sixième expression, et la règle
+du produit est qu'on n'en ajoute pas. Le mouvement suffit à donner vie à celles qui existent.
+C'est par ailleurs le seul endroit où un visage peut occuper l'écran entier sans rien commenter
+— il n'y a pas un chiffre dessus.
+
+`expo.backgroundColor` passe à `#E4EFE8` dans la foulée : c'est la couleur de la vue racine
+native, donc ce qui se voit entre le masquage du splash et la première image rendue par React.
+Elle était blanche, ce qui remettait exactement le flash qu'on venait de retirer.
+
+L'état d'échec du démarrage, lui, reste blanc et brut : c'est un message technique destiné à
+être recopié, pas une surface de produit.
