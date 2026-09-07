@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Spline Sans', system-ui, sans-serif; }
+    a { color: #14563A; } a:hover { color: #1F6F4A; }
+  </style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; overflow: hidden; display: flex; flex-direction: column"><div style="height: 44px; flex-shrink: 0"></div><div style="flex-grow: 1; overflow: hidden; padding: 24px; display: flex; flex-direction: column; gap: 16px"><div style="align-self: flex-start; font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F; text-decoration: underline">Retour</div><div style="font-size: 26px; line-height: 32px; font-weight: 600; letter-spacing: -0.26px; color: #131612">Toi</div><sc-if value="{{ rattache }}" hint-placeholder-val="{{ true }}"><div style="font-size: 15px; line-height: 22px; font-weight: 500; color: #39403B">Ton compte est rattaché à camille@exemple.fr. Ton bilan te suit d’un appareil à l’autre.</div></sc-if><sc-if value="{{ anonyme }}" hint-placeholder-val="{{ false }}"><div style="font-size: 15px; line-height: 22px; font-weight: 500; color: #39403B">Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs.</div><div style="height: 54px; border-radius: 27px; background: #1F6F4A; display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 20px; font-weight: 600; color: #FFFFFF; margin-top: 4px">Rattacher un compte</div></sc-if><div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px"><div style="display: flex; flex-direction: column; gap: 2px"><div style="font-size: 17px; line-height: 24px; font-weight: 600; color: #131612">Rappels</div><div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #39403B">Un mot à chaque point de suivi, jamais plus.</div></div><div style="display: flex; flex-direction: column; gap: 8px"><sc-if value="{{ notifPossible }}" hint-placeholder-val="{{ true }}"><div onClick="{{ choisirNotification }}" style="border-radius: 14px; border: 1.5px solid {{ r.notification.border }}; background: {{ r.notification.bg }}; padding: 14px 16px; display: flex; align-items: center; gap: 12px; opacity: 1; cursor: pointer"><div style="flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z" stroke="#131612" stroke-width="1.9" stroke-linejoin="round"></path><path d="M10 20a2 2 0 0 0 4 0" stroke="#131612" stroke-width="1.9" stroke-linecap="round"></path></svg></div><div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 16px; line-height: 22px; font-weight: {{ r.notification.weight }}; color: #131612">Par notification sur ce téléphone</div><div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">Le matin où la question s’ouvre.</div></div></div></sc-if><sc-if value="{{ notifCoupee }}" hint-placeholder-val="{{ false }}"><div  style="border-radius: 14px; border: 1.5px solid transparent; background: #F0F1EC; padding: 14px 16px; display: flex; align-items: center; gap: 12px; opacity: 0.55; cursor: pointer"><div style="flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z" stroke="#5E655F" stroke-width="1.9" stroke-linejoin="round"></path><path d="M10 20a2 2 0 0 0 4 0" stroke="#5E655F" stroke-width="1.9" stroke-linecap="round"></path></svg></div><div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 16px; line-height: 22px; font-weight: 400; color: #131612">Par notification sur ce téléphone</div><div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">Coupées dans les réglages du téléphone — c’est là que ça se rouvre.</div></div></div><div style="align-self: flex-start; margin-left: 16px; font-size: 14px; line-height: 20px; font-weight: 600; color: #14563A; text-decoration: underline">Ouvrir les réglages du téléphone</div></sc-if><sc-if value="{{ emailPossible }}" hint-placeholder-val="{{ true }}"><div onClick="{{ choisirEmail }}" style="border-radius: 14px; border: 1.5px solid {{ r.email.border }}; background: {{ r.email.bg }}; padding: 14px 16px; display: flex; align-items: center; gap: 12px; opacity: 1; cursor: pointer"><div style="flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5" stroke="#131612" stroke-width="1.9"></rect><path d="M4.5 7l7.5 6 7.5-6" stroke="#131612" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 16px; line-height: 22px; font-weight: {{ r.email.weight }}; color: #131612">Par email</div><div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">À camille@exemple.fr.</div></div></div></sc-if><sc-if value="{{ emailImpossible }}" hint-placeholder-val="{{ false }}"><div  style="border-radius: 14px; border: 1.5px solid transparent; background: #F0F1EC; padding: 14px 16px; display: flex; align-items: center; gap: 12px; opacity: 0.55; cursor: pointer"><div style="flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5" stroke="#5E655F" stroke-width="1.9"></rect><path d="M4.5 7l7.5 6 7.5-6" stroke="#5E655F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 16px; line-height: 22px; font-weight: 400; color: #131612">Par email</div><div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">Rattache un compte pour l’activer.</div></div></div></sc-if><div onClick="{{ choisirAucun }}" style="border-radius: 14px; border: 1.5px solid {{ r.aucun.border }}; background: {{ r.aucun.bg }}; padding: 14px 16px; display: flex; align-items: center; gap: 12px; opacity: 1; cursor: pointer"><div style="flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#131612" stroke-width="1.9"></circle><path d="M8 12h8" stroke="#131612" stroke-width="1.9" stroke-linecap="round"></path></svg></div><div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><div style="font-size: 16px; line-height: 22px; font-weight: {{ r.aucun.weight }}; color: #131612">Aucun</div><div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #5E655F">On se retrouve dans l’app, à chaque point.</div></div></div></div></div><div style="border-radius: 18px; background: #F0F1EC; padding: 24px; display: flex; flex-direction: column; gap: 8px; margin-top: 8px"><div style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131612">Mes données</div><div style="font-size: 14px; line-height: 20px; font-weight: 500; color: #39403B">Tu peux récupérer l’intégralité de ce que Ramille sait de toi, ou tout supprimer définitivement.</div></div></div></div>
+</x-dc>
+<script data-dc-script data-props='{"situation":{"editor":"enum","options":["compte","anonyme","refus","web"],"default":"compte","section":"Situation"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  state = { choix: null };
+  renderVals() {
+    var sit = this.props.situation || 'compte';
+    var rattache = sit !== 'anonyme';
+    var notifPossible = sit === 'compte' || sit === 'anonyme';
+    var notifCoupee = sit === 'refus';
+    var defaut = notifPossible ? 'notification' : (rattache ? 'email' : 'aucun');
+    var choix = this.state.choix || defaut;
+    if (choix === 'notification' && !notifPossible) choix = defaut;
+    if (choix === 'email' && !rattache) choix = defaut;
+    var ligne = (actif) => ({ bg: actif ? '#E4EFE8' : '#F0F1EC', border: actif ? '#1F6F4A' : 'transparent', weight: actif ? 600 : 400 });
+    var set = (patch) => this.setState(patch);
+    return {
+      rattache: rattache, anonyme: !rattache,
+      notifPossible: notifPossible, notifCoupee: notifCoupee,
+      emailPossible: rattache, emailImpossible: !rattache,
+      r: { notification: ligne(choix === 'notification'), email: ligne(choix === 'email'), aucun: ligne(choix === 'aucun') },
+      choisirNotification: () => { if (notifPossible) set({ choix: 'notification' }); },
+      choisirEmail: () => { if (rattache) set({ choix: 'email' }); },
+      choisirAucun: () => set({ choix: 'aucun' })
+    };
+  }
+}
+</script>
+</body>
+</html>
