@@ -11,10 +11,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
+import { ConfigurationManquante } from '@/components/configuration-manquante';
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
 import { createSessionFromUrl } from '@/lib/auth';
-import { ensureSession } from '@/lib/supabase';
+import { configurationSupabase, ensureSession } from '@/lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,6 +38,7 @@ export default function RootLayout() {
   // rendu (rien à l'écran ne la lit tout de suite), seulement avant la première écriture
   // bilan — re-garantie à ce moment-là de toute façon (cf. ensureSession).
   useEffect(() => {
+    if (!configurationSupabase.complete) return;
     ensureSession().catch((error) => {
       console.error('ensureSession() a échoué au démarrage :', error);
     });
@@ -49,6 +51,7 @@ export default function RootLayout() {
   // racine route vers le plan ou l'onboarding selon ce que porte le compte retrouvé.
   const urlEntrante = Linking.useURL();
   useEffect(() => {
+    if (!configurationSupabase.complete) return;
     if (Platform.OS === 'web' || !urlEntrante || !urlEntrante.includes('access_token=')) return;
     createSessionFromUrl(urlEntrante).then(({ error }) => {
       if (error) {
@@ -73,7 +76,15 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <TitreDePage />
-      <Stack screenOptions={{ headerShown: false }} />
+      {/* **Avant la pile, pas à l'intérieur.** Chaque écran importe `@/lib/supabase` : rendre
+          l'écran d'erreur comme une route de plus le ferait précéder par le chargement d'un
+          module qui, justement, ne peut pas fonctionner. Ici, aucune route n'est montée —
+          l'app s'arrête net, et elle le dit. */}
+      {configurationSupabase.complete ? (
+        <Stack screenOptions={{ headerShown: false }} />
+      ) : (
+        <ConfigurationManquante problemes={configurationSupabase.problemes} />
+      )}
     </ThemeProvider>
   );
 }

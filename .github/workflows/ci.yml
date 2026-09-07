@@ -57,6 +57,12 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://exemple.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: cle-factice-pour-le-build
       - run: node scripts/verifier-titres-export.mjs
+      # Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche, et
+      # l'app démarre alors sur une configuration vide — cf. l'en-tête du script.
+      - run: node scripts/verifier-configuration-export.mjs
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://exemple.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: cle-factice-pour-le-build
 
   db-tests:
     name: Tests base de données (pgTAP)
