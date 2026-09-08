@@ -18,8 +18,15 @@ import { APP_NAME } from '@/constants/produit';
  *      commente jamais une empreinte.
  *   3. Jamais « tu devrais », « il faut ». Toujours une porte ouverte, jamais une injonction.
  *
- * Les répliques de check-in et de période calme sont celles des maquettes validées (canvas
+ * Les répliques de check-in sont celles des maquettes validées (canvas
  * docs/design/v1-08-mascotte) : on ne les réécrit pas, on les rattache à elle.
+ *
+ * **Une exception, et une seule** : « Rien à rattraper. » a été retirée le 07/09/2026 sur un
+ * retour d'usage explicite — la phrase se lisait comme une attente déçue la première fois
+ * qu'on la voyait, alors qu'elle devait dire le contraire. Ramille dit maintenant l'attente
+ * (v1-12 §6.3). Le rythme du produit étant fixe — le lundi, le premier du mois — elle peut
+ * nommer le jour sans jamais compter, ce qui est la seule façon de tenir la règle 2 tout en
+ * disant quand elle revient.
  */
 export const MASCOT_NAME = APP_NAME;
 
@@ -36,9 +43,35 @@ export const RAMILLE = {
   /** Check-in répondu non (maquette validée) : une relance, jamais une déception. */
   checkinNon: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.',
 
-  /** /suivi, période calme (maquette validée) : rien à faire n'est pas un échec. */
-  periodeCalme: 'Rien à rattraper.',
-  periodeCalmeDetail: 'Tes points de suivi arrivent d’eux-mêmes, à leur rythme.',
+  /**
+   * /suivi, quand la personne a des bilans mais aucun point répondu. Contexte différent de
+   * la carte d'attente du plan : ici il n'y a rien à annoncer — ni jour, ni canal —, la
+   * cadence dépend de la boucle et une date fausse serait pire que pas de date.
+   */
+  suiviSansPoint: 'Je note tes réponses ici, au fil des saisons.',
+
+  /**
+   * Juste après « C'est noté », sur la feuille : ce qui va se passer, avant de demander quoi
+   * que ce soit. Deux variantes selon la boucle qui concerne la personne — jamais un nombre
+   * de jours, toujours le jour lui-même.
+   */
+  engagementAttenteHebdo: 'Je te laisse mener ton action. Lundi, je reviens te demander si tu l’as faite.',
+  engagementAttenteMensuel:
+    'Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.',
+
+  /** La question de la feuille — le choix du canal vient après, et il est du produit. */
+  choixCanal: 'Comment tu préfères que je te fasse signe ?',
+
+  /** Carte d'attente du plan, quand un rappel partira : elle s'engage, et elle tient. */
+  attenteSigneHebdo: 'Je te fais signe lundi.',
+  attenteSigneMensuel: 'Je te fais signe au début du mois prochain.',
+
+  /**
+   * Carte d'attente du plan, sans rappel. Ce n'est pas une punition : elle revient *ici* de
+   * toute façon, c'est l'app qui porte le rendez-vous quand aucun canal ne le porte.
+   */
+  attenteIciHebdo: 'On se retrouve ici lundi.',
+  attenteIciMensuel: 'On se retrouve ici au début du mois prochain.',
 
   /** Suppression de compte effectuée : on ne retient pas, on salue. */
   auRevoir: 'Merci d’être passé. Si tu reviens, on repart de zéro, tranquillement.',

@@ -223,16 +223,15 @@ export default function Suivi() {
 
               La maquette annonçait « ton prochain point arrive lundi » : on ne le dit pas, la
               cadence dépend de la boucle (hebdomadaire pour le domicile-travail, mensuelle pour
-              les extras) et une date fausse serait pire que pas de date. */}
+              les extras) et une date fausse serait pire que pas de date. C'est ce qui distingue
+              cette carte de celle du plan, qui *peut* nommer le jour parce qu'elle sait de
+              quelle boucle il s'agit (v1-12 §6.2). */}
           {checkins.length === 0 && (
             <ThemedView type="backgroundElement" style={styles.card}>
               <View style={styles.checkinsHeader}>
                 <Mascot mood="resting" size={40} />
                 <View style={styles.checkinsHeaderText}>
-                  <ThemedText weight={600}>{RAMILLE.periodeCalme}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {RAMILLE.periodeCalmeDetail}
-                  </ThemedText>
+                  <ThemedText weight={600}>{RAMILLE.suiviSansPoint}</ThemedText>
                 </View>
               </View>
               <ThemedText type="small" themeColor="textTertiary">

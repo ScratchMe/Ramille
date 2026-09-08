@@ -160,10 +160,22 @@ const SECTIONS: LegalSection[] = [
             text: 'Base de données, authentification et hébergement des données applicatives. Serveurs situés à Paris (région eu-west-3).',
           },
           { term: 'Vercel', text: 'Hébergement de la version web de l’application.' },
-          { term: 'Resend', text: 'Envoi des emails de rappel, uniquement si tu les as laissés activés.' },
+          { term: 'Resend', text: 'Envoi des emails de rappel, uniquement si tu as choisi ce canal.' },
+          {
+            term: 'Expo',
+            text:
+              'Acheminement des notifications de rappel vers ton téléphone, uniquement si tu as choisi ce canal. ' +
+              'Serveurs situés aux États-Unis, sur la base de clauses contractuelles types.',
+          },
           {
             term: 'Google',
-            text: 'Uniquement si tu choisis de te connecter avec un compte Google, pour vérifier ton identité.',
+            text:
+              'Firebase Cloud Messaging, la couche du système Android qui remet la notification à ton téléphone.',
+          },
+          {
+            term: 'Google',
+            text:
+              'Vérification de ton identité, uniquement si tu choisis de te connecter avec un compte Google.',
           },
         ],
       },
@@ -185,6 +197,9 @@ const SECTIONS: LegalSection[] = [
           'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
           'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
             'produit tel qu’il est.',
+          'Identifiant de notification de ton téléphone : conservé tant que l’application est installée et que tu as ' +
+            'choisi les rappels par notification. Il disparaît si tu désinstalles l’application, si tu coupes les ' +
+            'notifications, à la suppression de ton compte, et à la suppression automatique d’une session anonyme.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours et ' +
             'repères de parcours est supprimé.',
         ],

@@ -147,11 +147,14 @@ conditionnaient — l'étalement du pic d'envoi du lundi, et la purge des sessio
 supprimait sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur l'**inactivité**
 (corrigée, `v1-10` §2.B). Son compagnon design est `docs/design/v1-10-retrouver-son-compte/`.
 
-**Le chantier E est préparé, pas livré** : `v1-12-rappels.md` (07/09/2026) est son document
-d'implémentation — résolution du canal en une table de vérité écrite deux fois (SQL et
-TypeScript) et épinglée des deux côtés, jeton qui suit la personne par RPC, un point un
-message quel que soit le canal — en attente de Go, avec son canvas cliquable
-`docs/design/v1-12-rappels/` (direction B, la feuille après « C'est noté »).
+**Le chantier E est livré côté code** : `v1-12-rappels.md` (07/09/2026) en est le document,
+avec son canvas cliquable `docs/design/v1-12-rappels/`. Le rappel part par **notification, par
+email, ou pas du tout** ; le canal se résout en un seul endroit (§3) ; le jeton d'appareil suit
+la personne par RPC ; la feuille des rappels s'ouvre **une fois par appareil** après « C'est
+noté », et la carte d'attente du plan a remplacé « Rien à rattraper ». **Rien n'arrive encore
+sur un téléphone** tant que les identifiants FCM ne sont pas déposés sur expo.dev (§5.2 et §7)
+et qu'un build n'a pas été relancé : d'ici là les jetons s'enregistrent, Expo refuse l'envoi,
+et le repli email joue.
 
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
@@ -497,8 +500,11 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   un test : première personne et tutoiement ; **jamais un nombre dans sa bouche** (les
   chiffres restent au produit, c'est ce qui garantit qu'elle ne commente jamais une
   empreinte) ; jamais « tu devrais » ni « il faut ». Les rappels par email sont un mot
-  d'elle, signé (`enqueue_checkin_reminders`). Les répliques de check-in et de période calme
-  viennent des maquettes validées et ne se réécrivent pas.
+  d'elle, signé (`enqueue_checkin_reminders`). Les répliques de check-in viennent des
+  maquettes validées et ne se réécrivent pas ; **la période calme fait exception** — « Rien à
+  rattraper. » a été retirée le 07/09/2026 sur un retour d'usage (elle se lisait comme une
+  attente déçue), remplacée par des phrases qui *disent* l'attente et nomment le jour. Elle
+  peut le faire sans jamais compter, le rythme étant fixe.
   Cinq expressions, **aucune négative et il ne faut pas en ajouter** : `calm`, `happy`,
   `encouraging`, `thinking` (attente du calcul — seule asymétrie assumée, le regard est décalé
   d'une unité) et `resting` (périodes calmes de `/suivi`). Un second registre s'obtient sans
@@ -559,6 +565,12 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   utiliser un état de composant inline (écran à plusieurs états visuels) plutôt qu'un
   callback de bouton d'`Alert`. Voir `src/app/connexion/email.tsx` et
   `src/app/connexion/retrouver.tsx`.
+- **Une dépendance native nouvelle impose un build**, et il n'y a aucun moyen de s'en rendre
+  compte depuis le code : `expo-notifications` (v1-12) est arrivée ainsi. Le jeton d'appareil
+  ne s'enregistre jamais par un `insert` — `register_push_token` le **reprend** à son
+  propriétaire précédent, ce qu'une policy RLS owner-scoped ne peut pas faire au moment où une
+  session anonyme devient un compte, et l'oubli serait silencieux : les rappels partiraient
+  vers un utilisateur fantôme.
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
   connexion") via AsyncStorage — explicitement device-local, pas de sync multi-device tant
   que le compte n'est pas rattaché. Voir `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`.

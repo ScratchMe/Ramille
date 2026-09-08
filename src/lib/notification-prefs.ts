@@ -7,6 +7,8 @@
 // Le rappel reste en opt-out — il n'est pas une promotion, c'est le mécanisme même de la
 // brique 4 — mais il n'est plus réservé aux comptes rattachés : un jeton d'appareil suffit
 // pour la notification, donc le réglage s'ouvre aussi aux sessions anonymes.
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { supabase } from '@/lib/supabase';
 import type { CanalPrefere, EtatDesRappels } from '@/types/rappels';
 
@@ -52,4 +54,25 @@ export async function setReminderChannel(canal: CanalPrefere): Promise<boolean> 
     .eq('id', user.id);
 
   return !error;
+}
+
+// La feuille de proposition ne s'ouvre qu'une fois par appareil (v1-12 §6.1). Marque locale,
+// même mécanique et même préfixe historique que les autres clés AsyncStorage — les renommer
+// effacerait des états existants (CLAUDE.md).
+const FEUILLE_KEY = 'traceverte.rappels_proposes.v1';
+
+export async function aDejaVuLaFeuilleDeRappel(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(FEUILLE_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function marquerFeuilleDeRappelVue(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(FEUILLE_KEY, '1');
+  } catch {
+    // best-effort : au pire la feuille réapparaît au prochain engagement.
+  }
 }

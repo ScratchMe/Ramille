@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
@@ -15,13 +15,28 @@ import { Radius, Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
 import { formatTonnes } from '@/lib/format';
 import { useTrackFocus } from '@/hooks/use-track-focus';
+import { track } from '@/lib/analytics';
 import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
+import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { formatIntention } from '@/types/plan';
 import { daysSince, REBILAN_SUGGESTION_DAYS } from '@/types/suivi';
 import { aVuRattachementAnnonce, marquerRattachementAnnonce } from '@/lib/connexion-prefs';
 import { lireEtatDuRattachement } from '@/lib/compte';
+import {
+  aDejaVuLaFeuilleDeRappel,
+  loadReminderPrefs,
+  type ReminderPrefs,
+} from '@/lib/notification-prefs';
+import { lirePermission } from '@/lib/rappels';
 import { supabase } from '@/lib/supabase';
+import {
+  carteAttente,
+  doitProposerLaFeuille,
+  type Boucle,
+  type CanalPrefere,
+  type Permission,
+} from '@/types/rappels';
 
 type PlanAction = {
   id: string;
@@ -102,6 +117,12 @@ export default function Plan() {
   // Annonce du rattachement : `null` tant qu'on ne sait pas, une adresse (ou la chaîne vide
   // quand Google ne la remonte pas) quand il y a quelque chose à dire.
   const [rattachement, setRattachement] = useState<string | null>(null);
+  // Les rappels : ce que la carte d'attente affiche, et ce que la feuille présélectionne.
+  // `null` tant qu'on ne sait pas — mieux vaut ne rien dire qu'annoncer un canal faux.
+  const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
+  const [boucle, setBoucle] = useState<Boucle>('mensuel');
+  const [permission, setPermission] = useState<Permission>('fermee');
+  const [feuilleOuverte, setFeuilleOuverte] = useState(false);
 
   // **La confirmation se termine hors de l'app** : la personne clique le lien reçu par email
   // et revient ici, `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la
@@ -182,6 +203,25 @@ export default function Plan() {
 
       if (cancelled) return;
 
+      // Quelle boucle concerne cette personne, donc quel jour Ramille peut nommer : le point
+      // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3). C'est le
+      // prochain contact qui compte, pas l'action engagée.
+      const [{ data: resultat }, prefs, etatPermission] = await Promise.all([
+        supabase
+          .from('assessment_results')
+          .select('commute_poste_label')
+          .eq('assessment_id', assessment.id)
+          .maybeSingle(),
+        loadReminderPrefs(),
+        lirePermission(),
+      ]);
+
+      if (cancelled) return;
+
+      setBoucle(resultat?.commute_poste_label ? 'hebdo' : 'mensuel');
+      setRappels(prefs);
+      setPermission(etatPermission);
+
       setState({
         status: 'ok',
         cycle: cycle as PlanCycle,
@@ -195,6 +235,37 @@ export default function Plan() {
       cancelled = true;
     };
   }, [refreshKey]);
+
+  // Appelée quand un engagement vient d'être pris — jamais quand on en change ni quand on
+  // le libère. La feuille ne s'ouvre qu'une fois par appareil : c'est une cérémonie pour la
+  // première fois, pas un péage à chaque action.
+  const proposerLesRappels = async () => {
+    if (!rappels) return;
+    const dejaProposee = await aDejaVuLaFeuilleDeRappel();
+    if (
+      !doitProposerLaFeuille({
+        plateforme: Platform.OS === 'web' ? 'web' : 'natif',
+        emailPossible: rappels.emailPossible,
+        dejaProposee,
+      })
+    ) {
+      return;
+    }
+    track('rappels_view');
+    setFeuilleOuverte(true);
+  };
+
+  // À la fermeture, on met à jour l'état local plutôt que de relire la base : la carte
+  // d'attente doit refléter le choix immédiatement, et le serveur a déjà été écrit.
+  // Dérivée à chaque rendu plutôt que stockée : elle ne dépend que de l'état des rappels et
+  // de la boucle, et un second état à tenir en phase serait un état de trop.
+  const attente = rappels ? carteAttente({ ...rappels, boucle }) : null;
+
+  const fermerLaFeuille = (canal: CanalPrefere, jetonActif: boolean) => {
+    setFeuilleOuverte(false);
+    setRappels((p) => (p ? { ...p, prefere: canal, jetonActif } : p));
+    void lirePermission().then(setPermission);
+  };
 
   if (state.status === 'loading') {
     return (
@@ -269,6 +340,18 @@ export default function Plan() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         {/* Hors du ScrollView : la bande ne défile pas (cf. bande-haute.tsx). */}
         <BandeHaute />
+
+        {/* Rendue par-dessus le plan plutôt que dans le flux : elle arrive après un geste
+            (« C'est noté ») et doit se lire comme un moment, pas comme un encart de plus. */}
+        {feuilleOuverte && rappels && (
+          <FeuilleRappels
+            prefs={rappels}
+            boucle={boucle}
+            permission={permission}
+            onFerme={fermerLaFeuille}
+          />
+        )}
+
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Un fait, pas une félicitation : ni mascotte (elle ne commente pas l'état du
               compte), ni exclamation, ni action à faire. */}
@@ -313,22 +396,29 @@ export default function Plan() {
             </View>
           )}
 
-          {/* Période calme (v1-11 flux 6) : rien à faire n'est pas un échec, et le silence à
-              cet endroit se lit comme un manque. Le mot de Ramille prend la place de la
-              question — ses répliques vivent dans `mascotte.ts`, on n'en écrit pas ici.
+          {/* **Ramille dit l'attente, pas le vide** (v1-12 §6.2). « Rien à rattraper. »
+              vivait ici et se lisait comme une attente déçue la première fois qu'on la
+              voyait — retour d'appareil du 07/09. Elle nomme maintenant le jour où elle
+              revient, ce que le rythme fixe du produit (lundi, premier du mois) lui permet
+              de faire sans jamais compter.
 
-              Elle est posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte
-              près d'un chiffre lourd » vise l'empreinte, mais un cap en kilos juste sous son
+              Le détail sous sa phrase est **du produit, pas d'elle** : une adresse peut
+              porter un chiffre, et elle n'en dit jamais.
+
+              Posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte près
+              d'un chiffre lourd » vise l'empreinte, mais un cap en kilos juste sous son
               visage donnerait l'impression qu'elle le commente. */}
-          {checkins.length === 0 && (
+          {checkins.length === 0 && attente && (
             <ThemedView type="backgroundElement" style={styles.calmeCard}>
               <View style={styles.calmeRow}>
                 <Mascot mood="resting" size={40} />
                 <View style={styles.calmeTexte}>
-                  <ThemedText weight={600}>{RAMILLE.periodeCalme}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {RAMILLE.periodeCalmeDetail}
-                  </ThemedText>
+                  <ThemedText weight={600}>{RAMILLE[attente.cle]}</ThemedText>
+                  {attente.detail && (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {attente.detail}
+                    </ThemedText>
+                  )}
                 </View>
               </View>
             </ThemedView>
@@ -372,6 +462,7 @@ export default function Plan() {
                     fois par cycle — s'engager sur les deux revient à ne s'engager sur aucune,
                     et la base le garantit par un index unique partiel. */}
                 <ActionCommitment
+                  onEngage={proposerLesRappels}
                   actionId={action.id}
                   poste={action.action_templates?.poste ?? null}
                   committed={action.committed_at !== null}
