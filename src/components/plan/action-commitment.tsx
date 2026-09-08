@@ -37,6 +37,7 @@ export function ActionCommitment({
   intentionTiming,
   otherActionCommitted,
   onChanged,
+  onEngage,
 }: {
   actionId: string;
   poste: string | null;
@@ -46,6 +47,12 @@ export function ActionCommitment({
   /** Une autre action du cycle porte déjà l'engagement : on propose de basculer, pas d'ajouter. */
   otherActionCommitted: boolean;
   onChanged: () => void;
+  /**
+   * Appelé **seulement** quand un engagement vient d'être pris — pas quand on en change ni
+   * quand on le libère. C'est ce qui déclenche la feuille des rappels (v1-12 §6.1), et elle
+   * n'a de sens qu'à cet instant précis : la personne vient de dire quand elle va agir.
+   */
+  onEngage?: () => void;
 }) {
   const kind = intentionKindForPoste(poste);
 
@@ -74,6 +81,7 @@ export function ActionCommitment({
     setDays([]);
     setTiming(null);
     onChanged();
+    onEngage?.();
   };
 
   const release = async () => {

@@ -27,6 +27,7 @@ describe('USAGE_EVENT_NAMES', () => {
       'compte_view',
       'retrouver_view',
       'retrouver_send',
+      'rappels_view',
     ]);
   });
 
@@ -58,6 +59,7 @@ describe('USAGE_EVENT_NAMES', () => {
       compte_view: 'compte_view',
       retrouver_view: 'retrouver_view',
       retrouver_send: 'retrouver_send',
+      rappels_view: 'rappels_view',
     };
     expect(Object.keys(_exhaustif)).toHaveLength(USAGE_EVENT_NAMES.length);
   });

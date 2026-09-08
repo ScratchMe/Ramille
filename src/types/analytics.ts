@@ -31,6 +31,7 @@ export const USAGE_EVENT_NAMES = [
   'compte_view',
   'retrouver_view',
   'retrouver_send',
+  'rappels_view',
 ] as const;
 
 export type UsageEventName = (typeof USAGE_EVENT_NAMES)[number];
@@ -64,6 +65,9 @@ export type UsageEventPropsByName = {
   // Le clic sur « Recevoir le lien », sans distinguer adresse connue ou inconnue : la réponse
   // est volontairement la même dans les deux cas, sans quoi l'écran dirait qui utilise Ramille.
   retrouver_send: never;
+  /** La feuille des rappels s'est affichée. Elle ne s'ouvre que depuis un engagement,
+   *  donc elle n'a pas de propriété de provenance : il n'y en a qu'une. */
+  rappels_view: never;
 };
 
 // Bornes de `public.check_usage_event_props`, répliquées ici pour ne jamais émettre un insert

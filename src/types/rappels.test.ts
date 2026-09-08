@@ -1,4 +1,12 @@
-import { canalEffectif, lignesDeReglage, type EtatDesRappels } from '@/types/rappels';
+import { RAMILLE } from '@/constants/mascotte';
+import {
+  canalEffectif,
+  carteAttente,
+  doitProposerLaFeuille,
+  libelleBouton,
+  lignesDeReglage,
+  type EtatDesRappels,
+} from '@/types/rappels';
 
 // Les six lignes de la table de vérité de v1-12 §3, dans l'ordre du document. Le pendant SQL
 // est `17_rappels_canal.test.sql`, qui épingle **exactement** les mêmes : c'est la paire qui
@@ -96,5 +104,103 @@ describe('lignesDeReglage', () => {
     for (const ligne of lignesDeReglage({ ...base, plateforme: 'natif' })) {
       expect(ligne.titre).not.toMatch(/\d/);
     }
+  });
+});
+
+describe('doitProposerLaFeuille', () => {
+  it('ne s’ouvre qu’une fois par appareil', () => {
+    const base = { plateforme: 'natif', emailPossible: true } as const;
+    expect(doitProposerLaFeuille({ ...base, dejaProposee: false })).toBe(true);
+    expect(doitProposerLaFeuille({ ...base, dejaProposee: true })).toBe(false);
+  });
+
+  it('s’ouvre sur mobile même sans compte — le push n’en a pas besoin', () => {
+    expect(
+      doitProposerLaFeuille({ plateforme: 'natif', emailPossible: false, dejaProposee: false })
+    ).toBe(true);
+  });
+
+  it('ne s’ouvre pas sur web sans compte : il n’y aurait rien à choisir', () => {
+    expect(
+      doitProposerLaFeuille({ plateforme: 'web', emailPossible: false, dejaProposee: false })
+    ).toBe(false);
+    expect(
+      doitProposerLaFeuille({ plateforme: 'web', emailPossible: true, dejaProposee: false })
+    ).toBe(true);
+  });
+});
+
+describe('libelleBouton', () => {
+  it('n’annonce le dialogue système que s’il va vraiment s’en ouvrir un', () => {
+    expect(libelleBouton('push', 'demandable')).toBe('Autoriser les notifications');
+    // Permission déjà accordée, ou Android 12 et avant : aucune boîte ne s'ouvrira, et le
+    // promettre serait une petite trahison au seul moment où la confiance compte.
+    expect(libelleBouton('push', 'accordee')).toBe('C’est bon');
+    // Deux refus : le dialogue ne reviendra plus jamais. Même règle.
+    expect(libelleBouton('push', 'fermee')).toBe('C’est bon');
+  });
+
+  it('dit ce que le bouton fait pour les deux autres canaux', () => {
+    expect(libelleBouton('email', 'demandable')).toBe('C’est bon');
+    expect(libelleBouton('none', 'demandable')).toBe('Continuer sans rappel');
+  });
+});
+
+describe('carteAttente', () => {
+  const camille = { email: 'camille@exemple.fr' };
+
+  it('nomme le jour, et le canal quand il y en a un', () => {
+    expect(
+      carteAttente({ prefere: 'push', jetonActif: true, emailPossible: true, boucle: 'hebdo', ...camille })
+    ).toEqual({ cle: 'attenteSigneHebdo', detail: 'Par notification sur ce téléphone.' });
+
+    expect(
+      carteAttente({ prefere: 'email', jetonActif: false, emailPossible: true, boucle: 'mensuel', ...camille })
+    ).toEqual({ cle: 'attenteSigneMensuel', detail: 'Par email, à camille@exemple.fr.' });
+  });
+
+  it('dit le repli sans reproche quand la notification est coupée', () => {
+    expect(
+      carteAttente({ prefere: 'push', jetonActif: false, emailPossible: true, boucle: 'hebdo', ...camille })
+    ).toEqual({
+      cle: 'attenteSigneHebdo',
+      detail: 'Par email, à camille@exemple.fr — les notifications sont coupées sur ce téléphone.',
+    });
+  });
+
+  it('sans rappel, Ramille revient quand même — dans l’app', () => {
+    expect(
+      carteAttente({ prefere: 'none', jetonActif: true, emailPossible: true, boucle: 'hebdo', email: null })
+    ).toEqual({ cle: 'attenteIciHebdo', detail: null });
+
+    expect(
+      carteAttente({ prefere: 'none', jetonActif: false, emailPossible: false, boucle: 'mensuel', email: null })
+    ).toEqual({ cle: 'attenteIciMensuel', detail: null });
+  });
+
+  it('le refus sans compte nomme les deux portes, une fois', () => {
+    // Le cas qu'on oublie : la personne a dit oui chez nous puis non au téléphone, et elle
+    // n'a pas de compte. Ni reproche, ni relance — les deux chemins, dits une seule fois.
+    expect(
+      carteAttente({ prefere: 'push', jetonActif: false, emailPossible: false, boucle: 'hebdo', email: null })
+    ).toEqual({
+      cle: 'attenteIciHebdo',
+      detail:
+        'Les notifications sont coupées sur ce téléphone. Tu peux les rouvrir dans ses réglages, ou rattacher un compte pour l’email.',
+    });
+  });
+
+  it('ne met jamais de chiffre dans la bouche de Ramille', () => {
+    // Le détail (qui peut porter une adresse, donc un chiffre) est **du produit** ; seule la
+    // clé désigne ce qu'elle dit, et ces lignes-là sont gardées par le test de mascotte.ts.
+    const carte = carteAttente({
+      prefere: 'email',
+      jetonActif: false,
+      emailPossible: true,
+      boucle: 'hebdo',
+      email: 'camille42@exemple.fr',
+    });
+    expect(carte.cle).not.toMatch(/\d/);
+    expect(RAMILLE[carte.cle]).not.toMatch(/\d/);
   });
 });

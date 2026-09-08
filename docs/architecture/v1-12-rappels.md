@@ -1,9 +1,10 @@
 # v1-12 — Rappels : notification, email, ou rien
 
 **Date** : 07/09/2026. **Statut** : document d'implémentation du chantier E de v1-10. Go donné
-le 07/09 sur la direction B ; **PR 1 livrée** (base et réglage, §4 et §6.4), PR 2 et 3 à venir. Il acte les décisions prises le 07/09 et le canvas qui
-en découle ; il ne remplace ni `v1-02` (la boucle), ni `v1-07` §3.1 (le canal email), ni
-`v1-10` §2.E (le plan initial du push) — il les prolonge.
+le 07/09 sur la direction B ; **PR 1 et PR 2 livrées**, PR 3 (mise en service) en attente des
+identifiants FCM. Il acte les décisions du 07/09 et le canvas qui en découle ; il ne remplace
+ni `v1-02` (la boucle), ni `v1-07` §3.1 (le canal email), ni `v1-10` §2.E (le plan initial du
+push) — il les prolonge.
 
 Compagnons : `docs/design/v1-12-rappels/` (brief, canvas publié, README). Le canvas est la
 référence pour les écrans ; ce document dit ce qu'il faut construire dessous pour qu'ils
@@ -398,8 +399,6 @@ Trois assertions du test `15` l'épinglent. Et la base sera **repurgée avant l'
 la question de ce que les comptes existants verront à leur prochain engagement ne se pose
 plus.
 
-- **Le rayon de la feuille** : 24 sur le canvas, absent de `Radius`. Rabattre sur `card`
-  (18) ou nommer `sheet` — trancher à l'implémentation, pas recopier en dur.
 - **La sécurité renforcée du push** (jeton d'accès Expo) : recommandée, pas requise pour le
   premier test.
 
@@ -416,10 +415,16 @@ Une PR par étage, chacune verte seule ; le push depuis GitHub en un clic après
    §2.5), et la RLS de `push_tokens` est couverte par `17` plutôt que par `03` — elle est
    inséparable du RPC qui remplace la policy INSERT, et la séparer aurait donné deux tests qui
    ne se lisent qu'ensemble.
-2. **Le natif et le moment** — `expo-notifications`, `rappels.ts` (§5.3), le retour (§5.4), la
-   feuille (§6.1), la carte d'attente (§6.2), `mascotte.ts` (§6.3), la page de
-   confidentialité (§6.5), l'événement `rappels_view`, et les retouches de `CLAUDE.md`
-   (§11).
+2. **Le natif et le moment** — *livrée le 08/09*. `expo-notifications` et son plugin,
+   `app.config.js` (la variable EAS `GOOGLE_SERVICES_JSON`, §5.2), `rappels.ts` (§5.3), le
+   retour (§5.4), la feuille (§6.1), la carte d'attente (§6.2), `mascotte.ts` (§6.3), la page
+   de confidentialité (§6.5), l'événement `rappels_view`, et les retouches de `CLAUDE.md`
+   (§11). Trois écarts avec le plan : le rayon de la feuille est `Radius.card` et non une
+   valeur nommée (le point ouvert du §9 est tranché ainsi — un seul usage ne justifie pas un
+   jeton) ; `/suivi` gagne sa propre réplique `suiviSansPoint` plutôt que de reprendre celle
+   du plan, parce que la cadence y est inconnue et qu'une date fausse serait pire que pas de
+   date ; et l'icône de notification est dérivée de l'icône monochrome existante, silhouette
+   blanche sur transparent, Android n'utilisant que le canal alpha.
 3. **Mise en service** (§7) et le test d'appareil (§8) — pas de code, sauf ce que le test
    révèle.
 
