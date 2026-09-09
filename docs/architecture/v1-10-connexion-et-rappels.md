@@ -1,7 +1,10 @@
 # v1-10 — Connexion par lien, rappels par push
 
-**Date** : 06/09/2026. **Statut** : plan d'increment, à exécuter. Ce document décrit le
-prochain increment dans son ensemble ; il n'acte aucune implémentation.
+**Date** : 06/09/2026. **Statut** : plan d'increment, **exécuté sauf le chantier G**
+(renommage du dépôt GitHub). Ce document décrit l'increment dans son ensemble tel qu'il a été
+pensé le 06/09 ; il n'acte aucune implémentation et n'est pas réécrit après coup. Le chantier
+E (push) a reçu son propre document, `v1-12-rappels.md`, et a été vérifié sur appareil le
+09/09/2026 — c'est là qu'il faut lire ce qui a réellement été construit, pas ici.
 
 Compagnon design : `docs/design/v1-10-retrouver-son-compte/` — quatre écrans et le
 raisonnement sur la porte d'entrée et la collision.

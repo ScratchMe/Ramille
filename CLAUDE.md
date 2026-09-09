@@ -141,20 +141,35 @@ points restent à vérifier sur appareil** (§8) — dont le retour matériel An
 quitter l'app depuis `/plan` et ne pas être « corrigé ».
 
 L'increment précédent, `v1-10-connexion-et-rappels.md` (06/09/2026), est livré pour ses
-chantiers A à D et F ; il reste E (push) et G (renommage GitHub). Il portait la connexion
+chantiers A à D, F **et E** ; il ne reste que G (renommage GitHub). Il portait la connexion
 par lien sans mot de passe, les rappels par push, et deux correctifs livrés qui les
 conditionnaient — l'étalement du pic d'envoi du lundi, et la purge des sessions anonymes qui
 supprimait sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur l'**inactivité**
 (corrigée, `v1-10` §2.B). Son compagnon design est `docs/design/v1-10-retrouver-son-compte/`.
 
-**Le chantier E est livré côté code** : `v1-12-rappels.md` (07/09/2026) en est le document,
-avec son canvas cliquable `docs/design/v1-12-rappels/`. Le rappel part par **notification, par
-email, ou pas du tout** ; le canal se résout en un seul endroit (§3) ; le jeton d'appareil suit
-la personne par RPC ; la feuille des rappels s'ouvre **une fois par appareil** après « C'est
-noté », et la carte d'attente du plan a remplacé « Rien à rattraper ». **Rien n'arrive encore
-sur un téléphone** tant que les identifiants FCM ne sont pas déposés sur expo.dev (§5.2 et §7)
-et qu'un build n'a pas été relancé : d'ici là les jetons s'enregistrent, Expo refuse l'envoi,
-et le repli email joue.
+**Le chantier E est livré, et vérifié sur appareil le 09/09/2026** : `v1-12-rappels.md` en est
+le document, avec son canvas cliquable `docs/design/v1-12-rappels/`. Le rappel part par
+**notification, par email, ou pas du tout** ; le canal se résout en un seul endroit (§3) ; le
+jeton d'appareil suit la personne par RPC ; la feuille des rappels s'ouvre **une fois par
+appareil** après « C'est noté », et la carte d'attente du plan a remplacé « Rien à rattraper ».
+Les trois branches ont été parcourues en conditions réelles — notification reçue, email reçu,
+lien du rappel ouvrant l'app et non le navigateur, réponse refermant le point (§8.1).
+
+**Ce que ce test a appris, et qu'aucune suite ne pouvait dire :** le canal marchait
+parfaitement pendant que la boucle se cassait au dernier mètre. Appuyer sur la notification
+ouvrait le plan **sans la question**, parce qu'un écran d'onglet ne charge ses données qu'une
+fois par lancement — react-navigation le garde monté, et l'app survit à l'arrière-plan, qui
+est exactement l'état d'où l'on revient quand une notification arrive. D'où
+`useRafraichirAuRetour` (`src/hooks/use-rafraichir-au-retour.ts`) : **tout écran d'onglet dont
+le contenu peut changer côté serveur doit l'utiliser**, et il écoute deux retours parce qu'il
+en faut deux — le focus de l'écran, et le retour de l'app au premier plan que la navigation ne
+voit pas. Un `useEffect` de montage, là, rend un écran plausible et périmé.
+
+**Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
+décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
+`v1-10` §2.B). Le push, lui, part à `now()`. Pour provoquer un rappel de test, passer par
+`generate_commute_checkins()` puis `send_pending_reminders()` — le chemin du cron entier —
+plutôt que d'insérer un point à la main.
 
 **Feuille de route courante** : `v1-07-audit-facteurs-et-suivi.md` §4 — audit du 04/09/2026,
 plan d'exécution ordonné en 7 étapes (facteurs d'émission faux → boucle d'engagement cassée →
