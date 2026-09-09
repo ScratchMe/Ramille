@@ -369,15 +369,17 @@ seconde est certaine à la publication — **Google Play resigne l'AAB avec sa p
 l'empreinte de production devra être **ajoutée** au tableau, qui en accepte plusieurs, sans
 retirer celle du keystore EAS qui signe les APK de test.
 
-## 7. Mise en service — ce que le titulaire fait
+## 7. Mise en service — **faite le 09/09/2026**
 
-Dans l'ordre, et rien ne bloque le code d'avancer entre-temps :
+Dans l'ordre, et rien ne bloquait le code d'avancer entre-temps :
 
-1. Firebase + `google-services.json` + clé de compte de service sur expo.dev (§5.2).
-2. Variable EAS *fichier* `GOOGLE_SERVICES_JSON`.
+1. Firebase + `google-services.json` + clé de compte de service sur expo.dev (§5.2). ✅
+2. Variable EAS *fichier* `GOOGLE_SERVICES_JSON`. ✅
 3. Optionnel mais recommandé : activer la sécurité renforcée du push sur expo.dev et déposer
    un jeton d'accès dans Vault sous `expo_access_token` — je vérifie le nom, jamais la valeur.
-4. Build `preview`, installation, et le test d'appareil du §8.
+   ✅ (les quatre secrets de Vault sont renseignés : `resend_api_key`,
+   `reminder_from_address`, `app_url`, `expo_access_token`).
+4. Build `preview`, installation, et le test d'appareil du §8. ✅
 
 ## 8. Tests
 
@@ -409,9 +411,42 @@ tester une RPC qui vérifie `auth.uid()` — même erreur que le garde-fou de vo
    « Toi » → la ligne notification est là avec sa raison ; rouvrir dans les réglages du
    téléphone → à l'ouverture suivante, la carte repasse à « Par notification ».
 2. Android 12 ou avant : la feuille dit « C'est bon », aucun dialogue.
-3. Un vrai rappel un lundi matin, ou provoqué : un point `pending` inséré pour le compte de
-   test puis `select public.send_pending_reminders()` sur le projet distant — la seule façon
-   de voir la notification sans attendre lundi. Appuyer dessus ouvre le plan, point en tête.
+3. Un vrai rappel un lundi matin, ou provoqué : plutôt qu'un point inséré à la main,
+   `select public.generate_commute_checkins()` puis `select public.send_pending_reminders()`
+   sur le projet distant — ça emprunte **le chemin du cron**, générateur et file d'envoi
+   compris, au lieu d'en tester une moitié. Appuyer dessus ouvre le plan, point en tête.
+
+### 8.1 Ce que le test d'appareil a donné — 09/09/2026
+
+Les trois branches ont été parcourues en conditions réelles, sur une base fraîchement purgée
+et un compte créé pour l'occasion. **Ce qui a été vérifié bout en bout :**
+
+- **La notification.** Jeton enregistré sur une session anonyme, `reminder_channel_for` →
+  `push`, ticket Expo rendu, aucune erreur, notification affichée sur le téléphone. Le canal
+  complet tient donc : Firebase, clé de compte de service, jeton d'accès Expo, `channelId`
+  `rappels`.
+- **L'email.** Envoyé par la boucle mensuelle (l'hebdomadaire était déjà répondue), accepté
+  par Resend, reçu. Une seule ligne d'envoi par point, canal `email`, adresse renseignée.
+- **Le lien du rappel** (§6.6) : `https://www.ramille.fr/plan` a **ouvert l'app** et non le
+  navigateur. Le fichier est servi en `200 application/json` sans redirection, ce qu'Android
+  exige.
+- **La réponse** referme la boucle : le point est passé à `answered`.
+
+**Le défaut que ce test a révélé, et il n'était visible d'aucune autre façon.** Appuyer sur la
+notification ouvrait le plan **sans la question**. Elle existait pourtant en base. Le plan ne
+chargeait ses données qu'**une fois par lancement** : react-navigation garde l'écran d'onglet
+monté, et l'app entière survit à un passage en arrière-plan — or une notification arrive
+précisément quand l'app est derrière. Le canal marchait parfaitement et la boucle se cassait
+au dernier mètre, sur la promesse même du message (« réponds-moi en un geste » menant à un
+écran qui ne propose rien). Corrigé par `useRafraichirAuRetour`
+(`src/hooks/use-rafraichir-au-retour.ts`, PR #94), qui écoute **les deux** retours — le focus
+de l'écran *et* le retour de l'app au premier plan, que la navigation ne voit pas.
+
+**Un détail d'exploitation à ne pas confondre avec une panne :** un rappel par email n'est pas
+programmé pour l'instant présent. `enqueue_checkin_reminders` lui donne un `send_after` décalé
+de 0 à 4 jours, dérivé du hachage de l'identifiant — c'est l'étalement du pic du lundi
+(`v1-10` §2.B). Pour un test, avancer ce `send_after` sur la seule ligne concernée ; le push,
+lui, part à `now()`.
 
 ## 9. Ce qui reste ouvert
 
@@ -423,8 +458,12 @@ Trois assertions du test `15` l'épinglent. Et la base sera **repurgée avant l'
 la question de ce que les comptes existants verront à leur prochain engagement ne se pose
 plus.
 
-- **La sécurité renforcée du push** (jeton d'accès Expo) : recommandée, pas requise pour le
-  premier test.
+**Tranché le 09/09**, et retiré de cette liste : la **sécurité renforcée du push** (jeton
+d'accès Expo) était donnée comme recommandée mais non requise ; elle a été activée avant le
+premier test, et `expo_access_token` est dans Vault. Ce document ne porte donc plus de point
+ouvert — reste la seule échéance du §6.6, qui n'est pas un choix mais une conséquence :
+l'empreinte de signature de Google Play à ajouter à `assetlinks.json` au moment de la
+publication (issue #93).
 
 ## 10. Découpage en PR
 
@@ -450,7 +489,10 @@ Une PR par étage, chacune verte seule ; le push depuis GitHub en un clic après
    date ; et l'icône de notification est dérivée de l'icône monochrome existante, silhouette
    blanche sur transparent, Android n'utilisant que le canal alpha.
 3. **Mise en service** (§7) et le test d'appareil (§8) — pas de code, sauf ce que le test
-   révèle.
+   révèle. *Faite le 09/09.* Le test a bien révélé du code : le plan qui ne se rafraîchissait
+   pas au retour de l'app (§8.1, PR #94), et une régression trouvée au passage — un hook natif
+   appelé sans condition dans le layout racine, page blanche sur **tout** le web (PR #91),
+   d'où le garde-fou de rendu `scripts/verifier-rendu-export.mjs` (PR #92).
 
 ## 11. Ce que `CLAUDE.md` devra dire ensuite
 
