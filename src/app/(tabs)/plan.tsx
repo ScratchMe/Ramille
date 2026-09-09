@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,6 +14,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
 import { formatTonnes } from '@/lib/format';
+import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTrackFocus } from '@/hooks/use-track-focus';
 import { track } from '@/lib/analytics';
 import { ActionCard } from '@/components/plan/action-card';
@@ -114,6 +115,13 @@ export default function Plan() {
   // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
   // jour ne se déduit pas de l'action qu'on vient de toucher — il faut relire le cycle.
   const [refreshKey, setRefreshKey] = useState(0);
+  const rafraichir = useCallback(() => setRefreshKey((cle) => cle + 1), []);
+
+  // **Le plan est la destination du rappel, il doit donc être à jour quand on y arrive.**
+  // Sans ça il ne se chargeait qu'une fois par lancement : appuyer sur une notification avec
+  // l'app en arrière-plan ramenait sur un plan sans la question qui venait de s'ouvrir — la
+  // promesse rompue à l'endroit exact où elle se tient (09/09/2026, vérifié sur appareil).
+  useRafraichirAuRetour(rafraichir);
   // Annonce du rattachement : `null` tant qu'on ne sait pas, une adresse (ou la chaîne vide
   // quand Google ne la remonte pas) quand il y a quelque chose à dire.
   const [rattachement, setRattachement] = useState<string | null>(null);
