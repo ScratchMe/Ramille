@@ -565,6 +565,17 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   utiliser un état de composant inline (écran à plusieurs états visuels) plutôt qu'un
   callback de bouton d'`Alert`. Voir `src/app/connexion/email.tsx` et
   `src/app/connexion/retrouver.tsx`.
+- **Une API de module natif appelée pendant le rendu emporte toute l'app sur web.** Un hook
+  s'exécute au rendu : une garde `Platform.OS` placée dans l'effet arrive trop tard, et une
+  exception dans le layout racine fait tomber l'arbre React entier — page blanche sur
+  **toutes** les routes, pages légales comprises, pendant que le HTML statique est servi en
+  200 avec son titre. Un hook ne peut pas être appelé conditionnellement ; un composant, si :
+  c'est le motif de `RetourDeNotification`, monté sous `{estNatif && …}`. La CI l'a laissé
+  passer en production le 08/09/2026 — `scripts/verifier-rendu-export.mjs` ouvre désormais
+  cinq routes dans un navigateur après l'export et échoue sur une page vide ou une exception
+  non rattrapée (les erreurs d'hydratation restent des avertissements). Troisième garde de la
+  même famille que `cleanUrls` et l'inlining des `EXPO_PUBLIC_*` : ce qui se construit n'est
+  pas ce qui s'affiche.
 - **Une dépendance native nouvelle impose un build**, et il n'y a aucun moyen de s'en rendre
   compte depuis le code : `expo-notifications` (v1-12) est arrivée ainsi. Le jeton d'appareil
   ne s'enregistre jamais par un `insert` — `register_push_token` le **reprend** à son
