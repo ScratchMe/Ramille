@@ -63,6 +63,16 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://exemple.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: cle-factice-pour-le-build
+      # Les deux gardes ci-dessus **lisent** le HTML produit ; aucune ne l'exécute. Le
+      # 08/09/2026 un hook natif appelé au rendu du layout racine a emporté tout l'arbre
+      # React — page blanche sur toutes les routes, avec une CI verte et vingt pages titrées.
+      # Celle-ci ouvre vraiment les pages dans un navigateur, cf. l'en-tête du script.
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/verifier-rendu-export.mjs
+      # Le rappel par email ne porte qu'une URL : Android ne l'ouvre dans l'app que si le
+      # domaine l'y autorise par ce fichier. Absent ou désignant un autre paquet, le lien
+      # retombe dans le navigateur sans que rien ne le signale.
+      - run: node scripts/verifier-assetlinks-export.mjs
 
   db-tests:
     name: Tests base de données (pgTAP)

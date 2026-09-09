@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "fr.ramille.app",
+      "sha256_cert_fingerprints": [
+        "A6:90:22:11:80:98:E5:D3:1D:4F:9F:8D:24:1E:4C:F5:D3:BC:8E:98:7B:CB:F1:65:FB:5D:4E:B9:EB:B0:F3:DF"
+      ]
+    }
+  }
+]
