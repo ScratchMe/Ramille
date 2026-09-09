@@ -576,6 +576,17 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   non rattrapée (les erreurs d'hydratation restent des avertissements). Troisième garde de la
   même famille que `cleanUrls` et l'inlining des `EXPO_PUBLIC_*` : ce qui se construit n'est
   pas ce qui s'affiche.
+- **Le lien du rappel ouvre l'app grâce à un fichier servi par le site, pas par l'app.**
+  `public/.well-known/assetlinks.json` (recopié tel quel dans l'export) autorise nommément
+  `fr.ramille.app` à revendiquer `https://www.ramille.fr/plan`, déclaré en `intentFilters`
+  `autoVerify` dans `app.json`. **La revendication est volontairement étroite** : réclamer tout
+  le domaine ouvrirait aussi `/compte/suppression` et les pages légales dans l'app, alors que
+  Google Play exige précisément qu'elles restent atteignables **sans** elle. Deux façons de
+  casser ça en silence — le fichier qui disparaît de l'export, et l'empreinte de signature qui
+  change : **Google Play resigne l'AAB avec sa propre clé**, donc l'empreinte de production
+  différera de celle du keystore EAS et devra être **ajoutée** au tableau (qui en accepte
+  plusieurs) au moment de la publication, sans retirer la première. `scripts/verifier-assetlinks-export.mjs`
+  garde le reste.
 - **Une dépendance native nouvelle impose un build**, et il n'y a aucun moyen de s'en rendre
   compte depuis le code : `expo-notifications` (v1-12) est arrivée ainsi. Le jeton d'appareil
   ne s'enregistre jamais par un `insert` — `register_push_token` le **reprend** à son

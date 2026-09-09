@@ -345,6 +345,30 @@ canal ; le fichier garde son nom.
 - Le formulaire *Sécurité des données* de Google Play doit déclarer « identifiants
   d'appareil » (v1-10 §3.6) : motif de rejet, pas détail.
 
+### 6.6 Le lien du rappel ouvre l'app quand elle est installée
+
+Ajouté le 09/09 sur retour d'usage : le premier rappel reçu par email ne menait qu'au site.
+
+**Une seule URL, `https://www.ramille.fr/plan`** — celle qui était déjà dans le message.
+Android la route vers l'app quand elle est installée, vers le navigateur sinon, par les
+**App Links** : `intentFilters` `autoVerify` dans `app.json`, et
+`public/.well-known/assetlinks.json` servi par le site, qui autorise nommément le paquet.
+Aucun texte de rappel ne change, et le lien reste cliquable partout, y compris sur un
+ordinateur. Un schéma `ramille://` était l'autre voie et a été écarté : depuis un mail il
+échoue sans repli quand l'app est absente, et la plupart des clients de messagerie le
+bloquent.
+
+**La revendication est étroite, et c'est un choix** : seulement `/plan`, jamais le domaine
+entier. `/compte/suppression` et les pages légales doivent rester atteignables **sans** l'app
+— Google Play l'exige, c'est la raison d'être de cette page (v1-04). Les revendiquer les
+ferait ouvrir dans l'app chez qui l'a installée.
+
+**Deux façons de casser ça sans que rien ne le dise**, d'où `scripts/verifier-assetlinks-export.mjs` :
+le fichier qui disparaît de l'export, et l'empreinte de signature qui ne correspond plus. La
+seconde est certaine à la publication — **Google Play resigne l'AAB avec sa propre clé** :
+l'empreinte de production devra être **ajoutée** au tableau, qui en accepte plusieurs, sans
+retirer celle du keystore EAS qui signe les APK de test.
+
 ## 7. Mise en service — ce que le titulaire fait
 
 Dans l'ordre, et rien ne bloque le code d'avancer entre-temps :
