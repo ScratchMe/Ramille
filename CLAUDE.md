@@ -216,6 +216,20 @@ formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laiss
 natif, le lien arrive hors de l'app (messagerie) et remonte par `Linking.useURL()` dans
 `_layout.tsx` ; le scheme `ramille://` doit donc figurer dans les Redirect URLs Supabase.
 
+**Cette liste de redirections est une frontière de sécurité, pas une commodité de
+configuration.** Elle décide à quelles adresses Supabase accepte de **remettre une session** —
+un lien de connexion renvoie les jetons dans le fragment de l'URL d'arrivée. Une entrée trop
+large y est donc une prise de contrôle de compte : elle portait `https://*.vercel.app/**`
+(nettoyé le 09/09/2026), c'est-à-dire **tout le domaine `vercel.app`**, où n'importe qui
+déploie en trois minutes. Un tiers pouvait demander un lien pour l'adresse de quelqu'un
+d'autre en pointant l'arrivée chez lui : l'email partait bien de Ramille, à la bonne adresse,
+et la session finissait ailleurs. Deux règles qui en découlent : **jamais de joker sur un
+domaine qu'on ne possède pas** — un motif de preview doit porter le suffixe de compte
+(`ramille-*-me-c4a3.vercel.app`), que personne d'autre ne peut créer ; et **une entrée morte
+se retire**, parce qu'elle ne se lit pas « obsolète » mais « autorisé ». Rien dans le code ni
+dans la CI ne voit cette liste : elle vit dans la configuration du projet distant, et c'est
+en la lisant qu'on la vérifie.
+
 ### Base de données
 
 Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1`
