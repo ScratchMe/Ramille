@@ -521,8 +521,10 @@ permanent aurait contredit « pas besoin de compte ».
 
 Rien de tout cela ne se vérifie sur l'export web :
 
-- **Le retour matériel Android depuis `/plan`** doit quitter l'app. C'est le comportement
-  attendu d'une racine à onglets ; ne pas le « corriger » par réflexe.
+- ~~**Le retour matériel Android depuis `/plan`** doit quitter l'app.~~ **Vérifié le
+  09/09/2026** : il quitte bien l'app. C'est le comportement attendu d'une racine à onglets ;
+  ne pas le « corriger » par réflexe — la tentation reviendra à chaque fois que quelqu'un le
+  prendra pour une navigation manquante.
 - **TalkBack** doit annoncer « Plan, onglet, sélectionné ». Les attributs viennent du
   navigateur, ils n'ont pas été entendus.
 - **La carte de période calme** est posée au-dessus du cap de la saison, donc à deux blocs d'un

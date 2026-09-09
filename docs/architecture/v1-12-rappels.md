@@ -431,6 +431,15 @@ et un compte créé pour l'occasion. **Ce qui a été vérifié bout en bout :**
   navigateur. Le fichier est servi en `200 application/json` sans redirection, ce qu'Android
   exige.
 - **La réponse** referme la boucle : le point est passé à `answered`.
+- **La suppression du compte** (hors chantier, exercée dans la foulée sur le compte de test) :
+  la cascade a tout emporté — bilan, résultats, cycle, actions, points, file d'envoi, jeton
+  d'appareil — **zéro orphelin dans les onze tables**, et rien qui survive dans `usage_events`.
+  C'est la première fois que `delete_my_account` est exercée sur des données réelles plutôt
+  qu'en test, et elle confirme la doctrine : **une seule ligne effacée, `auth.users`, et la
+  cascade fait le reste**. La session anonyme fraîche qui apparaît juste après n'est pas un
+  reliquat, c'est `ensureSession()` qui rouvre l'app sur l'onboarding — exactement ce que
+  `src/types/compte-suppression.ts` décrit quand il refuse de traiter une session anonyme vide
+  comme un compte à supprimer.
 
 **Le défaut que ce test a révélé, et il n'était visible d'aucune autre façon.** Appuyer sur la
 notification ouvrait le plan **sans la question**. Elle existait pourtant en base. Le plan ne
