@@ -34,8 +34,15 @@ const DIST = process.argv[2] ?? 'dist';
 // Un marqueur par route : un fragment de texte que la page ne peut pas afficher si elle n'a
 // pas rendu. Choisis dans du contenu stable — un titre de section, une phrase de Ramille —
 // jamais un libellé décoratif qui bougera au prochain ajustement de copie.
+//
+// `marqueur: null` là où le contenu **dépend du réseau** : la racine ouvre une session avant
+// de router, et l'export de CI est construit avec une configuration Supabase factice — elle y
+// affiche donc son écran d'échec de démarrage, ce qui est le comportement correct. Y épingler
+// un texte reviendrait soit à figer une copie d'erreur, soit à faire échouer la CI pour une
+// raison étrangère au rendu. La page doit seulement ne pas être vide, et c'est bien ce que ce
+// garde-fou protège.
 const ROUTES = [
-  { chemin: '/', marqueur: 'Ramille' },
+  { chemin: '/', marqueur: null },
   { chemin: '/onboarding', marqueur: 'Moi, c’est Ramille' },
   { chemin: '/confidentialite', marqueur: 'Politique de confidentialité' },
   { chemin: '/conditions', marqueur: 'Conditions d’utilisation' },
@@ -119,7 +126,7 @@ for (const { chemin, marqueur } of ROUTES) {
 
     if (!texte) {
       echecs.push(`${chemin} : la page est vide.${bloquantes[0] ? ` Cause probable — ${bloquantes[0].slice(0, 220)}` : ''}`);
-    } else if (!texte.includes(marqueur)) {
+    } else if (marqueur && !texte.includes(marqueur)) {
       echecs.push(`${chemin} : « ${marqueur} » est absent de la page. Rendu : « ${texte.slice(0, 120)}… »`);
     }
     if (bloquantes.length > 0) {
