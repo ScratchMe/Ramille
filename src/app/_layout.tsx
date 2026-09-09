@@ -6,13 +6,13 @@ import {
   useFonts,
 } from '@expo-google-fonts/spline-sans';
 import * as Linking from 'expo-linking';
-import * as Notifications from 'expo-notifications';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
 import { ConfigurationManquante } from '@/components/configuration-manquante';
+import { RetourDeNotification } from '@/components/retour-de-notification';
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
 import { createSessionFromUrl } from '@/lib/auth';
@@ -85,20 +85,6 @@ export default function RootLayout() {
     });
   }, [urlEntrante]);
 
-  // Appuyer sur un rappel ouvre l'app. Dans le cas courant il n'y a **rien à faire** : la
-  // racine route déjà vers le plan dès qu'un bilan existe, et le point y est en tête (v1-11
-  // flux 4). Ce hook ne sert qu'au cas où l'app était déjà ouverte ailleurs — sur « Toi »,
-  // dans le questionnaire — où personne ne ramènerait au plan sans lui.
-  //
-  // `useLastNotificationResponse` plutôt qu'un listener : il couvre aussi le démarrage à
-  // froid, où l'événement est déjà passé quand l'écouteur s'installerait.
-  const reponseNotification = Notifications.useLastNotificationResponse();
-  useEffect(() => {
-    if (!estNatif || !reponseNotification) return;
-    const cible = reponseNotification.notification.request.content.data?.url;
-    if (cible === '/plan') router.navigate('/plan');
-  }, [reponseNotification]);
-
   // Dénominateur de tous les entonnoirs. Émis après `ensureSession()` dans l'ordre des
   // effets, mais sans dépendre de lui : si la session n'est pas encore là, `track` renonce
   // et l'événement est perdu — un défaut assumé, préférable à une file d'attente.
@@ -113,6 +99,10 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <TitreDePage />
+      {/* **Monté seulement en natif, et c'est structurel** : ce composant appelle un hook
+          d'`expo-notifications` qui n'existe pas sur web, et une exception au rendu ici
+          emporte tout l'arbre — page blanche sur toutes les routes. Voir son en-tête. */}
+      {estNatif && <RetourDeNotification />}
       {/* **Avant la pile, pas à l'intérieur.** Chaque écran importe `@/lib/supabase` : rendre
           l'écran d'erreur comme une route de plus le ferait précéder par le chargement d'un
           module qui, justement, ne peut pas fonctionner. Ici, aucune route n'est montée —
