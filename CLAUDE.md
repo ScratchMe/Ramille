@@ -172,12 +172,19 @@ décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pi
 plutôt que d'insérer un point à la main.
 
 **Feuille de route courante : `v1-13-audit-et-chantiers.md`** (audit du 09/09/2026, 283 constats
-contre-vérifiés, 53 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une issue GitHub par chantier (#99 à #151) ; inventaire
-complet en `docs/audit/2026-09-09-inventaire.md`). **Le lot 2 passe d'abord par une session Claude Design**
-(décidée le 10/09/2026) : son brief est `docs/design/v1-14-boucle-engagement/BRIEF.md`, et il donne au
-canvas mandat de faire évoluer le design existant dans les limites déjà posées (aucun jugement, aucune
-mécanique d'échec, la voix de Ramille) ; C2.1, C2.4, C2.7, C2.8, C2.10, C2.12 et C2.13 attendent le
-canvas pour leur partie écran, pas pour leur partie serveur. Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
+contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une
+issue GitHub par chantier — #99 à #151 et #153 — et **le plan de livraison en huit vagues en §2.3**, dont
+l'issue de suivi #154 est la vue cochable ; inventaire complet en `docs/audit/2026-09-09-inventaire.md`).
+**Le lot 2 a son canvas Claude Design, livré le 10/09/2026** : `docs/design/v1-14-boucle-engagement/`
+(brief, HANDOFF du designer, captures, README qui consigne ce que l'implémentation corrige par rapport au
+canvas) et son document d'implémentation **`v1-14-boucle-engagement.md`** — la copie (§3, seule source
+des nouvelles répliques de Ramille et des textes produit), la base (§4), les composants et leur chantier
+propriétaire (§5), les quatre jetons de couleur (§6), les accessoires de saison de la mascotte (§7), les
+écarts assumés par rapport au canvas (§10). Un chantier du lot 2 lit v1-14 avant v1-13 pour sa partie
+écran. Le **design system** formalisé à cette occasion vit dans `docs/design/design-system/` et
+s'invoque comme skill (`ramille-design`, `.claude/skills/ramille-design/SKILL.md`) ; c'est une
+photographie du dépôt, pas une source de vérité — en cas d'écart, le code et ce fichier gagnent, et son
+catalogue reprend des écrans du handoff V1 qui n'existent plus (mot de passe). Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
 §4 — audit du 04/09/2026, 7 étapes (facteurs d'émission faux → boucle d'engagement cassée → suivi
 dans la durée qui manque) — est entièrement livré. Son §1 corrige deux erreurs de chiffre documentées ailleurs
 comme des choix assumés : l'API Impact CO2 **distingue bien** court/moyen/long-courrier (la

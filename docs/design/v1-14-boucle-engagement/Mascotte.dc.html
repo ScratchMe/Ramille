@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ svg }}</span>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:120,&quot;height&quot;:120},&quot;mood&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;calm&quot;,&quot;happy&quot;,&quot;encouraging&quot;,&quot;thinking&quot;,&quot;resting&quot;],&quot;default&quot;:&quot;calm&quot;,&quot;tsType&quot;:&quot;'calm'|'happy'|'encouraging'|'thinking'|'resting'&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:42,&quot;min&quot;:16,&quot;max&quot;:200,&quot;tsType&quot;:&quot;number&quot;},&quot;tilt&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0,&quot;min&quot;:-12,&quot;max&quot;:12,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;},&quot;season&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;hiver&quot;,&quot;printemps&quot;,&quot;ete&quot;,&quot;automne&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;''|'hiver'|'printemps'|'ete'|'automne'&quot;}}">
+// Port de src/types/mascot.ts (géométrie) + accessoires de saison proposés (v1-14 C2.13).
+const LEAF = 'M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z';
+const FACE = {
+  calm: { eyes: 'dots', eyeSpread: 11, eyeShiftX: 0, eyeY: 50, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 0, mouthHalfWidth: 8, mouthY: 62, mouthDepth: 3, blushSpread: 17, blushY: 60, blushRadius: 5, blushOpacity: 0.55 },
+  happy: { eyes: 'happy', eyeSpread: 11, eyeShiftX: 0, eyeY: 49, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: -2.5, mouthHalfWidth: 10, mouthY: 60, mouthDepth: 6, blushSpread: 17, blushY: 59, blushRadius: 5.4, blushOpacity: 0.6 },
+  encouraging: { eyes: 'soft', eyeSpread: 11, eyeShiftX: 0, eyeY: 51, eyeRadius: 4.2, eyeArcHalfWidth: 4, eyeArcDepth: 1.5, mouthHalfWidth: 7, mouthY: 63, mouthDepth: 1.5, blushSpread: 17, blushY: 60, blushRadius: 5, blushOpacity: 0.55 },
+  thinking: { eyes: 'dots', eyeSpread: 11, eyeShiftX: -1, eyeY: 47, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 0, mouthHalfWidth: 5, mouthY: 63, mouthDepth: 0, blushSpread: 17, blushY: 61, blushRadius: 4.6, blushOpacity: 0.4 },
+  resting: { eyes: 'soft', eyeSpread: 11, eyeShiftX: 0, eyeY: 50, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 2.5, mouthHalfWidth: 6, mouthY: 63, mouthDepth: 1.5, blushSpread: 17, blushY: 60, blushRadius: 5, blushOpacity: 0.5 },
+};
+const r = (v) => Math.round(v * 100) / 100;
+const quad = (cx, hw, y, d) => `M${r(cx - hw)},${r(y)} Q${r(cx)},${r(y + d * 2)} ${r(cx + hw)},${r(y)}`;
+function geometry(mood, size) {
+  const f = FACE[mood] || FACE.calm;
+  const k = size >= 42 ? 1 : Math.min(42 / Math.max(size, 1), 1.5);
+  const kp = 1 + (k - 1) * 0.2;
+  const eyeY = 58 + (f.eyeY - 58) * kp, mouthY = 58 + (f.mouthY - 58) * kp, blushY = 58 + (f.blushY - 58) * kp;
+  const spread = r(f.eyeSpread * kp), shift = f.eyeShiftX * kp;
+  const sides = [-1, 1];
+  return {
+    visible: size >= 28, eyes: f.eyes, k, kp,
+    eyeCircles: sides.map((s) => ({ cx: r(50 + s * spread + shift), cy: r(eyeY), r: r(f.eyeRadius * k) })),
+    eyeArcs: sides.map((s) => quad(50 + s * spread + shift, f.eyeArcHalfWidth * k, eyeY, f.eyeArcDepth * k)),
+    eyeStroke: r(3.4 * k), mouth: quad(50, f.mouthHalfWidth * k, mouthY, f.mouthDepth * k), mouthStroke: r(3.2 * k),
+    blush: sides.map((s) => ({ cx: 50 + s * f.blushSpread, cy: r(blushY), r: r(f.blushRadius * kp) })),
+    blushOpacity: f.blushOpacity, vein: r(4 * k),
+  };
+}
+// Accessoires — positions et épaisseurs en unités de viewBox à la taille nominale, dérivées par k comme le visage.
+function accessory(season, g, mood) {
+  const h = React.createElement;
+  const ACC = 'var(--m-accessory, #E4EFE8)';
+  if (season === 'hiver') {
+    // Bonnet : calotte dans le ton chaud, revers clair, pompon du ton chaud cerné de clair — il se lit sur blanc comme sur noir.
+    const WARM = 'var(--m-blush-autumn, #C99A6B)';
+    return h('g', { key: 'acc' },
+      h('path', { d: 'M31,34 C37,24 44,18 50,15 C56,18 63,24 69,34 C62,29 56,27 50,27 C44,27 38,29 31,34 Z', fill: WARM }),
+      h('path', { d: 'M31,34 C38,29 44,27 50,27 C56,27 62,29 69,34', stroke: ACC, strokeWidth: r(4.4 * g.k), strokeLinecap: 'round', fill: 'none' }),
+      h('circle', { cx: 50, cy: 12, r: r(5.6 * g.k), fill: ACC }),
+      h('circle', { cx: 50, cy: 12, r: r(3.9 * g.k), fill: WARM }));
+  }
+  if (season === 'printemps') {
+    // Bourgeon : trois pétales clairs au sommet, sur la nervure.
+    return h('g', { key: 'acc' },
+      [[-4.2, 18.5], [4.2, 18.5], [0, 14]].map(([dx, y], i) => h('circle', { key: i, cx: 50 + dx, cy: y, r: r(3 * g.k), fill: ACC })),
+      h('circle', { cx: 50, cy: 17.5, r: r(1.8 * g.k), fill: 'var(--m-blush-autumn, #C99A6B)' }));
+  }
+  if (season === 'ete') {
+    // Goutte de rosée, en bas à droite du visage.
+    return h('g', { key: 'acc' },
+      h('path', { d: 'M64,70 C64,66 67,62 67,62 C67,62 70,66 70,70 C70,71.8 68.6,73 67,73 C65.4,73 64,71.8 64,70 Z', fill: '#FFFFFF', opacity: 0.85 }),
+      h('circle', { cx: 66, cy: 68.5, r: r(0.9 * g.k), fill: 'var(--m-accessory, #E4EFE8)' }));
+  }
+  return null;
+}
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const mood = p.mood || 'calm';
+    const size = Number(p.size) || 40;
+    const tilt = Math.max(-12, Math.min(12, Number(p.tilt) || 0));
+    const season = p.season || null;
+    const g = geometry(mood, size);
+    const h = React.createElement;
+    const ink = 'var(--m-ink, #131612)';
+    const blushColor = season === 'automne' ? 'var(--m-blush-autumn, #C99A6B)' : 'var(--m-blush, #A9C8B6)';
+    const blushOpacity = season === 'automne' ? Math.min(0.9, g.blushOpacity + 0.25) : g.blushOpacity;
+    const blushScale = season === 'automne' ? 1.18 : 1;
+    const id = 'leaf-' + Math.abs((mood + size + season + tilt).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) + '-' + (this._uid || (this._uid = Math.floor(Math.random() * 1e6)));
+    const svg = h('svg', { width: size, height: size, viewBox: '0 0 100 100', style: { transform: `rotate(${tilt}deg)`, display: 'block' } },
+      h('defs', null, h('clipPath', { id }, h('path', { d: LEAF }))),
+      h('path', { d: LEAF, fill: 'var(--m-leaf, #1F6F4A)' }),
+      h('path', { d: 'M50,18 C46,26 46,32 50,38', stroke: 'var(--m-vein, #E4EFE8)', strokeWidth: g.vein, strokeLinecap: 'round', fill: 'none', opacity: 0.55 }),
+      g.visible && h('g', { clipPath: `url(#${id})` },
+        g.blush.map((b, i) => h('circle', { key: 'b' + i, cx: b.cx, cy: b.cy, r: r(b.r * blushScale), fill: blushColor, opacity: blushOpacity })),
+        g.eyes === 'dots'
+          ? g.eyeCircles.map((e, i) => h('circle', { key: 'e' + i, cx: e.cx, cy: e.cy, r: e.r, fill: ink }))
+          : g.eyeArcs.map((d, i) => h('path', { key: 'e' + i, d, stroke: ink, strokeWidth: g.eyeStroke, strokeLinecap: 'round', fill: 'none' })),
+        h('path', { d: g.mouth, stroke: ink, strokeWidth: g.mouthStroke, strokeLinecap: 'round', fill: 'none' })),
+      g.visible && season ? accessory(season, g, mood) : null);
+    return { svg };
+  }
+}
+</script>
+</body>
+</html>

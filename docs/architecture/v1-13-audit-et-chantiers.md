@@ -13,6 +13,12 @@
 
 ## 0. Comment lire ce document
 
+> **10/09/2026, soir — le canvas Claude Design du lot 2 est livré** (`docs/design/v1-14-boucle-engagement/`)
+> et son document d'implémentation est `v1-14-boucle-engagement.md`. Les chantiers du lot 2 portent
+> désormais un paragraphe **Design (canvas v1-14)** qui renvoie à la planche et à la section de v1-14
+> qui les concernent ; C4.6 est relevé en P2 ; C2.14 (le socle « saison » côté client) est ajouté. L'ordre
+> de livraison définitif est en §2.3.
+
 ### 0.1 D'où il vient
 
 Treize lecteurs ont audité le dépôt par zone (racine et onboarding, questionnaire, restitution,
@@ -156,7 +162,8 @@ reçoit un bandeau daté au moment où le chantier correspondant est livré, jam
 | C2.10 | Le signal « deux points consécutifs » | P2 | petit | C2.3 | — |
 | C2.11 | Le lien du rappel ouvert sur un autre appareil | P2 | petit | — | D17 |
 | C2.12 | Variantes des répliques de check-in | P2 | petit | C2.4 | D12 |
-| C2.13 | La mascotte porte la saison | P2 | moyen | C2.8, canvas v1-14 | décision du 10/09 (hors audit) |
+| C2.13 | La mascotte porte la saison | P2 | moyen | C2.14, C2.8 | décision du 10/09 (hors audit) |
+| C2.14 | Le socle « saison » côté client (`src/types/saison.ts`) | P2 | petit | — | — |
 | C3.1 | La mobilité contrainte est lue par la restitution | P3 | petit | — | — |
 | C3.2 | D'où vient le chiffre : source, périmètre, une équivalence | P3 | moyen | — | — |
 | C3.3 | Vols : aller-retour, hypothèses affichées | P3 | petit | — | — |
@@ -174,7 +181,7 @@ reçoit un bandeau daté au moment où le chantier correspondant est livré, jam
 | C4.3 | Déplacements professionnels | P4 | grand | — | D7 |
 | C4.4 | Vélo à assistance électrique, RER, autocar, occupation longue distance | P4 | grand | — | — |
 | C4.5 | Hors-ligne : ouvrir sur le dernier plan connu ; session expirée | P4 | grand | C1.4 | — |
-| C4.6 | Voir d'autres pistes, premier pas, cadrage identitaire | P4 | moyen | C2.7 | D18, D16 |
+| C4.6 | Voir d'autres pistes, premier pas, cadrage identitaire | **P2** (relevé le 10/09, dessiné en v1-14) | moyen | C2.8, C2.7 | D18, D16 |
 | C4.7 | Retirer un bilan erroné | P4 | moyen | — | — |
 | C4.8 | Comparaison même saison, un an après | P4 | moyen | C2.8 | — |
 
@@ -186,12 +193,14 @@ rebaser dans l'ordre indiqué.
 
 | Fichier | Chantiers |
 |---|---|
-| `src/app/(tabs)/plan.tsx` | C1.4, C1.6, C1.8, C2.2, C2.6, C2.7, C2.8, C2.11, C3.8 |
+| `src/app/(tabs)/plan.tsx` | C1.4, C1.6, C1.8, C2.2, C2.6, C2.7, C2.8, C2.11, C3.8, C4.6 |
 | `src/app/(tabs)/suivi/bilan.tsx` | C1.8, C2.7, C3.1, C3.2, C3.10, C3.11 |
 | `src/app/(tabs)/suivi/index.tsx` | C1.4, C1.7, C1.8, C2.7, C2.8 |
 | `src/components/checkin-card.tsx` | C1.4, C1.12, C2.1, C2.4, C2.6 |
 | `src/constants/mascotte.ts` | C2.4, C2.7, C2.12, C3.9, C3.10 |
 | `src/types/mascot.ts`, `src/components/mascot.tsx` | C2.13 |
+| `src/types/saison.ts` | C2.14 (le crée), puis C2.7, C2.8, C2.13 le consomment |
+| `src/components/checkin-card.tsx` (suite) | C2.1 → C2.4 → C2.10 → C2.12, dans cet ordre |
 | `src/app/bilan/index.tsx`, `src/types/bilan.ts` | C1.1, C1.3, C3.3, C3.4 |
 | `src/lib/format.ts` | C1.8 |
 | Fonctions SQL de génération de check-ins (`generate_*_checkins`, `enqueue_checkin_reminders`) | C2.1, C2.3, C2.5, C2.9 |
@@ -200,24 +209,34 @@ rebaser dans l'ordre indiqué.
 | `src/app/confidentialite.tsx`, `conditions.tsx`, `compte/suppression.tsx` | C0.6, C1.10, C2.9 |
 | `CLAUDE.md` | C0.7, C1.13, et tout chantier qui change un comportement décrit |
 
-**Vagues suggérées** (chaque vague est parallélisable en interne) :
+### 2.3 Plan de livraison — arrêté le 10/09/2026, canvas v1-14 en main
 
-1. **Vague 1** — C0.1, C0.2, C0.3, C0.4, C0.6, C0.7 ; puis C0.5.
-2. **Vague 2** — C1.1, C1.2, C1.3, C1.5, C1.9, C1.10, C1.11, C1.12 (fichiers disjoints).
-3. **Vague 3** — C1.4, C1.6, C1.7, C1.8, C1.13 (tous touchent les écrans d'onglets : les enchaîner).
-4. **Vague 4** — C2.2, C2.3, C2.5, C2.6, C2.11 (après arbitrages D2 et D5).
-5. **Vague 5** — C2.1, C2.4, C2.7, C2.8, C2.9, C2.10, C2.12, C2.13 (après la vague 4 ; C2.12 après
-   C2.4 ; C2.13 après C2.8 et le canvas v1-14).
-6. **Vague 6** — le lot 3 : C3.1, C3.2, C3.3, C3.7, C3.10, C3.11, C3.12 sans arbitrage ; C3.4,
-   C3.5, C3.6, C3.8, C3.9 ensuite (C3.4 à C3.6 touchent `recompute_assessment_results` et se
-   font **en une seule migration** si possible, pour ne recalculer la suite pgTAP qu'une fois).
-7. **Vague 7** — le lot 4, chantier par chantier, chacun précédé d'une décision écrite.
+Huit vagues. Une vague est parallélisable en interne sauf mention ; on ne commence une vague
+qu'après la précédente, parce que chacune touche des fichiers que la suivante relit. Une issue
+par chantier, une PR par issue (`Closes #n`), la ligne de §10 cochée à la fin ; l'issue de suivi
+[#154](https://github.com/ScratchMe/TraceVerte/issues/154) est la vue cochable de ce tableau. Effort : petit
+≈ une demi-journée, moyen ≈ une à deux journées, grand au-delà.
 
-**Le lot 2 passe d'abord par un canvas Claude Design** (décision du 10/09/2026 ; brief :
-`docs/design/v1-14-boucle-engagement/BRIEF.md`, qui donne aussi au canvas mandat de proposer des
-évolutions du design existant, dans les limites de §8). La partie **écran** de C2.1, C2.4, C2.7,
-C2.8, C2.10, C2.12 et C2.13 attend sa direction ; leur partie **serveur** — migrations, RPC,
-générateurs de points — peut partir avant, comme les vagues 1 à 3.
+| Vague | Chantiers | Parallèle ? | Ce qu'elle livre | Effort |
+|---|---|---|---|---|
+| **1 — Sécurité et exploitation** | C0.1, C0.2, C0.3, C0.4, C0.6, C0.7 ; puis C0.5 | oui, C0.5 après | Le bloqueur (Redirect URLs), la sauvegarde, les droits, un filet d'erreur, la rétention, le registre. **Avant toute publication sur Play.** | 4 petits, 3 moyens |
+| **2 — Bugs silencieux, fichiers disjoints** | C1.1, C1.2, C1.3, C1.5, C1.9, C1.10, C1.11, C1.12 | oui | Plus de bilan fantôme ni de double session, le questionnaire aux bords, la connexion qui dit vrai, l'accessibilité, Play, le web, la réponse au point par RPC (socle de C2.4). | 4 petits, 4 moyens |
+| **3 — Bugs silencieux, écrans d'onglets** | C1.4, C1.6, C1.7, C1.8, C1.13 | **non** — enchaînés, mêmes fichiers | Réseau coupé dit vrai, la feuille des rappels ne se ferme plus sur rien, le suivi se rafraîchit, le chiffre affiché juste, la documentation à jour. **Jalon : publiable sur Play.** | 4 petits, 1 moyen |
+| **4 — Lot 2, socle et serveur** | C2.14, C2.6 d'abord (une heure chacun) ; puis C2.3 → C2.5 (générateurs, enchaînés) ; C2.2 ; C2.11 ; C2.9 après C0.5 | en partie | La saison côté client, la forme insérable, la période écoulée, les bonnes personnes dans chaque boucle, l'engagement qui survit et se reconduit, le rappel ouvert ailleurs, les rappels qui s'espacent. Rien de tout cela n'attendait le canvas. | 3 petits, 4 moyens |
+| **5 — Lot 2, le point** | C2.1 → C2.4 → C2.10 → C2.12 | **non** — même fichier, cet ordre | Le point qui nomme l'action, trois réponses, la carte qui reste, le second renforcement, les variantes. Planches A1 à A3. | 2 moyens, 2 petits |
+| **6 — Lot 2, la saison et le suivi** | `plan.tsx` : C2.8 puis C4.6 ; suivi : C2.7 puis C3.1 ; C2.13 ; C3.9 | trois files parallèles, séquentielles en interne | La fin et l'ouverture de saison, les pistes et le premier pas, le suivi dans la durée, la restitution d'un re-bilan, la mascotte saisonnière, la reprise de bilan. Planches B à G et Saisons. **Jalon : la boucle existe d'une saison à l'autre.** | 5 moyens, 1 petit |
+| **7 — Lot 3 restant** | C3.2, C3.3, C3.7, C3.10 (ce que C2.2 n'a pas déjà fait), C3.11, C3.12 ; puis C3.4 + C3.5 + C3.6 **en une seule migration** ; puis C3.8 | oui, puis non | La source du chiffre, les hypothèses affichées, le ton, les tests ; l'intermodal, le covoiturage des loisirs, la tranche haute ; le plan plausible. | 4 petits, 3 moyens, 2 grands |
+| **8 — Lot 4** | C4.1, C4.2, C4.3, C4.4, C4.5, C4.7, C4.8 | chantier par chantier | Chacun précédé d'une page de décision. | 4 grands, 3 moyens |
+
+Trois règles pour distribuer :
+
+- **Un agent par chantier, jamais deux chantiers d'une même file en même temps** (§2.2 dit
+  quelles files existent). Deux chantiers de files différentes peuvent partir le même jour.
+- **Un chantier du lot 2 lit `v1-14` avant `v1-13`** pour sa partie écran : la copie (§3), la base
+  (§4), les composants et leur propriétaire (§5), les jetons (§6). Il ne crée pas un composant dont
+  il n'est pas propriétaire ; il attend la PR du propriétaire.
+- **Une PR qui touche un point de §8 le dit dans sa description**, et toute PR qui change un
+  comportement décrit dans CLAUDE.md met CLAUDE.md à jour dans la même PR.
 
 ## 3. Lot 0 — Sécurité, exploitation, durée du projet
 
@@ -908,8 +927,10 @@ incohérente refusée ; test 17 : quota de jetons.
 
 C'est le lot qui fait exister la durée. Les cinq coupures identifiées (§0.2) se traitent dans
 l'ordre : d'abord ce que le check-in **dit** et **mesure** (C2.1, C2.3, C2.4, C2.5, C2.6), ensuite
-ce qui **survit** (C2.2), puis ce qui **se voit** (C2.7, C2.8), enfin ce qui **part** (C2.9, C2.10, C2.11), ce qui **répond** (C2.12), et ce qui **se voit sans
-un chiffre** (C2.13). Les moments d'écran de ce lot se dessinent d'abord (canvas v1-14, §2.2).
+ce qui **survit** (C2.2), puis ce qui **se voit** (C2.7, C2.8), enfin ce qui **part** (C2.9, C2.10, C2.11), ce qui **répond** (C2.12), ce qui **se voit sans
+un chiffre** (C2.13), et le socle que trois d'entre eux partagent (C2.14). **Le canvas v1-14 est
+livré** : chaque chantier ci-dessous porte un paragraphe *Design (canvas v1-14)* qui dit la
+planche, la section de `v1-14-boucle-engagement.md` et ce que le canvas a fixé. L'ordre est en §2.3.
 
 ### C2.1 — Le check-in connaît l'action engagée
 
@@ -947,6 +968,16 @@ Pour le poste voyages, « changer de mode » est hors sujet quand l'action est d
 4. La réponse reste binaire (C2.4 ajoute l'état neutre), aucun décompte, aucun « tenu / pas tenu ».
 5. Notification : le sujet en tête du corps (A12-21) : « Ton trajet domicile-travail : mardi ou
    jeudi, l'as-tu fait à vélo ? ».
+
+**Design (canvas v1-14).** Planches A1, A2a, A2b, A3 (`captures/A1-point-avec-engagement.png`
+et suivantes) ; `v1-14` §3.2 pour la copie exacte, §4.2 pour la base, §5 pour `CheckinCard`. Ce que
+le canvas fixe : un `question_kind` figé à la génération (`engagement` / `generique` / `maintien` /
+`occasion`), un `question_template` par gabarit d'action (« {jours}, as-tu fait ce trajet à
+vélo ? ») composé par `checkin_question` en SQL et son jumeau `src/types/checkin.ts` ; en-tête
+« Point de la semaine · lundi 14 sept. » ; la question d'occasion des voyages nomme le mois écoulé
+(« En septembre, … ») ; la notification met le sujet en tête. C2.1 pose la structure de la carte
+(question, `question_kind`, deux boutons avec `accessibilityHint`) ; C2.4, C2.10 et C2.12 la
+complètent **dans cet ordre**, même fichier.
 
 **Ne pas faire.** Indexer la **génération** de la boucle sur l'engagement (la boucle existe avec ou
 sans engagement, `v1-12` §3). Nommer les jours de façon qui se lise « tu devais ».
@@ -991,6 +1022,15 @@ personne ne relit jamais un cycle passé. La garde d'idempotence compare un horo
 5. Plan : sélectionner `period_end` et, si le cycle affiché est périmé, le dire en bandeau sans
    masquer l'action engagée (ne pas retomber sur `pending`).
 
+**Design (canvas v1-14).** Planches B2 et B3 ; `v1-14` §4.3 pour l'archive et la reconduction,
+§5 pour `ActionCard`. Ce que le canvas fixe : l'étiquette devient « TON ENGAGEMENT » (C3.10 ne le
+refait pas) et porte le suffixe « · RECONDUIT » quand `plan_actions.carried_over_from` est posé ;
+après « Choisir une autre », l'ancienne action reste en bas du plan, estompée (opacité 0,72),
+sur-titre « Cet automne », « Reste dans ton suivi, le mardi et le jeudi. » ; l'engagement orphelin
+après re-bilan se dit une fois, dans un encart discret : « Ton plan a changé avec ton nouveau
+bilan. L'action que tu suivais n'y est plus ; elle reste dans ton suivi. » + « Compris ».
+`commit_plan_action` gagne `p_replace` (C4.6 s'en sert).
+
 **Tests.** pgTAP : s'engager, resoumettre un bilan le même jour, l'engagement est conservé ;
 changer de saison, l'engagement est reconduit ; template disparu → archive.
 
@@ -1014,6 +1054,12 @@ lieu. Idem « ce mois-ci » le 1er. Le libellé hebdomadaire n'a pas d'année.
 2. Sur l'écran, ajouter l'année aux libellés hebdomadaires des années passées à partir de
    `periodStart` (ne pas réécrire les libellés snapshotés).
 3. Mettre à jour les assertions des tests qui épinglent « cette semaine » et « Semaine du ».
+
+**Design (canvas v1-14).** Planches A2a et A2b. Le passé : « La semaine dernière, as-tu changé
+de mode de transport pour ton trajet domicile-travail ? » ; la boucle mensuelle **nomme le mois
+écoulé** (« En septembre, … », troisième réponse « Pas de voyage en septembre »), correction du
+canvas qui écrivait « Ce mois-ci » (`v1-14` §10). Le libellé de période à l'écran : « Point de la
+semaine · lundi 14 sept. » / « Point du mois · septembre ».
 
 **Ne pas faire.** Déplacer l'envoi (v1-12 §2.8 reste).
 
@@ -1040,6 +1086,16 @@ de série cassée que le produit refuse.
 5. Le renforcement après réponse persiste le temps de la période : relire aussi les points
    `answered` de la période courante et rendre une carte « répondue » (ligne de Ramille + période)
    à la place de la question, sans compteur.
+
+**Design (canvas v1-14).** Planches A1, A3 ; `v1-14` §4.1 et §5. La troisième réponse est un
+`TextLink` `small` `textTertiaire` centré sous les deux boutons, cible 44 : « Pas de trajet cette
+semaine » / « Pas de voyage en septembre ». Ramille répond une attente (`checkinSansObjet`, deux
+variantes par boucle, `v1-14` §3.1), visage `calm`. **Précision sur le schéma** : `response_kind`
+est la vérité, `response` est dérivée (`true` / `false` / `null` pour sans objet), et tout ce qui
+lit les points répondus filtre sur `status = 'answered'` — c'est le filtre qu'il faut changer, pas
+la valeur. La carte répondue **reste jusqu'au prochain point** avec le retour de Ramille et le pied
+« Répondu lundi. Prochain point : lundi 21 sept. » (small tertiaire) ; fond `backgroundElement`
+une fois répondue.
 
 **Tests.** pgTAP : les trois valeurs ; `analytics.engagement_by_segment` inchangée pour `oui`/`non`.
 Jest : `suivi.test.ts` sur le comptage.
@@ -1073,6 +1129,13 @@ domicile-travail () ».
    `household_vehicles = '0'`, retomber sur les transports en commun pour le résiduel (A7-13).
 3. Bilan à zéro : poste dominant = celui où quelque chose est déclaré, jamais de parenthèse vide.
 
+**Design (canvas v1-14).** Planche A2a. **La question de maintien est retenue** (le canvas a
+tranché la question ouverte du brief) : « La semaine dernière, ton trajet s'est-il fait à vélo ? »
+(« … à pied ? » pour la marche), `question_kind = 'maintien'`. Son « Oui » reçoit `checkinOui` ; son
+« Non » reçoit `maintienNon.velo` / `maintienNon.marche` — « Noté. Le vélo reste ton trajet ; une
+semaine autrement n'y change rien. » — visage `calm`, jamais `checkinNon`. L'alternative « pas de
+point » est écartée (page Écarts).
+
 **Tests.** pgTAP : cycliste → pas de point hebdo (ou point de maintien) ; sédentaire → pas de
 point mensuel ; loisirs rares → aucune action `leisure` ; scénario total nul. Recalculer par
 requête toutes les assertions chiffrées touchées.
@@ -1101,6 +1164,12 @@ l'écran ; le détail des actions compte des jours et les appelle des trajets.
    questionnaire ; consigner l'écart au handoff (« Weekend et loisirs »).
 5. Détail des actions : « Sur tes 5 jours de trajet par semaine. » ; relire les libellés « un trajet
    sur cinq » qui désignent en réalité un jour sur cinq.
+
+**Design (canvas v1-14).** Toutes les planches utilisent la forme insérable (« ton trajet
+domicile-travail », « tes sorties du week-end », « tes voyages ») et l'intro du plan « Deux actions,
+sur d'autres postes que ton trajet domicile-travail. » (F2). L'en-tête du questionnaire dit
+« Loisirs du week-end », pas « Weekend et loisirs » (planche G, corrigée — `v1-14` §10). Petit et
+partagé : **à livrer en premier dans la vague 4**, avec C2.14.
 
 **Tests.** `plan.test.ts` : la table des formes.
 
@@ -1147,6 +1216,20 @@ et pose une mascotte souriante — absente du canvas — au-dessus d'une colonne
    aux bornes, utilisé par les deux écrans ; une phrase d'horizon 2050 en mots quand
    `showsTarget2050`.
 
+**Design (canvas v1-14).** Planches D1, D2, E ; `v1-14` §3.2 (copie), §4.5 (lectures), §5
+(`EcartParPoste`, `BarreContour`). Ce que le canvas fixe : en tête du suivi, « Bilan du 10 sept.
+2026 » / « précédent : 12 mars », le total en `salient`, la baisse reconnue en voix produit ;
+`EcartParPoste` (par poste, « 2,1 t → 1,7 t », barre-contour du bilan précédent, barre pleine du
+bilan courant en `accent` pour le poste dominant, `accentMuted` sinon, légende) ; « Ce que tu as
+décidé, saison après saison » (une ligne par saison, période à gauche, action · jours à droite,
+séparateur `border`) ; « Tes points » groupés par saison avec « Voir tout », trois libellés au même
+niveau (« Changement fait » / « Pas cette fois » / « Pas de trajet »), « Ces fois-là, c'est toi qui
+as choisi le trajet. », `RamilleDit` **`calm` 36 en bas** (« Je vois la différence. ») et la mascotte
+`happy` **retirée** du sommet ; sur la restitution, `BarreContour` « Ton bilan précédent · mars »
+au-dessus des deux barres, variation sous les barres, « Le palier que tu visais est derrière toi. »
+quand c'est vrai. C2.7 est propriétaire de `EcartParPoste` et `BarreContour` ; C3.1 (mobilité
+contrainte) passe après lui dans `suivi/bilan.tsx`.
+
 **Tests.** `suivi.test.ts` : variation en baisse, prédécesseur strict, écart par poste, date locale,
 seuil de re-bilan. `mascotte.test.ts` absorbe la nouvelle réplique.
 
@@ -1170,6 +1253,24 @@ peut coexister avec « Cadence : Été 2026 ». L'effet « nouveau départ » es
    {n} mois » comme `v1-11` §3.4 le prescrivait ; réserver la formulation saisonnière à la carte
    d'ouverture. Dérivation dans `src/types/suivi.ts`.
 4. Consigner dans ce document l'écart au libellé de `v1-11` §3.4.
+
+**Design (canvas v1-14).** Planches B1, B2, B3 ; `v1-14` §3.2 (copie), §4.5 (état local,
+récapitulatif), §5 (`CarteDeSaison`, `TraitDeTemps`). Ce que le canvas fixe : la carte du cap dit
+« Ton cap pour cette saison », « Automne 2026 » à gauche, « jusqu'au 30 novembre » à droite (small
+600 `accentText`), un trait de temps 6 px en `accentMuted` — **jamais en accent, il mesure la
+saison, pas la personne** — et la légende « La saison avance ; le trait mesure le temps, pas toi. » ;
+`CarteDeSaison` (bordure `border`, fond `backgroundTinted`, étiquette « NOUVELLE SAISON », titre
+« L'hiver commence. », corps « Cet automne : 11 points répondus, 8 fois où tu as changé quelque
+chose sur ton trajet. », « Reprendre la même action » / « Choisir une autre ») à la place du point
+pendant les deux premières semaines, marque « vue » locale à l'appareil par cycle, entrée
+`translateY` 16 → 0 en 320 ms ; **Ramille dessous, hors du cadre**, 44 px `happy` tilt −5,
+« On repart pour une saison. » ; en cadence de repli « NOUVELLE PÉRIODE » / « Une nouvelle période
+commence. » / « Ces trois mois : … » ; si la saison bascule pendant que le plan est ouvert, le
+bandeau « L'hiver a commencé pendant que tu étais là. » + « Voir la saison », jamais une carte
+remplacée sous les yeux ; la carte de re-bilan « Ton bilan a six mois. Le refaire prend quelques
+minutes ; ton plan s'ajuste. ». « Reprendre » pose la marque « vue » (l'action est déjà reconduite
+par C2.2) ; « Choisir une autre » déplie les pistes (C4.6) et garde l'ancienne action en mémoire.
+Consomme `saisonDe` et `recapDeSaison` (C2.14).
 
 ### C2.9 — Rappels qui s'espacent, et une sortie hors de l'app
 
@@ -1213,6 +1314,11 @@ trajet. ») : toujours calculé nulle part.
    période précédente : la phrase du handoff, en voix produit, sous la réplique de Ramille. Jamais
    un badge, jamais un compteur, jamais au-delà de deux.
 
+**Design (canvas v1-14).** Planche A1. La phrase de renforcement est une ligne de corps sous
+le retour de Ramille, voix produit : « Deuxième semaine de suite que tu fais ce trajet autrement. »
+/ « Deuxième mois de suite que tu voyages autrement. » Jamais un badge, jamais au-delà de deux ;
+dérivation pure `estDeuxiemeFoisDeSuite` (`v1-14` §4.6). Après C2.4 dans `checkin-card.tsx`.
+
 ### C2.11 — Le lien du rappel ouvert sur un autre appareil
 
 **Priorité** P2 · **Effort** petit · **Constats** C-2, A6-15 (partie repli), A6-16.
@@ -1234,9 +1340,15 @@ n'est pas encore fait » avec pour seul bouton « Faire mon bilan ». La consign
 4. « Toi », compte rattaché seulement : « Me déconnecter de cet appareil » (`signOut`, marques
    locales effacées, retour à la racine), avec « Tes données restent sur ton compte » (D17).
 
+**Design (canvas v1-14).** Planche G, seconde moitié : plan ouvert depuis un rappel sur un
+appareil neuf, sans bilan local — mascotte 72 px `calm` tilt −6 (aucun chiffre sur l'écran, elle
+peut l'occuper), « Ce rappel concerne un compte. Retrouve-le ici. », « Ton bilan, ton plan et tes
+points sont rattachés à ce compte, pas à cet appareil. », bouton « J'ai déjà un compte », lien
+« Commencer un bilan sur cet appareil ».
+
 ### C2.12 — Variantes des répliques de check-in
 
-**Priorité** P2 · **Effort** petit · **Dépend de** C2.4 · **Arbitrage** D12 (rendu contre la recommandation) · **Constats** A13-17, A9-21 (partie).
+**Priorité** P2 · **Effort** petit · **Dépend de** C2.4 · **Arbitrage** D12 (rendu le 10/09/2026, contre la recommandation : oui, trois ou quatre variantes par issue, choisies par période) · **Constats** A13-17, A9-21 (partie).
 
 **Pourquoi.** Avec les deux boucles, une personne reçoit environ soixante-quatre questions par an et
 n'entend que deux phrases en retour : « Bien joué — chaque changement compte. » et « Pas cette
@@ -1261,6 +1373,12 @@ interdit comme événement d'usage) : c'est un choix de ton, pas une optimisatio
 4. Réécrire l'en-tête de `mascotte.ts` et la phrase de CLAUDE.md : « les répliques d'origine
    viennent des maquettes validées et restent ; des variantes s'y ajoutent, décision D12 du
    10/09/2026, choisies par période ».
+
+**Design (canvas v1-14).** Planche A3 ; `v1-14` §3.1 donne les tableaux complets, par issue et
+**par boucle** (la mensuelle ne revient pas lundi). Quatre « Oui », trois « Non », deux « Pas de
+trajet », l'originale en tête. La variante « Tu as choisi le vélo. Je vois la différence. » du
+canvas devient « Tu as fait autrement. Je vois la différence. » pour valoir avec toute action.
+Dernier de la chaîne `checkin-card.tsx`.
 
 **Ne pas faire.** Toucher à la question elle-même. Étendre au texte de l'email dans ce chantier :
 il vit uniquement en SQL (`enqueue_checkin_reminders`), et des variantes y demanderaient une table
@@ -1304,6 +1422,17 @@ le seul signal de nouveauté périodique que le produit puisse offrir sans méca
 5. Exclusions : la carte de partage (`api/share-card.ts`, dont C3.10 retire le visage), le
    favicon, les icônes d'app (`mascot-mark.svg` reste la version `calm` sans saison).
 
+**Design (canvas v1-14).** Page Saisons (`captures/C-saisons-accessoires.png`),
+`Mascotte.dc.html`, géométrie exacte dans `HANDOFF.md` et `v1-14` §7. Ce que le canvas fixe :
+quatre accessoires — hiver un bonnet (calotte `mascotWarm`, revers et pompon `mascotAccessory`),
+printemps un bourgeon (trois pétales, cœur `mascotWarm`), été une goutte de rosée hors du visage,
+automne des joues plus marquées (rayon × 1,18, opacité + 0,25, `mascotWarm`) — positions fixes en
+unités de `viewBox`, épaisseurs × `k`, rendus après le visage, jamais sous 28 px ; quatre jetons
+dans les deux thèmes (`v1-14` §6, `mascotWarm` et non `mascotBlushAutumn`) ; les cinq expressions
+vérifiées avec le bonnet ; thème sombre : feuille `#3D9B6F`, encre fixe. Deux saisons marquées,
+deux discrètes : printemps et été peuvent rester nus si quatre sont trop. `saisonDe` vient de C2.14.
+**Un build** avant la vérification sur appareil.
+
 **Ne pas faire.** Une sixième expression. Une saison qui change l'humeur (l'hiver n'est pas
 triste). Un accessoire près d'un chiffre lourd (la règle ne change pas). Dériver la saison de
 `plan_cycles` ou de la cadence : `rolling_quarter` n'a pas de saison nommée, la mascotte suit le
@@ -1315,6 +1444,40 @@ rendu strictement identique quand aucune saison n'est passée aux tests existant
 
 **Fait quand.** Le 1er décembre, sans mise à jour de l'app, Ramille porte son bonnet sur le
 plan, le suivi et l'onboarding, en thème clair et sombre, et la carte de partage ne change pas.
+
+### C2.14 — Le socle « saison » côté client
+
+**Priorité** P2 · **Effort** petit · **Constats** aucun (ajouté le 10/09/2026 avec le canvas v1-14).
+
+**Pourquoi.** Trois chantiers du lot 2 ont besoin de savoir, côté client, dans quelle saison
+tombe une date et comment elle s'appelle : la carte d'ouverture et le cap (C2.8), le groupement
+des points par saison (C2.7), l'accessoire de la mascotte (C2.13). Aujourd'hui la saison n'existe
+qu'en SQL (`season_bounds`). Trois implémentations divergeraient ; une seule, écrite avant les
+trois, ne peut pas.
+
+**Fichiers.** `src/types/saison.ts` (nouveau), `src/types/saison.test.ts` ;
+`supabase/migrations/20260823110000_plan_reduction.sql:79` (`season_bounds`, la référence) ;
+`supabase/tests/database/` (le test existant de `season_bounds`, cité en miroir).
+
+**À faire.**
+1. `saisonDe(date: Date): { saison: 'hiver' | 'printemps' | 'ete' | 'automne'; debut: Date; fin:
+   Date; libelle: string }` — hiver = décembre à février (libellé « Hiver 2026-2027 », le
+   décembre appartient à l'hiver qui commence), printemps = mars à mai, été = juin à août, automne
+   = septembre à novembre. Miroir exact de `season_bounds`, en date locale.
+2. `recapDeSaison(checkins, bornes)` → `{ repondus, changements }` : le nombre de points répondus
+   (`status = 'answered'`, toutes valeurs de `response_kind`) et le nombre de `oui` dans la
+   période. Jamais les points manqués.
+3. Un module pur, sans import de `@/lib/supabase` ni de React.
+
+**Ne pas faire.** Dériver la saison de `plan_cycles` ou de la cadence : `rolling_quarter` n'a pas
+de saison nommée, et la mascotte suit le calendrier dans les deux cas. Réimplémenter la logique
+dans un écran.
+
+**Tests.** Les douze mois, les quatre bornes (1er déc., 1er mars, 1er juin, 1er sept.) et les
+veilles, le libellé d'hiver à cheval sur deux années ; en commentaire, la référence au test pgTAP de
+`season_bounds` qui épingle les mêmes bornes.
+
+**Fait quand.** C2.7, C2.8 et C2.13 importent `saisonDe` et aucun d'eux ne calcule une saison.
 
 ## 6. Lot 3 — Prise de conscience et justesse du chiffre
 
@@ -1333,6 +1496,11 @@ affichée à qui vient de déclarer n'avoir aucun transport en commun.
 ajuster `domain`, ajouter une phrase factuelle : « Là où tu vis, la voiture n'est pas un choix.
 Le plan regarde ce qui dépend de toi. » Ne rien masquer d'autre. Le champ **ne** pilote **pas**
 l'estimateur (C3.8 traite le plan par ses propres critères).
+
+**Design (canvas v1-14).** Planche E, variante « mobilité contrainte » : pas de barre « Moyenne
+en France », la barre-contour du bilan précédent (C2.7) et « Toi, aujourd'hui » restent, phrase
+« Là où tu vis, la voiture n'est pas un choix. Le plan regarde ce qui dépend de toi. » Après C2.7
+dans `suivi/bilan.tsx`.
 
 ### C3.2 — D'où vient le chiffre : source, périmètre, une équivalence
 
@@ -1463,6 +1631,11 @@ ni l'absence du bus.
    « aucun template `bus` », valeurs exactes pour `remove_day` et `share_vehicle`.
 6. Vue `analytics.engagement_action_by_segment` (cycles, engagements, template, forme d'intention).
 
+**Design (canvas v1-14).** Planches F1 et F2 pour deux points de ce chantier : le libellé
+« Travailler depuis chez toi un jour par semaine » et l'intro « Deux actions, sur d'autres postes
+que ton trajet domicile-travail. » quand les actions débordent du poste dominant. Le reste du
+chantier (filtres, question B4, gabarits, tests) n'a pas d'écran.
+
 ### C3.9 — Onboarding et compte : ce que le produit promet et ne dit pas
 
 **Priorité** P3 · **Effort** moyen · **Arbitrage** D17 · **Constats** A1-8, A1-9, A1-10, A6-17, A1-11, A12-15, A13-15, A2-24, A1-13, A6-9, A6-14.
@@ -1495,6 +1668,13 @@ de points mensuels » (texte du handoff, antérieur à la boucle hebdo).
    Lien « Un chiffre me semble faux » au pied de la restitution (`kind: 'chiffre'`, catégorie
    modifiable).
 
+**Design (canvas v1-14).** Planche G, première moitié : l'écran de reprise — en-tête du
+questionnaire (« Loisirs du week-end · Étape 5 sur 9 » et sa barre), « On reprend là où tu en
+étais. » (le canvas écrit « où tu t'étais arrêté », accord qui genre — corrigé, `v1-14` §10),
+« Quatre écrans déjà remplis. Il en reste cinq, en comptant celui-ci. » dérivé de `isStepVisible`,
+« Continuer mon bilan » primaire, « Repartir de mon dernier bilan » secondaire. Aucune mention du
+délai écoulé.
+
 ### C3.10 — Ton : accords, carte de partage, textes machine
 
 **Priorité** P3 · **Effort** petit · **Dépend de** C2.6 · **Arbitrage** D15 · **Constats** A12-4, A12-7, A12-20, A6-19, A9-8, A12-16.
@@ -1510,6 +1690,10 @@ de points mensuels » (texte du handoff, antérieur à la boucle hebdo).
 3. Suppression depuis l'app : état « C'est fait. » + ligne de Ramille + « Revenir au début ».
 4. `enforce_feedback_rate_limit` : un `errcode` distinct et stable, reconnu par code côté client ;
    le texte reste ce qui s'affiche ; test 11 sur le code.
+
+**Design (canvas v1-14).** L'étiquette « TON ENGAGEMENT » est livrée par C2.2 (vague 4) : ce
+chantier ne la refait pas et garde les trois autres accords, la carte de partage, l'état de
+suppression et le code d'erreur.
 
 ### C3.11 — Le palier et son cap : une seule définition
 
@@ -1596,12 +1780,23 @@ la panne réseau du reste sur le type d'erreur (pas sur le message).
 
 ### C4.6 — Voir d'autres pistes, premier pas, cadrage identitaire
 
-**Dépend de** C2.7 · **Arbitrage** D18, D16 · **Constats** A13-18, A13-19, A13-16, A13-20, A13-17.
+**Priorité** P2 (relevé le 10/09/2026) · **Effort** moyen · **Dépend de** C2.8, C2.7 · **Arbitrage** D18, D16 · **Constats** A13-18, A13-19, A13-16, A13-20, A13-17.
 
 Figer toutes les actions ≥ 5 kg avec leur `rank`, deux en avant, « Voir d'autres pistes » ;
 attention à `actionsCount` qui pilote le disclaimer et l'état vide. Une colonne `first_step` sur
 `action_templates`, affichée une fois l'action engagée. Une norme dynamique en mots dans la voix
 de Ramille, jamais un chiffre non sourcé.
+
+**Design (canvas v1-14).** Planches F1 et F2 ; `v1-14` §4.4 (base), §5 (les pistes). Ce que le
+canvas fixe : deux `ActionCard` en avant ; lien « Voir d'autres pistes · 4 » (`TextLink` small 600
+`accentText` centré, cible 44) ; dépliées, deux cartes estompées (opacité 0,72, cliquables) avec
+« Choisir celle-ci à la place » (`commit_plan_action` avec `p_replace`), puis des lignes simples
+libellé / « − 72 kg » tertiaire, puis « Replier » ; état `pistesDepliees` local ; le bloc « Premier
+pas » dans la carte engagée (fond `background`, rayon 16, padding 12/16, sur-titre 13/18/600
+tertiaire, texte 14/20 — « Bloque le prochain vendredi dans ton agenda, aujourd'hui. »),
+`first_step` sur le gabarit et recopié sur `plan_actions`. `actionsCount` continue de piloter le
+disclaimer et l'état vide. **Relevé en P2 le 10/09** : tout est dessiné et décidé (D18, D16), et le
+plan reste tronqué à deux sans lui. Après C2.8 dans `plan.tsx`.
 
 ### C4.7 — Retirer un bilan erroné
 
@@ -1660,7 +1855,7 @@ Relevé par les lecteurs et confirmé ; toute PR qui touche un de ces points le 
 Cocher ici, avec la PR et la date. Une décision d'arbitrage prise se note en §1, dans la colonne
 « Recommandation », par un « **Décidé le JJ/MM : …** ».
 
-**Chaque chantier a son issue GitHub** (#99 à #151, ouvertes le 10/09/2026, étiquettes
+**Chaque chantier a son issue GitHub** (#99 à #151 et #153, ouvertes le 10/09/2026 ; la vue cochable des huit vagues est l'issue de suivi #154, étiquettes
 `audit-2026-09` et `lot-0` à `lot-4`, type Task / Bug / Feature selon le lot). L'issue reprend le
 corps du chantier et pointe vers ce document et l'inventaire ; c'est elle qu'on donne à un agent ou
 qu'on s'assigne, et la PR la ferme (`Closes #n`). Le document reste la référence quand les deux
@@ -1701,6 +1896,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C2.11 | [#129](https://github.com/ScratchMe/TraceVerte/issues/129) | | | |
 | C2.12 | [#130](https://github.com/ScratchMe/TraceVerte/issues/130) | | | |
 | C2.13 | [#151](https://github.com/ScratchMe/TraceVerte/issues/151) | | | |
+| C2.14 | [#153](https://github.com/ScratchMe/TraceVerte/issues/153) | | | |
 | C3.1 | [#131](https://github.com/ScratchMe/TraceVerte/issues/131) | | | |
 | C3.2 | [#132](https://github.com/ScratchMe/TraceVerte/issues/132) | | | |
 | C3.3 | [#133](https://github.com/ScratchMe/TraceVerte/issues/133) | | | |

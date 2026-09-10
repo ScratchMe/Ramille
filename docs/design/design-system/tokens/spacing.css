@@ -1,0 +1,33 @@
+/* Ramille — espacement, rayons, hauteurs. Source : theme.ts (Spacing, Radius, ControlHeight). */
+:root {
+  --space-half: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 64px;
+
+  --radius-chip: 8px;
+  --radius-notice: 12px;
+  --radius-mode-item: 14px;
+  --radius-field: 16px;
+  --radius-card: 18px;
+  --radius-pill: 22px;
+  --radius-button: 27px;
+
+  --height-target: 44px;
+  --height-button: 54px;
+  --height-field: 56px;
+  --height-numeric: 64px;
+  --height-top-band: 52px;
+  --height-tab-bar: 60px;
+
+  --stroke-hairline: 1px;
+  --stroke-selected: 1.5px;
+  --stroke-engaged: 2px;
+  --progress-height: 6px;
+
+  --screen-padding: 24px;
+  --max-content-width: 800px;
+}
