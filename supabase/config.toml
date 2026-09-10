@@ -23,14 +23,19 @@ extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
-# Le projet distant TraceVerte-v1 expose déjà nos tables à `authenticated` sans GRANT explicite
-# dans nos migrations (comportement plateforme standard à sa création) — nos policies RLS sont
-# la seule couche d'autorisation écrite dans supabase/migrations/. Sans ce flag, la stack locale
-# (utilisée par `supabase test db`) part d'un état plus strict et renvoie "permission denied"
-# avant même d'atteindre RLS, ce qui a fait échouer 01_compute_assessment_results.test.sql en CI
-# (l'erreur venait du GRANT manquant, pas de la logique testée). À revoir avant la suppression de
-# ce flag (2026-10-30) — ajouter des GRANTs explicites dans une migration si toujours nécessaire.
-auto_expose_new_tables = true
+# Le drapeau `auto_expose_new_tables` a été retiré d'ici le 10/09/2026 (chantier C0.3). Absent, le
+# CLI 2.117.0 pose avant les migrations ses trois `alter default privileges ... revoke` (tables,
+# séquences, fonctions, depuis anon/authenticated/service_role) : une nouvelle entité du schéma
+# `public` exige donc un GRANT explicite — c'est le défaut de la plateforme depuis le 30/05/2026, et
+# le champ lui-même disparaît du CLI le 30/10/2026. L'écrire à `false` emprunte exactement le même
+# chemin de code (`if AutoExposeNewTables != nil && *AutoExposeNewTables { return nil }`) et ne
+# ferait que programmer la panne : le jour du retrait, un champ inconnu fait échouer
+# `supabase start`. Les privilèges de table vivent dans
+# supabase/migrations/20260910110000_grants_explicites.sql, et
+# supabase/tests/database/18_grants_explicites.test.sql en épingle la matrice entière — une table
+# ajoutée sans sa ligne de GRANT est invisible pour l'app, et ce test le dit.
+# L'équivalent côté projet distant est le réglage « Default privileges for new entities » du tableau
+# de bord, que rien dans le dépôt ne voit.
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.
@@ -186,7 +191,12 @@ refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
-enable_anonymous_sign_ins = false
+# Activé pour refléter la production : chaque visiteur reçoit une session Supabase Auth anonyme
+# dès l'ouverture de l'app (`ensureSession()`, v1-04 §1), et c'est sur cette session que reposent
+# le bilan anonyme, son rattachement à un compte et la reprise du jeton d'appareil. Une stack
+# locale qui refuse ces sessions ne peut exécuter aucun de ces chemins. Le plafond de débit est
+# déjà réglé plus bas (`[auth.rate_limit] anonymous_users`).
+enable_anonymous_sign_ins = true
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.

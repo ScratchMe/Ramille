@@ -11,7 +11,10 @@ import { APP_URL } from '@/lib/app-url';
 //   - session anonyme dès l'ouverture -> `ensureSession()` (src/lib/supabase.ts), v1-04 §1 ;
 //   - champs collectés -> colonnes de `assessment_answers` (v1-05 §3) ;
 //   - rappels par notification ou par email -> `notification_outbox` + `profiles.reminder_channel` ;
-//   - purge à 90 jours -> `purge_stale_anonymous_accounts()`, cron quotidien ;
+//   - purge à 90 jours sans activité -> `purge_stale_anonymous_accounts()`, cron quotidien ;
+//   - rétention des rappels (6 mois) et des jetons désactivés (90 jours) ->
+//     `purge_notification_outbox()`, cron quotidien 1h ;
+//   - panne d'affichage enregistrée sans son message -> événement `app_error` de `usage_events` ;
 //   - aucune géolocalisation -> non-goal explicite de la spec §2 ;
 //   - carte de partage sans lecture serveur -> v1-06 §2 ;
 //   - retours utilisateur -> table `feedback`, insert-only côté client, issue #29.
@@ -91,7 +94,8 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Nous enregistrons aussi quelques repères de parcours dans l’application : quels écrans tu as ouverts, à quelle ' +
-          'étape du questionnaire tu es arrivé, si tu as rattaché un compte. Rien d’autre — pas de texte que tu aurais ' +
+          'étape du questionnaire tu en es, si tu as rattaché un compte, et le fait qu’un écran n’a pas réussi à ' +
+          's’afficher (le type de l’erreur et l’écran concerné, jamais son message). Rien d’autre — pas de texte que tu aurais ' +
           'saisi, pas d’adresse IP, pas d’identifiant d’appareil, et aucun suivi de ce que tu fais ailleurs. Ces repères ' +
           'servent à une seule chose : voir où le produit décroche pour le réparer. Ils restent chez notre hébergeur, ' +
           'aucun outil d’analyse tiers ne les reçoit.',
@@ -193,13 +197,19 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'bullets',
         items: [
-          'Session anonyme jamais rattachée à un compte : supprimée automatiquement 90 jours après sa création.',
+          'Session anonyme jamais rattachée à un compte : supprimée automatiquement après 90 jours sans aucune ' +
+            'activité — un bilan commencé, un point de suivi répondu ou une simple ouverture de l’application ' +
+            'repartent de zéro.',
           'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
           'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
             'produit tel qu’il est.',
-          'Identifiant de notification de ton téléphone : conservé tant que l’application est installée et que tu as ' +
-            'choisi les rappels par notification. Il disparaît si tu désinstalles l’application, si tu coupes les ' +
-            'notifications, à la suppression de ton compte, et à la suppression automatique d’une session anonyme.',
+          'Identifiant de notification de ton téléphone : désactivé dès que ton téléphone cesse d’accepter les ' +
+            'notifications — permission retirée dans ses réglages, ou application désinstallée — puis supprimé ' +
+            '90 jours plus tard. Il part aussi avec la suppression de ton compte et avec la suppression ' +
+            'automatique d’une session anonyme.',
+          'Rappels envoyés : une fois le rappel parti (ou abandonné), sa trace — période concernée, canal, date ' +
+            'd’envoi, message — est gardée six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand ' +
+            'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours et ' +
             'repères de parcours est supprimé.',
         ],

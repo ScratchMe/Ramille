@@ -10,10 +10,16 @@
 -- mesurer l'activité et ne bouge jamais pour une session anonyme (`ensureSession()` ne
 -- rappelle `signInAnonymously` que s'il n'y a pas de session, et le rafraîchissement de jeton
 -- n'y touche pas). S'en servir reproduirait le bug en ayant l'air de le corriger.
+--
+-- La seconde moitié du fichier couvre la garde de volume ajoutée par la migration
+-- 20260910100000 (chantier C0.2) : au-delà de son seuil, un passage ne supprime **rien** et
+-- laisse une ligne dans `public.purge_runs`. Ce que ces deux scénarios épinglent, c'est la
+-- frontière : le seuil porte un plancher absolu, sans quoi il bloquerait la purge normale d'une
+-- base de quelques dizaines de comptes — une garde qui mord tout le temps finit désactivée.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(7);
+select plan(12);
 
 -- Cinq sessions anonymes, toutes créées il y a cent jours sauf la dernière : seule
 -- l'activité les distingue.
@@ -89,6 +95,70 @@ select ok(
 select is_empty(
   $$ select token from public.push_tokens where token = 'ExponentPushToken[pgtap-purge-anonyme]' $$,
   'le jeton d''appareil d''une session purgée part avec elle'
+);
+
+-- ── La garde de volume ─────────────────────────────────────────────────────────────────
+
+-- Le journal ne s'adresse qu'au serveur : RLS activée sans aucune policy, et les privilèges de
+-- table révoqués explicitement (le chantier C0.3 retire `auto_expose_new_tables`, donc aucune
+-- table ne doit plus compter sur un grant implicite).
+--
+-- **Cette assertion ne mord que là où de nouvelles entités sont exposées par défaut** — le projet
+-- distant, réglage « Default privileges for new entities » du tableau de bord. En local,
+-- `auto_expose_new_tables` étant absent de `supabase/config.toml` depuis C0.3, le CLI révoque les
+-- privilèges par défaut avant d'appliquer les migrations : aucun grant n'est jamais posé sur
+-- `purge_runs`, et l'assertion passerait aussi sans le `revoke all privileges` de la migration. Ne
+-- pas la lire comme une preuve que le revoke fait quelque chose ici — elle garde la production.
+select ok(
+  not has_table_privilege('authenticated', 'public.purge_runs', 'select')
+    and not has_table_privilege('anon', 'public.purge_runs', 'select')
+    and not has_table_privilege('authenticated', 'public.purge_runs', 'insert'),
+  'Le journal des purges n''est ni lisible ni écrivable par anon ou authenticated'
+);
+
+-- Soixante sessions anonymes muettes depuis cent jours. Les quatre sessions actives plus haut
+-- restent en base : soixante candidats sur soixante-quatre comptes, soit bien au-delà du seuil
+-- (20 %, plancher 50 comptes).
+insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at, last_sign_in_at)
+select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid,
+       '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
+       now() - interval '100 days', now(), now() - interval '100 days'
+from generate_series(1, 60) as g(i);
+
+select public.purge_stale_anonymous_accounts();
+
+select is(
+  (select count(*)::int from auth.users where id::text like 'c6222222%'),
+  60,
+  'Au-delà du seuil, la purge ne supprime aucun compte'
+);
+
+select isnt_empty(
+  $$ select 1 from public.purge_runs
+     where status = 'blocked' and candidates = 60 and deleted = 0 $$,
+  'Le passage bloqué laisse une ligne de journal qui dit combien de comptes étaient en jeu'
+);
+
+-- Même prédicat, volume ramené sous le plancher : quinze candidats. Ils représentent toujours
+-- une forte proportion des comptes restants — c'est précisément ce que le plancher autorise,
+-- pour qu'une base minuscule ne soit pas gelée par sa propre garde.
+delete from auth.users u
+where u.id in (
+  select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid
+  from generate_series(16, 60) as g(i)
+);
+
+select public.purge_stale_anonymous_accounts();
+
+select is_empty(
+  $$ select 1 from auth.users where id::text like 'c6222222%' $$,
+  'Sous le seuil, la purge supprime les sessions muettes comme avant la garde'
+);
+
+select isnt_empty(
+  $$ select 1 from public.purge_runs
+     where status = 'applied' and candidates = 15 and deleted = 15 $$,
+  'Un passage appliqué est journalisé lui aussi : sans ligne, on ne distingue pas « rien à purger » de « cron à l''arrêt »'
 );
 
 select * from finish();

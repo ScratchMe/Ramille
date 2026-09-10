@@ -2,15 +2,16 @@
 --
 -- Ce que ce fichier défend en priorité n'est pas l'engagement lui-même mais **ce qu'il ne doit
 -- pas ouvrir** : `plan_actions` porte des chiffres figés à la génération (`saving_kg_year`,
--- `saving_share_percent`), au même titre que `assessment_results` fige le bilan. `authenticated`
--- possède déjà le privilège UPDATE au niveau table — un grant par défaut de Supabase, sans
--- effet tant qu'aucune policy UPDATE n'existe. C'est pourquoi l'engagement passe par un RPC
--- `security definer` et non par une policy : une policy UPDATE aurait ouvert **toutes** les
--- colonnes, la RLS raisonnant par ligne et jamais par colonne.
+-- `saving_share_percent`), au même titre que `assessment_results` fige le bilan. C'est pourquoi
+-- l'engagement passe par un RPC `security definer` et non par une policy : une policy UPDATE
+-- aurait ouvert **toutes** les colonnes, la RLS raisonnant par ligne et jamais par colonne.
+-- Depuis le 10/09/2026 (chantier C0.3) `authenticated` n'a même plus le privilège UPDATE au
+-- niveau table : deux gardes indépendantes protègent donc les chiffres, et les deux sont
+-- éprouvées plus bas.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(11);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('71111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-eng-a@test.local', 'x', now(), now()),
@@ -103,17 +104,28 @@ select throws_ok(
 );
 
 -- ── Ce que l'engagement ne doit surtout pas ouvrir ──────────────────────────────────────
--- Le gain est figé à la génération. Si cette assertion tombe un jour, c'est qu'une policy
--- UPDATE a été ajoutée sur `plan_actions` : la RLS ne filtre que des lignes, elle laisserait
--- alors réécrire n'importe quelle colonne.
+-- Le gain est figé à la génération, et **deux** gardes indépendantes le protègent. La première
+-- est le privilège : `authenticated` n'a plus d'UPDATE sur `plan_actions` depuis le 10/09/2026
+-- (20260910110000_grants_explicites.sql, §4), donc PostgreSQL refuse avant d'atteindre la RLS —
+-- « permission denied for table plan_actions », SQLSTATE 42501. La seconde est l'absence de
+-- policy d'écriture : même si le privilège revenait, aucune ligne ne serait réécrite — c'est
+-- `18_grants_explicites.test.sql` §6 qui épingle nommément cette absence de policy, et la seconde
+-- assertion ici n'en constate que le résultat. Le jour où un `grant update` reviendrait « par
+-- facilité », c'est la première qui le dirait.
+-- Le RPC `commit_plan_action` est `security definer` : il écrit sous le propriétaire de la
+-- fonction, pas sous l'appelant, donc il n'a jamais eu besoin de ce privilège (les engagements
+-- plus haut dans ce fichier le démontrent).
 
--- Sous la session de A : la RLS limite déjà la portée à ses propres lignes.
-update public.plan_actions set saving_kg_year = 99999;
+-- Sous la session de A, c'est-à-dire le propriétaire lui-même.
+select throws_ok(
+  $stmt$ update public.plan_actions set saving_kg_year = 99999 $stmt$,
+  '42501', null, 'un UPDATE direct sur le gain figé est refusé, même pour le propriétaire'
+);
 
 select is(
   (select count(*) from public.plan_actions where saving_kg_year = 99999)::int,
   0,
-  'un UPDATE direct sur le gain figé reste sans effet, même pour le propriétaire'
+  'et aucune ligne ne porte la valeur refusée — le gain figé est intact'
 );
 
 -- ── Isolation ───────────────────────────────────────────────────────────────────────────

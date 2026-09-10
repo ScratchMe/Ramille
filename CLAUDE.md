@@ -192,6 +192,30 @@ valeur du mode avion dépend du paramètre `km` de la requête, contrairement à
 commentaire du seed initial), et le poste voyages en train était calculé au facteur TER. Son §2
 liste les défauts vérifiés (T1-T13) auxquels les autres documents renvoient.
 
+**Ce qui fait marcher Ramille sans vivre dans le dépôt a un registre : `docs/exploitation/`**
+(lot 0 du plan v1-13, livré le 10/09/2026). Son `README.md` nomme les comptes tiers — Supabase,
+Vercel, EAS/Expo, Google Play, Google Cloud et le projet Firebase d'où viennent
+`google-services.json` et la clé FCM v1, Resend, le registrar du domaine, GitHub — les réglages
+qu'ils portent, ce qui tombe si l'un manque, la checklist à parcourir avant de publier sur Play,
+et la question de continuité (tout tient à une seule personne, elle n'est pas tranchée). Son §8
+est la porte d'entrée des journaux : `analytics.rappels_par_jour`, `analytics.rappels_bloques`,
+`analytics.synchronisations_facteurs`, `public.reminder_send_runs`, `public.purge_runs`, chacun
+avec sa requête et ce qui doit alerter. À côté : `redirect-urls.md` (la liste réelle des URL de
+redirection Supabase, relevée entrée par entrée, avec ce qui doit en être retiré),
+`sauvegarde.md` (le régime de sauvegarde et la procédure de restauration) et
+`remontee-erreurs.md`. **Rien dans le code ni dans la CI ne voit ces réglages, et aucun de ces
+journaux n'émet d'alerte** : c'est ce dossier qui les rend vérifiables, et un journal qu'on ne
+sait pas où lire se lit zéro. Aucune valeur secrète n'y descend — on nomme le réglage et
+l'endroit où il vit.
+
+Deux nuances du fichier des redirections qu'il ne faut pas réécrire à l'envers : **le suffixe de
+compte `-me-c4a3` resserre un motif de preview, il ne le ferme pas** (un hôte `*.vercel.app` est
+alloué d'après le nom de projet, choisi librement, donc un tiers qui nomme son projet
+`ramille-xxx-me-c4a3` obtient une adresse qui correspond au motif — l'ordre de préférence est :
+aucune entrée de preview, sinon l'hôte exact retiré après usage, sinon le motif faute de mieux) ;
+et `https://ramille.vercel.app/**` est bien notre projet aujourd'hui, mais c'est un nom dans
+l'espace global `vercel.app`, donc **il se retire le jour où le projet Vercel est renommé**.
+
 **Backlog / idées identifiées mais non planifiées** : pas de fichier ROADMAP dédié — suivi via
 les GitHub Issues de ce repo (ex. #27-30 : synchronisation automatique des facteurs ADEME,
 trajectoire 2050 sur l'écran de restitution, canal de feedback utilisateur, tracking
@@ -250,6 +274,24 @@ Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `Trac
 `src/lib/database.types.ts`** (`mcp__Supabase__generate_typescript_types`) — le fichier n'a
 pas de formateur automatique dans ce repo (pas de prettier installé), donc respecter le
 style existant (guillemets doubles) en le retouchant à la main si besoin.
+
+**Les privilèges de table sont écrits, et `supabase/config.toml` ne porte plus
+`auto_expose_new_tables`** (10/09/2026). Jusque-là aucune migration n'accordait le moindre
+privilège : `anon` et `authenticated` tenaient les leurs du défaut de plateforme d'un projet
+neuf, et la stack locale le rejouait par ce drapeau. Une base reconstruite depuis
+`supabase/migrations/` n'accordait donc rien à personne — l'app répond « permission denied for
+table … » **avant** d'atteindre la RLS — et rien dans le dépôt ne le disait. Le CLI n'expose plus
+par défaut depuis le 30/05/2026 (absent et `false` suivent le même chemin de code) et supprime le
+champ le 30/10/2026 : l'écrire programmerait la panne. Tout vit dans
+`20260910110000_grants_explicites.sql`, qui ne contient que des `grant`/`revoke` — donc rejouable
+tel quel après une restauration — et `18_grants_explicites.test.sql` épingle la matrice entière.
+**Ajouter une table impose donc un geste explicite** : un `grant` dans ce fichier si l'app y
+touche, ou un `revoke all privileges … from anon, authenticated` dans sa propre migration si elle
+est serveur-only. Ne rien écrire la rend invisible pour l'app, en silence — même mécanique que
+`emission_factor_sources` et `usage_event_types`. Un privilège se justifie par un appel réel
+depuis `src/`, jamais par « un test en a besoin » ; et un test qui n'assure qu'un refus reste vert
+après un `revoke`, « permission denied » et « violates row-level security » portant tous deux le
+SQLSTATE 42501.
 
 Le bilan (`assessment_answers`) est modélisé à plat, un champ par question B1.1→B4.3 — pas
 une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par poste
@@ -351,12 +393,14 @@ jamais recalculer les km ailleurs**, les deux implémentations divergeraient. Le
 ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
 
 **L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
-`plan_actions` porte des chiffres figés à la génération, et `authenticated` a déjà le privilège
-`UPDATE` au niveau table (grant Supabase par défaut) — inoffensif tant qu'aucune policy UPDATE
-n'existe, mais **en ajouter une ouvrirait toutes les colonnes** : la RLS filtre des lignes,
-jamais des colonnes. D'où `commit_plan_action` / `clear_plan_action_commitment`
-(`security definer`, propriété vérifiée à l'intérieur), et un test pgTAP qui épingle qu'un
-`update` direct sur `saving_kg_year` reste sans effet. Une seule action engagée par cycle
+`plan_actions` porte des chiffres figés à la génération, et **deux gardes indépendantes les
+protègent depuis le 10/09/2026** : aucune policy d'écriture — en ajouter une ouvrirait toutes les
+colonnes, la RLS filtrant des lignes et jamais des colonnes — et aucun privilège d'écriture au
+niveau table, `grant select` seul (`20260910110000_grants_explicites.sql`). Un ordre direct est
+donc refusé par le privilège (42501) avant même d'atteindre la RLS ; jusqu'à cette date le
+privilège `UPDATE` était accordé par défaut et seule l'absence de policy le rendait inoffensif.
+D'où `commit_plan_action` / `clear_plan_action_commitment` (`security definer`, propriété
+vérifiée à l'intérieur), et deux tests pgTAP qui épinglent le refus. Une seule action engagée par cycle
 (index unique partiel), intention obligatoire, en jours de la semaine pour le poste
 domicile-travail et en échéance fermée pour les autres — jamais de saisie libre.
 
@@ -468,7 +512,16 @@ n'a besoin que d'un jeton d'appareil), et elle **ne se dégrade jamais d'elle-m�
 sans jeton actif part par email sans que rien ne soit réécrit, pour que rouvrir les
 notifications dans les réglages du téléphone suffise à le faire repartir. **L'envoi est inactif tant que
 les secrets Vault `resend_api_key` et `reminder_from_address` n'existent pas** — la fonction
-sort sans rien toucher, les rappels restent en attente. Voir `v1-07` §3.1 pour la mise en
+sort sans rien toucher, les rappels restent en attente, et depuis le 10/09/2026 elle le **dit** :
+`public.reminder_send_runs` reçoit **une ligne par canal à chaque passage**, y compris une nuit où
+rien n'attend et y compris quand un secret manque. Zéro ligne veut donc dire « le passage n'a pas
+eu lieu » — cron désinscrit, job en erreur — et jamais « il n'y avait rien à envoyer » : remettre
+l'un de ces `insert` sous une garde « seulement s'il y a du travail » détruirait la seule question
+que ce journal existe pour trancher. Deux corollaires : le cron appelle désormais une **procédure**
+qui committe entre les passes, à laquelle il ne faut ajouter ni `security definer` ni clause
+`set search_path` — les deux rendent le contexte atomique et font échouer le `commit` ; et la ligne
+est marquée `sent` **avant** l'appel HTTP, pour qu'un message remis au fournisseur ne reparte
+jamais. Voir `v1-07` §3.1 pour la mise en
 service.
 
 La boucle mensuelle (brique 4) est en réalité **deux boucles indépendantes**, toutes deux

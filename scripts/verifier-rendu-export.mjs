@@ -11,11 +11,17 @@
 // méthodes absentes de sa version web, et une exception au rendu du layout racine n'a aucun
 // effet local — elle emporte l'app entière.
 //
-// Deux vérifications par route, et la première est la plus importante :
+// Trois vérifications par route, et la première est la plus importante :
 //
 //   1. **La page affiche quelque chose de reconnaissable.** C'est ce qui attrape la page
 //      blanche quelle que soit la cause, sans dépendre de la façon dont React classe l'erreur.
-//   2. **Aucune exception non rattrapée**, hors erreurs d'hydratation (voir plus bas).
+//   2. **Aucun écran de panne.** Depuis le chantier C0.4, `src/app/_layout.tsx` exporte un
+//      `ErrorBoundary` : une exception de rendu n'efface plus la page, elle affiche un écran.
+//      C'est un progrès pour la personne qui l'utilise et une perte pour ce garde-fou — React
+//      ne signale plus en `pageerror` ce qu'un boundary a rattrapé. Reconnaître les deux écrans
+//      de panne (le nôtre, et celui d'Expo Router qui reste en anglais) rend au contrôle la
+//      rigueur qu'il avait avant, sans renoncer au filet.
+//   3. **Aucune exception non rattrapée**, hors erreurs d'hydratation (voir plus bas).
 //
 // Ce qui n'est PAS vérifié ici, volontairement : le réseau. L'export de CI est construit avec
 // une configuration Supabase factice, donc chaque page échoue à joindre la base — les erreurs
@@ -48,6 +54,24 @@ const ROUTES = [
   { chemin: '/conditions', marqueur: 'Conditions d’utilisation' },
   // Surface publique exigée par Google Play : elle doit s'afficher sans l'app et sans compte.
   { chemin: '/compte/suppression', marqueur: 'Supprimer mon compte' },
+];
+
+// Les deux écrans de panne, qu'aucune route ne doit afficher.
+//
+// `Something went wrong` est l'écran de secours d'Expo Router — en anglais, sur fond noir.
+// Depuis C0.4, plus rien ne devrait l'afficher : notre `Try` est le seul de l'arbre (Expo Router
+// 57 n'en monte un que là où une route exporte un `ErrorBoundary`), et une exception levée
+// au-dessus de lui ne rend pas cet écran mais une page blanche — que le contrôle de page vide
+// attrape. On garde la chaîne parce qu'elle redevient atteignable le jour où notre boundary
+// disparaît, où une route est rendue hors de notre layout, ou si Expo Router monte à nouveau son
+// propre filet. Le produit ne parle français qu'en français, y compris en panne.
+//
+// Le second est le titre de `src/components/erreur-inattendue.tsx`. **Les deux textes sont
+// couplés à la main** : changer ce titre sans venir ici rendrait le contrôle aveugle, d'où le
+// renvoi inverse écrit dans l'en-tête du composant.
+const ECRANS_DE_PANNE = [
+  { texte: 'Something went wrong', quoi: 'l’écran de secours d’Expo Router (en anglais)' },
+  { texte: 'L’écran n’a pas pu s’afficher', quoi: 'l’écran d’erreur du produit' },
 ];
 
 // Les erreurs d'hydratation sont signalées, jamais bloquantes. React reprend la main en
@@ -124,8 +148,18 @@ for (const { chemin, marqueur } of ROUTES) {
     const bloquantes = exceptions.filter((e) => !HYDRATATION.test(e));
     avertissements.push(...exceptions.filter((e) => HYDRATATION.test(e)).map((e) => `${chemin} : ${e.slice(0, 160)}`));
 
+    // L'ordre compte : un écran de panne fait aussi disparaître le marqueur de la route, et
+    // signaler « le marqueur est absent » cacherait la cause derrière son symptôme.
+    const panne = ECRANS_DE_PANNE.find((ecran) => texte.includes(ecran.texte));
+
     if (!texte) {
       echecs.push(`${chemin} : la page est vide.${bloquantes[0] ? ` Cause probable — ${bloquantes[0].slice(0, 220)}` : ''}`);
+    } else if (panne) {
+      echecs.push(
+        `${chemin} : ${panne.quoi} s’affiche (« ${panne.texte} »). Une exception a été levée` +
+          ` pendant le rendu, et elle a été rattrapée — donc elle n’apparaît pas ci-dessous.` +
+          ` Rendu : « ${texte.slice(0, 200)}… »`
+      );
     } else if (marqueur && !texte.includes(marqueur)) {
       echecs.push(`${chemin} : « ${marqueur} » est absent de la page. Rendu : « ${texte.slice(0, 120)}… »`);
     }
@@ -153,9 +187,12 @@ if (echecs.length > 0) {
     '\nUne exception pendant le rendu du layout racine emporte tout l’arbre React : le HTML' +
       '\nest servi, le titre est correct, et l’app ne démarre pas. Cause la plus fréquente : une' +
       '\nAPI de module natif appelée sur web — les hooks s’exécutent au rendu, une garde placée' +
-      '\ndans un effet arrive trop tard.'
+      '\ndans un effet arrive trop tard.' +
+      '\n\nSi c’est un écran de panne qui s’affiche, l’exception a été rattrapée : elle n’est pas' +
+      '\ndans la liste ci-dessus. Elle est dans la console du navigateur — rejouer l’export en' +
+      '\nlocal (expo export --platform web) et ouvrir la route en cause la fait apparaître.'
   );
   process.exit(1);
 }
 
-console.log(`${ROUTES.length} routes rendues, aucune exception bloquante.`);
+console.log(`${ROUTES.length} routes rendues, aucun écran de panne, aucune exception bloquante.`);

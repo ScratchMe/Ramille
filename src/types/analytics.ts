@@ -32,6 +32,7 @@ export const USAGE_EVENT_NAMES = [
   'retrouver_view',
   'retrouver_send',
   'rappels_view',
+  'app_error',
 ] as const;
 
 export type UsageEventName = (typeof USAGE_EVENT_NAMES)[number];
@@ -68,7 +69,51 @@ export type UsageEventPropsByName = {
   /** La feuille des rappels s'est affichée. Elle ne s'ouvre que depuis un engagement,
    *  donc elle n'a pas de propriété de provenance : il n'y en a qu'une. */
   rappels_view: never;
+  /** Une exception de rendu a remonté jusqu'à l'`ErrorBoundary` du layout racine (C0.4).
+   *  **Deux propriétés, et jamais une troisième** : la catégorie et la route. Pas de message
+   *  d'exception, pas de pile — un message d'erreur est du texte libre, et du texte libre dans
+   *  `usage_events` rendrait la table réidentifiable (cf. l'en-tête de la migration). */
+  app_error: { category: AppErrorCategory; route: string };
 };
+
+// ## `app_error` : la catégorie, et pourquoi elle est fermée
+//
+// Ce qu'on veut savoir d'une panne de rendu tient en deux questions : **où** (la route) et de
+// **quelle nature** (un accès sur `undefined` n'a pas la même cause qu'un JSON mal formé). Le
+// message, lui, est du texte libre : il peut contenir une URL, une valeur, un identifiant —
+// exactement ce que cette table ne doit jamais porter. La catégorie se dérive donc du *type* de
+// l'exception, qui est un nom de classe du langage et non une donnée.
+export const APP_ERROR_CATEGORIES = [
+  'type',
+  'reference',
+  'range',
+  'syntax',
+  'uri',
+  'autre',
+] as const;
+
+export type AppErrorCategory = (typeof APP_ERROR_CATEGORIES)[number];
+
+// `name` plutôt qu'`instanceof` : les constructeurs natifs portent leur nom dans le prototype,
+// que la minification ne touche pas, alors qu'`instanceof` se trompe dès qu'une exception
+// traverse deux contextes (un iframe, un worker) — et le repli `autre` serait silencieux.
+export function appErrorCategory(erreur: unknown): AppErrorCategory {
+  const nom = erreur instanceof Error ? erreur.name : '';
+  switch (nom) {
+    case 'TypeError':
+      return 'type';
+    case 'ReferenceError':
+      return 'reference';
+    case 'RangeError':
+      return 'range';
+    case 'SyntaxError':
+      return 'syntax';
+    case 'URIError':
+      return 'uri';
+    default:
+      return 'autre';
+  }
+}
 
 // Bornes de `public.check_usage_event_props`, répliquées ici pour ne jamais émettre un insert
 // que la base refusera. Les valeurs viennent du code, pas de l'utilisateur : dépasser une

@@ -1,7 +1,6 @@
 // Généré depuis le schéma Supabase réel (projet TraceVerte-v1) via
 // mcp__Supabase__generate_typescript_types. À régénérer après toute migration
 // (supabase/migrations/) pour rester synchronisé avec la base.
-
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
@@ -71,7 +70,6 @@ export type Database = {
           car_long_trips_engine: string | null
           car_long_trips_per_year: number
           commute_car_engine: string | null
-          commute_two_wheeler_type: string | null
           commute_carpool_size: number | null
           commute_days_per_week: number | null
           commute_distance_bracket: string | null
@@ -81,14 +79,15 @@ export type Database = {
           commute_mode: string | null
           commute_second_mode: string | null
           commute_second_mode_used: boolean
+          commute_two_wheeler_type: string | null
           flights_short_per_year: number | null
           flights_total_per_year: number
           household_vehicles: string | null
           leisure_car_engine: string | null
-          leisure_two_wheeler_type: string | null
           leisure_distance_bracket: string | null
           leisure_frequency: string
           leisure_mode: string | null
+          leisure_two_wheeler_type: string | null
           tc_access: string | null
           train_long_trips_per_year: number
           updated_at: string
@@ -99,7 +98,6 @@ export type Database = {
           car_long_trips_engine?: string | null
           car_long_trips_per_year?: number
           commute_car_engine?: string | null
-          commute_two_wheeler_type?: string | null
           commute_carpool_size?: number | null
           commute_days_per_week?: number | null
           commute_distance_bracket?: string | null
@@ -109,14 +107,15 @@ export type Database = {
           commute_mode?: string | null
           commute_second_mode?: string | null
           commute_second_mode_used?: boolean
+          commute_two_wheeler_type?: string | null
           flights_short_per_year?: number | null
           flights_total_per_year?: number
           household_vehicles?: string | null
           leisure_car_engine?: string | null
-          leisure_two_wheeler_type?: string | null
           leisure_distance_bracket?: string | null
           leisure_frequency: string
           leisure_mode?: string | null
+          leisure_two_wheeler_type?: string | null
           tc_access?: string | null
           train_long_trips_per_year?: number
           updated_at?: string
@@ -127,7 +126,6 @@ export type Database = {
           car_long_trips_engine?: string | null
           car_long_trips_per_year?: number
           commute_car_engine?: string | null
-          commute_two_wheeler_type?: string | null
           commute_carpool_size?: number | null
           commute_days_per_week?: number | null
           commute_distance_bracket?: string | null
@@ -137,14 +135,15 @@ export type Database = {
           commute_mode?: string | null
           commute_second_mode?: string | null
           commute_second_mode_used?: boolean
+          commute_two_wheeler_type?: string | null
           flights_short_per_year?: number | null
           flights_total_per_year?: number
           household_vehicles?: string | null
           leisure_car_engine?: string | null
-          leisure_two_wheeler_type?: string | null
           leisure_distance_bracket?: string | null
           leisure_frequency?: string
           leisure_mode?: string | null
+          leisure_two_wheeler_type?: string | null
           tc_access?: string | null
           train_long_trips_per_year?: number
           updated_at?: string
@@ -211,7 +210,10 @@ export type Database = {
         Insert: {
           assessment_id: string
           commute_co2_kg_year: number
+          commute_main_leg_co2_kg_year?: number | null
+          commute_main_leg_km_year?: number | null
           commute_poste_label?: string | null
+          commute_trip_distance_km?: number | null
           computed_at?: string
           dominant_poste: string
           dominant_poste_co2_kg_year: number
@@ -221,15 +223,15 @@ export type Database = {
           extras_poste_label?: string | null
           id?: string
           leisure_co2_kg_year: number
-          leisure_km_year: number | null
-          leisure_trip_distance_km: number | null
-          mobility_constrained: boolean | null
+          leisure_km_year?: number | null
+          leisure_trip_distance_km?: number | null
+          mobility_constrained?: boolean | null
           total_co2_kg_year: number
-          travel_car_co2_kg_year: number | null
+          travel_car_co2_kg_year?: number | null
           travel_co2_kg_year: number
-          travel_flight_long_co2_kg_year: number | null
-          travel_flight_short_co2_kg_year: number | null
-          travel_train_co2_kg_year: number | null
+          travel_flight_long_co2_kg_year?: number | null
+          travel_flight_short_co2_kg_year?: number | null
+          travel_train_co2_kg_year?: number | null
         }
         Update: {
           assessment_id?: string
@@ -670,6 +672,33 @@ export type Database = {
         }
         Relationships: []
       }
+      purge_runs: {
+        Row: {
+          candidates: number
+          deleted: number
+          detail: string | null
+          id: string
+          ran_at: string
+          status: string
+        }
+        Insert: {
+          candidates?: number
+          deleted?: number
+          detail?: string | null
+          id?: string
+          ran_at?: string
+          status: string
+        }
+        Update: {
+          candidates?: number
+          deleted?: number
+          detail?: string | null
+          id?: string
+          ran_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string
@@ -707,6 +736,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reminder_send_runs: {
+        Row: {
+          canal: string
+          detail: string | null
+          echecs: number
+          envoyes: number
+          id: string
+          ran_at: string
+          status: string
+          traites: number
+        }
+        Insert: {
+          canal: string
+          detail?: string | null
+          echecs?: number
+          envoyes?: number
+          id?: string
+          ran_at?: string
+          status: string
+          traites?: number
+        }
+        Update: {
+          canal?: string
+          detail?: string | null
+          echecs?: number
+          envoyes?: number
+          id?: string
+          ran_at?: string
+          status?: string
+          traites?: number
+        }
+        Relationships: []
       }
       transport_modes: {
         Row: {
@@ -808,12 +870,27 @@ export type Database = {
         Args: { p_mode_id: string; p_on_date: string }
         Returns: number
       }
-      export_my_data: { Args: never; Returns: Json }
       enqueue_checkin_reminders: { Args: never; Returns: undefined }
+      envoyer_lot_push: {
+        Args: {
+          p_expo_token: string
+          p_jetons: string[]
+          p_lignes: string[]
+          p_messages: Json
+        }
+        Returns: Json
+      }
       estimate_action_savings: {
         Args: { p_assessment_id: string }
         Returns: Database["public"]["CompositeTypes"]["action_saving"][]
+        SetofOptions: {
+          from: "*"
+          to: "action_saving"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
+      export_my_data: { Args: never; Returns: Json }
       generate_commute_checkins: { Args: never; Returns: undefined }
       generate_extras_checkins: { Args: never; Returns: undefined }
       generate_plan_cycle_for_user: {
@@ -821,6 +898,7 @@ export type Database = {
         Returns: undefined
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
+      purge_notification_outbox: { Args: never; Returns: undefined }
       purge_stale_anonymous_accounts: { Args: never; Returns: undefined }
       purge_usage_events: { Args: never; Returns: undefined }
       recompute_assessment_results: {
@@ -841,7 +919,11 @@ export type Database = {
         Returns: string
       }
       resolve_mode: {
-        Args: { p_car_engine: string; p_mode_id: string; p_two_wheeler_type: string }
+        Args: {
+          p_car_engine: string
+          p_mode_id: string
+          p_two_wheeler_type: string
+        }
         Returns: string
       }
       resolve_two_wheeler_mode: {
@@ -864,7 +946,7 @@ export type Database = {
           period_start: string
         }[]
       }
-      send_pending_reminders: { Args: never; Returns: undefined }
+      send_pending_reminders: { Args: never; Returns: number }
       sync_emission_factors: { Args: never; Returns: undefined }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
     }
@@ -891,12 +973,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -920,11 +1002,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -945,11 +1027,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -970,11 +1052,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -987,11 +1069,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

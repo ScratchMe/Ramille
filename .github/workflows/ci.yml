@@ -82,8 +82,26 @@ jobs:
       # Démarre une stack Postgres locale (Docker) à partir de supabase/config.toml et
       # applique supabase/migrations/ — indépendante du projet Supabase distant
       # TraceVerte-v1, cf. supabase/config.toml.
+      #
+      # Version épinglée, et pas `latest`. Le CLI apporte la stack locale entière (image
+      # Postgres, rôles, privilèges par défaut, GoTrue, PostgREST) : en `latest`, cette moitié
+      # de la CI changeait sous nos pieds à chaque sortie du CLI, sans qu'une ligne du dépôt
+      # bouge — une suite rouge le lundi sur un commit vert le vendredi, sans rien à lire pour
+      # le comprendre. Ce sont précisément les privilèges par défaut qui devaient nous tomber
+      # dessus par là : c'est le CLI, et lui seul, qui décide si une nouvelle table du schéma
+      # `public` arrive exposée ou non (cf. supabase/config.toml et
+      # supabase/migrations/20260910110000_grants_explicites.sql).
+      #
+      # 2.117.0 relevé le 10/09/2026 sur le registre npm : publiée le 07/09/2026 et toujours le
+      # `dist-tag` latest ce jour-là — c'est donc la version que `latest` installait déjà aux
+      # derniers passages de cette CI. L'épinglage fige l'état connu, il ne le change pas.
+      #
+      # Pour la faire évoluer : changer le numéro ici, rien d'autre, et laisser la CI de la PR
+      # le prouver. Une montée qui casse se lit alors dans le diff, ce qui est tout l'intérêt.
+      # Reporter alors le numéro **et** sa date de publication ci-dessus, et ne jamais revenir à
+      # `latest` : un tag qui n'existe pas fait tomber tout ce job, pas seulement une assertion.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.117.0
       - run: supabase db start
       - run: supabase test db
