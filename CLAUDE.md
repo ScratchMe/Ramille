@@ -172,8 +172,12 @@ décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pi
 plutôt que d'insérer un point à la main.
 
 **Feuille de route courante : `v1-13-audit-et-chantiers.md`** (audit du 09/09/2026, 283 constats
-contre-vérifiés, 52 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une issue GitHub par chantier (#99 à #150) ; inventaire
-complet en `docs/audit/2026-09-09-inventaire.md`). Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
+contre-vérifiés, 53 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une issue GitHub par chantier (#99 à #151) ; inventaire
+complet en `docs/audit/2026-09-09-inventaire.md`). **Le lot 2 passe d'abord par une session Claude Design**
+(décidée le 10/09/2026) : son brief est `docs/design/v1-14-boucle-engagement/BRIEF.md`, et il donne au
+canvas mandat de faire évoluer le design existant dans les limites déjà posées (aucun jugement, aucune
+mécanique d'échec, la voix de Ramille) ; C2.1, C2.4, C2.7, C2.8, C2.10, C2.12 et C2.13 attendent le
+canvas pour leur partie écran, pas pour leur partie serveur. Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
 §4 — audit du 04/09/2026, 7 étapes (facteurs d'émission faux → boucle d'engagement cassée → suivi
 dans la durée qui manque) — est entièrement livré. Son §1 corrige deux erreurs de chiffre documentées ailleurs
 comme des choix assumés : l'API Impact CO2 **distingue bien** court/moyen/long-courrier (la

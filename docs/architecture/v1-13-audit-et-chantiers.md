@@ -156,6 +156,7 @@ reçoit un bandeau daté au moment où le chantier correspondant est livré, jam
 | C2.10 | Le signal « deux points consécutifs » | P2 | petit | C2.3 | — |
 | C2.11 | Le lien du rappel ouvert sur un autre appareil | P2 | petit | — | D17 |
 | C2.12 | Variantes des répliques de check-in | P2 | petit | C2.4 | D12 |
+| C2.13 | La mascotte porte la saison | P2 | moyen | C2.8, canvas v1-14 | décision du 10/09 (hors audit) |
 | C3.1 | La mobilité contrainte est lue par la restitution | P3 | petit | — | — |
 | C3.2 | D'où vient le chiffre : source, périmètre, une équivalence | P3 | moyen | — | — |
 | C3.3 | Vols : aller-retour, hypothèses affichées | P3 | petit | — | — |
@@ -190,6 +191,7 @@ rebaser dans l'ordre indiqué.
 | `src/app/(tabs)/suivi/index.tsx` | C1.4, C1.7, C1.8, C2.7, C2.8 |
 | `src/components/checkin-card.tsx` | C1.4, C1.12, C2.1, C2.4, C2.6 |
 | `src/constants/mascotte.ts` | C2.4, C2.7, C2.12, C3.9, C3.10 |
+| `src/types/mascot.ts`, `src/components/mascot.tsx` | C2.13 |
 | `src/app/bilan/index.tsx`, `src/types/bilan.ts` | C1.1, C1.3, C3.3, C3.4 |
 | `src/lib/format.ts` | C1.8 |
 | Fonctions SQL de génération de check-ins (`generate_*_checkins`, `enqueue_checkin_reminders`) | C2.1, C2.3, C2.5, C2.9 |
@@ -204,11 +206,18 @@ rebaser dans l'ordre indiqué.
 2. **Vague 2** — C1.1, C1.2, C1.3, C1.5, C1.9, C1.10, C1.11, C1.12 (fichiers disjoints).
 3. **Vague 3** — C1.4, C1.6, C1.7, C1.8, C1.13 (tous touchent les écrans d'onglets : les enchaîner).
 4. **Vague 4** — C2.2, C2.3, C2.5, C2.6, C2.11 (après arbitrages D2 et D5).
-5. **Vague 5** — C2.1, C2.4, C2.7, C2.8, C2.9, C2.10, C2.12 (après la vague 4 ; C2.12 après C2.4).
+5. **Vague 5** — C2.1, C2.4, C2.7, C2.8, C2.9, C2.10, C2.12, C2.13 (après la vague 4 ; C2.12 après
+   C2.4 ; C2.13 après C2.8 et le canvas v1-14).
 6. **Vague 6** — le lot 3 : C3.1, C3.2, C3.3, C3.7, C3.10, C3.11, C3.12 sans arbitrage ; C3.4,
    C3.5, C3.6, C3.8, C3.9 ensuite (C3.4 à C3.6 touchent `recompute_assessment_results` et se
    font **en une seule migration** si possible, pour ne recalculer la suite pgTAP qu'une fois).
 7. **Vague 7** — le lot 4, chantier par chantier, chacun précédé d'une décision écrite.
+
+**Le lot 2 passe d'abord par un canvas Claude Design** (décision du 10/09/2026 ; brief :
+`docs/design/v1-14-boucle-engagement/BRIEF.md`, qui donne aussi au canvas mandat de proposer des
+évolutions du design existant, dans les limites de §8). La partie **écran** de C2.1, C2.4, C2.7,
+C2.8, C2.10, C2.12 et C2.13 attend sa direction ; leur partie **serveur** — migrations, RPC,
+générateurs de points — peut partir avant, comme les vagues 1 à 3.
 
 ## 3. Lot 0 — Sécurité, exploitation, durée du projet
 
@@ -899,7 +908,8 @@ incohérente refusée ; test 17 : quota de jetons.
 
 C'est le lot qui fait exister la durée. Les cinq coupures identifiées (§0.2) se traitent dans
 l'ordre : d'abord ce que le check-in **dit** et **mesure** (C2.1, C2.3, C2.4, C2.5, C2.6), ensuite
-ce qui **survit** (C2.2), puis ce qui **se voit** (C2.7, C2.8), enfin ce qui **part** (C2.9, C2.10, C2.11) et ce qui **répond** (C2.12).
+ce qui **survit** (C2.2), puis ce qui **se voit** (C2.7, C2.8), enfin ce qui **part** (C2.9, C2.10, C2.11), ce qui **répond** (C2.12), et ce qui **se voit sans
+un chiffre** (C2.13). Les moments d'écran de ce lot se dessinent d'abord (canvas v1-14, §2.2).
 
 ### C2.1 — Le check-in connaît l'action engagée
 
@@ -1259,6 +1269,53 @@ lue par la mise en file — à instruire séparément si on le souhaite (A9-21).
 **Tests.** `mascotte.test.ts` sur chaque variante ; `checkin.test.ts` : même période → même
 variante, deux périodes voisines → pas toujours la même.
 
+### C2.13 — La mascotte porte la saison
+
+**Priorité** P2 · **Effort** moyen · **Dépend de** C2.8, canvas v1-14 · **Arbitrage** décision du 10/09/2026 (idée du titulaire, hors audit : « un petit détail, bonnet en hiver, joues rouges en automne ») · **Constats** aucun.
+
+**Pourquoi.** La saison est l'unité de temps du produit — le cap, le cycle, et avec C2.8 une
+ouverture et une clôture — et rien ne la rend visible sans un chiffre ni une date. Une mascotte
+qui change avec la saison dit « le temps passe et je suis toujours là » sans compter, ce qui est
+exactement le registre de Ramille (« Je serai là à chaque saison, à ton rythme. »). C'est aussi
+le seul signal de nouveauté périodique que le produit puisse offrir sans mécanique d'échec.
+
+**Fichiers.** `src/types/mascot.ts` (géométrie calculée, `MASCOT_MIN_FACE_SIZE`) ;
+`src/components/mascot.tsx` ; `src/types/mascot.test.ts` ; `src/types/saison.ts` (nouveau) ;
+`supabase/migrations/20260823110000_plan_reduction.sql:79` (`season_bounds`, la référence) ;
+`api/share-card.ts` (exclu) ; `docs/design/v1-14-boucle-engagement/` (le canvas, page Saisons).
+
+**À faire.**
+1. Une dérivation pure `saisonDe(date)` dans `src/types/saison.ts` : hiver = décembre à février,
+   printemps = mars à mai, été = juin à août, automne = septembre à novembre — la table de
+   `season_bounds`, **écrite deux fois et épinglée des deux côtés** comme `reminder_channel_for`
+   (Jest sur les douze mois et les bornes ; le test pgTAP existant de `season_bounds` cité en
+   miroir). C2.8 s'en sert pour la carte d'ouverture.
+2. Une couche d'accessoire dans la géométrie (`mascotSeasonGeometry(saison, mood, size)` à côté
+   de `mascotFaceGeometry`) : positions et épaisseurs en unités de `viewBox` à la taille nominale,
+   compensation optique comme les traits, symétrie par l'écart et non par la coordonnée, découpée
+   par le même `clipPath` quand elle touche la silhouette. **Rien sous `MASCOT_MIN_FACE_SIZE`** :
+   la feuille seule reste la feuille seule.
+3. Le composant prend `saison` en prop, valeur par défaut `saisonDe(new Date())` — on peut donc
+   figer une saison dans un test, un canvas ou une capture. Les cinq expressions et `tilt` sont
+   inchangés ; l'accessoire doit rester lisible avec chacune des cinq.
+4. Les accessoires viennent du canvas v1-14 (page Saisons) ; leurs couleurs entrent dans `Colors`
+   avec les **deux thèmes** ; jamais de rouge (les joues d'automne sont un ton chaud de la
+   palette). Test de conformité aux chemins du canvas, comme pour le visage.
+5. Exclusions : la carte de partage (`api/share-card.ts`, dont C3.10 retire le visage), le
+   favicon, les icônes d'app (`mascot-mark.svg` reste la version `calm` sans saison).
+
+**Ne pas faire.** Une sixième expression. Une saison qui change l'humeur (l'hiver n'est pas
+triste). Un accessoire près d'un chiffre lourd (la règle ne change pas). Dériver la saison de
+`plan_cycles` ou de la cadence : `rolling_quarter` n'a pas de saison nommée, la mascotte suit le
+calendrier dans les deux cas. Un chemin SVG figé dans le composant.
+
+**Tests.** `saison.test.ts` (douze mois, bornes, miroir de `season_bounds`) ; `mascot.test.ts` :
+aucun trait sous ~1,3 px à `size >= 28`, accessoire dans la silhouette ou découpé, symétrie,
+rendu strictement identique quand aucune saison n'est passée aux tests existants.
+
+**Fait quand.** Le 1er décembre, sans mise à jour de l'app, Ramille porte son bonnet sur le
+plan, le suivi et l'onboarding, en thème clair et sombre, et la carte de partage ne change pas.
+
 ## 6. Lot 3 — Prise de conscience et justesse du chiffre
 
 ### C3.1 — La mobilité contrainte est lue par la restitution
@@ -1603,7 +1660,7 @@ Relevé par les lecteurs et confirmé ; toute PR qui touche un de ces points le 
 Cocher ici, avec la PR et la date. Une décision d'arbitrage prise se note en §1, dans la colonne
 « Recommandation », par un « **Décidé le JJ/MM : …** ».
 
-**Chaque chantier a son issue GitHub** (#99 à #150, ouvertes le 10/09/2026, étiquettes
+**Chaque chantier a son issue GitHub** (#99 à #151, ouvertes le 10/09/2026, étiquettes
 `audit-2026-09` et `lot-0` à `lot-4`, type Task / Bug / Feature selon le lot). L'issue reprend le
 corps du chantier et pointe vers ce document et l'inventaire ; c'est elle qu'on donne à un agent ou
 qu'on s'assigne, et la PR la ferme (`Closes #n`). Le document reste la référence quand les deux
@@ -1643,6 +1700,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C2.10 | [#128](https://github.com/ScratchMe/TraceVerte/issues/128) | | | |
 | C2.11 | [#129](https://github.com/ScratchMe/TraceVerte/issues/129) | | | |
 | C2.12 | [#130](https://github.com/ScratchMe/TraceVerte/issues/130) | | | |
+| C2.13 | [#151](https://github.com/ScratchMe/TraceVerte/issues/151) | | | |
 | C3.1 | [#131](https://github.com/ScratchMe/TraceVerte/issues/131) | | | |
 | C3.2 | [#132](https://github.com/ScratchMe/TraceVerte/issues/132) | | | |
 | C3.3 | [#133](https://github.com/ScratchMe/TraceVerte/issues/133) | | | |
