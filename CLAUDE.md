@@ -172,7 +172,7 @@ décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pi
 plutôt que d'insérer un point à la main.
 
 **Feuille de route courante : `v1-13-audit-et-chantiers.md`** (audit du 09/09/2026, 283 constats
-contre-vérifiés, 52 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1 ; inventaire
+contre-vérifiés, 52 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une issue GitHub par chantier (#99 à #150) ; inventaire
 complet en `docs/audit/2026-09-09-inventaire.md`). Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
 §4 — audit du 04/09/2026, 7 étapes (facteurs d'émission faux → boucle d'engagement cassée → suivi
 dans la durée qui manque) — est entièrement livré. Son §1 corrige deux erreurs de chiffre documentées ailleurs

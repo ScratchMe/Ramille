@@ -1603,57 +1603,63 @@ Relevé par les lecteurs et confirmé ; toute PR qui touche un de ces points le 
 Cocher ici, avec la PR et la date. Une décision d'arbitrage prise se note en §1, dans la colonne
 « Recommandation », par un « **Décidé le JJ/MM : …** ».
 
-| Chantier | PR | Date | Note |
-|---|---|---|---|
-| C0.1 | | | |
-| C0.2 | | | |
-| C0.3 | | | |
-| C0.4 | | | |
-| C0.5 | | | |
-| C0.6 | | | |
-| C0.7 | | | |
-| C1.1 | | | |
-| C1.2 | | | |
-| C1.3 | | | |
-| C1.4 | | | |
-| C1.5 | | | |
-| C1.6 | | | |
-| C1.7 | | | |
-| C1.8 | | | |
-| C1.9 | | | |
-| C1.10 | | | |
-| C1.11 | | | |
-| C1.12 | | | |
-| C1.13 | | | |
-| C2.1 | | | |
-| C2.2 | | | |
-| C2.3 | | | |
-| C2.4 | | | |
-| C2.5 | | | |
-| C2.6 | | | |
-| C2.7 | | | |
-| C2.8 | | | |
-| C2.9 | | | |
-| C2.10 | | | |
-| C2.11 | | | |
-| C2.12 | | | |
-| C3.1 | | | |
-| C3.2 | | | |
-| C3.3 | | | |
-| C3.4 | | | |
-| C3.5 | | | |
-| C3.6 | | | |
-| C3.7 | | | |
-| C3.8 | | | |
-| C3.9 | | | |
-| C3.10 | | | |
-| C3.11 | | | |
-| C3.12 | | | |
-| C4.1 | | | |
-| C4.2 | | | |
-| C4.3 | | | |
-| C4.4 | | | |
-| C4.5 | | | |
-| C4.6 | | | |
-| C4.7 | | | |
-| C4.8 | | | |
+**Chaque chantier a son issue GitHub** (#99 à #150, ouvertes le 10/09/2026, étiquettes
+`audit-2026-09` et `lot-0` à `lot-4`, type Task / Bug / Feature selon le lot). L'issue reprend le
+corps du chantier et pointe vers ce document et l'inventaire ; c'est elle qu'on donne à un agent ou
+qu'on s'assigne, et la PR la ferme (`Closes #n`). Le document reste la référence quand les deux
+divergent : une issue ne se réécrit pas, elle renvoie ici.
+
+| Chantier | Issue | PR | Date | Note |
+|---|---|---|---|---|
+| C0.1 | [#99](https://github.com/ScratchMe/TraceVerte/issues/99) | | | |
+| C0.2 | [#100](https://github.com/ScratchMe/TraceVerte/issues/100) | | | |
+| C0.3 | [#101](https://github.com/ScratchMe/TraceVerte/issues/101) | | | |
+| C0.4 | [#102](https://github.com/ScratchMe/TraceVerte/issues/102) | | | |
+| C0.5 | [#103](https://github.com/ScratchMe/TraceVerte/issues/103) | | | |
+| C0.6 | [#104](https://github.com/ScratchMe/TraceVerte/issues/104) | | | |
+| C0.7 | [#105](https://github.com/ScratchMe/TraceVerte/issues/105) | | | |
+| C1.1 | [#106](https://github.com/ScratchMe/TraceVerte/issues/106) | | | |
+| C1.2 | [#107](https://github.com/ScratchMe/TraceVerte/issues/107) | | | |
+| C1.3 | [#108](https://github.com/ScratchMe/TraceVerte/issues/108) | | | |
+| C1.4 | [#109](https://github.com/ScratchMe/TraceVerte/issues/109) | | | |
+| C1.5 | [#110](https://github.com/ScratchMe/TraceVerte/issues/110) | | | |
+| C1.6 | [#111](https://github.com/ScratchMe/TraceVerte/issues/111) | | | |
+| C1.7 | [#112](https://github.com/ScratchMe/TraceVerte/issues/112) | | | |
+| C1.8 | [#113](https://github.com/ScratchMe/TraceVerte/issues/113) | | | |
+| C1.9 | [#114](https://github.com/ScratchMe/TraceVerte/issues/114) | | | |
+| C1.10 | [#115](https://github.com/ScratchMe/TraceVerte/issues/115) | | | |
+| C1.11 | [#116](https://github.com/ScratchMe/TraceVerte/issues/116) | | | |
+| C1.12 | [#117](https://github.com/ScratchMe/TraceVerte/issues/117) | | | |
+| C1.13 | [#118](https://github.com/ScratchMe/TraceVerte/issues/118) | | | |
+| C2.1 | [#119](https://github.com/ScratchMe/TraceVerte/issues/119) | | | |
+| C2.2 | [#120](https://github.com/ScratchMe/TraceVerte/issues/120) | | | |
+| C2.3 | [#121](https://github.com/ScratchMe/TraceVerte/issues/121) | | | |
+| C2.4 | [#122](https://github.com/ScratchMe/TraceVerte/issues/122) | | | |
+| C2.5 | [#123](https://github.com/ScratchMe/TraceVerte/issues/123) | | | |
+| C2.6 | [#124](https://github.com/ScratchMe/TraceVerte/issues/124) | | | |
+| C2.7 | [#125](https://github.com/ScratchMe/TraceVerte/issues/125) | | | |
+| C2.8 | [#126](https://github.com/ScratchMe/TraceVerte/issues/126) | | | |
+| C2.9 | [#127](https://github.com/ScratchMe/TraceVerte/issues/127) | | | |
+| C2.10 | [#128](https://github.com/ScratchMe/TraceVerte/issues/128) | | | |
+| C2.11 | [#129](https://github.com/ScratchMe/TraceVerte/issues/129) | | | |
+| C2.12 | [#130](https://github.com/ScratchMe/TraceVerte/issues/130) | | | |
+| C3.1 | [#131](https://github.com/ScratchMe/TraceVerte/issues/131) | | | |
+| C3.2 | [#132](https://github.com/ScratchMe/TraceVerte/issues/132) | | | |
+| C3.3 | [#133](https://github.com/ScratchMe/TraceVerte/issues/133) | | | |
+| C3.4 | [#134](https://github.com/ScratchMe/TraceVerte/issues/134) | | | |
+| C3.5 | [#135](https://github.com/ScratchMe/TraceVerte/issues/135) | | | |
+| C3.6 | [#136](https://github.com/ScratchMe/TraceVerte/issues/136) | | | |
+| C3.7 | [#137](https://github.com/ScratchMe/TraceVerte/issues/137) | | | |
+| C3.8 | [#138](https://github.com/ScratchMe/TraceVerte/issues/138) | | | |
+| C3.9 | [#139](https://github.com/ScratchMe/TraceVerte/issues/139) | | | |
+| C3.10 | [#140](https://github.com/ScratchMe/TraceVerte/issues/140) | | | |
+| C3.11 | [#141](https://github.com/ScratchMe/TraceVerte/issues/141) | | | |
+| C3.12 | [#142](https://github.com/ScratchMe/TraceVerte/issues/142) | | | |
+| C4.1 | [#143](https://github.com/ScratchMe/TraceVerte/issues/143) | | | |
+| C4.2 | [#144](https://github.com/ScratchMe/TraceVerte/issues/144) | | | |
+| C4.3 | [#145](https://github.com/ScratchMe/TraceVerte/issues/145) | | | |
+| C4.4 | [#146](https://github.com/ScratchMe/TraceVerte/issues/146) | | | |
+| C4.5 | [#147](https://github.com/ScratchMe/TraceVerte/issues/147) | | | |
+| C4.6 | [#148](https://github.com/ScratchMe/TraceVerte/issues/148) | | | |
+| C4.7 | [#149](https://github.com/ScratchMe/TraceVerte/issues/149) | | | |
+| C4.8 | [#150](https://github.com/ScratchMe/TraceVerte/issues/150) | | | |
