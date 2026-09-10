@@ -220,13 +220,26 @@ par chantier, une PR par issue (`Closes #n`), la ligne de §10 cochée à la fin
 | Vague | Chantiers | Parallèle ? | Ce qu'elle livre | Effort |
 |---|---|---|---|---|
 | **1 — Sécurité et exploitation** | C0.1, C0.2, C0.3, C0.4, C0.6, C0.7 ; puis C0.5 | oui, C0.5 après | Le bloqueur (Redirect URLs), la sauvegarde, les droits, un filet d'erreur, la rétention, le registre. **Avant toute publication sur Play.** | 4 petits, 3 moyens |
-| **2 — Bugs silencieux, fichiers disjoints** | C1.1, C1.2, C1.3, C1.5, C1.9, C1.10, C1.11, C1.12 | oui | Plus de bilan fantôme ni de double session, le questionnaire aux bords, la connexion qui dit vrai, l'accessibilité, Play, le web, la réponse au point par RPC (socle de C2.4). | 4 petits, 4 moyens |
+| **2 — Bugs silencieux** | 2a : C1.12, C1.10, C1.11 · 2b : C1.3, C1.9 · puis C1.2 → C1.5 → C1.1 | **en partie** — voir ci-dessous | Plus de bilan fantôme ni de double session, le questionnaire aux bords, la connexion qui dit vrai, l'accessibilité, Play, le web, la réponse au point par RPC (socle de C2.4). | 4 petits, 4 moyens |
 | **3 — Bugs silencieux, écrans d'onglets** | C1.4, C1.6, C1.7, C1.8, C1.13 | **non** — enchaînés, mêmes fichiers | Réseau coupé dit vrai, la feuille des rappels ne se ferme plus sur rien, le suivi se rafraîchit, le chiffre affiché juste, la documentation à jour. **Jalon : publiable sur Play.** | 4 petits, 1 moyen |
 | **4 — Lot 2, socle et serveur** | C2.14, C2.6 d'abord (une heure chacun) ; puis C2.3 → C2.5 (générateurs, enchaînés) ; C2.2 ; C2.11 ; C2.9 après C0.5 | en partie | La saison côté client, la forme insérable, la période écoulée, les bonnes personnes dans chaque boucle, l'engagement qui survit et se reconduit, le rappel ouvert ailleurs, les rappels qui s'espacent. Rien de tout cela n'attendait le canvas. | 3 petits, 4 moyens |
 | **5 — Lot 2, le point** | C2.1 → C2.4 → C2.10 → C2.12 | **non** — même fichier, cet ordre | Le point qui nomme l'action, trois réponses, la carte qui reste, le second renforcement, les variantes. Planches A1 à A3. | 2 moyens, 2 petits |
 | **6 — Lot 2, la saison et le suivi** | `plan.tsx` : C2.8 puis C4.6 ; suivi : C2.7 puis C3.1 ; C2.13 ; C3.9 | trois files parallèles, séquentielles en interne | La fin et l'ouverture de saison, les pistes et le premier pas, le suivi dans la durée, la restitution d'un re-bilan, la mascotte saisonnière, la reprise de bilan. Planches B à G et Saisons. **Jalon : la boucle existe d'une saison à l'autre.** | 5 moyens, 1 petit |
 | **7 — Lot 3 restant** | C3.2, C3.3, C3.7, C3.10 (ce que C2.2 n'a pas déjà fait), C3.11, C3.12 ; puis C3.4 + C3.5 + C3.6 **en une seule migration** ; puis C3.8 | oui, puis non | La source du chiffre, les hypothèses affichées, le ton, les tests ; l'intermodal, le covoiturage des loisirs, la tranche haute ; le plan plausible. | 4 petits, 3 moyens, 2 grands |
 | **8 — Lot 4** | C4.1, C4.2, C4.3, C4.4, C4.5, C4.7, C4.8 | chantier par chantier | Chacun précédé d'une page de décision. | 4 grands, 3 moyens |
+
+**Correction du 10/09/2026 au soir — la vague 2 n'est pas « à fichiers disjoints ».** En relevant
+les fichiers de ses huit chantiers avant de les distribuer, six fichiers se sont révélés partagés :
+`src/app/_layout.tsx` (C1.2, C1.5, C1.11), `src/app/(tabs)/suivi/bilan.tsx` (C1.1, C1.2, C1.5),
+`src/app/(tabs)/plan.tsx` (C1.1, C1.5), `src/app/bilan/index.tsx` (C1.1, C1.3),
+`src/app/connexion/index.tsx` (C1.2, C1.5) et `src/lib/compte.ts` (C1.5, C1.10). Les lancer
+ensemble ferait s'écraser des chantiers en silence. La vague se découpe donc en cinq étapes :
+**2a** C1.12, C1.10, C1.11 (vraiment disjoints) ; **2b** C1.3 et C1.9 — les deux touchent
+`src/components/bilan/`, mais jamais les mêmes fichiers (C1.9 : `chip.tsx` et
+`steps/long-trips.tsx` ; C1.3 : `numeric-field.tsx` et les autres `steps/`), donc parallèles à
+condition de lister les fichiers un par un ; puis **C1.2**, **C1.5** et **C1.1** seuls et dans cet
+ordre, chacun repartant de ce que le précédent a écrit. La même vérification reste à faire pour
+les vagues suivantes : la colonne « Parallèle ? » de ce tableau est une intention, pas un relevé.
 
 Trois règles pour distribuer :
 
@@ -1863,13 +1876,13 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 
 | Chantier | Issue | PR | Date | Note |
 |---|---|---|---|---|
-| C0.1 | [#99](https://github.com/ScratchMe/TraceVerte/issues/99) | | | |
-| C0.2 | [#100](https://github.com/ScratchMe/TraceVerte/issues/100) | | | |
-| C0.3 | [#101](https://github.com/ScratchMe/TraceVerte/issues/101) | | | |
-| C0.4 | [#102](https://github.com/ScratchMe/TraceVerte/issues/102) | | | |
-| C0.5 | [#103](https://github.com/ScratchMe/TraceVerte/issues/103) | | | |
-| C0.6 | [#104](https://github.com/ScratchMe/TraceVerte/issues/104) | | | |
-| C0.7 | [#105](https://github.com/ScratchMe/TraceVerte/issues/105) | | | |
+| C0.1 | [#99](https://github.com/ScratchMe/TraceVerte/issues/99) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
+| C0.2 | [#100](https://github.com/ScratchMe/TraceVerte/issues/100) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
+| C0.3 | [#101](https://github.com/ScratchMe/TraceVerte/issues/101) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
+| C0.4 | [#102](https://github.com/ScratchMe/TraceVerte/issues/102) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
+| C0.5 | [#103](https://github.com/ScratchMe/TraceVerte/issues/103) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
+| C0.6 | [#104](https://github.com/ScratchMe/TraceVerte/issues/104) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
+| C0.7 | [#105](https://github.com/ScratchMe/TraceVerte/issues/105) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
 | C1.1 | [#106](https://github.com/ScratchMe/TraceVerte/issues/106) | | | |
 | C1.2 | [#107](https://github.com/ScratchMe/TraceVerte/issues/107) | | | |
 | C1.3 | [#108](https://github.com/ScratchMe/TraceVerte/issues/108) | | | |
