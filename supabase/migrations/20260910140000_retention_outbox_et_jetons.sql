@@ -8,9 +8,18 @@
 -- seule dont le contenu est un message adressé à une personne. `push_tokens`, de son côté,
 -- marque `disabled_at` et ne supprimait **jamais** une ligne — alors que /confidentialite
 -- affirmait que l'identifiant du téléphone « disparaît si tu coupes les notifications ».
--- La page est corrigée dans le même chantier ; ici on rend la phrase vraie.
+-- Les deux moitiés de cette phrase sont traitées séparément, et il faut les distinguer : la
+-- suppression différée est écrite ici, le déclencheur est réécrit sur la page. Choisir « Par
+-- email » ou « Aucun rappel » dans l'app ne désactive aucun jeton et ne doit pas le faire
+-- (`setReminderChannel` n'écrit que `profiles.reminder_channel` : la préférence ne se dégrade
+-- jamais d'elle-même, pour que rouvrir les notifications dans les réglages du téléphone suffise
+-- à faire repartir le push, v1-12 §3). Le seul chemin qui pose `disabled_at` est le téléphone qui
+-- cesse d'accepter les notifications — permission retirée dans ses réglages, ou application
+-- désinstallée, ce qu'Expo remonte en `DeviceNotRegistered`. La suppression du compte, elle,
+-- n'en désactive aucun : elle emporte la ligne entière par cascade. C'est ce que la page dit
+-- désormais.
 --
--- POURQUOI DEUX DURÉES DIFFÉRENTES.
+-- POURQUOI TROIS DURÉES DIFFÉRENTES.
 --   * Six mois pour la boîte d'envoi : c'est la fenêtre où un message parti peut encore
 --     servir à diagnostiquer un non-reçu (plainte « je n'ai rien eu », `last_error`,
 --     `provider_ticket`). Au-delà, la ligne ne sert plus à rien et ne porte que du texte
@@ -20,6 +29,12 @@
 --     réversible — rouvrir les notifications dans les réglages du téléphone fait repartir le
 --     push sur la **même** ligne (`register_push_token` la reprend). Passé trois mois, un
 --     jeton Expo désactivé ne redeviendra pas valide.
+--   * Douze mois pour les deux journaux de passage (`purge_runs`, `reminder_send_runs`) : ils
+--     ne portent aucune donnée nominative, donc le RGPD n'impose rien ici. Leur seule valeur
+--     est de pouvoir répondre à « depuis quand ? » sur un mécanisme qui peut rester cassé un
+--     trimestre entier sans que rien ne le signale (la synchronisation des facteurs ne repasse
+--     que tous les trois mois) : six mois trancheraient trop court, et une rétention absente
+--     par décision se lit exactement comme une rétention absente par oubli.
 --
 -- CE QU'ELLE NE FAIT JAMAIS. Toucher une ligne `pending`. Un rappel en attente l'est parce
 -- que l'envoi n'a pas encore eu lieu — les secrets Vault absents suffisent à ce qu'une file
@@ -44,24 +59,37 @@ as $$
 
   delete from public.push_tokens
   where disabled_at < now() - interval '90 days';
+
+  -- Les deux journaux de passage du lot 0. Aucune donnée nominative : on les garde douze mois
+  -- et non six, parce qu'ils servent à dire « depuis quand ce mécanisme est-il cassé ? » sur des
+  -- crons qui peuvent ne repasser qu'une fois par trimestre.
+  delete from public.purge_runs
+  where ran_at < now() - interval '12 months';
+
+  delete from public.reminder_send_runs
+  where ran_at < now() - interval '12 months';
 $$;
 
 comment on function public.purge_notification_outbox() is
-  'Rétention : supprime les rappels terminés (sent, cancelled, failed) de plus de six mois et les jetons d''appareil désactivés depuis plus de 90 jours. Ne touche jamais une ligne pending — un rappel en attente peut attendre des mois si les secrets d''envoi manquent, et unique(checkin_id) interdit de le remettre en file.';
+  'Rétention : supprime les rappels terminés (sent, cancelled, failed) de plus de six mois, les jetons d''appareil désactivés depuis plus de 90 jours, et les lignes de purge_runs / reminder_send_runs de plus de douze mois (journaux de passage, sans donnée nominative). Ne touche jamais une ligne pending — un rappel en attente peut attendre des mois si les secrets d''envoi manquent, et unique(checkin_id) interdit de le remettre en file.';
 
 -- `revoke ... from anon, authenticated` ne révoque rien : PostgreSQL accorde EXECUTE à PUBLIC
 -- à la création et les deux rôles en héritent (v1-08 §5.2). Il faut nommer `public`.
 revoke execute on function public.purge_notification_outbox() from public, anon, authenticated;
 
--- 2h UTC, parce que c'est la seule heure libre de la nuit : les autres passages occupent 3h30
--- (purge des repères de parcours), 4h (purge des sessions anonymes), 5h (génération des plans),
--- 6h (génération des points de suivi), 7h (envoi des rappels) et 8h (collecte des reçus push).
--- La purge ne dépend d'aucun de ces passages — elle ne regarde que des lignes vieilles de six
--- mois — donc seule compte l'absence de chevauchement, sur une base où un seul `pg_cron`
+-- 1h UTC. Inventaire réel des passages, relevé dans `cron.job` le 10/09/2026 : 3h le 1er de
+-- janvier/avril/juillet/octobre (synchronisation des facteurs ADEME), 3h30 (purge des repères de
+-- parcours), 4h (purge des sessions anonymes), 5h (génération des plans), 6h (points de suivi :
+-- le lundi pour la boucle hebdomadaire, le 1er du mois pour la mensuelle), 7h (envoi des
+-- rappels), 8h (collecte des reçus push). Minuit, 1h et 2h sont donc libres côté base — mais on
+-- ne prend pas 2h : la sauvegarde hebdomadaire part le dimanche à 2h UTC
+-- (`.github/workflows/sauvegarde.yml`), et on ne superpose pas un `delete` au seul filet de
+-- sécurité. La purge ne dépend d'aucun de ces passages — la plus jeune ligne qu'elle regarde a
+-- trois mois — donc seule compte l'absence de chevauchement, sur une base où un seul `pg_cron`
 -- exécute tout.
 select cron.schedule(
   'purge-notification-outbox',
-  '0 2 * * *',
+  '0 1 * * *',
   $$select public.purge_notification_outbox()$$
 );
 

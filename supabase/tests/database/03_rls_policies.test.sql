@@ -9,9 +9,14 @@
 --   A. Lecture (SELECT) : un tiers ne doit jamais voir la ligne d'un autre utilisateur.
 --   B. Écriture croisée : ni INSERT falsifié (user_id d'un tiers), ni UPDATE sur la ligne
 --      d'un tiers (silencieusement sans effet, RLS filtre la ligne cible avant l'UPDATE).
---   C. Verrouillage serveur-only : assessment_results/plan_cycles/plan_actions n'ont aucune
---      policy insert pour `authenticated` (écriture réservée aux fonctions security definer) ;
---      engagement_checkins va plus loin avec un `revoke insert` explicite.
+--   C. Verrouillage serveur-only : assessment_results et plan_cycles n'ont aucune policy insert
+--      pour `authenticated` (écriture réservée aux fonctions security definer) — le refus vient
+--      donc de la RLS. plan_actions et engagement_checkins vont plus loin : elles n'ont pas non
+--      plus le privilège INSERT, et le refus tombe avant la RLS (« permission denied for
+--      table … »). Pour plan_actions c'est l'arbitrage du 10/09/2026
+--      (20260910110000_grants_explicites.sql §4, l'engagement passant par un RPC) ; pour
+--      engagement_checkins le `revoke insert` de 20260827090000. C'est cette différence de
+--      message qui dit, pour chaque table, laquelle des deux gardes joue.
 --   D. Référentiels publics : transport_modes/emission_factors/action_templates restent
 --      lisibles même sans authentification (anon), cf. 20260823095200_public_reference_data.sql.
 begin;
@@ -40,8 +45,9 @@ insert into public.assessment_answers (
 
 -- L'instantané par segment est obligatoire depuis l'étape 6a : sans lui,
 -- `estimate_action_savings` ne rend aucune action et le cycle généré plus bas serait vide —
--- il n'y aurait alors rien à protéger, et l'assertion RLS sur `plan_actions` passerait pour
--- une mauvaise raison. Valeurs dérivées du facteur, jamais écrites en dur (cf. CLAUDE.md).
+-- il n'y aurait alors rien à protéger, et les deux assertions de lecture sur `plan_actions`
+-- passeraient pour une mauvaise raison. L'assertion d'INSERT, elle, ne dépend plus du contenu du
+-- cycle depuis le 10/09/2026 : le privilège manque, donc le refus tombe avant toute lecture. Valeurs dérivées du facteur, jamais écrites en dur (cf. CLAUDE.md).
 insert into public.assessment_results (
   assessment_id, total_co2_kg_year, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year,
   dominant_poste, dominant_poste_co2_kg_year, dominant_poste_mode, dominant_poste_label,
@@ -142,8 +148,8 @@ select throws_ok(
     (select id from public.plan_cycles where user_id = '51111111-1111-1111-1111-111111111111')
   ),
   '42501',
-  'new row violates row-level security policy for table "plan_actions"',
-  'plan_actions: authenticated ne peut pas insérer directement (génération serveur uniquement)'
+  'permission denied for table plan_actions',
+  'plan_actions: authenticated ne peut pas insérer directement (privilège INSERT retiré le 10/09/2026)'
 );
 select throws_ok(
   $stmt$ insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label) values ('51111111-1111-1111-1111-111111111111', 'commute', current_date, 'x', 'x') $stmt$,

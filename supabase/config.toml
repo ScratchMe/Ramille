@@ -23,32 +23,19 @@ extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
-# Passé à `false` le 10/09/2026 (chantier C0.3), et ce n'est pas l'équivalent de le retirer.
-# **Ce drapeau doit être écrit, pas omis** : son comportement par défaut n'est pas fiable. Le CLI
-# 2.117.0 annonce « When unset, new entities are auto-exposed » (donc exposition automatique de
-# toute nouvelle table, vue, séquence et fonction du schéma `public` à `anon`/`authenticated`/
-# `service_role`), alors que le commentaire que cette ligne remplace racontait exactement
-# l'inverse : absent, la CI tombait en « permission denied ». L'un des deux a changé entre-temps,
-# et aucun des deux ne se vérifie depuis le dépôt. Écrit explicitement à `false`, le CLI pose trois
-# `alter default privileges ... revoke` et les nouvelles entités exigent un GRANT — quelle que soit
-# la valeur par défaut du jour.
-#
-# Pourquoi `false` : les privilèges de table vivent désormais dans
-# supabase/migrations/20260910110000_grants_explicites.sql, seule source en local comme en
-# production, et c'est la stack locale qui fait autorité en CI. Tant que ce drapeau exposait tout,
-# un GRANT manquant dans une migration ne se voyait ni en local, ni en CI, ni avant le jour où la
-# base serait reconstruite depuis `supabase/migrations/`. La contrepartie est que
-# `18_grants_explicites.test.sql` devient exigeant : une table ajoutée sans sa ligne de GRANT sera
-# invisible pour l'app, et ce test le dira.
-#
-# Côté projet distant, l'équivalent de ce drapeau est le réglage « Default privileges for new
-# entities » du tableau de bord Supabase : tant qu'il est actif là-bas, la production accorde plus
-# que ce que décrivent les migrations (cf. l'en-tête de la migration).
-#
-# Le jour où le CLI supprime ce drapeau, cette ligne devient un champ inconnu et fera échouer
-# `supabase start` : la retirer alors, et relancer `supabase test db` — c'est le test 18 qui dira
-# si le comportement par défaut a changé avec elle.
-auto_expose_new_tables = false
+# Le drapeau `auto_expose_new_tables` a été retiré d'ici le 10/09/2026 (chantier C0.3). Absent, le
+# CLI 2.117.0 pose avant les migrations ses trois `alter default privileges ... revoke` (tables,
+# séquences, fonctions, depuis anon/authenticated/service_role) : une nouvelle entité du schéma
+# `public` exige donc un GRANT explicite — c'est le défaut de la plateforme depuis le 30/05/2026, et
+# le champ lui-même disparaît du CLI le 30/10/2026. L'écrire à `false` emprunte exactement le même
+# chemin de code (`if AutoExposeNewTables != nil && *AutoExposeNewTables { return nil }`) et ne
+# ferait que programmer la panne : le jour du retrait, un champ inconnu fait échouer
+# `supabase start`. Les privilèges de table vivent dans
+# supabase/migrations/20260910110000_grants_explicites.sql, et
+# supabase/tests/database/18_grants_explicites.test.sql en épingle la matrice entière — une table
+# ajoutée sans sa ligne de GRANT est invisible pour l'app, et ce test le dit.
+# L'équivalent côté projet distant est le réglage « Default privileges for new entities » du tableau
+# de bord, que rien dans le dépôt ne voit.
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.

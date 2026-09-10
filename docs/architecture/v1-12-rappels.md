@@ -167,6 +167,35 @@ La résolution vit dans une fonction SQL **pure** `public.reminder_channel_for(p
 returns text` (`'push'`, `'email'` ou `null`), appelée par `enqueue_checkin_reminders` et
 testable sans HTTP. C'est elle que le test `17` confronte à la table du §3.
 
+> ⚠️ **Correction du 10/09/2026 — les §4.4 et §4.5 ci-dessous décrivent l'implémentation remplacée
+> par le chantier C0.5** (`supabase/migrations/20260910130000_observabilite_rappels.sql`, constats
+> A9-1, A9-4, A9-12, A9-13, A9-14). **Quatre prescriptions y sont désormais fausses :**
+>
+> - le corps du push, `{ "to": [jetons actifs de l'utilisateur], … }`, « tous les jetons actifs de la
+>   personne dans la même requête » : c'est **un message par jeton**, regroupés par lots de cent dans
+>   un seul appel. Un `to` à plusieurs jetons casse la correspondance positionnelle entre un ticket
+>   et le jeton qui l'a causé, et se tromper de jeton désactiverait l'appareil de quelqu'un d'autre ;
+> - « Le cron `send-pending-reminders` reste quotidien à 7 h UTC […] Rien à changer » : il garde son
+>   nom et son heure, mais sa commande devient `call public.envoyer_rappels()`, la procédure qui
+>   committe entre les passes. `select public.send_pending_reminders()` reste une passe valide à
+>   déclencher à la main (elle rend le nombre de messages traités), ce n'est plus le chemin du cron ;
+> - « `email` : Resend, comme aujourd'hui, rien ne bouge » : le fournisseur ne change pas, mais le
+>   plafond de cent est compté sur ce qui est **déjà parti dans la journée**, vingt-cinq par passe ;
+> - §4.5, « avec les `provider_ticket` des lignes `sent` du jour » : l'appel est borné à mille
+>   identifiants par passage, et `receipts_checked_at` est posé au-delà de quarante-huit heures même
+>   en échec — sinon le lot en tête de file retient tous les suivants indéfiniment.
+>
+> **Deux mécanismes s'y ajoutent, que ces sections ne décrivaient pas** : la ligne est marquée `sent`
+> **avant** l'appel et remise en attente si l'appel échoue (mieux vaut un rappel perdu qu'un rappel
+> envoyé deux fois) ; et chaque passage laisse une ligne par canal dans `public.reminder_send_runs`,
+> **y compris une nuit où rien n'attend**, faute de quoi l'absence de ligne ne distinguerait pas
+> « personne n'attendait » de « le cron ne tourne plus ».
+>
+> **Le reste de ces sections reste exact** : le repli est une mise à jour de la même ligne,
+> `unique(checkin_id)` tient la garantie anti-relance, le ticket refusé en `DeviceNotRegistered`
+> désactive le jeton, le cron passe à 7 h UTC, et l'en-tête `Authorization` n'est joint que si le
+> secret Vault existe.
+
 ### 4.4 L'envoi
 
 `send_pending_reminders()` branche sur `channel` :

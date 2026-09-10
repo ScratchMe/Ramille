@@ -10,8 +10,10 @@
 -- l'export hebdomadaire de `.github/workflows/sauvegarde.yml` (docs/exploitation/sauvegarde.md).
 --
 -- CE QUE CETTE MIGRATION AJOUTE. Un plafond : si le passage du jour supprimerait plus que son
--- seuil, il ne supprime **rien** et laisse une ligne de journal. Une purge bloquée se rattrape
--- (le passage suivant reprendra les mêmes comptes) ; une purge fautive ne se rattrape pas.
+-- seuil, il ne supprime **rien** et laisse une ligne de journal. Une purge bloquée ne se rattrape
+-- pas d'elle-même : le prédicat étant déterministe, chaque passage suivant rebloque sur le même
+-- ensemble. Le blocage tient jusqu'à ce qu'on lise `purge_runs` — c'est le prix assumé, une purge
+-- fautive ne se rattrapant pas du tout.
 --
 -- LE SEUIL, ET POURQUOI IL A UN PLANCHER. 20 % des comptes anonymes, mais jamais moins de 50
 -- comptes en valeur absolue. Le pourcentage seul serait inexploitable sur une base petite :

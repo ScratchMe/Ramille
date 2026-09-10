@@ -13,14 +13,16 @@
 --     sauvegarde, branche de test — n'accorde rien à personne : l'app répond « permission denied
 --     for table … » avant même d'atteindre la RLS, et rien dans le dépôt ne le disait ;
 --   * ce drapeau est un drapeau de compatibilité, que le dépôt notait lui-même comme temporaire
---     (échéance 2026-10-30 — une note d'ici, pas une date vérifiée auprès de la plateforme). Le
---     jour où il disparaît du CLI, la CI tombe sur cette erreur sans qu'une ligne de code ait
---     changé ; et comme l'action `supabase/setup-cli@v1` était en `version: latest`, ce jour-là
---     n'était même pas choisi par nous (il l'est maintenant, cf. `.github/workflows/ci.yml`).
+--     (échéance confirmée par le CLI lui-même : son template de config annonce « the field is
+--     removed on 2026-10-30 », et `ApplyApiPrivileges` révoque déjà par défaut depuis le
+--     30/05/2026). Le jour où il disparaît du CLI, la CI tombe sur cette erreur sans qu'une ligne
+--     de code ait changé ; et comme l'action `supabase/setup-cli@v1` était en `version: latest`,
+--     ce jour-là n'était même pas choisi par nous (il l'est maintenant, cf.
+--     `.github/workflows/ci.yml`).
 --
--- Le même chantier passe ce drapeau à `false` dans `supabase/config.toml` — l'y laisser absent ne
--- suffit pas : sa valeur par défaut n'est pas fiable, et le CLI du jour peut tout exposer sans
--- qu'on l'ait demandé (le détail est dans le commentaire là-bas).
+-- Le même chantier **retire** ce drapeau de `supabase/config.toml` : absent, le CLI révoque les
+-- privilèges par défaut du schéma `public` avant d'appliquer les migrations — c'est le comportement
+-- voulu, et c'est aussi celui vers lequel le CLI converge (le champ est supprimé le 30/10/2026).
 -- **À partir d'ici, ce fichier est la seule source des privilèges de table du schéma public**, en
 -- local comme en production : d'où la remise à zéro de la §2 avant les grants. Sans elle, la
 -- migration n'aurait fait qu'ajouter à un état invisible, et les deux bases auraient continué à
@@ -49,7 +51,7 @@
 grant usage on schema public to anon, authenticated;
 
 -- ── 2. Remise à zéro ───────────────────────────────────────────────────────────────────
--- Les dix-sept tables du schéma, dans l'ordre alphabétique. `all privileges` couvre aussi
+-- Dix-sept des dix-neuf tables du schéma, dans l'ordre alphabétique. `all privileges` couvre aussi
 -- `truncate`, `references`, `trigger` et `maintain`, que le produit n'utilise nulle part et que
 -- les privilèges par défaut de la plateforme accordent pourtant aux deux rôles.
 -- Les journaux de cron du même lot (`purge_runs`, `reminder_send_runs`) ne sont pas listés : leurs
@@ -73,6 +75,12 @@ revoke all privileges on table public.transport_modes from anon, authenticated;
 revoke all privileges on table public.usage_event_types from anon, authenticated;
 revoke all privileges on table public.usage_events from anon, authenticated;
 
+-- Les séquences du schéma, pour la même raison que les tables : le projet distant en accorde
+-- `all` aux deux rôles par défaut de plateforme, `setval` compris. La seule séquence existante
+-- (`usage_events_id_seq`) reçoit son `usage` ciblé en §4 — les autres tables du schéma ont des
+-- clés `uuid`, pas des colonnes d'identité.
+revoke all privileges on all sequences in schema public from anon, authenticated;
+
 -- ── 3. Référentiels : lecture pour tout le monde ────────────────────────────────────────
 -- Aucune donnée utilisateur, et une policy `readable by anyone` (`to anon, authenticated`) sur
 -- chacune des quatre : le privilège ne fait que rendre cette policy atteignable. `anon` en a
@@ -86,7 +94,7 @@ grant select on table public.action_templates to anon, authenticated;
 grant select on table public.emission_factor_sources to anon, authenticated;
 
 -- ── 4. Tables applicatives : `authenticated` seulement ─────────────────────────────────
--- Chaque ligne correspond aux policies de la table, et à rien d'autre — les cinq écarts assumés
+-- Chaque ligne correspond aux policies de la table, et à rien d'autre — les trois écarts assumés
 -- sont rassemblés en §5. `anon` n'y figure jamais : la session anonyme du produit est une session
 -- **Supabase Auth anonyme**, dont le rôle JWT est `authenticated` (v1-04 §1) ; le rôle `anon`,
 -- lui, c'est une requête sans session, qui n'a aucune ligne à lire ni à écrire ici.
@@ -118,20 +126,32 @@ grant select, update on table public.engagement_checkins to authenticated;
 -- `generate_plan_cycle_for_user` (`security definer`).
 grant select on table public.plan_cycles to authenticated;
 
--- Les actions du cycle, avec leurs gains figés à la génération. Lecture, et rien d'autre qui
--- écrive : l'engagement passe par `commit_plan_action` / `clear_plan_action_commitment`. La §5 y
--- ajoute `insert` et `update`, tous deux sans policy, donc sans effet — et c'est justement ce
--- « sans effet » qu'un test épingle.
+-- Les actions du cycle, avec leurs gains figés à la génération. `select` et rien d'autre — c'est le
+-- seul besoin réel du client : `/plan` les lit en ressource imbriquée depuis `plan_cycles`
+-- (`plan_actions(…, action_templates(…))`, src/app/(tabs)/plan.tsx), et aucun écran ne les écrit.
+-- L'engagement passe par `commit_plan_action` / `clear_plan_action_commitment`, toutes deux
+-- `security definer` : elles écrivent sous le propriétaire de la fonction, pas sous l'appelant,
+-- donc `authenticated` n'a besoin d'aucun privilège d'écriture ici.
+-- **Ni insert ni update, et c'est un arbitrage du 10/09/2026, pas un oubli.** Les deux existaient
+-- « pour que les tests passent » : l'`update` pour que 13_engagement_action puisse exécuter un ordre
+-- nu, l'`insert` pour que 03_rls_policies reçoive le message de refus de la RLS plutôt que celui du
+-- privilège. Un privilège se justifie par un besoin du client, jamais par un test — d'où leur
+-- retrait. Les deux tests attendent en conséquence le refus du **privilège** et non celui de la
+-- RLS : `13_engagement_action` un `throws_ok` sur `42501`, et `03_rls_policies` le message
+-- « permission denied for table plan_actions ».
 grant select on table public.plan_actions to authenticated;
 
 -- Le canal de retour : écrire, relire et effacer ses propres retours (droit d'accès et droit à
 -- l'effacement du RGPD, annoncés par /confidentialite). Pas d'update — un retour est un envoi.
 grant select, insert, delete on table public.feedback to authenticated;
 
--- Les appareils qui reçoivent les rappels : l'app doit pouvoir dire « ce téléphone est-il
--- joignable ? » et la personne retirer un appareil. **Ni insert ni update** : l'enregistrement
--- passe par `register_push_token`, qui reprend le jeton à son propriétaire précédent — ce
--- qu'une policy owner-scoped ne peut pas faire (v1-10 §3.4).
+-- Les appareils qui reçoivent les rappels. Lecture pour que l'app puisse dire « ce téléphone est-il
+-- joignable ? » (`src/lib/rappels.ts`, `src/lib/notification-prefs.ts` : un `select('token')`). Le
+-- `delete` accompagne la policy `push_tokens delete own` de 20260907230000 (droit à l'effacement) ;
+-- aucun écran ne l'emprunte aujourd'hui — le retrait d'un appareil passe par
+-- `unregister_push_token`, qui désactive sans supprimer. **Ni insert ni update** : l'enregistrement
+-- passe par `register_push_token`, qui reprend le jeton à son propriétaire précédent — ce qu'une
+-- policy owner-scoped ne peut pas faire (v1-10 §3.4).
 grant select, delete on table public.push_tokens to authenticated;
 
 -- La mesure d'usage : écriture seule sur ses propres lignes. Aucune policy de lecture, donc
@@ -146,29 +166,30 @@ grant insert on table public.usage_events to authenticated;
 grant usage on sequence public.usage_events_id_seq to authenticated;
 
 -- ── 5. Les privilèges inertes, et pourquoi ils sont là ─────────────────────────────────
--- Cinq privilèges, sur quatre tables, sans policy correspondante. Aucun n'ouvre quoi que ce
+-- Trois privilèges, sur trois tables, sans policy correspondante. Aucun n'ouvre quoi que ce
 -- soit : la RLS est active et aucune policy ne les accompagne, donc zéro ligne lue, zéro ligne
--- écrite. Ce qu'ils changent, c'est **la nature du refus** — et trois fichiers de la suite pgTAP
+-- écrite. Ce qu'ils changent, c'est **la nature du refus** — et deux fichiers de la suite pgTAP
 -- reposent dessus, parce qu'un refus de RLS prouve la policy là où un refus de privilège la
 -- masque.
 --
---   * `insert` sur `assessment_results`, `plan_cycles` et `plan_actions` : 03_rls_policies
---     vérifie que `authenticated` reçoit « new row violates row-level security policy for
---     table … » sur ces trois tables, et « permission denied for table engagement_checkins »
---     sur la quatrième. C'est cette différence qui dit laquelle est verrouillée par un revoke
---     et lesquelles le sont par l'absence de policy.
---   * `update` sur `plan_actions` : 13_engagement_action exécute un `update ... set
---     saving_kg_year = 99999` nu et vérifie qu'il reste **sans effet**. Retirer le privilège
---     transformerait l'assertion en erreur de permission, et elle ne surveillerait plus ce
---     qu'elle surveille — l'apparition d'une policy UPDATE, qui ouvrirait toutes les colonnes
---     puisque la RLS filtre des lignes et jamais des colonnes. L'engagement passe par un RPC
---     (`commit_plan_action`) précisément pour cette raison.
+--   * `insert` sur `assessment_results` et `plan_cycles` : 03_rls_policies vérifie que
+--     `authenticated` reçoit « new row violates row-level security policy for table … » sur ces
+--     deux tables, et « permission denied for table engagement_checkins » sur une troisième.
+--     C'est cette différence qui dit laquelle est verrouillée par un revoke et lesquelles le sont
+--     par l'absence de policy.
 --   * `select` sur `usage_events` : 12_usage_events vérifie qu'une session cliente lit zéro
 --     ligne de ses **propres** événements. Sans le privilège, l'assertion lèverait au lieu de
 --     compter.
+--
+-- `plan_actions` a quitté cette liste le 10/09/2026 : ses `insert` et `update` n'y étaient que
+-- pour la forme du refus, et une interdiction explicite du chantier porte sur l'UPDATE (la
+-- doctrine de l'engagement par RPC en dépend). Les deux tests concernés attendent désormais le
+-- refus du privilège. Ces trois-ci restent parce qu'ils ne touchent pas à une doctrine, mais le
+-- même principe leur est opposable : le jour où on les retire, ce sont 03_rls_policies (deux
+-- messages attendus) et 12_usage_events (un comptage qui deviendrait une erreur) qu'il faut
+-- reprendre dans la même passe, jamais le grant qu'il faut remettre.
 grant insert on table public.assessment_results to authenticated;
 grant insert on table public.plan_cycles to authenticated;
-grant insert, update on table public.plan_actions to authenticated;
 grant select on table public.usage_events to authenticated;
 
 -- ── 6. Ce qui reste volontairement sans aucun privilège ────────────────────────────────
@@ -186,11 +207,16 @@ grant select on table public.usage_events to authenticated;
 --     PostgREST (`supabase/config.toml`, `[api] schemas`).
 --   * les tables supprimées (`assessment_trips`, `assessment_trip_modes`, `monthly_checkins`) :
 --     elles n'existent plus, il n'y a rien à révoquer.
+--   * `service_role` — aucun privilège accordé ici, et c'est volontaire : aucun code du produit ne
+--     l'emploie (ni `src/`, ni `api/`, ni `scripts/`). Ce qu'il perd sur une base reconstruite,
+--     c'est l'éditeur de tables du tableau de bord, pas un chemin de l'app. Le jour où un script
+--     d'administration en a besoin, c'est une ligne de `grant` ici, jamais un drapeau de
+--     configuration.
 --
 -- Une table ajoutée au schéma `public` passe donc désormais par l'un des deux chemins : une
 -- ligne de `grant` ici si l'app y touche, ou un `revoke all privileges ... from anon,
 -- authenticated` dans sa propre migration si elle est serveur-only — ce que font les journaux de
 -- cron du même lot (`purge_runs`, `reminder_send_runs`). Ce qui ne marche plus, c'est de ne rien
 -- écrire : sans grant la table est invisible pour l'app, et la matrice de
--- `supabase/tests/database/18_grants_explicites.test.sql` le dira en CI. C'est l'inverse exact du
--- drapeau désactivé, qui exposait tout sans que personne ne l'écrive.
+-- `supabase/tests/database/18_grants_explicites.test.sql` le dira en CI. C'est l'inverse exact de
+-- l'exposition automatique, qui accordait tout sans que personne ne l'écrive.

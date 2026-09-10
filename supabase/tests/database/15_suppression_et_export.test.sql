@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(27);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-suppr-a@test.local', 'x', now(), now()),
@@ -166,6 +166,12 @@ select is_empty(
   $$ select token from public.push_tokens where user_id = '90000000-0000-0000-0000-000000000001' $$,
   'les jetons d''appareil suivent — sinon un rappel partirait vers un compte supprimé'
 );
+-- Le maillon ajouté par C0.6 : la boîte d'envoi porte l'adresse email, le sujet et le corps du
+-- message. Un jour posé en NO ACTION, il ferait survivre au compte le texte qu'on lui a écrit.
+select is_empty(
+  $$ select id from public.notification_outbox where user_id = '90000000-0000-0000-0000-000000000001' $$,
+  'les rappels mis en file suivent — sinon l''adresse et le corps du message survivraient au compte'
+);
 select is(
   (select count(*) from public.usage_events where user_id = '90000000-0000-0000-0000-000000000001')::int,
   0,
@@ -257,6 +263,24 @@ select is(
   (select count(*) from public.push_tokens where token = 'ExponentPushToken[pgtap-retention-actif]')::int,
   1,
   'un jeton actif n''est jamais touché par la purge'
+);
+
+-- Le revoke, et pas seulement en prose : `revoke execute ... from anon, authenticated` ne
+-- révoque rien, PostgreSQL accordant EXECUTE à PUBLIC à la création (v1-08 §5.2). Sans cette
+-- assertion, un copier-coller du revoke incomplet de `purge_usage_events` passerait la CI et
+-- n'importe quel visiteur pourrait déclencher une suppression de données.
+select ok(
+  not has_function_privilege('authenticated', 'public.purge_notification_outbox()', 'execute')
+    and not has_function_privilege('anon', 'public.purge_notification_outbox()', 'execute'),
+  'la purge n''est appelable par aucun rôle client — c''est le cron qui la déclenche'
+);
+
+-- 1h UTC : voir l'inventaire des créneaux dans l'en-tête de la migration. Une fonction de purge
+-- que personne ne planifie ne supprime rien, et rien ne le dirait.
+select is(
+  (select schedule from cron.job where jobname = 'purge-notification-outbox'),
+  '0 1 * * *',
+  'la purge est bien planifiée chaque nuit'
 );
 
 select * from finish();

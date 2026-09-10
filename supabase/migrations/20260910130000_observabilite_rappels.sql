@@ -11,9 +11,12 @@
 --
 -- LES SIX DÉFAUTS TRAITÉS ICI.
 --   1. Aucune vue d'exploitation : on ajoute `analytics.rappels_par_jour`,
---      `analytics.rappels_bloques` et `analytics.synchronisations_facteurs` (A9-4, A7-8).
---   2. Sortie muette faute de secret Vault : `public.reminder_send_runs` journalise chaque
---      passage, canal par canal, **y compris celui qui ne fait rien** (A9-4).
+--      `analytics.rappels_bloques` et `analytics.synchronisations_facteurs`, et une
+--      synchronisation de facteurs qui n'aboutit pas se signale d'elle-même (A9-4, A7-8).
+--   2. Sortie muette faute de secret Vault : `public.reminder_send_runs` journalise **chaque
+--      passage**, une ligne par canal, y compris une nuit où rien n'attend — sans quoi zéro
+--      ligne ne distinguerait pas « personne n'attendait » de « le cron ne tourne plus », qui
+--      est exactement la question que ce journal existe pour trancher (A9-4).
 --   3. Un message parti pouvait repartir : la ligne est marquée `sent` **avant** l'appel, et
 --      remise en attente si l'appel échoue ; une procédure committe entre les passes (A9-1).
 --   4. Une requête HTTP par notification : les pushs partent par lots de cent (A9-13).
@@ -34,8 +37,14 @@
 -- ne tourne pas — ou qui tourne et refuse de s'appliquer — est indétectable, le cron n'ayant
 -- personne pour lire ses `raise warning`.
 --
--- Une ligne **par canal et par passage**, et seulement quand ce canal avait quelque chose à
--- faire : un journal qui écrirait deux lignes vides chaque nuit ne se lirait plus.
+-- Une ligne **par canal et par passage, toujours** — y compris une nuit où rien n'attend, où
+-- les deux lignes portent des compteurs à zéro et le disent dans leur `detail`. C'est tout ce
+-- qui fait la différence entre un journal et un battement de cœur : zéro ligne doit vouloir dire
+-- « le passage n'a pas eu lieu », jamais « il n'y avait rien à faire ».
+--
+-- Le volume est le prix assumé de cette lecture : deux lignes par passe, et la procédure du §6
+-- fait toujours une passe de plus que nécessaire puisqu'elle s'arrête sur une passe vide — quatre
+-- lignes une nuit ordinaire, moins de deux mille par an, sans une seule donnée nominative.
 
 create table public.reminder_send_runs (
   id uuid primary key default gen_random_uuid(),
@@ -53,7 +62,7 @@ create table public.reminder_send_runs (
 );
 
 comment on table public.reminder_send_runs is
-  'Journal des passages de send_pending_reminders(), une ligne par canal. status = skipped : rien n''a été tenté (secret Vault absent ou plafond journalier atteint), les rappels restent en attente. Écrit par le serveur, jamais lu par un client — se lit depuis le SQL editor, à côté de analytics.rappels_par_jour qui dit ce qui est parti.';
+  'Journal des passages de send_pending_reminders(), une ligne par canal à chaque passage — y compris un passage sans rien à envoyer, compteurs à zéro : zéro ligne veut dire « le passage n''a pas eu lieu », jamais « rien n''attendait ». status = skipped : rien n''a été tenté (secret Vault absent ou plafond journalier atteint), les rappels restent en attente. Écrit par le serveur, jamais lu par un client — se lit depuis le SQL editor, à côté de analytics.rappels_par_jour qui dit ce qui est parti.';
 
 alter table public.reminder_send_runs enable row level security;
 
@@ -294,6 +303,16 @@ begin
     group by d.ligne
   loop
     if v_tickets is null then
+      -- **Un repli ne coûte pas deux tentatives sur trois.** Le marquage avant appel en a
+      -- consommé une pour le push, et la branche email en consommera une à son tour dès que
+      -- l'expéditeur est configuré — dans la **même** passe, puisque c'est tout le correctif
+      -- A9-12. Sans ce rendu, un compte dont le seul appareil est refusé serait classé `failed`
+      -- après deux nuits au lieu de trois. L'autre repli, celui de `send_pending_reminders`
+      -- (« aucun jeton actif »), n'a jamais incrémenté : aucun appel n'y a eu lieu.
+      update public.notification_outbox
+      set attempts = greatest(attempts - 1, 0)
+      where id = v_ligne;
+
       perform public.replier_rappel_sur_email(v_ligne, 'tous les jetons refusés');
       v_replis := v_replis + 1;
     else
@@ -371,6 +390,7 @@ declare
   v_echecs integer;
   v_replis integer;
   v_statut text;
+  v_detail text;
   v_total integer := 0;
 begin
   select decrypted_secret into v_api_key
@@ -403,6 +423,8 @@ begin
   v_envoyes := 0;
   v_echecs := 0;
   v_replis := 0;
+  v_statut := 'success';
+  v_detail := 'Rien en attente sur ce canal.';
 
   select count(*) into v_candidats
   from public.notification_outbox
@@ -439,10 +461,29 @@ begin
 
       -- Le lot serait plein : on l'envoie avant d'y ajouter cette ligne.
       if coalesce(array_length(v_lot_jetons, 1), 0) + array_length(v_jetons, 1) > c_lot_push then
-        v_resultat := public.envoyer_lot_push(v_lot_lignes, v_lot_jetons, v_lot_messages, v_expo_token);
-        v_envoyes := v_envoyes + (v_resultat ->> 'envoyes')::integer;
-        v_echecs := v_echecs + (v_resultat ->> 'echecs')::integer;
-        v_replis := v_replis + (v_resultat ->> 'replis')::integer;
+        -- **Le filet entoure l'appel, et rien d'autre.** `envoyer_lot_push` rattrape son propre
+        -- appel HTTP ; ce qui lève ailleurs (statement_timeout, erreur de base) remontait jusqu'au
+        -- cron et annulait la passe entière, branche email comprise — un `commit` de moins et une
+        -- nuit sans rappel. Un bloc plus large serait pire que rien : un `begin ... exception`
+        -- ouvre une sous-transaction, donc envelopper la boucle annulerait aussi les marquages
+        -- `sent` des lots déjà partis, qui repartiraient la nuit suivante.
+        begin
+          v_resultat := public.envoyer_lot_push(v_lot_lignes, v_lot_jetons, v_lot_messages, v_expo_token);
+          v_envoyes := v_envoyes + (v_resultat ->> 'envoyes')::integer;
+          v_echecs := v_echecs + (v_resultat ->> 'echecs')::integer;
+          v_replis := v_replis + (v_resultat ->> 'replis')::integer;
+        exception when others then
+          -- Le lot **reste `sent`** : son marquage a eu lieu hors de ce bloc, il survit donc à
+          -- l'abandon de la sous-transaction, et l'erreur a pu tomber une fois les notifications
+          -- déjà parties. Mieux vaut un rappel perdu qu'un rappel envoyé deux fois (A9-1), donc
+          -- on ne remet rien en attente : on écrit la raison sur les lignes et on la compte comme
+          -- un échec, pour que le journal du §1 le dise au lieu de rendre `success`.
+          update public.notification_outbox
+          set last_error = left(sqlerrm, 300)
+          where id = any(v_lot_lignes);
+          v_echecs := v_echecs + (select count(distinct l)::integer from unnest(v_lot_lignes) as l);
+        end;
+
         v_lot_lignes := '{}'::uuid[];
         v_lot_jetons := '{}'::text[];
         v_lot_messages := '[]'::jsonb;
@@ -473,10 +514,18 @@ begin
     end loop;
 
     if array_length(v_lot_lignes, 1) is not null then
-      v_resultat := public.envoyer_lot_push(v_lot_lignes, v_lot_jetons, v_lot_messages, v_expo_token);
-      v_envoyes := v_envoyes + (v_resultat ->> 'envoyes')::integer;
-      v_echecs := v_echecs + (v_resultat ->> 'echecs')::integer;
-      v_replis := v_replis + (v_resultat ->> 'replis')::integer;
+      -- Le dernier lot, avec le même filet et pour les mêmes raisons qu'au-dessus.
+      begin
+        v_resultat := public.envoyer_lot_push(v_lot_lignes, v_lot_jetons, v_lot_messages, v_expo_token);
+        v_envoyes := v_envoyes + (v_resultat ->> 'envoyes')::integer;
+        v_echecs := v_echecs + (v_resultat ->> 'echecs')::integer;
+        v_replis := v_replis + (v_resultat ->> 'replis')::integer;
+      exception when others then
+        update public.notification_outbox
+        set last_error = left(sqlerrm, 300)
+        where id = any(v_lot_lignes);
+        v_echecs := v_echecs + (select count(distinct l)::integer from unnest(v_lot_lignes) as l);
+      end;
     end if;
 
     if v_echecs = 0 then
@@ -487,18 +536,24 @@ begin
       v_statut := 'error';
     end if;
 
-    insert into public.reminder_send_runs (status, canal, traites, envoyes, echecs, detail)
-    values (v_statut, 'push', v_traites, v_envoyes, v_echecs,
-      format('%s notification(s) en attente au début de la passe, %s repli(s) sur l''email.',
-             v_candidats, v_replis));
+    v_detail := format('%s notification(s) en attente au début de la passe, %s repli(s) sur l''email.',
+                       v_candidats, v_replis);
 
     v_total := v_total + v_traites;
   end if;
+
+  -- **L'insert est hors de la garde, et c'est tout le sujet du §1.** Une nuit où rien n'attend
+  -- laisse quand même sa ligne, compteurs à zéro : sans elle, un journal vide se lirait « rien à
+  -- envoyer » alors qu'il peut dire « le job est resté désinscrit ».
+  insert into public.reminder_send_runs (status, canal, traites, envoyes, echecs, detail)
+  values (v_statut, 'push', v_traites, v_envoyes, v_echecs, v_detail);
 
   -- ── L'email ──────────────────────────────────────────────────────────────────────────
   v_traites := 0;
   v_envoyes := 0;
   v_echecs := 0;
+  v_statut := 'success';
+  v_detail := 'Rien en attente sur ce canal.';
 
   -- Les lignes repliées juste au-dessus sont **dans** ce compte : elles portent désormais
   -- `channel = 'email'`, `status = 'pending'` et `send_after = now()`.
@@ -506,20 +561,23 @@ begin
   from public.notification_outbox
   where status = 'pending' and attempts < 3 and send_after <= now() and channel = 'email';
 
+  -- Les quatre branches ci-dessous (rien en attente / secret absent / plafond atteint / envoi)
+  -- aboutissent à **un seul** insert, après le `end if` : le statut et le détail se préparent ici,
+  -- la ligne s'écrit là-bas, toujours.
   if v_candidats > 0 then
     if v_api_key is null or v_from is null then
       -- Pas d'expéditeur configuré : on ne touche pas à la file — ni envoi, ni échec, ni
       -- tentative gâchée — mais on **laisse une trace**. C'est le `continue` muet d'avant, et
       -- le seul moyen de distinguer « personne n'attend de rappel » de « l'envoi est éteint ».
-      insert into public.reminder_send_runs (status, canal, traites, envoyes, echecs, detail)
-      values ('skipped', 'email', 0, 0, 0, format(
+      v_statut := 'skipped';
+      v_detail := format(
         'Envoi inactif, secret manquant dans le Vault : %s. %s rappel(s) en attente, rien n''est perdu.',
         case
           when v_api_key is null and v_from is null then 'resend_api_key, reminder_from_address'
           when v_api_key is null then 'resend_api_key'
           else 'reminder_from_address'
         end,
-        v_candidats));
+        v_candidats);
     else
       -- Ce qui est déjà parti aujourd'hui, tous passages confondus : le plafond de
       -- l'expéditeur est journalier, la borne doit l'être aussi.
@@ -528,10 +586,10 @@ begin
       where channel = 'email' and status = 'sent' and sent_at >= date_trunc('day', now());
 
       if v_budget = 0 then
-        insert into public.reminder_send_runs (status, canal, traites, envoyes, echecs, detail)
-        values ('skipped', 'email', 0, 0, 0, format(
+        v_statut := 'skipped';
+        v_detail := format(
           'Plafond journalier de l''expéditeur atteint (%s envois). %s rappel(s) repoussés au prochain passage.',
-          c_plafond_email_jour, v_candidats));
+          c_plafond_email_jour, v_candidats);
       else
         for rec in
           select * from public.notification_outbox
@@ -599,15 +657,20 @@ begin
           v_statut := 'error';
         end if;
 
-        insert into public.reminder_send_runs (status, canal, traites, envoyes, echecs, detail)
-        values (v_statut, 'email', v_traites, v_envoyes, v_echecs,
-          format('%s rappel(s) en attente au début de la passe, %s envoi(s) encore disponibles sur le plafond du jour.',
-                 v_candidats, v_budget));
+        -- Le solde est recalculé **après** la boucle : `v_budget` a été lu avant, et « encore
+        -- disponibles » se lit comme « après cette passe ». Écrit avec la valeur d'avant, le
+        -- détail annonçait cent envois disponibles la ligne même où quinze venaient de partir.
+        v_detail := format('%s rappel(s) en attente au début de la passe, %s envoi(s) encore disponibles sur le plafond du jour.',
+                           v_candidats, greatest(0, v_budget - v_envoyes));
       end if;
     end if;
 
     v_total := v_total + v_traites;
   end if;
+
+  -- Une ligne pour ce canal aussi, quoi qu'il se soit passé — y compris « rien » (cf. §1).
+  insert into public.reminder_send_runs (status, canal, traites, envoyes, echecs, detail)
+  values (v_statut, 'email', v_traites, v_envoyes, v_echecs, v_detail);
 
   return v_total;
 end;
@@ -616,7 +679,7 @@ $function$;
 revoke execute on function public.send_pending_reminders() from public, anon, authenticated;
 
 comment on function public.send_pending_reminders() is
-  'Une passe d''envoi des rappels en attente, push puis email (le push d''abord, pour que son repli sur l''email soit traité dans la même passe). Rend le nombre de messages traités. Le cron passe par la procédure envoyer_rappels(), qui committe entre les passes.';
+  'Une passe d''envoi des rappels en attente, push puis email (le push d''abord, pour que son repli sur l''email soit traité dans la même passe). Rend le nombre de messages traités, et laisse une ligne par canal dans reminder_send_runs à chaque passe, même sans rien à envoyer. Le cron passe par la procédure envoyer_rappels(), qui committe entre les passes.';
 
 -- ── 6. Le point d'entrée du cron : une procédure, pour committer entre les passes ───────
 -- **Pourquoi une procédure et pas la fonction directement.** Une fonction plpgsql est un seul
@@ -634,8 +697,9 @@ comment on function public.send_pending_reminders() is
 --
 -- **Ni `security definer`, ni clause `set search_path` — et ce n'est pas un oubli.** Les deux
 -- rendent le contexte d'exécution *atomique* et font échouer le `commit` par
--- `invalid transaction termination` (vérifié sur PostgreSQL 16 : une procédure nue committe,
--- les trois autres formes lèvent). La sécurité est ailleurs : le cron tourne sous le rôle qui
+-- `invalid transaction termination` (relevé sur PostgreSQL 16 : une procédure nue committe, les
+-- trois autres formes lèvent ; le projet distant et la stack locale sont en 17, où
+-- `supabase test db` le rejoue à chaque passage). La sécurité est ailleurs : le cron tourne sous le rôle qui
 -- l'a planifié — `postgres`, propriétaire des fonctions appelées — l'`execute` est révoqué
 -- juste en dessous, et **le corps ne contient aucun nom non qualifié**, donc aucun search_path
 -- à détourner. Ajouter l'un ou l'autre « par cohérence » casserait l'envoi des rappels toutes
@@ -805,3 +869,33 @@ revoke execute on function public.collect_push_receipts() from public, anon, aut
 -- `analytics.synchronisations_facteurs` (§2) qui la ferme, et la redéfinir pour recopier cent
 -- lignes de calcul de facteurs n'aurait ajouté qu'un risque de transcription là où tout le
 -- référentiel chiffré des tests pgTAP est en jeu.
+--
+-- **Il restait un trou, et il se ferme par un déclencheur plutôt que par une réécriture.** Un
+-- passage en `error` lève déjà un `raise warning` ; le cas `partial` — un slug renommé côté API —
+-- est le plus probable et le seul totalement muet (A7-8). Un trigger sur la table signale les
+-- deux sans toucher une seule valeur chiffrée : le cron ne repasse que tous les trois mois, donc
+-- la vue ne sera relue qu'une fois le mal fait, et l'avertissement est la seule trace qui arrive
+-- dans les journaux Postgres le jour même.
+create or replace function public.signaler_sync_facteurs_non_abouti()
+returns trigger
+language plpgsql
+set search_path = public
+as $function$
+begin
+  raise warning 'sync_emission_factors : passage % — %', new.status, coalesce(new.detail, 'sans détail');
+  return null;
+end;
+$function$;
+
+comment on function public.signaler_sync_facteurs_non_abouti() is
+  'Signale dans les journaux Postgres une synchronisation de facteurs qui n''a pas abouti. Le détail se relit ensuite dans analytics.synchronisations_facteurs.';
+
+-- Le filtre est dans la clause `when` plutôt que dans le corps : une synchronisation normale ne
+-- déclenche alors rien du tout.
+create trigger signaler_sync_facteurs_non_abouti
+after insert on public.emission_factor_sync_runs
+for each row
+when (new.status <> 'success')
+execute function public.signaler_sync_facteurs_non_abouti();
+
+revoke execute on function public.signaler_sync_facteurs_non_abouti() from public, anon, authenticated;

@@ -6,6 +6,11 @@
 --
 -- ## Pourquoi un RPC et pas une policy UPDATE
 --
+-- Note du 10/09/2026 (`20260910110000_grants_explicites.sql`) : le « grant par défaut » décrit
+-- ci-dessous a été révoqué. `authenticated` n'a plus que `select` sur `plan_actions`, donc un
+-- ordre direct est désormais refusé par le privilège (42501) avant même d'atteindre la RLS. Le
+-- choix du RPC ne change pas — il tient tout seul — mais la seconde garde existe maintenant.
+--
 -- `authenticated` possède déjà le privilège `UPDATE` au niveau table sur `plan_actions` — un
 -- grant par défaut de Supabase. Il est aujourd'hui sans effet parce qu'aucune policy UPDATE
 -- n'existe : la RLS filtre toutes les lignes. **Ajouter une policy UPDATE ouvrirait donc

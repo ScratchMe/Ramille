@@ -155,8 +155,10 @@ select is(
 -- « l'email prend le relais tout seul ».
 --
 -- Sans clé API, rien ne part d'ici : ce qui est éprouvé est que la branche email **voit** la
--- ligne repliée du même passage. Sa ligne de journal n'existerait pas du tout si le repli était
--- remis au lendemain, et elle compte un rappel en attente : celui qui vient d'être replié.
+-- ligne repliée du même passage. C'est le `skipped` et le compte du `detail` qui le disent — la
+-- ligne de journal du canal email existe de toute façon, même sans rien en attente (elle sortirait
+-- alors en `success`, compteurs à zéro) : un repli remis au lendemain laisserait donc ici une
+-- ligne `success` sans rappel à compter, pas l'absence de ligne.
 
 -- Une file remise à plat et remplie à la main : `enqueue_checkin_reminders()` est éprouvée
 -- juste au-dessus, et une ligne de journal décrit **tout** ce que le passage avait à faire —

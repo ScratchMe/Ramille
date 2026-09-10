@@ -157,11 +157,16 @@ select results_eq(
 );
 
 -- ── Le journal des passages ────────────────────────────────────────────────────────────
--- Constats A9-1 et A9-4 (chantier C0.5). Deux propriétés :
+-- Constats A9-1 et A9-4 (chantier C0.5). Trois propriétés :
 --   * un passage qui ne fait rien faute de secret **le dit**. C'était un `continue` muet, et
 --     c'est la seule façon de distinguer « personne n'attend de rappel » de « l'envoi est
 --     éteint » — si la clé de l'expéditeur expire, le seul autre symptôme est une baisse des
 --     réponses aux points de suivi, indiscernable d'un désintérêt.
+--   * **chaque passage laisse une ligne par canal, même sans rien à envoyer.** C'est ce qui fait
+--     du journal un battement de cœur plutôt qu'une trace : zéro ligne doit vouloir dire « le
+--     passage n'a pas eu lieu » — le cron désinscrit, le job en erreur — et jamais « il n'y avait
+--     rien à faire ». Un journal qui ne s'écrivait que lorsqu'il avait du travail ne pouvait pas
+--     trancher la question pour laquelle il existe.
 --   * une ligne déjà partie n'est jamais reprise. Le statut est posé **avant** l'appel, et la
 --     sélection d'envoi ne regarde que les lignes `pending` : mieux vaut un rappel perdu qu'un
 --     rappel envoyé deux fois, pour un produit qui promet de ne jamais insister.
@@ -189,15 +194,17 @@ where c.user_id = 'ba111111-1111-1111-1111-111111111116';
 
 select public.send_pending_reminders();
 
+-- Les deux canaux, même si un seul avait du travail : le push n'avait rien en attente et le dit
+-- avec des compteurs à zéro, l'email avait un rappel et n'a pas de clé pour l'envoyer.
 select results_eq(
-  $$ select canal, status, traites, envoyes, echecs from public.reminder_send_runs $$,
-  $$ values ('email'::text, 'skipped'::text, 0, 0, 0) $$,
-  'Sans clé API, le passage laisse une trace : rien tenté, rien envoyé, rien en échec'
+  $$ select canal, status, traites, envoyes, echecs from public.reminder_send_runs order by canal $$,
+  $$ values ('email'::text, 'skipped'::text, 0, 0, 0), ('push'::text, 'success'::text, 0, 0, 0) $$,
+  'Sans clé API, le passage laisse une trace par canal : rien tenté, rien envoyé, rien en échec'
 );
 
 select ok(
   (select detail like '%resend_api_key%' and detail like '%1 rappel(s) en attente%'
-   from public.reminder_send_runs),
+   from public.reminder_send_runs where canal = 'email'),
   'La trace nomme le secret qui manque et ce qui attend — sinon elle ne servirait à personne'
 );
 
@@ -214,10 +221,13 @@ select results_eq(
   'Une ligne déjà partie n''est jamais reprise : ni seconde tentative, ni second envoi'
 );
 
+-- Trois passages, deux canaux : six lignes. Les deux derniers passages n'avaient rien à faire du
+-- tout et s'écrivent quand même — c'est ce qui permet de dire « le cron tourne » une nuit sans
+-- rappel, au lieu de confondre un cron mort avec une nuit tranquille.
 select is(
   (select count(*)::int from public.reminder_send_runs),
-  1,
-  'Un canal sans rien à faire n''écrit pas de ligne : le journal dit ce qui s''est passé, pas ce qui n''a pas eu lieu'
+  6,
+  'Chaque passage laisse une ligne par canal — c''est ce qui permet de dire que le cron tourne, même une nuit sans rien à envoyer'
 );
 
 -- ── Verrouillage ───────────────────────────────────────────────────────────────────────

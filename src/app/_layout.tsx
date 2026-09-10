@@ -129,10 +129,13 @@ export default function RootLayout() {
 // ── Filet d'erreur ─────────────────────────────────────────────────────────────────────
 // **Le nom de cet export est imposé** : Expo Router cherche `ErrorBoundary` dans un fichier de
 // route et enveloppe le composant de cette route dans un `Try`. Exporté depuis le layout
-// racine, il couvre donc tout l'arbre — y compris le layout lui-même. Sans lui, une exception
-// de rendu affiche l'écran de secours d'Expo Router, **en anglais** (« Something went wrong ») :
-// la garde `scripts/verifier-rendu-export.mjs` refuse désormais un export qui contient cette
-// phrase, parce qu'elle n'a pas à pouvoir apparaître.
+// racine, il couvre donc tout l'arbre — y compris le layout lui-même. Et c'est le seul `Try` de
+// l'arbre : Expo Router 57 n'en monte aucun de lui-même (`build/useScreens.js` ne le fait que
+// pour une route qui exporte un `ErrorBoundary`), si bien que sans cet export une exception de
+// rendu ne donne pas l'écran de secours de la bibliothèque mais une **page blanche** — la panne
+// du 08/09/2026. Son écran anglais (« Something went wrong ») reste néanmoins refusé par
+// `scripts/verifier-rendu-export.mjs` : il n'a pas à pouvoir apparaître, et il redeviendrait
+// atteignable le jour où ce boundary disparaît.
 //
 // **Aucune API de module natif ici, et c'est structurel.** C'est le composant qui reste quand
 // tout le reste est tombé : un hook d'`expo-notifications` appelé au rendu à cet endroit
@@ -142,7 +145,9 @@ export default function RootLayout() {
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   // Le store de navigation est global à l'app, pas un contexte de l'arbre tombé, et
   // `getRouteInfo()` retombe sur une valeur par défaut quand rien n'est encore monté : lire la
-  // route ici ne peut pas lever.
+  // route ici ne peut pas lever. Cette valeur par défaut vaut `/`, donc une panne très précoce
+  // se lit comme une panne sur la racine — indiscernable d'une vraie, et c'est dit tel quel dans
+  // `docs/exploitation/remontee-erreurs.md` §2.
   const route = usePathname();
 
   // Remontée minimale, et volontairement pauvre : une catégorie dérivée du type de l'exception

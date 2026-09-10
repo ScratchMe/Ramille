@@ -24,7 +24,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(13);
 
 -- ── 1. La matrice entière ───────────────────────────────────────────────────────────────
 -- Les sept privilèges de table qui touchent aux données ou au schéma, pour les deux rôles
@@ -75,13 +75,13 @@ select bag_eq(
        ('authenticated', 'push_tokens', 'SELECT'),
        ('authenticated', 'push_tokens', 'DELETE'),
        ('authenticated', 'usage_events', 'INSERT'),
-       -- Les cinq privilèges inertes de la §5 de la migration, sur quatre tables : aucune policy
+       -- Les trois privilèges inertes de la §5 de la migration, sur trois tables : aucune policy
        -- ne les accompagne, ils ne servent qu'à ce que le refus vienne de la RLS, pas du droit.
-       -- Ce sont 03_rls_policies, 12_usage_events et 13_engagement_action qui en dépendent.
+       -- Ce sont 03_rls_policies et 12_usage_events qui en dépendent. `plan_actions` n'y est plus
+       -- depuis le 10/09/2026 : son `insert` et son `update` ont été retirés, et les deux tests
+       -- concernés attendent désormais « permission denied for table plan_actions ».
        ('authenticated', 'assessment_results', 'INSERT'),
        ('authenticated', 'plan_cycles', 'INSERT'),
-       ('authenticated', 'plan_actions', 'INSERT'),
-       ('authenticated', 'plan_actions', 'UPDATE'),
        ('authenticated', 'usage_events', 'SELECT') $$,
   'les privilèges de table du schéma public sont exactement ceux que la migration écrit'
 );
@@ -148,12 +148,14 @@ select ok(
   'emission_factor_sources : lecture seule — le mapping vers les slugs Impact CO2 n''est pas écrit par le client'
 );
 
--- ── 6. plan_actions : l'invariant est l'absence de policy, pas l'absence de privilège ───
--- Le privilège UPDATE existe (matrice ci-dessus) et il est inerte : 13_engagement_action
--- vérifie qu'un `update` direct sur `saving_kg_year` reste sans effet, ce qui n'a de sens que
--- si le refus vient de la RLS. Ce qui protège vraiment les chiffres figés, c'est qu'aucune
--- policy d'écriture n'existe : la RLS filtre des lignes, jamais des colonnes, donc une policy
--- UPDATE ouvrirait toutes les colonnes d'un coup. L'engagement passe par `commit_plan_action`.
+-- ── 6. plan_actions : deux gardes, et il faut les deux ──────────────────────────────────
+-- Les chiffres de `plan_actions` sont figés à la génération, et deux choses indépendantes les
+-- protègent depuis le 10/09/2026 : **aucune policy d'écriture** (la RLS filtre des lignes, jamais
+-- des colonnes — une policy UPDATE ouvrirait toutes les colonnes d'un coup) et **aucun privilège
+-- d'écriture** (un ordre direct est refusé avant même d'atteindre la RLS). L'engagement passe par
+-- `commit_plan_action`, `security definer`, qui n'a pas besoin du droit de l'appelant.
+-- Les deux assertions sont là parce qu'elles ne tombent pas pour la même raison : la seconde
+-- tombe si un `grant` revient dans la migration, la première si une policy apparaît.
 select is(
   (select count(*)::int from pg_policies
     where schemaname = 'public' and tablename = 'plan_actions' and cmd <> 'SELECT'),
@@ -161,12 +163,19 @@ select is(
   'plan_actions : aucune policy d''écriture (ni UPDATE, ni INSERT, ni DELETE) — l''engagement passe par un RPC'
 );
 
+select ok(
+  not has_table_privilege('authenticated', 'public.plan_actions', 'update')
+    and not has_table_privilege('authenticated', 'public.plan_actions', 'insert'),
+  'plan_actions : ni UPDATE ni INSERT pour authenticated — aucun écran n''écrit ces lignes, seul le RPC le fait'
+);
+
 -- ── 7. Les schémas et la séquence ───────────────────────────────────────────────────────
 select ok(
   has_schema_privilege('anon', 'public', 'usage')
     and has_schema_privilege('authenticated', 'public', 'usage')
-    and has_sequence_privilege('authenticated', 'public.usage_events_id_seq', 'usage'),
-  'schéma public utilisable par les deux rôles, et la séquence de usage_events accessible à authenticated'
+    and has_sequence_privilege('authenticated', 'public.usage_events_id_seq', 'usage')
+    and not has_sequence_privilege('anon', 'public.usage_events_id_seq', 'usage'),
+  'schéma public utilisable par les deux rôles, et la séquence de usage_events accessible à authenticated seul'
 );
 
 -- Le schéma analytics porte les vues d'exploitation (segments, entonnoirs) : il n'est pas exposé

@@ -442,12 +442,15 @@ en-tête. Vérifier au lecteur d'écran sur une page migrée, pas seulement lire
 
 ## 5. Hors de cet increment
 
-> 📌 **Mise à jour du 10/09/2026 — la liste ci-dessous est close, sauf la publication Play.** #68
-> (l'onboarding se balaie au doigt, §9.10), #61, #62, #60, #65 (`ConfigurationManquante` est rendu
-> par le layout racine) et #58 sont livrées ; le chantier E de `v1-10` l'est aussi, vérifié sur
-> appareil le 09/09/2026 (`v1-12` §8.1). Reste la **publication sur Google Play**, qui n'est pas un
-> chantier de code : le compte n'est pas encore ouvert, et tout ce qu'elle engage — comptes tiers,
-> réglages hors dépôt, checklist avant publication — vit dans **`docs/exploitation/README.md`**. La
+> 📌 **Mise à jour du 10/09/2026 — la liste ci-dessous est presque close.** #68 (l'onboarding se
+> balaie au doigt, §9.10), #59, #60, #61, #62 et #65 (`ConfigurationManquante` est rendu par le
+> layout racine) sont livrées et fermées sur GitHub — #62 le 10/09/2026 ; le chantier E de `v1-10`
+> est livré aussi, vérifié sur appareil le 09/09/2026 (`v1-12` §8.1). **Un point reste ouvert**,
+> relevé sur GitHub le 10/09/2026 : **#58** (dépendances Expo SDK 57, que le commit `85b29ac`
+> semble avoir livrée sans que l'issue soit fermée : à vérifier avant de la fermer). Reste enfin la
+> **publication sur Google Play**, qui n'est pas un chantier de code : rien dans le dépôt n'atteste
+> que le compte développeur existe, et tout ce qu'elle engage — comptes tiers, réglages hors dépôt,
+> checklist avant publication, journaux à relire — vit dans **`docs/exploitation/README.md`**. La
 > liste est conservée telle quelle comme décision datée.
 
 Volontairement laissé de côté, avec l'issue qui le porte :

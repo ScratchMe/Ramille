@@ -1,4 +1,5 @@
 import {
+  appErrorCategory,
   MAX_PROP_KEYS,
   MAX_PROP_VALUE_LENGTH,
   sanitizeEventProps,
@@ -28,6 +29,7 @@ describe('USAGE_EVENT_NAMES', () => {
       'retrouver_view',
       'retrouver_send',
       'rappels_view',
+      'app_error',
     ]);
   });
 
@@ -60,8 +62,26 @@ describe('USAGE_EVENT_NAMES', () => {
       retrouver_view: 'retrouver_view',
       retrouver_send: 'retrouver_send',
       rappels_view: 'rappels_view',
+      app_error: 'app_error',
     };
     expect(Object.keys(_exhaustif)).toHaveLength(USAGE_EVENT_NAMES.length);
+  });
+});
+
+describe('appErrorCategory', () => {
+  // Ce qui est épinglé ici : la catégorie se dérive du **type** de l'exception, et tout ce qui
+  // n'est pas une erreur native retombe sur `autre` — jamais sur le message, qui est du texte
+  // libre que `usage_events` ne doit pas porter. Ce qu'aucune assertion de ce fichier ne peut
+  // montrer, en revanche, c'est pourquoi la dérivation lit `error.name` plutôt qu'`instanceof` :
+  // une exception qui traverse deux contextes (un iframe, un worker) garde son nom et perd son
+  // prototype. Le commentaire de `appErrorCategory` porte cette raison ; ne pas la remplacer par
+  // un `instanceof` au motif que ces deux cas passeraient quand même.
+  it('dérive la catégorie du type de l’exception', () => {
+    expect(appErrorCategory(new TypeError('x'))).toBe('type');
+  });
+
+  it('retombe sur « autre » pour ce qui n’est pas une erreur native', () => {
+    expect(appErrorCategory('chaîne jetée')).toBe('autre');
   });
 });
 

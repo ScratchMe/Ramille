@@ -1,8 +1,9 @@
 # Sauvegarde hebdomadaire de la base Supabase (chantier C0.2 du plan v1-13, constat C-7).
 #
 # POURQUOI CE FICHIER EXISTE. Le projet est sur le plan gratuit Supabase : aucune sauvegarde
-# quotidienne n'est incluse, et aucun point de restauration n'existe côté plateforme. Les
-# migrations reconstruisent le schéma et les référentiels, jamais un bilan, un engagement ni
+# quotidienne n'est incluse, et aucun point de restauration n'existe côté plateforme — relevé le
+# 10/09/2026, `GET /v1/projects/<ref>/database/backups` rend `{"backups":[],"pitr_enabled":false}`.
+# Les migrations reconstruisent le schéma et les référentiels, jamais un bilan, un engagement ni
 # une réponse de check-in. Deux chemins de destruction tournent chaque nuit
 # (`purge_stale_anonymous_accounts()`, `purge_usage_events()`) : sans instantané, une erreur
 # de prédicat est définitive.
@@ -54,8 +55,10 @@ jobs:
 
       # Le runner ubuntu-latest embarque un client PostgreSQL dont la version suit l'image et
       # peut être antérieure au serveur : `pg_dump` refuse de dumper une base plus récente que
-      # lui. On installe donc explicitement le client 17 depuis le dépôt PGDG, compatible avec
-      # tous les serveurs 15 et plus.
+      # lui. Le serveur est en **PostgreSQL 17.6** (relevé le 10/09/2026 sur le projet distant),
+      # donc le client 15 ou 16 du runner échouerait. On installe explicitement le client 17
+      # depuis le dépôt PGDG, compatible avec tous les serveurs 15 et plus. Le jour où le projet
+      # passe en 18, c'est cette ligne qu'il faut changer, et rien d'autre.
       - name: Installer le client PostgreSQL 17
         run: |
           set -euo pipefail
@@ -71,12 +74,16 @@ jobs:
       # Deux fichiers et non un, parce qu'ils ne se restaurent pas de la même façon (détail
       # dans docs/exploitation/sauvegarde.md) :
       #   - `public` part avec son schéma : dans un projet neuf, ces tables n'existent pas.
+      #     `supabase_migrations` l'accompagne pour que l'historique des migrations voyage avec
+      #     la sauvegarde : sans lui, une base restaurée ne sait plus où elle en est, et on ne
+      #     peut plus dire quelle migration le dump reflète.
       #   - `auth` part en données seules, et seulement auth.users / auth.identities : les
       #     tables du schéma auth sont créées par la plateforme dans tout projet Supabase, et
       #     tenter de les recréer échouerait. auth.users est la racine de toutes les cascades,
       #     auth.identities porte le rattachement Google/email.
-      # `--no-owner` / `--no-privileges` : les rôles d'un autre projet ne sont pas les mêmes,
-      # et les GRANTs sont reconstruits par les migrations (chantier C0.3).
+      # `--no-owner` / `--no-privileges` : les rôles d'un autre projet ne sont pas les mêmes.
+      # Les GRANTs ne reviennent donc pas avec le dump, et aucune migration n'est rejouée à la
+      # restauration : on rejoue le seul fichier de grants, cf. sauvegarde.md §4 étape 6.
       # La chaîne de connexion n'est jamais affichée : pas de `set -x` ici, et aucun `echo`
       # de la variable.
       - name: Dumper la base
@@ -87,6 +94,7 @@ jobs:
           mkdir -p sauvegarde
           pg_dump "$SUPABASE_DB_URL" \
             --schema=public \
+            --schema=supabase_migrations \
             --no-owner --no-privileges \
             --quote-all-identifiers \
             --format=plain \
@@ -104,6 +112,16 @@ jobs:
       # inaccessible au rôle) pèse quelques centaines d'octets et ne dit rien de lui-même.
       # On exige donc la présence de deux tables applicatives dont l'absence ne peut pas être
       # une évolution normale du produit.
+      #
+      # LA TAILLE ET LES `CREATE TABLE` NE PROUVENT QUE LE SCHÉMA. `pg_dump --schema=public`
+      # émet les `CREATE TABLE` et un bloc `COPY` même quand toutes les tables sont vides, et un
+      # dump schéma-seul dépasse de loin le plancher de 1024 octets : un dump sans la moindre
+      # donnée (mauvaise base, rôle sans lecture sur les lignes, option mal posée un jour)
+      # passerait en vert et ne se découvrirait qu'à la restauration. D'où la dernière garde, sur
+      # les **données** d'un référentiel qui ne peut pas être vide : `transport_modes` porte une
+      # vingtaine de modes et n'en perdra pas les trois quarts (le plancher est à 10, pour
+      # qu'une réorganisation du référentiel ne fasse pas rougir la sauvegarde). On compte les
+      # lignes de son bloc `COPY`, du `FROM stdin;` au `\.` qui le termine.
       - name: Vérifier que le dump a du contenu
         run: |
           set -euo pipefail
@@ -125,6 +143,18 @@ jobs:
             echo "::error::auth.users est absent du dump : les comptes ne seraient pas restaurables."
             exit 1
           fi
+          lignes=$(awk '/^COPY "public"."transport_modes" /{f=1;next} f&&/^\\\.$/{exit} f{c++} END{print c+0}' sauvegarde/public.sql)
+          echo "transport_modes : $lignes lignes de données"
+          if [ "$lignes" -lt 10 ]; then
+            echo "::error::Le dump ne contient pas de données (transport_modes : $lignes lignes). Un dump schéma-seul n'est pas une sauvegarde."
+            exit 1
+          fi
+          # L'historique des migrations est un confort de lecture, pas une condition de
+          # restauration (la procédure ne rejoue aucune migration) : son absence avertit, elle
+          # ne fait pas échouer la sauvegarde.
+          if ! grep -q 'CREATE TABLE "supabase_migrations"."schema_migrations"' sauvegarde/public.sql; then
+            echo "::warning::L'historique des migrations (supabase_migrations) n'est pas dans le dump : on ne saura pas quelle migration cette archive reflète."
+          fi
 
       # L'artefact d'un dépôt privé reste lisible par toute personne ayant accès aux Actions,
       # et il contient des adresses email. Chiffrement symétrique AES-256 avant dépôt, la
@@ -132,11 +162,19 @@ jobs:
       # de passe du titulaire — un artefact qu'on ne peut plus déchiffrer n'est pas une
       # sauvegarde). `--passphrase-fd 0` : la phrase passe par l'entrée standard, jamais par la
       # ligne de commande, qui serait visible dans la liste des processus.
+      #
+      # `--pinentry-mode loopback` n'est pas décoratif. Depuis GnuPG 2.1, une phrase de passe
+      # fournie par `--passphrase-fd` n'est acceptée que si la boucle locale est demandée
+      # explicitement : sans elle, gpg s'adresse à son agent et sort en « problem with the
+      # agent » / « Inappropriate ioctl for device ». ubuntu-latest embarque gpg 2.4, donc le job
+      # échouerait à **toutes** ses exécutions et la sauvegarde ne produirait jamais d'artefact —
+      # panne que rien dans le dépôt ne peut attraper, la CI ne jouant pas ce workflow.
       - name: Chiffrer l'archive
         run: |
           set -euo pipefail
           tar -czf "sauvegarde-$horodatage.tar.gz" -C sauvegarde public.sql auth.sql
           printf '%s' "$SAUVEGARDE_PASSPHRASE" | gpg --batch --yes \
+            --pinentry-mode loopback \
             --passphrase-fd 0 \
             --symmetric --cipher-algo AES256 \
             --output "sauvegarde-$horodatage.tar.gz.gpg" \

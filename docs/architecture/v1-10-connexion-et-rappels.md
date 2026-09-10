@@ -425,14 +425,19 @@ dépend pas du SMTP mais se re-vérifie gratuitement au passage.
 
 ## 9. État des lieux du 07/09 — après les chantiers A, B, C, D
 
-> 📌 **Mise à jour du 10/09/2026 — les cinq issues du tableau ci-dessous sont closes.** #58
-> (dépendances Expo au niveau du SDK), #59 (les `Alert.alert` sont remplacés par `MessageInline`),
-> #60 (la collision Google est traitée par `identiteDejaRattachee`), #61 (`retrouver_view` et
-> `retrouver_send` sont émis) et #62 (le bandeau « Ton compte est rattaché à … » existe sur le plan
-> et sur « Toi ») ont toutes été livrées depuis. Ce §9 est conservé tel quel comme état daté du
-> 07/09 ; il **ne liste plus aucun point ouvert**, et ne doit plus être lu comme un reste-à-faire.
-> Ce qui reste vraiment ouvert, les huit comptes tiers, les réglages qui vivent hors du dépôt et la
-> checklist de publication sur Play : **`docs/exploitation/README.md`**.
+> 📌 **Mise à jour du 10/09/2026 — quatre des cinq issues du tableau ci-dessous sont livrées et
+> fermées.** #59 (les `Alert.alert` sont remplacés par `MessageInline`), #60 (la collision Google
+> est traitée par `identiteDejaRattachee`), #61 (`retrouver_view` et `retrouver_send` sont émis) et
+> #62 (le bandeau « Ton compte est rattaché à … » existe sur le plan et sur « Toi ») sont closes sur
+> GitHub, #62 le 10/09/2026. **#58 reste ouverte** : le commit `85b29ac` semble avoir livré les
+> dépendances Expo SDK 57, mais l'issue n'a pas été fermée — à vérifier avant de la fermer.
+> Ce §9 est conservé tel quel comme état daté du 07/09. Le tableau ci-dessous ne porte donc plus de
+> reste-à-faire. **Restent ouverts les deux points du paragraphe « volontairement laissé »** : les
+> trois vulnérabilités npm transitives (à revoir maintenant que #58 est livré) et les index en
+> INFO, qu'aucun chantier de `v1-13` ne reprend — ils se suivent depuis ce paragraphe, pas depuis
+> le registre d'exploitation, qui ne couvre que ce qui vit hors du dépôt. Les comptes tiers, les
+> réglages qui vivent hors du dépôt et la checklist de publication sur Play :
+> **`docs/exploitation/README.md`**.
 
 Tour rapide demandé après la livraison du chantier D (PR #57), pour vérifier que rien ne
 traîne avant d'attaquer F et E.

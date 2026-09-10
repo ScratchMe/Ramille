@@ -58,10 +58,13 @@ const ROUTES = [
 
 // Les deux écrans de panne, qu'aucune route ne doit afficher.
 //
-// `Something went wrong` est l'écran de secours d'Expo Router — en anglais, sur fond noir. Il
-// n'est plus le premier filet depuis C0.4, mais il reste atteignable : une exception levée
-// au-dessus de notre layout racine (la couche de routage elle-même, ou notre propre écran
-// d'erreur) y retombe. Le produit ne parle français qu'en français, y compris en panne.
+// `Something went wrong` est l'écran de secours d'Expo Router — en anglais, sur fond noir.
+// Depuis C0.4, plus rien ne devrait l'afficher : notre `Try` est le seul de l'arbre (Expo Router
+// 57 n'en monte un que là où une route exporte un `ErrorBoundary`), et une exception levée
+// au-dessus de lui ne rend pas cet écran mais une page blanche — que le contrôle de page vide
+// attrape. On garde la chaîne parce qu'elle redevient atteignable le jour où notre boundary
+// disparaît, où une route est rendue hors de notre layout, ou si Expo Router monte à nouveau son
+// propre filet. Le produit ne parle français qu'en français, y compris en panne.
 //
 // Le second est le titre de `src/components/erreur-inattendue.tsx`. **Les deux textes sont
 // couplés à la main** : changer ce titre sans venir ici rendrait le contrôle aveugle, d'où le
