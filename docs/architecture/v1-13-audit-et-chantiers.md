@@ -3,8 +3,8 @@
 > **Statut** : document de travail, feuille de route courante du produit à partir du 10/09/2026.
 > Il remplace le renvoi vers `v1-07` §4 (plan entièrement livré) comme point d'entrée de ce
 > qui reste à faire. Chaque chantier est écrit pour être confié tel quel à une personne ou à un
-> agent, sans relire l'audit. Les décisions marquées **[ARBITRAGE]** ne sont pas prises : elles
-> attendent le titulaire du produit (§1), et le chantier qui en dépend ne démarre pas avant.
+> agent, sans relire l'audit. Les dix-huit décisions marquées **[ARBITRAGE]** ont été rendues par le
+> titulaire du produit le 10/09/2026 (§1) : plus aucun chantier n'est bloqué par une décision.
 >
 > **Annexe** : `docs/audit/2026-09-09-inventaire.md` porte les 279 constats retenus, avec pour
 > chacun fichier et ligne, description, recommandation, et le complément du contre-vérificateur.
@@ -93,34 +93,36 @@ connus), **Tests** (ce qui doit exister à la fin), **Fait quand** (critère de 
 ## 1. Décisions à arbitrer avant de lancer certains chantiers
 
 Dix-huit constats rouvrent une décision écrite. Les voici regroupées, avec la recommandation de
-l'audit. **Sans réponse, le chantier concerné ne démarre pas.**
+l'audit et, en gras, **la décision rendue le 10/09/2026**. Une seule va contre la recommandation (D12).
+Chaque décision qui rouvre un document daté se consigne dans ce document-ci ; le document d'origine
+reçoit un bandeau daté au moment où le chantier correspondant est livré, jamais avant.
 
 | # | Question | Décision documentée | Recommandation | Bloque |
 |---|---|---|---|---|
-| D1 | La question du check-in nomme-t-elle l'action engagée et les jours choisis ? | Spec fonctionnelle §7 : « pas de personnalisation du wording par profil pour cette V1 ». | **Oui.** L'étape 6b (engagement avec intention) est postérieure à cette ligne et la rend caduque : sans cela, le levier « le mieux établi » (v1-07 §3.3) est décoratif. Repli générique quand rien n'est engagé. | C2.1 |
-| D2 | Le check-in interroge-t-il la semaine écoulée plutôt que « cette semaine » ? | v1-02 §3 (« semaine courante »), v1-12 §4.4 (corps du push avec « cette semaine »). | **Oui.** Le moment d'envoi (lundi matin, v1-12 §2.8) reste ; seul le temps du verbe et la période interrogée changent. | C2.3 |
-| D3 | Ajoute-t-on une troisième réponse « pas de trajet cette semaine » ? | Spec §7 : « une question fermée ». | **Oui**, comme troisième état explicite, jamais comme un « Non ». Une question fermée à trois réponses reste fermée. | C2.4 |
-| D4 | Le covoiturage des loisirs divise-t-il enfin le poste ? | v1-05 §2 : pas de `leisure_carpool_size`. | **Oui**, ajouter le champ. Ne pas retirer la ligne « Voiture (covoiturage) » : laisser une réponse sans effet est la seule option indéfendable. | C3.5 |
-| D5 | Les loisirs « rarement » : garde-t-on 15 km en voiture ? | Spec §5 et v1-05 §4 : « voiture, 15 km ». | **Garder le calcul**, mais retirer ce mode inventé du libellé de la question mensuelle et de la base des actions du plan (C2.5), et dire la règle à l'écran (C3.7). | C2.5, C3.7 |
-| D6 | Demande-t-on la part du trajet couverte par le second mode ? | Spec §5 et v1-05 §4 : « 50/50, à ajuster si besoin » ; règle « la profondeur coûte plus qu'une puce ». | **Oui**, une puce au même niveau (pas un second niveau), repli 0,5 pour l'existant. | C3.4 |
-| D7 | Ajoute-t-on un poste « déplacements professionnels » ? | v1-05 §1 : trois postes fixes. | **Pas maintenant.** Nommer la limite sur l'étape 1 (une ligne, sans arbitrage). Le poste lui-même est un increment à part. | C4.3 |
-| D8 | Une désinscription des rappels par lien dans l'email, hors de l'app ? | v1-12 §3 : le réglage vit dans « Toi ». | **Oui.** `List-Unsubscribe` est exigé par les grands fournisseurs de messagerie pour un envoi régulier ; sans lui, la seule sortie est « signaler comme spam ». Le réglage reste dans « Toi », le lien en est une seconde porte. | C2.9 |
-| D9 | La réponse au check-in passe-t-elle par un RPC ? | Aucune décision écrite ; la doctrine `plan_actions` va dans ce sens. | **Oui.** | C1.12 |
-| D10 | Un coup de pouce prospectif la veille des jours choisis ? | Spec §7 « jamais insistante ni répétée » ; v1-12 §2.1 « un mot par point, jamais plus ». | **Increment à instruire**, opt-in, borné dans le temps. Pas avant C2.1 et C2.2. | C4.2 |
-| D11 | Le premier point de suivi est-il généré à la soumission du bilan ? | v1-12 §2.3 et §6.2 : attente conçue, la carte nomme le jour. | **Non**, garder l'attente : générer à la soumission enverrait un push dans les minutes suivant la feuille des rappels. | — |
-| D12 | Des variantes aux deux répliques de check-in ? | `mascotte.ts` : « les répliques des maquettes validées ne se réécrivent pas ». | **Non** : l'usure n'est pas mesurable (`checkin_answer` est interdit comme événement), on ne réécrit pas sans signal. | — |
-| D13 | Le plancher d'animation de lancement (1450 ms) est-il réduit ? | v1-11 §9.5 et `ecran-lancement.tsx` : plancher assumé. | **Non**, sauf sous « réduire les animations » (C1.9), qui ne rouvre rien. | — |
-| D14 | `eas.json` épingle-t-il une image de build ? | v1-10 §10.7 : `latest` exigé par le build depuis GitHub. | **Non** : EAS retire ses images après un an, une image épinglée casserait le build au moment décrit. | — |
-| D15 | Un accusé de réception après suppression de compte depuis l'app ? | Commentaire de `mon-compte.tsx` (choix de code, pas une décision documentée). | **Oui**, un « C'est fait. » plus la ligne de Ramille, sans rétention. | C3.10 |
-| D16 | Une norme dynamique (« de plus en plus de gens… ») dans l'onboarding ? | `carbon-reference.ts` : toute valeur sourcée ou dérivation signalée. | **Seulement en mots, dans la voix de Ramille**, sans chiffre ; jamais un nouveau repère non sourcé. | C4.7 |
-| D17 | Une déconnexion sur « Toi » pour un compte rattaché ? | Handoff §4.3 : la copie de l'écran de reconnexion ne « mentionne » pas la déconnexion. | **Oui**, un lien discret, réservé aux comptes rattachés ; la consigne du handoff porte sur un autre écran. | C3.9 |
-| D18 | Figer toutes les actions ≥ 5 kg et offrir « Voir d'autres pistes » ? | Spec §6 : « 1 à 2 actions suggérées ». | **Oui**, deux en avant, les suivantes dépliables. | C4.6 |
+| D1 | La question du check-in nomme-t-elle l'action engagée et les jours choisis ? | Spec fonctionnelle §7 : « pas de personnalisation du wording par profil pour cette V1 ». | **Oui.** L'étape 6b (engagement avec intention) est postérieure à cette ligne et la rend caduque : sans cela, le levier « le mieux établi » (v1-07 §3.3) est décoratif. Repli générique quand rien n'est engagé. **Décidé le 10/09 : oui, l'action et les jours.** | C2.1 |
+| D2 | Le check-in interroge-t-il la semaine écoulée plutôt que « cette semaine » ? | v1-02 §3 (« semaine courante »), v1-12 §4.4 (corps du push avec « cette semaine »). | **Oui.** Le moment d'envoi (lundi matin, v1-12 §2.8) reste ; seul le temps du verbe et la période interrogée changent. **Décidé le 10/09 : oui, la période écoulée.** | C2.3 |
+| D3 | Ajoute-t-on une troisième réponse « pas de trajet cette semaine » ? | Spec §7 : « une question fermée ». | **Oui**, comme troisième état explicite, jamais comme un « Non ». Une question fermée à trois réponses reste fermée. **Décidé le 10/09 : oui, troisième état explicite.** | C2.4 |
+| D4 | Le covoiturage des loisirs divise-t-il enfin le poste ? | v1-05 §2 : pas de `leisure_carpool_size`. | **Oui**, ajouter le champ. Ne pas retirer la ligne « Voiture (covoiturage) » : laisser une réponse sans effet est la seule option indéfendable. **Décidé le 10/09 : oui, ajouter la taille du covoiturage.** | C3.5 |
+| D5 | Les loisirs « rarement » : garde-t-on 15 km en voiture ? | Spec §5 et v1-05 §4 : « voiture, 15 km ». | **Garder le calcul**, mais retirer ce mode inventé du libellé de la question mensuelle et de la base des actions du plan (C2.5), et dire la règle à l'écran (C3.7). **Décidé le 10/09 : garder le calcul, retirer l'invention du libellé, du plan et de la boucle, le dire à l'écran.** | C2.5, C3.7 |
+| D6 | Demande-t-on la part du trajet couverte par le second mode ? | Spec §5 et v1-05 §4 : « 50/50, à ajuster si besoin » ; règle « la profondeur coûte plus qu'une puce ». | **Oui**, une puce au même niveau (pas un second niveau), repli 0,5 pour l'existant. **Décidé le 10/09 : oui, une puce au même niveau.** | C3.4 |
+| D7 | Ajoute-t-on un poste « déplacements professionnels » ? | v1-05 §1 : trois postes fixes. | **Pas maintenant.** Nommer la limite sur l'étape 1 (une ligne, sans arbitrage). Le poste lui-même est un increment à part. **Décidé le 10/09 : nommer la limite maintenant, le poste reste en lot 4.** | C4.3 |
+| D8 | Une désinscription des rappels par lien dans l'email, hors de l'app ? | v1-12 §3 : le réglage vit dans « Toi ». | **Oui.** `List-Unsubscribe` est exigé par les grands fournisseurs de messagerie pour un envoi régulier ; sans lui, la seule sortie est « signaler comme spam ». Le réglage reste dans « Toi », le lien en est une seconde porte. **Décidé le 10/09 : oui, lien de sortie et en-têtes List-Unsubscribe.** | C2.9 |
+| D9 | La réponse au check-in passe-t-elle par un RPC ? | Aucune décision écrite ; la doctrine `plan_actions` va dans ce sens. | **Oui.** **Décidé le 10/09 : oui, RPC.** | C1.12 |
+| D10 | Un coup de pouce prospectif la veille des jours choisis ? | Spec §7 « jamais insistante ni répétée » ; v1-12 §2.1 « un mot par point, jamais plus ». | **Increment à instruire**, opt-in, borné dans le temps. Pas avant C2.1 et C2.2. **Décidé le 10/09 : à instruire en lot 4, opt-in, après C2.1 et C2.2.** | C4.2 |
+| D11 | Le premier point de suivi est-il généré à la soumission du bilan ? | v1-12 §2.3 et §6.2 : attente conçue, la carte nomme le jour. | **Non**, garder l'attente : générer à la soumission enverrait un push dans les minutes suivant la feuille des rappels. **Décidé le 10/09 : non, l'attente reste.** | — |
+| D12 | Des variantes aux deux répliques de check-in ? | `mascotte.ts` : « les répliques des maquettes validées ne se réécrivent pas ». | **Non** : l'usure n'est pas mesurable (`checkin_answer` est interdit comme événement), on ne réécrit pas sans signal. **Décidé le 10/09, contre la recommandation : oui, trois ou quatre variantes par issue, choisies de façon déterministe par période, sans chiffre, gardées par le même test, les répliques d'origine conservées. Chantier C2.12.** | — |
+| D13 | Le plancher d'animation de lancement (1450 ms) est-il réduit ? | v1-11 §9.5 et `ecran-lancement.tsx` : plancher assumé. | **Non**, sauf sous « réduire les animations » (C1.9), qui ne rouvre rien. **Décidé le 10/09 : non, le plancher reste ; seule la réduction d'animations (C1.9) s'applique.** | — |
+| D14 | `eas.json` épingle-t-il une image de build ? | v1-10 §10.7 : `latest` exigé par le build depuis GitHub. | **Non** : EAS retire ses images après un an, une image épinglée casserait le build au moment décrit. **Décidé le 10/09 : garder latest, tracer le dernier build réussi dans le registre.** | — |
+| D15 | Un accusé de réception après suppression de compte depuis l'app ? | Commentaire de `mon-compte.tsx` (choix de code, pas une décision documentée). | **Oui**, un « C'est fait. » plus la ligne de Ramille, sans rétention. **Décidé le 10/09 : oui, « C'est fait. » et la ligne de Ramille.** | C3.10 |
+| D16 | Une norme dynamique (« de plus en plus de gens… ») dans l'onboarding ? | `carbon-reference.ts` : toute valeur sourcée ou dérivation signalée. | **Seulement en mots, dans la voix de Ramille**, sans chiffre ; jamais un nouveau repère non sourcé. **Décidé le 10/09 : oui, en mots dans la voix de Ramille, jamais un chiffre.** | C4.7 |
+| D17 | Une déconnexion sur « Toi » pour un compte rattaché ? | Handoff §4.3 : la copie de l'écran de reconnexion ne « mentionne » pas la déconnexion. | **Oui**, un lien discret, réservé aux comptes rattachés ; la consigne du handoff porte sur un autre écran. **Décidé le 10/09 : oui, un lien discret réservé aux comptes rattachés.** | C3.9 |
+| D18 | Figer toutes les actions ≥ 5 kg et offrir « Voir d'autres pistes » ? | Spec §6 : « 1 à 2 actions suggérées ». | **Oui**, deux en avant, les suivantes dépliables. **Décidé le 10/09 : oui, deux en avant, les suivantes dépliables.** | C4.6 |
 
 ## 2. Vue d'ensemble
 
 ### 2.1 Les chantiers
 
-| Id | Chantier | Prio | Effort | Dépend de | Arbitrage |
+| Id | Chantier | Prio | Effort | Dépend de | Arbitrage (rendu le 10/09) |
 |---|---|---|---|---|---|
 | C0.1 | Redirect URLs : référence versionnée et correction de v1-10 §8.4 | P0 | petit | — | — |
 | C0.2 | Sauvegarde de la base | P0 | moyen | — | — |
@@ -152,7 +154,8 @@ l'audit. **Sans réponse, le chantier concerné ne démarre pas.**
 | C2.8 | La saison a une fin et un début | P2 | moyen | C2.2 | — |
 | C2.9 | Rappels qui s'espacent, et une sortie hors de l'app | P2 | moyen | C0.5 | D8 |
 | C2.10 | Le signal « deux points consécutifs » | P2 | petit | C2.3 | — |
-| C2.11 | Le lien du rappel ouvert sur un autre appareil | P2 | petit | — | — |
+| C2.11 | Le lien du rappel ouvert sur un autre appareil | P2 | petit | — | D17 |
+| C2.12 | Variantes des répliques de check-in | P2 | petit | C2.4 | D12 |
 | C3.1 | La mobilité contrainte est lue par la restitution | P3 | petit | — | — |
 | C3.2 | D'où vient le chiffre : source, périmètre, une équivalence | P3 | moyen | — | — |
 | C3.3 | Vols : aller-retour, hypothèses affichées | P3 | petit | — | — |
@@ -186,7 +189,7 @@ rebaser dans l'ordre indiqué.
 | `src/app/(tabs)/suivi/bilan.tsx` | C1.8, C2.7, C3.1, C3.2, C3.10, C3.11 |
 | `src/app/(tabs)/suivi/index.tsx` | C1.4, C1.7, C1.8, C2.7, C2.8 |
 | `src/components/checkin-card.tsx` | C1.4, C1.12, C2.1, C2.4, C2.6 |
-| `src/constants/mascotte.ts` | C2.4, C2.7, C3.9, C3.10 |
+| `src/constants/mascotte.ts` | C2.4, C2.7, C2.12, C3.9, C3.10 |
 | `src/app/bilan/index.tsx`, `src/types/bilan.ts` | C1.1, C1.3, C3.3, C3.4 |
 | `src/lib/format.ts` | C1.8 |
 | Fonctions SQL de génération de check-ins (`generate_*_checkins`, `enqueue_checkin_reminders`) | C2.1, C2.3, C2.5, C2.9 |
@@ -201,7 +204,7 @@ rebaser dans l'ordre indiqué.
 2. **Vague 2** — C1.1, C1.2, C1.3, C1.5, C1.9, C1.10, C1.11, C1.12 (fichiers disjoints).
 3. **Vague 3** — C1.4, C1.6, C1.7, C1.8, C1.13 (tous touchent les écrans d'onglets : les enchaîner).
 4. **Vague 4** — C2.2, C2.3, C2.5, C2.6, C2.11 (après arbitrages D2 et D5).
-5. **Vague 5** — C2.1, C2.4, C2.7, C2.8, C2.9, C2.10 (après D1, D3, D8 et la vague 4).
+5. **Vague 5** — C2.1, C2.4, C2.7, C2.8, C2.9, C2.10, C2.12 (après la vague 4 ; C2.12 après C2.4).
 6. **Vague 6** — le lot 3 : C3.1, C3.2, C3.3, C3.7, C3.10, C3.11, C3.12 sans arbitrage ; C3.4,
    C3.5, C3.6, C3.8, C3.9 ensuite (C3.4 à C3.6 touchent `recompute_assessment_results` et se
    font **en une seule migration** si possible, pour ne recalculer la suite pgTAP qu'une fois).
@@ -896,7 +899,7 @@ incohérente refusée ; test 17 : quota de jetons.
 
 C'est le lot qui fait exister la durée. Les cinq coupures identifiées (§0.2) se traitent dans
 l'ordre : d'abord ce que le check-in **dit** et **mesure** (C2.1, C2.3, C2.4, C2.5, C2.6), ensuite
-ce qui **survit** (C2.2), puis ce qui **se voit** (C2.7, C2.8), enfin ce qui **part** (C2.9, C2.10, C2.11).
+ce qui **survit** (C2.2), puis ce qui **se voit** (C2.7, C2.8), enfin ce qui **part** (C2.9, C2.10, C2.11) et ce qui **répond** (C2.12).
 
 ### C2.1 — Le check-in connaît l'action engagée
 
@@ -1220,6 +1223,41 @@ n'est pas encore fait » avec pour seul bouton « Faire mon bilan ». La consign
    avec Google et `/connexion/retrouver`, sans reproche.
 4. « Toi », compte rattaché seulement : « Me déconnecter de cet appareil » (`signOut`, marques
    locales effacées, retour à la racine), avec « Tes données restent sur ton compte » (D17).
+
+### C2.12 — Variantes des répliques de check-in
+
+**Priorité** P2 · **Effort** petit · **Dépend de** C2.4 · **Arbitrage** D12 (rendu contre la recommandation) · **Constats** A13-17, A9-21 (partie).
+
+**Pourquoi.** Avec les deux boucles, une personne reçoit environ soixante-quatre questions par an et
+n'entend que deux phrases en retour : « Bien joué — chaque changement compte. » et « Pas cette
+fois-ci. Rien d'obligatoire, on se repose la question au prochain point. » La répétition stricte
+de la **question** est utile (contexte stable) ; celle de la **réponse** s'use. Le titulaire a
+décidé d'ajouter des variantes en sachant que l'usure n'est pas mesurable (`checkin_answer` est
+interdit comme événement d'usage) : c'est un choix de ton, pas une optimisation.
+
+**Fichiers.** `src/constants/mascotte.ts:40-44` ; `src/constants/mascotte.test.ts` ;
+`src/components/checkin-card.tsx:79-83` ; CLAUDE.md (§ mascotte, règle « ne se réécrivent pas »).
+
+**À faire.**
+1. Dans `RAMILLE`, chaque issue devient un tableau : `checkinOui: [original, v2, v3, v4]`,
+   `checkinNon: [...]`, et `checkinSansObjet: [...]` (C2.4). **La réplique d'origine reste en
+   première position** et n'est pas modifiée.
+2. Une dérivation pure `repliqueDeCheckin(issue, periodStart)` dans `src/types/checkin.ts` (module
+   de C2.1) choisit la variante par un hachage déterministe de `period_start` — la même période
+   rend la même phrase sur tous les appareils et à chaque rendu, jamais de tirage aléatoire.
+3. Les variantes respectent les règles de la voix : première personne, tutoiement, jamais un
+   nombre, jamais « tu devrais » ni « il faut », jamais un accord qui genre la personne (C3.10),
+   et pour le « Non » jamais une déception. `mascotte.test.ts` parcourt désormais les tableaux.
+4. Réécrire l'en-tête de `mascotte.ts` et la phrase de CLAUDE.md : « les répliques d'origine
+   viennent des maquettes validées et restent ; des variantes s'y ajoutent, décision D12 du
+   10/09/2026, choisies par période ».
+
+**Ne pas faire.** Toucher à la question elle-même. Étendre au texte de l'email dans ce chantier :
+il vit uniquement en SQL (`enqueue_checkin_reminders`), et des variantes y demanderaient une table
+lue par la mise en file — à instruire séparément si on le souhaite (A9-21).
+
+**Tests.** `mascotte.test.ts` sur chaque variante ; `checkin.test.ts` : même période → même
+variante, deux périodes voisines → pas toujours la même.
 
 ## 6. Lot 3 — Prise de conscience et justesse du chiffre
 
@@ -1598,6 +1636,7 @@ Cocher ici, avec la PR et la date. Une décision d'arbitrage prise se note en §
 | C2.9 | | | |
 | C2.10 | | | |
 | C2.11 | | | |
+| C2.12 | | | |
 | C3.1 | | | |
 | C3.2 | | | |
 | C3.3 | | | |
