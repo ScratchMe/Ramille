@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#EAECE6; font-family:'Spline Sans', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#14563A; text-decoration:none; } a:hover { color:#1F6F4A; }
+  [data-theme] { --c-text:#131612; --c-text2:#39403B; --c-text3:#5E655F; --c-bg:#FFFFFF; --c-tinted:#F3F8F4; --c-el:#F0F1EC; --c-el2:#F6F8F3; --c-sel:#E4EFE8; --c-accent:#1F6F4A; --c-accent-text:#14563A; --c-muted:#A9C8B6; --c-border:#DDE0D9; --c-on-accent:#FFFFFF; --m-leaf:#1F6F4A; --m-ink:#131612; --m-vein:#E4EFE8; --m-blush:#A9C8B6; --m-accessory:#E4EFE8; --m-blush-autumn:#C99A6B; }
+  [data-theme="dark"] { --c-text:#FFFFFF; --c-text2:#B0B4BA; --c-text3:#8A9088; --c-bg:#000000; --c-tinted:#0F1410; --c-el:#212225; --c-el2:#1A1C1A; --c-sel:#1C2E22; --c-accent:#3D9B6F; --c-accent-text:#8FCBA9; --c-muted:#3A5245; --c-border:#2E3135; --m-leaf:#3D9B6F; --m-blush:#3A5245; --m-blush-autumn:#B98A5E; }
+  @keyframes slide-up { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="padding:64px 72px 140px;color:#131612;display:flex;flex-direction:column;gap:96px">
+
+  <!-- En-tête du canvas -->
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:760px">
+    <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5E655F">Ramille · v1-14 · lot 2 · canvas du 10/09/2026</span>
+    <h1 style="margin:0;font-size:48px;line-height:52px;font-weight:600;letter-spacing:-0.02em;text-wrap:balance">La boucle d'engagement, d'une saison à l'autre</h1>
+    <p style="margin:0;font-size:16px;line-height:24px;color:#39403B;text-wrap:pretty">Sept moments (A–G), dans l'ordre où une personne les rencontre, puis trois pages : Écarts, Système, Saisons. Planches 390 × 844, valeurs du dépôt (<span style="font-family:ui-monospace,monospace;font-size:13px">theme.ts</span>), composants réels ou proposés en Écarts. Les moments A et B sont cliquables ; B3, E et G défilent dans le cadre.</p>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
+      <button onClick="{{ toggleTheme }}" style="height:44px;padding:0 20px;border-radius:22px;border:1.5px solid #1F6F4A;background:#FFFFFF;color:#14563A;font:600 14px/20px 'Spline Sans',sans-serif;cursor:pointer">{{ themeLabel }}</button>
+      <span style="font-size:14px;line-height:20px;color:#5E655F">Toutes les planches basculent · <a href="#ecarts">Écarts</a> · <a href="#systeme">Système</a> · <a href="#saisons">Saisons</a></span>
+    </div>
+  </div>
+
+  <!-- A -->
+  <section id="a" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">A · Le point qui nomme l'action</h2><span style="font-size:14px;line-height:20px;color:#5E655F">D1, D2, D3, D12 · cliquable : réponds, Ramille répond, la carte reste</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <!-- A1 point avec engagement — prototype -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A1 — Point avec engagement" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;font-size:13px;font-weight:600"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:16px;height:9px;border-radius:2px;background:var(--c-text)"></span><span style="width:22px;height:11px;border:1.5px solid var(--c-text);border-radius:3px"></span></span></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border)"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--c-sel);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Point de la semaine · lundi 14 sept.</span>
+              <sc-if value="{{ pointOuvert }}" hint-placeholder-val="{{ true }}">
+                <span style="font-size:16px;line-height:23px;font-weight:600">Mardi ou jeudi, as-tu fait ce trajet à vélo ?</span>
+                <div style="display:flex;gap:8px">
+                  <button onClick="{{ repondreNon }}" style="flex:1;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Non</button>
+                  <button onClick="{{ repondreOui }}" style="flex:1;height:54px;border-radius:27px;border:0;background:var(--c-accent);color:#FFFFFF;font:600 16px 'Spline Sans',sans-serif;cursor:pointer">Oui</button>
+                </div>
+                <button onClick="{{ repondreAucun }}" style="min-height:44px;background:none;border:0;padding:0;color:var(--c-text3);font:500 14px/20px 'Spline Sans',sans-serif;cursor:pointer;text-align:center">Pas de trajet cette semaine</button>
+              </sc-if>
+              <sc-if value="{{ pointRepondu }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:8px;animation:slide-up 260ms ease-out">
+                  <dc-import name="Mascotte" mood="{{ retourMood }}" size="{{ 40 }}" hint-size="40px,40px"></dc-import>
+                  <span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">{{ retourLigne }}</span>
+                </div>
+                <sc-if value="{{ renforcement }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Deuxième semaine de suite que tu fais ce trajet autrement.</span></sc-if>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">{{ carteReponduePied }}</span>
+              </sc-if>
+            </div>
+            <h3 style="margin:8px 0 0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+            <div style="border:2px solid var(--c-accent);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:10px;background:var(--c-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">TON ENGAGEMENT</span></div>
+              <span style="font-size:17px;line-height:24px;font-weight:600">Faire ce trajet à vélo</span>
+              <span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 184 kg CO₂e</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Le mardi et le jeudi · par an · 7 % de ton empreinte</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Premier pas : repère un itinéraire cyclable pour mardi.</span>
+              <span style="margin-top:8px;font-size:14px;line-height:44px;color:var(--c-text3);text-decoration:underline">Changer d'avis</span>
+            </div>
+          </div>
+          <div style="height:60px;border-top:1px solid var(--c-border);display:flex;padding-top:8px;box-sizing:border-box">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;border-radius:15px;background:var(--c-sel);display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M4 20h16" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span><span style="font-size:12px;line-height:16px;font-weight:600;color:var(--c-accent)">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><circle cx="20" cy="7" r="1.6" fill="var(--c-text3)"></circle></svg></span><span style="font-size:12px;line-height:16px;font-weight:500;color:var(--c-text3)">Suivi</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <button onClick="{{ rejouerPoint }}" style="height:36px;padding:0 14px;border-radius:18px;border:1px solid #DDE0D9;background:#FFFFFF;color:#39403B;font:500 13px 'Spline Sans',sans-serif;cursor:pointer">Rejouer le point</button>
+          <button onClick="{{ toggleRenforcement }}" style="height:36px;padding:0 14px;border-radius:18px;border:1px solid #DDE0D9;background:#FFFFFF;color:#39403B;font:500 13px 'Spline Sans',sans-serif;cursor:pointer">{{ renforcementLabel }}</button>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">La question nomme l'action et les jours (D1), au passé (D2). Trois réponses : Oui / Non en boutons, « Pas de trajet cette semaine » en lien discret — ce n'est pas un Non, Ramille répond une attente. Une fois répondue, la carte reste jusqu'au prochain lundi. Le second renforcement est une phrase de corps, jamais un badge, jamais au-delà de deux.</p>
+      </div>
+
+      <!-- A2 sans engagement + variantes -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A2a — Sans engagement · déjà à vélo" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="flex:1;overflow:hidden;padding:0 24px 24px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">sans engagement · forme insérable du poste</span>
+            <div style="background:var(--c-sel);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Point de la semaine · lundi 14 sept.</span>
+              <span style="font-size:16px;line-height:23px;font-weight:600">La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?</span>
+              <div style="display:flex;gap:8px"><span style="flex:1;height:54px;border-radius:27px;background:var(--c-el);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500">Non</span><span style="flex:1;height:54px;border-radius:27px;background:var(--c-accent);color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">Oui</span></div>
+              <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Pas de trajet cette semaine</span>
+            </div>
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">déjà à vélo · question de maintien</span>
+            <div style="background:var(--c-sel);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Point de la semaine · lundi 14 sept.</span>
+              <span style="font-size:16px;line-height:23px;font-weight:600">La semaine dernière, ton trajet s'est-il fait à vélo ?</span>
+              <div style="display:flex;align-items:center;gap:8px;padding-top:2px"><dc-import name="Mascotte" mood="calm" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Noté. Le vélo reste ton trajet ; une semaine autrement n'y change rien.</span></div>
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">↑ retour au « Non » — neutre, sans accord qui genre</span>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Sans engagement, la question générique reste, au passé, sur la forme insérable du poste. La personne déjà à vélo reçoit une <b>question de maintien</b> (choix retenu, recommandation de l'audit : elle renforce l'identité) ; son « Non » reçoit une phrase neutre, sans accord qui genre. L'alternative « pas de point » est écartée — voir Écarts.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A2b — Voyages · question d'occasion" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="flex:1;overflow:hidden;padding:0 24px 24px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">voyages · question d'occasion</span>
+            <div style="background:var(--c-el);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Point du mois · septembre</span>
+              <span style="font-size:16px;line-height:23px;font-weight:600">Ce mois-ci, as-tu eu un déplacement où tu as choisi autre chose que l'avion ?</span>
+              <div style="display:flex;gap:8px"><span style="flex:1;height:54px;border-radius:27px;background:var(--c-bg);border:1px solid var(--c-border);box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500">Non</span><span style="flex:1;height:54px;border-radius:27px;background:var(--c-accent);color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">Oui</span></div>
+              <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Pas de voyage ce mois-ci</span>
+            </div>
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">notification · sujet en tête</span>
+            <div style="background:var(--c-el);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3)">Notification · 1er oct. 7:30</span>
+              <span style="font-size:15px;line-height:22px;font-weight:600">Ramille</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Tes voyages : ce mois-ci, as-tu choisi autre chose que l'avion ?</span>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Pour un « vol en moins », « changer de mode » n'a pas de sens : la question porte sur l'occasion. La troisième réponse devient « Pas de voyage ce mois-ci ». Le sujet de la notification est en tête, pour un aperçu tronqué.</p>
+      </div>
+      <!-- A3 retours de Ramille + notification -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A3 — Retours de Ramille et notification" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="flex:1;overflow-y:auto;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+            <div style="background:var(--c-el);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3)">Notification · lundi 7:30</span>
+              <span style="font-size:15px;line-height:22px;font-weight:600">Ramille</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton trajet domicile-travail : mardi ou jeudi, l'as-tu fait à vélo ?</span>
+            </div>
+            <span style="margin-top:8px;font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">Oui · l'originale, puis trois variantes par période (D12)</span>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="happy" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Bien joué — chaque changement compte.</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="happy" size="{{ 40 }}" tilt="{{ -6 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Un trajet autrement. Je le note ici.</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="happy" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">C'est fait, et ça compte. À lundi.</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="happy" size="{{ 40 }}" tilt="{{ 6 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Tu as choisi le vélo. Je vois la différence.</span></div>
+            </div>
+            <span style="margin-top:8px;font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">Non</span>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="encouraging" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Pas cette fois-ci. Rien d'obligatoire, on se repose la question au prochain point.</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="encouraging" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Ça arrive. Lundi, je te repose la question, tranquillement.</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="encouraging" size="{{ 40 }}" tilt="{{ -6 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Une semaine sans, ce n'est pas un retour en arrière.</span></div>
+            </div>
+            <span style="margin-top:8px;font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">Pas de trajet · une attente, pas une relance</span>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="calm" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Pas de trajet, pas de question. On se retrouve lundi.</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="resting" size="{{ 40 }}" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Semaine sans trajet. Je reviens lundi, comme d'habitude.</span></div>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Toutes les répliques respectent §5 : première personne, court, aucun nombre, aucun « tu devrais », aucun accord genré. L'inclinaison de la feuille fait le second registre. Le sujet de la notification est en tête, pour un aperçu tronqué.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section id="b" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">B · La saison : sa fin et son début</h2><span style="font-size:14px;line-height:20px;color:#5E655F">décisions 7 et 8 · cliquable : la carte d'ouverture, puis l'action reconduite</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <!-- B1 fin de saison -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B1 — Fin de saison" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border)"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px"></span></div>
+          <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--c-el);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Point de la semaine · lundi 23 nov.</span>
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="happy" size="{{ 40 }}" season="automne" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Bien joué — chaque changement compte.</span></div>
+            </div>
+            <h3 style="margin:8px 0 0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+            <div style="border:2px solid var(--c-accent);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:10px;background:var(--c-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">TON ENGAGEMENT</span></div>
+              <span style="font-size:17px;line-height:24px;font-weight:600">Faire ce trajet à vélo</span>
+              <span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 184 kg CO₂e</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Le mardi et le jeudi · par an · 7 % de ton empreinte</span>
+            </div>
+            <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Ton cap pour cette saison</span>
+              <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">− 184 kg</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Automne 2026</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">jusqu'au 30 novembre</span></div>
+              <div style="height:6px;border-radius:3px;background:var(--c-border);margin-top:6px"><div style="width:92%;height:100%;border-radius:3px;background:var(--c-muted)"></div></div>
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3)">La saison avance ; le trait mesure le temps, pas toi.</span>
+            </div>
+            <div style="background:var(--c-el);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton bilan a six mois. Le refaire prend cinq minutes ; ton plan s'ajuste.</span>
+              <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Refaire mon bilan</span>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">La carte du cap porte enfin sa fin : « jusqu'au 30 novembre », et un trait de temps écoulé en <span style="font-family:ui-monospace,monospace;font-size:12px">accentMuted</span> — c'est la saison qui avance, pas une jauge de progression vers un objectif. La carte de re-bilan dit le fait (« six mois »), sans relance.</p>
+      </div>
+
+      <!-- B2 ouverture — prototype -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B2 — Ouverture de saison" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border)"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px"></span></div>
+          <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px">
+            <sc-if value="{{ saisonOuverte }}" hint-placeholder-val="{{ true }}">
+              <div style="border:1px solid var(--c-border);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px;animation:slide-up 320ms ease-out">
+                <span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">NOUVELLE SAISON</span>
+                <span style="font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">L'hiver commence.</span>
+                <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Cet automne : 11 points répondus, 8 fois où tu as changé quelque chose sur ton trajet.</span>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+                  <button onClick="{{ reprendre }}" style="height:54px;border-radius:27px;border:0;background:var(--c-accent);color:#FFFFFF;font:600 16px 'Spline Sans',sans-serif;cursor:pointer">Reprendre la même action</button>
+                  <button onClick="{{ choisir }}" style="height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Choisir une autre</button>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:0 4px"><dc-import name="Mascotte" mood="happy" size="{{ 44 }}" season="hiver" tilt="{{ -5 }}" hint-size="44px,44px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text)">On repart pour une saison.</span></div>
+            </sc-if>
+            <sc-if value="{{ saisonReconduite }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;padding:0 4px;animation:slide-up 260ms ease-out"><dc-import name="Mascotte" mood="happy" size="{{ 44 }}" season="hiver" hint-size="44px,44px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text)">On repart pour une saison. Je te fais signe lundi.</span></div>
+              <h3 style="margin:8px 0 0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+              <div style="border:2px solid var(--c-accent);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;animation:slide-up 320ms ease-out">
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:10px;background:var(--c-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">TON ENGAGEMENT · RECONDUIT</span></div>
+                <span style="font-size:17px;line-height:24px;font-weight:600">Faire ce trajet à vélo</span>
+                <span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 184 kg CO₂e</span>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Le mardi et le jeudi · par an · 7 % de ton empreinte</span>
+                <span style="margin-top:8px;font-size:14px;line-height:44px;color:var(--c-text3);text-decoration:underline">Changer d'avis</span>
+              </div>
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Ton cap pour cette saison</span>
+                <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">− 184 kg</span>
+                <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Hiver 2026-2027</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">jusqu'au 28 février</span></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ saisonChoisir }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2);animation:slide-up 260ms ease-out">Deux actions, sur d'autres postes que ton trajet domicile-travail.</span>
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;animation:slide-up 320ms ease-out">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Travailler depuis chez toi un jour par semaine</span>
+                <span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 240 kg CO₂e</span>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 9 % de ton empreinte</span>
+                <span style="margin-top:8px;height:54px;border-radius:27px;background:var(--c-el);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500">Je m'y engage</span>
+              </div>
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;animation:slide-up 380ms ease-out">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Un aller-retour en train plutôt qu'en avion</span>
+                <span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 310 kg CO₂e</span>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text2)">sur un voyage · 11 % de ton empreinte</span>
+                <span style="margin-top:8px;height:54px;border-radius:27px;background:var(--c-el);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500">Je m'y engage</span>
+              </div>
+              <span style="text-align:center;font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Voir d'autres pistes</span>
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;opacity:0.72">
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Cet automne</span>
+                <span style="font-size:17px;line-height:24px;font-weight:600">Faire ce trajet à vélo</span>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Reste dans ton suivi, le mardi et le jeudi.</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button onClick="{{ rejouerSaison }}" style="height:36px;padding:0 14px;border-radius:18px;border:1px solid #DDE0D9;background:#FFFFFF;color:#39403B;font:500 13px 'Spline Sans',sans-serif;cursor:pointer">Rejouer l'ouverture</button></div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">La carte d'ouverture vit deux semaines en tête du plan, à la place du point. Voix produit pour les deux nombres, et seulement ce qui a été fait. Ramille se tient <b>sous</b> la carte, hors du cadre qui porte les chiffres (§10) — elle n'annonce que le départ. « Reprendre » pose l'action reconduite, étiquette « RECONDUIT » ; « Choisir » ouvre les pistes et garde l'ancienne action, estompée, en mémoire de saison.</p>
+      </div>
+
+      <!-- B3 bascule et cas de bord -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B3 — Bascule, cadence de repli, engagement orphelin" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="flex:1;overflow-y:auto;padding:0 24px 24px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">cycle affiché périmé (ouvert le 1er déc. au matin)</span>
+            <div style="background:var(--c-el);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+              <span style="flex:1;font-size:14px;line-height:20px;color:var(--c-text2)">L'hiver a commencé pendant que tu étais là.</span>
+              <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text);white-space:nowrap">Voir la saison</span>
+            </div>
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">cadence de repli · trimestre glissant, sans nom de saison</span>
+            <div style="border:1px solid var(--c-border);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px">
+              <span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">NOUVELLE PÉRIODE</span>
+              <span style="font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Une nouvelle période commence.</span>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Ces trois mois : 11 points répondus, 8 fois où tu as changé quelque chose sur ton trajet.</span>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px"><span style="height:54px;border-radius:27px;background:var(--c-accent);color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">Reprendre la même action</span><span style="height:54px;border-radius:27px;background:var(--c-el);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500">Choisir une autre</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:0 4px"><dc-import name="Mascotte" mood="happy" size="{{ 44 }}" season="hiver" hint-size="44px,44px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text)">On repart pour une saison.</span></div>
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">re-bilan : l'engagement n'a pas pu suivre — dit une fois</span>
+            <div style="background:var(--c-el);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton plan a changé avec ton nouveau bilan. L'action que tu suivais n'y est plus ; elle reste dans ton suivi.</span>
+              <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Compris</span>
+            </div>
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">la question figée nomme une action quittée le mercredi</span>
+            <div style="background:var(--c-sel);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Point de la semaine · lundi 14 sept.</span>
+              <span style="font-size:16px;line-height:23px;font-weight:600">Mardi ou jeudi, as-tu fait ce trajet à vélo ?</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Question posée lundi, sur l'action de la semaine dernière.</span>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Le bandeau de saison périmée réutilise le bandeau discret existant. Le repli sans saison garde exactement la même carte, avec « période » à la place. La mascotte suit le calendrier dans les deux cas. La question figée est acceptée et dite en une ligne (§7).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- D + E + F + G -->
+  <section id="defg" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">D · E · F · G · Suivi, re-bilan, pistes, reprise</h2><span style="font-size:14px;line-height:20px;color:#5E655F">décisions 9, 10, 11 · le suivi montre ce qui a été décidé et l'écart par poste</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <!-- D suivi -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="D1 — Suivi · bilans et décisions" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border)"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px"></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:18px">
+            <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton suivi</h3>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">Bilan du 10 sept. 2026</span><span style="font-size:14px;line-height:20px;color:var(--c-text3)">précédent : 12 mars</span></div>
+              <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">3,4 t CO₂e</span>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">8 % de moins que ton bilan précédent. Ce que tu as changé se voit ici.</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Par poste</span>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px">Trajet domicile-travail</span><span style="font-size:14px;line-height:20px;font-weight:600">2,1 t → 1,7 t</span></div><div style="height:10px;border-radius:5px;border:1.5px solid var(--c-muted);box-sizing:border-box;width:84%"></div><div style="height:10px;border-radius:5px;background:var(--c-accent);width:68%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px">Sorties du week-end</span><span style="font-size:14px;line-height:20px;font-weight:600">0,5 t → 0,6 t</span></div><div style="height:10px;border-radius:5px;border:1.5px solid var(--c-muted);box-sizing:border-box;width:20%"></div><div style="height:10px;border-radius:5px;background:var(--c-muted);width:24%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px">Voyages</span><span style="font-size:14px;line-height:20px;font-weight:600">1,1 t → 1,1 t</span></div><div style="height:10px;border-radius:5px;border:1.5px solid var(--c-muted);box-sizing:border-box;width:44%"></div><div style="height:10px;border-radius:5px;background:var(--c-muted);width:44%"></div></div>
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3)">Contour : bilan précédent · plein : ce bilan · accent : le poste qui pèse le plus</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Ce que tu as décidé, saison après saison</span>
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px;color:var(--c-text2)">Automne 2026</span><span style="font-size:15px;line-height:22px;text-align:right">Ce trajet à vélo · mardi, jeudi</span></div>
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px;color:var(--c-text2)">Été 2026</span><span style="font-size:15px;line-height:22px;text-align:right">Ce trajet à vélo · mardi</span></div>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">L'évolution par poste est factuelle : le poste dominant reste en accent (il peut changer, c'est une réussite), les autres en atténué ; le bilan précédent est un contour, jamais une couleur de jugement. La baisse est reconnue en voix produit, chiffrée. « Ce que tu as décidé » : une ligne par saison, jamais un statut tenu / pas tenu.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="D2 — Suivi · points par saison" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border)"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px"></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:18px">
+            <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Tes points</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Automne 2026 · 11 points</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Voir tout</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px;color:var(--c-text2)">23 nov.</span><span style="font-size:15px;line-height:22px">Changement fait</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px;color:var(--c-text2)">16 nov.</span><span style="font-size:15px;line-height:22px">Pas de trajet</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px;color:var(--c-text2)">9 nov.</span><span style="font-size:15px;line-height:22px">Pas cette fois</span></div>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ces fois-là, c'est toi qui as choisi le trajet.</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding-top:4px"><dc-import name="Mascotte" mood="calm" size="{{ 36 }}" season="automne" hint-size="36px,36px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Je vois la différence.</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Été 2026 · 13 points</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Voir tout</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px;color:var(--c-text2)">31 août</span><span style="font-size:15px;line-height:22px">Changement fait</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px;color:var(--c-text2)">24 août</span><span style="font-size:15px;line-height:22px">Changement fait</span></div>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Les points groupés par saison, « Voir tout » à droite — jamais tronqués en silence. Les trois libellés au même niveau typographique ; les périodes sans réponse n'apparaissent pas. La phrase d'attribution sous le compteur. Ramille en <span style="font-family:ui-monospace,monospace;font-size:12px">calm</span>, en bas, loin du total.</p>
+      </div>
+      <!-- E restitution re-bilan -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="E — Restitution d'un re-bilan" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="flex:1;overflow-y:auto;padding:0 24px;display:flex;flex-direction:column;gap:16px">
+            <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Ton bilan transport · le second</span>
+            <div style="background:var(--c-sel);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Le déplacement qui pèse le plus</span>
+              <span style="font-size:32px;line-height:38px;letter-spacing:-0.64px;font-weight:600">Ton trajet domicile-travail, en voiture</span>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">1,7 t CO₂e par an · 50 % de ton empreinte transport</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">Total annuel</span><span style="font-size:26px;line-height:32px;font-weight:600">3,4 t CO₂e</span></div>
+            <div style="background:var(--c-el);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <span style="font-size:17px;line-height:24px;font-weight:600">Où tu te situes</span>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton bilan précédent · mars</span><span style="font-size:14px;line-height:20px;font-weight:600">3,7 t</span></div><div style="height:14px;border-radius:7px;border:1.5px solid var(--c-muted);box-sizing:border-box;width:100%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Toi, aujourd'hui</span><span style="font-size:14px;line-height:20px;font-weight:600">3,4 t</span></div><div style="height:14px;border-radius:7px;background:var(--c-accent);width:92%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Moyenne en France</span><span style="font-size:14px;line-height:20px;font-weight:600">2,8 t</span></div><div style="height:14px;border-radius:7px;background:var(--c-muted);width:76%"></div></div>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">0,3 t de moins que ton bilan de mars. Le palier que tu visais est derrière toi.</span>
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">source SDES · le repère 2050 apparaît sous la moyenne</span>
+            </div>
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">variante · mobilité contrainte</span>
+            <div style="background:var(--c-el);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton bilan précédent</span><span style="font-size:14px;line-height:20px;font-weight:600">4,2 t</span></div><div style="height:14px;border-radius:7px;border:1.5px solid var(--c-muted);box-sizing:border-box;width:100%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Toi, aujourd'hui</span><span style="font-size:14px;line-height:20px;font-weight:600">4,0 t</span></div><div style="height:14px;border-radius:7px;background:var(--c-accent);width:95%"></div></div>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Là où tu vis, la voiture n'est pas un choix. Le plan regarde ce qui dépend de toi.</span>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">La barre « Ton bilan précédent » est un contour <span style="font-family:ui-monospace,monospace;font-size:12px">accentMuted</span> au-dessus de « Moyenne en France » : même geste que dans le suivi. La variation est sous les barres, chiffrée. Sans transport en commun : pas de barre « Moyenne », une phrase qui recadre.</p>
+      </div>
+
+      <!-- F pistes -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="F1 — L'action engagée et le premier pas" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border)"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px"></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--c-el);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Prochain point</span><div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="calm" size="{{ 40 }}" season="printemps" hint-size="40px,40px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Je te fais signe lundi.</span></div></div>
+            <h3 style="margin:8px 0 0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+            <div style="border:2px solid var(--c-accent);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:10px;background:var(--c-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">TON ENGAGEMENT</span></div>
+              <span style="font-size:17px;line-height:24px;font-weight:600">Travailler depuis chez toi un jour par semaine</span>
+              <span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 240 kg CO₂e</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Le vendredi · par an · 9 % de ton empreinte</span>
+              <div style="background:var(--c-bg);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:2px;margin-top:4px"><span style="font-size:13px;line-height:18px;font-weight:600;color:var(--c-text3)">Premier pas</span><span style="font-size:14px;line-height:20px;color:var(--c-text)">Bloque le prochain vendredi dans ton agenda, aujourd'hui.</span></div>
+              <span style="margin-top:4px;font-size:14px;line-height:44px;color:var(--c-text3);text-decoration:underline">Changer d'avis</span>
+            </div>
+            <span style="text-align:center;font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Voir d'autres pistes · 4</span>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Le premier pas apparaît une fois l'action engagée, dans un bloc interne blanc (rayon 16) — une chose concrète à faire aujourd'hui. « Travailler depuis chez toi un jour par semaine » remplace « Garder une journée de télétravail ». Les autres pistes sont derrière un seul lien (D18).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="F2 — Voir d'autres pistes, dépliées" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border)"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px"></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">D'autres pistes</h3>
+            <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Deux actions, sur d'autres postes que ton trajet domicile-travail.</span>
+            <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;opacity:0.72">
+              <span style="font-size:17px;line-height:24px;font-weight:600">Un aller-retour en train plutôt qu'en avion</span>
+              <span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 310 kg CO₂e</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">sur un voyage · 11 % de ton empreinte</span>
+              <span style="margin-top:8px;height:54px;border-radius:27px;background:var(--c-el);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500">Choisir celle-ci à la place</span>
+            </div>
+            <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;opacity:0.72">
+              <span style="font-size:17px;line-height:24px;font-weight:600">Covoiturer tes sorties du week-end</span>
+              <span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 96 kg CO₂e</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 4 % de ton empreinte</span>
+              <span style="margin-top:8px;height:54px;border-radius:27px;background:var(--c-el);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500">Choisir celle-ci à la place</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px">Prendre le train pour un week-end sur deux</span><span style="font-size:14px;line-height:22px;color:var(--c-text3)">− 72 kg</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--c-border)"><span style="font-size:15px;line-height:22px">Grouper deux sorties en une</span><span style="font-size:14px;line-height:22px;color:var(--c-text3)">− 40 kg</span></div>
+            <span style="text-align:center;font-size:14px;line-height:36px;color:var(--c-text3)">Replier</span>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Deux actions en avant, sur d'autres postes, avec la phrase d'introduction ; les suivantes en lignes simples, chiffre en tertiaire. « Choisir celle-ci à la place » : on bascule, on n'ajoute pas — une seule action engagée par saison.</p>
+      </div>
+      <!-- G reprise -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="G — La reprise" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="flex:1;overflow-y:auto;padding:0 24px 24px;display:flex;flex-direction:column;gap:14px">
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">questionnaire à moitié rempli</span>
+            <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="calm" size="{{ 28 }}" hint-size="28px,28px"></dc-import><span style="font-size:14px;line-height:20px;color:var(--c-text3)">Weekend et loisirs</span><span style="flex:1"></span><span style="font-size:14px;line-height:20px;color:var(--c-text3)">Étape 5 sur 9</span></div>
+              <div style="height:6px;border-radius:3px;background:var(--c-border)"><div style="width:56%;height:100%;border-radius:3px;background:var(--c-accent)"></div></div>
+              <span style="font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">On reprend où tu t'étais arrêté.</span>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Quatre écrans déjà remplis. Il en reste cinq, en comptant celui-ci.</span>
+              <span style="height:54px;border-radius:27px;background:var(--c-accent);color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">Continuer mon bilan</span>
+              <span style="height:54px;border-radius:27px;background:var(--c-el);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500">Repartir de mon dernier bilan</span>
+            </div>
+            <span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">plan ouvert depuis un rappel, appareil neuf, sans bilan local</span>
+            <div style="flex:1;border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;justify-content:center;gap:16px">
+              <dc-import name="Mascotte" mood="calm" size="{{ 72 }}" tilt="{{ -6 }}" hint-size="72px,72px"></dc-import>
+              <span style="font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ce rappel concerne un compte. Retrouve-le ici.</span>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Ton bilan, ton plan et tes points sont rattachés à ce compte, pas à cet appareil.</span>
+              <span style="height:54px;border-radius:27px;background:var(--c-accent);color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">J'ai déjà un compte</span>
+              <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Commencer un bilan sur cet appareil</span>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Aucune mention du délai écoulé. Le décompte est non ambigu (« en comptant celui-ci »). Sur un appareil neuf, la mascotte peut occuper l'écran : il n'y a aucun chiffre.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAISONS -->
+  <section id="saisons" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">C · Saisons — Ramille porte la saison</h2><span style="font-size:14px;line-height:20px;color:#5E655F">chantier C2.13 · un accessoire, jamais une sixième expression</span></div>
+    <div data-screen-label="Saisons — accessoires" style="background:var(--c-bg);color:var(--c-text);border-radius:24px;padding:40px;display:flex;flex-direction:column;gap:36px;max-width:1240px;box-shadow:0 24px 60px rgba(19,22,18,0.06)">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px">
+        <div style="display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:18px;background:var(--c-tinted);border:1.5px solid var(--c-border)"><div style="display:flex;gap:16px;align-items:flex-end"><dc-import name="Mascotte" mood="calm" size="{{ 42 }}" season="hiver" hint-size="42px,42px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 40 }}" season="hiver" hint-size="40px,40px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 36 }}" season="hiver" hint-size="36px,36px"></dc-import></div><span style="font-size:15px;font-weight:600">Hiver · un bonnet</span><span style="font-size:13px;line-height:19px;color:var(--c-text2)">Calotte dans le ton chaud, revers clair (couleur de la nervure), pompon cerné de clair — lisible sur blanc comme sur noir.</span></div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:18px;background:var(--c-tinted);border:1.5px solid var(--c-border)"><div style="display:flex;gap:16px;align-items:flex-end"><dc-import name="Mascotte" mood="calm" size="{{ 42 }}" season="printemps" hint-size="42px,42px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 40 }}" season="printemps" hint-size="40px,40px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 36 }}" season="printemps" hint-size="36px,36px"></dc-import></div><span style="font-size:15px;font-weight:600">Printemps · un bourgeon</span><span style="font-size:13px;line-height:19px;color:var(--c-text2)">Trois pétales clairs sur la nervure, un cœur du ton chaud. Le plus discret des quatre.</span></div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:18px;background:var(--c-tinted);border:1.5px solid var(--c-border)"><div style="display:flex;gap:16px;align-items:flex-end"><dc-import name="Mascotte" mood="calm" size="{{ 42 }}" season="ete" hint-size="42px,42px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 40 }}" season="ete" hint-size="40px,40px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 36 }}" season="ete" hint-size="36px,36px"></dc-import></div><span style="font-size:15px;font-weight:600">Été · une goutte de rosée</span><span style="font-size:13px;line-height:19px;color:var(--c-text2)">Une goutte blanche en bas à droite, hors du visage. Ni lunettes ni soleil : la feuille reste une feuille.</span></div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:18px;background:var(--c-tinted);border:1.5px solid var(--c-border)"><div style="display:flex;gap:16px;align-items:flex-end"><dc-import name="Mascotte" mood="calm" size="{{ 42 }}" season="automne" hint-size="42px,42px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 40 }}" season="automne" hint-size="40px,40px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 36 }}" season="automne" hint-size="36px,36px"></dc-import></div><span style="font-size:15px;font-weight:600">Automne · des joues plus marquées</span><span style="font-size:13px;line-height:19px;color:var(--c-text2)">Rayon +18 %, opacité +0,25, ton chaud <span style="font-family:ui-monospace,monospace;font-size:12px">mascotBlushAutumn</span> — pas un rouge. Proposé en Système.</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Les cinq expressions avec l'accessoire d'hiver · 42 px</span>
+        <div style="display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Mascotte" mood="calm" size="{{ 64 }}" season="hiver" hint-size="64px,64px"></dc-import><span style="font-size:12px;color:var(--c-text3);font-family:ui-monospace,monospace">calm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Mascotte" mood="happy" size="{{ 64 }}" season="hiver" hint-size="64px,64px"></dc-import><span style="font-size:12px;color:var(--c-text3);font-family:ui-monospace,monospace">happy</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Mascotte" mood="encouraging" size="{{ 64 }}" season="hiver" hint-size="64px,64px"></dc-import><span style="font-size:12px;color:var(--c-text3);font-family:ui-monospace,monospace">encouraging</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Mascotte" mood="thinking" size="{{ 64 }}" season="hiver" hint-size="64px,64px"></dc-import><span style="font-size:12px;color:var(--c-text3);font-family:ui-monospace,monospace">thinking</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Mascotte" mood="resting" size="{{ 64 }}" season="hiver" hint-size="64px,64px"></dc-import><span style="font-size:12px;color:var(--c-text3);font-family:ui-monospace,monospace">resting</span></div>
+          <div style="width:1px;height:64px;background:var(--c-border);margin:0 8px"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Mascotte" mood="happy" size="{{ 64 }}" season="automne" hint-size="64px,64px"></dc-import><span style="font-size:12px;color:var(--c-text3);font-family:ui-monospace,monospace">happy · automne</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><dc-import name="Mascotte" mood="resting" size="{{ 64 }}" season="ete" hint-size="64px,64px"></dc-import><span style="font-size:12px;color:var(--c-text3);font-family:ui-monospace,monospace">resting · été</span></div>
+          <div style="width:1px;height:64px;background:var(--c-border);margin:0 8px"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="display:flex;gap:10px;align-items:flex-end"><dc-import name="Mascotte" mood="calm" size="{{ 28 }}" season="hiver" hint-size="28px,28px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 24 }}" season="hiver" hint-size="24px,24px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 20 }}" season="hiver" hint-size="20px,20px"></dc-import></div><span style="font-size:12px;color:var(--c-text3);font-family:ui-monospace,monospace">28 · 24 · 20 — sous 28, feuille seule</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div style="flex:1;min-width:280px;border-radius:18px;background:var(--c-tinted);border:1px solid var(--c-border);padding:20px;display:flex;flex-direction:column;gap:12px">
+          <span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">NOUVELLE SAISON</span>
+          <span style="font-size:22px;line-height:28px;font-weight:600">L'hiver commence.</span>
+          <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Sur la carte d'ouverture, elle se tient dessous, à 44 px, en happy.</span>
+          <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="happy" size="{{ 44 }}" season="hiver" tilt="{{ -5 }}" hint-size="44px,44px"></dc-import><span style="flex:1;font-size:15px;line-height:22px">On repart pour une saison.</span></div>
+        </div>
+        <div style="flex:1;min-width:280px;border-radius:18px;background:var(--c-el);padding:20px;display:flex;flex-direction:column;gap:12px">
+          <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Dans le suivi · 36 px · calm</span>
+          <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="calm" size="{{ 36 }}" season="printemps" hint-size="36px,36px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Je vois la différence.</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><dc-import name="Mascotte" mood="resting" size="{{ 36 }}" season="ete" hint-size="36px,36px"></dc-import><span style="flex:1;font-size:15px;line-height:22px;color:var(--c-text2)">Je note tes réponses ici, au fil des saisons.</span></div>
+        </div>
+        <div data-theme="dark" style="flex:1;min-width:280px;border-radius:18px;background:var(--c-bg);color:var(--c-text);padding:20px;display:flex;flex-direction:column;gap:12px">
+          <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3)">Thème sombre · les quatre</span>
+          <div style="display:flex;gap:16px;align-items:flex-end"><dc-import name="Mascotte" mood="happy" size="{{ 44 }}" season="hiver" hint-size="44px,44px"></dc-import><dc-import name="Mascotte" mood="calm" size="{{ 44 }}" season="printemps" hint-size="44px,44px"></dc-import><dc-import name="Mascotte" mood="resting" size="{{ 44 }}" season="ete" hint-size="44px,44px"></dc-import><dc-import name="Mascotte" mood="encouraging" size="{{ 44 }}" season="automne" hint-size="44px,44px"></dc-import></div>
+          <span style="font-size:13px;line-height:19px;color:var(--c-text2)">Feuille <span style="font-family:ui-monospace,monospace;font-size:12px">#3D9B6F</span>, encre du visage fixe, accessoires inchangés.</span>
+        </div>
+      </div>
+    </div>
+    <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty;max-width:760px">Chaque accessoire s'écrit en unités de viewBox à la taille nominale (positions fixes, épaisseurs × k), comme le visage. Il n'existe pas sous 28 px. Aucun ne touche les yeux ni la bouche ; aucun ne change l'humeur — l'hiver n'est pas triste. Deux saisons marquées (hiver, automne) et deux très discrètes (printemps, été) : si quatre sont trop, printemps et été peuvent rester nus.</p>
+  </section>
+
+  <!-- ÉCARTS -->
+  <section id="ecarts" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Écarts</h2><span style="font-size:14px;line-height:20px;color:#5E655F">chaque changement au design existant · ce qui n'y figure pas est réputé inchangé</span></div>
+    <div style="background:#FFFFFF;border-radius:24px;padding:8px 32px;max-width:1240px;display:flex;flex-direction:column">
+      <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,1fr);gap:24px;padding:16px 0;border-bottom:1px solid #DDE0D9;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5E655F;font-family:ui-monospace,monospace"><span>Avant → après</span><span>Ce que ça apporte</span><span>Prix</span><span>Où</span></div>
+      <sc-for list="{{ ecarts }}" as="e" hint-placeholder-count="12">
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,1fr);gap:24px;padding:18px 0;border-bottom:1px solid #DDE0D9;font-size:14px;line-height:20px;color:#131612">
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="font-weight:600">{{ e.titre }}</span><span style="color:#5E655F">{{ e.avant }}</span><span>{{ e.apres }}</span></div>
+          <span style="color:#39403B;text-wrap:pretty">{{ e.apport }}</span>
+          <span style="color:#39403B;text-wrap:pretty">{{ e.prix }}</span>
+          <span style="color:#14563A;font-weight:600">{{ e.ou }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- SYSTÈME -->
+  <section id="systeme" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Système</h2><span style="font-size:14px;line-height:20px;color:#5E655F">jetons ajoutés · dans les deux thèmes · aucune valeur en dur dans le code</span></div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;max-width:1240px">
+      <div style="flex:1;min-width:320px;background:#FFFFFF;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:15px;font-weight:700;letter-spacing:0.2px;text-transform:uppercase">Colors · ajouts</span>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:12px;background:#C99A6B"></div><span style="font-size:12px;line-height:16px;color:#5E655F;font-family:ui-monospace,monospace">mascotBlushAutumn<br>light #C99A6B</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:12px;background:#B98A5E"></div><span style="font-size:12px;line-height:16px;color:#5E655F;font-family:ui-monospace,monospace">mascotBlushAutumn<br>dark #B98A5E</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:12px;background:#E4EFE8;border:1px solid #DDE0D9"></div><span style="font-size:12px;line-height:16px;color:#5E655F;font-family:ui-monospace,monospace">mascotAccessory<br>#E4EFE8 · les deux</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:12px;background:#131612"></div><span style="font-size:12px;line-height:16px;color:#5E655F;font-family:ui-monospace,monospace">mascotInk<br>#131612 · les deux</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:12px;background:#E4EFE8;border:1px solid #DDE0D9"></div><span style="font-size:12px;line-height:16px;color:#5E655F;font-family:ui-monospace,monospace">mascotVein<br>#E4EFE8 · les deux</span></div>
+        </div>
+        <span style="font-size:14px;line-height:20px;color:#39403B;text-wrap:pretty">Le ton chaud est un sable, oklch(0.72 0.07 70) — dans la famille des neutres tièdes, loin du rouge. Il sert aux joues d’automne et au bonnet d’hiver. Le visage lit aujourd'hui <span style="font-family:ui-monospace,monospace;font-size:12px">Colors.light</span> en dur : ces trois jetons fixes le disent explicitement et rendent la mascotte identique dans les deux thèmes, feuille exceptée.</span>
+      </div>
+      <div style="flex:1;min-width:320px;background:#FFFFFF;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:15px;font-weight:700;letter-spacing:0.2px;text-transform:uppercase">Motifs · ajouts, sans nouveau jeton</span>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:20px;color:#39403B">
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;height:14px;border-radius:7px;border:1.5px solid #A9C8B6;box-sizing:border-box;flex-shrink:0"></div><span><b style="color:#131612">Barre-contour</b> : la valeur précédente, en <span style="font-family:ui-monospace,monospace;font-size:12px">accentMuted</span> 1,5 px, rail transparent. Restitution et suivi.</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;height:44px;border-radius:12px;border:1px solid #DDE0D9;background:#F3F8F4;flex-shrink:0"></div><span><b style="color:#131612">Carte de saison</b> : bordure 1 px <span style="font-family:ui-monospace,monospace;font-size:12px">border</span> + fond <span style="font-family:ui-monospace,monospace;font-size:12px">backgroundTinted</span> + étiquette majuscule. Entre la carte neutre et la carte engagée.</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;text-align:center;font-size:14px;line-height:44px;color:#5E655F;flex-shrink:0">Pas de trajet</div><span><b style="color:#131612">Réponse tertiaire</b> : un <span style="font-family:ui-monospace,monospace;font-size:12px">TextLink</span> small tertiaire, centré, sous les deux boutons. Cible 44.</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:#14563A;flex-shrink:0">TON ENGAGEMENT · RECONDUIT</div><span><b style="color:#131612">Étiquette composée</b> : le suffixe « · RECONDUIT » sur l'étiquette existante, même style.</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;height:6px;border-radius:3px;background:#DDE0D9;flex-shrink:0"><div style="width:92%;height:100%;border-radius:3px;background:#A9C8B6"></div></div><span><b style="color:#131612">Trait de temps</b> : la barre de progression 6 px en <span style="font-family:ui-monospace,monospace;font-size:12px">accentMuted</span>, jamais en accent — il mesure la saison, pas la personne.</span></div>
+        </div>
+        <span style="font-size:14px;line-height:20px;color:#39403B;text-wrap:pretty">Aucune taille, aucun rayon, aucune hauteur nouvelle : tout s'écrit avec <span style="font-family:ui-monospace,monospace;font-size:12px">TypeScale</span>, <span style="font-family:ui-monospace,monospace;font-size:12px">Radius</span> et <span style="font-family:ui-monospace,monospace;font-size:12px">ControlHeight</span> existants.</span>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Thème&quot;}}">
+class Component extends DCLogic {
+  state = { point: null, renforcement: false, saison: 'ouverte', themeOverride: null };
+  renderVals() {
+    const s = this.state;
+    const theme = s.themeOverride || this.props.theme || 'light';
+    const retours = {
+      oui: { mood: 'happy', ligne: 'Bien joué — chaque changement compte.', pied: 'Répondu lundi. Prochain point : lundi 21 sept.' },
+      non: { mood: 'encouraging', ligne: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.', pied: 'Répondu lundi. Prochain point : lundi 21 sept.' },
+      aucun: { mood: 'calm', ligne: 'Pas de trajet, pas de question. On se retrouve lundi.', pied: 'Semaine sans trajet. Prochain point : lundi 21 sept.' },
+    };
+    const r = s.point ? retours[s.point] : null;
+    const ecarts = [
+      { titre: 'La question du point', avant: '« As-tu changé de mode de transport au moins une fois cette semaine pour Trajet domicile-travail (Voiture thermique) ? »', apres: '« Mardi ou jeudi, as-tu fait ce trajet à vélo ? » — au passé, nomme l’action et les jours.', apport: 'Relie chaque retour à l’action choisie (objectif 2). L’identité : « je suis quelqu’un qui va au travail à vélo ».', prix: 'Copy + générateur serveur (lot 2, #119). Aucun composant neuf.', ou: 'A1, A2' },
+      { titre: 'Déjà à vélo : question de maintien', avant: 'Point générique « as-tu changé de mode »', apres: '« La semaine dernière, ton trajet s’est-il fait à vélo ? » ; « Non » → phrase neutre', apport: 'Renforce l’identité (« le vélo reste ton trajet ») plutôt que de supprimer le point. Retenu contre l’alternative « pas de point », qui coupait la boucle pour les profils déjà vertueux.', prix: 'Copy + une variante de question côté générateur.', ou: 'A2a' },
+      { titre: 'Troisième réponse', avant: 'Oui / Non', apres: 'Oui / Non + « Pas de trajet cette semaine » en lien discret', apport: 'Une semaine sans trajet n’est plus un « Non ». Ramille répond une attente.', prix: 'CheckinCard : un TextLink de plus ; réponse à trois valeurs en base (D3).', ou: 'A1, A2' },
+      { titre: 'Retours de Ramille variés', avant: 'Une phrase par issue', apres: 'Trois ou quatre par issue, choisies par période, l’originale conservée', apport: 'La boucle ne se lit pas comme un automate au deuxième mois.', prix: 'mascotte.ts + test « aucun chiffre ». Rien à l’écran.', ou: 'A3' },
+      { titre: 'Carte répondue', avant: 'La carte disparaît, retour de Ramille éphémère', apres: 'La carte reste le temps de la période, avec le retour et la date du prochain point', apport: 'Le plan garde une tête stable ; la personne relit ce qu’elle a répondu.', prix: 'État « répondu » sur CheckinCard, rafraîchi au retour (écran d’onglet).', ou: 'A1' },
+      { titre: 'Fin de saison sur le cap', avant: '« Cadence : Automne 2026 »', apres: '« Automne 2026 · jusqu’au 30 novembre » + trait de temps en accentMuted', apport: 'La saison a une fin lisible ; le nouveau départ devient possible.', prix: 'Copy + une barre 6 px existante. Pas de jauge d’objectif.', ou: 'B1' },
+      { titre: 'Carte d’ouverture de saison', avant: 'Le cycle suivant se crée dans la nuit, rien n’est dit', apres: 'Deux semaines : récapitulatif (voix produit, seulement ce qui a été fait) + Reprendre / Choisir. Ramille dessous.', apport: 'Le moment « on me reconnaît, on repart ». Cœur de la durée.', prix: 'Nouveau composant CarteDeSaison (motif : bordure + tinted). État « vue » persistant. Transition Reanimated : la carte vient de la carte du cap.', ou: 'B2, B3' },
+      { titre: 'Action reconduite', avant: '—', apres: 'Étiquette « TON ENGAGEMENT · RECONDUIT », intention conservée', apport: 'L’engagement survit à la saison et au re-bilan (décision 8).', prix: 'Suffixe d’étiquette sur ActionCard ; RPC de reconduction.', ou: 'B2' },
+      { titre: 'Étiquette dégenrée', avant: '« TU T’Y ES ENGAGÉ »', apres: '« TON ENGAGEMENT »', apport: 'Aucun accord qui genre (§5, lot 3).', prix: 'Copy.', ou: 'partout' },
+      { titre: 'Suivi : écart par poste', avant: 'Un total qui bouge', apres: 'Trois paires de barres (contour = précédent, plein = actuel), dominant en accent', apport: 'L’effort sur le trajet ne disparaît plus derrière un vol.', prix: 'Nouveau composant EcartParPoste ; lecture des postes par bilan.', ou: 'D' },
+      { titre: 'Suivi : ce que tu as décidé', avant: 'Aucune trace des engagements', apres: 'Une ligne par saison : période, action, jours', apport: 'La décision est visible, jamais un statut tenu / pas tenu.', prix: 'Liste simple ; lecture des cycles passés + archive.', ou: 'D' },
+      { titre: 'Suivi : points par saison', avant: 'Liste bornée à huit lignes Oui / Non, mascotte happy au sommet', apres: 'Groupés par saison, trois libellés au même niveau, « Voir tout », phrase d’attribution, Ramille calm en bas', apport: 'Cinquante-deux points par an lisibles ; le compteur devient une attribution (« c’est toi qui as choisi »).', prix: 'Regroupement côté écran ; pagination.', ou: 'D' },
+      { titre: 'Restitution : bilan précédent', avant: 'Identique au premier bilan', apres: 'Barre-contour « Ton bilan précédent » au-dessus de la moyenne, variation sous les barres, palier derrière soi', apport: 'Le second bilan montre le chemin.', prix: 'Une barre de plus ; copy conditionnelle.', ou: 'E' },
+      { titre: 'Pistes dépliables + premier pas', avant: 'Toutes les actions affichées', apres: 'Deux en avant, « Voir d’autres pistes », premier pas dans l’action engagée', apport: 'Une chose à lire à la fois ; une chose à faire aujourd’hui.', prix: 'Bloc interne blanc rayon 16 dans ActionCard ; champ premier_pas côté plan.', ou: 'F' },
+      { titre: 'Mascotte : accessoires de saison', avant: 'Cinq expressions, aucune saison', apres: 'Bonnet, bourgeon, goutte, joues d’automne — en unités de viewBox, dérivés par k', apport: 'Ramille porte la saison sans dire un chiffre (décision 13).', prix: 'mascot.tsx + mascot.ts : build natif. Trois jetons fixes (ink, vein, accessory) + un ton chaud en deux thèmes.', ou: 'C' },
+      { titre: 'Thème sombre', avant: 'Colors.dark provisoire, jamais montré', apres: 'Toutes les planches basculent ; mascotte identique, feuille #3D9B6F', apport: 'Chaque couleur ajoutée existe dans les deux thèmes (§2.3).', prix: 'Aucun : userInterfaceStyle reste « light » tant que le produit ne l’ouvre pas.', ou: 'toutes' },
+    ];
+    return {
+      theme, themeLabel: theme === 'dark' ? 'Voir en thème clair' : 'Voir en thème sombre',
+      toggleTheme: () => this.setState({ themeOverride: theme === 'dark' ? 'light' : 'dark' }),
+      pointOuvert: !s.point, pointRepondu: !!s.point,
+      retourMood: r ? r.mood : 'calm', retourLigne: r ? r.ligne : '', carteReponduePied: r ? r.pied : '',
+      renforcement: s.renforcement && s.point === 'oui',
+      renforcementLabel: s.renforcement ? 'Premier « Oui »' : 'Simuler un second « Oui »',
+      repondreOui: () => this.setState({ point: 'oui' }), repondreNon: () => this.setState({ point: 'non' }), repondreAucun: () => this.setState({ point: 'aucun' }),
+      rejouerPoint: () => this.setState({ point: null }), toggleRenforcement: () => this.setState({ renforcement: !s.renforcement }),
+      saisonOuverte: s.saison === 'ouverte', saisonReconduite: s.saison === 'reconduite', saisonChoisir: s.saison === 'choisir',
+      reprendre: () => this.setState({ saison: 'reconduite' }), choisir: () => this.setState({ saison: 'choisir' }), rejouerSaison: () => this.setState({ saison: 'ouverte' }),
+      ecarts,
+    };
+  }
+}
+</script>
+</body>
+</html>

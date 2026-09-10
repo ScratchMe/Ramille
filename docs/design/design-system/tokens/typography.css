@@ -1,0 +1,29 @@
+/* Ramille — typographie. Source : theme.ts (TypeScale, FontFamily) et themed-text.tsx (baseSizes). */
+:root {
+  --font-sans: 'Spline Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* TypeScale (theme.ts) */
+  --type-screen-size: 26px;   --type-screen-line: 32px;   --type-screen-tracking: -0.26px;
+  --type-salient-size: 30px;  --type-salient-line: 36px;  --type-salient-tracking: -0.6px;
+  --type-card-size: 17px;     --type-card-line: 24px;
+  --type-body-size: 15px;     --type-body-line: 22px;
+
+  /* ThemedText.baseSizes */
+  --type-default-size: 16px;  --type-default-line: 24px;
+  --type-small-size: 14px;    --type-small-line: 20px;
+  --type-title-size: 48px;    --type-title-line: 52px;
+  --type-subtitle-size: 32px; --type-subtitle-line: 44px;
+  --type-link-size: 14px;     --type-link-line: 30px;
+  --type-code-size: 12px;     --type-code-line: 18px;
+
+  /* Tailles uniques laissées en dur dans le dépôt (documentées, pas des jetons) */
+  --type-hero-size: 34px;     --type-hero-line: 40px;     --type-hero-tracking: -0.68px;
+  --type-tab-size: 12px;      --type-tab-line: 16px;
+  --type-label-caps-size: 13px; --type-label-caps-line: 18px; --type-label-caps-tracking: 0.3px;
+}

@@ -1,0 +1,60 @@
+/* Ramille — couleurs. Source : src/constants/theme.ts (Colors.light / Colors.dark). Valeurs recopiées, jamais arrondies. */
+:root {
+  --color-text: #131612;
+  --color-text-secondary: #39403B;
+  --color-text-tertiary: #5E655F;
+  --color-background: #FFFFFF;
+  --color-background-tinted: #F3F8F4;
+  --color-background-element: #F0F1EC;
+  --color-background-element-2: #F6F8F3;
+  --color-background-selected: #E4EFE8;
+  --color-accent: #1F6F4A;
+  --color-accent-text: #14563A;
+  --color-accent-muted: #A9C8B6;
+  --color-border: #DDE0D9;
+  --color-pagination-inactive: #CDD7CF;
+  --color-on-accent: #FFFFFF;
+  --color-scrim: rgba(19, 22, 18, 0.42);
+  --color-canvas: #EAECE6;
+  /* Encre du visage de Ramille — fixe dans les deux thèmes (mascot.tsx lit Colors.light) */
+  --color-mascot-ink: #131612;
+  --color-mascot-vein: #E4EFE8;
+  --color-mascot-warm: #C99A6B;
+
+  /* Alias sémantiques */
+  --text-body: var(--color-text);
+  --text-muted: var(--color-text-secondary);
+  --text-label: var(--color-text-tertiary);
+  --text-on-tint: var(--color-accent-text);
+  --surface-screen: var(--color-background);
+  --surface-panel: var(--color-background-element);
+  --surface-card-engaged: var(--color-background-tinted);
+  --surface-selected: var(--color-background-selected);
+  --stroke-default: var(--color-border);
+  --stroke-selected: var(--color-accent);
+  --bar-active: var(--color-accent);
+  --bar-context: var(--color-accent-muted);
+  --bar-rail: var(--color-border);
+  --shadow-tier: 0 1px 2px rgba(19, 22, 18, 0.06);
+}
+
+[data-theme="dark"] {
+  --color-text: #FFFFFF;
+  --color-text-secondary: #B0B4BA;
+  --color-text-tertiary: #8A9088;
+  --color-background: #000000;
+  --color-background-tinted: #0F1410;
+  --color-background-element: #212225;
+  --color-background-element-2: #1A1C1A;
+  --color-background-selected: #1C2E22;
+  --color-accent: #3D9B6F;
+  --color-accent-text: #8FCBA9;
+  --color-accent-muted: #3A5245;
+  --color-border: #2E3135;
+  --color-pagination-inactive: #3A3D3A;
+  --color-on-accent: #FFFFFF;
+  --color-scrim: rgba(0, 0, 0, 0.6);
+  --color-canvas: #0A0B0A;
+  --color-mascot-warm: #B98A5E;
+  --shadow-tier: none;
+}
