@@ -2,14 +2,15 @@
 -- (docs/architecture/v1-07-audit-facteurs-et-suivi.md §3.1, migration
 -- 20260904200000_checkin_email_reminders.sql).
 --
--- Ce qui est couvert : qui reçoit un rappel et qui n'en reçoit pas, et la garantie
--- anti-relance. Ce qui ne l'est pas : l'envoi lui-même, qui dépend d'un fournisseur externe
--- — mais le comportement *sans* fournisseur configuré, lui, est testé, parce que c'est
--- l'état du projet tant que la clé n'est pas déposée et qu'aucun rappel ne doit s'y perdre.
+-- Ce qui est couvert : qui reçoit un rappel et qui n'en reçoit pas, la garantie anti-relance,
+-- et le journal des passages (chantier C0.5). Ce qui ne l'est pas : l'envoi lui-même, qui
+-- dépend d'un fournisseur externe — mais le comportement *sans* fournisseur configuré, lui,
+-- est testé, parce que c'est l'état du projet tant que la clé n'est pas déposée, qu'aucun
+-- rappel ne doit s'y perdre, et que ce passage-là doit quand même laisser une trace.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(15);
 
 -- Quatre profils qui couvrent les quatre conditions d'éligibilité.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
@@ -153,6 +154,70 @@ select results_eq(
   $$ select status from public.notification_outbox $$,
   $$ values ('cancelled'::text) $$,
   'Un rappel dont le check-in est périmé est annulé, et non envoyé — même sans fournisseur configuré'
+);
+
+-- ── Le journal des passages ────────────────────────────────────────────────────────────
+-- Constats A9-1 et A9-4 (chantier C0.5). Deux propriétés :
+--   * un passage qui ne fait rien faute de secret **le dit**. C'était un `continue` muet, et
+--     c'est la seule façon de distinguer « personne n'attend de rappel » de « l'envoi est
+--     éteint » — si la clé de l'expéditeur expire, le seul autre symptôme est une baisse des
+--     réponses aux points de suivi, indiscernable d'un désintérêt.
+--   * une ligne déjà partie n'est jamais reprise. Le statut est posé **avant** l'appel, et la
+--     sélection d'envoi ne regarde que les lignes `pending` : mieux vaut un rappel perdu qu'un
+--     rappel envoyé deux fois, pour un produit qui promet de ne jamais insister.
+
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
+  ('ba111111-1111-1111-1111-111111111116', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-journal@test.local', 'x', now(), now(), now(), false);
+
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label)
+values ('ba111111-1111-1111-1111-111111111116', 'commute', date_trunc('week', now())::date,
+        'Semaine du 31/08', 'Trajet domicile-travail (Voiture)');
+
+delete from public.notification_outbox;
+delete from public.reminder_send_runs;
+
+-- Mise en file écrite à la main plutôt que par `enqueue_checkin_reminders()`, qui est déjà
+-- éprouvée plus haut : une ligne de journal décrit **tout** ce que le passage avait à faire,
+-- donc ce fichier doit être seul dans la file pour que le compte ci-dessous mesure ce qu'il
+-- annonce. Et `send_after = now()`, sinon l'envoi n'a rien à regarder (l'étalement est éprouvé
+-- juste au-dessus).
+insert into public.notification_outbox (user_id, checkin_id, channel, recipient_email, subject, body, send_after)
+select c.user_id, c.id, 'email', 'pgtap-journal@test.local', 'Ton point de la semaine',
+       'Bonjour,' || E'\n\n' || 'Une seule question, comme d''habitude.', now()
+from public.engagement_checkins c
+where c.user_id = 'ba111111-1111-1111-1111-111111111116';
+
+select public.send_pending_reminders();
+
+select results_eq(
+  $$ select canal, status, traites, envoyes, echecs from public.reminder_send_runs $$,
+  $$ values ('email'::text, 'skipped'::text, 0, 0, 0) $$,
+  'Sans clé API, le passage laisse une trace : rien tenté, rien envoyé, rien en échec'
+);
+
+select ok(
+  (select detail like '%resend_api_key%' and detail like '%1 rappel(s) en attente%'
+   from public.reminder_send_runs),
+  'La trace nomme le secret qui manque et ce qui attend — sinon elle ne servirait à personne'
+);
+
+-- Une ligne `sent` : partie, ou laissée ainsi par un passage interrompu. Dans les deux cas
+-- elle n'est plus candidate.
+update public.notification_outbox set status = 'sent', sent_at = now(), attempts = 1;
+
+select public.send_pending_reminders();
+select public.send_pending_reminders();
+
+select results_eq(
+  $$ select status, attempts::int from public.notification_outbox $$,
+  $$ values ('sent'::text, 1) $$,
+  'Une ligne déjà partie n''est jamais reprise : ni seconde tentative, ni second envoi'
+);
+
+select is(
+  (select count(*)::int from public.reminder_send_runs),
+  1,
+  'Un canal sans rien à faire n''écrit pas de ligne : le journal dit ce qui s''est passé, pas ce qui n''a pas eu lieu'
 );
 
 -- ── Verrouillage ───────────────────────────────────────────────────────────────────────

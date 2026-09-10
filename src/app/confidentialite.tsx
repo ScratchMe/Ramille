@@ -197,9 +197,12 @@ const SECTIONS: LegalSection[] = [
           'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
           'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
             'produit tel qu’il est.',
-          'Identifiant de notification de ton téléphone : conservé tant que l’application est installée et que tu as ' +
-            'choisi les rappels par notification. Il disparaît si tu désinstalles l’application, si tu coupes les ' +
-            'notifications, à la suppression de ton compte, et à la suppression automatique d’une session anonyme.',
+          'Identifiant de notification de ton téléphone : désactivé dès que tu coupes les rappels par ' +
+            'notification ou que ton téléphone cesse de les accepter, puis supprimé 90 jours plus tard. Il part ' +
+            'aussi avec la suppression de ton compte et avec la suppression automatique d’une session anonyme.',
+          'Rappels envoyés : la trace d’un rappel (période concernée, canal, date d’envoi, message) est gardée ' +
+            'six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand tu nous dis ne pas l’avoir reçu. ' +
+            'Elle est supprimée ensuite.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours et ' +
             'repères de parcours est supprimé.',
         ],

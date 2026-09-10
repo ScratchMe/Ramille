@@ -13,7 +13,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(22);
 
 -- Six comptes, un par ligne de la table de vérité.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
@@ -144,6 +144,54 @@ select is(
    where user_id = 'c7111111-1111-1111-1111-111111111112'),
   1,
   'Un point, un message : le repli n''en ajoute pas un'
+);
+
+-- ── Le repli, dans la même passe ───────────────────────────────────────────────────────
+-- Constat A9-12 (chantier C0.5). La branche push tourne **avant** la branche email dans une
+-- passe d'envoi : une ligne qui ne trouve plus d'appareil joignable devient une ligne email due
+-- immédiatement, et part dans le même passage. Avant, la boucle avait déjà lu son jeu de lignes
+-- et faisait `continue` : le rappel attendait le cron du lendemain — un septième de la fenêtre
+-- perdu pour un point hebdomadaire, et précisément pour la personne à qui l'app promet que
+-- « l'email prend le relais tout seul ».
+--
+-- Sans clé API, rien ne part d'ici : ce qui est éprouvé est que la branche email **voit** la
+-- ligne repliée du même passage. Sa ligne de journal n'existerait pas du tout si le repli était
+-- remis au lendemain, et elle compte un rappel en attente : celui qui vient d'être replié.
+
+-- Une file remise à plat et remplie à la main : `enqueue_checkin_reminders()` est éprouvée
+-- juste au-dessus, et une ligne de journal décrit **tout** ce que le passage avait à faire —
+-- ce fichier doit donc être seul dans la file pour que les comptes mesurent ce qu'ils annoncent.
+delete from public.notification_outbox;
+delete from public.reminder_send_runs;
+
+insert into public.notification_outbox (user_id, checkin_id, channel, recipient_email, subject, body, push_body, send_after)
+select c.user_id, c.id, 'push', 'pgtap-canal-push@test.local', 'Ton point de la semaine',
+       'Bonjour, une seule question.', 'As-tu changé de mode de transport ?', now()
+from public.engagement_checkins c
+where c.user_id = 'c7111111-1111-1111-1111-111111111112';
+
+-- L'appareil se tait après la mise en file : c'est exactement quelqu'un qui coupe les
+-- notifications dans les réglages de son téléphone.
+update public.push_tokens set disabled_at = now(), disabled_reason = 'permission retirée'
+where user_id = 'c7111111-1111-1111-1111-111111111112';
+
+select public.send_pending_reminders();
+
+select results_eq(
+  $$ select channel, status, attempts::int, send_after <= now() from public.notification_outbox $$,
+  $$ values ('email'::text, 'pending'::text, 0, true) $$,
+  'Le repli rend la ligne due immédiatement, et sans consommer de tentative — aucun appel n''a eu lieu'
+);
+
+select results_eq(
+  $$ select canal, status, traites from public.reminder_send_runs order by canal $$,
+  $$ values ('email'::text, 'skipped'::text, 0), ('push'::text, 'success'::text, 1) $$,
+  'Le passage journalise ses deux canaux : le push a traité son message, l''email était là pour le reprendre'
+);
+
+select ok(
+  (select detail like '%1 rappel(s) en attente%' from public.reminder_send_runs where canal = 'email'),
+  'La branche email du même passage compte la ligne repliée : un repli ne perd plus une journée'
 );
 
 -- ── Les jetons : le RPC, et rien que le RPC ────────────────────────────────────────────

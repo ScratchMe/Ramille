@@ -23,14 +23,32 @@ extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
-# Le projet distant TraceVerte-v1 expose déjà nos tables à `authenticated` sans GRANT explicite
-# dans nos migrations (comportement plateforme standard à sa création) — nos policies RLS sont
-# la seule couche d'autorisation écrite dans supabase/migrations/. Sans ce flag, la stack locale
-# (utilisée par `supabase test db`) part d'un état plus strict et renvoie "permission denied"
-# avant même d'atteindre RLS, ce qui a fait échouer 01_compute_assessment_results.test.sql en CI
-# (l'erreur venait du GRANT manquant, pas de la logique testée). À revoir avant la suppression de
-# ce flag (2026-10-30) — ajouter des GRANTs explicites dans une migration si toujours nécessaire.
-auto_expose_new_tables = true
+# Passé à `false` le 10/09/2026 (chantier C0.3), et ce n'est pas l'équivalent de le retirer.
+# **Ce drapeau doit être écrit, pas omis** : son comportement par défaut n'est pas fiable. Le CLI
+# 2.117.0 annonce « When unset, new entities are auto-exposed » (donc exposition automatique de
+# toute nouvelle table, vue, séquence et fonction du schéma `public` à `anon`/`authenticated`/
+# `service_role`), alors que le commentaire que cette ligne remplace racontait exactement
+# l'inverse : absent, la CI tombait en « permission denied ». L'un des deux a changé entre-temps,
+# et aucun des deux ne se vérifie depuis le dépôt. Écrit explicitement à `false`, le CLI pose trois
+# `alter default privileges ... revoke` et les nouvelles entités exigent un GRANT — quelle que soit
+# la valeur par défaut du jour.
+#
+# Pourquoi `false` : les privilèges de table vivent désormais dans
+# supabase/migrations/20260910110000_grants_explicites.sql, seule source en local comme en
+# production, et c'est la stack locale qui fait autorité en CI. Tant que ce drapeau exposait tout,
+# un GRANT manquant dans une migration ne se voyait ni en local, ni en CI, ni avant le jour où la
+# base serait reconstruite depuis `supabase/migrations/`. La contrepartie est que
+# `18_grants_explicites.test.sql` devient exigeant : une table ajoutée sans sa ligne de GRANT sera
+# invisible pour l'app, et ce test le dira.
+#
+# Côté projet distant, l'équivalent de ce drapeau est le réglage « Default privileges for new
+# entities » du tableau de bord Supabase : tant qu'il est actif là-bas, la production accorde plus
+# que ce que décrivent les migrations (cf. l'en-tête de la migration).
+#
+# Le jour où le CLI supprime ce drapeau, cette ligne devient un champ inconnu et fera échouer
+# `supabase start` : la retirer alors, et relancer `supabase test db` — c'est le test 18 qui dira
+# si le comportement par défaut a changé avec elle.
+auto_expose_new_tables = false
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.
@@ -186,7 +204,12 @@ refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
-enable_anonymous_sign_ins = false
+# Activé pour refléter la production : chaque visiteur reçoit une session Supabase Auth anonyme
+# dès l'ouverture de l'app (`ensureSession()`, v1-04 §1), et c'est sur cette session que reposent
+# le bilan anonyme, son rattachement à un compte et la reprise du jeton d'appareil. Une stack
+# locale qui refuse ces sessions ne peut exécuter aucun de ces chemins. Le plafond de débit est
+# déjà réglé plus bas (`[auth.rate_limit] anonymous_users`).
+enable_anonymous_sign_ins = true
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.

@@ -6,12 +6,21 @@ import {
   useFonts,
 } from '@expo-google-fonts/spline-sans';
 import * as Linking from 'expo-linking';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider,
+  router,
+  usePathname,
+  type ErrorBoundaryProps,
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
 import { ConfigurationManquante } from '@/components/configuration-manquante';
+import { ErreurInattendue } from '@/components/erreur-inattendue';
 import { RetourDeNotification } from '@/components/retour-de-notification';
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
@@ -23,6 +32,7 @@ import {
   preparerLeCanalAndroid,
 } from '@/lib/rappels';
 import { configurationSupabase, ensureSession } from '@/lib/supabase';
+import { appErrorCategory } from '@/types/analytics';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -114,4 +124,34 @@ export default function RootLayout() {
       )}
     </ThemeProvider>
   );
+}
+
+// ── Filet d'erreur ─────────────────────────────────────────────────────────────────────
+// **Le nom de cet export est imposé** : Expo Router cherche `ErrorBoundary` dans un fichier de
+// route et enveloppe le composant de cette route dans un `Try`. Exporté depuis le layout
+// racine, il couvre donc tout l'arbre — y compris le layout lui-même. Sans lui, une exception
+// de rendu affiche l'écran de secours d'Expo Router, **en anglais** (« Something went wrong ») :
+// la garde `scripts/verifier-rendu-export.mjs` refuse désormais un export qui contient cette
+// phrase, parce qu'elle n'a pas à pouvoir apparaître.
+//
+// **Aucune API de module natif ici, et c'est structurel.** C'est le composant qui reste quand
+// tout le reste est tombé : un hook d'`expo-notifications` appelé au rendu à cet endroit
+// relèverait une exception dans le gestionnaire d'exceptions, et la page blanche du 08/09/2026
+// reviendrait — avec, cette fois, plus personne pour l'attraper. Les deux seuls hooks utilisés
+// ci-dessous lisent l'un le store de navigation, l'autre une mesure d'usage qui n'échoue jamais.
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  // Le store de navigation est global à l'app, pas un contexte de l'arbre tombé, et
+  // `getRouteInfo()` retombe sur une valeur par défaut quand rien n'est encore monté : lire la
+  // route ici ne peut pas lever.
+  const route = usePathname();
+
+  // Remontée minimale, et volontairement pauvre : une catégorie dérivée du type de l'exception
+  // et la route, jamais le message ni la pile (cf. `src/types/analytics.ts`). Son défaut est
+  // connu et assumé — `track()` renonce sans session, or une panne au démarrage est justement
+  // le moment où la session peut manquer. C'est un filet partiel, pas une garantie :
+  // `docs/exploitation/remontee-erreurs.md` dit ce qu'il faudrait pour aller plus loin.
+  useTrackView('app_error', { category: appErrorCategory(error), route });
+
+  // `retry` rend une promesse qu'un bouton n'attend pas.
+  return <ErreurInattendue erreur={error} reessayer={() => void retry()} />;
 }

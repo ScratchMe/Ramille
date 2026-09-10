@@ -334,6 +334,24 @@ Rate Limits. Il faut le porter à une valeur cohérente avec Resend — dont le 
 **100 emails par jour, partagés avec les rappels du cron**. Un plafond horaire d'une trentaine
 laisse de la marge sans pouvoir vider le quota quotidien en un incident.
 
+> ⚠️ **Correction du 09/09/2026 — le §8.4 ci-dessous prescrit une entrée fausse et
+> dangereuse.** La ligne « plus `https://*.vercel.app/**` pour les previews » autorise **tout**
+> le domaine `vercel.app`, où n'importe qui déploie en trois minutes : un tiers pouvait demander
+> un lien de connexion pour l'adresse de quelqu'un d'autre en pointant l'arrivée sur son propre
+> déploiement, l'email partant bien de Ramille à la bonne adresse pendant que la session
+> finissait ailleurs. Cette liste décide à quelles adresses Supabase accepte de **remettre une
+> session** — les jetons arrivent dans le fragment de l'URL de destination. **Relevé du
+> 10/09/2026 sur le projet distant** : l'entrée large a bien disparu de la liste ; des motifs de
+> preview portant le suffixe de compte Vercel (`-me-c4a3`) y figurent à sa place ; et il reste à
+> nettoyer un doublon exact et deux entrées absorbées par leurs variantes plus larges. Le suffixe
+> de compte **resserre** le motif sans le fermer — un hôte `*.vercel.app` est alloué d'après le
+> nom de projet, choisi librement — donc il ne vaut que faute de mieux. Le reste du §8.4 (Site
+> URL, `https://www.ramille.fr/**`, `ramille://**`, et le fait qu'une redirection non autorisée
+> retombe silencieusement sur la Site URL) reste exact. **Liste relevée entrée par entrée, liste
+> de référence, règles et procédure de relecture : `docs/exploitation/redirect-urls.md`** — c'est
+> ce fichier qui fait référence, pas le paragraphe ci-dessous, conservé tel quel comme décision
+> datée.
+
 **8.4 — Les URL de redirection, sinon le lien renvoie sur la racine.** `sendAccountAccessLink`
 passe `emailRedirectTo` (`${APP_URL}/compte/suppression`, et demain les écrans du chantier D).
 Supabase **ignore silencieusement** toute redirection absente de la liste d'autorisation et
@@ -406,6 +424,15 @@ doit, elle, afficher exactement le même message — c'est le garde-fou de non-d
 dépend pas du SMTP mais se re-vérifie gratuitement au passage.
 
 ## 9. État des lieux du 07/09 — après les chantiers A, B, C, D
+
+> 📌 **Mise à jour du 10/09/2026 — les cinq issues du tableau ci-dessous sont closes.** #58
+> (dépendances Expo au niveau du SDK), #59 (les `Alert.alert` sont remplacés par `MessageInline`),
+> #60 (la collision Google est traitée par `identiteDejaRattachee`), #61 (`retrouver_view` et
+> `retrouver_send` sont émis) et #62 (le bandeau « Ton compte est rattaché à … » existe sur le plan
+> et sur « Toi ») ont toutes été livrées depuis. Ce §9 est conservé tel quel comme état daté du
+> 07/09 ; il **ne liste plus aucun point ouvert**, et ne doit plus être lu comme un reste-à-faire.
+> Ce qui reste vraiment ouvert, les huit comptes tiers, les réglages qui vivent hors du dépôt et la
+> checklist de publication sur Play : **`docs/exploitation/README.md`**.
 
 Tour rapide demandé après la livraison du chantier D (PR #57), pour vérifier que rien ne
 traîne avant d'attaquer F et E.

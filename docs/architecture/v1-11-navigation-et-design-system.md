@@ -442,6 +442,14 @@ en-tête. Vérifier au lecteur d'écran sur une page migrée, pas seulement lire
 
 ## 5. Hors de cet increment
 
+> 📌 **Mise à jour du 10/09/2026 — la liste ci-dessous est close, sauf la publication Play.** #68
+> (l'onboarding se balaie au doigt, §9.10), #61, #62, #60, #65 (`ConfigurationManquante` est rendu
+> par le layout racine) et #58 sont livrées ; le chantier E de `v1-10` l'est aussi, vérifié sur
+> appareil le 09/09/2026 (`v1-12` §8.1). Reste la **publication sur Google Play**, qui n'est pas un
+> chantier de code : le compte n'est pas encore ouvert, et tout ce qu'elle engage — comptes tiers,
+> réglages hors dépôt, checklist avant publication — vit dans **`docs/exploitation/README.md`**. La
+> liste est conservée telle quelle comme décision datée.
+
 Volontairement laissé de côté, avec l'issue qui le porte :
 
 - Balayer l'onboarding au doigt — [#68](https://github.com/ScratchMe/TraceVerte/issues/68).
