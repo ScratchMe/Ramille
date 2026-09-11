@@ -85,8 +85,14 @@ select is(
 
 -- ── B : le plan suit un nouveau bilan ──────────────────────────────────────────────────
 
-insert into public.assessments (id, user_id, status, submitted_at) values
-  ('d8111111-1111-1111-1111-111111111121', 'c8111111-1111-1111-1111-111111111112', 'completed', now() - interval '2 days');
+-- **En deux temps depuis C2.2** : le trigger pose `submitted_at := now()` au passage en
+-- `completed` (l'horodatage venait du téléphone, A4-20), donc une fixture ne peut plus choisir sa
+-- date à l'insert. Le second ordre la recule — le trigger ne réécrit pas un bilan déjà complété.
+-- Ici la date antidatée est le sujet même du scénario : elle doit précéder le cycle.
+insert into public.assessments (id, user_id, status) values
+  ('d8111111-1111-1111-1111-111111111121', 'c8111111-1111-1111-1111-111111111112', 'completed');
+update public.assessments set submitted_at = now() - interval '2 days'
+where id = 'd8111111-1111-1111-1111-111111111121';
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
   commute_is_carpool, commute_second_mode_used, leisure_frequency

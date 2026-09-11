@@ -98,8 +98,15 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, c
 
 update public.profiles set cadence_type = 'rolling_quarter' where id = '31111111-1111-1111-1111-111111111113';
 
-insert into public.assessments (id, user_id, status, submitted_at) values
-  ('41111111-1111-1111-1111-111111111113', '31111111-1111-1111-1111-111111111113', 'completed', '2026-01-10T09:00:00Z');
+-- **La date de soumission se pose en deux temps depuis C2.2**, et il ne faut pas la remettre dans
+-- l'`insert` : un trigger `before insert or update` la remplace par `now()` au passage en
+-- `completed`, puisqu'elle venait jusque-là de l'horloge du téléphone (A4-20). Le second ordre la
+-- fixe — `old.status` et `new.status` valant tous deux `completed`, le trigger ne réécrit rien.
+-- Ce scénario a besoin d'une date choisie : c'est elle qui ancre le trimestre glissant.
+insert into public.assessments (id, user_id, status) values
+  ('41111111-1111-1111-1111-111111111113', '31111111-1111-1111-1111-111111111113', 'completed');
+update public.assessments set submitted_at = '2026-01-10T09:00:00Z'
+where id = '41111111-1111-1111-1111-111111111113';
 
 insert into public.assessment_results (
   assessment_id, total_co2_kg_year, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year,

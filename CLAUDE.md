@@ -594,6 +594,43 @@ aussi le seul endroit où la forme de la réponse changera quand une troisième 
 trajet cette période ») arrivera — mais `p_reponse boolean` ne peut pas porter un troisième état :
 ce sera une migration, pas un paramètre de plus.
 
+**Aucun chemin du produit ne détruit un engagement sans en laisser une trace** (C2.2, 11/09/2026,
+`20260912150000_engagement_qui_survit.sql`). Il y en avait quatre, et ils se ressemblent assez pour
+qu'on en oublie un : le re-bilan dans la même période (le plus fréquent — on corrige une réponse
+juste après l'avoir soumise), le changement de saison, « Changer d'avis », et **« Choisir une autre
+action », dont la libération est une ligne interne de `commit_plan_action`** que rien n'affiche. Ce
+qui partait : `committed_at`, `intention_days`, `intention_timing` — le seul choix personnel que le
+produit demande, annulé par le second geste le plus encouragé. Quatre points à connaître :
+
+- **`plan_action_commitments_archive` n'a qu'une seule écriture, `public.archiver_engagement`**, et
+  elle prend des **valeurs** et non un `plan_action_id`. Ce n'est pas du confort : au re-bilan la
+  ligne est déjà supprimée au moment où l'on sait que son gabarit n'a pas survécu, donc une fonction
+  qui relirait la ligne n'archiverait **rien**, en silence, dans le cas principal du chantier. Les
+  deux chemins clients passent par `archiver_engagement_de_laction`, qui délègue. `action_text` y est
+  **figé** : C3.8 reformule plusieurs gabarits, et relire le libellé courant réécrirait ce que la
+  personne a lu en choisissant.
+- **Le re-bilan reprend l'engagement, le changement de saison le reconduit.** Les deux situations
+  s'excluent dans `generate_plan_cycle_for_user` (le cycle existe déjà / il est neuf), et la capture
+  précède l'upsert parce que le `delete` est irréversible. Une reconduction pose
+  `plan_actions.carried_over_from` sur le cycle d'**origine** — jamais sur la ligne `plan_actions`
+  précédente, qui est supprimée à chaque reconstruction et emporterait l'étiquette
+  « · RECONDUIT » avec elle. La ligne de l'ancien cycle garde son propre engagement : c'est de
+  l'historique, et l'index unique est **par cycle**.
+- **`plan_actions` a désormais deux clés étrangères vers `plan_cycles`**, donc toute lecture
+  imbriquée doit nommer la sienne : `plan_actions!plan_actions_plan_cycle_id_fkey(…)`. Sans le nom,
+  PostgREST refuse la requête (« more than one relationship was found ») et l'écran du plan ne
+  charge plus **du tout**. Le typecheck l'attrape, et c'est le seul garde qui le fait — la chaîne du
+  `select` est analysée au niveau des types.
+- **`assessments.submitted_at` vient du serveur** (trigger `stamp_assessment_submitted_at`, posé au
+  seul passage en `completed`). Il venait du téléphone, et la garde d'idempotence du plan le
+  comparait à un horodatage serveur : un téléphone en avance faisait reconstruire le plan à chaque
+  passage du cron — donc, avant cette migration, effacer l'engagement chaque nuit. Corollaire pour
+  les tests : **une fixture ne peut plus choisir `submitted_at` à l'insert**, elle insère puis met la
+  date à jour (`old.status` et `new.status` valant tous deux `completed`, le trigger ne réécrit
+  rien) ; et dans une transaction pgTAP où `now()` est figé, un re-bilan **rapproche** les dates au
+  lieu de les écarter, donc il faut reculer explicitement l'ancien bilan **et** le `created_at` du
+  cycle, sans quoi les deux gardes renvoient et les assertions passent sans rien éprouver.
+
 **L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
 `plan_actions` porte des chiffres figés à la génération, et **deux gardes indépendantes les
 protègent depuis le 10/09/2026** : aucune policy d'écriture — en ajouter une ouvrirait toutes les

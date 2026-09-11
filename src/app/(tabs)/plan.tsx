@@ -23,7 +23,12 @@ import { ActionCommitment } from '@/components/plan/action-commitment';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { formatIntention, formeInserable } from '@/types/plan';
 import { daysSince, REBILAN_SUGGESTION_DAYS } from '@/types/suivi';
-import { aVuRattachementAnnonce, marquerRattachementAnnonce } from '@/lib/connexion-prefs';
+import {
+  aVuEngagementOrphelin,
+  aVuRattachementAnnonce,
+  marquerEngagementOrphelinVu,
+  marquerRattachementAnnonce,
+} from '@/lib/connexion-prefs';
 import { lireEtatDuRattachement } from '@/lib/compte';
 import {
   aDejaVuLaFeuilleDeRappel,
@@ -49,12 +54,16 @@ type PlanAction = {
   committed_at: string | null;
   intention_days: number[] | null;
   intention_timing: string | null;
+  /** Le cycle d'où l'engagement a été reconduit (C2.2) — ce qui porte « · RECONDUIT ». */
+  carried_over_from: string | null;
   action_templates: { action_text: string; poste: string | null } | null;
 };
 
 type PlanCycle = {
   id: string;
   period_label: string;
+  /** La fin de la période, lue pour dire qu'un cycle est révolu plutôt que le montrer à jour (C2.2). */
+  period_end: string;
   trip_label: string;
   /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */
   poste: string | null;
@@ -62,6 +71,15 @@ type PlanCycle = {
   target_reduction_pct: number;
   plan_actions: PlanAction[];
 };
+
+/**
+ * L'engagement qu'un re-bilan a emporté (C2.2), lu dans `plan_action_commitments_archive`.
+ *
+ * Le plan le dit **une fois** : c'est une nouvelle, pas un état. La marque d'annonce vit en
+ * AsyncStorage et porte l'identifiant de la ligne, pour qu'un second re-bilan puisse le dire à
+ * son tour.
+ */
+type EngagementOrphelin = { id: string; action_text: string };
 
 // Une seule question vivante par boucle, la plus récente. La requête est déjà triée par
 // `period_start` décroissant, donc le premier vu de chaque `loop_type` est le bon.
@@ -169,6 +187,14 @@ export default function Plan() {
   // domicile-travail, et une valeur par défaut nommerait le mauvais rythme (cf. le chargement).
   const [boucle, setBoucle] = useState<Boucle | null>(null);
   const [permission, setPermission] = useState<Permission>('fermee');
+  /**
+   * L'engagement qu'un re-bilan a emporté, tant qu'il n'a pas été annoncé sur cet appareil (C2.2).
+   *
+   * Logé **à côté** du `LoadState` et jamais dans sa variante `ok`, comme la ligne de relecture :
+   * un drapeau dans `LoadState.ok` détruirait `pending`, `no_assessment` et `empty` — donc
+   * « Revoir mon bilan » et « Faire mon bilan » — au premier repli.
+   */
+  const [orphelin, setOrphelin] = useState<EngagementOrphelin | null>(null);
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
 
   // **La confirmation se termine hors de l'app** : la personne clique le lien reçu par email
@@ -292,7 +318,14 @@ export default function Plan() {
             // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
             // type du résultat en analysant ce littéral au niveau des types. Une concaténation
             // lui rend un `string` opaque et le typage du retour est perdu.
-            'id, period_label, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, action_templates(action_text, poste))'
+            //
+            // **`plan_actions!plan_actions_plan_cycle_id_fkey` est obligatoire depuis C2.2**, et
+            // ce n'est pas une précaution de typage : `carried_over_from` est une **seconde** clé
+            // étrangère de `plan_actions` vers `plan_cycles`, donc PostgREST ne sait plus laquelle
+            // suivre et refuse la requête (« more than one relationship was found »). Sans le
+            // nom de la clé, l'écran du plan ne charge plus du tout. Le typecheck l'attrape —
+            // c'est le seul garde qui le fait, la chaîne étant analysée au niveau des types.
+            'id, period_label, period_end, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
           )
           .order('period_start', { ascending: false })
           .limit(1)
@@ -345,15 +378,28 @@ export default function Plan() {
         // Quelle boucle concerne cette personne, donc quel jour Ramille peut nommer : le point
         // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3). C'est le
         // prochain contact qui compte, pas l'action engagée.
-        const [{ data: resultat, error: erreurResultat }, prefs, etatPermission] = await Promise.all([
-          supabase
-            .from('assessment_results')
-            .select('commute_poste_label')
-            .eq('assessment_id', assessment.id)
-            .maybeSingle(),
-          loadReminderPrefs(),
-          lirePermission(),
-        ]);
+        //
+        // **L'engagement qu'un re-bilan a emporté** se lit dans la même fournée (C2.2). Le filtre
+        // porte sur la raison : `saison` et `changement` n'ont rien à annoncer — l'une est une
+        // reconduction qui a échoué à la frontière d'une saison, l'autre est la décision de la
+        // personne elle-même, qu'il serait absurde de lui apprendre. Seul `rebilan` est un effet
+        // de bord qu'elle n'a pas choisi.
+        const [{ data: resultat, error: erreurResultat }, { data: orphelins }, prefs, etatPermission] =
+          await Promise.all([
+            supabase
+              .from('assessment_results')
+              .select('commute_poste_label')
+              .eq('assessment_id', assessment.id)
+              .maybeSingle(),
+            supabase
+              .from('plan_action_commitments_archive')
+              .select('id, action_text')
+              .eq('released_reason', 'rebilan')
+              .order('released_at', { ascending: false })
+              .limit(1),
+            loadReminderPrefs(),
+            lirePermission(),
+          ]);
 
         if (cancelled) return;
 
@@ -367,6 +413,12 @@ export default function Plan() {
         if (!erreurResultat) setBoucle(resultat?.commute_poste_label ? 'hebdo' : 'mensuel');
         setRappels(prefs);
         setPermission(etatPermission);
+
+        // L'encart n'apparaît que si la marque locale ne porte pas déjà cet identifiant. Une
+        // lecture en échec laisse simplement `orphelin` à `null` : mieux vaut ne rien dire qu'une
+        // nouvelle inventée.
+        const orphelin = orphelins?.[0] ?? null;
+        setOrphelin(orphelin && !(await aVuEngagementOrphelin(orphelin.id)) ? orphelin : null);
 
         setState({
           status: 'ok',
@@ -564,6 +616,19 @@ export default function Plan() {
       ? Math.round((baselineKg * cycle.target_reduction_pct) / 100)
       : null;
 
+  // **Le cycle affiché peut être révolu, et l'écran le disait à personne** (C2.2). Le cron
+  // nocturne construit le cycle de la saison courante, mais il peut ne pas être passé — et un
+  // cycle périmé présenté comme courant fait croire qu'on travaille encore sur une période
+  // terminée. On le **dit** plutôt que de retomber sur l'écran d'attente : l'action engagée, les
+  // jours choisis et le cap restent à l'écran, parce qu'ils ont eu lieu.
+  //
+  // La comparaison est en chaînes `YYYY-MM-DD` et non en `Date` : `period_end` vient de Postgres
+  // en date nue, et `new Date('2026-11-30')` est minuit UTC — donc la veille, à l'ouest de
+  // Greenwich, ce qui ferait annoncer une saison révolue un jour trop tôt.
+  const aujourdhui = new Date();
+  const dateDuJour = `${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, '0')}-${String(aujourdhui.getDate()).padStart(2, '0')}`;
+  const cyclePerime = cycle.period_end < dateDuJour;
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -596,6 +661,43 @@ export default function Plan() {
               </ThemedText>
             </ThemedView>
           )}
+          {/* **Ce que le re-bilan a emporté, dit une fois** (C2.2, `v1-14` §5). Avant, le
+              `delete from plan_actions` de la génération effaçait l'engagement, ses jours et son
+              intention sans un mot — le geste le plus engageant du produit annulé par le second
+              geste le plus encouragé. Il est maintenant archivé, et cet encart est l'endroit où la
+              personne l'apprend.
+
+              Discret, et sans mascotte : c'est un fait sur ses données, pas un commentaire. Le
+              bouton écrit la marque locale, qui porte l'identifiant de la ligne — un second
+              re-bilan pourra donc le dire à son tour. */}
+          {orphelin !== null && (
+            <ThemedView type="backgroundElement" style={styles.orphelin}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Ton plan a changé avec ton nouveau bilan. « {orphelin.action_text} » n’y est plus ;
+                elle reste dans ton suivi.
+              </ThemedText>
+              <TextLink
+                label="Compris"
+                onPress={() => {
+                  void marquerEngagementOrphelinVu(orphelin.id);
+                  setOrphelin(null);
+                }}
+              />
+            </ThemedView>
+          )}
+
+          {/* **Une période terminée se dit, elle ne se masque pas** (C2.2). Retomber sur l'écran
+              d'attente ferait disparaître l'action engagée et les jours choisis — ce qui a eu lieu
+              n'a pas à s'effacer parce que le cron n'est pas encore passé. */}
+          {cyclePerime && (
+            <ThemedView type="backgroundElement" style={styles.orphelin}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Cette période est terminée. Ton prochain plan arrive ; en attendant, voici où tu en
+                étais.
+              </ThemedText>
+            </ThemedView>
+          )}
+
           <View style={styles.intro}>
             <ThemedText type="screenTitle">
               Ton plan
@@ -696,6 +798,7 @@ export default function Plan() {
                 detail={action.detail_text}
                 intention={formatIntention(action.intention_days, action.intention_timing)}
                 engagee={action.committed_at !== null}
+                reconduite={action.carried_over_from !== null}
                 estompee={committedActionId !== null && committedActionId !== action.id}
               >
                 {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la
@@ -830,6 +933,15 @@ const styles = StyleSheet.create({
   },
   intro: { gap: Spacing.two },
   rattachement: { borderRadius: Radius.field, paddingVertical: 12, paddingHorizontal: Spacing.three },
+  // Les deux encarts de C2.2 : le même gabarit discret, parce qu'ils disent la même sorte de
+  // chose — un fait sur l'état du plan, jamais une injonction.
+  orphelin: {
+    borderRadius: Radius.field,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.three,
+    gap: Spacing.two,
+    alignItems: 'flex-start',
+  },
   cadenceChip: { alignSelf: 'flex-start', borderRadius: Radius.chip, paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 },
   capCard: { borderRadius: Radius.card, padding: 20, gap: 6 },
   actions: { gap: Spacing.two + 2 },

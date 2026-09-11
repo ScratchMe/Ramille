@@ -26,6 +26,7 @@ export function ActionCard({
   detail,
   intention,
   engagee,
+  reconduite,
   estompee,
   children,
 }: {
@@ -36,11 +37,18 @@ export function ActionCard({
   /** Phrase d'intention déjà formatée (`formatIntention`), affichée seulement si engagée. */
   intention: string | null;
   engagee: boolean;
+  /**
+   * L'engagement vient du cycle précédent (`plan_actions.carried_over_from`, C2.2). Une saison qui
+   * commence ne remet pas le choix à zéro : elle le reconduit, et le dit.
+   */
+  reconduite: boolean;
   /** Une autre action porte l'engagement : celle-ci passe au second plan, sans se désactiver. */
   estompee: boolean;
   children: React.ReactNode;
 }) {
   const theme = useTheme();
+
+  const etiquette = reconduite ? 'TON ENGAGEMENT · RECONDUIT' : 'TON ENGAGEMENT';
 
   // Le libellé accessible recompose ce que la mise en forme dit à l'œil : un lecteur d'écran
   // ne voit ni la bordure ni le fond. Sans lui, l'engagement serait invisible pour lui.
@@ -57,7 +65,7 @@ export function ActionCard({
   // nullable, et à plat le lecteur d'écran entendait deux informations qui ne sont écrites nulle
   // part — exactement l'inverse de ce que ce libellé est censé faire.
   const annonce = [
-    engagee ? `Action engagée : ${titre}` : titre,
+    engagee ? `${reconduite ? 'Action engagée, reconduite' : 'Action engagée'} : ${titre}` : titre,
     ...(gainKg !== null
       ? [
           `− ${Math.round(gainKg)} kg de CO₂e par an`,
@@ -103,8 +111,11 @@ export function ActionCard({
                 reprise dans la même vague (« Tu es connecté » → « Ce navigateur est
                 connecté »). Le libellé accessible juste au-dessus était déjà juste : il porte
                 sur l'action. */}
+            {/* **Le suffixe « · RECONDUIT »** (C2.2, `v1-14` §5) : il se lit sur
+                `carried_over_from`, et son absence est une information aussi — un engagement pris
+                dans cette période-ci n'a rien à reconduire. */}
             <ThemedText themeColor="accentText" weight={700} style={styles.etiquette}>
-              TON ENGAGEMENT
+              {etiquette}
             </ThemedText>
           </View>
         )}

@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(30);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-suppr-a@test.local', 'x', now(), now()),
@@ -59,6 +59,20 @@ select c.user_id, c.id, 'email', 'pgtap-suppr-a@test.local', 'Ton point de la se
        'Bonjour,' || E'\n\n' || 'Une seule question, comme d''habitude.', 'sent', now()
 from public.engagement_checkins c
 where c.user_id = '90000000-0000-0000-0000-000000000001';
+
+-- Un engagement relâché : même raisonnement une fois de plus (C2.2). Ce sont les choix de la
+-- personne — l'action, les jours, la raison de l'arrêt — et la table n'est écrite que par le
+-- serveur, donc l'export est le seul endroit d'où elle peut les relire.
+insert into public.plan_action_commitments_archive (
+  user_id, plan_cycle_id, action_template_id, action_text, intention_days, committed_at, released_reason
+)
+select '90000000-0000-0000-0000-000000000001', pc.id, t.id, t.action_text, array[2,4]::smallint[],
+       now() - interval '10 days', 'rebilan'
+from public.plan_cycles pc
+cross join public.action_templates t
+where pc.user_id = '90000000-0000-0000-0000-000000000001'
+  and t.poste = 'commute'
+limit 1;
 
 -- ── L'export ────────────────────────────────────────────────────────────────────────────
 
@@ -115,6 +129,18 @@ select is(
 );
 
 select is(
+  jsonb_array_length(public.export_my_data() -> 'engagements_relaches'),
+  1,
+  'l''export nomme les engagements relâchés — la table n''est lisible nulle part ailleurs'
+);
+
+select is(
+  public.export_my_data() #>> '{engagements_relaches,0,raison}',
+  'rebilan',
+  'l''export dit pourquoi chaque engagement s''est arrêté'
+);
+
+select is(
   public.export_my_data() #>> '{compte,identifiant}',
   '90000000-0000-0000-0000-000000000001',
   'l''export porte bien sur la personne connectée'
@@ -156,6 +182,16 @@ select is_empty(
   $$ select pa.id from public.plan_actions pa
      where not exists (select 1 from public.plan_cycles pc where pc.id = pa.plan_cycle_id) $$,
   'aucune action de plan orpheline'
+);
+-- Le maillon ajouté par C2.2 : l'archive des engagements relâchés porte les choix de la personne
+-- (l'action, les jours, l'échéance). Sa clé vers `plan_cycles` est volontairement en `set null` —
+-- l'archive doit survivre à la disparition d'un cycle — donc **seule** la chaîne depuis `profiles`
+-- l'emporte à la suppression du compte. Un jour posé en NO ACTION, elle ferait survivre au compte
+-- ce qu'il avait décidé.
+select is_empty(
+  $$ select id from public.plan_action_commitments_archive
+     where user_id = '90000000-0000-0000-0000-000000000001' $$,
+  'les engagements relâchés suivent — sinon les choix de la personne survivraient au compte'
 );
 select is_empty(
   $$ select id from public.engagement_checkins where user_id = '90000000-0000-0000-0000-000000000001'
