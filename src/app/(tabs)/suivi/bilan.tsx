@@ -5,15 +5,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
 import { Button } from '@/components/button';
-import { Mascot } from '@/components/mascot';
 import { MessageInline } from '@/components/message-inline';
+import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
-import { modeResultat } from '@/types/resultat';
+import {
+  POSTE_LABEL,
+  bilanSansEmissions,
+  comparisonNote,
+  dominantHeadline,
+  modeResultat,
+  palierNote,
+  partDuTotal,
+  pourcentageDominant,
+  urlDePartage,
+} from '@/types/resultat';
+import { formatDate } from '@/types/suivi';
 import { track } from '@/lib/analytics';
 import { supabase } from '@/lib/supabase';
 import { APP_URL } from '@/lib/app-url';
@@ -24,123 +35,32 @@ import {
   formatTonnesShort,
 } from '@/constants/carbon-reference';
 import { formatTonnes } from '@/lib/format';
-import { nextPalier, showsTarget2050, type Palier } from '@/types/palier';
+import { nextPalier, showsTarget2050 } from '@/types/palier';
 import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
 import { etatDeLaProposition, type EtatProposition } from '@/types/connexion';
 import type { Database } from '@/lib/database.types';
+import { RAMILLE } from '@/constants/mascotte';
 import { APP_NAME } from '@/constants/produit';
 
 type AssessmentResults = Database['public']['Tables']['assessment_results']['Row'];
 
-
-// "Tes voyages" seul ne dit pas de quoi il s'agit — on précise toujours le mode réel
-// (`dominant_poste_mode`, déjà en base) plutôt que le seul nom du poste. Table tenue à jour
-// avec `transport_modes` (cf. seed) ; un mode absent ou inconnu retombe sur le libellé
-// backend `dominant_poste_label`, jamais un texte vide.
-const MODE_PREPOSITION: Partial<Record<string, string>> = {
-  voiture: 'en voiture',
-  voiture_thermique: 'en voiture thermique',
-  voiture_electrique: 'en voiture électrique',
-  voiture_hybride: 'en voiture hybride',
-  voiture_hybride_rechargeable: 'en voiture hybride rechargeable',
-  train: 'en train',
-  // Mode du poste voyages uniquement (B3.3, trajets > 300 km) — jamais sélectionnable dans
-  // les listes du questionnaire, cf. migration 20260904140000.
-  train_longue_distance: 'en TGV',
-  bus: 'en bus',
-  metro_tram: 'en métro ou tram',
-  velo: 'à vélo',
-  marche: 'à pied',
-  trottinette: 'en trottinette',
-  deux_roues_motorise: 'en deux-roues motorisé',
-  avion_court_moyen_courrier: 'en avion (court/moyen-courrier)',
-  avion_long_courrier: 'en avion long-courrier',
-};
-
-// "Trajets loisirs"/"Voyages" seuls ne distinguent pas les deux postes (retour
-// utilisateur du 03/09/2026) : ce sont deux postes bien distincts du bilan (B2 "Week-ends
-// et loisirs" vs B3 "Voyages sur l'année", cf. onboarding/transition.tsx) — même wording
-// que les libellés persistés côté serveur, cf. migration 20260903120000_precise_poste_labels.sql.
-const POSTE_SUBJECT: Record<string, string> = {
-  commute: 'Ton trajet domicile-travail',
-  leisure: 'Tes loisirs du week-end',
-  travel: 'Tes voyages longue distance',
-};
-
+// **Toute la voix de cet écran vit désormais dans `src/types/resultat.ts`** — prépositions de
+// mode, sujets de poste, titre du poste dominant, phrase de comparaison, phrase du palier,
+// adresse de partage. Elles étaient ici, donc dans un fichier qui importe `@/lib/supabase`,
+// donc hors de portée des tests : quatre défauts y avaient coexisté (A3-6, A3-9, A3-10, A3-14),
+// chacun à une assertion près. Ne rien redéclarer ici.
+//
+// Seul reste ce qui est propre au rendu : quelle colonne de `assessment_results` alimente
+// quelle barre. Le libellé, lui, vient de `POSTE_LABEL` — il est aussi celui de la liste du
+// suivi et celui de la carte de partage.
 const POSTE_BREAKDOWN: {
   key: 'commute' | 'leisure' | 'travel';
-  label: string;
   co2Key: 'commute_co2_kg_year' | 'leisure_co2_kg_year' | 'travel_co2_kg_year';
 }[] = [
-  { key: 'commute', label: 'Trajet domicile-travail', co2Key: 'commute_co2_kg_year' },
-  { key: 'leisure', label: 'Loisirs du week-end', co2Key: 'leisure_co2_kg_year' },
-  { key: 'travel', label: 'Voyages longue distance', co2Key: 'travel_co2_kg_year' },
+  { key: 'commute', co2Key: 'commute_co2_kg_year' },
+  { key: 'leisure', co2Key: 'leisure_co2_kg_year' },
+  { key: 'travel', co2Key: 'travel_co2_kg_year' },
 ];
-
-function dominantHeadline(results: AssessmentResults): string {
-  const subject = POSTE_SUBJECT[results.dominant_poste] ?? results.dominant_poste_label;
-  const preposition = results.dominant_poste_mode ? MODE_PREPOSITION[results.dominant_poste_mode] : undefined;
-  return preposition ? `${subject} ${preposition}` : subject;
-}
-
-// Variante neutre de dominantHeadline (sans "Tes"/"Ton") pour la carte de partage : lue par
-// les destinataires du lien, pas adressée à l'utilisateur qui partage — cf. partagerLeBilan
-// ci-dessous. dominant_poste_label seul (ex. "Voyages longue distance (Avion long-courrier)")
-// ne dit pas qu'il s'agit du poste dominant ; combiné à dominantPercent sur la carte, le
-// pourcentage lui donne un sens (retour utilisateur du 04/09/2026).
-function dominantShareLabel(results: AssessmentResults): string {
-  const posteLabel = POSTE_BREAKDOWN.find((p) => p.key === results.dominant_poste)?.label ?? results.dominant_poste_label;
-  const preposition = results.dominant_poste_mode ? MODE_PREPOSITION[results.dominant_poste_mode] : undefined;
-  return preposition ? `${posteLabel} ${preposition}` : posteLabel;
-}
-
-// « Tu es à 150 % de la moyenne française » était un jugement déguisé en fait : un score, avec
-// un bon et un mauvais côté, servi à quelqu'un qui n'a parfois aucune alternative (rural, pas
-// de transports en commun). La spec demande de contextualiser « sans ton culpabilisant » (§5)
-// et de ne pas traiter ces profils en mauvais élèves (§2). Les barres au-dessus montrent déjà
-// l'écart : la phrase se contente de le nommer et d'ouvrir sur la suite. Cf. v1-07 §3.5.
-function comparisonNote(totalT: number): string {
-  if (totalT <= TARGET_2050_TRANSPORT_T) {
-    return 'Tu es déjà sous la part transport compatible avec 2050.';
-  }
-  if (totalT <= FRANCE_AVERAGE_TRANSPORT_T) {
-    return 'Tu es en dessous de la moyenne française. Il reste du chemin jusqu’à 2050, comme pour tout le monde.';
-  }
-  return `La moyenne française est de ${formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}. L’essentiel se joue sur un seul poste, celui du haut.`;
-}
-
-// La phrase qui accompagne le palier. Elle nomme la marche et situe 2050 comme un horizon,
-// jamais comme une mesure de l'écart : c'est précisément ce que la barre faisait, et ce que la
-// spec §4 demande d'éviter (« le registre anxiogène tend à paralyser plutôt qu'à mobiliser »).
-//
-// Aucune formulation d'échec : on ne dit pas combien de paliers restent. « Il t'en reste 15 »
-// est une autre façon d'écrire le gouffre.
-function palierNote(palier: Palier, repereVisible: boolean): string {
-  const reduction = formatTonnes(palier.reductionKg);
-
-  // Déjà sous le repère. Le registre bascule : ce n'est plus une marche à franchir mais une
-  // marge qui profite ailleurs. Rien n'est demandé, rien n'est attendu — et surtout aucune
-  // formulation qui ferait d'un profil déjà sobre quelqu'un qui n'en fait pas encore assez.
-  if (palier.beyondTarget2050) {
-    return (
-      `Tu es déjà sous le repère transport 2050. Ce que tu n’émets pas laisse de la marge ` +
-      `ailleurs — pour tes autres postes, ou pour ceux dont les déplacements sont contraints. ` +
-      `S’il te reste de l’envie : ${reduction} de moins sur l’année.`
-    );
-  }
-
-  // Le palier tombe pile sur le repère : la barre porte alors son vrai nom, et la phrase dit
-  // ce qu'il faut pour l'atteindre.
-  if (palier.isTarget2050) {
-    return `Le repère 2050 est à ta portée : ${reduction} de moins sur l’année, et tu y es.`;
-  }
-
-  if (repereVisible) {
-    // Le repère est déjà sur l'écran : la phrase n'a pas à le rappeler, elle nomme la marche.
-    return `Une marche à ${reduction} de moins sur l’année. Le plan qui suit propose de quoi la franchir.`;
-  }
-  return `Une marche à ${reduction} de moins sur l’année. Le plan qui suit propose de quoi la franchir ; 2050 se joue palier après palier.`;
-}
 
 type LoadState =
   | { status: 'loading' }
@@ -153,8 +73,13 @@ type LoadState =
   | { status: 'error' }
   // `capKg` vient du cycle de plan, généré par `compute_assessment_results` au moment de la
   // soumission : il existe donc déjà quand cet écran s'affiche. `null` si le plan n'a rien
-  // trouvé à proposer — on ne montre alors pas de palier.
-  | { status: 'ok'; results: AssessmentResults; capKg: number | null };
+  // trouvé à proposer — ou si l'on relit un ancien bilan, auquel cas le cap du cycle courant ne
+  // lui appartient pas (cf. le chargement). On ne montre alors pas de palier.
+  //
+  // `submittedAt` est la date de **soumission** du bilan, pas le `computed_at` du résultat :
+  // c'est celle que la liste du suivi affiche, et un recalcul côté serveur ferait diverger les
+  // deux écrans (A3-15).
+  | { status: 'ok'; results: AssessmentResults; capKg: number | null; submittedAt: string | null };
 
 // Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
 // jamais rien — la feuille du téléphone ou du navigateur a déjà tout montré ; seul le repli
@@ -232,6 +157,12 @@ export default function BilanResultat() {
   // `src/app/(tabs)/plan.tsx`.
   const [tentative, setTentative] = useState(0);
   const reessayer = () => {
+    // **Sans `id`, il n'y a rien à relire**, et repasser en `loading` enfermerait sur « Chargement
+    // de ton bilan… » — sans bouton ni lien, pour toujours : l'effet sort aussitôt sur `!id`, donc
+    // rien ne ferait jamais repartir l'écran. C'est atteignable par une URL tapée, un favori
+    // tronqué, ou l'ancienne adresse `/bilan/resultat` sans paramètre, que la redirection propage
+    // telle quelle. L'écran d'erreur garde ainsi ses deux sorties.
+    if (!id) return;
     setState({ status: 'loading' });
     setTentative((n) => n + 1);
   };
@@ -267,6 +198,40 @@ export default function BilanResultat() {
         return;
       }
 
+      // **Pas de palier en relecture** (A3-3, A13-14). Le cap appartient au cycle de plan
+      // **courant** : le retrancher d'un bilan de l'an dernier donne une marche qui n'est pas la
+      // sienne, et la phrase qui l'accompagne promet « le plan qui suit » alors que rien ne suit
+      // — l'écran n'offre alors que « Revenir à mon suivi ». On ne lit donc pas le cycle, et on
+      // lit la date à la place : c'est elle qui manque à un bilan relu (A3-15).
+      if (mode === 'relecture') {
+        // La date de **soumission**, jamais le `computed_at` du résultat : une reprise de calcul
+        // en masse (correction de facteur) déplacerait le second, et cet écran daterait alors le
+        // bilan autrement que la liste du suivi, d'où il est ouvert.
+        //
+        // Une lecture à part, dont l'échec est toléré — comme celle du cycle ci-dessous. La date
+        // est une précision, le résultat est l'écran : une requête de plus ne doit pas pouvoir
+        // transformer un bilan lisible en « Ton bilan n'a pas pu être affiché », **ni retarder
+        // son affichage**. D'où l'écran rendu d'abord, la date posée ensuite : sur une connexion
+        // qui traîne, attendre la seconde requête laissait « Chargement de ton bilan… » alors que
+        // le résultat était déjà en main, et c'est le chemin le plus fréquent de cet écran.
+        setState({ status: 'ok', results: data, capKg: null, submittedAt: null });
+
+        const { data: bilan, error: erreurDate } = await supabase
+          .from('assessments')
+          .select('submitted_at')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (cancelled) return;
+        // Tracé comme les deux autres lectures : sans ça, une date refusée par la RLS serait
+        // indistinguable d'un bilan sans `submitted_at`.
+        if (erreurDate) console.error('La date du bilan n’a pas pu être lue :', erreurDate);
+        setState((precedent) =>
+          precedent.status === 'ok' ? { ...precedent, submittedAt: bilan?.submitted_at ?? null } : precedent,
+        );
+        return;
+      }
+
       // Le cap de la saison en cours. Le palier n'est pas un nouveau chiffre : c'est celui que
       // `/plan` affiche déjà, figé à la génération du cycle. Son absence n'est pas une erreur —
       // l'écran se contente alors de ne pas proposer de marche.
@@ -283,13 +248,14 @@ export default function BilanResultat() {
           ? (cycle.baseline_co2_kg_year * cycle.target_reduction_pct) / 100
           : null;
 
-      setState({ status: 'ok', results: data, capKg });
+      // La date ne sert qu'en relecture : après le questionnaire, c'est aujourd'hui.
+      setState({ status: 'ok', results: data, capKg, submittedAt: null });
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [id, tentative]);
+  }, [id, mode, tentative]);
 
   useEffect(() => {
     // En relecture, aucune proposition de compte : redemander à chaque consultation de son
@@ -361,11 +327,11 @@ export default function BilanResultat() {
     if (state.status !== 'ok') return;
     setPartage({ statut: 'inactif' });
 
+    // L'adresse se construit dans `urlDePartage` (module pur, testé) : la part du poste
+    // dominant y passe par le même garde-fou que l'affichage, qui manquait ici — un bilan à
+    // zéro envoyait « NaN » dans l'URL (A3-12).
     const { results } = state;
-    const totalTonnes = (results.total_co2_kg_year / 1000).toFixed(1);
-    const percent = String(Math.round((results.dominant_poste_co2_kg_year / results.total_co2_kg_year) * 100));
-    const params = new URLSearchParams({ total: totalTonnes, poste: dominantShareLabel(results), percent });
-    const shareUrl = `${APP_URL}/api/partage?${params.toString()}`;
+    const shareUrl = urlDePartage(results, APP_URL);
     const message = `Mon empreinte transport : ${formatTonnes(results.total_co2_kg_year)} par an. Fais la tienne sur ${APP_NAME} : ${shareUrl}`;
 
     if (partageSystemeDisponible()) {
@@ -404,7 +370,10 @@ export default function BilanResultat() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.centered}>
-          <ThemedText themeColor="textSecondary">Calcul de ton bilan…</ThemedText>
+          {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
+              lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
+              écran ne fait que le relire, y compris juste après le questionnaire (A3-16). */}
+          <ThemedText themeColor="textSecondary">Chargement de ton bilan…</ThemedText>
         </SafeAreaView>
       </ThemedView>
     );
@@ -430,23 +399,27 @@ export default function BilanResultat() {
     );
   }
 
-  const { results, capKg } = state;
+  const { results, capKg, submittedAt } = state;
   const totalT = results.total_co2_kg_year / 1000;
 
   // Le palier remplace la barre « Repère 2050 » : mettre 15,8 t à côté de 0,6 t affichait un
   // rapport de 1 à 26 qu'aucune formulation ne rattrape. 2050 reste, en mots, sous les barres.
+  // En relecture, `capKg` est nul par construction (cf. le chargement) : rien à proposer, le
+  // cap n'appartient pas au bilan qu'on relit.
   const palier = nextPalier(results.total_co2_kg_year, capKg, TARGET_2050_TRANSPORT_T * 1000);
   // Le repère 2050 revient dès qu'on passe sous la moyenne : au-dessus il est un gouffre, en
   // dessous un horizon crédible. Cf. `showsTarget2050`.
   const montreRepere2050 = showsTarget2050(results.total_co2_kg_year, FRANCE_AVERAGE_TRANSPORT_T * 1000);
 
-  // Un total nul est atteignable — quelqu'un qui n'a que du vélo ou de la marche, sans avion
-  // ni trajet longue distance. C'est le profil que le produit devrait féliciter, et il
-  // tombait jusqu'ici sur un « NaN % » : toutes les parts se divisent par le total.
-  // Cf. v1-07 T8.
-  const hasEmissions = results.total_co2_kg_year > 0;
-  const shareOfTotal = (kg: number) => (hasEmissions ? (kg / results.total_co2_kg_year) * 100 : 0);
-  const dominantPercent = Math.round(shareOfTotal(results.dominant_poste_co2_kg_year));
+  // Un total nul est atteignable, mais plus rarement que ce commentaire ne l'a longtemps dit :
+  // depuis le passage aux facteurs ACV, `marche` est le **seul** mode à facteur nul — le vélo
+  // ne l'est plus, fabrication comprise (un test pgTAP l'épingle). Il faut donc un profil
+  // marche uniquement, zéro loisir et zéro voyage. C'est le profil que le produit félicite, et
+  // il tombait jusqu'ici sur un « NaN % » : toutes les parts se divisent par le total.
+  // Cf. v1-07 T8, A3-14.
+  const hasEmissions = !bilanSansEmissions(results);
+  const shareOfTotal = (kg: number) => partDuTotal(kg, results.total_co2_kg_year);
+  const dominantPercent = pourcentageDominant(results);
 
   const domain = Math.max(totalT, FRANCE_AVERAGE_TRANSPORT_T) / 0.85;
   const barPercent = (value: number) => Math.max((value / domain) * 100, 3);
@@ -479,32 +452,51 @@ export default function BilanResultat() {
             </Pressable>
           )}
 
-          <ThemedText type="small" themeColor="textTertiary">
-            Ton bilan transport
-          </ThemedText>
+          <View style={styles.enTete}>
+            <ThemedText type="small" themeColor="textTertiary">
+              Ton bilan transport
+            </ThemedText>
+            {/* **La date, en relecture seulement** (A3-15). Rien ne distinguait à l'écran un
+                bilan d'aujourd'hui d'un bilan d'il y a un an : mêmes cartes, mêmes barres, même
+                « Estimation annuelle » — sur le seul écran du produit qui matérialise le passé.
+                Après le questionnaire elle n'apprendrait rien, c'est aujourd'hui. */}
+            {mode === 'relecture' && submittedAt && (
+              <ThemedText type="small" themeColor="textTertiary">
+                Bilan du {formatDate(submittedAt)}
+              </ThemedText>
+            )}
+          </View>
 
           <ThemedView type="backgroundSelected" style={styles.dominantCard}>
-            <ThemedText weight={600} themeColor="accentText" style={styles.dominantLabel}>
-              Le déplacement qui pèse le plus
-            </ThemedText>
-            <ThemedText type="subtitle" weight={600} style={styles.dominantHeadline}>
-              {dominantHeadline(results)}
-            </ThemedText>
             {hasEmissions ? (
-              <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
-                {`${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`}
-              </ThemedText>
-            ) : (
-              // Profil quasi nul (100 % vélo/marche, aucun trajet longue distance) : c'est le
-              // seul endroit de la restitution qui est une félicitation, et le seul où la
-              // mascotte a quelque chose à ajouter au texte.
-              <View style={styles.dominantPraise}>
-                <Mascot mood="happy" size={36} />
-                <ThemedText themeColor="textSecondary" style={styles.dominantPraiseText}>
-                  Tes déplacements n’émettent quasiment rien. C’est rare, et c’est une bonne
-                  nouvelle.
+              <>
+                <ThemedText weight={600} themeColor="accentText" style={styles.dominantLabel}>
+                  Le déplacement qui pèse le plus
                 </ThemedText>
-              </View>
+                <ThemedText type="subtitle" weight={600} style={styles.dominantHeadline}>
+                  {dominantHeadline(results)}
+                </ThemedText>
+                <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
+                  {`${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`}
+                </ThemedText>
+              </>
+            ) : (
+              // **Profil sans émission : tout le haut de carte change** (A3-14). Le SQL force
+              // `dominant_poste = 'commute'` par défaut quand le total est nul, si bien que le
+              // seul écran de félicitation du produit s'ouvrait sur « Le déplacement qui pèse le
+              // plus / Ton trajet domicile-travail » — une désignation de coupable qui n'existe
+              // pas, contredite deux lignes plus bas par la mascotte. Intitulé neutre, et plus
+              // de `dominantHeadline` du tout.
+              //
+              // La phrase est à elle (A3-13) : elle vivait ici, à la deuxième personne, donc
+              // hors du test qui garde sa voix. Aucun chiffre n'est affiché dans cette branche,
+              // donc la mascotte n'est jamais à côté d'un chiffre lourd.
+              <>
+                <ThemedText weight={600} themeColor="accentText" style={styles.dominantLabel}>
+                  Ton bilan
+                </ThemedText>
+                <RamilleDit ligne={RAMILLE.bilanQuasiNul} mood="happy" size={36} />
+              </>
             )}
           </ThemedView>
 
@@ -513,16 +505,23 @@ export default function BilanResultat() {
               Répartition par poste
             </ThemedText>
             <View style={styles.bars}>
-              {POSTE_BREAKDOWN.map((poste) => (
-                <CompareRow
-                  key={poste.key}
-                  label={poste.label}
-                  value={formatTonnes(results[poste.co2Key])}
-                  percent={Math.max(shareOfTotal(results[poste.co2Key]), 3)}
-                  bold={poste.key === results.dominant_poste}
-                  accentColor={poste.key === results.dominant_poste ? theme.accent : theme.accentMuted}
-                />
-              ))}
+              {POSTE_BREAKDOWN.map((poste) => {
+                // **Pas de poste mis en avant quand il n'y a rien à peser** (A3-14) : le SQL
+                // désigne `commute` par défaut sur un total nul, et la répartition mettait donc
+                // en gras et en accent un poste à « 0 kg CO₂e », juste sous une carte qui vient
+                // de dire qu'il n'y a presque rien à compter.
+                const dominant = hasEmissions && poste.key === results.dominant_poste;
+                return (
+                  <CompareRow
+                    key={poste.key}
+                    label={POSTE_LABEL[poste.key]}
+                    value={formatTonnes(results[poste.co2Key])}
+                    percent={Math.max(shareOfTotal(results[poste.co2Key]), 3)}
+                    bold={dominant}
+                    accentColor={dominant ? theme.accent : theme.accentMuted}
+                  />
+                );
+              })}
             </View>
           </ThemedView>
 
@@ -530,17 +529,34 @@ export default function BilanResultat() {
             <ThemedText type="small" themeColor="textTertiary">
               Estimation annuelle, tous déplacements
             </ThemedText>
-            <ThemedText weight={600} style={styles.totalValue}>
-              {formatTonnes(results.total_co2_kg_year)}
-            </ThemedText>
+            {/* **Le jeton, pas une recopie** (A3-22). Le chiffre le plus important du produit
+                redéclarait 26 / 32 à la main, c'est-à-dire exactement `TypeScale.screen` — le
+                jeton des *titres d'écran*. `salient` est celui des chiffres saillants (le cap de
+                la saison, l'écart entre deux bilans) : il vaut 30, et la hiérarchie tient
+                puisque la décision dominante reste au-dessus, à 32. */}
+            <ThemedText type="salient">{formatTonnes(results.total_co2_kg_year)}</ThemedText>
           </View>
 
           <ThemedView type="backgroundElement" style={styles.compareCard}>
             <ThemedText weight={600} type="small">
               Où tu te situes
             </ThemedText>
+            {/* **Deux registres dans la même carte, et c'est délibéré** (A5-3, A10-3). Les deux
+                lignes de repère — la moyenne française, le repère 2050 — restent au dixième de
+                tonne : c'est l'échelle de comparaison, elle ne descend jamais sous la tonne et
+                une unité unique est ce qui rend les barres lisibles entre elles. Les deux lignes
+                qui sont **les chiffres de la personne** passent, elles, par `formatTonnes` sous
+                la tonne : sans ça, un profil sobre lisait « Toi — 0,0 t » et « Ton prochain
+                palier — 0,0 t », deux libellés chiffrés identiques sur deux barres de longueurs
+                différentes, trente pixels sous un total qui disait « 40 kg CO₂e ». */}
             <View style={styles.bars}>
-              <CompareRow label="Toi" value={formatTonnesShort(totalT)} percent={barPercent(totalT)} bold accentColor={theme.accent} />
+              <CompareRow
+                label="Toi"
+                value={totalT < 1 ? formatTonnes(results.total_co2_kg_year) : formatTonnesShort(totalT)}
+                percent={barPercent(totalT)}
+                bold
+                accentColor={theme.accent}
+              />
               {/* Le palier vient juste après « Toi », avant la moyenne : la comparaison qui
                   compte est celle entre où l'on est et où l'on va, pas avec le pays. Rendu à
                   la troisième place, la paire se lisait comme deux repères sans rapport, et
@@ -552,7 +568,14 @@ export default function BilanResultat() {
               {palier && (
                 <CompareRow
                   label={palier.isTarget2050 ? 'Repère transport 2050' : 'Ton prochain palier'}
-                  value={formatTonnesShort(palier.targetKg / 1000)}
+                  value={
+                    // Quand le palier **est** le repère 2050, cette ligne est un repère et non un
+                    // chiffre de la personne : elle reste en tonnes, comme la ligne homonyme plus
+                    // bas, faute de quoi la même valeur s'écrirait de deux façons selon la branche.
+                    !palier.isTarget2050 && palier.targetKg < 1000
+                      ? formatTonnes(palier.targetKg)
+                      : formatTonnesShort(palier.targetKg / 1000)
+                  }
                   percent={barPercent(palier.targetKg / 1000)}
                   accentColor={theme.accentText}
                 />
@@ -574,8 +597,10 @@ export default function BilanResultat() {
                 />
               )}
             </View>
+            {/* En relecture il n'y a jamais de palier, donc c'est toujours `comparisonNote` qui
+                parle — et elle ne promet aucun plan. */}
             <ThemedText type="small" themeColor="textSecondary">
-              {palier ? palierNote(palier, montreRepere2050) : comparisonNote(totalT)}
+              {palier ? palierNote(palier, montreRepere2050) : comparisonNote(results)}
             </ThemedText>
             <ThemedText type="code" themeColor="textTertiary">
               {CARBON_SOURCE_LABEL}
@@ -659,6 +684,11 @@ export default function BilanResultat() {
               title="Voir ce que je peux faire"
               onPress={goToPlan}
               disabled={proposition === 'inconnu'}
+              // Le pied est hors du `ScrollView`, donc la largeur maximale du contenu ne
+              // l'atteint pas : sans ça, le bouton s'étirerait sur toute la fenêtre pendant que
+              // les barres au-dessus sont bornées à 800 px (A5-21). Le filet, lui, reste pleine
+              // largeur : c'est la séparation du pied, pas une limite de contenu.
+              style={styles.footerBouton}
             />
           </View>
         )}
@@ -706,7 +736,17 @@ const styles = StyleSheet.create({
   // elle touche les bords sur un téléphone étroit) et d'air sous elle.
   erreurTexte: { textAlign: 'center', paddingHorizontal: Spacing.four, marginBottom: Spacing.four },
   erreurBouton: { marginBottom: Spacing.three },
-  scrollContent: { padding: Spacing.four, gap: Spacing.four },
+  // Largeur maximale du contenu, comme les pages légales et les écrans de compte (A5-21).
+  // L'app est déployée sur le web : sans borne, les barres de comparaison — moyenne française,
+  // repère 2050 — s'étirent sur toute la fenêtre, et c'est précisément là qu'un étirement
+  // fausse la lecture visuelle du rapport entre deux valeurs.
+  scrollContent: {
+    padding: Spacing.four,
+    gap: Spacing.four,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -717,14 +757,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   bannerText: { flex: 1 },
+  enTete: { gap: Spacing.half },
   dominantCard: { borderRadius: 24, padding: 22, gap: 10 },
   dominantLabel: { fontSize: 14, lineHeight: 20 },
   dominantHeadline: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
-  dominantPraise: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  dominantPraiseText: { flex: 1, minWidth: 0 },
   dominantBody: { fontSize: 16, lineHeight: 24 },
   totalBlock: { gap: 4 },
-  totalValue: { fontSize: 26, lineHeight: 32 },
   compareCard: { borderRadius: 20, padding: 20, gap: 14 },
   bars: { gap: 8 },
   compareRow: { gap: 8 },
@@ -734,6 +772,7 @@ const styles = StyleSheet.create({
   // Un seul bouton, une bordure fine plutôt qu'une rupture nette : le pied ne pèse plus que
   // sa propre hauteur, et se lit comme posé sur le contenu au lieu de le trancher.
   footer: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
+  footerBouton: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   actionsSecondaires: { gap: Spacing.three, alignItems: 'stretch', paddingTop: Spacing.two },
   editLink: { textAlign: 'center' },
   // Le lien de repli : centré comme le message qui l'introduit, et assez aéré pour être

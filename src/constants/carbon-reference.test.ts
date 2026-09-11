@@ -9,6 +9,7 @@ import {
   TARGET_2050_TOTAL_T,
   TARGET_2050_TRANSPORT_T,
   formatTonnesShort,
+  formatTonnesTexte,
 } from '@/constants/carbon-reference';
 
 describe('repères carbone', () => {
@@ -56,5 +57,37 @@ describe('repères carbone', () => {
     expect(formatTonnesShort(2.8)).toBe('2,8 t');
     expect(formatTonnesShort(0.6)).toBe('0,6 t');
     expect(formatTonnesShort(9)).toBe('9,0 t');
+  });
+
+  // **Ce formateur ne bascule pas en kilos, contrairement à `formatTonnes`** : il porte
+  // l'échelle de comparaison de la restitution — la moyenne française, le repère 2050 — qui
+  // reste dans une seule unité pour que les barres se comparent. Le revers est ci-dessous :
+  // sous cinquante kilos il rend « 0,0 t ». C'est précisément pour ça que les deux lignes qui
+  // sont les chiffres de la personne (« Toi », « Ton prochain palier ») ne passent plus par lui
+  // sous la tonne dans `src/app/(tabs)/suivi/bilan.tsx`.
+  it('reste au dixième de tonne, y compris sous la tonne', () => {
+    expect(formatTonnesShort(0.04)).toBe('0,0 t');
+  });
+});
+
+// Vit ici, à côté de la fonction, et non dans `src/lib/format.test.ts` : la colocation est la
+// règle de test du dépôt, et c'est ici qu'on viendra la chercher.
+describe('formatTonnesTexte', () => {
+  it('écrit l’unité en toutes lettres, sans décimale nulle', () => {
+    expect(formatTonnesTexte(9.5)).toBe('9,5 tonnes');
+    expect(formatTonnesTexte(2)).toBe('2 tonnes');
+  });
+
+  it('accorde l’unité : le singulier vaut jusqu’à deux exclu', () => {
+    expect(formatTonnesTexte(1)).toBe('1 tonne');
+    expect(formatTonnesTexte(1.5)).toBe('1,5 tonne');
+    expect(formatTonnesTexte(0.6)).toBe('0,6 tonne');
+  });
+
+  // L'accord suit le nombre affiché : 1,95 s'écrit « 2 », et « 2 tonne » serait une faute
+  // produite par l'arrondi.
+  it('accorde sur le nombre affiché, pas sur la valeur d’entrée', () => {
+    expect(formatTonnesTexte(1.95)).toBe('2 tonnes');
+    expect(formatTonnesTexte(1.94)).toBe('1,9 tonne');
   });
 });

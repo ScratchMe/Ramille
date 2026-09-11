@@ -11,6 +11,7 @@ import {
   FRANCE_AVERAGE_TOTAL_T,
   TARGET_2050_TOTAL_T,
   formatTonnesShort,
+  formatTonnesTexte,
 } from '@/constants/carbon-reference';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -39,8 +40,13 @@ export function EtapeContexte({ onSuivant }: { onSuivant: () => void }) {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.textBlock}>
             <ThemedText type="title" weight={600} style={styles.title}>
-              {formatTonnesShort(FRANCE_AVERAGE_TOTAL_T).replace(' t', ' tonnes')} en moyenne,{' '}
-              {TARGET_2050_TOTAL_T} tonnes visées en 2050
+              {/* Les deux valeurs par le même formateur (A1-12). Elles s'écrivaient de deux
+                  façons à deux lignes d'écart — un `.replace` sur la forme courte d'un côté, la
+                  constante interpolée brute de l'autre, donc un point décimal le jour où la cible
+                  cesserait d'être un entier, dans une app dont le formatage à la française est
+                  justement centralisé. */}
+              {formatTonnesTexte(FRANCE_AVERAGE_TOTAL_T)} en moyenne,{' '}
+              {formatTonnesTexte(TARGET_2050_TOTAL_T)} visées en 2050
             </ThemedText>
             <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
               C&apos;est l&apos;empreinte annuelle moyenne d&apos;une personne en France, et la

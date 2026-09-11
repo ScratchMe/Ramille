@@ -17,7 +17,7 @@ import { APP_URL } from '@/lib/app-url';
 import { sendAccountAccessLink } from '@/lib/auth';
 import { deleteMyAccount, lireEtatDuCompte } from '@/lib/compte';
 import { type EtatSuppression } from '@/types/compte-suppression';
-import { adresseSemblePlausible, estLimiteDEnvoi } from '@/types/connexion';
+import { adresseSemblePlausible, estLimiteDEnvoi, estPanneDeTransport } from '@/types/connexion';
 
 // Page publique de suppression de compte — **exigée par Google Play** en plus du chemin
 // dans l'app : la fiche réclame une URL atteignable depuis un navigateur, par quelqu'un qui
@@ -78,8 +78,21 @@ export default function SuppressionCompte() {
     const { error } = await sendAccountAccessLink(email, `${APP_URL}/compte/suppression`);
     setBusy(false);
 
-    // Un seul cas mérite un message distinct : la limite d'envoi, où réessayer tout de suite
-    // ne servirait à rien (cf. `estLimiteDEnvoi`, partagée avec `/connexion/retrouver`).
+    // **La demande n'a pas abouti** (A6-12) : annoncer un lien envoyé enverrait attendre un
+    // message qui ne partira jamais, sur la page que Google Play exige et que quelqu'un ouvre
+    // justement parce qu'il n'a plus l'application. Liste blanche (`src/types/connexion.ts`) :
+    // réseau coupé et 5xx, rien d'autre — le 422 d'une adresse inconnue continue de mener à
+    // l'écran d'attente, sinon cette page dirait qui a un compte.
+    //
+    // Le texte ne dit pas « pas partie » : sur un 5xx la demande a bien quitté le navigateur,
+    // c'est l'envoi qui n'a pas abouti — et le geste à faire est le même dans les deux cas.
+    if (estPanneDeTransport(error)) {
+      setMessage('Ta demande n’a pas abouti. Vérifie ta connexion et réessaie.');
+      return;
+    }
+
+    // Deux cas méritent un message distinct ; celui-ci est la limite d'envoi, où réessayer tout
+    // de suite ne servirait à rien (cf. `estLimiteDEnvoi`, partagée avec `/connexion/retrouver`).
     if (estLimiteDEnvoi(error)) {
       setMessage('Trop de demandes coup sur coup. Réessaie dans quelques minutes.');
       return;

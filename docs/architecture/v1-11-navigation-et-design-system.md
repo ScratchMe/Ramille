@@ -407,8 +407,36 @@ seuil, l'invitation apparaît sur le plan **et** sur le suivi.
 grep -rn "fontSize: 2[6]\b\|fontSize: 30\b\|fontSize: 17\b\|borderRadius: 18\b" src/app src/components
 ```
 
-doit rendre zéro ligne (les tailles hors échelle — 44 du gros chiffre de résultat, 34 de
-l'accroche — restent en dur : elles sont uniques, les nommer serait du bruit).
+devait rendre zéro ligne à la fin du lot 4. Elle en rend **sept** au 11/09/2026, relevées sur le
+dépôt (et non sur cette ligne de chantier) :
+
+| Ligne | Ce que c'est |
+| --- | --- |
+| `src/app/connexion/index.tsx:258` | `TypeScale.salient` recopié au caractère près (30 / 36 / −0.6) |
+| `src/components/onboarding/etape-contexte.tsx:165` | idem |
+| `src/components/bande-haute.tsx:49` | `TypeScale.card` recopié (17 / 24) |
+| `src/components/bilan/numeric-field.tsx:80` | `fontSize: 17` seul, la taille de `TypeScale.card` |
+| `src/components/legal/legal-page.tsx:158` | 30 / 36 / **−0.3** — proche de `salient`, pas identique |
+| `src/components/ecran-lancement.tsx:175` | 30 / **38**, centré — l'accroche de l'écran de lancement |
+| `src/components/onboarding/etape-reassurance.tsx:55` | 17 / **26** — corps d'une étape, pas un titre de carte |
+
+Les quatre premières sont le défaut d'A3-22 et restent à migrer ; les trois dernières sont des
+tailles propres à un écran, à exempter ou à nommer explicitement. Relever la valeur dans le code
+avant de trancher, jamais de mémoire.
+
+> **Correction du 11/09/2026 (chantier C1.8, constat A3-22).** La parenthèse d'origine disait
+> « zéro ligne (la seule taille hors échelle — 34 de l'accroche — reste en dur) » et exemptait
+> aussi « 44 du gros chiffre de résultat », pendant que l'en-tête de `TypeScale` dans
+> `src/constants/theme.ts` annonçait 48 pour la même ligne. Le code disait **26** — exactement
+> `TypeScale.screen`, le jeton des titres d'écran, recopié à la main sur le chiffre le plus
+> important du produit. Deux valeurs fausses et différentes pour un même endroit : l'exemption
+> avait été écrite de mémoire, sans relever la valeur (même défaut que la §7 points 2 et 3,
+> « avoir lu le canvas au lieu du code »). Le total de la restitution est passé sur
+> `type="salient"` et son entrée de style a disparu : il n'y a plus de taille hors échelle
+> **sur la restitution**. Le reste du dépôt, lui, est le tableau ci-dessus — la commande ne rend
+> pas zéro ligne, et une nouvelle exemption ne s'ouvre qu'après avoir relu la valeur dans le
+> code. Le 34 de l'accroche (`src/components/onboarding/etape-accroche.tsx:80`) reste exempté et
+> hors de la commande, qui ne cherche pas cette taille.
 
 **Acceptation.** La même comparaison pixel à pixel qu'au lot 0 : zéro différence sur les 20
 pages. C'est le seul garde-fou qui vaille pour un lot de 40 fichiers touchés.

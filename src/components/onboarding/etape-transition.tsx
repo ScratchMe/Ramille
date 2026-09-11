@@ -55,9 +55,10 @@ export function EtapeTransition() {
           <Button
             title="Commencer mon bilan"
             onPress={() => {
-              // Fin de l'onboarding : `profiles.onboarding_completed_at` existe dans le
-              // schéma mais n'est écrit par aucun code du produit, donc c'est ici — et
-              // seulement ici — que le franchissement se lit.
+              // Fin de l'onboarding : la colonne `profiles.onboarding_completed_at` a été
+              // supprimée le 05/09/2026 (20260905180000_supprimer_colonnes_mortes_profiles.sql),
+              // parce qu'aucun code ne l'écrivait. Le franchissement ne se lit donc que dans cet
+              // événement — il n'y a pas de repli en base sur lequel se rabattre.
               track('onboarding_complete');
               // **On vide la pile en quittant l'onboarding, on n'empile pas le questionnaire
               // par-dessus.** Sans cela, au tout premier lancement, le retour matériel Android

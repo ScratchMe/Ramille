@@ -1,0 +1,66 @@
+-- v1-13, chantier C1.13 — les notes du référentiel des facteurs redisent ce qui est vrai.
+-- Constat A7-15, et sa vérification voisine sur le vélo (A7-11).
+--
+-- `emission_factor_sources.note` n'est lue par aucun code, ni SQL ni `src/` : c'est de la
+-- documentation en base. C'est aussi ce qu'on relit pour comprendre un mapping avant d'y
+-- toucher, donc une note fausse y coûte le prix d'un document faux — on s'y fie.
+--
+-- **Cette migration n'écrit que des notes** : aucun facteur, aucun slug, aucun mode. Les cinq
+-- assertions balayantes de `07_sync_emission_factors.test.sql` — « tout mode du référentiel a une
+-- source » (1), « aucune source orpheline » (2), « tout mode mappé a au moins une valeur » (3),
+-- « tout facteur porte l'ACV complète » (5) et « le vélo n'est pas nul » (6) — ne lisent pas
+-- `note`. Aucune assertion de la suite pgTAP ne bouge, pas davantage les valeurs chiffrées de
+-- 01, 05, 06 et 08 : le piège documenté dans CLAUDE.md vise le référentiel des **facteurs**, et
+-- rien ici n'y touche.
+--
+-- ── 1. Le deux-roues motorisé générique est un repli, pas un choix de représentativité ──────
+--
+-- La note disait : « Scooter thermique — la moto > 250 cm³ (0,14) est plus de deux fois plus
+-- émettrice, le scooter est le cas majoritaire du trajet domicile-travail ». Deux choses y sont
+-- fausses depuis le 05/09/2026.
+--
+--   * **Le chiffre.** 0,14 était le facteur d'usage seul, d'avant la bascule ACV
+--     (20260905100000). Relevé en base le 11/09/2026 : la grosse moto vaut 0,214700 et le
+--     scooter 0,076300, soit 2,8 fois. Le rapport « plus de deux fois » reste donc juste ;
+--     la valeur qui l'appuie, non. Ces deux nombres sont datés pour la même raison que le 0,14
+--     a péri : `sync_emission_factors()` insère chaque trimestre une nouvelle version dans
+--     `emission_factors` sans jamais toucher `note`, donc les valeurs vivantes se lisent par
+--     `public.emission_factor(mode_id, current_date)` et non ici — et le rapport de 2,8 dérive
+--     avec elles.
+--   * **Le raisonnement.** « Le scooter est le cas majoritaire, donc on prend son facteur » est
+--     exactement celui que 20260905200000 a démonté, en montrant qu'il sous-estimait de 64 %
+--     l'empreinte d'un motard — dans le sens qui fait passer le deux-roues pour vertueux.
+--
+-- Depuis 20260905200000, les quatre types réels ont leur propre mode et le questionnaire les
+-- demande (`commute_two_wheeler_type`, `leisure_two_wheeler_type`). `deux_roues_motorise` ne
+-- prétend donc plus représenter quoi que ce soit : il est le **repli** des bilans soumis avant
+-- le 05/09/2026, où le type n'était pas posé, et de ceux où il reste vide. C'est la nuance qui
+-- évite qu'on « corrige » un jour ce facteur générique en croyant qu'il décrit le parc.
+--
+-- Son slug reste `scooter`, donc la synchronisation trimestrielle continue de rafraîchir ce
+-- repli au tarif du scooter. C'est cohérent avec sa nature — un repli suit la valeur qu'il
+-- remplaçait, pas le parc — mais il fallait l'écrire : sans cela, le prochain lecteur peut
+-- aussi bien l'aligner sur la moto « par prudence » que le laisser tel quel, et rien ne dirait
+-- lequel des deux est le choix.
+
+update public.emission_factor_sources
+set note = 'Repli des bilans soumis avant le 05/09/2026, quand le type de deux-roues n''était pas demandé (commute_two_wheeler_type / leisure_two_wheeler_type), et de ceux où il reste vide. Ce n''est PAS un choix de représentativité du parc : les quatre types réels ont leur propre mode depuis 20260905200000, et l''écart est large : au relevé du 11/09/2026, grosse moto 0,214700 contre scooter 0,076300, soit 2,8 fois — les valeurs vivantes se lisent par public.emission_factor(mode_id, current_date), que la synchronisation trimestrielle fait bouger. Le slug reste « scooter », donc la synchronisation trimestrielle rafraîchit ce repli au tarif du scooter : c''est voulu, un repli suit la valeur qu''il remplaçait et non le parc.'
+where transport_mode_id = 'deux_roues_motorise';
+
+-- ── 2. Le vélo à assistance électrique : vérifié en base, rien à corriger ───────────────────
+--
+-- Le chantier prévoyait une seconde ligne : la note du vélo chiffrerait encore le VAE à 0,0022,
+-- la valeur d'usage seul. Relevé sur le projet distant le 11/09/2026, ce n'est pas le cas — elle
+-- porte bien 0,010950 :
+--
+--   « Vélo mécanique. Son ACV est intégralement de la fabrication (usage nul) — d'où une valeur
+--     non nulle là où /transport renvoyait 0. Le vélo à assistance électrique (0,010950) n'est
+--     pas distingué par le questionnaire. »
+--
+-- Le 0,0022 ne subsiste que dans la ligne de seed de 20260904160000_sync_emission_factors.sql,
+-- que 20260905100000_facteurs_acv_complete.sql remplace par un `update`. Les deux se rejouent
+-- dans cet ordre sur une stack locale neuve comme sur le projet distant : l'état de la base est
+-- juste des deux côtés. Une migration appliquée ne se réécrit pas (CLAUDE.md), et réécrire ici
+-- une note déjà exacte n'ajouterait qu'une troisième version du même texte. Le constat se ferme
+-- donc par la vérification et non par un `update` — et ce paragraphe est ce qui l'empêche d'être
+-- rouvert au prochain passage.

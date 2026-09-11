@@ -1,5 +1,24 @@
 # TraceVerte — Architecture technique V1 (increment 3/3)
 
+> ⚠️ **Le schéma décrit en §3 et la mécanique décrite en §5-§6 sont obsolètes** (bandeau posé le
+> 11/09/2026, constat A11-8). Le §3 décrit `plan_cycles.dominant_trip_id` en clé étrangère vers
+> `assessment_trips`, table supprimée le 24/08/2026 par `v1-05-bilan-v2.md`, et `action_templates`
+> comme un couple (`transport_mode_category`, `action_text`) : la table porte aujourd'hui `poste`,
+> `segment`, `operation`, `share`, `trips`, `substitute_mode_id`, `requires_tc`, `requires_car`,
+> `detail_kind`. Le §6 décrit une génération de plan par catégorie de mode qui n'existe plus, et
+> `plan_actions` a depuis gagné les colonnes d'engagement posées par `commit_plan_action`.
+> **Références à jour** : `v1-07-audit-facteurs-et-suivi.md` §3.3 et les migrations
+> `20260905130000_actions_chiffrees.sql` (actions chiffrées, `estimate_action_savings`) et
+> `20260905190000_engagement_action.sql` (engagement par RPC).
+>
+> **Le §2 (cadence : saisons météorologiques) reste en vigueur**, et c'est la décision que ce
+> document conserve. Deux nuances à connaître : la comparaison « mon été contre mon été
+> précédent », donnée ici comme bénéfice principal du choix, **n'a jamais été construite** (aucun
+> écran ne compare deux saisons homologues, cf. A11-4) — la raison décisive était le calcul
+> trivial en SQL, dite juste en dessous ; et `cadence_type = 'rolling_quarter'` est un **mécanisme
+> dormant**, complet côté serveur mais qu'aucun écran n'ouvre (A8-16, cf. CLAUDE.md § Base de
+> données). Conservé pour l'historique des décisions, pas comme référence du schéma actuel.
+
 **Périmètre** : Brique 3 (Plan de réduction), dernière brique de la spec V1. Niveau d'effort
 "fonctionnel simple" (spec §3). Clôture le socle de spec fonctionnelle §4-§7.
 

@@ -5,6 +5,18 @@
 > mise à jour de la spec fonctionnelle avec le détail complet des champs B1.1→B4.3. Le reste
 > de ce document (stack, onboarding, RLS générales) reste valide. Conservé pour l'historique
 > des décisions, pas comme référence du schéma actuel.
+>
+> ⚠️ **Le §5 est obsolète lui aussi** (extension du bandeau le 11/09/2026, constat A11-16) :
+> aucun des accès qu'il annonce comme nécessaires n'existe, et le bandeau ci-dessus ne doit pas
+> le couvrir par défaut. La **clé API Impact CO2** s'est révélée inutile — l'endpoint répond en
+> HTTP 200 sans clé, et `sync_emission_factors()` l'appelle sans en-tête d'authentification (cf.
+> `v1-07-audit-facteurs-et-suivi.md` §1.1 et §1.5). Le **token EAS en secret GitHub `EXPO_TOKEN`**
+> et le **service account Google Play** n'existent pas non plus : `v1-10-connexion-et-rappels.md`
+> §10 a retenu la voie « Build from GitHub » depuis expo.dev et la publication depuis la console
+> Play, et le seul workflow du dépôt ne référence aucun secret Expo. Ce qui reste vrai du §5 est
+> la mise en garde « ne pas coller le token dans le chat », et le fait qu'une décision d'accès se
+> consigne. Le registre à jour de ce qui fait marcher Ramille hors du dépôt est
+> `docs/exploitation/README.md`.
 
 **Périmètre de ce document** : Brique 2 (Bilan initial) + socle minimal Brique 1 (Onboarding).
 Les briques 3 (Plan) et 4 (Boucle mensuelle) sont volontairement laissées hors de cet

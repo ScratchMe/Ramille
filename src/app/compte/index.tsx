@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { ChoixDeRappel } from '@/components/compte/choix-de-rappel';
 import { MonCompte } from '@/components/compte/mon-compte';
+import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -14,6 +15,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement } from '@/lib/compte';
 import { loadReminderPrefs, setReminderChannel, type ReminderPrefs } from '@/lib/notification-prefs';
+import { supabase } from '@/lib/supabase';
 import { type EtatRattachement } from '@/types/compte';
 import { type CanalPrefere } from '@/types/rappels';
 
@@ -31,27 +33,66 @@ export default function Compte() {
 
   const [etat, setEtat] = useState<EtatRattachement | null>(null);
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
+  const [messageCanal, setMessageCanal] = useState<string | null>(null);
+  const [cle, setCle] = useState(0);
 
   useEffect(() => {
     let annule = false;
     lireEtatDuRattachement()
       .then((e) => !annule && setEtat(e))
-      .catch(() => !annule && setEtat({ kind: 'local' }));
+      // **Jamais `local` sur un échec** (A6-8) : c'est l'état le plus affirmatif, celui qui dit
+      // « tu n'as pas de compte » et propose d'en créer un. `lireEtatDuRattachement` rend
+      // désormais `indisponible` sans lever, et ce repli couvre le cas où elle lève quand même.
+      .catch(() => !annule && setEtat({ kind: 'indisponible' }));
     loadReminderPrefs()
       .then((p) => !annule && setRappels(p))
       .catch(() => undefined);
     return () => {
       annule = true;
     };
+  }, [cle]);
+
+  // **`/compte` est une URL publique, et elle peut arriver avant la session.** Ouverte
+  // directement sur web, la lecture ci-dessus part pendant qu'`ensureSession()` est encore en
+  // vol : `getUser()` rend `AuthSessionMissingError`, l'écran affiche « On n'a pas pu vérifier
+  // ton compte à l'instant » à quelqu'un dont la session arrive une demi-seconde plus tard, et
+  // l'effet ne dépendant que de `cle`, rien ne le corrigeait avant un clic.
+  //
+  // On relit donc dès qu'une session s'ouvre. **`SIGNED_IN` et rien d'autre** : c'est
+  // l'événement de la session anonyme qui vient d'être créée et celui du lien de connexion
+  // ouvert depuis la messagerie, alors qu'`INITIAL_SESSION` partirait à chaque montage (une
+  // lecture pour rien) et que `TOKEN_REFRESHED` revient toutes les heures sans rien changer à
+  // l'écran. Le rappel reste synchrone, comme celui du layout racine. Le bouton « Réessayer »
+  // reste le repli pour ce que cette écoute ne voit pas — le réseau coupé, d'abord.
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((evenement) => {
+      if (evenement === 'SIGNED_IN') setCle((n) => n + 1);
+    });
+    return () => data.subscription.unsubscribe();
   }, []);
+
+  // Gestionnaire d'événement : l'écriture synchrone y est légitime, et remettre l'état à
+  // « on ne sait pas » donne à la personne le seul retour visible de son geste — sans ça, un
+  // second échec rend exactement le même écran et le bouton a l'air mort.
+  const reessayer = () => {
+    setEtat(null);
+    setCle((n) => n + 1);
+  };
 
   // Optimiste puis corrigé : le réglage doit répondre au doigt, et une écriture qui échoue
   // remet la ligne où elle était plutôt que de laisser croire à un choix enregistré.
+  //
+  // **Et elle le dit** (A12-6) : le retour en arrière silencieux laissait quelqu'un croire
+  // qu'il avait coupé ses rappels alors qu'ils partent toujours — la préférence ne se dégrade
+  // jamais d'elle-même côté serveur, donc rien d'autre ne viendra rattraper ce malentendu.
   const choisirLeCanal = async (canal: CanalPrefere) => {
     const avant = rappels;
+    setMessageCanal(null);
     setRappels((p) => (p ? { ...p, prefere: canal } : p));
     const ok = await setReminderChannel(canal);
-    if (!ok) setRappels(avant);
+    if (ok) return;
+    setRappels(avant);
+    setMessageCanal('Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.');
   };
 
 
@@ -108,10 +149,37 @@ export default function Compte() {
               </>
             )}
 
+            {/* **Le quatrième état, et le seul qui n'affirme rien** (A6-8). `getUser()` est un
+                aller-retour réseau : hors ligne, cet écran disait à une personne rattachée
+                depuis des mois qu'elle n'a pas de compte, et lui proposait d'en créer un. Pas
+                de bouton de rattachement ici — proposer un compte à quelqu'un qui en a
+                peut-être un est exactement le mensonge qu'on corrige. */}
+            {etat?.kind === 'indisponible' && (
+              <>
+                <ThemedText type="body" themeColor="textSecondary">
+                  On n’a pas pu vérifier ton compte à l’instant, ni relire tes réglages de
+                  rappel. Rien n’a changé de ton côté.
+                </ThemedText>
+                <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
+              </>
+            )}
+
             {/* Le réglage s'affiche pour tout le monde, y compris une session anonyme : le
                 push n'a besoin que d'un jeton d'appareil (v1-12 §2.5). C'était l'inverse
-                avant, l'interrupteur email n'apparaissant qu'avec un compte rattaché. */}
-            {rappels && <ChoixDeRappel prefs={rappels} onChoisir={choisirLeCanal} />}
+                avant, l'interrupteur email n'apparaissant qu'avec un compte rattaché.
+
+                **Sauf quand la lecture du compte a échoué** : `loadReminderPrefs` ne distingue
+                pas un échec de « pas de session » et rend alors ses valeurs par défaut — canal
+                « aucun », pas de jeton, pas d'email. La liste afficherait donc un choix que
+                personne n'a fait, à côté d'un message qui dit qu'on n'a rien pu lire. On attend
+                donc de savoir : les deux lectures partent ensemble, et `etat` vaut toujours
+                quelque chose à l'arrivée, échec compris. */}
+            {rappels && etat !== null && etat.kind !== 'indisponible' && (
+              <>
+                <ChoixDeRappel prefs={rappels} onChoisir={choisirLeCanal} />
+                <MessageInline message={messageCanal} />
+              </>
+            )}
 
             <MonCompte />
 

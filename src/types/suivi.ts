@@ -55,6 +55,20 @@ export function variationNote(previousKg: number, currentKg: number): string {
 }
 
 /**
+ * La date d'un bilan, telle qu'elle s'écrit à l'écran : « 12 mars 2026 ».
+ *
+ * Une seule implémentation, parce qu'il y a deux écrans à la dater — la liste du suivi et la
+ * relecture d'un bilan (A3-15). Et une seule entrée : `submittedAt`, la **date de soumission**,
+ * jamais le `computed_at` d'`assessment_results`. Les deux coïncident à la soumission, mais
+ * une reprise de calcul en masse côté serveur (correction de facteur, chemin explicitement
+ * prévu par CLAUDE.md) déplace le second : les deux écrans dateraient alors le même bilan
+ * différemment, sans que rien ne le signale.
+ */
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+/**
  * Depuis combien de jours cette date remonte-t-elle ?
  * Sert à proposer un re-bilan sans jamais l'imposer.
  */

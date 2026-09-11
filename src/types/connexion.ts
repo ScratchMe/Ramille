@@ -8,9 +8,9 @@
 /**
  * Forme minimale d'une erreur Supabase Auth telle qu'elle arrive dans les écrans. Le type
  * `AuthError` du SDK n'est pas importé pour ne pas tirer `@supabase/supabase-js` dans un
- * module testé ; seuls `code` et `status` sont lus.
+ * module testé ; seuls `name`, `code` et `status` sont lus.
  */
-export type ErreurAuth = { code?: string; status?: number; message?: string } | null;
+export type ErreurAuth = { name?: string; code?: string; status?: number; message?: string } | null;
 
 /**
  * La limite d'envoi d'emails, seul cas où réessayer tout de suite ne servirait à rien.
@@ -23,6 +23,56 @@ export type ErreurAuth = { code?: string; status?: number; message?: string } | 
 export function estLimiteDEnvoi(error: ErreurAuth): boolean {
   if (!error) return false;
   return error.code === 'over_email_send_rate_limit' || error.status === 429;
+}
+
+/**
+ * La demande n'a pas abouti côté transport — le seul échec qu'un écran d'envoi de lien peut
+ * nommer sans rien divulguer (A6-12).
+ *
+ * **C'est une liste blanche, et le fourre-tout serait une faille.** Les deux écrans qui
+ * envoient un lien répondent exprès la même chose que l'adresse ait un compte ou non : une
+ * adresse inconnue rend un `422 otp_disabled` (`shouldCreateUser: false` a fait son travail) et
+ * mène au **même** écran d'attente qu'un envoi accepté. Tout prédicat qui attraperait large
+ * finirait par afficher « réessaie » sur ce 422, et la page deviendrait un moyen de savoir qui
+ * utilise Ramille — la non-divulgation est un garde-fou non négociable du produit.
+ *
+ * D'où trois signatures reconnues, et rien d'autre :
+ *   - `AuthRetryableFetchError`, le nom que le SDK pose lui-même sur ce qu'il déclare retryable ;
+ *   - un statut 5xx ;
+ *   - l'absence de statut HTTP, c'est-à-dire aucune réponse revenue — le SDK écrit `status: 0`
+ *     dans ce cas, et un code d'API disqualifie puisqu'il prouve que le serveur a répondu.
+ *
+ * **Le 5xx est dans la liste, et les deux premières lignes sont en fait le même cas.**
+ * `auth-js` ne réserve pas `AuthRetryableFetchError` à l'échec de `fetch` :
+ * `node_modules/@supabase/auth-js/dist/main/lib/fetch.js` porte
+ * `NETWORK_ERROR_CODES = [500, 501, 502, 503, 504, 520…530]`, et `handleError` lève ce même nom
+ * pour chacun d'eux, en jetant au passage le `code` du corps. Un 500 arrive donc ici avec
+ * `name: 'AuthRetryableFetchError'` et `status: 500` : il est une panne de transport au sens de
+ * ce prédicat, quel que soit l'ordre des tests. Le statut est quand même testé à part, pour que
+ * la règle tienne d'elle-même si un jour le SDK cesse de nommer ces réponses ainsi.
+ *
+ * **L'écart avec la non-divulgation est assumé, et c'est la contre-vérification d'A6-12 qui le
+ * tranche** (« panne de transport = erreur retryable du SDK ou `status >= 500` ») : un 500 a
+ * beaucoup de causes qui ne disent rien de l'adresse — Auth indisponible, passerelle, Cloudflare
+ * — alors que le coût de l'autre choix est certain, puisqu'il tombe sur le seul chemin du
+ * produit vers un compte existant : on lit « regarde tes emails » et on attend un message qui
+ * ne partira jamais. Ce qui reste fermé, c'est la seule distinction qui porte vraiment
+ * l'information : le 422 `otp_disabled` d'une adresse inconnue, qui mène à l'écran d'attente
+ * comme un envoi accepté.
+ *
+ * Une version de ce commentaire a affirmé l'inverse de ce que le code fait (« le 5xx est
+ * volontairement hors de la liste »), et le test censé l'épingler fabriquait un 500 **sans
+ * `name`**, forme que le SDK ne produit jamais : il ne vérifiait rien. Le cas de test porte
+ * maintenant la vraie forme.
+ */
+export function estPanneDeTransport(error: ErreurAuth): boolean {
+  if (!error) return false;
+  if (error.name === 'AuthRetryableFetchError') return true;
+  // Testé avant le code, comme le nom l'est : sur un 5xx, `auth-js` jette le code du corps,
+  // donc un statut serveur qui en porterait un quand même reste une panne de transport.
+  if (error.status !== undefined && error.status >= 500) return true;
+  if (error.code) return false;
+  return error.status === undefined || error.status === 0;
 }
 
 /**

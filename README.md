@@ -25,9 +25,21 @@ npm run lint       # eslint (config Expo)
 npm test           # tests unitaires (Jest)
 ```
 
-Tests SQL (`compute_assessment_results`, `generate_plan_cycle_for_user`, bornes de
-période) : `npx supabase@latest db start` puis `npx supabase@latest test db` (nécessite
-Docker). Voir `CLAUDE.md` pour le détail des deux suites de tests.
+Tests SQL (pgTAP) : `npx supabase@latest db start` puis `npx supabase@latest test db`
+(nécessite Docker).
+
+Deux suites, et la règle plutôt qu'une liste qui se périme au fichier suivant :
+
+- **Jest** — toute dérivation pure affichée à la personne ou décidant d'une navigation est
+  testée, dans un `*.test.ts` colocalisé. L'inventaire se lit en listant `src/**/*.test.ts`.
+- **pgTAP** — un fichier numéroté par sujet dans `supabase/tests/database/` : fonctions de
+  calcul, policies RLS, privilèges de table, crons et référentiels. L'inventaire se lit dans
+  le répertoire.
+
+Plusieurs de ces tests n'épinglent pas un comportement mais une **décision**, pour qu'elle ne
+soit pas « corrigée » par réflexe (ordre ACV des motorisations, source des facteurs, invariant
+SDES de la moyenne française, table de vérité du canal de rappel). Voir `CLAUDE.md` pour le
+détail des deux suites et des pièges qui vont avec.
 
 ## Base de données
 

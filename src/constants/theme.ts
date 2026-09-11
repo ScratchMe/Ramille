@@ -106,13 +106,31 @@ export const Spacing = {
  * sans les surcharger**. Le rôle d'en-tête accessible était donc porté par le `type`, et la
  * taille par l'écran : ces jetons referment cette dissociation.
  *
- * Les tailles uniques restent en dur là où elles vivent (34 de l'accroche d'onboarding, 48 du
- * total de la restitution) : les nommer serait du bruit, pas du vocabulaire.
+ * Les tailles uniques restent en dur là où elles vivent (34 de l'accroche d'onboarding) : les
+ * nommer serait du bruit, pas du vocabulaire.
+ *
+ * **Cette phrase exemptait aussi « 48 du total de la restitution », et ce chiffre n'a jamais
+ * existé** (A3-22, relevé le 11/09/2026). Le code disait 26 — exactement `screen`, le jeton des
+ * titres d'écran, recopié à la main sur le chiffre le plus important du produit. L'exemption
+ * avait été écrite de mémoire, et `v1-11` l.408 annonçait 44 pour la même ligne : deux valeurs
+ * fausses et différentes pour un même endroit. Le total est passé sur `salient` ; il n'y a plus
+ * de taille hors échelle sur la restitution. Ne pas rouvrir d'exemption sans relever la valeur
+ * dans le code.
+ *
+ * **Ailleurs, la migration du lot 4 n'est pas finie** : quatre recopies de jeton subsistent au
+ * 11/09/2026 — `salient` dans `connexion/index.tsx` et `onboarding/etape-contexte.tsx`, `card`
+ * dans `bande-haute.tsx` et `bilan/numeric-field.tsx`. La commande de contrôle du lot 4 rend
+ * donc sept lignes, pas zéro : le relevé complet, avec les trois tailles propres à un écran qui
+ * restent à arbitrer, est dans `v1-11` §« Lot 4 ».
  */
 export const TypeScale = {
   /** Titre d'écran. */
   screen: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
-  /** Chiffre saillant d'une carte : cap de la saison, écart entre deux bilans. */
+  /**
+   * Chiffre saillant d'une carte : total de la restitution, cap de la saison, écart entre deux
+   * bilans. Il reste **sous** la décision dominante (32) : ce que le produit met en tête, c'est
+   * le poste sur lequel agir, pas le total.
+   */
   salient: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   /** Titre de carte : intitulé d'une action, d'un check-in. */
   card: { fontSize: 17, lineHeight: 24 },

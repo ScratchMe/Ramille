@@ -108,10 +108,24 @@ function mascot() {
 // Garde de robustesse, pas de sécurité : `poste` reste du texte libre (cf. `api/partage.ts`).
 const TOTAL_TONNES_MAX = 200;
 
+// **La règle des kilos sous la tonne, recopiée depuis `src/lib/format.ts`.** `api/` ne peut pas
+// importer `src/` (tsconfig dédié, runtime Web Fetch API), exactement comme pour `APP_NAME` — donc
+// la règle se duplique, et il faut la tenir des deux côtés. Sans cette bascule, un bilan de 40 kg
+// partait avec un texte disant « 40 kg CO₂e » et une carte titrée « 0,0 t CO₂e » : les deux
+// chiffres du même partage se contredisaient, sur la seule surface publique du produit. C'est le
+// constat A3-1, réapparu par la porte de l'aperçu.
+//
+// Le paramètre arrive en **tonnes** (cf. `urlDePartage`), la règle raisonne en kilos : l'arrondi
+// vient avant la comparaison, donc 0,9996 t est une tonne et non « 1000 kg ».
+//
+// Rend le libellé **entier**, unité comprise, et non plus le seul nombre : l'unité dépend de la
+// valeur, donc la concaténer à l'appel rendrait « 40 kg CO₂e t CO₂e ».
 function formatTonnes(raw: string | null): string {
   const n = raw ? Number.parseFloat(raw) : NaN;
   if (!Number.isFinite(n) || n < 0 || n > TOTAL_TONNES_MAX) return '—';
-  return n.toFixed(1).replace('.', ',');
+  const kilos = Math.round(n * 1000);
+  if (kilos < 1000) return `${kilos} kg CO₂e`;
+  return `${n.toFixed(1).replace('.', ',')} t CO₂e`;
 }
 
 function formatPercent(raw: string | null): number | null {
@@ -201,7 +215,7 @@ async function carte(request: Request): Promise<Uint8Array> {
     h(
       'div',
       { style: { display: 'flex', fontSize: 104, fontWeight: 700, color: INK, marginTop: 12 } },
-      `${total} t CO₂e / an`
+      `${total} / an`
     ),
     poste
       ? h(

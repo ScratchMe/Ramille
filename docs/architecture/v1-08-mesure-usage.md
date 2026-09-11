@@ -47,6 +47,22 @@ c'est-à-dire comme un fait sur les utilisateurs.
 
 ## 3. Ce qui est enregistré
 
+> ⚠️ **Note du 11/09/2026 (constat A11-15) : cette liste a grandi et ne fait plus foi.** La source
+> de vérité est `src/types/analytics.ts` (`USAGE_EVENT_NAMES`), miroir de
+> `public.usage_event_types` — c'est déjà la règle de la double inscription posée juste en
+> dessous, et c'est le seul couple qu'on ne peut pas laisser diverger sans que le typecheck ou la
+> clé étrangère le dise. Les onze ci-dessous sont ceux du 05/09/2026 ; les increments suivants en
+> ont ajouté (`v1-10` pour le compte et l'écran « retrouver », `v1-12` pour les rappels, puis les
+> lots de `v1-13` pour les erreurs et pour `connexion_demande` — l'intention, à distinguer de
+> `connexion_success`, le rattachement constaté).
+>
+> Une affirmation de cette section est par ailleurs périmée : **`profiles.onboarding_completed_at`
+> n'existe plus** — la colonne a été supprimée le 05/09/2026 par
+> `20260905180000_supprimer_colonnes_mortes_profiles.sql`, ce que le §5.3 de ce document
+> enregistre correctement en encadré. La conclusion qu'en tire le paragraphe sur
+> `onboarding_complete` reste juste, et devient même plus forte : la fin de l'onboarding ne se lit
+> que dans cet événement.
+
 Onze événements, référencés dans `public.usage_event_types` (clé étrangère depuis
 `usage_events.name`) et miroir dans `src/types/analytics.ts` :
 
