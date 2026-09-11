@@ -1956,7 +1956,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 
 ## 11. Vérifications sur appareil en attente
 
-Cinq « Fait quand » de ce document ne se prouvent pas au clavier, et un sixième point est un
+Sept « Fait quand » de ce document ne se prouvent pas au clavier, et un huitième point est un
 reste assumé. Ils sont consignés ici plutôt que cochés en §10 : une ligne cochée dit « livré », et
 le code l'est — ce qui manque est la preuve en conditions réelles. Même régime que `v1-11` §8 et
 `v1-12` §8, dont les points restants ne sont pas repris ici.
@@ -1970,6 +1970,10 @@ le code l'est — ce qui manque est la preuve en conditions réelles. Même rég
 
 | 11.5 | C1.4 (réseau coupé) | **Parcourir l'app en mode avion**, écran par écran : le plan, le suivi, « Toi », la réponse à un point, le choix de canal, l'envoi d'un lien, « Mes données ». Aucun ne doit affirmer un fait sur les données de la personne — ni « ton bilan n'est pas encore fait », ni « ton suivi commence au premier bilan », ni « tu n'as pas de compte ». C'est le « Fait quand » du chantier, et il ne se prouve qu'en coupant vraiment le réseau : un test ne peut pas distinguer une lecture vide d'une lecture qui n'a pas eu lieu, c'est précisément le défaut corrigé. |
 | 11.6 | C1.7 (le suivi au retour) | **Répondre au point depuis Plan, puis toucher l'onglet Suivi** : la réponse doit y être. Puis refaire un bilan et toucher Suivi : la nouvelle barre doit y être. Le hook écoute deux retours — le focus de l'écran et le retour de l'app au premier plan — et seul le second se vérifie en mettant vraiment l'app en arrière-plan, ce qu'aucun test ne fait. Même famille que la leçon du 09/09/2026 sur le plan. |
+| 11.7 | C2.9 (la sortie des rappels) | **Recevoir un vrai rappel par email, puis cliquer son lien de désinscription**, depuis une messagerie et dans un navigateur où l'app n'est pas installée. Trois choses à regarder, et **aucune n'est couverte par une suite** : que le bouton « Se désabonner » de la messagerie apparaisse au-dessus du message (c'est l'en-tête `List-Unsubscribe`, que la branche email de `send_pending_reminders` n'évalue qu'une fois les secrets Vault en place — donc jamais en CI) ; que `/rappels/stop` s'ouvre bien dans le **navigateur** et pas dans l'app (la revendication `assetlinks.json` ne couvre que `/plan`, mais c'est le genre de périmètre qui se vérifie en le faisant) ; et que le second clic sur le même lien dise « ce lien n'est plus valable » au lieu d'une panne. Le chemin passe par `generate_commute_checkins()` puis `send_pending_reminders()` — le cron entier — et non par un point inséré à la main, sinon l'étalement du `send_after` n'est pas exercé. |
+| 11.8 | C2.11 (le lien de connexion) | **Ouvrir un lien de connexion `ramille://` depuis une messagerie sur un téléphone neuf**, et vérifier qu'il aboutit sur le plan, barre d'onglets comprise. Ce chemin n'a jamais été exercé sur appareil (`v1-11` §8) alors que c'est le seul accès à un compte existant, et C2.11 en dépend : l'écran de reconnexion qu'il ajoute n'a de sens que si ce lien arrive. Ne pas le confondre avec le lien du **rappel**, vérifié le 09/09/2026, qui est en `https://` et passe par `assetlinks.json`. |
 
 Les points 11.1 et 11.4 vont ensemble : le passage TalkBack sera plus utile une fois les six
-appels repris, sinon il relèvera six fois le même défaut déjà connu.
+appels repris, sinon il relèvera six fois le même défaut déjà connu. Les points 11.7 et 11.8 vont
+ensemble aussi, pour une autre raison : les deux demandent un vrai message reçu dans une vraie
+messagerie sur un appareil, donc autant les faire dans la même séance.
