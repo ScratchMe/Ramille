@@ -23,10 +23,12 @@
 --      deux gardes joue.
 --   D. Référentiels publics : transport_modes/emission_factors/action_templates restent
 --      lisibles même sans authentification (anon), cf. 20260823095200_public_reference_data.sql.
+--   E. **La forme de l'appel à `auth.uid()`**, balayée sur le schéma entier — seule garde du
+--      fichier qui ne nomme aucune table, et c'est tout son intérêt (cf. sa section).
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(30);
+select plan(31);
 
 -- ── Fixtures : deux utilisateurs, un seul (A) possède des données ──────────────────────
 
@@ -200,5 +202,32 @@ select is((select count(*) > 0 from public.emission_factors), true, 'emission_fa
 select is((select count(*) > 0 from public.action_templates), true, 'action_templates: lisible par anon (référentiel non sensible)');
 
 reset role;
+
+-- ── Section E : la forme de l'appel à `auth.uid()`, sur tout le schéma ─────────────────
+-- **Cette garde ne nomme aucune table, et c'est exprès.** Une policy écrite `user_id = auth.uid()`
+-- au lieu de `user_id = (select auth.uid())` est correcte et se comporte exactement pareil : la
+-- différence est que l'appel, volatile, est réévalué **pour chaque ligne examinée** au lieu d'être
+-- calculé une fois en initplan. Rien ne la signale — ni le typecheck, ni une assertion de
+-- comportement, ni la revue, puisque les deux formes se lisent de la même façon. Seul le lint
+-- `auth_rls_initplan` de Supabase la voit, et personne ne le consulte à chaque PR.
+--
+-- C'est arrivé le 11/09/2026 : la policy de `plan_action_commitments_archive` (C2.2) était la seule
+-- du schéma à porter la forme nue, sur dix-huit policies qui portent l'autre. Une exception dans une
+-- table d'objets identiques est précisément ce qui se recopie ensuite — d'où un balayage plutôt
+-- qu'une assertion sur cette table-là.
+--
+-- La normalisation retire les sous-selects bien formés, puis cherche ce qui reste : `pg_policies`
+-- rend la forme cachée comme `( SELECT auth.uid() AS uid)`, donc tout `auth.uid()` survivant est un
+-- appel nu. Vaut pour `qual` (USING) comme pour `with_check` (WITH CHECK).
+select is_empty(
+  $$ select schemaname || '.' || tablename || ' / ' || policyname
+     from pg_policies
+     where schemaname = 'public'
+       and position('auth.uid()' in
+             regexp_replace(coalesce(qual, '') || ' ' || coalesce(with_check, ''),
+                            '\( SELECT auth\.uid\(\) AS uid\)', '', 'g')) > 0 $$,
+  'Aucune policy n''appelle auth.uid() hors d''un sous-select — sinon l''appel est réévalué à chaque ligne'
+);
+
 select * from finish();
 rollback;
