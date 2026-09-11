@@ -20,6 +20,7 @@ import { POSTE_LABEL } from '@/types/resultat';
 import {
   daysSince,
   formatDate,
+  libellePeriodeAffiche,
   REBILAN_SUGGESTION_DAYS,
   variationNote,
   type AssessmentSnapshot,
@@ -391,7 +392,8 @@ export default function Suivi() {
                 {checkins.slice(0, 8).map((checkin) => (
                   <View key={checkin.id} style={styles.checkinRow}>
                     <ThemedText type="small" themeColor="textSecondary" style={styles.checkinPeriod}>
-                      {LOOP_LABEL[checkin.loopType]} · {checkin.periodLabel}
+                      {LOOP_LABEL[checkin.loopType]} ·{' '}
+                      {libellePeriodeAffiche(checkin.periodLabel, checkin.periodStart)}
                     </ThemedText>
                     <ThemedText type="small" weight={600} themeColor={checkin.response ? 'accentText' : 'textTertiary'}>
                       {checkin.response ? 'Oui' : 'Non'}

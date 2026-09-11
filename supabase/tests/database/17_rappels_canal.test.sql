@@ -98,14 +98,16 @@ select results_eq(
   'Trois messages pour six personnes : un push, deux emails, rien pour les trois autres'
 );
 
--- **L'attendu a changé avec C2.6, et c'est le changement qui était visé** : le message collait
+-- **L'attendu a changé deux fois, et chaque fois c'était le changement visé.** C2.6 : le message collait
 -- après « pour » le libellé snapshoté, mode compris (« … pour Trajet domicile-travail (Voiture
 -- thermique) ? »). Il porte désormais la forme insérable de `poste_inserable(c.poste,
 -- c.loop_type)`. Cette assertion est donc aussi le garde-fou de bout en bout de la colonne
--- `poste` : elle tombe si quelqu'un rebranche `trip_label`.
+-- `poste` : elle tombe si quelqu'un rebranche `trip_label`. C2.3 : la question passe au **passé**
+-- et la période ouvre la phrase — au moment du rappel, la semaine interrogée est finie, alors
+-- qu'auparavant elle avait quelques heures et aucune réponse honnête sauf « Non ».
 select is(
   (select push_body from public.notification_outbox where channel = 'push' and user_id::text like 'c7111111%'),
-  'As-tu changé de mode de transport au moins une fois cette semaine pour ton trajet domicile-travail ?',
+  'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?',
   'La notification porte la question seule, avec la forme insérable du poste — jamais le libellé snapshoté'
 );
 

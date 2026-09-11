@@ -242,6 +242,19 @@ le contenu peut changer côté serveur doit l'utiliser**, et il écoute deux ret
 en faut deux — le focus de l'écran, et le retour de l'app au premier plan que la navigation ne
 voit pas. Un `useEffect` de montage, là, rend un écran plausible et périmé.
 
+**Le point interroge la période ÉCOULÉE, pas celle qui commence** (C2.3, 11/09/2026) :
+`generate_commute_checkins()` pose `period_start` au lundi **précédent**, `generate_extras_checkins()`
+au mois précédent, et la question s'ouvre sur la période — « La semaine dernière, as-tu changé de
+mode de transport pour ton trajet domicile-travail ? », « En septembre, … » (le mois écoulé est
+**nommé**, il ne se dit pas « le mois dernier »). **Le moment d'envoi, lui, n'a pas bougé** : cron
+le lundi 6 h et le 1er à 6 h, étalement du `send_after` inchangé (v1-12 §2.8) — c'est la période
+interrogée qui recule, et confondre les deux ferait « corriger » le générateur dans le mauvais
+sens. Avant, le push partait quand la semaine avait quelques heures : la seule réponse honnête
+était « Non », suivie de la consolation d'échec.
+Le nom du mois vit dans `public.mois_francais(date)`, appelée par le libellé de période **et** par
+la question — deux copies d'une liste de douze chaînes divergent par une faute de frappe que
+personne ne relit.
+
 **Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
 décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
 `v1-10` §2.B). Le push, lui, part à `now()`. Pour provoquer un rappel de test, passer par

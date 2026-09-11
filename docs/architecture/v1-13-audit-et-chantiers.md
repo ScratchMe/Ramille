@@ -1911,7 +1911,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C1.13 | [#118](https://github.com/ScratchMe/TraceVerte/issues/118) | [#158](https://github.com/ScratchMe/TraceVerte/pull/158) | 11/09/2026 | livré |
 | C2.1 | [#119](https://github.com/ScratchMe/TraceVerte/issues/119) | | | |
 | C2.2 | [#120](https://github.com/ScratchMe/TraceVerte/issues/120) | | | |
-| C2.3 | [#121](https://github.com/ScratchMe/TraceVerte/issues/121) | | | |
+| C2.3 | [#121](https://github.com/ScratchMe/TraceVerte/issues/121) | [#161](https://github.com/ScratchMe/TraceVerte/pull/161) | 11/09/2026 | livré ; transition documentée (une cohorte ne reçoit pas de message le lundi du basculement, et sa question de la semaine précédente devient correcte au lieu d'être prématurée) |
 | C2.4 | [#122](https://github.com/ScratchMe/TraceVerte/issues/122) | | | |
 | C2.5 | [#123](https://github.com/ScratchMe/TraceVerte/issues/123) | | | |
 | C2.6 | [#124](https://github.com/ScratchMe/TraceVerte/issues/124) | [#160](https://github.com/ScratchMe/TraceVerte/pull/160) | 11/09/2026 | livré ; a imposé trois colonnes (`assessment_results.extras_poste`, `engagement_checkins.poste`, `plan_cycles.poste`) que le chantier n'avait pas anticipées — la forme insérable se dérive du poste, que le schéma ne gardait nulle part |

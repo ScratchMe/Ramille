@@ -5,6 +5,7 @@ import {
   daysSince,
   formatDate,
   keepLatestPerDay,
+  libellePeriodeAffiche,
   variationNote,
   type AssessmentSnapshot,
 } from '@/types/suivi';
@@ -98,5 +99,48 @@ describe('formatDate', () => {
 
   it('garde le jour sur deux chiffres', () => {
     expect(formatDate('2026-09-01T12:00:00Z')).toBe('01 septembre 2026');
+  });
+});
+
+describe('libellePeriodeAffiche', () => {
+  const maintenant = new Date(2026, 8, 14);
+
+  it('laisse le libellé de l’année en cours intact', () => {
+    expect(libellePeriodeAffiche('Semaine du 31/08', '2026-08-31', maintenant)).toBe(
+      'Semaine du 31/08'
+    );
+  });
+
+  // Sans l'année, deux points à douze mois d'écart portent le même libellé et la liste se lit
+  // comme un doublon.
+  it('ajoute l’année à un libellé hebdomadaire passé', () => {
+    expect(libellePeriodeAffiche('Semaine du 31/08', '2025-08-31', maintenant)).toBe(
+      'Semaine du 31/08 2025'
+    );
+  });
+
+  // Le libellé mensuel porte déjà son année : la redoubler donnerait « septembre 2025 2025 ».
+  it('ne redouble pas une année déjà présente', () => {
+    expect(libellePeriodeAffiche('septembre 2025', '2025-09-01', maintenant)).toBe(
+      'septembre 2025'
+    );
+    expect(libellePeriodeAffiche('septembre 2026', '2026-09-01', maintenant)).toBe(
+      'septembre 2026'
+    );
+  });
+
+  // Le libellé snapshoté n'est jamais réécrit : l'année vient de `periodStart`, pas d'une
+  // relecture du texte. Un libellé ancien, écrit sous une autre forme, ressort tel quel avec son
+  // année ajoutée.
+  it('dérive l’année de periodStart et non du texte', () => {
+    expect(libellePeriodeAffiche('Semaine du 05/01', '2024-01-01', maintenant)).toBe(
+      'Semaine du 05/01 2024'
+    );
+  });
+
+  it('accepte un horodatage complet', () => {
+    expect(libellePeriodeAffiche('Semaine du 31/08', '2025-08-31T06:00:00.000Z', maintenant)).toBe(
+      'Semaine du 31/08 2025'
+    );
   });
 });

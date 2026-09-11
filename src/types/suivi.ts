@@ -80,3 +80,30 @@ export function daysSince(iso: string): number {
 // court pour que la comparaison reste parlante. Une proposition, jamais un rappel insistant
 // (spec §7) — l'écran de suivi l'affiche, rien ne la relance.
 export const REBILAN_SUGGESTION_DAYS = 182;
+
+/**
+ * Le libellé de période d'un point, avec l'année quand elle n'est plus celle en cours.
+ *
+ * « Semaine du 31/08 » ne dit pas l'année. Sur un suivi de deux ans, deux points portent le même
+ * libellé à douze mois d'écart, et la liste se lit comme un doublon. Le libellé mensuel, lui,
+ * porte déjà son année (« septembre 2026 ») : il ressort inchangé.
+ *
+ * **Le libellé snapshoté n'est pas réécrit** (C2.3, point 2) : il reste ce qu'il était au moment
+ * de la génération, et l'année est ajoutée à l'affichage, à partir de `periodStart`. Réécrire un
+ * `period_label` déjà posé effacerait ce que la personne a vu quand elle a répondu — c'est
+ * précisément ce que le snapshot existe pour empêcher.
+ *
+ * `maintenant` est un paramètre plutôt qu'un `new Date()` interne : l'année en cours est une
+ * entrée du calcul, et une fonction qui lit l'horloge ne se teste qu'au 31 décembre.
+ */
+export function libellePeriodeAffiche(
+  periodLabel: string,
+  periodStart: string,
+  maintenant: Date = new Date()
+): string {
+  // L'année est déjà là (libellé mensuel) : ne rien ajouter.
+  const annee = periodStart.slice(0, 4);
+  if (periodLabel.includes(annee)) return periodLabel;
+
+  return annee === String(maintenant.getFullYear()) ? periodLabel : `${periodLabel} ${annee}`;
+}
