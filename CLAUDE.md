@@ -128,8 +128,9 @@ des enfants, un **fichier plat** `suivi.html` sinon. Sans `cleanUrls`, Vercel se
 premières et renvoie 404 sur les secondes — `/suivi`, `/confidentialite`, `/feedback` et
 surtout **`/bilan/resultat`**, la restitution, étaient inaccessibles en production sans que
 rien ne le signale (l'export local contenait bien les fichiers, et les routes en répertoire
-marchaient). Toute nouvelle route sans enfants tombe dans ce cas : si `cleanUrls` disparaît un
-jour de ce fichier, la moitié de l'app repasse en 404 silencieusement.
+marchaient). Toute nouvelle route sans enfants tombe dans ce cas — `/rappels/stop` (C2.9) sort
+ainsi en `rappels/stop.html`, alors que c'est le lien de désinscription imprimé dans chaque email :
+si `cleanUrls` disparaît un jour de ce fichier, la moitié de l'app repasse en 404 silencieusement.
 
 **`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
 la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de route Expo
@@ -157,7 +158,8 @@ sa place dans cette pile, qui garde la barre visible.
 
 Tout le reste vit hors du groupe et s'affiche en plein écran, sans barre : `/onboarding` et
 `/bilan` sont des **flux**, `/compte/*` et `/connexion/*` des détours, `/confidentialite`,
-`/conditions`, `/compte/suppression` et `/feedback` des surfaces publiques ou de service. Les
+`/conditions`, `/compte/suppression`, `/rappels/stop` et `/feedback` des surfaces publiques ou de
+service. Les
 deux règles qui vont avec ce découpage (ajouter une route dans `(tabs)/` lui donne un onglet ;
 jamais de route dynamique `[id]`) sont en § Conventions front notables, pas ici.
 
@@ -320,11 +322,14 @@ plutôt que d'insérer un point à la main.
 contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une
 issue GitHub par chantier — #99 à #151 et #153 — et **le plan de livraison en huit vagues en §2.3**, dont
 l'issue de suivi #154 est la vue cochable ; inventaire complet en `docs/audit/2026-09-09-inventaire.md`).
-**Les vagues 1, 2 et 3 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, puis le
-lot 1 (bugs silencieux et textes faux, puis écrans d'onglets) le 11/09/2026. **Le jalon « publiable
-sur Play » est atteint côté code** ; ce qui reste avant de publier n'est pas du code mais les
-vérifications de la §11 et la checklist de `docs/exploitation/README.md`. La vague 4 (lot 2, socle
-et serveur de la boucle d'engagement) est la suite.
+**Les vagues 1 à 4 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, puis le
+lot 1 (bugs silencieux et textes faux, puis écrans d'onglets) le 11/09/2026, puis la vague 4 (lot 2,
+socle et serveur de la boucle d'engagement : saison côté client, forme insérable du poste, période
+écoulée, qui reçoit quelle boucle, engagement qui survit, lien du rappel ouvert ailleurs, rappels qui
+s'espacent) le même jour. **Le jalon « publiable sur Play » est atteint côté code** ; ce qui reste
+avant de publier n'est pas du code mais les vérifications de la §11 et la checklist de
+`docs/exploitation/README.md`. La vague 5 (lot 2, le point : C2.1 → C2.4 → C2.10 → C2.12, **même
+fichier, dans cet ordre**) est la suite.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -845,6 +850,64 @@ qui committe entre les passes, à laquelle il ne faut ajouter ni `security defin
 est marquée `sent` **avant** l'appel HTTP, pour qu'un message remis au fournisseur ne reparte
 jamais. Voir `v1-07` §3.1 pour la mise en
 service.
+
+**Les rappels s'espacent d'eux-mêmes, et ce qui s'espace est le message — jamais le point**
+(C2.9, `20260912170000_rappels_qui_s_espacent.sql`). `public.regime_de_rappel(user_id, loop_type)`
+rend `normal` / `espace` / `silence` en comptant les points clos `expired` **depuis le dernier signe
+de vie** — le plus récent d'une réponse et d'un `app_open` —, et `enqueue_checkin_reminders()` s'en
+sert dans sa clause `where`. Quatre points sans réponse font passer à **au plus un message par mois
+calendaire**, tous canaux et toutes boucles confondus ; huit font taire. Cinq choses à ne pas
+« corriger » :
+- **le point continue d'être généré** — l'app doit pouvoir montrer la question à qui revient après
+  six mois, et supprimer la génération effacerait l'historique de la boucle ;
+- **deux seuils et non un** : sans le second, « espace » serait un **état terminal** pour la boucle
+  mensuelle, qui est déjà à ce rythme ;
+- le plafond du régime espacé compte sur `created_at` de la boîte d'envoi et non sur `sent_at`,
+  sinon la décroissance ne s'appliquerait **pas du tout** tant que l'expéditeur n'est pas
+  configuré ;
+- `regime_de_rappel` est `security definer` pour une raison non décorative : `usage_events` n'a
+  aucune policy de lecture, donc le comptage des `app_open` ne verrait rien depuis `authenticated`
+  — même piège que le garde-fou de volume de cette table, et un compteur qui ne compte rien ne
+  déclenche jamais ;
+- et la mise en file est appelée **une fois par point** : le plafond mensuel est un `not exists`,
+  donc deux points du même compte insérés par un seul `insert` ne se verraient pas l'un l'autre.
+  Le cas n'existe pas en production (le générateur clôt la période précédente avant d'insérer, et
+  les deux boucles sont mises en file par deux appels), et un test qui le fabriquerait
+  n'éprouverait rien.
+
+**La sortie ne passe pas par l'app, parce que celle-ci a justement pu être désinstallée**
+(`desinscrire_des_rappels(uuid)`, page `/rappels/stop?jeton=…`). L'ancienne consigne de l'email
+renvoyait à « Toi » : inutilisable sans l'app, et **pire** sur un appareil neuf, où elle réglait la
+préférence de la session anonyme vide que l'ouverture venait de créer. Le jeton vit sur la ligne
+d'outbox, ne sert qu'une fois, et ne peut rien d'autre que couper les rappels du compte qui a reçu
+ce message-là. C'est **le seul RPC qui écrit et que `anon` peut appeler** — les autres fonctions
+accessibles à ce rôle n'ont jamais été révoquées du `PUBLIC` de leur création, et sont toutes pures
+(`emission_factor`, `resolve_*`, `season_bounds`, les deux `check_*`) ; ici le `grant` est explicite
+et le jeton *est* l'autorisation. Trois pièges :
+- **le jeton est écrit explicitement dans l'`insert`** de la mise en file. Laissé au `default` de la
+  colonne, il aurait tiré un second uuid, différent de celui que le corps du message venait
+  d'afficher : un lien mort au premier clic, sans qu'aucune des deux moitiés ait l'air fausse ;
+- la réponse **ne distingue jamais** un jeton inconnu d'un jeton déjà utilisé (même non-divulgation
+  que `/connexion/retrouver`), et la page vérifie la **forme uuid** avant d'appeler — sans quoi un
+  lien tronqué par une messagerie recevrait un `22P02`, c'est-à-dire l'écran de panne et une
+  invitation à réessayer un lien qui ne marchera jamais (`src/types/desinscription.ts`) ;
+- **`List-Unsubscribe-Post` n'est pas envoyé, et son absence est épinglée par un contrôle de la
+  migration.** L'annoncer engage l'URL à accepter un POST sans confirmation ; `/rappels/stop` est
+  une page de l'export statique, qui ne peut pas y répondre — l'ajouter par symétrie ferait échouer
+  le geste **en silence**, là où l'en-tête seul fait ouvrir le lien dans un navigateur (RFC 8058).
+  Corollaire : la branche email de `send_pending_reminders` n'évalue son corps que si les secrets
+  Vault existent, donc **aucune suite ne l'exerce** — ni la CI, où ils manquent, ni le distant, où
+  les rejouer ferait partir un vrai email. L'en-tête a été éprouvé en évaluant la même expression à
+  la main sur une vraie ligne d'outbox.
+
+**Les reprises de jeton d'appareil laissent une trace** (`push_tokens.reprises`,
+`derniere_reprise_le`, `proprietaire_precedent`). La reprise reste **inconditionnelle** — décision
+de `v1-10` §3.4, inchangée : sans elle, les rappels partiraient au nom d'un utilisateur fantôme au
+moment où une session anonyme devient un compte. Ce qui manquait était de pouvoir le *constater* :
+un jeton repris deux cents fois dirait un appareil partagé ou une boucle, et c'est la seule question
+que ces trois colonnes servent à trancher. Dans le `on conflict do update`, `push_tokens.user_id`
+désigne la ligne **existante** et `excluded` la ligne proposée — s'y tromper lirait la nouvelle
+valeur, donc ne compterait jamais rien.
 
 La boucle mensuelle (brique 4) est en réalité **deux boucles indépendantes**, toutes deux
 proposées à tout utilisateur concerné (l'UI recommande de se concentrer sur le poste
