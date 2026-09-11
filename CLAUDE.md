@@ -505,6 +505,22 @@ depuis `src/`, jamais par « un test en a besoin » ; et un test qui n'assure qu
 après un `revoke`, « permission denied » et « violates row-level security » portant tous deux le
 SQLSTATE 42501.
 
+**Une policy appelle `auth.uid()` dans un sous-select, et une clé étrangère neuve veut son index.**
+Les deux se sont fait prendre en contre-lisant la vague 4, et aucune ne se voit à la lecture :
+- `user_id = (select auth.uid())` et `user_id = auth.uid()` se comportent exactement pareil ; la
+  seconde forme réévalue un appel volatile **pour chaque ligne examinée** au lieu d'une fois en
+  initplan. La policy de `plan_action_commitments_archive` était la seule du schéma à la porter.
+  Le balayage de la §E de `03_rls_policies.test.sql` garde désormais le point sur **toutes** les
+  policies, sans en nommer aucune — et il a été éprouvé sur une policy fautive fabriquée exprès,
+  sinon il resterait vert quoi qu'il arrive.
+- Postgres n'indexe jamais le **côté enfant** d'une clé étrangère. Tant que personne ne supprime de
+  parent ça ne se voit pas, mais `generate_plan_cycle_for_user` **supprime et reconstruit** des
+  cycles à chaque re-bilan et à chaque saison : sans index, chacune de ces suppressions balayait
+  `plan_actions` en entier pour dénuller `carried_over_from`. Quatre index posés par
+  `20260912180000`, deux partiels (la colonne est nulle dans l'immense majorité des lignes). Ils ne
+  servent **aucune lecture** du produit, seulement les suppressions — donc le lint `unused_index`
+  les signalera un jour sans qu'il faille les retirer.
+
 **La soumission écrit `in_progress` d'abord, et c'est ce qui empêche le bilan fantôme**
 (11/09/2026, `20260911120000_soumission_bilan.sql`). L'ancienne séquence insérait `assessments` en
 `completed` avec son `submitted_at`, **puis** les réponses, **puis** appelait le calcul : ce qui
@@ -546,6 +562,18 @@ l'empreinte d'un motard — dans le sens qui fait passer le deux-roues pour vert
 pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe. Piège de relevé :
 l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
 distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
+
+**Le distant porte les corps de fonction sans les commentaires du dépôt, et la substitution
+vérifiée lit le distant.** Relevé le 11/09/2026 en comparant les 47 fonctions une à une : la logique
+est identique partout, mais plusieurs corps installés ont perdu les commentaires `--` que le fichier
+de migration porte (`apply_migration` a reçu une version allégée). Sans conséquence sur le
+comportement — et c'est un piège armé pour la suite, parce que **l'idiome de substitution vérifiée
+cherche son ancre dans `pg_get_functiondef` du distant** : une ancre qui inclurait une ligne de
+commentaire serait trouvée en CI (où la base est reconstruite depuis le dépôt, commentaires compris)
+et introuvable sur le distant, ou l'inverse. Donc : **une ancre ne contient jamais de ligne de
+commentaire**, seulement du code. Les trois ancres de la vague 4 respectent déjà la règle, et le
+moyen de vérifier qu'un corps installé correspond au dépôt est de comparer les empreintes
+**normalisées** (commentaires retirés, blancs réduits), pas les corps bruts.
 
 **Réécrire une fonction existante part de `pg_get_functiondef`, jamais du fichier qui l'a créée.**
 Relevé le 11/09/2026 en livrant C2.2 : `commit_plan_action` et `clear_plan_action_commitment` ont
@@ -884,6 +912,13 @@ calendaire**, tous canaux et toutes boucles confondus ; huit font taire. Cinq ch
   aucune policy de lecture, donc le comptage des `app_open` ne verrait rien depuis `authenticated`
   — même piège que le garde-fou de volume de cette table, et un compteur qui ne compte rien ne
   déclenche jamais ;
+- **quelqu'un qui ouvre l'app chaque semaine sans jamais répondre ne se fait jamais taire**, et
+  c'est voulu : `app_open` est un signe de vie, et le chantier visait le compte **désinstallé**, pas
+  le lecteur silencieux. Avec la période écoulée de C2.3, le point ouvert lundi porte un
+  `period_start` d'une semaine plus tôt, donc une ouverture du lundi est toujours postérieure et le
+  point ne compte pas. Corollaire rassurant : ouvrir le lien de l'email **sur un appareil où l'on
+  n'est pas connecté** émet l'`app_open` de la session anonyme de cet appareil, jamais celui du
+  compte — le compteur du compte n'est donc pas remis à zéro par quelqu'un qui n'y est pas entré ;
 - et la mise en file est appelée **une fois par point** : le plafond mensuel est un `not exists`,
   donc deux points du même compte insérés par un seul `insert` ne se verraient pas l'un l'autre.
   Le cas n'existe pas en production (le générateur clôt la période précédente avant d'insérer, et
@@ -906,6 +941,12 @@ et le jeton *est* l'autorisation. Trois pièges :
   que `/connexion/retrouver`), et la page vérifie la **forme uuid** avant d'appeler — sans quoi un
   lien tronqué par une messagerie recevrait un `22P02`, c'est-à-dire l'écran de panne et une
   invitation à réessayer un lien qui ne marchera jamais (`src/types/desinscription.ts`) ;
+- **c'est une écriture sans session et sans limite de débit, et c'est le bon compromis.** Le
+  `feedback` a son `enforce_feedback_rate_limit` parce qu'il stocke du texte libre ; ici il n'y a
+  rien à stocker, rien à lire en retour, et la réponse ne distingue aucun échec — marteler l'endpoint
+  avec des uuid au hasard ne rend qu'une recherche d'index et `false` (122 bits à deviner). Brider une
+  désinscription coûterait plus que l'abus qu'on éviterait : quelqu'un qui veut arrêter de recevoir
+  doit réussir du premier coup. Ne pas « corriger » cette asymétrie avec `feedback`.
 - **`List-Unsubscribe-Post` n'est pas envoyé, et son absence est épinglée par un contrôle de la
   migration.** L'annoncer engage l'URL à accepter un POST sans confirmation ; `/rappels/stop` est
   une page de l'export statique, qui ne peut pas y répondre — l'ajouter par symétrie ferait échouer
@@ -990,7 +1031,14 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   phrases collaient après une préposition le libellé **snapshoté**, mode compris : « as-tu changé
   de mode de transport cette semaine pour Trajet domicile-travail (Voiture thermique) ? ».
   La jumelle SQL est `public.poste_inserable(poste, loop_type)` — écrite deux fois parce qu'un
-  rappel part sans le client, **donc à toucher ensemble**, comme `reminder_channel_for`.
+  rappel part sans le client, **donc à toucher ensemble**, comme `reminder_channel_for`. Les deux
+  s'accordent sur **toute valeur que le schéma autorise** (contre-vérifié valeur par valeur le
+  11/09/2026) ; elles divergent sur une valeur qu'il interdit — un poste inconnu rend « tes trajets »
+  en SQL, et le repli de boucle côté client. Les trois colonnes portent
+  `check (poste is null or poste in ('commute','leisure','travel'))`, donc cette branche SQL est
+  **inatteignable** et aucun test ne la couvre : ne pas la prendre pour un quatrième registre, et si
+  un quatrième poste arrive un jour, c'est la branche qui ferait dire au rappel autre chose qu'à la
+  carte — exactement le défaut que C2.5 a corrigé.
   Elle a imposé trois colonnes, et la raison vaut d'être connue : le serveur **décidait** du poste
   puis n'en gardait que le libellé. `assessment_results.extras_poste` (loisirs ou voyages),
   `engagement_checkins.poste` (`loop_type` ne le nomme pas : « extras » couvre les deux) et

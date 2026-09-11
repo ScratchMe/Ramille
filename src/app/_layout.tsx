@@ -98,9 +98,16 @@ export default function RootLayout() {
   });
 
   /**
-   * Le jeton stocké a été refusé (C2.11). Posé par le démarrage ci-dessous, et **jamais** remis à
-   * faux : rien dans cette session ne peut plus rendre ce jeton valide, et `/connexion/retrouver`
-   * comme `/onboarding` sont atteints par un `replace` qui remplace cet écran.
+   * Le jeton stocké a été refusé (C2.11). Posé par le démarrage ci-dessous, et **abaissé par les
+   * deux gestes de l'écran avant qu'ils ne naviguent** — ce n'est pas optionnel, c'est ce qui rend
+   * les boutons vivants. `SessionRefusee` est une **surcouche** du `Stack`, pas un remplacement
+   * (il n'aurait sinon aucune route où aller) : un `router.replace` seul naviguerait *dessous*
+   * pendant que la surcouche resterait au-dessus, cachant la destination. Retirer les
+   * `setSessionRefusee(false)` en croyant les simplifier rendrait les deux boutons inertes — la
+   * panne même que cette surcouche existe pour éviter.
+   *
+   * Rien ne le repose à vrai ensuite : `ensureSession` ne tourne qu'une fois par chargement du
+   * bundle, et rien dans cette session ne peut rendre ce jeton valide.
    */
   const [sessionRefusee, setSessionRefusee] = useState(false);
 
