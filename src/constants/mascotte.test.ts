@@ -1,9 +1,41 @@
 import { MASCOT_NAME, RAMILLE } from './mascotte';
 import { APP_NAME } from './produit';
 
-const lignes = Object.entries(RAMILLE);
+/**
+ * **Toutes les répliques, aplaties — et c'est le garde du garde.**
+ *
+ * `Object.entries(RAMILLE)` a suffi tant que chaque clé portait une chaîne. Depuis C2.5,
+ * `maintienNon` groupe ses variantes par mode, et C2.1 ajoutera des tableaux de variantes : une
+ * valeur non-textuelle traverse `expect.stringMatching` **sans jamais matcher**, donc les trois
+ * règles de voix — pas de nombre, pas d'injonction, jamais de vouvoiement — passeraient en
+ * silence sur une réplique groupée. Seul « parle court » tomberait, et par accident
+ * (`undefined.length`). Le piège est le même que partout ailleurs dans ce dépôt : un test vert
+ * qui n'éprouve rien.
+ *
+ * La fonction lève plutôt que d'ignorer une valeur qu'elle ne sait pas lire : une réplique
+ * silencieusement sautée est ce qu'on cherche à empêcher.
+ */
+function aplatir(valeur: unknown, chemin: string): [string, string][] {
+  if (typeof valeur === 'string') return [[chemin, valeur]];
+  if (valeur !== null && typeof valeur === 'object') {
+    return Object.entries(valeur).flatMap(([cle, sous]) =>
+      aplatir(sous, chemin === '' ? cle : `${chemin}.${cle}`)
+    );
+  }
+  throw new Error(`RAMILLE.${chemin} n’est ni une réplique ni un groupe de répliques.`);
+}
+
+const lignes = aplatir(RAMILLE, '');
 
 describe('Ramille', () => {
+  // Sans cette assertion, un aplatissement qui rendrait un tableau vide rendrait tous les
+  // gardes ci-dessous vrais par vacuité. Un groupe rend au moins une ligne, donc le total ne
+  // peut jamais passer sous le nombre de clés de premier niveau — invariant, pas seuil choisi.
+  it('éprouve bien chaque réplique, groupes compris', () => {
+    expect(lignes.length).toBeGreaterThanOrEqual(Object.keys(RAMILLE).length);
+    expect(lignes.map(([cle]) => cle)).toContain('maintienNon.velo');
+  });
+
   it('porte le nom du produit — décision du 05/09/2026, à changer ici et nulle part ailleurs', () => {
     expect(MASCOT_NAME).toBe(APP_NAME);
   });

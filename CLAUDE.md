@@ -253,7 +253,62 @@ sens. Avant, le push partait quand la semaine avait quelques heures : la seule r
 était « Non », suivie de la consolation d'échec.
 Le nom du mois vit dans `public.mois_francais(date)`, appelée par le libellé de période **et** par
 la question — deux copies d'une liste de douze chaînes divergent par une faute de frappe que
-personne ne relit.
+personne ne relit. Sa jumelle client est `MOIS_FRANCAIS` (`src/types/checkin.ts`), épinglée par un
+test : `toLocaleDateString('fr-FR', { month: 'long' })` aurait évité la copie, mais Hermes peut
+être construit sans ICU complet et rend alors un mois en anglais — invisible en CI, visible sur
+l'appareil, dans la seule phrase qui doit correspondre mot pour mot à la notification qu'on vient
+d'ouvrir. Elle lit les **caractères** de `period_start` et jamais un `Date` : `new Date('2026-09-01')`
+est minuit UTC, donc août à l'ouest de Greenwich.
+
+**La question du point a une seule source côté client, `src/types/checkin.ts`** (C2.5, 11/09/2026),
+et c'est la moitié d'une paire avec `enqueue_checkin_reminders` — le rappel part sans le client, la
+carte repose la question avec lui. `checkin-card.tsx` l'écrivait lui-même, au présent et avec le
+libellé snapshoté : la notification disait « La semaine dernière, as-tu changé de mode de transport
+pour ton trajet domicile-travail ? » et l'écran « As-tu changé de mode de transport au moins une
+fois cette semaine pour Trajet domicile-travail (Voiture thermique) ? ». Sur un produit dont la
+boucle consiste à appuyer sur la notification pour répondre, ce n'est pas une variante de
+formulation : c'est la même question qui ne se reconnaît pas d'un écran à l'autre. C2.1 étendra ces
+fonctions (l'action engagée, ses jours, la troisième réponse) plutôt que d'ouvrir un troisième
+endroit.
+
+**Le cycliste, le piéton et les loisirs rares ne reçoivent pas la même boucle** (C2.5, arbitrage D5,
+`20260912140000_qui_recoit_quelle_boucle.sql`). Quatre choses à connaître avant d'y toucher :
+
+- **C'est la catégorie du mode qui décide de la question de maintien, jamais le CO₂.** Le chantier
+  proposait `commute_main_leg_co2_kg_year = 0` ; ce critère est faux depuis les facteurs ACV —
+  `marche` vaut 0 mais `velo` 0,00017 et `trottinette` 0,0249 — donc il n'attraperait que les
+  piétons et laisserait les cyclistes recevoir chaque lundi une question dont la seule réponse
+  honnête est « Non ». `engagement_checkins.question_kind` (`changement` | `maintien`) et `.mode`
+  sont **deux** colonnes parce que ce sont deux faits : le genre, que C2.1 fera grossir, et le mode
+  qui remplit le texte. La catégorie `velo_marche` compte **trois** modes (`velo`, `marche`,
+  `trottinette`) : en ajouter un quatrième impose un complément dans
+  `public.complement_de_maintien` **et** dans sa jumelle `src/types/checkin.ts`, sinon il reçoit
+  « autrement » en silence des deux côtés. Un test pgTAP épingle la liste.
+- **Le « Non » d'un maintien ne reçoit jamais `checkinNon`** : cette réplique console d'un échec, et
+  répondre « non » à « ton trajet s'est-il fait à vélo ? » n'en est pas un. D'où `maintienNon`, en
+  visage `calm`. Le choix vit dans `repliqueDuPoint`, avec son test — jamais en ternaire dans la
+  carte.
+- **Le mode par défaut des loisirs « rarement » est un résiduel de calcul, et il ne nomme plus
+  rien.** Le calcul reste (D5, spec §5 : 15 km, 0,25 fois par semaine) mais ses conséquences
+  partent : `extras_poste_label` **et** `dominant_poste_label` disent « Loisirs du week-end
+  (occasionnels) », `dominant_poste_mode` est nul (sans quoi la restitution écrivait « Tes loisirs
+  du week-end **en voiture** »), et `estimate_action_savings` refuse les gabarits `leisure` — une
+  action « faire une sortie sur trois à vélo » sur des sorties jamais déclarées. Les deux libellés
+  partagent le mot parce que leur condition est **le même test** (`v_leisure_co2 >= v_travel_co2 ×
+  0,95`), donc ils ne peuvent pas se contredire. Conséquence à connaître : **tout cycliste et tout
+  profil sédentaire a désormais un plan à zéro action** — l'écran le félicite (« Tu fais déjà
+  l'essentiel sur ce poste »), ce qui est juste, mais la carte du cap s'affiche encore au-dessus,
+  relevé pour C3.8. Et si `household_vehicles = '0'`, le résiduel passe en **train** et non en bus :
+  à 0,1224 kg/km le bus ne vaut que 14 % de moins qu'une thermique en ACV, la correction aurait été
+  un non-événement (A7-13).
+- **La boucle mensuelle demande une base déclarée**, sinon elle n'est pas générée :
+  `extras_poste_label` est calculé sans condition, donc sans ce filtre un profil qui a répondu sortir
+  rarement et n'avoir pris ni vol ni long trajet recevait chaque mois une question sur des
+  déplacements qui n'existent que dans le résiduel. `generate_extras_checkins` joint donc
+  `assessment_answers` — en production un bilan `completed` les porte toujours
+  (`recompute_assessment_results` lève sans elles), ce sont les **fixtures de test** qui s'en
+  passaient. Et un bilan à zéro nomme le poste où quelque chose est déclaré : plus de
+  « Trajet domicile-travail () ».
 
 **Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
 décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
@@ -837,6 +892,10 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   rattraper. » a été retirée le 07/09/2026 sur un retour d'usage (elle se lisait comme une
   attente déçue), remplacée par des phrases qui *disent* l'attente et nomment le jour. Elle
   peut le faire sans jamais compter, le rythme étant fixe.
+  Depuis C2.5 certaines répliques sont **groupées** (`maintienNon` par mode, et C2.1 ajoutera des
+  tableaux de variantes) : le test aplatit `RAMILLE` avant de l'éprouver, et il le fait parce qu'une
+  valeur non-textuelle traverse `expect.stringMatching` **sans jamais matcher** — les trois règles de
+  voix passeraient en silence sur une réplique groupée.
   Cinq expressions, **aucune négative et il ne faut pas en ajouter** : `calm`, `happy`,
   `encouraging`, `thinking` (attente du calcul — seule asymétrie assumée, le regard est décalé
   d'une unité) et `resting` (périodes calmes de `/suivi`). Un second registre s'obtient sans

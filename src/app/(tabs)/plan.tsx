@@ -63,11 +63,12 @@ type PlanCycle = {
   plan_actions: PlanAction[];
 };
 
-type PendingCheckin = EngagementCheckin & { period_start: string };
-
 // Une seule question vivante par boucle, la plus récente. La requête est déjà triée par
 // `period_start` décroissant, donc le premier vu de chaque `loop_type` est le bon.
-function keepLatestPerLoop(checkins: PendingCheckin[]): EngagementCheckin[] {
+//
+// `period_start` n'est plus ajouté ici : il fait partie d'`EngagementCheckin` depuis C2.3, parce
+// que c'est lui qui nomme le mois dans la question de la boucle mensuelle.
+function keepLatestPerLoop(checkins: EngagementCheckin[]): EngagementCheckin[] {
   const seen = new Set<EngagementCheckin['loop_type']>();
   return checkins.filter((checkin) => {
     if (seen.has(checkin.loop_type)) return false;
@@ -330,7 +331,7 @@ export default function Plan() {
         // est justement ouverte.
         const { data: checkins, error: erreurCheckins } = await supabase
           .from('engagement_checkins')
-          .select('id, loop_type, period_label, trip_label, poste, period_start')
+          .select('id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode')
           .eq('status', 'pending')
           .order('period_start', { ascending: false });
 
@@ -372,7 +373,7 @@ export default function Plan() {
           cycle: cycle as PlanCycle,
           assessmentId: assessment.id,
           assessmentDate: assessment.submitted_at,
-          checkins: keepLatestPerLoop((checkins as PendingCheckin[] | null) ?? []),
+          checkins: keepLatestPerLoop((checkins as EngagementCheckin[] | null) ?? []),
         });
         // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si la lecture
         // secondaire ci-dessus a échoué.

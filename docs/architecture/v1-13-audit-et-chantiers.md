@@ -1649,6 +1649,16 @@ ni l'absence du bus.
    postes que ton trajet domicile-travail. » (le `poste` de chaque action est déjà sélectionné) ;
    cap : soit sur le total quand les actions viennent de plusieurs postes, soit formulé comme un
    repère du poste dominant sans inviter à y cumuler des gains d'ailleurs.
+   **Relevé en livrant C2.5 (11/09/2026) : le cas à traiter en premier est celui de zéro action,
+   pas celui des actions d'un autre poste.** La carte du cap ne dépend que de `capKg !== null`
+   (`plan.tsx`), donc elle s'affiche au-dessus de « Tu fais déjà l'essentiel sur ce poste » —
+   « − 11 kg, soit − 20 % sur tes sorties du week-end » juste avant « aucun changement de mode ne
+   te ferait gagner assez pour valoir la peine d'être proposé ». Le commentaire du cap dit lui-même
+   qu'il existe pour qu'on voie « qu'en cumulant deux actions elle l'atteint » : sans action, il
+   n'a plus d'objet. Ce n'était un cas de bord qu'avant C2.5 ; depuis que les templates `leisure`
+   sont refusés aux loisirs rares, **tout cycliste et tout profil sédentaire** y tombe — vérifié
+   sur le distant, plan à zéro action pour les deux. Et le chiffre du cap y est dérivé du résiduel
+   de 15 km, c'est-à-dire d'une hypothèse : raison de plus de ne pas le poser en grand.
 4. Templates à ajouter (une ligne de seed chacun) : covoiturer un long trajet, marche pour les
    sorties courtes, un vol court en moins quand le train n'est pas une option, second jour de
    télétravail avec garde. Échéances des actions voyages dépendantes du `segment` (« avant mon
@@ -1913,7 +1923,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C2.2 | [#120](https://github.com/ScratchMe/TraceVerte/issues/120) | | | |
 | C2.3 | [#121](https://github.com/ScratchMe/TraceVerte/issues/121) | [#161](https://github.com/ScratchMe/TraceVerte/pull/161) | 11/09/2026 | livré ; transition documentée (une cohorte ne reçoit pas de message le lundi du basculement, et sa question de la semaine précédente devient correcte au lieu d'être prématurée) |
 | C2.4 | [#122](https://github.com/ScratchMe/TraceVerte/issues/122) | | | |
-| C2.5 | [#123](https://github.com/ScratchMe/TraceVerte/issues/123) | | | |
+| C2.5 | [#123](https://github.com/ScratchMe/TraceVerte/issues/123) | [#162](https://github.com/ScratchMe/TraceVerte/pull/162) | 11/09/2026 | livré ; quatre écarts au chantier, tous vérifiés en base — **la catégorie du mode décide, pas `commute_main_leg_co2_kg_year = 0`** (faux depuis les facteurs ACV : `velo` vaut 0,00017, le critère n'attraperait que les piétons) ; la catégorie `velo_marche` compte **trois** modes, donc la trottinette a sa question et sa réplique ; le résiduel d'un foyer sans véhicule passe en **train** et non en bus (à 0,1224 le bus ne vaut que 14 % de moins qu'une thermique, la correction aurait été un non-événement) ; et le mode inventé nommait aussi le **poste dominant**, moitié d'A13-4 que la recommandation ne couvrait pas. A imposé la paire `complement_de_maintien` / `src/types/checkin.ts`, qui porte désormais **la question du point côté client** — la carte l'écrivait elle-même, au présent et avec le libellé snapshoté, donc la notification et l'écran ne posaient pas la même question |
 | C2.6 | [#124](https://github.com/ScratchMe/TraceVerte/issues/124) | [#160](https://github.com/ScratchMe/TraceVerte/pull/160) | 11/09/2026 | livré ; a imposé trois colonnes (`assessment_results.extras_poste`, `engagement_checkins.poste`, `plan_cycles.poste`) que le chantier n'avait pas anticipées — la forme insérable se dérive du poste, que le schéma ne gardait nulle part |
 | C2.7 | [#125](https://github.com/ScratchMe/TraceVerte/issues/125) | | | |
 | C2.8 | [#126](https://github.com/ScratchMe/TraceVerte/issues/126) | | | |

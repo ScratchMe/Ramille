@@ -42,6 +42,30 @@ insert into public.assessment_results (
   ('83333333-3333-3333-3333-333333333333', 400, 400, 0, 0, 'commute', 400, 'bus', 'Trajet domicile-travail (Bus)',
    'Trajet domicile-travail (Bus)', null, null);
 
+-- **Les réponses sont nécessaires depuis C2.5**, et leur absence ici était un raccourci de
+-- fixture : `generate_extras_checkins` joint désormais `assessment_answers` pour vérifier que le
+-- poste extras a une **base déclarée** (une sortie, un vol ou un long trajet). Sans ce filtre, la
+-- boucle mensuelle était générée pour tout bilan complété — y compris celui de quelqu'un qui a
+-- répondu sortir rarement et n'avoir pris ni vol ni long trajet, à qui elle posait chaque mois une
+-- question sur des déplacements qui n'existent que dans le résiduel du calcul.
+--
+-- En production un bilan `completed` porte toujours ses réponses (`recompute_assessment_results`
+-- lève sans elles), donc la jointure n'exclut personne ; ce sont les fixtures qui s'en passaient.
+--
+-- Chacun des trois profils reçoit une base déclarée, y compris C : son assertion doit continuer
+-- d'éprouver le chemin « `extras_poste_label` est null », pas le nouveau filtre — sinon elle
+-- passerait pour la mauvaise raison.
+insert into public.assessment_answers (
+  assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
+  leisure_frequency, leisure_mode, leisure_distance_bracket, train_long_trips_per_year
+) values
+  -- A : sorties hebdomadaires déclarées -> base pour la boucle extras.
+  ('81111111-1111-1111-1111-111111111111', true, 5, 10, 'voiture', 'weekly', 'voiture', '15_30', 0),
+  -- B : pas de trajet régulier, mais deux longs trajets en train -> base côté voyages.
+  ('82222222-2222-2222-2222-222222222222', false, null, null, null, 'rarely', null, null, 2),
+  -- C : base déclarée aussi, pour que son absence de check-in extras vienne bien du libellé null.
+  ('83333333-3333-3333-3333-333333333333', true, 5, 12, 'bus', 'weekly', 'bus', '15_30', 0);
+
 select public.generate_commute_checkins();
 select public.generate_extras_checkins();
 

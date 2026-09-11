@@ -187,6 +187,7 @@ export type Database = {
           commute_main_leg_co2_kg_year: number | null
           commute_main_leg_km_year: number | null
           commute_poste_label: string | null
+          commute_poste_mode: string | null
           commute_trip_distance_km: number | null
           computed_at: string
           dominant_poste: string
@@ -214,6 +215,7 @@ export type Database = {
           commute_main_leg_co2_kg_year?: number | null
           commute_main_leg_km_year?: number | null
           commute_poste_label?: string | null
+          commute_poste_mode?: string | null
           commute_trip_distance_km?: number | null
           computed_at?: string
           dominant_poste: string
@@ -241,6 +243,7 @@ export type Database = {
           commute_main_leg_co2_kg_year?: number | null
           commute_main_leg_km_year?: number | null
           commute_poste_label?: string | null
+          commute_poste_mode?: string | null
           commute_trip_distance_km?: number | null
           computed_at?: string
           dominant_poste?: string
@@ -268,6 +271,13 @@ export type Database = {
             columns: ["assessment_id"]
             isOneToOne: true
             referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_results_commute_poste_mode_fkey"
+            columns: ["commute_poste_mode"]
+            isOneToOne: false
+            referencedRelation: "transport_modes"
             referencedColumns: ["id"]
           },
           {
@@ -401,9 +411,11 @@ export type Database = {
           created_at: string
           id: string
           loop_type: string
+          mode: string | null
           period_label: string
           period_start: string
           poste: string | null
+          question_kind: string
           responded_at: string | null
           response: boolean | null
           status: string
@@ -414,9 +426,11 @@ export type Database = {
           created_at?: string
           id?: string
           loop_type: string
+          mode?: string | null
           period_label: string
           period_start: string
           poste?: string | null
+          question_kind?: string
           responded_at?: string | null
           response?: boolean | null
           status?: string
@@ -427,9 +441,11 @@ export type Database = {
           created_at?: string
           id?: string
           loop_type?: string
+          mode?: string | null
           period_label?: string
           period_start?: string
           poste?: string | null
+          question_kind?: string
           responded_at?: string | null
           response?: boolean | null
           status?: string
@@ -437,6 +453,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "engagement_checkins_mode_fkey"
+            columns: ["mode"]
+            isOneToOne: false
+            referencedRelation: "transport_modes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "engagement_checkins_user_id_fkey"
             columns: ["user_id"]
@@ -870,6 +893,7 @@ export type Database = {
         Args: { p_days?: number[]; p_plan_action_id: string; p_timing?: string }
         Returns: undefined
       }
+      complement_de_maintien: { Args: { p_mode: string }; Returns: string }
       compute_assessment_results: {
         Args: { p_assessment_id: string }
         Returns: undefined
@@ -907,6 +931,7 @@ export type Database = {
         Returns: undefined
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
+      mois_francais: { Args: { d: string }; Returns: string }
       poste_inserable: {
         Args: { p_loop_type?: string; p_poste: string }
         Returns: string

@@ -6,10 +6,10 @@ import { MessageInline } from '@/components/message-inline';
 import { RamilleDit } from '@/components/ramille-dit';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { RAMILLE } from '@/constants/mascotte';
 import { formeInserable } from '@/constants/postes';
 import { Radius, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { questionDuPoint, repliqueDuPoint } from '@/types/checkin';
 
 export type EngagementCheckin = {
   id: string;
@@ -18,11 +18,12 @@ export type EngagementCheckin = {
   trip_label: string;
   /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */
   poste: string | null;
-};
-
-const QUESTION_UNIT: Record<EngagementCheckin['loop_type'], string> = {
-  commute: 'cette semaine',
-  extras: 'ce mois-ci',
+  /** `changement` | `maintien` — le genre de question posée (C2.5). */
+  question_kind: string | null;
+  /** Le mode snapshoté du poste interrogé. Ne remplit que la question de maintien (C2.5). */
+  mode: string | null;
+  /** Le début de la période **écoulée** interrogée : c'est lui qui nomme le mois (C2.3). */
+  period_start: string;
 };
 
 // **Les deux refus de `repondre_au_checkin`, et la raison de les distinguer d'une panne de
@@ -106,9 +107,15 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
       </ThemedText>
       {answered === null ? (
         <>
+          {/* **La question vient de `src/types/checkin.ts`, et c'est la même qu'au rappel.**
+              Elle vivait ici, au présent et avec le libellé snapshoté collé après la préposition :
+              « As-tu changé de mode de transport au moins une fois cette semaine pour Trajet
+              domicile-travail (Voiture thermique) ? ». Le rappel, lui, disait déjà « La semaine
+              dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ? ».
+              Deux phrases pour une seule question, sur un produit dont la boucle entière consiste
+              à appuyer sur la notification pour y répondre. */}
           <ThemedText weight={600} style={styles.question}>
-            As-tu changé de mode de transport au moins une fois {QUESTION_UNIT[checkin.loop_type]} pour{' '}
-            {checkin.trip_label} ?
+            {questionDuPoint(checkin)}
           </ThemedText>
           {refus ? (
             // La question reste lisible, mais elle n'attend plus rien : deux boutons qui ne
@@ -142,10 +149,10 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
           )}
         </>
       ) : (
-        <RamilleDit
-          mood={answered ? 'happy' : 'encouraging'}
-          ligne={answered ? RAMILLE.checkinOui : RAMILLE.checkinNon}
-        />
+        // **Un point de maintien ne reçoit jamais `checkinNon`** (C2.5) : cette réplique console
+        // d'un échec, et répondre « non » à « ton trajet s'est-il fait à vélo ? » n'en est pas un.
+        // Le choix se fait dans `repliqueDuPoint`, avec son test, plutôt qu'en ternaire ici.
+        <RamilleDit {...repliqueDuPoint(checkin, answered)} />
       )}
     </ThemedView>
   );
