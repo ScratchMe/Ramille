@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -124,11 +125,17 @@ export function MonCompte() {
         )}
       </View>
 
-      {message && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {message}
-        </ThemedText>
-      )}
+      {/* **`MessageInline` et non un `ThemedText` nu** (A5-16) : le texte qui apparaît dans la
+          page n'est annoncé par aucun lecteur d'écran, contrairement à la boîte système qu'il a
+          remplacée — le composant existe pour porter ce `role="alert"` / `accessibilityLiveRegion`
+          au même endroit pour tout le monde. Ici l'échec de la suppression exigée par Google Play
+          et celui de l'export RGPD étaient donc muets pour qui ne voit pas l'écran.
+
+          **Le succès y passe aussi, et c'est voulu** : sur natif, le message d'`exportMyData` est
+          le seul retour de l'export — la feuille de partage s'est ouverte, rien d'autre ne le dit.
+          Il reste en `polite` : c'est une nouvelle, pas une urgence, et `assertive` couperait la
+          parole au lecteur d'écran en plein geste. */}
+      <MessageInline message={message} />
     </ThemedView>
   );
 }

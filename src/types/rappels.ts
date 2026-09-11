@@ -13,6 +13,9 @@
  * que ce que le serveur fera.
  *
  * Réf. docs/architecture/v1-12-rappels.md §3.
+ *
+ * Ce module porte aussi ce que l'écran **présélectionne** : une ligne non choisissable ne doit
+ * jamais l'être, sans quoi la feuille se referme sur un canal qui ne partira pas.
  */
 
 /** Ce que la personne a choisi — `profiles.reminder_channel`. */
@@ -23,7 +26,11 @@ export type CanalEffectif = 'push' | 'email' | 'aucun';
 
 export type EtatDesRappels = {
   prefere: CanalPrefere;
-  /** Un jeton d'appareil non désactivé existe côté serveur. */
+  /**
+   * Le jeton de **cet** appareil existe côté serveur et n'est pas désactivé. Pas « un jeton de
+   * cette personne » : elle peut en avoir plusieurs, et l'écran dit « sur ce téléphone »
+   * (`loadReminderPrefs` filtre sur le jeton mémorisé à l'enregistrement).
+   */
   jetonActif: boolean;
   /** Compte rattaché **et** email confirmé — les deux, jamais l'un sans l'autre. */
   emailPossible: boolean;
@@ -66,6 +73,28 @@ export type LigneDeReglage = {
    */
   choisissable: boolean;
   choisi: boolean;
+  /**
+   * Le lien « Ouvrir les réglages du téléphone » du canvas. Vrai dans le seul état où il mène
+   * quelque part : dire que les notifications sont coupées sans donner la porte laisse
+   * chercher un réglage à trois niveaux de menu.
+   */
+  lienVersLesReglages: boolean;
+};
+
+/**
+ * Le détail de la ligne « notification » vient de la **permission système**, jamais de
+ * l'existence d'un jeton.
+ *
+ * L'absence de jeton recouvre quatre situations qui n'appellent pas la même phrase : la
+ * permission jamais demandée (état de départ d'Android 13 et plus), le refus, l'échec
+ * d'enregistrement et le simulateur. Les confondre annonçait « coupées dans les réglages » à
+ * quelqu'un qui n'a jamais rien refusé, et l'envoyait chercher un réglage qu'il n'a pas touché.
+ * La permission, elle, est un fait de **cet** appareil — ce que le jeton n'est pas (A9-19).
+ */
+const DETAIL_NOTIFICATION: Record<Permission, string> = {
+  accordee: 'Le matin où la question s’ouvre.',
+  demandable: 'À activer en une fois.',
+  fermee: 'Coupées dans les réglages du téléphone — c’est là que ça se rouvre.',
 };
 
 /**
@@ -76,18 +105,17 @@ export type LigneDeReglage = {
  * panne ; « Rattache un compte pour l'activer » est une porte, pas un mur.
  */
 export function lignesDeReglage(
-  etat: EtatDesRappels & { plateforme: Plateforme; email: string | null }
+  etat: EtatDesRappels & { plateforme: Plateforme; email: string | null; permission: Permission }
 ): LigneDeReglage[] {
-  const { prefere, jetonActif, emailPossible, plateforme, email } = etat;
+  const { prefere, emailPossible, plateforme, email, permission } = etat;
 
   const notification: LigneDeReglage = {
     canal: 'push',
     titre: 'Par notification sur ce téléphone',
-    detail: jetonActif
-      ? 'Le matin où la question s’ouvre.'
-      : 'Coupées dans les réglages de ce téléphone.',
+    detail: DETAIL_NOTIFICATION[permission],
     choisissable: true,
     choisi: prefere === 'push',
+    lienVersLesReglages: permission === 'fermee',
   };
 
   const courriel: LigneDeReglage = {
@@ -96,6 +124,7 @@ export function lignesDeReglage(
     detail: emailPossible && email ? `À ${email}.` : 'Rattache un compte pour l’activer.',
     choisissable: emailPossible,
     choisi: prefere === 'email',
+    lienVersLesReglages: false,
   };
 
   const aucun: LigneDeReglage = {
@@ -104,9 +133,32 @@ export function lignesDeReglage(
     detail: 'On se retrouve dans l’app, à chaque point.',
     choisissable: true,
     choisi: prefere === 'none',
+    lienVersLesReglages: false,
   };
 
   return plateforme === 'web' ? [courriel, aucun] : [notification, courriel, aucun];
+}
+
+/**
+ * Le canal que la feuille propose à l'ouverture — **jamais une ligne non choisissable**.
+ *
+ * La préférence en base vaut `email` par défaut (`20260907230000_rappels_canal.sql`). Sur
+ * natif sans compte — le cas majoritaire, puisque le produit ne demande pas de compte — la
+ * feuille présélectionnait donc une ligne grisée, s'intitulait « C'est bon » et écrivait
+ * `email`, dont le canal effectif est `aucun` : la seule cérémonie du produit se terminait en
+ * ne branchant rien, et la marque locale l'empêchait de revenir (A4-4).
+ *
+ * La règle est générale plutôt que taillée pour ce cas : on garde la préférence si sa ligne est
+ * choisissable, sinon on prend la première qui l'est — donc la notification sur natif, l'email
+ * sur web. Un canal ajouté demain y entre sans rien à retoucher.
+ */
+export function canalPreselectionne(
+  etat: EtatDesRappels & { plateforme: Plateforme; email: string | null; permission: Permission }
+): CanalPrefere {
+  const lignes = lignesDeReglage(etat);
+  const voulue = lignes.find((ligne) => ligne.canal === etat.prefere);
+  if (voulue?.choisissable) return voulue.canal;
+  return lignes.find((ligne) => ligne.choisissable)?.canal ?? 'none';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────────────
@@ -177,15 +229,49 @@ export type CarteAttente = {
  *
  * Le cas du refus est celui qu'on oublie : avec un compte, l'email prend le relais tout seul
  * et la carte le dit ; sans compte, elle nomme les deux portes **une fois**, sans insister.
+ *
+ * **Les six lignes du §3 sont ici, et la sixième a manqué longtemps** : préférence `email`
+ * sans email possible, c'est-à-dire l'état par défaut de toute session anonyme. La carte
+ * disait « On se retrouve ici lundi. » sans détail, donc rien nulle part n'apprenait qu'aucun
+ * rappel ne partirait (A4-5). Le canal, lui, était juste des deux côtés : l'écart portait sur
+ * ce qui est *dit*, et c'est exactement ce que la paire de tests existe pour attraper.
+ *
+ * **La permission est ici pour la même raison qu'elle est dans `lignesDeReglage` : l'absence
+ * de jeton n'accuse personne.** Depuis que `jetonActif` ne vaut plus vrai sur la seule
+ * permission accordée, elle est fausse aussi quand l'enregistrement a échoué (pas
+ * d'identifiants FCM, pas de réseau, simulateur) — et la carte disait alors « les
+ * notifications sont coupées sur ce téléphone » à qui venait d'appuyer sur « Autoriser ». Le
+ * canal annoncé, lui, reste juste dans ce cas : c'est l'explication qui était fausse, pas le
+ * repli. On ne nomme donc les réglages du téléphone que là où quelqu'un les a vraiment fermés
+ * (A4-15, point 2).
  */
 export function carteAttente({
   boucle,
   email,
+  permission,
+  plateforme,
   ...etat
-}: EtatDesRappels & { boucle: Boucle; email: string | null }): CarteAttente {
+}: EtatDesRappels & {
+  boucle: Boucle;
+  email: string | null;
+  permission: Permission;
+  plateforme: Plateforme;
+}): CarteAttente {
   const canal = canalEffectif(etat);
   const hebdo = boucle === 'hebdo';
-  const coupees = etat.prefere === 'push' && !etat.jetonActif;
+  // **`plateforme` est ce qui empêche d'accuser un navigateur de bureau.** Sur web
+  // `lirePermission()` rend toujours `fermee`, et depuis que `jetonActif` est un fait de **cet**
+  // appareil, il y est toujours faux : sans cette condition, quelqu'un dont la préférence est
+  // `push` et dont l'email n'est pas utilisable lisait « les notifications sont coupées sur ce
+  // téléphone… tu peux les rouvrir dans ses réglages » sur une machine où il n'y a ni téléphone ni
+  // réglage à ouvrir — pendant que les notifications de son téléphone marchent très bien. Avant
+  // que le jeton devienne un fait local, ce texte ne sortait pas : la bascule par appareil a
+  // ouvert ce cas, et c'est le genre de phrase qui décrédibilise tout le reste de l'écran.
+  const coupees =
+    plateforme === 'natif' &&
+    etat.prefere === 'push' &&
+    !etat.jetonActif &&
+    permission !== 'accordee';
 
   if (canal === 'push') {
     return {
@@ -203,8 +289,19 @@ export function carteAttente({
     };
   }
 
+  const cle = hebdo ? 'attenteIciHebdo' : 'attenteIciMensuel';
+
+  // La sixième ligne : le mot est demandé par email, mais aucune adresse ne peut le recevoir.
+  // `coupees` est faux ici (il ne vaut que pour `push`), d'où la branche à part.
+  if (etat.prefere === 'email') {
+    return { cle, detail: 'Rattache un compte pour recevoir le mot par email.' };
+  }
+
+  // Permission accordée mais jeton absent : l'enregistrement a échoué, il repartira au
+  // prochain lancement. Rien à dire plutôt qu'envoyer chercher un réglage que personne n'a
+  // touché — le silence est le seul registre honnête d'un état qui se répare tout seul.
   return {
-    cle: hebdo ? 'attenteIciHebdo' : 'attenteIciMensuel',
+    cle,
     detail: coupees
       ? 'Les notifications sont coupées sur ce téléphone. Tu peux les rouvrir dans ses réglages, ou rattacher un compte pour l’email.'
       : null,

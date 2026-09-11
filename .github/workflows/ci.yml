@@ -45,12 +45,22 @@ jobs:
       # construction d'AAB.
       #
       # Version épinglée, pour la même raison que le CLI Supabase plus bas : `npx expo-doctor`
-      # sans numéro télécharge la dernière version publiée à chaque passage, et une étape
-      # bloquante de la CI changerait alors sous nos pieds sans qu'une ligne du dépôt bouge.
-      # 1.20.4 relevé le 10/09/2026 sur le registre npm : publiée le 26/08/2026 et toujours le
-      # `dist-tag` latest ce jour-là — c'est donc la version que `latest` installait déjà.
-      # L'épinglage fige l'état connu, il ne le change pas. Pour la faire évoluer : changer le
-      # numéro ici et reporter sa date de publication, rien d'autre.
+      # sans numéro télécharge la dernière version publiée à chaque passage. 1.20.4 relevé le
+      # 10/09/2026 sur le registre npm : publiée le 26/08/2026 et toujours le `dist-tag` latest
+      # ce jour-là. Pour la faire évoluer : changer le numéro ici et reporter sa date.
+      #
+      # **Mais épingler l'outil n'épingle pas ce qu'il attend, et cette étape peut donc rougir
+      # sans qu'une ligne du dépôt ait bougé.** Le contrôle « packages match versions required by
+      # installed Expo SDK » compare nos versions à celles qu'Expo recommande **au moment du
+      # passage**, et ce jeu-là vit chez Expo, pas ici : le 11/09/2026 la CI est tombée sur onze
+      # paquets « en retard » d'un patch, sur un arbre qui passait 21/21 quelques heures plus tôt.
+      # Le commentaire d'origine promettait le contraire — il est corrigé plutôt que retiré, parce
+      # que c'est la surprise qui coûte, pas l'étape.
+      #
+      # L'étape reste **bloquante**, et c'est délibéré : cette dérive est exactement ce qu'on veut
+      # savoir avant une construction d'AAB, où elle se paierait bien plus cher. La conduite à
+      # tenir quand elle rougit sur un arbre qu'on n'a pas touché : `npx expo install --fix`, puis
+      # rejouer typecheck, lint, tests et export — ce n'est pas une panne, c'est Expo qui a publié.
       - run: npx expo-doctor@1.20.4
 
   unit-tests:

@@ -19,6 +19,7 @@ import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs
 import {
   adresseSemblePlausible,
   estLimiteDEnvoi,
+  estPanneDeTransport,
   messageDuRetourDeLien,
   motifRetourLien,
 } from '@/types/connexion';
@@ -170,6 +171,19 @@ export default function RetrouverMonCompte() {
     // ne sait pas — et on ne veut pas savoir — si un lien est parti. Ce qui est sûr, c'est que
     // cette adresse est celle que la personne vient de taper sur cet appareil.
     await memoriserAdresseDuLien(email);
+
+    // **La demande n'a pas abouti : « Regarde tes emails » serait faux, et l'attente sans
+    // fin** (A6-12). C'est le pire endroit du produit pour un échec muet — le seul chemin vers
+    // un compte existant. Le prédicat reste une liste blanche (`src/types/connexion.ts`) :
+    // réseau coupé et 5xx, rien d'autre, pour que le 422 d'une adresse inconnue continue de
+    // mener à l'écran d'attente.
+    //
+    // Le texte ne dit pas « pas partie » : sur un 5xx la demande a bien quitté l'appareil,
+    // c'est l'envoi qui n'a pas abouti — et le geste à faire est le même dans les deux cas.
+    if (estPanneDeTransport(error)) {
+      setMessage('Ta demande n’a pas abouti. Vérifie ta connexion et réessaie.');
+      return;
+    }
 
     if (estLimiteDEnvoi(error)) {
       setMessage('Trop de demandes coup sur coup. Réessaie dans quelques minutes.');

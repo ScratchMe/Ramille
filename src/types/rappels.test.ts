@@ -1,6 +1,7 @@
 import { RAMILLE } from '@/constants/mascotte';
 import {
   canalEffectif,
+  canalPreselectionne,
   carteAttente,
   doitProposerLaFeuille,
   libelleBouton,
@@ -40,7 +41,13 @@ describe('canalEffectif', () => {
 });
 
 describe('lignesDeReglage', () => {
-  const base = { prefere: 'push', jetonActif: true, emailPossible: true, email: 'camille@exemple.fr' } as const;
+  const base = {
+    prefere: 'push',
+    jetonActif: true,
+    emailPossible: true,
+    email: 'camille@exemple.fr',
+    permission: 'accordee',
+  } as const;
 
   it('propose les trois canaux sur mobile, l’email et rien sur web', () => {
     expect(lignesDeReglage({ ...base, plateforme: 'natif' }).map((l) => l.canal)).toEqual([
@@ -60,6 +67,7 @@ describe('lignesDeReglage', () => {
       emailPossible: false,
       email: null,
       plateforme: 'natif',
+      permission: 'accordee',
     });
     expect(lignes.find((l) => l.canal === 'push')?.choisissable).toBe(true);
   });
@@ -71,25 +79,45 @@ describe('lignesDeReglage', () => {
       emailPossible: false,
       email: null,
       plateforme: 'natif',
+      permission: 'accordee',
     }).find((l) => l.canal === 'email');
 
     expect(email?.choisissable).toBe(false);
     expect(email?.detail).toBe('Rattache un compte pour l’activer.');
   });
 
-  it('dit pourquoi la notification n’arrive pas, sans fermer la porte', () => {
-    const notification = lignesDeReglage({
-      prefere: 'push',
-      jetonActif: false,
-      emailPossible: true,
-      email: 'camille@exemple.fr',
-      plateforme: 'natif',
-    }).find((l) => l.canal === 'push');
+  it('distingue les trois états de la permission, et ne ferme jamais la porte', () => {
+    // Trois détails et non deux : l'absence de jeton recouvrait la permission jamais demandée,
+    // le refus, l'échec d'enregistrement et le simulateur. La première ouverture de « Toi » sur
+    // un téléphone neuf annonçait donc des notifications « coupées dans les réglages », ce qui
+    // est faux et envoie chercher un réglage que personne n'a touché (A4-15).
+    const detail = (permission: 'accordee' | 'demandable' | 'fermee') =>
+      lignesDeReglage({ ...base, jetonActif: false, plateforme: 'natif', permission }).find(
+        (l) => l.canal === 'push'
+      );
 
-    expect(notification?.detail).toBe('Coupées dans les réglages de ce téléphone.');
-    // Toujours choisissable : c'est ce qui permet de rouvrir les notifications côté système
-    // et de voir le rappel repartir sans revenir ici.
-    expect(notification?.choisissable).toBe(true);
+    expect(detail('accordee')?.detail).toBe('Le matin où la question s’ouvre.');
+    expect(detail('demandable')?.detail).toBe('À activer en une fois.');
+    expect(detail('fermee')?.detail).toBe(
+      'Coupées dans les réglages du téléphone — c’est là que ça se rouvre.'
+    );
+
+    // Toujours choisissable, quel que soit l'état : c'est ce qui permet de rouvrir les
+    // notifications côté système et de voir le rappel repartir sans revenir ici.
+    for (const permission of ['accordee', 'demandable', 'fermee'] as const) {
+      expect(detail(permission)?.choisissable).toBe(true);
+    }
+  });
+
+  it('ne donne la porte des réglages que là où elle mène quelque part', () => {
+    const lienDe = (permission: 'accordee' | 'demandable' | 'fermee') =>
+      lignesDeReglage({ ...base, plateforme: 'natif', permission }).filter(
+        (l) => l.lienVersLesReglages
+      );
+
+    expect(lienDe('fermee').map((l) => l.canal)).toEqual(['push']);
+    expect(lienDe('accordee')).toEqual([]);
+    expect(lienDe('demandable')).toEqual([]);
   });
 
   it('affiche l’adresse quand elle est utilisable, et marque le canal choisi', () => {
@@ -103,6 +131,67 @@ describe('lignesDeReglage', () => {
     // sont du produit et non de Ramille, mais ils ne doivent pas non plus compter les jours.
     for (const ligne of lignesDeReglage({ ...base, plateforme: 'natif' })) {
       expect(ligne.titre).not.toMatch(/\d/);
+    }
+  });
+});
+
+describe('canalPreselectionne', () => {
+  const anonyme = { emailPossible: false, email: null, permission: 'demandable' } as const;
+  const rattache = { emailPossible: true, email: 'camille@exemple.fr', permission: 'demandable' } as const;
+
+  it('sur natif sans compte, propose la notification et jamais l’email', () => {
+    // Le défaut en base vaut `email` : c'est l'état de toute session anonyme, donc le cas
+    // majoritaire. La feuille présélectionnait une ligne grisée, s'intitulait « C'est bon » et
+    // écrivait un canal dont l'effectif est `aucun` (A4-4).
+    expect(
+      canalPreselectionne({ ...anonyme, prefere: 'email', jetonActif: false, plateforme: 'natif' })
+    ).toBe('push');
+  });
+
+  it('garde ce que la personne a déjà choisi quand la ligne est choisissable', () => {
+    expect(
+      canalPreselectionne({ ...rattache, prefere: 'email', jetonActif: false, plateforme: 'natif' })
+    ).toBe('email');
+    expect(
+      canalPreselectionne({ ...anonyme, prefere: 'none', jetonActif: false, plateforme: 'natif' })
+    ).toBe('none');
+    expect(
+      canalPreselectionne({ ...anonyme, prefere: 'push', jetonActif: true, plateforme: 'natif' })
+    ).toBe('push');
+  });
+
+  it('sur web, propose l’email avec un compte, rien sans', () => {
+    expect(
+      canalPreselectionne({ ...rattache, prefere: 'email', jetonActif: false, plateforme: 'web' })
+    ).toBe('email');
+    // La feuille ne s'ouvre pas dans ce cas (`doitProposerLaFeuille`) ; l'assertion garde la
+    // règle générale, pas ce cas d'écran — un canal qui deviendrait choisissable sur web demain
+    // doit sortir d'ici sans retouche. (« Toi » n'appelle pas cette dérivation : il affiche la
+    // préférence telle quelle, sans présélection.)
+    expect(
+      canalPreselectionne({ ...anonyme, prefere: 'email', jetonActif: false, plateforme: 'web' })
+    ).toBe('none');
+  });
+
+  it('ne présélectionne jamais une ligne non choisissable, quelle que soit la situation', () => {
+    // La règle générale, pas le cas particulier : un canal ajouté demain y entre sans rien à
+    // retoucher, et c'est elle qui empêche la cérémonie de se refermer sur rien.
+    for (const plateforme of ['natif', 'web'] as const) {
+      for (const emailPossible of [true, false]) {
+        for (const prefere of ['push', 'email', 'none'] as const) {
+          const etat = {
+            prefere,
+            jetonActif: false,
+            emailPossible,
+            email: emailPossible ? 'camille@exemple.fr' : null,
+            plateforme,
+            permission: 'demandable' as const,
+          };
+          const canal = canalPreselectionne(etat);
+          const ligne = lignesDeReglage(etat).find((l) => l.canal === canal);
+          expect(ligne?.choisissable).toBe(true);
+        }
+      }
     }
   });
 });
@@ -151,38 +240,179 @@ describe('carteAttente', () => {
 
   it('nomme le jour, et le canal quand il y en a un', () => {
     expect(
-      carteAttente({ prefere: 'push', jetonActif: true, emailPossible: true, boucle: 'hebdo', ...camille })
+      carteAttente({ plateforme: 'natif',
+        prefere: 'push',
+        jetonActif: true,
+        emailPossible: true,
+        boucle: 'hebdo',
+        permission: 'accordee',
+        ...camille,
+      })
     ).toEqual({ cle: 'attenteSigneHebdo', detail: 'Par notification sur ce téléphone.' });
 
     expect(
-      carteAttente({ prefere: 'email', jetonActif: false, emailPossible: true, boucle: 'mensuel', ...camille })
+      carteAttente({ plateforme: 'natif',
+        prefere: 'email',
+        jetonActif: false,
+        emailPossible: true,
+        boucle: 'mensuel',
+        permission: 'accordee',
+        ...camille,
+      })
     ).toEqual({ cle: 'attenteSigneMensuel', detail: 'Par email, à camille@exemple.fr.' });
   });
 
   it('dit le repli sans reproche quand la notification est coupée', () => {
     expect(
-      carteAttente({ prefere: 'push', jetonActif: false, emailPossible: true, boucle: 'hebdo', ...camille })
+      carteAttente({ plateforme: 'natif',
+        prefere: 'push',
+        jetonActif: false,
+        emailPossible: true,
+        boucle: 'hebdo',
+        permission: 'fermee',
+        ...camille,
+      })
     ).toEqual({
       cle: 'attenteSigneHebdo',
       detail: 'Par email, à camille@exemple.fr — les notifications sont coupées sur ce téléphone.',
     });
   });
 
+  it('n’accuse les réglages que là où quelqu’un les a vraiment fermés', () => {
+    // Les deux portes du même état — préférence `push`, aucun jeton — séparées par la seule
+    // chose qui les distingue : la permission. Depuis que `jetonActif` ne vaut plus vrai sur la
+    // seule permission accordée, il est faux aussi quand l'enregistrement a échoué (pas
+    // d'identifiants FCM, pas de réseau, simulateur) : la carte annonçait alors « les
+    // notifications sont coupées sur ce téléphone » à qui venait d'appuyer sur « Autoriser »
+    // (A4-15, point 2). Le canal annoncé, lui, est juste dans les deux cas.
+    const sansJeton = { prefere: 'push', jetonActif: false, boucle: 'hebdo' } as const;
+
+    expect(
+      carteAttente({ plateforme: 'natif', ...sansJeton, emailPossible: true, permission: 'accordee', ...camille })
+    ).toEqual({ cle: 'attenteSigneHebdo', detail: 'Par email, à camille@exemple.fr.' });
+
+    expect(
+      carteAttente({ plateforme: 'natif', ...sansJeton, emailPossible: true, permission: 'fermee', ...camille })
+    ).toEqual({
+      cle: 'attenteSigneHebdo',
+      detail: 'Par email, à camille@exemple.fr — les notifications sont coupées sur ce téléphone.',
+    });
+
+    // Sans compte, l'enregistrement raté ne laisse rien à dire : l'état se répare au prochain
+    // lancement, et envoyer chercher un réglage que personne n'a touché serait la seule chose
+    // que la personne pourrait lire comme un reproche.
+    expect(
+      carteAttente({ plateforme: 'natif', ...sansJeton, emailPossible: false, permission: 'accordee', email: null })
+    ).toEqual({ cle: 'attenteIciHebdo', detail: null });
+  });
+
+  // **Sur web il n'y a ni téléphone ni réglage à ouvrir, et le dire serait faux deux fois.**
+  // `lirePermission()` rend toujours `fermee` dans un navigateur, et `jetonActif` y est toujours
+  // faux depuis que le jeton est un fait de cet appareil : sans la garde de plateforme, quelqu'un
+  // dont la préférence est `push` lisait « les notifications sont coupées sur ce téléphone » sur
+  // une machine de bureau — pendant que celles de son téléphone marchaient. C'est la bascule par
+  // appareil qui a ouvert ce cas ; cette assertion est là pour qu'il ne se rouvre pas.
+  it('n’accuse jamais les réglages depuis un navigateur', () => {
+    expect(
+      carteAttente({
+        plateforme: 'web',
+        prefere: 'push',
+        jetonActif: false,
+        emailPossible: false,
+        boucle: 'hebdo',
+        permission: 'fermee',
+        email: null,
+      })
+    ).toEqual({ cle: 'attenteIciHebdo', detail: null });
+
+    // Et la même personne, sur son téléphone, lit bien la phrase : c'est la plateforme qui
+    // distingue les deux, pas l'état des rappels, identique dans les deux appels.
+    expect(
+      carteAttente({
+        plateforme: 'natif',
+        prefere: 'push',
+        jetonActif: false,
+        emailPossible: false,
+        boucle: 'hebdo',
+        permission: 'fermee',
+        email: null,
+      }).detail
+    ).toContain('coupées sur ce téléphone');
+  });
+
   it('sans rappel, Ramille revient quand même — dans l’app', () => {
     expect(
-      carteAttente({ prefere: 'none', jetonActif: true, emailPossible: true, boucle: 'hebdo', email: null })
+      carteAttente({ plateforme: 'natif',
+        prefere: 'none',
+        jetonActif: true,
+        emailPossible: true,
+        boucle: 'hebdo',
+        permission: 'accordee',
+        email: null,
+      })
     ).toEqual({ cle: 'attenteIciHebdo', detail: null });
 
     expect(
-      carteAttente({ prefere: 'none', jetonActif: false, emailPossible: false, boucle: 'mensuel', email: null })
+      carteAttente({ plateforme: 'natif',
+        prefere: 'none',
+        jetonActif: false,
+        emailPossible: false,
+        boucle: 'mensuel',
+        permission: 'fermee',
+        email: null,
+      })
     ).toEqual({ cle: 'attenteIciMensuel', detail: null });
+  });
+
+  it('dit la porte quand le mot est attendu par email et qu’aucune adresse ne peut le recevoir', () => {
+    // La sixième ligne du §3, celle qui manquait des deux côtés — ici et dans la couverture
+    // que cet en-tête revendiquait. C'est l'état par défaut de toute session anonyme
+    // (`reminder_channel` vaut `email` en base), donc le cas le plus fréquent : la carte disait
+    // « On se retrouve ici lundi. » sans rien ajouter, et rien nulle part n'apprenait qu'aucun
+    // rappel ne partirait (A4-5).
+    expect(
+      carteAttente({ plateforme: 'natif',
+        prefere: 'email',
+        jetonActif: false,
+        emailPossible: false,
+        boucle: 'hebdo',
+        permission: 'demandable',
+        email: null,
+      })
+    ).toEqual({
+      cle: 'attenteIciHebdo',
+      detail: 'Rattache un compte pour recevoir le mot par email.',
+    });
+
+    // Un jeton existe mais la préférence reste `email` : le canal effectif est toujours
+    // `aucun`, et la phrase ne parle donc pas de notification.
+    expect(
+      carteAttente({ plateforme: 'natif',
+        prefere: 'email',
+        jetonActif: true,
+        emailPossible: false,
+        boucle: 'mensuel',
+        permission: 'accordee',
+        email: null,
+      })
+    ).toEqual({
+      cle: 'attenteIciMensuel',
+      detail: 'Rattache un compte pour recevoir le mot par email.',
+    });
   });
 
   it('le refus sans compte nomme les deux portes, une fois', () => {
     // Le cas qu'on oublie : la personne a dit oui chez nous puis non au téléphone, et elle
     // n'a pas de compte. Ni reproche, ni relance — les deux chemins, dits une seule fois.
     expect(
-      carteAttente({ prefere: 'push', jetonActif: false, emailPossible: false, boucle: 'hebdo', email: null })
+      carteAttente({ plateforme: 'natif',
+        prefere: 'push',
+        jetonActif: false,
+        emailPossible: false,
+        boucle: 'hebdo',
+        permission: 'fermee',
+        email: null,
+      })
     ).toEqual({
       cle: 'attenteIciHebdo',
       detail:
@@ -193,11 +423,12 @@ describe('carteAttente', () => {
   it('ne met jamais de chiffre dans la bouche de Ramille', () => {
     // Le détail (qui peut porter une adresse, donc un chiffre) est **du produit** ; seule la
     // clé désigne ce qu'elle dit, et ces lignes-là sont gardées par le test de mascotte.ts.
-    const carte = carteAttente({
+    const carte = carteAttente({ plateforme: 'natif',
       prefere: 'email',
       jetonActif: false,
       emailPossible: true,
       boucle: 'hebdo',
+      permission: 'accordee',
       email: 'camille42@exemple.fr',
     });
     expect(carte.cle).not.toMatch(/\d/);

@@ -2,6 +2,7 @@ import {
   adresseDejaRattachee,
   adresseSemblePlausible,
   estLimiteDEnvoi,
+  estPanneDeTransport,
   etatDeLaProposition,
   identiteDejaRattachee,
   issueDuNavigateurDAuth,
@@ -33,6 +34,67 @@ describe('estLimiteDEnvoi', () => {
     // panne, et surtout pas un message distinct à afficher.
     expect(estLimiteDEnvoi({ code: 'otp_disabled', status: 422 })).toBe(false);
     expect(estLimiteDEnvoi(null)).toBe(false);
+  });
+});
+
+describe('estPanneDeTransport', () => {
+  it('reconnaît l’échec de fetch que le SDK nomme lui-même', () => {
+    // Ce que `auth-js` construit quand `fetch` échoue : nom explicite, `status: 0`, pas de
+    // code d'API. C'est le cas du mode avion, celui pour lequel ces écrans existent.
+    expect(
+      estPanneDeTransport({
+        name: 'AuthRetryableFetchError',
+        status: 0,
+        message: 'Network request failed',
+      })
+    ).toBe(true);
+  });
+
+  it('reconnaît une erreur sans statut ni code', () => {
+    expect(estPanneDeTransport({ message: 'Failed to fetch' })).toBe(true);
+  });
+
+  // Non-régression explicite : une adresse inconnue doit continuer de mener à l'écran
+  // d'attente, sans quoi la page dirait qui utilise Ramille.
+  it('ne prend jamais une adresse inconnue pour une panne', () => {
+    expect(estPanneDeTransport({ code: 'otp_disabled', status: 422 })).toBe(false);
+    // Même code sans statut : le code seul suffit à disqualifier, puisqu'il prouve que le
+    // serveur a répondu.
+    expect(estPanneDeTransport({ code: 'otp_disabled' })).toBe(false);
+  });
+
+  it('range le 5xx du côté de la panne, dans la forme que le SDK produit vraiment', () => {
+    // **La forme compte, et c'est ce qui a rendu une première version de ce test creuse** :
+    // elle fabriquait `{ status: 500 }` *sans* `name` et concluait `false`, alors que
+    // `auth-js` ne renvoie jamais un 500 sous cette forme. `lib/fetch.js` porte
+    // `NETWORK_ERROR_CODES = [500, 501, 502, 503, 504, 520…530]` et lève pour chacun un
+    // `AuthRetryableFetchError`, code du corps jeté au passage — un 500 valait donc `true`
+    // pendant que le commentaire du module affirmait le contraire.
+    expect(
+      estPanneDeTransport({
+        name: 'AuthRetryableFetchError',
+        status: 500,
+        message: 'Internal Server Error',
+      })
+    ).toBe(true);
+    // Et le statut suffit sans le nom : la règle de la contre-vérification d'A6-12
+    // (« retryable du SDK ou status >= 500 ») ne dépend pas d'un détail interne d'auth-js.
+    expect(estPanneDeTransport({ status: 503, message: 'Service Unavailable' })).toBe(true);
+  });
+
+  it('ne prend pas un 4xx pour une panne', () => {
+    // La frontière du 5xx : un refus métier a répondu, il suit le chemin de l'écran d'attente.
+    expect(estPanneDeTransport({ status: 400, message: 'Bad Request' })).toBe(false);
+    expect(estPanneDeTransport({ status: 422 })).toBe(false);
+  });
+
+  it('ne recouvre pas la limite d’envoi, qui a son propre message', () => {
+    expect(estPanneDeTransport({ code: 'over_email_send_rate_limit', status: 429 })).toBe(false);
+    expect(estPanneDeTransport({ status: 429 })).toBe(false);
+  });
+
+  it('sans erreur, il n’y a pas de panne', () => {
+    expect(estPanneDeTransport(null)).toBe(false);
   });
 });
 

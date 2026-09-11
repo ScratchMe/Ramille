@@ -22,12 +22,29 @@ const QUESTION_UNIT: Record<EngagementCheckin['loop_type'], string> = {
   extras: 'ce mois-ci',
 };
 
-// `invalid_parameter_value` : le seul refus de `repondre_au_checkin` que réessayer ne lèvera
-// jamais — le point porte déjà une réponse, ou la génération de la période suivante l'a clos
-// pendant que la carte restait affichée (le cas du retour de notification). Tout le reste, y
-// compris un point introuvable, peut être une session que l'app rétablit d'elle-même : on laisse
-// alors les boutons actifs plutôt que de fermer la question sur une panne passagère.
+// **Les deux refus de `repondre_au_checkin`, et la raison de les distinguer d'une panne de
+// transport** (A4-2, A12-6).
+// Aucun des deux ne se lève en réessayant, donc aucun des deux ne doit conseiller de vérifier la
+// connexion : ce serait renvoyer la personne vers un geste qui ne peut rien changer.
+//
+//   - `22023` (`invalid_parameter_value`) : le point porte déjà une réponse, ou la génération de
+//     la période suivante l'a clos pendant que la carte restait affichée — le cas du retour de
+//     notification.
+//   - `P0002` (`no_data_found`) : aucun point de cet identifiant sous ce compte. La session est
+//     valide (sans elle, c'est le privilège qui refuserait, en `42501`), donc la carte est
+//     simplement plus vieille que la session — un lien de connexion ouvert entre-temps a changé
+//     d'utilisateur, ou le point a disparu. Le plan se relit au retour sur l'onglet.
+//
+// Tout le reste — un code absent, un transport qui n'aboutit pas — garde les boutons actifs.
 const CODE_POINT_CLOS = '22023';
+const CODE_POINT_INTROUVABLE = 'P0002';
+
+const REFUS_DU_RPC: Record<string, string | undefined> = {
+  [CODE_POINT_CLOS]:
+    'Ce point de suivi n’attend plus de réponse. La question revient à la prochaine période.',
+  [CODE_POINT_INTROUVABLE]:
+    'Ce point de suivi n’est plus rattaché à ton compte. Il disparaîtra de ton plan à la prochaine relecture.',
+};
 
 // Contenu et comportement adaptatif minimal cf. spec-fonctionnelle §7 : une question
 // fermée ancrée sur un fait précis (pas d'auto-évaluation globale floue), réponse positive
@@ -39,7 +56,9 @@ const CODE_POINT_CLOS = '22023';
 // produit du 27/08/2026, les deux boucles restent proposées) sans jamais masquer l'autre.
 export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin; emphasize: boolean }) {
   const [answered, setAnswered] = useState<boolean | null>(null);
-  const [clos, setClos] = useState(false);
+  /** Le point n'accepte plus de réponse : la question reste lisible, les boutons partent. */
+  const [refus, setRefus] = useState<string | null>(null);
+  /** La réponse n'est pas partie : les boutons restent, il n'y a qu'à recommencer. */
   const [erreur, setErreur] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -67,10 +86,13 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
       setAnswered(response);
       return;
     }
-    if (error.code === CODE_POINT_CLOS) {
-      setClos(true);
+
+    const refusDuRpc = REFUS_DU_RPC[error.code];
+    if (refusDuRpc) {
+      setRefus(refusDuRpc);
       return;
     }
+
     setErreur('Ta réponse n’est pas partie. Vérifie ta connexion et réessaie.');
   };
 
@@ -85,10 +107,10 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
             As-tu changé de mode de transport au moins une fois {QUESTION_UNIT[checkin.loop_type]} pour{' '}
             {checkin.trip_label} ?
           </ThemedText>
-          {clos ? (
+          {refus ? (
             // La question reste lisible, mais elle n'attend plus rien : deux boutons qui ne
             // peuvent plus aboutir valent moins qu'une phrase qui dit où en est le point.
-            <MessageInline message="Ce point de suivi n’attend plus de réponse. La question revient à la prochaine période." />
+            <MessageInline message={refus} />
           ) : (
             <>
               <View style={styles.actions}>

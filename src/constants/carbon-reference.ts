@@ -103,3 +103,24 @@ export const TARGET_2050_TRANSPORT_T =
 export function formatTonnesShort(value: number): string {
   return `${value.toFixed(1).replace('.', ',')} t`;
 }
+
+/**
+ * La même valeur, unité en toutes lettres — pour un titre, où « 9,5 t » se lit comme une
+ * étiquette de graphique et non comme une phrase.
+ *
+ * Existe parce que le titre de l'étape de contexte écrit la même valeur de deux façons à deux
+ * lignes d'écart (A1-12) : `formatTonnesShort(...).replace(' t', ' tonnes')` d'un côté, la
+ * constante interpolée brute de l'autre — donc un point décimal le jour où la cible cesserait
+ * d'être un entier, dans une app dont le formatage à la française est justement centralisé ici.
+ *
+ * Deux règles que le `.replace` ad hoc ne pouvait pas tenir : la décimale nulle disparaît
+ * (« 2 tonnes », jamais « 2,0 tonnes », qui est plus laid que le défaut corrigé), et
+ * l'unité s'accorde — en français le singulier vaut jusqu'à 2 exclu, d'où « 1,5 tonne ».
+ */
+export function formatTonnesTexte(value: number): string {
+  // L'accord suit le nombre **affiché**, pas la valeur d'entrée : 1,95 s'écrit « 2 », et
+  // « 2 tonne » serait une faute d'orthographe produite par un arrondi.
+  const arrondi = Math.round(value * 10) / 10;
+  const nombre = formatTonnesShort(arrondi).replace(' t', '').replace(/,0$/, '');
+  return `${nombre} ${Math.abs(arrondi) < 2 ? 'tonne' : 'tonnes'}`;
+}

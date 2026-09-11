@@ -16,15 +16,27 @@ import { supabase } from '@/lib/supabase';
 import type { BilanAnswers } from '@/types/bilan';
 import { keepLatestPerDay, type AssessmentSnapshot, type CheckinRecord } from '@/types/suivi';
 
+/**
+ * Une lecture qui peut échouer, et qui le dit.
+ *
+ * **`{ ok: false }` veut dire « je n'ai pas pu lire », jamais « il n'y a rien »** (A5-2). Les
+ * deux lectures ci-dessous rendaient `[]` sur erreur, et l'écran de suivi traduisait ce tableau
+ * vide en « Ton suivi commence au premier bilan » : hors ligne, quelqu'un qui a douze bilans
+ * lisait que son historique n'existait pas. Un état vide est une affirmation sur les données de
+ * la personne — c'est la pire chose à inventer, et ça se règle ici, à la source, parce que
+ * l'appelant ne peut pas deviner ce que le tableau vide voulait dire.
+ */
+export type Lecture<T> = { ok: true; data: T } | { ok: false };
+
 /** Bilans complétés, du plus ancien au plus récent — l'ordre dans lequel on lit une évolution. */
-export async function loadAssessmentHistory(): Promise<AssessmentSnapshot[]> {
+export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapshot[]>> {
   const { data, error } = await supabase
     .from('assessments')
     .select('id, submitted_at, assessment_results(total_co2_kg_year, dominant_poste, dominant_poste_label)')
     .eq('status', 'completed')
     .order('submitted_at', { ascending: true });
 
-  if (error || !data) return [];
+  if (error || !data) return { ok: false };
 
   const snapshots = data.flatMap((assessment) => {
     // `assessment_results` est en 1:1 avec `assessments`, mais un bilan complété dont le
@@ -45,20 +57,20 @@ export async function loadAssessmentHistory(): Promise<AssessmentSnapshot[]> {
     ];
   });
 
-  return keepLatestPerDay(snapshots);
+  return { ok: true, data: keepLatestPerDay(snapshots) };
 }
 
 /** Check-ins auxquels l'utilisateur a effectivement répondu, du plus récent au plus ancien. */
-export async function loadAnsweredCheckins(): Promise<CheckinRecord[]> {
+export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> {
   const { data, error } = await supabase
     .from('engagement_checkins')
     .select('id, loop_type, period_label, period_start, response, responded_at')
     .eq('status', 'answered')
     .order('period_start', { ascending: false });
 
-  if (error || !data) return [];
+  if (error || !data) return { ok: false };
 
-  return data.flatMap((checkin) =>
+  const points = data.flatMap((checkin) =>
     checkin.response === null || checkin.responded_at === null
       ? []
       : [
@@ -72,6 +84,8 @@ export async function loadAnsweredCheckins(): Promise<CheckinRecord[]> {
           },
         ]
   );
+
+  return { ok: true, data: points };
 }
 
 /**

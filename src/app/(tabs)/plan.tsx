@@ -8,10 +8,11 @@ import { Button } from '@/components/button';
 import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { Mascot } from '@/components/mascot';
+import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
 import { formatTonnes } from '@/lib/format';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
@@ -94,6 +95,15 @@ type LoadState =
   | { status: 'loading' }
   // Aucun bilan complété — écran "État vide" de la maquette.
   | { status: 'no_assessment' }
+  // **Rien n'a pu être lu, et c'est autre chose que « rien à afficher »** (A4-1). L'erreur des
+  // requêtes était purement ignorée : hors ligne, `assessment === null` menait à
+  // `no_assessment`, donc à « Ton bilan n'est pas encore fait » et à un bouton pour le refaire,
+  // à quelqu'un qui en a un. Un état vide est une affirmation sur les données de la personne.
+  //
+  // **Cet état ne s'atteint que depuis `loading`** : les trois autres viennent d'une lecture
+  // qui a réussi, et l'écran d'erreur plein écran ne vaut que quand rien n'a jamais pu être lu.
+  // La relecture en échec se dit à côté (`relectureEnEchec`), sans rien effacer.
+  | { status: 'erreur_reseau' }
   // Bilan complété mais plan_cycles pas encore généré — ne devrait plus arriver en
   // pratique (compute_assessment_results le génère désormais immédiatement, cf.
   // migration 20260824190000), gardé comme filet pour les bilans complétés avant elle
@@ -129,6 +139,13 @@ export default function Plan() {
   useTrackFocus('plan_view');
 
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  // **Hors du `LoadState`, et pas par commodité** : la dernière relecture peut échouer
+  // au-dessus de n'importe quel écran issu d'une lecture réussie — le plan, mais aussi
+  // « en préparation » et « pas encore de bilan ». Porté par la variante `ok` seule, le drapeau
+  // obligeait le repli à écraser les deux autres, qui perdaient alors leurs sorties : « Revoir
+  // mon bilan » depuis `pending`, et « Faire mon bilan » depuis `no_assessment` — le
+  // questionnaire, lui, se remplit très bien hors ligne (brouillon AsyncStorage).
+  const [relectureEnEchec, setRelectureEnEchec] = useState(false);
   // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
   // jour ne se déduit pas de l'action qu'on vient de toucher — il faut relire le cycle.
   const [refreshKey, setRefreshKey] = useState(0);
@@ -145,7 +162,9 @@ export default function Plan() {
   // Les rappels : ce que la carte d'attente affiche, et ce que la feuille présélectionne.
   // `null` tant qu'on ne sait pas — mieux vaut ne rien dire qu'annoncer un canal faux.
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
-  const [boucle, setBoucle] = useState<Boucle>('mensuel');
+  // `null` tant qu'on ne sait pas : le jour que Ramille nomme vient du libellé du poste
+  // domicile-travail, et une valeur par défaut nommerait le mauvais rythme (cf. le chargement).
+  const [boucle, setBoucle] = useState<Boucle | null>(null);
   const [permission, setPermission] = useState<Permission>('fermee');
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
 
@@ -217,87 +236,152 @@ export default function Plan() {
   useEffect(() => {
     let cancelled = false;
 
+    // **Une lecture qui échoue n'est ni « pas de bilan » ni « plan en préparation ».** Les deux
+    // replis disaient la même chose à quelqu'un dans le métro : que ses données n'existent pas.
+    //
+    // Un écran déjà rempli n'est jamais remplacé par l'erreur : ce qu'il montre reste vrai,
+    // seulement plus tout à fait à jour. Ce chargement tourne à chaque retour au premier plan
+    // (`useRafraichirAuRetour`), et le plan est la destination du rappel — le remplacer par un
+    // écran d'erreur à chaque ouverture hors ligne coûterait plus que la ligne qui le dit.
+    const echecDeLecture = () => {
+      if (cancelled) return;
+      setRelectureEnEchec(true);
+      // `pending` et `no_assessment` sont dérivés d'une lecture **réussie** au même titre que
+      // `ok` : seul `loading` n'a jamais rien su, et c'est le seul que l'écran d'erreur plein
+      // écran remplace.
+      setState((precedent) =>
+        precedent.status === 'loading' ? { status: 'erreur_reseau' } : precedent
+      );
+    };
+
     (async () => {
-      // Le lien "Revenir à mon bilan" pointe vers la restitution du dernier bilan
-      // complété (elle-même donne accès à "Modifier mes réponses") — il faut donc son
-      // id systématiquement, pas seulement dans le cas filet ci-dessous.
-      const { data: assessment } = await supabase
-        .from('assessments')
-        .select('id, submitted_at')
-        .eq('status', 'completed')
-        .order('submitted_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      try {
+        // Le lien "Revenir à mon bilan" pointe vers la restitution du dernier bilan
+        // complété (elle-même donne accès à "Modifier mes réponses") — il faut donc son
+        // id systématiquement, pas seulement dans le cas filet ci-dessous.
+        const { data: assessment, error: erreurBilan } = await supabase
+          .from('assessments')
+          .select('id, submitted_at')
+          .eq('status', 'completed')
+          .order('submitted_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (!assessment) {
-        setState({ status: 'no_assessment' });
-        return;
+        if (erreurBilan) {
+          echecDeLecture();
+          return;
+        }
+
+        if (!assessment) {
+          setState({ status: 'no_assessment' });
+          // Une lecture qui aboutit efface la ligne de relecture, y compris sur les deux
+          // sorties anticipées : sans ça, elle survivrait à l'échec précédent au-dessus d'un
+          // écran pourtant à jour.
+          setRelectureEnEchec(false);
+          return;
+        }
+
+        const { data: cycle, error: cycleError } = await supabase
+          .from('plan_cycles')
+          .select(
+            // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
+            // type du résultat en analysant ce littéral au niveau des types. Une concaténation
+            // lui rend un `string` opaque et le typage du retour est perdu.
+            'id, period_label, trip_label, baseline_co2_kg_year, target_reduction_pct, plan_actions(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, action_templates(action_text, poste))'
+          )
+          .order('period_start', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        // **Le cycle manquant et le cycle illisible ne sont plus le même état.** Les deux
+        // tombaient sur « Ton plan est en cours de préparation », qui est une affirmation :
+        // elle dit qu'il n'y a rien à montrer *encore*, donc qu'il suffit d'attendre. Hors
+        // ligne, il n'y a rien à attendre. `pending` reste le filet du cas légitime — un bilan
+        // complété avant que le calcul ne génère le plan, que le cron rattrape.
+        if (cycleError) {
+          echecDeLecture();
+          return;
+        }
+
+        if (!cycle) {
+          setState({ status: 'pending', assessmentId: assessment.id });
+          setRelectureEnEchec(false);
+          return;
+        }
+
+        // Check-ins en attente (boucle hebdo domicile-travail + boucle mensuelle extras,
+        // cf. generate_commute_checkins/generate_extras_checkins). Les périodes révolues sont
+        // clôturées côté serveur en `expired` (migration 20260904180000) : sans ça, un
+        // utilisateur absent huit semaines retrouvait huit cartes identiques.
+        //
+        // Le `keepLatestPerLoop` ci-dessous est une ceinture en plus de cette bretelle : si un
+        // passage de cron était manqué, la table pourrait de nouveau porter deux périodes en
+        // attente pour une même boucle. On n'affiche jamais qu'une question vivante par boucle,
+        // la plus récente — une pile de rappels est le contraire de ce que cette boucle promet.
+        //
+        // Une erreur ici compte autant que les deux autres : sans les points, la carte d'attente
+        // prend leur place et Ramille dit qu'il n'y a rien à rattraper le jour où la question
+        // est justement ouverte.
+        const { data: checkins, error: erreurCheckins } = await supabase
+          .from('engagement_checkins')
+          .select('id, loop_type, period_label, trip_label, period_start')
+          .eq('status', 'pending')
+          .order('period_start', { ascending: false });
+
+        if (cancelled) return;
+
+        if (erreurCheckins) {
+          echecDeLecture();
+          return;
+        }
+
+        // Quelle boucle concerne cette personne, donc quel jour Ramille peut nommer : le point
+        // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3). C'est le
+        // prochain contact qui compte, pas l'action engagée.
+        const [{ data: resultat, error: erreurResultat }, prefs, etatPermission] = await Promise.all([
+          supabase
+            .from('assessment_results')
+            .select('commute_poste_label')
+            .eq('assessment_id', assessment.id)
+            .maybeSingle(),
+          loadReminderPrefs(),
+          lirePermission(),
+        ]);
+
+        if (cancelled) return;
+
+        // **La boucle ne se devine pas sur un échec de lecture.** C'était la seule des quatre
+        // lectures dont l'`error` restait ignorée, et le repli n'était pas neutre : sans
+        // libellé, `boucle` valait `mensuel`, donc la carte d'attente nommait « le 1er du
+        // mois » à quelqu'un dont le point s'ouvre le lundi. On préfère ne pas la nommer du
+        // tout — `boucle` reste `null`, la carte ne s'affiche pas — plutôt que de remplacer
+        // tout le plan par un écran d'erreur pour une lecture secondaire. La ligne de relecture
+        // dit que l'écran n'est pas tout à fait à jour.
+        if (!erreurResultat) setBoucle(resultat?.commute_poste_label ? 'hebdo' : 'mensuel');
+        setRappels(prefs);
+        setPermission(etatPermission);
+
+        setState({
+          status: 'ok',
+          cycle: cycle as PlanCycle,
+          assessmentId: assessment.id,
+          assessmentDate: assessment.submitted_at,
+          checkins: keepLatestPerLoop((checkins as PendingCheckin[] | null) ?? []),
+        });
+        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si la lecture
+        // secondaire ci-dessus a échoué.
+        setRelectureEnEchec(Boolean(erreurResultat));
+      } catch {
+        // Une promesse rejetée — `loadReminderPrefs` ou `lirePermission`, qui touchent un
+        // module natif et ne rendent pas d'erreur mais lèvent — laissait l'écran sur
+        // « Chargement de ton plan… » pour toujours : le même mensonge par omission, en plus
+        // muet. Même leçon que la racine de l'app (07/09/2026).
+        echecDeLecture();
       }
-
-      const { data: cycle, error: cycleError } = await supabase
-        .from('plan_cycles')
-        .select(
-          // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
-          // type du résultat en analysant ce littéral au niveau des types. Une concaténation
-          // lui rend un `string` opaque et le typage du retour est perdu.
-          'id, period_label, trip_label, baseline_co2_kg_year, target_reduction_pct, plan_actions(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, action_templates(action_text, poste))'
-        )
-        .order('period_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (cycleError || !cycle) {
-        setState({ status: 'pending', assessmentId: assessment.id });
-        return;
-      }
-
-      // Check-ins en attente (boucle hebdo domicile-travail + boucle mensuelle extras,
-      // cf. generate_commute_checkins/generate_extras_checkins). Les périodes révolues sont
-      // clôturées côté serveur en `expired` (migration 20260904180000) : sans ça, un
-      // utilisateur absent huit semaines retrouvait huit cartes identiques.
-      //
-      // Le `keepLatestPerLoop` ci-dessous est une ceinture en plus de cette bretelle : si un
-      // passage de cron était manqué, la table pourrait de nouveau porter deux périodes en
-      // attente pour une même boucle. On n'affiche jamais qu'une question vivante par boucle,
-      // la plus récente — une pile de rappels est le contraire de ce que cette boucle promet.
-      const { data: checkins } = await supabase
-        .from('engagement_checkins')
-        .select('id, loop_type, period_label, trip_label, period_start')
-        .eq('status', 'pending')
-        .order('period_start', { ascending: false });
-
-      if (cancelled) return;
-
-      // Quelle boucle concerne cette personne, donc quel jour Ramille peut nommer : le point
-      // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3). C'est le
-      // prochain contact qui compte, pas l'action engagée.
-      const [{ data: resultat }, prefs, etatPermission] = await Promise.all([
-        supabase
-          .from('assessment_results')
-          .select('commute_poste_label')
-          .eq('assessment_id', assessment.id)
-          .maybeSingle(),
-        loadReminderPrefs(),
-        lirePermission(),
-      ]);
-
-      if (cancelled) return;
-
-      setBoucle(resultat?.commute_poste_label ? 'hebdo' : 'mensuel');
-      setRappels(prefs);
-      setPermission(etatPermission);
-
-      setState({
-        status: 'ok',
-        cycle: cycle as PlanCycle,
-        assessmentId: assessment.id,
-        assessmentDate: assessment.submitted_at,
-        checkins: keepLatestPerLoop((checkins as PendingCheckin[] | null) ?? []),
-      });
     })();
 
     return () => {
@@ -328,13 +412,47 @@ export default function Plan() {
   // d'attente doit refléter le choix immédiatement, et le serveur a déjà été écrit.
   // Dérivée à chaque rendu plutôt que stockée : elle ne dépend que de l'état des rappels et
   // de la boucle, et un second état à tenir en phase serait un état de trop.
-  const attente = rappels ? carteAttente({ ...rappels, boucle }) : null;
+  // La permission part avec le reste (A4-15) : sans elle, la carte accusait les réglages du
+  // téléphone dès qu'un jeton manquait, y compris quand l'enregistrement venait d'échouer pour
+  // une autre raison. C'est un fait de l'appareil, déjà lu par le chargement ci-dessus.
+  const attente = rappels && boucle ? carteAttente({ ...rappels, boucle, permission, plateforme: Platform.OS === 'web' ? 'web' : 'natif' }) : null;
 
   const fermerLaFeuille = (canal: CanalPrefere, jetonActif: boolean) => {
     setFeuilleOuverte(false);
     setRappels((p) => (p ? { ...p, prefere: canal, jetonActif } : p));
     void lirePermission().then(setPermission);
   };
+
+  // **Le seul retour visible du bouton de l'écran d'erreur.** `rafraichir` n'incrémente qu'une
+  // clé : l'effet relit, échoue, et `echecDeLecture` laisse rigoureusement le même écran —
+  // hors ligne, donc dans le seul cas où cet écran existe, le bouton a l'air mort. Repasser par
+  // « Chargement… » dit que le geste a été pris.
+  //
+  // Et surtout pas dans `rafraichir` lui-même, qui est aussi le rappel de
+  // `useRafraichirAuRetour` et celui de l'engagement : y remettre `loading` ferait clignoter
+  // « Chargement de ton plan… » à chaque retour au premier plan, c'est-à-dire à chaque arrivée
+  // par notification.
+  const reessayerDepuisLErreur = () => {
+    setState({ status: 'loading' });
+    rafraichir();
+  };
+
+  // Ce qui est affiché reste vrai, mais date. La ligne vaut au-dessus des trois écrans issus
+  // d'une lecture réussie — le plan, « en préparation » et « pas encore de bilan » — et le lien
+  // relance la même lecture que le retour sur l'onglet.
+  const banniereRelecture = (centree = false) =>
+    relectureEnEchec ? (
+      <View style={[styles.relecture, centree && styles.relectureCentree]}>
+        <MessageInline message="Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
+        <TextLink
+          label="Réessayer"
+          onPress={rafraichir}
+          type="small"
+          weight={600}
+          themeColor="accentText"
+        />
+      </View>
+    ) : null;
 
   if (state.status === 'loading') {
     return (
@@ -355,6 +473,7 @@ export default function Plan() {
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <BandeHaute />
           <View style={styles.emptySafeArea}>
+            {banniereRelecture(true)}
             <EmptyStateIllustration style={styles.emptyIllustration} />
             <ThemedText type="screenTitle">
               Ton bilan n&apos;est pas encore fait
@@ -364,6 +483,26 @@ export default function Plan() {
               minutes.
             </ThemedText>
             <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  // L'écran ne sait rien : il le dit, et il ne propose surtout ni de faire un bilan ni
+  // d'attendre — les deux replis d'avant affirmaient quelque chose sur les données de la
+  // personne. « Réessayer » relance exactement la lecture que le retour sur l'onglet relance.
+  if (state.status === 'erreur_reseau') {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            <MessageInline
+              message="Ton plan n’a pas pu être relu. Vérifie ta connexion."
+              style={styles.erreurTexte}
+            />
+            <Button title="Réessayer" onPress={reessayerDepuisLErreur} />
           </View>
         </SafeAreaView>
       </ThemedView>
@@ -386,6 +525,7 @@ export default function Plan() {
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <BandeHaute />
           <View style={styles.centered}>
+            {banniereRelecture(true)}
             <ThemedText themeColor="textSecondary" style={styles.attenteTexte}>
               Ton plan est en cours de préparation, reviens dans un instant.
             </ThemedText>
@@ -429,7 +569,7 @@ export default function Plan() {
 
         {/* Rendue par-dessus le plan plutôt que dans le flux : elle arrive après un geste
             (« C'est noté ») et doit se lire comme un moment, pas comme un encart de plus. */}
-        {feuilleOuverte && rappels && (
+        {feuilleOuverte && rappels && boucle && (
           <FeuilleRappels
             prefs={rappels}
             boucle={boucle}
@@ -439,6 +579,9 @@ export default function Plan() {
         )}
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Sans cette ligne, une question ouverte depuis et un engagement pris ailleurs
+              manqueraient à l'écran sans que rien ne le dise. */}
+          {banniereRelecture()}
           {/* Un fait, pas une félicitation : ni mascotte (elle ne commente pas l'état du
               compte), ni exclamation, ni action à faire. */}
           {rattachement !== null && (
@@ -645,7 +788,35 @@ const styles = StyleSheet.create({
   // son propre espace sous elle, sinon le bouton la touche.
   attenteTexte: { textAlign: 'center', paddingHorizontal: Spacing.four, marginBottom: Spacing.four },
   attenteBouton: { marginBottom: Spacing.three },
-  scrollContent: { padding: Spacing.four, gap: Spacing.four },
+  // Le corps d'un état plein écran, comme les états vides voisins : `MessageInline` rend du
+  // « small » par défaut, ce qui se lit comme une note sous un bouton — pas comme la seule
+  // phrase de l'écran.
+  //
+  // 16/24, c'est la taille du `default` de `ThemedText`, pas `TypeScale.body` (15/22) : deux
+  // valeurs nues, recopiées à l'identique sur l'onglet voisin (`suivi/index.tsx`). L'endroit
+  // où les factoriser est un `type` sur `MessageInline`, qui n'appartient pas à ce chantier —
+  // le prochain passage visuel saura quoi faire de ces deux lignes.
+  erreurTexte: {
+    textAlign: 'center',
+    paddingHorizontal: Spacing.four,
+    marginBottom: Spacing.four,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  relecture: { gap: Spacing.one },
+  // La même ligne au-dessus d'un écran centré : elle a besoin de son propre air sous elle.
+  relectureCentree: { alignItems: 'center', marginBottom: Spacing.four },
+  // Largeur maximale du contenu, comme les pages légales et les écrans de compte (A5-21).
+  // L'app est déployée sur le web, et sans borne la carte du cap comme les cartes d'action
+  // s'étirent sur toute la fenêtre : le titre et le gain se retrouvent aux deux extrémités de
+  // l'écran, ce qui casse l'appariement visuel que ces cartes existent pour porter.
+  scrollContent: {
+    padding: Spacing.four,
+    gap: Spacing.four,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
   intro: { gap: Spacing.two },
   rattachement: { borderRadius: Radius.field, paddingVertical: 12, paddingHorizontal: Spacing.three },
   cadenceChip: { alignSelf: 'flex-start', borderRadius: Radius.chip, paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 },

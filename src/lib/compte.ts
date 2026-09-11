@@ -97,14 +97,28 @@ export async function exportMyData(): Promise<ExportResult> {
  * `getUser()` et non `getSession()` : la session en cache peut encore porter
  * `is_anonymous: true` juste après la confirmation de l'adresse, et c'est exactement
  * l'instant qu'on cherche à rendre visible.
+ *
+ * **Le prix de ce choix est un aller-retour réseau, et `error` est donc la moitié de la
+ * réponse** (A6-8) : hors ligne, `getUser()` ne lève pas, il rend `{ user: null, error }`. Ne
+ * lire que `data.user` ramenait cet échec à « pas de session », donc à l'état `local` — le plus
+ * affirmatif de tous, celui qui propose de rattacher un compte à quelqu'un qui en a peut-être
+ * déjà un. Les deux informations partent ensemble vers la dérivation, qui seule décide.
+ *
+ * Conséquence à connaître avant de la « corriger » : **l'absence totale de session tombe elle
+ * aussi en `indisponible`**, parce que le SDK la signale comme une erreur
+ * (`AuthSessionMissingError`) et non comme un utilisateur nul. C'est la bonne réponse ici —
+ * chaque visiteur reçoit une session dès l'ouverture (`ensureSession`), donc ne pas en trouver
+ * une veut dire que quelque chose a échoué, pas que la personne n'a pas de compte. Et l'ancien
+ * repli offrait un bouton « Rattacher un compte » qui, sans session, ne pouvait rien rattacher.
  */
 export async function lireEtatDuRattachement(): Promise<EtatRattachement> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return etatDuRattachement(null);
+  const { data, error } = await supabase.auth.getUser();
+  const user = data.user;
 
-  return etatDuRattachement({ isAnonymous: user.is_anonymous === true, email: user.email ?? null });
+  return etatDuRattachement({
+    session: user ? { isAnonymous: user.is_anonymous === true, email: user.email ?? null } : null,
+    lectureEnEchec: error !== null,
+  });
 }
 
 export async function lireEtatDuCompte(): Promise<EtatSuppression> {
@@ -131,12 +145,12 @@ export async function lireEtatDuCompte(): Promise<EtatSuppression> {
  * AsyncStorage : le brouillon de questionnaire — distances, zone d'habitation, motorisation, les
  * seules réponses de la personne dans le lot — survivait à un écran qui venait d'annoncer une
  * suppression définitive, et **repréremplissait** le questionnaire suivant (ordre brouillon >
- * dernier bilan > vide). Les trois autres clés sont des marques d'interface : les laisser
+ * dernier bilan > vide). Les autres clés sont des marques d'interface : les laisser
  * amputait durablement l'appareil de ses moments de renforcement (proposition de connexion plein
  * écran, feuille des rappels, annonce de rattachement), sans que rien ne le montre.
  *
  * **Le balayage se fait par préfixe, et c'est ce qui le garde juste dans le temps.** Une liste
- * écrite ici aurait oublié la cinquième clé du jour où quelqu'un en ajoute une ailleurs — le
+ * écrite ici aurait oublié la clé suivante, du jour où quelqu'un en ajoute une ailleurs — le
  * même piège silencieux qu'une fonction de suppression qui énumérerait les tables. Le préfixe
  * `traceverte.` est commun à toutes (il est historique et se conserve : le renommer effacerait
  * les brouillons existants, cf. CLAUDE.md) et n'appartient qu'à nous : les clés de session du

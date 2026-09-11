@@ -21,8 +21,12 @@ faute de pouvoir importer `src/`. Trois choses gardent volontairement l'ancien n
 son tableau de bord. Les documents `docs/architecture/v1-01` à `v1-08` parlent de TraceVerte :
 ce sont des décisions datées, on ne les réécrit pas. Détail en `v1-09-renommage-ramille.md`.
 
-Trois briques dans l'ordre de priorité produit : Bilan initial (2) > Onboarding (1) >
-Boucle mensuelle (4) > Plan de réduction (3).
+Cinq briques dans l'ordre de priorité de la spec §11 : Bilan initial (2) > Onboarding (1) >
+Connexion (5) > Boucle mensuelle (4) > Plan de réduction (3). Cet ordre est aujourd'hui
+historique — les cinq sont livrées — mais il explique le niveau de soin, que la spec §3 donne
+brique par brique : copy et framing travaillés sur 1 et 2, « fonctionnel simple » sur 3 et 4,
+soin sur le **placement et le message** pour 5. La connexion a son écart assumé (`v1-04` §1,
+session anonyme dès l'ouverture) : reprendre l'ordre de la spec ne remet pas son découpage.
 
 ## Commandes
 
@@ -43,19 +47,36 @@ Deux suites de tests automatisés, ciblées sur la logique où un bug est le plu
 (chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
 bout-en-bout (écrans, flux de connexion) :
 
-- **Jest** (`npm test`) sur la logique pure côté client — aujourd'hui `src/types/bilan.ts`
-  (dérivation de navigation et de complétude du wizard) et `src/types/suivi.ts` (écart entre
-  deux bilans, dédoublonnage de l'historique). Colocalisés en `*.test.ts` à côté du fichier
-  testé. **Un module testé ne doit pas importer `@/lib/supabase`** : son constructeur lève
-  sans variables d'environnement et fait échouer toute la suite — d'où la séparation
-  `src/types/*` (pur, testé) / `src/lib/*` (requêtes).
-- **pgTAP** (`supabase/tests/database/*.sql`) sur les fonctions SQL de calcul —
-  `compute_assessment_results`, `generate_plan_cycle_for_user`, `season_bounds`/
-  `rolling_quarter_bounds` — et sur les policies RLS (isolation stricte par utilisateur en
-  lecture/écriture, verrouillage des tables à écriture serveur-only, lecture publique des
-  référentiels). Tourne via `supabase test db`, qui démarre une stack Postgres
-  locale (Docker) à partir de `supabase/config.toml` + `supabase/migrations/` — indépendante
-  du projet Supabase distant `TraceVerte-v1` utilisé pour le développement applicatif
+- **Jest** (`npm test`) sur la logique pure côté client. La règle, plutôt qu'une liste qui se
+  périme au fichier suivant : **toute dérivation pure affichée à la personne ou décidant d'une
+  navigation est testée**, dans un `*.test.ts` colocalisé — l'inventaire se lit en listant
+  `src/**/*.test.ts`. Quelques-uns de ces tests n'existent pas pour attraper une régression de
+  code mais une régression de **jugement**, et il faut savoir qu'ils sont là avant de « corriger »
+  ce qu'ils épinglent : l'invariant SDES de `carbon-reference.test.ts` (le total est la somme des
+  postes), la table de vérité de `rappels.test.ts` (jumelle SQL de `reminder_channel_for`), les
+  règles de voix de `mascotte.test.ts` (jamais un nombre, jamais « tu devrais »), et la conformité
+  des chemins de `mascot.test.ts`.
+  **Un module testé ne doit pas importer `@/lib/supabase`** — d'où la séparation `src/types/*`
+  (pur, testé) / `src/lib/*` (requêtes). Le motif n'est plus l'exception au chargement : depuis
+  que le client est un mandataire, il ne lève plus qu'au premier accès (voir plus bas), ce qui
+  rend l'échec **plus** discret — un seul test d'une branche, pas la suite entière — donc c'est un
+  argument pour garder la règle, pas pour l'assouplir. La vraie raison est en tête du module :
+  il tire `@react-native-async-storage/async-storage`, `react-native` (Platform) et
+  `react-native-url-polyfill/auto`, qui n'ont rien à faire dans une suite de logique pure. Deux
+  modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
+  (et importé par `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la
+  suite qui en dépend, par un lien que rien n'affiche), et `bilan-draft.ts`, dont le test double
+  AsyncStorage parce que c'est l'entrée-sortie elle-même qu'il éprouve.
+- **pgTAP** (`supabase/tests/database/*.sql`, numérotés, un fichier par sujet — l'inventaire se
+  lit dans le répertoire) sur les fonctions SQL de calcul, sur les policies RLS (isolation
+  stricte par utilisateur en lecture/écriture, verrouillage des tables à écriture serveur-only,
+  lecture publique des référentiels) et sur la matrice de privilèges. Même distinction que côté
+  Jest : plusieurs assertions sont là pour **empêcher une correction de réflexe** — l'ordre ACV
+  des motorisations (hybride > thermique > rechargeable > électrique), la grosse moto au-dessus
+  de la voiture, la **source** de chaque facteur et le vélo non nul, le refus d'écriture directe
+  sur `plan_actions` et `engagement_checkins`. Tourne via `supabase test db`, qui démarre une
+  stack Postgres locale (Docker) à partir de `supabase/config.toml` + `supabase/migrations/` —
+  indépendante du projet Supabase distant `TraceVerte-v1` utilisé pour le développement applicatif
   courant. Nécessite le CLI Supabase (`npx supabase@latest`) et Docker ; non exécutable dans
   cet environnement (pas de daemon Docker) — validé à la place via des transactions
   `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
@@ -115,9 +136,9 @@ la racine, indépendant de l'export statique Expo régi par `vercel.json`) — p
 Router. Tsconfig dédié (`api/tsconfig.json`, exclu du tsconfig racine, `types: ["node"]`) : ce
 contexte tourne en Web Fetch API (Request/Response), pas dans React Native. Utilisé pour
 `api/partage.ts` (runtime Edge) et `api/share-card.ts` (runtime Node.js, rendu d'image via
-`satori`/`@resvg/resvg-wasm`) — carte de bilan partageable, cf. `bilan/resultat.tsx` "Partager
-mon bilan". **Une Vercel Function en runtime Node.js dans ce repo a une checklist non
-négociable** (`api/package.json` en `"type": "module"`, `vercel.json` →
+`satori`/`@resvg/resvg-wasm`) — carte de bilan partageable, cf. « Partager mon bilan » dans
+`src/app/(tabs)/suivi/bilan.tsx`. **Une Vercel Function en runtime Node.js dans ce repo a une
+checklist non négociable** (`api/package.json` en `"type": "module"`, `vercel.json` →
 `functions["<chemin>"].includeFiles` pour tout asset chargé par une dépendance transitive,
 `request.url` toujours relatif donc à parser avec une base factice, export **nommé**
 `GET`/`POST`/… jamais `export default`, `maxDuration` à surveiller si cold start lourd) — sans
@@ -126,10 +147,37 @@ aucun détail côté client) sans que le code lui-même soit en cause. Détail d
 pourquoi, et comment les vrais logs runtime Vercel ont permis de les diagnostiquer :
 `docs/architecture/v1-06-partage-social.md` §3.
 
-**Routing** : `src/app/` (Expo Router, file-based). Flux : `/` → `/onboarding/*` →
-`/bilan` (questionnaire) → `/bilan/resultat` (restitution) → `/plan` (plan de réduction),
-avec `/connexion/*` atteignable depuis la restitution et le plan, et `/suivi` (historique des
-bilans et des check-ins) depuis le plan.
+**Routing** : `src/app/` (Expo Router, file-based), organisé autour d'une **barre à deux
+onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit :
+`plan.tsx` (le présent — action engagée, point de la période) et la pile `suivi/`, dont
+`suivi/index.tsx` est l'historique et `suivi/bilan.tsx` la restitution d'un bilan
+(`/suivi/bilan?id=`, `&nouveau=1` à la sortie du questionnaire). **La restitution n'est pas un
+troisième lieu** : c'est la dernière page d'un flux, ou le détail d'une entrée du suivi — d'où
+sa place dans cette pile, qui garde la barre visible.
+
+Tout le reste vit hors du groupe et s'affiche en plein écran, sans barre : `/onboarding` et
+`/bilan` sont des **flux**, `/compte/*` et `/connexion/*` des détours, `/confidentialite`,
+`/conditions`, `/compte/suppression` et `/feedback` des surfaces publiques ou de service. Les
+deux règles qui vont avec ce découpage (ajouter une route dans `(tabs)/` lui donne un onglet ;
+jamais de route dynamique `[id]`) sont en § Conventions front notables, pas ici.
+
+Le parcours : `/` route sur `/plan` si un bilan complété existe, sinon `/onboarding` → `/bilan`
+(la sortie de l'onboarding vide la pile avant d'y entrer, `dismissAll()`) →
+`/suivi/bilan?id=…&nouveau=1`, d'où l'on rejoint le plan. `/connexion` s'atteint depuis la
+restitution — transition imposée (`resultat_transition`) et bouton délibéré (`resultat_cta`),
+deux provenances que la mesure distingue — et depuis `/compte` (`compte`).
+`/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis quatre
+endroits, énumérés par `SOURCES_RETROUVER` : l'accueil de l'onboarding (« J'ai déjà un
+compte »), `/connexion/email` quand l'adresse est déjà prise, `/connexion` sur une collision
+Google, et un lien de connexion arrivé en **échec** (expiré, déjà utilisé), que le layout racine
+route ici avec son motif (`src/app/_layout.tsx`) — un lien valide, lui, ouvre la session et ne
+passe pas par cet écran. Le compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
+
+**`/bilan/resultat` existe toujours, et c'est exprès** : un `<Redirect>` de quinze lignes vers
+`/suivi/bilan`, parce que l'adresse est citée dans `page-titles.ts`, dans l'en-tête
+d'`api/partage.ts`, dans les liens déjà partagés et dans des favoris. Un lien mort silencieux
+est le pire résultat d'un déplacement de fichier, et c'est la destination de la boucle de
+partage — ne pas la supprimer au prochain nettoyage.
 
 **Documentation de référence — à lire avant toute modification de schéma ou de flux** :
 `docs/architecture/v1-0N-*.md`. Ce sont des décisions actées, pas des brouillons ; chaque
@@ -149,9 +197,17 @@ lots) : **barre à deux onglets Plan / Suivi**, le questionnaire et le compte ho
 résultat sous le suivi (`/suivi/bilan?id=`, deux entrées dérivées dans `src/types/resultat.ts`,
 `/bilan/resultat` conservée en redirection), action engagée saillante, et les jetons
 `TypeScale`/`Radius`/`ControlHeight` que les écrans consomment au lieu de redéclarer une taille.
-Son canvas est `docs/design/v1-11-navigation/`, ses écarts d'implémentation sa §7. **Trois
-points restent à vérifier sur appareil** (§8) — dont le retour matériel Android, qui doit
-quitter l'app depuis `/plan` et ne pas être « corrigé ».
+Son canvas est `docs/design/v1-11-navigation/`, ses écarts d'implémentation sa §7. **Trois des
+quatre puces de sa §8 restent à vérifier sur appareil** : l'annonce TalkBack « Plan, onglet,
+sélectionné » ; le placement de la **carte d'attente** du plan, posée au-dessus du cap de la
+saison — la règle « jamais la mascotte près d'un chiffre lourd » vise l'empreinte et non une
+réduction, mais si le rendu réel la fait paraître commenter le cap, elle descend sous les actions
+(déplacement d'un bloc ; la puce visait la carte de période calme, remplacée par celle-ci en
+`v1-12` §6.3) ; et le **lien de connexion `ramille://`**, repris plus bas avec ce qui le distingue
+du lien du rappel.
+Le **retour matériel Android** n'est plus à vérifier : vérifié le 09/09/2026, il quitte bien
+l'app depuis `/plan` — c'est le comportement attendu d'une racine à onglets, et il ne doit pas
+être « corrigé » par quelqu'un qui le prendrait pour une navigation manquante.
 
 L'increment précédent, `v1-10-connexion-et-rappels.md` (06/09/2026), est livré pour ses
 chantiers A à D, F **et E** ; il ne reste que G (renommage GitHub). Il portait la connexion
@@ -167,6 +223,14 @@ jeton d'appareil suit la personne par RPC ; la feuille des rappels s'ouvre **une
 appareil** après « C'est noté », et la carte d'attente du plan a remplacé « Rien à rattraper ».
 Les trois branches ont été parcourues en conditions réelles — notification reçue, email reçu,
 lien du rappel ouvrant l'app et non le navigateur, réponse refermant le point (§8.1).
+
+**Ce qui a été vérifié là, c'est le lien du rappel, pas celui de la connexion**, et les
+confondre ferait croire qu'un chemin a été éprouvé alors qu'il ne l'a pas été. Le lien du
+rappel pointe `https://www.ramille.fr/plan` et s'ouvre dans l'app par `assetlinks.json`. Le lien
+de connexion, lui, arrive en `ramille://` depuis une messagerie, remonte par `Linking.useURL()`
+dans `_layout.tsx`, et doit aboutir sur le plan barre comprise : **ce chemin n'a jamais été
+exercé sur appareil** (`v1-11` §8, dernière puce), alors que c'est le seul accès à un compte
+existant depuis un téléphone neuf.
 
 **Ce que ce test a appris, et qu'aucune suite ne pouvait dire :** le canal marchait
 parfaitement pendant que la boucle se cassait au dernier mètre. Appuyer sur la notification
@@ -188,12 +252,19 @@ plutôt que d'insérer un point à la main.
 contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une
 issue GitHub par chantier — #99 à #151 et #153 — et **le plan de livraison en huit vagues en §2.3**, dont
 l'issue de suivi #154 est la vue cochable ; inventaire complet en `docs/audit/2026-09-09-inventaire.md`).
-**Les vagues 1 et 2 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, le lot 1
-(bugs silencieux et textes faux) le 11/09/2026 ; la vague 3 est la suite, et c'est elle qui porte le
-jalon « publiable sur Play ». Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce
-qui reste à vérifier sur appareil et que cocher une ligne de §10 ne dit pas, et le relevé de fichiers
-— la colonne « Parallèle ? » de §2.3 est une intention, pas un relevé, et la vague 2 s'est révélée
-partager six fichiers après avoir été annoncée disjointe.
+**Les vagues 1, 2 et 3 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, puis le
+lot 1 (bugs silencieux et textes faux, puis écrans d'onglets) le 11/09/2026. **Le jalon « publiable
+sur Play » est atteint côté code** ; ce qui reste avant de publier n'est pas du code mais les
+vérifications de la §11 et la checklist de `docs/exploitation/README.md`. La vague 4 (lot 2, socle
+et serveur de la boucle d'engagement) est la suite.
+
+Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
+appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
+fois** — la colonne « Parallèle ? » de §2.3 est une intention, pas un relevé. Elle s'est trompée
+deux fois de suite : la vague 2, annoncée disjointe, partageait six fichiers, et la vague 3,
+annoncée « enchaînée », avait deux chantiers réellement parallélisables et trois fichiers
+revendiqués par plusieurs — dont un par trois. Le relevé coûte dix minutes et évite qu'un chantier
+en écrase un autre en silence.
 **Le lot 2 a son canvas Claude Design, livré le 10/09/2026** : `docs/design/v1-14-boucle-engagement/`
 (brief, HANDOFF du designer, captures, README qui consigne ce que l'implémentation corrige par rapport au
 canvas) et son document d'implémentation **`v1-14-boucle-engagement.md`** — la copie (§3, seule source
@@ -271,6 +342,16 @@ message ; et un appareil qui porte déjà un bilan anonyme voit l'écran de coll
 formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laisse choisir. Sur
 natif, le lien arrive hors de l'app (messagerie) et remonte par `Linking.useURL()` dans
 `_layout.tsx` ; le scheme `ramille://` doit donc figurer dans les Redirect URLs Supabase.
+
+**`estPanneDeTransport` couvre les 5xx, et c'est assumé** (même module) : `auth-js` ne réserve
+pas `AuthRetryableFetchError` à l'échec de `fetch` — son `lib/fetch.js` porte
+`NETWORK_ERROR_CODES = [500…504, 520…530]` et lève ce même nom pour chacun, code du corps jeté au
+passage. La non-divulgation qui reste tenue est la seule qui porte l'information : le 422
+`otp_disabled` d'une adresse inconnue mène au **même** écran d'attente qu'un envoi accepté. Deux
+pièges qui vont avec : un test qui fabrique un 500 **sans `name`** n'éprouve rien (le SDK ne
+produit jamais cette forme — c'est ainsi qu'un commentaire a pu affirmer l'inverse du code sans
+que rien ne tombe), et le message d'échec dit « n'a pas abouti » et non « n'est pas partie »,
+puisque sur un 5xx la demande a bien quitté l'appareil.
 
 **Cette liste de redirections est une frontière de sécurité, pas une commodité de
 configuration.** Elle décide à quelles adresses Supabase accepte de **remettre une session** —
@@ -385,7 +466,7 @@ dépend du segment (court / moyen / long-courrier), relevé aux distances de ré
 `train_longue_distance` (TGV) et non le mode générique `train` qui reste le TER du
 trajet quotidien B1.4. `train_longue_distance` n'est jamais sélectionnable dans le
 questionnaire — il n'apparaît donc pas dans `src/constants/transport-modes.ts`, mais bien dans
-`MODE_PREPOSITION` (`bilan/resultat.tsx`) puisqu'il peut être le `dominant_poste_mode`.
+`MODE_PREPOSITION` (`src/types/resultat.ts`) puisqu'il peut être le `dominant_poste_mode`.
 
 **Tous les facteurs portent l'ACV complète — usage + fabrication — jamais la seule phase
 d'usage.** C'est la distinction la plus coûteuse du produit et elle n'est pas visible dans les
@@ -466,6 +547,27 @@ Deux mécanismes de génération server-side qu'il faut garder synchronisés si 
 - Cadence du plan de réduction : saisons **météorologiques** (blocs calendaires de 3 mois,
   pas astronomiques) par défaut, ou trimestre glissant ancré sur la date du bilan si
   `profiles.cadence_type = 'rolling_quarter'`.
+
+**`cadence_type = 'rolling_quarter'` est un mécanisme dormant, et il faut le savoir avant de le
+prendre pour du code mort.** Toute la chaîne serveur existe et est testée — `rolling_quarter_bounds`,
+le branchement de `generate_plan_cycle_for_user`, le snapshot `plan_cycles.cadence_type`, quatre
+assertions du test 00 et le scénario B du test 02 — mais **aucun écran ne l'écrit ni ne la lit** :
+les 19 profils de la base valent tous `season`, la valeur par défaut (relevé le 11/09/2026).
+`v1-01` la décrivait comme un « paramètre réservé pour la brique 3, stocké dès maintenant pour ne
+pas migrer le profil plus tard » ; la brique 3 est livrée depuis `v1-03` et rien ne disait pourquoi
+le réglage n'a jamais été ouvert. La réponse est qu'il ne l'a pas encore été, pas qu'il a été
+écarté : le handoff design le prévoit (`docs/design/README.md`, puce « Cadence : saison — été »),
+donc l'ouvrir dans « Toi » serait une décision produit et non une invention. La dormance est
+consignée en base sur le commentaire de la colonne (`20260912110000_detail_kind_et_cadence.sql`).
+
+Même famille, côté plan : `action_templates.detail_kind` ne vaut plus que pour les postes
+domicile-travail et loisirs. La branche `travel` d'`estimate_action_savings` construit son détail
+elle-même avec `format(...)` avant d'atteindre le `case`, qui est gardé par `if v_detail is null` —
+les trois valeurs de voyages étaient donc **inatteignables et masquantes** (un template de voyages
+avec un `detail_kind` neuf aurait reçu le détail générique du segment, en silence). Elles ont été
+retirées de la contrainte et le champ mis à `null` sur les trois templates concernés, plutôt que
+branchées : les faire passer par le `case` l'obligerait à lire `v_count`, une variable locale de la
+branche, et en ferait un troisième endroit où se lit la logique de segment.
 
 `assessment_results` fige le résultat calculé au moment du bilan (jamais recalculé à la
 volée côté client) — même logique pour `engagement_checkins.trip_label`, snapshotté pour ne
@@ -633,6 +735,22 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `TARGET_2050_TRANSPORT_T` est une **dérivation** explicitement signalée — aucune source
   publique ne donne d'objectif 2050 par poste d'empreinte individuelle — d'où le libellé
   « Repère » et non « Objectif » à l'écran.
+  **Deux formateurs, et ils ne disent pas la même chose.** `formatTonnes` (`src/lib/format.ts`)
+  bascule : kilos arrondis sous la tonne, dixième de tonne au-dessus — sans quoi tout ce qui vaut
+  moins de 50 kg s'affichait « 0,0 t CO₂e », c'est-à-dire les postes secondaires de n'importe quel
+  bilan et la phrase « Le repère 2050 est à ta portée : 0,0 t CO₂e de moins sur l'année »,
+  adressée au profil qui en est le plus près. `formatTonnesShort` (`carbon-reference.ts`) ne
+  bascule pas, et c'est délibéré : il porte l'échelle de comparaison — la moyenne française, le
+  repère 2050 — qui reste dans une seule unité pour que les barres se comparent. Les deux se
+  lisent côte à côte dans la carte « Où tu te situes » de `suivi/bilan.tsx`, d'où la règle : **les
+  lignes de repère restent en tonnes, les lignes qui sont les chiffres de la personne passent par
+  `formatTonnes` sous la tonne** (« Toi », « Ton prochain palier » — sauf quand le palier *est* le
+  repère 2050, où la ligne redevient un repère). Ce qui n'est **pas** réglé : au-dessus de la
+  tonne, deux bilans à 1 240 puis 1 180 kg s'affichent toujours « 1,2 t » tous les deux sous une
+  note « 5 % de moins » (A5-3 symptôme 1) — le remède est de dire l'**écart** en kilos côté suivi,
+  jamais une forme de plus dans le formateur. Et `src/lib/format.ts` doit rester pur pour une
+  raison qui ne se voit pas : `src/types/resultat.ts` l'importe, donc une dépendance ajoutée là
+  ferait tomber toute la suite Jest qui en dépend.
 - **Le palier de la restitution est le cap de la saison, jamais une marche inventée**
   (`src/types/palier.ts`). La barre « Repère 2050 » lui a cédé sa place : afficher 15,8 t à côté
   de 0,6 t donnait un rapport de 1 à 26 que le texte ne rattrape pas, et 2050 tient désormais
@@ -698,7 +816,8 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   rôle qui annonce « sélectionné » ; et la mascotte comme les illustrations sont masquées
   (`aria-hidden`, `accessibilityElementsHidden`) — elles accompagnent un texte qui dit déjà
   tout. Un `Pressable` nu reste légitime quand la cible porte plusieurs textes (la bannière de
-  `bilan/resultat.tsx`), à condition de lui donner un `accessibilityLabel` qui les recompose.
+  `src/app/(tabs)/suivi/bilan.tsx`), à condition de lui donner un `accessibilityLabel` qui les
+  recompose.
 - **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
   par un `onPress`.** `react-native-web` rend un `onPress` sur du texte en `<div>` : cliquable
   pour un humain, inexistant pour un crawler. Et il ne suffit pas que l'ancrage soit correct, il
@@ -708,6 +827,14 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   seules surfaces publiques du produit (leurs URL sont données à Google Play et à l'écran de
   consentement Google). Le sens du lien est délibéré — Ramille vers le CV — et il ne porte
   pas de `nofollow`.
+- **Ce que `api/` duplique de `src/` doit être tenu des deux côtés, et la liste est courte.**
+  Les Vercel Functions ne peuvent pas importer `src/` (tsconfig dédié, runtime Web Fetch API) :
+  `APP_NAME` y est un littéral, et depuis le 11/09/2026 **la règle des kilos sous la tonne** aussi.
+  L'oubli ne se voit d'aucun côté pris séparément : quand `formatTonnes` a basculé en kilos sous
+  1 t, le message de partage s'est mis à dire « 40 kg CO₂e » pendant que l'aperçu et l'image
+  gardaient « 0,0 t CO₂e » — les deux chiffres du même partage se contredisaient, sur la seule
+  surface publique du produit, et aucune des deux suites de tests ne regarde les deux à la fois.
+  Toucher à un formatage affiché impose donc de chercher son jumeau dans `api/`.
 - **Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche.**
   `babel-preset-expo` remplace `process.env.EXPO_PUBLIC_X` par sa valeur littérale — **sauf**
   quand l'accès est écrit directement comme valeur d'une propriété d'objet dont la clé porte ce
@@ -769,6 +896,30 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   jusqu'au prochain démarrage à froid. Le garde vit hors du composant (`onAuthStateChange` émet à
   chaque rafraîchissement de jeton, soit toutes les heures) et **ne se valide qu'après le succès**
   de l'appel, sinon un échec réseau le referme sur l'état qu'il devait corriger.
+- **`enregistrerLeJeton()` rend un booléen, et c'est la seule chose qui peut faire passer
+  `jetonActif` à vrai** (`src/lib/rappels.ts`) — une permission accordée dont l'enregistrement a
+  échoué (pas d'identifiants FCM, pas de réseau, simulateur) faisait promettre au plan une
+  notification que le serveur ne voyait pas. Hors du chemin `push`, `jetonActif` n'est pas touché :
+  la préférence et le jeton sont deux faits distincts, et la feuille rend `prefs.jetonActif`
+  inchangé quand on la referme sans rien choisir. Le booléen ne distingue pas encore « permission
+  non accordée » d'un échec réseau ; le garde d'`_layout.tsx` ne rend donc le jeton à son
+  propriétaire précédent que sur une exception.
+- **Une absence de jeton n'accuse personne : c'est la permission qui le dit.** L'absence recouvre
+  quatre situations — jamais demandée, refusée, enregistrement échoué, simulateur — qui n'appellent
+  pas la même phrase. `lignesDeReglage` **et** `carteAttente` (`src/types/rappels.ts`) reçoivent
+  donc la `Permission`, et « coupées dans les réglages du téléphone » ne se dit que là où quelqu'un
+  les a vraiment fermées. Le corollaire est le lien « Ouvrir les réglages du téléphone » : il
+  n'existe que dans l'état `fermee`, il se rend **sous la ligne qui le porte** et non après le
+  groupe (détaché, il se lit comme appartenant au dernier choix), et **le retour doit réparer, pas
+  seulement changer le texte** — relire la permission sans réinscrire le jeton laisse la ligne
+  promettre une notification pendant que `push_tokens` porte encore son `disabled_at`, jusqu'au
+  prochain démarrage à froid.
+- **Le jeton de cet appareil est mémorisé en AsyncStorage** (`traceverte.jeton_appareil.v1`),
+  parce que rien en base ne permet de le reconnaître : `push_tokens` est owner-scoped et une
+  lecture rend les jetons de tous les appareils de la personne. C'est ce qui rend vraies les deux
+  phrases « sur ce téléphone » et « on ne désactive que le sien ». Sans marque locale, on ne
+  désactive rien — fenêtre de transition assumée et commentée dans `src/lib/rappels.ts`, sans
+  conséquence tant que `push_tokens` est vide.
 - **Le mode clair est forcé sur web, et ce n'est pas un oubli** (`src/hooks/use-theme.ts`).
   `userInterfaceStyle: light` d'`app.json` ne s'applique qu'au natif : sur web, `useColorScheme`
   lit `prefers-color-scheme` et rendait `Colors.dark` — la palette que `constants/theme.ts` décrit
@@ -832,16 +983,24 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   session anonyme devient un compte, et l'oubli serait silencieux : les rappels partiraient
   vers un utilisateur fantôme.
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
-  connexion") via AsyncStorage — explicitement device-local, pas de sync multi-device tant
-  que le compte n'est pas rattaché. Voir `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`.
+  connexion", jeton d'appareil) via AsyncStorage — explicitement device-local, pas de sync
+  multi-device tant que le compte n'est pas rattaché. Voir `src/lib/bilan-draft.ts`,
+  `src/lib/connexion-prefs.ts`, `src/lib/notification-prefs.ts`. Toutes ces clés portent le
+  préfixe historique `traceverte.` (le renommer effacerait les brouillons), et c'est par ce
+  **préfixe** que `src/lib/compte.ts` les balaie à la suppression de compte. **Ne jamais
+  dénombrer les clés `traceverte.*` dans un commentaire.** Le balayage se fait par préfixe
+  précisément pour que le nombre n'ait pas à être juste : trois commentaires en portaient un, tous
+  faux dès que le jeton d'appareil s'est ajouté. Une phrase qui compte devient fausse à la clé
+  suivante, en silence — et nommer ici les occurrences fautives rendrait cette ligne-ci fausse le
+  jour où on les corrige.
 - Le questionnaire se préremplit dans cet ordre : **brouillon local > dernier bilan complété >
   vide** (`src/lib/bilan-history.ts`). Le brouillon prime car il est plus récent par
   construction. Un re-bilan prérempli est ce qui rend le suivi dans la durée praticable — sans
   lui, comparer deux bilans demandait de retaper les neuf étapes.
 - La logique **pure** du suivi (écart entre deux bilans, dédoublonnage par jour, ancienneté)
-  vit dans `src/types/suivi.ts`, séparée des requêtes de `src/lib/bilan-history.ts` : importer
-  `@/lib/supabase` dans un module testé le fait échouer hors environnement configuré. Même
-  découpage que `src/types/bilan.ts`.
+  vit dans `src/types/suivi.ts`, séparée des requêtes de `src/lib/bilan-history.ts` : ce module
+  tire AsyncStorage et `react-native`, qui n'ont rien à faire dans une suite de logique pure
+  (cf. §Tests, où le motif est expliqué en entier). Même découpage que `src/types/bilan.ts`.
 - **L'écran `/suivi` n'a aucune mécanique d'échec** : ni streak, ni série cassée, ni score. Une
   période sans réponse n'y apparaît pas du tout (les check-ins non répondus sont clos en
   `expired` côté serveur et jamais relus). On compte les fois où la personne a répondu, jamais
@@ -858,6 +1017,35 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   react-navigation garde l'écran monté quand on change d'onglet : au montage, l'événement ne
   part qu'une fois par session. Le compteur ne tombe pas à zéro, ce qui se verrait — il rend un
   chiffre plausible et faux.
+- **Les deux onglets tiennent la concurrence de la même façon**, et c'est délibérément le même
+  idiome : une clé d'état qu'incrémente `rafraichir`, l'effet de chargement qui la porte en
+  dépendance, et un `let cancelled` périmé dans son nettoyage (`(tabs)/plan.tsx`, repris à
+  l'identique par `(tabs)/suivi/index.tsx`). Revenir sur l'onglet puis ramener l'app au premier
+  plan déclenche deux chargements à quelques millisecondes d'écart, et rien ne garantit l'ordre
+  des réponses : chaque nouvelle clé démonte l'effet précédent, donc seul le dernier lancé écrit,
+  sans compteur de génération à maintenir. Le rappel passé à `useRafraichirAuRetour` doit être
+  stable (`useCallback`), sinon son effet de focus se réabonne à chaque rendu et fait tourner
+  chargement et rendu l'un dans l'autre.
+- **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Charger à
+  chaque retour transforme une lecture en échec en régression visible : tant que la lecture n'avait
+  lieu qu'au montage, personne ne pouvait perdre ses barres en cours de session. Les lectures
+  rendent donc `{ ok: true, data } | { ok: false }` — **jamais erreur → tableau vide**, qui se
+  traduisait par « Ton suivi commence au premier bilan » à quelqu'un qui a douze bilans — et les
+  deux onglets séparent trois choses : l'erreur plein écran, qui ne s'atteint **que depuis
+  `loading`** (rien n'a jamais pu être lu) ; la ligne de relecture, portée par un `useState` **à
+  côté** du `LoadState` et jamais dans sa variante `ok`, affichable au-dessus de n'importe quel
+  écran issu d'une lecture réussie et qui n'efface rien ; et les états vides, qui restent des
+  affirmations sur les données de la personne. Le drapeau logé dans `LoadState.ok` était le
+  défaut : le repli détruisait alors `pending`, `no_assessment` et `empty`, c'est-à-dire « Revoir
+  mon bilan » et « Faire mon bilan » — la seule entrée du questionnaire, qui se remplit pourtant
+  très bien hors ligne (brouillon AsyncStorage). Deux corollaires : le « Réessayer » d'un écran
+  d'erreur repasse par `loading` **dans son propre gestionnaire**, jamais dans `rafraichir` — sans
+  ce passage, un second échec rend exactement le même écran et le bouton a l'air mort ; dedans, il
+  ferait clignoter « Chargement… » à chaque retour au premier plan, donc à chaque arrivée par
+  notification, puisque `rafraichir` est aussi le rappel de `useRafraichirAuRetour`. Et une valeur
+  par défaut posée sur un échec de lecture est du même mensonge : le rythme de la boucle (`boucle`)
+  vaut `null` tant qu'on ne l'a pas lu, et la carte d'attente ne s'affiche pas plutôt que de nommer
+  le mauvais jour.
 - **Les tailles et rayons qui se répètent vivent dans `TypeScale`/`Radius`/`ControlHeight`**
   (`src/constants/theme.ts`), consommés par les types `screenTitle`/`salient`/`cardTitle`/`body`
   de `ThemedText`. Une taille unique reste en dur là où elle vit — la nommer serait du bruit.
@@ -868,8 +1056,16 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   entièrement sa navigation ("Étape N sur M", saut conditionnel d'étapes) de l'état courant
   des réponses via `isStepVisible`/`nextStep`/`previousStep`/`isStepComplete` dans
   `src/types/bilan.ts` — pas de machine à états séparée à maintenir en parallèle.
-- `bilan/resultat.tsx` a deux variantes de libellé pour le poste dominant, jamais
+- `src/types/resultat.ts` a deux variantes de libellé pour le poste dominant, jamais
   interchangeables : `dominantHeadline()` (2ᵉ personne, "Tes voyages…", affichée à l'écran,
   adressée à l'utilisateur) et `dominantShareLabel()` (neutre, sans pronom, transmise à
   `/api/partage` — lue par les destinataires du lien partagé, pas par l'utilisateur qui
   partage). Voir `docs/architecture/v1-06-partage-social.md` §2.
+  **`MODE_IDS` est un miroir tenu à la main de `public.transport_modes`**, relevé en base le
+  11/09/2026. `MODE_PREPOSITION` étant un `Record` sur cette liste, le typecheck garantit la
+  cohérence **interne** au fichier — un identifiant ajouté sans préposition ne compile pas — mais
+  **rien** sur la correspondance avec la base : ajouter un mode au produit est une migration SQL,
+  et un mode résolu côté serveur (les quatre deux-roues, les quatre motorisations, le TGV) ne
+  traverse aucun fichier TypeScript. C'est le chemin qui avait laissé les quatre deux-roues
+  motorisés sans préposition alors qu'ils peuvent parfaitement être le `dominant_poste_mode`. La
+  garde qui manque est côté SQL et reste à écrire.

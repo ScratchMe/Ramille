@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Fragment, useState } from 'react';
+import { Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
 import { RamilleDit } from '@/components/ramille-dit';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { RAMILLE } from '@/constants/mascotte';
@@ -12,6 +13,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { demanderLaPermission, enregistrerLeJeton } from '@/lib/rappels';
 import { setReminderChannel, marquerFeuilleDeRappelVue, type ReminderPrefs } from '@/lib/notification-prefs';
 import {
+  canalPreselectionne,
   libelleBouton,
   lignesDeReglage,
   type Boucle,
@@ -47,19 +49,19 @@ export function FeuilleRappels({
   onFerme: (canal: CanalPrefere, jetonActif: boolean) => void;
 }) {
   const theme = useTheme();
+  const plateforme = Platform.OS === 'web' ? 'web' : 'natif';
 
-  // Présélection : ce que la personne a déjà, ou la notification quand elle est possible.
-  const [canal, setCanal] = useState<CanalPrefere>(
-    Platform.OS === 'web' ? 'email' : prefs.prefere
+  // Présélection dérivée, jamais une ligne grisée : la préférence si elle est choisissable,
+  // la notification sinon sur natif (`canalPreselectionne`, module pur et testé). Calculée une
+  // fois à l'ouverture — la feuille ne reste pas assez longtemps pour que l'état bouge sous
+  // elle, et la recalculer écraserait le choix qui vient d'être fait.
+  const [canal, setCanal] = useState<CanalPrefere>(() =>
+    canalPreselectionne({ ...prefs, plateforme, permission })
   );
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  const lignes = lignesDeReglage({
-    ...prefs,
-    prefere: canal,
-    plateforme: Platform.OS === 'web' ? 'web' : 'natif',
-  });
+  const lignes = lignesDeReglage({ ...prefs, prefere: canal, plateforme, permission });
 
   const valider = async () => {
     setOccupe(true);
@@ -73,13 +75,15 @@ export function FeuilleRappels({
     }
 
     // Le dialogue système, seulement si la personne a dit oui chez nous.
+    //
+    // `jetonActif` ne prend que ce que l'enregistrement a **vraiment** obtenu : une permission
+    // accordée dont le jeton n'a pas pu s'inscrire (pas de réseau, pas d'identifiants FCM,
+    // simulateur) laissait la carte d'attente promettre une notification qui ne partirait
+    // jamais. Avec le booléen, elle bascule d'elle-même sur la bonne ligne du §3.
     let jetonActif = prefs.jetonActif;
     if (canal === 'push' && permission !== 'fermee') {
       const apres = await demanderLaPermission();
-      if (apres === 'accordee') {
-        await enregistrerLeJeton();
-        jetonActif = true;
-      }
+      jetonActif = apres === 'accordee' ? await enregistrerLeJeton() : false;
     }
 
     await marquerFeuilleDeRappelVue();
@@ -115,35 +119,55 @@ export function FeuilleRappels({
             {RAMILLE.choixCanal}
           </ThemedText>
 
+          {/* Le rôle `radiogroup` ne porte que sur ce bloc. Le lien des réglages y entre, parce
+              qu'il appartient à la ligne « notification » : rendu après le groupe, il tombait
+              sous « Sans rappel » et se lisait comme appartenant à ce choix-là (canvas
+              `Main.dc.html` / `Toi.dc.html` : il suit la rangée atténuée). Il n'est pas un
+              `radio` et rien ne le compte comme une option. */}
           <View style={styles.lignes} accessibilityRole="radiogroup">
             {lignes.map((ligne) => (
-              <Pressable
-                key={ligne.canal}
-                onPress={() => ligne.choisissable && setCanal(ligne.canal)}
-                disabled={!ligne.choisissable || occupe}
-                accessibilityRole="radio"
-                accessibilityLabel={`${ligne.titre}. ${ligne.detail}`}
-                accessibilityState={{
-                  selected: ligne.choisi,
-                  checked: ligne.choisi,
-                  disabled: !ligne.choisissable,
-                }}
-                style={[
-                  styles.ligne,
-                  {
-                    backgroundColor: ligne.choisi ? theme.backgroundSelected : theme.backgroundElement,
-                    borderColor: ligne.choisi ? theme.accent : 'transparent',
-                    opacity: ligne.choisissable ? 1 : 0.6,
-                  },
-                ]}
-              >
-                <ThemedText weight={ligne.choisi ? 600 : 400} style={styles.titre}>
-                  {ligne.titre}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {ligne.detail}
-                </ThemedText>
-              </Pressable>
+              <Fragment key={ligne.canal}>
+                <Pressable
+                  onPress={() => ligne.choisissable && setCanal(ligne.canal)}
+                  disabled={!ligne.choisissable || occupe}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`${ligne.titre}. ${ligne.detail}`}
+                  accessibilityState={{
+                    selected: ligne.choisi,
+                    checked: ligne.choisi,
+                    disabled: !ligne.choisissable,
+                  }}
+                  style={[
+                    styles.ligne,
+                    {
+                      backgroundColor: ligne.choisi ? theme.backgroundSelected : theme.backgroundElement,
+                      borderColor: ligne.choisi ? theme.accent : 'transparent',
+                      opacity: ligne.choisissable ? 1 : 0.6,
+                    },
+                  ]}
+                >
+                  <ThemedText weight={ligne.choisi ? 600 : 400} style={styles.titre}>
+                    {ligne.titre}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {ligne.detail}
+                  </ThemedText>
+                </Pressable>
+
+                {/* Le seul état où la phrase appelle un geste hors de l'app : les notifications
+                    sont fermées pour de bon côté système, et rien ici ne peut les rouvrir. */}
+                {ligne.lienVersLesReglages && (
+                  <TextLink
+                    label="Ouvrir les réglages du téléphone"
+                    onPress={() => void Linking.openSettings()}
+                    role="link"
+                    type="small"
+                    weight={600}
+                    themeColor="accentText"
+                    containerStyle={styles.reglages}
+                  />
+                )}
+              </Fragment>
             ))}
           </View>
 
@@ -174,6 +198,7 @@ const styles = StyleSheet.create({
   poignee: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.two },
   mot: { alignItems: 'flex-start' },
   lignes: { gap: Spacing.two },
+  reglages: { alignSelf: 'flex-start', paddingHorizontal: Spacing.four },
   ligne: {
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,

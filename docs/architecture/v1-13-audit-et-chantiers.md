@@ -1886,16 +1886,16 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C1.1 | [#106](https://github.com/ScratchMe/TraceVerte/issues/106) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
 | C1.2 | [#107](https://github.com/ScratchMe/TraceVerte/issues/107) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
 | C1.3 | [#108](https://github.com/ScratchMe/TraceVerte/issues/108) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
-| C1.4 | [#109](https://github.com/ScratchMe/TraceVerte/issues/109) | | | |
+| C1.4 | [#109](https://github.com/ScratchMe/TraceVerte/issues/109) | [#158](https://github.com/ScratchMe/TraceVerte/pull/158) | 11/09/2026 | livré, sauf §11.5 (parcours en mode avion) |
 | C1.5 | [#110](https://github.com/ScratchMe/TraceVerte/issues/110) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
-| C1.6 | [#111](https://github.com/ScratchMe/TraceVerte/issues/111) | | | |
-| C1.7 | [#112](https://github.com/ScratchMe/TraceVerte/issues/112) | | | |
-| C1.8 | [#113](https://github.com/ScratchMe/TraceVerte/issues/113) | | | |
+| C1.6 | [#111](https://github.com/ScratchMe/TraceVerte/issues/111) | [#158](https://github.com/ScratchMe/TraceVerte/pull/158) | 11/09/2026 | livré |
+| C1.7 | [#112](https://github.com/ScratchMe/TraceVerte/issues/112) | [#158](https://github.com/ScratchMe/TraceVerte/pull/158) | 11/09/2026 | livré, sauf §11.6 (réponse puis onglet Suivi, sur appareil) |
+| C1.8 | [#113](https://github.com/ScratchMe/TraceVerte/issues/113) | [#158](https://github.com/ScratchMe/TraceVerte/pull/158) | 11/09/2026 | livré — quatre surfaces et non trois, la carte de partage comprise |
 | C1.9 | [#114](https://github.com/ScratchMe/TraceVerte/issues/114) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré, sauf §11.1 (passage TalkBack) et §11.4 (six appels de `Chip`) |
 | C1.10 | [#115](https://github.com/ScratchMe/TraceVerte/issues/115) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré, sauf §11.3 (chemin de suppression vérifié par un examinateur Play) |
 | C1.11 | [#116](https://github.com/ScratchMe/TraceVerte/issues/116) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
 | C1.12 | [#117](https://github.com/ScratchMe/TraceVerte/issues/117) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré, cinq points sur cinq |
-| C1.13 | [#118](https://github.com/ScratchMe/TraceVerte/issues/118) | | | |
+| C1.13 | [#118](https://github.com/ScratchMe/TraceVerte/issues/118) | [#158](https://github.com/ScratchMe/TraceVerte/pull/158) | 11/09/2026 | livré |
 | C2.1 | [#119](https://github.com/ScratchMe/TraceVerte/issues/119) | | | |
 | C2.2 | [#120](https://github.com/ScratchMe/TraceVerte/issues/120) | | | |
 | C2.3 | [#121](https://github.com/ScratchMe/TraceVerte/issues/121) | | | |
@@ -1933,7 +1933,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 
 ## 11. Vérifications sur appareil en attente
 
-Trois « Fait quand » de ce document ne se prouvent pas au clavier, et un quatrième point est un
+Cinq « Fait quand » de ce document ne se prouvent pas au clavier, et un sixième point est un
 reste assumé. Ils sont consignés ici plutôt que cochés en §10 : une ligne cochée dit « livré », et
 le code l'est — ce qui manque est la preuve en conditions réelles. Même régime que `v1-11` §8 et
 `v1-12` §8, dont les points restants ne sont pas repris ici.
@@ -1944,6 +1944,9 @@ le code l'est — ce qui manque est la preuve en conditions réelles. Même rég
 | 11.2 | C1.1 (soumission) | **Couper le réseau entre les deux premières écritures.** Aucune ligne `completed` sans réponses ne doit rester, et la tentative suivante doit reprendre le bilan `in_progress` au lieu d'en créer un second. Le double appui, lui, se vérifie au navigateur (le verrou est dans une `useRef`, lue dans le même tour de boucle que l'appel). |
 | 11.3 | C1.10 (textes légaux) | **Un examinateur Play qui suit les instructions de `/compte/suppression` doit trouver le chemin**, sans l'app installée, depuis un navigateur neuf. À refaire juste avant la publication, puisque c'est à ce moment-là que la page est lue — et c'est aussi le moment où l'empreinte de signature de Play doit être ajoutée à `assetlinks.json` (cf. CLAUDE.md). |
 | 11.4 | C1.9 (reste assumé) | **Six appels de `Chip` gardent le rôle `button` par défaut** — `steps/context.tsx`, `steps/flights.tsx`, `steps/commute-days-distance.tsx`, `steps/commute-extra.tsx`, `steps/leisure-detail.tsx` (choix uniques, donc `radio` dans une `View accessibilityRole="radiogroup"`) et `plan/action-commitment.tsx` (jours cumulables, donc `checkbox` dans un groupe nommé). Un `button` qui porte `selected` est exactement la combinaison que le constat A2-8 désigne : ces six-là portent encore le défaut. Le geste qui les ferme est de rendre la prop **obligatoire**, ce qui les énumère au typecheck — à faire en même temps qu'eux, pas avant. |
+
+| 11.5 | C1.4 (réseau coupé) | **Parcourir l'app en mode avion**, écran par écran : le plan, le suivi, « Toi », la réponse à un point, le choix de canal, l'envoi d'un lien, « Mes données ». Aucun ne doit affirmer un fait sur les données de la personne — ni « ton bilan n'est pas encore fait », ni « ton suivi commence au premier bilan », ni « tu n'as pas de compte ». C'est le « Fait quand » du chantier, et il ne se prouve qu'en coupant vraiment le réseau : un test ne peut pas distinguer une lecture vide d'une lecture qui n'a pas eu lieu, c'est précisément le défaut corrigé. |
+| 11.6 | C1.7 (le suivi au retour) | **Répondre au point depuis Plan, puis toucher l'onglet Suivi** : la réponse doit y être. Puis refaire un bilan et toucher Suivi : la nouvelle barre doit y être. Le hook écoute deux retours — le focus de l'écran et le retour de l'app au premier plan — et seul le second se vérifie en mettant vraiment l'app en arrière-plan, ce qu'aucun test ne fait. Même famille que la leçon du 09/09/2026 sur le plan. |
 
 Les points 11.1 et 11.4 vont ensemble : le passage TalkBack sera plus utile une fois les six
 appels repris, sinon il relèvera six fois le même défaut déjà connu.

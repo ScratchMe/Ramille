@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,15 +7,19 @@ import { BandeHaute } from '@/components/bande-haute';
 import { Button } from '@/components/button';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { Mascot } from '@/components/mascot';
+import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackFocus } from '@/hooks/use-track-focus';
 import { loadAnsweredCheckins, loadAssessmentHistory } from '@/lib/bilan-history';
+import { POSTE_LABEL } from '@/types/resultat';
 import {
   daysSince,
+  formatDate,
   REBILAN_SUGGESTION_DAYS,
   variationNote,
   type AssessmentSnapshot,
@@ -42,25 +46,32 @@ import { RAMILLE } from '@/constants/mascotte';
 //     laissé passer. La révision du 04/09/2026 (v1-06 §1) rouvre les mécaniques de
 //     progression **non comparatives** ; elle ne rouvre pas les mécaniques punitives.
 
-const POSTE_LABEL: Record<string, string> = {
-  commute: 'Trajet domicile-travail',
-  leisure: 'Loisirs du week-end',
-  travel: 'Voyages longue distance',
-};
+// Les libellés de poste et la date viennent tous deux d'un module pur et partagé : les trois
+// mêmes étiquettes étaient déclarées ici ET dans la restitution (`@/types/resultat`), et
+// `formatDate` y est maintenant aussi, parce que la relecture d'un bilan doit porter
+// exactement la date que cette liste affiche (A3-15).
 
+// Les deux boucles de la brique 4, elles, n'existent que sur cet écran.
 const LOOP_LABEL: Record<CheckinRecord['loopType'], string> = {
   commute: 'Domicile-travail',
   extras: 'Loisirs et voyages',
 };
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-}
-
 type LoadState =
   | { status: 'loading' }
   | { status: 'empty' }
-  | { status: 'ok'; history: AssessmentSnapshot[]; checkins: CheckinRecord[] };
+  /**
+   * Rien n'a pu être lu : on le dit, on ne prétend pas que la personne n'a rien.
+   *
+   * **Cet état ne s'atteint que depuis `loading`** : `ok` comme `empty` viennent d'une lecture
+   * qui a réussi, et l'écran d'erreur plein écran ne vaut que quand rien n'a jamais pu être lu.
+   */
+  | { status: 'erreur' }
+  | {
+      status: 'ok';
+      history: AssessmentSnapshot[];
+      checkins: CheckinRecord[];
+    };
 
 export default function Suivi() {
   // **Émis au focus et non au montage** : dans une barre d'onglets, react-navigation garde
@@ -71,23 +82,117 @@ export default function Suivi() {
 
   const theme = useTheme();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  // **Hors du `LoadState`, et pas par commodité** : la dernière relecture peut échouer au-dessus
+  // de `ok` comme de `empty`. Porté par la variante `ok` seule, le drapeau obligeait le repli à
+  // écraser l'état vide, qui perdait alors son « Faire mon bilan » — la seule entrée du
+  // questionnaire sur cet onglet, alors que le questionnaire se remplit très bien hors ligne.
+  const [relectureEnEchec, setRelectureEnEchec] = useState(false);
+
+  // Même idiome que l'autre onglet (`plan.tsx:134-135, 217-218`), délibérément : une clé qu'on
+  // incrémente, l'effet qui la porte en dépendance, et le garde `cancelled` posé dans son
+  // nettoyage. Deux rafraîchissements peuvent se chevaucher — revenir sur l'onglet puis
+  // ramener l'app au premier plan en déclenche deux à quelques millisecondes d'écart — et rien
+  // ne garantit que les réponses reviennent dans l'ordre où elles sont parties : chaque
+  // nouvelle clé démonte l'effet précédent, donc seul le dernier chargement lancé écrit.
+  const [cle, setCle] = useState(0);
+
+  // Stable, et ce n'est pas du confort : `useRafraichirAuRetour` relance ce rappel à chaque
+  // fois que son effet de focus se réabonne, donc un rappel recréé à chaque rendu ferait
+  // tourner chargement et rendu l'un dans l'autre sans fin.
+  const rafraichir = useCallback(() => setCle((precedente) => precedente + 1), []);
 
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      const [history, checkins] = await Promise.all([
-        loadAssessmentHistory(),
-        loadAnsweredCheckins(),
-      ]);
+    // Le repli, extrait parce qu'il sert à deux endroits : la lecture qui rend `{ ok: false }` et
+    // la promesse qui rejette. Même forme que `plan.tsx`, et pour la même raison — une promesse
+    // rejetée laisserait l'écran sur « Chargement de ton suivi… » pour toujours, c'est-à-dire le
+    // même mensonge par omission que celui qu'on vient de corriger, en plus muet.
+    const echecDeLecture = () => {
       if (cancelled) return;
-      setState(history.length === 0 ? { status: 'empty' } : { status: 'ok', history, checkins });
+      setRelectureEnEchec(true);
+      // `empty` est dérivé d'une lecture **réussie** au même titre que `ok` : seul `loading`
+      // n'a jamais rien su, et c'est le seul que l'écran d'erreur plein écran remplace.
+      setState((precedent) => (precedent.status === 'loading' ? { status: 'erreur' } : precedent));
+    };
+
+    (async () => {
+      let bilans;
+      let points;
+      try {
+        [bilans, points] = await Promise.all([loadAssessmentHistory(), loadAnsweredCheckins()]);
+      } catch (erreur) {
+        console.error('Le suivi n’a pas pu être relu :', erreur);
+        echecDeLecture();
+        return;
+      }
+
+      if (cancelled) return;
+
+      // **Une lecture en échec n'est pas un historique vide** (A5-2). Les deux fonctions
+      // rendaient `[]` sur erreur et cet écran le traduisait en « Ton suivi commence au premier
+      // bilan » : hors ligne, quelqu'un qui a douze bilans lisait que le sien n'existe pas — et
+      // la lecture a lieu à chaque retour d'onglet et à chaque retour au premier plan, plus
+      // seulement au montage. Elles disent maintenant laquelle des deux choses est vraie, et
+      // c'est ici qu'on en tire deux états distincts.
+      //
+      // Un écran déjà rempli n'est jamais remplacé par l'erreur : ce qu'il montre reste vrai,
+      // seulement plus tout à fait à jour. Il le dit en une ligne au lieu de tout effacer — le
+      // retour au premier plan hors ligne, sinon, balaierait à chaque fois un suivi juste.
+      if (!bilans.ok || !points.ok) {
+        echecDeLecture();
+        return;
+      }
+
+      // On ne repasse pas par « Chargement… » en revenant : l'écran garde ce qu'il montrait
+      // jusqu'à l'arrivée des données.
+      setState(
+        bilans.data.length === 0
+          ? { status: 'empty' }
+          : { status: 'ok', history: bilans.data, checkins: points.data }
+      );
+      setRelectureEnEchec(false);
     })();
 
     return () => {
+      // Chargement dépassé ou écran démonté : on le périme plutôt que de le laisser écrire.
       cancelled = true;
     };
-  }, []);
+  }, [cle]);
+
+  // **Le « Oui » donné sur le plan et le bilan qu'on vient de refaire apparaissent ici, et
+  // c'est le moment de renforcement le plus fort du produit.** Sans ça l'écran ne chargeait
+  // qu'une fois par lancement : react-navigation le garde monté d'un onglet à l'autre, et
+  // l'app survit à l'arrière-plan (règle posée après le test d'appareil du 09/09/2026).
+  useRafraichirAuRetour(rafraichir);
+
+  // **Le seul retour visible du bouton de l'écran d'erreur.** `rafraichir` n'incrémente qu'une
+  // clé : l'effet relit, échoue, et le repli laisse rigoureusement le même écran — hors ligne,
+  // donc dans le seul cas où cet écran existe, le bouton a l'air mort. Repasser par
+  // « Chargement… » dit que le geste a été pris. Surtout pas dans `rafraichir` lui-même, qui
+  // est aussi le rappel de `useRafraichirAuRetour` : il ferait clignoter « Chargement de ton
+  // suivi… » à chaque retour au premier plan.
+  const reessayerDepuisLErreur = () => {
+    setState({ status: 'loading' });
+    rafraichir();
+  };
+
+  // Ce qui est affiché reste vrai, mais date. La ligne vaut au-dessus des deux écrans issus
+  // d'une lecture réussie — le suivi et l'état vide — et le lien relance la même lecture que le
+  // retour sur l'onglet.
+  const banniereRelecture = (centree = false) =>
+    relectureEnEchec ? (
+      <View style={[styles.relecture, centree && styles.relectureCentree]}>
+        <MessageInline message="Ton suivi n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
+        <TextLink
+          label="Réessayer"
+          onPress={rafraichir}
+          type="small"
+          weight={600}
+          themeColor="accentText"
+        />
+      </View>
+    ) : null;
 
   if (state.status === 'loading') {
     return (
@@ -102,12 +207,32 @@ export default function Suivi() {
     );
   }
 
+  // L'écran ne sait rien : il le dit, et il ne propose surtout pas de faire un bilan — c'est
+  // l'invitation qui transforme « je n'ai pas pu lire » en « tu n'as rien ».
+  if (state.status === 'erreur') {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            <MessageInline
+              message="Ton suivi n’a pas pu être relu. Vérifie ta connexion."
+              style={styles.erreurTexte}
+            />
+            <Button title="Réessayer" onPress={reessayerDepuisLErreur} />
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
   if (state.status === 'empty') {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <BandeHaute />
           <View style={styles.emptySafeArea}>
+            {banniereRelecture(true)}
             <EmptyStateIllustration style={styles.emptyIllustration} />
             <ThemedText type="screenTitle">
               Ton suivi commence au premier bilan
@@ -141,6 +266,9 @@ export default function Suivi() {
         {/* Hors du ScrollView : la bande ne défile pas (cf. bande-haute.tsx). */}
         <BandeHaute />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Le dire coûte une ligne, et c'est la seule façon de ne pas laisser croire qu'un
+              « Oui » donné à l'instant a été enregistré ici. */}
+          {banniereRelecture()}
           <View style={styles.intro}>
             <ThemedText type="screenTitle">
               Ton suivi
@@ -317,7 +445,35 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
-  scrollContent: { padding: Spacing.four, gap: Spacing.four },
+  // Largeur maximale du contenu, comme les pages légales et les écrans de compte (A5-21).
+  // Sur un écran large, les barres de 14 px s'étiraient sur toute la fenêtre et les lignes de
+  // point de suivi mettaient la période et le « Oui » aux deux extrémités. Le pied, hors du
+  // `ScrollView`, n'en a pas besoin : il ne porte qu'un lien déjà centré.
+  scrollContent: {
+    padding: Spacing.four,
+    gap: Spacing.four,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
+  // Le corps d'un état plein écran, comme les états vides voisins : `MessageInline` rend du
+  // « small » par défaut, ce qui se lit comme une note sous un bouton — pas comme la seule
+  // phrase de l'écran.
+  //
+  // 16/24, c'est la taille du `default` de `ThemedText`, pas `TypeScale.body` (15/22) : deux
+  // valeurs nues, recopiées à l'identique sur l'onglet voisin (`plan.tsx`). L'endroit où les
+  // factoriser est un `type` sur `MessageInline`, qui n'appartient pas à ce chantier — le
+  // prochain passage visuel saura quoi faire de ces deux lignes.
+  erreurTexte: {
+    textAlign: 'center',
+    paddingHorizontal: Spacing.four,
+    marginBottom: Spacing.four,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  relecture: { gap: Spacing.one },
+  // La même ligne au-dessus d'un écran centré : elle a besoin de son propre air sous elle.
+  relectureCentree: { alignItems: 'center', marginBottom: Spacing.four },
   intro: { gap: Spacing.two },
   card: { borderRadius: 20, padding: 20, gap: 14 },
   bars: { gap: Spacing.three },

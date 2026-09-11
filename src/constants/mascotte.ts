@@ -44,6 +44,17 @@ export const RAMILLE = {
   checkinNon: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.',
 
   /**
+   * Restitution, profil sans aucune émission — le seul moment de félicitation de tout l'écran,
+   * et le seul endroit où elle a quelque chose à ajouter au texte.
+   *
+   * La phrase vivait dans l'écran, à la deuxième personne et hors de portée du test (A3-13) :
+   * « Tes déplacements n'émettent quasiment rien. » Elle est dans sa voix maintenant. Aucun
+   * chiffre n'est affiché dans cette branche de la carte, donc la règle « jamais à côté d'un
+   * chiffre lourd » est tenue sans condition.
+   */
+  bilanQuasiNul: 'Je ne vois presque rien à compter chez toi — c’est rare.',
+
+  /**
    * /suivi, quand la personne a des bilans mais aucun point répondu. Contexte différent de
    * la carte d'attente du plan : ici il n'y a rien à annoncer — ni jour, ni canal —, la
    * cadence dépend de la boucle et une date fausse serait pire que pas de date.

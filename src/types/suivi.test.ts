@@ -1,7 +1,13 @@
 // Tests de la logique pure du suivi (v1-07 §3.2). Même critère que
 // `src/types/bilan.test.ts` : on teste ce qui produit un chiffre ou une phrase affichée à
 // l'utilisateur, là où un bug coûte cher — pas les requêtes elles-mêmes.
-import { daysSince, keepLatestPerDay, variationNote, type AssessmentSnapshot } from '@/types/suivi';
+import {
+  daysSince,
+  formatDate,
+  keepLatestPerDay,
+  variationNote,
+  type AssessmentSnapshot,
+} from '@/types/suivi';
 
 function snapshot(submittedAt: string, totalKg: number): AssessmentSnapshot {
   return {
@@ -80,5 +86,17 @@ describe('daysSince', () => {
 
   it('renvoie 0 pour aujourd’hui', () => {
     expect(daysSince(new Date().toISOString())).toBe(0);
+  });
+});
+
+describe('formatDate', () => {
+  // Une seule implémentation pour deux écrans : la liste du suivi et la relecture d'un bilan
+  // (A3-15). Une date à midi UTC, pour que le fuseau de la machine ne décide pas du jour.
+  it('écrit la date à la française, mois en lettres', () => {
+    expect(formatDate('2026-03-12T12:00:00Z')).toBe('12 mars 2026');
+  });
+
+  it('garde le jour sur deux chiffres', () => {
+    expect(formatDate('2026-09-01T12:00:00Z')).toBe('01 septembre 2026');
   });
 });
