@@ -17,7 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <div style={{display:'flex',gap:16}}><Button title="Retour" variant="secondary" style={{width:'auto'}} /><Button title="Suivant" flex /></div>
       <TextLink label="Modifier mes réponses" type="small" themeColor="textTertiary" align="center" />
       <TextLink label="Utiliser un email à la place" type="linkPrimary" align="center" />
-      <MessageInline message="Le mot de passe doit contenir au moins 8 caractères." />
+      <MessageInline message="L’envoi n’a pas abouti. Vérifie l’adresse et réessaie." />
       <OnboardingDots total={4} activeIndex={1} />
     </div>
   </div>
