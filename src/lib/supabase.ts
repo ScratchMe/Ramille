@@ -5,6 +5,11 @@ import 'react-native-url-polyfill/auto';
 
 import type { Database } from '@/lib/database.types';
 import { decrireProbleme, lireConfigurationSupabase } from '@/types/configuration';
+import {
+  doitOuvrirUneSessionAnonyme,
+  etatDeSession,
+  type EtatDeSession,
+} from '@/types/session';
 import { uneSeuleFois } from '@/types/une-seule-fois';
 
 /**
@@ -83,13 +88,39 @@ export const supabase = configurationSupabase.complete
 // étaient dans ce cas le 10/09/2026 (v1-13 C1.2). Le contrat ne change pas : seules les
 // promesses en vol sont partagées, donc un appel tardif relit bien l'état courant — voir
 // `src/types/une-seule-fois.ts`, qui porte le détail et les tests.
+// **« Pas de session » recouvre trois situations, et une seule appelle une création** (C2.11). La
+// dérivation vit dans `src/types/session.ts`, avec ses tests et la raison de chaque branche ; ici on
+// ne fait que l'appliquer. Le cas qui coûtait le plus cher : un jeton **refusé** faisait créer une
+// session anonyme **vide** à quelqu'un qui a un compte, et l'app lui répondait « Ton bilan n'est pas
+// encore fait » alors que son bilan, son plan et ses points étaient intacts côté serveur.
+//
+// Le retour est donc une session **ou `null`**, et jamais une exception pour ces deux cas : un refus
+// et une panne ne sont pas des pannes de programme, ce sont des états que l'app doit savoir
+// afficher. `etatDeLaSession` dit lequel, pour les écrans qui ont besoin de le distinguer.
+let dernierEtatDeSession: EtatDeSession = 'absente';
+
+/**
+ * Le dernier état observé par `ensureSession()`. Lu par le layout racine pour afficher l'écran de
+ * reconnexion sur un jeton refusé — et **seulement** dans ce cas : une panne de transport ne se
+ * reproche pas à la personne.
+ */
+export function etatDeLaSession(): EtatDeSession {
+  return dernierEtatDeSession;
+}
+
 export const ensureSession = uneSeuleFois(async () => {
   const {
     data: { session },
+    error,
   } = await supabase.auth.getSession();
-  if (session) return session;
 
-  const { data, error } = await supabase.auth.signInAnonymously();
-  if (error) throw error;
+  dernierEtatDeSession = etatDeSession(Boolean(session), error);
+
+  if (session) return session;
+  if (!doitOuvrirUneSessionAnonyme(dernierEtatDeSession)) return null;
+
+  const { data, error: erreurCreation } = await supabase.auth.signInAnonymously();
+  if (erreurCreation) throw erreurCreation;
+  dernierEtatDeSession = 'presente';
   return data.session;
 });

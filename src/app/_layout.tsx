@@ -15,12 +15,13 @@ import {
   type ErrorBoundaryProps,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { ConfigurationManquante } from '@/components/configuration-manquante';
 import { ErreurInattendue } from '@/components/erreur-inattendue';
 import { RetourDeNotification } from '@/components/retour-de-notification';
+import { SessionRefusee } from '@/components/session-refusee';
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
 import { track } from '@/lib/analytics';
@@ -32,7 +33,7 @@ import {
   estNatif,
   preparerLeCanalAndroid,
 } from '@/lib/rappels';
-import { configurationSupabase, ensureSession, supabase } from '@/lib/supabase';
+import { configurationSupabase, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
 import { appErrorCategory } from '@/types/analytics';
 import { lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
 
@@ -96,6 +97,13 @@ export default function RootLayout() {
     SplineSans_700Bold,
   });
 
+  /**
+   * Le jeton stocké a été refusé (C2.11). Posé par le démarrage ci-dessous, et **jamais** remis à
+   * faux : rien dans cette session ne peut plus rendre ce jeton valide, et `/connexion/retrouver`
+   * comme `/onboarding` sont atteints par un `replace` qui remplace cet écran.
+   */
+  const [sessionRefusee, setSessionRefusee] = useState(false);
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
@@ -133,6 +141,13 @@ export default function RootLayout() {
     if (!configurationSupabase.complete) return;
     ensureSession()
       .then((session) => {
+        // **Un jeton refusé s'affiche, il ne se contourne pas** (C2.11). `ensureSession` n'ouvre
+        // plus de session anonyme dans ce cas, donc sans cet écran l'app resterait sans session du
+        // tout — et chaque onglet dirait « tu n'as rien » à quelqu'un qui a tout. La panne de
+        // transport, elle, n'affiche rien : elle n'est pas de la faute de la personne et le
+        // prochain lancement réessaie.
+        if (etatDeLaSession() === 'refusee') setSessionRefusee(true);
+
         if (!ouvertureDejaComptee) {
           ouvertureDejaComptee = true;
           track('app_open', { origine: 'demarrage' });
@@ -336,7 +351,25 @@ export default function RootLayout() {
           module qui, justement, ne peut pas fonctionner. Ici, aucune route n'est montée —
           l'app s'arrête net, et elle le dit. */}
       {configurationSupabase.complete ? (
-        <Stack screenOptions={{ headerShown: false }} />
+        <>
+          <Stack screenOptions={{ headerShown: false }} />
+          {/* **Posé par-dessus le navigateur, qui reste monté** : les deux gestes de cet écran sont
+              des navigations, et un écran rendu *à la place* du `Stack` n'aurait eu aucune route où
+              aller. Le drapeau se lève avant de partir, sinon la surcouche masquerait la
+              destination. */}
+          {sessionRefusee && (
+            <SessionRefusee
+              onRetrouver={() => {
+                setSessionRefusee(false);
+                router.replace('/connexion/retrouver');
+              }}
+              onCommencer={() => {
+                setSessionRefusee(false);
+                router.replace('/onboarding');
+              }}
+            />
+          )}
+        </>
       ) : (
         <ConfigurationManquante problemes={configurationSupabase.problemes} />
       )}

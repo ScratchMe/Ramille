@@ -171,6 +171,35 @@ async function effacerLesMarquesLocales(): Promise<void> {
   }
 }
 
+/**
+ * Se déconnecter de cet appareil — C2.11, point 4 (arbitrage D17).
+ *
+ * **L'app n'avait aucune sortie.** Le seul `signOut` du produit était celui de la suppression de
+ * compte : quelqu'un qui prête son téléphone, ou qui arrive sur un appareil partagé, n'avait le
+ * choix qu'entre laisser sa session ouverte et supprimer son compte. Deux gestes très différents
+ * présentés comme un seul.
+ *
+ * L'ordre est l'inverse de la suppression, et c'est voulu : **`signOut` d'abord, effacement
+ * ensuite**. Effacer avant aurait laissé, si le `signOut` échouait, une session ouverte sans ses
+ * marques locales — donc une personne toujours connectée à qui l'app reposerait la feuille des
+ * rappels et le brouillon d'une autre. Ici le pire cas est l'inverse, et il est bénin : la session
+ * est bien fermée, des marques traînent, et la prochaine session anonyme les relit comme les
+ * siennes — ce qu'elle fait déjà aujourd'hui pour tout appareil jamais rattaché.
+ *
+ * Les données, elles, restent sur le compte : c'est exactement ce que l'écran dit, et c'est vrai —
+ * tout ce qui compte vit en base, rattaché au `user_id`, et `/connexion/retrouver` y ramène.
+ */
+export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    return { ok: false, message: 'La déconnexion n’a pas abouti. Réessaie dans un instant.' };
+  }
+
+  await effacerLesMarquesLocales();
+  return { ok: true };
+}
+
 export async function deleteMyAccount(): Promise<CompteResult> {
   const { error } = await supabase.rpc('delete_my_account');
 

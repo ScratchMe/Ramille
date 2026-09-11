@@ -51,6 +51,12 @@ export const PAGE_TITLES: Record<string, string> = {
   // publique à part entière, avec son titre.
   '/compte/suppression': `Supprimer mon compte — ${APP_NAME}`,
 
+  // La sortie des rappels par le lien d'un email (C2.9). Atteignable sans session et sans l'app,
+  // comme la page de suppression — mais **pas** une surface publique : elle n'a donc pas de
+  // description, donc `TitreDePage` la met en `noindex`. Indexer une page qui ne s'ouvre qu'avec
+  // un jeton à usage unique n'aurait aucun sens.
+  '/rappels/stop': `Ne plus recevoir de rappels — ${APP_NAME}`,
+
   '/status': `Diagnostic — ${APP_NAME}`,
 
   // **La page 404 est une page exportée comme les autres, et c'est à ce titre qu'elle est ici.**

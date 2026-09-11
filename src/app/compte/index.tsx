@@ -13,7 +13,7 @@ import { ThemedView } from '@/components/themed-view';
 import { CONTACT_EMAIL } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTrackView } from '@/hooks/use-track-view';
-import { lireEtatDuRattachement } from '@/lib/compte';
+import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
 import { loadReminderPrefs, setReminderChannel, type ReminderPrefs } from '@/lib/notification-prefs';
 import { supabase } from '@/lib/supabase';
 import { type EtatRattachement } from '@/types/compte';
@@ -35,6 +35,8 @@ export default function Compte() {
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
   const [messageCanal, setMessageCanal] = useState<string | null>(null);
   const [cle, setCle] = useState(0);
+  const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
+  const [erreurDeconnexion, setErreurDeconnexion] = useState<string | null>(null);
 
   useEffect(() => {
     let annule = false;
@@ -77,6 +79,26 @@ export default function Compte() {
   const reessayer = () => {
     setEtat(null);
     setCle((n) => n + 1);
+  };
+
+  // **`replace('/')` et non `back()`** : la racine décide où aller selon qu'un bilan complété
+  // existe, et après une déconnexion il n'en existe plus pour cette session — elle route donc vers
+  // l'onboarding. Revenir en arrière aurait ramené sur le plan d'un compte qu'on vient de quitter,
+  // avec des données encore en mémoire d'écran.
+  const seDeconnecter = async () => {
+    if (deconnexionEnCours) return;
+    setDeconnexionEnCours(true);
+    setErreurDeconnexion(null);
+
+    const resultat = await seDeconnecterDeCetAppareil();
+
+    if (!resultat.ok) {
+      setDeconnexionEnCours(false);
+      setErreurDeconnexion(resultat.message);
+      return;
+    }
+
+    router.replace('/');
   };
 
   // Optimiste puis corrigé : le réglage doit répondre au doigt, et une écriture qui échoue
@@ -127,6 +149,30 @@ export default function Compte() {
                   ? `Ton compte est rattaché à ${etat.email}. Ton bilan te suit d’un appareil à l’autre.`
                   : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
               </ThemedText>
+            )}
+
+            {/* **Une sortie, et elle n'existait pas** (C2.11, arbitrage D17). Le seul `signOut` du
+                produit était celui de la suppression de compte : quelqu'un qui prête son téléphone
+                n'avait le choix qu'entre laisser sa session ouverte et supprimer son compte. La
+                phrase est là pour dire ce qui ne part pas — sans elle, « me déconnecter » se lit
+                comme une perte.
+
+                Proposé au seul compte **rattaché** : déconnecter une session anonyme la rendrait
+                inatteignable pour toujours, puisque rien ne permet d'y revenir. */}
+            {etat?.kind === 'rattache' && (
+              <>
+                <Button
+                  title={deconnexionEnCours ? 'Déconnexion…' : 'Me déconnecter de cet appareil'}
+                  variant="secondary"
+                  disabled={deconnexionEnCours}
+                  onPress={seDeconnecter}
+                  style={styles.bouton}
+                />
+                <ThemedText type="small" themeColor="textTertiary">
+                  Tes données restent sur ton compte.
+                </ThemedText>
+                <MessageInline message={erreurDeconnexion} />
+              </>
             )}
 
             {etat?.kind === 'a_confirmer' && (

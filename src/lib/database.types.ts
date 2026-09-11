@@ -521,6 +521,8 @@ export type Database = {
           sent_at: string | null
           status: string
           subject: string
+          unsubscribe_token: string
+          unsubscribe_used_at: string | null
           user_id: string
         }
         Insert: {
@@ -539,6 +541,8 @@ export type Database = {
           sent_at?: string | null
           status?: string
           subject: string
+          unsubscribe_token?: string
+          unsubscribe_used_at?: string | null
           user_id: string
         }
         Update: {
@@ -557,6 +561,8 @@ export type Database = {
           sent_at?: string | null
           status?: string
           subject?: string
+          unsubscribe_token?: string
+          unsubscribe_used_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -805,32 +811,48 @@ export type Database = {
       push_tokens: {
         Row: {
           created_at: string
+          derniere_reprise_le: string | null
           disabled_at: string | null
           disabled_reason: string | null
           last_seen_at: string
           platform: string
+          proprietaire_precedent: string | null
+          reprises: number
           token: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          derniere_reprise_le?: string | null
           disabled_at?: string | null
           disabled_reason?: string | null
           last_seen_at?: string
           platform: string
+          proprietaire_precedent?: string | null
+          reprises?: number
           token: string
           user_id: string
         }
         Update: {
           created_at?: string
+          derniere_reprise_le?: string | null
           disabled_at?: string | null
           disabled_reason?: string | null
           last_seen_at?: string
           platform?: string
+          proprietaire_precedent?: string | null
+          reprises?: number
           token?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "push_tokens_proprietaire_precedent_fkey"
+            columns: ["proprietaire_precedent"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "push_tokens_user_id_fkey"
             columns: ["user_id"]
@@ -986,6 +1008,7 @@ export type Database = {
         Returns: undefined
       }
       delete_my_account: { Args: never; Returns: undefined }
+      desinscrire_des_rappels: { Args: { p_jeton: string }; Returns: boolean }
       emission_factor: {
         Args: { p_mode_id: string; p_on_date: string }
         Returns: number
@@ -1029,6 +1052,10 @@ export type Database = {
       recompute_assessment_results: {
         Args: { p_assessment_id: string }
         Returns: undefined
+      }
+      regime_de_rappel: {
+        Args: { p_loop_type: string; p_user_id: string }
+        Returns: string
       }
       register_push_token: {
         Args: { p_platform: string; p_token: string }

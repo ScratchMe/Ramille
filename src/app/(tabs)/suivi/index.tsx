@@ -243,6 +243,14 @@ export default function Suivi() {
               dans le temps. Environ 5 minutes.
             </ThemedText>
             <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
+            {/* **Le même lien que sur l'état sans bilan du plan** (C2.11) : un appareil neuf n'a que
+                ces deux écrans, et l'un comme l'autre n'offrait que « Faire mon bilan » — donc
+                l'invitation à refaire de zéro ce que la personne a déjà fait ailleurs. Son bilan,
+                son plan et ses points sont rattachés à son compte, pas à l'appareil. */}
+            <TextLink
+              label="J’ai déjà un compte"
+              onPress={() => router.push('/connexion/retrouver')}
+            />
           </View>
         </SafeAreaView>
       </ThemedView>

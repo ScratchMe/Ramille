@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -195,6 +195,13 @@ export default function Plan() {
    * « Revoir mon bilan » et « Faire mon bilan » — au premier repli.
    */
   const [orphelin, setOrphelin] = useState<EngagementOrphelin | null>(null);
+
+  /**
+   * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
+   * plan à montrer, il n'y a rien à expliquer — la personne est au bon endroit.
+   */
+  const { rappel } = useLocalSearchParams<{ rappel?: string }>();
+  const vientDUnRappel = rappel === '1';
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
 
   // **La confirmation se termine hors de l'app** : la personne clique le lien reçu par email
@@ -523,6 +530,50 @@ export default function Plan() {
   }
 
   if (state.status === 'no_assessment') {
+    // **Venir d'un rappel et n'avoir aucun bilan ici ne veut pas dire « pas de bilan »** (C2.11,
+    // constat C-2). L'email ne porte que `/plan` : ouvert sur un ordinateur ou un téléphone neuf, il
+    // tombe sur la session anonyme vide que l'app vient de créer, et cet écran répondait « Ton bilan
+    // n'est pas encore fait » — avec pour seul bouton « Faire mon bilan » — à quelqu'un qui a un
+    // bilan, un plan et des points, juste pas sur cet appareil. La consigne de désinscription du
+    // même email (« depuis Toi ») réglait alors la préférence d'une session qui n'est personne.
+    //
+    // Le paramètre ne change pas le **chemin** : `assetlinks.json` ne revendique que `/plan`, et son
+    // périmètre est volontairement étroit (les pages légales et la suppression de compte doivent
+    // rester atteignables sans l'app). Une autre route aurait donc fait ouvrir le lien dans le
+    // navigateur sur Android.
+    if (vientDUnRappel) {
+      return (
+        <ThemedView style={styles.container}>
+          <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <BandeHaute />
+            <View style={styles.emptySafeArea}>
+              {banniereRelecture(true)}
+              {/* Aucun chiffre sur cet écran : la mascotte peut l'occuper sans rien commenter
+                  (règle de `src/constants/mascotte.ts`). Elle ne parle pas pour autant — les deux
+                  phrases sont de la voix produit. */}
+              <View style={styles.rappelMascotte}>
+                <Mascot mood="calm" size={72} tilt={-6} />
+              </View>
+              <ThemedText type="screenTitle">Ce rappel concerne un compte</ThemedText>
+              <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
+                Retrouve-le ici. Ton bilan, ton plan et tes points sont rattachés à ce compte, pas à
+                cet appareil.
+              </ThemedText>
+              <Button
+                title="J’ai déjà un compte"
+                onPress={() => router.push('/connexion/retrouver')}
+                style={styles.emptyButton}
+              />
+              <TextLink
+                label="Commencer un bilan sur cet appareil"
+                onPress={() => router.push('/bilan')}
+              />
+            </View>
+          </SafeAreaView>
+        </ThemedView>
+      );
+    }
+
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -538,6 +589,14 @@ export default function Plan() {
               minutes.
             </ThemedText>
             <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
+            {/* **Le chemin vers un compte existant manquait ici**, et c'est le seul écran qu'un
+                appareil neuf montre : sans ce lien, quelqu'un qui a un compte n'avait que
+                « Faire mon bilan », c'est-à-dire l'invitation à refaire ce qu'il a déjà fait. Même
+                lien que l'accueil de l'onboarding, et même libellé. */}
+            <TextLink
+              label="J’ai déjà un compte"
+              onPress={() => router.push('/connexion/retrouver')}
+            />
           </View>
         </SafeAreaView>
       </ThemedView>
@@ -956,6 +1015,8 @@ const styles = StyleSheet.create({
   calmeTexte: { flex: 1, minWidth: 0, gap: 2 },
   lienBilan: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
+  // La mascotte prend la place de l'illustration d'état vide : centrée comme elle l'était.
+  rappelMascotte: { alignItems: 'center' },
   emptyIllustration: { height: 140 },
   emptyBody: { fontSize: 16, lineHeight: 24 },
   emptyButton: { marginTop: 12 },

@@ -21,6 +21,11 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //   - session anonyme dès l'ouverture -> `ensureSession()` (src/lib/supabase.ts), v1-04 §1 ;
 //   - champs collectés -> colonnes de `assessment_answers` (v1-05 §3) ;
 //   - rappels par notification ou par email -> `notification_outbox` + `profiles.reminder_channel` ;
+//   - décroissance des rappels (un par mois à partir de quatre questions sans réponse, silence à
+//     huit, remise à zéro par une réponse ou une ouverture) -> `public.regime_de_rappel()` et la
+//     clause `where` d'`enqueue_checkin_reminders()` (C2.9) ;
+//   - sortie sans ouvrir l'app -> `desinscrire_des_rappels(uuid)` et
+//     `notification_outbox.unsubscribe_token`, page `/rappels/stop` ;
 //   - purge à 90 jours sans activité -> `purge_stale_anonymous_accounts()`, cron quotidien ;
 //   - rétention des rappels (6 mois) et des jetons désactivés (90 jours) ->
 //     `purge_notification_outbox()`, cron quotidien 1h ;
@@ -160,7 +165,21 @@ const SECTIONS: LegalSection[] = [
         text:
           'La base légale est l’exécution du service que tu demandes. Pour les rappels par email et pour les repères de ' +
           'parcours, c’est notre intérêt légitime — maintenir le suivi que tu as commencé dans un cas, corriger ce qui ne ' +
-          'fonctionne pas dans l’autre. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi ».',
+          'fonctionne pas dans l’autre. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
+          'lien « ne plus recevoir ces rappels » au bas de chaque email : ce lien agit sans ouvrir l’application, et sans ' +
+          'que tu aies à te connecter.',
+      },
+      {
+        kind: 'paragraph',
+        // **La décroissance se dit, parce qu'elle décrit un traitement automatisé** : les rappels
+        // s'espacent puis s'arrêtent selon ce que la personne fait, et ce qui est observé pour en
+        // décider est une donnée la concernant. Le dire ici vaut mieux que de la laisser découvrir
+        // qu'on a cessé d'écrire.
+        text:
+          'Les rappels s’espacent d’eux-mêmes, puis s’arrêtent. Si plusieurs questions de suite passent sans réponse, ' +
+          'nous n’envoyons plus qu’un message par mois, et au bout de huit nous n’écrivons plus du tout — il suffit ' +
+          'd’ouvrir l’application, ou de répondre à une question, pour que le rythme normal reprenne. La question, elle, ' +
+          'continue de t’attendre dans l’application : c’est seulement le message qui s’espace.',
       },
     ],
   },
@@ -275,7 +294,8 @@ const SECTIONS: LegalSection[] = [
           'chiffre, aucune de tes réponses détaillées, aucun de tes totaux. Pour la connexion Google : l’adresse du ' +
           'compte avec lequel tu choisis de te connecter. Pour la carte de partage : le lien que tu génères toi-même, ' +
           'avec ton total annuel, ton poste principal et sa part — tant que tu ne partages rien, rien ne part. Le canal ' +
-          'de rappel se choisit — et s’éteint complètement — depuis l’écran « Toi ».',
+          'de rappel se choisit — et s’éteint complètement — depuis l’écran « Toi », ou par le lien de désinscription de ' +
+          'n’importe quel email de rappel.',
       },
       {
         kind: 'paragraph',
