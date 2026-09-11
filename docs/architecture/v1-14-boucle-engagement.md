@@ -393,6 +393,20 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
 7. Le compte des écrans de la reprise se dérive de `isStepVisible`.
 8. « quelques minutes » plutôt que « cinq minutes » sur la carte de re-bilan, sauf décision
    contraire du titulaire.
+9. **`maintienNon` a quatre variantes et non deux** (C2.5, 11/09/2026). Le canvas écrit
+   `maintienNon.velo` et `maintienNon.marche` ; la catégorie `velo_marche` compte **trois** modes en
+   base (`velo`, `marche`, `trottinette` — relevé le 11/09/2026, et un test pgTAP épingle la liste).
+   Un repli de la trottinette sur le vélo dirait « ton trajet s'est-il fait à vélo ? » à quelqu'un
+   qui n'en a pas, donc elle a sa question et sa réplique. `maintienNon.autre` ferme la liste : un
+   mode inattendu doit recevoir une phrase neutre, jamais `checkinNon`, qui consolerait d'un échec
+   qui n'en est pas un — c'est la seule règle non négociable de cette branche.
+10. **Le mode inventé des loisirs rares ne nomme pas non plus le poste dominant** (C2.5). Le canvas
+    et le constat A13-4 ne parlent que du libellé extras ; corriger le seul extras laissait
+    `dominant_poste_label` dire « Loisirs du week-end (Voiture) » pendant qu'`extras_poste_label`
+    disait « (occasionnels) » — deux libellés du même poste qui se contredisent sur des écrans
+    voisins (`/connexion`, la liste du suivi), et `dominant_poste_mode` qui faisait écrire « Tes
+    loisirs du week-end **en voiture** » à la restitution. Les deux libellés partagent désormais le
+    mot, et la condition est le même test des deux côtés.
 
 ## 11. Tests
 

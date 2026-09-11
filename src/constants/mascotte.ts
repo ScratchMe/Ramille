@@ -44,6 +44,29 @@ export const RAMILLE = {
   checkinNon: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.',
 
   /**
+   * **Le « Non » d'une question de maintien, et la raison d'un second tableau** (C2.5, v1-14 §3.1).
+   *
+   * Quand le trajet se fait déjà à vélo, à pied ou en trottinette, le point ne demande pas si
+   * quelque chose a changé mais si l'habitude a tenu. Son « Non » ne décrit donc aucun manquement
+   * — une semaine en voiture ne défait pas une année de vélo — et `checkinNon` (« Pas cette
+   * fois-ci. Rien d'obligatoire… ») y serait une consolation d'échec là où il n'y a pas d'échec.
+   * C'est exactement ce que le chantier existe pour retirer : la recevoir cinquante-deux fois par
+   * an, juste sous un écran qui dit « Tu fais déjà l'essentiel », était le défaut A13-3.
+   *
+   * Le mode est nommé parce que c'est lui qui porte l'identité qu'on renforce — « le vélo reste
+   * ton trajet » ne vaut pas « ce trajet reste le tien ». Le canvas n'a écrit que les deux
+   * premières variantes ; `trottinette` et `autre` sont ajoutées parce que la catégorie
+   * `velo_marche` compte **trois** modes en base et qu'un mode inattendu ne doit pas retomber sur
+   * `checkinNon` (écart consigné en `v1-14` §10).
+   */
+  maintienNon: {
+    velo: 'Noté. Le vélo reste ton trajet ; une semaine autrement n’y change rien.',
+    marche: 'Noté. La marche reste ton trajet ; une semaine autrement n’y change rien.',
+    trottinette: 'Noté. La trottinette reste ton trajet ; une semaine autrement n’y change rien.',
+    autre: 'Noté. Ce trajet-là reste le tien ; une semaine autrement n’y change rien.',
+  },
+
+  /**
    * Restitution, profil sans aucune émission — le seul moment de félicitation de tout l'écran,
    * et le seul endroit où elle a quelque chose à ajouter au texte.
    *

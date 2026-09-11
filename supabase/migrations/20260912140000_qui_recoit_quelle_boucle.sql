@@ -178,6 +178,84 @@ begin
 end
 $controle$;
 
+-- ── 3 bis. Le mode inventé ne nomme pas non plus le poste DOMINANT ──────────────────────
+-- Relevé en vérifiant la section 3 sur le distant, et c'est la moitié de A13-4 que la
+-- recommandation du constat ne nommait pas : elle ne parle que du libellé extras, alors que le
+-- constat lui-même observe que « pour un profil sans trajet régulier et sans vol, c'est même le
+-- poste dominant ». Un cycliste aux loisirs rares voyait donc
+--
+--     extras_poste_label   = « Loisirs du week-end (occasionnels) »   ← corrigé en section 3
+--     dominant_poste_label = « Loisirs du week-end (Voiture) »        ← pas corrigé
+--
+-- c'est-à-dire le mode inventé de retour sur les deux écrans qui lisent `dominant_poste_label`
+-- en clair (`/connexion`, la liste du suivi) et, par `dominant_poste_mode`, dans la préposition
+-- de la restitution : « Tes loisirs du week-end **en voiture** ». Deux libellés du même poste qui
+-- se contredisent sur des écrans voisins, c'est aussi l'écart qu'un lecteur « corrige » plus tard
+-- en revenant sur le bon des deux.
+--
+-- La condition est **la même** des deux côtés, et pas seulement une condition semblable :
+-- `v_dominant = 'leisure'` est décidé par `v_leisure_co2 >= v_travel_co2 * (1 - tie_break_margin)`,
+-- le test qui définit `v_extras_is_leisure`. Les deux libellés restent donc en phase par
+-- construction.
+--
+-- Ce que ce bloc ne corrige pas, et qu'il faut savoir : la **dominance** elle-même reste une
+-- hypothèse. Le résiduel de 15 km vaut 55,5 kg/an (10,8 en train sans véhicule), ce qui dépasse
+-- le trajet réel d'un cycliste d'un facteur cent — donc le poste dominant d'un cycliste aux
+-- loisirs rares est ce résiduel. C'est la conséquence du choix D5 de **garder** le résiduel
+-- (spec §5) ; le sortir du départage serait un autre arbitrage que celui rendu. Ici, le libellé
+-- cesse au moins de présenter une hypothèse comme une réponse.
+
+do $garde_dominant$
+declare
+  src text;
+  cible oid;
+  ancres text[] := array[
+    E'  select label into v_mode_label from public.transport_modes where id = v_dominant_mode;\n  v_dominant_label := case v_dominant',
+    E'    || coalesce('' ('' || regexp_replace(v_mode_label, ''[()]'', '''', ''g'') || '')'', '''');'
+  ];
+  remplacements text[] := array[
+    -- `select ... into` sans ligne met la variable à NULL : annuler le mode suffit donc à vider
+    -- `v_mode_label`, et la queue `coalesce` de la section 3 fait le reste.
+    E'  -- Le mode d''un loisir « rarement » est un résiduel de calcul, pas une déclaration\n  -- (A13-4) : il ne doit ni composer la préposition de la restitution, ni nommer le poste.\n  if v_dominant = ''leisure'' and a.leisure_frequency = ''rarely'' then\n    v_dominant_mode := null;\n  end if;\n\n  select label into v_mode_label from public.transport_modes where id = v_dominant_mode;\n  v_dominant_label := case v_dominant',
+    -- « (occasionnels) » et non rien du tout : c'est le mot que porte déjà `extras_poste_label`,
+    -- et le lire aussi ici garde les deux libellés du même poste identiques.
+    E'    || case\n      when v_dominant = ''leisure'' and a.leisure_frequency = ''rarely'' then '' (occasionnels)''\n      else coalesce('' ('' || regexp_replace(v_mode_label, ''[()]'', '''', ''g'') || '')'', '''')\n    end;'
+  ];
+  i int;
+  occurrences int;
+begin
+  select p.oid into cible from pg_proc p
+  where p.pronamespace = 'public'::regnamespace and p.proname = 'recompute_assessment_results';
+
+  src := pg_get_functiondef(cible);
+
+  for i in 1 .. array_length(ancres, 1) loop
+    occurrences := (length(src) - length(replace(src, ancres[i], ''))) / length(ancres[i]);
+    if occurrences <> 1 then
+      raise exception 'Ancre dominante % trouvée % fois (une seule attendue).', i, occurrences;
+    end if;
+    src := replace(src, ancres[i], remplacements[i]);
+  end loop;
+
+  execute src;
+end
+$garde_dominant$;
+
+do $controle_dominant$
+declare src text;
+begin
+  select prosrc into src from pg_proc
+  where pronamespace = 'public'::regnamespace and proname = 'recompute_assessment_results';
+
+  if position('v_dominant_mode := null;' in src) = 0 then
+    raise exception 'Le mode dominant des loisirs rares n''est pas annulé.';
+  end if;
+  if position(''' (occasionnels)''' in src) = 0 then
+    raise exception 'Le libellé dominant des loisirs rares n''a pas été posé.';
+  end if;
+end
+$controle_dominant$;
+
 
 -- ── 4. L'estimateur ne propose plus d'action sur des sorties hypothétiques ──────────────
 -- Un profil « rarement » n'a déclaré ni mode ni distance de loisir : le calcul lui prête une

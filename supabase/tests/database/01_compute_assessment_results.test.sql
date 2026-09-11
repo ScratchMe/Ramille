@@ -84,9 +84,15 @@ select is(
 -- la décision dominante globale, cf. migration 20260827090000_engagement_checkins.sql.
 -- Libellés précis ("Loisirs du week-end"/"Voyages longue distance", pas juste "Trajets
 -- loisirs"/"Voyages") depuis 20260903120000_precise_poste_labels.sql.
+--
+-- **« (occasionnels) » et non « (Voiture) »** depuis C2.5 : ce scénario répond « rarement » aux
+-- loisirs, donc son mode de loisir est un résiduel de calcul que personne n'a déclaré. Le nommer
+-- faisait poser la question mensuelle « pour Loisirs du week-end (Voiture) ? » à quelqu'un qui n'a
+-- jamais parlé de voiture pour ses sorties. Le calcul résiduel, lui, reste (arbitrage D5) : le
+-- total de l'assertion juste au-dessus ne bouge pas.
 select results_eq(
   $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '21111111-1111-1111-1111-111111111111' $$,
-  $$ values ('Trajet domicile-travail (Voiture)'::text, 'Loisirs du week-end (Voiture)'::text) $$,
+  $$ values ('Trajet domicile-travail (Voiture)'::text, 'Loisirs du week-end (occasionnels)'::text) $$,
   'scénario 1 : libellés commute/extras persistés indépendamment du poste dominant'
 );
 
