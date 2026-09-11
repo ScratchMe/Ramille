@@ -470,14 +470,17 @@ plutôt que d'insérer un point à la main.
 contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une
 issue GitHub par chantier — #99 à #151 et #153 — et **le plan de livraison en huit vagues en §2.3**, dont
 l'issue de suivi #154 est la vue cochable ; inventaire complet en `docs/audit/2026-09-09-inventaire.md`).
-**Les vagues 1 à 4 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, puis le
+**Les vagues 1 à 5 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, puis le
 lot 1 (bugs silencieux et textes faux, puis écrans d'onglets) le 11/09/2026, puis la vague 4 (lot 2,
 socle et serveur de la boucle d'engagement : saison côté client, forme insérable du poste, période
 écoulée, qui reçoit quelle boucle, engagement qui survit, lien du rappel ouvert ailleurs, rappels qui
-s'espacent) le même jour. **Le jalon « publiable sur Play » est atteint côté code** ; ce qui reste
+s'espacent) et la vague 5 (lot 2, **le point** : il connaît l'action engagée, accepte une troisième
+réponse, reste affiché le temps de la période, porte le signal « deux fois de suite » et varie ses
+répliques) le même jour. **Le jalon « publiable sur Play » est atteint côté code** ; ce qui reste
 avant de publier n'est pas du code mais les vérifications de la §11 et la checklist de
-`docs/exploitation/README.md`. La vague 5 (lot 2, le point : C2.1 → C2.4 → C2.10 → C2.12, **même
-fichier, dans cet ordre**) est la suite.
+`docs/exploitation/README.md`. La vague 6 (lot 2, la saison et le suivi : trois files parallèles —
+`plan.tsx` avec C2.8 puis C4.6, le suivi avec C2.7 puis C3.1, et C2.13 puis C3.9) est la suite, et
+c'est elle qui porte le jalon « la boucle existe d'une saison à l'autre ».
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
