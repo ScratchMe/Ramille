@@ -71,7 +71,7 @@ select is(
 
 -- Une réponse déjà donnée n'est jamais requalifiée en occasion manquée.
 update public.engagement_checkins
-set status = 'answered', response = true, responded_at = now()
+set status = 'answered', response_kind = 'oui', response = true, responded_at = now()
 where user_id = 'c8111111-1111-1111-1111-111111111111' and status = 'pending';
 
 select public.generate_commute_checkins();

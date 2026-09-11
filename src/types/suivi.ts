@@ -2,6 +2,8 @@
 // Supabase, donc testables directement, comme `src/types/bilan.ts`. Les requêtes qui les
 // alimentent vivent dans `src/lib/bilan-history.ts`.
 
+import type { ReponseDuPoint } from '@/types/checkin';
+
 export type AssessmentSnapshot = {
   assessmentId: string;
   submittedAt: string;
@@ -15,9 +17,28 @@ export type CheckinRecord = {
   loopType: 'commute' | 'extras';
   periodLabel: string;
   periodStart: string;
-  response: boolean;
+  /**
+   * **La réponse, et non un booléen** (C2.4). `response` restait `boolean` en base, et
+   * `loadAnsweredCheckins` écartait les lignes dont elle était nulle : la troisième réponse
+   * (« pas de trajet cette période ») aurait donc été donnée puis perdue, sans message d'erreur
+   * et sans rien afficher dans le suivi. C'est `response_kind` qui est la vérité côté base.
+   */
+  reponse: ReponseDuPoint;
   respondedAt: string;
 };
+
+/**
+ * Ce qu'une réponse affiche dans la colonne de droite du suivi.
+ *
+ * Une fonction et non un ternaire dans l'écran, parce que C2.7 reprend cette colonne : « Changement
+ * fait » / « Pas cette fois » / « Pas de trajet » (v1-14 §3.2). Les deux premiers libellés restent
+ * ceux d'aujourd'hui jusque-là — C2.4 n'ajoute que le troisième, qui n'existait pas.
+ */
+export function libelleDeReponse(reponse: ReponseDuPoint): string {
+  if (reponse === 'oui') return 'Oui';
+  if (reponse === 'non') return 'Non';
+  return 'Pas de trajet';
+}
 
 /**
  * Un point par jour, le dernier.

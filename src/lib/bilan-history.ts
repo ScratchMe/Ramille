@@ -14,6 +14,7 @@
 // jour, ancienneté) vivent dans `src/types/suivi.ts`, sans dépendance au client Supabase.
 import { supabase } from '@/lib/supabase';
 import type { BilanAnswers } from '@/types/bilan';
+import { genreDeReponse } from '@/types/checkin';
 import { keepLatestPerDay, type AssessmentSnapshot, type CheckinRecord } from '@/types/suivi';
 
 /**
@@ -60,18 +61,28 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
   return { ok: true, data: keepLatestPerDay(snapshots) };
 }
 
-/** Check-ins auxquels l'utilisateur a effectivement répondu, du plus récent au plus ancien. */
+/**
+ * Check-ins auxquels l'utilisateur a effectivement répondu, du plus récent au plus ancien.
+ *
+ * **Le filtre est `status = 'answered'`, et ce qui était lu ensuite était le défaut de C2.4.** La
+ * fonction écartait les lignes dont `response` est nulle — ce qui était sans effet tant qu'il n'y
+ * avait que oui et non, et devenait une réponse perdue le jour où « pas de trajet cette période »
+ * arrive avec `response = null`. La personne aurait répondu, vu le mot de Ramille, puis n'aurait
+ * **rien** trouvé dans son suivi, sans message d'erreur. C'est donc `response_kind` qu'on lit, et
+ * l'horodatage qui borne : un point répondu sans horodatage ne sait pas se placer dans le temps.
+ */
 export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> {
   const { data, error } = await supabase
     .from('engagement_checkins')
-    .select('id, loop_type, period_label, period_start, response, responded_at')
+    .select('id, loop_type, period_label, period_start, response_kind, responded_at')
     .eq('status', 'answered')
     .order('period_start', { ascending: false });
 
   if (error || !data) return { ok: false };
 
-  const points = data.flatMap((checkin) =>
-    checkin.response === null || checkin.responded_at === null
+  const points = data.flatMap((checkin) => {
+    const reponse = genreDeReponse(checkin.response_kind);
+    return reponse === null || checkin.responded_at === null
       ? []
       : [
           {
@@ -79,11 +90,11 @@ export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> 
             loopType: checkin.loop_type as CheckinRecord['loopType'],
             periodLabel: checkin.period_label,
             periodStart: checkin.period_start,
-            response: checkin.response,
+            reponse,
             respondedAt: checkin.responded_at,
           },
-        ]
-  );
+        ];
+  });
 
   return { ok: true, data: points };
 }

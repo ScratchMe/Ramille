@@ -19,6 +19,7 @@ export type Database = {
           max_distance_km: number | null
           operation: string | null
           poste: string | null
+          question_template: string | null
           requires_car: boolean
           requires_tc: boolean
           segment: string | null
@@ -33,6 +34,7 @@ export type Database = {
           max_distance_km?: number | null
           operation?: string | null
           poste?: string | null
+          question_template?: string | null
           requires_car?: boolean
           requires_tc?: boolean
           segment?: string | null
@@ -47,6 +49,7 @@ export type Database = {
           max_distance_km?: number | null
           operation?: string | null
           poste?: string | null
+          question_template?: string | null
           requires_car?: boolean
           requires_tc?: boolean
           segment?: string | null
@@ -408,6 +411,10 @@ export type Database = {
       }
       engagement_checkins: {
         Row: {
+          committed_action_text: string | null
+          committed_intention_days: number[] | null
+          committed_intention_timing: string | null
+          committed_question: string | null
           created_at: string
           id: string
           loop_type: string
@@ -418,11 +425,16 @@ export type Database = {
           question_kind: string
           responded_at: string | null
           response: boolean | null
+          response_kind: string | null
           status: string
           trip_label: string
           user_id: string
         }
         Insert: {
+          committed_action_text?: string | null
+          committed_intention_days?: number[] | null
+          committed_intention_timing?: string | null
+          committed_question?: string | null
           created_at?: string
           id?: string
           loop_type: string
@@ -433,11 +445,16 @@ export type Database = {
           question_kind?: string
           responded_at?: string | null
           response?: boolean | null
+          response_kind?: string | null
           status?: string
           trip_label: string
           user_id: string
         }
         Update: {
+          committed_action_text?: string | null
+          committed_intention_days?: number[] | null
+          committed_intention_timing?: string | null
+          committed_question?: string | null
           created_at?: string
           id?: string
           loop_type?: string
@@ -448,6 +465,7 @@ export type Database = {
           question_kind?: string
           responded_at?: string | null
           response?: boolean | null
+          response_kind?: string | null
           status?: string
           trip_label?: string
           user_id?: string
@@ -993,6 +1011,18 @@ export type Database = {
       }
       check_intention_days: { Args: { p_days: number[] }; Returns: boolean }
       check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
+      checkin_question: {
+        Args: {
+          p_intention_days?: number[]
+          p_loop_type: string
+          p_mode: string
+          p_period_start: string
+          p_poste: string
+          p_question_kind: string
+          p_question_template?: string
+        }
+        Returns: string
+      }
       clear_plan_action_commitment: {
         Args: { p_plan_action_id: string }
         Returns: undefined
@@ -1041,7 +1071,12 @@ export type Database = {
         Returns: undefined
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
+      jours_francais: { Args: { p_days: number[] }; Returns: string }
       mois_francais: { Args: { d: string }; Returns: string }
+      periode_precedente: {
+        Args: { p_loop_type: string; p_period_start: string }
+        Returns: string
+      }
       poste_inserable: {
         Args: { p_loop_type?: string; p_poste: string }
         Returns: string
@@ -1067,7 +1102,7 @@ export type Database = {
         Returns: undefined
       }
       repondre_au_checkin: {
-        Args: { p_checkin_id: string; p_reponse: boolean }
+        Args: { p_checkin_id: string; p_reponse: string }
         Returns: number
       }
       resolve_car_mode: {

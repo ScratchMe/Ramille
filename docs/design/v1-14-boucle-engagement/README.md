@@ -88,6 +88,14 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
 6. **Le compte des écrans de la reprise se dérive** (« Quatre écrans déjà remplis. Il en reste
    cinq, en comptant celui-ci. ») de `isStepVisible` : le total dépend des réponses, il ne
    s'écrit pas en dur.
+7. **Ramille a quatre répliques de « pas de trajet » et non deux**, indexées sur le **poste**
+   (C2.4). Le canvas oppose « Pas de trajet … » (hebdomadaire) à « Pas de voyage … » (mensuelle) ;
+   depuis C2.6 la boucle mensuelle couvre les voyages **et** les sorties du week-end, donc
+   « Pas de voyage, pas de question. » tomberait sur quelqu'un qui vient d'appuyer sur « Pas de
+   sortie en septembre ». Les variantes suivent le poste, comme le libellé du bouton.
+8. **Le pied de la carte répondue écrit le mois en entier** (« Prochain point : lundi
+   21 septembre. ») : abréger demanderait une quatrième liste de mots français tenue à la main,
+   pour quatre caractères sur une ligne en petit tertiaire.
 
 Une phrase reste à valider par le titulaire : « Le refaire prend cinq minutes » sur la carte de
 re-bilan (B1) promet une durée que le produit ne promettait pas ailleurs (« quelques minutes »

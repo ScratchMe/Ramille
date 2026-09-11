@@ -20,6 +20,7 @@ import { POSTE_LABEL } from '@/types/resultat';
 import {
   daysSince,
   formatDate,
+  libelleDeReponse,
   libellePeriodeAffiche,
   REBILAN_SUGGESTION_DAYS,
   variationNote,
@@ -265,7 +266,11 @@ export default function Suivi() {
   // Échelle commune à toutes les barres : la comparaison n'a de sens que si les bilans
   // partagent le même repère.
   const maxKg = Math.max(...history.map((snapshot) => snapshot.totalKg), 1);
-  const answeredYes = checkins.filter((checkin) => checkin.response).length;
+  // `reponse === 'oui'` et non une valeur truthy : depuis C2.4 il y a trois réponses, et
+  // « pas de trajet » n'est pas un changement (elle compte en revanche dans « N points de suivi »,
+  // ci-dessous — on compte les fois où la personne a répondu, jamais celles qu'elle a laissées
+  // passer).
+  const answeredYes = checkins.filter((checkin) => checkin.reponse === 'oui').length;
   const daysSinceLatest = daysSince(latest.submittedAt);
   const suggestRebilan = daysSinceLatest >= REBILAN_SUGGESTION_DAYS;
 
@@ -403,8 +408,12 @@ export default function Suivi() {
                       {LOOP_LABEL[checkin.loopType]} ·{' '}
                       {libellePeriodeAffiche(checkin.periodLabel, checkin.periodStart)}
                     </ThemedText>
-                    <ThemedText type="small" weight={600} themeColor={checkin.response ? 'accentText' : 'textTertiary'}>
-                      {checkin.response ? 'Oui' : 'Non'}
+                    <ThemedText
+                      type="small"
+                      weight={600}
+                      themeColor={checkin.reponse === 'oui' ? 'accentText' : 'textTertiary'}
+                    >
+                      {libelleDeReponse(checkin.reponse)}
                     </ThemedText>
                   </View>
                 ))}

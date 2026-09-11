@@ -29,8 +29,8 @@ insert into public.assessment_answers (
 select public.recompute_assessment_results('91111111-1111-1111-1111-111111111111');
 select public.generate_plan_cycle_for_user('90000000-0000-0000-0000-000000000001');
 
-insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, status, response, responded_at)
-values ('90000000-0000-0000-0000-000000000001', 'commute', current_date, 'Semaine test', 'Trajet domicile-travail', 'answered', true, now());
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, status, response_kind, response, responded_at)
+values ('90000000-0000-0000-0000-000000000001', 'commute', current_date, 'Semaine test', 'Trajet domicile-travail', 'answered', 'oui', true, now());
 insert into public.feedback (user_id, kind, message) values ('90000000-0000-0000-0000-000000000001', 'idee', 'Un retour de test');
 insert into public.usage_events (user_id, name, platform) values ('90000000-0000-0000-0000-000000000001', 'app_open', 'web');
 

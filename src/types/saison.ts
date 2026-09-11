@@ -151,10 +151,11 @@ export type RecapDeSaison = {
  * c'est exactement la pente que le produit refuse — on compte les fois où la personne a
  * répondu, jamais celles où elle a laissé passer.
  *
- * `repondus` filtre sur `status = 'answered'` et **non** sur `response !== null` : c'est le
- * filtre que C2.4 conserve quand la troisième réponse (« pas de trajet cette période ») arrive
- * avec `response = null`. Compter sur la valeur ferait disparaître ces points du récapitulatif
- * le jour où ils existeront, sans que rien ne le signale.
+ * `repondus` filtre sur `status = 'answered'` et **non** sur `response !== null`, et c'est ce qui
+ * l'a rendu compatible avec la troisième réponse livrée par C2.4 : « pas de trajet cette période »
+ * porte `response_kind = 'sans_objet'` et donc `response = null` sur un point bel et bien répondu.
+ * Compter sur la valeur ferait disparaître ces points du récapitulatif, sans que rien ne le
+ * signale. `changements` lit `response === true`, donc un « sans objet » n'en est pas un.
  */
 export function recapDeSaison(points: PointDeSaison[], bornes: BornesDeSaison): RecapDeSaison {
   const debut = isoJour(bornes.debut);

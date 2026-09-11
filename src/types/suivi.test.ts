@@ -5,6 +5,7 @@ import {
   daysSince,
   formatDate,
   keepLatestPerDay,
+  libelleDeReponse,
   libellePeriodeAffiche,
   variationNote,
   type AssessmentSnapshot,
@@ -142,5 +143,23 @@ describe('libellePeriodeAffiche', () => {
     expect(libellePeriodeAffiche('Semaine du 31/08', '2025-08-31T06:00:00.000Z', maintenant)).toBe(
       'Semaine du 31/08 2025'
     );
+  });
+});
+
+describe('libelleDeReponse', () => {
+  // **Les trois réponses ont chacune un libellé, et la troisième n'est pas « Non ».** C'est tout
+  // le chantier C2.4 : une semaine de congés inscrite en « Non » dans le suivi est précisément ce
+  // qui transformait dix mois sur douze en série d'échecs pour un profil « deux vols par an ».
+  it.each([
+    ['oui', 'Oui'],
+    ['non', 'Non'],
+    ['sans_objet', 'Pas de trajet'],
+  ] as const)('%s → %s', (reponse, libelle) => {
+    expect(libelleDeReponse(reponse)).toBe(libelle);
+  });
+
+  it('les trois libellés sont distincts', () => {
+    const libelles = (['oui', 'non', 'sans_objet'] as const).map(libelleDeReponse);
+    expect(new Set(libelles).size).toBe(3);
   });
 });

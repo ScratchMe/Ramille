@@ -38,6 +38,13 @@ import {
 import { lirePermission } from '@/lib/rappels';
 import { supabase } from '@/lib/supabase';
 import {
+  debutDePeriodeInterrogee,
+  estDeLaPeriodeCourante,
+  genreDeReponse,
+  periodePrecedente,
+  type PointRepondu,
+} from '@/types/checkin';
+import {
   carteAttente,
   doitProposerLaFeuille,
   type Boucle,
@@ -81,18 +88,60 @@ type PlanCycle = {
  */
 type EngagementOrphelin = { id: string; action_text: string };
 
-// Une seule question vivante par boucle, la plus récente. La requête est déjà triée par
-// `period_start` décroissant, donc le premier vu de chaque `loop_type` est le bon.
+// Une seule carte par boucle, la plus récente. La requête est déjà triée par `period_start`
+// décroissant, donc le premier vu de chaque `loop_type` est le bon.
 //
 // `period_start` n'est plus ajouté ici : il fait partie d'`EngagementCheckin` depuis C2.3, parce
 // que c'est lui qui nomme le mois dans la question de la boucle mensuelle.
+//
+// **Et depuis C2.4, la période borne l'affichage.** La requête ramène aussi les points répondus,
+// pour que le renforcement survive à un changement d'onglet ; il ne doit pas survivre à la période.
+// Un compte dont la boucle a cessé d'être générée — un re-bilan sans trajet régulier, par exemple —
+// garderait sinon à l'écran, pour toujours, un « Répondu lundi » suivi de la promesse d'un point qui
+// ne viendra pas. `estDeLaPeriodeCourante` est la jumelle du `date_trunc` des deux générateurs ; un
+// point **en attente** n'est jamais filtré, lui, parce que seul le serveur décide de le clore.
 function keepLatestPerLoop(checkins: EngagementCheckin[]): EngagementCheckin[] {
   const seen = new Set<EngagementCheckin['loop_type']>();
   return checkins.filter((checkin) => {
     if (seen.has(checkin.loop_type)) return false;
+    if (checkin.status === 'answered' && !estDeLaPeriodeCourante(checkin)) return false;
     seen.add(checkin.loop_type);
     return true;
   });
+}
+
+// **La borne basse de la lecture des points, et pourquoi elle existe** (C2.4 puis C2.10). La requête
+// ramenait les seuls points `pending` — un ou deux. Depuis qu'elle lit aussi les points répondus, elle
+// ramènerait tout l'historique d'un compte, soit une ligne par semaine qui s'accumule sans fin. Ce qui
+// est réellement nécessaire est la période courante et les **deux** qui la précèdent (le second
+// renforcement a besoin de savoir qu'on est à deux et pas à cinq) : la fenêtre est donc celle de la
+// boucle mensuelle, trois mois, qui couvre largement l'hebdomadaire.
+function fenetreDesPoints(maintenant: Date = new Date()): string {
+  const courante = debutDePeriodeInterrogee('extras', maintenant);
+  return periodePrecedente('extras', periodePrecedente('extras', courante));
+}
+
+// Les points répondus de chaque boucle, hors carte affichée : c'est ce que `estDeuxiemeFoisDeSuite`
+// interroge. Regroupé ici plutôt que dans la carte, qui n'a pas à relire la base pour savoir ce qui
+// s'est passé la période d'avant.
+function historiqueParBoucle(
+  checkins: EngagementCheckin[],
+  affiches: EngagementCheckin[]
+): Record<EngagementCheckin['loop_type'], PointRepondu[]> {
+  const affichesIds = new Set(affiches.map((checkin) => checkin.id));
+  const parBoucle: Record<EngagementCheckin['loop_type'], PointRepondu[]> = {
+    commute: [],
+    extras: [],
+  };
+
+  for (const checkin of checkins) {
+    if (affichesIds.has(checkin.id)) continue;
+    const reponse = genreDeReponse(checkin.response_kind);
+    if (reponse === null) continue;
+    parBoucle[checkin.loop_type].push({ period_start: checkin.period_start, reponse });
+  }
+
+  return parBoucle;
 }
 
 /**
@@ -137,6 +186,11 @@ type LoadState =
       /** Date du dernier bilan complété — sert la proposition de re-bilan. */
       assessmentDate: string | null;
       checkins: EngagementCheckin[];
+      /**
+       * Les points déjà répondus des périodes récentes, par boucle et hors carte affichée (C2.10).
+       * Sert au seul second renforcement ; la fenêtre de lecture est bornée par la requête.
+       */
+      historique: Record<EngagementCheckin['loop_type'], PointRepondu[]>;
     };
 
 // B "Plan de réduction". Depuis l'étape 6a (v1-07 §3.3), chaque action porte son gain estimé,
@@ -371,8 +425,23 @@ export default function Plan() {
         // est justement ouverte.
         const { data: checkins, error: erreurCheckins } = await supabase
           .from('engagement_checkins')
-          .select('id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode')
-          .eq('status', 'pending')
+          // `committed_question` d'abord : c'est la question **figée** à la génération, celle que
+          // le rappel a envoyée (C2.1). La carte l'affiche telle quelle plutôt que de la
+          // recomposer, pour qu'elle ne puisse pas différer d'un caractère de la notification
+          // qu'on vient d'ouvrir. `committed_action_text` sert à dire, le cas échéant, que la
+          // question porte sur une action quittée depuis.
+          .select(
+            'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, committed_intention_days, status, response_kind, responded_at'
+          )
+          // **`answered` autant que `pending` depuis C2.4.** La carte répondue reste le temps de la
+          // période : sans les lignes répondues, le renforcement vivait dans un `useState` et
+          // disparaissait au premier changement d'onglet — la personne répondait, voyait le mot de
+          // Ramille, revenait, et ne trouvait plus rien du tout. `expired` reste dehors : un point
+          // que la période suivante a clos n'a rien à montrer.
+          .in('status', ['pending', 'answered'])
+          // La fenêtre borne une lecture qui grossirait sans fin depuis qu'elle prend les points
+          // répondus : trois périodes mensuelles couvrent ce dont le second renforcement a besoin.
+          .gte('period_start', fenetreDesPoints())
           .order('period_start', { ascending: false });
 
         if (cancelled) return;
@@ -427,12 +496,15 @@ export default function Plan() {
         const orphelin = orphelins?.[0] ?? null;
         setOrphelin(orphelin && !(await aVuEngagementOrphelin(orphelin.id)) ? orphelin : null);
 
+        const points = (checkins as EngagementCheckin[] | null) ?? [];
+        const affiches = keepLatestPerLoop(points);
         setState({
           status: 'ok',
           cycle: cycle as PlanCycle,
           assessmentId: assessment.id,
           assessmentDate: assessment.submitted_at,
-          checkins: keepLatestPerLoop((checkins as EngagementCheckin[] | null) ?? []),
+          checkins: affiches,
+          historique: historiqueParBoucle(points, affiches),
         });
         // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si la lecture
         // secondaire ci-dessus a échoué.
@@ -654,9 +726,13 @@ export default function Plan() {
     );
   }
 
-  const { cycle, assessmentId, assessmentDate, checkins } = state;
+  const { cycle, assessmentId, assessmentDate, checkins, historique } = state;
   const actionsCount = cycle.plan_actions.length;
   const committedActionId = cycle.plan_actions.find((a) => a.committed_at !== null)?.id ?? null;
+  // Le libellé de l'action engagée, pour que la carte du point sache si sa question figée porte
+  // encore sur elle (C2.1). `null` quand rien n'est engagé, ce qui est aussi un « plus la même ».
+  const actionEngageeTexte =
+    cycle.plan_actions.find((a) => a.committed_at !== null)?.action_templates?.action_text ?? null;
   // Copie avant tri : `sort` mute, et `cycle` vient du state.
   const actionsOrdonnees = [...cycle.plan_actions].sort(
     (a, b) => Number(b.committed_at !== null) - Number(a.committed_at !== null)
@@ -792,6 +868,8 @@ export default function Plan() {
                   key={checkin.id}
                   checkin={checkin}
                   emphasize={checkin.trip_label === cycle.trip_label}
+                  actionEngagee={actionEngageeTexte}
+                  historique={historique[checkin.loop_type]}
                 />
               ))}
             </View>

@@ -121,6 +121,15 @@ Le reste de la suite est rejouable sur le distant et c'est la façon la plus rap
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que ces quatre-là ne prouvent rien là-bas.
 
+**`created_at` ne désigne aucune ligne dans une transaction pgTAP, et un `order by` dessus rend un
+ordre arbitraire.** `now()` est l'horodatage de **début de transaction** : deux lignes écrites par le
+même appel le portent à l'identique, et `order by created_at limit 1` retombe sur l'ordre du tas.
+Relevé le 11/09/2026 dans le fichier `22` (C2.9), où le « second clic » sur un lien de désinscription
+pouvait tirer l'**autre** message et donc réussir là où l'assertion attend un refus — l'assertion
+était juste, c'est la désignation de la ligne qui ne l'était pas, et elle passait en CI comme au
+premier rejeu. Capturer l'identifiant ou le jeton une fois dans un `set_config`, ou ordonner sur une
+colonne réellement distincte.
+
 **La place d'une assertion dans un fichier pgTAP fait partie de l'assertion, et valider l'assertion
 seule ne vaut rien.** Relevé le 11/09/2026 : les deux assertions C2.11 du fichier `09` avaient été
 posées en **fin** de fichier, après la section du journal qui écrit une ligne d'outbox **à la main**
@@ -284,9 +293,101 @@ libellé snapshoté : la notification disait « La semaine dernière, as-tu chan
 pour ton trajet domicile-travail ? » et l'écran « As-tu changé de mode de transport au moins une
 fois cette semaine pour Trajet domicile-travail (Voiture thermique) ? ». Sur un produit dont la
 boucle consiste à appuyer sur la notification pour répondre, ce n'est pas une variante de
-formulation : c'est la même question qui ne se reconnaît pas d'un écran à l'autre. C2.1 étendra ces
-fonctions (l'action engagée, ses jours, la troisième réponse) plutôt que d'ouvrir un troisième
-endroit.
+formulation : c'est la même question qui ne se reconnaît pas d'un écran à l'autre. C2.1 a étendu ces
+deux endroits plutôt que d'en ouvrir un troisième, et C2.4 fera de même pour la troisième réponse.
+
+**Quand une action est engagée, la question la nomme — et elle est figée à la génération** (C2.1,
+`20260912190000_point_connait_laction.sql`). « As-tu changé de mode de transport ? » posée à
+quelqu'un qui s'est engagé à « faire un trajet sur cinq à vélo le mardi et le jeudi » ne referme
+pas le « si-alors » qu'il a écrit : elle lui demande un résumé de sa semaine. La phrase vient
+désormais du gabarit, `action_templates.question_template` (« {jours}, as-tu fait ce trajet à
+vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à connaître :
+
+- **`engagement_checkins.committed_question` est la question elle-même, figée**, comme `trip_label`
+  fige le libellé. Elle est posée une fois, au moment de la génération, et `enqueue_checkin_reminders`
+  comme la carte la lisent telle quelle — c'est la seule façon qu'elles ne puissent pas différer
+  d'un caractère. Corollaire voulu : **changer d'action après la génération ne réécrit pas la
+  question déjà posée**, et la carte le dit (« Cette question porte sur l'action que tu suivais
+  alors : … »), plutôt que d'afficher une phrase qui ne correspond plus à rien. Recomposer à
+  l'affichage rendrait le point incohérent avec la notification qu'on vient d'ouvrir.
+- **Les quatre genres sont `engagement` | `generique` | `maintien` | `occasion`** — l'ancien
+  `changement` a été renommé `generique`, parce qu'il ne décrit plus le cas général mais le
+  **repli** : un gabarit sans `question_template` y retombe, jamais sur une phrase à trous. Le
+  genre et le mode restent deux colonnes pour la raison de C2.5, et **`maintien` gagne sur
+  `engagement`** : en pratique un cycliste a un plan à zéro action (effet de bord de C2.5), mais la
+  priorité est explicite et testée plutôt que dépendante de ce hasard.
+- **L'action retenue est celle du cycle qui couvre la période interrogée, appariée par poste** —
+  `t.poste = 'commute'` pour la boucle hebdomadaire, `t.poste = ar.extras_poste` pour la mensuelle.
+  Sans l'appariement, une action engagée sur les loisirs aurait nommé la question du trajet
+  domicile-travail.
+- **`public.jours_francais(smallint[])` est la jumelle SQL de `JOURS_FRANCAIS` / `joursDeLaQuestion`**
+  (`src/types/checkin.ts`), **donc à toucher ensemble**, exactement pour la raison de `mois_francais`
+  au paragraphe précédent. Elle joint par « ou » et non par « et » (l'intention est un choix de
+  jours, pas un cumul), ne capitalise que la première lettre — `initcap` sur la liste jointe
+  donnerait « Mardi Ou Jeudi » — et rend « Tous les jours » à sept jours plutôt que de les énumérer.
+- **La notification ne préfixe le poste que si la question ne le nomme pas déjà.** La question
+  générique finit par « … pour ton trajet domicile-travail ? » : y coller l'étiquette répétait le
+  poste dans la même notification. Le `push_body` teste donc `position(etiquette in question)`.
+- **La composition n'est appelable que côté serveur** : `checkin_question` et `jours_francais` sont
+  révoquées de `public, anon, authenticated`. Le client ne compose que pour les points générés
+  **avant** C2.1, dont `committed_question` est nul — d'où `questionDuPoint`, qui préfère toujours la
+  question figée.
+
+**Un point se répond par « oui », « non » ou « sans objet », et `response_kind` est la vérité**
+(C2.4, `20260912200000_troisieme_reponse_du_point.sql`). Une semaine de congés ou un mois sans voyage
+n'ont pas de réponse honnête entre oui et non : « Non » déclenche la consolation d'échec et s'inscrit
+en « Non » dans le suivi, ne rien répondre laisse le point expirer — ce qui compte pour une occasion
+manquée **et** fait s'espacer les rappels (C2.9). Pour un profil « deux vols par an », dix mois sur
+douze devenaient une suite de « Non ». Six points à connaître :
+
+- **Le piège n'était pas la valeur nulle, c'était le filtre qui la lisait.** `response boolean`
+  reste, **dérivée** (`true` / `false` / `null`), et `loadAnsweredCheckins` écartait les lignes dont
+  elle est nulle : la troisième réponse aurait été donnée puis perdue, sans message d'erreur et sans
+  rien afficher dans le suivi. Tout ce qui compte « les points répondus » filtre donc
+  `status = 'answered'` et lit `response_kind` — **jamais `response is not null`**. C'était déjà le
+  cas de `recapDeSaison` (C2.14, qui l'avait anticipé) et de `regime_de_rappel` (C2.9, où un
+  « sans objet » est un **signe de vie** : l'assertion est dans `24`, et sans elle quelqu'un qui
+  répond honnêtement quatre fois verrait ses rappels s'espacer comme s'il avait disparu).
+- **La dérivation est une contrainte, pas une convention**
+  (`engagement_checkins_reponse_coherente`), et elle porte **deux** invariants : répondu ⟺ genre
+  renseigné, et la correspondance genre/booléen. Le premier est la forme structurelle du défaut :
+  une ligne `answered` sans genre est une réponse que la lecture écarte. Aucun chemin de production
+  ne peut la produire — le RPC est le seul écrivain — et c'est pourquoi l'écrire coûte zéro et garde
+  le jour où C4.1 ajoutera une forme de réponse. Corollaire pour les tests : **une fixture ne peut
+  plus écrire `status = 'answered'` sans genre** (cinq fichiers corrigés), ce qui est une bonne
+  chose — une fixture qui écrit un état que la production ne peut pas produire éprouve une fiction.
+- **Le backfill passe sous le trigger, pas à travers.** `prevent_answered_checkin_update` lève sur
+  toute mise à jour d'une ligne déjà répondue (C1.12) : le rattrapage des points historiques le
+  désactive le temps de l'écriture et le réarme ensuite, et la contrainte n'est posée **qu'après** —
+  l'ordre inverse ferait échouer l'`alter` sur les lignes pas encore rattrapées. Un contrôle de la
+  migration vérifie que le trigger est bien réarmé : l'oublier défairait C1.12 en silence.
+- **La signature du RPC change, elle ne s'ajoute pas** : `repondre_au_checkin(uuid, text)`, et la
+  version booléenne est **supprimée**. Deux surcharges que PostgREST départage sur le type d'un
+  champ JSON coûteraient plus que la migration, et une surcharge qu'aucun appel n'émet se lit
+  « morte » et non « réservée » (la leçon de `p_replace` en C2.2). Ce raisonnement tient **parce que
+  l'app n'est pas encore publiée sur Play** ; le jour où un client installé appelle l'ancienne forme,
+  il faudra une seconde fonction nommée.
+- **`analytics.engagement_by_segment` gagne `answered_sans_objet`**, et ce n'est pas du confort :
+  `answered` compte les trois réponses et `answered_yes` les seuls « oui », donc l'écart entre les
+  deux se lisait « non » et vient d'accueillir les « sans objet ». Sans le troisième compteur, le
+  taux de réussite de la boucle baissait à chaque fois que quelqu'un répond honnêtement. Une
+  assertion de `24` nomme l'égalité.
+- **La carte répondue reste le temps de la période, et la borne se calcule en UTC.** Le
+  renforcement vivait dans un `useState` : répondre, changer d'onglet, revenir, et il n'y avait plus
+  rien — la requête du plan ne lisait que les points `pending`. Elle lit maintenant `pending` **et**
+  `answered`, et `estDeLaPeriodeCourante` (`src/types/checkin.ts`) borne l'affichage, sans quoi un
+  compte dont la boucle a cessé d'être générée garderait pour toujours un « Répondu lundi » et la
+  promesse d'un point qui ne viendra pas. `debutDePeriodeInterrogee` est la **jumelle du `date_trunc`
+  des deux générateurs**, donc elle lit l'UTC — à l'inverse de `saisonDe`, qui nomme une saison pour
+  un humain et suit son calendrier local. Aligner l'une sur l'autre ferait disparaître la carte d'un
+  point courant entre minuit et 6 h UTC le lundi. Le pied (« Répondu lundi. Prochain point : lundi
+  21 septembre. ») est **du produit et non de Ramille** : il porte deux dates, et elle ne dit jamais
+  de nombre.
+
+`RAMILLE.checkinSansObjet` a **quatre** variantes indexées sur le **poste** et non deux sur la
+boucle, écart consigné en `v1-14` §10 : la boucle mensuelle couvre les voyages *et* les sorties
+depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui vient d'appuyer sur
+« Pas de sortie en septembre » serait la fausseté lisible que ce chantier-là a retirée ailleurs.
 
 **Le cycliste, le piéton et les loisirs rares ne reçoivent pas la même boucle** (C2.5, arbitrage D5,
 `20260912140000_qui_recoit_quelle_boucle.sql`). Quatre choses à connaître avant d'y toucher :
@@ -327,6 +428,38 @@ endroit.
   passaient. Et un bilan à zéro nomme le poste où quelque chose est déclaré : plus de
   « Trajet domicile-travail () ».
 
+**Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
+(C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement
+et en §9 comme indicateur de succès, `v1-02` §4 en donnait même la requête, et il n'avait jamais été
+calculé nulle part — la phrase du handoff n'a jamais été affichée à personne. Trois choses à
+connaître :
+
+- **La requête de `v1-02` §4 est périmée, et elle l'est devenue en silence.** Elle prend les **deux
+  dernières lignes** de la boucle et vérifie qu'elles sont répondues ; c'était juste avant que
+  `20260904180000` ne close les périodes révolues en `expired` **et les garde en base**. Depuis,
+  « les deux dernières lignes » peut recouvrir deux périodes séparées de trois mois de silence. D'où
+  `public.periode_precedente(loop_type, period_start)` : la période se **calcule**. Un `lag()` sur
+  les lignes aurait le même défaut en moins visible — vérifié sur la fixture du test `25`, qui compte
+  2 par `lag()` et 1 par période.
+- **C'est une quatrième paire SQL/TypeScript** (`periodePrecedente`, `src/types/checkin.ts`), à
+  toucher avec sa jumelle comme `mois_francais`, `jours_francais` et `poste_inserable` : la vue
+  `analytics.checkins_consecutifs` compte côté serveur, la carte affiche côté client. Les deux
+  cadences n'ont pas la même forme et c'est voulu — sept jours avant un lundi est un lundi, tandis que
+  le mois est **ramené au premier** plutôt que décalé, sans quoi les deux moitiés divergeraient sur les
+  fins de mois (PostgreSQL ramène le 31 mars au 28 février, `Date.UTC` le pousse au 3 mars).
+- **« Jamais au-delà de deux » veut dire que le signal ne se rallume pas.** `estDeuxiemeFoisDeSuite`
+  exige que la période précédente soit un « oui » **et que celle d'avant n'en soit pas un** : la phrase
+  dit « Deuxième semaine de suite », donc à la cinquième elle serait fausse, et la recevoir chaque
+  semaine en ferait du papier peint. Le signal marque le passage d'un geste à une habitude, puis se
+  tait. `v1-14` §4.6 décrit la dérivation à deux arguments ; il en faut un troisième état pour savoir
+  qu'on est à deux et pas à cinq (écart consigné en `v1-14` §10). La phrase est **voix produit et non
+  celle de Ramille** — elle constate un fait sur deux périodes, et Ramille ne compte jamais.
+
+Corollaire sur la lecture du plan : **la requête des points est bornée par une fenêtre**
+(`fenetreDesPoints`, trois périodes mensuelles). Elle ne ramenait que les points `pending`, soit un ou
+deux ; depuis qu'elle prend aussi les répondus (C2.4), sans borne elle ramènerait une ligne par semaine
+indéfiniment.
+
 **Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
 décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
 `v1-10` §2.B). Le push, lui, part à `now()`. Pour provoquer un rappel de test, passer par
@@ -337,14 +470,17 @@ plutôt que d'insérer un point à la main.
 contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une
 issue GitHub par chantier — #99 à #151 et #153 — et **le plan de livraison en huit vagues en §2.3**, dont
 l'issue de suivi #154 est la vue cochable ; inventaire complet en `docs/audit/2026-09-09-inventaire.md`).
-**Les vagues 1 à 4 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, puis le
+**Les vagues 1 à 5 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, puis le
 lot 1 (bugs silencieux et textes faux, puis écrans d'onglets) le 11/09/2026, puis la vague 4 (lot 2,
 socle et serveur de la boucle d'engagement : saison côté client, forme insérable du poste, période
 écoulée, qui reçoit quelle boucle, engagement qui survit, lien du rappel ouvert ailleurs, rappels qui
-s'espacent) le même jour. **Le jalon « publiable sur Play » est atteint côté code** ; ce qui reste
+s'espacent) et la vague 5 (lot 2, **le point** : il connaît l'action engagée, accepte une troisième
+réponse, reste affiché le temps de la période, porte le signal « deux fois de suite » et varie ses
+répliques) le même jour. **Le jalon « publiable sur Play » est atteint côté code** ; ce qui reste
 avant de publier n'est pas du code mais les vérifications de la §11 et la checklist de
-`docs/exploitation/README.md`. La vague 5 (lot 2, le point : C2.1 → C2.4 → C2.10 → C2.12, **même
-fichier, dans cet ordre**) est la suite.
+`docs/exploitation/README.md`. La vague 6 (lot 2, la saison et le suivi : trois files parallèles —
+`plan.tsx` avec C2.8 puis C4.6, le suivi avec C2.7 puis C3.1, et C2.13 puis C3.9) est la suite, et
+c'est elle qui porte le jalon « la boucle existe d'une saison à l'autre ».
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -562,6 +698,26 @@ l'empreinte d'un motard — dans le sens qui fait passer le deux-roues pour vert
 pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe. Piège de relevé :
 l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
 distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
+
+**Aucune migration de données ne désigne une ligne par un identifiant généré, et celle qui l'a fait
+n'a été rattrapée que par son propre contrôle.** `action_templates.id` vaut `gen_random_uuid()` : les
+douze gabarits portent des identifiants **différents** sur chaque base construite depuis
+`supabase/migrations/`. Les uuid relevés sur le projet distant s'y apparient, donc la migration C2.1
+passait là-bas et n'appariait **rien** en CI — les douze `question_template` restaient nuls, et c'est le
+contrôle de la migration (« un gabarit sans `question_template` ») qui a fait tomber le job pgTAP.
+C'est exactement l'avertissement de `mcp__Supabase__apply_migration`, et c'est la seule migration du
+dépôt qui portait un uuid littéral (vérifié). La clé naturelle du référentiel est `action_text` : les
+douze libellés sont distincts et insérés littéralement par `20260905130000`. Deux corollaires : **un
+fichier de test pgTAP ne désigne pas davantage un gabarit par son identifiant** (`23` a été corrigé
+pour la même raison), et **un libellé mal recopié n'apparie rien** — c'est le contrôle qui rend
+l'appariement par texte sûr, pas la relecture.
+
+**Une migration doit se rejouer telle quelle, et `add constraint` n'est pas idempotent.** Corollaire
+du point précédent : pour corriger l'appariement il a fallu rejouer le fichier entier sur le distant, et
+il s'est arrêté sur un `42710` — une contrainte ajoutée sans `drop constraint if exists` devant. Le
+défaut ne se voit ni en CI (base neuve, un seul passage) ni au premier déploiement ; il se voit le jour
+d'une restauration, c'est-à-dire le plus mauvais. Même exigence que
+`20260910110000_grants_explicites.sql`, « rejouable tel quel après une restauration ».
 
 **Le distant porte les corps de fonction sans les commentaires du dépôt, et la substitution
 vérifiée lit le distant.** Relevé le 11/09/2026 en comparant les 47 fonctions une à une : la logique
@@ -1084,15 +1240,29 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   un test : première personne et tutoiement ; **jamais un nombre dans sa bouche** (les
   chiffres restent au produit, c'est ce qui garantit qu'elle ne commente jamais une
   empreinte) ; jamais « tu devrais » ni « il faut ». Les rappels par email sont un mot
-  d'elle, signé (`enqueue_checkin_reminders`). Les répliques de check-in viennent des
-  maquettes validées et ne se réécrivent pas ; **la période calme fait exception** — « Rien à
+  d'elle, signé (`enqueue_checkin_reminders`). Les répliques de check-in **d'origine** viennent
+  des maquettes validées et ne se réécrivent pas ; **la période calme fait exception** — « Rien à
   rattraper. » a été retirée le 07/09/2026 sur un retour d'usage (elle se lisait comme une
   attente déçue), remplacée par des phrases qui *disent* l'attente et nomment le jour. Elle
   peut le faire sans jamais compter, le rythme étant fixe.
-  Depuis C2.5 certaines répliques sont **groupées** (`maintienNon` par mode, et C2.1 ajoutera des
-  tableaux de variantes) : le test aplatit `RAMILLE` avant de l'éprouver, et il le fait parce qu'une
-  valeur non-textuelle traverse `expect.stringMatching` **sans jamais matcher** — les trois règles de
-  voix passeraient en silence sur une réplique groupée.
+  **Des variantes s'ajoutent depuis la décision D12 du 10/09/2026** (C2.12) : l'originale reste en
+  **première position** de son tableau et n'est pas modifiée, et `variantePourLaPeriode`
+  (`src/types/checkin.ts`) en choisit une par **période**. Jamais un tirage au hasard :
+  `useRafraichirAuRetour` relit l'écran du plan à chaque retour au premier plan, donc la phrase
+  changerait plusieurs fois dans la même période et différerait d'un appareil à l'autre. Le hachage
+  est un FNV-1a 32 bits avec un `>>> 0` à chaque tour — sans lui la multiplication sort de l'entier
+  exact des `number` et Hermes et V8 ne rendraient pas la même phrase pour la même semaine ; et deux
+  périodes voisines ne diffèrent que de sept jours ou d'un mois, donc une somme de codes de
+  caractères donnerait des indices corrélés. **Les tableaux sont doublés par boucle** (« À lundi. »
+  n'a aucun sens sur un point mensuel) et `checkinSansObjet` l'est par **poste**, ce qui est l'écart
+  de C2.4. L'usure que ces variantes traitent n'est **pas mesurable** — `checkin_answer` est interdit
+  comme événement d'usage — c'est un choix de ton, assumé comme tel.
+  Depuis C2.5 certaines répliques sont **groupées** (`maintienNon` par mode, les tableaux de C2.12) :
+  le test aplatit `RAMILLE` avant de l'éprouver, et il le fait parce qu'une valeur non-textuelle
+  traverse `expect.stringMatching` **sans jamais matcher** — les trois règles de voix passeraient en
+  silence sur une réplique groupée. Deux gardes s'ajoutent à C2.12 : l'originale en tête de chaque
+  tableau, et **aucun doublon** — un copier-coller qui laisse deux entrées identiques réduit la
+  variété sans que rien ne le signale, c'est-à-dire défait le chantier en silence.
   Cinq expressions, **aucune négative et il ne faut pas en ajouter** : `calm`, `happy`,
   `encouraging`, `thinking` (attente du calcul — seule asymétrie assumée, le regard est décalé
   d'une unité) et `resting` (périodes calmes de `/suivi`). Un second registre s'obtient sans
