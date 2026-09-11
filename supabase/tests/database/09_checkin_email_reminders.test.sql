@@ -135,6 +135,42 @@ select is(
   'Le décalage est dérivé du user_id, donc stable d''un passage à l''autre'
 );
 
+-- ── Le lien du corps de l'email (C2.11) ────────────────────────────────────────────────
+-- **La marque `?rappel=1` est tout l'objet du chantier**, et rien ne l'épinglait. Sans elle, le
+-- lien de l'email ouvert sur un ordinateur ou un téléphone neuf tombe sur la session anonyme vide
+-- que l'app vient de créer, et le plan répond « Ton bilan n'est pas encore fait » à quelqu'un qui a
+-- un bilan, un plan et des points — avec pour seul bouton « Faire mon bilan ». Elle ne se voit pas
+-- en lisant un email reçu : c'est le genre de détail qui se perd à la première réécriture du corps.
+--
+-- Le **chemin**, lui, ne doit pas bouger : `assetlinks.json` ne revendique que `/plan`, donc une
+-- autre route ferait ouvrir le lien dans le navigateur sur Android, en silence. Les deux assertions
+-- vont ensemble — la seconde est celle qui tomberait si quelqu'un « rangeait » le paramètre dans un
+-- segment de chemin.
+--
+-- **La place de ce bloc compte, et elle a déjà été fausse une fois.** Il lit le corps de la ligne
+-- que `enqueue_checkin_reminders()` vient d'écrire juste au-dessus, donc il doit rester entre cette
+-- mise en file et la prochaine qui vide la table. Posé en fin de fichier, il tombait sur la ligne
+-- **écrite à la main** par la section du journal — un corps que nulle mise en file n'a produit : la
+-- première assertion échouait et la seconde passait sans rien éprouver. C'est le piège que
+-- CLAUDE.md décrit (rejouer la séquence entière du fichier, pas l'assertion seule), et il s'est
+-- refermé exactement là.
+--
+-- Portée aux lignes de ce fichier : un `bool_and` nu porterait sur toute la table, donc sur des
+-- lignes écrites avant cette migration dès qu'on rejoue le fichier sur une base peuplée — il
+-- passerait en CI (base vierge) en ne vérifiant rien là où on le lit. Même précaution que
+-- l'assertion de `13_engagement_action` qui porte la même remarque.
+select ok(
+  (select bool_and(o.body like '%/plan?rappel=1%') from public.notification_outbox o
+   where o.user_id::text like 'ba111111%'),
+  'Le lien de l''email porte ?rappel=1 — sans quoi il dit « ton bilan n''est pas encore fait » à qui en a un'
+);
+
+select ok(
+  (select bool_and(o.body not like '%/plan/%') from public.notification_outbox o
+   where o.user_id::text like 'ba111111%'),
+  'Et il reste sur /plan : assetlinks.json ne revendique que ce chemin, un autre retomberait dans le navigateur'
+);
+
 -- ── Un rappel devenu caduc ─────────────────────────────────────────────────────────────
 -- La file est servie à cent par jour : un rappel peut y attendre plusieurs jours. Entre-temps
 -- `generate_commute_checkins()` périme les check-ins de la semaine précédente. Poser une
@@ -228,34 +264,6 @@ select is(
   (select count(*)::int from public.reminder_send_runs),
   6,
   'Chaque passage laisse une ligne par canal — c''est ce qui permet de dire que le cron tourne, même une nuit sans rien à envoyer'
-);
-
--- ── Le lien du corps de l'email (C2.11) ────────────────────────────────────────────────
--- **La marque `?rappel=1` est tout l'objet du chantier**, et rien ne l'épinglait. Sans elle, le
--- lien de l'email ouvert sur un ordinateur ou un téléphone neuf tombe sur la session anonyme vide
--- que l'app vient de créer, et le plan répond « Ton bilan n'est pas encore fait » à quelqu'un qui a
--- un bilan, un plan et des points — avec pour seul bouton « Faire mon bilan ». Elle ne se voit pas
--- en lisant un email reçu : c'est le genre de détail qui se perd à la première réécriture du corps.
---
--- Le **chemin**, lui, ne doit pas bouger : `assetlinks.json` ne revendique que `/plan`, donc une
--- autre route ferait ouvrir le lien dans le navigateur sur Android, en silence. Les deux assertions
--- vont ensemble — la seconde est celle qui tomberait si quelqu'un « rangeait » le paramètre dans un
--- segment de chemin.
-
--- Portée aux lignes de ce fichier : un `bool_and` nu porterait sur toute la table, donc sur des
--- lignes écrites avant cette migration dès qu'on rejoue le fichier sur une base peuplée — il
--- passerait en CI (base vierge) en ne vérifiant rien là où on le lit. Même précaution que
--- l'assertion de `13_engagement_action` qui porte la même remarque.
-select ok(
-  (select bool_and(o.body like '%/plan?rappel=1%') from public.notification_outbox o
-   where o.user_id::text like 'ba111111%'),
-  'Le lien de l''email porte ?rappel=1 — sans quoi il dit « ton bilan n''est pas encore fait » à qui en a un'
-);
-
-select ok(
-  (select bool_and(o.body not like '%/plan/%') from public.notification_outbox o
-   where o.user_id::text like 'ba111111%'),
-  'Et il reste sur /plan : assetlinks.json ne revendique que ce chemin, un autre retomberait dans le navigateur'
 );
 
 -- ── Verrouillage ───────────────────────────────────────────────────────────────────────

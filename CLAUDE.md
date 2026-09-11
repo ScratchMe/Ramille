@@ -112,9 +112,24 @@ projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les
 - `17_rappels_canal` assertions 15 et 16 attendent un envoi **sauté** faute de secrets Vault. Sur
   le distant, `resend_api_key` et `reminder_from_address` existent : la fonction envoie vraiment, et
   la ligne passe en `sent` / le passage en `success`.
+- `09_checkin_email_reminders` pour la même raison — et avec un **effet de bord** : ses trois appels
+  à `send_pending_reminders()` feraient partir de vrais emails vers des adresses `@test.local`, donc
+  un rebond qui coûte de la délivrabilité au domaine. Ce fichier ne se rejoue pas en entier sur le
+  distant ; ce qui s'y valide se valide en sautant ces appels (ils ne touchent pas au corps du
+  message, seulement au statut).
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
-`request.jwt.claims` comprises, et de savoir que ces trois-là ne prouvent rien là-bas.
+`request.jwt.claims` comprises, et de savoir que ces quatre-là ne prouvent rien là-bas.
+
+**La place d'une assertion dans un fichier pgTAP fait partie de l'assertion, et valider l'assertion
+seule ne vaut rien.** Relevé le 11/09/2026 : les deux assertions C2.11 du fichier `09` avaient été
+posées en **fin** de fichier, après la section du journal qui écrit une ligne d'outbox **à la main**
+— donc un corps que nulle mise en file n'a produit. La première échouait, la seconde passait sans
+rien éprouver, et la validation sur le distant n'avait porté que sur elles deux avec leurs propres
+fixtures, ce qui ne reproduisait pas cet état. Elles vivent maintenant juste après la mise en file
+qui produit la ligne qu'elles lisent, avec un commentaire qui dit pourquoi elles ne doivent pas
+bouger. La conjonction est le vrai piège : le fichier dont on a le plus besoin de rejouer la
+séquence entière est précisément celui qu'on ne peut pas rejouer en entier sur le distant.
 
 ## Architecture
 
