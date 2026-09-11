@@ -125,6 +125,39 @@ export default function Onboarding() {
 
   const page = { width, height: hauteur > 0 ? hauteur : undefined };
 
+  // **Les quatre pages sont montées en permanence, et un lecteur d'écran les lisait d'un
+  // bloc** (A1-7) : quatre titres annoncés comme en-têtes, quatre corps de texte, trois
+  // « Continuer » identiques, et sur web une tabulation qui atteignait le lien « J'ai déjà un
+  // compte » d'une page invisible — lien qui sort de l'onboarding. Une page hors champ est donc
+  // retirée de l'arbre d'accessibilité, les quatre attributs ensemble parce qu'aucun ne couvre
+  // les trois plateformes : `accessibilityElementsHidden` pour iOS,
+  // `importantForAccessibility` pour Android, `aria-hidden` et `inert` pour le web.
+  //
+  // **`aria-hidden` ne suffit pas sur web, et c'est `inert` qui ferme la tabulation.** Le premier
+  // retire un nœud de l'arbre d'accessibilité sans le retirer de l'ordre de tabulation : les
+  // boutons des trois pages hors champ et le lien « J'ai déjà un compte » restaient atteignables
+  // à la touche, c'est-à-dire que le défaut annoncé comme corrigé ne l'était qu'à moitié —
+  // vérifié sur l'export, qui portait cinq `tabindex="0"` pour un seul bouton visible. `inert`
+  // retire le sous-arbre des deux à la fois, et `react-native-web` le transmet au DOM (il figure
+  // dans sa liste de props transmises). La prop n'est pas dans les types de `View`, d'où le
+  // `Record` ci-dessous ; sur natif elle est simplement ignorée.
+  //
+  // Le masquage suit l'**index d'état**, jamais la position de défilement : pendant le geste,
+  // l'index ne bascule qu'au franchissement de la moitié de page, alors qu'un seuil sur le
+  // défilement ferait apparaître et disparaître les pages sous le doigt.
+  const propsDePage = (i: number) => {
+    const masquee = i !== index;
+    return {
+      style: page,
+      accessibilityElementsHidden: masquee,
+      importantForAccessibility: masquee ? ('no-hide-descendants' as const) : ('auto' as const),
+      'aria-hidden': masquee,
+      // `undefined` et non `false` : un attribut booléen du DOM vaut par sa présence, et
+      // `inert={false}` rendrait `inert=""` sur la page visible — donc une page inerte.
+      ...({ inert: masquee ? true : undefined } as Record<string, unknown>),
+    };
+  };
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView
@@ -138,16 +171,16 @@ export default function Onboarding() {
         // `bounces` en moins pour que les deux extrémités ne suggèrent pas une cinquième étape.
         bounces={false}
       >
-        <View style={page}>
+        <View {...propsDePage(0)}>
           <EtapeAccroche onSuivant={() => allerA(1)} />
         </View>
-        <View style={page}>
+        <View {...propsDePage(1)}>
           <EtapeContexte onSuivant={() => allerA(2)} />
         </View>
-        <View style={page}>
+        <View {...propsDePage(2)}>
           <EtapeReassurance onSuivant={() => allerA(3)} />
         </View>
-        <View style={page}>
+        <View {...propsDePage(3)}>
           <EtapeTransition />
         </View>
       </ScrollView>

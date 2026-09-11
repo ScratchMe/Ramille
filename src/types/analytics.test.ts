@@ -3,6 +3,8 @@ import {
   MAX_PROP_KEYS,
   MAX_PROP_VALUE_LENGTH,
   sanitizeEventProps,
+  sourceConnexion,
+  SOURCES_CONNEXION,
   USAGE_EVENT_NAMES,
   type UsageEventName,
   type UsageEventPropsByName,
@@ -21,6 +23,7 @@ describe('USAGE_EVENT_NAMES', () => {
       'resultat_view',
       'resultat_share',
       'connexion_view',
+      'connexion_demande',
       'connexion_success',
       'connexion_dismiss',
       'plan_view',
@@ -30,6 +33,7 @@ describe('USAGE_EVENT_NAMES', () => {
       'retrouver_send',
       'rappels_view',
       'app_error',
+      'bilan_submit_error',
     ]);
   });
 
@@ -37,6 +41,11 @@ describe('USAGE_EVENT_NAMES', () => {
     // `assessments.submitted_at`, `engagement_checkins.response` et la table `feedback`
     // portent ces faits. Les mesurer en double, c'est se garantir deux chiffres qui
     // divergeront le jour où l'un des chemins échoue.
+    //
+    // **`bilan_submit_error` n'est pas l'exception qui confirmerait la règle** : le schéma
+    // n'enregistre justement rien d'une soumission qui échoue — `submitted_at` n'est écrit que
+    // quand elle aboutit, et un bilan resté `in_progress` ne dit ni pourquoi ni à quel pas.
+    // C'est le complément du fait, pas son double.
     const interdits = ['bilan_submit', 'checkin_answer', 'feedback_submit'];
     for (const nom of interdits) {
       expect(USAGE_EVENT_NAMES).not.toContain(nom as UsageEventName);
@@ -54,6 +63,7 @@ describe('USAGE_EVENT_NAMES', () => {
       resultat_view: 'resultat_view',
       resultat_share: 'resultat_share',
       connexion_view: 'connexion_view',
+      connexion_demande: 'connexion_demande',
       connexion_success: 'connexion_success',
       connexion_dismiss: 'connexion_dismiss',
       plan_view: 'plan_view',
@@ -63,8 +73,48 @@ describe('USAGE_EVENT_NAMES', () => {
       retrouver_send: 'retrouver_send',
       rappels_view: 'rappels_view',
       app_error: 'app_error',
+      bilan_submit_error: 'bilan_submit_error',
     };
     expect(Object.keys(_exhaustif)).toHaveLength(USAGE_EVENT_NAMES.length);
+  });
+});
+
+describe('app_open', () => {
+  it('distingue ses deux chemins d’émission', () => {
+    // Purement statique : le typecheck refuse une valeur inconnue, et `app_open` redevenu
+    // `never` ferait échouer cette ligne. Ce qui est épinglé, c'est que le démarrage et le
+    // retour au premier plan n'écrivent pas des lignes indistinguables — sans quoi on ne peut
+    // ni vérifier que le chemin du rappel fonctionne, ni comparer les séries d'avant et
+    // d'après le 11/09/2026 (v1-13 C1.2, constat A1-4).
+    const origines: UsageEventPropsByName['app_open']['origine'][] = ['demarrage', 'retour'];
+    expect(origines).toEqual(['demarrage', 'retour']);
+  });
+});
+
+describe('sourceConnexion', () => {
+  // Ce qui est épinglé ici, c'est l'absence de seconde liste. Le garde de l'écran de connexion
+  // était écrit à la main et avait perdu `compte` en route : une arrivée depuis « Toi » était
+  // enregistrée comme l'interstitiel post-bilan, c'est-à-dire dans la case à laquelle on voulait
+  // justement la comparer. Dérivé de `SOURCES_CONNEXION`, le garde ne peut plus rater une
+  // provenance que le type déclare.
+  it('reconnaît toutes les provenances déclarées', () => {
+    for (const source of SOURCES_CONNEXION) {
+      expect(sourceConnexion(source)).toBe(source);
+    }
+  });
+
+  it('retombe sur l’interstitiel pour une provenance absente ou inconnue', () => {
+    // Un lien direct, un retour arrière : mieux vaut compté sur le chemin historique que perdu.
+    expect(sourceConnexion(undefined)).toBe('resultat_transition');
+    expect(sourceConnexion('')).toBe('resultat_transition');
+    // `plan` et `suivi` ont été retirées faute d'émetteur : elles ne doivent pas se rattraper
+    // en douce par le garde.
+    expect(sourceConnexion('plan')).toBe('resultat_transition');
+    expect(sourceConnexion('suivi')).toBe('resultat_transition');
+  });
+
+  it('ne déclare aucune provenance qu’aucun écran n’émet', () => {
+    expect([...SOURCES_CONNEXION]).toEqual(['resultat_transition', 'resultat_cta', 'compte']);
   });
 });
 

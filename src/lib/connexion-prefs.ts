@@ -49,3 +49,31 @@ export async function marquerRattachementAnnonce(): Promise<void> {
     // best-effort : au pire l'annonce réapparaît une fois.
   }
 }
+
+// L'adresse du dernier lien demandé depuis cet appareil.
+//
+// Elle existe pour un seul cas : un lien qui ne marche plus. La personne a fait le bon geste,
+// revient dans l'app, et l'écran lui dit d'en redemander un — lui faire retaper son adresse à
+// ce moment-là, c'est la faire payer une expiration qui n'est pas de son fait.
+//
+// **Une préférence locale, jamais une déduction serveur** : prérenseigner depuis une réponse de
+// l'API dirait qui utilise Ramille, ce que la règle de non-divulgation interdit (cf.
+// `src/types/connexion.ts`). Ici on ne relit que ce que la personne a tapé sur cet appareil.
+// Effacée avec le reste par la suppression de compte, d'où le préfixe commun.
+const ADRESSE_KEY = 'traceverte.derniere_adresse_lien.v1';
+
+export async function memoriserAdresseDuLien(email: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ADRESSE_KEY, email.trim());
+  } catch {
+    // best-effort : au pire l'adresse est à retaper.
+  }
+}
+
+export async function lireAdresseDuLien(): Promise<string | null> {
+  try {
+    return (await AsyncStorage.getItem(ADRESSE_KEY)) || null;
+  } catch {
+    return null;
+  }
+}

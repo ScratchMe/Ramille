@@ -5,6 +5,7 @@ import 'react-native-url-polyfill/auto';
 
 import type { Database } from '@/lib/database.types';
 import { decrireProbleme, lireConfigurationSupabase } from '@/types/configuration';
+import { uneSeuleFois } from '@/types/une-seule-fois';
 
 /**
  * **Ces deux `const` ne sont pas du confort, et il ne faut pas les replier dans l'appel
@@ -74,7 +75,15 @@ export const supabase = configurationSupabase.complete
 // n'existe déjà. Appelée au démarrage (_layout.tsx, en fire-and-forget) et re-vérifiée
 // avant toute écriture bilan pour couvrir un démarrage à froid trop rapide ou un
 // deep-link direct vers /bilan.
-export async function ensureSession() {
+//
+// **L'enveloppe `uneSeuleFois` n'est pas du confort, elle empêche un second compte anonyme.**
+// Le corps ci-dessous lit puis écrit : deux appels lancés dans le même rendu — celui du layout
+// racine et celui de la racine de l'app — lisent tous les deux « pas de session » avant que
+// l'un des deux n'ait écrit, et créent chacun leur compte. Six des treize comptes de la base
+// étaient dans ce cas le 10/09/2026 (v1-13 C1.2). Le contrat ne change pas : seules les
+// promesses en vol sont partagées, donc un appel tardif relit bien l'état courant — voir
+// `src/types/une-seule-fois.ts`, qui porte le détail et les tests.
+export const ensureSession = uneSeuleFois(async () => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -83,4 +92,4 @@ export async function ensureSession() {
   const { data, error } = await supabase.auth.signInAnonymously();
   if (error) throw error;
   return data.session;
-}
+});

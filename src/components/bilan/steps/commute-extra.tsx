@@ -100,20 +100,10 @@ export function CommuteExtraStep({
                 <ModeListItem
                   label={TRANSPORT_MODE_LABELS[modeId]}
                   selected={answers.commute_second_mode === modeId}
-                  onPress={() =>
-                    update({
-                      commute_second_mode: modeId,
-                      // Un seul champ moteur pour les deux jambes (cf. types/bilan.ts) :
-                      // on ne le réinitialise que si ni le mode principal ni ce second
-                      // mode ne valent "voiture" après ce choix.
-                      commute_car_engine:
-                        modeId === 'voiture' || answers.commute_mode === 'voiture' ? answers.commute_car_engine : null,
-                      commute_two_wheeler_type:
-                        modeId === 'deux_roues_motorise' || answers.commute_mode === 'deux_roues_motorise'
-                          ? answers.commute_two_wheeler_type
-                          : null,
-                    })
-                  }
+                  // La motorisation et le type de deux-roues sont partagés par les deux
+                  // jambes (cf. types/bilan.ts) : ce qu'un changement de second mode rend
+                  // orphelin est effacé par `normaliserReponses`, pas ici.
+                  onPress={() => update({ commute_second_mode: modeId })}
                   nestedBackground
                 />
 

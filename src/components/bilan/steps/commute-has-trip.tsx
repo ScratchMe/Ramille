@@ -27,20 +27,11 @@ export function CommuteHasTripStep({
         <ChoiceRow
           label="Non"
           selected={answers.commute_has_regular_trip === false}
-          onPress={() =>
-            update({
-              commute_has_regular_trip: false,
-              commute_days_per_week: null,
-              commute_distance_km: null,
-              commute_distance_bracket: null,
-              commute_mode: null,
-              commute_is_carpool: false,
-              commute_carpool_size: null,
-              commute_second_mode_used: false,
-              commute_second_mode: null,
-              commute_car_engine: null,
-            })
-          }
+          // Une seule réponse à poser : `normaliserReponses` efface toute la section 1, et c'est
+          // le seul endroit où cette liste vit. Celle qui était écrite ici énumérait dix champs
+          // et en oubliait un — `commute_two_wheeler_type`, le symptôme même du constat A2-17.
+          // C'était la dernière des quatre listes tenues à la main.
+          onPress={() => update({ commute_has_regular_trip: false })}
         />
       </View>
       <ThemedText type="small" themeColor="textTertiary" style={styles.helper}>

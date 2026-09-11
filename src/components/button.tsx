@@ -16,8 +16,14 @@ export type ButtonProps = {
   accessibilityHint?: string;
 };
 
-// Bouton pleine largeur, hauteur 54px, rayon 27px — cf. design tokens du handoff.
+// Bouton pleine largeur, rayon 27px — cf. design tokens du handoff.
 // `flex` sert au cas "Retour" (largeur auto) + "Suivant" (flex:1) côte à côte.
+//
+// **La hauteur est un minimum, pas une mesure** (A10-21) : le texte suit l'agrandissement des
+// polices du système — c'est le bon défaut, et rien dans le produit ne le plafonne — mais une
+// boîte figée à 54 px ne grandissait pas avec lui. À 150 ou 200 %, le libellé débordait de son
+// bouton. `minHeight` + `paddingVertical` donnent exactement la même allure à taille normale
+// (24 px d'interligne + 2 × 15 = 54) et laissent le bouton grandir au lieu de déborder.
 export function Button({
   title,
   onPress,
@@ -55,7 +61,8 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    height: ControlHeight.button,
+    minHeight: ControlHeight.button,
+    paddingVertical: 15,
     borderRadius: Radius.button,
     alignItems: 'center',
     justifyContent: 'center',

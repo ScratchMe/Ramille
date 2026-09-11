@@ -1883,18 +1883,18 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C0.5 | [#103](https://github.com/ScratchMe/TraceVerte/issues/103) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
 | C0.6 | [#104](https://github.com/ScratchMe/TraceVerte/issues/104) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
 | C0.7 | [#105](https://github.com/ScratchMe/TraceVerte/issues/105) | [#156](https://github.com/ScratchMe/TraceVerte/pull/156) | 10/09/2026 | livré |
-| C1.1 | [#106](https://github.com/ScratchMe/TraceVerte/issues/106) | | | |
-| C1.2 | [#107](https://github.com/ScratchMe/TraceVerte/issues/107) | | | |
-| C1.3 | [#108](https://github.com/ScratchMe/TraceVerte/issues/108) | | | |
+| C1.1 | [#106](https://github.com/ScratchMe/TraceVerte/issues/106) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
+| C1.2 | [#107](https://github.com/ScratchMe/TraceVerte/issues/107) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
+| C1.3 | [#108](https://github.com/ScratchMe/TraceVerte/issues/108) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
 | C1.4 | [#109](https://github.com/ScratchMe/TraceVerte/issues/109) | | | |
-| C1.5 | [#110](https://github.com/ScratchMe/TraceVerte/issues/110) | | | |
+| C1.5 | [#110](https://github.com/ScratchMe/TraceVerte/issues/110) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
 | C1.6 | [#111](https://github.com/ScratchMe/TraceVerte/issues/111) | | | |
 | C1.7 | [#112](https://github.com/ScratchMe/TraceVerte/issues/112) | | | |
 | C1.8 | [#113](https://github.com/ScratchMe/TraceVerte/issues/113) | | | |
-| C1.9 | [#114](https://github.com/ScratchMe/TraceVerte/issues/114) | | | |
-| C1.10 | [#115](https://github.com/ScratchMe/TraceVerte/issues/115) | | | |
-| C1.11 | [#116](https://github.com/ScratchMe/TraceVerte/issues/116) | | | |
-| C1.12 | [#117](https://github.com/ScratchMe/TraceVerte/issues/117) | | | |
+| C1.9 | [#114](https://github.com/ScratchMe/TraceVerte/issues/114) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré, sauf §11.1 (passage TalkBack) et §11.4 (six appels de `Chip`) |
+| C1.10 | [#115](https://github.com/ScratchMe/TraceVerte/issues/115) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré, sauf §11.3 (chemin de suppression vérifié par un examinateur Play) |
+| C1.11 | [#116](https://github.com/ScratchMe/TraceVerte/issues/116) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré |
+| C1.12 | [#117](https://github.com/ScratchMe/TraceVerte/issues/117) | [#157](https://github.com/ScratchMe/TraceVerte/pull/157) | 11/09/2026 | livré, cinq points sur cinq |
 | C1.13 | [#118](https://github.com/ScratchMe/TraceVerte/issues/118) | | | |
 | C2.1 | [#119](https://github.com/ScratchMe/TraceVerte/issues/119) | | | |
 | C2.2 | [#120](https://github.com/ScratchMe/TraceVerte/issues/120) | | | |
@@ -1930,3 +1930,20 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C4.6 | [#148](https://github.com/ScratchMe/TraceVerte/issues/148) | | | |
 | C4.7 | [#149](https://github.com/ScratchMe/TraceVerte/issues/149) | | | |
 | C4.8 | [#150](https://github.com/ScratchMe/TraceVerte/issues/150) | | | |
+
+## 11. Vérifications sur appareil en attente
+
+Trois « Fait quand » de ce document ne se prouvent pas au clavier, et un quatrième point est un
+reste assumé. Ils sont consignés ici plutôt que cochés en §10 : une ligne cochée dit « livré », et
+le code l'est — ce qui manque est la preuve en conditions réelles. Même régime que `v1-11` §8 et
+`v1-12` §8, dont les points restants ne sont pas repris ici.
+
+| # | Chantier | Ce qu'il faut faire, et ce qu'on cherche |
+|---|---|---|
+| 11.1 | C1.9 (accessibilité) | Un passage **TalkBack** sur onboarding, questionnaire, plan (prise d'engagement) et retour. On cherche : l'ordre de lecture du pager (les pages hors écran doivent être muettes), l'annonce « sélectionné » sur les puces et les lignes de choix, l'annonce d'en-tête sur les titres, le silence de la mascotte et des illustrations, le déplacement du focus au changement d'étape, et que les cibles tactiles atteignent 44 px sans que le texte bouge. |
+| 11.2 | C1.1 (soumission) | **Couper le réseau entre les deux premières écritures.** Aucune ligne `completed` sans réponses ne doit rester, et la tentative suivante doit reprendre le bilan `in_progress` au lieu d'en créer un second. Le double appui, lui, se vérifie au navigateur (le verrou est dans une `useRef`, lue dans le même tour de boucle que l'appel). |
+| 11.3 | C1.10 (textes légaux) | **Un examinateur Play qui suit les instructions de `/compte/suppression` doit trouver le chemin**, sans l'app installée, depuis un navigateur neuf. À refaire juste avant la publication, puisque c'est à ce moment-là que la page est lue — et c'est aussi le moment où l'empreinte de signature de Play doit être ajoutée à `assetlinks.json` (cf. CLAUDE.md). |
+| 11.4 | C1.9 (reste assumé) | **Six appels de `Chip` gardent le rôle `button` par défaut** — `steps/context.tsx`, `steps/flights.tsx`, `steps/commute-days-distance.tsx`, `steps/commute-extra.tsx`, `steps/leisure-detail.tsx` (choix uniques, donc `radio` dans une `View accessibilityRole="radiogroup"`) et `plan/action-commitment.tsx` (jours cumulables, donc `checkbox` dans un groupe nommé). Un `button` qui porte `selected` est exactement la combinaison que le constat A2-8 désigne : ces six-là portent encore le défaut. Le geste qui les ferme est de rendre la prop **obligatoire**, ce qui les énumère au typecheck — à faire en même temps qu'eux, pas avant. |
+
+Les points 11.1 et 11.4 vont ensemble : le passage TalkBack sera plus utile une fois les six
+appels repris, sinon il relèvera six fois le même défaut déjà connu.

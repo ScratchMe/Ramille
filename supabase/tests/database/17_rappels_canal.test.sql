@@ -13,7 +13,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(26);
 
 -- Six comptes, un par ligne de la table de vérité.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
@@ -231,6 +231,62 @@ select public.unregister_push_token('ExponentPushToken[pgtap-canal-0002]');
 select ok(
   (select disabled_at is not null from public.push_tokens where token = 'ExponentPushToken[pgtap-canal-0002]'),
   'Retirer la permission désactive le jeton sans le supprimer'
+);
+
+-- ── Le format du jeton, et le plafond d'appareils (C1.12 point 4) ───────────────────────
+-- Deux défauts qui ne se voyaient pas à l'enregistrement. Un jeton mal formé s'inscrivait sans
+-- bruit et n'échouait qu'**à l'envoi**, chez Expo, sur une ligne de `notification_outbox` déjà
+-- marquée `sent` (v1-07 §3.1) : le rappel était perdu sans reprise. Et rien ne bornait le nombre
+-- d'appareils, alors que `send_pending_reminders()` envoie à tous les jetons actifs — la même
+-- question partait autant de fois qu'il restait de lignes, ce que `unique(checkin_id)` ne peut pas
+-- empêcher : elle garantit un message, pas un destinataire unique.
+
+select throws_ok(
+  $$ select public.register_push_token('pas-un-jeton-expo-du-tout', 'android') $$,
+  '23514',
+  'Jeton d''appareil invalide : la forme attendue est ExponentPushToken[...].',
+  'Un jeton hors du format ExponentPushToken[...] est refusé à l''enregistrement'
+);
+
+-- Cinq appareils déjà actifs, avec des `last_seen_at` **distincts** — posés explicitement parce
+-- que `now()` est constant dans une transaction : sans cela, les cinq porteraient le même
+-- horodatage et « le moins récemment vu » ne désignerait personne. Insérés sous `postgres`, la
+-- table n'ayant aucune policy d'écriture (tout passe par le RPC, c'est ce que vérifie
+-- l'assertion plus haut).
+select set_config('role', 'postgres', true);
+
+insert into public.push_tokens (token, user_id, platform, last_seen_at) values
+  ('ExponentPushToken[pgtap-cap-a]', 'c7111111-1111-1111-1111-111111111114', 'android', now() - interval '50 days'),
+  ('ExponentPushToken[pgtap-cap-b]', 'c7111111-1111-1111-1111-111111111114', 'android', now() - interval '40 days'),
+  ('ExponentPushToken[pgtap-cap-c]', 'c7111111-1111-1111-1111-111111111114', 'android', now() - interval '30 days'),
+  ('ExponentPushToken[pgtap-cap-d]', 'c7111111-1111-1111-1111-111111111114', 'android', now() - interval '20 days'),
+  ('ExponentPushToken[pgtap-cap-e]', 'c7111111-1111-1111-1111-111111111114', 'android', now() - interval '10 days');
+
+-- Retour dans la session du propriétaire : le plafond vit dans le RPC, et le tester sous
+-- `postgres` serait le tester dans le seul rôle où l'app ne l'appelle jamais.
+select set_config('role', 'authenticated', true);
+
+select public.register_push_token('ExponentPushToken[pgtap-cap-f]', 'android');
+
+select is(
+  (select count(*)::int from public.push_tokens
+    where user_id = 'c7111111-1111-1111-1111-111111111114' and disabled_at is null),
+  5,
+  'Au-delà de cinq appareils actifs, le sixième enregistrement en laisse toujours cinq'
+);
+
+select is(
+  (select disabled_reason from public.push_tokens where token = 'ExponentPushToken[pgtap-cap-a]'),
+  'Remplacé : plus de cinq appareils actifs pour ce compte.',
+  'C''est le moins récemment vu qui est désactivé, et le motif le dit en français'
+);
+
+-- L'appareil qui vient d'appeler ne peut pas se désactiver lui-même : il porte le `last_seen_at`
+-- le plus récent par construction. Sans cette assertion, un plafond inversé (`asc` au lieu de
+-- `desc`) rendrait exactement le même compte de cinq.
+select ok(
+  (select disabled_at is null from public.push_tokens where token = 'ExponentPushToken[pgtap-cap-f]'),
+  'L''appareil qui vient de s''enregistrer reste actif'
 );
 
 -- ── Verrouillage ───────────────────────────────────────────────────────────────────────

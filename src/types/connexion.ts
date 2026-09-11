@@ -63,3 +63,157 @@ export function adresseSemblePlausible(email: string): boolean {
   if (reste.length > 0) return false;
   return Boolean(locale) && Boolean(domaine) && domaine.includes('.') && !domaine.endsWith('.');
 }
+
+// ── Retour de la fenêtre d'authentification Google ─────────────────────────────────────
+
+/**
+ * Ce que la fenêtre d'authentification a rendu, ramené aux trois cas qui changent quelque
+ * chose à l'écran.
+ *
+ * **L'annulation était comptée comme une réussite** (A6-1) : `linkGoogleIdentity` rendait
+ * `{ error: null }` quand la fenêtre se refermait sans rien — « pas une vraie erreur à
+ * afficher » — et l'écran, qui ne testait que `error`, émettait `connexion_success`, posait la
+ * marque « proposition vue » et déposait la personne sur le plan, sans compte et sans un mot.
+ * Trois dégâts : l'entonnoir qui décide de la suite du produit comptait les abandons comme des
+ * succès, le seul moment fort de l'argumentaire « garde ce résultat » était consommé pour rien,
+ * et la spec demande justement ici un message neutre sans blocage.
+ *
+ * `opened` et `locked` ne sont **pas** des annulations : personne n'a refermé quoi que ce soit,
+ * la fenêtre n'a pas abouti. Les ranger du côté de l'annulation rendrait l'écran muet sur une
+ * panne réelle.
+ */
+export type IssueDuNavigateur = 'jetons' | 'annulation' | 'echec';
+
+export function issueDuNavigateurDAuth(resultat: {
+  type: string;
+  url?: string | null;
+}): IssueDuNavigateur {
+  // Une réussite sans URL n'en est pas une : c'est de là que les jetons sortent.
+  if (resultat.type === 'success') return resultat.url ? 'jetons' : 'echec';
+  return resultat.type === 'cancel' || resultat.type === 'dismiss' ? 'annulation' : 'echec';
+}
+
+// ── Retour d'un lien reçu par email ────────────────────────────────────────────────────
+
+/**
+ * Ce que porte une URL entrante : des jetons de session, l'échec du lien, ou rien qui regarde
+ * l'authentification.
+ *
+ * **Le cas `erreur` ne produisait rien du tout sur natif** (A1-6, A6-6). Le layout racine ne
+ * réagissait qu'aux URL contenant littéralement `access_token=`, alors que Supabase renvoie les
+ * échecs de lien dans le même fragment sous une autre forme —
+ * `#error=access_denied&error_code=otp_expired&error_description=…`. Le lien était donc filtré
+ * avant tout traitement : la personne qui clique un quart d'heure trop tard voyait son
+ * téléphone ouvrir l'app, l'écran de lancement, puis l'onboarding, sans un mot — alors que le
+ * lien est le **seul** chemin du produit vers un compte existant.
+ *
+ * Piège à connaître : `QueryParams.getQueryParams` d'expo-auth-session ne lit que `errorCode`
+ * (en camel), que Supabase n'envoie jamais. Son champ `errorCode` vaut donc toujours `null`
+ * ici, et l'échec retombait sur « Jetons de session manquants », message technique que
+ * personne ne voit.
+ */
+export type RetourDeLien = 'jetons' | 'erreur' | 'aucun';
+
+export function lireRetourDeLien(url: string): RetourDeLien {
+  const params = parametresDeLUrl(url);
+  // L'échec se teste d'abord : si les deux formes cohabitaient, c'est lui qui compte.
+  if (params.error || params.error_code || params.error_description) return 'erreur';
+  if (params.access_token) return 'jetons';
+  return 'aucun';
+}
+
+/**
+ * Les paramètres d'une URL, **requête et fragment confondus** — Supabase range les jetons
+ * comme les erreurs dans le fragment, et une URL de retour peut porter les deux blocs.
+ *
+ * Écrit à la main plutôt qu'avec `URL`/`URLSearchParams` : ce module reste pur et sans
+ * dépendance, et son implémentation ne doit rien supposer du polyfill d'URL embarqué par la
+ * plateforme.
+ */
+function parametresDeLUrl(url: string): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const bloc of url.split(/[?#]/).slice(1)) {
+    for (const paire of bloc.split('&')) {
+      if (!paire) continue;
+      const separateur = paire.indexOf('=');
+      const cle = separateur === -1 ? paire : paire.slice(0, separateur);
+      const valeur = separateur === -1 ? '' : paire.slice(separateur + 1);
+      if (cle) params[decoderMorceau(cle)] = decoderMorceau(valeur);
+    }
+  }
+  return params;
+}
+
+function decoderMorceau(valeur: string): string {
+  try {
+    return decodeURIComponent(valeur.replace(/\+/g, ' '));
+  } catch {
+    // Une séquence de pourcentage invalide ne doit pas faire échouer la lecture entière :
+    // ce qu'on cherche ici, c'est la présence d'une clé.
+    return valeur;
+  }
+}
+
+/**
+ * Pourquoi l'écran de demande de lien s'ouvre de lui-même. Passé en paramètre d'URL par le
+ * layout racine, donc relu par ce garde et jamais cru sur parole.
+ *
+ * Deux valeurs, parce que les deux échecs n'appellent pas le même geste : un lien périmé se
+ * remplace, une session qui n'a pas pu s'ouvrir se retente. **Aucun des deux textes ne dit si
+ * l'adresse a un compte** — c'est la règle de non-divulgation de cet écran, et elle vaut aussi
+ * pour un message d'échec.
+ *
+ * **Et aucun des deux ne promet un envoi**, pour la même raison : `/connexion/retrouver`
+ * n'affirme jamais qu'un lien est parti (« *si* un compte existe avec cette adresse… »).
+ * « Demande-en un nouveau, il part tout de suite » disait donc ici l'inverse de ce que l'écran
+ * suivant refuse de dire, et le test de non-divulgation ne l'attrapait pas : il ne cherchait
+ * que le mot « compte ». Il cherche maintenant la promesse aussi.
+ */
+export const MOTIFS_RETOUR_LIEN = ['lien_expire', 'session_non_ouverte'] as const;
+
+export type MotifRetourLien = (typeof MOTIFS_RETOUR_LIEN)[number];
+
+export function motifRetourLien(valeur: string | undefined): MotifRetourLien | null {
+  return MOTIFS_RETOUR_LIEN.find((motif) => motif === valeur) ?? null;
+}
+
+export function messageDuRetourDeLien(motif: MotifRetourLien): string {
+  return motif === 'lien_expire'
+    ? 'Ce lien ne marche plus : il a expiré, ou il a déjà servi. Demande-en un nouveau depuis cet écran.'
+    : 'Ce lien n’a pas réussi à ouvrir ta session. Vérifie ta connexion, puis redemande un lien.';
+}
+
+// ── Proposition de compte sur la restitution ───────────────────────────────────────────
+
+/**
+ * Faut-il proposer un compte à cette personne, et sous quelle forme ?
+ *
+ * **Le booléen optimiste d'avant sautait la proposition** (A3-20) : `proposalSeen` démarrait à
+ * `true` et n'était corrigé qu'après un aller-retour réseau suivi d'une lecture AsyncStorage.
+ * Quelqu'un qui appuie vite sur « Voir ce que je peux faire », ou dont le réseau traîne, ne
+ * voyait ni l'interstitiel **ni** la bannière de repli — c'est-à-dire plus aucune occasion de
+ * garder son bilan, au seul endroit où le produit la propose. Le défaut sûr est d'attendre,
+ * pas de sauter.
+ *
+ * Quatre états et non trois : la quatrième valeur est la bannière discrète, qui se lisait
+ * jusqu'ici sur la même variable que le routage et aurait disparu en réduisant la liste.
+ */
+export type EtatProposition =
+  /** La session n'est pas encore lisible : on ne conclut rien, et on n'ouvre pas le chemin. */
+  | 'inconnu'
+  /** Jamais proposé : le bouton passe par l'interstitiel plein écran. */
+  | 'anonyme-jamais-proposee'
+  /** Déjà proposé une fois : bannière discrète, le bouton va droit au plan. */
+  | 'anonyme-deja-proposee'
+  /** Compte rattaché, ou relecture d'un ancien bilan : rien à proposer. */
+  | 'autre';
+
+export function etatDeLaProposition(lu: {
+  /** `null` quand la session n'a pas pu être lue. */
+  estAnonyme: boolean | null;
+  dejaProposee: boolean;
+}): EtatProposition {
+  if (lu.estAnonyme === null) return 'inconnu';
+  if (!lu.estAnonyme) return 'autre';
+  return lu.dejaProposee ? 'anonyme-deja-proposee' : 'anonyme-jamais-proposee';
+}

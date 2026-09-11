@@ -100,9 +100,17 @@ function mascot() {
   );
 }
 
+// Même borne, même repli et même raison que dans `api/partage.ts` : les deux endpoints lisent la
+// même URL, et un total accepté d'un côté mais refusé de l'autre afficherait un titre et une image
+// qui se contredisent dans le même aperçu. Sans borne, `Number.parseFloat` acceptait un négatif ou
+// un 1e40 — une carte aux couleurs et à la mascotte du produit annonçant « -5,0 t », et un nombre
+// à quarante chiffres qui débordait les 1200 px en `fontSize: 104` sans que rien ne l'arrête.
+// Garde de robustesse, pas de sécurité : `poste` reste du texte libre (cf. `api/partage.ts`).
+const TOTAL_TONNES_MAX = 200;
+
 function formatTonnes(raw: string | null): string {
   const n = raw ? Number.parseFloat(raw) : NaN;
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n) || n < 0 || n > TOTAL_TONNES_MAX) return '—';
   return n.toFixed(1).replace('.', ',');
 }
 
@@ -119,6 +127,47 @@ function formatPercent(raw: string | null): number | null {
 // `fetch`-style API"). Un export nommé par méthode HTTP est la convention que Vercel reconnaît
 // explicitement comme fetch-style, quel que soit le runtime.
 export async function GET(request: Request): Promise<Response> {
+  try {
+    return reponsePng(await carte(request), true);
+  } catch (erreur) {
+    // **Jamais de 500 ici.** Ce endpoint est lu par des aperçus de lien, pas par du code qui sait
+    // réessayer : un 500 laisse un cadre vide dans une conversation, et côté client il n'apparaît
+    // que comme le `FUNCTION_INVOCATION_FAILED` générique dont l'en-tête de ce fichier raconte le
+    // coût de diagnostic. Le cas réaliste — une URL fabriquée, un total absurde — n'arrive pas
+    // jusqu'ici : les paramètres retombent sur leur repli avant le rendu. Reste l'imprévu (satori,
+    // resvg, une police illisible), d'où une image valide et neutre, servie **sans cache** pour
+    // qu'une panne passagère ne se fige pas un an sur cette URL.
+    console.error('api/share-card : rendu impossible, repli statique.', erreur);
+    return reponsePng(Buffer.from(PNG_DE_REPLI, 'base64'), false);
+  }
+}
+
+// Un pixel au vert de fond du produit, écrit en base64 plutôt que rendu : le repli ne peut pas
+// dépendre de ce dont la panne vient — ni de satori, ni de resvg, ni des polices, ni d'un fichier
+// à tracer dans le bundle (cf. `hb.wasm`, dans l'en-tête ci-dessus). Une carte de repli dessinée
+// serait plus jolie et tomberait exactement dans les mêmes cas que la vraie.
+const PNG_DE_REPLI =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mN48v4FAAV2Ary6IMVxAAAAAElFTkSuQmCC';
+
+// `x-robots-tag` : l'image n'a pas de `<head>` où écrire un `noindex`, et elle porte le chiffre de
+// quelqu'un. Même décision que la page d'`api/partage.ts`, qui l'explique — et comme elle, cette
+// URL est rouverte nommément dans `public/robots.txt` : un crawler interdit de la demander ne
+// lirait pas cet en-tête, et les trois réseaux qui composent l'aperçu ne récupéreraient pas
+// l'image.
+function reponsePng(png: Uint8Array, cachable: boolean): Response {
+  // Buffer.from(png) plutôt que le Uint8Array tel quel : les libs DOM + Node chargées ensemble
+  // (cf. api/tsconfig.json) font diverger le type générique de Uint8Array de celui attendu par
+  // `BodyInit` — Buffer (sous-classe concrète) satisfait les deux.
+  return new Response(Buffer.from(png), {
+    headers: {
+      'content-type': 'image/png',
+      'cache-control': cachable ? 'public, immutable, no-transform, max-age=31536000' : 'no-store',
+      'x-robots-tag': 'noindex, nofollow',
+    },
+  });
+}
+
+async function carte(request: Request): Promise<Uint8Array> {
   await ensureWasm();
 
   // Base factice : contrairement au runtime Edge, `request.url` en Function Node.js est un
@@ -183,13 +232,5 @@ export async function GET(request: Request): Promise<Response> {
   const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
   const png = resvg.render().asPng();
 
-  // Buffer.from(png) plutôt que le Uint8Array renvoyé tel quel : les libs DOM + Node chargées
-  // ensemble (cf. api/tsconfig.json) font diverger le type générique de Uint8Array de celui
-  // attendu par `BodyInit` — Buffer (sous-classe concrète) satisfait les deux.
-  return new Response(Buffer.from(png), {
-    headers: {
-      'content-type': 'image/png',
-      'cache-control': 'public, immutable, no-transform, max-age=31536000',
-    },
-  });
+  return png;
 }

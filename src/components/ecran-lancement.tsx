@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
+  ReduceMotion,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withSequence,
@@ -61,29 +63,54 @@ export function EcranLancement() {
   const arrivee = useSharedValue(0);
   const acoup = useSharedValue(1);
   const nom = useSharedValue(0);
+  // **Sous « réduire les animations », les trois animations arrivaient déjà posées, sans rien
+  // faire pour ça** : `ReduceMotion.System` est la valeur par défaut de reanimated
+  // (`animation/util.ts`, pour les animations simples comme pour `withSequence`/`withDelay`),
+  // donc l'arrivée, l'à-coup et le fondu du nom sautaient déjà à leur valeur finale. Les
+  // drapeaux écrits plus bas sont là pour que l'intention se lise, pas pour corriger un défaut.
+  //
+  // **Ce qui échappait au mécanisme, c'est tout ce qui n'est pas une animation reanimated** : le
+  // passage de `calm` à `happy` est un `setTimeout`, et il restait calé sur le sommet d'un
+  // à-coup qui n'a pas lieu — la feuille restait `calm` tout l'écran. C'est le seul point que ce
+  // drapeau-ci corrige (A10-8). Le plancher d'affichage, lui, ne bouge pas — le raccourcir
+  // rouvrirait une décision datée, ce que l'arbitrage D13 du 10/09/2026 refuse.
+  const animationsReduites = useReducedMotion();
 
   useEffect(() => {
     // Écritures sur des valeurs partagées, pas des `setState` : le corps d'un effet peut les
     // faire (même motif que la respiration de `mascot.tsx`). Le passage au sourire, lui, est
     // bien un `setState` — d'où le `setTimeout`, qui le sort du corps de l'effet et le met
     // hors de portée de `react-hooks/set-state-in-effect` (React Compiler).
-    arrivee.value = withTiming(1, { duration: ARRIVEE, easing: Easing.out(Easing.back(1.4)) });
+    // Les trois `reduceMotion: ReduceMotion.System` qui suivent sont explicites, pas
+    // correctifs : ils répètent le défaut de la bibliothèque pour que le cas se lise sans aller
+    // chercher son code, et pour tenir si ce défaut change.
+    arrivee.value = withTiming(1, {
+      duration: ARRIVEE,
+      easing: Easing.out(Easing.back(1.4)),
+      reduceMotion: ReduceMotion.System,
+    });
     acoup.value = withDelay(
       REVEIL,
       withSequence(
         withTiming(1.07, { duration: 110, easing: Easing.out(Easing.quad) }),
         withTiming(0.975, { duration: 130, easing: Easing.inOut(Easing.quad) }),
         withTiming(1, { duration: 190, easing: Easing.out(Easing.quad) })
-      )
+      ),
+      ReduceMotion.System
     );
     nom.value = withDelay(
       REVEIL + 40,
-      withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) })
+      withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }),
+      ReduceMotion.System
     );
 
-    const minuteur = setTimeout(() => setHumeur('happy'), SOMMET_REVEIL);
+    // Le sourire n'est pas une animation reanimated : la préférence système ne l'atteint que
+    // par ce délai nul. Sans lui, la feuille restait `calm` tout l'écran, l'à-coup censé masquer
+    // la substitution n'ayant pas lieu. Le `setTimeout` reste, à 0 ms — c'est lui qui sort le
+    // `setState` du corps de l'effet (`react-hooks/set-state-in-effect`).
+    const minuteur = setTimeout(() => setHumeur('happy'), animationsReduites ? 0 : SOMMET_REVEIL);
     return () => clearTimeout(minuteur);
-  }, [arrivee, acoup, nom]);
+  }, [arrivee, acoup, nom, animationsReduites]);
 
   // L'inclinaison passe par ce conteneur et non par la prop `tilt`, qui n'est pas animable —
   // les deux rotations se composeraient, d'où `tilt={0}` sur le composant.
@@ -102,7 +129,19 @@ export function EcranLancement() {
   }));
 
   return (
-    <View style={[styles.ecran, { backgroundColor: theme.backgroundSelected }]}>
+    // **Le chargement se dit, il ne se devine pas** (A1-15) : la mascotte est masquée aux
+    // lecteurs d'écran, le nom n'arrive qu'en fondu, et la redirection survenait sans un mot.
+    // Le rôle `progressbar` et l'état occupé annoncent l'attente ; `accessible` regroupe l'écran
+    // en un seul élément, pour que « Chargement » soit tout ce qu'on entende d'un écran qui ne
+    // demande rien.
+    <View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel="Chargement"
+      accessibilityState={{ busy: true }}
+      aria-busy
+      style={[styles.ecran, { backgroundColor: theme.backgroundSelected }]}
+    >
       <Animated.View style={styleMascotte}>
         <Mascot mood={humeur} size={TAILLE} tilt={0} />
       </Animated.View>

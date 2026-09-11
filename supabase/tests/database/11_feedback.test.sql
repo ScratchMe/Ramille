@@ -8,7 +8,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(7);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('f1111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-fb-a@test.local', 'x', now(), now()),
@@ -88,6 +88,23 @@ select throws_ok(
   $stmt$ insert into public.feedback (user_id, kind, message) values ('f1111111-1111-1111-1111-111111111111', 'idee', 'le onzieme') $stmt$,
   'Tu as déjà envoyé plusieurs retours aujourd''hui. Reviens demain, on les lit tous.',
   'le onzième est refusé, avec un message rédigé pour être montré tel quel'
+);
+
+-- ── Le trigger n'est pas appelable par un client ─────────────────────────────────────────
+-- PostgreSQL accorde `EXECUTE` à **PUBLIC** à la création, et `anon`/`authenticated` en héritent :
+-- une fonction de trigger reste donc invocable par l'API tant qu'on ne l'a pas révoquée de
+-- `public` nommément (20260911100000, qui a fermé les deux dernières exceptions du schéma).
+-- PostgREST n'expose pas une fonction qui rend `trigger`, mais on ne laisse pas un droit dépendre
+-- de ce détail — et sans cette assertion, un `create or replace` ultérieur rendrait le droit à
+-- PUBLIC sans que rien ne tombe. Sa jumelle `prevent_answered_checkin_update` est épinglée dans
+-- le test 04.
+
+select set_config('role', 'postgres', true);
+
+select ok(
+  not has_function_privilege('authenticated', 'public.enforce_feedback_rate_limit()', 'execute')
+    and not has_function_privilege('anon', 'public.enforce_feedback_rate_limit()', 'execute'),
+  'enforce_feedback_rate_limit : execute révoqué de PUBLIC, donc des deux rôles client'
 );
 
 select * from finish();

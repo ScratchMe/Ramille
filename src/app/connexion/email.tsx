@@ -1,6 +1,7 @@
+import { makeRedirectUri } from 'expo-auth-session';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -11,22 +12,72 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
+import { APP_URL } from '@/lib/app-url';
 import { linkEmail } from '@/lib/auth';
-import { markConnexionProposalSeen } from '@/lib/connexion-prefs';
-import { adresseDejaRattachee, adresseSemblePlausible, estLimiteDEnvoi } from '@/types/connexion';
+import {
+  lireAdresseDuLien,
+  markConnexionProposalSeen,
+  memoriserAdresseDuLien,
+} from '@/lib/connexion-prefs';
+import {
+  adresseDejaRattachee,
+  adresseSemblePlausible,
+  estLimiteDEnvoi,
+  messageDuRetourDeLien,
+  motifRetourLien,
+} from '@/types/connexion';
+
+/**
+ * Sortir d'ici sans cul-de-sac — même raison et même repli que dans `/connexion/retrouver` : le
+ * layout racine ouvre cet écran en `replace` quand le lien de confirmation de `linkEmail` revient
+ * périmé, et la pile peut alors n'avoir aucune entrée derrière. Un `router.back()` nu n'y fait
+ * rien.
+ */
+function revenirOuRacine() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
 
 // "Connexion — email" — lie l'adresse à la session anonyme en cours (cf. src/lib/auth.ts) :
 // toujours le cas "créer mon compte" ici, jamais une connexion à un compte existant, qui
 // passe par /connexion/retrouver. Une adresse, rien d'autre : le mot de passe a disparu avec
 // v1-10 §2.D — il n'a jamais servi, et la confirmation par email faisait déjà tout le travail.
 export default function ConnexionEmail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, motif: motifBrut } = useLocalSearchParams<{ id: string; motif?: string }>();
+
+  // **Le lien de confirmation expiré revient ici, et pas sur « retrouver ».** Les deux liens du
+  // produit portent le même `error_code=otp_expired`, mais celui-ci appartient à quelqu'un qui
+  // rattachait une adresse à cette session : `/connexion/retrouver` ne sait que chercher un
+  // compte **existant** (`shouldCreateUser: false`), donc aucun lien n'en serait jamais reparti.
+  // Le layout racine distingue les deux par l'état du rattachement et dépose le motif ici ; on le
+  // relit par son garde plutôt que de croire un paramètre d'URL.
+  const motif = motifRetourLien(motifBrut);
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(
+    motif ? messageDuRetourDeLien(motif) : null
+  );
   // États inline plutôt qu'un Alert.alert avec callback sur le bouton : sur web,
   // react-native-web retombe sur window.alert(), qui n'invoque pas onPress.
   const [phase, setPhase] = useState<'saisie' | 'envoye' | 'deja-un-compte'>('saisie');
+
+  // Relancer la demande ne doit pas se payer d'une ressaisie : l'adresse est celle tapée sur cet
+  // appareil, relue en local et jamais déduite d'une réponse serveur (même règle que
+  // `/connexion/retrouver`). Ne s'écrit que sur un champ encore vide, une frappe en cours passe
+  // avant.
+  useEffect(() => {
+    if (!motif) return;
+    let annule = false;
+    void lireAdresseDuLien().then((adresse) => {
+      if (annule || !adresse) return;
+      setEmail((actuelle) => (actuelle ? actuelle : adresse));
+    });
+    return () => {
+      annule = true;
+    };
+    // Volontairement au montage seul : les paramètres d'URL ne changent pas ici.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const valid = adresseSemblePlausible(email);
 
@@ -34,7 +85,13 @@ export default function ConnexionEmail() {
     if (!valid || submitting) return;
     setMessage(null);
     setSubmitting(true);
-    const { error } = await linkEmail(email);
+    // **Le lien de confirmation doit revenir dans l'app, pas dans le navigateur.** Sans
+    // `redirectTo`, il retombe sur la Site URL du tableau de bord : sur natif il s'ouvre alors
+    // hors de Ramille, la personne y revient à la main, sans aucune URL entrante — et plus rien
+    // ne peut lui annoncer que son compte est rattaché (A6-5). Même valeur que
+    // `/connexion/retrouver`, donc déjà présente dans les Redirect URLs autorisées.
+    const redirectTo = Platform.OS === 'web' ? `${APP_URL}/` : makeRedirectUri();
+    const { error } = await linkEmail(email, redirectTo);
     setSubmitting(false);
 
     // L'adresse a déjà un compte : la personne est au mauvais écran, pas en erreur. On le
@@ -52,9 +109,23 @@ export default function ConnexionEmail() {
       return;
     }
 
-    // Le rattachement est effectif ici — `linkEmail` a réussi. La confirmation d'adresse
-    // qui suit conditionne les rappels par email, pas le compte lui-même.
-    track('connexion_success', { method: 'email' });
+    // **Une demande, pas un rattachement**, et c'est tout ce que cet écran peut constater.
+    // `connexion_success` partait d'ici, avec pour justification que « le rattachement est
+    // effectif » — alors que le modèle de données dit le contraire : `etatDuRattachement` classe
+    // cet instant en `a_confirmer`, et `is_anonymous` ne bascule qu'au clic du lien reçu dans la
+    // messagerie. Le chemin Google, lui, n'émet l'événement qu'après une session réellement liée.
+    // Comparer les deux, la seule chose que `connexion_success` permet, revenait donc à comparer
+    // une intention à un fait — l'écart étant exactement le taux d'emails jamais confirmés,
+    // c'est-à-dire le chiffre cherché. Il est maintenant lisible : `connexion_demande` ici,
+    // `connexion_success` au constat de la bascule — émis par l'annonce de rattachement de
+    // `/plan`, le seul écran que la personne traverse **après** avoir cliqué le lien reçu dans
+    // sa messagerie (v1-13 C1.2). Les deux émetteurs vont ensemble : retirer celui du plan
+    // ferait lire `method: 'email'` **zéro**, ce qui est pire qu'un chiffre mal daté.
+    track('connexion_demande');
+    // Gardée pour le seul cas où elle sert : si ce lien-là n'est plus valable au moment du clic,
+    // le layout racine rouvre **cet** écran avec l'adresse déjà là plutôt qu'à retaper (c'est la
+    // session courante qui est `a_confirmer`, donc la demande se relance ici).
+    await memoriserAdresseDuLien(email);
     await markConnexionProposalSeen();
     setPhase('envoye');
   };
@@ -148,7 +219,7 @@ export default function ConnexionEmail() {
           />
           <TextLink
             label="Revenir aux autres options"
-            onPress={() => router.back()}
+            onPress={revenirOuRacine}
             role="link"
             type="small"
             themeColor="textTertiary"

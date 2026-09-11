@@ -7,7 +7,6 @@ import {
 } from '@expo-google-fonts/spline-sans';
 import * as Linking from 'expo-linking';
 import {
-  DarkTheme,
   DefaultTheme,
   Stack,
   ThemeProvider,
@@ -17,22 +16,25 @@ import {
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Platform, useColorScheme } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { ConfigurationManquante } from '@/components/configuration-manquante';
 import { ErreurInattendue } from '@/components/erreur-inattendue';
 import { RetourDeNotification } from '@/components/retour-de-notification';
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
+import { track } from '@/lib/analytics';
 import { createSessionFromUrl } from '@/lib/auth';
+import { lireEtatDuRattachement } from '@/lib/compte';
 import {
   afficherLesNotificationsAuPremierPlan,
   enregistrerLeJeton,
   estNatif,
   preparerLeCanalAndroid,
 } from '@/lib/rappels';
-import { configurationSupabase, ensureSession } from '@/lib/supabase';
+import { configurationSupabase, ensureSession, supabase } from '@/lib/supabase';
 import { appErrorCategory } from '@/types/analytics';
+import { lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,8 +43,52 @@ SplashScreen.preventAutoHideAsync();
 // or c'est le moment où la personne peut y répondre en un geste.
 if (estNatif) afficherLesNotificationsAuPremierPlan();
 
+// Au-delà de ce temps passé derrière, revenir au premier plan est une nouvelle ouverture.
+// En dessous, c'est un aller-retour vers une autre app — consulter un message, copier une
+// adresse — et le compter gonflerait le dénominateur de tous les entonnoirs. Cinq minutes :
+// assez long pour qu'un détour ne compte pas, assez court pour qu'une reprise le lendemain
+// matin, ou l'ouverture d'un rappel, compte toujours.
+const DELAI_NOUVELLE_OUVERTURE_MS = 5 * 60 * 1000;
+
+// Une ouverture par chargement du bundle, et le garde vit **hors du composant**. C'est ce que
+// `useTrackView` offrait avec son `useRef` et qu'on perd en émettant depuis un `.then` : en
+// développement, React remonte les effets (Fast Refresh, StrictMode) et chaque remontée
+// recompterait une ouverture — dans la même base que la production, puisque le développement
+// courant tape sur le projet distant. Le biais serait homogène, donc invisible dans les chiffres.
+let ouvertureDejaComptee = false;
+
+// **Le jeton d'appareil appartient à la personne connectée, pas à l'appareil.**
+// `register_push_token` le *reprend* à son propriétaire précédent (v1-12 §5.3), et il n'y avait
+// aucun appel ailleurs qu'au démarrage : le lien de `/connexion/retrouver` ouvre la session d'un
+// utilisateur **différent** de la session anonyme qui venait d'enregistrer le jeton sur ce
+// téléphone, si bien que l'appareil restait inscrit au nom de celui qu'on vient de quitter — et
+// recevait ses rappels jusqu'au prochain démarrage à froid (A4-7).
+//
+// Un enregistrement par utilisateur, et le garde vit **hors du composant** comme
+// `ouvertureDejaComptee` : `onAuthStateChange` émet aussi à chaque rafraîchissement de jeton,
+// c'est-à-dire toutes les heures, et sans garde cela ferait un appel RPC par heure pour rien.
+let utilisateurDuJeton: string | null = null;
+
+// **Le garde ne se valide qu'après coup.** Posé avant l'appel, il retenait un enregistrement
+// qui n'avait pas eu lieu : pas de réseau au moment du `setSession`, RPC en erreur, et
+// l'appareil restait inscrit au nom de celui qu'on vient de quitter jusqu'au prochain démarrage
+// à froid — c'est-à-dire exactement A4-7, que ce code existe pour corriger. Il est quand même
+// posé **pendant** l'appel, pour que deux émissions rapprochées d'`onAuthStateChange` ne
+// lancent pas deux RPC concurrents ; seul un échec le rend à son propriétaire précédent, et la
+// tentative suivante repart.
+async function enregistrerLeJetonPour(utilisateur: string | null): Promise<void> {
+  if (utilisateur === null || utilisateur === utilisateurDuJeton) return;
+  const precedent = utilisateurDuJeton;
+  utilisateurDuJeton = utilisateur;
+  try {
+    await enregistrerLeJeton();
+  } catch (error) {
+    utilisateurDuJeton = precedent;
+    console.error('Le jeton d’appareil n’a pas pu être enregistré :', error);
+  }
+}
+
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({
     SplineSans_400Regular,
     SplineSans_500Medium,
@@ -60,6 +106,24 @@ export default function RootLayout() {
   // rendu (rien à l'écran ne la lit tout de suite), seulement avant la première écriture
   // bilan — re-garantie à ce moment-là de toute façon (cf. ensureSession).
   //
+  // **`app_open` part ici, après la session, et plus au montage.** `track()` renonce quand
+  // aucune session n'existe encore : émis au rendu du layout, l'événement était **perdu**
+  // exactement sur les premiers lancements — ceux où `ensureSession()` fait encore son
+  // aller-retour de création de compte — et ne partait que sur les suivants, où la session est
+  // en cache. Ce n'était donc pas une perte occasionnelle, comme l'affirmait le commentaire
+  // d'avant, mais un biais systématique contre les nouveaux venus : une seule ligne en base
+  // pour six vues d'étape d'onboarding (v1-13, préambule ; la contre-vérification d'A1-3 du
+  // 09/09 comptait zéro). Le dénominateur de tous les entonnoirs ne comptait donc presque
+  // aucune arrivée.
+  //
+  // **`origine` n'est pas un ornement** : c'est ce qui garde les deux chemins d'émission
+  // distinguables — ce démarrage-ci, et le retour au premier plan de l'écoute ci-dessous.
+  // Fondus en lignes identiques, on ne pourrait ni vérifier que le second fonctionne (un
+  // rappel ouvert doit écrire une ligne), ni comparer une série d'avant le 11/09/2026, où
+  // seuls les démarrages comptaient, à une série d'après. La base ne contraint pas les valeurs
+  // de `props` (`check_usage_event_props` ne regarde que les clés et les longueurs) : une
+  // dimension ne coûte donc aucune ligne de référentiel, seulement la description à tenir.
+  //
   // Le jeton d'appareil suit la session, donc **après** elle : `register_push_token` reprend
   // le jeton à son propriétaire précédent, ce qui est exactement le cas d'un appareil dont la
   // session anonyme vient de devenir un compte (v1-12 §5.3). Silencieux dans les deux sens :
@@ -68,37 +132,185 @@ export default function RootLayout() {
   useEffect(() => {
     if (!configurationSupabase.complete) return;
     ensureSession()
-      .then(() => {
+      .then((session) => {
+        if (!ouvertureDejaComptee) {
+          ouvertureDejaComptee = true;
+          track('app_open', { origine: 'demarrage' });
+        }
         void preparerLeCanalAndroid();
-        return enregistrerLeJeton();
+        return enregistrerLeJetonPour(session?.user.id ?? null);
       })
       .catch((error) => {
         console.error('ensureSession() a échoué au démarrage :', error);
       });
   }, []);
 
+  // **Une ouverture, c'est aussi un retour au premier plan.** Le layout racine n'est monté
+  // qu'une fois par chargement du bundle : sans cette écoute, `app_open` ne compte pas des
+  // ouvertures mais des démarrages à froid. Or le chemin nominal de la boucle d'engagement est
+  // une app en arrière-plan que la notification ramène devant — le même défaut que
+  // `useRafraichirAuRetour` corrige pour les données des onglets, et sur natif, où le rappel
+  // hebdomadaire est le déclencheur principal, c'est le chemin majoritaire.
+  //
+  // C'est aussi ce qui rend vraie la phrase sur laquelle `purge_stale_anonymous_accounts()`
+  // fonde sa fenêtre de 90 jours (« `app_open` est émis à chaque ouverture », migration
+  // 20260907093000) : une session anonyme qui revient chaque semaine par le rappel, lit son
+  // plan et ne répond pas au point écrit désormais un signe de vie, là où elle redevenait
+  // supprimable, bilan compris.
+  //
+  // **Le retour ne compte que sur natif, et ce n'est pas de la prudence de plateforme.**
+  // `AppState` existe bien sur web — react-native-web le dérive de `document.visibilityState`,
+  // l'écoute fonctionnerait — mais il n'y mesure pas la même chose : un onglet laissé derrière
+  // une demi-journée puis réaffiché écrirait une ouverture alors qu'aucune app n'a été ouverte,
+  // et `app_open` dépasserait franchement le nombre de chargements de page sans rien dans la
+  // série pour le signaler. Sur web, chaque chargement de page recharge le bundle et émet déjà
+  // son `demarrage` : il n'y a rien à rattraper. Et la cible de la V1 est Google Play, donc
+  // c'est là que le chemin du rappel compte.
+  useEffect(() => {
+    if (!configurationSupabase.complete || !estNatif) return;
+
+    // Daté au départ, jamais écrasé pendant le séjour derrière : iOS passe par `inactive` avant
+    // `background` à l'aller comme au retour, et garder la première date est ce qui mesure le
+    // séjour entier.
+    let departArrierePlan: number | null = null;
+
+    const abonnement = AppState.addEventListener('change', (etat) => {
+      if (etat !== 'active') {
+        if (departArrierePlan === null) departArrierePlan = Date.now();
+        return;
+      }
+      const depart = departArrierePlan;
+      departArrierePlan = null;
+      if (depart !== null && Date.now() - depart >= DELAI_NOUVELLE_OUVERTURE_MS) {
+        track('app_open', { origine: 'retour' });
+      }
+    });
+
+    // `?.` et pas un appel sec, bien que l'effet sorte désormais hors natif : la garde coûte un
+    // caractère et couvre le jour où ce code serait réutilisé ailleurs. C'est le layout racine —
+    // l'endroit où une exception n'a plus personne au-dessus d'elle.
+    return () => abonnement?.remove();
+  }, []);
+
+  // **Le jeton se réenregistre à chaque changement d'utilisateur**, et cette écoute est ce qui
+  // couvre tous les `setSession` réussis sans avoir à y penser appel par appel : le lien de
+  // connexion traité juste en dessous, le retour Google natif de `/connexion`, et le passage d'une
+  // session anonyme à un compte. Voir `enregistrerLeJetonPour` pour le pourquoi du garde.
+  //
+  // **Le rappel reste synchrone** (`void`, jamais `async`) : le SDK déconseille une fonction
+  // asynchrone ici, parce qu'un rafraîchissement déclenché depuis un `TOKEN_REFRESHED` attend une
+  // promesse qui attend le retour du rappel. Le garde met ce cas hors de portée — un
+  // rafraîchissement ne change pas d'utilisateur, donc il sort avant de toucher au réseau — et
+  // l'écriture ne part pas dans le fil du rappel.
+  useEffect(() => {
+    if (!configurationSupabase.complete) return;
+    const { data } = supabase.auth.onAuthStateChange((_evenement, session) => {
+      void enregistrerLeJetonPour(session?.user.id ?? null);
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
+
   // Lien de connexion par email ouvert depuis la messagerie du téléphone : il revient par le
   // scheme `ramille://` avec les jetons dans le fragment, et personne n'attend cette URL —
   // contrairement au retour Google, qui passe par `openAuthSessionAsync`. Sur web,
-  // `detectSessionInUrl` s'en charge et ce hook ne fait rien. Une fois la session ouverte, la
-  // racine route vers le plan ou l'onboarding selon ce que porte le compte retrouvé.
+  // `detectSessionInUrl` ouvre la session tout seul. Une fois la session ouverte, la racine route
+  // vers le plan ou l'onboarding selon ce que porte le compte retrouvé.
+  //
+  // **Un lien qui ne marche plus ne produisait rien du tout** (A1-6, A6-6) : la garde ne
+  // reconnaissait que `access_token=`, alors que Supabase renvoie l'expiration dans le même
+  // fragment sous une autre forme (`error=access_denied&error_code=otp_expired`). La personne avait
+  // fait le bon geste, se retrouvait sur l'écran d'où elle venait, et rien ne lui disait qu'il
+  // fallait redemander un lien — sur le **seul** chemin du produit vers un compte existant.
+  // L'échec s'affiche donc là où on en redemande un, avec de quoi dire lequel des deux échecs
+  // c'était.
+  //
+  // **Deux liens différents finissent ici, et ils ne mènent pas au même écran.** Ils portent le
+  // même `error_code=otp_expired` : celui de `sendAccountAccessLink`, qui cherche un compte
+  // existant, et celui de confirmation de `linkEmail`, qui rattache une adresse à la session
+  // anonyme courante. Envoyer la seconde personne sur `/connexion/retrouver` lui montrerait
+  // l'écran de collision — « ce bilan-ci ne le rejoindra pas », faux pour elle — puis un
+  // formulaire dont le seul appel est `shouldCreateUser: false` : son adresse n'ayant pas encore
+  // de compte confirmé, **aucun lien ne partirait jamais**, et le 422 `otp_disabled` est traité
+  // comme un succès. L'état du rattachement les distingue sans ambiguïté (`a_confirmer`), et
+  // `/connexion/email` sait, lui, renvoyer une demande.
+  //
+  // **Sur web, seul le chemin d'arrivée sépare les retours, et il est fiable** : les deux
+  // `redirectTo` sont écrits par l'app elle-même — `${APP_URL}/` pour les liens (`connexion/email`
+  // et `connexion/retrouver`), `origin + /plan` pour le consentement Google, qui revient en
+  // `…/plan#error=access_denied` et n'a rien à voir avec un lien à redemander. On ne traite donc
+  // sur web que les échecs arrivés sur `/`, et les jetons jamais (`detectSessionInUrl` s'en
+  // charge, et l'erreur, elle, laisse le fragment en place). Reste dehors le lien demandé depuis
+  // `/compte/suppression`, qui revient sur son propre chemin : c'est à cette page de le dire, pas
+  // à celle qui reconnecte.
+  //
+  // **La navigation ne part jamais du rendu courant.** Le corps d'une fonction `async` tourne
+  // synchronement jusqu'à son premier `await` : la branche `erreur` — le cas principal, un lien
+  // mort — n'en avait aucun et naviguait donc pendant l'effet de montage, au démarrage à froid,
+  // avant que la pile ne soit montée (le genre d'appel qui a déjà coûté un cycle, cf. le
+  // commentaire de `src/app/index.tsx`). D'où l'attente explicite en tête, et le garde `annule`
+  // qui couvre un démontage entre-temps.
+  //
+  // **`replace`, et les écrans d'arrivée savent sortir sans `back()`.** Au démarrage à froid, la
+  // seule entrée de pile est `/`, donc remplacer rend `canGoBack()` faux — or les sorties de
+  // `/connexion/retrouver` (« Garder ce bilan sur cet appareil », « Retour ») et de
+  // `/connexion/email` (« Revenir aux autres options ») étaient des `router.back()` nus : la
+  // personne se retrouvait enfermée sur l'écran où on venait de la déposer. C'est réparé de leur
+  // côté (repli sur la racine), et pas ici en `push` : `src/app/index.tsx` reste monté sous un
+  // écran empilé et termine son propre démarrage par un `router.replace('/plan')` au bout de
+  // ~1,45 s, qui remplace la **route focalisée** — c'est-à-dire l'écran qu'on vient de pousser.
+  // Le lien mort s'afficherait une seconde puis disparaîtrait, ce qui est pire que le cul-de-sac.
+  // En `replace`, la racine est démontée, son `annule` coupe la suite, et rien ne vient par
+  // derrière.
   const urlEntrante = Linking.useURL();
   useEffect(() => {
-    if (!configurationSupabase.complete) return;
-    if (Platform.OS === 'web' || !urlEntrante || !urlEntrante.includes('access_token=')) return;
-    createSessionFromUrl(urlEntrante).then(({ error }) => {
-      if (error) {
+    if (!configurationSupabase.complete || !urlEntrante) return;
+    const retour = lireRetourDeLien(urlEntrante);
+    if (retour === 'aucun') return;
+    if (Platform.OS === 'web' && (retour !== 'erreur' || window.location.pathname !== '/')) return;
+
+    let annule = false;
+    // `.catch` et pas une promesse nue : c'est le layout racine, où un rejet non rattrapé n'a
+    // personne au-dessus de lui.
+    void (async () => {
+      // Rendre la main avant toute navigation, dans **toutes** les branches : voir ci-dessus.
+      await new Promise<void>((resoudre) => {
+        setTimeout(resoudre, 0);
+      });
+      if (annule) return;
+
+      // Valeur du cas `erreur`, où le lien est revenu porteur d'un échec et où il n'y a rien à
+      // tenter ; la branche `jetons` la corrige si c'est la session qui n'a pas pu s'ouvrir.
+      let motif: MotifRetourLien = 'lien_expire';
+      if (retour === 'jetons') {
+        const { error } = await createSessionFromUrl(urlEntrante);
+        if (annule) return;
+        if (!error) {
+          router.replace('/');
+          return;
+        }
+        // Les jetons étaient là et la session n'a pas pu s'ouvrir : redemander un lien ne sert
+        // à rien tant que le réseau ne répond pas, et l'écran le dit autrement.
         console.error('Le lien de connexion n’a pas pu ouvrir de session :', error);
+        motif = 'session_non_ouverte';
+      }
+
+      // Une lecture qui échoue retombe sur l'écran qui reconnecte : c'est le cas majoritaire, et
+      // c'est celui qui ne ferme aucune porte.
+      const etat = await lireEtatDuRattachement().catch(() => null);
+      if (annule) return;
+      if (etat?.kind === 'a_confirmer') {
+        router.replace({ pathname: '/connexion/email', params: { motif } });
         return;
       }
-      router.replace('/');
+      router.replace({ pathname: '/connexion/retrouver', params: { motif, source: 'lien' } });
+    })().catch((error) => {
+      console.error('Le retour du lien de connexion n’a pas pu être traité :', error);
     });
-  }, [urlEntrante]);
 
-  // Dénominateur de tous les entonnoirs. Émis après `ensureSession()` dans l'ordre des
-  // effets, mais sans dépendre de lui : si la session n'est pas encore là, `track` renonce
-  // et l'événement est perdu — un défaut assumé, préférable à une file d'attente.
-  useTrackView('app_open');
+    return () => {
+      annule = true;
+    };
+  }, [urlEntrante]);
 
   // Ne jamais bloquer tout l'arbre sur le chargement de la police : sur le rendu
   // statique web (expo export), useFonts ne résout jamais pendant la génération —
@@ -106,8 +318,14 @@ export default function RootLayout() {
   // ne contenait que des marqueurs Suspense, contenu réel présent seulement après
   // hydratation côté client). Le texte s'affiche avec le fallback système puis bascule
   // sur Spline Sans dès que le chargement aboutit, natif comme web.
+  //
+  // `DefaultTheme` en dur, et pas selon `prefers-color-scheme` : le produit n'a pas de mode
+  // sombre validé (cf. `src/hooks/use-theme.ts`, qui force le clair sur web pour la même
+  // raison). Laisser `DarkTheme` ici donnerait des chromes de navigation sombres autour d'une
+  // palette claire — la moitié de l'écran dans l'autre variante. Les deux décisions vont
+  // ensemble : rétablir le sombre demande de toucher ces deux endroits, jamais un seul.
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <TitreDePage />
       {/* **Monté seulement en natif, et c'est structurel** : ce composant appelle un hook
           d'`expo-notifications` qui n'existe pas sur web, et une exception au rendu ici

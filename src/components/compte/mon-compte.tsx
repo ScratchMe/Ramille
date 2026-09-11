@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { TextLink } from '@/components/text-link';
@@ -10,10 +10,16 @@ import { Radius, Spacing } from '@/constants/theme';
 import { deleteMyAccount, exportMyData } from '@/lib/compte';
 import { APP_NAME } from '@/constants/produit';
 
-// Section « Mes données » de /suivi — droit d'accès, de portabilité et à l'effacement
-// (RGPD art. 15, 20, 17), et **bloqueur Google Play** pour la suppression (T12).
+// Section « Mes données » de l'écran « Toi » (`src/app/compte/index.tsx`) — droit d'accès, de
+// portabilité et à l'effacement (RGPD art. 15, 20, 17), et **bloqueur Google Play** pour la
+// suppression (T12). Elle vivait au bas de /suivi jusqu'à v1-11 §2.5 ; c'est cet écran-là que
+// nomment les instructions de `/confidentialite`, de `/conditions` et de la page publique
+// `/compte/suppression`, et ces textes doivent bouger ensemble. Ils désignent le chemin par les
+// mots que le produit prononce — « Ton compte » (l'`accessibilityLabel` de `CompteBouton`), puis
+// l'écran « Toi », puis cette section — et non par une paraphrase comme « icône de compte », qui
+// n'existe nulle part à l'écran ni au lecteur d'écran.
 //
-// Deux partis pris de forme :
+// Trois partis pris de forme :
 //
 //   - **la confirmation est un état de composant, jamais un `Alert`.** Sur web, `Alert.alert`
 //     retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` : la suppression ne
@@ -22,6 +28,13 @@ import { APP_NAME } from '@/constants/produit';
 //     pas de bouton « Rester » mis en avant. On dit ce qui sera supprimé parce que c'est une
 //     information utile, et on s'arrête là. Un produit qui rend le départ pénible ne mérite pas
 //     la confiance qu'il demande par ailleurs.
+//   - **ce que l'export promet dépend de la plateforme.** Sur web, un vrai fichier JSON arrive
+//     dans les téléchargements ; sur natif, le JSON part en texte dans la feuille de partage
+//     (cf. `src/lib/compte.ts`, où la dégradation et sa sortie sont expliquées). Promettre un
+//     fichier des deux côtés, puis annoncer « Export généré. » quand la feuille a peut-être été
+//     refermée sans rien choisir, affirmait deux fois un résultat qu'on n'a pas (A5-18, A6-18).
+//     Le message de succès vient donc de `exportMyData`, seul endroit qui sait ce qui s'est
+//     vraiment passé.
 export function MonCompte() {
   const [confirmation, setConfirmation] = useState(false);
   const [busy, setBusy] = useState<'export' | 'suppression' | null>(null);
@@ -32,7 +45,7 @@ export function MonCompte() {
     setMessage(null);
     const result = await exportMyData();
     setBusy(null);
-    setMessage(result.ok ? 'Export généré.' : result.message);
+    setMessage(result.message);
   };
 
   const supprimer = async () => {
@@ -56,13 +69,20 @@ export function MonCompte() {
       </ThemedText>
 
       <ThemedText type="small" themeColor="textSecondary">
-        Tu peux récupérer l’intégralité de ce que {APP_NAME} sait de toi, dans un fichier JSON, ou
-        tout supprimer définitivement.
+        {Platform.OS === 'web'
+          ? `Tu peux récupérer l’intégralité de ce que ${APP_NAME} sait de toi, dans un fichier JSON, ou tout supprimer définitivement.`
+          : `Tu peux récupérer l’intégralité de ce que ${APP_NAME} sait de toi, au format JSON : il part dans l’application que tu choisis. Pour un fichier à conserver, ouvre ${APP_NAME} dans un navigateur. Tu peux aussi tout supprimer définitivement.`}
       </ThemedText>
 
       <View style={styles.actions}>
         <Button
-          title={busy === 'export' ? 'Génération…' : 'Télécharger mes données'}
+          title={
+            busy === 'export'
+              ? 'Génération…'
+              : Platform.OS === 'web'
+                ? 'Télécharger mes données'
+                : 'Exporter mes données'
+          }
           variant="secondary"
           onPress={exporter}
           disabled={busy !== null}

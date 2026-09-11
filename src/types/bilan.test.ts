@@ -4,13 +4,24 @@
 // flux entier sans qu'aucun typecheck ne le voie.
 import {
   BILAN_STEP_ORDER,
+  BROUILLON_ANCIEN_JOURS,
+  COMMUTE_DISTANCE_A_RELIRE_KM,
   EMPTY_BILAN_ANSWERS,
+  afficherNombreSaisi,
+  brouillonEstAncien,
   distanceBracketMidpointKm,
+  distanceDomicileTravailARelire,
+  distanceDomicileTravailKm,
   isStepComplete,
   isStepVisible,
+  lireBrouillonBilan,
   manqueDeLEtape,
+  memesReponses,
+  nettoyerSaisieNumerique,
   nextStep,
+  normaliserReponses,
   previousStep,
+  saisieVersNombre,
   visibleSteps,
   type BilanAnswers,
 } from '@/types/bilan';
@@ -357,5 +368,358 @@ describe('manqueDeLEtape', () => {
         expect(isStepComplete(step, cas_)).toBe(manqueDeLEtape(step, cas_) === null);
       }
     }
+  });
+});
+
+describe('distance domicile-travail', () => {
+  // Le défaut le plus coûteux du questionnaire : « 0 » passait les neuf étapes et n'échouait
+  // qu'à la soumission, sur le `check (commute_distance_km > 0)` de la table, en anglais.
+  it('un 0 saisi ne compte pas comme une distance', () => {
+    expect(distanceDomicileTravailKm(answers({ commute_distance_km: 0 }))).toBeNull();
+    expect(
+      isStepComplete('commute_days_distance', answers({ commute_days_per_week: 5, commute_distance_km: 0 }))
+    ).toBe(false);
+    expect(
+      manqueDeLEtape('commute_days_distance', answers({ commute_days_per_week: 5, commute_distance_km: 0 }))
+    ).toBe('la distance');
+  });
+
+  it('une tranche reste une réponse valable quand aucun kilométrage n’est saisi', () => {
+    expect(
+      isStepComplete(
+        'commute_days_distance',
+        answers({ commute_days_per_week: 5, commute_distance_bracket: '5_15' })
+      )
+    ).toBe(true);
+  });
+
+  it('une distance positive est retenue telle quelle, décimale comprise', () => {
+    expect(distanceDomicileTravailKm(answers({ commute_distance_km: 3.5 }))).toBe(3.5);
+    expect(
+      isStepComplete('commute_days_distance', answers({ commute_days_per_week: 2, commute_distance_km: 3.5 }))
+    ).toBe(true);
+  });
+
+  // La borne haute est une relecture, jamais un blocage : l'étape reste complète.
+  it('au-delà de la borne haute, on propose une relecture sans bloquer', () => {
+    const loin = answers({
+      commute_days_per_week: 5,
+      commute_distance_km: COMMUTE_DISTANCE_A_RELIRE_KM + 1,
+    });
+    expect(distanceDomicileTravailARelire(loin)).toBe(true);
+    expect(isStepComplete('commute_days_distance', loin)).toBe(true);
+    expect(distanceDomicileTravailARelire(answers({ commute_distance_km: COMMUTE_DISTANCE_A_RELIRE_KM }))).toBe(
+      false
+    );
+    expect(distanceDomicileTravailARelire(answers({ commute_distance_km: 12 }))).toBe(false);
+    expect(distanceDomicileTravailARelire(answers({}))).toBe(false);
+  });
+});
+
+describe('saisie numérique', () => {
+  it('garde la virgule et le point, et ne concatène plus les décimales aux unités', () => {
+    expect(nettoyerSaisieNumerique('3,5')).toBe('3,5');
+    expect(nettoyerSaisieNumerique('3.5')).toBe('3,5');
+    expect(saisieVersNombre(nettoyerSaisieNumerique('3,5'))).toBe(3.5);
+    expect(saisieVersNombre(nettoyerSaisieNumerique('3.5'))).toBe(3.5);
+  });
+
+  it('garde la frappe en cours telle quelle, pour que la décimale soit saisissable', () => {
+    expect(nettoyerSaisieNumerique('3,')).toBe('3,');
+    expect(saisieVersNombre('3,')).toBe(3);
+  });
+
+  it('n’accepte qu’un séparateur et ignore le reste', () => {
+    expect(nettoyerSaisieNumerique('3,5,2')).toBe('3,52');
+    expect(nettoyerSaisieNumerique('12 km')).toBe('12');
+    expect(nettoyerSaisieNumerique('-4')).toBe('4');
+  });
+
+  it('une saisie sans chiffre ne porte aucune valeur', () => {
+    expect(saisieVersNombre('')).toBeNull();
+    expect(saisieVersNombre(',')).toBeNull();
+  });
+
+  it('affiche un nombre avec la virgule française', () => {
+    expect(afficherNombreSaisi(3.5)).toBe('3,5');
+    expect(afficherNombreSaisi(12)).toBe('12');
+    expect(afficherNombreSaisi(null)).toBe('');
+  });
+});
+
+describe('normaliserReponses', () => {
+  it('efface le second mode devenu identique au mode principal, et la réponse qui l’annonçait', () => {
+    // Séquence réelle : Train, puis second mode Voiture, puis Retour et mode principal
+    // Voiture (covoiturage). La liste de B1.7 filtre le mode principal, donc la ligne
+    // n'apparaissait plus nulle part, « Suivant » restait actif, et la moitié du trajet était
+    // facturée en voiture sans être divisée par le covoiturage.
+    const a = normaliserReponses(
+      answers({
+        commute_mode: 'voiture',
+        commute_is_carpool: true,
+        commute_carpool_size: 3,
+        commute_second_mode_used: true,
+        commute_second_mode: 'voiture',
+        commute_car_engine: 'thermique',
+      })
+    );
+    expect(a.commute_second_mode).toBeNull();
+    expect(a.commute_second_mode_used).toBe(false);
+    // La jambe principale est encore une voiture : la motorisation reste.
+    expect(a.commute_car_engine).toBe('thermique');
+    expect(a.commute_carpool_size).toBe(3);
+  });
+
+  it('garde la motorisation tant qu’une des deux jambes est une voiture, et l’efface sinon', () => {
+    const secondeJambe = normaliserReponses(
+      answers({
+        commute_mode: 'train',
+        commute_second_mode_used: true,
+        commute_second_mode: 'voiture',
+        commute_car_engine: 'electrique',
+      })
+    );
+    expect(secondeJambe.commute_car_engine).toBe('electrique');
+
+    const aucuneJambe = normaliserReponses(
+      answers({
+        commute_mode: 'train',
+        commute_second_mode_used: true,
+        commute_second_mode: 'velo',
+        commute_car_engine: 'electrique',
+      })
+    );
+    expect(aucuneJambe.commute_car_engine).toBeNull();
+  });
+
+  it('efface le type de deux-roues rattaché à une jambe qui n’existe plus', () => {
+    const orphelin = normaliserReponses(
+      answers({ commute_mode: 'bus', commute_two_wheeler_type: 'moto_grosse' })
+    );
+    expect(orphelin.commute_two_wheeler_type).toBeNull();
+
+    const secondeJambe = normaliserReponses(
+      answers({
+        commute_mode: 'bus',
+        commute_second_mode_used: true,
+        commute_second_mode: 'deux_roues_motorise',
+        commute_two_wheeler_type: 'moto_grosse',
+      })
+    );
+    expect(secondeJambe.commute_two_wheeler_type).toBe('moto_grosse');
+  });
+
+  it('« Non » à B1.1 n’oublie plus le type de deux-roues', () => {
+    const a = normaliserReponses(
+      answers({
+        commute_has_regular_trip: false,
+        commute_days_per_week: 5,
+        commute_distance_km: 12,
+        commute_distance_bracket: '5_15',
+        commute_mode: 'deux_roues_motorise',
+        commute_is_carpool: true,
+        commute_carpool_size: 3,
+        commute_second_mode_used: true,
+        commute_second_mode: 'train',
+        commute_car_engine: 'thermique',
+        commute_two_wheeler_type: 'moto_grosse',
+      })
+    );
+    expect(a.commute_days_per_week).toBeNull();
+    expect(a.commute_distance_km).toBeNull();
+    expect(a.commute_distance_bracket).toBeNull();
+    expect(a.commute_mode).toBeNull();
+    expect(a.commute_is_carpool).toBe(false);
+    expect(a.commute_carpool_size).toBeNull();
+    expect(a.commute_second_mode_used).toBe(false);
+    expect(a.commute_second_mode).toBeNull();
+    expect(a.commute_car_engine).toBeNull();
+    expect(a.commute_two_wheeler_type).toBeNull();
+  });
+
+  it('le covoiturage ne survit pas à un mode qui n’est pas une voiture', () => {
+    const a = normaliserReponses(
+      answers({ commute_mode: 'train', commute_is_carpool: true, commute_carpool_size: 4 })
+    );
+    expect(a.commute_is_carpool).toBe(false);
+    expect(a.commute_carpool_size).toBeNull();
+  });
+
+  it('efface la précision des loisirs rattachée à un autre mode', () => {
+    const a = normaliserReponses(
+      answers({
+        leisure_mode: 'bus',
+        leisure_car_engine: 'thermique',
+        leisure_two_wheeler_type: 'scooter_thermique',
+      })
+    );
+    expect(a.leisure_car_engine).toBeNull();
+    expect(a.leisure_two_wheeler_type).toBeNull();
+  });
+
+  it('garde la motorisation des loisirs sur « rarement », que le calcul lit encore', () => {
+    // Séquence réelle : « une fois par semaine » + voiture électrique, puis retour sur
+    // « rarement » — l'étape loisirs disparaît et `leisure_mode` est remis à null. Le calcul,
+    // lui, force le mode à « voiture » sur cette branche et résout la motorisation avec
+    // `leisure_car_engine` : l'effacer ferait passer le poste de 0,067365 à 0,142253, soit
+    // 2,1× plus lourd pour quelqu'un qui roule à l'électrique.
+    const rarement = normaliserReponses(
+      answers({
+        leisure_frequency: 'rarely',
+        leisure_mode: null,
+        leisure_car_engine: 'electrique',
+        leisure_two_wheeler_type: 'moto_grosse',
+      })
+    );
+    expect(rarement.leisure_car_engine).toBe('electrique');
+    expect(rarement.leisure_two_wheeler_type).toBe('moto_grosse');
+
+    // Revenir à une fréquence qui repose la question du mode rend la main à la règle.
+    expect(
+      normaliserReponses(
+        answers({ leisure_frequency: 'weekly', leisure_mode: null, leisure_car_engine: 'electrique' })
+      ).leisure_car_engine
+    ).toBeNull();
+  });
+
+  it('une distance saisie efface la tranche, que le calcul n’utiliserait plus', () => {
+    // État qu'aucun des deux liens de l'écran ne produit (ils s'effacent l'un l'autre), mais
+    // qu'un brouillon antérieur ou un bilan relu peut porter. Le calcul fait
+    // `coalesce(km, milieu de tranche)` : garder les deux laisse l'écran annoncer « On comptera
+    // environ 10 km » sur un trajet compté à 12.
+    const a = normaliserReponses(
+      answers({ commute_distance_km: 12, commute_distance_bracket: '5_15' })
+    );
+    expect(a.commute_distance_km).toBe(12);
+    expect(a.commute_distance_bracket).toBeNull();
+
+    // Un « 0 » n'est pas une distance : la tranche reste la seule réponse de l'étape.
+    expect(
+      normaliserReponses(answers({ commute_distance_km: 0, commute_distance_bracket: '5_15' }))
+        .commute_distance_bracket
+    ).toBe('5_15');
+  });
+
+  it('efface la motorisation des trajets longs quand il n’y en a plus', () => {
+    expect(
+      normaliserReponses(answers({ car_long_trips_per_year: 0, car_long_trips_engine: 'hybride' }))
+        .car_long_trips_engine
+    ).toBeNull();
+    expect(
+      normaliserReponses(answers({ car_long_trips_per_year: 2, car_long_trips_engine: 'hybride' }))
+        .car_long_trips_engine
+    ).toBe('hybride');
+  });
+
+  it('ne touche pas à un jeu de réponses cohérent, et s’applique deux fois sans rien changer', () => {
+    const coherent = answers({
+      commute_has_regular_trip: true,
+      commute_days_per_week: 4,
+      commute_distance_km: 8,
+      commute_mode: 'voiture',
+      commute_is_carpool: true,
+      commute_carpool_size: 2,
+      commute_second_mode_used: true,
+      commute_second_mode: 'train',
+      commute_car_engine: 'hybride',
+      leisure_frequency: 'weekly',
+      leisure_mode: 'deux_roues_motorise',
+      leisure_two_wheeler_type: 'moto_petite',
+      leisure_distance_bracket: '5_15',
+      car_long_trips_per_year: 2,
+      car_long_trips_engine: 'thermique',
+    });
+    const une = normaliserReponses(coherent);
+    expect(une).toEqual(coherent);
+    expect(normaliserReponses(une)).toEqual(une);
+  });
+});
+
+describe('lireBrouillonBilan', () => {
+  it('complète les champs qu’une version antérieure ne connaissait pas', () => {
+    // Brouillon écrit avant la question de cylindrée : le champ était absent, donc
+    // `undefined` à la relecture — et `undefined !== null` déclarait l'étape complète. Le
+    // bilan partait au tarif du scooter pour un motard.
+    const brouillon = lireBrouillonBilan({
+      step: 'commute_mode',
+      answers: { commute_has_regular_trip: true, commute_mode: 'deux_roues_motorise' },
+    });
+    expect(brouillon).not.toBeNull();
+    expect(brouillon!.answers.commute_two_wheeler_type).toBeNull();
+    expect(isStepComplete('commute_mode', brouillon!.answers)).toBe(false);
+    expect(brouillon!.answers).toEqual(
+      answers({ commute_has_regular_trip: true, commute_mode: 'deux_roues_motorise' })
+    );
+  });
+
+  it('normalise un état qu’une version antérieure autorisait', () => {
+    const brouillon = lireBrouillonBilan({
+      step: 'commute_extra',
+      answers: {
+        commute_mode: 'voiture',
+        commute_second_mode_used: true,
+        commute_second_mode: 'voiture',
+      },
+    });
+    expect(brouillon!.answers.commute_second_mode).toBeNull();
+    expect(brouillon!.answers.commute_second_mode_used).toBe(false);
+  });
+
+  it('rejette un brouillon dont l’étape est inconnue', () => {
+    // Sans ce garde, aucune des neuf branches de rendu ne s'active : l'écran garde son
+    // en-tête et ses boutons, et le corps est vide.
+    expect(lireBrouillonBilan({ step: 'commute_carpool', answers: {} })).toBeNull();
+    expect(lireBrouillonBilan({ step: 42, answers: {} })).toBeNull();
+    expect(lireBrouillonBilan({ answers: {} })).toBeNull();
+  });
+
+  it('rejette ce qui n’a pas la forme d’un brouillon', () => {
+    expect(lireBrouillonBilan(null)).toBeNull();
+    expect(lireBrouillonBilan('brouillon')).toBeNull();
+    expect(lireBrouillonBilan({ step: 'commute_mode' })).toBeNull();
+    expect(lireBrouillonBilan({ step: 'commute_mode', answers: null })).toBeNull();
+  });
+
+  it('relit l’horodatage, et s’en passe quand il n’y en a pas', () => {
+    expect(
+      lireBrouillonBilan({ step: 'flights', answers: {}, savedAt: '2026-09-01T08:00:00.000Z' })!.savedAt
+    ).toBe('2026-09-01T08:00:00.000Z');
+    expect(lireBrouillonBilan({ step: 'flights', answers: {} })!.savedAt).toBeNull();
+    expect(lireBrouillonBilan({ step: 'flights', answers: {}, savedAt: 1757000000000 })!.savedAt).toBeNull();
+  });
+});
+
+describe('brouillonEstAncien', () => {
+  const maintenant = new Date('2026-09-30T12:00:00.000Z');
+
+  function brouillonDu(savedAt: string | null) {
+    return { step: 'commute_mode' as const, answers: EMPTY_BILAN_ANSWERS, savedAt };
+  }
+
+  it('ancien au-delà du délai, récent en deçà', () => {
+    const jour = 24 * 60 * 60 * 1000;
+    const pile = new Date(maintenant.getTime() - BROUILLON_ANCIEN_JOURS * jour).toISOString();
+    const veille = new Date(maintenant.getTime() - (BROUILLON_ANCIEN_JOURS - 1) * jour).toISOString();
+    expect(brouillonEstAncien(brouillonDu(pile), maintenant)).toBe(true);
+    expect(brouillonEstAncien(brouillonDu(veille), maintenant)).toBe(false);
+  });
+
+  it('ne suppose rien quand l’âge est inconnu ou illisible', () => {
+    expect(brouillonEstAncien(brouillonDu(null), maintenant)).toBe(false);
+    expect(brouillonEstAncien(brouillonDu('hier'), maintenant)).toBe(false);
+  });
+});
+
+describe('memesReponses', () => {
+  it('reconnaît un brouillon qui n’est que le dernier bilan rechargé', () => {
+    const dernier = answers({ commute_mode: 'train', leisure_frequency: 'weekly' });
+    expect(memesReponses(dernier, { ...dernier })).toBe(true);
+    expect(memesReponses(dernier, answers({ commute_mode: 'bus', leisure_frequency: 'weekly' }))).toBe(false);
+  });
+
+  it('ignore les clés en plus d’un brouillon relu, jamais une réponse qui diffère', () => {
+    const dernier = answers({ commute_days_per_week: 3 });
+    const avecSurplus = { ...dernier, champ_disparu: 'oui' } as BilanAnswers;
+    expect(memesReponses(dernier, avecSurplus)).toBe(true);
   });
 });

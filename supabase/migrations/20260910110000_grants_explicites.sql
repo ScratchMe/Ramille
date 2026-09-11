@@ -117,10 +117,11 @@ grant select, insert, update on table public.assessment_answers to authenticated
 -- rien — aucune policy ne l'accompagne, la RLS refuse toutes les lignes.
 grant select on table public.assessment_results to authenticated;
 
--- Les points d'engagement : lus par le plan, répondus par leur propriétaire. **Pas d'insert** —
+-- Les points d'engagement : lus par le plan ; la réponse passe par `repondre_au_checkin`
+-- (20260911100000), d'où l'absence d'`update`. **Pas d'insert** non plus —
 -- la génération est serveur-only (`revoke insert` de 20260827090000, et un test pgTAP épingle
 -- que le refus est bien « permission denied » ici, pas un refus de RLS).
-grant select, update on table public.engagement_checkins to authenticated;
+grant select on table public.engagement_checkins to authenticated;
 
 -- Le cycle de plan : lu par `/plan` et `/suivi/bilan`, généré par
 -- `generate_plan_cycle_for_user` (`security definer`).

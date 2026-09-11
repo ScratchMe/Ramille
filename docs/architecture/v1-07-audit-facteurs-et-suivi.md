@@ -679,15 +679,24 @@ ligne.
 | `auth_allow_anonymous_sign_ins` sur `cron.job` / `cron.job_run_details` (WARN ×2) | Schéma de Supabase lui-même, sa policy restreint déjà au propriétaire du job. Pas à nous. |
 | `unindexed_foreign_keys` sur `assessment_answers.commute_mode` / `.commute_second_mode` / `.leisure_mode` et `assessment_results.dominant_poste_mode` (INFO ×4) | Les quatre pointent vers `transport_modes`. **Aucune requête du produit ne filtre ni ne joint sur ces colonnes** — les libellés se lisent par clé primaire de `transport_modes`. La table référencée est un référentiel de 13 lignes qui ne bouge qu'en migration. Quatre index de plus coûteraient à chaque insertion de bilan pour un gain de lecture nul : on ne les crée pas. À revoir si un écran vient un jour filtrer les bilans par mode. |
 | `unused_index` sur `plan_actions_action_template_id_idx` (INFO) | « Jamais utilisé » sur une base qui compte une douzaine de bilans de test ne veut rien dire. Cet index couvre la jointure `plan_actions → action_templates` que l'écran `/plan` traverse à chaque affichage. Conservé. |
+| `auth_rls_initplan` sur `push_tokens` (WARN ×2, relevé par l'audit du 09/09/2026 — constat A11-11) | **Corrigé le 11/09/2026, ce n'était pas volontaire** : les deux policies de `push_tokens` étaient les seules du schéma écrites `user_id = auth.uid()` sans sous-`select`, forme qui fait réévaluer la fonction à chaque ligne (`auth.uid()` est `stable`, pas `immutable` : seul un sous-`select` devient un `InitPlan` évalué une fois). Réécrites en `(select auth.uid())` par `20260911130000_jetons_push.sql`. Ligne conservée ici parce qu'un advisor corrigé et un advisor assumé se lisent pareil dans la console Supabase — si celui-ci remonte de nouveau, c'est une régression, pas une décision. |
 
 ### Écarté pour cette V1
 
 `auth_leaked_password_protection` (WARN) : la vérification des mots de passe compromis contre
-HaveIBeenPwned est désactivée. Pertinente sur le principe — le produit propose bien une
-connexion email + mot de passe (`v1-04` §2) — mais **réservée au plan payant Supabase**.
-Décision produit du 04/09/2026 : on ne la prend pas pour cette V1. Cet advisor continuera donc
-à remonter, c'est attendu ; à réévaluer le jour où le projet passe sur un plan payant pour
-d'autres raisons.
+HaveIBeenPwned est désactivée. Elle est **réservée au plan payant Supabase**, et la décision
+produit du 04/09/2026 était de ne pas la prendre pour cette V1.
+
+**Mise à jour du 11/09/2026 — cet advisor ne nous concerne plus du tout, et la raison écrite ici
+était devenue fausse.** Ce paragraphe affirmait que « le produit propose bien une connexion
+email + mot de passe (`v1-04` §2) » : ce chemin a été supprimé par `v1-10` §2.D (07/09/2026), et
+il n'avait jamais servi — aucun `signInWithPassword` dans le produit, zéro compte n'en portait.
+Il n'y a **pas de mot de passe** dans Ramille : le seul chemin vers un compte existant est un lien
+à usage unique par email (`sendAccountAccessLink`). Une protection des mots de passe compromis ne
+peut donc rien protéger ici. L'advisor continuera à remonter — c'est un réglage de projet, pas une
+propriété du schéma — et il reste sans objet, y compris le jour où le projet passerait sur un plan
+payant. Le laisser écrit comme « pertinent sur le principe, écarté pour des raisons de coût »
+aurait fait réintroduire un mot de passe à qui viendrait lever l'avertissement.
 
 Aucun autre signalement ne demande d'action à ce jour.
 

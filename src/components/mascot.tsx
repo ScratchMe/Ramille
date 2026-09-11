@@ -2,7 +2,9 @@ import { useEffect } from 'react';
 import { type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
+  ReduceMotion,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withSequence,
@@ -75,9 +77,19 @@ export function Mascot({
   const c = Colors.light;
   const face = mascotFaceGeometry(mood, size);
   const breathe = useSharedValue(0);
+  // **Sous « réduire les animations », la respiration ne tourne pas — et reanimated le faisait
+  // déjà.** Contrairement à ce qu'affirme A10-8, la boucle n'a jamais survécu à la préférence :
+  // `ReduceMotion.System` est le défaut de la bibliothèque (`animation/util.ts`, qui amène toute
+  // animation sans `reduceMotion` explicite directement à sa valeur finale) et `repeat.ts` coupe
+  // la boucle dès la première répétition. Cette garde ne corrige donc pas une régression : elle
+  // rend l'intention lisible à la lecture et évite d'armer une animation qui sera annulée plus
+  // bas. `useReducedMotion` lit la préférence système sur natif comme sur web
+  // (`prefers-reduced-motion`) sans état à tenir ni écouteur à brancher. Le visage, lui, ne
+  // change pas : il est rendu tel quel, à l'arrêt.
+  const animationsReduites = useReducedMotion();
 
   useEffect(() => {
-    if (!animated) {
+    if (!animated || animationsReduites) {
       breathe.value = 0;
       return;
     }
@@ -87,9 +99,14 @@ export function Mascot({
         withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.sin) })
       ),
       -1,
-      true
+      true,
+      undefined,
+      // Écrit pour être lu : c'est **déjà** la valeur par défaut de reanimated, donc cette ligne
+      // ne change rien au comportement. Elle dit au prochain lecteur que le cas a été regardé,
+      // et elle tient si un jour la valeur par défaut de la bibliothèque change.
+      ReduceMotion.System
     );
-  }, [animated, breathe]);
+  }, [animated, animationsReduites, breathe]);
 
   const clampedTilt = Math.max(-12, Math.min(12, tilt));
 

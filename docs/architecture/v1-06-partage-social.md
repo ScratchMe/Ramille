@@ -138,3 +138,24 @@ Alternative envisagée pour générer l'image : capture côté client (`react-na
 sur Android, invalidable dans un environnement de développement sans émulateur/device.
 L'approche par Vercel Function retenue est vérifiable de bout en bout (HTML + image réelle)
 sans device, sur le déploiement preview de chaque pull request.
+
+**Révision du 11/09/2026 — l'argument du build invérifiable est tombé, et il ne vaut plus pour
+l'export de données.** `expo-notifications` (v1-12) a imposé un build EAS : la dépendance native
+n'est donc plus un coût qu'on évite, c'est un coût déjà payé. Ce qui change, et ce qui ne change
+pas :
+
+- **La carte de partage reste une Vercel Function, et ce choix n'est pas rouvert.** Son second
+  argument n'a jamais été le build : l'image doit être servie à un *destinataire* qui n'a pas
+  l'app — `facebookexternalhit` et ses pareils récupèrent une URL, pas une capture d'écran de
+  notre téléphone. Une capture native ne peut pas rendre ce service.
+- **L'export de données, lui, était adossé à ce refus et n'aurait pas dû l'être** (constats
+  A5-18 et A6-18, chantier C1.10). `exportMyData` (`src/lib/compte.ts`) passe le JSON en **texte**
+  dans la feuille de partage Android faute d'`expo-file-system` et d'`expo-sharing`. La bonne
+  forme — écrire le fichier dans le cache, le partager en `url` — attend ces deux dépendances, et
+  plus rien ne s'y oppose. En attendant, seule l'annonce a été corrigée : sur Android
+  `Share.share` rend toujours `sharedAction`, même feuille refermée sans rien choisir, donc
+  l'écran dit que la feuille s'est ouverte et jamais que l'export est parti.
+
+Le chantier qui ajoutera ces deux dépendances devra rouvrir cette §4 plutôt que la contourner :
+c'est ici, et non dans un commentaire de `src/lib/compte.ts`, que le prochain lecteur viendra
+chercher si la question est tranchée.

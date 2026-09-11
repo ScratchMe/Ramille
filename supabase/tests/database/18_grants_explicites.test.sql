@@ -24,7 +24,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(15);
 
 -- ── 1. La matrice entière ───────────────────────────────────────────────────────────────
 -- Les sept privilèges de table qui touchent aux données ou au schéma, pour les deux rôles
@@ -66,7 +66,6 @@ select bag_eq(
        ('authenticated', 'assessment_answers', 'UPDATE'),
        ('authenticated', 'assessment_results', 'SELECT'),
        ('authenticated', 'engagement_checkins', 'SELECT'),
-       ('authenticated', 'engagement_checkins', 'UPDATE'),
        ('authenticated', 'plan_cycles', 'SELECT'),
        ('authenticated', 'plan_actions', 'SELECT'),
        ('authenticated', 'feedback', 'SELECT'),
@@ -134,11 +133,28 @@ select ok(
 
 -- ── 5. Les révocations que la migration ne doit pas défaire ─────────────────────────────
 -- Un `grant` est un accordéon : écrit large, il rouvre ce qu'un `revoke` d'une migration
--- antérieure avait fermé, et rien ne le signale. Les deux cas du schéma, épinglés nommément.
+-- antérieure avait fermé, et rien ne le signale. Les cas du schéma, épinglés nommément.
 select ok(
   not has_table_privilege('authenticated', 'public.engagement_checkins', 'insert')
     and not has_table_privilege('anon', 'public.engagement_checkins', 'insert'),
   'engagement_checkins : insert toujours révoqué — la génération des points est serveur-only'
+);
+
+-- L'`update` a disparu le 11/09/2026 (20260911100000) : le point porte des libellés snapshotés et
+-- la clé d'idempotence de sa génération, qu'une policy UPDATE aurait tous ouverts d'un coup. Même
+-- paire de gardes que `plan_actions` en §6, et pour la même raison — le privilège ici, la policy
+-- juste après.
+select ok(
+  not has_table_privilege('authenticated', 'public.engagement_checkins', 'update')
+    and not has_table_privilege('anon', 'public.engagement_checkins', 'update'),
+  'engagement_checkins : update révoqué — la réponse passe par repondre_au_checkin'
+);
+
+select is(
+  (select count(*)::int from pg_policies
+    where schemaname = 'public' and tablename = 'engagement_checkins' and cmd <> 'SELECT'),
+  0,
+  'engagement_checkins : aucune policy d''écriture — la réponse passe par un RPC'
 );
 
 select ok(

@@ -914,6 +914,10 @@ export type Database = {
         Args: { p_outbox_id: string; p_raison: string }
         Returns: undefined
       }
+      repondre_au_checkin: {
+        Args: { p_checkin_id: string; p_reponse: boolean }
+        Returns: number
+      }
       resolve_car_mode: {
         Args: { p_engine: string; p_mode_id: string }
         Returns: string

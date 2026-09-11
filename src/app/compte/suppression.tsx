@@ -126,7 +126,7 @@ export default function SuppressionCompte() {
               <>
                 <ThemedText themeColor="textSecondary" style={styles.corps}>
                   Ce navigateur n’est rattaché à aucun compte. Indique l’adresse de ton compte :
-                  on t’envoie un lien qui te ramènera ici, connecté, pour confirmer la
+                  on t’envoie un lien qui te ramènera ici, session ouverte, pour confirmer la
                   suppression.
                 </ThemedText>
                 <View style={styles.bloc}>
@@ -143,9 +143,20 @@ export default function SuppressionCompte() {
                     disabled={busy}
                   />
                 </View>
+                {/* Ce renvoi nomme un écran, donc il vieillit : « Mes données » a quitté
+                    /suivi pour « Toi » en v1-11 §2.5, et personne ne l'avait vu ici. Le geste
+                    est décrit avant le nom de l'écran — quelqu'un qui cherche une section dans
+                    un produit qu'il vient de réinstaller a besoin de savoir où toucher.
+                    L'icône est nommée **comme le produit l'annonce** (« Ton compte », cf.
+                    l'`accessibilityLabel` de `src/components/compte-bouton.tsx`) : cette page
+                    se lit quasi exclusivement dans un navigateur — la revendication App Links
+                    d'`app.json` ne couvre que `/plan` —, donc on cherche un mot qui existe
+                    bien dans l'app, y compris pour TalkBack. « Icône de compte » n'y est nulle
+                    part. */}
                 <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
-                  Si tu as encore l’application, c’est plus direct : écran « Mon suivi »,
-                  section « Mes données ».
+                  Si tu as encore l’application, c’est plus direct : ouvre « Ton compte »,
+                  l’icône en haut à droite de l’écran, puis la section « Mes données » de l’écran
+                  « Toi ».
                 </ThemedText>
               </>
             )}
@@ -162,10 +173,14 @@ export default function SuppressionCompte() {
 
             {phase.kind === 'pret' && phase.etat.kind === 'rattache' && (
               <>
+                {/* « Tu es connecté » accordait au masculin la personne à qui la phrase
+                    parle (A12-4), sur la page publique que Google Play exige. C'est le
+                    navigateur qui porte la session : le dire ainsi est à la fois sans accord
+                    de genre et plus exact — cette page n'affirme rien d'autre. */}
                 <ThemedText themeColor="textSecondary" style={styles.corps}>
                   {phase.etat.email
-                    ? `Tu es connecté au compte ${phase.etat.email}.`
-                    : 'Tu es connecté à ton compte.'}
+                    ? `Ce navigateur est connecté au compte ${phase.etat.email}.`
+                    : 'Ce navigateur est connecté à ton compte.'}
                 </ThemedText>
                 {renduSuppression(phase.confirme)}
               </>
@@ -175,8 +190,8 @@ export default function SuppressionCompte() {
               <>
                 <ThemedText themeColor="textSecondary" style={styles.corps}>
                   Si un compte {APP_NAME} existe avec cette adresse, un lien vient d’y être
-                  envoyé. Ouvre-le depuis ce navigateur : tu reviendras sur cette page,
-                  connecté, et la suppression se fera en un geste.
+                  envoyé. Ouvre-le depuis ce navigateur : tu reviendras sur cette page, session
+                  ouverte, et la suppression se fera en un geste.
                 </ThemedText>
                 <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
                   Le lien ne crée jamais de compte : s’il n’y en a pas à cette adresse, rien ne
