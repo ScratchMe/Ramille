@@ -101,25 +101,37 @@ comment on column public.action_templates.question_template is
   'Un gabarit sans question_template ferait retomber le point sur la question générique, en '
   'silence — un test pgTAP interdit le nul.';
 
+-- **L'appariement se fait sur `action_text`, jamais sur l'identifiant.** `action_templates.id`
+-- vaut `gen_random_uuid()` : les douze lignes portent des identifiants **différents** sur chaque base
+-- construite depuis `supabase/migrations/`. Des uuid en dur ici s'apparient au projet distant, où ils
+-- ont été relevés, et à **rien** en CI — ce qui a fait tomber la CI de la vague 5 sur le contrôle
+-- ci-dessous (les douze `question_template` restaient nuls). C'est exactement l'avertissement de
+-- l'outil de migration : aucune référence en dur à un identifiant généré.
+--
+-- `action_text` est la clé naturelle du référentiel : les douze libellés sont distincts, et
+-- `20260905130000` les insère littéralement. Un libellé mal recopié n'apparierait rien — et c'est le
+-- contrôle de la §7 qui l'attrape, puisqu'il refuse le moindre `question_template` nul. C3.8
+-- reformulera plusieurs de ces libellés, sans conséquence : une migration se rejoue dans l'ordre,
+-- donc celle-ci voit toujours le référentiel d'avant C3.8.
 update public.action_templates set question_template = v.modele
 from (values
   -- Trajet domicile-travail : la question nomme les jours choisis.
-  ('ee11ab03-91c6-4f9b-b21c-d15bbfa3d8ae'::uuid, '{jours}, as-tu travaillé depuis chez toi ?'),
-  ('4b5c98be-ba09-429a-9b46-e86e70f74aa6'::uuid, '{jours}, as-tu fait ce trajet à deux ?'),
-  ('b21a9efb-5793-4689-9f05-519e1fac0d3a'::uuid, '{jours}, as-tu fait ce trajet à pied ?'),
-  ('fedcddc0-c616-4731-af42-f9032251ffae'::uuid, '{jours}, as-tu fait ce trajet à vélo ?'),
-  ('c466e753-b830-4a8b-9fc6-f5b78bdd9540'::uuid, '{jours}, as-tu fait ce trajet en métro ou en tram ?'),
-  ('3f6e8983-0a5e-4fdd-bc3f-df6e563aea9d'::uuid, '{jours}, as-tu fait ce trajet en train ou en RER ?'),
+  ('Garder une journée de télétravail par semaine', '{jours}, as-tu travaillé depuis chez toi ?'),
+  ('Faire ce trajet à deux au moins un jour sur deux', '{jours}, as-tu fait ce trajet à deux ?'),
+  ('Faire un trajet sur cinq à pied', '{jours}, as-tu fait ce trajet à pied ?'),
+  ('Faire un trajet sur cinq à vélo', '{jours}, as-tu fait ce trajet à vélo ?'),
+  ('Passer deux trajets sur cinq en métro ou en tram', '{jours}, as-tu fait ce trajet en métro ou en tram ?'),
+  ('Passer deux trajets sur cinq en train ou en RER', '{jours}, as-tu fait ce trajet en train ou en RER ?'),
   -- Loisirs et voyages : la boucle est mensuelle, il n'y a pas de jour à nommer — la question
   -- ouvre sur le mois écoulé et demande si l'occasion s'est présentée.
-  ('17c384bd-696e-4d27-bc5c-9215a9cbbe88'::uuid, 'En {mois}, as-tu regroupé deux sorties en une ?'),
-  ('6518b804-dd17-4288-a3bc-c6035228a953'::uuid, 'En {mois}, as-tu fait une sortie à vélo ?'),
-  ('f0bf4714-480d-4f11-a855-3ca4fc88c9d7'::uuid, 'En {mois}, as-tu pris les transports en commun pour une sortie ?'),
-  ('3827c283-05e7-45ec-b07f-cd1127a92b26'::uuid, 'En {mois}, as-tu fait un long trajet en train plutôt qu''en voiture ?'),
-  ('bfa75c4a-1ddb-4e81-a5ef-6d8c15a8c8cc'::uuid, 'En {mois}, as-tu eu un déplacement où tu as choisi autre chose que l''avion ?'),
-  ('702e20ab-5786-4d96-9a47-7694db8ab088'::uuid, 'En {mois}, as-tu remplacé un vol par le train ?')
-) as v(id, modele)
-where public.action_templates.id = v.id;
+  ('Regrouper deux sorties en une seule, une fois sur cinq', 'En {mois}, as-tu regroupé deux sorties en une ?'),
+  ('Faire une sortie sur trois à vélo', 'En {mois}, as-tu fait une sortie à vélo ?'),
+  ('Prendre les transports en commun pour deux sorties sur cinq', 'En {mois}, as-tu pris les transports en commun pour une sortie ?'),
+  ('Faire un de tes longs trajets en train plutôt qu''en voiture', 'En {mois}, as-tu fait un long trajet en train plutôt qu''en voiture ?'),
+  ('Renoncer à un vol long-courrier cette année', 'En {mois}, as-tu eu un déplacement où tu as choisi autre chose que l''avion ?'),
+  ('Remplacer un aller-retour en avion par le train', 'En {mois}, as-tu remplacé un vol par le train ?')
+) as v(libelle, modele)
+where public.action_templates.action_text = v.libelle;
 
 -- ── 3. Les quatre genres, et les colonnes figées ────────────────────────────────────────
 
@@ -141,6 +153,12 @@ alter table public.engagement_checkins
   add column if not exists committed_intention_timing text,
   add column if not exists committed_question text;
 
+-- `drop ... if exists` d'abord, comme les deux contraintes ci-dessus : une migration de ce dépôt doit
+-- pouvoir être rejouée telle quelle après une restauration, et un `add constraint` nu lève un 42710
+-- au second passage. Relevé en rejouant ce fichier sur le distant pour corriger l'appariement des
+-- gabarits.
+alter table public.engagement_checkins
+  drop constraint if exists engagement_checkins_committed_days_valides;
 alter table public.engagement_checkins
   add constraint engagement_checkins_committed_days_valides
     check (public.check_intention_days(committed_intention_days));

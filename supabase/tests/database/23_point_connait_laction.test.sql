@@ -19,6 +19,12 @@
 -- qu'aucune comparaison caractère par caractère ne soit possible. Les gabarits, eux, gardent
 -- l'apostrophe droite du référentiel : ils sont lus de `action_templates` par les deux côtés, donc
 -- aucune divergence n'y est possible.
+--
+-- **Les gabarits se désignent par `action_text`, jamais par leur identifiant.** `action_templates.id`
+-- vaut `gen_random_uuid()` : il diffère sur chaque base construite depuis `supabase/migrations/`, donc
+-- un uuid relevé sur le projet distant ne s'apparie à rien en CI — c'est ce qui a fait tomber la CI de
+-- la vague 5, sur le contrôle de la migration. Les douze libellés du référentiel sont distincts et
+-- insérés littéralement par `20260905130000` : ils en sont la clé naturelle.
 begin;
 create extension if not exists pgtap with schema extensions;
 
@@ -162,7 +168,8 @@ values ('c2300000-0000-0000-0000-0000000000c1', 'c2300000-0000-0000-0000-0000000
 
 insert into public.plan_actions (id, plan_cycle_id, action_template_id, committed_at, intention_days, rank)
 values ('c2300000-0000-0000-0000-0000000000d1', 'c2300000-0000-0000-0000-0000000000c1',
-        'fedcddc0-c616-4731-af42-f9032251ffae', now(), array[2, 4]::smallint[], 1);
+        (select id from public.action_templates where action_text = 'Faire un trajet sur cinq à vélo'),
+        now(), array[2, 4]::smallint[], 1);
 
 select public.generate_commute_checkins();
 
@@ -212,7 +219,9 @@ select is(
 -- déjà posée et déjà partie par email.
 
 update public.plan_actions
-set action_template_id = 'b21a9efb-5793-4689-9f05-519e1fac0d3a', intention_days = array[1]::smallint[]
+set action_template_id = (select id from public.action_templates
+                          where action_text = 'Faire un trajet sur cinq à pied'),
+    intention_days = array[1]::smallint[]
 where id = 'c2300000-0000-0000-0000-0000000000d1';
 
 select public.generate_commute_checkins();

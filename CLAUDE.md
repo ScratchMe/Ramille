@@ -699,6 +699,26 @@ pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe.
 l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
 distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
 
+**Aucune migration de données ne désigne une ligne par un identifiant généré, et celle qui l'a fait
+n'a été rattrapée que par son propre contrôle.** `action_templates.id` vaut `gen_random_uuid()` : les
+douze gabarits portent des identifiants **différents** sur chaque base construite depuis
+`supabase/migrations/`. Les uuid relevés sur le projet distant s'y apparient, donc la migration C2.1
+passait là-bas et n'appariait **rien** en CI — les douze `question_template` restaient nuls, et c'est le
+contrôle de la migration (« un gabarit sans `question_template` ») qui a fait tomber le job pgTAP.
+C'est exactement l'avertissement de `mcp__Supabase__apply_migration`, et c'est la seule migration du
+dépôt qui portait un uuid littéral (vérifié). La clé naturelle du référentiel est `action_text` : les
+douze libellés sont distincts et insérés littéralement par `20260905130000`. Deux corollaires : **un
+fichier de test pgTAP ne désigne pas davantage un gabarit par son identifiant** (`23` a été corrigé
+pour la même raison), et **un libellé mal recopié n'apparie rien** — c'est le contrôle qui rend
+l'appariement par texte sûr, pas la relecture.
+
+**Une migration doit se rejouer telle quelle, et `add constraint` n'est pas idempotent.** Corollaire
+du point précédent : pour corriger l'appariement il a fallu rejouer le fichier entier sur le distant, et
+il s'est arrêté sur un `42710` — une contrainte ajoutée sans `drop constraint if exists` devant. Le
+défaut ne se voit ni en CI (base neuve, un seul passage) ni au premier déploiement ; il se voit le jour
+d'une restauration, c'est-à-dire le plus mauvais. Même exigence que
+`20260910110000_grants_explicites.sql`, « rejouable tel quel après une restauration ».
+
 **Le distant porte les corps de fonction sans les commentaires du dépôt, et la substitution
 vérifiée lit le distant.** Relevé le 11/09/2026 en comparant les 47 fonctions une à une : la logique
 est identique partout, mais plusieurs corps installés ont perdu les commentaires `--` que le fichier
