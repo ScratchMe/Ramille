@@ -175,43 +175,72 @@ revoke execute on function public.archiver_engagement_de_laction(uuid, text)
   from public, anon, authenticated;
 
 -- ── 4. « Changer d'avis » laisse une trace ──────────────────────────────────────────────
--- L'archivage précède la remise à null, sinon il n'y a plus rien à archiver. La vérification de
--- propriété reste **dans** la fonction : c'est elle qui protège, `plan_actions` n'ayant ni policy
--- d'écriture ni privilège d'écriture.
+-- **Les deux fonctions de cette section et de la suivante sont reprises de leur état installé par
+-- C1.12 (`20260911100000`), et pas de leur migration d'origine.** Première version de ce fichier,
+-- je les avais réécrites depuis `20260905190000` : j'ai ainsi supprimé en silence les trois gardes
+-- que C1.12 leur avait ajoutées (une intention et une seule, la forme d'intention qui suit le
+-- poste, et le refus explicite au lieu d'un succès muet). `13_engagement_action` les a rattrapées
+-- — c'est exactement ce qu'il existe pour faire. La leçon, qui vaut pour la prochaine migration
+-- qui touche une fonction existante : **partir de `pg_get_functiondef`, jamais du fichier qui l'a
+-- créée**, et rejouer le fichier de test qui la possède.
+--
+-- L'archivage ne change donc rien d'autre : il s'insère avant la remise à null, sinon il n'y a plus
+-- rien à archiver.
 
 create or replace function public.clear_plan_action_commitment(p_plan_action_id uuid)
 returns void
 language plpgsql
 security definer
-set search_path to 'public'
+set search_path = public
 as $$
 declare
-  v_autorise boolean;
+  v_lignes integer;
+  v_eng record;
 begin
-  select exists (
-    select 1
-    from public.plan_actions pa
-    join public.plan_cycles pc on pc.id = pa.plan_cycle_id
-    where pa.id = p_plan_action_id and pc.user_id = auth.uid()
-  ) into v_autorise;
+  -- **La capture est sous vérification de propriété**, et c'est volontairement plus explicite que
+  -- nécessaire : `archiver_engagement` est `security definer` et ne vérifie rien, donc l'appeler
+  -- sur une ligne d'un tiers écrirait son engagement dans l'archive. Le `raise` plus bas annulerait
+  -- la transaction, mais faire dépendre une garde de propriété du rollback d'une exception est le
+  -- genre de chose qui cesse d'être vrai au prochain changement.
+  select pc.user_id, pc.id as cycle_id, pa.action_template_id, pa.intention_days,
+         pa.intention_timing, pa.committed_at
+    into v_eng
+  from public.plan_actions pa
+  join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+  where pa.id = p_plan_action_id and pc.user_id = auth.uid();
 
-  if not v_autorise then
-    return;
+  update public.plan_actions pa
+  set committed_at = null, intention_days = null, intention_timing = null, carried_over_from = null
+  where pa.id = p_plan_action_id
+    and exists (
+      select 1 from public.plan_cycles pc
+      where pc.id = pa.plan_cycle_id and pc.user_id = auth.uid()
+    );
+
+  get diagnostics v_lignes = row_count;
+
+  -- Rendre un succès muet quand aucune ligne ne correspond (action d'un tiers, identifiant faux)
+  -- faisait afficher « ok » au client sur un engagement toujours en place. Garde de C1.12.
+  if v_lignes = 0 then
+    raise exception 'Action introuvable.' using errcode = 'no_data_found';
   end if;
 
-  perform public.archiver_engagement_de_laction(p_plan_action_id, 'changement');
-
-  update public.plan_actions
-  set committed_at = null, intention_days = null, intention_timing = null, carried_over_from = null
-  where id = p_plan_action_id;
+  perform public.archiver_engagement(
+    v_eng.user_id, v_eng.cycle_id, v_eng.action_template_id,
+    v_eng.intention_days, v_eng.intention_timing, v_eng.committed_at, 'changement'
+  );
 end;
 $$;
 
 -- ── 5. « Choisir une autre action » aussi ───────────────────────────────────────────────
 -- Ce chemin-là était le plus discret des quatre : la libération de l'engagement précédent est une
--- ligne interne de `commit_plan_action`, imposée par l'index unique partiel, et elle n'apparaît
--- nulle part à l'écran. Le canvas veut pourtant que l'ancienne action reste lisible (`v1-14` §5,
--- « Reste dans ton suivi »), ce qui n'est possible que si elle est archivée.
+-- ligne **interne** de `commit_plan_action`, que rien n'affiche. Le canvas veut pourtant que
+-- l'ancienne action reste lisible (`v1-14` §5, « Reste dans ton suivi »), ce qui n'est possible que
+-- si elle est archivée.
+--
+-- **Les deux gardes d'intention de C1.12 précèdent la libération**, et l'ordre est le sujet d'une
+-- assertion : « un refus ne libère rien ». Les déplacer après l'archivage ferait perdre son
+-- engagement à quelqu'un dont l'appel est refusé.
 --
 -- `p_replace` n'est **pas** ajouté ici : `v1-14` §4.3 le mentionne pour C4.6, et un paramètre
 -- qu'aucun appel n'émet ne se lit pas « réservé », il se lit « mort » — même règle que pour un
@@ -225,26 +254,47 @@ create or replace function public.commit_plan_action(
 returns void
 language plpgsql
 security definer
-set search_path to 'public'
+set search_path = public
 as $$
 declare
   v_cycle_id uuid;
+  v_poste text;
+  v_forme_attendue text;
   v_precedent uuid;
 begin
   -- Vérification de propriété **dans** la fonction : c'est elle qui protège, pas un REVOKE,
-  -- puisque ce RPC doit rester appelable par le client.
-  select pc.id into v_cycle_id
+  -- puisque ce RPC doit rester appelable par le client. La jointure sur le gabarit rapporte au
+  -- passage le poste visé.
+  select pc.id, tpl.poste into v_cycle_id, v_poste
   from public.plan_actions pa
   join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+  join public.action_templates tpl on tpl.id = pa.action_template_id
   where pa.id = p_plan_action_id and pc.user_id = auth.uid();
 
   if v_cycle_id is null then
     raise exception 'Action introuvable.' using errcode = 'no_data_found';
   end if;
 
+  -- Une intention et une seule. Le message nomme la forme attendue : c'est ce qui manquait au
+  -- 23514 de la contrainte (C1.12, A8-20).
+  v_forme_attendue := case when coalesce(v_poste, '') = 'commute' then 'des jours de la semaine' else 'une échéance' end;
+
+  if (p_days is not null) = (p_timing is not null) then
+    raise exception 'Une intention et une seule est attendue pour cette action : %.', v_forme_attendue
+      using errcode = 'invalid_parameter_value';
+  end if;
+
+  -- Le rythme de l'intention suit le poste : hebdomadaire pour le domicile-travail, une échéance
+  -- fermée partout ailleurs — un trajet de loisir ou un voyage ne se planifie pas par jour de la
+  -- semaine.
+  if (coalesce(v_poste, '') = 'commute') <> (p_days is not null) then
+    raise exception 'Cette action attend %.', v_forme_attendue
+      using errcode = 'invalid_parameter_value';
+  end if;
+
   -- Libérer l'engagement précédent du même cycle avant de poser le nouveau, dans la même
   -- transaction : l'index unique partiel refuserait sinon la seconde ligne. Il est archivé
-  -- d'abord — c'est un engagement qui a existé, et le produit ne le jette pas.
+  -- d'abord — c'est un engagement qui a existé, et le produit ne le jette pas (C2.2).
   select id into v_precedent
   from public.plan_actions
   where plan_cycle_id = v_cycle_id and committed_at is not null and id <> p_plan_action_id;

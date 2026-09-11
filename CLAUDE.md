@@ -503,6 +503,16 @@ pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe.
 l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
 distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
 
+**Réécrire une fonction existante part de `pg_get_functiondef`, jamais du fichier qui l'a créée.**
+Relevé le 11/09/2026 en livrant C2.2 : `commit_plan_action` et `clear_plan_action_commitment` ont
+été reprises depuis `20260905190000`, leur migration d'origine — alors que C1.12
+(`20260911100000`) leur avait ajouté trois gardes depuis. La réécriture les a donc **supprimées en
+silence** : une intention et une seule, la forme d'intention qui suit le poste, et le refus
+explicite au lieu d'un succès muet. Rien ne le signalait ; c'est `13_engagement_action` qui l'a
+attrapé en CI, et c'est exactement ce que ce fichier existe pour faire. Corollaire : **une migration
+qui touche une fonction existante impose de rejouer le fichier de test qui la possède**, pas
+seulement celui du chantier en cours.
+
 **Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine, type)`**,
 qui compose `resolve_car_mode` et `resolve_two_wheeler_mode`. Ne jamais rappeler les deux
 fonctions spécialisées en imbriqué dans `recompute_assessment_results` ou
