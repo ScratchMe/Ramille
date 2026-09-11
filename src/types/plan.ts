@@ -8,6 +8,14 @@
 // que personne ne peut tenir. Les deux formes s'excluent, et la base le vérifie
 // (`plan_actions_engagement_coherent`).
 
+/**
+ * La forme insérable du poste (C2.6) est définie dans `@/constants/postes` — le vocabulaire d'un
+ * poste y tient en un seul endroit, avec ses quatre registres et la raison de chacun. Réexportée
+ * ici parce que c'est le module que l'écran du plan et la carte de point importent déjà ;
+ * **la définition et son commentaire sont là-bas.**
+ */
+export { formeInserable } from '@/constants/postes';
+
 export type IntentionTiming = 'ce_mois' | 'le_mois_prochain' | 'prochaine_occasion';
 
 /** 1 = lundi … 7 = dimanche, comme ISO 8601 et comme la contrainte SQL. */

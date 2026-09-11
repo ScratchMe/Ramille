@@ -228,6 +228,19 @@ par chantier, une PR par issue (`Closes #n`), la ligne de §10 cochée à la fin
 | **7 — Lot 3 restant** | C3.2, C3.3, C3.7, C3.10 (ce que C2.2 n'a pas déjà fait), C3.11, C3.12 ; puis C3.4 + C3.5 + C3.6 **en une seule migration** ; puis C3.8 | oui, puis non | La source du chiffre, les hypothèses affichées, le ton, les tests ; l'intermodal, le covoiturage des loisirs, la tranche haute ; le plan plausible. | 4 petits, 3 moyens, 2 grands |
 | **8 — Lot 4** | C4.1, C4.2, C4.3, C4.4, C4.5, C4.7, C4.8 | chantier par chantier | Chacun précédé d'une page de décision. | 4 grands, 3 moyens |
 
+**Relevé du 11/09/2026 — la vague 4 est enchaînée, pas « en partie » parallèle.** Le relevé de
+fichiers (refait avant distribution, comme la règle l'impose) montre six chantiers sur sept qui se
+croisent : **`src/app/(tabs)/plan.tsx` est revendiqué par trois** (C2.6, C2.2, C2.11),
+`src/app/(tabs)/suivi/index.tsx` par deux (C2.3, C2.11), et la fonction
+`enqueue_checkin_reminders` par trois (C2.6, C2.3, C2.9) — plus les deux générateurs de points,
+partagés par C2.3 et C2.5. Un seul couple est réellement parallélisable, et seulement parce que
+C2.14 ne crée que deux fichiers neufs :
+
+    C2.14 ∥ C2.6  →  C2.3  →  C2.5  →  C2.2  →  C2.11  →  C2.9
+
+C'est l'ordre annoncé en §2.3, mais pas pour la raison annoncée. Troisième fois que la colonne
+« Parallèle ? » se trompe.
+
 **Correction du 10/09/2026 au soir — la vague 2 n'est pas « à fichiers disjoints ».** En relevant
 les fichiers de ses huit chantiers avant de les distribuer, six fichiers se sont révélés partagés :
 `src/app/_layout.tsx` (C1.2, C1.5, C1.11), `src/app/(tabs)/suivi/bilan.tsx` (C1.1, C1.2, C1.5),
@@ -1901,7 +1914,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C2.3 | [#121](https://github.com/ScratchMe/TraceVerte/issues/121) | | | |
 | C2.4 | [#122](https://github.com/ScratchMe/TraceVerte/issues/122) | | | |
 | C2.5 | [#123](https://github.com/ScratchMe/TraceVerte/issues/123) | | | |
-| C2.6 | [#124](https://github.com/ScratchMe/TraceVerte/issues/124) | | | |
+| C2.6 | [#124](https://github.com/ScratchMe/TraceVerte/issues/124) | [#160](https://github.com/ScratchMe/TraceVerte/pull/160) | 11/09/2026 | livré ; a imposé trois colonnes (`assessment_results.extras_poste`, `engagement_checkins.poste`, `plan_cycles.poste`) que le chantier n'avait pas anticipées — la forme insérable se dérive du poste, que le schéma ne gardait nulle part |
 | C2.7 | [#125](https://github.com/ScratchMe/TraceVerte/issues/125) | | | |
 | C2.8 | [#126](https://github.com/ScratchMe/TraceVerte/issues/126) | | | |
 | C2.9 | [#127](https://github.com/ScratchMe/TraceVerte/issues/127) | | | |
@@ -1909,7 +1922,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C2.11 | [#129](https://github.com/ScratchMe/TraceVerte/issues/129) | | | |
 | C2.12 | [#130](https://github.com/ScratchMe/TraceVerte/issues/130) | | | |
 | C2.13 | [#151](https://github.com/ScratchMe/TraceVerte/issues/151) | | | |
-| C2.14 | [#153](https://github.com/ScratchMe/TraceVerte/issues/153) | | | |
+| C2.14 | [#153](https://github.com/ScratchMe/TraceVerte/issues/153) | [#160](https://github.com/ScratchMe/TraceVerte/pull/160) | 11/09/2026 | livré |
 | C3.1 | [#131](https://github.com/ScratchMe/TraceVerte/issues/131) | | | |
 | C3.2 | [#132](https://github.com/ScratchMe/TraceVerte/issues/132) | | | |
 | C3.3 | [#133](https://github.com/ScratchMe/TraceVerte/issues/133) | | | |

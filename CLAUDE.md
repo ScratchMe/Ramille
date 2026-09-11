@@ -763,6 +763,31 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   étape. Être déjà sous le repère ne coupe pas la proposition : la marche reste offerte, dans un
   registre de contribution (« ce que tu n'émets pas laisse de la marge ailleurs ») et jamais
   d'exigence. **Le nombre de paliers restants ne s'affiche jamais.**
+- **Le vocabulaire d'un poste vit dans `src/constants/postes.ts`, et il a quatre registres qu'il
+  ne faut pas fusionner.** `POSTE_LABEL` est l'étiquette nue (« Trajet domicile-travail »),
+  `POSTE_SUBJECT` / `POSTE_EN_PHRASE` le sujet d'une phrase de restitution, et **`FORME_INSERABLE`
+  la forme courte qui suit une préposition** (« pour ton trajet domicile-travail », « − 20 % sur
+  tes voyages »). Les deux dernières se ressemblent assez pour qu'on soit tenté de n'en garder
+  qu'une ; les unifier rallonge la question du point d'un « longue distance » ou change
+  « sorties » en « loisirs » dans la copie validée du canvas — un test l'épingle. Avant C2.6, cinq
+  phrases collaient après une préposition le libellé **snapshoté**, mode compris : « as-tu changé
+  de mode de transport cette semaine pour Trajet domicile-travail (Voiture thermique) ? ».
+  La jumelle SQL est `public.poste_inserable(poste, loop_type)` — écrite deux fois parce qu'un
+  rappel part sans le client, **donc à toucher ensemble**, comme `reminder_channel_for`.
+  Elle a imposé trois colonnes, et la raison vaut d'être connue : le serveur **décidait** du poste
+  puis n'en gardait que le libellé. `assessment_results.extras_poste` (loisirs ou voyages),
+  `engagement_checkins.poste` (`loop_type` ne le nomme pas : « extras » couvre les deux) et
+  `plan_cycles.poste`. Se rabattre sur `loop_type` aurait remplacé une vérité laide par une
+  **fausseté lisible** — « tes sorties du week-end » à quelqu'un dont le poste est les voyages.
+- **La saison côté client vit dans `src/types/saison.ts`** (`saisonDe`, `recapDeSaison`), miroir
+  exact de `public.season_bounds` : saisons **météorologiques**, décembre appartenant à l'hiver
+  **qui commence**. Ne jamais la dériver de `plan_cycles` ni de la cadence — `rolling_quarter`
+  n'a pas de saison nommée, alors que la mascotte et les regroupements du suivi suivent le
+  calendrier dans les deux cas. `recapDeSaison` compte les points **répondus** et les « oui », et
+  **jamais les manqués** : il n'y a volontairement aucun champ pour les dire, parce qu'un champ
+  rendrait affichable ce que `/suivi` refuse de montrer. Son filtre est `status = 'answered'` et
+  non `response !== null`, pour que la troisième réponse de C2.4 (« pas de trajet cette période »,
+  `response = null` sur un point bel et bien répondu) y entre sans rien changer.
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
   faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
   professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne

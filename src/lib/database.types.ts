@@ -193,6 +193,7 @@ export type Database = {
           dominant_poste_co2_kg_year: number
           dominant_poste_label: string
           dominant_poste_mode: string | null
+          extras_poste: string | null
           extras_poste_co2_kg_year: number | null
           extras_poste_label: string | null
           id: string
@@ -219,6 +220,7 @@ export type Database = {
           dominant_poste_co2_kg_year: number
           dominant_poste_label: string
           dominant_poste_mode?: string | null
+          extras_poste?: string | null
           extras_poste_co2_kg_year?: number | null
           extras_poste_label?: string | null
           id?: string
@@ -245,6 +247,7 @@ export type Database = {
           dominant_poste_co2_kg_year?: number
           dominant_poste_label?: string
           dominant_poste_mode?: string | null
+          extras_poste?: string | null
           extras_poste_co2_kg_year?: number | null
           extras_poste_label?: string | null
           id?: string
@@ -400,6 +403,7 @@ export type Database = {
           loop_type: string
           period_label: string
           period_start: string
+          poste: string | null
           responded_at: string | null
           response: boolean | null
           status: string
@@ -412,6 +416,7 @@ export type Database = {
           loop_type: string
           period_label: string
           period_start: string
+          poste?: string | null
           responded_at?: string | null
           response?: boolean | null
           status?: string
@@ -424,6 +429,7 @@ export type Database = {
           loop_type?: string
           period_label?: string
           period_start?: string
+          poste?: string | null
           responded_at?: string | null
           response?: boolean | null
           status?: string
@@ -613,6 +619,7 @@ export type Database = {
           period_end: string
           period_label: string
           period_start: string
+          poste: string | null
           target_reduction_pct: number
           trip_label: string
           user_id: string
@@ -625,6 +632,7 @@ export type Database = {
           period_end: string
           period_label: string
           period_start: string
+          poste?: string | null
           target_reduction_pct: number
           trip_label: string
           user_id: string
@@ -637,6 +645,7 @@ export type Database = {
           period_end?: string
           period_label?: string
           period_start?: string
+          poste?: string | null
           target_reduction_pct?: number
           trip_label?: string
           user_id?: string
@@ -898,6 +907,10 @@ export type Database = {
         Returns: undefined
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
+      poste_inserable: {
+        Args: { p_loop_type?: string; p_poste: string }
+        Returns: string
+      }
       purge_notification_outbox: { Args: never; Returns: undefined }
       purge_stale_anonymous_accounts: { Args: never; Returns: undefined }
       purge_usage_events: { Args: never; Returns: undefined }
