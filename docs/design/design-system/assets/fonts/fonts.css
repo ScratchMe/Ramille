@@ -1,0 +1,33 @@
+/* Spline Sans 400/500/600/700 — binaires versionnés ici, sous licence SIL Open Font 1.1
+   (`OFL.txt`), repris de `@expo-google-fonts/spline-sans` que le dépôt utilise déjà.
+   Ils remplacent l'@import Google Fonts d'avant : une police de marque servie par un tiers
+   se dégrade en silence en police système partout où cet hôte n'est pas joignable, et rien
+   en aval ne le signale. 224 Ko pour les quatre graisses. */
+@font-face {
+  font-family: 'Spline Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./SplineSans_400Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Spline Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./SplineSans_500Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Spline Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./SplineSans_600SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Spline Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./SplineSans_700Bold.ttf') format('truetype');
+}

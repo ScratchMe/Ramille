@@ -20,6 +20,9 @@
   ],
   "exclude": [
     "node_modules",
-    "api/**"
+    "api/**",
+    ".ds-sync/**",
+    ".design-sync/**",
+    "ds-bundle/**"
   ]
 }

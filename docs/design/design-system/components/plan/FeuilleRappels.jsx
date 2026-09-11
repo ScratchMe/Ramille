@@ -6,11 +6,20 @@ import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 import { MessageInline } from '../core/MessageInline.jsx';
 // Source : src/components/plan/feuille-rappels.tsx — feuille basse, poignée 40×4, Ramille 44, choix du canal, bouton, sortie.
 export function FeuilleRappels({ boucle = 'hebdo', lignes, canal, onCanal, boutonLabel, onValider, erreur, style }) {
-  const ligneRamille = boucle === 'hebdo' ? 'Je te laisse mener ton action. Lundi, je reviens te demander si tu l’as faite.' : 'Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.';
+  const hebdo = boucle === 'hebdo';
+  const ligneRamille = hebdo
+    ? 'Je te laisse mener ton action. Lundi, je reviens te demander si tu l’as faite.'
+    : 'Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.';
+  // Le moment se dit trois fois sur la même feuille : dans la phrase de Ramille et dans deux
+  // détails de canal. Les laisser figés sur « lundi » faisait dire au choix l'inverse de ce
+  // que Ramille venait d'annoncer sur la boucle mensuelle — la contradiction ne casse rien,
+  // elle se recopie simplement dans tout écran construit à partir de la valeur par défaut.
+  const quand = hebdo ? 'le lundi matin' : 'au début du mois';
+  const retrouvailles = hebdo ? 'On se retrouve ici lundi.' : 'On se retrouve ici le mois prochain.';
   const items = lignes || [
-    { canal: 'push', titre: 'Une notification', detail: 'Sur ce téléphone, le lundi matin.' },
+    { canal: 'push', titre: 'Une notification', detail: `Sur ce téléphone, ${quand}.` },
     { canal: 'email', titre: 'Un email', detail: 'À l’adresse de ton compte.' },
-    { canal: 'aucun', titre: 'Rien', detail: 'On se retrouve ici lundi.' },
+    { canal: 'aucun', titre: 'Rien', detail: retrouvailles },
   ];
   return (
     <div style={{ background: 'var(--color-background)', borderTop: '1px solid var(--color-border)', borderRadius: '18px 18px 0 0', padding: '8px 24px 64px', display: 'flex', flexDirection: 'column', gap: 16, ...style }}>

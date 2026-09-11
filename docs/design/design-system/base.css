@@ -1,0 +1,54 @@
+/* Ramille — couche de base.
+ *
+ * Les composants portent leur mise en forme en styles en ligne (ils n'importent aucun CSS) :
+ * ce fichier est donc la seule feuille du kit, et il ne contient que ce qui ne peut pas vivre
+ * dans un composant — ce que la page elle-même doit savoir. Chaque carte du kit et chaque
+ * carte de guideline réécrivait ces quatre déclarations à la main dans un `<style>` local ;
+ * les avoir ici, c'est ce qui fait qu'un écran construit avec Ramille hérite de la police, du
+ * fond et de l'encre sans que personne y pense.
+ *
+ * Pas de reset au-delà de `box-sizing` : le kit n'en a jamais eu besoin, et un reset large
+ * imposerait des choix aux écrans qu'on ne construit pas ici.
+ */
+
+html,
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Le focus se voit — bordure accent 1,5 px sur les champs (cf. guidelines/colors-accent).
+   `:focus-visible` et non `:focus` : un appui tactile ne doit pas laisser l'anneau derrière lui. */
+:focus-visible {
+  outline: 1.5px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Les illustrations non produites sont des placeholders rayés 135°, légende mono — la forme
+   décrite par le readme, pour qu'un écran en construction n'invente pas la sienne. */
+.ramille-placeholder {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-background-selected) 0,
+    var(--color-background-selected) 6px,
+    var(--color-background-tinted) 6px,
+    var(--color-background-tinted) 12px
+  );
+  border-radius: var(--radius-card);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

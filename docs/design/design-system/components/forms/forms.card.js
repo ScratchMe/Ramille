@@ -15,7 +15,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <PrecisionMode question="Quelle motorisation ?" options={[{value:'t',label:'Thermique'},{value:'h',label:'Hybride'}]} valeur="t" />
       <ModeListItem label="Vélo" selected={false} />
       <NumericField value={12} unit="km" label="Distance d’un aller" />
-      <TextField label="Mot de passe" value="motdepasse" type="password" rightActionLabel="Afficher" helperText="Le mot de passe doit contenir au moins 8 caractères." />
+      <TextField label="Email" value="camille@exemple" type="email" placeholder="camille@exemple.fr" helperText="Cette adresse semble incomplète." />
       <GoogleButton />
     </div>
   </div>

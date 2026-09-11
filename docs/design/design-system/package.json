@@ -1,0 +1,9 @@
+{
+  "name": "ramille-design-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kit de design Ramille — composants web (React navigateur), jetons et guidelines, relevés depuis src/ du dépôt.",
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}
