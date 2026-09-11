@@ -428,6 +428,38 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   passaient. Et un bilan à zéro nomme le poste où quelque chose est déclaré : plus de
   « Trajet domicile-travail () ».
 
+**Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
+(C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement
+et en §9 comme indicateur de succès, `v1-02` §4 en donnait même la requête, et il n'avait jamais été
+calculé nulle part — la phrase du handoff n'a jamais été affichée à personne. Trois choses à
+connaître :
+
+- **La requête de `v1-02` §4 est périmée, et elle l'est devenue en silence.** Elle prend les **deux
+  dernières lignes** de la boucle et vérifie qu'elles sont répondues ; c'était juste avant que
+  `20260904180000` ne close les périodes révolues en `expired` **et les garde en base**. Depuis,
+  « les deux dernières lignes » peut recouvrir deux périodes séparées de trois mois de silence. D'où
+  `public.periode_precedente(loop_type, period_start)` : la période se **calcule**. Un `lag()` sur
+  les lignes aurait le même défaut en moins visible — vérifié sur la fixture du test `25`, qui compte
+  2 par `lag()` et 1 par période.
+- **C'est une quatrième paire SQL/TypeScript** (`periodePrecedente`, `src/types/checkin.ts`), à
+  toucher avec sa jumelle comme `mois_francais`, `jours_francais` et `poste_inserable` : la vue
+  `analytics.checkins_consecutifs` compte côté serveur, la carte affiche côté client. Les deux
+  cadences n'ont pas la même forme et c'est voulu — sept jours avant un lundi est un lundi, tandis que
+  le mois est **ramené au premier** plutôt que décalé, sans quoi les deux moitiés divergeraient sur les
+  fins de mois (PostgreSQL ramène le 31 mars au 28 février, `Date.UTC` le pousse au 3 mars).
+- **« Jamais au-delà de deux » veut dire que le signal ne se rallume pas.** `estDeuxiemeFoisDeSuite`
+  exige que la période précédente soit un « oui » **et que celle d'avant n'en soit pas un** : la phrase
+  dit « Deuxième semaine de suite », donc à la cinquième elle serait fausse, et la recevoir chaque
+  semaine en ferait du papier peint. Le signal marque le passage d'un geste à une habitude, puis se
+  tait. `v1-14` §4.6 décrit la dérivation à deux arguments ; il en faut un troisième état pour savoir
+  qu'on est à deux et pas à cinq (écart consigné en `v1-14` §10). La phrase est **voix produit et non
+  celle de Ramille** — elle constate un fait sur deux périodes, et Ramille ne compte jamais.
+
+Corollaire sur la lecture du plan : **la requête des points est bornée par une fenêtre**
+(`fenetreDesPoints`, trois périodes mensuelles). Elle ne ramenait que les points `pending`, soit un ou
+deux ; depuis qu'elle prend aussi les répondus (C2.4), sans borne elle ramènerait une ligne par semaine
+indéfiniment.
+
 **Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
 décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
 `v1-10` §2.B). Le push, lui, part à `now()`. Pour provoquer un rappel de test, passer par

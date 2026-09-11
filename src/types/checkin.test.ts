@@ -7,10 +7,13 @@ import {
   composerQuestionDuPoint,
   debutDePeriodeInterrogee,
   estDeLaPeriodeCourante,
+  estDeuxiemeFoisDeSuite,
   genreDeReponse,
   joursDeLaQuestion,
   libelleSansObjet,
   moisFrancais,
+  periodePrecedente,
+  phraseDeSecondRenforcement,
   piedDuPointRepondu,
   questionDuPoint,
   repliqueDuPoint,
@@ -531,5 +534,146 @@ describe('piedDuPointRepondu', () => {
   // Une carte répondue sans date vaut mieux qu'une date inventée.
   it.each([null, undefined, 'pas-une-date'])('%s ne produit pas de pied', (valeur) => {
     expect(piedDuPointRepondu({ loop_type: 'commute', responded_at: valeur })).toBeNull();
+  });
+});
+
+/**
+ * **La moitié client de `public.periode_precedente(text, date)`**, et la paire compte autant que les
+ * deux autres de ce fichier : la vue d'analyse compte côté serveur, la carte affiche côté client, et
+ * les deux doivent désigner la même période.
+ */
+describe('periodePrecedente', () => {
+  it.each([
+    ['2026-09-14', '2026-09-07'],
+    ['2026-09-07', '2026-08-31'],
+    // Le passage de mois et d'année se fait par le constructeur UTC, pas par une soustraction de
+    // numéro de jour.
+    ['2026-01-05', '2025-12-29'],
+    ['2026-03-02', '2026-02-23'],
+  ])('hebdomadaire, %s → %s', (courante, attendue) => {
+    expect(periodePrecedente('commute', courante)).toBe(attendue);
+  });
+
+  it.each([
+    ['2026-09-01', '2026-08-01'],
+    ['2026-01-01', '2025-12-01'],
+    ['2026-03-01', '2026-02-01'],
+  ])('mensuelle, %s → %s', (courante, attendue) => {
+    expect(periodePrecedente('extras', courante)).toBe(attendue);
+  });
+
+  // **Le mois est ramené au premier, pas décalé du même nombre de jours**, et c'est ce qui rend la
+  // paire SQL/TypeScript identique par construction : PostgreSQL ramène le 31 mars au 28 février,
+  // `Date.UTC` le pousserait au 3 mars. `period_start` vaut toujours le 1er en pratique.
+  it('un period_start mensuel inhabituel retombe sur le premier du mois précédent', () => {
+    expect(periodePrecedente('extras', '2026-03-31')).toBe('2026-02-01');
+  });
+});
+
+describe('estDeuxiemeFoisDeSuite', () => {
+  const courant = (reponse: 'oui' | 'non' | 'sans_objet', periodStart = '2026-09-14') => ({
+    loop_type: 'commute' as const,
+    period_start: periodStart,
+    reponse,
+  });
+
+  it('deux « oui » sur deux périodes qui se suivent', () => {
+    expect(
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', reponse: 'oui' }])
+    ).toBe(true);
+  });
+
+  /**
+   * **L'assertion pour laquelle la troisième condition existe.**
+   *
+   * La phrase dit « Deuxième semaine de suite » : à la cinquième elle serait fausse, et la recevoir
+   * chaque semaine en ferait du papier peint. Le signal marque le passage d'un geste à une habitude,
+   * puis se tait — c'est ce que « jamais au-delà de deux » veut dire.
+   */
+  it('une troisième fois de suite ne rallume pas le signal', () => {
+    expect(
+      estDeuxiemeFoisDeSuite(courant('oui'), [
+        { period_start: '2026-09-07', reponse: 'oui' },
+        { period_start: '2026-08-31', reponse: 'oui' },
+      ])
+    ).toBe(false);
+  });
+
+  /**
+   * **Les périodes, jamais les dernières lignes répondues.** C'est le défaut de la requête de
+   * `v1-02` §4, qui était juste avant que les périodes révolues ne soient closes en `expired` et
+   * gardées en base : « les deux dernières lignes » peut recouvrir deux périodes séparées de trois
+   * mois de silence.
+   */
+  it('deux « oui » séparés par un trou ne font pas une série', () => {
+    expect(
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-08-17', reponse: 'oui' }])
+    ).toBe(false);
+  });
+
+  it('un « non » ou un « sans objet » à la période précédente ne prolonge rien', () => {
+    expect(
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', reponse: 'non' }])
+    ).toBe(false);
+    expect(
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', reponse: 'sans_objet' }])
+    ).toBe(false);
+  });
+
+  it('la réponse courante doit être un « oui »', () => {
+    for (const reponse of ['non', 'sans_objet'] as const) {
+      expect(
+        estDeuxiemeFoisDeSuite(courant(reponse), [{ period_start: '2026-09-07', reponse: 'oui' }])
+      ).toBe(false);
+    }
+  });
+
+  it('un historique vide ne déclenche rien, et ne lève pas', () => {
+    expect(estDeuxiemeFoisDeSuite(courant('oui'), [])).toBe(false);
+  });
+
+  // Un « sans objet » ne prolonge pas la série ; il ne la casse pas non plus au sens où il n'y a
+  // rien à reprocher — il n'est simplement pas un « oui ».
+  it('la boucle mensuelle se compte en mois, pas en semaines', () => {
+    const mensuel = (periodStart: string) => ({
+      loop_type: 'extras' as const,
+      period_start: periodStart,
+      reponse: 'oui' as const,
+    });
+    expect(
+      estDeuxiemeFoisDeSuite(mensuel('2026-09-01'), [{ period_start: '2026-08-01', reponse: 'oui' }])
+    ).toBe(true);
+    expect(
+      estDeuxiemeFoisDeSuite(mensuel('2026-09-01'), [{ period_start: '2026-08-25', reponse: 'oui' }])
+    ).toBe(false);
+  });
+});
+
+describe('phraseDeSecondRenforcement', () => {
+  it('quatre formes, une par poste — la boucle hebdomadaire gagne', () => {
+    expect(phraseDeSecondRenforcement({ loop_type: 'commute', poste: 'commute' })).toBe(
+      'Deuxième semaine de suite que tu fais ce trajet autrement.'
+    );
+    expect(phraseDeSecondRenforcement({ loop_type: 'extras', poste: 'travel' })).toBe(
+      'Deuxième mois de suite que tu voyages autrement.'
+    );
+    expect(phraseDeSecondRenforcement({ loop_type: 'extras', poste: 'leisure' })).toBe(
+      'Deuxième mois de suite que tu sors autrement.'
+    );
+    expect(phraseDeSecondRenforcement({ loop_type: 'extras', poste: null })).toBe(
+      'Deuxième mois de suite que tu te déplaces autrement.'
+    );
+  });
+
+  // **Jamais un compteur, jamais un nombre au-delà de « deuxième ».** La phrase est du produit et
+  // non de Ramille, mais la règle qui la borne est la même : le produit ne tient pas de score.
+  it('aucune forme ne nomme un chiffre ni ne promet une suite', () => {
+    for (const poste of ['commute', 'leisure', 'travel', null]) {
+      for (const loop of ['commute', 'extras'] as const) {
+        const phrase = phraseDeSecondRenforcement({ loop_type: loop, poste });
+        expect(phrase).not.toMatch(/[0-9]/);
+        expect(phrase).toMatch(/^Deuxième /);
+      }
+    }
   });
 });

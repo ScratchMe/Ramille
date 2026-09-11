@@ -1073,6 +1073,10 @@ export type Database = {
       generate_plan_cycles: { Args: never; Returns: undefined }
       jours_francais: { Args: { p_days: number[] }; Returns: string }
       mois_francais: { Args: { d: string }; Returns: string }
+      periode_precedente: {
+        Args: { p_loop_type: string; p_period_start: string }
+        Returns: string
+      }
       poste_inserable: {
         Args: { p_loop_type?: string; p_poste: string }
         Returns: string

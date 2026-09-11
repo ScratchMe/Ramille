@@ -11,11 +11,14 @@ import { formeInserable } from '@/constants/postes';
 import { Radius, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import {
+  estDeuxiemeFoisDeSuite,
   genreDeReponse,
   libelleSansObjet,
+  phraseDeSecondRenforcement,
   piedDuPointRepondu,
   questionDuPoint,
   repliqueDuPoint,
+  type PointRepondu,
   type ReponseDuPoint,
 } from '@/types/checkin';
 
@@ -90,6 +93,7 @@ export function CheckinCard({
   checkin,
   emphasize,
   actionEngagee,
+  historique,
 }: {
   checkin: EngagementCheckin;
   emphasize: boolean;
@@ -99,6 +103,12 @@ export function CheckinCard({
    * la carte ne le relit donc pas.
    */
   actionEngagee?: string | null;
+  /**
+   * Les points **déjà répondus** de la même boucle, hors celui-ci, sur les périodes récentes (C2.10).
+   * Sert au seul second renforcement : la carte n'a pas à interroger la base pour savoir ce qui s'est
+   * passé la période d'avant, l'écran du plan lit déjà la fenêtre.
+   */
+  historique?: PointRepondu[];
 }) {
   const [reponseLocale, setReponseLocale] = useState<ReponseDuPoint | null>(null);
   /** Le point n'accepte plus de réponse : la question reste lisible, les boutons partent. */
@@ -124,6 +134,15 @@ export function CheckinCard({
   // dessus le temps d'un aller-retour réseau, pour que la carte bascule à l'instant du geste.
   const reponse = reponseLocale ?? genreDeReponse(checkin.response_kind);
   const pied = piedDuPointRepondu(checkin);
+
+  // **Le second renforcement ne se déclenche qu'une fois, et jamais sur un compteur** (C2.10). Il se
+  // calcule sur les **périodes** et non sur les dernières lignes répondues : deux « oui » séparés par
+  // trois mois de silence ne sont pas une série, et les points non répondus sont clos en `expired` et
+  // gardés en base, donc « les deux dernières lignes » ne veut plus rien dire depuis 20260904180000.
+  const renforcement =
+    reponse !== null && estDeuxiemeFoisDeSuite({ ...checkin, reponse }, historique ?? [])
+      ? phraseDeSecondRenforcement(checkin)
+      : null;
 
   // La réponse passe par un RPC, jamais par un `update` : `engagement_checkins` porte des
   // libellés snapshotés (`trip_label`, `period_label`) et la clé d'idempotence de la génération
@@ -258,6 +277,11 @@ export function CheckinCard({
               un. Même raison pour `sans_objet`, qui reçoit une attente et non une relance (C2.4).
               Le choix se fait dans `repliqueDuPoint`, avec son test, plutôt qu'en ternaire ici. */}
           <RamilleDit {...repliqueDuPoint(checkin, reponse)} />
+          {/* **La phrase du handoff, enfin affichée** (C2.10) : elle est dans la spec §7 comme signal
+              d'engagement et en §9 comme indicateur de succès, et n'avait jamais été calculée nulle
+              part. Voix produit et non celle de Ramille — elle constate un fait sur deux périodes, et
+              Ramille ne compte jamais. Jamais un badge, jamais un compteur, jamais au-delà de deux. */}
+          {renforcement && <ThemedText type="body">{renforcement}</ThemedText>}
           {/* Le pied est **du produit, pas d'elle** : il porte deux dates, et Ramille ne dit jamais
               de nombre. D'où le petit tertiaire sous sa phrase. */}
           {pied && (

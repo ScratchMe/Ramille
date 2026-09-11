@@ -381,6 +381,36 @@ export function estDeLaPeriodeCourante(
   return point.period_start.slice(0, 10) >= debutDePeriodeInterrogee(point.loop_type, maintenant);
 }
 
+/**
+ * La période qui précède celle-ci pour la boucle donnée — **jumelle de
+ * `public.periode_precedente(text, date)`**, à toucher avec elle.
+ *
+ * **La période se calcule, elle ne se lit pas dans l'ordre des lignes.** C'est tout le sujet de
+ * C2.10 : la requête d'origine (`v1-02` §4) prenait les deux dernières lignes de la boucle, ce qui
+ * était juste avant que les périodes révolues ne soient closes en `expired` et gardées en base.
+ * Depuis, « les deux dernières lignes » peut recouvrir deux périodes qui ne se suivent pas —
+ * quelqu'un qui répond en janvier, laisse passer février et mars, puis répond en avril aurait une
+ * série de deux.
+ *
+ * Les deux cadences n'ont pas la même forme, et c'est voulu : sept jours avant un lundi est un
+ * lundi, tandis que le mois est **ramené au premier** plutôt que décalé — garder le jour du mois
+ * n'aurait pas de sens pour une période mensuelle, et divergerait de la jumelle SQL sur les fins de
+ * mois (PostgreSQL ramène le 31 mars au 28 février, `Date.UTC` le pousse au 3 mars).
+ *
+ * Comme `debutDePeriodeInterrogee`, elle lit l'**UTC** : c'est la même arithmétique que celle du
+ * serveur, pas une date affichée à quelqu'un.
+ */
+export function periodePrecedente(loopType: 'commute' | 'extras', periodStartIso: string): string {
+  const an = Number(periodStartIso.slice(0, 4));
+  const mois = Number(periodStartIso.slice(5, 7));
+  const jour = Number(periodStartIso.slice(8, 10));
+
+  if (loopType === 'commute') {
+    return isoUtc(new Date(Date.UTC(an, mois - 1, jour - 7)));
+  }
+  return isoUtc(new Date(Date.UTC(an, mois - 2, 1)));
+}
+
 /** `YYYY-MM-DD` d'une date, lue en UTC — l'envers d'`isoJour` de `src/types/saison.ts`, qui lit local. */
 function isoUtc(d: Date): string {
   const mois = String(d.getUTCMonth() + 1).padStart(2, '0');
@@ -428,4 +458,62 @@ export function piedDuPointRepondu(
 /** « 1er » et non « 1 » — la seule irrégularité des jours du mois en français. */
 function jourDuMois(jour: number): string {
   return jour === 1 ? '1er' : String(jour);
+}
+
+/** Ce qu'il faut d'un point déjà répondu pour reconstituer une série : sa période et sa réponse. */
+export type PointRepondu = { period_start: string; reponse: ReponseDuPoint };
+
+/**
+ * **Le second renforcement, et pourquoi il ne se déclenche qu'une fois** (C2.10, `v1-14` §4.6).
+ *
+ * Vrai quand ce point est un « oui », que la période **immédiatement précédente** en porte un aussi,
+ * et que celle d'avant **n'en porte pas**. Les trois conditions comptent :
+ *
+ *   - les périodes sont calculées (`periodePrecedente`) et non lues dans l'ordre des lignes, sinon
+ *     deux « oui » séparés par trois mois de silence feraient une série ;
+ *   - la troisième condition est ce que « jamais au-delà de deux » veut dire. La phrase dit
+ *     « Deuxième semaine de suite » : à la cinquième elle serait fausse, et la recevoir chaque
+ *     semaine en ferait du papier peint — le contraire de ce qu'un renforcement est censé faire.
+ *     Le signal marque le passage d'un geste à une habitude, puis se tait.
+ *
+ * `v1-14` §4.6 décrit la dérivation comme `estDeuxiemeFoisDeSuite(precedent, courant)`, à deux
+ * arguments : il en faut un troisième état pour savoir qu'on est à **deux** et pas à cinq (écart
+ * consigné en `v1-14` §10).
+ *
+ * Un « pas de trajet cette période » ne prolonge pas la série et ne la casse pas non plus : il n'est
+ * simplement pas un « oui », donc il n'y a rien à renforcer — et rien à reprocher.
+ */
+export function estDeuxiemeFoisDeSuite(
+  courant: Pick<PointInterrogeable, 'loop_type' | 'period_start'> & { reponse: ReponseDuPoint },
+  historique: PointRepondu[]
+): boolean {
+  if (courant.reponse !== 'oui') return false;
+
+  const precedente = periodePrecedente(courant.loop_type, courant.period_start);
+  const avant = periodePrecedente(courant.loop_type, precedente);
+  const reponseDe = (iso: string) =>
+    historique.find((point) => point.period_start.slice(0, 10) === iso)?.reponse ?? null;
+
+  return reponseDe(precedente) === 'oui' && reponseDe(avant) !== 'oui';
+}
+
+/**
+ * La phrase du second renforcement — **voix produit, pas celle de Ramille** (`v1-14` §3.2).
+ *
+ * Elle constate un fait sur deux périodes ; Ramille, elle, ne compte jamais. D'où son rendu en corps
+ * **sous** sa réplique, et sa place ici plutôt que dans `RAMILLE`.
+ *
+ * Quatre formes et non deux : le canvas écrit celle du trajet et celle des voyages, mais la boucle
+ * mensuelle couvre aussi les sorties du week-end depuis C2.6 — même raison que pour le libellé du
+ * troisième choix et la réplique qui lui répond.
+ */
+export function phraseDeSecondRenforcement(
+  point: Pick<PointInterrogeable, 'loop_type' | 'poste'>
+): string {
+  if (point.loop_type === 'commute') {
+    return 'Deuxième semaine de suite que tu fais ce trajet autrement.';
+  }
+  if (point.poste === 'travel') return 'Deuxième mois de suite que tu voyages autrement.';
+  if (point.poste === 'leisure') return 'Deuxième mois de suite que tu sors autrement.';
+  return 'Deuxième mois de suite que tu te déplaces autrement.';
 }

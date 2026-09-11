@@ -419,6 +419,13 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     mots français tenue à la main, pour gagner quatre caractères sur une ligne en petit tertiaire.
     Le reste de la phrase est celui du canvas. Et ce pied est **du produit, pas de Ramille** : il
     porte deux dates, et elle ne dit jamais de nombre — d'où son rendu sous sa phrase, et non dedans.
+13. **`estDeuxiemeFoisDeSuite` prend un troisième état, et le signal ne se rallume pas** (C2.10,
+    11/09/2026). §4.6 décrit la dérivation comme `(precedent, courant)` ; avec deux arguments on ne
+    peut pas distinguer « deuxième » de « cinquième », et la phrase validée dit « Deuxième semaine de
+    suite ». Elle exige donc que la période précédente soit un « oui » **et que celle d'avant n'en
+    soit pas un** : le signal marque le passage d'un geste à une habitude, puis se tait — ce que
+    « jamais au-delà de deux » veut dire. La phrase existe aussi en quatre formes et non deux, même
+    raison que les deux écarts précédents (la boucle mensuelle couvre deux postes).
 
 ## 11. Tests
 

@@ -37,7 +37,13 @@ import {
 } from '@/lib/notification-prefs';
 import { lirePermission } from '@/lib/rappels';
 import { supabase } from '@/lib/supabase';
-import { estDeLaPeriodeCourante } from '@/types/checkin';
+import {
+  debutDePeriodeInterrogee,
+  estDeLaPeriodeCourante,
+  genreDeReponse,
+  periodePrecedente,
+  type PointRepondu,
+} from '@/types/checkin';
 import {
   carteAttente,
   doitProposerLaFeuille,
@@ -104,6 +110,40 @@ function keepLatestPerLoop(checkins: EngagementCheckin[]): EngagementCheckin[] {
   });
 }
 
+// **La borne basse de la lecture des points, et pourquoi elle existe** (C2.4 puis C2.10). La requête
+// ramenait les seuls points `pending` — un ou deux. Depuis qu'elle lit aussi les points répondus, elle
+// ramènerait tout l'historique d'un compte, soit une ligne par semaine qui s'accumule sans fin. Ce qui
+// est réellement nécessaire est la période courante et les **deux** qui la précèdent (le second
+// renforcement a besoin de savoir qu'on est à deux et pas à cinq) : la fenêtre est donc celle de la
+// boucle mensuelle, trois mois, qui couvre largement l'hebdomadaire.
+function fenetreDesPoints(maintenant: Date = new Date()): string {
+  const courante = debutDePeriodeInterrogee('extras', maintenant);
+  return periodePrecedente('extras', periodePrecedente('extras', courante));
+}
+
+// Les points répondus de chaque boucle, hors carte affichée : c'est ce que `estDeuxiemeFoisDeSuite`
+// interroge. Regroupé ici plutôt que dans la carte, qui n'a pas à relire la base pour savoir ce qui
+// s'est passé la période d'avant.
+function historiqueParBoucle(
+  checkins: EngagementCheckin[],
+  affiches: EngagementCheckin[]
+): Record<EngagementCheckin['loop_type'], PointRepondu[]> {
+  const affichesIds = new Set(affiches.map((checkin) => checkin.id));
+  const parBoucle: Record<EngagementCheckin['loop_type'], PointRepondu[]> = {
+    commute: [],
+    extras: [],
+  };
+
+  for (const checkin of checkins) {
+    if (affichesIds.has(checkin.id)) continue;
+    const reponse = genreDeReponse(checkin.response_kind);
+    if (reponse === null) continue;
+    parBoucle[checkin.loop_type].push({ period_start: checkin.period_start, reponse });
+  }
+
+  return parBoucle;
+}
+
 /**
  * Par quel chemin ce compte a-t-il été rattaché ? Lu sur les **identités** de la session, jamais
  * déduit de la présence d'une adresse : Google en fournit une aussi, et prendre « email » par
@@ -146,6 +186,11 @@ type LoadState =
       /** Date du dernier bilan complété — sert la proposition de re-bilan. */
       assessmentDate: string | null;
       checkins: EngagementCheckin[];
+      /**
+       * Les points déjà répondus des périodes récentes, par boucle et hors carte affichée (C2.10).
+       * Sert au seul second renforcement ; la fenêtre de lecture est bornée par la requête.
+       */
+      historique: Record<EngagementCheckin['loop_type'], PointRepondu[]>;
     };
 
 // B "Plan de réduction". Depuis l'étape 6a (v1-07 §3.3), chaque action porte son gain estimé,
@@ -394,6 +439,9 @@ export default function Plan() {
           // Ramille, revenait, et ne trouvait plus rien du tout. `expired` reste dehors : un point
           // que la période suivante a clos n'a rien à montrer.
           .in('status', ['pending', 'answered'])
+          // La fenêtre borne une lecture qui grossirait sans fin depuis qu'elle prend les points
+          // répondus : trois périodes mensuelles couvrent ce dont le second renforcement a besoin.
+          .gte('period_start', fenetreDesPoints())
           .order('period_start', { ascending: false });
 
         if (cancelled) return;
@@ -448,12 +496,15 @@ export default function Plan() {
         const orphelin = orphelins?.[0] ?? null;
         setOrphelin(orphelin && !(await aVuEngagementOrphelin(orphelin.id)) ? orphelin : null);
 
+        const points = (checkins as EngagementCheckin[] | null) ?? [];
+        const affiches = keepLatestPerLoop(points);
         setState({
           status: 'ok',
           cycle: cycle as PlanCycle,
           assessmentId: assessment.id,
           assessmentDate: assessment.submitted_at,
-          checkins: keepLatestPerLoop((checkins as EngagementCheckin[] | null) ?? []),
+          checkins: affiches,
+          historique: historiqueParBoucle(points, affiches),
         });
         // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si la lecture
         // secondaire ci-dessus a échoué.
@@ -675,7 +726,7 @@ export default function Plan() {
     );
   }
 
-  const { cycle, assessmentId, assessmentDate, checkins } = state;
+  const { cycle, assessmentId, assessmentDate, checkins, historique } = state;
   const actionsCount = cycle.plan_actions.length;
   const committedActionId = cycle.plan_actions.find((a) => a.committed_at !== null)?.id ?? null;
   // Le libellé de l'action engagée, pour que la carte du point sache si sa question figée porte
@@ -818,6 +869,7 @@ export default function Plan() {
                   checkin={checkin}
                   emphasize={checkin.trip_label === cycle.trip_label}
                   actionEngagee={actionEngageeTexte}
+                  historique={historique[checkin.loop_type]}
                 />
               ))}
             </View>
