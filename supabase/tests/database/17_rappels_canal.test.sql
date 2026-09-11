@@ -78,8 +78,12 @@ select is(
 
 -- ── La mise en file : une ligne par point, le canal en colonne ─────────────────────────
 
-insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label)
-select id, 'commute', date_trunc('week', now())::date, 'Semaine du 07/09', 'tes trajets domicile-travail'
+-- Le `trip_label` est **volontairement réaliste** depuis C2.6 : c'est la forme que les
+-- générateurs snapshotent, mode entre parenthèses compris. Le message ne doit plus la contenir —
+-- l'assertion 9 ci-dessous ne le prouve que si la fixture porte la vraie forme.
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, poste)
+select id, 'commute', date_trunc('week', now())::date, 'Semaine du 07/09',
+       'Trajet domicile-travail (Voiture thermique)', 'commute'
 from auth.users where id::text like 'c7111111%';
 
 select public.enqueue_checkin_reminders();
@@ -94,10 +98,15 @@ select results_eq(
   'Trois messages pour six personnes : un push, deux emails, rien pour les trois autres'
 );
 
+-- **L'attendu a changé avec C2.6, et c'est le changement qui était visé** : le message collait
+-- après « pour » le libellé snapshoté, mode compris (« … pour Trajet domicile-travail (Voiture
+-- thermique) ? »). Il porte désormais la forme insérable de `poste_inserable(c.poste,
+-- c.loop_type)`. Cette assertion est donc aussi le garde-fou de bout en bout de la colonne
+-- `poste` : elle tombe si quelqu'un rebranche `trip_label`.
 select is(
   (select push_body from public.notification_outbox where channel = 'push' and user_id::text like 'c7111111%'),
-  'As-tu changé de mode de transport au moins une fois cette semaine pour tes trajets domicile-travail ?',
-  'La notification porte la question seule — Android replie le corps à deux lignes'
+  'As-tu changé de mode de transport au moins une fois cette semaine pour ton trajet domicile-travail ?',
+  'La notification porte la question seule, avec la forme insérable du poste — jamais le libellé snapshoté'
 );
 
 select is(
