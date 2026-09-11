@@ -426,6 +426,13 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     soit pas un** : le signal marque le passage d'un geste à une habitude, puis se tait — ce que
     « jamais au-delà de deux » veut dire. La phrase existe aussi en quatre formes et non deux, même
     raison que les deux écarts précédents (la boucle mensuelle couvre deux postes).
+14. **`checkinOui.mensuel[1]` dit « Une fois autrement » et non « Un voyage autrement »** (C2.12,
+    11/09/2026). Même raison que les écarts 11 et 13 : la boucle mensuelle couvre les voyages **et**
+    les sorties du week-end depuis C2.6. Les deux autres variantes mensuelles ne nomment aucun poste,
+    donc seul ce mot change ; `checkinSansObjet`, lui, les nomme tous et reste indexé par poste.
+    La dérivation se nomme `variantePourLaPeriode(variantes, periodStart)` et non
+    `repliqueDeCheckin(issue, periodStart)` : les tableaux vivent sous une clé de boucle ou de poste,
+    donc c'est `repliqueDuPoint` qui choisit la clé et délègue le tirage.
 
 ## 11. Tests
 

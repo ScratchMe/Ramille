@@ -273,17 +273,30 @@ export function questionDuPoint(point: PointInterrogeable): string {
  * tous les deux `checkinOui`.
  */
 export function repliqueDuPoint(
-  point: Pick<PointInterrogeable, 'question_kind' | 'mode' | 'poste' | 'loop_type'>,
+  point: Pick<PointInterrogeable, 'question_kind' | 'mode' | 'poste' | 'loop_type' | 'period_start'>,
   reponse: ReponseDuPoint
 ): { ligne: string; mood: 'happy' | 'encouraging' | 'calm' } {
-  if (reponse === 'oui') return { ligne: RAMILLE.checkinOui, mood: 'happy' };
+  const cadence = point.loop_type === 'commute' ? 'hebdo' : 'mensuel';
+
+  if (reponse === 'oui') {
+    return {
+      ligne: variantePourLaPeriode(RAMILLE.checkinOui[cadence], point.period_start),
+      mood: 'happy',
+    };
+  }
 
   // **`sans_objet` passe avant le maintien, et ce n'est pas un détail d'ordre** : « pas de trajet
   // cette semaine » n'est pas un manquement à l'habitude, c'est l'absence de l'occasion de
   // l'exercer. `maintienNon` (« Le vélo reste ton trajet ») commenterait une habitude dont la
   // personne vient justement de dire qu'elle n'a pas eu lieu.
   if (reponse === 'sans_objet') {
-    return { ligne: RAMILLE.checkinSansObjet[cleDuSansObjet(point)], mood: 'calm' };
+    return {
+      ligne: variantePourLaPeriode(
+        RAMILLE.checkinSansObjet[cleDuSansObjet(point)],
+        point.period_start
+      ),
+      mood: 'calm',
+    };
   }
 
   if (point.question_kind === 'maintien') {
@@ -295,7 +308,41 @@ export function repliqueDuPoint(
     return { ligne, mood: 'calm' };
   }
 
-  return { ligne: RAMILLE.checkinNon, mood: 'encouraging' };
+  return {
+    ligne: variantePourLaPeriode(RAMILLE.checkinNon[cadence], point.period_start),
+    mood: 'encouraging',
+  };
+}
+
+/**
+ * **La variante d'une réplique pour une période donnée** (C2.12, décision D12 du 10/09/2026).
+ *
+ * Déterministe, dérivée de `period_start` : la même période rend la même phrase à chaque rendu, sur
+ * tous les appareils, et après un rechargement. Un tirage aléatoire ferait changer la réplique sous
+ * les yeux de la personne — `useRafraichirAuRetour` relit l'écran à chaque retour au premier plan,
+ * donc plusieurs fois par période.
+ *
+ * Le hachage est un FNV-1a 32 bits, choisi pour une raison précise : deux périodes voisines ne
+ * diffèrent que de sept jours ou d'un mois, donc une somme de codes de caractères donnerait des
+ * indices corrélés — la même variante plusieurs semaines d'affilée, ou un cycle régulier qu'on
+ * remarque. FNV disperse des entrées proches.
+ *
+ * `>>> 0` après chaque tour : sans lui, la multiplication sort de l'entier exact des `number`
+ * JavaScript et le résultat cesse d'être reproductible d'un moteur à l'autre — Hermes et V8 ne
+ * donneraient pas la même phrase pour la même semaine.
+ */
+export function variantePourLaPeriode(variantes: readonly string[], periodStart: string): string {
+  if (variantes.length === 0) {
+    throw new Error('variantePourLaPeriode : aucune variante à choisir.');
+  }
+
+  let h = 0x811c9dc5;
+  for (let i = 0; i < periodStart.length; i += 1) {
+    h ^= periodStart.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+
+  return variantes[h % variantes.length] as string;
 }
 
 /**

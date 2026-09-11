@@ -1217,15 +1217,29 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   un test : première personne et tutoiement ; **jamais un nombre dans sa bouche** (les
   chiffres restent au produit, c'est ce qui garantit qu'elle ne commente jamais une
   empreinte) ; jamais « tu devrais » ni « il faut ». Les rappels par email sont un mot
-  d'elle, signé (`enqueue_checkin_reminders`). Les répliques de check-in viennent des
-  maquettes validées et ne se réécrivent pas ; **la période calme fait exception** — « Rien à
+  d'elle, signé (`enqueue_checkin_reminders`). Les répliques de check-in **d'origine** viennent
+  des maquettes validées et ne se réécrivent pas ; **la période calme fait exception** — « Rien à
   rattraper. » a été retirée le 07/09/2026 sur un retour d'usage (elle se lisait comme une
   attente déçue), remplacée par des phrases qui *disent* l'attente et nomment le jour. Elle
   peut le faire sans jamais compter, le rythme étant fixe.
-  Depuis C2.5 certaines répliques sont **groupées** (`maintienNon` par mode, et C2.1 ajoutera des
-  tableaux de variantes) : le test aplatit `RAMILLE` avant de l'éprouver, et il le fait parce qu'une
-  valeur non-textuelle traverse `expect.stringMatching` **sans jamais matcher** — les trois règles de
-  voix passeraient en silence sur une réplique groupée.
+  **Des variantes s'ajoutent depuis la décision D12 du 10/09/2026** (C2.12) : l'originale reste en
+  **première position** de son tableau et n'est pas modifiée, et `variantePourLaPeriode`
+  (`src/types/checkin.ts`) en choisit une par **période**. Jamais un tirage au hasard :
+  `useRafraichirAuRetour` relit l'écran du plan à chaque retour au premier plan, donc la phrase
+  changerait plusieurs fois dans la même période et différerait d'un appareil à l'autre. Le hachage
+  est un FNV-1a 32 bits avec un `>>> 0` à chaque tour — sans lui la multiplication sort de l'entier
+  exact des `number` et Hermes et V8 ne rendraient pas la même phrase pour la même semaine ; et deux
+  périodes voisines ne diffèrent que de sept jours ou d'un mois, donc une somme de codes de
+  caractères donnerait des indices corrélés. **Les tableaux sont doublés par boucle** (« À lundi. »
+  n'a aucun sens sur un point mensuel) et `checkinSansObjet` l'est par **poste**, ce qui est l'écart
+  de C2.4. L'usure que ces variantes traitent n'est **pas mesurable** — `checkin_answer` est interdit
+  comme événement d'usage — c'est un choix de ton, assumé comme tel.
+  Depuis C2.5 certaines répliques sont **groupées** (`maintienNon` par mode, les tableaux de C2.12) :
+  le test aplatit `RAMILLE` avant de l'éprouver, et il le fait parce qu'une valeur non-textuelle
+  traverse `expect.stringMatching` **sans jamais matcher** — les trois règles de voix passeraient en
+  silence sur une réplique groupée. Deux gardes s'ajoutent à C2.12 : l'originale en tête de chaque
+  tableau, et **aucun doublon** — un copier-coller qui laisse deux entrées identiques réduit la
+  variété sans que rien ne le signale, c'est-à-dire défait le chantier en silence.
   Cinq expressions, **aucune négative et il ne faut pas en ajouter** : `calm`, `happy`,
   `encouraging`, `thinking` (attente du calcul — seule asymétrie assumée, le regard est décalé
   d'une unité) et `resting` (périodes calmes de `/suivi`). Un second registre s'obtient sans

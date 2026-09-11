@@ -18,8 +18,11 @@ import { APP_NAME } from '@/constants/produit';
  *      commente jamais une empreinte.
  *   3. Jamais « tu devrais », « il faut ». Toujours une porte ouverte, jamais une injonction.
  *
- * Les répliques de check-in sont celles des maquettes validées (canvas
- * docs/design/v1-08-mascotte) : on ne les réécrit pas, on les rattache à elle.
+ * Les répliques de check-in d'origine sont celles des maquettes validées (canvas
+ * docs/design/v1-08-mascotte) : on ne les réécrit pas, on les rattache à elle. **Des variantes s'y
+ * ajoutent** depuis la décision D12 du 10/09/2026 (C2.12, tableaux de `v1-14` §3.1) : l'originale
+ * reste en première position, et `variantePourLaPeriode` en choisit une **par période** — jamais au
+ * hasard, sinon la phrase changerait à chaque rendu et d'un appareil à l'autre.
  *
  * **Une exception, et une seule** : « Rien à rattraper. » a été retirée le 07/09/2026 sur un
  * retour d'usage explicite — la phrase se lisait comme une attente déçue la première fois
@@ -37,11 +40,57 @@ export const RAMILLE = {
   /** Attente du calcul du bilan — son seul moment de réflexion. */
   calcul: 'Je calcule ton bilan…',
 
-  /** Check-in répondu oui (maquette validée). */
-  checkinOui: 'Bien joué — chaque changement compte.',
+  /**
+   * **Check-in répondu oui — quatre variantes par boucle** (C2.12, décision D12 du 10/09/2026,
+   * `v1-14` §3.1).
+   *
+   * Avec les deux boucles, une personne reçoit environ soixante-quatre questions par an et
+   * n'entendait que deux phrases en retour. La répétition stricte de la **question** est utile (le
+   * contexte doit rester stable d'une période à l'autre, c'est tout le travail de C2.1) ; celle de la
+   * **réponse** s'use. Le titulaire a tranché en sachant que l'usure n'est pas mesurable —
+   * `checkin_answer` est interdit comme événement d'usage (v1-08) : c'est un choix de ton, pas une
+   * optimisation.
+   *
+   * **La réplique d'origine reste en première position et n'est pas modifiée** : elle vient des
+   * maquettes validées. Les variantes s'y ajoutent, et `variantePourLaPeriode`
+   * (`src/types/checkin.ts`) en choisit une par **période** — jamais un tirage au hasard, qui ferait
+   * changer la phrase à chaque rendu et d'un appareil à l'autre.
+   *
+   * Deux tableaux parce que la boucle mensuelle ne revient pas lundi. `mensuel[1]` dit « Une fois
+   * autrement » là où le canvas écrit « Un voyage autrement » : cette boucle couvre aussi les sorties
+   * du week-end depuis C2.6 (écart consigné en `v1-14` §10).
+   */
+  checkinOui: {
+    hebdo: [
+      'Bien joué — chaque changement compte.',
+      'Un trajet autrement. Je le note ici.',
+      'C’est fait, et ça compte. À lundi.',
+      'Tu as fait autrement. Je vois la différence.',
+    ],
+    mensuel: [
+      'Bien joué — chaque changement compte.',
+      'Une fois autrement. Je le note ici.',
+      'C’est fait, et ça compte. Au début du mois prochain.',
+      'Tu as fait autrement. Je vois la différence.',
+    ],
+  },
 
-  /** Check-in répondu non (maquette validée) : une relance, jamais une déception. */
-  checkinNon: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.',
+  /**
+   * Check-in répondu non — trois variantes par boucle (C2.12). Une relance, jamais une déception :
+   * aucune des trois ne dit de regret, et aucune ne promet autre chose que la prochaine question.
+   */
+  checkinNon: {
+    hebdo: [
+      'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.',
+      'Ça arrive. Lundi, je te repose la question, tranquillement.',
+      'Une semaine sans, ce n’est pas un retour en arrière.',
+    ],
+    mensuel: [
+      'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.',
+      'Ça arrive. Au début du mois prochain, je te repose la question, tranquillement.',
+      'Un mois sans, ce n’est pas un retour en arrière.',
+    ],
+  },
 
   /**
    * **La troisième réponse : « pas de trajet cette période »** (C2.4, v1-14 §3.1).
@@ -63,10 +112,22 @@ export const RAMILLE = {
    * disant quand elle revient.
    */
   checkinSansObjet: {
-    commute: 'Pas de trajet, pas de question. On se retrouve lundi.',
-    leisure: 'Pas de sortie, pas de question. On se retrouve au début du mois prochain.',
-    travel: 'Pas de voyage, pas de question. On se retrouve au début du mois prochain.',
-    autre: 'Pas de déplacement, pas de question. On se retrouve au prochain point.',
+    commute: [
+      'Pas de trajet, pas de question. On se retrouve lundi.',
+      'Semaine sans trajet. Je reviens lundi, comme d’habitude.',
+    ],
+    leisure: [
+      'Pas de sortie, pas de question. On se retrouve au début du mois prochain.',
+      'Mois sans sortie. Je reviens au début du mois prochain, comme d’habitude.',
+    ],
+    travel: [
+      'Pas de voyage, pas de question. On se retrouve au début du mois prochain.',
+      'Mois sans voyage. Je reviens au début du mois prochain, comme d’habitude.',
+    ],
+    autre: [
+      'Pas de déplacement, pas de question. On se retrouve au prochain point.',
+      'Période sans déplacement. Je reviens au prochain point, comme d’habitude.',
+    ],
   },
 
   /**

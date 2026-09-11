@@ -17,6 +17,7 @@ import {
   piedDuPointRepondu,
   questionDuPoint,
   repliqueDuPoint,
+  variantePourLaPeriode,
   type PointInterrogeable,
 } from '@/types/checkin';
 
@@ -307,14 +308,13 @@ describe('questionDuPoint — la question figée gagne', () => {
 
 describe('repliqueDuPoint', () => {
   it('le « Oui » est le même des deux côtés', () => {
-    expect(repliqueDuPoint(point(), 'oui')).toEqual({
-      ligne: RAMILLE.checkinOui,
-      mood: 'happy',
-    });
-    expect(repliqueDuPoint(point({ question_kind: 'maintien', mode: 'velo' }), 'oui')).toEqual({
-      ligne: RAMILLE.checkinOui,
-      mood: 'happy',
-    });
+    // Avoir tenu son habitude et avoir changé de mode valent tous les deux un « oui » : c'est la
+    // **même** réplique, et la question de maintien ne change que le « non ».
+    const generique = repliqueDuPoint(point(), 'oui');
+    const maintien = repliqueDuPoint(point({ question_kind: 'maintien', mode: 'velo' }), 'oui');
+    expect(generique).toEqual(maintien);
+    expect(generique.mood).toBe('happy');
+    expect(RAMILLE.checkinOui.hebdo).toContain(generique.ligne);
   });
 
   /**
@@ -345,11 +345,12 @@ describe('repliqueDuPoint', () => {
   });
 
   it('une question générique garde checkinNon', () => {
-    expect(repliqueDuPoint(point(), 'non')).toEqual({
-      ligne: RAMILLE.checkinNon,
-      mood: 'encouraging',
-    });
-    expect(repliqueDuPoint(point({ question_kind: null }), 'non').ligne).toBe(RAMILLE.checkinNon);
+    const { ligne, mood } = repliqueDuPoint(point(), 'non');
+    expect(RAMILLE.checkinNon.hebdo).toContain(ligne);
+    expect(mood).toBe('encouraging');
+    expect(RAMILLE.checkinNon.hebdo).toContain(
+      repliqueDuPoint(point({ question_kind: null }), 'non').ligne
+    );
   });
 
   /**
@@ -362,11 +363,12 @@ describe('repliqueDuPoint', () => {
    */
   it('« sans objet » ne reçoit ni checkinNon ni maintienNon, même sur un point de maintien', () => {
     const sur = (p: Partial<PointInterrogeable>) => repliqueDuPoint(point(p), 'sans_objet');
+    const toutesLesSansObjet = Object.values(RAMILLE.checkinSansObjet).flat();
     for (const p of [{}, { question_kind: 'maintien', mode: 'velo' }, { question_kind: null }]) {
       const { ligne, mood } = sur(p);
-      expect(ligne).not.toBe(RAMILLE.checkinNon);
+      expect(RAMILLE.checkinNon.hebdo).not.toContain(ligne);
       expect(Object.values(RAMILLE.maintienNon)).not.toContain(ligne);
-      expect(Object.values(RAMILLE.checkinSansObjet)).toContain(ligne);
+      expect(toutesLesSansObjet).toContain(ligne);
       expect(mood).toBe('calm');
     }
   });
@@ -376,21 +378,36 @@ describe('repliqueDuPoint', () => {
   it('« sans objet » suit le poste, et la boucle hebdomadaire gagne sur lui', () => {
     const sansObjet = (p: Partial<PointInterrogeable>) =>
       repliqueDuPoint(point(p), 'sans_objet').ligne;
-    expect(sansObjet({ loop_type: 'commute', poste: 'commute' })).toBe(
-      RAMILLE.checkinSansObjet.commute
+    expect(RAMILLE.checkinSansObjet.commute).toContain(
+      sansObjet({ loop_type: 'commute', poste: 'commute' })
     );
-    expect(sansObjet({ loop_type: 'extras', poste: 'leisure' })).toBe(
-      RAMILLE.checkinSansObjet.leisure
+    expect(RAMILLE.checkinSansObjet.leisure).toContain(
+      sansObjet({ loop_type: 'extras', poste: 'leisure' })
     );
-    expect(sansObjet({ loop_type: 'extras', poste: 'travel' })).toBe(
-      RAMILLE.checkinSansObjet.travel
+    expect(RAMILLE.checkinSansObjet.travel).toContain(
+      sansObjet({ loop_type: 'extras', poste: 'travel' })
     );
     // Un point d'avant C2.6 ne porte pas de poste : la liste se ferme, elle ne devine pas.
-    expect(sansObjet({ loop_type: 'extras', poste: null })).toBe(RAMILLE.checkinSansObjet.autre);
-    // Et un point hebdomadaire sans poste reste hebdomadaire.
-    expect(sansObjet({ loop_type: 'commute', poste: null })).toBe(
-      RAMILLE.checkinSansObjet.commute
+    expect(RAMILLE.checkinSansObjet.autre).toContain(
+      sansObjet({ loop_type: 'extras', poste: null })
     );
+    // Et un point hebdomadaire sans poste reste hebdomadaire.
+    expect(RAMILLE.checkinSansObjet.commute).toContain(
+      sansObjet({ loop_type: 'commute', poste: null })
+    );
+  });
+
+  /**
+   * **La boucle décide de la cadence nommée dans la réplique** (C2.12) : « À lundi. » n'a aucun sens
+   * sur un point mensuel, et c'est la raison pour laquelle les tableaux sont doublés.
+   */
+  it('la réplique vient du tableau de sa boucle', () => {
+    const mensuel = point({ loop_type: 'extras', poste: 'travel', period_start: '2026-09-01' });
+    for (const reponse of ['oui', 'non'] as const) {
+      const cle = reponse === 'oui' ? 'checkinOui' : 'checkinNon';
+      expect(RAMILLE[cle].mensuel).toContain(repliqueDuPoint(mensuel, reponse).ligne);
+      expect(RAMILLE[cle].hebdo).toContain(repliqueDuPoint(point(), reponse).ligne);
+    }
   });
 });
 
@@ -675,5 +692,81 @@ describe('phraseDeSecondRenforcement', () => {
         expect(phrase).toMatch(/^Deuxième /);
       }
     }
+  });
+});
+
+/**
+ * **Le choix d'une variante est déterministe, dérivé de la période** (C2.12, décision D12 du
+ * 10/09/2026). Un tirage aléatoire ferait changer la réplique sous les yeux de la personne :
+ * `useRafraichirAuRetour` relit l'écran du plan à chaque retour au premier plan, donc plusieurs fois
+ * par période, et la phrase différerait aussi d'un appareil à l'autre.
+ */
+describe('variantePourLaPeriode', () => {
+  const variantes = ['a', 'b', 'c', 'd'];
+
+  it('la même période rend toujours la même variante', () => {
+    const premiere = variantePourLaPeriode(variantes, '2026-09-07');
+    for (let i = 0; i < 20; i += 1) {
+      expect(variantePourLaPeriode(variantes, '2026-09-07')).toBe(premiere);
+    }
+  });
+
+  it('rend toujours une variante de la liste', () => {
+    for (const semaine of ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28']) {
+      expect(variantes).toContain(variantePourLaPeriode(variantes, semaine));
+    }
+  });
+
+  /**
+   * **Ce que cette assertion peut et ne peut pas prouver.** Elle ne dit pas que le hachage est bon —
+   * aucune assertion ne le dirait sur huit tirages. Elle dit que le choix **varie** : un hachage
+   * constant, ou qui ne produirait que deux valeurs, tombe ici. Les deux tailles de pas du produit
+   * sont éprouvées séparément (sept jours, un mois), parce que deux périodes voisines ne diffèrent
+   * que de cela et qu'une somme de codes de caractères donnerait des indices corrélés.
+   */
+  it.each([
+    [
+      'hebdomadaire',
+      [
+        '2026-09-07',
+        '2026-09-14',
+        '2026-09-21',
+        '2026-09-28',
+        '2026-10-05',
+        '2026-10-12',
+        '2026-10-19',
+        '2026-10-26',
+      ],
+    ],
+    [
+      'mensuelle',
+      [
+        '2026-01-01',
+        '2026-02-01',
+        '2026-03-01',
+        '2026-04-01',
+        '2026-05-01',
+        '2026-06-01',
+        '2026-07-01',
+        '2026-08-01',
+      ],
+    ],
+  ])('cadence %s : le choix varie d’une période à l’autre', (_cadence, periodes) => {
+    const choisies = periodes.map((periode) => variantePourLaPeriode(variantes, periode));
+    // Au moins trois des quatre variantes sur huit périodes : un choix constant ou binaire tombe.
+    expect(new Set(choisies).size).toBeGreaterThanOrEqual(3);
+    // Et deux périodes voisines ne rendent pas systématiquement la même phrase.
+    const voisinesIdentiques = choisies.filter((v, i) => i > 0 && v === choisies[i - 1]).length;
+    expect(voisinesIdentiques).toBeLessThan(choisies.length - 1);
+  });
+
+  it('un seul élément se choisit toujours lui-même', () => {
+    expect(variantePourLaPeriode(['seule'], '2026-09-07')).toBe('seule');
+  });
+
+  // Une liste vide est une erreur de programmation, pas un cas à couvrir en silence : rendre
+  // `undefined` afficherait une réplique vide à la place de celle de Ramille.
+  it('une liste vide lève', () => {
+    expect(() => variantePourLaPeriode([], '2026-09-07')).toThrow();
   });
 });
