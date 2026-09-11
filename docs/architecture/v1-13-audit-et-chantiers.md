@@ -1929,7 +1929,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C2.8 | [#126](https://github.com/ScratchMe/TraceVerte/issues/126) | | | |
 | C2.9 | [#127](https://github.com/ScratchMe/TraceVerte/issues/127) | | | |
 | C2.10 | [#128](https://github.com/ScratchMe/TraceVerte/issues/128) | | | |
-| C2.11 | [#129](https://github.com/ScratchMe/TraceVerte/issues/129) | | | |
+| C2.11 | [#129](https://github.com/ScratchMe/TraceVerte/issues/129) | [#164](https://github.com/ScratchMe/TraceVerte/pull/164) | 11/09/2026 | livré ; le point 3 a demandé une dérivation pure (`src/types/session.ts`) parce que « pas de session » recouvre **trois** états et non deux — un jeton refusé, une panne de transport et une vraie première ouverture, qui n'appellent pas la même réponse. Vérifié dans `auth-js` que `getSession()` remonte bien l'erreur de rafraîchissement, sans quoi l'état `refusee` aurait été déclaré et inatteignable. Deux relevés : l'écran de reconnexion doit être une **surcouche** du `Stack` (rendu à sa place, ses deux boutons n'ont aucune route où aller), et la marque `?rappel=1` n'était épinglée nulle part — deux assertions ajoutées à `09`, dont celle qui tombe si quelqu'un range le paramètre dans un segment de chemin et fait repartir le lien dans le navigateur |
 | C2.12 | [#130](https://github.com/ScratchMe/TraceVerte/issues/130) | | | |
 | C2.13 | [#151](https://github.com/ScratchMe/TraceVerte/issues/151) | | | |
 | C2.14 | [#153](https://github.com/ScratchMe/TraceVerte/issues/153) | [#160](https://github.com/ScratchMe/TraceVerte/pull/160) | 11/09/2026 | livré |

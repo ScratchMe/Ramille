@@ -421,6 +421,30 @@ produit jamais cette forme — c'est ainsi qu'un commentaire a pu affirmer l'inv
 que rien ne tombe), et le message d'échec dit « n'a pas abouti » et non « n'est pas partie »,
 puisque sur un 5xx la demande a bien quitté l'appareil.
 
+**« Pas de session » recouvre trois situations, et une seule appelle une création** (C2.11,
+11/09/2026, `src/types/session.ts`). `ensureSession()` raisonnait à deux branches ; le cas qui
+coûtait cher est celui du **jeton refusé** : créer une session anonyme là donne un compte **vide** à
+quelqu'un qui en a un, et chaque onglet lui répond « tu n'as rien » alors que son bilan, son plan et
+ses points sont intacts côté serveur. Le troisième cas, une **panne de transport**, n'appelle ni
+création (on fabriquerait le même compte orphelin pour une cause passagère) ni reproche — le
+prochain lancement réessaie, et rien ne s'affiche. La distinction est possible parce qu'`auth-js`
+remonte l'erreur de rafraîchissement dans `getSession()` (relevé dans `GoTrueClient.__loadSession`) :
+les quatre états sont atteignables, aucun n'est décoratif. L'écran `SessionRefusee` est une
+**surcouche** du `Stack` et non un remplacement, à la différence de `ConfigurationManquante` : ses
+deux boutons sont des navigations, et un écran rendu à la place du navigateur n'aurait aucune route
+où aller.
+
+**Le lien du rappel porte `?rappel=1`, et le chemin ne doit pas bouger** (C2.11). L'email ne portait
+que `/plan` : ouvert sur un ordinateur ou un téléphone neuf, il tombait sur la session anonyme que
+l'app venait de créer, et le plan répondait « Ton bilan n'est pas encore fait » avec pour seul bouton
+« Faire mon bilan » — et la consigne de désinscription du même email réglait la préférence d'une
+session qui n'est personne. Le paramètre ne sert que là, et **seulement sans bilan local**. Une
+nouvelle route à la place du paramètre aurait fait ouvrir le lien dans le navigateur sur Android :
+`assetlinks.json` ne revendique nommément que `/plan`, et ce périmètre étroit est voulu (Play exige
+que les pages légales et `/compte/suppression` restent atteignables **sans** l'app). Une chaîne de
+requête ne fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux
+moitiés de la règle.
+
 **Cette liste de redirections est une frontière de sécurité, pas une commodité de
 configuration.** Elle décide à quelles adresses Supabase accepte de **remettre une session** —
 un lien de connexion renvoie les jetons dans le fragment de l'URL d'arrivée. Une entrée trop
