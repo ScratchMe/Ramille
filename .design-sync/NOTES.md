@@ -134,6 +134,13 @@ composants y figuraient. Les quatre restants (`CalculEnCours`, `EcranLancement`,
 - **`cfg.pkg` n'est pas un chemin.** Il valait `docs/design/design-system` dans la toute première
   version de ce fichier de config, ce qui ne peut pas marcher : c'est un nom de paquet, résolu
   sous `--node-modules`.
+- **Deux chemins de config se lisent différemment, et l'un rate en silence.** `readmeHeader` est
+  relatif au *config home*, c'est-à-dire au répertoire qui **contient** `.design-sync/` — donc
+  `.design-sync/conventions.md`, pas `conventions.md`. Écrit court, il est simplement « skipped »
+  avec une ligne d'avertissement, et le README part sans son en-tête. `cssEntry`, `tokensGlob`
+  et `extraFonts`, eux, sont relatifs au **paquet** (le kit).
+- **`tokensGlob` seul ne copie rien** : `copyTokens` sort immédiatement si `tokensPkg` est absent.
+  Les deux vont ensemble, et `tokensPkg` vaut ici le kit lui-même.
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
   Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
   bout, et un nouveau téléversement coûte peu.
