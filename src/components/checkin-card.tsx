@@ -7,6 +7,7 @@ import { RamilleDit } from '@/components/ramille-dit';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { RAMILLE } from '@/constants/mascotte';
+import { formeInserable } from '@/constants/postes';
 import { Radius, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
@@ -15,6 +16,8 @@ export type EngagementCheckin = {
   loop_type: 'commute' | 'extras';
   period_label: string;
   trip_label: string;
+  /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */
+  poste: string | null;
 };
 
 const QUESTION_UNIT: Record<EngagementCheckin['loop_type'], string> = {
@@ -123,14 +126,14 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
                   onPress={() => answer(false)}
                   disabled={saving}
                   flex
-                  accessibilityHint={`Répondre non pour ${checkin.trip_label}`}
+                  accessibilityHint={`Répondre non pour ${formeInserable(checkin.poste, checkin.loop_type)}`}
                 />
                 <Button
                   title="Oui"
                   onPress={() => answer(true)}
                   disabled={saving}
                   flex
-                  accessibilityHint={`Répondre oui pour ${checkin.trip_label}`}
+                  accessibilityHint={`Répondre oui pour ${formeInserable(checkin.poste, checkin.loop_type)}`}
                 />
               </View>
               {/* Les boutons restent actifs : l'échec est une panne, pas un refus. */}

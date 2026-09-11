@@ -24,6 +24,7 @@ import {
 } from '@/constants/carbon-reference';
 import { formatTonnes } from '@/lib/format';
 import type { Palier } from '@/types/palier';
+import { POSTE_EN_PHRASE, POSTE_LABEL, POSTE_SUBJECT } from '@/constants/postes';
 
 export type ModeResultat = 'nouveau' | 'relecture';
 
@@ -146,33 +147,13 @@ export function prepositionDuMode(modeId: string | null | undefined): string | u
 }
 
 /**
- * « Trajets loisirs »/« Voyages » seuls ne distinguent pas les deux postes (retour
- * utilisateur du 03/09/2026) : ce sont deux postes bien distincts du bilan (B2 « Week-ends et
- * loisirs » vs B3 « Voyages sur l'année »). Même wording que les libellés persistés côté
- * serveur, cf. migration `20260903120000_precise_poste_labels.sql`.
+ * Le vocabulaire d'un poste vit dans `@/constants/postes` depuis C2.6 — il servait déjà à la
+ * restitution, au suivi et au partage, et il sert désormais aussi à la question du point, au
+ * rappel et au cap du plan, qui collaient jusque-là le libellé snapshoté (mode compris) après
+ * une préposition. Réexporté ici pour que les écrans qui lisent un résultat n'aient pas à
+ * connaître deux origines ; **la définition est là-bas, pas ici.**
  */
-export const POSTE_SUBJECT: Record<string, string> = {
-  commute: 'Ton trajet domicile-travail',
-  leisure: 'Tes loisirs du week-end',
-  travel: 'Tes voyages longue distance',
-};
-
-/** Les mêmes postes en étiquette neutre : répartition du bilan, liste du suivi, partage. */
-export const POSTE_LABEL: Record<string, string> = {
-  commute: 'Trajet domicile-travail',
-  leisure: 'Loisirs du week-end',
-  travel: 'Voyages longue distance',
-};
-
-/**
- * Les mêmes, en milieu de phrase. Un seul vocabulaire, deux casses : un test épingle que
- * cette table est `POSTE_SUBJECT` à la majuscule près, pour qu'elles ne divergent pas.
- */
-export const POSTE_EN_PHRASE: Record<string, string> = {
-  commute: 'ton trajet domicile-travail',
-  leisure: 'tes loisirs du week-end',
-  travel: 'tes voyages longue distance',
-};
+export { POSTE_EN_PHRASE, POSTE_LABEL, POSTE_SUBJECT };
 
 /**
  * Un bilan sans aucune émission — atteignable, et c'est le profil que le produit veut

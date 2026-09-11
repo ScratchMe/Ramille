@@ -21,7 +21,7 @@ import { track } from '@/lib/analytics';
 import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
-import { formatIntention } from '@/types/plan';
+import { formatIntention, formeInserable } from '@/types/plan';
 import { daysSince, REBILAN_SUGGESTION_DAYS } from '@/types/suivi';
 import { aVuRattachementAnnonce, marquerRattachementAnnonce } from '@/lib/connexion-prefs';
 import { lireEtatDuRattachement } from '@/lib/compte';
@@ -56,6 +56,8 @@ type PlanCycle = {
   id: string;
   period_label: string;
   trip_label: string;
+  /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */
+  poste: string | null;
   baseline_co2_kg_year: number | null;
   target_reduction_pct: number;
   plan_actions: PlanAction[];
@@ -289,7 +291,7 @@ export default function Plan() {
             // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
             // type du résultat en analysant ce littéral au niveau des types. Une concaténation
             // lui rend un `string` opaque et le typage du retour est perdu.
-            'id, period_label, trip_label, baseline_co2_kg_year, target_reduction_pct, plan_actions(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, action_templates(action_text, poste))'
+            'id, period_label, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, action_templates(action_text, poste))'
           )
           .order('period_start', { ascending: false })
           .limit(1)
@@ -328,7 +330,7 @@ export default function Plan() {
         // est justement ouverte.
         const { data: checkins, error: erreurCheckins } = await supabase
           .from('engagement_checkins')
-          .select('id, loop_type, period_label, trip_label, period_start')
+          .select('id, loop_type, period_label, trip_label, poste, period_start')
           .eq('status', 'pending')
           .order('period_start', { ascending: false });
 
@@ -597,11 +599,19 @@ export default function Plan() {
             <ThemedText type="screenTitle">
               Ton plan
             </ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              {actionsCount === 0
-                ? `Rien à alléger sur ${cycle.trip_label}.`
-                : `${actionsCount > 1 ? 'Deux actions liées' : 'Une action liée'} à ${cycle.trip_label}.`}
-            </ThemedText>
+            {/* **Quand il n'y a rien à alléger, on n'écrit rien ici** (C2.6) : la carte de
+                félicitation juste en dessous le dit déjà, et « Rien à alléger sur … » sonnait
+                comme un constat d'échec posé sous le titre de l'écran.
+
+                Le poste est nommé par sa forme insérable et non par `trip_label`, qui porte le
+                mode entre parenthèses — « Une action liée à Trajet domicile-travail (Voiture
+                thermique). » était une phrase que personne n'a écrite. */}
+            {actionsCount > 0 && (
+              <ThemedText type="body" themeColor="textSecondary">
+                {actionsCount > 1 ? 'Deux actions' : 'Une action'} pour{' '}
+                {formeInserable(cycle.poste)}.
+              </ThemedText>
+            )}
             <ThemedView type="backgroundElement" style={styles.cadenceChip}>
               <ThemedText type="small" weight={600}>
                 Cadence : {cycle.period_label}
@@ -666,7 +676,7 @@ export default function Plan() {
                 − {capKg} kg
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                soit − {Math.round(cycle.target_reduction_pct)} % de {cycle.trip_label.toLowerCase()}
+                soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
                 {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
               </ThemedText>
             </ThemedView>

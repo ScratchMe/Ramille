@@ -9,10 +9,13 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
 
+// Les mêmes libellés qu'en tête du questionnaire et que dans la restitution (C2.6) : l'annonce
+// et ce qu'on trouve ensuite doivent porter le même nom, sans quoi la personne croit avoir
+// changé de sujet.
 const SECTIONS = [
-  '1 — Trajets domicile-travail',
-  '2 — Week-ends et loisirs',
-  '3 — Voyages sur l’année',
+  '1 — Trajet domicile-travail',
+  '2 — Loisirs du week-end',
+  '3 — Voyages longue distance',
   '4 — Ton contexte de mobilité',
 ];
 

@@ -103,15 +103,30 @@ export const BILAN_STEP_ORDER = [
 
 export type BilanStepId = (typeof BILAN_STEP_ORDER)[number];
 
+/**
+ * Le libellé de section de l'en-tête du questionnaire.
+ *
+ * **Un seul libellé par poste dans tout le produit** (C2.6) : c'est ici que « Weekend et
+ * loisirs » devenait « Loisirs du week-end » une fois le bilan rendu, et « Voyages sur l'année »
+ * devenait « Voyages longue distance ». Trois noms pour le même poste selon l'écran — le canvas
+ * v1-14 (planche G) tranche pour celui de la restitution et du suivi.
+ *
+ * Écart assumé au handoff, qui écrivait « Weekend et loisirs » : le handoff nommait une **étape
+ * du questionnaire**, le produit nomme un **poste**, et c'est le poste que la personne retrouve
+ * partout ensuite.
+ *
+ * « Domicile-travail » reste court : c'est le seul libellé où la forme longue
+ * (« Trajet domicile-travail ») sonnerait redondante en face de « Étape 3 sur 9 ».
+ */
 export const BILAN_SECTION_LABEL: Record<BilanStepId, string> = {
   commute_has_trip: 'Domicile-travail',
   commute_days_distance: 'Domicile-travail',
   commute_mode: 'Domicile-travail',
   commute_extra: 'Domicile-travail',
-  leisure_frequency: 'Weekend et loisirs',
-  leisure_detail: 'Weekend et loisirs',
-  flights: 'Voyages sur l’année',
-  long_trips: 'Voyages sur l’année',
+  leisure_frequency: 'Loisirs du week-end',
+  leisure_detail: 'Loisirs du week-end',
+  flights: 'Voyages longue distance',
+  long_trips: 'Voyages longue distance',
   context: 'Contexte de mobilité',
 };
 
