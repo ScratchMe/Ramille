@@ -50,8 +50,12 @@ select public.generate_extras_checkins();
 select results_eq(
   $$ select loop_type, period_start, period_label, trip_label, status
      from public.engagement_checkins where user_id = '71111111-1111-1111-1111-111111111111' and loop_type = 'commute' $$,
-  $$ select 'commute'::text, date_trunc('week', now())::date, 'Semaine du ' || to_char(date_trunc('week', now())::date, 'DD/MM'), 'Trajet domicile-travail (Voiture)'::text, 'pending'::text $$,
-  'boucle commute : semaine ISO courante, libellé et trip_label repris de commute_poste_label'
+  -- **La semaine ÉCOULÉE, pas celle qui commence** (C2.3) : le cron passe toujours le lundi 6 h,
+  -- mais la question porte sur la semaine qui vient de finir. Générée pour la semaine en cours,
+  -- elle arrivait quand aucun trajet n'avait encore eu lieu, et la seule réponse honnête était
+  -- « Non » — suivie de la consolation.
+  $$ select 'commute'::text, date_trunc('week', now())::date - 7, 'Semaine du ' || to_char(date_trunc('week', now())::date - 7, 'DD/MM'), 'Trajet domicile-travail (Voiture)'::text, 'pending'::text $$,
+  'boucle commute : semaine ISO écoulée, libellé et trip_label repris de commute_poste_label'
 );
 
 select is(
@@ -73,11 +77,14 @@ select is(
 select results_eq(
   $$ select loop_type, period_start, period_label, trip_label, status
      from public.engagement_checkins where user_id = '71111111-1111-1111-1111-111111111111' and loop_type = 'extras' $$,
-  $$ select 'extras'::text, date_trunc('month', now())::date,
-     (array['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'])[extract(month from date_trunc('month', now()))::int]
-       || ' ' || extract(year from date_trunc('month', now()))::text,
+  -- Le mois **écoulé**, même raison que pour la semaine. Le tableau des douze mois est recopié
+  -- ici exprès : il épingle `public.mois_francais`, il ne l'appelle pas — un test qui appelle la
+  -- fonction qu'il vérifie ne vérifie rien.
+  $$ select 'extras'::text, (date_trunc('month', now()) - interval '1 month')::date,
+     (array['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'])[extract(month from (date_trunc('month', now()) - interval '1 month'))::int]
+       || ' ' || extract(year from (date_trunc('month', now()) - interval '1 month'))::text,
      'Loisirs du week-end (Voiture)'::text, 'pending'::text $$,
-  'boucle extras : mois calendaire courant, libellé français et trip_label repris de extras_poste_label'
+  'boucle extras : mois calendaire écoulé, libellé français et trip_label repris de extras_poste_label'
 );
 
 select is(
@@ -141,8 +148,8 @@ select is(
 select results_eq(
   $$ select period_start, period_label, trip_label from public.engagement_checkins
      where id = current_setting('test.checkin_commute_a')::uuid $$,
-  $$ select date_trunc('week', now())::date,
-            'Semaine du ' || to_char(date_trunc('week', now())::date, 'DD/MM'),
+  $$ select date_trunc('week', now())::date - 7,
+            'Semaine du ' || to_char(date_trunc('week', now())::date - 7, 'DD/MM'),
             'Trajet domicile-travail (Voiture)'::text $$,
   'répondre ne touche ni les libellés snapshotés ni la clé d''idempotence de la génération'
 );

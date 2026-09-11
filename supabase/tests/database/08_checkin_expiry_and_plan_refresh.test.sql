@@ -33,7 +33,11 @@ select 'c8111111-1111-1111-1111-111111111111', 'commute',
        (date_trunc('week', now()) - (n || ' weeks')::interval)::date,
        'Semaine du ' || to_char(date_trunc('week', now()) - (n || ' weeks')::interval, 'DD/MM'),
        'Trajet domicile-travail (Voiture)'
-from generate_series(1, 8) n;
+-- `2..9` et non `1..8` depuis C2.3 : le générateur crée désormais le point de la semaine
+-- **écoulée** (n = 1), donc une fixture à n = 1 entrerait en conflit avec lui et ne s'expirerait
+-- pas. Le décalage garde intact le sujet du test — huit semaines sans réponse, toutes closes, et
+-- une seule question neuve.
+from generate_series(2, 9) n;
 
 select is(
   (select count(*)::int from public.engagement_checkins
@@ -54,8 +58,8 @@ select is(
 select is(
   (select period_start from public.engagement_checkins
    where user_id = 'c8111111-1111-1111-1111-111111111111' and status = 'pending'),
-  date_trunc('week', now())::date,
-  'A : et c''est celle de la semaine courante, pas la plus ancienne de la pile'
+  date_trunc('week', now())::date - 7,
+  'A : et c''est celle de la semaine écoulée, pas la plus ancienne de la pile'
 );
 
 select is(
