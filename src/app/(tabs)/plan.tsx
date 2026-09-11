@@ -371,7 +371,14 @@ export default function Plan() {
         // est justement ouverte.
         const { data: checkins, error: erreurCheckins } = await supabase
           .from('engagement_checkins')
-          .select('id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode')
+          // `committed_question` d'abord : c'est la question **figée** à la génération, celle que
+          // le rappel a envoyée (C2.1). La carte l'affiche telle quelle plutôt que de la
+          // recomposer, pour qu'elle ne puisse pas différer d'un caractère de la notification
+          // qu'on vient d'ouvrir. `committed_action_text` sert à dire, le cas échéant, que la
+          // question porte sur une action quittée depuis.
+          .select(
+            'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, committed_intention_days'
+          )
           .eq('status', 'pending')
           .order('period_start', { ascending: false });
 
@@ -657,6 +664,10 @@ export default function Plan() {
   const { cycle, assessmentId, assessmentDate, checkins } = state;
   const actionsCount = cycle.plan_actions.length;
   const committedActionId = cycle.plan_actions.find((a) => a.committed_at !== null)?.id ?? null;
+  // Le libellé de l'action engagée, pour que la carte du point sache si sa question figée porte
+  // encore sur elle (C2.1). `null` quand rien n'est engagé, ce qui est aussi un « plus la même ».
+  const actionEngageeTexte =
+    cycle.plan_actions.find((a) => a.committed_at !== null)?.action_templates?.action_text ?? null;
   // Copie avant tri : `sort` mute, et `cycle` vient du state.
   const actionsOrdonnees = [...cycle.plan_actions].sort(
     (a, b) => Number(b.committed_at !== null) - Number(a.committed_at !== null)
@@ -792,6 +803,7 @@ export default function Plan() {
                   key={checkin.id}
                   checkin={checkin}
                   emphasize={checkin.trip_label === cycle.trip_label}
+                  actionEngagee={actionEngageeTexte}
                 />
               ))}
             </View>

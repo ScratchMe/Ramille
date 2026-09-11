@@ -18,12 +18,22 @@ export type EngagementCheckin = {
   trip_label: string;
   /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */
   poste: string | null;
-  /** `changement` | `maintien` — le genre de question posée (C2.5). */
+  /** `engagement` | `generique` | `maintien` | `occasion` — le genre de question posée (C2.1). */
   question_kind: string | null;
   /** Le mode snapshoté du poste interrogé. Ne remplit que la question de maintien (C2.5). */
   mode: string | null;
   /** Le début de la période **écoulée** interrogée : c'est lui qui nomme le mois (C2.3). */
   period_start: string;
+  /**
+   * La question **figée** à la génération, telle que le rappel l'a envoyée (C2.1). La carte
+   * l'affiche telle quelle : c'est la seule façon qu'elle ne puisse pas différer d'un caractère de
+   * la notification qu'on vient d'ouvrir. Nulle sur les points générés avant C2.1.
+   */
+  committed_question: string | null;
+  /** Le libellé de l'action engagée au moment de la génération (C2.1), figé comme `trip_label`. */
+  committed_action_text: string | null;
+  /** Les jours d'intention figés. Lus seulement pour recomposer une question d'avant C2.1. */
+  committed_intention_days: number[] | null;
 };
 
 // **Les deux refus de `repondre_au_checkin`, et la raison de les distinguer d'une panne de
@@ -58,13 +68,34 @@ const REFUS_DU_RPC: Record<string, string | undefined> = {
 //
 // `emphasize` matérialise la recommandation "concentre-toi sur ton poste dominant" (décision
 // produit du 27/08/2026, les deux boucles restent proposées) sans jamais masquer l'autre.
-export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin; emphasize: boolean }) {
+export function CheckinCard({
+  checkin,
+  emphasize,
+  actionEngagee,
+}: {
+  checkin: EngagementCheckin;
+  emphasize: boolean;
+  /**
+   * Le libellé de l'action **actuellement** engagée, ou `null`. Sert à une seule chose : savoir si
+   * la question figée porte sur une action quittée depuis (C2.1). L'écran du plan le connaît déjà,
+   * la carte ne le relit donc pas.
+   */
+  actionEngagee?: string | null;
+}) {
   const [answered, setAnswered] = useState<boolean | null>(null);
   /** Le point n'accepte plus de réponse : la question reste lisible, les boutons partent. */
   const [refus, setRefus] = useState<string | null>(null);
   /** La réponse n'est pas partie : les boutons restent, il n'y a qu'à recommencer. */
   const [erreur, setErreur] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Comparaison de libellés et non d'identifiants : la carte ne porte pas l'identifiant du gabarit,
+  // et le libellé est ce que la personne a lu en choisissant. Deux actions de libellés identiques
+  // n'existent pas dans le référentiel.
+  const questionSurActionQuittee =
+    checkin.committed_action_text !== null &&
+    actionEngagee !== undefined &&
+    actionEngagee !== checkin.committed_action_text;
 
   // La réponse passe par un RPC, jamais par un `update` : `engagement_checkins` porte des
   // libellés snapshotés (`trip_label`, `period_label`) et la clé d'idempotence de la génération
@@ -117,6 +148,21 @@ export function CheckinCard({ checkin, emphasize }: { checkin: EngagementCheckin
           <ThemedText weight={600} style={styles.question}>
             {questionDuPoint(checkin)}
           </ThemedText>
+          {/* **Une question figée peut nommer une action qu'on ne suit plus** (C2.1) : elle a été
+              composée au moment de la génération, et changer d'avis entre-temps ne la réécrit pas —
+              c'est précisément ce que `committed_question` garantit. Sans cette ligne, « Mardi ou
+              jeudi, as-tu fait ce trajet à vélo ? » s'afficherait à quelqu'un qui suit désormais le
+              télétravail, sans rien pour l'expliquer.
+
+              Écart assumé au canvas, qui écrit « Question posée lundi, sur l'action de la semaine
+              dernière. » : nommer le jour demanderait de dériver une date de génération et un
+              troisième format de date dans la carte, pour un état marginal. La phrase dit le fait,
+              et nomme l'action — ce qui est l'information utile. */}
+          {questionSurActionQuittee && (
+            <ThemedText type="small" themeColor="textTertiary">
+              Cette question porte sur l’action que tu suivais alors : {checkin.committed_action_text}.
+            </ThemedText>
+          )}
           {refus ? (
             // La question reste lisible, mais elle n'attend plus rien : deux boutons qui ne
             // peuvent plus aboutir valent moins qu'une phrase qui dit où en est le point.

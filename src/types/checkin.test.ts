@@ -1,8 +1,11 @@
 import { RAMILLE } from '@/constants/mascotte';
 import {
   COMPLEMENT_DE_MAINTIEN,
+  JOURS_FRANCAIS,
   MOIS_FRANCAIS,
   complementDeMaintien,
+  composerQuestionDuPoint,
+  joursDeLaQuestion,
   moisFrancais,
   questionDuPoint,
   repliqueDuPoint,
@@ -20,7 +23,7 @@ import {
 const point = (p: Partial<PointInterrogeable> = {}): PointInterrogeable => ({
   loop_type: 'commute',
   poste: 'commute',
-  question_kind: 'changement',
+  question_kind: 'generique',
   mode: null,
   period_start: '2026-09-07',
   ...p,
@@ -166,6 +169,134 @@ describe('questionDuPoint', () => {
   });
 });
 
+describe('joursDeLaQuestion', () => {
+  it('porte les sept jours, dans l’ordre ISO de la contrainte SQL', () => {
+    expect(JOURS_FRANCAIS).toHaveLength(7);
+    expect(JOURS_FRANCAIS[0]).toBe('lundi');
+    expect(JOURS_FRANCAIS[6]).toBe('dimanche');
+  });
+
+  // **« ou » et non « et »**, et une seule majuscule : la jumelle SQL rend la même chaîne, et les
+  // deux sont comparées caractère par caractère par la paire de tests.
+  it('joint par « ou » et ne capitalise que le premier mot', () => {
+    expect(joursDeLaQuestion([2, 4])).toBe('Mardi ou jeudi');
+    expect(joursDeLaQuestion([1])).toBe('Lundi');
+    expect(joursDeLaQuestion([1, 3, 5])).toBe('Lundi ou mercredi ou vendredi');
+  });
+
+  it('trie, dédoublonne et ignore ce qui sort de la semaine', () => {
+    expect(joursDeLaQuestion([4, 2, 2])).toBe('Mardi ou jeudi');
+    expect(joursDeLaQuestion([0, 2, 9])).toBe('Mardi');
+  });
+
+  // Énumérer sept jours tiendrait sur trois lignes dans une notification.
+  it('sept jours se disent « Tous les jours »', () => {
+    expect(joursDeLaQuestion([1, 2, 3, 4, 5, 6, 7])).toBe('Tous les jours');
+  });
+
+  it('rend null plutôt qu’une chaîne vide quand il n’y a rien à nommer', () => {
+    expect(joursDeLaQuestion(null)).toBeNull();
+    expect(joursDeLaQuestion([])).toBeNull();
+    expect(joursDeLaQuestion([0, 8])).toBeNull();
+  });
+});
+
+describe('composerQuestionDuPoint — les quatre genres', () => {
+  it('engagement : le gabarit, avec les jours nommés', () => {
+    expect(
+      composerQuestionDuPoint(
+        point({
+          question_kind: 'engagement',
+          question_template: '{jours}, as-tu fait ce trajet à vélo ?',
+          committed_intention_days: [2, 4],
+        })
+      )
+    ).toBe('Mardi ou jeudi, as-tu fait ce trajet à vélo ?');
+  });
+
+  it('occasion : le gabarit, avec le mois écoulé', () => {
+    expect(
+      composerQuestionDuPoint(
+        point({
+          loop_type: 'extras',
+          poste: 'travel',
+          question_kind: 'occasion',
+          period_start: '2026-09-01',
+          // L'apostrophe est **droite**, comme dans la base : les gabarits sont lus de
+          // `action_templates` par les deux côtés de la paire, donc aucune divergence n'est
+          // possible là — contrairement à la phrase de maintien, écrite en dur des deux côtés, qui
+          // a dû être alignée. Le référentiel entier porte l'apostrophe droite (`action_text`
+          // comprise) ; l'uniformiser appartient à C3.8, qui possède ces libellés.
+          question_template:
+            "En {mois}, as-tu eu un déplacement où tu as choisi autre chose que l'avion ?",
+        })
+      )
+    ).toBe("En septembre, as-tu eu un déplacement où tu as choisi autre chose que l'avion ?");
+  });
+
+  // **Le maintien gagne**, et ce n'est pas l'ordre du `if` par hasard : demander à quelqu'un qui va
+  // déjà au travail à vélo s'il a tenu son engagement de faire un trajet à vélo poserait deux fois
+  // la même question. Le générateur applique la même priorité, et un contrôle SQL l'épingle.
+  it('maintien gagne sur engagement, gabarit présent ou non', () => {
+    expect(
+      composerQuestionDuPoint(
+        point({
+          question_kind: 'maintien',
+          mode: 'velo',
+          question_template: '{jours}, as-tu fait ce trajet à vélo ?',
+          committed_intention_days: [2, 4],
+        })
+      )
+    ).toBe('La semaine dernière, ton trajet s’est-il fait à vélo ?');
+  });
+
+  // Un `{jours}` affiché tel quel serait pire que vague : on retombe sur le générique.
+  it('un genre d’engagement sans gabarit retombe sur le générique', () => {
+    expect(composerQuestionDuPoint(point({ question_kind: 'engagement' }))).toBe(
+      'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?'
+    );
+  });
+
+  it('un gabarit sans jours figés ne laisse pas la marque à l’écran', () => {
+    expect(
+      composerQuestionDuPoint(
+        point({
+          question_kind: 'engagement',
+          question_template: '{jours}, as-tu fait ce trajet à vélo ?',
+        })
+      )
+    ).toBe('Cette semaine, as-tu fait ce trajet à vélo ?');
+  });
+});
+
+describe('questionDuPoint — la question figée gagne', () => {
+  // C'est tout l'intérêt de figer : la carte dit mot pour mot ce que la notification a dit, même si
+  // la composition a changé de version entre les deux.
+  it('affiche la question figée plutôt que de la recomposer', () => {
+    expect(
+      questionDuPoint(
+        point({
+          question_kind: 'engagement',
+          committed_question: 'Mardi ou jeudi, as-tu fait ce trajet à vélo ?',
+          question_template: '{jours}, as-tu travaillé depuis chez toi ?',
+          committed_intention_days: [1],
+        })
+      )
+    ).toBe('Mardi ou jeudi, as-tu fait ce trajet à vélo ?');
+  });
+
+  it('recompose sur un point d’avant C2.1, qui n’en porte pas', () => {
+    expect(questionDuPoint(point({ committed_question: null }))).toBe(
+      'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?'
+    );
+  });
+
+  // Une chaîne vide en base doit se comporter comme une absence, pas s'afficher à la place.
+  it('une question figée vide ne remplace pas la vraie', () => {
+    expect(questionDuPoint(point({ committed_question: '   ' }))).toContain('as-tu changé de mode');
+  });
+});
+
 describe('repliqueDuPoint', () => {
   it('le « Oui » est le même des deux côtés', () => {
     expect(repliqueDuPoint({ question_kind: 'changement', mode: null }, true)).toEqual({
@@ -210,8 +341,8 @@ describe('repliqueDuPoint', () => {
     );
   });
 
-  it('une question de changement garde checkinNon', () => {
-    expect(repliqueDuPoint({ question_kind: 'changement', mode: null }, false)).toEqual({
+  it('une question générique garde checkinNon', () => {
+    expect(repliqueDuPoint({ question_kind: 'generique', mode: null }, false)).toEqual({
       ligne: RAMILLE.checkinNon,
       mood: 'encouraging',
     });

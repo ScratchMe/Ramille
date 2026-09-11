@@ -16,6 +16,7 @@ export type Database = {
           action_text: string
           detail_kind: string | null
           id: string
+          question_template: string | null
           max_distance_km: number | null
           operation: string | null
           poste: string | null
@@ -30,6 +31,7 @@ export type Database = {
           action_text: string
           detail_kind?: string | null
           id?: string
+          question_template?: string | null
           max_distance_km?: number | null
           operation?: string | null
           poste?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           action_text?: string
           detail_kind?: string | null
           id?: string
+          question_template?: string | null
           max_distance_km?: number | null
           operation?: string | null
           poste?: string | null
@@ -408,6 +411,10 @@ export type Database = {
       }
       engagement_checkins: {
         Row: {
+          committed_action_text: string | null
+          committed_intention_days: number[] | null
+          committed_intention_timing: string | null
+          committed_question: string | null
           created_at: string
           id: string
           loop_type: string
@@ -423,6 +430,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          committed_action_text?: string | null
+          committed_intention_days?: number[] | null
+          committed_intention_timing?: string | null
+          committed_question?: string | null
           created_at?: string
           id?: string
           loop_type: string
@@ -438,6 +449,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          committed_action_text?: string | null
+          committed_intention_days?: number[] | null
+          committed_intention_timing?: string | null
+          committed_question?: string | null
           created_at?: string
           id?: string
           loop_type?: string
@@ -992,6 +1007,18 @@ export type Database = {
         Returns: undefined
       }
       check_intention_days: { Args: { p_days: number[] }; Returns: boolean }
+      checkin_question: {
+        Args: {
+          p_intention_days?: number[]
+          p_loop_type: string
+          p_mode: string
+          p_period_start: string
+          p_poste: string
+          p_question_kind: string
+          p_question_template?: string
+        }
+        Returns: string
+      }
       check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
       clear_plan_action_commitment: {
         Args: { p_plan_action_id: string }
@@ -1041,6 +1068,7 @@ export type Database = {
         Returns: undefined
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
+      jours_francais: { Args: { p_days: number[] }; Returns: string }
       mois_francais: { Args: { d: string }; Returns: string }
       poste_inserable: {
         Args: { p_loop_type?: string; p_poste: string }

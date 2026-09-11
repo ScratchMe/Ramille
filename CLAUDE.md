@@ -284,9 +284,45 @@ libellé snapshoté : la notification disait « La semaine dernière, as-tu chan
 pour ton trajet domicile-travail ? » et l'écran « As-tu changé de mode de transport au moins une
 fois cette semaine pour Trajet domicile-travail (Voiture thermique) ? ». Sur un produit dont la
 boucle consiste à appuyer sur la notification pour répondre, ce n'est pas une variante de
-formulation : c'est la même question qui ne se reconnaît pas d'un écran à l'autre. C2.1 étendra ces
-fonctions (l'action engagée, ses jours, la troisième réponse) plutôt que d'ouvrir un troisième
-endroit.
+formulation : c'est la même question qui ne se reconnaît pas d'un écran à l'autre. C2.1 a étendu ces
+deux endroits plutôt que d'en ouvrir un troisième, et C2.4 fera de même pour la troisième réponse.
+
+**Quand une action est engagée, la question la nomme — et elle est figée à la génération** (C2.1,
+`20260912190000_point_connait_laction.sql`). « As-tu changé de mode de transport ? » posée à
+quelqu'un qui s'est engagé à « faire un trajet sur cinq à vélo le mardi et le jeudi » ne referme
+pas le « si-alors » qu'il a écrit : elle lui demande un résumé de sa semaine. La phrase vient
+désormais du gabarit, `action_templates.question_template` (« {jours}, as-tu fait ce trajet à
+vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à connaître :
+
+- **`engagement_checkins.committed_question` est la question elle-même, figée**, comme `trip_label`
+  fige le libellé. Elle est posée une fois, au moment de la génération, et `enqueue_checkin_reminders`
+  comme la carte la lisent telle quelle — c'est la seule façon qu'elles ne puissent pas différer
+  d'un caractère. Corollaire voulu : **changer d'action après la génération ne réécrit pas la
+  question déjà posée**, et la carte le dit (« Cette question porte sur l'action que tu suivais
+  alors : … »), plutôt que d'afficher une phrase qui ne correspond plus à rien. Recomposer à
+  l'affichage rendrait le point incohérent avec la notification qu'on vient d'ouvrir.
+- **Les quatre genres sont `engagement` | `generique` | `maintien` | `occasion`** — l'ancien
+  `changement` a été renommé `generique`, parce qu'il ne décrit plus le cas général mais le
+  **repli** : un gabarit sans `question_template` y retombe, jamais sur une phrase à trous. Le
+  genre et le mode restent deux colonnes pour la raison de C2.5, et **`maintien` gagne sur
+  `engagement`** : en pratique un cycliste a un plan à zéro action (effet de bord de C2.5), mais la
+  priorité est explicite et testée plutôt que dépendante de ce hasard.
+- **L'action retenue est celle du cycle qui couvre la période interrogée, appariée par poste** —
+  `t.poste = 'commute'` pour la boucle hebdomadaire, `t.poste = ar.extras_poste` pour la mensuelle.
+  Sans l'appariement, une action engagée sur les loisirs aurait nommé la question du trajet
+  domicile-travail.
+- **`public.jours_francais(smallint[])` est la jumelle SQL de `JOURS_FRANCAIS` / `joursDeLaQuestion`**
+  (`src/types/checkin.ts`), **donc à toucher ensemble**, exactement pour la raison de `mois_francais`
+  au paragraphe précédent. Elle joint par « ou » et non par « et » (l'intention est un choix de
+  jours, pas un cumul), ne capitalise que la première lettre — `initcap` sur la liste jointe
+  donnerait « Mardi Ou Jeudi » — et rend « Tous les jours » à sept jours plutôt que de les énumérer.
+- **La notification ne préfixe le poste que si la question ne le nomme pas déjà.** La question
+  générique finit par « … pour ton trajet domicile-travail ? » : y coller l'étiquette répétait le
+  poste dans la même notification. Le `push_body` teste donc `position(etiquette in question)`.
+- **La composition n'est appelable que côté serveur** : `checkin_question` et `jours_francais` sont
+  révoquées de `public, anon, authenticated`. Le client ne compose que pour les points générés
+  **avant** C2.1, dont `committed_question` est nul — d'où `questionDuPoint`, qui préfère toujours la
+  question figée.
 
 **Le cycliste, le piéton et les loisirs rares ne reçoivent pas la même boucle** (C2.5, arbitrage D5,
 `20260912140000_qui_recoit_quelle_boucle.sql`). Quatre choses à connaître avant d'y toucher :

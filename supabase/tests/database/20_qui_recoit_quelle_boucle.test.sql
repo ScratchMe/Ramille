@@ -157,18 +157,24 @@ select results_eq(
   'cycliste : question de maintien, mode snapshoté — la catégorie décide, pas le CO₂'
 );
 
+-- **Deux choses ont bougé ici avec C2.1, et aucune n'est un relâchement.** Le `push_body` porte
+-- désormais le **poste en étiquette** quand la question ne le nomme pas déjà (A12-21 : Android ne
+-- montre que le titre et le début du corps), et la phrase de maintien porte l'apostrophe
+-- **typographique** — le SQL écrivait « s'est-il » et le client « s’est-il », ce qui rendait la paire
+-- incomparable caractère par caractère. Le genre `changement` s'appelle `generique` : même repli,
+-- nom plus juste maintenant qu'il y a quatre genres.
 select is(
   (select push_body from public.notification_outbox o
    where o.user_id = 'e2500000-0000-0000-0000-000000000001'),
-  'La semaine dernière, ton trajet s''est-il fait à vélo ?',
+  'Ton trajet domicile-travail · La semaine dernière, ton trajet s’est-il fait à vélo ?',
   'cycliste : la question est affirmative et ne demande pas ce qui a changé'
 );
 
 select results_eq(
   $$ select question_kind, mode from public.engagement_checkins
      where user_id = 'e2500000-0000-0000-0000-000000000003' and loop_type = 'commute' $$,
-  $$ values ('changement'::text, 'voiture_thermique'::text) $$,
-  'automobiliste : question de changement — le maintien ne s''étend pas à tout le monde'
+  $$ values ('generique'::text, 'voiture_thermique'::text) $$,
+  'automobiliste : question générique — le maintien ne s''étend pas à tout le monde'
 );
 
 select is(
@@ -210,7 +216,7 @@ select is(
 select results_eq(
   $$ select question_kind, mode from public.engagement_checkins
      where user_id = 'e2500000-0000-0000-0000-000000000006' and loop_type = 'extras' $$,
-  $$ values ('changement'::text, null::text) $$,
+  $$ values ('generique'::text, null::text) $$,
   'boucle mensuelle : jamais de question de maintien, et pas de mode snapshoté'
 );
 

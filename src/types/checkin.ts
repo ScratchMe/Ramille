@@ -19,27 +19,49 @@
 // touchent ensemble**, et deux fichiers de tests jumeaux (`checkin.test.ts` ici,
 // `20_qui_recoit_quelle_boucle.test.sql` là-bas) existent pour que la divergence tombe.
 //
-// **Ce module ne porte pas encore la structure complète de la question** (l'action engagée et ses
-// jours, la troisième réponse, le pied de carte) : c'est le chantier C2.1, qui étendra ces deux
-// fonctions plutôt que d'en ouvrir un troisième endroit.
+// **Depuis C2.1, la question connaît l'action engagée**, et la composition est écrite deux fois de
+// plus : `composerQuestionDuPoint` ici, `public.checkin_question` là-bas. Mais la carte ne compose
+// presque jamais — elle lit `engagement_checkins.committed_question`, **figée à la génération**.
+// C'est ce qui garantit qu'elle affiche mot pour mot ce que la notification a envoyé, même si la
+// composition change de version entre les deux. La fonction de composition reste nécessaire pour
+// deux raisons : les points générés avant C2.1 n'ont pas de question figée, et c'est elle qui rend
+// la paire SQL/TypeScript **testable** — sans jumelle, la composition SQL pourrait dériver sans que
+// rien ne tombe.
 
 import { RAMILLE } from '@/constants/mascotte';
 import { formeInserable } from '@/constants/postes';
 
-/** Le genre de question posée, miroir de `engagement_checkins.question_kind`. */
-export type GenreDeQuestion = 'changement' | 'maintien';
+/**
+ * Le genre de question posée, miroir de `engagement_checkins.question_kind` (C2.1).
+ *
+ * Quatre valeurs, et un ordre de priorité que le générateur applique et qu'un test épingle des
+ * deux côtés : **`maintien` gagne sur tout**, puis `engagement` / `occasion` quand une action est
+ * engagée sur le poste interrogé, puis `generique` en repli. `generique` est l'ancien
+ * `changement`, renommé par la migration : « générique » dit ce qu'il est, « changement »
+ * décrivait le verbe de sa phrase.
+ */
+export type GenreDeQuestion = 'engagement' | 'generique' | 'maintien' | 'occasion';
 
 /** Ce qu'il faut d'un point pour en composer la question. Un sous-ensemble de la ligne en base. */
 export type PointInterrogeable = {
   loop_type: 'commute' | 'extras';
   /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */
   poste: string | null;
-  /** `changement` par défaut en base : une ligne générée avant C2.5 n'en porte pas d'autre. */
+  /** `generique` par défaut en base ; une ligne d'avant C2.5 n'en porte pas d'autre. */
   question_kind: string | null;
   /** Le mode snapshoté du poste interrogé. Ne remplit que la question de maintien. */
   mode: string | null;
   /** Date ISO (`YYYY-MM-DD`) du début de la période **écoulée** qu'on interroge (C2.3). */
   period_start: string;
+  /**
+   * La question **figée** à la génération (C2.1), telle que le rappel l'a envoyée. Nulle sur les
+   * points générés avant cette migration, où la composition reprend le relais.
+   */
+  committed_question?: string | null;
+  /** Le gabarit de l'action engagée, pour composer. La carte ne le lit pas : elle a la question. */
+  question_template?: string | null;
+  /** Les jours d'intention figés, qui remplissent `{jours}`. */
+  committed_intention_days?: number[] | null;
 };
 
 /**
@@ -107,6 +129,45 @@ export function complementDeMaintien(mode: string | null | undefined): string {
 }
 
 /**
+ * Les sept jours — **jumelle de la liste de `public.jours_francais(smallint[])`**.
+ *
+ * Troisième liste de mots français écrite deux fois, après les mois et le complément de maintien,
+ * et pour la même raison : le rappel nomme les jours sans le client.
+ */
+export const JOURS_FRANCAIS = [
+  'lundi',
+  'mardi',
+  'mercredi',
+  'jeudi',
+  'vendredi',
+  'samedi',
+  'dimanche',
+] as const;
+
+/**
+ * Les jours d'intention nommés **pour une question** — jumelle de `public.jours_francais`.
+ *
+ * **« ou » et non « et », et une seule majuscule.** La question demande si le geste a eu lieu *l'un*
+ * de ces jours ; `formatIntentionDays` (`src/types/plan.ts`) dit « le mardi et le jeudi » parce
+ * qu'elle rappelle un engagement. Les deux formes coexistent à dessein et ne doivent pas être
+ * fusionnées : « Le mardi et le jeudi, as-tu fait ce trajet à vélo ? » demande si les deux ont eu
+ * lieu, ce qui n'est pas la question.
+ *
+ * Sept jours se disent « Tous les jours » plutôt que de les énumérer : la phrase tiendrait sur
+ * trois lignes dans une notification.
+ */
+export function joursDeLaQuestion(jours: number[] | null | undefined): string | null {
+  if (!jours) return null;
+
+  const distincts = [...new Set(jours)].filter((j) => j >= 1 && j <= 7).sort((a, b) => a - b);
+  if (distincts.length === 0) return null;
+  if (distincts.length === 7) return 'Tous les jours';
+
+  const liste = distincts.map((j) => JOURS_FRANCAIS[j - 1]).join(' ou ');
+  return liste.charAt(0).toUpperCase() + liste.slice(1);
+}
+
+/**
  * L'ouverture de la question : la **période écoulée**, jamais celle qui commence (C2.3).
  *
  * Le mois est nommé à partir de `period_start`, donc du mois réellement interrogé — jamais de
@@ -120,32 +181,62 @@ function ouvertureDeLaPeriode(point: PointInterrogeable): string {
 }
 
 /**
- * La question du point, telle que la carte l'affiche — **et telle que le rappel l'a envoyée**.
+ * La composition de la question — **jumelle de `public.checkin_question(...)`**, à toucher avec
+ * elle, et épinglée des deux côtés sur la même table de cas.
  *
- * Deux formes, décidées par `question_kind` :
+ * Quatre formes, dans cet ordre de priorité :
  *
- *   * `changement` — « La semaine dernière, as-tu changé de mode de transport pour ton trajet
- *     domicile-travail ? ». Le poste est nommé par sa **forme insérable** et non par `trip_label`,
- *     qui porte le mode entre parenthèses : « … pour Trajet domicile-travail (Voiture thermique) ? »
- *     est une phrase que personne n'a écrite (C2.6).
- *   * `maintien` — « La semaine dernière, ton trajet s'est-il fait à vélo ? ». Affirmative : elle
- *     demande si l'habitude a tenu, pas si quelque chose a changé. La poser sous l'autre forme à
- *     quelqu'un qui va déjà au travail à vélo n'a qu'une réponse honnête (C2.5).
+ *   1. `maintien` — « La semaine dernière, ton trajet s’est-il fait à vélo ? ». Affirmative : elle
+ *      demande si l'habitude a tenu, pas si quelque chose a changé. **Elle gagne sur l'engagement**,
+ *      parce que demander à quelqu'un qui va déjà au travail à vélo s'il a tenu son engagement de
+ *      faire un trajet à vélo serait poser deux fois la même question (C2.5).
+ *   2. `engagement` — le gabarit de l'action, les jours nommés : « Mardi ou jeudi, as-tu fait ce
+ *      trajet à vélo ? ». C'est le « si-alors » de l'engagement, enfin refermé (C2.1).
+ *   3. `occasion` — le gabarit aussi, mais la boucle est mensuelle : il n'y a pas de jour de la
+ *      semaine à nommer, l'intention étant une échéance fermée. « En septembre, as-tu eu un
+ *      déplacement où tu as choisi autre chose que l'avion ? »
+ *   4. `generique` — aucune action engagée. Le poste par sa **forme insérable** et non par
+ *      `trip_label`, qui porte le mode entre parenthèses (C2.6).
  *
- * « au moins une fois » a disparu de la première forme : la question porte déjà sur une période
- * fermée, et la précision alourdissait une phrase que la notification doit tenir en deux lignes.
+ * Un genre `engagement` ou `occasion` **sans gabarit** retombe sur le générique : une phrase qui
+ * afficherait `{jours}` tel quel serait pire que vague. Le cas ne devrait pas arriver — un test
+ * pgTAP interdit un gabarit sans `question_template` — mais il ne doit pas s'afficher.
  */
-export function questionDuPoint(point: PointInterrogeable): string {
+export function composerQuestionDuPoint(point: PointInterrogeable): string {
   const ouverture = ouvertureDeLaPeriode(point);
 
   if (point.question_kind === 'maintien') {
     return `${ouverture}, ton trajet s’est-il fait ${complementDeMaintien(point.mode)} ?`;
   }
 
+  const gabarit = point.question_template;
+  if ((point.question_kind === 'engagement' || point.question_kind === 'occasion') && gabarit) {
+    const mois = moisFrancais(point.period_start) ?? 'ce mois';
+    const jours = joursDeLaQuestion(point.committed_intention_days) ?? 'Cette semaine';
+    return gabarit.replace('{mois}', mois).replace('{jours}', jours);
+  }
+
   return `${ouverture}, as-tu changé de mode de transport pour ${formeInserable(
     point.poste,
     point.loop_type
   )} ?`;
+}
+
+/**
+ * La question du point, telle que la carte l'affiche — **et telle que le rappel l'a envoyée**.
+ *
+ * **La question figée gagne toujours.** `committed_question` est posée à la génération, dans la même
+ * transaction que le point et que la ligne d'envoi : l'afficher plutôt que de la recomposer est la
+ * seule façon de garantir que la carte dit mot pour mot ce que la notification a dit, y compris si
+ * la composition change de version entre les deux — et c'est le cas que C2.1 a justement créé en
+ * figeant l'action engagée. La recomposition ne sert qu'aux points générés avant cette migration.
+ *
+ * `trim()` et non une simple vérité : une chaîne vide en base doit se comporter comme une absence,
+ * pas comme une question vide affichée à la place de la vraie.
+ */
+export function questionDuPoint(point: PointInterrogeable): string {
+  const figee = point.committed_question?.trim();
+  return figee ? figee : composerQuestionDuPoint(point);
 }
 
 /**
