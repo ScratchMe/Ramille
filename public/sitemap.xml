@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Les cinq pages que le produit offre à l'indexation, et elles seules. La liste est la même que
+  `PAGE_DESCRIPTIONS` dans `src/constants/page-titles.ts` : une page publique porte une
+  description et une entrée ici, une page d'application ne porte ni l'une ni l'autre et reçoit
+  `noindex, nofollow`.
+
+  Pas de `lastmod` : une date écrite à la main devient fausse au premier déploiement suivant, et
+  un `lastmod` faux vaut moins que pas de `lastmod` du tout.
+
+  Le domaine est en dur parce que ce fichier est statique, recopié tel quel depuis `public/` par
+  l'export : il ne peut pas importer de TypeScript, même raison qu'`api/`. Il doit donc valoir
+  exactement `ORIGINE_CANONIQUE` (`src/constants/produit.ts`), que `scripts/verifier-titres-export.mjs`
+  lit par motif pour refuser un export où ce fichier, `robots.txt` ou l'`og:url` des pages
+  publiques désigneraient une autre origine. `www` et non l'apex : c'est le domaine canonique
+  côté Vercel, l'apex redirige en 308 vers lui.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.ramille.fr/</loc></url>
+  <url><loc>https://www.ramille.fr/onboarding</loc></url>
+  <url><loc>https://www.ramille.fr/confidentialite</loc></url>
+  <url><loc>https://www.ramille.fr/conditions</loc></url>
+  <url><loc>https://www.ramille.fr/compte/suppression</loc></url>
+</urlset>

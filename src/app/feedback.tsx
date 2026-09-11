@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
 import { Mascot } from '@/components/mascot';
+import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -29,6 +30,15 @@ import {
 //
 // L'état de succès est un état de composant, jamais une `Alert` : sur web `Alert.alert`
 // retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` (cf. CLAUDE.md).
+
+/**
+ * L'intitulé du champ, **écrit une fois** : il est à la fois le texte visible au-dessus de la
+ * zone de saisie et son nom accessible (A6-13). Les deux recopiés côte à côte finissent
+ * toujours par ne plus correspondre — c'est la dérive que `TextField` et `TextLink`
+ * documentent déjà.
+ */
+const LIBELLE_MESSAGE = 'Ton message';
+
 export default function Feedback() {
   const theme = useTheme();
   const { kind: kindParam, context } = useLocalSearchParams<{ kind?: string; context?: string }>();
@@ -90,11 +100,15 @@ export default function Feedback() {
             </ThemedText>
           </View>
 
-          <View style={styles.kinds}>
+          {/* Une catégorie et une seule : `radiogroup` + `radio`, comme `ChoixDeRappel`. En
+              `button`, le rôle n'annonçait pas « non sélectionné » — sur cinq puces, c'est
+              l'information qui manque le plus. */}
+          <View style={styles.kinds} accessibilityRole="radiogroup" accessibilityLabel="Catégorie">
             {FEEDBACK_KINDS.map((option) => (
               <Chip
                 key={option.value}
                 label={option.label}
+                role="radio"
                 selected={kind === option.value}
                 onPress={() => setKind(option.value)}
                 radius={16}
@@ -105,7 +119,7 @@ export default function Feedback() {
 
           <View style={styles.fieldBlock}>
             <ThemedText type="small" themeColor="textTertiary">
-              Ton message
+              {LIBELLE_MESSAGE}
             </ThemedText>
             <TextInput
               value={message}
@@ -114,6 +128,11 @@ export default function Feedback() {
               maxLength={FEEDBACK_MAX_LENGTH}
               placeholder="Dis-nous en quelques mots…"
               placeholderTextColor={theme.textTertiary}
+              // L'intitulé est un frère dans l'arbre, pas un `label for` : sans ces deux lignes,
+              // le seul champ de texte libre du produit s'annonce sans nom, et le compteur de
+              // caractères affiché dessous n'est rattaché à rien.
+              accessibilityLabel={LIBELLE_MESSAGE}
+              accessibilityHint={`${FEEDBACK_MAX_LENGTH} caractères au maximum.`}
               style={[
                 styles.input,
                 { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.border },
@@ -124,11 +143,9 @@ export default function Feedback() {
             </ThemedText>
           </View>
 
-          {error && (
-            <ThemedView type="backgroundElement" style={styles.errorCard}>
-              <ThemedText type="small">{error}</ThemedText>
-            </ThemedView>
-          )}
+          {/* L'échec passe par `MessageInline` comme partout ailleurs : une carte maison dit la
+              même chose à l'œil, mais sans région vivante elle n'est annoncée à personne. */}
+          <MessageInline message={error} />
 
           <Button title={sending ? 'Envoi…' : 'Envoyer'} onPress={onSend} disabled={!canSend} />
 
@@ -136,8 +153,8 @@ export default function Feedback() {
               personne n'ouvre. Le contexte est le nom de l'écran d'origine, rien de plus. */}
           <ThemedText type="code" themeColor="textTertiary" style={styles.privacy}>
             On enregistre ton message, la catégorie choisie{context ? ' et l’écran d’où tu viens' : ''}, avec
-            l’identifiant de ton compte pour pouvoir te répondre si tu nous laisses un moyen de le
-            faire. Rien d’autre.
+            l’identifiant de ton compte pour rapprocher ton retour de ce que tu vois. Rien d’autre,
+            et aucune réponse : il n’existe pas de canal pour t’en adresser une.
           </ThemedText>
 
           <TextLink
@@ -169,7 +186,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlignVertical: 'top',
   },
-  errorCard: { borderRadius: 14, padding: 14 },
   privacy: { lineHeight: 18 },
   cancel: { textAlign: 'center' },
   sentSafeArea: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },

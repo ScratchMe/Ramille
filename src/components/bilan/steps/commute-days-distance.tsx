@@ -8,7 +8,13 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { BilanAnswers, DistanceBracket } from '@/types/bilan';
+import {
+  afficherNombreSaisi,
+  distanceBracketMidpointKm,
+  distanceDomicileTravailARelire,
+  type BilanAnswers,
+  type DistanceBracket,
+} from '@/types/bilan';
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7];
 
@@ -77,6 +83,36 @@ export function CommuteDaysDistanceStep({
               />
             ))}
           </View>
+          {/* La règle du calcul, dite à l'écran : une tranche est comptée par son milieu, et
+              ce milieu était écrit en deux endroits sans être montré nulle part (audit
+              A2-22). Ramille ne porte jamais de chiffre : ce texte n'est donc pas dans sa
+              voix, c'est celle du produit.
+
+              La phrase n'est vraie que parce qu'une tranche et un kilométrage ne coexistent
+              pas — `normaliserReponses` efface la tranche dès qu'un kilométrage existe, le
+              calcul faisant `coalesce(km, milieu)`. Sans cette exclusivité, l'écran
+              annoncerait une distance que le calcul n'utiliserait pas. */}
+          {answers.commute_distance_bracket !== null && (
+            <ThemedText type="small" themeColor="textSecondary">
+              On comptera environ{' '}
+              {afficherNombreSaisi(distanceBracketMidpointKm(answers.commute_distance_bracket))} km
+              pour un aller.
+            </ThemedText>
+          )}
+          {/* Symétrique de « Je ne sais pas » : sans lui, le passage aux tranches était sans
+              retour — `unknown` repart de la présence d'une tranche à chaque visite de
+              l'étape, donc restait vrai, et la tranche se transmettait de re-bilan en
+              re-bilan. L'écran promettait pourtant juste au-dessus qu'on ajusterait la
+              précision plus tard (audit A2-18). */}
+          <TextLink
+            label="Je connais la distance exacte"
+            hint="Revient à la saisie en kilomètres"
+            onPress={() => {
+              setUnknown(false);
+              update({ commute_distance_bracket: null });
+            }}
+            type="linkPrimary"
+          />
         </View>
       ) : (
         <View style={styles.block}>
@@ -89,6 +125,16 @@ export function CommuteDaysDistanceStep({
             unit="km"
             label="Distance pour un aller"
           />
+          {/* Relecture proposée, jamais un blocage : un aller de 250 km existe. Ce qu'on
+              attrape, c'est le 1200 saisi au lieu de 120 — cent fois trop lourd sur le poste
+              le plus lourd du bilan, et rien ne le signalait (audit A2-1). Pas de
+              `role="alert"` : ce n'est pas un échec. */}
+          {distanceDomicileTravailARelire(answers) && (
+            <ThemedText type="small" themeColor="textSecondary">
+              C’est une longue distance pour un aller. Vérifie qu’il s’agit bien d’un seul
+              trajet : le retour est déjà compté.
+            </ThemedText>
+          )}
           <TextLink
             label="Je ne sais pas"
             hint="Propose des tranches de distance à la place"

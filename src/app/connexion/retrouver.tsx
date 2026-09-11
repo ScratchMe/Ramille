@@ -15,8 +15,15 @@ import { Radius, Spacing } from '@/constants/theme';
 import { APP_URL } from '@/lib/app-url';
 import { sendAccountAccessLink } from '@/lib/auth';
 import { lireEtatDuCompte } from '@/lib/compte';
-import { adresseSemblePlausible, estLimiteDEnvoi } from '@/types/connexion';
+import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
+import {
+  adresseSemblePlausible,
+  estLimiteDEnvoi,
+  messageDuRetourDeLien,
+  motifRetourLien,
+} from '@/types/connexion';
 import { track } from '@/lib/analytics';
+import type { SourceRetrouver } from '@/types/analytics';
 
 // "Retrouver mon compte" — l'écran qui manquait (docs/design/v1-10-retrouver-son-compte) :
 // jusqu'à v1-10, le produit n'avait aucun chemin vers un compte *existant*. Sur un nouvel
@@ -37,10 +44,47 @@ import { track } from '@/lib/analytics';
 //   - `chargement` : le temps de savoir s'il y a collision.
 type Phase = 'chargement' | 'collision' | 'saisie' | 'envoye';
 
-/** Un paramètre d'URL vient de l'extérieur : on ne le relaie pas tel quel dans une mesure. */
-function sourceMesuree(source: string | undefined): 'onboarding' | 'email' | 'google' {
+/**
+ * Un paramètre d'URL vient de l'extérieur : on ne le relaie pas tel quel dans une mesure.
+ *
+ * **Une quatrième porte existe désormais et n'a pas encore sa valeur** : le layout racine ouvre
+ * cet écran avec `source: 'lien'` quand une URL entrante porte un échec au lieu de jetons, et
+ * cette arrivée est encore comptée comme l'accueil de l'onboarding, faute d'un `'lien'` dans
+ * `retrouver_view.source` (`src/types/analytics.ts`). Les deux côtés s'ajoutent ensemble ou pas
+ * du tout : une valeur émise et non déclarée ne passe pas le typecheck, une valeur déclarée que
+ * rien n'émet se lit zéro (CLAUDE.md). Le jour où la liste du type l'accueille, la ligne à
+ * ajouter ici est `if (source === 'lien') return 'lien';` — et le chiffre de la porte qu'on vient
+ * d'ouvrir cesse d'être faux.
+ */
+/**
+ * Sortir d'ici sans cul-de-sac.
+ *
+ * Le layout racine ouvre cet écran en `replace` quand une URL entrante porte un lien mort : au
+ * démarrage à froid, `/` était la seule entrée de pile, donc après le remplacement `canGoBack()`
+ * est faux et un `router.back()` nu **ne fait rien du tout**. Les deux sorties de l'écran étaient
+ * exactement ça : quelqu'un qui clique un lien expiré restait enfermé sur l'écran où on venait de
+ * le déposer, la phase « envoyé » ne menant nulle part non plus. La racine sait toujours où
+ * envoyer la personne (plan si un bilan est complété, onboarding sinon).
+ */
+function revenirOuRacine() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
+
+/**
+ * La porte par laquelle on est entré, ramenée aux valeurs que le référentiel déclare.
+ *
+ * **`lien` est la quatrième, et elle est neuve** : le layout racine ouvre cet écran quand l'URL
+ * entrante porte un échec de lien au lieu de jetons. Sans elle, ces arrivées se repliaient sur
+ * `onboarding` et gonflaient exactement la porte à laquelle on voulait les comparer — le même
+ * défaut que les provenances de `/connexion` dans la même vague. Une valeur de propriété ne coûte
+ * aucune ligne de référentiel (`check_usage_event_props` ne valide que les clés et les longueurs),
+ * seulement la description à tenir côté base et le type ici.
+ */
+function sourceMesuree(source: string | undefined): SourceRetrouver {
   if (source === 'email') return 'email';
   if (source === 'google') return 'google';
+  if (source === 'lien') return 'lien';
   return 'onboarding';
 }
 
@@ -49,11 +93,20 @@ export default function RetrouverMonCompte() {
   // dit par quelle porte on est entré — l'accueil de l'onboarding ou l'écran email — et c'est
   // la moitié de ce qu'on cherche à savoir : combien de personnes changent d'appareil **avant**
   // de refaire un bilan, la porte qui doit rendre la collision rare (v1-10 §2.D).
-  const params = useLocalSearchParams<{ email?: string; source?: string }>();
+  const params = useLocalSearchParams<{ email?: string; source?: string; motif?: string }>();
+
+  // **`motif` est la seule surface où un lien mort se voit.** Le layout racine ouvre cet écran
+  // quand l'URL entrante porte un échec au lieu de jetons (A1-6, A6-6) ; il relit le paramètre par
+  // son garde plutôt que de le croire, et le message part dans un `MessageInline` — en `collision`
+  // comme en `saisie`, puisque c'est la collision qui s'affiche en premier neuf fois sur dix, et
+  // qu'il se garde d'une phase à l'autre jusqu'à la tentative suivante, qui l'efface.
+  const motif = motifRetourLien(params.motif);
   const [phase, setPhase] = useState<Phase>('chargement');
   const [email, setEmail] = useState(params.email ?? '');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(
+    motif ? messageDuRetourDeLien(motif) : null
+  );
 
   useEffect(() => {
     let annule = false;
@@ -77,6 +130,24 @@ export default function RetrouverMonCompte() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Arrivée par un lien qui n'a pas marché : l'adresse est celle qu'on a demandée depuis cet
+  // appareil, relue en local et jamais déduite d'une réponse serveur (non-divulgation, cf.
+  // `src/lib/connexion-prefs.ts`). Sans elle, une expiration se paie d'une ressaisie. Ne s'écrit
+  // que sur un champ encore vide : une frappe en cours passe avant.
+  useEffect(() => {
+    if (!motif || params.email) return;
+    let annule = false;
+    void lireAdresseDuLien().then((adresse) => {
+      if (annule || !adresse) return;
+      setEmail((actuelle) => (actuelle ? actuelle : adresse));
+    });
+    return () => {
+      annule = true;
+    };
+    // Volontairement au montage seul : les paramètres d'URL ne changent pas ici.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const envoyerLeLien = async () => {
     setMessage(null);
     if (!adresseSemblePlausible(email)) {
@@ -95,6 +166,10 @@ export default function RetrouverMonCompte() {
     const redirectTo = Platform.OS === 'web' ? `${APP_URL}/` : makeRedirectUri();
     const { error } = await sendAccountAccessLink(email, redirectTo);
     setBusy(false);
+    // Gardée avant toute lecture du retour, pour la même raison que la réponse est unique : on
+    // ne sait pas — et on ne veut pas savoir — si un lien est parti. Ce qui est sûr, c'est que
+    // cette adresse est celle que la personne vient de taper sur cet appareil.
+    await memoriserAdresseDuLien(email);
 
     if (estLimiteDEnvoi(error)) {
       setMessage('Trop de demandes coup sur coup. Réessaie dans quelques minutes.');
@@ -126,11 +201,21 @@ export default function RetrouverMonCompte() {
               <ThemedText type="body" themeColor="textSecondary">
                 On peut le refaire ensemble après, ça va vite.
               </ThemedText>
+              {/* **Le motif s'affiche ici aussi, et c'est le cas le plus fréquent.** Un appareil
+                  qui a demandé un lien porte presque toujours un bilan anonyme : `collision` est
+                  donc l'écran que voit la personne qui vient de cliquer un lien mort, et sans
+                  cette ligne rien ne lui disait pourquoi l'app s'était ouverte là — exactement le
+                  silence que le paramètre existe pour supprimer. */}
+              <MessageInline message={message} />
             </View>
           </View>
           <View style={styles.footer}>
             <Button title="Retrouver mon compte" onPress={() => setPhase('saisie')} />
-            <Button title="Garder ce bilan sur cet appareil" variant="secondary" onPress={() => router.back()} />
+            <Button
+              title="Garder ce bilan sur cet appareil"
+              variant="secondary"
+              onPress={revenirOuRacine}
+            />
             <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
               Garder ce bilan te laisse sans compte : il restera sur cet appareil, et là seulement.
             </ThemedText>
@@ -213,7 +298,7 @@ export default function RetrouverMonCompte() {
               Sans cette carte, la moitié des gens concernés se croient exclus. */}
           <ThemedView type="backgroundSelected" style={styles.card}>
             <ThemedText type="small" weight={600}>
-              Tu t&apos;es connecté avec Google ?
+              Ton compte est un compte Google ?
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               C&apos;est la même adresse — celle de ton compte Google. Pas besoin de mot de passe :
@@ -227,7 +312,7 @@ export default function RetrouverMonCompte() {
           </ThemedText>
           <TextLink
             label="Retour"
-            onPress={() => router.back()}
+            onPress={revenirOuRacine}
             role="link"
             type="small"
             themeColor="textTertiary"

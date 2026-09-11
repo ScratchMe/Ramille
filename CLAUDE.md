@@ -82,6 +82,19 @@ requête sur la base** plutôt qu'à la main, et n'écrire dans le test que des 
 vérifiées. Le piège se referme d'autant plus facilement que la validation sur le projet
 distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des tests.
 
+**Et le piège a un symétrique, relevé le 11/09/2026 : trois assertions de la suite échouent sur le
+projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les connaître évite de
+« corriger » un test qui n'a rien.
+- `12_usage_events` assertion 9 (« un horodatage antidaté est écrasé par celui du serveur ») lit
+  `min(occurred_at)` sur **toute** la table : le projet distant porte des lignes réelles
+  antérieures à sa fenêtre de cinq minutes, une stack locale neuve n'en a aucune.
+- `17_rappels_canal` assertions 15 et 16 attendent un envoi **sauté** faute de secrets Vault. Sur
+  le distant, `resend_api_key` et `reminder_from_address` existent : la fonction envoie vraiment, et
+  la ligne passe en `sent` / le passage en `success`.
+Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
+fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
+`request.jwt.claims` comprises, et de savoir que ces trois-là ne prouvent rien là-bas.
+
 ## Architecture
 
 **Stack** : Expo (React Native + Expo Router, un seul codebase mobile+web) · Supabase
@@ -175,6 +188,12 @@ plutôt que d'insérer un point à la main.
 contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une
 issue GitHub par chantier — #99 à #151 et #153 — et **le plan de livraison en huit vagues en §2.3**, dont
 l'issue de suivi #154 est la vue cochable ; inventaire complet en `docs/audit/2026-09-09-inventaire.md`).
+**Les vagues 1 et 2 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, le lot 1
+(bugs silencieux et textes faux) le 11/09/2026 ; la vague 3 est la suite, et c'est elle qui porte le
+jalon « publiable sur Play ». Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce
+qui reste à vérifier sur appareil et que cocher une ligne de §10 ne dit pas, et le relevé de fichiers
+— la colonne « Parallèle ? » de §2.3 est une intention, pas un relevé, et la vague 2 s'est révélée
+partager six fichiers après avoir été annoncée disjointe.
 **Le lot 2 a son canvas Claude Design, livré le 10/09/2026** : `docs/design/v1-14-boucle-engagement/`
 (brief, HANDOFF du designer, captures, README qui consigne ce que l'implémentation corrige par rapport au
 canvas) et son document d'implémentation **`v1-14-boucle-engagement.md`** — la copie (§3, seule source
@@ -293,6 +312,25 @@ depuis `src/`, jamais par « un test en a besoin » ; et un test qui n'assure qu
 après un `revoke`, « permission denied » et « violates row-level security » portant tous deux le
 SQLSTATE 42501.
 
+**La soumission écrit `in_progress` d'abord, et c'est ce qui empêche le bilan fantôme**
+(11/09/2026, `20260911120000_soumission_bilan.sql`). L'ancienne séquence insérait `assessments` en
+`completed` avec son `submitted_at`, **puis** les réponses, **puis** appelait le calcul : ce qui
+s'arrêtait entre les deux premières laissait un bilan complété sans réponses ni résultat, et cet
+état n'est pas inerte — la racine route sur `status = 'completed'`, donc elle envoyait au plan, qui
+affichait « Ton plan est en cours de préparation » sans bouton et pour toujours (le cron nocturne
+boucle lui aussi sur les `completed`, mais il a besoin des réponses), le préremplissage du
+re-bilan ne trouvait rien, et l'entonnoir comptait un bilan soumis là où il y avait eu une panne.
+`in_progress` est l'état que rien ne lit. Trois règles qui en découlent : **le passage en
+`completed` précède le RPC** (`generate_plan_cycle_for_user` sélectionne les `completed`) ; la
+reprise **réutilise** le bilan `in_progress` qui traîne au lieu de le supprimer — ce qui couvre
+aussi l'app tuée entre deux écritures, où aucun nettoyage ne tournerait, et n'oblige pas à
+accorder un `delete` sur `assessments` ; et les réponses passent donc par un `upsert`, leur clé
+primaire étant `assessment_id`. Le verrou anti-double-soumission vit dans une `useRef`, pas dans
+l'état d'affichage, qui ne vaut `true` qu'au rendu suivant. Côté SQL, la génération du plan est
+enveloppée dans un `begin … exception … end` : les deux fonctions partagent la transaction du RPC,
+donc sans cette sous-transaction un plan qui échoue emportait le résultat que le calcul venait
+d'écrire.
+
 Le bilan (`assessment_answers`) est modélisé à plat, un champ par question B1.1→B4.3 — pas
 une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par poste
 (domicile-travail, loisirs, voyages), jamais plusieurs trajets du même type. Le mapping
@@ -392,6 +430,21 @@ répondu qu'il n'y en a pas. L'estimateur lit l'instantané par segment figé su
 jamais recalculer les km ailleurs**, les deux implémentations divergeraient. Les gains sont
 ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
 
+**La réponse à un point de suivi passe par `repondre_au_checkin`, et `engagement_checkins` n'a
+plus aucune écriture client** (11/09/2026, `20260911100000_reponse_checkin_rpc.sql`) : ni policy
+d'écriture, ni privilège `update`. Le raisonnement est mot pour mot celui de `plan_actions`
+ci-dessous — **la RLS filtre des lignes, jamais des colonnes** — et ce qu'une policy UPDATE
+owner-scoped ouvrait ici n'était pas anodin : `trip_label` et `period_label`, les libellés
+snapshotés qui existent précisément pour qu'un re-bilan ne réécrive pas un point déjà généré ;
+`period_start`, la clé d'idempotence de la génération (`unique(user_id, loop_type, period_start)`
++ `on conflict do nothing`), dont la réécriture bloque ou duplique la période suivante ; `status`,
+qui accepte `expired` — un point en attente pouvait disparaître de la carte du plan sans avoir été
+répondu ; et `responded_at`, qui venait de l'horloge du téléphone. Le RPC pose les trois seules
+colonnes d'une réponse, avec `now()` du serveur, et refuse un point déjà répondu ou clos. C'est
+aussi le seul endroit où la forme de la réponse changera quand une troisième réponse (« pas de
+trajet cette période ») arrivera — mais `p_reponse boolean` ne peut pas porter un troisième état :
+ce sera une migration, pas un paramètre de plus.
+
 **L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
 `plan_actions` porte des chiffres figés à la génération, et **deux gardes indépendantes les
 protègent depuis le 10/09/2026** : aucune policy d'écriture — en ajouter une ouvrirait toutes les
@@ -430,6 +483,34 @@ depuis `usage_events` — **ajouter un événement impose une ligne par migratio
 `src/types/analytics.ts`**, sinon l'insert est rejeté et l'événement perdu en silence (même
 mécanique que `emission_factor_sources`). Un événement déclaré mais qu'aucun code n'émet doit
 être retiré : il ne se lit pas « pas encore instrumenté », il se lit **zéro**.
+
+**La même règle vaut pour une valeur de propriété, et elle est plus discrète** : la base ne valide
+pas les valeurs de `props` — `check_usage_event_props` ne compte que des clés et des longueurs —
+donc rien n'arrête la dérive. `connexion_view` déclarait cinq provenances dont deux qu'aucun écran
+n'émettait plus, et une sixième (`compte`) que l'écran de connexion réécrivait en
+`resultat_transition` faute de la reconnaître : la provenance la plus intéressante à mesurer
+gonflait exactement le chiffre auquel on voulait la comparer. D'où `SOURCES_CONNEXION`
+(`src/types/analytics.ts`) — **une seule liste**, qui donne le type *et* le garde
+d'appartenance — et le fait que les valeurs attendues soient écrites dans la description du
+référentiel, seul endroit où la base peut les porter.
+
+**Deux mesures valent d'être connues, parce qu'elles étaient fausses d'une façon qui ne se voit
+pas dans un chiffre** (11/09/2026) :
+- **`app_open` part après la résolution d'`ensureSession()`, jamais au montage du layout**, et
+  porte `props.origine` (`demarrage` / `retour`). `track()` renonce quand aucune session n'existe
+  encore : émis au rendu, l'événement était perdu précisément sur les premiers lancements — ceux
+  où la session se crée — soit un biais systématique contre les nouveaux venus, une ligne en base
+  pour six vues d'étape d'onboarding. Et le second chemin n'existait pas du tout : le layout n'est
+  monté qu'une fois par chargement du bundle, or le chemin nominal de la boucle d'engagement est
+  une app en arrière-plan que la notification ramène devant. `retour` n'existe que sur natif.
+  C'est aussi ce qui rend vraie la phrase sur laquelle `purge_stale_anonymous_accounts()` fonde sa
+  fenêtre de 90 jours.
+- **`connexion_demande` est l'intention, `connexion_success` le fait constaté.** L'écran email
+  émettait `connexion_success` juste après `updateUser({ email })`, que `etatDuRattachement`
+  classe pourtant en `a_confirmer` : `is_anonymous` ne bascule qu'au clic du lien reçu. Le chemin
+  Google, lui, n'émettait qu'après une identité liée — les deux branches ne mesuraient pas le même
+  fait, et leur comparaison était faussée du taux d'emails jamais confirmés, c'est-à-dire du
+  chiffre qu'on voulait lire. L'écart entre les deux **est** ce taux.
 
 Trois pièges vérifiés en construisant cette table, tous silencieux :
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
@@ -651,6 +732,68 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `onLayout`, ni `key`, ni le compilateur. C'est ce qui a fait échouer la première tentative
   du pager d'onboarding (v1-11 §9.10). `useSyncExternalStore` avec un instantané serveur
   distinct fait voir le passage à React ; `useWindowDimensions` ne le fait pas.
+- **Une réponse rendue impossible par une autre réponse s'efface dans `normaliserReponses`, et
+  nulle part ailleurs** (`src/types/bilan.ts`, appliquée après chaque `update` du questionnaire et
+  à la relecture d'un brouillon). Trois écrans tenaient trois listes de remises à zéro, qui
+  divergeaient déjà : changer le mode principal effaçait la motorisation sans regarder si le
+  **second** mode était encore une voiture ; « Non » à B1.1 oubliait le type de deux-roues ; et
+  choisir comme mode principal celui déjà pris en second laissait les deux jambes sur « voiture »,
+  la ligne n'apparaissant plus nulle part et la moitié du trajet étant facturée au tarif solo.
+  Deux règles : la fonction est **idempotente** (elle s'applique aussi à un brouillon écrit avant
+  ces règles), et ce qui décide d'effacer un champ est **ce que le calcul lit encore**, pas ce que
+  l'écran affiche — la branche « rarement » des loisirs en est l'exemple, commentée sur place.
+- **La virgule est un séparateur décimal, et la traiter comme un caractère à jeter coûtait un
+  facteur dix.** Le champ de distance filtrait tout ce qui n'était pas un chiffre : « 3,5 » ne
+  donnait ni erreur ni refus, il donnait **35**. Le clavier numérique d'Android propose une
+  virgule, et l'erreur porte sur le poste le plus lourd de la majorité des bilans, multiplié par
+  deux fois le nombre de jours et par quarante-cinq semaines. D'où `nettoyerSaisieNumerique` /
+  `saisieVersNombre` / `afficherNombreSaisi` (`src/types/bilan.ts`) : la virgule est **conservée
+  telle quelle** sous les doigts de la personne, la conversion se fait à part, et un second
+  séparateur est ignoré sans jeter ses chiffres. Et un « 0 » saisi n'est pas une distance — la
+  colonne porte `check (commute_distance_km > 0)`, donc la complétude de l'étape et l'insert
+  lisent la **même** définition, `distanceDomicileTravailKm`.
+- **`ensureSession()` est enveloppée dans `uneSeuleFois` (`src/types/une-seule-fois.ts`), et ce
+  n'est pas du confort : sans elle, deux comptes anonymes.** La fonction fait un « lis puis
+  écris » ; deux appels lancés dans le même rendu — le layout racine et la racine de l'app —
+  lisent tous les deux « pas de session » avant que l'un n'ait écrit. Six des treize comptes de la
+  base étaient dans ce cas. Rien ne le signalait : l'app marche, elle laisse un compte orphelin
+  qui consomme le quota de créations anonymes, gonfle d'un facteur proche de deux toute
+  statistique de nouveaux visiteurs, et peut recevoir le jeton d'appareil à la place du compte
+  gagnant. Seules les promesses **en vol** sont partagées, donc le contrat ne change pas : un appel
+  tardif relit bien l'état courant, dont dépend la re-vérification avant l'écriture du bilan.
+- **Le jeton d'appareil se réenregistre à chaque changement d'utilisateur, pas seulement au
+  démarrage.** `register_push_token` *reprend* le jeton à son propriétaire précédent, et il n'y
+  avait aucun appel ailleurs qu'au lancement : le lien de `/connexion/retrouver` ouvre la session
+  d'un utilisateur **différent** de la session anonyme qui venait d'enregistrer le jeton, si bien
+  que l'appareil restait inscrit au nom de celui qu'on vient de quitter — et recevait ses rappels
+  jusqu'au prochain démarrage à froid. Le garde vit hors du composant (`onAuthStateChange` émet à
+  chaque rafraîchissement de jeton, soit toutes les heures) et **ne se valide qu'après le succès**
+  de l'appel, sinon un échec réseau le referme sur l'état qu'il devait corriger.
+- **Le mode clair est forcé sur web, et ce n'est pas un oubli** (`src/hooks/use-theme.ts`).
+  `userInterfaceStyle: light` d'`app.json` ne s'applique qu'au natif : sur web, `useColorScheme`
+  lit `prefers-color-scheme` et rendait `Colors.dark` — la palette que `constants/theme.ts` décrit
+  lui-même comme provisoire et jamais validée, avec un bouton principal à 3,4:1 (sous le 4,5:1 de
+  WCAG AA) et une mascotte restée claire sur fond noir. La décision se prend **là**, et le
+  `ThemeProvider` du layout racine porte la même en dur pour les chromes de navigation : corriger
+  l'un sans l'autre laisse la moitié de l'écran dans l'autre palette.
+- **`public/robots.txt` et `public/sitemap.xml` sont la cinquième garde d'export, et ils
+  disparaissent exactement comme `assetlinks.json`** — sans erreur de build ni de déploiement.
+  `scripts/verifier-titres-export.mjs` les vérifie ligne par ligne dans `dist/`, avec trois points
+  qu'il ne faut pas défaire à moitié : la paire `Disallow: /api/` + `Allow: /api/partage` +
+  `Allow: /api/share-card` (sans les deux `Allow`, un lien de bilan partagé sort en URL nue sur les
+  trois réseaux, qui lisent `robots.txt` avant d'aller chercher une page) ; les pages d'application
+  restent **parcourables** et portent `noindex` — interdire le crawl empêcherait un moteur de lire
+  ce `noindex` ; et l'**origine canonique** a une source unique, `ORIGINE_CANONIQUE`
+  (`src/constants/produit.ts`), que les deux fichiers statiques ne peuvent pas importer et que le
+  script confronte par motif. La page 404 est une page exportée comme les autres : elle a sa ligne
+  dans `PAGE_TITLES` (`/+not-found`), la surcharge de `TitreDePage` ne valant qu'à l'exécution.
+- **Changer `.env` puis réexporter ne suffit pas à revérifier l'inlining : il faut
+  `expo export --clear`.** Le cache de transformation de Metro est indexé sur le contenu des
+  fichiers, pas sur les valeurs `EXPO_PUBLIC_*` : un second export réutilise le `void 0` qu'un
+  premier export sans variables avait mis en cache, au bit près (même empreinte de bundle). La CI
+  ne peut pas tomber dans ce piège — elle part d'un checkout neuf — mais
+  `scripts/verifier-configuration-export.mjs` accuse alors en local un défaut qui n'existe pas, et
+  on le cherche dans le code.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
   explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
   (unité, label) peut être partiellement recouvert/coupé. Voir

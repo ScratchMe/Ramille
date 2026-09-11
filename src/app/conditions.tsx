@@ -1,6 +1,17 @@
 import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
 import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
-import { APP_NAME } from '@/constants/produit';
+// **`ORIGINE_CANONIQUE` et non `APP_URL`, et ce n'est pas interchangeable ici.** `APP_URL`
+// vaut l'origine réelle côté client et le domaine canonique au rendu statique : écrite dans
+// un **texte**, elle produit un écart d'hydratation — le HTML exporté dit
+// `https://www.ramille.fr/…`, le client recalcule autre chose, et React remplace le texte
+// sans rien signaler (erreur 418, que `scripts/verifier-rendu-export.mjs` classe en
+// avertissement par conception, donc la CI reste verte). Sur une preview Vercel, les deux
+// seules surfaces publiques du produit afficheraient l'hôte de preview dans un texte
+// juridique. C'est le raisonnement que `titre-de-page.tsx` applique déjà à l'`og:url`, et
+// l'origine canonique est celle que `sitemap.xml` annonce pour cette même page. `APP_URL`
+// reste pour ce qui doit suivre l'origine réelle : les `redirectTo` de connexion et le
+// lien de partage.
+import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 
 // Conditions générales d'utilisation — exigées par la fiche Google Play au même titre que la
 // politique de confidentialité, et attendues par l'écran de consentement Google OAuth.
@@ -16,7 +27,11 @@ import { APP_NAME } from '@/constants/produit';
 // médiateur de la consommation : le projet est édité à titre non professionnel, régime prévu
 // par l'article 6 III-2 de la LCEN. Ce sont des absences motivées, pas des oublis.
 
-const UPDATED_AT = '5 septembre 2026';
+// Cette page bouge moins que /confidentialite, et sa date ne suit donc pas la sienne : elle
+// n'avance que quand une clause change. Le 11/09/2026, c'est la durée de conservation d'un
+// bilan non rattaché — la purge porte sur l'inactivité et non sur l'âge du bilan. La date est
+// celle de la mise en ligne, pour la raison écrite dans `/confidentialite`.
+const UPDATED_AT = '11 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -58,7 +73,7 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           `${APP_NAME} ne fournit ni conseil professionnel, ni prestation de conseil en mobilité. Les actions proposées ` +
-          'sont des suggestions, jamais des injonctions : tu restes seul juge de ce qui est possible dans ta situation.',
+          'sont des suggestions, jamais des injonctions : tu restes juge de ce qui est possible dans ta situation.',
       },
     ],
   },
@@ -76,7 +91,7 @@ const SECTIONS: LegalSection[] = [
         items: [
           'Tu peux créer un compte avec ton adresse email, ou en passant par ton compte Google. Il n’y a pas de mot de passe : la connexion se fait par un lien envoyé à ton adresse.',
           'Tu es responsable de l’accès à ta boîte email et des actions effectuées depuis ton compte.',
-          'Sans rattachement à un compte, ton bilan reste lié à l’appareil et au navigateur utilisés, et il est supprimé automatiquement après 90 jours.',
+          'Sans rattachement à un compte, ton bilan reste lié à l’appareil et au navigateur utilisés, et il est supprimé automatiquement après 90 jours sans utilisation de l’application. Tant que tu reviens, rien n’est effacé.',
         ],
       },
     ],
@@ -139,9 +154,12 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'Tu peux cesser d’utiliser le service à tout moment et demander la suppression de ton compte et de tes données ' +
-          `en écrivant à ${CONTACT_EMAIL}. Nous pouvons suspendre un compte en cas de ` +
-          'manquement caractérisé aux règles ci-dessus.',
+          'Tu peux cesser d’utiliser le service à tout moment. La suppression de ton compte et de tes données se fait ' +
+          'sans nous écrire : dans l’application, ouvre « Ton compte » — l’icône en haut à droite de l’écran — puis, ' +
+          'sur l’écran « Toi », la section « Mes ' +
+          `données » ; depuis un navigateur, même sans l’application, sur ${ORIGINE_CANONIQUE}/compte/suppression. Si tu ` +
+          `préfères passer par nous, écris à ${CONTACT_EMAIL}. Nous pouvons suspendre un compte en cas de manquement ` +
+          'caractérisé aux règles ci-dessus.',
       },
     ],
   },
@@ -151,8 +169,8 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'Ces conditions peuvent évoluer. En cas de changement significatif, tu en seras informé dans l’application ' +
-          'avant qu’il prenne effet. La date de dernière mise à jour figure en haut de cette page.',
+          'Ces conditions peuvent évoluer. En cas de changement significatif, nous t’en informerons dans ' +
+          'l’application avant qu’il prenne effet. La date de dernière mise à jour figure en haut de cette page.',
       },
     ],
   },

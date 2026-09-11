@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
 import { Button } from '@/components/button';
 import { Mascot } from '@/components/mascot';
+import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -25,6 +26,7 @@ import {
 import { formatTonnes } from '@/lib/format';
 import { nextPalier, showsTarget2050, type Palier } from '@/types/palier';
 import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
+import { etatDeLaProposition, type EtatProposition } from '@/types/connexion';
 import type { Database } from '@/lib/database.types';
 import { APP_NAME } from '@/constants/produit';
 
@@ -82,7 +84,7 @@ function dominantHeadline(results: AssessmentResults): string {
 }
 
 // Variante neutre de dominantHeadline (sans "Tes"/"Ton") pour la carte de partage : lue par
-// les destinataires du lien, pas adressée à l'utilisateur qui partage — cf. shareResult
+// les destinataires du lien, pas adressée à l'utilisateur qui partage — cf. partagerLeBilan
 // ci-dessous. dominant_poste_label seul (ex. "Voyages longue distance (Avion long-courrier)")
 // ne dit pas qu'il s'agit du poste dominant ; combiné à dominantPercent sur la carte, le
 // pourcentage lui donne un sens (retour utilisateur du 04/09/2026).
@@ -142,11 +144,63 @@ function palierNote(palier: Palier, repereVisible: boolean): string {
 
 type LoadState =
   | { status: 'loading' }
-  | { status: 'error'; message: string }
+  // **L'état d'erreur ne porte plus de message.** Il en portait un, alimenté par
+  // `error?.message` : du texte de PostgREST, en anglais, affiché seul au milieu d'un écran sans
+  // sortie, au moment précis où la personne vient chercher son résultat. Et une erreur Postgres
+  // cite volontiers la valeur qui l'a déclenchée — c'est-à-dire une de ses réponses. L'écran dit
+  // donc une phrase fixe et propose deux sorties ; la cause technique reste dans la console, où
+  // elle est utile à qui peut la lire (C1.1, A2-15, A3-5).
+  | { status: 'error' }
   // `capKg` vient du cycle de plan, généré par `compute_assessment_results` au moment de la
   // soumission : il existe donc déjà quand cet écran s'affiche. `null` si le plan n'a rien
   // trouvé à proposer — on ne montre alors pas de palier.
   | { status: 'ok'; results: AssessmentResults; capKg: number | null };
+
+// Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
+// jamais rien — la feuille du téléphone ou du navigateur a déjà tout montré ; seul le repli
+// presse-papier a besoin d'une confirmation sur place, sans quoi appuyer ne produit rien de
+// visible.
+//
+// **Trois issues et non deux, et la troisième n'est pas un raffinement.** Un presse-papier
+// absent de la page (contexte non sécurisé, navigateur ancien) et un `writeText` refusé
+// donnaient le même « Réessaie dans un instant » : dans le premier cas, réessayer ne peut pas
+// marcher — l'API n'apparaîtra jamais — et comme le lien n'est montré nulle part, la personne
+// n'avait plus aucun moyen de partager son bilan. L'écran dit donc ce qui est vrai et donne le
+// lien à copier à la main ; « réessaie » ne reste que là où c'est vrai.
+type EtatPartage =
+  | { statut: 'inactif' }
+  | { statut: 'copie' }
+  | { statut: 'echec' }
+  | { statut: 'indisponible'; lien: string };
+
+// Le partage système est absent de Firefox partout et de Chrome desktop hors Windows/ChromeOS :
+// `Share.share` y rejette avec « Share is not supported in this browser ». On le constate
+// **avant** d'appeler le partage plutôt que sur son rejet, parce que la copie qui suit a besoin
+// du geste de l'utilisateur : repartir d'un rejet la fait sortir de la fenêtre d'activation que
+// le navigateur accorde à ce geste.
+function partageSystemeDisponible(): boolean {
+  if (Platform.OS !== 'web') return true;
+  return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+}
+
+// Le résultat distingue « cette page n'a pas de presse-papier » de « l'écriture a été
+// refusée » : les deux se disent autrement à l'écran (cf. `EtatPartage`). `navigator.clipboard`
+// est absent hors contexte sécurisé — un déterminisme, pas un aléa.
+async function copierDansLePressePapier(
+  lien: string
+): Promise<'copie' | 'echec' | 'indisponible'> {
+  if (Platform.OS !== 'web' || typeof navigator === 'undefined' || !navigator.clipboard) {
+    return 'indisponible';
+  }
+  try {
+    await navigator.clipboard.writeText(lien);
+    return 'copie';
+  } catch {
+    // Permission refusée, geste hors fenêtre d'activation : celui-là peut aboutir au coup
+    // suivant, donc c'est le seul cas où l'écran invite à réessayer.
+    return 'echec';
+  }
+}
 
 // Anonyme et pas encore proposé un compte : au clic sur le CTA, on passe d'abord par la
 // proposition plein écran (cf. maquette "Connexion — proposition après bilan", qui
@@ -154,18 +208,46 @@ type LoadState =
 // bandeau discret ("Bilan anonyme — relance douce") plutôt que de réinterrompre à chaque
 // retour, le CTA va alors directement au plan.
 export default function BilanResultat() {
-  useTrackView('resultat_view');
-
   const theme = useTheme();
   // Deux entrées, un seul écran (cf. `src/types/resultat.ts`) : la fin du questionnaire pose
   // `nouveau=1`, une ouverture depuis le suivi ne pose rien.
   const { id, nouveau } = useLocalSearchParams<{ id: string; nouveau?: string }>();
   const mode = modeResultat(nouveau);
+
+  // **Après le mode, et pas avant.** L'écran le connaissait déjà et l'événement partait sans :
+  // l'entonnoir « bilan soumis → résultat vu → plan vu » additionnait donc les premières lectures
+  // et les consultations d'historique, si bien que plus le suivi dans la durée fonctionne, plus
+  // la conversion vers le plan paraît chuter. `useTrackView` fige ses props au premier rendu,
+  // donc un seul déplacement suffit — et il reste le bon hook ici : cet écran est poussé sur une
+  // pile à chaque ouverture, le passer à `useTrackFocus` recompterait un retour de pile.
+  useTrackView('resultat_view', { mode });
+
   const [state, setState] = useState<LoadState>(
-    id ? { status: 'loading' } : { status: 'error', message: 'Bilan introuvable.' }
+    id ? { status: 'loading' } : { status: 'error' }
   );
-  const [showBanner, setShowBanner] = useState(false);
-  const [proposalSeen, setProposalSeen] = useState(true);
+  // **Le compteur est ce qui rend « Réessayer » autre chose qu'un bouton mort.** Repasser l'état à
+  // `loading` ne relance rien : l'effet de chargement ne dépend que de `id`, qui n'a pas changé.
+  // L'écran basculait alors sur la branche « Calcul de ton bilan… », sans bouton ni lien, pour
+  // toujours — en échange de la seule sortie qu'il avait. Même mécanique que `refreshKey` dans
+  // `src/app/(tabs)/plan.tsx`.
+  const [tentative, setTentative] = useState(0);
+  const reessayer = () => {
+    setState({ status: 'loading' });
+    setTentative((n) => n + 1);
+  };
+  // **Un état à quatre valeurs, pas un booléen optimiste** (A3-20). `proposalSeen` démarrait à
+  // `true` et n'était corrigé qu'après un aller-retour réseau (`getUser()`) suivi d'une lecture
+  // AsyncStorage : quelqu'un qui appuie vite sur le bouton, ou dont le réseau traîne, passait
+  // droit au plan — et comme la même variable pilotait la bannière de repli, il ne voyait ni
+  // l'interstitiel **ni** la bannière, c'est-à-dire plus aucune occasion de garder son bilan.
+  // `getSession()` suffit et supprime l'aller-retour : c'est le cache local, et la seule chose
+  // qu'on lui demande est `is_anonymous` (cf. `src/lib/analytics.ts`, même lecture).
+  const [propositionLue, setPropositionLue] = useState<EtatProposition>('inconnu');
+  // La relecture n'est pas un état à tenir à jour, c'est une propriété de l'entrée dans l'écran :
+  // elle se dérive du rendu, là où l'écrire depuis l'effet serait un `setState` synchrone que le
+  // React Compiler refuse (`react-hooks/set-state-in-effect`).
+  const proposition: EtatProposition = mode === 'relecture' ? 'autre' : propositionLue;
+  const [partage, setPartage] = useState<EtatPartage>({ statut: 'inactif' });
 
   useEffect(() => {
     if (!id) return;
@@ -180,7 +262,8 @@ export default function BilanResultat() {
 
       if (cancelled) return;
       if (error || !data) {
-        setState({ status: 'error', message: error?.message ?? 'Bilan introuvable.' });
+        console.error('Le résultat du bilan n’a pas pu être lu :', error);
+        setState({ status: 'error' });
         return;
       }
 
@@ -206,26 +289,54 @@ export default function BilanResultat() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, tentative]);
 
   useEffect(() => {
     // En relecture, aucune proposition de compte : redemander à chaque consultation de son
-    // historique serait du harcèlement, pas une invitation.
-    if (mode === 'relecture') return;
+    // historique serait du harcèlement, pas une invitation. Rien à écrire, la dérivation du
+    // rendu s'en charge.
+    //
+    // **Après le bilan, pas avant.** Le bouton n'est rendu qu'à `ok`, donc rien n'est gagné à
+    // lire plus tôt — et surtout, un bilan lu veut dire une session lisible (la ligne est
+    // protégée par une policy owner-scoped) : lancée au montage, la lecture pouvait tomber sur
+    // une session pas encore écrite et laisser `inconnu` collé, donc le bouton désactivé.
+    if (mode === 'relecture' || state.status !== 'ok') return;
+    let annule = false;
     (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user?.is_anonymous) return;
-
-      const seen = await hasSeenConnexionProposal();
-      setProposalSeen(seen);
-      setShowBanner(seen);
+      // **Le repli n'enferme pas.** `inconnu` désactive le bouton, et cet effet ne dépend que de
+      // `[mode, state.status]` : rien ne le relance. Une lecture qui lève, ou une session que le
+      // cache ne rend pas, laissait donc « Voir ce que je peux faire » désactivé **pour de bon**,
+      // sans un mot — la seule sortie de l'écran fermée, ce qui est plus grave que le booléen
+      // optimiste d'A3-20 qu'on corrige ici. `anonyme-jamais-proposee` est le repli sûr : il passe
+      // par l'interstitiel, qui porte lui-même « Continuer sans compte » et mène au plan.
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (annule) return;
+        if (!session) {
+          setPropositionLue('anonyme-jamais-proposee');
+          return;
+        }
+        const estAnonyme = session.user.is_anonymous === true;
+        const dejaProposee = estAnonyme ? await hasSeenConnexionProposal() : false;
+        if (annule) return;
+        setPropositionLue(etatDeLaProposition({ estAnonyme, dejaProposee }));
+      } catch (erreur) {
+        console.error('L’état de la proposition de compte n’a pas pu être lu :', erreur);
+        if (!annule) setPropositionLue('anonyme-jamais-proposee');
+      }
     })();
-  }, [mode]);
+    return () => {
+      annule = true;
+    };
+  }, [mode, state.status]);
 
   const goToPlan = () => {
-    if (!proposalSeen) {
+    // `inconnu` n'arrive pas ici — le bouton est désactivé tant qu'on ne sait pas —, et le test
+    // reste : sans lui, la première valeur lue déciderait du routage par défaut.
+    if (proposition === 'inconnu') return;
+    if (proposition === 'anonyme-jamais-proposee') {
       router.push({ pathname: '/connexion', params: { id, source: 'resultat_transition' } });
       return;
     }
@@ -239,17 +350,54 @@ export default function BilanResultat() {
   // Chiffres transmis uniquement via l'URL (ce que l'utilisateur voit déjà à l'écran) —
   // aucune nouvelle lecture serveur, aucune exposition de données au-delà de ce qu'il choisit
   // explicitement de partager.
-  const shareResult = () => {
+  //
+  // **Deux défauts corrigés ici, et le second était invisible à cause du premier.** Le rejet de
+  // `Share.share` était avalé dans un `.catch(() => {})` : sur les navigateurs sans partage
+  // système, appuyer ne faisait rien, sans un mot ni un lien à copier. Et `resultat_share` partait
+  // **avant** l'appel, donc la mesure du seul levier de croissance du produit comptait aussi bien
+  // ces partages impossibles que les feuilles refermées sans rien envoyer — le cas majoritaire,
+  // puisque la V1 vise Google Play. L'événement ne part plus que sur une issue aboutie.
+  const partagerLeBilan = async () => {
     if (state.status !== 'ok') return;
+    setPartage({ statut: 'inactif' });
+
     const { results } = state;
     const totalTonnes = (results.total_co2_kg_year / 1000).toFixed(1);
     const percent = String(Math.round((results.dominant_poste_co2_kg_year / results.total_co2_kg_year) * 100));
     const params = new URLSearchParams({ total: totalTonnes, poste: dominantShareLabel(results), percent });
     const shareUrl = `${APP_URL}/api/partage?${params.toString()}`;
-    Share.share({
-      message: `Mon empreinte transport : ${formatTonnes(state.results.total_co2_kg_year)} par an. Fais la tienne sur ${APP_NAME} : ${shareUrl}`,
-      url: shareUrl,
-    }).catch(() => {});
+    const message = `Mon empreinte transport : ${formatTonnes(results.total_co2_kg_year)} par an. Fais la tienne sur ${APP_NAME} : ${shareUrl}`;
+
+    if (partageSystemeDisponible()) {
+      try {
+        // `Share.share` rend un `ShareAction` sur natif et **rien du tout** sur web, où
+        // `navigator.share` résout sans valeur : le type doit accepter les deux, sinon la
+        // lecture de `action` lève sur le chemin web.
+        const issue: { action?: string } | undefined = await Share.share({ message, url: shareUrl });
+        // Une feuille refermée rend `dismissedAction` : rien n'a été envoyé, rien n'est compté.
+        // Sur web, une promesse tenue ne peut venir que d'un partage abouti — `navigator.share`
+        // rejette en `AbortError` quand on renonce.
+        //
+        // **Plafond d'Android, et il ne se contourne pas** : la plateforme résout *toujours* en
+        // `sharedAction`, annulation comprise (doc de `Share.share`). Sur la cible de la V1, ce
+        // chiffre se lit donc « partages ouverts », pas « partages envoyés ». Rien à corriger
+        // ici : l'information n'existe pas côté système.
+        if (issue?.action !== 'dismissedAction') track('resultat_share');
+      } catch {
+        // Geste interrompu (`AbortError`) ou partage refusé par le navigateur : rien à compter,
+        // et rien à dire non plus — c'est la personne qui a renoncé.
+      }
+      return;
+    }
+
+    // Repli : l'adresse dans le presse-papier, et on le dit sur place. Pas d'`Alert` (proscrit,
+    // cf. CLAUDE.md), et surtout pas de silence. Le lien est gardé dans l'état quand le
+    // presse-papier n'existe pas : c'est la seule façon de partager qui reste à la personne.
+    const issue = await copierDansLePressePapier(shareUrl);
+    if (issue === 'copie') track('resultat_share');
+    setPartage(
+      issue === 'indisponible' ? { statut: 'indisponible', lien: shareUrl } : { statut: issue }
+    );
   };
 
   if (state.status === 'loading') {
@@ -262,11 +410,21 @@ export default function BilanResultat() {
     );
   }
 
+  // Deux sorties plutôt qu'un message et rien. « Réessayer » relance la lecture — c'est le bon
+  // conseil, la cause la plus fréquente étant une coupure réseau ; le suivi est la sortie qui
+  // marche dans tous les cas, et l'écran y est poussé depuis lui.
+  //
+  // La mascotte n'apparaît pas ici : elle n'est pas là pour accompagner une panne, et ce serait
+  // commenter. Le texte dit ce qui s'est passé et ce qu'on peut faire.
   if (state.status === 'error') {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.centered}>
-          <ThemedText themeColor="textSecondary">{state.message}</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.erreurTexte}>
+            Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
+          </ThemedText>
+          <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
+          <TextLink label="Revenir à mon suivi" onPress={() => router.replace('/suivi')} />
         </SafeAreaView>
       </ThemedView>
     );
@@ -300,7 +458,7 @@ export default function BilanResultat() {
             bouton retour dont iOS aura besoin sur cet écran de détail. */}
         <BandeHaute />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {showBanner && (
+          {proposition === 'anonyme-deja-proposee' && (
             <Pressable
               onPress={() =>
                 router.push({ pathname: '/connexion', params: { id, source: 'resultat_cta' } })
@@ -430,15 +588,37 @@ export default function BilanResultat() {
           <View style={styles.actionsSecondaires}>
             <TextLink
               label="Partager mon bilan"
-              onPress={() => {
-                track('resultat_share');
-                shareResult();
-              }}
+              onPress={() => void partagerLeBilan()}
               type="small"
               weight={600}
               themeColor="accentText"
               style={styles.editLink}
             />
+            {/* Annoncé par un lecteur d'écran (région vivante de `MessageInline`) : le repli
+                presse-papier n'a aucune autre trace à l'écran. Le lien, quand il s'affiche,
+                vient juste après cette annonce. */}
+            <MessageInline
+              message={
+                partage.statut === 'copie'
+                  ? 'Lien copié. Tu peux le coller où tu veux.'
+                  : partage.statut === 'echec'
+                    ? 'La copie n’a pas abouti. Réessaie dans un instant.'
+                    : partage.statut === 'indisponible'
+                      ? 'Ce navigateur ne donne pas accès au presse-papier. Voici ton lien, à copier à la main :'
+                      : null
+              }
+              style={styles.editLink}
+            />
+            {partage.statut === 'indisponible' && (
+              <ThemedText
+                type="code"
+                themeColor="textSecondary"
+                selectable
+                style={styles.lienPartage}
+              >
+                {partage.lien}
+              </ThemedText>
+            )}
             {/* « Modifier mes réponses » promettait une édition, alors que le questionnaire
                 insère toujours un nouveau bilan — et repartait d'écrans vides. Le
                 préremplissage (v1-07 T7) rend l'action peu coûteuse ; le libellé dit
@@ -473,7 +653,13 @@ export default function BilanResultat() {
 
         {mode === 'nouveau' && (
           <View style={[styles.footer, { borderTopColor: theme.border }]}>
-            <Button title="Voir ce que je peux faire" onPress={goToPlan} />
+            {/* Désactivé tant que la session n'est pas lue : appuyer avant que la proposition
+                de compte soit connue faisait sauter l'interstitiel comme la bannière (A3-20). */}
+            <Button
+              title="Voir ce que je peux faire"
+              onPress={goToPlan}
+              disabled={proposition === 'inconnu'}
+            />
           </View>
         )}
       </SafeAreaView>
@@ -516,6 +702,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // L'écran d'erreur tient dans le conteneur centré : la phrase a besoin de gouttières (sinon
+  // elle touche les bords sur un téléphone étroit) et d'air sous elle.
+  erreurTexte: { textAlign: 'center', paddingHorizontal: Spacing.four, marginBottom: Spacing.four },
+  erreurBouton: { marginBottom: Spacing.three },
   scrollContent: { padding: Spacing.four, gap: Spacing.four },
   banner: {
     flexDirection: 'row',
@@ -546,4 +736,7 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
   actionsSecondaires: { gap: Spacing.three, alignItems: 'stretch', paddingTop: Spacing.two },
   editLink: { textAlign: 'center' },
+  // Le lien de repli : centré comme le message qui l'introduit, et assez aéré pour être
+  // recopié à la main sur plusieurs lignes.
+  lienPartage: { textAlign: 'center', lineHeight: 20 },
 });

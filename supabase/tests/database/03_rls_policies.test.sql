@@ -9,20 +9,24 @@
 --   A. Lecture (SELECT) : un tiers ne doit jamais voir la ligne d'un autre utilisateur.
 --   B. Écriture croisée : ni INSERT falsifié (user_id d'un tiers), ni UPDATE sur la ligne
 --      d'un tiers (silencieusement sans effet, RLS filtre la ligne cible avant l'UPDATE).
+--      `engagement_checkins` est l'exception depuis le 11/09/2026 : elle n'a plus ni policy ni
+--      privilège UPDATE, la réponse passant par `repondre_au_checkin` — son refus est donc un
+--      42501 et non un silence, pour le tiers comme pour le propriétaire (§B et §C).
 --   C. Verrouillage serveur-only : assessment_results et plan_cycles n'ont aucune policy insert
 --      pour `authenticated` (écriture réservée aux fonctions security definer) — le refus vient
 --      donc de la RLS. plan_actions et engagement_checkins vont plus loin : elles n'ont pas non
 --      plus le privilège INSERT, et le refus tombe avant la RLS (« permission denied for
 --      table … »). Pour plan_actions c'est l'arbitrage du 10/09/2026
 --      (20260910110000_grants_explicites.sql §4, l'engagement passant par un RPC) ; pour
---      engagement_checkins le `revoke insert` de 20260827090000. C'est cette différence de
---      message qui dit, pour chaque table, laquelle des deux gardes joue.
+--      engagement_checkins le `revoke insert` de 20260827090000, et le `revoke update` de
+--      20260911100000. C'est cette différence de message qui dit, pour chaque table, laquelle des
+--      deux gardes joue.
 --   D. Référentiels publics : transport_modes/emission_factors/action_templates restent
 --      lisibles même sans authentification (anon), cf. 20260823095200_public_reference_data.sql.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(30);
 
 -- ── Fixtures : deux utilisateurs, un seul (A) possède des données ──────────────────────
 
@@ -111,14 +115,23 @@ select throws_ok(
 -- 0 ligne affectée plutôt qu'une erreur — vérifié ci-dessous en repassant en contexte A.
 update public.assessments set status = 'in_progress' where id = '61111111-1111-1111-1111-111111111111';
 update public.assessment_answers set commute_days_per_week = 1 where assessment_id = '61111111-1111-1111-1111-111111111111';
-update public.engagement_checkins set status = 'answered', response = true where user_id = '51111111-1111-1111-1111-111111111111';
 update public.profiles set cadence_type = 'rolling_quarter' where id = '51111111-1111-1111-1111-111111111111';
+
+-- Répondre à la place de quelqu'un d'autre : ce n'est plus la RLS qui filtre la ligne, c'est le
+-- privilège qui manque — le refus est donc bruyant, et il tombe avant la policy de lecture. Deux
+-- assertions plutôt qu'une : celle-ci dit que l'ordre est refusé, celle d'après que rien n'a bougé.
+select throws_ok(
+  $stmt$ update public.engagement_checkins set status = 'answered', response = true where user_id = '51111111-1111-1111-1111-111111111111' $stmt$,
+  '42501',
+  'permission denied for table engagement_checkins',
+  'engagement_checkins: un tiers ne peut pas répondre à la place du propriétaire (privilège UPDATE retiré le 11/09/2026, réponse par RPC)'
+);
 
 select set_config('request.jwt.claims', json_build_object('sub', '51111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 
 select is((select status from public.assessments where id = '61111111-1111-1111-1111-111111111111'), 'completed', 'assessments: l''UPDATE d''un tiers sur le bilan du propriétaire est sans effet');
 select is((select commute_days_per_week from public.assessment_answers where assessment_id = '61111111-1111-1111-1111-111111111111'), 5::smallint, 'assessment_answers: l''UPDATE d''un tiers sur les réponses du propriétaire est sans effet');
-select is((select status from public.engagement_checkins where user_id = '51111111-1111-1111-1111-111111111111'), 'pending', 'engagement_checkins: l''UPDATE d''un tiers sur le check-in du propriétaire est sans effet');
+select is((select status from public.engagement_checkins where user_id = '51111111-1111-1111-1111-111111111111'), 'pending', 'engagement_checkins: le point du propriétaire est toujours en attente après la tentative du tiers');
 -- `cadence_type` plutôt qu'une colonne nullable : sa valeur par défaut est 'season', donc
 -- l'assertion distingue « l'UPDATE n'a rien fait » de « la colonne n'a jamais rien contenu ».
 -- La version précédente vérifiait que `profiles.zone_type` restait NULL — une colonne qui
@@ -156,6 +169,25 @@ select throws_ok(
   '42501',
   'permission denied for table engagement_checkins',
   'engagement_checkins: authenticated ne peut pas insérer directement (revoke insert explicite, cf. migration)'
+);
+
+-- Le libellé du point est snapshoté à la génération, comme `assessment_results` fige le bilan :
+-- il existe pour qu'un re-bilan ne réécrive pas rétroactivement le texte d'une question déjà
+-- posée. Une policy UPDATE l'aurait laissé réinscriptible par son propre propriétaire — la RLS
+-- filtre des lignes, jamais des colonnes — d'où `repondre_au_checkin` (20260911100000), qui ne
+-- pose que `status`, `response` et `responded_at`. L'ordre ci-dessous s'exécute sous la session
+-- de A, c'est-à-dire du propriétaire lui-même, et c'est bien là l'intérêt de l'assertion.
+select throws_ok(
+  $stmt$ update public.engagement_checkins set trip_label = 'Trajet réécrit' where user_id = '51111111-1111-1111-1111-111111111111' $stmt$,
+  '42501',
+  'permission denied for table engagement_checkins',
+  'engagement_checkins: le propriétaire lui-même ne peut pas réécrire un libellé snapshoté'
+);
+
+select is(
+  (select trip_label from public.engagement_checkins where user_id = '51111111-1111-1111-1111-111111111111'),
+  'Trajet domicile-travail (Voiture)',
+  'engagement_checkins: et le libellé snapshoté est intact'
 );
 
 -- ── Section D : référentiels publics, lisibles même sans authentification ──────────────

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
@@ -15,6 +15,8 @@ import { useTrackView } from '@/hooks/use-track-view';
 import { formatTonnes } from '@/lib/format';
 import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
+import { lireEtatDuRattachement } from '@/lib/compte';
+import { sourceConnexion } from '@/types/analytics';
 import { identiteDejaRattachee } from '@/types/connexion';
 import { supabase } from '@/lib/supabase';
 
@@ -26,13 +28,21 @@ type Recap = { total_co2_kg_year: number; dominant_poste_label: string } | null;
 export default function ConnexionProposition() {
   const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
 
-  // `resultat_transition` par défaut : c'est le chemin historique, et un paramètre absent
-  // (lien direct, retour arrière) vaut mieux compté là que perdu.
-  useTrackView('connexion_view', {
-    source: source === 'resultat_cta' || source === 'plan' || source === 'suivi'
-      ? source
-      : 'resultat_transition',
-  });
+  // **Le garde se dérive de la liste du type, il ne la recopie pas** (`sourceConnexion`). La
+  // copie écrite ici à la main avait perdu `compte` en route : une arrivée depuis « Toi » —
+  // quelqu'un qui vient chercher le rattachement hors de tout interstitiel, la provenance la
+  // plus intéressante à mesurer — était enregistrée comme l'interstitiel post-bilan, et gonflait
+  // exactement le chiffre auquel on voulait la comparer. Un paramètre absent ou inconnu retombe
+  // sur `resultat_transition`, le chemin historique : mieux compté là que perdu.
+  useTrackView('connexion_view', { source: sourceConnexion(source) });
+
+  // **Empilé depuis « Toi », cet écran n'est plus un interstitiel.** Sa seule sortie était
+  // « Continuer sans compte », qui pose la marque « proposition vue », émet `connexion_dismiss` et
+  // remplace la pile par `/plan` : quelqu'un qui ouvrait la connexion depuis « Toi » et changeait
+  // d'avis était donc déposé sur le plan, sans retour, la proposition plein écran consommée au
+  // passage et un refus d'interstitiel compté qui n'en était pas un (A6-21). La provenance se lit
+  // par le même garde que la mesure — une seule dérivation, pas deux lectures du paramètre.
+  const vientDeCompte = sourceConnexion(source) === 'compte';
   const [recap, setRecap] = useState<Recap>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -56,9 +66,38 @@ export default function ConnexionProposition() {
   const onGoogle = async () => {
     setGoogleLoading(true);
     setMessage(null);
-    const { error } = await linkGoogleIdentity();
+
+    // **Sur web, la marque se pose avant l'appel** (A6-20). `linkIdentity` y déclenche une
+    // redirection plein écran et rend la main aussitôt : tout ce qui suit s'exécute pendant que
+    // le document se décharge, et le retour d'OAuth atterrit directement sur `/plan` sans
+    // repasser par ici. Ce qui doit survivre au départ de la page est donc écrit maintenant ; le
+    // constat du rattachement, lui, est laissé au plan, qui voit la bascule d'`is_anonymous`.
+    //
+    // Poser la marque avant de savoir si l'appel aboutit la pose parfois pour rien (liaison
+    // désactivée, réseau coupé) : le coût est que l'interstitiel plein écran ne se rejoue pas, la
+    // bannière discrète restant là. C'est moins cher que la mesure perdue, et de toute façon la
+    // proposition ne se rejoue pas après un rattachement réussi.
+    if (Platform.OS === 'web') await markConnexionProposalSeen();
+
+    const resultat = await linkGoogleIdentity();
+
+    // La page s'en va vers Google : le bouton reste en attente plutôt que de redevenir inerte
+    // sous les yeux de quelqu'un qui vient d'appuyer.
+    if (resultat.issue === 'redirection') return;
+
     setGoogleLoading(false);
-    if (error) {
+
+    // **Une annulation n'est ni un échec ni une réussite.** C'est le défaut d'origine (A6-1) :
+    // la fenêtre refermée rendait `{ error: null }`, donc l'écran fêtait un rattachement qui
+    // n'avait pas eu lieu, posait la marque et déposait la personne sur le plan sans compte. On
+    // ne marque rien, on n'émet rien, on ne bouge pas — un mot neutre, sans blocage, comme la
+    // spec le demande à cet endroit.
+    if (resultat.issue === 'annulation') {
+      setMessage('Tu peux réessayer quand tu veux.');
+      return;
+    }
+
+    if (resultat.issue === 'echec') {
       // **L'identité Google déjà prise n'est pas un échec, c'est un aiguillage** (#60) :
       // quelqu'un qui a un compte Ramille, change d'appareil, refait un bilan sans passer par
       // « J'ai déjà un compte », puis tape « Continuer avec Google ». Le chemin email était
@@ -66,18 +105,34 @@ export default function ConnexionProposition() {
       // Supabase, en anglais, sans rien à faire ensuite. `/connexion/retrouver` sait déjà
       // tout dire : la collision, le choix entre retrouver et garder ce bilan, et l'envoi du
       // lien. L'adresse Google en est une, le geste est le même.
-      if (identiteDejaRattachee(error)) {
+      if (identiteDejaRattachee(resultat.error)) {
         router.push({ pathname: '/connexion/retrouver', params: { id, source: 'google' } });
         return;
       }
       // Le message de Supabase est repris tel quel : il est en anglais et technique, mais
       // c'est le seul indice disponible sur ce qui a échoué, et un texte rassurant à la
       // place laisserait la personne sans rien pour comprendre ni pour nous le rapporter.
-      setMessage(`La connexion avec Google n’a pas abouti. ${error.message}`);
+      setMessage(`La connexion avec Google n’a pas abouti. ${resultat.error.message}`);
       return;
     }
-    track('connexion_success', { method: 'google' });
-    await markConnexionProposalSeen();
+
+    // Une session est ouverte ; reste à **constater** qu'elle est liée avant de la compter.
+    // `lireEtatDuRattachement` fait exactement ce test (`is_anonymous === false`) et il vaut
+    // mieux qu'un raisonnement local : l'écran ne peut pas savoir ce que les jetons portent.
+    //
+    // **Ici, et pas dans l'annonce de `/plan`** : côté Google l'identité est liée dans ce geste
+    // même, donc ce constat *est* le fait — c'est la branche email qui n'en a pas et que le plan
+    // couvre (v1-13 C1.2). Déplacer cet appel là-bas compterait deux fois les rattachements
+    // Google, puisque le plan est la destination de la ligne suivante.
+    //
+    // Une lecture qui échoue ne fait rien inventer : ni ligne de mesure, ni marque. La
+    // navigation, elle, a lieu quand même — la session est ouverte, et laisser quelqu'un sur un
+    // écran qui a marché serait pire qu'une ligne manquante.
+    const etat = await lireEtatDuRattachement().catch(() => null);
+    if (etat?.kind === 'rattache') {
+      track('connexion_success', { method: 'google' });
+      await markConnexionProposalSeen();
+    }
     router.replace('/plan');
   };
 
@@ -126,17 +181,44 @@ export default function ConnexionProposition() {
             />
           </View>
 
+          {/* Deux sorties qui ne disent pas la même chose, et une seule à la fois. Depuis « Toi »,
+              on revient d'où l'on vient : rien n'est décliné, donc rien n'est marqué ni compté.
+              Depuis la restitution, c'est l'interstitiel qu'on passe, et le produit dit ce que
+              ça implique. */}
           <View style={styles.skip}>
-            <TextLink
-              label="Continuer sans compte"
-              hint="Ton résultat reste accessible sur cet appareil"
-              onPress={dismiss}
-              type="small"
-              themeColor="textTertiary"
-            />
-            <ThemedText type="code" themeColor="textTertiary" style={styles.skipHint}>
-              Ton résultat reste accessible sur cet appareil.
-            </ThemedText>
+            {vientDeCompte ? (
+              <TextLink
+                label="Retour"
+                // `canGoBack()` d'abord : `/connexion?source=compte` est une vraie URL web,
+                // atteignable sans pile derrière elle (favori, lien collé, démarrage à froid), et
+                // un `router.back()` nu ne fait alors **rien** — la personne reste enfermée sur
+                // l'écran. Le repli va sur « Toi », l'écran d'où cette sortie prétend revenir :
+                // c'est une destination, pas un dépilement. Même garde que
+                // `connexion/retrouver.tsx` et `connexion/email.tsx`.
+                onPress={() => (router.canGoBack() ? router.back() : router.replace('/compte'))}
+                role="link"
+                type="small"
+                themeColor="textTertiary"
+              />
+            ) : (
+              <>
+                {/* Pas de `hint` ici : il reprenait mot pour mot le paragraphe ci-dessous, et un
+                    lecteur d'écran annonçait donc la phrase deux fois de suite (A6-22). Le `hint`
+                    de `TextLink` est fait pour les intitulés ambigus hors contexte, pas pour
+                    doubler un texte déjà présent — et les deux copies avaient déjà divergé d'un
+                    point final. Le paragraphe visible reste : il rassure au moment précis où
+                    quelqu'un renonce à un compte. */}
+                <TextLink
+                  label="Continuer sans compte"
+                  onPress={dismiss}
+                  type="small"
+                  themeColor="textTertiary"
+                />
+                <ThemedText type="code" themeColor="textTertiary" style={styles.skipHint}>
+                  Ton résultat reste accessible sur cet appareil.
+                </ThemedText>
+              </>
+            )}
           </View>
 
           {/* Les deux pages légales sont accessibles là où quelqu'un s'apprête à créer un

@@ -36,21 +36,13 @@ export function CommuteModeStep({
               <ModeListItem
                 label={choice.label}
                 selected={selected}
-                onPress={() =>
-                  update({
-                    commute_mode: choice.modeId,
-                    commute_is_carpool: choice.carpool,
-                    commute_carpool_size: choice.carpool ? answers.commute_carpool_size : null,
-                    commute_car_engine: choice.modeId === 'voiture' ? answers.commute_car_engine : null,
-                    // Même règle que la motorisation : on n'efface le type de deux-roues que si
-                    // aucune des deux jambes du trajet n'en utilise plus.
-                    commute_two_wheeler_type:
-                      choice.modeId === 'deux_roues_motorise' ||
-                      answers.commute_second_mode === 'deux_roues_motorise'
-                        ? answers.commute_two_wheeler_type
-                        : null,
-                  })
-                }
+                // Cet écran ne dit que ce que la personne vient de choisir. Ce que ce choix
+                // rend impossible — taille du covoiturage, second mode devenu identique,
+                // motorisation ou type de deux-roues rattachés à une jambe qui n'existe
+                // plus — est effacé par `normaliserReponses`, appliquée après chaque
+                // `update`. Trois écrans tenaient ces listes à la main, et elles
+                // divergeaient déjà (audit A2-17).
+                onPress={() => update({ commute_mode: choice.modeId, commute_is_carpool: choice.carpool })}
               />
 
               {/* La précision s'ouvre sous l'élément qui la déclenche — cf. `precision-mode.tsx`

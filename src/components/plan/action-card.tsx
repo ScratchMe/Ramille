@@ -44,14 +44,34 @@ export function ActionCard({
 
   // Le libellé accessible recompose ce que la mise en forme dit à l'œil : un lecteur d'écran
   // ne voit ni la bordure ni le fond. Sans lui, l'engagement serait invisible pour lui.
-  const annonce = engagee
-    ? `Action engagée : ${titre}${intention ? ` ${intention}` : ''}`
-    : titre;
+  //
+  // **Il est posé sur le bloc de texte, jamais sur la racine de la carte** (A4-11). `accessible`
+  // regroupe tout le sous-arbre : sur la racine, il avalait `children`, c'est-à-dire le bouton
+  // « Je m'y engage », les puces de jours et « Changer d'avis » — le seul geste d'engagement du
+  // produit devenait annoncé et non actionnable (garanti sur iOS, indéterminé sur TalkBack).
+  // Le groupe ne couvre donc que ce qui ne se touche pas, et recompose tout ce qu'il masque :
+  // l'étiquette d'engagement, le titre, le gain, l'intention et le détail.
+  //
+  // **La composition suit l'imbrication du rendu, pas la liste des props.** L'intention et la
+  // part d'empreinte ne s'affichent qu'à l'intérieur du bloc de gain : `saving_kg_year` est
+  // nullable, et à plat le lecteur d'écran entendait deux informations qui ne sont écrites nulle
+  // part — exactement l'inverse de ce que ce libellé est censé faire.
+  const annonce = [
+    engagee ? `Action engagée : ${titre}` : titre,
+    ...(gainKg !== null
+      ? [
+          `− ${Math.round(gainKg)} kg de CO₂e par an`,
+          intention ? majuscule(intention) : null,
+          partPercent !== null ? `${Math.round(partPercent)} % de ton empreinte` : null,
+        ]
+      : []),
+    detail,
+  ]
+    .filter((morceau): morceau is string => !!morceau)
+    .join('. ');
 
   return (
     <View
-      accessible
-      accessibilityLabel={annonce}
       style={[
         styles.carte,
         {
@@ -62,45 +82,53 @@ export function ActionCard({
         },
       ]}
     >
-      {engagee && (
-        <View style={styles.enTete}>
-          <View style={[styles.pastille, { backgroundColor: theme.accent }]}>
-            <Svg width={12} height={12} viewBox="0 0 24 24">
-              <Path
-                d="M5 13l4 4L19 7"
-                stroke="#FFFFFF"
-                strokeWidth={3}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </Svg>
+      <View accessible accessibilityLabel={annonce} style={styles.bloc}>
+        {engagee && (
+          <View style={styles.enTete}>
+            <View style={[styles.pastille, { backgroundColor: theme.accent }]}>
+              <Svg width={12} height={12} viewBox="0 0 24 24">
+                <Path
+                  d="M5 13l4 4L19 7"
+                  stroke="#FFFFFF"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </Svg>
+            </View>
+            {/* **L'étiquette nomme la chose, pas la personne.** « Tu t'y es engagé » accordait au
+                masculin celui ou celle à qui elle parle — le seul endroit du produit où il
+                restait un participe accordé sur la personne, `/compte/suppression` ayant été
+                reprise dans la même vague (« Tu es connecté » → « Ce navigateur est
+                connecté »). Le libellé accessible juste au-dessus était déjà juste : il porte
+                sur l'action. */}
+            <ThemedText themeColor="accentText" weight={700} style={styles.etiquette}>
+              TON ENGAGEMENT
+            </ThemedText>
           </View>
-          <ThemedText themeColor="accentText" weight={700} style={styles.etiquette}>
-            TU T’Y ES ENGAGÉ
-          </ThemedText>
-        </View>
-      )}
+        )}
 
-      <ThemedText type="cardTitle">{titre}</ThemedText>
+        <ThemedText type="cardTitle">{titre}</ThemedText>
 
-      {gainKg !== null && (
-        <View style={styles.gain}>
-          <ThemedText weight={600} themeColor="accentText" style={styles.gainValeur}>
-            − {Math.round(gainKg)} kg CO₂e
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {intention ? `${majuscule(intention)} · par an` : 'par an'}
-            {partPercent !== null ? ` · ${Math.round(partPercent)} % de ton empreinte` : ''}
-          </ThemedText>
-        </View>
-      )}
+        {gainKg !== null && (
+          <View style={styles.gain}>
+            <ThemedText weight={600} themeColor="accentText" style={styles.gainValeur}>
+              − {Math.round(gainKg)} kg CO₂e
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {intention ? `${majuscule(intention)} · par an` : 'par an'}
+              {partPercent !== null ? ` · ${Math.round(partPercent)} % de ton empreinte` : ''}
+            </ThemedText>
+          </View>
+        )}
 
-      {detail && (
-        <ThemedText type="small" themeColor="textTertiary">
-          {detail}
-        </ThemedText>
-      )}
+        {detail && (
+          <ThemedText type="small" themeColor="textTertiary">
+            {detail}
+          </ThemedText>
+        )}
+      </View>
 
       {children}
     </View>
@@ -116,6 +144,9 @@ function majuscule(phrase: string): string {
 
 const styles = StyleSheet.create({
   carte: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
+  // Le groupe non interactif reprend l'écart que la carte posait entre ses textes : les
+  // regrouper pour le lecteur d'écran ne doit rien changer à l'œil.
+  bloc: { gap: Spacing.two },
   enTete: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   pastille: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   etiquette: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },

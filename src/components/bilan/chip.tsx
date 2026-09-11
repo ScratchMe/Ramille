@@ -17,6 +17,21 @@ export type ChipProps = {
   /** Quand le libellé visible est une abréviation ambiguë — deux jours de la semaine portent
    *  l'initiale « M » — le lecteur d'écran doit entendre le mot entier. */
   accessibilityLabel?: string;
+  /** Rôle annoncé (A2-8) : `radio` pour une puce d'un groupe à choix unique — la majorité du
+   *  questionnaire —, `checkbox` pour une puce qui se cumule avec ses voisines (les jours de
+   *  l'engagement, où `radio` serait faux), `button` pour une vraie action. `radio` et
+   *  `checkbox` sont les seuls rôles à annoncer « non sélectionné » et la place dans le
+   *  groupe.
+   *
+   *  **Le défaut `button` est provisoire, et il laisse le défaut d'A2-8 en place partout où il
+   *  s'applique encore** : un `button` qui porte `selected` est la combinaison qu'A2-8 désigne.
+   *  Six appels n'ont pas été relus et le gardent — `steps/context.tsx`, `steps/flights.tsx`,
+   *  `steps/commute-days-distance.tsx`, `steps/commute-extra.tsx`, `steps/leisure-detail.tsx`
+   *  (tous des choix uniques, donc `radio` dans une `View accessibilityRole="radiogroup"`) et
+   *  `plan/action-commitment.tsx` (jours cumulables, donc `checkbox` dans un groupe nommé).
+   *  Rendre la prop obligatoire est ce qui les énumérera au typecheck, et c'est le geste à faire
+   *  en même temps qu'eux — pas avant, un défaut ne se remplace pas par un build cassé. */
+  role?: 'button' | 'radio' | 'checkbox';
 };
 
 // Chip générique — couvre les pickers numériques/tranches (B1.3, B2.2, B3.*) et les
@@ -30,6 +45,7 @@ export function Chip({
   selectedStyle = 'solid',
   radius = 22,
   accessibilityLabel,
+  role = 'button',
 }: ChipProps) {
   const theme = useTheme();
 
@@ -44,9 +60,15 @@ export function Chip({
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
+      accessibilityRole={role}
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ selected }}
+      // Un rôle de choix porte **les deux** états, comme les quatre autres contrôles exclusifs
+      // du produit (`mode-list-item`, `choice-row`, `choix-de-rappel`, `feuille-rappels`) :
+      // `checked` est ce que TalkBack attend d'un `radio` ou d'une `checkbox`, et `selected` est
+      // ce que VoiceOver sait rendre — iOS n'a pas de trait `radio` et ne lit `checked` que sur
+      // un interrupteur ou une case, donc n'annoncerait aucun état sans lui. Un `button`, lui,
+      // ne prend que `selected` : `aria-checked` sur `role="button"` n'existe pas.
+      accessibilityState={role === 'button' ? { selected } : { selected, checked: selected }}
       style={[
         styles.base,
         flex ? styles.baseFlex : styles.basePilule,

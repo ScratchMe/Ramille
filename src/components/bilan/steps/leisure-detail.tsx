@@ -37,7 +37,14 @@ export function LeisureDetailStep({
   update: (patch: Partial<BilanAnswers>) => void;
 }) {
   const theme = useTheme();
-  const [showMore, setShowMore] = useState(false);
+  // Ouvert d'emblée si le mode déjà répondu vit dans la seconde liste. Sinon la question
+  // paraît vide alors qu'elle est remplie : un re-bilan prérempli (la personne allait en bus
+  // le mois dernier) comme un simple aller-retour Retour/Suivant remontaient quatre modes
+  // parmi lesquels le bon n'était pas, « Suivant » restait actif, et la personne cochait une
+  // voiture pour avancer — son « bus » changeait de valeur sans qu'elle le sache (audit A2-5).
+  const [showMore, setShowMore] = useState(() =>
+    LEISURE_MODE_CHOICES_MORE.some((choice) => choice.modeId === answers.leisure_mode)
+  );
   // Voiture seul/covoiturage partagent le même `leisure_mode` ('voiture') : la clé
   // choisie, pas la valeur, distingue laquelle des deux rangées est cochée à l'écran —
   // et donc sous laquelle des deux la précision s'ouvre.
@@ -64,12 +71,9 @@ export function LeisureDetailStep({
                   selected={selected}
                   onPress={() => {
                     setSelectedKey(choice.key);
-                    update({
-                      leisure_mode: choice.modeId,
-                      leisure_car_engine: choice.modeId === 'voiture' ? answers.leisure_car_engine : null,
-                      leisure_two_wheeler_type:
-                        choice.modeId === 'deux_roues_motorise' ? answers.leisure_two_wheeler_type : null,
-                    });
+                    // La motorisation et le type de deux-roues rattachés au mode précédent
+                    // sont effacés par `normaliserReponses`, pas ici (audit A2-17).
+                    update({ leisure_mode: choice.modeId });
                   }}
                 />
 

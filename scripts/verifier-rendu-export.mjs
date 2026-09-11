@@ -23,13 +23,21 @@
 //      rigueur qu'il avait avant, sans renoncer au filet.
 //   3. **Aucune exception non rattrapée**, hors erreurs d'hydratation (voir plus bas).
 //
+// S'y ajoutent deux contrôles sur `vercel.json`, parce que ce script **reproduit** la façon dont
+// Vercel sert l'export (cf. `resoudre()` plus bas) et qu'un garde-fou qui ne sert pas comme la
+// production teste autre chose : `cleanUrls` doit être là, et chaque fichier listé en
+// `functions[*].includeFiles` doit exister. Ce second point est le seul contrôle du dépôt qui
+// regarde l'empaquetage des Vercel Functions — `hb.wasm` y est désigné par un chemin en dur vers
+// une dépendance transitive de `satori`, et sa disparition ne produit **aucune** erreur de build :
+// l'échec arrive à l'exécution, en `ENOENT` derrière un `FUNCTION_INVOCATION_FAILED` générique.
+//
 // Ce qui n'est PAS vérifié ici, volontairement : le réseau. L'export de CI est construit avec
 // une configuration Supabase factice, donc chaque page échoue à joindre la base — les erreurs
 // de console sont attendues et ne font pas échouer ce contrôle. On teste le rendu, pas les
 // données.
 //
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 
@@ -37,9 +45,14 @@ import { chromium } from 'playwright';
 
 const DIST = process.argv[2] ?? 'dist';
 
-// Un marqueur par route : un fragment de texte que la page ne peut pas afficher si elle n'a
-// pas rendu. Choisis dans du contenu stable — un titre de section, une phrase de Ramille —
-// jamais un libellé décoratif qui bougera au prochain ajustement de copie.
+// Un marqueur par route : un fragment de texte qui doit figurer dans la page. Choisis dans du
+// contenu stable — un titre de section, une phrase de Ramille — jamais un libellé décoratif qui
+// bougera au prochain ajustement de copie.
+//
+// **Le marqueur ne prouve pas que l'app a démarré**, et c'est important pour la suite : l'export
+// pré-rend le corps de chaque page, donc le texte est là avant que le bundle ne s'exécute. Il dit
+// que la page rend le bon contenu ; c'est l'attente d'hydratation, plus bas, qui ouvre la fenêtre
+// où une exception au montage peut être vue.
 //
 // `marqueur: null` là où le contenu **dépend du réseau** : la racine ouvre une session avant
 // de router, et l'export de CI est construit avec une configuration Supabase factice — elle y
@@ -54,6 +67,17 @@ const ROUTES = [
   { chemin: '/conditions', marqueur: 'Conditions d’utilisation' },
   // Surface publique exigée par Google Play : elle doit s'afficher sans l'app et sans compte.
   { chemin: '/compte/suppression', marqueur: 'Supprimer mon compte' },
+  // Les écrans d'application, tous sans marqueur. La panne du 08/09/2026 était dans le layout
+  // racine, donc les cinq routes ci-dessus la voyaient toutes — mais une exception confinée à
+  // `(tabs)/_layout.tsx` ou à un écran d'onglet n'apparaîtrait sur aucune d'elles. Ces six-là
+  // dépendent du réseau (l'export de CI porte une configuration Supabase factice) : seul « la
+  // page n'est pas vide et ne lève pas » est vérifiable, et c'est précisément ce qui manque.
+  { chemin: '/plan', marqueur: null },
+  { chemin: '/suivi', marqueur: null },
+  { chemin: '/suivi/bilan', marqueur: null },
+  { chemin: '/bilan', marqueur: null },
+  { chemin: '/compte', marqueur: null },
+  { chemin: '/feedback', marqueur: null },
 ];
 
 // Les deux écrans de panne, qu'aucune route ne doit afficher.
@@ -80,6 +104,13 @@ const ECRANS_DE_PANNE = [
 // à voir avec ce qu'il protège — et il en existe une, connue, sur les pages légales : `APP_URL`
 // vaut l'origine réelle côté client et le domaine de production côté serveur.
 const HYDRATATION = /Minified React error #(418|421|422|423|425)\b|hydrat/i;
+
+// Plafond d'attente par route, et repos ensuite — cf. leur usage plus bas. Six secondes, et pas
+// une seconde et demie : c'est la fenêtre pendant laquelle une exception levée dans un effet, ou
+// dans un écran monté après coup, peut encore arriver. Onze routes à six secondes coûtent un peu
+// plus d'une minute, la navigation n'attendant plus de délai fixe avant ce repos.
+const ATTENTE_MAX = 20_000;
+const REPOS = 6_000;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -124,14 +155,49 @@ const serveur = createServer((requete, reponse) => {
 await new Promise((resoudre) => serveur.listen(0, '127.0.0.1', resoudre));
 const base = `http://127.0.0.1:${serveur.address().port}`;
 
+const echecs = [];
+const avertissements = [];
+
+// ── Ce que ce script reproduit de la production ────────────────────────────────────────────
+// `cleanUrls` d'abord : sans lui, Vercel sert les routes en répertoire (`plan/index.html`) et
+// renvoie 404 sur les routes en fichier plat (`suivi.html`) — la moitié de l'app, en silence.
+// `resoudre()` ci-dessus sert les deux formes exprès, donc ce script ne verrait **pas** la panne
+// que la disparition de `cleanUrls` provoquerait : il faut la lire dans le fichier.
+const configVercel = JSON.parse(readFileSync('vercel.json', 'utf8'));
+
+if (configVercel.cleanUrls !== true) {
+  echecs.push(
+    'vercel.json ne porte plus `cleanUrls: true`. Les routes sans enfants (/suivi,' +
+      ' /confidentialite, /feedback, /suivi/bilan…) repasseraient en 404 en production, et ce' +
+      ' garde-fou ne le verrait pas : il sert les deux formes de chemin exprès.',
+  );
+}
+
+// Puis les assets des Functions. Un chemin littéral vers une dépendance transitive (aujourd'hui
+// `node_modules/harfbuzzjs/hb.wasm`, tiré par `satori`) n'est vérifié par personne : ni le build
+// Vercel, ni le typecheck. Les motifs glob sont ignorés — `includeFiles` en accepte, et ce
+// contrôle ne sait pas les résoudre ; il le dit plutôt que d'échouer à tort.
+for (const [fonction, options] of Object.entries(configVercel.functions ?? {})) {
+  const declares = [options?.includeFiles ?? []].flat();
+  for (const fichier of declares) {
+    if (/[*?{[]/.test(fichier)) {
+      avertissements.push(`vercel.json : includeFiles « ${fichier} » est un motif, non vérifié.`);
+    } else if (!existsSync(fichier)) {
+      echecs.push(
+        `vercel.json : \`${fonction}\`.includeFiles désigne « ${fichier} », qui n’existe pas.` +
+          ' La Function se déploierait sans cet asset et échouerait à l’exécution en ENOENT,' +
+          ' derrière un FUNCTION_INVOCATION_FAILED sans détail côté client.',
+      );
+    }
+  }
+}
+
 // `CHROMIUM_PATH` laisse pointer un binaire déjà présent — utile là où les navigateurs de
 // Playwright sont installés hors de son arborescence habituelle. En CI, la variable est
 // absente et le navigateur vient de `npx playwright install chromium`.
 const navigateur = await chromium.launch(
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}
 );
-const echecs = [];
-const avertissements = [];
 
 for (const { chemin, marqueur } of ROUTES) {
   const page = await navigateur.newPage({ viewport: { width: 420, height: 900 } });
@@ -140,9 +206,45 @@ for (const { chemin, marqueur } of ROUTES) {
 
   try {
     await page.goto(base + chemin, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    // Le temps que le bundle s'exécute et que l'app monte. Généreux : un runner de CI est
-    // plus lent qu'un poste, et un faux échec ici coûterait la confiance dans le garde-fou.
-    await page.waitForTimeout(6_000);
+    // **Ce qu'on attend d'abord, c'est que React ait pris la main.** Et c'est la seule attente
+    // qui prouve quelque chose : l'export d'Expo Router **pré-rend** le corps de chaque page,
+    // donc « la page n'est pas vide » et même le marqueur sont vrais dès `domcontentloaded`,
+    // avant que le bundle ne s'exécute. Attendre l'un ou l'autre reviendrait à relire le HTML
+    // statique — ce que les deux autres gardes font déjà — et à refermer la fenêtre
+    // d'observation juste avant l'instant où la panne du 08/09/2026 se produit : une exception au
+    // rendu du layout racine arrive quand le bundle monte l'app, pas quand le serveur sert le
+    // fichier. React marque son conteneur d'une propriété interne au montage —
+    // `__reactContainer$…` aujourd'hui — qu'aucun HTML statique ne peut porter : la chercher sur
+    // `#root` (le conteneur de l'export, présent dans les vingt-et-une pages de `dist/`) est donc
+    // le seul signal qui distingue « servi » de « monté ». Le préfixe est lâche exprès, le suffixe
+    // étant aléatoire et le nom propre à la version de React ; l'attente n'est pas bloquante en
+    // cas d'expiration, ce sont les contrôles ci-dessous qui disent ce qui a échoué.
+    await page
+      .waitForFunction(
+        () => {
+          const racine = document.getElementById('root');
+          return !!racine && Object.keys(racine).some((cle) => cle.startsWith('__react'));
+        },
+        null,
+        { timeout: ATTENTE_MAX },
+      )
+      .catch(() => {});
+    // Puis le marqueur quand il y en a un, sinon la première trace de contenu — avec un plafond
+    // large, un runner de CI étant plus lent qu'un poste. L'expiration n'est pas traitée comme
+    // une erreur ici : c'est aux contrôles ci-dessous de dire *lequel* des trois a échoué, avec
+    // ce que la page affichait vraiment.
+    //
+    // Puis le repos, qui n'est pas du luxe : une exception levée dans un effet arrive **après**
+    // le premier rendu, et c'est la moitié de ce que ce script cherche.
+    await (marqueur
+      ? page.waitForFunction((attendu) => document.body.innerText.includes(attendu), marqueur, {
+          timeout: ATTENTE_MAX,
+        })
+      : page.waitForFunction(() => document.body.innerText.trim().length > 0, null, {
+          timeout: ATTENTE_MAX,
+        })
+    ).catch(() => {});
+    await page.waitForTimeout(REPOS);
     const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ').trim();
 
     const bloquantes = exceptions.filter((e) => !HYDRATATION.test(e));
@@ -195,4 +297,7 @@ if (echecs.length > 0) {
   process.exit(1);
 }
 
-console.log(`${ROUTES.length} routes rendues, aucun écran de panne, aucune exception bloquante.`);
+console.log(
+  `${ROUTES.length} routes rendues, aucun écran de panne, aucune exception bloquante.` +
+    ' vercel.json : cleanUrls en place, assets des Functions présents.'
+);

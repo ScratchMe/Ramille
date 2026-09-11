@@ -10,9 +10,12 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(16);
 
--- ── Fixtures : 4 utilisateurs, 1 bilan chacun ───────────────────────────────────────────
+-- ── Fixtures : 5 utilisateurs ───────────────────────────────────────────────────────────
+-- Quatre bilans ici (scénarios 1 à 4) ; le cinquième utilisateur sert d'abord à la garde
+-- d'accès, et reçoit son bilan en fin de fichier, avec la garde autour de
+-- generate_plan_cycle_for_user.
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-commute@test.local', 'x', now(), now()),
@@ -192,6 +195,55 @@ select throws_ok(
   'P0001',
   'compute_assessment_results: bilan introuvable ou accès refusé',
   'un id de bilan inexistant lève la même erreur générique (pas d''énumération)'
+);
+
+-- ── Le plan ne peut plus emporter le bilan (C1.1, A8-3) ─────────────────────────────────
+-- `recompute_assessment_results` se termine par `generate_plan_cycle_for_user`, dans la **même**
+-- transaction : sans garde, une exception dans la génération du plan annulait aussi l'écriture
+-- d'`assessment_results` que le calcul venait de réussir, et le bilan était perdu pour une panne
+-- qui ne le concerne pas. Il suffit d'un mode sans facteur d'émission pour que
+-- `estimate_action_savings` lève (`emission_factor` lève plutôt que de rendre un NULL).
+--
+-- La panne est simulée en remplaçant le générateur de plan par un corps qui lève — la seule façon
+-- de l'éprouver sans fabriquer un référentiel incohérent, et elle est annulée avec la transaction
+-- du fichier. On repasse en `postgres` : `recompute_assessment_results` est révoquée des rôles
+-- client (c'est `compute_assessment_results` qui est le RPC), et `create or replace function`
+-- demande de toute façon le propriétaire.
+
+select set_config('role', 'postgres', true);
+
+insert into public.assessments (id, user_id, status, submitted_at) values
+  ('25555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111115', 'completed', now());
+
+insert into public.assessment_answers (
+  assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
+  commute_is_carpool, commute_second_mode_used, leisure_frequency
+) values (
+  '25555555-5555-5555-5555-555555555555', true, 5, 10, 'voiture', false, false, 'rarely'
+);
+
+create or replace function public.generate_plan_cycle_for_user(p_user_id uuid)
+returns void
+language plpgsql
+as $panne$
+begin
+  raise exception 'panne simulée du générateur de plan';
+end;
+$panne$;
+
+select lives_ok(
+  $$ select public.recompute_assessment_results('25555555-5555-5555-5555-555555555555') $$,
+  'un générateur de plan qui lève ne fait pas échouer le calcul du bilan'
+);
+
+-- Et le résultat est bien écrit, pas seulement l'absence d'exception : c'est la ligne
+-- qu'annulait la transaction avant la garde. Même valeur que le scénario 1, dont ce bilan est la
+-- copie — 4 500 km à 0,142253 plus les loisirs par défaut.
+select is(
+  (select round(total_co2_kg_year::numeric, 3) from public.assessment_results
+    where assessment_id = '25555555-5555-5555-5555-555555555555'),
+  695.617::numeric,
+  'le bilan est enregistré malgré l''échec du plan — le cron nocturne rattrapera le plan'
 );
 
 select * from finish();

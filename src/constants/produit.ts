@@ -20,3 +20,23 @@
  * dupliqué, et il faut le changer à la main si celui-ci change.
  */
 export const APP_NAME = 'Ramille';
+
+/**
+ * Origine canonique du site, en dur et en un seul endroit.
+ *
+ * `www` et non l'apex : c'est le domaine canonique côté Vercel, l'apex redirige en 308 vers
+ * lui. En dur parce que c'est un **fait statique** — le domaine ne dépend ni de la plateforme,
+ * ni de l'origine réelle de la page — et c'est exactement ce qui rend possible un `og:url`
+ * identique au rendu serveur et au rendu client (cf. `src/components/titre-de-page.tsx` : une
+ * valeur dérivée de `window.location.origin` aurait introduit un écart d'hydratation sur
+ * toutes les pages).
+ *
+ * Elle était écrite quatre fois — `src/lib/app-url.ts`, `public/robots.txt`,
+ * `public/sitemap.xml`, et son seul hôte dans `app.json` pour les liens d'application — sans
+ * constante commune : un changement de domaine aurait laissé un sitemap et un robots.txt
+ * désignant l'ancien, en silence. Les deux fichiers de `public/` sont statiques et ne peuvent pas
+ * importer d'ici (même raison qu'`api/`), mais `scripts/verifier-titres-export.mjs` lit cette
+ * constante par motif et refuse un export où l'un des deux — ou l'`og:url` d'une page publique —
+ * désigne une autre origine.
+ */
+export const ORIGINE_CANONIQUE = 'https://www.ramille.fr';

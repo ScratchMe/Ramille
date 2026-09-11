@@ -1,0 +1,42 @@
+# Ce que les moteurs de recherche ont le droit de parcourir sur ramille.fr.
+#
+# Expo recopie `public/` tel quel dans l'export, comme `.well-known/assetlinks.json` — et comme
+# lui, ce fichier échoue en silence s'il disparaît : rien dans l'app, le build ou le déploiement
+# ne le signalerait. `scripts/verifier-titres-export.mjs` vérifie donc sa présence dans `dist/`.
+#
+# **Le partage du travail avec la balise `robots` compte, et il n'est pas intuitif.** Interdire
+# le crawl d'une page empêche un moteur d'y lire son `noindex` : l'URL peut alors rester
+# indexée, sans extrait, sur la foi d'un lien trouvé ailleurs. Les pages d'application sont donc
+# laissées **parcourables** et portent chacune `noindex, nofollow`, posé par
+# `src/components/titre-de-page.tsx` pour tout chemin absent de `PAGE_DESCRIPTIONS`. Ne sont
+# interdits ici que les chemins qu'un crawler n'a aucune raison d'ouvrir :
+#
+#   /_sitemap     le plan de site de développement d'Expo Router, qui énumère toutes les routes
+#   /status       l'écran de diagnostic, volontairement non lié depuis nulle part
+#   /(tabs)/      les doublons d'URL que l'export produit pour le groupe d'onglets, servant le
+#                 même contenu que /plan, /suivi et /suivi/bilan (les deux écritures, brute et
+#                 percent-encodée, parce que les analyseurs ne normalisent pas tous pareil)
+#   /api/         les Vercel Functions, qui servent leur propre contenu hors de l'export
+#
+# **Les deux exceptions sous `/api/` ne sont pas un oubli, elles sont la fonctionnalité.**
+# `/api/partage` et `/api/share-card` composent l'aperçu d'un bilan partagé (v1-06), et
+# facebookexternalhit, Twitterbot comme LinkedInBot lisent ce fichier avant de récupérer une
+# page : interdites ici, elles ne rendraient plus ni titre, ni description, ni image — un lien
+# collé sur Facebook, X ou LinkedIn sortirait en URL nue. C'est aussi le raisonnement du
+# paragraphe ci-dessus appliqué à elles : ces deux URL sont les seules du produit à porter un
+# `X-Robots-Tag: noindex, nofollow`, et un crawler ne peut le lire que s'il a le droit de
+# demander la réponse. L'`Allow` le plus spécifique l'emporte chez Google, Bing et Facebook,
+# donc l'ordre des lignes n'a pas d'importance — mais la paire `Disallow` + `Allow` ne vaut
+# qu'entière, et `scripts/verifier-titres-export.mjs` exige les deux.
+#
+# Le reste est ouvert, et `sitemap.xml` dit lesquelles de ces pages méritent d'être trouvées.
+User-agent: *
+Disallow: /_sitemap
+Disallow: /status
+Disallow: /(tabs)/
+Disallow: /%28tabs%29/
+Disallow: /api/
+Allow: /api/partage
+Allow: /api/share-card
+
+Sitemap: https://www.ramille.fr/sitemap.xml

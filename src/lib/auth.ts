@@ -8,12 +8,32 @@ import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from '@/lib/supabase';
+import { issueDuNavigateurDAuth, lireRetourDeLien } from '@/types/connexion';
 
 // Requis uniquement sur web (referme l'onglet/popup d'auth quand le redirect revient) —
 // no-op inoffensif sur natif, cf. doc Supabase "Native Mobile Deep Linking".
 WebBrowser.maybeCompleteAuthSession();
 
 export type AuthResult = { error: Error | null };
+
+/**
+ * Ce que le rattachement Google a donné — **quatre issues, et surtout pas deux.**
+ *
+ * L'annulation était rendue comme une réussite (`{ error: null }`, « pas une vraie erreur à
+ * afficher ») : l'écran n'avait alors aucun moyen de la distinguer, et fêtait un rattachement
+ * qui n'avait pas eu lieu (A6-1). Et sur web, `linkIdentity` rend la main **avant** la
+ * redirection plein écran, donc « pas d'erreur » n'y veut pas dire « rattaché » mais « la page
+ * s'en va » — tout ce qui suit l'appel court contre le déchargement du document (A6-20).
+ *
+ * `session` dit que les jetons de retour ont ouvert une session, rien de plus : le constat du
+ * rattachement lui-même se lit sur `lireEtatDuRattachement()`, côté écran, avant de compter
+ * quoi que ce soit.
+ */
+export type IssueGoogle =
+  | { issue: 'session' }
+  | { issue: 'redirection' }
+  | { issue: 'annulation' }
+  | { issue: 'echec'; error: Error };
 
 // Lie l'identité Google à la session anonyme courante. Web : redirect plein écran
 // classique (detectSessionInUrl déjà activé côté client sur web, cf. supabase.ts — la
@@ -25,13 +45,15 @@ export type AuthResult = { error: Error | null };
 // WebBrowser + extraction manuelle des tokens depuis l'URL de retour, pattern
 // recommandé par la doc Supabase pour Expo (pas de config OAuth native type
 // google_sign_in — un seul chemin à maintenir, web et natif).
-export async function linkGoogleIdentity(): Promise<AuthResult> {
+export async function linkGoogleIdentity(): Promise<IssueGoogle> {
   if (Platform.OS === 'web') {
     const { error } = await supabase.auth.linkIdentity({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/plan` },
     });
-    return { error };
+    // Pas d'erreur ici ne veut pas dire rattaché : la page part vers Google. Ce qui doit
+    // survivre à la redirection est posé **avant** l'appel, par l'appelant.
+    return error ? { issue: 'echec', error } : { issue: 'redirection' };
   }
 
   const redirectTo = makeRedirectUri();
@@ -39,16 +61,38 @@ export async function linkGoogleIdentity(): Promise<AuthResult> {
     provider: 'google',
     options: { redirectTo, skipBrowserRedirect: true },
   });
-  if (error) return { error };
-  if (!data?.url) return { error: new Error('Supabase n’a pas renvoyé d’URL de connexion Google.') };
-
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-  if (result.type !== 'success' || !result.url) {
-    // 'cancel' / 'dismiss' : l'utilisateur a fermé la fenêtre, pas une vraie erreur à afficher.
-    return { error: null };
+  if (error) return { issue: 'echec', error };
+  if (!data?.url) {
+    return { issue: 'echec', error: new Error('Supabase n’a pas renvoyé d’URL de connexion Google.') };
   }
 
-  return createSessionFromUrl(result.url);
+  const resultat = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  const issue = issueDuNavigateurDAuth(resultat);
+  if (issue === 'annulation') return { issue: 'annulation' };
+  // Le `in` est là pour le typage — `issue === 'jetons'` garantit déjà l'URL, mais seul lui
+  // distingue les deux formes du résultat aux yeux du compilateur.
+  if (issue === 'jetons' && 'url' in resultat && resultat.url) {
+    // **Un consentement refusé revient par la porte du succès.** Google renvoie
+    // `ramille://?error=access_denied`, que `openAuthSessionAsync` rend avec `type: 'success'`
+    // puisque la redirection a bien eu lieu : sans ce test, l'URL partait dans
+    // `createSessionFromUrl`, qui n'y voit qu'un retour de lien mort et rend « Ce lien de
+    // connexion n'est plus valable. » — un texte qui parle d'un lien reçu par email à
+    // quelqu'un qui vient de refuser un écran Google. Un refus **est** une annulation : même
+    // issue que la fenêtre refermée, donc le même mot neutre à l'écran.
+    if (lireRetourDeLien(resultat.url) === 'erreur') return { issue: 'annulation' };
+    const { error: erreurDeSession } = await createSessionFromUrl(resultat.url);
+    return erreurDeSession ? { issue: 'echec', error: erreurDeSession } : { issue: 'session' };
+  }
+
+  // Le type brut du résultat reste au journal, pas à l'écran : l'affichage le recopiait à la
+  // suite de « La connexion avec Google n'a pas abouti. », si bien que la personne lisait deux
+  // fois la même chose avec « (locked) » ou « (opened) » en anglais au bout. La phrase qui reste
+  // ajoute le peu qu'on sait — la fenêtre s'est bien ouverte, rien n'en est revenu.
+  console.error('La fenêtre d’authentification Google n’a pas abouti :', resultat.type);
+  return {
+    issue: 'echec',
+    error: new Error('La fenêtre s’est refermée sans réponse de Google.'),
+  };
 }
 
 // Ouvre la session portée par une URL de retour (`#access_token=…&refresh_token=…`). Deux
@@ -56,9 +100,17 @@ export async function linkGoogleIdentity(): Promise<AuthResult> {
 // arrive hors de l'app (ouvert depuis la messagerie) et remonte par `Linking.useURL()` dans
 // `_layout.tsx`. Sur web, `detectSessionInUrl` fait ce travail tout seul.
 export async function createSessionFromUrl(url: string): Promise<AuthResult> {
-  const { params, errorCode } = QueryParams.getQueryParams(url);
-  if (errorCode) return { error: new Error(errorCode) };
+  // **L'échec du lien arrive dans le même fragment que les jetons**, sous une autre forme
+  // (`#error=access_denied&error_code=otp_expired`). Le test d'avant portait sur le champ
+  // `errorCode` de `getQueryParams`, qui ne lit que ce nom-là — en camel, jamais envoyé par
+  // Supabase : il valait donc toujours `null`, et un lien expiré ressortait d'ici avec
+  // « Jetons de session manquants ». La lecture vit maintenant dans `src/types/connexion.ts`,
+  // testée, et c'est la même que celle du layout racine.
+  if (lireRetourDeLien(url) === 'erreur') {
+    return { error: new Error('Ce lien de connexion n’est plus valable.') };
+  }
 
+  const { params } = QueryParams.getQueryParams(url);
   const { access_token, refresh_token } = params;
   if (!access_token || !refresh_token) {
     return { error: new Error('Jetons de session manquants dans la redirection.') };
@@ -79,8 +131,19 @@ export async function createSessionFromUrl(url: string): Promise<AuthResult> {
 // Une adresse déjà rattachée à un autre compte renvoie `422 email_exists` — ce n'est pas une
 // erreur à afficher, c'est le signe que la personne cherchait l'écran « retrouver »
 // (cf. `adresseDejaRattachee` dans `src/types/connexion.ts`).
-export async function linkEmail(email: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.updateUser({ email: email.trim() });
+//
+// **`redirectTo` n'est pas optionnel, et son absence coûtait la fin du parcours.** Sans lui, le
+// lien de confirmation retombe sur la Site URL du tableau de bord : sur natif il s'ouvre donc
+// dans le navigateur et pas dans l'app, la personne revient à Ramille à la main, sans aucune URL
+// entrante — il n'y a alors strictement rien pour lui annoncer que son compte est rattaché
+// (contre-vérification d'A6-5). Avec lui, le retour passe par le scheme `ramille://`, que
+// `_layout.tsx` traite, et l'annonce du plan se referme. L'adresse doit figurer dans les
+// Redirect URLs du tableau de bord, sinon elle est ignorée en silence (`v1-10` §8.4).
+export async function linkEmail(email: string, redirectTo: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.updateUser(
+    { email: email.trim() },
+    { emailRedirectTo: redirectTo }
+  );
   return { error };
 }
 

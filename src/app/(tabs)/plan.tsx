@@ -73,6 +73,23 @@ function keepLatestPerLoop(checkins: PendingCheckin[]): EngagementCheckin[] {
   });
 }
 
+/**
+ * Par quel chemin ce compte a-t-il été rattaché ? Lu sur les **identités** de la session, jamais
+ * déduit de la présence d'une adresse : Google en fournit une aussi, et prendre « email » par
+ * défaut rangerait tous les comptes Google du mauvais côté. Sert à ne pas compter deux fois un
+ * rattachement Google, que `/connexion` émet déjà au retour de `linkIdentity()`.
+ *
+ * `null` quand la lecture échoue : une méthode inventée fausserait la seule comparaison que
+ * `connexion_success` permet, donc on préfère ne rien compter et réessayer au passage suivant.
+ */
+async function methodeDuRattachement(): Promise<'google' | 'email' | null> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) return null;
+  return (data.user.identities ?? []).some((identite) => identite.provider === 'google')
+    ? 'google'
+    : 'email';
+}
+
 type LoadState =
   | { status: 'loading' }
   // Aucun bilan complété — écran "État vide" de la maquette.
@@ -137,6 +154,33 @@ export default function Plan() {
   // boucle ouverte par « Vérifie tes emails » ne se refermait nulle part. On l'annonce une
   // seule fois : c'est une nouvelle, pas un état permanent en tête du plan. Qui veut le
   // revoir le trouve sur « Toi ».
+  //
+  // **C'est aussi le seul endroit qui peut constater un rattachement par email, donc c'est ici
+  // que part `connexion_success`** (v1-13 C1.2). L'écran email l'émettait juste après
+  // `updateUser({ email })`, où rien n'est encore rattaché : `etatDuRattachement` classe cet
+  // instant en `a_confirmer`, et `is_anonymous` ne bascule qu'au clic du lien. Il n'y porte plus
+  // que `connexion_demande`, l'intention — l'écart entre les deux **est** le taux d'emails jamais
+  // confirmés, c'est-à-dire le chiffre cherché.
+  //
+  // Deux précautions qui font que ce chiffre veut dire quelque chose :
+  //
+  // — **Google n'est émis ici que sur web**, où l'écran de connexion ne peut pas le faire : sa
+  //   redirection plein écran emporte la page avant la ligne suivante, et le retour d'OAuth
+  //   atterrit ici sans repasser par lui. Sur natif, `/connexion` constate la session liée dans le
+  //   geste même et l'émet là-bas ; le compter une seconde fois doublerait exactement la branche à
+  //   laquelle on compare l'email. La méthode se lit donc sur les identités de la session, jamais
+  //   sur la présence d'une adresse — Google en fournit une aussi.
+  // — **L'émission partage la marque d'annonce, et ce n'est pas un raccourci.** Sans garde,
+  //   l'événement repartirait à chaque passage sur le plan et ne compterait plus des
+  //   rattachements mais des ouvertures d'onglet par quelqu'un de connecté : le taux de
+  //   conversion, seule chose que cet événement sert à lire, deviendrait un ratio de fréquence
+  //   d'usage. La marque est écrite dans la même foulée que l'annonce, donc « déjà annoncé »
+  //   vaut « déjà compté ».
+  //
+  // `refreshKey` en dépendance, et pas un tableau vide : le retour de la messagerie est
+  // exactement le cas d'un écran d'onglet que react-navigation garde monté (v1-12 §8.1). Avec
+  // `[]`, la bascule survenue après le premier passage n'était vue qu'au lancement suivant —
+  // l'annonce arrivait en retard et l'événement avec elle. La marque empêche le doublon.
   useEffect(() => {
     let annule = false;
 
@@ -144,14 +188,31 @@ export default function Plan() {
       if (await aVuRattachementAnnonce()) return;
       const etat = await lireEtatDuRattachement().catch(() => null);
       if (annule || etat?.kind !== 'rattache') return;
+      const methode = await methodeDuRattachement().catch(() => null);
+      if (annule) return;
       setRattachement(etat.email ?? '');
+      // Méthode indéterminée : on n'écrit ni l'événement ni la marque — le passage suivant
+      // reprendra les deux, et l'annonce ci-dessus est déjà à l'écran en attendant.
+      if (methode === null) return;
+      // **Sur web, Google se compte ici aussi, et c'est la seule façon de le compter.**
+      // `/connexion` l'émet au retour de `linkIdentity()` — mais sur web cet appel déclenche une
+      // redirection plein écran et rend la main avant elle : la ligne de mesure partait pendant
+      // le déchargement du document et n'arrivait jamais, et le retour d'OAuth atterrit
+      // directement ici sans repasser par l'écran de connexion (A6-20). Le rattachement Google
+      // sur web n'était donc jamais compté, ce qui se lit comme une conversion plus faible sur
+      // web que sur natif, sans cause visible. Sur natif, l'écran de connexion constate la
+      // session liée dans le geste même : le compter une seconde fois doublerait exactement la
+      // branche à laquelle on compare l'email.
+      if (methode === 'email' || Platform.OS === 'web') {
+        track('connexion_success', { method: methode });
+      }
       await marquerRattachementAnnonce();
     })();
 
     return () => {
       annule = true;
     };
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -309,13 +370,30 @@ export default function Plan() {
     );
   }
 
+  // **Cet état était un cul-de-sac, et c'est là qu'atterrissait le bilan fantôme** (A2-2, A3-5) :
+  // une phrase, aucun bouton, et rien qui en sorte — ni le retour matériel (on est sur l'onglet
+  // racine, il quitte l'app), ni le temps (le cron nocturne ne peut pas générer un plan sans
+  // réponses). La personne voyait un plan « en préparation » pour toujours.
+  //
+  // Deux sorties, et les deux sont vraies maintenant. « Réessayer » a un sens depuis que le plan
+  // peut manquer pour une raison passagère : la garde de C1.1 rend le bilan même quand la
+  // génération du plan échoue, donc relire peut trouver le cycle que le cron a rattrapé depuis.
+  // « Revoir mon bilan » est la sortie qui marche dans tous les cas — le résultat, lui, est bien
+  // là, et c'est ce que la personne est venue chercher.
   if (state.status === 'pending') {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <BandeHaute />
           <View style={styles.centered}>
-            <ThemedText themeColor="textSecondary">Ton plan est en cours de préparation, reviens dans un instant.</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.attenteTexte}>
+              Ton plan est en cours de préparation, reviens dans un instant.
+            </ThemedText>
+            <Button title="Réessayer" onPress={rafraichir} style={styles.attenteBouton} />
+            <TextLink
+              label="Revoir mon bilan"
+              onPress={() => router.push({ pathname: '/suivi/bilan', params: { id: state.assessmentId } })}
+            />
           </View>
         </SafeAreaView>
       </ThemedView>
@@ -563,6 +641,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  // La phrase au-dessus des deux sorties : centrée comme le conteneur, mais elle a besoin de
+  // son propre espace sous elle, sinon le bouton la touche.
+  attenteTexte: { textAlign: 'center', paddingHorizontal: Spacing.four, marginBottom: Spacing.four },
+  attenteBouton: { marginBottom: Spacing.three },
   scrollContent: { padding: Spacing.four, gap: Spacing.four },
   intro: { gap: Spacing.two },
   rattachement: { borderRadius: Radius.field, paddingVertical: 12, paddingHorizontal: Spacing.three },

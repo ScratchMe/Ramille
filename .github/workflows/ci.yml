@@ -21,9 +21,37 @@ jobs:
       # checkout propre, sans dev server jamais lancé, `tsc` échoue sinon sur l'import
       # side-effect de global.css (types fournis via `/// <reference types="expo/types" />`).
       # Contenu statique, identique à celui qu'Expo génère lui-même.
+      #
+      # **Redondant depuis le `postinstall` de package.json, et gardé exprès.** Ce `printf`
+      # était la seule chose qui faisait passer `tsc` sur un checkout propre — explication qui
+      # ne vivait qu'ici, donc invisible pour qui clone le dépôt et suit le README. Le
+      # `postinstall` règle le cas partout (poste, CI, agent) ; retirer cette étape dans le même
+      # mouvement ferait qu'un `postinstall` silencieusement cassé rendrait la CI rouge sans
+      # indice. Les deux cohabitent un cycle, et l'étape part ensuite.
       - run: printf '/// <reference types="expo/types" />\n' > expo-env.d.ts
       - run: npx tsc --noEmit
+      # `api/` est le seul code du dépôt dont la boucle de retour est un déploiement en
+      # production, et c'était le seul que rien ne typecheckait : le tsconfig racine l'exclut
+      # explicitement, et Vercel compile ces fichiers avec esbuild, qui efface les types sans
+      # les vérifier. Une erreur de type y partait donc en production pour se manifester en
+      # `FUNCTION_INVOCATION_FAILED` sans détail côté client — le mode d'échec dont l'en-tête
+      # d'api/share-card.ts raconte le coût de diagnostic.
+      - run: npm run typecheck:api
       - run: npm run lint
+      # Les dépendances n'étaient regardées par aucune des trois étapes. expo-doctor est la
+      # garde la moins chère : versions incohérentes avec le SDK, modules natifs mal déclarés,
+      # configuration d'app qui ne correspond plus aux paquets installés — tout ce qui ne se
+      # voit ni au typecheck, ni aux tests, ni à l'export, et qui se paie à la prochaine
+      # construction d'AAB.
+      #
+      # Version épinglée, pour la même raison que le CLI Supabase plus bas : `npx expo-doctor`
+      # sans numéro télécharge la dernière version publiée à chaque passage, et une étape
+      # bloquante de la CI changerait alors sous nos pieds sans qu'une ligne du dépôt bouge.
+      # 1.20.4 relevé le 10/09/2026 sur le registre npm : publiée le 26/08/2026 et toujours le
+      # `dist-tag` latest ce jour-là — c'est donc la version que `latest` installait déjà.
+      # L'épinglage fige l'état connu, il ne le change pas. Pour la faire évoluer : changer le
+      # numéro ici et reporter sa date de publication, rien d'autre.
+      - run: npx expo-doctor@1.20.4
 
   unit-tests:
     name: Tests unitaires (Jest)

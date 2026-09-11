@@ -11,7 +11,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(19);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('71111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-eng-a@test.local', 'x', now(), now()),
@@ -39,6 +39,27 @@ select '72222222-2222-2222-2222-222222222222', f.co2, f.co2, 0, 0,
 from (select 9000 * public.emission_factor('voiture', current_date) as co2) f;
 
 select public.generate_plan_cycle_for_user('71111111-1111-1111-1111-111111111111');
+
+-- Un cycle de voyages pour B, posé à la main : le bilan de A est entièrement domicile-travail,
+-- donc ses deux actions portent le même poste et ne peuvent pas éprouver la forme d'intention
+-- inverse (une échéance fermée). Lui donner aussi des voyages déplacerait le classement des deux
+-- actions retenues et l'assertion juste au-dessus avec — deux fixtures disjointes coûtent moins
+-- qu'une fixture qui sert deux raisonnements.
+insert into public.plan_cycles (user_id, cadence_type, period_label, period_start, period_end, trip_label, target_reduction_pct)
+values ('71111111-1111-1111-1111-111111111112', 'season', 'Saison de test', current_date, current_date + 89, 'Voyages longue distance (Avion)', 20);
+
+insert into public.plan_actions (plan_cycle_id, action_template_id, saving_kg_year, saving_share_percent, detail_text, rank)
+select pc.id, tpl.id, 900, 30, 'Sur 1 vol long-courrier déclaré.', 1
+from public.plan_cycles pc
+cross join public.action_templates tpl
+where pc.user_id = '71111111-1111-1111-1111-111111111112'
+  and tpl.poste = 'travel' and tpl.segment = 'flight_long';
+
+select set_config('test.action_voyage',
+  (select pa.id::text
+     from public.plan_actions pa
+     join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+    where pc.user_id = '71111111-1111-1111-1111-111111111112'), true);
 
 -- Portée explicite au cycle de l'utilisateur A : cette assertion s'exécute encore sous
 -- `postgres`, donc hors RLS, et un `count(*)` nu compterait les actions de toute la base. Elle
@@ -73,8 +94,10 @@ select is(
 -- revient à ne s'engager sur aucune. Le RPC libère la précédente dans la même transaction —
 -- l'index unique partiel refuserait sinon la seconde ligne.
 
+-- Les deux actions de A portent le poste domicile-travail : la bascule se fait donc elle aussi en
+-- jours de la semaine. Une échéance fermée y est refusée depuis le 11/09/2026 (cf. plus bas).
 select lives_ok(
-  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank desc limit 1), null, 'ce_mois') $stmt$,
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank desc limit 1), array[1,3]::smallint[], null) $stmt$,
   'basculer l''engagement sur l''autre action'
 );
 
@@ -87,20 +110,43 @@ select is(
 -- ── Ce qu'une intention ne peut pas être ────────────────────────────────────────────────
 -- Un engagement sans « quand » n'est pas un engagement : c'est le moment choisi qui fait le
 -- levier, pas la case cochée.
+--
+-- Les deux premiers refus venaient de la contrainte `plan_actions_engagement_coherent`, avec un
+-- 23514 que rien ne permet de lire côté client. Le RPC les rend explicites depuis le 11/09/2026
+-- (22023, `invalid_parameter_value`) et nomme la forme attendue dans son message ; la contrainte
+-- reste, comme seconde garde. Le troisième refus, lui, reste bien celui d'une contrainte CHECK :
+-- `check_intention_days` est pure et s'applique à toute écriture, d'où le 23514 conservé.
 
 select throws_ok(
   $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), array[2]::smallint[], 'ce_mois') $stmt$,
-  '23514', null, 'jours ET échéance ensemble : refusé (les deux formes s''excluent)'
+  '22023', null, 'jours ET échéance ensemble : refusé (les deux formes s''excluent)'
 );
 
 select throws_ok(
   $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), null, null) $stmt$,
-  '23514', null, 'un engagement sans intention est refusé'
+  '22023', null, 'un engagement sans intention est refusé'
 );
 
 select throws_ok(
   $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), array[2,2]::smallint[], null) $stmt$,
   '23514', null, 'un jour en double dans l''intention est refusé'
+);
+
+-- ── La forme de l'intention suit le poste (A8-20) ───────────────────────────────────────
+-- « Demander un jour de la semaine pour un voyage produirait une intention que personne ne peut
+-- tenir » (v1-07 §3.3) ne tenait que par `intentionKindForPoste` côté écran : la base acceptait
+-- les deux formes sur n'importe quel poste. La règle est maintenant écrite des deux côtés, et ces
+-- deux assertions sont là pour qu'elle ne redevienne pas un usage.
+
+select throws_ok(
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), null, 'ce_mois') $stmt$,
+  '22023', null, 'une échéance fermée sur une action domicile-travail est refusée'
+);
+
+select is(
+  (select array_to_string(intention_days, '-') from public.plan_actions where committed_at is not null),
+  '1-3',
+  'et l''engagement en place n''a pas bougé : un refus ne libère rien'
 );
 
 -- ── Ce que l'engagement ne doit surtout pas ouvrir ──────────────────────────────────────
@@ -140,6 +186,48 @@ select set_config('request.jwt.claims', json_build_object('sub', '71111111-1111-
 select throws_ok(
   $stmt$ select public.commit_plan_action(current_setting('test.action_id')::uuid, array[1]::smallint[], null) $stmt$,
   'P0002', null, 'un tiers ne peut pas s''engager sur l''action de quelqu''un d''autre'
+);
+
+-- ── La forme inverse, sur le cycle de voyages de B ───────────────────────────────────────
+-- Toujours sous la session de B, qui est ici chez lui : son unique action porte le poste
+-- voyages. C'est l'autre moitié de la règle — sans elle, une vérification qui refuserait tout
+-- passerait le test précédent sans rien garantir.
+
+select throws_ok(
+  $stmt$ select public.commit_plan_action(current_setting('test.action_voyage')::uuid, array[2,4]::smallint[], null) $stmt$,
+  '22023', null, 'des jours de la semaine sur une action de voyage sont refusés'
+);
+
+select lives_ok(
+  $stmt$ select public.commit_plan_action(current_setting('test.action_voyage')::uuid, null, 'prochaine_occasion') $stmt$,
+  's''engager sur une action de voyage avec une échéance fermée'
+);
+
+select is(
+  (select intention_timing from public.plan_actions where id = current_setting('test.action_voyage')::uuid),
+  'prochaine_occasion',
+  'l''échéance est conservée telle quelle'
+);
+
+-- ── Libérer un engagement : plus de succès muet ──────────────────────────────────────────
+-- `clear_plan_action_commitment` rendait un succès quand aucune ligne ne correspondait — action
+-- d'un tiers, identifiant faux — là où sa jumelle lève depuis toujours. Le client affichait « ok »
+-- sur un engagement toujours en place.
+
+select throws_ok(
+  $stmt$ select public.clear_plan_action_commitment(current_setting('test.action_id')::uuid) $stmt$,
+  'P0002', null, 'libérer l''engagement d''un tiers lève, au lieu de rendre un succès muet'
+);
+
+select lives_ok(
+  $stmt$ select public.clear_plan_action_commitment(current_setting('test.action_voyage')::uuid) $stmt$,
+  'libérer son propre engagement'
+);
+
+select is(
+  (select count(*)::int from public.plan_actions where committed_at is not null),
+  0,
+  'et l''action de B ne porte plus d''engagement (sa seule action visible)'
 );
 
 select * from finish();

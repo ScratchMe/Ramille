@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radius, FontFamily } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { afficherNombreSaisi, nettoyerSaisieNumerique, saisieVersNombre } from '@/types/bilan';
 
 // Champ numérique encadré (B1.2/B1.3 "Quelle distance pour un aller ?") — bordure
 // accent permanente dans la maquette, pas seulement au focus.
@@ -21,15 +23,34 @@ export function NumericField({
 }) {
   const theme = useTheme();
 
+  // La chaîne saisie est gardée telle quelle pendant la frappe. Reformater à chaque touche
+  // depuis la valeur numérique réécrirait « 3, » en « 3 » : la décimale deviendrait
+  // impossible à saisir, et on aurait remplacé un défaut par un autre.
+  const [saisie, setSaisie] = useState(() => afficherNombreSaisi(value));
+  // Une valeur qui change **hors frappe** (préremplissage d'un re-bilan, bascule vers les
+  // tranches) doit se voir dans le champ. C'est le motif documenté de React pour ajuster un
+  // état sur un changement de prop : la comparaison se fait au rendu, pas dans un effet, donc
+  // le champ n'affiche jamais une valeur périmée le temps d'un aller-retour.
+  const [valeurConnue, setValeurConnue] = useState(value);
+  if (value !== valeurConnue) {
+    setValeurConnue(value);
+    setSaisie(afficherNombreSaisi(value));
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundElement, borderColor: theme.accent }]}>
       <TextInput
-        value={value === null ? '' : String(value)}
-        onChangeText={(text) => {
-          const cleaned = text.replace(/[^0-9]/g, '');
-          onChange(cleaned === '' ? null : Number(cleaned));
+        value={saisie}
+        onChangeText={(texte) => {
+          const nettoye = nettoyerSaisieNumerique(texte);
+          const valeur = saisieVersNombre(nettoye);
+          setSaisie(nettoye);
+          setValeurConnue(valeur);
+          onChange(valeur);
         }}
-        keyboardType="number-pad"
+        // `decimal-pad` et non `number-pad` : le clavier doit porter le séparateur décimal
+        // qu'on accepte désormais, sinon la virgule reste hors de portée sur mobile.
+        keyboardType="decimal-pad"
         accessibilityLabel={`${label}, en ${unit}`}
         placeholder="0"
         placeholderTextColor={theme.textTertiary}
