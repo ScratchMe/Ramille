@@ -60,3 +60,11 @@ traceverte-*.html
 ramille-*.html
 mascotte-traceverte.html
 mascotte-ramille.html
+
+# Synchronisation du kit de design vers Claude Design (scripts mis en scène, sortie
+# régénérée, état machine). Ce qui est durable vit dans .design-sync/ et est versionné.
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules

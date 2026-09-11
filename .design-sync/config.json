@@ -1,0 +1,25 @@
+{
+  "projectId": "93230318-3cf5-46fc-b0be-ac9ec87b2877",
+  "shape": "package",
+  "pkg": "ramille-design-system",
+  "globalName": "Ramille",
+  "srcDir": "components",
+  "cssEntry": "base.css",
+  "tokensPkg": "ramille-design-system",
+  "tokensGlob": "tokens/*.css",
+  "extraFonts": [
+    "assets/fonts/fonts.css"
+  ],
+  "guidelinesGlob": [
+    "readme.md"
+  ],
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "Mascot": {
+      "cardMode": "column"
+    }
+  },
+  "libOverrides": {
+    "docs.mjs": "le kit nomme ses docs par composant <Nom>.prompt.md, pas <Nom>.md"
+  }
+}

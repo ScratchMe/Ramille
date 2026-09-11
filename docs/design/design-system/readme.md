@@ -7,7 +7,7 @@ Ramille (ex-TraceVerte) est une app Android-first (web = surface publique) de se
 - Canvas antérieurs : `docs/design/v1-07` … `v1-12` (dont `v1-11-navigation/Systeme.dc.html`, `v1-08-mascotte/Expressions.dc.html`).
 - Handoff V1 : `design_handoff_traceverte_v1/` (38 écrans, README détaillé).
 - Brief v1-14 : `uploads/BRIEF.md` (boucle d'engagement, d'une saison à l'autre).
-- Aucun fichier Figma. Aucun fichier de police versionné (Spline Sans via Google Fonts — cf. Caveats).
+- Aucun fichier Figma. Spline Sans est versionnée en `assets/fonts/` (SIL OFL 1.1) — cf. Caveats.
 
 ## Contenu — fondamentaux
 - **Français, tutoiement, phrases courtes**, factuelles. Le produit dit des faits chiffrés, sans qualifier : « 0,6 t au-dessus de la moyenne en France », jamais « c'est trop ».
@@ -56,16 +56,24 @@ Non portés (infrastructure sans UI) : ThemedView, TitreDePage, RetourDeNotifica
 **Ajouts intentionnels** : `BarreOnglets` (le dépôt la compose dans `(tabs)/_layout.tsx` via expo-router) ; prop `accessory` sur `Mascot` (préparation des accessoires de saison, brief v1-14 C2.13) ; jetons `--color-mascot-ink` / `--color-mascot-vein` / `--color-mascot-warm` (le dépôt lit `Colors.light` en dur pour le visage ; le ton chaud sert aux joues d'automne et au bonnet d'hiver — proposé en v1-14).
 
 ## Index
-- `styles.css` → `tokens/fonts.css`, `colors.css`, `typography.css`, `spacing.css`
+- `styles.css` → `assets/fonts/fonts.css`, `tokens/colors.css`, `typography.css`, `spacing.css`, `base.css`
+- `base.css` — la seule feuille du kit : police, fond et encre de la page, `box-sizing`, anneau
+  de focus, motif des placeholders. Les composants portent tout le reste en styles en ligne ;
+  chaque carte réécrivait ces déclarations à la main dans un `<style>` local.
 - `guidelines/*.html` — 14 cartes de fondations (Colors, Type, Spacing, Brand)
 - `components/<groupe>/` — .jsx + .d.ts + .prompt.md + une carte par groupe ; `components/loader.js` = repli quand `_ds_bundle.js` n'est pas compilé
 - `ui_kits/ramille/` — kit cliquable (6 écrans, thème sombre) + catalogue des 38 écrans V1
-- `assets/images/` — marques
+- `assets/images/` — marques ; `assets/fonts/` — Spline Sans 400/500/600/700 (.ttf, SIL OFL 1.1)
 - `design_handoff_traceverte_v1/` — handoff V1 (référence)
 - `SKILL.md` — invocation Claude Code
 - `github.md` — dépôt source et carte des écrans
 
 ## Caveats
-- Spline Sans : aucun binaire dans le dépôt (chargée via @expo-google-fonts). `tokens/fonts.css` importe Google Fonts. Fournir les .ttf pour des `@font-face` locaux.
+- Spline Sans : les quatre graisses sont désormais versionnées en `assets/fonts/` (224 Ko, SIL OFL 1.1,
+  reprises de `@expo-google-fonts/spline-sans` que le dépôt utilise déjà) et déclarées en `@font-face`
+  local par `assets/fonts/fonts.css`. L'`@import` Google Fonts de `tokens/fonts.css` a disparu avec le
+  fichier : une police de marque servie par un tiers se dégrade en silence en police système partout
+  où cet hôte n'est pas joignable, et rien en aval ne le signale. L'app, elle, continue de la charger
+  via `@expo-google-fonts` — c'est le kit qui devient autonome, pas le dépôt qui change.
 - Les cartes de composants chargent React/Babel depuis unpkg et `_ds_bundle.js` ; sans bundle compilé, `components/loader.js` transpile les sources à la volée.
 - Le kit reprend les valeurs chiffrées des maquettes (3,4 t, 2,8 t SDES, 0,6 t, 184 kg) — à confirmer côté produit.
