@@ -503,6 +503,16 @@ pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe.
 l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
 distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
 
+**Réécrire une fonction existante part de `pg_get_functiondef`, jamais du fichier qui l'a créée.**
+Relevé le 11/09/2026 en livrant C2.2 : `commit_plan_action` et `clear_plan_action_commitment` ont
+été reprises depuis `20260905190000`, leur migration d'origine — alors que C1.12
+(`20260911100000`) leur avait ajouté trois gardes depuis. La réécriture les a donc **supprimées en
+silence** : une intention et une seule, la forme d'intention qui suit le poste, et le refus
+explicite au lieu d'un succès muet. Rien ne le signalait ; c'est `13_engagement_action` qui l'a
+attrapé en CI, et c'est exactement ce que ce fichier existe pour faire. Corollaire : **une migration
+qui touche une fonction existante impose de rejouer le fichier de test qui la possède**, pas
+seulement celui du chantier en cours.
+
 **Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine, type)`**,
 qui compose `resolve_car_mode` et `resolve_two_wheeler_mode`. Ne jamais rappeler les deux
 fonctions spécialisées en imbriqué dans `recompute_assessment_results` ou
@@ -593,6 +603,43 @@ colonnes d'une réponse, avec `now()` du serveur, et refuse un point déjà rép
 aussi le seul endroit où la forme de la réponse changera quand une troisième réponse (« pas de
 trajet cette période ») arrivera — mais `p_reponse boolean` ne peut pas porter un troisième état :
 ce sera une migration, pas un paramètre de plus.
+
+**Aucun chemin du produit ne détruit un engagement sans en laisser une trace** (C2.2, 11/09/2026,
+`20260912150000_engagement_qui_survit.sql`). Il y en avait quatre, et ils se ressemblent assez pour
+qu'on en oublie un : le re-bilan dans la même période (le plus fréquent — on corrige une réponse
+juste après l'avoir soumise), le changement de saison, « Changer d'avis », et **« Choisir une autre
+action », dont la libération est une ligne interne de `commit_plan_action`** que rien n'affiche. Ce
+qui partait : `committed_at`, `intention_days`, `intention_timing` — le seul choix personnel que le
+produit demande, annulé par le second geste le plus encouragé. Quatre points à connaître :
+
+- **`plan_action_commitments_archive` n'a qu'une seule écriture, `public.archiver_engagement`**, et
+  elle prend des **valeurs** et non un `plan_action_id`. Ce n'est pas du confort : au re-bilan la
+  ligne est déjà supprimée au moment où l'on sait que son gabarit n'a pas survécu, donc une fonction
+  qui relirait la ligne n'archiverait **rien**, en silence, dans le cas principal du chantier. Les
+  deux chemins clients passent par `archiver_engagement_de_laction`, qui délègue. `action_text` y est
+  **figé** : C3.8 reformule plusieurs gabarits, et relire le libellé courant réécrirait ce que la
+  personne a lu en choisissant.
+- **Le re-bilan reprend l'engagement, le changement de saison le reconduit.** Les deux situations
+  s'excluent dans `generate_plan_cycle_for_user` (le cycle existe déjà / il est neuf), et la capture
+  précède l'upsert parce que le `delete` est irréversible. Une reconduction pose
+  `plan_actions.carried_over_from` sur le cycle d'**origine** — jamais sur la ligne `plan_actions`
+  précédente, qui est supprimée à chaque reconstruction et emporterait l'étiquette
+  « · RECONDUIT » avec elle. La ligne de l'ancien cycle garde son propre engagement : c'est de
+  l'historique, et l'index unique est **par cycle**.
+- **`plan_actions` a désormais deux clés étrangères vers `plan_cycles`**, donc toute lecture
+  imbriquée doit nommer la sienne : `plan_actions!plan_actions_plan_cycle_id_fkey(…)`. Sans le nom,
+  PostgREST refuse la requête (« more than one relationship was found ») et l'écran du plan ne
+  charge plus **du tout**. Le typecheck l'attrape, et c'est le seul garde qui le fait — la chaîne du
+  `select` est analysée au niveau des types.
+- **`assessments.submitted_at` vient du serveur** (trigger `stamp_assessment_submitted_at`, posé au
+  seul passage en `completed`). Il venait du téléphone, et la garde d'idempotence du plan le
+  comparait à un horodatage serveur : un téléphone en avance faisait reconstruire le plan à chaque
+  passage du cron — donc, avant cette migration, effacer l'engagement chaque nuit. Corollaire pour
+  les tests : **une fixture ne peut plus choisir `submitted_at` à l'insert**, elle insère puis met la
+  date à jour (`old.status` et `new.status` valant tous deux `completed`, le trigger ne réécrit
+  rien) ; et dans une transaction pgTAP où `now()` est figé, un re-bilan **rapproche** les dates au
+  lieu de les écarter, donc il faut reculer explicitement l'ancien bilan **et** le `created_at` du
+  cycle, sans quoi les deux gardes renvoient et les assertions passent sans rien éprouver.
 
 **L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
 `plan_actions` porte des chiffres figés à la génération, et **deux gardes indépendantes les

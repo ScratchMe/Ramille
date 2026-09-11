@@ -68,6 +68,10 @@ select bag_eq(
        ('authenticated', 'engagement_checkins', 'SELECT'),
        ('authenticated', 'plan_cycles', 'SELECT'),
        ('authenticated', 'plan_actions', 'SELECT'),
+       -- L'archive des engagements relâchés (C2.2) : lecture seule, comme `plan_actions` et pour la
+       -- même raison — ces lignes sont un constat du serveur, pas une saisie. C'est l'écran du plan
+       -- qui les lit pour dire une fois qu'un re-bilan a emporté un engagement.
+       ('authenticated', 'plan_action_commitments_archive', 'SELECT'),
        ('authenticated', 'feedback', 'SELECT'),
        ('authenticated', 'feedback', 'INSERT'),
        ('authenticated', 'feedback', 'DELETE'),

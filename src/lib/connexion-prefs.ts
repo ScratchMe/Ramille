@@ -77,3 +77,31 @@ export async function lireAdresseDuLien(): Promise<string | null> {
     return null;
   }
 }
+
+// Marque locale « on a déjà dit que le re-bilan avait emporté l'engagement » (C2.2).
+//
+// Quand un nouveau bilan change le poste dominant, le gabarit engagé peut disparaître du plan.
+// Le serveur l'archive (`plan_action_commitments_archive`, raison `rebilan`) et l'écran du plan
+// le dit — **une fois**. C'est une nouvelle, pas un état : la laisser en tête du plan
+// indéfiniment ferait d'un fait ponctuel un reproche permanent, et l'engagement relâché se
+// retrouve de toute façon dans le suivi.
+//
+// La marque porte l'identifiant de la ligne d'archive, et pas un simple « vu » : un second
+// re-bilan qui relâche un second engagement doit pouvoir le dire à son tour.
+const ENGAGEMENT_ORPHELIN_KEY = 'traceverte.engagement_orphelin_vu.v1';
+
+export async function aVuEngagementOrphelin(archiveId: string): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(ENGAGEMENT_ORPHELIN_KEY)) === archiveId;
+  } catch {
+    return false;
+  }
+}
+
+export async function marquerEngagementOrphelinVu(archiveId: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ENGAGEMENT_ORPHELIN_KEY, archiveId);
+  } catch {
+    // best-effort : au pire l'encart réapparaît une fois de plus.
+  }
+}

@@ -576,9 +576,71 @@ export type Database = {
           },
         ]
       }
+      plan_action_commitments_archive: {
+        Row: {
+          action_template_id: string
+          action_text: string
+          committed_at: string
+          id: string
+          intention_days: number[] | null
+          intention_timing: string | null
+          plan_cycle_id: string | null
+          released_at: string
+          released_reason: string
+          user_id: string
+        }
+        Insert: {
+          action_template_id: string
+          action_text: string
+          committed_at: string
+          id?: string
+          intention_days?: number[] | null
+          intention_timing?: string | null
+          plan_cycle_id?: string | null
+          released_at?: string
+          released_reason: string
+          user_id: string
+        }
+        Update: {
+          action_template_id?: string
+          action_text?: string
+          committed_at?: string
+          id?: string
+          intention_days?: number[] | null
+          intention_timing?: string | null
+          plan_cycle_id?: string | null
+          released_at?: string
+          released_reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_action_commitments_archive_action_template_id_fkey"
+            columns: ["action_template_id"]
+            isOneToOne: false
+            referencedRelation: "action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_action_commitments_archive_plan_cycle_id_fkey"
+            columns: ["plan_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "plan_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_action_commitments_archive_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_actions: {
         Row: {
           action_template_id: string
+          carried_over_from: string | null
           committed_at: string | null
           created_at: string
           detail_text: string | null
@@ -592,6 +654,7 @@ export type Database = {
         }
         Insert: {
           action_template_id: string
+          carried_over_from?: string | null
           committed_at?: string | null
           created_at?: string
           detail_text?: string | null
@@ -605,6 +668,7 @@ export type Database = {
         }
         Update: {
           action_template_id?: string
+          carried_over_from?: string | null
           committed_at?: string | null
           created_at?: string
           detail_text?: string | null
@@ -622,6 +686,13 @@ export type Database = {
             columns: ["action_template_id"]
             isOneToOne: false
             referencedRelation: "action_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_actions_carried_over_from_fkey"
+            columns: ["carried_over_from"]
+            isOneToOne: false
+            referencedRelation: "plan_cycles"
             referencedColumns: ["id"]
           },
           {
@@ -882,6 +953,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archiver_engagement: {
+        Args: {
+          p_action_template_id: string
+          p_committed_at: string
+          p_intention_days: number[]
+          p_intention_timing: string
+          p_plan_cycle_id: string
+          p_raison: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      archiver_engagement_de_laction: {
+        Args: { p_plan_action_id: string; p_raison: string }
+        Returns: undefined
+      }
       check_intention_days: { Args: { p_days: number[] }; Returns: boolean }
       check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
       clear_plan_action_commitment: {

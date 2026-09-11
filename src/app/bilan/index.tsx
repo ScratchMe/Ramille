@@ -343,9 +343,16 @@ export default function BilanQuestionnaire() {
       // `compute_assessment_results` termine en appelant `generate_plan_cycle_for_user`, qui
       // sélectionne les bilans `completed`. L'inverse rendrait un bilan sans plan jusqu'au
       // prochain passage du cron.
+      //
+      // **`submitted_at` n'est plus envoyé** (C2.2) : un trigger le pose avec l'horloge du
+      // serveur au passage en `completed`. Il venait d'ici, c'est-à-dire du téléphone, et la
+      // garde d'idempotence du plan le comparait à un horodatage serveur (A4-20) — un téléphone
+      // en avance faisait reconstruire le plan à chaque passage du cron, donc effacer
+      // l'engagement chaque nuit ; un téléphone en retard le figeait. L'envoyer quand même
+      // serait sans effet, mais laisserait croire que c'est le client qui décide.
       const { error: finalisationError } = await supabase
         .from('assessments')
-        .update({ status: 'completed', submitted_at: new Date().toISOString() })
+        .update({ status: 'completed' })
         .eq('id', assessmentId);
       if (finalisationError) throw finalisationError;
 
