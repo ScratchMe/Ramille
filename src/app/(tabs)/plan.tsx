@@ -37,6 +37,7 @@ import {
 } from '@/lib/notification-prefs';
 import { lirePermission } from '@/lib/rappels';
 import { supabase } from '@/lib/supabase';
+import { estDeLaPeriodeCourante } from '@/types/checkin';
 import {
   carteAttente,
   doitProposerLaFeuille,
@@ -81,15 +82,23 @@ type PlanCycle = {
  */
 type EngagementOrphelin = { id: string; action_text: string };
 
-// Une seule question vivante par boucle, la plus récente. La requête est déjà triée par
-// `period_start` décroissant, donc le premier vu de chaque `loop_type` est le bon.
+// Une seule carte par boucle, la plus récente. La requête est déjà triée par `period_start`
+// décroissant, donc le premier vu de chaque `loop_type` est le bon.
 //
 // `period_start` n'est plus ajouté ici : il fait partie d'`EngagementCheckin` depuis C2.3, parce
 // que c'est lui qui nomme le mois dans la question de la boucle mensuelle.
+//
+// **Et depuis C2.4, la période borne l'affichage.** La requête ramène aussi les points répondus,
+// pour que le renforcement survive à un changement d'onglet ; il ne doit pas survivre à la période.
+// Un compte dont la boucle a cessé d'être générée — un re-bilan sans trajet régulier, par exemple —
+// garderait sinon à l'écran, pour toujours, un « Répondu lundi » suivi de la promesse d'un point qui
+// ne viendra pas. `estDeLaPeriodeCourante` est la jumelle du `date_trunc` des deux générateurs ; un
+// point **en attente** n'est jamais filtré, lui, parce que seul le serveur décide de le clore.
 function keepLatestPerLoop(checkins: EngagementCheckin[]): EngagementCheckin[] {
   const seen = new Set<EngagementCheckin['loop_type']>();
   return checkins.filter((checkin) => {
     if (seen.has(checkin.loop_type)) return false;
+    if (checkin.status === 'answered' && !estDeLaPeriodeCourante(checkin)) return false;
     seen.add(checkin.loop_type);
     return true;
   });
@@ -377,9 +386,14 @@ export default function Plan() {
           // qu'on vient d'ouvrir. `committed_action_text` sert à dire, le cas échéant, que la
           // question porte sur une action quittée depuis.
           .select(
-            'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, committed_intention_days'
+            'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, committed_intention_days, status, response_kind, responded_at'
           )
-          .eq('status', 'pending')
+          // **`answered` autant que `pending` depuis C2.4.** La carte répondue reste le temps de la
+          // période : sans les lignes répondues, le renforcement vivait dans un `useState` et
+          // disparaissait au premier changement d'onglet — la personne répondait, voyait le mot de
+          // Ramille, revenait, et ne trouvait plus rien du tout. `expired` reste dehors : un point
+          // que la période suivante a clos n'a rien à montrer.
+          .in('status', ['pending', 'answered'])
           .order('period_start', { ascending: false });
 
         if (cancelled) return;

@@ -7,7 +7,9 @@
 -- 03_rls_policies.test.sql ; ce fichier se concentre sur la logique de génération elle-même —
 -- éligibilité par boucle, cadence, libellés, idempotence — et sur ce qu'une réponse est autorisée
 -- à changer de cette génération, depuis que la réponse passe par `repondre_au_checkin`
--- (20260911100000, chantier C1.12) : trois colonnes, et pas une de plus.
+-- (20260911100000, chantier C1.12) : quatre colonnes depuis C2.4, et pas une de plus. La signature
+-- du RPC prend désormais `'oui' | 'non' | 'sans_objet'` et non un booléen — les trois réponses
+-- elles-mêmes sont éprouvées par `24_troisieme_reponse`, ici on ne garde que le chemin nominal.
 begin;
 create extension if not exists pgtap with schema extensions;
 
@@ -127,8 +129,9 @@ select is(
 
 -- ── La réponse : un RPC, et rien que trois colonnes (20260911100000) ────────────────────
 -- Le point est généré côté serveur avec des libellés snapshotés et un `period_start` qui sert de
--- clé d'idempotence (les assertions plus haut). Répondre ne doit toucher que `status`, `response`
--- et `responded_at` : c'est pourquoi `engagement_checkins` n'a plus ni policy ni privilège UPDATE
+-- clé d'idempotence (les assertions plus haut). Répondre ne doit toucher que `status`,
+-- `response_kind`, sa dérivée `response` et `responded_at` : c'est pourquoi `engagement_checkins`
+-- n'a plus ni policy ni privilège UPDATE
 -- et que la réponse passe par `repondre_au_checkin` — une policy UPDATE aurait ouvert **toutes**
 -- les colonnes, la RLS raisonnant par ligne et jamais par colonne.
 --
@@ -150,15 +153,15 @@ select set_config('test.checkin_commute_a',
    where user_id = '71111111-1111-1111-1111-111111111111' and loop_type = 'commute'), true);
 
 select lives_ok(
-  $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, true) $stmt$,
+  $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, 'oui') $stmt$,
   'répondre à son point de suivi par le RPC'
 );
 
 select results_eq(
-  $$ select status, response from public.engagement_checkins
+  $$ select status, response_kind, response from public.engagement_checkins
      where id = current_setting('test.checkin_commute_a')::uuid $$,
-  $$ select 'answered'::text, true $$,
-  'la réponse pose le statut et la réponse elle-même'
+  $$ select 'answered'::text, 'oui'::text, true $$,
+  'la réponse pose le statut, le genre de réponse et sa dérivée booléenne'
 );
 
 -- `now()` est l'horodatage de début de transaction : si la valeur venait d'un paramètre du client
@@ -179,7 +182,7 @@ select results_eq(
 );
 
 select throws_ok(
-  $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, false) $stmt$,
+  $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, 'non') $stmt$,
   '22023', null,
   'un point déjà répondu n''accepte pas une seconde réponse'
 );
@@ -202,7 +205,7 @@ select is(
 select set_config('request.jwt.claims', json_build_object('sub', '71111111-1111-1111-1111-111111111112', 'role', 'authenticated')::text, true);
 
 select throws_ok(
-  $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, true) $stmt$,
+  $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, 'oui') $stmt$,
   'P0002', null,
   'un tiers ne peut pas répondre à la place de quelqu''un d''autre'
 );
@@ -211,7 +214,7 @@ select set_config('request.jwt.claims', json_build_object('sub', '71111111-1111-
 
 select throws_ok(
   $stmt$ select public.repondre_au_checkin(
-    (select id from public.engagement_checkins where loop_type = 'commute'), true) $stmt$,
+    (select id from public.engagement_checkins where loop_type = 'commute'), 'oui') $stmt$,
   '22023', null,
   'un point clos par la génération de la période suivante n''accepte plus de réponse'
 );
@@ -237,8 +240,8 @@ select ok(
 -- session anonyme du produit porte le rôle `authenticated`, jamais celui-là — et PUBLIC encore
 -- moins (l'héritage de PUBLIC est le piège de 20260905170700).
 select ok(
-  has_function_privilege('authenticated', 'public.repondre_au_checkin(uuid, boolean)', 'execute')
-    and not has_function_privilege('anon', 'public.repondre_au_checkin(uuid, boolean)', 'execute'),
+  has_function_privilege('authenticated', 'public.repondre_au_checkin(uuid, text)', 'execute')
+    and not has_function_privilege('anon', 'public.repondre_au_checkin(uuid, text)', 'execute'),
   'repondre_au_checkin : exécutable par authenticated seul'
 );
 

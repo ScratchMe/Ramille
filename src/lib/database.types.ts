@@ -16,10 +16,10 @@ export type Database = {
           action_text: string
           detail_kind: string | null
           id: string
-          question_template: string | null
           max_distance_km: number | null
           operation: string | null
           poste: string | null
+          question_template: string | null
           requires_car: boolean
           requires_tc: boolean
           segment: string | null
@@ -31,10 +31,10 @@ export type Database = {
           action_text: string
           detail_kind?: string | null
           id?: string
-          question_template?: string | null
           max_distance_km?: number | null
           operation?: string | null
           poste?: string | null
+          question_template?: string | null
           requires_car?: boolean
           requires_tc?: boolean
           segment?: string | null
@@ -46,10 +46,10 @@ export type Database = {
           action_text?: string
           detail_kind?: string | null
           id?: string
-          question_template?: string | null
           max_distance_km?: number | null
           operation?: string | null
           poste?: string | null
+          question_template?: string | null
           requires_car?: boolean
           requires_tc?: boolean
           segment?: string | null
@@ -425,6 +425,7 @@ export type Database = {
           question_kind: string
           responded_at: string | null
           response: boolean | null
+          response_kind: string | null
           status: string
           trip_label: string
           user_id: string
@@ -444,6 +445,7 @@ export type Database = {
           question_kind?: string
           responded_at?: string | null
           response?: boolean | null
+          response_kind?: string | null
           status?: string
           trip_label: string
           user_id: string
@@ -463,6 +465,7 @@ export type Database = {
           question_kind?: string
           responded_at?: string | null
           response?: boolean | null
+          response_kind?: string | null
           status?: string
           trip_label?: string
           user_id?: string
@@ -1007,6 +1010,7 @@ export type Database = {
         Returns: undefined
       }
       check_intention_days: { Args: { p_days: number[] }; Returns: boolean }
+      check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
       checkin_question: {
         Args: {
           p_intention_days?: number[]
@@ -1019,7 +1023,6 @@ export type Database = {
         }
         Returns: string
       }
-      check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
       clear_plan_action_commitment: {
         Args: { p_plan_action_id: string }
         Returns: undefined
@@ -1095,7 +1098,7 @@ export type Database = {
         Returns: undefined
       }
       repondre_au_checkin: {
-        Args: { p_checkin_id: string; p_reponse: boolean }
+        Args: { p_checkin_id: string; p_reponse: string }
         Returns: number
       }
       resolve_car_mode: {

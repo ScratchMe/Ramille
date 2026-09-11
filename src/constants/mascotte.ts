@@ -44,6 +44,32 @@ export const RAMILLE = {
   checkinNon: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.',
 
   /**
+   * **La troisième réponse : « pas de trajet cette période »** (C2.4, v1-14 §3.1).
+   *
+   * Une semaine de congés n'est pas un « Non ». La réplique dit donc une attente, pas une relance :
+   * il n'y a rien à consoler, rien à encourager, et surtout rien à reprocher — c'est exactement la
+   * raison d'être du troisième choix. Visage `calm`, comme `maintienNon`.
+   *
+   * **Quatre variantes et non deux, et c'est un écart au canvas** (consigné en `v1-14` §10). Le
+   * canvas en écrit deux, indexées sur la boucle — « Pas de trajet … » pour l'hebdomadaire, « Pas
+   * de voyage … » pour la mensuelle — mais la boucle mensuelle couvre **deux** postes depuis C2.6 :
+   * les voyages et les sorties du week-end. Répondre « Pas de voyage, pas de question. » à
+   * quelqu'un qui vient d'appuyer sur « Pas de sortie en septembre » serait la même fausseté
+   * lisible que C2.6 a retirée ailleurs. Les variantes sont donc indexées sur le **poste**, comme
+   * le libellé du bouton, et `autre` ferme la liste pour un point d'avant C2.6 qui n'en porte pas.
+   *
+   * Le jour de retour est nommé sans jamais compter — le rythme du produit est fixe (le lundi, le
+   * premier du mois), ce qui est la seule façon de tenir la règle « jamais un nombre » tout en
+   * disant quand elle revient.
+   */
+  checkinSansObjet: {
+    commute: 'Pas de trajet, pas de question. On se retrouve lundi.',
+    leisure: 'Pas de sortie, pas de question. On se retrouve au début du mois prochain.',
+    travel: 'Pas de voyage, pas de question. On se retrouve au début du mois prochain.',
+    autre: 'Pas de déplacement, pas de question. On se retrouve au prochain point.',
+  },
+
+  /**
    * **Le « Non » d'une question de maintien, et la raison d'un second tableau** (C2.5, v1-14 §3.1).
    *
    * Quand le trajet se fait déjà à vélo, à pied ou en trottinette, le point ne demande pas si

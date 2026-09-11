@@ -115,9 +115,9 @@ describe('recapDeSaison', () => {
     expect(Object.keys(r)).toEqual(['repondus', 'changements']);
   });
 
-  // Le filtre est `status = 'answered'`, **jamais** `response !== null` : c'est ce qui rend le
-  // module compatible avec la troisième réponse de C2.4 (« pas de trajet cette période »),
-  // qui porte `response = null` sur un point bel et bien répondu.
+  // Le filtre est `status = 'answered'`, **jamais** `response !== null` : c'est ce qui a rendu le
+  // module compatible avec la troisième réponse livrée par C2.4 (« pas de trajet cette période »),
+  // qui porte bien `response = null` — et `response_kind = 'sans_objet'` — sur un point répondu.
   it('compte un point répondu sans objet, sans le compter comme un changement', () => {
     const r = recapDeSaison([point('2026-10-12', 'answered', null)], automne);
     expect(r).toEqual({ repondus: 1, changements: 0 });

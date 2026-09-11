@@ -91,7 +91,7 @@ select results_eq(
 -- ── Un check-in qui n'attend plus de réponse ───────────────────────────────────────────
 
 delete from public.notification_outbox;
-update public.engagement_checkins set status = 'answered', response = true, responded_at = now()
+update public.engagement_checkins set status = 'answered', response_kind = 'oui', response = true, responded_at = now()
 where user_id = 'ba111111-1111-1111-1111-111111111111';
 
 select public.enqueue_checkin_reminders();

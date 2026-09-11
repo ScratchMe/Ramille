@@ -127,8 +127,8 @@ select is(
   'quatre points clos chez un second compte : même seuil'
 );
 
-insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, poste, status, response, responded_at)
-values ('c2900000-0000-0000-0000-000000000002', 'commute', current_date - 28, 'Semaine', 'Trajet domicile-travail', 'commute', 'answered', false, now());
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, poste, status, response_kind, response, responded_at)
+values ('c2900000-0000-0000-0000-000000000002', 'commute', current_date - 28, 'Semaine', 'Trajet domicile-travail', 'commute', 'answered', 'non', false, now());
 
 -- Un « Non » est une réponse : le produit ne compte jamais les échecs, et la décroissance non plus.
 select is(
@@ -254,17 +254,26 @@ insert into public.engagement_checkins (user_id, loop_type, period_start, period
 
 select public.enqueue_checkin_reminders();
 
+-- **Le jeton est capturé une fois, et les trois assertions suivantes lisent la même valeur.**
+-- `order by created_at limit 1` ne désigne rien de stable ici : `created_at` vaut `now()`, c'est-à-dire
+-- l'horodatage de **début de transaction**, donc les deux lignes mises en file par le même appel le
+-- portent à l'identique et l'ordre retombe sur celui du tas. Le « second clic » pouvait ainsi tirer
+-- l'autre ligne — jeton jamais utilisé, donc un succès là où l'assertion attend un refus. Relevé en
+-- rejouant le fichier sur le distant pendant C2.4 ; l'assertion était juste, c'est la désignation de
+-- la ligne qui ne l'était pas.
+select set_config('test.jeton_sortie',
+  (select unsubscribe_token::text from public.notification_outbox
+   where user_id = 'c2900000-0000-0000-0000-000000000021' order by created_at, id limit 1), true);
+
 select ok(
-  (select position('/rappels/stop?jeton=' in body) > 0
+  (select position('/rappels/stop?jeton=' || current_setting('test.jeton_sortie') in body) > 0
    from public.notification_outbox
-   where user_id = 'c2900000-0000-0000-0000-000000000021' order by created_at limit 1),
-  'le message porte un lien de désinscription — l''ancienne phrase renvoyait à une app désinstallée'
+   where unsubscribe_token = current_setting('test.jeton_sortie')::uuid),
+  'le message porte SON lien de désinscription — l''ancienne phrase renvoyait à une app désinstallée'
 );
 
 select ok(
-  public.desinscrire_des_rappels(
-    (select unsubscribe_token from public.notification_outbox
-     where user_id = 'c2900000-0000-0000-0000-000000000021' order by created_at limit 1)),
+  public.desinscrire_des_rappels(current_setting('test.jeton_sortie')::uuid),
   'le premier clic aboutit, sans session'
 );
 
@@ -284,10 +293,8 @@ select is(
 -- **La réponse ne distingue pas les échecs**, même registre que `/connexion/retrouver` : trois
 -- messages différents feraient de cette page un moyen de savoir qui reçoit des rappels.
 select ok(
-  not public.desinscrire_des_rappels(
-    (select unsubscribe_token from public.notification_outbox
-     where user_id = 'c2900000-0000-0000-0000-000000000021' order by created_at limit 1)),
-  'un second clic sur le même lien ne dit rien de plus : le jeton ne sert qu''une fois'
+  not public.desinscrire_des_rappels(current_setting('test.jeton_sortie')::uuid),
+  'un second clic sur le MÊME lien ne dit rien de plus : le jeton ne sert qu''une fois'
 );
 
 select ok(

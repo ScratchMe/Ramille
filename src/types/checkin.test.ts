@@ -5,8 +5,13 @@ import {
   MOIS_FRANCAIS,
   complementDeMaintien,
   composerQuestionDuPoint,
+  debutDePeriodeInterrogee,
+  estDeLaPeriodeCourante,
+  genreDeReponse,
   joursDeLaQuestion,
+  libelleSansObjet,
   moisFrancais,
+  piedDuPointRepondu,
   questionDuPoint,
   repliqueDuPoint,
   type PointInterrogeable,
@@ -299,11 +304,11 @@ describe('questionDuPoint — la question figée gagne', () => {
 
 describe('repliqueDuPoint', () => {
   it('le « Oui » est le même des deux côtés', () => {
-    expect(repliqueDuPoint({ question_kind: 'changement', mode: null }, true)).toEqual({
+    expect(repliqueDuPoint(point(), 'oui')).toEqual({
       ligne: RAMILLE.checkinOui,
       mood: 'happy',
     });
-    expect(repliqueDuPoint({ question_kind: 'maintien', mode: 'velo' }, true)).toEqual({
+    expect(repliqueDuPoint(point({ question_kind: 'maintien', mode: 'velo' }), 'oui')).toEqual({
       ligne: RAMILLE.checkinOui,
       mood: 'happy',
     });
@@ -319,7 +324,7 @@ describe('repliqueDuPoint', () => {
    */
   it('un point de maintien ne reçoit JAMAIS checkinNon', () => {
     for (const mode of ['velo', 'marche', 'trottinette', 'autre-mode', null]) {
-      const { ligne, mood } = repliqueDuPoint({ question_kind: 'maintien', mode }, false);
+      const { ligne, mood } = repliqueDuPoint(point({ question_kind: 'maintien', mode }), 'non');
       expect(ligne).not.toBe(RAMILLE.checkinNon);
       expect(mood).toBe('calm');
       expect(ligne.length).toBeGreaterThan(0);
@@ -327,27 +332,204 @@ describe('repliqueDuPoint', () => {
   });
 
   it('le « Non » de maintien nomme le mode, et retombe sur une phrase neutre sinon', () => {
-    expect(repliqueDuPoint({ question_kind: 'maintien', mode: 'velo' }, false).ligne).toBe(
-      RAMILLE.maintienNon.velo
-    );
-    expect(repliqueDuPoint({ question_kind: 'maintien', mode: 'marche' }, false).ligne).toBe(
-      RAMILLE.maintienNon.marche
-    );
-    expect(repliqueDuPoint({ question_kind: 'maintien', mode: 'trottinette' }, false).ligne).toBe(
+    const maintien = (mode: string) => point({ question_kind: 'maintien', mode });
+    expect(repliqueDuPoint(maintien('velo'), 'non').ligne).toBe(RAMILLE.maintienNon.velo);
+    expect(repliqueDuPoint(maintien('marche'), 'non').ligne).toBe(RAMILLE.maintienNon.marche);
+    expect(repliqueDuPoint(maintien('trottinette'), 'non').ligne).toBe(
       RAMILLE.maintienNon.trottinette
     );
-    expect(repliqueDuPoint({ question_kind: 'maintien', mode: 'voiture' }, false).ligne).toBe(
-      RAMILLE.maintienNon.autre
-    );
+    expect(repliqueDuPoint(maintien('voiture'), 'non').ligne).toBe(RAMILLE.maintienNon.autre);
   });
 
   it('une question générique garde checkinNon', () => {
-    expect(repliqueDuPoint({ question_kind: 'generique', mode: null }, false)).toEqual({
+    expect(repliqueDuPoint(point(), 'non')).toEqual({
       ligne: RAMILLE.checkinNon,
       mood: 'encouraging',
     });
-    expect(repliqueDuPoint({ question_kind: null, mode: null }, false).ligne).toBe(
-      RAMILLE.checkinNon
+    expect(repliqueDuPoint(point({ question_kind: null }), 'non').ligne).toBe(RAMILLE.checkinNon);
+  });
+
+  /**
+   * **La seconde assertion de jugement de cette fonction** (C2.4), jumelle de la précédente.
+   *
+   * « Pas de trajet cette semaine » n'est ni un échec ni un manquement à une habitude : c'est
+   * l'absence de l'occasion. Ni `checkinNon` (qui console) ni `maintienNon` (qui renforce une
+   * habitude dont la personne vient de dire qu'elle n'a pas eu lieu) ne conviennent — d'où l'ordre
+   * des branches, que cette assertion tient.
+   */
+  it('« sans objet » ne reçoit ni checkinNon ni maintienNon, même sur un point de maintien', () => {
+    const sur = (p: Partial<PointInterrogeable>) => repliqueDuPoint(point(p), 'sans_objet');
+    for (const p of [{}, { question_kind: 'maintien', mode: 'velo' }, { question_kind: null }]) {
+      const { ligne, mood } = sur(p);
+      expect(ligne).not.toBe(RAMILLE.checkinNon);
+      expect(Object.values(RAMILLE.maintienNon)).not.toContain(ligne);
+      expect(Object.values(RAMILLE.checkinSansObjet)).toContain(ligne);
+      expect(mood).toBe('calm');
+    }
+  });
+
+  // La boucle mensuelle couvre deux postes depuis C2.6 : la réplique suit le poste, pas la boucle,
+  // sinon elle dit « Pas de voyage » à qui vient d'appuyer sur « Pas de sortie en septembre ».
+  it('« sans objet » suit le poste, et la boucle hebdomadaire gagne sur lui', () => {
+    const sansObjet = (p: Partial<PointInterrogeable>) =>
+      repliqueDuPoint(point(p), 'sans_objet').ligne;
+    expect(sansObjet({ loop_type: 'commute', poste: 'commute' })).toBe(
+      RAMILLE.checkinSansObjet.commute
     );
+    expect(sansObjet({ loop_type: 'extras', poste: 'leisure' })).toBe(
+      RAMILLE.checkinSansObjet.leisure
+    );
+    expect(sansObjet({ loop_type: 'extras', poste: 'travel' })).toBe(
+      RAMILLE.checkinSansObjet.travel
+    );
+    // Un point d'avant C2.6 ne porte pas de poste : la liste se ferme, elle ne devine pas.
+    expect(sansObjet({ loop_type: 'extras', poste: null })).toBe(RAMILLE.checkinSansObjet.autre);
+    // Et un point hebdomadaire sans poste reste hebdomadaire.
+    expect(sansObjet({ loop_type: 'commute', poste: null })).toBe(
+      RAMILLE.checkinSansObjet.commute
+    );
+  });
+});
+
+describe('genreDeReponse', () => {
+  it.each([
+    ['oui', 'oui'],
+    ['non', 'non'],
+    ['sans_objet', 'sans_objet'],
+  ])('%s traverse', (valeur, attendu) => {
+    expect(genreDeReponse(valeur)).toBe(attendu);
+  });
+
+  // Une valeur inattendue rend `null`, donc la carte affiche la question : le comportement d'un
+  // point non répondu, jamais une réponse inventée.
+  it.each([null, undefined, '', 'true', 'peut-être'])('%s ne traverse pas', (valeur) => {
+    expect(genreDeReponse(valeur)).toBeNull();
+  });
+});
+
+describe('libelleSansObjet', () => {
+  it('la boucle hebdomadaire ne nomme pas de mois', () => {
+    expect(libelleSansObjet(point())).toBe('Pas de trajet cette semaine');
+  });
+
+  // Le mois vient de `period_start`, comme la question juste au-dessus : lu sur l'horloge, il
+  // pourrait nommer un autre mois que celui de la question.
+  it('la boucle mensuelle nomme le mois interrogé, et le poste décide du mot', () => {
+    expect(libelleSansObjet(point({ loop_type: 'extras', poste: 'travel', period_start: '2026-09-01' }))).toBe(
+      'Pas de voyage en septembre'
+    );
+    expect(libelleSansObjet(point({ loop_type: 'extras', poste: 'leisure', period_start: '2026-08-01' }))).toBe(
+      'Pas de sortie en août'
+    );
+    expect(libelleSansObjet(point({ loop_type: 'extras', poste: null, period_start: '2026-12-01' }))).toBe(
+      'Pas de déplacement en décembre'
+    );
+  });
+
+  it('un period_start illisible ne laisse pas un trou dans la phrase', () => {
+    expect(libelleSansObjet(point({ loop_type: 'extras', poste: 'travel', period_start: 'x' }))).toBe(
+      'Pas de voyage ce mois-ci'
+    );
+  });
+});
+
+/**
+ * **La borne se calcule en UTC, et c'est le sujet du test.**
+ *
+ * Les deux générateurs posent `period_start` depuis `now()` dans le fuseau du serveur, qui est UTC.
+ * Une borne locale divergerait d'une période entre minuit et 6 h UTC le lundi — la carte d'un point
+ * courant disparaîtrait juste avant que le cron ne produise la suivante. Les dates sont donc
+ * construites en UTC ici aussi, sinon le test passerait en CI (UTC) et raterait le défaut.
+ */
+describe('debutDePeriodeInterrogee', () => {
+  it.each([
+    // 2026-09-14 est un lundi : la semaine interrogée est celle du 7.
+    ['2026-09-14T06:00:00Z', '2026-09-07'],
+    ['2026-09-14T00:00:00Z', '2026-09-07'],
+    // Dimanche 20 : toujours la semaine du 7, le cron n'est pas repassé.
+    ['2026-09-20T23:59:00Z', '2026-09-07'],
+    // Lundi 21 : la semaine du 14.
+    ['2026-09-21T06:00:00Z', '2026-09-14'],
+  ])('hebdomadaire, %s → %s', (instant, attendu) => {
+    expect(debutDePeriodeInterrogee('commute', new Date(instant))).toBe(attendu);
+  });
+
+  it.each([
+    ['2026-09-01T06:00:00Z', '2026-08-01'],
+    ['2026-09-30T23:00:00Z', '2026-08-01'],
+    ['2026-10-01T06:00:00Z', '2026-09-01'],
+    // Le passage d'année se fait par le constructeur UTC, pas par une soustraction de mois.
+    ['2026-01-05T06:00:00Z', '2025-12-01'],
+  ])('mensuelle, %s → %s', (instant, attendu) => {
+    expect(debutDePeriodeInterrogee('extras', new Date(instant))).toBe(attendu);
+  });
+});
+
+describe('estDeLaPeriodeCourante', () => {
+  const lundi21 = new Date('2026-09-21T08:00:00Z');
+
+  it('le point de la période courante est gardé', () => {
+    expect(estDeLaPeriodeCourante(point({ period_start: '2026-09-14' }), lundi21)).toBe(true);
+  });
+
+  // C'est la raison d'être de la borne : un compte dont la boucle a cessé d'être générée garderait
+  // sinon un « Répondu lundi » et la promesse d'un point qui ne viendra jamais.
+  it('un point répondu d’une période révolue ne l’est pas', () => {
+    expect(estDeLaPeriodeCourante(point({ period_start: '2026-09-07' }), lundi21)).toBe(false);
+  });
+
+  it('un point en avance reste affiché plutôt que de disparaître sans raison', () => {
+    expect(estDeLaPeriodeCourante(point({ period_start: '2026-09-28' }), lundi21)).toBe(true);
+  });
+});
+
+describe('piedDuPointRepondu', () => {
+  // Dates **locales** ici, à la différence de la borne : ce pied est lu par une personne dans son
+  // fuseau, pas comparé à un calcul serveur.
+  it('la boucle hebdomadaire nomme le jour de la réponse et le lundi suivant', () => {
+    expect(
+      piedDuPointRepondu(
+        { loop_type: 'commute', responded_at: new Date(2026, 8, 14, 9, 0).toISOString() },
+        new Date(2026, 8, 14, 9, 30)
+      )
+    ).toBe('Répondu lundi. Prochain point : lundi 21 septembre.');
+  });
+
+  // Répondre un lundi ne renvoie pas au lundi du jour : le point suivant est dans sept jours.
+  it('un lundi, le prochain point est le lundi d’après et jamais aujourd’hui', () => {
+    const pied = piedDuPointRepondu(
+      { loop_type: 'commute', responded_at: new Date(2026, 8, 16, 9, 0).toISOString() },
+      new Date(2026, 8, 16, 9, 30)
+    );
+    expect(pied).toBe('Répondu mercredi. Prochain point : lundi 21 septembre.');
+  });
+
+  it('la boucle mensuelle dit le jour du mois, avec « 1er » pour le premier', () => {
+    expect(
+      piedDuPointRepondu(
+        { loop_type: 'extras', responded_at: new Date(2026, 9, 1, 9, 0).toISOString() },
+        new Date(2026, 9, 1, 9, 30)
+      )
+    ).toBe('Répondu le 1er. Prochain point : 1er novembre.');
+    expect(
+      piedDuPointRepondu(
+        { loop_type: 'extras', responded_at: new Date(2026, 9, 3, 9, 0).toISOString() },
+        new Date(2026, 9, 3, 9, 30)
+      )
+    ).toBe('Répondu le 3. Prochain point : 1er novembre.');
+  });
+
+  it('le passage d’année ne se fait pas par une addition de mois', () => {
+    expect(
+      piedDuPointRepondu(
+        { loop_type: 'extras', responded_at: new Date(2026, 11, 2, 9, 0).toISOString() },
+        new Date(2026, 11, 2, 9, 30)
+      )
+    ).toBe('Répondu le 2. Prochain point : 1er janvier.');
+  });
+
+  // Une carte répondue sans date vaut mieux qu'une date inventée.
+  it.each([null, undefined, 'pas-une-date'])('%s ne produit pas de pied', (valeur) => {
+    expect(piedDuPointRepondu({ loop_type: 'commute', responded_at: valeur })).toBeNull();
   });
 });

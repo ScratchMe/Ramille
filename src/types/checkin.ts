@@ -42,6 +42,28 @@ import { formeInserable } from '@/constants/postes';
  */
 export type GenreDeQuestion = 'engagement' | 'generique' | 'maintien' | 'occasion';
 
+/**
+ * Les trois réponses possibles à un point — miroir de `engagement_checkins.response_kind` (C2.4).
+ *
+ * `sans_objet` n'est pas un « non » déguisé : une semaine de congés ou un mois sans voyage n'ont
+ * pas de réponse honnête entre oui et non, et pour un profil « deux vols par an » dix mois sur
+ * douze deviendraient une suite de « Non ». La colonne booléenne `response` reste en base, dérivée
+ * de celle-ci (`true` / `false` / `null`), mais c'est ce genre qui est la vérité — et le filtre
+ * d'une lecture est toujours `status = 'answered'`, jamais `response is not null`.
+ */
+export type ReponseDuPoint = 'oui' | 'non' | 'sans_objet';
+
+/**
+ * La réponse lue en base, ou `null` si la colonne ne porte rien d'exploitable.
+ *
+ * `response_kind` arrive typée `string | null` des types générés : la restreindre ici évite que
+ * chaque écran refasse le même `as`. Une valeur inattendue rend `null` plutôt que de traverser —
+ * la carte affichera la question, ce qui est le comportement d'un point non répondu.
+ */
+export function genreDeReponse(valeur: string | null | undefined): ReponseDuPoint | null {
+  return valeur === 'oui' || valeur === 'non' || valeur === 'sans_objet' ? valeur : null;
+}
+
 /** Ce qu'il faut d'un point pour en composer la question. Un sous-ensemble de la ligne en base. */
 export type PointInterrogeable = {
   loop_type: 'commute' | 'extras';
@@ -251,10 +273,18 @@ export function questionDuPoint(point: PointInterrogeable): string {
  * tous les deux `checkinOui`.
  */
 export function repliqueDuPoint(
-  point: Pick<PointInterrogeable, 'question_kind' | 'mode'>,
-  reponse: boolean
+  point: Pick<PointInterrogeable, 'question_kind' | 'mode' | 'poste' | 'loop_type'>,
+  reponse: ReponseDuPoint
 ): { ligne: string; mood: 'happy' | 'encouraging' | 'calm' } {
-  if (reponse) return { ligne: RAMILLE.checkinOui, mood: 'happy' };
+  if (reponse === 'oui') return { ligne: RAMILLE.checkinOui, mood: 'happy' };
+
+  // **`sans_objet` passe avant le maintien, et ce n'est pas un détail d'ordre** : « pas de trajet
+  // cette semaine » n'est pas un manquement à l'habitude, c'est l'absence de l'occasion de
+  // l'exercer. `maintienNon` (« Le vélo reste ton trajet ») commenterait une habitude dont la
+  // personne vient justement de dire qu'elle n'a pas eu lieu.
+  if (reponse === 'sans_objet') {
+    return { ligne: RAMILLE.checkinSansObjet[cleDuSansObjet(point)], mood: 'calm' };
+  }
 
   if (point.question_kind === 'maintien') {
     const variante = point.mode ?? '';
@@ -266,4 +296,136 @@ export function repliqueDuPoint(
   }
 
   return { ligne: RAMILLE.checkinNon, mood: 'encouraging' };
+}
+
+/**
+ * Laquelle des quatre répliques de « pas de trajet » — indexée sur le **poste**, pas sur la boucle.
+ *
+ * La boucle mensuelle couvre deux postes depuis C2.6 (les voyages et les sorties du week-end) :
+ * répondre « Pas de voyage, pas de question. » à quelqu'un qui vient d'appuyer sur « Pas de sortie
+ * en septembre » serait la fausseté lisible que ce chantier-là a retirée ailleurs. `autre` ferme la
+ * liste pour un point généré avant C2.6, qui ne porte pas de poste.
+ */
+function cleDuSansObjet(
+  point: Pick<PointInterrogeable, 'poste' | 'loop_type'>
+): keyof typeof RAMILLE.checkinSansObjet {
+  if (point.loop_type === 'commute') return 'commute';
+  if (point.poste === 'leisure') return 'leisure';
+  if (point.poste === 'travel') return 'travel';
+  return 'autre';
+}
+
+/**
+ * Le libellé du troisième choix, sous les deux boutons : « Pas de trajet cette semaine » / « Pas de
+ * voyage en septembre » (v1-14 §3.2).
+ *
+ * Le mois est celui de la période **interrogée** et vient de `period_start`, comme la question
+ * elle-même (C2.3) : lu sur l'horloge, il dirait le mois courant sur un point ouvert avec un jour
+ * de retard, donc un mois différent de celui de la question juste au-dessus.
+ */
+export function libelleSansObjet(point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>): string {
+  if (point.loop_type === 'commute') return 'Pas de trajet cette semaine';
+
+  const mois = moisFrancais(point.period_start);
+  const quand = mois === null ? 'ce mois-ci' : `en ${mois}`;
+  if (point.poste === 'leisure') return `Pas de sortie ${quand}`;
+  if (point.poste === 'travel') return `Pas de voyage ${quand}`;
+  return `Pas de déplacement ${quand}`;
+}
+
+/**
+ * Le début de la période que le serveur interroge **en ce moment** — jumelle de
+ * `date_trunc('week', now())::date - 7` et de `(date_trunc('month', now()) - interval '1 month')`.
+ *
+ * **Elle se calcule en UTC, et c'est la différence avec `saisonDe`.** Les deux générateurs
+ * (`generate_commute_checkins`, `generate_extras_checkins`) posent `period_start` depuis `now()`
+ * dans le fuseau du serveur, qui est UTC (relevé le 11/09/2026). Une borne calculée en heure locale
+ * divergerait d'une période entre minuit et 6 h UTC le lundi : la carte d'un point bel et bien
+ * courant serait jugée périmée et disparaîtrait de l'écran, juste avant que le cron ne produise la
+ * suivante. `saisonDe` fait l'inverse — elle nomme une saison pour un humain et suit donc son
+ * calendrier local — et les deux ne doivent pas être alignées l'une sur l'autre.
+ *
+ * Sert à borner l'affichage de la carte répondue (C2.4) : elle reste le temps de la période, et pas
+ * au-delà — sinon un compte dont la boucle a cessé d'être générée garderait à l'écran, pour
+ * toujours, un « Répondu lundi » et la promesse d'un point qui ne viendra pas.
+ */
+export function debutDePeriodeInterrogee(
+  loopType: 'commute' | 'extras',
+  maintenant: Date = new Date()
+): string {
+  if (loopType === 'commute') {
+    // `getUTCDay()` rend 0 pour dimanche : le décalage ramène lundi à 0, comme l'ISO.
+    const reculJusquAuLundi = (maintenant.getUTCDay() + 6) % 7;
+    return isoUtc(
+      new Date(
+        Date.UTC(
+          maintenant.getUTCFullYear(),
+          maintenant.getUTCMonth(),
+          maintenant.getUTCDate() - reculJusquAuLundi - 7
+        )
+      )
+    );
+  }
+
+  return isoUtc(new Date(Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth() - 1, 1)));
+}
+
+/**
+ * Ce point porte-t-il encore la période courante ? `>=` et non `=` : un point en avance (horloge
+ * serveur décalée, génération manuelle) reste affiché plutôt que de disparaître sans raison.
+ */
+export function estDeLaPeriodeCourante(
+  point: Pick<PointInterrogeable, 'loop_type' | 'period_start'>,
+  maintenant: Date = new Date()
+): boolean {
+  return point.period_start.slice(0, 10) >= debutDePeriodeInterrogee(point.loop_type, maintenant);
+}
+
+/** `YYYY-MM-DD` d'une date, lue en UTC — l'envers d'`isoJour` de `src/types/saison.ts`, qui lit local. */
+function isoUtc(d: Date): string {
+  const mois = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const jour = String(d.getUTCDate()).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${mois}-${jour}`;
+}
+
+/**
+ * Le pied de la carte répondue : « Répondu lundi. Prochain point : lundi 21 septembre. » (v1-14 §3.2).
+ *
+ * **Ce n'est pas la voix de Ramille** — il porte des dates, et elle ne dit jamais de nombre. D'où
+ * sa place ici et son rendu en petit tertiaire, sous sa phrase à elle.
+ *
+ * Les dates sont **locales**, à la différence de `debutDePeriodeInterrogee` : celle-là est la
+ * jumelle d'un calcul serveur, celles-ci sont lues par une personne dans son fuseau. Le mois est
+ * écrit en entier (« 21 septembre ») là où le canvas abrège (« 21 sept. ») : une quatrième liste de
+ * mots français, abréviations comprises, coûterait plus que la place qu'elle économise — écart
+ * consigné en `v1-14` §10.
+ *
+ * `null` quand l'horodatage manque : une carte répondue sans date vaut mieux qu'une date inventée.
+ */
+export function piedDuPointRepondu(
+  point: { loop_type: 'commute' | 'extras'; responded_at: string | null | undefined },
+  maintenant: Date = new Date()
+): string | null {
+  if (!point.responded_at) return null;
+  const repondu = new Date(point.responded_at);
+  if (Number.isNaN(repondu.getTime())) return null;
+
+  if (point.loop_type === 'commute') {
+    const jour = JOURS_FRANCAIS[(repondu.getDay() + 6) % 7];
+    // Lundi prochain : jamais aujourd'hui, même un lundi — le point du jour est celui qu'on vient
+    // de répondre, le suivant est dans sept jours.
+    const prochain = new Date(maintenant);
+    prochain.setDate(prochain.getDate() + (7 - ((maintenant.getDay() + 6) % 7)));
+    return `Répondu ${jour}. Prochain point : lundi ${prochain.getDate()} ${MOIS_FRANCAIS[prochain.getMonth()]}.`;
+  }
+
+  const premier = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 1);
+  return `Répondu le ${jourDuMois(repondu.getDate())}. Prochain point : ${jourDuMois(1)} ${
+    MOIS_FRANCAIS[premier.getMonth()]
+  }.`;
+}
+
+/** « 1er » et non « 1 » — la seule irrégularité des jours du mois en français. */
+function jourDuMois(jour: number): string {
+  return jour === 1 ? '1er' : String(jour);
 }

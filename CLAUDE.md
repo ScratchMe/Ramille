@@ -121,6 +121,15 @@ Le reste de la suite est rejouable sur le distant et c'est la façon la plus rap
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que ces quatre-là ne prouvent rien là-bas.
 
+**`created_at` ne désigne aucune ligne dans une transaction pgTAP, et un `order by` dessus rend un
+ordre arbitraire.** `now()` est l'horodatage de **début de transaction** : deux lignes écrites par le
+même appel le portent à l'identique, et `order by created_at limit 1` retombe sur l'ordre du tas.
+Relevé le 11/09/2026 dans le fichier `22` (C2.9), où le « second clic » sur un lien de désinscription
+pouvait tirer l'**autre** message et donc réussir là où l'assertion attend un refus — l'assertion
+était juste, c'est la désignation de la ligne qui ne l'était pas, et elle passait en CI comme au
+premier rejeu. Capturer l'identifiant ou le jeton une fois dans un `set_config`, ou ordonner sur une
+colonne réellement distincte.
+
 **La place d'une assertion dans un fichier pgTAP fait partie de l'assertion, et valider l'assertion
 seule ne vaut rien.** Relevé le 11/09/2026 : les deux assertions C2.11 du fichier `09` avaient été
 posées en **fin** de fichier, après la section du journal qui écrit une ligne d'outbox **à la main**
@@ -323,6 +332,62 @@ vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à conna�
   révoquées de `public, anon, authenticated`. Le client ne compose que pour les points générés
   **avant** C2.1, dont `committed_question` est nul — d'où `questionDuPoint`, qui préfère toujours la
   question figée.
+
+**Un point se répond par « oui », « non » ou « sans objet », et `response_kind` est la vérité**
+(C2.4, `20260912200000_troisieme_reponse_du_point.sql`). Une semaine de congés ou un mois sans voyage
+n'ont pas de réponse honnête entre oui et non : « Non » déclenche la consolation d'échec et s'inscrit
+en « Non » dans le suivi, ne rien répondre laisse le point expirer — ce qui compte pour une occasion
+manquée **et** fait s'espacer les rappels (C2.9). Pour un profil « deux vols par an », dix mois sur
+douze devenaient une suite de « Non ». Six points à connaître :
+
+- **Le piège n'était pas la valeur nulle, c'était le filtre qui la lisait.** `response boolean`
+  reste, **dérivée** (`true` / `false` / `null`), et `loadAnsweredCheckins` écartait les lignes dont
+  elle est nulle : la troisième réponse aurait été donnée puis perdue, sans message d'erreur et sans
+  rien afficher dans le suivi. Tout ce qui compte « les points répondus » filtre donc
+  `status = 'answered'` et lit `response_kind` — **jamais `response is not null`**. C'était déjà le
+  cas de `recapDeSaison` (C2.14, qui l'avait anticipé) et de `regime_de_rappel` (C2.9, où un
+  « sans objet » est un **signe de vie** : l'assertion est dans `24`, et sans elle quelqu'un qui
+  répond honnêtement quatre fois verrait ses rappels s'espacer comme s'il avait disparu).
+- **La dérivation est une contrainte, pas une convention**
+  (`engagement_checkins_reponse_coherente`), et elle porte **deux** invariants : répondu ⟺ genre
+  renseigné, et la correspondance genre/booléen. Le premier est la forme structurelle du défaut :
+  une ligne `answered` sans genre est une réponse que la lecture écarte. Aucun chemin de production
+  ne peut la produire — le RPC est le seul écrivain — et c'est pourquoi l'écrire coûte zéro et garde
+  le jour où C4.1 ajoutera une forme de réponse. Corollaire pour les tests : **une fixture ne peut
+  plus écrire `status = 'answered'` sans genre** (cinq fichiers corrigés), ce qui est une bonne
+  chose — une fixture qui écrit un état que la production ne peut pas produire éprouve une fiction.
+- **Le backfill passe sous le trigger, pas à travers.** `prevent_answered_checkin_update` lève sur
+  toute mise à jour d'une ligne déjà répondue (C1.12) : le rattrapage des points historiques le
+  désactive le temps de l'écriture et le réarme ensuite, et la contrainte n'est posée **qu'après** —
+  l'ordre inverse ferait échouer l'`alter` sur les lignes pas encore rattrapées. Un contrôle de la
+  migration vérifie que le trigger est bien réarmé : l'oublier défairait C1.12 en silence.
+- **La signature du RPC change, elle ne s'ajoute pas** : `repondre_au_checkin(uuid, text)`, et la
+  version booléenne est **supprimée**. Deux surcharges que PostgREST départage sur le type d'un
+  champ JSON coûteraient plus que la migration, et une surcharge qu'aucun appel n'émet se lit
+  « morte » et non « réservée » (la leçon de `p_replace` en C2.2). Ce raisonnement tient **parce que
+  l'app n'est pas encore publiée sur Play** ; le jour où un client installé appelle l'ancienne forme,
+  il faudra une seconde fonction nommée.
+- **`analytics.engagement_by_segment` gagne `answered_sans_objet`**, et ce n'est pas du confort :
+  `answered` compte les trois réponses et `answered_yes` les seuls « oui », donc l'écart entre les
+  deux se lisait « non » et vient d'accueillir les « sans objet ». Sans le troisième compteur, le
+  taux de réussite de la boucle baissait à chaque fois que quelqu'un répond honnêtement. Une
+  assertion de `24` nomme l'égalité.
+- **La carte répondue reste le temps de la période, et la borne se calcule en UTC.** Le
+  renforcement vivait dans un `useState` : répondre, changer d'onglet, revenir, et il n'y avait plus
+  rien — la requête du plan ne lisait que les points `pending`. Elle lit maintenant `pending` **et**
+  `answered`, et `estDeLaPeriodeCourante` (`src/types/checkin.ts`) borne l'affichage, sans quoi un
+  compte dont la boucle a cessé d'être générée garderait pour toujours un « Répondu lundi » et la
+  promesse d'un point qui ne viendra pas. `debutDePeriodeInterrogee` est la **jumelle du `date_trunc`
+  des deux générateurs**, donc elle lit l'UTC — à l'inverse de `saisonDe`, qui nomme une saison pour
+  un humain et suit son calendrier local. Aligner l'une sur l'autre ferait disparaître la carte d'un
+  point courant entre minuit et 6 h UTC le lundi. Le pied (« Répondu lundi. Prochain point : lundi
+  21 septembre. ») est **du produit et non de Ramille** : il porte deux dates, et elle ne dit jamais
+  de nombre.
+
+`RAMILLE.checkinSansObjet` a **quatre** variantes indexées sur le **poste** et non deux sur la
+boucle, écart consigné en `v1-14` §10 : la boucle mensuelle couvre les voyages *et* les sorties
+depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui vient d'appuyer sur
+« Pas de sortie en septembre » serait la fausseté lisible que ce chantier-là a retirée ailleurs.
 
 **Le cycliste, le piéton et les loisirs rares ne reçoivent pas la même boucle** (C2.5, arbitrage D5,
 `20260912140000_qui_recoit_quelle_boucle.sql`). Quatre choses à connaître avant d'y toucher :

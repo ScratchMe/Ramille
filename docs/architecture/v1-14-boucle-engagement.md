@@ -407,6 +407,18 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     voisins (`/connexion`, la liste du suivi), et `dominant_poste_mode` qui faisait écrire « Tes
     loisirs du week-end **en voiture** » à la restitution. Les deux libellés partagent désormais le
     mot, et la condition est le même test des deux côtés.
+11. **`checkinSansObjet` a quatre variantes indexées sur le poste, et non deux sur la boucle**
+    (C2.4, 11/09/2026). Le canvas oppose « Pas de trajet … » (hebdomadaire) et « Pas de voyage … »
+    (mensuelle) ; depuis C2.6 la boucle mensuelle couvre **deux** postes, les voyages et les sorties
+    du week-end. Répondre « Pas de voyage, pas de question. » à quelqu'un qui vient d'appuyer sur
+    « Pas de sortie en septembre » serait exactement la fausseté lisible que C2.6 a retirée ailleurs.
+    Les variantes suivent donc le poste, comme le libellé du bouton, et `checkinSansObjet.autre`
+    ferme la liste pour un point généré avant C2.6, qui n'en porte pas.
+12. **Le pied de la carte répondue écrit le mois en entier** : « Prochain point : lundi
+    21 septembre. » et non « 21 sept. » (§3.2). Les abréviations demanderaient une quatrième liste de
+    mots français tenue à la main, pour gagner quatre caractères sur une ligne en petit tertiaire.
+    Le reste de la phrase est celui du canvas. Et ce pied est **du produit, pas de Ramille** : il
+    porte deux dates, et elle ne dit jamais de nombre — d'où son rendu sous sa phrase, et non dedans.
 
 ## 11. Tests
 

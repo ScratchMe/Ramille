@@ -47,9 +47,9 @@ values ('ExponentPushToken[pgtap-purge-anonyme]', 'c6111111-1111-1111-1111-11111
 insert into public.assessments (user_id, status, created_at)
 values ('c6111111-1111-1111-1111-111111111113', 'in_progress', now() - interval '10 days');
 
-insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, status, response, responded_at)
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, status, response_kind, response, responded_at)
 values ('c6111111-1111-1111-1111-111111111114', 'commute', (now() - interval '20 days')::date,
-        'Semaine test', 'Trajet domicile-travail', 'answered', true, now() - interval '20 days');
+        'Semaine test', 'Trajet domicile-travail', 'answered', 'oui', true, now() - interval '20 days');
 
 -- Toutes les vieilles sessions ont un `last_sign_in_at` de cent jours : si la purge s'y
 -- fiait, elle les emporterait toutes les quatre.
