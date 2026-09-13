@@ -102,6 +102,48 @@ export function daysSince(iso: string): number {
 // (spec §7) — l'écran de suivi l'affiche, rien ne la relance.
 export const REBILAN_SUGGESTION_DAYS = 182;
 
+/** Les mois en lettres — au-delà de onze, on ne compte plus en mois. */
+const MOIS_EN_MOTS = [
+  '',
+  'un',
+  'deux',
+  'trois',
+  'quatre',
+  'cinq',
+  'six',
+  'sept',
+  'huit',
+  'neuf',
+  'dix',
+  'onze',
+] as const;
+
+/**
+ * L'âge d'un bilan, en mots : « six mois », « plus d'un an ».
+ *
+ * **Le fait, pas la saison** (C2.8, point 3). Les deux cartes de re-bilan disaient autre chose :
+ * le plan annonçait « Une nouvelle saison a commencé » — ce qui pouvait être faux, la carte se
+ * déclenchant sur 182 jours d'ancienneté du bilan et non sur une bascule, et ce qui pouvait de
+ * surcroît coexister avec la puce « Cadence : Été 2026 » ; le suivi, lui, écrivait le nombre en
+ * chiffres et le calculait sur place. La formulation saisonnière appartient maintenant à la carte
+ * d'ouverture, qui, elle, se déclenche vraiment sur une bascule ; ces deux cartes disent l'âge, et
+ * le disent par la même dérivation — deux écrans qui comptent chacun de leur côté finissent par
+ * annoncer six mois d'un côté et cinq de l'autre.
+ *
+ * En mots plutôt qu'en chiffres parce que c'est un ordre de grandeur et non une mesure : « Ton
+ * bilan a six mois » se lit, « Ton bilan a 187 jours » se compte. Le mois vaut trente jours, la
+ * même approximation que le seuil lui-même (182).
+ */
+export function ancienneteEnMots(jours: number): string {
+  const mois = Math.floor(jours / 30);
+  // Au-delà de l'année, le compte exact n'apporte plus rien — et « quinze mois » se lit comme une
+  // facture. La carte n'apparaît qu'à partir de six mois ; les deux bornes basses sont là pour que
+  // la dérivation soit totale, pas parce qu'un écran les atteint.
+  if (mois >= 12) return 'plus d’un an';
+  if (mois < 1) return 'moins d’un mois';
+  return `${MOIS_EN_MOTS[mois]} mois`;
+}
+
 /**
  * Le libellé de période d'un point, avec l'année quand elle n'est plus celle en cours.
  *

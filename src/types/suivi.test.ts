@@ -2,11 +2,13 @@
 // `src/types/bilan.test.ts` : on teste ce qui produit un chiffre ou une phrase affichée à
 // l'utilisateur, là où un bug coûte cher — pas les requêtes elles-mêmes.
 import {
+  ancienneteEnMots,
   daysSince,
   formatDate,
   keepLatestPerDay,
   libelleDeReponse,
   libellePeriodeAffiche,
+  REBILAN_SUGGESTION_DAYS,
   variationNote,
   type AssessmentSnapshot,
 } from '@/types/suivi';
@@ -161,5 +163,49 @@ describe('libelleDeReponse', () => {
   it('les trois libellés sont distincts', () => {
     const libelles = (['oui', 'non', 'sans_objet'] as const).map(libelleDeReponse);
     expect(new Set(libelles).size).toBe(3);
+  });
+});
+
+describe('ancienneteEnMots', () => {
+  // Le seuil de la proposition de re-bilan doit tomber pile sur « six mois » : c'est la phrase du
+  // canvas (« Ton bilan a six mois »), et si la dérivation rendait « cinq mois » au jour où la
+  // carte apparaît, la carte se contredirait elle-même le premier jour.
+  it('dit « six mois » au seuil de la proposition', () => {
+    expect(ancienneteEnMots(REBILAN_SUGGESTION_DAYS)).toBe('six mois');
+  });
+
+  it.each([
+    [180, 'six mois'],
+    [210, 'sept mois'],
+    [240, 'huit mois'],
+    [270, 'neuf mois'],
+    [300, 'dix mois'],
+    [330, 'onze mois'],
+  ])('%i jours se disent « %s »', (jours, attendu) => {
+    expect(ancienneteEnMots(jours)).toBe(attendu);
+  });
+
+  // En mots, jamais en chiffres : c'est un ordre de grandeur, et aucun de ces libellés ne doit
+  // pouvoir se lire comme une mesure.
+  it('n’écrit aucun chiffre', () => {
+    for (const jours of [0, 30, 182, 300, 400, 4000]) {
+      expect(ancienneteEnMots(jours)).not.toMatch(/\d/);
+    }
+  });
+
+  // Au-delà de l'année, le compte exact n'apporte plus rien — et « quinze mois » se lit comme une
+  // facture.
+  it('ne compte plus en mois au-delà de l’année', () => {
+    expect(ancienneteEnMots(360)).toBe('plus d’un an');
+    expect(ancienneteEnMots(365)).toBe('plus d’un an');
+    expect(ancienneteEnMots(1200)).toBe('plus d’un an');
+  });
+
+  // Les deux bornes basses existent pour que la dérivation soit totale, pas parce qu'un écran les
+  // atteint : la carte n'apparaît qu'à partir de six mois.
+  it('reste lisible sous le mois', () => {
+    expect(ancienneteEnMots(0)).toBe('moins d’un mois');
+    expect(ancienneteEnMots(29)).toBe('moins d’un mois');
+    expect(ancienneteEnMots(30)).toBe('un mois');
   });
 });

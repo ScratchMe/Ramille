@@ -486,7 +486,51 @@ connaître :
 Corollaire sur la lecture du plan : **la requête des points est bornée par une fenêtre**
 (`fenetreDesPoints`, trois périodes mensuelles). Elle ne ramenait que les points `pending`, soit un ou
 deux ; depuis qu'elle prend aussi les répondus (C2.4), sans borne elle ramènerait une ligne par semaine
-indéfiniment.
+indéfiniment. **Et depuis C2.8 elle prend aussi le début du cycle précédent, contre une coïncidence
+qui aurait tenu longtemps** : le récapitulatif de la carte d'ouverture compte les points de la saison
+écoulée, et trois périodes mensuelles en arrière depuis le 1er d'un mois est le 1er du mois trois mois
+plus tôt — c'est-à-dire exactement le premier jour de la saison précédente. Les deux bornes tombaient
+au même jour, donc l'oubli ne se serait pas vu jusqu'au jour où l'une des deux dérivations bouge (une
+cadence `rolling_quarter`, elle, n'est pas alignée sur les mois et sortait déjà de la fenêtre). On
+prend le minimum des deux.
+
+**La saison a une fin et un début, et les deux se disent sur l'écran du plan** (C2.8,
+`src/types/saison.ts`). `plan_cycles.period_end` et `.cadence_type` existaient depuis l'increment 3 et
+n'étaient lus par **aucun** écran : le cap était annoncé sans échéance, et l'effet « nouveau départ »
+était perdu quatre fois par an. Sept points à connaître, dont deux qui sont des règles :
+
+- **La carte d'ouverture ne prend jamais la place d'un point en attente.** Le canvas la pose « à la
+  place du point » ; le lien du rappel pointe `/plan`, donc masquer la question y fait ouvrir une
+  notification sur un écran qui ne la porte pas — le défaut exact trouvé sur appareil le 09/09/2026
+  (v1-12 §8.1), et jusqu'à deux semaines de points perdus pour qui ne touche pas ses boutons. Elle
+  remplace la **carte d'attente**, Ramille parlant déjà sous elle.
+- **Le récapitulatif ne dit jamais zéro et ne nomme aucun poste.** Sans point répondu la phrase
+  disparaît (« 0 point répondu » nommerait les manqués, ce que `/suivi` refuse) ; sans changement, sa
+  seconde moitié tombe. Et le décompte porte sur les **deux** boucles, donc « … sur ton trajet »
+  serait faux pour quelqu'un dont les changements sont des voyages — même fausseté lisible que C2.6.
+- **Le trait de temps mesure la saison, pas la personne** : `accentMuted` et jamais `accent`, avec sa
+  légende. Il n'est pas plein le dernier jour — `period_end` étant inclus, la saison dure 91 jours et
+  non 90, et il n'atteint le bout qu'une fois la période révolue, au moment où le bandeau de bascule
+  prend le relais. Remplacer ce « + 1 » par un écart entre bornes afficherait « plein » un jour trop
+  tôt.
+- **L'écran lit deux cycles** (`limit(2)`). L'existence du précédent est ce qui distingue une bascule
+  d'un premier bilan, et ses bornes sont **lues sur sa ligne** plutôt que recalculées : une cadence
+  `rolling_quarter` n'a pas de saison, donc dériver les bornes d'une saison ferait compter trois mois
+  calendaires qui ne sont pas les siens.
+- **La carte de re-bilan dit le fait, jamais la saison.** Son titre était « Une nouvelle saison a
+  commencé », ce qui pouvait être faux : elle se déclenche sur 182 jours d'ancienneté du bilan, pas
+  sur une bascule, et pouvait coexister avec la puce « Cadence : Été 2026 ». La formulation
+  saisonnière appartient à la carte d'ouverture. L'âge vient d'`ancienneteEnMots`
+  (`src/types/suivi.ts`), **partagée par les deux écrans** qui le disent, et il s'écrit en mots — un
+  ordre de grandeur, pas une mesure.
+- **La puce « Cadence : … » a disparu du plan** : la période se nomme dans la carte du cap, à côté de
+  sa fin, et cette carte se rend donc **même sans cap** (`baseline_co2_kg_year` peut valoir zéro).
+  Nommer la période à deux endroits de l'écran était le plus sûr moyen de les voir un jour se
+  contredire.
+- **Les boutons de la carte sortent de `sortiesDeLouverture`**, pas d'un ternaire : le canvas suppose
+  une action engagée et reconduite, alors que rien n'est engagé dans deux cas de production — dont le
+  plan à zéro action de tout cycliste depuis C2.5, où proposer d'en choisir une promettrait une liste
+  vide.
 
 **Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
 décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
@@ -506,9 +550,11 @@ s'espacent) et la vague 5 (lot 2, **le point** : il connaît l'action engagée, 
 réponse, reste affiché le temps de la période, porte le signal « deux fois de suite » et varie ses
 répliques) le même jour. **Le jalon « publiable sur Play » est atteint côté code** ; ce qui reste
 avant de publier n'est pas du code mais les vérifications de la §11 et la checklist de
-`docs/exploitation/README.md`. La vague 6 (lot 2, la saison et le suivi : trois files parallèles —
-`plan.tsx` avec C2.8 puis C4.6, le suivi avec C2.7 puis C3.1, et C2.13 puis C3.9) est la suite, et
-c'est elle qui porte le jalon « la boucle existe d'une saison à l'autre ».
+`docs/exploitation/README.md`. **La vague 6 est en cours** (lot 2, la saison et le suivi) : elle
+porte le jalon « la boucle existe d'une saison à l'autre », et son relevé de fichiers du 13/09/2026
+a démenti la colonne « Parallèle ? » pour la quatrième fois — un seul chantier y est réellement
+disjoint (C2.13), l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9**, et C2.8 (la
+saison a une fin et un début) est livré.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -1245,8 +1291,16 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   calendrier dans les deux cas. `recapDeSaison` compte les points **répondus** et les « oui », et
   **jamais les manqués** : il n'y a volontairement aucun champ pour les dire, parce qu'un champ
   rendrait affichable ce que `/suivi` refuse de montrer. Son filtre est `status = 'answered'` et
-  non `response !== null`, pour que la troisième réponse de C2.4 (« pas de trajet cette période »,
-  `response = null` sur un point bel et bien répondu) y entre sans rien changer.
+  non la réponse elle-même, pour que la troisième réponse de C2.4 (« pas de trajet cette période »,
+  un point bel et bien répondu) y entre sans rien changer. `PointDeSaison.reponse` parle le
+  vocabulaire de `response_kind` depuis C2.8 et non plus un `boolean | null`, où `null` voulait dire
+  à la fois « pas répondu » et « répondu sans objet ».
+  Le module porte aussi, depuis C2.8, ce que le plan affiche de la période : `finDePeriodeEnMots`
+  (« jusqu'au 30 novembre », qui lit les **caractères** de la date et jamais un `Date` — minuit UTC
+  serait la veille à l'ouest de Greenwich), `progressionDeLaPeriode`, `estDansLouverture`,
+  `ouvertureDeSaison`, `sortiesDeLouverture` et `basculeDeSaison`. Les douze mois et le « 1er »
+  viennent de `src/types/checkin.ts` (`MOIS_FRANCAIS`, `jourDuMois`, exporté pour l'occasion) : une
+  seconde copie divergerait par la faute de frappe que personne ne relit.
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
   faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
   professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne
@@ -1485,9 +1539,10 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   session anonyme devient un compte, et l'oubli serait silencieux : les rappels partiraient
   vers un utilisateur fantôme.
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
-  connexion", jeton d'appareil) via AsyncStorage — explicitement device-local, pas de sync
-  multi-device tant que le compte n'est pas rattaché. Voir `src/lib/bilan-draft.ts`,
-  `src/lib/connexion-prefs.ts`, `src/lib/notification-prefs.ts`. Toutes ces clés portent le
+  connexion", jeton d'appareil, ouverture de saison vue) via AsyncStorage — explicitement
+  device-local, pas de sync multi-device tant que le compte n'est pas rattaché. Voir
+  `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`, `src/lib/notification-prefs.ts`,
+  `src/lib/saison-prefs.ts`. Toutes ces clés portent le
   préfixe historique `traceverte.` (le renommer effacerait les brouillons), et c'est par ce
   **préfixe** que `src/lib/compte.ts` les balaie à la suppression de compte. **Ne jamais
   dénombrer les clés `traceverte.*` dans un commentaire.** Le balayage se fait par préfixe

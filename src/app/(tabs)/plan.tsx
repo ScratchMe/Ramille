@@ -20,9 +20,26 @@ import { useTrackFocus } from '@/hooks/use-track-focus';
 import { track } from '@/lib/analytics';
 import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
+import { CarteDeSaison } from '@/components/plan/carte-de-saison';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
+import { TraitDeTemps } from '@/components/plan/trait-de-temps';
 import { formatIntention, formeInserable } from '@/types/plan';
-import { daysSince, REBILAN_SUGGESTION_DAYS } from '@/types/suivi';
+import { ancienneteEnMots, daysSince, REBILAN_SUGGESTION_DAYS } from '@/types/suivi';
+import {
+  aVuLouvertureDeSaison,
+  marquerLouvertureDeSaisonVue,
+} from '@/lib/saison-prefs';
+import {
+  basculeDeSaison,
+  cadenceNommeUneSaison,
+  estDansLouverture,
+  finDePeriodeEnMots,
+  ouvertureDeSaison,
+  progressionDeLaPeriode,
+  sortiesDeLouverture,
+  type OuvertureDeSaison,
+  type PointDeSaison,
+} from '@/types/saison';
 import {
   aVuEngagementOrphelin,
   aVuRattachementAnnonce,
@@ -69,8 +86,19 @@ type PlanAction = {
 type PlanCycle = {
   id: string;
   period_label: string;
-  /** La fin de la période, lue pour dire qu'un cycle est révolu plutôt que le montrer à jour (C2.2). */
+  /** Le premier jour de la période : la fenêtre d'ouverture et le trait de temps en partent (C2.8). */
+  period_start: string;
+  /**
+   * La fin de la période. Lue d'abord pour dire qu'un cycle est révolu plutôt que le montrer à jour
+   * (C2.2), puis affichée telle quelle par la carte du cap depuis C2.8 — elle était écrite à chaque
+   * génération et lue par aucun écran, donc le cap était annoncé sans échéance (constat A8-8).
+   */
   period_end: string;
+  /**
+   * `season` | `rolling_quarter`, snapshoté à la génération. Ce qui décide si la période a un nom de
+   * saison : un trimestre glissant peut parfaitement commencer un 1er décembre sans être l'hiver.
+   */
+  cadence_type: string;
   trip_label: string;
   /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */
   poste: string | null;
@@ -116,9 +144,24 @@ function keepLatestPerLoop(checkins: EngagementCheckin[]): EngagementCheckin[] {
 // est réellement nécessaire est la période courante et les **deux** qui la précèdent (le second
 // renforcement a besoin de savoir qu'on est à deux et pas à cinq) : la fenêtre est donc celle de la
 // boucle mensuelle, trois mois, qui couvre largement l'hebdomadaire.
-function fenetreDesPoints(maintenant: Date = new Date()): string {
+//
+// **`debutDuCyclePrecedent` l'élargit, et ce n'est pas une précaution de confort** (C2.8). Le
+// récapitulatif de la carte d'ouverture compte les points de la période écoulée : au premier jour
+// d'une saison, ces points remontent à trois mois pleins. Les deux bornes tombent aujourd'hui
+// **exactement** au même jour — trois périodes mensuelles en arrière depuis le 1er d'un mois est le
+// 1er du mois trois mois plus tôt, qui est aussi le premier jour de la saison précédente — donc
+// l'oubli ne se verrait pas, jusqu'au jour où l'une des deux dérivations bouge. Une cadence
+// `rolling_quarter`, elle, n'est pas alignée sur les mois et sortirait déjà de la fenêtre. On prend
+// le minimum des deux plutôt que de compter sur une coïncidence.
+function fenetreDesPoints(
+  maintenant: Date = new Date(),
+  debutDuCyclePrecedent?: string | null
+): string {
   const courante = debutDePeriodeInterrogee('extras', maintenant);
-  return periodePrecedente('extras', periodePrecedente('extras', courante));
+  const troisPeriodes = periodePrecedente('extras', periodePrecedente('extras', courante));
+  if (!debutDuCyclePrecedent) return troisPeriodes;
+  const debutDuCycle = debutDuCyclePrecedent.slice(0, 10);
+  return debutDuCycle < troisPeriodes ? debutDuCycle : troisPeriodes;
 }
 
 // Les points répondus de chaque boucle, hors carte affichée : c'est ce que `estDeuxiemeFoisDeSuite`
@@ -142,6 +185,22 @@ function historiqueParBoucle(
   }
 
   return parBoucle;
+}
+
+/**
+ * Un point, réduit à ce que le récapitulatif de saison regarde (C2.8).
+ *
+ * `PointDeSaison` parle le vocabulaire de `response_kind` — la seule vérité côté base (C2.4) — donc
+ * la conversion n'est qu'un changement de nom de champ. `genreDeReponse` est la même lecture que
+ * partout ailleurs dans l'écran : la reconvertir en booléen ici rouvrirait l'ambiguïté que C2.4 a
+ * fermée, où `null` voulait dire à la fois « pas répondu » et « répondu sans objet ».
+ */
+function pointDeSaison(checkin: EngagementCheckin): PointDeSaison {
+  return {
+    periodStart: checkin.period_start,
+    status: checkin.status,
+    reponse: genreDeReponse(checkin.response_kind),
+  };
 }
 
 /**
@@ -249,6 +308,14 @@ export default function Plan() {
    * « Revoir mon bilan » et « Faire mon bilan » — au premier repli.
    */
   const [orphelin, setOrphelin] = useState<EngagementOrphelin | null>(null);
+  /**
+   * La carte d'ouverture de saison, tant qu'elle n'a pas été vue sur cet appareil (C2.8).
+   *
+   * Logée **à côté** du `LoadState` pour la même raison que `orphelin` et la ligne de relecture : un
+   * drapeau dans sa variante `ok` détruirait `pending`, `no_assessment` et l'écran de rappel au
+   * premier repli, donc « Revoir mon bilan » et « Faire mon bilan ».
+   */
+  const [ouverture, setOuverture] = useState<OuvertureDeSaison | null>(null);
 
   /**
    * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
@@ -373,7 +440,13 @@ export default function Plan() {
           return;
         }
 
-        const { data: cycle, error: cycleError } = await supabase
+        // **Deux cycles et non un** (C2.8) : le second est la période écoulée, dont la carte
+        // d'ouverture récapitule les points. Ses bornes sont **lues sur sa ligne** plutôt que
+        // recalculées — une cadence `rolling_quarter` n'a pas de saison nommée, donc dériver les
+        // bornes de la saison ferait compter trois mois calendaires qui ne sont pas les siens. Et
+        // son existence est ce qui distingue une bascule d'un premier bilan : « On repart pour une
+        // saison » ne vaut que si l'on a déjà roulé une saison.
+        const { data: cycles, error: cycleError } = await supabase
           .from('plan_cycles')
           .select(
             // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
@@ -386,11 +459,10 @@ export default function Plan() {
             // suivre et refuse la requête (« more than one relationship was found »). Sans le
             // nom de la clé, l'écran du plan ne charge plus du tout. Le typecheck l'attrape —
             // c'est le seul garde qui le fait, la chaîne étant analysée au niveau des types.
-            'id, period_label, period_end, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
+            'id, period_label, period_start, period_end, cadence_type, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
           )
           .order('period_start', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(2);
 
         if (cancelled) return;
 
@@ -403,6 +475,9 @@ export default function Plan() {
           echecDeLecture();
           return;
         }
+
+        const cycle = cycles?.[0] ?? null;
+        const cyclePrecedent = cycles?.[1] ?? null;
 
         if (!cycle) {
           setState({ status: 'pending', assessmentId: assessment.id });
@@ -446,7 +521,7 @@ export default function Plan() {
           .in('status', ['pending', 'answered'])
           // La fenêtre borne une lecture qui grossirait sans fin depuis qu'elle prend les points
           // répondus : trois périodes mensuelles couvrent ce dont le second renforcement a besoin.
-          .gte('period_start', fenetreDesPoints())
+          .gte('period_start', fenetreDesPoints(new Date(), cyclePrecedent?.period_start))
           .order('period_start', { ascending: false });
 
         if (cancelled) return;
@@ -503,6 +578,30 @@ export default function Plan() {
 
         const points = (checkins as EngagementCheckin[] | null) ?? [];
         const affiches = keepLatestPerLoop(points);
+
+        // **La carte d'ouverture, trois conditions et une marque locale** (C2.8). Il faut une
+        // période écoulée (sinon « On repart » ne veut rien dire), être dans les deux premières
+        // semaines du cycle, et que la carte n'ait pas déjà été refermée sur cet appareil. La marque
+        // est locale comme la feuille des rappels : la carte ne vit que deux semaines, et un second
+        // appareil peut la revoir.
+        //
+        // Calculée ici et non au rendu : le rendu tourne à chaque frappe d'état, et ce calcul lit
+        // AsyncStorage. Le chargement, lui, repasse à chaque focus et à chaque retour au premier
+        // plan (`useRafraichirAuRetour`), ce qui suffit largement pour une fenêtre de deux semaines.
+        const aOuvrir =
+          cyclePrecedent && estDansLouverture(cycle.period_start)
+            ? ouvertureDeSaison({
+                debutDuCycle: cycle.period_start,
+                cadence: cycle.cadence_type,
+                precedente: {
+                  debut: cyclePrecedent.period_start,
+                  fin: cyclePrecedent.period_end,
+                  cadence: cyclePrecedent.cadence_type,
+                },
+                points: points.map(pointDeSaison),
+              })
+            : null;
+        setOuverture(aOuvrir && !(await aVuLouvertureDeSaison(cycle.id)) ? aOuvrir : null);
         setState({
           status: 'ok',
           cycle: cycle as PlanCycle,
@@ -769,6 +868,31 @@ export default function Plan() {
   const dateDuJour = `${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, '0')}-${String(aujourdhui.getDate()).padStart(2, '0')}`;
   const cyclePerime = cycle.period_end < dateDuJour;
 
+  // La période a-t-elle un nom de saison ? `rolling_quarter` est dormant (aucun écran ne l'écrit,
+  // tous les profils valent `season`) mais la chaîne serveur existe et est testée : trois phrases de
+  // cet écran doivent savoir s'en passer plutôt que d'appeler « hiver » un trimestre glissant.
+  const cadenceDeSaison = cadenceNommeUneSaison(cycle.cadence_type);
+  const finDeLaPeriode = finDePeriodeEnMots(cycle.period_end);
+  const progression = progressionDeLaPeriode(cycle.period_start, cycle.period_end, aujourdhui);
+
+  // Les quatre sorties de la carte d'ouverture, dérivées plutôt qu'écrites dans le composant : le
+  // canvas suppose une action engagée et reconduite, et deux cas de production ne peuvent pas
+  // recevoir ces libellés (rien d'engagé, plan sans action — tout cycliste depuis C2.5).
+  const sortiesDeSaison = sortiesDeLouverture({
+    actionEngagee: committedActionId !== null,
+    nombreDActions: actionsCount,
+  });
+
+  // Les quatre sorties referment la carte, et c'est exact aujourd'hui : « Reprendre la même action »
+  // n'a rien à faire — C2.2 a déjà reconduit l'engagement — et « Choisir une autre » révèle le plan
+  // juste dessous, où chaque action porte son « Je m'y engage » (c'est `commit_plan_action` qui
+  // libère et archive la précédente). Ce que C4.6 ajoutera est le dépli des pistes et la mémoire de
+  // saison : la distinction se fera sur la clé, que le composant transmet déjà.
+  const refermerLouverture = () => {
+    void marquerLouvertureDeSaisonVue(cycle.id);
+    setOuverture(null);
+  };
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -828,14 +952,46 @@ export default function Plan() {
 
           {/* **Une période terminée se dit, elle ne se masque pas** (C2.2). Retomber sur l'écran
               d'attente ferait disparaître l'action engagée et les jours choisis — ce qui a eu lieu
-              n'a pas à s'effacer parce que le cron n'est pas encore passé. */}
+              n'a pas à s'effacer parce que le cron n'est pas encore passé.
+
+              **La phrase nomme la saison depuis C2.8**, et celle du **jour** : le cycle suivant peut
+              ne pas exister encore — le cron nocturne ne passe qu'une fois par nuit — alors que le
+              calendrier, lui, a bien tourné. La seconde phrase reste, et elle est ce qui empêche
+              « Voir la saison » d'avoir l'air mort : entre minuit et le passage du cron, relire ne
+              trouve rien de plus, et la personne sait pourquoi. Jamais une carte remplacée sous les
+              yeux — c'est un lien, pas une bascule automatique. */}
           {cyclePerime && (
             <ThemedView type="backgroundElement" style={styles.orphelin}>
               <ThemedText type="small" themeColor="textSecondary">
-                Cette période est terminée. Ton prochain plan arrive ; en attendant, voici où tu en
-                étais.
+                {basculeDeSaison(cycle.cadence_type, aujourdhui)} Ton prochain plan arrive ; en
+                attendant, voici où tu en étais.
               </ThemedText>
+              <TextLink
+                label="Voir la saison"
+                onPress={rafraichir}
+                type="small"
+                weight={600}
+                themeColor="accentText"
+              />
             </ThemedView>
+          )}
+
+          {/* **L'ouverture d'une saison** (C2.8, planches B2 et B3). En tête du plan, au-dessus de
+              son titre : c'est la nouvelle, et elle ne vit que deux semaines.
+
+              **Elle ne prend pas la place d'un point en attente**, contrairement à ce que dit le
+              canvas (écart consigné en `v1-14` §10). Le lien du rappel pointe `/plan` : masquer la
+              question ici, c'est ouvrir une notification sur un écran qui ne la porte pas — le défaut
+              exact que le test sur appareil du 09/09/2026 a trouvé (v1-12 §8.1), et la promesse
+              rompue à l'endroit même où elle se tient. Ce qu'elle remplace est la **carte
+              d'attente** : Ramille parle déjà sous la carte d'ouverture, et deux fois dans le même
+              écran ferait du bruit. */}
+          {ouverture !== null && (
+            <CarteDeSaison
+              ouverture={ouverture}
+              sorties={sortiesDeSaison}
+              onSortie={() => refermerLouverture()}
+            />
           )}
 
           <View style={styles.intro}>
@@ -855,11 +1011,6 @@ export default function Plan() {
                 {formeInserable(cycle.poste)}.
               </ThemedText>
             )}
-            <ThemedView type="backgroundElement" style={styles.cadenceChip}>
-              <ThemedText type="small" weight={600}>
-                Cadence : {cycle.period_label}
-              </ThemedText>
-            </ThemedView>
           </View>
 
           {/* **Le point de la semaine passe en tête** (v1-11 flux 4) : répondre à un rappel est
@@ -892,7 +1043,7 @@ export default function Plan() {
               Posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte près
               d'un chiffre lourd » vise l'empreinte, mais un cap en kilos juste sous son
               visage donnerait l'impression qu'elle le commente. */}
-          {checkins.length === 0 && attente && (
+          {checkins.length === 0 && attente && ouverture === null && (
             <ThemedView type="backgroundElement" style={styles.calmeCard}>
               <View style={styles.calmeRow}>
                 <Mascot mood="resting" size={40} />
@@ -911,21 +1062,52 @@ export default function Plan() {
           {/* Le cap de la saison (T10). Affiché en kg parce que c'est l'unité des actions
               juste en dessous : la personne doit pouvoir voir d'un coup d'œil qu'en cumulant
               deux actions elle l'atteint — ou ne l'atteint pas, ce qui est une information
-              tout aussi utile et jamais présentée comme un échec. */}
-          {capKg !== null && (
-            <ThemedView type="backgroundSelected" style={styles.capCard}>
-              <ThemedText type="small" weight={600} themeColor="accentText">
-                Ton cap pour cette période
-              </ThemedText>
-              <ThemedText type="salient">
-                − {capKg} kg
-              </ThemedText>
+              tout aussi utile et jamais présentée comme un échec.
+
+              **Elle porte la période et sa fin depuis C2.8**, et c'est ce qui lui manquait : le cap
+              était annoncé puis abandonné, `period_end` étant écrit à chaque génération et lu par
+              aucun écran (constat A8-8). Une échéance sans date n'en est pas une.
+
+              La carte se rend **même sans cap** — `baseline_co2_kg_year` peut valoir zéro, ce qui est
+              le cas d'un profil sans émission sur son poste dominant — parce qu'elle est devenue
+              l'endroit où la période se nomme. La puce « Cadence : Automne 2026 » a donc disparu de
+              l'intro : elle disait la même chose dans un vocabulaire de réglage, et la répéter à deux
+              endroits de l'écran était le plus sûr moyen de les voir un jour se contredire.
+
+              Le trait de temps **mesure la saison, pas la personne** : `accentMuted` et jamais
+              `accent`, et la légende le dit en mots. Confondre les deux ferait de chaque semaine
+              écoulée un retard. */}
+          <ThemedView type="backgroundSelected" style={styles.capCard}>
+            {capKg !== null && (
+              <>
+                <ThemedText type="small" weight={600} themeColor="accentText">
+                  Ton cap pour cette {cadenceDeSaison ? 'saison' : 'période'}
+                </ThemedText>
+                <ThemedText type="salient">
+                  − {capKg} kg
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
+                  {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
+                </ThemedText>
+              </>
+            )}
+            <View style={styles.capPeriode}>
               <ThemedText type="small" themeColor="textSecondary">
-                soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
-                {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
+                {cycle.period_label}
               </ThemedText>
-            </ThemedView>
-          )}
+              {finDeLaPeriode && (
+                <ThemedText type="small" weight={600} themeColor="accentText">
+                  {finDeLaPeriode}
+                </ThemedText>
+              )}
+            </View>
+            {progression !== null && <TraitDeTemps progression={progression} />}
+            <ThemedText themeColor="textTertiary" style={styles.capLegende}>
+              {cadenceDeSaison ? 'La saison avance' : 'La période avance'} ; le trait mesure le
+              temps, pas toi.
+            </ThemedText>
+          </ThemedView>
 
           {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce
               moment ? », elle n'a pas à être cherchée. Le reste garde l'ordre du serveur, qui
@@ -993,15 +1175,20 @@ export default function Plan() {
           {/* La proposition de re-bilan ferme l'écran (v1-11 flux 2). Elle apparaît au plus
               deux fois par an : la faire passer devant la question de la semaine ou devant
               l'action engagée inverserait l'urgence. « Une proposition, jamais un rappel
-              insistant » — même règle que sur le suivi, même seuil, même lien. */}
-          {bilanAncien && (
-            <ThemedView type="backgroundSelected" style={styles.rebilanCard}>
-              <ThemedText type="small" weight={600}>
-                Une nouvelle saison a commencé
-              </ThemedText>
+              insistant » — même règle que sur le suivi, même seuil, même lien.
+
+              **Elle dit le fait et non la saison** (C2.8, point 3). Son titre était « Une nouvelle
+              saison a commencé », ce qui pouvait être faux — elle se déclenche sur 182 jours
+              d'ancienneté du bilan, pas sur une bascule — et pouvait coexister avec la puce
+              « Cadence : Été 2026 » juste au-dessus. La formulation saisonnière appartient
+              maintenant à la carte d'ouverture, qui, elle, se déclenche vraiment sur une bascule ;
+              celle-ci dit l'âge, par la dérivation que le suivi partage. Fond `backgroundElement`
+              plutôt que `backgroundSelected` (canvas B1) : une proposition, pas une mise en avant. */}
+          {bilanAncien && assessmentDate !== null && (
+            <ThemedView type="backgroundElement" style={styles.rebilanCard}>
               <ThemedText type="small" themeColor="textSecondary">
-                Ton bilan date d’un moment. Le refaire prend moins de temps que la première
-                fois : tes réponses sont préremplies.
+                Ton bilan a {ancienneteEnMots(daysSince(assessmentDate))}. Le refaire prend quelques
+                minutes ; ton plan s’ajuste.
               </ThemedText>
               <TextLink
                 label="Refaire mon bilan"
@@ -1084,8 +1271,22 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     alignItems: 'flex-start',
   },
-  cadenceChip: { alignSelf: 'flex-start', borderRadius: Radius.chip, paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 },
   capCard: { borderRadius: Radius.card, padding: 20, gap: 6 },
+  // La période à gauche, sa fin à droite : `baseline` et non `center`, pour que les deux lignes
+  // s'alignent sur leur texte et non sur leur boîte. `flexWrap` parce que le texte suit
+  // l'agrandissement des polices du système, que rien dans le produit ne plafonne (A10-21) : à
+  // 200 %, « Hiver 2026-2027 » et « jusqu'au 28 février » ne tiennent plus sur une ligne, et une
+  // rangée sans retour les tronquerait au lieu de les empiler.
+  capPeriode: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  // 12/16 : la seule occurrence de cette taille dans l'écran, donc elle reste en dur — la nommer
+  // dans `theme.ts` encoderait une équivalence avec les autres légendes qui n'existe pas encore.
+  capLegende: { fontSize: 12, lineHeight: 16 },
   actions: { gap: Spacing.two + 2 },
   emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
   praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

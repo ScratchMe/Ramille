@@ -101,9 +101,29 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
    moitié mensuelle de la même ligne du canvas nomme déjà le mois écoulé. Le bouton nommait la semaine
    qui commence, dont le point ne demande rien.
 
-Une phrase reste à valider par le titulaire : « Le refaire prend cinq minutes » sur la carte de
-re-bilan (B1) promet une durée que le produit ne promettait pas ailleurs (« quelques minutes »
-dans l'onboarding).
+10. **La carte d'ouverture ne prend pas la place d'un point en attente** (C2.8). Le canvas la pose
+    « à la place du point » ; le lien du rappel pointe `/plan`, donc masquer la question revient à
+    faire ouvrir une notification sur un écran qui ne la porte pas — le défaut trouvé sur appareil
+    le 09/09/2026 (`v1-12` §8.1). Elle se pose au-dessus du titre du plan et remplace la **carte
+    d'attente** : Ramille parle déjà sous la carte d'ouverture.
+11. **Le récapitulatif ne nomme aucun poste** (C2.8) : « … changé quelque chose. » et non « … sur
+    ton trajet ». Le décompte porte sur les deux boucles, donc nommer le trajet serait faux pour
+    quelqu'un dont les changements sont des voyages. Et il **ne dit jamais zéro** : sans point
+    répondu, la phrase disparaît ; sans changement, sa seconde moitié tombe.
+12. **La carte d'ouverture a deux états que le canvas ne dessine pas** (C2.8) : rien d'engagé
+    (« Choisir une action »), et un plan sans action (« Compris » seul) — ce dernier étant le cas de
+    tout cycliste et de tout profil sédentaire depuis C2.5. Une action et une seule : « Choisir une
+    autre » disparaît, elle ne mènerait nulle part.
+13. **La puce « Cadence : Automne 2026 » quitte le plan** (C2.8). Le canvas nomme la période dans la
+    carte du cap, sur un écran qui ne porte pas la puce ; garder les deux nommerait la période à deux
+    endroits — et « Cadence : … » le disait dans un vocabulaire de réglage. La carte du cap se rend
+    donc même quand il n'y a pas de cap à dire.
+
+La phrase de durée est tranchée : « Le refaire prend **quelques minutes** », et non « cinq minutes »
+comme l'écrit B1. Le produit promet « environ 5 minutes » pour le **premier** bilan (transition de
+l'onboarding, états vides du plan et du suivi) ; un re-bilan est plus rapide, ses réponses étant
+préremplies, donc reprendre la même durée serait la surestimer. Le titulaire peut revenir dessus,
+mais pas vers « cinq minutes » sans revoir les trois autres surfaces.
 
 ## Ce que le canvas ne fait pas
 

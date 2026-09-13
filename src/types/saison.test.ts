@@ -1,4 +1,16 @@
-import { recapDeSaison, saisonDe, type PointDeSaison } from '@/types/saison';
+import {
+  basculeDeSaison,
+  estDansLouverture,
+  finDePeriodeEnMots,
+  JOURS_DOUVERTURE,
+  ouvertureDeSaison,
+  progressionDeLaPeriode,
+  recapDeLaPeriode,
+  recapDeSaison,
+  saisonDe,
+  sortiesDeLouverture,
+  type PointDeSaison,
+} from '@/types/saison';
 
 /**
  * Ces bornes sont **écrites deux fois** : ici, et dans `public.season_bounds`
@@ -81,18 +93,18 @@ describe('saisonDe', () => {
 describe('recapDeSaison', () => {
   const automne = saisonDe(jour(2026, 10, 1));
 
-  const point = (periodStart: string, status: string, response: boolean | null): PointDeSaison => ({
-    periodStart,
-    status,
-    response,
-  });
+  const point = (
+    periodStart: string,
+    status: string,
+    reponse: PointDeSaison['reponse']
+  ): PointDeSaison => ({ periodStart, status, reponse });
 
   it('compte les répondus et les oui de la période', () => {
     const r = recapDeSaison(
       [
-        point('2026-09-07', 'answered', true),
-        point('2026-09-14', 'answered', false),
-        point('2026-10-05', 'answered', true),
+        point('2026-09-07', 'answered', 'oui'),
+        point('2026-09-14', 'answered', 'non'),
+        point('2026-10-05', 'answered', 'oui'),
       ],
       automne
     );
@@ -105,7 +117,7 @@ describe('recapDeSaison', () => {
   it('ignore les points non répondus, et ne les rend nulle part', () => {
     const r = recapDeSaison(
       [
-        point('2026-09-07', 'answered', true),
+        point('2026-09-07', 'answered', 'oui'),
         point('2026-09-14', 'expired', null),
         point('2026-09-21', 'pending', null),
       ],
@@ -115,21 +127,21 @@ describe('recapDeSaison', () => {
     expect(Object.keys(r)).toEqual(['repondus', 'changements']);
   });
 
-  // Le filtre est `status = 'answered'`, **jamais** `response !== null` : c'est ce qui a rendu le
+  // Le filtre est `status = 'answered'`, **jamais** la réponse elle-même : c'est ce qui a rendu le
   // module compatible avec la troisième réponse livrée par C2.4 (« pas de trajet cette période »),
-  // qui porte bien `response = null` — et `response_kind = 'sans_objet'` — sur un point répondu.
+  // qui est un point bel et bien répondu.
   it('compte un point répondu sans objet, sans le compter comme un changement', () => {
-    const r = recapDeSaison([point('2026-10-12', 'answered', null)], automne);
+    const r = recapDeSaison([point('2026-10-12', 'answered', 'sans_objet')], automne);
     expect(r).toEqual({ repondus: 1, changements: 0 });
   });
 
   it('exclut ce qui tombe hors des bornes, veilles comprises', () => {
     const r = recapDeSaison(
       [
-        point('2026-08-31', 'answered', true),
-        point('2026-09-01', 'answered', true),
-        point('2026-11-30', 'answered', true),
-        point('2026-12-01', 'answered', true),
+        point('2026-08-31', 'answered', 'oui'),
+        point('2026-09-01', 'answered', 'oui'),
+        point('2026-11-30', 'answered', 'oui'),
+        point('2026-12-01', 'answered', 'oui'),
       ],
       automne
     );
@@ -137,11 +149,305 @@ describe('recapDeSaison', () => {
   });
 
   it('accepte un horodatage complet et n’en lit que le jour', () => {
-    const r = recapDeSaison([point('2026-10-05T06:00:00.000Z', 'answered', true)], automne);
+    const r = recapDeSaison([point('2026-10-05T06:00:00.000Z', 'answered', 'oui')], automne);
     expect(r.repondus).toBe(1);
   });
 
   it('rend zéro sur une saison vide', () => {
     expect(recapDeSaison([], automne)).toEqual({ repondus: 0, changements: 0 });
+  });
+});
+
+describe('finDePeriodeEnMots', () => {
+  // Les quatre fins de saison, telles que `season_bounds` les rend. Le 28 février est celle
+  // qu'une année bissextile déplace, et le libellé suit la date qu'on lui donne : il ne la
+  // recalcule pas.
+  it.each([
+    ['2026-11-30', 'jusqu’au 30 novembre'],
+    ['2027-02-28', 'jusqu’au 28 février'],
+    ['2028-02-29', 'jusqu’au 29 février'],
+    ['2026-05-31', 'jusqu’au 31 mai'],
+    ['2026-08-31', 'jusqu’au 31 août'],
+  ])('%s se dit « %s »', (iso, attendu) => {
+    expect(finDePeriodeEnMots(iso)).toBe(attendu);
+  });
+
+  // « jusqu'au 1er mars », jamais « jusqu'au 1 mars » — la seule irrégularité des jours du mois
+  // en français, portée par `jourDuMois` de `src/types/checkin.ts` et non recopiée ici.
+  it('dit « 1er » pour un premier du mois', () => {
+    expect(finDePeriodeEnMots('2027-03-01')).toBe('jusqu’au 1er mars');
+  });
+
+  // **Les caractères, jamais un `Date`.** `new Date('2026-11-30')` est minuit UTC : à l'ouest de
+  // Greenwich, son jour local est le 29. Une carte du cap qui annoncerait « jusqu'au 29 novembre »
+  // serait fausse d'un jour, et aucun test tournant en UTC ne le verrait — d'où cette lecture.
+  it('lit le jour écrit, quel que soit le fuseau', () => {
+    expect(finDePeriodeEnMots('2026-12-01')).toBe('jusqu’au 1er décembre');
+    expect(finDePeriodeEnMots('2026-01-01')).toBe('jusqu’au 1er janvier');
+  });
+
+  it('rend null sur ce qui n’est pas une date', () => {
+    expect(finDePeriodeEnMots('')).toBeNull();
+    expect(finDePeriodeEnMots('pas-une-date')).toBeNull();
+    expect(finDePeriodeEnMots('2026-13-01')).toBeNull();
+  });
+});
+
+describe('progressionDeLaPeriode', () => {
+  const automne = ['2026-09-01', '2026-11-30'] as const;
+
+  // **Le trait n'est pas plein le dernier jour, et c'est le rôle du « + 1 » de la durée.**
+  // Du 1er septembre au 30 novembre inclus, la saison dure 91 jours : au matin du dernier, 90
+  // sont derrière et il en reste un. Sans ce « + 1 », le dénominateur vaudrait 90 et le trait
+  // afficherait « plein » alors que la journée n'a pas commencé. Il n'atteint 1 qu'une fois la
+  // période révolue — c'est-à-dire quand le bandeau de bascule prend le relais.
+  it('part de 0 le premier jour, et n’est plein qu’une fois la période révolue', () => {
+    expect(progressionDeLaPeriode(...automne, jour(2026, 9, 1))).toBe(0);
+    expect(progressionDeLaPeriode(...automne, jour(2026, 11, 30))).toBeCloseTo(90 / 91, 9);
+    expect(progressionDeLaPeriode(...automne, jour(2026, 12, 1))).toBe(1);
+  });
+
+  it('vaut la moitié au milieu de la saison', () => {
+    // 91 jours du 1er septembre au 30 novembre inclus : le 46e jour est le milieu.
+    expect(progressionDeLaPeriode(...automne, jour(2026, 10, 16))).toBeCloseTo(45 / 91, 6);
+  });
+
+  it('se borne à [0, 1] hors de la période', () => {
+    expect(progressionDeLaPeriode(...automne, jour(2026, 8, 20))).toBe(0);
+    expect(progressionDeLaPeriode(...automne, jour(2027, 3, 4))).toBe(1);
+  });
+
+  // Le calcul passe par `Date.UTC` sur des composantes déjà séparées : la différence est un
+  // nombre de jours exact, y compris à travers un changement d'heure — que la soustraction de
+  // deux horodatages locaux divisée par 86 400 000 ferait dériver d'une heure.
+  it('traverse un changement d’heure sans dériver', () => {
+    // Le passage à l'heure d'hiver 2026 en France est le 25 octobre.
+    const avant = progressionDeLaPeriode(...automne, jour(2026, 10, 24));
+    const apres = progressionDeLaPeriode(...automne, jour(2026, 10, 26));
+    expect((apres as number) - (avant as number)).toBeCloseTo(2 / 91, 9);
+  });
+
+  it('rend null sur des bornes inutilisables', () => {
+    expect(progressionDeLaPeriode('', '2026-11-30')).toBeNull();
+    // Fin avant le début : aucune durée à mesurer, donc pas de trait plutôt qu'un trait faux.
+    expect(progressionDeLaPeriode('2026-11-30', '2026-09-01')).toBeNull();
+  });
+});
+
+describe('estDansLouverture', () => {
+  it('couvre les quatorze premiers jours, pas le quinzième', () => {
+    expect(estDansLouverture('2026-09-01', jour(2026, 9, 1))).toBe(true);
+    expect(estDansLouverture('2026-09-01', jour(2026, 9, 14))).toBe(true);
+    expect(estDansLouverture('2026-09-01', jour(2026, 9, 15))).toBe(false);
+    expect(JOURS_DOUVERTURE).toBe(14);
+  });
+
+  // Un cycle dont le début est dans le futur n'a pas commencé : rien à ouvrir.
+  it('ne s’ouvre pas avant le premier jour', () => {
+    expect(estDansLouverture('2026-09-01', jour(2026, 8, 31))).toBe(false);
+  });
+
+  // Un cycle révolu est loin de sa propre ouverture : la carte de bascule et la carte
+  // d'ouverture ne peuvent donc pas se retrouver à l'écran ensemble.
+  it('ne s’ouvre pas sur un cycle révolu', () => {
+    expect(estDansLouverture('2026-06-01', jour(2026, 9, 3))).toBe(false);
+  });
+});
+
+describe('ouvertureDeSaison', () => {
+  const points = (...jours: string[]): PointDeSaison[] =>
+    jours.map((periodStart) => ({ periodStart, status: 'answered', reponse: 'oui' as const }));
+
+  const ete = { debut: '2026-06-01', fin: '2026-08-31', cadence: 'season' };
+
+  it('nomme la saison qui commence et récapitule celle qui s’achève', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-09-01',
+      cadence: 'season',
+      precedente: ete,
+      points: points('2026-06-08', '2026-07-06', '2026-08-03'),
+    });
+    expect(r.etiquette).toBe('NOUVELLE SAISON');
+    expect(r.titre).toBe('L’automne commence.');
+    expect(r.corps).toBe('Cet été : 3 points répondus, 3 fois où tu as changé quelque chose.');
+  });
+
+  // Le printemps est la seule saison dont l'article ne s'élide pas, dans les deux registres.
+  it('accorde l’article du printemps', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-03-01',
+      cadence: 'season',
+      precedente: { debut: '2025-12-01', fin: '2026-02-28', cadence: 'season' },
+      points: points('2026-01-05'),
+    });
+    expect(r.titre).toBe('Le printemps commence.');
+    expect(r.corps).toBe('Cet hiver : 1 point répondu, 1 fois où tu as changé quelque chose.');
+  });
+
+  it('nomme l’hiver qui commence en décembre, jamais celui qui s’achève', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-12-01',
+      cadence: 'season',
+      precedente: { debut: '2026-09-01', fin: '2026-11-30', cadence: 'season' },
+      points: points('2026-10-05', '2026-11-02'),
+    });
+    expect(r.titre).toBe('L’hiver commence.');
+    expect(r.corps).toBe('Cet automne : 2 points répondus, 2 fois où tu as changé quelque chose.');
+  });
+
+  // **Jamais les points manqués** : sans réponse sur la période écoulée, il n'y a pas de
+  // récapitulatif du tout. « 0 point répondu » serait exactement la phrase qui les nomme, et
+  // c'est ce que `/suivi` refuse de montrer.
+  it('ne dit rien plutôt que de dire zéro point répondu', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-09-01',
+      cadence: 'season',
+      precedente: ete,
+      points: [
+        { periodStart: '2026-06-08', status: 'expired', reponse: null },
+        { periodStart: '2026-07-06', status: 'pending', reponse: null },
+      ],
+    });
+    expect(r.titre).toBe('L’automne commence.');
+    expect(r.corps).toBeNull();
+  });
+
+  // Aucun changement n'est pas un échec : la seconde moitié de la phrase tombe, le décompte des
+  // réponses reste.
+  it('laisse tomber la seconde moitié quand rien n’a changé', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-09-01',
+      cadence: 'season',
+      precedente: ete,
+      points: [
+        { periodStart: '2026-06-08', status: 'answered', reponse: 'non' },
+        { periodStart: '2026-07-06', status: 'answered', reponse: 'sans_objet' },
+      ],
+    });
+    expect(r.corps).toBe('Cet été : 2 points répondus.');
+  });
+
+  // Première saison d'un compte : pas de cycle précédent, donc rien à récapituler. L'écran ne
+  // montre pas la carte dans ce cas (« On repart » ne vaut que si l'on a déjà roulé), mais la
+  // dérivation reste totale.
+  it('ne récapitule rien sans période précédente', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-09-01',
+      cadence: 'season',
+      precedente: null,
+      points: points('2026-06-08'),
+    });
+    expect(r.corps).toBeNull();
+  });
+
+  // **La cadence de repli ne nomme aucune saison** : `rolling_quarter` produit des trimestres
+  // glissants, et un trimestre qui commence un 1er décembre n'est pas l'hiver. Le mécanisme est
+  // dormant (aucun écran ne l'écrit) mais la chaîne serveur existe et est testée.
+  it('se passe du nom de saison en cadence de repli', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-12-01',
+      cadence: 'rolling_quarter',
+      precedente: { debut: '2026-09-01', fin: '2026-11-30', cadence: 'rolling_quarter' },
+      points: points('2026-10-05'),
+    });
+    expect(r.etiquette).toBe('NOUVELLE PÉRIODE');
+    expect(r.titre).toBe('Une nouvelle période commence.');
+    expect(r.corps).toBe(
+      'Ces trois mois : 1 point répondu, 1 fois où tu as changé quelque chose.'
+    );
+  });
+
+  // Le sujet du récapitulatif vient de la cadence **du cycle précédent** : c'est cette
+  // période-là qu'on récapitule, et rien n'interdit que la cadence ait changé entre les deux.
+  it('lit la cadence de la période récapitulée, pas celle qui commence', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-09-01',
+      cadence: 'season',
+      precedente: { debut: '2026-06-01', fin: '2026-08-31', cadence: 'rolling_quarter' },
+      points: points('2026-07-06'),
+    });
+    expect(r.titre).toBe('L’automne commence.');
+    expect(r.corps).toBe(
+      'Ces trois mois : 1 point répondu, 1 fois où tu as changé quelque chose.'
+    );
+  });
+
+  // Les bornes viennent du cycle précédent, jamais d'un calcul : un point hors de ces bornes
+  // n'entre pas dans le récapitulatif, même s'il est dans la fenêtre lue par l'écran.
+  it('ne compte que les points de la période récapitulée', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-09-01',
+      cadence: 'season',
+      precedente: ete,
+      points: points('2026-05-25', '2026-07-06', '2026-09-07'),
+    });
+    expect(r.corps).toBe('Cet été : 1 point répondu, 1 fois où tu as changé quelque chose.');
+  });
+});
+
+describe('recapDeLaPeriode', () => {
+  // Les bornes arrivent telles que `plan_cycles` les porte — des dates nues — mais un
+  // horodatage complet ne doit pas décaler la comparaison.
+  it('accepte des bornes horodatées et n’en lit que le jour', () => {
+    const r = recapDeLaPeriode(
+      [{ periodStart: '2026-06-01', status: 'answered', reponse: 'oui' }],
+      '2026-06-01T00:00:00.000Z',
+      '2026-08-31T00:00:00.000Z'
+    );
+    expect(r).toEqual({ repondus: 1, changements: 1 });
+  });
+});
+
+describe('sortiesDeLouverture', () => {
+  // Le cas du canvas : une action engagée, reconduite par C2.2, et d'autres au plan.
+  it('propose de reprendre ou de choisir autrement quand une action est engagée', () => {
+    expect(sortiesDeLouverture({ actionEngagee: true, nombreDActions: 2 })).toEqual([
+      { cle: 'reprendre', label: 'Reprendre la même action', forme: 'primaire' },
+      { cle: 'choisir_une_autre', label: 'Choisir une autre', forme: 'secondaire' },
+    ]);
+  });
+
+  // Une seule action au plan : « Choisir une autre » ne mènerait nulle part.
+  it('n’offre pas de choisir une autre action quand il n’y en a qu’une', () => {
+    expect(sortiesDeLouverture({ actionEngagee: true, nombreDActions: 1 })).toEqual([
+      { cle: 'reprendre', label: 'Reprendre la même action', forme: 'primaire' },
+    ]);
+  });
+
+  // Rien d'engagé — personne ne s'était engagé la saison passée, ou la reconduction n'a pas
+  // trouvé son gabarit dans le nouveau plan : « Reprendre la même action » ne nomme rien.
+  it('invite à choisir quand rien n’est engagé', () => {
+    expect(sortiesDeLouverture({ actionEngagee: false, nombreDActions: 2 })).toEqual([
+      { cle: 'choisir', label: 'Choisir une action', forme: 'primaire' },
+    ]);
+  });
+
+  // **Un plan à zéro action, c'est tout cycliste et tout profil sédentaire depuis C2.5** :
+  // proposer d'en choisir une serait promettre une liste vide. Il reste de quoi refermer la
+  // carte, sans quoi elle tiendrait deux semaines sans sortie.
+  it('ne promet aucune action quand le plan n’en porte pas', () => {
+    expect(sortiesDeLouverture({ actionEngagee: false, nombreDActions: 0 })).toEqual([
+      { cle: 'compris', label: 'Compris', forme: 'lien' },
+    ]);
+  });
+});
+
+describe('basculeDeSaison', () => {
+  // La saison nommée est celle **du jour**, pas celle du cycle suivant : celui-ci peut ne pas
+  // exister encore (le cron nocturne ne passe qu'une fois par nuit), alors que le calendrier a
+  // bien tourné.
+  it('nomme la saison du jour', () => {
+    expect(basculeDeSaison('season', jour(2026, 12, 1))).toBe(
+      'L’hiver a commencé pendant que tu étais là.'
+    );
+    expect(basculeDeSaison('season', jour(2026, 3, 1))).toBe(
+      'Le printemps a commencé pendant que tu étais là.'
+    );
+  });
+
+  it('se passe du nom de saison en cadence de repli', () => {
+    expect(basculeDeSaison('rolling_quarter', jour(2026, 12, 1))).toBe(
+      'Une nouvelle période a commencé pendant que tu étais là.'
+    );
   });
 });
