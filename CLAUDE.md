@@ -286,6 +286,34 @@ l'appareil, dans la seule phrase qui doit correspondre mot pour mot à la notifi
 d'ouvrir. Elle lit les **caractères** de `period_start` et jamais un `Date` : `new Date('2026-09-01')`
 est minuit UTC, donc août à l'ouest de Greenwich.
 
+**Tout ce que la carte d'un point affiche nomme la période INTERROGÉE, bouton compris** (contre-lecture
+de la vague 5, 13/09/2026). C'est le corollaire de C2.3 qu'il est le plus facile de manquer, parce que
+les textes ne sont pas écrits au même endroit : deux d'entre eux nommaient encore la semaine **qui
+commence**, celle dont le point ne demande rien.
+- **Le troisième choix disait « Pas de trajet cette semaine »** sous une question qui ouvre par « La
+  semaine dernière ». C'est la copie du canvas, rédigée avant que la période interrogée ne recule — et
+  sa moitié mensuelle nommait déjà le mois **écoulé** (« Pas de voyage en septembre »), donc les deux
+  moitiés d'une même ligne ne désignaient pas la même chose. Écart consigné en `v1-14` §10.
+- **Le repli de `{jours}`** (un gabarit d'engagement sans jours figés) disait « Cette semaine » dans
+  `checkin_question` **et** dans `composerQuestionDuPoint`, à quatorze lignes de l'ouverture correcte
+  que la même fonction venait de calculer. Le correctif n'écrit pas la bonne chaîne : il fait **lire
+  la variable déjà calculée**, pour qu'il n'y ait plus deux littéraux à tenir d'accord. La branche est
+  défensive aujourd'hui (`commit_plan_action` exige des jours sur le poste domicile-travail, et les
+  gabarits mensuels ne portent pas `{jours}`), et c'est justement pour ça qu'elle valait d'être
+  corrigée : une phrase fausse que rien n'exerce attend la troisième forme d'intention qui la rendra
+  atteignable.
+Les deux gardes qui restent sont écrites sur l'**invariant** et non sur la phrase — le repli et le
+générique ouvrent sur la même période, et le bouton nomme la période de la question — donc elles
+survivent à une reformulation.
+
+**Le gabarit de question n'arrive jamais jusqu'à la carte, et c'est structurel** : `question_template`
+vit sur `action_templates`, pas sur le point, donc aucune requête de l'app ne peut le remplir. La
+branche à gabarit de `composerQuestionDuPoint` est inatteignable côté client et n'existe que pour
+rendre la composition **éprouvable** face à sa jumelle SQL. Corollaire : le seul chemin client qui
+compose est celui d'un point d'avant C2.1, qui retombe donc toujours sur la question générique — ce
+qui est exactement le libellé sous lequel ce point-là est parti. `committed_intention_days` n'est pour
+cette raison **pas** rapatrié par l'écran du plan : il ne remplirait que cette branche.
+
 **La question du point a une seule source côté client, `src/types/checkin.ts`** (C2.5, 11/09/2026),
 et c'est la moitié d'une paire avec `enqueue_checkin_reminders` — le rappel part sans le client, la
 carte repose la question avec lui. `checkin-card.tsx` l'écrivait lui-même, au présent et avec le
@@ -718,6 +746,16 @@ il s'est arrêté sur un `42710` — une contrainte ajoutée sans `drop constrai
 défaut ne se voit ni en CI (base neuve, un seul passage) ni au premier déploiement ; il se voit le jour
 d'une restauration, c'est-à-dire le plus mauvais. Même exigence que
 `20260910110000_grants_explicites.sql`, « rejouable tel quel après une restauration ».
+
+**Et une substitution vérifiée est à un coup par nature, donc elle doit reconnaître « déjà
+appliquée ».** Le contrôle `if occurrences <> 1 then raise` est juste au premier passage et faux au
+second : rejoué sur une base déjà corrigée, il trouve zéro occurrence de l'ancre et lève, c'est-à-dire
+qu'il échoue précisément le jour d'une restauration. Les deux substitutions du dépôt le portaient
+(C2.9 et la correction de la vague 5) ; toutes deux séparent maintenant les deux causes de « zéro
+occurrence » par la **présence du remplacement** — déjà substitué, on sort sans rien faire ; ni l'ancre
+ni le remplacement, on lève, parce que le corps a été réécrit autrement et qu'on ne devine pas. Ne
+jamais reconnaître un rejeu à la **seule absence de l'ancre** : ce test-là couvrirait aussi le corps
+réécrit, et la migration passerait en silence sans avoir rien fait.
 
 **Le distant porte les corps de fonction sans les commentaires du dépôt, et la substitution
 vérifiée lit le distant.** Relevé le 11/09/2026 en comparant les 47 fonctions une à une : la logique

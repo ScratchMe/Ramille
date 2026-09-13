@@ -43,8 +43,6 @@ export type EngagementCheckin = {
   committed_question: string | null;
   /** Le libellé de l'action engagée au moment de la génération (C2.1), figé comme `trip_label`. */
   committed_action_text: string | null;
-  /** Les jours d'intention figés. Lus seulement pour recomposer une question d'avant C2.1. */
-  committed_intention_days: number[] | null;
   /**
    * `pending` | `answered` — `expired` n'arrive pas jusqu'ici, l'écran ne lit pas les points clos.
    * Depuis C2.4 la carte reste affichée après la réponse, le temps de la période : c'est donc le

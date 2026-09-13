@@ -266,7 +266,10 @@ describe('composerQuestionDuPoint — les quatre genres', () => {
     );
   });
 
-  it('un gabarit sans jours figés ne laisse pas la marque à l’écran', () => {
+  // Le repli lit l'ouverture que la fonction vient de calculer, donc il ouvre sur la **même période**
+  // que la branche générique. Il disait « Cette semaine » — la semaine qui commence, dont le point ne
+  // demande rien — corrigé le 13/09/2026 des deux côtés de la paire.
+  it('un gabarit sans jours figés ne laisse pas la marque à l’écran, et ouvre sur la période interrogée', () => {
     expect(
       composerQuestionDuPoint(
         point({
@@ -274,7 +277,7 @@ describe('composerQuestionDuPoint — les quatre genres', () => {
           question_template: '{jours}, as-tu fait ce trajet à vélo ?',
         })
       )
-    ).toBe('Cette semaine, as-tu fait ce trajet à vélo ?');
+    ).toBe('La semaine dernière, as-tu fait ce trajet à vélo ?');
   });
 });
 
@@ -356,7 +359,7 @@ describe('repliqueDuPoint', () => {
   /**
    * **La seconde assertion de jugement de cette fonction** (C2.4), jumelle de la précédente.
    *
-   * « Pas de trajet cette semaine » n'est ni un échec ni un manquement à une habitude : c'est
+   * « Pas de trajet la semaine dernière » n'est ni un échec ni un manquement à une habitude : c'est
    * l'absence de l'occasion. Ni `checkinNon` (qui console) ni `maintienNon` (qui renforce une
    * habitude dont la personne vient de dire qu'elle n'a pas eu lieu) ne conviennent — d'où l'ordre
    * des branches, que cette assertion tient.
@@ -428,8 +431,28 @@ describe('genreDeReponse', () => {
 });
 
 describe('libelleSansObjet', () => {
-  it('la boucle hebdomadaire ne nomme pas de mois', () => {
-    expect(libelleSansObjet(point())).toBe('Pas de trajet cette semaine');
+  /**
+   * **La période nommée est celle que le point interroge, donc la semaine ÉCOULÉE** (C2.3). Le canvas
+   * écrit « Pas de trajet cette semaine », rédigé avant que la période interrogée ne recule ; sa
+   * moitié mensuelle nomme déjà le mois écoulé, donc les deux moitiés d'une même ligne ne désignaient
+   * pas la même chose. Cette assertion est celle qui tombe si quelqu'un « corrige » le libellé vers
+   * le canvas.
+   */
+  it('la boucle hebdomadaire nomme la semaine écoulée, comme la question', () => {
+    expect(libelleSansObjet(point())).toBe('Pas de trajet la semaine dernière');
+  });
+
+  // La garde qui vaut pour les deux cadences : le bouton ne peut pas désigner une autre période que
+  // la question posée juste au-dessus de lui.
+  it.each([
+    ['commute' as const, 'commute' as const, '2026-09-07'],
+    ['extras' as const, 'travel' as const, '2026-09-01'],
+    ['extras' as const, 'leisure' as const, '2026-08-01'],
+  ])('boucle %s / poste %s : le bouton et la question parlent de la même période', (loop, poste, debut) => {
+    const p = point({ loop_type: loop, poste, period_start: debut });
+    const periodeDeLaQuestion = loop === 'commute' ? 'la semaine dernière' : `en ${moisFrancais(debut)}`;
+    expect(libelleSansObjet(p).toLowerCase()).toContain(periodeDeLaQuestion);
+    expect(composerQuestionDuPoint(p).toLowerCase()).toContain(periodeDeLaQuestion);
   });
 
   // Le mois vient de `period_start`, comme la question juste au-dessus : lu sur l'horloge, il

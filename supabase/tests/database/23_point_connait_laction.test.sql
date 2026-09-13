@@ -28,7 +28,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(28);
 
 -- Les deux comptes sont créés **avant la première assertion**, et pas seulement avant la §4 : le
 -- `throws_ok` ci-dessous doit échouer sur la **contrainte de genre** et non sur une clé étrangère
@@ -125,11 +125,25 @@ select is(
   'un genre d''engagement sans gabarit retombe sur le générique, jamais sur une phrase à trous'
 );
 
+-- **Le repli ouvre sur la période INTERROGÉE.** Il disait « Cette semaine » — la semaine qui commence,
+-- celle dont le point ne demande rien (C2.3) — pendant que la branche générique de la même fonction
+-- disait « La semaine dernière. » Corrigé le 13/09/2026 en faisant lire au repli la valeur déjà
+-- calculée, plutôt qu'un second littéral à tenir d'accord (`20260913100000_corrections_vague_5.sql`).
 select is(
   public.checkin_question('commute', 'engagement', 'commute', 'voiture_thermique', '2026-09-07',
                           '{jours}, as-tu fait ce trajet à vélo ?', null),
-  'Cette semaine, as-tu fait ce trajet à vélo ?',
-  'un gabarit sans jours figés ne laisse pas la marque {jours} à l''écran'
+  'La semaine dernière, as-tu fait ce trajet à vélo ?',
+  'un gabarit sans jours figés ne laisse pas la marque {jours} à l''écran, et ouvre sur la bonne période'
+);
+
+-- La garde qui survit à une reformulation : les deux branches ouvrent sur la même période, quelle que
+-- soit la phrase. C'est l'invariant que le défaut violait.
+select is(
+  split_part(public.checkin_question('commute', 'engagement', 'commute', 'voiture_thermique',
+    '2026-09-07', '{jours}, as-tu fait ce trajet à vélo ?', null), ',', 1),
+  split_part(public.checkin_question('commute', 'generique', 'commute', 'voiture_thermique',
+    '2026-09-07', null, null), ',', 1),
+  'le repli et le générique ouvrent sur la même période — l''invariant, pas la phrase'
 );
 
 select is(

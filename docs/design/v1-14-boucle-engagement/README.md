@@ -96,6 +96,10 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
 8. **Le pied de la carte répondue écrit le mois en entier** (« Prochain point : lundi
    21 septembre. ») : abréger demanderait une quatrième liste de mots français tenue à la main,
    pour quatre caractères sur une ligne en petit tertiaire.
+9. **« Pas de trajet la semaine dernière »**, et non « cette semaine » (planche A1). Le point
+   interroge la semaine **écoulée** depuis C2.3 ; la question ouvre par « La semaine dernière » et la
+   moitié mensuelle de la même ligne du canvas nomme déjà le mois écoulé. Le bouton nommait la semaine
+   qui commence, dont le point ne demande rien.
 
 Une phrase reste à valider par le titulaire : « Le refaire prend cinq minutes » sur la carte de
 re-bilan (B1) promet une durée que le produit ne promettait pas ailleurs (« quelques minutes »

@@ -433,6 +433,13 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     La dérivation se nomme `variantePourLaPeriode(variantes, periodStart)` et non
     `repliqueDeCheckin(issue, periodStart)` : les tableaux vivent sous une clé de boucle ou de poste,
     donc c'est `repliqueDuPoint` qui choisit la clé et délègue le tirage.
+15. **La troisième réponse hebdomadaire dit « Pas de trajet la semaine dernière »**, pas « cette
+    semaine » (contre-lecture de la vague 5, 13/09/2026). §3.2 écrit « Pas de trajet cette semaine » —
+    rédigé avant que C2.3 ne fasse reculer la période interrogée d'une semaine. La question posée
+    juste au-dessus du bouton ouvre par « La semaine dernière », et la moitié mensuelle de la même
+    ligne du canvas nomme déjà le mois **écoulé** (« Pas de voyage en septembre ») : les deux moitiés
+    ne désignaient pas la même période. Un test épingle l'invariant — le bouton et la question parlent
+    de la même période — plutôt que la phrase, pour qu'il survive à une reformulation.
 
 ## 11. Tests
 
