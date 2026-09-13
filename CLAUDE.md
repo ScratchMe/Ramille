@@ -72,6 +72,16 @@ bout-en-bout (écrans, flux de connexion) :
   `suivi.test.ts` est celui qui l'a rendu visible : il échoue sur l'ancienne implémentation en
   Europe/Paris et passe des deux façons en UTC. Forcer le fuseau depuis le corps d'un test ne marche
   pas — Node met son fuseau en cache à la première opération de date, et Jest en a déjà fait une.
+  **Jest résout `ts` avant `js` parce que le dépôt le lui dit, et Metro le faisait déjà.**
+  `package.json` porte un `moduleFileExtensions` explicite : le défaut de Jest est
+  `['js','mjs','cjs','jsx','ts','tsx',…]`, soit l'inverse des `sourceExts` d'Expo, qui commencent par
+  `ts`/`tsx`. Sans ce réglage, un `.js` égaré à côté de son `.ts` — un `npx tsc` lancé sans
+  `--outDir` suffit, et c'est arrivé le 13/09/2026 sur sept modules — devient silencieusement le
+  module que la suite éprouve, pendant que l'app continue de charger le `.ts`. Deux résolveurs qui
+  ne disent pas la même chose sont exactement la forme de défaut que ce dépôt traque ailleurs, et
+  la seule à se lire « 590 tests verts ». La raison vit ici et non à côté du réglage parce que
+  `package.json` est du JSON : une clé de commentaire y fait émettre à Jest un `Validation Warning`
+  à chaque passage.
   Deux modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
   (et importé par `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la
   suite qui en dépend, par un lien que rien n'affiche), et `bilan-draft.ts`, dont le test double

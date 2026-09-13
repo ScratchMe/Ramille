@@ -60,6 +60,16 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "mjs",
+      "cjs",
+      "jsx",
+      "json",
+      "node"
+    ],
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/dist/"
