@@ -579,6 +579,26 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     goutte elle-même par-dessus le vert (#DDE9E3). Le grossir ne le sauverait pas : c'est le
     contraste qui manque, et l'augmenter percerait un trou dans une goutte de six unités.
 
+36. **L'écran de reprise s'atteint par deux chemins, pas un** (C3.9, 13/09/2026). Le canvas montre
+    l'écran ; il ne dit pas quand il s'affiche. Il s'en présentait déjà un dans le dépôt, livré par
+    C1.3 pour un brouillon de plus de trois semaines (audit A2-6), et le chantier en décrit un autre
+    — la racine qui trouve un brouillon et saute l'onboarding. Les deux coexistent, parce qu'ils ne
+    couvrent pas les mêmes arrivées : la racine ne voit pas quelqu'un qui relance l'app sur `/bilan`,
+    et l'ancienneté ne voit pas le cas fréquent, celui d'un questionnaire repris le lendemain.
+    **Le second bouton, lui, est conditionnel** : « Repartir de mon dernier bilan » ne se rend que
+    s'il y a un bilan vers quoi repartir. Confondre « l'écran s'affiche » et « il y a un repli »
+    réservait la reprise à ceux qui avaient déjà soumis un bilan, c'est-à-dire à personne au premier
+    questionnaire interrompu.
+37. **Le mot de Ramille à l'entrée d'une section ne passe pas par `RamilleDit`** (C3.9). Son visage
+    est déjà dans l'en-tête du questionnaire, trois centimètres plus haut : un second `Mascot`
+    ferait deux Ramille sur le même écran. La règle que l'exception ne touche pas est la vraie —
+    la phrase vit dans `RAMILLE` et n'est jamais écrite dans un écran.
+38. **La proposition de compte ne promet plus « un historique de points mensuels »** (C3.9). Le
+    texte vient du handoff, écrit avant que la boucle hebdomadaire n'existe : quelqu'un dont le
+    poste dominant est le trajet domicile-travail reçoit un point par **semaine**. La phrase nomme
+    maintenant ce qui suit le compte — les bilans, les réponses, le plan — sans promettre de
+    cadence. Écart au handoff consigné, comme le chantier le demande.
+
 ## 11. Tests
 
 - Jest : `checkin.test.ts` (table de cas partagée avec le SQL : quatre `question_kind`, deux

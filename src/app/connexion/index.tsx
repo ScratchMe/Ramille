@@ -151,9 +151,15 @@ export default function ConnexionProposition() {
             <ThemedText type="title" weight={600} style={styles.title}>
               Garde ce résultat et suis ta progression
             </ThemedText>
+            {/* **La promesse était fausse par vieillissement** (C3.9, constat A12-15) : « ton
+                historique de points mensuels » est un texte du handoff, écrit avant que la boucle
+                hebdomadaire n'existe. Quelqu'un dont le poste dominant est le trajet
+                domicile-travail reçoit un point par **semaine**, et le produit lui annonçait des
+                points mensuels. La phrase nomme maintenant ce qui suit vraiment le compte — les
+                trois choses que la personne perdrait — sans promettre de cadence. */}
             <ThemedText themeColor="textSecondary" style={styles.body}>
-              Ton bilan est calculé. Avec un compte, il te suit d&apos;un appareil à l&apos;autre et
-              tu retrouves ton historique de points mensuels.
+              Ton bilan est calculé. Avec un compte, il te suit d&apos;un appareil à l&apos;autre,
+              saison après saison : tes bilans, tes réponses, ton plan.
             </ThemedText>
           </View>
 
@@ -214,8 +220,20 @@ export default function ConnexionProposition() {
                   type="small"
                   themeColor="textTertiary"
                 />
-                <ThemedText type="code" themeColor="textTertiary" style={styles.skipHint}>
-                  Ton résultat reste accessible sur cet appareil.
+                {/* **Ce qu'on perd sans compte n'était dit que dans les pages légales** (C3.9,
+                    constat A1-11) : « reste accessible sur cet appareil » est vrai et ne dit pas
+                    ce qu'il faut entendre — que changer de téléphone perd tout, et que la purge
+                    des sessions anonymes ferme le compte après trois mois d'inactivité
+                    (`purge_stale_anonymous_accounts`, fenêtre de 90 jours). Les deux faits sont
+                    écrits là où la personne renonce, pas dans une page qu'elle n'ouvrira pas. */}
+                {/* `small` et non `code` : la ligne était en monospace, ce qui passait sur une
+                    phrase courte et se lit comme une sortie technique sur trois lignes. Dans ce
+                    dépôt `code` est réservé au texte **destiné à être recopié** — une cause
+                    d'erreur, un identifiant — et une phrase qui dit ce qu'on perd n'en est pas.
+                    Vu au rendu, pas à la lecture. */}
+                <ThemedText type="small" themeColor="textTertiary" style={styles.skipHint}>
+                  Sur cet appareil seulement : si tu changes de téléphone ou si tu ne reviens pas
+                  pendant trois mois, ton bilan ne te suivra pas.
                 </ThemedText>
               </>
             )}

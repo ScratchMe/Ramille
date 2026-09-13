@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,11 +13,13 @@ import { LeisureDetailStep } from '@/components/bilan/steps/leisure-detail';
 import { LeisureFrequencyStep } from '@/components/bilan/steps/leisure-frequency';
 import { LongTripsStep } from '@/components/bilan/steps/long-trips';
 import { CalculEnCours } from '@/components/bilan/calcul-en-cours';
+import { ProgressHeader } from '@/components/bilan/progress-header';
 import { StepShell } from '@/components/bilan/step-shell';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { RAMILLE } from '@/constants/mascotte';
 import { track } from '@/lib/analytics';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
 import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
@@ -26,6 +28,7 @@ import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission'
 import {
   BILAN_SECTION_LABEL,
   EMPTY_BILAN_ANSWERS,
+  avancementDeLaReprise,
   brouillonEstAncien,
   distanceDomicileTravailKm,
   isStepComplete,
@@ -46,6 +49,11 @@ import {
 // interruption est couverte par un brouillon local (AsyncStorage), pas par un état
 // serveur intermédiaire.
 export default function BilanQuestionnaire() {
+  // Posé par la racine quand elle a trouvé un brouillon : elle a sauté l'onboarding, donc c'est
+  // ici qu'il faut dire où l'on en était. Le paramètre ne fait rien tout seul — il faut aussi
+  // qu'un brouillon soit réellement relu, sinon un lien recopié afficherait un écran de reprise
+  // sur un questionnaire vierge.
+  const { reprise } = useLocalSearchParams<{ reprise?: string }>();
   const [answers, setAnswers] = useState<BilanAnswers>(EMPTY_BILAN_ANSWERS);
   const [step, setStep] = useState<BilanStepId>('commute_has_trip');
   const [draftLoaded, setDraftLoaded] = useState(false);
@@ -53,9 +61,15 @@ export default function BilanQuestionnaire() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
-  // Réponses du dernier bilan, quand un brouillon ancien les rend offrables en alternative
-  // (écran de reprise ci-dessous). `null` = rien à demander, on entre dans le questionnaire.
+  // Réponses du dernier bilan, quand elles sont offrables en alternative sur l'écran de reprise.
+  // `null` = il n'y a rien vers quoi repartir, et le second bouton ne se rend pas — jamais que
+  // l'écran ne s'affiche pas : depuis C3.9 ce sont **deux faits distincts**, et les confondre
+  // réservait la reprise à ceux qui avaient déjà soumis un bilan.
   const [repriseDepuis, setRepriseDepuis] = useState<BilanAnswers | null>(null);
+  // L'écran de reprise s'affiche-t-il ? Deux chemins y mènent, et ils ne se recouvrent pas :
+  // la racine qui a trouvé un brouillon (`?reprise=1`, C3.9) et un brouillon de plus de trois
+  // semaines (C1.3, audit A2-6), qui peut arriver par n'importe quelle autre porte.
+  const [montrerLaReprise, setMontrerLaReprise] = useState(false);
   // Vrai dès que la lecture du dernier bilan a tranché : on sait si l'écran de reprise
   // s'affiche, donc quelle étape la personne va réellement voir. C'est ce que l'entonnoir
   // attend, cf. son commentaire plus bas.
@@ -111,6 +125,11 @@ export default function BilanQuestionnaire() {
         setStep(draft.step);
         brouillonExistant.current = true;
         savedAtCharge.current = draft.savedAt;
+        // Premier des deux chemins : la racine a trouvé ce brouillon et nous a envoyés ici
+        // directement. L'écran s'affiche **avant** le second aller-retour serveur, qui ne fera
+        // qu'ajouter le bouton de repli s'il y a un bilan précédent — attendre la réponse
+        // réseau pour afficher une phrase qu'on peut déjà écrire ferait clignoter l'entrée.
+        if (reprise === '1') setMontrerLaReprise(true);
       }
       setDraftLoaded(true);
 
@@ -135,6 +154,15 @@ export default function BilanQuestionnaire() {
         } else if (memesReponses(draft.answers, precedent)) {
           setPrefilled(true);
         } else if (brouillonEstAncien(draft, new Date()) && !reponseModifiee.current) {
+          // Second chemin, et il survit à C3.9 : un brouillon de plus de trois semaines ne se
+          // rouvre pas en silence, **par quelque porte qu'on arrive**. La racine n'est pas la
+          // seule — un lien direct, un retour en arrière, une app relancée sur `/bilan`.
+          setRepriseDepuis(precedent);
+          setMontrerLaReprise(true);
+        } else if (reprise === '1') {
+          // Arrivé par la racine avec un brouillon récent : l'écran est déjà affiché, et le
+          // bilan précédent lui donne son second bouton. Le paramètre est lu et non l'état —
+          // celui-ci serait périmé dans cette fermeture, alors que le paramètre ne bouge pas.
           setRepriseDepuis(precedent);
         }
       }
@@ -148,7 +176,7 @@ export default function BilanQuestionnaire() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reprise]);
 
   useEffect(() => {
     if (!draftLoaded) return;
@@ -182,11 +210,11 @@ export default function BilanQuestionnaire() {
   // entre-temps : la ref ne survit pas à un redémarrage, la ligne si.
   const bilanEnCours = useRef<string | null>(null);
   useEffect(() => {
-    if (!draftLoaded || !repriseResolue || repriseDepuis !== null) return;
+    if (!draftLoaded || !repriseResolue || montrerLaReprise) return;
     if (etapesVues.current.has(step)) return;
     etapesVues.current.add(step);
     track('bilan_step_view', { step });
-  }, [step, draftLoaded, repriseResolue, repriseDepuis]);
+  }, [step, draftLoaded, repriseResolue, montrerLaReprise]);
 
   // Un seul point d'entrée pour toute modification de réponse : le patch dit ce que la
   // personne vient de choisir, `normaliserReponses` efface ce que ce choix rend impossible.
@@ -197,7 +225,7 @@ export default function BilanQuestionnaire() {
     setAnswers((prev) => normaliserReponses({ ...prev, ...patch }));
   };
 
-  const continuerLeBrouillon = () => setRepriseDepuis(null);
+  const continuerLeBrouillon = () => setMontrerLaReprise(false);
 
   const repartirDuDernierBilan = () => {
     if (repriseDepuis === null) return;
@@ -207,7 +235,7 @@ export default function BilanQuestionnaire() {
     setAnswers(repriseDepuis);
     setStep('commute_has_trip');
     setPrefilled(true);
-    setRepriseDepuis(null);
+    setMontrerLaReprise(false);
   };
 
   const visible = visibleSteps(answers);
@@ -404,43 +432,66 @@ export default function BilanQuestionnaire() {
   // bouton grisé fait paraître l'app bloquée.
   if (submitting) return <CalculEnCours />;
 
-  // Reprise de bilan : un brouillon de plusieurs semaines ne se rouvre plus en silence. Du
-  // handoff §5.2, cet écran tient ses deux interdits — aucune mention du délai écoulé, pas de
-  // « Recommencer » : les deux chemins mènent à un questionnaire rempli, l'un par le
-  // brouillon, l'autre par le dernier bilan.
+  // **L'écran de reprise du handoff §5.2**, spécifié depuis l'origine et livré par C3.9.
   //
-  // Le reste est un écart assumé, repris du À faire de C1.3 et non du handoff : la copie est
-  // celle du chantier (« Tu as un bilan commencé. ») et le second chemin est « Repartir de mon
-  // dernier bilan », que le handoff ne prévoit pas. Ne sont pas reprises la barre de
-  // progression à l'étape exacte avec son décompte, ni le lien « Revoir les étapes
-  // précédentes » — les deux boutons mènent déjà à un questionnaire où « Retour » marche.
-  if (repriseDepuis !== null) {
+  // Deux chemins y mènent et ils ne se recouvrent pas : la racine qui a trouvé un brouillon — le
+  // cas fréquent, et celui qui faisait rejouer les quatre écrans d'onboarding avant d'atterrir
+  // sur une étape 5 sans explication — et un brouillon de plus de trois semaines, quelle que
+  // soit la porte (C1.3, audit A2-6).
+  //
+  // Trois choses que cet écran tient, et qu'il ne faut pas défaire :
+  //
+  //   - **il ne dit jamais le délai écoulé.** Interdit du handoff, et pour une raison qui se
+  //     vérifie à la lecture : « tu as commencé il y a trois semaines » est un reproche déguisé
+  //     en information, et la personne n'a rien à en faire — les deux chemins mènent au même
+  //     endroit quel que soit le délai ;
+  //   - **il n'offre pas de « Recommencer ».** Les deux boutons mènent à un questionnaire
+  //     rempli, l'un par le brouillon, l'autre par le dernier bilan. Repartir de zéro se fait en
+  //     répondant, pas en effaçant ;
+  //   - **le second bouton n'apparaît que s'il y a un bilan vers quoi repartir.** C'est ce que
+  //     `repriseDepuis` porte, et c'est un fait distinct de « l'écran s'affiche » — les
+  //     confondre réservait la reprise à ceux qui avaient déjà soumis un bilan, c'est-à-dire à
+  //     personne au premier questionnaire interrompu.
+  //
+  // L'en-tête est celui du questionnaire, à l'étape et à la section où l'on s'était arrêté :
+  // c'est lui qui rend la phrase vraie plutôt que rassurante. Le décompte se dérive
+  // (`avancementDeLaReprise`), il ne s'écrit pas — le total dépend des réponses déjà données.
+  if (montrerLaReprise) {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.repriseSafeArea}>
+          <ProgressHeader section={section} step={stepNumber} total={total} />
           <View style={styles.repriseBloc}>
-            <ThemedText type="screenTitle">Tu as un bilan commencé.</ThemedText>
+            <ThemedText type="screenTitle">On reprend là où tu en étais.</ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Tu peux le reprendre où tu en étais, ou repartir de tes dernières réponses
-              enregistrées.
+              {avancementDeLaReprise(step, answers)}
             </ThemedText>
             <Button title="Continuer mon bilan" onPress={continuerLeBrouillon} />
-            <Button
-              title="Repartir de mon dernier bilan"
-              variant="secondary"
-              onPress={repartirDuDernierBilan}
-            />
+            {repriseDepuis !== null && (
+              <Button
+                title="Repartir de mon dernier bilan"
+                variant="secondary"
+                onPress={repartirDuDernierBilan}
+              />
+            )}
           </View>
         </SafeAreaView>
       </ThemedView>
     );
   }
 
+  // Quatre entrées de section sur les neuf étapes — la table décide, pas l'écran (C3.9).
+  const motDeRamille =
+    step in RAMILLE.entreeDeSection
+      ? RAMILLE.entreeDeSection[step as keyof typeof RAMILLE.entreeDeSection]
+      : null;
+
   return (
     <StepShell
       section={section}
       step={stepNumber}
       total={total}
+      motDeRamille={motDeRamille}
       // Rendu à chaque passage, jamais mémoïsé : `router.canGoBack()` n'est pas réactif. Sans
       // `onBack`, `StepShell` n'affiche pas de bouton — c'est ce qu'il faut au premier pas du
       // premier lancement, où la pile est vide (cf. son commentaire d'en-tête).
@@ -468,6 +519,10 @@ export default function BilanQuestionnaire() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  repriseSafeArea: { flex: 1, justifyContent: 'center', padding: Spacing.four },
-  repriseBloc: { gap: Spacing.three },
+  // L'en-tête reste **en haut**, là où il est dans le questionnaire : centrer tout le bloc le
+  // faisait flotter au milieu de l'écran, et une barre de progression au milieu d'une page ne se
+  // lit plus comme une position dans un parcours. Le texte, lui, se centre dans ce qui reste.
+  // Vu au rendu, pas à la lecture.
+  repriseSafeArea: { flex: 1, padding: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
+  repriseBloc: { flex: 1, justifyContent: 'center', gap: Spacing.three },
 });

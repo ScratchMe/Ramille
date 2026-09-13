@@ -1,9 +1,11 @@
+import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { ReassuranceIllustration } from '@/components/illustrations/reassurance-illustration';
 import { OnboardingDots } from '@/components/onboarding-dots';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -34,6 +36,20 @@ export function EtapeReassurance({ onSuivant }: { onSuivant: () => void }) {
               Tes réponses restent privées. Aucun classement, aucune comparaison avec
               d&apos;autres utilisateurs.
             </ThemedText>
+            {/* **Rien ne menait aux pages légales avant la première écriture serveur** (C3.9,
+                constat A1-9), alors que la session anonyme est ouverte dès le lancement : la
+                phrase ci-dessus affirmait quelque chose que personne ne pouvait aller vérifier.
+                `TextLink` et non `Link` : c'est une navigation interne vers une page `noindex`,
+                donc la règle du lien indexable ne s'applique pas — celle qui s'applique est
+                l'autre, la cible de 44 px et le rôle annoncé. */}
+            <TextLink
+              label="Ce qu’on enregistre, et pourquoi"
+              onPress={() => router.push('/confidentialite')}
+              role="link"
+              type="small"
+              weight={600}
+              themeColor="textSecondary"
+            />
           </View>
         </View>
         <View style={styles.footer}>

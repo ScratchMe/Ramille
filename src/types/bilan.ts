@@ -171,6 +171,61 @@ export function previousStep(current: BilanStepId, answers: BilanAnswers): Bilan
 }
 
 /**
+ * Les nombres de 1 à 9, en lettres — l'écran de reprise en dit deux dans la même phrase.
+ *
+ * Écrits et non calculés : le questionnaire a neuf étapes et n'en aura jamais des dizaines, donc
+ * une table de neuf entrées est plus courte et plus sûre qu'une conversion. Au-delà, la phrase
+ * n'aurait de toute façon plus de sens.
+ */
+const ECRANS_EN_LETTRES = [
+  'un',
+  'deux',
+  'trois',
+  'quatre',
+  'cinq',
+  'six',
+  'sept',
+  'huit',
+  'neuf',
+] as const;
+
+function enLettres(nombre: number): string {
+  return ECRANS_EN_LETTRES[nombre - 1] ?? String(nombre);
+}
+
+/**
+ * Où en est un brouillon, en toutes lettres — « Quatre écrans déjà remplis. Il en reste cinq, en
+ * comptant celui-ci. » (C3.9, canvas v1-14 planche G).
+ *
+ * **Le total se dérive, il ne s'écrit pas** : le questionnaire saute des étapes selon les réponses
+ * (pas de trajet régulier, loisirs « rarement »), donc « sur 9 » serait faux pour une bonne part
+ * des brouillons. C'est `visibleSteps` qui décide, la même fonction que l'en-tête « Étape N sur M »
+ * et que la navigation — trois lectures d'une seule vérité.
+ *
+ * Deux cas que la phrase du canvas ne couvre pas et qu'il faut tenir :
+ *
+ *   - **zéro écran rempli** : la première moitié disparaît plutôt que d'annoncer « Aucun écran
+ *     déjà rempli », qui est une façon de dire à quelqu'un qu'il n'a rien fait. Même règle que le
+ *     récapitulatif de la carte d'ouverture (C2.8), qui ne dit jamais zéro ;
+ *   - **une étape devenue invisible** : un brouillon peut porter une étape que ses propres
+ *     réponses excluent désormais (le questionnaire l'en déplace, mais la phrase se calcule
+ *     avant). On ne compte alors aucun écran rempli plutôt que d'en inventer.
+ */
+export function avancementDeLaReprise(step: BilanStepId, answers: BilanAnswers): string {
+  const visibles = visibleSteps(answers);
+  const position = visibles.indexOf(step);
+  const remplis = position < 0 ? 0 : position;
+  const restants = visibles.length - remplis;
+
+  const reste = `Il en reste ${enLettres(restants)}, en comptant celui-ci.`;
+  if (remplis === 0) return reste;
+
+  const pluriel = remplis > 1 ? 's' : '';
+  const debut = `${enLettres(remplis)} écran${pluriel} déjà rempli${pluriel}.`;
+  return `${debut.charAt(0).toUpperCase()}${debut.slice(1)} ${reste}`;
+}
+
+/**
  * Remet à zéro les réponses qu'un changement vient de rendre impossibles — appliquée après
  * chaque `update` du questionnaire, et à la relecture d'un brouillon.
  *

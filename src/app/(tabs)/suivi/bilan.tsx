@@ -804,6 +804,26 @@ export default function BilanResultat() {
               themeColor="textTertiary"
               style={styles.editLink}
             />
+            {/* **Le seul endroit où un chiffre se conteste** (C3.9, constat A6-9). La restitution
+                affiche une empreinte calculée à partir de moyennes nationales et de réponses
+                approchées : quelqu'un qui connaît son trajet mieux que nous doit pouvoir le dire
+                là où il lit le résultat, pas dans un écran de retour qu'il faudrait aller
+                chercher. La catégorie est **préremplie et modifiable** — c'est la personne qui
+                sait si c'est un chiffre, un mode manquant ou autre chose. Le contexte part avec :
+                sans l'identifiant du bilan, un retour sur un chiffre n'est pas exploitable. */}
+            <TextLink
+              label="Un chiffre me semble faux"
+              onPress={() =>
+                router.push({
+                  pathname: '/feedback',
+                  params: { kind: 'chiffre', context: `bilan:${results.assessment_id}` },
+                })
+              }
+              role="link"
+              type="small"
+              themeColor="textTertiary"
+              style={styles.editLink}
+            />
             {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
                 plan à un onglet de là — donc rien de collé en bas non plus. */}
             {mode !== 'nouveau' && (

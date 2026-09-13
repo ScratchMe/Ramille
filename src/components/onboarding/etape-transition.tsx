@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { OnboardingDots } from '@/components/onboarding-dots';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -53,6 +54,16 @@ export function EtapeTransition() {
               </ThemedText>
             ))}
           </View>
+          {/* **Ce qui vient après le bilan n'était annoncé nulle part** (C3.9, constat A1-10) :
+              l'onboarding présentait un questionnaire et s'arrêtait là, alors que le produit est
+              une boucle qui dure des saisons. La phrase tient en une ligne et **ne fait pas un
+              cinquième écran** — l'ajout d'une étape coûterait plus en abandon qu'il ne rapporte
+              en clarté. Elle ne promet pas de rythme chiffré : « de temps en temps » est vrai
+              pour les deux boucles, hebdomadaire comme mensuelle. */}
+          <ThemedText type="small" themeColor="textTertiary" style={styles.suite}>
+            Ensuite : une action à ton rythme, et un point de temps en temps pour voir ce qui a
+            changé.
+          </ThemedText>
         </View>
         <View style={styles.footer}>
           <Button
@@ -76,6 +87,19 @@ export function EtapeTransition() {
             }}
           />
           <OnboardingDots total={4} activeIndex={3} />
+          {/* Le second accès aux pages légales, au dernier écran avant la première écriture
+              serveur : c'est le moment où « tes réponses sont conservées » cesse d'être une
+              promesse et devient une ligne en base. */}
+          <TextLink
+            label="Ce qu’on enregistre, et pourquoi"
+            onPress={() => router.push('/confidentialite')}
+            role="link"
+            type="small"
+            weight={600}
+            themeColor="textTertiary"
+            style={styles.legal}
+            containerStyle={styles.legalCible}
+          />
         </View>
       </SafeAreaView>
     </ThemedView>
@@ -91,5 +115,8 @@ const styles = StyleSheet.create({
   durationBlock: { borderRadius: 20, padding: Spacing.four, gap: 2 },
   duration: { fontSize: 24, lineHeight: 30 },
   sections: { gap: 10 },
+  suite: { lineHeight: 20 },
+  legal: { textAlign: 'center' },
+  legalCible: { marginTop: -Spacing.four },
   footer: { gap: Spacing.five },
 });
