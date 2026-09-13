@@ -108,3 +108,32 @@ export function nextPalier(
 export function showsTarget2050(totalKg: number, franceAverageKg: number): boolean {
   return totalKg <= franceAverageKg;
 }
+
+/**
+ * Le palier que la personne visait au bilan précédent est-il derrière elle ? (C2.7, point 2.)
+ *
+ * La restitution d'un re-bilan pouvait dire l'écart sans jamais dire ce que cet écart avait
+ * franchi. C'est la seule phrase du produit qui ferme la boucle du plan : le palier a été annoncé
+ * une saison plus tôt, et il est passé.
+ *
+ * **`capAlorsKg` est le cap qui était en vigueur alors, et il n'est pas toujours connaissable.**
+ * `generate_plan_cycle_for_user` **réécrit** le cycle courant à chaque re-bilan : quand les deux
+ * bilans tombent dans la même période, la ligne ne porte plus le cap qui avait été affiché, et
+ * l'ancien n'est nulle part. Utiliser le cap d'aujourd'hui serait une sur-affirmation — la baseline
+ * du poste dominant a baissé, donc le cap aussi, donc le palier recalculé serait plus près du total
+ * précédent et la phrase s'afficherait plus souvent qu'elle ne le devrait. On passe `null` dans ce
+ * cas, et la phrase ne s'affiche pas : elle n'est dite que quand elle est prouvable.
+ *
+ * **Jamais un décompte de paliers restants**, ici comme ailleurs : on dit qu'un seuil est passé, pas
+ * combien il en reste.
+ */
+export function palierEstDerriere(params: {
+  precedentKg: number;
+  courantKg: number;
+  capAlorsKg: number | null;
+  target2050Kg: number;
+}): boolean {
+  const vise = nextPalier(params.precedentKg, params.capAlorsKg, params.target2050Kg);
+  if (!vise) return false;
+  return params.courantKg <= vise.targetKg;
+}

@@ -119,6 +119,19 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
     endroits — et « Cadence : … » le disait dans un vocabulaire de réglage. La carte du cap se rend
     donc même quand il n'y a pas de cap à dire.
 
+14. **« 2,1 t → 1,7 t » et « 0,3 t de moins » s'écrivent sans « CO₂e »** (C2.7), ce que le canvas
+    montre et que le formateur du dépôt n'offrait pas : le nom du gaz appartient au chiffre qui se
+    tient seul. D'où `formatTonnesNu`, qui partage la bascule kilos/tonnes de `formatTonnes`.
+15. **« Je vois la différence. » ne se dit que sur une baisse réelle** (C2.7). Le canvas la pose sans
+    condition ; au-dessus d'une hausse, ou d'un écart qui tient dans l'imprécision des facteurs, elle
+    serait fausse — et c'est la personne concernée qui le verrait la première.
+16. **« Le palier que tu visais est derrière toi. » n'est dit que quand il est prouvable** (C2.7) :
+    le cap visé à l'époque est perdu quand les deux bilans tombent dans la même période, le cycle
+    étant réécrit à chaque soumission.
+17. **« Toi » devient « Toi, aujourd'hui » seulement quand la barre d'avant est là** (C2.7), et
+    l'échelle des barres inclut le bilan précédent — sans quoi sa barre dépasse la carte exactement
+    dans le cas d'un re-bilan réussi.
+
 La phrase de durée est tranchée : « Le refaire prend **quelques minutes** », et non « cinq minutes »
 comme l'écrit B1. Le produit promet « environ 5 minutes » pour le **premier** bilan (transition de
 l'onboarding, états vides du plan et du suivi) ; un re-bilan est plus rapide, ses réponses étant

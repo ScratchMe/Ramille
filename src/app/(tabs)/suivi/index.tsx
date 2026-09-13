@@ -8,6 +8,8 @@ import { Button } from '@/components/button';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
 import { Mascot } from '@/components/mascot';
 import { MessageInline } from '@/components/message-inline';
+import { RamilleDit } from '@/components/ramille-dit';
+import { EcartParPoste } from '@/components/suivi/ecart-par-poste';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -15,20 +17,31 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackFocus } from '@/hooks/use-track-focus';
-import { loadAnsweredCheckins, loadAssessmentHistory } from '@/lib/bilan-history';
-import { POSTE_LABEL } from '@/types/resultat';
 import {
+  loadAnsweredCheckins,
+  loadAssessmentHistory,
+  loadDecisionsEngagees,
+} from '@/lib/bilan-history';
+import { POSTE_LABEL } from '@/types/resultat';
+import { formatIntention } from '@/types/plan';
+import {
+  ancienneteEnMots,
   daysSince,
+  doitProposerUnRebilan,
+  ecartParPoste,
+  estUneBaisse,
   formatDate,
   libelleDeReponse,
   libellePeriodeAffiche,
-  REBILAN_SUGGESTION_DAYS,
-  ancienneteEnMots,
+  pointsParSaison,
   variationNote,
   type AssessmentSnapshot,
   type CheckinRecord,
+  type DecisionDeSaison,
 } from '@/types/suivi';
 import { formatTonnes } from '@/lib/format';
+import { FRANCE_AVERAGE_TRANSPORT_T } from '@/constants/carbon-reference';
+import { showsTarget2050 } from '@/types/palier';
 import { RAMILLE } from '@/constants/mascotte';
 
 // Écran « Mon suivi » — la brique qui manquait pour que le produit accompagne réellement
@@ -60,6 +73,16 @@ const LOOP_LABEL: Record<CheckinRecord['loopType'], string> = {
   extras: 'Loisirs et voyages',
 };
 
+/**
+ * Combien de points un groupe de saison montre avant « Voir tout » (C2.7, point 5).
+ *
+ * Cinq et non huit, et surtout **pas en silence** : la borne d'avant coupait la liste sous un
+ * compteur global qui annonçait plus de points qu'elle n'en affichait, donc l'en-tête et la liste ne
+ * comptaient pas la même chose. Chaque groupe porte désormais son propre total, et le lien dit qu'il
+ * y a plus à voir.
+ */
+const POINTS_VISIBLES = 5;
+
 type LoadState =
   | { status: 'loading' }
   | { status: 'empty' }
@@ -74,6 +97,15 @@ type LoadState =
       status: 'ok';
       history: AssessmentSnapshot[];
       checkins: CheckinRecord[];
+      /**
+       * Ce que la personne a décidé, saison après saison (C2.7, point 4).
+       *
+       * **`null` veut dire « pas lu », jamais « rien décidé ».** Un tableau vide sur échec de lecture
+       * ferait disparaître la carte, donc affirmerait que la personne n'a jamais rien engagé — la
+       * même faute que le tableau vide de A5-2, sur une carte de moins. La lecture est secondaire :
+       * son échec ne remplace pas l'écran, il allume la ligne de relecture.
+       */
+      decisions: DecisionDeSaison[] | null;
     };
 
 export default function Suivi() {
@@ -104,6 +136,14 @@ export default function Suivi() {
   // tourner chargement et rendu l'un dans l'autre sans fin.
   const rafraichir = useCallback(() => setCle((precedente) => precedente + 1), []);
 
+  // Les saisons dépliées, par libellé — local à l'écran, comme `pistesDepliees` le sera sur le plan.
+  // Rien à persister : c'est un geste de lecture, pas une préférence.
+  const [groupesDeplies, setGroupesDeplies] = useState<string[]>([]);
+  const basculerLeGroupe = (libelle: string) =>
+    setGroupesDeplies((deplies) =>
+      deplies.includes(libelle) ? deplies.filter((l) => l !== libelle) : [...deplies, libelle]
+    );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -122,8 +162,13 @@ export default function Suivi() {
     (async () => {
       let bilans;
       let points;
+      let decisions;
       try {
-        [bilans, points] = await Promise.all([loadAssessmentHistory(), loadAnsweredCheckins()]);
+        [bilans, points, decisions] = await Promise.all([
+          loadAssessmentHistory(),
+          loadAnsweredCheckins(),
+          loadDecisionsEngagees(),
+        ]);
       } catch (erreur) {
         console.error('Le suivi n’a pas pu être relu :', erreur);
         echecDeLecture();
@@ -152,9 +197,16 @@ export default function Suivi() {
       setState(
         bilans.data.length === 0
           ? { status: 'empty' }
-          : { status: 'ok', history: bilans.data, checkins: points.data }
+          : {
+              status: 'ok',
+              history: bilans.data,
+              checkins: points.data,
+              // Lecture secondaire : son échec laisse `null` — donc pas de carte plutôt qu'une carte
+              // vide — et se dit dans la ligne de relecture, comme sur le plan.
+              decisions: decisions.ok ? decisions.data : null,
+            }
       );
-      setRelectureEnEchec(false);
+      setRelectureEnEchec(!decisions.ok);
     })();
 
     return () => {
@@ -259,7 +311,7 @@ export default function Suivi() {
     );
   }
 
-  const { history, checkins } = state;
+  const { history, checkins, decisions } = state;
   const latest = history[history.length - 1];
   const previous = history.length > 1 ? history[history.length - 2] : null;
   const first = history[0];
@@ -272,8 +324,20 @@ export default function Suivi() {
   // ci-dessous — on compte les fois où la personne a répondu, jamais celles qu'elle a laissées
   // passer).
   const answeredYes = checkins.filter((checkin) => checkin.reponse === 'oui').length;
-  const daysSinceLatest = daysSince(latest.submittedAt);
-  const suggestRebilan = daysSinceLatest >= REBILAN_SUGGESTION_DAYS;
+  const suggestRebilan = doitProposerUnRebilan(latest.submittedAt);
+  // Les points par saison (C2.7, point 5) : l'en-tête d'un groupe porte son **vrai** total, et la
+  // troncature devient visible et réversible. La liste était coupée à huit en silence sous un
+  // compteur global qui en annonçait davantage.
+  const groupes = pointsParSaison(checkins);
+  // L'écart par poste : il n'a de sens qu'avec un bilan précédent, et il se compare poste à poste.
+  const ecarts = previous ? ecartParPoste(previous, latest) : null;
+  // **« Je vois la différence. » ne se dit que sur une baisse réelle** : au-dessus d'une hausse, ou
+  // d'un écart qui tient dans l'imprécision des facteurs, la phrase serait fausse — et c'est le
+  // genre de fausseté qu'on ne remarque que quand elle s'adresse à soi.
+  const baisse = previous !== null && estUneBaisse(previous.totalKg, latest.totalKg);
+  // Le repère 2050 ne se nomme qu'en dessous de la moyenne française, exactement comme sur la
+  // restitution : même dérivation, donc les deux écrans ne peuvent pas se contredire.
+  const horizon2050 = showsTarget2050(latest.totalKg, FRANCE_AVERAGE_TRANSPORT_T * 1000);
 
   return (
     <ThemedView style={styles.container}>
@@ -357,7 +421,73 @@ export default function Suivi() {
                 {variationNote(previous.totalKg, latest.totalKg)}
               </ThemedText>
             )}
+            {/* **L'horizon 2050, en mots et seulement sous la moyenne** (C2.7, point 7). Le suivi ne
+                le mentionnait nulle part, alors que c'est le seul écran qui montre une trajectoire.
+                Au-dessus de la moyenne, l'écart est un gouffre que rien ne rattrape et le nommer
+                découragerait (`showsTarget2050`) ; en dessous, il tombe à un facteur deux à quatre et
+                redevient crédible. En mots, sans barre et **sans compter les paliers restants** — la
+                clause de fin est celle de `palierNote`, pour que les deux écrans parlent d'une voix. */}
+            {horizon2050 && (
+              <ThemedText type="small" themeColor="textTertiary">
+                Tu es sous la moyenne française : à partir de là, le repère 2050 se joue palier après
+                palier.
+              </ThemedText>
+            )}
           </ThemedView>
+
+          {/* **L'écart par poste** (C2.7, point 3, planche D1). Le suivi ne montrait que le total :
+              un effort tenu tout l'hiver sur le trajet quotidien disparaissait derrière un vol de
+              l'été, et rien ne le disait. La comparaison est **poste à poste** — le poste dominant
+              peut changer d'un bilan à l'autre, et c'est le plus souvent une réussite. */}
+          {ecarts !== null && ecarts.length > 0 && (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText weight={600} type="small">
+                Par poste
+              </ThemedText>
+              <EcartParPoste ecarts={ecarts} />
+            </ThemedView>
+          )}
+
+          {/* **Ce que la personne a décidé, saison après saison** (C2.7, point 4). Le suivi ne lisait
+              jamais `plan_cycles` ni `plan_actions` : le seul choix personnel que le produit demande
+              — une action, des jours — ne laissait aucune trace passé la saison.
+
+              **Jamais un statut tenu / pas tenu**, et jamais un chiffre présenté comme un résultat
+              obtenu : le produit ne sait pas si l'action a été menée, seulement ce que la personne a
+              répondu aux points, qui vivent dans leur propre carte. C'est une liste de décisions.
+
+              `decisions === null` veut dire « pas lu » : la carte ne s'affiche pas, plutôt que
+              d'affirmer que rien n'a jamais été engagé. */}
+          {decisions !== null && decisions.length > 0 && (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText weight={600} type="small">
+                Ce que tu as décidé, saison après saison
+              </ThemedText>
+              <View style={styles.decisions}>
+                {decisions.map((decision, index) => (
+                  <View
+                    key={decision.cycleId}
+                    style={[
+                      styles.decisionRow,
+                      index > 0 && { borderTopWidth: 1, borderTopColor: theme.border },
+                    ]}
+                  >
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {decision.periodLabel}
+                    </ThemedText>
+                    <ThemedText type="small" weight={600}>
+                      {decision.actionText}
+                    </ThemedText>
+                    {formatIntention(decision.intentionDays, decision.intentionTiming) && (
+                      <ThemedText type="small" themeColor="textTertiary">
+                        {formatIntention(decision.intentionDays, decision.intentionTiming)}
+                      </ThemedText>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </ThemedView>
+          )}
 
           {/* Période calme : la personne a des bilans mais aucun point de suivi répondu. Jusqu'ici
               l'écran ne montrait rien du tout à cet endroit, ce qui se lit comme un manque —
@@ -384,42 +514,91 @@ export default function Suivi() {
             </ThemedView>
           )}
 
-          {/* Ce que la personne a fait, jamais ce qu'elle a manqué. */}
+          {/* **Ce que la personne a fait, jamais ce qu'elle a manqué** — et depuis C2.7, groupé par
+              saison (point 5, planche D2).
+
+              Trois choses réparées ici. La liste était coupée à **huit en silence**, sous un
+              compteur global qui en annonçait davantage : chaque groupe porte maintenant son vrai
+              total, et la troncature est visible et réversible. L'écran affirmait « Tu réponds
+              régulièrement : c'est déjà ça qui compte. » **dès le premier point** — une phrase
+              fausse, et condescendante quand elle est vraie. Et une mascotte souriante trônait
+              au-dessus de ce qui peut être une colonne de « Pas cette fois » : le canvas l'a
+              retirée, elle revient en bas de l'écran, `calm`, et seulement quand il y a une
+              différence à voir.
+
+              **Les trois libellés sont au même niveau typographique** : un « Changement fait » en
+              accent au-dessus d'un « Pas cette fois » en tertiaire classait les réponses, alors que
+              la troisième n'est pas un échec et que la seconde n'en est pas un non plus. La
+              reconnaissance vit dans le compteur et dans le mot de Ramille, pas dans la couleur
+              d'une ligne. */}
           {checkins.length > 0 && (
-            <ThemedView type="backgroundSelected" style={styles.card}>
-              <View style={styles.checkinsHeader}>
-                <Mascot mood="happy" size={40} />
-                <View style={styles.checkinsHeaderText}>
-                  <ThemedText weight={600}>
-                    {answeredYes === 0
-                      ? `${checkins.length} point${checkins.length > 1 ? 's' : ''} de suivi`
-                      : `${answeredYes} fois où tu as changé quelque chose`}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {answeredYes === 0
-                      ? 'Tu réponds régulièrement : c’est déjà ça qui compte.'
-                      : 'Chaque fois compte, même isolée.'}
-                  </ThemedText>
-                </View>
-              </View>
-              <View style={styles.checkinList}>
-                {checkins.slice(0, 8).map((checkin) => (
-                  <View key={checkin.id} style={styles.checkinRow}>
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.checkinPeriod}>
-                      {LOOP_LABEL[checkin.loopType]} ·{' '}
-                      {libellePeriodeAffiche(checkin.periodLabel, checkin.periodStart)}
-                    </ThemedText>
-                    <ThemedText
-                      type="small"
-                      weight={600}
-                      themeColor={checkin.reponse === 'oui' ? 'accentText' : 'textTertiary'}
-                    >
-                      {libelleDeReponse(checkin.reponse)}
-                    </ThemedText>
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText weight={600} type="small">
+                Tes points
+              </ThemedText>
+              <ThemedText weight={600}>
+                {answeredYes === 0
+                  ? `${checkins.length} point${checkins.length > 1 ? 's' : ''} répondu${checkins.length > 1 ? 's' : ''}`
+                  : `${answeredYes} fois où tu as changé quelque chose`}
+              </ThemedText>
+              {/* Voix produit, et une attribution plutôt qu'un encouragement : ce n'est pas le
+                  produit qui a fait le trajet. */}
+              {answeredYes > 0 && (
+                <ThemedText type="small" themeColor="textSecondary">
+                  Ces fois-là, c’est toi qui as choisi le trajet.
+                </ThemedText>
+              )}
+              {groupes.map((groupe) => {
+                const deplie = groupesDeplies.includes(groupe.libelle);
+                const visibles = deplie ? groupe.points : groupe.points.slice(0, POINTS_VISIBLES);
+                return (
+                  <View key={groupe.libelle} style={styles.groupe}>
+                    <View style={styles.groupeEntete}>
+                      <ThemedText type="small" weight={600}>
+                        {groupe.libelle}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textTertiary">
+                        {groupe.points.length} point{groupe.points.length > 1 ? 's' : ''}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.checkinList}>
+                      {visibles.map((checkin) => (
+                        <View key={checkin.id} style={styles.checkinRow}>
+                          <ThemedText
+                            type="small"
+                            themeColor="textSecondary"
+                            style={styles.checkinPeriod}
+                          >
+                            {LOOP_LABEL[checkin.loopType]} ·{' '}
+                            {libellePeriodeAffiche(checkin.periodLabel, checkin.periodStart)}
+                          </ThemedText>
+                          <ThemedText type="small" weight={600} themeColor="textSecondary">
+                            {libelleDeReponse(checkin.reponse)}
+                          </ThemedText>
+                        </View>
+                      ))}
+                    </View>
+                    {groupe.points.length > POINTS_VISIBLES && (
+                      <TextLink
+                        label={deplie ? 'Replier' : 'Voir tout'}
+                        onPress={() => basculerLeGroupe(groupe.libelle)}
+                        type="small"
+                        weight={600}
+                        themeColor="accentText"
+                      />
+                    )}
                   </View>
-                ))}
-              </View>
+                );
+              })}
             </ThemedView>
+          )}
+
+          {/* **Elle ne se dit que sur une baisse réelle** (C2.7, point 1). Posée en bas et non au
+              sommet de la carte des points : elle constate un écart entre deux bilans, pas une
+              colonne de réponses — et jamais collée au total, qui est un chiffre lourd. Elle ne dit
+              ni le pourcentage ni les kilos ; les deux sont au-dessus, en voix produit. */}
+          {baisse && (
+            <RamilleDit ligne={RAMILLE.suiviDifference} mood="calm" size={36} themeColor="text" />
           )}
 
           {suggestRebilan && (
@@ -429,7 +608,7 @@ export default function Suivi() {
                   qui comptent chacun de leur côté finissent par annoncer six mois d'un côté et cinq
                   de l'autre. En mots parce que c'est un ordre de grandeur, pas une mesure. */}
               <ThemedText weight={600} type="small">
-                Ton dernier bilan a {ancienneteEnMots(daysSinceLatest)}
+                Ton dernier bilan a {ancienneteEnMots(daysSince(latest.submittedAt))}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 Le refaire prend moins de temps que la première fois : tes réponses sont
@@ -507,6 +686,13 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 7 },
   checkinsHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   checkinsHeaderText: { flex: 1, gap: 2 },
+  // Les décisions : une ligne par saison, séparées par un filet — pas une carte chacune, la liste
+  // se lit d'un bloc.
+  decisions: { gap: 0 },
+  decisionRow: { paddingVertical: Spacing.two, gap: 2 },
+  // Un groupe de points : son en-tête, sa liste, son lien.
+  groupe: { gap: Spacing.two, marginTop: Spacing.two },
+  groupeEntete: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: Spacing.two },
   checkinList: { gap: Spacing.two },
   checkinRow: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
   checkinPeriod: { flex: 1 },

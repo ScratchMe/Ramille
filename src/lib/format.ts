@@ -39,7 +39,39 @@
  * repère 2050 — qui doit rester dans une seule unité pour que les barres se comparent.
  */
 export function formatTonnes(kg: number): string {
+  const { nombre, unite } = valeurEtUnite(kg);
+  return `${nombre} ${unite} CO₂e`;
+}
+
+/**
+ * La même valeur, **sans le nom du gaz** — pour une ligne qui en porte deux (C2.7).
+ *
+ * Deux endroits en ont besoin, et dans les deux « CO₂e » est du bruit plutôt qu'une précision :
+ * « 2,1 t CO₂e → 1,7 t CO₂e » sur une ligne de l'écart par poste, et « 600 kg CO₂e de moins que ton
+ * bilan de mars » dans une phrase, où le gaz s'intercale entre le nombre et ce qu'il qualifie. Le
+ * nom du gaz appartient au chiffre qui se tient **seul**, c'est-à-dire à `formatTonnes` : un total,
+ * un gain, un cap.
+ *
+ * **Ce n'est pas une troisième règle d'unité**, et c'est ce qui fait qu'elle n'entre pas en
+ * concurrence avec les deux autres formateurs : même bascule que `formatTonnes` — kilos sous la
+ * tonne, dixième de tonne au-dessus — par la même fonction interne, donc les deux ne peuvent pas
+ * diverger. `formatTonnesShort` (`@/constants/carbon-reference`), lui, ne bascule pas : il porte
+ * l'échelle de comparaison, qui reste dans une seule unité pour que les barres se comparent.
+ */
+export function formatTonnesNu(kg: number): string {
+  const { nombre, unite } = valeurEtUnite(kg);
+  return `${nombre} ${unite}`;
+}
+
+/**
+ * Le nombre et son unité, une fois pour les deux formes.
+ *
+ * Extrait plutôt que recopié, ou pire, obtenu par un `.replace` sur la sortie de l'autre : c'est le
+ * seuil de bascule qui doit être unique, et lui seul décide de la forme. L'arrondi vient **avant** la
+ * comparaison — 999,6 kg est une tonne, pas « 1000 kg ».
+ */
+function valeurEtUnite(kg: number): { nombre: string; unite: 'kg' | 't' } {
   const kilos = Math.round(kg);
-  if (kilos < 1000) return `${kilos} kg CO₂e`;
-  return `${(kg / 1000).toFixed(1).replace('.', ',')} t CO₂e`;
+  if (kilos < 1000) return { nombre: String(kilos), unite: 'kg' };
+  return { nombre: (kg / 1000).toFixed(1).replace('.', ','), unite: 't' };
 }

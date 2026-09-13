@@ -495,6 +495,35 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     derrière et il en reste un. Le trait n'atteint 1 qu'une fois la période révolue — c'est-à-dire au
     moment où le bandeau de bascule prend le relais. Remplacer ce « + 1 » par un calcul d'écart entre
     bornes ferait afficher « plein » un jour trop tôt.
+23. **Le nom du gaz quitte la ligne qui porte deux nombres** (C2.7, 13/09/2026). §3.2 écrit
+    « 2,1 t → 1,7 t » et « 0,3 t de moins que ton bilan de mars » ; `formatTonnes` ajoute « CO₂e »,
+    ce qui donnait « 2,1 t CO₂e → 1,7 t CO₂e » sur une ligne et faisait s'intercaler le gaz entre le
+    nombre et ce qu'il qualifie dans la phrase. D'où `formatTonnesNu` (`src/lib/format.ts`), même
+    bascule par la même fonction interne — ce n'est pas une troisième règle d'unité. Le nom du gaz
+    reste au chiffre qui se tient seul : un total, un gain, un cap.
+24. **« Le palier que tu visais est derrière toi. » ne s'affiche que quand il est prouvable** (C2.7).
+    Le palier visé se recalcule depuis le cap **d'alors**, et ce cap est perdu quand les deux bilans
+    tombent dans la même période : `generate_plan_cycle_for_user` réécrit le cycle courant à chaque
+    soumission, et l'ancienne baseline n'est nulle part. Avec le cap d'aujourd'hui — plus petit, la
+    baseline du poste dominant ayant baissé — le palier recalculé serait plus proche du total
+    précédent et la phrase s'afficherait plus souvent qu'elle ne le devrait.
+25. **« Ton bilan précédent » se met au-dessus de « Toi, aujourd'hui », et l'échelle l'inclut**
+    (C2.7). §3.2 place la barre-contour « au-dessus de "Toi, aujourd'hui" et "Moyenne en France" » ;
+    le domaine des barres était `max(toi, moyenne)`, donc la barre du bilan précédent dépassait la
+    carte exactement dans le cas d'un re-bilan réussi — le précédent est plus lourd, et c'est ce
+    qu'on vient montrer. Le libellé « Toi » devient « Toi, aujourd'hui » **seulement** quand la barre
+    d'avant est là : sinon les deux se disputeraient le même sujet.
+26. **« Je vois la différence. » ne se dit que sur une baisse réelle** (C2.7). §3.1 la donne sans
+    condition ; au-dessus d'une hausse, ou d'un écart qui tient dans l'imprécision des facteurs et
+    des réponses, elle serait une fausseté lisible — et c'est celle qui se remarque le plus, puisque
+    la personne connaît son propre chiffre. Le seuil est `estStable`, partagé avec les deux phrases
+    de variation.
+27. **La liste des points est groupée par saison avec un total par groupe** (C2.7). §3.2 donne
+    « Automne 2026 · 11 points » + « Voir tout » ; l'écran tronquait à huit **en silence** sous un
+    compteur global qui en annonçait davantage. Chaque groupe porte son vrai total, ce qui est la
+    seule façon que l'en-tête et la liste comptent la même chose même tronquées. Et les trois
+    libellés passent au même niveau typographique : « Changement fait » en accent au-dessus d'un
+    « Pas cette fois » en tertiaire classait des réponses dont aucune n'est un échec.
 
 ## 11. Tests
 
@@ -507,7 +536,10 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
   dire zéro, les quatre cas de `sortiesDeLouverture`) ; `mascotte.test.ts` sur chaque
   variante et chaque clé nouvelle ; `mascot.test.ts` (accessoires : lisibilité ≥ 28 px, rien sous
   28, dans la silhouette ou découpé, conformité aux chemins, rendu identique sans saison) ;
-  `suivi.test.ts` (écart par poste, groupement par saison, prédécesseur strict) ; `plan.test.ts`
+  `suivi.test.ts` (écart par poste, groupement par saison, prédécesseur strict, jour **local** de
+  `keepLatestPerDay` — qui n'éprouve quelque chose que hors d'UTC, d'où la suite en
+  `TZ=Europe/Paris`) ; `palier.test.ts` (`palierEstDerriere`, dont le cas « cap d'alors inconnu ») ;
+  `format.test.ts` (`formatTonnesNu` dit exactement ce que `formatTonnes` dit, sans le gaz) ; `plan.test.ts`
   (forme insérable, deux en avant / le reste, `reconduit`).
 - pgTAP : question figée (changer l'engagement après ne change pas `committed_question`) ; les
   trois `response_kind` et les vues qui les lisent ; archive et reconduction ; `p_replace` ;

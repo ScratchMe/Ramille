@@ -24,7 +24,14 @@ import {
   pourcentageDominant,
   urlDePartage,
 } from '@/types/resultat';
-import { formatDate } from '@/types/suivi';
+import { BarreContour } from '@/components/suivi/barre-contour';
+import { formatDate, variationDepuisLeBilanPrecedent } from '@/types/suivi';
+import { MOIS_FRANCAIS } from '@/types/checkin';
+import {
+  loadBilanPrecedent,
+  loadCycleCouvrant,
+  type BilanPrecedent,
+} from '@/lib/bilan-history';
 import { track } from '@/lib/analytics';
 import { supabase } from '@/lib/supabase';
 import { APP_URL } from '@/lib/app-url';
@@ -35,7 +42,7 @@ import {
   formatTonnesShort,
 } from '@/constants/carbon-reference';
 import { formatTonnes } from '@/lib/format';
-import { nextPalier, showsTarget2050 } from '@/types/palier';
+import { nextPalier, palierEstDerriere, showsTarget2050 } from '@/types/palier';
 import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
 import { etatDeLaProposition, type EtatProposition } from '@/types/connexion';
 import type { Database } from '@/lib/database.types';
@@ -79,7 +86,30 @@ type LoadState =
   // `submittedAt` est la date de **soumission** du bilan, pas le `computed_at` du résultat :
   // c'est celle que la liste du suivi affiche, et un recalcul côté serveur ferait diverger les
   // deux écrans (A3-15).
-  | { status: 'ok'; results: AssessmentResults; capKg: number | null; submittedAt: string | null };
+  | {
+      status: 'ok';
+      results: AssessmentResults;
+      capKg: number | null;
+      submittedAt: string | null;
+      /**
+       * Le bilan précédent, quand la restitution sort du questionnaire (C2.7, point 2).
+       *
+       * **C'est la question à laquelle cet écran ne répondait pas.** Une restitution de re-bilan
+       * était identique à celle du premier : le seul écran atteint en sortant du questionnaire ne
+       * disait pas « est-ce que ça a bougé ? », alors que c'est la raison même d'un re-bilan.
+       *
+       * `null` couvre trois situations qu'il n'y a pas lieu de distinguer à l'écran : premier bilan,
+       * relecture d'un ancien, ou lecture qui n'a pas abouti. Dans les trois cas la barre et la
+       * phrase ne s'affichent pas — la restitution reste entière sans elles.
+       */
+      precedent: BilanPrecedent | null;
+      /**
+       * Le palier visé au bilan précédent est-il derrière ? Faux tant qu'on ne peut pas le prouver
+       * — notamment quand les deux bilans tombent dans la même période, le cycle ayant alors été
+       * réécrit et l'ancien cap perdu (cf. `palierEstDerriere`).
+       */
+      palierFranchi: boolean;
+    };
 
 // Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
 // jamais rien — la feuille du téléphone ou du navigateur a déjà tout montré ; seul le repli
@@ -214,7 +244,18 @@ export default function BilanResultat() {
         // son affichage**. D'où l'écran rendu d'abord, la date posée ensuite : sur une connexion
         // qui traîne, attendre la seconde requête laissait « Chargement de ton bilan… » alors que
         // le résultat était déjà en main, et c'est le chemin le plus fréquent de cet écran.
-        setState({ status: 'ok', results: data, capKg: null, submittedAt: null });
+        // **Pas de comparaison en relecture**, pour la même raison qu'il n'y a pas de palier : la
+        // barre « ton bilan précédent » répond à « est-ce que ça a bougé depuis ? », question qui
+        // n'a pas de sens quand on ouvre un bilan de l'an dernier depuis la liste du suivi — c'est
+        // le suivi lui-même qui montre l'évolution.
+        setState({
+          status: 'ok',
+          results: data,
+          capKg: null,
+          submittedAt: null,
+          precedent: null,
+          palierFranchi: false,
+        });
 
         const { data: bilan, error: erreurDate } = await supabase
           .from('assessments')
@@ -237,7 +278,10 @@ export default function BilanResultat() {
       // l'écran se contente alors de ne pas proposer de marche.
       const { data: cycle } = await supabase
         .from('plan_cycles')
-        .select('baseline_co2_kg_year, target_reduction_pct')
+        // `id` depuis C2.7 : il sert à savoir si le cycle qui couvrait le bilan précédent est
+        // **celui-ci**, auquel cas son cap a été réécrit à la soumission et le palier alors visé
+        // n'est plus connaissable (cf. `palierEstDerriere`).
+        .select('id, baseline_co2_kg_year, target_reduction_pct')
         .order('period_start', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -249,7 +293,46 @@ export default function BilanResultat() {
           : null;
 
       // La date ne sert qu'en relecture : après le questionnaire, c'est aujourd'hui.
-      setState({ status: 'ok', results: data, capKg, submittedAt: null });
+      setState({
+        status: 'ok',
+        results: data,
+        capKg,
+        submittedAt: null,
+        precedent: null,
+        palierFranchi: false,
+      });
+
+      // **La comparaison arrive en second temps, et l'écran ne l'attend pas** (C2.7, point 2). Même
+      // raison que la date en relecture : c'est le chemin le plus fréquent de cet écran, et sur une
+      // connexion qui traîne, attendre deux requêtes de plus laisserait « Chargement de ton bilan… »
+      // alors que le résultat est déjà en main. Les deux lectures sont tolérantes à l'échec — la
+      // restitution reste entière sans la barre du bilan précédent.
+      const lecture = await loadBilanPrecedent(data.assessment_id);
+      if (cancelled || !lecture.ok || lecture.data === null) return;
+      const precedent = lecture.data;
+
+      // Le cycle qui couvrait le bilan précédent, pour savoir quel palier était visé alors. S'il
+      // s'agit du cycle courant, la soumission d'aujourd'hui l'a réécrit : le cap affiché à l'époque
+      // n'existe plus, et on ne prétend pas le connaître.
+      const cycleAlors = await loadCycleCouvrant(precedent.submittedAt.slice(0, 10));
+      if (cancelled) return;
+      const capAlorsKg =
+        cycleAlors && cycle && cycleAlors.cycleId !== cycle.id ? cycleAlors.capKg : null;
+
+      setState((etat) =>
+        etat.status === 'ok'
+          ? {
+              ...etat,
+              precedent,
+              palierFranchi: palierEstDerriere({
+                precedentKg: precedent.totalKg,
+                courantKg: data.total_co2_kg_year,
+                capAlorsKg,
+                target2050Kg: TARGET_2050_TRANSPORT_T * 1000,
+              }),
+            }
+          : etat
+      );
     })();
 
     return () => {
@@ -399,7 +482,7 @@ export default function BilanResultat() {
     );
   }
 
-  const { results, capKg, submittedAt } = state;
+  const { results, capKg, submittedAt, precedent, palierFranchi } = state;
   const totalT = results.total_co2_kg_year / 1000;
 
   // Le palier remplace la barre « Repère 2050 » : mettre 15,8 t à côté de 0,6 t affichait un
@@ -421,7 +504,11 @@ export default function BilanResultat() {
   const shareOfTotal = (kg: number) => partDuTotal(kg, results.total_co2_kg_year);
   const dominantPercent = pourcentageDominant(results);
 
-  const domain = Math.max(totalT, FRANCE_AVERAGE_TRANSPORT_T) / 0.85;
+  // **L'échelle inclut le bilan précédent depuis C2.7**, sans quoi sa barre dépasserait la carte
+  // exactement dans le cas le plus fréquent d'un re-bilan réussi : le précédent est plus lourd que
+  // l'actuel, et c'est bien ce qu'on vient montrer.
+  const precedentT = precedent ? precedent.totalKg / 1000 : 0;
+  const domain = Math.max(totalT, precedentT, FRANCE_AVERAGE_TRANSPORT_T) / 0.85;
   const barPercent = (value: number) => Math.max((value / domain) * 100, 3);
 
   return (
@@ -550,8 +637,28 @@ export default function BilanResultat() {
                 palier — 0,0 t », deux libellés chiffrés identiques sur deux barres de longueurs
                 différentes, trente pixels sous un total qui disait « 40 kg CO₂e ». */}
             <View style={styles.bars}>
+              {/* **Le bilan précédent, en contour, au-dessus du sien** (C2.7, point 2, planche E).
+                  La restitution d'un re-bilan était identique à celle du premier : le seul écran
+                  atteint en sortant du questionnaire ne répondait pas à « est-ce que ça a bougé ? ».
+
+                  En contour et non en barre pleine atténuée : deux pleins se lisent comme deux
+                  résultats, et celui d'aujourd'hui doit rester le sien. Le mois nomme la barre — sur
+                  deux bilans de la même année, « ton bilan précédent » seul ne situe rien. */}
+              {precedent && (
+                <CompareRow
+                  label={`Ton bilan précédent · ${formatMois(precedent.submittedAt)}`}
+                  value={
+                    precedentT < 1 ? formatTonnes(precedent.totalKg) : formatTonnesShort(precedentT)
+                  }
+                  percent={barPercent(precedentT)}
+                  contour
+                  accentColor={theme.accentMuted}
+                />
+              )}
               <CompareRow
-                label="Toi"
+                // « Toi, aujourd'hui » dès qu'il y a une barre d'avant : « Toi » seul, au-dessus de
+                // « ton bilan précédent », laisserait les deux barres se disputer le même sujet.
+                label={precedent ? 'Toi, aujourd’hui' : 'Toi'}
                 value={totalT < 1 ? formatTonnes(results.total_co2_kg_year) : formatTonnesShort(totalT)}
                 percent={barPercent(totalT)}
                 bold
@@ -597,6 +704,21 @@ export default function BilanResultat() {
                 />
               )}
             </View>
+            {/* **Ce que le re-bilan a changé, en écart absolu** (C2.7, point 2). En kilos ou en
+                tonnes et jamais en pourcentage : les barres juste au-dessus sont en tonnes, et
+                « 8 % de moins » ne se rattache à rien de ce qu'on y voit.
+
+                La seconde phrase ne s'ajoute que quand elle est **prouvable** : le palier visé se
+                recalcule depuis le cap qui était en vigueur à l'époque, et ce cap est perdu quand les
+                deux bilans tombent dans la même période (le cycle est réécrit à chaque soumission).
+                On ne dit alors rien plutôt que de l'affirmer avec le cap d'aujourd'hui, qui est plus
+                petit et rendrait la phrase trop facile. */}
+            {precedent && (
+              <ThemedText type="small" themeColor="textSecondary">
+                {variationDepuisLeBilanPrecedent(precedent, results.total_co2_kg_year)}
+                {palierFranchi ? ' Le palier que tu visais est derrière toi.' : ''}
+              </ThemedText>
+            )}
             {/* En relecture il n'y a jamais de palier, donc c'est toujours `comparisonNote` qui
                 parle — et elle ne promet aucun plan. */}
             <ThemedText type="small" themeColor="textSecondary">
@@ -697,17 +819,26 @@ export default function BilanResultat() {
   );
 }
 
+/**
+ * `contour` rend la barre en `BarreContour` au lieu d'une barre pleine (C2.7).
+ *
+ * Une prop ici plutôt qu'un second composant : c'est l'**en-tête** qui doit rester identique entre
+ * les lignes — même taille, même couleur, même alignement — et deux composants divergeraient sur ce
+ * point au premier ajustement. Seul le corps de la barre change.
+ */
 function CompareRow({
   label,
   value,
   percent,
   bold,
+  contour,
   accentColor,
 }: {
   label: string;
   value: string;
   percent: number;
   bold?: boolean;
+  contour?: boolean;
   accentColor: string;
 }) {
   const theme = useTheme();
@@ -721,11 +852,26 @@ function CompareRow({
           {value}
         </ThemedText>
       </View>
-      <View style={[styles.barRail, { backgroundColor: theme.border }]}>
-        <View style={[styles.barFill, { width: `${percent}%`, backgroundColor: accentColor }]} />
-      </View>
+      {contour ? (
+        <BarreContour percent={percent} hauteur={14} />
+      ) : (
+        <View style={[styles.barRail, { backgroundColor: theme.border }]}>
+          <View style={[styles.barFill, { width: `${percent}%`, backgroundColor: accentColor }]} />
+        </View>
+      )}
     </View>
   );
+}
+
+/**
+ * Le mois d'un horodatage, en français — « mars ».
+ *
+ * `MOIS_FRANCAIS` et non `toLocaleDateString` : Hermes peut être construit sans ICU complet et
+ * rendrait un mois en anglais, invisible en CI et visible sur l'appareil (piège de `moisFrancais`,
+ * `src/types/checkin.ts`). Lu en heure **locale**, comme la date affichée par `formatDate`.
+ */
+function formatMois(iso: string): string {
+  return MOIS_FRANCAIS[new Date(iso).getMonth()] ?? 'précédent';
 }
 
 const styles = StyleSheet.create({
