@@ -143,6 +143,18 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
 20. **Les lignes simples des pistes ne portent pas de bouton** (C4.6) : c'est la hiérarchie que la
     borne à quatre cartes installe — au-delà, on dit ce qui existe sans le mettre au même rang.
 
+21. **Les accessoires de saison ne sont pas découpés par la silhouette** (C2.13), seules les joues
+    d'automne le sont — elles seules sont dans le visage. Un pompon découpé devient une lentille : il dépasse la
+    pointe de la feuille par construction, et d'autant plus à petite taille.
+22. **La goutte de rosée est remontée en haut à droite de la feuille** (C2.13), translatée de
+    (−6, −37). À sa place d'origine elle chevauche le bord de la silhouette et s'y lit comme une
+    éraflure du contour ; et son coin arrivait à 0,08 px du coin de la bouche de `happy` à 28 px,
+    la taille et l'expression exactes de l'en-tête du questionnaire à la dernière étape. Le dessin
+    lui-même est inchangé — le test applique la translation au chemin du canvas.
+23. **Le reflet dans la goutte n'est pas repris** (C2.13) : 0,76 px de diamètre et sept niveaux de
+    contraste au-dessus de la goutte, donc invisible et non discret. Le grossir ne le sauverait
+    pas, et l'éclaircir percerait un trou dans une goutte de six unités.
+
 La phrase de durée est tranchée : « Le refaire prend **quelques minutes** », et non « cinq minutes »
 comme l'écrit B1. Le produit promet « environ 5 minutes » pour le **premier** bilan (transition de
 l'onboarding, états vides du plan et du suivi) ; un re-bilan est plus rapide, ses réponses étant

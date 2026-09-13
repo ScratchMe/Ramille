@@ -565,7 +565,8 @@ a démenti la colonne « Parallèle ? » pour la quatrième fois — un seul cha
 disjoint (C2.13), l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9**. C2.8 (la saison a
 une fin et un début), C2.7 (le suivi dans la durée : l'écart par poste, les décisions saison après
 saison, les points groupés, la restitution d'un re-bilan), C3.1 (la mobilité contrainte est lue par la
-restitution) et C4.6 (toutes les pistes, le premier pas, le remplacement explicite) sont livrés.
+restitution), C4.6 (toutes les pistes, le premier pas, le remplacement explicite) et C2.13 (la
+mascotte porte la saison) sont livrés.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -1404,6 +1405,28 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `50 ± offset` casse la symétrie d'un centième, d'où l'arrondi sur l'écart et non sur la
   coordonnée. Les joues affleurent le bord de la silhouette dès la taille nominale : le
   visage est découpé par un `clipPath`, sans quoi elles flottent hors du vert.
+  **Elle porte la saison** (C2.13) : un bonnet en hiver, un bourgeon au printemps, une goutte de
+  rosée en été, des joues chaudes en automne. La saison par défaut est celle du jour (`saisonDe`),
+  donc **aucun écran ne la passe** et le 1er décembre elle change partout sans mise à jour de l'app
+  — jamais dérivée de `plan_cycles` ni de la cadence, un trimestre glissant n'ayant pas de saison
+  nommée. Quatre points à connaître avant d'y toucher. L'automne n'est **pas** un accessoire : il
+  reprend les joues du visage (rayon × 1,18, opacité + 0,25, ton chaud), donc il vit dans
+  `mascotFaceGeometry` et `mascotSeasonGeometry('automne', …)` rend une liste vide — deux couches de
+  joues, l'une découpée et l'autre non, se verraient au bord de la feuille. Les trois autres ne sont
+  **pas découpés** par le `clipPath`, à la différence du visage : le clip existe parce que des joues
+  hors du vert se lisent comme un bug, pas pour empêcher un chapeau de se porter sur la tête, et
+  découper rognerait le pompon en lentille. Ce qu'il garantissait, un test le garantit autrement —
+  chaque élément reste dans le `viewBox`. Les positions sont **fixes** et seules les épaisseurs et
+  les rayons suivent `k`, comme les traits du visage. Et les quatre jetons (`mascotInk`,
+  `mascotVein`, `mascotAccessory`, `mascotWarm`) existent dans les deux thèmes mais ne sont **lus
+  qu'en clair** : le composant lit `Colors.light` comme avant, dormance assumée et commentée sur
+  place — le jour où un thème sombre est livré, c'est cette table qui dit ce qui bascule (la
+  feuille) et ce qui ne bascule pas (l'encre et les accessoires). **Ce qui se voit au rendu ne se
+  voit pas à la lecture d'un chemin** : deux des trois écarts au canvas viennent d'une capture des
+  cinq expressions × cinq tailles × cinq saisons, et les deux assertions qui en sortent — la
+  distance **réelle** entre accessoire et visage, et la lisibilité de chaque élément — valent mieux
+  que la capture. Exclus, et ils doivent le rester : la carte de partage (`api/share-card.ts`), le
+  favicon, `mascot-mark.svg`.
   **Elle parle, et tout ce qu'elle dit vit dans `src/constants/mascotte.ts`** (`RAMILLE`),
   rendu par `RamilleDit` — jamais une phrase écrite dans un écran. Trois règles, gardées par
   un test : première personne et tutoiement ; **jamais un nombre dans sa bouche** (les

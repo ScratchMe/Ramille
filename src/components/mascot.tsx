@@ -13,7 +13,14 @@ import Animated, {
 import Svg, { Circle, ClipPath, Defs, G, Path } from 'react-native-svg';
 
 import { Colors } from '@/constants/theme';
-import { mascotFaceGeometry, type MascotMood } from '@/types/mascot';
+import {
+  mascotFaceGeometry,
+  mascotSeasonGeometry,
+  type MascotColorToken,
+  type MascotMood,
+  type MascotSeasonElement,
+} from '@/types/mascot';
+import { saisonDe, type Saison } from '@/types/saison';
 
 export type { MascotMood } from '@/types/mascot';
 
@@ -45,6 +52,17 @@ export type { MascotMood } from '@/types/mascot';
 // figées ici — voir l'en-tête de ce module pour le raisonnement, et son test pour
 // l'invariant (aucun trait sous ~1,3 px tant que `size >= MASCOT_MIN_FACE_SIZE`).
 //
+// **Elle porte la saison** (C2.13) : un bonnet en hiver, un bourgeon au printemps, une goutte de
+// rosée en été, des joues plus chaudes en automne. C'est la seule chose du produit qui change
+// d'elle-même avec le calendrier, sans mise à jour de l'app et sans dire un chiffre — la saison
+// est l'unité de temps du plan, et voilà ce qui la rend visible. Toute la géométrie vient de
+// `mascotSeasonGeometry` ; ce qui suit ne fait que la dessiner, et l'accessoire n'est pas découpé
+// par le `clipPath` (le pompon se porte au-dessus de la feuille, et la goutte à son bord — le
+// raisonnement complet est en tête de `src/types/mascot.ts`).
+//
+// La saison par défaut est celle du jour (`saisonDe`), donc aucun écran n'a à la passer ; la
+// carte de partage (`api/share-card.ts`) ne l'a pas non plus, elle ne rend pas ce composant.
+//
 // assets/images/mascot-mark.svg est la version statique de la variante `calm` à taille
 // nominale — source de vérité pour la régénération de icon.png/android-icon-*.png/
 // splash-icon.png, qui doit rester visuellement identique à ce composant si l'un des deux
@@ -58,11 +76,51 @@ export type { MascotMood } from '@/types/mascot';
 // un favicon est un dessin figé qu'on peut simplifier, un composant doit rester le même
 // visage à toutes ses tailles.
 const LEAF_PATH = 'M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z';
+
+// La géométrie nomme ses couleurs et ne les résout pas (module pur, cf. `MascotColorToken`) :
+// voici la correspondance, et c'est le seul endroit du composant qui connaisse une couleur.
+// `rosee` n'est pas un jeton de `Colors` — la goutte est blanche dans les deux thèmes, parce que
+// la feuille reste verte dans les deux et qu'une goutte ne se lit comme de l'eau qu'en étant plus
+// claire que ce sur quoi elle repose.
+const COULEUR: Record<MascotColorToken, string> = {
+  accentMuted: Colors.light.accentMuted,
+  mascotAccessory: Colors.light.mascotAccessory,
+  mascotWarm: Colors.light.mascotWarm,
+  rosee: '#FFFFFF',
+};
+
+// Un élément d'accessoire, dessiné dans l'ordre où la géométrie le rend. Une fonction et non un
+// composant : react-native-svg attend des primitives SVG pour enfants, et rien ici n'a d'état.
+function elementDeSaison(element: MascotSeasonElement, index: number) {
+  const couleur = COULEUR[element.couleur];
+  if (element.forme === 'cercle') {
+    return (
+      <Circle key={`saison-${index}`} cx={element.cx} cy={element.cy} r={element.r} fill={couleur} />
+    );
+  }
+  if (element.forme === 'trait') {
+    return (
+      <Path
+        key={`saison-${index}`}
+        d={element.d}
+        stroke={couleur}
+        strokeWidth={element.epaisseur}
+        strokeLinecap="round"
+        fill="none"
+      />
+    );
+  }
+  return (
+    <Path key={`saison-${index}`} d={element.d} fill={couleur} opacity={element.opacite} />
+  );
+}
+
 export function Mascot({
   mood = 'calm',
   size = 40,
   tilt = 0,
   animated = true,
+  saison = saisonDe(new Date()).saison,
   style,
 }: {
   mood?: MascotMood;
@@ -72,10 +130,19 @@ export function Mascot({
    *  d'une douzaine, la silhouette cesse de se lire comme une feuille. */
   tilt?: number;
   animated?: boolean;
+  /** La saison portée par la mascotte. Le défaut suit le calendrier (`saisonDe`), qui est le
+   *  miroir client de `season_bounds` — jamais la cadence du plan ni `plan_cycles` : un
+   *  trimestre glissant n'a pas de saison nommée, la mascotte suit le calendrier dans les deux
+   *  cas. `null` la rend sans saison, pour une capture, un canvas ou un test. */
+  saison?: Saison | null;
   style?: ViewStyle;
 }) {
   const c = Colors.light;
-  const face = mascotFaceGeometry(mood, size);
+  const face = mascotFaceGeometry(mood, size, saison);
+  // Pas de garde `face.visible` ici : le plancher de lisibilité est appliqué une seule fois, dans
+  // la géométrie, qui rend une liste vide sous `MASCOT_MIN_FACE_SIZE`. Le redoubler ferait deux
+  // seuils à tenir d'accord.
+  const accessoires = mascotSeasonGeometry(saison, size);
   const breathe = useSharedValue(0);
   // **Sous « réduire les animations », la respiration ne tourne pas — et reanimated le faisait
   // déjà.** Contrairement à ce qu'affirme A10-8, la boucle n'a jamais survécu à la préférence :
@@ -140,7 +207,7 @@ export function Mascot({
         <Path d={LEAF_PATH} fill={c.accent} />
         <Path
           d="M50,18 C46,26 46,32 50,38"
-          stroke={c.backgroundSelected}
+          stroke={c.mascotVein}
           strokeWidth={face.veinStrokeWidth}
           strokeLinecap="round"
           fill="none"
@@ -155,20 +222,20 @@ export function Mascot({
                 cx={blush.cx}
                 cy={blush.cy}
                 r={blush.r}
-                fill={c.accentMuted}
+                fill={COULEUR[face.blushToken]}
                 opacity={face.blushOpacity}
               />
             ))}
 
             {face.eyes === 'dots'
               ? face.eyeCircles.map((eye, i) => (
-                  <Circle key={`eye-${i}`} cx={eye.cx} cy={eye.cy} r={eye.r} fill={c.text} />
+                  <Circle key={`eye-${i}`} cx={eye.cx} cy={eye.cy} r={eye.r} fill={c.mascotInk} />
                 ))
               : face.eyeArcs.map((arc, i) => (
                   <Path
                     key={`eye-${i}`}
                     d={arc}
-                    stroke={c.text}
+                    stroke={c.mascotInk}
                     strokeWidth={face.eyeStrokeWidth}
                     strokeLinecap="round"
                     fill="none"
@@ -177,13 +244,16 @@ export function Mascot({
 
             <Path
               d={face.mouthPath}
-              stroke={c.text}
+              stroke={c.mascotInk}
               strokeWidth={face.mouthStrokeWidth}
               strokeLinecap="round"
               fill="none"
             />
           </G>
         )}
+
+        {/* Après le visage, et hors du groupe découpé — cf. l'en-tête de `src/types/mascot.ts`. */}
+        {accessoires.map(elementDeSaison)}
       </Svg>
     </Animated.View>
   );

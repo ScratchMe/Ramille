@@ -1,9 +1,12 @@
 import {
   MASCOT_MIN_FACE_SIZE,
   mascotFaceGeometry,
+  mascotSeasonGeometry,
   opticalScale,
   type MascotMood,
+  type MascotSeasonElement,
 } from './mascot';
+import { SAISONS, type Saison } from './saison';
 
 const MOODS: MascotMood[] = ['calm', 'happy', 'encouraging', 'thinking', 'resting'];
 
@@ -16,6 +19,8 @@ const MIN_STROKE_PX = 1.3;
 const MIN_EYE_DIAMETER_PX = 2.6;
 
 const px = (units: number, size: number) => (units * size) / 100;
+
+const tailles = (de: number, a: number) => Array.from({ length: a - de + 1 }, (_, i) => de + i);
 
 describe('mascotFaceGeometry', () => {
   it('garde tous les traits du visage au-dessus du seuil de lisibilité', () => {
@@ -217,3 +222,332 @@ describe('mascotFaceGeometry — conformité au dessin d\'origine', () => {
     ]);
   });
 });
+
+// --- Les accessoires de saison (C2.13) --------------------------------------------------
+
+const SAISONS_AVEC_ACCESSOIRE: Saison[] = ['hiver', 'printemps', 'ete'];
+
+describe('mascotSeasonGeometry', () => {
+  it('ne pose rien sous le plancher de lisibilité, ni sans saison', () => {
+    // Même règle que le visage, et pour la même raison : la feuille seule reste la feuille
+    // seule. Un bonnet sur une feuille sans visage n'est plus un bonnet, c'est une tache.
+    for (const saison of SAISONS) {
+      expect(mascotSeasonGeometry(saison, MASCOT_MIN_FACE_SIZE - 1)).toEqual([]);
+      expect(mascotSeasonGeometry(saison, 16)).toEqual([]);
+    }
+    for (const size of USED_SIZES) {
+      expect(mascotSeasonGeometry(null, size)).toEqual([]);
+    }
+  });
+
+  it("rend un accessoire pour trois saisons, et rien pour l'automne", () => {
+    // L'automne ne pose rien **par-dessus** le visage : il reprend ses joues, à l'intérieur du
+    // groupe découpé (cf. `mascotFaceGeometry`). Une seconde couche de joues, non découpée
+    // celle-là, se verrait au bord de la feuille — d'où la liste vide, qui n'est pas un oubli.
+    for (const saison of SAISONS_AVEC_ACCESSOIRE) {
+      expect(mascotSeasonGeometry(saison, MASCOT_MIN_FACE_SIZE).length).toBeGreaterThan(0);
+    }
+    for (const size of USED_SIZES) {
+      expect(mascotSeasonGeometry('automne', size)).toEqual([]);
+    }
+  });
+
+  it('garde chaque élément au-dessus du seuil de lisibilité', () => {
+    for (const saison of SAISONS_AVEC_ACCESSOIRE) {
+      for (let size = MASCOT_MIN_FACE_SIZE; size <= 96; size += 1) {
+        for (const element of mascotSeasonGeometry(saison, size)) {
+          if (element.forme === 'trait') {
+            expect(px(element.epaisseur, size)).toBeGreaterThanOrEqual(MIN_STROKE_PX);
+          }
+          if (element.forme === 'cercle') {
+            expect(px(element.r * 2, size)).toBeGreaterThanOrEqual(MIN_STROKE_PX);
+          }
+        }
+      }
+    }
+  });
+
+  it('garde chaque élément dans le viewBox, à toutes les tailles', () => {
+    // Ce que le `clipPath` garantissait pour le visage, ce test le garantit pour l'accessoire,
+    // qui n'est **pas** découpé : le pompon se porte au-dessus de la feuille et la goutte se
+    // pose près de son bord. Ce qui reste interdit, c'est de sortir du viewBox — le bord du SVG
+    // couperait alors le dessin sans que rien ne le signale, et c'est à `k` maximal (donc à la
+    // plus petite taille) que le pompon en approche le plus.
+    for (const saison of SAISONS_AVEC_ACCESSOIRE) {
+      for (let size = MASCOT_MIN_FACE_SIZE; size <= 96; size += 1) {
+        for (const boite of mascotSeasonGeometry(saison, size).map(boiteDeLelement)) {
+          expect(boite.x0).toBeGreaterThanOrEqual(0);
+          expect(boite.y0).toBeGreaterThanOrEqual(0);
+          expect(boite.x1).toBeLessThanOrEqual(100);
+          expect(boite.y1).toBeLessThanOrEqual(100);
+        }
+      }
+    }
+  });
+
+  // **Le test qui a fait déplacer la goutte de rosée.** À la position du canvas, son coin haut
+  // arrivait à 0,29 unité du coin de la bouche de `happy` à `size={28}` — 0,08 px, c'est-à-dire
+  // collés, et à la taille et à l'expression exactes de l'en-tête du questionnaire à la dernière
+  // étape. Aucune assertion de boîte englobante ne l'aurait vu : les deux boîtes ne se croisent
+  // pas, ce sont les formes qui se touchent. D'où la distance réelle, échantillonnée.
+  it('ne touche ni les yeux ni la bouche, pour chacune des cinq expressions', () => {
+    for (const saison of SAISONS_AVEC_ACCESSOIRE) {
+      for (const mood of MOODS) {
+        // Toutes les tailles jusqu'à la nominale, puis deux grandes : au-delà de 42 px `k` vaut
+        // 1, donc la géométrie ne bouge plus (le test voisin l'épingle) et balayer 43 à 96
+        // referait cinquante fois le même calcul — celui-ci est le plus cher de la suite.
+        for (const size of [...tailles(MASCOT_MIN_FACE_SIZE, 42), 56, 96]) {
+          const ecart = ecartAuVisage(mascotSeasonGeometry(saison, size), mood, size);
+          expect(ecart).toBeGreaterThanOrEqual(ECART_MIN_UNITES);
+          expect(px(ecart, size)).toBeGreaterThanOrEqual(MIN_STROKE_PX / 1.3);
+        }
+      }
+    }
+  });
+
+  it('reste symétrique, la goutte exceptée', () => {
+    // Le bonnet et le bourgeon sont centrés sur l'axe du visage ; la goutte ne l'est pas, et
+    // c'est la seule asymétrie assumée du dessin — une goutte posée au milieu d'une feuille se
+    // lirait comme une tache, pas comme de la rosée.
+    for (const size of USED_SIZES) {
+      for (const saison of ['hiver', 'printemps'] as const) {
+        const elements = mascotSeasonGeometry(saison, size);
+        const boites = elements.map(boiteDeLelement);
+        // L'encombrement d'ensemble est centré sur l'axe…
+        expect(
+          Math.min(...boites.map((b) => b.x0)) + Math.max(...boites.map((b) => b.x1))
+        ).toBeCloseTo(100, 5);
+        // …et les cercles s'apparient deux à deux (les deux pétales latéraux du bourgeon), ce
+        // que l'encombrement seul ne dirait pas : un pétale déplacé d'une unité et l'autre de
+        // deux garderait la même boîte. C'est la règle de l'arrondi sur l'écart, vue de l'autre
+        // côté.
+        const abscisses = elements
+          .filter((e) => e.forme === 'cercle')
+          .map((e) => (e as { cx: number }).cx)
+          .sort((a, b) => a - b);
+        abscisses.forEach((cx, i) => {
+          expect(cx + abscisses[abscisses.length - 1 - i]).toBeCloseTo(100, 5);
+        });
+      }
+    }
+  });
+
+  it('ne grossit plus une fois la taille nominale atteinte', () => {
+    for (const saison of SAISONS) {
+      const nominal = mascotSeasonGeometry(saison, 42);
+      for (const size of [42, 56, 80, 120]) {
+        expect(mascotSeasonGeometry(saison, size)).toEqual(nominal);
+      }
+    }
+  });
+});
+
+// Même nature que le bloc de conformité du visage : une transcription indépendante du canvas
+// (`docs/design/v1-14-boucle-engagement/HANDOFF.md`, § Mascotte — accessoires de saison, repris
+// en `v1-14` §7), pour qu'une retouche involontaire d'un chemin tombe ici et pas sur l'appareil.
+describe('mascotSeasonGeometry — conformité au canvas', () => {
+  const CANVAS = {
+    calotte:
+      'M31,34 C37,24 44,18 50,15 C56,18 63,24 69,34 C62,29 56,27 50,27 C44,27 38,29 31,34 Z',
+    revers: 'M31,34 C38,29 44,27 50,27 C56,27 62,29 69,34',
+    goutte:
+      'M64,70 C64,66 67,62 67,62 C67,62 70,66 70,70 C70,71.8 68.6,73 67,73 C65.4,73 64,71.8 64,70 Z',
+  };
+  // Le seul écart de dessin du chantier, et il est mesuré : à sa place d'origine la goutte
+  // chevauchait le bord de la silhouette (elle s'y lisait comme une éraflure du contour) et
+  // touchait le coin de la bouche de `happy` à 28 px. Le dessin, lui, n'a pas bougé — d'où la
+  // translation appliquée ici au chemin du canvas plutôt qu'un second littéral.
+  const GOUTTE_DECALAGE = { dx: -6, dy: -37 };
+
+  it('rend exactement les chemins du canvas à taille nominale', () => {
+    expect(mascotSeasonGeometry('hiver', 56)).toEqual([
+      { forme: 'aire', d: CANVAS.calotte, couleur: 'mascotWarm' },
+      { forme: 'trait', d: CANVAS.revers, couleur: 'mascotAccessory', epaisseur: 4.4 },
+      { forme: 'cercle', cx: 50, cy: 12, r: 5.6, couleur: 'mascotAccessory' },
+      { forme: 'cercle', cx: 50, cy: 12, r: 3.9, couleur: 'mascotWarm' },
+    ]);
+    expect(mascotSeasonGeometry('printemps', 56)).toEqual([
+      { forme: 'cercle', cx: 45.8, cy: 18.5, r: 3, couleur: 'mascotAccessory' },
+      { forme: 'cercle', cx: 54.2, cy: 18.5, r: 3, couleur: 'mascotAccessory' },
+      { forme: 'cercle', cx: 50, cy: 14, r: 3, couleur: 'mascotAccessory' },
+      { forme: 'cercle', cx: 50, cy: 17.5, r: 1.8, couleur: 'mascotWarm' },
+    ]);
+    // Le reflet du canvas (un cercle de rayon 0,9 dans la goutte) n'est pas repris : 0,76 px de
+    // diamètre, et sept niveaux de contraste au-dessus de la goutte — c'est la tache grise que
+    // l'assertion de lisibilité ci-dessus refuse. La goutte est d'une seule pièce.
+    expect(mascotSeasonGeometry('ete', 56)).toEqual([
+      {
+        forme: 'aire',
+        d: translater(CANVAS.goutte, GOUTTE_DECALAGE.dx, GOUTTE_DECALAGE.dy),
+        couleur: 'rosee',
+        opacite: 0.85,
+      },
+    ]);
+  });
+
+  it('épaissit les traits et les rayons à petite taille, jamais les positions', () => {
+    // La moitié du principe : à `size={28}` le trait du revers passe de 4,4 à 6,6 unités (donc
+    // 1,85 px comme à taille nominale), pendant que la calotte reste exactement où elle est.
+    const petit = mascotSeasonGeometry('hiver', MASCOT_MIN_FACE_SIZE);
+    expect(petit[0]).toEqual({ forme: 'aire', d: CANVAS.calotte, couleur: 'mascotWarm' });
+    expect(petit[1]).toMatchObject({ epaisseur: 6.6 });
+    expect(petit[2]).toMatchObject({ cx: 50, cy: 12, r: 8.4 });
+  });
+});
+
+describe("mascotFaceGeometry — les joues de l'automne", () => {
+  it('ne change rien au visage, hors automne', () => {
+    // L'invariant qui protège les quatre autres saisons : le visage est celui d'avant C2.13,
+    // au centième près, qu'on lui passe une saison ou non.
+    for (const mood of MOODS) {
+      for (const size of USED_SIZES) {
+        const sansSaison = mascotFaceGeometry(mood, size);
+        for (const saison of ['hiver', 'printemps', 'ete'] as const) {
+          expect(mascotFaceGeometry(mood, size, saison)).toEqual(sansSaison);
+        }
+        expect(mascotFaceGeometry(mood, size, null)).toEqual(sansSaison);
+        expect(sansSaison.blushToken).toBe('accentMuted');
+      }
+    }
+  });
+
+  it('reprend les joues : rayon × 1,18, opacité + 0,25, ton chaud', () => {
+    for (const mood of MOODS) {
+      for (const size of USED_SIZES) {
+        const nu = mascotFaceGeometry(mood, size);
+        const automne = mascotFaceGeometry(mood, size, 'automne');
+        expect(automne.blushToken).toBe('mascotWarm');
+        expect(automne.blushOpacity).toBeCloseTo(Math.min(0.9, nu.blushOpacity + 0.25), 5);
+        automne.blushCircles.forEach((joue, i) => {
+          expect(joue.r).toBeCloseTo(nu.blushCircles[i].r * 1.18, 1);
+          expect(joue.cx).toBe(nu.blushCircles[i].cx);
+          expect(joue.cy).toBe(nu.blushCircles[i].cy);
+        });
+        // Rien d'autre ne bouge : ni les yeux, ni la bouche, ni la nervure.
+        expect({ ...automne, blushCircles: [], blushOpacity: 0, blushToken: 'accentMuted' }).toEqual(
+          { ...nu, blushCircles: [], blushOpacity: 0, blushToken: 'accentMuted' }
+        );
+      }
+    }
+  });
+
+  it("n'atteint le plafond d'opacité avec aucune des cinq expressions", () => {
+    // Le plafond de 0,9 est une garde, pas un réglage : la plus marquée des cinq (`happy`) monte
+    // à 0,85. S'il se mettait à mordre, c'est que l'expression aurait changé de registre — des
+    // joues opaques cessent d'être des joues.
+    for (const mood of MOODS) {
+      expect(mascotFaceGeometry(mood, 56, 'automne').blushOpacity).toBeLessThan(0.9);
+    }
+  });
+});
+
+// --- helpers de lecture des accessoires -------------------------------------------------
+
+// Écart minimal toléré entre un accessoire et le visage, en unités de viewBox. La valeur vient
+// du pire cas réel des trois accessoires (3,60 pour la goutte, 3,64 pour le bonnet, tous deux à
+// `thinking` et 28 px), arrondi vers le bas : ce n'est pas un seuil choisi d'avance, c'est la
+// marge dont on dispose, et la figer empêche qu'elle se réduise sans qu'on le sache.
+const ECART_MIN_UNITES = 3.5;
+
+function translater(d: string, dx: number, dy: number): string {
+  return d.replace(
+    /(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g,
+    (_, x, y) => `${arrondi(Number(x) + dx)},${arrondi(Number(y) + dy)}`
+  );
+}
+
+function arrondi(valeur: number): number {
+  return Math.round(valeur * 100) / 100;
+}
+
+/** Points échantillonnés d'un chemin `M` + `C`/`Q`, pour mesurer une distance réelle. */
+function echantillonner(d: string): [number, number][] {
+  const points = pathPoints(d).map((p) => [p.x, p.y] as [number, number]);
+  const sortie: [number, number][] = [points[0]];
+  let courant = points[0];
+  let i = 1;
+  while (i < points.length) {
+    const cubique = d.includes('C') && i + 2 < points.length + 1 && points[i + 2] !== undefined;
+    const fin = cubique ? points[i + 2] : points[i + 1];
+    const controles = cubique ? [points[i], points[i + 1]] : [points[i]];
+    for (let n = 1; n <= 60; n += 1) {
+      sortie.push(bezier(courant, controles, fin, n / 60));
+    }
+    courant = fin;
+    i += cubique ? 3 : 2;
+  }
+  return sortie;
+}
+
+function bezier(
+  p0: [number, number],
+  controles: [number, number][],
+  p1: [number, number],
+  t: number
+): [number, number] {
+  const u = 1 - t;
+  if (controles.length === 2) {
+    const [c1, c2] = controles;
+    return [0, 1].map(
+      (axe) => u ** 3 * p0[axe] + 3 * u * u * t * c1[axe] + 3 * u * t * t * c2[axe] + t ** 3 * p1[axe]
+    ) as [number, number];
+  }
+  const [c] = controles;
+  return [0, 1].map((axe) => u * u * p0[axe] + 2 * u * t * c[axe] + t * t * p1[axe]) as [
+    number,
+    number,
+  ];
+}
+
+/** Un élément, réduit à des disques : son centre et le rayon qui l'entoure. */
+function disques(element: MascotSeasonElement): { p: [number, number]; r: number }[] {
+  if (element.forme === 'cercle') return [{ p: [element.cx, element.cy], r: element.r }];
+  const rayon = element.forme === 'trait' ? element.epaisseur / 2 : 0;
+  return echantillonner(element.d).map((p) => ({ p, r: rayon }));
+}
+
+function boiteDeLelement(element: MascotSeasonElement) {
+  const points = disques(element);
+  return {
+    x0: Math.min(...points.map((d) => d.p[0] - d.r)),
+    y0: Math.min(...points.map((d) => d.p[1] - d.r)),
+    x1: Math.max(...points.map((d) => d.p[0] + d.r)),
+    y1: Math.max(...points.map((d) => d.p[1] + d.r)),
+  };
+}
+
+/** Les yeux et la bouche, réduits aux mêmes disques — les joues sont exclues : elles ont le
+ *  droit d'affleurer, et l'automne les reprend justement pour lui. */
+function disquesDuVisage(mood: MascotMood, size: number) {
+  const face = mascotFaceGeometry(mood, size);
+  const sortie: { p: [number, number]; r: number }[] = [];
+  if (face.eyes === 'dots') {
+    for (const eye of face.eyeCircles) sortie.push({ p: [eye.cx, eye.cy], r: eye.r });
+  } else {
+    for (const arc of face.eyeArcs) {
+      for (const p of echantillonner(arc)) sortie.push({ p, r: face.eyeStrokeWidth / 2 });
+    }
+  }
+  for (const p of echantillonner(face.mouthPath)) {
+    sortie.push({ p, r: face.mouthStrokeWidth / 2 });
+  }
+  return sortie;
+}
+
+function ecartAuVisage(
+  accessoire: MascotSeasonElement[],
+  mood: MascotMood,
+  size: number
+): number {
+  const visage = disquesDuVisage(mood, size);
+  let minimum = Number.POSITIVE_INFINITY;
+  for (const element of accessoire) {
+    for (const a of disques(element)) {
+      for (const v of visage) {
+        const d = Math.hypot(a.p[0] - v.p[0], a.p[1] - v.p[1]) - a.r - v.r;
+        if (d < minimum) minimum = d;
+      }
+    }
+  }
+  return minimum;
+}
