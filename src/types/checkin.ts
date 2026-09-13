@@ -521,8 +521,13 @@ export function piedDuPointRepondu(
   }.`;
 }
 
-/** « 1er » et non « 1 » — la seule irrégularité des jours du mois en français. */
-function jourDuMois(jour: number): string {
+/**
+ * « 1er » et non « 1 » — la seule irrégularité des jours du mois en français.
+ *
+ * Exportée depuis C2.8 : `src/types/saison.ts` en a besoin pour « jusqu'au 1er mars », et deux
+ * copies de cette irrégularité divergeraient par le même oubli que deux copies des douze mois.
+ */
+export function jourDuMois(jour: number): string {
   return jour === 1 ? '1er' : String(jour);
 }
 

@@ -23,6 +23,7 @@ import {
   libelleDeReponse,
   libellePeriodeAffiche,
   REBILAN_SUGGESTION_DAYS,
+  ancienneteEnMots,
   variationNote,
   type AssessmentSnapshot,
   type CheckinRecord,
@@ -423,8 +424,12 @@ export default function Suivi() {
 
           {suggestRebilan && (
             <ThemedView type="backgroundElement" style={styles.card}>
+              {/* **L'âge par la dérivation partagée, en mots** (C2.8). Le mois se calculait ici,
+                  en chiffres, tandis que le plan disait « Ton bilan date d'un moment » : deux écrans
+                  qui comptent chacun de leur côté finissent par annoncer six mois d'un côté et cinq
+                  de l'autre. En mots parce que c'est un ordre de grandeur, pas une mesure. */}
               <ThemedText weight={600} type="small">
-                Ton dernier bilan a {Math.floor(daysSinceLatest / 30)} mois
+                Ton dernier bilan a {ancienneteEnMots(daysSinceLatest)}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 Le refaire prend moins de temps que la première fois : tes réponses sont

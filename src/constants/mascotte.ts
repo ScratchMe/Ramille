@@ -172,6 +172,20 @@ export const RAMILLE = {
   suiviSansPoint: 'Je note tes réponses ici, au fil des saisons.',
 
   /**
+   * **L'ouverture d'une saison** (C2.8, `v1-14` §3.1) — sous la carte qui porte les deux nombres,
+   * et hors de son cadre.
+   *
+   * Elle ne dit ni combien de points ont été répondus, ni combien de fois quelque chose a changé :
+   * ces deux chiffres sont dans la carte, en voix produit. Elle annonce le départ, c'est tout — et
+   * c'est ce qui fait qu'elle n'a pas l'air de commenter un bilan de saison.
+   *
+   * La même phrase en cadence de repli (`v1-14` §3.1, « idem ») : « une saison » y est une façon de
+   * parler et non le nom du cycle, et c'est le seul endroit du produit où l'écart est sans
+   * conséquence — le mécanisme est dormant, et aucun chiffre ni aucune date ne dépend de ce mot.
+   */
+  ouvertureSaison: 'On repart pour une saison.',
+
+  /**
    * Juste après « C'est noté », sur la feuille : ce qui va se passer, avant de demander quoi
    * que ce soit. Deux variantes selon la boucle qui concerne la personne — jamais un nombre
    * de jours, toujours le jour lui-même.

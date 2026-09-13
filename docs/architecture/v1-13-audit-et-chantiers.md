@@ -224,7 +224,7 @@ par chantier, une PR par issue (`Closes #n`), la ligne de §10 cochée à la fin
 | **3 — Bugs silencieux, écrans d'onglets** | C1.4, C1.6, C1.7, C1.8, C1.13 | **non** — enchaînés, mêmes fichiers | Réseau coupé dit vrai, la feuille des rappels ne se ferme plus sur rien, le suivi se rafraîchit, le chiffre affiché juste, la documentation à jour. **Jalon : publiable sur Play.** | 4 petits, 1 moyen |
 | **4 — Lot 2, socle et serveur** | C2.14, C2.6 d'abord (une heure chacun) ; puis C2.3 → C2.5 (générateurs, enchaînés) ; C2.2 ; C2.11 ; C2.9 après C0.5 | en partie | La saison côté client, la forme insérable, la période écoulée, les bonnes personnes dans chaque boucle, l'engagement qui survit et se reconduit, le rappel ouvert ailleurs, les rappels qui s'espacent. Rien de tout cela n'attendait le canvas. | 3 petits, 4 moyens |
 | **5 — Lot 2, le point** | C2.1 → C2.4 → C2.10 → C2.12 | **non** — même fichier, cet ordre | Le point qui nomme l'action, trois réponses, la carte qui reste, le second renforcement, les variantes. Planches A1 à A3. **Livrée le 11/09/2026** ([#166](https://github.com/ScratchMe/TraceVerte/pull/166)) — et c'est la première vague dont la colonne « Parallèle ? » ne s'est pas trompée : les quatre chantiers se partagent bien `checkin-card.tsx` **et** `src/types/checkin.ts`, que C2.1 a transformé en source unique de la question et C2.12 en source unique du tirage. | 2 moyens, 2 petits |
-| **6 — Lot 2, la saison et le suivi** | `plan.tsx` : C2.8 puis C4.6 ; suivi : C2.7 puis C3.1 ; C2.13 ; C3.9 | trois files parallèles, séquentielles en interne | La fin et l'ouverture de saison, les pistes et le premier pas, le suivi dans la durée, la restitution d'un re-bilan, la mascotte saisonnière, la reprise de bilan. Planches B à G et Saisons. **Jalon : la boucle existe d'une saison à l'autre.** | 5 moyens, 1 petit |
+| **6 — Lot 2, la saison et le suivi** | C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9 | **non** — un seul chantier disjoint, voir le relevé du 13/09/2026 ci-dessous | La fin et l'ouverture de saison, les pistes et le premier pas, le suivi dans la durée, la restitution d'un re-bilan, la mascotte saisonnière, la reprise de bilan. Planches B à G et Saisons. **Jalon : la boucle existe d'une saison à l'autre.** | 5 moyens, 1 petit |
 | **7 — Lot 3 restant** | C3.2, C3.3, C3.7, C3.10 (ce que C2.2 n'a pas déjà fait), C3.11, C3.12 ; puis C3.4 + C3.5 + C3.6 **en une seule migration** ; puis C3.8 | oui, puis non | La source du chiffre, les hypothèses affichées, le ton, les tests ; l'intermodal, le covoiturage des loisirs, la tranche haute ; le plan plausible. | 4 petits, 3 moyens, 2 grands |
 | **8 — Lot 4** | C4.1, C4.2, C4.3, C4.4, C4.5, C4.7, C4.8 | chantier par chantier | Chacun précédé d'une page de décision. | 4 grands, 3 moyens |
 
@@ -240,6 +240,22 @@ C2.14 ne crée que deux fichiers neufs :
 
 C'est l'ordre annoncé en §2.3, mais pas pour la raison annoncée. Troisième fois que la colonne
 « Parallèle ? » se trompe.
+
+**Relevé du 13/09/2026 — la vague 6 n'a pas trois files parallèles, elle en a une.** Quatrième fois
+que la colonne se trompe, et cette fois le chantier rangé dans la troisième file est celui qui touche
+les deux fichiers les plus disputés : **`src/constants/mascotte.ts` est revendiqué par trois** (C2.7
+pour « Je vois la différence. », C2.8 pour « On repart pour une saison. », C3.9 pour quatre répliques
+de section et le 404), **`src/app/(tabs)/suivi/bilan.tsx` par trois** (C2.7 barre-contour et phrase de
+variation, C3.1 mobilité contrainte, C3.9 le lien « Un chiffre me semble faux »), `plan.tsx` par deux
+(C2.8, C4.6) et `src/types/suivi.ts` par deux (C2.7, C2.8). **Seul C2.13 est réellement disjoint** — et
+son texte appelle `src/types/saison.ts` « nouveau » alors que C2.14 l'a livré : c'est le piège de C2.1
+en plus petit, un fichier à **étendre** et non à créer. Ordre retenu :
+
+    C2.8  →  C2.7  →  C3.1  →  C4.6  →  C2.13  →  C3.9
+
+C3.9 passe en dernier parce qu'il touche les deux fichiers les plus disputés ; C2.13 juste avant, pour
+que la mascotte saisonnière et la carte d'ouverture se regardent dans la même séance sur appareil
+(§11.9).
 
 **Correction du 10/09/2026 au soir — la vague 2 n'est pas « à fichiers disjoints ».** En relevant
 les fichiers de ses huit chantiers avant de les distribuer, six fichiers se sont révélés partagés :
@@ -1298,6 +1314,27 @@ minutes ; ton plan s'ajuste. ». « Reprendre » pose la marque « vue » (l'act
 par C2.2) ; « Choisir une autre » déplie les pistes (C4.6) et garde l'ancienne action en mémoire.
 Consomme `saisonDe` et `recapDeSaison` (C2.14).
 
+**L'écart au libellé de `v1-11` §3.4, consigné (point 4).** Ce paragraphe-là prescrivait, pour la
+carte de re-bilan du plan, « Une nouvelle saison a commencé. Ton bilan date de {n} mois. » sur un
+fond `backgroundSelected`. Livré en `v1-11`, il l'a été à moitié : la phrase saisonnière est restée,
+le nombre de mois a disparu (« Ton bilan date d'un moment »). Les deux moitiés étaient fautives, et
+pour deux raisons différentes.
+
+La formulation saisonnière, d'abord, **n'était pas vraie au moment où elle s'affichait** : la carte
+se déclenche sur 182 jours d'ancienneté du bilan, pas sur une bascule de saison. Un bilan du 10 mars
+la fait apparaître le 8 septembre, une semaine après le début de l'automne mais aussi bien le
+15 juillet pour un bilan du 14 janvier — en plein été. Elle pouvait de surcroît coexister avec la
+puce « Cadence : Été 2026 » posée quelques lignes plus haut, ce qui est le constat A13-13. Cette
+formulation appartient donc à la carte d'**ouverture**, qui se déclenche sur `period_start` et ne
+peut pas se tromper.
+
+Le nombre de mois, ensuite, n'a pas été perdu par oubli : « Ton bilan date de 6 mois » est un
+chiffre, et un chiffre invite à le vérifier. C'est un ordre de grandeur, donc il s'écrit en mots —
+`ancienneteEnMots` (`src/types/suivi.ts`), partagée avec la carte du suivi, qui l'écrivait en
+chiffres et le calculait sur place. Les deux cartes disent maintenant l'âge, par la même dérivation :
+deux écrans qui comptent chacun de leur côté finissent par annoncer six mois d'un côté et cinq de
+l'autre. Le fond passe à `backgroundElement` (canvas B1) — une proposition, pas une mise en avant.
+
 ### C2.9 — Rappels qui s'espacent, et une sortie hors de l'app
 
 **Priorité** P2 · **Effort** moyen · **Dépend de** C0.5 · **Arbitrage** D8 · **Constats** C-4, A9-7, A9-16, A9-21.
@@ -1926,7 +1963,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C2.5 | [#123](https://github.com/ScratchMe/TraceVerte/issues/123) | [#162](https://github.com/ScratchMe/TraceVerte/pull/162) | 11/09/2026 | livré ; quatre écarts au chantier, tous vérifiés en base — **la catégorie du mode décide, pas `commute_main_leg_co2_kg_year = 0`** (faux depuis les facteurs ACV : `velo` vaut 0,00017, le critère n'attraperait que les piétons) ; la catégorie `velo_marche` compte **trois** modes, donc la trottinette a sa question et sa réplique ; le résiduel d'un foyer sans véhicule passe en **train** et non en bus (à 0,1224 le bus ne vaut que 14 % de moins qu'une thermique, la correction aurait été un non-événement) ; et le mode inventé nommait aussi le **poste dominant**, moitié d'A13-4 que la recommandation ne couvrait pas. A imposé la paire `complement_de_maintien` / `src/types/checkin.ts`, qui porte désormais **la question du point côté client** — la carte l'écrivait elle-même, au présent et avec le libellé snapshoté, donc la notification et l'écran ne posaient pas la même question |
 | C2.6 | [#124](https://github.com/ScratchMe/TraceVerte/issues/124) | [#160](https://github.com/ScratchMe/TraceVerte/pull/160) | 11/09/2026 | livré ; a imposé trois colonnes (`assessment_results.extras_poste`, `engagement_checkins.poste`, `plan_cycles.poste`) que le chantier n'avait pas anticipées — la forme insérable se dérive du poste, que le schéma ne gardait nulle part |
 | C2.7 | [#125](https://github.com/ScratchMe/TraceVerte/issues/125) | | | |
-| C2.8 | [#126](https://github.com/ScratchMe/TraceVerte/issues/126) | | | |
+| C2.8 | [#126](https://github.com/ScratchMe/TraceVerte/issues/126) | [#168](https://github.com/ScratchMe/TraceVerte/pull/168) | 13/09/2026 | livré, **sans une ligne de SQL** — `period_end` et `cadence_type` existaient déjà et n'étaient lus par aucun écran, ce qui est tout le constat A8-8. Sept écarts au canvas, dont deux qui touchent au fond. **La carte d'ouverture ne prend pas la place d'un point en attente** : le lien du rappel pointe `/plan`, donc masquer la question y ferait ouvrir une notification sur un écran qui ne la porte pas — le défaut exact trouvé sur appareil le 09/09/2026 (`v1-12` §8.1), et deux semaines de points perdus pour qui ne touche pas les boutons. Elle remplace la **carte d'attente**, Ramille parlant déjà sous elle. Et **le récapitulatif ne nomme aucun poste** : le décompte porte sur les deux boucles, donc « … sur ton trajet » serait faux pour quelqu'un dont les changements sont des voyages (même fausseté lisible que C2.6). Il ne dit jamais zéro non plus — sans point répondu la phrase disparaît, sans changement sa seconde moitié tombe. Trois relevés que le chantier ne nommait pas : la carte a besoin du **cycle précédent** (`limit(2)`), dont l'existence est ce qui distingue une bascule d'un premier bilan — « On repart pour une saison » ne vaut que si l'on a déjà roulé — et dont les bornes sont lues sur sa ligne plutôt que recalculées, une cadence `rolling_quarter` n'ayant pas de saison ; le canvas ne dessine pas les deux cas où il n'y a pas d'action à reprendre, dont le plan à zéro action de tout cycliste depuis C2.5, d'où `sortiesDeLouverture` ; et la fenêtre de lecture des points **tombait par coïncidence** au même jour que le début de la saison précédente (trois périodes mensuelles en arrière depuis le 1er d'un mois est le 1er du mois trois mois plus tôt), donc l'oubli ne se serait pas vu — elle prend maintenant le minimum des deux. Le trait de temps n'est pas plein le dernier jour de la saison, et c'est le rôle du « + 1 » de la durée. La puce « Cadence : Automne 2026 » disparaît : la période se nomme dans la carte du cap, à côté de sa fin. Reste §11.9 (le rendu sur appareil) |
 | C2.9 | [#127](https://github.com/ScratchMe/TraceVerte/issues/127) | [#164](https://github.com/ScratchMe/TraceVerte/pull/164) | 11/09/2026 | livré, avec **un écart assumé au point 2 : `List-Unsubscribe-Post` n'est pas envoyé.** Annoncer `One-Click` engage l'URL à accepter un POST sans confirmation ; `/rappels/stop` est une page de l'export statique, qui ne peut pas y répondre — l'annoncer ferait échouer le geste **en silence**, là où l'en-tête seul fait ouvrir le lien dans un navigateur (comportement prévu par la RFC 8058). Le contrôle de la migration épingle donc son **absence**, pour que personne ne l'ajoute par symétrie. Deux seuils plutôt qu'un (4 puis 8) : sans le second, « espace » serait un état terminal pour la boucle mensuelle, qui est déjà à ce rythme. Le plafond du régime espacé compte sur `created_at` et non `sent_at`, sinon la décroissance ne s'appliquerait pas du tout tant que l'expéditeur n'est pas configuré. Et le jeton est écrit **explicitement** dans l'`insert` : laissé au `default` de la colonne, il aurait tiré un second uuid, différent de celui que le corps du message venait d'afficher — un lien mort au premier clic, sans qu'aucune des deux moitiés ait l'air fausse. Vérification : 33 assertions pgTAP rejouées sur le distant, plus le fichier `17` en entier (3 échecs attendus, ceux qui exigent l'appel d'envoi qu'on ne déclenche pas là-bas) |
 | C2.10 | [#128](https://github.com/ScratchMe/TraceVerte/issues/128) | [#166](https://github.com/ScratchMe/TraceVerte/pull/166) | 11/09/2026 | livré ; **la requête de `v1-02` §4 est périmée et l'est devenue en silence** — elle prend les deux dernières *lignes*, ce qui était juste avant que 20260904180000 ne close les périodes révolues en `expired` **et les garde en base**. D'où `public.periode_precedente`, quatrième paire SQL/TypeScript : la période se calcule. Non-vacuité vérifiée sur la fixture du test `25`, qui compte 2 par `lag()` et 1 par période. Deux écarts : le signal **ne se rallume pas** (`estDeuxiemeFoisDeSuite` exige que la période d'avant ne soit pas un « oui » — la phrase dit « Deuxième semaine de suite », à la cinquième elle serait fausse, et la recevoir chaque semaine en ferait du papier peint), ce qui demande un troisième état là où `v1-14` §4.6 décrit deux arguments ; et la phrase existe en quatre formes, la boucle mensuelle couvrant deux postes. Les assertions de la vue sont écrites en **écarts** et non en totaux : elle agrège par segment et n'expose pas `user_id`, donc un total supposerait une base vierge. Corollaire de C2.4 refermé : la requête des points du plan est bornée par une fenêtre de trois périodes mensuelles |
 | C2.11 | [#129](https://github.com/ScratchMe/TraceVerte/issues/129) | [#164](https://github.com/ScratchMe/TraceVerte/pull/164) | 11/09/2026 | livré ; le point 3 a demandé une dérivation pure (`src/types/session.ts`) parce que « pas de session » recouvre **trois** états et non deux — un jeton refusé, une panne de transport et une vraie première ouverture, qui n'appellent pas la même réponse. Vérifié dans `auth-js` que `getSession()` remonte bien l'erreur de rafraîchissement, sans quoi l'état `refusee` aurait été déclaré et inatteignable. Deux relevés : l'écran de reconnexion doit être une **surcouche** du `Stack` (rendu à sa place, ses deux boutons n'ont aucune route où aller), et la marque `?rappel=1` n'était épinglée nulle part — deux assertions ajoutées à `09`, dont celle qui tombe si quelqu'un range le paramètre dans un segment de chemin et fait repartir le lien dans le navigateur |
@@ -1956,7 +1993,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 
 ## 11. Vérifications sur appareil en attente
 
-Sept « Fait quand » de ce document ne se prouvent pas au clavier, et un huitième point est un
+Huit « Fait quand » de ce document ne se prouvent pas au clavier, et un neuvième point est un
 reste assumé. Ils sont consignés ici plutôt que cochés en §10 : une ligne cochée dit « livré », et
 le code l'est — ce qui manque est la preuve en conditions réelles. Même régime que `v1-11` §8 et
 `v1-12` §8, dont les points restants ne sont pas repris ici.
@@ -1972,8 +2009,10 @@ le code l'est — ce qui manque est la preuve en conditions réelles. Même rég
 | 11.6 | C1.7 (le suivi au retour) | **Répondre au point depuis Plan, puis toucher l'onglet Suivi** : la réponse doit y être. Puis refaire un bilan et toucher Suivi : la nouvelle barre doit y être. Le hook écoute deux retours — le focus de l'écran et le retour de l'app au premier plan — et seul le second se vérifie en mettant vraiment l'app en arrière-plan, ce qu'aucun test ne fait. Même famille que la leçon du 09/09/2026 sur le plan. |
 | 11.7 | C2.9 (la sortie des rappels) | **Recevoir un vrai rappel par email, puis cliquer son lien de désinscription**, depuis une messagerie et dans un navigateur où l'app n'est pas installée. Trois choses à regarder, et **aucune n'est couverte par une suite** : que le bouton « Se désabonner » de la messagerie apparaisse au-dessus du message (c'est l'en-tête `List-Unsubscribe`, que la branche email de `send_pending_reminders` n'évalue qu'une fois les secrets Vault en place — donc jamais en CI) ; que `/rappels/stop` s'ouvre bien dans le **navigateur** et pas dans l'app (la revendication `assetlinks.json` ne couvre que `/plan`, mais c'est le genre de périmètre qui se vérifie en le faisant) ; et que le second clic sur le même lien dise « ce lien n'est plus valable » au lieu d'une panne. Le chemin passe par `generate_commute_checkins()` puis `send_pending_reminders()` — le cron entier — et non par un point inséré à la main, sinon l'étalement du `send_after` n'est pas exercé. |
 | 11.8 | C2.11 (le lien de connexion) | **Ouvrir un lien de connexion `ramille://` depuis une messagerie sur un téléphone neuf**, et vérifier qu'il aboutit sur le plan, barre d'onglets comprise. Ce chemin n'a jamais été exercé sur appareil (`v1-11` §8) alors que c'est le seul accès à un compte existant, et C2.11 en dépend : l'écran de reconnexion qu'il ajoute n'a de sens que si ce lien arrive. Ne pas le confondre avec le lien du **rappel**, vérifié le 09/09/2026, qui est en `https://` et passe par `assetlinks.json`. |
+| 11.9 | C2.8 (la saison qui s'ouvre) | **Voir la carte d'ouverture et le trait de temps rendus pour de vrai**, sur un compte qui a deux cycles et dans les deux thèmes. Trois choses qu'aucune suite ne regarde : l'entrée Reanimated (la carte démarre à `opacity: 0` — si l'animation ne part pas, elle reste invisible, et c'est la famille de défaut du 08/09/2026) ; le trait de 6 px en `accentMuted` sur fond `border`, qui doit se lire comme une mesure du temps et non comme une jauge de progression ; et **Ramille sous la carte, hors du cadre**, à 44 px et penchée de −5°, qui ne doit pas avoir l'air de commenter les deux nombres juste au-dessus. Le distant ne porte aujourd'hui aucun bilan (relevé le 13/09/2026 : 21 comptes anonymes, zéro `assessments`), donc la séance demande de soumettre un bilan puis d'antidater un cycle. À faire une fois C2.13 livré si possible — la mascotte saisonnière se regarde au même endroit, et la séance coûte le même bilan à saisir. |
 
 Les points 11.1 et 11.4 vont ensemble : le passage TalkBack sera plus utile une fois les six
 appels repris, sinon il relèvera six fois le même défaut déjà connu. Les points 11.7 et 11.8 vont
 ensemble aussi, pour une autre raison : les deux demandent un vrai message reçu dans une vraie
-messagerie sur un appareil, donc autant les faire dans la même séance.
+messagerie sur un appareil, donc autant les faire dans la même séance. Et 11.9 attend C2.13 sans le
+bloquer : les deux se regardent sur le même écran, au prix d'un seul bilan à saisir.

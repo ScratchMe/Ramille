@@ -120,8 +120,11 @@ Les répliques existantes ne bougent pas : `attenteSigneHebdo` (« Je te fais si
   « − 184 kg », « Automne 2026 » à gauche, « jusqu'au 30 novembre » à droite, légende « La saison
   avance ; le trait mesure le temps, pas toi. »
 - Carte de re-bilan : « Ton bilan a six mois. Le refaire prend quelques minutes ; ton plan
-  s'ajuste. » + « Refaire mon bilan ». (Le canvas dit « cinq minutes » : à valider par le
-  titulaire, le produit ne promet de durée nulle part ailleurs.)
+  s'ajuste. » + « Refaire mon bilan ». (Le canvas dit « cinq minutes » ; tranché le 13/09/2026 pour
+  « quelques minutes » — le produit promet bien « environ 5 minutes », mais pour le **premier**
+  bilan, et un re-bilan prérempli est plus rapide. Écart 8.) L'âge vient d'`ancienneteEnMots`
+  (`src/types/suivi.ts`), partagée avec la carte du suivi : deux écrans qui comptent chacun de leur
+  côté finissent par annoncer six mois d'un côté et cinq de l'autre.
 - Carte d'ouverture : étiquette « NOUVELLE SAISON », titre « L'hiver commence. », corps « Cet
   automne : 11 points répondus, 8 fois où tu as changé quelque chose sur ton trajet. », boutons
   « Reprendre la même action » / « Choisir une autre ». Cadence de repli : « NOUVELLE PÉRIODE »,
@@ -220,9 +223,13 @@ unique partiel (une seule action engagée par cycle) ne bouge pas.
 `plan_cycles.period_end` existe déjà ; le plan le sélectionne. Le récapitulatif de la carte
 d'ouverture se calcule **côté client** à partir des points de la période précédente
 (`recapDeSaison(checkins, bornes)` dans `src/types/saison.ts`, C2.14) — pas de vue, pas de RPC.
-L'état « carte d'ouverture vue » est **local à l'appareil** (AsyncStorage, clé
-`traceverte.saison-ouverture-vue:<plan_cycle_id>`), comme la feuille des rappels : la carte ne
-vit que deux semaines, un second appareil peut la revoir. Le suivi lit `plan_cycles` +
+L'état « carte d'ouverture vue » est **local à l'appareil** (AsyncStorage), comme la feuille des
+rappels : la carte ne vit que deux semaines, un second appareil peut la revoir. **Une clé unique qui
+porte l'identifiant du cycle** (`traceverte.saison_ouverture_vue.v1`) et non une clé par cycle
+(écart 19) — un seul cycle est en ouverture à la fois, et le motif est celui de la marque de
+l'engagement orphelin. Le cycle **précédent** est lu dans la même requête que le courant
+(`limit(2)`) : ses bornes servent au récapitulatif, et son existence est ce qui distingue une
+bascule d'un premier bilan. Le suivi lit `plan_cycles` +
 `plan_actions` engagées + l'archive pour « ce que tu as décidé », et les colonnes par poste
 d'`assessment_results` (`commute_co2_kg_year`, `leisure_co2_kg_year`, `travel_co2_kg_year`) pour
 l'écart par poste.
@@ -261,9 +268,12 @@ jusqu'au prochain point ; écran d'onglet, rafraîchi au retour (`useRafraichirA
 
 **`CarteDeSaison`.** Bordure 1 px `border`, fond `backgroundTinted`, rayon `Radius.card` (18),
 padding 20, gap 12. Étiquette 13/18/700, interlettrage +0,3, `accentText`, majuscules ; titre
-`screenTitle` ; corps `body` `textSecondary` ; `Button` primaire puis secondaire. Elle se tient à
-la place du point, en tête du plan, pendant les deux premières semaines de la période, tant que
-la marque locale « vue » n'est pas posée. **Ramille est dessous, hors du cadre** : `RamilleDit`
+`screenTitle` ; corps `body` `textSecondary` ; `Button` primaire puis secondaire. Elle se tient en
+tête du plan, au-dessus de son titre, pendant les deux premières semaines de la période, tant que
+la marque locale « vue » n'est pas posée. **Elle ne prend pas la place d'un point en attente** —
+elle remplace la carte d'attente (écart 16) : le lien du rappel pointe `/plan`, donc masquer la
+question y ouvrirait une notification sur un écran qui ne la porte pas. Ses boutons sortent de
+`sortiesDeLouverture`, parce que deux cas de production n'ont pas d'action à reprendre (écart 18). **Ramille est dessous, hors du cadre** : `RamilleDit`
 44 px, `happy`, `tilt` −5, `ouvertureSaison`. Entrée : `translateY` 16 → 0 et opacité, 320 ms
 ease-out (Reanimated). Rien d'autre ne bouge.
 
@@ -391,8 +401,10 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
 6. « Tu as fait autrement. Je vois la différence. », pas « Tu as choisi le vélo. » ; les variantes
    qui nomment un jour ont une version par boucle (§3.1).
 7. Le compte des écrans de la reprise se dérive de `isStepVisible`.
-8. « quelques minutes » plutôt que « cinq minutes » sur la carte de re-bilan, sauf décision
-   contraire du titulaire.
+8. « quelques minutes » plutôt que « cinq minutes » sur la carte de re-bilan (tranché le
+   13/09/2026, C2.8) : le produit promet « environ 5 minutes » pour le **premier** bilan — transition
+   de l'onboarding, états vides du plan et du suivi — et un re-bilan est plus rapide, ses réponses
+   étant préremplies. Reprendre la même durée la surestimerait.
 9. **`maintienNon` a quatre variantes et non deux** (C2.5, 11/09/2026). Le canvas écrit
    `maintienNon.velo` et `maintienNon.marche` ; la catégorie `velo_marche` compte **trois** modes en
    base (`velo`, `marche`, `trottinette` — relevé le 11/09/2026, et un test pgTAP épingle la liste).
@@ -440,12 +452,59 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     ligne du canvas nomme déjà le mois **écoulé** (« Pas de voyage en septembre ») : les deux moitiés
     ne désignaient pas la même période. Un test épingle l'invariant — le bouton et la question parlent
     de la même période — plutôt que la phrase, pour qu'il survive à une reformulation.
+16. **La carte d'ouverture ne prend pas la place d'un point en attente** (C2.8, 13/09/2026). §5 dit
+    « elle se tient à la place du point » ; le lien du rappel pointe `/plan`, donc masquer la question
+    revient à faire ouvrir une notification sur un écran qui ne la porte pas — le défaut exact que le
+    test sur appareil du 09/09/2026 a trouvé (`v1-12` §8.1), et la promesse rompue à l'endroit même où
+    elle se tient. Deux semaines de points perdus pour qui ne touche pas les boutons de la carte. Elle
+    se pose donc **au-dessus** du titre du plan et remplace la **carte d'attente** : Ramille parle
+    déjà sous la carte d'ouverture, et deux fois dans le même écran ferait du bruit.
+17. **Le récapitulatif ne nomme aucun poste** (C2.8). Le canvas écrit « … changé quelque chose **sur
+    ton trajet** » ; `recapDeLaPeriode` ne filtre pas sur `loop_type` et compte donc les deux boucles,
+    ce qui rendrait la phrase fausse pour quelqu'un dont les changements sont des voyages — même
+    fausseté lisible que celle retirée par C2.6. Le chantier v1-13 écrivait déjà la version courte
+    (« M fois où tu as changé quelque chose »), c'est elle qui est retenue.
+18. **Deux cas que le canvas ne dessine pas, et une dérivation pour les porter** (C2.8). Les boutons
+    « Reprendre la même action » / « Choisir une autre » supposent une action engagée et reconduite.
+    Rien d'engagé (personne ne s'était engagé la saison passée, ou la reconduction n'a pas trouvé son
+    gabarit) : « Reprendre la même action » ne nomme rien, et la carte propose « Choisir une action ».
+    Plan sans action — **tout cycliste et tout profil sédentaire depuis C2.5** : proposer d'en choisir
+    une serait promettre une liste vide, et la carte n'offre que « Compris ». Une action et une seule :
+    « Choisir une autre » ne mènerait nulle part, elle disparaît. D'où `sortiesDeLouverture`, testée
+    par cas, plutôt qu'un ternaire dans le composant.
+19. **La marque « vue » est une clé unique qui porte l'identifiant du cycle** (C2.8). §4.5 décrit
+    `traceverte.saison-ouverture-vue:<plan_cycle_id>`, donc une entrée par saison, gardée à jamais et
+    jamais relue — quatre par an sur un stockage dont rien ne fait le ménage. Un seul cycle peut être
+    en ouverture à un instant donné, donc « la carte du cycle X a été vue » se dit exactement par « la
+    dernière ouverture vue est X ». C'est le motif de la marque de l'engagement orphelin (C2.2), pour
+    la même raison.
+20. **La carte du cap se rend même sans cap, et la puce « Cadence » disparaît** (C2.8). Le canvas met
+    « Automne 2026 » dans la carte du cap sur un écran qui ne porte pas la puce ; les garder tous les
+    deux nommerait la période à deux endroits de l'écran, ce qui est le plus sûr moyen de les voir un
+    jour se contredire — et « Cadence : … » disait la chose dans un vocabulaire de réglage. La carte
+    devient donc l'endroit où la période se nomme, et se rend même quand `capKg` est nul
+    (`baseline_co2_kg_year` peut valoir zéro : un profil sans émission sur son poste dominant).
+21. **Le bandeau de bascule garde la seconde phrase de C2.2** (C2.8). Le canvas dit « L'hiver a
+    commencé pendant que tu étais là. » + « Voir la saison » ; entre minuit et le passage du cron
+    nocturne, le cycle suivant n'existe pas encore, donc relire ne trouve rien de plus et le lien
+    aurait l'air mort. « Ton prochain plan arrive ; en attendant, voici où tu en étais. » reste, et
+    c'est elle qui le rend honnête. La saison nommée est celle **du jour** et non celle du cycle
+    suivant, pour la même raison.
+22. **Le trait de temps n'est pas plein le dernier jour de la saison** (C2.8). `period_end` est le
+    dernier jour **inclus**, donc la saison dure 91 jours et non 90 : au matin du 30 novembre, 90 sont
+    derrière et il en reste un. Le trait n'atteint 1 qu'une fois la période révolue — c'est-à-dire au
+    moment où le bandeau de bascule prend le relais. Remplacer ce « + 1 » par un calcul d'écart entre
+    bornes ferait afficher « plein » un jour trop tôt.
 
 ## 11. Tests
 
 - Jest : `checkin.test.ts` (table de cas partagée avec le SQL : quatre `question_kind`, deux
   boucles, jours nommés ; `repliqueDeCheckin` déterministe ; `estDeuxiemeFoisDeSuite`) ;
-  `saison.test.ts` (douze mois, bornes, libellés, `recapDeSaison`) ; `mascotte.test.ts` sur chaque
+  `saison.test.ts` (douze mois, bornes, libellés, `recapDeSaison` ; puis, depuis C2.8, la fin de
+  période — le « 1er », les caractères de la date et non un `Date` —, la progression bornée à [0, 1]
+  qui traverse un changement d'heure sans dériver et n'est pleine qu'une fois la période révolue, la
+  fenêtre d'ouverture au jour près, les quatre sujets de récapitulatif et les trois façons de ne pas
+  dire zéro, les quatre cas de `sortiesDeLouverture`) ; `mascotte.test.ts` sur chaque
   variante et chaque clé nouvelle ; `mascot.test.ts` (accessoires : lisibilité ≥ 28 px, rien sous
   28, dans la silhouette ou découpé, conformité aux chemins, rendu identique sans saison) ;
   `suivi.test.ts` (écart par poste, groupement par saison, prédécesseur strict) ; `plan.test.ts`
@@ -461,8 +520,9 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
 
 Voir `v1-13` §2.3. En bref : le socle (C2.14, C2.6), le serveur (C2.3, C2.5, C2.2, C2.11, C2.9),
 puis la chaîne du point dans `checkin-card.tsx` (C2.1 → C2.4 → C2.10 → C2.12), puis la saison et
-le suivi en parallèle (C2.8 puis C4.6 dans `plan.tsx` ; C2.7 puis C3.1 dans le suivi ; C2.13 ;
-C3.9).
+le suivi — annoncés en parallèle, enchaînés en pratique : le relevé de fichiers du 13/09/2026 (v1-13
+§2.3) ne trouve qu'un chantier disjoint, C2.13, et l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 →
+C2.13 → C3.9**.
 
 ## 13. Ce que CLAUDE.md devra dire ensuite
 
