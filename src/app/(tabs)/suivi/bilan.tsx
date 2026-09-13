@@ -19,6 +19,8 @@ import {
   comparisonNote,
   dominantHeadline,
   modeResultat,
+  montreMoyenneFrancaise,
+  NOTE_MOBILITE_CONTRAINTE,
   palierNote,
   partDuTotal,
   pourcentageDominant,
@@ -504,11 +506,21 @@ export default function BilanResultat() {
   const shareOfTotal = (kg: number) => partDuTotal(kg, results.total_co2_kg_year);
   const dominantPercent = pourcentageDominant(results);
 
+  // **La moyenne française n'est pas montrée à qui n'a pas le choix** (C3.1).
+  // `assessment_results.mobility_constrained` était calculée et lue par aucun écran : la barre
+  // s'affichait donc à quelqu'un qui vient de déclarer n'avoir aucun transport en commun, et une
+  // moyenne dont il ne peut pas s'approcher est un score avec un mauvais côté, pas un repère.
+  // **Rien d'autre n'est masqué** : le repère 2050, le palier et la répartition par poste restent.
+  const montreMoyenne = montreMoyenneFrancaise(results);
+
   // **L'échelle inclut le bilan précédent depuis C2.7**, sans quoi sa barre dépasserait la carte
   // exactement dans le cas le plus fréquent d'un re-bilan réussi : le précédent est plus lourd que
-  // l'actuel, et c'est bien ce qu'on vient montrer.
+  // l'actuel, et c'est bien ce qu'on vient montrer. Et elle **exclut** la moyenne quand sa barre ne
+  // se rend pas (C3.1) : sinon toutes les barres restantes seraient raccourcies par un repère absent
+  // de l'écran.
   const precedentT = precedent ? precedent.totalKg / 1000 : 0;
-  const domain = Math.max(totalT, precedentT, FRANCE_AVERAGE_TRANSPORT_T) / 0.85;
+  const domain =
+    Math.max(totalT, precedentT, montreMoyenne ? FRANCE_AVERAGE_TRANSPORT_T : 0) / 0.85;
   const barPercent = (value: number) => Math.max((value / domain) * 100, 3);
 
   return (
@@ -687,12 +699,14 @@ export default function BilanResultat() {
                   accentColor={theme.accentText}
                 />
               )}
-              <CompareRow
-                label="Moyenne en France"
-                value={formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}
-                percent={barPercent(FRANCE_AVERAGE_TRANSPORT_T)}
-                accentColor={theme.accentMuted}
-              />
+              {montreMoyenne && (
+                <CompareRow
+                  label="Moyenne en France"
+                  value={formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}
+                  percent={barPercent(FRANCE_AVERAGE_TRANSPORT_T)}
+                  accentColor={theme.accentMuted}
+                />
+              )}
               {/* Sauf quand le palier EST le repère : il porte déjà son nom juste au-dessus,
                   deux barres de même valeur n'apprendraient rien. */}
               {(montreRepere2050 || !palier) && !palier?.isTarget2050 && (
@@ -717,6 +731,18 @@ export default function BilanResultat() {
               <ThemedText type="small" themeColor="textSecondary">
                 {variationDepuisLeBilanPrecedent(precedent, results.total_co2_kg_year)}
                 {palierFranchi ? ' Le palier que tu visais est derrière toi.' : ''}
+              </ThemedText>
+            )}
+            {/* **La phrase qui remplace la comparaison** (C3.1). Rendue à part et non à la place de
+                `comparisonNote` : celle-ci ne parle qu'en **relecture** (en mode `nouveau` c'est
+                `palierNote` qui la remplace), donc la loger dedans seul aurait fait qu'un profil en
+                mobilité contrainte ne la voie jamais à la sortie du questionnaire — c'est-à-dire à
+                l'endroit précis où la barre vient d'être retirée. `comparisonNote` y renonce aussi de
+                son côté, et le garde sur `palier` est ce qui empêche la relecture de la dire **deux
+                fois** — une branche par chemin, jamais les deux en même temps. */}
+            {!montreMoyenne && palier !== null && (
+              <ThemedText type="small" themeColor="textSecondary">
+                {NOTE_MOBILITE_CONTRAINTE}
               </ThemedText>
             )}
             {/* En relecture il n'y a jamais de palier, donc c'est toujours `comparisonNote` qui

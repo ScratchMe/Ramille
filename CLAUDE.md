@@ -563,8 +563,9 @@ avant de publier n'est pas du code mais les vérifications de la §11 et la chec
 porte le jalon « la boucle existe d'une saison à l'autre », et son relevé de fichiers du 13/09/2026
 a démenti la colonne « Parallèle ? » pour la quatrième fois — un seul chantier y est réellement
 disjoint (C2.13), l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9**. C2.8 (la saison a
-une fin et un début) et C2.7 (le suivi dans la durée : l'écart par poste, les décisions saison après
-saison, les points groupés, la restitution d'un re-bilan) sont livrés.
+une fin et un début), C2.7 (le suivi dans la durée : l'écart par poste, les décisions saison après
+saison, les points groupés, la restitution d'un re-bilan) et C3.1 (la mobilité contrainte est lue par
+la restitution) sont livrés.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -1322,6 +1323,18 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `ouvertureDeSaison`, `sortiesDeLouverture` et `basculeDeSaison`. Les douze mois et le « 1er »
   viennent de `src/types/checkin.ts` (`MOIS_FRANCAIS`, `jourDuMois`, exporté pour l'occasion) : une
   seconde copie divergerait par la faute de frappe que personne ne relit.
+- **La moyenne française n'est pas montrée à qui n'a pas le choix** (C3.1,
+  `montreMoyenneFrancaise` dans `src/types/resultat.ts`). `assessment_results.mobility_constrained`
+  est calculée depuis l'increment 6, commentée « pour la restitution », et n'était lue par **aucun**
+  écran : la barre s'affichait donc à quelqu'un qui vient de déclarer n'avoir aucun transport en
+  commun, et une moyenne dont il ne peut pas s'approcher est un score avec un mauvais côté, pas un
+  repère. Trois points à ne pas défaire : **`null` montre la barre** (les bilans d'avant la colonne
+  la portent, et ne pas savoir n'est pas une contrainte — d'où `!== true`) ; **rien d'autre n'est
+  masqué**, ni le repère 2050, ni le palier, ni la répartition par poste, et le drapeau ne pilote pas
+  l'estimateur d'actions, qui filtre l'impossible par le contexte B4 ; et **la phrase de
+  remplacement se rend à deux endroits gardés l'un par l'autre** — `comparisonNote` ne parle qu'en
+  relecture, `palierNote` la remplace en mode `nouveau`, donc une seule branche aurait laissé le
+  profil concerné sans phrase à l'endroit même où la barre disparaît.
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
   faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
   professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne
