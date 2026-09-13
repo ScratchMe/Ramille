@@ -54,7 +54,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:api": "tsc -p api/tsconfig.json",
     "lint": "expo lint",
-    "test": "jest",
+    "test": "TZ=Europe/Paris jest",
     "vercel-build": "expo export --platform web"
   },
   "private": true,

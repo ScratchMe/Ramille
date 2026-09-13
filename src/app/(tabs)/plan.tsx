@@ -24,7 +24,7 @@ import { CarteDeSaison } from '@/components/plan/carte-de-saison';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
 import { formatIntention, formeInserable } from '@/types/plan';
-import { ancienneteEnMots, daysSince, REBILAN_SUGGESTION_DAYS } from '@/types/suivi';
+import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
   marquerLouvertureDeSaisonVue,
@@ -848,7 +848,10 @@ export default function Plan() {
   // rencontrer. Le plan est celui où l'on revient le plus souvent — c'est donc là qu'une
   // proposition de re-bilan a le plus de chances d'être vue, alors qu'elle n'existait que
   // sur le suivi.
-  const bilanAncien = assessmentDate !== null && daysSince(assessmentDate) >= REBILAN_SUGGESTION_DAYS;
+  // Une seule règle, deux écrans : `doitProposerUnRebilan` porte le seuil **et** le cas de la date
+  // absente (C2.7, point 7). Les deux écrans comparaient chacun de leur côté, avec pour l'un une date
+  // qui peut manquer et pour l'autre une date toujours là — deux conditions à tenir en phase.
+  const bilanAncien = doitProposerUnRebilan(assessmentDate);
 
   const capKg =
     baselineKg !== null && baselineKg > 0

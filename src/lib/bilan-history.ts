@@ -15,7 +15,14 @@
 import { supabase } from '@/lib/supabase';
 import type { BilanAnswers } from '@/types/bilan';
 import { genreDeReponse } from '@/types/checkin';
-import { keepLatestPerDay, type AssessmentSnapshot, type CheckinRecord } from '@/types/suivi';
+import {
+  decisionsParSaison,
+  keepLatestPerDay,
+  type AssessmentSnapshot,
+  type CheckinRecord,
+  type DecisionBrute,
+  type DecisionDeSaison,
+} from '@/types/suivi';
 
 /**
  * Une lecture qui peut échouer, et qui le dit.
@@ -33,7 +40,11 @@ export type Lecture<T> = { ok: true; data: T } | { ok: false };
 export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapshot[]>> {
   const { data, error } = await supabase
     .from('assessments')
-    .select('id, submitted_at, assessment_results(total_co2_kg_year, dominant_poste, dominant_poste_label)')
+    // Les trois postes viennent avec le total depuis C2.7 : le suivi ne montrait que le total, où un
+    // effort tenu sur le trajet quotidien disparaît derrière un vol. Non nullables en base.
+    .select(
+      'id, submitted_at, assessment_results(total_co2_kg_year, dominant_poste, dominant_poste_label, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year)'
+    )
     .eq('status', 'completed')
     .order('submitted_at', { ascending: true });
 
@@ -54,6 +65,11 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
         totalKg: results.total_co2_kg_year,
         dominantPoste: results.dominant_poste,
         dominantLabel: results.dominant_poste_label,
+        parPoste: {
+          commute: results.commute_co2_kg_year,
+          leisure: results.leisure_co2_kg_year,
+          travel: results.travel_co2_kg_year,
+        },
       },
     ];
   });
@@ -97,6 +113,146 @@ export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> 
   });
 
   return { ok: true, data: points };
+}
+
+/**
+ * Ce que la personne a décidé, saison après saison (C2.7, point 4).
+ *
+ * Le suivi ne lisait **jamais** `plan_cycles` ni `plan_actions` : le seul choix personnel que le
+ * produit demande — une action, des jours — ne laissait aucune trace passé la saison. Deux sources,
+ * parce qu'un engagement peut avoir été relâché : la ligne vivante du cycle, et l'archive de C2.2.
+ * `decisionsParSaison` en tire une ligne par cycle.
+ *
+ * **`plan_cycles!plan_actions_plan_cycle_id_fkey` est obligatoire** : `plan_actions` a deux clés
+ * étrangères vers `plan_cycles` depuis C2.2 (`carried_over_from`), donc PostgREST refuse la requête
+ * sans le nom de celle qu'on suit — le typecheck est le seul garde qui l'attrape.
+ */
+export async function loadDecisionsEngagees(): Promise<Lecture<DecisionDeSaison[]>> {
+  const [vivantes, archivees] = await Promise.all([
+    supabase
+      .from('plan_actions')
+      .select(
+        'intention_days, intention_timing, action_templates(action_text), plan_cycles!plan_actions_plan_cycle_id_fkey(id, period_label, period_start)'
+      )
+      .not('committed_at', 'is', null),
+    supabase
+      .from('plan_action_commitments_archive')
+      .select('action_text, intention_days, intention_timing, released_at, plan_cycles(id, period_label, period_start)')
+      .order('released_at', { ascending: false }),
+  ]);
+
+  if (vivantes.error || archivees.error) return { ok: false };
+
+  const brutes: DecisionBrute[] = [];
+
+  for (const action of vivantes.data ?? []) {
+    const cycle = unique(action.plan_cycles);
+    const gabarit = unique(action.action_templates);
+    // Sans cycle il n'y a pas de saison à mettre à gauche de la ligne ; sans gabarit, pas d'action à
+    // nommer. Les deux sont garantis par le schéma — on les écarte plutôt que d'écrire « undefined ».
+    if (!cycle || !gabarit) continue;
+    brutes.push({
+      cycleId: cycle.id,
+      periodLabel: cycle.period_label,
+      periodStart: cycle.period_start,
+      actionText: gabarit.action_text,
+      intentionDays: action.intention_days,
+      intentionTiming: action.intention_timing,
+      releasedAt: null,
+    });
+  }
+
+  for (const ligne of archivees.data ?? []) {
+    const cycle = unique(ligne.plan_cycles);
+    // `plan_cycle_id` est nullable dans l'archive : un cycle supprimé laisse une décision qui ne
+    // sait plus de quelle saison elle était, et c'est la saison qui ouvre la ligne.
+    if (!cycle) continue;
+    brutes.push({
+      cycleId: cycle.id,
+      periodLabel: cycle.period_label,
+      periodStart: cycle.period_start,
+      actionText: ligne.action_text,
+      intentionDays: ligne.intention_days,
+      intentionTiming: ligne.intention_timing,
+      releasedAt: ligne.released_at,
+    });
+  }
+
+  return { ok: true, data: decisionsParSaison(brutes) };
+}
+
+/** PostgREST rend parfois un objet, parfois un tableau d'un élément, selon la relation. */
+function unique<T>(valeur: T | T[] | null): T | null {
+  if (valeur === null) return null;
+  return Array.isArray(valeur) ? (valeur[0] ?? null) : valeur;
+}
+
+/** Le bilan qui précède, tel que la restitution d'un re-bilan le compare. */
+export type BilanPrecedent = { submittedAt: string; totalKg: number };
+
+/**
+ * Le bilan **strictement antérieur** à celui-ci (C2.7, point 2).
+ *
+ * **Choisi sur `submitted_at`, jamais dans l'historique dédoublonné.** `keepLatestPerDay` ne garde
+ * que le dernier bilan de chaque jour — c'est ce qu'il faut pour une courbe, pas pour désigner un
+ * prédécesseur : réutiliser cette liste ferait dépendre la comparaison d'un regroupement qui existe
+ * pour une tout autre raison.
+ *
+ * Deux lignes lues et non une : la seule façon de vérifier que le bilan courant est bien le plus
+ * récent. S'il ne l'est pas — une horloge serveur qui recule, une ouverture en mode `nouveau` sur un
+ * bilan qui ne l'est pas — on ne compare rien plutôt que de comparer à un bilan postérieur.
+ */
+export async function loadBilanPrecedent(
+  assessmentId: string
+): Promise<Lecture<BilanPrecedent | null>> {
+  const { data, error } = await supabase
+    .from('assessments')
+    .select('id, submitted_at, assessment_results(total_co2_kg_year)')
+    .eq('status', 'completed')
+    .order('submitted_at', { ascending: false })
+    .limit(2);
+
+  if (error || !data) return { ok: false };
+  if (data[0]?.id !== assessmentId) return { ok: true, data: null };
+
+  const precedent = data[1];
+  const results = precedent ? unique(precedent.assessment_results) : null;
+  if (!precedent?.submitted_at || !results) return { ok: true, data: null };
+
+  return {
+    ok: true,
+    data: { submittedAt: precedent.submitted_at, totalKg: results.total_co2_kg_year },
+  };
+}
+
+/** Le cycle de plan qui couvrait un jour donné, avec le cap qu'il portait. */
+export type CycleDeCePour = { cycleId: string; capKg: number | null };
+
+/**
+ * Le cycle qui couvrait ce jour-là, pour savoir quel palier était visé alors (C2.7, point 2).
+ *
+ * Le cap affiché **à l'époque** n'est pas toujours retrouvable : `generate_plan_cycle_for_user`
+ * réécrit le cycle courant à chaque re-bilan, donc quand les deux bilans tombent dans la même
+ * période, la ligne porte désormais la baseline du nouveau. C'est l'appelant qui tranche, en
+ * comparant l'identifiant rendu ici à celui du cycle courant — d'où `cycleId` dans le retour.
+ */
+export async function loadCycleCouvrant(jourIso: string): Promise<CycleDeCePour | null> {
+  const { data } = await supabase
+    .from('plan_cycles')
+    .select('id, baseline_co2_kg_year, target_reduction_pct')
+    .lte('period_start', jourIso)
+    .order('period_start', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    cycleId: data.id,
+    capKg:
+      data.baseline_co2_kg_year != null
+        ? (data.baseline_co2_kg_year * data.target_reduction_pct) / 100
+        : null,
+  };
 }
 
 /**

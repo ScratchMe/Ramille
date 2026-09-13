@@ -2,7 +2,7 @@
 // dépôt vise en premier — et `src/lib/format.ts` n'avait aucun test, alors que c'est un module
 // pur de six lignes lu par cinq écrans (A10-3, A10-7).
 import { formatTonnesShort } from '@/constants/carbon-reference';
-import { formatTonnes } from '@/lib/format';
+import { formatTonnes, formatTonnesNu } from '@/lib/format';
 
 describe('formatTonnes', () => {
   // Les valeurs du chantier C1.8, dans l'ordre : le zéro, les trois cas qui tombaient à
@@ -59,5 +59,27 @@ describe('formatTonnes face à formatTonnesShort', () => {
   it('ne prennent pas la même unité — une tonne, c’est mille kilos', () => {
     expect(formatTonnesShort(1)).toBe('1,0 t');
     expect(formatTonnes(1000)).toBe('1,0 t CO₂e');
+  });
+});
+
+describe('formatTonnesNu', () => {
+  // **Même bascule que `formatTonnes`, sans le nom du gaz** (C2.7) : les deux passent par la même
+  // fonction interne, donc le seuil ne peut pas diverger entre les deux formes. Si un jour l'une
+  // bascule à 1 500 kg et l'autre à 1 000, c'est ici que ça se verra.
+  it.each([
+    [0, '0 kg'],
+    [40, '40 kg'],
+    [999, '999 kg'],
+    [999.6, '1,0 t'],
+    [1000, '1,0 t'],
+    [2149, '2,1 t'],
+  ])('%p kg s’écrit « %s »', (kg, attendu) => {
+    expect(formatTonnesNu(kg)).toBe(attendu);
+  });
+
+  it('dit exactement ce que `formatTonnes` dit, sans « CO₂e »', () => {
+    for (const kg of [0, 40, 999, 1000, 2149, 15820]) {
+      expect(formatTonnes(kg)).toBe(`${formatTonnesNu(kg)} CO₂e`);
+    }
   });
 });

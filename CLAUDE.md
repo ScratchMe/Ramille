@@ -47,7 +47,8 @@ Deux suites de tests automatisés, ciblées sur la logique où un bug est le plu
 (chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
 bout-en-bout (écrans, flux de connexion) :
 
-- **Jest** (`npm test`) sur la logique pure côté client. La règle, plutôt qu'une liste qui se
+- **Jest** (`npm test`, qui force `TZ=Europe/Paris` — voir plus bas pourquoi) sur la logique pure
+  côté client. La règle, plutôt qu'une liste qui se
   périme au fichier suivant : **toute dérivation pure affichée à la personne ou décidant d'une
   navigation est testée**, dans un `*.test.ts` colocalisé — l'inventaire se lit en listant
   `src/**/*.test.ts`. Quelques-uns de ces tests n'existent pas pour attraper une régression de
@@ -63,7 +64,15 @@ bout-en-bout (écrans, flux de connexion) :
   argument pour garder la règle, pas pour l'assouplir. La vraie raison est en tête du module :
   il tire `@react-native-async-storage/async-storage`, `react-native` (Platform) et
   `react-native-url-polyfill/auto`, qui n'ont rien à faire dans une suite de logique pure. Deux
-  modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
+  **La suite tourne en `TZ=Europe/Paris`, et ce n'est pas cosmétique** (C2.7) : en UTC, toutes les
+  distinctions UTC/local que ce dépôt documente avec soin — `debutDePeriodeInterrogee` et
+  `periodePrecedente` qui lisent l'UTC comme leurs jumelles SQL, `saisonDe`, `progressionDeLaPeriode`
+  et `keepLatestPerDay` qui lisent le calendrier local — sont **indistinguables**, donc leurs tests
+  passeraient tout aussi bien avec l'erreur. Le test « regroupe sur le jour local » de
+  `suivi.test.ts` est celui qui l'a rendu visible : il échoue sur l'ancienne implémentation en
+  Europe/Paris et passe des deux façons en UTC. Forcer le fuseau depuis le corps d'un test ne marche
+  pas — Node met son fuseau en cache à la première opération de date, et Jest en a déjà fait une.
+  Deux modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
   (et importé par `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la
   suite qui en dépend, par un lien que rien n'affiche), et `bilan-draft.ts`, dont le test double
   AsyncStorage parce que c'est l'entrée-sortie elle-même qu'il éprouve.
@@ -553,8 +562,9 @@ avant de publier n'est pas du code mais les vérifications de la §11 et la chec
 `docs/exploitation/README.md`. **La vague 6 est en cours** (lot 2, la saison et le suivi) : elle
 porte le jalon « la boucle existe d'une saison à l'autre », et son relevé de fichiers du 13/09/2026
 a démenti la colonne « Parallèle ? » pour la quatrième fois — un seul chantier y est réellement
-disjoint (C2.13), l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9**, et C2.8 (la
-saison a une fin et un début) est livré.
+disjoint (C2.13), l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9**. C2.8 (la saison a
+une fin et un début) et C2.7 (le suivi dans la durée : l'écart par poste, les décisions saison après
+saison, les points groupés, la restitution d'un re-bilan) sont livrés.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -1233,7 +1243,7 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `TARGET_2050_TRANSPORT_T` est une **dérivation** explicitement signalée — aucune source
   publique ne donne d'objectif 2050 par poste d'empreinte individuelle — d'où le libellé
   « Repère » et non « Objectif » à l'écran.
-  **Deux formateurs, et ils ne disent pas la même chose.** `formatTonnes` (`src/lib/format.ts`)
+  **Trois formateurs, et ils ne disent pas la même chose.** `formatTonnes` (`src/lib/format.ts`)
   bascule : kilos arrondis sous la tonne, dixième de tonne au-dessus — sans quoi tout ce qui vaut
   moins de 50 kg s'affichait « 0,0 t CO₂e », c'est-à-dire les postes secondaires de n'importe quel
   bilan et la phrase « Le repère 2050 est à ta portée : 0,0 t CO₂e de moins sur l'année »,
@@ -1249,6 +1259,17 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   jamais une forme de plus dans le formateur. Et `src/lib/format.ts` doit rester pur pour une
   raison qui ne se voit pas : `src/types/resultat.ts` l'importe, donc une dépendance ajoutée là
   ferait tomber toute la suite Jest qui en dépend.
+  **Le troisième est `formatTonnesNu`** (C2.7, même module) : la même bascule que `formatTonnes`, par
+  la même fonction interne, mais **sans le nom du gaz**. Deux endroits en ont besoin, et dans les
+  deux « CO₂e » est du bruit — « 2,1 t CO₂e → 1,7 t CO₂e » sur une ligne de l'écart par poste, et
+  « 600 kg CO₂e de moins que ton bilan de mars » dans une phrase, où le gaz s'intercale entre le
+  nombre et ce qu'il qualifie. Le nom du gaz appartient au chiffre qui se tient **seul** : un total,
+  un gain, un cap. Ce n'est donc pas une troisième règle d'unité, et c'est pour ça qu'il n'entre pas
+  en concurrence avec les deux autres.
+  **C'est aussi ce qui referme A5-3** : l'écart entre deux bilans se dit en kilos
+  (`variationDepuisLeBilanPrecedent`), là où deux bilans à 1 240 puis 1 180 kg s'affichaient tous
+  deux « 1,2 t ». Le remède était bien une décision d'écran, pas une forme de plus dans le
+  formateur du total.
 - **Le palier de la restitution est le cap de la saison, jamais une marche inventée**
   (`src/types/palier.ts`). La barre « Repère 2050 » lui a cédé sa place : afficher 15,8 t à côté
   de 0,6 t donnait un rapport de 1 à 26 que le texte ne rattrape pas, et 2050 tient désormais
@@ -1562,7 +1583,48 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   période sans réponse n'y apparaît pas du tout (les check-ins non répondus sont clos en
   `expired` côté serveur et jamais relus). On compte les fois où la personne a répondu, jamais
   celles où elle a laissé passer — et une hausse d'empreinte est toujours présentée comme un
-  fait, jamais comme une faute.
+  fait, jamais comme une faute. **Une baisse, en revanche, est désormais reconnue** (C2.7) :
+  « Ce que tu as changé se voit ici. », et le mot de Ramille `suiviDifference` en bas de l'écran —
+  mais **seulement sur une baisse réelle** (`estUneBaisse`), jamais au-dessus d'une hausse ni d'un
+  écart qui tient dans l'imprécision des facteurs. Le seuil de stabilité est `estStable`, une seule
+  fois pour les trois endroits qui le lisent.
+- **Le suivi lit enfin `plan_cycles`, et une décision n'a pas de statut** (C2.7). « Ce que tu as
+  décidé, saison après saison » est une liste de **décisions**, jamais un bulletin : le produit ne
+  sait pas si l'action a été menée, seulement ce que la personne a répondu aux points — qui vivent
+  dans leur propre carte. Une ligne par cycle, et `decisionsParSaison` fait gagner l'engagement
+  **vivant** sur l'archive du même cycle, puis la dernière libérée. `decisions === null` veut dire
+  « pas lu » et la carte ne s'affiche pas : un tableau vide affirmerait que rien n'a jamais été
+  engagé, la faute de A5-2 sur une carte de moins.
+- **Les trois réponses du suivi ont des libellés de fait, au même niveau typographique** (C2.7) :
+  « Changement fait » / « Pas cette fois » / « Pas de trajet ». « Oui » et « Non » étaient les
+  libellés du *bouton* — relus six mois plus tard, hors de la question, ils ne disent plus à quoi
+  ils répondaient. Et un « Changement fait » en accent au-dessus d'un « Pas cette fois » en
+  tertiaire classait les réponses, alors que ni la deuxième ni la troisième n'est un échec : la
+  reconnaissance vit dans le compteur et dans le mot de Ramille, pas dans la couleur d'une ligne.
+  La liste est **groupée par saison**, chaque groupe portant son vrai total — elle était tronquée à
+  huit **en silence** sous un compteur global qui en annonçait davantage.
+- **`keepLatestPerDay` regroupe sur le jour LOCAL** (C2.7). Les dix premiers caractères d'un
+  `timestamptz` sont son jour **UTC** : un bilan soumis le 10 mars à 23 h 00 UTC et sa correction le
+  11 à 00 h 30 UTC sont le même 11 mars à Paris, et l'ancien regroupement en faisait deux barres
+  avec deux valeurs différentes — le doublon exact que cette fonction existe pour empêcher.
+- **Le prédécesseur d'un bilan se choisit sur `submitted_at`, jamais dans l'historique
+  dédoublonné** (C2.7, `loadBilanPrecedent`). `keepLatestPerDay` ne garde que le dernier bilan de
+  chaque jour : c'est ce qu'il faut pour une courbe, pas pour désigner celui d'avant. Deux lignes
+  sont lues et non une, pour vérifier que le bilan courant est bien le plus récent — sinon on ne
+  compare rien plutôt que de comparer à un bilan postérieur.
+- **« Le palier que tu visais est derrière toi. » n'est dit que s'il est prouvable** (C2.7,
+  `palierEstDerriere`). Le palier visé se recalcule depuis le cap **d'alors**, et ce cap est perdu
+  quand les deux bilans tombent dans la même période : `generate_plan_cycle_for_user` réécrit le
+  cycle courant à chaque soumission. Avec le cap d'aujourd'hui — plus petit, la baseline du poste
+  dominant ayant baissé — le palier recalculé serait plus proche et la phrase s'afficherait plus
+  souvent qu'elle ne le devrait. On passe `null` et on ne dit rien.
+- **`EcartParPoste` compare poste à poste, et l'accent suit le dominant du serveur** (C2.7). Le
+  poste dominant peut changer d'un bilan à l'autre, et c'est le plus souvent une réussite :
+  comparer « dominant d'avant » à « dominant d'aujourd'hui » ferait passer ce succès pour une
+  hausse. `dominant_poste` vient d'`assessment_results` et n'est pas un maximum recalculé — le
+  départage du serveur n'en est pas un (les loisirs l'emportent sur les voyages à 5 % près). Et
+  l'échelle est **commune aux six barres** : une échelle par poste rendrait un poste de 40 kg aussi
+  long qu'un poste de 2 t.
 - **La barre d'onglets ne porte que deux destinations, et le reste n'est pas un lieu.** Le
   groupe `src/app/(tabs)/` contient le plan et la pile du suivi ; tout ce qui vit ailleurs
   s'affiche en plein écran, sans barre — le questionnaire et l'onboarding sont des flux, le

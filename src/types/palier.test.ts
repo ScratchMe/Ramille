@@ -1,4 +1,4 @@
-import { nextPalier, showsTarget2050 } from './palier';
+import { nextPalier, palierEstDerriere, showsTarget2050 } from './palier';
 
 // 0,6 t — le repère transport 2050, cf. `carbon-reference.ts`. Écrit en dur ici pour que le
 // test dise ce qu'il éprouve plutôt que de recopier la dérivation.
@@ -101,5 +101,67 @@ describe('showsTarget2050', () => {
 
   it('range la moyenne elle-même du côté visible', () => {
     expect(showsTarget2050(MOYENNE, MOYENNE)).toBe(true);
+  });
+});
+
+describe('palierEstDerriere', () => {
+  // La seule phrase du produit qui ferme la boucle du plan : le palier a été annoncé une saison plus
+  // tôt, et il est passé. 4 380 kg avec un cap de 768 visait 3 612 kg.
+  it('reconnaît un palier franchi', () => {
+    expect(
+      palierEstDerriere({
+        precedentKg: 4380,
+        courantKg: 3600,
+        capAlorsKg: 768,
+        target2050Kg: CIBLE,
+      })
+    ).toBe(true);
+  });
+
+  it('ne dit rien quand le palier est encore devant', () => {
+    expect(
+      palierEstDerriere({
+        precedentKg: 4380,
+        courantKg: 3700,
+        capAlorsKg: 768,
+        target2050Kg: CIBLE,
+      })
+    ).toBe(false);
+  });
+
+  // Le palier tombe **pile** dessus : il est atteint, donc derrière. La borne large est le bon choix
+  // — dire « pas encore » à quelqu'un qui est exactement au seuil annoncé serait faux.
+  it('compte le palier atteint exactement comme franchi', () => {
+    expect(
+      palierEstDerriere({
+        precedentKg: 4380,
+        courantKg: 3612,
+        capAlorsKg: 768,
+        target2050Kg: CIBLE,
+      })
+    ).toBe(true);
+  });
+
+  // **Le cap d'alors n'est pas toujours connaissable** : quand les deux bilans tombent dans la même
+  // période, la soumission a réécrit le cycle et le cap affiché à l'époque n'existe plus. On ne dit
+  // rien plutôt que de l'affirmer avec le cap d'aujourd'hui, qui est plus petit — donc un palier plus
+  // proche, donc une phrase trop facile.
+  it('ne prétend rien sans le cap de l’époque', () => {
+    expect(
+      palierEstDerriere({
+        precedentKg: 4380,
+        courantKg: 100,
+        capAlorsKg: null,
+        target2050Kg: CIBLE,
+      })
+    ).toBe(false);
+  });
+
+  // Un cap nul ne produit aucun palier (`nextPalier` rend `null`) : rien n'était visé, rien n'est
+  // franchi. C'est le profil que `/plan` accueille par « Tu fais déjà l'essentiel sur ce poste ».
+  it('ne prétend rien quand aucun palier n’était proposé', () => {
+    expect(
+      palierEstDerriere({ precedentKg: 500, courantKg: 100, capAlorsKg: 0, target2050Kg: CIBLE })
+    ).toBe(false);
   });
 });

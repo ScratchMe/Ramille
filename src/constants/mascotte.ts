@@ -165,6 +165,20 @@ export const RAMILLE = {
   bilanQuasiNul: 'Je ne vois presque rien à compter chez toi — c’est rare.',
 
   /**
+   * Le suivi, **quand l'empreinte a baissé d'un bilan à l'autre** (C2.7, `v1-14` §3.1).
+   *
+   * Le seul moment du produit où quelque chose que la personne a changé se voit dans un chiffre — et
+   * il passait sans un mot. Elle ne dit ni le pourcentage ni les kilos : les deux sont juste
+   * au-dessus, en voix produit, et c'est ce qui lui permet d'être là sans commenter une empreinte.
+   *
+   * **Elle ne s'affiche que sur une baisse réelle** (`estUneBaisse`, `src/types/suivi.ts`) : « Je
+   * vois la différence. » au-dessus d'une hausse, ou d'un écart qui tient dans l'imprécision des
+   * facteurs, serait une fausseté lisible. Visage `calm` et non `happy` — la carte des points
+   * portait un sourire au-dessus d'une colonne de « Non », et le canvas l'a retiré.
+   */
+  suiviDifference: 'Je vois la différence.',
+
+  /**
    * /suivi, quand la personne a des bilans mais aucun point répondu. Contexte différent de
    * la carte d'attente du plan : ici il n'y a rien à annoncer — ni jour, ni canal —, la
    * cadence dépend de la boucle et une date fausse serait pire que pas de date.

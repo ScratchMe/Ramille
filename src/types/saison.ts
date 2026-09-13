@@ -351,6 +351,23 @@ export function cadenceNommeUneSaison(cadence: string): boolean {
   return cadence === 'season';
 }
 
+/**
+ * La saison d'un jour ISO `YYYY-MM-DD` — la porte d'entrée à utiliser quand la date vient de la
+ * base, et non `saisonDe` directement.
+ *
+ * `saisonDe(new Date('2026-09-01'))` est le piège : la chaîne est interprétée en **UTC**, donc son
+ * jour local est le 31 août à l'ouest de Greenwich, et le point du 1er septembre se rangerait dans
+ * l'été. On lit les caractères, on construit une date **locale**, et la saison suit alors le
+ * calendrier que la personne a sous les yeux — ce qui est bien le registre de `saisonDe`.
+ *
+ * `null` sur une chaîne qui n'est pas un jour.
+ */
+export function saisonDuJour(iso: string): BornesDeSaison | null {
+  const c = composantesDuJour(iso);
+  if (!c) return null;
+  return saisonDe(dateLocale(c.annee, c.mois, c.jour));
+}
+
 export type OuvertureDeSaison = {
   /** « NOUVELLE SAISON » — l'étiquette de la carte, en majuscules dans le texte lui-même. */
   etiquette: string;
@@ -414,13 +431,11 @@ export function ouvertureDeSaison(params: {
 }): OuvertureDeSaison {
   const { debutDuCycle, cadence, precedente, points } = params;
 
-  const saisonQuiCommence = cadenceNommeUneSaison(cadence)
-    ? composantesDuJour(debutDuCycle)
-    : null;
+  const saisonQuiCommence = cadenceNommeUneSaison(cadence) ? saisonDuJour(debutDuCycle) : null;
 
   const etiquette = saisonQuiCommence ? 'NOUVELLE SAISON' : 'NOUVELLE PÉRIODE';
   const titre = saisonQuiCommence
-    ? `${AVEC_ARTICLE[saisonDe(dateLocale(saisonQuiCommence.annee, saisonQuiCommence.mois, saisonQuiCommence.jour)).saison]} commence.`
+    ? `${AVEC_ARTICLE[saisonQuiCommence.saison]} commence.`
     : 'Une nouvelle période commence.';
 
   return { etiquette, titre, corps: recapEnMots(precedente, points) };
@@ -442,11 +457,10 @@ function recapEnMots(
   const { repondus, changements } = recapDeLaPeriode(points, precedente.debut, precedente.fin);
   if (repondus === 0) return null;
 
-  const bornes = composantesDuJour(precedente.debut);
-  const sujet =
-    cadenceNommeUneSaison(precedente.cadence) && bornes
-      ? DEMONSTRATIF[saisonDe(dateLocale(bornes.annee, bornes.mois, bornes.jour)).saison]
-      : 'Ces trois mois';
+  const saisonEcoulee = cadenceNommeUneSaison(precedente.cadence)
+    ? saisonDuJour(precedente.debut)
+    : null;
+  const sujet = saisonEcoulee ? DEMONSTRATIF[saisonEcoulee.saison] : 'Ces trois mois';
 
   const pointsRepondus = repondus === 1 ? '1 point répondu' : `${repondus} points répondus`;
   // « 0 fois où tu as changé quelque chose » nommerait ce que le produit ne compte pas : la
