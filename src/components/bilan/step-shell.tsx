@@ -25,6 +25,7 @@ export function StepShell({
   nextLabel = 'Suivant',
   nextDisabled,
   notice,
+  motDeRamille,
   message,
   detail,
   manque,
@@ -39,6 +40,13 @@ export function StepShell({
   nextDisabled?: boolean;
   /** Bandeau discret sous l'en-tête (ex. « réponses pré-remplies » lors d'un re-bilan). */
   notice?: string;
+  /**
+   * Un mot de Ramille à l'entrée d'une section (C3.9). **Rendu sans `RamilleDit`, et c'est
+   * voulu** : son visage est déjà là, dans l'en-tête juste au-dessus, à trois centimètres. Un
+   * second `Mascot` ferait deux Ramille sur le même écran. La règle que cette exception ne touche
+   * pas est la vraie : la phrase vient de `RAMILLE` et n'est jamais écrite dans un écran.
+   */
+  motDeRamille?: string | null;
   /** Échec de la dernière tentative, affiché juste au-dessus des boutons — là où l'action a
    *  été déclenchée, et dans la zone collante, donc sans avoir à faire défiler. Une phrase du
    *  produit, en français : la cause technique passe par `detail`. */
@@ -96,6 +104,11 @@ export function StepShell({
               </ThemedText>
             </ThemedView>
           )}
+          {motDeRamille && (
+            <ThemedText type="small" themeColor="textTertiary" style={styles.motDeRamille}>
+              {motDeRamille}
+            </ThemedText>
+          )}
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View ref={contenu} {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
@@ -139,6 +152,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   headerBlock: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
   notice: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: Spacing.three },
+  motDeRamille: { lineHeight: 20 },
   scrollContent: { padding: Spacing.four, gap: Spacing.five, flexGrow: 1 },
   // Le padding vit sur le bloc, pas sur la rangée : le message doit être aligné sur les
   // boutons et non collé au bord.

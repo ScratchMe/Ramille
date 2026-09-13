@@ -8,6 +8,7 @@ import {
   COMMUTE_DISTANCE_A_RELIRE_KM,
   EMPTY_BILAN_ANSWERS,
   afficherNombreSaisi,
+  avancementDeLaReprise,
   brouillonEstAncien,
   distanceBracketMidpointKm,
   distanceDomicileTravailARelire,
@@ -721,5 +722,60 @@ describe('memesReponses', () => {
     const dernier = answers({ commute_days_per_week: 3 });
     const avecSurplus = { ...dernier, champ_disparu: 'oui' } as BilanAnswers;
     expect(memesReponses(dernier, avecSurplus)).toBe(true);
+  });
+});
+
+describe('avancementDeLaReprise', () => {
+  it('dit la phrase du canvas à l’étape 5 sur 9', () => {
+    // Le cas dessiné : « Loisirs du week-end · Étape 5 sur 9 » → quatre écrans derrière, cinq
+    // devant en comptant celui-ci.
+    expect(avancementDeLaReprise('leisure_frequency', EMPTY_BILAN_ANSWERS)).toBe(
+      'Quatre écrans déjà remplis. Il en reste cinq, en comptant celui-ci.'
+    );
+  });
+
+  it('dérive le total des étapes visibles, jamais de neuf', () => {
+    // **Le point du chantier.** Sans trajet régulier, trois étapes disparaissent : annoncer
+    // « sur 9 » serait faux pour une bonne part des brouillons, et le canvas dit bien que le
+    // compte se dérive.
+    const sansTrajet = { ...EMPTY_BILAN_ANSWERS, commute_has_regular_trip: false };
+    expect(visibleSteps(sansTrajet)).toHaveLength(6);
+    expect(avancementDeLaReprise('leisure_frequency', sansTrajet)).toBe(
+      'Un écran déjà rempli. Il en reste cinq, en comptant celui-ci.'
+    );
+
+    // Et deux sauts cumulés : pas de trajet régulier **et** loisirs rares.
+    const minimal = { ...sansTrajet, leisure_frequency: 'rarely' as const };
+    expect(visibleSteps(minimal)).toHaveLength(5);
+    expect(avancementDeLaReprise('flights', minimal)).toBe(
+      'Deux écrans déjà remplis. Il en reste trois, en comptant celui-ci.'
+    );
+  });
+
+  it('ne dit jamais zéro écran rempli', () => {
+    // Même règle que le récapitulatif de la carte d'ouverture : « Aucun écran déjà rempli » est
+    // une façon de dire à quelqu'un qu'il n'a rien fait.
+    expect(avancementDeLaReprise('commute_has_trip', EMPTY_BILAN_ANSWERS)).toBe(
+      'Il en reste neuf, en comptant celui-ci.'
+    );
+  });
+
+  it('accorde le singulier', () => {
+    expect(avancementDeLaReprise('commute_days_distance', EMPTY_BILAN_ANSWERS)).toBe(
+      'Un écran déjà rempli. Il en reste huit, en comptant celui-ci.'
+    );
+    expect(avancementDeLaReprise('context', EMPTY_BILAN_ANSWERS)).toBe(
+      'Huit écrans déjà remplis. Il en reste un, en comptant celui-ci.'
+    );
+  });
+
+  it('ne compte rien sur une étape que les réponses excluent', () => {
+    // Un brouillon peut porter une étape que ses propres réponses rendent invisible : le
+    // questionnaire l'en déplace, mais la phrase se calcule avant. On n'invente pas un rang.
+    const rares = { ...EMPTY_BILAN_ANSWERS, leisure_frequency: 'rarely' as const };
+    expect(visibleSteps(rares)).not.toContain('leisure_detail');
+    expect(avancementDeLaReprise('leisure_detail', rares)).toBe(
+      'Il en reste huit, en comptant celui-ci.'
+    );
   });
 });

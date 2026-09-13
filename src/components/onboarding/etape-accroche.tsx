@@ -50,6 +50,14 @@ export function EtapeAccroche({ onSuivant }: { onSuivant: () => void }) {
         <View style={styles.footer}>
           <Button title="Découvrir mon impact" onPress={() => onSuivant()} />
           <OnboardingDots total={4} activeIndex={0} />
+          {/* **Le produit ne disait nulle part qu'on peut commencer sans compte** (C3.9, constat
+              A1-8) : le seul mot « compte » de tout l'onboarding était le lien ci-dessous, qui se
+              lit exactement à l'envers — « j'ai déjà un compte » laisse entendre qu'il en faut un.
+              La phrase se pose **au-dessus** du lien et ne le déplace pas : c'est elle qui doit
+              répondre en premier à la question que le lien fait naître. */}
+          <ThemedText type="small" themeColor="textTertiary" style={styles.sansCompte}>
+            Pas de compte à créer pour commencer.
+          </ThemedText>
           {/* La seule mention de compte avant le bilan, et volontairement discrète — jamais un
               bouton — sur un écran dont la promesse est « pas besoin de compte ». Elle est
               pourtant ce qui fait le gros du travail de v1-10 : proposée ici, elle attrape la
@@ -80,6 +88,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 34, lineHeight: 40, letterSpacing: -0.68 },
   body: { fontSize: 16, lineHeight: 24 },
   footer: { gap: Spacing.five },
+  sansCompte: { textAlign: 'center', marginTop: -Spacing.three },
   dejaUnCompte: { textAlign: 'center' },
-  dejaUnCompteCible: { marginTop: -Spacing.four },
+  dejaUnCompteCible: { marginTop: -Spacing.five },
 });

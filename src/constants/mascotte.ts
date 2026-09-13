@@ -1,4 +1,5 @@
 import { APP_NAME } from '@/constants/produit';
+import type { BilanStepId } from '@/types/bilan';
 
 /**
  * Ramille — la mascotte, et tout ce qu'elle dit.
@@ -225,6 +226,36 @@ export const RAMILLE = {
   /** Suppression de compte effectuée : on ne retient pas, on salue. */
   auRevoir: 'Merci d’être passé. Si tu reviens, on repart de zéro, tranquillement.',
 
-  /** Page 404 — la seule page qu'on atteint sans l'avoir voulu : elle rend la main. */
-  introuvable: 'Cette page n’existe pas. Ton bilan et ton plan, si — je te ramène.',
+  /**
+   * Page 404 — la seule page qu'on atteint sans l'avoir voulu : elle rend la main.
+   *
+   * **Elle ne redit pas que la page n'existe pas** (C3.9, constat A2-24) : le titre de l'écran
+   * le dit déjà, deux lignes plus haut, et Ramille le répétait mot pour mot. Elle ne porte que
+   * la sortie — ce qui est toujours là, et le fait qu'on y retourne.
+   */
+  introuvable: 'Ton bilan et ton plan, eux, sont toujours là — je te ramène.',
+
+  /**
+   * **Un mot à l'entrée de chaque section du questionnaire** — quatre, pas neuf (C3.9, constat
+   * A13-15).
+   *
+   * Le questionnaire demande des ordres de grandeur et ne le dit qu'une fois, dans l'onboarding,
+   * cinq écrans plus tôt : au troisième champ, la personne se demande si « environ trente
+   * kilomètres » est une réponse acceptable, et la précision qu'elle croit devoir donner est ce
+   * qui fait abandonner. Ramille le redit à chaque changement de sujet, là où le doute revient.
+   *
+   * **Quatre et non neuf** : à chaque étape, ce serait du papier peint au troisième écran — la
+   * même usure que les variantes de C2.12 traitent ailleurs. Les clés sont les **premières
+   * étapes** de chacune des quatre sections, et ces quatre-là sont toujours visibles (les sauts
+   * du questionnaire ne portent que sur des étapes qui les suivent).
+   */
+  entreeDeSection: {
+    commute_has_trip: 'À peu près, c’est déjà bien. Je ne vérifie rien, et personne ne relit.',
+    leisure_frequency: 'Pense à une semaine ordinaire, pas à la meilleure ni à la pire.',
+    flights: 'De mémoire, sans aller chercher. C’est l’ordre de grandeur qui compte.',
+    context: 'Ce qui est possible là où tu vis change ce que je te proposerai ensuite.',
+  } satisfies Record<
+    Extract<BilanStepId, 'commute_has_trip' | 'leisure_frequency' | 'flights' | 'context'>,
+    string
+  >,
 } as const;

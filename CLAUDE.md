@@ -565,8 +565,10 @@ a démenti la colonne « Parallèle ? » pour la quatrième fois — un seul cha
 disjoint (C2.13), l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9**. C2.8 (la saison a
 une fin et un début), C2.7 (le suivi dans la durée : l'écart par poste, les décisions saison après
 saison, les points groupés, la restitution d'un re-bilan), C3.1 (la mobilité contrainte est lue par la
-restitution), C4.6 (toutes les pistes, le premier pas, le remplacement explicite) et C2.13 (la
-mascotte porte la saison) sont livrés.
+restitution), C4.6 (toutes les pistes, le premier pas, le remplacement explicite), C2.13 (la
+mascotte porte la saison) et C3.9 (onboarding et compte : ce que le produit promet) sont livrés :
+**la vague 6 est complète**, et avec elle le jalon « la boucle existe d'une saison à l'autre ». La
+suite est la vague 7 (lot 3 restant).
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -1679,6 +1681,37 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   faux dès que le jeton d'appareil s'est ajouté. Une phrase qui compte devient fausse à la clé
   suivante, en silence — et nommer ici les occurrences fautives rendrait cette ligne-ci fausse le
   jour où on les corrige.
+- **Un brouillon de bilan détourne le démarrage, et l'écran de reprise a deux déclencheurs**
+  (C3.9). La racine lit `loadBilanDraft()` en parallèle de sa requête, et route sur
+  `/bilan?reprise=1` **quand il n'y a pas de bilan complété** — qui en a un a le plan pour maison,
+  et un re-bilan commencé ne doit pas s'emparer de l'ouverture de l'app. Avant, quelqu'un qui avait
+  interrompu son questionnaire rejouait les quatre écrans d'onboarding et « Commencer mon bilan »
+  pour atterrir sans un mot à l'étape 5. L'écran de reprise s'affiche sur ce paramètre **ou** sur un
+  brouillon de plus de trois semaines (C1.3, audit A2-6) : les deux ne couvrent pas les mêmes
+  arrivées, et le second survit. **« L'écran s'affiche » et « il y a un repli » sont deux faits
+  distincts** — le bouton « Repartir de mon dernier bilan » ne se rend que s'il y a un bilan vers
+  quoi repartir, et les confondre réservait la reprise à ceux qui avaient déjà soumis un bilan,
+  c'est-à-dire à personne au premier questionnaire interrompu. Le décompte de l'écran
+  (`avancementDeLaReprise`) se **dérive** de `visibleSteps`, jamais de neuf : un profil sans trajet
+  régulier n'a que six étapes. Il ne dit jamais zéro écran rempli, et l'écran ne dit jamais le délai
+  écoulé — interdit du handoff §5.2, parce que « tu as commencé il y a trois semaines » est un
+  reproche déguisé en information.
+- **Ramille parle à l'entrée de chaque section du questionnaire — quatre, pas neuf** (C3.9,
+  `RAMILLE.entreeDeSection`). Le questionnaire demande des ordres de grandeur et ne le disait qu'une
+  fois, dans l'onboarding, cinq écrans plus tôt ; au troisième champ, la précision qu'on croit
+  devoir donner est ce qui fait abandonner. À chaque étape ce serait du papier peint — même usure
+  que les variantes de C2.12 traitent ailleurs. **Rendu sans `RamilleDit`** : son visage est déjà
+  dans l'en-tête, trois centimètres plus haut, et un second `Mascot` ferait deux Ramille sur le même
+  écran. La règle que cette exception ne touche pas est la vraie — la phrase vit dans `RAMILLE`.
+- **Ce que le produit promet sans compte, et ce qu'on y perd, se dit là où la personne renonce**
+  (C3.9). L'onboarding n'écrivait nulle part qu'on peut commencer sans compte — le seul mot
+  « compte » était « J'ai déjà un compte », qui se lit à l'envers. Et la proposition de compte
+  promettait « un historique de points **mensuels** », texte du handoff antérieur à la boucle
+  hebdomadaire : elle nomme désormais ce qui suit le compte (les bilans, les réponses, le plan) sans
+  promettre de cadence. Sous « Continuer sans compte », les deux faits qui n'étaient dits que dans
+  les pages légales : changer de téléphone perd tout, et la purge des sessions anonymes ferme le
+  compte après trois mois d'**inactivité** (`purge_stale_anonymous_accounts`, fenêtre de 90 jours) —
+  donc ne pas écrire « trois mois » ailleurs sans vérifier cette fonction.
 - Le questionnaire se préremplit dans cet ordre : **brouillon local > dernier bilan complété >
   vide** (`src/lib/bilan-history.ts`). Le brouillon prime car il est plus récent par
   construction. Un re-bilan prérempli est ce qui rend le suivi dans la durée praticable — sans

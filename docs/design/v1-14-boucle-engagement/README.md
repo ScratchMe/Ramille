@@ -155,6 +155,17 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
     contraste au-dessus de la goutte, donc invisible et non discret. Le grossir ne le sauverait
     pas, et l'éclaircir percerait un trou dans une goutte de six unités.
 
+24. **L'écran de reprise a deux déclencheurs** (C3.9) : la racine qui trouve un brouillon, et un
+    brouillon de plus de trois semaines (celui-là existait déjà). Le second bouton, « Repartir de
+    mon dernier bilan », ne se rend que s'il y a un bilan vers quoi repartir.
+25. **Le mot de Ramille à l'entrée d'une section est du texte, sans son visage** (C3.9) : il est
+    déjà dans l'en-tête du questionnaire, juste au-dessus.
+26. **Deux corrections que seul le rendu a montrées** (C3.9) : l'en-tête de l'écran de reprise
+    reste **en haut**, comme dans le questionnaire — tout centrer faisait flotter une barre de
+    progression au milieu de la page, où elle ne se lit plus comme une position ; et la phrase
+    « Sur cet appareil seulement… » passe de `code` à `small`, le monospace passant sur une ligne
+    et se lisant comme une sortie technique sur trois.
+
 La phrase de durée est tranchée : « Le refaire prend **quelques minutes** », et non « cinq minutes »
 comme l'écrit B1. Le produit promet « environ 5 minutes » pour le **premier** bilan (transition de
 l'onboarding, états vides du plan et du suivi) ; un re-bilan est plus rapide, ses réponses étant

@@ -7,6 +7,7 @@ import { Button } from '@/components/button';
 import { DUREE_ANIMATION_LANCEMENT, EcranLancement } from '@/components/ecran-lancement';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { loadBilanDraft } from '@/lib/bilan-draft';
 import { ensureSession, supabase } from '@/lib/supabase';
 
 // Racine de l'app — jamais un écran visible en pratique (redirection immédiate dès que la
@@ -38,12 +39,21 @@ export default function Index() {
     (async () => {
       try {
         await ensureSession();
-        const { data, error } = await supabase
-          .from('assessments')
-          .select('id')
-          .eq('status', 'completed')
-          .limit(1)
-          .maybeSingle();
+        // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-13). Quelqu'un qui a
+        // interrompu son questionnaire repartait de la racine, donc de l'onboarding : quatre
+        // écrans de présentation, « Commencer mon bilan », et il atterrissait sans un mot à
+        // l'étape 5. Les quatre écrans ne lui apprenaient rien — il les avait déjà vus, c'est
+        // comme ça qu'il est arrivé au questionnaire la première fois.
+        //
+        // En parallèle et non à la suite : la lecture locale ne coûte rien, et l'enchaîner
+        // derrière l'aller-retour serveur retarderait le démarrage de tout le monde pour un
+        // cas minoritaire.
+        const [{ data, error }, brouillon] = await Promise.all([
+          supabase.from('assessments').select('id').eq('status', 'completed').limit(1).maybeSingle(),
+          // Un échec de lecture locale ne doit pas emporter le démarrage : sans brouillon on
+          // route comme avant, ce qui est exactement le comportement d'avant ce chantier.
+          loadBilanDraft().catch(() => null),
+        ]);
         if (error) throw error;
         if (annule) return;
         // **Plancher d'affichage, pas délai ajouté.** Une session déjà en cache répond en
@@ -54,7 +64,16 @@ export default function Index() {
         const reste = DUREE_ANIMATION_LANCEMENT - (Date.now() - depart);
         if (reste > 0) await new Promise((resoudre) => setTimeout(resoudre, reste));
         if (annule) return;
-        router.replace(data ? '/plan' : '/onboarding');
+        // **Le brouillon ne détourne le démarrage que sans bilan complété.** Qui en a un a le
+        // plan pour maison, et un re-bilan commencé ne doit pas s'emparer de l'ouverture de
+        // l'app : le questionnaire se reprend depuis le suivi, pas à la place du plan.
+        if (data) {
+          router.replace('/plan');
+        } else if (brouillon) {
+          router.replace({ pathname: '/bilan', params: { reprise: '1' } });
+        } else {
+          router.replace('/onboarding');
+        }
       } catch (erreur) {
         console.error('Démarrage impossible :', erreur);
         if (annule) return;
