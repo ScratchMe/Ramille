@@ -11,7 +11,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(23);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('71111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-eng-a@test.local', 'x', now(), now()),
@@ -65,12 +65,44 @@ select set_config('test.action_voyage',
 -- `postgres`, donc hors RLS, et un `count(*)` nu compterait les actions de toute la base. Elle
 -- passerait en CI (base vierge) tout en ne vérifiant rien — c'est une assertion qui ne tombe
 -- que sur un environnement peuplé, donc jamais là où on la lit.
+-- **Plus de deux actions depuis C4.6, et c'est le point** : `generate_plan_cycle_for_user` fige
+-- désormais **toutes** les actions dont le gain atteint 5 kg/an, avec leur `rank`. Le `limit 2` qu'il
+-- portait était un choix d'écran écrit dans le SQL, et il jetait les autres leviers avant même de les
+-- écrire (constat A13-18). L'assertion attendait exactement 2 ; elle vérifie maintenant qu'il y en a
+-- **au moins** deux — ce dont la bascule d'engagement plus bas a besoin — et que rien n'est tronqué.
+select cmp_ok(
+  (select count(*) from public.plan_actions pa
+   join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+   where pc.user_id = '71111111-1111-1111-1111-111111111111')::int,
+  '>=',
+  2,
+  'le cycle porte au moins deux actions à départager'
+);
+
+-- Et le plan n'en jette aucune : autant de lignes que l'estimateur en propose. C'est l'assertion qui
+-- tomberait si un `limit` revenait « pour ne pas charger l'écran » — la troncature est une décision
+-- d'affichage, elle ne se reprend pas dans le SQL.
 select is(
   (select count(*) from public.plan_actions pa
    join public.plan_cycles pc on pc.id = pa.plan_cycle_id
    where pc.user_id = '71111111-1111-1111-1111-111111111111')::int,
-  2,
-  'le cycle porte bien deux actions à départager'
+  (select count(*) from public.estimate_action_savings(
+     (select id from public.assessments where user_id = '71111111-1111-1111-1111-111111111111'
+      and status = 'completed' order by submitted_at desc limit 1)))::int,
+  'toutes les actions proposées par l''estimateur sont figées, aucune n''est tronquée'
+);
+
+-- Le `rank` les numérote sans trou, à partir de 1 : c'est lui que l'écran suit pour décider ce qu'il
+-- met en avant et ce qu'il garde derrière « Voir d'autres pistes ».
+select is(
+  (select array_agg(pa.rank order by pa.rank) from public.plan_actions pa
+   join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+   where pc.user_id = '71111111-1111-1111-1111-111111111111'),
+  (select array_agg(n::smallint order by n) from generate_series(1,
+     (select count(*)::int from public.plan_actions pa
+      join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+      where pc.user_id = '71111111-1111-1111-1111-111111111111')) n),
+  'les rangs vont de 1 à N, sans trou'
 );
 
 select set_config('role', 'authenticated', true);
@@ -89,16 +121,33 @@ select is(
   'l''intention d''implémentation est conservée telle quelle'
 );
 
--- ── Une seule action engagée à la fois ──────────────────────────────────────────────────
+-- ── Une seule action engagée à la fois, et le remplacement se demande ───────────────────
 -- « Choisir une action » est le mécanisme, pas une contrainte d'écran : s'engager sur les deux
 -- revient à ne s'engager sur aucune. Le RPC libère la précédente dans la même transaction —
 -- l'index unique partiel refuserait sinon la seconde ligne.
+--
+-- **Depuis C4.6, il faut le demander** (`p_replace`). Libérer l'engagement précédent efface
+-- `committed_at`, les jours et l'échéance — le seul choix personnel que le produit demande — et
+-- l'archive de C2.2 en garde la trace sans le rendre. Un appel qui ne dit pas qu'il remplace ne
+-- remplace donc pas : c'est l'écran qui propose « Choisir celle-ci à la place » qui le dit.
+select throws_ok(
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank desc limit 1), array[1,3]::smallint[], null) $stmt$,
+  'RM001',
+  null,
+  'sans p_replace, s''engager sur une seconde action est refusé'
+);
+
+select is(
+  (select count(*) from public.plan_actions where committed_at is not null)::int,
+  1,
+  'le refus ne touche à rien : l''engagement d''origine tient toujours'
+);
 
 -- Les deux actions de A portent le poste domicile-travail : la bascule se fait donc elle aussi en
 -- jours de la semaine. Une échéance fermée y est refusée depuis le 11/09/2026 (cf. plus bas).
 select lives_ok(
-  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank desc limit 1), array[1,3]::smallint[], null) $stmt$,
-  'basculer l''engagement sur l''autre action'
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank desc limit 1), array[1,3]::smallint[], null, true) $stmt$,
+  'basculer l''engagement sur l''autre action, p_replace à l''appui'
 );
 
 select is(
@@ -127,8 +176,12 @@ select throws_ok(
   '22023', null, 'un engagement sans intention est refusé'
 );
 
+-- `p_replace` à `true` ici, et ce n'est pas du remplissage : sans lui, le refus arriverait du
+-- garde de C4.6 (RM001) **avant** d'atteindre la contrainte, et l'assertion mesurerait autre chose
+-- que ce qu'elle annonce. C'est aussi ce qui rend l'assertion suivante plus forte — un remplacement
+-- demandé mais refusé pour une autre raison ne libère rien non plus.
 select throws_ok(
-  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), array[2,2]::smallint[], null) $stmt$,
+  $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank limit 1), array[2,2]::smallint[], null, true) $stmt$,
   '23514', null, 'un jour en double dans l''intention est refusé'
 );
 
@@ -146,7 +199,7 @@ select throws_ok(
 select is(
   (select array_to_string(intention_days, '-') from public.plan_actions where committed_at is not null),
   '1-3',
-  'et l''engagement en place n''a pas bougé : un refus ne libère rien'
+  'et l''engagement en place n''a pas bougé : un refus ne libère rien, p_replace ou non'
 );
 
 -- ── Ce que l'engagement ne doit surtout pas ouvrir ──────────────────────────────────────

@@ -25,6 +25,7 @@ export function ActionCard({
   partPercent,
   detail,
   intention,
+  premierPas,
   engagee,
   reconduite,
   estompee,
@@ -36,6 +37,17 @@ export function ActionCard({
   detail: string | null;
   /** Phrase d'intention déjà formatée (`formatIntention`), affichée seulement si engagée. */
   intention: string | null;
+  /**
+   * Le premier pas (`plan_actions.first_step`, C4.6), affiché **seulement une fois l'action
+   * engagée** — et c'est tout son intérêt : la carte portait un titre, un gain et un détail
+   * chiffré, et rien n'abaissait le coût de la première fois (constat A13-19). Le principal
+   * prédicteur d'un premier essai est la perception de facilité, et c'est le mètre qui manquait
+   * entre « Je m'y engage » et la question du lundi.
+   *
+   * **Avant l'engagement, il n'a rien à faire là** : sur une carte qu'on est en train de comparer
+   * à une autre, une consigne pratique se lit comme une charge de plus, pas comme une aide.
+   */
+  premierPas: string | null;
   engagee: boolean;
   /**
    * L'engagement vient du cycle précédent (`plan_actions.carried_over_from`, C2.2). Une saison qui
@@ -141,6 +153,19 @@ export function ActionCard({
         )}
       </View>
 
+      {/* **Le premier pas, sous l'intention et seulement quand l'action est engagée** (C4.6,
+          planche F1). Hors du groupe accessible ci-dessus : ce bloc arrive après le choix, il a son
+          propre sur-titre, et l'agréger au reste en ferait une phrase de plus dans une annonce déjà
+          longue. Fond `background` dans une carte teintée — un creux, pas un relief. */}
+      {engagee && premierPas && (
+        <View style={[styles.premierPas, { backgroundColor: theme.background }]}>
+          <ThemedText themeColor="textTertiary" weight={600} style={styles.premierPasTitre}>
+            PREMIER PAS
+          </ThemedText>
+          <ThemedText style={styles.premierPasTexte}>{premierPas}</ThemedText>
+        </View>
+      )}
+
       {children}
     </View>
   );
@@ -163,4 +188,10 @@ const styles = StyleSheet.create({
   etiquette: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
   gain: { gap: 2 },
   gainValeur: { fontSize: 20, lineHeight: 26 },
+  // 12/16 de padding vertical, 16 horizontal, rayon `Radius.field` : un bloc interne de carte, ce
+  // que ce rayon nomme déjà.
+  premierPas: { borderRadius: Radius.field, paddingVertical: 12, paddingHorizontal: Spacing.three, gap: 2 },
+  // 13/18 et 14/20 : les deux seules occurrences de ces tailles ici, elles restent en dur.
+  premierPasTitre: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
+  premierPasTexte: { fontSize: 14, lineHeight: 20 },
 });

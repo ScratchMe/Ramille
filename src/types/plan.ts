@@ -93,3 +93,69 @@ export function isIntentionComplete(
 ): boolean {
   return kind === 'days' ? days.length > 0 : timing !== null;
 }
+
+// ── Ce que le plan met en avant, et ce qu'il garde derrière un lien (C4.6) ──────────────────
+
+/**
+ * Combien d'actions le plan présente d'emblée.
+ *
+ * Deux, comme la spec §6 (« 1 à 2 actions suggérées ») — mais **c'est un choix d'écran, et il ne
+ * vivait pas à l'écran** : `generate_plan_cycle_for_user` jetait tout le reste avec un `limit 2`
+ * avant même de l'écrire, alors que l'estimateur rend déjà toutes les actions dont le gain atteint
+ * 5 kg/an. L'autonomie de la personne s'exerçait donc sur deux leviers et les autres restaient
+ * invisibles (constat A13-18, arbitrage D18 du 10/09/2026).
+ */
+export const ACTIONS_EN_AVANT = 2;
+
+/**
+ * Combien d'actions gardent une **carte** quand on déplie les pistes ; au-delà, des lignes simples.
+ *
+ * Le canvas borne les cartes à quatre, et c'est une hiérarchie voulue : une liste de six cartes
+ * pleines ne présente plus un choix, elle présente un catalogue. Les lignes qui suivent disent ce
+ * qui existe sans le mettre au même rang.
+ */
+export const PISTES_ESTOMPEES = 2;
+
+export type PistesDuPlan<T> = {
+  /** Les cartes pleines, toujours visibles. */
+  enAvant: T[];
+  /** Les cartes estompées, visibles une fois les pistes dépliées. */
+  estompees: T[];
+  /** Le reste, en lignes simples, visible une fois les pistes dépliées. */
+  lignes: T[];
+  /** Ce que le lien annonce : combien de pistes se cachent derrière lui. */
+  masquees: number;
+};
+
+/**
+ * L'ordre d'affichage du plan et ses trois rangs (C4.6, planches F1 et F2).
+ *
+ * **L'action engagée passe toujours devant** : c'est la réponse à « qu'est-ce que je fais en ce
+ * moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte déjà le
+ * bon ordre — poste dominant d'abord, puis gain décroissant — et qui est figé à la génération. Un
+ * `rank` nul (aucune migration n'en produit, mais la colonne l'autorise) passe en dernier plutôt que
+ * de remonter en tête par accident, comme le `nulls last` du serveur.
+ *
+ * La fonction est générique parce que la forme d'une ligne `plan_actions` appartient à l'écran :
+ * elle ne demande que les deux champs dont l'ordre dépend.
+ */
+export function pistesDuPlan<T extends { committed_at: string | null; rank: number | null }>(
+  actions: T[]
+): PistesDuPlan<T> {
+  const ordonnees = [...actions].sort((a, b) => {
+    const engagement = Number(b.committed_at !== null) - Number(a.committed_at !== null);
+    if (engagement !== 0) return engagement;
+    // `Infinity` plutôt que 0 : un rang absent va au bout, il ne se glisse pas en tête.
+    return (a.rank ?? Infinity) - (b.rank ?? Infinity);
+  });
+
+  const enAvant = ordonnees.slice(0, ACTIONS_EN_AVANT);
+  const reste = ordonnees.slice(ACTIONS_EN_AVANT);
+
+  return {
+    enAvant,
+    estompees: reste.slice(0, PISTES_ESTOMPEES),
+    lignes: reste.slice(PISTES_ESTOMPEES),
+    masquees: reste.length,
+  };
+}

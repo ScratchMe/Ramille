@@ -23,7 +23,7 @@ import { ActionCommitment } from '@/components/plan/action-commitment';
 import { CarteDeSaison } from '@/components/plan/carte-de-saison';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
-import { formatIntention, formeInserable } from '@/types/plan';
+import { formatIntention, formeInserable, pistesDuPlan } from '@/types/plan';
 import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
@@ -74,6 +74,8 @@ type PlanAction = {
   saving_kg_year: number | null;
   saving_share_percent: number | null;
   detail_text: string | null;
+  /** Le premier pas du gabarit, figé à la génération (C4.6) — affiché une fois l'action engagée. */
+  first_step: string | null;
   rank: number | null;
   committed_at: string | null;
   intention_days: number[] | null;
@@ -316,6 +318,14 @@ export default function Plan() {
    * premier repli, donc « Revoir mon bilan » et « Faire mon bilan ».
    */
   const [ouverture, setOuverture] = useState<OuvertureDeSaison | null>(null);
+  /**
+   * Les autres pistes sont-elles dépliées ? (C4.6.)
+   *
+   * Local à l'écran et non persisté : c'est un geste de lecture, pas une préférence — et le replier
+   * par défaut à chaque venue est ce qui garde le plan à deux actions en tête, comme la spec §6 le
+   * demande.
+   */
+  const [pistesDepliees, setPistesDepliees] = useState(false);
 
   /**
    * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
@@ -459,7 +469,7 @@ export default function Plan() {
             // suivre et refuse la requête (« more than one relationship was found »). Sans le
             // nom de la clé, l'écran du plan ne charge plus du tout. Le typecheck l'attrape —
             // c'est le seul garde qui le fait, la chaîne étant analysée au niveau des types.
-            'id, period_label, period_start, period_end, cadence_type, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, saving_kg_year, saving_share_percent, detail_text, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
+            'id, period_label, period_start, period_end, cadence_type, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, saving_kg_year, saving_share_percent, detail_text, first_step, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
           )
           .order('period_start', { ascending: false })
           .limit(2);
@@ -837,10 +847,12 @@ export default function Plan() {
   // encore sur elle (C2.1). `null` quand rien n'est engagé, ce qui est aussi un « plus la même ».
   const actionEngageeTexte =
     cycle.plan_actions.find((a) => a.committed_at !== null)?.action_templates?.action_text ?? null;
-  // Copie avant tri : `sort` mute, et `cycle` vient du state.
-  const actionsOrdonnees = [...cycle.plan_actions].sort(
-    (a, b) => Number(b.committed_at !== null) - Number(a.committed_at !== null)
-  );
+  // **Trois rangs depuis C4.6** (`pistesDuPlan`, planches F1 et F2) : deux cartes pleines, deux
+  // cartes estompées derrière le lien, et le reste en lignes simples. Le `limit 2` du serveur a
+  // disparu — l'estimateur rendait déjà toutes les actions au gain ≥ 5 kg/an, et le plan en jetait
+  // le reste avant même de l'écrire (constat A13-18). La dérivation copie avant de trier : `sort`
+  // mute, et `cycle` vient du state.
+  const pistes = pistesDuPlan(cycle.plan_actions);
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.
@@ -895,6 +907,40 @@ export default function Plan() {
     void marquerLouvertureDeSaisonVue(cycle.id);
     setOuverture(null);
   };
+
+  // Une fabrique et non deux blocs recopiés : les cartes en avant et les cartes estompées ne
+  // diffèrent que par leur opacité, et deux copies divergeraient au premier ajustement de props —
+  // c'est exactement ce qui est arrivé à `first_step`, qui manquait d'un côté au premier essai.
+  const carteDaction = (action: PlanAction, estompeeParLeRang = false) => (
+    <ActionCard
+      key={action.id}
+      titre={action.action_templates?.action_text ?? 'Action à préciser.'}
+      gainKg={action.saving_kg_year}
+      partPercent={action.saving_share_percent}
+      detail={action.detail_text}
+      intention={formatIntention(action.intention_days, action.intention_timing)}
+      premierPas={action.first_step}
+      engagee={action.committed_at !== null}
+      reconduite={action.carried_over_from !== null}
+      estompee={
+        estompeeParLeRang || (committedActionId !== null && committedActionId !== action.id)
+      }
+    >
+      {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la fois par
+          cycle — s'engager sur les deux revient à ne s'engager sur aucune, et la base le
+          garantit par un index unique partiel. */}
+      <ActionCommitment
+        onEngage={proposerLesRappels}
+        actionId={action.id}
+        poste={action.action_templates?.poste ?? null}
+        committed={action.committed_at !== null}
+        intentionDays={action.intention_days}
+        intentionTiming={action.intention_timing}
+        otherActionCommitted={committedActionId !== null && committedActionId !== action.id}
+        onChanged={() => setRefreshKey((key) => key + 1)}
+      />
+    </ActionCard>
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -1010,7 +1056,7 @@ export default function Plan() {
                 thermique). » était une phrase que personne n'a écrite. */}
             {actionsCount > 0 && (
               <ThemedText type="body" themeColor="textSecondary">
-                {actionsCount > 1 ? 'Deux actions' : 'Une action'} pour{' '}
+                {pistes.enAvant.length > 1 ? 'Deux actions' : 'Une action'} pour{' '}
                 {formeInserable(cycle.poste)}.
               </ThemedText>
             )}
@@ -1113,39 +1159,55 @@ export default function Plan() {
           </ThemedView>
 
           {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce
-              moment ? », elle n'a pas à être cherchée. Le reste garde l'ordre du serveur, qui
-              trie déjà par gain décroissant (`estimate_action_savings`). */}
+              moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte
+              déjà le bon ordre — poste dominant d'abord, puis gain décroissant. */}
           <View style={styles.actions}>
-            {actionsOrdonnees.map((action) => (
-              <ActionCard
-                key={action.id}
-                titre={action.action_templates?.action_text ?? 'Action à préciser.'}
-                gainKg={action.saving_kg_year}
-                partPercent={action.saving_share_percent}
-                detail={action.detail_text}
-                intention={formatIntention(action.intention_days, action.intention_timing)}
-                engagee={action.committed_at !== null}
-                reconduite={action.carried_over_from !== null}
-                estompee={committedActionId !== null && committedActionId !== action.id}
-              >
-                {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la
-                    fois par cycle — s'engager sur les deux revient à ne s'engager sur aucune,
-                    et la base le garantit par un index unique partiel. */}
-                <ActionCommitment
-                  onEngage={proposerLesRappels}
-                  actionId={action.id}
-                  poste={action.action_templates?.poste ?? null}
-                  committed={action.committed_at !== null}
-                  intentionDays={action.intention_days}
-                  intentionTiming={action.intention_timing}
-                  otherActionCommitted={
-                    committedActionId !== null && committedActionId !== action.id
-                  }
-                  onChanged={() => setRefreshKey((key) => key + 1)}
-                />
-              </ActionCard>
-            ))}
+            {pistes.enAvant.map((action) => carteDaction(action))}
           </View>
+
+          {/* **Les autres pistes, derrière un lien** (C4.6, planches F1 et F2). Le plan figeait deux
+              actions et jetait le reste avant même de l'écrire : l'autonomie de la personne
+              s'exerçait sur deux leviers, les autres restant invisibles (A13-18, arbitrage D18).
+
+              Le compte est dans le libellé — un lien qui ne dit pas combien il cache n'aide pas à
+              décider de l'ouvrir. Deux cartes estompées, puis des lignes simples : au-delà de quatre
+              cartes pleines, ce n'est plus un choix qu'on présente, c'est un catalogue. */}
+          {pistes.masquees > 0 && (
+            <View style={styles.pistes}>
+              <TextLink
+                label={pistesDepliees ? 'Replier' : `Voir d’autres pistes · ${pistes.masquees}`}
+                onPress={() => setPistesDepliees((depliees) => !depliees)}
+                type="small"
+                weight={600}
+                themeColor="accentText"
+                style={styles.lienPistes}
+              />
+              {pistesDepliees && (
+                <>
+                  {pistes.estompees.map((action) => carteDaction(action, true))}
+                  {/* Les lignes simples : ce qui existe, sans le mettre au même rang que les cartes.
+                      Elles ne portent pas de bouton — s'engager sur l'une d'elles demande d'abord de
+                      la faire remonter, ce que le prochain re-bilan fait si le poste bouge. */}
+                  {pistes.lignes.length > 0 && (
+                    <View style={styles.lignesPistes}>
+                      {pistes.lignes.map((action) => (
+                        <View key={action.id} style={styles.lignePiste}>
+                          <ThemedText type="small" themeColor="textSecondary" style={styles.lignePisteTitre}>
+                            {action.action_templates?.action_text ?? 'Action à préciser.'}
+                          </ThemedText>
+                          {action.saving_kg_year !== null && (
+                            <ThemedText type="small" themeColor="textTertiary">
+                              − {Math.round(action.saving_kg_year)} kg
+                            </ThemedText>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          )}
 
           {/* Profil qui n'a plus rien à céder sur son poste dominant. Le pire accueil
               possible serait une liste vide : c'est la personne qui fait déjà le plus
@@ -1291,6 +1353,18 @@ const styles = StyleSheet.create({
   // dans `theme.ts` encoderait une équivalence avec les autres légendes qui n'existe pas encore.
   capLegende: { fontSize: 12, lineHeight: 16 },
   actions: { gap: Spacing.two + 2 },
+  pistes: { gap: Spacing.two + 2 },
+  lienPistes: { textAlign: 'center' },
+  // Les lignes simples : un filet entre elles suffit, elles ne sont pas des cartes.
+  lignesPistes: { gap: 0 },
+  lignePiste: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: Spacing.two,
+    paddingVertical: Spacing.two,
+  },
+  lignePisteTitre: { flexShrink: 1, minWidth: 0 },
   emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
   praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   praiseText: { flex: 1, minWidth: 0 },

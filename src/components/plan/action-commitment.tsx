@@ -70,11 +70,19 @@ export function ActionCommitment({
     setError(null);
     const result = await commitPlanAction(
       actionId,
-      kind === 'days' ? { days } : { timing: timing as IntentionTiming }
+      kind === 'days' ? { days } : { timing: timing as IntentionTiming },
+      // **Remplacer se dit, il ne se déduit pas** (C4.6). Le bouton affiche « Choisir celle-ci à la
+      // place » quand une autre action est engagée : c'est exactement ce qu'on transmet, et le RPC
+      // refuse un remplacement qu'on ne lui a pas demandé plutôt que d'effacer en silence les jours
+      // et l'intention que la personne avait choisis.
+      otherActionCommitted
     );
     setBusy(false);
     if (!result.ok) {
       setError(result.message);
+      // L'écran ne savait pas qu'une autre action était engagée : on relit plutôt que de laisser un
+      // plan qui ne dit pas la vérité, et le message explique ce que la relecture va montrer.
+      if (result.rechargerLePlan) onChanged();
       return;
     }
     setPicking(false);
