@@ -53,7 +53,7 @@ compte/ ChoixDeRappel · MonCompte
 
 Non portés (infrastructure sans UI) : ThemedView, TitreDePage, RetourDeNotification, ConfigurationManquante, MissingModeLink (rendu en ThemedText code dans le kit).
 
-**Ajouts intentionnels** : `BarreOnglets` (le dépôt la compose dans `(tabs)/_layout.tsx` via expo-router) ; prop `accessory` sur `Mascot` (préparation des accessoires de saison, brief v1-14 C2.13) ; jetons `--color-mascot-ink` / `--color-mascot-vein` / `--color-mascot-warm` (le dépôt lit `Colors.light` en dur pour le visage ; le ton chaud sert aux joues d'automne et au bonnet d'hiver — proposé en v1-14).
+**Ajouts intentionnels** : `BarreOnglets` (le dépôt la compose dans `(tabs)/_layout.tsx` via expo-router) ; prop `accessory` sur `Mascot` (préparation des accessoires de saison) — **le dépôt les a livrés depuis (C2.13, 13/09/2026) et la prop s'y appelle `saison`**, avec pour défaut la saison du jour, donc c'est le nom du kit qui est le delta ; jetons `--color-mascot-ink` / `--color-mascot-vein` / `--color-mascot-warm`, qui **existent désormais dans `Colors`** (avec `mascotAccessory` en quatrième), le composant les lisant encore sur la seule palette claire.
 
 ## Index
 - `styles.css` → `assets/fonts/fonts.css`, `tokens/colors.css`, `typography.css`, `spacing.css`, `base.css`

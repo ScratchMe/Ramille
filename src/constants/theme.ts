@@ -15,6 +15,20 @@ import { Platform } from 'react-native';
 // V1 fonctionne en light uniquement (app.json: userInterfaceStyle "light"), les
 // valeurs dark ci-dessous sont des équivalents provisoires pour la sûreté de
 // typage, pas un mode sombre livré ou validé.
+// Les quatre jetons de la mascotte (`v1-14` §6, chantier C2.13). Ils sont là plutôt qu'en dur
+// dans `src/components/mascot.tsx` pour une raison précise : **le visage ne suit pas le thème,
+// la feuille oui.** La feuille est peinte en `accent`, qui vaut #1F6F4A en clair et #3D9B6F en
+// sombre ; l'encre des yeux et de la bouche, la nervure et les accessoires de saison gardent au
+// contraire la même valeur dans les deux palettes — un visage qui s'éclaircirait avec le fond
+// cesserait de se lire sur le vert. C'est pourquoi les trois premiers sont identiques ligne à
+// ligne, et c'est volontaire : la valeur dupliquée dit « ce jeton ne bascule pas ».
+//
+// Aujourd'hui `mascot.tsx` lit `Colors.light` pour tout, comme avant ce chantier (le mode clair
+// est forcé sur web, et `app.json` porte `userInterfaceStyle: light` sur natif). Les valeurs
+// `dark` ne sont donc **pas encore lues** — même dormance assumée que `cadence_type =
+// 'rolling_quarter'` côté serveur, et pour la même raison : le jour où un thème sombre est
+// livré, c'est cette table qui dit ce qui bascule et ce qui ne bascule pas, et il ne faudra
+// retoucher qu'une ligne du composant.
 export const Colors = {
   light: {
     text: '#131612',
@@ -30,6 +44,10 @@ export const Colors = {
     accentMuted: '#A9C8B6',
     border: '#DDE0D9',
     paginationInactive: '#CDD7CF',
+    mascotInk: '#131612',
+    mascotVein: '#E4EFE8',
+    mascotAccessory: '#E4EFE8',
+    mascotWarm: '#C99A6B',
   },
   dark: {
     text: '#FFFFFF',
@@ -45,6 +63,10 @@ export const Colors = {
     accentMuted: '#3A5245',
     border: '#2E3135',
     paginationInactive: '#3A3D3A',
+    mascotInk: '#131612',
+    mascotVein: '#E4EFE8',
+    mascotAccessory: '#E4EFE8',
+    mascotWarm: '#B98A5E',
   },
 } as const;
 

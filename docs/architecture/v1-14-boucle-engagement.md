@@ -555,6 +555,30 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     trajet » sans source serait la première assertion non sourcée du produit. Le tableau des
     arbitrages de `v1-13` §1 rattache d'ailleurs D16 à C4.7.
 
+33. **Les trois accessoires de saison ne sont pas découpés par le `clipPath`** (C2.13,
+    13/09/2026). §7 écrit « découpé par le même `clipPath` quand il touche la silhouette » ; seules
+    les joues d'automne le sont, parce que seules elles sont **dans** le visage. Découper le bonnet
+    rognerait le pompon en lentille — il dépasse la pointe de la feuille par construction, et
+    d'autant plus que `k` grandit. Le clip existe parce que des joues qui flottent hors du vert se
+    lisent comme un bug, pas pour empêcher un chapeau de se porter sur la tête. Ce que le clip garantissait, un test le garantit autrement — chaque
+    élément reste dans le `viewBox`, donc rien n'est coupé par le bord du SVG à `k` maximal.
+34. **La goutte de rosée est posée en haut à droite de la feuille, et non en bas** (C2.13). Deux
+    mesures l'imposent, et aucune ne se voit à la lecture du chemin. À `M64,70` la goutte
+    **chevauche le bord de la silhouette**, les deux tiers en dehors : au rendu elle ne se lit pas
+    comme une goutte mais comme une éraflure du contour, à toutes les tailles (vérifié en
+    capturant les cinq expressions × cinq tailles). Et son coin haut arrivait à **0,29 unité** du
+    coin de la bouche de `happy` à `size={28}`, soit 0,08 px — c'est-à-dire collés, et `happy` à
+    28 px est exactement ce que rend l'en-tête du questionnaire à la dernière étape. Translatée de
+    (−6, −37), elle garde 3,6 unités de marge au pire cas, la même que le bonnet. **Le dessin n'a
+    pas bougé d'un centième** : le test reconstruit le chemin du canvas et lui applique la
+    translation, donc une retouche du dessin tombe comme avant.
+35. **Le reflet de la goutte n'est pas repris** (C2.13). Deux valeurs le rendaient invisible plutôt
+    que discret : un rayon de 0,9 unité, soit **0,76 px de diamètre** à toute taille — exactement la
+    tache grise que la compensation optique existe pour éviter, et l'assertion de lisibilité des
+    accessoires le refuse — et une couleur (#E4EFE8) **sept niveaux** au-dessus de ce que rend la
+    goutte elle-même par-dessus le vert (#DDE9E3). Le grossir ne le sauverait pas : c'est le
+    contraste qui manque, et l'augmenter percerait un trou dans une goutte de six unités.
+
 ## 11. Tests
 
 - Jest : `checkin.test.ts` (table de cas partagée avec le SQL : quatre `question_kind`, deux
