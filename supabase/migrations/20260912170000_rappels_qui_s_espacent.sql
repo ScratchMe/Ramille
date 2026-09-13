@@ -307,7 +307,18 @@ begin
   src := pg_get_functiondef(cible);
   occurrences := (length(src) - length(replace(src, ancre, ''))) / length(ancre);
 
-  if occurrences <> 1 then
+  -- **Rejouable, alors qu'une substitution vérifiée est à un coup par nature** (corrigé le
+  -- 13/09/2026 en contre-lisant la vague 5, qui portait le même défaut). Zéro occurrence de l'ancre
+  -- veut dire soit « déjà substitué » — un rejeu après restauration, donc un non-événement — soit
+  -- « corps réécrit autrement », où l'on ne devine pas. Les deux se séparent par la **présence de
+  -- l'en-tête posé**, jamais par la seule absence de l'ancre. Sans ce cas, le fichier levait au
+  -- second passage, c'est-à-dire précisément le jour d'une restauration.
+  if occurrences = 0 then
+    if position('List-Unsubscribe' in src) > 0 then
+      return;
+    end if;
+    raise exception 'Ni le corps de l''appel Resend ni l''en-tête de désinscription ne sont présents.';
+  elsif occurrences > 1 then
     raise exception 'Le corps de l''appel Resend a été trouvé % fois (une seule attendue).', occurrences;
   end if;
 

@@ -80,9 +80,16 @@ export type PointInterrogeable = {
    * points générés avant cette migration, où la composition reprend le relais.
    */
   committed_question?: string | null;
-  /** Le gabarit de l'action engagée, pour composer. La carte ne le lit pas : elle a la question. */
+  /**
+   * **Ces deux champs n'arrivent jamais d'une ligne lue par la carte, et c'est structurel** : le
+   * gabarit vit sur `action_templates` et non sur le point, donc aucune requête de l'app ne peut le
+   * remplir. Ils existent pour que `composerQuestionDuPoint` soit la jumelle **éprouvable** de
+   * `public.checkin_question` — sans eux, la composition SQL pourrait dériver sans que rien ne
+   * tombe. Le seul chemin client qui compose est celui d'un point généré **avant** C2.1, qui ne
+   * porte ni gabarit ni jours : il retombe donc toujours sur la question générique, ce qui est
+   * précisément le libellé sous lequel ce point-là a été envoyé.
+   */
   question_template?: string | null;
-  /** Les jours d'intention figés, qui remplissent `{jours}`. */
   committed_intention_days?: number[] | null;
 };
 
@@ -234,7 +241,13 @@ export function composerQuestionDuPoint(point: PointInterrogeable): string {
   const gabarit = point.question_template;
   if ((point.question_kind === 'engagement' || point.question_kind === 'occasion') && gabarit) {
     const mois = moisFrancais(point.period_start) ?? 'ce mois';
-    const jours = joursDeLaQuestion(point.committed_intention_days) ?? 'Cette semaine';
+    // **Le repli lit `ouverture`, et non un second littéral.** Il disait « Cette semaine », donc la
+    // semaine qui commence — celle dont le point ne demande rien (C2.3) — pendant que la branche
+    // générique de la même fonction disait « La semaine dernière ». Deux littéraux à tenir d'accord
+    // en étaient un de trop ; la valeur est maintenant celle que la fonction vient de calculer, et
+    // les deux branches ne peuvent plus divergent. Corrigé des deux côtés de la paire le 13/09/2026
+    // (`20260913100000_corrections_vague_5.sql`).
+    const jours = joursDeLaQuestion(point.committed_intention_days) ?? ouverture;
     return gabarit.replace('{mois}', mois).replace('{jours}', jours);
   }
 
@@ -371,7 +384,13 @@ function cleDuSansObjet(
  * de retard, donc un mois différent de celui de la question juste au-dessus.
  */
 export function libelleSansObjet(point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>): string {
-  if (point.loop_type === 'commute') return 'Pas de trajet cette semaine';
+  // **« la semaine dernière » et non « cette semaine »**, écart au canvas consigné en `v1-14` §10 :
+  // le point interroge la période **écoulée** (C2.3), et la question juste au-dessus du bouton ouvre
+  // sur « La semaine dernière ». Le canvas écrit « Pas de trajet cette semaine » — il a été rédigé
+  // avant que la période interrogée ne recule d'une semaine, et sa moitié mensuelle nomme déjà le
+  // mois **écoulé** (« Pas de voyage en septembre »). Les deux moitiés d'une même ligne ne
+  // désignaient donc pas la même chose.
+  if (point.loop_type === 'commute') return 'Pas de trajet la semaine dernière';
 
   const mois = moisFrancais(point.period_start);
   const quand = mois === null ? 'ce mois-ci' : `en ${mois}`;

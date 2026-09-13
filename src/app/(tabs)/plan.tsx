@@ -430,8 +430,13 @@ export default function Plan() {
           // recomposer, pour qu'elle ne puisse pas différer d'un caractère de la notification
           // qu'on vient d'ouvrir. `committed_action_text` sert à dire, le cas échéant, que la
           // question porte sur une action quittée depuis.
+          //
+          // `committed_intention_days` n'est **pas** rapatrié, et c'est délibéré : il ne remplirait
+          // que la branche à gabarit de `composerQuestionDuPoint`, qu'aucune requête de l'app ne
+          // peut atteindre — le gabarit vit sur `action_templates`. La carte n'a besoin que de la
+          // question figée.
           .select(
-            'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, committed_intention_days, status, response_kind, responded_at'
+            'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, status, response_kind, responded_at'
           )
           // **`answered` autant que `pending` depuis C2.4.** La carte répondue reste le temps de la
           // période : sans les lignes répondues, le renforcement vivait dans un `useState` et
