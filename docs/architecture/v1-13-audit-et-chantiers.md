@@ -257,6 +257,29 @@ C3.9 passe en dernier parce qu'il touche les deux fichiers les plus disputés ; 
 que la mascotte saisonnière et la carte d'ouverture se regardent dans la même séance sur appareil
 (§11.9).
 
+**Relevé du 13/09/2026 — la vague 7 a un ordre à corriger, pas seulement une colonne.** Cinquième
+relevé, et le premier qui trouve un défaut d'**ordre** et non de parallélisme. Huit des dix chantiers
+n'ayant pas de section « Fichiers », il a fallu lire les « À faire » un par un.
+
+- **C3.12 est placé avant C3.4 + C3.5 + C3.6, et il teste ce qu'ils changent.** Le chantier écrit les
+  tests de `src/lib`, de l'estimateur et du calcul complet ; les trois suivants ajoutent une seconde
+  jambe persistée, le covoiturage des loisirs et une tranche de distance ouverte — c'est-à-dire le
+  calcul lui-même. Et C3.8, annoncé en dernier, reformule les gabarits d'action et retouche les
+  tests 02 et 10. Écrire les assertions avant ces trois-là, c'est les écrire deux fois. **C3.12 passe
+  tout à la fin.**
+- **La première moitié n'est pas parallèle non plus** : C3.2 (le bloc « d'où vient ce chiffre » sous
+  le total) et C3.11 (la définition unique du palier) partagent `src/app/(tabs)/suivi/bilan.tsx` —
+  le fichier que trois chantiers se disputaient déjà à la vague 6. Ils s'enchaînent.
+- Le reste tient : C3.3 vit dans `steps/flights.tsx`, C3.7 dans `steps/leisure-frequency.tsx`,
+  C3.10 dans `mascotte.ts`, `api/share-card.ts` et `compte/suppression.tsx` — trois files réellement
+  disjointes. Et le regroupement des trois chantiers de calcul en **une seule migration** est juste :
+  ils partagent `src/types/bilan.ts` tous les trois, et `steps/leisure-detail.tsx` pour deux d'entre
+  eux, en plus de la reprise pgTAP.
+
+Ordre retenu :
+
+    C3.2 → C3.11  ·  C3.3  ·  C3.7  ·  C3.10  ·  C3.4 + C3.5 + C3.6  ·  C3.8  ·  C3.12
+
 **Correction du 10/09/2026 au soir — la vague 2 n'est pas « à fichiers disjoints ».** En relevant
 les fichiers de ses huit chantiers avant de les distribuer, six fichiers se sont révélés partagés :
 `src/app/_layout.tsx` (C1.2, C1.5, C1.11), `src/app/(tabs)/suivi/bilan.tsx` (C1.1, C1.2, C1.5),
