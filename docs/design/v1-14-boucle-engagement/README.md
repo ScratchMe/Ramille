@@ -137,6 +137,12 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
     qui occupe cette ligne —, donc la loger là seul aurait fait qu'un profil concerné ne la voie
     jamais à l'endroit où la barre vient d'être retirée.
 
+19. **Le premier pas ne nomme aucun jour** (C4.6) : le canvas écrit « Repère un itinéraire cyclable
+    pour mardi. », or le jour vient de l'intention que la personne choisit **après** l'engagement, et
+    le gabarit ne le connaît pas. Il dit donc « avant ton premier jour ».
+20. **Les lignes simples des pistes ne portent pas de bouton** (C4.6) : c'est la hiérarchie que la
+    borne à quatre cartes installe — au-delà, on dit ce qui existe sans le mettre au même rang.
+
 La phrase de durée est tranchée : « Le refaire prend **quelques minutes** », et non « cinq minutes »
 comme l'écrit B1. Le produit promet « environ 5 minutes » pour le **premier** bilan (transition de
 l'onboarding, états vides du plan et du suivi) ; un re-bilan est plus rapide, ses réponses étant

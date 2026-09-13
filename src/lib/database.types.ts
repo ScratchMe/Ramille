@@ -15,6 +15,7 @@ export type Database = {
         Row: {
           action_text: string
           detail_kind: string | null
+          first_step: string | null
           id: string
           max_distance_km: number | null
           operation: string | null
@@ -30,6 +31,7 @@ export type Database = {
         Insert: {
           action_text: string
           detail_kind?: string | null
+          first_step?: string | null
           id?: string
           max_distance_km?: number | null
           operation?: string | null
@@ -45,6 +47,7 @@ export type Database = {
         Update: {
           action_text?: string
           detail_kind?: string | null
+          first_step?: string | null
           id?: string
           max_distance_km?: number | null
           operation?: string | null
@@ -668,6 +671,7 @@ export type Database = {
           committed_at: string | null
           created_at: string
           detail_text: string | null
+          first_step: string | null
           id: string
           intention_days: number[] | null
           intention_timing: string | null
@@ -682,6 +686,7 @@ export type Database = {
           committed_at?: string | null
           created_at?: string
           detail_text?: string | null
+          first_step?: string | null
           id?: string
           intention_days?: number[] | null
           intention_timing?: string | null
@@ -696,6 +701,7 @@ export type Database = {
           committed_at?: string | null
           created_at?: string
           detail_text?: string | null
+          first_step?: string | null
           id?: string
           intention_days?: number[] | null
           intention_timing?: string | null
@@ -1029,7 +1035,12 @@ export type Database = {
       }
       collect_push_receipts: { Args: never; Returns: undefined }
       commit_plan_action: {
-        Args: { p_days?: number[]; p_plan_action_id: string; p_timing?: string }
+        Args: {
+          p_days?: number[]
+          p_plan_action_id: string
+          p_replace?: boolean
+          p_timing?: string
+        }
         Returns: undefined
       }
       complement_de_maintien: { Args: { p_mode: string }; Returns: string }

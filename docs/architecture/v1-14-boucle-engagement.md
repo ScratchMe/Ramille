@@ -532,6 +532,28 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     sont gardés l'un par l'autre pour qu'elle ne soit jamais dite deux fois. Et `mobility_constrained`
     à `null` — tout l'historique d'avant l'increment 6 — **montre** la barre : ne pas savoir n'est pas
     une contrainte.
+29. **`p_replace` n'apporte quelque chose que par son défaut, qui refuse** (C4.6, 13/09/2026). §4.4
+    décrit « à `true`, l'engagement courant est archivé en `changement` dans la même transaction » —
+    or `commit_plan_action` le faisait déjà, **sans condition**, depuis C2.2 : à `true` le drapeau ne
+    fait rien de neuf. Ce qu'il ajoute est le refus par défaut (`RM001`), qui rend explicite au point
+    d'appel le geste le plus irréversible du produit. Le client transmet ce que le bouton dit déjà
+    (« Choisir celle-ci à la place ») et relit le plan sur un refus : ce refus veut presque toujours
+    dire que l'état a changé depuis l'affichage.
+30. **Les lignes simples des pistes ne portent pas de bouton** (C4.6). §5 les décrit comme « des
+    lignes simples libellé / − 72 kg » après les deux cartes estompées, sans dire si elles sont
+    actionnables ; elles ne le sont pas. C'est la hiérarchie que la borne à quatre cartes installe —
+    au-delà, on dit ce qui existe sans le mettre au même rang. En pratique le cas est rare : un profil
+    apparie trois à six gabarits sur les douze.
+31. **Le premier pas ne nomme aucun jour** (C4.6). Le canvas écrit « Repère un itinéraire cyclable
+    pour mardi. » ; le jour vient de l'intention, que la personne choisit **après**, et le gabarit ne
+    le connaît pas — il dit donc « avant ton premier jour ». Même raison qu'ailleurs : un texte figé
+    sur le gabarit ne peut pas citer une valeur choisie plus tard.
+32. **La norme dynamique de D16 n'est pas livrée, et c'est un report motivé** (C4.6). Une norme
+    dynamique est une affirmation sur un comportement collectif ; la règle du dépôt est qu'une
+    affirmation sur le monde est sourcée ou signalée comme dérivation. La mettre dans la voix de
+    Ramille en retire le **nombre**, pas l'affirmation : « de plus en plus de gens changent un
+    trajet » sans source serait la première assertion non sourcée du produit. Le tableau des
+    arbitrages de `v1-13` §1 rattache d'ailleurs D16 à C4.7.
 
 ## 11. Tests
 
@@ -550,7 +572,10 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
   `format.test.ts` (`formatTonnesNu` dit exactement ce que `formatTonnes` dit, sans le gaz) ; `plan.test.ts`
   (forme insérable, deux en avant / le reste, `reconduit`).
 - pgTAP : question figée (changer l'engagement après ne change pas `committed_question`) ; les
-  trois `response_kind` et les vues qui les lisent ; archive et reconduction ; `p_replace` ;
+  trois `response_kind` et les vues qui les lisent ; archive et reconduction ; `p_replace` (fichier
+  `26` : le refus par défaut, et surtout qu'un **refus n'archive rien** — une archive écrite par un
+  remplacement refusé ferait apparaître dans le suivi une décision jamais prise) ; le premier pas
+  balayé sur la table entière (aucun gabarit sans lui, aucun chiffre dedans) ;
   gabarits sans `question_template` nul ; `season_bounds` cité par le test Jest ; `checkins_consecutifs`.
 - Appareil : un point répondu qui reste jusqu'au lundi suivant ; une ouverture de saison rejouée
   en changeant la date de l'appareil ; le bonnet sur le plan, le suivi et l'onboarding, en clair

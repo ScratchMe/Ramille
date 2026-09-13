@@ -159,11 +159,16 @@ select results_eq(
   'A1 : le re-bilan reconstruit le plan et l''engagement y revient, jours compris — pas une reconduction'
 );
 
+-- Le `created_at` des lignes dit la reconstruction mieux que leur nombre, qui a cessé d'être deux
+-- avec C4.6 (toutes les actions au gain suffisant sont désormais figées). Ce qu'on veut établir ici
+-- est que les lignes sont **neuves** — sinon l'assertion précédente lirait l'engagement d'origine
+-- resté en place, et ne prouverait rien.
 select is(
-  (select count(*)::int from public.plan_actions
-   where plan_cycle_id = current_setting('test.cycle_a')::uuid),
-  2,
-  'A1 : et le plan a bien été reconstruit (deux actions neuves), sinon l''assertion précédente ne prouverait rien'
+  (select bool_and(pa.created_at >= pc.created_at) from public.plan_actions pa
+   join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+   where pa.plan_cycle_id = current_setting('test.cycle_a')::uuid),
+  true,
+  'A1 : et le plan a bien été reconstruit (des actions neuves), sinon l''assertion précédente ne prouverait rien'
 );
 
 select is(
@@ -331,8 +336,10 @@ select set_config('request.jwt.claims',
 select public.commit_plan_action(current_setting('test.action_d1')::uuid, array[2]::smallint[], null);
 
 -- « Choisir une autre action » : la libération de la précédente est une ligne **interne** de
--- `commit_plan_action`, que rien n'affiche. C'était le plus discret des quatre chemins.
-select public.commit_plan_action(current_setting('test.action_d2')::uuid, array[3]::smallint[], null);
+-- `commit_plan_action`, que rien n'affiche. C'était le plus discret des quatre chemins — et depuis
+-- C4.6 il faut le **demander** (`p_replace`), ce qui ne le rend pas moins interne mais le rend
+-- explicite au point d'appel.
+select public.commit_plan_action(current_setting('test.action_d2')::uuid, array[3]::smallint[], null, true);
 
 select is(
   (select count(*)::int from public.plan_action_commitments_archive

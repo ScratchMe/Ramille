@@ -64,13 +64,20 @@ select results_eq(
   'cadence saisonnière par défaut : champs propagés depuis assessment_results et le profil'
 );
 
--- Le plan retient au plus deux actions, et chacune porte son gain chiffré (T10, §3.3).
+-- **Le plan retient TOUTES les actions dont le gain atteint le seuil** (C4.6), et chacune porte son
+-- gain chiffré (T10, §3.3). L'assertion attendait exactement 2 : c'était le `limit 2` que le SQL
+-- portait, un choix d'écran écrit au mauvais endroit, qui jetait les autres leviers avant même de les
+-- écrire (A13-18). Ce qui compte ici n'est plus le nombre mais l'égalité avec ce que l'estimateur
+-- propose — le nombre, lui, dépend du profil de la fixture et ne dit rien.
 select results_eq(
-  $$ select count(*)::int, bool_and(saving_kg_year > 0), bool_and(detail_text is not null)
+  $$ select count(*)::int, bool_and(saving_kg_year > 0), bool_and(detail_text is not null),
+            bool_and(first_step is not null)
      from public.plan_actions pa join public.plan_cycles pc on pc.id = pa.plan_cycle_id
      where pc.user_id = '31111111-1111-1111-1111-111111111111' $$,
-  $$ values (2, true, true) $$,
-  '2 actions retenues, toutes chiffrées avec un gain strictement positif et un détail'
+  $$ select count(*)::int, true, true, true from public.estimate_action_savings(
+       (select id from public.assessments where user_id = '31111111-1111-1111-1111-111111111111'
+        and status = 'completed' order by submitted_at desc limit 1)) $$,
+  'toutes les actions proposées sont retenues, chiffrées, détaillées, et portent leur premier pas'
 );
 
 -- L'ordre n'est pas décoratif : c'est lui qui décide des deux actions retenues parmi neuf.

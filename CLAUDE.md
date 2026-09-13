@@ -564,8 +564,8 @@ porte le jalon « la boucle existe d'une saison à l'autre », et son relevé de
 a démenti la colonne « Parallèle ? » pour la quatrième fois — un seul chantier y est réellement
 disjoint (C2.13), l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9**. C2.8 (la saison a
 une fin et un début), C2.7 (le suivi dans la durée : l'écart par poste, les décisions saison après
-saison, les points groupés, la restitution d'un re-bilan) et C3.1 (la mobilité contrainte est lue par
-la restitution) sont livrés.
+saison, les points groupés, la restitution d'un re-bilan), C3.1 (la mobilité contrainte est lue par la
+restitution) et C4.6 (toutes les pistes, le premier pas, le remplacement explicite) sont livrés.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -826,6 +826,21 @@ commentaire**, seulement du code. Les trois ancres de la vague 4 respectent déj
 moyen de vérifier qu'un corps installé correspond au dépôt est de comparer les empreintes
 **normalisées** (commentaires retirés, blancs réduits), pas les corps bruts.
 
+**Rejouer un fichier de migration ancien sur le distant peut défaire une migration plus récente,
+et la CI ne le verra jamais.** Relevé le 13/09/2026 en livrant C4.6 : le fichier 23 échouait sur le
+distant à l'assertion du `push_body` alors qu'il passe en CI. Cause : la contre-lecture de la vague 5
+avait rejoué **en entier** `20260912170000_rappels_qui_s_espacent.sql` (C2.9) pour corriger
+l'idempotence d'une de ses substitutions — et ce fichier contient un
+`create or replace function public.enqueue_checkin_reminders()` complet, qui a donc écrasé la version
+de C2.1 (`20260912190000`), plus récente. **La CI est aveugle à ce défaut par construction** : elle
+reconstruit la base dans l'ordre des versions, donc C2.1 y passe toujours après C2.9. C'est le
+symétrique exact du piège déjà consigné (« la validation sur le distant passe, la CI tombe ») : ici
+c'est le distant qui dérive et la CI qui a raison. Deux conséquences pratiques — **avant de rejouer un
+fichier ancien, lister les fonctions qu'il réécrit en entier et vérifier qu'aucune migration
+postérieure ne les touche** (`grep -n 'create or replace function public.<nom>' supabase/migrations/`
+suffit), et **rejouer ensuite le bloc de la migration la plus récente** pour chacune. La réparation
+est une opération sur le distant, pas un changement de code.
+
 **Réécrire une fonction existante part de `pg_get_functiondef`, jamais du fichier qui l'a créée.**
 Relevé le 11/09/2026 en livrant C2.2 : `commit_plan_action` et `clear_plan_action_commitment` ont
 été reprises depuis `20260905190000`, leur migration d'origine — alors que C1.12
@@ -963,6 +978,34 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   rien) ; et dans une transaction pgTAP où `now()` est figé, un re-bilan **rapproche** les dates au
   lieu de les écarter, donc il faut reculer explicitement l'ancien bilan **et** le `created_at` du
   cycle, sans quoi les deux gardes renvoient et les assertions passent sans rien éprouver.
+
+**Le plan fige TOUTES les actions au gain suffisant, et c'est l'écran qui en montre deux** (C4.6,
+`20260913110000_pistes_et_premier_pas.sql`). `generate_plan_cycle_for_user` portait un `limit 2` — un
+choix d'écran écrit dans le SQL — qui jetait les autres leviers avant même de les écrire, alors que
+`estimate_action_savings` rend déjà toutes les actions dont le gain atteint 5 kg/an, triées, et que la
+colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage décide. Quatre points :
+
+- **Trois rangs à l'écran, pas deux** (`pistesDuPlan`, `src/types/plan.ts`) : deux cartes pleines,
+  deux cartes estompées derrière « Voir d'autres pistes · N », puis des lignes simples. Au-delà de
+  quatre cartes pleines ce n'est plus un choix qu'on présente, c'est un catalogue. Le compte est
+  **dans** le libellé du lien : un lien qui ne dit pas combien il cache n'aide pas à décider de
+  l'ouvrir.
+- **`actionsCount` pilote encore le disclaimer et l'état vide**, mais la phrase d'intro compte
+  désormais `enAvant.length` : elle décrit ce qui est devant, et dire « Deux actions » à un plan qui
+  en porte cinq serait faux.
+- **`first_step` est une ligne sans chiffre qui décrit un essai**, figée sur `plan_actions` comme le
+  gain, et affichée **seulement une fois l'action engagée** : avant le choix, une consigne pratique se
+  lit comme une charge de plus. Elle ne chiffre rien — le gain est juste au-dessus, et
+  `/conditions` affirme que le produit ne fournit pas de prestation de conseil en mobilité. Deux
+  balayages de la table l'épinglent (aucun gabarit sans premier pas, aucun chiffre dedans) plutôt que
+  de nommer les douze : un treizième ajouté demain traverserait une liste.
+- **`commit_plan_action` prend `p_replace`, et son défaut refuse.** La fonction libérait et archivait
+  l'engagement précédent **sans condition** (C2.2) : le geste le plus irréversible du produit partait
+  en silence depuis n'importe quel appel. `p_replace = false` lève `RM001` — un SQLSTATE de la classe
+  réservée aux conditions utilisateur, que le client reconnaît par son **code** et jamais par le
+  message —, et l'écran relit alors le plan plutôt que de parler de réseau : ce refus veut presque
+  toujours dire que l'état a changé depuis l'affichage. La signature **remplace** l'ancienne au lieu
+  de la doubler, comme `repondre_au_checkin` en C2.4.
 
 **L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
 `plan_actions` porte des chiffres figés à la génération, et **deux gardes indépendantes les
