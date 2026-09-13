@@ -5,6 +5,7 @@ import 'react-native-url-polyfill/auto';
 
 import type { Database } from '@/lib/database.types';
 import { decrireProbleme, lireConfigurationSupabase } from '@/types/configuration';
+import { fetchAvecSecondeChance } from '@/types/postgrest';
 import {
   doitOuvrirUneSessionAnonyme,
   etatDeSession,
@@ -71,6 +72,16 @@ export const supabase = configurationSupabase.complete
         persistSession: true,
         detectSessionInUrl: Platform.OS === 'web',
       },
+      // **Un jeton refusé parce qu'il est trop neuf n'est pas un refus, c'est une attente** —
+      // incident du 13/09/2026, raisonnement et règle en tête de `src/types/postgrest.ts`. Le
+      // refus (`401 PGRST303`) frappe la **première requête d'une session**, quelle qu'elle soit :
+      // la racine de l'app, l'événement `app_open` juste à côté, un onglet au retour — d'où le
+      // transport et non un écran, qui ne l'aurait corrigé que pour lui-même.
+      //
+      // `fetch` est rappelé dans une lambda plutôt que passé par référence : en React Native il
+      // peut être installé par un polyfill après le chargement de ce module, et une référence
+      // capturée ici figerait celui d'avant.
+      global: { fetch: fetchAvecSecondeChance((entree, options) => fetch(entree, options)) },
     })
   : clientAbsent();
 

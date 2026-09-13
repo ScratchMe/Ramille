@@ -687,6 +687,35 @@ que les pages légales et `/compte/suppression` restent atteignables **sans** l'
 requête ne fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux
 moitiés de la règle.
 
+**Un jeton refusé parce qu'il est TROP NEUF n'est pas un refus, c'est une attente** (incident du
+13/09/2026, `src/types/postgrest.ts`). PostgREST rend `401 { code: "PGRST303", message: "JWT issued
+at future" }` quand l'instant d'émission du jeton est postérieur à sa propre horloge. Quatre choses
+à savoir avant de chercher ailleurs :
+
+- **l'horloge de l'appareil n'entre nulle part dans ce contrôle.** Le jeton est émis par Supabase
+  Auth, qui pose `iat` à son horloge à lui, et vérifié par PostgREST contre la sienne : c'est un
+  écart entre deux services de Supabase. Une pendule fausse côté utilisateur ne peut pas produire
+  cette erreur, et la chercher là coûte la journée ;
+- **le réflexe qu'appelle un `401` est ici le mauvais geste** : rafraîchir la session produit un
+  jeton au `iat` encore plus récent, donc encore plus en avance sur l'horloge qui le refuse. Ce qui
+  répare, c'est le temps qui passe ;
+- **ça se répare tout seul, donc ça ne doit pas s'afficher.** Le refus frappe la **première requête
+  d'une session** — la racine de l'app, l'`app_open` juste à côté, un onglet au retour — et le
+  démarrage tombait alors sur « Le démarrage a échoué : JWT issued at future », un écran technique
+  pour une condition d'une seconde. `fetchAvecSecondeChance` (passé en `global.fetch` du client)
+  redemande **au plus deux fois**, 1 200 ms puis 2 500 ms. Le réessai est sûr **pour ce code et
+  aucun autre** : le contrôle du jeton précède l'exécution, donc un `PGRST303` garantit qu'aucune
+  ligne n'a été lue ni écrite — ne pas étendre le motif à ce qui ressemblerait à une panne
+  passagère, et surtout pas aux autres refus de jeton (expiré, mal signé), qui ne se réparent pas en
+  attendant et qu'un réessai masquerait derrière une latence ;
+- **le corps de la réponse est lu sur une copie** (`clone()`). Sans elle, le contrôle consommerait
+  le corps et **toutes** les erreurs de l'app deviendraient illisibles — en silence, et seulement
+  sur les chemins d'échec, c'est-à-dire là où personne ne regarde. Un test épingle ce point.
+
+La recette pour trancher « écart d'horloge ou vrai défaut » est en `docs/exploitation/README.md`
+§8.6 : les deux horloges à mesurer, le jeton à émettre, et la requête sur les journaux d'accès qui
+donne l'ampleur.
+
 **Cette liste de redirections est une frontière de sécurité, pas une commodité de
 configuration.** Elle décide à quelles adresses Supabase accepte de **remettre une session** —
 un lien de connexion renvoie les jetons dans le fragment de l'URL d'arrivée. Une entrée trop
