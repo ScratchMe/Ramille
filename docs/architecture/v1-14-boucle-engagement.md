@@ -524,6 +524,14 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     seule façon que l'en-tête et la liste comptent la même chose même tronquées. Et les trois
     libellés passent au même niveau typographique : « Changement fait » en accent au-dessus d'un
     « Pas cette fois » en tertiaire classait des réponses dont aucune n'est un échec.
+28. **La phrase de mobilité contrainte se rend en plus de la comparaison, pas à sa place** (C3.1,
+    13/09/2026). §3.2 la donne comme la phrase de la variante « mobilité contrainte » de la planche E ;
+    `comparisonNote` ne parle qu'en **relecture** — en mode `nouveau`, `palierNote` occupe cette ligne
+    —, donc la loger là seul aurait fait qu'un profil concerné ne la voie jamais à la sortie du
+    questionnaire, c'est-à-dire à l'endroit précis où la barre vient d'être retirée. Les deux chemins
+    sont gardés l'un par l'autre pour qu'elle ne soit jamais dite deux fois. Et `mobility_constrained`
+    à `null` — tout l'historique d'avant l'increment 6 — **montre** la barre : ne pas savoir n'est pas
+    une contrainte.
 
 ## 11. Tests
 

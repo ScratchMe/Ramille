@@ -24,6 +24,8 @@ import {
   pourcentageDominant,
   prepositionDuMode,
   urlDePartage,
+  montreMoyenneFrancaise,
+  NOTE_MOBILITE_CONTRAINTE,
   type ResultatBilan,
 } from '@/types/resultat';
 
@@ -34,6 +36,9 @@ function resultat(champs: Partial<ResultatBilan> = {}): ResultatBilan {
     dominant_poste_label: 'Trajet domicile-travail (Voiture seul)',
     dominant_poste_mode: 'voiture_thermique',
     dominant_poste_co2_kg_year: 2100,
+    // `null` par défaut, comme un bilan calculé avant la colonne : le cas le plus neutre, celui
+    // qui montre la barre de comparaison.
+    mobility_constrained: null,
     ...champs,
   };
 }
@@ -291,5 +296,55 @@ describe('palierNote', () => {
         expect(palierNote(variante, repereVisible)).not.toMatch(/palier(s)? restant|il t’en reste/i);
       }
     }
+  });
+});
+
+describe('montreMoyenneFrancaise', () => {
+  // **La barre ne s'affiche pas à qui vient de déclarer n'avoir aucun transport en commun** (C3.1).
+  // `mobility_constrained` était calculée depuis l'increment 6 et lue par aucun écran : une moyenne
+  // nationale dont on ne peut pas s'approcher est un score avec un mauvais côté, pas un repère.
+  it('retire la barre quand la voiture n’est pas un choix', () => {
+    expect(montreMoyenneFrancaise({ mobility_constrained: true })).toBe(false);
+  });
+
+  it('montre la barre dans tous les autres cas', () => {
+    expect(montreMoyenneFrancaise({ mobility_constrained: false })).toBe(true);
+  });
+
+  // **`null` montre la barre**, et ce n'est pas un détail : les bilans calculés avant la colonne la
+  // portent, et ne pas savoir n'est pas une contrainte. Traiter `null` comme vrai retirerait la
+  // comparaison à tout l'historique d'avant l'increment 6.
+  it('montre la barre quand on ne sait pas', () => {
+    expect(montreMoyenneFrancaise({ mobility_constrained: null })).toBe(true);
+  });
+});
+
+describe('comparisonNote — mobilité contrainte', () => {
+  // Les deux branches qui citent la moyenne cèdent la place : garder « La moyenne française est de
+  // 2,8 t » sous une carte d'où cette barre vient d'être ôtée serait la contradiction la plus
+  // visible de l'écran.
+  it.each([15820, 2000, 800])('ne cite pas la moyenne à %i kg', (kg) => {
+    const note = comparisonNote(
+      resultat({ total_co2_kg_year: kg, mobility_constrained: true, dominant_poste_co2_kg_year: kg })
+    );
+    expect(note).toBe(NOTE_MOBILITE_CONTRAINTE);
+    expect(note).not.toMatch(/moyenne française/);
+  });
+
+  // **Sous le repère 2050, la première branche garde la main** : elle ne cite pas la moyenne, et
+  // c'est la seule chose qu'il y a à dire à quelqu'un qui est déjà sous le repère — la contrainte de
+  // mobilité n'a plus rien à expliquer là.
+  it('laisse parler le repère 2050 quand il est déjà atteint', () => {
+    const note = comparisonNote(
+      resultat({ total_co2_kg_year: 400, mobility_constrained: true, dominant_poste_co2_kg_year: 400 })
+    );
+    expect(note).toBe('Tu es déjà sous la part transport compatible avec 2050.');
+  });
+
+  // Ni excuse, ni consolation : la phrase ne dit pas que ce n'est pas grave, et le chiffre reste
+  // affiché en entier juste au-dessus.
+  it('dit un fait et non une excuse', () => {
+    expect(NOTE_MOBILITE_CONTRAINTE).not.toMatch(/pas grave|ce n’est pas ta faute|désolé/i);
+    expect(NOTE_MOBILITE_CONTRAINTE).toContain('Le plan regarde ce qui dépend de toi.');
   });
 });

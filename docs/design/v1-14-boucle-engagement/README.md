@@ -132,6 +132,11 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
     l'échelle des barres inclut le bilan précédent — sans quoi sa barre dépasse la carte exactement
     dans le cas d'un re-bilan réussi.
 
+18. **La phrase de mobilité contrainte se rend en plus de la comparaison, pas à sa place** (C3.1) :
+    `comparisonNote` ne parle qu'en relecture — en sortie de questionnaire, c'est la phrase du palier
+    qui occupe cette ligne —, donc la loger là seul aurait fait qu'un profil concerné ne la voie
+    jamais à l'endroit où la barre vient d'être retirée.
+
 La phrase de durée est tranchée : « Le refaire prend **quelques minutes** », et non « cinq minutes »
 comme l'écrit B1. Le produit promet « environ 5 minutes » pour le **premier** bilan (transition de
 l'onboarding, états vides du plan et du suivi) ; un re-bilan est plus rapide, ses réponses étant

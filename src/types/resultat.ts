@@ -51,6 +51,14 @@ export type ResultatBilan = {
   dominant_poste_label: string;
   dominant_poste_mode: string | null;
   dominant_poste_co2_kg_year: number;
+  /**
+   * Vrai quand le contexte B4 ne laisse pas d'alternative crédible à la voiture (C3.1).
+   *
+   * Calculée par le serveur depuis l'increment 6 et lue par **aucun** écran jusqu'ici (A3-7) :
+   * `null` sur les bilans calculés avant la colonne, et ce `null` montre la barre — on ne sait pas,
+   * et ne pas savoir n'est pas une contrainte. Cf. `montreMoyenneFrancaise`.
+   */
+  mobility_constrained: boolean | null;
 };
 
 /**
@@ -222,6 +230,42 @@ export function urlDePartage(results: ResultatBilan, appUrl: string): string {
 }
 
 /**
+ * La restitution montre-t-elle la barre « Moyenne en France » ? (C3.1.)
+ *
+ * **Non à qui vient de déclarer n'avoir aucun transport en commun.**
+ * `assessment_results.mobility_constrained` est calculé depuis l'increment 6, commenté « pour la
+ * restitution », et n'était lu par **aucun** écran (constat A3-7) : la barre s'affichait donc à
+ * quelqu'un dont la voiture n'est pas un choix, et une moyenne nationale dont il ne peut pas
+ * s'approcher est un score avec un mauvais côté, pas un repère. Le commentaire de la colonne le dit
+ * mot pour mot : « uniquement pour ne pas lui proposer l'impossible ni la comparer à une moyenne qui
+ * ne la concerne pas ».
+ *
+ * Le serveur pose le drapeau sur la **conjonction** — aucun transport en commun, ou rural avec une
+ * desserte limitée — parce qu'en périurbain une desserte limitée reste une desserte.
+ *
+ * `null` (les bilans calculés avant cette colonne) montre la barre : on ne sait pas, et ne pas
+ * savoir n'est pas une contrainte. Et **rien d'autre n'est masqué** — ni le repère 2050, ni le
+ * palier, ni la répartition par poste : le drapeau retire une comparaison, il ne réduit pas ce que
+ * la personne voit. Il ne pilote pas non plus l'estimateur d'actions, qui filtre l'impossible par
+ * ses propres critères (le contexte B4, cf. C3.8).
+ */
+export function montreMoyenneFrancaise(
+  results: Pick<ResultatBilan, 'mobility_constrained'>
+): boolean {
+  return results.mobility_constrained !== true;
+}
+
+/**
+ * Ce que la restitution dit à la place de la comparaison, quand la voiture n'est pas un choix.
+ *
+ * Un **fait**, et une redirection vers ce qui dépend d'elle. Ni excuse — le chiffre reste affiché
+ * en entier —, ni consolation : la phrase ne dit pas que ce n'est pas grave, elle dit où le produit
+ * regarde.
+ */
+export const NOTE_MOBILITE_CONTRAINTE =
+  'Là où tu vis, la voiture n’est pas un choix. Le plan regarde ce qui dépend de toi.';
+
+/**
  * « Tu es à 150 % de la moyenne française » était un jugement déguisé en fait : un score, avec
  * un bon et un mauvais côté, servi à quelqu'un qui n'a parfois aucune alternative (rural, pas
  * de transports en commun). La spec demande de contextualiser « sans ton culpabilisant » (§5)
@@ -239,6 +283,12 @@ export function comparisonNote(results: ResultatBilan): string {
 
   if (totalT <= TARGET_2050_TRANSPORT_T) {
     return 'Tu es déjà sous la part transport compatible avec 2050.';
+  }
+  // **Les deux branches suivantes citent la moyenne, et une seule ligne suffit à défaire la
+  // barre retirée** (C3.1) : garder « La moyenne française est de 2,8 t » sous une carte d'où
+  // cette barre a été ôtée serait la contradiction la plus visible de l'écran.
+  if (!montreMoyenneFrancaise(results)) {
+    return NOTE_MOBILITE_CONTRAINTE;
   }
   if (totalT <= FRANCE_AVERAGE_TRANSPORT_T) {
     return 'Tu es en dessous de la moyenne française. Il reste du chemin jusqu’à 2050, comme pour tout le monde.';
