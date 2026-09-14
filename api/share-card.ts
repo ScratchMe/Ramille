@@ -58,7 +58,6 @@ import { Resvg, initWasm } from '@resvg/resvg-wasm';
 const ACCENT = '#1F6F4A';
 const ACCENT_TEXT = '#14563A';
 const BACKGROUND = '#E4EFE8';
-const BLUSH = '#A9C8B6';
 const INK = '#131612';
 const TEXT_SECONDARY = '#39403B';
 
@@ -76,9 +75,23 @@ function ensureWasm(): Promise<void> {
   return wasmReady;
 }
 
-// Feuille + nervure + visage "calm" — reprend exactement assets/images/mascot-mark.svg
-// (cf. src/components/mascot.tsx). Dupliqué ici plutôt qu'importé : ce fichier tourne hors
-// du bundle Expo, aucun accès à assets/ à la construction.
+// La feuille et sa nervure, **sans visage** — la marque, pas le personnage (C3.10, point 2).
+//
+// **Pourquoi le visage part.** Cette carte est la seule surface du produit qui s'affiche là où
+// Ramille n'accompagne personne : dans un fil, à côté d'un chiffre, devant des gens qui ne
+// connaissent pas l'app. Le visage y commente une empreinte — exactement ce que la règle
+// « jamais la mascotte près d'un chiffre lourd » interdit partout ailleurs, et ici le chiffre fait
+// 104 px de haut. Ce qui reste est ce que le produit rend déjà sous `MASCOT_MIN_FACE_SIZE` : la
+// silhouette seule, qui identifie sans commenter.
+//
+// **Et ça règle un second problème, qui était le vrai coût.** Le visage était **recopié** ici —
+// ce fichier tourne hors du bundle Expo, il ne peut importer ni `src/` ni `assets/`. Or depuis
+// C2.13 la géométrie du visage est *calculée* (`mascotFaceGeometry`), avec une compensation
+// optique, des joues qui suivent la saison et quatre accessoires : cette copie figée dérivait un
+// peu plus à chaque increment, sans que rien ne puisse le signaler. Une silhouette, elle, ne
+// dépend ni de la taille ni de la saison — c'est la seule partie du dessin qu'on peut dupliquer
+// sans dette. La feuille et la nervure restent donc identiques à `mascot-mark.svg`, et
+// `src/types/mascot.test.ts` exclut nommément cette carte de ses gardes de conformité.
 function mascot() {
   return h(
     'svg',
@@ -91,12 +104,7 @@ function mascot() {
       strokeLinecap: 'round',
       fill: 'none',
       opacity: 0.55,
-    }),
-    h('circle', { cx: 33, cy: 60, r: 5, fill: BLUSH, opacity: 0.55 }),
-    h('circle', { cx: 67, cy: 60, r: 5, fill: BLUSH, opacity: 0.55 }),
-    h('circle', { cx: 39, cy: 50, r: 4.2, fill: INK }),
-    h('circle', { cx: 61, cy: 50, r: 4.2, fill: INK }),
-    h('path', { d: 'M42,62 Q50,68 58,62', stroke: INK, strokeWidth: 3.2, strokeLinecap: 'round', fill: 'none' })
+    })
   );
 }
 

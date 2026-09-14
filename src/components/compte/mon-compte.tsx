@@ -4,12 +4,14 @@ import { Platform, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
+import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
 import { deleteMyAccount, exportMyData } from '@/lib/compte';
 import { APP_NAME } from '@/constants/produit';
+import { RAMILLE } from '@/constants/mascotte';
 
 // Section « Mes données » de l'écran « Toi » (`src/app/compte/index.tsx`) — droit d'accès, de
 // portabilité et à l'effacement (RGPD art. 15, 20, 17), et **bloqueur Google Play** pour la
@@ -40,6 +42,18 @@ export function MonCompte() {
   const [confirmation, setConfirmation] = useState(false);
   const [busy, setBusy] = useState<'export' | 'suppression' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  // **La suppression a maintenant un après, et c'est un revirement assumé** (C3.10, point 3,
+  // constat A6-19). Le commentaire d'origine défendait l'absence d'écran : « on repart de zéro,
+  // sans écran intermédiaire qui annoncerait une suppression déjà faite ». L'argument confond deux
+  // choses — annoncer la suppression **avant** (ce serait mentir) et la confirmer **après** (ce
+  // dont la personne a besoin). En l'état, on venait de supprimer son compte et on se retrouvait
+  // sur l'accueil de l'onboarding sans un mot : rien ne disait que ça avait marché, et l'écran
+  // d'arrivée est précisément celui de quelqu'un qui n'a jamais rien fait.
+  //
+  // La page web `/compte/suppression` le disait déjà, avec la même phrase et le même mot de
+  // Ramille. Deux chemins vers le même acte qui ne le reconnaissent pas pareil, c'est le genre
+  // d'asymétrie que ce dépôt traque ailleurs.
+  const [supprime, setSupprime] = useState(false);
 
   const exporter = async () => {
     setBusy('export');
@@ -58,10 +72,29 @@ export function MonCompte() {
       setMessage(result.message);
       return;
     }
-    // La racine recrée une session anonyme et renvoie vers l'onboarding : on repart de zéro,
-    // sans écran intermédiaire qui annoncerait une suppression déjà faite.
-    router.replace('/');
+    // Pas de navigation ici : c'est « Revenir au début » qui la déclenche, quand la personne a lu.
+    // La racine recréera alors une session anonyme et renverra vers l'onboarding.
+    setBusy(null);
+    setSupprime(true);
   };
+
+  // L'état terminal remplace la carte entière : ce qu'elle proposait — exporter, supprimer — n'a
+  // plus d'objet, et le laisser affiché sous un « C'est fait » inviterait à recommencer.
+  if (supprime) {
+    return (
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <ThemedText weight={600} type="small">
+          C’est fait.
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Ton compte et tout ce qui s’y rattachait — bilans, plan, points de suivi, retours — ont
+          été supprimés définitivement.
+        </ThemedText>
+        <RamilleDit ligne={RAMILLE.auRevoir} mood="calm" size={44} tilt={-7} />
+        <Button title="Revenir au début" onPress={() => router.replace('/')} />
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>

@@ -8,7 +8,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(7);
+select plan(8);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('f1111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-fb-a@test.local', 'x', now(), now()),
@@ -84,10 +84,20 @@ select is(
   'dix retours en 24 h passent'
 );
 
+-- **Le code d'abord, le message ensuite** (C3.10, point 4, migration `20260914120453`). Le refus
+-- levait avec `check_violation`, c'est-à-dire le **même 23514** que la contrainte de longueur
+-- épinglée trente lignes plus haut : le client ne pouvait les distinguer qu'en cherchant
+-- « plusieurs retours » dans le texte, et ce test-là n'éprouvait que le message — donc il serait
+-- resté vert le jour où une reformulation aurait fait lire « Vérifie ta connexion » à quelqu'un
+-- dont le retour est simplement le onzième.
+--
+-- Forme à quatre arguments : code **et** message. Le message reste éprouvé parce qu'il s'affiche
+-- tel quel ; ce qui s'ajoute est ce qui le sélectionne.
 select throws_ok(
   $stmt$ insert into public.feedback (user_id, kind, message) values ('f1111111-1111-1111-1111-111111111111', 'idee', 'le onzieme') $stmt$,
+  'RM002',
   'Tu as déjà envoyé plusieurs retours aujourd''hui. Reviens demain, on les lit tous.',
-  'le onzième est refusé, avec un message rédigé pour être montré tel quel'
+  'le onzième est refusé sous son propre code, avec un message rédigé pour être montré tel quel'
 );
 
 -- ── Le trigger n'est pas appelable par un client ─────────────────────────────────────────
@@ -105,6 +115,20 @@ select ok(
   not has_function_privilege('authenticated', 'public.enforce_feedback_rate_limit()', 'execute')
     and not has_function_privilege('anon', 'public.enforce_feedback_rate_limit()', 'execute'),
   'enforce_feedback_rate_limit : execute révoqué de PUBLIC, donc des deux rôles client'
+);
+
+-- L'invariant que les deux `throws_ok` portent ensemble, énoncé pour lui-même : les deux refus de
+-- cette table ne se reconnaissent pas au même SQLSTATE. Sans cette assertion, un futur
+-- `using errcode = 'check_violation'` réintroduirait la confusion en laissant les deux `throws_ok`
+-- verts chacun de son côté — chacun ne regarde que son propre cas, et celui du quota n'a pas de
+-- raison de s'apercevoir qu'il vient d'emprunter le code de l'autre.
+--
+-- Écrite sur le **corps installé** et non en comparant deux littéraux : `isnt('RM002', '23514')`
+-- serait vrai par construction, c'est-à-dire le genre d'assertion tautologique que C3.12 va
+-- justement retirer de `page-titles.test.ts`.
+select ok(
+  position('check_violation' in pg_get_functiondef('public.enforce_feedback_rate_limit()'::regprocedure)) = 0,
+  'le garde-fou de volume n''emprunte pas le SQLSTATE des contraintes de longueur'
 );
 
 select * from finish();
