@@ -20,9 +20,9 @@
 //
 // **Le texte vit ici et jamais dans l'écran.** Même raison que `carbon-reference.ts` : ces
 // phrases portent la crédibilité du produit, et une phrase de crédibilité écrite au milieu d'un
-// `<View>` finit par diverger de la valeur qu'elle décrit. Les sept constantes citées plus bas
-// sont celles de `recompute_assessment_results` ; les toucher impose de reprendre ce fichier,
-// ce que rien n'automatise — d'où le test qui épingle chaque valeur au chiffre du SQL.
+// `<View>` finit par diverger de la valeur qu'elle décrit. Les constantes citées plus bas sont
+// celles de `recompute_assessment_results` ; les toucher impose de reprendre ce fichier, et ce
+// qui garde l'égalité est `scripts/verifier-hypotheses-calcul.mjs`, lancé en CI.
 
 import { formatDate } from '@/types/suivi';
 
@@ -60,7 +60,11 @@ export const HYPOTHESES = {
   trainLongKm: 800,
   /** Distance retenue pour un long trajet en voiture. */
   voitureLongKm: 700,
-  /** Part du trajet domicile-travail attribuée au second mode, faute de mieux. */
+  /**
+   * Part du trajet domicile-travail attribuée au second mode **quand elle n'a pas été
+   * demandée** — c'est-à-dire à tout bilan antérieur à C3.4, qui a fait de cette moitié une
+   * question à trois puces au lieu d'une hypothèse appliquée à tout le monde.
+   */
   partDuSecondMode: 0.5,
 } as const;
 
@@ -115,7 +119,7 @@ export function sectionsDeMethode(dateDuBilan: string | null): SectionDeMethode[
       titre: 'Ce qu’on suppose, faute de te le demander',
       lignes: [
         `Ton trajet domicile-travail compte ${nombre(h.semainesDomicileTravail)} semaines par an — 52 moins les congés, les jours fériés et les absences.`,
-        `Un second mode de transport sur ce trajet en prend environ la moitié (${nombre(h.partDuSecondMode * 100)} %) tant que tu ne dis pas autre chose.`,
+        `Un second mode déclaré sans sa part du trajet en prend la moitié (${nombre(h.partDuSecondMode * 100)} %) : c'était le cas de tous les bilans faits avant qu'on pose la question.`,
         `« Rarement » vaut ${nombre(h.sortiesParSemaine.rarement)} sortie par semaine, « une fois par semaine » ${nombre(h.sortiesParSemaine.hebdomadaire)}, « plusieurs fois » ${nombre(h.sortiesParSemaine.plusieurs)} — sur ${nombre(h.semainesLoisirs)} semaines.`,
         `Sans distance déclarée, une sortie compte ${nombre(h.distanceSortieParDefautKm)} km.`,
         `Un vol compte ${nombre(h.volCourtKm)} km s’il est court ou moyen-courrier, ${nombre(h.volLongKm)} km s’il est long-courrier — un aller, pas un aller-retour.`,

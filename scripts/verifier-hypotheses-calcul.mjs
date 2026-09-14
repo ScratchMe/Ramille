@@ -36,6 +36,12 @@ const PAIRES = [
   ['volLongKm', 'dist_flight_long'],
   ['trainLongKm', 'dist_train_long'],
   ['voitureLongKm', 'dist_car_long'],
+  // Ajoutée par C3.4, qui a fait de la moitié du trajet une constante nommée
+  // (`second_leg_share_default`) au lieu d'un `/ 2` écrit en clair dans les deux branches du
+  // trajet domicile-travail. Elle n'est plus l'hypothèse de tout le monde — la question est
+  // posée à l'écran — mais elle reste ce que le calcul applique à un bilan qui n'y a pas
+  // répondu, donc le bloc de méthode la cite et ce contrôle la compare.
+  ['partDuSecondMode', 'second_leg_share_default'],
 ];
 
 function derniereDefinitionSql() {

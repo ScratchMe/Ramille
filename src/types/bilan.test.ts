@@ -11,8 +11,12 @@ import {
   avancementDeLaReprise,
   brouillonEstAncien,
   distanceBracketMidpointKm,
+  OCCUPATIONS_LONG_TRAJET,
+  PARTS_DU_SECOND_MODE,
+  TAILLES_DE_COVOITURAGE,
   distanceDomicileTravailARelire,
   distanceDomicileTravailKm,
+  distanceSortieKm,
   isStepComplete,
   isStepVisible,
   lireBrouillonBilan,
@@ -154,10 +158,23 @@ describe('isStepComplete', () => {
     expect(
       isStepComplete('commute_extra', answers({ commute_second_mode_used: true, commute_second_mode: null }))
     ).toBe(false);
+    // Un second mode choisi sans sa part n'est pas une étape finie (C3.4) : c'est l'état dans
+    // lequel arrive tout re-bilan prérempli d'avant la question, c'est-à-dire précisément le
+    // bilan dont la seconde jambe valait la moitié du trajet par hypothèse.
     expect(
       isStepComplete(
         'commute_extra',
         answers({ commute_second_mode_used: true, commute_second_mode: 'bus' })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'commute_extra',
+        answers({
+          commute_second_mode_used: true,
+          commute_second_mode: 'bus',
+          commute_second_mode_share: 0.75,
+        })
       )
     ).toBe(true);
   });
@@ -183,6 +200,7 @@ describe('isStepComplete', () => {
           commute_second_mode_used: true,
           commute_second_mode: 'voiture',
           commute_car_engine: 'thermique',
+          commute_second_mode_share: 0.5,
         })
       )
     ).toBe(true);
@@ -222,6 +240,7 @@ describe('isStepComplete', () => {
           commute_second_mode_used: true,
           commute_second_mode: 'deux_roues_motorise',
           commute_two_wheeler_type: 'scooter_electrique',
+          commute_second_mode_share: 0.25,
         })
       )
     ).toBe(true);
@@ -273,6 +292,47 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
+  it('leisure_detail : le covoiturage exige sa taille, la tranche ouverte exige sa distance', () => {
+    const base = { leisure_mode: 'voiture', leisure_car_engine: 'thermique' } as const;
+
+    // C3.5 — sans la taille, le calcul ne divise pas : le choix « covoiturage » ne changerait
+    // rien au chiffre, ce qui est pire qu'une question non posée.
+    expect(
+      isStepComplete(
+        'leisure_detail',
+        answers({ ...base, leisure_distance_bracket: 'lt_5', leisure_is_carpool: true })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'leisure_detail',
+        answers({
+          ...base,
+          leisure_distance_bracket: 'lt_5',
+          leisure_is_carpool: true,
+          leisure_carpool_size: 4,
+        })
+      )
+    ).toBe(true);
+
+    // C3.6 — la tranche ouverte est la seule à réclamer un chiffre, et un « 0 » n'en est pas un.
+    expect(
+      isStepComplete('leisure_detail', answers({ ...base, leisure_distance_bracket: '30_plus' }))
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'leisure_detail',
+        answers({ ...base, leisure_distance_bracket: '30_plus', leisure_distance_km: 0 })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'leisure_detail',
+        answers({ ...base, leisure_distance_bracket: '30_plus', leisure_distance_km: 120 })
+      )
+    ).toBe(true);
+  });
+
   it('flights : short_per_year requis seulement si au moins un vol déclaré', () => {
     expect(isStepComplete('flights', answers({ flights_total_per_year: 0 }))).toBe(true);
     expect(
@@ -283,13 +343,25 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
-  it('long_trips : complet par défaut (0 trajet), exige le type de moteur dès qu’un trajet voiture est déclaré', () => {
+  it('long_trips : complet par défaut (0 trajet), exige moteur et occupation dès qu’un trajet voiture est déclaré', () => {
     expect(isStepComplete('long_trips', answers({}))).toBe(true);
     expect(isStepComplete('long_trips', answers({ car_long_trips_per_year: 3 }))).toBe(false);
+    // C3.5 : la motorisation seule ne suffit plus. Le calcul divisait par une personne sans
+    // jamais le demander, sur le trajet qu'on partage le plus.
     expect(
       isStepComplete(
         'long_trips',
         answers({ car_long_trips_per_year: 3, car_long_trips_engine: 'thermique' })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'long_trips',
+        answers({
+          car_long_trips_per_year: 3,
+          car_long_trips_engine: 'thermique',
+          car_long_trips_occupancy: 3,
+        })
       )
     ).toBe(true);
   });
@@ -414,6 +486,44 @@ describe('distance domicile-travail', () => {
     );
     expect(distanceDomicileTravailARelire(answers({ commute_distance_km: 12 }))).toBe(false);
     expect(distanceDomicileTravailARelire(answers({}))).toBe(false);
+  });
+});
+
+describe('distance d’une sortie', () => {
+  // Jumelle de `distanceDomicileTravailKm`, et pour le même piège : la colonne porte
+  // `check (leisure_distance_km > 0)`, donc un « 0 » qui traverse les neuf étapes n'échoue
+  // qu'à la soumission, en anglais, sans désigner ni le champ ni l'étape.
+  it('un 0 saisi ne compte pas comme une distance', () => {
+    expect(distanceSortieKm(answers({ leisure_distance_km: 0 }))).toBeNull();
+    expect(distanceSortieKm(answers({ leisure_distance_km: null }))).toBeNull();
+    expect(distanceSortieKm(answers({ leisure_distance_km: 120 }))).toBe(120);
+    expect(distanceSortieKm(answers({ leisure_distance_km: 32.5 }))).toBe(32.5);
+  });
+});
+
+describe('les tables de réponses chiffrées', () => {
+  // Ces trois tables sont des **miroirs des `check` du schéma**, pas des choix d'écran : une
+  // valeur hors bornes ne serait refusée qu'à la soumission, neuf étapes trop tard et en
+  // anglais. Les bornes sont recopiées ici parce que rien ne peut les lire depuis le SQL — même
+  // limite que `distanceBracketMidpointKm`, et même raison de l'épingler.
+  it('la part du second mode tient dans ses bornes strictes', () => {
+    for (const { value } of PARTS_DU_SECOND_MODE) {
+      expect(value).toBeGreaterThan(0);
+      expect(value).toBeLessThan(1);
+    }
+    expect(PARTS_DU_SECOND_MODE.map((p) => p.value)).toEqual([0.25, 0.5, 0.75]);
+  });
+
+  it('les tailles de covoiturage vont de 2 à 6, et la dernière dit « ou plus »', () => {
+    expect(TAILLES_DE_COVOITURAGE.map((t) => t.value)).toEqual([2, 3, 4, 5, 6]);
+    expect(TAILLES_DE_COVOITURAGE[TAILLES_DE_COVOITURAGE.length - 1].label).toBe('6+');
+  });
+
+  it('l’occupation d’un long trajet commence à 1 et s’arrête à 5', () => {
+    // Commence à 1 parce que « seul » est une réponse, pas une absence — c'est justement la
+    // valeur que le calcul supposait sans jamais la demander. S'arrête à 5 là où le
+    // covoiturage quotidien va à 6 : un long trajet se fait en voiture familiale.
+    expect(OCCUPATIONS_LONG_TRAJET).toEqual([1, 2, 3, 4, 5]);
   });
 });
 
@@ -630,6 +740,131 @@ describe('normaliserReponses', () => {
     ).toBe('hybride');
   });
 
+  it('la part du second mode ne survit pas au second mode (C3.4)', () => {
+    // Séquence réelle : « Oui » → « Train » → « Un quart », puis « Non ». Sans cette règle, la
+    // fraction partait à l'insert sous une question qu'on ne pose plus — et revenait telle
+    // quelle dans le re-bilan prérempli.
+    expect(
+      normaliserReponses(
+        answers({
+          commute_second_mode_used: false,
+          commute_second_mode: 'train',
+          commute_second_mode_share: 0.25,
+        })
+      ).commute_second_mode_share
+    ).toBeNull();
+    // Et le second chemin, celui du mode devenu identique au principal.
+    expect(
+      normaliserReponses(
+        answers({
+          commute_mode: 'train',
+          commute_second_mode_used: true,
+          commute_second_mode: 'train',
+          commute_second_mode_share: 0.5,
+        })
+      ).commute_second_mode_share
+    ).toBeNull();
+    expect(
+      normaliserReponses(
+        answers({
+          commute_second_mode_used: true,
+          commute_second_mode: 'train',
+          commute_second_mode_share: 0.25,
+        })
+      ).commute_second_mode_share
+    ).toBe(0.25);
+  });
+
+  it('le covoiturage des loisirs suit la voiture, et sa taille suit le covoiturage (C3.5)', () => {
+    const versVelo = normaliserReponses(
+      answers({
+        leisure_frequency: 'weekly',
+        leisure_mode: 'velo',
+        leisure_is_carpool: true,
+        leisure_carpool_size: 4,
+      })
+    );
+    expect(versVelo.leisure_is_carpool).toBe(false);
+    expect(versVelo.leisure_carpool_size).toBeNull();
+
+    const enVoiture = normaliserReponses(
+      answers({
+        leisure_frequency: 'weekly',
+        leisure_mode: 'voiture',
+        leisure_car_engine: 'thermique',
+        leisure_is_carpool: true,
+        leisure_carpool_size: 4,
+      })
+    );
+    expect(enVoiture.leisure_carpool_size).toBe(4);
+  });
+
+  it('« rarement » emporte le covoiturage des loisirs, à l’inverse de la motorisation', () => {
+    // La règle du dessus (« garde la motorisation, que le calcul lit encore ») ne s'étend pas
+    // au covoiturage, et c'est la distinction à ne pas défaire : le calcul divise par
+    // `leisure_carpool_size` **quel que soit** le mode, donc laisser le drapeau diviserait le
+    // résiduel de « rarement » par une taille déclarée pour une sortie qui n'est plus
+    // déclarée. La motorisation décrit le véhicule de la personne, le covoiturage un trajet
+    // qui n'existe plus.
+    const rarement = normaliserReponses(
+      answers({
+        leisure_frequency: 'rarely',
+        leisure_mode: null,
+        leisure_car_engine: 'electrique',
+        leisure_is_carpool: true,
+        leisure_carpool_size: 4,
+      })
+    );
+    expect(rarement.leisure_car_engine).toBe('electrique');
+    expect(rarement.leisure_is_carpool).toBe(false);
+    expect(rarement.leisure_carpool_size).toBeNull();
+  });
+
+  it('la distance libre des loisirs ne survit qu’à la tranche ouverte (C3.6)', () => {
+    // Le calcul préfère `leisure_distance_km` à **toute** tranche (`coalesce`), donc une valeur
+    // laissée par un aller-retour écraserait le milieu de tranche affiché : la personne lirait
+    // « 5 à 15 km » et le bilan compterait 120.
+    expect(
+      normaliserReponses(
+        answers({
+          leisure_frequency: 'weekly',
+          leisure_mode: 'velo',
+          leisure_distance_bracket: '5_15',
+          leisure_distance_km: 120,
+        })
+      ).leisure_distance_km
+    ).toBeNull();
+    expect(
+      normaliserReponses(
+        answers({
+          leisure_frequency: 'weekly',
+          leisure_mode: 'velo',
+          leisure_distance_bracket: '30_plus',
+          leisure_distance_km: 120,
+        })
+      ).leisure_distance_km
+    ).toBe(120);
+    // Et « rarement » l'emporte, comme il emporte la tranche.
+    expect(
+      normaliserReponses(
+        answers({ leisure_frequency: 'rarely', leisure_distance_km: 120 })
+      ).leisure_distance_km
+    ).toBeNull();
+  });
+
+  it('l’occupation des longs trajets part avec les trajets eux-mêmes (C3.5)', () => {
+    expect(
+      normaliserReponses(
+        answers({ car_long_trips_per_year: 0, car_long_trips_occupancy: 3 })
+      ).car_long_trips_occupancy
+    ).toBeNull();
+    expect(
+      normaliserReponses(
+        answers({ car_long_trips_per_year: 2, car_long_trips_occupancy: 3 })
+      ).car_long_trips_occupancy
+    ).toBe(3);
+  });
+
   it('ne touche pas à un jeu de réponses cohérent, et s’applique deux fois sans rien changer', () => {
     const coherent = answers({
       commute_has_regular_trip: true,
@@ -640,6 +875,7 @@ describe('normaliserReponses', () => {
       commute_carpool_size: 2,
       commute_second_mode_used: true,
       commute_second_mode: 'train',
+      commute_second_mode_share: 0.75,
       commute_car_engine: 'hybride',
       leisure_frequency: 'weekly',
       leisure_mode: 'deux_roues_motorise',
@@ -647,6 +883,7 @@ describe('normaliserReponses', () => {
       leisure_distance_bracket: '5_15',
       car_long_trips_per_year: 2,
       car_long_trips_engine: 'thermique',
+      car_long_trips_occupancy: 3,
     });
     const une = normaliserReponses(coherent);
     expect(une).toEqual(coherent);

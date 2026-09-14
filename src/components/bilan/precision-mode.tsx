@@ -36,7 +36,11 @@ import { Radius, Spacing } from '@/constants/theme';
 // Le rôle d'accessibilité suit gratuitement : `ModeListItem` s'annonce en `radio`, seul rôle
 // qui dit « sélectionné », alors qu'une puce s'annonce en `button`. Ces réponses sont bien
 // des choix exclusifs.
-export function PrecisionMode<T extends string>({
+//
+// Le paramètre accepte un nombre autant qu'une chaîne : la part du second mode (C3.4) est une
+// fraction, parce que c'est ce que le calcul multiplie — traduire une énumération en fraction
+// quelque part entre l'écran et le SQL serait un troisième endroit où se tromper.
+export function PrecisionMode<T extends string | number>({
   question,
   options,
   valeur,

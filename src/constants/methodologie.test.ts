@@ -14,11 +14,12 @@ import { HYPOTHESES, METHODE_TITRE, sectionsDeMethode } from './methodologie';
 // assume ses hypothèses par écrit, et qu'il affiche chaque valeur au lieu de la réécrire à côté.
 
 describe('HYPOTHESES', () => {
-  // La part du second mode n'est pas une constante nommée du SQL : elle y est écrite en clair
-  // (`/ 2`) dans les deux branches du trajet domicile-travail — c'est pourquoi elle n'est pas dans
-  // la table du script de CI. C3.4 la persistera en colonne avec ce 0,5 pour repli, et l'assertion
-  // sera alors à faire pointer sur la valeur par défaut de la colonne.
-  it('garde la moitié comme part du second mode tant que rien n’est déclaré', () => {
+  // C3.4 a fait de cette moitié une question posée à l'écran, et une constante nommée du SQL
+  // (`second_leg_share_default`) au lieu d'un `/ 2` écrit en clair dans les deux branches du
+  // trajet domicile-travail. Elle est donc entrée dans la table du script de CI, qui est ce qui
+  // garde l'égalité ; ce qui reste ici, c'est ce que le bloc affiche — la valeur appliquée à un
+  // bilan qui n'a pas répondu, c'est-à-dire à tout bilan antérieur à la question.
+  it('garde la moitié comme part du second mode quand elle n’a pas été demandée', () => {
     expect(HYPOTHESES.partDuSecondMode).toBe(0.5);
   });
 });

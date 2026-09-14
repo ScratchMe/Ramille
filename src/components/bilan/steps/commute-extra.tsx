@@ -14,15 +14,7 @@ import {
   type TransportModeId,
 } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
-import type { BilanAnswers } from '@/types/bilan';
-
-const CARPOOL_SIZES: { value: number; label: string }[] = [
-  { value: 2, label: '2' },
-  { value: 3, label: '3' },
-  { value: 4, label: '4' },
-  { value: 5, label: '5' },
-  { value: 6, label: '6+' },
-];
+import { PARTS_DU_SECOND_MODE, TAILLES_DE_COVOITURAGE, type BilanAnswers } from '@/types/bilan';
 
 // B1.5 / B1.6 / B1.7 — combinés sur un seul écran : taille du covoiturage (si mode =
 // voiture covoiturage), second mode Oui/Non, puis "Lequel ?" imbriqué si Oui.
@@ -47,7 +39,7 @@ export function CommuteExtraStep({
               Vous êtes combien à partager ce trajet ?
             </ThemedText>
             <View style={styles.row}>
-              {CARPOOL_SIZES.map((size) => (
+              {TAILLES_DE_COVOITURAGE.map((size) => (
                 <Chip
                   key={size.value}
                   label={size.label}
@@ -127,6 +119,23 @@ export function CommuteExtraStep({
                       options={TWO_WHEELER_TYPE_OPTIONS}
                       valeur={answers.commute_two_wheeler_type}
                       onChange={(value) => update({ commute_two_wheeler_type: value })}
+                    />
+                  </View>
+                )}
+
+                {/* C3.4 — sous le mode choisi, jamais après la liste : c'est la question que
+                    le calcul se posait tout seul. Il attribuait exactement la moitié des
+                    kilomètres à chaque jambe, ce qui sous-estime de 44 % un vélo + train (on
+                    fait rarement la moitié du trajet à vélo) et surestime de 51 % un
+                    parc-relais (on ne conduit pas jusqu'à mi-chemin) — sur le poste qui décide
+                    du poste dominant, donc du plan. */}
+                {answers.commute_second_mode === modeId && (
+                  <View style={styles.precision}>
+                    <PrecisionMode
+                      question="Quelle part du trajet fais-tu ainsi ?"
+                      options={PARTS_DU_SECOND_MODE}
+                      valeur={answers.commute_second_mode_share}
+                      onChange={(value) => update({ commute_second_mode_share: value })}
                     />
                   </View>
                 )}
