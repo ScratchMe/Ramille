@@ -5,7 +5,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  View,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -145,6 +144,20 @@ export default function Onboarding() {
   // Le masquage suit l'**index d'état**, jamais la position de défilement : pendant le geste,
   // l'index ne bascule qu'au franchissement de la moitié de page, alors qu'un seuil sur le
   // défilement ferait apparaître et disparaître les pages sous le doigt.
+  // **Une page d'onboarding doit pouvoir défiler, sinon elle coupe** (contre-lecture de la vague 6,
+  // 14/09/2026). Les pages sont des boîtes à hauteur fixe, égale au viewport : tout ce qui dépasse
+  // est rogné sans un mot, et rien dans les étapes ne peut l'absorber — elles centrent leur contenu
+  // et les hauteurs de ligne ne se compriment pas. Les deux phrases ajoutées par C3.9 (le lien légal
+  // de l'étape 3, « Ensuite : … » sur la transition) ont suffi à faire sortir « Continuer » et
+  // « Commencer mon bilan » de l'écran à 360×640 — c'est-à-dire sur un téléphone d'entrée de gamme,
+  // et sur le seul bouton qui fait avancer.
+  //
+  // `minHeight` et non `height` : au-dessus de cette taille la page se comporte exactement comme
+  // avant (le `flex: 1` des étapes et leur `justifyContent: 'space-between'` gardent leur sens),
+  // en dessous elle défile. Et `minHeight` n'est posé qu'une fois la hauteur mesurée, pour ne pas
+  // rompre l'instantané serveur dont dépend l'hydratation (cf. le bloc ci-dessus).
+  const contenuDePage = [styles.pageContenu, hauteur > 0 ? { minHeight: hauteur } : null];
+
   const propsDePage = (i: number) => {
     const masquee = i !== index;
     return {
@@ -171,18 +184,34 @@ export default function Onboarding() {
         // `bounces` en moins pour que les deux extrémités ne suggèrent pas une cinquième étape.
         bounces={false}
       >
-        <View {...propsDePage(0)}>
+        <ScrollView
+          {...propsDePage(0)}
+          contentContainerStyle={contenuDePage}
+          showsVerticalScrollIndicator={false}
+        >
           <EtapeAccroche onSuivant={() => allerA(1)} />
-        </View>
-        <View {...propsDePage(1)}>
+        </ScrollView>
+        <ScrollView
+          {...propsDePage(1)}
+          contentContainerStyle={contenuDePage}
+          showsVerticalScrollIndicator={false}
+        >
           <EtapeContexte onSuivant={() => allerA(2)} />
-        </View>
-        <View {...propsDePage(2)}>
+        </ScrollView>
+        <ScrollView
+          {...propsDePage(2)}
+          contentContainerStyle={contenuDePage}
+          showsVerticalScrollIndicator={false}
+        >
           <EtapeReassurance onSuivant={() => allerA(3)} />
-        </View>
-        <View {...propsDePage(3)}>
+        </ScrollView>
+        <ScrollView
+          {...propsDePage(3)}
+          contentContainerStyle={contenuDePage}
+          showsVerticalScrollIndicator={false}
+        >
           <EtapeTransition />
-        </View>
+        </ScrollView>
       </ScrollView>
     </ThemedView>
   );
@@ -190,4 +219,5 @@ export default function Onboarding() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  pageContenu: { flexGrow: 1 },
 });

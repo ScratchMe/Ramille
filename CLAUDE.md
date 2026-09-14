@@ -1818,6 +1818,15 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   sans compteur de génération à maintenir. Le rappel passé à `useRafraichirAuRetour` doit être
   stable (`useCallback`), sinon son effet de focus se réabonne à chaque rendu et fait tourner
   chargement et rendu l'un dans l'autre.
+- **Une page d'un pager doit pouvoir défiler, sinon elle coupe** (contre-lecture de la vague 6).
+  Les quatre pages de `/onboarding` sont des boîtes à hauteur fixe, égale au viewport : ce qui
+  dépasse était rogné sans un mot, et aucune étape ne peut l'absorber — elles centrent leur contenu
+  et les hauteurs de ligne ne se compriment pas. Chaque page est donc une `ScrollView` verticale à
+  `contentContainerStyle: { flexGrow: 1, minHeight: hauteur }` — `minHeight` et non `height`, pour
+  qu'au-dessus de cette taille la page se comporte exactement comme avant, et seulement une fois la
+  hauteur **mesurée**, sinon l'instantané serveur dont dépend l'hydratation est rompu. Le fait
+  mesuré qui va avec : l'étape 1 fait 890 px à 360 de large et 896 à 390, donc elle ne tient dans
+  aucun téléphone courant et le lien « J'ai déjà un compte » y était coupé (§11.13 de `v1-13`).
 - **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Charger à
   chaque retour transforme une lecture en échec en régression visible : tant que la lecture n'avait
   lieu qu'au montage, personne ne pouvait perdre ses barres en cours de session. Les lectures
