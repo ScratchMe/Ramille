@@ -82,7 +82,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test -- --ci
+      # **La couverture est relevée sans seuil, et c'est le point** (C3.12) : un seuil transforme
+      # une carte en obstacle, et se contourne en écrivant des tests qui touchent du code sans rien
+      # affirmer. Ce qu'on veut savoir est ce qui n'est éprouvé par rien — un module de `src/types`
+      # à 0 % est une dérivation affichée à quelqu'un que personne ne garde.
+      #
+      # Le périmètre est celui de la règle du dépôt (`src/types`, `src/lib`, `src/constants`) et pas
+      # tout `src/` : les écrans ne sont pas testés, par décision — il n'y a pas encore de tests
+      # d'intégration — donc les lister à 0 % à chaque passage noierait la carte dans une centaine
+      # de lignes qui ne disent rien de neuf. Le jour où des tests d'écran existent, le périmètre
+      # s'élargit ici. Il vit dans `package.json` (`collectCoverageFrom`), qui est du JSON et ne peut
+      # pas porter cette explication.
+      - run: npm test -- --ci --coverage --coverageReporters=text
 
   web-export:
     name: Export web
@@ -152,3 +163,16 @@ jobs:
           version: 2.117.0
       - run: supabase db start
       - run: supabase test db
+      # **`src/lib/database.types.ts` est tenu à la main, donc il dérive** (C3.12 §3). Le typecheck
+      # ne peut pas l'attraper : il vérifie le code **contre ce fichier**, jamais le fichier contre
+      # la base. Une colonne oubliée dans le bloc `Insert` rend impossible d'écrire une colonne qui
+      # existe ; une colonne fantôme laisse écrire une colonne qui n'existe plus, et l'échec arrive
+      # à l'exécution, en anglais, chez la personne.
+      #
+      # La comparaison porte sur les **colonnes** et pas sur le texte — l'audit avait prévu qu'un
+      # `diff` brut serait rouge dès le premier passage pour une raison de forme : le fichier du
+      # dépôt est généré depuis le projet distant et retouché à la main, la CI produit la sortie du
+      # CLI local, et les deux mises en forme n'ont aucune raison de coïncider. Détail dans
+      # l'en-tête du script.
+      - run: supabase gen types typescript --local > /tmp/database.types.generated.ts
+      - run: node scripts/verifier-types-base.mjs /tmp/database.types.generated.ts

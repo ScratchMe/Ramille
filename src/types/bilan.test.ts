@@ -35,6 +35,31 @@ function answers(overrides: Partial<BilanAnswers>): BilanAnswers {
   return { ...EMPTY_BILAN_ANSWERS, ...overrides };
 }
 
+describe('BILAN_STEP_ORDER', () => {
+  // **Moitié cliente d'une paire, et la jumelle est en SQL** : `analytics.bilan_funnel` porte ces
+  // neuf identifiants écrits en clair dans son `unnest(array[…])`, et leur ordre décide de celui
+  // des lignes de l'entonnoir. Rien ne tenait les deux d'accord, et aucun des deux côtés n'était
+  // épinglé (C3.12 §4).
+  //
+  // Ce qu'on perd sans ça : une étape renommée ici, et l'entonnoir montre pour toujours une ligne à
+  // zéro là où les gens passent — un abandon massif, inventé, à l'étape qu'on vient de retoucher.
+  // Une étape ajoutée, et elle n'apparaît pas du tout. Les deux moitiés doivent tomber ensemble :
+  // l'assertion jumelle est dans `supabase/tests/database/12_usage_events.test.sql`.
+  it('porte les neuf étapes de l’entonnoir, dans leur ordre', () => {
+    expect(BILAN_STEP_ORDER).toEqual([
+      'commute_has_trip',
+      'commute_days_distance',
+      'commute_mode',
+      'commute_extra',
+      'leisure_frequency',
+      'leisure_detail',
+      'flights',
+      'long_trips',
+      'context',
+    ]);
+  });
+});
+
 describe('isStepVisible', () => {
   it('affiche les étapes domicile-travail par défaut (réponse pas encore donnée)', () => {
     const a = answers({});

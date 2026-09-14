@@ -73,6 +73,13 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/dist/"
+    ],
+    "collectCoverageFrom": [
+      "src/types/**/*.ts",
+      "src/lib/**/*.ts",
+      "src/constants/**/*.ts",
+      "!src/**/*.test.ts",
+      "!src/lib/database.types.ts"
     ]
   }
 }
