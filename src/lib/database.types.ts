@@ -74,6 +74,7 @@ export type Database = {
         Row: {
           assessment_id: string
           car_long_trips_engine: string | null
+          car_long_trips_occupancy: number | null
           car_long_trips_per_year: number
           commute_car_engine: string | null
           commute_carpool_size: number | null
@@ -84,14 +85,18 @@ export type Database = {
           commute_is_carpool: boolean
           commute_mode: string | null
           commute_second_mode: string | null
+          commute_second_mode_share: number | null
           commute_second_mode_used: boolean
           commute_two_wheeler_type: string | null
           flights_short_per_year: number | null
           flights_total_per_year: number
           household_vehicles: string | null
           leisure_car_engine: string | null
+          leisure_carpool_size: number | null
           leisure_distance_bracket: string | null
+          leisure_distance_km: number | null
           leisure_frequency: string
+          leisure_is_carpool: boolean
           leisure_mode: string | null
           leisure_two_wheeler_type: string | null
           tc_access: string | null
@@ -102,6 +107,7 @@ export type Database = {
         Insert: {
           assessment_id: string
           car_long_trips_engine?: string | null
+          car_long_trips_occupancy?: number | null
           car_long_trips_per_year?: number
           commute_car_engine?: string | null
           commute_carpool_size?: number | null
@@ -112,14 +118,18 @@ export type Database = {
           commute_is_carpool?: boolean
           commute_mode?: string | null
           commute_second_mode?: string | null
+          commute_second_mode_share?: number | null
           commute_second_mode_used?: boolean
           commute_two_wheeler_type?: string | null
           flights_short_per_year?: number | null
           flights_total_per_year?: number
           household_vehicles?: string | null
           leisure_car_engine?: string | null
+          leisure_carpool_size?: number | null
           leisure_distance_bracket?: string | null
+          leisure_distance_km?: number | null
           leisure_frequency: string
+          leisure_is_carpool?: boolean
           leisure_mode?: string | null
           leisure_two_wheeler_type?: string | null
           tc_access?: string | null
@@ -130,6 +140,7 @@ export type Database = {
         Update: {
           assessment_id?: string
           car_long_trips_engine?: string | null
+          car_long_trips_occupancy?: number | null
           car_long_trips_per_year?: number
           commute_car_engine?: string | null
           commute_carpool_size?: number | null
@@ -140,14 +151,18 @@ export type Database = {
           commute_is_carpool?: boolean
           commute_mode?: string | null
           commute_second_mode?: string | null
+          commute_second_mode_share?: number | null
           commute_second_mode_used?: boolean
           commute_two_wheeler_type?: string | null
           flights_short_per_year?: number | null
           flights_total_per_year?: number
           household_vehicles?: string | null
           leisure_car_engine?: string | null
+          leisure_carpool_size?: number | null
           leisure_distance_bracket?: string | null
+          leisure_distance_km?: number | null
           leisure_frequency?: string
+          leisure_is_carpool?: boolean
           leisure_mode?: string | null
           leisure_two_wheeler_type?: string | null
           tc_access?: string | null
@@ -194,6 +209,8 @@ export type Database = {
           commute_main_leg_km_year: number | null
           commute_poste_label: string | null
           commute_poste_mode: string | null
+          commute_second_leg_co2_kg_year: number | null
+          commute_second_leg_km_year: number | null
           commute_trip_distance_km: number | null
           computed_at: string
           dominant_poste: string
@@ -222,6 +239,8 @@ export type Database = {
           commute_main_leg_km_year?: number | null
           commute_poste_label?: string | null
           commute_poste_mode?: string | null
+          commute_second_leg_co2_kg_year?: number | null
+          commute_second_leg_km_year?: number | null
           commute_trip_distance_km?: number | null
           computed_at?: string
           dominant_poste: string
@@ -250,6 +269,8 @@ export type Database = {
           commute_main_leg_km_year?: number | null
           commute_poste_label?: string | null
           commute_poste_mode?: string | null
+          commute_second_leg_co2_kg_year?: number | null
+          commute_second_leg_km_year?: number | null
           commute_trip_distance_km?: number | null
           computed_at?: string
           dominant_poste?: string
