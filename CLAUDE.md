@@ -1789,6 +1789,18 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   seulement changer le texte** — relire la permission sans réinscrire le jeton laisse la ligne
   promettre une notification pendant que `push_tokens` porte encore son `disabled_at`, jusqu'au
   prochain démarrage à froid.
+- **La carte d'attente parle de la personne, la feuille parle de l'action — et `Boucle` sert aux
+  deux** (recette sur appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
+  le sujet : elle se dérive de la personne (un poste domicile-travail ⟹ un point le lundi). La
+  feuille ouverte après « C'est noté » promet un contact **sur l'action qu'on vient d'engager**
+  (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du **poste de cette
+  action**, par `boucleDeLAction` (`src/types/rappels.ts`), miroir de l'appariement que fait la
+  génération du point (C2.1). Les confondre affiche une promesse fausse, et c'est ce qui a été
+  trouvé : quelqu'un qui a un trajet domicile-travail **et** s'engage sur un vol s'entendait
+  promettre le lundi, alors que le point du lundi ne demandera jamais rien sur son vol — vérifié en
+  base le même jour, le point hebdomadaire sortant en question générique. Corollaire : la feuille
+  ne dépend plus de `boucle`, sans quoi un échec de lecture secondaire empêchait une cérémonie qui
+  ne s'ouvre **qu'une fois par appareil** — donc la perdait pour de bon.
 - **Le jeton de cet appareil est mémorisé en AsyncStorage** (`traceverte.jeton_appareil.v1`),
   parce que rien en base ne permet de le reconnaître : `push_tokens` est owner-scoped et une
   lecture rend les jetons de tous les appareils de la personne. C'est ce qui rend vraies les deux

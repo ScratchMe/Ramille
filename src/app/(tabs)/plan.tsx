@@ -62,6 +62,7 @@ import {
   type PointRepondu,
 } from '@/types/checkin';
 import {
+  boucleDeLAction,
   carteAttente,
   doitProposerLaFeuille,
   type Boucle,
@@ -347,6 +348,16 @@ export default function Plan() {
   const { rappel } = useLocalSearchParams<{ rappel?: string }>();
   const vientDUnRappel = rappel === '1';
   const [feuilleOuverte, setFeuilleOuverte] = useState(false);
+  /**
+   * Le poste de l'action qu'on vient d'engager, pour la feuille et pour elle seule.
+   *
+   * **Il ne se confond pas avec `boucle`** (recette du 14/09/2026) : `boucle` répond à « quel est
+   * le prochain contact, quel qu'en soit le sujet » et se dérive de la personne ; la feuille, elle,
+   * promet un contact *sur cette action-là*. Quelqu'un qui a un trajet domicile-travail et
+   * s'engage sur un vol s'entendait promettre le lundi, alors que le point du lundi s'apparie sur
+   * le poste `commute` (C2.1) et ne lui demandera jamais rien sur son vol.
+   */
+  const [posteEngage, setPosteEngage] = useState<string | null>(null);
 
   // **La confirmation se termine hors de l'app** : la personne clique le lien reçu par email
   // et revient ici, `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la
@@ -653,8 +664,9 @@ export default function Plan() {
   // Appelée quand un engagement vient d'être pris — jamais quand on en change ni quand on
   // le libère. La feuille ne s'ouvre qu'une fois par appareil : c'est une cérémonie pour la
   // première fois, pas un péage à chaque action.
-  const proposerLesRappels = async () => {
+  const proposerLesRappels = async (poste: string | null) => {
     if (!rappels) return;
+    setPosteEngage(poste);
     const dejaProposee = await aDejaVuLaFeuilleDeRappel();
     if (
       !doitProposerLaFeuille({
@@ -994,10 +1006,14 @@ export default function Plan() {
 
         {/* Rendue par-dessus le plan plutôt que dans le flux : elle arrive après un geste
             (« C'est noté ») et doit se lire comme un moment, pas comme un encart de plus. */}
-        {feuilleOuverte && rappels && boucle && (
+        {/* **La feuille ne dépend plus de `boucle`**, et c'est le corollaire du correctif : ce
+            qu'elle annonce se dérive du poste de l'action. La garde d'avant faisait qu'un échec
+            de lecture secondaire empêchait la cérémonie de s'ouvrir — et comme elle ne s'ouvre
+            qu'une fois par appareil, elle était alors perdue pour de bon. */}
+        {feuilleOuverte && rappels && (
           <FeuilleRappels
             prefs={rappels}
-            boucle={boucle}
+            boucle={boucleDeLAction(posteEngage)}
             permission={permission}
             onFerme={fermerLaFeuille}
           />

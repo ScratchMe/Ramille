@@ -2047,3 +2047,33 @@ ensemble aussi, pour une autre raison : les deux demandent un vrai message reçu
 messagerie sur un appareil, donc autant les faire dans la même séance. Et 11.9 et 11.10 attendent C2.13 sans le
 bloquer : les trois se regardent au prix d'un seul compte à garnir — un bilan, un cycle antidaté, un
 second bilan.
+
+## 12. Ce que la recette sur appareil du 14/09/2026 a trouvé
+
+Première séance sur l'APK `preview` du build `0e0d9a89` (commit `58ffda2`), sur un compte réel avec
+sa saison passée fabriquée côté serveur. Le protocole suivi est l'artefact « Recette Ramille sur
+appareil ». Quatre constats, **un corrigé dans la foulée et trois à trancher** — ils sont ici et
+non en §11 parce qu'ils ne demandent pas un appareil pour être compris : l'appareil a servi à les
+voir, pas à les établir.
+
+**Et deux choses ont été vérifiées par accident, qui ne l'avaient jamais été.** La **reconduction
+d'un engagement** au changement de saison (C2.2) : le cycle sur lequel la personne s'était engagée
+a été reculé d'une saison, et son engagement a bien été recopié dans le cycle neuf avec l'étiquette
+« · RECONDUIT ». Puis, au re-bilan, le gabarit engagé a disparu du plan (les vols passés à zéro) et
+l'engagement a été **archivé** au lieu d'être perdu — l'autre moitié de la même promesse. Et
+« Le palier que tu visais est derrière toi. » s'est affichée, ce qui demandait deux bilans dans deux
+périodes distinctes.
+
+| # | Constat | Statut |
+|---|---|---|
+| 12.1 | **La feuille des rappels promettait le mauvais jour.** Après « C'est noté » sur une action de **voyages**, elle disait « Lundi, je reviens te demander si tu l'as faite ». Le point du lundi s'apparie sur le poste `commute` (C2.1) : il ne demande jamais rien sur un vol — constaté en base le même jour, le point hebdomadaire étant sorti en question générique. La variante se dérivait de la personne (« a-t-elle un poste domicile-travail »), avec le raisonnement « c'est le prochain contact qui compte, pas l'action engagée » — vrai pour la **carte d'attente**, faux pour une phrase qui dit « si tu **l'**as faite ». | **Corrigé** le 14/09/2026 : `boucleDeLAction` (`src/types/rappels.ts`), le poste voyage avec `onEngage`, et la feuille ne dépend plus de `boucle`. |
+| 12.2 | **La taille du covoiturage du trajet quotidien est sur l'écran suivant**, alors que les deux questions identiques ajoutées par C3.5 (sorties, longs trajets) s'ouvrent **sous l'option choisie**. Trois fois « vous êtes combien », deux motifs. Reste d'avant C3.5, qui a introduit le motif imbriqué sans reprendre l'ancienne ; la contre-lecture du 14/09 a aligné leurs **rôles d'accessibilité** sans voir que le **placement** divergeait. | À trancher |
+| 12.3 | **Le binaire du second mode arrive déjà répondu.** `commute_second_mode_used` vaut `false` par défaut, donc « Non » est pré-coché sur un questionnaire vierge, et `manqueDeLEtape` ne bloque pas : on traverse la question sans jamais décider. C'est le motif que C3.4, C3.5 et C3.6 ont corrigé ailleurs — « laisser le choix facultatif revient à garder le défaut pour tous ceux qui passent sans répondre ». | À trancher |
+| 12.4 | **Le plan affiche des actions qu'on ne peut pas choisir.** Au-delà du quatrième rang, les pistes sont des lignes sans bouton (C4.6, trois rangs). La hiérarchie se défend — « une liste de six cartes pleines ne présente plus un choix, elle présente un catalogue » — mais la porte de sortie écrite dans le code (« s'engager sur l'une d'elles demande d'abord de la faire remonter, ce que le prochain re-bilan fait si le poste bouge ») demande à la personne de changer pour que l'app la réordonne. C4.6 existait précisément parce que « l'autonomie de la personne s'exerçait sur deux leviers » : elle s'exerce maintenant sur quatre, pas sur toutes celles qu'on lui montre. | À trancher |
+
+**Un piège de méthode, à ne pas répéter.** Le protocole annonçait un pourcentage sur la note de
+variation de la **restitution**. Il n'y en a pas, et c'est voulu : `variationDepuisLeBilanPrecedent`
+donne l'écart absolu seul (« les barres sont en tonnes, "8 % de moins" ne se rattache à rien de ce
+qu'on y voit »), tandis que `variationNote` — les kilos **puis** le pourcentage — est celle de
+l'onglet Suivi. L'attendu avait été écrit pour l'une et posé sur l'autre, et a fait perdre du temps
+à chercher un défaut qui n'existait pas. **Un attendu de recette nomme l'écran d'où il vient.**
