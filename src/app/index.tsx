@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { loadBilanDraft } from '@/lib/bilan-draft';
 import { ensureSession, supabase } from '@/lib/supabase';
+import { decrireErreur } from '@/types/erreur';
 
 // Racine de l'app — jamais un écran visible en pratique (redirection immédiate dès que la
 // session est prête) : remplace l'ancien smoke-test Supabase qui vivait ici (déplacé vers
@@ -54,7 +55,20 @@ export default function Index() {
           // route comme avant, ce qui est exactement le comportement d'avant ce chantier.
           loadBilanDraft().catch(() => null),
         ]);
-        if (error) throw error;
+        // **Un échec de lecture n'empêche pas de reprendre un questionnaire commencé**
+        // (contre-lecture de la vague 6, 14/09/2026). La racine conditionnait ses trois
+        // destinations à la réussite de cette requête, dont une seule a besoin : le brouillon vit en
+        // AsyncStorage et l'écran de reprise ne demande rien au réseau. Quelqu'un qui avait
+        // interrompu sa saisie dans le métro tombait donc sur « Le démarrage a échoué ».
+        //
+        // **Et on s'arrête là, sans router vers `/onboarding` faute de mieux.** Le brouillon est une
+        // preuve locale ; son absence n'en est pas une. Sans lui on ne sait pas distinguer un
+        // visiteur neuf d'un compte existant dont la lecture a échoué, et envoyer le second à
+        // l'onboarding lui dirait « tu n'as rien » — exactement ce qu'aucun écran de ce produit ne
+        // dit sur un échec de lecture. `ensureSession()` ne rapporte pas si elle a créé ou restauré
+        // la session, donc la distinction n'est pas disponible ici ; l'écran d'échec et son
+        // « Réessayer » restent la réponse honnête.
+        if (error && !brouillon) throw error;
         if (annule) return;
         // **Plancher d'affichage, pas délai ajouté.** Une session déjà en cache répond en
         // ~200 ms : l'écran d'ouverture était payé — un temps d'arrêt à chaque lancement —
@@ -67,7 +81,7 @@ export default function Index() {
         // **Le brouillon ne détourne le démarrage que sans bilan complété.** Qui en a un a le
         // plan pour maison, et un re-bilan commencé ne doit pas s'emparer de l'ouverture de
         // l'app : le questionnaire se reprend depuis le suivi, pas à la place du plan.
-        if (data) {
+        if (data && !error) {
           router.replace('/plan');
         } else if (brouillon) {
           router.replace({ pathname: '/bilan', params: { reprise: '1' } });
@@ -77,7 +91,7 @@ export default function Index() {
       } catch (erreur) {
         console.error('Démarrage impossible :', erreur);
         if (annule) return;
-        setEchec(erreur instanceof Error ? erreur.message : String(erreur));
+        setEchec(decrireErreur(erreur));
       }
     })();
 

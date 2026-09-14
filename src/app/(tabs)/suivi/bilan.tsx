@@ -519,8 +519,22 @@ export default function BilanResultat() {
   // se rend pas (C3.1) : sinon toutes les barres restantes seraient raccourcies par un repère absent
   // de l'écran.
   const precedentT = precedent ? precedent.totalKg / 1000 : 0;
+
+  // **La condition de rendu du repère 2050 vit ici, pas dans le JSX**, parce que l'échelle doit la
+  // lire aussi : c'est le défaut que C3.1 a introduit sans le voir. En retirant la moyenne française
+  // du domaine, elle a laissé la barre du repère dépasser son rail dès que le total passe sous
+  // 0,510 t (0,85 × 0,6 t) — elle se rendait pleine, coupée par l'`overflow: hidden` du rail, et
+  // seulement pour un profil en mobilité contrainte, c'est-à-dire celui pour qui ce chantier existe.
+  // Deux endroits qui décident séparément ce que l'échelle contient finissent toujours par se
+  // contredire ; le palier, lui, n'a pas besoin d'y entrer (`targetKg <= totalKg` par construction).
+  const montreBarreRepere2050 = (montreRepere2050 || !palier) && !palier?.isTarget2050;
   const domain =
-    Math.max(totalT, precedentT, montreMoyenne ? FRANCE_AVERAGE_TRANSPORT_T : 0) / 0.85;
+    Math.max(
+      totalT,
+      precedentT,
+      montreMoyenne ? FRANCE_AVERAGE_TRANSPORT_T : 0,
+      montreBarreRepere2050 ? TARGET_2050_TRANSPORT_T : 0
+    ) / 0.85;
   const barPercent = (value: number) => Math.max((value / domain) * 100, 3);
 
   return (
@@ -709,7 +723,7 @@ export default function BilanResultat() {
               )}
               {/* Sauf quand le palier EST le repère : il porte déjà son nom juste au-dessus,
                   deux barres de même valeur n'apprendraient rien. */}
-              {(montreRepere2050 || !palier) && !palier?.isTarget2050 && (
+              {montreBarreRepere2050 && (
                 <CompareRow
                   label="Repère transport 2050"
                   value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}

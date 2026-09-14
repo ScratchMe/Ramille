@@ -41,6 +41,7 @@ import {
   type BilanAnswers,
   type BilanStepId,
 } from '@/types/bilan';
+import { decrireErreur } from '@/types/erreur';
 
 // Questionnaire du bilan (9 pas maximum, branchements B1.1/B2.1) — état local pour
 // toute la traversée, un seul aller-retour serveur à la soumission (cf. commentaire
@@ -415,7 +416,7 @@ export default function BilanQuestionnaire() {
       setMessage(
         'Ton bilan n’a pas pu être enregistré. Tes réponses sont conservées, réessaie dans un instant.'
       );
-      setDetail(error instanceof Error ? error.message : String(error));
+      setDetail(decrireErreur(error));
     } finally {
       soumissionEnCours.current = false;
       setSubmitting(false);
