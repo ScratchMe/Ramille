@@ -70,7 +70,15 @@ bout-en-bout (écrans, flux de connexion) :
   et `keepLatestPerDay` qui lisent le calendrier local — sont **indistinguables**, donc leurs tests
   passeraient tout aussi bien avec l'erreur. Le test « regroupe sur le jour local » de
   `suivi.test.ts` est celui qui l'a rendu visible : il échoue sur l'ancienne implémentation en
-  Europe/Paris et passe des deux façons en UTC. Forcer le fuseau depuis le corps d'un test ne marche
+  Europe/Paris et **échoue en UTC avec l'une comme avec l'autre** — ce qui en fait du même coup la
+  garde de ce réglage : `TZ=UTC npx jest src/types/suivi.test.ts` le fait tomber, mesuré le
+  14/09/2026 (la première rédaction disait « passe des deux façons en UTC », ce qui était faux).
+  **Et ce fuseau ne suffit pas à garder les autres distinctions du même genre** : Paris est à l'est
+  de Greenwich, donc minuit UTC et le jour écrit y tombent le même jour, et deux gardes intitulées
+  « quel que soit le fuseau » restaient vertes avec l'implémentation qu'elles interdisent. Elles
+  éprouvent désormais le **moyen** et non la sortie — le constructeur `Date` est neutralisé le temps
+  de l'appel pour `finDePeriodeEnMots`, et réduit à sa forme à composantes pour `pointsParSaison`,
+  qui a besoin d'une date locale. Forcer le fuseau depuis le corps d'un test ne marche
   pas — Node met son fuseau en cache à la première opération de date, et Jest en a déjà fait une.
   **Jest résout `ts` avant `js` parce que le dépôt le lui dit, et Metro le faisait déjà.**
   `package.json` porte un `moduleFileExtensions` explicite : le défaut de Jest est

@@ -1,6 +1,7 @@
 // Tests de la logique pure du suivi (v1-07 §3.2). Même critère que
 // `src/types/bilan.test.ts` : on teste ce qui produit un chiffre ou une phrase affichée à
 // l'utilisateur, là où un bug coûte cher — pas les requêtes elles-mêmes.
+import { saisonDe } from './saison';
 import {
   ancienneteEnMots,
   daysSince,
@@ -284,6 +285,23 @@ describe('estStable / estUneBaisse', () => {
     expect(estUneBaisse(3000, 3600)).toBe(false);
   });
 
+  it('range deux bilans identiques dans le stable, même à zéro', () => {
+    // Le seuil est relatif, donc sans issue sur une base nulle : `false` faisait dire « 0 kg de
+    // plus que ton bilan de mars. Une année n'est pas l'autre. » à un écart nul. Un bilan à zéro
+    // est celui d'un piéton sans vol ni long trajet, pas un cas théorique.
+    expect(estStable(0, 0)).toBe(true);
+    expect(estStable(2400, 2400)).toBe(true);
+    expect(estUneBaisse(0, 0)).toBe(false);
+    // Et une base nulle qui augmente reste une hausse, pas une stabilité.
+    expect(estStable(0, 40)).toBe(false);
+  });
+
+  it("ne console pas d'une hausse quand l'écart est nul", () => {
+    expect(
+      variationDepuisLeBilanPrecedent({ totalKg: 0, submittedAt: '2026-03-10T09:00:00Z' }, 0)
+    ).toBe('Stable par rapport à ton bilan de mars.');
+  });
+
   // Un premier bilan n'a rien à comparer : ni stable, ni en baisse.
   it('ne dit rien sans point de départ', () => {
     expect(estStable(0, 2400)).toBe(false);
@@ -472,9 +490,43 @@ describe('pointsParSaison', () => {
 
   // **La saison passe par les caractères de la date.** `new Date('2026-09-01')` est minuit UTC :
   // à l'ouest de Greenwich son jour local est le 31 août, et le point se rangerait dans l'été.
-  it('range le 1er septembre dans l’automne, quel que soit le fuseau', () => {
+  //
+  // Le nom de ce test promettait « quel que soit le fuseau » et ne pouvait pas le tenir
+  // (contre-lecture de la vague 6, 14/09/2026) : la suite tourne en `TZ=Europe/Paris`, à l'est de
+  // Greenwich, donc minuit UTC et le jour écrit y tombent le même jour et les deux implémentations
+  // rendent la même chose. À la différence de `finDePeriodeEnMots`, on ne peut pas interdire ici le
+  // constructeur `Date` — `saisonDe` suit délibérément le calendrier **local** — donc on énonce
+  // l'invariant réellement portant : le regroupement doit dire la même saison que `saisonDe` sur la
+  // même date, lue par ses caractères. Une lecture UTC des caractères ferait diverger les deux.
+  it('range le 1er septembre dans l’automne', () => {
     const groupes = pointsParSaison([point('a', '2026-09-01')]);
     expect(groupes[0].libelle).toBe('Automne 2026');
+  });
+
+  // Le garde qui mord : on interdit `new Date(<chaîne>)` — la lecture UTC — tout en laissant passer
+  // `new Date(annee, mois, jour)`, qui est la forme locale correcte et dont `saisonDe` a besoin. Une
+  // implémentation qui passerait la chaîne ISO au constructeur lève ici, dans n'importe quel fuseau.
+  it('ne passe jamais la date ISO au constructeur `Date`', () => {
+    const vrai = globalThis.Date;
+    class DateSansChaine extends vrai {
+      constructor(...args: unknown[]) {
+        if (args.length === 1 && typeof args[0] === 'string') {
+          throw new Error('une date nue se lit par ses composantes, pas par `new Date(iso)`');
+        }
+        super(...(args as []));
+      }
+    }
+    globalThis.Date = DateSansChaine as unknown as DateConstructor;
+    try {
+      for (const jour of ['2026-03-01', '2026-06-01', '2026-09-01', '2026-12-01', '2027-02-28']) {
+        expect(pointsParSaison([point('x', jour)])[0].libelle).toBe(
+          saisonDe(new vrai(Number(jour.slice(0, 4)), Number(jour.slice(5, 7)) - 1, Number(jour.slice(8, 10))))
+            .libelle
+        );
+      }
+    } finally {
+      globalThis.Date = vrai;
+    }
   });
 
   // L'en-tête d'un groupe porte son **vrai** total : c'est ce qui empêche la liste et le compteur de

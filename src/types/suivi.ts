@@ -205,6 +205,12 @@ export function ancienneteEnMots(jours: number): string {
  * l'imprécision des facteurs et des réponses, l'annoncer comme un progrès serait le surestimer.
  */
 export function estStable(previousKg: number, currentKg: number): boolean {
+  // **Deux bilans égaux sont stables, même à zéro** (contre-lecture de la vague 6, 14/09/2026). Le
+  // seuil est relatif, donc il n'a pas de sens sur une base nulle ; mais renvoyer `false` sans
+  // regarder l'égalité faisait dire « 0 kg de plus que ton bilan de mars. Une année n'est pas
+  // l'autre. » — une consolation de hausse pour un écart nul. Le cas n'est pas théorique : un bilan
+  // à zéro est celui d'un piéton qui ne prend ni vol ni long trajet.
+  if (currentKg === previousKg) return true;
   if (previousKg === 0) return false;
   return Math.abs((currentKg - previousKg) / previousKg) < 0.03;
 }
