@@ -57,13 +57,31 @@ bout-en-bout (écrans, flux de connexion) :
   postes), la table de vérité de `rappels.test.ts` (jumelle SQL de `reminder_channel_for`), les
   règles de voix de `mascotte.test.ts` (jamais un nombre, jamais « tu devrais »), et la conformité
   des chemins de `mascot.test.ts`.
-  **Un module testé ne doit pas importer `@/lib/supabase`** — d'où la séparation `src/types/*`
-  (pur, testé) / `src/lib/*` (requêtes). Le motif n'est plus l'exception au chargement : depuis
-  que le client est un mandataire, il ne lève plus qu'au premier accès (voir plus bas), ce qui
-  rend l'échec **plus** discret — un seul test d'une branche, pas la suite entière — donc c'est un
-  argument pour garder la règle, pas pour l'assouplir. La vraie raison est en tête du module :
-  il tire `@react-native-async-storage/async-storage`, `react-native` (Platform) et
-  `react-native-url-polyfill/auto`, qui n'ont rien à faire dans une suite de logique pure. Deux
+  **La ligne passe par ce qu'un test doit dresser avant de pouvoir affirmer** (C3.12), et non par
+  le nom d'un import. La règle disait « un module testé n'importe pas `@/lib/supabase` » ; elle
+  protégeait une chose qui n'existe plus — le client levait au **chargement**, donc un seul import
+  faisait tomber la suite entière — et depuis qu'il est un mandataire, l'importer est inoffensif.
+  Elle interdisait donc des tests utiles en gardant un danger disparu. Deux niveaux la remplacent :
+  **`src/types/*` est de la logique pure** — n'importe rien de la plateforme, n'installe aucun
+  double ; c'est aussi pourquoi `format.ts` doit rester pur bien qu'il vive dans `src/lib`, puisque
+  `src/types/resultat.ts` l'importe. **`src/lib/*` est de l'entrée-sortie** — le test **double**
+  exactement ce qu'il éprouve (AsyncStorage pour `bilan-draft`, `connexion-prefs`, `saison-prefs`
+  et la moitié locale de `notification-prefs` ; `Platform` pour `app-url`) et n'éprouve que ce que
+  ce double couvre. `notification-prefs` importe `@/lib/supabase` et est quand même testé : ce qui
+  y est éprouvé ne touche que le stockage. Corollaire à connaître si cette suite tombe un jour sur
+  une erreur de configuration — ce n'est pas le test qui aura changé, c'est une de ces fonctions
+  qui aura commencé à toucher le client au chargement du module.
+  **La couverture est relevée en CI sans seuil** (`npm test -- --coverage`, périmètre
+  `src/types` · `src/lib` · `src/constants` dans `collectCoverageFrom`) : un seuil transforme une
+  carte en obstacle et se contourne en écrivant des tests qui touchent du code sans rien affirmer.
+  Les écrans n'y sont pas — ils ne sont pas testés, par décision, et les lister à 0 % à chaque
+  passage noierait la carte. 79 % des lignes au 14/09/2026.
+  **Doubler `react-native` en entier passe au vert en salissant la sortie** : le `setup.js` de
+  jest-expo est privé de ce qu'il installe, et l'étaler avec `requireActual` **lit** chaque
+  propriété du module, donc déclenche les avertissements de dépréciation posés sur ses exports
+  sortants. Un `Proxy` ne lit que ce qu'on lui demande — la démonstration est dans
+  `app-url.test.ts`. Un avertissement dans une sortie de CI est un avertissement qu'on cesse de
+  lire, et c'est ainsi qu'on manque le vrai.
   **La suite tourne en `TZ=Europe/Paris`, et ce n'est pas cosmétique** (C2.7) : en UTC, toutes les
   distinctions UTC/local que ce dépôt documente avec soin — `debutDePeriodeInterrogee` et
   `periodePrecedente` qui lisent l'UTC comme leurs jumelles SQL, `saisonDe`, `progressionDeLaPeriode`
@@ -109,6 +127,17 @@ bout-en-bout (écrans, flux de connexion) :
   `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
 
 Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
+
+**Et le job `db-tests` compare aussi `src/lib/database.types.ts` à la base qu'il vient de
+construire** (C3.12) : `supabase gen types typescript --local`, puis
+`scripts/verifier-types-base.mjs`. Le fichier est tenu à la main — on y ajoute les colonnes plutôt
+que de le régénérer, un diff de mille lignes pour trois — et **le typecheck ne peut pas voir cette
+dérive** : il vérifie le code **contre ce fichier**, jamais le fichier contre la base. Une colonne
+oubliée dans `Insert` rend impossible d'écrire une colonne qui existe ; une colonne fantôme laisse
+écrire une colonne qui n'existe plus, et l'échec arrive à l'exécution, en anglais, chez la personne.
+La comparaison porte sur les **colonnes** et jamais sur le texte : le fichier du dépôt vient du
+projet distant et la CI du CLI local, donc un `diff` brut serait rouge dès le premier passage pour
+une raison de forme, et finirait désarmé.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
 pas seulement celles qui citent le facteur touché — et « toucher » inclut en AJOUTER un.**
@@ -496,8 +525,11 @@ connaître :
   `public.periode_precedente(loop_type, period_start)` : la période se **calcule**. Un `lag()` sur
   les lignes aurait le même défaut en moins visible — vérifié sur la fixture du test `25`, qui compte
   2 par `lag()` et 1 par période.
-- **C'est une quatrième paire SQL/TypeScript** (`periodePrecedente`, `src/types/checkin.ts`), à
-  toucher avec sa jumelle comme `mois_francais`, `jours_francais` et `poste_inserable` : la vue
+- **C'est une paire SQL/TypeScript de plus** (`periodePrecedente`, `src/types/checkin.ts`), à
+  toucher avec sa jumelle comme `mois_francais`, `jours_francais`, `poste_inserable`,
+  `reminder_channel_for` et — depuis C3.12 — `analytics.bilan_funnel` / `BILAN_STEP_ORDER`, dont
+  les deux moitiés s'épinglent l'une l'autre et se nomment mutuellement en commentaire. Le nombre
+  de paires ne se compte pas ici : il devient faux à la suivante, en silence. Donc : la vue
   `analytics.checkins_consecutifs` compte côté serveur, la carte affiche côté client. Les deux
   cadences n'ont pas la même forme et c'est voulu — sept jours avant un lundi est un lundi, tandis que
   le mois est **ramené au premier** plutôt que décalé, sans quoi les deux moitiés divergeraient sur les
@@ -585,8 +617,16 @@ une fin et un début), C2.7 (le suivi dans la durée : l'écart par poste, les d
 saison, les points groupés, la restitution d'un re-bilan), C3.1 (la mobilité contrainte est lue par la
 restitution), C4.6 (toutes les pistes, le premier pas, le remplacement explicite), C2.13 (la
 mascotte porte la saison) et C3.9 (onboarding et compte : ce que le produit promet) sont livrés :
-**la vague 6 est complète**, et avec elle le jalon « la boucle existe d'une saison à l'autre ». La
-suite est la vague 7 (lot 3 restant).
+**la vague 6 est complète**, et avec elle le jalon « la boucle existe d'une saison à l'autre ».
+**La vague 7 est complète elle aussi** (14/09/2026, lot 3 restant) : d'où vient le chiffre (C3.2),
+ce que le palier mesure (C3.11), les deux écrans du questionnaire (C3.3), la lisibilité du
+questionnaire (C3.7), le ton et la carte de partage (C3.10), les trois questions que le calcul se
+posait tout seul (C3.4 + C3.5 + C3.6, une seule migration), le plan qui cesse de proposer
+l'impossible (C3.8) et les tests qui manquaient (C3.12). **Avec elle, les lots 0 à 3 sont livrés
+en entier** — l'audit du 09/09/2026 n'a plus de chantier ouvert hors du lot 4. La suite est la
+vague 8 (lot 4), dont chaque chantier commence par **une page de décision** (`v1-1N`) et non par du
+code : C4.1 (point quantitatif), C4.2 (coup de pouce la veille), C4.3 (déplacements
+professionnels), C4.4, C4.5, C4.7 et C4.8 — C4.6 ayant été avancé dans la vague 6.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -831,6 +871,37 @@ une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par 
 `BilanAnswers` (`src/types/bilan.ts`) est un miroir direct des colonnes de la table, pour un
 insert sans transformation.
 
+**Le questionnaire demande désormais ce que le calcul supposait** (C3.4 + C3.5 + C3.6,
+`20260914123432`). Quatre réponses s'ajoutent, toutes **obligatoires dès que leur déclencheur est
+là** — laisser le choix facultatif reviendrait à garder le défaut pour tous ceux qui passent sans
+répondre, ce que chacun des trois chantiers corrige. Cinq points à connaître :
+
+- **`commute_second_mode_share` est une fraction, pas une énumération** : c'est ce que le SQL
+  multiplie, et traduire trois libellés en trois nombres quelque part entre l'écran et le calcul
+  serait un troisième endroit où se tromper. Le calcul attribuait exactement la moitié des
+  kilomètres à chaque jambe — vélo + train sous-estimé de 44 %, parc-relais surestimé de 51 %, sur
+  le poste qui décide du poste dominant donc du plan. La moitié reste le **repli** d'un bilan qui
+  n'a pas répondu (`second_leg_share_default`), et c'est à ce titre que le bloc « Comment ce chiffre
+  est calculé » la cite encore.
+- **Le CO₂ de la seconde jambe est persisté** (`commute_second_leg_co2_kg_year`). Il était calculé,
+  entrait dans le total, et n'était écrit nulle part : tout ce qui lit `assessment_results` — le
+  plan en premier — ne voyait que la jambe principale, donc « Travailler depuis chez toi un jour »
+  valait 128 kg au lieu de 205 sur un trajet à deux modes.
+- **`normaliserReponses` porte une règle qui diverge de celle du dessus, et il ne faut pas
+  l'uniformiser** : sur des loisirs « rarement », le covoiturage part là où la motorisation reste.
+  Le calcul lit encore les deux, mais la motorisation décrit le **véhicule** de la personne et rend
+  le résiduel plus juste, tandis que le covoiturage décrit un **trajet** qui n'est plus déclaré — et
+  le garder diviserait ce résiduel, donc changerait le total d'un bilan déjà soumis.
+- **`PARTS_DU_SECOND_MODE`, `TAILLES_DE_COVOITURAGE` et `OCCUPATIONS_LONG_TRAJET`
+  (`src/types/bilan.ts`) sont des miroirs des `check` du schéma**, épinglés par un test : rien ne
+  peut lire ces bornes depuis TypeScript, et une valeur hors bornes ne serait refusée qu'à la
+  soumission, en anglais, neuf étapes trop tard.
+- **`distanceSortieKm` est la jumelle de `distanceDomicileTravailKm`**, et pour le même piège : la
+  colonne porte `check (leisure_distance_km > 0)`, donc un « 0 » saisi n'est pas une distance.
+  `leisure_distance_km` ne survit qu'à la tranche ouverte, parce que le calcul la préfère à
+  **toute** tranche (`coalesce`) : sans cette règle, quelqu'un qui saisit 120 km puis redescend sur
+  « 5 à 15 km » repartirait avec 120, et la tranche affichée ne dirait plus ce que le calcul fait.
+
 Le mode "voiture" ne distingue jamais la motorisation dans les listes de sélection
 (B1.4/B1.7/B2.2 restent "Voiture (seul)"/"Voiture (covoiturage)", jamais une entrée par
 motorisation) — une question de suivi ("Quelle motorisation ?") s'affiche en nested reveal dès
@@ -1070,6 +1141,50 @@ colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage d�
   message —, et l'écran relit alors le plan plutôt que de parler de réseau : ce refus veut presque
   toujours dire que l'état a changé depuis l'affichage. La signature **remplace** l'ancienne au lieu
   de la doubler, comme `repondre_au_checkin` en C2.4.
+
+**Le plan ne propose plus l'impossible, et la règle qui l'en empêche vaut pour les filtres à
+venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur sur trois —
+`requires_tc` n'écartait les transports en commun que sur `tc_access = 'inexistant'` —, donc
+« Passer deux trajets sur cinq en métro ou en tram » arrivait **en tête** du plan d'un profil rural
+à desserte limitée : le gain était juste, l'action impossible. Six points :
+
+- **Une condition qu'on ne peut pas évaluer n'est pas remplie** : sans réponse, on ne propose pas.
+  C'est l'inverse du choix de C3.1 (`mobility_constrained` nul **montre** la barre de la moyenne
+  française), et l'asymétrie est le raisonnement — là-bas ne pas savoir faisait **cacher** un
+  repère, ici cela ferait **proposer** une action implausible.
+- **`action_templates.zones_admissibles` et `.teletravail_admissible` sont des listes de valeurs
+  admissibles**, `null` valant « pas de condition ». Pour le télétravail ce n'est pas du style : il
+  y a **deux seuils**, un jour se tenant avec « parfois » et deux jours demandant « oui ». Un
+  tableau **vide** n'est pas un tableau absent — `= any('{}')` est faux pour toute valeur, donc il
+  écarte tout le monde là où `null` n'écarte personne ; un test l'interdit.
+- **Le métro et le tram sont bornés à `urbain_dense`, le train et le RER ne le sont pas**, et c'est
+  la moitié qu'il ne faut pas « uniformiser » : un TER dessert des communes rurales, et lui coller
+  la même zone retirerait à ce profil la seule alternative qui lui reste.
+- **Le télétravail se demande** (B4.4, `assessment_answers.teletravail`), et l'action s'appelle
+  « Travailler depuis chez toi un jour par semaine » — « garder » supposait qu'on en avait. Le
+  libellé seul ne suffisait pas : sans la question, l'action reste en tête chez les gros rouleurs
+  sans alternative. La garde du `remove_day` se dérive du gabarit (`commute_days_per_week <=
+  t.trips`) au lieu d'un 2 écrit en dur : retirer deux jours à qui en fait deux supprimerait 100 %
+  du trajet, et le gain annoncé serait celui de ne plus travailler.
+- **Les échéances dépendent du poste** (`intentionTimingsForPoste`, `src/types/plan.ts`) : « Ce
+  mois-ci » n'est pas une échéance pour un vol. Les voyages ont les leurs, les trois anciennes
+  restent et sont celles des sorties. Le repli d'un poste inconnu est la liste des sorties, sans
+  quoi la feuille s'ouvrirait sur rien et « C'est noté » resterait inactif sans dire pourquoi.
+- **`cadreDuPlan` décide de ce que l'écran annonce et de ce que le cap a le droit de chiffrer.**
+  Un plan à **zéro action** ne chiffre plus son cap — ce n'était un cas de bord qu'avant C2.5, et
+  depuis, tout cycliste et tout profil sédentaire y tombe ; la carte se rend quand même, elle est
+  depuis C2.8 l'endroit où la période se nomme. Et quand les actions débordent du poste dominant,
+  l'intro le dit et une note suit le cap, qui reste celui du poste dominant : le recalculer sur le
+  total côté client ferait deux définitions d'un même chiffre.
+
+**`action_text` est la clé naturelle du référentiel d'actions, et elle porte enfin un index
+unique.** Tout le dépôt apparie les gabarits par elle — `action_templates.id` vaut
+`gen_random_uuid()`, donc les identifiants diffèrent d'une base à l'autre — et rien ne le
+garantissait ; c'est aussi ce qui rend l'insert de C3.8 rejouable (`on conflict do nothing`). Deux
+pièges de la même famille : **`transport_mode_category` n'existe plus** sur cette table (supprimée
+par `20260905130000` une fois la reprise de données faite), donc un insert recopié depuis ce
+fichier-là échoue ; et un gabarit ajouté doit porter `question_template` **et** `first_step`, que
+deux balayages épinglent sans nommer personne.
 
 **L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
 `plan_actions` porte des chiffres figés à la génération, et **deux gardes indépendantes les
