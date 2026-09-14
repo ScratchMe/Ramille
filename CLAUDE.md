@@ -701,7 +701,7 @@ moitiés de la règle.
 
 **Un jeton refusé parce qu'il est TROP NEUF n'est pas un refus, c'est une attente** (incident du
 13/09/2026, `src/types/postgrest.ts`). PostgREST rend `401 { code: "PGRST303", message: "JWT issued
-at future" }` quand l'instant d'émission du jeton est postérieur à sa propre horloge. Quatre choses
+at future" }` quand l'instant d'émission du jeton est postérieur à sa propre horloge. Cinq choses
 à savoir avant de chercher ailleurs :
 
 - **l'horloge de l'appareil n'entre nulle part dans ce contrôle.** Le jeton est émis par Supabase
@@ -715,18 +715,32 @@ at future" }` quand l'instant d'émission du jeton est postérieur à sa propre 
   d'une session** — la racine de l'app, l'`app_open` juste à côté, un onglet au retour — et le
   démarrage tombait alors sur « Le démarrage a échoué : JWT issued at future », un écran technique
   pour une condition d'une seconde. `fetchAvecSecondeChance` (passé en `global.fetch` du client)
-  redemande **au plus deux fois**, 1 200 ms puis 2 500 ms. Le réessai est sûr **pour ce code et
-  aucun autre** : le contrôle du jeton précède l'exécution, donc un `PGRST303` garantit qu'aucune
-  ligne n'a été lue ni écrite — ne pas étendre le motif à ce qui ressemblerait à une panne
-  passagère, et surtout pas aux autres refus de jeton (expiré, mal signé), qui ne se réparent pas en
-  attendant et qu'un réessai masquerait derrière une latence ;
+  redemande **au plus deux fois**, 1 200 ms puis 2 500 ms. Le réessai est sûr parce que le contrôle
+  du jeton précède l'exécution : un refus de claims garantit qu'aucune ligne n'a été lue ni écrite —
+  ne pas étendre le motif à ce qui ressemblerait à une panne passagère, et surtout pas aux autres
+  refus de jeton, qui ne se réparent pas en attendant et qu'un réessai masquerait derrière une
+  latence ;
+- **et c'est le seul refus du produit qu'on reconnaît au code ET au message** (corrigé le
+  14/09/2026 en contre-lisant la vague 6). `PGRST303` n'est pas le code du jeton en avance : la table
+  des erreurs de PostgREST le définit comme « JWT claims validation or parsing failed », c'est-à-dire
+  **toute** la famille des claims, `exp` comprise. Reconnaître au code seul faisait donc rejouer un
+  jeton **expiré** — l'état normal au réveil de l'app, un jeton d'accès Supabase vivant une heure —
+  soit 3 700 ms d'attente avant que l'erreur ne sorte, exactement ce que la puce précédente interdit.
+  `PGRST301` est le refus de **décodage** et ne porte jamais l'expiration, donc aucun code ne
+  discrimine : la paire est la seule voie. Elle échoue **du bon côté** — une phrase reformulée par
+  PostgREST désarme le réessai et l'erreur s'affiche, soit le comportement d'avant le correctif — et
+  c'est ce qui autorise l'entorse à « jamais au message ». Corollaire pour les tests : une fixture
+  `{ code: 'PGRST301', message: 'JWT expired' }` n'existe pas, et le garde qui l'utilisait ne gardait
+  rien ;
 - **le corps de la réponse est lu sur une copie** (`clone()`). Sans elle, le contrôle consommerait
   le corps et **toutes** les erreurs de l'app deviendraient illisibles — en silence, et seulement
   sur les chemins d'échec, c'est-à-dire là où personne ne regarde. Un test épingle ce point.
 
 La recette pour trancher « écart d'horloge ou vrai défaut » est en `docs/exploitation/README.md`
 §8.6 : les deux horloges à mesurer, le jeton à émettre, et la requête sur les journaux d'accès qui
-donne l'ampleur.
+donne l'ampleur. Elle commence par la version de PostgREST qu'exécute le projet — un écart
+intermittent entre deux services du même fournisseur est au moins autant un défaut amont qu'un
+réglage d'horloge, et c'est la première chose qu'on peut lire sans rien mesurer.
 
 **Cette liste de redirections est une frontière de sécurité, pas une commodité de
 configuration.** Elle décide à quelles adresses Supabase accepte de **remettre une session** —

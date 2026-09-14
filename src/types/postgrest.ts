@@ -38,17 +38,41 @@
 // ## Ce qui n'est pas couvert, et pourquoi
 //
 // Les autres refus de jeton — expiré, signature invalide, rôle absent — ne se réparent pas en
-// attendant : les réessayer masquerait un vrai problème derrière une latence. Un seul code est
-// donc reconnu, et c'est celui-là.
+// attendant : les réessayer masquerait un vrai problème derrière une latence.
+//
+// **Et c'est ce qui oblige à lire le message, contre la règle du dépôt** (contre-lecture de la
+// vague 6, 14/09/2026). `PGRST303` n'est pas le code de « jeton en avance » : la table des erreurs
+// de PostgREST le définit comme « JWT claims validation or parsing failed », c'est-à-dire **toute**
+// la famille des claims — `exp` comprise. Un jeton **expiré** porte donc le même code, et
+// l'enveloppe le rejouait deux fois, exactement le refus qu'elle affirme ne jamais rejouer. Ce
+// n'est pas un cas de bord : un jeton d'accès Supabase vit une heure, donc l'expiration est l'état
+// **normal** au réveil de l'app, et chaque requête qui double le rafraîchissement d'`auth-js`
+// payait 3 700 ms d'attente avant que son erreur ne sorte. `PGRST301`, lui, est le refus de
+// **décodage** (« Provided JWT couldn't be decoded or it is invalid ») : l'expiration n'y passe
+// jamais.
+//
+// La paire code + message est donc la seule discrimination possible, faute d'un code plus fin en
+// amont — et elle échoue **du bon côté** : si une version de PostgREST reformule la phrase, le
+// réessai cesse et l'erreur s'affiche, c'est-à-dire le comportement d'avant ce module. Un réessai
+// est une commodité, pas un invariant ; c'est ce qui autorise ici l'entorse à la règle
+// « reconnaître au code, jamais au message ».
 
 /**
- * « JWT issued at future » — le jeton est en avance sur l'horloge qui le vérifie.
+ * Le code des erreurs de claims de PostgREST — **toute** la famille, pas le seul jeton en avance.
  *
- * Reconnu par son **code** et jamais par son message, comme `over_email_send_rate_limit`
- * (`src/types/connexion.ts`) et `RM001` (`src/lib/plan-engagement.ts`) : un message est du texte
- * qu'une version de PostgREST peut reformuler sans prévenir.
+ * Ne suffit donc pas à décider d'un réessai : voir `MESSAGE_JETON_TROP_NEUF` et le bloc
+ * « Ce qui n'est pas couvert » ci-dessus.
  */
 export const CODE_JETON_TROP_NEUF = 'PGRST303';
+
+/**
+ * La phrase qui, **dans** cette famille de codes, désigne le jeton en avance sur l'horloge qui le
+ * vérifie — et elle seule.
+ *
+ * C'est la seule exception du dépôt à « on reconnaît un refus à son code » : elle est argumentée
+ * au-dessus, et elle n'existe que parce que PostgREST n'expose pas de code plus fin.
+ */
+export const MESSAGE_JETON_TROP_NEUF = 'JWT issued at future';
 
 /**
  * Ce qu'on laisse passer avant de redemander : **deux attentes, donc trois tentatives au plus**.
@@ -81,8 +105,11 @@ export const DELAIS_JETON_TROP_NEUF_MS = [1200, 2500] as const;
  */
 export function estJetonTropNeuf(corps: unknown): boolean {
   if (typeof corps !== 'object' || corps === null) return false;
-  const code = (corps as { code?: unknown }).code;
-  return code === CODE_JETON_TROP_NEUF;
+  const { code, message } = corps as { code?: unknown; message?: unknown };
+  if (code !== CODE_JETON_TROP_NEUF) return false;
+  // Le code seul recouvre aussi « JWT expired » : c'est le message qui départage, et son absence
+  // ou sa reformulation fait échouer le réessai du bon côté (l'erreur s'affiche).
+  return typeof message === 'string' && message.includes(MESSAGE_JETON_TROP_NEUF);
 }
 
 /**
@@ -109,10 +136,12 @@ const attendreParDefaut = (ms: number) => new Promise<void>((resoudre) => setTim
  *      étendre le motif à ce qui ressemblerait à une panne passagère.
  *   2. **Le corps n'est lu que sur un 401, et sur une copie** : l'original doit rester consommable
  *      par l'appelant, qui ne saura jamais qu'on l'a regardé.
- *   3. **Un `Request` n'est pas rejoué.** Il porte son corps sous forme de flux, consommé au
- *      premier envoi. Les trois SDK Supabase passent une URL et un corps en chaîne, donc la
- *      branche n'est pas atteinte en production — elle est là pour que l'invariant soit tenu par
- *      le code plutôt que par une lecture des dépendances.
+ *   3. **Rien dont le corps soit un flux n'est rejoué** : ni un `Request` (son corps est consommé
+ *      au premier envoi), ni un appel dont `options.body` n'est pas une chaîne. `postgrest-js` et
+ *      `auth-js` passent une URL et un corps en chaîne, mais `storage-js` et `functions-js`
+ *      transmettent le corps tel qu'on leur donne — un `Blob`, un `FormData`, un `ReadableStream` —
+ *      et ce sont les deux SDK que l'énumération d'origine oubliait. L'invariant est donc tenu par
+ *      le code et non par une lecture des dépendances, ce qui est tout l'intérêt de l'écrire.
  *
  * Si la dernière tentative échoue à son tour, sa réponse est rendue telle quelle : l'écran affiche
  * alors son message d'échec, ce qui est le bon résultat pour un écart qui durerait vraiment.
@@ -122,7 +151,8 @@ export function fetchAvecSecondeChance(
   attendre: (ms: number) => Promise<void> = attendreParDefaut
 ): FonctionFetch {
   return async (entree, options) => {
-    const rejouable = typeof entree === 'string' || entree instanceof URL;
+    const corpsRejouable = options?.body == null || typeof options.body === 'string';
+    const rejouable = (typeof entree === 'string' || entree instanceof URL) && corpsRejouable;
     let reponse = await fetchBrut(entree, options);
 
     for (const delai of DELAIS_JETON_TROP_NEUF_MS) {

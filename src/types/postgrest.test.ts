@@ -1,29 +1,53 @@
 import {
   CODE_JETON_TROP_NEUF,
   DELAIS_JETON_TROP_NEUF_MS,
+  MESSAGE_JETON_TROP_NEUF,
   estJetonTropNeuf,
   fetchAvecSecondeChance,
   type FonctionFetch,
 } from './postgrest';
 
 const refusJetonTropNeuf = () =>
-  new Response(JSON.stringify({ code: CODE_JETON_TROP_NEUF, message: 'JWT issued at future' }), {
+  new Response(JSON.stringify({ code: CODE_JETON_TROP_NEUF, message: MESSAGE_JETON_TROP_NEUF }), {
     status: 401,
     headers: { 'content-type': 'application/json' },
   });
 
+/**
+ * Les formes que PostgREST produit vraiment, relevées dans sa table des erreurs : `PGRST303` est
+ * « JWT claims validation or parsing failed » — donc l'expiration aussi — et `PGRST301` le refus
+ * de **décodage**. Les fixtures de la première version de ce fichier associaient « JWT expired » à
+ * `PGRST301`, une forme qui n'existe pas : le garde censé interdire le rejeu d'un jeton expiré
+ * restait vert quoi que fasse le code.
+ */
+const REFUS_REELS = {
+  enAvance: { code: 'PGRST303', message: MESSAGE_JETON_TROP_NEUF },
+  expire: { code: 'PGRST303', message: 'JWT expired' },
+  horsAudience: { code: 'PGRST303', message: 'JWT not in audience' },
+  indecodable: { code: 'PGRST301', message: 'Expected 3 parts in JWT; got 2' },
+} as const;
+
 describe('estJetonTropNeuf', () => {
-  it('reconnaît le refus au code, jamais au message', () => {
-    expect(estJetonTropNeuf({ code: 'PGRST303', message: 'JWT issued at future' })).toBe(true);
-    // Le message seul ne suffit pas : c'est du texte qu'une version de PostgREST peut reformuler.
-    expect(estJetonTropNeuf({ message: 'JWT issued at future' })).toBe(false);
+  it('reconnaît le jeton en avance à son code ET à son message', () => {
+    expect(estJetonTropNeuf(REFUS_REELS.enAvance)).toBe(true);
+    // Le message seul ne suffit pas : il faut être dans la famille des claims.
+    expect(estJetonTropNeuf({ message: MESSAGE_JETON_TROP_NEUF })).toBe(false);
+    // Et le code seul ne suffit pas non plus — c'est tout l'objet du correctif.
+    expect(estJetonTropNeuf({ code: CODE_JETON_TROP_NEUF })).toBe(false);
+  });
+
+  it("ne prend pas un jeton EXPIRÉ pour un jeton en avance", () => {
+    // **Le garde qui compte, et qui ne comptait pas.** L'expiration porte le même code que le
+    // jeton en avance ; un jeton d'accès Supabase vit une heure, donc c'est l'état normal au
+    // réveil de l'app. Le rejouer ajoutait 3,7 s avant que l'erreur ne sorte.
+    expect(estJetonTropNeuf(REFUS_REELS.expire)).toBe(false);
+    expect(estJetonTropNeuf(REFUS_REELS.horsAudience)).toBe(false);
+    expect(estJetonTropNeuf(REFUS_REELS.indecodable)).toBe(false);
   });
 
   it("n'attrape aucun autre refus de jeton", () => {
-    // **Le garde qui compte.** Un jeton expiré ou mal signé ne se répare pas en attendant :
-    // le réessayer masquerait un vrai problème derrière une latence.
     for (const code of ['PGRST301', 'PGRST302', 'PGRST300', 'PGRST116', '42501', '']) {
-      expect(estJetonTropNeuf({ code })).toBe(false);
+      expect(estJetonTropNeuf({ code, message: MESSAGE_JETON_TROP_NEUF })).toBe(false);
     }
   });
 
@@ -92,12 +116,14 @@ describe('fetchAvecSecondeChance', () => {
     // Même garde que ci-dessus, vue depuis l'enveloppe : c'est ce test qui tomberait si
     // quelqu'un élargissait la condition à « tous les 401 ».
     const autres = [
-      new Response(JSON.stringify({ code: 'PGRST301', message: 'JWT expired' }), { status: 401 }),
+      // Un jeton expiré : même code que le jeton en avance, et pourtant jamais rejoué.
+      new Response(JSON.stringify(REFUS_REELS.expire), { status: 401 }),
+      new Response(JSON.stringify(REFUS_REELS.indecodable), { status: 401 }),
       new Response(JSON.stringify({ code: '42501' }), { status: 401 }),
       new Response('pas du JSON', { status: 401 }),
       new Response('', { status: 401 }),
       // Le même corps, mais pas le même statut : le refus de jeton est un 401 et rien d'autre.
-      new Response(JSON.stringify({ code: CODE_JETON_TROP_NEUF }), { status: 500 }),
+      new Response(JSON.stringify(REFUS_REELS.enAvance), { status: 500 }),
     ];
     for (const premiere of autres) {
       const { fonction, appels } = fetchFactice(premiere, new Response('[]', { status: 200 }));
@@ -111,11 +137,9 @@ describe('fetchAvecSecondeChance', () => {
     // L'invariant de la copie. Sans `clone()`, le corps serait consommé par le contrôle et
     // **toutes** les erreurs de l'app deviendraient illisibles — en silence, et seulement sur
     // les chemins d'échec, c'est-à-dire là où personne ne regarde.
-    const { fonction } = fetchFactice(
-      new Response(JSON.stringify({ code: 'PGRST301', message: 'JWT expired' }), { status: 401 })
-    );
+    const { fonction } = fetchFactice(new Response(JSON.stringify(REFUS_REELS.expire), { status: 401 }));
     const reponse = await fetchAvecSecondeChance(fonction, sansAttendre)('https://exemple/rest');
-    expect(await reponse.json()).toEqual({ code: 'PGRST301', message: 'JWT expired' });
+    expect(await reponse.json()).toEqual(REFUS_REELS.expire);
   });
 
   it('attend les délais déclarés, dans l’ordre', async () => {
@@ -145,6 +169,28 @@ describe('fetchAvecSecondeChance', () => {
     )(new URL('https://exemple/rest'));
     expect(reponse.status).toBe(200);
     expect(appels).toHaveLength(2);
+  });
+
+  it("ne rejoue jamais un corps qui n'est pas une chaîne", async () => {
+    // `storage-js` et `functions-js` transmettent le corps tel quel : un flux déjà consommé
+    // lèverait au second envoi. Le garde d'origine ne regardait que l'URL.
+    for (const body of [new Blob(['x']), new Uint8Array([1, 2]), new URLSearchParams({ a: 'b' })]) {
+      const { fonction, appels } = fetchFactice(refusJetonTropNeuf());
+      const reponse = await fetchAvecSecondeChance(
+        fonction,
+        sansAttendre
+      )('https://exemple/rest', { method: 'POST', body: body as BodyInit });
+      expect(appels).toHaveLength(1);
+      expect(reponse.status).toBe(401);
+    }
+    // Un corps en chaîne, lui, reste rejouable : c'est ce que passent postgrest-js et auth-js.
+    const { fonction, appels } = fetchFactice(refusJetonTropNeuf(), new Response('[]', { status: 200 }));
+    const reponse = await fetchAvecSecondeChance(
+      fonction,
+      sansAttendre
+    )('https://exemple/rest', { method: 'POST', body: '{"a":1}' });
+    expect(appels).toHaveLength(2);
+    expect(reponse.status).toBe(200);
   });
 
   it('ne rejoue jamais un `Request`', async () => {
