@@ -125,12 +125,26 @@ describe('cadreDuPlan', () => {
     const vide = cadreDuPlan({ postesEnAvant: [], posteDuCycle: 'commute', nombreDActions: 0 });
     expect(vide.intro).toBeNull();
     expect(vide.chiffreLeCap).toBe(false);
+  });
 
-    // Et la garde porte sur le nombre **total** d'actions, pas sur celles mises en avant : les deux
-    // peuvent différer depuis C4.6, où le plan fige toutes les pistes et l'écran en montre deux.
-    expect(
-      cadreDuPlan({ postesEnAvant: [], posteDuCycle: 'commute', nombreDActions: 3 }).chiffreLeCap
-    ).toBe(false);
+  it('garde le cap d’un plan dont toutes les actions sont derrière le lien des pistes', () => {
+    // Les deux causes de « rien à annoncer » tenaient dans un seul `||`, et le commentaire de ce
+    // test affirmait que la garde portait sur le nombre **total** d'actions — alors que
+    // l'assertion passait par l'autre membre, `postesEnAvant` vide. Elle n'éprouvait donc pas ce
+    // qu'elle disait, et ce qu'elle constatait était faux : un plan de trois actions n'a pas cessé
+    // d'avoir un cap parce que l'écran n'en met aucune en avant.
+    //
+    // La branche est inatteignable aujourd'hui — `pistesDuPlan` remplit toujours `enAvant` dès
+    // qu'il y a une action, les deux nombres différant seulement par les pistes repliées (C4.6).
+    // Elle est écrite pour le jour où elle cesserait de l'être.
+    const derriere = cadreDuPlan({
+      postesEnAvant: [],
+      posteDuCycle: 'commute',
+      nombreDActions: 3,
+    });
+    expect(derriere.intro).toBeNull();
+    expect(derriere.chiffreLeCap).toBe(true);
+    expect(derriere.noteDuCap).toBeNull();
   });
 
   it('dit que le plan est allé chercher ailleurs, et que le cap ne mesure pas ça', () => {
@@ -147,7 +161,7 @@ describe('cadreDuPlan', () => {
   it('compte celles qui débordent quand le plan est mixte', () => {
     const mixte = cadre(['commute', 'travel'], 'commute');
     expect(mixte.intro).toBe(
-      'Deux actions, dont une action ailleurs que sur ton trajet domicile-travail.'
+      'Deux actions, dont une ailleurs que sur ton trajet domicile-travail.'
     );
     expect(mixte.noteDuCap).toBe(
       'Le cap porte sur ton trajet domicile-travail ; cette action porte ailleurs.'

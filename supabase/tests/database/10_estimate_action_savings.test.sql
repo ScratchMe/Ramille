@@ -20,7 +20,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(19);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('a1111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-est-a@test.local', 'x', now(), now()),
@@ -28,7 +28,8 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, c
   ('a1111111-1111-1111-1111-111111111113', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-est-c@test.local', 'x', now(), now()),
   ('a1111111-1111-1111-1111-111111111114', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-est-d@test.local', 'x', now(), now()),
   ('a1111111-1111-1111-1111-111111111115', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-est-e@test.local', 'x', now(), now()),
-  ('a1111111-1111-1111-1111-111111111116', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-est-f@test.local', 'x', now(), now());
+  ('a1111111-1111-1111-1111-111111111116', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-est-f@test.local', 'x', now(), now()),
+  ('a1111111-1111-1111-1111-111111111117', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-est-g@test.local', 'x', now(), now());
 
 insert into public.assessments (id, user_id, status, submitted_at) values
   ('b1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'completed', now()),
@@ -36,7 +37,8 @@ insert into public.assessments (id, user_id, status, submitted_at) values
   ('b1111111-1111-1111-1111-111111111113', 'a1111111-1111-1111-1111-111111111113', 'completed', now()),
   ('b1111111-1111-1111-1111-111111111114', 'a1111111-1111-1111-1111-111111111114', 'completed', now()),
   ('b1111111-1111-1111-1111-111111111115', 'a1111111-1111-1111-1111-111111111115', 'completed', now()),
-  ('b1111111-1111-1111-1111-111111111116', 'a1111111-1111-1111-1111-111111111116', 'completed', now());
+  ('b1111111-1111-1111-1111-111111111116', 'a1111111-1111-1111-1111-111111111116', 'completed', now()),
+  ('b1111111-1111-1111-1111-111111111117', 'a1111111-1111-1111-1111-111111111117', 'completed', now());
 
 -- A : urbain dense, bonne desserte, 10 km en voiture. Tout est possible pour lui.
 insert into public.assessment_answers (
@@ -107,12 +109,25 @@ insert into public.assessment_answers (
   'rarely', 'periurbain', 'limite', '1', 'oui'
 );
 
+-- G : le jumeau de E, au seul détail qu'il part **seul**. Il n'est pas un cas de plus mais ce qui
+-- rend un rapport éprouvable : la base et le facteur de la branche voyages doivent parler de la
+-- même chose. Sans lui, la valeur du train à trois est un nombre qu'on ne peut que recopier.
+insert into public.assessment_answers (
+  assessment_id, commute_has_regular_trip, leisure_frequency,
+  flights_total_per_year, flights_short_per_year, car_long_trips_per_year, car_long_trips_engine,
+  car_long_trips_occupancy, zone_type, tc_access, household_vehicles
+) values (
+  'b1111111-1111-1111-1111-111111111117', false, 'rarely', 3, 2, 2, 'thermique',
+  1, 'periurbain', 'bon', '1'
+);
+
 select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111111');
 select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111112');
 select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111113');
 select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111114');
 select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111115');
 select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111116');
+select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111117');
 
 -- ── 1. Aucun gain nul ou négatif, jamais ────────────────────────────────────────────────
 
@@ -246,6 +261,37 @@ select results_eq(
   'branche voyages : renoncer à un vol court rapporte plus que le remplacer par le train'
 );
 
+-- **Le facteur des voyages se ramène à la personne, comme sa base.** Défaut introduit par C3.5 et
+-- relevé en contre-lisant la vague 7 : depuis qu'on demande l'occupation,
+-- `travel_car_co2_kg_year` est une empreinte **par personne**, alors que le facteur courant restait
+-- celui du **véhicule**. Les deux membres du rapport ne parlaient plus de la même chose, et le gain
+-- du train était annoncé 4,4 % trop haut à trois — dans le sens qui flatte.
+--
+-- L'assertion porte sur le **rapport entre deux profils** et non sur une valeur, parce qu'une
+-- valeur seule ne distingue pas les deux comportements : partager divise la base par trois dans un
+-- cas comme dans l'autre. Ce qui les sépare est que partager rend aussi le train **moins**
+-- intéressant — il faut trois places de train pour remplacer une voiture partagée à trois. Sous le
+-- défaut, le gain à trois et le tiers du gain seul étaient rigoureusement **égaux** ; ils ne
+-- peuvent l'être que si le facteur ignore l'occupation. Aucun facteur n'est nommé ici, donc une
+-- resynchronisation ADEME ne périme pas cette garde.
+select ok(
+  (select saving_kg_year from public.estimate_action_savings('b1111111-1111-1111-1111-111111111115')
+     where action_text = 'Faire un de tes longs trajets en train plutôt qu''en voiture')
+  < (select saving_kg_year / 3 from public.estimate_action_savings('b1111111-1111-1111-1111-111111111117')
+     where action_text = 'Faire un de tes longs trajets en train plutôt qu''en voiture'),
+  'longs trajets : à trois, le train rapporte moins que le tiers de ce qu''il rapportait seul'
+);
+
+-- Et la valeur, recalculée par une requête sur la base plutôt qu'à la main : deux trajets de 700 km
+-- en thermique partagés à trois, dont le gabarit en substitue un. 31 kg/an, là où le facteur par
+-- véhicule en annonçait 32,51.
+select is(
+  (select round(saving_kg_year::numeric) from public.estimate_action_savings('b1111111-1111-1111-1111-111111111115')
+     where action_text = 'Faire un de tes longs trajets en train plutôt qu''en voiture'),
+  31::numeric,
+  'longs trajets à trois : le train rapporte 31 kg/an, pas les 32,51 du facteur par véhicule'
+);
+
 -- ── 7. Les deux gardes de référentiel ───────────────────────────────────────────────────
 
 -- **Aucun gain sous le seuil**, sur tous les profils à la fois. Le seuil existe parce qu'aux
@@ -259,8 +305,9 @@ select ok(
      union all select saving_kg_year from public.estimate_action_savings('b1111111-1111-1111-1111-111111111114')
      union all select saving_kg_year from public.estimate_action_savings('b1111111-1111-1111-1111-111111111115')
      union all select saving_kg_year from public.estimate_action_savings('b1111111-1111-1111-1111-111111111116')
+     union all select saving_kg_year from public.estimate_action_savings('b1111111-1111-1111-1111-111111111117')
    ) tout),
-  'aucune action sous les 5 kg/an, sur aucun des six profils'
+  'aucune action sous les 5 kg/an, sur aucun des sept profils'
 );
 
 -- **Et aucun gabarit ne propose le bus**, ce qui est une décision et non un oubli : à 0,1224 kg/km

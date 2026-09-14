@@ -27,7 +27,7 @@ const MAX_TRAJETS = COUNT_CHOICES[COUNT_CHOICES.length - 1];
  * Ce qu'un lecteur d'écran entend sur la puce de plafond, là où l'œil lit « 6+ » (A2-9).
  *
  * Les autres puces gardent leur chiffre pour libellé : c'est le `radiogroup` nommé qui dit de
- * quelle série il s'agit, une fois, au lieu de le répéter quatorze fois.
+ * quelle série il s'agit, une fois, au lieu de le répéter sur chacune de ses puces.
  */
 const LIBELLE_PLAFOND = `${MAX_TRAJETS} trajets ou plus`;
 
@@ -73,12 +73,14 @@ export function LongTripsStep({
           En train
         </ThemedText>
         {/* `radiogroup` ferme la série, et **c'est son libellé qui la distingue, pas son rôle**
-            (A2-9) : les deux séries de l'étape sont rigoureusement identiques — sept puces « 0 »
-            à « 6+ », deux fois — et l'intitulé qui les qualifie est un frère dans l'arbre, pas
-            un libellé rattaché. En lecture séquentielle il précède bien le groupe, mais en
-            navigation de contrôle en contrôle ou en exploration tactile plus rien ne disait dans
-            lequel on se trouve. Nommer le groupe le dit une fois ; le répéter sur chaque puce le
-            dirait quatorze. Même motif que `ChoixDeRappel`. */}
+            (A2-9) : les deux séries de l'étape sont rigoureusement identiques — la même rangée,
+            de « 0 » au plafond, rendue deux fois depuis la même liste — et l'intitulé qui les
+            qualifie est un frère dans l'arbre, pas un libellé rattaché. En lecture séquentielle
+            il précède bien le groupe, mais en navigation de contrôle en contrôle ou en
+            exploration tactile plus rien ne disait dans lequel on se trouve. Nommer le groupe le
+            dit une fois ; le répéter sur chaque puce le dirait autant de fois qu'il y en a — un
+            nombre qu'on ne recopie pas ici, la plage étant déjà passée de 6 à 10 sans que cette
+            phrase le suive. Même motif que `ChoixDeRappel`. */}
         <View
           style={styles.chipsWrap}
           accessibilityRole="radiogroup"
