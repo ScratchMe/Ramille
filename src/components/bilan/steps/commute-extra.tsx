@@ -38,11 +38,23 @@ export function CommuteExtraStep({
             <ThemedText type="screenTitle">
               Vous êtes combien à partager ce trajet ?
             </ThemedText>
-            <View style={styles.row}>
+            {/* La **même** question que « Vous êtes combien dans la voiture ? » des sorties et
+                des longs trajets, sur la même liste — elle doit donc s'annoncer pareil. C3.5 a
+                posé les deux nouvelles en `radiogroup` nommé et laissé celle-ci en `button`,
+                si bien que trois questions jumelles se présentaient de deux façons selon
+                l'écran. Le libellé accessible vient de la table, pour que « 6+ » ne s'entende
+                pas « six plus ». */}
+            <View
+              style={styles.row}
+              accessibilityRole="radiogroup"
+              accessibilityLabel="Nombre de personnes qui partagent ce trajet"
+            >
               {TAILLES_DE_COVOITURAGE.map((size) => (
                 <Chip
                   key={size.value}
                   label={size.label}
+                  accessibilityLabel={size.accessibilityLabel}
+                  role="radio"
                   selected={answers.commute_carpool_size === size.value}
                   onPress={() => update({ commute_carpool_size: size.value })}
                   flex

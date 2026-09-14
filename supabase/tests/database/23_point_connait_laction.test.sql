@@ -23,7 +23,7 @@
 -- **Les gabarits se désignent par `action_text`, jamais par leur identifiant.** `action_templates.id`
 -- vaut `gen_random_uuid()` : il diffère sur chaque base construite depuis `supabase/migrations/`, donc
 -- un uuid relevé sur le projet distant ne s'apparie à rien en CI — c'est ce qui a fait tomber la CI de
--- la vague 5, sur le contrôle de la migration. Les douze libellés du référentiel sont distincts et
+-- la vague 5, sur le contrôle de la migration. Les libellés du référentiel sont distincts et
 -- insérés littéralement par `20260905130000` : ils en sont la clé naturelle.
 begin;
 create extension if not exists pgtap with schema extensions;

@@ -566,6 +566,17 @@ describe('les tables de réponses chiffrées', () => {
   it('les tailles de covoiturage vont de 2 à 6, et la dernière dit « ou plus »', () => {
     expect(TAILLES_DE_COVOITURAGE.map((t) => t.value)).toEqual([2, 3, 4, 5, 6]);
     expect(TAILLES_DE_COVOITURAGE[TAILLES_DE_COVOITURAGE.length - 1].label).toBe('6+');
+    // Ce que l'œil lit « 6+ », un lecteur d'écran l'annonçait « six plus ». Le libellé accessible
+    // est dérivé du plafond et non recopié : recopié, il continuerait de dire « 6 » sur une puce
+    // qui aurait cessé d'être le plafond. Et les autres disent « personnes » plutôt que le chiffre
+    // nu — sortie de sa question, la puce ne dit plus de quoi elle compte.
+    expect(TAILLES_DE_COVOITURAGE.map((t) => t.accessibilityLabel)).toEqual([
+      '2 personnes',
+      '3 personnes',
+      '4 personnes',
+      '5 personnes',
+      '6 personnes ou plus',
+    ]);
   });
 
   it('l’occupation d’un long trajet commence à 1 et s’arrête à 5', () => {

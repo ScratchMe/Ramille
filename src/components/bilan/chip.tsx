@@ -25,12 +25,16 @@ export type ChipProps = {
    *
    *  **Le défaut `button` est provisoire, et il laisse le défaut d'A2-8 en place partout où il
    *  s'applique encore** : un `button` qui porte `selected` est la combinaison qu'A2-8 désigne.
-   *  Six appels n'ont pas été relus et le gardent — `steps/context.tsx`, `steps/flights.tsx`,
-   *  `steps/commute-days-distance.tsx`, `steps/commute-extra.tsx`, `steps/leisure-detail.tsx`
-   *  (tous des choix uniques, donc `radio` dans une `View accessibilityRole="radiogroup"`) et
-   *  `plan/action-commitment.tsx` (jours cumulables, donc `checkbox` dans un groupe nommé).
-   *  Rendre la prop obligatoire est ce qui les énumérera au typecheck, et c'est le geste à faire
-   *  en même temps qu'eux — pas avant, un défaut ne se remplace pas par un build cassé. */
+   *  Les séries qui le gardent se nomment une par une, et non par fichier — `commute-extra.tsx`
+   *  porte désormais les deux, sa taille de covoiturage étant relue et son « Oui / Non » non :
+   *  les quatre séries de `steps/context.tsx`, les deux de `steps/flights.tsx`, les jours de
+   *  `steps/commute-days-distance.tsx`, le « Oui / Non » de `steps/commute-extra.tsx` et les
+   *  tranches de distance de `steps/leisure-detail.tsx` (tous des choix uniques, donc `radio`
+   *  dans une `View accessibilityRole="radiogroup"`), plus les deux de
+   *  `plan/action-commitment.tsx` (jours cumulables, donc `checkbox` dans un groupe nommé ;
+   *  l'échéance, elle, est un choix unique). Rendre la prop obligatoire est ce qui les
+   *  énumérera au typecheck, et c'est le geste à faire en même temps qu'eux — pas avant, un
+   *  défaut ne se remplace pas par un build cassé. */
   role?: 'button' | 'radio' | 'checkbox';
 };
 

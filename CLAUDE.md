@@ -528,9 +528,10 @@ connaître :
 - **C'est une paire SQL/TypeScript de plus** (`periodePrecedente`, `src/types/checkin.ts`), à
   toucher avec sa jumelle comme `mois_francais`, `jours_francais`, `poste_inserable`,
   `reminder_channel_for` et — depuis C3.12 — `analytics.bilan_funnel` / `BILAN_STEP_ORDER`, dont
-  les deux moitiés s'épinglent l'une l'autre et se nomment mutuellement en commentaire. Le nombre
-  de paires ne se compte pas ici : il devient faux à la suivante, en silence. Donc : la vue
-  `analytics.checkins_consecutifs` compte côté serveur, la carte affiche côté client. Les deux
+  les deux moitiés s'épinglent l'une l'autre et se nomment mutuellement en commentaire : la vue
+  `analytics.checkins_consecutifs` compte côté serveur, la carte affiche côté client. Le nombre de
+  ces paires ne s'écrit nulle part, et surtout pas ici — il deviendrait faux à la suivante, en
+  silence. Les deux
   cadences n'ont pas la même forme et c'est voulu — sept jours avant un lundi est un lundi, tandis que
   le mois est **ramené au premier** plutôt que décalé, sans quoi les deux moitiés divergeraient sur les
   fins de mois (PostgreSQL ramène le 31 mars au 28 février, `Date.UTC` le pousse au 3 mars).
@@ -601,32 +602,37 @@ plutôt que d'insérer un point à la main.
 contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une
 issue GitHub par chantier — #99 à #151 et #153 — et **le plan de livraison en huit vagues en §2.3**, dont
 l'issue de suivi #154 est la vue cochable ; inventaire complet en `docs/audit/2026-09-09-inventaire.md`).
-**Les vagues 1 à 5 sont livrées** — le lot 0 (sécurité et exploitation) le 10/09/2026, puis le
-lot 1 (bugs silencieux et textes faux, puis écrans d'onglets) le 11/09/2026, puis la vague 4 (lot 2,
-socle et serveur de la boucle d'engagement : saison côté client, forme insérable du poste, période
-écoulée, qui reçoit quelle boucle, engagement qui survit, lien du rappel ouvert ailleurs, rappels qui
-s'espacent) et la vague 5 (lot 2, **le point** : il connaît l'action engagée, accepte une troisième
-réponse, reste affiché le temps de la période, porte le signal « deux fois de suite » et varie ses
-répliques) le même jour. **Le jalon « publiable sur Play » est atteint côté code** ; ce qui reste
-avant de publier n'est pas du code mais les vérifications de la §11 et la checklist de
-`docs/exploitation/README.md`. **La vague 6 est en cours** (lot 2, la saison et le suivi) : elle
-porte le jalon « la boucle existe d'une saison à l'autre », et son relevé de fichiers du 13/09/2026
-a démenti la colonne « Parallèle ? » pour la quatrième fois — un seul chantier y est réellement
-disjoint (C2.13), l'ordre retenu est **C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9**. C2.8 (la saison a
-une fin et un début), C2.7 (le suivi dans la durée : l'écart par poste, les décisions saison après
-saison, les points groupés, la restitution d'un re-bilan), C3.1 (la mobilité contrainte est lue par la
-restitution), C4.6 (toutes les pistes, le premier pas, le remplacement explicite), C2.13 (la
-mascotte porte la saison) et C3.9 (onboarding et compte : ce que le produit promet) sont livrés :
-**la vague 6 est complète**, et avec elle le jalon « la boucle existe d'une saison à l'autre ».
-**La vague 7 est complète elle aussi** (14/09/2026, lot 3 restant) : d'où vient le chiffre (C3.2),
-ce que le palier mesure (C3.11), les deux écrans du questionnaire (C3.3), la lisibilité du
-questionnaire (C3.7), le ton et la carte de partage (C3.10), les trois questions que le calcul se
-posait tout seul (C3.4 + C3.5 + C3.6, une seule migration), le plan qui cesse de proposer
-l'impossible (C3.8) et les tests qui manquaient (C3.12). **Avec elle, les lots 0 à 3 sont livrés
-en entier** — l'audit du 09/09/2026 n'a plus de chantier ouvert hors du lot 4. La suite est la
-vague 8 (lot 4), dont chaque chantier commence par **une page de décision** (`v1-1N`) et non par du
-code : C4.1 (point quantitatif), C4.2 (coup de pouce la veille), C4.3 (déplacements
-professionnels), C4.4, C4.5, C4.7 et C4.8 — C4.6 ayant été avancé dans la vague 6.
+**Les sept premières vagues sont livrées, et avec elles les lots 0 à 3 en entier** — l'audit du
+09/09/2026 n'a plus de chantier ouvert hors du lot 4. Le lot 0 (sécurité et exploitation) est parti
+le 10/09/2026, le lot 1 (bugs silencieux et textes faux, puis écrans d'onglets) le 11/09/2026, puis
+la vague 4 (lot 2, socle et serveur de la boucle d'engagement : saison côté client, forme insérable
+du poste, période écoulée, qui reçoit quelle boucle, engagement qui survit, lien du rappel ouvert
+ailleurs, rappels qui s'espacent) et la vague 5 (lot 2, **le point** : il connaît l'action engagée,
+accepte une troisième réponse, reste affiché le temps de la période, porte le signal « deux fois de
+suite » et varie ses répliques) le même jour. **Le jalon « publiable sur Play » est atteint côté
+code** ; ce qui reste avant de publier n'est pas du code mais les vérifications de la §11 et la
+checklist de `docs/exploitation/README.md`.
+
+**La vague 6** (lot 2, la saison et le suivi) porte le jalon « la boucle existe d'une saison à
+l'autre ». Son relevé de fichiers du 13/09/2026 a démenti la colonne « Parallèle ? » pour la
+quatrième fois — un seul chantier y était réellement disjoint (C2.13) —, d'où l'ordre
+**C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9** : C2.8 (la saison a une fin et un début), C2.7 (le
+suivi dans la durée : l'écart par poste, les décisions saison après saison, les points groupés, la
+restitution d'un re-bilan), C3.1 (la mobilité contrainte est lue par la restitution), C4.6 (toutes
+les pistes, le premier pas, le remplacement explicite), C2.13 (la mascotte porte la saison) et C3.9
+(onboarding et compte : ce que le produit promet).
+
+**La vague 7** (14/09/2026, lot 3 restant) : d'où vient le chiffre (C3.2), ce que le palier mesure
+(C3.11), les deux écrans du questionnaire (C3.3), la lisibilité du questionnaire (C3.7), le ton et
+la carte de partage (C3.10), les trois questions que le calcul se posait tout seul (C3.4 + C3.5 +
+C3.6, une seule migration), le plan qui cesse de proposer l'impossible (C3.8) et les tests qui
+manquaient (C3.12). Sa contre-lecture, le 14/09/2026, a corrigé un défaut de calcul qu'elle avait
+elle-même introduit — le gain d'une substitution sur un long trajet se ramène à la personne comme sa
+base — et rendu éprouvable une garde de `cadreDuPlan` qui ne l'était pas.
+
+La suite est la vague 8 (lot 4), dont chaque chantier commence par **une page de décision**
+(`v1-1N`) et non par du code : C4.1 (point quantitatif), C4.2 (coup de pouce la veille), C4.3
+(déplacements professionnels), C4.4, C4.5, C4.7 et C4.8 — C4.6 ayant été avancé dans la vague 6.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -891,7 +897,21 @@ répondre, ce que chacun des trois chantiers corrige. Cinq points à connaître 
   l'uniformiser** : sur des loisirs « rarement », le covoiturage part là où la motorisation reste.
   Le calcul lit encore les deux, mais la motorisation décrit le **véhicule** de la personne et rend
   le résiduel plus juste, tandis que le covoiturage décrit un **trajet** qui n'est plus déclaré — et
-  le garder diviserait ce résiduel, donc changerait le total d'un bilan déjà soumis.
+  le garder diviserait ce résiduel, donc changerait le total d'un bilan resoumis à l'identique.
+  Ce que cette règle ne garde **pas**, c'est la promesse que les bilans déjà en base rendent le même
+  total : celle-là tient au défaut de la colonne (`leisure_is_carpool` n'existait pas), et
+  `normaliserReponses` ne touche jamais une ligne déjà écrite.
+- **Une empreinte par personne veut un facteur par personne, et la branche voyages ne l'avait pas**
+  (relevé en contre-lisant la vague 7, `20260914141729`). `estimate_action_savings` chiffre une
+  substitution comme `base × (1 − facteur_substitut / facteur_courant)` : pour le trajet
+  domicile-travail et pour les sorties, le facteur courant est **dérivé de la paire persistée**
+  (`co2 / km`), donc il hérite de la division par le covoiturage sans qu'on ait rien à écrire. Les
+  voyages n'ont pas de paire à diviser — il n'existe pas de `travel_car_km_year` — donc cette
+  branche lisait le référentiel, c'est-à-dire le facteur du **véhicule**, sous une base devenue
+  celle d'**une personne** depuis C3.5 : « Faire un de tes longs trajets en train » annonçait 4,4 %
+  de trop à trois. Le test 10 l'épingle par un **rapport** entre deux profils jumeaux et non par une
+  valeur — partager divise la base par trois dans les deux cas, et ce qui sépare le juste du faux
+  est que partager rend aussi le train moins intéressant.
 - **`PARTS_DU_SECOND_MODE`, `TAILLES_DE_COVOITURAGE` et `OCCUPATIONS_LONG_TRAJET`
   (`src/types/bilan.ts`) sont des miroirs des `check` du schéma**, épinglés par un test : rien ne
   peut lire ces bornes depuis TypeScript, et une valeur hors bornes ne serait refusée qu'à la
@@ -921,13 +941,14 @@ distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que 
 
 **Aucune migration de données ne désigne une ligne par un identifiant généré, et celle qui l'a fait
 n'a été rattrapée que par son propre contrôle.** `action_templates.id` vaut `gen_random_uuid()` : les
-douze gabarits portent des identifiants **différents** sur chaque base construite depuis
+les gabarits portent des identifiants **différents** sur chaque base construite depuis
 `supabase/migrations/`. Les uuid relevés sur le projet distant s'y apparient, donc la migration C2.1
-passait là-bas et n'appariait **rien** en CI — les douze `question_template` restaient nuls, et c'est le
+passait là-bas et n'appariait **rien** en CI — tous les `question_template` restaient nuls, et c'est le
 contrôle de la migration (« un gabarit sans `question_template` ») qui a fait tomber le job pgTAP.
 C'est exactement l'avertissement de `mcp__Supabase__apply_migration`, et c'est la seule migration du
 dépôt qui portait un uuid littéral (vérifié). La clé naturelle du référentiel est `action_text` : les
-douze libellés sont distincts et insérés littéralement par `20260905130000`. Deux corollaires : **un
+libellés sont distincts — un index unique le garantit depuis C3.8 — et les douze premiers sont
+insérés littéralement par `20260905130000`. Deux corollaires : **un
 fichier de test pgTAP ne désigne pas davantage un gabarit par son identifiant** (`23` a été corrigé
 pour la même raison), et **un libellé mal recopié n'apparie rien** — c'est le contrôle qui rend
 l'appariement par texte sûr, pas la relecture.
@@ -1133,7 +1154,9 @@ colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage d�
   lit comme une charge de plus. Elle ne chiffre rien — le gain est juste au-dessus, et
   `/conditions` affirme que le produit ne fournit pas de prestation de conseil en mobilité. Deux
   balayages de la table l'épinglent (aucun gabarit sans premier pas, aucun chiffre dedans) plutôt que
-  de nommer les douze : un treizième ajouté demain traverserait une liste.
+  de nommer les gabarits un par un : celui qu'on ajoutera demain traverserait une liste. Le compte
+  qui figurait ici s'est périmé à la vague suivante, où C3.8 en a ajouté quatre — c'est exactement
+  la raison pour laquelle il ne s'écrit plus.
 - **`commit_plan_action` prend `p_replace`, et son défaut refuse.** La fonction libérait et archivait
   l'engagement précédent **sans condition** (C2.2) : le geste le plus irréversible du produit partait
   en silence depuis n'importe quel appel. `p_replace = false` lève `RM001` — un SQLSTATE de la classe

@@ -196,8 +196,10 @@ select is(
 -- et il se verrait, puisqu'il vaudrait 329 kg au lieu de 309 sur ce même bilan.
 --
 -- Le gabarit vélo ne convient pas pour l'éprouver et c'est structurel : il porte
--- `max_distance_km = 10`, et ce trajet fait 20 km l'aller. Les deux gabarits sans borne haute
--- demandent des transports en commun, que ce bilan ne déclare pas inexistants.
+-- `max_distance_km = 10`, et ce trajet fait 20 km l'aller. Les deux seules **substitutions** sans
+-- borne haute demandent des transports en commun, que ce bilan ne déclare pas inexistants. Trois
+-- autres gabarits n'ont pas de borne non plus — le covoiturage et les deux télétravails — mais ils
+-- ne substituent rien, donc aucun ne peut dire sur quelle jambe une substitution porte.
 select is(
   (select saving_kg_year::numeric from public.estimate_action_savings('a3400000-0000-0000-0000-000000000001')
      where action_text = 'Passer deux trajets sur cinq en train ou en RER'),

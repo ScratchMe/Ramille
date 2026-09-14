@@ -14,9 +14,11 @@ create extension if not exists pgtap with schema extensions;
 select plan(8);
 
 -- ── Les deux tableaux ne portent que des valeurs que le schéma connaît ───────────────────
--- Balayages de la table entière, sans nommer aucun gabarit : un treizième ajouté demain les
--- traverse. C'est la forme que le dépôt a retenue après que quatre modes ajoutés au référentiel
--- des facteurs ont fait tomber la CI sans être nommés nulle part.
+-- Balayages de la table entière, sans nommer aucun gabarit ni compter combien il y en a : celui
+-- qu'on ajoutera demain les traverse, et la phrase reste vraie. C'est la forme que le dépôt a
+-- retenue après que quatre modes ajoutés au référentiel des facteurs ont fait tomber la CI sans
+-- être nommés nulle part — et le compte qui figurait ici s'est périmé dans la migration même qui
+-- accompagne ce fichier, laquelle porte le référentiel de douze gabarits à seize.
 
 select is_empty(
   $$ select action_text from public.action_templates t, unnest(t.zones_admissibles) z

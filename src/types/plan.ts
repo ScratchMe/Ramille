@@ -207,8 +207,23 @@ export function cadreDuPlan({
   /** Le nombre total d'actions du plan, pistes dépliées comprises. */
   nombreDActions: number;
 }): CadreDuPlan {
-  if (nombreDActions === 0 || postesEnAvant.length === 0) {
+  // **Deux causes, deux branches** — les réunir dans un seul `||` rendait la seconde
+  // inéprouvable, la première suffisant toujours à faire passer l'assertion, et leur faisait dire
+  // la même chose alors qu'elles disent l'inverse.
+  //
+  // Un plan **sans action** n'a pas de cap à chiffrer : c'est le cas de C2.5, devenu courant.
+  if (nombreDActions === 0) {
     return { intro: null, chiffreLeCap: false, noteDuCap: null };
+  }
+
+  // Un plan qui a des actions mais n'en met **aucune en avant** n'a pas d'intro à écrire — elle
+  // nomme les postes de ce qui est devant — mais son cap garde tout son objet : les actions sont
+  // là, derrière le lien des pistes. La branche est inatteignable aujourd'hui (`pistesDuPlan`
+  // remplit toujours `enAvant` dès qu'il y a une action), et c'est justement pourquoi elle se
+  // tranche ici : le jour où elle cesserait de l'être, la cumuler avec la précédente effacerait
+  // le cap d'un plan qui en a un.
+  if (postesEnAvant.length === 0) {
+    return { intro: null, chiffreLeCap: true, noteDuCap: null };
   }
 
   const poste = formeInserable(posteDuCycle);
@@ -236,7 +251,9 @@ export function cadreDuPlan({
   }
 
   return {
-    intro: `${capitale(accorde(postesEnAvant.length, 'action'))}, dont ${accorde(ailleurs, 'action')} ailleurs que sur ${poste}.`,
+    // « dont une **action** ailleurs » répétait le nom à quatre mots de distance : le nombre seul
+    // le reprend, comme en français courant.
+    intro: `${capitale(accorde(postesEnAvant.length, 'action'))}, dont ${enLettres(ailleurs)} ailleurs que sur ${poste}.`,
     chiffreLeCap: true,
     noteDuCap: note,
   };

@@ -165,6 +165,9 @@ export const REPONSES_TELETRAVAIL: { value: Teletravail; label: string }[] = [
   { value: 'non', label: 'Non' },
 ];
 
+/** Le plafond du covoiturage, borne haute du `check` des deux colonnes. */
+const PLAFOND_COVOITURAGE = 6;
+
 /**
  * Les tailles de covoiturage proposées, pour le trajet quotidien comme pour les sorties.
  *
@@ -172,14 +175,24 @@ export const REPONSES_TELETRAVAIL: { value: Teletravail; label: string }[] = [
  * `leisure_carpool_size` portent le **même** `check (>= 2 and <= 6)`, et deux listes
  * recopiées auraient divergé au premier ajout. La dernière vaut « ce nombre ou plus », comme
  * la puce de plafond des longs trajets.
+ *
+ * **Elle porte son libellé accessible, et il est dérivé.** L'œil lit « 6+ » ; un lecteur
+ * d'écran, lui, annonçait « six plus ». Le plafond est nommé une fois et les deux libellés en
+ * descendent, pour la raison qui vaut déjà sur les longs trajets : une valeur recopiée ferait
+ * annoncer « 6 personnes ou plus » sur une puce qui aurait cessé d'être le plafond. Les autres
+ * disent « N personnes » plutôt que le chiffre nu — les deux questions demandent un nombre de
+ * personnes, et la puce sortie de sa question ne dit plus de quoi elle compte.
  */
-export const TAILLES_DE_COVOITURAGE: { value: number; label: string }[] = [
-  { value: 2, label: '2' },
-  { value: 3, label: '3' },
-  { value: 4, label: '4' },
-  { value: 5, label: '5' },
-  { value: 6, label: '6+' },
-];
+export const TAILLES_DE_COVOITURAGE: {
+  value: number;
+  label: string;
+  accessibilityLabel: string;
+}[] = [2, 3, 4, 5, PLAFOND_COVOITURAGE].map((n) => ({
+  value: n,
+  label: n === PLAFOND_COVOITURAGE ? `${n}+` : String(n),
+  accessibilityLabel:
+    n === PLAFOND_COVOITURAGE ? `${n} personnes ou plus` : `${n} personnes`,
+}));
 
 /**
  * Le nombre de personnes dans la voiture sur un long trajet (B3.4, C3.5).
@@ -451,8 +464,13 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
     // résiduel de « rarement » (15 km, 0,25 sortie par semaine) par une taille déclarée pour
     // une sortie qui n'est plus déclarée. La motorisation, elle, décrit le **véhicule** de la
     // personne et rend le résiduel plus juste ; le covoiturage décrit un **trajet** qui
-    // n'existe plus. C'est aussi ce qui garde vraie la promesse de la migration C3.5 : un
-    // bilan « rarement » déjà soumis rend exactement le même total qu'avant.
+    // n'existe plus.
+    //
+    // Ce que cette ligne ne fait **pas** : garder vraie la promesse de la migration C3.5, qu'un
+    // bilan « rarement » déjà soumis rende le même total qu'avant. Celle-là tient au **défaut de
+    // la colonne** — `leisure_is_carpool` n'existait pas, donc aucune ligne ancienne ne la porte
+    // à vrai — et rien de ce qui s'écrit ici ne touche un bilan déjà en base. L'en créditer
+    // ferait croire cette promesse gardée par un test qui ne l'éprouve pas.
     a.leisure_is_carpool = false;
   } else {
     if (a.leisure_mode !== 'voiture') a.leisure_car_engine = null;
@@ -619,7 +637,7 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
       // re-bilan prérempli d'avant C3.4 arrive sans la réponse et bute ici : c'est voulu, c'est
       // exactement le bilan dont le chiffre était faux.
       if (answers.commute_second_mode !== null && answers.commute_second_mode_share === null)
-        return 'la part du trajet faite avec ce second mode';
+        return 'la part de ce second mode';
       return null;
     case 'leisure_frequency':
       return answers.leisure_frequency === null ? 'ta fréquence' : null;

@@ -13,7 +13,9 @@
 --
 -- **Le premier pas ne chiffre rien.** Le gain est juste au-dessus sur la carte, et un second nombre
 -- à cet endroit se lirait comme une consigne. La garde balaie la table entière plutôt que de citer
--- des gabarits : un treizième ajouté demain la traverse sans être nommé nulle part.
+-- des gabarits, et sans compter combien il y en a : celui qu'on ajoutera demain la traverse sans
+-- être nommé nulle part. Le compte qui figurait ici s'est périmé dès la vague suivante, où C3.8 en
+-- a ajouté quatre.
 --
 -- **Remplacer un engagement se demande.** `commit_plan_action` libérait et archivait l'engagement
 -- précédent sans condition : le geste le plus irréversible du produit — effacer le seul choix
