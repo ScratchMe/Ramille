@@ -222,7 +222,15 @@ export function dominantShareLabel(results: ResultatBilan): string {
  */
 export function urlDePartage(results: ResultatBilan, appUrl: string): string {
   const params = new URLSearchParams({
-    total: (results.total_co2_kg_year / 1000).toFixed(1),
+    // **Trois décimales, et c'est ce qui rend calculable la règle des kilos côté `api/`.** Les deux
+    // Functions appliquent `Math.round(tonnes * 1000)` puis basculent sous 1 000 kg — la copie de
+    // `formatTonnes` qu'elles ne peuvent pas importer — mais un dixième de tonne ne porte pas
+    // l'information : un bilan de 40 kg partait en `total=0.0`, donc l'aperçu et l'image titraient
+    // « 0 kg CO₂e » pendant que l'écran disait « 40 kg ». Les deux moitiés du même partage se
+    // contredisaient, sur la seule surface publique du produit (relevé le 14/09/2026). Au-dessus de
+    // la tonne rien ne change — `15.820` retombe sur « 15,8 t » — et les liens déjà partagés à une
+    // décimale continuent d'être lus.
+    total: (results.total_co2_kg_year / 1000).toFixed(3),
     poste: dominantShareLabel(results),
     percent: String(pourcentageDominant(results)),
   });

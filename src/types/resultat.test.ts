@@ -174,10 +174,23 @@ describe('partDuTotal et pourcentageDominant', () => {
 });
 
 describe('urlDePartage', () => {
+
+  it('porte assez de décimales pour que `api/` retrouve les kilos', () => {
+    // **La garde de la jumelle.** Les deux Vercel Functions appliquent `Math.round(tonnes * 1000)`
+    // puis basculent sous 1 000 kg ; avec un dixième de tonne dans l'URL, un bilan de 40 kg arrivait
+    // à « 0 kg CO₂e » pendant que l'écran disait « 40 kg » — les deux moitiés du même partage se
+    // contredisaient. On éprouve ici la propriété dont `api/` a besoin, et non le nombre de
+    // décimales : le kilo exact doit être reconstituable depuis le paramètre.
+    for (const kg of [0, 40, 499, 999, 1000, 1049, 15820]) {
+      const url = urlDePartage(resultat({ total_co2_kg_year: kg }), 'https://www.ramille.fr');
+      const total = new URL(url).searchParams.get('total');
+      expect(Math.round(Number.parseFloat(total ?? '0') * 1000)).toBe(kg);
+    }
+  });
   it('porte le total, le poste et la part', () => {
     const url = new URL(urlDePartage(resultat(), 'https://www.ramille.fr'));
     expect(url.pathname).toBe('/api/partage');
-    expect(url.searchParams.get('total')).toBe('4.2');
+    expect(url.searchParams.get('total')).toBe('4.200');
     expect(url.searchParams.get('poste')).toBe('Trajet domicile-travail en voiture thermique');
     expect(url.searchParams.get('percent')).toBe('50');
   });
@@ -185,7 +198,7 @@ describe('urlDePartage', () => {
   it('ne met jamais « NaN » dans l’adresse d’un bilan à zéro', () => {
     const url = new URL(urlDePartage(resultat({ total_co2_kg_year: 0, dominant_poste_co2_kg_year: 0 }), 'https://www.ramille.fr'));
     expect(url.searchParams.get('percent')).toBe('0');
-    expect(url.searchParams.get('total')).toBe('0.0');
+    expect(url.searchParams.get('total')).toBe('0.000');
   });
 });
 

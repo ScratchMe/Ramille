@@ -898,12 +898,23 @@ export default function Plan() {
     nombreDActions: actionsCount,
   });
 
-  // Les quatre sorties referment la carte, et c'est exact aujourd'hui : « Reprendre la même action »
-  // n'a rien à faire — C2.2 a déjà reconduit l'engagement — et « Choisir une autre » révèle le plan
-  // juste dessous, où chaque action porte son « Je m'y engage » (c'est `commit_plan_action` qui
-  // libère et archive la précédente). Ce que C4.6 ajoutera est le dépli des pistes et la mémoire de
-  // saison : la distinction se fera sur la clé, que le composant transmet déjà.
-  const refermerLouverture = () => {
+  // Les quatre sorties referment la carte, et **deux d'entre elles font quelque chose de plus** :
+  // « Choisir une action » et « Choisir une autre » déplient les pistes en refermant, sans quoi elles
+  // reposent le plan tel qu'il était et ne se distinguent pas de « Reprendre la même action » —
+  // c'est-à-dire que le bouton ne fait rien de ce que son libellé annonce. La clé était transmise
+  // par le composant et jetée ici, sous un commentaire qui annonçait au futur ce que C4.6 allait
+  // ajouter alors que C4.6 est livré dans la même vague (relevé par cinq constats de l'audit, le
+  // 14/09/2026).
+  //
+  // « Reprendre la même action » n'a effectivement rien à faire : C2.2 a déjà reconduit l'engagement.
+  // Et la bascule d'engagement se joue sur la carte d'action elle-même, où `commit_plan_action`
+  // libère et archive la précédente — d'où le dépli, qui amène simplement ces cartes sous les yeux.
+  //
+  // **Ce qui reste à faire est la mémoire de saison** (écart 7 de `v1-14` §10, moitié « affichage ») :
+  // rapatrier l'engagement libéré du cycle courant pour le rappeler à côté du choix. Elle n'est pas
+  // livrée, et c'est désormais écrit là plutôt que promis à un chantier déjà passé.
+  const refermerLouverture = (cle?: string) => {
+    if (cle === 'choisir' || cle === 'choisir_une_autre') setPistesDepliees(true);
     void marquerLouvertureDeSaisonVue(cycle.id);
     setOuverture(null);
   };
@@ -1039,7 +1050,7 @@ export default function Plan() {
             <CarteDeSaison
               ouverture={ouverture}
               sorties={sortiesDeSaison}
-              onSortie={() => refermerLouverture()}
+              onSortie={(cle) => refermerLouverture(cle)}
             />
           )}
 
