@@ -1488,7 +1488,7 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `mascotVein`, `mascotAccessory`, `mascotWarm`) existent dans les deux thèmes mais ne sont **lus
   qu'en clair** : le composant lit `Colors.light` comme avant, dormance assumée et commentée sur
   place — le jour où un thème sombre est livré, c'est cette table qui dit ce qui bascule (la
-  feuille) et ce qui ne bascule pas (l'encre et les accessoires). **Ce qui se voit au rendu ne se
+  feuille, les joues et le ton chaud) et ce qui ne bascule pas (l'encre). `mascotWarm` porte bien deux valeurs : ranger tous les accessoires du côté « ne bascule pas » était faux. **Ce qui se voit au rendu ne se
   voit pas à la lecture d'un chemin** : deux des trois écarts au canvas viennent d'une capture des
   cinq expressions × cinq tailles × cinq saisons, et les deux assertions qui en sortent — la
   distance **réelle** entre accessoire et visage, et la lisibilité de chaque élément — valent mieux
@@ -1785,6 +1785,10 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   11 à 00 h 30 UTC sont le même 11 mars à Paris, et l'ancien regroupement en faisait deux barres
   avec deux valeurs différentes — le doublon exact que cette fonction existe pour empêcher.
 - **Le prédécesseur d'un bilan se choisit sur `submitted_at`, jamais dans l'historique
+  — et ce point n'est couvert par aucun test** : `loadBilanPrecedent` vit dans `src/lib/`, qui tire
+  AsyncStorage, donc il n'est pas éprouvable par la suite de logique pure (le rendre testable
+  demanderait d'extraire la décision dans `src/types/suivi.ts`, ce qui n'est pas fait). Deux documents
+  l'annonçaient comme testé ; ils ne le font plus.
   dédoublonné** (C2.7, `loadBilanPrecedent`). `keepLatestPerDay` ne garde que le dernier bilan de
   chaque jour : c'est ce qu'il faut pour une courbe, pas pour désigner celui d'avant. Deux lignes
   sont lues et non une, pour vérifier que le bilan courant est bien le plus récent — sinon on ne

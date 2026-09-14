@@ -5,16 +5,19 @@ import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// Bouton "Se connecter avec Google". Réutilisé par la proposition post-bilan et par l'écran de
-// session refusée.
+// Bouton « Se connecter avec Google ». Un seul appelant aujourd'hui, la proposition post-bilan
+// (`src/app/connexion/index.tsx`) : `SessionRefusee` ne l'importe pas, contrairement à ce que disait
+// cette phrase.
 //
-// **Le « G » est celui de Google, et il ne se redessine pas** (C3.9, constat A1-13 bis). Le bouton
+// **Le « G » est celui de Google, et il ne se redessine pas** (C3.9 ; relevé en livrant le chantier, pas un constat numéroté de l'audit — la citation « A1-13 bis » qui figurait ici désignait un tout autre constat, celui de la page 404). Le bouton
 // portait une pastille grise en attendant — un placeholder de maquette laissé en production, qui
 // ne disait pas de quel fournisseur il s'agissait et que les règles de marque de Google ne
 // permettent de toute façon pas. Les quatre chemins ci-dessous sont le logo officiel, en SVG
 // inline plutôt qu'en image : il reste net à toute densité, il n'a pas de fond blanc à poser sur
-// un bouton blanc, et il ne coûte pas une requête. `assets/images/google-oauth-logo.png` reste la
-// **référence** à laquelle le comparer, pas une source à afficher.
+// un bouton blanc, et il ne coûte pas une requête. Et `assets/images/google-oauth-logo.png` n'est
+// **pas** une référence pour ce dessin, contrairement à ce que disait cette phrase : ce fichier est
+// le logo de Ramille, celui qu'on téléverse sur l'écran de consentement OAuth (relevé le
+// 14/09/2026).
 //
 // **Le libellé annoncé est le texte affiché**, et il ne l'était pas : l'`accessibilityLabel`
 // disait « Continuer avec Google » quand le bouton affichait « Se connecter avec Google ». C'est

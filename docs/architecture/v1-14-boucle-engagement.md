@@ -564,7 +564,7 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     élément reste dans le `viewBox`, donc rien n'est coupé par le bord du SVG à `k` maximal.
 34. **La goutte de rosée est posée en haut à droite de la feuille, et non en bas** (C2.13). Deux
     mesures l'imposent, et aucune ne se voit à la lecture du chemin. À `M64,70` la goutte
-    **chevauche le bord de la silhouette**, les deux tiers en dehors : au rendu elle ne se lit pas
+    **chevauche le bord de la silhouette**, près de la moitié en dehors (45 % mesurés, donc 54,9 % dedans) : au rendu elle ne se lit pas
     comme une goutte mais comme une éraflure du contour, à toutes les tailles (vérifié en
     capturant les cinq expressions × cinq tailles). Et son coin haut arrivait à **0,29 unité** du
     coin de la bouche de `happy` à `size={28}`, soit 0,08 px — c'est-à-dire collés, et `happy` à

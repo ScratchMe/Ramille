@@ -299,7 +299,7 @@ export function variationDepuisLeBilanPrecedent(
 }
 
 /** Le mois d'un horodatage, en français et en heure locale. `null` si la date est illisible. */
-function moisLocalDe(iso: string): string | null {
+export function moisLocalDe(iso: string): string | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return MOIS_FRANCAIS[d.getMonth()] ?? null;

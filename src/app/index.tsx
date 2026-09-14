@@ -40,7 +40,7 @@ export default function Index() {
     (async () => {
       try {
         await ensureSession();
-        // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-13). Quelqu'un qui a
+        // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-10). Quelqu'un qui a
         // interrompu son questionnaire repartait de la racine, donc de l'onboarding : quatre
         // écrans de présentation, « Commencer mon bilan », et il atterrissait sans un mot à
         // l'étape 5. Les quatre écrans ne lui apprenaient rien — il les avait déjà vus, c'est

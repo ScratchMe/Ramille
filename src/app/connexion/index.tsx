@@ -227,10 +227,14 @@ export default function ConnexionProposition() {
                     (`purge_stale_anonymous_accounts`, fenêtre de 90 jours). Les deux faits sont
                     écrits là où la personne renonce, pas dans une page qu'elle n'ouvrira pas. */}
                 {/* `small` et non `code` : la ligne était en monospace, ce qui passait sur une
-                    phrase courte et se lit comme une sortie technique sur trois lignes. Dans ce
-                    dépôt `code` est réservé au texte **destiné à être recopié** — une cause
-                    d'erreur, un identifiant — et une phrase qui dit ce qu'on perd n'en est pas.
-                    Vu au rendu, pas à la lecture. */}
+                    phrase courte et se lit comme une sortie technique sur trois lignes. Vu au
+                    rendu, pas à la lecture.
+                    La phrase qui figurait ici — « dans ce dépôt `code` est réservé au texte destiné
+                    à être recopié » — énonçait une convention que le dépôt ne suit pas : `code` y
+                    porte huit usages, dont une source de chiffre, un disclaimer et une règle de
+                    calcul, c'est-à-dire une mention en petit de registre technique ou institutionnel.
+                    Ce qui vaut ici est plus simple : trois lignes de monospace se lisent comme une
+                    sortie machine (relevé le 14/09/2026). */}
                 <ThemedText type="small" themeColor="textTertiary" style={styles.skipHint}>
                   Sur cet appareil seulement : si tu changes de téléphone ou si tu ne reviens pas
                   pendant trois mois, ton bilan ne te suivra pas.

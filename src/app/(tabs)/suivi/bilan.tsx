@@ -27,8 +27,7 @@ import {
   urlDePartage,
 } from '@/types/resultat';
 import { BarreContour } from '@/components/suivi/barre-contour';
-import { formatDate, variationDepuisLeBilanPrecedent } from '@/types/suivi';
-import { MOIS_FRANCAIS } from '@/types/checkin';
+import { formatDate, variationDepuisLeBilanPrecedent, moisLocalDe } from '@/types/suivi';
 import {
   loadBilanPrecedent,
   loadCycleCouvrant,
@@ -672,7 +671,7 @@ export default function BilanResultat() {
                   deux bilans de la même année, « ton bilan précédent » seul ne situe rien. */}
               {precedent && (
                 <CompareRow
-                  label={`Ton bilan précédent · ${formatMois(precedent.submittedAt)}`}
+                  label={`Ton bilan précédent · ${moisLocalDe(precedent.submittedAt) ?? 'précédent'}`}
                   value={
                     precedentT < 1 ? formatTonnes(precedent.totalKg) : formatTonnesShort(precedentT)
                   }
@@ -929,16 +928,12 @@ function CompareRow({
   );
 }
 
-/**
- * Le mois d'un horodatage, en français — « mars ».
- *
- * `MOIS_FRANCAIS` et non `toLocaleDateString` : Hermes peut être construit sans ICU complet et
- * rendrait un mois en anglais, invisible en CI et visible sur l'appareil (piège de `moisFrancais`,
- * `src/types/checkin.ts`). Lu en heure **locale**, comme la date affichée par `formatDate`.
- */
-function formatMois(iso: string): string {
-  return MOIS_FRANCAIS[new Date(iso).getMonth()] ?? 'précédent';
-}
+// **`formatMois` a été supprimée le 14/09/2026.** C'était une seconde dérivation du mois local,
+// rendue sur le même écran que `moisLocalDe` (`src/types/suivi.ts`), et aucune assertion ne
+// distinguait la lecture locale de la lecture UTC que les deux commentaires revendiquaient. Une
+// seule dérivation désormais, dans le module pur où elle est testée — avec la raison qui vaut pour
+// les deux : `MOIS_FRANCAIS` et non `toLocaleDateString`, Hermes pouvant être construit sans ICU
+// complet et rendre un mois en anglais, invisible en CI et visible sur l'appareil.
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

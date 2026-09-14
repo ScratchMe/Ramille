@@ -123,7 +123,9 @@ export default function Suivi() {
   // questionnaire sur cet onglet, alors que le questionnaire se remplit très bien hors ligne.
   const [relectureEnEchec, setRelectureEnEchec] = useState(false);
 
-  // Même idiome que l'autre onglet (`plan.tsx:134-135, 217-218`), délibérément : une clé qu'on
+  // Même idiome que l'autre onglet (`plan.tsx`, `refreshKey` / `rafraichir` et le nettoyage de
+  // l'effet de chargement), délibérément — on cite les noms et non des numéros de ligne, qui se
+  // périment au premier commit suivant : une clé qu'on
   // incrémente, l'effet qui la porte en dépendance, et le garde `cancelled` posé dans son
   // nettoyage. Deux rafraîchissements peuvent se chevaucher — revenir sur l'onglet puis
   // ramener l'app au premier plan en déclenche deux à quelques millisecondes d'écart — et rien
