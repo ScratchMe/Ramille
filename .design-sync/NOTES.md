@@ -118,6 +118,38 @@ composants y figuraient. Les quatre restants (`CalculEnCours`, `EcranLancement`,
   "column"`. Les expressions sont rendues à 96 px (80 pour l'inclinaison) : à 64 px le visage
   n'était pas lisible à l'échelle de la carte, ce qui vide de sens la planche des expressions.
 
+## Relevé du 14/09/2026 — deuxième synchronisation
+
+Re-synchro sur le chemin atomique (projet épinglé). Verdict du pilote : les **28 composants
+`unchanged`**, donc vérifiés par le téléversement précédent — aucun regrade, aucun `[SPOT_CHECK]`,
+`pendingGrade` vide. `validate` sort à 0 avec **28/28 aperçus rendus** et **zéro ligne
+d'avertissement**, ce qui confirme le « aucun à ce jour » de la liste connue. Les noms énumérés par
+`conventions.md` ont été revalidés un par un contre le build frais (deux jetons, dix composants
+présents à la fois dans l'arbre et dans le bundle, `StepShell.manque`, `Button.flex`,
+`guidelines/readme.md`, 28 `.prompt.md`) : aucune dérive, donc le fichier n'a pas été réécrit.
+
+**Le seul écart était `aux`** — ni le bundle, ni le style, ni un composant. Cause : le corps généré
+du README a changé avec la **version du skill** (2.1.268 → 2.1.270) alors que `scriptsSha` est resté
+identique. Conséquence à connaître : **une montée de version du skill peut produire un téléversement
+aux-seul**, et ce n'est pas un signe de dérive du kit.
+
+Trois pièges rencontrés, dont deux qui coûtent du temps :
+
+1. **Ne jamais faire passer la sortie du pilote dans `tail`.** Les lignes d'avertissement que la
+   procédure demande de confronter à la liste connue sont en **tête** de sortie ; un `| tail -80` les
+   jette et il faut rejouer `package-validate.mjs` seul pour les récupérer (rejeu sans danger : seul
+   `package-build.mjs` efface `.sync-diff.json`).
+2. **Un build dans un répertoire témoin n'est pas un test de déterminisme** pour `bundleSha12` ni
+   `styleSha`. esbuild embarque le chemin de l'entrée synthétisée (`<out>/.pkg-entry.mjs`) dans un
+   commentaire de module : à `--out ./ds-bundle` c'est un chemin **relatif**, ailleurs c'est un
+   absolu, donc les deux empreintes diffèrent sans qu'aucun contenu n'ait bougé (`styles.css`,
+   `_ds_bundle.css` et `README.md` sont, eux, identiques octet pour octet). `auxSha` et le README
+   sont les seules empreintes comparables d'un répertoire à l'autre.
+3. **Le premier lien symbolique a survécu, le second non.** Sur cette machine
+   `node_modules/ramille-design-system` était encore là (le `node_modules` du conteneur datait de la
+   synchro précédente) alors que `.design-sync/node_modules` avait disparu. Les refaire tous les deux
+   sans regarder coûte une seconde ; en vérifier un seul laisse l'autre casser plus tard.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine
