@@ -104,14 +104,23 @@ export function variationNote(previousKg: number, currentKg: number): string {
   const deltaKg = currentKg - previousKg;
   const percent = Math.round(Math.abs(deltaKg / previousKg) * 100);
   if (estStable(previousKg, currentKg)) return 'Stable par rapport à ton bilan précédent.';
+  // **L'écart se dit d'abord en kilos, et c'est ce qui referme vraiment A5-3** (14/09/2026). La
+  // note ne portait qu'un pourcentage, au-dessus de deux barres étiquetées « 1,2 t » toutes les
+  // deux : 1 240 puis 1 180 kg s'affichent identiques dès qu'on passe la tonne, donc la seule chose
+  // qui montrait le changement était un « 5 % de moins » que rien ne corroborait à l'écran. Trois
+  // documents donnaient le constat pour refermé par `formatTonnesNu` alors que cette fonction
+  // n'était lue que par la restitution ; le pourcentage reste, en second, parce qu'un écart absolu
+  // seul ne dit pas l'échelle.
+  //
   // **La baisse est reconnue, la hausse reste un fait** (C2.7, point 1). Une hausse recevait
   // « Une année n'est pas l'autre » — une phrase qui désamorce — et une baisse un pourcentage sec :
   // le seul moment où la personne peut voir que ce qu'elle a changé a compté passait sans un mot.
   // La seconde phrase attribue le résultat sans le chiffrer, et sans accord qui genre.
+  const ecart = formatTonnesNu(Math.abs(deltaKg));
   if (deltaKg < 0) {
-    return `${percent} % de moins que ton bilan précédent. Ce que tu as changé se voit ici.`;
+    return `${ecart} de moins que ton bilan précédent (− ${percent} %). Ce que tu as changé se voit ici.`;
   }
-  return `${percent} % de plus que ton bilan précédent. Une année n’est pas l’autre.`;
+  return `${ecart} de plus que ton bilan précédent (+ ${percent} %). Une année n’est pas l’autre.`;
 }
 
 /**
@@ -205,6 +214,12 @@ export function ancienneteEnMots(jours: number): string {
  * l'imprécision des facteurs et des réponses, l'annoncer comme un progrès serait le surestimer.
  */
 export function estStable(previousKg: number, currentKg: number): boolean {
+  // **Deux bilans égaux sont stables, même à zéro** (contre-lecture de la vague 6, 14/09/2026). Le
+  // seuil est relatif, donc il n'a pas de sens sur une base nulle ; mais renvoyer `false` sans
+  // regarder l'égalité faisait dire « 0 kg de plus que ton bilan de mars. Une année n'est pas
+  // l'autre. » — une consolation de hausse pour un écart nul. Le cas n'est pas théorique : un bilan
+  // à zéro est celui d'un piéton qui ne prend ni vol ni long trajet.
+  if (currentKg === previousKg) return true;
   if (previousKg === 0) return false;
   return Math.abs((currentKg - previousKg) / previousKg) < 0.03;
 }
@@ -284,7 +299,7 @@ export function variationDepuisLeBilanPrecedent(
 }
 
 /** Le mois d'un horodatage, en français et en heure locale. `null` si la date est illisible. */
-function moisLocalDe(iso: string): string | null {
+export function moisLocalDe(iso: string): string | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return MOIS_FRANCAIS[d.getMonth()] ?? null;

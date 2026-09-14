@@ -27,6 +27,22 @@ function aplatir(valeur: unknown, chemin: string): [string, string][] {
 
 const lignes = aplatir(RAMILLE, '');
 
+/**
+ * Un accord qui genre la personne : un auxiliaire d'`être` suivi, à deux mots près, d'un participe
+ * ou d'un adjectif accordé.
+ *
+ * **C'est l'auxiliaire qui fait le motif**, et c'est ce qui le rend utilisable : sans lui, la
+ * liste des participes attraperait « Action engagée » (accordé avec un nom, correct) et « Mois
+ * sans sortie » (qui n'est même pas un participe). Avec lui, seul l'accord avec « tu » est visé.
+ *
+ * La fin du motif est une **anticipation négative** et non un `\b` : en JavaScript, « é » n'est pas
+ * un caractère de mot, donc il n'y a pas de frontière de mot entre « passé » et le point qui le
+ * suit. Un `\b` rendait le motif incapable de reconnaître le moindre accord — un test vert qui
+ * n'éprouvait rien, exactement ce que ce fichier existe pour empêcher ailleurs.
+ */
+const ACCORD_QUI_GENRE =
+  /(?:d['’]être|être|t['’]es|tu\s+es|tu\s+étais|sois)\s+(?:\w+\s+){0,2}(?:\w+(?:é|ée|és|ées|ie|ies|ue|ues)|(?:prêt|sûr|content|heureux|déçu|seul|ravi|fier)e?s?)(?![a-zA-ZÀ-ÿ])/i;
+
 describe('Ramille', () => {
   // Sans cette assertion, un aplatissement qui rendrait un tableau vide rendrait tous les
   // gardes ci-dessous vrais par vacuité. Un groupe rend au moins une ligne, donc le total ne
@@ -44,6 +60,48 @@ describe('Ramille', () => {
    * doublon — un copier-coller qui laisse deux entrées identiques réduit la variété sans que rien ne
    * le signale, et c'est précisément ce que ces tableaux existent pour apporter.
    */
+  /**
+   * **Règle 4 — jamais un accord qui genre la personne** (C3.10, arbitrage D15, constat A12-4).
+   *
+   * Le produit tutoie sans rien savoir de qui lit. « Merci d'être passé » — la formulation qui
+   * était ici jusqu'au 14/09/2026 — choisit un genre à la place du lecteur, et la moitié des gens
+   * la lisent comme une erreur sur eux, au moment précis où ils quittent le produit.
+   *
+   * **Se relire ne suffit pas, et c'est pour ça que ce test existe** : la forme fautive est la
+   * forme naturelle. On écrit « passé » sans y penser, parce que c'est ainsi qu'on parle. Le
+   * contrôle cherche donc le **motif** — un auxiliaire d'`être` suivi d'un participe ou d'un
+   * adjectif accordé — plutôt qu'une liste de phrases interdites, qui serait périmée à la
+   * réplique suivante.
+   *
+   * Ce qu'il ne cherche pas : un participe accordé avec un **nom**. « Action engagée » est
+   * correct, et « Mois sans sortie » n'est même pas un participe. C'est l'auxiliaire qui distingue
+   * les deux cas, et c'est pour ça qu'il est dans le motif.
+   */
+  it('n’accorde jamais un participe avec la personne', () => {
+    for (const [cle, ligne] of lignes) {
+      expect(`${cle} :: ${ligne}`).not.toMatch(ACCORD_QUI_GENRE);
+    }
+  });
+
+  // Le motif attrape-t-il vraiment la phrase qui a motivé la règle ? Sans cette assertion, une
+  // expression mal échappée rendrait le test ci-dessus vert pour toujours — c'est le mode d'échec
+  // que ce dépôt attrape partout ailleurs en reposant le défaut. Il s'est produit ici : une
+  // première rédaction finissait le motif par `\b`, qui **ne se déclenche pas** après « é » — en
+  // JavaScript, une lettre accentuée n'est pas un caractère de mot, donc la frontière entre « é »
+  // et le point qui suit n'en est pas une. Le motif ne reconnaissait littéralement aucun accord.
+  it('le motif d’accord reconnaît la formulation qu’il remplace', () => {
+    expect('Merci d’être passé. Si tu reviens, on repart de zéro.').toMatch(ACCORD_QUI_GENRE);
+    expect('Tu t’es connecté avec Google ?').toMatch(ACCORD_QUI_GENRE);
+    expect('Tu es prête à commencer ?').toMatch(ACCORD_QUI_GENRE);
+    // Et il laisse passer ce qui est correct : un participe accordé avec un **nom**, un nom qui
+    // finit comme un participe, et la réplique retenue.
+    expect('Action engagée : faire un trajet sur cinq à vélo.').not.toMatch(ACCORD_QUI_GENRE);
+    expect('Mois sans sortie. Je reviens au début du mois prochain.').not.toMatch(ACCORD_QUI_GENRE);
+    expect('Merci du temps passé ici. Si tu reviens, on repart de zéro, tranquillement.').not.toMatch(
+      ACCORD_QUI_GENRE
+    );
+  });
+
   it('les répliques d’origine restent en tête de leur tableau', () => {
     expect(RAMILLE.checkinOui.hebdo[0]).toBe('Bien joué — chaque changement compte.');
     expect(RAMILLE.checkinOui.mensuel[0]).toBe('Bien joué — chaque changement compte.');

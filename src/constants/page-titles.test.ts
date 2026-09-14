@@ -32,10 +32,13 @@ describe('PAGE_TITLES', () => {
   });
 
   it('ne déclare comme alias que des chemins qui ont un titre', () => {
-    for (const alias of PAGES_ALIAS) {
-      expect({ alias, titre: PAGE_TITLES[alias] }).toEqual({ alias, titre: PAGE_TITLES[alias] });
-      expect(PAGE_TITLES[alias]).toBeDefined();
-    }
+    // **Écrit en liste, et pas en boucle d'assertions** (C3.12) : la première version comparait
+    // `{ alias, titre }` à lui-même — vrai par construction, donc une assertion qui ne pouvait pas
+    // tomber — pour que l'échec de la ligne suivante nomme l'alias fautif. La liste le fait
+    // vraiment : le diff montre quel chemin manque, et il n'y a plus qu'une assertion, qui éprouve
+    // quelque chose.
+    const sansTitre = [...PAGES_ALIAS].filter((alias) => PAGE_TITLES[alias] === undefined);
+    expect(sansTitre).toEqual([]);
   });
 
   it('nomme le produit dans chaque titre', () => {

@@ -54,7 +54,7 @@ export function EtapeTransition() {
               </ThemedText>
             ))}
           </View>
-          {/* **Ce qui vient après le bilan n'était annoncé nulle part** (C3.9, constat A1-10) :
+          {/* **Ce qui vient après le bilan n'était annoncé nulle part** (C3.9, constat A1-11) :
               l'onboarding présentait un questionnaire et s'arrêtait là, alors que le produit est
               une boucle qui dure des saisons. La phrase tient en une ligne et **ne fait pas un
               cinquième écran** — l'ajout d'une étape coûterait plus en abandon qu'il ne rapporte

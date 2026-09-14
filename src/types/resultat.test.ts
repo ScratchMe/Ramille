@@ -10,6 +10,7 @@ import {
 import { TRANSPORT_MODE_LABELS } from '@/constants/transport-modes';
 import type { Palier } from '@/types/palier';
 import {
+  equivalenceNote,
   MODE_IDS,
   MODE_PREPOSITION,
   POSTE_EN_PHRASE,
@@ -174,10 +175,23 @@ describe('partDuTotal et pourcentageDominant', () => {
 });
 
 describe('urlDePartage', () => {
+
+  it('porte assez de décimales pour que `api/` retrouve les kilos', () => {
+    // **La garde de la jumelle.** Les deux Vercel Functions appliquent `Math.round(tonnes * 1000)`
+    // puis basculent sous 1 000 kg ; avec un dixième de tonne dans l'URL, un bilan de 40 kg arrivait
+    // à « 0 kg CO₂e » pendant que l'écran disait « 40 kg » — les deux moitiés du même partage se
+    // contredisaient. On éprouve ici la propriété dont `api/` a besoin, et non le nombre de
+    // décimales : le kilo exact doit être reconstituable depuis le paramètre.
+    for (const kg of [0, 40, 499, 999, 1000, 1049, 15820]) {
+      const url = urlDePartage(resultat({ total_co2_kg_year: kg }), 'https://www.ramille.fr');
+      const total = new URL(url).searchParams.get('total');
+      expect(Math.round(Number.parseFloat(total ?? '0') * 1000)).toBe(kg);
+    }
+  });
   it('porte le total, le poste et la part', () => {
     const url = new URL(urlDePartage(resultat(), 'https://www.ramille.fr'));
     expect(url.pathname).toBe('/api/partage');
-    expect(url.searchParams.get('total')).toBe('4.2');
+    expect(url.searchParams.get('total')).toBe('4.200');
     expect(url.searchParams.get('poste')).toBe('Trajet domicile-travail en voiture thermique');
     expect(url.searchParams.get('percent')).toBe('50');
   });
@@ -185,7 +199,7 @@ describe('urlDePartage', () => {
   it('ne met jamais « NaN » dans l’adresse d’un bilan à zéro', () => {
     const url = new URL(urlDePartage(resultat({ total_co2_kg_year: 0, dominant_poste_co2_kg_year: 0 }), 'https://www.ramille.fr'));
     expect(url.searchParams.get('percent')).toBe('0');
-    expect(url.searchParams.get('total')).toBe('0.0');
+    expect(url.searchParams.get('total')).toBe('0.000');
   });
 });
 
@@ -261,6 +275,8 @@ describe('comparisonNote', () => {
 });
 
 describe('palierNote', () => {
+  const POSTE = 'ton trajet domicile-travail';
+
   function palier(champs: Partial<Palier> = {}): Palier {
     return { targetKg: 3400, reductionKg: 800, isTarget2050: false, beyondTarget2050: false, ...champs };
   }
@@ -268,34 +284,88 @@ describe('palierNote', () => {
   // Le défaut le plus visible de tous : la marche qui sépare du repère vaut quelques dizaines
   // de kilos, et la phrase promettait littéralement zéro effort (A10-3).
   it('ne promet plus « 0,0 t CO₂e de moins » quand le repère est à portée', () => {
-    const note = palierNote(palier({ reductionKg: 40, isTarget2050: true }), true);
+    const note = palierNote(palier({ reductionKg: 40, isTarget2050: true }), true, POSTE);
     expect(note).toBe('Le repère 2050 est à ta portée : 40 kg CO₂e de moins sur l’année, et tu y es.');
   });
 
-  it('nomme la marche et le plan qui suit', () => {
-    expect(palierNote(palier(), true)).toBe(
-      'Une marche à 800 kg CO₂e de moins sur l’année. Le plan qui suit propose de quoi la franchir.'
+  it('nomme la marche, le poste qui la porte, et le plan qui suit', () => {
+    expect(palierNote(palier(), true, POSTE)).toBe(
+      'Une marche à 800 kg CO₂e de moins sur l’année sur ton trajet domicile-travail. ' +
+        'Le plan qui suit propose de quoi la franchir.'
     );
   });
 
   it('situe 2050 quand le repère n’est pas à l’écran', () => {
-    expect(palierNote(palier({ reductionKg: 1200 }), false)).toMatch(/2050 se joue palier après palier\.$/);
+    expect(palierNote(palier({ reductionKg: 1200 }), false, POSTE)).toMatch(
+      /2050 se joue palier après palier\.$/
+    );
+  });
+
+  // **Le poste est nommé partout où la marche vaut le cap, et nulle part ailleurs** (C3.11). Le
+  // cap est 20 % du poste **dominant** : sans le nommer, « une marche à 800 kg » se lit comme une
+  // marche sur l'empreinte entière, c'est-à-dire une exigence d'autant plus dure que le profil est
+  // diversifié. La branche `isTarget2050` fait exception et doit la faire : la réduction n'y est
+  // plus le cap mais ce qui sépare du repère 2050, donc une distance sur le **total**.
+  it('ne nomme aucun poste quand la marche s’arrête au repère 2050', () => {
+    for (const repereVisible of [true, false]) {
+      expect(palierNote(palier({ isTarget2050: true }), repereVisible, POSTE)).not.toContain(POSTE);
+    }
+    for (const variante of [palier(), palier({ beyondTarget2050: true })]) {
+      for (const repereVisible of [true, false]) {
+        expect(palierNote(variante, repereVisible, POSTE)).toContain(POSTE);
+      }
+    }
   });
 
   // Déjà sous le repère : registre de contribution, jamais d'exigence.
   it('change de registre pour un profil déjà sous le repère', () => {
-    const note = palierNote(palier({ reductionKg: 12, beyondTarget2050: true }), true);
+    const note = palierNote(palier({ reductionKg: 12, beyondTarget2050: true }), true, POSTE);
     expect(note).toMatch(/laisse de la marge ailleurs/);
-    expect(note).toMatch(/S’il te reste de l’envie : 12 kg CO₂e de moins sur l’année\.$/);
+    expect(note).toMatch(/S’il te reste de l’envie : 12 kg CO₂e de moins sur l’année sur ton trajet domicile-travail\.$/);
   });
 
   // Aucune formulation d'échec : on ne dit jamais combien de paliers restent.
   it('ne compte jamais les paliers restants', () => {
     for (const variante of [palier(), palier({ isTarget2050: true }), palier({ beyondTarget2050: true })]) {
       for (const repereVisible of [true, false]) {
-        expect(palierNote(variante, repereVisible)).not.toMatch(/palier(s)? restant|il t’en reste/i);
+        expect(palierNote(variante, repereVisible, POSTE)).not.toMatch(
+          /palier(s)? restant|il t’en reste/i
+        );
       }
     }
+  });
+});
+
+describe('equivalenceNote', () => {
+  function palier(reductionKg: number): Palier {
+    return { targetKg: 0, reductionKg, isTarget2050: false, beyondTarget2050: false };
+  }
+
+  // **Rien plutôt qu'une fraction** (C3.2, décision 4). Sous un vol entier la phrase disparaît :
+  // « 0,3 vol » n'est pas un ordre de grandeur, c'est un chiffre de plus à interpréter. Et le cas
+  // est fréquent — le cap d'un profil sobre vaut quelques dizaines de kilos.
+  it('se tait sous un vol entier', () => {
+    expect(equivalenceNote(palier(12))).toBeNull();
+    expect(equivalenceNote(palier(276))).toBeNull();
+  });
+
+  it('compte en vols dès qu’il y en a un', () => {
+    expect(equivalenceNote(palier(277))).toBe('Pour situer : à peu près un vol de 1\u202f500 km.');
+    expect(equivalenceNote(palier(800))).toBe('Pour situer : à peu près 3 vols de 1\u202f500 km.');
+  });
+
+  // Le séparateur de milliers est écrit à la main : `toLocaleString('fr-FR')` rend « 1,500 » sur
+  // un Hermes sans ICU complet, soit une virgule décimale au milieu d'une distance.
+  it('n’écrit jamais de point ni de virgule dans la distance', () => {
+    expect(equivalenceNote(palier(277))).not.toMatch(/1[.,]500/);
+  });
+
+  // L'équivalence décrit l'effort proposé, jamais ce que la personne a fait : accrochée au total,
+  // la même phrase deviendrait un verdict. Le registre reste plat.
+  it('reste dans un registre de repère, jamais de reproche', () => {
+    const note = equivalenceNote(palier(1400))!;
+    expect(note).toMatch(/^Pour situer /);
+    expect(note).not.toMatch(/comme si|tu as émis|équivaut à ce que tu/i);
   });
 });
 

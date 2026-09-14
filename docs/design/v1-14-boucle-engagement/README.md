@@ -166,6 +166,16 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
     « Sur cet appareil seulement… » passe de `code` à `small`, le monospace passant sur une ligne
     et se lisant comme une sortie technique sur trois.
 
+27. **Le pompon du bonnet est plus gros que sur le canvas** (14/09/2026) : rayon extérieur 7,1 au
+    lieu de 5,6, le cœur chaud restant à 3,9. À 5,6 le cerne clair qui sépare le pompon de la
+    calotte mesurait 0,71 px aux tailles courantes — sous le plancher de lisibilité du dépôt — et un
+    rendu rastérisé à la vraie taille puis agrandi sans lissage montre qu'il ne se lit alors pas du
+    tout : le pompon devient un point chaud sur une calotte chaude, fondu dans le bonnet au lieu de
+    le coiffer. C'est le rayon **extérieur** qu'on ouvre et jamais le cœur qu'on rétrécit — le cœur
+    fait le deux tons, et il porte le dessin sur l'écran de lancement, où la mascotte fait 168 px.
+    Le pompon occupe alors 56 % de la largeur de la calotte à la plus petite taille, contre 44 %
+    avant, et son bord haut affleure le haut du `viewBox` : on ne l'ouvre pas davantage.
+
 La phrase de durée est tranchée : « Le refaire prend **quelques minutes** », et non « cinq minutes »
 comme l'écrit B1. Le produit promet « environ 5 minutes » pour le **premier** bilan (transition de
 l'onboarding, états vides du plan et du suivi) ; un re-bilan est plus rapide, ses réponses étant

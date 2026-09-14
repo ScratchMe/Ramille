@@ -123,7 +123,9 @@ export default function Suivi() {
   // questionnaire sur cet onglet, alors que le questionnaire se remplit très bien hors ligne.
   const [relectureEnEchec, setRelectureEnEchec] = useState(false);
 
-  // Même idiome que l'autre onglet (`plan.tsx:134-135, 217-218`), délibérément : une clé qu'on
+  // Même idiome que l'autre onglet (`plan.tsx`, `refreshKey` / `rafraichir` et le nettoyage de
+  // l'effet de chargement), délibérément — on cite les noms et non des numéros de ligne, qui se
+  // périment au premier commit suivant : une clé qu'on
   // incrémente, l'effet qui la porte en dépendance, et le garde `cancelled` posé dans son
   // nettoyage. Deux rafraîchissements peuvent se chevaucher — revenir sur l'onglet puis
   // ramener l'app au premier plan en déclenche deux à quelques millisecondes d'écart — et rien
@@ -336,7 +338,16 @@ export default function Suivi() {
   // genre de fausseté qu'on ne remarque que quand elle s'adresse à soi.
   const baisse = previous !== null && estUneBaisse(previous.totalKg, latest.totalKg);
   // Le repère 2050 ne se nomme qu'en dessous de la moyenne française, exactement comme sur la
-  // restitution : même dérivation, donc les deux écrans ne peuvent pas se contredire.
+  // restitution : même dérivation, donc les deux écrans ne peuvent pas se contredire là-dessus.
+  //
+  // **Ce que cet écran fait et que la restitution ne fait pas, et c'est assumé** (14/09/2026) : il
+  // nomme la moyenne française dans sa phrase même pour un profil en mobilité contrainte, à qui
+  // C3.1 retire la barre de comparaison. Les deux ne portent pas la même chose — la barre est un
+  // score, avec un bon et un mauvais côté, et c'est le mauvais côté qui n'a rien à dire à quelqu'un
+  // qui vient de déclarer n'avoir aucun transport en commun. La phrase, elle, ne se rend **que** sous
+  // la moyenne, donc uniquement du bon côté : elle informe au lieu de classer. Faire remonter
+  // `mobility_constrained` jusqu'ici pour la taire reviendrait à cacher à ce profil la seule
+  // comparaison qui lui soit favorable.
   const horizon2050 = showsTarget2050(latest.totalKg, FRANCE_AVERAGE_TRANSPORT_T * 1000);
 
   return (

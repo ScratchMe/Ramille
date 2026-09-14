@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { decrireErreur } from '@/types/erreur';
 
 // Écran rendu quand une exception de rendu remonte jusqu'à l'`ErrorBoundary` du layout racine
 // (chantier C0.4, constat C-1). Sans lui, rien ne rattrape l'exception : Expo Router 57 ne monte
@@ -33,34 +34,6 @@ export type ErreurInattendueProps = {
   reessayer: () => void;
 };
 
-// Borne de la sortie de `decrire`. Ce qui est jeté n'a aucune longueur garantie : une erreur
-// React minifiée traîne son URL d'explication, une erreur Supabase son corps de réponse, un
-// `JSON.stringify` d'objet jeté tout son contenu. Le détail complet n'est de toute façon envoyé
-// nulle part (seule la *catégorie* remonte, cf. `src/types/analytics.ts`) : ce bloc sert à être
-// recopié à la main, et 600 caractères suffisent largement à le faire.
-const DETAIL_MAX = 600;
-
-// Normalisation volontairement verbeuse : un « [object Object] » affiché à la place du vrai
-// message coûterait le seul indice disponible.
-function decrire(erreur: unknown): string {
-  if (erreur instanceof Error) {
-    return (erreur.message ? `${erreur.name} : ${erreur.message}` : erreur.name).slice(
-      0,
-      DETAIL_MAX
-    );
-  }
-  if (typeof erreur === 'string') return erreur.slice(0, DETAIL_MAX);
-  try {
-    // `JSON.stringify` rend `undefined` pour une fonction ou un `undefined`, et lève sur une
-    // structure circulaire : les deux cas retombent sur `String()`.
-    const json = JSON.stringify(erreur);
-    if (typeof json === 'string') return json.slice(0, DETAIL_MAX);
-  } catch {
-    // Rien à journaliser ici : on est déjà dans le filet du filet.
-  }
-  return String(erreur).slice(0, DETAIL_MAX);
-}
-
 export function ErreurInattendue({ erreur, reessayer }: ErreurInattendueProps) {
   return (
     <ThemedView style={styles.container}>
@@ -86,7 +59,7 @@ export function ErreurInattendue({ erreur, reessayer }: ErreurInattendueProps) {
               style={styles.detail}
               selectable
             >
-              {decrire(erreur)}
+              {decrireErreur(erreur)}
             </ThemedText>
             {/* `Button` porte la cible tactile (hauteur 54, au-delà des 44 px de
                 `ControlHeight.target`) et le rôle `button` avec le libellé visible. */}

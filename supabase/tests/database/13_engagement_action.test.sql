@@ -143,8 +143,10 @@ select is(
   'le refus ne touche à rien : l''engagement d''origine tient toujours'
 );
 
--- Les deux actions de A portent le poste domicile-travail : la bascule se fait donc elle aussi en
--- jours de la semaine. Une échéance fermée y est refusée depuis le 11/09/2026 (cf. plus bas).
+-- Toutes les actions de A portent le poste domicile-travail (son bilan est entièrement
+-- domicile-travail, loisirs « rarement ») : la bascule se fait donc elle aussi en jours de la
+-- semaine. Le nombre a cessé d'être deux quand C4.6 a retiré le `limit 2` — ne pas le recompter
+-- ici, l'invariant est le poste. Une échéance fermée y est refusée depuis le 11/09/2026 (cf. plus bas).
 select lives_ok(
   $stmt$ select public.commit_plan_action((select id from public.plan_actions order by rank desc limit 1), array[1,3]::smallint[], null, true) $stmt$,
   'basculer l''engagement sur l''autre action, p_replace à l''appui'

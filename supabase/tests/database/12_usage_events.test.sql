@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(14);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('a1111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-ue-a@test.local', 'x', now(), now()),
@@ -175,6 +175,30 @@ select is(
   (select count(*) from public.usage_events where occurred_at < now() - interval '12 months')::int,
   0,
   'la purge supprime les événements de plus de douze mois'
+);
+
+-- ── L'entonnoir connaît les mêmes étapes que le questionnaire ───────────────────────────
+--
+-- `analytics.bilan_funnel` porte les neuf étapes **écrites en clair** dans son `unnest(array[…])`,
+-- et leur ordre décide de celui des lignes. C'est un miroir tenu à la main de `BILAN_STEP_ORDER`
+-- (`src/types/bilan.ts`), au même titre que `mois_francais` / `MOIS_FRANCAIS` et les trois autres
+-- paires du dépôt — à cette différence près que celle-ci n'avait **aucune** des deux moitiés
+-- épinglée.
+--
+-- Ce qui se passe sans cette assertion : une étape renommée côté client, et l'entonnoir montre pour
+-- toujours une ligne à zéro là où les gens passent — un abandon massif, inventé, à l'étape même
+-- qu'on venait de retoucher. Une étape **ajoutée**, et elle n'apparaît pas du tout : l'entonnoir
+-- reste plausible et ne compte plus tout le monde.
+--
+-- L'assertion ne peut pas lire le TypeScript, donc elle épingle la moitié SQL et nomme sa jumelle.
+-- Le pendant Jest vit dans `src/types/bilan.test.ts` et pointe ici : les deux doivent tomber
+-- ensemble, c'est ce qui rend la paire visible à qui n'en touche qu'un côté.
+select results_eq(
+  $$ select step from analytics.bilan_funnel $$,
+  $$ values ('commute_has_trip'::text), ('commute_days_distance'), ('commute_mode'),
+            ('commute_extra'), ('leisure_frequency'), ('leisure_detail'), ('flights'),
+            ('long_trips'), ('context') $$,
+  'bilan_funnel : les neuf étapes de BILAN_STEP_ORDER, dans leur ordre — jumelle de src/types/bilan.ts'
 );
 
 select * from finish();

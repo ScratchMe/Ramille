@@ -21,7 +21,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(15);
 
 -- ── 1. Le premier pas, sur le référentiel ───────────────────────────────────────────────
 -- Deux balayages, aucun gabarit nommé : c'est la seule forme qui attrape un gabarit **ajouté**, et
@@ -129,11 +129,27 @@ select throws_ok(
   'la seconde est refusée : remplacer se demande'
 );
 
-select is(
-  (select count(*)::int from public.plan_action_commitments_archive
-   where user_id = 'c4600000-0000-0000-0000-000000000001'),
-  0,
-  'et le refus n''archive rien : aucune libération n''a eu lieu'
+-- **Et `p_replace = null` refuse aussi** (contre-lecture du 14/09/2026). `if not p_replace then`
+-- était faux pour la valeur nulle — `not null` vaut `null`, donc la garde ne déclenchait pas et
+-- l'engagement précédent partait. Le défaut d'argument protège l'appel qui **omet** le paramètre,
+-- jamais celui qui passe un null explicite.
+select throws_ok(
+  $stmt$ select public.commit_plan_action('c4600000-0000-0000-0000-0000000000a2'::uuid, array[1,3]::smallint[], null, null::boolean) $stmt$,
+  'RM001',
+  null,
+  'un p_replace nul refuse comme un p_replace faux'
+);
+
+-- **Le refus n'archive rien, et cette assertion ne peut pas se poser sur un comptage.** `throws_ok`
+-- exécute l'ordre dans un bloc PL/pgSQL à gestionnaire d'exception, donc dans une sous-transaction :
+-- tout ce que l'ordre a écrit avant de lever est annulé, et un `count(*) = 0` serait vrai même si la
+-- fonction archivait avant de refuser. Ce qui est réellement éprouvable est l'**ordre du corps** —
+-- le refus précède la libération — et il se lit sur la définition installée.
+select cmp_ok(
+  (select position('errcode = ''RM001''' in pg_get_functiondef('public.commit_plan_action(uuid,smallint[],text,boolean)'::regprocedure))),
+  '<',
+  (select position('archiver_engagement_de_laction' in pg_get_functiondef('public.commit_plan_action(uuid,smallint[],text,boolean)'::regprocedure))),
+  'le refus est levé avant toute libération : rien ne peut être archivé puis annulé'
 );
 
 -- Avec `p_replace`, la libération a lieu **et** laisse sa trace : c'est le contrat de C2.2, que ce

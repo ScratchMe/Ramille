@@ -10,7 +10,7 @@ import type { BilanStepId } from '@/types/bilan';
  *
  * Ses phrases vivent toutes ici, pas dans les écrans, pour la même raison que les repères
  * chiffrés vivent dans carbon-reference.ts : une voix qui se déclare à dix endroits finit par
- * se contredire au onzième. Trois règles, découlant de ce qui est déjà acté sur la mascotte
+ * se contredire au onzième. Quatre règles, découlant de ce qui est déjà acté sur la mascotte
  * (aucune expression négative, jamais à côté d'un chiffre lourd, le produit ne commente pas) :
  *
  *   1. Elle parle à la première personne, court, en tutoyant.
@@ -18,6 +18,13 @@ import type { BilanStepId } from '@/types/bilan';
  *      Un test refuse tout chiffre dans ces lignes — c'est aussi ce qui garantit qu'elle ne
  *      commente jamais une empreinte.
  *   3. Jamais « tu devrais », « il faut ». Toujours une porte ouverte, jamais une injonction.
+ *   4. **Jamais un accord qui genre la personne** (C3.10, arbitrage D15, constat A12-4). Le
+ *      produit tutoie sans rien savoir de qui lit : « Merci d'être passé » choisit un genre à sa
+ *      place, et la moitié des gens le lisent comme une erreur sur eux. La règle vise les
+ *      participes et adjectifs accordés avec « tu » — se relire n'y suffit pas, parce que la
+ *      forme fautive est la forme naturelle : on la choisit sans y penser. D'où un test qui
+ *      balaie les participes fréquents. Il exclut « engagée », qui s'accorde avec « action » et
+ *      non avec la personne — un accord grammatical n'est pas un accord qui genre.
  *
  * Les répliques de check-in d'origine sont celles des maquettes validées (canvas
  * docs/design/v1-08-mascotte) : on ne les réécrit pas, on les rattache à elle. **Des variantes s'y
@@ -224,7 +231,7 @@ export const RAMILLE = {
   attenteIciMensuel: 'On se retrouve ici au début du mois prochain.',
 
   /** Suppression de compte effectuée : on ne retient pas, on salue. */
-  auRevoir: 'Merci d’être passé. Si tu reviens, on repart de zéro, tranquillement.',
+  auRevoir: 'Merci du temps passé ici. Si tu reviens, on repart de zéro, tranquillement.',
 
   /**
    * Page 404 — la seule page qu'on atteint sans l'avoir voulu : elle rend la main.

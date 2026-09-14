@@ -157,7 +157,10 @@ export function ActionCard({
           planche F1). Hors du groupe accessible ci-dessus : ce bloc arrive après le choix, il a son
           propre sur-titre, et l'agréger au reste en ferait une phrase de plus dans une annonce déjà
           longue. Fond `background` dans une carte teintée — un creux, pas un relief. */}
-      {engagee && premierPas && (
+      {/* **Pas de premier pas sur une action reconduite** (corrigé le 14/09/2026) : la carte porte
+          alors « TON ENGAGEMENT · RECONDUIT », donc la personne a déjà passé une saison dessus, et
+          un « premier pas » y arrive une saison trop tard. C'est une ligne qui décrit un essai. */}
+      {engagee && !reconduite && premierPas && (
         <View style={[styles.premierPas, { backgroundColor: theme.background }]}>
           <ThemedText themeColor="textTertiary" weight={600} style={styles.premierPasTitre}>
             PREMIER PAS

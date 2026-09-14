@@ -181,9 +181,30 @@ describe('finDePeriodeEnMots', () => {
   // **Les caractères, jamais un `Date`.** `new Date('2026-11-30')` est minuit UTC : à l'ouest de
   // Greenwich, son jour local est le 29. Une carte du cap qui annoncerait « jusqu'au 29 novembre »
   // serait fausse d'un jour, et aucun test tournant en UTC ne le verrait — d'où cette lecture.
-  it('lit le jour écrit, quel que soit le fuseau', () => {
+  it('lit le jour écrit', () => {
     expect(finDePeriodeEnMots('2026-12-01')).toBe('jusqu’au 1er décembre');
     expect(finDePeriodeEnMots('2026-01-01')).toBe('jusqu’au 1er janvier');
+  });
+
+  // **Et la garde qui vaut vraiment quelque chose** (contre-lecture de la vague 6, 14/09/2026).
+  // L'assertion ci-dessus s'intitulait « quel que soit le fuseau » et restait verte avec
+  // l'implémentation qu'elle prétend interdire : la suite tourne en `TZ=Europe/Paris`, à l'**est**
+  // de Greenwich, où minuit UTC et le jour écrit tombent le même jour. L'écart n'apparaît qu'à
+  // l'ouest, donc nulle part en CI. On n'éprouve donc plus la sortie mais le **moyen** : le
+  // constructeur `Date` est neutralisé le temps de l'appel, et une implémentation qui en construit
+  // un lève. C'est indépendant du fuseau du processus, ce que le nom du test promettait.
+  it('ne construit aucun `Date` pour lire une date nue', () => {
+    const vrai = globalThis.Date;
+    const interdit = function () {
+      throw new Error('une date nue ne se lit pas avec `Date`');
+    } as unknown as DateConstructor;
+    globalThis.Date = Object.assign(interdit, vrai);
+    try {
+      expect(finDePeriodeEnMots('2026-12-01')).toBe('jusqu’au 1er décembre');
+      expect(finDePeriodeEnMots('2026-11-30')).toBe('jusqu’au 30 novembre');
+    } finally {
+      globalThis.Date = vrai;
+    }
   });
 
   it('rend null sur ce qui n’est pas une date', () => {

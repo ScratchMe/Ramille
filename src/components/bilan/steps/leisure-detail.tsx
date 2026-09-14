@@ -4,6 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { Chip } from '@/components/bilan/chip';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
+import { NumericField } from '@/components/bilan/numeric-field';
+import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
@@ -15,7 +17,11 @@ import {
   TWO_WHEELER_TYPE_OPTIONS,
 } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
-import type { BilanAnswers, LeisureDistanceBracket } from '@/types/bilan';
+import {
+  TAILLES_DE_COVOITURAGE,
+  type BilanAnswers,
+  type LeisureDistanceBracket,
+} from '@/types/bilan';
 
 const BRACKETS: { value: LeisureDistanceBracket; label: string }[] = [
   { value: 'lt_5', label: 'Moins de 5 km' },
@@ -24,11 +30,16 @@ const BRACKETS: { value: LeisureDistanceBracket; label: string }[] = [
   { value: '30_plus', label: 'Plus de 30 km' },
 ];
 
-// B2.2 / B2.3 — le choix voiture seul/covoiturage n'a pas d'équivalent en base côté
-// loisirs (pas de `leisure_carpool_size`, cf. v1-05 §2) : les deux options écrivent le
-// même `leisure_mode: 'voiture'`, la clé locale ne sert qu'à l'affichage sélectionné.
-// Conséquence acceptée : revenir en arrière oublie laquelle des deux était cochée
-// (retombe sur "seul" par défaut) — sans effet sur le calcul.
+// B2.2 / B2.3 — les deux options voiture écrivent toujours le même `leisure_mode: 'voiture'`,
+// mais **le covoiturage compte désormais** (C3.5) : `leisure_is_carpool` le porte en base,
+// exactement comme `commute_is_carpool` le fait depuis toujours pour le trajet quotidien. Une
+// sortie à quatre dans la même voiture comptait quatre fois.
+//
+// Deux conséquences sur cet écran. La taille est demandée sous l'option choisie, parce que le
+// calcul ne divise que si elle est renseignée — un drapeau seul ne dit pas par combien. Et
+// l'écart consigné ici (« revenir en arrière oublie laquelle des deux était cochée ») a
+// disparu de lui-même : la clé sélectionnée se dérive maintenant d'une réponse persistée, pas
+// d'un état local qui repartait sur « seul ».
 export function LeisureDetailStep({
   answers,
   update,
@@ -49,7 +60,11 @@ export function LeisureDetailStep({
   // choisie, pas la valeur, distingue laquelle des deux rangées est cochée à l'écran —
   // et donc sous laquelle des deux la précision s'ouvre.
   const [selectedKey, setSelectedKey] = useState<string | null>(
-    answers.leisure_mode === 'voiture' ? 'voiture_solo' : (answers.leisure_mode ?? null)
+    answers.leisure_mode === 'voiture'
+      ? answers.leisure_is_carpool
+        ? 'voiture_covoiturage'
+        : 'voiture_solo'
+      : (answers.leisure_mode ?? null)
   );
   const modeChoices = showMore
     ? [...LEISURE_MODE_CHOICES_PRIMARY, ...LEISURE_MODE_CHOICES_MORE]
@@ -71,9 +86,10 @@ export function LeisureDetailStep({
                   selected={selected}
                   onPress={() => {
                     setSelectedKey(choice.key);
-                    // La motorisation et le type de deux-roues rattachés au mode précédent
-                    // sont effacés par `normaliserReponses`, pas ici (audit A2-17).
-                    update({ leisure_mode: choice.modeId });
+                    // La motorisation, le type de deux-roues et la taille du covoiturage
+                    // rattachés au mode précédent sont effacés par `normaliserReponses`, pas
+                    // ici (audit A2-17).
+                    update({ leisure_mode: choice.modeId, leisure_is_carpool: choice.carpool });
                   }}
                 />
 
@@ -97,6 +113,19 @@ export function LeisureDetailStep({
                       options={TWO_WHEELER_TYPE_OPTIONS}
                       valeur={answers.leisure_two_wheeler_type}
                       onChange={(value) => update({ leisure_two_wheeler_type: value })}
+                    />
+                  </View>
+                )}
+
+                {/* C3.5 — après la motorisation, sous la même option : les deux précisions
+                    décrivent la même voiture. */}
+                {selected && choice.carpool && (
+                  <View style={styles.precision}>
+                    <PrecisionChiffres
+                      question="Vous êtes combien dans la voiture ?"
+                      options={TAILLES_DE_COVOITURAGE}
+                      valeur={answers.leisure_carpool_size}
+                      onChange={(value) => update({ leisure_carpool_size: value })}
                     />
                   </View>
                 )}
@@ -129,6 +158,28 @@ export function LeisureDetailStep({
             />
           ))}
         </View>
+
+        {/* C3.6 — la seule tranche sans borne haute est aussi la seule qui demandait quelque
+            chose de plus : « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait
+            pour un tiers d'elle-même, sur un poste qui peut être dominant.
+
+            Le champ se rend **après** la rangée de puces et non sous celle qui l'ouvre, à
+            l'inverse des précisions de mode : les tranches sont un groupe qui revient à la
+            ligne, pas une liste d'éléments, donc il n'y a pas d'élément sous lequel se glisser
+            — et à quatre puces, le champ reste juste sous l'œil. */}
+        {answers.leisure_distance_bracket === '30_plus' && (
+          <View style={styles.distanceLibre}>
+            <ThemedText type="small" themeColor="textTertiary">
+              Environ combien, pour un aller ?
+            </ThemedText>
+            <NumericField
+              value={answers.leisure_distance_km}
+              onChange={(value) => update({ leisure_distance_km: value })}
+              unit="km"
+              label="Distance d’un aller"
+            />
+          </View>
+        )}
       </View>
       <MissingModeLink context="B2.2 mode loisirs" />
     </View>
@@ -143,4 +194,5 @@ const styles = StyleSheet.create({
   precision: { marginTop: Spacing.two },
   separator: { height: 1 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  distanceLibre: { gap: Spacing.two },
 });

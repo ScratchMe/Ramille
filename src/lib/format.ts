@@ -26,9 +26,12 @@
  *
  * **Ce que la bascule ne corrige pas**, et qu'il ne faut pas lire ici comme réglé : au-dessus
  * de la tonne, le dixième reste la forme, donc deux bilans à 1 240 puis 1 180 kg s'affichent
- * toujours tous deux « 1,2 t » sous une note disant « 5 % de moins » (A5-3, symptôme 1,
- * ouvert). Le remède recommandé par l'audit — « 1,2 t · −60 kg depuis mars » — est une
- * décision d'écran du suivi, pas une forme de plus dans ce formateur : c'est l'**écart** qui
+ * toujours tous deux « 1,2 t » (A5-3, symptôme 1). Le remède est une décision d'écran du suivi et
+ * non une forme de plus dans ce formateur, et il est posé depuis le 14/09/2026 : `variationNote`
+ * dit l'écart absolu d'abord (« 60 kg de moins que ton bilan précédent (− 5 %) »), donc la note
+ * corrobore ce que les deux barres ne distinguent pas. Le constat est refermé ; ce qui reste vrai
+ * ici, et qu'il ne faut pas lire comme un défaut, c'est que le total lui-même garde le dixième de
+ * tonne au-dessus de 1 t. C'est l'**écart** qui
  * se dit en kilos, pas le total.
  *
  * Le seuil est la tonne, et l'arrondi vient **avant** la comparaison : 999,6 kg est une

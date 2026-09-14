@@ -27,8 +27,11 @@ import { Platform } from 'react-native';
 // est forcé sur web, et `app.json` porte `userInterfaceStyle: light` sur natif). Les valeurs
 // `dark` ne sont donc **pas encore lues** — même dormance assumée que `cadence_type =
 // 'rolling_quarter'` côté serveur, et pour la même raison : le jour où un thème sombre est
-// livré, c'est cette table qui dit ce qui bascule et ce qui ne bascule pas, et il ne faudra
-// retoucher qu'une ligne du composant.
+// livré, c'est cette table qui dit ce qui bascule et ce qui ne bascule pas. **Et ce ne sera pas
+// « une ligne du composant »**, contrairement à ce qui était écrit ici : C2.13 a ajouté un second
+// gel de `Colors.light` au niveau module (le `COULEUR` de `mascot.tsx`), donc il y a deux endroits à
+// reprendre — soit en faire une fonction de la palette courante, soit les corriger ensemble
+// (relevé le 14/09/2026).
 export const Colors = {
   light: {
     text: '#131612',

@@ -386,6 +386,12 @@ compte que les fois où tu as répondu ») qui n'a de sens que là.
 saison a commencé. Ton bilan date de {n} mois. » + `TextLink` « Refaire mon bilan » → `/bilan`.
 Même seuil, même lien que le suivi.
 
+> **Remplacé le 13/09/2026 par C2.8** (`v1-13` §10). La carte de re-bilan ne dit plus la saison : elle
+> se déclenche sur l'ancienneté du bilan et non sur une bascule, donc « Une nouvelle saison a
+> commencé » pouvait être faux et coexister avec la puce « Cadence : Été 2026 ». La formulation
+> saisonnière appartient à la carte d'ouverture de saison, et le fond passe à `backgroundElement`.
+> Le texte ci-dessus est conservé tel quel, comme le veut `v1-13` §0.5.
+
 **Tests.** `src/types/suivi.test.ts` : la suggestion de re-bilan (seuil inclus/exclu). Pas de
 pgTAP.
 

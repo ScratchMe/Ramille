@@ -1,4 +1,4 @@
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { Colors } from '@/constants/theme';
@@ -7,10 +7,12 @@ import { Colors } from '@/constants/theme';
 // Remplace IllustrationPlaceholder par un vrai visuel : une silhouette au sol, un
 // itinéraire pointillé qui la relie à ses modes de déplacement (vélo, voiture), quelques
 // feuilles pour l'ancrage "carbone" — palette Colors.light uniquement (app light-only,
-// cf. constants/theme.ts). Le conteneur est en flex:1 (cf. onboarding/index.tsx), donc son
-// ratio réel varie selon l'appareil ; viewBox carré + `slice` + marge de sécurité ~50px de
-// chaque bord pour qu'aucun élément ne se fasse rogner par un recadrage plus serré que prévu.
-export function OnboardingHeroIllustration({ style }: { style?: ViewStyle }) {
+// cf. constants/theme.ts). Le conteneur est en flex:1 sous un plafond de hauteur posé par
+// l'étape (cf. etape-accroche.tsx), donc son ratio réel varie selon l'appareil et vaut
+// aujourd'hui à peu près 16/9 ; viewBox carré + `slice` + marge de sécurité ~50px de chaque
+// bord pour qu'aucun élément ne se fasse rogner par un recadrage plus serré que prévu — c'est
+// cette marge qui rend le plafond sans conséquence sur le dessin.
+export function OnboardingHeroIllustration({ style }: { style?: StyleProp<ViewStyle> }) {
   const c = Colors.light;
 
   return (

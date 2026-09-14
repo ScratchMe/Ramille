@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
 import { ThemedText } from '@/components/themed-text';
+import { HYPOTHESES } from '@/constants/methodologie';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { BilanAnswers } from '@/types/bilan';
@@ -26,8 +27,19 @@ export function FlightsStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">
-          Combien de fois prends-tu l’avion dans une année type ?
+        {/* **« Combien de fois » laissait le facteur 2 au hasard** (C3.3, constat A7-7). Un
+            aller-retour compte-t-il un ou deux ? Chacun répond à sa façon, sur le poste le plus
+            lourd de la plupart des bilans — un vol long-courrier vaut à lui seul plus d'une année
+            de trajet domicile-travail en voiture pour beaucoup de profils.
+
+            Levé par la copie et non en doublant les distances : doubler `dist_flight_short` et
+            `dist_flight_long` invaliderait la quinzaine d'assertions chiffrées de la suite pgTAP
+            **et** obligerait à relever à nouveau les facteurs avion, dont la valeur dépend du `km`
+            demandé à l'API Impact CO2. Le calcul ne bouge pas ; c'est la question qui devient
+            sans ambiguïté. */}
+        <ThemedText type="screenTitle">Combien de vols prends-tu dans une année type ?</ThemedText>
+        <ThemedText type="small" themeColor="textTertiary">
+          Un aller-retour compte pour deux vols.
         </ThemedText>
         <View style={styles.chipsWrap}>
           {TOTAL_CHOICES.map((n) => (
@@ -81,8 +93,25 @@ export function FlightsStep({
           </View>
         </>
       )}
+
+      {/* **Les hypothèses s'affichent ici comme sur l'écran des longs trajets** (C3.3). Elles y
+          étaient depuis le début (« 800 km train, 700 km voiture ») et nulle part pour les vols,
+          alors que ce sont les deux plus grandes distances du bilan. Interpolées depuis
+          `HYPOTHESES` plutôt que réécrites : un script de CI compare cette table aux constantes de
+          `recompute_assessment_results`, donc ce qui s'affiche ici suit le calcul. */}
+      <ThemedText type="code" themeColor="textTertiary">
+        distances moyennes par défaut · {formatKm(HYPOTHESES.volCourtKm)} court et moyen-courrier,{' '}
+        {formatKm(HYPOTHESES.volLongKm)} long-courrier
+      </ThemedText>
     </View>
   );
+}
+
+// Séparateur de milliers écrit à la main, comme dans `methodologie.ts` : `toLocaleString('fr-FR')`
+// rend « 1,500 » sur un Hermes construit sans ICU complet, soit une virgule décimale au milieu
+// d'une distance.
+function formatKm(km: number): string {
+  return `${String(km).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} km`;
 }
 
 const styles = StyleSheet.create({

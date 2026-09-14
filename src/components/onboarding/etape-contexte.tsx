@@ -163,24 +163,39 @@ function PosteRow({ label, value, percent, accent }: { label: string; value: str
   );
 }
 
+// **Les gouttières de cet écran sont resserrées, et c'est ce qui rachète le pied épinglé**
+// (14/09/2026). Le contenu de l'étape fait 903 px pour 640 de fenêtre : à ce format elle doit
+// défiler quoi qu'on fasse — la faire tenir demanderait de supprimer la ventilation par poste,
+// c'est-à-dire le contenu factuel que la spec §4 rend obligatoire. La décision porte donc sur ce
+// qu'on voit **en premier**, et elle se jouait à une soixantaine de pixels : avec le pied
+// réépinglé mais les gouttières d'origine, il ne restait qu'un seul poste à l'écran à 360 × 640 —
+// donc la phrase « le transport est le premier poste » sans le second poste qui la démontre.
+//
+// Mesuré à 360 × 640 après resserrement : Transport et Logement entiers, Alimentation à 45 %, et
+// « Continuer » visible. Aucune police, aucun chiffre, aucune barre n'a bougé — seulement neuf
+// gouttières. **Et la demi-barre qui affleure sous le bouton fait partie du résultat** : c'est
+// elle qui dit qu'il y a une suite, l'indicateur de défilement ne se montrant qu'au contact. Le
+// premier jeu de six gouttières laissait la coupe tomber **entre** deux rangées, c'est-à-dire sur
+// un bord net qui donne l'écran pour complet ; les trois dernières (`textBlock`, `postesBlock`,
+// `posteRow`) ne sont pas du grignotage, elles déplacent la coupe à l'intérieur d'une rangée.
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, padding: Spacing.four },
-  scrollContent: { gap: Spacing.five, paddingBottom: Spacing.four },
-  textBlock: { gap: Spacing.three },
+  scrollContent: { gap: Spacing.four, paddingBottom: Spacing.four },
+  textBlock: { gap: Spacing.two },
   title: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   body: { fontSize: 16, lineHeight: 24 },
-  barsBlock: { gap: Spacing.four },
-  comparisonRow: { gap: 10 },
+  barsBlock: { gap: Spacing.three },
+  comparisonRow: { gap: Spacing.two },
   rowHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   rowLabel: { fontSize: 14, lineHeight: 20 },
   barRail: { overflow: 'hidden' },
   separator: { height: 1 },
-  postesBlock: { gap: Spacing.three },
+  postesBlock: { gap: Spacing.two },
   postesTitle: { fontSize: 16, lineHeight: 24 },
-  postesRows: { gap: 10 },
-  posteRow: { gap: 6 },
+  postesRows: { gap: Spacing.two },
+  posteRow: { gap: Spacing.one },
   posteLabel: { fontSize: 14, lineHeight: 20 },
   posteRail: { height: 12, borderRadius: 6, overflow: 'hidden' },
-  footer: { gap: Spacing.five, paddingTop: Spacing.three },
+  footer: { gap: Spacing.three, paddingTop: Spacing.two },
 });

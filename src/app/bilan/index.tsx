@@ -31,6 +31,7 @@ import {
   avancementDeLaReprise,
   brouillonEstAncien,
   distanceDomicileTravailKm,
+  distanceSortieKm,
   isStepComplete,
   manqueDeLEtape,
   memesReponses,
@@ -41,6 +42,7 @@ import {
   type BilanAnswers,
   type BilanStepId,
 } from '@/types/bilan';
+import { decrireErreur } from '@/types/erreur';
 
 // Questionnaire du bilan (9 pas maximum, branchements B1.1/B2.1) — état local pour
 // toute la traversée, un seul aller-retour serveur à la soumission (cf. commentaire
@@ -346,11 +348,17 @@ export default function BilanQuestionnaire() {
           commute_carpool_size: answers.commute_carpool_size,
           commute_second_mode_used: answers.commute_second_mode_used,
           commute_second_mode: answers.commute_second_mode,
+          commute_second_mode_share: answers.commute_second_mode_share,
           commute_car_engine: answers.commute_car_engine,
           commute_two_wheeler_type: answers.commute_two_wheeler_type,
           leisure_frequency: answers.leisure_frequency ?? 'rarely',
           leisure_mode: answers.leisure_mode,
           leisure_distance_bracket: answers.leisure_distance_bracket,
+          // Même garde que `commute_distance_km` juste au-dessus : un « 0 » saisi n'est pas
+          // une distance, et la colonne porte `check (leisure_distance_km > 0)`.
+          leisure_distance_km: distanceSortieKm(answers),
+          leisure_is_carpool: answers.leisure_is_carpool,
+          leisure_carpool_size: answers.leisure_carpool_size,
           leisure_car_engine: answers.leisure_car_engine,
           leisure_two_wheeler_type: answers.leisure_two_wheeler_type,
           flights_total_per_year: answers.flights_total_per_year,
@@ -358,9 +366,11 @@ export default function BilanQuestionnaire() {
           train_long_trips_per_year: answers.train_long_trips_per_year,
           car_long_trips_per_year: answers.car_long_trips_per_year,
           car_long_trips_engine: answers.car_long_trips_engine,
+          car_long_trips_occupancy: answers.car_long_trips_occupancy,
           zone_type: answers.zone_type,
           tc_access: answers.tc_access,
           household_vehicles: answers.household_vehicles,
+          teletravail: answers.teletravail,
         },
         { onConflict: 'assessment_id' }
       );
@@ -415,7 +425,7 @@ export default function BilanQuestionnaire() {
       setMessage(
         'Ton bilan n’a pas pu être enregistré. Tes réponses sont conservées, réessaie dans un instant.'
       );
-      setDetail(error instanceof Error ? error.message : String(error));
+      setDetail(decrireErreur(error));
     } finally {
       soumissionEnCours.current = false;
       setSubmitting(false);

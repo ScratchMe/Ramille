@@ -68,8 +68,15 @@ export function EcartParPoste({ ecarts }: { ecarts: EcartDePoste[] }) {
           </View>
         </View>
       ))}
+      {/* **L'accent dit le poste du plan, pas le plus lourd** (corrigé le 14/09/2026). Le départage
+          du serveur n'en est pas un — les loisirs l'emportent sur les voyages à 5 % près — donc
+          `dominant_poste` peut désigner un poste visiblement plus court que celui du dessus, et la
+          légende devenait fausse à l'écran. C'est bien ce poste qu'il faut accentuer : c'est celui
+          sur lequel le cap et les actions travaillent. Le classement par poids, lui, se lit déjà
+          dans l'ordre des barres. */}
       <ThemedText themeColor="textTertiary" style={styles.legende}>
-        Contour : bilan précédent · plein : ce bilan · accent : le poste qui pèse le plus
+        Contour : bilan précédent · plein : ce bilan · accent : le poste sur lequel ton plan
+        travaille
       </ThemedText>
     </View>
   );

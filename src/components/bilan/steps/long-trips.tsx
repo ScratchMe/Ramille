@@ -1,11 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
-import type { BilanAnswers } from '@/types/bilan';
+import { OCCUPATIONS_LONG_TRAJET, type BilanAnswers } from '@/types/bilan';
 
 // Même plage que les vols (`flights.tsx`, `TOTAL_CHOICES`) : l'écart à la spec §5 était que
 // celle-ci s'arrêtait à 6, ce qui plafonnait les trajets longue distance d'un grand rouleur ou
@@ -29,6 +30,24 @@ const MAX_TRAJETS = COUNT_CHOICES[COUNT_CHOICES.length - 1];
  * quelle série il s'agit, une fois, au lieu de le répéter quatorze fois.
  */
 const LIBELLE_PLAFOND = `${MAX_TRAJETS} trajets ou plus`;
+
+/**
+ * Les puces d'occupation d'un long trajet en voiture (C3.5), dérivées de la liste que
+ * `src/types/bilan.ts` tient face au `check` de la colonne.
+ *
+ * La dernière vaut « ce nombre ou plus », comme la puce de plafond des trajets — et pour la
+ * même raison, son libellé accessible est dérivé plutôt que recopié. « 1 » n'a pas besoin
+ * d'être traduit en « seul » : la question posée juste au-dessus est « Vous êtes combien ? »,
+ * à laquelle « 1 » répond.
+ */
+const PLAFOND_OCCUPATION = OCCUPATIONS_LONG_TRAJET[OCCUPATIONS_LONG_TRAJET.length - 1];
+
+const OPTIONS_OCCUPATION = OCCUPATIONS_LONG_TRAJET.map((n) => ({
+  value: n,
+  label: n === PLAFOND_OCCUPATION ? `${n}+` : String(n),
+  accessibilityLabel:
+    n === PLAFOND_OCCUPATION ? `${n} personnes ou plus` : `${n} personne${n > 1 ? 's' : ''}`,
+}));
 
 // B3.3 / B3.4 — la dernière puce stocke sa valeur nominale, même simplification que flights.tsx.
 export function LongTripsStep({
@@ -112,6 +131,22 @@ export function LongTripsStep({
               options={CAR_ENGINE_OPTIONS}
               valeur={answers.car_long_trips_engine}
               onChange={(value) => update({ car_long_trips_engine: value })}
+            />
+          </View>
+        )}
+
+        {/* C3.5 — le calcul supposait « seul » sur 700 km, sans jamais le demander, alors que
+            c'est le trajet qu'on partage le plus : partir à trois divise l'empreinte par
+            trois. La question suit la motorisation parce qu'elle décrit la même voiture, et
+            elle apparaît sous la même condition — déclarer des longs trajets en voiture, c'est
+            en déclarer deux choses. */}
+        {answers.car_long_trips_per_year > 0 && (
+          <View style={styles.precision}>
+            <PrecisionChiffres
+              question="Vous êtes combien dans la voiture ?"
+              options={OPTIONS_OCCUPATION}
+              valeur={answers.car_long_trips_occupancy}
+              onChange={(value) => update({ car_long_trips_occupancy: value })}
             />
           </View>
         )}

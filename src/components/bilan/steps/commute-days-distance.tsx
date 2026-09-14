@@ -70,8 +70,13 @@ export function CommuteDaysDistanceStep({
           <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
             Environ, ça représente quelle distance ?
           </ThemedText>
+          {/* **« On ajustera la précision plus tard » promettait un mécanisme qui n'existe pas**
+              (C3.7, constat A12-22). Rien dans le produit ne revient demander une distance, et la
+              phrase laissait attendre une relance. Ce qui existe vraiment, c'est le re-bilan — et
+              il est préremplissable, donc peu coûteux : c'est ce qu'on dit à la place. */}
           <ThemedText type="small" themeColor="textTertiary">
-            Une estimation suffit. On ajustera la précision plus tard si tu le souhaites.
+            Une estimation suffit. Tu pourras donner un chiffre plus précis en refaisant ton
+            bilan : tes réponses seront préremplies.
           </ThemedText>
           <View style={styles.bracketList}>
             {BRACKETS.map((bracket) => (

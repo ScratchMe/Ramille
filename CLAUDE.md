@@ -57,21 +57,57 @@ bout-en-bout (écrans, flux de connexion) :
   postes), la table de vérité de `rappels.test.ts` (jumelle SQL de `reminder_channel_for`), les
   règles de voix de `mascotte.test.ts` (jamais un nombre, jamais « tu devrais »), et la conformité
   des chemins de `mascot.test.ts`.
-  **Un module testé ne doit pas importer `@/lib/supabase`** — d'où la séparation `src/types/*`
-  (pur, testé) / `src/lib/*` (requêtes). Le motif n'est plus l'exception au chargement : depuis
-  que le client est un mandataire, il ne lève plus qu'au premier accès (voir plus bas), ce qui
-  rend l'échec **plus** discret — un seul test d'une branche, pas la suite entière — donc c'est un
-  argument pour garder la règle, pas pour l'assouplir. La vraie raison est en tête du module :
-  il tire `@react-native-async-storage/async-storage`, `react-native` (Platform) et
-  `react-native-url-polyfill/auto`, qui n'ont rien à faire dans une suite de logique pure. Deux
+  **La ligne passe par ce qu'un test doit dresser avant de pouvoir affirmer** (C3.12), et non par
+  le nom d'un import. La règle disait « un module testé n'importe pas `@/lib/supabase` » ; elle
+  protégeait une chose qui n'existe plus — le client levait au **chargement**, donc un seul import
+  faisait tomber la suite entière — et depuis qu'il est un mandataire, l'importer est inoffensif.
+  Elle interdisait donc des tests utiles en gardant un danger disparu. Deux niveaux la remplacent :
+  **`src/types/*` est de la logique pure** — n'importe rien de la plateforme, n'installe aucun
+  double ; c'est aussi pourquoi `format.ts` doit rester pur bien qu'il vive dans `src/lib`, puisque
+  `src/types/resultat.ts` l'importe. **`src/lib/*` est de l'entrée-sortie** — le test **double**
+  exactement ce qu'il éprouve (AsyncStorage pour `bilan-draft`, `connexion-prefs`, `saison-prefs`
+  et la moitié locale de `notification-prefs` ; `Platform` pour `app-url`) et n'éprouve que ce que
+  ce double couvre. `notification-prefs` importe `@/lib/supabase` et est quand même testé : ce qui
+  y est éprouvé ne touche que le stockage. Corollaire à connaître si cette suite tombe un jour sur
+  une erreur de configuration — ce n'est pas le test qui aura changé, c'est une de ces fonctions
+  qui aura commencé à toucher le client au chargement du module.
+  **La couverture est relevée en CI sans seuil** (`npm test -- --coverage`, périmètre
+  `src/types` · `src/lib` · `src/constants` dans `collectCoverageFrom`) : un seuil transforme une
+  carte en obstacle et se contourne en écrivant des tests qui touchent du code sans rien affirmer.
+  Les écrans n'y sont pas — ils ne sont pas testés, par décision, et les lister à 0 % à chaque
+  passage noierait la carte. 79 % des lignes au 14/09/2026.
+  **Doubler `react-native` en entier passe au vert en salissant la sortie** : le `setup.js` de
+  jest-expo est privé de ce qu'il installe, et l'étaler avec `requireActual` **lit** chaque
+  propriété du module, donc déclenche les avertissements de dépréciation posés sur ses exports
+  sortants. Un `Proxy` ne lit que ce qu'on lui demande — la démonstration est dans
+  `app-url.test.ts`. Un avertissement dans une sortie de CI est un avertissement qu'on cesse de
+  lire, et c'est ainsi qu'on manque le vrai.
   **La suite tourne en `TZ=Europe/Paris`, et ce n'est pas cosmétique** (C2.7) : en UTC, toutes les
   distinctions UTC/local que ce dépôt documente avec soin — `debutDePeriodeInterrogee` et
   `periodePrecedente` qui lisent l'UTC comme leurs jumelles SQL, `saisonDe`, `progressionDeLaPeriode`
   et `keepLatestPerDay` qui lisent le calendrier local — sont **indistinguables**, donc leurs tests
   passeraient tout aussi bien avec l'erreur. Le test « regroupe sur le jour local » de
   `suivi.test.ts` est celui qui l'a rendu visible : il échoue sur l'ancienne implémentation en
-  Europe/Paris et passe des deux façons en UTC. Forcer le fuseau depuis le corps d'un test ne marche
+  Europe/Paris et **échoue en UTC avec l'une comme avec l'autre** — ce qui en fait du même coup la
+  garde de ce réglage : `TZ=UTC npx jest src/types/suivi.test.ts` le fait tomber, mesuré le
+  14/09/2026 (la première rédaction disait « passe des deux façons en UTC », ce qui était faux).
+  **Et ce fuseau ne suffit pas à garder les autres distinctions du même genre** : Paris est à l'est
+  de Greenwich, donc minuit UTC et le jour écrit y tombent le même jour, et deux gardes intitulées
+  « quel que soit le fuseau » restaient vertes avec l'implémentation qu'elles interdisent. Elles
+  éprouvent désormais le **moyen** et non la sortie — le constructeur `Date` est neutralisé le temps
+  de l'appel pour `finDePeriodeEnMots`, et réduit à sa forme à composantes pour `pointsParSaison`,
+  qui a besoin d'une date locale. Forcer le fuseau depuis le corps d'un test ne marche
   pas — Node met son fuseau en cache à la première opération de date, et Jest en a déjà fait une.
+  **Jest résout `ts` avant `js` parce que le dépôt le lui dit, et Metro le faisait déjà.**
+  `package.json` porte un `moduleFileExtensions` explicite : le défaut de Jest est
+  `['js','mjs','cjs','jsx','ts','tsx',…]`, soit l'inverse des `sourceExts` d'Expo, qui commencent par
+  `ts`/`tsx`. Sans ce réglage, un `.js` égaré à côté de son `.ts` — un `npx tsc` lancé sans
+  `--outDir` suffit, et c'est arrivé le 13/09/2026 sur sept modules — devient silencieusement le
+  module que la suite éprouve, pendant que l'app continue de charger le `.ts`. Deux résolveurs qui
+  ne disent pas la même chose sont exactement la forme de défaut que ce dépôt traque ailleurs, et
+  la seule à se lire « 590 tests verts ». La raison vit ici et non à côté du réglage parce que
+  `package.json` est du JSON : une clé de commentaire y fait émettre à Jest un `Validation Warning`
+  à chaque passage.
   Deux modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
   (et importé par `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la
   suite qui en dépend, par un lien que rien n'affiche), et `bilan-draft.ts`, dont le test double
@@ -91,6 +127,17 @@ bout-en-bout (écrans, flux de connexion) :
   `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
 
 Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
+
+**Et le job `db-tests` compare aussi `src/lib/database.types.ts` à la base qu'il vient de
+construire** (C3.12) : `supabase gen types typescript --local`, puis
+`scripts/verifier-types-base.mjs`. Le fichier est tenu à la main — on y ajoute les colonnes plutôt
+que de le régénérer, un diff de mille lignes pour trois — et **le typecheck ne peut pas voir cette
+dérive** : il vérifie le code **contre ce fichier**, jamais le fichier contre la base. Une colonne
+oubliée dans `Insert` rend impossible d'écrire une colonne qui existe ; une colonne fantôme laisse
+écrire une colonne qui n'existe plus, et l'échec arrive à l'exécution, en anglais, chez la personne.
+La comparaison porte sur les **colonnes** et jamais sur le texte : le fichier du dépôt vient du
+projet distant et la CI du CLI local, donc un `diff` brut serait rouge dès le premier passage pour
+une raison de forme, et finirait désarmé.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
 pas seulement celles qui citent le facteur touché — et « toucher » inclut en AJOUTER un.**
@@ -478,8 +525,11 @@ connaître :
   `public.periode_precedente(loop_type, period_start)` : la période se **calcule**. Un `lag()` sur
   les lignes aurait le même défaut en moins visible — vérifié sur la fixture du test `25`, qui compte
   2 par `lag()` et 1 par période.
-- **C'est une quatrième paire SQL/TypeScript** (`periodePrecedente`, `src/types/checkin.ts`), à
-  toucher avec sa jumelle comme `mois_francais`, `jours_francais` et `poste_inserable` : la vue
+- **C'est une paire SQL/TypeScript de plus** (`periodePrecedente`, `src/types/checkin.ts`), à
+  toucher avec sa jumelle comme `mois_francais`, `jours_francais`, `poste_inserable`,
+  `reminder_channel_for` et — depuis C3.12 — `analytics.bilan_funnel` / `BILAN_STEP_ORDER`, dont
+  les deux moitiés s'épinglent l'une l'autre et se nomment mutuellement en commentaire. Le nombre
+  de paires ne se compte pas ici : il devient faux à la suivante, en silence. Donc : la vue
   `analytics.checkins_consecutifs` compte côté serveur, la carte affiche côté client. Les deux
   cadences n'ont pas la même forme et c'est voulu — sept jours avant un lundi est un lundi, tandis que
   le mois est **ramené au premier** plutôt que décalé, sans quoi les deux moitiés divergeraient sur les
@@ -567,8 +617,16 @@ une fin et un début), C2.7 (le suivi dans la durée : l'écart par poste, les d
 saison, les points groupés, la restitution d'un re-bilan), C3.1 (la mobilité contrainte est lue par la
 restitution), C4.6 (toutes les pistes, le premier pas, le remplacement explicite), C2.13 (la
 mascotte porte la saison) et C3.9 (onboarding et compte : ce que le produit promet) sont livrés :
-**la vague 6 est complète**, et avec elle le jalon « la boucle existe d'une saison à l'autre ». La
-suite est la vague 7 (lot 3 restant).
+**la vague 6 est complète**, et avec elle le jalon « la boucle existe d'une saison à l'autre ».
+**La vague 7 est complète elle aussi** (14/09/2026, lot 3 restant) : d'où vient le chiffre (C3.2),
+ce que le palier mesure (C3.11), les deux écrans du questionnaire (C3.3), la lisibilité du
+questionnaire (C3.7), le ton et la carte de partage (C3.10), les trois questions que le calcul se
+posait tout seul (C3.4 + C3.5 + C3.6, une seule migration), le plan qui cesse de proposer
+l'impossible (C3.8) et les tests qui manquaient (C3.12). **Avec elle, les lots 0 à 3 sont livrés
+en entier** — l'audit du 09/09/2026 n'a plus de chantier ouvert hors du lot 4. La suite est la
+vague 8 (lot 4), dont chaque chantier commence par **une page de décision** (`v1-1N`) et non par du
+code : C4.1 (point quantitatif), C4.2 (coup de pouce la veille), C4.3 (déplacements
+professionnels), C4.4, C4.5, C4.7 et C4.8 — C4.6 ayant été avancé dans la vague 6.
 
 Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
@@ -691,7 +749,7 @@ moitiés de la règle.
 
 **Un jeton refusé parce qu'il est TROP NEUF n'est pas un refus, c'est une attente** (incident du
 13/09/2026, `src/types/postgrest.ts`). PostgREST rend `401 { code: "PGRST303", message: "JWT issued
-at future" }` quand l'instant d'émission du jeton est postérieur à sa propre horloge. Quatre choses
+at future" }` quand l'instant d'émission du jeton est postérieur à sa propre horloge. Cinq choses
 à savoir avant de chercher ailleurs :
 
 - **l'horloge de l'appareil n'entre nulle part dans ce contrôle.** Le jeton est émis par Supabase
@@ -705,18 +763,32 @@ at future" }` quand l'instant d'émission du jeton est postérieur à sa propre 
   d'une session** — la racine de l'app, l'`app_open` juste à côté, un onglet au retour — et le
   démarrage tombait alors sur « Le démarrage a échoué : JWT issued at future », un écran technique
   pour une condition d'une seconde. `fetchAvecSecondeChance` (passé en `global.fetch` du client)
-  redemande **au plus deux fois**, 1 200 ms puis 2 500 ms. Le réessai est sûr **pour ce code et
-  aucun autre** : le contrôle du jeton précède l'exécution, donc un `PGRST303` garantit qu'aucune
-  ligne n'a été lue ni écrite — ne pas étendre le motif à ce qui ressemblerait à une panne
-  passagère, et surtout pas aux autres refus de jeton (expiré, mal signé), qui ne se réparent pas en
-  attendant et qu'un réessai masquerait derrière une latence ;
+  redemande **au plus deux fois**, 1 200 ms puis 2 500 ms. Le réessai est sûr parce que le contrôle
+  du jeton précède l'exécution : un refus de claims garantit qu'aucune ligne n'a été lue ni écrite —
+  ne pas étendre le motif à ce qui ressemblerait à une panne passagère, et surtout pas aux autres
+  refus de jeton, qui ne se réparent pas en attendant et qu'un réessai masquerait derrière une
+  latence ;
+- **et c'est le seul refus du produit qu'on reconnaît au code ET au message** (corrigé le
+  14/09/2026 en contre-lisant la vague 6). `PGRST303` n'est pas le code du jeton en avance : la table
+  des erreurs de PostgREST le définit comme « JWT claims validation or parsing failed », c'est-à-dire
+  **toute** la famille des claims, `exp` comprise. Reconnaître au code seul faisait donc rejouer un
+  jeton **expiré** — l'état normal au réveil de l'app, un jeton d'accès Supabase vivant une heure —
+  soit 3 700 ms d'attente avant que l'erreur ne sorte, exactement ce que la puce précédente interdit.
+  `PGRST301` est le refus de **décodage** et ne porte jamais l'expiration, donc aucun code ne
+  discrimine : la paire est la seule voie. Elle échoue **du bon côté** — une phrase reformulée par
+  PostgREST désarme le réessai et l'erreur s'affiche, soit le comportement d'avant le correctif — et
+  c'est ce qui autorise l'entorse à « jamais au message ». Corollaire pour les tests : une fixture
+  `{ code: 'PGRST301', message: 'JWT expired' }` n'existe pas, et le garde qui l'utilisait ne gardait
+  rien ;
 - **le corps de la réponse est lu sur une copie** (`clone()`). Sans elle, le contrôle consommerait
   le corps et **toutes** les erreurs de l'app deviendraient illisibles — en silence, et seulement
   sur les chemins d'échec, c'est-à-dire là où personne ne regarde. Un test épingle ce point.
 
 La recette pour trancher « écart d'horloge ou vrai défaut » est en `docs/exploitation/README.md`
 §8.6 : les deux horloges à mesurer, le jeton à émettre, et la requête sur les journaux d'accès qui
-donne l'ampleur.
+donne l'ampleur. Elle commence par la version de PostgREST qu'exécute le projet — un écart
+intermittent entre deux services du même fournisseur est au moins autant un défaut amont qu'un
+réglage d'horloge, et c'est la première chose qu'on peut lire sans rien mesurer.
 
 **Cette liste de redirections est une frontière de sécurité, pas une commodité de
 configuration.** Elle décide à quelles adresses Supabase accepte de **remettre une session** —
@@ -798,6 +870,37 @@ une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par 
 (domicile-travail, loisirs, voyages), jamais plusieurs trajets du même type. Le mapping
 `BilanAnswers` (`src/types/bilan.ts`) est un miroir direct des colonnes de la table, pour un
 insert sans transformation.
+
+**Le questionnaire demande désormais ce que le calcul supposait** (C3.4 + C3.5 + C3.6,
+`20260914123432`). Quatre réponses s'ajoutent, toutes **obligatoires dès que leur déclencheur est
+là** — laisser le choix facultatif reviendrait à garder le défaut pour tous ceux qui passent sans
+répondre, ce que chacun des trois chantiers corrige. Cinq points à connaître :
+
+- **`commute_second_mode_share` est une fraction, pas une énumération** : c'est ce que le SQL
+  multiplie, et traduire trois libellés en trois nombres quelque part entre l'écran et le calcul
+  serait un troisième endroit où se tromper. Le calcul attribuait exactement la moitié des
+  kilomètres à chaque jambe — vélo + train sous-estimé de 44 %, parc-relais surestimé de 51 %, sur
+  le poste qui décide du poste dominant donc du plan. La moitié reste le **repli** d'un bilan qui
+  n'a pas répondu (`second_leg_share_default`), et c'est à ce titre que le bloc « Comment ce chiffre
+  est calculé » la cite encore.
+- **Le CO₂ de la seconde jambe est persisté** (`commute_second_leg_co2_kg_year`). Il était calculé,
+  entrait dans le total, et n'était écrit nulle part : tout ce qui lit `assessment_results` — le
+  plan en premier — ne voyait que la jambe principale, donc « Travailler depuis chez toi un jour »
+  valait 128 kg au lieu de 205 sur un trajet à deux modes.
+- **`normaliserReponses` porte une règle qui diverge de celle du dessus, et il ne faut pas
+  l'uniformiser** : sur des loisirs « rarement », le covoiturage part là où la motorisation reste.
+  Le calcul lit encore les deux, mais la motorisation décrit le **véhicule** de la personne et rend
+  le résiduel plus juste, tandis que le covoiturage décrit un **trajet** qui n'est plus déclaré — et
+  le garder diviserait ce résiduel, donc changerait le total d'un bilan déjà soumis.
+- **`PARTS_DU_SECOND_MODE`, `TAILLES_DE_COVOITURAGE` et `OCCUPATIONS_LONG_TRAJET`
+  (`src/types/bilan.ts`) sont des miroirs des `check` du schéma**, épinglés par un test : rien ne
+  peut lire ces bornes depuis TypeScript, et une valeur hors bornes ne serait refusée qu'à la
+  soumission, en anglais, neuf étapes trop tard.
+- **`distanceSortieKm` est la jumelle de `distanceDomicileTravailKm`**, et pour le même piège : la
+  colonne porte `check (leisure_distance_km > 0)`, donc un « 0 » saisi n'est pas une distance.
+  `leisure_distance_km` ne survit qu'à la tranche ouverte, parce que le calcul la préfère à
+  **toute** tranche (`coalesce`) : sans cette règle, quelqu'un qui saisit 120 km puis redescend sur
+  « 5 à 15 km » repartirait avec 120, et la tranche affichée ne dirait plus ce que le calcul fait.
 
 Le mode "voiture" ne distingue jamais la motorisation dans les listes de sélection
 (B1.4/B1.7/B2.2 restent "Voiture (seul)"/"Voiture (covoiturage)", jamais une entrée par
@@ -1038,6 +1141,50 @@ colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage d�
   message —, et l'écran relit alors le plan plutôt que de parler de réseau : ce refus veut presque
   toujours dire que l'état a changé depuis l'affichage. La signature **remplace** l'ancienne au lieu
   de la doubler, comme `repondre_au_checkin` en C2.4.
+
+**Le plan ne propose plus l'impossible, et la règle qui l'en empêche vaut pour les filtres à
+venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur sur trois —
+`requires_tc` n'écartait les transports en commun que sur `tc_access = 'inexistant'` —, donc
+« Passer deux trajets sur cinq en métro ou en tram » arrivait **en tête** du plan d'un profil rural
+à desserte limitée : le gain était juste, l'action impossible. Six points :
+
+- **Une condition qu'on ne peut pas évaluer n'est pas remplie** : sans réponse, on ne propose pas.
+  C'est l'inverse du choix de C3.1 (`mobility_constrained` nul **montre** la barre de la moyenne
+  française), et l'asymétrie est le raisonnement — là-bas ne pas savoir faisait **cacher** un
+  repère, ici cela ferait **proposer** une action implausible.
+- **`action_templates.zones_admissibles` et `.teletravail_admissible` sont des listes de valeurs
+  admissibles**, `null` valant « pas de condition ». Pour le télétravail ce n'est pas du style : il
+  y a **deux seuils**, un jour se tenant avec « parfois » et deux jours demandant « oui ». Un
+  tableau **vide** n'est pas un tableau absent — `= any('{}')` est faux pour toute valeur, donc il
+  écarte tout le monde là où `null` n'écarte personne ; un test l'interdit.
+- **Le métro et le tram sont bornés à `urbain_dense`, le train et le RER ne le sont pas**, et c'est
+  la moitié qu'il ne faut pas « uniformiser » : un TER dessert des communes rurales, et lui coller
+  la même zone retirerait à ce profil la seule alternative qui lui reste.
+- **Le télétravail se demande** (B4.4, `assessment_answers.teletravail`), et l'action s'appelle
+  « Travailler depuis chez toi un jour par semaine » — « garder » supposait qu'on en avait. Le
+  libellé seul ne suffisait pas : sans la question, l'action reste en tête chez les gros rouleurs
+  sans alternative. La garde du `remove_day` se dérive du gabarit (`commute_days_per_week <=
+  t.trips`) au lieu d'un 2 écrit en dur : retirer deux jours à qui en fait deux supprimerait 100 %
+  du trajet, et le gain annoncé serait celui de ne plus travailler.
+- **Les échéances dépendent du poste** (`intentionTimingsForPoste`, `src/types/plan.ts`) : « Ce
+  mois-ci » n'est pas une échéance pour un vol. Les voyages ont les leurs, les trois anciennes
+  restent et sont celles des sorties. Le repli d'un poste inconnu est la liste des sorties, sans
+  quoi la feuille s'ouvrirait sur rien et « C'est noté » resterait inactif sans dire pourquoi.
+- **`cadreDuPlan` décide de ce que l'écran annonce et de ce que le cap a le droit de chiffrer.**
+  Un plan à **zéro action** ne chiffre plus son cap — ce n'était un cas de bord qu'avant C2.5, et
+  depuis, tout cycliste et tout profil sédentaire y tombe ; la carte se rend quand même, elle est
+  depuis C2.8 l'endroit où la période se nomme. Et quand les actions débordent du poste dominant,
+  l'intro le dit et une note suit le cap, qui reste celui du poste dominant : le recalculer sur le
+  total côté client ferait deux définitions d'un même chiffre.
+
+**`action_text` est la clé naturelle du référentiel d'actions, et elle porte enfin un index
+unique.** Tout le dépôt apparie les gabarits par elle — `action_templates.id` vaut
+`gen_random_uuid()`, donc les identifiants diffèrent d'une base à l'autre — et rien ne le
+garantissait ; c'est aussi ce qui rend l'insert de C3.8 rejouable (`on conflict do nothing`). Deux
+pièges de la même famille : **`transport_mode_category` n'existe plus** sur cette table (supprimée
+par `20260905130000` une fois la reprise de données faite), donc un insert recopié depuis ce
+fichier-là échoue ; et un gabarit ajouté doit porter `question_template` **et** `first_step`, que
+deux balayages épinglent sans nommer personne.
 
 **L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
 `plan_actions` porte des chiffres figés à la génération, et **deux gardes indépendantes les
@@ -1331,8 +1478,12 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `formatTonnes` sous la tonne** (« Toi », « Ton prochain palier » — sauf quand le palier *est* le
   repère 2050, où la ligne redevient un repère). Ce qui n'est **pas** réglé : au-dessus de la
   tonne, deux bilans à 1 240 puis 1 180 kg s'affichent toujours « 1,2 t » tous les deux sous une
-  note « 5 % de moins » (A5-3 symptôme 1) — le remède est de dire l'**écart** en kilos côté suivi,
-  jamais une forme de plus dans le formateur. Et `src/lib/format.ts` doit rester pur pour une
+  note « 5 % de moins » — **c'était** A5-3 symptôme 1, refermé le 14/09/2026 : `variationNote` dit
+  désormais l'écart absolu d'abord (« 60 kg de moins que ton bilan précédent (− 5 %) »), donc la
+  note corrobore ce que deux barres identiques ne distinguent pas. Le remède était bien de dire
+  l'**écart** en kilos côté suivi, jamais une forme de plus dans le formateur — et il fallait le
+  dire **sur `/suivi`** : la première rédaction donnait le constat pour clos par `formatTonnesNu`,
+  que seule la restitution lisait. Et `src/lib/format.ts` doit rester pur pour une
   raison qui ne se voit pas : `src/types/resultat.ts` l'importe, donc une dépendance ajoutée là
   ferait tomber toute la suite Jest qui en dépend.
   **Le troisième est `formatTonnesNu`** (C2.7, même module) : la même bascule que `formatTonnes`, par
@@ -1410,6 +1561,10 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   remplacement se rend à deux endroits gardés l'un par l'autre** — `comparisonNote` ne parle qu'en
   relecture, `palierNote` la remplace en mode `nouveau`, donc une seule branche aurait laissé le
   profil concerné sans phrase à l'endroit même où la barre disparaît.
+  **Et `/suivi` nomme la moyenne même pour ce profil, ce qui est assumé** (14/09/2026) : ce que C3.1
+  retire est la **barre**, c'est-à-dire un score avec un mauvais côté ; la phrase du suivi ne se rend
+  qu'en **dessous** de la moyenne, donc du seul côté qui soit favorable, et la taire cacherait à ce
+  profil la seule comparaison qui joue pour lui.
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
   faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
   professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne
@@ -1452,11 +1607,21 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `mascotVein`, `mascotAccessory`, `mascotWarm`) existent dans les deux thèmes mais ne sont **lus
   qu'en clair** : le composant lit `Colors.light` comme avant, dormance assumée et commentée sur
   place — le jour où un thème sombre est livré, c'est cette table qui dit ce qui bascule (la
-  feuille) et ce qui ne bascule pas (l'encre et les accessoires). **Ce qui se voit au rendu ne se
+  feuille, les joues et le ton chaud) et ce qui ne bascule pas (l'encre). `mascotWarm` porte bien deux valeurs : ranger tous les accessoires du côté « ne bascule pas » était faux. **Ce qui se voit au rendu ne se
   voit pas à la lecture d'un chemin** : deux des trois écarts au canvas viennent d'une capture des
   cinq expressions × cinq tailles × cinq saisons, et les deux assertions qui en sortent — la
   distance **réelle** entre accessoire et visage, et la lisibilité de chaque élément — valent mieux
-  que la capture. Exclus, et ils doivent le rester : la carte de partage (`api/share-card.ts`), le
+  que la capture. **Le quatrième écart vient du même genre de relevé, poussé d'un cran**
+  (14/09/2026) : le rayon extérieur du pompon passe de 5,6 à **7,1**, parce qu'à 5,6 le cerne clair
+  qui le sépare de la calotte mesurait 0,71 px de 28 à 40 — sous le plancher de 1,3 px, franchi
+  seulement au-dessus de 76, c'est-à-dire sur le seul écran de lancement. Un rendu rastérisé à la
+  vraie taille puis agrandi sans lissage montre qu'aux tailles courantes il ne se lit **pas du
+  tout** : le pompon devient un point chaud sur une calotte chaude. Deux choses à ne pas défaire —
+  c'est le rayon **extérieur** qu'on ouvre et jamais le cœur qu'on rétrécit (le cœur fait le deux
+  tons, et il porte le dessin à 168 px), et 7,1 plutôt que 7,0 parce que l'arrondi au centième
+  ramènerait le cerne à 1,2997 px à `size` 41, soit sous le seuil de trois dix-millièmes. Le pompon
+  vaut alors 56 % de la largeur de la calotte à `k` maximal et son bord haut tombe à y = 1,35 : c'est
+  la borne du `viewBox`, donc on ne l'ouvre pas davantage. Exclus, et ils doivent le rester : la carte de partage (`api/share-card.ts`), le
   favicon, `mascot-mark.svg`.
   **Elle parle, et tout ce qu'elle dit vit dans `src/constants/mascotte.ts`** (`RAMILLE`),
   rendu par `RamilleDit` — jamais une phrase écrite dans un écran. Trois règles, gardées par
@@ -1749,6 +1914,10 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   11 à 00 h 30 UTC sont le même 11 mars à Paris, et l'ancien regroupement en faisait deux barres
   avec deux valeurs différentes — le doublon exact que cette fonction existe pour empêcher.
 - **Le prédécesseur d'un bilan se choisit sur `submitted_at`, jamais dans l'historique
+  — et ce point n'est couvert par aucun test** : `loadBilanPrecedent` vit dans `src/lib/`, qui tire
+  AsyncStorage, donc il n'est pas éprouvable par la suite de logique pure (le rendre testable
+  demanderait d'extraire la décision dans `src/types/suivi.ts`, ce qui n'est pas fait). Deux documents
+  l'annonçaient comme testé ; ils ne le font plus.
   dédoublonné** (C2.7, `loadBilanPrecedent`). `keepLatestPerDay` ne garde que le dernier bilan de
   chaque jour : c'est ce qu'il faut pour une courbe, pas pour désigner celui d'avant. Deux lignes
   sont lues et non une, pour vérifier que le bilan courant est bien le plus récent — sinon on ne
@@ -1786,6 +1955,25 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   sans compteur de génération à maintenir. Le rappel passé à `useRafraichirAuRetour` doit être
   stable (`useCallback`), sinon son effet de focus se réabonne à chaque rendu et fait tourner
   chargement et rendu l'un dans l'autre.
+- **Une page d'un pager doit pouvoir défiler, sinon elle coupe — mais `minHeight` a un effet de
+  bord qu'il faut connaître.** Les quatre pages de `/onboarding` étaient des boîtes à hauteur fixe
+  égale au viewport : ce qui dépassait était rogné sans un mot, et aucune étape ne peut l'absorber —
+  elles centrent leur contenu et les hauteurs de ligne ne se compriment pas. Chaque page est donc une
+  `ScrollView` verticale à `contentContainerStyle: { flexGrow: 1, minHeight: hauteur }` — et
+  seulement une fois la hauteur **mesurée**, sinon l'instantané serveur dont dépend l'hydratation est
+  rompu.
+  **Sous ce `minHeight`, une hauteur n'est plus *définie*** (relevé au rendu le 14/09/2026) : un
+  enfant en `flex: 1` ne se résout plus sur l'espace restant mais sur sa taille **max-content**. Deux
+  conséquences, invisibles à la lecture du code et toutes deux corrigées là où elles naissent.
+  L'illustration de l'étape 1, dont le `viewBox` est carré, réclamait (largeur − 48) px sur tous les
+  téléphones — d'où un contenu constant à ~890 px et « Découvrir mon impact » 91 px sous le pli à
+  360 × 640 ; elle est **plafonnée à 30 % de la hauteur de page** (`PART_ILLUSTRATION`), une part et
+  non un nombre de pixels, sans quoi un grand téléphone garderait une bande vide. Et le `ScrollView`
+  interne de l'étape 2 s'étirait à ses 745 px de contenu, si bien que la page entière défilait,
+  **pied compris** : elle est la seule des quatre construite avec un corps qui défile sous un pied
+  épinglé, donc sa page reçoit une hauteur **définie** (`contenuDePageFixe`) et non un minimum. La
+  règle générale qui en sort : une page qui gère son propre débordement veut `height`, une page qui
+  n'en a pas veut `minHeight`. Détail et mesures en §11.13 et §11.14 de `v1-13`.
 - **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Charger à
   chaque retour transforme une lecture en échec en régression visible : tant que la lecture n'avait
   lieu qu'au montage, personne ne pouvait perdre ses barres en cours de session. Les lectures

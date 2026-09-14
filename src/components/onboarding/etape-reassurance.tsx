@@ -39,9 +39,11 @@ export function EtapeReassurance({ onSuivant }: { onSuivant: () => void }) {
             {/* **Rien ne menait aux pages légales avant la première écriture serveur** (C3.9,
                 constat A1-9), alors que la session anonyme est ouverte dès le lancement : la
                 phrase ci-dessus affirmait quelque chose que personne ne pouvait aller vérifier.
-                `TextLink` et non `Link` : c'est une navigation interne vers une page `noindex`,
-                donc la règle du lien indexable ne s'applique pas — celle qui s'applique est
-                l'autre, la cible de 44 px et le rôle annoncé. */}
+                `TextLink` et non `Link`, et la raison n'est pas celle qui était écrite ici : rien à
+                voir avec un `noindex`, `/confidentialite` étant au contraire l'une des pages offertes
+                à l'indexation (elle est dans `sitemap.xml`). La règle du lien indexable ne vise que
+                les liens **sortants** du pied des pages légales (`EDITOR_CV_URL`) ; ce qui s'applique
+                ici est la cible de 44 px et le rôle annoncé (relevé le 14/09/2026). */}
             <TextLink
               label="Ce qu’on enregistre, et pourquoi"
               onPress={() => router.push('/confidentialite')}

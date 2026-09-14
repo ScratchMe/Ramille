@@ -9,6 +9,14 @@ export type LeisureFrequency = 'rarely' | 'weekly' | 'multiple_weekly';
 export type ZoneType = 'urbain_dense' | 'periurbain' | 'rural';
 export type TcAccess = 'bon' | 'limite' | 'inexistant';
 export type HouseholdVehicles = '0' | '1' | '2_plus';
+/**
+ * B4.4 — « Peux-tu travailler depuis chez toi ? » (C3.8).
+ *
+ * Trois réponses et non deux, parce que les gabarits en lisent **deux seuils** : un jour de
+ * télétravail se tient avec « parfois », deux jours demandent « oui ». Un booléen aurait forcé à
+ * trancher pour la personne.
+ */
+export type Teletravail = 'oui' | 'parfois' | 'non';
 // Thermique/électrique change fortement le calcul (facteur ~9x plus faible pour
 // l'électrique, cf. migration 20260904*_car_engine.sql) — une seule question de suivi,
 // jamais une entrée séparée dans les listes de mode (qui resteraient "Voiture (seul)" /
@@ -36,6 +44,15 @@ export type BilanAnswers = {
   commute_carpool_size: number | null;
   commute_second_mode_used: boolean;
   commute_second_mode: TransportModeId | null;
+  /**
+   * Part du trajet faite avec le second mode, en fraction (C3.4).
+   *
+   * En fraction et non en énumération parce que c'est ce que le calcul multiplie : le SQL
+   * n'a pas à traduire, et une quatrième nuance ne sera pas une migration de contrainte. Les
+   * bornes sont strictes des deux côtés (`0 < x < 1`) — à 0 il n'y a pas de second mode, à 1
+   * il n'y a plus de mode principal.
+   */
+  commute_second_mode_share: number | null;
   // Un seul champ pour les deux jambes (principale/second mode) : elles ne peuvent pas
   // valoir "voiture" toutes les deux à la fois (B1.7 exclut le mode déjà choisi en B1.4),
   // donc au plus une jambe est concernée à un instant donné.
@@ -45,6 +62,20 @@ export type BilanAnswers = {
   leisure_frequency: LeisureFrequency | null;
   leisure_mode: TransportModeId | null;
   leisure_distance_bracket: LeisureDistanceBracket | null;
+  /**
+   * Distance d'un aller sous la tranche ouverte « Plus de 30 km » (C3.6).
+   *
+   * La seule tranche du questionnaire sans borne haute était aussi la seule à ne rien
+   * demander de plus : une sortie de 120 km comptait pour 40, sur un poste qui peut être
+   * dominant. Le calcul la préfère à la tranche dès qu'elle existe (`coalesce`), donc
+   * `normaliserReponses` l'efface sous toute autre tranche — sans quoi une valeur laissée
+   * par un aller-retour écraserait silencieusement le milieu de tranche choisi.
+   */
+  leisure_distance_km: number | null;
+  /** Vrai quand la sortie se fait en voiture partagée (C3.5) — la jumelle loisirs de
+   *  `commute_is_carpool`, qui n'existait pas : une sortie à quatre comptait quatre fois. */
+  leisure_is_carpool: boolean;
+  leisure_carpool_size: number | null;
   leisure_car_engine: CarEngine | null;
   leisure_two_wheeler_type: TwoWheelerType | null;
 
@@ -53,10 +84,19 @@ export type BilanAnswers = {
   train_long_trips_per_year: number;
   car_long_trips_per_year: number;
   car_long_trips_engine: CarEngine | null;
+  /** Nombre de personnes dans la voiture sur un long trajet (C3.5) — 1 = seul. Partir à
+   *  trois est plus courant sur 700 km qu'au quotidien, et le calcul supposait « seul »
+   *  sans le dire. */
+  car_long_trips_occupancy: number | null;
 
   zone_type: ZoneType | null;
   tc_access: TcAccess | null;
   household_vehicles: HouseholdVehicles | null;
+  /**
+   * Ne se demande que s'il y a un trajet régulier : la question n'a pas d'objet sans lui, et les
+   * deux gabarits qui la lisent sont des gabarits du poste domicile-travail.
+   */
+  teletravail: Teletravail | null;
 };
 
 export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
@@ -69,12 +109,16 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   commute_carpool_size: null,
   commute_second_mode_used: false,
   commute_second_mode: null,
+  commute_second_mode_share: null,
   commute_car_engine: null,
   commute_two_wheeler_type: null,
 
   leisure_frequency: null,
   leisure_mode: null,
   leisure_distance_bracket: null,
+  leisure_distance_km: null,
+  leisure_is_carpool: false,
+  leisure_carpool_size: null,
   leisure_car_engine: null,
   leisure_two_wheeler_type: null,
 
@@ -83,11 +127,69 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   train_long_trips_per_year: 0,
   car_long_trips_per_year: 0,
   car_long_trips_engine: null,
+  car_long_trips_occupancy: null,
 
   zone_type: null,
   tc_access: null,
   household_vehicles: null,
+  teletravail: null,
 };
+
+/**
+ * Les trois parts proposées pour le second mode du trajet domicile-travail (C3.4).
+ *
+ * **Miroir des bornes du schéma**, pas un choix d'écran : `assessment_answers` porte
+ * `check (commute_second_mode_share > 0 and commute_second_mode_share < 1)`, et les trois
+ * valeurs tiennent dedans avec de la marge. Une quatrième nuance s'ajoute ici seule ; une
+ * valeur hors bornes ne serait refusée qu'à la soumission, en anglais, neuf étapes trop tard.
+ *
+ * Les libellés disent « environ » là où le chiffre ne se sent pas : personne ne sait quelle
+ * fraction exacte de son trajet il fait à vélo, et prétendre le contraire ferait hésiter sur
+ * une réponse dont l'ordre de grandeur suffit.
+ */
+export const PARTS_DU_SECOND_MODE: { value: number; label: string }[] = [
+  { value: 0.25, label: 'Un quart environ' },
+  { value: 0.5, label: 'La moitié environ' },
+  { value: 0.75, label: 'Les trois quarts environ' },
+];
+
+/**
+ * Les trois réponses à B4.4 (C3.8).
+ *
+ * « Parfois » n'est pas une hésitation qu'on aurait laissée passer : c'est le seuil qui sépare
+ * les deux gabarits de télétravail, un jour se tenant avec, deux jours non.
+ */
+export const REPONSES_TELETRAVAIL: { value: Teletravail; label: string }[] = [
+  { value: 'oui', label: 'Oui' },
+  { value: 'parfois', label: 'Parfois' },
+  { value: 'non', label: 'Non' },
+];
+
+/**
+ * Les tailles de covoiturage proposées, pour le trajet quotidien comme pour les sorties.
+ *
+ * Une seule table pour les deux écrans depuis C3.5 : `commute_carpool_size` et
+ * `leisure_carpool_size` portent le **même** `check (>= 2 and <= 6)`, et deux listes
+ * recopiées auraient divergé au premier ajout. La dernière vaut « ce nombre ou plus », comme
+ * la puce de plafond des longs trajets.
+ */
+export const TAILLES_DE_COVOITURAGE: { value: number; label: string }[] = [
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+  { value: 4, label: '4' },
+  { value: 5, label: '5' },
+  { value: 6, label: '6+' },
+];
+
+/**
+ * Le nombre de personnes dans la voiture sur un long trajet (B3.4, C3.5).
+ *
+ * S'arrête à 5 là où le covoiturage quotidien va à 6 : un long trajet se fait en voiture
+ * familiale, pas en minibus — et c'est la borne du `check` de la colonne. Commence à 1, qui
+ * est une réponse (« seul »), pas une absence : c'est justement la valeur que le calcul
+ * supposait sans jamais la demander.
+ */
+export const OCCUPATIONS_LONG_TRAJET: number[] = [1, 2, 3, 4, 5];
 
 export const BILAN_STEP_ORDER = [
   'commute_has_trip',
@@ -207,12 +309,23 @@ function enLettres(nombre: number): string {
  *   - **zéro écran rempli** : la première moitié disparaît plutôt que d'annoncer « Aucun écran
  *     déjà rempli », qui est une façon de dire à quelqu'un qu'il n'a rien fait. Même règle que le
  *     récapitulatif de la carte d'ouverture (C2.8), qui ne dit jamais zéro ;
- *   - **une étape devenue invisible** : un brouillon peut porter une étape que ses propres
- *     réponses excluent désormais (le questionnaire l'en déplace, mais la phrase se calcule
- *     avant). On ne compte alors aucun écran rempli plutôt que d'en inventer.
+ *   - **une étape devenue invisible** : un brouillon peut porter une étape que ses propres réponses
+ *     excluent désormais. Aucun chemin du produit ne produit cet état et rien ne le corrigerait —
+ *     le questionnaire rend l'étape telle quelle, contrairement à ce que disait cette phrase — donc
+ *     on se contente de ne pas compter l'écran courant parmi ce qui reste (relevé le 14/09/2026).
  */
 export function avancementDeLaReprise(step: BilanStepId, answers: BilanAnswers): string {
   const visibles = visibleSteps(answers);
+  // **Le compte est la position, et c'est exact sur le chemin normal** : « Suivant » est inactif
+  // tant que l'étape n'est pas complète, donc tout écran derrière celui-ci a bel et bien été rempli.
+  //
+  // **Compter la complétude serait pire**, et l'essai a été fait (contre-lecture de la vague 6, le
+  // 14/09/2026) : `commute_extra` — le second mode, facultatif — est complète sans aucune réponse,
+  // donc `visibles.filter(isStepComplete).length` annonce « Trois écrans déjà remplis » sur un
+  // brouillon que personne n'a touché. Une imprécision rare échangée contre une fausseté à chaque
+  // première reprise. L'imprécision qui reste, assumée : un brouillon dont tous les écrans sont
+  // renseignés mais qu'on a quitté après un « Retour » sous-compte ce qui est derrière. Rien ne
+  // permet de distinguer un écran facultatif renseigné d'un écran facultatif jamais vu.
   const position = visibles.indexOf(step);
   const remplis = position < 0 ? 0 : position;
   const restants = visibles.length - remplis;
@@ -268,6 +381,9 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
     a.commute_mode = null;
     a.commute_is_carpool = false;
     a.commute_second_mode_used = false;
+    // C3.8 : sans trajet régulier, B4.4 ne se pose pas — et les deux gabarits qui la lisent sont
+    // des gabarits du poste domicile-travail, qui ne sont de toute façon pas proposés.
+    a.teletravail = null;
   }
 
   // Un kilométrage saisi et une tranche ne coexistent pas. Le calcul fait
@@ -292,6 +408,12 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
     a.commute_second_mode_used = false;
   }
   if (!a.commute_second_mode_used) a.commute_second_mode = null;
+  // C3.4 : la part n'a de sens qu'attachée à un second mode. Sans cette ligne, répondre
+  // « un quart » puis revenir à « Non » laissait une fraction orpheline que l'insert aurait
+  // écrite — et que le calcul aurait ignorée, la branche entière étant gardée par
+  // `commute_second_mode_used`. Une réponse écrite mais jamais lue est pire qu'absente : elle
+  // reparaît telle quelle dans le re-bilan prérempli, sous une question qu'on ne pose plus.
+  if (a.commute_second_mode === null) a.commute_second_mode_share = null;
 
   // Un seul champ de motorisation pour les deux jambes (cf. `BilanAnswers`) : il ne s'efface
   // que si plus aucune des deux ne porte le mode concerné.
@@ -313,15 +435,46 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
   // électrique — 2,1× plus lourd, dans le sens qui alourdit l'empreinte de quelqu'un qui roule
   // à l'électrique. Revenir à « une fois par semaine » repose la question du mode, et la règle
   // reprend alors la main.
-  if (a.leisure_frequency !== 'rarely') {
+  if (a.leisure_frequency === 'rarely') {
+    // **Le mode et la tranche partent, la motorisation reste** — et c'est ici, pas dans l'écran.
+    // L'étape B2.1 tenait sa propre liste de remises à zéro, donc les deux chemins d'entrée dans le
+    // questionnaire ne convergeaient pas : cliquer « Rarement » effaçait, relire un brouillon non
+    // (relevé le 14/09/2026). Sans conséquence sur le calcul — `recompute_assessment_results` force
+    // le mode à `leisure_default_mode` dans cette branche — mais c'est exactement le genre d'écart
+    // que cette fonction existe pour ne pas avoir à vérifier écran par écran.
+    a.leisure_mode = null;
+    a.leisure_distance_bracket = null;
+    a.leisure_distance_km = null;
+    // **Le covoiturage part, la motorisation reste — et la règle du dessus ne s'applique pas
+    // ici.** Le calcul lit encore les deux dans cette branche : il divise par
+    // `leisure_carpool_size` quel que soit le mode, donc laisser le drapeau diviserait le
+    // résiduel de « rarement » (15 km, 0,25 sortie par semaine) par une taille déclarée pour
+    // une sortie qui n'est plus déclarée. La motorisation, elle, décrit le **véhicule** de la
+    // personne et rend le résiduel plus juste ; le covoiturage décrit un **trajet** qui
+    // n'existe plus. C'est aussi ce qui garde vraie la promesse de la migration C3.5 : un
+    // bilan « rarement » déjà soumis rend exactement le même total qu'avant.
+    a.leisure_is_carpool = false;
+  } else {
     if (a.leisure_mode !== 'voiture') a.leisure_car_engine = null;
     if (a.leisure_mode !== 'deux_roues_motorise') a.leisure_two_wheeler_type = null;
+    // Le covoiturage de loisirs ne se déclare que sur une voiture, comme celui du quotidien :
+    // c'est le choix « Voiture (covoiturage) » de B2.2 qui le porte, aucune autre ligne.
+    if (a.leisure_mode !== 'voiture') a.leisure_is_carpool = false;
+    // C3.6 : la distance libre n'est proposée que sous la tranche ouverte, mais le calcul la
+    // préfère à **toute** tranche dès qu'elle existe (`coalesce(a.leisure_distance_km, …)`).
+    // Sans cette ligne, quelqu'un qui saisit 120 km puis redescend sur « 5 à 15 km » repart
+    // avec 120 : la tranche affichée et la distance calculée ne diraient plus la même chose.
+    if (a.leisure_distance_bracket !== '30_plus') a.leisure_distance_km = null;
   }
+  if (!a.leisure_is_carpool) a.leisure_carpool_size = null;
 
   // Voyages : la motorisation ne tient qu'à la présence d'un trajet en voiture. Rien à
   // normaliser pour la part de vols courts — `0` et `null` sont équivalents au calcul
   // (`coalesce(flights_short_per_year, 0)` côté SQL), et B3.1 écrit l'un ou l'autre.
-  if (a.car_long_trips_per_year === 0) a.car_long_trips_engine = null;
+  if (a.car_long_trips_per_year === 0) {
+    a.car_long_trips_engine = null;
+    a.car_long_trips_occupancy = null;
+  }
 
   return a;
 }
@@ -378,6 +531,19 @@ export function afficherNombreSaisi(valeur: number | null): string {
  */
 export function distanceDomicileTravailKm(reponses: BilanAnswers): number | null {
   const km = reponses.commute_distance_km;
+  return km !== null && km > 0 ? km : null;
+}
+
+/**
+ * Distance retenue pour un aller de sortie, ou `null` si la réponse n'en porte pas (C3.6).
+ *
+ * Jumelle exacte de `distanceDomicileTravailKm`, pour la même raison et avec le même piège :
+ * la colonne porte `check (leisure_distance_km > 0)`, donc un « 0 » saisi n'est pas une
+ * distance et ne doit pas franchir la soumission. Une seule définition, lue par la complétude
+ * de l'étape et par l'insert.
+ */
+export function distanceSortieKm(reponses: BilanAnswers): number | null {
+  const km = reponses.leisure_distance_km;
   return km !== null && km > 0 ? km : null;
 }
 
@@ -443,6 +609,17 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
         answers.commute_two_wheeler_type === null
       )
         return 'le type de deux-roues';
+      // En dernier, et pour la même raison que la distance des loisirs : la part se rend sous
+      // la précision du mode, donc on ne la nomme qu'une fois le reste rempli.
+      //
+      // **Elle est demandée et non supposée** (C3.4). Le calcul en avait une — la moitié
+      // exacte — et l'appliquait à tout le monde : vélo + train sous-estimé de 44 %, parc-relais
+      // surestimé de 51 %, sur le poste qui décide du poste dominant et donc du plan. Trois
+      // puces sous un mode qu'on vient de choisir coûtent moins que cette erreur-là. Un
+      // re-bilan prérempli d'avant C3.4 arrive sans la réponse et bute ici : c'est voulu, c'est
+      // exactement le bilan dont le chiffre était faux.
+      if (answers.commute_second_mode !== null && answers.commute_second_mode_share === null)
+        return 'la part du trajet faite avec ce second mode';
       return null;
     case 'leisure_frequency':
       return answers.leisure_frequency === null ? 'ta fréquence' : null;
@@ -452,10 +629,22 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
         return 'la motorisation';
       if (answers.leisure_mode === 'deux_roues_motorise' && answers.leisure_two_wheeler_type === null)
         return 'le type de deux-roues';
+      // La taille du covoiturage se rend sous « Voiture (covoiturage) », après la motorisation.
+      // Elle est obligatoire pour la raison qui vaut déjà côté quotidien : le calcul ne divise
+      // que si elle est renseignée, donc sans elle le choix « covoiturage » ne change **rien**
+      // au chiffre — une réponse qu'on a prise et qui ne sert à rien.
+      if (answers.leisure_is_carpool && answers.leisure_carpool_size === null)
+        return 'le nombre de personnes dans la voiture';
       // En dernier, et c'est voulu : la distance est plus bas dans la page que la précision
       // du mode, donc on ne l'annonce qu'une fois le reste rempli — on nomme ce qu'il reste
       // à faire, dans l'ordre où on le rencontre.
       if (answers.leisure_distance_bracket === null) return 'la distance habituelle';
+      // C3.6 : la tranche ouverte est la seule sans borne haute, et c'est celle qui en avait
+      // le plus besoin — « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait
+      // pour un tiers d'elle-même. La demander est le chantier ; la laisser facultative
+      // reviendrait à garder le défaut pour tous ceux qui passent sans répondre.
+      if (answers.leisure_distance_bracket === '30_plus' && distanceSortieKm(answers) === null)
+        return 'la distance d’une sortie';
       return null;
     case 'flights':
       if (answers.flights_total_per_year > 0 && answers.flights_short_per_year === null)
@@ -464,11 +653,22 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
     case 'long_trips':
       if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_engine === null)
         return 'la motorisation';
+      // C3.5 : le calcul supposait « seul » sur 700 km, alors que c'est le trajet qu'on partage
+      // le plus. Obligatoire comme la motorisation juste au-dessus, et pour la même raison —
+      // déclarer des longs trajets en voiture, c'est en déclarer deux choses.
+      if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_occupancy === null)
+        return 'le nombre de personnes dans la voiture';
       return null;
     case 'context':
       if (answers.zone_type === null) return 'ton type de zone';
       if (answers.tc_access === null) return 'l’accès aux transports en commun';
       if (answers.household_vehicles === null) return 'le nombre de véhicules du foyer';
+      // C3.8 : demandée, pas supposée. Le calcul du plan écarte les gabarits de télétravail quand
+      // la réponse manque — « une condition qu'on ne peut pas évaluer n'est pas remplie » —, donc
+      // une étape qu'on pourrait valider sans elle retirerait silencieusement un levier réel à
+      // quelqu'un qui l'a.
+      if (answers.commute_has_regular_trip !== false && answers.teletravail === null)
+        return 'ta réponse sur le télétravail';
       return null;
   }
 }

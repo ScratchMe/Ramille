@@ -23,7 +23,7 @@ import { ActionCommitment } from '@/components/plan/action-commitment';
 import { CarteDeSaison } from '@/components/plan/carte-de-saison';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
-import { formatIntention, formeInserable, pistesDuPlan } from '@/types/plan';
+import { cadreDuPlan, formatIntention, formeInserable, pistesDuPlan } from '@/types/plan';
 import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
@@ -282,6 +282,19 @@ export default function Plan() {
   // mon bilan » depuis `pending`, et « Faire mon bilan » depuis `no_assessment` — le
   // questionnaire, lui, se remplit très bien hors ligne (brouillon AsyncStorage).
   const [relectureEnEchec, setRelectureEnEchec] = useState(false);
+
+  /**
+   * Le refus de remplacement (`RM001`), remonté à l'écran plutôt que gardé dans la carte.
+   *
+   * **Logé ici pour la même raison que la ligne de relecture**, et parce que le message était
+   * invisible : `commitPlanAction` rend `rechargerLePlan`, la carte appelait `onChanged()` dans la
+   * foulée, donc le plan était relu et les cartes remontées — l'état local qui portait la phrase
+   * disparaissait au rendu suivant. Personne ne lisait donc jamais pourquoi son choix n'avait pas
+   * été enregistré ; le plan changeait simplement sous ses yeux (relevé le 14/09/2026). Et le
+   * remonter ne suffisait pas à le rendre visible si la carte concernée repassait derrière « Voir
+   * d'autres pistes », replié par défaut : on déplie donc en même temps.
+   */
+  const [refusDeRemplacement, setRefusDeRemplacement] = useState<string | null>(null);
   // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
   // jour ne se déduit pas de l'action qu'on vient de toucher — il faut relire le cycle.
   const [refreshKey, setRefreshKey] = useState(0);
@@ -689,16 +702,21 @@ export default function Plan() {
   // d'une lecture réussie — le plan, « en préparation » et « pas encore de bilan » — et le lien
   // relance la même lecture que le retour sur l'onglet.
   const banniereRelecture = (centree = false) =>
-    relectureEnEchec ? (
+    relectureEnEchec || refusDeRemplacement ? (
       <View style={[styles.relecture, centree && styles.relectureCentree]}>
-        <MessageInline message="Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
-        <TextLink
-          label="Réessayer"
-          onPress={rafraichir}
-          type="small"
-          weight={600}
-          themeColor="accentText"
-        />
+        {refusDeRemplacement && <MessageInline message={refusDeRemplacement} />}
+        {relectureEnEchec && (
+          <>
+            <MessageInline message="Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
+            <TextLink
+              label="Réessayer"
+              onPress={rafraichir}
+              type="small"
+              weight={600}
+              themeColor="accentText"
+            />
+          </>
+        )}
       </View>
     ) : null;
 
@@ -853,6 +871,15 @@ export default function Plan() {
   // le reste avant même de l'écrire (constat A13-18). La dérivation copie avant de trier : `sort`
   // mute, et `cycle` vient du state.
   const pistes = pistesDuPlan(cycle.plan_actions);
+  // Ce que l'écran annonce de lui-même, et ce que son cap a le droit de chiffrer (C3.8 §3). Dérivé
+  // dans `src/types/plan.ts` plutôt qu'écrit en ternaires ici : trois phrases en dépendent, et
+  // c'est la forme qui a laissé l'intro annoncer « pour ton trajet domicile-travail » au-dessus
+  // d'actions qui n'en étaient pas.
+  const cadre = cadreDuPlan({
+    postesEnAvant: pistes.enAvant.map((action) => action.action_templates?.poste ?? null),
+    posteDuCycle: cycle.poste,
+    nombreDActions: actionsCount,
+  });
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.
@@ -898,12 +925,23 @@ export default function Plan() {
     nombreDActions: actionsCount,
   });
 
-  // Les quatre sorties referment la carte, et c'est exact aujourd'hui : « Reprendre la même action »
-  // n'a rien à faire — C2.2 a déjà reconduit l'engagement — et « Choisir une autre » révèle le plan
-  // juste dessous, où chaque action porte son « Je m'y engage » (c'est `commit_plan_action` qui
-  // libère et archive la précédente). Ce que C4.6 ajoutera est le dépli des pistes et la mémoire de
-  // saison : la distinction se fera sur la clé, que le composant transmet déjà.
-  const refermerLouverture = () => {
+  // Les quatre sorties referment la carte, et **deux d'entre elles font quelque chose de plus** :
+  // « Choisir une action » et « Choisir une autre » déplient les pistes en refermant, sans quoi elles
+  // reposent le plan tel qu'il était et ne se distinguent pas de « Reprendre la même action » —
+  // c'est-à-dire que le bouton ne fait rien de ce que son libellé annonce. La clé était transmise
+  // par le composant et jetée ici, sous un commentaire qui annonçait au futur ce que C4.6 allait
+  // ajouter alors que C4.6 est livré dans la même vague (relevé par cinq constats de l'audit, le
+  // 14/09/2026).
+  //
+  // « Reprendre la même action » n'a effectivement rien à faire : C2.2 a déjà reconduit l'engagement.
+  // Et la bascule d'engagement se joue sur la carte d'action elle-même, où `commit_plan_action`
+  // libère et archive la précédente — d'où le dépli, qui amène simplement ces cartes sous les yeux.
+  //
+  // **Ce qui reste à faire est la mémoire de saison** (écart 7 de `v1-14` §10, moitié « affichage ») :
+  // rapatrier l'engagement libéré du cycle courant pour le rappeler à côté du choix. Elle n'est pas
+  // livrée, et c'est désormais écrit là plutôt que promis à un chantier déjà passé.
+  const refermerLouverture = (cle?: string) => {
+    if (cle === 'choisir' || cle === 'choisir_une_autre') setPistesDepliees(true);
     void marquerLouvertureDeSaisonVue(cycle.id);
     setOuverture(null);
   };
@@ -938,6 +976,12 @@ export default function Plan() {
         intentionTiming={action.intention_timing}
         otherActionCommitted={committedActionId !== null && committedActionId !== action.id}
         onChanged={() => setRefreshKey((key) => key + 1)}
+        onRefus={(message) => {
+          setRefusDeRemplacement(message);
+          // Sans le dépli, la carte concernée peut repasser derrière « Voir d'autres pistes » et le
+          // message parlerait d'une action qu'on ne voit plus.
+          setPistesDepliees(true);
+        }}
       />
     </ActionCard>
   );
@@ -1039,7 +1083,7 @@ export default function Plan() {
             <CarteDeSaison
               ouverture={ouverture}
               sorties={sortiesDeSaison}
-              onSortie={() => refermerLouverture()}
+              onSortie={(cle) => refermerLouverture(cle)}
             />
           )}
 
@@ -1054,10 +1098,9 @@ export default function Plan() {
                 Le poste est nommé par sa forme insérable et non par `trip_label`, qui porte le
                 mode entre parenthèses — « Une action liée à Trajet domicile-travail (Voiture
                 thermique). » était une phrase que personne n'a écrite. */}
-            {actionsCount > 0 && (
+            {cadre.intro !== null && (
               <ThemedText type="body" themeColor="textSecondary">
-                {pistes.enAvant.length > 1 ? 'Deux actions' : 'Une action'} pour{' '}
-                {formeInserable(cycle.poste)}.
+                {cadre.intro}
               </ThemedText>
             )}
           </View>
@@ -1127,7 +1170,7 @@ export default function Plan() {
               `accent`, et la légende le dit en mots. Confondre les deux ferait de chaque semaine
               écoulée un retard. */}
           <ThemedView type="backgroundSelected" style={styles.capCard}>
-            {capKg !== null && (
+            {capKg !== null && cadre.chiffreLeCap && (
               <>
                 <ThemedText type="small" weight={600} themeColor="accentText">
                   Ton cap pour cette {cadenceDeSaison ? 'saison' : 'période'}
@@ -1139,6 +1182,11 @@ export default function Plan() {
                   soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
                   {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
                 </ThemedText>
+                {cadre.noteDuCap !== null && (
+                  <ThemedText type="small" themeColor="textTertiary">
+                    {cadre.noteDuCap}
+                  </ThemedText>
+                )}
               </>
             )}
             <View style={styles.capPeriode}>

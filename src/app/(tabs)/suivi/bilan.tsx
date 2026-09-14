@@ -25,10 +25,12 @@ import {
   partDuTotal,
   pourcentageDominant,
   urlDePartage,
+  equivalenceNote,
 } from '@/types/resultat';
 import { BarreContour } from '@/components/suivi/barre-contour';
-import { formatDate, variationDepuisLeBilanPrecedent } from '@/types/suivi';
-import { MOIS_FRANCAIS } from '@/types/checkin';
+import { BlocMethode } from '@/components/suivi/bloc-methode';
+import { FORME_INSERABLE } from '@/constants/postes';
+import { formatDate, variationDepuisLeBilanPrecedent, moisLocalDe } from '@/types/suivi';
 import {
   loadBilanPrecedent,
   loadCycleCouvrant,
@@ -492,6 +494,11 @@ export default function BilanResultat() {
   // En relecture, `capKg` est nul par construction (cf. le chargement) : rien à proposer, le
   // cap n'appartient pas au bilan qu'on relit.
   const palier = nextPalier(results.total_co2_kg_year, capKg, TARGET_2050_TRANSPORT_T * 1000);
+  // **Le poste que la marche nomme** (C3.11). Le cap vaut 20 % de `baseline_co2_kg_year`, qui est
+  // le poste dominant et non le total : sans le nommer, la phrase se lit comme une marche sur
+  // l'empreinte entière. Repli sur le libellé snapshoté si le poste sortait un jour de la liste.
+  const posteDeLaMarche = FORME_INSERABLE[results.dominant_poste] ?? results.dominant_poste_label;
+  const equivalenceDeLaMarche = palier ? equivalenceNote(palier) : null;
   // Le repère 2050 revient dès qu'on passe sous la moyenne : au-dessus il est un gouffre, en
   // dessous un horizon crédible. Cf. `showsTarget2050`.
   const montreRepere2050 = showsTarget2050(results.total_co2_kg_year, FRANCE_AVERAGE_TRANSPORT_T * 1000);
@@ -519,8 +526,22 @@ export default function BilanResultat() {
   // se rend pas (C3.1) : sinon toutes les barres restantes seraient raccourcies par un repère absent
   // de l'écran.
   const precedentT = precedent ? precedent.totalKg / 1000 : 0;
+
+  // **La condition de rendu du repère 2050 vit ici, pas dans le JSX**, parce que l'échelle doit la
+  // lire aussi : c'est le défaut que C3.1 a introduit sans le voir. En retirant la moyenne française
+  // du domaine, elle a laissé la barre du repère dépasser son rail dès que le total passe sous
+  // 0,510 t (0,85 × 0,6 t) — elle se rendait pleine, coupée par l'`overflow: hidden` du rail, et
+  // seulement pour un profil en mobilité contrainte, c'est-à-dire celui pour qui ce chantier existe.
+  // Deux endroits qui décident séparément ce que l'échelle contient finissent toujours par se
+  // contredire ; le palier, lui, n'a pas besoin d'y entrer (`targetKg <= totalKg` par construction).
+  const montreBarreRepere2050 = (montreRepere2050 || !palier) && !palier?.isTarget2050;
   const domain =
-    Math.max(totalT, precedentT, montreMoyenne ? FRANCE_AVERAGE_TRANSPORT_T : 0) / 0.85;
+    Math.max(
+      totalT,
+      precedentT,
+      montreMoyenne ? FRANCE_AVERAGE_TRANSPORT_T : 0,
+      montreBarreRepere2050 ? TARGET_2050_TRANSPORT_T : 0
+    ) / 0.85;
   const barPercent = (value: number) => Math.max((value / domain) * 100, 3);
 
   return (
@@ -634,6 +655,12 @@ export default function BilanResultat() {
                 la saison, l'écart entre deux bilans) : il vaut 30, et la hiérarchie tient
                 puisque la décision dominante reste au-dessus, à 32. */}
             <ThemedText type="salient">{formatTonnes(results.total_co2_kg_year)}</ThemedText>
+            {/* **La question « d'où vient ce chiffre ? » se pose ici et nulle part ailleurs**
+                (C3.2). Sous le total, replié, parce que c'est le moment où elle naît — et parce
+                que ce total ne se compare à aucun autre simulateur sans savoir qu'il compte la
+                fabrication. La date passée est celle de **soumission** : c'est elle qui fige les
+                facteurs (`emission_factor(mode, date)`), donc elle qui date la méthode. */}
+            <BlocMethode dateDuBilan={submittedAt} />
           </View>
 
           <ThemedView type="backgroundElement" style={styles.compareCard}>
@@ -658,7 +685,7 @@ export default function BilanResultat() {
                   deux bilans de la même année, « ton bilan précédent » seul ne situe rien. */}
               {precedent && (
                 <CompareRow
-                  label={`Ton bilan précédent · ${formatMois(precedent.submittedAt)}`}
+                  label={`Ton bilan précédent · ${moisLocalDe(precedent.submittedAt) ?? 'précédent'}`}
                   value={
                     precedentT < 1 ? formatTonnes(precedent.totalKg) : formatTonnesShort(precedentT)
                   }
@@ -709,7 +736,7 @@ export default function BilanResultat() {
               )}
               {/* Sauf quand le palier EST le repère : il porte déjà son nom juste au-dessus,
                   deux barres de même valeur n'apprendraient rien. */}
-              {(montreRepere2050 || !palier) && !palier?.isTarget2050 && (
+              {montreBarreRepere2050 && (
                 <CompareRow
                   label="Repère transport 2050"
                   value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}
@@ -748,8 +775,17 @@ export default function BilanResultat() {
             {/* En relecture il n'y a jamais de palier, donc c'est toujours `comparisonNote` qui
                 parle — et elle ne promet aucun plan. */}
             <ThemedText type="small" themeColor="textSecondary">
-              {palier ? palierNote(palier, montreRepere2050) : comparisonNote(results)}
+              {palier
+                ? palierNote(palier, montreRepere2050, posteDeLaMarche)
+                : comparisonNote(results)}
             </ThemedText>
+            {/* L'ordre de grandeur de la marche, sur sa propre ligne (C3.2). Il disparaît sous un
+                vol entier : « 0,3 vol » n'est pas un ordre de grandeur. */}
+            {palier && equivalenceDeLaMarche && (
+              <ThemedText type="small" themeColor="textTertiary">
+                {equivalenceDeLaMarche}
+              </ThemedText>
+            )}
             <ThemedText type="code" themeColor="textTertiary">
               {CARBON_SOURCE_LABEL}
             </ThemedText>
@@ -816,7 +852,13 @@ export default function BilanResultat() {
               onPress={() =>
                 router.push({
                   pathname: '/feedback',
-                  params: { kind: 'chiffre', context: `bilan:${results.assessment_id}` },
+                  // **Le nom de l'écran, pas l'identifiant du bilan** (corrigé le 14/09/2026). Le
+                  // commentaire de `/feedback`, la phrase qu'il affiche et la politique de
+                  // confidentialité disent tous les trois « le contexte est le nom de l'écran
+                  // d'origine, rien de plus » : y glisser un uuid rendait les trois faux d'un coup,
+                  // pour une information qui ne manque pas — le bilan d'une personne se retrouve par
+                  // son compte et la date de son retour.
+                  params: { kind: 'chiffre', context: 'restitution du bilan' },
                 })
               }
               role="link"
@@ -909,16 +951,12 @@ function CompareRow({
   );
 }
 
-/**
- * Le mois d'un horodatage, en français — « mars ».
- *
- * `MOIS_FRANCAIS` et non `toLocaleDateString` : Hermes peut être construit sans ICU complet et
- * rendrait un mois en anglais, invisible en CI et visible sur l'appareil (piège de `moisFrancais`,
- * `src/types/checkin.ts`). Lu en heure **locale**, comme la date affichée par `formatDate`.
- */
-function formatMois(iso: string): string {
-  return MOIS_FRANCAIS[new Date(iso).getMonth()] ?? 'précédent';
-}
+// **`formatMois` a été supprimée le 14/09/2026.** C'était une seconde dérivation du mois local,
+// rendue sur le même écran que `moisLocalDe` (`src/types/suivi.ts`), et aucune assertion ne
+// distinguait la lecture locale de la lecture UTC que les deux commentaires revendiquaient. Une
+// seule dérivation désormais, dans le module pur où elle est testée — avec la raison qui vaut pour
+// les deux : `MOIS_FRANCAIS` et non `toLocaleDateString`, Hermes pouvant être construit sans ICU
+// complet et rendre un mois en anglais, invisible en CI et visible sur l'appareil.
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

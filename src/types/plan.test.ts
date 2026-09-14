@@ -1,9 +1,14 @@
 import {
   ACTIONS_EN_AVANT,
+  cadreDuPlan,
   formatIntention,
   formatIntentionDays,
   formatIntentionTiming,
   intentionKindForPoste,
+  intentionTimingsForPoste,
+  INTENTION_TIMINGS,
+  INTENTION_TIMINGS_LOISIRS,
+  INTENTION_TIMINGS_VOYAGES,
   isIntentionComplete,
   PISTES_ESTOMPEES,
   pistesDuPlan,
@@ -18,6 +23,34 @@ describe('intentionKindForPoste', () => {
     expect(intentionKindForPoste('leisure')).toBe('timing');
     expect(intentionKindForPoste('travel')).toBe('timing');
     expect(intentionKindForPoste(null)).toBe('timing');
+  });
+});
+
+describe('intentionTimingsForPoste', () => {
+  it('ne propose pas le calendrier du mois pour un voyage (C3.8)', () => {
+    // « Ce mois-ci » n'est pas une échéance pour un vol : sur les trois échéances générales, une
+    // seule tenait, donc la question revenait à demander un engagement au mois sur une décision
+    // annuelle.
+    expect(intentionTimingsForPoste('travel')).toEqual(INTENTION_TIMINGS_VOYAGES);
+    expect(intentionTimingsForPoste('leisure')).toEqual(INTENTION_TIMINGS_LOISIRS);
+  });
+
+  it('retombe sur les échéances générales plutôt que sur une liste vide', () => {
+    // Un poste inconnu — un gabarit à venir, une ligne relue d'une version antérieure — ouvrirait
+    // la feuille d'engagement sur rien, et « C'est noté » resterait inactif sans dire pourquoi.
+    expect(intentionTimingsForPoste(null)).toEqual(INTENTION_TIMINGS_LOISIRS);
+    expect(intentionTimingsForPoste('commute')).toEqual(INTENTION_TIMINGS_LOISIRS);
+  });
+
+  it('la table de relecture couvre les deux listes, sans doublon', () => {
+    // `formatIntentionTiming` lit `INTENTION_TIMINGS` et doit savoir rendre une valeur quel que
+    // soit le poste qui l'a écrite, y compris celle d'un engagement archivé dont on ne connaît
+    // plus le gabarit.
+    const valeurs = INTENTION_TIMINGS.map((t) => t.value);
+    expect(new Set(valeurs).size).toBe(valeurs.length);
+    for (const { value } of [...INTENTION_TIMINGS_LOISIRS, ...INTENTION_TIMINGS_VOYAGES]) {
+      expect(valeurs).toContain(value);
+    }
   });
 });
 
@@ -50,6 +83,11 @@ describe('formatIntentionTiming', () => {
     expect(formatIntentionTiming(null)).toBeNull();
     expect(formatIntentionTiming('valeur_inconnue')).toBeNull();
   });
+
+  it('sait relire une échéance de voyage (C3.8)', () => {
+    expect(formatIntentionTiming('au_prochain_voyage')).toBe('à mon prochain projet de voyage');
+    expect(formatIntentionTiming('avant_le_prochain_bilan')).toBe('avant mon prochain bilan');
+  });
 });
 
 describe('formatIntention', () => {
@@ -66,6 +104,66 @@ describe('isIntentionComplete', () => {
     expect(isIntentionComplete('days', [2] as IntentionDay[], null)).toBe(true);
     expect(isIntentionComplete('timing', [], null)).toBe(false);
     expect(isIntentionComplete('timing', [], 'ce_mois')).toBe(true);
+  });
+});
+
+describe('cadreDuPlan', () => {
+  const cadre = (postesEnAvant: (string | null)[], posteDuCycle: string | null) =>
+    cadreDuPlan({ postesEnAvant, posteDuCycle, nombreDActions: postesEnAvant.length });
+
+  it('nomme le poste quand toutes les actions y portent', () => {
+    expect(cadre(['commute', 'commute'], 'commute').intro).toBe(
+      'Deux actions pour ton trajet domicile-travail.'
+    );
+    expect(cadre(['leisure'], 'leisure').intro).toBe('Une action pour tes sorties du week-end.');
+  });
+
+  it('ne pose pas de cap chiffré sur un plan sans action (C2.5, puis C3.8)', () => {
+    // Le cas est devenu courant, pas rare : depuis que les gabarits de loisirs sont refusés aux
+    // sorties rares, tout cycliste et tout profil sédentaire a un plan à zéro action. La carte du
+    // cap s'affichait alors juste au-dessus de « Tu fais déjà l'essentiel sur ce poste ».
+    const vide = cadreDuPlan({ postesEnAvant: [], posteDuCycle: 'commute', nombreDActions: 0 });
+    expect(vide.intro).toBeNull();
+    expect(vide.chiffreLeCap).toBe(false);
+
+    // Et la garde porte sur le nombre **total** d'actions, pas sur celles mises en avant : les deux
+    // peuvent différer depuis C4.6, où le plan fige toutes les pistes et l'écran en montre deux.
+    expect(
+      cadreDuPlan({ postesEnAvant: [], posteDuCycle: 'commute', nombreDActions: 3 }).chiffreLeCap
+    ).toBe(false);
+  });
+
+  it('dit que le plan est allé chercher ailleurs, et que le cap ne mesure pas ça', () => {
+    const ailleurs = cadre(['travel', 'leisure'], 'commute');
+    expect(ailleurs.intro).toBe(
+      'Deux actions, sur d’autres postes que ton trajet domicile-travail.'
+    );
+    expect(ailleurs.chiffreLeCap).toBe(true);
+    expect(ailleurs.noteDuCap).toBe(
+      'Le cap porte sur ton trajet domicile-travail ; ces actions portent ailleurs.'
+    );
+  });
+
+  it('compte celles qui débordent quand le plan est mixte', () => {
+    const mixte = cadre(['commute', 'travel'], 'commute');
+    expect(mixte.intro).toBe(
+      'Deux actions, dont une action ailleurs que sur ton trajet domicile-travail.'
+    );
+    expect(mixte.noteDuCap).toBe(
+      'Le cap porte sur ton trajet domicile-travail ; cette action porte ailleurs.'
+    );
+  });
+
+  it('ne met la note qu’au-dessus d’un plan qui déborde', () => {
+    expect(cadre(['commute', 'commute'], 'commute').noteDuCap).toBeNull();
+  });
+
+  it('un poste inconnu reste nommable : la forme insérable a son repli', () => {
+    // Le repli côté client est celui de la boucle `extras`, « tes sorties du week-end » — un
+    // libellé un peu décalé plutôt qu'une formule vague, décision de C2.6. Ce que ce test garde
+    // n'est pas ce mot-là mais le fait que l'intro reste une phrase : sans repli, elle s'écrirait
+    // « Une action pour . ».
+    expect(cadre([null], null).intro).toBe('Une action pour tes sorties du week-end.');
   });
 });
 

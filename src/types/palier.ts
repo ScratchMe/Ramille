@@ -8,7 +8,7 @@
 // « l'écart à 2050 est abstrait et lointain, et le registre anxiogène tend à paralyser plutôt
 // qu'à mobiliser ». La barre 2050 cède donc sa place au palier, et 2050 reste en mots.
 //
-// ## Pourquoi le palier est un pourcentage de soi, et pas une marche partagée
+// ## Pourquoi le palier est adossé au cap de la saison
 //
 // Deux mécaniques ont été écartées sur ces mêmes données :
 //
@@ -18,10 +18,36 @@
 //   - **marches absolues partagées** (2,8 → 2,0 → 1,4 → 1,0 → 0,6) : la première marche de
 //     quelqu'un à 15,8 t reste à −82 %. On remplace un gouffre par un gouffre.
 //
-// Le cap de la saison, lui, est **le même effort relatif pour tout le monde** et il est déjà
-// calculé, figé sur `plan_cycles` et affiché sur `/plan` : le palier n'introduit donc aucun
-// nouveau chiffre à sourcer ni à tenir cohérent. Et il est atteignable par construction,
-// puisque les actions du plan sont chiffrées pour y mener.
+// Le cap de la saison, lui, est déjà calculé, figé sur `plan_cycles` et affiché sur `/plan` : le
+// palier n'introduit donc aucun nouveau chiffre à sourcer ni à tenir cohérent, et il est
+// atteignable par construction, puisque les actions du plan sont chiffrées pour y mener.
+//
+// ## Ce que ce cap est vraiment, et ce qu'il n'est pas (C3.11, constat A3-2)
+//
+// **Ce n'est pas « le même effort relatif pour tout le monde », et ce fichier l'a affirmé
+// pendant deux increments.** Le cap vaut 20 % de `plan_cycles.baseline_co2_kg_year`, qui est le
+// **poste dominant** — décision `v1-07` §3.3, prise pour le plan, parce que c'est le poste que
+// les actions savent atteindre. Rapporté au **total**, que la restitution affiche, le même cap
+// vaut donc :
+//
+//   - **−18 %** pour qui a un poste dominant à 90 % de son empreinte ;
+//   - **−6,8 %** pour qui est à 34 %.
+//
+// C'est-à-dire exactement la propriété pour laquelle la trajectoire linéaire avait été écartée
+// deux paragraphes plus haut, et dans le même sens : elle pénalise les profils diversifiés. Le
+// commentaire d'origine décrivait une mécanique qui n'a jamais été celle du code, et le test qui
+// la « prouvait » fabriquait un cap égal à 20 % du **total** — donc il éprouvait la phrase, pas
+// la fonction.
+//
+// **Arbitrage retenu le 14/09/2026 : on garde le cap du poste dominant, et on le dit.** Normaliser
+// sur le total donnerait un palier que le plan ne sait pas atteindre — les actions vivent sur un
+// poste, pas sur l'empreinte entière —, donc une marche annoncée puis démentie par l'écran
+// suivant. Ce qui change est la **phrase** : `palierNote` nomme désormais le poste (« une marche
+// à 800 kg de moins sur l'année **sur ton trajet domicile-travail** »), ce qui la rend à la fois
+// vraie et plus facile. Une marche non située se lit comme une exigence sur tout.
+//
+// `nextPalier` n'a donc pas bougé : elle reçoit le cap et le retranche du total. Ce fichier ne
+// connaît pas le poste, et ne doit pas — c'est la copie qui le nomme, là où elle s'écrit.
 
 export type Palier = {
   /** Empreinte visée, en kg CO2e/an. */

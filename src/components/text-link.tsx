@@ -21,6 +21,7 @@ export function TextLink({
   disabled,
   role = 'button',
   hint,
+  expanded,
   containerStyle,
   style,
   ...textProps
@@ -32,6 +33,16 @@ export function TextLink({
   role?: 'button' | 'link';
   /** Précision annoncée après le libellé, quand l'intitulé seul est ambigu hors contexte. */
   hint?: string;
+  /**
+   * Le lien ouvre et referme un contenu, et voici s'il est ouvert.
+   *
+   * Sans lui, une bascule ne s'annonce que par son libellé — ce qui oblige à écrire « Replier »
+   * à la place du titre, donc à perdre de quoi il s'agit pour qui rouvre l'écran. Avec, le
+   * libellé reste stable et le lecteur d'écran dit « développé » / « réduit ». Laisser
+   * `undefined` sur un lien qui n'ouvre rien : `expanded: false` annoncerait un contenu
+   * repliable là où il n'y en a pas.
+   */
+  expanded?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<TextStyle>;
 } & Omit<ThemedTextProps, 'children' | 'style' | 'onPress'>) {
@@ -42,7 +53,7 @@ export function TextLink({
       accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityHint={hint}
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!disabled, ...(expanded === undefined ? {} : { expanded }) }}
       style={[styles.cible, containerStyle]}
     >
       <ThemedText {...textProps} style={style}>
