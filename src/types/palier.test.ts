@@ -15,13 +15,41 @@ describe('nextPalier — au-dessus du repère', () => {
     });
   });
 
-  it('donne le même effort relatif quel que soit le point de départ', () => {
-    // C'est la propriété qui a fait retenir cette mécanique : la trajectoire linéaire, elle,
-    // offrait −609 kg/an à 15,8 t et −6 kg/an à 0,76 t.
-    const gros = nextPalier(15820, 3164, CIBLE)!;
-    const petit = nextPalier(1330, 266, CIBLE)!;
-    expect(gros.reductionKg / 15820).toBeCloseTo(0.2, 5);
-    expect(petit.reductionKg / 1330).toBeCloseTo(0.2, 5);
+  // **Ce test éprouvait une phrase, pas la fonction** (C3.11, constat A3-2). Il s'intitulait
+  // « donne le même effort relatif quel que soit le point de départ » et alimentait `nextPalier`
+  // avec un cap valant exactement 20 % du **total** — une valeur que la production ne produit
+  // jamais. Le cap est 20 % de `baseline_co2_kg_year`, c'est-à-dire du **poste dominant**
+  // (`v1-07` §3.3). Le test confirmait donc le commentaire d'en-tête, qui était faux, et aucun des
+  // deux ne regardait le SQL.
+  //
+  // Ce qu'on épingle à la place est la vraie propriété, avec ses conséquences assumées : à cap
+  // égal la marche est la même en kilos, et sa part du total dépend de la concentration du
+  // profil. Deux personnes au même total et au même pourcentage de réduction sur leur poste
+  // dominant n'ont pas la même marche — c'est voulu, c'est ce que les actions savent atteindre,
+  // et c'est ce que `palierNote` dit maintenant en nommant le poste.
+  it('taille la marche sur le poste dominant, donc pas sur la même part du total', () => {
+    const total = 4380;
+    // Poste dominant à 90 % du total, cap de 20 % de ce poste.
+    const concentre = nextPalier(total, 0.2 * 0.9 * total, CIBLE)!;
+    // Même total, poste dominant à 34 % : même règle, même pourcentage, marche plus petite.
+    const diversifie = nextPalier(total, 0.2 * 0.34 * total, CIBLE)!;
+
+    expect(concentre.reductionKg / total).toBeCloseTo(0.18, 5);
+    expect(diversifie.reductionKg / total).toBeCloseTo(0.068, 5);
+    expect(concentre.reductionKg).toBeGreaterThan(diversifie.reductionKg);
+  });
+
+  it('retranche le cap tel qu’il est donné, sans jamais le dériver du total', () => {
+    // La garde qui empêche de « corriger » `nextPalier` vers une normalisation sur le total : à
+    // cap identique, la marche est identique, quel que soit le total. Une normalisation ferait
+    // varier `reductionKg` avec `totalKg`.
+    //
+    // Les totaux restent au-dessus de `CIBLE + 768` : en dessous, c'est l'autre règle qui parle —
+    // la marche s'arrête au repère 2050 et devient plus courte que le cap, ce que le test suivant
+    // éprouve déjà.
+    for (const total of [1500, 4380, 15820]) {
+      expect(nextPalier(total, 768, CIBLE)!.reductionKg).toBe(768);
+    }
   });
 
   it('s’arrête au repère quand le cap le dépasserait, et le signale comme tel', () => {

@@ -25,8 +25,11 @@ import {
   partDuTotal,
   pourcentageDominant,
   urlDePartage,
+  equivalenceNote,
 } from '@/types/resultat';
 import { BarreContour } from '@/components/suivi/barre-contour';
+import { BlocMethode } from '@/components/suivi/bloc-methode';
+import { FORME_INSERABLE } from '@/constants/postes';
 import { formatDate, variationDepuisLeBilanPrecedent, moisLocalDe } from '@/types/suivi';
 import {
   loadBilanPrecedent,
@@ -491,6 +494,11 @@ export default function BilanResultat() {
   // En relecture, `capKg` est nul par construction (cf. le chargement) : rien à proposer, le
   // cap n'appartient pas au bilan qu'on relit.
   const palier = nextPalier(results.total_co2_kg_year, capKg, TARGET_2050_TRANSPORT_T * 1000);
+  // **Le poste que la marche nomme** (C3.11). Le cap vaut 20 % de `baseline_co2_kg_year`, qui est
+  // le poste dominant et non le total : sans le nommer, la phrase se lit comme une marche sur
+  // l'empreinte entière. Repli sur le libellé snapshoté si le poste sortait un jour de la liste.
+  const posteDeLaMarche = FORME_INSERABLE[results.dominant_poste] ?? results.dominant_poste_label;
+  const equivalenceDeLaMarche = palier ? equivalenceNote(palier) : null;
   // Le repère 2050 revient dès qu'on passe sous la moyenne : au-dessus il est un gouffre, en
   // dessous un horizon crédible. Cf. `showsTarget2050`.
   const montreRepere2050 = showsTarget2050(results.total_co2_kg_year, FRANCE_AVERAGE_TRANSPORT_T * 1000);
@@ -647,6 +655,12 @@ export default function BilanResultat() {
                 la saison, l'écart entre deux bilans) : il vaut 30, et la hiérarchie tient
                 puisque la décision dominante reste au-dessus, à 32. */}
             <ThemedText type="salient">{formatTonnes(results.total_co2_kg_year)}</ThemedText>
+            {/* **La question « d'où vient ce chiffre ? » se pose ici et nulle part ailleurs**
+                (C3.2). Sous le total, replié, parce que c'est le moment où elle naît — et parce
+                que ce total ne se compare à aucun autre simulateur sans savoir qu'il compte la
+                fabrication. La date passée est celle de **soumission** : c'est elle qui fige les
+                facteurs (`emission_factor(mode, date)`), donc elle qui date la méthode. */}
+            <BlocMethode dateDuBilan={submittedAt} />
           </View>
 
           <ThemedView type="backgroundElement" style={styles.compareCard}>
@@ -761,8 +775,17 @@ export default function BilanResultat() {
             {/* En relecture il n'y a jamais de palier, donc c'est toujours `comparisonNote` qui
                 parle — et elle ne promet aucun plan. */}
             <ThemedText type="small" themeColor="textSecondary">
-              {palier ? palierNote(palier, montreRepere2050) : comparisonNote(results)}
+              {palier
+                ? palierNote(palier, montreRepere2050, posteDeLaMarche)
+                : comparisonNote(results)}
             </ThemedText>
+            {/* L'ordre de grandeur de la marche, sur sa propre ligne (C3.2). Il disparaît sous un
+                vol entier : « 0,3 vol » n'est pas un ordre de grandeur. */}
+            {palier && equivalenceDeLaMarche && (
+              <ThemedText type="small" themeColor="textTertiary">
+                {equivalenceDeLaMarche}
+              </ThemedText>
+            )}
             <ThemedText type="code" themeColor="textTertiary">
               {CARBON_SOURCE_LABEL}
             </ThemedText>

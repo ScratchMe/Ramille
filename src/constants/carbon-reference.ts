@@ -124,3 +124,58 @@ export function formatTonnesTexte(value: number): string {
   const nombre = formatTonnesShort(arrondi).replace(' t', '').replace(/,0$/, '');
   return `${nombre} ${Math.abs(arrondi) < 2 ? 'tonne' : 'tonnes'}`;
 }
+
+// ---------------------------------------------------------------------------------------------
+// L'équivalence de la marche (C3.2, point 2)
+// ---------------------------------------------------------------------------------------------
+//
+// `v1-07` §3.5 relevait que « 2,9 t reste abstrait » et proposait des équivalences concrètes ;
+// la ligne du plan d'exécution a été cochée « fait » alors que seule l'autre moitié du point
+// l'était (la reformulation du « 150 % de la moyenne »). Les équivalences n'ont jamais existé.
+//
+// Quatre décisions, et chacune retire une manière de se tromper :
+//
+//   1. **Accrochée à la marche, pas au total.** Une équivalence sur le total (« ton empreinte,
+//      c'est N vols ») est un jugement sur la personne posé en grand. Sur la marche, c'est un
+//      ordre de grandeur de l'effort proposé — la même information sans le verdict.
+//   2. **Figée, pas calculée à chaud.** La valeur ci-dessous est un littéral et non un appel à
+//      `emission_factor` : elle sert à rendre une phrase saisissable, pas à chiffrer un bilan. Si
+//      la synchronisation trimestrielle fait bouger le facteur avion de quelques pour cent, cette
+//      phrase ne doit pas changer — c'est ce que « figée » veut dire ici. Le jour où l'écart
+//      devient visible, on reprend le littéral **et** son commentaire, jamais l'un sans l'autre.
+//   3. **Ni alimentaire, ni culpabilisante.** Le repère est un vol, c'est-à-dire un déplacement —
+//      donc dans le sujet du produit. Les équivalences en steaks ou en douches sont hors sujet et
+//      se lisent comme un reproche, ce que la spec §2 exclut.
+//   4. **Rien plutôt qu'une fraction.** Sous un vol, la phrase disparaît : « 0,3 vol » n'est pas
+//      un ordre de grandeur, c'est un chiffre de plus à interpréter.
+
+/**
+ * Distance d'un vol court ou moyen-courrier, telle que le bilan la compte.
+ *
+ * C'est `dist_flight_short` de `recompute_assessment_results`, repris ici pour que l'équivalence
+ * parle de la **même** chose que le calcul — un « vol » dans cette phrase est exactement le vol
+ * que le questionnaire fait compter.
+ */
+export const EQUIVALENCE_VOL_KM = 1500;
+
+/**
+ * Ce que pèse ce vol, en kg CO₂e.
+ *
+ * Dérivé du facteur ACV du mode `avion_court_moyen_courrier` : 0,184661 kg/km × 1 500 km =
+ * 276,99, arrondi à l'unité. Source du facteur : ADEME Base Empreinte, endpoint ACV complète de
+ * l'API Impact CO2 (`avion-moyencourrier`), relevé le 05/09/2026 — migration
+ * `20260905100000_facteurs_acv_complete.sql`.
+ */
+export const EQUIVALENCE_VOL_KG = 277;
+
+/**
+ * L'équivalence de la marche, ou `null` quand il n'y a rien de saisissable à dire.
+ *
+ * Rend le nombre de vols, arrondi, jamais en dessous de 1 — sous un vol entier la fonction rend
+ * `null` (décision 4 ci-dessus). L'appelant écrit la phrase : cette fonction ne connaît ni le
+ * registre de l'écran ni le fait que la marche soit une exigence ou une marge offerte.
+ */
+export function volsEquivalents(reductionKg: number): number | null {
+  if (!Number.isFinite(reductionKg) || reductionKg < EQUIVALENCE_VOL_KG) return null;
+  return Math.round(reductionKg / EQUIVALENCE_VOL_KG);
+}

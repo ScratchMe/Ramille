@@ -483,6 +483,24 @@ comme un « objectif non atteint » retomberait dans le registre que le produit 
 
 ### 3.4 La trajectoire 2050 doit être progressive, pas frontale
 
+> **Encadré du 14/09/2026 (C3.11, constat A3-2) — cette section a décrit le cap comme « le même
+> effort relatif pour tout le monde », et c'est faux.** Le cap vaut 20 % de
+> `plan_cycles.baseline_co2_kg_year`, qui est le **poste dominant** (§3.3 ci-dessus, décision prise
+> pour le plan), tandis que la restitution retranche ce cap du **total**. Rapporté au total, le
+> même cap vaut donc −18 % pour qui a un poste dominant à 90 % de son empreinte et −6,8 % pour qui
+> est à 34 % : c'est-à-dire exactement la propriété qui a fait écarter la trajectoire linéaire dans
+> le tableau ci-dessous, et dans le même sens — elle pénalise les profils diversifiés. Le test qui
+> « prouvait » l'égalité alimentait `nextPalier` avec un cap égal à 20 % du total, une valeur que
+> la production ne produit jamais : il éprouvait la phrase, pas la fonction.
+>
+> **Arbitrage retenu : on garde le cap du poste dominant, et on le dit.** Normaliser sur le total
+> donnerait un palier que le plan ne sait pas atteindre — les actions vivent sur un poste, pas sur
+> l'empreinte entière —, donc une marche annoncée par la restitution puis démentie par l'écran
+> suivant. Ce qui change est la **phrase** : `palierNote` nomme désormais le poste (« une marche à
+> 800 kg de moins sur l'année **sur ton trajet domicile-travail** »). Une marche non située se lit
+> comme une exigence sur tout. `nextPalier` n'a pas bougé ; le détail est en tête de
+> `src/types/palier.ts`, et deux tests remplacent celui qui fabriquait son cap.
+
 Aujourd'hui la restitution affiche une barre statique à 0,5 t face à 2,9 t. Présenté brut, un
 écart ×6 décourage — précisément l'effet que la spec §4 cherche à éviter (« l'écart à 2050 est
 abstrait et lointain, et le registre anxiogène tend à paralyser plutôt qu'à mobiliser »).
@@ -606,6 +624,28 @@ qui vise un registre institutionnel, un chiffre sans source n'engage personne.
 
 ### 3.5 Deux points de ton
 
+> **Encadré du 14/09/2026 (C3.2) — la ligne « fait » du tableau §4 ne couvrait que la moitié de
+> cette section.** L'étape 3 y est cochée pour « §3.5 » ; seule la reformulation du « 150 % de la
+> moyenne » avait été livrée. **Les équivalences n'ont jamais existé**, et c'est le genre de
+> demi-vérité qu'un tableau de suivi rend indétectable — la ligne agrège quatre sujets, donc elle
+> se coche dès que le plus visible est réglé.
+>
+> Livré maintenant, avec quatre décisions qui ne sont pas dans le texte d'origine :
+> l'équivalence est accrochée à la **marche** et non au total (sur le total, « ton empreinte, c'est
+> N vols » est un verdict posé en grand ; sur la marche, c'est l'ordre de grandeur de l'effort
+> proposé) ; elle est **figée** dans `carbon-reference.ts` et non calculée à chaud, donc sans appel
+> réseau — l'endpoint d'équivalences de l'API Impact CO2, que cette section suggérait, aurait fait
+> dépendre une phrase de la disponibilité d'un service ; le repère est un **vol**, donc un
+> déplacement, et jamais une équivalence alimentaire, qui se lit comme un reproche ; et sous un vol
+> entier la phrase **disparaît**, « 0,3 vol » n'étant pas un ordre de grandeur.
+>
+> Le même chantier ajoute le bloc « Comment ce chiffre est calculé » sous le total
+> (`src/constants/methodologie.ts`), qui dit la source, le périmètre ACV — la raison pour laquelle
+> ce total ne se compare pas à celui d'un simulateur d'usage — et assume par écrit les sept
+> constantes du calcul. `scripts/verifier-hypotheses-calcul.mjs` les compare en CI à celles de
+> `recompute_assessment_results`, faute de quoi l'écran expliquerait un jour un calcul que la base
+> ne fait plus.
+
 - « **Tu es à 150 % de la moyenne française** » (`bilan/resultat.tsx:180`) est un jugement
   déguisé en fait. À reformuler, et à ne pas afficher du tout pour les profils structurellement
   captifs (rural, TC inexistants) une fois le contexte B4 exploité (T9).
@@ -637,7 +677,7 @@ de signe entre les deux bases.
 | 0 | Passage de tous les facteurs à l'ACV complète | §1.5 | **fait** — migration `20260905100000` |
 | 1 | Facteurs avion long-courrier et train longue distance | T1, T2, T4, T13 | **fait** — migration `20260904140000` |
 | 2 | Synchronisation ADEME automatisée | T3, #27 | **fait** — migration `20260904160000` |
-| 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | **fait** — migration `20260904180000` |
+| 3 | Expiration des check-ins périmés, regénération du plan au re-bilan, `NaN`, formulation | T5, T6, T8, §3.5 | **fait** — migration `20260904180000` ; **la moitié « équivalences » de §3.5 ne l'était pas** et a été livrée le 14/09/2026 par C3.2, cf. l'encadré de §3.5 |
 | 4 | Écran « Mon suivi » + re-bilan prérempli | T7, §3.2 | **fait** — `src/app/suivi.tsx`, `src/types/suivi.ts` |
 | 5 | Canal de rappel email | §3.1 | **fait** — migration `20260904200000` (envoi en attente d'un fournisseur, cf. §3.1) |
 | 6a | Actions chiffrées, cap affiché, contexte B4 exploité | T9, T10, §3.3 (1 et 3) | **fait** — migration `20260905130000` |

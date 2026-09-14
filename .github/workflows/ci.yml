@@ -38,6 +38,15 @@ jobs:
       # d'api/share-card.ts raconte le coût de diagnostic.
       - run: npm run typecheck:api
       - run: npm run lint
+      # Cinquième garde de la famille « ce qui se lit n'est pas ce qui s'exécute » (C3.2). Le bloc
+      # « Comment ce chiffre est calculé » de la restitution affiche les hypothèses du calcul —
+      # 45 semaines, 1 500 km par vol, 0,25 sortie par semaine — recopiées à la main depuis
+      # `recompute_assessment_results`. Une constante changée d'un côté et pas de l'autre donne un
+      # écran qui explique un calcul que la base ne fait plus, et rien d'autre ne le verrait : le
+      # typecheck ne traverse pas le SQL, et Jest ne peut pas lire les migrations (le tsconfig
+      # racine exclut les types Node, volontairement). Ici, sans export préalable, contrairement
+      # aux quatre autres gardes.
+      - run: node scripts/verifier-hypotheses-calcul.mjs
       # Les dépendances n'étaient regardées par aucune des trois étapes. expo-doctor est la
       # garde la moins chère : versions incohérentes avec le SDK, modules natifs mal déclarés,
       # configuration d'app qui ne correspond plus aux paquets installés — tout ce qui ne se

@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
 import type { BilanAnswers, LeisureFrequency } from '@/types/bilan';
 
@@ -38,15 +39,36 @@ export function LeisureFrequencyStep({
       )}
       <View style={styles.choices}>
         {OPTIONS.map((option) => (
-          <ChoiceRow
-            key={option.value}
-            label={option.label}
-            selected={answers.leisure_frequency === option.value}
-            // Aucune remise à zéro ici : `normaliserReponses` s'applique après chaque `update` et
-            // c'est elle qui efface ce que « Rarement » rend impossible. Deux listes, c'est deux
-            // listes qui divergent.
-            onPress={() => update({ leisure_frequency: option.value })}
-          />
+          <View key={option.value} style={styles.choix}>
+            <ChoiceRow
+              label={option.label}
+              selected={answers.leisure_frequency === option.value}
+              // Aucune remise à zéro ici : `normaliserReponses` s'applique après chaque `update` et
+              // c'est elle qui efface ce que « Rarement » rend impossible. Deux listes, c'est deux
+              // listes qui divergent.
+              onPress={() => update({ leisure_frequency: option.value })}
+            />
+            {/* **« Rarement » fait disparaître les questions suivantes, et rien ne le disait**
+                (C3.7, arbitrage D5, constats A2-11 et A12-22). Choisir cette réponse saute l'étape
+                du détail : plus de mode, plus de distance. Le calcul continue pourtant — une base
+                résiduelle, dont le chantier C2.5 a retiré toutes les conséquences visibles (elle
+                ne nomme plus de mode nulle part, et le plan refuse d'en tirer des actions) mais qui
+                pèse toujours dans le total. La personne voyait donc un poste « loisirs » non nul
+                sans avoir rien déclaré.
+
+                La ligne se rend **sous la réponse qui la provoque** et seulement quand elle est
+                choisie : posée sous le groupe, elle se lit comme une note sur les trois. Même
+                registre `code` que la ligne d'hypothèses des longs trajets et des vols, et mêmes
+                valeurs interpolées depuis `HYPOTHESES` — un script de CI les compare aux
+                constantes du calcul. */}
+            {option.value === 'rarely' && answers.leisure_frequency === 'rarely' && (
+              <ThemedText type="code" themeColor="textTertiary" style={styles.base}>
+                on comptera une petite base par défaut ·{' '}
+                {virgule(HYPOTHESES.sortiesParSemaine.rarement)} sortie par semaine,{' '}
+                {HYPOTHESES.distanceSortieParDefautKm} km
+              </ThemedText>
+            )}
+          </View>
         ))}
       </View>
       {commuteSkipped && (
@@ -60,9 +82,18 @@ export function LeisureFrequencyStep({
   );
 }
 
+// Virgule décimale écrite à la main : `toLocaleString('fr-FR')` rend « 0.25 » sur un Hermes
+// construit sans ICU complet.
+function virgule(valeur: number): string {
+  return String(valeur).replace('.', ',');
+}
+
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   choices: { gap: Spacing.two + 2 },
+  choix: { gap: Spacing.one },
+  // La ligne s'aligne sur le texte de la réponse au-dessus, pas sur le bord de l'écran.
+  base: { paddingLeft: Spacing.three },
   notice: { borderRadius: Radius.field, padding: Spacing.three },
   noticeText: { lineHeight: 21 },
 });

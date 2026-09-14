@@ -21,6 +21,8 @@ import {
   FRANCE_AVERAGE_TRANSPORT_T,
   TARGET_2050_TRANSPORT_T,
   formatTonnesShort,
+  EQUIVALENCE_VOL_KM,
+  volsEquivalents,
 } from '@/constants/carbon-reference';
 import { formatTonnes } from '@/lib/format';
 import type { Palier } from '@/types/palier';
@@ -322,8 +324,16 @@ export function comparisonNote(results: ResultatBilan): string {
  * l'écran n'y propose plus que « Revenir à mon suivi ». La relecture affiche `comparisonNote`,
  * qui ne promet rien.
  */
-export function palierNote(palier: Palier, repereVisible: boolean): string {
+export function palierNote(palier: Palier, repereVisible: boolean, poste: string): string {
   const reduction = formatTonnes(palier.reductionKg);
+  // **La marche se dit sur le poste dominant, et c'est la moitié de C3.11.** Le cap de la saison
+  // vaut 20 % de `baseline_co2_kg_year`, qui est le poste **dominant** (décision `v1-07` §3.3,
+  // prise pour le plan) — pas 20 % du total. Ne pas le nommer laissait lire « une marche à 300 kg
+  // de moins » comme une marche sur l'empreinte entière, c'est-à-dire une exigence d'autant plus
+  // dure que le profil est diversifié : −18 % du total pour qui a un poste à 90 %, −6,8 % pour qui
+  // est à 34 %. Le poste nommé rend la phrase vraie **et** plus facile : c'est là que les actions
+  // du plan savent aller chercher le gain.
+  const surLePoste = ` sur ${poste}`;
 
   // Déjà sous le repère. Le registre bascule : ce n'est plus une marche à franchir mais une
   // marge qui profite ailleurs. Rien n'est demandé, rien n'est attendu — et surtout aucune
@@ -332,19 +342,45 @@ export function palierNote(palier: Palier, repereVisible: boolean): string {
     return (
       `Tu es déjà sous le repère transport 2050. Ce que tu n’émets pas laisse de la marge ` +
       `ailleurs — pour tes autres postes, ou pour ceux dont les déplacements sont contraints. ` +
-      `S’il te reste de l’envie : ${reduction} de moins sur l’année.`
+      `S’il te reste de l’envie : ${reduction} de moins sur l’année${surLePoste}.`
     );
   }
 
   // Le palier tombe pile sur le repère : la barre porte alors son vrai nom, et la phrase dit
   // ce qu'il faut pour l'atteindre.
+  //
+  // **Cette branche ne nomme aucun poste, et c'est voulu** : la réduction n'y est plus le cap
+  // mais ce qui sépare du repère 2050, donc une distance sur le **total**. Y coller « sur ton
+  // trajet domicile-travail » ferait dire à la phrase l'inverse de ce qu'elle mesure.
   if (palier.isTarget2050) {
     return `Le repère 2050 est à ta portée : ${reduction} de moins sur l’année, et tu y es.`;
   }
 
   if (repereVisible) {
     // Le repère est déjà sur l'écran : la phrase n'a pas à le rappeler, elle nomme la marche.
-    return `Une marche à ${reduction} de moins sur l’année. Le plan qui suit propose de quoi la franchir.`;
+    return `Une marche à ${reduction} de moins sur l’année${surLePoste}. Le plan qui suit propose de quoi la franchir.`;
   }
-  return `Une marche à ${reduction} de moins sur l’année. Le plan qui suit propose de quoi la franchir ; 2050 se joue palier après palier.`;
+  return `Une marche à ${reduction} de moins sur l’année${surLePoste}. Le plan qui suit propose de quoi la franchir ; 2050 se joue palier après palier.`;
+}
+
+/**
+ * L'ordre de grandeur de la marche, en vols — ou `null` quand il n'y a rien de saisissable à dire
+ * (C3.2, point 2).
+ *
+ * Rendue sur sa **propre ligne** plutôt que collée à `palierNote` : celle-ci porte déjà deux
+ * informations (ce qu'il faut retirer, et où le plan va le chercher), et une troisième
+ * proposition dans la même phrase en fait un paragraphe qu'on ne lit plus. C'est aussi ce qui
+ * permet à l'écran de l'omettre sans réécrire la phrase principale.
+ *
+ * Le registre est volontairement plat — « pour situer », pas « c'est comme si tu ». L'équivalence
+ * décrit l'**effort proposé**, jamais ce que la personne a fait : accrochée au total, la même
+ * phrase deviendrait un verdict (cf. l'en-tête de `carbon-reference.ts`).
+ */
+export function equivalenceNote(palier: Palier): string | null {
+  const vols = volsEquivalents(palier.reductionKg);
+  if (vols === null) return null;
+  // Séparateur de milliers écrit à la main : `toLocaleString('fr-FR')` rendrait « 1,500 » sur un
+  // Hermes construit sans ICU complet, c'est-à-dire une virgule décimale au milieu d'une distance.
+  const km = String(EQUIVALENCE_VOL_KM).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+  return `Pour situer : à peu près ${vols === 1 ? 'un vol' : `${vols} vols`} de ${km} km.`;
 }
