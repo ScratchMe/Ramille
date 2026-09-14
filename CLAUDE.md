@@ -1496,7 +1496,17 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   voit pas à la lecture d'un chemin** : deux des trois écarts au canvas viennent d'une capture des
   cinq expressions × cinq tailles × cinq saisons, et les deux assertions qui en sortent — la
   distance **réelle** entre accessoire et visage, et la lisibilité de chaque élément — valent mieux
-  que la capture. Exclus, et ils doivent le rester : la carte de partage (`api/share-card.ts`), le
+  que la capture. **Le quatrième écart vient du même genre de relevé, poussé d'un cran**
+  (14/09/2026) : le rayon extérieur du pompon passe de 5,6 à **7,1**, parce qu'à 5,6 le cerne clair
+  qui le sépare de la calotte mesurait 0,71 px de 28 à 40 — sous le plancher de 1,3 px, franchi
+  seulement au-dessus de 76, c'est-à-dire sur le seul écran de lancement. Un rendu rastérisé à la
+  vraie taille puis agrandi sans lissage montre qu'aux tailles courantes il ne se lit **pas du
+  tout** : le pompon devient un point chaud sur une calotte chaude. Deux choses à ne pas défaire —
+  c'est le rayon **extérieur** qu'on ouvre et jamais le cœur qu'on rétrécit (le cœur fait le deux
+  tons, et il porte le dessin à 168 px), et 7,1 plutôt que 7,0 parce que l'arrondi au centième
+  ramènerait le cerne à 1,2997 px à `size` 41, soit sous le seuil de trois dix-millièmes. Le pompon
+  vaut alors 56 % de la largeur de la calotte à `k` maximal et son bord haut tombe à y = 1,35 : c'est
+  la borne du `viewBox`, donc on ne l'ouvre pas davantage. Exclus, et ils doivent le rester : la carte de partage (`api/share-card.ts`), le
   favicon, `mascot-mark.svg`.
   **Elle parle, et tout ce qu'elle dit vit dans `src/constants/mascotte.ts`** (`RAMILLE`),
   rendu par `RamilleDit` — jamais une phrase écrite dans un écran. Trois règles, gardées par
@@ -1830,15 +1840,25 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   sans compteur de génération à maintenir. Le rappel passé à `useRafraichirAuRetour` doit être
   stable (`useCallback`), sinon son effet de focus se réabonne à chaque rendu et fait tourner
   chargement et rendu l'un dans l'autre.
-- **Une page d'un pager doit pouvoir défiler, sinon elle coupe** (contre-lecture de la vague 6).
-  Les quatre pages de `/onboarding` sont des boîtes à hauteur fixe, égale au viewport : ce qui
-  dépasse était rogné sans un mot, et aucune étape ne peut l'absorber — elles centrent leur contenu
-  et les hauteurs de ligne ne se compriment pas. Chaque page est donc une `ScrollView` verticale à
-  `contentContainerStyle: { flexGrow: 1, minHeight: hauteur }` — `minHeight` et non `height`, pour
-  qu'au-dessus de cette taille la page se comporte exactement comme avant, et seulement une fois la
-  hauteur **mesurée**, sinon l'instantané serveur dont dépend l'hydratation est rompu. Le fait
-  mesuré qui va avec : l'étape 1 fait 890 px à 360 de large et 896 à 390, donc elle ne tient dans
-  aucun téléphone courant et le lien « J'ai déjà un compte » y était coupé (§11.13 de `v1-13`).
+- **Une page d'un pager doit pouvoir défiler, sinon elle coupe — mais `minHeight` a un effet de
+  bord qu'il faut connaître.** Les quatre pages de `/onboarding` étaient des boîtes à hauteur fixe
+  égale au viewport : ce qui dépassait était rogné sans un mot, et aucune étape ne peut l'absorber —
+  elles centrent leur contenu et les hauteurs de ligne ne se compriment pas. Chaque page est donc une
+  `ScrollView` verticale à `contentContainerStyle: { flexGrow: 1, minHeight: hauteur }` — et
+  seulement une fois la hauteur **mesurée**, sinon l'instantané serveur dont dépend l'hydratation est
+  rompu.
+  **Sous ce `minHeight`, une hauteur n'est plus *définie*** (relevé au rendu le 14/09/2026) : un
+  enfant en `flex: 1` ne se résout plus sur l'espace restant mais sur sa taille **max-content**. Deux
+  conséquences, invisibles à la lecture du code et toutes deux corrigées là où elles naissent.
+  L'illustration de l'étape 1, dont le `viewBox` est carré, réclamait (largeur − 48) px sur tous les
+  téléphones — d'où un contenu constant à ~890 px et « Découvrir mon impact » 91 px sous le pli à
+  360 × 640 ; elle est **plafonnée à 30 % de la hauteur de page** (`PART_ILLUSTRATION`), une part et
+  non un nombre de pixels, sans quoi un grand téléphone garderait une bande vide. Et le `ScrollView`
+  interne de l'étape 2 s'étirait à ses 745 px de contenu, si bien que la page entière défilait,
+  **pied compris** : elle est la seule des quatre construite avec un corps qui défile sous un pied
+  épinglé, donc sa page reçoit une hauteur **définie** (`contenuDePageFixe`) et non un minimum. La
+  règle générale qui en sort : une page qui gère son propre débordement veut `height`, une page qui
+  n'en a pas veut `minHeight`. Détail et mesures en §11.13 et §11.14 de `v1-13`.
 - **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Charger à
   chaque retour transforme une lecture en échec en régression visible : tant que la lecture n'avait
   lieu qu'au montage, personne ne pouvait perdre ses barres en cours de session. Les lectures

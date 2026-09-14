@@ -287,29 +287,30 @@ describe('mascotSeasonGeometry', () => {
   };
 
   it('mesure l’anneau réellement visible de deux cercles concentriques', () => {
-    // **Le pompon est une exception connue et chiffrée, pas un oubli.** Son cerne vaut 0,714 px de
-    // `MASCOT_MIN_FACE_SIZE` à 40 (où `k` compense), et ne franchit le seuil qu'à 96 : il se lit
-    // comme un halo et non comme un trait. La décision est ouverte dans `v1-13` §11.11 — la regarder
-    // sur un écran, et si elle disparaît tout à fait c'est le rayon **extérieur** qu'on ouvre, jamais
-    // le cœur qu'on rétrécit (il faudrait 7,0 au lieu de 5,6 pour atteindre le seuil à 28). Ce test
-    // épingle la valeur pour qu'elle ne dérive pas en silence, et la nomme pour que l'assertion
-    // ci-dessous cesse de promettre ce qu'elle ne tient pas.
-    const anneauDuPompon = (size: number) => {
-      const [pompon] = anneauxConcentriques('hiver', size);
-      return px(pompon.ext - pompon.int, size);
-    };
-    expect(anneauDuPompon(MASCOT_MIN_FACE_SIZE)).toBeCloseTo(0.714, 3);
-    expect(anneauDuPompon(96)).toBeGreaterThanOrEqual(MIN_STROKE_PX);
-
-    // Toute autre paire concentrique, elle, doit tenir le seuil : c'est le garde pour la suite.
+    // **Le pompon n'est plus une exception** (14/09/2026). Son cerne valait 0,714 px de
+    // `MASCOT_MIN_FACE_SIZE` à 40 et ne franchissait le seuil qu'au-dessus de 76, c'est-à-dire sur
+    // le seul écran de lancement ; le rayon extérieur a été ouvert de 5,6 à 7,1 et il le tient
+    // désormais à toutes les tailles. Ce test n'a donc plus rien à excepter — ce qui est le vrai
+    // acquis : tant que le pompon était nommé ici, la règle ne s'appliquait qu'à ce que personne
+    // n'avait encore dessiné.
     for (const saison of SAISONS_AVEC_ACCESSOIRE) {
       for (let size = MASCOT_MIN_FACE_SIZE; size <= 96; size += 1) {
         for (const paire of anneauxConcentriques(saison, size)) {
-          if (saison === 'hiver') continue;
           expect(px(paire.ext - paire.int, size)).toBeGreaterThanOrEqual(MIN_STROKE_PX);
         }
       }
     }
+
+    // Et la valeur reste épinglée, pour que l'ouverture ne se reperde pas dans un arrondi : c'est
+    // `size` 41 qui donne le pire cas (1,3407 px), parce que l'arrondi au centième y rapproche les
+    // deux rayons. Un rayon extérieur de 7,0 y tomberait à 1,2997 px, sous le seuil de trois
+    // dix-millièmes — c'est pour ça qu'il vaut 7,1.
+    const anneauDuPompon = (size: number) => {
+      const [pompon] = anneauxConcentriques('hiver', size);
+      return px(pompon.ext - pompon.int, size);
+    };
+    expect(anneauDuPompon(MASCOT_MIN_FACE_SIZE)).toBeCloseTo(1.344, 3);
+    expect(anneauDuPompon(41)).toBeCloseTo(1.3407, 4);
   });
 
   it('garde chaque élément dans le viewBox, à toutes les tailles', () => {
@@ -395,6 +396,7 @@ describe('mascotSeasonGeometry — conformité au canvas', () => {
     calotte:
       'M31,34 C37,24 44,18 50,15 C56,18 63,24 69,34 C62,29 56,27 50,27 C44,27 38,29 31,34 Z',
     revers: 'M31,34 C38,29 44,27 50,27 C56,27 62,29 69,34',
+    pomponRayon: 5.6,
     goutte:
       'M64,70 C64,66 67,62 67,62 C67,62 70,66 70,70 C70,71.8 68.6,73 67,73 C65.4,73 64,71.8 64,70 Z',
   };
@@ -404,11 +406,21 @@ describe('mascotSeasonGeometry — conformité au canvas', () => {
   // translation appliquée ici au chemin du canvas plutôt qu'un second littéral.
   const GOUTTE_DECALAGE = { dx: -6, dy: -37 };
 
+  // Second écart de dessin, mesuré lui aussi. Au rayon du canvas (5,6) le cerne clair du pompon
+  // valait 0,71 px de 28 à 40 et 1,22 px à 72 — sous le plancher de lisibilité du dépôt partout
+  // sauf sur l'écran de lancement —, si bien que le pompon se lisait comme un point chaud posé sur
+  // une calotte chaude, fondu dans le bonnet au lieu de le coiffer. C'est le rayon **extérieur**
+  // qu'on ouvre et jamais le cœur qu'on rétrécit : le cœur est ce qui fait le deux tons, et il
+  // porte le dessin à 168 px. 7,1 et non 7,0 parce que l'arrondi au centième des rayons ramènerait
+  // le cerne à 1,2997 px à `size` 41. Décision du 14/09/2026, `v1-13` §11.11, écart consigné en
+  // `v1-14` §10.
+  const POMPON_RAYON_OUVERT = 7.1;
+
   it('rend exactement les chemins du canvas à taille nominale', () => {
     expect(mascotSeasonGeometry('hiver', 56)).toEqual([
       { forme: 'aire', d: CANVAS.calotte, couleur: 'mascotWarm' },
       { forme: 'trait', d: CANVAS.revers, couleur: 'mascotAccessory', epaisseur: 4.4 },
-      { forme: 'cercle', cx: 50, cy: 12, r: 5.6, couleur: 'mascotAccessory' },
+      { forme: 'cercle', cx: 50, cy: 12, r: POMPON_RAYON_OUVERT, couleur: 'mascotAccessory' },
       { forme: 'cercle', cx: 50, cy: 12, r: 3.9, couleur: 'mascotWarm' },
     ]);
     expect(mascotSeasonGeometry('printemps', 56)).toEqual([
@@ -436,7 +448,11 @@ describe('mascotSeasonGeometry — conformité au canvas', () => {
     const petit = mascotSeasonGeometry('hiver', MASCOT_MIN_FACE_SIZE);
     expect(petit[0]).toEqual({ forme: 'aire', d: CANVAS.calotte, couleur: 'mascotWarm' });
     expect(petit[1]).toMatchObject({ epaisseur: 6.6 });
-    expect(petit[2]).toMatchObject({ cx: 50, cy: 12, r: 8.4 });
+    expect(petit[2]).toMatchObject({
+      cx: 50,
+      cy: 12,
+      r: Math.round(POMPON_RAYON_OUVERT * 1.5 * 100) / 100,
+    });
   });
 });
 

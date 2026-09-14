@@ -19,11 +19,40 @@ import { RAMILLE } from '@/constants/mascotte';
 //
 // Onboarding — Accroche. Aucun chiffre : la spec impose d'ouvrir sur un bénéfice
 // concret, pas sur l'écart à combler (docs/design/README.md §1.1).
-export function EtapeAccroche({ onSuivant }: { onSuivant: () => void }) {
+// **L'illustration est plafonnée, et sans ce plafond elle prend tout l'écran** (14/09/2026).
+// Depuis que la page est un `ScrollView` à `minHeight` (cf. `onboarding/index.tsx`), sa hauteur
+// n'est plus *définie* au sens du moteur de rendu : le `flex: 1` de l'illustration ne se résout
+// donc plus sur un espace restant, il retombe sur sa taille **max-content** — et le `viewBox` du
+// SVG étant carré, l'illustration réclamait (largeur − 48) px sur tous les téléphones. D'où un
+// contenu de 890 px quelle que soit la hauteur de l'écran, et « Découvrir mon impact » 91 px sous
+// le pli à 360 × 640, c'est-à-dire le seul bouton du premier écran de l'app hors de vue sur un
+// Android d'entrée de gamme.
+//
+// Le plafond est une **part de la hauteur de page** et non un nombre de pixels : à nombre fixe,
+// un grand téléphone garderait une bande vide sous l'illustration. À 30 %, le bouton passe
+// au-dessus du pli dès 360 × 640 (mesuré : 192 px d'illustration, bouton fini à 611 sur 640) et la
+// page entière tient sans défiler à partir de 390 × 844. Le `ScrollView` de page reste le filet
+// pour les deux petites lignes du pied sur les petits écrans.
+const PART_ILLUSTRATION = 0.3;
+
+export function EtapeAccroche({
+  onSuivant,
+  /** Hauteur de la page, mesurée par le pager. Vaut 0 tant qu'elle ne l'est pas — l'illustration
+   *  n'est alors pas plafonnée, ce qui est l'état du rendu serveur dont dépend l'hydratation. */
+  hauteurDePage = 0,
+}: {
+  onSuivant: () => void;
+  hauteurDePage?: number;
+}) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <OnboardingHeroIllustration style={styles.illustration} />
+        <OnboardingHeroIllustration
+          style={[
+            styles.illustration,
+            hauteurDePage > 0 ? { maxHeight: Math.round(hauteurDePage * PART_ILLUSTRATION) } : null,
+          ]}
+        />
         <View style={styles.textBlock}>
           {/* Première apparition de la mascotte dans le parcours : elle salue avant que le
               questionnaire ne la reprenne, plus petite et droite, dans son en-tête.

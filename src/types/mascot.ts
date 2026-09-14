@@ -336,16 +336,31 @@ export type MascotSeasonElement =
   | { forme: 'cercle'; cx: number; cy: number; r: number; couleur: MascotColorToken };
 
 // Hiver — le bonnet. Calotte dans le ton chaud, revers clair, pompon du ton chaud cerné de clair
-// (il se lit ainsi sur fond blanc comme sur fond sombre). Le cerne est fin par construction —
-// (5,6 − 3,9) × k, soit 0,71 px à toute taille sous la nominale : il se lit comme un halo et non
-// comme un anneau. Si la relecture sur appareil le veut plus net, c'est le rayon **extérieur**
-// qu'on ouvre, jamais le cœur qu'on rétrécit.
+// (il se lit ainsi sur fond blanc comme sur fond sombre).
+//
+// **Le rayon extérieur vaut 7,1 et non 5,6, et c'est ce qui rend le pompon lisible** (décision du
+// 14/09/2026, `v1-13` §11.11). À 5,6 le cerne mesurait (5,6 − 3,9) × k, soit 0,71 px de
+// `MASCOT_MIN_FACE_SIZE` à 40 et 1,22 px à 72 — le plancher de lisibilité du dépôt étant 1,3 px,
+// il n'était franchi qu'au-dessus de 76, c'est-à-dire sur le seul écran de lancement. Le
+// commentaire d'alors disait « il se lit comme un halo » ; un rendu rastérisé à la vraie taille
+// puis agrandi sans lissage a montré qu'à 28, 36 et 48 px il ne se lit pas du tout : le pompon
+// devient un point chaud posé sur une calotte chaude, donc il se fond dans le bonnet au lieu de
+// le coiffer. C'est le **rayon extérieur** qu'on ouvre et jamais le cœur qu'on rétrécit — le cœur
+// est ce qui fait le deux tons, et il porte le dessin à 168 px sur l'écran de lancement.
+//
+// 7,1 et non 7,0 pour une raison d'arithmétique et non de dessin : les rayons sont arrondis au
+// centième, et à `size` 41 cet arrondi ramène le cerne à 1,2997 px — sous le seuil de trois
+// dix-millièmes. Une exception dans le test coûterait plus que ce dixième d'unité.
+//
+// Ce que ça coûte, mesuré : le pompon passe de 29 % à 37 % de la largeur de la calotte à la
+// taille nominale, et de 44 % à 56 % à `k` maximal. Son bord haut tombe alors à y = 1,35, donc
+// toujours dans le `viewBox` — c'est la borne qu'il ne faut pas franchir en l'ouvrant davantage.
 const BONNET_CALOTTE =
   'M31,34 C37,24 44,18 50,15 C56,18 63,24 69,34 C62,29 56,27 50,27 C44,27 38,29 31,34 Z';
 const BONNET_REVERS = 'M31,34 C38,29 44,27 50,27 C56,27 62,29 69,34';
 const BONNET_REVERS_TRAIT = 4.4;
 const POMPON_Y = 12;
-const POMPON_RAYON = 5.6;
+const POMPON_RAYON = 7.1;
 const POMPON_COEUR_RAYON = 3.9;
 
 // Printemps — le bourgeon : trois pétales clairs au sommet, dans le prolongement de la nervure,

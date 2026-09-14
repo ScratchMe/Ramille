@@ -323,8 +323,9 @@ aux chemins du canvas (`Mascotte.dc.html`, géométrie exacte dans `HANDOFF.md`)
 
 - **Hiver — bonnet** : calotte `M31,34 C37,24 44,18 50,15 C56,18 63,24 69,34 C62,29 56,27 50,27
   C44,27 38,29 31,34 Z` en `mascotWarm` ; revers `M31,34 C38,29 44,27 50,27 C56,27 62,29 69,34`
-  trait `mascotAccessory`, épaisseur 4,4·k, bouts ronds ; pompon cercle (50, 12) rayon 5,6·k
-  `mascotAccessory` puis cercle rayon 3,9·k `mascotWarm`.
+  trait `mascotAccessory`, épaisseur 4,4·k, bouts ronds ; pompon cercle (50, 12) rayon **7,1·k**
+  `mascotAccessory` puis cercle rayon 3,9·k `mascotWarm`. Le canvas donne 5,6 pour le rayon
+  extérieur ; c'est l'écart 39 de §10, et il est là pour que le cerne clair soit visible.
 - **Printemps — bourgeon** : trois cercles rayon 3·k `mascotAccessory` en (45,8 ; 18,5),
   (54,2 ; 18,5), (50 ; 14) ; cœur (50 ; 17,5) rayon 1,8·k `mascotWarm`. Le plus discret.
 - **Été — goutte de rosée** : `M64,70 C64,66 67,62 67,62 C67,62 70,66 70,70 C70,71.8 68.6,73
@@ -598,6 +599,23 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     poste dominant est le trajet domicile-travail reçoit un point par **semaine**. La phrase nomme
     maintenant ce qui suit le compte — les bilans, les réponses, le plan — sans promettre de
     cadence. Écart au handoff consigné, comme le chantier le demande.
+39. **Le rayon extérieur du pompon vaut 7,1 et non 5,6** (14/09/2026, décision de `v1-13` §11.11).
+    Au rayon du canvas, le cerne clair qui sépare le pompon de la calotte mesurait (5,6 − 3,9) × k,
+    soit **0,71 px** de 28 à 40, 0,95 à 56 et 1,22 à 72 : le plancher de lisibilité du dépôt étant
+    1,3 px, il n'était franchi qu'au-dessus de 76 — c'est-à-dire sur le seul écran de lancement, où
+    la mascotte fait 168 px. Le commentaire d'alors le disait « lu comme un halo » ; un rendu
+    rastérisé à la vraie taille puis agrandi sans lissage a montré qu'à 28, 36 et 48 px il ne se lit
+    pas du tout, et que le pompon devient alors un point **chaud** posé sur une calotte chaude —
+    fondu dans le bonnet au lieu de le coiffer. §11.11 avait pré-tranché le remède : c'est le rayon
+    **extérieur** qu'on ouvre, jamais le cœur qu'on rétrécit, le cœur étant ce qui fait le deux tons
+    et ce qui porte le dessin à 168 px. 7,1 et non 7,0 pour une raison d'arithmétique et non de
+    dessin : les rayons sont arrondis au centième, et à `size` 41 cet arrondi ramènerait le cerne à
+    1,2997 px — sous le seuil de trois dix-millièmes, ce qui vaut moins qu'une exception dans le
+    test. Coût mesuré : le pompon passe de 29 % à 37 % de la largeur de la calotte à la taille
+    nominale, et de 44 % à 56 % à `k` maximal ; son bord haut tombe à y = 1,35, donc toujours dans le
+    `viewBox`, et c'est la borne à ne pas franchir en l'ouvrant davantage. Le test de conformité
+    porte l'écart comme il porte la translation de la goutte — la valeur du canvas reste écrite, et
+    l'ouverture est nommée à côté.
 
 ## 11. Tests
 
