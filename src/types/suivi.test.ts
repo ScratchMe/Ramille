@@ -1,6 +1,7 @@
 // Tests de la logique pure du suivi (v1-07 §3.2). Même critère que
 // `src/types/bilan.test.ts` : on teste ce qui produit un chiffre ou une phrase affichée à
 // l'utilisateur, là où un bug coûte cher — pas les requêtes elles-mêmes.
+import { formatTonnes } from '@/lib/format';
 import { saisonDe } from './saison';
 import {
   ancienneteEnMots,
@@ -43,7 +44,7 @@ describe('variationNote', () => {
   // La phrase de baisse est reprise en détail plus bas (« variationNote — la baisse reconnue ») :
   // ici on ne garde que le pourcentage, qui est ce que ce bloc-là éprouve.
   it('annonce une baisse en pourcentage', () => {
-    expect(variationNote(3000, 2400)).toContain('20 % de moins que ton bilan précédent.');
+    expect(variationNote(3000, 2400)).toContain('600 kg de moins que ton bilan précédent (− 20 %).');
   });
 
   it('annonce une hausse sans en faire une faute', () => {
@@ -51,7 +52,7 @@ describe('variationNote', () => {
     // déménagement ou d'une année avec un voyage familial, et la spec §7 exige une relance
     // factuelle et non culpabilisante.
     expect(variationNote(2000, 2600)).toBe(
-      '30 % de plus que ton bilan précédent. Une année n’est pas l’autre.'
+      '600 kg de plus que ton bilan précédent (+ 30 %). Une année n’est pas l’autre.'
     );
   });
 
@@ -67,8 +68,16 @@ describe('variationNote', () => {
     expect(variationNote(0, 0)).toBe('Premier point de comparaison.');
   });
 
+  it('distingue deux bilans que le total affiche à l’identique', () => {
+    // **A5-3, symptôme 1.** 1 240 et 1 180 kg s'affichent tous deux « 1,2 t » dans la liste : si la
+    // note ne porte qu'un pourcentage, rien à l'écran ne corrobore le changement. C'est l'écart
+    // absolu qui referme le constat, et c'est ici qu'il est épinglé.
+    expect(variationNote(1240, 1180)).toContain('60 kg de moins');
+    expect(formatTonnes(1240)).toBe(formatTonnes(1180));
+  });
+
   it('arrondit au pourcent le plus proche', () => {
-    expect(variationNote(1000, 1126)).toBe('13 % de plus que ton bilan précédent. Une année n’est pas l’autre.');
+    expect(variationNote(1000, 1126)).toBe('126 kg de plus que ton bilan précédent (+ 13 %). Une année n’est pas l’autre.');
   });
 });
 
@@ -253,7 +262,7 @@ describe('variationNote — la baisse reconnue', () => {
   // baisse un pourcentage sec.
   it('attribue la baisse sans la chiffrer deux fois', () => {
     expect(variationNote(3000, 2400)).toBe(
-      '20 % de moins que ton bilan précédent. Ce que tu as changé se voit ici.'
+      '600 kg de moins que ton bilan précédent (− 20 %). Ce que tu as changé se voit ici.'
     );
   });
 
@@ -261,7 +270,7 @@ describe('variationNote — la baisse reconnue', () => {
   // un voyage familial. On dit le fait, jamais un verdict.
   it('laisse la hausse factuelle', () => {
     expect(variationNote(2400, 3000)).toBe(
-      '25 % de plus que ton bilan précédent. Une année n’est pas l’autre.'
+      '600 kg de plus que ton bilan précédent (+ 25 %). Une année n’est pas l’autre.'
     );
   });
 

@@ -449,6 +449,24 @@ describe('saisie numérique', () => {
 });
 
 describe('normaliserReponses', () => {
+  it('efface le mode et la tranche des loisirs quand la fréquence passe à « rarement »', () => {
+    // Les deux chemins d'entrée doivent converger : l'étape B2.1 tenait sa propre liste, donc un
+    // brouillon relu gardait un mode que le clic effaçait. La motorisation, elle, reste — le calcul
+    // la lit encore dans cette branche (commentée sur place).
+    const a = normaliserReponses({
+      ...EMPTY_BILAN_ANSWERS,
+      leisure_frequency: 'rarely',
+      leisure_mode: 'voiture',
+      leisure_distance_bracket: '10_30',
+      leisure_car_engine: 'electrique',
+    });
+    expect(a.leisure_mode).toBeNull();
+    expect(a.leisure_distance_bracket).toBeNull();
+    expect(a.leisure_car_engine).toBe('electrique');
+    // Idempotence, comme le reste de la fonction.
+    expect(normaliserReponses(a)).toEqual(a);
+  });
+
   it('efface le second mode devenu identique au mode principal, et la réponse qui l’annonçait', () => {
     // Séquence réelle : Train, puis second mode Voiture, puis Retour et mode principal
     // Voiture (covoiturage). La liste de B1.7 filtre le mode principal, donc la ligne

@@ -207,12 +207,23 @@ function enLettres(nombre: number): string {
  *   - **zéro écran rempli** : la première moitié disparaît plutôt que d'annoncer « Aucun écran
  *     déjà rempli », qui est une façon de dire à quelqu'un qu'il n'a rien fait. Même règle que le
  *     récapitulatif de la carte d'ouverture (C2.8), qui ne dit jamais zéro ;
- *   - **une étape devenue invisible** : un brouillon peut porter une étape que ses propres
- *     réponses excluent désormais (le questionnaire l'en déplace, mais la phrase se calcule
- *     avant). On ne compte alors aucun écran rempli plutôt que d'en inventer.
+ *   - **une étape devenue invisible** : un brouillon peut porter une étape que ses propres réponses
+ *     excluent désormais. Aucun chemin du produit ne produit cet état et rien ne le corrigerait —
+ *     le questionnaire rend l'étape telle quelle, contrairement à ce que disait cette phrase — donc
+ *     on se contente de ne pas compter l'écran courant parmi ce qui reste (relevé le 14/09/2026).
  */
 export function avancementDeLaReprise(step: BilanStepId, answers: BilanAnswers): string {
   const visibles = visibleSteps(answers);
+  // **Le compte est la position, et c'est exact sur le chemin normal** : « Suivant » est inactif
+  // tant que l'étape n'est pas complète, donc tout écran derrière celui-ci a bel et bien été rempli.
+  //
+  // **Compter la complétude serait pire**, et l'essai a été fait (contre-lecture de la vague 6, le
+  // 14/09/2026) : `commute_extra` — le second mode, facultatif — est complète sans aucune réponse,
+  // donc `visibles.filter(isStepComplete).length` annonce « Trois écrans déjà remplis » sur un
+  // brouillon que personne n'a touché. Une imprécision rare échangée contre une fausseté à chaque
+  // première reprise. L'imprécision qui reste, assumée : un brouillon dont tous les écrans sont
+  // renseignés mais qu'on a quitté après un « Retour » sous-compte ce qui est derrière. Rien ne
+  // permet de distinguer un écran facultatif renseigné d'un écran facultatif jamais vu.
   const position = visibles.indexOf(step);
   const remplis = position < 0 ? 0 : position;
   const restants = visibles.length - remplis;
@@ -313,7 +324,16 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
   // électrique — 2,1× plus lourd, dans le sens qui alourdit l'empreinte de quelqu'un qui roule
   // à l'électrique. Revenir à « une fois par semaine » repose la question du mode, et la règle
   // reprend alors la main.
-  if (a.leisure_frequency !== 'rarely') {
+  if (a.leisure_frequency === 'rarely') {
+    // **Le mode et la tranche partent, la motorisation reste** — et c'est ici, pas dans l'écran.
+    // L'étape B2.1 tenait sa propre liste de remises à zéro, donc les deux chemins d'entrée dans le
+    // questionnaire ne convergeaient pas : cliquer « Rarement » effaçait, relire un brouillon non
+    // (relevé le 14/09/2026). Sans conséquence sur le calcul — `recompute_assessment_results` force
+    // le mode à `leisure_default_mode` dans cette branche — mais c'est exactement le genre d'écart
+    // que cette fonction existe pour ne pas avoir à vérifier écran par écran.
+    a.leisure_mode = null;
+    a.leisure_distance_bracket = null;
+  } else {
     if (a.leisure_mode !== 'voiture') a.leisure_car_engine = null;
     if (a.leisure_mode !== 'deux_roues_motorise') a.leisure_two_wheeler_type = null;
   }

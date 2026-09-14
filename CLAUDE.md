@@ -1363,8 +1363,12 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `formatTonnes` sous la tonne** (« Toi », « Ton prochain palier » — sauf quand le palier *est* le
   repère 2050, où la ligne redevient un repère). Ce qui n'est **pas** réglé : au-dessus de la
   tonne, deux bilans à 1 240 puis 1 180 kg s'affichent toujours « 1,2 t » tous les deux sous une
-  note « 5 % de moins » (A5-3 symptôme 1) — le remède est de dire l'**écart** en kilos côté suivi,
-  jamais une forme de plus dans le formateur. Et `src/lib/format.ts` doit rester pur pour une
+  note « 5 % de moins » — **c'était** A5-3 symptôme 1, refermé le 14/09/2026 : `variationNote` dit
+  désormais l'écart absolu d'abord (« 60 kg de moins que ton bilan précédent (− 5 %) »), donc la
+  note corrobore ce que deux barres identiques ne distinguent pas. Le remède était bien de dire
+  l'**écart** en kilos côté suivi, jamais une forme de plus dans le formateur — et il fallait le
+  dire **sur `/suivi`** : la première rédaction donnait le constat pour clos par `formatTonnesNu`,
+  que seule la restitution lisait. Et `src/lib/format.ts` doit rester pur pour une
   raison qui ne se voit pas : `src/types/resultat.ts` l'importe, donc une dépendance ajoutée là
   ferait tomber toute la suite Jest qui en dépend.
   **Le troisième est `formatTonnesNu`** (C2.7, même module) : la même bascule que `formatTonnes`, par

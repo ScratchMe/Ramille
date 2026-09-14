@@ -104,14 +104,23 @@ export function variationNote(previousKg: number, currentKg: number): string {
   const deltaKg = currentKg - previousKg;
   const percent = Math.round(Math.abs(deltaKg / previousKg) * 100);
   if (estStable(previousKg, currentKg)) return 'Stable par rapport à ton bilan précédent.';
+  // **L'écart se dit d'abord en kilos, et c'est ce qui referme vraiment A5-3** (14/09/2026). La
+  // note ne portait qu'un pourcentage, au-dessus de deux barres étiquetées « 1,2 t » toutes les
+  // deux : 1 240 puis 1 180 kg s'affichent identiques dès qu'on passe la tonne, donc la seule chose
+  // qui montrait le changement était un « 5 % de moins » que rien ne corroborait à l'écran. Trois
+  // documents donnaient le constat pour refermé par `formatTonnesNu` alors que cette fonction
+  // n'était lue que par la restitution ; le pourcentage reste, en second, parce qu'un écart absolu
+  // seul ne dit pas l'échelle.
+  //
   // **La baisse est reconnue, la hausse reste un fait** (C2.7, point 1). Une hausse recevait
   // « Une année n'est pas l'autre » — une phrase qui désamorce — et une baisse un pourcentage sec :
   // le seul moment où la personne peut voir que ce qu'elle a changé a compté passait sans un mot.
   // La seconde phrase attribue le résultat sans le chiffrer, et sans accord qui genre.
+  const ecart = formatTonnesNu(Math.abs(deltaKg));
   if (deltaKg < 0) {
-    return `${percent} % de moins que ton bilan précédent. Ce que tu as changé se voit ici.`;
+    return `${ecart} de moins que ton bilan précédent (− ${percent} %). Ce que tu as changé se voit ici.`;
   }
-  return `${percent} % de plus que ton bilan précédent. Une année n’est pas l’autre.`;
+  return `${ecart} de plus que ton bilan précédent (+ ${percent} %). Une année n’est pas l’autre.`;
 }
 
 /**

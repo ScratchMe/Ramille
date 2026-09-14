@@ -42,12 +42,10 @@ export function LeisureFrequencyStep({
             key={option.value}
             label={option.label}
             selected={answers.leisure_frequency === option.value}
-            onPress={() =>
-              update({
-                leisure_frequency: option.value,
-                ...(option.value === 'rarely' ? { leisure_mode: null, leisure_distance_bracket: null } : {}),
-              })
-            }
+            // Aucune remise à zéro ici : `normaliserReponses` s'applique après chaque `update` et
+            // c'est elle qui efface ce que « Rarement » rend impossible. Deux listes, c'est deux
+            // listes qui divergent.
+            onPress={() => update({ leisure_frequency: option.value })}
           />
         ))}
       </View>

@@ -267,6 +267,51 @@ describe('mascotSeasonGeometry', () => {
     }
   });
 
+  // **Le diamètre d'un cercle n'est pas ce qu'on voit quand un autre cercle est posé dessus**
+  // (contre-lecture de la vague 6, 14/09/2026). L'assertion précédente mesure chaque cercle
+  // séparément : elle laisse donc passer un **anneau** arbitrairement fin dès que deux cercles
+  // partagent leur centre, et c'est exactement la forme du pompon — 5,6 de rayon en
+  // `mascotAccessory`, 3,9 en `mascotWarm` par-dessus, soit 1,7 unité visibles. Elle était
+  // créditée d'avoir refusé le reflet de la goutte (0,756 px) alors qu'elle laissait passer plus
+  // fin qu'elle ne refusait.
+  const anneauxConcentriques = (saison: Saison, size: number) => {
+    const cercles = mascotSeasonGeometry(saison, size).filter((e) => e.forme === 'cercle');
+    const paires: { ext: number; int: number }[] = [];
+    for (const a of cercles) {
+      for (const b of cercles) {
+        if (a === b || a.cx !== b.cx || a.cy !== b.cy || a.r <= b.r) continue;
+        paires.push({ ext: a.r, int: b.r });
+      }
+    }
+    return paires;
+  };
+
+  it('mesure l’anneau réellement visible de deux cercles concentriques', () => {
+    // **Le pompon est une exception connue et chiffrée, pas un oubli.** Son cerne vaut 0,714 px de
+    // `MASCOT_MIN_FACE_SIZE` à 40 (où `k` compense), et ne franchit le seuil qu'à 96 : il se lit
+    // comme un halo et non comme un trait. La décision est ouverte dans `v1-13` §11.11 — la regarder
+    // sur un écran, et si elle disparaît tout à fait c'est le rayon **extérieur** qu'on ouvre, jamais
+    // le cœur qu'on rétrécit (il faudrait 7,0 au lieu de 5,6 pour atteindre le seuil à 28). Ce test
+    // épingle la valeur pour qu'elle ne dérive pas en silence, et la nomme pour que l'assertion
+    // ci-dessous cesse de promettre ce qu'elle ne tient pas.
+    const anneauDuPompon = (size: number) => {
+      const [pompon] = anneauxConcentriques('hiver', size);
+      return px(pompon.ext - pompon.int, size);
+    };
+    expect(anneauDuPompon(MASCOT_MIN_FACE_SIZE)).toBeCloseTo(0.714, 3);
+    expect(anneauDuPompon(96)).toBeGreaterThanOrEqual(MIN_STROKE_PX);
+
+    // Toute autre paire concentrique, elle, doit tenir le seuil : c'est le garde pour la suite.
+    for (const saison of SAISONS_AVEC_ACCESSOIRE) {
+      for (let size = MASCOT_MIN_FACE_SIZE; size <= 96; size += 1) {
+        for (const paire of anneauxConcentriques(saison, size)) {
+          if (saison === 'hiver') continue;
+          expect(px(paire.ext - paire.int, size)).toBeGreaterThanOrEqual(MIN_STROKE_PX);
+        }
+      }
+    }
+  });
+
   it('garde chaque élément dans le viewBox, à toutes les tailles', () => {
     // Ce que le `clipPath` garantissait pour le visage, ce test le garantit pour l'accessoire,
     // qui n'est **pas** découpé : le pompon se porte au-dessus de la feuille et la goutte se
