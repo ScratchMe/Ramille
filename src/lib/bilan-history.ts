@@ -316,5 +316,6 @@ export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
     zone_type: answers.zone_type as BilanAnswers['zone_type'],
     tc_access: answers.tc_access as BilanAnswers['tc_access'],
     household_vehicles: answers.household_vehicles as BilanAnswers['household_vehicles'],
+    teletravail: answers.teletravail as BilanAnswers['teletravail'],
   };
 }

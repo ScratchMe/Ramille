@@ -366,12 +366,36 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
-  it('context : les 3 champs sont requis', () => {
+  it('context : les 3 champs sont requis, et le télétravail avec un trajet régulier', () => {
     expect(isStepComplete('context', answers({ zone_type: 'urbain_dense' }))).toBe(false);
     expect(
       isStepComplete(
         'context',
         answers({ zone_type: 'urbain_dense', tc_access: 'bon', household_vehicles: '1' })
+      )
+    ).toBe(false);
+    expect(
+      isStepComplete(
+        'context',
+        answers({
+          zone_type: 'urbain_dense',
+          tc_access: 'bon',
+          household_vehicles: '1',
+          teletravail: 'non',
+        })
+      )
+    ).toBe(true);
+    // C3.8 : sans trajet régulier la question n'est pas posée, donc elle n'est pas exigée non
+    // plus. Les deux gabarits qui la lisent sont des gabarits du poste domicile-travail.
+    expect(
+      isStepComplete(
+        'context',
+        answers({
+          commute_has_regular_trip: false,
+          zone_type: 'rural',
+          tc_access: 'inexistant',
+          household_vehicles: '0',
+        })
       )
     ).toBe(true);
   });
@@ -740,6 +764,17 @@ describe('normaliserReponses', () => {
     ).toBe('hybride');
   });
 
+  it('« Non » à B1.1 emporte aussi la réponse sur le télétravail (C3.8)', () => {
+    expect(
+      normaliserReponses(answers({ commute_has_regular_trip: false, teletravail: 'oui' }))
+        .teletravail
+    ).toBeNull();
+    expect(
+      normaliserReponses(answers({ commute_has_regular_trip: true, teletravail: 'oui' }))
+        .teletravail
+    ).toBe('oui');
+  });
+
   it('la part du second mode ne survit pas au second mode (C3.4)', () => {
     // Séquence réelle : « Oui » → « Train » → « Un quart », puis « Non ». Sans cette règle, la
     // fraction partait à l'insert sous une question qu'on ne pose plus — et revenait telle
@@ -884,6 +919,7 @@ describe('normaliserReponses', () => {
       car_long_trips_per_year: 2,
       car_long_trips_engine: 'thermique',
       car_long_trips_occupancy: 3,
+      teletravail: 'parfois',
     });
     const une = normaliserReponses(coherent);
     expect(une).toEqual(coherent);

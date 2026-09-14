@@ -23,7 +23,7 @@ import { ActionCommitment } from '@/components/plan/action-commitment';
 import { CarteDeSaison } from '@/components/plan/carte-de-saison';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
-import { formatIntention, formeInserable, pistesDuPlan } from '@/types/plan';
+import { cadreDuPlan, formatIntention, formeInserable, pistesDuPlan } from '@/types/plan';
 import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
@@ -871,6 +871,15 @@ export default function Plan() {
   // le reste avant même de l'écrire (constat A13-18). La dérivation copie avant de trier : `sort`
   // mute, et `cycle` vient du state.
   const pistes = pistesDuPlan(cycle.plan_actions);
+  // Ce que l'écran annonce de lui-même, et ce que son cap a le droit de chiffrer (C3.8 §3). Dérivé
+  // dans `src/types/plan.ts` plutôt qu'écrit en ternaires ici : trois phrases en dépendent, et
+  // c'est la forme qui a laissé l'intro annoncer « pour ton trajet domicile-travail » au-dessus
+  // d'actions qui n'en étaient pas.
+  const cadre = cadreDuPlan({
+    postesEnAvant: pistes.enAvant.map((action) => action.action_templates?.poste ?? null),
+    posteDuCycle: cycle.poste,
+    nombreDActions: actionsCount,
+  });
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.
@@ -1089,10 +1098,9 @@ export default function Plan() {
                 Le poste est nommé par sa forme insérable et non par `trip_label`, qui porte le
                 mode entre parenthèses — « Une action liée à Trajet domicile-travail (Voiture
                 thermique). » était une phrase que personne n'a écrite. */}
-            {actionsCount > 0 && (
+            {cadre.intro !== null && (
               <ThemedText type="body" themeColor="textSecondary">
-                {pistes.enAvant.length > 1 ? 'Deux actions' : 'Une action'} pour{' '}
-                {formeInserable(cycle.poste)}.
+                {cadre.intro}
               </ThemedText>
             )}
           </View>
@@ -1162,7 +1170,7 @@ export default function Plan() {
               `accent`, et la légende le dit en mots. Confondre les deux ferait de chaque semaine
               écoulée un retard. */}
           <ThemedView type="backgroundSelected" style={styles.capCard}>
-            {capKg !== null && (
+            {capKg !== null && cadre.chiffreLeCap && (
               <>
                 <ThemedText type="small" weight={600} themeColor="accentText">
                   Ton cap pour cette {cadenceDeSaison ? 'saison' : 'période'}
@@ -1174,6 +1182,11 @@ export default function Plan() {
                   soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
                   {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
                 </ThemedText>
+                {cadre.noteDuCap !== null && (
+                  <ThemedText type="small" themeColor="textTertiary">
+                    {cadre.noteDuCap}
+                  </ThemedText>
+                )}
               </>
             )}
             <View style={styles.capPeriode}>

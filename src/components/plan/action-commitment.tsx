@@ -10,7 +10,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import {
   INTENTION_DAYS,
-  INTENTION_TIMINGS,
+  intentionTimingsForPoste,
   intentionKindForPoste,
   isIntentionComplete,
   type IntentionDay,
@@ -185,7 +185,10 @@ export function ActionCommitment({
         </View>
       ) : (
         <View style={styles.timingColumn}>
-          {INTENTION_TIMINGS.map((option) => (
+          {/* C3.8 §4 : les échéances dépendent du poste — un voyage ne se décide pas au calendrier
+              du mois. La liste se dérive ici plutôt que dans le rendu d'un ternaire, pour que
+              `src/types/plan.ts` reste le seul endroit qui sache lesquelles vont avec quoi. */}
+          {intentionTimingsForPoste(poste).map((option) => (
             <Chip
               key={option.value}
               label={option.label}

@@ -370,6 +370,7 @@ export default function BilanQuestionnaire() {
           zone_type: answers.zone_type,
           tc_access: answers.tc_access,
           household_vehicles: answers.household_vehicles,
+          teletravail: answers.teletravail,
         },
         { onConflict: 'assessment_id' }
       );

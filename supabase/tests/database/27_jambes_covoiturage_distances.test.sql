@@ -52,10 +52,15 @@ insert into public.assessments (id, user_id, status, submitted_at) values
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
   commute_car_engine, commute_is_carpool, commute_second_mode_used, commute_second_mode,
-  commute_second_mode_share, leisure_frequency
+  commute_second_mode_share, leisure_frequency, teletravail
 ) values (
   'a3400000-0000-0000-0000-000000000001', true, 5, 20, 'voiture', 'thermique', false, true, 'train',
-  0.25, 'rarely'
+  0.25, 'rarely',
+  -- C3.8 : sans cette réponse, les deux gabarits de télétravail ne sont pas proposés — « une
+  -- condition qu'on ne peut pas évaluer n'est pas remplie » — et l'assertion qui suit sur le gain
+  -- d'une journée de télétravail comparerait `NULL`. La fixture d'un test de calcul doit répondre
+  -- ce que le questionnaire exige désormais.
+  'oui'
 );
 
 -- B — le même bilan sans la part : c'est le bilan d'avant C3.4, et son total ne doit pas bouger.
@@ -170,7 +175,7 @@ select isnt(
 );
 
 -- **Le plan comptait la moitié du trajet.** Toutes les actions domicile-travail se calculaient sur
--- `commute_main_leg_co2_kg_year` : « Garder une journée de télétravail » supprime les deux jambes
+-- `commute_main_leg_co2_kg_year` : « Travailler depuis chez toi un jour » supprime les deux jambes
 -- et n'en comptait qu'une — 205 kg réels sur ce bilan-là contre 128 annoncés —, et le seuil de
 -- 5 kg/an écartait des actions qui le franchissaient en comptant le trajet entier.
 --
@@ -181,7 +186,7 @@ select is(
   -- `is` est polymorphe : sans le cast des deux côtés, la résolution échoue en
   -- `function is(numeric, integer) does not exist` plutôt que de comparer.
   (select saving_kg_year::numeric from public.estimate_action_savings('a3400000-0000-0000-0000-000000000001')
-     where action_text = 'Garder une journée de télétravail par semaine'),
+     where action_text = 'Travailler depuis chez toi un jour par semaine'),
   205::numeric,  -- (1 / 5) × (960,20775 + 62,3025) = 204,50205 ; avant C3.4 : (1 / 5) × 640,1385 = 128
   'C3.4 : une journée de télétravail en moins retire les DEUX jambes, pas la principale seule'
 );
@@ -211,7 +216,7 @@ select ok(
     where action_text = 'Passer deux trajets sur cinq en train ou en RER')
   and (select detail_text not like '%Sur la partie en%'
      from public.estimate_action_savings('a3400000-0000-0000-0000-000000000001')
-    where action_text = 'Garder une journée de télétravail par semaine'),
+    where action_text = 'Travailler depuis chez toi un jour par semaine'),
   'C3.4 : le détail dit qu’une substitution ne porte que sur une partie du trajet, et le télétravail ne le dit pas'
 );
 

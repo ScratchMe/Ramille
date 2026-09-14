@@ -14,9 +14,16 @@
  * ici parce que c'est le module que l'écran du plan et la carte de point importent déjà ;
  * **la définition et son commentaire sont là-bas.**
  */
-export { formeInserable } from '@/constants/postes';
+import { formeInserable } from '@/constants/postes';
 
-export type IntentionTiming = 'ce_mois' | 'le_mois_prochain' | 'prochaine_occasion';
+export { formeInserable };
+
+export type IntentionTiming =
+  | 'ce_mois'
+  | 'le_mois_prochain'
+  | 'prochaine_occasion'
+  | 'au_prochain_voyage'
+  | 'avant_le_prochain_bilan';
 
 /** 1 = lundi … 7 = dimanche, comme ISO 8601 et comme la contrainte SQL. */
 export type IntentionDay = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -31,10 +38,38 @@ export const INTENTION_DAYS: { value: IntentionDay; short: string; long: string 
   { value: 7, short: 'D', long: 'dimanche' },
 ];
 
-export const INTENTION_TIMINGS: { value: IntentionTiming; label: string }[] = [
+/**
+ * Les échéances des **sorties** : elles se pensent au calendrier du mois, parce qu'une sortie du
+ * week-end se décide dans le mois où elle tombe.
+ */
+export const INTENTION_TIMINGS_LOISIRS: { value: IntentionTiming; label: string }[] = [
   { value: 'ce_mois', label: 'Ce mois-ci' },
   { value: 'le_mois_prochain', label: 'Le mois prochain' },
   { value: 'prochaine_occasion', label: 'À ma prochaine occasion' },
+];
+
+/**
+ * Les échéances des **voyages** (C3.8 §4), et ce ne sont pas les mêmes.
+ *
+ * « Ce mois-ci » n'est pas une échéance pour un vol : on ne renonce pas à un long-courrier au
+ * calendrier du mois, on le décide quand le projet se présente — ou avant le prochain bilan, qui
+ * est le seul rendez-vous que le produit donne. Proposer les trois échéances des sorties sur un
+ * voyage revenait à demander un engagement au mois sur une décision annuelle, c'est-à-dire à
+ * choisir entre « faux » et « À ma prochaine occasion », la seule des trois qui tenait.
+ */
+export const INTENTION_TIMINGS_VOYAGES: { value: IntentionTiming; label: string }[] = [
+  { value: 'au_prochain_voyage', label: 'À mon prochain projet de voyage' },
+  { value: 'avant_le_prochain_bilan', label: 'Avant mon prochain bilan' },
+];
+
+/**
+ * Toutes les échéances, pour la **relecture** seule : `formatIntentionTiming` doit savoir rendre
+ * une valeur quel que soit le poste qui l'a écrite, y compris celle d'un engagement archivé dont
+ * on ne connaît plus le gabarit.
+ */
+export const INTENTION_TIMINGS: { value: IntentionTiming; label: string }[] = [
+  ...INTENTION_TIMINGS_LOISIRS,
+  ...INTENTION_TIMINGS_VOYAGES,
 ];
 
 /**
@@ -43,6 +78,20 @@ export const INTENTION_TIMINGS: { value: IntentionTiming; label: string }[] = [
  */
 export function intentionKindForPoste(poste: string | null): 'days' | 'timing' {
   return poste === 'commute' ? 'days' : 'timing';
+}
+
+/**
+ * Et le poste décide aussi **lesquelles** — les sorties et les voyages n'ont pas le même horizon.
+ *
+ * Le repli est celui des sorties : un poste inconnu (un gabarit à venir, une ligne relue d'une
+ * version antérieure) reçoit les trois échéances générales plutôt qu'aucune, sans quoi la feuille
+ * d'engagement s'ouvrirait sur une liste vide et « C'est noté » resterait inactif sans dire
+ * pourquoi.
+ */
+export function intentionTimingsForPoste(
+  poste: string | null
+): { value: IntentionTiming; label: string }[] {
+  return poste === 'travel' ? INTENTION_TIMINGS_VOYAGES : INTENTION_TIMINGS_LOISIRS;
 }
 
 /**
@@ -92,6 +141,109 @@ export function isIntentionComplete(
   timing: IntentionTiming | null
 ): boolean {
   return kind === 'days' ? days.length > 0 : timing !== null;
+}
+
+// ── Ce que le plan annonce, et ce que son cap mesure (C3.8 §3) ─────────────────────────────
+
+/** Les nombres que l'intro du plan peut avoir à dire, en lettres. */
+const ACTIONS_EN_LETTRES = ['aucune', 'une', 'deux', 'trois', 'quatre'];
+
+function enLettres(n: number): string {
+  return ACTIONS_EN_LETTRES[n] ?? String(n);
+}
+
+function accorde(n: number, mot: string): string {
+  return `${enLettres(n)} ${mot}${n > 1 ? 's' : ''}`;
+}
+
+/** Ce que l'en-tête du plan annonce, et ce que sa carte de cap a le droit de chiffrer. */
+export type CadreDuPlan = {
+  /** La phrase d'intro, ou `null` quand il n'y a rien à annoncer. */
+  intro: string | null;
+  /**
+   * Le cap se chiffre-t-il ? Non quand le plan ne porte **aucune** action.
+   *
+   * C'est le cas de bord que C2.5 a rendu courant : depuis que les gabarits de loisirs sont
+   * refusés aux sorties rares, **tout cycliste et tout profil sédentaire** a un plan à zéro
+   * action — vérifié sur le distant. La carte du cap ne dépendait que de `capKg !== null`, donc
+   * « − 11 kg, soit − 20 % sur tes sorties du week-end » s'affichait juste **au-dessus** de « Tu
+   * fais déjà l'essentiel sur ce poste ». Le commentaire du cap dit lui-même pourquoi il existe :
+   * qu'on voie qu'en cumulant deux actions on l'atteint. Sans action, il n'a plus d'objet, et son
+   * chiffre y est de surcroît dérivé d'un résiduel de calcul de 15 km.
+   *
+   * La carte, elle, se rend toujours : elle est depuis C2.8 l'endroit où la période se nomme.
+   */
+  chiffreLeCap: boolean;
+  /**
+   * La note qui suit le cap quand les actions mises en avant ne portent pas toutes sur le poste
+   * qu'il mesure, ou `null`.
+   *
+   * Le cap reste celui du poste dominant — c'est ce que le serveur a calculé, et le recalculer sur
+   * le total côté client ferait deux définitions d'un même chiffre. Ce qui change est la phrase :
+   * sans elle, l'écran pose un cap sur un poste et aligne dessous des gains d'un autre, en invitant
+   * à les cumuler.
+   */
+  noteDuCap: string | null;
+};
+
+/**
+ * Ce que l'écran du plan dit de lui-même, dérivé plutôt qu'écrit dans le rendu.
+ *
+ * **Le plan peut déborder de son poste dominant**, et l'écran l'ignorait : quand le poste dominant
+ * n'a plus rien à proposer, `generate_plan_cycle_for_user` complète avec d'autres postes, et
+ * l'intro écrivait quand même « Deux actions pour ton trajet domicile-travail » au-dessus d'actions
+ * qui n'en étaient pas (constat A8-14). Le `poste` de chaque action est déjà sélectionné par la
+ * requête de l'écran : il suffisait de le lire.
+ */
+export function cadreDuPlan({
+  postesEnAvant,
+  posteDuCycle,
+  nombreDActions,
+}: {
+  /** Le `poste` de chaque action mise en avant, dans l'ordre où elle s'affiche. */
+  postesEnAvant: (string | null)[];
+  /** Le poste que le cycle — et donc le cap — mesure. */
+  posteDuCycle: string | null;
+  /** Le nombre total d'actions du plan, pistes dépliées comprises. */
+  nombreDActions: number;
+}): CadreDuPlan {
+  if (nombreDActions === 0 || postesEnAvant.length === 0) {
+    return { intro: null, chiffreLeCap: false, noteDuCap: null };
+  }
+
+  const poste = formeInserable(posteDuCycle);
+  const surLeDominant = postesEnAvant.filter((p) => p === posteDuCycle).length;
+  const ailleurs = postesEnAvant.length - surLeDominant;
+
+  if (ailleurs === 0) {
+    return {
+      intro: `${capitale(accorde(postesEnAvant.length, 'action'))} pour ${poste}.`,
+      chiffreLeCap: true,
+      noteDuCap: null,
+    };
+  }
+
+  const note = `Le cap porte sur ${poste} ; ${ailleurs > 1 ? 'ces actions portent' : 'cette action porte'} ailleurs.`;
+
+  // Aucune sur le poste dominant : la phrase du canvas (planche F2), qui dit d'emblée que le plan
+  // est allé chercher ailleurs plutôt que de le laisser découvrir carte par carte.
+  if (surLeDominant === 0) {
+    return {
+      intro: `${capitale(accorde(postesEnAvant.length, 'action'))}, sur d’autres postes que ${poste}.`,
+      chiffreLeCap: true,
+      noteDuCap: note,
+    };
+  }
+
+  return {
+    intro: `${capitale(accorde(postesEnAvant.length, 'action'))}, dont ${accorde(ailleurs, 'action')} ailleurs que sur ${poste}.`,
+    chiffreLeCap: true,
+    noteDuCap: note,
+  };
+}
+
+function capitale(texte: string): string {
+  return `${texte.charAt(0).toUpperCase()}${texte.slice(1)}`;
 }
 
 // ── Ce que le plan met en avant, et ce qu'il garde derrière un lien (C4.6) ──────────────────

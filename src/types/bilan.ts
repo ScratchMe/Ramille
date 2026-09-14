@@ -9,6 +9,14 @@ export type LeisureFrequency = 'rarely' | 'weekly' | 'multiple_weekly';
 export type ZoneType = 'urbain_dense' | 'periurbain' | 'rural';
 export type TcAccess = 'bon' | 'limite' | 'inexistant';
 export type HouseholdVehicles = '0' | '1' | '2_plus';
+/**
+ * B4.4 — « Peux-tu travailler depuis chez toi ? » (C3.8).
+ *
+ * Trois réponses et non deux, parce que les gabarits en lisent **deux seuils** : un jour de
+ * télétravail se tient avec « parfois », deux jours demandent « oui ». Un booléen aurait forcé à
+ * trancher pour la personne.
+ */
+export type Teletravail = 'oui' | 'parfois' | 'non';
 // Thermique/électrique change fortement le calcul (facteur ~9x plus faible pour
 // l'électrique, cf. migration 20260904*_car_engine.sql) — une seule question de suivi,
 // jamais une entrée séparée dans les listes de mode (qui resteraient "Voiture (seul)" /
@@ -84,6 +92,11 @@ export type BilanAnswers = {
   zone_type: ZoneType | null;
   tc_access: TcAccess | null;
   household_vehicles: HouseholdVehicles | null;
+  /**
+   * Ne se demande que s'il y a un trajet régulier : la question n'a pas d'objet sans lui, et les
+   * deux gabarits qui la lisent sont des gabarits du poste domicile-travail.
+   */
+  teletravail: Teletravail | null;
 };
 
 export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
@@ -119,6 +132,7 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   zone_type: null,
   tc_access: null,
   household_vehicles: null,
+  teletravail: null,
 };
 
 /**
@@ -137,6 +151,18 @@ export const PARTS_DU_SECOND_MODE: { value: number; label: string }[] = [
   { value: 0.25, label: 'Un quart environ' },
   { value: 0.5, label: 'La moitié environ' },
   { value: 0.75, label: 'Les trois quarts environ' },
+];
+
+/**
+ * Les trois réponses à B4.4 (C3.8).
+ *
+ * « Parfois » n'est pas une hésitation qu'on aurait laissée passer : c'est le seuil qui sépare
+ * les deux gabarits de télétravail, un jour se tenant avec, deux jours non.
+ */
+export const REPONSES_TELETRAVAIL: { value: Teletravail; label: string }[] = [
+  { value: 'oui', label: 'Oui' },
+  { value: 'parfois', label: 'Parfois' },
+  { value: 'non', label: 'Non' },
 ];
 
 /**
@@ -355,6 +381,9 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
     a.commute_mode = null;
     a.commute_is_carpool = false;
     a.commute_second_mode_used = false;
+    // C3.8 : sans trajet régulier, B4.4 ne se pose pas — et les deux gabarits qui la lisent sont
+    // des gabarits du poste domicile-travail, qui ne sont de toute façon pas proposés.
+    a.teletravail = null;
   }
 
   // Un kilométrage saisi et une tranche ne coexistent pas. Le calcul fait
@@ -634,6 +663,12 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
       if (answers.zone_type === null) return 'ton type de zone';
       if (answers.tc_access === null) return 'l’accès aux transports en commun';
       if (answers.household_vehicles === null) return 'le nombre de véhicules du foyer';
+      // C3.8 : demandée, pas supposée. Le calcul du plan écarte les gabarits de télétravail quand
+      // la réponse manque — « une condition qu'on ne peut pas évaluer n'est pas remplie » —, donc
+      // une étape qu'on pourrait valider sans elle retirerait silencieusement un levier réel à
+      // quelqu'un qui l'a.
+      if (answers.commute_has_regular_trip !== false && answers.teletravail === null)
+        return 'ta réponse sur le télétravail';
       return null;
   }
 }

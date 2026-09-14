@@ -3,7 +3,13 @@ import { StyleSheet, View } from 'react-native';
 import { Chip } from '@/components/bilan/chip';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import type { BilanAnswers, HouseholdVehicles, TcAccess, ZoneType } from '@/types/bilan';
+import {
+  REPONSES_TELETRAVAIL,
+  type BilanAnswers,
+  type HouseholdVehicles,
+  type TcAccess,
+  type ZoneType,
+} from '@/types/bilan';
 
 const ZONE_OPTIONS: { value: ZoneType; label: string }[] = [
   { value: 'urbain_dense', label: 'Urbain dense' },
@@ -96,6 +102,34 @@ export function ContextStep({
           ))}
         </View>
       </View>
+
+      {/* B4.4 (C3.8) — la seule question de cette étape qui ne se pose pas à tout le monde : sans
+          trajet régulier elle n'a pas d'objet, et les deux gabarits qui la lisent sont des
+          gabarits du poste domicile-travail.
+
+          Elle existe parce que « Garder une journée de télétravail par semaine » était proposé —
+          en tête — à une aide-soignante ou à un chauffeur, et formulé comme un manquement. Le
+          libellé de l'action a changé aussi, mais le libellé seul ne suffisait pas : il faut la
+          question, sinon l'action reste en tête chez les gros rouleurs sans alternative. */}
+      {answers.commute_has_regular_trip !== false && (
+        <View style={styles.field}>
+          <ThemedText type="small" themeColor="textTertiary">
+            Peux-tu travailler depuis chez toi ?
+          </ThemedText>
+          <View style={styles.row}>
+            {REPONSES_TELETRAVAIL.map((option) => (
+              <Chip
+                key={option.value}
+                label={option.label}
+                selected={answers.teletravail === option.value}
+                onPress={() => update({ teletravail: option.value })}
+                flex
+                radius={14}
+              />
+            ))}
+          </View>
+        </View>
+      )}
     </View>
   );
 }

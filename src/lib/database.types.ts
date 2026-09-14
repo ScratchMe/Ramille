@@ -26,7 +26,9 @@ export type Database = {
           segment: string | null
           share: number | null
           substitute_mode_id: string | null
+          teletravail_admissible: string[] | null
           trips: number | null
+          zones_admissibles: string[] | null
         }
         Insert: {
           action_text: string
@@ -42,7 +44,9 @@ export type Database = {
           segment?: string | null
           share?: number | null
           substitute_mode_id?: string | null
+          teletravail_admissible?: string[] | null
           trips?: number | null
+          zones_admissibles?: string[] | null
         }
         Update: {
           action_text?: string
@@ -58,7 +62,9 @@ export type Database = {
           segment?: string | null
           share?: number | null
           substitute_mode_id?: string | null
+          teletravail_admissible?: string[] | null
           trips?: number | null
+          zones_admissibles?: string[] | null
         }
         Relationships: [
           {
@@ -100,6 +106,7 @@ export type Database = {
           leisure_mode: string | null
           leisure_two_wheeler_type: string | null
           tc_access: string | null
+          teletravail: string | null
           train_long_trips_per_year: number
           updated_at: string
           zone_type: string | null
@@ -133,6 +140,7 @@ export type Database = {
           leisure_mode?: string | null
           leisure_two_wheeler_type?: string | null
           tc_access?: string | null
+          teletravail?: string | null
           train_long_trips_per_year?: number
           updated_at?: string
           zone_type?: string | null
@@ -166,6 +174,7 @@ export type Database = {
           leisure_mode?: string | null
           leisure_two_wheeler_type?: string | null
           tc_access?: string | null
+          teletravail?: string | null
           train_long_trips_per_year?: number
           updated_at?: string
           zone_type?: string | null
