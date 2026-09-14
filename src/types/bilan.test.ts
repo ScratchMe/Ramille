@@ -457,7 +457,7 @@ describe('normaliserReponses', () => {
       ...EMPTY_BILAN_ANSWERS,
       leisure_frequency: 'rarely',
       leisure_mode: 'voiture',
-      leisure_distance_bracket: '10_30',
+      leisure_distance_bracket: '15_30',
       leisure_car_engine: 'electrique',
     });
     expect(a.leisure_mode).toBeNull();
