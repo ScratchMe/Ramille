@@ -830,7 +830,13 @@ export default function BilanResultat() {
               onPress={() =>
                 router.push({
                   pathname: '/feedback',
-                  params: { kind: 'chiffre', context: `bilan:${results.assessment_id}` },
+                  // **Le nom de l'écran, pas l'identifiant du bilan** (corrigé le 14/09/2026). Le
+                  // commentaire de `/feedback`, la phrase qu'il affiche et la politique de
+                  // confidentialité disent tous les trois « le contexte est le nom de l'écran
+                  // d'origine, rien de plus » : y glisser un uuid rendait les trois faux d'un coup,
+                  // pour une information qui ne manque pas — le bilan d'une personne se retrouve par
+                  // son compte et la date de son retour.
+                  params: { kind: 'chiffre', context: 'restitution du bilan' },
                 })
               }
               role="link"

@@ -282,6 +282,19 @@ export default function Plan() {
   // mon bilan » depuis `pending`, et « Faire mon bilan » depuis `no_assessment` — le
   // questionnaire, lui, se remplit très bien hors ligne (brouillon AsyncStorage).
   const [relectureEnEchec, setRelectureEnEchec] = useState(false);
+
+  /**
+   * Le refus de remplacement (`RM001`), remonté à l'écran plutôt que gardé dans la carte.
+   *
+   * **Logé ici pour la même raison que la ligne de relecture**, et parce que le message était
+   * invisible : `commitPlanAction` rend `rechargerLePlan`, la carte appelait `onChanged()` dans la
+   * foulée, donc le plan était relu et les cartes remontées — l'état local qui portait la phrase
+   * disparaissait au rendu suivant. Personne ne lisait donc jamais pourquoi son choix n'avait pas
+   * été enregistré ; le plan changeait simplement sous ses yeux (relevé le 14/09/2026). Et le
+   * remonter ne suffisait pas à le rendre visible si la carte concernée repassait derrière « Voir
+   * d'autres pistes », replié par défaut : on déplie donc en même temps.
+   */
+  const [refusDeRemplacement, setRefusDeRemplacement] = useState<string | null>(null);
   // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
   // jour ne se déduit pas de l'action qu'on vient de toucher — il faut relire le cycle.
   const [refreshKey, setRefreshKey] = useState(0);
@@ -689,16 +702,21 @@ export default function Plan() {
   // d'une lecture réussie — le plan, « en préparation » et « pas encore de bilan » — et le lien
   // relance la même lecture que le retour sur l'onglet.
   const banniereRelecture = (centree = false) =>
-    relectureEnEchec ? (
+    relectureEnEchec || refusDeRemplacement ? (
       <View style={[styles.relecture, centree && styles.relectureCentree]}>
-        <MessageInline message="Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
-        <TextLink
-          label="Réessayer"
-          onPress={rafraichir}
-          type="small"
-          weight={600}
-          themeColor="accentText"
-        />
+        {refusDeRemplacement && <MessageInline message={refusDeRemplacement} />}
+        {relectureEnEchec && (
+          <>
+            <MessageInline message="Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
+            <TextLink
+              label="Réessayer"
+              onPress={rafraichir}
+              type="small"
+              weight={600}
+              themeColor="accentText"
+            />
+          </>
+        )}
       </View>
     ) : null;
 
@@ -949,6 +967,12 @@ export default function Plan() {
         intentionTiming={action.intention_timing}
         otherActionCommitted={committedActionId !== null && committedActionId !== action.id}
         onChanged={() => setRefreshKey((key) => key + 1)}
+        onRefus={(message) => {
+          setRefusDeRemplacement(message);
+          // Sans le dépli, la carte concernée peut repasser derrière « Voir d'autres pistes » et le
+          // message parlerait d'une action qu'on ne voit plus.
+          setPistesDepliees(true);
+        }}
       />
     </ActionCard>
   );

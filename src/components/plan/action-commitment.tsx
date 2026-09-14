@@ -38,6 +38,7 @@ export function ActionCommitment({
   otherActionCommitted,
   onChanged,
   onEngage,
+  onRefus,
 }: {
   actionId: string;
   poste: string | null;
@@ -53,6 +54,15 @@ export function ActionCommitment({
    * n'a de sens qu'à cet instant précis : la personne vient de dire quand elle va agir.
    */
   onEngage?: () => void;
+  /**
+   * Appelé quand le serveur **refuse** le remplacement (`RM001`), avec la phrase à afficher.
+   *
+   * Le message ne peut pas vivre dans cet état local : le même chemin appelle `onChanged()`, donc le
+   * plan est relu et ce composant remonté — la phrase disparaissait au rendu suivant, et personne ne
+   * lisait jamais pourquoi son choix n'avait pas été pris (relevé le 14/09/2026). C'est l'écran qui
+   * la porte, au-dessus du plan, là où la ligne de relecture se dit déjà.
+   */
+  onRefus?: (message: string | null) => void;
 }) {
   const kind = intentionKindForPoste(poste);
 
@@ -68,6 +78,10 @@ export function ActionCommitment({
   const submit = async () => {
     setBusy(true);
     setError(null);
+    // Le refus précédent appartenait à la tentative précédente : il s'efface ici et nulle part
+    // ailleurs. La relecture qui suit un refus est déclenchée par le même `onChanged` que le succès,
+    // donc l'effacer là ferait disparaître le message avant qu'il ne soit lu.
+    onRefus?.(null);
     const result = await commitPlanAction(
       actionId,
       kind === 'days' ? { days } : { timing: timing as IntentionTiming },
@@ -79,10 +93,16 @@ export function ActionCommitment({
     );
     setBusy(false);
     if (!result.ok) {
-      setError(result.message);
       // L'écran ne savait pas qu'une autre action était engagée : on relit plutôt que de laisser un
-      // plan qui ne dit pas la vérité, et le message explique ce que la relecture va montrer.
-      if (result.rechargerLePlan) onChanged();
+      // plan qui ne dit pas la vérité, et le message explique ce que la relecture va montrer — mais
+      // il se dit **à l'écran**, parce que la relecture remonte cette carte et emporterait un état
+      // local avec elle.
+      if (result.rechargerLePlan) {
+        onRefus?.(result.message);
+        onChanged();
+        return;
+      }
+      setError(result.message);
       return;
     }
     setPicking(false);
@@ -95,6 +115,7 @@ export function ActionCommitment({
   const release = async () => {
     setBusy(true);
     setError(null);
+    onRefus?.(null);
     const result = await clearPlanActionCommitment(actionId);
     setBusy(false);
     if (!result.ok) {
