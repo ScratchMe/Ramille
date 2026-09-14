@@ -149,6 +149,14 @@ select set_config('role', 'postgres', true);
 update public.plan_cycles set created_at = now() - interval '1 hour'
 where id = current_setting('test.cycle_a')::uuid;
 
+-- **On désigne les lignes avant de les reconstruire, parce que `created_at` ne désigne rien ici.**
+-- `now()` est l'horodatage de début de transaction : les lignes d'origine et les lignes
+-- reconstruites le portent à l'identique, et la ligne juste au-dessus vient en plus de reculer le
+-- `created_at` du cycle d'une heure — donc toute comparaison de dates est vraie quoi qu'il arrive.
+select set_config('test.actions_avant',
+  (select coalesce(string_agg(id::text, ',' order by id::text), '')
+   from public.plan_actions where plan_cycle_id = current_setting('test.cycle_a')::uuid), true);
+
 select public.recompute_assessment_results('c2210000-0000-0000-0000-000000000001');
 
 select results_eq(
@@ -159,16 +167,16 @@ select results_eq(
   'A1 : le re-bilan reconstruit le plan et l''engagement y revient, jours compris — pas une reconduction'
 );
 
--- Le `created_at` des lignes dit la reconstruction mieux que leur nombre, qui a cessé d'être deux
--- avec C4.6 (toutes les actions au gain suffisant sont désormais figées). Ce qu'on veut établir ici
--- est que les lignes sont **neuves** — sinon l'assertion précédente lirait l'engagement d'origine
--- resté en place, et ne prouverait rien.
-select is(
-  (select bool_and(pa.created_at >= pc.created_at) from public.plan_actions pa
-   join public.plan_cycles pc on pc.id = pa.plan_cycle_id
-   where pa.plan_cycle_id = current_setting('test.cycle_a')::uuid),
-  true,
-  'A1 : et le plan a bien été reconstruit (des actions neuves), sinon l''assertion précédente ne prouverait rien'
+-- Ce qu'on veut établir est que les lignes sont **neuves** — sinon l'assertion précédente lirait
+-- l'engagement d'origine resté en place, et ne prouverait rien. L'ensemble des identifiants est donc
+-- comparé à celui capturé plus haut : aucune date n'entre dans ce test, et il tombe si le `delete`
+-- n'a pas eu lieu. La première version comparait `plan_actions.created_at` à `plan_cycles.created_at`
+-- et ne pouvait pas échouer (quatre dimensions de l'audit de la vague 6 l'ont relevé le même jour).
+select isnt(
+  (select coalesce(string_agg(id::text, ',' order by id::text), '')
+   from public.plan_actions where plan_cycle_id = current_setting('test.cycle_a')::uuid),
+  current_setting('test.actions_avant'),
+  'A1 : et le plan a bien été reconstruit — les lignes sont neuves, pas les mêmes réécrites'
 );
 
 select is(

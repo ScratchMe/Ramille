@@ -150,11 +150,18 @@ begin
   end if;
 
   v_def := replace(v_def, v_ancre, v_neuf);
-  v_def := replace(
-    v_def,
-    'plan_cycle_id, action_template_id, saving_kg_year, saving_share_percent, detail_text, rank',
-    'plan_cycle_id, action_template_id, saving_kg_year, saving_share_percent, detail_text, rank, first_step'
-  );
+
+  -- **La seconde substitution était aveugle**, et son échec aurait produit une fonction cassée créée
+  -- sans erreur : la liste de colonnes de l'`insert` doit être vérifiée comme la première ancre
+  -- (relevé en contre-lisant la vague 6, le 14/09/2026). Ajouter ce contrôle ne change rien au
+  -- schéma produit ; il fait seulement échouer fort plutôt qu'en silence, le jour d'un rejeu.
+  v_ancre := 'plan_cycle_id, action_template_id, saving_kg_year, saving_share_percent, detail_text, rank';
+  v_neuf := v_ancre || ', first_step';
+  v_occurrences := (length(v_def) - length(replace(v_def, v_ancre, ''))) / length(v_ancre);
+  if v_occurrences <> 1 then
+    raise exception 'C4.6 : % occurrences de la liste de colonnes de l''insert au lieu d''une seule.', v_occurrences;
+  end if;
+  v_def := replace(v_def, v_ancre, v_neuf);
 
   execute v_def;
 end
