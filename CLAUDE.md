@@ -1446,6 +1446,10 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   remplacement se rend à deux endroits gardés l'un par l'autre** — `comparisonNote` ne parle qu'en
   relecture, `palierNote` la remplace en mode `nouveau`, donc une seule branche aurait laissé le
   profil concerné sans phrase à l'endroit même où la barre disparaît.
+  **Et `/suivi` nomme la moyenne même pour ce profil, ce qui est assumé** (14/09/2026) : ce que C3.1
+  retire est la **barre**, c'est-à-dire un score avec un mauvais côté ; la phrase du suivi ne se rend
+  qu'en **dessous** de la moyenne, donc du seul côté qui soit favorable, et la taire cacherait à ce
+  profil la seule comparaison qui joue pour lui.
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
   faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
   professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne
