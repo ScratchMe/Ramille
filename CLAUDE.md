@@ -664,6 +664,20 @@ Les trois autres sont des décisions d'écran : le placement de la taille du cov
 quotidien (§12.2), le binaire du second mode qui n'a pas d'état « pas encore répondu » (§12.3), et
 les actions que le plan affiche sans qu'on puisse les choisir (§12.4, qui rouvre C4.6).
 
+**`C4.5` a sa page de décision : `v1-15-hors-ligne.md`** (15/09/2026), et elle déplace deux choses
+qu'il faut connaître avant d'y toucher. La moitié « session expirée » du chantier est **déjà livrée**
+par C2.11, donc il ne porte plus que l'hors-ligne. Et **l'instantané local du plan est sorti du
+périmètre** : il serait un troisième endroit où vivent les chiffres de la personne, ce que ce dépôt
+refuse partout ailleurs. Ce qui referme le mur est une **marque locale** — une clé
+`traceverte.a_un_bilan.v1`, dont le préfixe historique n'est pas négociable puisque c'est par lui que
+`src/lib/compte.ts` balaie les marques à la suppression de compte — consultée **seulement** quand la
+lecture a échoué, jamais comme source de vérité. Son rôle n'est pas de mettre en cache mais
+d'**autoriser une phrase** : sans elle, aucun écran ne peut dire « ton plan t'attend » sans affirmer
+quelque chose qu'il ne sait pas. Et le repli quand elle est absente est `/onboarding`, qui n'affirme
+rien, marche hors ligne, et porte « J'ai déjà un compte » — ce qui rend le questionnaire atteignable
+sans réseau sans remettre « Faire mon bilan » sur un écran d'erreur, que C1.4 en avait délibérément
+retiré.
+
 Trois choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas — chaque ligne dit maintenant si la recette du
 14/09/2026 l'a jouée, et une ligne muette n'a pas été jouée, y compris quand le bloc qui la portait
