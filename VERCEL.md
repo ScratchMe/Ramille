@@ -37,6 +37,10 @@ vérifiées par Antoine auprès de Vercel :
 - **Une fusion qui ne touche que la documentation coûte autant qu'une fusion de code**, tant
   qu'un Ignored Build Step ne l'écarte pas (§1.3). Sur Ramille, 13 des 82 fusions des trente jours
   précédant le 15/09/2026 étaient dans ce cas — et 3 des 5 fusions de cette seule journée.
+- **Le compteur est celui du compte, pas du projet.** Un tableau de bord qui affiche 9,85 Go sur
+  10 additionne tous les projets du compte ; le chiffre par projet est ailleurs sur la même page.
+  Lire l'un sans l'autre, c'est raisonner sur le mauvais dénominateur — Ramille a passé une heure
+  à chercher un facteur cinq qui était un autre projet (§2.1). Demander les deux chiffres.
 
 **Vercel compte le poids d'un bundle une fois par ROUTE, pas une fois par bundle physique.** Un
 bundle de 4 Mo partagé par 92 routes est facturé ~368 Mo. Avant de choisir où optimiser, compter
@@ -80,6 +84,14 @@ Puis, et c'est là que tout le monde se trompe :
 La mesure juste, en une phrase : *pour chaque `.func` non-symlink, sommer les fichiers réels
 qu'il contient **et** les fichiers listés dans son `filePathMap`, sans compter deux fois.* Pour le
 poids facturé, multiplier ensuite chaque bundle par le nombre de routes qui pointent dessus.
+
+**Et le tableau de bord compte l'archive, pas le disque.** L'export d'un déploiement (*Deployment
+→ Source/Output*, ou l'export CSV) donne par fonction la taille que Vercel retient ; chez Ramille
+c'est 1 595 453 octets pour un bundle qui pèse 4,33 Mo sur disque, soit **37 %** — un `.zip` local
+au taux maximal donne 1,37 Mo, donc c'est bien une archive compressée, avec une marge. Le rapport
+dépend de ce que le bundle contient (du WASM et du JS se compressent bien, une police moins) :
+**la mesure hors ligne donne le classement et l'ordre de grandeur, le tableau de bord donne le
+chiffre**, et c'est lui qu'on écrit dans un budget.
 
 **`.vercel/` doit être dans `.gitignore` ET dans les ignores du linter.** Tour de Growth l'avait
 oublié : ESLint s'est mis à analyser des bundles minifiés et à rapporter 2 366 problèmes. Le
@@ -218,26 +230,38 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 | | Valeur |
 |---|---|
 | Fonctions physiques par déploiement | 2 — `api/share-card` (Node.js, 63 fichiers) et `api/partage` (Edge) |
-| Poids de `share-card` | 3,95 Mo sur disque + 0,38 Mo de `hb.wasm` via `includeFiles` = **4,33 Mo** |
-| Poids de `partage` | 0,03 Mo |
-| **Poids par déploiement** | **≈ 4,4 Mo**, une route par fonction donc sans amplification |
+| Poids de `share-card` sur disque | 3,95 Mo + 0,38 Mo de `hb.wasm` via `includeFiles` = 4,33 Mo |
+| Poids de `share-card` **retenu par Vercel** | **1 595 453 octets ≈ 1,6 Mo** (export du tableau de bord, 15/09/2026 — l'archive compressée, 37 % du disque) |
+| Poids de `partage` | 0,03 Mo sur disque ; l'export du tableau de bord ne lui donne aucune taille (Edge) |
+| **Poids par déploiement** | **≈ 1,6 Mo**, une route par fonction donc sans amplification |
 | Fusions sur `main`, 16/08 → 15/09 | 82, dont **13 doc seule** (16 %) |
 | Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
-| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — pas de baisse avant |
+| **Compteur Functions Storage du compte** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*), tous projets confondus — pas de baisse avant au moins dix jours |
+| **Part de Ramille** | **437,53 Mo**, soit ≈ 273 déploiements à 1,6 Mo en dix jours de vie du projet (82 fusions de production et ~190 prévisualisations, une par push jusqu'au 15/09 à midi) |
+| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — c'est tout ce qui reste avant la limite |
 
-Ce que ce budget vaut en déploiements, au poids mesuré : **≈ 34**. Ce que la cadence des trente
-derniers jours aurait consommé sur dix jours : 27 déploiements, ≈ 120 Mo — avec les fusions
-« doc seule » sautées, 23 et ≈ 100 Mo. **L'Ignored Build Step seul ne fait pas la marge : c'est
-le groupage des fusions qui la fait** (§2.3).
+> **Réconcilié le 15/09/2026, en deux temps.** Le premier relevé — « 9,85 Go sur 10 » — ne se
+> déduisait ni de 1,6 Mo × 82 fusions (131 Mo) ni de 4,4 Mo × (fusions + prévisualisations) : il
+> manquait un facteur cinq, cherché une heure dans le nombre de déploiements et dans ce que Vercel
+> compte. Il était dans le **dénominateur** : 9,85 Go est le compteur du **compte**, et Ramille
+> n'en représente que 437,53 Mo — le reste est Tour de Growth, dont chaque déploiement pèse
+> ~47 Mo. 437,53 Mo ÷ 1,6 Mo ≈ 273 déploiements en dix jours, ce que l'historique rend plausible
+> (82 fusions de production, 158 commits atteignables hors branches écrasées, une prévisualisation
+> par push jusqu'au 15/09 à midi). **Le chiffre par déploiement de l'export est donc le bon.**
+
+Ce que le budget vaut en déploiements de Ramille : ≈ 94 — **si l'autre projet ne fusionne pas** ;
+trois de ses fusions suffisent à consommer les 150 Mo. Un déploiement de Ramille est bon marché,
+mais le compte est à 98 % : rien ne déploie sans nécessité (§2.3). Première estimation, avant les
+relevés : 4,4 Mo par déploiement d'après le disque ; l'export l'a divisée par 2,7 (§1.2).
 
 Répartition du poids de `share-card` : `@resvg/resvg-wasm` 2,48 Mo (57 %), `hb.wasm` 0,38,
 `@shuding/opentype.js` 0,37, `satori` 0,36, `fflate` 0,17, `linebreak` 0,14, les deux polices
 Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 
-> Le poids mesuré est celui du disque, non compressé. Tour de Growth a relevé un compteur
-> proche de sa mesure disque (47 Mo affichés pour 43,5 mesurés) ; le rapport exact chez Vercel
-> n'est pas connu. **Le tableau de bord a raison** : relever ce qu'il affiche par déploiement et
-> corriger cette table si l'écart dépasse quelques dizaines de pour cent.
+> Tour de Growth avait relevé un compteur proche de sa mesure disque (47 Mo affichés pour 43,5
+> mesurés) ; chez Ramille le rapport est de 37 %. Les deux sont vrais : un bundle Next.js est du
+> JavaScript déjà minifié qui se compresse peu, le nôtre est un WASM de 2,5 Mo qui se compresse
+> bien. **Le tableau de bord a raison**, et la mesure hors ligne sert au classement (§1.2).
 
 ### 2.2 Décisions prises, à ne pas rouvrir sans raison
 
@@ -263,9 +287,10 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 
 ### 2.3 Convention de cadence, et le budget des dix jours
 
-Chaque fusion sur `main` coûte ≈ 4,4 Mo pendant trente jours. Entre le 15 et le 25/09/2026, le
-plafond est **150 Mo, soit 34 déploiements au plus**, et la cadence courante en consommerait 120.
-Trois règles, à demeure :
+Chaque fusion sur `main` coûte ≈ 1,6 Mo pendant trente jours. Entre le 15 et le 25/09/2026,
+**150 Mo sont tout ce qui reste au compte entier**, partagés avec un projet dont une fusion en
+vaut trente de Ramille — et une limite atteinte, c'est un correctif qui ne part plus, sur les
+deux projets. Quatre règles, à demeure :
 
 1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
    (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le
@@ -273,8 +298,12 @@ Trois règles, à demeure :
 2. **Une PR par vague, pas une par chantier.** Une vérification complète, un push, une fusion.
    Une correction de documentation qui suit une fusion de code attend la fusion de code
    suivante — ou part seule, puisqu'elle ne déploie plus.
-3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours, ce qui laisse
-   ≈ 90 Mo et une marge pour l'imprévu.
+3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours, et **seule une
+   correction nécessaire déploie** tant que le compte est à 98 % ; ce qui peut attendre le 25/09
+   attend, sur une branche. Le coût unitaire est faible, c'est la marge qui ne l'est pas, et elle
+   n'est pas qu'à nous.
+4. **Une fusion de documentation part seule et doit être sautée** (§1.3) : c'est gratuit, et
+   chacune vérifie que le script fait ce qu'il dit.
 
 Ce que cette convention corrige : le 15/09/2026, cinq fusions dans la journée, dont trois qui ne
 touchaient que de la documentation — le motif exact contre lequel Tour de Growth avait écrit sa
@@ -289,4 +318,6 @@ règle, et que j'ai reproduit avant de la lire.
 - **`VERCEL_GIT_PREVIOUS_SHA` est-il exposé ?** Le script écrit « repli sur HEAD^ » quand il ne
   l'est pas. Si cette ligne apparaît à chaque fois, le trou du build échoué (§1.3) est ouvert et
   il faut le savoir.
-- **Le poids affiché par déploiement**, à confronter à §2.1.
+- **La part de Ramille après la fusion de la PR #192** (première fusion sautée) : elle doit être
+  restée à 437,53 Mo. Si elle a bougé, l'Ignored Build Step n'a pas sauté, et le journal de build
+  dit pourquoi. (Le total du compte, lui, bouge dès que l'autre projet fusionne.)

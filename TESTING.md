@@ -1,0 +1,283 @@
+# Tests — conventions et pièges
+
+Ce que Ramille a appris en écrivant ses deux suites (Jest sur la logique pure, pgTAP sur la
+base). La **§1 vaut sur n'importe quel projet** ; la **§2** porte les fichiers, les chiffres et les
+pièges propres à Ramille, et ne voyage pas. L'histoire complète est dans `CLAUDE.md` (mécaniques)
+et dans les documents `docs/architecture/v1-0N-*.md` que chaque paragraphe cite.
+
+> **Quand lire ce fichier** : avant d'écrire un test censé protéger une correction · avant
+> d'**annoncer que quelque chose est vérifié** · quand une suite rougit ou verdit de façon
+> inattendue · avant de rejouer un fichier pgTAP sur le projet distant · avant de toucher au
+> référentiel des facteurs.
+
+---
+
+## 1. Ce qui vaut sur n'importe quel projet
+
+### 1.1 Une garde se vérifie en cassant ce qu'elle garde
+
+Un test qui passe n'a encore rien prouvé : il faut **remettre le défaut** — l'ancien défaut de la
+valeur, le rang tronqué, la policy fautive fabriquée exprès, le script mutilé — et constater que
+l'assertion tombe, **et seulement celle-là**. Sans ce passage on a écrit une ligne qui *pourrait*
+garder quelque chose ; avec, on sait laquelle. Deux règles qui en découlent :
+
+- **Le compte s'écrit dans le fichier de test** (« retirer X fait tomber 1 test ; ignorer Y, 3 »),
+  daté. C'est ce qui permet, six mois plus tard, de savoir si une garde s'est désarmée sans que
+  personne ne touche au test — un test vert qui ne tombe plus sur aucune mutation est une garde
+  morte qui a l'air vivante. Exemple : l'en-tête de `scripts/vercel-ignorer-le-build.test.ts`.
+- **Une mutation qui passe est elle-même un signal**, pas une formalité ratée : soit la garde ne
+  garde rien, soit le défaut n'est pas observable là où on le cherche. Les deux valent d'être
+  écrits avant de conclure.
+
+Corollaire pour une valeur attendue : **une hypothèse sur les données se mesure, jamais au
+raisonnement**. Une assertion chiffrée se recalcule par une requête sur la base, et n'écrit que ce
+qui a été ainsi vérifié (§2.2).
+
+### 1.2 Où passe la ligne entre logique pure et entrée-sortie
+
+La ligne passe par **ce qu'un test doit dresser avant de pouvoir affirmer**, et non par le nom
+d'un import. Deux niveaux :
+
+- **Un module de logique pure** n'importe rien de la plateforme et n'installe aucun double. C'est
+  ce qui le rend éprouvable à la vitesse de la pensée, et c'est fragile par un lien que rien
+  n'affiche : une dépendance ajoutée à un module *importé par* un module pur fait tomber toute la
+  suite qui en dépend. Une règle ESLint vaut mieux qu'une prose (`eslint.config.js` la porte pour
+  `src/types/**`).
+- **Un module d'entrée-sortie** est testé avec un double **exactement de ce qu'il éprouve**
+  (le stockage local pour un module de stockage, la plateforme pour un module de plateforme), et
+  n'éprouve que ce que ce double couvre. Importer un client réseau devenu paresseux (mandataire qui
+  lève à la première utilisation, jamais au chargement) est inoffensif — interdire l'import gardait
+  un danger disparu et interdisait des tests utiles.
+
+### 1.3 Doubler un module entier passe au vert en salissant la sortie
+
+Étaler un module natif avec `requireActual` **lit** chacune de ses propriétés, donc déclenche
+les avertissements de dépréciation posés sur ses exports sortants. Un `Proxy` ne lit que ce qu'on
+lui demande. Un avertissement dans une sortie de CI est un avertissement qu'on cesse de lire, et
+c'est ainsi qu'on manque le vrai.
+
+### 1.4 Le fuseau de la suite fait partie de la suite — et il ne suffit pas
+
+En UTC, toutes les distinctions UTC/local qu'un dépôt documente avec soin sont
+**indistinguables** : les tests passent aussi bien avec l'erreur. Forcer un fuseau réaliste
+(`TZ=Europe/Paris` dans la commande de test — pas depuis le corps d'un test : Node met son fuseau
+en cache à la première opération de date, et Jest en a déjà fait une) rend visible au moins un
+défaut, et le test qui tombe alors est du même coup **la garde du réglage** : lancer la suite en
+`TZ=UTC` doit le faire tomber, et cette mesure s'écrit dans la documentation avec sa date (la
+première rédaction disait l'inverse, ce qui était faux).
+
+Mais un fuseau à l'est de Greenwich ne garde pas les distinctions du même genre dans l'autre sens
+(minuit UTC et le jour écrit y tombent le même jour). Une garde intitulée « quel que soit le
+fuseau » doit éprouver le **moyen** et non la sortie : neutraliser le constructeur `Date` le temps
+de l'appel, ou le réduire à sa forme à composantes quand une date locale est nécessaire.
+
+### 1.5 Deux résolveurs qui ne disent pas la même chose
+
+Le défaut de `moduleFileExtensions` de Jest est `['js','mjs','cjs','jsx','ts','tsx',…]`, soit
+l'inverse des `sourceExts` d'Expo/Metro. Sans un réglage explicite, un `.js` égaré à côté de son
+`.ts` (un `npx tsc` lancé sans `--outDir` suffit) devient **silencieusement** le module que la
+suite éprouve, pendant que l'app charge le `.ts` — et ça se lit « tous les tests verts ». Et si le
+réglage vit dans un JSON, la raison ne peut pas vivre à côté (une clé de commentaire fait émettre
+un `Validation Warning`) : elle s'écrit dans la documentation.
+
+### 1.6 La couverture se relève sans seuil
+
+Un seuil transforme une carte en obstacle, et se contourne en écrivant des tests qui touchent du
+code sans rien affirmer. Relever la couverture sur le périmètre qui est *censé* être testé (la
+logique pure), sans y lister ce qui n'est pas testé par décision (les écrans, à 0 %, noieraient
+la carte).
+
+### 1.7 pgTAP : cinq pièges d'une transaction
+
+- **`now()` est l'horodatage de début de transaction.** Deux lignes écrites par le même appel
+  portent le même `created_at`, et `order by created_at limit 1` retombe sur l'ordre du tas : une
+  assertion juste peut tirer *l'autre* ligne et réussir là où elle attend un refus. Capturer
+  l'identifiant dans un `set_config`, ou ordonner sur une colonne réellement distincte.
+- **La place d'une assertion fait partie de l'assertion.** Posée après une section qui écrit une
+  ligne à la main, elle lit un état que nulle mise en file n'a produit — et valider l'assertion
+  seule, avec ses propres fixtures, ne reproduit pas cet état. Elle vit juste après ce qui produit
+  ce qu'elle lit, avec un commentaire qui dit pourquoi elle ne doit pas bouger.
+- **Rejouer la séquence entière du fichier**, bascules de rôle (`request.jwt.claims`) comprises :
+  un scénario extrait de son contexte ne reproduit pas le rôle sous lequel il tournera.
+- **Une assertion de refus peut passer sans rien éprouver de deux façons** : un trigger `before`
+  qui refuse avant les `check` (même SQLSTATE `23514`), ou la RLS depuis la session d'un tiers
+  (`42501`). L'ordre des assertions et le rôle courant décident de ce qui est éprouvé. Même chose
+  pour un privilège : « permission denied » et « violates row-level security » portent tous deux
+  `42501`, donc un test qui n'assure qu'un refus reste vert après un `revoke`.
+- **Une fixture ne peut pas écrire un état que la production ne peut pas produire** (une ligne
+  « répondue » sans réponse, un horodatage choisi que le serveur pose lui-même) : quand une
+  contrainte ou un trigger arrive, les fixtures qui le faisaient tombent, et c'est une bonne
+  chose — elles éprouvaient une fiction.
+
+Et une base **vierge** n'est pas la base **distante** : une assertion qui lit `min()` sur toute
+une table, ou qui attend un envoi *sauté* faute de secret, passe sur l'une et échoue sur l'autre.
+Les connaître évite de « corriger » un test qui n'a rien (§2.3).
+
+---
+
+## 2. Propre à Ramille
+
+### 2.1 Les deux suites, et où passe la ligne
+
+Deux suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
+(chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
+bout-en-bout (écrans, flux de connexion) :
+
+- **Jest** (`npm test`, qui force `TZ=Europe/Paris` — voir plus bas pourquoi) sur la logique pure
+  côté client. La règle, plutôt qu'une liste qui se
+  périme au fichier suivant : **toute dérivation pure affichée à la personne ou décidant d'une
+  navigation est testée**, dans un `*.test.ts` colocalisé — l'inventaire se lit en listant
+  `src/**/*.test.ts`. Quelques-uns de ces tests n'existent pas pour attraper une régression de
+  code mais une régression de **jugement**, et il faut savoir qu'ils sont là avant de « corriger »
+  ce qu'ils épinglent : l'invariant SDES de `carbon-reference.test.ts` (le total est la somme des
+  postes), la table de vérité de `rappels.test.ts` (jumelle SQL de `reminder_channel_for`), les
+  règles de voix de `mascotte.test.ts` (jamais un nombre, jamais « tu devrais »), et la conformité
+  des chemins de `mascot.test.ts`.
+  **La ligne passe par ce qu'un test doit dresser avant de pouvoir affirmer** (C3.12), et non par
+  le nom d'un import. La règle disait « un module testé n'importe pas `@/lib/supabase` » ; elle
+  protégeait une chose qui n'existe plus — le client levait au **chargement**, donc un seul import
+  faisait tomber la suite entière — et depuis qu'il est un mandataire, l'importer est inoffensif.
+  Elle interdisait donc des tests utiles en gardant un danger disparu. Deux niveaux la remplacent :
+  **`src/types/*` est de la logique pure** — n'importe rien de la plateforme, n'installe aucun
+  double ; c'est aussi pourquoi `format.ts` doit rester pur bien qu'il vive dans `src/lib`, puisque
+  `src/types/resultat.ts` l'importe. **`src/lib/*` est de l'entrée-sortie** — le test **double**
+  exactement ce qu'il éprouve (AsyncStorage pour `bilan-draft`, `connexion-prefs`, `saison-prefs`
+  et la moitié locale de `notification-prefs` ; `Platform` pour `app-url`) et n'éprouve que ce que
+  ce double couvre. `notification-prefs` importe `@/lib/supabase` et est quand même testé : ce qui
+  y est éprouvé ne touche que le stockage. Corollaire à connaître si cette suite tombe un jour sur
+  une erreur de configuration — ce n'est pas le test qui aura changé, c'est une de ces fonctions
+  qui aura commencé à toucher le client au chargement du module.
+  **La couverture est relevée en CI sans seuil** (`npm test -- --coverage`, périmètre
+  `src/types` · `src/lib` · `src/constants` dans `collectCoverageFrom`) : un seuil transforme une
+  carte en obstacle et se contourne en écrivant des tests qui touchent du code sans rien affirmer.
+  Les écrans n'y sont pas — ils ne sont pas testés, par décision, et les lister à 0 % à chaque
+  passage noierait la carte. 79 % des lignes au 14/09/2026.
+  **Doubler `react-native` en entier passe au vert en salissant la sortie** : le `setup.js` de
+  jest-expo est privé de ce qu'il installe, et l'étaler avec `requireActual` **lit** chaque
+  propriété du module, donc déclenche les avertissements de dépréciation posés sur ses exports
+  sortants. Un `Proxy` ne lit que ce qu'on lui demande — la démonstration est dans
+  `app-url.test.ts`. Un avertissement dans une sortie de CI est un avertissement qu'on cesse de
+  lire, et c'est ainsi qu'on manque le vrai.
+  **La suite tourne en `TZ=Europe/Paris`, et ce n'est pas cosmétique** (C2.7) : en UTC, toutes les
+  distinctions UTC/local que ce dépôt documente avec soin — `debutDePeriodeInterrogee` et
+  `periodePrecedente` qui lisent l'UTC comme leurs jumelles SQL, `saisonDe`, `progressionDeLaPeriode`
+  et `keepLatestPerDay` qui lisent le calendrier local — sont **indistinguables**, donc leurs tests
+  passeraient tout aussi bien avec l'erreur. Le test « regroupe sur le jour local » de
+  `suivi.test.ts` est celui qui l'a rendu visible : il échoue sur l'ancienne implémentation en
+  Europe/Paris et **échoue en UTC avec l'une comme avec l'autre** — ce qui en fait du même coup la
+  garde de ce réglage : `TZ=UTC npx jest src/types/suivi.test.ts` le fait tomber, mesuré le
+  14/09/2026 (la première rédaction disait « passe des deux façons en UTC », ce qui était faux).
+  **Et ce fuseau ne suffit pas à garder les autres distinctions du même genre** : Paris est à l'est
+  de Greenwich, donc minuit UTC et le jour écrit y tombent le même jour, et deux gardes intitulées
+  « quel que soit le fuseau » restaient vertes avec l'implémentation qu'elles interdisent. Elles
+  éprouvent désormais le **moyen** et non la sortie — le constructeur `Date` est neutralisé le temps
+  de l'appel pour `finDePeriodeEnMots`, et réduit à sa forme à composantes pour `pointsParSaison`,
+  qui a besoin d'une date locale. Forcer le fuseau depuis le corps d'un test ne marche
+  pas — Node met son fuseau en cache à la première opération de date, et Jest en a déjà fait une.
+  **Jest résout `ts` avant `js` parce que le dépôt le lui dit, et Metro le faisait déjà.**
+  `package.json` porte un `moduleFileExtensions` explicite : le défaut de Jest est
+  `['js','mjs','cjs','jsx','ts','tsx',…]`, soit l'inverse des `sourceExts` d'Expo, qui commencent par
+  `ts`/`tsx`. Sans ce réglage, un `.js` égaré à côté de son `.ts` — un `npx tsc` lancé sans
+  `--outDir` suffit, et c'est arrivé le 13/09/2026 sur sept modules — devient silencieusement le
+  module que la suite éprouve, pendant que l'app continue de charger le `.ts`. Deux résolveurs qui
+  ne disent pas la même chose sont exactement la forme de défaut que ce dépôt traque ailleurs, et
+  la seule à se lire « 590 tests verts ». La raison vit ici et non à côté du réglage parce que
+  `package.json` est du JSON : une clé de commentaire y fait émettre à Jest un `Validation Warning`
+  à chaque passage.
+  Deux modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
+  (et importé par `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la
+  suite qui en dépend, par un lien que rien n'affiche), et `bilan-draft.ts`, dont le test double
+  AsyncStorage parce que c'est l'entrée-sortie elle-même qu'il éprouve.
+- **pgTAP** (`supabase/tests/database/*.sql`, numérotés, un fichier par sujet — l'inventaire se
+  lit dans le répertoire) sur les fonctions SQL de calcul, sur les policies RLS (isolation
+  stricte par utilisateur en lecture/écriture, verrouillage des tables à écriture serveur-only,
+  lecture publique des référentiels) et sur la matrice de privilèges. Même distinction que côté
+  Jest : plusieurs assertions sont là pour **empêcher une correction de réflexe** — l'ordre ACV
+  des motorisations (hybride > thermique > rechargeable > électrique), la grosse moto au-dessus
+  de la voiture, la **source** de chaque facteur et le vélo non nul, le refus d'écriture directe
+  sur `plan_actions` et `engagement_checkins`. Tourne via `supabase test db`, qui démarre une
+  stack Postgres locale (Docker) à partir de `supabase/config.toml` + `supabase/migrations/` —
+  indépendante du projet Supabase distant `TraceVerte-v1` utilisé pour le développement applicatif
+  courant. Nécessite le CLI Supabase (`npx supabase@latest`) et Docker ; non exécutable dans
+  cet environnement (pas de daemon Docker) — validé à la place via des transactions
+  `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
+
+Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
+
+### 2.2 Le référentiel des facteurs et les assertions chiffrées
+
+**Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
+pas seulement celles qui citent le facteur touché — et « toucher » inclut en AJOUTER un.**
+Le fichier `07` porte trois gardes qui balaient les tables entières (tout mode a une source,
+toute source a un facteur, tout facteur porte l'ACV complète) : quatre modes ajoutés les
+traversent sans être nommés nulle part. C'est ainsi que la CI est tombée une troisième fois
+(PR #48). En particulier, `emission_factors.source` doit valoir **exactement**
+`'ADEME Base Empreinte — ACV complète (via API Impact CO2)'` : ce n'est pas une étiquette
+décorative mais le seul endroit où l'on enregistre quel endpoint a été interrogé — la valeur
+seule ne distingue pas un facteur ACV d'un facteur d'usage, les deux endpoints renvoyant des
+nombres également plausibles.
+
+**Le corollaire sur les valeurs :** Une quinzaine d'assertions chiffrées sont
+réparties dans `01`, `05`, `06` et `08`, et beaucoup dérivent d'un facteur sans le nommer.
+Chercher l'ancienne valeur littérale dans les fichiers ne suffit donc pas — c'est ainsi que
+la CI est tombée deux fois (PR #34, puis PR #41). La méthode qui marche : lister toutes les
+assertions (`grep -n '::numeric,' supabase/tests/database/`), recalculer chacune **par une
+requête sur la base** plutôt qu'à la main, et n'écrire dans le test que des valeurs ainsi
+vérifiées. Le piège se referme d'autant plus facilement que la validation sur le projet
+distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des tests.
+
+### 2.3 Ce que le projet distant ne prouve pas
+
+**Et le piège a un symétrique, relevé le 11/09/2026 : trois assertions de la suite échouent sur le
+projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les connaître évite de
+« corriger » un test qui n'a rien.
+- `12_usage_events` assertion 9 (« un horodatage antidaté est écrasé par celui du serveur ») lit
+  `min(occurred_at)` sur **toute** la table : le projet distant porte des lignes réelles
+  antérieures à sa fenêtre de cinq minutes, une stack locale neuve n'en a aucune.
+- `17_rappels_canal` assertions 15 et 16 attendent un envoi **sauté** faute de secrets Vault. Sur
+  le distant, `resend_api_key` et `reminder_from_address` existent : la fonction envoie vraiment, et
+  la ligne passe en `sent` / le passage en `success`.
+- `09_checkin_email_reminders` pour la même raison — et avec un **effet de bord** : ses trois appels
+  à `send_pending_reminders()` feraient partir de vrais emails vers des adresses `@test.local`, donc
+  un rebond qui coûte de la délivrabilité au domaine. Ce fichier ne se rejoue pas en entier sur le
+  distant ; ce qui s'y valide se valide en sautant ces appels (ils ne touchent pas au corps du
+  message, seulement au statut).
+Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
+fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
+`request.jwt.claims` comprises, et de savoir que ces quatre-là ne prouvent rien là-bas.
+
+### 2.4 Deux pièges de rédaction pgTAP
+
+**`created_at` ne désigne aucune ligne dans une transaction pgTAP, et un `order by` dessus rend un
+ordre arbitraire.** `now()` est l'horodatage de **début de transaction** : deux lignes écrites par le
+même appel le portent à l'identique, et `order by created_at limit 1` retombe sur l'ordre du tas.
+Relevé le 11/09/2026 dans le fichier `22` (C2.9), où le « second clic » sur un lien de désinscription
+pouvait tirer l'**autre** message et donc réussir là où l'assertion attend un refus — l'assertion
+était juste, c'est la désignation de la ligne qui ne l'était pas, et elle passait en CI comme au
+premier rejeu. Capturer l'identifiant ou le jeton une fois dans un `set_config`, ou ordonner sur une
+colonne réellement distincte.
+
+**La place d'une assertion dans un fichier pgTAP fait partie de l'assertion, et valider l'assertion
+seule ne vaut rien.** Relevé le 11/09/2026 : les deux assertions C2.11 du fichier `09` avaient été
+posées en **fin** de fichier, après la section du journal qui écrit une ligne d'outbox **à la main**
+— donc un corps que nulle mise en file n'a produit. La première échouait, la seconde passait sans
+rien éprouver, et la validation sur le distant n'avait porté que sur elles deux avec leurs propres
+fixtures, ce qui ne reproduisait pas cet état. Elles vivent maintenant juste après la mise en file
+qui produit la ligne qu'elles lisent, avec un commentaire qui dit pourquoi elles ne doivent pas
+bouger. La conjonction est le vrai piège : le fichier dont on a le plus besoin de rejouer la
+séquence entière est précisément celui qu'on ne peut pas rejouer en entier sur le distant.
+
+### 2.5 Le canal de retour : deux façons de passer sans rien éprouver
+
+Le contexte : `feedback` est la seule table où un client écrit du texte libre, gardée par le
+trigger `enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et des bornes de longueur
+(`CLAUDE.md`, « Canal de retour »).
+
+**Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
+passer sans rien éprouver de **deux** façons, et les deux se sont produites. Après la
+saturation du quota, c'est le trigger `before insert` qui refuse — il s'exécute avant
+l'évaluation des CHECK et lève lui aussi un `23514`. Et depuis la session d'un tiers, c'est la
+RLS (`42501`). Elle doit donc venir avant le remplissage du quota **et** sous la session du
+propriétaire. Plus généralement, pour valider un test pgTAP en base, rejouer la **séquence
+entière** du fichier, bascules de `request.jwt.claims` comprises — un scénario extrait de son
+contexte ne reproduit pas le rôle sous lequel il tournera.

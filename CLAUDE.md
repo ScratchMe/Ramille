@@ -26,6 +26,9 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 | Fichier | Déclencheur — ouvrir AVANT d'agir |
 |---|---|
 | **`VERCEL.md`** | Toute fusion sur `main` · toucher `vercel.json`, `api/`, `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · ajouter une route · affirmer quoi que ce soit sur un compteur ou une facture Vercel · mesurer le poids d'un déploiement |
+| **`SUPABASE.md`** | Écrire, rejouer ou réécrire une migration · toucher à un privilège, une policy, un trigger ou un RPC · toucher à l'auth (session, lien de connexion, Redirect URLs) · un `401`, `403` ou `42501` inexpliqué · retoucher `database.types.ts` · rejouer un test pgTAP sur le distant |
+| **`EXPO.md`** | Ajouter une route ou un fichier dans `public/` · toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · un écran blanc sur web · une dépendance native, un build EAS, un `expo-doctor` rouge |
+| **`TESTING.md`** | Écrire un test censé protéger une correction · **annoncer que quelque chose est vérifié** · une suite qui rougit ou verdit de façon inattendue · rejouer un fichier pgTAP sur le distant · toucher au référentiel des facteurs |
 
 ### Ce que la personne qui pilote a demandé
 
@@ -36,10 +39,12 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 - **Au plus un build EAS tous les deux jours** (15/09/2026), et la raison est au registre
   d'exploitation §3.3 : le quota du plan gratuit ne se lit qu'en le heurtant.
 - **Pas plus de 150 Mo de Functions Storage ajoutés chez Vercel entre le 15 et le 25/09/2026**
-  (15/09/2026), et à demeure : **chaque fusion sur `main` est un déploiement qui se paie trente
-  jours**, l'agent ne peut pas lire le compteur, donc il se demande avant de fusionner. La règle
-  entière et le budget en déploiements sont en `VERCEL.md` §2.3. Le jour même, j'avais fusionné
-  cinq fois, dont trois fois pour de la documentation seule.
+  (15/09/2026) — c'est tout ce qui reste au **compte** Vercel, à 9,85 Go sur 10 dont 437 Mo pour
+  Ramille —, et à demeure : **chaque fusion sur `main` est un déploiement qui se paie trente
+  jours** (≈ 1,6 Mo), l'agent ne peut pas lire le compteur, donc il se demande avant de fusionner,
+  **et il demande le total du compte et la part du projet**, parce qu'une heure a été perdue à
+  chercher dans un projet un facteur cinq qui était l'autre. `VERCEL.md` §2.1 et §2.3.
+  Le jour même, j'avais fusionné cinq fois, dont trois fois pour de la documentation seule.
 
 ### La branche de travail
 
@@ -76,7 +81,8 @@ la règle : il coûte dix minutes et évite qu'un chantier en écrase un autre e
 **Une garde neuve se vérifie en cassant ce qu'elle garde** : remettre l'ancien défaut, tronquer le
 rang, fabriquer la policy fautive — puis constater que l'assertion tombe, et seulement celle-là.
 Sans ce passage on a écrit une ligne qui *pourrait* garder quelque chose ; avec, on sait laquelle.
-C'est déjà la règle en §E de `03_rls_policies.test.sql`, et elle vaut partout.
+C'est déjà la règle en §E de `03_rls_policies.test.sql`, et elle vaut partout — le compte des
+mutations s'écrit dans le fichier de test, daté (`TESTING.md` §1.1).
 
 **Une hypothèse sur les données se mesure en base, jamais au raisonnement.** L'idiome, quand il faut
 écrire pour mesurer sans rien laisser : un bloc `do $$ … raise exception 'RESULTAT …' $$` —
@@ -141,158 +147,31 @@ expo export --platform web # build statique web (= script vercel-build), utile p
 
 ### Tests
 
-Deux suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
-(chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
-bout-en-bout (écrans, flux de connexion) :
+Deux suites : **Jest** (`npm test`, logique pure côté client, `src/**/*.test.ts` colocalisés,
+`TZ=Europe/Paris` forcé et ce n'est pas cosmétique) et **pgTAP** (`supabase/tests/database/*.sql`,
+numérotés, un fichier par sujet, `supabase test db` — non exécutable ici sans Docker, validé par
+`BEGIN`/`ROLLBACK` sur le projet distant). Les deux tournent en CI sur chaque pull request. La
+règle qui décide de ce qui se teste (**toute dérivation pure affichée à la personne ou décidant
+d'une navigation**), où passe la ligne entre logique pure (`src/types`) et entrée-sortie
+(`src/lib`), les tests de **jugement** à connaître avant de « corriger » ce qu'ils épinglent, et
+les quatre pièges de la suite Jest (doubles, fuseau, résolveurs, couverture) : `TESTING.md` §2.1 —
+et sa §1 pour ce qui vaut sur n'importe quel projet.
 
-- **Jest** (`npm test`, qui force `TZ=Europe/Paris` — voir plus bas pourquoi) sur la logique pure
-  côté client. La règle, plutôt qu'une liste qui se
-  périme au fichier suivant : **toute dérivation pure affichée à la personne ou décidant d'une
-  navigation est testée**, dans un `*.test.ts` colocalisé — l'inventaire se lit en listant
-  `src/**/*.test.ts`. Quelques-uns de ces tests n'existent pas pour attraper une régression de
-  code mais une régression de **jugement**, et il faut savoir qu'ils sont là avant de « corriger »
-  ce qu'ils épinglent : l'invariant SDES de `carbon-reference.test.ts` (le total est la somme des
-  postes), la table de vérité de `rappels.test.ts` (jumelle SQL de `reminder_channel_for`), les
-  règles de voix de `mascotte.test.ts` (jamais un nombre, jamais « tu devrais »), et la conformité
-  des chemins de `mascot.test.ts`.
-  **La ligne passe par ce qu'un test doit dresser avant de pouvoir affirmer** (C3.12), et non par
-  le nom d'un import. La règle disait « un module testé n'importe pas `@/lib/supabase` » ; elle
-  protégeait une chose qui n'existe plus — le client levait au **chargement**, donc un seul import
-  faisait tomber la suite entière — et depuis qu'il est un mandataire, l'importer est inoffensif.
-  Elle interdisait donc des tests utiles en gardant un danger disparu. Deux niveaux la remplacent :
-  **`src/types/*` est de la logique pure** — n'importe rien de la plateforme, n'installe aucun
-  double ; c'est aussi pourquoi `format.ts` doit rester pur bien qu'il vive dans `src/lib`, puisque
-  `src/types/resultat.ts` l'importe. **`src/lib/*` est de l'entrée-sortie** — le test **double**
-  exactement ce qu'il éprouve (AsyncStorage pour `bilan-draft`, `connexion-prefs`, `saison-prefs`
-  et la moitié locale de `notification-prefs` ; `Platform` pour `app-url`) et n'éprouve que ce que
-  ce double couvre. `notification-prefs` importe `@/lib/supabase` et est quand même testé : ce qui
-  y est éprouvé ne touche que le stockage. Corollaire à connaître si cette suite tombe un jour sur
-  une erreur de configuration — ce n'est pas le test qui aura changé, c'est une de ces fonctions
-  qui aura commencé à toucher le client au chargement du module.
-  **La couverture est relevée en CI sans seuil** (`npm test -- --coverage`, périmètre
-  `src/types` · `src/lib` · `src/constants` dans `collectCoverageFrom`) : un seuil transforme une
-  carte en obstacle et se contourne en écrivant des tests qui touchent du code sans rien affirmer.
-  Les écrans n'y sont pas — ils ne sont pas testés, par décision, et les lister à 0 % à chaque
-  passage noierait la carte. 79 % des lignes au 14/09/2026.
-  **Doubler `react-native` en entier passe au vert en salissant la sortie** : le `setup.js` de
-  jest-expo est privé de ce qu'il installe, et l'étaler avec `requireActual` **lit** chaque
-  propriété du module, donc déclenche les avertissements de dépréciation posés sur ses exports
-  sortants. Un `Proxy` ne lit que ce qu'on lui demande — la démonstration est dans
-  `app-url.test.ts`. Un avertissement dans une sortie de CI est un avertissement qu'on cesse de
-  lire, et c'est ainsi qu'on manque le vrai.
-  **La suite tourne en `TZ=Europe/Paris`, et ce n'est pas cosmétique** (C2.7) : en UTC, toutes les
-  distinctions UTC/local que ce dépôt documente avec soin — `debutDePeriodeInterrogee` et
-  `periodePrecedente` qui lisent l'UTC comme leurs jumelles SQL, `saisonDe`, `progressionDeLaPeriode`
-  et `keepLatestPerDay` qui lisent le calendrier local — sont **indistinguables**, donc leurs tests
-  passeraient tout aussi bien avec l'erreur. Le test « regroupe sur le jour local » de
-  `suivi.test.ts` est celui qui l'a rendu visible : il échoue sur l'ancienne implémentation en
-  Europe/Paris et **échoue en UTC avec l'une comme avec l'autre** — ce qui en fait du même coup la
-  garde de ce réglage : `TZ=UTC npx jest src/types/suivi.test.ts` le fait tomber, mesuré le
-  14/09/2026 (la première rédaction disait « passe des deux façons en UTC », ce qui était faux).
-  **Et ce fuseau ne suffit pas à garder les autres distinctions du même genre** : Paris est à l'est
-  de Greenwich, donc minuit UTC et le jour écrit y tombent le même jour, et deux gardes intitulées
-  « quel que soit le fuseau » restaient vertes avec l'implémentation qu'elles interdisent. Elles
-  éprouvent désormais le **moyen** et non la sortie — le constructeur `Date` est neutralisé le temps
-  de l'appel pour `finDePeriodeEnMots`, et réduit à sa forme à composantes pour `pointsParSaison`,
-  qui a besoin d'une date locale. Forcer le fuseau depuis le corps d'un test ne marche
-  pas — Node met son fuseau en cache à la première opération de date, et Jest en a déjà fait une.
-  **Jest résout `ts` avant `js` parce que le dépôt le lui dit, et Metro le faisait déjà.**
-  `package.json` porte un `moduleFileExtensions` explicite : le défaut de Jest est
-  `['js','mjs','cjs','jsx','ts','tsx',…]`, soit l'inverse des `sourceExts` d'Expo, qui commencent par
-  `ts`/`tsx`. Sans ce réglage, un `.js` égaré à côté de son `.ts` — un `npx tsc` lancé sans
-  `--outDir` suffit, et c'est arrivé le 13/09/2026 sur sept modules — devient silencieusement le
-  module que la suite éprouve, pendant que l'app continue de charger le `.ts`. Deux résolveurs qui
-  ne disent pas la même chose sont exactement la forme de défaut que ce dépôt traque ailleurs, et
-  la seule à se lire « 590 tests verts ». La raison vit ici et non à côté du réglage parce que
-  `package.json` est du JSON : une clé de commentaire y fait émettre à Jest un `Validation Warning`
-  à chaque passage.
-  Deux modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
-  (et importé par `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la
-  suite qui en dépend, par un lien que rien n'affiche), et `bilan-draft.ts`, dont le test double
-  AsyncStorage parce que c'est l'entrée-sortie elle-même qu'il éprouve.
-- **pgTAP** (`supabase/tests/database/*.sql`, numérotés, un fichier par sujet — l'inventaire se
-  lit dans le répertoire) sur les fonctions SQL de calcul, sur les policies RLS (isolation
-  stricte par utilisateur en lecture/écriture, verrouillage des tables à écriture serveur-only,
-  lecture publique des référentiels) et sur la matrice de privilèges. Même distinction que côté
-  Jest : plusieurs assertions sont là pour **empêcher une correction de réflexe** — l'ordre ACV
-  des motorisations (hybride > thermique > rechargeable > électrique), la grosse moto au-dessus
-  de la voiture, la **source** de chaque facteur et le vélo non nul, le refus d'écriture directe
-  sur `plan_actions` et `engagement_checkins`. Tourne via `supabase test db`, qui démarre une
-  stack Postgres locale (Docker) à partir de `supabase/config.toml` + `supabase/migrations/` —
-  indépendante du projet Supabase distant `TraceVerte-v1` utilisé pour le développement applicatif
-  courant. Nécessite le CLI Supabase (`npx supabase@latest`) et Docker ; non exécutable dans
-  cet environnement (pas de daemon Docker) — validé à la place via des transactions
-  `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
-
-Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
-
-**Et le job `db-tests` compare aussi `src/lib/database.types.ts` à la base qu'il vient de
-construire** (C3.12) : `supabase gen types typescript --local`, puis
-`scripts/verifier-types-base.mjs`. Le fichier est tenu à la main — on y ajoute les colonnes plutôt
-que de le régénérer, un diff de mille lignes pour trois — et **le typecheck ne peut pas voir cette
-dérive** : il vérifie le code **contre ce fichier**, jamais le fichier contre la base. Une colonne
-oubliée dans `Insert` rend impossible d'écrire une colonne qui existe ; une colonne fantôme laisse
-écrire une colonne qui n'existe plus, et l'échec arrive à l'exécution, en anglais, chez la personne.
-La comparaison porte sur les **colonnes** et jamais sur le texte : le fichier du dépôt vient du
-projet distant et la CI du CLI local, donc un `diff` brut serait rouge dès le premier passage pour
-une raison de forme, et finirait désarmé.
+**Le job `db-tests` compare aussi `src/lib/database.types.ts` à la base qu'il vient de
+construire** (C3.12) — le fichier est tenu à la main, et le typecheck ne peut pas voir cette
+dérive : `SUPABASE.md` §2.1.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
-pas seulement celles qui citent le facteur touché — et « toucher » inclut en AJOUTER un.**
-Le fichier `07` porte trois gardes qui balaient les tables entières (tout mode a une source,
-toute source a un facteur, tout facteur porte l'ACV complète) : quatre modes ajoutés les
-traversent sans être nommés nulle part. C'est ainsi que la CI est tombée une troisième fois
-(PR #48). En particulier, `emission_factors.source` doit valoir **exactement**
-`'ADEME Base Empreinte — ACV complète (via API Impact CO2)'` : ce n'est pas une étiquette
-décorative mais le seul endroit où l'on enregistre quel endpoint a été interrogé — la valeur
-seule ne distingue pas un facteur ACV d'un facteur d'usage, les deux endpoints renvoyant des
-nombres également plausibles.
+y compris celles qui ne nomment pas le facteur touché — et « toucher » inclut en ajouter un.**
+Trois CI rouges pour l'apprendre (PR #34, #41, #48) ; la méthode qui marche, recalculer chaque
+assertion par une requête et jamais à la main : `TESTING.md` §2.2.
 
-**Le corollaire sur les valeurs :** Une quinzaine d'assertions chiffrées sont
-réparties dans `01`, `05`, `06` et `08`, et beaucoup dérivent d'un facteur sans le nommer.
-Chercher l'ancienne valeur littérale dans les fichiers ne suffit donc pas — c'est ainsi que
-la CI est tombée deux fois (PR #34, puis PR #41). La méthode qui marche : lister toutes les
-assertions (`grep -n '::numeric,' supabase/tests/database/`), recalculer chacune **par une
-requête sur la base** plutôt qu'à la main, et n'écrire dans le test que des valeurs ainsi
-vérifiées. Le piège se referme d'autant plus facilement que la validation sur le projet
-distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des tests.
+**Trois assertions de la suite échouent sur le projet distant et passent en CI, parce qu'elles
+supposent une base vierge** — et une quatrième y ferait partir de vrais emails : `TESTING.md` §2.3,
+à lire avant de « corriger » un test qui n'a rien.
 
-**Et le piège a un symétrique, relevé le 11/09/2026 : trois assertions de la suite échouent sur le
-projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les connaître évite de
-« corriger » un test qui n'a rien.
-- `12_usage_events` assertion 9 (« un horodatage antidaté est écrasé par celui du serveur ») lit
-  `min(occurred_at)` sur **toute** la table : le projet distant porte des lignes réelles
-  antérieures à sa fenêtre de cinq minutes, une stack locale neuve n'en a aucune.
-- `17_rappels_canal` assertions 15 et 16 attendent un envoi **sauté** faute de secrets Vault. Sur
-  le distant, `resend_api_key` et `reminder_from_address` existent : la fonction envoie vraiment, et
-  la ligne passe en `sent` / le passage en `success`.
-- `09_checkin_email_reminders` pour la même raison — et avec un **effet de bord** : ses trois appels
-  à `send_pending_reminders()` feraient partir de vrais emails vers des adresses `@test.local`, donc
-  un rebond qui coûte de la délivrabilité au domaine. Ce fichier ne se rejoue pas en entier sur le
-  distant ; ce qui s'y valide se valide en sautant ces appels (ils ne touchent pas au corps du
-  message, seulement au statut).
-Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
-fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
-`request.jwt.claims` comprises, et de savoir que ces quatre-là ne prouvent rien là-bas.
-
-**`created_at` ne désigne aucune ligne dans une transaction pgTAP, et un `order by` dessus rend un
-ordre arbitraire.** `now()` est l'horodatage de **début de transaction** : deux lignes écrites par le
-même appel le portent à l'identique, et `order by created_at limit 1` retombe sur l'ordre du tas.
-Relevé le 11/09/2026 dans le fichier `22` (C2.9), où le « second clic » sur un lien de désinscription
-pouvait tirer l'**autre** message et donc réussir là où l'assertion attend un refus — l'assertion
-était juste, c'est la désignation de la ligne qui ne l'était pas, et elle passait en CI comme au
-premier rejeu. Capturer l'identifiant ou le jeton une fois dans un `set_config`, ou ordonner sur une
-colonne réellement distincte.
-
-**La place d'une assertion dans un fichier pgTAP fait partie de l'assertion, et valider l'assertion
-seule ne vaut rien.** Relevé le 11/09/2026 : les deux assertions C2.11 du fichier `09` avaient été
-posées en **fin** de fichier, après la section du journal qui écrit une ligne d'outbox **à la main**
-— donc un corps que nulle mise en file n'a produit. La première échouait, la seconde passait sans
-rien éprouver, et la validation sur le distant n'avait porté que sur elles deux avec leurs propres
-fixtures, ce qui ne reproduisait pas cet état. Elles vivent maintenant juste après la mise en file
-qui produit la ligne qu'elles lisent, avec un commentaire qui dit pourquoi elles ne doivent pas
-bouger. La conjonction est le vrai piège : le fichier dont on a le plus besoin de rejouer la
-séquence entière est précisément celui qu'on ne peut pas rejouer en entier sur le distant.
+**Dans une transaction pgTAP, `created_at` ne désigne aucune ligne, et la place d'une assertion
+fait partie de l'assertion** : `TESTING.md` §2.4.
 
 ## Architecture
 
@@ -305,7 +184,7 @@ enfants (`/suivi`, `/rappels/stop`, la restitution) répond 404 en production pe
 local est parfait — `VERCEL.md` §1.5. **Il ne se déploie plus de prévisualisation** (`git.deploymentEnabled`,
 trois pièges dont `"**"` et jamais `"*"` — §1.4), la vérification visuelle du web se fait localement
 par `expo export --platform web` puis Playwright sur `dist/`. **Et chaque fusion sur `main` est un
-déploiement qui coûte ≈ 4,4 Mo de Functions Storage pendant trente jours** — §1.1, §2.1 et la
+déploiement qui coûte ≈ 1,6 Mo de Functions Storage pendant trente jours** — §1.1, §2.1 et la
 convention de cadence en §2.3 ; les fusions qui ne touchent que la documentation sont sautées par
 `scripts/vercel-ignorer-le-build.sh` (§1.3), dont la liste blanche dit ce que le build ne lit pas.
 
@@ -712,13 +591,9 @@ journaux n'émet d'alerte** : c'est ce dossier qui les rend vérifiables, et un 
 sait pas où lire se lit zéro. Aucune valeur secrète n'y descend — on nomme le réglage et
 l'endroit où il vit.
 
-Deux nuances du fichier des redirections qu'il ne faut pas réécrire à l'envers : **le suffixe de
-compte `-me-c4a3` resserre un motif de preview, il ne le ferme pas** (un hôte `*.vercel.app` est
-alloué d'après le nom de projet, choisi librement, donc un tiers qui nomme son projet
-`ramille-xxx-me-c4a3` obtient une adresse qui correspond au motif — l'ordre de préférence est :
-aucune entrée de preview, sinon l'hôte exact retiré après usage, sinon le motif faute de mieux) ;
-et `https://ramille.vercel.app/**` est bien notre projet aujourd'hui, mais c'est un nom dans
-l'espace global `vercel.app`, donc **il se retire le jour où le projet Vercel est renommé**.
+Deux nuances du fichier des redirections qu'il ne faut pas réécrire à l'envers — le suffixe de
+compte resserre un motif de preview sans le fermer, et `ramille.vercel.app` se retire le jour où
+le projet Vercel est renommé : `SUPABASE.md` §2.5.
 
 ### Modèle d'authentification (à connaître avant de toucher à l'auth ou au bilan)
 
@@ -751,28 +626,12 @@ formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laiss
 natif, le lien arrive hors de l'app (messagerie) et remonte par `Linking.useURL()` dans
 `_layout.tsx` ; le scheme `ramille://` doit donc figurer dans les Redirect URLs Supabase.
 
-**`estPanneDeTransport` couvre les 5xx, et c'est assumé** (même module) : `auth-js` ne réserve
-pas `AuthRetryableFetchError` à l'échec de `fetch` — son `lib/fetch.js` porte
-`NETWORK_ERROR_CODES = [500…504, 520…530]` et lève ce même nom pour chacun, code du corps jeté au
-passage. La non-divulgation qui reste tenue est la seule qui porte l'information : le 422
-`otp_disabled` d'une adresse inconnue mène au **même** écran d'attente qu'un envoi accepté. Deux
-pièges qui vont avec : un test qui fabrique un 500 **sans `name`** n'éprouve rien (le SDK ne
-produit jamais cette forme — c'est ainsi qu'un commentaire a pu affirmer l'inverse du code sans
-que rien ne tombe), et le message d'échec dit « n'a pas abouti » et non « n'est pas partie »,
-puisque sur un 5xx la demande a bien quitté l'appareil.
+**`estPanneDeTransport` couvre les 5xx, et c'est assumé** — `auth-js` lève
+`AuthRetryableFetchError` pour chacun d'eux : `SUPABASE.md` §2.4.
 
 **« Pas de session » recouvre trois situations, et une seule appelle une création** (C2.11,
-11/09/2026, `src/types/session.ts`). `ensureSession()` raisonnait à deux branches ; le cas qui
-coûtait cher est celui du **jeton refusé** : créer une session anonyme là donne un compte **vide** à
-quelqu'un qui en a un, et chaque onglet lui répond « tu n'as rien » alors que son bilan, son plan et
-ses points sont intacts côté serveur. Le troisième cas, une **panne de transport**, n'appelle ni
-création (on fabriquerait le même compte orphelin pour une cause passagère) ni reproche — le
-prochain lancement réessaie, et rien ne s'affiche. La distinction est possible parce qu'`auth-js`
-remonte l'erreur de rafraîchissement dans `getSession()` (relevé dans `GoTrueClient.__loadSession`) :
-les quatre états sont atteignables, aucun n'est décoratif. L'écran `SessionRefusee` est une
-**surcouche** du `Stack` et non un remplacement, à la différence de `ConfigurationManquante` : ses
-deux boutons sont des navigations, et un écran rendu à la place du navigateur n'aurait aucune route
-où aller.
+`src/types/session.ts`) — un jeton refusé n'en est pas une, sans quoi on donne un compte vide à
+quelqu'un qui en a un : `SUPABASE.md` §2.4.
 
 **Le lien du rappel porte `?rappel=1`, et le chemin ne doit pas bouger** (C2.11). L'email ne portait
 que `/plan` : ouvert sur un ordinateur ou un téléphone neuf, il tombait sur la session anonyme que
@@ -785,104 +644,29 @@ que les pages légales et `/compte/suppression` restent atteignables **sans** l'
 requête ne fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux
 moitiés de la règle.
 
-**Un jeton refusé parce qu'il est TROP NEUF n'est pas un refus, c'est une attente** (incident du
-13/09/2026, `src/types/postgrest.ts`). PostgREST rend `401 { code: "PGRST303", message: "JWT issued
-at future" }` quand l'instant d'émission du jeton est postérieur à sa propre horloge. Cinq choses
-à savoir avant de chercher ailleurs :
+**Un jeton refusé parce qu'il est TROP NEUF n'est pas un refus, c'est une attente** (`PGRST303`
+« JWT issued at future », `fetchAvecSecondeChance` dans `src/types/postgrest.ts`) — cinq choses à
+savoir avant de chercher ailleurs, dont le fait que ce code couvre aussi l'expiration :
+`SUPABASE.md` §2.4, et la recette pour trancher « écart d'horloge ou vrai défaut » en
+`docs/exploitation/README.md` §8.6.
 
-- **l'horloge de l'appareil n'entre nulle part dans ce contrôle.** Le jeton est émis par Supabase
-  Auth, qui pose `iat` à son horloge à lui, et vérifié par PostgREST contre la sienne : c'est un
-  écart entre deux services de Supabase. Une pendule fausse côté utilisateur ne peut pas produire
-  cette erreur, et la chercher là coûte la journée ;
-- **le réflexe qu'appelle un `401` est ici le mauvais geste** : rafraîchir la session produit un
-  jeton au `iat` encore plus récent, donc encore plus en avance sur l'horloge qui le refuse. Ce qui
-  répare, c'est le temps qui passe ;
-- **ça se répare tout seul, donc ça ne doit pas s'afficher.** Le refus frappe la **première requête
-  d'une session** — la racine de l'app, l'`app_open` juste à côté, un onglet au retour — et le
-  démarrage tombait alors sur « Le démarrage a échoué : JWT issued at future », un écran technique
-  pour une condition d'une seconde. `fetchAvecSecondeChance` (passé en `global.fetch` du client)
-  redemande **au plus deux fois**, 1 200 ms puis 2 500 ms. Le réessai est sûr parce que le contrôle
-  du jeton précède l'exécution : un refus de claims garantit qu'aucune ligne n'a été lue ni écrite —
-  ne pas étendre le motif à ce qui ressemblerait à une panne passagère, et surtout pas aux autres
-  refus de jeton, qui ne se réparent pas en attendant et qu'un réessai masquerait derrière une
-  latence ;
-- **et c'est le seul refus du produit qu'on reconnaît au code ET au message** (corrigé le
-  14/09/2026 en contre-lisant la vague 6). `PGRST303` n'est pas le code du jeton en avance : la table
-  des erreurs de PostgREST le définit comme « JWT claims validation or parsing failed », c'est-à-dire
-  **toute** la famille des claims, `exp` comprise. Reconnaître au code seul faisait donc rejouer un
-  jeton **expiré** — l'état normal au réveil de l'app, un jeton d'accès Supabase vivant une heure —
-  soit 3 700 ms d'attente avant que l'erreur ne sorte, exactement ce que la puce précédente interdit.
-  `PGRST301` est le refus de **décodage** et ne porte jamais l'expiration, donc aucun code ne
-  discrimine : la paire est la seule voie. Elle échoue **du bon côté** — une phrase reformulée par
-  PostgREST désarme le réessai et l'erreur s'affiche, soit le comportement d'avant le correctif — et
-  c'est ce qui autorise l'entorse à « jamais au message ». Corollaire pour les tests : une fixture
-  `{ code: 'PGRST301', message: 'JWT expired' }` n'existe pas, et le garde qui l'utilisait ne gardait
-  rien ;
-- **le corps de la réponse est lu sur une copie** (`clone()`). Sans elle, le contrôle consommerait
-  le corps et **toutes** les erreurs de l'app deviendraient illisibles — en silence, et seulement
-  sur les chemins d'échec, c'est-à-dire là où personne ne regarde. Un test épingle ce point.
-
-La recette pour trancher « écart d'horloge ou vrai défaut » est en `docs/exploitation/README.md`
-§8.6 : les deux horloges à mesurer, le jeton à émettre, et la requête sur les journaux d'accès qui
-donne l'ampleur. Elle commence par la version de PostgREST qu'exécute le projet — un écart
-intermittent entre deux services du même fournisseur est au moins autant un défaut amont qu'un
-réglage d'horloge, et c'est la première chose qu'on peut lire sans rien mesurer.
-
-**Cette liste de redirections est une frontière de sécurité, pas une commodité de
-configuration.** Elle décide à quelles adresses Supabase accepte de **remettre une session** —
-un lien de connexion renvoie les jetons dans le fragment de l'URL d'arrivée. Une entrée trop
-large y est donc une prise de contrôle de compte : elle portait `https://*.vercel.app/**`
-(nettoyé le 09/09/2026), c'est-à-dire **tout le domaine `vercel.app`**, où n'importe qui
-déploie en trois minutes. Un tiers pouvait demander un lien pour l'adresse de quelqu'un
-d'autre en pointant l'arrivée chez lui : l'email partait bien de Ramille, à la bonne adresse,
-et la session finissait ailleurs. Deux règles qui en découlent : **jamais de joker sur un
-domaine qu'on ne possède pas** — un motif de preview doit porter le suffixe de compte
-(`ramille-*-me-c4a3.vercel.app`), que personne d'autre ne peut créer ; et **une entrée morte
-se retire**, parce qu'elle ne se lit pas « obsolète » mais « autorisé ». Rien dans le code ni
-dans la CI ne voit cette liste : elle vit dans la configuration du projet distant, et c'est
-en la lisant qu'on la vérifie.
+**La liste des Redirect URLs Supabase est une frontière de sécurité, pas une commodité de
+configuration** — jamais de joker sur un domaine qu'on ne possède pas, et une entrée morte se
+retire : `SUPABASE.md` §1.2 et §2.5.
 
 ### Base de données
 
-Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1`
-(via `mcp__Supabase__apply_migration`). **Après toute migration, régénérer
-`src/lib/database.types.ts`** (`mcp__Supabase__generate_typescript_types`) — le fichier n'a
-pas de formateur automatique dans ce repo (pas de prettier installé), donc respecter le
-style existant (guillemets doubles) en le retouchant à la main si besoin.
+Migrations dans `supabase/migrations/`, appliquées sur le projet distant `TraceVerte-v1` par
+`mcp__Supabase__apply_migration` ; **après toute migration, `src/lib/database.types.ts` se
+retouche à la main** — comment, et ce que la CI en vérifie : `SUPABASE.md` §2.1.
 
-**Les privilèges de table sont écrits, et `supabase/config.toml` ne porte plus
-`auto_expose_new_tables`** (10/09/2026). Jusque-là aucune migration n'accordait le moindre
-privilège : `anon` et `authenticated` tenaient les leurs du défaut de plateforme d'un projet
-neuf, et la stack locale le rejouait par ce drapeau. Une base reconstruite depuis
-`supabase/migrations/` n'accordait donc rien à personne — l'app répond « permission denied for
-table … » **avant** d'atteindre la RLS — et rien dans le dépôt ne le disait. Le CLI n'expose plus
-par défaut depuis le 30/05/2026 (absent et `false` suivent le même chemin de code) et supprime le
-champ le 30/10/2026 : l'écrire programmerait la panne. Tout vit dans
-`20260910110000_grants_explicites.sql`, qui ne contient que des `grant`/`revoke` — donc rejouable
-tel quel après une restauration — et `18_grants_explicites.test.sql` épingle la matrice entière.
-**Ajouter une table impose donc un geste explicite** : un `grant` dans ce fichier si l'app y
-touche, ou un `revoke all privileges … from anon, authenticated` dans sa propre migration si elle
-est serveur-only. Ne rien écrire la rend invisible pour l'app, en silence — même mécanique que
-`emission_factor_sources` et `usage_event_types`. Un privilège se justifie par un appel réel
-depuis `src/`, jamais par « un test en a besoin » ; et un test qui n'assure qu'un refus reste vert
-après un `revoke`, « permission denied » et « violates row-level security » portant tous deux le
-SQLSTATE 42501.
+**Les privilèges de table sont écrits** (`20260910110000_grants_explicites.sql` ;
+`supabase/config.toml` ne porte plus `auto_expose_new_tables`) : **ajouter une table impose un
+`grant` ou un `revoke` explicite**, sinon elle est invisible pour l'app, en silence —
+`SUPABASE.md` §2.2.
 
-**Une policy appelle `auth.uid()` dans un sous-select, et une clé étrangère neuve veut son index.**
-Les deux se sont fait prendre en contre-lisant la vague 4, et aucune ne se voit à la lecture :
-- `user_id = (select auth.uid())` et `user_id = auth.uid()` se comportent exactement pareil ; la
-  seconde forme réévalue un appel volatile **pour chaque ligne examinée** au lieu d'une fois en
-  initplan. La policy de `plan_action_commitments_archive` était la seule du schéma à la porter.
-  Le balayage de la §E de `03_rls_policies.test.sql` garde désormais le point sur **toutes** les
-  policies, sans en nommer aucune — et il a été éprouvé sur une policy fautive fabriquée exprès,
-  sinon il resterait vert quoi qu'il arrive.
-- Postgres n'indexe jamais le **côté enfant** d'une clé étrangère. Tant que personne ne supprime de
-  parent ça ne se voit pas, mais `generate_plan_cycle_for_user` **supprime et reconstruit** des
-  cycles à chaque re-bilan et à chaque saison : sans index, chacune de ces suppressions balayait
-  `plan_actions` en entier pour dénuller `carried_over_from`. Quatre index posés par
-  `20260912180000`, deux partiels (la colonne est nulle dans l'immense majorité des lignes). Ils ne
-  servent **aucune lecture** du produit, seulement les suppressions — donc le lint `unused_index`
-  les signalera un jour sans qu'il faille les retirer.
+**Une policy appelle `auth.uid()` dans un sous-select, et une clé étrangère neuve veut son
+index** — aucun des deux ne se voit à la lecture : `SUPABASE.md` §2.2.
 
 **La soumission écrit `in_progress` d'abord, et c'est ce qui empêche le bilan fantôme**
 (11/09/2026, `20260911120000_soumission_bilan.sql`). L'ancienne séquence insérait `assessments` en
@@ -971,73 +755,13 @@ pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe.
 l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
 distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
 
-**Aucune migration de données ne désigne une ligne par un identifiant généré, et celle qui l'a fait
-n'a été rattrapée que par son propre contrôle.** `action_templates.id` vaut `gen_random_uuid()` : les
-les gabarits portent des identifiants **différents** sur chaque base construite depuis
-`supabase/migrations/`. Les uuid relevés sur le projet distant s'y apparient, donc la migration C2.1
-passait là-bas et n'appariait **rien** en CI — tous les `question_template` restaient nuls, et c'est le
-contrôle de la migration (« un gabarit sans `question_template` ») qui a fait tomber le job pgTAP.
-C'est exactement l'avertissement de `mcp__Supabase__apply_migration`, et c'est la seule migration du
-dépôt qui portait un uuid littéral (vérifié). La clé naturelle du référentiel est `action_text` : les
-libellés sont distincts — un index unique le garantit depuis C3.8 — et les douze premiers sont
-insérés littéralement par `20260905130000`. Deux corollaires : **un
-fichier de test pgTAP ne désigne pas davantage un gabarit par son identifiant** (`23` a été corrigé
-pour la même raison), et **un libellé mal recopié n'apparie rien** — c'est le contrôle qui rend
-l'appariement par texte sûr, pas la relecture.
-
-**Une migration doit se rejouer telle quelle, et `add constraint` n'est pas idempotent.** Corollaire
-du point précédent : pour corriger l'appariement il a fallu rejouer le fichier entier sur le distant, et
-il s'est arrêté sur un `42710` — une contrainte ajoutée sans `drop constraint if exists` devant. Le
-défaut ne se voit ni en CI (base neuve, un seul passage) ni au premier déploiement ; il se voit le jour
-d'une restauration, c'est-à-dire le plus mauvais. Même exigence que
-`20260910110000_grants_explicites.sql`, « rejouable tel quel après une restauration ».
-
-**Et une substitution vérifiée est à un coup par nature, donc elle doit reconnaître « déjà
-appliquée ».** Le contrôle `if occurrences <> 1 then raise` est juste au premier passage et faux au
-second : rejoué sur une base déjà corrigée, il trouve zéro occurrence de l'ancre et lève, c'est-à-dire
-qu'il échoue précisément le jour d'une restauration. Les deux substitutions du dépôt le portaient
-(C2.9 et la correction de la vague 5) ; toutes deux séparent maintenant les deux causes de « zéro
-occurrence » par la **présence du remplacement** — déjà substitué, on sort sans rien faire ; ni l'ancre
-ni le remplacement, on lève, parce que le corps a été réécrit autrement et qu'on ne devine pas. Ne
-jamais reconnaître un rejeu à la **seule absence de l'ancre** : ce test-là couvrirait aussi le corps
-réécrit, et la migration passerait en silence sans avoir rien fait.
-
-**Le distant porte les corps de fonction sans les commentaires du dépôt, et la substitution
-vérifiée lit le distant.** Relevé le 11/09/2026 en comparant les 47 fonctions une à une : la logique
-est identique partout, mais plusieurs corps installés ont perdu les commentaires `--` que le fichier
-de migration porte (`apply_migration` a reçu une version allégée). Sans conséquence sur le
-comportement — et c'est un piège armé pour la suite, parce que **l'idiome de substitution vérifiée
-cherche son ancre dans `pg_get_functiondef` du distant** : une ancre qui inclurait une ligne de
-commentaire serait trouvée en CI (où la base est reconstruite depuis le dépôt, commentaires compris)
-et introuvable sur le distant, ou l'inverse. Donc : **une ancre ne contient jamais de ligne de
-commentaire**, seulement du code. Les trois ancres de la vague 4 respectent déjà la règle, et le
-moyen de vérifier qu'un corps installé correspond au dépôt est de comparer les empreintes
-**normalisées** (commentaires retirés, blancs réduits), pas les corps bruts.
-
-**Rejouer un fichier de migration ancien sur le distant peut défaire une migration plus récente,
-et la CI ne le verra jamais.** Relevé le 13/09/2026 en livrant C4.6 : le fichier 23 échouait sur le
-distant à l'assertion du `push_body` alors qu'il passe en CI. Cause : la contre-lecture de la vague 5
-avait rejoué **en entier** `20260912170000_rappels_qui_s_espacent.sql` (C2.9) pour corriger
-l'idempotence d'une de ses substitutions — et ce fichier contient un
-`create or replace function public.enqueue_checkin_reminders()` complet, qui a donc écrasé la version
-de C2.1 (`20260912190000`), plus récente. **La CI est aveugle à ce défaut par construction** : elle
-reconstruit la base dans l'ordre des versions, donc C2.1 y passe toujours après C2.9. C'est le
-symétrique exact du piège déjà consigné (« la validation sur le distant passe, la CI tombe ») : ici
-c'est le distant qui dérive et la CI qui a raison. Deux conséquences pratiques — **avant de rejouer un
-fichier ancien, lister les fonctions qu'il réécrit en entier et vérifier qu'aucune migration
-postérieure ne les touche** (`grep -n 'create or replace function public.<nom>' supabase/migrations/`
-suffit), et **rejouer ensuite le bloc de la migration la plus récente** pour chacune. La réparation
-est une opération sur le distant, pas un changement de code.
-
-**Réécrire une fonction existante part de `pg_get_functiondef`, jamais du fichier qui l'a créée.**
-Relevé le 11/09/2026 en livrant C2.2 : `commit_plan_action` et `clear_plan_action_commitment` ont
-été reprises depuis `20260905190000`, leur migration d'origine — alors que C1.12
-(`20260911100000`) leur avait ajouté trois gardes depuis. La réécriture les a donc **supprimées en
-silence** : une intention et une seule, la forme d'intention qui suit le poste, et le refus
-explicite au lieu d'un succès muet. Rien ne le signalait ; c'est `13_engagement_action` qui l'a
-attrapé en CI, et c'est exactement ce que ce fichier existe pour faire. Corollaire : **une migration
-qui touche une fonction existante impose de rejouer le fichier de test qui la possède**, pas
-seulement celui du chantier en cours.
+**Six règles de migration apprises sur le distant, et aucune ne se voit en CI** : une migration de
+données ne désigne jamais une ligne par un identifiant généré (`action_text` est la clé naturelle
+des gabarits) ; elle se rejoue telle quelle (`add constraint` n'est pas idempotent) ; une
+substitution vérifiée reconnaît « déjà appliquée » par la présence du remplacement ; le distant
+porte les corps de fonction sans les commentaires du dépôt, donc une ancre n'en contient jamais ;
+rejouer un fichier ancien peut défaire une migration plus récente ; et réécrire une fonction part
+de `pg_get_functiondef`, jamais du fichier qui l'a créée — `SUPABASE.md` §2.3.
 
 **Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine, type)`**,
 qui compose `resolve_car_mode` et `resolve_two_wheeler_mode`. Ne jamais rappeler les deux
@@ -1335,16 +1059,12 @@ pas dans un chiffre** (11/09/2026) :
   fait, et leur comparaison était faussée du taux d'emails jamais confirmés, c'est-à-dire du
   chiffre qu'on voulait lire. L'écart entre les deux **est** ce taux.
 
-Trois pièges vérifiés en construisant cette table, tous silencieux :
+Trois pièges vérifiés en construisant cette table, tous silencieux — les deux premiers sont des
+pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
-  `security definer`.** `usage_events` n'a aucune policy de lecture ; sans `security definer`, le
-  `select` de comptage du garde-fou de volume ne voyait rien depuis `authenticated` et le quota
-  ne se déclenchait **jamais**. Corollaire pour les tests : remplir un quota sous `postgres` par
-  commodité, c'est le tester dans le seul rôle où il ne sert à rien.
-- **`revoke execute ... from anon, authenticated` ne révoque rien** : PostgreSQL accorde
-  `EXECUTE` à **PUBLIC** à la création, et les deux rôles en héritent. Il faut
-  `from public, anon, authenticated` — sans quoi n'importe quel visiteur appelait
-  `/rest/v1/rpc/purge_usage_events`.
+  `security definer`**, sinon le quota ne se déclenche jamais — `SUPABASE.md` §2.2.
+- **`revoke execute ... from anon, authenticated` ne révoque rien** : il faut
+  `from public, anon, authenticated` — `SUPABASE.md` §2.2.
 - **Le contexte B4 vit dans `assessment_answers`, et nulle part ailleurs.** `profiles` portait
   des colonnes homonymes `zone_type`/`tc_access` héritées du schéma initial, avec un vocabulaire
   *différent* (`urbain`/`aucun` au lieu de `urbain_dense`/`periurbain`/`rural` et `inexistant`) :
@@ -1396,13 +1116,8 @@ libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvri
 `authenticated` revient à l'ouvrir à quiconque sait appeler l'API — d'où le trigger
 `enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et les bornes de longueur.
 **Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
-passer sans rien éprouver de **deux** façons, et les deux se sont produites. Après la
-saturation du quota, c'est le trigger `before insert` qui refuse — il s'exécute avant
-l'évaluation des CHECK et lève lui aussi un `23514`. Et depuis la session d'un tiers, c'est la
-RLS (`42501`). Elle doit donc venir avant le remplissage du quota **et** sous la session du
-propriétaire. Plus généralement, pour valider un test pgTAP en base, rejouer la **séquence
-entière** du fichier, bascules de `request.jwt.claims` comprises — un scénario extrait de son
-contexte ne reproduit pas le rôle sous lequel il tournera.
+passer sans rien éprouver de **deux** façons, et les deux se sont produites — `TESTING.md` §2.5,
+qui dit aussi pourquoi un fichier pgTAP se rejoue en séquence entière.
 
 **Rappel par email** : `enqueue_checkin_reminders()` remplit `notification_outbox` à chaque
 génération de check-in, `send_pending_reminders()` (cron quotidien 7h UTC) l'envoie via
@@ -1746,14 +1461,8 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   `src/app/(tabs)/suivi/bilan.tsx`), à condition de lui donner un `accessibilityLabel` qui les
   recompose.
 - **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
-  par un `onPress`.** `react-native-web` rend un `onPress` sur du texte en `<div>` : cliquable
-  pour un humain, inexistant pour un crawler. Et il ne suffit pas que l'ancrage soit correct, il
-  doit se retrouver dans le HTML **statique** — à vérifier dans `dist/*.html` après
-  `expo export`, même piège silencieux que `cleanUrls`. Seul cas aujourd'hui : le lien vers la
-  page personnelle de l'éditeur (`EDITOR_CV_URL`) au pied des deux pages légales, qui sont les
-  seules surfaces publiques du produit (leurs URL sont données à Google Play et à l'écran de
-  consentement Google). Le sens du lien est délibéré — Ramille vers le CV — et il ne porte
-  pas de `nofollow`.
+  par un `onPress`** (rendu en `<div>` par `react-native-web`), et se vérifie dans le HTML statique
+  de `dist/` : `EXPO.md` §2.1.
 - **Ce que `api/` duplique de `src/` doit être tenu des deux côtés, et la liste est courte.**
   Les Vercel Functions ne peuvent pas importer `src/` (tsconfig dédié, runtime Web Fetch API) :
   `APP_NAME` y est un littéral, et depuis le 11/09/2026 **la règle des kilos sous la tonne** aussi.
@@ -1762,14 +1471,9 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   gardaient « 0,0 t CO₂e » — les deux chiffres du même partage se contredisaient, sur la seule
   surface publique du produit, et aucune des deux suites de tests ne regarde les deux à la fois.
   Toucher à un formatage affiché impose donc de chercher son jumeau dans `api/`.
-- **Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche.**
-  `babel-preset-expo` remplace `process.env.EXPO_PUBLIC_X` par sa valeur littérale — **sauf**
-  quand l'accès est écrit directement comme valeur d'une propriété d'objet dont la clé porte ce
-  même nom, où il rend `void 0` (vérifié en A/B, `.env` inchangé entre les deux exports). Lire
-  la variable dans un `const` d'abord, jamais la replier dans une expression. Le typecheck
-  passe, les tests passent, l'export réussit, et l'app démarre sur une configuration vide :
-  `scripts/verifier-configuration-export.mjs` garde ce point en CI, même famille que les gardes
-  `cleanUrls` et titres de page.
+- **Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche** — lire la
+  variable dans un `const`, jamais en valeur d'une propriété homonyme ;
+  `scripts/verifier-configuration-export.mjs` garde ce point : `EXPO.md` §1.2 et §2.1.
 - **La configuration Supabase absente ou fautive s'affiche, elle ne plante plus.**
   `src/lib/supabase.ts` ne lève plus au chargement du module mais à la première utilisation
   (mandataire) : le contrat ne change pas — aucun écran ne fonctionne sans configuration — mais
@@ -1779,13 +1483,8 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   URL portant un chemin — `.../rest/v1` collé à la place de l'URL du projet a coûté un cycle de
   build. L'écran s'adresse à la personne qui développe : ni la voix de Ramille, ni la mascotte.
 - **Un état qui diffère entre le serveur et le client doit démarrer à la valeur du serveur et
-  changer après hydratation** — sinon le DOM garde l'attribut `style` du HTML statique pour
-  toujours. L'hydratation ne vérifie que le texte : elle adopte les attributs tels quels. Une
-  largeur lue dans `Dimensions` dès le premier rendu client (390) laisse React croire qu'il
-  tient déjà `width: 390` alors que le HTML dit `0px`, et rien ne le corrige jamais — ni
-  `onLayout`, ni `key`, ni le compilateur. C'est ce qui a fait échouer la première tentative
-  du pager d'onboarding (v1-11 §9.10). `useSyncExternalStore` avec un instantané serveur
-  distinct fait voir le passage à React ; `useWindowDimensions` ne le fait pas.
+  changer après hydratation** (`useSyncExternalStore`, jamais `useWindowDimensions` — le pager
+  d'onboarding l'a appris, v1-11 §9.10) : `EXPO.md` §2.2.
 - **Une réponse rendue impossible par une autre réponse s'efface dans `normaliserReponses`, et
   nulle part ailleurs** (`src/types/bilan.ts`, appliquée après chaque `update` du questionnaire et
   à la relecture d'un brouillon). Trois écrans tenaient trois listes de remises à zéro, qui
@@ -1830,14 +1529,8 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   colonne porte `check (commute_distance_km > 0)`, donc la complétude de l'étape et l'insert
   lisent la **même** définition, `distanceDomicileTravailKm`.
 - **`ensureSession()` est enveloppée dans `uneSeuleFois` (`src/types/une-seule-fois.ts`), et ce
-  n'est pas du confort : sans elle, deux comptes anonymes.** La fonction fait un « lis puis
-  écris » ; deux appels lancés dans le même rendu — le layout racine et la racine de l'app —
-  lisent tous les deux « pas de session » avant que l'un n'ait écrit. Six des treize comptes de la
-  base étaient dans ce cas. Rien ne le signalait : l'app marche, elle laisse un compte orphelin
-  qui consomme le quota de créations anonymes, gonfle d'un facteur proche de deux toute
-  statistique de nouveaux visiteurs, et peut recevoir le jeton d'appareil à la place du compte
-  gagnant. Seules les promesses **en vol** sont partagées, donc le contrat ne change pas : un appel
-  tardif relit bien l'état courant, dont dépend la re-vérification avant l'écriture du bilan.
+  n'est pas du confort : sans elle, deux comptes anonymes** — six des treize comptes de la base
+  l'étaient : `SUPABASE.md` §2.4.
 - **Le jeton d'appareil se réenregistre à chaque changement d'utilisateur, pas seulement au
   démarrage.** `register_push_token` *reprend* le jeton à son propriétaire précédent, et il n'y
   avait aucun appel ailleurs qu'au lancement : le lien de `/connexion/retrouver` ouvre la session
@@ -1882,68 +1575,25 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   phrases « sur ce téléphone » et « on ne désactive que le sien ». Sans marque locale, on ne
   désactive rien — fenêtre de transition assumée et commentée dans `src/lib/rappels.ts`, sans
   conséquence tant que `push_tokens` est vide.
-- **Le mode clair est forcé sur web, et ce n'est pas un oubli** (`src/hooks/use-theme.ts`).
-  `userInterfaceStyle: light` d'`app.json` ne s'applique qu'au natif : sur web, `useColorScheme`
-  lit `prefers-color-scheme` et rendait `Colors.dark` — la palette que `constants/theme.ts` décrit
-  lui-même comme provisoire et jamais validée, avec un bouton principal à 3,4:1 (sous le 4,5:1 de
-  WCAG AA) et une mascotte restée claire sur fond noir. La décision se prend **là**, et le
-  `ThemeProvider` du layout racine porte la même en dur pour les chromes de navigation : corriger
-  l'un sans l'autre laisse la moitié de l'écran dans l'autre palette.
+- **Le mode clair est forcé sur web, et ce n'est pas un oubli** (`src/hooks/use-theme.ts`, et le
+  `ThemeProvider` du layout racine porte la même décision) : `EXPO.md` §2.2.
 - **`public/robots.txt` et `public/sitemap.xml` sont la cinquième garde d'export, et ils
-  disparaissent exactement comme `assetlinks.json`** — sans erreur de build ni de déploiement.
-  `scripts/verifier-titres-export.mjs` les vérifie ligne par ligne dans `dist/`, avec trois points
-  qu'il ne faut pas défaire à moitié : la paire `Disallow: /api/` + `Allow: /api/partage` +
-  `Allow: /api/share-card` (sans les deux `Allow`, un lien de bilan partagé sort en URL nue sur les
-  trois réseaux, qui lisent `robots.txt` avant d'aller chercher une page) ; les pages d'application
-  restent **parcourables** et portent `noindex` — interdire le crawl empêcherait un moteur de lire
-  ce `noindex` ; et l'**origine canonique** a une source unique, `ORIGINE_CANONIQUE`
-  (`src/constants/produit.ts`), que les deux fichiers statiques ne peuvent pas importer et que le
-  script confronte par motif. La page 404 est une page exportée comme les autres : elle a sa ligne
-  dans `PAGE_TITLES` (`/+not-found`), la surcharge de `TitreDePage` ne valant qu'à l'exécution.
+  disparaissent exactement comme `assetlinks.json`** — trois points à ne pas défaire à moitié :
+  `EXPO.md` §2.1.
 - **Changer `.env` puis réexporter ne suffit pas à revérifier l'inlining : il faut
-  `expo export --clear`.** Le cache de transformation de Metro est indexé sur le contenu des
-  fichiers, pas sur les valeurs `EXPO_PUBLIC_*` : un second export réutilise le `void 0` qu'un
-  premier export sans variables avait mis en cache, au bit près (même empreinte de bundle). La CI
-  ne peut pas tomber dans ce piège — elle part d'un checkout neuf — mais
-  `scripts/verifier-configuration-export.mjs` accuse alors en local un défaut qui n'existe pas, et
-  on le cherche dans le code.
+  `expo export --clear`** : `EXPO.md` §2.1.
 - **`react-native-web` : un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0`
-  explicite pour pouvoir rétrécir sous sa largeur intrinsèque** — sinon un texte voisin
-  (unité, label) peut être partiellement recouvert/coupé. Voir
-  `src/components/bilan/numeric-field.tsx` et `src/components/auth/text-field.tsx`.
+  explicite** : `EXPO.md` §2.2.
 - **`Alert.alert(...)` sur web retombe sur `window.alert()`, qui n'invoque pas fiablement
-  `onPress`** — pour tout flux qui doit exécuter une action après fermeture de l'alerte,
-  utiliser un état de composant inline (écran à plusieurs états visuels) plutôt qu'un
-  callback de bouton d'`Alert`. Voir `src/app/connexion/email.tsx` et
-  `src/app/connexion/retrouver.tsx`.
-- **Une API de module natif appelée pendant le rendu emporte toute l'app sur web.** Un hook
-  s'exécute au rendu : une garde `Platform.OS` placée dans l'effet arrive trop tard, et une
-  exception dans le layout racine fait tomber l'arbre React entier — page blanche sur
-  **toutes** les routes, pages légales comprises, pendant que le HTML statique est servi en
-  200 avec son titre. Un hook ne peut pas être appelé conditionnellement ; un composant, si :
-  c'est le motif de `RetourDeNotification`, monté sous `{estNatif && …}`. La CI l'a laissé
-  passer en production le 08/09/2026 — `scripts/verifier-rendu-export.mjs` ouvre désormais
-  cinq routes dans un navigateur après l'export et échoue sur une page vide ou une exception
-  non rattrapée (les erreurs d'hydratation restent des avertissements). Troisième garde de la
-  même famille que `cleanUrls` et l'inlining des `EXPO_PUBLIC_*` : ce qui se construit n'est
-  pas ce qui s'affiche.
-- **Le lien du rappel ouvre l'app grâce à un fichier servi par le site, pas par l'app.**
-  `public/.well-known/assetlinks.json` (recopié tel quel dans l'export) autorise nommément
-  `fr.ramille.app` à revendiquer `https://www.ramille.fr/plan`, déclaré en `intentFilters`
-  `autoVerify` dans `app.json`. **La revendication est volontairement étroite** : réclamer tout
-  le domaine ouvrirait aussi `/compte/suppression` et les pages légales dans l'app, alors que
-  Google Play exige précisément qu'elles restent atteignables **sans** elle. Deux façons de
-  casser ça en silence — le fichier qui disparaît de l'export, et l'empreinte de signature qui
-  change : **Google Play resigne l'AAB avec sa propre clé**, donc l'empreinte de production
-  différera de celle du keystore EAS et devra être **ajoutée** au tableau (qui en accepte
-  plusieurs) au moment de la publication, sans retirer la première. `scripts/verifier-assetlinks-export.mjs`
-  garde le reste.
-- **Une dépendance native nouvelle impose un build**, et il n'y a aucun moyen de s'en rendre
-  compte depuis le code : `expo-notifications` (v1-12) est arrivée ainsi. Le jeton d'appareil
-  ne s'enregistre jamais par un `insert` — `register_push_token` le **reprend** à son
-  propriétaire précédent, ce qu'une policy RLS owner-scoped ne peut pas faire au moment où une
-  session anonyme devient un compte, et l'oubli serait silencieux : les rappels partiraient
-  vers un utilisateur fantôme.
+  `onPress`** — un état de composant à la place, et l'import est interdit par ESLint : `EXPO.md` §2.2.
+- **Une API de module natif appelée pendant le rendu emporte toute l'app sur web** — page blanche
+  sur toutes les routes, HTML servi en 200 ; d'où `RetourDeNotification` monté sous
+  `{estNatif && …}` et `scripts/verifier-rendu-export.mjs` : `EXPO.md` §2.2.
+- **Le lien du rappel ouvre l'app grâce à `public/.well-known/assetlinks.json`, pas grâce à
+  l'app** — revendication volontairement étroite (`/plan` seul), et l'empreinte de Play
+  s'**ajoute** à la publication : `EXPO.md` §2.3.
+- **Une dépendance native nouvelle impose un build**, et rien dans le code ne le dit :
+  `EXPO.md` §2.3.
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
   connexion", jeton d'appareil, ouverture de saison vue, marque « cet appareil a vu un bilan ») via
   AsyncStorage — explicitement device-local, pas de sync multi-device tant que le compte n'est pas
@@ -2066,25 +1716,9 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   sans compteur de génération à maintenir. Le rappel passé à `useRafraichirAuRetour` doit être
   stable (`useCallback`), sinon son effet de focus se réabonne à chaque rendu et fait tourner
   chargement et rendu l'un dans l'autre.
-- **Une page d'un pager doit pouvoir défiler, sinon elle coupe — mais `minHeight` a un effet de
-  bord qu'il faut connaître.** Les quatre pages de `/onboarding` étaient des boîtes à hauteur fixe
-  égale au viewport : ce qui dépassait était rogné sans un mot, et aucune étape ne peut l'absorber —
-  elles centrent leur contenu et les hauteurs de ligne ne se compriment pas. Chaque page est donc une
-  `ScrollView` verticale à `contentContainerStyle: { flexGrow: 1, minHeight: hauteur }` — et
-  seulement une fois la hauteur **mesurée**, sinon l'instantané serveur dont dépend l'hydratation est
-  rompu.
-  **Sous ce `minHeight`, une hauteur n'est plus *définie*** (relevé au rendu le 14/09/2026) : un
-  enfant en `flex: 1` ne se résout plus sur l'espace restant mais sur sa taille **max-content**. Deux
-  conséquences, invisibles à la lecture du code et toutes deux corrigées là où elles naissent.
-  L'illustration de l'étape 1, dont le `viewBox` est carré, réclamait (largeur − 48) px sur tous les
-  téléphones — d'où un contenu constant à ~890 px et « Découvrir mon impact » 91 px sous le pli à
-  360 × 640 ; elle est **plafonnée à 30 % de la hauteur de page** (`PART_ILLUSTRATION`), une part et
-  non un nombre de pixels, sans quoi un grand téléphone garderait une bande vide. Et le `ScrollView`
-  interne de l'étape 2 s'étirait à ses 745 px de contenu, si bien que la page entière défilait,
-  **pied compris** : elle est la seule des quatre construite avec un corps qui défile sous un pied
-  épinglé, donc sa page reçoit une hauteur **définie** (`contenuDePageFixe`) et non un minimum. La
-  règle générale qui en sort : une page qui gère son propre débordement veut `height`, une page qui
-  n'en a pas veut `minHeight`. Détail et mesures en §11.13 et §11.14 de `v1-13`.
+- **Une page d'un pager doit pouvoir défiler, sinon elle coupe — et sous `minHeight`, une hauteur
+  n'est plus définie** : une page qui gère son propre débordement veut `height`, une page qui n'en
+  a pas veut `minHeight` — `EXPO.md` §2.4.
 - **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Tout ce qui
   suit vit **derrière la racine**, qui levait à froid sans réseau jusqu'à C4.5 (§12.5 de `v1-13`) et
   route désormais sur la marque locale : ces écrans sont donc atteignables à froid depuis le
