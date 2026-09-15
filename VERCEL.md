@@ -37,6 +37,10 @@ vérifiées par Antoine auprès de Vercel :
 - **Une fusion qui ne touche que la documentation coûte autant qu'une fusion de code**, tant
   qu'un Ignored Build Step ne l'écarte pas (§1.3). Sur Ramille, 13 des 82 fusions des trente jours
   précédant le 15/09/2026 étaient dans ce cas — et 3 des 5 fusions de cette seule journée.
+- **Le compteur est celui du compte, pas du projet.** Un tableau de bord qui affiche 9,85 Go sur
+  10 additionne tous les projets du compte ; le chiffre par projet est ailleurs sur la même page.
+  Lire l'un sans l'autre, c'est raisonner sur le mauvais dénominateur — Ramille a passé une heure
+  à chercher un facteur cinq qui était un autre projet (§2.1). Demander les deux chiffres.
 
 **Vercel compte le poids d'un bundle une fois par ROUTE, pas une fois par bundle physique.** Un
 bundle de 4 Mo partagé par 92 routes est facturé ~368 Mo. Avant de choisir où optimiser, compter
@@ -232,25 +236,23 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 | **Poids par déploiement** | **≈ 1,6 Mo**, une route par fonction donc sans amplification |
 | Fusions sur `main`, 16/08 → 15/09 | 82, dont **13 doc seule** (16 %) |
 | Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
-| **Compteur Functions Storage** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*) — pas de baisse avant au moins dix jours |
+| **Compteur Functions Storage du compte** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*), tous projets confondus — pas de baisse avant au moins dix jours |
+| **Part de Ramille** | **437,53 Mo**, soit ≈ 273 déploiements à 1,6 Mo en dix jours de vie du projet (82 fusions de production et ~190 prévisualisations, une par push jusqu'au 15/09 à midi) |
 | Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — c'est tout ce qui reste avant la limite |
 
-> ⚠️ **Point non réconcilié, et il décide de tout.** 9,85 Go ne se déduisent ni de 1,6 Mo × 82
-> fusions (131 Mo), ni de 4,4 Mo × (82 fusions + les prévisualisations d'avant le 15/09, au plus
-> quelques centaines — l'historique git en montre 158 commits atteignables sur la période, et le
-> dépôt n'a que dix jours). Il manque un facteur d'au moins cinq, et **on ne sait pas où il
-> est** : dans le nombre de déploiements, dans ce que Vercel compte par déploiement, ou dans ce
-> que « Functions Storage » mesure vraiment. Les deux mesures qui trancheront, toutes deux au
-> tableau de bord : **l'augmentation quotidienne du compteur** sur *Usage* (celle du 15/09 divisée
-> par les neuf fusions du jour et les prévisualisations de la matinée donne le coût réel d'un
-> déploiement), et **le compteur après la première fusion sautée** (PR #192), qui doit être
-> immobile. Tant que ce n'est pas réconcilié, un déploiement se compte comme s'il valait des
-> dizaines de mégaoctets, et **rien ne déploie sans nécessité**.
+> **Réconcilié le 15/09/2026, en deux temps.** Le premier relevé — « 9,85 Go sur 10 » — ne se
+> déduisait ni de 1,6 Mo × 82 fusions (131 Mo) ni de 4,4 Mo × (fusions + prévisualisations) : il
+> manquait un facteur cinq, cherché une heure dans le nombre de déploiements et dans ce que Vercel
+> compte. Il était dans le **dénominateur** : 9,85 Go est le compteur du **compte**, et Ramille
+> n'en représente que 437,53 Mo — le reste est Tour de Growth, dont chaque déploiement pèse
+> ~47 Mo. 437,53 Mo ÷ 1,6 Mo ≈ 273 déploiements en dix jours, ce que l'historique rend plausible
+> (82 fusions de production, 158 commits atteignables hors branches écrasées, une prévisualisation
+> par push jusqu'au 15/09 à midi). **Le chiffre par déploiement de l'export est donc le bon.**
 
-Ce que le budget vaudrait en déploiements au poids de l'export : ≈ 94 ; au poids du disque,
-34 ; au poids que le compteur suggère, **peut-être moins de dix**. Première estimation, avant le
-relevé : 4,4 Mo par déploiement d'après le disque ; l'export d'un déploiement l'a divisée par 2,7
-(§1.2) ; le compteur l'a remise en cause dans l'autre sens.
+Ce que le budget vaut en déploiements de Ramille : ≈ 94 — **si l'autre projet ne fusionne pas** ;
+trois de ses fusions suffisent à consommer les 150 Mo. Un déploiement de Ramille est bon marché,
+mais le compte est à 98 % : rien ne déploie sans nécessité (§2.3). Première estimation, avant les
+relevés : 4,4 Mo par déploiement d'après le disque ; l'export l'a divisée par 2,7 (§1.2).
 
 Répartition du poids de `share-card` : `@resvg/resvg-wasm` 2,48 Mo (57 %), `hb.wasm` 0,38,
 `@shuding/opentype.js` 0,37, `satori` 0,36, `fflate` 0,17, `linebreak` 0,14, les deux polices
@@ -285,10 +287,10 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 
 ### 2.3 Convention de cadence, et le budget des dix jours
 
-Chaque fusion sur `main` coûte au moins 1,6 Mo pendant trente jours — et peut-être beaucoup
-plus, tant que le point de §2.1 n'est pas réconcilié. Entre le 15 et le 25/09/2026, **150 Mo
-sont tout ce qui reste avant la limite**, et une limite atteinte, c'est un correctif qui ne part
-plus. Quatre règles, à demeure :
+Chaque fusion sur `main` coûte ≈ 1,6 Mo pendant trente jours. Entre le 15 et le 25/09/2026,
+**150 Mo sont tout ce qui reste au compte entier**, partagés avec un projet dont une fusion en
+vaut trente de Ramille — et une limite atteinte, c'est un correctif qui ne part plus, sur les
+deux projets. Quatre règles, à demeure :
 
 1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
    (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le
@@ -296,9 +298,10 @@ plus. Quatre règles, à demeure :
 2. **Une PR par vague, pas une par chantier.** Une vérification complète, un push, une fusion.
    Une correction de documentation qui suit une fusion de code attend la fusion de code
    suivante — ou part seule, puisqu'elle ne déploie plus.
-3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours — et tant que le
-   coût réel d'un déploiement n'est pas connu, **seule une correction nécessaire déploie** ; ce
-   qui peut attendre le 25/09 attend, sur une branche.
+3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours, et **seule une
+   correction nécessaire déploie** tant que le compte est à 98 % ; ce qui peut attendre le 25/09
+   attend, sur une branche. Le coût unitaire est faible, c'est la marge qui ne l'est pas, et elle
+   n'est pas qu'à nous.
 4. **Une fusion de documentation part seule et doit être sautée** (§1.3) : c'est gratuit, et
    chacune vérifie que le script fait ce qu'il dit.
 
@@ -315,7 +318,6 @@ règle, et que j'ai reproduit avant de la lire.
 - **`VERCEL_GIT_PREVIOUS_SHA` est-il exposé ?** Le script écrit « repli sur HEAD^ » quand il ne
   l'est pas. Si cette ligne apparaît à chaque fois, le trou du build échoué (§1.3) est ouvert et
   il faut le savoir.
-- **Le compteur après la fusion de la PR #192** (première fusion sautée) : il doit être identique
-  à 9,85 Go. S'il a bougé, l'Ignored Build Step n'a pas sauté, et le journal de build dit pourquoi.
-- **L'augmentation quotidienne du compteur** sur *Usage*, pour le 15/09 : neuf fusions de
-  production et les prévisualisations de la matinée. C'est la mesure qui réconcilie §2.1.
+- **La part de Ramille après la fusion de la PR #192** (première fusion sautée) : elle doit être
+  restée à 437,53 Mo. Si elle a bougé, l'Ignored Build Step n'a pas sauté, et le journal de build
+  dit pourquoi. (Le total du compte, lui, bouge dès que l'autre projet fusionne.)

@@ -39,10 +39,11 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 - **Au plus un build EAS tous les deux jours** (15/09/2026), et la raison est au registre
   d'exploitation §3.3 : le quota du plan gratuit ne se lit qu'en le heurtant.
 - **Pas plus de 150 Mo de Functions Storage ajoutés chez Vercel entre le 15 et le 25/09/2026**
-  (15/09/2026) — c'est tout ce qui reste, le compteur étant à 9,85 Go sur 10 —, et à demeure :
-  **chaque fusion sur `main` est un déploiement qui se paie trente jours**, l'agent ne peut pas
-  lire le compteur, donc il se demande avant de fusionner. La règle entière, le budget, et le
-  point non réconcilié sur ce que coûte vraiment un déploiement sont en `VERCEL.md` §2.1 et §2.3.
+  (15/09/2026) — c'est tout ce qui reste au **compte** Vercel, à 9,85 Go sur 10 dont 437 Mo pour
+  Ramille —, et à demeure : **chaque fusion sur `main` est un déploiement qui se paie trente
+  jours** (≈ 1,6 Mo), l'agent ne peut pas lire le compteur, donc il se demande avant de fusionner,
+  **et il demande le total du compte et la part du projet**, parce qu'une heure a été perdue à
+  chercher dans un projet un facteur cinq qui était l'autre. `VERCEL.md` §2.1 et §2.3.
   Le jour même, j'avais fusionné cinq fois, dont trois fois pour de la documentation seule.
 
 ### La branche de travail
