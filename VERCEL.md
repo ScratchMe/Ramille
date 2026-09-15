@@ -232,15 +232,25 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 | **Poids par déploiement** | **≈ 1,6 Mo**, une route par fonction donc sans amplification |
 | Fusions sur `main`, 16/08 → 15/09 | 82, dont **13 doc seule** (16 %) |
 | Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
-| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — pas de baisse avant |
+| **Compteur Functions Storage** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*) — pas de baisse avant au moins dix jours |
+| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — c'est tout ce qui reste avant la limite |
 
-Ce que ce budget vaut en déploiements, au poids retenu par Vercel : **≈ 94**. Ce que la cadence
-des trente derniers jours aurait consommé sur dix jours : 27 déploiements, ≈ 43 Mo — avec les
-fusions « doc seule » sautées, 23 et ≈ 37 Mo. La marge est réelle, et elle ne dispense pas de la
-convention de cadence (§2.3) : le compteur est une somme sur trente jours, et ce qui reste avant
-la limite n'est pas dans l'export d'un déploiement — il se lit sur *Usage*. Première estimation,
-avant le relevé : 4,4 Mo par déploiement et 34 déploiements de budget, d'après le disque ; le
-tableau de bord l'a divisée par 2,7 (§1.2).
+> ⚠️ **Point non réconcilié, et il décide de tout.** 9,85 Go ne se déduisent ni de 1,6 Mo × 82
+> fusions (131 Mo), ni de 4,4 Mo × (82 fusions + les prévisualisations d'avant le 15/09, au plus
+> quelques centaines — l'historique git en montre 158 commits atteignables sur la période, et le
+> dépôt n'a que dix jours). Il manque un facteur d'au moins cinq, et **on ne sait pas où il
+> est** : dans le nombre de déploiements, dans ce que Vercel compte par déploiement, ou dans ce
+> que « Functions Storage » mesure vraiment. Les deux mesures qui trancheront, toutes deux au
+> tableau de bord : **l'augmentation quotidienne du compteur** sur *Usage* (celle du 15/09 divisée
+> par les neuf fusions du jour et les prévisualisations de la matinée donne le coût réel d'un
+> déploiement), et **le compteur après la première fusion sautée** (PR #192), qui doit être
+> immobile. Tant que ce n'est pas réconcilié, un déploiement se compte comme s'il valait des
+> dizaines de mégaoctets, et **rien ne déploie sans nécessité**.
+
+Ce que le budget vaudrait en déploiements au poids de l'export : ≈ 94 ; au poids du disque,
+34 ; au poids que le compteur suggère, **peut-être moins de dix**. Première estimation, avant le
+relevé : 4,4 Mo par déploiement d'après le disque ; l'export d'un déploiement l'a divisée par 2,7
+(§1.2) ; le compteur l'a remise en cause dans l'autre sens.
 
 Répartition du poids de `share-card` : `@resvg/resvg-wasm` 2,48 Mo (57 %), `hb.wasm` 0,38,
 `@shuding/opentype.js` 0,37, `satori` 0,36, `fflate` 0,17, `linebreak` 0,14, les deux polices
@@ -275,9 +285,10 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 
 ### 2.3 Convention de cadence, et le budget des dix jours
 
-Chaque fusion sur `main` coûte ≈ 1,6 Mo pendant trente jours. Entre le 15 et le 25/09/2026, le
-plafond est **150 Mo, soit ≈ 94 déploiements au plus**, et la cadence courante en consommerait
-≈ 43. Trois règles, à demeure — la marge ne les rend pas facultatives, elle les rend tenables :
+Chaque fusion sur `main` coûte au moins 1,6 Mo pendant trente jours — et peut-être beaucoup
+plus, tant que le point de §2.1 n'est pas réconcilié. Entre le 15 et le 25/09/2026, **150 Mo
+sont tout ce qui reste avant la limite**, et une limite atteinte, c'est un correctif qui ne part
+plus. Quatre règles, à demeure :
 
 1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
    (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le
@@ -285,8 +296,11 @@ plafond est **150 Mo, soit ≈ 94 déploiements au plus**, et la cadence courant
 2. **Une PR par vague, pas une par chantier.** Une vérification complète, un push, une fusion.
    Une correction de documentation qui suit une fusion de code attend la fusion de code
    suivante — ou part seule, puisqu'elle ne déploie plus.
-3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours, ce qui laisse
-   plus de 110 Mo de marge pour l'imprévu.
+3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours — et tant que le
+   coût réel d'un déploiement n'est pas connu, **seule une correction nécessaire déploie** ; ce
+   qui peut attendre le 25/09 attend, sur une branche.
+4. **Une fusion de documentation part seule et doit être sautée** (§1.3) : c'est gratuit, et
+   chacune vérifie que le script fait ce qu'il dit.
 
 Ce que cette convention corrige : le 15/09/2026, cinq fusions dans la journée, dont trois qui ne
 touchaient que de la documentation — le motif exact contre lequel Tour de Growth avait écrit sa
@@ -301,6 +315,7 @@ règle, et que j'ai reproduit avant de la lire.
 - **`VERCEL_GIT_PREVIOUS_SHA` est-il exposé ?** Le script écrit « repli sur HEAD^ » quand il ne
   l'est pas. Si cette ligne apparaît à chaque fois, le trou du build échoué (§1.3) est ouvert et
   il faut le savoir.
-- **Le poids affiché par déploiement** est relevé (1,6 Mo, §2.1) ; ce qui reste à lire, c'est le
-  **compteur** lui-même sur *Usage → Functions Storage*, et sa limite — l'export d'un déploiement
-  ne les porte pas.
+- **Le compteur après la fusion de la PR #192** (première fusion sautée) : il doit être identique
+  à 9,85 Go. S'il a bougé, l'Ignored Build Step n'a pas sauté, et le journal de build dit pourquoi.
+- **L'augmentation quotidienne du compteur** sur *Usage*, pour le 15/09 : neuf fusions de
+  production et les prévisualisations de la matinée. C'est la mesure qui réconcilie §2.1.
