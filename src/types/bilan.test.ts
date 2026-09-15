@@ -172,14 +172,67 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
-  it('commute_extra : covoiturage et second mode doivent chacun être renseignés si activés', () => {
-    expect(isStepComplete('commute_extra', answers({ commute_is_carpool: false }))).toBe(true);
+  /**
+   * **La taille du covoiturage se demande sur l'étape du mode, pas sur la suivante**
+   * (recette du 14/09/2026, `v1-16` §3). Elle se rend sous « Voiture (covoiturage) », comme les
+   * deux jumelles des sorties et des longs trajets ; la condition a suivi la question.
+   *
+   * L'assertion la plus utile est la **dernière** : `commute_extra` ne réclame plus rien d'un
+   * covoiturage sans taille. Si elle tombe, c'est que la condition a été recopiée au lieu d'être
+   * déplacée — et deux étapes réclameraient alors le même champ, dont une qui ne l'affiche pas.
+   */
+  it('commute_mode : la taille du covoiturage est réclamée là où elle se demande', () => {
+    const voiture = { commute_mode: 'voiture' as const, commute_car_engine: 'thermique' as const };
+    expect(isStepComplete('commute_mode', answers({ ...voiture, commute_is_carpool: false }))).toBe(
+      true
+    );
     expect(
-      isStepComplete('commute_extra', answers({ commute_is_carpool: true, commute_carpool_size: null }))
+      isStepComplete(
+        'commute_mode',
+        answers({ ...voiture, commute_is_carpool: true, commute_carpool_size: null })
+      )
     ).toBe(false);
     expect(
-      isStepComplete('commute_extra', answers({ commute_is_carpool: true, commute_carpool_size: 3 }))
+      isStepComplete(
+        'commute_mode',
+        answers({ ...voiture, commute_is_carpool: true, commute_carpool_size: 3 })
+      )
     ).toBe(true);
+    // `commute_second_mode_used: false` est ici une **réponse**, pas un détail de fixture : le
+    // champ a un troisième état depuis `v1-16` §4, et sans lui l'étape serait incomplète pour
+    // une autre raison que celle qu'on éprouve.
+    expect(
+      isStepComplete(
+        'commute_extra',
+        answers({
+          commute_is_carpool: true,
+          commute_carpool_size: null,
+          commute_second_mode_used: false,
+        })
+      )
+    ).toBe(true);
+  });
+
+  /**
+   * **Le défaut ne répond plus à la place de la personne** (recette du 14/09/2026, `v1-16` §4).
+   *
+   * `EMPTY_BILAN_ANSWERS.commute_second_mode_used` valait `false` : « Non » arrivait coché sur un
+   * questionnaire vierge et l'étape se traversait sans qu'on décide — or « Non » **sous-estime**
+   * un trajet intermodal, sur le poste qui décide du poste dominant, donc du plan.
+   *
+   * Les deux moitiés comptent, et une seule ne garderait rien : la valeur du défaut, et le fait
+   * que l'étape la refuse. Le `false` explicite de la dernière ligne est là pour dire que c'est
+   * bien l'absence de réponse qui bloque, pas la réponse « Non ».
+   */
+  it('commute_extra : un questionnaire vierge n’a pas répondu, et l’étape le refuse', () => {
+    expect(EMPTY_BILAN_ANSWERS.commute_second_mode_used).toBeNull();
+    expect(manqueDeLEtape('commute_extra', EMPTY_BILAN_ANSWERS)).toBe(
+      'une réponse sur le second mode'
+    );
+    expect(isStepComplete('commute_extra', answers({ commute_second_mode_used: false }))).toBe(true);
+  });
+
+  it('commute_extra : le second mode doit être renseigné s’il est activé', () => {
     expect(
       isStepComplete('commute_extra', answers({ commute_second_mode_used: true, commute_second_mode: null }))
     ).toBe(false);
@@ -653,7 +706,11 @@ describe('normaliserReponses', () => {
       })
     );
     expect(a.commute_second_mode).toBeNull();
-    expect(a.commute_second_mode_used).toBe(false);
+    // **`null` et non `false`** (`v1-16` §4) : la règle écrivait « Non » pour quelqu'un qui
+    // venait de dire « Oui, voiture », c'est-à-dire qu'elle répondait à sa place. Elle repose
+    // la question, et l'étape reste incomplète tant qu'on n'y a pas répondu.
+    expect(a.commute_second_mode_used).toBeNull();
+    expect(isStepComplete('commute_extra', a)).toBe(false);
     // La jambe principale est encore une voiture : la motorisation reste.
     expect(a.commute_car_engine).toBe('thermique');
     expect(a.commute_carpool_size).toBe(3);
@@ -990,7 +1047,8 @@ describe('lireBrouillonBilan', () => {
       },
     });
     expect(brouillon!.answers.commute_second_mode).toBeNull();
-    expect(brouillon!.answers.commute_second_mode_used).toBe(false);
+    // Cf. `normaliserReponses` : l'état se défait en « pas encore répondu », pas en « Non ».
+    expect(brouillon!.answers.commute_second_mode_used).toBeNull();
   });
 
   it('rejette un brouillon dont l’étape est inconnue', () => {

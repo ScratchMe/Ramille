@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
@@ -340,6 +340,18 @@ export default function Plan() {
    * demande.
    */
   const [pistesDepliees, setPistesDepliees] = useState(false);
+
+  /**
+   * Les lignes simples qu'on a ouvertes en carte (recette du 14/09/2026, `v1-16` §5).
+   *
+   * **Plusieurs à la fois, et c'est le point.** Un accordéon qui referme la précédente reprendrait
+   * d'une main ce que ce chantier vient de donner, et comparer deux leviers est exactement ce qu'il
+   * rend possible. Local et non persisté, comme `pistesDepliees` : un geste de lecture, pas une
+   * préférence.
+   *
+   * Un `Set` réécrit et non muté — React compare par référence.
+   */
+  const [lignesOuvertes, setLignesOuvertes] = useState<ReadonlySet<string>>(new Set());
 
   /**
    * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
@@ -1240,7 +1252,14 @@ export default function Plan() {
             <View style={styles.pistes}>
               <TextLink
                 label={pistesDepliees ? 'Replier' : `Voir d’autres pistes · ${pistes.masquees}`}
-                onPress={() => setPistesDepliees((depliees) => !depliees)}
+                onPress={() => {
+                  // « Replier » remet le plan comme il était, cartes ouvertes comprises (`v1-16`
+                  // §5) : sans cette remise à zéro, redéplier ferait réapparaître des cartes là où
+                  // le lien promet des lignes. Hors du `setState` — un effet de bord dans un
+                  // réducteur repasse deux fois en mode strict.
+                  if (pistesDepliees) setLignesOuvertes(new Set());
+                  setPistesDepliees((depliees) => !depliees);
+                }}
                 type="small"
                 weight={600}
                 themeColor="accentText"
@@ -1249,23 +1268,78 @@ export default function Plan() {
               {pistesDepliees && (
                 <>
                   {pistes.estompees.map((action) => carteDaction(action, true))}
-                  {/* Les lignes simples : ce qui existe, sans le mettre au même rang que les cartes.
-                      Elles ne portent pas de bouton — s'engager sur l'une d'elles demande d'abord de
-                      la faire remonter, ce que le prochain re-bilan fait si le poste bouge. */}
+                  {/* **Les lignes simples, et elles s'ouvrent en carte** (recette du 14/09/2026,
+                      §12.4, `v1-16` §5). Elles disent ce qui existe sans le mettre au même rang que
+                      les cartes, et cette hiérarchie reste : à six cartes pleines, ce n'est plus un
+                      choix qu'on présente, c'est un catalogue.
+
+                      Ce qui est parti est la porte de sortie qui vivait ici — « s'engager sur l'une
+                      d'elles demande d'abord de la faire remonter, ce que le prochain re-bilan fait
+                      si le poste bouge ». Elle demandait à la personne de **changer sa vie pour que
+                      l'app la réordonne**, alors que C4.6 existe précisément parce que son autonomie
+                      s'exerçait sur deux leviers et que les autres restaient invisibles (A13-18,
+                      arbitrage D18). Elle s'exerçait ensuite sur quatre, pas sur toutes celles qu'on
+                      lui montre : le chantier avait déplacé la frontière, la phrase la justifiait.
+
+                      Désormais l'insistance porte la hiérarchie, la permission ne la porte plus.
+                      `carteDaction` est déjà une fabrique, donc déplier une ligne, c'est l'appeler. */}
                   {pistes.lignes.length > 0 && (
                     <View style={styles.lignesPistes}>
-                      {pistes.lignes.map((action) => (
-                        <View key={action.id} style={styles.lignePiste}>
-                          <ThemedText type="small" themeColor="textSecondary" style={styles.lignePisteTitre}>
-                            {action.action_templates?.action_text ?? 'Action à préciser.'}
-                          </ThemedText>
-                          {action.saving_kg_year !== null && (
-                            <ThemedText type="small" themeColor="textTertiary">
-                              − {Math.round(action.saving_kg_year)} kg
+                      {pistes.lignes.map((action) => {
+                        if (lignesOuvertes.has(action.id)) return carteDaction(action, true);
+                        const titre = action.action_templates?.action_text ?? 'Action à préciser.';
+                        const gain =
+                          action.saving_kg_year !== null
+                            ? `− ${Math.round(action.saving_kg_year)} kg`
+                            : null;
+                        return (
+                          <Pressable
+                            key={action.id}
+                            style={styles.lignePiste}
+                            onPress={() =>
+                              setLignesOuvertes((ouvertes) => new Set(ouvertes).add(action.id))
+                            }
+                            accessibilityRole="button"
+                            // Une cible qui porte plusieurs textes : on les recompose plutôt que de
+                            // laisser annoncer trois fragments sans lien (règle de CLAUDE.md, même
+                            // motif que la bannière du suivi). Trois détails qui ne se voient qu'à
+                            // l'oreille : le gain se dit « par an », que l'œil déduit de la colonne ;
+                            // le point final du libellé est retiré avant de composer, sinon le repli
+                            // « Action à préciser. » enchaîne deux points ; et l'annonce finit par
+                            // « Choisir », qui dit ce que le toucher fait.
+                            accessibilityLabel={[
+                              titre.replace(/\.$/, ''),
+                              gain !== null ? `${gain} par an` : null,
+                              'Choisir',
+                            ]
+                              .filter((part) => part !== null)
+                              .join('. ')
+                              .concat('.')}
+                          >
+                            <ThemedText type="small" themeColor="textSecondary" style={styles.lignePisteTitre}>
+                              {titre}
                             </ThemedText>
-                          )}
-                        </View>
-                      ))}
+                            {/* Le gain et l'affordance groupés à droite : sous le `space-between` de
+                                la rangée, trois enfants feraient flotter le chiffre au milieu. */}
+                            <View style={styles.lignePisteFin}>
+                              {gain !== null && (
+                                <ThemedText type="small" themeColor="textTertiary">
+                                  {gain}
+                                </ThemedText>
+                              )}
+                              {/* **L'affordance est un mot, parce que ce dépôt n'a pas d'icônes** —
+                                  et c'est celui que le produit emploie déjà pour ce geste
+                                  (« Choisir une action » sur la carte d'ouverture). Une ligne qui ne
+                                  porte qu'un nombre ne donne aucune raison d'être touchée. Il part
+                                  avec la ligne quand la carte s'ouvre : celle-ci porte son propre
+                                  contrôle. */}
+                              <ThemedText type="small" weight={600} themeColor="accentText">
+                                Choisir
+                              </ThemedText>
+                            </View>
+                          </Pressable>
+                        );
+                      })}
                     </View>
                   )}
                 </>
@@ -1426,9 +1500,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'baseline',
     gap: Spacing.two,
-    paddingVertical: Spacing.two,
+    // `three` et non `two` depuis que la ligne se touche (`v1-16` §5) : à 8 px la rangée mesurait
+    // 34 px, sous la cible de 44 que `ControlHeight.target` nomme et que `TextLink` tient déjà. Du
+    // `hitSlop` aurait marché sans déplacer le texte, mais les rangées se touchent (`gap: 0`) et
+    // leurs zones se seraient recouvertes — c'est la hauteur qu'il faut, pas une marge invisible.
+    paddingVertical: Spacing.three,
   },
-  lignePisteTitre: { flexShrink: 1, minWidth: 0 },
+  lignePisteTitre: { flex: 1, minWidth: 0 },
+  lignePisteFin: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
   emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
   praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   praiseText: { flex: 1, minWidth: 0 },

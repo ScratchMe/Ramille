@@ -282,6 +282,11 @@ export const ACTIONS_EN_AVANT = 2;
  * Le canvas borne les cartes à quatre, et c'est une hiérarchie voulue : une liste de six cartes
  * pleines ne présente plus un choix, elle présente un catalogue. Les lignes qui suivent disent ce
  * qui existe sans le mettre au même rang.
+ *
+ * **Les trois rangs disent l'insistance, jamais la permission** (recette du 14/09/2026, §12.4,
+ * `v1-16` §5). Les lignes simples n'avaient pas de bouton, donc le plan affichait des leviers
+ * chiffrés et inatteignables ; elles s'ouvrent désormais en carte au toucher. Le classement n'a pas
+ * bougé — c'est ce que l'écran permet qui a changé, pas ce qu'il recommande.
  */
 export const PISTES_ESTOMPEES = 2;
 

@@ -13,11 +13,16 @@ import {
   TWO_WHEELER_TYPE_OPTIONS,
   type TransportModeId,
 } from '@/constants/transport-modes';
-import { useTheme } from '@/hooks/use-theme';
-import { PARTS_DU_SECOND_MODE, TAILLES_DE_COVOITURAGE, type BilanAnswers } from '@/types/bilan';
+import { PARTS_DU_SECOND_MODE, type BilanAnswers } from '@/types/bilan';
 
-// B1.5 / B1.6 / B1.7 — combinés sur un seul écran : taille du covoiturage (si mode =
-// voiture covoiturage), second mode Oui/Non, puis "Lequel ?" imbriqué si Oui.
+// B1.6 / B1.7 — second mode Oui/Non, puis « Lequel ? » imbriqué si Oui.
+//
+// **B1.5 est parti sur l'écran précédent** (recette du 14/09/2026, `v1-16` §3) : la taille du
+// covoiturage se demande sous l'option « Voiture (covoiturage) » de B1.4, comme ses deux jumelles
+// des sorties et des longs trajets. Cet écran n'a donc plus qu'une question — et elle porte enfin
+// son titre. Le `screenTitle` vivait sur le bloc du covoiturage, qui était **conditionnel** : qui
+// ne covoiturait pas arrivait ici sur un écran sans titre. Le chantier ne crée pas ce défaut, il
+// le referme.
 export function CommuteExtraStep({
   answers,
   update,
@@ -25,50 +30,14 @@ export function CommuteExtraStep({
   answers: BilanAnswers;
   update: (patch: Partial<BilanAnswers>) => void;
 }) {
-  const theme = useTheme();
   const secondModeChoices = (Object.keys(TRANSPORT_MODE_LABELS) as TransportModeId[]).filter(
     (id) => id !== answers.commute_mode
   );
 
   return (
     <View style={styles.container}>
-      {answers.commute_is_carpool && (
-        <>
-          <View style={styles.block}>
-            <ThemedText type="screenTitle">
-              Vous êtes combien à partager ce trajet ?
-            </ThemedText>
-            {/* La **même** question que « Vous êtes combien dans la voiture ? » des sorties et
-                des longs trajets, sur la même liste — elle doit donc s'annoncer pareil. C3.5 a
-                posé les deux nouvelles en `radiogroup` nommé et laissé celle-ci en `button`,
-                si bien que trois questions jumelles se présentaient de deux façons selon
-                l'écran. Le libellé accessible vient de la table, pour que « 6+ » ne s'entende
-                pas « six plus ». */}
-            <View
-              style={styles.row}
-              accessibilityRole="radiogroup"
-              accessibilityLabel="Nombre de personnes qui partagent ce trajet"
-            >
-              {TAILLES_DE_COVOITURAGE.map((size) => (
-                <Chip
-                  key={size.value}
-                  label={size.label}
-                  accessibilityLabel={size.accessibilityLabel}
-                  role="radio"
-                  selected={answers.commute_carpool_size === size.value}
-                  onPress={() => update({ commute_carpool_size: size.value })}
-                  flex
-                  radius={14}
-                />
-              ))}
-            </View>
-          </View>
-          <View style={[styles.separator, { backgroundColor: theme.border }]} />
-        </>
-      )}
-
       <View style={styles.block}>
-        <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
+        <ThemedText type="screenTitle">
           Utilises-tu un second mode en complément ?
         </ThemedText>
         <ThemedText type="small" themeColor="textTertiary">
@@ -93,7 +62,7 @@ export function CommuteExtraStep({
           />
         </View>
 
-        {answers.commute_second_mode_used && (
+        {answers.commute_second_mode_used === true && (
           <ThemedView type="backgroundElement" style={styles.nestedBox}>
             <ThemedText type="small" themeColor="textTertiary">
               Lequel ?
@@ -166,9 +135,7 @@ export function CommuteExtraStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   row: { flexDirection: 'row', gap: Spacing.two },
-  separator: { height: 1 },
   nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
   nestedList: { gap: Spacing.two },
   precision: { marginTop: Spacing.two },

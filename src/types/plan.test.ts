@@ -222,6 +222,25 @@ describe('pistesDuPlan', () => {
     expect(p.estompees.map((a) => a.id)).toEqual(['anull']);
   });
 
+  /**
+   * **Les trois rangs partitionnent, ils ne sélectionnent pas** — et depuis §12.4 (`v1-16` §5)
+   * cette propriété porte une promesse d'écran : toute action affichée est engageable, donc toute
+   * action figée doit être affichée. Un rang qui en laisserait tomber une la rendrait invisible,
+   * c'est-à-dire recréerait le `limit 2` que C4.6 a retiré du serveur, ici et en silence.
+   *
+   * L'assertion porte sur neuf actions pour déborder les deux bornes, et compare la
+   * **concaténation des trois rangs** à l'ordre attendu plutôt que trois listes séparées : c'est
+   * la partition qu'on éprouve, pas le contenu de chaque rang, déjà épinglé plus haut.
+   */
+  it('ne perd aucune action, quel qu’en soit le nombre', () => {
+    const rangs = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const p = pistesDuPlan(rangs.map((r) => action(r)));
+    expect([...p.enAvant, ...p.estompees, ...p.lignes].map((a) => a.id)).toEqual(
+      rangs.map((r) => `a${r}`)
+    );
+    expect(p.masquees).toBe(rangs.length - ACTIONS_EN_AVANT);
+  });
+
   // Le plan d'avant C4.6 : deux actions, rien derrière, donc pas de lien à afficher.
   it('ne cache rien quand il n’y a que deux actions', () => {
     const p = pistesDuPlan([action(1), action(2)]);
