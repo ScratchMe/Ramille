@@ -213,14 +213,19 @@ ainsi en `rappels/stop.html`, alors que c'est le lien de désinscription imprim�
 si `cleanUrls` disparaît un jour de ce fichier, la moitié de l'app repasse en 404 silencieusement.
 
 **Et il ne se déploie plus de prévisualisation** (15/09/2026) : `git.deploymentEnabled` y vaut
-`{ "*": false, "main": true }`, donc seule `main` déclenche un déploiement et c'est la production.
-Deux conséquences pour qui travaille ici. **Ne pas attendre d'URL de prévisualisation sur une
-branche** — la vérification visuelle du web se fait localement, par `expo export --platform web` puis
-Playwright sur `dist/`, ce qui est de toute façon ce que font les cinq gardes d'export en CI ; aucune
-d'elles n'a jamais interrogé Vercel. Et **le motif `"*": false` ne suffit pas seul** : Vercel déploie
-dès qu'une règle correspondante vaut `true`, donc `main` doit être nommée explicitement — la retirer
-en croyant simplifier couperait la production, qui sert `assetlinks.json`, `/rappels/stop` et les
-pages légales exigées par Play.
+`{ "**": false, "main": true }`, donc seule `main` déclenche un déploiement et c'est la production.
+**Ne pas attendre d'URL de prévisualisation sur une branche** — la vérification visuelle du web se
+fait localement, par `expo export --platform web` puis Playwright sur `dist/`, ce qui est de toute
+façon ce que font les cinq gardes d'export en CI ; aucune d'elles n'a jamais interrogé Vercel.
+
+Trois pièges vont avec ce réglage, et **le premier s'est refermé sur moi le jour où je l'ai écrit**.
+**C'est `"**"` et jamais `"*"`** : Vercel départage les branches en **minimatch**, où `*` ne traverse
+pas les `/`. Les branches de travail de ce dépôt s'appellent `claude/…`, donc `"*": false` ne les
+attrape pas et la prévisualisation part quand même — constaté sur la PR qui posait le réglage. Ensuite,
+**`main` doit être nommée explicitement** : Vercel déploie dès qu'une règle correspondante vaut `true`,
+donc la retirer en croyant simplifier couperait la production, qui sert `assetlinks.json`,
+`/rappels/stop` et les pages légales exigées par Play. Enfin, **le réglage vit dans le dépôt, donc il
+suit la branche** : une branche partie d'un commit antérieur à celui-ci déploiera encore.
 
 **`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
 la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de route Expo
