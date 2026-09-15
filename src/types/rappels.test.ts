@@ -1,5 +1,6 @@
 import { RAMILLE } from '@/constants/mascotte';
 import {
+  boucleDeLAction,
   canalEffectif,
   canalPreselectionne,
   carteAttente,
@@ -433,5 +434,25 @@ describe('carteAttente', () => {
     });
     expect(carte.cle).not.toMatch(/\d/);
     expect(RAMILLE[carte.cle]).not.toMatch(/\d/);
+  });
+});
+
+describe('boucleDeLAction', () => {
+  // **Relevé en recette sur appareil, le 14/09/2026.** La feuille qui s'ouvre après « C'est noté »
+  // promettait « Lundi, je reviens te demander si tu l'as faite » à quelqu'un qui venait de
+  // s'engager sur un vol. Elle lisait la boucle **de la personne** — a-t-elle un trajet
+  // domicile-travail — alors qu'elle parle de l'action. Le point du lundi s'apparie sur le poste
+  // `commute` (C2.1) : il ne demande jamais rien sur un voyage, et le même jour la base l'a
+  // confirmé, le point hebdomadaire sortant en question générique.
+  it('suit le poste de l’action, jamais les boucles de la personne', () => {
+    expect(boucleDeLAction('commute')).toBe('hebdo');
+    expect(boucleDeLAction('leisure')).toBe('mensuel');
+    expect(boucleDeLAction('travel')).toBe('mensuel');
+  });
+
+  // Même repli que `intentionTimingsForPoste` : sans poste on prend la branche qui n'engage pas
+  // un jour précis. Une promesse vague vaut mieux qu'une promesse fausse.
+  it('sans poste, prend la branche qui ne nomme pas de jour', () => {
+    expect(boucleDeLAction(null)).toBe('mensuel');
   });
 });

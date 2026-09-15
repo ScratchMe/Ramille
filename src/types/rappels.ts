@@ -166,11 +166,35 @@ export function canalPreselectionne(
 // ─────────────────────────────────────────────────────────────────────────────────────────
 
 /**
- * Quelle boucle concerne la personne, donc quel jour Ramille peut nommer. Hebdomadaire dès
- * qu'un poste domicile-travail existe (le point du lundi est alors généré pour elle),
- * mensuelle sinon. Le prochain contact est celui qui vient en premier.
+ * Quelle boucle nomme le jour que Ramille annonce. Hebdomadaire dès qu'un poste
+ * domicile-travail existe (le point du lundi est alors généré), mensuelle sinon.
+ *
+ * **Deux questions distinctes s'y répondent, et elles n'ont pas la même source** (relevé en
+ * recette le 14/09/2026). La **carte d'attente** annonce le prochain contact, quel qu'en soit le
+ * sujet : elle se dérive de la personne — a-t-elle un poste domicile-travail, donc un point le
+ * lundi. La **feuille ouverte après « C'est noté »**, elle, promet un contact *sur l'action qu'on
+ * vient d'engager* (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du
+ * **poste de cette action**, par `boucleDeLAction`.
+ *
+ * Les confondre affiche une promesse fausse, et c'est ce qui a été trouvé sur appareil : quelqu'un
+ * qui a un trajet domicile-travail **et** s'engage sur un vol s'entendait promettre le lundi, alors
+ * que le point du lundi s'apparie sur le poste `commute` (C2.1) et ne demandera jamais rien sur son
+ * vol. Le chemin a été constaté en base le même jour : le point hebdomadaire est bien sorti en
+ * question générique.
  */
 export type Boucle = 'hebdo' | 'mensuel';
+
+/**
+ * La boucle qui interrogera une action, d'après le poste de son gabarit.
+ *
+ * Miroir de l'appariement que fait la génération du point (C2.1) : la boucle hebdomadaire ne
+ * retient qu'une action du poste `commute`, la mensuelle celle du poste `extras` du bilan. Un
+ * poste absent prend la branche mensuelle, par le même repli que `intentionTimingsForPoste` —
+ * mieux vaut la formulation qui n'engage pas un jour précis.
+ */
+export function boucleDeLAction(poste: string | null): Boucle {
+  return poste === 'commute' ? 'hebdo' : 'mensuel';
+}
 
 /** L'état de la permission système, tel que le téléphone le rapporte. */
 export type Permission =

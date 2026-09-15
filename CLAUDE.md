@@ -632,11 +632,43 @@ base — et rendu éprouvable une garde de `cadreDuPlan` qui ne l'était pas.
 
 La suite est la vague 8 (lot 4), dont chaque chantier commence par **une page de décision**
 (`v1-1N`) et non par du code : C4.1 (point quantitatif), C4.2 (coup de pouce la veille), C4.3
-(déplacements professionnels), C4.4, C4.5, C4.7 et C4.8 — C4.6 ayant été avancé dans la vague 6.
+(déplacements professionnels), C4.4 (VAE, RER, autocar), C4.5 (hors-ligne), C4.7 (retirer un bilan
+erroné), C4.8 (comparaison à un an) et **C4.9** (la sortie que la messagerie affiche) — C4.6 ayant
+été avancé dans la vague 6.
 
-Deux choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
-appareil et que cocher une ligne de §10 ne dit pas, et **le relevé de fichiers, à refaire à chaque
-fois** — la colonne « Parallèle ? » de §2.3 est une intention, pas un relevé. Elle s'est trompée
+**La première recette sur appareil a eu lieu le 14/09/2026, et elle verse cinq constats dans cette
+vague-là** (`v1-13` §12, une issue chacun, tous repris dans le tableau de §2.3 — c'est là qu'on les
+retrouve, pas seulement dans le compte rendu de séance). Deux d'entre eux ne sont pas des idées
+d'increment mais des **défauts en production**, et il faut les connaître avant de toucher aux écrans
+qu'ils concernent :
+
+- **Hors ligne et à froid, la racine est un mur** (§12.5, `C4.5`). Mode avion, app complètement
+  fermée puis rouverte : « Le démarrage a échoué ». `src/app/index.tsx` lève quand la lecture
+  d'`assessments` échoue **et** qu'il n'y a pas de brouillon — or le brouillon est effacé à la
+  soumission, donc toute personne ayant déjà soumis un bilan a une app inutilisable au démarrage
+  sans réseau, questionnaire compris. Tout le soin décrit plus bas sur les écrans hors ligne vit
+  **derrière** ce mur et n'est jamais atteint à froid. Le raisonnement écrit dans ce fichier-là reste
+  juste et ne se défait pas (envoyer à `/onboarding` dirait « tu n'as rien ») : ce qui manque est une
+  marque locale, et son coût — `allowBackup` est vrai par défaut, donc elle revient fausse sur un
+  appareil restauré — est le vrai point à trancher.
+- **Le bouton « Se désabonner » de Gmail n'apparaît pas** (§12.6, `C4.9`). L'en-tête
+  `List-Unsubscribe` part bien et le reste du chemin marche (le lien s'ouvre dans le navigateur, le
+  second clic refuse calmement) ; c'est l'objectif que la migration se donnait — « la sortie que la
+  personne trouvera en premier, avant de cliquer Spam » — qui n'est pas atteint. Ce qui a changé est
+  la **prémisse** de la décision de ne pas envoyer `List-Unsubscribe-Post` : « la page est un export
+  statique, elle ne peut pas répondre à un POST » reste vrai de la page, et faux du dépôt, qui sert
+  déjà des Vercel Functions depuis `api/`. Commencer par l'expérience à un message, qui sépare cette
+  cause de l'autre (Gmail ne rend ce bouton qu'aux expéditeurs qu'il classe en courrier de masse).
+
+Les trois autres sont des décisions d'écran : le placement de la taille du covoiturage du trajet
+quotidien (§12.2), le binaire du second mode qui n'a pas d'état « pas encore répondu » (§12.3), et
+les actions que le plan affiche sans qu'on puisse les choisir (§12.4, qui rouvre C4.6).
+
+Trois choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
+appareil et que cocher une ligne de §10 ne dit pas — chaque ligne dit maintenant si la recette du
+14/09/2026 l'a jouée, et une ligne muette n'a pas été jouée, y compris quand le bloc qui la portait
+est revenu conforme sur autre chose ; la **§12**, ce que cette recette a trouvé ; et **le relevé de
+fichiers, à refaire à chaque fois** — la colonne « Parallèle ? » de §2.3 est une intention, pas un relevé. Elle s'est trompée
 deux fois de suite : la vague 2, annoncée disjointe, partageait six fichiers, et la vague 3,
 annoncée « enchaînée », avait deux chantiers réellement parallélisables et trois fichiers
 revendiqués par plusieurs — dont un par trois. Le relevé coûte dix minutes et évite qu'un chantier
@@ -1344,7 +1376,10 @@ n'a rien supprimé. Le test épingle aussi qu'une session anonyme portant déjà
 confirmée (entre `updateUser({ email })` et le clic de confirmation) n'est **pas** un compte
 rattaché. **La suppression
 efface une seule ligne, `auth.users`, et laisse la cascade faire le reste** : une fonction qui
-énumérerait les tables deviendrait fausse à la prochaine migration, en silence. Ne jamais
+énumérerait les tables deviendrait fausse à la prochaine migration, en silence. **Parcourue une fois
+pour de bon le 14/09/2026**, en clôture de la recette sur appareil : un compte réel supprimé depuis
+`/compte/suppression`, puis neuf tables relevées pour son identifiant — zéro ligne partout,
+`auth.users` comprise. Ne jamais
 rattacher une table à `profiles` avec autre chose que `on delete cascade` — un test pgTAP
 vérifie la chaîne niveau par niveau. L'export est `security definer` pour une autre raison :
 `usage_events` n'ayant aucune policy de lecture, une fonction en `security invoker` rendrait un
@@ -1451,6 +1486,15 @@ et le jeton *est* l'autorisation. Trois pièges :
   Vault existent, donc **aucune suite ne l'exerce** — ni la CI, où ils manquent, ni le distant, où
   les rejouer ferait partir un vrai email. L'en-tête a été éprouvé en évaluant la même expression à
   la main sur une vraie ligne d'outbox.
+  **Et depuis le 14/09/2026 on sait ce que ça coûte : Gmail n'affiche aucun bouton « Se désabonner »**
+  (recette sur appareil, `v1-13` §12.6, chantier `C4.9`). Le reste du chemin marche — le lien imprimé
+  dans le corps s'ouvre dans le navigateur, le second clic refuse calmement, la préférence repasse sur
+  « Aucun » — mais la sortie que la personne trouve **en premier** n'existe pas, et c'est elle qui
+  évite le clic « Spam ». Deux causes possibles, non séparées : Gmail veut les deux en-têtes, ou il ne
+  rend ce bouton qu'aux expéditeurs qu'il classe en courrier de masse. Ce qui a vieilli dans la
+  décision ci-dessus n'est pas son raisonnement mais sa **prémisse** : la page ne peut toujours pas
+  répondre à un POST, le dépôt si — `api/` sert déjà des Vercel Functions hors de l'export statique.
+  Ne pas ajouter l'en-tête seul pour autant : c'est exactement ce que la première moitié interdit.
 
 **Les reprises de jeton d'appareil laissent une trace** (`push_tokens.reprises`,
 `derniere_reprise_le`, `proprietaire_precedent`). La reprise reste **inconditionnelle** — décision
@@ -1789,6 +1833,18 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   seulement changer le texte** — relire la permission sans réinscrire le jeton laisse la ligne
   promettre une notification pendant que `push_tokens` porte encore son `disabled_at`, jusqu'au
   prochain démarrage à froid.
+- **La carte d'attente parle de la personne, la feuille parle de l'action — et `Boucle` sert aux
+  deux** (recette sur appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
+  le sujet : elle se dérive de la personne (un poste domicile-travail ⟹ un point le lundi). La
+  feuille ouverte après « C'est noté » promet un contact **sur l'action qu'on vient d'engager**
+  (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du **poste de cette
+  action**, par `boucleDeLAction` (`src/types/rappels.ts`), miroir de l'appariement que fait la
+  génération du point (C2.1). Les confondre affiche une promesse fausse, et c'est ce qui a été
+  trouvé : quelqu'un qui a un trajet domicile-travail **et** s'engage sur un vol s'entendait
+  promettre le lundi, alors que le point du lundi ne demandera jamais rien sur son vol — vérifié en
+  base le même jour, le point hebdomadaire sortant en question générique. Corollaire : la feuille
+  ne dépend plus de `boucle`, sans quoi un échec de lecture secondaire empêchait une cérémonie qui
+  ne s'ouvre **qu'une fois par appareil** — donc la perdait pour de bon.
 - **Le jeton de cet appareil est mémorisé en AsyncStorage** (`traceverte.jeton_appareil.v1`),
   parce que rien en base ne permet de le reconnaître : `push_tokens` est owner-scoped et une
   lecture rend les jetons de tous les appareils de la personne. C'est ce qui rend vraies les deux
@@ -1997,8 +2053,10 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   épinglé, donc sa page reçoit une hauteur **définie** (`contenuDePageFixe`) et non un minimum. La
   règle générale qui en sort : une page qui gère son propre débordement veut `height`, une page qui
   n'en a pas veut `minHeight`. Détail et mesures en §11.13 et §11.14 de `v1-13`.
-- **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Charger à
-  chaque retour transforme une lecture en échec en régression visible : tant que la lecture n'avait
+- **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus** — mais tout
+  ce qui suit vit **derrière la racine**, qui lève à froid sans réseau (§12.5 de `v1-13`, `C4.5`) :
+  ce paragraphe décrit ce qui se passe quand le réseau tombe **pendant** une session, jamais au
+  démarrage. Charger à chaque retour transforme une lecture en échec en régression visible : tant que la lecture n'avait
   lieu qu'au montage, personne ne pouvait perdre ses barres en cours de session. Les lectures
   rendent donc `{ ok: true, data } | { ok: false }` — **jamais erreur → tableau vide**, qui se
   traduisait par « Ton suivi commence au premier bilan » à quelqu'un qui a douze bilans — et les

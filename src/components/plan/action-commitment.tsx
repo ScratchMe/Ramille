@@ -53,7 +53,12 @@ export function ActionCommitment({
    * quand on le libère. C'est ce qui déclenche la feuille des rappels (v1-12 §6.1), et elle
    * n'a de sens qu'à cet instant précis : la personne vient de dire quand elle va agir.
    */
-  onEngage?: () => void;
+  /**
+   * Appelé quand un engagement vient d'être pris. Le **poste** part avec, parce que la feuille
+   * qui s'ouvre derrière promet un contact *sur cette action* : c'est lui qui dit quelle boucle
+   * l'interrogera (relevé en recette le 14/09/2026, cf. `boucleDeLAction`).
+   */
+  onEngage?: (poste: string | null) => void;
   /**
    * Appelé quand le serveur **refuse** le remplacement (`RM001`), avec la phrase à afficher.
    *
@@ -109,7 +114,7 @@ export function ActionCommitment({
     setDays([]);
     setTiming(null);
     onChanged();
-    onEngage?.();
+    onEngage?.(poste);
   };
 
   const release = async () => {
