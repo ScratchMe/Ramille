@@ -23,6 +23,7 @@ import { RAMILLE } from '@/constants/mascotte';
 import { track } from '@/lib/analytics';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
 import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
+import { marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
@@ -402,6 +403,13 @@ export default function BilanQuestionnaire() {
 
       bilanEnCours.current = null;
       await clearBilanDraft();
+      // **La marque locale se pose ici aussi, et pas seulement à la racine** (C4.5). Le
+      // questionnaire mène à la restitution puis au plan, sans repasser par la racine : sans cette
+      // ligne, la marque n'existerait qu'au **prochain** lancement en ligne, et quelqu'un qui
+      // soumet son premier bilan puis rouvre l'app sans réseau retomberait sur l'onboarding. Elle
+      // se pose après `clearBilanDraft()` parce que c'est exactement ce que cet effacement rend
+      // nécessaire : le brouillon était jusque-là la preuve locale.
+      void marquerQuIlYAUnBilan();
       // `nouveau=1` distingue l'aboutissement du questionnaire d'une relecture depuis le
       // suivi : c'est ce paramètre, et lui seul, qui autorise la proposition de compte et le
       // bouton vers le plan (cf. `src/types/resultat.ts`).

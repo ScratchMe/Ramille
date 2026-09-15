@@ -1,15 +1,16 @@
 # v1-15 — Hors ligne : la racine cesse d'être un mur
 
-**Date** : 15/09/2026. **Statut** : page de décision, avant tout code — c'est la règle du lot 4
-(`v1-13` §7). **Chantier** : C4.5, [#147](https://github.com/ScratchMe/TraceVerte/issues/147),
+**Date** : 15/09/2026. **Statut** : page de décision écrite avant tout code — c'est la règle du
+lot 4 (`v1-13` §7) — puis **livrée le même jour** (§11, qui porte les deux écarts au plan).
+**Chantier** : C4.5, [#147](https://github.com/ScratchMe/TraceVerte/issues/147),
 requalifié par la recette sur appareil du 14/09/2026
 ([#180](https://github.com/ScratchMe/TraceVerte/issues/180), `v1-13` §12.5).
 **Constats** : A1-5, A10-9, A6-15.
 
 **Ce que ce document tranche** : comment la racine se comporte sans réseau, ce qu'on persiste
-localement pour y arriver, et ce qu'on ne persiste pas. **Ce qu'il ne tranche pas** : la copie exacte
-des deux phrases neuves, qui appartient au canvas ; et l'instantané du plan, reporté avec sa raison
-en §7.
+localement pour y arriver, et ce qu'on ne persiste pas. **Ce qu'il ne tranche pas** : l'instantané du
+plan, reporté avec sa raison en §7. La copie neuve, elle, n'a finalement pas lieu d'exister — aucune
+phrase n'a été écrite, cf. §6.
 
 ---
 
@@ -79,18 +80,40 @@ devient un **second** état, en français, sans jeton technique.
 **La distinction ne se fait pas sur le libellé de l'exception.** « Network request failed », « Failed
 to fetch », « Unable to resolve host … » varient selon la plateforme, la version et la langue du
 système : reconnaître au message refabriquerait exactement le piège que ce dépôt documente pour
-`over_email_send_rate_limit` et pour `PGRST303`. Une erreur PostgREST porte un `code` ; une coupure
-de transport n'en porte pas.
+`over_email_send_rate_limit` et pour `PGRST303`.
 
-**À vérifier avant d'écrire la ligne, pas après** : la forme exacte de l'objet que rend
-`@supabase/postgrest-js` installé quand `fetch` rejette. Le raisonnement « absence de `code` » vient
-de la contre-vérification d'A1-5 et n'a pas été relu dans le SDK. C'est une dérivation de deux lignes
-dont tout le reste dépend ; elle se lit dans le code du paquet en cinq minutes, et un test l'épingle
-ensuite.
+**Et elle ne se fait pas non plus sur l'absence de `code`** — c'est le critère que cette page
+proposait avant d'avoir lu le SDK, et il est faux. Relu le 15/09/2026 dans `@supabase/postgrest-js`
+2.116.0 : le `catch` du transport rend bien une erreur sans `code`
+(`{ message, details, hint, code: '' }`), mais il rend **aussi** `status: 0` — et surtout **trois
+autres chemins** du même paquet rendent une erreur sans `code` en portant un statut bien réel : un
+corps non-JSON sur une réponse 2xx, un corps d'erreur illisible, un 404 au corps vide. Un critère
+fondé sur le `code` classerait ces trois-là « pas de connexion » devant un serveur qui a
+parfaitement répondu. Le discriminant est donc **`status === 0`**, et il tient parce que `status`
+vit sur `PostgrestResponseBase` : il arrive jusqu'à l'appelant, ce qui n'était pas garanti avant de
+le vérifier.
 
-**Où ça vit** : un module **pur** de `src/types/`, donc testé. Attention au nom : `estPanneDeTransport`
-est déjà pris dans `src/types/connexion.ts` et traite les erreurs d'`auth-js`, reconnues par leur
-`name` — c'est une autre famille, un autre test, et les confondre ferait passer l'un pour l'autre.
+C'est la leçon de `PGRST303` prise par l'autre bout : là-bas un code seul ne suffisait pas à
+distinguer deux causes, ici l'absence d'un code ne suffit pas à en nommer une. Le mauvais critère
+est rendu **inexprimable** plutôt qu'interdit — `lireLeBilan` ne reçoit pas de `code` du tout — et
+une assertion dit pourquoi, pour que personne ne l'ajoute.
+
+**La coupure a deux points d'entrée, et le second s'est révélé à l'écriture.** `ensureSession()` lève
+sur l'échec de la **création** d'une session — les trois autres états sortent sans rien faire
+(C2.11) — et c'est précisément le cas de l'installation neuve hors ligne. La racine ne relance donc
+plus cette erreur quand `estPanneDeTransport` la reconnaît : elle note la coupure et **n'interroge
+pas la base non plus**. Sans session, la requête partirait en `anon`, qui n'a aucun privilège sur
+`assessments` (§1), et le `42501` se lirait « erreur serveur » là où c'est le réseau — l'écran
+technique en anglais pour une panne de wifi, c'est-à-dire le défaut que ce chantier ferme, atteint
+par un autre chemin.
+
+**Où ça vit** : `src/types/demarrage.ts`, module **pur** et testé, qui porte les deux dérivations —
+`lireLeBilan` (lue / coupure / erreur) et `destinationDuDemarrage` (la table de §6). Attention au
+nom : `estPanneDeTransport` est déjà pris dans `src/types/connexion.ts` et traite les erreurs
+d'`auth-js`, reconnues par leur `name` — c'est une autre famille, un autre test, et les confondre
+ferait passer l'un pour l'autre. Les deux se côtoient d'ailleurs dans la racine, chacune sur la
+sienne : celle de `connexion.ts` sur l'échec d'`ensureSession()`, celle de `demarrage.ts` sur la
+réponse PostgREST.
 
 ## 5. Décision 2 — la marque locale, et ce qu'elle autorise
 
@@ -151,9 +174,26 @@ La racine se réduit donc à :
 |---|---|---|
 | réussie | — | inchangé : `/plan`, `/bilan?reprise=1` ou `/onboarding` |
 | échouée, **coupure réseau**, brouillon | — | `/bilan?reprise=1` — inchangé, et déjà le cas |
-| échouée, **coupure réseau** | présente | `/plan`, avec le bandeau doux de §5 |
+| échouée, **coupure réseau** | présente | `/plan` |
 | échouée, **coupure réseau** | absente | `/onboarding` |
 | échouée, **erreur serveur** | — | l'écran technique actuel, message brut compris |
+
+Hors ligne, **le brouillon passe devant la marque**, à l'inverse de la règle en ligne où un bilan
+complété gagne sur un questionnaire commencé (C3.9). Ce n'est pas une incohérence : le questionnaire
+se remplit sans réseau, le plan non. Router vers le plan retirerait à la personne la seule chose
+qu'elle pouvait faire — et c'est déjà ce que la racine fait aujourd'hui, donc l'inverser serait une
+régression. Une assertion le dit.
+
+**Le bandeau doux de §5 n'a pas été écrit, et c'est une simplification, pas un oubli.** La phrase que
+§5 autorise devait vivre sur `/plan`, où la lecture vient d'échouer — donc sur l'écran
+`erreur_reseau`, qui existe depuis C1.4 et dit déjà « Ton plan n'a pas pu être relu. Vérifie ta
+connexion. », avec un « Réessayer » et la barre d'onglets intacte. C'est en français, ça n'affirme
+rien de faux, et ça ne parle pas des données de la personne : superposer un second bandeau aurait
+fait deux messages de réseau sur le même écran. Ce que la marque autorise reste acquis — c'est elle
+qui rend cet écran-là atteignable au lieu de l'écran technique — mais elle n'a pas eu besoin d'une
+phrase de plus pour le faire. Corollaire à tenir : **aucun drapeau `horsLigne` ne descend de la
+racine vers le plan.** Il serait la seule chose à devoir rester juste entre deux écrans, pour une
+information que l'onglet relit lui-même à chaque retour.
 
 **Une seule ligne de l'ancien raisonnement tombe**, et il faut le dire franchement : le commentaire
 qui explique aujourd'hui pourquoi on s'arrête plutôt que de router vers `/onboarding` cesse d'être
@@ -230,19 +270,33 @@ Trois façons d'y répondre, et je recommande la troisième :
 
 ## 11. Plan d'exécution
 
-1. **Lire le SDK** et trancher la forme de la coupure réseau (§4). Rien d'autre ne commence avant.
-2. **La dérivation pure**, dans `src/types/`, avec son test : coupure réseau ou non, et la
+**Livré le 15/09/2026**, dans cet ordre. Les deux écarts au plan initial sont le critère de §4
+(`status === 0` et non l'absence de `code`) et le bandeau de §6, qui n'a pas eu lieu d'être écrit ;
+les deux sont consignés dans leur section.
+
+1. **Lire le SDK** et trancher la forme de la coupure réseau (§4). Rien d'autre ne commence avant —
+   et c'est ce qui a évité d'écrire le mauvais critère, puis de bâtir un test qui l'aurait consacré.
+2. **La dérivation pure**, `src/types/demarrage.ts` avec son test : coupure réseau ou non, et la
    destination de la racine à partir du triplet (lecture, marque, brouillon). La table de §6 est
-   écrite pour être un test.
-3. **La marque**, dans `src/lib/`, avec son test qui double AsyncStorage — comme `bilan-draft`,
-   `connexion-prefs` et `saison-prefs` (§Tests de CLAUDE.md). Vérifier au passage que le balayage par
-   préfixe de `src/lib/compte.ts` l'emporte bien : c'est une assertion, pas une lecture de code.
-4. **La racine**, qui ne fait que consommer les deux. Son commentaire se réécrit (§6).
-5. **Le bandeau** sur `/plan`, et sa copie avec le canvas.
-6. **Vérifier que `?rappel=1` traverse toujours.** Le lien du rappel pointe `/plan?rappel=1` et C2.11
-   ne l'honore que sans bilan local ; la marque ajoute une route vers `/plan` et ne doit pas changer
-   ce comportement. Deux assertions de `09` gardent les deux moitiés côté SQL, rien ne le garde côté
-   client.
+   écrite pour être un test, et elle l'est devenue ligne par ligne.
+3. **La marque**, `src/lib/marque-de-bilan.ts` avec son test qui double AsyncStorage — comme
+   `bilan-draft`, `connexion-prefs` et `saison-prefs` (§Tests de CLAUDE.md). Le balayage par préfixe
+   de `src/lib/compte.ts` y est **rejoué** plutôt que lu : `getAllKeys`, filtre sur `traceverte.`,
+   `multiRemove`, puis on vérifie que la marque a disparu. Ce que l'assertion prouve est que la clé
+   **tombe** sous ce balayage ; que `compte.ts` le fasse bien reste son propre code.
+4. **La racine**, qui ne fait que consommer les deux. Son commentaire est réécrit (§6), et elle a
+   gagné le second point d'entrée de la coupure (§4, avant-dernière puce). La marque s'écrit aussi
+   **à la soumission du questionnaire** : celui-ci mène à la restitution puis au plan sans repasser
+   par la racine, donc sans cette ligne la marque n'existerait qu'au prochain lancement en ligne, et
+   quelqu'un qui soumet son premier bilan puis rouvre l'app sans réseau retomberait sur l'onboarding.
+5. **Le bandeau** : sans objet, cf. §6.
+6. **`?rappel=1` traverse toujours, vérifié.** Le paramètre n'est lu qu'à un seul endroit
+   (`src/app/(tabs)/plan.tsx`, `vientDUnRappel`) et uniquement dans la branche `no_assessment`. Le
+   lien du rappel arrive **directement** sur `/plan`, jamais par la racine, donc la nouvelle route
+   vers `/plan` ne peut pas lui retirer sa chaîne de requête ; et les deux ne se rencontrent pas non
+   plus par accident, cette route n'existant que sur une coupure, où le plan résout `erreur_reseau`
+   et non `no_assessment`. Rien à écrire, donc — mais il fallait le regarder : la conclusion n'est
+   pas « ça n'a pas de raison de casser », c'est que les deux chemins ne se croisent nulle part.
 
 ## 12. Ce qu'il ne faut pas casser
 

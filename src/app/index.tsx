@@ -8,7 +8,10 @@ import { DUREE_ANIMATION_LANCEMENT, EcranLancement } from '@/components/ecran-la
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { loadBilanDraft } from '@/lib/bilan-draft';
+import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
 import { ensureSession, supabase } from '@/lib/supabase';
+import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
+import { destinationDuDemarrage, lireLeBilan, type LectureDuBilan } from '@/types/demarrage';
 import { decrireErreur } from '@/types/erreur';
 
 // Racine de l'app — jamais un écran visible en pratique (redirection immédiate dès que la
@@ -39,36 +42,80 @@ export default function Index() {
 
     (async () => {
       try {
-        await ensureSession();
+        // **Une création de session qui échoue par coupure de transport n'est pas un refus** (C4.5).
+        // `ensureSession()` ne lève que sur l'échec de la **création** — les trois autres états
+        // sortent sans rien faire (C2.11) — et c'est le cas de l'installation neuve hors ligne. On
+        // ne lève donc pas, et on n'interroge pas la base non plus : sans session, la requête
+        // partirait en `anon`, qui n'a aucun privilège sur `assessments`, et le `42501` se lirait
+        // « erreur serveur » alors que c'est le réseau.
+        let coupureALaSession = false;
+        try {
+          await ensureSession();
+        } catch (erreurDeSession) {
+          if (!estPanneDeTransport(erreurDeSession as ErreurAuth)) throw erreurDeSession;
+          coupureALaSession = true;
+        }
+
         // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-10). Quelqu'un qui a
         // interrompu son questionnaire repartait de la racine, donc de l'onboarding : quatre
         // écrans de présentation, « Commencer mon bilan », et il atterrissait sans un mot à
         // l'étape 5. Les quatre écrans ne lui apprenaient rien — il les avait déjà vus, c'est
         // comme ça qu'il est arrivé au questionnaire la première fois.
         //
-        // En parallèle et non à la suite : la lecture locale ne coûte rien, et l'enchaîner
-        // derrière l'aller-retour serveur retarderait le démarrage de tout le monde pour un
-        // cas minoritaire.
-        const [{ data, error }, brouillon] = await Promise.all([
-          supabase.from('assessments').select('id').eq('status', 'completed').limit(1).maybeSingle(),
+        // En parallèle et non à la suite : les deux lectures locales ne coûtent rien, et les
+        // enchaîner derrière l'aller-retour serveur retarderait le démarrage de tout le monde.
+        const [reponse, brouillon, marqueDeBilan] = await Promise.all([
+          coupureALaSession
+            ? null
+            : supabase
+                .from('assessments')
+                .select('id')
+                .eq('status', 'completed')
+                .limit(1)
+                .maybeSingle(),
           // Un échec de lecture locale ne doit pas emporter le démarrage : sans brouillon on
           // route comme avant, ce qui est exactement le comportement d'avant ce chantier.
           loadBilanDraft().catch(() => null),
+          // La marque « cet appareil a vu un bilan complété » (C4.5). Elle rend `false` sur un
+          // stockage indisponible, donc elle ne promet jamais rien qu'on ne puisse tenir.
+          aDejaVuUnBilan(),
         ]);
-        // **Un échec de lecture n'empêche pas de reprendre un questionnaire commencé**
-        // (contre-lecture de la vague 6, 14/09/2026). La racine conditionnait ses trois
-        // destinations à la réussite de cette requête, dont une seule a besoin : le brouillon vit en
-        // AsyncStorage et l'écran de reprise ne demande rien au réseau. Quelqu'un qui avait
-        // interrompu sa saisie dans le métro tombait donc sur « Le démarrage a échoué ».
+
+        // **Toute la décision vit dans `src/types/demarrage.ts`**, qui est pur et testé sur la table
+        // de `v1-15` §6 — et non ici, en cascade de `if`, où trois versions successives de ce fichier
+        // ont écrit trois raisonnements différents. Ce qui reste ici est de la plomberie.
+        const lecture: LectureDuBilan =
+          reponse === null
+            ? { etat: 'coupure' }
+            : lireLeBilan({
+                aUnBilan: reponse.data !== null,
+                enErreur: reponse.error !== null,
+                status: reponse.status,
+              });
+
+        // **La marque se pose sur une lecture réussie, et seulement là.** C'est ce qui l'empêche de
+        // devenir une seconde source de vérité : elle n'est relue qu'au prochain démarrage, et
+        // seulement si celui-là ne peut rien lire. Sans attendre — elle ne sert à rien tout de suite.
+        if (lecture.etat === 'lue' && lecture.bilanComplete) void marquerQuIlYAUnBilan();
+
+        const destination = destinationDuDemarrage(lecture, {
+          brouillon: brouillon !== null,
+          marqueDeBilan,
+        });
+
+        // **L'écran technique reste, et il reste pour les erreurs serveur** : son registre
+        // développeur est une décision explicite, et son message brut est fait pour être recopié.
+        // On relance l'erreur telle quelle plutôt que d'en fabriquer une, pour que `decrireErreur`
+        // dise exactement ce que PostgREST a dit. Et avant le plancher d'affichage : l'échec
+        // n'attend jamais.
         //
-        // **Et on s'arrête là, sans router vers `/onboarding` faute de mieux.** Le brouillon est une
-        // preuve locale ; son absence n'en est pas une. Sans lui on ne sait pas distinguer un
-        // visiteur neuf d'un compte existant dont la lecture a échoué, et envoyer le second à
-        // l'onboarding lui dirait « tu n'as rien » — exactement ce qu'aucun écran de ce produit ne
-        // dit sur un échec de lecture. `ensureSession()` ne rapporte pas si elle a créé ou restauré
-        // la session, donc la distinction n'est pas disponible ici ; l'écran d'échec et son
-        // « Réessayer » restent la réponse honnête.
-        if (error && !brouillon) throw error;
+        // Le repli de ce `??` est inatteignable par construction — `echec` ne sort que de
+        // `lecture.etat === 'erreur'`, qui implique une réponse porteuse d'une erreur. Il est en
+        // français au cas où une quatrième forme de lecture le rendrait un jour atteignable.
+        if (destination.vers === 'echec') {
+          throw reponse?.error ?? new Error('Le serveur a refusé la lecture du bilan.');
+        }
+
         if (annule) return;
         // **Plancher d'affichage, pas délai ajouté.** Une session déjà en cache répond en
         // ~200 ms : l'écran d'ouverture était payé — un temps d'arrêt à chaque lancement —
@@ -78,12 +125,14 @@ export default function Index() {
         const reste = DUREE_ANIMATION_LANCEMENT - (Date.now() - depart);
         if (reste > 0) await new Promise((resoudre) => setTimeout(resoudre, reste));
         if (annule) return;
-        // **Le brouillon ne détourne le démarrage que sans bilan complété.** Qui en a un a le
-        // plan pour maison, et un re-bilan commencé ne doit pas s'emparer de l'ouverture de
-        // l'app : le questionnaire se reprend depuis le suivi, pas à la place du plan.
-        if (data && !error) {
+        // Les trois destinations que la dérivation peut rendre ici. Pourquoi l'une plutôt qu'une
+        // autre est écrit là-bas, pas ici — y compris les deux règles qui se lisent mal de loin :
+        // le brouillon ne détourne pas quelqu'un qui a un bilan complété (C3.9), et il passe en
+        // revanche devant la marque hors ligne, parce que le questionnaire se remplit sans réseau
+        // et le plan non.
+        if (destination.vers === 'plan') {
           router.replace('/plan');
-        } else if (brouillon) {
+        } else if (destination.vers === 'reprise') {
           router.replace({ pathname: '/bilan', params: { reprise: '1' } });
         } else {
           router.replace('/onboarding');
