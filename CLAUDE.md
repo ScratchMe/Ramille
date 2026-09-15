@@ -647,10 +647,11 @@ base — et rendu éprouvable une garde de `cadreDuPlan` qui ne l'était pas.
 
 La suite est la vague 8 (lot 4), dont chaque chantier commence par **une page de décision**
 (`v1-1N`) et non par du code : C4.1 (point quantitatif), C4.2 (coup de pouce la veille), C4.3
-(déplacements professionnels), C4.4 (VAE, RER, autocar), C4.5 (hors-ligne), C4.7 (retirer un bilan
-erroné) et C4.8 (comparaison à un an) — C4.6 ayant été avancé dans la vague 6, et **C4.9 fermé le
-15/09/2026 par son expérience**, sans une ligne de code : elle a écarté l'hypothèse qui justifiait le
-chantier, et la condition de réouverture est écrite en `v1-13` §7.
+(déplacements professionnels), C4.4 (VAE, RER, autocar), C4.7 (retirer un bilan erroné) et C4.8
+(comparaison à un an) — C4.6 ayant été avancé dans la vague 6, **C4.9 fermé le 15/09/2026 par son
+expérience**, sans une ligne de code (elle a écarté l'hypothèse qui justifiait le chantier, et la
+condition de réouverture est écrite en `v1-13` §7), et **C4.5 livré le 15/09/2026** — sa page de
+décision `v1-15-hors-ligne.md` écrite puis exécutée le même jour, cf. plus bas.
 
 **La première recette sur appareil a eu lieu le 14/09/2026, et elle verse cinq constats dans cette
 vague-là** (`v1-13` §12, une issue chacun, tous repris dans le tableau de §2.3 — c'est là qu'on les
@@ -658,15 +659,14 @@ retrouve, pas seulement dans le compte rendu de séance). Deux d'entre eux ne so
 d'increment mais des **défauts en production**, et il faut les connaître avant de toucher aux écrans
 qu'ils concernent :
 
-- **Hors ligne et à froid, la racine est un mur** (§12.5, `C4.5`). Mode avion, app complètement
-  fermée puis rouverte : « Le démarrage a échoué ». `src/app/index.tsx` lève quand la lecture
-  d'`assessments` échoue **et** qu'il n'y a pas de brouillon — or le brouillon est effacé à la
-  soumission, donc toute personne ayant déjà soumis un bilan a une app inutilisable au démarrage
-  sans réseau, questionnaire compris. Tout le soin décrit plus bas sur les écrans hors ligne vit
-  **derrière** ce mur et n'est jamais atteint à froid. Le raisonnement écrit dans ce fichier-là reste
-  juste et ne se défait pas (envoyer à `/onboarding` dirait « tu n'as rien ») : ce qui manque est une
-  marque locale, et son coût — `allowBackup` est vrai par défaut, donc elle revient fausse sur un
-  appareil restauré — est le vrai point à trancher.
+- **Hors ligne et à froid, la racine était un mur** (§12.5) — **et c'était `C4.5`, livré le
+  15/09/2026.** Mode avion, app complètement fermée puis rouverte : « Le démarrage a échoué ».
+  `src/app/index.tsx` levait quand la lecture d'`assessments` échouait **et** qu'il n'y avait pas de
+  brouillon — or le brouillon est effacé à la soumission, donc toute personne ayant déjà soumis un
+  bilan avait une app inutilisable au démarrage sans réseau, questionnaire compris, et tout le soin
+  décrit plus bas sur les écrans hors ligne vivait **derrière** ce mur sans jamais être atteint à
+  froid. Ce qui l'a refermé est décrit au paragraphe C4.5 plus bas ; le raisonnement de C1.4 n'a
+  **pas** été défait au passage — aucun écran ne s'est mis à dire « tu n'as rien ».
 - **Le bouton « Se désabonner » de Gmail n'apparaît pas** (§12.6) — **et c'était `C4.9`, fermé le
   15/09/2026 par son expérience.** Un message avec les deux en-têtes n'a pas fait apparaître le
   bouton : l'en-tête manquant n'était pas la cause, donc il n'y avait rien à construire. Détail et
@@ -676,19 +676,48 @@ Les trois autres sont des décisions d'écran : le placement de la taille du cov
 quotidien (§12.2), le binaire du second mode qui n'a pas d'état « pas encore répondu » (§12.3), et
 les actions que le plan affiche sans qu'on puisse les choisir (§12.4, qui rouvre C4.6).
 
-**`C4.5` a sa page de décision : `v1-15-hors-ligne.md`** (15/09/2026), et elle déplace deux choses
-qu'il faut connaître avant d'y toucher. La moitié « session expirée » du chantier est **déjà livrée**
-par C2.11, donc il ne porte plus que l'hors-ligne. Et **l'instantané local du plan est sorti du
-périmètre** : il serait un troisième endroit où vivent les chiffres de la personne, ce que ce dépôt
-refuse partout ailleurs. Ce qui referme le mur est une **marque locale** — une clé
-`traceverte.a_un_bilan.v1`, dont le préfixe historique n'est pas négociable puisque c'est par lui que
-`src/lib/compte.ts` balaie les marques à la suppression de compte — consultée **seulement** quand la
-lecture a échoué, jamais comme source de vérité. Son rôle n'est pas de mettre en cache mais
-d'**autoriser une phrase** : sans elle, aucun écran ne peut dire « ton plan t'attend » sans affirmer
-quelque chose qu'il ne sait pas. Et le repli quand elle est absente est `/onboarding`, qui n'affirme
-rien, marche hors ligne, et porte « J'ai déjà un compte » — ce qui rend le questionnaire atteignable
-sans réseau sans remettre « Faire mon bilan » sur un écran d'erreur, que C1.4 en avait délibérément
-retiré.
+**Hors ligne, la racine route au lieu de lever, et c'est une marque locale qui l'y autorise** (C4.5,
+15/09/2026, `v1-15-hors-ligne.md`). La moitié « session expirée » du chantier était **déjà livrée**
+par C2.11, et **l'instantané local du plan est resté hors périmètre** — il serait un troisième
+endroit où vivent les chiffres de la personne, ce que ce dépôt refuse partout ailleurs ; `v1-15` §7
+dit à quelles conditions le rouvrir. Sept points à connaître :
+
+- **La coupure de transport se reconnaît à `status === 0`, jamais à l'absence de `code`**
+  (`lireLeBilan`, `src/types/demarrage.ts`). C'est le critère que l'audit proposait, et il est faux :
+  le `catch` du transport de `@supabase/postgrest-js` rend bien une erreur sans `code`, mais **trois
+  autres chemins** du même paquet en rendent une sans `code` avec un statut réel — un corps non-JSON
+  sur une réponse 2xx, un corps d'erreur illisible, un 404 au corps vide. Les classer « pas de
+  connexion » ferait taire un serveur qui a parfaitement répondu. Le mauvais critère est rendu
+  **inexprimable** — la fonction ne reçoit pas de `code` du tout — et une assertion dit pourquoi.
+- **La marque `traceverte.a_un_bilan.v1` n'est pas un cache : c'est ce qui autorise une phrase.**
+  Sans elle, aucun écran ne peut dire « ton plan t'attend » sans affirmer ce qu'il ne sait pas — tout
+  le raisonnement de C1.4. Le préfixe historique n'est pas négociable : c'est par lui que
+  `src/lib/compte.ts` balaie les marques locales depuis ses **deux** sorties, suppression de compte
+  **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse au seul appareil
+  restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut).
+- **Elle n'est consultée qu'en repli, jamais quand le serveur a répondu**, et c'est ce qui la rend
+  sûre : une marque fausse ne peut pas contredire une vérité. Un test l'épingle, et le jour où il
+  tombe, c'est que quelqu'un en a fait une seconde source de vérité.
+- **Elle s'écrit à deux endroits** : sur une lecture réussie à la racine, et à la soumission du
+  questionnaire. Le second n'est pas du confort — le questionnaire mène à la restitution puis au plan
+  sans repasser par la racine, donc sans lui, quelqu'un qui soumet son premier bilan puis rouvre
+  l'app sans réseau retomberait sur l'onboarding. Elle se pose juste après `clearBilanDraft()`, qui
+  est exactement ce qui la rend nécessaire : le brouillon était jusque-là la preuve locale.
+- **Hors ligne, le brouillon passe devant la marque**, à l'inverse de la règle en ligne où un bilan
+  complété gagne sur un questionnaire commencé (C3.9) : le questionnaire se remplit sans réseau, le
+  plan non. Le repli sans marque est `/onboarding`, qui n'affirme rien, marche hors ligne et porte
+  « J'ai déjà un compte » — ce qui rend le questionnaire atteignable sans remettre « Faire mon
+  bilan » sur un écran d'erreur, que C1.4 en avait délibérément retiré.
+- **Aucun drapeau `horsLigne` ne descend de la racine vers le plan, et aucun bandeau n'a été écrit.**
+  L'écran `erreur_reseau` de `/plan` existe depuis C1.4 et dit déjà la chose, en français, avec un
+  « Réessayer » et la barre d'onglets intacte. Un drapeau serait la seule chose à devoir rester juste
+  entre deux écrans, pour une information que l'onglet relit lui-même à chaque retour.
+- **Un `ensureSession()` qui échoue par coupure ne fait pas interroger la base.** La racine note la
+  coupure et s'arrête là : sans session, la requête partirait en `anon`, qui n'a aucun privilège sur
+  `assessments`, et le `42501` se lirait « erreur serveur » alors que c'est le réseau — le défaut que
+  ce chantier ferme, atteint par un autre chemin. C'est la famille d'erreurs d'`auth-js`, donc
+  `estPanneDeTransport` (`src/types/connexion.ts`) et non `lireLeBilan` : les deux se côtoient dans
+  la racine et les confondre ferait passer l'une pour l'autre.
 
 Trois choses à lire avant de lancer une vague : la **§11**, qui liste ce qui reste à vérifier sur
 appareil et que cocher une ligne de §10 ne dit pas — chaque ligne dit maintenant si la recette du
@@ -1942,10 +1971,11 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   session anonyme devient un compte, et l'oubli serait silencieux : les rappels partiraient
   vers un utilisateur fantôme.
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
-  connexion", jeton d'appareil, ouverture de saison vue) via AsyncStorage — explicitement
-  device-local, pas de sync multi-device tant que le compte n'est pas rattaché. Voir
-  `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`, `src/lib/notification-prefs.ts`,
-  `src/lib/saison-prefs.ts`. Toutes ces clés portent le
+  connexion", jeton d'appareil, ouverture de saison vue, marque « cet appareil a vu un bilan ») via
+  AsyncStorage — explicitement device-local, pas de sync multi-device tant que le compte n'est pas
+  rattaché. Voir `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`,
+  `src/lib/notification-prefs.ts`, `src/lib/saison-prefs.ts`, `src/lib/marque-de-bilan.ts`. Toutes
+  ces clés portent le
   préfixe historique `traceverte.` (le renommer effacerait les brouillons), et c'est par ce
   **préfixe** que `src/lib/compte.ts` les balaie à la suppression de compte. **Ne jamais
   dénombrer les clés `traceverte.*` dans un commentaire.** Le balayage se fait par préfixe
@@ -2081,10 +2111,11 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   épinglé, donc sa page reçoit une hauteur **définie** (`contenuDePageFixe`) et non un minimum. La
   règle générale qui en sort : une page qui gère son propre débordement veut `height`, une page qui
   n'en a pas veut `minHeight`. Détail et mesures en §11.13 et §11.14 de `v1-13`.
-- **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus** — mais tout
-  ce qui suit vit **derrière la racine**, qui lève à froid sans réseau (§12.5 de `v1-13`, `C4.5`) :
-  ce paragraphe décrit ce qui se passe quand le réseau tombe **pendant** une session, jamais au
-  démarrage. Charger à chaque retour transforme une lecture en échec en régression visible : tant que la lecture n'avait
+- **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Tout ce qui
+  suit vit **derrière la racine**, qui levait à froid sans réseau jusqu'à C4.5 (§12.5 de `v1-13`) et
+  route désormais sur la marque locale : ces écrans sont donc atteignables à froid depuis le
+  15/09/2026, et le premier que rencontre alors quelqu'un qui a un bilan est l'`erreur_reseau` de
+  `/plan` — ce qui est le point du chantier, pas un défaut. Charger à chaque retour transforme une lecture en échec en régression visible : tant que la lecture n'avait
   lieu qu'au montage, personne ne pouvait perdre ses barres en cours de session. Les lectures
   rendent donc `{ ok: true, data } | { ok: false }` — **jamais erreur → tableau vide**, qui se
   traduisait par « Ton suivi commence au premier bilan » à quelqu'un qui a douze bilans — et les
