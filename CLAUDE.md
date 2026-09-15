@@ -212,6 +212,16 @@ marchaient). Toute nouvelle route sans enfants tombe dans ce cas — `/rappels/s
 ainsi en `rappels/stop.html`, alors que c'est le lien de désinscription imprimé dans chaque email :
 si `cleanUrls` disparaît un jour de ce fichier, la moitié de l'app repasse en 404 silencieusement.
 
+**Et il ne se déploie plus de prévisualisation** (15/09/2026) : `git.deploymentEnabled` y vaut
+`{ "*": false, "main": true }`, donc seule `main` déclenche un déploiement et c'est la production.
+Deux conséquences pour qui travaille ici. **Ne pas attendre d'URL de prévisualisation sur une
+branche** — la vérification visuelle du web se fait localement, par `expo export --platform web` puis
+Playwright sur `dist/`, ce qui est de toute façon ce que font les cinq gardes d'export en CI ; aucune
+d'elles n'a jamais interrogé Vercel. Et **le motif `"*": false` ne suffit pas seul** : Vercel déploie
+dès qu'une règle correspondante vaut `true`, donc `main` doit être nommée explicitement — la retirer
+en croyant simplifier couperait la production, qui sert `assetlinks.json`, `/rappels/stop` et les
+pages légales exigées par Play.
+
 **`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
 la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de route Expo
 Router. Tsconfig dédié (`api/tsconfig.json`, exclu du tsconfig racine, `types: ["node"]`) : ce
@@ -633,8 +643,9 @@ base — et rendu éprouvable une garde de `cadreDuPlan` qui ne l'était pas.
 La suite est la vague 8 (lot 4), dont chaque chantier commence par **une page de décision**
 (`v1-1N`) et non par du code : C4.1 (point quantitatif), C4.2 (coup de pouce la veille), C4.3
 (déplacements professionnels), C4.4 (VAE, RER, autocar), C4.5 (hors-ligne), C4.7 (retirer un bilan
-erroné), C4.8 (comparaison à un an) et **C4.9** (la sortie que la messagerie affiche) — C4.6 ayant
-été avancé dans la vague 6.
+erroné) et C4.8 (comparaison à un an) — C4.6 ayant été avancé dans la vague 6, et **C4.9 fermé le
+15/09/2026 par son expérience**, sans une ligne de code : elle a écarté l'hypothèse qui justifiait le
+chantier, et la condition de réouverture est écrite en `v1-13` §7.
 
 **La première recette sur appareil a eu lieu le 14/09/2026, et elle verse cinq constats dans cette
 vague-là** (`v1-13` §12, une issue chacun, tous repris dans le tableau de §2.3 — c'est là qu'on les
@@ -651,14 +662,10 @@ qu'ils concernent :
   juste et ne se défait pas (envoyer à `/onboarding` dirait « tu n'as rien ») : ce qui manque est une
   marque locale, et son coût — `allowBackup` est vrai par défaut, donc elle revient fausse sur un
   appareil restauré — est le vrai point à trancher.
-- **Le bouton « Se désabonner » de Gmail n'apparaît pas** (§12.6, `C4.9`). L'en-tête
-  `List-Unsubscribe` part bien et le reste du chemin marche (le lien s'ouvre dans le navigateur, le
-  second clic refuse calmement) ; c'est l'objectif que la migration se donnait — « la sortie que la
-  personne trouvera en premier, avant de cliquer Spam » — qui n'est pas atteint. Ce qui a changé est
-  la **prémisse** de la décision de ne pas envoyer `List-Unsubscribe-Post` : « la page est un export
-  statique, elle ne peut pas répondre à un POST » reste vrai de la page, et faux du dépôt, qui sert
-  déjà des Vercel Functions depuis `api/`. Commencer par l'expérience à un message, qui sépare cette
-  cause de l'autre (Gmail ne rend ce bouton qu'aux expéditeurs qu'il classe en courrier de masse).
+- **Le bouton « Se désabonner » de Gmail n'apparaît pas** (§12.6) — **et c'était `C4.9`, fermé le
+  15/09/2026 par son expérience.** Un message avec les deux en-têtes n'a pas fait apparaître le
+  bouton : l'en-tête manquant n'était pas la cause, donc il n'y avait rien à construire. Détail et
+  condition de réouverture en `v1-13` §7, et la règle d'en-tête plus bas dans ce fichier.
 
 Les trois autres sont des décisions d'écran : le placement de la taille du covoiturage du trajet
 quotidien (§12.2), le binaire du second mode qui n'a pas d'état « pas encore répondu » (§12.3), et
@@ -1500,15 +1507,17 @@ et le jeton *est* l'autorisation. Trois pièges :
   Vault existent, donc **aucune suite ne l'exerce** — ni la CI, où ils manquent, ni le distant, où
   les rejouer ferait partir un vrai email. L'en-tête a été éprouvé en évaluant la même expression à
   la main sur une vraie ligne d'outbox.
-  **Et depuis le 14/09/2026 on sait ce que ça coûte : Gmail n'affiche aucun bouton « Se désabonner »**
-  (recette sur appareil, `v1-13` §12.6, chantier `C4.9`). Le reste du chemin marche — le lien imprimé
-  dans le corps s'ouvre dans le navigateur, le second clic refuse calmement, la préférence repasse sur
-  « Aucun » — mais la sortie que la personne trouve **en premier** n'existe pas, et c'est elle qui
-  évite le clic « Spam ». Deux causes possibles, non séparées : Gmail veut les deux en-têtes, ou il ne
-  rend ce bouton qu'aux expéditeurs qu'il classe en courrier de masse. Ce qui a vieilli dans la
-  décision ci-dessus n'est pas son raisonnement mais sa **prémisse** : la page ne peut toujours pas
-  répondre à un POST, le dépôt si — `api/` sert déjà des Vercel Functions hors de l'export statique.
-  Ne pas ajouter l'en-tête seul pour autant : c'est exactement ce que la première moitié interdit.
+  **Et cette décision est désormais éprouvée, pas seulement raisonnée** (15/09/2026, `v1-13` §7, C4.9).
+  La recette avait constaté que Gmail n'affiche **aucun** bouton « Se désabonner » au-dessus du rappel ;
+  l'expérience qui devait trancher a été faite — un message avec les **deux** en-têtes, même expéditeur
+  de production, même boîte que le témoin de la veille, seule la paire d'en-têtes changeant — et il n'y
+  a **toujours** pas de bouton. Donc l'en-tête manquant n'était pas la cause, et une fonction `api/`
+  qui répondrait au POST n'aurait rien produit : le chantier s'est fermé sans une ligne de code. La
+  cause la plus probable est la classification de Gmail en courrier de masse, qui dépend du volume — ce
+  qui donne la **condition de réouverture** : si le domaine se met à envoyer pour de vrai, la paire
+  d'en-têtes peut redevenir la contrainte restante, et le chantier se rouvre tel qu'il est écrit en §7.
+  D'ici là, la sortie que le produit contrôle est le lien imprimé dans le corps, et elle marche —
+  vérifiée sur appareil : navigateur, refus calme au second clic, préférence sur « Aucun ».
 
 **Les reprises de jeton d'appareil laissent une trace** (`push_tokens.reprises`,
 `derniere_reprise_le`, `proprietaire_precedent`). La reprise reste **inconditionnelle** — décision

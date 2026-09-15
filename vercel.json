@@ -1,5 +1,11 @@
 {
   "framework": null,
+  "git": {
+    "deploymentEnabled": {
+      "*": false,
+      "main": true
+    }
+  },
   "cleanUrls": true,
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist",

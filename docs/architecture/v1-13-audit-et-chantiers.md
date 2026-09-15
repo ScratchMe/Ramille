@@ -184,7 +184,7 @@ reçoit un bandeau daté au moment où le chantier correspondant est livré, jam
 | C4.6 | Voir d'autres pistes, premier pas, cadrage identitaire | **P2** (relevé le 10/09, dessiné en v1-14) | moyen | C2.8, C2.7 | D18, D16 |
 | C4.7 | Retirer un bilan erroné | P4 | moyen | — | — |
 | C4.8 | Comparaison même saison, un an après | P4 | moyen | C2.8 | — |
-| C4.9 | La sortie que la messagerie affiche (`List-Unsubscribe`) | P4 | petit | C2.9 | — |
+| C4.9 | La sortie que la messagerie affiche (`List-Unsubscribe`) — **fermé le 15/09/2026 par l'expérience**, voir §7 | — | — | C2.9 | — |
 
 ### 2.2 Fichiers chauds et parallélisation
 
@@ -227,7 +227,7 @@ par chantier, une PR par issue (`Closes #n`), la ligne de §10 cochée à la fin
 | **5 — Lot 2, le point** | C2.1 → C2.4 → C2.10 → C2.12 | **non** — même fichier, cet ordre | Le point qui nomme l'action, trois réponses, la carte qui reste, le second renforcement, les variantes. Planches A1 à A3. **Livrée le 11/09/2026** ([#166](https://github.com/ScratchMe/TraceVerte/pull/166)) — et c'est la première vague dont la colonne « Parallèle ? » ne s'est pas trompée : les quatre chantiers se partagent bien `checkin-card.tsx` **et** `src/types/checkin.ts`, que C2.1 a transformé en source unique de la question et C2.12 en source unique du tirage. | 2 moyens, 2 petits |
 | **6 — Lot 2, la saison et le suivi** | C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9 | **non** — un seul chantier disjoint, voir le relevé du 13/09/2026 ci-dessous | La fin et l'ouverture de saison, les pistes et le premier pas, le suivi dans la durée, la restitution d'un re-bilan, la mascotte saisonnière, la reprise de bilan. Planches B à G et Saisons. **Jalon : la boucle existe d'une saison à l'autre.** | 5 moyens, 1 petit |
 | **7 — Lot 3 restant** | C3.2 → C3.11 · C3.3 · C3.7 · C3.10 ; puis C3.4 + C3.5 + C3.6 **en une seule migration** ; puis C3.8 ; puis C3.12 | oui, puis non | La source du chiffre, les hypothèses affichées, le ton, les tests ; l'intermodal, le covoiturage des loisirs, la tranche haute ; le plan plausible. **Livrée le 14/09/2026** ([#175](https://github.com/ScratchMe/TraceVerte/pull/175)), et avec elle **les lots 0 à 3 en entier** : l'audit n'a plus de chantier ouvert hors du lot 4. C3.12 est passé en dernier et non dans le premier groupe — il fallait que les tests portent sur le code livré. | 4 petits, 3 moyens, 2 grands |
-| **8 — Lot 4, et ce que la recette a trouvé** | C4.1, C4.2, C4.3, C4.4, **C4.5**, C4.7, C4.8, **C4.9** ; et les trois constats de recette [#177](https://github.com/ScratchMe/TraceVerte/issues/177), [#178](https://github.com/ScratchMe/TraceVerte/issues/178), [#179](https://github.com/ScratchMe/TraceVerte/issues/179) | chantier par chantier | Chacun précédé d'une page de décision. C4.6 a été avancé dans la vague 6. **La recette sur appareil du 14/09/2026 (§12) verse cinq constats dans cette vague** : trois y entrent tels quels, [#181](https://github.com/ScratchMe/TraceVerte/issues/181) devient **C4.9**, et [#180](https://github.com/ScratchMe/TraceVerte/issues/180) rejoint **C4.5** en le requalifiant — ce qui y était écrit comme un confort est un démarrage impossible. Le sixième a été corrigé le jour même. | 5 grands, 3 moyens, 3 petits |
+| **8 — Lot 4, et ce que la recette a trouvé** | C4.1, C4.2, C4.3, C4.4, **C4.5**, C4.7, C4.8 (**C4.9 fermé le 15/09/2026 par son expérience, sans une ligne de code**) ; et les trois constats de recette [#177](https://github.com/ScratchMe/TraceVerte/issues/177), [#178](https://github.com/ScratchMe/TraceVerte/issues/178), [#179](https://github.com/ScratchMe/TraceVerte/issues/179) | chantier par chantier | Chacun précédé d'une page de décision. C4.6 a été avancé dans la vague 6. **La recette sur appareil du 14/09/2026 (§12) verse cinq constats dans cette vague** : trois y entrent tels quels, [#181](https://github.com/ScratchMe/TraceVerte/issues/181) devient **C4.9**, et [#180](https://github.com/ScratchMe/TraceVerte/issues/180) rejoint **C4.5** en le requalifiant — ce qui y était écrit comme un confort est un démarrage impossible. Le sixième a été corrigé le jour même. | 5 grands, 3 moyens, 3 petits |
 
 **Relevé du 11/09/2026 — la vague 4 est enchaînée, pas « en partie » parallèle.** Le relevé de
 fichiers (refait avant distribution, comme la règle l'impose) montre six chantiers sur sept qui se
@@ -306,7 +306,7 @@ donc aussi ici, dans le seul tableau qu'on relit avant de lancer une vague.
 | 12.3 — le binaire du second mode sans état « pas répondu » | chantier à part entière, petit | [#178](https://github.com/ScratchMe/TraceVerte/issues/178) |
 | 12.4 — le plan affiche des actions qu'on ne peut pas choisir | chantier à part entière, moyen ; rouvre C4.6 | [#179](https://github.com/ScratchMe/TraceVerte/issues/179) |
 | 12.5 — hors ligne et à froid, la racine est un mur | **C4.5**, requalifié : plus un confort, un démarrage impossible | [#180](https://github.com/ScratchMe/TraceVerte/issues/180) |
-| 12.6 — le bouton « Se désabonner » n'apparaît pas | **C4.9**, neuf | [#181](https://github.com/ScratchMe/TraceVerte/issues/181) |
+| 12.6 — le bouton « Se désabonner » n'apparaît pas | **C4.9**, ouvert puis **fermé le 15/09/2026** : l'expérience à un message a écarté l'hypothèse de l'en-tête | [#181](https://github.com/ScratchMe/TraceVerte/issues/181) |
 
 Deux d'entre eux ne sont pas des idées d'increment mais des **défauts en production**, et c'est ce qui
 les distingue du reste du lot 4 : 12.5 rend l'app inutilisable au démarrage sans réseau pour quiconque
@@ -1966,38 +1966,44 @@ il existe, et une proposition de re-bilan à l'anniversaire saisonnier. Aucun ut
 bénéficier avant un an : c'est pourquoi il est en lot 4, mais la donnée doit être prête (C2.8).
 
 
-### C4.9 — La sortie que la messagerie affiche
+### C4.9 — La sortie que la messagerie affiche · **fermé le 15/09/2026**
 
 **Dépend de** C2.9 · **Recette** §12.6, [#181](https://github.com/ScratchMe/TraceVerte/issues/181).
 
-Le rappel par email porte `List-Unsubscribe` et pas `List-Unsubscribe-Post`, et Gmail n'affiche aucun
-bouton « Se désabonner » au-dessus du message (vérifié le 14/09/2026 sur un vrai message, `delivered`
-côté Resend, en-tête relu sur le corps installé de `send_pending_reminders`). L'enjeu est écrit dans la
-migration qui a posé l'en-tête : « c'est la sortie que la personne trouvera en premier, et celle qui
-évite qu'elle clique "Spam" à la place — un signalement coûte la délivrabilité de tout le domaine ».
-Cet objectif-là n'est pas atteint.
+**Fermé par son expérience, sans une ligne de code — et c'est le meilleur résultat possible.** Le
+chantier devait commencer par une expérience à un message ; elle a été faite le 15/09/2026 et elle a
+écarté l'hypothèse qui justifiait tout le reste.
 
-**Commencer par l'expérience, pas par le code.** Deux causes possibles que le constat ne sépare pas :
-Gmail veut les **deux** en-têtes (RFC 8058, consignes aux expéditeurs de février 2024), ou Gmail ne rend
-ce bouton qu'aux expéditeurs qu'il **classe** en courrier de masse — auquel cas quelques messages
-transactionnels vers une adresse n'y donneront jamais droit. Un seul rappel envoyé avec les deux
-en-têtes tranche, et si c'est la seconde, le chantier se ferme par écrit sans rien changer.
+**Le protocole.** Un rappel envoyé par Resend avec les **deux** en-têtes —
+`List-Unsubscribe` et `List-Unsubscribe-Post: List-Unsubscribe=One-Click` — depuis l'expéditeur de
+production `Ramille <rappels@ramille.fr>`, vers la boîte Gmail qui portait déjà le témoin de la
+veille : même sujet, même corps, même forme de lien, jeton mort exprès. **La seule variable était la
+paire d'en-têtes.** Sans toucher à `send_pending_reminders` ni à son contrôle de migration, donc sans
+rien risquer en production.
 
-**Si c'est la première, la prémisse de la décision a changé, pas son raisonnement.** « La route
-`/rappels/stop` est une page de l'app exportée en statique : elle ne peut pas répondre à un POST »
-reste vrai de la **page** — mais le dépôt sert déjà des Vercel Functions depuis `api/`, hors de
-l'export statique régi par `vercel.json`. Une fonction `api/` qui répond au **GET** par une
-redirection vers `/rappels/stop?jeton=…` et au **POST** en appelant `desinscrire_des_rappels`
-satisfait exactement la RFC, sans toucher à la page ni au lien imprimé dans le corps du message.
-« Annoncer le POST sans le servir ferait échouer le geste en silence » continue de valoir : c'est ce
-qui interdit d'ajouter l'en-tête seul.
+**Le résultat : toujours aucun bouton.** L'en-tête manquant n'était donc pas la cause, et la fonction
+`api/` qui aurait répondu au POST — le vrai coût du chantier — n'aurait produit **rien du tout**. Une
+demi-journée de travail évitée par un message.
 
-Quatre choses à ne pas perdre en le faisant : la réponse ne distingue **jamais** un jeton inconnu d'un
-jeton déjà utilisé, POST compris ; le POST est une écriture sans session et sans limite de débit, comme
-le RPC qu'il appelle — c'est le compromis rendu en C2.9 et il ne se resserre pas par symétrie avec
-`feedback` ; le contrôle de migration qui **interdit** aujourd'hui `List-Unsubscribe-Post` dans le corps
-de `send_pending_reminders` se renverse dans la même migration plutôt qu'il ne se contourne ; et la
-checklist des Vercel Functions en runtime Node.js s'applique (`v1-06` §3).
+**Ce qui reste vrai, et qui suffit.** La sortie que le produit contrôle est le lien imprimé dans le
+corps, et elle marche : vérifiée sur appareil le 14/09/2026, elle s'ouvre dans le navigateur, le
+second clic refuse calmement, et la préférence repasse sur « Aucun ». C'est celle qu'il faut garder
+bonne.
+
+**Et la décision de C2.9 en sort renforcée, pas seulement intacte.** Ne pas envoyer
+`List-Unsubscribe-Post` reposait sur un argument — la page est un export statique, elle ne peut pas
+répondre au POST, et l'annoncer ferait échouer le geste en silence. Cet argument tenait ; on sait
+maintenant qu'il n'y avait de toute façon rien à gagner de l'autre côté. Le contrôle de la migration
+qui épingle l'**absence** de cet en-tête reste en place et se justifie deux fois.
+
+**Condition de réouverture, parce que l'expérience a une limite qu'il faut écrire.** Elle a été faite
+à un volume de **un message**. La façon la plus probable dont Gmail décide d'afficher ce bouton est
+une classification en courrier de masse, qui dépend du volume et de la réputation de l'expéditeur —
+or le domaine n'envoie aujourd'hui presque rien. **Si le volume d'envoi devient réel un jour, la paire
+d'en-têtes peut redevenir la contrainte qui reste**, et ce chantier se rouvre alors tel qu'il était
+écrit : une fonction `api/` qui répond au GET par une redirection vers `/rappels/stop?jeton=…` et au
+POST en appelant `desinscrire_des_rappels`, avec les quatre garde-fous listés dans
+[#181](https://github.com/ScratchMe/TraceVerte/issues/181). Ce n'est pas « faux », c'est **prématuré**.
 
 ## 8. Ce qu'il ne faut pas casser
 
@@ -2100,7 +2106,7 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | C4.6 | [#148](https://github.com/ScratchMe/TraceVerte/issues/148) | [#171](https://github.com/ScratchMe/TraceVerte/pull/171) | 13/09/2026 | livré pour A13-18 (toutes les pistes), A13-19 (le premier pas) et `p_replace` ; **A13-16 était déjà livré par C2.7** (« Ces fois-là, c'est toi qui as choisi le trajet. » et « Ce que tu as changé se voit ici. » attribuent le résultat à la personne, ce que la recommandation demandait) ; **A13-20 / D16 est reporté, avec sa raison** — une norme dynamique est une affirmation sur un comportement collectif, et la règle du dépôt est qu'une affirmation sur le monde est sourcée ou signalée comme dérivation ; la mettre dans la voix de Ramille en retire le **nombre**, pas l'affirmation, donc « de plus en plus de gens changent un trajet » sans source serait la première assertion non sourcée du produit. Le tableau des arbitrages de la §1 rattache d'ailleurs D16 à C4.7, pas ici. Trois relevés que le chantier ne nommait pas. **`p_replace` ne sert à rien s'il ne refuse pas** : `commit_plan_action` libérait et archivait déjà l'engagement précédent sans condition, donc à `true` le drapeau ne fait rien de neuf — c'est son défaut `false`, qui lève `RM001`, qui apporte quelque chose. **`revoke ... from public` ne suffit pas sur une fonction** : Supabase pose des privilèges par défaut accordant `EXECUTE` directement à `anon` et `authenticated`, donc il faut nommer les trois — c'est un contrôle de la migration qui l'a montré, pas la relecture. Et **la troncature vivait dans le SQL** : `limit 2` dans `generate_plan_cycle_for_user`, ce qui a fait changer une assertion de `02` et une de `21` (elles comptaient exactement deux actions) — la seconde compare désormais les `created_at`, qui disent la reconstruction mieux que le nombre. Un défaut du **distant** a été trouvé au passage et réparé : voir la note sur le rejeu d'un fichier ancien dans CLAUDE.md |
 | C4.7 | [#149](https://github.com/ScratchMe/TraceVerte/issues/149) | | | |
 | C4.8 | [#150](https://github.com/ScratchMe/TraceVerte/issues/150) | | | |
-| C4.9 | [#181](https://github.com/ScratchMe/TraceVerte/issues/181) | | | neuf, relevé par la recette du 14/09/2026 (§12.6) |
+| C4.9 | [#181](https://github.com/ScratchMe/TraceVerte/issues/181) | — | 15/09/2026 | **fermé par l'expérience, sans une ligne de code.** Un rappel envoyé avec les **deux** en-têtes, même expéditeur et même boîte que le témoin de la veille : Gmail n'affiche toujours aucun bouton. L'en-tête manquant n'était donc pas la cause, et la fonction `api/` qui répondrait au POST n'aurait rien produit. Condition de réouverture écrite en §7 |
 | Recette 12.2 | [#177](https://github.com/ScratchMe/TraceVerte/issues/177) | | | vague 8 |
 | Recette 12.3 | [#178](https://github.com/ScratchMe/TraceVerte/issues/178) | | | vague 8 |
 | Recette 12.4 | [#179](https://github.com/ScratchMe/TraceVerte/issues/179) | | | vague 8 ; rouvre C4.6 |
@@ -2184,7 +2190,7 @@ n'est interrogeable aujourd'hui, ce qu'il faut savoir avant de vouloir y relire 
 | 12.3 | **Le binaire du second mode n'a pas d'état « pas encore répondu ».** `commute_second_mode_used` est un `boolean` dont le défaut est `false`, donc « Non » est pré-coché sur un questionnaire vierge et `manqueDeLEtape` ne bloque pas : on traverse la question sans jamais décider. C'est le motif que C3.4, C3.5 et C3.6 ont corrigé ailleurs — « laisser le choix facultatif revient à garder le défaut pour tous ceux qui passent sans répondre ». | À trancher — [#178](https://github.com/ScratchMe/TraceVerte/issues/178), vague 8 |
 | 12.4 | **Le plan affiche des actions qu'on ne peut pas choisir.** Au-delà du quatrième rang, les pistes sont des lignes sans bouton (C4.6, trois rangs). La hiérarchie se défend — « une liste de six cartes pleines ne présente plus un choix, elle présente un catalogue » — mais la porte de sortie écrite dans le code (« s'engager sur l'une d'elles demande d'abord de la faire remonter, ce que le prochain re-bilan fait si le poste bouge ») demande à la personne de changer pour que l'app la réordonne. C4.6 existait précisément parce que « l'autonomie de la personne s'exerçait sur deux leviers » : elle s'exerce maintenant sur quatre, pas sur toutes celles qu'on lui montre. | À trancher — [#179](https://github.com/ScratchMe/TraceVerte/issues/179), vague 8 |
 | 12.5 | **Hors ligne et à froid, la racine est un mur.** Mode avion, app complètement fermée puis rouverte : « Le démarrage a échoué », suivi du `Unable to resolve host …` d'Android. `src/app/index.tsx` lève quand la lecture d'`assessments` échoue **et** qu'il n'y a pas de brouillon — or le brouillon est effacé à la soumission, donc **toute personne qui a déjà soumis un bilan a une app inutilisable au démarrage sans réseau**. Le questionnaire compris, que le dépôt décrit pourtant comme se remplissant très bien hors ligne : sa seule entrée est l'état vide d'un onglet, derrière la racine. Tout le soin de C1.4 vit derrière ce mur et n'est jamais atteint à froid. | À trancher — [#180](https://github.com/ScratchMe/TraceVerte/issues/180), et c'est **C4.5**, qu'il requalifie |
-| 12.6 | **Le bouton « Se désabonner » de la messagerie n'apparaît pas.** Le message portait bien `List-Unsubscribe` (corps installé de `send_pending_reminders` relu le même jour) et pas de `List-Unsubscribe-Post` ; Resend le donne `delivered` ; Gmail n'a rien affiché au-dessus. Deux causes possibles que ce constat ne sépare pas — Gmail veut les deux en-têtes (RFC 8058), ou Gmail ne rend ce bouton qu'aux expéditeurs qu'il classe en courrier de masse — et une expérience à un message les sépare. Ce qui a changé, c'est la prémisse de la décision : « la page est un export statique, elle ne peut pas répondre à un POST » reste vrai de la **page**, mais le dépôt sert déjà des Vercel Functions depuis `api/`. | À trancher — [#181](https://github.com/ScratchMe/TraceVerte/issues/181), devient **C4.9** |
+| 12.6 | **Le bouton « Se désabonner » de la messagerie n'apparaît pas.** Le message portait bien `List-Unsubscribe` (corps installé de `send_pending_reminders` relu le même jour) et pas de `List-Unsubscribe-Post` ; Resend le donne `delivered` ; Gmail n'a rien affiché au-dessus. Deux causes possibles que ce constat ne sépare pas — Gmail veut les deux en-têtes (RFC 8058), ou Gmail ne rend ce bouton qu'aux expéditeurs qu'il classe en courrier de masse — et une expérience à un message les sépare. Ce qui a changé, c'est la prémisse de la décision : « la page est un export statique, elle ne peut pas répondre à un POST » reste vrai de la **page**, mais le dépôt sert déjà des Vercel Functions depuis `api/`. | **Tranché le 15/09/2026** : l'expérience à un message a écarté l'hypothèse de l'en-tête (voir §7, C4.9). Rien à construire — [#181](https://github.com/ScratchMe/TraceVerte/issues/181) |
 
 **Un piège de méthode, à ne pas répéter.** Le protocole annonçait un pourcentage sur la note de
 variation de la **restitution**. Il n'y en a pas, et c'est voulu : `variationDepuisLeBilanPrecedent`
