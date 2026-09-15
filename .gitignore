@@ -9,6 +9,10 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Vercel — `npx vercel build` hors ligne (mesure du poids des fonctions, cf. VERCEL.md §1.2).
+# Contient des bundles minifiés : à ignorer aussi dans eslint.config.js, sinon le linter les lit.
+.vercel/
+
 # Native
 .kotlin/
 *.orig.*

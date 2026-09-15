@@ -10,6 +10,23 @@ suit cette section décrit Ramille ; celle-ci décrit comment on y touche. Une m
 écrite nulle part est une mécanique qu'un prochain passage réinventera de travers — et il n'aura
 aucun moyen de savoir qu'il la réinvente.
 
+### Les fichiers d'outil — à ouvrir sur déclencheur, pas au démarrage
+
+Les pièges et conventions propres à **un outil** vivent dans leur propre fichier à la racine, pour
+deux raisons : garder celui-ci lisible, et pouvoir **retransmettre ces apprentissages à un autre
+projet** qui utilise le même outil. Chacun est coupé en « ce qui vaut partout » (portable) et
+« propre à Ramille » (les chiffres, les routes — ne voyage pas).
+
+**Seul `CLAUDE.md` est chargé automatiquement.** Les autres ne le sont pas — d'où cette table, qui
+ne contient pas les règles mais **le moment d'aller les lire**. Si un déclencheur est réuni, ouvrir
+le fichier avant d'agir, pas après. La forme vient d'un autre projet, où une règle de cadence
+écrite dans le fichier chargé n'a pas été suivie pour autant : sortir une règle sans dire *quand*
+aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
+
+| Fichier | Déclencheur — ouvrir AVANT d'agir |
+|---|---|
+| **`VERCEL.md`** | Toute fusion sur `main` · toucher `vercel.json`, `api/`, `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · ajouter une route · affirmer quoi que ce soit sur un compteur ou une facture Vercel · mesurer le poids d'un déploiement |
+
 ### Ce que la personne qui pilote a demandé
 
 - **Une tâche par chantier, tenue à jour pendant le travail** et pas après coup (14/09/2026 :
@@ -18,6 +35,11 @@ aucun moyen de savoir qu'il la réinvente.
   quoi il s'agit. Personne ne garde en tête ce que désigne `C3.8`.
 - **Au plus un build EAS tous les deux jours** (15/09/2026), et la raison est au registre
   d'exploitation §3.3 : le quota du plan gratuit ne se lit qu'en le heurtant.
+- **Pas plus de 150 Mo de Functions Storage ajoutés chez Vercel entre le 15 et le 25/09/2026**
+  (15/09/2026), et à demeure : **chaque fusion sur `main` est un déploiement qui se paie trente
+  jours**, l'agent ne peut pas lire le compteur, donc il se demande avant de fusionner. La règle
+  entière et le budget en déploiements sont en `VERCEL.md` §2.3. Le jour même, j'avais fusionné
+  cinq fois, dont trois fois pour de la documentation seule.
 
 ### La branche de travail
 
@@ -78,7 +100,9 @@ Les réglages des comptes tiers ne vivent pas ici mais dans `docs/exploitation/`
 qui les rend vérifiables — rien dans le code ni dans la CI ne les voit. Deux d'entre eux pèsent sur
 le **rythme de travail** et méritent d'être connus avant de planifier quoi que ce soit : le quota de
 builds EAS (§3.3) et les budgets d'API GitHub (§3.8 — GraphQL et REST sont deux compteurs
-distincts, donc `issue_write` peut être refusé pendant que tout le reste passe).
+distincts, donc `issue_write` peut être refusé pendant que tout le reste passe). Le troisième est
+le compteur Functions Storage de Vercel (§3.2), dont la règle vit dans `VERCEL.md` parce qu'elle
+est portable : c'est le seul des trois que le dépôt peut alléger lui-même, par l'Ignored Build Step.
 
 ## Le produit, en trois règles et un renvoi
 
@@ -276,30 +300,14 @@ séquence entière est précisément celui qu'on ne peut pas rejouer en entier s
 (Postgres + Auth + RLS) · Vercel (déploiement web, build via `vercel-build` →
 `expo export --platform web` → `dist/`) · EAS (build/publish Android uniquement).
 
-**`vercel.json` porte `cleanUrls: true`, et ce n'est pas cosmétique.** L'export statique
-d'Expo Router produit deux formes : un **répertoire** `plan/index.html` pour une route qui a
-des enfants, un **fichier plat** `suivi.html` sinon. Sans `cleanUrls`, Vercel sert les
-premières et renvoie 404 sur les secondes — `/suivi`, `/confidentialite`, `/feedback` et
-surtout **`/bilan/resultat`**, la restitution, étaient inaccessibles en production sans que
-rien ne le signale (l'export local contenait bien les fichiers, et les routes en répertoire
-marchaient). Toute nouvelle route sans enfants tombe dans ce cas — `/rappels/stop` (C2.9) sort
-ainsi en `rappels/stop.html`, alors que c'est le lien de désinscription imprimé dans chaque email :
-si `cleanUrls` disparaît un jour de ce fichier, la moitié de l'app repasse en 404 silencieusement.
-
-**Et il ne se déploie plus de prévisualisation** (15/09/2026) : `git.deploymentEnabled` y vaut
-`{ "**": false, "main": true }`, donc seule `main` déclenche un déploiement et c'est la production.
-**Ne pas attendre d'URL de prévisualisation sur une branche** — la vérification visuelle du web se
-fait localement, par `expo export --platform web` puis Playwright sur `dist/`, ce qui est de toute
-façon ce que font les cinq gardes d'export en CI ; aucune d'elles n'a jamais interrogé Vercel.
-
-Trois pièges vont avec ce réglage, et **le premier s'est refermé sur moi le jour où je l'ai écrit**.
-**C'est `"**"` et jamais `"*"`** : Vercel départage les branches en **minimatch**, où `*` ne traverse
-pas les `/`. Les branches de travail de ce dépôt s'appellent `claude/…`, donc `"*": false` ne les
-attrape pas et la prévisualisation part quand même — constaté sur la PR qui posait le réglage. Ensuite,
-**`main` doit être nommée explicitement** : Vercel déploie dès qu'une règle correspondante vaut `true`,
-donc la retirer en croyant simplifier couperait la production, qui sert `assetlinks.json`,
-`/rappels/stop` et les pages légales exigées par Play. Enfin, **le réglage vit dans le dépôt, donc il
-suit la branche** : une branche partie d'un commit antérieur à celui-ci déploiera encore.
+**`vercel.json` porte `cleanUrls: true`, et ce n'est pas cosmétique** : sans lui, toute route sans
+enfants (`/suivi`, `/rappels/stop`, la restitution) répond 404 en production pendant que l'export
+local est parfait — `VERCEL.md` §1.5. **Il ne se déploie plus de prévisualisation** (`git.deploymentEnabled`,
+trois pièges dont `"**"` et jamais `"*"` — §1.4), la vérification visuelle du web se fait localement
+par `expo export --platform web` puis Playwright sur `dist/`. **Et chaque fusion sur `main` est un
+déploiement qui coûte ≈ 4,4 Mo de Functions Storage pendant trente jours** — §1.1, §2.1 et la
+convention de cadence en §2.3 ; les fusions qui ne touchent que la documentation sont sautées par
+`scripts/vercel-ignorer-le-build.sh` (§1.3), dont la liste blanche dit ce que le build ne lit pas.
 
 **`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
 la racine, indépendant de l'export statique Expo régi par `vercel.json`) — pas de route Expo
@@ -307,15 +315,10 @@ Router. Tsconfig dédié (`api/tsconfig.json`, exclu du tsconfig racine, `types:
 contexte tourne en Web Fetch API (Request/Response), pas dans React Native. Utilisé pour
 `api/partage.ts` (runtime Edge) et `api/share-card.ts` (runtime Node.js, rendu d'image via
 `satori`/`@resvg/resvg-wasm`) — carte de bilan partageable, cf. « Partager mon bilan » dans
-`src/app/(tabs)/suivi/bilan.tsx`. **Une Vercel Function en runtime Node.js dans ce repo a une
-checklist non négociable** (`api/package.json` en `"type": "module"`, `vercel.json` →
-`functions["<chemin>"].includeFiles` pour tout asset chargé par une dépendance transitive,
-`request.url` toujours relatif donc à parser avec une base factice, export **nommé**
-`GET`/`POST`/… jamais `export default`, `maxDuration` à surveiller si cold start lourd) — sans
-elle, une Function échoue silencieusement (`FUNCTION_INVOCATION_FAILED`/`_TIMEOUT` générique,
-aucun détail côté client) sans que le code lui-même soit en cause. Détail de chaque point,
-pourquoi, et comment les vrais logs runtime Vercel ont permis de les diagnostiquer :
-`docs/architecture/v1-06-partage-social.md` §3.
+`src/app/(tabs)/suivi/bilan.tsx`. **Une Vercel Function en runtime Node.js a une checklist non
+négociable, et son échec est muet** (`FUNCTION_INVOCATION_FAILED` générique, aucun détail côté
+client) : `VERCEL.md` §1.6, et le détail de chaque point avec les vrais logs qui l'ont diagnostiqué
+en `docs/architecture/v1-06-partage-social.md` §3.
 
 **Routing** : `src/app/` (Expo Router, file-based), organisé autour d'une **barre à deux
 onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit :

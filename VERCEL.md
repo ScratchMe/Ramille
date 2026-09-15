@@ -1,0 +1,292 @@
+# Vercel — conventions et pièges
+
+Ce que Ramille a appris de Vercel, et ce qu'un autre projet (Tour de Growth, le 15/09/2026) a
+appris en payant avant nous. La **§1 vaut sur n'importe quel projet Vercel** ; la **§2** porte
+les chiffres, les routes et les décisions de Ramille, et ne voyage pas. Chaque règle dit d'où
+elle vient ; l'histoire complète est dans `CLAUDE.md` (mécaniques) et dans les documents
+`docs/architecture/v1-0N-*.md` qu'elle cite.
+
+> **Quand lire ce fichier** : avant toute fusion sur `main` (chaque fusion est un déploiement,
+> et un déploiement se paie trente jours) · avant de toucher `vercel.json`, `api/`, le script
+> `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · avant d'ajouter une route à l'app ·
+> avant d'affirmer quoi que ce soit sur un compteur ou une facture Vercel · pour mesurer le
+> poids d'un déploiement.
+
+---
+
+## 1. Ce qui vaut sur n'importe quel projet Vercel
+
+### 1.1 Functions Storage : une somme glissante que rien ne purge
+
+**Functions Storage est une somme glissante sur trente jours.** Chaque déploiement ajoute le
+poids de ses fonctions ; il en sort trente jours plus tard, **qu'il ait été supprimé ou non**.
+
+```
+Functions Storage = poids des fonctions × déploiements des 30 derniers jours
+```
+
+Trois conséquences, apprises dans le mauvais sens par Tour de Growth (13→15/09/2026) et
+vérifiées par Antoine auprès de Vercel :
+
+- **Supprimer des déploiements ne fait rien pour ce compteur.** Une politique de rétention agit
+  sur autre chose. Écrire un correctif sur cette hypothèse corrige zéro octet.
+- **La cadence de fusions est un terme de la facture**, au même titre que le poids du bundle. À
+  poids constant, diviser les fusions par deux divise le compteur par deux — c'est presque
+  toujours le levier le plus gros et le moins cher. Un projet dont les fonctions pèsent peu peut
+  quand même heurter la limite : il suffit de fusionner souvent.
+- **Une fusion qui ne touche que la documentation coûte autant qu'une fusion de code**, tant
+  qu'un Ignored Build Step ne l'écarte pas (§1.3). Sur Ramille, 13 des 82 fusions des trente jours
+  précédant le 15/09/2026 étaient dans ce cas — et 3 des 5 fusions de cette seule journée.
+
+**Vercel compte le poids d'un bundle une fois par ROUTE, pas une fois par bundle physique.** Un
+bundle de 4 Mo partagé par 92 routes est facturé ~368 Mo. Avant de choisir où optimiser, compter
+les routes : un gramme retiré du bundle le plus partagé compte N fois, un gramme retiré d'une
+fonction mono-route compte une fois. (Ramille a deux fonctions, une route chacune : pas
+d'amplification, §2.1.)
+
+> ⚠️ **Point non réconcilié, à ne pas présenter comme un fait.** Chez Tour de Growth, l'export
+> local donnait 428,9 Mo par déploiement, soit 66 Go sur 154 déploiements, quand le compteur
+> affichait ~7 Go : Vercel déduplique probablement des bundles identiques. Le **classement
+> relatif** des postes est fiable et suffit à décider ; si le chiffre absolu compte pour une
+> décision, c'est le tableau de bord qui a raison, jamais le modèle.
+
+### 1.2 Mesurer le poids réel hors ligne
+
+La seule mesure fiable se fait sans rien déployer, avec le CLI :
+
+```bash
+# .vercel/project.json peut être fabriqué : l'outil ne le valide pas hors ligne.
+# `framework` doit dire ce que dit vercel.json (`null` pour un export statique).
+mkdir -p .vercel && printf '%s\n' \
+  '{"projectId":"prj_offline","orgId":"team_offline","settings":{"framework":null}}' \
+  > .vercel/project.json
+npx --yes vercel@59 build --prod --yes
+```
+
+Puis, et c'est là que tout le monde se trompe :
+
+1. **`du` sur `.vercel/output/functions` ne mesure rien** quand le framework produit des
+   `.func` en **liens symboliques** vers une poignée de bundles physiques (Next.js). Filtrer
+   sur « n'est pas un lien » avant de sommer.
+2. **Sommer tous les `.func` donne un résultat absurde** pour la même raison — des centaines de
+   copies du même bundle.
+3. **Ce qu'un `.func` contient dépend du runtime.** Avec Next.js, le `.func` physique ne porte
+   presque rien et la vraie liste des fichiers tracés vit dans le `filePathMap` de son
+   `.vc-config.json`. Avec `@vercel/node` (une fonction `api/*.ts` hors framework), c'est
+   l'inverse, relevé sur Ramille le 15/09/2026 : les fichiers tracés sont **physiquement dans le
+   `.func`** (63 fichiers pour `share-card`), et `filePathMap` ne porte que les `includeFiles` de
+   `vercel.json`, mappés vers leur source. Une fonction Edge n'a pas de `filePathMap` du tout.
+
+La mesure juste, en une phrase : *pour chaque `.func` non-symlink, sommer les fichiers réels
+qu'il contient **et** les fichiers listés dans son `filePathMap`, sans compter deux fois.* Pour le
+poids facturé, multiplier ensuite chaque bundle par le nombre de routes qui pointent dessus.
+
+**`.vercel/` doit être dans `.gitignore` ET dans les ignores du linter.** Tour de Growth l'avait
+oublié : ESLint s'est mis à analyser des bundles minifiés et à rapporter 2 366 problèmes. Le
+signe qui ne trompe pas, ce sont des numéros de colonne à quatre ou cinq chiffres (`1:10753`).
+Règle de diagnostic générale : quand un compteur d'outil explose après une manipulation, regarder
+d'abord **quels fichiers** sont concernés, pas les règles.
+
+**Et `vercel build` laisse des traces** : il a lancé un `npm install` dans `api/` et y a écrit un
+`package-lock.json` que le dépôt ne veut pas. Vérifier `git status` après une mesure.
+
+### 1.3 `ignoreCommand` — sémantique exacte, vérifiée à la source
+
+La page de référence de `vercel.json` ne dit que « code 0 ignores the build, code 1 continues
+it », ce qui est insuffisant pour écrire la commande en sécurité. L'article du centre d'aide
+tranche : « If the command returns '0', the build will be skipped. If, however, a code **'1' or
+greater** is returned, then a new deployment will be built. »
+
+**`exit 0` est donc la seule valeur qui saute.** Un crash du script (`127`), une erreur git
+(`128`), une variable non définie : tout est ≥ 1, donc tout construit. Le mode d'échec est sûr
+par construction — mais l'écrire en sachant *pourquoi* c'est sûr vaut mieux que de l'espérer.
+
+**Règle non négociable : en cas de doute, on construit.** Un déploiement sauté à tort veut dire
+qu'un correctif ne part pas en production, ce qui est bien pire que le coût économisé. La forme
+qui en découle : ne sortir en 0 que sur une détermination **positive et vérifiée**, et en 1
+partout ailleurs, chemin d'erreur compris.
+
+Quatre faits qui changent l'écriture de la commande :
+
+- **`VERCEL_GIT_PREVIOUS_SHA` vaut mieux que `HEAD^`.** C'est le SHA du dernier déploiement
+  **réussi**, exposé seulement quand un Ignored Build Step est configuré, et connu pour être
+  parfois vide (prévoir le repli). L'écart compte dans un cas précis : une fusion de code qui
+  **échoue au build**, suivie d'une fusion de documentation — `HEAD^..HEAD` ne voit que la
+  documentation, saute, et **le code de la fusion échouée ne part jamais**.
+- **Le clone est superficiel (`--depth=10`).** Une base plus ancienne que dix commits n'y est
+  pas, `git diff` échoue, donc le build se déclenche. Sûr, mais à savoir avant de déboguer : après
+  dix fusions sautées d'affilée, la onzième construit quoi qu'il arrive.
+- **Un build sauté ne crée aucun déploiement** — « No build minutes consumed, no new production
+  deployment created ». Donc aucune fonction, donc rien au compteur : l'économie est réelle. Ne
+  pas confondre avec un build **annulé en cours**, qui a déjà exécuté la commande de build et
+  compte, lui.
+- **La liste blanche se dit en chemins de racine, jamais en `**/*.md`.** Un `.md` sous `src/`
+  peut être importé par l'app ; seul le `.md` de la racine est certainement inerte. Et tout ce
+  qu'on *croit* inerte sans l'avoir vérifié (`vercel.json` lui-même, `package.json`,
+  `.gitignore`) reste hors de la liste : ça construit.
+
+**Un `vercel.json` invalide fait échouer TOUS les déploiements, production comprise.** Toute
+évolution de ce fichier passe par un test unitaire qui le parse et vérifie qu'une branche de
+production reste du côté « construire ». Sur Ramille, c'est `scripts/vercel-ignorer-le-build.test.ts`,
+qui joue aussi le script sur de vrais dépôts git fabriqués — et dont la non-vacuité a été
+mesurée en cassant le script six fois (§2.2).
+
+### 1.4 Les prévisualisations coûtent, et `git.deploymentEnabled` a trois pièges
+
+Chaque push de branche déclenche un déploiement de prévisualisation, donc des fonctions, donc du
+Functions Storage. Si la vérification se fait localement contre un export de production puis en
+CI, ces prévisualisations ne servent à rien. Deux façons de les couper :
+
+```json
+{ "git": { "deploymentEnabled": { "**": false, "main": true } } }
+```
+
+ou, dans l'`ignoreCommand`, sauter quand `VERCEL_ENV` vaut exactement `preview` — Ramille fait
+les deux, la seconde en ceinture sous les bretelles. **Corollaire utile : un push de branche ne
+construit plus rien.** Travailler et pousser sur une branche est gratuit ; seule la fusion coûte.
+
+Trois pièges avec `deploymentEnabled`, et **le premier s'est refermé sur nous le jour où on l'a
+écrit** (15/09/2026, PR #185) :
+
+- **C'est `"**"` et jamais `"*"`** : Vercel départage les branches en **minimatch**, où `*` ne
+  traverse pas les `/`. Des branches nommées `claude/…` passent au travers de `"*": false`, et la
+  prévisualisation part quand même — constaté sur la PR qui posait le réglage.
+- **La branche de production doit être nommée explicitement** : Vercel déploie dès qu'une règle
+  correspondante vaut `true`, donc retirer `main` en croyant simplifier coupe la production.
+- **Le réglage vit dans le dépôt, donc il suit la branche** : une branche partie d'un commit
+  antérieur au réglage déploie encore.
+
+### 1.5 Un export statique a besoin de `cleanUrls`, et ce n'est pas cosmétique
+
+Un export statique produit deux formes de page : un **répertoire** `plan/index.html` pour une
+route qui a des enfants, un **fichier plat** `suivi.html` sinon (Expo Router fait exactement
+ça). Sans `cleanUrls: true`, Vercel sert les premières et répond 404 sur les secondes — l'export
+local contient bien les fichiers, les routes en répertoire marchent, et rien ne le signale. Sur
+Ramille, `/suivi`, `/confidentialite`, `/feedback` et la restitution `/bilan/resultat` ont été
+inaccessibles en production de cette façon. **Toute nouvelle route sans enfants tombe dans ce
+cas** ; la valeur est épinglée deux fois, par `scripts/verifier-rendu-export.mjs` en CI (qui parse
+`vercel.json` et vérifie aussi que chaque `includeFiles` existe) et par
+`scripts/vercel-ignorer-le-build.test.ts`, parce que la retirer remettrait la moitié de l'app en 404
+en silence. Piège de relevé, subi en écrivant cette ligne : chercher `cleanUrls` dans **un** garde
+(`verifier-titres-export.mjs`) ne trouve qu'un commentaire, et la conclusion « aucun garde ne la
+lit » était fausse — un relevé qui ne trouve rien doit d'abord prouver qu'il a regardé partout.
+
+### 1.6 Une Function en runtime Node.js a une checklist, et l'échec est muet
+
+Une Vercel Function échoue avec un `FUNCTION_INVOCATION_FAILED` ou `_TIMEOUT` générique, sans
+détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*. La checklist qui
+évite d'y aller, chaque point ayant coûté un cycle de déploiement à Ramille (`v1-06` §3) :
+
+- le dossier de la fonction porte son `package.json` en `"type": "module"` ;
+- **tout asset chargé par une dépendance transitive** (un `.wasm`, une police) passe par
+  `functions["<chemin>"].includeFiles` dans `vercel.json`, sinon le traceur ne l'embarque pas ;
+- `request.url` est **relatif** : le parser avec une base factice (`new URL(url, 'http://x')`) ;
+- l'export est **nommé** (`GET`, `POST`…), jamais `export default` ;
+- `maxDuration` se surveille si le démarrage à froid est lourd (un rendu d'image à partir de
+  WASM l'est).
+
+### 1.7 Ce qui pèse dans une fonction
+
+- Chez Tour de Growth : **`sharp` (~48 Mo)** est tracé dès que `next/image` *pourrait* servir, et
+  **`@vercel/og` embarque deux rendus** (Node et Edge). Dans les deux cas, le remède est une
+  exclusion de traçage **plus un test** qui affirme que l'usage justifiant l'exclusion n'existe
+  pas dans les sources — sinon un futur import réintroduit les octets sans bruit.
+- Chez Ramille : le rendu d'image de partage porte **un binaire WASM de 2,5 Mo** (`@resvg`), soit
+  57 % du poids, et il est irréductible tant que l'image se rend côté serveur. Le levier n'est
+  donc pas le bundle, c'est la cadence (§2.3).
+
+### 1.8 Ce que l'outillage d'une session agent ne voit pas
+
+- **L'outil MCP Vercel d'une session ne voit pas forcément le compte où vivent les projets** — sur
+  Ramille, `list_deployments` a répondu 403 le 15/09/2026 ; chez Tour de Growth, l'unique équipe
+  visible est restée vide. Conséquence : **l'agent ne peut pas lire les compteurs de
+  consommation**, et la configuration se fait à la main dans le tableau de bord. Règle : *quand
+  une ressource que je ne peux pas lire est en jeu, je demande le chiffre avant d'agir, pas
+  après.*
+- **La région des fonctions est un réglage de projet**, pas de code. Une région par défaut aux
+  États-Unis avec une base en Europe ajoute une seconde et plus par requête ; se vérifie avec
+  `x-vercel-id` sur une vraie réponse.
+
+---
+
+## 2. Propre à Ramille
+
+*Cette section ne voyage pas — ce sont nos chiffres, à un instant donné.*
+
+### 2.1 Chiffres de référence (15/09/2026, mesure hors ligne §1.2)
+
+| | Valeur |
+|---|---|
+| Fonctions physiques par déploiement | 2 — `api/share-card` (Node.js, 63 fichiers) et `api/partage` (Edge) |
+| Poids de `share-card` | 3,95 Mo sur disque + 0,38 Mo de `hb.wasm` via `includeFiles` = **4,33 Mo** |
+| Poids de `partage` | 0,03 Mo |
+| **Poids par déploiement** | **≈ 4,4 Mo**, une route par fonction donc sans amplification |
+| Fusions sur `main`, 16/08 → 15/09 | 82, dont **13 doc seule** (16 %) |
+| Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
+| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — pas de baisse avant |
+
+Ce que ce budget vaut en déploiements, au poids mesuré : **≈ 34**. Ce que la cadence des trente
+derniers jours aurait consommé sur dix jours : 27 déploiements, ≈ 120 Mo — avec les fusions
+« doc seule » sautées, 23 et ≈ 100 Mo. **L'Ignored Build Step seul ne fait pas la marge : c'est
+le groupage des fusions qui la fait** (§2.3).
+
+Répartition du poids de `share-card` : `@resvg/resvg-wasm` 2,48 Mo (57 %), `hb.wasm` 0,38,
+`@shuding/opentype.js` 0,37, `satori` 0,36, `fflate` 0,17, `linebreak` 0,14, les deux polices
+Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
+
+> Le poids mesuré est celui du disque, non compressé. Tour de Growth a relevé un compteur
+> proche de sa mesure disque (47 Mo affichés pour 43,5 mesurés) ; le rapport exact chez Vercel
+> n'est pas connu. **Le tableau de bord a raison** : relever ce qu'il affiche par déploiement et
+> corriger cette table si l'écart dépasse quelques dizaines de pour cent.
+
+### 2.2 Décisions prises, à ne pas rouvrir sans raison
+
+- **Plus de prévisualisation** depuis le 15/09/2026 (PR #185, `git.deploymentEnabled`) : la
+  vérification visuelle du web se fait par `expo export --platform web` puis Playwright sur
+  `dist/`, ce que font déjà les cinq gardes d'export en CI — aucune n'a jamais interrogé Vercel.
+- **Les fusions « doc seule » ne déploient plus** (`ignoreCommand` →
+  `scripts/vercel-ignorer-le-build.sh`). Liste blanche, relevée contre ce que lisent
+  `expo export --platform web` et les deux fonctions : `docs/`, `.github/`, `supabase/`,
+  `.claude/`, `.design-sync/`, `.vscode/`, `scripts/`, `LICENSE` et les `.md` de la racine. Tout le
+  reste construit, `vercel.json` et `package.json` compris. Base de comparaison :
+  `VERCEL_GIT_PREVIOUS_SHA`, repli `HEAD^`, `exit 1` sur tout chemin d'erreur, et une
+  prévisualisation (`VERCEL_ENV=preview`) ne construit jamais. **Non-vacuité mesurée** en cassant
+  le script six fois : chaque mutation fait tomber entre un et quatre tests, jamais zéro (le
+  détail est en tête de `scripts/vercel-ignorer-le-build.test.ts`).
+- **Le poids de `share-card` n'est pas optimisé.** Le WASM de rendu est 57 % du poids et
+  irréductible ; les 43 % restants valent moins de 2 Mo. Ce qui compte, c'est le nombre de
+  déploiements.
+- **`maxDuration: 30` sur `share-card`** — un rendu d'image WASM au démarrage à froid dépasse
+  les 10 s par défaut (`v1-06` §3).
+- **`framework: null`** — l'export d'Expo est statique, la commande de build est
+  `npm run vercel-build` et la sortie `dist/`.
+
+### 2.3 Convention de cadence, et le budget des dix jours
+
+Chaque fusion sur `main` coûte ≈ 4,4 Mo pendant trente jours. Entre le 15 et le 25/09/2026, le
+plafond est **150 Mo, soit 34 déploiements au plus**, et la cadence courante en consommerait 120.
+Trois règles, à demeure :
+
+1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
+   (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le
+   lire (§1.8).
+2. **Une PR par vague, pas une par chantier.** Une vérification complète, un push, une fusion.
+   Une correction de documentation qui suit une fusion de code attend la fusion de code
+   suivante — ou part seule, puisqu'elle ne déploie plus.
+3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours, ce qui laisse
+   ≈ 90 Mo et une marge pour l'imprévu.
+
+Ce que cette convention corrige : le 15/09/2026, cinq fusions dans la journée, dont trois qui ne
+touchaient que de la documentation — le motif exact contre lequel Tour de Growth avait écrit sa
+règle, et que j'ai reproduit avant de la lire.
+
+### 2.4 Ce qu'il reste à vérifier sur le tableau de bord
+
+- **La première fusion « doc seule » après celle-ci** doit apparaître comme sautée par l'Ignored
+  Build Step, sans déploiement de production nouveau. Si un déploiement apparaît quand même, lire
+  le journal de build : le script y écrit pourquoi il a construit (« … entre dans le build » ou
+  « a échoué »).
+- **`VERCEL_GIT_PREVIOUS_SHA` est-il exposé ?** Le script écrit « repli sur HEAD^ » quand il ne
+  l'est pas. Si cette ligne apparaît à chaque fois, le trou du build échoué (§1.3) est ouvert et
+  il faut le savoir.
+- **Le poids affiché par déploiement**, à confronter à §2.1.
