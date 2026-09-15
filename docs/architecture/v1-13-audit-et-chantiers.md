@@ -1889,7 +1889,9 @@ assertions chiffrées : les grouper en **une** migration.
 
 ### C4.5 — Hors-ligne : ouvrir sur le dernier plan connu ; session expirée
 
-**Dépend de** C1.4 · **Constats** A1-5, A10-9, A6-15 · **Recette** §12.5, [#180](https://github.com/ScratchMe/TraceVerte/issues/180).
+**Dépend de** C1.4 · **Constats** A1-5, A10-9, A6-15 · **Recette** §12.5, [#180](https://github.com/ScratchMe/TraceVerte/issues/180) · **Page de décision : [`v1-15-hors-ligne.md`](v1-15-hors-ligne.md)**, écrite le 15/09/2026.
+
+**Deux choses que la page de décision change à ce qui suit, et qu'il faut lire là-bas.** La moitié « session expirée » de ce titre est **déjà livrée** par C2.11 (`src/types/session.ts` et l'écran `SessionRefusee`), donc le chantier ne porte plus que l'hors-ligne. Et **l'instantané du plan est sorti du périmètre** : il crée un troisième endroit où vivent les chiffres de la personne, ce que tout ce dépôt refuse, et la contre-vérification d'A1-5 le disait déjà hors de l'effort annoncé. Ce qui referme le défaut est une **marque locale** (« cet appareil a vu un bilan complété »), plus `/onboarding` comme repli quand elle est absente — ce qui rend le questionnaire atteignable hors ligne sans toucher à l'écran d'erreur que C1.4 a délibérément dépouillé.
 
 Persister en AsyncStorage le fait « cette session a un bilan complété » et un instantané du
 dernier plan ; hors réseau, la racine route vers `/plan` en lecture avec un bandeau doux. Distinguer
