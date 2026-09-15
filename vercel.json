@@ -7,6 +7,7 @@
     }
   },
   "cleanUrls": true,
+  "ignoreCommand": "sh scripts/vercel-ignorer-le-build.sh",
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist",
   "functions": {

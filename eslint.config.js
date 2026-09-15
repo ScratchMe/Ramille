@@ -4,7 +4,10 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = [
   ...expoConfig,
   {
-    ignores: ['dist/*'],
+    // `.vercel/` est la sortie de `npx vercel build` hors ligne (VERCEL.md §1.2) : des bundles
+    // minifiés, que le linter lirait sinon — des milliers de problèmes à des colonnes à cinq
+    // chiffres, c'est ce signe-là.
+    ignores: ['dist/*', '.vercel/*'],
   },
   {
     files: ['src/**/*.{ts,tsx}'],
