@@ -2,6 +2,70 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Mécaniques de travail, et ce qu'elles ont coûté avant d'être écrites
+
+**Ce fichier n'est pas seulement la carte du produit : c'est aussi là que se consigne la façon de
+travailler**, pour qu'une leçon payée une fois ne se repaie pas à la session suivante. Tout ce qui
+suit cette section décrit Ramille ; celle-ci décrit comment on y touche. Une mécanique qui n'est
+écrite nulle part est une mécanique qu'un prochain passage réinventera de travers — et il n'aura
+aucun moyen de savoir qu'il la réinvente.
+
+### Ce que la personne qui pilote a demandé
+
+- **Une tâche par chantier, tenue à jour pendant le travail** et pas après coup (14/09/2026 :
+  « c'est pénible de ne pas savoir où tu en es »). C'est la seule fenêtre sur l'avancement.
+- **Un numéro ne se cite jamais seul.** Un lot, une issue, un chantier : on écrit à chaque fois de
+  quoi il s'agit. Personne ne garde en tête ce que désigne `C3.8`.
+- **Au plus un build EAS tous les deux jours** (15/09/2026), et la raison est au registre
+  d'exploitation §3.3 : le quota du plan gratuit ne se lit qu'en le heurtant.
+
+### La branche de travail
+
+**Après une fusion, la branche se recrée en local et ne se repousse qu'au premier commit réel.**
+GitHub la supprime à la fusion ; la repousser aussitôt ressuscite une branche **vide et identique à
+`main`**, qui se lit « il y a du travail en cours » alors qu'il n'y en a pas. Fait trois fois le
+15/09/2026 avant qu'on me le fasse remarquer : une branche ouverte doit vouloir dire quelque chose.
+
+**Et ça ne se rattrape pas d'ici** : le proxy git de l'environnement distant refuse les suppressions
+de référence — `HTTP 403` sur `git push --delete` comme sur la refspec vide. La suppression se fait
+depuis GitHub. Ce n'est pas passager, donc une boucle de reprise n'y changera rien.
+
+**Un numéro de PR s'écrit dans un document une fois obtenu, jamais avant.** Le 15/09/2026, `#186`
+puis `#187` ont été écrits dans `v1-13` §10 avant d'ouvrir les PR, en pariant sur la numérotation.
+Les deux paris ont tenu ; une issue ouverte entre-temps par quiconque les aurait rendus faux, et le
+lien aurait pointé ailleurs sans que rien ne le signale.
+
+### Éprouver plutôt qu'affirmer
+
+**Une garde neuve se vérifie en cassant ce qu'elle garde** : remettre l'ancien défaut, tronquer le
+rang, fabriquer la policy fautive — puis constater que l'assertion tombe, et seulement celle-là.
+Sans ce passage on a écrit une ligne qui *pourrait* garder quelque chose ; avec, on sait laquelle.
+C'est déjà la règle en §E de `03_rls_policies.test.sql`, et elle vaut partout.
+
+**Une hypothèse sur les données se mesure en base, jamais au raisonnement.** L'idiome, quand il faut
+écrire pour mesurer sans rien laisser : un bloc `do $$ … raise exception 'RESULTAT …' $$` —
+l'exception annule toute la transaction **et** ramène le chiffre dans son message. C'est ainsi qu'on
+a su qu'un profil donné rend **onze** actions au plan (15/09/2026) plutôt que de l'espérer.
+
+### Lire un échec avant d'y répondre
+
+**Un tube masque le code de sortie.** Une boucle de reprise bâtie sur `commande | tail` ne reprend
+**jamais** : elle lit le succès de `tail`. Relevé le 15/09/2026 — trois « tentatives » de
+suppression de branche n'en étaient qu'une, et le `403` n'est apparu qu'en retirant le tube.
+
+**Un marqueur accentué absent d'un bundle minifié ne prouve rien** : `é` y est échappé en
+`\u00e9`. Cherché le 15/09/2026 pour vérifier qu'un déploiement était bien passé — il l'était, et
+la conclusion inverse a failli être tirée. Chercher un marqueur **ASCII** (un nom de style, une clé
+d'objet), ou la forme échappée.
+
+### Ce qui se consigne ailleurs, et pourquoi
+
+Les réglages des comptes tiers ne vivent pas ici mais dans `docs/exploitation/`, qui est le registre
+qui les rend vérifiables — rien dans le code ni dans la CI ne les voit. Deux d'entre eux pèsent sur
+le **rythme de travail** et méritent d'être connus avant de planifier quoi que ce soit : le quota de
+builds EAS (§3.3) et les budgets d'API GitHub (§3.8 — GraphQL et REST sont deux compteurs
+distincts, donc `issue_write` peut être refusé pendant que tout le reste passe).
+
 ## Le produit
 
 Ramille est une app de sensibilisation à l'empreinte carbone des transports, pour la
