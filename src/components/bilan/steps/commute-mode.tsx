@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
+import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { ThemedText } from '@/components/themed-text';
 import {
@@ -10,7 +11,7 @@ import {
   TWO_WHEELER_TYPE_OPTIONS,
 } from '@/constants/transport-modes';
 import { Spacing } from '@/constants/theme';
-import type { BilanAnswers } from '@/types/bilan';
+import { TAILLES_DE_COVOITURAGE, type BilanAnswers } from '@/types/bilan';
 
 // B1.4. Le moteur (B1.4bis, hors spec d'origine — cf. migration
 // 20260904*_car_engine.sql) n'ajoute jamais d'entrée à la liste ci-dessus : question de
@@ -65,6 +66,27 @@ export function CommuteModeStep({
                     options={TWO_WHEELER_TYPE_OPTIONS}
                     valeur={answers.commute_two_wheeler_type}
                     onChange={(value) => update({ commute_two_wheeler_type: value })}
+                  />
+                </View>
+              )}
+
+              {/* **Elle vient de l'écran suivant** (recette du 14/09/2026, `v1-16` §3). Le produit
+                  pose trois fois combien de personnes partagent la voiture, et le présentait de
+                  deux façons : sous l'option choisie pour les sorties et les longs trajets depuis
+                  C3.5, en tête de l'écran suivant pour celui-ci. La question décrit la voiture
+                  qu'on vient de choisir, exactement comme la motorisation juste au-dessus — la
+                  séparer du choix demandait de se souvenir d'un écran à l'autre de quelle voiture
+                  on parle.
+
+                  Après la motorisation et sous la même option, comme `leisure-detail.tsx` : les
+                  deux précisions décrivent la même voiture. */}
+              {selected && choice.carpool && (
+                <View style={styles.precision}>
+                  <PrecisionChiffres
+                    question="Vous êtes combien à partager ce trajet ?"
+                    options={TAILLES_DE_COVOITURAGE}
+                    valeur={answers.commute_carpool_size}
+                    onChange={(value) => update({ commute_carpool_size: value })}
                   />
                 </View>
               )}

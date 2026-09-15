@@ -42,7 +42,26 @@ export type BilanAnswers = {
   commute_mode: TransportModeId | null;
   commute_is_carpool: boolean;
   commute_carpool_size: number | null;
-  commute_second_mode_used: boolean;
+  /**
+   * Y a-t-il un second mode ? — avec un troisième état, `null`, qui veut dire **pas encore
+   * répondu** (recette du 14/09/2026, `v1-16` §4).
+   *
+   * Le défaut était `false`, donc « Non » arrivait coché sur un questionnaire vierge et
+   * `manqueDeLEtape` laissait passer : on traversait la question sans jamais décider. Et le
+   * défaut penchait du mauvais côté — « je n'ai pas de second mode » **sous-estime** un trajet
+   * intermodal, sur le poste qui décide du poste dominant, donc du plan. C'est le motif que
+   * C3.4, C3.5 et C3.6 ont corrigé partout ailleurs, resté ici parce qu'il préexistait à la
+   * règle.
+   *
+   * **La colonne, elle, reste `not null`, et ce n'est pas une facilité.** `null` décrit un
+   * questionnaire en cours, jamais un bilan : l'étape est visible exactement quand la question
+   * s'applique, donc un bilan soumis porte toujours une réponse. La rendre nullable importerait
+   * un état d'écran dans le schéma — et le calcul lit
+   * `if a.commute_second_mode_used and a.commute_second_mode is not null`, où un `null` se
+   * comporte **exactement comme `false`** : l'ambiguïté qu'on retire de l'écran reparaîtrait en
+   * base, muette, à l'endroit précis où elle fausse un total.
+   */
+  commute_second_mode_used: boolean | null;
   commute_second_mode: TransportModeId | null;
   /**
    * Part du trajet faite avec le second mode, en fraction (C3.4).
@@ -107,7 +126,8 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   commute_mode: null,
   commute_is_carpool: false,
   commute_carpool_size: null,
-  commute_second_mode_used: false,
+  // `null` et non `false` : personne n'a encore répondu. Cf. le champ, qui porte la raison.
+  commute_second_mode_used: null,
   commute_second_mode: null,
   commute_second_mode_share: null,
   commute_car_engine: null,
@@ -387,6 +407,11 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
   // faut pas la retirer : aucune règle en dessous ne peut savoir qu'il n'y a plus de trajet
   // auquel rattacher une seconde jambe — celle du second mode lit ce drapeau, elle ne le
   // contredit pas. Sans cette ligne, `commute_second_mode` survit à un « Non ».
+  //
+  // **Et c'est `false` et non `null`**, à l'inverse de la règle du même nom plus bas (`v1-16`
+  // §4) : ici la question ne s'applique pas, elle n'est pas « à reposer » — l'étape est
+  // invisible. C'est aussi ce qui rend inatteignable le repli de l'insert : sans trajet
+  // régulier on écrit `false`, avec trajet régulier l'étape exige une réponse.
   if (a.commute_has_regular_trip === false) {
     a.commute_days_per_week = null;
     a.commute_distance_km = null;
@@ -416,10 +441,16 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
 
   // État inatteignable en avant (B1.7 exclut le mode principal de sa liste), fabriqué par un
   // retour en arrière — et que le calcul suppose impossible, cf. `commute_car_engine`.
+  //
+  // **On repose la question au lieu d'y répondre à sa place** (`v1-16` §4) : cette ligne écrivait
+  // `false`, c'est-à-dire « Non » pour quelqu'un qui venait de dire « Oui, train » avant de
+  // passer son mode principal au train. C'est le défaut du chantier dans un autre habit — un
+  // binaire qu'on n'a pas choisi. `null` rend l'étape incomplète, donc la question revient.
   if (a.commute_second_mode !== null && a.commute_second_mode === a.commute_mode) {
     a.commute_second_mode = null;
-    a.commute_second_mode_used = false;
+    a.commute_second_mode_used = null;
   }
+  // `null` passe ici comme `false` — pas de réponse, donc pas de second mode à garder.
   if (!a.commute_second_mode_used) a.commute_second_mode = null;
   // C3.4 : la part n'a de sens qu'attachée à un second mode. Sans cette ligne, répondre
   // « un quart » puis revenir à « Non » laissait une fraction orpheline que l'insert aurait
@@ -614,10 +645,20 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
         return 'la motorisation';
       if (answers.commute_mode === 'deux_roues_motorise' && answers.commute_two_wheeler_type === null)
         return 'le type de deux-roues';
-      return null;
-    case 'commute_extra':
+      // La taille du covoiturage vient de l'étape suivante (recette du 14/09/2026, `v1-16` §3) :
+      // elle se rend désormais sous « Voiture (covoiturage) », après la motorisation, comme la
+      // jumelle des sorties. Elle reste obligatoire pour la raison qui vaut des deux côtés : le
+      // calcul ne divise que si elle est renseignée, donc sans elle le choix « covoiturage » ne
+      // change **rien** au chiffre.
       if (answers.commute_is_carpool && answers.commute_carpool_size === null)
         return 'le nombre de personnes dans la voiture';
+      return null;
+    case 'commute_extra':
+      // **En tête, parce que c'est la première chose que l'écran demande** (`v1-16` §4). Sans
+      // cette ligne, un questionnaire vierge traversait la question : le défaut répondait
+      // « Non », et « Non » sous-estime un trajet intermodal. Un re-bilan prérempli arrive avec
+      // une vraie réponse et ne bute pas ici.
+      if (answers.commute_second_mode_used === null) return 'une réponse sur le second mode';
       if (answers.commute_second_mode_used && answers.commute_second_mode === null)
         return 'le second mode';
       if (answers.commute_second_mode === 'voiture' && answers.commute_car_engine === null)

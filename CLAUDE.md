@@ -672,9 +672,12 @@ qu'ils concernent :
   bouton : l'en-tête manquant n'était pas la cause, donc il n'y avait rien à construire. Détail et
   condition de réouverture en `v1-13` §7, et la règle d'en-tête plus bas dans ce fichier.
 
-Les trois autres sont des décisions d'écran : le placement de la taille du covoiturage du trajet
-quotidien (§12.2), le binaire du second mode qui n'a pas d'état « pas encore répondu » (§12.3), et
-les actions que le plan affiche sans qu'on puisse les choisir (§12.4, qui rouvre C4.6).
+Les trois autres étaient des décisions d'écran, **livrées le 15/09/2026** et tranchées dans
+`v1-16-trois-decisions-decran.md` : le placement de la taille du covoiturage du trajet quotidien
+(§12.2), le binaire du second mode qui n'avait pas d'état « pas encore répondu » (§12.3), et les
+actions que le plan affichait sans qu'on puisse les choisir (§12.4, qui rouvrait C4.6). **Les cinq
+constats de la recette sont donc clos**, et ce qu'il en reste n'est plus un constat mais une
+vérification : §11.16.
 
 **Hors ligne, la racine route au lieu de lever, et c'est une marque locale qui l'y autorise** (C4.5,
 15/09/2026, `v1-15-hors-ligne.md`). La moitié « session expirée » du chantier était **déjà livrée**
@@ -1232,7 +1235,13 @@ colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage d�
   deux cartes estompées derrière « Voir d'autres pistes · N », puis des lignes simples. Au-delà de
   quatre cartes pleines ce n'est plus un choix qu'on présente, c'est un catalogue. Le compte est
   **dans** le libellé du lien : un lien qui ne dit pas combien il cache n'aide pas à décider de
-  l'ouvrir.
+  l'ouvrir. **Et les trois rangs disent l'insistance, jamais la permission** (recette du 14/09/2026,
+  §12.4, `v1-16` §5) : les lignes simples n'avaient pas de bouton, donc le plan affichait des
+  leviers chiffrés et **inatteignables**, sous une phrase qui demandait à la personne de changer sa
+  vie pour que l'app la réordonne. Elles s'ouvrent désormais en carte au toucher — `carteDaction`
+  étant une fabrique, déplier une ligne c'est l'appeler. Le classement n'a pas bougé, et une garde
+  de **partition** dans `plan.test.ts` épingle ce dont la promesse dépend : un rang qui laisserait
+  tomber une action recréerait ici, en silence, le `limit 2` que ce chantier a retiré du serveur.
 - **`actionsCount` pilote encore le disclaimer et l'état vide**, mais la phrase d'intro compte
   désormais `enAvant.length` : elle décrit ce qui est devant, et dire « Deux actions » à un plan qui
   en porte cinq serait faux.
@@ -1845,6 +1854,29 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   Deux règles : la fonction est **idempotente** (elle s'applique aussi à un brouillon écrit avant
   ces règles), et ce qui décide d'effacer un champ est **ce que le calcul lit encore**, pas ce que
   l'écran affiche — la branche « rarement » des loisirs en est l'exemple, commentée sur place.
+  **Et depuis `v1-16` §4, elle écrit `false` ou `null` selon ce qu'elle veut dire** : `false` quand
+  la question ne s'applique plus (pas de trajet régulier), `null` quand elle est **à reposer** — un
+  retour en arrière qui rend le second mode identique au mode principal répondait « Non » à la
+  place de la personne. Les confondre, c'est refaire le défaut de §12.3 par une autre porte.
+- **Une question à laquelle personne n'a répondu ne vaut pas « Non »** (recette du 14/09/2026,
+  `v1-16` §4). `commute_second_mode_used` est `boolean | null` côté client, `null` valant « pas
+  encore répondu », et `manqueDeLEtape` le refuse : le défaut était `false`, donc « Non » arrivait
+  coché sur un questionnaire vierge et l'étape se traversait sans qu'on décide — or « Non »
+  **sous-estime** un trajet intermodal, sur le poste qui décide du poste dominant donc du plan.
+  C'est la quatrième occurrence du motif de C3.4 / C3.5 / C3.6, restée en place parce qu'elle
+  préexistait à la règle. **La colonne, elle, reste `not null`, et ce n'est pas un raccourci** :
+  `null` décrit un questionnaire en cours, jamais un bilan soumis, et la rendre nullable
+  réimporterait l'ambiguïté en base — la branche du calcul est
+  `if a.commute_second_mode_used and a.commute_second_mode is not null`, où `null` se comporte
+  **exactement comme `false`**. D'où un `?? false` à l'insert, inatteignable par construction et
+  écrit quand même, le typecheck étant le seul garde qui voie cette dérive.
+- **Une précision s'ouvre sous l'option qu'elle décrit, et la dernière exception est tombée**
+  (`v1-16` §3). La taille du covoiturage du trajet quotidien vivait en tête de l'écran **suivant**,
+  alors que ses deux jumelles de C3.5 (sorties, longs trajets) s'ouvrent sous l'option choisie :
+  trois fois la même question, deux motifs. Elle est désormais sous « Voiture (covoiturage) » de
+  B1.4, par `PrecisionChiffres`, après la motorisation — les deux précisions décrivent la même
+  voiture. Le seul écart qui reste est la distance ouverte des loisirs, et sa raison est écrite sur
+  place : une rangée de puces n'a pas d'élément sous lequel se glisser.
 - **La virgule est un séparateur décimal, et la traiter comme un caractère à jeter coûtait un
   facteur dix.** Le champ de distance filtrait tout ce qui n'était pas un chiffre : « 3,5 » ne
   donnait ni erreur ni refus, il donnait **35**. Le clavier numérique d'Android propose une

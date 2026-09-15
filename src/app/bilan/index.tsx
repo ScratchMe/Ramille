@@ -347,7 +347,13 @@ export default function BilanQuestionnaire() {
           commute_mode: answers.commute_mode,
           commute_is_carpool: answers.commute_is_carpool,
           commute_carpool_size: answers.commute_carpool_size,
-          commute_second_mode_used: answers.commute_second_mode_used,
+          // **Ce repli est inatteignable, et il est écrit quand même** (`v1-16` §4). Le champ porte
+          // un troisième état « pas encore répondu » côté questionnaire, que la colonne n'a pas :
+          // elle est `not null`, et c'est voulu — un bilan soumis a toujours une réponse. Aucune
+          // des deux branches ne peut produire `null` ici (étape visible ⇒ complète ; étape
+          // invisible ⇒ `normaliserReponses` a écrit `false`), mais le typecheck l'exige — et
+          // c'est le seul garde qui voit cette dérive, `database.types.ts` étant tenu à la main.
+          commute_second_mode_used: answers.commute_second_mode_used ?? false,
           commute_second_mode: answers.commute_second_mode,
           commute_second_mode_share: answers.commute_second_mode_share,
           commute_car_engine: answers.commute_car_engine,
