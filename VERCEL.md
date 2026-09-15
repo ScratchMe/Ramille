@@ -81,6 +81,14 @@ La mesure juste, en une phrase : *pour chaque `.func` non-symlink, sommer les fi
 qu'il contient **et** les fichiers listés dans son `filePathMap`, sans compter deux fois.* Pour le
 poids facturé, multiplier ensuite chaque bundle par le nombre de routes qui pointent dessus.
 
+**Et le tableau de bord compte l'archive, pas le disque.** L'export d'un déploiement (*Deployment
+→ Source/Output*, ou l'export CSV) donne par fonction la taille que Vercel retient ; chez Ramille
+c'est 1 595 453 octets pour un bundle qui pèse 4,33 Mo sur disque, soit **37 %** — un `.zip` local
+au taux maximal donne 1,37 Mo, donc c'est bien une archive compressée, avec une marge. Le rapport
+dépend de ce que le bundle contient (du WASM et du JS se compressent bien, une police moins) :
+**la mesure hors ligne donne le classement et l'ordre de grandeur, le tableau de bord donne le
+chiffre**, et c'est lui qu'on écrit dans un budget.
+
 **`.vercel/` doit être dans `.gitignore` ET dans les ignores du linter.** Tour de Growth l'avait
 oublié : ESLint s'est mis à analyser des bundles minifiés et à rapporter 2 366 problèmes. Le
 signe qui ne trompe pas, ce sont des numéros de colonne à quatre ou cinq chiffres (`1:10753`).
@@ -218,26 +226,30 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 | | Valeur |
 |---|---|
 | Fonctions physiques par déploiement | 2 — `api/share-card` (Node.js, 63 fichiers) et `api/partage` (Edge) |
-| Poids de `share-card` | 3,95 Mo sur disque + 0,38 Mo de `hb.wasm` via `includeFiles` = **4,33 Mo** |
-| Poids de `partage` | 0,03 Mo |
-| **Poids par déploiement** | **≈ 4,4 Mo**, une route par fonction donc sans amplification |
+| Poids de `share-card` sur disque | 3,95 Mo + 0,38 Mo de `hb.wasm` via `includeFiles` = 4,33 Mo |
+| Poids de `share-card` **retenu par Vercel** | **1 595 453 octets ≈ 1,6 Mo** (export du tableau de bord, 15/09/2026 — l'archive compressée, 37 % du disque) |
+| Poids de `partage` | 0,03 Mo sur disque ; l'export du tableau de bord ne lui donne aucune taille (Edge) |
+| **Poids par déploiement** | **≈ 1,6 Mo**, une route par fonction donc sans amplification |
 | Fusions sur `main`, 16/08 → 15/09 | 82, dont **13 doc seule** (16 %) |
 | Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
 | Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — pas de baisse avant |
 
-Ce que ce budget vaut en déploiements, au poids mesuré : **≈ 34**. Ce que la cadence des trente
-derniers jours aurait consommé sur dix jours : 27 déploiements, ≈ 120 Mo — avec les fusions
-« doc seule » sautées, 23 et ≈ 100 Mo. **L'Ignored Build Step seul ne fait pas la marge : c'est
-le groupage des fusions qui la fait** (§2.3).
+Ce que ce budget vaut en déploiements, au poids retenu par Vercel : **≈ 94**. Ce que la cadence
+des trente derniers jours aurait consommé sur dix jours : 27 déploiements, ≈ 43 Mo — avec les
+fusions « doc seule » sautées, 23 et ≈ 37 Mo. La marge est réelle, et elle ne dispense pas de la
+convention de cadence (§2.3) : le compteur est une somme sur trente jours, et ce qui reste avant
+la limite n'est pas dans l'export d'un déploiement — il se lit sur *Usage*. Première estimation,
+avant le relevé : 4,4 Mo par déploiement et 34 déploiements de budget, d'après le disque ; le
+tableau de bord l'a divisée par 2,7 (§1.2).
 
 Répartition du poids de `share-card` : `@resvg/resvg-wasm` 2,48 Mo (57 %), `hb.wasm` 0,38,
 `@shuding/opentype.js` 0,37, `satori` 0,36, `fflate` 0,17, `linebreak` 0,14, les deux polices
 Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 
-> Le poids mesuré est celui du disque, non compressé. Tour de Growth a relevé un compteur
-> proche de sa mesure disque (47 Mo affichés pour 43,5 mesurés) ; le rapport exact chez Vercel
-> n'est pas connu. **Le tableau de bord a raison** : relever ce qu'il affiche par déploiement et
-> corriger cette table si l'écart dépasse quelques dizaines de pour cent.
+> Tour de Growth avait relevé un compteur proche de sa mesure disque (47 Mo affichés pour 43,5
+> mesurés) ; chez Ramille le rapport est de 37 %. Les deux sont vrais : un bundle Next.js est du
+> JavaScript déjà minifié qui se compresse peu, le nôtre est un WASM de 2,5 Mo qui se compresse
+> bien. **Le tableau de bord a raison**, et la mesure hors ligne sert au classement (§1.2).
 
 ### 2.2 Décisions prises, à ne pas rouvrir sans raison
 
@@ -263,9 +275,9 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 
 ### 2.3 Convention de cadence, et le budget des dix jours
 
-Chaque fusion sur `main` coûte ≈ 4,4 Mo pendant trente jours. Entre le 15 et le 25/09/2026, le
-plafond est **150 Mo, soit 34 déploiements au plus**, et la cadence courante en consommerait 120.
-Trois règles, à demeure :
+Chaque fusion sur `main` coûte ≈ 1,6 Mo pendant trente jours. Entre le 15 et le 25/09/2026, le
+plafond est **150 Mo, soit ≈ 94 déploiements au plus**, et la cadence courante en consommerait
+≈ 43. Trois règles, à demeure — la marge ne les rend pas facultatives, elle les rend tenables :
 
 1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
    (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le
@@ -274,7 +286,7 @@ Trois règles, à demeure :
    Une correction de documentation qui suit une fusion de code attend la fusion de code
    suivante — ou part seule, puisqu'elle ne déploie plus.
 3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours, ce qui laisse
-   ≈ 90 Mo et une marge pour l'imprévu.
+   plus de 110 Mo de marge pour l'imprévu.
 
 Ce que cette convention corrige : le 15/09/2026, cinq fusions dans la journée, dont trois qui ne
 touchaient que de la documentation — le motif exact contre lequel Tour de Growth avait écrit sa
@@ -289,4 +301,6 @@ règle, et que j'ai reproduit avant de la lire.
 - **`VERCEL_GIT_PREVIOUS_SHA` est-il exposé ?** Le script écrit « repli sur HEAD^ » quand il ne
   l'est pas. Si cette ligne apparaît à chaque fois, le trou du build échoué (§1.3) est ouvert et
   il faut le savoir.
-- **Le poids affiché par déploiement**, à confronter à §2.1.
+- **Le poids affiché par déploiement** est relevé (1,6 Mo, §2.1) ; ce qui reste à lire, c'est le
+  **compteur** lui-même sur *Usage → Functions Storage*, et sa limite — l'export d'un déploiement
+  ne les porte pas.
