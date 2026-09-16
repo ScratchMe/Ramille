@@ -38,10 +38,12 @@ calcul. Les cadres des écrans qui défilent sont **allongés** pour tout montre
    contredire. Sur le profil de la recette : le vol long-courrier (1 601 kg) puis le télétravail à
    deux jours (461 kg) ; l'action de voyages à 48 kg redescend là où elle est. **Oui, une action
    d'un autre poste peut être la deuxième carte** ; elle n'est jamais la première tant que le poste
-   dominant a une piste. Elle se dit par l'intro, qui nomme les postes. **La note sous le cap disparaît**
-   (relecture du titulaire, 16/09/2026) : le cap est une quantité à atteindre, la ligne « soit − 20 %
-   sur … » dit d'où vient le nombre, et où la réduction se fait est le choix de la personne. Une phrase
-   qui dirait « pas dans ce cap » énoncerait une règle que le produit n'applique nulle part.
+   dominant a une piste. **Et rien ne le commente** (relecture du titulaire, 16/09/2026) : ni note sous
+   le cap, ni intro qui nomme les postes. Le cap est une quantité à atteindre, la ligne « soit − 20 %
+   sur … » dit d'où vient le nombre, et où la réduction se fait est le choix de la personne — une phrase
+   qui dirait « pas dans ce cap » énoncerait une règle que le produit n'applique nulle part. Chaque
+   carte dit déjà où elle agit (« Sur tes 5 trajets par semaine. »). L'intro, elle, dit le **principe**
+   du plan : « Une action par saison, une seule. C'est pas à pas qu'on tient un cap. »
 2. **Deux cartes sur le plan, et toutes les pistes derrière une porte.** Le dépli en place (D18) a
    été décidé quand un plan portait quatre à six pistes ; il en porte onze, et « déplier + ouvrir »
    fait onze cartes sur l'écran où l'on revient le plus souvent. La liste va sur **un écran de la
@@ -108,8 +110,8 @@ Ce qui n'est pas listé est inchangé.
 3. **Le lien** — « Voir toutes les pistes · N », N = `actionsCount`.
 4. **La ligne ouverte se referme** — « Réduire » (`TextLink` small tertiaire souligné) sous la carte.
 5. **La ligne engagée** — pastille-coche 20 px + « Engagée », pas de bouton.
-6. **L'intro nomme les postes** — « Deux actions : une sur tes voyages, une sur ton trajet
-   domicile-travail. »
+6. **L'intro dit le principe, pas les cartes** — « Une action par saison, une seule. C'est pas à pas
+   qu'on tient un cap. » Une ligne fixe ; `cadreDuPlan` perd `intro`.
 7. **La note sous le cap** — supprimée : `cadreDuPlan` perd `noteDuCap`. Le nouveau classement l'aurait
    réveillée sur la plupart des plans, pour dire une règle que rien n'applique.
 8. **Le premier plan** — carte « TON PREMIER PLAN » à la place de la carte d'attente, Ramille
@@ -137,8 +139,9 @@ cartes : rayon 18, padding 20 ; les encarts : rayon 16, padding 12/16. Les bouto
 Profil de la recette, rien d'engagé, retour ordinaire.
 - **Carte d'attente** (inchangée) : `backgroundElement`, mascotte `resting` 40, « Je te fais signe
   lundi. » 16/24/600, détail small `textSecondary` « Par notification sur ce téléphone. ».
-- **Titre + intro** : `screenTitle` « Ton plan » ; `body` `textSecondary` « Deux actions : une sur tes
-  voyages, une sur ton trajet domicile-travail. »
+- **Titre + intro** : `screenTitle` « Ton plan » ; `body` `textSecondary` « Une action par saison, une
+  seule. C'est pas à pas qu'on tient un cap. » — fixe, « période » remplace « saison » quand la cadence
+  n'en nomme pas une (`cadenceNommeUneSaison`, comme la carte du cap). Absente d'un plan à zéro action.
 - **Carte du cap** : `backgroundSelected`, gap 6. « Ton cap pour cette saison » small 600
   `accentText` ; « − 451 kg » `salient` ; « soit − 20 % sur tes voyages (2,3 t CO₂e aujourd'hui) »
   small `textSecondary` ; **pas de note** ; période « Automne 2026 »
@@ -188,8 +191,8 @@ Signal : aucun cycle précédent, aucun engagement (courant ou archivé). L'écr
 - **Carte d'ouverture** à la place de la carte d'attente : bordure 1 px `border`, fond
   `backgroundTinted`, rayon 18, padding 20, gap 12. Étiquette « TON PREMIER PLAN » 13/18/700 +0,3
   `accentText` ; titre `screenTitle` « Une action pour l'automne. » (la saison du cycle ; repli
-  « Une action pour cette période. ») ; corps `body` `textSecondary` « Choisis-en une seule, et dis
-  quand. Ensuite, un point régulier te demandera si tu l'as faite — rien d'autre à suivre. » ;
+  « Une action pour cette période. ») ; corps `body` `textSecondary` « Choisis-en une, et dis quand.
+  Ensuite, un point régulier te demandera si tu l'as faite — rien d'autre à suivre. » ;
   sortie `TextLink` small 600 `accentText` « Compris » (marge haute 4).
 - **Ramille dessous**, hors du cadre : `RamilleDit` `happy` 44, tilt − 5, padding horizontal 4,
   « Prends celle qui te ressemble. » (`RAMILLE.premierPlan`).
@@ -250,16 +253,14 @@ sept conditions » ci-dessous.
 
 | Où | Texte |
 |---|---|
-| Plan, intro (tout sur le dominant) | Deux actions pour tes voyages. |
-| Plan, intro (une ailleurs, poste unique) | Deux actions : une sur tes voyages, une sur ton trajet domicile-travail. |
-| Plan, intro (plusieurs postes ailleurs) | Trois actions, dont deux ailleurs que sur tes voyages. |
-| Plan, intro (aucune sur le dominant) | Deux actions, sur d'autres postes que tes voyages. |
+| Plan, intro (saison) | Une action par saison, une seule. C'est pas à pas qu'on tient un cap. |
+| Plan, intro (cadence sans saison) | Une action par période, une seule. C'est pas à pas qu'on tient un cap. |
 | Plan, la porte | Voir toutes les pistes · 11 |
 | Plan, encart de contexte | Ton plan tient compte de ton contexte : {zone}, {transports}, {véhicules}, {télétravail}. Ce qui ne tient pas avec ces réponses n'est pas proposé. |
 | Plan, porte de l'encart | Modifier ces réponses |
 | Premier plan, étiquette | TON PREMIER PLAN |
 | Premier plan, titre | Une action pour l'automne. · Une action pour cette période. |
-| Premier plan, corps | Choisis-en une seule, et dis quand. Ensuite, un point régulier te demandera si tu l'as faite — rien d'autre à suivre. |
+| Premier plan, corps | Choisis-en une, et dis quand. Ensuite, un point régulier te demandera si tu l'as faite — rien d'autre à suivre. |
 | Premier plan, sortie | Compris |
 | Ramille, sous la carte du premier plan | Prends celle qui te ressemble. |
 | Pistes, retour | Retour au plan |

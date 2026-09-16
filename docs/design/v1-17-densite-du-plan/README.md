@@ -29,7 +29,7 @@ sont cliquables.
 
 | Planche | Capture | Rôle |
 | --- | --- | --- |
-| A1 — Le plan · le meilleur levier hors du poste dominant | `A1-plan-levier-hors-dominant.png` | le nouveau classement, l'intro qui nomme les postes, la porte « Voir toutes les pistes · 11 », l'encart de contexte |
+| A1 — Le plan · le meilleur levier hors du poste dominant | `A1-plan-levier-hors-dominant.png` | le nouveau classement, l'intro qui dit le principe du plan, la porte « Voir toutes les pistes · 11 », l'encart de contexte |
 | A2 — Toutes les pistes · l'écran | `A2-toutes-les-pistes.png` | l'écran de la pile du plan, groupé par poste, en lignes qui s'ouvrent en carte |
 | A3 — Toutes les pistes · une ligne ouverte | `A3-toutes-les-pistes-ligne-ouverte.png` | la carte ouverte avec « Réduire », la ligne engagée |
 | B1 — Le tout premier plan | `B1-premier-plan.png` | la carte « TON PREMIER PLAN » à la place de la carte d'attente, Ramille dessous, pas de trait de temps |
@@ -68,6 +68,13 @@ que ça : le cap est une quantité à atteindre, dérivée du poste dominant, et
 vérifie d'où vient la réduction — où elle se fait est le choix de la personne. La note énonçait une
 règle que rien n'applique, sur l'écran qu'on voulait alléger. Elle est retirée, et `cadreDuPlan`
 perd `noteDuCap` (écart 7).
+
+Même relecture, même jour : l'intro sous « Ton plan » décrivait les deux cartes posées juste dessous
+(« Deux actions : une sur tes voyages, une sur ton trajet domicile-travail. »), en taisant les neuf
+autres pistes. Elle dit désormais le principe du plan — une action par saison, une seule, pas à pas —
+c'est-à-dire pourquoi on ne prend qu'une action et vers quoi elle va (écart 6). `cadreDuPlan` perd
+`intro` ; le classement n'est plus commenté nulle part sur le plan, et c'est voulu : chaque carte dit
+où elle agit.
 
 ## Ce que le canvas ne fait pas
 
