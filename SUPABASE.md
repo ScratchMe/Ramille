@@ -292,6 +292,29 @@ attrapé en CI, et c'est exactement ce que ce fichier existe pour faire. Corolla
 qui touche une fonction existante impose de rejouer le fichier de test qui la possède**, pas
 seulement celui du chantier en cours.
 
+**Une colonne figée se rattrape quand c'est l'instantané lui-même qui est fautif — et seulement
+là.** Relevé le 16/09/2026 en corrigeant le premier pas du vol long-courrier : la phrase vit sur
+`action_templates`, mais elle est **copiée** sur `plan_actions.first_step` à la génération, et le
+plan n'est reconstruit qu'au re-bilan ou au changement de saison. Corriger le référentiel sans
+rattraper les lignes laisse la personne lire la phrase fautive jusqu'à sa prochaine soumission,
+c'est-à-dire précisément sur la carte où le défaut a été trouvé. Le gel existe pour qu'un
+changement postérieur ne rende pas le produit incohérent avec ce que la personne a lu ; quand
+c'est l'instantané qui est incohérent, le rattraper restaure ce que le gel protège. La ligne
+passe entre deux familles, et la distinction n'est pas de degré :
+
+| se rattrape | ne se rattrape **jamais** ainsi |
+|---|---|
+| `plan_actions.first_step` — une consigne pratique, affichée **après** l'engagement | `engagement_checkins.committed_question` — une question **déjà posée**, par une notification qu'on vient d'ouvrir (C2.1) |
+| | `engagement_checkins.trip_label`, `.period_label` — les libellés qui existent pour qu'un re-bilan ne réécrive pas un point généré |
+| | `plan_actions.saving_kg_year`, `.saving_share_percent` — un chiffre annoncé, sur lequel quelqu'un a décidé |
+
+Deux règles d'écriture qui vont avec : le rattrapage **apparie par la valeur** (le `where` porte
+sur l'ancienne phrase), donc un second passage ne trouve rien et ne fait rien — inutile d'y mettre
+le contrôle « déjà appliquée » d'une substitution de corps de fonction, et surtout ne pas lever sur
+zéro ligne, qui est l'état normal d'une base neuve en CI. Et il **vérifie qu'il ne laisse rien
+derrière lui** : une ligne encore porteuse de l'ancienne valeur après l'`update` veut dire que
+quelque chose la réécrit, et il vaut mieux l'apprendre là que sur un écran.
+
 ### 2.4 Sessions : pannes, refus et doublons
 
 Le modèle lui-même — session anonyme dès l'ouverture, conversion qui garde le `user_id`, pas de

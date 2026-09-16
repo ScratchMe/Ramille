@@ -27,7 +27,7 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 |---|---|
 | **`VERCEL.md`** | Toute fusion sur `main` · toucher `vercel.json`, `api/`, `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · ajouter une route · affirmer quoi que ce soit sur un compteur ou une facture Vercel · mesurer le poids d'un déploiement |
 | **`SUPABASE.md`** | Écrire, rejouer ou réécrire une migration · toucher à un privilège, une policy, un trigger ou un RPC · toucher à l'auth (session, lien de connexion, Redirect URLs) · un `401`, `403` ou `42501` inexpliqué · retoucher `database.types.ts` · rejouer un test pgTAP sur le distant |
-| **`EXPO.md`** | Ajouter une route ou un fichier dans `public/` · toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · un écran blanc sur web · une dépendance native, un build EAS, un `expo-doctor` rouge |
+| **`EXPO.md`** | Ajouter une route ou un fichier dans `public/` · toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · **toucher à une mise en page — marge, hauteur, barre d'onglets** · un écran blanc sur web · une dépendance native, un build EAS, un `expo-doctor` rouge |
 | **`TESTING.md`** | Écrire un test censé protéger une correction · **annoncer que quelque chose est vérifié** · une suite qui rougit ou verdit de façon inattendue · rejouer un fichier pgTAP sur le distant · toucher au référentiel des facteurs |
 
 ### Ce que la personne qui pilote a demandé
@@ -1569,6 +1569,20 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   base le même jour, le point hebdomadaire sortant en question générique. Corollaire : la feuille
   ne dépend plus de `boucle`, sans quoi un échec de lecture secondaire empêchait une cérémonie qui
   ne s'ouvre **qu'une fois par appareil** — donc la perdait pour de bon.
+- **Une phrase qui dit quoi faire donne le moyen de le faire, et la porte se rend sous la ligne qui
+  la porte** (13.4, recette web du 16/09/2026). « Rattache un compte pour recevoir le mot par
+  email. » était un `ThemedView` nu sur le plan : le seul chemin était l'icône de compte en haut à
+  droite, que rien n'explique — alors que le commentaire de `lignesDeReglage` écrivait déjà la
+  doctrine (« une porte, pas un mur »), vraie sur « Toi » où l'on est déjà, fausse sur le plan.
+  `carteAttente` rend donc une `action` à côté de son `detail`, de la même forme que le lien
+  « Ouvrir les réglages du téléphone » : elle n'existe **que dans l'état qui la réclame**.
+  L'invariant est écrit sur le sens et non sur les six phrases — **la porte se rend exactement là
+  où le canal effectif est `aucun` et où la carte dit quelque chose** : aucun canal veut dire
+  qu'aucune adresse ne peut recevoir le mot, donc qu'un compte est ce qui manque ; ne rien dire
+  (l'enregistrement raté, qui se répare au prochain lancement) veut dire qu'il n'y a rien à
+  réparer à la main. La destination est **« Toi » et jamais `/connexion`**, qui imposerait une
+  provenance neuve à `SOURCES_CONNEXION`. Et pas la carte entière rendue `Pressable` : trois des
+  six variantes n'ont rien à offrir, elles deviendraient une cible morte.
 - **Le jeton de cet appareil est mémorisé en AsyncStorage** (`traceverte.jeton_appareil.v1`),
   parce que rien en base ne permet de le reconnaître : `push_tokens` est owner-scoped et une
   lecture rend les jetons de tous les appareils de la personne. C'est ce qui rend vraies les deux
@@ -1719,6 +1733,15 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
 - **Une page d'un pager doit pouvoir défiler, sinon elle coupe — et sous `minHeight`, une hauteur
   n'est plus définie** : une page qui gère son propre débordement veut `height`, une page qui n'en
   a pas veut `minHeight` — `EXPO.md` §2.4.
+- **Une coupure réseau n'a pas de détail technique, et le code le sait déjà quand il l'écrit**
+  (13.2, recette web du 16/09/2026). Le `catch` de la soumission du questionnaire classait l'erreur
+  en `reseau` pour la mesure (`genreErreurSoumission`), puis appelait `setDetail(decrireErreur(…))`
+  **sans regarder ce genre** : sous la phrase française correcte s'affichaient cinq lignes de
+  bundle minifié en anglais, au terme de cinq minutes de saisie. `decrireErreur` n'est pas en cause
+  et ne se défait pas — une contrainte, une permission, un `P0002` se recopient à la main et
+  nomment la cause, c'est ce qui manquait avant le 14/09. Mais le réseau est le cas d'échec **le
+  plus probable en production**, et le seul où « réessaie dans un instant » est déjà toute la
+  vérité. Le genre se calcule donc **une fois** et sert deux fois, la mesure et le détail.
 - **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Tout ce qui
   suit vit **derrière la racine**, qui levait à froid sans réseau jusqu'à C4.5 (§12.5 de `v1-13`) et
   route désormais sur la marque locale : ces écrans sont donc atteignables à froid depuis le

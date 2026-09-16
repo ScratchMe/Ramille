@@ -23,7 +23,7 @@ import { ActionCommitment } from '@/components/plan/action-commitment';
 import { CarteDeSaison } from '@/components/plan/carte-de-saison';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
-import { cadreDuPlan, formatIntention, formeInserable, pistesDuPlan } from '@/types/plan';
+import { cadreDuPlan, formatIntention, formeInserable, pistesDuPlan, separationsDesLignes } from '@/types/plan';
 import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
@@ -702,6 +702,12 @@ export default function Plan() {
   // une autre raison. C'est un fait de l'appareil, déjà lu par le chargement ci-dessus.
   const attente = rappels && boucle ? carteAttente({ ...rappels, boucle, permission, plateforme: Platform.OS === 'web' ? 'web' : 'natif' }) : null;
 
+  // Sortie en variable, et pas lue depuis `attente` dans le rendu : le rappel du `TextLink`
+  // ferme sur elle, et TypeScript ne conserve pas le rétrécissement d'un **accès de propriété**
+  // dans une fermeture — celui d'une `const`, si. Sans ça il faudrait une assertion non-nulle,
+  // c'est-à-dire promettre à la main ce que le compilateur sait déjà.
+  const porteDeLAttente = attente?.action ?? null;
+
   const fermerLaFeuille = (canal: CanalPrefere, jetonActif: boolean) => {
     setFeuilleOuverte(false);
     setRappels((p) => (p ? { ...p, prefere: canal, jetonActif } : p));
@@ -895,6 +901,7 @@ export default function Plan() {
   // le reste avant même de l'écrire (constat A13-18). La dérivation copie avant de trier : `sort`
   // mute, et `cycle` vient du state.
   const pistes = pistesDuPlan(cycle.plan_actions);
+  const separations = separationsDesLignes(pistes.lignes.map((action) => action.id), lignesOuvertes);
   // Ce que l'écran annonce de lui-même, et ce que son cap a le droit de chiffrer (C3.8 §3). Dérivé
   // dans `src/types/plan.ts` plutôt qu'écrit en ternaires ici : trois phrases en dépendent, et
   // c'est la forme qui a laissé l'intro annoncer « pour ton trajet domicile-travail » au-dessus
@@ -1174,6 +1181,32 @@ export default function Plan() {
                       {attente.detail}
                     </ThemedText>
                   )}
+
+                  {/* **La porte, sous la ligne qui la porte** (13.4, recette web du 16/09/2026).
+                      « Rattache un compte pour recevoir le mot par email. » disait quoi faire et
+                      n'offrait aucun moyen de le faire : le seul chemin était l'icône de compte
+                      en haut à droite, que rien n'explique.
+
+                      Un lien, et non la carte entière rendue `Pressable` : trois des six
+                      variantes n'ont rien à offrir — elles deviendraient une cible morte — et un
+                      `Pressable` à trois textes impose un `accessibilityLabel` qui les
+                      recompose, ce que la règle T11 ne tolère qu'en dernier recours. Ici le
+                      libellé annoncé **est** le texte affiché.
+
+                      Même forme que le lien « Ouvrir les réglages du téléphone » des rappels :
+                      rendu sous la ligne qui l'appelle, jamais après le groupe. */}
+                  {porteDeLAttente && (
+                    <TextLink
+                      label={porteDeLAttente.libelle}
+                      onPress={() => router.push(porteDeLAttente.vers)}
+                      role="link"
+                      hint="Ouvre l’écran « Toi »."
+                      type="small"
+                      weight={600}
+                      themeColor="accentText"
+                      containerStyle={styles.calmePorte}
+                    />
+                  )}
                 </View>
               </View>
             </ThemedView>
@@ -1285,8 +1318,22 @@ export default function Plan() {
                       `carteDaction` est déjà une fabrique, donc déplier une ligne, c'est l'appeler. */}
                   {pistes.lignes.length > 0 && (
                     <View style={styles.lignesPistes}>
-                      {pistes.lignes.map((action) => {
-                        if (lignesOuvertes.has(action.id)) return carteDaction(action, true);
+                      {pistes.lignes.map((action, rang) => {
+                        const ouverte = lignesOuvertes.has(action.id);
+                        // **L'écart se pose sur un seul côté, et seulement là où il manque** (13.5,
+                        // recette web du 16/09/2026). La règle et ses deux pièges — Yoga ne fusionne
+                        // pas les marges, et un `gap` au conteneur séparerait les lignes fermées —
+                        // vivent dans `separationsDesLignes`, avec leur test.
+                        const separee = separations[rang];
+
+                        if (ouverte) {
+                          return (
+                            <View key={action.id} style={separee ? styles.pisteSeparee : undefined}>
+                              {carteDaction(action, true)}
+                            </View>
+                          );
+                        }
+
                         const titre = action.action_templates?.action_text ?? 'Action à préciser.';
                         const gain =
                           action.saving_kg_year !== null
@@ -1295,7 +1342,7 @@ export default function Plan() {
                         return (
                           <Pressable
                             key={action.id}
-                            style={styles.lignePiste}
+                            style={[styles.lignePiste, separee && styles.pisteSeparee]}
                             onPress={() =>
                               setLignesOuvertes((ouvertes) => new Set(ouvertes).add(action.id))
                             }
@@ -1493,8 +1540,13 @@ const styles = StyleSheet.create({
   actions: { gap: Spacing.two + 2 },
   pistes: { gap: Spacing.two + 2 },
   lienPistes: { textAlign: 'center' },
-  // Les lignes simples : un filet entre elles suffit, elles ne sont pas des cartes.
+  // Les lignes simples : un filet entre elles suffit, elles ne sont pas des cartes. Le `gap`
+  // reste donc à zéro, et l'écart ne se pose qu'aux frontières qui touchent une carte dépliée
+  // (`pisteSeparee`, décidée au rendu — le conteneur ne sait pas lesquelles sont ouvertes).
   lignesPistes: { gap: 0 },
+  // La même valeur que `actions` et `pistes` : une ligne dépliée devient une carte, elle doit
+  // donc respirer au rythme des cartes du dessus et non à un rythme à elle.
+  pisteSeparee: { marginTop: Spacing.two + 2 },
   lignePiste: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1517,6 +1569,9 @@ const styles = StyleSheet.create({
   rebilanCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
   calmeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   calmeTexte: { flex: 1, minWidth: 0, gap: 2 },
+  // `alignSelf` pour que la cible de 44 px du lien ne s'étende pas sur toute la largeur de la
+  // carte : une zone tactile plus large que son texte se touche par accident.
+  calmePorte: { alignSelf: 'flex-start' },
   lienBilan: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   // La mascotte prend la place de l'illustration d'état vide : centrée comme elle l'était.

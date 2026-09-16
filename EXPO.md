@@ -87,6 +87,14 @@ sur l'espace restant mais sur sa taille max-content. Une page qui gère son prop
 réclame sa largeur en hauteur sur tous les téléphones : la plafonner à une **part** de la page,
 pas à un nombre de pixels.
 
+**En Yoga les marges ne fusionnent pas**, contrairement à CSS. Deux voisins qui portent chacun
+leur marge donnent la **somme**, pas le maximum : une `marginVertical` posée sur chaque élément
+d'une liste rend un écart double entre deux éléments et simple aux extrémités. Un écart qui doit
+être uniforme se pose donc **d'un seul côté**, ou au conteneur par `gap`. Et quand le conteneur ne
+peut pas le porter — parce que ses enfants n'ont pas tous besoin du même écart —, la règle se
+calcule par **frontière** et non par élément : c'est le second des deux voisins qui porte la
+marge, et une frontière ne la compte qu'une fois.
+
 ### 1.7 Navigation : un écran d'onglet reste monté
 
 - **react-navigation garde l'écran monté** quand on change d'onglet, et l'app survit à
@@ -100,6 +108,14 @@ pas à un nombre de pixels.
   clé d'état incrémentée, l'effet qui la porte en dépendance, et un `cancelled` dans son nettoyage
   — seul le dernier lancé écrit, sans compteur de génération. Le rappel passé au hook de retour
   doit être stable (`useCallback`), sinon l'effet se réabonne à chaque rendu.
+- **La barre d'onglets change de disposition toute seule au-delà de 768 px de large.**
+  `shouldUseHorizontalLabels` (bottom-tabs) fait passer le libellé **à côté** de l'icône dès que
+  la place suffit, sauf si `tabBarLabelPosition` est posé. Tout ce qui est dessiné dans le slot
+  `tabBarIcon` en supposant un libellé **au-dessous** — une pastille, un badge, un liseré — se
+  retrouve alors à côté du libellé et ne dit plus ce qu'il disait. Ça ne se voit pas sur un
+  téléphone, donc jamais pendant le développement d'une app mobile : ça se voit dans un navigateur
+  de bureau, et seulement là. Si la maquette ne dessine qu'une barre, poser
+  `tabBarLabelPosition: 'below-icon'` vaut mieux que rendre le dessin sensible à la disposition.
 
 ### 1.8 Hermes peut être construit sans ICU complet
 
@@ -219,6 +235,17 @@ cinq routes dans un navigateur après l'export et échoue sur une page vide ou u
 non rattrapée (les erreurs d'hydratation restent des avertissements). Troisième garde de la
 même famille que `cleanUrls` et l'inlining des `EXPO_PUBLIC_*` : ce qui se construit n'est
 pas ce qui s'affiche.
+
+**La barre d'onglets est épinglée en `tabBarLabelPosition: 'below-icon'`, et c'est le web qui
+l'imposait** (13.7, recette web du 16/09/2026). `OngletIcone` dessine une pastille de 56 × 30 dans
+le slot de l'icône : sur un téléphone, le libellé est dessous et la pastille se lit comme
+appartenant au couple — c'est le motif Material 3 et c'est le canvas `v1-11-navigation`. Dans un
+navigateur de bureau, react-navigation basculait seul en libellés horizontaux et la pastille se
+retrouvait **à côté** du libellé. Mesuré sur l'export servi en local : sans la ligne, à 1280 px de
+large, le libellé « Plan » passe à 27 px à droite de l'icône, même `y` ; avec, il reste 25 px
+en dessous, à 1280 comme à 390. Ce n'était pas une décision d'écran — `BarreOnglets` du design
+system est en `flexDirection: 'column'` sans condition. **Et on n'englobe pas l'icône et le
+libellé ensemble** : ce serait casser le motif sur la cible réelle, qui est un téléphone Android.
 
 ### 2.3 Android : App Links et build natif
 

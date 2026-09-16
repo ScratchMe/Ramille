@@ -238,6 +238,10 @@ describe('libelleBouton', () => {
 
 describe('carteAttente', () => {
   const camille = { email: 'camille@exemple.fr' };
+  // La porte vers « Toi ». Écrite ici en toutes lettres plutôt qu'importée : c'est une valeur
+  // que la personne lit, et un test qui la relirait depuis le module qu'il éprouve ne dirait
+  // plus rien du libellé.
+  const porte = { libelle: 'Rattacher un compte', vers: '/compte' };
 
   it('nomme le jour, et le canal quand il y en a un', () => {
     expect(
@@ -249,7 +253,7 @@ describe('carteAttente', () => {
         permission: 'accordee',
         ...camille,
       })
-    ).toEqual({ cle: 'attenteSigneHebdo', detail: 'Par notification sur ce téléphone.' });
+    ).toEqual({ cle: 'attenteSigneHebdo', detail: 'Par notification sur ce téléphone.', action: null });
 
     expect(
       carteAttente({ plateforme: 'natif',
@@ -260,7 +264,7 @@ describe('carteAttente', () => {
         permission: 'accordee',
         ...camille,
       })
-    ).toEqual({ cle: 'attenteSigneMensuel', detail: 'Par email, à camille@exemple.fr.' });
+    ).toEqual({ cle: 'attenteSigneMensuel', detail: 'Par email, à camille@exemple.fr.', action: null });
   });
 
   it('dit le repli sans reproche quand la notification est coupée', () => {
@@ -276,6 +280,7 @@ describe('carteAttente', () => {
     ).toEqual({
       cle: 'attenteSigneHebdo',
       detail: 'Par email, à camille@exemple.fr — les notifications sont coupées sur ce téléphone.',
+      action: null,
     });
   });
 
@@ -290,13 +295,14 @@ describe('carteAttente', () => {
 
     expect(
       carteAttente({ plateforme: 'natif', ...sansJeton, emailPossible: true, permission: 'accordee', ...camille })
-    ).toEqual({ cle: 'attenteSigneHebdo', detail: 'Par email, à camille@exemple.fr.' });
+    ).toEqual({ cle: 'attenteSigneHebdo', detail: 'Par email, à camille@exemple.fr.', action: null });
 
     expect(
       carteAttente({ plateforme: 'natif', ...sansJeton, emailPossible: true, permission: 'fermee', ...camille })
     ).toEqual({
       cle: 'attenteSigneHebdo',
       detail: 'Par email, à camille@exemple.fr — les notifications sont coupées sur ce téléphone.',
+      action: null,
     });
 
     // Sans compte, l'enregistrement raté ne laisse rien à dire : l'état se répare au prochain
@@ -304,7 +310,7 @@ describe('carteAttente', () => {
     // que la personne pourrait lire comme un reproche.
     expect(
       carteAttente({ plateforme: 'natif', ...sansJeton, emailPossible: false, permission: 'accordee', email: null })
-    ).toEqual({ cle: 'attenteIciHebdo', detail: null });
+    ).toEqual({ cle: 'attenteIciHebdo', detail: null, action: null });
   });
 
   // **Sur web il n'y a ni téléphone ni réglage à ouvrir, et le dire serait faux deux fois.**
@@ -324,7 +330,7 @@ describe('carteAttente', () => {
         permission: 'fermee',
         email: null,
       })
-    ).toEqual({ cle: 'attenteIciHebdo', detail: null });
+    ).toEqual({ cle: 'attenteIciHebdo', detail: null, action: null });
 
     // Et la même personne, sur son téléphone, lit bien la phrase : c'est la plateforme qui
     // distingue les deux, pas l'état des rappels, identique dans les deux appels.
@@ -351,7 +357,7 @@ describe('carteAttente', () => {
         permission: 'accordee',
         email: null,
       })
-    ).toEqual({ cle: 'attenteIciHebdo', detail: null });
+    ).toEqual({ cle: 'attenteIciHebdo', detail: null, action: null });
 
     expect(
       carteAttente({ plateforme: 'natif',
@@ -362,7 +368,7 @@ describe('carteAttente', () => {
         permission: 'fermee',
         email: null,
       })
-    ).toEqual({ cle: 'attenteIciMensuel', detail: null });
+    ).toEqual({ cle: 'attenteIciMensuel', detail: null, action: null });
   });
 
   it('dit la porte quand le mot est attendu par email et qu’aucune adresse ne peut le recevoir', () => {
@@ -383,6 +389,7 @@ describe('carteAttente', () => {
     ).toEqual({
       cle: 'attenteIciHebdo',
       detail: 'Rattache un compte pour recevoir le mot par email.',
+      action: porte,
     });
 
     // Un jeton existe mais la préférence reste `email` : le canal effectif est toujours
@@ -399,6 +406,7 @@ describe('carteAttente', () => {
     ).toEqual({
       cle: 'attenteIciMensuel',
       detail: 'Rattache un compte pour recevoir le mot par email.',
+      action: porte,
     });
   });
 
@@ -418,7 +426,63 @@ describe('carteAttente', () => {
       cle: 'attenteIciHebdo',
       detail:
         'Les notifications sont coupées sur ce téléphone. Tu peux les rouvrir dans ses réglages, ou rattacher un compte pour l’email.',
+      action: porte,
     });
+  });
+
+  // **L'invariant, et non la liste des six branches.** Une assertion par phrase se périmerait à
+  // la première reformulation ; celle-ci dit ce que la porte veut dire — « aucun canal ne peut
+  // porter le mot, et la carte le dit » — donc elle survit à une réécriture des six.
+  //
+  // Éprouvée en cassant ce qu'elle garde, le 16/09/2026 — trois mutations, et celle-ci tombe à
+  // chaque fois : la porte rendue sur **toutes** les branches (6 tests rouges, dont celui-ci) ;
+  // la porte décidée sur le seul canal, sans regarder si la carte dit quelque chose — donc
+  // offerte sous une carte muette, l'enregistrement raté dont le silence est voulu (4 rouges) ;
+  // la porte retirée de la branche « préférence email sans adresse », l'état par défaut de toute
+  // session anonyme (2 rouges). Les tests de phrase ci-dessus en attrapent une partie ; celui-ci
+  // est le seul qui attrape les trois.
+  it('n’ouvre une porte que là où aucun canal ne peut porter le mot, et où la carte le dit', () => {
+    const preferes = ['push', 'email', 'none'] as const;
+    const permissions = ['accordee', 'demandable', 'fermee'] as const;
+    const plateformes = ['natif', 'web'] as const;
+    const boucles = ['hebdo', 'mensuel'] as const;
+
+    let avecPorte = 0;
+
+    for (const prefere of preferes)
+      for (const jetonActif of [true, false])
+        for (const emailPossible of [true, false])
+          for (const permission of permissions)
+            for (const plateforme of plateformes)
+              for (const boucle of boucles) {
+                const etat = { prefere, jetonActif, emailPossible };
+                const carte = carteAttente({
+                  ...etat,
+                  boucle,
+                  permission,
+                  plateforme,
+                  email: emailPossible ? 'camille@exemple.fr' : null,
+                });
+
+                const attendue = canalEffectif(etat) === 'aucun' && carte.detail !== null;
+                expect({ ...etat, permission, plateforme, porte: carte.action !== null }).toEqual({
+                  ...etat,
+                  permission,
+                  plateforme,
+                  porte: attendue,
+                });
+
+                // Et quand elle existe, c'est toujours la même, vers « Toi ». Jamais
+                // `/connexion`, qui imposerait une provenance neuve à `SOURCES_CONNEXION`.
+                if (carte.action) {
+                  expect(carte.action).toEqual(porte);
+                  avecPorte += 1;
+                }
+              }
+
+    // Une garde de non-vacuité : sans elle, une porte qui ne sortirait jamais passerait ce test
+    // en silence, puisque les deux moitiés de l'équivalence seraient fausses partout.
+    expect(avecPorte).toBeGreaterThan(0);
   });
 
   it('ne met jamais de chiffre dans la bouche de Ramille', () => {

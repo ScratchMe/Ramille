@@ -10,6 +10,7 @@ import {
   INTENTION_TIMINGS_LOISIRS,
   INTENTION_TIMINGS_VOYAGES,
   isIntentionComplete,
+  separationsDesLignes,
   PISTES_ESTOMPEES,
   pistesDuPlan,
   type IntentionDay,
@@ -261,5 +262,48 @@ describe('pistesDuPlan', () => {
     const liste = [action(3), action(1)];
     pistesDuPlan(liste);
     expect(liste.map((a) => a.id)).toEqual(['a3', 'a1']);
+  });
+});
+
+describe('separationsDesLignes', () => {
+  // **13.5 de la recette web du 16/09/2026** : deux lignes dépliées en carte se touchaient. Aucune
+  // assertion ne portait sur l'espacement — c'est exactement pourquoi la CI ne l'a pas vu —, d'où
+  // cette règle sortie de l'écran.
+  //
+  // Éprouvée en cassant ce qu'elle garde, le 16/09/2026 : la marge posée aussi sur la première
+  // ligne, la marge portée par la seule carte (et non par la frontière), et le « ou » changé en
+  // « et » — soit le cas de la carte isolée. Deux assertions tombent à chaque fois, jamais les
+  // mêmes deux.
+  const lignes = ['a', 'b', 'c', 'd'];
+
+  it('ne sépare rien quand tout est fermé', () => {
+    expect(separationsDesLignes(lignes, new Set())).toEqual([false, false, false, false]);
+  });
+
+  // La première ligne n'a pas de voisine au-dessus : lui donner une marge la décollerait du lien
+  // « Voir d'autres pistes », dont le conteneur porte déjà l'écart.
+  it('ne pose jamais de marge sur la première', () => {
+    expect(separationsDesLignes(lignes, new Set(['a']))[0]).toBe(false);
+  });
+
+  // Une carte isolée : un écart avant elle, et un avant la ligne qui la suit. Sans le second, la
+  // ligne fermée viendrait se coller sous la carte — c'est une frontière comme l'autre.
+  it('sépare des deux côtés d’une carte isolée', () => {
+    expect(separationsDesLignes(lignes, new Set(['b']))).toEqual([false, true, true, false]);
+  });
+
+  // **Le piège de Yoga, épinglé**. Les marges n'y fusionnent pas : si les deux voisines portaient
+  // chacune la leur, l'écart entre deux cartes vaudrait le double de celui entre une carte et une
+  // ligne. On compte donc **une** séparation par frontière, jamais deux.
+  it('ne compte qu’une séparation entre deux cartes voisines', () => {
+    expect(separationsDesLignes(lignes, new Set(['b', 'c']))).toEqual([false, true, true, true]);
+  });
+
+  it('sépare partout quand tout est ouvert, sauf en tête', () => {
+    expect(separationsDesLignes(lignes, new Set(lignes))).toEqual([false, true, true, true]);
+  });
+
+  it('rend une liste vide sans ligne', () => {
+    expect(separationsDesLignes([], new Set())).toEqual([]);
   });
 });

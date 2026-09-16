@@ -2134,12 +2134,12 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | Recette 12.3 | [#178](https://github.com/ScratchMe/TraceVerte/issues/178) | [#187](https://github.com/ScratchMe/TraceVerte/pull/187) | 15/09/2026 | livré **sans migration**, ce que l'issue n'anticipait pas : `null` décrit un questionnaire en cours, jamais un bilan soumis — l'étape est visible exactement quand la question s'applique. Et rendre la colonne nullable réimporterait l'ambiguïté en base, la branche du calcul étant `if a.commute_second_mode_used and …`, où `null` se comporte comme `false`. Le repli `?? false` de l'insert est inatteignable et écrit quand même. [`v1-16`](v1-16-trois-decisions-decran.md) §4 |
 | Recette 12.4 | [#179](https://github.com/ScratchMe/TraceVerte/issues/179) | [#187](https://github.com/ScratchMe/TraceVerte/pull/187) | 15/09/2026 | livré : les trois rangs de `pistesDuPlan` ne bougent pas — ils disent l'**insistance** — et la ligne simple s'ouvre en carte au toucher, donc toute action affichée est engageable. La porte de sortie du rendu (« la faire remonter ») est retirée. Une garde de **partition** s'ajoute à `plan.test.ts` : un rang qui laisserait tomber une action recréerait ici, en silence, le `limit 2` que C4.6 a retiré du serveur. [`v1-16`](v1-16-trois-decisions-decran.md) §5 |
 | Recette 13.1 | [#197](https://github.com/ScratchMe/TraceVerte/issues/197) | | | « Parfois » au télétravail retire l'action à deux jours du plan, et rien à l'écran ne le dit. **Arbitrage** : une phrase d'aide, ou une reformulation en fréquence — la seconde migre le `check` et reprend les bilans soumis. Le seuil lui-même (C3.8) ne bouge pas |
-| Recette 13.2 | [#193](https://github.com/ScratchMe/TraceVerte/issues/193) | | | une coupure réseau à la soumission affiche la trace de pile, alors que `genreErreurSoumission(error)` a déjà rendu `'reseau'` trois lignes plus haut pour la mesure. Ne pas toucher à `decrireErreur`, qui garde les quatre autres genres |
+| Recette 13.2 | [#193](https://github.com/ScratchMe/TraceVerte/issues/193) | [#201](https://github.com/ScratchMe/TraceVerte/pull/201) | 16/09/2026 | une coupure réseau à la soumission affiche la trace de pile, alors que `genreErreurSoumission(error)` a déjà rendu `'reseau'` trois lignes plus haut pour la mesure. Ne pas toucher à `decrireErreur`, qui garde les quatre autres genres |
 | Recette 13.3 | [#198](https://github.com/ScratchMe/TraceVerte/issues/198) | | | **le plus lourd de la séance, et un arbitrage.** Le `row_number()` de C4.6 classe par poste dominant puis par gain : une action à 48 kg a une carte, une à 461 kg une ligne — et 461 kg dépasse le cap de la saison. Corollaire : ce tri rend presque mortes les deux branches de débordement de `cadreDuPlan`. La moitié **densité** part en brief Claude Design, écrit le 16/09/2026 : [`v1-17`](../design/v1-17-densite-du-plan/BRIEF.md) |
-| Recette 13.4 | [#194](https://github.com/ScratchMe/TraceVerte/issues/194) | | | la carte d'attente du plan dit « Rattache un compte » sans offrir de chemin ; le commentaire de `lignesDeReglage` écrit pourtant « une porte, pas un mur ». Destination « Toi » et non `/connexion`, pour ne pas ajouter de provenance à `SOURCES_CONNEXION` |
-| Recette 13.5 | [#195](https://github.com/ScratchMe/TraceVerte/issues/195) | | | `lignesPistes: { gap: 0 }` était juste pour des lignes, faux depuis qu'elles s'ouvrent en cartes (`v1-16` §5). Deux pièges : les marges ne fusionnent pas en Yoga, et les lignes fermées gardent 44 px de cible |
-| Recette 13.6 | [#196](https://github.com/ScratchMe/TraceVerte/issues/196) | | | « Note les dates que tu gardes libres, avant de réserver » ne dit ni pour quoi ni quoi réserver, là où son jumeau `remove_trip` dit un essai. Migration de données ; `first_step` étant figé sur `plan_actions`, les plans existants gardent la phrase jusqu'à leur régénération |
-| Recette 13.7 | [#199](https://github.com/ScratchMe/TraceVerte/issues/199) | | | **basse priorité, web seulement** : la pastille d'onglet n'englobe que l'icône en disposition horizontale. Juste sur mobile — ne pas englober les deux partout |
+| Recette 13.4 | [#194](https://github.com/ScratchMe/TraceVerte/issues/194) | [#201](https://github.com/ScratchMe/TraceVerte/pull/201) | 16/09/2026 | la carte d'attente du plan dit « Rattache un compte » sans offrir de chemin ; le commentaire de `lignesDeReglage` écrit pourtant « une porte, pas un mur ». Destination « Toi » et non `/connexion`, pour ne pas ajouter de provenance à `SOURCES_CONNEXION` |
+| Recette 13.5 | [#195](https://github.com/ScratchMe/TraceVerte/issues/195) | [#201](https://github.com/ScratchMe/TraceVerte/pull/201) | 16/09/2026 | `lignesPistes: { gap: 0 }` était juste pour des lignes, faux depuis qu'elles s'ouvrent en cartes (`v1-16` §5). Deux pièges : les marges ne fusionnent pas en Yoga, et les lignes fermées gardent 44 px de cible |
+| Recette 13.6 | [#196](https://github.com/ScratchMe/TraceVerte/issues/196) | [#201](https://github.com/ScratchMe/TraceVerte/pull/201) | 16/09/2026 | « Note les dates que tu gardes libres, avant de réserver » ne dit ni pour quoi ni quoi réserver, là où son jumeau `remove_trip` dit un essai. **livré** : deux migrations, le référentiel puis le rattrapage de `plan_actions.first_step` — figé à la génération, donc sans lui la phrase fautive survivait jusqu'à la prochaine soumission |
+| Recette 13.7 | [#199](https://github.com/ScratchMe/TraceVerte/issues/199) | [#201](https://github.com/ScratchMe/TraceVerte/pull/201) | 16/09/2026 | **basse priorité, web seulement** : la pastille d'onglet n'englobe que l'icône en disposition horizontale. Juste sur mobile — ne pas englober les deux partout |
 
 ## 11. Vérifications sur appareil en attente
 
@@ -2305,6 +2305,36 @@ deux — les arbitrer séparément reviendrait à arbitrer deux fois. Les sept s
 | 13.5 | **Une ligne dépliée en carte se colle à sa voisine.** `lignesPistes` porte `gap: 0` — juste pour des lignes, faux pour des cartes, `ActionCard` n'ayant aucune marge extérieure. Né avec `v1-16` §5, qui a rendu les lignes dépliables sans que le conteneur ne le sache. Deux pièges à l'implémentation : en Yoga **les marges ne fusionnent pas**, et les lignes fermées doivent garder 44 px de cible tactile. | [#195](https://github.com/ScratchMe/TraceVerte/issues/195) |
 | 13.6 | **Le premier pas du vol long-courrier ne décrit pas un essai.** « Note les dates que tu gardes libres, avant de réserver » laisse deux trous — libres pour quoi, réserver quoi — et « avant de réserver » contredit l'action qu'il amorce. Ce n'est pas un mauvais appariement : c'est que **le jumeau du même geste** (`remove_trip` court-courrier) dit « Regarde lequel de tes déplacements prévus tient sans avion », qui est un essai. | [#196](https://github.com/ScratchMe/TraceVerte/issues/196) |
 | 13.7 | **La pastille d'onglet actif n'englobe que l'icône.** Sur mobile, le libellé est sous l'icône et la pastille se lit comme appartenant au couple (Material 3, canvas `v1-11`). Sur le web à largeur de bureau, la barre bascule en disposition horizontale et la pastille se retrouve à côté du libellé. **Basse priorité** — V1 est Google Play, et il ne faut surtout pas englober les deux partout. | [#199](https://github.com/ScratchMe/TraceVerte/issues/199) |
+
+### Cinq des sept sont corrigés le jour même
+
+Cinq constats se corrigent sans rien arbitrer : ils ont un remède que le dépôt écrit déjà
+ailleurs. Les deux autres restent ouverts, et ce n'est pas un oubli — **13.1** (« Parfois » au
+télétravail) demande un arbitrage produit, et la moitié densité de **13.3** part en brief Claude
+Design ([`v1-17`](../design/v1-17-densite-du-plan/BRIEF.md)).
+
+Le **relevé de fichiers** avant d'écrire, comme la règle l'impose : un seul fichier est partagé,
+`src/app/(tabs)/plan.tsx`, entre 13.4 et 13.5 — faites en séquence. Les trois autres sont
+disjoints.
+
+| | Ce qui change | Ce qui l'éprouve |
+|---|---|---|
+| **13.2** | Le genre de l'erreur est calculé **une fois** dans le `catch` et sert deux fois : la mesure, et le détail. Sur `reseau`, pas de détail du tout — `decrireErreur` ne bouge pas, les quatre autres genres le gardent | La composition tient par ses deux bouts déjà testés (`genreErreurSoumission` d'un côté, le `{detail && …}` de `StepShell` de l'autre) ; ce n'est pas une vérification de bout en bout et ça ne se prétend pas |
+| **13.4** | `carteAttente` rend une `action` à côté de son `detail` ; le plan pose un `TextLink` **sous** le détail, vers « Toi ». L'invariant est écrit sur le sens : la porte se rend là où le canal est `aucun` **et** où la carte dit quelque chose | Une assertion exhaustive sur les 144 combinaisons, avec sa garde de non-vacuité. Trois mutations, trois échecs : porte partout (6 rouges), porte sur le seul canal (4), porte retirée de l'état par défaut d'une session anonyme (2) |
+| **13.5** | La règle d'écart sort de l'écran (`separationsDesLignes`, `src/types/plan.ts`) : **un écart par frontière dont un voisin au moins est une carte**, porté par le second des deux — Yoga ne fusionne pas les marges | Six assertions, dont celle qui compte une seule séparation entre deux cartes voisines. Trois mutations, deux rouges à chaque fois, jamais les mêmes deux |
+| **13.6** | Le premier pas devient « Regarde lequel de tes projets de voyage peut attendre, ou se passer plus près. » — même verbe que son jumeau, et un essai. Deux migrations : le référentiel, puis le **rattrapage** de `plan_actions.first_step`, figé à la génération | Les trois chemins du contrôle joués sur le distant en `BEGIN`/`ROLLBACK` : appliquer, rejouer (sans effet, sans lever), et premier pas réécrit entre-temps (lève). Puis appliqué, et la ligne engagée relue |
+| **13.7** | `tabBarLabelPosition: 'below-icon'` : la barre garde à toute largeur la disposition du kit, qui est en `flexDirection: 'column'` sans condition. On n'englobe **pas** l'icône et le libellé | Mesuré sur l'export servi en local, lu par Playwright, **avec et sans la ligne** : sans elle, à 1280 px, le libellé passe à 27 px à droite de l'icône (même `y`) ; avec, il reste 25 px dessous, à 1280 comme à 390 |
+
+**Deux choses valaient d'être sorties du fichier d'écran pour devenir éprouvables** : la règle
+d'écart de 13.5 et l'invariant de porte de 13.4. Le constat 13.5 le disait lui-même — « aucune
+assertion ne porte sur l'espacement, ce qui est justement pourquoi la CI ne l'a pas vu ».
+
+**Et un rattrapage de colonne figée a été fait, ce qui n'est pas anodin** : `plan_actions.first_step`
+porte une copie de la phrase, et sans le rattrapage la personne qui a une action de voyages engagée
+aujourd'hui aurait continué de lire la phrase fautive jusqu'à sa prochaine soumission — c'est-à-dire
+sur la carte même où le défaut a été trouvé. La frontière entre ce qui se rattrape et ce qui ne se
+rattrape **jamais** (une question déjà posée, un libellé snapshoté, un chiffre annoncé) est écrite en
+`SUPABASE.md` §2.3.
 
 ### Ce que le web ne prouve pas, et pourquoi
 
