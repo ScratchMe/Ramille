@@ -48,6 +48,17 @@ les routes : un gramme retiré du bundle le plus partagé compte N fois, un gram
 fonction mono-route compte une fois. (Ramille a deux fonctions, une route chacune : pas
 d'amplification, §2.1.)
 
+**Le coût d'un déploiement se mesure sur un intervalle qui n'en contient QU'UN**, jamais en
+divisant l'écart d'une journée par le nombre de fusions. Deux raisons, et la seconde est la
+mauvaise : la fenêtre est glissante, donc un intervalle long voit aussi **sortir** de vieux
+déploiements, et l'écart net mélange alors les ajouts et les retraits ; et toutes les fusions ne
+déploient pas dès qu'un Ignored Build Step existe (§1.3). Un écart mesuré sur un seul déploiement
+ne fait ni l'un ni l'autre — et reste un **plancher**, puisqu'un retrait peut toujours s'y cacher.
+Corollaire de cadence : **le compteur retarde**, souvent d'une nuit ; on le relit le lendemain, pas
+dix minutes après la fusion. C'est ainsi que Ramille a découvert que son coût réel était 10 % plus
+élevé que ce que l'export du tableau de bord attribuait à sa fonction (§2.1) — un écart qui n'est
+toujours pas expliqué, et qu'on budgète tel qu'il est mesuré.
+
 > ⚠️ **Point non réconcilié, à ne pas présenter comme un fait.** Chez Tour de Growth, l'export
 > local donnait 428,9 Mo par déploiement, soit 66 Go sur 154 déploiements, quand le compteur
 > affichait ~7 Go : Vercel déduplique probablement des bundles identiques. Le **classement
@@ -233,7 +244,7 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 | Poids de `share-card` sur disque | 3,95 Mo + 0,38 Mo de `hb.wasm` via `includeFiles` = 4,33 Mo |
 | Poids de `share-card` **retenu par Vercel** | **1 595 453 octets ≈ 1,6 Mo** (export du tableau de bord, 15/09/2026 — l'archive compressée, 37 % du disque) |
 | Poids de `partage` | 0,03 Mo sur disque ; l'export du tableau de bord ne lui donne aucune taille (Edge) |
-| **Poids par déploiement** | **≈ 1,6 Mo**, une route par fonction donc sans amplification |
+| **Poids par déploiement, mesuré sur le compteur** | **1,76 Mo**, deux fois (16/09/2026, voir ci-dessous) — et c'est un **plancher** |
 | Fusions sur `main`, 16/08 → 15/09 | 82, dont **13 doc seule** (16 %) |
 | Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
 | **Compteur Functions Storage du compte** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*), tous projets confondus — pas de baisse avant au moins dix jours |
@@ -248,6 +259,28 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 > ~47 Mo. 437,53 Mo ÷ 1,6 Mo ≈ 273 déploiements en dix jours, ce que l'historique rend plausible
 > (82 fusions de production, 158 commits atteignables hors branches écrasées, une prévisualisation
 > par push jusqu'au 15/09 à midi). **Le chiffre par déploiement de l'export est donc le bon.**
+
+> **Corrigé le 16/09/2026 : le compteur dit 1,76 Mo, pas 1,6.** Deux intervalles ne contenant
+> **qu'un seul déploiement** ont été relevés, et les deux donnent exactement le même écart :
+> 437,53 → 439,29 Mo (la fusion de la PR #191, arrivée au compteur pendant la nuit) et
+> 439,29 → 441,05 Mo (la fusion de la PR #201). Entre les deux, deux fusions « doc seule » (#192
+> et #200) n'ont **rien** ajouté — c'est la mesure de l'Ignored Build Step sur le compteur
+> lui-même, et non sur le journal de déploiements.
+>
+> **L'écart avec l'export n'est pas expliqué, et on ne l'explique pas à la place de la mesure.**
+> 1 595 453 octets valent 1,5955 Mo décimaux ou 1,5216 Mio : ni l'un ni l'autre ne fait 1,76, et
+> `partage` n'a aucune taille dans l'export. Les deux pistes plausibles — l'export ne compte pas
+> tout ce que le compteur retient, ou l'affichage arrondit autrement — n'ont pas été départagées.
+> Ce qui est mesuré, c'est l'écart du compteur, et **c'est lui qu'on budgète**.
+>
+> **Et c'est un plancher, pas une valeur exacte** : le compteur est une somme **glissante**, donc
+> un intervalle d'un jour peut aussi voir sortir un déploiement vieux de trente jours. Un tel
+> retrait **diminue** l'écart observé, jamais l'inverse.
+>
+> Corollaire sur la réconciliation du 15/09 ci-dessus : elle divisait un écart **net** d'une
+> journée par un nombre de fusions, donc elle mélangeait les ajouts et les retraits de la fenêtre.
+> Un écart mesuré sur **un** déploiement ne fait pas ce mélange — c'est la seule forme de mesure à
+> laquelle se fier ici, et la règle portable est en §1.1.
 
 Ce que le budget vaut en déploiements de Ramille : ≈ 94 — **si l'autre projet ne fusionne pas** ;
 trois de ses fusions suffisent à consommer les 150 Mo. Un déploiement de Ramille est bon marché,
@@ -287,7 +320,7 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 
 ### 2.3 Convention de cadence, et le budget des dix jours
 
-Chaque fusion sur `main` coûte ≈ 1,6 Mo pendant trente jours. Entre le 15 et le 25/09/2026,
+Chaque fusion sur `main` coûte **≈ 1,8 Mo** pendant trente jours (1,76 mesuré, §2.1). Entre le 15 et le 25/09/2026,
 **150 Mo sont tout ce qui reste au compte entier**, partagés avec un projet dont une fusion en
 vaut trente de Ramille — et une limite atteinte, c'est un correctif qui ne part plus, sur les
 deux projets. Quatre règles, à demeure :
@@ -311,13 +344,15 @@ règle, et que j'ai reproduit avant de la lire.
 
 ### 2.4 Ce qu'il reste à vérifier sur le tableau de bord
 
-- **La première fusion « doc seule » après celle-ci** doit apparaître comme sautée par l'Ignored
-  Build Step, sans déploiement de production nouveau. Si un déploiement apparaît quand même, lire
-  le journal de build : le script y écrit pourquoi il a construit (« … entre dans le build » ou
-  « a échoué »).
+- ~~**La première fusion « doc seule » après celle-ci** doit apparaître comme sautée par l'Ignored
+  Build Step~~ — **vérifié le 16/09/2026, deux fois et sur le compteur** : les fusions des PR #192
+  (fichiers d'outil) et #200 (recette web) n'ont pas fait bouger la part de Ramille, restée à
+  439,29 Mo. C'est la preuve que le journal de déploiements ne donnait qu'à moitié.
 - **`VERCEL_GIT_PREVIOUS_SHA` est-il exposé ?** Le script écrit « repli sur HEAD^ » quand il ne
   l'est pas. Si cette ligne apparaît à chaque fois, le trou du build échoué (§1.3) est ouvert et
   il faut le savoir.
-- **La part de Ramille après la fusion de la PR #192** (première fusion sautée) : elle doit être
-  restée à 437,53 Mo. Si elle a bougé, l'Ignored Build Step n'a pas sauté, et le journal de build
-  dit pourquoi. (Le total du compte, lui, bouge dès que l'autre projet fusionne.)
+- ~~**La part de Ramille après la fusion de la PR #192**~~ — **relevée le 16/09/2026** : 439,29 Mo
+  avant et après, donc sautée. (Le total du compte, lui, bouge dès que l'autre projet fusionne :
+  c'est pourquoi on demande toujours **les deux** chiffres.)
+- **Le compteur retarde d'une nuit** : l'écart d'une fusion ne se lit pas dix minutes après, il se
+  lit le lendemain. Les deux mesures de 1,76 Mo l'ont chacune confirmé.
