@@ -4,6 +4,12 @@
 (`docs/architecture/v1-13-audit-et-chantiers.md` §13, constat 13.3, issue
 [#198](https://github.com/ScratchMe/TraceVerte/issues/198)).
 
+**Ce brief a un jumeau depuis le 16/09/2026** :
+[`v1-18`](../v1-18-question-qui-restreint/BRIEF.md) demande comment se dit ce que le plan **ne
+montrera pas** — une réponse du questionnaire écarte près de la moitié du référentiel d'actions
+sans qu'un écran le dise. Celui-ci porte sur ce que le plan montre, l'autre sur ce qu'il tait ;
+ils dessinent deux écrans différents, mais une même réponse pourrait les servir tous les deux.
+
 Ce brief ne demande pas de corriger un défaut. Il demande de **trancher une contradiction que le
 produit s'est créée à lui-même**, en deux décisions justes séparément. C'est pourquoi il part en
 design plutôt qu'en chantier : le remède qu'on choisirait au clavier serait un pansement sur le
