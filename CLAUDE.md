@@ -41,7 +41,9 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 - **Pas plus de 150 Mo de Functions Storage ajoutés chez Vercel entre le 15 et le 25/09/2026**
   (15/09/2026) — c'est tout ce qui reste au **compte** Vercel, à 9,85 Go sur 10 dont 437 Mo pour
   Ramille —, et à demeure : **chaque fusion sur `main` est un déploiement qui se paie trente
-  jours** (≈ 1,6 Mo), l'agent ne peut pas lire le compteur, donc il se demande avant de fusionner,
+  jours** (≈ 1,8 Mo — 1,76 mesuré deux fois le 16/09/2026, et c'est un plancher : `VERCEL.md`
+  §1.1 dit pourquoi un écart d'une journée divisé par le nombre de fusions ment), l'agent ne peut
+  pas lire le compteur, donc il se demande avant de fusionner,
   **et il demande le total du compte et la part du projet**, parce qu'une heure a été perdue à
   chercher dans un projet un facteur cinq qui était l'autre. `VERCEL.md` §2.1 et §2.3.
   Le jour même, j'avais fusionné cinq fois, dont trois fois pour de la documentation seule.
@@ -184,7 +186,7 @@ enfants (`/suivi`, `/rappels/stop`, la restitution) répond 404 en production pe
 local est parfait — `VERCEL.md` §1.5. **Il ne se déploie plus de prévisualisation** (`git.deploymentEnabled`,
 trois pièges dont `"**"` et jamais `"*"` — §1.4), la vérification visuelle du web se fait localement
 par `expo export --platform web` puis Playwright sur `dist/`. **Et chaque fusion sur `main` est un
-déploiement qui coûte ≈ 1,6 Mo de Functions Storage pendant trente jours** — §1.1, §2.1 et la
+déploiement qui coûte ≈ 1,8 Mo de Functions Storage pendant trente jours** — §1.1, §2.1 et la
 convention de cadence en §2.3 ; les fusions qui ne touchent que la documentation sont sautées par
 `scripts/vercel-ignorer-le-build.sh` (§1.3), dont la liste blanche dit ce que le build ne lit pas.
 
