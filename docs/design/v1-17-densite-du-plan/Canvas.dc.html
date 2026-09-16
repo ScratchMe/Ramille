@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#EAECE6; font-family:'Spline Sans', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#14563A; text-decoration:none; } a:hover { color:#1F6F4A; }
+  button { font-family:'Spline Sans', ui-sans-serif, system-ui, sans-serif; }
+  /* Jetons : src/constants/theme.ts (Colors.light / Colors.dark), recopiés, jamais arrondis. */
+  [data-theme] { --c-text:#131612; --c-text2:#39403B; --c-text3:#5E655F; --c-bg:#FFFFFF; --c-tinted:#F3F8F4; --c-el:#F0F1EC; --c-el2:#F6F8F3; --c-sel:#E4EFE8; --c-accent:#1F6F4A; --c-accent-text:#14563A; --c-muted:#A9C8B6; --c-border:#DDE0D9; --c-on-accent:#FFFFFF; --m-leaf:#1F6F4A; --m-ink:#131612; --m-vein:#E4EFE8; --m-blush:#A9C8B6; --m-warm:#C99A6B; }
+  [data-theme="dark"] { --c-text:#FFFFFF; --c-text2:#B0B4BA; --c-text3:#8A9088; --c-bg:#000000; --c-tinted:#0F1410; --c-el:#212225; --c-el2:#1A1C1A; --c-sel:#1C2E22; --c-accent:#3D9B6F; --c-accent-text:#8FCBA9; --c-muted:#3A5245; --c-border:#2E3135; --m-leaf:#3D9B6F; --m-blush:#3A5245; --m-warm:#B98A5E; }
+  .ligne:hover { background:var(--c-el2); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="padding:64px 72px 140px;color:#131612;display:flex;flex-direction:column;gap:96px">
+
+  <!-- En-tête du canvas -->
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:820px">
+    <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5E655F">Ramille · v1-17 + v1-18 · canvas du 16/09/2026 · un dossier pour deux briefs</span>
+    <h1 style="margin:0;font-size:48px;line-height:52px;font-weight:600;letter-spacing:-0.02em;text-wrap:balance">Le plan : ce qu’il montre, et ce qu’il tait</h1>
+    <p style="margin:0;font-size:16px;line-height:24px;color:#39403B;text-wrap:pretty">Deux briefs, une réponse. <b>A</b> — le classement et la porte vers toutes les pistes ; <b>B</b> — le tout premier plan et le plan de retour ; <b>C</b> — le plan à zéro action ; <b>D</b> — l’étape « Contexte de mobilité » ; <b>E</b> — les sept conditions et où chacune se dit ; <b>F</b> — le premier parcours, de la restitution au suivi ; <b>G</b> — le parcours moment par moment, de la première ouverture à la cinquantième. Puis deux pages : Écarts, Système. Planches 390 px de large, valeurs du dépôt (<span style="font-family:ui-monospace,monospace;font-size:13px">theme.ts</span>) ; les écrans qui défilent sont dessinés en entier, le cadre est allongé. Le profil est celui de la recette du 16/09/2026 : poste dominant voyages, cap − 451 kg, onze pistes.</p>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
+      <button onClick="{{ toggleTheme }}" style="height:44px;padding:0 20px;border-radius:22px;border:1.5px solid #1F6F4A;background:#FFFFFF;color:#14563A;font:600 14px/20px 'Spline Sans',sans-serif;cursor:pointer">{{ themeLabel }}</button>
+      <span style="font-size:14px;line-height:20px;color:#5E655F">Toutes les planches basculent · <a href="#a">A</a> · <a href="#b">B</a> · <a href="#c">C</a> · <a href="#d">D</a> · <a href="#e">E</a> · <a href="#f">F</a> · <a href="#g">G</a> · <a href="#ecarts">Écarts</a> · <a href="#systeme">Système</a></span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ A ══════════════════════════════ -->
+  <section id="a" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">A · Le plan, quand le meilleur levier est ailleurs</h2><span style="font-size:14px;line-height:20px;color:#5E655F">v1-17 §6.1, §6.2 · v1-18 §8.4 · A2 est cliquable : touche une ligne, elle s’ouvre en carte</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <!-- A1 — le plan, sans engagement -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A1 — Le plan · le meilleur levier hors du poste dominant" style="width:390px;height:1660px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <!-- carte d'attente (inchangée) -->
+            <div style="background:var(--c-el);border-radius:18px;padding:20px;display:flex;align-items:center;gap:16px">
+              <span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ mascotAttente }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;line-height:24px;font-weight:600">Je te fais signe lundi.</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Par notification sur ce téléphone.</span></div>
+            </div>
+            <!-- titre + intro : l'intro nomme les postes -->
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Une action par saison, une seule. C’est pas à pas qu’on tient un cap.</span>
+            </div>
+            <!-- carte du cap : la note dit ce que le cap mesure, et ce que l'autre action fait -->
+            <div style="background:var(--c-sel);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Ton cap pour cette saison</span>
+              <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">− 451 kg</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">soit − 20 % sur tes voyages (2,3 t CO₂e aujourd’hui)</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Automne 2026</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">jusqu’au 30 novembre</span></div>
+              <div style="height:6px;border-radius:3px;background:var(--c-border);overflow:hidden;margin-top:6px"><div style="width:17%;height:100%;border-radius:3px;background:var(--c-muted)"></div></div>
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3)">La saison avance ; le trait mesure le temps, pas toi.</span>
+            </div>
+            <!-- deux cartes, et deux seulement -->
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Renoncer à un vol long-courrier cette année</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 1 601 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 43 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur 1 vol long-courrier déclaré.</span>
+                <button style="margin-top:16px;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Je m’y engage</button>
+              </div>
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Travailler depuis chez toi deux jours par semaine</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 461 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 12 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur tes 5 trajets par semaine.</span>
+                <button style="margin-top:16px;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Je m’y engage</button>
+              </div>
+            </div>
+            <!-- la porte vers toutes les pistes : le total, parce que la liste est entière -->
+            <a href="#a2" style="display:block;text-align:center;font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Voir toutes les pistes · 11</a>
+            <!-- l'encart de contexte (v1-18) : les prémisses, la règle, la porte -->
+            <div style="background:var(--c-el);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton plan tient compte de ton contexte : zone urbaine dense, bon accès aux transports en commun, un véhicule dans le foyer, deux jours de télétravail possibles ou plus. Ce qui ne tient pas avec ces réponses n’est pas proposé.</span>
+              <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Modifier ces réponses</span>
+            </div>
+            <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:18px;color:var(--c-text3)">Estimations sur la base des facteurs ADEME et de tes réponses. Un ordre de grandeur pour choisir, pas une mesure.</span>
+            <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Revoir mon bilan</span>
+          </div>
+          <div style="height:60px;border-top:1px solid var(--c-border);display:flex;padding-top:8px;box-sizing:border-box;flex-shrink:0">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;border-radius:15px;background:var(--c-sel);display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M4 20h16" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span><span style="font-size:12px;line-height:16px;font-weight:600;color:var(--c-accent)">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><circle cx="20" cy="7" r="1.6" fill="var(--c-text3)"></circle></svg></span><span style="font-size:12px;line-height:16px;font-weight:500;color:var(--c-text3)">Suivi</span></div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Le classement : <b>la meilleure piste du poste dominant d’abord, puis toutes les autres par gain</b>. La deuxième carte est le télétravail à 461 kg, plus une action de voyages à 48 kg. L’intro dit le principe du plan — une action par saison, pas à pas — et non le contenu des deux cartes posées dessous ; la carte du cap dit d’où vient le nombre, et rien de plus : le cap est une quantité, et où la réduction se fait est le choix de la personne. Le lien annonce le total : il ouvre la liste entière. L’encart de contexte (v1-18) ferme l’écran : les prémisses, la règle, la porte.</p>
+      </div>
+
+      <!-- A2 — toutes les pistes, l'écran (prototype) -->
+      <div id="a2" style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A2 — Toutes les pistes · l’écran" style="width:390px;height:1400px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text);align-self:flex-start">Retour au plan</span>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Toutes les pistes</h3>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan.</span>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ lignes }}" as="r" hint-placeholder-count="14">
+                <sc-if value="{{ r.tete }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3);padding:16px 0 4px">{{ r.label }}</span>
+                </sc-if>
+                <sc-if value="{{ r.fermee }}" hint-placeholder-val="{{ true }}">
+                  <button class="ligne" onClick="{{ r.ouvrir }}" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border:0;border-bottom:1px solid var(--c-border);background:none;text-align:left;cursor:pointer;width:100%"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">{{ r.titre }}</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">{{ r.gain }}</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></button>
+                </sc-if>
+                <sc-if value="{{ r.ouverte }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:10px;margin-bottom:10px;border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;animation:slide-up 260ms ease-out">
+                    <span style="font-size:17px;line-height:24px;font-weight:600">{{ r.titre }}</span>
+                    <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">{{ r.gainLong }}</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">{{ r.part }}</span></div>
+                    <span style="font-size:14px;line-height:20px;color:var(--c-text3)">{{ r.detail }}</span>
+                    <button style="margin-top:16px;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Je m’y engage</button>
+                    <button onClick="{{ r.reduire }}" style="align-self:flex-start;background:none;border:0;padding:0;font:500 14px/44px 'Spline Sans',sans-serif;color:var(--c-text3);text-decoration:underline;cursor:pointer">Réduire</button>
+                  </div>
+                </sc-if>
+              </sc-for>
+            </div>
+          </div>
+          <div style="height:60px;border-top:1px solid var(--c-border);display:flex;padding-top:8px;box-sizing:border-box;flex-shrink:0">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;border-radius:15px;background:var(--c-sel);display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M4 20h16" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span><span style="font-size:12px;line-height:16px;font-weight:600;color:var(--c-accent)">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><circle cx="20" cy="7" r="1.6" fill="var(--c-text3)"></circle></svg></span><span style="font-size:12px;line-height:16px;font-weight:500;color:var(--c-text3)">Suivi</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <button onClick="{{ toutReduire }}" style="height:36px;padding:0 14px;border-radius:18px;border:1px solid #DDE0D9;background:#FFFFFF;color:#39403B;font:500 13px 'Spline Sans',sans-serif;cursor:pointer">Tout réduire</button>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Un écran de la pile du plan, comme le détail d’un bilan dans la pile du suivi : la barre reste, le retour est celui de la plateforme. Toutes les pistes, groupées par poste — le dominant d’abord, puis les autres par leur meilleur gain — et par gain dedans. Une ligne s’ouvre en carte sur place (v1-16 §5) et se referme par « Réduire » ; plusieurs peuvent être ouvertes. Plus de cartes estompées qui s’ouvrent toutes seules, plus de « Replier ».</p>
+      </div>
+
+      <!-- A3 — une ligne ouverte (statique) -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A3 — Toutes les pistes · une ligne ouverte" style="width:390px;height:1580px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text);align-self:flex-start">Retour au plan</span>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Toutes les pistes</h3>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici remplace la tienne.</span>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3);padding:16px 0 4px">Voyages longue distance</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Renoncer à un vol long-courrier cette année</span><span style="display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 1 601 kg</span><span style="width:20px;height:20px;border-radius:10px;background:var(--c-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Engagée</span></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Renoncer à un vol court ou moyen-courrier cette année</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 277 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Remplacer un aller-retour en avion par le train</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 273 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Faire un de tes longs trajets en train plutôt qu’en voiture</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 48 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3);padding:16px 0 4px">Trajet domicile-travail</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Travailler depuis chez toi deux jours par semaine</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 461 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Passer deux trajets sur cinq en métro ou en tram</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 447 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+              <!-- la ligne ouverte : la même carte que sur le plan, plus « Réduire » -->
+              <div style="margin-top:10px;margin-bottom:10px;border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Passer deux trajets sur cinq en train ou en RER</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 431 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 12 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur un trajet de 18 km.</span>
+                <button style="margin-top:16px;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Choisir celle-ci à la place</button>
+                <span style="align-self:flex-start;font-size:14px;line-height:44px;color:var(--c-text3);text-decoration:underline">Réduire</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Faire ce trajet à deux au moins un jour sur deux</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 287 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Travailler depuis chez toi un jour par semaine</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 230 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-text3);padding:16px 0 4px">Loisirs du week-end</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Prendre les transports en commun pour deux sorties sur cinq</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 45 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:16px 0;border-bottom:1px solid var(--c-border)"><span style="flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--c-text2)">Faire une sortie sur trois à vélo</span><span style="display:flex;align-items:baseline;gap:8px;flex-shrink:0"><span style="font-size:14px;line-height:20px;color:var(--c-text3)">− 39 kg</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Choisir</span></span></div>
+            </div>
+          </div>
+          <div style="height:60px;border-top:1px solid var(--c-border);display:flex;padding-top:8px;box-sizing:border-box;flex-shrink:0">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;border-radius:15px;background:var(--c-sel);display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M4 20h16" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span><span style="font-size:12px;line-height:16px;font-weight:600;color:var(--c-accent)">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><circle cx="20" cy="7" r="1.6" fill="var(--c-text3)"></circle></svg></span><span style="font-size:12px;line-height:16px;font-weight:500;color:var(--c-text3)">Suivi</span></div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">La même liste quand une action est engagée : sa ligne porte la pastille-coche et « Engagée » à la place de « Choisir » ; une ligne ouverte propose « Choisir celle-ci à la place » (<span style="font-family:ui-monospace,monospace;font-size:12px">p_replace</span>). La carte ouverte est celle du plan, avec « Réduire » dessous. Après « C’est noté », l’écran se referme et le plan s’ouvre avec l’action en tête et la feuille des rappels, comme aujourd’hui.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ B ══════════════════════════════ -->
+  <section id="b" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">B · Le tout premier plan, et le plan de retour</h2><span style="font-size:14px;line-height:20px;color:#5E655F">v1-17 §6.3 · le même écran, une ouverture différente</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <!-- B1 — le tout premier plan -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B1 — Le tout premier plan" style="width:390px;height:1760px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <!-- la carte d'ouverture du premier plan : le motif de CarteDeSaison, à la place de la carte d'attente -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="border:1px solid var(--c-border);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px">
+                <span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">TON PREMIER PLAN</span>
+                <span style="font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Une action pour l’automne.</span>
+                <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Choisis-en une, et dis quand. Ensuite, un point régulier te demandera si tu l’as faite — rien d’autre à suivre.</span>
+                <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text);margin-top:4px">Compris</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:0 4px">
+                <span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ mascotPremier }}</span>
+                <span style="flex:1;font-size:15px;line-height:22px">Prends celle qui te ressemble.</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Une action par saison, une seule. C’est pas à pas qu’on tient un cap.</span>
+            </div>
+            <!-- la carte du cap, sans le trait de temps : rien n'est engagé -->
+            <div style="background:var(--c-sel);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Ton cap pour cette saison</span>
+              <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">− 451 kg</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">soit − 20 % sur tes voyages (2,3 t CO₂e aujourd’hui)</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Automne 2026</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">jusqu’au 30 novembre</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Renoncer à un vol long-courrier cette année</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 1 601 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 43 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur 1 vol long-courrier déclaré.</span>
+                <button style="margin-top:16px;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Je m’y engage</button>
+              </div>
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Travailler depuis chez toi deux jours par semaine</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 461 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 12 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur tes 5 trajets par semaine.</span>
+                <button style="margin-top:16px;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Je m’y engage</button>
+              </div>
+            </div>
+            <a href="#a2" style="display:block;text-align:center;font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Voir toutes les pistes · 11</a>
+            <div style="background:var(--c-el);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton plan tient compte de ton contexte : zone urbaine dense, bon accès aux transports en commun, un véhicule dans le foyer, deux jours de télétravail possibles ou plus. Ce qui ne tient pas avec ces réponses n’est pas proposé.</span>
+              <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Modifier ces réponses</span>
+            </div>
+            <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:18px;color:var(--c-text3)">Estimations sur la base des facteurs ADEME et de tes réponses. Un ordre de grandeur pour choisir, pas une mesure.</span>
+            <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Revoir mon bilan</span>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Premier plan = aucun cycle précédent, aucun engagement, jamais archivé. La carte d’ouverture (motif de <span style="font-family:ui-monospace,monospace;font-size:12px">CarteDeSaison</span>) prend la place de la carte d’attente, dit la règle du jeu en deux phrases, et Ramille se tient dessous, hors du cadre. « Compris » la ferme (marque locale) ; le premier engagement aussi. Le trait de temps et sa légende n’apparaissent qu’une fois une action engagée : avant, un trait sous un cap se lit comme une jauge. <b>Pas de barre d’onglets</b> : elle arrive à la fermeture de cette carte (F3). Le reste de l’écran est le même.</p>
+      </div>
+
+      <!-- B2 — le plan de retour, engagé, point de la semaine -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B2 — Le plan de retour · action engagée, point de la semaine" style="width:390px;height:1920px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <!-- le point de la semaine (inchangé) : question générique, l'engagement porte sur les voyages -->
+            <div style="background:var(--c-sel);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Semaine du 07/09</span>
+              <span style="font-size:16px;line-height:23px;font-weight:600">La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?</span>
+              <div style="display:flex;gap:8px">
+                <button style="flex:1;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Non</button>
+                <button style="flex:1;height:54px;border-radius:27px;border:0;background:var(--c-accent);color:#FFFFFF;font:600 16px 'Spline Sans',sans-serif;cursor:pointer">Oui</button>
+              </div>
+              <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Pas de trajet la semaine dernière</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Une action par saison, une seule. C’est pas à pas qu’on tient un cap.</span>
+            </div>
+            <div style="background:var(--c-sel);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Ton cap pour cette saison</span>
+              <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">− 451 kg</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">soit − 20 % sur tes voyages (2,3 t CO₂e aujourd’hui)</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Automne 2026</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">jusqu’au 30 novembre</span></div>
+              <div style="height:6px;border-radius:3px;background:var(--c-border);overflow:hidden;margin-top:6px"><div style="width:17%;height:100%;border-radius:3px;background:var(--c-muted)"></div></div>
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3)">La saison avance ; le trait mesure le temps, pas toi.</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <!-- l'action engagée : en tête, quelle que soit sa place au classement -->
+              <div style="border:2px solid var(--c-accent);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:10px;background:var(--c-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">TON ENGAGEMENT</span></div>
+                <span style="font-size:17px;line-height:24px;font-weight:600">Renoncer à un vol long-courrier cette année</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 1 601 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">À mon prochain projet de voyage · par an · 43 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur 1 vol long-courrier déclaré.</span>
+                <div style="background:var(--c-bg);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;line-height:18px;font-weight:600;letter-spacing:0.3px;color:var(--c-text3)">PREMIER PAS</span><span style="font-size:14px;line-height:20px">Regarde lequel de tes projets de voyage peut attendre, ou se passer plus près.</span></div>
+                <span style="margin-top:16px;align-self:flex-start;font-size:14px;line-height:44px;color:var(--c-text3);text-decoration:underline">Changer d’avis</span>
+              </div>
+              <!-- la seconde carte, estompée parce qu'une autre porte l'engagement -->
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;opacity:0.72">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Travailler depuis chez toi deux jours par semaine</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 461 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 12 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur tes 5 trajets par semaine.</span>
+                <button style="margin-top:16px;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Choisir celle-ci à la place</button>
+              </div>
+            </div>
+            <a href="#a2" style="display:block;text-align:center;font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Voir toutes les pistes · 11</a>
+            <div style="background:var(--c-el);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton plan tient compte de ton contexte : zone urbaine dense, bon accès aux transports en commun, un véhicule dans le foyer, deux jours de télétravail possibles ou plus. Ce qui ne tient pas avec ces réponses n’est pas proposé.</span>
+              <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Modifier ces réponses</span>
+            </div>
+            <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:18px;color:var(--c-text3)">Estimations sur la base des facteurs ADEME et de tes réponses. Un ordre de grandeur pour choisir, pas une mesure.</span>
+            <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Revoir mon bilan</span>
+          </div>
+          <div style="height:60px;border-top:1px solid var(--c-border);display:flex;padding-top:8px;box-sizing:border-box;flex-shrink:0">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;border-radius:15px;background:var(--c-sel);display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M4 20h16" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span><span style="font-size:12px;line-height:16px;font-weight:600;color:var(--c-accent)">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><circle cx="20" cy="7" r="1.6" fill="var(--c-text3)"></circle></svg></span><span style="font-size:12px;line-height:16px;font-weight:500;color:var(--c-text3)">Suivi</span></div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Le même profil, une saison plus loin : le point de la semaine en tête (question générique, parce que l’engagement porte sur les voyages — C2.1), l’action engagée devant avec son premier pas, la seconde carte estompée, le trait de temps. L’écart avec B1 est l’ouverture : la carte du premier plan a disparu, la carte d’attente ou le point ont pris sa place. Rien d’autre ne change.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ C ══════════════════════════════ -->
+  <section id="c" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">C · Le plan à zéro action</h2><span style="font-size:14px;line-height:20px;color:#5E655F">v1-17 §6.4 · tout cycliste, tout profil sédentaire depuis C2.5</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="C — Le plan à zéro action" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <div style="background:var(--c-el);border-radius:18px;padding:20px;display:flex;align-items:center;gap:16px">
+              <span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ mascotAttente }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;line-height:24px;font-weight:600">Je te fais signe lundi.</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Par notification sur ce téléphone.</span></div>
+            </div>
+            <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+            <!-- la carte du cap ne chiffre rien : elle nomme la période -->
+            <div style="background:var(--c-sel);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Automne 2026</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">jusqu’au 30 novembre</span></div>
+              <div style="height:6px;border-radius:3px;background:var(--c-border);overflow:hidden;margin-top:6px"><div style="width:17%;height:100%;border-radius:3px;background:var(--c-muted)"></div></div>
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3)">La saison avance ; le trait mesure le temps, pas toi.</span>
+            </div>
+            <div style="background:var(--c-el);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px"><span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ mascotFelicite }}</span><span style="flex:1;min-width:0;font-size:17px;line-height:24px;font-weight:600">Tu fais déjà l’essentiel sur ce poste.</span></div>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Aucun changement de mode ne te ferait gagner assez pour valoir la peine d’être proposé. Le check-in reste là si tu veux garder un œil dessus.</span>
+            </div>
+            <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Revoir mon bilan</span>
+          </div>
+          <div style="height:60px;border-top:1px solid var(--c-border);display:flex;padding-top:8px;box-sizing:border-box;flex-shrink:0">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;border-radius:15px;background:var(--c-sel);display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M4 20h16" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span><span style="font-size:12px;line-height:16px;font-weight:600;color:var(--c-accent)">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><circle cx="20" cy="7" r="1.6" fill="var(--c-text3)"></circle></svg></span><span style="font-size:12px;line-height:16px;font-weight:500;color:var(--c-text3)">Suivi</span></div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Inchangé, et c’est le point : rien de ce canvas n’y entre. Pas de lien vers les pistes (il n’y en a pas), pas d’encart de contexte (le zéro vient du mode, pas des réponses de l’étape — un cycliste ne débloquerait rien en les modifiant), pas de carte de premier plan (« Choisis-en une seule » serait faux), pas de note technique. La carte du cap nomme la période sans chiffre, la félicitation reste. Ramille se tient près d’une phrase, jamais d’un nombre.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ D ══════════════════════════════ -->
+  <section id="d" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">D · L’étape « Contexte de mobilité »</h2><span style="font-size:14px;line-height:20px;color:#5E655F">v1-18 §8.1 · la dernière question est cliquable</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="D — L’étape « Contexte de mobilité »" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="padding:8px 24px 0;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="display:flex;align-items:center;gap:8px"><span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ mascotEtape }}</span><span style="font-size:14px;line-height:20px;color:var(--c-text3)">Contexte de mobilité</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Étape 9 sur 9</span>
+              </div>
+              <div style="height:6px;border-radius:3px;background:var(--c-border);overflow:hidden"><div style="width:100%;height:100%;border-radius:3px;background:var(--c-accent)"></div></div>
+            </div>
+            <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Ce qui est possible là où tu vis change ce que je te proposerai ensuite.</span>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:32px">
+            <div style="display:flex;flex-direction:column;gap:24px">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Quel est ton contexte de mobilité ?</h3>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Ton plan ne propose que ce qui tient avec ces réponses. Elles n’entrent pas dans le calcul de ton bilan.</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Type de zone</span>
+                <div style="display:flex;gap:8px">
+                  <button aria-pressed="true" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-accent);color:#FFFFFF;font-size:15px;line-height:20px;font-weight:600;text-align:center;cursor:pointer">Urbain dense</button>
+                  <button aria-pressed="false" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-el);color:var(--c-text);font-size:15px;line-height:20px;font-weight:400;text-align:center;cursor:pointer">Périurbain</button>
+                  <button aria-pressed="false" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-el);color:var(--c-text);font-size:15px;line-height:20px;font-weight:400;text-align:center;cursor:pointer">Rural</button>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Accès aux transports en commun</span>
+                <div style="display:flex;gap:8px">
+                  <button aria-pressed="true" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-accent);color:#FFFFFF;font-size:15px;line-height:20px;font-weight:600;text-align:center;cursor:pointer">Bon</button>
+                  <button aria-pressed="false" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-el);color:var(--c-text);font-size:15px;line-height:20px;font-weight:400;text-align:center;cursor:pointer">Limité</button>
+                  <button aria-pressed="false" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-el);color:var(--c-text);font-size:15px;line-height:20px;font-weight:400;text-align:center;cursor:pointer">Inexistant</button>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Véhicules motorisés dans le foyer</span>
+                <div style="display:flex;gap:8px">
+                  <button aria-pressed="false" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-el);color:var(--c-text);font-size:15px;line-height:20px;font-weight:400;text-align:center;cursor:pointer">0</button>
+                  <button aria-pressed="true" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-accent);color:#FFFFFF;font-size:15px;line-height:20px;font-weight:600;text-align:center;cursor:pointer">1</button>
+                  <button aria-pressed="false" style="flex:1;min-width:0;padding:12px 4px;border:1.5px solid transparent;border-radius:14px;background:var(--c-el);color:var(--c-text);font-size:15px;line-height:20px;font-weight:400;text-align:center;cursor:pointer">2 ou plus</button>
+                </div>
+              </div>
+              <!-- B4.4 reformulée : l'unité que le produit lit, et un nombre venu de B1.2 -->
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur tes 5 jours de trajet, combien pourrais-tu travailler depuis chez toi ?</span>
+                <div style="display:flex;gap:8px">
+                  <sc-for list="{{ ttChips }}" as="c" hint-placeholder-count="3">
+                    <button onClick="{{ c.pick }}" aria-pressed="{{ c.selected }}" aria-label="{{ c.aria }}" style="{{ c.style }}">{{ c.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:24px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:16px;align-items:center">
+              <button style="height:54px;padding:0 24px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Retour</button>
+              <button style="flex:1;height:54px;border-radius:27px;border:0;background:var(--c-accent);color:#FFFFFF;font:600 16px 'Spline Sans',sans-serif;cursor:pointer">Voir mon bilan</button>
+            </div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Quatre questions, quatre rangées de puces, aucune phrase d’aide. L’intro dit la règle (« ne propose que ce qui tient ») et garde « n’entrent pas dans le calcul ». Ramille ouvre la section comme aujourd’hui. La quatrième question demande un nombre de jours, sur les jours que la personne vient de déclarer : la réponse est l’unité que le produit lit, « Parfois » disparaît, le seuil ne bouge pas. Trois états, aucun n’ouvre quoi que ce soit — c’est pourquoi la planche « trois états » de v1-18 §8.2 n’est pas dessinée.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ E ══════════════════════════════ -->
+  <section id="e" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">E · Les sept conditions, et où chacune se dit</h2><span style="font-size:14px;line-height:20px;color:#5E655F">v1-18 §8.3 · relevé en base du 16/09/2026, sept gabarits sur seize</span></div>
+    <div data-screen-label="E — Les sept conditions" style="background:var(--c-bg);color:var(--c-text);border-radius:24px;padding:8px 32px 28px;max-width:1240px;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(19,22,18,0.06)">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,1.3fr);gap:24px;padding:16px 0;border-bottom:1px solid var(--c-border);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--c-text3);font-family:ui-monospace,monospace"><span>La question</span><span>Les réponses</span><span>Ce qu’une réponse écarte</span><span>Où ça se dit</span></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,1.3fr);gap:24px;padding:18px 0;border-bottom:1px solid var(--c-border);font-size:14px;line-height:20px">
+        <span style="font-weight:600">Type de zone</span>
+        <span style="color:var(--c-text2)">Urbain dense · Périurbain · Rural</span>
+        <span style="color:var(--c-text2);text-wrap:pretty">Périurbain et Rural écartent « Passer deux trajets sur cinq en métro ou en tram » et « Prendre les transports en commun pour deux sorties sur cinq ». Le train et le RER restent : un TER dessert des communes rurales.</span>
+        <span style="color:var(--c-text2);text-wrap:pretty">Sur le plan, par l’encart. La question ne change pas : la réponse est un fait, et l’action écartée porte le mot de ce fait (« métro »).</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,1.3fr);gap:24px;padding:18px 0;border-bottom:1px solid var(--c-border);font-size:14px;line-height:20px">
+        <span style="font-weight:600">Accès aux transports en commun</span>
+        <span style="color:var(--c-text2)">Bon · Limité · Inexistant</span>
+        <span style="color:var(--c-text2);text-wrap:pretty">Inexistant écarte les trois gabarits de transports en commun (métro ou tram, train ou RER, transports en commun pour les sorties). Limité n’écarte rien.</span>
+        <span style="color:var(--c-text2);text-wrap:pretty">Sur le plan, par l’encart. Inchangée : « Inexistant » dit exactement ce qu’il fait.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,1.3fr);gap:24px;padding:18px 0;border-bottom:1px solid var(--c-border);font-size:14px;line-height:20px">
+        <span style="font-weight:600">Véhicules motorisés dans le foyer</span>
+        <span style="color:var(--c-text2)">0 · 1 · 2 ou plus</span>
+        <span style="color:var(--c-text2);text-wrap:pretty">« 0 » écarte « Faire ce trajet à deux au moins un jour sur deux » et « Partager un de tes longs trajets en voiture ».</span>
+        <span style="color:var(--c-text2);text-wrap:pretty">Sur le plan, par l’encart. Inchangée : on ne partage pas une voiture qu’on n’a pas.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,1.3fr);gap:24px;padding:18px 0;border-bottom:1px solid var(--c-border);font-size:14px;line-height:20px">
+        <span style="font-weight:600">Télétravail <span style="font-weight:400;color:var(--c-text3)">(dès deux jours de trajet)</span></span>
+        <span style="color:var(--c-text2)">Aucun · Un jour · Deux ou plus <span style="color:var(--c-text3)">(était Oui · Parfois · Non)</span></span>
+        <span style="color:var(--c-text2);text-wrap:pretty">« Aucun » écarte les deux gabarits de télétravail ; « Un jour » écarte « deux jours par semaine ». Le seuil de C3.8 ne bouge pas : un jour ⇔ « Un jour », deux jours ⇔ « Deux ou plus ».</span>
+        <span style="color:var(--c-text2);text-wrap:pretty">Dans la réponse elle-même — un nombre de jours est l’unité que le produit lit — et sur le plan, par l’encart. C’est la seule question dont le mot de la réponse ne disait pas ce que le produit en ferait.</span>
+      </div>
+      <div style="padding:20px 0 0;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:20px;color:var(--c-text2);max-width:900px;text-wrap:pretty">
+        <span><b style="color:var(--c-text)">Ce qui vaut pour les sept :</b> la restriction se dit <b style="color:var(--c-text)">avant</b>, comme une règle, dans l’intro de l’étape (« Ton plan ne propose que ce qui tient avec ces réponses. ») ; et <b style="color:var(--c-text)">après</b>, sur le plan, par l’encart qui redit les quatre réponses et donne la porte. Jamais <b style="color:var(--c-text)">au moment</b> de répondre avec l’enjeu sous la puce : dit là, « cette réponse écarte une action » apprend à répondre haut, pas à répondre juste.</span>
+        <span><b style="color:var(--c-text)">Ce qui ne bouge pas :</b> une condition qu’on ne peut pas évaluer n’est pas remplie — sans réponse, rien n’est proposé (C3.8). L’encart ne nomme jamais l’action écartée ni son gain : ce serait la liste des portes fermées, et un prix sur une réponse.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ F ══════════════════════════════ -->
+  <section id="f" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">F · Le premier parcours, de la restitution au suivi</h2><span style="font-size:14px;line-height:20px;color:#5E655F">relecture du 16/09/2026 · un lieu n’apparaît que quand il a quelque chose à montrer</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <!-- F1 — la restitution du premier bilan, sans barre -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="F1 — La restitution du premier bilan · sans barre" style="width:390px;height:1420px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Ton bilan transport</span>
+            <div style="background:var(--c-sel);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Le déplacement qui pèse le plus</span>
+              <span style="font-size:32px;line-height:38px;letter-spacing:-0.64px;font-weight:600">Tes voyages longue distance en avion</span>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">2,3 t CO₂e par an, soit 60 % de ton empreinte transport.</span>
+            </div>
+            <div style="background:var(--c-el);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <span style="font-size:14px;line-height:20px;font-weight:600">Répartition par poste</span>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Trajet domicile-travail</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">1,2 t CO₂e</span></div><div style="height:14px;border-radius:7px;background:var(--c-muted);width:31%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Loisirs du week-end</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">118 kg CO₂e</span></div><div style="height:14px;border-radius:7px;background:var(--c-muted);width:3%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;font-weight:600">Voyages longue distance</span><span style="font-size:14px;line-height:20px;font-weight:600">2,3 t CO₂e</span></div><div style="height:14px;border-radius:7px;background:var(--c-accent);width:60%"></div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Estimation annuelle, tous déplacements</span>
+              <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">3,7 t CO₂e</span>
+              <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Comment ce chiffre est calculé</span>
+            </div>
+            <div style="background:var(--c-el);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <span style="font-size:14px;line-height:20px;font-weight:600">Où tu te situes</span>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Toi</span><span style="font-size:14px;line-height:20px;font-weight:600">3,7 t</span></div><div style="height:14px;border-radius:7px;background:var(--c-accent);width:100%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton prochain palier</span><span style="font-size:14px;line-height:20px;font-weight:600">3,3 t</span></div><div style="height:14px;border-radius:7px;background:var(--c-muted);width:89%"></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Moyenne en France</span><span style="font-size:14px;line-height:20px;font-weight:600">2,8 t</span></div><div style="height:14px;border-radius:7px;background:var(--c-muted);width:76%"></div></div>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Une marche à 451 kg de moins sur l’année sur tes voyages. Le plan qui suit propose de quoi la franchir ; 2050 se joue palier après palier.</span>
+            </div>
+            <button style="height:54px;border-radius:27px;border:0;background:var(--c-accent);color:#FFFFFF;font:600 16px 'Spline Sans',sans-serif;cursor:pointer">Voir ce que je peux faire</button>
+            <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Modifier mes réponses</span>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">La première fois, la restitution est la dernière page d’un flux, pas le détail d’une entrée du suivi : <b>pas de barre</b>. Un seul chemin en avant, un seul retour. Le contenu de l’écran ne change pas d’un mot (le partage et la note de méthode restent). Aujourd’hui, c’est ici que la personne voit deux onglets pour la première fois — sur la dernière page de son questionnaire, avant même d’avoir un plan.</p>
+      </div>
+
+      <!-- F2 — la feuille des rappels, après « C’est noté » -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="F2 — Après « C’est noté » · la feuille des rappels" style="width:390px;height:844px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text);position:relative">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Une action par saison, une seule. C’est pas à pas qu’on tient un cap.</span>
+            </div>
+            <div style="background:var(--c-sel);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Ton cap pour cette saison</span>
+              <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">− 451 kg</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">soit − 20 % sur tes voyages (2,3 t CO₂e aujourd’hui)</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Automne 2026</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">jusqu’au 30 novembre</span></div>
+            </div>
+            <div style="border:2px solid var(--c-accent);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:10px;background:var(--c-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">TON ENGAGEMENT</span></div>
+              <span style="font-size:17px;line-height:24px;font-weight:600">Renoncer à un vol long-courrier cette année</span>
+              <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 1 601 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">À mon prochain projet de voyage · par an · 43 % de ton empreinte</span></div>
+            </div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(19,22,18,0.42)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:var(--c-bg);border-top:1px solid var(--c-border);border-radius:18px 18px 0 0;padding:8px 24px 40px;display:flex;flex-direction:column;gap:16px">
+            <div style="width:40px;height:4px;border-radius:2px;background:var(--c-border);align-self:center;margin-bottom:8px"></div>
+            <div style="display:flex;align-items:center;gap:8px"><span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ mascotFeuille }}</span><span style="flex:1;font-size:15px;line-height:22px">Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.</span></div>
+            <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Comment tu préfères que je te fasse signe ?</span>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="border:1.5px solid var(--c-accent);background:var(--c-sel);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;line-height:24px;font-weight:600">Une notification</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Sur ce téléphone, au début du mois.</span></div>
+              <div style="border:1.5px solid transparent;background:var(--c-el);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;opacity:0.6"><span style="font-size:16px;line-height:24px">Un email</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Rattache un compte pour recevoir le mot par email.</span></div>
+              <div style="border:1.5px solid transparent;background:var(--c-el);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;line-height:24px">Rien</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">On se retrouve ici le mois prochain.</span></div>
+            </div>
+            <button style="height:54px;border-radius:27px;border:0;background:var(--c-accent);color:#FFFFFF;font:600 16px 'Spline Sans',sans-serif;cursor:pointer">Activer les notifications</button>
+            <span style="text-align:center;font-size:14px;line-height:20px;color:var(--c-text3)">Tu pourras changer d’avis dans « Toi ».</span>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Inchangée. Le premier engagement ouvre la feuille des rappels comme aujourd’hui ; derrière, le plan n’a toujours pas de barre. Ramille dit ce qui vient (ici la boucle mensuelle, l’action étant un voyage), le produit propose le canal. C’est à la fermeture de cette feuille que la barre arrive.</p>
+      </div>
+
+      <!-- F3 — la barre arrive : « Plan et Suivi » -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="F3 — La barre arrive · « Plan et Suivi »" style="width:390px;height:1980px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <!-- la carte « Plan et Suivi », une fois, à la place de la carte d'attente -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="border:1px solid var(--c-border);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px">
+                <span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">PLAN ET SUIVI</span>
+                <span style="font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Deux endroits, pas plus.</span>
+                <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Ici, ton plan : l’action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.</span>
+                <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text);margin-top:4px">Compris</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:0 4px">
+                <span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ mascotSuivi }}</span>
+                <span style="flex:1;font-size:15px;line-height:22px">Je note tes réponses dans ton suivi, au fil des saisons.</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton plan</h3>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Une action par saison, une seule. C’est pas à pas qu’on tient un cap.</span>
+            </div>
+            <div style="background:var(--c-sel);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">Ton cap pour cette saison</span>
+              <span style="font-size:30px;line-height:36px;letter-spacing:-0.6px;font-weight:600">− 451 kg</span>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">soit − 20 % sur tes voyages (2,3 t CO₂e aujourd’hui)</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><span style="font-size:14px;line-height:20px;color:var(--c-text2)">Automne 2026</span><span style="font-size:14px;line-height:20px;font-weight:600;color:var(--c-accent-text)">jusqu’au 30 novembre</span></div>
+              <div style="height:6px;border-radius:3px;background:var(--c-border);overflow:hidden;margin-top:6px"><div style="width:17%;height:100%;border-radius:3px;background:var(--c-muted)"></div></div>
+              <span style="font-size:12px;line-height:16px;color:var(--c-text3)">La saison avance ; le trait mesure le temps, pas toi.</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="border:2px solid var(--c-accent);background:var(--c-tinted);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:10px;background:var(--c-accent);display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:13px;line-height:18px;font-weight:700;letter-spacing:0.3px;color:var(--c-accent-text)">TON ENGAGEMENT</span></div>
+                <span style="font-size:17px;line-height:24px;font-weight:600">Renoncer à un vol long-courrier cette année</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 1 601 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">À mon prochain projet de voyage · par an · 43 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur 1 vol long-courrier déclaré.</span>
+                <div style="background:var(--c-bg);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;line-height:18px;font-weight:600;letter-spacing:0.3px;color:var(--c-text3)">PREMIER PAS</span><span style="font-size:14px;line-height:20px">Regarde lequel de tes projets de voyage peut attendre, ou se passer plus près.</span></div>
+                <span style="margin-top:16px;align-self:flex-start;font-size:14px;line-height:44px;color:var(--c-text3);text-decoration:underline">Changer d’avis</span>
+              </div>
+              <div style="border:1px solid var(--c-border);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;opacity:0.72">
+                <span style="font-size:17px;line-height:24px;font-weight:600">Travailler depuis chez toi deux jours par semaine</span>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;line-height:26px;font-weight:600;color:var(--c-accent-text)">− 461 kg CO₂e</span><span style="font-size:14px;line-height:20px;color:var(--c-text2)">par an · 12 % de ton empreinte</span></div>
+                <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Sur tes 5 trajets par semaine.</span>
+                <button style="margin-top:16px;height:54px;border-radius:27px;border:0;background:var(--c-el);color:var(--c-text);font:500 16px 'Spline Sans',sans-serif;cursor:pointer">Choisir celle-ci à la place</button>
+              </div>
+            </div>
+            <a href="#a2" style="display:block;text-align:center;font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Voir toutes les pistes · 11</a>
+            <div style="background:var(--c-el);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+              <span style="font-size:14px;line-height:20px;color:var(--c-text2)">Ton plan tient compte de ton contexte : zone urbaine dense, bon accès aux transports en commun, un véhicule dans le foyer, deux jours de télétravail possibles ou plus. Ce qui ne tient pas avec ces réponses n’est pas proposé.</span>
+              <span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Modifier ces réponses</span>
+            </div>
+            <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:18px;color:var(--c-text3)">Estimations sur la base des facteurs ADEME et de tes réponses. Un ordre de grandeur pour choisir, pas une mesure.</span>
+            <span style="text-align:center;font-size:14px;line-height:44px;color:var(--c-text3)">Revoir mon bilan</span>
+          </div>
+          <div style="height:60px;border-top:1px solid var(--c-border);display:flex;padding-top:8px;box-sizing:border-box;flex-shrink:0;animation:slide-up 320ms ease-out">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;border-radius:15px;background:var(--c-sel);display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M4 20h16" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span><span style="font-size:12px;line-height:16px;font-weight:600;color:var(--c-accent)">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><circle cx="20" cy="7" r="1.6" fill="var(--c-text3)"></circle></svg></span><span style="font-size:12px;line-height:16px;font-weight:500;color:var(--c-text3)">Suivi</span></div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">À la fermeture de la feuille, <b>la barre glisse depuis le bas</b> (320 ms, comme l’entrée d’une carte) et une carte, une fois, nomme les deux endroits par ce qu’on y trouve : « Deux endroits, pas plus. » Ramille dessous dit où iront les réponses, dans ses mots du suivi. « Compris » la ferme ; la carte d’attente prend sa place, et rien de tout ça ne revient. Même carte, même moment, si la personne a fermé « Ton premier plan » par « Compris » sans choisir, ou si son plan est à zéro action.</p>
+      </div>
+
+      <!-- F4 — le suivi, première visite -->
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="F4 — Le suivi · première visite" style="width:390px;height:1180px;background:var(--c-bg);border-radius:40px;box-shadow:0 24px 60px rgba(19,22,18,0.10);overflow:hidden;display:flex;flex-direction:column;color:var(--c-text)">
+          <div style="height:44px"></div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid var(--c-border);flex-shrink:0"><span style="width:44px"></span><span style="flex:1;text-align:center;font-size:17px;line-height:24px;font-weight:600;letter-spacing:-0.1px">Ramille</span><span style="width:44px;display:flex;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" stroke="var(--c-text3)" stroke-width="1.9" fill="none"></circle><path d="M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span></div>
+          <div style="flex:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:24px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <h3 style="margin:0;font-size:26px;line-height:32px;letter-spacing:-0.26px;font-weight:600">Ton suivi</h3>
+              <span style="font-size:15px;line-height:22px;color:var(--c-text2)">Ton point de départ. Refais ton bilan quand tes habitudes changent : tu verras l’écart ici.</span>
+            </div>
+            <div style="background:var(--c-el);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <span style="font-size:14px;line-height:20px;font-weight:600">Ton empreinte transport, bilan après bilan</span>
+              <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;line-height:20px;font-weight:600">16 septembre 2026</span><span style="font-size:14px;line-height:20px;font-weight:600">3,7 t CO₂e</span></div><div style="height:10px;border-radius:5px;background:var(--c-border);overflow:hidden"><div style="height:100%;width:100%;border-radius:5px;background:var(--c-accent)"></div></div></div>
+            </div>
+            <div style="background:var(--c-el);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;line-height:20px;font-weight:600">Ce que tu as décidé, saison après saison</span>
+              <div style="display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-top:1px solid var(--c-border)"><span style="font-size:14px;line-height:20px;color:var(--c-text2);flex-shrink:0">Automne 2026</span><span style="font-size:14px;line-height:20px;text-align:right">Renoncer à un vol long-courrier cette année · à mon prochain projet de voyage</span></div>
+            </div>
+            <div style="background:var(--c-el);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:16px"><span aria-hidden="true" style="display:inline-block;line-height:0;flex-shrink:0">{{ mascotAttente }}</span><span style="flex:1;min-width:0;font-size:16px;line-height:24px;font-weight:600">Je note tes réponses ici, au fil des saisons.</span></div>
+              <span style="font-size:14px;line-height:20px;color:var(--c-text3)">Une période sans réponse ne se voit pas ici : on ne compte que les fois où tu as répondu, jamais celles où tu as laissé passer.</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--c-border);padding:0 24px;display:flex;justify-content:center"><span style="font-size:14px;line-height:44px;font-weight:600;color:var(--c-accent-text)">Refaire mon bilan</span></div>
+          <div style="height:60px;border-top:1px solid var(--c-border);display:flex;padding-top:8px;box-sizing:border-box;flex-shrink:0">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L19 7" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><path d="M4 20h16" stroke="var(--c-text3)" stroke-width="1.9" stroke-linecap="round" fill="none"></path></svg></span><span style="font-size:12px;line-height:16px;font-weight:500;color:var(--c-text3)">Plan</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="width:56px;height:30px;border-radius:15px;background:var(--c-sel);display:inline-flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 15.5l5-5 3.5 3.5L20 7" stroke="var(--c-accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path><circle cx="20" cy="7" r="1.6" fill="var(--c-accent)"></circle></svg></span><span style="font-size:12px;line-height:16px;font-weight:600;color:var(--c-accent)">Suivi</span></div>
+          </div>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:19px;color:#5E655F;text-wrap:pretty">Inchangé, et c’est l’argument : le jour où la personne y entre, l’écran s’explique par ce qu’il contient — son bilan de départ, la décision qu’elle vient de prendre, et Ramille qui dit ce qui viendra s’y ranger. La décision est là parce qu’elle a été prise avant d’ouvrir la barre : c’est l’ordre du parcours qui rend ce premier suivi lisible. « Refaire mon bilan » reste le seul geste de l’écran.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ G ══════════════════════════════ -->
+  <section id="g" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">G · Le parcours, moment par moment</h2><span style="font-size:14px;line-height:20px;color:#5E655F">de la première ouverture à la cinquantième · ce que la personne voit, ce qui est nouveau, ce qui l’explique</span></div>
+    <div data-screen-label="G — Le parcours, moment par moment" style="background:var(--c-bg);color:var(--c-text);border-radius:24px;padding:8px 32px 28px;max-width:1240px;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(19,22,18,0.06)">
+      <div style="display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,1.3fr);gap:24px;padding:16px 0;border-bottom:1px solid var(--c-border);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--c-text3);font-family:ui-monospace,monospace"><span>Le moment</span><span>Ce que la personne voit</span><span>Ce qui est nouveau</span><span>Ce qui l’explique, et par quoi</span></div>
+      <sc-for list="{{ moments }}" as="m" hint-placeholder-count="12">
+        <div style="display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,1.3fr);gap:24px;padding:16px 0;border-bottom:1px solid var(--c-border);font-size:14px;line-height:20px">
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">{{ m.moment }}</span><span style="font-size:12px;line-height:16px;color:var(--c-text3);font-family:ui-monospace,monospace">{{ m.ou }}</span></div>
+          <span style="color:var(--c-text2);text-wrap:pretty">{{ m.voit }}</span>
+          <span style="color:var(--c-text2);text-wrap:pretty">{{ m.nouveau }}</span>
+          <span style="color:var(--c-text2);text-wrap:pretty">{{ m.explique }}</span>
+        </div>
+      </sc-for>
+      <div style="padding:20px 0 0;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:20px;color:var(--c-text2);max-width:900px;text-wrap:pretty">
+        <span><b style="color:var(--c-text)">La règle :</b> un lieu n’apparaît que quand il a quelque chose à montrer, et chaque chose nouvelle s’explique une fois, à l’endroit où elle apparaît, par ce qu’on y trouve — jamais par un tutoriel, jamais par une bulle. Trois cartes d’ouverture, chacune une seule fois : « Ton premier plan », « Plan et Suivi », « Nouvelle saison ».</span>
+        <span><b style="color:var(--c-text)">La cinquantième fois :</b> rien ne se réexplique. Le plan ouvre sur le point s’il attend, sinon sur la carte d’attente ; la barre est là ; les mots sont ceux du premier jour. Ce qui reste fixe est ce qui reste utile à l’habitué : la ligne de principe est un rappel, la carte du cap une échéance, l’encart de contexte une référence le jour où une piste manque.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ ÉCARTS ══════════════════════════════ -->
+  <section id="ecarts" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Écarts</h2><span style="font-size:14px;line-height:20px;color:#5E655F">chaque changement au design existant · ce qui n’y figure pas est réputé inchangé</span></div>
+    <div data-screen-label="Écarts" style="background:#FFFFFF;border-radius:24px;padding:8px 32px;max-width:1240px;display:flex;flex-direction:column">
+      <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,0.6fr);gap:24px;padding:16px 0;border-bottom:1px solid #DDE0D9;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5E655F;font-family:ui-monospace,monospace"><span>Avant → après</span><span>Ce que ça apporte</span><span>Prix</span><span>Où</span></div>
+      <sc-for list="{{ ecarts }}" as="e" hint-placeholder-count="16">
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,0.6fr);gap:24px;padding:18px 0;border-bottom:1px solid #DDE0D9;font-size:14px;line-height:20px;color:#131612">
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="font-weight:600">{{ e.titre }}</span><span style="color:#5E655F">{{ e.avant }}</span><span>{{ e.apres }}</span></div>
+          <span style="color:#39403B;text-wrap:pretty">{{ e.apport }}</span>
+          <span style="color:#39403B;text-wrap:pretty">{{ e.prix }}</span>
+          <span style="color:#14563A;font-weight:600">{{ e.ou }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ SYSTÈME ══════════════════════════════ -->
+  <section id="systeme" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Système</h2><span style="font-size:14px;line-height:20px;color:#5E655F">aucun jeton ajouté · aucune taille, aucun rayon, aucune hauteur nouvelle · cinq motifs composés avec l’existant</span></div>
+    <div data-screen-label="Système" style="display:flex;gap:24px;flex-wrap:wrap;max-width:1240px">
+      <div style="flex:1;min-width:320px;background:#FFFFFF;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:15px;font-weight:700;letter-spacing:0.2px;text-transform:uppercase">Motifs · réemplois, sans nouveau jeton</span>
+        <div style="display:flex;flex-direction:column;gap:14px;font-size:14px;line-height:20px;color:#39403B">
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;height:44px;border-radius:12px;border:1px solid #DDE0D9;background:#F3F8F4;flex-shrink:0;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;font-size:9px;font-weight:700;letter-spacing:0.3px;color:#14563A">TON PREMIER PLAN</div><span><b style="color:#131612">Carte d’ouverture réemployée</b> : le motif de <span style="font-family:ui-monospace,monospace;font-size:12px">CarteDeSaison</span> (bordure 1 px, fond <span style="font-family:ui-monospace,monospace;font-size:12px">backgroundTinted</span>, étiquette 13/18/700), avec une étiquette et un corps de plus, Ramille dessous.</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;height:44px;border-radius:12px;background:#F0F1EC;flex-shrink:0;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;font-size:9px;color:#39403B;line-height:11px">Ton plan tient compte de…</div><span><b style="color:#131612">Encart de contexte</b> : le gabarit des encarts de C2.2 — fond <span style="font-family:ui-monospace,monospace;font-size:12px">backgroundElement</span>, rayon 16, padding 12/16, small secondaire, un <span style="font-family:ui-monospace,monospace;font-size:12px">TextLink</span> small 600 accentText dessous.</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;font-size:12px;line-height:16px;font-weight:600;color:#5E655F;flex-shrink:0">Trajet domicile-travail</div><span><b style="color:#131612">Tête de groupe</b> : l’étiquette nue du poste (<span style="font-family:ui-monospace,monospace;font-size:12px">POSTE_LABEL</span>), small 600 tertiaire, 16 px au-dessus, 4 en dessous. La liste des points du suivi groupe par saison de la même manière.</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;font-size:12px;line-height:44px;color:#5E655F;text-decoration:underline;flex-shrink:0">Réduire</div><span><b style="color:#131612">Ligne qui se referme</b> : la ligne s’ouvre en carte (v1-16 §5) et se referme par un <span style="font-family:ui-monospace,monospace;font-size:12px">TextLink</span> small tertiaire souligné, cible 44 — exactement « Changer d’avis ».</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><div style="width:120px;display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="width:20px;height:20px;border-radius:10px;background:#1F6F4A;display:inline-flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></span><span style="font-size:12px;font-weight:600;color:#14563A">Engagée</span></div><span><b style="color:#131612">Ligne engagée</b> : la pastille-coche de 20 px de l’étiquette « TON ENGAGEMENT », suivie du mot, à la place de « Choisir ». Le quatrième tracé du produit, réemployé, pas un cinquième.</span></div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:320px;background:#FFFFFF;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:15px;font-weight:700;letter-spacing:0.2px;text-transform:uppercase">Ce qui reste tel quel</span>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:20px;color:#39403B">
+          <span><b style="color:#131612">Couleurs</b> : les treize jetons de <span style="font-family:ui-monospace,monospace;font-size:12px">Colors</span> et les quatre de la mascotte, dans les deux thèmes. L’accent marque l’engagé et l’actionnable (« Choisir », « Modifier ces réponses »), jamais un verdict.</span>
+          <span><b style="color:#131612">Tailles</b> : screen 26/32, salient 30/36, card 17/24, body 15/22, small 14/20, code 12, l’étiquette 13/18 et le gain 20/26 déjà en dur dans <span style="font-family:ui-monospace,monospace;font-size:12px">ActionCard</span>. Rayons 14 / 16 / 18 / 27. Cibles 44, boutons 54.</span>
+          <span><b style="color:#131612">Composants</b> : <span style="font-family:ui-monospace,monospace;font-size:12px">ActionCard</span>, <span style="font-family:ui-monospace,monospace;font-size:12px">ActionCommitment</span>, <span style="font-family:ui-monospace,monospace;font-size:12px">CheckinCard</span>, <span style="font-family:ui-monospace,monospace;font-size:12px">CarteDeSaison</span>, <span style="font-family:ui-monospace,monospace;font-size:12px">TraitDeTemps</span>, <span style="font-family:ui-monospace,monospace;font-size:12px">Chip</span>, <span style="font-family:ui-monospace,monospace;font-size:12px">StepShell</span> : aucun composant neuf. L’écran « Toutes les pistes » se compose avec eux.</span>
+          <span><b style="color:#131612">La mascotte</b> : automne (joues chaudes), parce que la saison du jour est l’automne météorologique et qu’aucun écran ne la passe. Jamais à côté d’un chiffre : sous la carte du premier plan, dans la carte d’attente, dans la félicitation — trois phrases, zéro nombre.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light","tsType":"&#39;light&#39;|&#39;dark&#39;","section":"Thème"}}'>
+// ── Ramille : port de src/types/mascot.ts (géométrie), repris de v1-14/Mascotte.dc.html. La saison est
+// celle du jour — l'automne météorologique le 16/09/2026 — donc les joues chaudes (C2.13), sans qu'aucun
+// écran ne la passe. Rendue ici en SVG inline : ce canvas ne référence que support.js.
+const LEAF = 'M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z';
+const FACE = {
+  calm: { eyes: 'dots', eyeSpread: 11, eyeShiftX: 0, eyeY: 50, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 0, mouthHalfWidth: 8, mouthY: 62, mouthDepth: 3, blushSpread: 17, blushY: 60, blushRadius: 5, blushOpacity: 0.55 },
+  happy: { eyes: 'happy', eyeSpread: 11, eyeShiftX: 0, eyeY: 49, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: -2.5, mouthHalfWidth: 10, mouthY: 60, mouthDepth: 6, blushSpread: 17, blushY: 59, blushRadius: 5.4, blushOpacity: 0.6 },
+  encouraging: { eyes: 'soft', eyeSpread: 11, eyeShiftX: 0, eyeY: 51, eyeRadius: 4.2, eyeArcHalfWidth: 4, eyeArcDepth: 1.5, mouthHalfWidth: 7, mouthY: 63, mouthDepth: 1.5, blushSpread: 17, blushY: 60, blushRadius: 5, blushOpacity: 0.55 },
+  thinking: { eyes: 'dots', eyeSpread: 11, eyeShiftX: -1, eyeY: 47, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 0, mouthHalfWidth: 5, mouthY: 63, mouthDepth: 0, blushSpread: 17, blushY: 61, blushRadius: 4.6, blushOpacity: 0.4 },
+  resting: { eyes: 'soft', eyeSpread: 11, eyeShiftX: 0, eyeY: 50, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 2.5, mouthHalfWidth: 6, mouthY: 63, mouthDepth: 1.5, blushSpread: 17, blushY: 60, blushRadius: 5, blushOpacity: 0.5 },
+};
+const r = (v) => Math.round(v * 100) / 100;
+const quad = (cx, hw, y, d) => `M${r(cx - hw)},${r(y)} Q${r(cx)},${r(y + d * 2)} ${r(cx + hw)},${r(y)}`;
+function geometry(mood, size) {
+  const f = FACE[mood] || FACE.calm;
+  const k = size >= 42 ? 1 : Math.min(42 / Math.max(size, 1), 1.5);
+  const kp = 1 + (k - 1) * 0.2;
+  const eyeY = 58 + (f.eyeY - 58) * kp, mouthY = 58 + (f.mouthY - 58) * kp, blushY = 58 + (f.blushY - 58) * kp;
+  const spread = r(f.eyeSpread * kp), shift = f.eyeShiftX * kp;
+  const sides = [-1, 1];
+  return {
+    visible: size >= 28, eyes: f.eyes, k,
+    eyeCircles: sides.map((s) => ({ cx: r(50 + s * spread + shift), cy: r(eyeY), r: r(f.eyeRadius * k) })),
+    eyeArcs: sides.map((s) => quad(50 + s * spread + shift, f.eyeArcHalfWidth * k, eyeY, f.eyeArcDepth * k)),
+    eyeStroke: r(3.4 * k), mouth: quad(50, f.mouthHalfWidth * k, mouthY, f.mouthDepth * k), mouthStroke: r(3.2 * k),
+    blush: sides.map((s) => ({ cx: 50 + s * f.blushSpread, cy: r(blushY), r: r(f.blushRadius * kp) })),
+    blushOpacity: f.blushOpacity, vein: r(4 * k),
+  };
+}
+// Automne : rayon des joues × 1,18, opacité + 0,25 (plafond 0,9), ton chaud à la place de accentMuted.
+function ramille(mood, size, tilt) {
+  const g = geometry(mood, size);
+  const h = React.createElement;
+  const id = 'feuille-' + mood + '-' + size + '-' + (tilt || 0);
+  const ink = 'var(--m-ink, #131612)';
+  return h('svg', { width: size, height: size, viewBox: '0 0 100 100', style: { transform: `rotate(${tilt || 0}deg)`, display: 'block' } },
+    h('defs', null, h('clipPath', { id }, h('path', { d: LEAF }))),
+    h('path', { d: LEAF, fill: 'var(--m-leaf, #1F6F4A)' }),
+    h('path', { d: 'M50,18 C46,26 46,32 50,38', stroke: 'var(--m-vein, #E4EFE8)', strokeWidth: g.vein, strokeLinecap: 'round', fill: 'none', opacity: 0.55 }),
+    g.visible ? h('g', { clipPath: `url(#${id})` },
+      g.blush.map((b, i) => h('circle', { key: 'b' + i, cx: b.cx, cy: b.cy, r: r(b.r * 1.18), fill: 'var(--m-warm, #C99A6B)', opacity: Math.min(0.9, g.blushOpacity + 0.25) })),
+      g.eyes === 'dots'
+        ? g.eyeCircles.map((e, i) => h('circle', { key: 'e' + i, cx: e.cx, cy: e.cy, r: e.r, fill: ink }))
+        : g.eyeArcs.map((d, i) => h('path', { key: 'e' + i, d, stroke: ink, strokeWidth: g.eyeStroke, strokeLinecap: 'round', fill: 'none' })),
+      h('path', { d: g.mouth, stroke: ink, strokeWidth: g.mouthStroke, strokeLinecap: 'round', fill: 'none' })) : null);
+}
+
+// ── Les onze pistes du profil de la recette du 16/09/2026 (v1-17 §2). Les six premiers chiffres sont
+// ceux du brief ; les cinq autres sont des valeurs de démonstration cohérentes avec le calcul.
+const PISTES = [
+  { poste: 'Voyages longue distance', items: [
+    { titre: 'Renoncer à un vol long-courrier cette année', kg: '1 601', part: 43, detail: 'Sur 1 vol long-courrier déclaré.' },
+    { titre: 'Renoncer à un vol court ou moyen-courrier cette année', kg: '277', part: 7, detail: 'Sur 2 vols court ou moyen-courrier déclarés.' },
+    { titre: 'Remplacer un aller-retour en avion par le train', kg: '273', part: 7, detail: 'Sur 2 vols court ou moyen-courrier déclarés.' },
+    { titre: 'Faire un de tes longs trajets en train plutôt qu’en voiture', kg: '48', part: 1, detail: 'Sur 1 long trajet en voiture déclaré.' },
+  ] },
+  { poste: 'Trajet domicile-travail', items: [
+    { titre: 'Travailler depuis chez toi deux jours par semaine', kg: '461', part: 12, detail: 'Sur tes 5 trajets par semaine.' },
+    { titre: 'Passer deux trajets sur cinq en métro ou en tram', kg: '447', part: 12, detail: 'Sur un trajet de 18 km.' },
+    { titre: 'Passer deux trajets sur cinq en train ou en RER', kg: '431', part: 12, detail: 'Sur un trajet de 18 km.' },
+    { titre: 'Faire ce trajet à deux au moins un jour sur deux', kg: '287', part: 8, detail: 'Sur tes 5 trajets par semaine.' },
+    { titre: 'Travailler depuis chez toi un jour par semaine', kg: '230', part: 6, detail: 'Sur tes 5 trajets par semaine.' },
+  ] },
+  { poste: 'Loisirs du week-end', items: [
+    { titre: 'Prendre les transports en commun pour deux sorties sur cinq', kg: '45', part: 1, detail: 'Sur tes déplacements de loisir.' },
+    { titre: 'Faire une sortie sur trois à vélo', kg: '39', part: 1, detail: 'Sur tes déplacements de loisir.' },
+  ] },
+];
+
+// ── B4.4 : les trois réponses, dans l'unité que le produit lit.
+const TELETRAVAIL = [
+  { v: 'aucun', label: 'Aucun', aria: 'Aucun jour' },
+  { v: 'un_jour', label: 'Un jour', aria: 'Un jour par semaine' },
+  { v: 'deux_ou_plus', label: 'Deux ou plus', aria: 'Deux jours par semaine ou plus' },
+];
+
+const ECARTS = [
+  { titre: 'Le classement des pistes', avant: '« Poste dominant d’abord, puis gain décroissant » : une action à 48 kg devant une action à 461 kg.', apres: '« La meilleure piste de ton poste dominant d’abord ; ensuite toutes les autres, du plus gros gain au plus petit. »', apport: 'Le plan ouvre toujours sur le poste que le cap mesure, et n’enfouit plus son plus gros levier. Les deux phrases de cadreDuPlan se réveillent.', prix: 'Migration : le row_number() de generate_plan_cycle_for_user. pistesDuPlan ne change pas, elle lit rank. Tests 02 et 10 recalculés par requête.', ou: 'A1, B1, B2' },
+  { titre: 'Deux cartes, et toutes les pistes derrière une porte', avant: 'Deux pleines, deux estompées, des lignes, dépliées en place : jusqu’à onze cartes, « Replier » hors écran.', apres: 'Deux cartes sur le plan. Un écran « Toutes les pistes » dans la pile du plan : par poste, en lignes qui s’ouvrent en carte et se referment.', apport: 'Le plan ne porte jamais plus de deux cartes ; la liste vit là où vivent les listes, avec le retour de la plateforme. La permission reste totale (v1-16 §5).', prix: 'Route (tabs)/plan/pistes et pile plan/ sur le modèle de suivi/, tabPress qui ramène à l’index. Plus de rang estompé dans pistesDuPlan. Engagement depuis l’écran, retour au plan qui ouvre la feuille.', ou: 'A2, A3' },
+  { titre: 'Le lien', avant: '« Voir d’autres pistes · 9 » — le compte des masquées.', apres: '« Voir toutes les pistes · 11 » — le total.', apport: 'La porte annonce ce qu’elle ouvre : la liste entière, l’action engagée comprise.', prix: 'Copy ; le compte devient actionsCount.', ou: 'A1, B1, B2' },
+  { titre: 'La ligne ouverte se referme', avant: 'Une ligne dépliée ne se replie qu’avec « Replier », qui replie tout.', apres: '« Réduire » sous la carte : small tertiaire souligné, cible 44, comme « Changer d’avis ». Plusieurs lignes peuvent rester ouvertes.', apport: 'La densité de la liste est celle que la personne fait, ligne par ligne.', prix: 'Un TextLink et un état local, comme lignesOuvertes aujourd’hui.', ou: 'A2, A3' },
+  { titre: 'La ligne engagée', avant: '—', apres: 'Pastille-coche 20 px + « Engagée » à la place de « Choisir » ; la ligne ne s’ouvre pas.', apport: 'L’engagement se lit dans la liste sans y chercher une carte saillante.', prix: 'Une branche de rendu ; le tracé existe.', ou: 'A3' },
+  { titre: 'L’intro du plan dit le principe, pas les cartes', avant: '« Deux actions pour tes voyages. » / « Deux actions, dont une ailleurs que sur tes voyages. » — une description des deux cartes posées juste dessous, qui tait les neuf autres pistes.', apres: '« Une action par saison, une seule. C’est pas à pas qu’on tient un cap. » — une ligne fixe (« période » à la place de « saison » en cadence de repli).', apport: 'Elle dit pourquoi une seule action et vers quoi : le principe du plan, progressif, une saison après l’autre. Ce qu’elle décrivait avant, chaque carte le dit déjà (« Sur tes 5 trajets par semaine. »).', prix: 'cadreDuPlan perd intro ; une constante à côté du titre, le mot de cadence dérivé comme sur la carte du cap.', ou: 'A1, B1, B2' },
+  { titre: 'La note sous le cap', avant: '« Le cap porte sur tes voyages ; cette action porte ailleurs. » — presque jamais déclenchée ; le nouveau classement l’aurait réveillée sur la plupart des plans.', apres: 'Supprimée. La carte du cap dit d’où vient le nombre (« soit − 20 % sur tes voyages ») et rien de plus.', apport: 'Le cap est une quantité à atteindre, pas une catégorie : où la réduction se fait est le choix de la personne. Une phrase qui dirait « pas dans ce cap » énoncerait une règle que le produit n’applique nulle part. Une ligne de moins sur l’écran qu’on voulait alléger.', prix: 'cadreDuPlan perd noteDuCap et son test.', ou: 'A1, B1, B2' },
+  { titre: 'Le tout premier plan', avant: 'Le même écran que le retour : carte d’attente, cap, trait, cartes.', apres: 'Carte « TON PREMIER PLAN » (motif CarteDeSaison) à la place de la carte d’attente, Ramille dessous, « Compris ». Trait de temps et légende absents tant que rien n’est engagé. Pas de barre d’onglets : elle arrive à la fermeture de la carte.', apport: 'La règle du jeu est dite une fois, là où on la découvre. Un trait sous un cap ne se lit plus comme une jauge.', prix: 'Un état dérivé (aucun cycle précédent, aucun engagement, rien d’archivé) et une marque locale, comme l’ouverture de saison. CarteDeSaison reçoit une ouverture de plus, sortiesDeLouverture une sortie « Compris ».', ou: 'B1' },
+  { titre: 'L’encart de contexte sur le plan (v1-18)', avant: 'Rien : sept gabarits écartés sans un mot, nulle part.', apres: 'Encart au gabarit de C2.2 : les quatre réponses en mots, la règle « Ce qui ne tient pas avec ces réponses n’est pas proposé. », la porte « Modifier ces réponses ». Absent d’un plan à zéro action.', apport: 'La restriction se dit une fois, pour les sept, après coup et sans marchander : ni gain, ni action écartée nommée.', prix: 'Une table réponse → phrase dans src/types (épinglée par un test) ; la requête du plan lit les quatre colonnes de assessment_answers ; un TextLink.', ou: 'A1, B1, B2' },
+  { titre: 'La porte « Modifier ces réponses »', avant: 'Le seul chemin était « Refaire mon bilan » : neuf étapes.', apres: 'Ouvre le questionnaire prérempli sur l’étape « Contexte de mobilité » (/bilan?etape=context). Soumettre régénère le plan comme un re-bilan.', apport: 'Corriger une réponse coûte un écran, pas neuf.', prix: 'Un paramètre lu par bilan/index.tsx. La mécanique du re-bilan ne change pas : C2.2 archive l’engagement et l’encart orphelin le dit.', ou: 'A1' },
+  { titre: 'La question du télétravail', avant: '« Peux-tu travailler depuis chez toi ? » Oui / Parfois / Non — une possibilité, lue comme une fréquence.', apres: '« Sur tes 5 jours de trajet, combien pourrais-tu travailler depuis chez toi ? » Aucun / Un jour / Deux ou plus. Posée dès deux jours de trajet.', apport: 'La réponse est dans l’unité que le produit lit ; « Parfois » n’existe plus. Le seuil ne bouge pas : un jour ⇔ « Un jour », deux jours ⇔ « Deux ou plus ».', prix: 'Copy ; valeurs aucun / un_jour / deux_ou_plus (migration : check, teletravail_admissible, commentaire) ; REPONSES_TELETRAVAIL ; manqueDeLEtape et normaliserReponses lisent commute_days_per_week.', ou: 'D' },
+  { titre: 'L’intro de l’étape', avant: '« Ça nous sert à te proposer des actions réalistes. Ces réponses n’entrent pas dans le calcul de ton bilan. »', apres: '« Ton plan ne propose que ce qui tient avec ces réponses. Elles n’entrent pas dans le calcul de ton bilan. »', apport: 'Le mécanisme est dit comme une règle, pas comme un service. La seconde phrase reste : c’est elle qui empêche de lire l’étape comme un jugement.', prix: 'Copy.', ou: 'D' },
+  { titre: 'Zone, transports en commun, véhicules', avant: 'Trois questions de fait, sans phrase d’aide.', apres: 'Inchangées.', apport: 'Leurs réponses sont des faits, et l’action écartée porte le mot de la réponse (« métro », « transports en commun », « à deux »). La restriction se dit par l’encart du plan.', prix: 'Aucun.', ou: 'D, E' },
+  { titre: 'Le plan à zéro action', avant: 'Cap sans chiffre, félicitation, pas de note technique.', apres: 'Inchangé : ni lien vers les pistes, ni encart de contexte, ni carte de premier plan.', apport: 'Le zéro vient du mode, pas des réponses de l’étape : une porte y promettrait ce qu’elle ne peut pas tenir.', prix: 'Trois gardes de rendu sur actionsCount === 0.', ou: 'C' },
+  { titre: 'La barre d’onglets attend la fin du premier parcours', avant: 'Visible dès la restitution du premier bilan, absente sur la proposition de compte, de retour sur le plan : deux lieux proposés avant qu’il y ait quoi que ce soit à suivre.', apres: 'Masquée de la soumission du premier questionnaire à la fermeture de la carte « Ton premier plan » (« Compris » ou premier engagement). Elle glisse alors depuis le bas, 320 ms.', apport: 'Un lieu n’apparaît que quand il a quelque chose à montrer. Le premier parcours reste un flux à un geste par écran, jusqu’au choix — et il a une fin : la carte se ferme, la barre vient.', prix: 'Une marque locale traceverte.premier_parcours.v1, posée à la soumission avec la marque de bilan, effacée à la fermeture de la carte, balayée par le préfixe ; tabBarStyle display none depuis le layout des onglets ; l’inset bas des deux écrans sans barre. Un appareil neuf d’un compte existant n’a pas la marque : la barre est là.', ou: 'F1, B1, F2, F3' },
+  { titre: 'La carte « Plan et Suivi »', avant: '—', apres: 'À l’arrivée de la barre, une fois, à la place de la carte d’attente : « Deux endroits, pas plus. », les deux phrases, « Compris ». Ramille dessous : « Je note tes réponses dans ton suivi, au fil des saisons. »', apport: 'Les deux onglets sont nommés au moment exact où ils apparaissent, par ce qu’on y trouve. Elle ne revient jamais.', prix: 'Une ouverture de plus pour CarteDeSaison ; une réplique de plus dans RAMILLE, couverte par le test « aucun chiffre » ; la même marque locale.', ou: 'F3' },
+  { titre: 'La restitution du premier bilan, sans barre', avant: 'La même que la relecture, barre comprise : le premier endroit où l’on voit deux onglets est la dernière page du questionnaire.', apres: 'Le contenu ne change pas d’un mot ; la barre est absente tant que le premier parcours n’est pas fini. « Voir ce que je peux faire » est le seul chemin en avant, « Modifier mes réponses » le seul retour.', apport: 'La restitution redevient, la première fois, la dernière page d’un flux — ce que CLAUDE.md dit déjà d’elle.', prix: 'La même marque, lue par le layout ; rien dans l’écran.', ou: 'F1' },
+  { titre: 'L’espace fine des milliers', avant: '« − 1601 kg CO₂e »', apres: '« − 1 601 kg CO₂e »', apport: 'Première fois qu’un gain a quatre chiffres ; sans elle il se lit mal.', prix: 'Un formateur à la main (jamais toLocaleString : Hermes), et son jumeau dans api/.', ou: 'A1, A3, B1, B2' },
+  { titre: 'Thème sombre', avant: 'Colors.dark provisoire', apres: 'Toutes les planches basculent ; aucun jeton ajouté.', apport: 'Rien de nouveau à porter dans les deux thèmes.', prix: 'Aucun.', ou: 'toutes' },
+];
+
+// ── Le parcours, moment par moment (page G).
+const MOMENTS = [
+  { moment: 'Première ouverture', ou: 'onboarding · 4 écrans', voit: 'Une accroche, le contexte chiffré, une réassurance, la transition vers le bilan. Un bouton par écran, quatre points de progression, « J’ai déjà un compte » sur le premier.', nouveau: 'Tout. Aucune barre, aucun lieu : un flux.', explique: 'Le flux lui-même, et Ramille qui se présente. Inchangé.' },
+  { moment: 'Le questionnaire', ou: '9 étapes', voit: 'Une question par écran, « Étape N sur M », la barre de progression, Retour / Suivant. Ramille ouvre chacune des quatre sections.', nouveau: 'La dernière étape dit la règle du plan : « Ton plan ne propose que ce qui tient avec ces réponses. » (D).', explique: 'L’en-tête, et l’intro de chaque étape. Inchangé sauf D.' },
+  { moment: 'Le calcul', ou: 'CalculEnCours', voit: 'Ramille qui réfléchit. « Je calcule ton bilan… »', nouveau: '—', explique: 'Rien à expliquer : c’est une attente. Inchangé.' },
+  { moment: 'La restitution', ou: 'F1 · sans barre', voit: 'Le déplacement qui pèse le plus, la répartition, le total, « Où tu te situes », le prochain palier, « Voir ce que je peux faire ».', nouveau: 'Pas de barre : la première fois, cet écran est la dernière page du flux, pas le détail d’une entrée du suivi.', explique: 'La phrase du palier annonce le plan : « Le plan qui suit propose de quoi la franchir ; 2050 se joue palier après palier. »' },
+  { moment: 'La proposition de compte', ou: '/connexion · plein écran', voit: '« Garde ce résultat et suis ta progression », Google, un email, « Continuer sans compte ».', nouveau: '—', explique: 'Inchangée (v1-04 §1 : après la restitution, avant le plan). Les trois issues mènent au plan.' },
+  { moment: 'Le premier plan', ou: 'B1 · sans barre', voit: 'La carte « Ton premier plan », Ramille dessous, le principe, le cap sans trait, deux actions, la porte vers toutes les pistes, l’encart de contexte.', nouveau: 'La carte dit la règle du jeu en deux phrases. Un geste attendu : choisir. Rien n’est forcé — « Compris », « Revoir mon bilan », l’icône de compte restent.', explique: 'La carte d’ouverture, une fois. Le premier pas n’apparaît qu’après le choix.' },
+  { moment: 'Le premier engagement', ou: 'F2 · la feuille', voit: '« Je m’y engage », les jours ou l’échéance, « C’est noté », puis la feuille : Ramille dit quand elle revient, le produit propose le canal.', nouveau: '—', explique: 'La feuille, inchangée. C’est elle qui dit ce qui va se passer.' },
+  { moment: 'La barre arrive', ou: 'F3 · Plan et Suivi', voit: 'La barre glisse depuis le bas. En tête, une carte : « Deux endroits, pas plus. » Ici ton plan, en bas ton suivi. Ramille : « Je note tes réponses dans ton suivi, au fil des saisons. »', nouveau: 'Les deux onglets, nommés au moment où ils apparaissent, par ce qu’on y trouve.', explique: 'La carte, une fois ; « Compris » la remplace par la carte d’attente. Même moment après « Compris » sans choix, ou sur un plan à zéro action.' },
+  { moment: 'Le suivi, première visite', ou: 'F4', voit: 'Son point de départ, la décision qu’elle vient de prendre, Ramille qui dit ce qui viendra s’y ranger, « Refaire mon bilan ».', nouveau: 'Rien de dessiné : l’ordre du parcours suffit, la décision est déjà là.', explique: 'L’écran lui-même. Inchangé.' },
+  { moment: 'Le premier point', ou: 'lundi, ou le 1er', voit: 'La notification ouvre le plan sur la question. Oui, Non, « Pas de trajet la semaine dernière ». Ramille répond, la carte reste jusqu’au prochain point.', nouveau: 'La question nomme l’action et les jours choisis (C2.1).', explique: 'Rien : la question est l’explication. Inchangé.' },
+  { moment: 'La saison suivante', ou: 'C2.8', voit: '« L’hiver commence. » Ce que la saison a donné, « Reprendre la même action » ou « Choisir une autre », Ramille dessous.', nouveau: 'La troisième et dernière carte d’ouverture, quatre fois par an.', explique: 'La carte de saison. Inchangée.' },
+  { moment: 'La cinquantième fois', ou: 'B2', voit: 'Le point s’il attend, sinon la carte d’attente ; le principe ; le cap et son trait ; l’action engagée ; la porte ; l’encart de contexte.', nouveau: 'Rien. Aucune carte d’ouverture ne revient ; la barre est là ; les mots sont ceux du premier jour.', explique: 'Ce qui reste fixe est ce qui reste utile : un rappel, une échéance, une référence.' },
+];
+
+class Component extends DCLogic {
+  state = { themeOverride: null, ouvertes: {}, teletravail: 'deux_ou_plus' };
+  renderVals() {
+    const s = this.state;
+    const theme = s.themeOverride || this.props.theme || 'light';
+
+    const lignes = [];
+    PISTES.forEach((g) => {
+      lignes.push({ tete: true, fermee: false, ouverte: false, label: g.poste, titre: '', gain: '', gainLong: '', part: '', detail: '', ouvrir: null, reduire: null });
+      g.items.forEach((p) => {
+        const key = p.titre;
+        const open = !!s.ouvertes[key];
+        lignes.push({
+          tete: false, fermee: !open, ouverte: open, label: '',
+          titre: p.titre, gain: `− ${p.kg} kg`, gainLong: `− ${p.kg} kg CO₂e`,
+          part: `par an · ${p.part} % de ton empreinte`, detail: p.detail,
+          ouvrir: () => this.setState({ ouvertes: { ...s.ouvertes, [key]: true } }),
+          reduire: () => { const o = { ...s.ouvertes }; delete o[key]; this.setState({ ouvertes: o }); },
+        });
+      });
+    });
+
+    const ttChips = TELETRAVAIL.map((o) => {
+      const selected = s.teletravail === o.v;
+      return {
+        label: o.label, aria: o.aria, selected,
+        style: { flex: 1, minWidth: 0, padding: '12px 4px', border: '1.5px solid transparent', borderRadius: 14, background: selected ? 'var(--c-accent)' : 'var(--c-el)', color: selected ? '#FFFFFF' : 'var(--c-text)', fontFamily: "'Spline Sans', ui-sans-serif, system-ui, sans-serif", fontSize: 15, lineHeight: '20px', fontWeight: selected ? 600 : 400, textAlign: 'center', cursor: 'pointer' },
+        pick: () => this.setState({ teletravail: o.v }),
+      };
+    });
+
+    return {
+      theme, themeLabel: theme === 'dark' ? 'Voir en thème clair' : 'Voir en thème sombre',
+      toggleTheme: () => this.setState({ themeOverride: theme === 'dark' ? 'light' : 'dark' }),
+      mascotAttente: ramille('resting', 40, 0),
+      mascotFelicite: ramille('happy', 36, 0),
+      mascotPremier: ramille('happy', 44, -5),
+      mascotEtape: ramille('happy', 28, 0),
+      mascotFeuille: ramille('calm', 44, 0),
+      mascotSuivi: ramille('calm', 44, -5),
+      moments: MOMENTS,
+      lignes, toutReduire: () => this.setState({ ouvertes: {} }),
+      ttChips,
+      ecarts: ECARTS,
+    };
+  }
+}
+</script>
+</body>
+</html>
