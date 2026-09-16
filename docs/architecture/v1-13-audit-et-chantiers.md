@@ -314,6 +314,26 @@ a déjà soumis un bilan, et 12.6 fait manquer à un email de rappel la sortie q
 offrir. Ils commencent quand même par une page de décision — c'est la règle du lot — mais une page
 courte : ce qui est à trancher est le **moyen**, pas l'opportunité.
 
+**Relevé du 16/09/2026 — ce que la recette web verse dans la vague 8.** Même régime que le relevé
+ci-dessus, pour une séance d'une autre nature : un navigateur, une fenêtre privée, et le blocage de
+requêtes de DevTools pour couper l'API sans couper le site. Sept entrées, dont deux qui ne sont pas
+des correctifs mais des arbitrages, et une qui part en brief Claude Design.
+
+| Constat (§13) | Où il vit dans la vague 8 | Issue |
+|---|---|---|
+| 13.1 — « Parfois » au télétravail coûte une action, et rien ne le dit | décision produit : une phrase d'aide, ou une reformulation en fréquence (plus chère, elle migre le `check`) | [#197](https://github.com/ScratchMe/TraceVerte/issues/197) |
+| 13.2 — une coupure réseau répond par une trace de pile | chantier à part entière, petit ; une ligne dans le `catch` de la soumission | [#193](https://github.com/ScratchMe/TraceVerte/issues/193) |
+| 13.3 — le plan enfouit son meilleur levier, et le déplié franchit sa limite de densité | **arbitrage**, le plus lourd de la séance : le classement SQL **et** la densité, indissociables. La moitié densité part en **brief Claude Design**, écrit le 16/09/2026 : [`v1-17`](../design/v1-17-densite-du-plan/BRIEF.md) | [#198](https://github.com/ScratchMe/TraceVerte/issues/198) |
+| 13.4 — « Rattache un compte » sur le plan est un mur | chantier à part entière, petit ; `carteAttente` rend une action, le plan pose un `TextLink` | [#194](https://github.com/ScratchMe/TraceVerte/issues/194) |
+| 13.5 — une ligne dépliée en carte se colle à sa voisine | chantier à part entière, minime ; un `gap` dans `plan.tsx` | [#195](https://github.com/ScratchMe/TraceVerte/issues/195) |
+| 13.6 — le premier pas du vol long-courrier ne décrit pas un essai | chantier à part entière, minime ; une migration de données | [#196](https://github.com/ScratchMe/TraceVerte/issues/196) |
+| 13.7 — la pastille d'onglet n'englobe que l'icône (web) | **basse priorité**, web seulement ; à ne pas « corriger » en englobant partout | [#199](https://github.com/ScratchMe/TraceVerte/issues/199) |
+
+**Aucun de ces sept n'est un défaut en production au sens de 12.5**, et c'est la différence avec le
+relevé précédent : rien ici ne rend l'app inutilisable. Quatre sont des correctifs francs
+(13.2, 13.4, 13.5, 13.6) qui tiennent dans une seule PR ; deux sont des arbitrages (13.1, 13.3) ;
+un est un reste assumé (13.7).
+
 Trois règles pour distribuer :
 
 - **Un agent par chantier, jamais deux chantiers d'une même file en même temps** (§2.2 dit
@@ -2113,6 +2133,13 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | Recette 12.2 | [#177](https://github.com/ScratchMe/TraceVerte/issues/177) | [#187](https://github.com/ScratchMe/TraceVerte/pull/187) | 15/09/2026 | livré : la taille du covoiturage se demande sous « Voiture (covoiturage) » de B1.4, par `PrecisionChiffres`, comme ses deux jumelles de C3.5 ; la condition a suivi dans `manqueDeLEtape`. **Effet de bord refermé au passage** : `commute_extra` portait son `screenTitle` sur un bloc **conditionnel**, donc qui ne covoiturait pas y arrivait sur un écran sans titre. Décision en [`v1-16`](v1-16-trois-decisions-decran.md) §3 |
 | Recette 12.3 | [#178](https://github.com/ScratchMe/TraceVerte/issues/178) | [#187](https://github.com/ScratchMe/TraceVerte/pull/187) | 15/09/2026 | livré **sans migration**, ce que l'issue n'anticipait pas : `null` décrit un questionnaire en cours, jamais un bilan soumis — l'étape est visible exactement quand la question s'applique. Et rendre la colonne nullable réimporterait l'ambiguïté en base, la branche du calcul étant `if a.commute_second_mode_used and …`, où `null` se comporte comme `false`. Le repli `?? false` de l'insert est inatteignable et écrit quand même. [`v1-16`](v1-16-trois-decisions-decran.md) §4 |
 | Recette 12.4 | [#179](https://github.com/ScratchMe/TraceVerte/issues/179) | [#187](https://github.com/ScratchMe/TraceVerte/pull/187) | 15/09/2026 | livré : les trois rangs de `pistesDuPlan` ne bougent pas — ils disent l'**insistance** — et la ligne simple s'ouvre en carte au toucher, donc toute action affichée est engageable. La porte de sortie du rendu (« la faire remonter ») est retirée. Une garde de **partition** s'ajoute à `plan.test.ts` : un rang qui laisserait tomber une action recréerait ici, en silence, le `limit 2` que C4.6 a retiré du serveur. [`v1-16`](v1-16-trois-decisions-decran.md) §5 |
+| Recette 13.1 | [#197](https://github.com/ScratchMe/TraceVerte/issues/197) | | | « Parfois » au télétravail retire l'action à deux jours du plan, et rien à l'écran ne le dit. **Arbitrage** : une phrase d'aide, ou une reformulation en fréquence — la seconde migre le `check` et reprend les bilans soumis. Le seuil lui-même (C3.8) ne bouge pas |
+| Recette 13.2 | [#193](https://github.com/ScratchMe/TraceVerte/issues/193) | | | une coupure réseau à la soumission affiche la trace de pile, alors que `genreErreurSoumission(error)` a déjà rendu `'reseau'` trois lignes plus haut pour la mesure. Ne pas toucher à `decrireErreur`, qui garde les quatre autres genres |
+| Recette 13.3 | [#198](https://github.com/ScratchMe/TraceVerte/issues/198) | | | **le plus lourd de la séance, et un arbitrage.** Le `row_number()` de C4.6 classe par poste dominant puis par gain : une action à 48 kg a une carte, une à 461 kg une ligne — et 461 kg dépasse le cap de la saison. Corollaire : ce tri rend presque mortes les deux branches de débordement de `cadreDuPlan`. La moitié **densité** part en brief Claude Design, écrit le 16/09/2026 : [`v1-17`](../design/v1-17-densite-du-plan/BRIEF.md) |
+| Recette 13.4 | [#194](https://github.com/ScratchMe/TraceVerte/issues/194) | | | la carte d'attente du plan dit « Rattache un compte » sans offrir de chemin ; le commentaire de `lignesDeReglage` écrit pourtant « une porte, pas un mur ». Destination « Toi » et non `/connexion`, pour ne pas ajouter de provenance à `SOURCES_CONNEXION` |
+| Recette 13.5 | [#195](https://github.com/ScratchMe/TraceVerte/issues/195) | | | `lignesPistes: { gap: 0 }` était juste pour des lignes, faux depuis qu'elles s'ouvrent en cartes (`v1-16` §5). Deux pièges : les marges ne fusionnent pas en Yoga, et les lignes fermées gardent 44 px de cible |
+| Recette 13.6 | [#196](https://github.com/ScratchMe/TraceVerte/issues/196) | | | « Note les dates que tu gardes libres, avant de réserver » ne dit ni pour quoi ni quoi réserver, là où son jumeau `remove_trip` dit un essai. Migration de données ; `first_step` étant figé sur `plan_actions`, les plans existants gardent la phrase jusqu'à leur régénération |
+| Recette 13.7 | [#199](https://github.com/ScratchMe/TraceVerte/issues/199) | | | **basse priorité, web seulement** : la pastille d'onglet n'englobe que l'icône en disposition horizontale. Juste sur mobile — ne pas englober les deux partout |
 
 ## 11. Vérifications sur appareil en attente
 
@@ -2124,7 +2151,10 @@ ce qui manque est la preuve en conditions réelles. Même régime que `v1-11` §
 les points restants ne sont pas repris ici.
 
 **La première séance a eu lieu le 14/09/2026**, et chaque ligne qu'elle touche le dit en tête de sa
-case. Deux façons de la lire sans se tromper : une ligne qui commence par « Fait le 14/09/2026 » a
+case. **La seconde, le 16/09/2026, n'a touché aucune ligne de cette section et ne pouvait pas** :
+elle s'est tenue dans un navigateur, faute de build disponible avant le 1er octobre, et tout ce qui
+est listé ici demande un appareil. Ce qu'elle a trouvé est en §13 ; qu'elle ait eu lieu ne réduit
+donc **rien** de ce tableau — une ligne muette reste muette. Deux façons de la lire sans se tromper : une ligne qui commence par « Fait le 14/09/2026 » a
 été regardée et n'a rien donné, ce qui n'est pas la même chose que « couverte par une suite » ; et
 une ligne qui ne dit rien n'a pas été jouée, y compris quand le bloc qui la portait est revenu `ok`
 sur autre chose. Ce que la séance a **trouvé** ne vit pas ici mais en §12 — elle a servi à voir, pas
@@ -2226,3 +2256,83 @@ répondu », donc un questionnaire **vierge** arrive avec « Non » pré-coché.
 qu'il a été vu l'aurait rendu faux et probablement classé sans suite. **Un constat de recette se
 relit dans le code avant d'être consigné**, et ce qui s'y écrit est ce que le code fait — pas ce que
 l'écran a montré ce jour-là, sur cet état-là.
+
+## 13. Ce que la recette web du 16/09/2026 a trouvé
+
+Deuxième séance, d'une autre nature que celle du 14/09 : **un navigateur**, faute de build EAS
+disponible avant le 1er octobre (quota du plan gratuit, registre d'exploitation §3.3). Fenêtre de
+navigation privée sur `www.ramille.fr`, commit `b033b37`, et le **blocage de requêtes de DevTools**
+comme instrument — `https://nuugfepfsypqgvsvyzht.supabase.co/*` pour couper toute l'API,
+`…/rest/v1/assessment_answers*` seul pour n'arrêter que l'écriture des réponses. C'est ce qui rend
+la séance possible sans appareil : le site est servi par Vercel, seul le dialogue avec la base
+tombe, et une requête coupée se comporte comme une vraie coupure (`status: 0`).
+
+Dix blocs, tous joués. **Sept constats**, aucun bloquant, et une série de vérifications qui
+n'avaient jamais été faites en conditions réelles. Une issue par constat sauf 13.3, qui en réunit
+deux — les arbitrer séparément reviendrait à arbitrer deux fois. Les sept sont accrochés à la vague
+8 en §2.3.
+
+### Ce qui est vert, et qui ne l'avait jamais été autrement que par un test
+
+- **Le bilan fantôme est fermé.** Soumission coupée entre les deux écritures : la base garde un
+  bilan `in_progress`, `submitted_at` nul, **0 réponse, 0 résultat, 0 cycle de plan**. La racine
+  routant sur `completed`, cette ligne est invisible pour tout le produit — c'est exactement ce que
+  `20260911120000_soumission_bilan.sql` promet.
+- **La reprise réutilise la ligne.** Blocage retiré, soumission rejouée : **même `id`, même
+  `created_at`**, passage en `completed`, `submitted_at` posé par le trigger serveur. Pas de
+  doublon, pas d'orphelin.
+- **Les chiffres du plan tiennent.** Cap − 451 kg = 20 % × 2 254,6 ; parts d'empreinte 43 % et 7 %
+  contre un total de 3 740 kg ; « Voir d'autres pistes · 9 » = 11 − 2 ; le trait de saison à ~17 %
+  le 16ᵉ jour sur 91, avec sa légende ; la période nommée dans la carte du cap et la puce
+  « Cadence » bien absente (C2.8).
+- **Les échéances suivent le poste** : une action de voyages propose les échéances de voyages, pas
+  « Ce mois-ci » (C3.8).
+- **L'appariement par poste de C2.1, vu pour la première fois en vrai.** Le point hebdomadaire
+  généré porte sur une semaine **dans** le cycle, l'appariement a donc cherché une action engagée
+  sur le poste `commute`, n'en a pas trouvé (l'engagement porte sur les voyages) et a produit la
+  question générique. C'est mot pour mot ce que le chantier promettait d'empêcher : « sans
+  l'appariement, une action engagée sur les loisirs aurait nommé la question du trajet
+  domicile-travail ».
+
+### Les sept constats
+
+| | Constat | Suite |
+|---|---|---|
+| 13.1 | **« Parfois » au télétravail coûte une action, et rien ne le dit.** `teletravail_admissible` vaut `array['oui','parfois']` sur « un jour » et `array['oui']` sur « deux jours » : répondre « Parfois » retire du plan l'action la plus rentable du poste domicile-travail (461 kg/an contre 230). Or la question porte sur la **possibilité**, et rien à l'écran ne dit que la réponse décide de quelque chose — le motif de C3.4 / C3.5 / C3.6 et du second mode, une quatrième fois. | [#197](https://github.com/ScratchMe/TraceVerte/issues/197) |
+| 13.2 | **Une coupure réseau répond par une trace de pile.** Sous la phrase française correcte, la soumission affiche le retour brut de `decrireErreur` — cinq lignes de bundle minifié, en anglais. `decrireErreur` n'est pas en cause (il évite le « [object Object] » corrigé le 14/09) : le défaut est que **le même `catch` a déjà classé l'erreur** en `'reseau'` trois lignes plus haut, pour la mesure, et que `setDetail` ne regarde pas ce genre. Le cas d'échec le plus probable en production est le seul où le détail ne dit rien. | [#193](https://github.com/ScratchMe/TraceVerte/issues/193) |
+| 13.3 | **Le plan enfouit son meilleur levier, et le déplié franchit sa propre limite de densité.** Le `row_number()` de C4.6 classe par poste dominant **puis** par gain : sur ce profil, une action à 48 kg a une carte et une action à **461 kg** une ligne simple — alors que 461 kg dépasse à elle seule le cap de la saison (451 kg). Corollaire non prévu : ce tri rend **presque mortes** les deux branches de `cadreDuPlan` écrites pour annoncer le débordement, qui ne lisent que les deux cartes pleines. Et « déplier + ouvrir les lignes » mène à onze cartes pleines, quand C4.6 pose quatre comme limite (« au-delà, c'est un catalogue ») ; « Replier », rendu avant le bloc déplié, est alors hors écran. | [#198](https://github.com/ScratchMe/TraceVerte/issues/198) — la moitié densité part en **brief Claude Design** : [`v1-17`](../design/v1-17-densite-du-plan/BRIEF.md) |
+| 13.4 | **« Rattache un compte » sur le plan est un mur.** La carte d'attente est un `ThemedView` nu : la phrase dit quoi faire, et rien ne permet de le faire. Le commentaire de la fonction sœur `lignesDeReglage` écrit pourtant la doctrine — « une porte, pas un mur ». Le remède a son motif dans le dépôt (le lien « Ouvrir les réglages du téléphone », qui n'existe que dans l'état qui le réclame et se rend sous la ligne qui le porte) ; la destination est « Toi » et non `/connexion`, ce qui évite d'ajouter une provenance à `SOURCES_CONNEXION`. | [#194](https://github.com/ScratchMe/TraceVerte/issues/194) |
+| 13.5 | **Une ligne dépliée en carte se colle à sa voisine.** `lignesPistes` porte `gap: 0` — juste pour des lignes, faux pour des cartes, `ActionCard` n'ayant aucune marge extérieure. Né avec `v1-16` §5, qui a rendu les lignes dépliables sans que le conteneur ne le sache. Deux pièges à l'implémentation : en Yoga **les marges ne fusionnent pas**, et les lignes fermées doivent garder 44 px de cible tactile. | [#195](https://github.com/ScratchMe/TraceVerte/issues/195) |
+| 13.6 | **Le premier pas du vol long-courrier ne décrit pas un essai.** « Note les dates que tu gardes libres, avant de réserver » laisse deux trous — libres pour quoi, réserver quoi — et « avant de réserver » contredit l'action qu'il amorce. Ce n'est pas un mauvais appariement : c'est que **le jumeau du même geste** (`remove_trip` court-courrier) dit « Regarde lequel de tes déplacements prévus tient sans avion », qui est un essai. | [#196](https://github.com/ScratchMe/TraceVerte/issues/196) |
+| 13.7 | **La pastille d'onglet actif n'englobe que l'icône.** Sur mobile, le libellé est sous l'icône et la pastille se lit comme appartenant au couple (Material 3, canvas `v1-11`). Sur le web à largeur de bureau, la barre bascule en disposition horizontale et la pastille se retrouve à côté du libellé. **Basse priorité** — V1 est Google Play, et il ne faut surtout pas englober les deux partout. | [#199](https://github.com/ScratchMe/TraceVerte/issues/199) |
+
+### Ce que le web ne prouve pas, et pourquoi
+
+- **La boucle de rappel, en entier.** Aucun canal n'existe pour une session anonyme sur le web : pas
+  de jeton d'appareil, pas d'adresse. `enqueue_checkin_reminders` n'a donc **rien mis en file**, ce
+  qui est correct — et confirme au passage le libellé de la carte d'attente de 13.4. Sans ligne
+  d'outbox, pas de jeton, donc `/rappels/stop` n'est jouable qu'aux deux tiers : le refus
+  non-divulgant d'un uuid inconnu et le garde de forme sur un jeton tronqué, oui ; le chemin
+  nominal, non.
+- **« La question du point nomme l'action engagée » sur la boucle mensuelle.** Voir la leçon de
+  méthode ci-dessous : ce n'est pas un défaut du produit, c'est une limite de la manipulation.
+- **Tout ce qui demande un appareil** reste en §11 : le push, TalkBack, le lien `ramille://`, les
+  App Links. La séance n'y touche pas.
+
+### Deux leçons de méthode
+
+**Forcer un générateur hors de sa date de cron produit une question sur une période antérieure au
+cycle de plan.** L'appariement de C2.1 est
+`v_period_start between pc.period_start and pc.period_end` : lancé un **16** du mois,
+`generate_extras_checkins()` pose `period_start` au 1er août, or le cycle commence le 1er septembre.
+Aucune action ne peut alors être appariée, et la question retombe sur le générique — ce qui **a
+l'air** d'un défaut de C2.1 et n'en est pas un. En production le cron passe le 1er, la période
+interrogée est dans le cycle, et l'action est nommée. Deux contournements, aucun gratuit : attendre
+un vrai 1er du mois, ou engager une action du poste domicile-travail, dont le point hebdomadaire
+tombe bien dans le cycle — au prix de l'archivage de l'engagement en cours (C2.2).
+
+**Un faux positif se consigne aussi.** Le bloc « Estimations sur la base des facteurs ADEME… » du
+plan s'affiche en chasse fixe, ce qui se lit comme une police qui n'a pas chargé. C'est `type="code"`
+(`Fonts.mono`, 12 px, tertiaire), le registre des notes techniques du produit, employé à dix-neuf
+endroits. Vérifié avant d'être signalé — et écrit ici pour que la prochaine recette ne le resignale
+pas.
