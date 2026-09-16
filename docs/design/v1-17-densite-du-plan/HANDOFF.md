@@ -6,7 +6,8 @@ Ce dossier répond à **deux briefs** écrits le 16/09/2026 au lendemain de la r
 premier parcours (constat 13.3, issue #198) — et `v1-18` — une réponse du questionnaire qui restreint
 sans le dire (constat 13.1, issue #197). **Un seul canvas**, parce que la réponse au second met la
 restriction sur le plan, qui est l'écran que le premier dessine (v1-18 §6, dernier point) ; le dossier
-`v1-18` renvoie ici.
+`v1-18` renvoie ici. La relecture du titulaire, le 16/09/2026, a étendu le canvas au **premier parcours** entier,
+de la restitution au suivi (F, G) : les deux onglets n'apparaissent qu'à la fin de ce parcours.
 
 Cible : `ScratchMe/TraceVerte`, branche `main`, React Native / Expo Router. Ce canvas demande **une
 migration** (le classement) et **une route** (l'écran des pistes) ; tout le reste est de la copy, des
@@ -80,6 +81,29 @@ calcul. Les cadres des écrans qui défilent sont **allongés** pour tout montre
    réouverture : si un gabarit futur porte une condition qui ne se lit pas dans le mot de la
    réponse, on reformule la réponse — comme ici — on n'ajoute pas de liste.
 
+### Le premier parcours (relecture du titulaire, 16/09/2026)
+
+Le premier plan n'est pas un écran, c'est un moment dans un parcours — et ce parcours proposait deux
+lieux (Plan, Suivi) avant qu'il y ait quoi que ce soit à suivre, dès la dernière page du questionnaire.
+Une règle et une séquence :
+
+- **Un lieu n'apparaît que quand il a quelque chose à montrer.** La barre d'onglets est masquée de la
+  soumission du premier questionnaire à la fermeture de la carte « Ton premier plan » (« Compris » ou
+  premier engagement). Jusque-là, chaque écran n'a qu'un geste : la restitution (« Voir ce que je peux
+  faire »), la proposition de compte (inchangée), le premier plan (choisir). Ce n'est pas une contrainte :
+  « Compris » ferme la carte et fait venir la barre sans avoir choisi ; « Revoir mon bilan » et l'icône
+  de compte restent.
+- **Quand la barre arrive, elle est nommée, une fois** : la carte « Plan et Suivi » (« Deux endroits,
+  pas plus. ») prend la place de la carte d'attente et dit ce qu'on trouve ici et en bas ; Ramille
+  dessous dit où iront les réponses, dans ses mots du suivi. Même carte, même moment, après un
+  « Compris » sans choix ou sur un plan à zéro action.
+- **Le suivi ne change pas** : le jour où la personne y entre, il s'explique par ce qu'il contient — son
+  point de départ, la décision qu'elle vient de prendre, Ramille qui dit ce qui viendra s'y ranger. C'est
+  l'ordre du parcours qui le rend lisible, pas un texte de plus.
+- **Trois cartes d'ouverture, chacune une seule fois** : « Ton premier plan », « Plan et Suivi »,
+  « Nouvelle saison ». Rien d'autre ne se réexplique jamais ; la cinquantième ouverture est l'écran B2,
+  avec les mots du premier jour.
+
 ### Les questions ouvertes des briefs, une par une
 
 - v1-17 §7.1 — Une action d'un autre poste en première carte ? **Non tant que le dominant a une piste ;
@@ -127,6 +151,10 @@ Ce qui n'est pas listé est inchangé.
 14. **Le plan à zéro action** — inchangé : ni porte, ni encart, ni premier plan.
 15. **L'espace fine des milliers** — « − 1 601 kg CO₂e », formateur à la main, jumeau dans `api/`.
 16. **Thème sombre** — toutes les planches basculent, aucun jeton ajouté.
+17. **La barre d'onglets attend la fin du premier parcours** — masquée de la soumission du premier
+    questionnaire à la fermeture de la carte « Ton premier plan » ; elle glisse depuis le bas, 320 ms.
+18. **La carte « Plan et Suivi »** — à l'arrivée de la barre, une fois, à la place de la carte d'attente.
+19. **La restitution du premier bilan, sans barre** — le contenu ne change pas.
 
 ## Planche par planche
 
@@ -200,6 +228,8 @@ Signal : aucun cycle précédent, aucun engagement (courant ou archivé). L'écr
   qu'une fois une action engagée. La période et sa fin restent.
 - La carte se ferme par « Compris » (marque locale, comme `carteOuvertureVue`) ou par le premier
   engagement. Elle ne se rend pas sur un plan à zéro action (C).
+- **Pas de barre d'onglets** tant que la carte est là (§« Le premier parcours »). L'écran garde son
+  inset bas ; « Revoir mon bilan » et l'icône de compte restent les seules sorties.
 
 ### B2 — Le plan de retour · action engagée, point de la semaine
 Le même profil, engagé sur le vol long-courrier ; un point est en attente.
@@ -245,6 +275,43 @@ gap 32, bloc gap 24, champ gap 10 ; pied collant « Retour » secondaire + « Vo
   la poser demanderait une réponse pour rien. `manqueDeLEtape` suit la même condition ;
   `normaliserReponses` remet la réponse à `null` (« à reposer ») quand les jours passent sous deux.
 
+### F1 — La restitution du premier bilan · sans barre
+Le contenu est celui de l'écran actuel en mode `nouveau`, mot pour mot (sur-titre, décision
+dominante, répartition, total et bloc de méthode, « Où tu te situes » avec le palier, « Voir ce que je
+peux faire », « Modifier mes réponses », le partage). **Ce qui change** : la barre d'onglets n'est pas
+rendue tant que le premier parcours n'est pas fini. La bande haute reste.
+
+### F2 — Après « C'est noté » · la feuille des rappels
+Inchangée (`FeuilleRappels`) : Ramille dit quand elle revient (ici la boucle mensuelle, l'action
+étant un voyage : `boucleDeLAction`), le produit propose le canal, « Tu pourras changer d'avis dans
+« Toi ». » Derrière, le plan sans barre. La barre arrive à la fermeture de la feuille.
+
+### F3 — La barre arrive · « Plan et Suivi »
+- **La barre** glisse depuis le bas : translateY 60 → 0 et opacité, 320 ms ease-out (Reanimated,
+  `ReduceMotion.System`), une fois, à la fermeture de la feuille — ou de la carte « Ton premier plan »
+  par « Compris », ou au premier rendu d'un plan à zéro action.
+- **La carte « Plan et Suivi »** : motif `CarteDeSaison` (bordure 1 px `border`, fond
+  `backgroundTinted`, rayon 18, padding 20, gap 12). Étiquette « PLAN ET SUIVI » 13/18/700 +0,3
+  `accentText` ; titre `screenTitle` « Deux endroits, pas plus. » ; corps `body` `textSecondary`
+  « Ici, ton plan : l'action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes
+  réponses, saison après saison. » ; sortie `TextLink` small 600 `accentText` « Compris ». Elle prend la
+  place de la carte d'attente, et « Compris » (marque locale) la lui rend.
+- **Ramille dessous**, hors du cadre : `RamilleDit` `calm` 44, tilt − 5, « Je note tes réponses dans ton
+  suivi, au fil des saisons. » (`RAMILLE.planEtSuivi`, la jumelle de `suiviSansPoint`).
+- Le reste de l'écran est B2 sans le point : cap avec son trait (une action est engagée), carte engagée
+  avec son premier pas, seconde carte estompée, porte, encart, note, « Revoir mon bilan ».
+
+### F4 — Le suivi · première visite
+Inchangé : « Ton suivi », « Ton point de départ. Refais ton bilan quand tes habitudes changent : tu
+verras l'écart ici. », la carte « Ton empreinte transport, bilan après bilan » avec une barre, « Ce que
+tu as décidé, saison après saison » avec la décision qui vient d'être prise, la carte « Je note tes
+réponses ici, au fil des saisons. », le pied « Refaire mon bilan ». Dessiné pour montrer que l'écran
+s'explique lui-même le jour où l'on y entre.
+
+### G — Le parcours, moment par moment
+Une page : douze moments, de la première ouverture à la cinquantième, avec ce que la personne voit, ce
+qui est nouveau et ce qui l'explique. Reprise en §« Le premier parcours, moment par moment ».
+
 ### E — Les sept conditions
 Une page : la table question → réponses → ce qu'une réponse écarte → où ça se dit, reprise en §« Les
 sept conditions » ci-dessous.
@@ -263,6 +330,11 @@ sept conditions » ci-dessous.
 | Premier plan, corps | Choisis-en une, et dis quand. Ensuite, un point régulier te demandera si tu l'as faite — rien d'autre à suivre. |
 | Premier plan, sortie | Compris |
 | Ramille, sous la carte du premier plan | Prends celle qui te ressemble. |
+| Carte « Plan et Suivi », étiquette | PLAN ET SUIVI |
+| Carte « Plan et Suivi », titre | Deux endroits, pas plus. |
+| Carte « Plan et Suivi », corps | Ici, ton plan : l'action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison. |
+| Carte « Plan et Suivi », sortie | Compris |
+| Ramille, sous la carte « Plan et Suivi » | Je note tes réponses dans ton suivi, au fil des saisons. |
 | Pistes, retour | Retour au plan |
 | Pistes, titre | Toutes les pistes |
 | Pistes, intro (rien d'engagé) | Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan. |
@@ -325,6 +397,13 @@ mêmes entrées. Valeurs attendues des tests 02 et 10 recalculées par requête 
   le premier engagement la rend inutile. Elle remplace la carte d'attente exactement comme la carte
   d'ouverture de saison (C2.8), et pour la même raison, Ramille parle dessous.
 - **Le trait** : `progression !== null && (engagement || !premierPlan)`.
+- **La barre** : une marque locale `traceverte.premier_parcours.v1`, posée à la soumission du premier
+  questionnaire (à côté de la marque de bilan de C4.5) et effacée à la fermeture de la carte « Ton premier
+  plan » ; le layout des onglets la lit (`tabBarStyle: { display: 'none' }`) et la restitution en mode
+  `nouveau` aussi. Sans marque — appareil neuf d'un compte existant, session retrouvée — la barre est là.
+  Balayée par le préfixe à la déconnexion et à la suppression, comme les autres.
+- **La carte « Plan et Suivi »** : une seconde marque, posée par son « Compris » ; rendue quand la barre
+  vient d'apparaître sur cet appareil et que cette marque manque, à la place de la carte d'attente.
 
 ## L'encart de contexte et sa porte
 - Rendu sous la porte des pistes, au-dessus de la note technique ; jamais quand `actionsCount === 0`.
@@ -334,6 +413,23 @@ mêmes entrées. Valeurs attendues des tests 02 et 10 recalculées par requête 
   dernier bilan), positionné sur l'étape « Contexte de mobilité ». Soumettre est un re-bilan
   ordinaire : le plan est régénéré, un engagement en cours est archivé et l'encart orphelin le dit
   (C2.2). Un paramètre de plus à côté de `reprise`, rien d'autre.
+
+## Le premier parcours, moment par moment
+
+| Le moment | Ce que la personne voit | Ce qui est nouveau | Ce qui l'explique |
+|---|---|---|---|
+| Première ouverture (onboarding) | Quatre écrans, un bouton chacun, « J'ai déjà un compte » | Tout ; aucun lieu, un flux | Le flux, Ramille qui se présente. Inchangé |
+| Le questionnaire | Neuf étapes, l'en-tête, Retour / Suivant, Ramille à l'entrée des sections | L'intro de la dernière étape dit la règle du plan (D) | Inchangé sauf D |
+| Le calcul | Ramille qui réfléchit | — | Une attente. Inchangé |
+| La restitution (F1) | La décision dominante, la répartition, le total, « Où tu te situes », le palier, « Voir ce que je peux faire » | **Pas de barre** | La phrase du palier annonce le plan |
+| La proposition de compte | Google, email, « Continuer sans compte » | — | Inchangée (v1-04 §1) |
+| Le premier plan (B1) | La carte « Ton premier plan », Ramille, le principe, le cap sans trait, deux actions, la porte, l'encart | La règle du jeu en deux phrases ; un geste attendu, rien de forcé | La carte, une fois |
+| Le premier engagement (F2) | Les jours ou l'échéance, « C'est noté », la feuille des rappels | — | La feuille. Inchangée |
+| La barre arrive (F3) | La barre glisse ; « Deux endroits, pas plus. » ; Ramille : où iront les réponses | Les deux onglets, nommés à l'instant où ils apparaissent | La carte, une fois |
+| Le suivi, première visite (F4) | Le point de départ, la décision prise, Ramille, « Refaire mon bilan » | Rien de dessiné | L'écran lui-même. Inchangé |
+| Le premier point | La notification ouvre la question ; Oui / Non / « Pas de trajet » ; Ramille répond | La question nomme l'action (C2.1) | La question. Inchangé |
+| La saison suivante | « L'hiver commence. », reprendre ou choisir | La troisième carte d'ouverture | La carte de saison (C2.8). Inchangée |
+| La cinquantième fois (B2) | Le point ou la carte d'attente, le principe, le cap, l'action, la porte, l'encart | Rien | Rien ne se réexplique |
 
 ## Les sept conditions
 
@@ -366,6 +462,8 @@ jour » serait la dérive silencieuse que ce dépôt chasse partout ailleurs.
   noté » → retour au plan + feuille des rappels.
 - **Étape contexte** : trois puces, pas de réaction au choix ; « Suivant » inactif dit ce qui manque
   (« ta réponse sur le télétravail »).
+- **La barre d'onglets** : absente pendant le premier parcours ; entre par le bas (320 ms) à la fermeture
+  de la carte « Ton premier plan » ; la carte « Plan et Suivi » arrive avec elle.
 - Aucune autre animation ; aucune célébration.
 
 ## Règles non négociables (v1-17 §3, v1-18 §5)

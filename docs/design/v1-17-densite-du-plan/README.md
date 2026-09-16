@@ -23,7 +23,7 @@ planches du plan servent donc les deux briefs, et deux dossiers auraient porté 
 
 ## Ce que le canvas contient
 
-Cinq groupes de planches (A à E), puis deux pages. Planches 390 px de large, valeurs relevées du dépôt,
+Sept groupes de planches (A à G), puis deux pages. Planches 390 px de large, valeurs relevées du dépôt,
 thème clair et sombre. Les écrans qui défilent sont dessinés en entier, le cadre est allongé. A2 et D
 sont cliquables.
 
@@ -32,12 +32,17 @@ sont cliquables.
 | A1 — Le plan · le meilleur levier hors du poste dominant | `A1-plan-levier-hors-dominant.png` | le nouveau classement, l'intro qui dit le principe du plan, la porte « Voir toutes les pistes · 11 », l'encart de contexte |
 | A2 — Toutes les pistes · l'écran | `A2-toutes-les-pistes.png` | l'écran de la pile du plan, groupé par poste, en lignes qui s'ouvrent en carte |
 | A3 — Toutes les pistes · une ligne ouverte | `A3-toutes-les-pistes-ligne-ouverte.png` | la carte ouverte avec « Réduire », la ligne engagée |
-| B1 — Le tout premier plan | `B1-premier-plan.png` | la carte « TON PREMIER PLAN » à la place de la carte d'attente, Ramille dessous, pas de trait de temps |
+| B1 — Le tout premier plan | `B1-premier-plan.png` | la carte « TON PREMIER PLAN » à la place de la carte d'attente, Ramille dessous, pas de trait de temps, pas de barre d'onglets |
 | B2 — Le plan de retour | `B2-plan-de-retour.png` | le point de la semaine, l'action engagée avec son premier pas, la seconde carte estompée |
 | C — Le plan à zéro action | `C-plan-zero-action.png` | inchangé, et pourquoi rien de neuf ne s'y rend |
 | D — L'étape « Contexte de mobilité » | `D-etape-contexte.png` | l'intro qui dit la règle, la question du télétravail en jours |
 | E — Les sept conditions | `E-sept-conditions.png` | question par question, ce qu'une réponse écarte et où ça se dit |
-| Écarts | `Ecarts.png` | seize lignes avant / après, apport, prix, où |
+| F1 — La restitution du premier bilan · sans barre | `F1-restitution-sans-barre.png` | la dernière page du flux, un seul chemin en avant |
+| F2 — Après « C'est noté » · la feuille des rappels | `F2-feuille-des-rappels.png` | inchangée ; derrière, le plan sans barre |
+| F3 — La barre arrive · « Plan et Suivi » | `F3-la-barre-arrive.png` | la barre glisse, la carte nomme les deux endroits, Ramille dessous |
+| F4 — Le suivi · première visite | `F4-suivi-premiere-visite.png` | l'écran s'explique par ce qu'il contient |
+| G — Le parcours, moment par moment | `G-parcours-moment-par-moment.png` | douze moments, de la première ouverture à la cinquantième |
+| Écarts | `Ecarts.png` | dix-neuf lignes avant / après, apport, prix, où |
 | Système | `Systeme.png` | aucun jeton ajouté, cinq motifs réemployés |
 
 ## Ce qui a été retenu
@@ -49,6 +54,9 @@ sont cliquables.
   « Replier » : le retour est celui de la plateforme.
 - **Le premier plan** montre la même chose ; son ouverture est une carte qui dit la règle du jeu, et le
   trait de temps attend le premier engagement.
+- **La barre d'onglets attend la fin du premier parcours** : masquée de la restitution du premier bilan
+  à la fermeture de la carte « Ton premier plan », elle arrive avec une carte qui nomme les deux
+  endroits, une fois. Le suivi ne change pas : il s'explique par ce qu'il contient le jour où l'on y entre.
 - **La restriction** se dit dans l'intro de l'étape et dans un encart du plan, sans jamais nommer
   l'action écartée ni son gain. La question du télétravail demande un nombre de jours sur les jours
   de trajet déclarés ; « Parfois » disparaît, le seuil de C3.8 ne bouge pas.
@@ -75,6 +83,12 @@ autres pistes. Elle dit désormais le principe du plan — une action par saison
 c'est-à-dire pourquoi on ne prend qu'une action et vers quoi elle va (écart 6). `cadreDuPlan` perd
 `intro` ; le classement n'est plus commenté nulle part sur le plan, et c'est voulu : chaque carte dit
 où elle agit.
+
+Troisième relecture, même jour : le premier plan était dessiné comme un écran, pas comme un moment.
+Le premier parcours proposait deux onglets dès la dernière page du questionnaire, avant qu'il y ait
+quoi que ce soit à suivre. D'où la section F et la page G : un lieu n'apparaît que quand il a quelque
+chose à montrer, la barre attend la fermeture de la carte « Ton premier plan » et arrive avec une carte
+qui nomme les deux endroits (écarts 17 à 19).
 
 ## Ce que le canvas ne fait pas
 
