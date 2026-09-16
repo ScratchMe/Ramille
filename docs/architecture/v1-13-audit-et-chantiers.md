@@ -185,6 +185,14 @@ reçoit un bandeau daté au moment où le chantier correspondant est livré, jam
 | C4.7 | Retirer un bilan erroné | P4 | moyen | — | — |
 | C4.8 | Comparaison même saison, un an après | P4 | moyen | C2.8 | — |
 | C4.9 | La sortie que la messagerie affiche (`List-Unsubscribe`) — **fermé le 15/09/2026 par l'expérience**, voir §7 | — | — | C2.9 | — |
+| C5.1 | Le classement du plan : le meilleur levier du poste dominant en tête | P1 | moyen | — | canvas v1-17 |
+| C5.2 | La pile du plan et l'écran « Toutes les pistes » | P2 | grand | C5.1 | canvas v1-17 |
+| C5.3 | L'intro dit le principe, la note du cap disparaît | P2 | petit | C5.2 | canvas v1-17 |
+| C5.4 | Le télétravail se demande en jours | P1 | moyen | — | canvas v1-18 |
+| C5.5 | L'encart de contexte et sa porte | P2 | moyen | C5.4, C5.2 | canvas v1-18 |
+| C5.6 | Le premier plan | P3 | moyen | C5.2 | canvas v1-17 |
+| C5.7 | La barre d'onglets attend la fin du premier parcours | P3 | moyen | C5.6 | canvas v1-17 |
+| C5.8 | L'espace fine des milliers | P3 | petit | — | canvas v1-17 |
 
 ### 2.2 Fichiers chauds et parallélisation
 
@@ -228,6 +236,9 @@ par chantier, une PR par issue (`Closes #n`), la ligne de §10 cochée à la fin
 | **6 — Lot 2, la saison et le suivi** | C2.8 → C2.7 → C3.1 → C4.6 → C2.13 → C3.9 | **non** — un seul chantier disjoint, voir le relevé du 13/09/2026 ci-dessous | La fin et l'ouverture de saison, les pistes et le premier pas, le suivi dans la durée, la restitution d'un re-bilan, la mascotte saisonnière, la reprise de bilan. Planches B à G et Saisons. **Jalon : la boucle existe d'une saison à l'autre.** | 5 moyens, 1 petit |
 | **7 — Lot 3 restant** | C3.2 → C3.11 · C3.3 · C3.7 · C3.10 ; puis C3.4 + C3.5 + C3.6 **en une seule migration** ; puis C3.8 ; puis C3.12 | oui, puis non | La source du chiffre, les hypothèses affichées, le ton, les tests ; l'intermodal, le covoiturage des loisirs, la tranche haute ; le plan plausible. **Livrée le 14/09/2026** ([#175](https://github.com/ScratchMe/TraceVerte/pull/175)), et avec elle **les lots 0 à 3 en entier** : l'audit n'a plus de chantier ouvert hors du lot 4. C3.12 est passé en dernier et non dans le premier groupe — il fallait que les tests portent sur le code livré. | 4 petits, 3 moyens, 2 grands |
 | **8 — Lot 4, et ce que la recette a trouvé** | C4.1, C4.2, C4.3, C4.4, C4.7, C4.8 (**C4.9 fermé le 15/09/2026 par son expérience, sans une ligne de code** ; **C4.5 livré le 15/09/2026**) ; et les trois constats de recette [#177](https://github.com/ScratchMe/TraceVerte/issues/177), [#178](https://github.com/ScratchMe/TraceVerte/issues/178), [#179](https://github.com/ScratchMe/TraceVerte/issues/179) | chantier par chantier | Chacun précédé d'une page de décision. C4.6 a été avancé dans la vague 6. **La recette sur appareil du 14/09/2026 (§12) verse cinq constats dans cette vague** : trois y entrent tels quels, [#181](https://github.com/ScratchMe/TraceVerte/issues/181) devient **C4.9**, et [#180](https://github.com/ScratchMe/TraceVerte/issues/180) rejoint **C4.5** en le requalifiant — ce qui y était écrit comme un confort est un démarrage impossible. Le sixième a été corrigé le jour même. | 5 grands, 3 moyens, 3 petits |
+| **9 — Le classement et la restriction** | C5.1 · C5.4 | **oui** — les deux seuls du lot 5 qui le soient, voir le relevé ci-dessous | Le meilleur levier du poste dominant en tête ; le télétravail se demande en jours et « Parfois » disparaît. **Ce qui trompe aujourd'hui.** Ferme la moitié de [#198](https://github.com/ScratchMe/TraceVerte/issues/198) et de [#197](https://github.com/ScratchMe/TraceVerte/issues/197) | 2 moyens |
+| **10 — Le plan se relit** | C5.2 → C5.3 → C5.5 ; C5.8 voyage avec | **non** — quatre chantiers dans le même écran, et C5.2 le déplace | Deux cartes sur le plan, toutes les pistes sur un écran à elles, l'intro qui dit le principe, l'encart de contexte et sa porte. Ferme l'autre moitié des deux issues | 1 grand, 2 moyens, 2 petits |
+| **11 — Le premier parcours** | C5.6 → C5.7 | **non** — même écran, et la barre attend la carte | La carte « Ton premier plan », puis la barre d'onglets qui arrive quand les deux lieux ont quelque chose à montrer. **Ce qui manque.** Sa vérification demande un appareil : première séance d'octobre | 2 moyens |
 
 **Relevé du 11/09/2026 — la vague 4 est enchaînée, pas « en partie » parallèle.** Le relevé de
 fichiers (refait avant distribution, comme la règle l'impose) montre six chantiers sur sept qui se
@@ -313,6 +324,16 @@ les distingue du reste du lot 4 : 12.5 rend l'app inutilisable au démarrage san
 a déjà soumis un bilan, et 12.6 fait manquer à un email de rappel la sortie que la RFC 8058 existe pour
 offrir. Ils commencent quand même par une page de décision — c'est la règle du lot — mais une page
 courte : ce qui est à trancher est le **moyen**, pas l'opportunité.
+
+**Relevé du 16/09/2026 (soir) — le lot 5 n'a que deux chantiers parallèles, et ce n'est pas une
+surprise cette fois.** Sixième relevé, et le premier qui part d'un canvas plutôt que d'un audit :
+huit chantiers issus de [`v1-17`](v1-17-densite-du-plan.md), dont **cinq écrivent dans le même
+écran** (`(tabs)/plan.tsx`, que C5.2 transforme en pile) et trois dans `src/types/plan.ts`. Seuls
+**C5.1** (le classement, une fonction SQL) et **C5.8** (l'espace fine des milliers, `format.ts` et
+son jumeau `api/`) sont disjoints de tout. Le tableau complet et les deux relevés de précision qui
+en découlent — l'écran du plan n'interroge pas `assessment_answers`, et sa lecture de
+`plan_action_commitments_archive` est filtrée sur `released_reason = 'rebilan'`, donc inutilisable
+telle quelle pour le signal du premier plan — sont en [`v1-17`](v1-17-densite-du-plan.md) §2.
 
 **Relevé du 16/09/2026 — ce que la recette web verse dans la vague 8.** Même régime que le relevé
 ci-dessus, pour une séance d'une autre nature : un navigateur, une fenêtre privée, et le blocage de
@@ -2140,6 +2161,14 @@ divergent : une issue ne se réécrit pas, elle renvoie ici.
 | Recette 13.5 | [#195](https://github.com/ScratchMe/TraceVerte/issues/195) | [#201](https://github.com/ScratchMe/TraceVerte/pull/201) | 16/09/2026 | `lignesPistes: { gap: 0 }` était juste pour des lignes, faux depuis qu'elles s'ouvrent en cartes (`v1-16` §5). Deux pièges : les marges ne fusionnent pas en Yoga, et les lignes fermées gardent 44 px de cible |
 | Recette 13.6 | [#196](https://github.com/ScratchMe/TraceVerte/issues/196) | [#201](https://github.com/ScratchMe/TraceVerte/pull/201) | 16/09/2026 | « Note les dates que tu gardes libres, avant de réserver » ne dit ni pour quoi ni quoi réserver, là où son jumeau `remove_trip` dit un essai. **livré** : deux migrations, le référentiel puis le rattrapage de `plan_actions.first_step` — figé à la génération, donc sans lui la phrase fautive survivait jusqu'à la prochaine soumission |
 | Recette 13.7 | [#199](https://github.com/ScratchMe/TraceVerte/issues/199) | [#201](https://github.com/ScratchMe/TraceVerte/pull/201) | 16/09/2026 | **basse priorité, web seulement** : la pastille d'onglet n'englobe que l'icône en disposition horizontale. Juste sur mobile — ne pas englober les deux partout |
+| C5.1 | [#205](https://github.com/ScratchMe/TraceVerte/issues/205) | | | le classement du plan : la meilleure piste du poste dominant en tête, puis gain décroissant. Migration de `generate_plan_cycle_for_user` ; tests 02 et 10 recalculés par requête. Ferme la moitié « classement » de [#198](https://github.com/ScratchMe/TraceVerte/issues/198) |
+| C5.2 | [#207](https://github.com/ScratchMe/TraceVerte/issues/207) | | | la pile du plan (`plan/_layout`, `index`, `pistes`) et l'écran « Toutes les pistes ». Une route de plus : titre de page et gardes d'export (`EXPO.md` §2.1). Ferme la moitié « densité » de [#198](https://github.com/ScratchMe/TraceVerte/issues/198) |
+| C5.3 | [#208](https://github.com/ScratchMe/TraceVerte/issues/208) | | | `cadreDuPlan` perd `intro` et `noteDuCap` ; l'intro dit le principe du plan. `CLAUDE.md` change dans la même PR |
+| C5.4 | [#206](https://github.com/ScratchMe/TraceVerte/issues/206) | | | le télétravail en jours (`aucun` / `un_jour` / `deux_ou_plus`), « Parfois » disparaît. Migration à traduction **préservant le comportement**, à prouver par un contrôle. Ferme la moitié « question » de [#197](https://github.com/ScratchMe/TraceVerte/issues/197) |
+| C5.5 | [#209](https://github.com/ScratchMe/TraceVerte/issues/209) | | | l'encart de contexte du plan et sa porte vers `/bilan?etape=context`. L'écran n'interroge pas encore `assessment_answers`. Ferme la moitié « plan » de [#197](https://github.com/ScratchMe/TraceVerte/issues/197) |
+| C5.6 | [#210](https://github.com/ScratchMe/TraceVerte/issues/210) | | | la carte « Ton premier plan ». Le signal demande l'archive **sans filtre de raison**, alors que la requête actuelle filtre sur `rebilan` |
+| C5.7 | [#211](https://github.com/ScratchMe/TraceVerte/issues/211) | | | la barre d'onglets masquée pendant le premier parcours, puis la carte « Plan et Suivi ». Sans marque, la barre est là |
+| C5.8 | [#212](https://github.com/ScratchMe/TraceVerte/issues/212) | | | l'espace fine des milliers, `src/lib/format.ts` **et** son jumeau `api/` — les deux ensemble ou pas du tout |
 
 ## 11. Vérifications sur appareil en attente
 

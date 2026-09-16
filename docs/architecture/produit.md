@@ -147,6 +147,31 @@ actions que le plan affichait sans qu'on puisse les choisir (§12.4, qui rouvrai
 constats de la recette sont donc clos**, et ce qu'il en reste n'est plus un constat mais une
 vérification : §11.16.
 
+**La seconde recette a eu lieu le 16/09/2026, dans un navigateur** — aucun build EAS n'étant
+disponible avant le 1er octobre. Sept constats (`v1-13` §13), dont **cinq corrigés et fusionnés le
+jour même** : la coupure réseau qui répondait par une trace de pile à la soumission, la carte
+d'attente du plan qui disait « Rattache un compte » sans offrir de chemin, la marge manquante entre
+deux lignes dépliées en carte, le premier pas du vol long-courrier qui ne décrivait pas un essai, et
+la barre d'onglets qui changeait de disposition au-delà de 768 px. Les deux autres sont partis en
+**brief Claude Design**, et le canvas est revenu le même jour.
+
+**Trois vagues de plus en découlent — le lot 5, « le plan : ce qu'il montre et ce qu'il tait ».** Le
+plan d'implémentation est [`v1-17-densite-du-plan.md`](v1-17-densite-du-plan.md), apparié au dossier
+design [`docs/design/v1-17-densite-du-plan/`](../design/v1-17-densite-du-plan/) comme `v1-14` l'est
+au sien ; il porte **le plan entier** et pas seulement le canvas, la TODO ouverte comprise. Ce qui
+change pour la personne, en trois temps : la **vague 9** corrige ce qui trompe — le meilleur levier
+du poste dominant passe en tête (aujourd'hui une action à 461 kg/an est en ligne simple sous une
+action à 48 kg) et le télétravail se demande en jours au lieu d'un « Parfois » dont le produit
+faisait un seuil sans le dire ; la **vague 10** rend le plan relisible — deux cartes, un écran pour
+toutes les pistes, un encart qui dit sur quelles réponses le plan s'appuie et la porte pour les
+corriger ; la **vague 11** répare le premier parcours — une carte qui dit la règle du jeu, et les
+deux onglets qui n'arrivent qu'une fois qu'ils ont chacun quelque chose à montrer.
+
+**Le lot 4 n'a pas bougé et reste après** : ses six chantiers ouverts commencent chacun par une page
+de décision, et `v1-17` §5.1 en donne l'ordre proposé avec sa raison. Ce que C4.5 a reporté, les
+vérifications sur appareil de §11, l'exploitation et les restes assumés y sont aussi — rien de ce
+qui était ouvert n'a disparu du plan.
+
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 
 **Le lot 2 a son canvas Claude Design, livré le 10/09/2026** : `docs/design/v1-14-boucle-engagement/`
