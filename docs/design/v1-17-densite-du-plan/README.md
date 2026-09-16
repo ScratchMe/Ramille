@@ -29,7 +29,7 @@ sont cliquables.
 
 | Planche | Capture | Rôle |
 | --- | --- | --- |
-| A1 — Le plan · le meilleur levier hors du poste dominant | `A1-plan-levier-hors-dominant.png` | le nouveau classement, l'intro qui nomme les postes, la note sous le cap, la porte « Voir toutes les pistes · 11 », l'encart de contexte |
+| A1 — Le plan · le meilleur levier hors du poste dominant | `A1-plan-levier-hors-dominant.png` | le nouveau classement, l'intro qui nomme les postes, la porte « Voir toutes les pistes · 11 », l'encart de contexte |
 | A2 — Toutes les pistes · l'écran | `A2-toutes-les-pistes.png` | l'écran de la pile du plan, groupé par poste, en lignes qui s'ouvrent en carte |
 | A3 — Toutes les pistes · une ligne ouverte | `A3-toutes-les-pistes-ligne-ouverte.png` | la carte ouverte avec « Réduire », la ligne engagée |
 | B1 — Le tout premier plan | `B1-premier-plan.png` | la carte « TON PREMIER PLAN » à la place de la carte d'attente, Ramille dessous, pas de trait de temps |
@@ -58,6 +58,16 @@ sont cliquables.
 Ce que les briefs listaient et qui n'est pas dessiné : la planche « trois états de la question du
 télétravail » (v1-18 §8.2) — la forme retenue ne réagit pas au choix, ses trois états sont trois
 puces, visibles en D.
+
+## Relecture du 16/09/2026
+
+La première version portait, sous le cap, une note pour la deuxième carte quand elle est sur un
+autre poste : « Le cap porte sur tes voyages. L'action sur ton trajet domicile-travail compte dans
+ton total, pas dans ce cap. » Le titulaire l'a lue comme peu claire et pas nécessaire, et c'est plus
+que ça : le cap est une quantité à atteindre, dérivée du poste dominant, et rien dans le produit ne
+vérifie d'où vient la réduction — où elle se fait est le choix de la personne. La note énonçait une
+règle que rien n'applique, sur l'écran qu'on voulait alléger. Elle est retirée, et `cadreDuPlan`
+perd `noteDuCap` (écart 7).
 
 ## Ce que le canvas ne fait pas
 

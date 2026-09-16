@@ -38,8 +38,10 @@ calcul. Les cadres des écrans qui défilent sont **allongés** pour tout montre
    contredire. Sur le profil de la recette : le vol long-courrier (1 601 kg) puis le télétravail à
    deux jours (461 kg) ; l'action de voyages à 48 kg redescend là où elle est. **Oui, une action
    d'un autre poste peut être la deuxième carte** ; elle n'est jamais la première tant que le poste
-   dominant a une piste. Elle se dit par l'intro, qui nomme les postes, et par la note sous le cap,
-   qui dit pour quoi elle compte avant de dire pour quoi elle ne compte pas.
+   dominant a une piste. Elle se dit par l'intro, qui nomme les postes. **La note sous le cap disparaît**
+   (relecture du titulaire, 16/09/2026) : le cap est une quantité à atteindre, la ligne « soit − 20 %
+   sur … » dit d'où vient le nombre, et où la réduction se fait est le choix de la personne. Une phrase
+   qui dirait « pas dans ce cap » énoncerait une règle que le produit n'applique nulle part.
 2. **Deux cartes sur le plan, et toutes les pistes derrière une porte.** Le dépli en place (D18) a
    été décidé quand un plan portait quatre à six pistes ; il en porte onze, et « déplier + ouvrir »
    fait onze cartes sur l'écran où l'on revient le plus souvent. La liste va sur **un écran de la
@@ -79,8 +81,8 @@ calcul. Les cadres des écrans qui défilent sont **allongés** pour tout montre
 ### Les questions ouvertes des briefs, une par une
 
 - v1-17 §7.1 — Une action d'un autre poste en première carte ? **Non tant que le dominant a une piste ;
-  en deuxième, oui.** La note sous le cap : « Le cap porte sur tes voyages. L'action sur ton trajet
-  domicile-travail compte dans ton total, pas dans ce cap. »
+  en deuxième, oui.** Et elle compte comme les autres : le cap est une quantité, la carte du cap dit
+  d'où vient le nombre et rien de plus. Aucune phrase ne dit qu'une action « ne compte pas ».
 - v1-17 §7.2 — Le nombre d'actions visible d'emblée ? **Seulement dans la porte, et c'est le total**
   (« Voir toutes les pistes · 11 »), parce que la porte ouvre la liste entière.
 - v1-17 §7.3 — Un premier plan doit-il montrer moins ? **Il montre la même chose** : deux cartes et la
@@ -108,8 +110,8 @@ Ce qui n'est pas listé est inchangé.
 5. **La ligne engagée** — pastille-coche 20 px + « Engagée », pas de bouton.
 6. **L'intro nomme les postes** — « Deux actions : une sur tes voyages, une sur ton trajet
    domicile-travail. »
-7. **La note sous le cap** — « Le cap porte sur tes voyages. L'action sur ton trajet domicile-travail
-   compte dans ton total, pas dans ce cap. »
+7. **La note sous le cap** — supprimée : `cadreDuPlan` perd `noteDuCap`. Le nouveau classement l'aurait
+   réveillée sur la plupart des plans, pour dire une règle que rien n'applique.
 8. **Le premier plan** — carte « TON PREMIER PLAN » à la place de la carte d'attente, Ramille
    dessous, « Compris » ; trait de temps absent tant que rien n'est engagé.
 9. **L'encart de contexte** (v1-18) — les quatre réponses en mots, la règle, la porte. Absent d'un
@@ -139,8 +141,7 @@ Profil de la recette, rien d'engagé, retour ordinaire.
   voyages, une sur ton trajet domicile-travail. »
 - **Carte du cap** : `backgroundSelected`, gap 6. « Ton cap pour cette saison » small 600
   `accentText` ; « − 451 kg » `salient` ; « soit − 20 % sur tes voyages (2,3 t CO₂e aujourd'hui) »
-  small `textSecondary` ; **note** small `textTertiary` « Le cap porte sur tes voyages. L'action sur
-  ton trajet domicile-travail compte dans ton total, pas dans ce cap. » ; période « Automne 2026 »
+  small `textSecondary` ; **pas de note** ; période « Automne 2026 »
   small `textSecondary` à gauche, « jusqu'au 30 novembre » small 600 `accentText` à droite ; trait
   6 px rail `border` rempli `accentMuted` (17 % le 16 septembre) ; légende 12/16 `textTertiary`.
 - **Deux cartes** (gap 10) : `ActionCard` bordure 1 px `border`, titre `cardTitle`, gain 20/26/600
@@ -253,8 +254,6 @@ sept conditions » ci-dessous.
 | Plan, intro (une ailleurs, poste unique) | Deux actions : une sur tes voyages, une sur ton trajet domicile-travail. |
 | Plan, intro (plusieurs postes ailleurs) | Trois actions, dont deux ailleurs que sur tes voyages. |
 | Plan, intro (aucune sur le dominant) | Deux actions, sur d'autres postes que tes voyages. |
-| Plan, note sous le cap (une ailleurs) | Le cap porte sur tes voyages. L'action sur ton trajet domicile-travail compte dans ton total, pas dans ce cap. |
-| Plan, note sous le cap (plusieurs) | Le cap porte sur tes voyages. Les actions sur d'autres postes comptent dans ton total, pas dans ce cap. |
 | Plan, la porte | Voir toutes les pistes · 11 |
 | Plan, encart de contexte | Ton plan tient compte de ton contexte : {zone}, {transports}, {véhicules}, {télétravail}. Ce qui ne tient pas avec ces réponses n'est pas proposé. |
 | Plan, porte de l'encart | Modifier ces réponses |
