@@ -2306,6 +2306,36 @@ deux — les arbitrer séparément reviendrait à arbitrer deux fois. Les sept s
 | 13.6 | **Le premier pas du vol long-courrier ne décrit pas un essai.** « Note les dates que tu gardes libres, avant de réserver » laisse deux trous — libres pour quoi, réserver quoi — et « avant de réserver » contredit l'action qu'il amorce. Ce n'est pas un mauvais appariement : c'est que **le jumeau du même geste** (`remove_trip` court-courrier) dit « Regarde lequel de tes déplacements prévus tient sans avion », qui est un essai. | [#196](https://github.com/ScratchMe/TraceVerte/issues/196) |
 | 13.7 | **La pastille d'onglet actif n'englobe que l'icône.** Sur mobile, le libellé est sous l'icône et la pastille se lit comme appartenant au couple (Material 3, canvas `v1-11`). Sur le web à largeur de bureau, la barre bascule en disposition horizontale et la pastille se retrouve à côté du libellé. **Basse priorité** — V1 est Google Play, et il ne faut surtout pas englober les deux partout. | [#199](https://github.com/ScratchMe/TraceVerte/issues/199) |
 
+### Cinq des sept sont corrigés le jour même
+
+Cinq constats se corrigent sans rien arbitrer : ils ont un remède que le dépôt écrit déjà
+ailleurs. Les deux autres restent ouverts, et ce n'est pas un oubli — **13.1** (« Parfois » au
+télétravail) demande un arbitrage produit, et la moitié densité de **13.3** part en brief Claude
+Design ([`v1-17`](../design/v1-17-densite-du-plan/BRIEF.md)).
+
+Le **relevé de fichiers** avant d'écrire, comme la règle l'impose : un seul fichier est partagé,
+`src/app/(tabs)/plan.tsx`, entre 13.4 et 13.5 — faites en séquence. Les trois autres sont
+disjoints.
+
+| | Ce qui change | Ce qui l'éprouve |
+|---|---|---|
+| **13.2** | Le genre de l'erreur est calculé **une fois** dans le `catch` et sert deux fois : la mesure, et le détail. Sur `reseau`, pas de détail du tout — `decrireErreur` ne bouge pas, les quatre autres genres le gardent | La composition tient par ses deux bouts déjà testés (`genreErreurSoumission` d'un côté, le `{detail && …}` de `StepShell` de l'autre) ; ce n'est pas une vérification de bout en bout et ça ne se prétend pas |
+| **13.4** | `carteAttente` rend une `action` à côté de son `detail` ; le plan pose un `TextLink` **sous** le détail, vers « Toi ». L'invariant est écrit sur le sens : la porte se rend là où le canal est `aucun` **et** où la carte dit quelque chose | Une assertion exhaustive sur les 144 combinaisons, avec sa garde de non-vacuité. Trois mutations, trois échecs : porte partout (6 rouges), porte sur le seul canal (4), porte retirée de l'état par défaut d'une session anonyme (2) |
+| **13.5** | La règle d'écart sort de l'écran (`separationsDesLignes`, `src/types/plan.ts`) : **un écart par frontière dont un voisin au moins est une carte**, porté par le second des deux — Yoga ne fusionne pas les marges | Six assertions, dont celle qui compte une seule séparation entre deux cartes voisines. Trois mutations, deux rouges à chaque fois, jamais les mêmes deux |
+| **13.6** | Le premier pas devient « Regarde lequel de tes projets de voyage peut attendre, ou se passer plus près. » — même verbe que son jumeau, et un essai. Deux migrations : le référentiel, puis le **rattrapage** de `plan_actions.first_step`, figé à la génération | Les trois chemins du contrôle joués sur le distant en `BEGIN`/`ROLLBACK` : appliquer, rejouer (sans effet, sans lever), et premier pas réécrit entre-temps (lève). Puis appliqué, et la ligne engagée relue |
+| **13.7** | `tabBarLabelPosition: 'below-icon'` : la barre garde à toute largeur la disposition du kit, qui est en `flexDirection: 'column'` sans condition. On n'englobe **pas** l'icône et le libellé | Mesuré sur l'export servi en local, lu par Playwright, **avec et sans la ligne** : sans elle, à 1280 px, le libellé passe à 27 px à droite de l'icône (même `y`) ; avec, il reste 25 px dessous, à 1280 comme à 390 |
+
+**Deux choses valaient d'être sorties du fichier d'écran pour devenir éprouvables** : la règle
+d'écart de 13.5 et l'invariant de porte de 13.4. Le constat 13.5 le disait lui-même — « aucune
+assertion ne porte sur l'espacement, ce qui est justement pourquoi la CI ne l'a pas vu ».
+
+**Et un rattrapage de colonne figée a été fait, ce qui n'est pas anodin** : `plan_actions.first_step`
+porte une copie de la phrase, et sans le rattrapage la personne qui a une action de voyages engagée
+aujourd'hui aurait continué de lire la phrase fautive jusqu'à sa prochaine soumission — c'est-à-dire
+sur la carte même où le défaut a été trouvé. La frontière entre ce qui se rattrape et ce qui ne se
+rattrape **jamais** (une question déjà posée, un libellé snapshoté, un chiffre annoncé) est écrite en
+`SUPABASE.md` §2.3.
+
 ### Ce que le web ne prouve pas, et pourquoi
 
 - **La boucle de rappel, en entier.** Aucun canal n'existe pour une session anonyme sur le web : pas

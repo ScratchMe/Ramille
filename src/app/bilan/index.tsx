@@ -425,7 +425,13 @@ export default function BilanQuestionnaire() {
       // aucune trace : `submitted_at` n'est écrit que si la soumission aboutit. Deux dimensions,
       // et jamais le message — une violation de contrainte cite la valeur refusée, c'est-à-dire
       // une réponse de la personne, et `usage_events` ne porte pas de texte libre.
-      track('bilan_submit_error', { etape, genre: genreErreurSoumission(error) });
+      //
+      // Le genre est calculé **une fois** et sert deux fois : ici pour la mesure, et trois
+      // lignes plus bas pour décider s'il y a un détail à montrer. Les séparer était le défaut
+      // de 13.2 (recette web du 16/09/2026) : l'information était déjà dérivée dans cette
+      // portée, et n'était pas lue là où elle servait.
+      const genre = genreErreurSoumission(error);
+      track('bilan_submit_error', { etape, genre });
 
       // Le message revient sur le dernier pas du questionnaire, juste au-dessus du bouton :
       // les réponses sont toujours là, il n'y a qu'à réessayer. Une boîte système disait la
@@ -439,7 +445,17 @@ export default function BilanQuestionnaire() {
       setMessage(
         'Ton bilan n’a pas pu être enregistré. Tes réponses sont conservées, réessaie dans un instant.'
       );
-      setDetail(decrireErreur(error));
+
+      // **Sur une coupure réseau, il n'y a pas de détail du tout.** `decrireErreur` reste juste
+      // et indispensable aux quatre autres genres — une contrainte, une permission, un `P0002`
+      // se recopient à la main et nomment la cause. Mais sur `reseau` il rend
+      // « TypeError: Failed to fetch » suivi des numéros de ligne d'un bundle minifié : cinq
+      // lignes d'anglais au terme de cinq minutes de saisie. Or c'est le cas d'échec **le plus
+      // probable en production** — un tunnel, un ascenseur, un réseau qui tombe —, pas un
+      // défaut, et le seul où la phrase française au-dessus est déjà toute la vérité. Le reste
+      // du produit y répond ainsi depuis C1.4 (l'écran `erreur_reseau` de `/plan`) ; le
+      // questionnaire était le seul endroit à y répondre par une trace de pile.
+      setDetail(genre === 'reseau' ? null : decrireErreur(error));
     } finally {
       soumissionEnCours.current = false;
       setSubmitting(false);

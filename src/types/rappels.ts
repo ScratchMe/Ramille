@@ -237,11 +237,55 @@ export function libelleBouton(canal: CanalPrefere, permission: Permission): stri
   return permission === 'demandable' ? 'Autoriser les notifications' : 'C’est bon';
 }
 
+/**
+ * La porte que la carte d'attente ouvre, quand sa phrase en demande une.
+ *
+ * **Une phrase qui dit quoi faire et n'offre aucun moyen de le faire est un mur** — et le dépôt
+ * écrivait déjà le contraire, dans le commentaire de `lignesDeReglage` juste au-dessus : « une
+ * porte, pas un mur ». Sur « Toi » c'était vrai, on y est déjà ; sur le plan, la même phrase
+ * n'avait aucune suite et le seul chemin était l'icône de compte en haut à droite, que rien
+ * n'explique (13.4 de la recette web du 16/09/2026).
+ *
+ * La forme est celle du lien « Ouvrir les réglages du téléphone » de `LigneDeReglage` : elle
+ * n'existe **que dans l'état qui la réclame**, et l'écran la rend **sous la ligne qui la porte**
+ * — détachée, elle se lirait comme appartenant à autre chose.
+ *
+ * `vers` est volontairement un littéral et non un type de route d'Expo Router : ce module est
+ * pur et testé, et rien n'y importe de la navigation. La destination est « Toi » et **jamais**
+ * `/connexion` — y arriver depuis le plan imposerait une provenance neuve dans
+ * `SOURCES_CONNEXION`, alors que « Toi » en a déjà une ; et le dépôt garde la trace du jour où
+ * une provenance non reconnue s'est fait réécrire en `resultat_transition`, gonflant exactement
+ * le chiffre auquel on voulait la comparer.
+ */
+export type PorteDeLaCarte = { libelle: string; vers: '/compte' };
+
+/**
+ * La seule porte que cette carte sache ouvrir, et c'est assez.
+ *
+ * L'état « refus sans compte » nomme **deux** remèdes dans sa phrase — rouvrir les notifications
+ * du téléphone, ou rattacher un compte — mais le premier n'est pas une route : c'est un réglage
+ * système, dont le lien vit dans `lignesDeReglage`, c'est-à-dire précisément sur l'écran où
+ * celle-ci mène. Une porte qui donne sur les deux remèdes vaut mieux que deux liens sur une
+ * carte qui doit rester calme.
+ */
+const PORTE_VERS_LE_COMPTE: PorteDeLaCarte = { libelle: 'Rattacher un compte', vers: '/compte' };
+
 export type CarteAttente = {
   /** La ligne de Ramille, toujours issue de `RAMILLE` — jamais écrite dans un écran. */
   cle: 'attenteSigneHebdo' | 'attenteSigneMensuel' | 'attenteIciHebdo' | 'attenteIciMensuel';
   /** Ce qui précise le canal. Du produit, pas d'elle : une adresse peut porter un chiffre. */
   detail: string | null;
+  /**
+   * La porte, ou `null` quand il n'y a rien à ouvrir.
+   *
+   * L'invariant, et c'est lui qu'un test épingle plutôt que la liste des branches : **elle se
+   * rend exactement là où le canal effectif est `aucun` et où la carte dit quelque chose.**
+   * Aucun canal veut dire qu'aucune adresse ne peut recevoir le mot, donc qu'un compte est
+   * précisément ce qui manque ; et ne rien dire (l'enregistrement raté, qui se répare au
+   * prochain lancement) veut dire qu'il n'y a rien à réparer à la main. Écrit ainsi, il survit
+   * à une reformulation des six phrases.
+   */
+  action: PorteDeLaCarte | null;
 };
 
 /**
@@ -301,6 +345,7 @@ export function carteAttente({
     return {
       cle: hebdo ? 'attenteSigneHebdo' : 'attenteSigneMensuel',
       detail: 'Par notification sur ce téléphone.',
+      action: null,
     };
   }
 
@@ -310,6 +355,9 @@ export function carteAttente({
       detail: coupees
         ? `Par email, à ${email} — les notifications sont coupées sur ce téléphone.`
         : `Par email, à ${email}.`,
+      // Un canal marche déjà : la phrase constate, elle ne demande rien. Poser une porte ici
+      // ferait passer un compte rattaché pour un état incomplet.
+      action: null,
     };
   }
 
@@ -318,7 +366,11 @@ export function carteAttente({
   // La sixième ligne : le mot est demandé par email, mais aucune adresse ne peut le recevoir.
   // `coupees` est faux ici (il ne vaut que pour `push`), d'où la branche à part.
   if (etat.prefere === 'email') {
-    return { cle, detail: 'Rattache un compte pour recevoir le mot par email.' };
+    return {
+      cle,
+      detail: 'Rattache un compte pour recevoir le mot par email.',
+      action: PORTE_VERS_LE_COMPTE,
+    };
   }
 
   // Permission accordée mais jeton absent : l'enregistrement a échoué, il repartira au
@@ -329,5 +381,8 @@ export function carteAttente({
     detail: coupees
       ? 'Les notifications sont coupées sur ce téléphone. Tu peux les rouvrir dans ses réglages, ou rattacher un compte pour l’email.'
       : null,
+    // La porte suit la phrase, et pas l'état : sans phrase il n'y a rien à ouvrir, et c'est le
+    // silence voulu juste au-dessus.
+    action: coupees ? PORTE_VERS_LE_COMPTE : null,
   };
 }

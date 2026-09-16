@@ -30,6 +30,26 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // **La barre garde la disposition du kit à toutes les largeurs** (13.7, recette web du
+        // 16/09/2026). Sans cette ligne, react-navigation bascule seul en disposition
+        // horizontale au-delà de 768 px de large (`shouldUseHorizontalLabels`) : le libellé
+        // passe **à côté** de l'icône, et la pastille d'`OngletIcone` — dimensionnée pour le
+        // slot de l'icône — se retrouve à côté du libellé au lieu d'être au-dessus. Elle ne se
+        // lit alors plus comme appartenant au couple, qui est tout ce qu'elle est censée dire
+        // sur une barre à deux entrées.
+        //
+        // Ce n'est pas une décision d'écran neuve : `BarreOnglets` du design system est en
+        // `flexDirection: 'column'` sans condition, et le canvas `v1-11-navigation` ne dessine
+        // qu'une barre. Le basculement venait d'un défaut de bibliothèque que personne n'avait
+        // choisi. Et **on n'englobe surtout pas l'icône et le libellé ensemble** : ce serait
+        // casser le motif Material 3 sur la cible réelle, qui est un téléphone Android.
+        //
+        // **Mesuré des deux façons, le 16/09/2026**, sur l'export statique servi en local et lu
+        // par Playwright : avec la ligne, le libellé « Plan » est à 25 px **sous** l'icône à 1280
+        // comme à 390 px de large ; sans elle, à 1280, il passe à 27 px **à côté** — même y, x
+        // décalé. C'est la mesure qui dit que la ligne sert, pas la lecture du code de la
+        // bibliothèque.
+        tabBarLabelPosition: 'below-icon',
         tabBarActiveTintColor: theme.accent,
         tabBarInactiveTintColor: theme.textTertiary,
         tabBarStyle: {
