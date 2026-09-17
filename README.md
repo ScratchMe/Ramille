@@ -48,7 +48,8 @@ Après toute migration, régénérer `src/lib/database.types.ts` (types TypeScri
 
 ## Licence et attributions
 
-Code sous **GNU Affero General Public License v3.0 ou ultérieure** (fichier `LICENSE`),
+Code sous **GNU Affero General Public License v3.0 ou ultérieure** — `AGPL-3.0-or-later`,
+fichier `LICENSE` —
 © 2026 Antoine Berthaud. C'est une licence **copyleft** : toute version modifiée se
 redistribue sous la même licence, en conservant les mentions de paternité — et son **§13**
 étend l'obligation au réseau, donc exploiter une version modifiée comme service web oblige à en
