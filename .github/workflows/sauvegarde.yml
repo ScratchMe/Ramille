@@ -109,7 +109,29 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
-          pg_dump --version
+          # **INSTALLER LE CLIENT 17 NE SUFFIT PAS À LE FAIRE UTILISER**, mesuré le 17/09/2026 sur
+          # une vraie exécution : l'image du runner porte déjà un client 16 plus haut dans le PATH,
+          # et cette étape imprimait sagement « pg_dump (PostgreSQL) 16.15 » — personne ne l'a lu.
+          # Le serveur étant en 17.6, le dump aurait échoué à l'étape suivante sur un refus de
+          # version ; il a échoué avant, sur la chaîne de connexion, ce qui masquait celui-ci.
+          #
+          # Deux corrections, et la seconde est la vraie : le répertoire du client 17 passe en tête
+          # du PATH des étapes suivantes, et l'étape **échoue** si la version obtenue n'est pas
+          # celle qu'on a demandée. Une étape qui **imprime** au lieu de vérifier n'est pas une
+          # vérification — c'est le même défaut que le journal qu'on ne relit pas.
+          bin17=/usr/lib/postgresql/17/bin
+          if [ ! -x "$bin17/pg_dump" ]; then
+            echo "::error::postgresql-client-17 est installé mais $bin17/pg_dump est absent : le chemin des binaires pgdg a changé."
+            exit 1
+          fi
+          echo "$bin17" >> "$GITHUB_PATH"
+          echo "client du PATH avant : $(pg_dump --version 2>/dev/null || echo 'aucun') ($(command -v pg_dump || echo '-'))"
+          echo "client retenu        : $("$bin17/pg_dump" --version)"
+          majeure=$("$bin17/pg_dump" --version | awk '{print $3}' | cut -d. -f1)
+          if [ "$majeure" -lt 17 ]; then
+            echo "::error::Le client retenu est en version $majeure ; le serveur est en 17.6, et pg_dump refuse de dumper une base plus récente que lui."
+            exit 1
+          fi
 
       # Deux fichiers et non un, parce qu'ils ne se restaurent pas de la même façon (détail
       # dans docs/exploitation/sauvegarde.md) :
