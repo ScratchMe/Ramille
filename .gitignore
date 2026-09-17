@@ -41,6 +41,11 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Couverture de tests — sortie de `npm test -- --coverage`, la commande que TESTING.md §1.6 et
+# §2.1 nomment pour relever la carte. Elle régénère ~200 fichiers HTML à chaque passage, et la CI
+# la lance aussi : sans cette ligne, tout relevé local laisse un dossier non suivi derrière lui.
+coverage/
+
 example
 
 # generated native folders
