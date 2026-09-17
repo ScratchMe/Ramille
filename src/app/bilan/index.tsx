@@ -29,7 +29,6 @@ import { ensureSession, supabase } from '@/lib/supabase';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
   BILAN_SECTION_LABEL,
-  BILAN_STEP_ORDER,
   EMPTY_BILAN_ANSWERS,
   avancementDeLaReprise,
   brouillonEstAncien,
@@ -145,10 +144,23 @@ export default function BilanQuestionnaire() {
       // l'étape du brouillon plutôt qu'à celle demandée, ce qui est exactement ce que la porte
       // promet de ne pas faire.
       //
-      // Le paramètre est **vérifié contre les étapes réelles** et non repris tel quel : un lien
-      // recopié de travers ouvrirait sinon un écran qui n'existe pas. Inconnu, il est ignoré — le
-      // questionnaire s'ouvre normalement, ce qui n'affirme rien de faux.
-      if (etape !== undefined && (BILAN_STEP_ORDER as readonly string[]).includes(etape)) {
+      // Le paramètre est **vérifié contre les étapes visibles pour ces réponses-là**, et non
+      // contre la liste complète (corrigé par la contre-lecture du lot 5). C5.5 le validait contre
+      // `BILAN_STEP_ORDER`, ce qui suffit pour la porte — qui n'émet que `context`, toujours
+      // visible — mais pas pour l'adresse, qui existe sur web et se tape : `?etape=commute_mode`
+      // sur un profil sans trajet régulier ouvrait une étape que son parcours saute, numérotée
+      // « Étape 1 sur 6 » par le repli de l'en-tête. Inconnue ou invisible, l'étape est ignorée et
+      // le questionnaire s'ouvre normalement, ce qui n'affirme rien de faux.
+      //
+      // Les réponses lues ici sont celles du brouillon s'il y en a un, sinon les réponses vides :
+      // le bilan précédent n'arrive qu'après, et il ne change la visibilité d'une étape que dans le
+      // sens où elle en ouvre **plus**. Une étape refusée ici pour un questionnaire vierge l'aurait
+      // été de toute façon — c'est le même préremplissage qui décide des deux.
+      const reponsesPourLaVisibilite = draft ? draft.answers : EMPTY_BILAN_ANSWERS;
+      if (
+        etape !== undefined &&
+        visibleSteps(reponsesPourLaVisibilite).some((connue) => connue === etape)
+      ) {
         setStep(etape as BilanStepId);
       }
 

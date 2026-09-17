@@ -287,6 +287,17 @@ describe('separationsDesLignes', () => {
     expect(separationsDesLignes(lignes, new Set(['b', 'c']))).toEqual([false, true, true, true]);
   });
 
+  // **Le paramètre est « rendue en carte », et pas « ouverte au toucher »** (contre-lecture du lot
+  // 5, 17/09/2026). L'écran des pistes rend aussi en carte l'**action engagée**, qu'on ne déplie
+  // pas : lui passer les seules lignes ouvertes laissait la ligne suivante se coller sous elle,
+  // c'est-à-dire 13.5 recréé sur l'écran neuf. La fonction ne peut pas attraper cette faute d'appel
+  // — elle reçoit un ensemble, pas des lignes — donc cette assertion existe pour **nommer** ce que
+  // l'ensemble doit contenir.
+  it('sépare sous une carte que personne n’a ouverte', () => {
+    // « b » n'est pas dépliée : elle est engagée, donc rendue en carte. La frontière b|c compte.
+    expect(separationsDesLignes(lignes, new Set(['b']))[2]).toBe(true);
+  });
+
   it('sépare partout quand tout est ouvert, sauf en tête', () => {
     expect(separationsDesLignes(lignes, new Set(lignes))).toEqual([false, true, true, true]);
   });
@@ -317,7 +328,7 @@ describe('motsDuContexte', () => {
       'zone urbaine dense',
       'bon accès aux transports en commun',
       'un véhicule dans le foyer',
-      'deux jours de télétravail possibles ou plus',
+      'au moins deux jours de télétravail possibles',
     ]);
   });
 

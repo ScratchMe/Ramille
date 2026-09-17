@@ -151,10 +151,27 @@ export default function PistesScreen() {
 
           <ThemedText type="screenTitle">Toutes les pistes</ThemedText>
           <ThemedText type="body" themeColor="textSecondary">
+            {/* **La phrase disait un ordre que l'engagement défait** (contre-lecture du lot 5) :
+                l'action engagée passe en tête de son poste quel que soit son gain, comme sur le
+                plan — donc « du plus gros gain au plus petit » était faux pour ce groupe-là. On
+                nomme l'exception plutôt que de retirer le tri de la phrase : c'est lui qui dit
+                pourquoi la liste est dans cet ordre. */}
             {engageeId !== null
-              ? 'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici remplace la tienne.'
+              ? 'Ton action en cours d’abord, puis par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici remplace la tienne.'
               : 'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan.'}
           </ThemedText>
+
+          {/* **Un écran atteignable sans porte doit savoir ne rien avoir à montrer**
+              (contre-lecture du lot 5). La porte du plan ne s'affiche qu'au-delà de deux pistes,
+              mais l'adresse existe sur web et se tape : sans cette phrase, un plan à zéro action —
+              tout cycliste et tout profil sédentaire depuis C2.5 — rendait un titre suivi d'une
+              promesse de tri au-dessus de rien. On le dit, et on ne le dit qu'après une lecture
+              **réussie** : l'échec, lui, a son propre écran juste au-dessus (règle de C1.4). */}
+          {groupes.length === 0 && (
+            <ThemedText type="body" themeColor="textSecondary">
+              Ton plan ne porte aucune piste pour cette période.
+            </ThemedText>
+          )}
 
           {groupes.map((groupe) => (
             <View key={groupe.poste ?? 'sans-poste'} style={styles.groupe}>
@@ -213,18 +230,24 @@ function Lignes({
   // **L'écart se pose sur un seul côté, et seulement là où il manque** (13.5, recette web du
   // 16/09/2026). La règle et ses deux pièges — Yoga ne fusionne pas les marges, et un `gap` au
   // conteneur séparerait les lignes fermées — vivent dans `separationsDesLignes`, avec leur test.
+  //
+  // **Ce qu'on lui passe est « rendue en carte », pas « ouverte au toucher »** (contre-lecture du
+  // lot 5) : l'action engagée est une carte sans avoir été dépliée, donc lui passer `ouvertes`
+  // laissait la ligne qui la suit se coller sous elle — 13.5 recréé ici même.
+  const enCarte = new Set(
+    pistes.filter((p) => ouvertes.has(p.id) || p.committed_at !== null).map((p) => p.id)
+  );
   const separations = separationsDesLignes(
     pistes.map((p) => p.id),
-    ouvertes
+    enCarte
   );
 
   return (
     <View style={styles.lignesPistes}>
       {pistes.map((action, rang) => {
         const separee = separations[rang];
-        const estEngagee = action.committed_at !== null;
 
-        if (ouvertes.has(action.id) || estEngagee) {
+        if (enCarte.has(action.id)) {
           return (
             <View key={action.id} style={separee ? styles.pisteSeparee : undefined}>
               <CarteDePiste

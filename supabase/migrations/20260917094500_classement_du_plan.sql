@@ -128,13 +128,22 @@ begin
   select count(*) into v_engagements_avant
   from public.plan_actions where committed_at is not null;
 
+  -- **Un cycle, un bilan, et c'est `distinct on` qui le garantit** (ajouté par la contre-lecture du
+  -- lot 5, 17/09/2026). La jointure rend une ligne par bilan complété de la personne : quelqu'un qui
+  -- en a deux voyait son cycle reclassé deux fois, et si les deux bilans n'ont pas le même poste
+  -- dominant — ce qui est le cas le plus intéressant du produit, celui où un changement a porté —
+  -- le classement retenu était celui du dernier rendu par le planificateur, c'est-à-dire au hasard.
+  -- Zéro ligne concernée au moment d'écrire (relevé sur le distant : un seul cycle porte des
+  -- actions, et un seul bilan lui répond), mais une migration doit rejouer **juste** sur une base
+  -- restaurée, pas seulement sur celle du jour.
   for rec in
-    select pc.id as cycle_id, ar.dominant_poste
+    select distinct on (pc.id) pc.id as cycle_id, ar.dominant_poste
     from public.plan_cycles pc
     join public.assessments a
       on a.user_id = pc.user_id and a.status = 'completed'
     join public.assessment_results ar on ar.assessment_id = a.id
     where exists (select 1 from public.plan_actions pa where pa.plan_cycle_id = pc.id)
+    order by pc.id, a.submitted_at desc nulls last
   loop
     with tete as (
       select max(pa.saving_kg_year) as gain

@@ -185,10 +185,25 @@ export const PARTS_DU_SECOND_MODE: { value: number; label: string }[] = [
  * L'échelle reste courte — trois puces, aucune précision qui s'ouvre — mais elle porte l'unité que
  * le calcul lit. Le nombre de jours de trajet vient de B1.2 et s'écrit dans la question.
  */
-export const REPONSES_TELETRAVAIL: { value: Teletravail; label: string }[] = [
-  { value: 'aucun', label: 'Aucun' },
-  { value: 'un_jour', label: 'Un jour' },
-  { value: 'deux_ou_plus', label: 'Deux ou plus' },
+export const REPONSES_TELETRAVAIL: {
+  value: Teletravail;
+  label: string;
+  /**
+   * Ce que le lecteur d'écran annonce (handoff `v1-17`, planche D), et il n'est pas décoratif :
+   * la puce est annoncée **seule**, détachée de la question posée trois lignes plus haut, donc
+   * « Aucun » n'y dit rien du tout. Même raison que les initiales des jours de la semaine, qui
+   * portent déjà cette prop sur `Chip`. Porté après coup par la contre-lecture du lot 5 — C5.4
+   * avait écrit les trois libellés visibles et oublié ceux-là.
+   */
+  accessibilityLabel: string;
+}[] = [
+  { value: 'aucun', label: 'Aucun', accessibilityLabel: 'Aucun jour' },
+  { value: 'un_jour', label: 'Un jour', accessibilityLabel: 'Un jour par semaine' },
+  {
+    value: 'deux_ou_plus',
+    label: 'Deux ou plus',
+    accessibilityLabel: 'Deux jours par semaine ou plus',
+  },
 ];
 
 /**
