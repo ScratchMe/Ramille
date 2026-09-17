@@ -208,6 +208,30 @@ export const RAMILLE = {
   ouvertureSaison: 'On repart pour une saison.',
 
   /**
+   * Sous la carte « Ton premier plan » (C5.6), hors du cadre comme sous la carte d'ouverture de
+   * saison — et pour la même raison : ce qui est dans le cadre explique la règle du jeu, elle ne
+   * fait que donner le critère de choix.
+   *
+   * **Le critère est la ressemblance, pas le gain**, alors que les deux cartes posées dessous sont
+   * classées par gain depuis C5.1. Ce n'est pas une contradiction : le classement dit l'insistance,
+   * et le produit ne choisit jamais à la place de la personne — « Prends la première » serait
+   * exactement l'injonction que les trois règles de voix lui interdisent.
+   */
+  premierPlan: 'Prends celle qui te ressemble.',
+
+  /**
+   * Sous la carte « Plan et Suivi » (C5.7), au moment où la barre d'onglets arrive.
+   *
+   * **La jumelle de `suiviSansPoint`, et l'écart entre les deux est la déixis** : celle-ci se dit
+   * sur le plan, donc elle nomme le suivi (« dans ton suivi ») ; l'autre se dit **dans** le suivi,
+   * donc elle dit « ici ». Les unifier obligerait l'une des deux à désigner de travers l'endroit où
+   * elle est lue.
+   *
+   * Visage `calm` et non `happy` : la carte explique où sont les choses, elle ne fête rien.
+   */
+  planEtSuivi: 'Je note tes réponses dans ton suivi, au fil des saisons.',
+
+  /**
    * Juste après « C'est noté », sur la feuille : ce qui va se passer, avant de demander quoi
    * que ce soit. Deux variantes selon la boucle qui concerne la personne — jamais un nombre
    * de jours, toujours le jour lui-même.

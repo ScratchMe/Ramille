@@ -548,6 +548,77 @@ n'étaient lus par **aucun** écran : le cap était annoncé sans échéance, et
   plan à zéro action de tout cycliste depuis C2.5, où proposer d'en choisir une promettrait une liste
   vide.
 
+**Le tout premier plan dit la règle du jeu, et le trait de temps attend qu'il y ait quelque chose à
+mesurer** (C5.6, `estPremierPlan` / `ouvertureDuPremierPlan` dans `src/types/saison.ts`). On arrivait
+de la restitution devant deux cartes chiffrées, un cap et un trait qui avance, sans qu'un mot dise
+qu'on en choisit **une** et que tout le reste du produit tient en un point régulier. Quatre points à
+connaître :
+
+- **Le signal a trois conditions, et c'est la troisième qui compte** : un seul cycle, aucune action
+  engagée, et **aucune ligne dans `plan_action_commitments_archive`, quelle qu'en soit la raison**.
+  Les deux premières décrivent un plan neuf ; l'archive est la seule trace de quelqu'un qui s'est
+  **déjà** engagé puis a repris — « Changer d'avis » (raison `changement`) ou un re-bilan dans la
+  même période (raison `rebilan`), qui remettent tous deux `committed_at` à `null` sans créer de
+  second cycle. Sans elle, la carte réexplique la règle du jeu à quelqu'un qui la connaît.
+- **La lecture de l'archive que l'écran faisait déjà ne peut pas servir**, et c'est le piège que le
+  relevé de `v1-17` §2 a évité : celle de l'encart orphelin (C2.2) filtre sur
+  `released_reason = 'rebilan'` parce qu'elle annonce un effet de bord non choisi, et elle est bornée
+  à une ligne. Élargir ce filtre casserait l'encart. Le premier plan demande donc sa **propre**
+  lecture, un `count` en `head` dans le même `Promise.all` (règle de C5.5). Un `count` **nul** veut
+  dire « pas pu lire » et se lit « s'est déjà engagée » : des deux erreurs possibles, celle qui
+  montre une carte de trop coûte moins que celle qui **retire** le trait au milieu d'une saison.
+- **Le trait s'écrit `progression !== null && !premierPlan`**, et non la forme du canvas
+  `(engagement || !premierPlan)` : un engagement rend déjà le signal faux par sa deuxième condition,
+  donc la première moitié n'est exerçable par aucun cas. Un test épingle cette implication — le jour
+  où il tombe, c'est que la forme courte est redevenue fausse. La légende disparaît **avec** le
+  trait ; la période et sa fin, elles, restent.
+- **Une seule carte pour deux ouvertures** (`CarteDOuverture`, ex-`CarteDeSaison`) : le canvas décrit
+  le cadre de la saison et celui du premier plan de la même façon au pixel près, donc en écrire deux
+  garantirait qu'ils divergent — la leçon de `CarteDePiste` en C5.2. Ce qui change est du contenu,
+  dérivé dans `src/types/saison.ts`, **y compris la ligne de Ramille**, passée sans valeur par
+  défaut : un repli sur « On repart pour une saison. » dirait au premier plan la seule phrase qui ne
+  peut pas y être vraie. Les deux cartes ne peuvent pas coexister (l'une exige un cycle précédent,
+  l'autre exige qu'il n'y en ait pas) et **remplacent toutes deux la carte d'attente, jamais un point
+  en attente** — C2.8 dit pourquoi. La marque locale (`traceverte.premier_plan_vu.v1`,
+  `src/lib/premier-parcours.ts`) est **booléenne** là où celle de la saison porte un identifiant de
+  cycle : le premier plan n'arrive qu'une fois, et elle est nécessaire parce que le signal, lui, ne
+  se referme que sur un engagement.
+
+**La barre d'onglets attend que les deux lieux aient quelque chose à montrer** (C5.7,
+`src/types/premier-parcours.ts`). Le produit proposait Plan et Suivi dès la dernière page du
+questionnaire, c'est-à-dire avant qu'il y ait quoi que ce soit à suivre. La barre est masquée de la
+soumission du **premier** questionnaire à la fermeture de la carte « Ton premier plan », puis elle
+arrive et se nomme, une fois. Cinq points :
+
+- **Une valeur à trois états (`questionnaire` → `barre` → `fait`), jamais deux marques booléennes.**
+  Le canvas décrit une marque « effacée » à la fin du parcours, plus une seconde pour la carte des
+  deux lieux ; effacée, la première ne dit plus rien, et la question que pose la carte est « la barre
+  vient-elle d'arriver **sur cet appareil** ? ». Deux booléens ne distinguent pas « le parcours vient
+  de finir ici » de « il n'y en a jamais eu ici », donc la carte se serait rendue à **tout le
+  monde** — chaque installation existante, chaque appareil neuf d'un compte existant. Écart consigné
+  en `v1-17` §9.
+- **Sans marque, la barre est là**, et c'est le cas à ne pas rater : appareil neuf d'un compte
+  existant, session retrouvée par lien, installation d'avant le chantier. La marque autorise une
+  absence, elle ne la présume jamais — et `null` recouvre aussi « pas encore lue », donc l'état de
+  départ du layout ne fait disparaître la barre de personne (la règle d'hydratation d'`EXPO.md`
+  §2.2 : sur web, le rendu statique ne connaît aucun stockage). Une **valeur inconnue** se lit de
+  même : c'est le seul moyen, depuis ce stockage, de retirer à quelqu'un la moitié du produit.
+- **« Premier » veut dire premier sur cet appareil**, et la question se pose à la soumission, **avant**
+  de poser la marque de bilan de C4.5 — c'est elle qui répond. Trois situations retombent alors du
+  bon côté sans garde à écrire : un re-bilan, un appareil neuf d'un compte existant, et une
+  installation d'avant le chantier.
+- **L'étape vit dans le layout des onglets**, qui la partage par contexte (`usePremierParcours`) :
+  c'est lui qui rend la barre, donc un écran qui réécrirait la marque dans son coin la ferait
+  arriver au prochain montage et non au geste. Le questionnaire, lui, est **hors** du groupe et
+  écrit directement la marque — le bon ordre, puisque le layout est monté après. Quatre chemins
+  referment le premier plan et font venir la barre : « Compris » (immédiat, dans son gestionnaire),
+  le premier engagement, un plan à zéro action, et une carte déjà refermée ici — les trois derniers
+  passent par le chargement de l'écran, qui les ramène au même appel.
+- **`tabBarStyle: { display: 'none' }` ne laisse pas de bande vide**, mesuré et non raisonné
+  (`EXPO.md` §1.7) ; **l'entrée glissée de 320 ms du canvas n'est pas rendue**, faute de pouvoir
+  envelopper `BottomTabBar` sans ajouter `@react-navigation/bottom-tabs` aux dépendances —
+  `expo-router` l'embarque sans l'exposer. Écart consigné en `v1-17` §9.
+
 **Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
 décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
 `v1-10` §2.B). Le push, lui, part à `now()`. Pour provoquer un rappel de test, passer par

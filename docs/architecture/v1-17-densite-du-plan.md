@@ -497,3 +497,21 @@ le premier pas ne s'affiche qu'une fois l'action engagée ; la carte d'ouverture
 place d'un point en attente ; le seuil de télétravail de C3.8 ; « ces réponses n'entrent pas dans
 le calcul de ton bilan » ; deux onglets et pas trois ; aucune route dynamique `[id]` ; Ramille ne
 dit jamais un nombre et ne se tient jamais près d'un chiffre lourd.
+
+## 9. Les écarts au canvas, consignés
+
+Même rôle que `v1-14` §10 pour le canvas de l'increment 14 : ce qui a été **volontairement** rendu
+autrement que dessiné, avec la raison. Un écart non consigné est un écart qu'un prochain passage
+« corrigera » dans le mauvais sens.
+
+| # | Ce que le canvas dit | Ce qui est livré | Pourquoi |
+|---|---|---|---|
+| 1 | Le trait de temps : `progression !== null && (engagement || !premierPlan)` (C5.6) | `progression !== null && !premierPlan` | La moitié `engagement ||` est **impliquée** par la seconde : `estPremierPlan` exige déjà qu'aucune action ne porte de `committed_at`, donc aucun cas ne peut l'exercer. Une clause morte se lit « réservée » et non « redondante ». Un test épingle l'implication : le jour où il tombe, c'est que la forme courte est redevenue fausse |
+| 2 | Le premier parcours tient en **deux marques booléennes**, la première « effacée » à la fermeture de la carte du premier plan (C5.7) | **Une valeur à trois états**, `questionnaire` → `barre` → `fait` | Effacée, la première marque ne dit plus rien. Or la carte des deux lieux demande « la barre vient-elle d'arriver **sur cet appareil** ? », et une marque absente ne distingue pas « le parcours vient de finir ici » de « il n'y en a jamais eu ici ». Avec deux booléens, la carte se serait rendue à **toute** installation existante et à tout appareil neuf d'un compte existant — précisément la réexplication que « trois cartes d'ouverture, chacune une seule fois » interdit |
+| 3 | La barre glisse depuis le bas : translateY 60 → 0 et opacité, 320 ms ease-out (C5.7, planche F3) | Pas d'animation d'entrée | L'animer demande de rendre la barre soi-même en enveloppant `BottomTabBar` dans un `Animated.View`, donc de dépendre de `@react-navigation/bottom-tabs` — un paquet qu'`expo-router` embarque **sans l'exposer**, et qui n'est pas une dépendance de ce dépôt. Ajouter une dépendance pour une animation d'entrée n'est pas un échange que ce projet fait. Se rouvre le jour où `expo-router` réexporte le composant, ou si le paquet devient une dépendance pour une autre raison |
+| 4 | C5.7 touche `(tabs)/suivi/bilan.tsx` (§3, « Où ») | Ce fichier n'est pas modifié | La planche F1 dit que la restitution est celle d'aujourd'hui **mot pour mot**, et que ce qui change est que la barre n'est pas rendue. Or la barre est rendue par le layout des onglets, pas par l'écran : masquer la barre depuis le layout suffit, et l'écran n'a **rien** à lire. Une lecture de la marque y aurait été un second endroit à tenir en phase pour zéro effet |
+
+**Le relevé de fichiers de la vague 11 confirmait la colonne d'intention de `v1-13` §2.3** — C5.6 et
+C5.7 partagent `(tabs)/plan/index.tsx` et le module des marques, et la barre attend la carte : non
+parallèles, enchaînés. C'est la deuxième fois que cette colonne dit vrai, ce qui ne change rien à la
+règle du relevé.
