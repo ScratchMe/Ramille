@@ -895,7 +895,6 @@ export default function Plan() {
   // d'actions qui n'en étaient pas.
   const cadre = cadreDuPlan({
     postesEnAvant: pistes.enAvant.map((action) => action.action_templates?.poste ?? null),
-    posteDuCycle: cycle.poste,
     nombreDActions: actionsCount,
   });
   const baselineKg = cycle.baseline_co2_kg_year;
@@ -1093,18 +1092,23 @@ export default function Plan() {
             <ThemedText type="screenTitle">
               Ton plan
             </ThemedText>
-            {/* **Quand il n'y a rien à alléger, on n'écrit rien ici** (C2.6) : la carte de
-                félicitation juste en dessous le dit déjà, et « Rien à alléger sur … » sonnait
-                comme un constat d'échec posé sous le titre de l'écran.
+            {/* **L'intro dit le principe, plus la description** (C5.3, écart 6). Elle écrivait
+                « Deux actions pour ton trajet domicile-travail » — une description des deux cartes
+                posées juste dessous, qui taisait les neuf autres et n'apprenait rien. La question
+                que la personne se pose devant deux cartes n'est pas « lesquelles ? », c'est
+                « pourquoi seulement deux ? ». La ligne y répond.
 
-                Le poste est nommé par sa forme insérable et non par `trip_label`, qui porte le
-                mode entre parenthèses — « Une action liée à Trajet domicile-travail (Voiture
-                thermique). » était une phrase que personne n'a écrite. */}
-            {cadre.intro !== null && (
-              <ThemedText type="body" themeColor="textSecondary">
-                {cadre.intro}
-              </ThemedText>
-            )}
+                **Fixe, donc plus dérivée** : elle ne nomme ni poste ni nombre, ce qui retire du
+                même coup le défaut que `cadreDuPlan` existait pour éviter (annoncer un poste
+                au-dessus d'actions qui n'en sont pas, constat A8-14). Il ne reste d'elle que la
+                décision du cap.
+
+                Le mot de période suit la cadence : un trimestre glissant n'a pas de saison, et
+                « une action par saison » y serait faux. */}
+            <ThemedText type="body" themeColor="textSecondary">
+              Une action par {cadenceDeSaison ? 'saison' : 'période'}, une seule. C’est pas à pas
+              qu’on tient un cap.
+            </ThemedText>
           </View>
 
           {/* **Le point de la semaine passe en tête** (v1-11 flux 4) : répondre à un rappel est
@@ -1210,11 +1214,12 @@ export default function Plan() {
                   soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
                   {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
                 </ThemedText>
-                {cadre.noteDuCap !== null && (
-                  <ThemedText type="small" themeColor="textTertiary">
-                    {cadre.noteDuCap}
-                  </ThemedText>
-                )}
+                {/* **La note qui suivait ici a été retirée** (C5.3, écart 7) — « Le cap porte sur
+                    tes voyages ; cette action porte ailleurs. » Elle énonçait une règle que rien
+                    n'applique : le cap est une quantité à atteindre, et aucun endroit du produit ne
+                    vérifie d'où vient la réduction. Elle était rare tant que le poste dominant
+                    remplissait les deux premières cartes ; le classement de C5.1 l'aurait réveillée
+                    sur la plupart des plans, les meilleurs leviers venant souvent d'ailleurs. */}
               </>
             )}
             <View style={styles.capPeriode}>

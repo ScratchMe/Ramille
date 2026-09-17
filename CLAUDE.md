@@ -997,12 +997,20 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
   mois-ci » n'est pas une échéance pour un vol. Les voyages ont les leurs, les trois anciennes
   restent et sont celles des sorties. Le repli d'un poste inconnu est la liste des sorties, sans
   quoi la feuille s'ouvrirait sur rien et « C'est noté » resterait inactif sans dire pourquoi.
-- **`cadreDuPlan` décide de ce que l'écran annonce et de ce que le cap a le droit de chiffrer.**
-  Un plan à **zéro action** ne chiffre plus son cap — ce n'était un cas de bord qu'avant C2.5, et
+- **`cadreDuPlan` décide de ce que le cap a le droit de chiffrer, et de rien d'autre depuis C5.3.**
+  Un plan à **zéro action** ne chiffre pas son cap — ce n'était un cas de bord qu'avant C2.5, et
   depuis, tout cycliste et tout profil sédentaire y tombe ; la carte se rend quand même, elle est
-  depuis C2.8 l'endroit où la période se nomme. Et quand les actions débordent du poste dominant,
-  l'intro le dit et une note suit le cap, qui reste celui du poste dominant : le recalculer sur le
-  total côté client ferait deux définitions d'un même chiffre.
+  depuis C2.8 l'endroit où la période se nomme. Le cap reste celui du poste dominant : le
+  recalculer sur le total côté client ferait deux définitions d'un même chiffre.
+  **Deux champs en sont partis, et ce n'est pas un allègement** : `intro` décrivait les deux cartes
+  posées dessous (« Deux actions pour ton trajet domicile-travail ») en taisant les neuf autres,
+  remplacée par une ligne fixe qui dit le **principe** — une action à la fois, la seule question
+  qu'on se pose devant deux cartes. Et `noteDuCap` énonçait une **règle que rien n'applique** : le
+  cap est une quantité à atteindre, aucun endroit du produit ne vérifie d'où vient la réduction.
+  Elle était rare tant que le poste dominant remplissait les deux premières cartes ; **le
+  classement de C5.1 l'aurait réveillée sur la plupart des plans**, les meilleurs leviers venant
+  souvent d'ailleurs. La dérivation reste malgré son unique booléen, parce qu'il porte **deux
+  causes** qu'un `||` rendrait à moitié inéprouvables.
 
 **`action_text` est la clé naturelle du référentiel d'actions, et elle porte enfin un index
 unique.** Tout le dépôt apparie les gabarits par elle — `action_templates.id` vaut

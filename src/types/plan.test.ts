@@ -109,76 +109,33 @@ describe('isIntentionComplete', () => {
 });
 
 describe('cadreDuPlan', () => {
-  const cadre = (postesEnAvant: (string | null)[], posteDuCycle: string | null) =>
-    cadreDuPlan({ postesEnAvant, posteDuCycle, nombreDActions: postesEnAvant.length });
-
-  it('nomme le poste quand toutes les actions y portent', () => {
-    expect(cadre(['commute', 'commute'], 'commute').intro).toBe(
-      'Deux actions pour ton trajet domicile-travail.'
-    );
-    expect(cadre(['leisure'], 'leisure').intro).toBe('Une action pour tes sorties du week-end.');
+  /**
+   * **Il ne reste qu'un booléen, et la dérivation reste** (C5.3). `intro` et `noteDuCap` sont
+   * parties — la première décrivait les cartes posées dessous en taisant les autres, la seconde
+   * énonçait une règle que rien n'applique. Ce qui reste porte **deux causes distinctes**, et
+   * c'est pourquoi la fonction n'est pas remplacée par un `nombreDActions > 0` écrit dans l'écran :
+   * les réunir rendrait la seconde inéprouvable, la première suffisant toujours à faire passer
+   * l'assertion.
+   */
+  it('ne chiffre pas le cap d’un plan sans action', () => {
+    // Tout cycliste et tout profil sédentaire depuis C2.5 : « − 11 kg sur tes sorties » juste
+    // au-dessus de « Tu fais déjà l'essentiel sur ce poste » était le défaut.
+    expect(cadreDuPlan({ postesEnAvant: [], nombreDActions: 0 }).chiffreLeCap).toBe(false);
   });
 
-  it('ne pose pas de cap chiffré sur un plan sans action (C2.5, puis C3.8)', () => {
-    // Le cas est devenu courant, pas rare : depuis que les gabarits de loisirs sont refusés aux
-    // sorties rares, tout cycliste et tout profil sédentaire a un plan à zéro action. La carte du
-    // cap s'affichait alors juste au-dessus de « Tu fais déjà l'essentiel sur ce poste ».
-    const vide = cadreDuPlan({ postesEnAvant: [], posteDuCycle: 'commute', nombreDActions: 0 });
-    expect(vide.intro).toBeNull();
-    expect(vide.chiffreLeCap).toBe(false);
+  it('chiffre le cap dès qu’il y a une action', () => {
+    expect(cadreDuPlan({ postesEnAvant: ['commute'], nombreDActions: 1 }).chiffreLeCap).toBe(true);
+    expect(
+      cadreDuPlan({ postesEnAvant: ['travel', 'commute'], nombreDActions: 11 }).chiffreLeCap
+    ).toBe(true);
   });
 
-  it('garde le cap d’un plan dont toutes les actions sont derrière le lien des pistes', () => {
-    // Les deux causes de « rien à annoncer » tenaient dans un seul `||`, et le commentaire de ce
-    // test affirmait que la garde portait sur le nombre **total** d'actions — alors que
-    // l'assertion passait par l'autre membre, `postesEnAvant` vide. Elle n'éprouvait donc pas ce
-    // qu'elle disait, et ce qu'elle constatait était faux : un plan de trois actions n'a pas cessé
-    // d'avoir un cap parce que l'écran n'en met aucune en avant.
-    //
-    // La branche est inatteignable aujourd'hui — `pistesDuPlan` remplit toujours `enAvant` dès
-    // qu'il y a une action, les deux nombres différant seulement par les pistes repliées (C4.6).
-    // Elle est écrite pour le jour où elle cesserait de l'être.
-    const derriere = cadreDuPlan({
-      postesEnAvant: [],
-      posteDuCycle: 'commute',
-      nombreDActions: 3,
-    });
-    expect(derriere.intro).toBeNull();
-    expect(derriere.chiffreLeCap).toBe(true);
-    expect(derriere.noteDuCap).toBeNull();
-  });
-
-  it('dit que le plan est allé chercher ailleurs, et que le cap ne mesure pas ça', () => {
-    const ailleurs = cadre(['travel', 'leisure'], 'commute');
-    expect(ailleurs.intro).toBe(
-      'Deux actions, sur d’autres postes que ton trajet domicile-travail.'
-    );
-    expect(ailleurs.chiffreLeCap).toBe(true);
-    expect(ailleurs.noteDuCap).toBe(
-      'Le cap porte sur ton trajet domicile-travail ; ces actions portent ailleurs.'
-    );
-  });
-
-  it('compte celles qui débordent quand le plan est mixte', () => {
-    const mixte = cadre(['commute', 'travel'], 'commute');
-    expect(mixte.intro).toBe(
-      'Deux actions, dont une ailleurs que sur ton trajet domicile-travail.'
-    );
-    expect(mixte.noteDuCap).toBe(
-      'Le cap porte sur ton trajet domicile-travail ; cette action porte ailleurs.'
-    );
-  });
-
-  it('ne met la note qu’au-dessus d’un plan qui déborde', () => {
-    expect(cadre(['commute', 'commute'], 'commute').noteDuCap).toBeNull();
-  });
-
-  it('un poste inconnu reste nommable : la forme insérable a son repli', () => {
-    // Le repli côté client est celui de la boucle `extras`, « tes sorties du week-end » — un
-    // libellé un peu décalé plutôt qu'une formule vague, décision de C2.6. Ce que ce test garde
-    // n'est pas ce mot-là mais le fait que l'intro reste une phrase : sans repli, elle s'écrirait
-    // « Une action pour . ».
-    expect(cadre([null], null).intro).toBe('Une action pour tes sorties du week-end.');
+  // La seconde cause, prise à part. Elle est inatteignable aujourd'hui — `pistesDuPlan` remplit
+  // toujours `enAvant` dès qu'il y a une action — et c'est justement pourquoi elle est éprouvée :
+  // le jour où elle cesserait de l'être, la cumuler avec la première effacerait le cap d'un plan
+  // qui en a un.
+  it('garde le cap d’un plan dont aucune action n’est en avant', () => {
+    expect(cadreDuPlan({ postesEnAvant: [], nombreDActions: 5 }).chiffreLeCap).toBe(true);
   });
 });
 

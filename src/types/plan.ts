@@ -145,21 +145,24 @@ export function isIntentionComplete(
 
 // ── Ce que le plan annonce, et ce que son cap mesure (C3.8 §3) ─────────────────────────────
 
-/** Les nombres que l'intro du plan peut avoir à dire, en lettres. */
-const ACTIONS_EN_LETTRES = ['aucune', 'une', 'deux', 'trois', 'quatre'];
-
-function enLettres(n: number): string {
-  return ACTIONS_EN_LETTRES[n] ?? String(n);
-}
-
-function accorde(n: number, mot: string): string {
-  return `${enLettres(n)} ${mot}${n > 1 ? 's' : ''}`;
-}
-
-/** Ce que l'en-tête du plan annonce, et ce que sa carte de cap a le droit de chiffrer. */
+/**
+ * Ce que la carte de cap du plan a le droit de chiffrer (C3.8 §3, resserré par C5.3).
+ *
+ * **Il ne reste qu'un champ, et les deux qui sont partis ne sont pas un allègement.**
+ *
+ * `intro` décrivait les cartes posées juste dessous — « Deux actions pour ton trajet
+ * domicile-travail » — en taisant les neuf autres. Elle est remplacée par une ligne fixe qui dit le
+ * **principe** : une action à la fois. Décrire ce qu'on voit n'apprend rien ; dire pourquoi il n'y
+ * en a qu'une répond à la seule question que la personne se pose devant deux cartes.
+ *
+ * `noteDuCap` — « Le cap porte sur tes voyages ; cette action porte ailleurs. » — énonçait une
+ * **règle que rien n'applique** : le cap est une quantité à atteindre, et aucun endroit du produit
+ * ne vérifie d'où vient la réduction. Elle était rare tant que le poste dominant remplissait les
+ * deux premières cartes ; **le classement de C5.1 l'aurait réveillée sur la plupart des plans**,
+ * puisque les meilleurs leviers viennent souvent d'ailleurs. Une phrase fausse qui ne se voyait
+ * pas allait devenir une phrase fausse qu'on voit (relecture du 16/09/2026).
+ */
 export type CadreDuPlan = {
-  /** La phrase d'intro, ou `null` quand il n'y a rien à annoncer. */
-  intro: string | null;
   /**
    * Le cap se chiffre-t-il ? Non quand le plan ne porte **aucune** action.
    *
@@ -174,94 +177,41 @@ export type CadreDuPlan = {
    * La carte, elle, se rend toujours : elle est depuis C2.8 l'endroit où la période se nomme.
    */
   chiffreLeCap: boolean;
-  /**
-   * La note qui suit le cap quand les actions mises en avant ne portent pas toutes sur le poste
-   * qu'il mesure, ou `null`.
-   *
-   * Le cap reste celui du poste dominant — c'est ce que le serveur a calculé, et le recalculer sur
-   * le total côté client ferait deux définitions d'un même chiffre. Ce qui change est la phrase :
-   * sans elle, l'écran pose un cap sur un poste et aligne dessous des gains d'un autre, en invitant
-   * à les cumuler.
-   */
-  noteDuCap: string | null;
 };
 
 /**
- * Ce que l'écran du plan dit de lui-même, dérivé plutôt qu'écrit dans le rendu.
+ * Ce que la carte de cap a le droit de chiffrer, dérivé plutôt qu'écrit dans le rendu.
  *
- * **Le plan peut déborder de son poste dominant**, et l'écran l'ignorait : quand le poste dominant
- * n'a plus rien à proposer, `generate_plan_cycle_for_user` complète avec d'autres postes, et
- * l'intro écrivait quand même « Deux actions pour ton trajet domicile-travail » au-dessus d'actions
- * qui n'en étaient pas (constat A8-14). Le `poste` de chaque action est déjà sélectionné par la
- * requête de l'écran : il suffisait de le lire.
+ * La dérivation garde sa forme et son test alors qu'elle ne rend plus qu'un booléen, parce que ce
+ * booléen porte **deux causes distinctes** qu'il ne faut pas réunir dans un `||` — l'une d'elles
+ * deviendrait inéprouvable, la première suffisant toujours à faire passer l'assertion.
  */
 export function cadreDuPlan({
   postesEnAvant,
-  posteDuCycle,
   nombreDActions,
 }: {
   /** Le `poste` de chaque action mise en avant, dans l'ordre où elle s'affiche. */
   postesEnAvant: (string | null)[];
-  /** Le poste que le cycle — et donc le cap — mesure. */
-  posteDuCycle: string | null;
-  /** Le nombre total d'actions du plan, pistes dépliées comprises. */
+  /** Le nombre total d'actions du plan. */
   nombreDActions: number;
 }): CadreDuPlan {
-  // **Deux causes, deux branches** — les réunir dans un seul `||` rendait la seconde
-  // inéprouvable, la première suffisant toujours à faire passer l'assertion, et leur faisait dire
-  // la même chose alors qu'elles disent l'inverse.
-  //
   // Un plan **sans action** n'a pas de cap à chiffrer : c'est le cas de C2.5, devenu courant.
   if (nombreDActions === 0) {
-    return { intro: null, chiffreLeCap: false, noteDuCap: null };
+    return { chiffreLeCap: false };
   }
 
-  // Un plan qui a des actions mais n'en met **aucune en avant** n'a pas d'intro à écrire — elle
-  // nomme les postes de ce qui est devant — mais son cap garde tout son objet : les actions sont
-  // là, derrière le lien des pistes. La branche est inatteignable aujourd'hui (`pistesDuPlan`
-  // remplit toujours `enAvant` dès qu'il y a une action), et c'est justement pourquoi elle se
-  // tranche ici : le jour où elle cesserait de l'être, la cumuler avec la précédente effacerait
-  // le cap d'un plan qui en a un.
+  // Un plan qui a des actions mais n'en met **aucune en avant** garde son cap : les actions sont
+  // là, sur l'écran des pistes. La branche est inatteignable aujourd'hui (`pistesDuPlan` remplit
+  // toujours `enAvant` dès qu'il y a une action), et c'est justement pourquoi elle se tranche ici :
+  // le jour où elle cesserait de l'être, la cumuler avec la précédente effacerait le cap d'un plan
+  // qui en a un.
   if (postesEnAvant.length === 0) {
-    return { intro: null, chiffreLeCap: true, noteDuCap: null };
+    return { chiffreLeCap: true };
   }
 
-  const poste = formeInserable(posteDuCycle);
-  const surLeDominant = postesEnAvant.filter((p) => p === posteDuCycle).length;
-  const ailleurs = postesEnAvant.length - surLeDominant;
-
-  if (ailleurs === 0) {
-    return {
-      intro: `${capitale(accorde(postesEnAvant.length, 'action'))} pour ${poste}.`,
-      chiffreLeCap: true,
-      noteDuCap: null,
-    };
-  }
-
-  const note = `Le cap porte sur ${poste} ; ${ailleurs > 1 ? 'ces actions portent' : 'cette action porte'} ailleurs.`;
-
-  // Aucune sur le poste dominant : la phrase du canvas (planche F2), qui dit d'emblée que le plan
-  // est allé chercher ailleurs plutôt que de le laisser découvrir carte par carte.
-  if (surLeDominant === 0) {
-    return {
-      intro: `${capitale(accorde(postesEnAvant.length, 'action'))}, sur d’autres postes que ${poste}.`,
-      chiffreLeCap: true,
-      noteDuCap: note,
-    };
-  }
-
-  return {
-    // « dont une **action** ailleurs » répétait le nom à quatre mots de distance : le nombre seul
-    // le reprend, comme en français courant.
-    intro: `${capitale(accorde(postesEnAvant.length, 'action'))}, dont ${enLettres(ailleurs)} ailleurs que sur ${poste}.`,
-    chiffreLeCap: true,
-    noteDuCap: note,
-  };
+  return { chiffreLeCap: true };
 }
 
-function capitale(texte: string): string {
-  return `${texte.charAt(0).toUpperCase()}${texte.slice(1)}`;
-}
 
 // ── Ce que le plan met en avant, et ce qu'il garde derrière un lien (C4.6) ──────────────────
 
