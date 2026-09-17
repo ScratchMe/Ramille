@@ -145,21 +145,24 @@ export function isIntentionComplete(
 
 // ── Ce que le plan annonce, et ce que son cap mesure (C3.8 §3) ─────────────────────────────
 
-/** Les nombres que l'intro du plan peut avoir à dire, en lettres. */
-const ACTIONS_EN_LETTRES = ['aucune', 'une', 'deux', 'trois', 'quatre'];
-
-function enLettres(n: number): string {
-  return ACTIONS_EN_LETTRES[n] ?? String(n);
-}
-
-function accorde(n: number, mot: string): string {
-  return `${enLettres(n)} ${mot}${n > 1 ? 's' : ''}`;
-}
-
-/** Ce que l'en-tête du plan annonce, et ce que sa carte de cap a le droit de chiffrer. */
+/**
+ * Ce que la carte de cap du plan a le droit de chiffrer (C3.8 §3, resserré par C5.3).
+ *
+ * **Il ne reste qu'un champ, et les deux qui sont partis ne sont pas un allègement.**
+ *
+ * `intro` décrivait les cartes posées juste dessous — « Deux actions pour ton trajet
+ * domicile-travail » — en taisant les neuf autres. Elle est remplacée par une ligne fixe qui dit le
+ * **principe** : une action à la fois. Décrire ce qu'on voit n'apprend rien ; dire pourquoi il n'y
+ * en a qu'une répond à la seule question que la personne se pose devant deux cartes.
+ *
+ * `noteDuCap` — « Le cap porte sur tes voyages ; cette action porte ailleurs. » — énonçait une
+ * **règle que rien n'applique** : le cap est une quantité à atteindre, et aucun endroit du produit
+ * ne vérifie d'où vient la réduction. Elle était rare tant que le poste dominant remplissait les
+ * deux premières cartes ; **le classement de C5.1 l'aurait réveillée sur la plupart des plans**,
+ * puisque les meilleurs leviers viennent souvent d'ailleurs. Une phrase fausse qui ne se voyait
+ * pas allait devenir une phrase fausse qu'on voit (relecture du 16/09/2026).
+ */
 export type CadreDuPlan = {
-  /** La phrase d'intro, ou `null` quand il n'y a rien à annoncer. */
-  intro: string | null;
   /**
    * Le cap se chiffre-t-il ? Non quand le plan ne porte **aucune** action.
    *
@@ -174,94 +177,41 @@ export type CadreDuPlan = {
    * La carte, elle, se rend toujours : elle est depuis C2.8 l'endroit où la période se nomme.
    */
   chiffreLeCap: boolean;
-  /**
-   * La note qui suit le cap quand les actions mises en avant ne portent pas toutes sur le poste
-   * qu'il mesure, ou `null`.
-   *
-   * Le cap reste celui du poste dominant — c'est ce que le serveur a calculé, et le recalculer sur
-   * le total côté client ferait deux définitions d'un même chiffre. Ce qui change est la phrase :
-   * sans elle, l'écran pose un cap sur un poste et aligne dessous des gains d'un autre, en invitant
-   * à les cumuler.
-   */
-  noteDuCap: string | null;
 };
 
 /**
- * Ce que l'écran du plan dit de lui-même, dérivé plutôt qu'écrit dans le rendu.
+ * Ce que la carte de cap a le droit de chiffrer, dérivé plutôt qu'écrit dans le rendu.
  *
- * **Le plan peut déborder de son poste dominant**, et l'écran l'ignorait : quand le poste dominant
- * n'a plus rien à proposer, `generate_plan_cycle_for_user` complète avec d'autres postes, et
- * l'intro écrivait quand même « Deux actions pour ton trajet domicile-travail » au-dessus d'actions
- * qui n'en étaient pas (constat A8-14). Le `poste` de chaque action est déjà sélectionné par la
- * requête de l'écran : il suffisait de le lire.
+ * La dérivation garde sa forme et son test alors qu'elle ne rend plus qu'un booléen, parce que ce
+ * booléen porte **deux causes distinctes** qu'il ne faut pas réunir dans un `||` — l'une d'elles
+ * deviendrait inéprouvable, la première suffisant toujours à faire passer l'assertion.
  */
 export function cadreDuPlan({
   postesEnAvant,
-  posteDuCycle,
   nombreDActions,
 }: {
   /** Le `poste` de chaque action mise en avant, dans l'ordre où elle s'affiche. */
   postesEnAvant: (string | null)[];
-  /** Le poste que le cycle — et donc le cap — mesure. */
-  posteDuCycle: string | null;
-  /** Le nombre total d'actions du plan, pistes dépliées comprises. */
+  /** Le nombre total d'actions du plan. */
   nombreDActions: number;
 }): CadreDuPlan {
-  // **Deux causes, deux branches** — les réunir dans un seul `||` rendait la seconde
-  // inéprouvable, la première suffisant toujours à faire passer l'assertion, et leur faisait dire
-  // la même chose alors qu'elles disent l'inverse.
-  //
   // Un plan **sans action** n'a pas de cap à chiffrer : c'est le cas de C2.5, devenu courant.
   if (nombreDActions === 0) {
-    return { intro: null, chiffreLeCap: false, noteDuCap: null };
+    return { chiffreLeCap: false };
   }
 
-  // Un plan qui a des actions mais n'en met **aucune en avant** n'a pas d'intro à écrire — elle
-  // nomme les postes de ce qui est devant — mais son cap garde tout son objet : les actions sont
-  // là, derrière le lien des pistes. La branche est inatteignable aujourd'hui (`pistesDuPlan`
-  // remplit toujours `enAvant` dès qu'il y a une action), et c'est justement pourquoi elle se
-  // tranche ici : le jour où elle cesserait de l'être, la cumuler avec la précédente effacerait
-  // le cap d'un plan qui en a un.
+  // Un plan qui a des actions mais n'en met **aucune en avant** garde son cap : les actions sont
+  // là, sur l'écran des pistes. La branche est inatteignable aujourd'hui (`pistesDuPlan` remplit
+  // toujours `enAvant` dès qu'il y a une action), et c'est justement pourquoi elle se tranche ici :
+  // le jour où elle cesserait de l'être, la cumuler avec la précédente effacerait le cap d'un plan
+  // qui en a un.
   if (postesEnAvant.length === 0) {
-    return { intro: null, chiffreLeCap: true, noteDuCap: null };
+    return { chiffreLeCap: true };
   }
 
-  const poste = formeInserable(posteDuCycle);
-  const surLeDominant = postesEnAvant.filter((p) => p === posteDuCycle).length;
-  const ailleurs = postesEnAvant.length - surLeDominant;
-
-  if (ailleurs === 0) {
-    return {
-      intro: `${capitale(accorde(postesEnAvant.length, 'action'))} pour ${poste}.`,
-      chiffreLeCap: true,
-      noteDuCap: null,
-    };
-  }
-
-  const note = `Le cap porte sur ${poste} ; ${ailleurs > 1 ? 'ces actions portent' : 'cette action porte'} ailleurs.`;
-
-  // Aucune sur le poste dominant : la phrase du canvas (planche F2), qui dit d'emblée que le plan
-  // est allé chercher ailleurs plutôt que de le laisser découvrir carte par carte.
-  if (surLeDominant === 0) {
-    return {
-      intro: `${capitale(accorde(postesEnAvant.length, 'action'))}, sur d’autres postes que ${poste}.`,
-      chiffreLeCap: true,
-      noteDuCap: note,
-    };
-  }
-
-  return {
-    // « dont une **action** ailleurs » répétait le nom à quatre mots de distance : le nombre seul
-    // le reprend, comme en français courant.
-    intro: `${capitale(accorde(postesEnAvant.length, 'action'))}, dont ${enLettres(ailleurs)} ailleurs que sur ${poste}.`,
-    chiffreLeCap: true,
-    noteDuCap: note,
-  };
+  return { chiffreLeCap: true };
 }
 
-function capitale(texte: string): string {
-  return `${texte.charAt(0).toUpperCase()}${texte.slice(1)}`;
-}
 
 // ── Ce que le plan met en avant, et ce qu'il garde derrière un lien (C4.6) ──────────────────
 
@@ -276,28 +226,10 @@ function capitale(texte: string): string {
  */
 export const ACTIONS_EN_AVANT = 2;
 
-/**
- * Combien d'actions gardent une **carte** quand on déplie les pistes ; au-delà, des lignes simples.
- *
- * Le canvas borne les cartes à quatre, et c'est une hiérarchie voulue : une liste de six cartes
- * pleines ne présente plus un choix, elle présente un catalogue. Les lignes qui suivent disent ce
- * qui existe sans le mettre au même rang.
- *
- * **Les trois rangs disent l'insistance, jamais la permission** (recette du 14/09/2026, §12.4,
- * `v1-16` §5). Les lignes simples n'avaient pas de bouton, donc le plan affichait des leviers
- * chiffrés et inatteignables ; elles s'ouvrent désormais en carte au toucher. Le classement n'a pas
- * bougé — c'est ce que l'écran permet qui a changé, pas ce qu'il recommande.
- */
-export const PISTES_ESTOMPEES = 2;
-
 export type PistesDuPlan<T> = {
-  /** Les cartes pleines, toujours visibles. */
+  /** Les cartes pleines du plan, et rien d'autre depuis C5.2. */
   enAvant: T[];
-  /** Les cartes estompées, visibles une fois les pistes dépliées. */
-  estompees: T[];
-  /** Le reste, en lignes simples, visible une fois les pistes dépliées. */
-  lignes: T[];
-  /** Ce que le lien annonce : combien de pistes se cachent derrière lui. */
+  /** Ce que le lien annonce : combien de pistes attendent sur l'écran dédié. */
   masquees: number;
 };
 
@@ -313,25 +245,63 @@ export type PistesDuPlan<T> = {
  * La fonction est générique parce que la forme d'une ligne `plan_actions` appartient à l'écran :
  * elle ne demande que les deux champs dont l'ordre dépend.
  */
-export function pistesDuPlan<T extends { committed_at: string | null; rank: number | null }>(
+/**
+ * L'ordre commun aux deux surfaces — le plan et l'écran des pistes.
+ *
+ * Écrit une fois parce que deux copies divergeraient : le jour où l'une des deux change, les deux
+ * écrans ne s'accorderaient plus sur ce qui vient en premier, et rien ne le signalerait.
+ */
+function ordonnerLesPistes<T extends { committed_at: string | null; rank: number | null }>(
   actions: T[]
-): PistesDuPlan<T> {
-  const ordonnees = [...actions].sort((a, b) => {
+): T[] {
+  return [...actions].sort((a, b) => {
     const engagement = Number(b.committed_at !== null) - Number(a.committed_at !== null);
     if (engagement !== 0) return engagement;
     // `Infinity` plutôt que 0 : un rang absent va au bout, il ne se glisse pas en tête.
     return (a.rank ?? Infinity) - (b.rank ?? Infinity);
   });
+}
 
-  const enAvant = ordonnees.slice(0, ACTIONS_EN_AVANT);
-  const reste = ordonnees.slice(ACTIONS_EN_AVANT);
+export function pistesDuPlan<T extends { committed_at: string | null; rank: number | null }>(
+  actions: T[]
+): PistesDuPlan<T> {
+  const ordonnees = ordonnerLesPistes(actions);
 
   return {
-    enAvant,
-    estompees: reste.slice(0, PISTES_ESTOMPEES),
-    lignes: reste.slice(PISTES_ESTOMPEES),
-    masquees: reste.length,
+    enAvant: ordonnees.slice(0, ACTIONS_EN_AVANT),
+    masquees: Math.max(0, ordonnees.length - ACTIONS_EN_AVANT),
   };
+}
+
+/**
+ * Les pistes de l'écran « Toutes les pistes », groupées par poste (C5.2, écart 3).
+ *
+ * **Le groupement est un fait d'écran, pas un classement de plus.** L'ordre des actions ne bouge
+ * pas — c'est toujours le `rank` du serveur, qui porte déjà la meilleure piste du poste dominant en
+ * tête depuis C5.1 — et les groupes sortent **dans l'ordre où leur poste apparaît pour la première
+ * fois**. Trier les groupes autrement (par poids du poste, par nom) rendrait la tête de liste
+ * différente de la première carte du plan, et les deux écrans se contrediraient sur ce qui compte
+ * le plus.
+ *
+ * Ici il n'y a **pas de rang** : toutes les pistes sont au même niveau, chacune ouvrable. C'est ce
+ * que le lot 5 change — le plan insiste sur deux, cet écran-ci présente tout, et aucune des deux
+ * surfaces ne cache un levier derrière une hiérarchie qu'on ne peut pas franchir (`v1-16` §5).
+ */
+export function pistesParPoste<T extends { committed_at: string | null; rank: number | null }>(
+  actions: T[],
+  posteDe: (action: T) => string | null
+): { poste: string | null; pistes: T[] }[] {
+  const ordonnees = ordonnerLesPistes(actions);
+  const groupes: { poste: string | null; pistes: T[] }[] = [];
+
+  for (const action of ordonnees) {
+    const poste = posteDe(action);
+    const existant = groupes.find((g) => g.poste === poste);
+    if (existant) existant.pistes.push(action);
+    else groupes.push({ poste, pistes: [action] });
+  }
+
+  return groupes;
 }
 
 /**
@@ -358,4 +328,80 @@ export function separationsDesLignes(ids: string[], ouvertes: ReadonlySet<string
   return ids.map(
     (id, rang) => rang > 0 && (ouvertes.has(id) || ouvertes.has(ids[rang - 1]))
   );
+}
+
+// ── L'encart de contexte du plan (C5.5, écarts 9 et 10) ────────────────────────────────────────
+
+/**
+ * Les réponses du contexte B4, telles que l'encart les lit.
+ *
+ * `teletravail` peut être nul sans que rien ne soit cassé : la question ne se pose pas sans trajet
+ * régulier ni en dessous de deux jours de trajet (C5.4, `teletravailSePose`).
+ */
+export type ReponsesDeContexte = {
+  zone_type: string | null;
+  tc_access: string | null;
+  household_vehicles: string | null;
+  teletravail: string | null;
+};
+
+/**
+ * Chaque réponse du contexte en mots, pour la phrase de l'encart.
+ *
+ * **Une table et non des ternaires** : quatre colonnes, douze valeurs, et la moindre faute de frappe
+ * y sortirait une phrase bancale sur l'écran le plus lu du produit. Elle est épinglée par un test
+ * qui la parcourt plutôt que de nommer les valeurs une par une — celle qu'on ajoutera demain
+ * traverserait une liste.
+ */
+const MOTS_DU_CONTEXTE: Record<keyof ReponsesDeContexte, Record<string, string>> = {
+  zone_type: {
+    urbain_dense: 'zone urbaine dense',
+    periurbain: 'zone périurbaine',
+    rural: 'zone rurale',
+  },
+  tc_access: {
+    bon: 'bon accès aux transports en commun',
+    limite: 'accès limité aux transports en commun',
+    inexistant: 'pas de transports en commun',
+  },
+  household_vehicles: {
+    '0': 'pas de véhicule dans le foyer',
+    '1': 'un véhicule dans le foyer',
+    '2_plus': 'deux véhicules ou plus dans le foyer',
+  },
+  teletravail: {
+    aucun: 'pas de télétravail possible',
+    un_jour: 'un jour de télétravail possible',
+    deux_ou_plus: 'deux jours de télétravail possibles ou plus',
+  },
+};
+
+/**
+ * Ce que l'encart énumère, dans l'ordre de l'étape « Contexte ».
+ *
+ * **Il ne nomme jamais l'action écartée ni son gain**, et c'est la contrainte du chantier, pas un
+ * oubli : ce serait la liste des portes fermées pour la personne qui a répondu juste, et un prix
+ * affiché sur une réponse pour les autres — c'est-à-dire apprendre à répondre haut. L'encart dit
+ * sur quoi le plan s'appuie, la porte permet de corriger, et rien de plus.
+ *
+ * **Une valeur absente ou inconnue ne sort pas.** Le télétravail manque légitimement (la question
+ * ne se pose pas partout, C5.4) ; les trois autres manquent seulement sur un bilan d'avant leur
+ * colonne, et une phrase à trou serait pire qu'un segment de moins. Une valeur hors table ne peut
+ * venir que d'une migration qui aurait ajouté une réponse sans passer ici — auquel cas on tait ce
+ * qu'on ne sait pas dire plutôt que d'écrire un identifiant technique.
+ */
+export function motsDuContexte(reponses: ReponsesDeContexte): string[] {
+  const ordre: (keyof ReponsesDeContexte)[] = [
+    'zone_type',
+    'tc_access',
+    'household_vehicles',
+    'teletravail',
+  ];
+
+  return ordre
+    .map((colonne) => {
+      const valeur = reponses[colonne];
+      return valeur !== null ? (MOTS_DU_CONTEXTE[colonne][valeur] ?? null) : null;
+    })
+    .filter((mot): mot is string => mot !== null);
 }

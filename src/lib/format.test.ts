@@ -2,7 +2,7 @@
 // dépôt vise en premier — et `src/lib/format.ts` n'avait aucun test, alors que c'est un module
 // pur de six lignes lu par cinq écrans (A10-3, A10-7).
 import { formatTonnesShort } from '@/constants/carbon-reference';
-import { formatTonnes, formatTonnesNu } from '@/lib/format';
+import { formatKg, formatTonnes, formatTonnesNu } from '@/lib/format';
 
 describe('formatTonnes', () => {
   // Les valeurs du chantier C1.8, dans l'ordre : le zéro, les trois cas qui tombaient à
@@ -81,5 +81,31 @@ describe('formatTonnesNu', () => {
     for (const kg of [0, 40, 999, 1000, 2149, 15820]) {
       expect(formatTonnes(kg)).toBe(`${formatTonnesNu(kg)} CO₂e`);
     }
+  });
+});
+
+describe('formatKg', () => {
+  // « − 1 601 kg CO₂e » et non « − 1601 kg » (C5.8, écart 15). Le séparateur est l'espace **fine
+  // insécable** U+202F, celle de la typographie française : une espace ordinaire laisserait le
+  // nombre se couper en fin de ligne.
+  it('groupe les milliers avec une espace fine insécable', () => {
+    expect(formatKg(1601)).toBe('1 601');
+    expect(formatKg(12345)).toBe('12 345');
+  });
+
+  // Sous mille, rien ne change : c'est le cas de presque tous les gains, et y glisser un séparateur
+  // serait un faux ami.
+  it('ne touche pas aux nombres à trois chiffres', () => {
+    expect(formatKg(999)).toBe('999');
+    expect(formatKg(48)).toBe('48');
+    expect(formatKg(0)).toBe('0');
+  });
+
+  // Un gain vient de la base en `numeric` et peut porter des décimales que l'écran n'affiche pas :
+  // l'arrondi vient **avant** le groupement, sinon « 1599,7 » sortirait avec un séparateur posé au
+  // mauvais endroit.
+  it('arrondit avant de grouper', () => {
+    expect(formatKg(1599.7)).toBe('1 600');
+    expect(formatKg(999.6)).toBe('1 000');
   });
 });

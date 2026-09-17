@@ -1,19 +1,21 @@
 import {
   ACTIONS_EN_AVANT,
+  INTENTION_TIMINGS,
+  INTENTION_TIMINGS_LOISIRS,
+  INTENTION_TIMINGS_VOYAGES,
   cadreDuPlan,
   formatIntention,
   formatIntentionDays,
   formatIntentionTiming,
   intentionKindForPoste,
   intentionTimingsForPoste,
-  INTENTION_TIMINGS,
-  INTENTION_TIMINGS_LOISIRS,
-  INTENTION_TIMINGS_VOYAGES,
   isIntentionComplete,
-  separationsDesLignes,
-  PISTES_ESTOMPEES,
+  motsDuContexte,
   pistesDuPlan,
+  pistesParPoste,
+  separationsDesLignes,
   type IntentionDay,
+  type ReponsesDeContexte,
 } from './plan';
 
 describe('intentionKindForPoste', () => {
@@ -109,76 +111,33 @@ describe('isIntentionComplete', () => {
 });
 
 describe('cadreDuPlan', () => {
-  const cadre = (postesEnAvant: (string | null)[], posteDuCycle: string | null) =>
-    cadreDuPlan({ postesEnAvant, posteDuCycle, nombreDActions: postesEnAvant.length });
-
-  it('nomme le poste quand toutes les actions y portent', () => {
-    expect(cadre(['commute', 'commute'], 'commute').intro).toBe(
-      'Deux actions pour ton trajet domicile-travail.'
-    );
-    expect(cadre(['leisure'], 'leisure').intro).toBe('Une action pour tes sorties du week-end.');
+  /**
+   * **Il ne reste qu'un booléen, et la dérivation reste** (C5.3). `intro` et `noteDuCap` sont
+   * parties — la première décrivait les cartes posées dessous en taisant les autres, la seconde
+   * énonçait une règle que rien n'applique. Ce qui reste porte **deux causes distinctes**, et
+   * c'est pourquoi la fonction n'est pas remplacée par un `nombreDActions > 0` écrit dans l'écran :
+   * les réunir rendrait la seconde inéprouvable, la première suffisant toujours à faire passer
+   * l'assertion.
+   */
+  it('ne chiffre pas le cap d’un plan sans action', () => {
+    // Tout cycliste et tout profil sédentaire depuis C2.5 : « − 11 kg sur tes sorties » juste
+    // au-dessus de « Tu fais déjà l'essentiel sur ce poste » était le défaut.
+    expect(cadreDuPlan({ postesEnAvant: [], nombreDActions: 0 }).chiffreLeCap).toBe(false);
   });
 
-  it('ne pose pas de cap chiffré sur un plan sans action (C2.5, puis C3.8)', () => {
-    // Le cas est devenu courant, pas rare : depuis que les gabarits de loisirs sont refusés aux
-    // sorties rares, tout cycliste et tout profil sédentaire a un plan à zéro action. La carte du
-    // cap s'affichait alors juste au-dessus de « Tu fais déjà l'essentiel sur ce poste ».
-    const vide = cadreDuPlan({ postesEnAvant: [], posteDuCycle: 'commute', nombreDActions: 0 });
-    expect(vide.intro).toBeNull();
-    expect(vide.chiffreLeCap).toBe(false);
+  it('chiffre le cap dès qu’il y a une action', () => {
+    expect(cadreDuPlan({ postesEnAvant: ['commute'], nombreDActions: 1 }).chiffreLeCap).toBe(true);
+    expect(
+      cadreDuPlan({ postesEnAvant: ['travel', 'commute'], nombreDActions: 11 }).chiffreLeCap
+    ).toBe(true);
   });
 
-  it('garde le cap d’un plan dont toutes les actions sont derrière le lien des pistes', () => {
-    // Les deux causes de « rien à annoncer » tenaient dans un seul `||`, et le commentaire de ce
-    // test affirmait que la garde portait sur le nombre **total** d'actions — alors que
-    // l'assertion passait par l'autre membre, `postesEnAvant` vide. Elle n'éprouvait donc pas ce
-    // qu'elle disait, et ce qu'elle constatait était faux : un plan de trois actions n'a pas cessé
-    // d'avoir un cap parce que l'écran n'en met aucune en avant.
-    //
-    // La branche est inatteignable aujourd'hui — `pistesDuPlan` remplit toujours `enAvant` dès
-    // qu'il y a une action, les deux nombres différant seulement par les pistes repliées (C4.6).
-    // Elle est écrite pour le jour où elle cesserait de l'être.
-    const derriere = cadreDuPlan({
-      postesEnAvant: [],
-      posteDuCycle: 'commute',
-      nombreDActions: 3,
-    });
-    expect(derriere.intro).toBeNull();
-    expect(derriere.chiffreLeCap).toBe(true);
-    expect(derriere.noteDuCap).toBeNull();
-  });
-
-  it('dit que le plan est allé chercher ailleurs, et que le cap ne mesure pas ça', () => {
-    const ailleurs = cadre(['travel', 'leisure'], 'commute');
-    expect(ailleurs.intro).toBe(
-      'Deux actions, sur d’autres postes que ton trajet domicile-travail.'
-    );
-    expect(ailleurs.chiffreLeCap).toBe(true);
-    expect(ailleurs.noteDuCap).toBe(
-      'Le cap porte sur ton trajet domicile-travail ; ces actions portent ailleurs.'
-    );
-  });
-
-  it('compte celles qui débordent quand le plan est mixte', () => {
-    const mixte = cadre(['commute', 'travel'], 'commute');
-    expect(mixte.intro).toBe(
-      'Deux actions, dont une ailleurs que sur ton trajet domicile-travail.'
-    );
-    expect(mixte.noteDuCap).toBe(
-      'Le cap porte sur ton trajet domicile-travail ; cette action porte ailleurs.'
-    );
-  });
-
-  it('ne met la note qu’au-dessus d’un plan qui déborde', () => {
-    expect(cadre(['commute', 'commute'], 'commute').noteDuCap).toBeNull();
-  });
-
-  it('un poste inconnu reste nommable : la forme insérable a son repli', () => {
-    // Le repli côté client est celui de la boucle `extras`, « tes sorties du week-end » — un
-    // libellé un peu décalé plutôt qu'une formule vague, décision de C2.6. Ce que ce test garde
-    // n'est pas ce mot-là mais le fait que l'intro reste une phrase : sans repli, elle s'écrirait
-    // « Une action pour . ».
-    expect(cadre([null], null).intro).toBe('Une action pour tes sorties du week-end.');
+  // La seconde cause, prise à part. Elle est inatteignable aujourd'hui — `pistesDuPlan` remplit
+  // toujours `enAvant` dès qu'il y a une action — et c'est justement pourquoi elle est éprouvée :
+  // le jour où elle cesserait de l'être, la cumuler avec la première effacerait le cap d'un plan
+  // qui en a un.
+  it('garde le cap d’un plan dont aucune action n’est en avant', () => {
+    expect(cadreDuPlan({ postesEnAvant: [], nombreDActions: 5 }).chiffreLeCap).toBe(true);
   });
 });
 
@@ -189,14 +148,11 @@ describe('pistesDuPlan', () => {
     committed_at: committed ? '2026-09-01T10:00:00Z' : null,
   });
 
-  it('met deux actions en avant et compte celles qui restent', () => {
+  it('met deux actions en avant et compte tout ce qui reste', () => {
     const p = pistesDuPlan([action(1), action(2), action(3), action(4), action(5)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a1', 'a2']);
-    expect(p.estompees.map((a) => a.id)).toEqual(['a3', 'a4']);
-    expect(p.lignes.map((a) => a.id)).toEqual(['a5']);
     expect(p.masquees).toBe(3);
     expect(ACTIONS_EN_AVANT).toBe(2);
-    expect(PISTES_ESTOMPEES).toBe(2);
   });
 
   // **L'action engagée passe toujours devant** : c'est la réponse à « qu'est-ce que je fais en ce
@@ -204,15 +160,13 @@ describe('pistesDuPlan', () => {
   it('met l’action engagée en tête, quel que soit son rang', () => {
     const p = pistesDuPlan([action(1), action(2), action(3), action(4, true)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a4', 'a1']);
-    expect(p.estompees.map((a) => a.id)).toEqual(['a2', 'a3']);
   });
 
-  // Le `rank` du serveur porte déjà le bon ordre — poste dominant d'abord, puis gain décroissant —
-  // donc l'écran le suit au lieu de retrier sur le gain, qui donnerait un ordre différent.
+  // Le `rank` du serveur porte déjà le bon ordre — meilleure piste du poste dominant d'abord, puis
+  // gain décroissant depuis C5.1 — donc l'écran le suit au lieu de retrier sur autre chose.
   it('suit le rang du serveur et ne retrie pas sur autre chose', () => {
     const p = pistesDuPlan([action(3), action(1), action(2)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a1', 'a2']);
-    expect(p.estompees.map((a) => a.id)).toEqual(['a3']);
   });
 
   // Un rang absent va au bout, il ne remonte pas en tête par accident — comme le `nulls last` du
@@ -220,48 +174,82 @@ describe('pistesDuPlan', () => {
   it('range un rang absent en dernier', () => {
     const p = pistesDuPlan([action(null), action(2), action(1)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a1', 'a2']);
-    expect(p.estompees.map((a) => a.id)).toEqual(['anull']);
   });
 
-  /**
-   * **Les trois rangs partitionnent, ils ne sélectionnent pas** — et depuis §12.4 (`v1-16` §5)
-   * cette propriété porte une promesse d'écran : toute action affichée est engageable, donc toute
-   * action figée doit être affichée. Un rang qui en laisserait tomber une la rendrait invisible,
-   * c'est-à-dire recréerait le `limit 2` que C4.6 a retiré du serveur, ici et en silence.
-   *
-   * L'assertion porte sur neuf actions pour déborder les deux bornes, et compare la
-   * **concaténation des trois rangs** à l'ordre attendu plutôt que trois listes séparées : c'est
-   * la partition qu'on éprouve, pas le contenu de chaque rang, déjà épinglé plus haut.
-   */
-  it('ne perd aucune action, quel qu’en soit le nombre', () => {
-    const rangs = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const p = pistesDuPlan(rangs.map((r) => action(r)));
-    expect([...p.enAvant, ...p.estompees, ...p.lignes].map((a) => a.id)).toEqual(
-      rangs.map((r) => `a${r}`)
-    );
-    expect(p.masquees).toBe(rangs.length - ACTIONS_EN_AVANT);
-  });
-
-  // Le plan d'avant C4.6 : deux actions, rien derrière, donc pas de lien à afficher.
-  it('ne cache rien quand il n’y a que deux actions', () => {
-    const p = pistesDuPlan([action(1), action(2)]);
-    expect(p.masquees).toBe(0);
-    expect(p.estompees).toEqual([]);
-    expect(p.lignes).toEqual([]);
+  // Le plan d'avant C4.6 : deux actions, rien de plus, donc pas de lien vers l'écran des pistes —
+  // il promettrait un écran qui répète celui-ci.
+  it('ne renvoie à rien quand il n’y a que deux actions', () => {
+    expect(pistesDuPlan([action(1), action(2)]).masquees).toBe(0);
   });
 
   // Tout cycliste et tout profil sédentaire depuis C2.5 : le plan est vide, et l'écran le félicite
   // plutôt que de lui présenter une liste.
-  it('rend trois rangs vides sans action', () => {
-    expect(pistesDuPlan([])).toEqual({ enAvant: [], estompees: [], lignes: [], masquees: 0 });
+  it('ne met rien en avant sans action', () => {
+    const p = pistesDuPlan([]);
+    expect(p.enAvant).toEqual([]);
+    expect(p.masquees).toBe(0);
+  });
+});
+
+describe('pistesParPoste', () => {
+  const action = (rank: number | null, poste: string | null, committed = false) => ({
+    id: `a${rank}`,
+    rank,
+    poste,
+    committed_at: committed ? '2026-09-01T10:00:00Z' : null,
+  });
+  const grouper = (actions: ReturnType<typeof action>[]) =>
+    pistesParPoste(actions, (a) => a.poste);
+
+  // Les groupes sortent dans l'ordre où leur poste **apparaît**, jamais dans un ordre à eux : la
+  // tête de cet écran doit être la première carte du plan, sinon les deux surfaces se contredisent
+  // sur ce qui compte le plus.
+  it('sort les groupes dans l’ordre d’apparition, et garde le rang à l’intérieur', () => {
+    const groupes = grouper([
+      action(3, 'commute'),
+      action(1, 'travel'),
+      action(4, 'commute'),
+      action(2, 'travel'),
+    ]);
+    expect(groupes.map((g) => g.poste)).toEqual(['travel', 'commute']);
+    expect(groupes[0].pistes.map((a) => a.id)).toEqual(['a1', 'a2']);
+    expect(groupes[1].pistes.map((a) => a.id)).toEqual(['a3', 'a4']);
   });
 
-  // La fonction ne mute pas ce qu'on lui donne : `cycle.plan_actions` vient du state, et `sort`
-  // mute — c'est le piège que la copie évite, et il ne se voit qu'au second rendu.
-  it('ne mute pas la liste reçue', () => {
-    const liste = [action(3), action(1)];
-    pistesDuPlan(liste);
-    expect(liste.map((a) => a.id)).toEqual(['a3', 'a1']);
+  // L'action engagée passe devant ici aussi — et elle entraîne son poste en tête du même coup,
+  // parce que l'ordre des groupes se dérive de l'ordre des actions et de rien d'autre.
+  it('met l’action engagée en tête, et son poste avec elle', () => {
+    const groupes = grouper([action(1, 'travel'), action(2, 'travel'), action(5, 'commute', true)]);
+    expect(groupes.map((g) => g.poste)).toEqual(['commute', 'travel']);
+    expect(groupes[0].pistes.map((a) => a.id)).toEqual(['a5']);
+  });
+
+  /**
+   * **Le groupement partitionne, il ne sélectionne pas** — et cette propriété porte une promesse
+   * d'écran depuis §12.4 (`v1-16` §5) : toute action affichée est engageable, donc toute action
+   * figée doit être affichée. Un groupement qui en laisserait tomber une la rendrait invisible,
+   * c'est-à-dire recréerait le `limit 2` que C4.6 a retiré du serveur, ici et en silence.
+   *
+   * C'est la garde que C5.2 hérite de l'ancienne partition à trois rangs : elle a changé de forme,
+   * pas d'objet. Neuf actions sur trois postes pour qu'elle ait quelque chose à perdre.
+   */
+  it('ne perd aucune action, quels que soient les postes', () => {
+    const postes = ['travel', 'commute', 'leisure'];
+    const actions = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((r) => action(r, postes[r % 3]));
+    const aplati = grouper(actions).flatMap((g) => g.pistes);
+    expect(aplati).toHaveLength(actions.length);
+    expect(new Set(aplati.map((a) => a.id)).size).toBe(actions.length);
+  });
+
+  // Un poste nul est un groupe comme un autre : la jointure sur `action_templates` peut ne rien
+  // rendre, et perdre l'action serait pire que l'afficher sans en-tête.
+  it('garde les actions dont le poste est inconnu', () => {
+    const groupes = grouper([action(1, null), action(2, 'commute')]);
+    expect(groupes.map((g) => g.poste)).toEqual([null, 'commute']);
+  });
+
+  it('rend une liste vide sans action', () => {
+    expect(grouper([])).toEqual([]);
   });
 });
 
@@ -305,5 +293,86 @@ describe('separationsDesLignes', () => {
 
   it('rend une liste vide sans ligne', () => {
     expect(separationsDesLignes([], new Set())).toEqual([]);
+  });
+});
+
+describe('motsDuContexte', () => {
+  const reponses = (o: Partial<ReponsesDeContexte> = {}): ReponsesDeContexte => ({
+    zone_type: null,
+    tc_access: null,
+    household_vehicles: null,
+    teletravail: null,
+    ...o,
+  });
+
+  it('énumère les quatre réponses dans l’ordre de l’étape', () => {
+    expect(
+      motsDuContexte({
+        zone_type: 'urbain_dense',
+        tc_access: 'bon',
+        household_vehicles: '1',
+        teletravail: 'deux_ou_plus',
+      })
+    ).toEqual([
+      'zone urbaine dense',
+      'bon accès aux transports en commun',
+      'un véhicule dans le foyer',
+      'deux jours de télétravail possibles ou plus',
+    ]);
+  });
+
+  // Le télétravail manque **légitimement** : la question ne se pose ni sans trajet régulier ni en
+  // dessous de deux jours de trajet (C5.4). L'encart perd son quatrième segment, il n'écrit pas de
+  // phrase à trou.
+  it('tait le télétravail quand la question ne s’est pas posée', () => {
+    const mots = motsDuContexte(
+      reponses({ zone_type: 'rural', tc_access: 'inexistant', household_vehicles: '2_plus' })
+    );
+    expect(mots).toEqual([
+      'zone rurale',
+      'pas de transports en commun',
+      'deux véhicules ou plus dans le foyer',
+    ]);
+  });
+
+  /**
+   * **La table est parcourue, pas énumérée valeur par valeur.** Celle qu'on ajoutera demain
+   * traverserait une liste écrite à la main — c'est le motif des deux balayages de `first_step`
+   * (C4.6) et de la liste des modes de maintien (C2.5). Trois choses s'y vérifient d'un coup :
+   * chaque valeur rend un mot, aucun mot n'est vide, et aucun ne porte de chiffre — l'encart dit un
+   * contexte, jamais une quantité, et surtout jamais le gain d'une action écartée.
+   */
+  it('rend une phrase pour chaque valeur admise, sans chiffre', () => {
+    const colonnes: (keyof ReponsesDeContexte)[] = [
+      'zone_type',
+      'tc_access',
+      'household_vehicles',
+      'teletravail',
+    ];
+    const valeurs: Record<string, string[]> = {
+      zone_type: ['urbain_dense', 'periurbain', 'rural'],
+      tc_access: ['bon', 'limite', 'inexistant'],
+      household_vehicles: ['0', '1', '2_plus'],
+      teletravail: ['aucun', 'un_jour', 'deux_ou_plus'],
+    };
+
+    for (const colonne of colonnes) {
+      for (const valeur of valeurs[colonne]) {
+        const [mot] = motsDuContexte(reponses({ [colonne]: valeur }));
+        expect(mot).toBeDefined();
+        expect(mot.length).toBeGreaterThan(0);
+        expect(mot).not.toMatch(/\d/);
+      }
+    }
+  });
+
+  // Une valeur hors table ne peut venir que d'une migration qui aurait ajouté une réponse sans
+  // passer ici : on tait ce qu'on ne sait pas dire plutôt que d'afficher un identifiant technique.
+  it('tait une valeur qu’elle ne sait pas dire', () => {
+    expect(motsDuContexte(reponses({ zone_type: 'montagne' }))).toEqual([]);
+  });
+
+  it('rend une liste vide quand rien n’est renseigné', () => {
+    expect(motsDuContexte(reponses())).toEqual([]);
   });
 });

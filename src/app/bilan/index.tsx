@@ -28,6 +28,7 @@ import { ensureSession, supabase } from '@/lib/supabase';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
   BILAN_SECTION_LABEL,
+  BILAN_STEP_ORDER,
   EMPTY_BILAN_ANSWERS,
   avancementDeLaReprise,
   brouillonEstAncien,
@@ -39,9 +40,9 @@ import {
   nextStep,
   normaliserReponses,
   previousStep,
-  visibleSteps,
   type BilanAnswers,
   type BilanStepId,
+  visibleSteps,
 } from '@/types/bilan';
 import { decrireErreur } from '@/types/erreur';
 
@@ -56,7 +57,7 @@ export default function BilanQuestionnaire() {
   // ici qu'il faut dire où l'on en était. Le paramètre ne fait rien tout seul — il faut aussi
   // qu'un brouillon soit réellement relu, sinon un lien recopié afficherait un écran de reprise
   // sur un questionnaire vierge.
-  const { reprise } = useLocalSearchParams<{ reprise?: string }>();
+  const { reprise, etape } = useLocalSearchParams<{ reprise?: string; etape?: string }>();
   const [answers, setAnswers] = useState<BilanAnswers>(EMPTY_BILAN_ANSWERS);
   const [step, setStep] = useState<BilanStepId>('commute_has_trip');
   const [draftLoaded, setDraftLoaded] = useState(false);
@@ -134,6 +135,22 @@ export default function BilanQuestionnaire() {
         // réseau pour afficher une phrase qu'on peut déjà écrire ferait clignoter l'entrée.
         if (reprise === '1') setMontrerLaReprise(true);
       }
+
+      // **La porte de l'encart du plan** (C5.5) : `?etape=context` ouvre le questionnaire là où la
+      // personne veut corriger, prérempli dans l'ordre habituel (brouillon > dernier bilan > vide).
+      //
+      // Elle passe **après** la relecture du brouillon, qui pose l'étape où l'on s'était arrêté :
+      // dans l'autre ordre, arriver par la porte sur un questionnaire interrompu ramènerait à
+      // l'étape du brouillon plutôt qu'à celle demandée, ce qui est exactement ce que la porte
+      // promet de ne pas faire.
+      //
+      // Le paramètre est **vérifié contre les étapes réelles** et non repris tel quel : un lien
+      // recopié de travers ouvrirait sinon un écran qui n'existe pas. Inconnu, il est ignoré — le
+      // questionnaire s'ouvre normalement, ce qui n'affirme rien de faux.
+      if (etape !== undefined && (BILAN_STEP_ORDER as readonly string[]).includes(etape)) {
+        setStep(etape as BilanStepId);
+      }
+
       setDraftLoaded(true);
 
       // Enveloppé, parce que cette lecture n'est plus seulement celle du préremplissage : un
@@ -179,7 +196,7 @@ export default function BilanQuestionnaire() {
     return () => {
       cancelled = true;
     };
-  }, [reprise]);
+  }, [reprise, etape]);
 
   useEffect(() => {
     if (!draftLoaded) return;

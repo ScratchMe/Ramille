@@ -67,6 +67,28 @@ export function formatTonnesNu(kg: number): string {
 }
 
 /**
+ * Un nombre de kilos, avec l'espace fine des milliers (C5.8, écart 15).
+ *
+ * « − 1 601 kg CO₂e » et non « − 1601 kg ». Le séparateur est une **espace fine insécable**
+ * (U+202F), celle que la typographie française demande entre les groupes de chiffres : une espace
+ * ordinaire laisserait le nombre se couper en fin de ligne, et une espace insécable large
+ * l'écarterait trop.
+ *
+ * **Ce formateur ne concerne pas les totaux**, et c'est pourquoi il ne touche pas aux deux jumeaux
+ * d'`api/` : `formatTonnes` et ses copies basculent en tonnes dès 1 000 kg, donc leur branche en
+ * kilos ne peut jamais porter de millier. Les seuls kilos à quatre chiffres du produit sont les
+ * **gains** d'action et le **cap**, qui ne sortent pas de `src/`. La règle que `CLAUDE.md` énonce —
+ * un formatage affiché impose de chercher son jumeau dans `api/` — a donc bien été jouée ici : elle
+ * a rendu « rien à faire », ce qui n'est une réponse valable qu'une fois qu'on a regardé.
+ *
+ * L'entrée est arrondie avant d'être groupée : un gain vient de la base en `numeric` et peut porter
+ * des décimales que l'écran n'affiche pas.
+ */
+export function formatKg(kg: number): string {
+  return String(Math.round(kg)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+}
+
+/**
  * Le nombre et son unité, une fois pour les deux formes.
  *
  * Extrait plutôt que recopié, ou pire, obtenu par un `.replace` sur la sortie de l'autre : c'est le

@@ -31,6 +31,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/bilan/resultat': `Ton résultat — ${APP_NAME}`,
 
   '/plan': `Ton plan — ${APP_NAME}`,
+  '/plan/pistes': `Toutes les pistes — ${APP_NAME}`,
   '/suivi': `Ton suivi — ${APP_NAME}`,
 
   '/connexion': `Se connecter — ${APP_NAME}`,

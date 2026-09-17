@@ -72,6 +72,15 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused, color }) => <OngletIcone nom="plan" focused={focused} color={color} />,
           tabBarLabel: ({ focused, color }) => <Libelle texte="Plan" focused={focused} color={color} />,
         }}
+        // Depuis C5.2 le plan est une pile lui aussi, donc il lui faut la même garde que Suivi,
+        // pour la même raison : un onglet est un lieu, pas un signet. Sans elle, avoir ouvert
+        // « Toutes les pistes » ferait rouvrir les pistes au prochain toucher sur « Plan ».
+        listeners={({ navigation }) => ({
+          tabPress: (evenement) => {
+            evenement.preventDefault();
+            navigation.navigate('plan', { screen: 'index' });
+          },
+        })}
       />
       <Tabs.Screen
         name="suivi"
