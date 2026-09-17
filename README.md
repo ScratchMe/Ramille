@@ -45,3 +45,17 @@ détail des deux suites et des pièges qui vont avec.
 
 Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1`.
 Après toute migration, régénérer `src/lib/database.types.ts` (types TypeScript du schéma).
+
+## Licence et attributions
+
+Code sous **licence Apache 2.0** (fichier `LICENSE`), © 2026 Antoine Berthaud. La licence ne
+concède aucun droit sur le **nom** « Ramille » — son §6 exclut les marques.
+
+Les **facteurs d'émission** viennent de la **Base Empreinte de l'ADEME**, consommés via l'API
+Impact CO2 (`impactco2.fr`, incubateur ADEME) : tous portent l'ACV complète (usage + fabrication),
+et chaque version enregistrée garde sa source dans `emission_factors.source`. Les conditions de
+réutilisation de ces données relèvent de l'ADEME, pas de la licence de ce dépôt — voir `NOTICE`.
+
+Le dépôt est public pour être **lu**. Les conventions internes (tout en français, une décision par
+document daté, contre-lecture avant fusion) rendent une contribution de passage coûteuse à
+intégrer : ouvrir une issue avant une pull request. Pour signaler une faille, voir `SECURITY.md`.

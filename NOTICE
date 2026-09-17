@@ -1,0 +1,17 @@
+Ramille
+Copyright 2026 Antoine Berthaud
+
+Ce produit est distribué sous la licence Apache, version 2.0 — voir le fichier
+LICENSE. La licence ne concède aucun droit sur les marques, noms commerciaux ou
+noms de produits du titulaire (Apache-2.0 §6) : le nom « Ramille » n'est pas
+couvert par l'autorisation de réutilisation du code.
+
+FACTEURS D'ÉMISSION
+
+Les facteurs d'émission utilisés par le calcul d'empreinte proviennent de la
+Base Empreinte de l'ADEME, consommée via l'API Impact CO2 (impactco2.fr, projet
+de l'incubateur ADEME). Chaque version de facteur enregistrée en base porte sa
+source dans la colonne `emission_factors.source`.
+
+Les conditions exactes de réutilisation de ces données relèvent de l'ADEME et
+non de la licence de ce dépôt.
