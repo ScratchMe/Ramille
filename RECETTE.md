@@ -114,16 +114,41 @@ Deux règles de rendu qui tiennent le tout :
 - **la page est complète au repos.** Pas d'accordéon qui cache des blocs : ce qu'on ne voit pas, on
   ne le joue pas.
 
-### 1.7 La mémoire locale, et le piège de la fenêtre privée
+### 1.7 Où vit l'état coché — base partagée, et jamais le stockage local seul
 
-L'état se garde dans le stockage du navigateur, **et chaque accès est gardé** (`try`/`catch`) : la
-page doit se rendre correctement quand le stockage lève ou revient vide.
+**Ce qui est coché dans l'artefact doit être lisible par l'agent, donc l'état vit dans une base
+partagée.** Écrit le 17/09/2026, après l'avoir payé : la feuille de route du passage en public
+gardait ses cases dans le `localStorage`, qui est **par navigateur et ne quitte jamais la machine de
+qui coche**. La personne qui pilote avait coché les onze lignes d'une phase ; l'agent, qui ne les
+voyait pas, en a redemandé deux — et a écrit dans un registre qu'elles restaient « à relire ». Le
+stockage local n'est pas un mauvais choix par étourderie : c'est le choix par défaut, et il est
+**juste pour ce qui n'intéresse que le lecteur** (l'onglet ouvert, un filtre, un brouillon).
+
+D'où la règle, en deux moitiés :
+
+- **l'avancement — une case, un état, un constat — va dans la base partagée de l'artefact**, parce
+  que c'est exactement ce que les deux côtés doivent lire. C'est aussi ce qui rend le compte-rendu
+  de §1.8 reproductible : l'agent peut le composer lui-même au lieu d'attendre un copier-coller ;
+- **le confort de lecture reste local**, et rien d'autre.
+
+Corollaire à ne pas manquer : dès qu'un artefact porte un avancement, **la question « qui a coché ? »
+devient posable**, et la réponse doit rester distinguable d'une mesure. Un registre écrit *confirmé
+par la personne qui pilote* là où l'agent n'a pas mesuré lui-même — la §6.1 de
+`docs/exploitation/depot-public.md` en est l'exemple.
+
+**Et chaque accès au stockage, local comme partagé, reste gardé** (`try`/`catch`) : la page doit se
+rendre correctement quand il lève ou revient vide.
 
 **Le piège, et il est propre aux recettes :** une recette de premier parcours se joue en **fenêtre
 privée** — c'est même sa première précaution. Or fermer toutes les fenêtres privées efface le
 stockage. D'où la consigne, à écrire dans l'artefact lui-même : **la feuille reste dans une fenêtre
 normale, le produit se teste dans la privée à côté.** Deux stockages, deux fenêtres, et l'un ne
 tombe pas avec l'autre.
+
+**La base partagée désarme ce piège en plus de rendre l'état lisible**, et c'est la deuxième raison
+de la règle ci-dessus : un avancement qui vit côté serveur survit à la fermeture de toutes les
+fenêtres, privées comprises. La consigne des deux fenêtres reste écrite dans l'artefact — elle
+protège le **produit** d'un état local, pas la feuille.
 
 ### 1.8 Le compte-rendu sort en markdown, écarts d'abord
 
