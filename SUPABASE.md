@@ -224,6 +224,15 @@ colonnes homonymes de `profiles`, est resté dans `CLAUDE.md` avec la mesure d'u
 
 ### 2.3 Rejouer, réécrire, désigner : ce que le distant a appris
 
+**Le nom du fichier de migration se règle APRÈS l'application, pas avant.** `apply_migration`
+**génère son propre horodatage** et l'enregistre dans `supabase_migrations.schema_migrations` : le
+fichier écrit à l'avance dans `supabase/migrations/` porte donc une version que le distant ne
+connaît pas, et les deux divergent en silence. La CI n'en voit rien — le job `db-tests` construit
+depuis les fichiers, jamais depuis le distant — mais un `db push` ultérieur tente de rejouer une
+migration déjà appliquée. Relevé le 17/09/2026 : fichier `20260917230000`, distant `20260917231133`.
+La parade tient en un geste : appliquer, **relire `max(version)`**, et renommer le fichier dessus.
+
+
 **Aucune migration de données ne désigne une ligne par un identifiant généré, et celle qui l'a fait
 n'a été rattrapée que par son propre contrôle.** `action_templates.id` vaut `gen_random_uuid()` : les
 les gabarits portent des identifiants **différents** sur chaque base construite depuis
