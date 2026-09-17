@@ -11,7 +11,7 @@ import {
   INTENTION_TIMINGS_VOYAGES,
   isIntentionComplete,
   separationsDesLignes,
-  PISTES_ESTOMPEES,
+  pistesParPoste,
   pistesDuPlan,
   type IntentionDay,
 } from './plan';
@@ -189,14 +189,11 @@ describe('pistesDuPlan', () => {
     committed_at: committed ? '2026-09-01T10:00:00Z' : null,
   });
 
-  it('met deux actions en avant et compte celles qui restent', () => {
+  it('met deux actions en avant et compte tout ce qui reste', () => {
     const p = pistesDuPlan([action(1), action(2), action(3), action(4), action(5)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a1', 'a2']);
-    expect(p.estompees.map((a) => a.id)).toEqual(['a3', 'a4']);
-    expect(p.lignes.map((a) => a.id)).toEqual(['a5']);
     expect(p.masquees).toBe(3);
     expect(ACTIONS_EN_AVANT).toBe(2);
-    expect(PISTES_ESTOMPEES).toBe(2);
   });
 
   // **L'action engagée passe toujours devant** : c'est la réponse à « qu'est-ce que je fais en ce
@@ -204,15 +201,13 @@ describe('pistesDuPlan', () => {
   it('met l’action engagée en tête, quel que soit son rang', () => {
     const p = pistesDuPlan([action(1), action(2), action(3), action(4, true)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a4', 'a1']);
-    expect(p.estompees.map((a) => a.id)).toEqual(['a2', 'a3']);
   });
 
-  // Le `rank` du serveur porte déjà le bon ordre — poste dominant d'abord, puis gain décroissant —
-  // donc l'écran le suit au lieu de retrier sur le gain, qui donnerait un ordre différent.
+  // Le `rank` du serveur porte déjà le bon ordre — meilleure piste du poste dominant d'abord, puis
+  // gain décroissant depuis C5.1 — donc l'écran le suit au lieu de retrier sur autre chose.
   it('suit le rang du serveur et ne retrie pas sur autre chose', () => {
     const p = pistesDuPlan([action(3), action(1), action(2)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a1', 'a2']);
-    expect(p.estompees.map((a) => a.id)).toEqual(['a3']);
   });
 
   // Un rang absent va au bout, il ne remonte pas en tête par accident — comme le `nulls last` du
@@ -220,48 +215,82 @@ describe('pistesDuPlan', () => {
   it('range un rang absent en dernier', () => {
     const p = pistesDuPlan([action(null), action(2), action(1)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a1', 'a2']);
-    expect(p.estompees.map((a) => a.id)).toEqual(['anull']);
   });
 
-  /**
-   * **Les trois rangs partitionnent, ils ne sélectionnent pas** — et depuis §12.4 (`v1-16` §5)
-   * cette propriété porte une promesse d'écran : toute action affichée est engageable, donc toute
-   * action figée doit être affichée. Un rang qui en laisserait tomber une la rendrait invisible,
-   * c'est-à-dire recréerait le `limit 2` que C4.6 a retiré du serveur, ici et en silence.
-   *
-   * L'assertion porte sur neuf actions pour déborder les deux bornes, et compare la
-   * **concaténation des trois rangs** à l'ordre attendu plutôt que trois listes séparées : c'est
-   * la partition qu'on éprouve, pas le contenu de chaque rang, déjà épinglé plus haut.
-   */
-  it('ne perd aucune action, quel qu’en soit le nombre', () => {
-    const rangs = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const p = pistesDuPlan(rangs.map((r) => action(r)));
-    expect([...p.enAvant, ...p.estompees, ...p.lignes].map((a) => a.id)).toEqual(
-      rangs.map((r) => `a${r}`)
-    );
-    expect(p.masquees).toBe(rangs.length - ACTIONS_EN_AVANT);
-  });
-
-  // Le plan d'avant C4.6 : deux actions, rien derrière, donc pas de lien à afficher.
-  it('ne cache rien quand il n’y a que deux actions', () => {
-    const p = pistesDuPlan([action(1), action(2)]);
-    expect(p.masquees).toBe(0);
-    expect(p.estompees).toEqual([]);
-    expect(p.lignes).toEqual([]);
+  // Le plan d'avant C4.6 : deux actions, rien de plus, donc pas de lien vers l'écran des pistes —
+  // il promettrait un écran qui répète celui-ci.
+  it('ne renvoie à rien quand il n’y a que deux actions', () => {
+    expect(pistesDuPlan([action(1), action(2)]).masquees).toBe(0);
   });
 
   // Tout cycliste et tout profil sédentaire depuis C2.5 : le plan est vide, et l'écran le félicite
   // plutôt que de lui présenter une liste.
-  it('rend trois rangs vides sans action', () => {
-    expect(pistesDuPlan([])).toEqual({ enAvant: [], estompees: [], lignes: [], masquees: 0 });
+  it('ne met rien en avant sans action', () => {
+    const p = pistesDuPlan([]);
+    expect(p.enAvant).toEqual([]);
+    expect(p.masquees).toBe(0);
+  });
+});
+
+describe('pistesParPoste', () => {
+  const action = (rank: number | null, poste: string | null, committed = false) => ({
+    id: `a${rank}`,
+    rank,
+    poste,
+    committed_at: committed ? '2026-09-01T10:00:00Z' : null,
+  });
+  const grouper = (actions: ReturnType<typeof action>[]) =>
+    pistesParPoste(actions, (a) => a.poste);
+
+  // Les groupes sortent dans l'ordre où leur poste **apparaît**, jamais dans un ordre à eux : la
+  // tête de cet écran doit être la première carte du plan, sinon les deux surfaces se contredisent
+  // sur ce qui compte le plus.
+  it('sort les groupes dans l’ordre d’apparition, et garde le rang à l’intérieur', () => {
+    const groupes = grouper([
+      action(3, 'commute'),
+      action(1, 'travel'),
+      action(4, 'commute'),
+      action(2, 'travel'),
+    ]);
+    expect(groupes.map((g) => g.poste)).toEqual(['travel', 'commute']);
+    expect(groupes[0].pistes.map((a) => a.id)).toEqual(['a1', 'a2']);
+    expect(groupes[1].pistes.map((a) => a.id)).toEqual(['a3', 'a4']);
   });
 
-  // La fonction ne mute pas ce qu'on lui donne : `cycle.plan_actions` vient du state, et `sort`
-  // mute — c'est le piège que la copie évite, et il ne se voit qu'au second rendu.
-  it('ne mute pas la liste reçue', () => {
-    const liste = [action(3), action(1)];
-    pistesDuPlan(liste);
-    expect(liste.map((a) => a.id)).toEqual(['a3', 'a1']);
+  // L'action engagée passe devant ici aussi — et elle entraîne son poste en tête du même coup,
+  // parce que l'ordre des groupes se dérive de l'ordre des actions et de rien d'autre.
+  it('met l’action engagée en tête, et son poste avec elle', () => {
+    const groupes = grouper([action(1, 'travel'), action(2, 'travel'), action(5, 'commute', true)]);
+    expect(groupes.map((g) => g.poste)).toEqual(['commute', 'travel']);
+    expect(groupes[0].pistes.map((a) => a.id)).toEqual(['a5']);
+  });
+
+  /**
+   * **Le groupement partitionne, il ne sélectionne pas** — et cette propriété porte une promesse
+   * d'écran depuis §12.4 (`v1-16` §5) : toute action affichée est engageable, donc toute action
+   * figée doit être affichée. Un groupement qui en laisserait tomber une la rendrait invisible,
+   * c'est-à-dire recréerait le `limit 2` que C4.6 a retiré du serveur, ici et en silence.
+   *
+   * C'est la garde que C5.2 hérite de l'ancienne partition à trois rangs : elle a changé de forme,
+   * pas d'objet. Neuf actions sur trois postes pour qu'elle ait quelque chose à perdre.
+   */
+  it('ne perd aucune action, quels que soient les postes', () => {
+    const postes = ['travel', 'commute', 'leisure'];
+    const actions = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((r) => action(r, postes[r % 3]));
+    const aplati = grouper(actions).flatMap((g) => g.pistes);
+    expect(aplati).toHaveLength(actions.length);
+    expect(new Set(aplati.map((a) => a.id)).size).toBe(actions.length);
+  });
+
+  // Un poste nul est un groupe comme un autre : la jointure sur `action_templates` peut ne rien
+  // rendre, et perdre l'action serait pire que l'afficher sans en-tête.
+  it('garde les actions dont le poste est inconnu', () => {
+    const groupes = grouper([action(1, null), action(2, 'commute')]);
+    expect(groupes.map((g) => g.poste)).toEqual([null, 'commute']);
+  });
+
+  it('rend une liste vide sans action', () => {
+    expect(grouper([])).toEqual([]);
   });
 });
 

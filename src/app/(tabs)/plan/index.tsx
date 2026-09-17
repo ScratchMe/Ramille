@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
@@ -16,14 +16,14 @@ import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
 import { formatTonnes } from '@/lib/format';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
+import { usePassageDEngagement } from './_layout';
 import { useTrackFocus } from '@/hooks/use-track-focus';
 import { track } from '@/lib/analytics';
-import { ActionCard } from '@/components/plan/action-card';
-import { ActionCommitment } from '@/components/plan/action-commitment';
+import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste';
 import { CarteDeSaison } from '@/components/plan/carte-de-saison';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
-import { cadreDuPlan, formatIntention, formeInserable, pistesDuPlan, separationsDesLignes } from '@/types/plan';
+import { cadreDuPlan, formeInserable, pistesDuPlan } from '@/types/plan';
 import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
@@ -70,21 +70,6 @@ import {
   type Permission,
 } from '@/types/rappels';
 
-type PlanAction = {
-  id: string;
-  saving_kg_year: number | null;
-  saving_share_percent: number | null;
-  detail_text: string | null;
-  /** Le premier pas du gabarit, figé à la génération (C4.6) — affiché une fois l'action engagée. */
-  first_step: string | null;
-  rank: number | null;
-  committed_at: string | null;
-  intention_days: number[] | null;
-  intention_timing: string | null;
-  /** Le cycle d'où l'engagement a été reconduit (C2.2) — ce qui porte « · RECONDUIT ». */
-  carried_over_from: string | null;
-  action_templates: { action_text: string; poste: string | null } | null;
-};
 
 type PlanCycle = {
   id: string;
@@ -107,7 +92,7 @@ type PlanCycle = {
   poste: string | null;
   baseline_co2_kg_year: number | null;
   target_reduction_pct: number;
-  plan_actions: PlanAction[];
+  plan_actions: PisteDuPlan[];
 };
 
 /**
@@ -288,7 +273,7 @@ export default function Plan() {
    * Le refus de remplacement (`RM001`), remonté à l'écran plutôt que gardé dans la carte.
    *
    * **Logé ici pour la même raison que la ligne de relecture**, et parce que le message était
-   * invisible : `commitPlanAction` rend `rechargerLePlan`, la carte appelait `onChanged()` dans la
+   * invisible : `commitPisteDuPlan` rend `rechargerLePlan`, la carte appelait `onChanged()` dans la
    * foulée, donc le plan était relu et les cartes remontées — l'état local qui portait la phrase
    * disparaissait au rendu suivant. Personne ne lisait donc jamais pourquoi son choix n'avait pas
    * été enregistré ; le plan changeait simplement sous ses yeux (relevé le 14/09/2026). Et le
@@ -306,6 +291,8 @@ export default function Plan() {
   // l'app en arrière-plan ramenait sur un plan sans la question qui venait de s'ouvrir — la
   // promesse rompue à l'endroit exact où elle se tient (09/09/2026, vérifié sur appareil).
   useRafraichirAuRetour(rafraichir);
+
+  const passage = usePassageDEngagement();
   // Annonce du rattachement : `null` tant qu'on ne sait pas, une adresse (ou la chaîne vide
   // quand Google ne la remonte pas) quand il y a quelque chose à dire.
   const [rattachement, setRattachement] = useState<string | null>(null);
@@ -333,27 +320,6 @@ export default function Plan() {
    */
   const [ouverture, setOuverture] = useState<OuvertureDeSaison | null>(null);
   /**
-   * Les autres pistes sont-elles dépliées ? (C4.6.)
-   *
-   * Local à l'écran et non persisté : c'est un geste de lecture, pas une préférence — et le replier
-   * par défaut à chaque venue est ce qui garde le plan à deux actions en tête, comme la spec §6 le
-   * demande.
-   */
-  const [pistesDepliees, setPistesDepliees] = useState(false);
-
-  /**
-   * Les lignes simples qu'on a ouvertes en carte (recette du 14/09/2026, `v1-16` §5).
-   *
-   * **Plusieurs à la fois, et c'est le point.** Un accordéon qui referme la précédente reprendrait
-   * d'une main ce que ce chantier vient de donner, et comparer deux leviers est exactement ce qu'il
-   * rend possible. Local et non persisté, comme `pistesDepliees` : un geste de lecture, pas une
-   * préférence.
-   *
-   * Un `Set` réécrit et non muté — React compare par référence.
-   */
-  const [lignesOuvertes, setLignesOuvertes] = useState<ReadonlySet<string>>(new Set());
-
-  /**
    * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
    * plan à montrer, il n'y a rien à expliquer — la personne est au bon endroit.
    */
@@ -370,6 +336,48 @@ export default function Plan() {
    * le poste `commute` (C2.1) et ne lui demandera jamais rien sur son vol.
    */
   const [posteEngage, setPosteEngage] = useState<string | null>(null);
+
+  // Appelée quand un engagement vient d'être pris — jamais quand on en change ni quand on
+  // le libère. La feuille ne s'ouvre qu'une fois par appareil : c'est une cérémonie pour la
+  // première fois, pas un péage à chaque action.
+  // **Stable, et ce n'est pas du confort** : l'effet de focus qui reprend l'engagement des pistes
+  // la porte en dépendance, donc une fonction recréée à chaque rendu ferait se réabonner cet effet
+  // à chaque rendu. C'est la règle déjà écrite pour `useRafraichirAuRetour` — un rappel instable
+  // fait tourner chargement et rendu l'un dans l'autre.
+  const proposerLesRappels = useCallback(async (poste: string | null) => {
+    if (!rappels) return;
+    setPosteEngage(poste);
+    const dejaProposee = await aDejaVuLaFeuilleDeRappel();
+    if (
+      !doitProposerLaFeuille({
+        plateforme: Platform.OS === 'web' ? 'web' : 'natif',
+        emailPossible: rappels.emailPossible,
+        dejaProposee,
+      })
+    ) {
+      return;
+    }
+    track('rappels_view');
+    setFeuilleOuverte(true);
+  }, [rappels]);
+  /**
+   * Reprendre l'engagement pris sur l'écran des pistes (C5.2, `v1-17` §7.3).
+   *
+   * **Sans attendre le rechargement, et c'est le point.** Brancher l'ouverture de la feuille
+   * derrière la résolution du `Promise.all` ferait qu'une coupure réseau au retour coûte la
+   * cérémonie — et comme elle ne s'ouvre qu'une fois par appareil, la coûte **définitivement**.
+   * C'est le défaut corrigé le 14/09/2026, atteint par un autre chemin. Les données et la
+   * cérémonie sont deux choses indépendantes.
+   *
+   * Le drapeau se consomme au passage : `useRafraichirAuRetour` écoute aussi le retour de l'app au
+   * premier plan, donc un drapeau qui resterait posé rouvrirait la feuille à chaque aller-retour.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      const engagement = passage.reprendre();
+      if (engagement !== null) void proposerLesRappels(engagement.poste);
+    }, [passage, proposerLesRappels])
+  );
 
   // **La confirmation se termine hors de l'app** : la personne clique le lien reçu par email
   // et revient ici, `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la
@@ -673,26 +681,6 @@ export default function Plan() {
     };
   }, [refreshKey]);
 
-  // Appelée quand un engagement vient d'être pris — jamais quand on en change ni quand on
-  // le libère. La feuille ne s'ouvre qu'une fois par appareil : c'est une cérémonie pour la
-  // première fois, pas un péage à chaque action.
-  const proposerLesRappels = async (poste: string | null) => {
-    if (!rappels) return;
-    setPosteEngage(poste);
-    const dejaProposee = await aDejaVuLaFeuilleDeRappel();
-    if (
-      !doitProposerLaFeuille({
-        plateforme: Platform.OS === 'web' ? 'web' : 'natif',
-        emailPossible: rappels.emailPossible,
-        dejaProposee,
-      })
-    ) {
-      return;
-    }
-    track('rappels_view');
-    setFeuilleOuverte(true);
-  };
-
   // À la fermeture, on met à jour l'état local plutôt que de relire la base : la carte
   // d'attente doit refléter le choix immédiatement, et le serveur a déjà été écrit.
   // Dérivée à chaque rendu plutôt que stockée : elle ne dépend que de l'état des rappels et
@@ -895,13 +883,12 @@ export default function Plan() {
   // encore sur elle (C2.1). `null` quand rien n'est engagé, ce qui est aussi un « plus la même ».
   const actionEngageeTexte =
     cycle.plan_actions.find((a) => a.committed_at !== null)?.action_templates?.action_text ?? null;
-  // **Trois rangs depuis C4.6** (`pistesDuPlan`, planches F1 et F2) : deux cartes pleines, deux
-  // cartes estompées derrière le lien, et le reste en lignes simples. Le `limit 2` du serveur a
-  // disparu — l'estimateur rendait déjà toutes les actions au gain ≥ 5 kg/an, et le plan en jetait
-  // le reste avant même de l'écrire (constat A13-18). La dérivation copie avant de trier : `sort`
-  // mute, et `cycle` vient du state.
+  // **Deux cartes, et le compte de ce qui attend ailleurs** (C5.2). Le `limit 2` du serveur avait
+  // disparu en C4.6 — l'estimateur rendait déjà toutes les actions au gain ≥ 5 kg/an, et le plan en
+  // jetait le reste avant même de l'écrire (constat A13-18) — mais l'exhaustivité était revenue
+  // s'entasser ici, jusqu'à onze cartes sous un « Replier » hors écran. Elle vit désormais sur
+  // `plan/pistes`. La dérivation copie avant de trier : `sort` mute, et `cycle` vient du state.
   const pistes = pistesDuPlan(cycle.plan_actions);
-  const separations = separationsDesLignes(pistes.lignes.map((action) => action.id), lignesOuvertes);
   // Ce que l'écran annonce de lui-même, et ce que son cap a le droit de chiffrer (C3.8 §3). Dérivé
   // dans `src/types/plan.ts` plutôt qu'écrit en ternaires ici : trois phrases en dépendent, et
   // c'est la forme qui a laissé l'intro annoncer « pour ton trajet domicile-travail » au-dessus
@@ -972,49 +959,29 @@ export default function Plan() {
   // rapatrier l'engagement libéré du cycle courant pour le rappeler à côté du choix. Elle n'est pas
   // livrée, et c'est désormais écrit là plutôt que promis à un chantier déjà passé.
   const refermerLouverture = (cle?: string) => {
-    if (cle === 'choisir' || cle === 'choisir_une_autre') setPistesDepliees(true);
+    // **Le bouton mène là où l'on choisit** (C5.2). Il dépliait les pistes sous la carte ; depuis
+    // qu'elles ont leur écran, il y conduit. C'est la même intention, avec une destination qui
+    // existe : une sortie nommée « Choisir une action » qui laisse la personne sur le même écran
+    // devant les deux mêmes cartes ne tiendrait pas sa promesse.
+    if (cle === 'choisir' || cle === 'choisir_une_autre') router.push('/plan/pistes');
     void marquerLouvertureDeSaisonVue(cycle.id);
     setOuverture(null);
   };
 
-  // Une fabrique et non deux blocs recopiés : les cartes en avant et les cartes estompées ne
-  // diffèrent que par leur opacité, et deux copies divergeraient au premier ajustement de props —
-  // c'est exactement ce qui est arrivé à `first_step`, qui manquait d'un côté au premier essai.
-  const carteDaction = (action: PlanAction, estompeeParLeRang = false) => (
-    <ActionCard
+  // **Une carte, deux écrans** (C5.2). La fabrique qui vivait ici suffisait tant que le plan était
+  // seul à rendre ces cartes ; depuis que « Toutes les pistes » a le sien, elle est un composant —
+  // recopier celui qui porte l'engagement serait garantir que les deux surfaces divergent sur le
+  // geste le plus irréversible du produit.
+  const carteDaction = (action: PisteDuPlan, estompeeParLeRang = false) => (
+    <CarteDePiste
       key={action.id}
-      titre={action.action_templates?.action_text ?? 'Action à préciser.'}
-      gainKg={action.saving_kg_year}
-      partPercent={action.saving_share_percent}
-      detail={action.detail_text}
-      intention={formatIntention(action.intention_days, action.intention_timing)}
-      premierPas={action.first_step}
-      engagee={action.committed_at !== null}
-      reconduite={action.carried_over_from !== null}
-      estompee={
-        estompeeParLeRang || (committedActionId !== null && committedActionId !== action.id)
-      }
-    >
-      {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la fois par
-          cycle — s'engager sur les deux revient à ne s'engager sur aucune, et la base le
-          garantit par un index unique partiel. */}
-      <ActionCommitment
-        onEngage={proposerLesRappels}
-        actionId={action.id}
-        poste={action.action_templates?.poste ?? null}
-        committed={action.committed_at !== null}
-        intentionDays={action.intention_days}
-        intentionTiming={action.intention_timing}
-        otherActionCommitted={committedActionId !== null && committedActionId !== action.id}
-        onChanged={() => setRefreshKey((key) => key + 1)}
-        onRefus={(message) => {
-          setRefusDeRemplacement(message);
-          // Sans le dépli, la carte concernée peut repasser derrière « Voir d'autres pistes » et le
-          // message parlerait d'une action qu'on ne voit plus.
-          setPistesDepliees(true);
-        }}
-      />
-    </ActionCard>
+      action={action}
+      committedActionId={committedActionId}
+      estompeeParLeRang={estompeeParLeRang}
+      onEngage={proposerLesRappels}
+      onChanged={() => setRefreshKey((key) => key + 1)}
+      onRefus={(message) => setRefusDeRemplacement(message)}
+    />
   );
 
   return (
@@ -1274,123 +1241,24 @@ export default function Plan() {
             {pistes.enAvant.map((action) => carteDaction(action))}
           </View>
 
-          {/* **Les autres pistes, derrière un lien** (C4.6, planches F1 et F2). Le plan figeait deux
-              actions et jetait le reste avant même de l'écrire : l'autonomie de la personne
-              s'exerçait sur deux leviers, les autres restant invisibles (A13-18, arbitrage D18).
+          {/* **Toutes les pistes, sur un écran à elles** (C5.2, écarts 2 à 5). Le plan en
+              montrait deux, puis dépliait jusqu'à onze cartes sous un « Replier » sorti de l'écran :
+              l'insistance et l'exhaustivité tenaient sur la même surface, et l'exhaustivité gagnait.
+              Elles se séparent — deux cartes ici, tout là-bas, groupé par poste.
 
-              Le compte est dans le libellé — un lien qui ne dit pas combien il cache n'aide pas à
-              décider de l'ouvrir. Deux cartes estompées, puis des lignes simples : au-delà de quatre
-              cartes pleines, ce n'est plus un choix qu'on présente, c'est un catalogue. */}
+              Le compte reste **dans** le libellé, et c'est le total : un lien qui ne dit pas combien
+              il mène à voir n'aide pas à décider de l'ouvrir. Il ne se rend que s'il y a plus à voir
+              que les deux cartes — sinon il promettrait un écran qui répète celui-ci. */}
           {pistes.masquees > 0 && (
             <View style={styles.pistes}>
               <TextLink
-                label={pistesDepliees ? 'Replier' : `Voir d’autres pistes · ${pistes.masquees}`}
-                onPress={() => {
-                  // « Replier » remet le plan comme il était, cartes ouvertes comprises (`v1-16`
-                  // §5) : sans cette remise à zéro, redéplier ferait réapparaître des cartes là où
-                  // le lien promet des lignes. Hors du `setState` — un effet de bord dans un
-                  // réducteur repasse deux fois en mode strict.
-                  if (pistesDepliees) setLignesOuvertes(new Set());
-                  setPistesDepliees((depliees) => !depliees);
-                }}
+                label={`Voir toutes les pistes · ${actionsCount}`}
+                onPress={() => router.push('/plan/pistes')}
                 type="small"
                 weight={600}
                 themeColor="accentText"
                 style={styles.lienPistes}
               />
-              {pistesDepliees && (
-                <>
-                  {pistes.estompees.map((action) => carteDaction(action, true))}
-                  {/* **Les lignes simples, et elles s'ouvrent en carte** (recette du 14/09/2026,
-                      §12.4, `v1-16` §5). Elles disent ce qui existe sans le mettre au même rang que
-                      les cartes, et cette hiérarchie reste : à six cartes pleines, ce n'est plus un
-                      choix qu'on présente, c'est un catalogue.
-
-                      Ce qui est parti est la porte de sortie qui vivait ici — « s'engager sur l'une
-                      d'elles demande d'abord de la faire remonter, ce que le prochain re-bilan fait
-                      si le poste bouge ». Elle demandait à la personne de **changer sa vie pour que
-                      l'app la réordonne**, alors que C4.6 existe précisément parce que son autonomie
-                      s'exerçait sur deux leviers et que les autres restaient invisibles (A13-18,
-                      arbitrage D18). Elle s'exerçait ensuite sur quatre, pas sur toutes celles qu'on
-                      lui montre : le chantier avait déplacé la frontière, la phrase la justifiait.
-
-                      Désormais l'insistance porte la hiérarchie, la permission ne la porte plus.
-                      `carteDaction` est déjà une fabrique, donc déplier une ligne, c'est l'appeler. */}
-                  {pistes.lignes.length > 0 && (
-                    <View style={styles.lignesPistes}>
-                      {pistes.lignes.map((action, rang) => {
-                        const ouverte = lignesOuvertes.has(action.id);
-                        // **L'écart se pose sur un seul côté, et seulement là où il manque** (13.5,
-                        // recette web du 16/09/2026). La règle et ses deux pièges — Yoga ne fusionne
-                        // pas les marges, et un `gap` au conteneur séparerait les lignes fermées —
-                        // vivent dans `separationsDesLignes`, avec leur test.
-                        const separee = separations[rang];
-
-                        if (ouverte) {
-                          return (
-                            <View key={action.id} style={separee ? styles.pisteSeparee : undefined}>
-                              {carteDaction(action, true)}
-                            </View>
-                          );
-                        }
-
-                        const titre = action.action_templates?.action_text ?? 'Action à préciser.';
-                        const gain =
-                          action.saving_kg_year !== null
-                            ? `− ${Math.round(action.saving_kg_year)} kg`
-                            : null;
-                        return (
-                          <Pressable
-                            key={action.id}
-                            style={[styles.lignePiste, separee && styles.pisteSeparee]}
-                            onPress={() =>
-                              setLignesOuvertes((ouvertes) => new Set(ouvertes).add(action.id))
-                            }
-                            accessibilityRole="button"
-                            // Une cible qui porte plusieurs textes : on les recompose plutôt que de
-                            // laisser annoncer trois fragments sans lien (règle de CLAUDE.md, même
-                            // motif que la bannière du suivi). Trois détails qui ne se voient qu'à
-                            // l'oreille : le gain se dit « par an », que l'œil déduit de la colonne ;
-                            // le point final du libellé est retiré avant de composer, sinon le repli
-                            // « Action à préciser. » enchaîne deux points ; et l'annonce finit par
-                            // « Choisir », qui dit ce que le toucher fait.
-                            accessibilityLabel={[
-                              titre.replace(/\.$/, ''),
-                              gain !== null ? `${gain} par an` : null,
-                              'Choisir',
-                            ]
-                              .filter((part) => part !== null)
-                              .join('. ')
-                              .concat('.')}
-                          >
-                            <ThemedText type="small" themeColor="textSecondary" style={styles.lignePisteTitre}>
-                              {titre}
-                            </ThemedText>
-                            {/* Le gain et l'affordance groupés à droite : sous le `space-between` de
-                                la rangée, trois enfants feraient flotter le chiffre au milieu. */}
-                            <View style={styles.lignePisteFin}>
-                              {gain !== null && (
-                                <ThemedText type="small" themeColor="textTertiary">
-                                  {gain}
-                                </ThemedText>
-                              )}
-                              {/* **L'affordance est un mot, parce que ce dépôt n'a pas d'icônes** —
-                                  et c'est celui que le produit emploie déjà pour ce geste
-                                  (« Choisir une action » sur la carte d'ouverture). Une ligne qui ne
-                                  porte qu'un nombre ne donne aucune raison d'être touchée. Il part
-                                  avec la ligne quand la carte s'ouvre : celle-ci porte son propre
-                                  contrôle. */}
-                              <ThemedText type="small" weight={600} themeColor="accentText">
-                                Choisir
-                              </ThemedText>
-                            </View>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  )}
-                </>
-              )}
             </View>
           )}
 
@@ -1543,23 +1411,6 @@ const styles = StyleSheet.create({
   // Les lignes simples : un filet entre elles suffit, elles ne sont pas des cartes. Le `gap`
   // reste donc à zéro, et l'écart ne se pose qu'aux frontières qui touchent une carte dépliée
   // (`pisteSeparee`, décidée au rendu — le conteneur ne sait pas lesquelles sont ouvertes).
-  lignesPistes: { gap: 0 },
-  // La même valeur que `actions` et `pistes` : une ligne dépliée devient une carte, elle doit
-  // donc respirer au rythme des cartes du dessus et non à un rythme à elle.
-  pisteSeparee: { marginTop: Spacing.two + 2 },
-  lignePiste: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    gap: Spacing.two,
-    // `three` et non `two` depuis que la ligne se touche (`v1-16` §5) : à 8 px la rangée mesurait
-    // 34 px, sous la cible de 44 que `ControlHeight.target` nomme et que `TextLink` tient déjà. Du
-    // `hitSlop` aurait marché sans déplacer le texte, mais les rangées se touchent (`gap: 0`) et
-    // leurs zones se seraient recouvertes — c'est la hauteur qu'il faut, pas une marge invisible.
-    paddingVertical: Spacing.three,
-  },
-  lignePisteTitre: { flex: 1, minWidth: 0 },
-  lignePisteFin: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
   emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
   praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   praiseText: { flex: 1, minWidth: 0 },

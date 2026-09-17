@@ -276,28 +276,10 @@ function capitale(texte: string): string {
  */
 export const ACTIONS_EN_AVANT = 2;
 
-/**
- * Combien d'actions gardent une **carte** quand on déplie les pistes ; au-delà, des lignes simples.
- *
- * Le canvas borne les cartes à quatre, et c'est une hiérarchie voulue : une liste de six cartes
- * pleines ne présente plus un choix, elle présente un catalogue. Les lignes qui suivent disent ce
- * qui existe sans le mettre au même rang.
- *
- * **Les trois rangs disent l'insistance, jamais la permission** (recette du 14/09/2026, §12.4,
- * `v1-16` §5). Les lignes simples n'avaient pas de bouton, donc le plan affichait des leviers
- * chiffrés et inatteignables ; elles s'ouvrent désormais en carte au toucher. Le classement n'a pas
- * bougé — c'est ce que l'écran permet qui a changé, pas ce qu'il recommande.
- */
-export const PISTES_ESTOMPEES = 2;
-
 export type PistesDuPlan<T> = {
-  /** Les cartes pleines, toujours visibles. */
+  /** Les cartes pleines du plan, et rien d'autre depuis C5.2. */
   enAvant: T[];
-  /** Les cartes estompées, visibles une fois les pistes dépliées. */
-  estompees: T[];
-  /** Le reste, en lignes simples, visible une fois les pistes dépliées. */
-  lignes: T[];
-  /** Ce que le lien annonce : combien de pistes se cachent derrière lui. */
+  /** Ce que le lien annonce : combien de pistes attendent sur l'écran dédié. */
   masquees: number;
 };
 
@@ -313,25 +295,63 @@ export type PistesDuPlan<T> = {
  * La fonction est générique parce que la forme d'une ligne `plan_actions` appartient à l'écran :
  * elle ne demande que les deux champs dont l'ordre dépend.
  */
-export function pistesDuPlan<T extends { committed_at: string | null; rank: number | null }>(
+/**
+ * L'ordre commun aux deux surfaces — le plan et l'écran des pistes.
+ *
+ * Écrit une fois parce que deux copies divergeraient : le jour où l'une des deux change, les deux
+ * écrans ne s'accorderaient plus sur ce qui vient en premier, et rien ne le signalerait.
+ */
+function ordonnerLesPistes<T extends { committed_at: string | null; rank: number | null }>(
   actions: T[]
-): PistesDuPlan<T> {
-  const ordonnees = [...actions].sort((a, b) => {
+): T[] {
+  return [...actions].sort((a, b) => {
     const engagement = Number(b.committed_at !== null) - Number(a.committed_at !== null);
     if (engagement !== 0) return engagement;
     // `Infinity` plutôt que 0 : un rang absent va au bout, il ne se glisse pas en tête.
     return (a.rank ?? Infinity) - (b.rank ?? Infinity);
   });
+}
 
-  const enAvant = ordonnees.slice(0, ACTIONS_EN_AVANT);
-  const reste = ordonnees.slice(ACTIONS_EN_AVANT);
+export function pistesDuPlan<T extends { committed_at: string | null; rank: number | null }>(
+  actions: T[]
+): PistesDuPlan<T> {
+  const ordonnees = ordonnerLesPistes(actions);
 
   return {
-    enAvant,
-    estompees: reste.slice(0, PISTES_ESTOMPEES),
-    lignes: reste.slice(PISTES_ESTOMPEES),
-    masquees: reste.length,
+    enAvant: ordonnees.slice(0, ACTIONS_EN_AVANT),
+    masquees: Math.max(0, ordonnees.length - ACTIONS_EN_AVANT),
   };
+}
+
+/**
+ * Les pistes de l'écran « Toutes les pistes », groupées par poste (C5.2, écart 3).
+ *
+ * **Le groupement est un fait d'écran, pas un classement de plus.** L'ordre des actions ne bouge
+ * pas — c'est toujours le `rank` du serveur, qui porte déjà la meilleure piste du poste dominant en
+ * tête depuis C5.1 — et les groupes sortent **dans l'ordre où leur poste apparaît pour la première
+ * fois**. Trier les groupes autrement (par poids du poste, par nom) rendrait la tête de liste
+ * différente de la première carte du plan, et les deux écrans se contrediraient sur ce qui compte
+ * le plus.
+ *
+ * Ici il n'y a **pas de rang** : toutes les pistes sont au même niveau, chacune ouvrable. C'est ce
+ * que le lot 5 change — le plan insiste sur deux, cet écran-ci présente tout, et aucune des deux
+ * surfaces ne cache un levier derrière une hiérarchie qu'on ne peut pas franchir (`v1-16` §5).
+ */
+export function pistesParPoste<T extends { committed_at: string | null; rank: number | null }>(
+  actions: T[],
+  posteDe: (action: T) => string | null
+): { poste: string | null; pistes: T[] }[] {
+  const ordonnees = ordonnerLesPistes(actions);
+  const groupes: { poste: string | null; pistes: T[] }[] = [];
+
+  for (const action of ordonnees) {
+    const poste = posteDe(action);
+    const existant = groupes.find((g) => g.poste === poste);
+    if (existant) existant.pistes.push(action);
+    else groupes.push({ poste, pistes: [action] });
+  }
+
+  return groupes;
 }
 
 /**
