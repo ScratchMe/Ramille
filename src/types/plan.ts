@@ -329,3 +329,79 @@ export function separationsDesLignes(ids: string[], ouvertes: ReadonlySet<string
     (id, rang) => rang > 0 && (ouvertes.has(id) || ouvertes.has(ids[rang - 1]))
   );
 }
+
+// ── L'encart de contexte du plan (C5.5, écarts 9 et 10) ────────────────────────────────────────
+
+/**
+ * Les réponses du contexte B4, telles que l'encart les lit.
+ *
+ * `teletravail` peut être nul sans que rien ne soit cassé : la question ne se pose pas sans trajet
+ * régulier ni en dessous de deux jours de trajet (C5.4, `teletravailSePose`).
+ */
+export type ReponsesDeContexte = {
+  zone_type: string | null;
+  tc_access: string | null;
+  household_vehicles: string | null;
+  teletravail: string | null;
+};
+
+/**
+ * Chaque réponse du contexte en mots, pour la phrase de l'encart.
+ *
+ * **Une table et non des ternaires** : quatre colonnes, douze valeurs, et la moindre faute de frappe
+ * y sortirait une phrase bancale sur l'écran le plus lu du produit. Elle est épinglée par un test
+ * qui la parcourt plutôt que de nommer les valeurs une par une — celle qu'on ajoutera demain
+ * traverserait une liste.
+ */
+const MOTS_DU_CONTEXTE: Record<keyof ReponsesDeContexte, Record<string, string>> = {
+  zone_type: {
+    urbain_dense: 'zone urbaine dense',
+    periurbain: 'zone périurbaine',
+    rural: 'zone rurale',
+  },
+  tc_access: {
+    bon: 'bon accès aux transports en commun',
+    limite: 'accès limité aux transports en commun',
+    inexistant: 'pas de transports en commun',
+  },
+  household_vehicles: {
+    '0': 'pas de véhicule dans le foyer',
+    '1': 'un véhicule dans le foyer',
+    '2_plus': 'deux véhicules ou plus dans le foyer',
+  },
+  teletravail: {
+    aucun: 'pas de télétravail possible',
+    un_jour: 'un jour de télétravail possible',
+    deux_ou_plus: 'deux jours de télétravail possibles ou plus',
+  },
+};
+
+/**
+ * Ce que l'encart énumère, dans l'ordre de l'étape « Contexte ».
+ *
+ * **Il ne nomme jamais l'action écartée ni son gain**, et c'est la contrainte du chantier, pas un
+ * oubli : ce serait la liste des portes fermées pour la personne qui a répondu juste, et un prix
+ * affiché sur une réponse pour les autres — c'est-à-dire apprendre à répondre haut. L'encart dit
+ * sur quoi le plan s'appuie, la porte permet de corriger, et rien de plus.
+ *
+ * **Une valeur absente ou inconnue ne sort pas.** Le télétravail manque légitimement (la question
+ * ne se pose pas partout, C5.4) ; les trois autres manquent seulement sur un bilan d'avant leur
+ * colonne, et une phrase à trou serait pire qu'un segment de moins. Une valeur hors table ne peut
+ * venir que d'une migration qui aurait ajouté une réponse sans passer ici — auquel cas on tait ce
+ * qu'on ne sait pas dire plutôt que d'écrire un identifiant technique.
+ */
+export function motsDuContexte(reponses: ReponsesDeContexte): string[] {
+  const ordre: (keyof ReponsesDeContexte)[] = [
+    'zone_type',
+    'tc_access',
+    'household_vehicles',
+    'teletravail',
+  ];
+
+  return ordre
+    .map((colonne) => {
+      const valeur = reponses[colonne];
+      return valeur !== null ? (MOTS_DU_CONTEXTE[colonne][valeur] ?? null) : null;
+    })
+    .filter((mot): mot is string => mot !== null);
+}

@@ -1,19 +1,21 @@
 import {
   ACTIONS_EN_AVANT,
+  INTENTION_TIMINGS,
+  INTENTION_TIMINGS_LOISIRS,
+  INTENTION_TIMINGS_VOYAGES,
   cadreDuPlan,
   formatIntention,
   formatIntentionDays,
   formatIntentionTiming,
   intentionKindForPoste,
   intentionTimingsForPoste,
-  INTENTION_TIMINGS,
-  INTENTION_TIMINGS_LOISIRS,
-  INTENTION_TIMINGS_VOYAGES,
   isIntentionComplete,
-  separationsDesLignes,
-  pistesParPoste,
+  motsDuContexte,
   pistesDuPlan,
+  pistesParPoste,
+  separationsDesLignes,
   type IntentionDay,
+  type ReponsesDeContexte,
 } from './plan';
 
 describe('intentionKindForPoste', () => {
@@ -291,5 +293,86 @@ describe('separationsDesLignes', () => {
 
   it('rend une liste vide sans ligne', () => {
     expect(separationsDesLignes([], new Set())).toEqual([]);
+  });
+});
+
+describe('motsDuContexte', () => {
+  const reponses = (o: Partial<ReponsesDeContexte> = {}): ReponsesDeContexte => ({
+    zone_type: null,
+    tc_access: null,
+    household_vehicles: null,
+    teletravail: null,
+    ...o,
+  });
+
+  it('énumère les quatre réponses dans l’ordre de l’étape', () => {
+    expect(
+      motsDuContexte({
+        zone_type: 'urbain_dense',
+        tc_access: 'bon',
+        household_vehicles: '1',
+        teletravail: 'deux_ou_plus',
+      })
+    ).toEqual([
+      'zone urbaine dense',
+      'bon accès aux transports en commun',
+      'un véhicule dans le foyer',
+      'deux jours de télétravail possibles ou plus',
+    ]);
+  });
+
+  // Le télétravail manque **légitimement** : la question ne se pose ni sans trajet régulier ni en
+  // dessous de deux jours de trajet (C5.4). L'encart perd son quatrième segment, il n'écrit pas de
+  // phrase à trou.
+  it('tait le télétravail quand la question ne s’est pas posée', () => {
+    const mots = motsDuContexte(
+      reponses({ zone_type: 'rural', tc_access: 'inexistant', household_vehicles: '2_plus' })
+    );
+    expect(mots).toEqual([
+      'zone rurale',
+      'pas de transports en commun',
+      'deux véhicules ou plus dans le foyer',
+    ]);
+  });
+
+  /**
+   * **La table est parcourue, pas énumérée valeur par valeur.** Celle qu'on ajoutera demain
+   * traverserait une liste écrite à la main — c'est le motif des deux balayages de `first_step`
+   * (C4.6) et de la liste des modes de maintien (C2.5). Trois choses s'y vérifient d'un coup :
+   * chaque valeur rend un mot, aucun mot n'est vide, et aucun ne porte de chiffre — l'encart dit un
+   * contexte, jamais une quantité, et surtout jamais le gain d'une action écartée.
+   */
+  it('rend une phrase pour chaque valeur admise, sans chiffre', () => {
+    const colonnes: (keyof ReponsesDeContexte)[] = [
+      'zone_type',
+      'tc_access',
+      'household_vehicles',
+      'teletravail',
+    ];
+    const valeurs: Record<string, string[]> = {
+      zone_type: ['urbain_dense', 'periurbain', 'rural'],
+      tc_access: ['bon', 'limite', 'inexistant'],
+      household_vehicles: ['0', '1', '2_plus'],
+      teletravail: ['aucun', 'un_jour', 'deux_ou_plus'],
+    };
+
+    for (const colonne of colonnes) {
+      for (const valeur of valeurs[colonne]) {
+        const [mot] = motsDuContexte(reponses({ [colonne]: valeur }));
+        expect(mot).toBeDefined();
+        expect(mot.length).toBeGreaterThan(0);
+        expect(mot).not.toMatch(/\d/);
+      }
+    }
+  });
+
+  // Une valeur hors table ne peut venir que d'une migration qui aurait ajouté une réponse sans
+  // passer ici : on tait ce qu'on ne sait pas dire plutôt que d'afficher un identifiant technique.
+  it('tait une valeur qu’elle ne sait pas dire', () => {
+    expect(motsDuContexte(reponses({ zone_type: 'montagne' }))).toEqual([]);
+  });
+
+  it('rend une liste vide quand rien n’est renseigné', () => {
+    expect(motsDuContexte(reponses())).toEqual([]);
   });
 });

@@ -23,7 +23,7 @@ import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste
 import { CarteDeSaison } from '@/components/plan/carte-de-saison';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
-import { cadreDuPlan, formeInserable, pistesDuPlan } from '@/types/plan';
+import { cadreDuPlan, formeInserable, motsDuContexte, pistesDuPlan, type ReponsesDeContexte } from '@/types/plan';
 import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
@@ -230,6 +230,15 @@ type LoadState =
       status: 'ok';
       cycle: PlanCycle;
       assessmentId: string;
+      /**
+       * Les réponses du contexte B4, pour l'encart (C5.5).
+       *
+       * Dans le **même** `LoadState` que le reste, sans drapeau d'échec à elle : la règle de C1.4
+       * est qu'une lecture qui échoue rend `{ ok: false }`, jamais une valeur par défaut. Un encart
+       * qui afficherait « zone : — » sur une coupure réseau serait un mensonge sur les données de
+       * la personne, et un quatrième état à tenir en phase serait un état de trop.
+       */
+      contexte: ReponsesDeContexte | null;
       /** Date du dernier bilan complété — sert la proposition de re-bilan. */
       assessmentDate: string | null;
       checkins: EngagementCheckin[];
@@ -253,6 +262,18 @@ type LoadState =
 // des moyennes ADEME, jamais une mesure ; et un plan sans action n'est pas un échec mais le
 // signe que la personne fait déjà l'essentiel — l'état correspondant la félicite au lieu de
 // lui présenter une liste vide.
+/**
+ * Le repli quand la lecture du contexte n'a rien rendu : quatre `null`, donc zéro segment, donc
+ * pas d'encart. Nommé plutôt qu'écrit en littéral dans le rendu — il y est lu deux fois, et deux
+ * littéraux finiraient par différer.
+ */
+const VIDE_DE_CONTEXTE: ReponsesDeContexte = {
+  zone_type: null,
+  tc_access: null,
+  household_vehicles: null,
+  teletravail: null,
+};
+
 export default function Plan() {
   // **Émis au focus et non au montage** : dans une barre d'onglets, react-navigation garde
   // l'écran monté quand on passe à l'autre. Avec `useTrackView`, l'événement ne partirait
@@ -594,11 +615,25 @@ export default function Plan() {
         // reconduction qui a échoué à la frontière d'une saison, l'autre est la décision de la
         // personne elle-même, qu'il serait absurde de lui apprendre. Seul `rebilan` est un effet
         // de bord qu'elle n'a pas choisi.
-        const [{ data: resultat, error: erreurResultat }, { data: orphelins }, prefs, etatPermission] =
-          await Promise.all([
+        const [
+          { data: resultat, error: erreurResultat },
+          { data: contexte },
+          { data: orphelins },
+          prefs,
+          etatPermission,
+        ] = await Promise.all([
             supabase
               .from('assessment_results')
               .select('commute_poste_label')
+              .eq('assessment_id', assessment.id)
+              .maybeSingle(),
+            // **Dans le lot existant, jamais en plus** (C5.5, `v1-17` §7.4) : l'écran se recharge à
+            // chaque retour au premier plan — le chemin nominal de la boucle d'engagement, celui
+            // qu'on emprunte en appuyant sur une notification — donc une requête en séquence
+            // additionnerait sa latence à chaque fois au lieu de se fondre dans le maximum.
+            supabase
+              .from('assessment_answers')
+              .select('zone_type, tc_access, household_vehicles, teletravail')
               .eq('assessment_id', assessment.id)
               .maybeSingle(),
             supabase
@@ -661,6 +696,7 @@ export default function Plan() {
           cycle: cycle as PlanCycle,
           assessmentId: assessment.id,
           assessmentDate: assessment.submitted_at,
+          contexte: contexte ?? null,
           checkins: affiches,
           historique: historiqueParBoucle(points, affiches),
         });
@@ -1267,6 +1303,41 @@ export default function Plan() {
             </View>
           )}
 
+          {/* **L'encart de contexte, et sa porte** (C5.5, écarts 9 et 10). C'est la moitié « plan »
+              du constat 13.1 : « Parfois » au télétravail coûtait une action, et rien ne le disait.
+              La restriction se dit donc **après**, sur un écran qu'on relit — dite au moment du
+              choix, elle apprend à répondre haut ; dite ici, elle informe sans marchander.
+
+              **Il ne nomme jamais l'action écartée ni son gain**, et c'est la contrainte du
+              chantier : ce serait la liste des portes fermées pour qui a répondu juste, et un prix
+              affiché sur une réponse pour les autres. Il dit sur quoi le plan s'appuie, la porte
+              permet de corriger, rien de plus.
+
+              **Jamais sur un plan à zéro action** : il n'a rien à expliquer, et la carte de
+              félicitation juste en dessous serait la dernière chose à nuancer. Et jamais non plus
+              quand il n'y a rien à énumérer — une lecture qui a échoué ne devient pas une phrase
+              vide (C1.4). */}
+          {actionsCount > 0 && motsDuContexte(state.contexte ?? VIDE_DE_CONTEXTE).length > 0 && (
+            <ThemedView type="backgroundElement" style={styles.contexteCard}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Ton plan tient compte de ton contexte :{' '}
+                {motsDuContexte(state.contexte ?? VIDE_DE_CONTEXTE).join(', ')}. Ce qui ne tient pas
+                avec ces réponses n’est pas proposé.
+              </ThemedText>
+              {/* La porte se rend **sous** la phrase qui la porte, comme le lien des réglages du
+                  téléphone et celui de la carte d'attente : détachée, elle se lirait comme
+                  appartenant à ce qui suit. */}
+              <TextLink
+                label="Modifier ces réponses"
+                onPress={() => router.push({ pathname: '/bilan', params: { etape: 'context' } })}
+                type="small"
+                weight={600}
+                themeColor="accentText"
+                style={styles.contextePorte}
+              />
+            </ThemedView>
+          )}
+
           {/* Profil qui n'a plus rien à céder sur son poste dominant. Le pire accueil
               possible serait une liste vide : c'est la personne qui fait déjà le plus
               d'efforts. Même principe que le T8 de l'audit sur la restitution. */}
@@ -1416,6 +1487,10 @@ const styles = StyleSheet.create({
   // Les lignes simples : un filet entre elles suffit, elles ne sont pas des cartes. Le `gap`
   // reste donc à zéro, et l'écart ne se pose qu'aux frontières qui touchent une carte dépliée
   // (`pisteSeparee`, décidée au rendu — le conteneur ne sait pas lesquelles sont ouvertes).
+  contexteCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
+  // `alignSelf` pour que la cible de 44 px du lien ne s'étende pas sur toute la largeur de la
+  // carte : une zone tactile plus large que son texte se touche par accident.
+  contextePorte: { alignSelf: 'flex-start' },
   emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
   praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   praiseText: { flex: 1, minWidth: 0 },
