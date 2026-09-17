@@ -5,6 +5,17 @@ on:
   push:
     branches: [main]
 
+# Le jeton de ces travaux ne sert qu'au `checkout` : aucune étape n'écrit dans le dépôt, ne commente
+# une PR ni ne publie quoi que ce soit. Déclarer le minimum à la racine l'applique aux quatre.
+#
+# **Et ce n'est pas redondant avec le réglage du dépôt**, qui est pourtant déjà en lecture seule
+# (phase 5 du passage en public, `docs/exploitation/depot-public.md` §7). Le bloc dit trois choses
+# que le réglage ne dit pas : ce dont le workflow a réellement besoin, qu'il le gardera si le défaut
+# du dépôt change un jour, et qu'il le gardera aussi si ce fichier est copié ailleurs. C'est le
+# constat de l'analyse de code du 17/09/2026, et il portait sur les quatre travaux à la fois.
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: Typecheck & lint

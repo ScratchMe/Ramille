@@ -1,0 +1,23 @@
+-- `notification_outbox.user_id` était la seule clé étrangère en cascade du schéma `public` sans
+-- index qui la couvre. Relevé le 17/09/2026 dans les advisors de performance Supabase, en
+-- instruisant le passage du dépôt en public (issue #222).
+--
+-- **Ce qui la distingue des sept autres clés que le même advisor signale** : celles-là pointent
+-- toutes vers `transport_modes`, un référentiel dont aucune ligne ne se supprime et qu'aucune
+-- requête ne remonte à l'envers — elles sont correctement dépourvues d'index. Celle-ci est
+-- `on delete cascade`, et la cascade la **parcourt**.
+--
+-- Le chemin exact, parce qu'il a été mal écrit une première fois : la clé pointe vers
+-- `public.profiles`, et c'est `profiles` qui pointe vers `auth.users`. `delete_my_account` efface
+-- une seule ligne, celle d'`auth.users`, et laisse la cascade faire le reste — donc la suppression
+-- d'un compte traverse `auth.users → profiles → notification_outbox`, et sans index ce dernier saut
+-- est un balayage séquentiel de la table.
+--
+-- Deux choses le rendaient invisible, et c'est le propre de ce défaut : la table est petite, et le
+-- chemin est peu emprunté — mais il est **exigé par Google Play**, épinglé niveau par niveau dans
+-- `15_suppression_et_export.test.sql`, et il a été parcouru en vrai une fois, le 14/09/2026.
+--
+-- L'index sert aussi le chemin nominal : `regime_de_rappel` et le plafond mensuel de
+-- `enqueue_checkin_reminders` interrogent l'outbox **par utilisateur**, à chaque passage du cron.
+create index if not exists notification_outbox_user_id_idx
+  on public.notification_outbox(user_id);

@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(30);
+select plan(31);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-suppr-a@test.local', 'x', now(), now()),
@@ -318,6 +318,34 @@ select is(
   '0 1 * * *',
   'la purge est bien planifiée chaque nuit'
 );
+
+-- **La chaîne existe (assertions ci-dessus), mais elle doit aussi être parcourable.** Une clé
+-- étrangère `on delete cascade` sans index qui la couvre fait chercher les lignes filles par
+-- balayage séquentiel à chaque suppression — invisible sur une table vide, et c'est exactement ce
+-- qui s'est produit : `notification_outbox.user_id` a vécu sans index jusqu'au 17/09/2026, relevé
+-- par un advisor et non par cette suite.
+--
+-- Le balayage vaut mieux qu'une liste de noms : celui qu'on ajoutera demain traverserait une liste.
+-- Et il est **précis**, pas zélé — il ne regarde que les clés en cascade, laissant tranquilles les
+-- sept clés vers `transport_modes`, un référentiel dont rien ne se supprime. Au 17/09/2026 :
+-- quatorze clés en cascade, quatorze couvertes.
+--
+-- « Couvrir » veut dire que la colonne de la clé est la **première** de l'index, ce qui est la
+-- condition qui rend la recherche utilisable ; toutes les clés du schéma sont mono-colonne.
+select is_empty($$
+  select c.conname::text
+    from pg_constraint c
+    join pg_class src on src.oid = c.conrelid
+    join pg_namespace sn on sn.oid = src.relnamespace
+   where c.contype = 'f'
+     and c.confdeltype = 'c'
+     and sn.nspname = 'public'
+     and not exists (
+       select 1 from pg_index i
+        where i.indrelid = c.conrelid
+          and i.indkey[0] = c.conkey[1]
+     )
+$$, 'toute clé étrangère en cascade porte un index dont elle est la première colonne');
 
 select * from finish();
 rollback;
