@@ -515,3 +515,28 @@ autrement que dessiné, avec la raison. Un écart non consigné est un écart qu
 C5.7 partagent `(tabs)/plan/index.tsx` et le module des marques, et la barre attend la carte : non
 parallèles, enchaînés. C'est la deuxième fois que cette colonne dit vrai, ce qui ne change rien à la
 règle du relevé.
+
+## 10. La contre-lecture du 17/09/2026
+
+Le lot 5 a été relu **adversairement** le jour même de sa livraison, à la demande de la personne qui
+pilote : « liste tout ce que tu as mal fait ou qui entraînerait un bug ». Huit défauts, corrigés par
+la PR [#218](https://github.com/ScratchMe/TraceVerte/pull/218). Ils sont consignés ici et non en §9 :
+un écart est un choix, ceux-ci sont des fautes.
+
+| # | Chantier | Le défaut | Ce qu'il coûtait |
+|---|---|---|---|
+| 1 | C5.2 | `separationsDesLignes` recevait les lignes **dépliées au toucher**, alors que l'écran des pistes rend **aussi** en carte l'action engagée | La ligne suivant la carte engagée s'y collait — **le défaut 13.5 recréé sur l'écran neuf**, huit jours après avoir été corrigé sur le plan. Le paramètre s'appelle désormais `enCarte`, et une assertion nomme ce qu'il doit contenir : la fonction reçoit un ensemble, elle ne peut pas attraper une faute d'appel |
+| 2 | C5.5, C5.6 | Quatre écritures d'état après le dernier `if (cancelled)` du chargeur du plan | Un chargement périmé pouvait écrire, l'inverse de l'idiome que les deux onglets partagent depuis C1.4 — et l'une de ces écritures fait **arriver la barre d'onglets**, donc elle persiste. C2.8 l'avait introduit pour une carte ; les trois marques se lisent maintenant en parallèle, suivies d'une seule garde |
+| 3 | C5.7 | « Les trois cartes d'ouverture ne s'affichent jamais ensemble, et c'est structurel » | Vrai de la saison et du premier plan (l'une exige un cycle précédent, l'autre exige qu'il n'y en ait pas), **faux** de celle des deux lieux, qui reste due tant que son « Compris » n'a pas eu lieu. L'écran tranche désormais, et le commentaire dit **laquelle** des deux exclusions est structurelle |
+| 4 | C5.4 | Les libellés accessibles des puces de télétravail, que la planche D demande nommément | Une puce est annoncée **seule**, détachée de la question posée trois lignes plus haut : « Aucun » n'y dit rien. `Chip` portait déjà la prop, pour les initiales des jours et la même raison |
+| 5 | C5.5 | `?etape=` validé contre `BILAN_STEP_ORDER` et non contre les étapes **visibles** | Assez pour la porte, qui n'émet que `context` ; pas pour l'adresse, qui existe sur web et se tape. `?etape=commute_mode` sur un profil sans trajet régulier ouvrait une étape que son parcours saute, numérotée « Étape 1 sur 6 » par le repli de l'en-tête |
+| 6 | C5.2 | Un JSDoc orphelin au-dessus de `ordonnerLesPistes`, décrivant « les trois rangs » | C5.2 les a retirés en sortant l'exhaustivité sur son écran. Deux blocs de commentaire empilés, dont un faux |
+| 7 | C5.2, C5.5 | « Par poste, du plus gros gain au plus petit » ; « deux jours de télétravail possibles ou plus » | La première est fausse pour le groupe qui porte l'action engagée, hissée en tête quel que soit son gain ; la seconde a un ordre de mots qui ne tient pas |
+| 8 | C5.1 | Le rattrapage des rangs joignait **tous** les bilans complétés d'une personne | Deux bilans de poste dominant différent — le cas où un changement a porté — auraient reclassé le cycle selon l'un des deux au hasard. **Zéro ligne concernée** (un seul cycle porte des actions, un seul bilan lui répond), et la forme corrigée jouée en `BEGIN`/`ROLLBACK` rend zéro écart avec les rangs en base. Le `distinct on` est posé quand même : une migration doit rejouer juste sur une base **restaurée** |
+
+**Ce que cette liste dit de la méthode, et qui vaut plus que les huit corrections.** Le n°1 est le
+plus instructif : la règle avait son test, son commentaire, son historique daté et son écran
+d'origine — et elle a quand même été mal **appelée** depuis l'écran neuf. Un test sur une fonction
+pure garde la fonction, jamais ses appels ; quand une fonction reçoit un ensemble plutôt que les
+objets qu'elle décrit, c'est le **nom du paramètre** qui porte le contrat, et `ouvertes` mentait.
+Le n°3 est de la même famille : une exclusion vérifiée sur deux paires et affirmée sur trois.
