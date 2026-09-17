@@ -30,6 +30,7 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 | **`EXPO.md`** | Ajouter une route ou un fichier dans `public/` · toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · **toucher à une mise en page — marge, hauteur, barre d'onglets** · un écran blanc sur web · une dépendance native, un build EAS, un `expo-doctor` rouge |
 | **`TESTING.md`** | Écrire un test censé protéger une correction · **annoncer que quelque chose est vérifié** · une suite qui rougit ou verdit de façon inattendue · rejouer un fichier pgTAP sur le distant · toucher au référentiel des facteurs |
 | **`FRONT.md`** | Toucher un écran, un composant ou une dérivation lue par un écran · **écrire une phrase que quelqu'un lira** · afficher un chiffre, un repère, un poste, une saison · faire parler Ramille · rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur · toucher au questionnaire, au plan ou au suivi |
+| **`RECETTE.md`** | **Préparer une séance de recette, sur appareil ou au navigateur** · écrire ou retoucher un document de `docs/recette/` · fabriquer ou mettre à jour l'artefact web d'une recette · consigner ce qu'une séance a trouvé · prescrire un profil de test |
 
 ### Ce que la personne qui pilote a demandé
 
