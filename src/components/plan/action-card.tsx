@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { formatKg } from '@/lib/format';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -80,7 +81,7 @@ export function ActionCard({
     engagee ? `${reconduite ? 'Action engagée, reconduite' : 'Action engagée'} : ${titre}` : titre,
     ...(gainKg !== null
       ? [
-          `− ${Math.round(gainKg)} kg de CO₂e par an`,
+          `− ${formatKg(gainKg)} kg de CO₂e par an`,
           intention ? majuscule(intention) : null,
           partPercent !== null ? `${Math.round(partPercent)} % de ton empreinte` : null,
         ]
@@ -137,7 +138,7 @@ export function ActionCard({
         {gainKg !== null && (
           <View style={styles.gain}>
             <ThemedText weight={600} themeColor="accentText" style={styles.gainValeur}>
-              − {Math.round(gainKg)} kg CO₂e
+              − {formatKg(gainKg)} kg CO₂e
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               {intention ? `${majuscule(intention)} · par an` : 'par an'}

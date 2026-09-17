@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { POSTE_LABEL } from '@/constants/postes';
 import { Radius, Spacing } from '@/constants/theme';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
+import { formatKg } from '@/lib/format';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { pistesParPoste, separationsDesLignes } from '@/types/plan';
 import { usePassageDEngagement } from './_layout';
@@ -239,7 +240,7 @@ function Lignes({
 
         const titre = action.action_templates?.action_text ?? 'Action à préciser.';
         const gain =
-          action.saving_kg_year !== null ? `− ${Math.round(action.saving_kg_year)} kg` : null;
+          action.saving_kg_year !== null ? `− ${formatKg(action.saving_kg_year)} kg` : null;
 
         return (
           <Pressable

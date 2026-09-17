@@ -14,7 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
-import { formatTonnes } from '@/lib/format';
+import { formatKg, formatTonnes } from '@/lib/format';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { usePassageDEngagement } from './_layout';
 import { useTrackFocus } from '@/hooks/use-track-focus';
@@ -1208,7 +1208,7 @@ export default function Plan() {
                   Ton cap pour cette {cadenceDeSaison ? 'saison' : 'période'}
                 </ThemedText>
                 <ThemedText type="salient">
-                  − {capKg} kg
+                  − {formatKg(capKg)} kg
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
