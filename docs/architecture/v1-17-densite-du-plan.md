@@ -1,7 +1,7 @@
 # v1-17 — Le plan : ce qu'il montre, ce qu'il tait. Plan d'implémentation
 
-**Écrit le 16/09/2026.** Document d'implémentation apparié au dossier design
-[`docs/design/v1-17-densite-du-plan/`](../design/v1-17-densite-du-plan/), comme
+**Écrit le 16/09/2026, §7 tranché le 17/09/2026.** Document d'implémentation apparié au dossier
+design [`docs/design/v1-17-densite-du-plan/`](../design/v1-17-densite-du-plan/), comme
 [`v1-14-boucle-engagement.md`](v1-14-boucle-engagement.md) l'est au sien. Il traduit le canvas
 livré ce jour-là en chantiers, **et il porte le plan entier** : ce que ce canvas demande, et tout
 ce qui était déjà ouvert avant lui. Rien de la TODO existante n'en disparaît sans une ligne qui
@@ -81,7 +81,9 @@ un levier à 48 kg.
   **10** (l'estimateur) sont invalidées. `TESTING.md` §2.2 : chaque assertion se **recalcule par
   une requête**, jamais à la main. Une assertion neuve sur le déterminisme du rang (`action_text`
   départage une égalité de gain), et une sur le cas « le poste dominant n'a aucune piste », où
-  l'ordre redevient le gain seul.
+  l'ordre redevient le gain seul. **Aucune assertion ne nomme une séquence de gabarits** : les
+  facteurs se resynchronisent chaque trimestre, donc un ordre juste aujourd'hui peut être faux
+  au suivant sans que personne ne l'ait décidé — on éprouve l'invariant, §7.1.
 - **À ne pas casser** : le cap reste calculé sur le poste dominant. Les rangs disent l'insistance,
   jamais la permission (`v1-13` §8, `v1-16` §5).
 
@@ -109,9 +111,14 @@ donne onze cartes pleines sous un « Replier » hors écran.
   sur `dist/`, la seule façon de voir l'écran sans appareil.
 - **Copy** : « Le classement, côté serveur » et « L'écran "Toutes les pistes" » du HANDOFF ;
   « Voir toutes les pistes · N » avec N = `actionsCount`.
-- **Piège nommé par le canvas** : à `onEngage` depuis l'écran des pistes, retour au plan **et**
-  ouverture de la feuille des rappels. Le canvas laisse le choix entre un drapeau local et
-  `?engagee=1` ; recommandation en §7.
+- **Piège nommé par le canvas, tranché en §7.3** : à `onEngage` depuis l'écran des pistes, retour
+  au plan **et** ouverture de la feuille des rappels. C'est un **drapeau local** — un contexte
+  typé `{ poste } | null` sur `plan/_layout.tsx` — et jamais `?engagee=1`. Il se pose **avant**
+  `router.back()`, se lit dans l'effet de focus **sans attendre le rechargement**, et se consomme
+  une fois : la cérémonie ne s'ouvre qu'une fois par appareil, donc la manquer, c'est la perdre.
+- **Et c'est ici qu'on relève les vrais gains** (§7.1) : les chiffres de la planche sont des
+  valeurs de démonstration. Si un gain réel la dément, il se consigne — le canvas ne se réécrit
+  pas.
 
 ### C5.3 — L'intro dit le principe, la note du cap disparaît
 
@@ -140,8 +147,10 @@ le dire.
 
 - **Où** : une migration (le `check` d'`assessment_answers.teletravail`, les deux
   `action_templates.teletravail_admissible`, le commentaire de colonne, la **traduction des lignes
-  existantes**), `src/types/bilan.ts` (`Teletravail`, `REPONSES_TELETRAVAIL`, et `manqueDeLEtape`
-  qui ne réclame la réponse qu'à partir de deux jours de trajet), son test,
+  existantes**), `src/types/bilan.ts` (`Teletravail`, `REPONSES_TELETRAVAIL`, et
+  **`teletravailSePose(answers)`, écrite une fois et lue par les trois endroits** qui doivent dire
+  la même chose — l'écran pour afficher, `manqueDeLEtape` pour réclamer, `normaliserReponses` pour
+  effacer ; §7.2 dit ce que coûte d'en oublier un), son test,
   `src/components/bilan/steps/context.tsx` (la question et l'intro d'étape),
   `src/lib/database.types.ts`.
 - **Ce qu'il faut ouvrir avant** : `SUPABASE.md` §2.1 (le fichier de types se retouche à la main
@@ -155,7 +164,9 @@ le dire.
   mieux que cette phrase.
 - **Ce qui l'éprouve** : les assertions pgTAP du filtre de C3.8 (le tableau vide `= any('{}')`
   interdit, les deux seuils) recalculées ; un test Jest sur `manqueDeLEtape` à un jour de trajet et
-  à deux ; le job `db-tests`, seul garde de la dérive de `database.types.ts`.
+  à deux, **et celui qui attrape le second défaut de §7.2** — passer de 3 jours à 1 jour *après*
+  avoir répondu, et vérifier que `teletravail` retombe à `null` plutôt que de partir à la
+  soumission ; le job `db-tests`, seul garde de la dérive de `database.types.ts`.
 - **À ne pas casser** : le **seuil** de C3.8 ne bouge pas ; « une condition qu'on ne peut pas
   évaluer n'est pas remplie » ; « ces réponses n'entrent pas dans le calcul de ton bilan » reste
   dans l'intro.
@@ -347,27 +358,136 @@ Listés pour qu'ils ne se perdent pas, et non pour être faits maintenant :
 | La planche « trois états du télétravail » (v1-18 §8.2) | La forme retenue ne réagit pas au choix : ses trois états **sont** trois puces | Si la forme change |
 | C4.8 (même saison, un an après) | Personne ne peut en bénéficier avant un an | Le premier compte qui atteint un an |
 
-## 7. Ce que je ne tranche pas, et ce que je recommande
+## 7. Les cinq questions, tranchées le 17/09/2026
 
-1. **Les gains des lignes 7 à 11 du canvas sont des valeurs de démonstration** (README du dossier
-   design, point 1). **Recommandation** : les relever en base au moment d'écrire C5.2, et si un
-   gain réel dément la planche, le consigner dans « Ce que l'implémentation corrigera » plutôt que
-   de réécrire le canvas.
-2. **La question du télétravail quand il n'y a qu'un jour de trajet** (point 2). Le canvas la fait
-   disparaître. **Recommandation : suivre le canvas.** Poser une question dont la réponse ne peut
-   rien changer est exactement le défaut que v1-18 nomme, retourné — et `manqueDeLEtape` doit
-   alors ne plus la réclamer sous deux jours, sans quoi l'étape devient invalidable.
-3. **Le retour de l'écran des pistes après « C'est noté »** : drapeau local ou `?engagee=1` ?
-   **Recommandation : un drapeau local.** Un paramètre d'URL est une surface publique de plus, et
-   le dépôt garde la trace de ce que coûte une provenance non reconnue.
-4. **La lecture des réponses B4 par l'écran du plan** (C5.5). **Recommandation** : étendre le
-   `Promise.all` existant plutôt qu'ajouter un aller-retour — l'écran se recharge à **chaque**
-   retour au premier plan (`useRafraichirAuRetour`), donc chaque requête s'y paie souvent.
-5. **Faut-il une issue GitHub par chantier du lot 5 ?** Le budget d'API a deux compteurs distincts
-   et `issue_write` peut être refusé seul (registre §3.8). **Recommandation** : en ouvrir huit si
-   ça passe, et sinon s'en tenir à ce document et à
-   [#154](https://github.com/ScratchMe/TraceVerte/issues/154) — ce document reste la référence
-   quand les deux divergent.
+Ce paragraphe portait cinq questions ouvertes avec une recommandation chacune. Elles ont été
+passées en revue une par une le 17/09/2026 ; ce qui suit est la décision, avec ce qui l'a motivée.
+Les deux premières sont des décisions de produit, les trois autres sont techniques et prises à ce
+titre.
+
+### 7.1 Les gains de la planche sont des valeurs de démonstration — on les relève en base
+
+Les gains des lignes 7 à 11 de la planche « Toutes les pistes » ont été choisis pour que la
+planche soit lisible (README du dossier design, point 1). **Décision : les relever en base au
+moment d'écrire C5.2**, sur deux ou trois profils réels ; si un gain réel dément la planche, le
+consigner dans « Ce que l'implémentation corrigera » plutôt que de réécrire le canvas, qui est un
+document daté comme les `v1-0N`. Précédent exact : la vague 7 a trouvé que « Faire un de tes longs
+trajets en train » annonçait 4,4 % de trop à trois personnes — le chiffre était faux, pas la
+maquette.
+
+**Et il en sort une contrainte sur la forme des tests de C5.1, qui est la vraie conséquence.**
+`sync_emission_factors()` tourne chaque trimestre et **insère une nouvelle version** dans
+`emission_factors` sans jamais écraser. Deux effets qui ne vont pas dans le même sens :
+
+- **pour un bilan déjà soumis, l'ordre ne bouge pas**, et c'est voulu — `emission_factor(mode_id,
+  date)` borne le facteur à la date du bilan (`v1-01` §3), et `plan_actions.saving_kg_year` est
+  figé à la génération ;
+- **pour un bilan soumis après une synchronisation, il peut bouger.** L'ordre des motorisations en
+  ACV est déjà contre-intuitif (hybride > thermique > hybride rechargeable > électrique) : c'est
+  exactement le genre de classement qu'une révision ADEME peut retourner.
+
+**Donc aucune assertion de C5.1 ne nomme une séquence de gabarits.** On éprouve l'invariant — le
+meilleur levier du poste dominant en tête, puis les autres par gain décroissant — et jamais
+« `remove_day` avant `substitute` », qui serait vrai aujourd'hui et faux au prochain trimestre sans
+que personne ne l'ait décidé. Même famille que les trois CI rouges des PR #34, #41 et #48 : toucher
+au référentiel des facteurs invalide **toutes** les valeurs attendues, y compris celles qui ne
+nomment pas le facteur touché (`TESTING.md` §2.2).
+
+### 7.2 Le télétravail disparaît à un seul jour de trajet — et le prédicat s'écrit une fois
+
+**Décision : suivre le canvas.** Poser une question dont la réponse ne peut rien changer est
+exactement le défaut que v1-18 nomme, retourné : à un seul jour de trajet, l'action « Travailler
+depuis chez toi un jour par semaine » supprimerait 100 % du trajet, et elle est déjà écartée par la
+garde dérivée du gabarit (`commute_days_per_week <= t.trips`).
+
+**Ce qui rend ce chantier piégeux, c'est que B4.4 n'est pas une étape mais un champ de l'étape
+« Contexte ».** `isStepVisible` ne la gouverne donc pas : **trois** endroits doivent dire la même
+chose, et ils lisent aujourd'hui le même prédicat (`commute_has_regular_trip !== false`), ce qui est
+précisément ce qui les empêche de diverger —
+
+1. l'écran, qui affiche ou non le champ ;
+2. `manqueDeLEtape('context', …)` (`src/types/bilan.ts`), qui réclame `teletravail` ;
+3. `normaliserReponses`, qui l'efface quand la question ne se pose plus.
+
+C5.4 ajoute une **seconde** condition de disparition, et il y a deux façons de la rater :
+
+- **ne toucher que l'écran** → le champ disparaît, `manqueDeLEtape` le réclame toujours, et
+  « Suivant » reste inactif **pour toujours** sous un message qui nomme une question absente de
+  l'écran. C'est le défaut que `manqueDeLEtape` existe pour empêcher — un bouton grisé qui ne dit
+  pas pourquoi — retourné : il dit pourquoi, et le pourquoi est invisible. La personne n'a aucun
+  moyen de s'en sortir sans remonter changer son nombre de jours, ce que rien ne lui suggère.
+- **toucher l'écran et `manqueDeLEtape` mais pas `normaliserReponses`** → quelqu'un déclare 3 jours,
+  répond « deux jours ou plus », remonte et corrige à 1 jour : la question disparaît, l'étape se
+  valide, et `teletravail = 'deux_ou_plus'` **part à la soumission**. La base porte une réponse que
+  la personne ne voit plus et ne peut plus corriger. Elle est inerte aujourd'hui (les gabarits
+  `remove_day` sont de toute façon écartés) — et c'est précisément l'argument contre lequel ce
+  dépôt met en garde : une valeur fausse que rien n'exerce attend la forme d'intention qui la
+  rendra atteignable (le repli `{jours}`). C'est aussi le défaut de `v1-16` §4 par une autre porte,
+  où « Non » tenait la place de « pas encore répondu ».
+
+**Donc : une dérivation nommée, `teletravailSePose(answers)`, écrite une fois dans
+`src/types/bilan.ts` et lue par les trois** — l'écran pour afficher, `manqueDeLEtape` pour
+réclamer, `normaliserReponses` pour effacer. Même motif que `distanceDomicileTravailKm`, partagée
+entre la complétude de l'étape et l'insert. Et le test qui vaut la peine est celui du second
+défaut : **passer de 3 jours à 1 jour après avoir répondu**, et vérifier que `teletravail` retombe
+à `null`. Ni le typecheck ni l'écran ne voient ce chemin.
+
+### 7.3 Le retour de « Toutes les pistes » : un drapeau local, jamais `?engagee=1`
+
+Le handoff laisse le choix ouvert. **Décision : un drapeau local**, porté par un contexte typé sur
+`plan/_layout.tsx` — la pile que C5.2 crée de toute façon —, de forme `{ poste } | null`.
+
+Trois raisons d'écarter le paramètre d'URL :
+
+- **ce n'est pas un booléen qui doit voyager, c'est le poste.** La feuille promet un contact *sur
+  l'action qu'on vient d'engager*, et cette promesse se dérive de `boucleDeLAction(posteEngage)`.
+  C'est le constat n°1 de la recette du 14/09/2026 : quelqu'un qui a un trajet domicile-travail et
+  s'engage sur un vol s'entendait promettre le lundi. Le paramètre serait donc `?engagee=travel` —
+  une valeur publique de plus à valider, et une valeur fautive recrée à la main le défaut qu'on
+  vient de corriger ;
+- **les deux paramètres d'URL du produit existent parce que l'émetteur est hors de l'app** :
+  `?rappel=1` vient d'un email, `?nouveau=1` d'un flux qui a vidé sa pile. Ici les deux écrans sont
+  dans le même processus **et** la même pile : il existe un canal qui ne passe pas par une adresse
+  publique ;
+- **sur web, il s'écrit dans la barre d'adresse** — rechargeable, partageable, et ouvrant une
+  cérémonie sans engagement derrière.
+
+**Et le piège est sérieux : la cérémonie ne s'ouvre qu'une fois par appareil**
+(`aDejaVuLaFeuilleDeRappel`). Si le drapeau n'est pas remis la seule fois où ça compte — le tout
+premier engagement — la feuille est perdue **pour de bon**. C'est mot pour mot le défaut corrigé le
+14/09/2026, où une garde sur `boucle` empêchait la cérémonie sur un échec de lecture secondaire.
+Trois conséquences :
+
+- **le drapeau se pose avant `router.back()`**, jamais après, et jamais conditionné à un succès ;
+- **le plan le lit dans son effet de focus sans attendre son rechargement** — brancher l'ouverture
+  de la feuille derrière la résolution du `Promise.all` ferait qu'une coupure réseau au retour
+  coûte la cérémonie, définitivement ;
+- **il se consomme une fois** : `useRafraichirAuRetour` écoute le focus **et** le retour au premier
+  plan, donc un drapeau non effacé rouvrirait la feuille à chaque aller-retour.
+
+`proposerLesRappels` ne change pas d'une ligne.
+
+### 7.4 Les réponses B4 entrent dans le `Promise.all` existant
+
+**Décision : étendre le lot existant**, pas ajouter un aller-retour. L'écran du plan se recharge à
+chaque retour au premier plan (`useRafraichirAuRetour`, deux déclencheurs), donc chaque requête
+supplémentaire s'y paie souvent — et c'est le chemin nominal de la boucle d'engagement, celui qu'on
+emprunte en appuyant sur une notification. En parallèle, la lecture coûte le maximum des latences ;
+en séquence, elle les additionne.
+
+**Corollaire : elle entre dans le même `LoadState`, sans drapeau d'échec à elle.** La règle de C1.4
+est explicite — une lecture qui échoue rend `{ ok: false }`, jamais un tableau vide ni une valeur
+par défaut. Un encart de contexte affichant « zone : — » sur une coupure réseau serait un mensonge
+sur les données de la personne, et un quatrième état à tenir en phase serait un état de trop.
+
+### 7.5 Une issue par chantier — réglée par les faits
+
+Les huit issues sont ouvertes,
+[#205](https://github.com/ScratchMe/TraceVerte/issues/205) à
+[#212](https://github.com/ScratchMe/TraceVerte/issues/212) : le budget d'API a tenu, ce qui n'allait
+pas de soi puisque GraphQL et REST sont deux compteurs distincts et que `issue_write` peut être
+refusé pendant que tout le reste passe (registre d'exploitation §3.8). La règle qui reste vraie au
+prochain lot : **ce document est la référence quand lui et les issues divergent.**
 
 ## 8. Ce qu'il ne faut pas casser
 
