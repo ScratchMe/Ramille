@@ -289,3 +289,44 @@ jobs:
             echo "::error::L'objet déposé fait $distante octets contre $locale en local : le dépôt est incomplet."
             exit 1
           fi
+
+      # **« Arrivée entière » n'est pas « ouvrable ».** L'étape précédente compare des tailles :
+      # elle attrape un dépôt tronqué, pas une archive illisible. Or le seul mode de défaillance
+      # catastrophique d'une sauvegarde est exactement celui-là — on ne le découvre qu'en
+      # restaurant, c'est-à-dire le jour où l'on n'a pas le temps.
+      #
+      # On relit donc l'objet **depuis le bucket** (et non le fichier local, qui prouverait
+      # seulement que gpg sait défaire ce que gpg vient de faire), on le déchiffre, et on exige d'y
+      # trouver les deux fichiers attendus.
+      #
+      # **Ce que ce contrôle ne dit PAS, et qu'il ne faut pas lui faire dire** : il déchiffre avec
+      # le secret de dépôt. Il prouve que l'archive s'ouvre avec *cette* valeur-là — pas que la
+      # copie rangée dans le gestionnaire de mots de passe est la même. Cette moitié-là se vérifie
+      # à la main, une fois, par un humain (sauvegarde.md §4 étape 2), et ne peut pas s'automatiser
+      # sans mettre la copie humaine dans la machine, ce qui la viderait de son sens.
+      #
+      # Aucune exposition nouvelle : le dump en clair a déjà transité par ce runner trente secondes
+      # plus tôt. Rien n'est téléversé, et seuls les **noms** des fichiers sont imprimés.
+      - name: Vérifier que l'archive s'ouvre
+        run: |
+          set -euo pipefail
+          archive="sauvegarde-$horodatage.tar.gz.gpg"
+          rm -rf controle && mkdir controle
+          aws s3 cp "s3://$R2_BUCKET/$archive" "controle/$archive" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --only-show-errors
+          printf '%s' "$SAUVEGARDE_PASSPHRASE" | gpg --batch --yes \
+            --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --decrypt --output controle/archive.tar.gz "controle/$archive"
+          contenu=$(tar -tzf controle/archive.tar.gz)
+          echo "contenu de l'archive relue :"
+          printf '  %s\n' $contenu
+          for attendu in public.sql auth.sql; do
+            if ! printf '%s\n' $contenu | grep -qx "$attendu"; then
+              echo "::error::$attendu est absent de l'archive relue : elle s'ouvre mais ne porte pas ce qu'il faut."
+              exit 1
+            fi
+          done
+          # Le clair ne survit pas à l'étape, comme au chiffrement.
+          rm -rf controle
