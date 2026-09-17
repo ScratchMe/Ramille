@@ -63,6 +63,9 @@ Impact CO2 (`impactco2.fr`, incubateur ADEME) : tous portent l'ACV complète (us
 et chaque version enregistrée garde sa source dans `emission_factors.source`. Les conditions de
 réutilisation de ces données relèvent de l'ADEME, pas de la licence de ce dépôt — voir `NOTICE`.
 
-Le dépôt est public pour être **lu**. Les conventions internes (tout en français, une décision par
-document daté, contre-lecture avant fusion) rendent une contribution de passage coûteuse à
-intégrer : ouvrir une issue avant une pull request. Pour signaler une faille, voir `SECURITY.md`.
+Le dépôt est public pour être **lu** : lecture bienvenue, **pull requests non attendues** — il n'y
+a pas d'équipe derrière, et les conventions internes (tout en français, une décision par document
+daté, contre-lecture avant fusion) rendent une contribution de passage coûteuse à intégrer. La
+licence donne le droit de forker et de modifier ; ce qui n'est pas promis, c'est du temps de
+relecture. Ce qui est **toujours utile** : un rapport — une incohérence, un chiffre qui ne
+correspond pas au calcul. Détail dans `CONTRIBUTING.md` ; pour une faille, `SECURITY.md`.
