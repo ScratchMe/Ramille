@@ -167,10 +167,45 @@ toutes les pistes, un encart qui dit sur quelles réponses le plan s'appuie et l
 corriger ; la **vague 11** répare le premier parcours — une carte qui dit la règle du jeu, et les
 deux onglets qui n'arrivent qu'une fois qu'ils ont chacun quelque chose à montrer.
 
+**Les trois vagues sont livrées le 17/09/2026** (PR #215, #216 et #217), et avec elles **le lot 5 en
+entier**. Les écarts au canvas sont consignés en `v1-17` §9, qui est à ce document ce que `v1-14`
+§10 est au sien. Ce qui reste à éprouver ne l'est pas par du code : le premier parcours de bout en
+bout demande un appareil neuf, et c'est une ligne de la §11 de `v1-13`.
+
 **Le lot 4 n'a pas bougé et reste après** : ses six chantiers ouverts commencent chacun par une page
 de décision, et `v1-17` §5.1 en donne l'ordre proposé avec sa raison. Ce que C4.5 a reporté, les
 vérifications sur appareil de §11, l'exploitation et les restes assumés y sont aussi — rien de ce
 qui était ouvert n'a disparu du plan.
+
+**Un lot 6 est demandé et n'est pas instruit : l'administration** (demande du 17/09/2026, après la
+livraison du lot 5). Il n'appartient pas à l'audit du 09/09/2026 — c'est un besoin neuf, et il vit
+donc ici et non dans `v1-13`. Ce qui est demandé, mot pour mot : **exploiter tout ce que le produit
+enregistre déjà pour savoir où en est son utilisation**, et **suivre sa croissance** par quelques
+métriques que la personne qui pilote puisse ressortir ailleurs qu'ici.
+
+Quatre choses à savoir avant de l'instruire, parce qu'elles décident de la taille du lot :
+
+- **La matière existe déjà et n'a jamais été regardée.** `usage_events` et son référentiel
+  `usage_event_types` (increment 8), les vues `analytics.*` (`engagement_by_segment`,
+  `bilan_funnel`, `checkins_consecutifs`, `rappels_par_jour`, `rappels_bloques`,
+  `synchronisations_facteurs`), et les faits que le schéma porte sans événement — `submitted_at`,
+  `response_kind`, `committed_at`. Le registre `docs/exploitation/README.md` §8 dit déjà où lire
+  chacun **à la main**, en SQL. Ce qui manque n'est pas la donnée : c'est une surface.
+- **Les axes de segmentation sont en base**, et c'est ce qui avait écarté PostHog : `zone_type`,
+  `tc_access`, poste dominant, cadence. Un lot d'administration qui rebrancherait un outil tiers
+  referait ce choix à l'envers.
+- **La croissance n'a aujourd'hui aucune définition écrite.** Ni cohorte, ni rétention, ni
+  activation : `app_open` porte `origine` (`demarrage` / `retour`) depuis le 11/09/2026, ce qui est
+  la brique d'une rétention, mais rien ne la calcule. Ce qui compte comme « un utilisateur actif »
+  est une **décision produit**, pas une requête.
+- **Ce lot fabrique une surface qui n'est pas le produit**, et c'est sa question la plus lourde :
+  pour une seule personne, où vit-elle, qui y accède, et qu'est-ce qui garantit qu'elle ne
+  ressemble jamais à un écran de Ramille ? Un écran d'administration livré dans l'app aurait à
+  répondre à Play ; hors de l'app, il a à répondre de son authentification. **Rien ne s'écrit avant
+  cet arbitrage.**
+
+Rien n'est chiffré ni ordonné ici : ce paragraphe existe pour que la demande ne se perde pas entre
+la fin du lot 5 et le lot 4.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 
