@@ -1,14 +1,17 @@
 import {
   basculeDeSaison,
   estDansLouverture,
+  estPremierPlan,
   finDePeriodeEnMots,
   JOURS_DOUVERTURE,
   ouvertureDeSaison,
+  ouvertureDuPremierPlan,
   progressionDeLaPeriode,
   recapDeLaPeriode,
   recapDeSaison,
   saisonDe,
   sortiesDeLouverture,
+  SORTIE_DU_PREMIER_PLAN,
   type PointDeSaison,
 } from '@/types/saison';
 
@@ -470,5 +473,100 @@ describe('basculeDeSaison', () => {
     expect(basculeDeSaison('rolling_quarter', jour(2026, 12, 1))).toBe(
       'Une nouvelle période a commencé pendant que tu étais là.'
     );
+  });
+});
+
+/**
+ * **Mutations éprouvées le 17/09/2026** — cinq, et chacune fait tomber ce qu'elle devait faire
+ * tomber, sans rien emporter d'autre :
+ *
+ * | Ce qu'on casse | Ce qui tombe |
+ * |---|---|
+ * | la condition d'archive retirée | « une ligne dans l'archive » **et** « s'est engagé puis a repris » |
+ * | la condition d'engagement retirée | « une action engagée » **et** la redondance du trait |
+ * | la condition de cycle précédent retirée | « un cycle précédent » |
+ * | la majuscule gardée sous la préposition | les quatre saisons |
+ * | la cadence ignorée | « se passe du nom de saison en cadence de repli » |
+ */
+describe('estPremierPlan', () => {
+  const neuf = { aUnCyclePrecedent: false, aUnEngagement: false, aDejaEngage: false };
+
+  it('reconnaît un plan neuf', () => {
+    expect(estPremierPlan(neuf)).toBe(true);
+  });
+
+  // Les trois conditions comptent : le test vaut par ce qu'il **casse**, une par une.
+  it.each([
+    ['un cycle précédent', { ...neuf, aUnCyclePrecedent: true }],
+    ['une action engagée', { ...neuf, aUnEngagement: true }],
+    ['une ligne dans l’archive', { ...neuf, aDejaEngage: true }],
+  ])('%s suffit à dire que ce n’est plus le premier plan', (_cas, params) => {
+    expect(estPremierPlan(params)).toBe(false);
+  });
+
+  // **La condition qu'on oublie**, et c'est le scénario en entier : quelqu'un qui s'est engagé,
+  // puis a repris son engagement (« Changer d'avis », ou un re-bilan dans la même période). Il n'a
+  // toujours qu'un cycle et plus aucun `committed_at` — seule l'archive le distingue d'un
+  // arrivant, et sans elle la carte lui réexpliquerait la règle du jeu.
+  it('n’est plus le premier plan pour quelqu’un qui s’est engagé puis a repris', () => {
+    expect(
+      estPremierPlan({ aUnCyclePrecedent: false, aUnEngagement: false, aDejaEngage: true })
+    ).toBe(false);
+  });
+
+  // Le canvas écrit le trait `progression !== null && (engagement || !premierPlan)`. La moitié
+  // `engagement ||` n'est exerçable par aucun cas : un engagement rend déjà le signal faux. Le
+  // jour où cette assertion tombe, c'est que la deuxième condition a quitté le signal — et que la
+  // forme courte du trait est redevenue fausse.
+  it('exclut toujours un engagement, ce qui rend « engagement ou pas premier plan » redondant', () => {
+    for (const aUnCyclePrecedent of [false, true]) {
+      for (const aDejaEngage of [false, true]) {
+        expect(estPremierPlan({ aUnCyclePrecedent, aUnEngagement: true, aDejaEngage })).toBe(false);
+      }
+    }
+  });
+});
+
+describe('ouvertureDuPremierPlan', () => {
+  // L'article suit une préposition, donc il perd sa majuscule — et l'élision reste juste, parce
+  // qu'elle vient de la même table que « L'hiver commence. ».
+  it.each([
+    ['2026-12-01', 'Une action pour l’hiver.'],
+    ['2026-03-01', 'Une action pour le printemps.'],
+    ['2026-06-15', 'Une action pour l’été.'],
+    ['2026-09-01', 'Une action pour l’automne.'],
+  ])('nomme la saison du cycle (%s)', (debutDuCycle, titre) => {
+    expect(ouvertureDuPremierPlan({ debutDuCycle, cadence: 'season' }).titre).toBe(titre);
+  });
+
+  // `rolling_quarter` est dormant mais sa chaîne serveur existe : un trimestre glissant n'a pas de
+  // saison, et l'appeler « automne » serait la seule fausseté que cette carte pourrait dire.
+  it('se passe du nom de saison en cadence de repli', () => {
+    expect(ouvertureDuPremierPlan({ debutDuCycle: '2026-09-01', cadence: 'rolling_quarter' })).toEqual(
+      {
+        etiquette: 'TON PREMIER PLAN',
+        titre: 'Une action pour cette période.',
+        corps:
+          'Choisis-en une, et dis quand. Ensuite, un point régulier te demandera si tu l’as faite — rien d’autre à suivre.',
+      }
+    );
+  });
+
+  // La carte explique la règle du jeu ; elle ne commente pas ce plan-ci. Un chiffre ou un poste
+  // dedans en ferait une seconde description des cartes posées dessous — le défaut exact que C5.3
+  // vient de retirer de l'intro.
+  it('ne chiffre rien et ne nomme aucun poste', () => {
+    const carte = ouvertureDuPremierPlan({ debutDuCycle: '2026-09-01', cadence: 'season' });
+    const texte = [carte.etiquette, carte.titre, carte.corps].join(' ');
+    expect(texte).not.toMatch(/\d/);
+    expect(texte).not.toMatch(/trajet|voyage|sortie|loisir|domicile/i);
+  });
+});
+
+describe('SORTIE_DU_PREMIER_PLAN', () => {
+  // Un lien « Compris », et rien d'autre : il n'y a rien à reconduire au premier plan, donc pas
+  // les libellés de `sortiesDeLouverture`.
+  it('est un seul lien', () => {
+    expect(SORTIE_DU_PREMIER_PLAN).toEqual([{ cle: 'compris', label: 'Compris', forme: 'lien' }]);
   });
 });

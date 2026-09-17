@@ -20,7 +20,7 @@ import { usePassageDEngagement } from './_layout';
 import { useTrackFocus } from '@/hooks/use-track-focus';
 import { track } from '@/lib/analytics';
 import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste';
-import { CarteDeSaison } from '@/components/plan/carte-de-saison';
+import { CarteDOuverture } from '@/components/plan/carte-douverture';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
 import { cadreDuPlan, formeInserable, motsDuContexte, pistesDuPlan, type ReponsesDeContexte } from '@/types/plan';
@@ -29,13 +29,17 @@ import {
   aVuLouvertureDeSaison,
   marquerLouvertureDeSaisonVue,
 } from '@/lib/saison-prefs';
+import { aVuLePremierPlan, marquerLePremierPlanVu } from '@/lib/premier-parcours';
 import {
   basculeDeSaison,
   cadenceNommeUneSaison,
   estDansLouverture,
+  estPremierPlan,
   finDePeriodeEnMots,
   ouvertureDeSaison,
+  ouvertureDuPremierPlan,
   progressionDeLaPeriode,
+  SORTIE_DU_PREMIER_PLAN,
   sortiesDeLouverture,
   type OuvertureDeSaison,
   type PointDeSaison,
@@ -247,6 +251,16 @@ type LoadState =
        * Sert au seul second renforcement ; la fenêtre de lecture est bornée par la requête.
        */
       historique: Record<EngagementCheckin['loop_type'], PointRepondu[]>;
+      /**
+       * Est-ce le tout premier plan de cette personne ? (C5.6, `estPremierPlan`.)
+       *
+       * **Dans le `LoadState` et non dans un état à part**, parce que c'est un fait lu en base au
+       * même instant que le reste : le mettre à côté en ferait une valeur à tenir en phase avec le
+       * cycle affiché. Il pilote **deux** choses qui ne se referment pas ensemble — la carte, qu'un
+       * « Compris » suffit à retirer (marque locale), et le trait de temps, qui attend un
+       * engagement parce qu'il n'a rien à mesurer avant.
+       */
+      premierPlan: boolean;
     };
 
 // B "Plan de réduction". Depuis l'étape 6a (v1-07 §3.3), chaque action porte son gain estimé,
@@ -340,6 +354,15 @@ export default function Plan() {
    * premier repli, donc « Revoir mon bilan » et « Faire mon bilan ».
    */
   const [ouverture, setOuverture] = useState<OuvertureDeSaison | null>(null);
+  /**
+   * La carte « Ton premier plan », tant qu'elle n'a pas été refermée sur cet appareil (C5.6).
+   *
+   * Même logement et même raison que `ouverture` juste au-dessus — et les deux ne peuvent pas
+   * coexister : la carte de saison demande un cycle précédent, celle-ci demande qu'il n'y en ait
+   * pas. C'est aussi ce qui permet aux deux de remplacer la même chose, la carte d'attente, sans
+   * jamais se disputer la place.
+   */
+  const [cartePremierPlan, setCartePremierPlan] = useState<OuvertureDeSaison | null>(null);
   /**
    * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
    * plan à montrer, il n'y a rien à expliquer — la personne est au bon endroit.
@@ -615,10 +638,18 @@ export default function Plan() {
         // reconduction qui a échoué à la frontière d'une saison, l'autre est la décision de la
         // personne elle-même, qu'il serait absurde de lui apprendre. Seul `rebilan` est un effet
         // de bord qu'elle n'a pas choisi.
+        //
+        // **Et une seconde lecture de la même table, qui n'est pas un doublon** (C5.6) : celle du
+        // dessus répond à « quel engagement le dernier re-bilan a-t-il emporté ? », celle du
+        // dessous à « cette personne s'est-elle **déjà** engagée, de quelque façon que ce soit ? ».
+        // Élargir le filtre de la première casserait l'encart orphelin — qui n'annonce que l'effet
+        // de bord non choisi — et la borner à une ligne ne dirait rien de la seconde question. Un
+        // `count` en `head` ne ramène aucune ligne : c'est une existence, pas une donnée.
         const [
           { data: resultat, error: erreurResultat },
           { data: contexte },
           { data: orphelins },
+          { count: engagementsArchives },
           prefs,
           etatPermission,
         ] = await Promise.all([
@@ -642,6 +673,9 @@ export default function Plan() {
               .eq('released_reason', 'rebilan')
               .order('released_at', { ascending: false })
               .limit(1),
+            supabase
+              .from('plan_action_commitments_archive')
+              .select('id', { count: 'exact', head: true }),
             loadReminderPrefs(),
             lirePermission(),
           ]);
@@ -691,6 +725,37 @@ export default function Plan() {
               })
             : null;
         setOuverture(aOuvrir && !(await aVuLouvertureDeSaison(cycle.id)) ? aOuvrir : null);
+
+        // **Le tout premier plan** (C5.6). Trois faits, tous lus dans cette même fournée : pas de
+        // cycle avant celui-ci (l'écran en lit deux), aucune action engagée, aucune ligne dans
+        // l'archive quelle qu'en soit la raison — la troisième étant la seule qui distingue un
+        // arrivant de quelqu'un qui s'est déjà engagé puis a repris (« Changer d'avis », ou un
+        // re-bilan dans la même période).
+        //
+        // **Un `count` nul veut dire « on n'a pas pu lire », pas « zéro »**, et c'est pourquoi il
+        // se lit ici comme « cette personne s'est déjà engagée ». Le signal pilote deux choses, et
+        // les deux erreurs ne coûtent pas la même chose : se tromper vers la carte réexplique la
+        // règle du jeu à quelqu'un qui la connaît, se tromper vers le trait le **retire** au milieu
+        // d'une saison pour une coupure réseau. On préfère la lecture qui ne retire rien, et la
+        // lecture suivante rétablit la carte si elle avait lieu d'être.
+        const premierPlan = estPremierPlan({
+          aUnCyclePrecedent: cyclePrecedent !== null,
+          aUnEngagement: cycle.plan_actions.some((action) => action.committed_at !== null),
+          aDejaEngage: engagementsArchives === null || engagementsArchives > 0,
+        });
+
+        // La carte ne se rend pas sur un plan à zéro action — tout cycliste et tout profil
+        // sédentaire depuis C2.5 : « Choisis-en une » y promettrait une liste vide, et c'est la
+        // même règle que celle qui écarte la porte, l'encart et la note technique de cet écran-là.
+        const premiereCarte =
+          premierPlan && cycle.plan_actions.length > 0 && !(await aVuLePremierPlan())
+            ? ouvertureDuPremierPlan({
+                debutDuCycle: cycle.period_start,
+                cadence: cycle.cadence_type,
+              })
+            : null;
+        setCartePremierPlan(premiereCarte);
+
         setState({
           status: 'ok',
           cycle: cycle as PlanCycle,
@@ -699,6 +764,7 @@ export default function Plan() {
           contexte: contexte ?? null,
           checkins: affiches,
           historique: historiqueParBoucle(points, affiches),
+          premierPlan,
         });
         // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si la lecture
         // secondaire ci-dessus a échoué.
@@ -912,7 +978,7 @@ export default function Plan() {
     );
   }
 
-  const { cycle, assessmentId, assessmentDate, checkins, historique } = state;
+  const { cycle, assessmentId, assessmentDate, checkins, historique, premierPlan } = state;
   const actionsCount = cycle.plan_actions.length;
   const committedActionId = cycle.plan_actions.find((a) => a.committed_at !== null)?.id ?? null;
   // Le libellé de l'action engagée, pour que la carte du point sache si sa question figée porte
@@ -993,6 +1059,16 @@ export default function Plan() {
   // **Ce qui reste à faire est la mémoire de saison** (écart 7 de `v1-14` §10, moitié « affichage ») :
   // rapatrier l'engagement libéré du cycle courant pour le rappeler à côté du choix. Elle n'est pas
   // livrée, et c'est désormais écrit là plutôt que promis à un chantier déjà passé.
+  // « Compris » et rien d'autre : la carte du premier plan n'a pas de bouton qui mène ailleurs,
+  // les deux cartes d'action l'attendent juste dessous. La marque est locale parce que le signal,
+  // lui, ne se referme que sur un engagement — sans elle, quelqu'un qui a compris sans encore
+  // choisir reverrait l'explication à chaque retour sur l'onglet, donc à chaque notification
+  // ouverte.
+  const refermerLePremierPlan = () => {
+    void marquerLePremierPlanVu();
+    setCartePremierPlan(null);
+  };
+
   const refermerLouverture = (cle?: string) => {
     // **Le bouton mène là où l'on choisit** (C5.2). Il dépliait les pistes sous la carte ; depuis
     // qu'elles ont leur écran, il y conduit. C'est la même intention, avec une destination qui
@@ -1117,10 +1193,31 @@ export default function Plan() {
               d'attente** : Ramille parle déjà sous la carte d'ouverture, et deux fois dans le même
               écran ferait du bruit. */}
           {ouverture !== null && (
-            <CarteDeSaison
+            <CarteDOuverture
               ouverture={ouverture}
               sorties={sortiesDeSaison}
+              ligne={RAMILLE.ouvertureSaison}
               onSortie={(cle) => refermerLouverture(cle)}
+            />
+          )}
+
+          {/* **La carte du tout premier plan** (C5.6, écart 8, planche B1). Le plan disait la règle
+              du jeu nulle part : on arrivait de la restitution devant deux cartes chiffrées, un cap
+              et un trait de temps, sans qu'un mot explique qu'on en choisit **une** et que le reste
+              du produit tient en un point régulier.
+
+              **Le même composant que la carte de saison**, parce que le canvas décrit les deux
+              cadres de la même façon au pixel près : ce qui change est le contenu, dérivé dans
+              `src/types/saison.ts`. Et la même règle qu'elle — **elle ne prend jamais la place d'un
+              point en attente**, seulement celle de la carte d'attente, sous laquelle Ramille parle
+              déjà. Les deux ne peuvent pas coexister : l'une exige un cycle précédent, l'autre
+              exige qu'il n'y en ait pas. */}
+          {cartePremierPlan !== null && (
+            <CarteDOuverture
+              ouverture={cartePremierPlan}
+              sorties={SORTIE_DU_PREMIER_PLAN}
+              ligne={RAMILLE.premierPlan}
+              onSortie={refermerLePremierPlan}
             />
           )}
 
@@ -1177,7 +1274,7 @@ export default function Plan() {
               Posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte près
               d'un chiffre lourd » vise l'empreinte, mais un cap en kilos juste sous son
               visage donnerait l'impression qu'elle le commente. */}
-          {checkins.length === 0 && attente && ouverture === null && (
+          {checkins.length === 0 && attente && ouverture === null && cartePremierPlan === null && (
             <ThemedView type="backgroundElement" style={styles.calmeCard}>
               <View style={styles.calmeRow}>
                 <Mascot mood="resting" size={40} />
@@ -1268,11 +1365,27 @@ export default function Plan() {
                 </ThemedText>
               )}
             </View>
-            {progression !== null && <TraitDeTemps progression={progression} />}
-            <ThemedText themeColor="textTertiary" style={styles.capLegende}>
-              {cadenceDeSaison ? 'La saison avance' : 'La période avance'} ; le trait mesure le
-              temps, pas toi.
-            </ThemedText>
+            {/* **Le trait attend qu'il y ait quelque chose à mesurer** (C5.6). Au tout premier
+                plan il annoncerait un temps qui s'écoule sur une action qu'on n'a pas encore
+                choisie — c'est-à-dire un compte à rebours, exactement ce que sa légende jure qu'il
+                n'est pas. La période et sa fin, elles, restent : elles disent le cadre, pas une
+                avance.
+
+                Le canvas écrit la condition `progression !== null && (engagement || !premierPlan)`.
+                La moitié `engagement ||` est **impliquée par la seconde** — un engagement rend
+                `estPremierPlan` faux par sa deuxième condition, et un test le dit — donc on garde
+                la forme courte plutôt qu'une clause qu'aucun cas ne peut exercer. La légende
+                disparaît **avec** le trait : seule, elle commenterait quelque chose qui n'est pas
+                là. */}
+            {progression !== null && !premierPlan && (
+              <>
+                <TraitDeTemps progression={progression} />
+                <ThemedText themeColor="textTertiary" style={styles.capLegende}>
+                  {cadenceDeSaison ? 'La saison avance' : 'La période avance'} ; le trait mesure le
+                  temps, pas toi.
+                </ThemedText>
+              </>
+            )}
           </ThemedView>
 
           {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce

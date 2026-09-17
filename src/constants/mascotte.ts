@@ -208,6 +208,18 @@ export const RAMILLE = {
   ouvertureSaison: 'On repart pour une saison.',
 
   /**
+   * Sous la carte « Ton premier plan » (C5.6), hors du cadre comme sous la carte d'ouverture de
+   * saison — et pour la même raison : ce qui est dans le cadre explique la règle du jeu, elle ne
+   * fait que donner le critère de choix.
+   *
+   * **Le critère est la ressemblance, pas le gain**, alors que les deux cartes posées dessous sont
+   * classées par gain depuis C5.1. Ce n'est pas une contradiction : le classement dit l'insistance,
+   * et le produit ne choisit jamais à la place de la personne — « Prends la première » serait
+   * exactement l'injonction que les trois règles de voix lui interdisent.
+   */
+  premierPlan: 'Prends celle qui te ressemble.',
+
+  /**
    * Juste après « C'est noté », sur la feuille : ce qui va se passer, avant de demander quoi
    * que ce soit. Deux variantes selon la boucle qui concerne la personne — jamais un nombre
    * de jours, toujours le jour lui-même.

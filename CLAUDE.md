@@ -548,6 +548,42 @@ n'étaient lus par **aucun** écran : le cap était annoncé sans échéance, et
   plan à zéro action de tout cycliste depuis C2.5, où proposer d'en choisir une promettrait une liste
   vide.
 
+**Le tout premier plan dit la règle du jeu, et le trait de temps attend qu'il y ait quelque chose à
+mesurer** (C5.6, `estPremierPlan` / `ouvertureDuPremierPlan` dans `src/types/saison.ts`). On arrivait
+de la restitution devant deux cartes chiffrées, un cap et un trait qui avance, sans qu'un mot dise
+qu'on en choisit **une** et que tout le reste du produit tient en un point régulier. Quatre points à
+connaître :
+
+- **Le signal a trois conditions, et c'est la troisième qui compte** : un seul cycle, aucune action
+  engagée, et **aucune ligne dans `plan_action_commitments_archive`, quelle qu'en soit la raison**.
+  Les deux premières décrivent un plan neuf ; l'archive est la seule trace de quelqu'un qui s'est
+  **déjà** engagé puis a repris — « Changer d'avis » (raison `changement`) ou un re-bilan dans la
+  même période (raison `rebilan`), qui remettent tous deux `committed_at` à `null` sans créer de
+  second cycle. Sans elle, la carte réexplique la règle du jeu à quelqu'un qui la connaît.
+- **La lecture de l'archive que l'écran faisait déjà ne peut pas servir**, et c'est le piège que le
+  relevé de `v1-17` §2 a évité : celle de l'encart orphelin (C2.2) filtre sur
+  `released_reason = 'rebilan'` parce qu'elle annonce un effet de bord non choisi, et elle est bornée
+  à une ligne. Élargir ce filtre casserait l'encart. Le premier plan demande donc sa **propre**
+  lecture, un `count` en `head` dans le même `Promise.all` (règle de C5.5). Un `count` **nul** veut
+  dire « pas pu lire » et se lit « s'est déjà engagée » : des deux erreurs possibles, celle qui
+  montre une carte de trop coûte moins que celle qui **retire** le trait au milieu d'une saison.
+- **Le trait s'écrit `progression !== null && !premierPlan`**, et non la forme du canvas
+  `(engagement || !premierPlan)` : un engagement rend déjà le signal faux par sa deuxième condition,
+  donc la première moitié n'est exerçable par aucun cas. Un test épingle cette implication — le jour
+  où il tombe, c'est que la forme courte est redevenue fausse. La légende disparaît **avec** le
+  trait ; la période et sa fin, elles, restent.
+- **Une seule carte pour deux ouvertures** (`CarteDOuverture`, ex-`CarteDeSaison`) : le canvas décrit
+  le cadre de la saison et celui du premier plan de la même façon au pixel près, donc en écrire deux
+  garantirait qu'ils divergent — la leçon de `CarteDePiste` en C5.2. Ce qui change est du contenu,
+  dérivé dans `src/types/saison.ts`, **y compris la ligne de Ramille**, passée sans valeur par
+  défaut : un repli sur « On repart pour une saison. » dirait au premier plan la seule phrase qui ne
+  peut pas y être vraie. Les deux cartes ne peuvent pas coexister (l'une exige un cycle précédent,
+  l'autre exige qu'il n'y en ait pas) et **remplacent toutes deux la carte d'attente, jamais un point
+  en attente** — C2.8 dit pourquoi. La marque locale (`traceverte.premier_plan_vu.v1`,
+  `src/lib/premier-parcours.ts`) est **booléenne** là où celle de la saison porte un identifiant de
+  cycle : le premier plan n'arrive qu'une fois, et elle est nécessaire parce que le signal, lui, ne
+  se referme que sur un engagement.
+
 **Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
 décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
 `v1-10` §2.B). Le push, lui, part à `now()`. Pour provoquer un rappel de test, passer par

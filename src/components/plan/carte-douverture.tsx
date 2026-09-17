@@ -12,7 +12,6 @@ import { Button } from '@/components/button';
 import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { RAMILLE } from '@/constants/mascotte';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { OuvertureDeSaison, SortieDouverture } from '@/types/saison';
@@ -21,7 +20,15 @@ import type { OuvertureDeSaison, SortieDouverture } from '@/types/saison';
 const ENTREE = 320;
 
 /**
- * La carte d'ouverture d'une saison (C2.8, planches B2 et B3).
+ * La carte d'ouverture du plan — celle d'une saison (C2.8, planches B2 et B3) **et celle du tout
+ * premier plan** (C5.6, planche B1).
+ *
+ * **Un seul composant pour les deux**, et ce n'est pas une économie : le canvas décrit les deux
+ * cadres de la même façon au pixel près — bordure 1 px, fond `backgroundTinted`, étiquette
+ * 13/18/700, titre `screenTitle`, corps `body`, Ramille dessous en `happy` 44 penchée de − 5. En
+ * écrire deux garantirait qu'ils divergent, exactement comme `CarteDePiste` en C5.2. Ce qui
+ * change est du **contenu** : l'étiquette, le titre, le corps, les sorties et la ligne de Ramille,
+ * tous dérivés dans `src/types/saison.ts`.
  *
  * **L'effet « nouveau départ » était perdu quatre fois par an** (constat A13-6) : à la bascule, le
  * cycle suivant se créait dans la nuit, et la seule trace en était la puce « Cadence : Hiver
@@ -38,17 +45,23 @@ const ENTREE = 320;
  *   libellés (rien d'engagé, plan sans action — tout cycliste depuis C2.5).
  * — **Le corps peut être `null`**, et alors la carte n'a pas de corps du tout : aucun point répondu
  *   sur la période écoulée, et « 0 point répondu » nommerait les manqués.
+ * — **La ligne de Ramille est passée par l'appelant**, sans valeur par défaut : une carte qui
+ *   retomberait sur « On repart pour une saison. » au premier plan de quelqu'un dirait la seule
+ *   phrase qui ne peut pas y être vraie — on ne repart pas d'une saison qu'on n'a pas vécue.
  *
  * L'animation d'entrée respecte « réduire les animations » par le défaut de reanimated
  * (`ReduceMotion.System`), rappelé explicitement comme dans `ecran-lancement.tsx`.
  */
-export function CarteDeSaison({
+export function CarteDOuverture({
   ouverture,
   sorties,
+  ligne,
   onSortie,
 }: {
   ouverture: OuvertureDeSaison;
   sorties: SortieDouverture[];
+  /** Ce que Ramille dit sous le cadre — `RAMILLE.ouvertureSaison` ou `RAMILLE.premierPlan`. */
+  ligne: string;
   onSortie: (cle: SortieDouverture['cle']) => void;
 }) {
   const theme = useTheme();
@@ -103,7 +116,7 @@ export function CarteDeSaison({
       </View>
       {/* Hors du cadre, sous les chiffres : c'est tout ce qu'elle dit, et elle ne compte rien. */}
       <RamilleDit
-        ligne={RAMILLE.ouvertureSaison}
+        ligne={ligne}
         mood="happy"
         size={44}
         tilt={-5}

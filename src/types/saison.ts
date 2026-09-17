@@ -517,6 +517,90 @@ export function sortiesDeLouverture(plan: {
   return [reprendre, { cle: 'choisir_une_autre', label: 'Choisir une autre', forme: 'secondaire' }];
 }
 
+// ── Le tout premier plan (C5.6) ─────────────────────────────────────────────────────────────
+
+/**
+ * Le tout premier plan de quelqu'un : une seule ligne dans `plan_cycles`, aucune action engagée,
+ * et **aucune ligne dans l'archive des engagements, quelle qu'en soit la raison**.
+ *
+ * **Les trois conditions disent trois choses différentes, et la troisième est celle qu'on oublie.**
+ * Le premier cycle et l'absence d'engagement décrivent un plan neuf ; l'archive, elle, est la seule
+ * trace de quelqu'un qui s'est **déjà** engagé puis a laissé partir son engagement — « Changer
+ * d'avis » (raison `changement`) ou un re-bilan dans la même période (raison `rebilan`), qui
+ * remettent tous deux `committed_at` à `null` sans créer de second cycle. Sans elle, la carte
+ * « Ton premier plan » réapparaîtrait à quelqu'un qui connaît déjà la règle du jeu.
+ *
+ * C'est aussi pourquoi la lecture de l'archive que l'écran fait **déjà** ne peut pas servir ici :
+ * celle de l'encart orphelin (C2.2) filtre sur `released_reason = 'rebilan'`, parce qu'elle annonce
+ * un effet de bord que la personne n'a pas choisi. Élargir ce filtre casserait l'encart — la
+ * question du premier plan demande donc sa propre lecture.
+ *
+ * **Le trait de temps suit ce même signal**, et le canvas l'écrit
+ * `progression !== null && (engagement || !premierPlan)` : la moitié `engagement ||` est **impliquée
+ * par la seconde**, un engagement rendant ce signal faux par sa deuxième condition. On garde la
+ * forme courte plutôt qu'une clause qu'aucun cas ne peut exercer, et un test le dit.
+ */
+export function estPremierPlan(params: {
+  /** Y a-t-il un cycle avant celui qu'on affiche ? L'écran en lit deux (`limit(2)`). */
+  aUnCyclePrecedent: boolean;
+  /** Une action du cycle porte-t-elle un `committed_at` ? */
+  aUnEngagement: boolean;
+  /** `plan_action_commitments_archive` porte-t-elle une ligne, **toutes raisons confondues** ? */
+  aDejaEngage: boolean;
+}): boolean {
+  return !params.aUnCyclePrecedent && !params.aUnEngagement && !params.aDejaEngage;
+}
+
+/**
+ * « Une action pour l'automne. » — la carte qui dit la règle du jeu, une fois.
+ *
+ * Elle rend le **même** objet que `ouvertureDeSaison` et se dessine par le même composant : le
+ * canvas décrit les deux cadres de la même façon au pixel près (planches B1 et B2), et en écrire
+ * deux serait garantir qu'ils divergent — la leçon de `CarteDePiste` en C5.2.
+ *
+ * Le corps ne chiffre rien et ne nomme aucun poste : il décrit ce qui va se passer, pas ce plan-ci.
+ */
+export function ouvertureDuPremierPlan(params: {
+  /** `plan_cycles.period_start` du cycle affiché. */
+  debutDuCycle: string;
+  /** `plan_cycles.cadence_type` du cycle affiché. */
+  cadence: string;
+}): OuvertureDeSaison {
+  const saison = cadenceNommeUneSaison(params.cadence) ? saisonDuJour(params.debutDuCycle) : null;
+
+  return {
+    etiquette: 'TON PREMIER PLAN',
+    // « pour l'automne », « pour le printemps » : la table du module, dont on ne retire que la
+    // majuscule. Une seconde liste de quatre articles divergerait de la première par la faute de
+    // frappe que personne ne relit, et l'élision est déjà dedans.
+    titre: saison
+      ? `Une action pour ${sansMajuscule(AVEC_ARTICLE[saison.saison])}.`
+      : 'Une action pour cette période.',
+    corps:
+      'Choisis-en une, et dis quand. Ensuite, un point régulier te demandera si tu l’as faite — rien d’autre à suivre.',
+  };
+}
+
+/**
+ * `L’automne` → `l’automne`. La table porte la majuscule parce que ses deux autres lectures ouvrent
+ * une phrase ; ici l'article suit une préposition.
+ */
+function sansMajuscule(article: string): string {
+  return article.charAt(0).toLowerCase() + article.slice(1);
+}
+
+/**
+ * La seule sortie de la carte du premier plan : « Compris ».
+ *
+ * Pas `sortiesDeLouverture`, dont les libellés parlent de reconduction (« Reprendre la même
+ * action ») : il n'y a rien à reconduire au premier plan. Et un lien plutôt qu'un bouton — refermer
+ * une carte qui explique n'est pas un geste du produit, les deux cartes d'action l'attendent juste
+ * dessous.
+ */
+export const SORTIE_DU_PREMIER_PLAN: SortieDouverture[] = [
+  { cle: 'compris', label: 'Compris', forme: 'lien' },
+];
+
 // ── La bascule pendant qu'on regarde (C2.8) ─────────────────────────────────────────────────
 
 /**
