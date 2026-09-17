@@ -23,7 +23,8 @@ import { RAMILLE } from '@/constants/mascotte';
 import { track } from '@/lib/analytics';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
 import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
-import { marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
+import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
+import { noterLePremierParcours } from '@/lib/premier-parcours';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
@@ -426,6 +427,17 @@ export default function BilanQuestionnaire() {
 
       bilanEnCours.current = null;
       await clearBilanDraft();
+      // **Le premier parcours commence ici** (C5.7), et il faut le noter **avant** de poser la
+      // marque de bilan : c'est elle qui dit si cet appareil en avait déjà vu un. « Premier » veut
+      // dire premier **sur cet appareil**, et c'est la bonne définition pour une barre d'onglets —
+      // ce qui se joue est qu'on ne montre pas deux lieux à quelqu'un qui n'a encore rien à y
+      // mettre, et quelqu'un qui refait un bilan a déjà tout vu.
+      //
+      // Trois situations retombent donc naturellement du bon côté, sans garde à écrire : un
+      // re-bilan (la marque est là), un appareil neuf d'un compte existant (la racine a posé la
+      // marque en lisant le bilan), et une installation d'avant ce chantier (idem, au premier
+      // lancement en ligne). Dans les trois cas, la barre reste.
+      if (!(await aDejaVuUnBilan())) await noterLePremierParcours('questionnaire');
       // **La marque locale se pose ici aussi, et pas seulement à la racine** (C4.5). Le
       // questionnaire mène à la restitution puis au plan, sans repasser par la racine : sans cette
       // ligne, la marque n'existerait qu'au **prochain** lancement en ligne, et quelqu'un qui

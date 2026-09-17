@@ -368,7 +368,15 @@ export function saisonDuJour(iso: string): BornesDeSaison | null {
   return saisonDe(dateLocale(c.annee, c.mois, c.jour));
 }
 
-export type OuvertureDeSaison = {
+/**
+ * Le contenu d'une carte d'ouverture du plan — le cadre est le même pour les trois (C5.7).
+ *
+ * Le type s'appelait `OuvertureDeSaison` tant qu'une saison était la seule chose qui s'ouvre. Le
+ * premier plan (C5.6) puis l'arrivée de la barre (C5.7) en ont fait un nom faux : une fonction
+ * nommée `ouvertureDuPremierPlan` qui rend une `OuvertureDeSaison` est exactement la petite
+ * fausseté que ce dépôt chasse ailleurs.
+ */
+export type ContenuDOuverture = {
   /** « NOUVELLE SAISON » — l'étiquette de la carte, en majuscules dans le texte lui-même. */
   etiquette: string;
   /** « L'hiver commence. » */
@@ -428,7 +436,7 @@ export function ouvertureDeSaison(params: {
   precedente: { debut: string; fin: string; cadence: string } | null;
   /** Les points de la fenêtre lue par l'écran ; seuls ceux de la période écoulée comptent. */
   points: PointDeSaison[];
-}): OuvertureDeSaison {
+}): ContenuDOuverture {
   const { debutDuCycle, cadence, precedente, points } = params;
 
   const saisonQuiCommence = cadenceNommeUneSaison(cadence) ? saisonDuJour(debutDuCycle) : null;
@@ -565,7 +573,7 @@ export function ouvertureDuPremierPlan(params: {
   debutDuCycle: string;
   /** `plan_cycles.cadence_type` du cycle affiché. */
   cadence: string;
-}): OuvertureDeSaison {
+}): ContenuDOuverture {
   const saison = cadenceNommeUneSaison(params.cadence) ? saisonDuJour(params.debutDuCycle) : null;
 
   return {
@@ -590,14 +598,14 @@ function sansMajuscule(article: string): string {
 }
 
 /**
- * La seule sortie de la carte du premier plan : « Compris ».
+ * La sortie des cartes qui n'ont qu'à se refermer : « Compris ».
  *
- * Pas `sortiesDeLouverture`, dont les libellés parlent de reconduction (« Reprendre la même
- * action ») : il n'y a rien à reconduire au premier plan. Et un lien plutôt qu'un bouton — refermer
- * une carte qui explique n'est pas un geste du produit, les deux cartes d'action l'attendent juste
- * dessous.
+ * Deux la partagent, celle du premier plan (C5.6) et celle des deux lieux (C5.7) — pas
+ * `sortiesDeLouverture`, dont les libellés parlent de reconduction (« Reprendre la même action ») :
+ * il n'y a rien à reconduire à l'une ni à l'autre. Et un lien plutôt qu'un bouton — refermer une
+ * carte qui explique n'est pas un geste du produit.
  */
-export const SORTIE_DU_PREMIER_PLAN: SortieDouverture[] = [
+export const SORTIE_COMPRIS: SortieDouverture[] = [
   { cle: 'compris', label: 'Compris', forme: 'lien' },
 ];
 

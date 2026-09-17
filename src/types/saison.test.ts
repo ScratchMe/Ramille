@@ -11,7 +11,7 @@ import {
   recapDeSaison,
   saisonDe,
   sortiesDeLouverture,
-  SORTIE_DU_PREMIER_PLAN,
+  SORTIE_COMPRIS,
   type PointDeSaison,
 } from '@/types/saison';
 
@@ -563,10 +563,10 @@ describe('ouvertureDuPremierPlan', () => {
   });
 });
 
-describe('SORTIE_DU_PREMIER_PLAN', () => {
+describe('SORTIE_COMPRIS', () => {
   // Un lien « Compris », et rien d'autre : il n'y a rien à reconduire au premier plan, donc pas
   // les libellés de `sortiesDeLouverture`.
   it('est un seul lien', () => {
-    expect(SORTIE_DU_PREMIER_PLAN).toEqual([{ cle: 'compris', label: 'Compris', forme: 'lien' }]);
+    expect(SORTIE_COMPRIS).toEqual([{ cle: 'compris', label: 'Compris', forme: 'lien' }]);
   });
 });

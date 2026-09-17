@@ -13,6 +13,40 @@
 // être juste.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import type { EtapeDuPremierParcours } from '@/types/premier-parcours';
+
+/**
+ * Où en est le premier parcours sur cet appareil (C5.7).
+ *
+ * **Une valeur et non un booléen** : `src/types/premier-parcours.ts` dit pourquoi — une marque
+ * effacée à la fin du parcours ne distingue plus « il vient de finir ici » de « il n'y en a jamais
+ * eu ici », et la carte des deux lieux se serait rendue à tout le monde.
+ *
+ * Une valeur inconnue en base locale se lit `null`, donc « pas de parcours ici », donc la barre : une
+ * clé écrite par une version future ne peut pas faire disparaître la barre d'onglets d'une version
+ * ancienne.
+ */
+const PARCOURS_KEY = 'traceverte.premier_parcours.v1';
+
+const ETAPES: EtapeDuPremierParcours[] = ['questionnaire', 'barre', 'fait'];
+
+export async function lireLePremierParcours(): Promise<EtapeDuPremierParcours | null> {
+  try {
+    const valeur = await AsyncStorage.getItem(PARCOURS_KEY);
+    return ETAPES.find((etape) => etape === valeur) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function noterLePremierParcours(etape: EtapeDuPremierParcours): Promise<void> {
+  try {
+    await AsyncStorage.setItem(PARCOURS_KEY, etape);
+  } catch {
+    // best-effort, et l'échec penche du bon côté : sans marque, la barre est là.
+  }
+}
+
 /**
  * « La carte du premier plan a été refermée sur cet appareil. »
  *

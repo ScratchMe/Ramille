@@ -31,6 +31,12 @@ import {
 } from '@/lib/saison-prefs';
 import { aVuLePremierPlan, marquerLePremierPlanVu } from '@/lib/premier-parcours';
 import {
+  etatDuPremierParcours,
+  OUVERTURE_DES_DEUX_LIEUX,
+  SORTIE_DES_DEUX_LIEUX,
+} from '@/types/premier-parcours';
+import { usePremierParcours } from '@/app/(tabs)/_layout';
+import {
   basculeDeSaison,
   cadenceNommeUneSaison,
   estDansLouverture,
@@ -39,9 +45,9 @@ import {
   ouvertureDeSaison,
   ouvertureDuPremierPlan,
   progressionDeLaPeriode,
-  SORTIE_DU_PREMIER_PLAN,
+  SORTIE_COMPRIS,
   sortiesDeLouverture,
-  type OuvertureDeSaison,
+  type ContenuDOuverture,
   type PointDeSaison,
 } from '@/types/saison';
 import {
@@ -353,7 +359,7 @@ export default function Plan() {
    * drapeau dans sa variante `ok` détruirait `pending`, `no_assessment` et l'écran de rappel au
    * premier repli, donc « Revoir mon bilan » et « Faire mon bilan ».
    */
-  const [ouverture, setOuverture] = useState<OuvertureDeSaison | null>(null);
+  const [ouverture, setOuverture] = useState<ContenuDOuverture | null>(null);
   /**
    * La carte « Ton premier plan », tant qu'elle n'a pas été refermée sur cet appareil (C5.6).
    *
@@ -362,7 +368,15 @@ export default function Plan() {
    * pas. C'est aussi ce qui permet aux deux de remplacer la même chose, la carte d'attente, sans
    * jamais se disputer la place.
    */
-  const [cartePremierPlan, setCartePremierPlan] = useState<OuvertureDeSaison | null>(null);
+  const [cartePremierPlan, setCartePremierPlan] = useState<ContenuDOuverture | null>(null);
+  /**
+   * Le premier parcours, détenu par le layout des onglets parce que c'est lui qui rend la barre
+   * (C5.7). L'écran y fait **deux** choses : il signale que la carte du premier plan s'est refermée,
+   * et il rend la carte qui nomme la barre au moment où elle arrive.
+   */
+  const premierParcours = usePremierParcours();
+  const { laBarreArrive } = premierParcours;
+  const { carteDesDeuxLieux } = etatDuPremierParcours(premierParcours.etape);
   /**
    * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
    * plan à montrer, il n'y a rien à expliquer — la personne est au bon endroit.
@@ -756,6 +770,17 @@ export default function Plan() {
             : null;
         setCartePremierPlan(premiereCarte);
 
+        // **La barre arrive quand la carte du premier plan n'a plus lieu d'être** (C5.7), et c'est
+        // ici que trois chemins se rejoignent : le premier engagement (qui rend le signal faux), un
+        // plan à zéro action (qui n'a jamais de carte), et une carte déjà refermée sur cet appareil.
+        // Le quatrième, « Compris », est immédiat et vit dans son gestionnaire — attendre le
+        // rechargement y ferait arriver la barre une seconde trop tard, après le geste qui la
+        // demande.
+        //
+        // La transition est gardée à l'intérieur (`questionnaire` → `barre`) : sur un appareil qui
+        // n'a pas commencé son parcours ici, cet appel ne fait rien.
+        if (premiereCarte === null) laBarreArrive();
+
         setState({
           status: 'ok',
           cycle: cycle as PlanCycle,
@@ -781,7 +806,9 @@ export default function Plan() {
     return () => {
       cancelled = true;
     };
-  }, [refreshKey]);
+    // `laBarreArrive` est stable (`useCallback` sans dépendance dans le layout des onglets) : sans
+    // ça, la porter ici relancerait la lecture à chaque rendu.
+  }, [refreshKey, laBarreArrive]);
 
   // À la fermeture, on met à jour l'état local plutôt que de relire la base : la carte
   // d'attente doit refléter le choix immédiatement, et le serveur a déjà été écrit.
@@ -1067,6 +1094,9 @@ export default function Plan() {
   const refermerLePremierPlan = () => {
     void marquerLePremierPlanVu();
     setCartePremierPlan(null);
+    // Le geste **est** ce qui fait venir la barre : l'attendre du prochain chargement la ferait
+    // arriver après coup, sur un écran qui a déjà changé.
+    laBarreArrive();
   };
 
   const refermerLouverture = (cle?: string) => {
@@ -1197,6 +1227,7 @@ export default function Plan() {
               ouverture={ouverture}
               sorties={sortiesDeSaison}
               ligne={RAMILLE.ouvertureSaison}
+              visage="happy"
               onSortie={(cle) => refermerLouverture(cle)}
             />
           )}
@@ -1215,9 +1246,31 @@ export default function Plan() {
           {cartePremierPlan !== null && (
             <CarteDOuverture
               ouverture={cartePremierPlan}
-              sorties={SORTIE_DU_PREMIER_PLAN}
+              sorties={SORTIE_COMPRIS}
               ligne={RAMILLE.premierPlan}
+              visage="happy"
               onSortie={refermerLePremierPlan}
+            />
+          )}
+
+          {/* **La barre vient d'arriver, et elle se nomme** (C5.7, planche F3). Elle n'apparaît
+              qu'une fois, au moment exact où le premier parcours se referme : la personne voit
+              apparaître deux lieux en bas de son écran, et la carte dit ce qu'on trouve dans
+              chacun. Sans elle, la barre pousserait sans un mot, ce qui est la façon la plus sûre
+              de faire d'une navigation à deux entrées une navigation à une.
+
+              **Elle ne se rend que si le parcours s'est terminé sur cet appareil**, jamais sur la
+              seule absence d'une marque : `etatDuPremierParcours` en fait un état à part entière,
+              et son module dit pourquoi deux booléens l'auraient affichée à tout le monde. Comme
+              les deux autres, elle prend la place de la carte d'attente et jamais celle d'un point
+              en attente. */}
+          {carteDesDeuxLieux && (
+            <CarteDOuverture
+              ouverture={OUVERTURE_DES_DEUX_LIEUX}
+              sorties={SORTIE_DES_DEUX_LIEUX}
+              ligne={RAMILLE.planEtSuivi}
+              visage="calm"
+              onSortie={premierParcours.lesDeuxLieuxSontVus}
             />
           )}
 
@@ -1274,7 +1327,11 @@ export default function Plan() {
               Posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte près
               d'un chiffre lourd » vise l'empreinte, mais un cap en kilos juste sous son
               visage donnerait l'impression qu'elle le commente. */}
-          {checkins.length === 0 && attente && ouverture === null && cartePremierPlan === null && (
+          {checkins.length === 0 &&
+            attente &&
+            ouverture === null &&
+            cartePremierPlan === null &&
+            !carteDesDeuxLieux && (
             <ThemedView type="backgroundElement" style={styles.calmeCard}>
               <View style={styles.calmeRow}>
                 <Mascot mood="resting" size={40} />

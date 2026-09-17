@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -6,6 +7,38 @@ import { OngletIcone } from '@/components/onglet-icone';
 import { ThemedText } from '@/components/themed-text';
 import { FontFamily, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-parcours';
+import { etatDuPremierParcours, type EtapeDuPremierParcours } from '@/types/premier-parcours';
+
+/**
+ * Le premier parcours, partagé entre la barre et l'écran du plan (C5.7).
+ *
+ * **Le layout le détient, parce que c'est lui qui rend la barre.** L'étape vit en AsyncStorage,
+ * mais un écran qui la réécrirait dans son coin laisserait le layout afficher l'état d'avant
+ * jusqu'au prochain montage — c'est-à-dire que la barre n'arriverait pas au moment où la carte du
+ * premier plan se referme, qui est exactement le moment que ce chantier existe pour produire.
+ *
+ * Le questionnaire, lui, n'est **pas** dans ce groupe et n'a donc pas ce contexte : il écrit
+ * directement la marque, et le layout la lira à son montage — ce qui est le bon ordre, puisqu'il
+ * est monté après (la sortie du questionnaire mène à la restitution, qui est ici).
+ */
+type PremierParcours = {
+  etape: EtapeDuPremierParcours | null;
+  /** La carte du premier plan vient de se refermer : la barre arrive, et se nomme. */
+  laBarreArrive: () => void;
+  /** Le « Compris » de la carte des deux lieux : plus rien ne se réexplique. */
+  lesDeuxLieuxSontVus: () => void;
+};
+
+const ContexteDuPremierParcours = createContext<PremierParcours | null>(null);
+
+export function usePremierParcours(): PremierParcours {
+  const parcours = useContext(ContexteDuPremierParcours);
+  if (parcours === null) {
+    throw new Error('usePremierParcours doit être appelé dans le groupe des onglets.');
+  }
+  return parcours;
+}
 
 // Les deux lieux du produit — v1-11 §1, canvas `docs/design/v1-11-navigation/`.
 //
@@ -26,7 +59,45 @@ export default function TabsLayout() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
+  // **L'étape démarre à `null`, et ce n'est pas un repli commode** : `null` recouvre « pas encore
+  // lue » et « aucun premier parcours ici », et les deux veulent la barre. Démarrer à l'inverse la
+  // ferait disparaître une fraction de seconde à chaque ouverture pour tout le monde — et sur web à
+  // chaque chargement de page, le rendu statique ne connaissant aucun stockage (`EXPO.md` §2.2).
+  const [etape, setEtape] = useState<EtapeDuPremierParcours | null>(null);
+  // Lue par les transitions, qui ne doivent pas se redéclarer à chaque rendu : l'écran du plan les
+  // passe en dépendance de son effet de chargement, et une fonction recréée à chaque rendu y
+  // relancerait la lecture en boucle (la règle déjà écrite pour `useRafraichirAuRetour`).
+  const etapeLue = useRef<EtapeDuPremierParcours | null>(null);
+
+  useEffect(() => {
+    let annule = false;
+    void lireLePremierParcours().then((lue) => {
+      if (annule) return;
+      etapeLue.current = lue;
+      setEtape(lue);
+    });
+    return () => {
+      annule = true;
+    };
+  }, []);
+
+  // Une transition, et une seule à la fois : `depuis` est la garde. Sans elle, un « Compris » sur la
+  // carte du premier plan d'un **second** appareil — où la barre a toujours été là — ferait
+  // apparaître la carte des deux lieux à quelqu'un qui ne les a jamais perdus de vue.
+  const avancer = useCallback((depuis: EtapeDuPremierParcours, vers: EtapeDuPremierParcours) => {
+    if (etapeLue.current !== depuis) return;
+    etapeLue.current = vers;
+    setEtape(vers);
+    void noterLePremierParcours(vers);
+  }, []);
+
+  const laBarreArrive = useCallback(() => avancer('questionnaire', 'barre'), [avancer]);
+  const lesDeuxLieuxSontVus = useCallback(() => avancer('barre', 'fait'), [avancer]);
+
+  const { barreVisible } = etatDuPremierParcours(etape);
+
   return (
+    <ContexteDuPremierParcours.Provider value={{ etape, laBarreArrive, lesDeuxLieuxSontVus }}>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -62,6 +133,30 @@ export default function TabsLayout() {
           height: 60 + insets.bottom,
           paddingTop: Spacing.two,
           paddingBottom: insets.bottom + 12,
+          // **Un lieu n'apparaît que quand il a quelque chose à montrer** (C5.7). La barre est
+          // masquée de la soumission du premier questionnaire à la fermeture de la carte « Ton
+          // premier plan » : jusque-là, chaque écran n'a qu'un geste, et proposer deux lieux avant
+          // qu'il y ait quoi que ce soit à suivre était offrir une porte sur une pièce vide.
+          //
+          // `display: 'none'` plutôt qu'un rendu conditionnel de la barre : c'est ce que le canvas
+          // décrit, et c'est la seule forme qui laisse intact tout ce que `tabBarStyle` porte déjà —
+          // la hauteur qui inclut l'encoche, et la disposition verticale du libellé mesurée en 13.7.
+          //
+          // **Et elle ne laisse pas de bande vide, ce qui se mesure et ne se raisonne pas** : le
+          // navigateur d'onglets passe aussi sa hauteur aux écrans par contexte. Relevé le
+          // 17/09/2026 sur l'export statique lu par Playwright, en 390 × 844 : les deux enfants du
+          // conteneur en colonne valent `[784, 60]` barre visible et `[844, 0]` barre masquée —
+          // l'écran reprend la hauteur entière. Aucun écran ne compense à la main
+          // (`useBottomTabBarHeight` n'est lu nulle part), ce qui est la seule chose qui aurait pu
+          // laisser la bande. `EXPO.md` §1.7.
+          //
+          // **L'entrée glissée du canvas (320 ms depuis le bas) n'est pas rendue**, et c'est un
+          // écart assumé : elle demanderait de rendre la barre soi-même en enveloppant
+          // `BottomTabBar` dans un `Animated.View`, donc de dépendre de `@react-navigation/bottom-tabs`
+          // — un paquet qu'`expo-router` embarque sans l'exposer, et qui n'est pas une dépendance de
+          // ce dépôt. Ajouter une dépendance pour une animation d'entrée n'est pas un échange que ce
+          // projet fait. Écart consigné en `v1-17` §9.
+          display: barreVisible ? 'flex' : 'none',
         },
       }}
     >
@@ -102,6 +197,7 @@ export default function TabsLayout() {
         })}
       />
     </Tabs>
+    </ContexteDuPremierParcours.Provider>
   );
 }
 

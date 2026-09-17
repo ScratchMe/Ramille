@@ -116,6 +116,15 @@ marge, et une frontière ne la compte qu'une fois.
   téléphone, donc jamais pendant le développement d'une app mobile : ça se voit dans un navigateur
   de bureau, et seulement là. Si la maquette ne dessine qu'une barre, poser
   `tabBarLabelPosition: 'below-icon'` vaut mieux que rendre le dessin sensible à la disposition.
+- **Masquer la barre par `tabBarStyle: { display: 'none' }` libère sa hauteur** — elle ne laisse
+  pas de bande vide. Ça se raisonne (un enfant `display: none` ne prend pas de place dans un
+  conteneur flex) mais ça se **mesure**, parce que le navigateur d'onglets passe aussi sa hauteur
+  aux écrans par contexte : mesuré chez Ramille le 17/09/2026 sur l'export statique lu par
+  Playwright, les deux enfants du conteneur en colonne valent `[784, 60]` barre visible et
+  `[844, 0]` barre masquée, sur une fenêtre de 844 px. Le seul cas où une bande resterait est un
+  écran qui compense à la main avec `useBottomTabBarHeight()` : le vérifier avant de conclure.
+  Corollaire d'accessibilité gratuit — `display: none` retire aussi la barre de l'arbre
+  d'accessibilité, donc rien n'y reste focalisable.
 
 ### 1.8 Hermes peut être construit sans ICU complet
 

@@ -5,7 +5,12 @@
 // ressemblent assez pour qu'on recopie la mauvaise, et le prix n'est pas le même dans les deux
 // sens — une marque par cycle ferait revoir l'explication à chaque saison, à quelqu'un qui n'a plus
 // rien à apprendre.
-import { aVuLePremierPlan, marquerLePremierPlanVu } from '@/lib/premier-parcours';
+import {
+  aVuLePremierPlan,
+  lireLePremierParcours,
+  marquerLePremierPlanVu,
+  noterLePremierParcours,
+} from '@/lib/premier-parcours';
 
 const mockStock = new Map<string, string>();
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -52,5 +57,33 @@ describe('la carte du premier plan', () => {
     const ecriture = jest.spyOn(stockage, 'setItem').mockRejectedValue(new Error('quota'));
     await expect(marquerLePremierPlanVu()).resolves.toBeUndefined();
     ecriture.mockRestore();
+  });
+});
+
+describe('l’étape du premier parcours', () => {
+  it('n’a pas d’étape tant que rien n’a commencé ici', async () => {
+    expect(await lireLePremierParcours()).toBeNull();
+  });
+
+  it('se relit telle qu’elle a été notée', async () => {
+    await noterLePremierParcours('questionnaire');
+    expect(await lireLePremierParcours()).toBe('questionnaire');
+    await noterLePremierParcours('barre');
+    expect(await lireLePremierParcours()).toBe('barre');
+  });
+
+  // **Une valeur inconnue se lit « pas de parcours ici », donc la barre.** Une clé écrite par une
+  // version future — ou salie par n'importe quoi — ne doit pas pouvoir faire disparaître la barre
+  // d'onglets d'une version ancienne : c'est le seul moyen, depuis ce stockage, de retirer à
+  // quelqu'un l'accès à la moitié du produit.
+  it('ne laisse pas une valeur inconnue masquer la barre', async () => {
+    const stockage = jest.requireMock('@react-native-async-storage/async-storage').default;
+    await stockage.setItem('traceverte.premier_parcours.v1', 'plus_tard');
+    expect(await lireLePremierParcours()).toBeNull();
+  });
+
+  it('porte le préfixe historique', async () => {
+    await noterLePremierParcours('barre');
+    expect([...mockStock.keys()]).toEqual(['traceverte.premier_parcours.v1']);
   });
 });
