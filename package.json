@@ -58,6 +58,7 @@
     "vercel-build": "expo export --platform web"
   },
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "jest": {
     "preset": "jest-expo",
     "moduleFileExtensions": [

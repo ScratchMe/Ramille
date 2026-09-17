@@ -1,0 +1,28 @@
+Ramille — sensibilisation à l'empreinte carbone des transports
+Copyright (C) 2026 Antoine Berthaud
+
+Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le
+modifier selon les termes de la GNU Affero General Public License telle que
+publiée par la Free Software Foundation, soit la version 3 de cette licence,
+soit (à votre choix) toute version ultérieure.
+
+Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
+GARANTIE, sans même la garantie implicite de VALEUR MARCHANDE ou d'ADÉQUATION
+À UN USAGE PARTICULIER. Voir la GNU Affero General Public License pour plus de
+détails — fichier LICENSE, ou <https://www.gnu.org/licenses/>.
+
+LE NOM N'EST PAS COUVERT PAR LA LICENCE
+
+La licence porte sur le code. Elle ne concède aucun droit sur le nom
+« Ramille », ni sur la mascotte et l'identité visuelle qui l'accompagnent :
+une version modifiée se distribue sous un autre nom.
+
+FACTEURS D'ÉMISSION
+
+Les facteurs d'émission utilisés par le calcul d'empreinte proviennent de la
+Base Empreinte de l'ADEME, consommée via l'API Impact CO2 (impactco2.fr, projet
+de l'incubateur ADEME). Chaque version de facteur enregistrée en base porte sa
+source dans la colonne `emission_factors.source`.
+
+Les conditions exactes de réutilisation de ces données relèvent de l'ADEME et
+non de la licence de ce dépôt.

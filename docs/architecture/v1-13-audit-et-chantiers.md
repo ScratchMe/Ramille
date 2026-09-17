@@ -2246,6 +2246,14 @@ dans la même fenêtre ne repart pas de zéro et montrera l'état d'après. Ensu
 production** : un bilan soumis est un vrai bilan, sur un vrai compte anonyme, que la purge fermera
 après 90 jours d'inactivité. Rien n'est à nettoyer, mais rien n'est fictif non plus.
 
+**Les lignes 11.W.1 à 11.W.6 se jouent en une seule séance, et elle a son script** :
+[`docs/recette/premier-parcours-web.md`](../recette/premier-parcours-web.md) — onze blocs à
+consigner ligne par ligne, et surtout **un profil à saisir mesuré le 17/09/2026** (bilan calculé
+puis plan généré sur le distant, transaction annulée), qui donne les chiffres exacts attendus à
+l'écran : huit pistes, un rang 2 à 1 601 kg au-dessus d'un rang 1 à 619 kg, un cap de − 384 kg.
+Sans ce profil, la moitié des lignes ci-dessous n'ont rien à regarder — un plan à zéro action ne
+porte ni pistes, ni encart de contexte, ni millier.
+
 | # | Ce qu'on peut voir au navigateur | Comment y arriver, et ce qu'on cherche |
 |---|---|---|
 | 11.W.1 | **Le premier parcours** (C5.6 · C5.7) — le plus utile, parce que personne ne l'a jamais vu | Fenêtre privée → `www.ramille.fr` → onboarding → bilan complet. Attendu, dans cet ordre : la restitution s'affiche **sans barre d'onglets** en bas ; « Voir ce que je peux faire » mène au plan, qui porte la carte **« TON PREMIER PLAN »** (« Une action pour l'automne. ») avec Ramille dessous et **pas de trait de temps** sous le cap ; « Compris » fait apparaître la barre **et** la carte **« PLAN ET SUIVI »**. Ce qui serait un défaut : une barre présente avant « Compris », un trait de temps sous le cap avant qu'une action soit engagée, ou les deux cartes en même temps. |

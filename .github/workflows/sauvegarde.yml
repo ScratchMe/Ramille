@@ -8,6 +8,21 @@
 # (`purge_stale_anonymous_accounts()`, `purge_usage_events()`) : sans instantané, une erreur
 # de prédicat est définitive.
 #
+# OÙ VA L'ARCHIVE, ET POURQUOI PAS DANS UN ARTEFACT GITHUB (17/09/2026). Elle partait dans un
+# artefact de workflow, ce qui tenait tant que le dépôt était privé. **Un artefact est
+# téléchargeable par toute personne ayant accès en lecture au dépôt** : public, c'est tout le
+# monde, et rétroactivement — les archives déjà déposées deviennent accessibles au moment du
+# basculement, pas seulement les suivantes. Or celle-ci porte `auth.users`, donc les adresses
+# email de tous les comptes. Le chiffrement GPG serait alors devenu la *seule* frontière, face à
+# un attaquant qui a l'archive hors ligne et sans limite d'essais.
+#
+# L'archive part donc dans un bucket **Cloudflare R2 privé**, en juridiction UE. Ce qui n'a pas
+# changé : le moteur reste GitHub Actions, parce qu'il est gratuit et illimité sur un dépôt
+# public et que ce fichier a déjà payé trois pièges qu'on ne veut pas repayer (client PG 17,
+# pooler en mode session, `--pinentry-mode loopback`). C'est la **destination** qui change, pas
+# l'exécuteur. Le chiffrement GPG est **conservé** bien que le bucket soit privé : deux
+# barrières, pour qu'un bucket mal configuré un jour ne soit pas une catastrophe.
+#
 # Régime retenu, procédure de restauration et secrets à créer : docs/exploitation/sauvegarde.md.
 name: Sauvegarde de la base
 
@@ -37,17 +52,42 @@ jobs:
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       SAUVEGARDE_PASSPHRASE: ${{ secrets.SAUVEGARDE_PASSPHRASE }}
+      # L'endpoint porte l'identifiant de compte Cloudflare et **le préfixe `.eu.`** de la
+      # juridiction : sans lui, le client s'adresse à la juridiction par défaut et ne voit pas le
+      # bucket. C'est pour ça qu'il vit dans un secret plutôt qu'en clair dans ce fichier, qui est
+      # public. Le nom du bucket n'est pas un secret ; il est rangé au même endroit pour qu'il n'y
+      # ait qu'un seul écran à ouvrir quand on met la sauvegarde en service.
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      # Le CLI `aws` lit ces deux noms-là, pas `R2_*` : le jeton R2 est un couple de clés S3.
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      # `auto` est exigé par le SDK et ignoré par R2 (doc Cloudflare). Sans région, le CLI refuse
+      # de partir.
+      AWS_DEFAULT_REGION: auto
+      # Garde-fou de version, et non correction d'un défaut reproduit. Les CLI `aws` récents
+      # calculent des sommes de contrôle supplémentaires par défaut, et le runner met le sien à
+      # jour sans que ce dépôt bouge — même famille que l'étape `expo-doctor` de la CI, qui peut
+      # rougir sur un arbre qu'on n'a pas touché. Ces deux variables ramènent le comportement à
+      # « seulement quand c'est nécessaire » ; un CLI qui ne les connaît pas les ignore, donc
+      # elles ne coûtent rien.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
     steps:
       # Un secret absent rend `pg_dump` silencieusement inopérant : sans cette garde, le job
       # téléverserait un artefact vide et se terminerait en vert. C'est exactement le mode de
       # défaillance qu'une sauvegarde ne peut pas se permettre — on ne découvre l'absence de
       # contenu que le jour où l'on restaure.
-      - name: Vérifier que les deux secrets existent
+      - name: Vérifier que les secrets existent
         run: |
           set -euo pipefail
           manquants=""
           [ -n "${SUPABASE_DB_URL:-}" ] || manquants="$manquants SUPABASE_DB_URL"
           [ -n "${SAUVEGARDE_PASSPHRASE:-}" ] || manquants="$manquants SAUVEGARDE_PASSPHRASE"
+          [ -n "${R2_ENDPOINT:-}" ] || manquants="$manquants R2_ENDPOINT"
+          [ -n "${R2_BUCKET:-}" ] || manquants="$manquants R2_BUCKET"
+          [ -n "${AWS_ACCESS_KEY_ID:-}" ] || manquants="$manquants R2_ACCESS_KEY_ID"
+          [ -n "${AWS_SECRET_ACCESS_KEY:-}" ] || manquants="$manquants R2_SECRET_ACCESS_KEY"
           if [ -n "$manquants" ]; then
             echo "::error::Secrets de dépôt manquants :$manquants. Les créer dans Settings > Secrets and variables > Actions (voir docs/exploitation/sauvegarde.md)."
             exit 1
@@ -69,7 +109,29 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
-          pg_dump --version
+          # **INSTALLER LE CLIENT 17 NE SUFFIT PAS À LE FAIRE UTILISER**, mesuré le 17/09/2026 sur
+          # une vraie exécution : l'image du runner porte déjà un client 16 plus haut dans le PATH,
+          # et cette étape imprimait sagement « pg_dump (PostgreSQL) 16.15 » — personne ne l'a lu.
+          # Le serveur étant en 17.6, le dump aurait échoué à l'étape suivante sur un refus de
+          # version ; il a échoué avant, sur la chaîne de connexion, ce qui masquait celui-ci.
+          #
+          # Deux corrections, et la seconde est la vraie : le répertoire du client 17 passe en tête
+          # du PATH des étapes suivantes, et l'étape **échoue** si la version obtenue n'est pas
+          # celle qu'on a demandée. Une étape qui **imprime** au lieu de vérifier n'est pas une
+          # vérification — c'est le même défaut que le journal qu'on ne relit pas.
+          bin17=/usr/lib/postgresql/17/bin
+          if [ ! -x "$bin17/pg_dump" ]; then
+            echo "::error::postgresql-client-17 est installé mais $bin17/pg_dump est absent : le chemin des binaires pgdg a changé."
+            exit 1
+          fi
+          echo "$bin17" >> "$GITHUB_PATH"
+          echo "client du PATH avant : $(pg_dump --version 2>/dev/null || echo 'aucun') ($(command -v pg_dump || echo '-'))"
+          echo "client retenu        : $("$bin17/pg_dump" --version)"
+          majeure=$("$bin17/pg_dump" --version | awk '{print $3}' | cut -d. -f1)
+          if [ "$majeure" -lt 17 ]; then
+            echo "::error::Le client retenu est en version $majeure ; le serveur est en 17.6, et pg_dump refuse de dumper une base plus récente que lui."
+            exit 1
+          fi
 
       # Deux fichiers et non un, parce qu'ils ne se restaurent pas de la même façon (détail
       # dans docs/exploitation/sauvegarde.md) :
@@ -183,13 +245,88 @@ jobs:
           rm -rf sauvegarde "sauvegarde-$horodatage.tar.gz"
           ls -l "sauvegarde-$horodatage.tar.gz.gpg"
 
-      # Rétention explicite : 90 jours, soit assez pour couvrir la fenêtre d'inactivité de
-      # 90 jours de la purge des sessions anonymes — une suppression fautive y reste
-      # rattrapable pendant toute la durée qu'elle met à se produire.
-      - name: Déposer l'artefact chiffré
-        uses: actions/upload-artifact@v4
-        with:
-          name: sauvegarde-base-${{ env.horodatage }}
-          path: sauvegarde-${{ env.horodatage }}.tar.gz.gpg
-          retention-days: 90
-          if-no-files-found: error
+      # **La rétention n'est plus ici.** Elle vivait dans `retention-days: 90` de l'artefact ;
+      # elle vit maintenant dans une **règle de cycle de vie du bucket**, réglée dans le tableau
+      # de bord Cloudflare (sauvegarde.md §3). Rien dans ce dépôt ne peut la voir ni la vérifier :
+      # sans cette règle, la rétention est **infinie en silence**. Ce n'est pas un problème de
+      # place — c'est une surface exposée qui grandit sans fin.
+      #
+      # Le dépôt et sa relecture sont deux étapes et pas une, parce que la seconde remplace une
+      # garde perdue : `if-no-files-found: error` protégeait du cas « le job est vert et il n'y a
+      # rien au bout ». Un `aws s3 cp` qui réussit ne prouve pas qu'un objet lisible existe.
+      - name: Déposer l'archive sur R2
+        run: |
+          set -euo pipefail
+          archive="sauvegarde-$horodatage.tar.gz.gpg"
+          # La version du CLI est imprimée parce que c'est elle qui bouge sous nous : le garde-fou
+          # de sommes de contrôle posé plus haut n'a de sens que si le log dit contre quoi il a
+          # joué, le jour où un dépôt échoue sans qu'une ligne du dépôt ait changé.
+          aws --version
+          # `--only-show-errors` : la barre de progression du CLI n'apporte rien dans un log de
+          # workflow et noie les lignes qui comptent.
+          aws s3 cp "$archive" "s3://$R2_BUCKET/$archive" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --only-show-errors
+          echo "déposé : s3://$R2_BUCKET/$archive"
+
+      # On relit l'objet et on compare sa taille à celle du fichier local. C'est ce qui demande au
+      # jeton R2 la permission de **lecture en plus de l'écriture**, sur ce seul bucket : un jeton
+      # en écriture seule rendrait cette vérification impossible, et une sauvegarde qu'on ne peut
+      # pas constater n'en est pas une. Le compromis est tenable parce que l'archive est chiffrée
+      # — un jeton volé ne donne que des octets illisibles.
+      - name: Vérifier que l'archive est bien arrivée
+        run: |
+          set -euo pipefail
+          archive="sauvegarde-$horodatage.tar.gz.gpg"
+          locale=$(stat -c%s "$archive")
+          distante=$(aws s3api head-object \
+            --bucket "$R2_BUCKET" \
+            --key "$archive" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --query ContentLength --output text)
+          echo "local : $locale octets — distant : $distante octets"
+          if [ "$locale" != "$distante" ]; then
+            echo "::error::L'objet déposé fait $distante octets contre $locale en local : le dépôt est incomplet."
+            exit 1
+          fi
+
+      # **« Arrivée entière » n'est pas « ouvrable ».** L'étape précédente compare des tailles :
+      # elle attrape un dépôt tronqué, pas une archive illisible. Or le seul mode de défaillance
+      # catastrophique d'une sauvegarde est exactement celui-là — on ne le découvre qu'en
+      # restaurant, c'est-à-dire le jour où l'on n'a pas le temps.
+      #
+      # On relit donc l'objet **depuis le bucket** (et non le fichier local, qui prouverait
+      # seulement que gpg sait défaire ce que gpg vient de faire), on le déchiffre, et on exige d'y
+      # trouver les deux fichiers attendus.
+      #
+      # **Ce que ce contrôle ne dit PAS, et qu'il ne faut pas lui faire dire** : il déchiffre avec
+      # le secret de dépôt. Il prouve que l'archive s'ouvre avec *cette* valeur-là — pas que la
+      # copie rangée dans le gestionnaire de mots de passe est la même. Cette moitié-là se vérifie
+      # à la main, une fois, par un humain (sauvegarde.md §4 étape 2), et ne peut pas s'automatiser
+      # sans mettre la copie humaine dans la machine, ce qui la viderait de son sens.
+      #
+      # Aucune exposition nouvelle : le dump en clair a déjà transité par ce runner trente secondes
+      # plus tôt. Rien n'est téléversé, et seuls les **noms** des fichiers sont imprimés.
+      - name: Vérifier que l'archive s'ouvre
+        run: |
+          set -euo pipefail
+          archive="sauvegarde-$horodatage.tar.gz.gpg"
+          rm -rf controle && mkdir controle
+          aws s3 cp "s3://$R2_BUCKET/$archive" "controle/$archive" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --only-show-errors
+          printf '%s' "$SAUVEGARDE_PASSPHRASE" | gpg --batch --yes \
+            --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --decrypt --output controle/archive.tar.gz "controle/$archive"
+          contenu=$(tar -tzf controle/archive.tar.gz)
+          echo "contenu de l'archive relue :"
+          printf '  %s\n' $contenu
+          for attendu in public.sql auth.sql; do
+            if ! printf '%s\n' $contenu | grep -qx "$attendu"; then
+              echo "::error::$attendu est absent de l'archive relue : elle s'ouvre mais ne porte pas ce qu'il faut."
+              exit 1
+            fi
+          done
+          # Le clair ne survit pas à l'étape, comme au chiffrement.
+          rm -rf controle
