@@ -234,22 +234,22 @@ export type PistesDuPlan<T> = {
 };
 
 /**
- * L'ordre d'affichage du plan et ses trois rangs (C4.6, planches F1 et F2).
+ * L'ordre commun aux deux surfaces — le plan et l'écran des pistes.
  *
  * **L'action engagée passe toujours devant** : c'est la réponse à « qu'est-ce que je fais en ce
  * moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte déjà le
- * bon ordre — poste dominant d'abord, puis gain décroissant — et qui est figé à la génération. Un
- * `rank` nul (aucune migration n'en produit, mais la colonne l'autorise) passe en dernier plutôt que
- * de remonter en tête par accident, comme le `nulls last` du serveur.
- *
- * La fonction est générique parce que la forme d'une ligne `plan_actions` appartient à l'écran :
- * elle ne demande que les deux champs dont l'ordre dépend.
- */
-/**
- * L'ordre commun aux deux surfaces — le plan et l'écran des pistes.
+ * bon ordre — la meilleure piste du poste dominant en tête, puis gain décroissant (C5.1) — et qui
+ * est figé à la génération. Un `rank` nul (aucune migration n'en produit, mais la colonne
+ * l'autorise) passe en dernier plutôt que de remonter en tête par accident, comme le `nulls last`
+ * du serveur.
  *
  * Écrit une fois parce que deux copies divergeraient : le jour où l'une des deux change, les deux
- * écrans ne s'accorderaient plus sur ce qui vient en premier, et rien ne le signalerait.
+ * écrans ne s'accorderaient plus sur ce qui vient en premier, et rien ne le signalerait. La
+ * fonction est générique parce que la forme d'une ligne `plan_actions` appartient à l'écran : elle
+ * ne demande que les deux champs dont l'ordre dépend.
+ *
+ * Le bloc qui précédait celui-ci décrivait « les trois rangs » du plan, que C5.2 a retirés en
+ * sortant l'exhaustivité sur son écran : il était resté, orphelin, au-dessus de cette fonction.
  */
 function ordonnerLesPistes<T extends { committed_at: string | null; rank: number | null }>(
   actions: T[]
@@ -305,7 +305,7 @@ export function pistesParPoste<T extends { committed_at: string | null; rank: nu
 }
 
 /**
- * Où poser un écart dans la liste des lignes simples, quand certaines sont dépliées en carte.
+ * Où poser un écart dans la liste des lignes simples, quand certaines sont rendues en carte.
  *
  * **13.5 de la recette web du 16/09/2026** : deux lignes dépliées côte à côte se touchaient. Le
  * conteneur porte `gap: 0` — juste pour des lignes, qui se lisent serrées et portent chacune leurs
@@ -323,10 +323,16 @@ export function pistesParPoste<T extends { committed_at: string | null; rank: nu
  *
  * Sortie de l'écran pour être éprouvable : l'espacement est exactement le genre de règle qu'aucune
  * assertion ne portait, et c'est pour ça que la CI n'a rien vu.
+ *
+ * **Le paramètre est « rendue en carte », et non « ouverte au toucher »** (contre-lecture du lot 5,
+ * 17/09/2026). C5.2 lui passait le seul ensemble des lignes dépliées, alors que l'écran des pistes
+ * rend **aussi** en carte l'action engagée, qu'on ne déplie pas : la frontière sous cette carte-là
+ * n'était donc pas vue, et la ligne suivante venait s'y coller — le défaut 13.5 recréé sur l'écran
+ * neuf. Une carte est une carte, quelle que soit la raison pour laquelle elle en est une.
  */
-export function separationsDesLignes(ids: string[], ouvertes: ReadonlySet<string>): boolean[] {
+export function separationsDesLignes(ids: string[], enCarte: ReadonlySet<string>): boolean[] {
   return ids.map(
-    (id, rang) => rang > 0 && (ouvertes.has(id) || ouvertes.has(ids[rang - 1]))
+    (id, rang) => rang > 0 && (enCarte.has(id) || enCarte.has(ids[rang - 1]))
   );
 }
 
@@ -372,7 +378,7 @@ const MOTS_DU_CONTEXTE: Record<keyof ReponsesDeContexte, Record<string, string>>
   teletravail: {
     aucun: 'pas de télétravail possible',
     un_jour: 'un jour de télétravail possible',
-    deux_ou_plus: 'deux jours de télétravail possibles ou plus',
+    deux_ou_plus: 'au moins deux jours de télétravail possibles',
   },
 };
 

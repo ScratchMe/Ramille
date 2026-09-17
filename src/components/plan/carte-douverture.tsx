@@ -30,10 +30,13 @@ const ENTREE = 320;
  * **contenu** : l'étiquette, le titre, le corps, les sorties, et ce que Ramille dit — le tout
  * dérivé dans `src/types/saison.ts` et `src/types/premier-parcours.ts`.
  *
- * **Elles ne s'affichent jamais ensemble**, et c'est structurel plutôt que gardé : l'ouverture de
- * saison exige un cycle précédent, le premier plan exige qu'il n'y en ait pas, et celle des deux
- * lieux ne se rend qu'au moment où le premier plan vient de se refermer. Toutes trois prennent la
- * place de la **carte d'attente**, jamais celle d'un point en attente (C2.8).
+ * **Elles ne s'affichent jamais ensemble, mais une seule des deux exclusions est structurelle**
+ * (corrigé par la contre-lecture du lot 5). L'ouverture de saison exige un cycle précédent et le
+ * premier plan exige qu'il n'y en ait pas : celles-là ne peuvent pas se croiser. Celle des deux
+ * lieux, en revanche, reste due tant que son « Compris » n'a pas eu lieu — donc quelqu'un qui
+ * referme le premier plan puis ne revient qu'après la bascule suivante les devrait toutes les
+ * deux le même jour. C'est l'**écran** qui tranche, et la carte de saison passe devant. Toutes
+ * trois prennent la place de la **carte d'attente**, jamais celle d'un point en attente (C2.8).
  *
  * **L'effet « nouveau départ » était perdu quatre fois par an** (constat A13-6) : à la bascule, le
  * cycle suivant se créait dans la nuit, et la seule trace en était la puce « Cadence : Hiver

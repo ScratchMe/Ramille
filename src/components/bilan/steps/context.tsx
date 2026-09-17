@@ -134,6 +134,7 @@ export function ContextStep({
               <Chip
                 key={option.value}
                 label={option.label}
+                accessibilityLabel={option.accessibilityLabel}
                 selected={answers.teletravail === option.value}
                 onPress={() => update({ teletravail: option.value })}
                 flex

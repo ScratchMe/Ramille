@@ -707,11 +707,7 @@ export default function Plan() {
         setRappels(prefs);
         setPermission(etatPermission);
 
-        // L'encart n'apparaît que si la marque locale ne porte pas déjà cet identifiant. Une
-        // lecture en échec laisse simplement `orphelin` à `null` : mieux vaut ne rien dire qu'une
-        // nouvelle inventée.
         const orphelin = orphelins?.[0] ?? null;
-        setOrphelin(orphelin && !(await aVuEngagementOrphelin(orphelin.id)) ? orphelin : null);
 
         const points = (checkins as EngagementCheckin[] | null) ?? [];
         const affiches = keepLatestPerLoop(points);
@@ -738,8 +734,6 @@ export default function Plan() {
                 points: points.map(pointDeSaison),
               })
             : null;
-        setOuverture(aOuvrir && !(await aVuLouvertureDeSaison(cycle.id)) ? aOuvrir : null);
-
         // **Le tout premier plan** (C5.6). Trois faits, tous lus dans cette même fournée : pas de
         // cycle avant celui-ci (l'écran en lit deux), aucune action engagée, aucune ligne dans
         // l'archive quelle qu'en soit la raison — la troisième étant la seule qui distingue un
@@ -761,13 +755,37 @@ export default function Plan() {
         // La carte ne se rend pas sur un plan à zéro action — tout cycliste et tout profil
         // sédentaire depuis C2.5 : « Choisis-en une » y promettrait une liste vide, et c'est la
         // même règle que celle qui écarte la porte, l'encart et la note technique de cet écran-là.
-        const premiereCarte =
-          premierPlan && cycle.plan_actions.length > 0 && !(await aVuLePremierPlan())
+        const carteDuPremierPlan =
+          premierPlan && cycle.plan_actions.length > 0
             ? ouvertureDuPremierPlan({
                 debutDuCycle: cycle.period_start,
                 cadence: cycle.cadence_type,
               })
             : null;
+
+        // **Les trois marques locales se lisent ensemble, et une seule garde d'annulation les
+        // suit** (contre-lecture du lot 5, 17/09/2026). Chacune était lue par un `await` séparé
+        // **après** le dernier `if (cancelled)`, donc les quatre écritures d'état qui s'ensuivent
+        // pouvaient venir d'un chargement périmé — l'inverse exact de l'idiome que les deux onglets
+        // partagent (« seul le dernier lancé écrit »). C2.8 l'avait introduit pour une carte, C5.5
+        // et C5.6 l'ont élargi à quatre — dont un appel qui **écrit** (l'arrivée de la barre). Les
+        // lire en parallèle est aussi ce qui coûte le moins : trois allers-retours de stockage
+        // s'additionnaient.
+        const [orphelinVu, ouvertureVue, premierPlanVu] = await Promise.all([
+          orphelin ? aVuEngagementOrphelin(orphelin.id) : Promise.resolve(true),
+          aVuLouvertureDeSaison(cycle.id),
+          aVuLePremierPlan(),
+        ]);
+
+        if (cancelled) return;
+
+        // L'encart n'apparaît que si la marque locale ne porte pas déjà cet identifiant. Une
+        // lecture en échec laisse simplement `orphelin` à `null` : mieux vaut ne rien dire qu'une
+        // nouvelle inventée.
+        setOrphelin(orphelin && !orphelinVu ? orphelin : null);
+        setOuverture(aOuvrir && !ouvertureVue ? aOuvrir : null);
+
+        const premiereCarte = premierPlanVu ? null : carteDuPremierPlan;
         setCartePremierPlan(premiereCarte);
 
         // **La barre arrive quand la carte du premier plan n'a plus lieu d'être** (C5.7), et c'est
@@ -1263,8 +1281,16 @@ export default function Plan() {
               seule absence d'une marque : `etatDuPremierParcours` en fait un état à part entière,
               et son module dit pourquoi deux booléens l'auraient affichée à tout le monde. Comme
               les deux autres, elle prend la place de la carte d'attente et jamais celle d'un point
-              en attente. */}
-          {carteDesDeuxLieux && (
+              en attente.
+
+              **Elle cède à la carte de saison, et cette garde n'est pas décorative** (contre-lecture
+              du lot 5). Je la croyais impossible à croiser : elle l'est avec celle du premier plan,
+              qui exige qu'aucun cycle ne précède, mais **pas** avec l'ouverture de saison — il
+              suffit d'avoir refermé le premier plan puis de n'être pas revenu avant la bascule
+              suivante pour que les deux soient dues le même jour. Deux cadres empilés au-dessus du
+              plan, c'est une carte qui explique par-dessus une carte qui annonce ; la nouvelle
+              passe devant, celle-ci attendra le prochain passage — sa marque, elle, ne bouge pas. */}
+          {ouverture === null && carteDesDeuxLieux && (
             <CarteDOuverture
               ouverture={OUVERTURE_DES_DEUX_LIEUX}
               sorties={SORTIE_DES_DEUX_LIEUX}
