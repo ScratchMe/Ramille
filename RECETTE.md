@@ -139,6 +139,19 @@ par la personne qui pilote* là où l'agent n'a pas mesuré lui-même — la §6
 **Et chaque accès au stockage, local comme partagé, reste gardé** (`try`/`catch`) : la page doit se
 rendre correctement quand il lève ou revient vide.
 
+**Deux pièges de la base partagée, payés le 17/09/2026 en la branchant** — ils n'ont rien de
+propre aux recettes, et le second n'a été trouvé qu'en contre-lisant le correctif du premier :
+
+- **un instantané et son corps sont GELÉS.** Les brancher directement sur l'état de la page rend
+  toute modification **silencieusement inopérante** : la carte s'allume une fraction de seconde,
+  l'écriture repart avec l'état inchangé, l'instantané suivant remet l'affichage comme avant. Vu de
+  l'écran, « le bouton ne fait rien », et aucune erreur n'apparaît. L'état de la page se **copie**
+  depuis l'instantané, toujours ;
+- **une coche s'écrit tout de suite, seule la frappe se regroupe.** Une temporisation posée pour la
+  saisie d'une note s'appliquait aussi au clic : fermer l'onglet dans la seconde perdait la coche.
+  Un geste ponctuel et une frappe continue n'ont pas la même cadence d'écriture, et les confondre
+  fabrique exactement la perte que la base partagée devait supprimer.
+
 **Le piège, et il est propre aux recettes :** une recette de premier parcours se joue en **fenêtre
 privée** — c'est même sa première précaution. Or fermer toutes les fenêtres privées efface le
 stockage. D'où la consigne, à écrire dans l'artefact lui-même : **la feuille reste dans une fenêtre
