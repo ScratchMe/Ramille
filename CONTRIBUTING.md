@@ -44,5 +44,6 @@ Les tests pgTAP demandent Docker : `npx supabase@latest db start` puis
 
 ## Licence
 
-Toute contribution est versée sous la licence du dépôt, **Apache 2.0** (`LICENSE`), comme le
-prévoit son §5.
+Toute contribution est versée sous la licence du dépôt, la **GNU Affero General Public License
+v3.0 ou ultérieure** (`LICENSE`). C'est un copyleft : le code dérivé reste sous la même licence,
+et les mentions de paternité se conservent. Ouvrir une pull request vaut acceptation de ce cadre.

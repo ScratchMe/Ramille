@@ -48,8 +48,14 @@ Après toute migration, régénérer `src/lib/database.types.ts` (types TypeScri
 
 ## Licence et attributions
 
-Code sous **licence Apache 2.0** (fichier `LICENSE`), © 2026 Antoine Berthaud. La licence ne
-concède aucun droit sur le **nom** « Ramille » — son §6 exclut les marques.
+Code sous **GNU Affero General Public License v3.0 ou ultérieure** (fichier `LICENSE`),
+© 2026 Antoine Berthaud. C'est une licence **copyleft** : toute version modifiée se
+redistribue sous la même licence, en conservant les mentions de paternité — et son **§13**
+étend l'obligation au réseau, donc exploiter une version modifiée comme service web oblige à en
+offrir le code source aux utilisateurs.
+
+**La licence porte sur le code, pas sur le nom.** Elle ne concède aucun droit sur « Ramille »,
+sur la mascotte ni sur l'identité visuelle : une version modifiée se distribue sous un autre nom.
 
 Les **facteurs d'émission** viennent de la **Base Empreinte de l'ADEME**, consommés via l'API
 Impact CO2 (`impactco2.fr`, incubateur ADEME) : tous portent l'ACV complète (usage + fabrication),
