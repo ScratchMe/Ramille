@@ -28,7 +28,7 @@ select is_empty(
 
 select is_empty(
   $$ select action_text from public.action_templates t, unnest(t.teletravail_admissible) r
-     where r not in ('oui', 'parfois', 'non') $$,
+     where r not in ('aucun', 'un_jour', 'deux_ou_plus') $$,
   'teletravail_admissible : que des réponses de B4.4'
 );
 

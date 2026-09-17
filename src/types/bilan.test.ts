@@ -21,6 +21,7 @@ import {
   isStepVisible,
   lireBrouillonBilan,
   manqueDeLEtape,
+  teletravailSePose,
   memesReponses,
   nettoyerSaisieNumerique,
   nextStep,
@@ -444,27 +445,42 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
-  it('context : les 3 champs sont requis, et le télétravail avec un trajet régulier', () => {
+  it('context : les 3 champs sont requis, et le télétravail dès deux jours de trajet', () => {
     expect(isStepComplete('context', answers({ zone_type: 'urbain_dense' }))).toBe(false);
+    // Les trois faits renseignés mais pas le télétravail, **sur un profil où il se pose** : c'est
+    // le seul cas où l'étape reste incomplète pour cette raison-là. Sans les jours de trajet la
+    // question n'a pas d'objet, et l'assertion dirait le contraire de ce qu'elle croit dire.
     expect(
       isStepComplete(
         'context',
-        answers({ zone_type: 'urbain_dense', tc_access: 'bon', household_vehicles: '1' })
+        answers({
+          commute_has_regular_trip: true,
+          commute_days_per_week: 5,
+          zone_type: 'urbain_dense',
+          tc_access: 'bon',
+          household_vehicles: '1',
+        })
       )
     ).toBe(false);
     expect(
       isStepComplete(
         'context',
         answers({
+          // C5.4 : sans jours de trajet la question ne se pose pas, et l'assertion passerait sans
+          // rien éprouver — c'est `teletravailSePose` qui décide, pas la seule présence du champ.
+          commute_has_regular_trip: true,
+          commute_days_per_week: 5,
           zone_type: 'urbain_dense',
           tc_access: 'bon',
           household_vehicles: '1',
-          teletravail: 'non',
+          teletravail: 'aucun',
         })
       )
     ).toBe(true);
     // C3.8 : sans trajet régulier la question n'est pas posée, donc elle n'est pas exigée non
     // plus. Les deux gabarits qui la lisent sont des gabarits du poste domicile-travail.
+    // C5.4 a ajouté une seconde façon de ne pas se poser — un seul jour de trajet — éprouvée avec
+    // `normaliserReponses`, là où elle peut laisser une réponse périmée derrière elle.
     expect(
       isStepComplete(
         'context',
@@ -859,13 +875,76 @@ describe('normaliserReponses', () => {
 
   it('« Non » à B1.1 emporte aussi la réponse sur le télétravail (C3.8)', () => {
     expect(
-      normaliserReponses(answers({ commute_has_regular_trip: false, teletravail: 'oui' }))
-        .teletravail
+      normaliserReponses(
+        answers({ commute_has_regular_trip: false, teletravail: 'deux_ou_plus' })
+      ).teletravail
     ).toBeNull();
     expect(
-      normaliserReponses(answers({ commute_has_regular_trip: true, teletravail: 'oui' }))
-        .teletravail
-    ).toBe('oui');
+      normaliserReponses(
+        answers({
+          commute_has_regular_trip: true,
+          commute_days_per_week: 5,
+          teletravail: 'deux_ou_plus',
+        })
+      ).teletravail
+    ).toBe('deux_ou_plus');
+  });
+
+  // **Mutations éprouvées le 17/09/2026** — les deux tests qui suivent gardent des choses
+  // différentes, et aucun des deux n'est décoratif :
+  //
+  //   seuil `>= 2` ramené à `>= 1`                      ->  « redescendre à un seul jour » tombe
+  //   `normaliserReponses` n'écoute plus le prédicat    ->  idem
+  //   `manqueDeLEtape` n'écoute plus le prédicat        ->  idem
+  //   seuil `>= 2` monté à `>= 3`                       ->  « à deux jours » tombe
+  //
+  // Le premier exerce les **trois** lecteurs à la fois, ce qui est le point du chantier ; le second
+  // tient la borne basse, que le premier ne dit pas.
+  //
+  // **Le chemin que ni le typecheck ni l'écran ne voient** (C5.4, v1-17 §7.2) : la question
+  // disparaît en dessous de deux jours de trajet, donc une réponse donnée à 3 jours puis rendue
+  // sans objet par un retour en arrière doit partir. Sans cette ligne, elle serait soumise en base
+  // sans que la personne puisse plus la voir ni la corriger — le défaut de `v1-16` §4 par une
+  // autre porte.
+  it('redescendre à un seul jour de trajet efface la réponse sur le télétravail (C5.4)', () => {
+    const a_trois_jours = answers({
+      commute_has_regular_trip: true,
+      commute_days_per_week: 3,
+      teletravail: 'deux_ou_plus',
+    });
+    expect(normaliserReponses(a_trois_jours).teletravail).toBe('deux_ou_plus');
+
+    const redescendu = normaliserReponses({ ...a_trois_jours, commute_days_per_week: 1 });
+    expect(redescendu.teletravail).toBeNull();
+
+    // Et l'étape ne la réclame plus : les trois lecteurs disent la même chose, sinon « Suivant »
+    // resterait inactif pour toujours sous un message nommant une question absente de l'écran.
+    expect(teletravailSePose(redescendu)).toBe(false);
+    expect(
+      manqueDeLEtape(
+        'context',
+        answers({
+          ...redescendu,
+          zone_type: 'urbain_dense',
+          tc_access: 'bon',
+          household_vehicles: '1',
+        })
+      )
+    ).toBeNull();
+  });
+
+  // À deux jours elle se pose, donc elle est exigée : c'est la borne du seuil, et l'assertion
+  // ci-dessus ne dit rien sans celle-ci.
+  it('à deux jours de trajet la question se pose et l’étape la réclame (C5.4)', () => {
+    const a_deux_jours = answers({
+      commute_has_regular_trip: true,
+      commute_days_per_week: 2,
+      zone_type: 'urbain_dense',
+      tc_access: 'bon',
+      household_vehicles: '1',
+    });
+    expect(teletravailSePose(a_deux_jours)).toBe(true);
+    expect(manqueDeLEtape('context', a_deux_jours)).toBe('ta réponse sur le télétravail');
   });
 
   it('la part du second mode ne survit pas au second mode (C3.4)', () => {
@@ -1012,7 +1091,7 @@ describe('normaliserReponses', () => {
       car_long_trips_per_year: 2,
       car_long_trips_engine: 'thermique',
       car_long_trips_occupancy: 3,
-      teletravail: 'parfois',
+      teletravail: 'un_jour',
     });
     const une = normaliserReponses(coherent);
     expect(une).toEqual(coherent);

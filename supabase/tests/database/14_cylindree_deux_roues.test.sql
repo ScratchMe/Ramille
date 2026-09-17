@@ -113,7 +113,7 @@ insert into public.assessment_answers (
   leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
 ) values (
   'd1400000-0000-0000-0000-000000000011', true, 5, 20, 'deux_roues_motorise', 'moto_grosse',
-  false, false, 'rarely', 'periurbain', 'limite', '1', 'non'
+  false, false, 'rarely', 'periurbain', 'limite', '1', 'aucun'
 );
 
 -- 22,5 km (milieu de la tranche 15-30) × 2 × 1 sortie × 52 semaines = 2 340 km/an, en scooter

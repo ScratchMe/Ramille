@@ -60,7 +60,7 @@ insert into public.assessment_answers (
   -- condition qu'on ne peut pas évaluer n'est pas remplie » — et l'assertion qui suit sur le gain
   -- d'une journée de télétravail comparerait `NULL`. La fixture d'un test de calcul doit répondre
   -- ce que le questionnaire exige désormais.
-  'oui'
+  'deux_ou_plus'
 );
 
 -- B — le même bilan sans la part : c'est le bilan d'avant C3.4, et son total ne doit pas bouger.

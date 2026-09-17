@@ -952,8 +952,8 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
   repère, ici cela ferait **proposer** une action implausible.
 - **`action_templates.zones_admissibles` et `.teletravail_admissible` sont des listes de valeurs
   admissibles**, `null` valant « pas de condition ». Pour le télétravail ce n'est pas du style : il
-  y a **deux seuils**, un jour se tenant avec « parfois » et deux jours demandant « oui ». Un
-  tableau **vide** n'est pas un tableau absent — `= any('{}')` est faux pour toute valeur, donc il
+  y a **deux seuils**, un jour se tenant avec « un jour » et deux jours demandant « deux ou plus ».
+  Un tableau **vide** n'est pas un tableau absent — `= any('{}')` est faux pour toute valeur, donc il
   écarte tout le monde là où `null` n'écarte personne ; un test l'interdit.
 - **Le métro et le tram sont bornés à `urbain_dense`, le train et le RER ne le sont pas**, et c'est
   la moitié qu'il ne faut pas « uniformiser » : un TER dessert des communes rurales, et lui coller
@@ -964,6 +964,26 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
   sans alternative. La garde du `remove_day` se dérive du gabarit (`commute_days_per_week <=
   t.trips`) au lieu d'un 2 écrit en dur : retirer deux jours à qui en fait deux supprimerait 100 %
   du trajet, et le gain annoncé serait celui de ne plus travailler.
+- **La question demande un nombre de jours, et « Parfois » n'existe plus** (C5.4,
+  `20260917103000_teletravail_en_jours.sql`). « Peux-tu travailler depuis chez toi ? oui / parfois /
+  non » posait une **possibilité** là où le produit lisait un **nombre de jours** : « Parfois » était
+  un seuil déguisé en hésitation, et y répondre coûtait l'action à deux jours sans que rien ne le
+  dise. Les valeurs sont `aucun` / `un_jour` / `deux_ou_plus`, la question nomme le nombre de jours
+  déclaré (« Sur tes 5 jours de trajet, combien pourrais-tu travailler depuis chez toi ? »), et sa
+  traduction préserve le comportement — la migration le **prouve** par une table de vérité case par
+  case, et `src/lib/database.types.ts` ne bouge pas (la colonne reste `text`, la base n'a aucun
+  `enum`). Deux points à ne pas défaire :
+  - **la question disparaît en dessous de deux jours de trajet**, parce qu'à un seul jour l'action
+    supprimerait 100 % du trajet et que la garde du `remove_day` l'écarte déjà — la réponse ne
+    pourrait rien changer ;
+  - et **ce qui décide de l'afficher décide aussi de l'effacer et de la réclamer** :
+    `teletravailSePose` (`src/types/bilan.ts`) est lue par l'écran, par `manqueDeLEtape` et par
+    `normaliserReponses`, parce que B4.4 n'est pas une étape mais un **champ** de l'étape
+    « Contexte », donc `isStepVisible` ne la gouverne pas. En oublier un ne coûte pas la même chose
+    (`v1-17` §7.2) : ne toucher que l'écran laisse « Suivant » inactif **pour toujours** sous un
+    message qui nomme une question absente ; oublier `normaliserReponses` laisse partir à la
+    soumission une réponse que la personne ne voit plus et ne peut plus corriger — le défaut de
+    `v1-16` §4 par une autre porte.
 - **Les échéances dépendent du poste** (`intentionTimingsForPoste`, `src/types/plan.ts`) : « Ce
   mois-ci » n'est pas une échéance pour un vol. Les voyages ont les leurs, les trois anciennes
   restent et sont celles des sorties. Le repli d'un poste inconnu est la liste des sorties, sans
