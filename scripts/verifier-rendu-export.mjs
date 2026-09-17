@@ -37,11 +37,11 @@
 // données.
 //
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { extname, join, normalize } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 
 import { chromium } from 'playwright';
+
+import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
 
@@ -116,48 +116,10 @@ const HYDRATATION = /Minified React error #(418|421|422|423|425)\b|hydrat/i;
 const ATTENTE_MAX = 20_000;
 const REPOS = 6_000;
 
-const TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf',
-};
-
-// Reproduit `cleanUrls` de vercel.json : l'export d'Expo Router produit un **répertoire**
-// `plan/index.html` pour une route qui a des enfants, un **fichier plat** `suivi.html` sinon.
-// Servir seulement la première forme, c'est ce que faisait Vercel avant `cleanUrls`, et la
-// moitié des routes répondait 404 en production. Le garde-fou doit servir comme la production,
-// sinon il teste autre chose.
-function resoudre(url) {
-  const chemin = normalize(decodeURIComponent(url.split('?')[0])).replace(/^(\.\.[/\\])+/, '');
-  for (const candidat of [
-    join(DIST, chemin),
-    join(DIST, `${chemin}.html`),
-    join(DIST, chemin, 'index.html'),
-  ]) {
-    if (existsSync(candidat) && statSync(candidat).isFile()) return candidat;
-  }
-  return null;
-}
-
-const serveur = createServer((requete, reponse) => {
-  const fichier = resoudre(requete.url ?? '/');
-  if (!fichier) {
-    reponse.writeHead(404).end('introuvable');
-    return;
-  }
-  reponse.writeHead(200, { 'content-type': TYPES[extname(fichier)] ?? 'application/octet-stream' });
-  createReadStream(fichier).pipe(reponse);
-});
-
-await new Promise((resoudre) => serveur.listen(0, '127.0.0.1', resoudre));
-const base = `http://127.0.0.1:${serveur.address().port}`;
+// Le serveur est celui de `servir-export.mjs` — extrait le 17/09/2026, quand le garde-fou des
+// **états** a eu besoin du même. Sa `resoudre()` reproduit `cleanUrls`, et deux copies qui
+// divergeraient feraient qu'un des deux scripts ne sert pas comme la production.
+const { base, fermer } = await servirExport(DIST);
 
 const echecs = [];
 const avertissements = [];
@@ -280,7 +242,7 @@ for (const { chemin, marqueur } of ROUTES) {
 }
 
 await navigateur.close();
-serveur.close();
+fermer();
 
 for (const avertissement of avertissements) {
   console.warn(`Avertissement (hydratation, non bloquant) — ${avertissement}`);

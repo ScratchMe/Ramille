@@ -127,6 +127,12 @@ jobs:
       # Celle-ci ouvre vraiment les pages dans un navigateur, cf. l'en-tête du script.
       - run: npx playwright install --with-deps chromium
       - run: node scripts/verifier-rendu-export.mjs
+      # Celle du dessus vérifie que l'app **démarre** ; celle-ci, ce qu'elle **montre**. Les ~15 000
+      # lignes d'écrans ne sont testées par rien d'autre (décision de TESTING.md §1.6), et la
+      # contre-lecture du lot 5 a trouvé trois défauts d'état d'écran qu'aucune garde ne voyait.
+      # Périmètre volontairement étroit : les seuls états qui se décident **sans réseau**, l'export
+      # de CI portant une configuration Supabase factice.
+      - run: node scripts/verifier-etats-export.mjs
       # Le rappel par email ne porte qu'une URL : Android ne l'ouvre dans l'app que si le
       # domaine l'y autorise par ce fichier. Absent ou désignant un autre paquet, le lien
       # retombe dans le navigateur sans que rien ne le signale.
