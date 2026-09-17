@@ -246,7 +246,7 @@ insert into public.assessment_answers (
   'weekly', 'voiture', 'thermique', false, '15_30',
   3, 2, 2,
   2, 'thermique', 0,
-  'urbain_dense', 'bon', '1', 'oui'
+  'urbain_dense', 'bon', '1', 'deux_ou_plus'
 );
 
 insert into public.assessment_results (

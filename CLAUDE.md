@@ -89,6 +89,15 @@ réellement parallélisables et trois fichiers revendiqués par plusieurs, dont 
 relevé du 15/09/2026 est le **premier** à l'avoir confirmée (`v1-16` §2), ce qui ne change rien à
 la règle : il coûte dix minutes et évite qu'un chantier en écrase un autre en silence.
 
+**Et un relevé est un instantané, donc un chantier qui CRÉE un fichier ou une fixture invalide le
+sien** (17/09/2026, CI rouge de la vague 9). Le relevé disait vrai : `02_generate_plan_cycle_for_user`
+ne contenait **aucune** occurrence de `teletravail`, donc C5.1 et C5.4 étaient disjoints. Puis C5.1 y
+a ajouté une fixture portant `teletravail = 'oui'`, une heure avant que C5.4 n'interdise cette
+valeur — et les deux chantiers se sont croisés dans un fichier qui ne les concernait ni l'un ni
+l'autre au moment du relevé. La parade n'est pas de relever deux fois : c'est, **avant de pousser
+une vague, de rebalayer les valeurs que la vague vient de changer sur tout le dépôt**, fixtures
+comprises. Un `grep` sur le vocabulaire retiré aurait coûté dix secondes.
+
 ### Éprouver plutôt qu'affirmer
 
 **Une garde neuve se vérifie en cassant ce qu'elle garde** : remettre l'ancien défaut, tronquer le
