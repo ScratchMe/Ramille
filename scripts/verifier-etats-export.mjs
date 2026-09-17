@@ -170,7 +170,17 @@ for (const { marque, barre, quoi } of ETATS_DE_BARRE) {
         `La barre porte ${vue.onglets} onglet(s) au lieu de deux — marque « ${marque ?? '(aucune)'} ».` +
           ' Deux onglets et pas trois : ajouter une route dans `(tabs)/` lui en donne un.'
       );
-    } else if (!barre && vue.colonne && vue.colonne[0] < vue.fenetre - 1) {
+    } else if (!barre && vue.colonne === null) {
+      // **Une assertion qu'on ne peut pas jouer est un échec, pas un succès** (contre-lecture de
+      // ce script, 17/09/2026). Le premier jet passait silencieusement quand le conteneur en
+      // colonne n'était pas trouvé : la mesure de la bande réservée ne se serait jamais exécutée,
+      // et rien ne l'aurait dit — c'est-à-dire un garde-fou vert qui ne garde rien.
+      echecs.push(
+        'La barre est masquée mais le conteneur en colonne du navigateur d’onglets est' +
+          ' introuvable : la bande réservée n’a pas pu être mesurée. Le garde-fou ne peut pas' +
+          ' conclure, et il ne fera pas semblant (EXPO.md §1.7).'
+      );
+    } else if (!barre && vue.colonne[0] < vue.fenetre - 1) {
       echecs.push(
         `La barre est bien masquée mais réserve encore sa hauteur : l’écran mesure` +
           ` ${vue.colonne[0]} px sur ${vue.fenetre}. Une bande vide en bas de tous les écrans du` +

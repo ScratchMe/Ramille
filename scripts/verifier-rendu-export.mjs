@@ -111,8 +111,10 @@ const HYDRATATION = /Minified React error #(418|421|422|423|425)\b|hydrat/i;
 
 // Plafond d'attente par route, et repos ensuite — cf. leur usage plus bas. Six secondes, et pas
 // une seconde et demie : c'est la fenêtre pendant laquelle une exception levée dans un effet, ou
-// dans un écran monté après coup, peut encore arriver. Onze routes à six secondes coûtent un peu
-// plus d'une minute, la navigation n'attendant plus de délai fixe avant ce repos.
+// dans un écran monté après coup, peut encore arriver. Le repos se paie **par route**, donc le
+// contrôle entier coûte à peu près six secondes fois la longueur de `ROUTES` — le compte ne
+// s'écrit pas ici, il deviendrait faux à la route suivante et en silence (relevé le 17/09/2026 :
+// il disait onze pour douze).
 const ATTENTE_MAX = 20_000;
 const REPOS = 6_000;
 
