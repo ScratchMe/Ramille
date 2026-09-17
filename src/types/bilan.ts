@@ -13,10 +13,16 @@ export type HouseholdVehicles = '0' | '1' | '2_plus';
  * B4.4 — « Peux-tu travailler depuis chez toi ? » (C3.8).
  *
  * Trois réponses et non deux, parce que les gabarits en lisent **deux seuils** : un jour de
- * télétravail se tient avec « parfois », deux jours demandent « oui ». Un booléen aurait forcé à
- * trancher pour la personne.
+ * télétravail se tient avec « un jour », deux jours demandent « deux ou plus ». Un booléen aurait
+ * forcé à trancher pour la personne.
+ *
+ * **Les valeurs disent un nombre de jours depuis C5.4**, et « Parfois » n'existe plus : c'était une
+ * réponse sans unité que le produit lisait comme un seuil, donc elle coûtait l'action à deux jours
+ * sans que rien ne le dise (constat 13.1 de la recette web du 16/09/2026). La traduction
+ * `non → aucun`, `parfois → un_jour`, `oui → deux_ou_plus` préserve exactement le comportement —
+ * la migration le prouve par une table de vérité plutôt que de l'affirmer.
  */
-export type Teletravail = 'oui' | 'parfois' | 'non';
+export type Teletravail = 'aucun' | 'un_jour' | 'deux_ou_plus';
 // Thermique/électrique change fortement le calcul (facteur ~9x plus faible pour
 // l'électrique, cf. migration 20260904*_car_engine.sql) — une seule question de suivi,
 // jamais une entrée séparée dans les listes de mode (qui resteraient "Voiture (seul)" /
@@ -176,14 +182,44 @@ export const PARTS_DU_SECOND_MODE: { value: number; label: string }[] = [
 /**
  * Les trois réponses à B4.4 (C3.8).
  *
- * « Parfois » n'est pas une hésitation qu'on aurait laissée passer : c'est le seuil qui sépare
- * les deux gabarits de télétravail, un jour se tenant avec, deux jours non.
+ * L'échelle reste courte — trois puces, aucune précision qui s'ouvre — mais elle porte l'unité que
+ * le calcul lit. Le nombre de jours de trajet vient de B1.2 et s'écrit dans la question.
  */
 export const REPONSES_TELETRAVAIL: { value: Teletravail; label: string }[] = [
-  { value: 'oui', label: 'Oui' },
-  { value: 'parfois', label: 'Parfois' },
-  { value: 'non', label: 'Non' },
+  { value: 'aucun', label: 'Aucun' },
+  { value: 'un_jour', label: 'Un jour' },
+  { value: 'deux_ou_plus', label: 'Deux ou plus' },
 ];
+
+/**
+ * La question du télétravail se pose-t-elle ?
+ *
+ * **Écrite une fois et lue par les trois endroits qui doivent dire la même chose** — l'écran pour
+ * afficher, `manqueDeLEtape` pour réclamer, `normaliserReponses` pour effacer. Même motif que
+ * `distanceDomicileTravailKm`, partagée entre la complétude de l'étape et l'insert, et pour la même
+ * raison : `teletravail` n'est pas une étape mais un **champ** de l'étape « Contexte », donc
+ * `isStepVisible` ne le gouverne pas. En oublier un coûte cher, et pas de la même façon (v1-17
+ * §7.2) — ne toucher que l'écran laisse « Suivant » inactif pour toujours sous un message qui nomme
+ * une question absente ; oublier `normaliserReponses` laisse partir à la soumission une réponse que
+ * la personne ne voit plus et ne peut plus corriger, ce qui est le défaut de `v1-16` §4 par une
+ * autre porte.
+ *
+ * Deux conditions, et la seconde est celle de C5.4 : à **un seul jour** de trajet, « travailler
+ * depuis chez toi un jour par semaine » supprimerait 100 % du trajet, et la garde du `remove_day`
+ * l'écarte déjà (`commute_days_per_week <= t.trips`). La réponse ne pourrait donc rien changer, et
+ * poser une question dont la réponse ne change rien est exactement le défaut que ce chantier
+ * corrige, retourné.
+ *
+ * Un nombre de jours inconnu vaut « ne se pose pas » : la question **nomme** ce nombre, donc sans
+ * lui elle ne peut même pas s'écrire.
+ */
+export function teletravailSePose(answers: BilanAnswers): boolean {
+  return (
+    answers.commute_has_regular_trip !== false &&
+    answers.commute_days_per_week !== null &&
+    answers.commute_days_per_week >= 2
+  );
+}
 
 /** Le plafond du covoiturage, borne haute du `check` des deux colonnes. */
 const PLAFOND_COVOITURAGE = 6;
@@ -419,8 +455,13 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
     a.commute_mode = null;
     a.commute_is_carpool = false;
     a.commute_second_mode_used = false;
-    // C3.8 : sans trajet régulier, B4.4 ne se pose pas — et les deux gabarits qui la lisent sont
-    // des gabarits du poste domicile-travail, qui ne sont de toute façon pas proposés.
+  }
+
+  // C3.8 puis C5.4 : B4.4 ne se pose pas sans trajet régulier, ni en dessous de deux jours de
+  // trajet. **Ce qui décide de l'afficher décide aussi de l'effacer** — les deux lisent
+  // `teletravailSePose`, sans quoi quelqu'un qui répond à 3 jours puis redescend à 1 jour envoie
+  // à la soumission une réponse qu'aucun écran ne lui montre plus (v1-17 §7.2).
+  if (!teletravailSePose(a)) {
     a.teletravail = null;
   }
 
@@ -726,7 +767,7 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
       // la réponse manque — « une condition qu'on ne peut pas évaluer n'est pas remplie » —, donc
       // une étape qu'on pourrait valider sans elle retirerait silencieusement un levier réel à
       // quelqu'un qui l'a.
-      if (answers.commute_has_regular_trip !== false && answers.teletravail === null)
+      if (teletravailSePose(answers) && answers.teletravail === null)
         return 'ta réponse sur le télétravail';
       return null;
   }

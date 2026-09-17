@@ -47,7 +47,7 @@ insert into public.assessment_answers (
   leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111111', true, 5, 10, 'voiture', 'thermique', false, false,
-  'rarely', 'urbain_dense', 'bon', '1', 'oui'
+  'rarely', 'urbain_dense', 'bon', '1', 'deux_ou_plus'
 );
 
 -- B : même trajet, même voiture, mais rural sans transports en commun. Seul le contexte B4
@@ -58,7 +58,7 @@ insert into public.assessment_answers (
   leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111112', true, 5, 10, 'voiture', 'thermique', false, false,
-  'rarely', 'rural', 'inexistant', '1', 'oui'
+  'rarely', 'rural', 'inexistant', '1', 'deux_ou_plus'
 );
 
 -- C : 60 km de trajet, urbain dense. Le vélo n'est pas une option, la desserte oui.
@@ -68,7 +68,7 @@ insert into public.assessment_answers (
   leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111113', true, 5, 60, 'voiture', 'thermique', false, false,
-  'rarely', 'urbain_dense', 'bon', '1', 'oui'
+  'rarely', 'urbain_dense', 'bon', '1', 'deux_ou_plus'
 );
 
 -- D : le profil du constat A8-5 — rural à desserte **limitée**, c'est-à-dire ni « bon » ni
@@ -81,7 +81,7 @@ insert into public.assessment_answers (
   leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111114', true, 5, 10, 'voiture', 'thermique', false, false,
-  'rarely', 'rural', 'limite', '1', 'non'
+  'rarely', 'rural', 'limite', '1', 'aucun'
 );
 
 -- E : le profil voyages, que rien n'éprouvait — alors que c'est la branche qui porte les gains les
@@ -106,7 +106,7 @@ insert into public.assessment_answers (
   leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111116', true, 2, 30, 'voiture', 'thermique', false, false,
-  'rarely', 'periurbain', 'limite', '1', 'oui'
+  'rarely', 'periurbain', 'limite', '1', 'deux_ou_plus'
 );
 
 -- G : le jumeau de E, au seul détail qu'il part **seul**. Il n'est pas un cas de plus mais ce qui
