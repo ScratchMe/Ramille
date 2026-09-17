@@ -32,6 +32,17 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 
 ### Ce que la personne qui pilote a demandé
 
+- **Elle est le Product Manager, et c'est ce qui départage les décisions** (17/09/2026). Ce qui
+  touche au **produit** — ce qu'on montre, ce qu'on tait, ce qu'on demande à la personne, dans quel
+  ordre on livre — lui revient, et se pose avant d'écrire. Ce qui est **technique** revient à
+  l'agent : « je peux t'aider mais ça reste toi l'expert ». Le piège n'est pas de trancher soi-même
+  une question technique, c'est de **présenter comme un arbitrage une question qui n'en est pas
+  une** — ça fait payer un aller-retour pour rien. Et l'inverse coûte plus cher : un choix de
+  produit pris seul sous prétexte qu'il a une forme technique. La bonne façon de poser une question
+  de produit est celle qui a marché le 17/09/2026 sur le §7 de `v1-17` : le fait, ce qui est en jeu,
+  la recommandation, et **ce qu'on casse si on se trompe** — les deux seules questions qui ont
+  demandé une décision portaient chacune un piège que leur énoncé ne laissait pas voir. Cadrer,
+  c'est déjà la moitié du travail.
 - **Une tâche par chantier, tenue à jour pendant le travail** et pas après coup (14/09/2026 :
   « c'est pénible de ne pas savoir où tu en es »). C'est la seule fenêtre sur l'avancement.
 - **Un numéro ne se cite jamais seul.** Un lot, une issue, un chantier : on écrit à chaque fois de
