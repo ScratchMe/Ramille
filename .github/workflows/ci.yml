@@ -175,7 +175,7 @@ jobs:
       # le prouver. Une montée qui casse se lit alors dans le diff, ce qui est tout l'intérêt.
       # Reporter alors le numéro **et** sa date de publication ci-dessus, et ne jamais revenir à
       # `latest` : un tag qui n'existe pas fait tomber tout ce job, pas seulement une assertion.
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: 2.117.0
       - run: supabase db start
