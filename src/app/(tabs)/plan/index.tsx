@@ -1577,11 +1577,15 @@ export default function Plan() {
           {bilanAncien && assessmentDate !== null && (
             <ThemedView type="backgroundElement" style={styles.rebilanCard}>
               <ThemedText type="small" themeColor="textSecondary">
-                Ton bilan a {ancienneteEnMots(daysSince(assessmentDate))}. Le refaire prend quelques
-                minutes ; ton plan s’ajuste.
+                Ton bilan a {ancienneteEnMots(daysSince(assessmentDate))}. En faire un nouveau prend
+                quelques minutes ; ton plan s’ajuste.
               </ThemedText>
+              {/* **« Refaire » laissait croire à un écrasement** (C6.1, `v1-19` D1) : un nouveau
+                  bilan s'ajoute, il n'efface rien. Le libellé est le même sur les deux écrans qui
+                  portent cette porte, et c'est voulu — deux mots différents pour un même geste se
+                  liraient comme deux gestes. */}
               <TextLink
-                label="Refaire mon bilan"
+                label="Faire un nouveau bilan"
                 onPress={() => router.push('/bilan')}
                 role="link"
                 type="small"

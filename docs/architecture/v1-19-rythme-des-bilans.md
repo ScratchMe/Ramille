@@ -25,14 +25,23 @@ un nouveau ». Traiter la porte aurait laissé le sujet entier.
 
 ## 2. L'état des lieux, relevé le 18/09/2026
 
-**Quatre portes rouvrent le questionnaire** quand un bilan complété existe déjà :
+**Cinq portes rouvrent le questionnaire** quand un bilan complété existe déjà :
 
-| Où | Libellé | Quand |
+| Où | Libellé d'origine | Quand |
 |---|---|---|
 | Plan, carte de re-bilan | « Refaire mon bilan » | à partir de 182 jours d'ancienneté |
 | Plan, encart de contexte | « Modifier ces réponses » | toujours — entre à l'étape `context` |
 | Suivi, bloc de suggestion | « Refaire mon bilan » | quand le bilan est ancien |
 | **Suivi, pied d'écran** | « Refaire mon bilan » | **quand la suggestion ne s'affiche pas** |
+| Restitution d'un bilan | « Refaire mon bilan » | toujours |
+
+**La cinquième a été trouvée en écrivant C6.1, pas en faisant ce relevé**, et il faut le dire : ce
+document a d'abord annoncé quatre portes. Le relevé était parti des appels `push('/bilan')` **du plan
+et du suivi** ; celui de la restitution vit dans la pile du suivi (`(tabs)/suivi/bilan.tsx`) et y a
+échappé. Un `grep` sur le **libellé** les a toutes rendues d'un coup — chercher ce que la personne
+lit plutôt que ce que le code appelle. Même famille que l'erreur inverse commise le même jour, où
+« Revoir mon bilan » avait été compté comme une porte parce qu'il appelait `/bilan`… ce qu'il ne fait
+pas : il ouvre la restitution.
 
 **La dernière ligne est le défaut en une condition** : le pied du suivi propose un re-bilan
 exactement quand le produit a décidé de ne pas le suggérer. Deux jours après le premier bilan, le
@@ -40,8 +49,7 @@ lien est là. Il n'y a donc pas un rythme mais deux régimes qui se complètent 
 refuser — une suggestion à 182 jours, et une porte ouverte le reste du temps.
 
 **« Revoir mon bilan » n'est pas une de ces portes** : il ouvre la restitution du dernier bilan, et
-non le questionnaire. Relevé après s'être trompé une première fois en comptant les `push('/bilan')`
-sans lire les libellés qui les accompagnent.
+non le questionnaire.
 
 **Le mot « Refaire » ment, et le produit se contredit lui-même à deux lignes d'écart** : le bloc du
 suivi explique que « tes réponses sont pré-remplies, tu ne modifies que ce qui a changé » — une
@@ -115,9 +123,18 @@ dépendance à `household_vehicles` est le dernier fil qui relie une réponse de
 - **D1 — « Refaire mon bilan » disparaît.** Le libellé dit ce que le geste fait : soumettre un
   nouveau bilan, qui s'ajoute et n'efface rien. Le bloc du suivi dit déjà la bonne chose ; c'est le
   bouton qui doit le rejoindre, pas l'inverse.
-- **D2 — Le pied du suivi ne porte plus de porte inconditionnelle.** Un chemin reste, mais il cesse
-  d'être l'exact complément de la suggestion : proposer un re-bilan précisément quand on a décidé de
-  ne pas le suggérer est ce qui supprime le rythme.
+- **D2 — Le pied du suivi ne porte plus de lien vers le questionnaire du tout.** Il ne se rendait
+  que sous `!suggestRebilan` : le produit proposait un nouveau bilan **précisément quand il avait
+  décidé de ne pas le suggérer**, et les deux régimes se complétaient pour qu'il y ait toujours une
+  offre à l'écran.
+  **Cette décision a été écrite une première fois comme « plus de porte inconditionnelle », et
+  c'était ambigu au point d'induire une implémentation fausse** : rendre le lien inconditionnel
+  supprime bien la symétrie, et laisse exactement le défaut qu'on visait — une offre permanente, et
+  deux fois quand la carte s'affiche. La contre-lecture de C6.1 l'a rattrapé. Ce qui manquait n'est
+  pas la symétrie, c'est **le silence** : on doit pouvoir regarder son suivi sans qu'on y propose
+  quoi que ce soit.
+  **Le chemin ne disparaît pas pour autant** : la restitution d'un bilan porte « Faire un nouveau
+  bilan » en permanence, à un toucher du suivi, et c'est sa place — on y a un bilan sous les yeux.
 - **D3 — L'avertissement se déclenche sur la période de plan, pas sur un nombre de jours.** « Dans
   la même période que le cycle courant » est ce que la base sait déjà (`plan_cycles.period_start`,
   `period_end`) **et** ce qui coûte quelque chose : c'est exactement la condition sous laquelle

@@ -828,12 +828,15 @@ export default function BilanResultat() {
                 {partage.lien}
               </ThemedText>
             )}
-            {/* « Modifier mes réponses » promettait une édition, alors que le questionnaire
-                insère toujours un nouveau bilan — et repartait d'écrans vides. Le
-                préremplissage (v1-07 T7) rend l'action peu coûteuse ; le libellé dit
-                maintenant ce qu'elle fait vraiment. */}
+            {/* **Le libellé se corrige une seconde fois, et dans la même direction** (C6.1,
+                `v1-19` D1). « Modifier mes réponses » promettait une édition alors que le
+                questionnaire insère toujours un nouveau bilan ; « Refaire » a le défaut inverse et
+                aussi faux — il laisse croire qu'on efface celui qu'on regarde. Un nouveau bilan
+                s'**ajoute** : la ligne d'aujourd'hui reste, et c'est même ce qui permet à cet écran
+                d'exister pour chacune d'elles. Le préremplissage (v1-07 T7) rend l'action peu
+                coûteuse ; le libellé dit enfin ce qu'elle fait. */}
             <TextLink
-              label="Refaire mon bilan"
+              label="Faire un nouveau bilan"
               onPress={() => router.push('/bilan')}
               role="link"
               type="small"

@@ -622,34 +622,38 @@ export default function Suivi() {
                 Ton dernier bilan a {ancienneteEnMots(daysSince(latest.submittedAt))}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                Le refaire prend moins de temps que la première fois : tes réponses sont
+                En faire un nouveau prend moins de temps que la première fois : tes réponses sont
                 pré-remplies, tu ne modifies que ce qui a changé.
               </ThemedText>
-              <Button title="Refaire mon bilan" onPress={() => router.push('/bilan')} />
+              {/* **« Refaire » laissait croire à un écrasement** (C6.1, `v1-19` D1). Aucun bilan
+                  n'est jamais effacé : chaque soumission est une ligne de plus, l'historique
+                  ci-dessus les montre toutes, et `emission_factor(mode_id, date)` garde chacune
+                  reproductible aux facteurs de sa date. Le texte juste au-dessus disait déjà la
+                  bonne chose — une actualisation — pendant que le bouton disait l'inverse, à deux
+                  lignes d'écart. */}
+              <Button title="Faire un nouveau bilan" onPress={() => router.push('/bilan')} />
             </ThemedView>
           )}
 
         </ScrollView>
 
-        {/* Le bandeau ne se rend que s'il porte quelque chose : la condition vivait à
-            l'intérieur, et quand la proposition de re-bilan s'affichait plus haut, il restait
-            une bande vide de 48 px collée en bas. Et il ne porte plus que sa hauteur, avec un
-            filet plutôt qu'une rupture — même traitement que le pied de `/suivi/bilan`.
-            Le canal de retour et le compte ont rejoint l'écran « Toi » (v1-11 §2.5) : le
-            suivi retrouve son sujet — les bilans et les points répondus. */}
-        {!suggestRebilan && (
-          <View style={[styles.footer, { borderTopColor: theme.border }]}>
-            <TextLink
-              label="Refaire mon bilan"
-              onPress={() => router.push('/bilan')}
-              role="link"
-              type="small"
-              weight={600}
-              themeColor="accentText"
-              style={styles.footerLink}
-            />
-          </View>
-        )}
+        {/* **Le pied a porté un lien vers le questionnaire, il n'en porte plus** (C6.1,
+            `v1-19` D2). Il ne se rendait que sous `!suggestRebilan` : le produit proposait donc un
+            nouveau bilan **précisément quand il avait décidé de ne pas le suggérer**, et les deux
+            régimes se complétaient pour qu'il y ait toujours une offre à l'écran. Ce n'était pas un
+            rythme, c'était une offre permanente sous deux formes.
+
+            **Le rendre inconditionnel n'aurait rien réglé** — c'est l'erreur qu'a rattrapée la
+            contre-lecture de ce chantier : le lien aurait toujours été là, et deux fois quand la
+            carte s'affiche. Ce qui manquait n'était pas la symétrie, c'était le silence : le suivi
+            se regarde sans qu'on y propose quoi que ce soit, et l'insistance vient de la carte
+            ci-dessus **quand elle a une raison de venir**.
+
+            **Le chemin, lui, ne disparaît pas** (`v1-19` D6 n'impose rien) : la restitution d'un
+            bilan porte « Faire un nouveau bilan » en permanence, à un toucher d'ici, et c'est sa
+            place — on y a justement un bilan sous les yeux. Le canal de retour et le compte avaient
+            déjà rejoint l'écran « Toi » (v1-11 §2.5) ; ce lien parti, le bandeau n'a plus rien à
+            porter et s'en va avec, styles compris. */}
       </SafeAreaView>
     </ThemedView>
   );
@@ -707,8 +711,6 @@ const styles = StyleSheet.create({
   checkinList: { gap: Spacing.two },
   checkinRow: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
   checkinPeriod: { flex: 1 },
-  footer: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
-  footerLink: { textAlign: 'center' },
   emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   emptyIllustration: { height: 140 },
   emptyBody: { fontSize: 16, lineHeight: 24 },

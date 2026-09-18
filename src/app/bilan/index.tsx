@@ -13,6 +13,7 @@ import { LeisureDetailStep } from '@/components/bilan/steps/leisure-detail';
 import { LeisureFrequencyStep } from '@/components/bilan/steps/leisure-frequency';
 import { LongTripsStep } from '@/components/bilan/steps/long-trips';
 import { CalculEnCours } from '@/components/bilan/calcul-en-cours';
+import { FeuilleNouveauBilan } from '@/components/bilan/feuille-nouveau-bilan';
 import { ProgressHeader } from '@/components/bilan/progress-header';
 import { StepShell } from '@/components/bilan/step-shell';
 import { Button } from '@/components/button';
@@ -26,6 +27,11 @@ import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
 import { noterLePremierParcours } from '@/lib/premier-parcours';
 import { ensureSession, supabase } from '@/lib/supabase';
+import {
+  dateCalendaire,
+  engagementLibereParUnNouveauBilan,
+  type EngagementLibere,
+} from '@/types/rebilan';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
   BILAN_SECTION_LABEL,
@@ -238,6 +244,57 @@ export default function BilanQuestionnaire() {
   // repart immédiatement. Les deux restent nécessaires — la ref garde la fonction, l'état garde
   // l'écran.
   const soumissionEnCours = useRef(false);
+
+  /**
+   * L'engagement qu'une soumission libérerait, et la lecture qui le détermine (C6.2, `v1-19` D3).
+   *
+   * **Lue au montage et non à la dernière étape**, parce qu'un re-bilan peut entrer directement sur
+   * `context` : la lecture aurait alors à peine commencé au moment où l'on touche « Voir mon
+   * bilan ». `handleNext` attend la promesse plutôt que de la course, ce qui coûte quelques
+   * millisecondes le jour où quelqu'un est vraiment plus rapide que le réseau.
+   *
+   * **Un échec de lecture laisse passer**, et c'est le bon sens de l'erreur : l'avertissement
+   * *nomme* l'action et l'intention, donc sans elles il n'aurait rien à dire — et bloquer une
+   * soumission parce qu'on n'a pas su lire un cycle coûterait plus cher que l'avertissement qu'on
+   * manque. Le produit garde son filet d'après coup, l'encart orphelin du plan (C2.2).
+   */
+  const engagementMenace = useRef<EngagementLibere | null>(null);
+  const lectureDeLEngagement = useRef<Promise<void> | null>(null);
+  const [feuilleDeLEngagement, setFeuilleDeLEngagement] = useState<EngagementLibere | null>(null);
+
+  useEffect(() => {
+    lectureDeLEngagement.current = (async () => {
+      try {
+        await ensureSession();
+        const { data, error } = await supabase
+          .from('plan_cycles')
+          // Même chaîne d'un seul tenant que les deux écrans du plan, et **le nom de la clé
+          // étrangère est obligatoire** : `carried_over_from` en est une seconde vers
+          // `plan_cycles`, donc sans lui PostgREST refuse la requête entière (C2.2).
+          .select(
+            'period_start, period_end, plan_actions!plan_actions_plan_cycle_id_fkey(committed_at, intention_days, intention_timing, action_templates(action_text))'
+          )
+          .order('period_start', { ascending: false })
+          .limit(1);
+        if (error) return;
+
+        const cycle = data?.[0];
+        if (!cycle) return;
+
+        engagementMenace.current = engagementLibereParUnNouveauBilan(
+          {
+            period_start: cycle.period_start,
+            period_end: cycle.period_end,
+            actions: cycle.plan_actions,
+          },
+          dateCalendaire(new Date())
+        );
+      } catch {
+        // Voir le commentaire ci-dessus : on laisse passer.
+      }
+    })();
+  }, []);
+
   // Le bilan `in_progress` de la tentative précédente, gardé pour que la reprise ne crée pas un
   // second brouillon côté serveur. Il est aussi relu en base au cas où l'app a été relancée
   // entre-temps : la ref ne survit pas à un redémarrage, la ligne si.
@@ -292,6 +349,16 @@ export default function BilanQuestionnaire() {
       if (next) setStep(next);
       return;
     }
+
+    // La lecture du cycle a démarré au montage ; l'attendre ici est ce qui empêche une soumission
+    // plus rapide que le réseau de sauter l'avertissement.
+    if (lectureDeLEngagement.current !== null) await lectureDeLEngagement.current;
+
+    if (engagementMenace.current !== null) {
+      setFeuilleDeLEngagement(engagementMenace.current);
+      return;
+    }
+
     await submit();
   };
 
@@ -594,6 +661,22 @@ export default function BilanQuestionnaire() {
       {step === 'flights' && <FlightsStep answers={answers} update={update} />}
       {step === 'long_trips' && <LongTripsStep answers={answers} update={update} />}
       {step === 'context' && <ContextStep answers={answers} update={update} />}
+
+      {/* La feuille vit **dans** `StepShell` plutôt qu'à côté : c'est un `Modal`, donc son rendu
+          ne dépend pas de sa place dans l'arbre, et l'écran garde un seul élément racine. */}
+      {feuilleDeLEngagement !== null && (
+        <FeuilleNouveauBilan
+          engagement={feuilleDeLEngagement}
+          onSoumettre={() => {
+            // La menace est consommée : sans ça, un échec de soumission suivi d'un second essai
+            // réafficherait la feuille à quelqu'un qui vient de répondre à sa question.
+            engagementMenace.current = null;
+            setFeuilleDeLEngagement(null);
+            void submit();
+          }}
+          onFerme={() => setFeuilleDeLEngagement(null)}
+        />
+      )}
     </StepShell>
   );
 }
