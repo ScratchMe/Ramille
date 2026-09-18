@@ -218,7 +218,13 @@ période de plan plutôt que sur un nombre de jours, et la sortie du contexte ho
 **quatre questions restent ouvertes** et sont nommées comme telles, dont le moment anniversaire — un
 écran de chiffres, donc de voix produit et non de mascotte — et le sort de `household_vehicles`, la
 seule réponse de contexte qui entre dans le calcul. Ce que ça pèse est mesuré : elle ne change rien
-pour six bilans sur sept, et multiplie le total du septième par cinq. **Le lot 4 reste après.**
+pour six bilans sur sept, et multiplie le total du septième par cinq.
+
+**Et la priorité est tranchée : tout ce que la séance du 18/09/2026 a ouvert passe avant le lot 4** —
+les cinq chantiers de `v1-19` et les trois issues qui n'en relèvent pas (l'espace fine, et les deux
+moitiés de « Toutes les pistes »). La raison est dans le sujet plutôt que dans l'urgence : **faire un
+bilan et le tenir à jour est le geste central du produit**, et c'est celui dont la recette a montré
+qu'il n'est ni clair ni fluide. Le lot 4 garde l'ordre proposé en `v1-17` §5.1 et démarre après.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 

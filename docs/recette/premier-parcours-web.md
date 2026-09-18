@@ -106,7 +106,7 @@ parcours : c'est le bloc 09, et il vaut la peine d'être joué aussi.
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
 | 00.1 | Ouvrir `https://www.ramille.fr/status` dans une fenêtre **normale** | Sous « Connexion Supabase », la page écrit **« OK — N modes de transport en base »**. Autre chose qu'un « OK », **arrêter là** : la suite ne prouverait rien, et le défaut est côté configuration, pas côté parcours | |
-| 00.2 | Noter la version déployée | Le site suit `main` : c'est le dernier commit fusionné. Au moment où ce document est écrit, `79ca698`. Si des fusions ont eu lieu depuis, me demander le commit courant | |
+| 00.2 | Noter la version déployée | Le site suit `main` : c'est le dernier commit fusionné. **La feuille ne fige pas de valeur** — elle s'en figeait une (`79ca698`), et la séance du 18/09/2026 l'a trouvée périmée alors que le site était simplement en avance. Relever le commit servi, et le comparer à `main` plutôt qu'à un souvenir | |
 | 00.3 | Ouvrir une fenêtre de **navigation privée** neuve | — | |
 
 ---
@@ -119,7 +119,7 @@ ci-dessus.
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
-| 01.1 | Traverser l'onboarding jusqu'à « Commencer mon bilan » | Sous le bouton, il est écrit qu'on peut commencer **sans compte**, et ce qu'on y perd | |
+| 01.1 | Traverser l'onboarding jusqu'à « Commencer mon bilan » | Sous le bouton, il est écrit qu'on peut commencer **sans compte**. **Et pas ce qu'on y perd** : la feuille l'attendait, le produit ne l'a jamais porté, et la séance du 18/09/2026 a jugé qu'il n'a pas à l'être ici — à cette étape, « ce qu'on perd » ne veut encore rien dire pour quelqu'un qui n'a pas vu son bilan | |
 | 01.2 | Répondre au questionnaire jusqu'à la dernière étape | « Étape N sur M » en tête, et le pied reste visible sans défiler. **M dépend des réponses** — neuf pour le profil ci-dessus, huit si les sorties sont « rarement », six sans trajet régulier — donc ce qu'on regarde est que N avance d'une étape à l'autre **sans sauter**, pas la valeur de M | |
 | 01.3 | **La question du télétravail** (dernière étape, C5.4) | « Sur tes 5 jours de trajet, combien pourrais-tu travailler depuis chez toi ? », et **trois** puces : Aucun / Un jour / Deux ou plus. Le mot « Parfois » ne doit apparaître nulle part | |
 | 01.4 | Revenir en arrière et ramener le trajet à **1 jour** par semaine, puis revenir à l'étape Contexte | La question du télétravail **a disparu**, et « Voir mon bilan » ne reste pas bloqué en réclamant une réponse qu'on ne peut plus donner | |
@@ -147,7 +147,7 @@ Le deuxième moment neuf, et celui qui porte le plus de décisions.
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
-| 03.1 | Toucher « Voir ce que je peux faire » | On arrive sur le plan, **toujours sans barre d'onglets** | |
+| 03.1 | Toucher « Voir ce que je peux faire » | **L'écran de création de compte s'intercale d'abord** — la transition imposée de `/connexion` (`resultat_transition`), un choix daté que la feuille avait oublié. Le passer, puis : on arrive sur le plan, **toujours sans barre d'onglets**. *Que ce soit le bon moment pour cet écran est une question ouverte depuis le 18/09/2026, pas un écart* | |
 | 03.2 | La carte en haut de l'écran | Étiquette **« TON PREMIER PLAN »**, titre **« Une action pour l'automne. »**, puis « Choisis-en une, et dis quand. Ensuite, un point régulier te demandera si tu l'as faite — rien d'autre à suivre. » La saison nommée est celle du **cycle**, pas celle du jour : automne jusqu'au 30 novembre inclus, hiver ensuite | |
 | 03.3 | **Ramille, sous la carte et hors du cadre** | Le visage vert, penché, et la phrase **« Prends celle qui te ressemble. »** Elle doit être **dessous**, pas dans le cadre | |
 | 03.4 | La sortie de la carte | Un seul lien, **« Compris »**. Pas de bouton plein, pas de second choix | |

@@ -172,13 +172,18 @@ dépendance à `household_vehicles` est le dernier fil qui relie une réponse de
 
 ## 8. Les chantiers proposés
 
-| # | Chantier | Dépend de |
-|---|---|---|
-| C6.1 | Les libellés du re-bilan disent ce que le geste fait (D1), et le pied du suivi cesse d'être le complément de la suggestion (D2) | — |
-| C6.2 | L'avertissement avant une soumission qui libère un engagement (D3, D4) | — |
-| C6.3 | La cadence : proposer à la bascule de saison, ré-insister à deux saisons | C2.8 |
-| C6.4 | L'écran de contexte, sorti du questionnaire (D5) | §6.3, §6.4 |
-| C6.5 | Le moment anniversaire | §6.1, §6.2 — brief de design |
+**Tout cet increment passe avant le lot 4** (décision du 18/09/2026), avec les deux issues de la
+même séance qui n'en relèvent pas — [#228](https://github.com/ScratchMe/Ramille/issues/228), l'espace fine, et [#234](https://github.com/ScratchMe/Ramille/issues/234) / [#235](https://github.com/ScratchMe/Ramille/issues/235),
+« Toutes les pistes ». La raison est dans le sujet : faire un bilan et le tenir à jour est le geste
+central du produit.
+
+| # | Chantier | Issue | Dépend de |
+|---|---|---|---|
+| C6.1 | Les libellés du re-bilan disent ce que le geste fait (D1), et le pied du suivi cesse d'être le complément de la suggestion (D2) | [#229](https://github.com/ScratchMe/Ramille/issues/229) | — |
+| C6.2 | L'avertissement avant une soumission qui libère un engagement (D3, D4) | [#230](https://github.com/ScratchMe/Ramille/issues/230) | — |
+| C6.3 | La cadence : proposer à la bascule de saison, ré-insister à deux saisons | [#231](https://github.com/ScratchMe/Ramille/issues/231) | C2.8 |
+| C6.4 | L'écran de contexte, sorti du questionnaire (D5) | [#232](https://github.com/ScratchMe/Ramille/issues/232) | §6.3, §6.4 |
+| C6.5 | Le moment anniversaire | [#233](https://github.com/ScratchMe/Ramille/issues/233) | §6.1, §6.2 — brief de design |
 
 **C6.1 et C6.2 sont indépendants et ferment le défaut trouvé en recette** ; les trois autres
 demandent qu'une des questions ouvertes soit tranchée avant d'être instruits. L'ordre n'est pas
