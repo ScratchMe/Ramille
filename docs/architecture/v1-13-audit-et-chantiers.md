@@ -2504,6 +2504,13 @@ période, donc `generate_plan_cycle_for_user` reprend l'engagement en libérant 
 (`archiver_engagement`, `released_reason = 'rebilan'`, C2.2). Quelqu'un qui voulait seulement
 **relire** son contexte ressort sans action engagée. C'est exactement arrivé pendant la séance.
 
+**Tranché le 18/09/2026, et pas comme ce paragraphe le posait** : le cadrage produit a élargi la
+question — le défaut n'est pas cette porte, c'est qu'il n'y a pas de rythme de bilan du tout. Tout
+est repris dans [`v1-19-rythme-des-bilans.md`](v1-19-rythme-des-bilans.md), qui sort le contexte du
+questionnaire (ce qui **dissout** ce constat pour cette porte) et garde l'avertissement pour les
+trois autres, où le re-bilan est voulu et la perte quand même non annoncée. Ce qui suit est le
+cadrage d'origine, laissé pour mémoire.
+
 La décision revient à la personne qui pilote, parce que les remèdes ne coûtent pas la même chose :
 une sortie explicite depuis cette étape ; un « Retour » qui, quand on est entré par cette porte,
 ramène au plan plutôt qu'à l'étape précédente ; ou un avertissement avant la soumission d'un

@@ -207,6 +207,19 @@ Quatre choses à savoir avant de l'instruire, parce qu'elles décident de la tai
 Rien n'est chiffré ni ordonné ici : ce paragraphe existe pour que la demande ne se perde pas entre
 la fin du lot 5 et le lot 4.
 
+**Et un increment s'est ouvert le 18/09/2026, avant le lot 4 : le rythme des bilans**
+([`v1-19-rythme-des-bilans.md`](v1-19-rythme-des-bilans.md)). Il naît de la première recette du
+premier parcours (`v1-13` §14) et du cadrage produit qui a suivi. Le défaut trouvé était local — on
+ne peut pas sortir du questionnaire sans soumettre, et soumettre libère l'engagement — mais la
+relecture l'a élargi au bon endroit : **le produit ne dit nulle part à quelle fréquence un bilan a
+du sens**, propose « Refaire mon bilan » en permanence, et appelle « refaire » ce qui ajoute une
+ligne sans rien effacer. Six décisions sont prises, dont le libellé, l'avertissement calé sur la
+période de plan plutôt que sur un nombre de jours, et la sortie du contexte hors du questionnaire ;
+**quatre questions restent ouvertes** et sont nommées comme telles, dont le moment anniversaire — un
+écran de chiffres, donc de voix produit et non de mascotte — et le sort de `household_vehicles`, la
+seule réponse de contexte qui entre dans le calcul. Ce que ça pèse est mesuré : elle ne change rien
+pour six bilans sur sept, et multiplie le total du septième par cinq. **Le lot 4 reste après.**
+
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 
 **Le lot 2 a son canvas Claude Design, livré le 10/09/2026** : `docs/design/v1-14-boucle-engagement/`
