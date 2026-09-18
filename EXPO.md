@@ -140,8 +140,8 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   Ramille) : au plus un build tous les deux jours, et la vérification web se fait sans build.
 - **`expo-doctor` compare aux versions qu'Expo recommande au moment du passage**, et ce jeu-là
   vit chez Expo : la CI peut rougir sans qu'une ligne du dépôt ait bougé, dès qu'Expo publie un
-  patch (11/09 et 15/09/2026 chez Ramille). Épingler la version de l'outil n'épingle pas ce qu'il
-  attend. L'étape reste bloquante — c'est ce qu'on veut savoir avant un build — et la conduite
+  patch (11/09, 15/09 et 18/09/2026 chez Ramille — trois fois en huit jours, donc à attendre
+  plutôt qu'à diagnostiquer). Épingler la version de l'outil n'épingle pas ce qu'il attend. L'étape reste bloquante — c'est ce qu'on veut savoir avant un build — et la conduite
   est `npx expo install --fix`, puis rejouer typecheck, lint, tests et export.
 - **`app.config.js` étend `app.json`** et n'a qu'un rôle : brancher un fichier fourni par une
   variable d'environnement de type *fichier* (`google-services.json` chez EAS) sans le mettre dans
