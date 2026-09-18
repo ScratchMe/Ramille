@@ -2451,6 +2451,12 @@ Navigateur, `www.ramille.fr`, commit **`77f1663`**. **49 lignes consignées sur 
 **cinq écarts** — dont **un seul défaut du produit**, les quatre autres se répartissant entre une
 feuille périmée, une feuille fautive, et deux questions de produit qu'il faut trancher.
 
+**Tout ce que cette séance a ouvert passe avant le lot 4** (décision du 18/09/2026). Les huit
+issues qui en sortent sont donc prioritaires sur les six chantiers du lot 4, dont l'ordre proposé
+reste celui de `v1-17` §5.1 une fois celles-ci refermées. La raison est dans le sujet : faire un
+bilan et le tenir à jour est le geste central du produit, et c'est celui dont la séance a montré
+qu'il n'est ni clair ni fluide.
+
 Le lot 5 tient : les blocs 02, 04, 08, 09 et 10 sont conformes de bout en bout — la restitution sans
 barre d'onglets, l'arrivée de la barre et son nommage, le trait de temps qui n'apparaît qu'à
 l'engagement, le parcours d'un profil sobre (plan à zéro action) et le re-bilan. C'est la première
@@ -2460,11 +2466,12 @@ fois que le premier parcours est vu tourner, et il tourne.
 
 | | Constat | Ce que c'est | Suite |
 |---|---|---|---|
+| 14.7 | « Toutes les pistes » — quatre écarts à la planche A2, et deux questions de design | **Trouvé à l'œil, pas par la feuille** : le bloc 06 est revenu conforme sur ses six lignes. §14.7 | [#234](https://github.com/ScratchMe/Ramille/issues/234) réparations, [#235](https://github.com/ScratchMe/Ramille/issues/235) brief de design |
 | 14.1 | 00.2 — version attendue `79ca698`, vue `77f1663` | **Feuille périmée**, et la ligne le prévoyait. `79ca698` est bien un ancêtre de `77f1663` (vérifié) : le site est en avance sur la feuille, pas en retard | La ligne ne fige plus de valeur. Et c'est une **bonne nouvelle collatérale** : le site servi à `77f1663` est la preuve du déploiement Vercel qu'on cherchait à constater le matin même |
 | 14.2 | 01.1 — il est écrit qu'on peut commencer sans compte, pas ce qu'on y perd | **Feuille fautive** : elle attendait une phrase que le produit n'a jamais portée. Et le jugement de la séance est qu'elle n'a pas à y être — à cette étape, « ce qu'on perd » ne veut encore rien dire pour quelqu'un qui n'a pas vu son bilan | Corriger la feuille |
 | 14.3 | 03.1 — l'écran de création de compte s'intercale avant le plan | **Conforme au produit**, feuille fautive : c'est la transition imposée de `/connexion` (`resultat_transition`), un choix daté. Mais la question posée par la séance — *est-ce le bon moment ?* — est légitime et n'a jamais été rejouée depuis que le premier parcours existe | Corriger la feuille ; **question de produit** ouverte |
-| 14.4 | 05.3 — pas d'espace fine dans « 1601 » | **Le seul vrai défaut**, et il n'est pas là où on le croit : le code est juste. §14.5 | Correctif |
-| 14.5 | 07.4 — on ne peut pas revenir au plan sans soumettre, et ça a fait re-soumettre un bilan | **Défaut de parcours, à conséquence** : un re-bilan dans la même période libère l'engagement | §14.6, **question de produit** |
+| 14.4 | 05.3 — pas d'espace fine dans « 1601 » | **Le seul vrai défaut**, et il n'est pas là où on le croit : le code est juste. §14.5 | [#228](https://github.com/ScratchMe/Ramille/issues/228) |
+| 14.5 | 07.4 — on ne peut pas revenir au plan sans soumettre, et ça a fait re-soumettre un bilan | **Défaut de parcours, à conséquence** : un re-bilan dans la même période libère l'engagement | §14.6 → [`v1-19`](v1-19-rythme-des-bilans.md), [#229](https://github.com/ScratchMe/Ramille/issues/229) à [#233](https://github.com/ScratchMe/Ramille/issues/233) |
 
 ### 14.5 L'espace fine est là : c'est la police qui la dessine à un demi-pixel
 
@@ -2503,6 +2510,13 @@ Il n'existe aucun chemin « j'abandonne, rends-moi mon plan ».
 période, donc `generate_plan_cycle_for_user` reprend l'engagement en libérant `committed_at`
 (`archiver_engagement`, `released_reason = 'rebilan'`, C2.2). Quelqu'un qui voulait seulement
 **relire** son contexte ressort sans action engagée. C'est exactement arrivé pendant la séance.
+
+**Tranché le 18/09/2026, et pas comme ce paragraphe le posait** : le cadrage produit a élargi la
+question — le défaut n'est pas cette porte, c'est qu'il n'y a pas de rythme de bilan du tout. Tout
+est repris dans [`v1-19-rythme-des-bilans.md`](v1-19-rythme-des-bilans.md), qui sort le contexte du
+questionnaire (ce qui **dissout** ce constat pour cette porte) et garde l'avertissement pour les
+trois autres, où le re-bilan est voulu et la perte quand même non annoncée. Ce qui suit est le
+cadrage d'origine, laissé pour mémoire.
 
 La décision revient à la personne qui pilote, parce que les remèdes ne coûtent pas la même chose :
 une sortie explicite depuis cette étape ; un « Retour » qui, quand on est entré par cette porte,
