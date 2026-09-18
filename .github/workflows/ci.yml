@@ -21,8 +21,8 @@ jobs:
     name: Typecheck & lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -87,8 +87,8 @@ jobs:
     name: Tests unitaires (Jest)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -110,8 +110,8 @@ jobs:
     name: Export web
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -153,7 +153,7 @@ jobs:
     name: Tests base de données (pgTAP)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Démarre une stack Postgres locale (Docker) à partir de supabase/config.toml et
       # applique supabase/migrations/ — indépendante du projet Supabase distant
       # TraceVerte-v1, cf. supabase/config.toml.
@@ -175,7 +175,7 @@ jobs:
       # le prouver. Une montée qui casse se lit alors dans le diff, ce qui est tout l'intérêt.
       # Reporter alors le numéro **et** sa date de publication ci-dessus, et ne jamais revenir à
       # `latest` : un tag qui n'existe pas fait tomber tout ce job, pas seulement une assertion.
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: 2.117.0
       - run: supabase db start

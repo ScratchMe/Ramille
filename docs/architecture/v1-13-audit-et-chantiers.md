@@ -2442,3 +2442,115 @@ plan s'affiche en chasse fixe, ce qui se lit comme une police qui n'a pas charg�
 (`Fonts.mono`, 12 px, tertiaire), le registre des notes techniques du produit, employé à dix-neuf
 endroits. Vérifié avant d'être signalé — et écrit ici pour que la prochaine recette ne le resignale
 pas.
+
+## 14. Ce que la recette du premier parcours du 18/09/2026 a trouvé
+
+Troisième séance, et la première à disposer de son propre document
+([`docs/recette/premier-parcours-web.md`](../recette/premier-parcours-web.md)) et de son artefact.
+Navigateur, `www.ramille.fr`, commit **`77f1663`**. **49 lignes consignées sur 49**, aucune muette,
+**cinq écarts** — dont **un seul défaut du produit**, les quatre autres se répartissant entre une
+feuille périmée, une feuille fautive, et deux questions de produit qu'il faut trancher.
+
+Le lot 5 tient : les blocs 02, 04, 08, 09 et 10 sont conformes de bout en bout — la restitution sans
+barre d'onglets, l'arrivée de la barre et son nommage, le trait de temps qui n'apparaît qu'à
+l'engagement, le parcours d'un profil sobre (plan à zéro action) et le re-bilan. C'est la première
+fois que le premier parcours est vu tourner, et il tourne.
+
+### Les cinq écarts
+
+| | Constat | Ce que c'est | Suite |
+|---|---|---|---|
+| 14.1 | 00.2 — version attendue `79ca698`, vue `77f1663` | **Feuille périmée**, et la ligne le prévoyait. `79ca698` est bien un ancêtre de `77f1663` (vérifié) : le site est en avance sur la feuille, pas en retard | La ligne ne fige plus de valeur. Et c'est une **bonne nouvelle collatérale** : le site servi à `77f1663` est la preuve du déploiement Vercel qu'on cherchait à constater le matin même |
+| 14.2 | 01.1 — il est écrit qu'on peut commencer sans compte, pas ce qu'on y perd | **Feuille fautive** : elle attendait une phrase que le produit n'a jamais portée. Et le jugement de la séance est qu'elle n'a pas à y être — à cette étape, « ce qu'on perd » ne veut encore rien dire pour quelqu'un qui n'a pas vu son bilan | Corriger la feuille |
+| 14.3 | 03.1 — l'écran de création de compte s'intercale avant le plan | **Conforme au produit**, feuille fautive : c'est la transition imposée de `/connexion` (`resultat_transition`), un choix daté. Mais la question posée par la séance — *est-ce le bon moment ?* — est légitime et n'a jamais été rejouée depuis que le premier parcours existe | Corriger la feuille ; **question de produit** ouverte |
+| 14.4 | 05.3 — pas d'espace fine dans « 1601 » | **Le seul vrai défaut**, et il n'est pas là où on le croit : le code est juste. §14.5 | Correctif |
+| 14.5 | 07.4 — on ne peut pas revenir au plan sans soumettre, et ça a fait re-soumettre un bilan | **Défaut de parcours, à conséquence** : un re-bilan dans la même période libère l'engagement | §14.6, **question de produit** |
+
+### 14.5 L'espace fine est là : c'est la police qui la dessine à un demi-pixel
+
+`formatKg` pose bien U+202F, le bundle déployé le contient, et les trois endroits de C5.8 l'appellent
+tous les trois. Le défaut est **dans la police**. Mesuré sur `SplineSans_500Medium.ttf` avec
+opentype.js, à 2000 unités par cadratin :
+
+| Caractère | Chasse | À 17 px | À 14 px |
+|---|---|---|---|
+| chiffre « 1 » | 824 | 7,00 px | — |
+| **U+202F** espace fine insécable | **71** | **0,60 px** | **0,50 px** |
+| U+2009 espace fine | 280 | 2,38 px | — |
+| U+00A0 espace insécable | 357 | 3,03 px | — |
+
+Un demi-pixel : « 1 601 » est rendu « 1601 », et l'œil a raison. **Et le commentaire qui a motivé le
+choix de U+202F est faux pour cette police** : il dit qu'« une espace insécable large l'écarterait
+trop », or U+00A0 y vaut **357 unités, c'est-à-dire 1/6 de cadratin** (333) — exactement la valeur
+que la typographie française demande pour un séparateur de milliers. Le raisonnement était bon en
+général et faux ici, faute d'avoir mesuré la police qu'on utilise.
+
+Correctif retenu : **U+00A0 dans `formatKg`**. Il garde la propriété pour laquelle U+202F avait été
+choisi — insécable, donc le nombre ne se coupe pas en fin de ligne — et il se voit. Une ligne, plus
+son test.
+
+**La leçon vaut au-delà** : un caractère de mise en forme n'est pas un choix typographique tant
+qu'on n'a pas relevé sa chasse **dans la police du produit**. La règle rejoint `FRONT.md`.
+
+### 14.6 Sortir du questionnaire sans soumettre n'existe pas
+
+Entré depuis l'encart de contexte du plan (« Modifier ces réponses », C5.5), on atterrit sur l'étape
+« Contexte » du questionnaire. `StepShell` n'offre que deux sorties : **« Retour »**, qui remonte à
+l'étape **précédente du questionnaire** et non au plan, et **« Voir mon bilan »**, qui **soumet**.
+Il n'existe aucun chemin « j'abandonne, rends-moi mon plan ».
+
+**Ce n'est pas un inconfort, c'est une perte** : soumettre depuis là est un re-bilan dans la même
+période, donc `generate_plan_cycle_for_user` reprend l'engagement en libérant `committed_at`
+(`archiver_engagement`, `released_reason = 'rebilan'`, C2.2). Quelqu'un qui voulait seulement
+**relire** son contexte ressort sans action engagée. C'est exactement arrivé pendant la séance.
+
+La décision revient à la personne qui pilote, parce que les remèdes ne coûtent pas la même chose :
+une sortie explicite depuis cette étape ; un « Retour » qui, quand on est entré par cette porte,
+ramène au plan plutôt qu'à l'étape précédente ; ou un avertissement avant la soumission d'un
+re-bilan qui libérerait un engagement. Les trois sont défendables ; le troisième protège aussi tous
+les autres chemins de re-bilan.
+
+### 14.7 « Toutes les pistes » : ce que la feuille n'a pas pu voir
+
+**Le bloc 06 est revenu conforme sur ses six lignes**, et l'écran gêne quand même — quatre remarques
+rapportées pendant la séance : « pas très joli », « aucune emphase, dur de voir qu'il y a différentes
+catégories », « peur que tout soit trop petit sur mobile », « pas sûr que *Choisir* soit compris
+comme un bouton ». Les deux constats cohabitent sans se contredire, et c'est le résultat le plus
+utile de la séance sur le plan de la méthode : **la feuille vérifiait des comportements, pas la
+planche**. Six lignes vertes sur un écran livré à moitié.
+
+Trois des quatre remarques ont la même cause — la planche A2 du canvas `v1-17` n'a été livrée qu'en
+partie, et **aucun de ces écarts n'est consigné en §9** :
+
+| Ce que la planche A2 dit | Ce qui est livré |
+|---|---|
+| Lignes : « **filet 1 px `border` dessous** » | Aucun filet ; `borderBottom` ne figure nulle part dans l'écran |
+| Têtes de groupe : `small` **600 `textTertiary`**, padding 16 dessus / 4 dessous | `cardTitle` — 17 px, couleur par défaut —, `gap: 8` |
+| Ligne ouverte : `TextLink` « **Réduire** », « s'ouvrent en carte sur place **et se referment** » | Aucune fermeture : `setOuvertes` n'ajoute jamais que, et « Réduire » n'existe nulle part dans `src/` |
+| Ligne engagée : **reste une ligne**, pastille-coche 20 px + « Engagée », ne s'ouvre pas | Rendue en `ActionCard` pleine |
+
+**Le filet explique à lui seul le « pas d'emphase ».** Sans lui, onze lignes de 14 px en
+`textSecondary` forment un pavé continu — et les têtes de groupe ont été montées d'un cran (17 px au
+lieu de 14) : on a pris la moitié qui compense et laissé celle qui structure. La planche était
+cohérente, une étiquette discrète **suffit** à annoncer un groupe quand les lignes sont séparées.
+
+**Le troisième écart est fonctionnel** : l'écran existe pour comparer deux leviers — c'est la raison
+écrite pour laquelle plusieurs lignes s'ouvrent à la fois (recette du 14/09) — et une fois trois
+lignes ouvertes on ne revient plus à la liste sans quitter l'écran. Détail de la même famille :
+`styles.groupe` porte `borderRadius: Radius.card` sans fond ni bordure, un rayon qui n'arrondit rien.
+
+**Les deux remarques qui restent ne sont pas des écarts**, et c'est ce qui les rend intéressantes :
+le titre de ligne en `small` `textSecondary` (14 px) **est** ce que la planche demande, et « Choisir »
+en texte 14 px 600 `accentText` sans cadre aussi. Ce sont de vraies questions de design — destination
+brief, comme deux des sept constats du 16/09 (`RECETTE.md` §2.4). La seconde revient pour la
+**deuxième séance consécutive** : le 14/09 avait déjà constaté que ces lignes ne se donnaient pas
+pour cliquables, et le correctif d'alors — ajouter le mot « Choisir » — n'a pas refermé la question.
+**Un mot ne fait pas une affordance** ; le dépôt n'ayant pas d'icônes, il reste un cadre.
+
+**Sur l'idée d'un balayage à la Tinder : non, et la raison est dans le rôle de l'écran.** Un paquet
+de cartes qu'on balaie montre **une** chose à la fois et suppose qu'on jette ce qu'on écarte. Ici
+rien ne se jette — ne pas choisir une piste ne la retire pas — et l'écran a été sorti du plan
+précisément pour **présenter pendant que le plan insiste** (`v1-17` §2), la comparaison étant son
+seul intérêt : le balayage la supprimerait. S'y ajoutent une décision prise une fois par saison et
+non un flux à trier, et une accessibilité qui demanderait de toute façon un chemin non gestuel en
+parallèle.
