@@ -29,8 +29,8 @@ import { noterLePremierParcours } from '@/lib/premier-parcours';
 import { ensureSession, supabase } from '@/lib/supabase';
 import {
   dateCalendaire,
-  engagementLibereParUnNouveauBilan,
-  type EngagementLibere,
+  engagementDeLaPeriodeCourante,
+  type EngagementEnCours,
 } from '@/types/rebilan';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
@@ -246,21 +246,25 @@ export default function BilanQuestionnaire() {
   const soumissionEnCours = useRef(false);
 
   /**
-   * L'engagement qu'une soumission libérerait, et la lecture qui le détermine (C6.2, `v1-19` D3).
+   * L'engagement exposé au recalcul, et la lecture qui le détermine (C6.2, `v1-19` D3).
+   *
+   * **Il n'est pas « menacé », et le nom le disait à tort** : le serveur le repose sur la ligne du
+   * nouveau plan qui porte le même gabarit, et ne l'archive que si ce gabarit n'est plus proposé
+   * (`src/types/rebilan.ts`). La feuille annonce donc une règle, pas une perte.
    *
    * **Lue au montage et non à la dernière étape**, parce qu'un re-bilan peut entrer directement sur
    * `context` : la lecture aurait alors à peine commencé au moment où l'on touche « Voir mon
    * bilan ». `handleNext` attend la promesse plutôt que de la course, ce qui coûte quelques
    * millisecondes le jour où quelqu'un est vraiment plus rapide que le réseau.
    *
-   * **Un échec de lecture laisse passer**, et c'est le bon sens de l'erreur : l'avertissement
-   * *nomme* l'action et l'intention, donc sans elles il n'aurait rien à dire — et bloquer une
-   * soumission parce qu'on n'a pas su lire un cycle coûterait plus cher que l'avertissement qu'on
-   * manque. Le produit garde son filet d'après coup, l'encart orphelin du plan (C2.2).
+   * **Un échec de lecture laisse passer**, et c'est le bon sens de l'erreur : la feuille *nomme*
+   * l'action et l'intention, donc sans elles elle n'aurait rien à dire — et bloquer une soumission
+   * parce qu'on n'a pas su lire un cycle coûterait plus cher que l'information qu'on manque. Le
+   * produit garde son filet d'après coup, l'encart orphelin du plan (C2.2).
    */
-  const engagementMenace = useRef<EngagementLibere | null>(null);
+  const engagementExpose = useRef<EngagementEnCours | null>(null);
   const lectureDeLEngagement = useRef<Promise<void> | null>(null);
-  const [feuilleDeLEngagement, setFeuilleDeLEngagement] = useState<EngagementLibere | null>(null);
+  const [feuilleDeLEngagement, setFeuilleDeLEngagement] = useState<EngagementEnCours | null>(null);
 
   useEffect(() => {
     lectureDeLEngagement.current = (async () => {
@@ -281,7 +285,7 @@ export default function BilanQuestionnaire() {
         const cycle = data?.[0];
         if (!cycle) return;
 
-        engagementMenace.current = engagementLibereParUnNouveauBilan(
+        engagementExpose.current = engagementDeLaPeriodeCourante(
           {
             period_start: cycle.period_start,
             period_end: cycle.period_end,
@@ -351,11 +355,11 @@ export default function BilanQuestionnaire() {
     }
 
     // La lecture du cycle a démarré au montage ; l'attendre ici est ce qui empêche une soumission
-    // plus rapide que le réseau de sauter l'avertissement.
+    // plus rapide que le réseau de sauter la feuille.
     if (lectureDeLEngagement.current !== null) await lectureDeLEngagement.current;
 
-    if (engagementMenace.current !== null) {
-      setFeuilleDeLEngagement(engagementMenace.current);
+    if (engagementExpose.current !== null) {
+      setFeuilleDeLEngagement(engagementExpose.current);
       return;
     }
 
@@ -668,9 +672,9 @@ export default function BilanQuestionnaire() {
         <FeuilleNouveauBilan
           engagement={feuilleDeLEngagement}
           onSoumettre={() => {
-            // La menace est consommée : sans ça, un échec de soumission suivi d'un second essai
-            // réafficherait la feuille à quelqu'un qui vient de répondre à sa question.
-            engagementMenace.current = null;
+            // La question est posée une fois : sans ça, un échec de soumission suivi d'un second
+            // essai réafficherait la feuille à quelqu'un qui vient d'y répondre.
+            engagementExpose.current = null;
             setFeuilleDeLEngagement(null);
             void submit();
           }}

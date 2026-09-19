@@ -1,7 +1,7 @@
 import {
   dateCalendaire,
-  engagementLibereParUnNouveauBilan,
-  phraseDeLEngagementLibere,
+  engagementDeLaPeriodeCourante,
+  phraseDeLEngagementRecalcule,
   type CyclePourRebilan,
 } from '@/types/rebilan';
 
@@ -40,14 +40,14 @@ describe('dateCalendaire', () => {
   });
 });
 
-describe('engagementLibereParUnNouveauBilan', () => {
+describe('engagementDeLaPeriodeCourante', () => {
   it('ne trouve rien sans cycle', () => {
-    expect(engagementLibereParUnNouveauBilan(null, '2026-09-18')).toBeNull();
+    expect(engagementDeLaPeriodeCourante(null, '2026-09-18')).toBeNull();
   });
 
   it('ne trouve rien quand aucune action n’est engagée', () => {
     const c = cycle({ actions: [action(), action()] });
-    expect(engagementLibereParUnNouveauBilan(c, '2026-09-18')).toBeNull();
+    expect(engagementDeLaPeriodeCourante(c, '2026-09-18')).toBeNull();
   });
 
   it('rend l’action engagée et son intention dans la période', () => {
@@ -58,7 +58,7 @@ describe('engagementLibereParUnNouveauBilan', () => {
       ],
     });
 
-    expect(engagementLibereParUnNouveauBilan(c, '2026-09-18')).toEqual({
+    expect(engagementDeLaPeriodeCourante(c, '2026-09-18')).toEqual({
       action: 'Faire un trajet sur cinq à vélo.',
       intention: 'le mardi et le jeudi',
     });
@@ -69,7 +69,7 @@ describe('engagementLibereParUnNouveauBilan', () => {
       actions: [action({ committed_at: '2026-09-10T08:00:00Z', intention_timing: 'ce_mois' })],
     });
 
-    expect(engagementLibereParUnNouveauBilan(c, '2026-09-18')?.intention).toBe('ce mois-ci');
+    expect(engagementDeLaPeriodeCourante(c, '2026-09-18')?.intention).toBe('ce mois-ci');
   });
 
   it('rend l’action sans intention quand la ligne n’en porte pas', () => {
@@ -78,7 +78,7 @@ describe('engagementLibereParUnNouveauBilan', () => {
     // client ne sait pas lire la valeur — une échéance ajoutée côté SQL et pas côté TypeScript.
     const c = cycle({ actions: [action({ committed_at: '2026-09-10T08:00:00Z' })] });
 
-    expect(engagementLibereParUnNouveauBilan(c, '2026-09-18')).toEqual({
+    expect(engagementDeLaPeriodeCourante(c, '2026-09-18')).toEqual({
       action: 'Faire un trajet sur cinq à vélo.',
       intention: null,
     });
@@ -87,16 +87,16 @@ describe('engagementLibereParUnNouveauBilan', () => {
   it('borne la période sur son dernier jour inclus', () => {
     const c = cycle({ actions: [action({ committed_at: '2026-09-10T08:00:00Z' })] });
 
-    expect(engagementLibereParUnNouveauBilan(c, '2026-11-30')).not.toBeNull();
-    // **Le lendemain, plus rien à perdre** : le cycle suivant est neuf, donc l'engagement est
-    // *reconduit* et non repris (C2.2). C'est toute la raison pour laquelle le seuil est une
-    // période et pas un nombre de jours.
-    expect(engagementLibereParUnNouveauBilan(c, '2026-12-01')).toBeNull();
+    expect(engagementDeLaPeriodeCourante(c, '2026-11-30')).not.toBeNull();
+    // **Le lendemain, plus rien à dire** : le cycle suivant est neuf, donc l'engagement est
+    // *reconduit* par un autre chemin (C2.2) et la feuille n'aurait aucune règle à annoncer. C'est
+    // toute la raison pour laquelle le seuil est une période et pas un nombre de jours.
+    expect(engagementDeLaPeriodeCourante(c, '2026-12-01')).toBeNull();
   });
 
   it('ne dit rien avant le début de la période', () => {
     const c = cycle({ actions: [action({ committed_at: '2026-09-10T08:00:00Z' })] });
-    expect(engagementLibereParUnNouveauBilan(c, '2026-08-31')).toBeNull();
+    expect(engagementDeLaPeriodeCourante(c, '2026-08-31')).toBeNull();
   });
 
   it('compare les bornes en chaînes, donc sans repasser par un Date', () => {
@@ -109,8 +109,8 @@ describe('engagementLibereParUnNouveauBilan', () => {
       actions: [action({ committed_at: '2026-07-10T08:00:00Z' })],
     });
 
-    expect(engagementLibereParUnNouveauBilan(c, '2026-09-01')).toBeNull();
-    expect(engagementLibereParUnNouveauBilan(c, '2026-08-31')).not.toBeNull();
+    expect(engagementDeLaPeriodeCourante(c, '2026-09-01')).toBeNull();
+    expect(engagementDeLaPeriodeCourante(c, '2026-08-31')).not.toBeNull();
   });
 
   it('retombe sur le libellé de repli quand le gabarit manque', () => {
@@ -118,30 +118,42 @@ describe('engagementLibereParUnNouveauBilan', () => {
       actions: [action({ committed_at: '2026-09-10T08:00:00Z', action_templates: null })],
     });
 
-    expect(engagementLibereParUnNouveauBilan(c, '2026-09-18')?.action).toBe('Action à préciser.');
+    expect(engagementDeLaPeriodeCourante(c, '2026-09-18')?.action).toBe('Action à préciser.');
   });
 });
 
-describe('phraseDeLEngagementLibere', () => {
-  it('nomme l’action et le moment choisi', () => {
-    expect(
-      phraseDeLEngagementLibere({
-        action: 'Faire un trajet sur cinq à vélo.',
-        intention: 'le mardi et le jeudi',
-      })
-    ).toBe(
-      'L’action que tu suis — Faire un trajet sur cinq à vélo — et le moment que tu avais choisi — le mardi et le jeudi — ne seront plus engagés.'
+describe('phraseDeLEngagementRecalcule', () => {
+  // **La phrase affirmait une perte, et le serveur ne la produit pas** (corrigé le 19/09/2026).
+  // `generate_plan_cycle_for_user` repose l'engagement sur la ligne du nouveau plan qui porte le
+  // même gabarit, et ne l'archive que `if not found`. Ces assertions gardent donc le
+  // **conditionnel** : c'est la seule forme vraie dans les deux cas, et la reperdre ferait mentir
+  // l'écran à quelqu'un qui, le plus souvent, garde son action.
+  it('dit la condition, et jamais une perte certaine', () => {
+    const phrase = phraseDeLEngagementRecalcule({
+      action: 'Faire un trajet sur cinq à vélo.',
+      intention: 'le mardi et le jeudi',
+    });
+
+    expect(phrase).toBe(
+      'L’action que tu suis — Faire un trajet sur cinq à vélo — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, tu en choisiras une autre.'
     );
+    expect(phrase).not.toContain('ne seront plus');
   });
 
-  it('ne laisse pas de tiret vide quand il n’y a pas d’intention', () => {
-    expect(
-      phraseDeLEngagementLibere({ action: 'Faire un trajet sur cinq à vélo.', intention: null })
-    ).toBe('L’action que tu suis — Faire un trajet sur cinq à vélo — ne sera plus engagée.');
+  it('dit la même condition sans intention', () => {
+    const phrase = phraseDeLEngagementRecalcule({
+      action: 'Faire un trajet sur cinq à vélo.',
+      intention: null,
+    });
+
+    expect(phrase).toBe(
+      'L’action que tu suis — Faire un trajet sur cinq à vélo — reste engagée si ton nouveau plan la propose encore. Sinon, tu en choisiras une autre.'
+    );
+    expect(phrase).not.toContain('ne sera plus');
   });
 
   it('retire le point final du libellé plutôt que d’enchaîner deux ponctuations', () => {
-    const phrase = phraseDeLEngagementLibere({ action: 'Action à préciser.', intention: null });
+    const phrase = phraseDeLEngagementRecalcule({ action: 'Action à préciser.', intention: null });
     expect(phrase).not.toContain('.. ');
     expect(phrase).toContain('— Action à préciser —');
   });

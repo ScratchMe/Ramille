@@ -2471,7 +2471,7 @@ fois que le premier parcours est vu tourner, et il tourne.
 | 14.2 | 01.1 — il est écrit qu'on peut commencer sans compte, pas ce qu'on y perd | **Feuille fautive** : elle attendait une phrase que le produit n'a jamais portée. Et le jugement de la séance est qu'elle n'a pas à y être — à cette étape, « ce qu'on perd » ne veut encore rien dire pour quelqu'un qui n'a pas vu son bilan | Corriger la feuille |
 | 14.3 | 03.1 — l'écran de création de compte s'intercale avant le plan | **Conforme au produit**, feuille fautive : c'est la transition imposée de `/connexion` (`resultat_transition`), un choix daté. Mais la question posée par la séance — *est-ce le bon moment ?* — est légitime et n'a jamais été rejouée depuis que le premier parcours existe | Corriger la feuille ; **question de produit** ouverte |
 | 14.4 | 05.3 — pas d'espace fine dans « 1601 » | **Le seul vrai défaut**, et il n'est pas là où on le croit : le code est juste. §14.5 | [#228](https://github.com/ScratchMe/Ramille/issues/228) |
-| 14.5 | 07.4 — on ne peut pas revenir au plan sans soumettre, et ça a fait re-soumettre un bilan | **Défaut de parcours, à conséquence** : un re-bilan dans la même période libère l'engagement | §14.6 → [`v1-19`](v1-19-rythme-des-bilans.md), [#229](https://github.com/ScratchMe/Ramille/issues/229) à [#233](https://github.com/ScratchMe/Ramille/issues/233) |
+| 14.5 | 07.4 — on ne peut pas revenir au plan sans soumettre, et ça a fait re-soumettre un bilan | **Défaut de parcours.** La conséquence annoncée ici — « un re-bilan libère l'engagement » — **était fausse** et a été corrigée le 19/09 : cf. §14.6 | §14.6 → [`v1-19`](v1-19-rythme-des-bilans.md), [#229](https://github.com/ScratchMe/Ramille/issues/229) à [#233](https://github.com/ScratchMe/Ramille/issues/233) |
 
 ### 14.5 L'espace fine est là : c'est la police qui la dessine à un demi-pixel
 
@@ -2506,10 +2506,14 @@ Entré depuis l'encart de contexte du plan (« Modifier ces réponses », C5.5),
 l'étape **précédente du questionnaire** et non au plan, et **« Voir mon bilan »**, qui **soumet**.
 Il n'existe aucun chemin « j'abandonne, rends-moi mon plan ».
 
-**Ce n'est pas un inconfort, c'est une perte** : soumettre depuis là est un re-bilan dans la même
-période, donc `generate_plan_cycle_for_user` reprend l'engagement en libérant `committed_at`
-(`archiver_engagement`, `released_reason = 'rebilan'`, C2.2). Quelqu'un qui voulait seulement
-**relire** son contexte ressort sans action engagée. C'est exactement arrivé pendant la séance.
+**Ce paragraphe affirmait une perte, et il avait tort** (corrigé le 19/09/2026, en lisant
+`pg_get_functiondef` plutôt que la description). `generate_plan_cycle_for_user` **capture**
+l'engagement, régénère, puis le **repose** sur la ligne du nouveau plan qui porte le même gabarit,
+et ne l'archive `if not found` — donc seulement si l'action n'est plus proposée. « Reprend », dans
+`CLAUDE.md`, veut dire « le récupère », pas « le lui retire ».
+
+Ce qui reste du constat est **le défaut de parcours**, et il suffit : on ne peut pas relire son
+contexte sans soumettre un bilan qu'on ne voulait pas faire. C'est ce que C6.4 ferme.
 
 **Tranché le 18/09/2026, et pas comme ce paragraphe le posait** : le cadrage produit a élargi la
 question — le défaut n'est pas cette porte, c'est qu'il n'y a pas de rythme de bilan du tout. Tout
