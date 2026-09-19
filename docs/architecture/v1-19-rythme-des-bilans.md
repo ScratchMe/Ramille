@@ -11,11 +11,28 @@
 
 ## 1. D'où ça vient
 
+> **Correction du 19/09/2026 — une affirmation de ce document était fausse.** Il a été écrit, ici
+> et dans l'issue [#230](https://github.com/ScratchMe/Ramille/issues/230), qu'un nouveau bilan dans
+> la même période **libère** l'engagement. La définition vivante de `generate_plan_cycle_for_user`,
+> relue par `pg_get_functiondef`, dit le contraire : elle **capture** l'engagement, régénère le
+> cycle, puis le **repose** sur la ligne du nouveau plan qui porte le même gabarit
+> (`update … where action_template_id = v_eng.action_template_id`), et ne l'archive que
+> `if not found` — c'est-à-dire **seulement si ce gabarit n'est plus proposé**.
+>
+> L'erreur vient d'une lecture de `CLAUDE.md` : « le re-bilan **reprend** l'engagement » y veut dire
+> « le récupère et le repose », et non « le lui retire ». Elle a été bâtie dessus sans vérifier la
+> fonction, ce qui aurait coûté une requête.
+>
+> **Ce que ça change** : la feuille de C6.2 annonçait une perte certaine à quelqu'un qui, dans le
+> cas courant, garde son action. Elle dit désormais la règle au conditionnel. Les passages corrigés
+> ci-dessous sont signalés ; le reste du document tient.
+
 La recette du 18/09/2026 a trouvé qu'on ne peut pas **sortir du questionnaire sans soumettre**
 (`v1-13` §14.6). Entré depuis l'encart de contexte du plan, on n'a que « Retour », qui remonte à
-l'étape précédente du questionnaire, et « Voir mon bilan », qui soumet. Soumettre est un re-bilan
-dans la même période, donc l'engagement est libéré (C2.2) : quelqu'un qui voulait **relire** son
-contexte ressort sans action engagée. C'est arrivé pendant la séance.
+l'étape précédente du questionnaire, et « Voir mon bilan », qui soumet. **Corrigé** : soumettre
+refait le plan de la période, et l'engagement n'est perdu que si son action n'est plus proposée par
+le plan recalculé. Le défaut de parcours, lui, reste entier — on ne peut pas sortir sans soumettre,
+et c'est ce que C6.4 ferme.
 
 Le premier remède envisagé était un avertissement avant la soumission. Le cadrage produit du même
 jour l'a écarté comme réponse principale, et il a eu raison : **le défaut n'est pas cette porte, c'est
@@ -137,9 +154,9 @@ dépendance à `household_vehicles` est le dernier fil qui relie une réponse de
   bilan » en permanence, à un toucher du suivi, et c'est sa place — on y a un bilan sous les yeux.
 - **D3 — L'avertissement se déclenche sur la période de plan, pas sur un nombre de jours.** « Dans
   la même période que le cycle courant » est ce que la base sait déjà (`plan_cycles.period_start`,
-  `period_end`) **et** ce qui coûte quelque chose : c'est exactement la condition sous laquelle
-  l'engagement est libéré. Un seuil en jours serait un second calendrier à tenir d'accord avec le
-  premier.
+  `period_end`) **et** la seule situation où il y ait quelque chose à dire : hors de cette période
+  le cycle suivant est neuf, donc l'engagement est *reconduit* par un autre chemin. Un seuil en
+  jours serait un second calendrier à tenir d'accord avec le premier.
 - **D4 — L'avertissement dit ce qu'on perd, et il ne refuse pas.** Il nomme l'action engagée et
   l'intention — le seul choix personnel que le produit demande — et laisse passer. Le produit
   annonce déjà cet effet **après coup** (l'encart orphelin de C2.2, filtré sur

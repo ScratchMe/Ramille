@@ -1,26 +1,39 @@
 import { formatIntention } from '@/types/plan';
 
 /**
- * Ce qu'un nouveau bilan coûte à l'engagement en cours (C6.2, `v1-19` D3 et D4).
+ * Ce qu'un nouveau bilan fait à l'engagement en cours (C6.2, `v1-19` D3 et D4).
  *
- * **Le fait** : un nouveau bilan soumis dans la **même période** que le cycle courant ne crée pas
- * de second cycle — `generate_plan_cycle_for_user` reconstruit celui qui existe, et la reprise de
- * l'engagement passe par `archiver_engagement` avec `released_reason = 'rebilan'` (C2.2).
- * `committed_at`, `intention_days` et `intention_timing` repartent. Quelqu'un qui voulait seulement
- * corriger une réponse ressort sans action engagée, et c'est arrivé en recette le 18/09/2026
- * (`v1-13` §14.6).
+ * **Le fait, relu dans la définition vivante de `generate_plan_cycle_for_user` le 19/09/2026** — et
+ * il dit l'inverse de ce que la première version de ce module affirmait. La fonction **capture**
+ * l'engagement, régénère le cycle, puis le **repose** sur la ligne du nouveau plan qui porte le même
+ * gabarit :
  *
- * **Le seuil est une période, jamais un nombre de jours.** C'est ce que la base sait déjà
- * (`plan_cycles.period_start` / `period_end`) **et** exactement la condition sous laquelle la perte
- * se produit : à la bascule de saison le cycle est neuf, donc l'engagement est *reconduit* et rien
- * ne se perd. Un seuil en jours serait un second calendrier à tenir d'accord avec le premier, et il
- * se tromperait aux bornes.
+ * ```sql
+ * update public.plan_actions
+ *    set committed_at = v_eng.committed_at, intention_days = …, intention_timing = …
+ *  where plan_cycle_id = v_cycle_id and action_template_id = v_eng.action_template_id;
+ * if not found then perform public.archiver_engagement(… v_raison); end if;
+ * ```
  *
- * **On avertit, on ne refuse pas.** Le produit annonce déjà cet effet *après coup* — l'encart
- * orphelin du plan lit l'archive filtrée sur `rebilan`. Il ne s'agit pas d'inventer un mécanisme
- * mais de le dire avant.
+ * L'engagement n'est donc archivé — et perdu — **que si son gabarit n'est plus proposé** par le plan
+ * recalculé. C'est le cas minoritaire : il faut que les réponses aient changé au point de rendre
+ * l'action impossible ou sans objet.
+ *
+ * **D'où venait l'erreur** : `CLAUDE.md` écrit « le re-bilan **reprend** l'engagement, le changement
+ * de saison le reconduit », et « reprend » a été lu comme « le lui retire » là où le code dit « le
+ * récupère et le repose ». La feuille annonçait donc une perte certaine à quelqu'un qui, dans le cas
+ * courant, garde son action. Mesurer la fonction plutôt que lire sa description aurait coûté une
+ * requête.
+ *
+ * **Le seuil reste la période, jamais un nombre de jours.** C'est ce que la base sait déjà
+ * (`plan_cycles.period_start` / `period_end`) : à la bascule de saison le cycle est neuf, donc
+ * l'engagement est *reconduit* par un autre chemin et il n'y a rien à annoncer.
+ *
+ * **Et on annonce sans refuser.** Le produit dit déjà la perte *après coup*, par l'encart orphelin
+ * du plan filtré sur `released_reason = 'rebilan'` ; ce module la dit **avant**, au conditionnel,
+ * qui est la seule forme vraie.
  */
-export type EngagementLibere = {
+export type EngagementEnCours = {
   /** Le libellé de l'action engagée, figé sur le gabarit. */
   action: string;
   /** « le mardi et le jeudi », « ce mois-ci »… ou `null` si la ligne n'en porte pas. */
@@ -58,7 +71,12 @@ export function dateCalendaire(maintenant: Date): string {
 }
 
 /**
- * L'engagement qu'un nouveau bilan libérerait, ou `null` s'il n'y a rien à perdre.
+ * L'engagement de la période courante, ou `null` s'il n'y en a pas.
+ *
+ * **Le nom dit ce que la fonction calcule, et plus ce qu'on croyait qu'il adviendrait** : elle
+ * s'appelait `engagementLibereParUnNouveauBilan`, ce qui affirmait une perte que le serveur ne
+ * produit pas. Elle rend l'engagement **exposé au recalcul**, dont le sort dépend de ce que le
+ * nouveau plan proposera.
  *
  * **Les bornes se comparent en chaînes**, jamais en `Date` : `period_end` est une date de calendrier
  * en `YYYY-MM-DD`, et `new Date('2026-11-30')` est minuit **UTC**, donc le 29 à l'ouest de
@@ -67,10 +85,10 @@ export function dateCalendaire(maintenant: Date): string {
  *
  * `period_end` est **inclus** : le dernier jour d'une saison est encore dans la saison.
  */
-export function engagementLibereParUnNouveauBilan(
+export function engagementDeLaPeriodeCourante(
   cycle: CyclePourRebilan | null,
   aujourdHui: string
-): EngagementLibere | null {
+): EngagementEnCours | null {
   if (cycle === null) return null;
   if (aujourdHui < cycle.period_start || aujourdHui > cycle.period_end) return null;
 
@@ -86,26 +104,29 @@ export function engagementLibereParUnNouveauBilan(
 }
 
 /**
- * Ce que l'avertissement dit qu'on perd.
+ * Ce que l'avertissement dit qu'il va se passer.
  *
- * **Deux formes et non une seule à trous, et la seconde est défensive** — il faut le dire, sinon
- * un prochain passage la prendra pour du code mort et la retirera. La base garantit qu'une action
- * engagée porte une intention : `plan_actions_engagement_coherent` exige, dès que `committed_at`
- * est posé, **exactement une** des deux formes. Ce que la base ne garantit pas, c'est que le client
+ * **La phrase est au conditionnel parce que le serveur l'est.** Elle affirmait une perte ; elle dit
+ * désormais la règle exacte — l'action reste engagée si le plan recalculé la propose encore, et on
+ * en choisit une autre sinon. C'est la seule formulation qui soit vraie dans les deux cas, et elle
+ * ne fait peur ni à tort ni par omission.
+ *
+ * **Deux formes et non une seule à trous, et la seconde est défensive** — il faut le dire, sinon un
+ * prochain passage la prendra pour du code mort et la retirera. La base garantit qu'une action
+ * engagée porte une intention : `plan_actions_engagement_coherent` exige, dès que `committed_at` est
+ * posé, **exactement une** des deux formes. Ce que la base ne garantit pas, c'est que le client
  * sache la **lire** : `formatIntentionTiming` cherche la valeur dans `INTENTION_TIMINGS`, donc une
  * échéance ajoutée côté SQL et pas côté TypeScript rendrait `null` — le piège de
  * `complement_de_maintien` et d'`emission_factor_sources`, déjà payé deux fois ici.
- * Écrire « et le moment que tu avais choisi — ­— » serait alors la fausseté lisible que ce dépôt
- * retire ailleurs.
  *
  * Le point final du libellé part avant la composition : les gabarits en portent un, et sans ça la
  * phrase enchaîne deux ponctuations.
  */
-export function phraseDeLEngagementLibere(engagement: EngagementLibere): string {
+export function phraseDeLEngagementRecalcule(engagement: EngagementEnCours): string {
   const action = engagement.action.replace(/\.$/, '');
 
   if (engagement.intention === null) {
-    return `L’action que tu suis — ${action} — ne sera plus engagée.`;
+    return `L’action que tu suis — ${action} — reste engagée si ton nouveau plan la propose encore. Sinon, tu en choisiras une autre.`;
   }
-  return `L’action que tu suis — ${action} — et le moment que tu avais choisi — ${engagement.intention} — ne seront plus engagés.`;
+  return `L’action que tu suis — ${action} — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, tu en choisiras une autre.`;
 }

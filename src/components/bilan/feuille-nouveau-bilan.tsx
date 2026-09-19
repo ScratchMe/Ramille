@@ -6,31 +6,39 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { phraseDeLEngagementLibere, type EngagementLibere } from '@/types/rebilan';
+import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/rebilan';
 
 /**
- * L'avertissement avant une soumission qui libère l'engagement en cours (C6.2, `v1-19` D4).
+ * Ce qu'une soumission fait à l'engagement en cours, dit avant (C6.2, `v1-19` D4).
  *
- * **Il avertit, il ne refuse pas.** Le produit annonce déjà cet effet *après coup* — l'encart
+ * **Elle annonçait une perte certaine, et c'était faux** (corrigé le 19/09/2026, après lecture de la
+ * définition vivante de `generate_plan_cycle_for_user`). Le serveur **repose** l'engagement sur la
+ * ligne du nouveau plan qui porte le même gabarit, et ne l'archive que si ce gabarit n'est plus
+ * proposé. La feuille disait donc « tu vas repartir sans action engagée » à quelqu'un qui, dans le
+ * cas courant, garde la sienne. Elle dit maintenant la règle, au conditionnel, qui est la seule
+ * forme vraie dans les deux cas — cf. `src/types/rebilan.ts` pour le code SQL relu.
+ *
+ * **Elle informe, elle ne refuse pas.** Le produit annonce déjà la perte *après coup* — l'encart
  * orphelin du plan lit `plan_action_commitments_archive` filtrée sur `released_reason = 'rebilan'`
  * (C2.2). Ce qui manquait était de le dire **avant**, au moment où la personne peut encore décider.
  * Le chemin reste donc entier : le bouton plein soumet, la sortie referme, et rien n'est interdit.
  *
- * **Sans Ramille, et c'est délibéré.** Elle est la voix de l'encouragement, pas celle d'un
- * avertissement qui nomme une conséquence — lui faire dire « tu vas perdre » la mettrait dans un
- * rôle qu'elle n'a nulle part ailleurs dans le produit. Le texte est en voix produit, comme le
- * pied de la carte d'un point répondu.
+ * **Sans Ramille, et c'est délibéré.** Elle est la voix de l'encouragement, pas celle d'un écran
+ * qui explique une mécanique — lui faire dire ce qu'un recalcul fait à un engagement la mettrait
+ * dans un rôle qu'elle n'a nulle part ailleurs. Le texte est en voix produit, comme le pied de la
+ * carte d'un point répondu.
  *
- * **Il ne se déclenche pas sur un nombre de jours** : `engagementLibereParUnNouveauBilan`
- * (`src/types/rebilan.ts`) borne la question à la période du cycle courant, qui est exactement la
- * condition sous laquelle la perte se produit.
+ * **Elle ne se déclenche pas sur un nombre de jours** : `engagementDeLaPeriodeCourante`
+ * (`src/types/rebilan.ts`) borne la question à la période du cycle courant. Hors de cette période
+ * le cycle suivant est neuf, l'engagement est *reconduit* par un autre chemin, et il n'y a rien à
+ * dire.
  */
 export function FeuilleNouveauBilan({
   engagement,
   onSoumettre,
   onFerme,
 }: {
-  engagement: EngagementLibere;
+  engagement: EngagementEnCours;
   /** Poursuivre la soumission, en sachant ce qu'elle coûte. */
   onSoumettre: () => void;
   /** Refermer sans rien soumettre : on reste sur la dernière étape du questionnaire. */
@@ -51,11 +59,10 @@ export function FeuilleNouveauBilan({
         <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
           <View style={[styles.poignee, { backgroundColor: theme.border }]} />
 
-          <ThemedText type="cardTitle">Tu vas repartir sans action engagée</ThemedText>
+          <ThemedText type="cardTitle">Ton plan va être recalculé</ThemedText>
 
           <ThemedText type="body" themeColor="textSecondary">
-            {phraseDeLEngagementLibere(engagement)} Un nouveau bilan refait ton plan pour cette
-            période ; tu pourras en choisir une autre juste après.
+            {phraseDeLEngagementRecalcule(engagement)}
           </ThemedText>
 
           {/* Le cadrage du 18/09/2026, et il n'est pas décoratif : la raison principale de ne pas
