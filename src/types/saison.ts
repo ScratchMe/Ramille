@@ -131,6 +131,37 @@ export function saisonDe(date: Date): BornesDeSaison {
 }
 
 /**
+ * Le rang d'une saison dans la suite des saisons, pour pouvoir en **compter** l'écart.
+ *
+ * L'ordre dans l'année est `printemps` → `ete` → `automne` → `hiver`, et **pas** celui de `SAISONS`,
+ * qui commence par l'hiver. C'est la singularité de l'hiver qui l'impose : il démarre en **décembre**
+ * de son année de départ, donc il vient après l'automne de la même année et avant le printemps de
+ * la suivante. Le ranger en tête ferait compter l'hiver 2026 avant l'automne 2026.
+ */
+const RANG_DANS_LANNEE: Record<Saison, number> = { printemps: 0, ete: 1, automne: 2, hiver: 3 };
+
+function rangDeSaison(bornes: BornesDeSaison): number {
+  return bornes.debut.getFullYear() * 4 + RANG_DANS_LANNEE[bornes.saison];
+}
+
+/**
+ * Combien de bascules de saison séparent une date d'aujourd'hui (C6.3, `v1-19` postulats 3 et 4).
+ *
+ * **Une bascule, pas une durée.** Un bilan du 30 novembre et un bilan du 2 septembre ont trois mois
+ * d'écart et zéro bascule pour l'un, une pour l'autre — c'est voulu : ce qu'on veut savoir n'est pas
+ * l'âge du bilan mais si une **saison entière** a eu lieu depuis, parce que c'est la maille à
+ * laquelle une habitude a eu le temps de prendre et donc de se mesurer.
+ *
+ * Le calendrier est **local**, comme tout ce qui nomme une saison à un humain — `saisonDe` fait
+ * déjà ce choix, et on ne l'aligne pas sur l'UTC des générateurs de points.
+ */
+export function saisonsEcouleesDepuis(iso: string, maintenant: Date = new Date()): number {
+  const depuis = new Date(iso);
+  if (Number.isNaN(depuis.getTime())) return 0;
+  return Math.max(0, rangDeSaison(saisonDe(maintenant)) - rangDeSaison(saisonDe(depuis)));
+}
+
+/**
  * Un point de suivi, réduit à ce que le récapitulatif regarde. Volontairement plus étroit que
  * `CheckinRecord` (`src/types/suivi.ts`) : ce module ne doit pas dépendre de la forme exacte
  * d'une ligne, qui bouge au chantier suivant (C2.4 ajoute `response_kind`).

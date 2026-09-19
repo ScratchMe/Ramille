@@ -27,7 +27,8 @@ import { formatIntention } from '@/types/plan';
 import {
   ancienneteEnMots,
   daysSince,
-  doitProposerUnRebilan,
+  phraseDuRegimeDeRebilan,
+  regimeDeRebilan,
   ecartParPoste,
   estUneBaisse,
   formatDate,
@@ -326,7 +327,11 @@ export default function Suivi() {
   // ci-dessous — on compte les fois où la personne a répondu, jamais celles qu'elle a laissées
   // passer).
   const answeredYes = checkins.filter((checkin) => checkin.reponse === 'oui').length;
-  const suggestRebilan = doitProposerUnRebilan(latest.submittedAt);
+  // **Deux régimes et non un booléen** (C6.3, `v1-19` postulats 3 et 4) : on propose à la première
+  // bascule de saison, on ré-insiste à la deuxième — et la seconde phrase dit **pourquoi**, faute
+  // de quoi ce ne serait qu'un rappel de plus, ce que la spec §7 interdit.
+  const regimeRebilan = regimeDeRebilan(latest.submittedAt);
+  const phraseRebilan = phraseDuRegimeDeRebilan(regimeRebilan);
   // Les points par saison (C2.7, point 5) : l'en-tête d'un groupe porte son **vrai** total, et la
   // troncature devient visible et réversible. La liste était coupée à huit en silence sous un
   // compteur global qui en annonçait davantage.
@@ -612,7 +617,7 @@ export default function Suivi() {
             <RamilleDit ligne={RAMILLE.suiviDifference} mood="calm" size={36} themeColor="text" />
           )}
 
-          {suggestRebilan && (
+          {phraseRebilan !== null && (
             <ThemedView type="backgroundElement" style={styles.card}>
               {/* **L'âge par la dérivation partagée, en mots** (C2.8). Le mois se calculait ici,
                   en chiffres, tandis que le plan disait « Ton bilan date d'un moment » : deux écrans
@@ -622,8 +627,7 @@ export default function Suivi() {
                 Ton dernier bilan a {ancienneteEnMots(daysSince(latest.submittedAt))}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                En faire un nouveau prend moins de temps que la première fois : tes réponses sont
-                pré-remplies, tu ne modifies que ce qui a changé.
+                {phraseRebilan}
               </ThemedText>
               {/* **« Refaire » laissait croire à un écrasement** (C6.1, `v1-19` D1). Aucun bilan
                   n'est jamais effacé : chaque soumission est une ligne de plus, l'historique

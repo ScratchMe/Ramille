@@ -13,6 +13,7 @@ import {
   motsDuContexte,
   pistesDuPlan,
   pistesParPoste,
+  filetsDesLignes,
   separationsDesLignes,
   type IntentionDay,
   type ReponsesDeContexte,
@@ -253,6 +254,39 @@ describe('pistesParPoste', () => {
   });
 });
 
+describe('filetsDesLignes', () => {
+  // **L'écart au canvas que la recette du 18/09/2026 a fait ressortir sans pouvoir le nommer** : le
+  // bloc 06 de la feuille était conforme sur ses six lignes, et l'écran gênait quand même. La
+  // planche A2 demandait un filet sous chaque ligne ; il n'a jamais été livré, et onze lignes de
+  // 14 px formaient un pavé.
+  //
+  // Éprouvée en cassant ce qu'elle garde : en retirant l'exclusion des cartes, la première
+  // assertion tombe seule ; en retirant celle de la dernière ligne, la deuxième tombe seule.
+  const lignes = ['a', 'b', 'c', 'd'];
+
+  it('pose un filet sous chaque ligne fermée sauf la dernière', () => {
+    expect(filetsDesLignes(lignes, new Set())).toEqual([true, true, true, false]);
+  });
+
+  // Une carte porte sa propre bordure : un filet dessous dessinerait un second bord à deux pixels
+  // du premier.
+  it('n’en pose pas sous une ligne rendue en carte', () => {
+    expect(filetsDesLignes(lignes, new Set(['b']))).toEqual([true, false, true, false]);
+  });
+
+  // La dernière ligne n'a rien à séparer d'elle : ce qui suit est la tête du groupe suivant, ou la
+  // fin de l'écran. Un filet y annoncerait une ligne de plus.
+  it('ne pose rien sur une liste d’une seule ligne', () => {
+    expect(filetsDesLignes(['a'], new Set())).toEqual([false]);
+    expect(filetsDesLignes([], new Set())).toEqual([]);
+  });
+
+  // Le cas qui réunit les deux exclusions : dernière ligne **et** rendue en carte.
+  it('n’en pose pas sous une dernière ligne ouverte', () => {
+    expect(filetsDesLignes(lignes, new Set(['d']))).toEqual([true, true, true, false]);
+  });
+});
+
 describe('separationsDesLignes', () => {
   // **13.5 de la recette web du 16/09/2026** : deux lignes dépliées en carte se touchaient. Aucune
   // assertion ne portait sur l'espacement — c'est exactement pourquoi la CI ne l'a pas vu —, d'où
@@ -287,14 +321,15 @@ describe('separationsDesLignes', () => {
     expect(separationsDesLignes(lignes, new Set(['b', 'c']))).toEqual([false, true, true, true]);
   });
 
-  // **Le paramètre est « rendue en carte », et pas « ouverte au toucher »** (contre-lecture du lot
-  // 5, 17/09/2026). L'écran des pistes rend aussi en carte l'**action engagée**, qu'on ne déplie
-  // pas : lui passer les seules lignes ouvertes laissait la ligne suivante se coller sous elle,
-  // c'est-à-dire 13.5 recréé sur l'écran neuf. La fonction ne peut pas attraper cette faute d'appel
-  // — elle reçoit un ensemble, pas des lignes — donc cette assertion existe pour **nommer** ce que
-  // l'ensemble doit contenir.
-  it('sépare sous une carte que personne n’a ouverte', () => {
-    // « b » n'est pas dépliée : elle est engagée, donc rendue en carte. La frontière b|c compte.
+  // **Le paramètre est « rendue en carte », et pas « ouverte au toucher »**, et cette nuance a
+  // changé de raison d'être sans changer de contenu. Elle est née de la contre-lecture du lot 5,
+  // quand l'écran rendait aussi en carte l'**action engagée** qu'on ne déplie pas — lui passer les
+  // seules lignes ouvertes laissait la ligne suivante se coller sous elle. Depuis #234 l'action
+  // engagée **reste une ligne** (planche A2), donc l'ensemble est aujourd'hui exactement celui des
+  // lignes ouvertes. Le contrat, lui, ne bouge pas : la fonction parle de cartes rendues, quelle
+  // que soit la manière dont elles le sont, et c'est ce qui la laisse juste le jour où une
+  // troisième cause de carte apparaît.
+  it('sépare sous une carte, quelle qu’en soit la cause', () => {
     expect(separationsDesLignes(lignes, new Set(['b']))[2]).toBe(true);
   });
 

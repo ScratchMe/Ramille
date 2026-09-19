@@ -24,7 +24,7 @@ import {
   EQUIVALENCE_VOL_KM,
   volsEquivalents,
 } from '@/constants/carbon-reference';
-import { formatTonnes } from '@/lib/format';
+import { formatTonnes, grouperLesMilliers } from '@/lib/format';
 import type { Palier } from '@/types/palier';
 import { POSTE_EN_PHRASE, POSTE_LABEL, POSTE_SUBJECT } from '@/constants/postes';
 
@@ -379,8 +379,6 @@ export function palierNote(palier: Palier, repereVisible: boolean, poste: string
 export function equivalenceNote(palier: Palier): string | null {
   const vols = volsEquivalents(palier.reductionKg);
   if (vols === null) return null;
-  // Séparateur de milliers écrit à la main : `toLocaleString('fr-FR')` rendrait « 1,500 » sur un
-  // Hermes construit sans ICU complet, c'est-à-dire une virgule décimale au milieu d'une distance.
-  const km = String(EQUIVALENCE_VOL_KM).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+  const km = grouperLesMilliers(String(EQUIVALENCE_VOL_KM));
   return `Pour situer : à peu près ${vols === 1 ? 'un vol' : `${vols} vols`} de ${km} km.`;
 }

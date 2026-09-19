@@ -63,8 +63,8 @@ describe('sectionsDeMethode', () => {
     expect(texte).toContain('52 semaines');
     expect(texte).toContain('0,25 sortie');
     expect(texte).toContain('15 km');
-    expect(texte).toContain('1 500 km');
-    expect(texte).toContain('9 000 km');
+    expect(texte).toContain('1\u00a0500 km');
+    expect(texte).toContain('9\u00a0000 km');
     expect(texte).toContain('800 km');
     expect(texte).toContain('700 km');
     expect(texte).toContain('50 %');

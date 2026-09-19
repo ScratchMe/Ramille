@@ -17,7 +17,8 @@ import {
   keepLatestPerDay,
   libelleDeReponse,
   libellePeriodeAffiche,
-  REBILAN_SUGGESTION_DAYS,
+  phraseDuRegimeDeRebilan,
+  regimeDeRebilan,
   variationNote,
   type AssessmentSnapshot,
   type CheckinRecord,
@@ -213,11 +214,13 @@ describe('libelleDeReponse', () => {
 });
 
 describe('ancienneteEnMots', () => {
-  // Le seuil de la proposition de re-bilan doit tomber pile sur « six mois » : c'est la phrase du
-  // canvas (« Ton bilan a six mois »), et si la dérivation rendait « cinq mois » au jour où la
-  // carte apparaît, la carte se contredirait elle-même le premier jour.
-  it('dit « six mois » au seuil de la proposition', () => {
-    expect(ancienneteEnMots(REBILAN_SUGGESTION_DAYS)).toBe('six mois');
+  // **Ce test épinglait autrefois le seuil de la proposition** : la carte apparaissait à 182 jours,
+  // donc la dérivation devait y dire « six mois » sous peine de se contredire le premier jour.
+  // Depuis C6.3 la carte se déclenche sur une **bascule de saison**, donc son âge à l'apparition
+  // n'est plus fixe — il va d'un jour (bilan fait la veille d'un 1er décembre) à près de six mois.
+  // L'assertion reste, mais comme une valeur de la table et non comme un couplage.
+  it('dit « six mois » à 182 jours', () => {
+    expect(ancienneteEnMots(182)).toBe('six mois');
   });
 
   it.each([
@@ -554,16 +557,91 @@ describe('pointsParSaison', () => {
   });
 });
 
-describe('doitProposerUnRebilan', () => {
-  const ilYA = (jours: number) =>
-    new Date(Date.now() - jours * 24 * 60 * 60 * 1000).toISOString();
+describe('regimeDeRebilan', () => {
+  // Le fuseau de la suite est Europe/Paris (script `npm test`), donc ces dates sont celles que la
+  // personne lit. Saisons météorologiques : l'automne 2026 va du 1er septembre au 30 novembre.
+  const bilan = (iso: string) => new Date(iso).toISOString();
 
-  it('propose au seuil, pas la veille', () => {
-    expect(doitProposerUnRebilan(ilYA(REBILAN_SUGGESTION_DAYS))).toBe(true);
-    expect(doitProposerUnRebilan(ilYA(REBILAN_SUGGESTION_DAYS - 1))).toBe(false);
+  it('ne propose rien dans la saison du bilan', () => {
+    // Deux mois et demi d'écart, et pourtant zéro bascule : c'est exactement ce que la maille
+    // « saison » veut dire, et ce qu'un seuil en jours ne sait pas dire.
+    expect(regimeDeRebilan(bilan('2026-09-02T10:00:00+02:00'), new Date('2026-11-30T23:00:00+01:00')))
+      .toBe('aucun');
+  });
+
+  it('propose dès la première bascule', () => {
+    // Le lendemain, l'hiver a commencé : une saison entière a eu lieu.
+    expect(regimeDeRebilan(bilan('2026-09-02T10:00:00+02:00'), new Date('2026-12-01T10:00:00+01:00')))
+      .toBe('proposer');
+  });
+
+  it('insiste à partir de la deuxième', () => {
+    expect(regimeDeRebilan(bilan('2026-09-02T10:00:00+02:00'), new Date('2027-03-01T10:00:00+01:00')))
+      .toBe('insister');
+    expect(regimeDeRebilan(bilan('2026-09-02T10:00:00+02:00'), new Date('2027-09-01T10:00:00+02:00')))
+      .toBe('insister');
+  });
+
+  // **Le cas qu'un seuil en jours prend à l'envers** : un bilan de la veille d'une bascule a un jour
+  // d'âge et une saison écoulée, donc il se propose ; un bilan de deux mois et demi pris en début de
+  // saison n'en a aucune. Ce n'est pas l'âge qu'on mesure, c'est la confrontation possible.
+  it('propose un bilan de la veille si la saison a basculé', () => {
+    expect(regimeDeRebilan(bilan('2026-11-30T18:00:00+01:00'), new Date('2026-12-01T09:00:00+01:00')))
+      .toBe('proposer');
   });
 
   // Sans bilan il n'y a rien à refaire, et l'écran concerné propose déjà d'en faire un premier.
+  it('ne propose rien sans date', () => {
+    expect(regimeDeRebilan(null)).toBe('aucun');
+    expect(regimeDeRebilan(undefined)).toBe('aucun');
+  });
+});
+
+describe('phraseDuRegimeDeRebilan', () => {
+  it('ne dit rien quand il n’y a rien à proposer', () => {
+    expect(phraseDuRegimeDeRebilan('aucun')).toBeNull();
+  });
+
+  // **La phrase nomme la saison comme unité, jamais une saison en particulier.** « Une nouvelle
+  // saison a commencé » avait été retiré de la carte du plan (C2.8) parce que son déclencheur —
+  // 182 jours — ne le garantissait pas. Il tient désormais à la bascule ; nommer *laquelle* reste
+  // le travail de la carte d'ouverture.
+  it('dit qu’une saison a passé, sans nommer laquelle', () => {
+    const phrase = phraseDuRegimeDeRebilan('proposer');
+    expect(phrase).toContain('Une saison a passé');
+    for (const saison of ['hiver', 'printemps', 'été', 'automne', 'Hiver', 'Printemps', 'Été', 'Automne']) {
+      expect(phrase).not.toContain(saison);
+    }
+  });
+
+  // **Une insistance qui ne dit pas pourquoi n'est qu'un rappel de plus**, et la spec §7 les
+  // interdit. La raison donnée ne dépend pas de la personne : le référentiel a bougé sous son bilan.
+  it('donne la raison de la ré-insistance', () => {
+    const phrase = phraseDuRegimeDeRebilan('insister');
+    expect(phrase).toContain('facteurs d’émission');
+    expect(phrase).toContain('trimestre');
+  });
+
+  // Aucune des deux ne cite de nombre en chiffres : ce sont des ordres de grandeur, comme l'âge.
+  it('n’écrit aucun chiffre', () => {
+    expect(phraseDuRegimeDeRebilan('proposer')).not.toMatch(/\d/);
+    expect(phraseDuRegimeDeRebilan('insister')).not.toMatch(/\d/);
+  });
+});
+
+describe('doitProposerUnRebilan', () => {
+  const bilan = (iso: string) => new Date(iso).toISOString();
+
+  // **La forme booléenne dérive du régime, elle ne le recompte pas.** Le jour où elle recompterait,
+  // les deux écrans recommenceraient à diverger — ce que cette paire existe pour empêcher. Les deux
+  // assertions valent donc autant pour ce qu'elles interdisent que pour ce qu'elles vérifient.
+  it('dit oui dès qu’un régime existe, quel qu’il soit', () => {
+    const debut = bilan('2026-09-02T10:00:00+02:00');
+    expect(doitProposerUnRebilan(debut, new Date('2026-11-30T23:00:00+01:00'))).toBe(false);
+    expect(doitProposerUnRebilan(debut, new Date('2026-12-01T10:00:00+01:00'))).toBe(true);
+    expect(doitProposerUnRebilan(debut, new Date('2027-03-01T10:00:00+01:00'))).toBe(true);
+  });
+
   it('ne propose rien sans date', () => {
     expect(doitProposerUnRebilan(null)).toBe(false);
     expect(doitProposerUnRebilan(undefined)).toBe(false);
