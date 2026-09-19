@@ -230,6 +230,20 @@ export default function Compte() {
             <MonCompte />
 
             <View style={styles.liens}>
+              {/* **La seconde porte du contexte, et elle n'est pas un confort** (C6.4). La
+                  première est l'encart du plan, qui ne se rend que s'il y a au moins une action à
+                  expliquer : tout cycliste et tout profil sédentaire a un plan à zéro action depuis
+                  C2.5, donc sans celle-ci l'écran serait **inatteignable** pour exactement les
+                  personnes dont le contexte explique le plus le plan. L'écran gère lui-même le cas
+                  d'un compte sans bilan, qui est le seul où ce lien ne mène à rien à corriger. */}
+              <TextLink
+                label="Mon contexte de mobilité"
+                onPress={() => router.push('/contexte')}
+                role="link"
+                type="small"
+                weight={600}
+                themeColor="accentText"
+              />
               <TextLink
                 label="Un retour à nous faire ?"
                 onPress={() => router.push('/feedback')}

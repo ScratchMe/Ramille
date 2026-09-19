@@ -177,6 +177,19 @@ de décision, et `v1-17` §5.1 en donne l'ordre proposé avec sa raison. Ce que 
 vérifications sur appareil de §11, l'exploitation et les restes assumés y sont aussi — rien de ce
 qui était ouvert n'a disparu du plan.
 
+**Les six pages de décision sont écrites depuis le 19/09/2026** — `v1-21` à `v1-26`, dans l'ordre
+de `v1-17` §5.1 — et elles ne disent pas toutes « faisons-le ». Ce qu'elles rapportent, et qui
+n'était dans aucune fiche :
+
+| Page | Chantier | Ce qu'elle conclut |
+|---|---|---|
+| [`v1-21`](v1-21-modes-manquants.md) | C4.4, les modes manquants | À faire, et **à trois volets et non quatre**. Le « Train ou RER » du produit est compté au tarif du TER alors qu'un facteur RER existe à 2,83 fois moins ; le vélo à assistance est compté 64 fois trop bas ; l'autocar, absent, émet plus qu'un TER |
+| [`v1-22`](v1-22-retirer-un-bilan.md) | C4.7, retirer un bilan | À faire. `status = 'withdrawn'` rend justes **douze** lectures d'un coup — la fiche en annonçait trois |
+| [`v1-23`](v1-23-point-quantitatif.md) | C4.1, le point quantitatif | **Fermer par écrit pour la V1**, avec sa condition de réouverture : la boucle n'a tourné sur personne, et le gain principal annoncé est celui qu'il ne faut pas prendre |
+| [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **Livrer la phrase décidée le 10/09 et jamais livrée**, puis sortir le poste du lot 4 : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions |
+| [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | À instruire, avec cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
+| [`v1-26`](v1-26-meme-saison-un-an-apres.md) | C4.8, la même saison un an après | **Moitié livrée par C6.3**. Le reste recouvre le moment anniversaire : une dérivation pour deux surfaces, ou deux chiffres qui se contrediront |
+
 **Un lot 6 est demandé et n'est pas instruit : l'administration** (demande du 17/09/2026, après la
 livraison du lot 5). Il n'appartient pas à l'audit du 09/09/2026 — c'est un besoin neuf, et il vit
 donc ici et non dans `v1-13`. Ce qui est demandé, mot pour mot : **exploiter tout ce que le produit
@@ -225,6 +238,11 @@ les cinq chantiers de `v1-19` et les trois issues qui n'en relèvent pas (l'espa
 moitiés de « Toutes les pistes »). La raison est dans le sujet plutôt que dans l'urgence : **faire un
 bilan et le tenir à jour est le geste central du produit**, et c'est celui dont la recette a montré
 qu'il n'est ni clair ni fluide. Le lot 4 garde l'ordre proposé en `v1-17` §5.1 et démarre après.
+
+**C6.4 est livré le 19/09/2026** : le contexte se corrige à `/contexte`, sans resoumettre de bilan
+et sans ajouter d'entrée au suivi. Ce qui n'était pas prévu : **trois réponses de contexte sur
+quatre entrent dans le résultat et non une**, donc le recalcul est inconditionnel — mesuré en base
+plutôt que déduit de la description du calcul.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 

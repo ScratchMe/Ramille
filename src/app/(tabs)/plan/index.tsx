@@ -23,8 +23,16 @@ import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste
 import { CarteDOuverture } from '@/components/plan/carte-douverture';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
-import { cadreDuPlan, formeInserable, motsDuContexte, pistesDuPlan, type ReponsesDeContexte } from '@/types/plan';
-import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
+import {
+  cadreDuPlan,
+  formeInserable,
+  motsDuContexte,
+  phraseDeLOrphelin,
+  pistesDuPlan,
+  RAISONS_ANNONCABLES,
+  type ReponsesDeContexte,
+} from '@/types/plan';
+import { daysSince, regimeDeRebilan, titreDuRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
   marquerLouvertureDeSaisonVue,
@@ -112,7 +120,7 @@ type PlanCycle = {
  * AsyncStorage et porte l'identifiant de la ligne, pour qu'un second re-bilan puisse le dire à
  * son tour.
  */
-type EngagementOrphelin = { id: string; action_text: string };
+type EngagementOrphelin = { id: string; action_text: string; released_reason: string };
 
 // Une seule carte par boucle, la plus récente. La requête est déjà triée par `period_start`
 // décroissant, donc le premier vu de chaque `loop_type` est le bon.
@@ -647,11 +655,12 @@ export default function Plan() {
         // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3). C'est le
         // prochain contact qui compte, pas l'action engagée.
         //
-        // **L'engagement qu'un re-bilan a emporté** se lit dans la même fournée (C2.2). Le filtre
+        // **L'engagement qu'un recalcul a emporté** se lit dans la même fournée (C2.2). Le filtre
         // porte sur la raison : `saison` et `changement` n'ont rien à annoncer — l'une est une
         // reconduction qui a échoué à la frontière d'une saison, l'autre est la décision de la
-        // personne elle-même, qu'il serait absurde de lui apprendre. Seul `rebilan` est un effet
-        // de bord qu'elle n'a pas choisi.
+        // personne elle-même, qu'il serait absurde de lui apprendre. Restent les **deux effets de
+        // bord non choisis**, `rebilan` et, depuis C6.4, `contexte` — la liste vit dans
+        // `RAISONS_ANNONCABLES` et non ici, la requête et la phrase devant filtrer sur la même.
         //
         // **Et une seconde lecture de la même table, qui n'est pas un doublon** (C5.6) : celle du
         // dessus répond à « quel engagement le dernier re-bilan a-t-il emporté ? », celle du
@@ -683,8 +692,8 @@ export default function Plan() {
               .maybeSingle(),
             supabase
               .from('plan_action_commitments_archive')
-              .select('id, action_text')
-              .eq('released_reason', 'rebilan')
+              .select('id, action_text, released_reason')
+              .in('released_reason', RAISONS_ANNONCABLES)
               .order('released_at', { ascending: false })
               .limit(1),
             supabase
@@ -1054,7 +1063,15 @@ export default function Plan() {
   // Une seule règle, deux écrans : `doitProposerUnRebilan` porte le seuil **et** le cas de la date
   // absente (C2.7, point 7). Les deux écrans comparaient chacun de leur côté, avec pour l'un une date
   // qui peut manquer et pour l'autre une date toujours là — deux conditions à tenir en phase.
-  const bilanAncien = doitProposerUnRebilan(assessmentDate);
+  // **Le titre porte la condition, et c'est ce qui les garde d'accord** (contre-lecture du
+  // 19/09/2026). L'écran lisait un booléen puis composait sa phrase avec l'âge du bilan, tandis que
+  // le suivi lisait le régime : deux lectures d'une même règle, et c'est celle d'ici qui a survécu
+  // au changement de déclencheur de C6.3 en disant faux. `titreDuRebilan` rend `null` quand il n'y
+  // a rien à proposer, donc il n'y a plus qu'une chose à tester.
+  const titreRebilan =
+    assessmentDate !== null
+      ? titreDuRebilan(regimeDeRebilan(assessmentDate), daysSince(assessmentDate))
+      : null;
 
   const capKg =
     baselineKg !== null && baselineKg > 0
@@ -1179,7 +1196,7 @@ export default function Plan() {
               </ThemedText>
             </ThemedView>
           )}
-          {/* **Ce que le re-bilan a emporté, dit une fois** (C2.2, `v1-14` §5). Avant, le
+          {/* **Ce qu'un recalcul a emporté, dit une fois** (C2.2, `v1-14` §5 ; étendu par C6.4). Avant, le
               `delete from plan_actions` de la génération effaçait l'engagement, ses jours et son
               intention sans un mot — le geste le plus engageant du produit annulé par le second
               geste le plus encouragé. Il est maintenant archivé, et cet encart est l'endroit où la
@@ -1191,8 +1208,7 @@ export default function Plan() {
           {orphelin !== null && (
             <ThemedView type="backgroundElement" style={styles.orphelin}>
               <ThemedText type="small" themeColor="textSecondary">
-                Ton plan a changé avec ton nouveau bilan. « {orphelin.action_text} » n’y est plus ;
-                elle reste dans ton suivi.
+                {phraseDeLOrphelin(orphelin.released_reason, orphelin.action_text)}
               </ThemedText>
               <TextLink
                 label="Compris"
@@ -1525,7 +1541,7 @@ export default function Plan() {
                   appartenant à ce qui suit. */}
               <TextLink
                 label="Modifier ces réponses"
-                onPress={() => router.push({ pathname: '/bilan', params: { etape: 'context' } })}
+                onPress={() => router.push('/contexte')}
                 type="small"
                 weight={600}
                 themeColor="accentText"
@@ -1567,18 +1583,20 @@ export default function Plan() {
               l'action engagée inverserait l'urgence. « Une proposition, jamais un rappel
               insistant » — même règle que sur le suivi, même seuil, même lien.
 
-              **Elle dit le fait et non la saison** (C2.8, point 3). Son titre était « Une nouvelle
-              saison a commencé », ce qui pouvait être faux — elle se déclenche sur 182 jours
-              d'ancienneté du bilan, pas sur une bascule — et pouvait coexister avec la puce
-              « Cadence : Été 2026 » juste au-dessus. La formulation saisonnière appartient
-              maintenant à la carte d'ouverture, qui, elle, se déclenche vraiment sur une bascule ;
-              celle-ci dit l'âge, par la dérivation que le suivi partage. Fond `backgroundElement`
+              **Elle disait le fait et non la saison, et la prémisse s'est inversée** (C2.8 point 3,
+              puis contre-lecture du 19/09/2026). Son titre était « Une nouvelle saison a commencé »,
+              ce qui pouvait être faux : la carte se déclenchait alors sur 182 jours d'ancienneté du
+              bilan, pas sur une bascule. **C6.3 a fait exactement l'inverse** — le déclencheur est
+              la bascule — donc c'est l'âge qui est devenu la chose qui peut être fausse, jusqu'à
+              « Ton bilan a moins d'un mois » sous une invitation à en refaire un. Le titre vient
+              maintenant de `titreDuRebilan`, partagé avec le suivi, qui donne à chaque régime ce
+              qu'il peut dire de vrai. La puce « Cadence : Été 2026 » avec laquelle il ne fallait pas
+              coexister a, elle, disparu avec C2.8. Fond `backgroundElement`
               plutôt que `backgroundSelected` (canvas B1) : une proposition, pas une mise en avant. */}
-          {bilanAncien && assessmentDate !== null && (
+          {titreRebilan !== null && (
             <ThemedView type="backgroundElement" style={styles.rebilanCard}>
               <ThemedText type="small" themeColor="textSecondary">
-                Ton bilan a {ancienneteEnMots(daysSince(assessmentDate))}. En faire un nouveau prend
-                quelques minutes ; ton plan s’ajuste.
+                {titreRebilan} En faire un nouveau prend quelques minutes ; ton plan s’ajuste.
               </ThemedText>
               {/* **« Refaire » laissait croire à un écrasement** (C6.1, `v1-19` D1) : un nouveau
                   bilan s'ajoute, il n'efface rien. Le libellé est le même sur les deux écrans qui

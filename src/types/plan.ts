@@ -326,9 +326,15 @@ export function pistesParPoste<T extends { committed_at: string | null; rank: nu
  *
  * **Le paramètre est « rendue en carte », et non « ouverte au toucher »** (contre-lecture du lot 5,
  * 17/09/2026). C5.2 lui passait le seul ensemble des lignes dépliées, alors que l'écran des pistes
- * rend **aussi** en carte l'action engagée, qu'on ne déplie pas : la frontière sous cette carte-là
- * n'était donc pas vue, et la ligne suivante venait s'y coller — le défaut 13.5 recréé sur l'écran
- * neuf. Une carte est une carte, quelle que soit la raison pour laquelle elle en est une.
+ * rendait **aussi** en carte l'action engagée, qu'on ne déplie pas : la frontière sous cette
+ * carte-là n'était donc pas vue, et la ligne suivante venait s'y coller — le défaut 13.5 recréé sur
+ * l'écran neuf. Une carte est une carte, quelle que soit la raison pour laquelle elle en est une.
+ *
+ * **Le cas qui avait motivé cette formulation n'existe plus, et le contrat reste le bon** (#234,
+ * 19/09/2026) : la planche A2 rend l'action engagée en **ligne**, donc l'appelant ne lui passe plus
+ * aujourd'hui que les lignes dépliées. Garder « rendue en carte » plutôt que de renommer en
+ * « ouverte » est délibéré — c'est ce qui rend la fonction juste pour la prochaine raison d'en
+ * fabriquer une, et la raison précédente a été payée une fois.
  */
 export function separationsDesLignes(ids: string[], enCarte: ReadonlySet<string>): boolean[] {
   return ids.map(
@@ -356,6 +362,49 @@ export function separationsDesLignes(ids: string[], enCarte: ReadonlySet<string>
  */
 export function filetsDesLignes(ids: string[], enCarte: ReadonlySet<string>): boolean[] {
   return ids.map((id, rang) => !enCarte.has(id) && rang < ids.length - 1);
+}
+
+// ── L'engagement qu'un recalcul a emporté (C2.2, étendu par C6.4) ──────────────────────────────
+
+/**
+ * Les deux raisons de libération qu'un écran a le droit d'annoncer.
+ *
+ * **La règle est « effet de bord non choisi », et elle n'a pas bougé** — c'est le périmètre qui
+ * s'est élargi. `saison` est une reconduction qui a échoué à la frontière d'une saison, `changement`
+ * est la décision de la personne elle-même : les apprendre à quelqu'un serait au mieux inutile, au
+ * pire condescendant. `rebilan` et, depuis C6.4, `contexte` sont deux gestes dont la perte de
+ * l'engagement n'était **pas** le but — on refait un bilan pour corriger une réponse, on corrige
+ * son contexte parce qu'on a déménagé.
+ *
+ * Elle est exportée parce que la **requête** du plan doit filtrer exactement sur ces deux valeurs :
+ * une liste écrite deux fois se désaccorderait au premier ajout, et la moitié fautive serait celle
+ * qui ne dit rien — un encart muet ne se remarque pas.
+ */
+export const RAISONS_ANNONCABLES = ['rebilan', 'contexte'] as const;
+
+export type RaisonAnnoncable = (typeof RAISONS_ANNONCABLES)[number];
+
+export function estRaisonAnnoncable(raison: string): raison is RaisonAnnoncable {
+  return (RAISONS_ANNONCABLES as readonly string[]).includes(raison);
+}
+
+/**
+ * Ce que l'encart orphelin dit, selon ce qui a emporté l'engagement.
+ *
+ * **La phrase nommait le nouveau bilan, et il n'y en a pas toujours un** : depuis C6.4, corriger
+ * son contexte reconstruit le plan sans qu'aucun bilan ne soit resoumis. « Ton plan a changé avec
+ * ton nouveau bilan » serait alors faux sur le seul point qui aide à comprendre — la cause. Le
+ * reste de la phrase ne bouge pas : l'action reste dans le suivi, et c'est ce qui la distingue
+ * d'une disparition.
+ *
+ * Le repli sur `rebilan` n'est pas atteignable par une valeur hors liste — la requête filtre sur
+ * `RAISONS_ANNONCABLES` — mais il évite qu'un élargissement futur de ce filtre sorte une phrase
+ * vide plutôt qu'une phrase imparfaite.
+ */
+export function phraseDeLOrphelin(raison: string, actionText: string): string {
+  const cause =
+    raison === 'contexte' ? 'avec tes nouvelles réponses de contexte' : 'avec ton nouveau bilan';
+  return `Ton plan a changé ${cause}. « ${actionText} » n’y est plus ; elle reste dans ton suivi.`;
 }
 
 // ── L'encart de contexte du plan (C5.5, écarts 9 et 10) ────────────────────────────────────────

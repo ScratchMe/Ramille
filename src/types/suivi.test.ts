@@ -7,7 +7,6 @@ import {
   ancienneteEnMots,
   daysSince,
   decisionsParSaison,
-  doitProposerUnRebilan,
   ecartParPoste,
   estStable,
   estUneBaisse,
@@ -19,6 +18,7 @@ import {
   libellePeriodeAffiche,
   phraseDuRegimeDeRebilan,
   regimeDeRebilan,
+  titreDuRebilan,
   variationNote,
   type AssessmentSnapshot,
   type CheckinRecord,
@@ -602,13 +602,15 @@ describe('phraseDuRegimeDeRebilan', () => {
     expect(phraseDuRegimeDeRebilan('aucun')).toBeNull();
   });
 
-  // **La phrase nomme la saison comme unité, jamais une saison en particulier.** « Une nouvelle
-  // saison a commencé » avait été retiré de la carte du plan (C2.8) parce que son déclencheur —
-  // 182 jours — ne le garantissait pas. Il tient désormais à la bascule ; nommer *laquelle* reste
-  // le travail de la carte d'ouverture.
-  it('dit qu’une saison a passé, sans nommer laquelle', () => {
+  // **La saison est dite une fois, dans le titre, et jamais nommée** (contre-lecture du
+  // 19/09/2026). Le corps ouvrait par « Une saison a passé depuis. » ; depuis que le titre porte
+  // cette phrase — parce qu'elle est la seule vraie sous le régime `proposer` —, la répéter ici
+  // ferait dire deux fois la même chose dans une carte de trois lignes. La seconde moitié de
+  // l'assertion, elle, ne bouge pas : nommer *laquelle* reste le travail de la carte d'ouverture.
+  it('ne redit pas ce que le titre dit déjà, et ne nomme aucune saison', () => {
     const phrase = phraseDuRegimeDeRebilan('proposer');
-    expect(phrase).toContain('Une saison a passé');
+    expect(phrase).not.toContain('Une saison a passé');
+    expect(titreDuRebilan('proposer', 1)).toContain('Une saison a passé');
     for (const saison of ['hiver', 'printemps', 'été', 'automne', 'Hiver', 'Printemps', 'Été', 'Automne']) {
       expect(phrase).not.toContain(saison);
     }
@@ -629,21 +631,37 @@ describe('phraseDuRegimeDeRebilan', () => {
   });
 });
 
-describe('doitProposerUnRebilan', () => {
-  const bilan = (iso: string) => new Date(iso).toISOString();
-
-  // **La forme booléenne dérive du régime, elle ne le recompte pas.** Le jour où elle recompterait,
-  // les deux écrans recommenceraient à diverger — ce que cette paire existe pour empêcher. Les deux
-  // assertions valent donc autant pour ce qu'elles interdisent que pour ce qu'elles vérifient.
-  it('dit oui dès qu’un régime existe, quel qu’il soit', () => {
-    const debut = bilan('2026-09-02T10:00:00+02:00');
-    expect(doitProposerUnRebilan(debut, new Date('2026-11-30T23:00:00+01:00'))).toBe(false);
-    expect(doitProposerUnRebilan(debut, new Date('2026-12-01T10:00:00+01:00'))).toBe(true);
-    expect(doitProposerUnRebilan(debut, new Date('2027-03-01T10:00:00+01:00'))).toBe(true);
+describe('titreDuRebilan', () => {
+  // **Le défaut que ces assertions gardent a été livré et retiré le même jour** (19/09/2026). C6.3
+  // a déplacé le déclencheur des 182 jours vers la bascule de saison, et les deux écrans ont
+  // continué d'afficher l'âge du bilan au-dessus de la proposition — donc « Ton dernier bilan a
+  // moins d'un mois » à quelqu'un qui venait de le faire la veille d'une bascule.
+  it('ne dit jamais l’âge sous le régime « proposer »', () => {
+    // Un jour d'âge, une bascule : c'est le cas que `regimeDeRebilan` épingle plus haut.
+    const titre = titreDuRebilan('proposer', 1);
+    expect(titre).toBe('Une saison a passé depuis ton dernier bilan.');
+    // `/an/` seul matchait « bil**an** » — relevé en écrivant ce test, et c'est le rappel que
+    // `TESTING.md` §1 fait déjà : une assertion trop large passe pour une garde et n'en est pas une,
+    // sauf qu'ici elle tombait, ce qui est la bonne façon d'échouer.
+    expect(titre).not.toMatch(/mois|plus d’un an/);
   });
 
-  it('ne propose rien sans date', () => {
-    expect(doitProposerUnRebilan(null)).toBe(false);
-    expect(doitProposerUnRebilan(undefined)).toBe(false);
+  // La garde de fond, écrite sur l'invariant plutôt que sur la phrase : quel que soit le nombre de
+  // jours que `proposer` reçoit — et il peut en recevoir un seul —, le titre ne varie pas.
+  it('ne varie pas avec l’âge sous « proposer », quel qu’il soit', () => {
+    for (const jours of [0, 1, 45, 200, 900]) {
+      expect(titreDuRebilan('proposer', jours)).toBe(titreDuRebilan('proposer', 1));
+    }
+  });
+
+  // **Et l'âge revient sous « insister », parce qu'il y est toujours vrai** : deux bascules
+  // imposent une saison entière, donc au moins quatre-vingt-dix jours.
+  it('dit l’âge sous « insister », où il vaut au moins trois mois', () => {
+    expect(titreDuRebilan('insister', 91)).toBe('Ton dernier bilan a trois mois.');
+    expect(titreDuRebilan('insister', 400)).toBe('Ton dernier bilan a plus d’un an.');
+  });
+
+  it('ne rend rien quand il n’y a rien à proposer', () => {
+    expect(titreDuRebilan('aucun', 500)).toBeNull();
   });
 });

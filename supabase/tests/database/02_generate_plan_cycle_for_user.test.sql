@@ -324,9 +324,20 @@ select ok(
 -- ── Garde de privilège ───────────────────────────────────────────────────────────────────
 -- Régression sur l'intention documentée dans la migration : cette fonction ne doit être
 -- appelable que depuis une autre fonction security definer, jamais directement par un client.
+--
+-- **La signature s'écrit en entier, et ce n'est pas du style** (19/09/2026). Elle disait `(uuid)` ;
+-- C6.4 a remplacé la fonction par `(uuid, text)` et `has_function_privilege` ne **rend** pas faux
+-- sur une signature inconnue, il **lève** — donc ce fichier s'est arrêté ici, dix tests joués sur
+-- onze annoncés, sans qu'aucune assertion n'ait échoué. Une garde de privilège qui disparaît en
+-- silence quand la fonction change est le contraire d'une garde.
+--
+-- La migration avait pourtant été éprouvée en `BEGIN`/`ROLLBACK` sur le distant, et le fichier de
+-- test **neuf** y avait été rejoué en entier. Ce qui ne l'avait pas été, c'est celui-ci : la règle
+-- de `SUPABASE.md` §2.3 dit exactement ça — réécrire une fonction impose de rejouer le fichier de
+-- test qui la possède, et pas seulement celui qu'on vient d'écrire.
 
 select ok(
-  not has_function_privilege('authenticated', 'public.generate_plan_cycle_for_user(uuid)', 'execute'),
+  not has_function_privilege('authenticated', 'public.generate_plan_cycle_for_user(uuid, text)', 'execute'),
   'authenticated ne doit jamais pouvoir exécuter generate_plan_cycle_for_user directement'
 );
 
