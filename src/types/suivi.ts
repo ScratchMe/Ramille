@@ -5,7 +5,7 @@
 import { MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
 import { POSTES, type Poste } from '@/constants/postes';
 import { formatTonnesNu } from '@/lib/format';
-import { saisonDuJour } from '@/types/saison';
+import { saisonDuJour, saisonsEcouleesDepuis } from '@/types/saison';
 
 export type AssessmentSnapshot = {
   assessmentId: string;
@@ -145,22 +145,79 @@ export function daysSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-// Six mois : assez long pour qu'un changement d'habitude ait eu le temps de se voir, assez
-// court pour que la comparaison reste parlante. Une proposition, jamais un rappel insistant
-// (spec §7) — l'écran de suivi l'affiche, rien ne la relance.
-export const REBILAN_SUGGESTION_DAYS = 182;
+/**
+ * Le régime de proposition d'un nouveau bilan (C6.3, `v1-19` postulats 1, 3 et 4).
+ *
+ * - `aucun` — on ne propose rien. **C'est le régime normal**, et c'est lui qui manquait : le produit
+ *   proposait un nouveau bilan en permanence, sous une forme ou une autre.
+ * - `proposer` — une saison entière a passé depuis le dernier bilan.
+ * - `insister` — deux saisons ou plus. On le dit plus fort, et on dit **pourquoi**.
+ */
+export type RegimeDeRebilan = 'aucun' | 'proposer' | 'insister';
+
+/**
+ * Le seuil est une **bascule de saison**, et il l'était en jours (C6.3).
+ *
+ * **Pourquoi la saison plutôt que six mois.** La saison est la maille du plan — un cycle, un cap,
+ * une action — et c'est à elle que le produit demande « est-ce que ça a tenu ? ». Refaire un bilan à
+ * mi-saison mesure une habitude qui n'a pas eu le temps de prendre ; attendre six mois laisse passer
+ * une saison entière sans jamais confronter. Les 182 jours étaient un nombre rond sans rapport avec
+ * le rythme du produit, et ils tombaient n'importe où dans un cycle.
+ *
+ * **Et la ré-insistance à deux saisons a une raison objective, pas seulement pédagogique** : les
+ * facteurs d'émission se resynchronisent chaque trimestre (`sync_emission_factors`), et
+ * `emission_factor(mode_id, date)` **borne chaque bilan aux facteurs de sa date** pour qu'il reste
+ * reproductible (`v1-01` §3). Un bilan de deux saisons n'est donc pas seulement vieux : il est
+ * calculé avec un référentiel que l'ADEME a depuis révisé, et ça, ça ne dépend pas de la personne.
+ *
+ * `null` répond `aucun` — sans bilan il n'y a rien à refaire, et l'écran concerné propose déjà d'en
+ * faire un premier.
+ */
+export function regimeDeRebilan(
+  submittedAt: string | null | undefined,
+  maintenant: Date = new Date()
+): RegimeDeRebilan {
+  if (!submittedAt) return 'aucun';
+  const saisons = saisonsEcouleesDepuis(submittedAt, maintenant);
+  if (saisons >= 2) return 'insister';
+  return saisons >= 1 ? 'proposer' : 'aucun';
+}
+
+/**
+ * Ce que la carte du suivi dit selon le régime, et `null` quand elle ne se rend pas.
+ *
+ * **La phrase nomme la saison comme unité, jamais une saison en particulier.** « Une nouvelle saison
+ * a commencé » avait été retiré de la carte de re-bilan du plan (C2.8) parce que c'était une
+ * affirmation que le déclencheur ne garantissait pas — il tenait à 182 jours. Il tient désormais à
+ * la bascule, donc « une saison a passé » est vrai par construction ; **nommer laquelle** resterait
+ * en revanche le travail de la carte d'ouverture, qui est le lieu de la saison.
+ *
+ * **La raison de la ré-insistance est écrite, pas seulement son ton.** Une insistance qui ne dit pas
+ * pourquoi n'est qu'un rappel de plus, et la spec §7 les interdit. Ici la raison ne dépend pas de la
+ * personne : le référentiel a bougé sous son bilan, et son bilan garde celui de sa date.
+ */
+export function phraseDuRegimeDeRebilan(regime: RegimeDeRebilan): string | null {
+  if (regime === 'aucun') return null;
+  if (regime === 'proposer') {
+    return 'Une saison a passé depuis. En faire un nouveau prend moins de temps que la première fois : tes réponses sont pré-remplies, tu ne modifies que ce qui a changé.';
+  }
+  return 'Plusieurs saisons ont passé depuis. Les facteurs d’émission se mettent à jour chaque trimestre et ton bilan garde ceux de sa date : en refaire un le recalcule avec les valeurs d’aujourd’hui, même si tes trajets n’ont pas changé.';
+}
 
 /**
  * Faut-il proposer un re-bilan ? Un seul seuil, deux écrans (C2.7, point 7).
  *
- * Le plan et le suivi comparaient chacun `daysSince(...) >= REBILAN_SUGGESTION_DAYS` de leur côté,
- * avec pour l'un une date qui peut manquer et pour l'autre une date toujours présente : deux
- * conditions à tenir en phase pour une seule règle. `null` répond non — sans bilan il n'y a rien à
- * refaire, et cet écran-là propose déjà d'en faire un premier.
+ * Le plan et le suivi comparaient chacun le seuil de leur côté, avec pour l'un une date qui peut
+ * manquer et pour l'autre une date toujours présente : deux conditions à tenir en phase pour une
+ * seule règle. La forme booléenne reste pour l'écran du plan, qui ne distingue pas les deux
+ * régimes ; elle **dérive** de `regimeDeRebilan` plutôt que de recompter, sinon les deux écrans
+ * recommenceraient à diverger — ce que cette fonction existe précisément pour empêcher.
  */
-export function doitProposerUnRebilan(submittedAt: string | null | undefined): boolean {
-  if (!submittedAt) return false;
-  return daysSince(submittedAt) >= REBILAN_SUGGESTION_DAYS;
+export function doitProposerUnRebilan(
+  submittedAt: string | null | undefined,
+  maintenant: Date = new Date()
+): boolean {
+  return regimeDeRebilan(submittedAt, maintenant) !== 'aucun';
 }
 
 /** Les mois en lettres — au-delà de onze, on ne compte plus en mois. */

@@ -10,6 +10,7 @@ import {
   recapDeLaPeriode,
   recapDeSaison,
   saisonDe,
+  saisonsEcouleesDepuis,
   sortiesDeLouverture,
   SORTIE_COMPRIS,
   type PointDeSaison,
@@ -568,5 +569,54 @@ describe('SORTIE_COMPRIS', () => {
   // les libellés de `sortiesDeLouverture`.
   it('est un seul lien', () => {
     expect(SORTIE_COMPRIS).toEqual([{ cle: 'compris', label: 'Compris', forme: 'lien' }]);
+  });
+});
+
+describe('saisonsEcouleesDepuis', () => {
+  // Le fuseau de la suite est Europe/Paris (script `npm test`) : ces dates sont celles que la
+  // personne lit. Saisons météorologiques — hiver du 1er décembre, printemps du 1er mars, été du
+  // 1er juin, automne du 1er septembre.
+  const le = (iso: string) => new Date(iso);
+
+  it('ne compte rien dans la saison du bilan', () => {
+    expect(saisonsEcouleesDepuis('2026-09-02T10:00:00+02:00', le('2026-11-30T23:00:00+01:00'))).toBe(0);
+  });
+
+  it('compte une bascule au premier jour de la saison suivante', () => {
+    expect(saisonsEcouleesDepuis('2026-09-02T10:00:00+02:00', le('2026-12-01T00:30:00+01:00'))).toBe(1);
+  });
+
+  // **Le piège que l'ordre de `SAISONS` tendrait.** L'hiver démarre en **décembre**, donc il suit
+  // l'automne de la même année et précède le printemps de la suivante. Rangé en tête — l'ordre de
+  // `SAISONS` —, l'hiver 2026 viendrait **avant** l'automne 2026 et l'écart ressortirait négatif.
+  // Ces quatre assertions parcourent la couture décembre → mars.
+  it('ordonne l’hiver après l’automne de la même année', () => {
+    const automne = '2026-10-15T12:00:00+02:00';
+    expect(saisonsEcouleesDepuis(automne, le('2026-10-20T12:00:00+02:00'))).toBe(0);
+    expect(saisonsEcouleesDepuis(automne, le('2026-12-15T12:00:00+01:00'))).toBe(1);
+    expect(saisonsEcouleesDepuis(automne, le('2027-01-15T12:00:00+01:00'))).toBe(1);
+    expect(saisonsEcouleesDepuis(automne, le('2027-03-15T12:00:00+01:00'))).toBe(2);
+  });
+
+  // Janvier et février appartiennent à l'hiver commencé en décembre **précédent** : un bilan du
+  // 20 janvier et un du 20 décembre sont dans la même saison, à un mois d'écart et à cheval sur
+  // deux années.
+  it('garde janvier avec le décembre qui le précède', () => {
+    expect(saisonsEcouleesDepuis('2026-12-20T12:00:00+01:00', le('2027-01-20T12:00:00+01:00'))).toBe(0);
+  });
+
+  it('compte une année entière comme quatre bascules', () => {
+    expect(saisonsEcouleesDepuis('2026-09-02T10:00:00+02:00', le('2027-09-02T10:00:00+02:00'))).toBe(4);
+  });
+
+  // Une date future ne rend jamais un négatif : l'appelant en ferait un régime à l'envers.
+  it('ne rend jamais de nombre négatif', () => {
+    expect(saisonsEcouleesDepuis('2027-06-01T10:00:00+02:00', le('2026-09-02T10:00:00+02:00'))).toBe(0);
+  });
+
+  // Une date illisible rend zéro plutôt que `NaN` : un `NaN` traverserait les comparaisons sans
+  // jamais déclencher, c'est-à-dire silencieusement.
+  it('rend zéro sur une date illisible', () => {
+    expect(saisonsEcouleesDepuis('pas une date', le('2026-12-01T10:00:00+01:00'))).toBe(0);
   });
 });
