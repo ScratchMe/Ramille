@@ -69,7 +69,11 @@ pas explicite, le produit doit dire son périmètre plutôt que de le supposer.
 
 ## 5. Les décisions à prendre
 
-### D1 — La phrase, maintenant
+### D1 — La phrase, maintenant · **livrée le 19/09/2026**
+
+> La contre-lecture du même jour l'a posée dans `commute-has-trip.tsx`, dans la forme proposée
+> ci-dessous. Elle ne rouvre pas D7 : c'est l'exécution d'une décision rendue le 10/09 et restée
+> neuf jours sans endroit où atterrir.
 
 **Recommandation : la livrer tout de suite, et hors de ce chantier.** La décision date du
 10/09/2026 et n'a pas à être reprise ; ce qui a manqué est un endroit où la faire atterrir. Forme

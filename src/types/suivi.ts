@@ -199,25 +199,39 @@ export function regimeDeRebilan(
 export function phraseDuRegimeDeRebilan(regime: RegimeDeRebilan): string | null {
   if (regime === 'aucun') return null;
   if (regime === 'proposer') {
-    return 'Une saison a passé depuis. En faire un nouveau prend moins de temps que la première fois : tes réponses sont pré-remplies, tu ne modifies que ce qui a changé.';
+    return 'En faire un nouveau prend moins de temps que la première fois : tes réponses sont pré-remplies, tu ne modifies que ce qui a changé.';
   }
   return 'Plusieurs saisons ont passé depuis. Les facteurs d’émission se mettent à jour chaque trimestre et ton bilan garde ceux de sa date : en refaire un le recalcule avec les valeurs d’aujourd’hui, même si tes trajets n’ont pas changé.';
 }
 
 /**
- * Faut-il proposer un re-bilan ? Un seul seuil, deux écrans (C2.7, point 7).
+ * Le titre de la carte de re-bilan, et **c'est lui qui a rattrapé un défaut livré le même jour**
+ * (contre-lecture du 19/09/2026).
  *
- * Le plan et le suivi comparaient chacun le seuil de leur côté, avec pour l'un une date qui peut
- * manquer et pour l'autre une date toujours présente : deux conditions à tenir en phase pour une
- * seule règle. La forme booléenne reste pour l'écran du plan, qui ne distingue pas les deux
- * régimes ; elle **dérive** de `regimeDeRebilan` plutôt que de recompter, sinon les deux écrans
- * recommenceraient à diverger — ce que cette fonction existe précisément pour empêcher.
+ * C6.3 a déplacé le déclencheur des 182 jours vers la **bascule de saison**, et un test épingle
+ * même le cas extrême : un bilan de la veille d'une bascule se propose, parce que ce qu'on mesure
+ * est la confrontation possible et non l'âge. Ce qu'aucun des deux écrans n'a relu, c'est ce qu'ils
+ * **affichaient** au-dessus de cette proposition — « Ton dernier bilan a {âge} », par
+ * `ancienneteEnMots`. Un bilan soumis le 30 novembre se serait donc vu proposer, le 1er décembre,
+ * sous la phrase **« Ton dernier bilan a moins d'un mois »**. C2.8 avait choisi de dire l'âge
+ * plutôt que la saison parce que le déclencheur d'alors ne garantissait pas la saison ; C6.3 a
+ * inversé la prémisse, et personne n'est allé relire la règle qui en dépendait.
+ *
+ * D'où le partage, qui n'est pas un compromis mais ce que chaque régime peut dire de vrai :
+ *
+ * - **`proposer` dit la saison.** Elle est vraie par construction — c'est le déclencheur lui-même —
+ *   là où l'âge peut valoir un jour.
+ * - **`insister` dit l'âge.** Deux bascules imposent une saison entière entre les deux, donc au
+ *   moins quatre-vingt-dix jours : `ancienneteEnMots` y rend « trois mois » au minimum, et jamais
+ *   une durée qui contredirait l'invitation. C'est aussi le régime où l'âge **ajoute** quelque
+ *   chose, la phrase du corps disant déjà les saisons.
+ *
+ * `null` pour `aucun`, comme sa voisine : la carte ne se rend pas.
  */
-export function doitProposerUnRebilan(
-  submittedAt: string | null | undefined,
-  maintenant: Date = new Date()
-): boolean {
-  return regimeDeRebilan(submittedAt, maintenant) !== 'aucun';
+export function titreDuRebilan(regime: RegimeDeRebilan, jours: number): string | null {
+  if (regime === 'aucun') return null;
+  if (regime === 'proposer') return 'Une saison a passé depuis ton dernier bilan.';
+  return `Ton dernier bilan a ${ancienneteEnMots(jours)}.`;
 }
 
 /** Les mois en lettres — au-delà de onze, on ne compte plus en mois. */
@@ -249,14 +263,20 @@ const MOIS_EN_MOTS = [
  * annoncer six mois d'un côté et cinq de l'autre.
  *
  * En mots plutôt qu'en chiffres parce que c'est un ordre de grandeur et non une mesure : « Ton
- * bilan a six mois » se lit, « Ton bilan a 187 jours » se compte. Le mois vaut trente jours, la
- * même approximation que le seuil lui-même (182).
+ * bilan a six mois » se lit, « Ton bilan a 187 jours » se compte. Le mois vaut trente jours — une
+ * approximation assumée, qui était jusqu'au 19/09/2026 celle du seuil lui-même (182 jours) et
+ * n'a plus de seuil à accompagner depuis que C6.3 compte en bascules de saison.
+ *
+ * **Elle n'est plus appelée que par le régime `insister`** (`titreDuRebilan`), et c'est ce qui
+ * rend ses deux bornes basses sûres : deux bascules imposent une saison entière, donc au moins
+ * quatre-vingt-dix jours. Les y appeler depuis `proposer` ferait dire « moins d'un mois » sous une
+ * invitation à refaire son bilan — le défaut que la contre-lecture du 19/09/2026 a retiré.
  */
 export function ancienneteEnMots(jours: number): string {
   const mois = Math.floor(jours / 30);
   // Au-delà de l'année, le compte exact n'apporte plus rien — et « quinze mois » se lit comme une
-  // facture. La carte n'apparaît qu'à partir de six mois ; les deux bornes basses sont là pour que
-  // la dérivation soit totale, pas parce qu'un écran les atteint.
+  // facture. Les deux bornes basses sont là pour que la dérivation soit totale, pas parce qu'un
+  // écran les atteint : son seul appelant lui passe au minimum une saison entière.
   if (mois >= 12) return 'plus d’un an';
   if (mois < 1) return 'moins d’un mois';
   return `${MOIS_EN_MOTS[mois]} mois`;

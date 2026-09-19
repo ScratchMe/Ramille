@@ -147,10 +147,19 @@ function rangDeSaison(bornes: BornesDeSaison): number {
 /**
  * Combien de bascules de saison séparent une date d'aujourd'hui (C6.3, `v1-19` postulats 3 et 4).
  *
- * **Une bascule, pas une durée.** Un bilan du 30 novembre et un bilan du 2 septembre ont trois mois
- * d'écart et zéro bascule pour l'un, une pour l'autre — c'est voulu : ce qu'on veut savoir n'est pas
- * l'âge du bilan mais si une **saison entière** a eu lieu depuis, parce que c'est la maille à
- * laquelle une habitude a eu le temps de prendre et donc de se mesurer.
+ * **Une bascule, pas une durée**, et l'exemple compte plus que la phrase — celui qui figurait ici
+ * ne tenait pas debout, relevé en contre-lisant le 19/09/2026. Les deux cas qui disent la
+ * mécanique, saisons météorologiques (l'automne va du 1er septembre au 30 novembre) :
+ *
+ * - un bilan du **2 septembre**, lu le **30 novembre** : trois mois d'écart et **zéro** bascule —
+ *   les deux dates sont dans le même automne ;
+ * - un bilan du **30 novembre**, lu le **1er décembre** : un jour d'écart et **une** bascule.
+ *
+ * C'est voulu : ce qu'on veut savoir n'est pas l'âge du bilan mais si une **saison entière** a eu
+ * lieu depuis, parce que c'est la maille à laquelle une habitude a eu le temps de prendre et donc
+ * de se mesurer. **Corollaire à connaître avant d'afficher quoi que ce soit** : un bilan proposé au
+ * re-bilan peut avoir un jour. Le titre de la carte le sait (`titreDuRebilan`, `src/types/suivi.ts`)
+ * ; il ne l'a pas su le jour de la livraison, et disait « Ton dernier bilan a moins d'un mois ».
  *
  * Le calendrier est **local**, comme tout ce qui nomme une saison à un humain — `saisonDe` fait
  * déjà ce choix, et on ne l'aligne pas sur l'UTC des générateurs de points.

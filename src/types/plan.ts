@@ -326,9 +326,15 @@ export function pistesParPoste<T extends { committed_at: string | null; rank: nu
  *
  * **Le paramètre est « rendue en carte », et non « ouverte au toucher »** (contre-lecture du lot 5,
  * 17/09/2026). C5.2 lui passait le seul ensemble des lignes dépliées, alors que l'écran des pistes
- * rend **aussi** en carte l'action engagée, qu'on ne déplie pas : la frontière sous cette carte-là
- * n'était donc pas vue, et la ligne suivante venait s'y coller — le défaut 13.5 recréé sur l'écran
- * neuf. Une carte est une carte, quelle que soit la raison pour laquelle elle en est une.
+ * rendait **aussi** en carte l'action engagée, qu'on ne déplie pas : la frontière sous cette
+ * carte-là n'était donc pas vue, et la ligne suivante venait s'y coller — le défaut 13.5 recréé sur
+ * l'écran neuf. Une carte est une carte, quelle que soit la raison pour laquelle elle en est une.
+ *
+ * **Le cas qui avait motivé cette formulation n'existe plus, et le contrat reste le bon** (#234,
+ * 19/09/2026) : la planche A2 rend l'action engagée en **ligne**, donc l'appelant ne lui passe plus
+ * aujourd'hui que les lignes dépliées. Garder « rendue en carte » plutôt que de renommer en
+ * « ouverte » est délibéré — c'est ce qui rend la fonction juste pour la prochaine raison d'en
+ * fabriquer une, et la raison précédente a été payée une fois.
  */
 export function separationsDesLignes(ids: string[], enCarte: ReadonlySet<string>): boolean[] {
   return ids.map(

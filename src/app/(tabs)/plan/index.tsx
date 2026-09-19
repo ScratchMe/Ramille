@@ -32,7 +32,7 @@ import {
   RAISONS_ANNONCABLES,
   type ReponsesDeContexte,
 } from '@/types/plan';
-import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
+import { daysSince, regimeDeRebilan, titreDuRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
   marquerLouvertureDeSaisonVue,
@@ -1063,7 +1063,15 @@ export default function Plan() {
   // Une seule règle, deux écrans : `doitProposerUnRebilan` porte le seuil **et** le cas de la date
   // absente (C2.7, point 7). Les deux écrans comparaient chacun de leur côté, avec pour l'un une date
   // qui peut manquer et pour l'autre une date toujours là — deux conditions à tenir en phase.
-  const bilanAncien = doitProposerUnRebilan(assessmentDate);
+  // **Le titre porte la condition, et c'est ce qui les garde d'accord** (contre-lecture du
+  // 19/09/2026). L'écran lisait un booléen puis composait sa phrase avec l'âge du bilan, tandis que
+  // le suivi lisait le régime : deux lectures d'une même règle, et c'est celle d'ici qui a survécu
+  // au changement de déclencheur de C6.3 en disant faux. `titreDuRebilan` rend `null` quand il n'y
+  // a rien à proposer, donc il n'y a plus qu'une chose à tester.
+  const titreRebilan =
+    assessmentDate !== null
+      ? titreDuRebilan(regimeDeRebilan(assessmentDate), daysSince(assessmentDate))
+      : null;
 
   const capKg =
     baselineKg !== null && baselineKg > 0
@@ -1575,18 +1583,20 @@ export default function Plan() {
               l'action engagée inverserait l'urgence. « Une proposition, jamais un rappel
               insistant » — même règle que sur le suivi, même seuil, même lien.
 
-              **Elle dit le fait et non la saison** (C2.8, point 3). Son titre était « Une nouvelle
-              saison a commencé », ce qui pouvait être faux — elle se déclenche sur 182 jours
-              d'ancienneté du bilan, pas sur une bascule — et pouvait coexister avec la puce
-              « Cadence : Été 2026 » juste au-dessus. La formulation saisonnière appartient
-              maintenant à la carte d'ouverture, qui, elle, se déclenche vraiment sur une bascule ;
-              celle-ci dit l'âge, par la dérivation que le suivi partage. Fond `backgroundElement`
+              **Elle disait le fait et non la saison, et la prémisse s'est inversée** (C2.8 point 3,
+              puis contre-lecture du 19/09/2026). Son titre était « Une nouvelle saison a commencé »,
+              ce qui pouvait être faux : la carte se déclenchait alors sur 182 jours d'ancienneté du
+              bilan, pas sur une bascule. **C6.3 a fait exactement l'inverse** — le déclencheur est
+              la bascule — donc c'est l'âge qui est devenu la chose qui peut être fausse, jusqu'à
+              « Ton bilan a moins d'un mois » sous une invitation à en refaire un. Le titre vient
+              maintenant de `titreDuRebilan`, partagé avec le suivi, qui donne à chaque régime ce
+              qu'il peut dire de vrai. La puce « Cadence : Été 2026 » avec laquelle il ne fallait pas
+              coexister a, elle, disparu avec C2.8. Fond `backgroundElement`
               plutôt que `backgroundSelected` (canvas B1) : une proposition, pas une mise en avant. */}
-          {bilanAncien && assessmentDate !== null && (
+          {titreRebilan !== null && (
             <ThemedView type="backgroundElement" style={styles.rebilanCard}>
               <ThemedText type="small" themeColor="textSecondary">
-                Ton bilan a {ancienneteEnMots(daysSince(assessmentDate))}. En faire un nouveau prend
-                quelques minutes ; ton plan s’ajuste.
+                {titreRebilan} En faire un nouveau prend quelques minutes ; ton plan s’ajuste.
               </ThemedText>
               {/* **« Refaire » laissait croire à un écrasement** (C6.1, `v1-19` D1) : un nouveau
                   bilan s'ajoute, il n'efface rien. Le libellé est le même sur les deux écrans qui

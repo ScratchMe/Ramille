@@ -57,6 +57,14 @@ contredire.** C'est mot pour mot la leçon de `CarteDOuverture` (C5.6) et de `Ca
 ce qui est rendu deux fois s'écrit une fois. La décision D4 ci-dessous est donc la première à
 prendre, avant les trois autres.
 
+> **Un détail du handoff à reprendre quand C6.5 sera construit** (relevé le 19/09/2026). La sortie
+> de la page anniversaire prescrit un en-tête « Ton dernier bilan a trois mois »
+> (`ancienneteEnMots(daysSince(…))`, `HANDOFF.md` l. 177). C'est la même forme que la carte de
+> re-bilan portait, et qui a dû être corrigée le jour même : un âge affiché au-dessus d'une
+> invitation à refaire son bilan peut le contredire. Ici le risque est moindre — la page ne s'ouvre
+> qu'à un anniversaire — mais la règle vaut : `titreDuRebilan` donne à chaque régime ce qu'il peut
+> dire de vrai, et c'est lui qu'il faudra lire plutôt que `ancienneteEnMots` en direct.
+
 ## 5. Les décisions à prendre
 
 ### D4 — D'abord : C4.8 est-il la couche de données de C6.5, ou un second écran

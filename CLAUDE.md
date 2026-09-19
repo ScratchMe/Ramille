@@ -551,12 +551,18 @@ n'étaient lus par **aucun** écran : le cap était annoncé sans échéance, et
   d'un premier bilan, et ses bornes sont **lues sur sa ligne** plutôt que recalculées : une cadence
   `rolling_quarter` n'a pas de saison, donc dériver les bornes d'une saison ferait compter trois mois
   calendaires qui ne sont pas les siens.
-- **La carte de re-bilan dit le fait, jamais la saison.** Son titre était « Une nouvelle saison a
-  commencé », ce qui pouvait être faux : elle se déclenche sur 182 jours d'ancienneté du bilan, pas
-  sur une bascule, et pouvait coexister avec la puce « Cadence : Été 2026 ». La formulation
-  saisonnière appartient à la carte d'ouverture. L'âge vient d'`ancienneteEnMots`
-  (`src/types/suivi.ts`), **partagée par les deux écrans** qui le disent, et il s'écrit en mots — un
-  ordre de grandeur, pas une mesure.
+- **La carte de re-bilan disait le fait et jamais la saison, et C6.3 a inversé la prémisse.** Son
+  titre était « Une nouvelle saison a commencé », ce qui pouvait être faux : elle se déclenchait sur
+  182 jours d'ancienneté du bilan, pas sur une bascule, et pouvait coexister avec la puce
+  « Cadence : Été 2026 » — disparue depuis. **Depuis C6.3, le déclencheur EST la bascule**
+  (`regimeDeRebilan` / `saisonsEcouleesDepuis`), donc c'est l'âge qui est devenu la chose qui peut
+  être fausse : un bilan soumis le 30 novembre se propose le 1er décembre, sous un titre qui disait
+  « Ton dernier bilan a moins d'un mois ». Le titre vient donc de `titreDuRebilan`
+  (`src/types/suivi.ts`), **partagé par les deux écrans**, et il donne à chaque régime ce qu'il peut
+  dire de vrai : `proposer` dit la saison — vraie par construction —, `insister` dit l'âge par
+  `ancienneteEnMots`, où deux bascules garantissent au moins trois mois. Le défaut a vécu une
+  journée, et la leçon est qu'**un changement de déclencheur oblige à relire les phrases qui en
+  dépendaient**, pas seulement le code qui l'appelle.
 - **La puce « Cadence : … » a disparu du plan** : la période se nomme dans la carte du cap, à côté de
   sa fin, et cette carte se rend donc **même sans cap** (`baseline_co2_kg_year` peut valoir zéro).
   Nommer la période à deux endroits de l'écran était le plus sûr moyen de les voir un jour se

@@ -25,10 +25,10 @@ import {
 import { POSTE_LABEL } from '@/types/resultat';
 import { formatIntention } from '@/types/plan';
 import {
-  ancienneteEnMots,
   daysSince,
   phraseDuRegimeDeRebilan,
   regimeDeRebilan,
+  titreDuRebilan,
   ecartParPoste,
   estUneBaisse,
   formatDate,
@@ -332,6 +332,7 @@ export default function Suivi() {
   // de quoi ce ne serait qu'un rappel de plus, ce que la spec §7 interdit.
   const regimeRebilan = regimeDeRebilan(latest.submittedAt);
   const phraseRebilan = phraseDuRegimeDeRebilan(regimeRebilan);
+  const titreRebilan = titreDuRebilan(regimeRebilan, daysSince(latest.submittedAt));
   // Les points par saison (C2.7, point 5) : l'en-tête d'un groupe porte son **vrai** total, et la
   // troncature devient visible et réversible. La liste était coupée à huit en silence sous un
   // compteur global qui en annonçait davantage.
@@ -619,12 +620,16 @@ export default function Suivi() {
 
           {phraseRebilan !== null && (
             <ThemedView type="backgroundElement" style={styles.card}>
-              {/* **L'âge par la dérivation partagée, en mots** (C2.8). Le mois se calculait ici,
-                  en chiffres, tandis que le plan disait « Ton bilan date d'un moment » : deux écrans
-                  qui comptent chacun de leur côté finissent par annoncer six mois d'un côté et cinq
-                  de l'autre. En mots parce que c'est un ordre de grandeur, pas une mesure. */}
+              {/* **Le titre dit ce qui a déclenché la carte, et pas toujours l'âge** (contre-lecture
+                  du 19/09/2026). Il disait l'âge en toutes circonstances, par la dérivation partagée
+                  avec le plan — ce qui était juste tant que le déclencheur tenait à 182 jours. Depuis
+                  que C6.3 compte en **bascules de saison**, un bilan de la veille d'une bascule se
+                  propose : le titre annonçait alors « Ton dernier bilan a moins d'un mois » au-dessus
+                  d'une invitation à en refaire un. `titreDuRebilan` donne à chaque régime ce qu'il
+                  peut dire de vrai, et l'âge ne revient qu'à partir de deux bascules, où il vaut au
+                  moins trois mois. */}
               <ThemedText weight={600} type="small">
-                Ton dernier bilan a {ancienneteEnMots(daysSince(latest.submittedAt))}
+                {titreRebilan}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 {phraseRebilan}
