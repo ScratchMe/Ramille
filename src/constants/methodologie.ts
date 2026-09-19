@@ -24,6 +24,7 @@
 // celles de `recompute_assessment_results` ; les toucher impose de reprendre ce fichier, et ce
 // qui garde l'égalité est `scripts/verifier-hypotheses-calcul.mjs`, lancé en CI.
 
+import { grouperLesMilliers } from '@/lib/format';
 import { formatDate } from '@/types/suivi';
 
 /** Une section du bloc : un intitulé, et les lignes qui le composent. */
@@ -79,8 +80,7 @@ export const HYPOTHESES = {
  */
 function nombre(valeur: number): string {
   const [entier, decimales] = String(valeur).split('.');
-  const groupe = entier.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
-  return decimales ? `${groupe},${decimales}` : groupe;
+  return decimales ? `${grouperLesMilliers(entier)},${decimales}` : grouperLesMilliers(entier);
 }
 
 /**

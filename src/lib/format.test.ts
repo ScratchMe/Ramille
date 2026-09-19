@@ -85,12 +85,16 @@ describe('formatTonnesNu', () => {
 });
 
 describe('formatKg', () => {
-  // « − 1 601 kg CO₂e » et non « − 1601 kg » (C5.8, écart 15). Le séparateur est l'espace **fine
-  // insécable** U+202F, celle de la typographie française : une espace ordinaire laisserait le
-  // nombre se couper en fin de ligne.
-  it('groupe les milliers avec une espace fine insécable', () => {
-    expect(formatKg(1601)).toBe('1 601');
-    expect(formatKg(12345)).toBe('12 345');
+  // « − 1 601 kg CO₂e » et non « − 1601 kg » (C5.8, écart 15). Le séparateur est l'espace
+  // **insécable** U+00A0, et les assertions le nomment par son point de code plutôt que de le coller
+  // en littéral : une espace de séparation ne se distingue d'une autre à l'œil ni dans un diff, et
+  // c'est exactement ce qui a laissé passer U+202F — invisible à l'écran, identique dans le code.
+  //
+  // U+00A0 vaut 357 unités sur 2000 dans la police du produit, soit 1/6 de cadratin ; U+202F y
+  // valait 71, c'est-à-dire un demi-pixel à 17 px (recette du 18/09/2026, constat 05.3).
+  it('groupe les milliers avec une espace insécable', () => {
+    expect(formatKg(1601)).toBe(`1\u00a0601`);
+    expect(formatKg(12345)).toBe(`12\u00a0345`);
   });
 
   // Sous mille, rien ne change : c'est le cas de presque tous les gains, et y glisser un séparateur
@@ -105,7 +109,7 @@ describe('formatKg', () => {
   // l'arrondi vient **avant** le groupement, sinon « 1599,7 » sortirait avec un séparateur posé au
   // mauvais endroit.
   it('arrondit avant de grouper', () => {
-    expect(formatKg(1599.7)).toBe('1 600');
-    expect(formatKg(999.6)).toBe('1 000');
+    expect(formatKg(1599.7)).toBe('1\u00a0600');
+    expect(formatKg(999.6)).toBe('1\u00a0000');
   });
 });

@@ -97,6 +97,28 @@ le module (un runtime différent, un bundler séparé), **la duplication se gard
 lit les deux côtés : la règle « tenir les deux moitiés » ne s'applique pas toute seule, et le jour
 où elle est oubliée, les deux chiffres du même partage se contredisent sur une surface publique.
 
+**Et la forme inclut les caractères invisibles**, qui sont le pire endroit où recopier quoi que ce
+soit. Le groupement des milliers était écrit **quatre fois** dans le dépôt — le même `replace`, le
+même séparateur — parce qu'une ligne de trois caractères ne se lit pas comme une dérivation. Une
+seule fonction désormais (`grouperLesMilliers`), et les quatre appellent.
+
+### Un caractère de mise en forme n'est pas un choix typographique tant qu'on n'a pas mesuré sa chasse
+
+Le séparateur retenu était U+202F, l'espace **fine** insécable, sur l'argument — juste en général —
+qu'une insécable ordinaire « écarterait trop ». Relevé dans la police du produit avec opentype.js,
+à 2000 unités par cadratin : U+202F y vaut **71 unités**, soit **0,6 px à 17** ; U+00A0 en vaut
+**357**, c'est-à-dire **1/6 de cadratin** (333), exactement la valeur que la typographie française
+demande. « 1 601 » se lisait donc « 1601 », et il a fallu une recette pour le voir.
+
+La règle : **relever la chasse dans la police qu'on utilise**, pas dans la norme. Elle se refait le
+jour où la police change, et ça se mesure en une commande — charger le `.ttf` et lire l'`advanceWidth`
+du point de code.
+
+**Corollaire pour les tests** : un séparateur s'écrit par son **point de code** (`\u00a0`) et jamais
+collé en littéral. Trois assertions le portaient en clair, et leur échec affichait
+`Expected: "1 600"` / `Received: "1 600"` — deux chaînes rigoureusement identiques à l'œil. C'est
+exactement ce qui avait laissé passer le mauvais caractère.
+
 ## 2. Propre à Ramille
 
 ### 2.1 Les chiffres affichés, les repères, et le vocabulaire des postes

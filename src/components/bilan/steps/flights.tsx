@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { grouperLesMilliers } from '@/lib/format';
 import type { BilanAnswers } from '@/types/bilan';
 
 // "N+" stocke N — simplification assumée (pas de borne haute en base pour ces champs,
@@ -107,11 +108,8 @@ export function FlightsStep({
   );
 }
 
-// Séparateur de milliers écrit à la main, comme dans `methodologie.ts` : `toLocaleString('fr-FR')`
-// rend « 1,500 » sur un Hermes construit sans ICU complet, soit une virgule décimale au milieu
-// d'une distance.
 function formatKm(km: number): string {
-  return `${String(km).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} km`;
+  return `${grouperLesMilliers(String(km))} km`;
 }
 
 const styles = StyleSheet.create({

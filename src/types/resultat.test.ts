@@ -350,8 +350,8 @@ describe('equivalenceNote', () => {
   });
 
   it('compte en vols dès qu’il y en a un', () => {
-    expect(equivalenceNote(palier(277))).toBe('Pour situer : à peu près un vol de 1\u202f500 km.');
-    expect(equivalenceNote(palier(800))).toBe('Pour situer : à peu près 3 vols de 1\u202f500 km.');
+    expect(equivalenceNote(palier(277))).toBe('Pour situer : à peu près un vol de 1\u00a0500 km.');
+    expect(equivalenceNote(palier(800))).toBe('Pour situer : à peu près 3 vols de 1\u00a0500 km.');
   });
 
   // Le séparateur de milliers est écrit à la main : `toLocaleString('fr-FR')` rend « 1,500 » sur

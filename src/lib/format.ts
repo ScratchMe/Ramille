@@ -69,10 +69,22 @@ export function formatTonnesNu(kg: number): string {
 /**
  * Un nombre de kilos, avec l'espace fine des milliers (C5.8, écart 15).
  *
- * « − 1 601 kg CO₂e » et non « − 1601 kg ». Le séparateur est une **espace fine insécable**
- * (U+202F), celle que la typographie française demande entre les groupes de chiffres : une espace
- * ordinaire laisserait le nombre se couper en fin de ligne, et une espace insécable large
- * l'écarterait trop.
+ * « − 1 601 kg CO₂e » et non « − 1601 kg ». Le séparateur est l'**espace insécable** U+00A0, et
+ * ce choix vient d'une mesure, pas d'un raisonnement.
+ *
+ * **La première version posait U+202F**, l'espace fine insécable, sur l'argument qu'une espace
+ * insécable ordinaire « écarterait trop ». L'argument est juste en général et **faux pour la police
+ * du produit** : relevé sur `SplineSans_500Medium.ttf` avec opentype.js, à 2000 unités par
+ * cadratin, U+202F y vaut **71 unités** — 0,6 px à 17, un demi-pixel — tandis que U+00A0 en vaut
+ * **357**, c'est-à-dire **1/6 de cadratin** (333), exactement la valeur que la typographie française
+ * demande pour un séparateur de milliers. « 1 601 » se lisait donc « 1601 » à l'écran, et la recette
+ * du 18/09/2026 l'a vu (constat 05.3, `v1-13` §14.5).
+ *
+ * L'insécabilité, qui est la raison pour laquelle U+202F avait été préféré à U+2009, est conservée :
+ * U+00A0 ne permet pas au nombre de se couper en fin de ligne.
+ *
+ * **La règle qui en sort vaut au-delà de ce cas** : un caractère de mise en forme n'est pas un choix
+ * typographique tant qu'on n'a pas relevé sa chasse dans la police du produit (`FRONT.md`).
  *
  * **Ce formateur ne concerne pas les totaux**, et c'est pourquoi il ne touche pas aux deux jumeaux
  * d'`api/` : `formatTonnes` et ses copies basculent en tonnes dès 1 000 kg, donc leur branche en
@@ -85,7 +97,27 @@ export function formatTonnesNu(kg: number): string {
  * des décimales que l'écran n'affiche pas.
  */
 export function formatKg(kg: number): string {
-  return String(Math.round(kg)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+  return grouperLesMilliers(String(Math.round(kg)));
+}
+
+/**
+ * Le groupement des milliers d'une partie entière, **une fois pour tout le produit**.
+ *
+ * **Il était écrit quatre fois** — ici, dans l'équivalence en vols de `src/types/resultat.ts`, dans
+ * la distance de l'étape « Vols » et dans le bloc « Comment ce chiffre est calculé ». Quatre copies
+ * du même `replace`, avec le même séparateur, donc quatre endroits à corriger le jour où il s'avère
+ * invisible — ce qui est arrivé le 18/09/2026. C'est le cas d'école de `FRONT.md` §1.6 : un chiffre
+ * vit à un seul endroit, **et sa forme aussi**.
+ *
+ * **Écrit à la main plutôt que par `toLocaleString('fr-FR')`**, et ce n'est pas un choix de style :
+ * Hermes peut être construit sans ICU complet et rendrait alors « 1,500 » — une virgule décimale au
+ * milieu d'une distance. Invisible en CI, visible sur l'appareil. Même raison que `MOIS_FRANCAIS`.
+ *
+ * L'entrée est la partie entière **déjà en chaîne** : un appelant qui porte des décimales les
+ * recolle lui-même, parce que le séparateur décimal n'est pas le même sujet que celui des milliers.
+ */
+export function grouperLesMilliers(entier: string): string {
+  return entier.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 }
 
 /**
