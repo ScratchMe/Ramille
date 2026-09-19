@@ -1108,11 +1108,20 @@ export type Database = {
       generate_commute_checkins: { Args: never; Returns: undefined }
       generate_extras_checkins: { Args: never; Returns: undefined }
       generate_plan_cycle_for_user: {
-        Args: { p_user_id: string }
+        Args: { p_cause?: string; p_user_id: string }
         Returns: undefined
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
       jours_francais: { Args: { p_days: number[] }; Returns: string }
+      mettre_a_jour_le_contexte: {
+        Args: {
+          p_household_vehicles: string
+          p_tc_access: string
+          p_teletravail: string | null
+          p_zone_type: string
+        }
+        Returns: undefined
+      }
       mois_francais: { Args: { d: string }; Returns: string }
       periode_precedente: {
         Args: { p_loop_type: string; p_period_start: string }

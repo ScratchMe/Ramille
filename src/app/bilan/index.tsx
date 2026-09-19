@@ -162,6 +162,12 @@ export default function BilanQuestionnaire() {
       // le bilan précédent n'arrive qu'après, et il ne change la visibilité d'une étape que dans le
       // sens où elle en ouvre **plus**. Une étape refusée ici pour un questionnaire vierge l'aurait
       // été de toute façon — c'est le même préremplissage qui décide des deux.
+      //
+      // **Plus aucun écran du produit n'émet ce paramètre depuis C6.4** — « Modifier ces réponses »
+      // ouvre `/contexte`, qui corrige le contexte sans resoumettre de bilan. Il reste malgré tout,
+      // et ce n'est pas un oubli : sur web l'adresse **se tape**, donc la validation ci-dessous
+      // garde quelque chose que personne n'émet mais que n'importe qui peut atteindre. Le retirer
+      // ne supprimerait pas le cas, il supprimerait la garde.
       const reponsesPourLaVisibilite = draft ? draft.answers : EMPTY_BILAN_ANSWERS;
       if (
         etape !== undefined &&

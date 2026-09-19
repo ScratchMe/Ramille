@@ -10,7 +10,10 @@ import {
   intentionKindForPoste,
   intentionTimingsForPoste,
   isIntentionComplete,
+  estRaisonAnnoncable,
   motsDuContexte,
+  phraseDeLOrphelin,
+  RAISONS_ANNONCABLES,
   pistesDuPlan,
   pistesParPoste,
   filetsDesLignes,
@@ -420,5 +423,37 @@ describe('motsDuContexte', () => {
 
   it('rend une liste vide quand rien n’est renseigné', () => {
     expect(motsDuContexte(reponses())).toEqual([]);
+  });
+});
+
+describe('l’encart orphelin', () => {
+  // **Deux raisons et pas quatre**, et la règle est « effet de bord non choisi » : `saison` est une
+  // reconduction qui a échoué à la frontière d'une saison, `changement` est la décision de la
+  // personne. Les lui apprendre serait inutile ou condescendant.
+  it('n’annonce que les deux libérations que la personne n’a pas choisies', () => {
+    expect([...RAISONS_ANNONCABLES]).toEqual(['rebilan', 'contexte']);
+    expect(estRaisonAnnoncable('saison')).toBe(false);
+    expect(estRaisonAnnoncable('changement')).toBe(false);
+  });
+
+  // **La phrase nommait le nouveau bilan, et il n'y en a pas toujours un** : depuis C6.4, corriger
+  // son contexte reconstruit le plan sans resoumettre de bilan. C'est la seule moitié de la phrase
+  // qui change — l'action reste dans le suivi dans les deux cas, et c'est ce qui la distingue
+  // d'une disparition.
+  it('nomme la cause, et pas un bilan qui n’a pas eu lieu', () => {
+    const contexte = phraseDeLOrphelin('contexte', 'Faire un trajet sur cinq à vélo.');
+    expect(contexte).toContain('avec tes nouvelles réponses de contexte');
+    expect(contexte).not.toContain('nouveau bilan');
+
+    const rebilan = phraseDeLOrphelin('rebilan', 'Faire un trajet sur cinq à vélo.');
+    expect(rebilan).toContain('avec ton nouveau bilan');
+  });
+
+  it('cite l’action et rappelle qu’elle reste dans le suivi', () => {
+    for (const raison of RAISONS_ANNONCABLES) {
+      const phrase = phraseDeLOrphelin(raison, 'Faire un trajet sur cinq à vélo.');
+      expect(phrase).toContain('« Faire un trajet sur cinq à vélo. »');
+      expect(phrase).toContain('elle reste dans ton suivi');
+    }
   });
 });

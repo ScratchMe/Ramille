@@ -198,14 +198,24 @@ Le troisième moment neuf. **Irréversible dans cette fenêtre.**
 
 ---
 
-## Bloc 07 — L'encart de contexte et sa porte (C5.5)
+## Bloc 07 — L'encart de contexte et sa porte (C5.5, destination réécrite par C6.4)
+
+**Ce bloc a changé de destination le 19/09/2026.** La séance du 18/09 avait trouvé ici le constat
+07.4 : « Modifier ces réponses » rouvrait le questionnaire, et en sortir **soumettait un bilan
+entier**. C6.4 a sorti le contexte du questionnaire, donc les lignes 07.3 et suivantes ne cherchent
+plus la même chose — c'est la porte elle-même qui est en recette.
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
 | 07.1 | Descendre en bas du plan | **« Ton plan tient compte de ton contexte : zone périurbaine, accès limité aux transports en commun, un véhicule dans le foyer, un jour de télétravail possible. Ce qui ne tient pas avec ces réponses n'est pas proposé. »** — les quatre réponses, dans cet ordre | |
 | 07.2 | La relire | Elle ne contient **aucun chiffre** et ne nomme **aucune action écartée**. Un « tu perds telle action » serait un écart grave | |
-| 07.3 | Toucher **« Modifier ces réponses »** | Le questionnaire s'ouvre **directement sur l'étape « Contexte de mobilité »**, avec les réponses déjà remplies. Arriver sur une autre étape, ou sur un questionnaire vide, serait un écart | |
-| 07.4 | Revenir en arrière sans soumettre | On retrouve le plan, inchangé | |
+| 07.3 | Toucher **« Modifier ces réponses »** | L'écran **« Ton contexte de mobilité »** s'ouvre, avec les quatre mêmes questions que la dernière étape du questionnaire et les réponses déjà sélectionnées. **Retomber dans le questionnaire serait l'écart que ce chantier ferme** | |
+| 07.4 | Lire le pied de l'écran, sans rien toucher | « Enregistrer met ton plan à jour ; ton bilan n'est pas refait. Si l'action que tu suis n'y tient plus, tu en choisiras une autre. » Et **« Enregistrer » est inactif** tant qu'aucune réponse n'a bougé | |
+| 07.5 | Toucher **« Retour »** | On retrouve le plan, inchangé | |
+| 07.6 | Rouvrir l'écran, passer l'accès aux transports en commun sur **Inexistant**, puis **« Enregistrer »** | Retour au plan, et **le plan s'est réduit** : les actions qui supposaient un métro ou un tram ont disparu | |
+| 07.7 | Ouvrir l'onglet **Suivi** | **Aucune entrée nouvelle.** Un second bilan dans l'historique serait le défaut que C6.4 ferme — corriger son contexte n'est pas refaire un bilan | |
+| 07.8 | Revenir au contexte et remettre **Limité**, puis enregistrer | Le plan retrouve ses actions. Le suivi n'a toujours qu'une entrée | |
+| 07.9 | Ouvrir **« Toi »** | La ligne **« Mon contexte de mobilité »** y mène aussi. C'est la seule porte pour un plan à zéro action, où l'encart du plan ne se rend pas | |
 
 ---
 

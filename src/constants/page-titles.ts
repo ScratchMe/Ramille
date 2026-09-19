@@ -40,6 +40,10 @@ export const PAGE_TITLES: Record<string, string> = {
 
   '/compte': `Toi — ${APP_NAME}`,
 
+  // Le contexte de mobilité, corrigeable seul depuis C6.4. Un détour, donc hors du groupe
+  // `(tabs)` : une route posée dedans se verrait donner un onglet, et le produit n'en a que deux.
+  '/contexte': `Ton contexte de mobilité — ${APP_NAME}`,
+
   '/feedback': `Nous faire un retour — ${APP_NAME}`,
 
   // Les deux seules surfaces publiques du produit : leurs URL sont données à Google Play et

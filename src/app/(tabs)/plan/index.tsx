@@ -23,7 +23,15 @@ import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste
 import { CarteDOuverture } from '@/components/plan/carte-douverture';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
-import { cadreDuPlan, formeInserable, motsDuContexte, pistesDuPlan, type ReponsesDeContexte } from '@/types/plan';
+import {
+  cadreDuPlan,
+  formeInserable,
+  motsDuContexte,
+  phraseDeLOrphelin,
+  pistesDuPlan,
+  RAISONS_ANNONCABLES,
+  type ReponsesDeContexte,
+} from '@/types/plan';
 import { ancienneteEnMots, daysSince, doitProposerUnRebilan } from '@/types/suivi';
 import {
   aVuLouvertureDeSaison,
@@ -112,7 +120,7 @@ type PlanCycle = {
  * AsyncStorage et porte l'identifiant de la ligne, pour qu'un second re-bilan puisse le dire à
  * son tour.
  */
-type EngagementOrphelin = { id: string; action_text: string };
+type EngagementOrphelin = { id: string; action_text: string; released_reason: string };
 
 // Une seule carte par boucle, la plus récente. La requête est déjà triée par `period_start`
 // décroissant, donc le premier vu de chaque `loop_type` est le bon.
@@ -647,11 +655,12 @@ export default function Plan() {
         // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3). C'est le
         // prochain contact qui compte, pas l'action engagée.
         //
-        // **L'engagement qu'un re-bilan a emporté** se lit dans la même fournée (C2.2). Le filtre
+        // **L'engagement qu'un recalcul a emporté** se lit dans la même fournée (C2.2). Le filtre
         // porte sur la raison : `saison` et `changement` n'ont rien à annoncer — l'une est une
         // reconduction qui a échoué à la frontière d'une saison, l'autre est la décision de la
-        // personne elle-même, qu'il serait absurde de lui apprendre. Seul `rebilan` est un effet
-        // de bord qu'elle n'a pas choisi.
+        // personne elle-même, qu'il serait absurde de lui apprendre. Restent les **deux effets de
+        // bord non choisis**, `rebilan` et, depuis C6.4, `contexte` — la liste vit dans
+        // `RAISONS_ANNONCABLES` et non ici, la requête et la phrase devant filtrer sur la même.
         //
         // **Et une seconde lecture de la même table, qui n'est pas un doublon** (C5.6) : celle du
         // dessus répond à « quel engagement le dernier re-bilan a-t-il emporté ? », celle du
@@ -683,8 +692,8 @@ export default function Plan() {
               .maybeSingle(),
             supabase
               .from('plan_action_commitments_archive')
-              .select('id, action_text')
-              .eq('released_reason', 'rebilan')
+              .select('id, action_text, released_reason')
+              .in('released_reason', RAISONS_ANNONCABLES)
               .order('released_at', { ascending: false })
               .limit(1),
             supabase
@@ -1179,7 +1188,7 @@ export default function Plan() {
               </ThemedText>
             </ThemedView>
           )}
-          {/* **Ce que le re-bilan a emporté, dit une fois** (C2.2, `v1-14` §5). Avant, le
+          {/* **Ce qu'un recalcul a emporté, dit une fois** (C2.2, `v1-14` §5 ; étendu par C6.4). Avant, le
               `delete from plan_actions` de la génération effaçait l'engagement, ses jours et son
               intention sans un mot — le geste le plus engageant du produit annulé par le second
               geste le plus encouragé. Il est maintenant archivé, et cet encart est l'endroit où la
@@ -1191,8 +1200,7 @@ export default function Plan() {
           {orphelin !== null && (
             <ThemedView type="backgroundElement" style={styles.orphelin}>
               <ThemedText type="small" themeColor="textSecondary">
-                Ton plan a changé avec ton nouveau bilan. « {orphelin.action_text} » n’y est plus ;
-                elle reste dans ton suivi.
+                {phraseDeLOrphelin(orphelin.released_reason, orphelin.action_text)}
               </ThemedText>
               <TextLink
                 label="Compris"
@@ -1525,7 +1533,7 @@ export default function Plan() {
                   appartenant à ce qui suit. */}
               <TextLink
                 label="Modifier ces réponses"
-                onPress={() => router.push({ pathname: '/bilan', params: { etape: 'context' } })}
+                onPress={() => router.push('/contexte')}
                 type="small"
                 weight={600}
                 themeColor="accentText"

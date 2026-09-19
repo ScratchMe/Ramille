@@ -246,7 +246,8 @@ troisième lieu** : c'est la dernière page d'un flux, ou le détail d'une entr�
 sa place dans cette pile, qui garde la barre visible.
 
 Tout le reste vit hors du groupe et s'affiche en plein écran, sans barre : `/onboarding` et
-`/bilan` sont des **flux**, `/compte/*` et `/connexion/*` des détours, `/confidentialite`,
+`/bilan` sont des **flux**, `/compte/*`, `/connexion/*` et `/contexte` (les quatre réponses B4,
+corrigeables seules depuis C6.4) des détours, `/confidentialite`,
 `/conditions`, `/compte/suppression`, `/rappels/stop` et `/feedback` des surfaces publiques ou de
 service. Les
 deux règles qui vont avec ce découpage (ajouter une route dans `(tabs)/` lui donne un onglet ;
@@ -1122,14 +1123,55 @@ vérifiée à l'intérieur), et deux tests pgTAP qui épinglent le refus. Une se
 domicile-travail et en échéance fermée pour les autres — jamais de saisie libre.
 
 Deux mécanismes de génération server-side qu'il faut garder synchronisés si on les touche :
-- `generate_plan_cycle_for_user(p_user_id)` (security definer, revoked de anon/authenticated)
-  génère le plan de réduction d'un utilisateur. Appelée à la fois par le cron nightly
-  `generate_plan_cycles()` (boucle sur tous les utilisateurs) et directement à la fin de
-  `compute_assessment_results()`, pour que le plan existe immédiatement après soumission
-  d'un bilan plutôt que d'attendre le prochain passage du cron.
+- `generate_plan_cycle_for_user(p_user_id, p_cause)` (security definer, revoked de
+  public/anon/authenticated) génère le plan de réduction d'un utilisateur. Appelée à la fois par le
+  cron nightly `generate_plan_cycles()` (boucle sur tous les utilisateurs) et **à la fin de
+  `recompute_assessment_results()`** — et non de `compute_assessment_results()`, que ce fichier
+  nommait à tort : relevé dans `pg_get_functiondef` le 19/09/2026, la ligne est dans la fonction
+  interne, donc toute reprise de calcul en masse régénère aussi les plans. L'appel y est enveloppé
+  dans un `begin … exception` : le bilan aboutit même si le plan échoue, et le cron rattrape.
 - Cadence du plan de réduction : saisons **météorologiques** (blocs calendaires de 3 mois,
   pas astronomiques) par défaut, ou trimestre glissant ancré sur la date du bilan si
   `profiles.cadence_type = 'rolling_quarter'`.
+
+**Le contexte se corrige sans resoumettre de bilan, et `p_cause` est ce qui le rend possible**
+(C6.4, `20260919230000_le_contexte_sort_du_questionnaire.sql`). « Modifier ces réponses » rouvrait
+le questionnaire à l'étape « Contexte », et en sortir soumettait un bilan entier — alors que
+corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses trajets. Six points :
+
+- **`mettre_a_jour_le_contexte(zone, tc, vehicules, teletravail)` est le seul écrivain de ces
+  quatre colonnes hors questionnaire**, et ce n'est **pas** une question de permission :
+  `assessment_answers` porte déjà une policy `UPDATE` owner-scoped. Ce sont l'**atomicité** (écrire,
+  recalculer et régénérer doivent réussir ensemble) et le **bornage des colonnes** — la RLS filtre
+  des lignes, jamais des colonnes, donc un `update` client sur cette table atteint les distances et
+  les modes, donc le chiffre. Le dire évite qu'un prochain passage retire le RPC en simplifiant.
+- **Un seul paramètre porte la cause, et les deux conséquences s'en dérivent.** La première forme
+  écrite était `p_forcer boolean`, qui obligeait à poser ailleurs la raison d'archivage — donc à
+  tenir d'accord deux paramètres disant la même chose. `p_cause` (`'bilan'` par défaut,
+  `'contexte'`) fait sauter la garde d'idempotence **et** nomme la raison de libération : il n'y a
+  pas de façon de forcer sans dire pourquoi. Une valeur inconnue lève `RM004` — un code à elle,
+  parce que c'est un invariant de serveur qu'aucun client ne peut atteindre, là où les
+  préconditions de `mettre_a_jour_le_contexte` (`RM003`) remontent jusqu'à un écran.
+- **La garde d'idempotence devait sauter, et surtout pas `submitted_at` bouger.** Cette date est
+  l'âge du bilan, lu par le régime de re-bilan, le suivi et le moment anniversaire ; la déplacer
+  pour déclencher une régénération aurait menti sur quand le bilan a été fait.
+- **Le recalcul est inconditionnel, parce que TROIS réponses sur quatre entrent dans le résultat.**
+  L'issue #232 posait `household_vehicles` comme la seule ; `tc_access` et `zone_type` décident
+  aussi de `mobility_constrained`, figé sur `assessment_results` et lu par la restitution (C3.1).
+  Une condition étroite l'aurait laissé périmé. C'est sans risque parce que
+  `recompute_assessment_results` est idempotent : mêmes réponses de trajet, facteurs bornés à la
+  date du bilan, mêmes totaux. **Recalculer n'est pas resoumettre** — aucune ligne n'est ajoutée à
+  `assessments`, et un test pgTAP l'épingle.
+- **`plan_action_commitments_archive.released_reason` a une quatrième valeur, `contexte`**, et
+  l'encart orphelin du plan filtre désormais sur `RAISONS_ANNONCABLES` — les **deux** libérations
+  que la personne n'a pas choisies. Sa phrase se dérive de la raison (`phraseDeLOrphelin`) : elle
+  disait « Ton plan a changé avec ton nouveau bilan », ce qui est faux quand il n'y a pas eu de
+  bilan. `saison` et `changement` restent tues, pour les raisons de C2.2.
+- **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
+  du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
+  n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle
+  était déjà fausse avant ce chantier pour qui sort rarement, profil où le basculement vaut
+  **10,88 → 55,56 kg**, soit 411 % de son total.
 
 **`cadence_type = 'rolling_quarter'` est un mécanisme dormant, et il faut le savoir avant de le
 prendre pour du code mort.** Toute la chaîne serveur existe et est testée — `rolling_quarter_bounds`,

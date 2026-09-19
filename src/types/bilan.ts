@@ -228,7 +228,13 @@ export const REPONSES_TELETRAVAIL: {
  * Un nombre de jours inconnu vaut « ne se pose pas » : la question **nomme** ce nombre, donc sans
  * lui elle ne peut même pas s'écrire.
  */
-export function teletravailSePose(answers: BilanAnswers): boolean {
+export function teletravailSePose(
+  // **Le trajet déclaré suffit, et le type le dit depuis C6.4** : l'écran de contexte autonome lit
+  // ces deux colonnes sur `assessment_answers` sans reconstruire un `BilanAnswers` entier. Un
+  // `BilanAnswers` satisfait toujours ce `Pick`, donc les trois appels du questionnaire ne bougent
+  // pas — et il n'y a toujours **qu'un** prédicat, ce qui est tout l'enjeu de `v1-17` §7.2.
+  answers: Pick<BilanAnswers, 'commute_has_regular_trip' | 'commute_days_per_week'>
+): boolean {
   return (
     answers.commute_has_regular_trip !== false &&
     answers.commute_days_per_week !== null &&

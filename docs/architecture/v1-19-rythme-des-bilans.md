@@ -80,6 +80,28 @@ change les actions qu'on peut proposer ». **C'est vrai pour trois réponses B4 
 `zone_type`, `tc_access` et `teletravail` ne sont lues que par `estimate_action_savings` : elles
 filtrent les gabarits (C3.8), elles ne touchent aucun chiffre.
 
+> **Correction du 19/09/2026, en construisant C6.4.** Le paragraphe ci-dessus est faux sur un point,
+> et il l'était pour la raison que ce dépôt nomme partout : il a été écrit en lisant la description
+> du calcul plutôt que sa définition. `recompute_assessment_results` lit **trois** des quatre
+> réponses, pas une — `household_vehicles` à la ligne 134 comme décrit plus bas, mais aussi
+> `tc_access` **et** `zone_type` aux lignes 208-210, qui décident ensemble de
+> `mobility_constrained` :
+>
+> ```sql
+> v_mobility_constrained :=
+>   a.tc_access = 'inexistant'
+>   or (a.zone_type = 'rural' and a.tc_access = 'limite');
+> ```
+>
+> Cette valeur est **figée sur `assessment_results`** et lue par la restitution : c'est elle qui
+> montre ou tait la barre de la moyenne française (C3.1). Elle ne change aucun total — la phrase
+> « ça ne change rien aux chiffres » reste donc vraie de ces deux réponses-là — mais elle change ce
+> que la personne **voit**, et un écran de contexte qui l'aurait laissée périmée aurait produit
+> exactement la contradiction qu'on cherchait à éviter : l'encart du plan disant « rural, desserte
+> limitée » pendant que la restitution continue de comparer cette personne à une moyenne qu'on
+> avait décidé de lui taire. C'est ce relevé qui a élargi la condition de recalcul de C6.4 — voir
+> §6.4, refermée.
+
 **`household_vehicles` est l'exception, et il faut la mesurer avant d'en décider.** Elle entre dans
 `recompute_assessment_results`, dans la seule branche du résiduel des sorties :
 
@@ -165,7 +187,7 @@ dépendance à `household_vehicles` est le dernier fil qui relie une réponse de
   puis accessible seul. Le mettre à jour ne resoumet pas de bilan.
 - **D6 — Rien n'est imposé, à aucune échéance.** Ni à une saison, ni à un an.
 
-## 6. Les quatre questions ouvertes
+## 6. Les quatre questions ouvertes — deux refermées le 19/09/2026
 
 - **6.1 — La forme du moment anniversaire.** Ce qu'il montre est esquissé (émissions évitées,
   habitudes changées, encouragement) ; sa forme ne l'est pas, et « joli et dynamique » est un
@@ -178,14 +200,35 @@ dépendance à `household_vehicles` est le dernier fil qui relie une réponse de
   trop court » — est fondé, et il y a déjà de quoi : la carte d'ouverture de saison (C2.8) porte un
   récapitulatif de la saison écoulée, et `recapDeSaison` (C2.14) existe. La question est de savoir
   si l'anniversaire est une version riche de ce qui existe, ou autre chose.
-- **6.3 — Où vit l'écran de contexte une fois le premier questionnaire passé**, et comment on
-  rappelle « ton contexte a-t-il changé ? » sans en faire un rappel de plus.
-- **6.4 — `household_vehicles`, et c'est la seule question technique des quatre.** Trois issues :
-  la laisser dans le bilan et n'en sortir que trois réponses ; la sortir et **recalculer** quand
-  elle change pour un profil « rarement » ; ou **couper le fil** — le résiduel ne dépendrait plus
-  d'elle. La troisième est la plus propre et la plus discutable : elle change le total des profils
-  sobres, dans un sens ou dans l'autre, et il faut décider **lequel** est juste avant de la retenir.
-  §3 donne les chiffres pour en juger.
+- **6.3 — Où vit l'écran de contexte une fois le premier questionnaire passé** — *à moitié
+  refermée le 19/09/2026*. L'écran vit à `/contexte`, hors du groupe `(tabs)` (une route posée
+  dedans se verrait donner un onglet), et **deux** portes y mènent : l'encart du plan, qui
+  l'ouvrait déjà, et une ligne de « Toi ». La seconde n'est pas un confort — l'encart ne se rend
+  que sur un plan à au moins une action, or tout cycliste et tout profil sédentaire a un plan à
+  zéro action depuis C2.5, donc sans elle l'écran serait inatteignable pour exactement les
+  personnes dont le contexte explique le plus le plan. **Reste ouvert** : comment rappeler « ton
+  contexte a-t-il changé ? » sans en faire un rappel de plus. Rien n'a été construit de ce côté, et
+  c'est délibéré : le produit a déjà une boucle de rappels qui s'espace d'elle-même (C2.9), et y
+  ajouter une sollicitation demande d'abord de savoir ce qu'elle déplace.
+- **6.4 — `household_vehicles`** — *refermée le 19/09/2026, par la deuxième issue, et la mesure a
+  déplacé la question*. La décision produit retenue est bien la deuxième : **la sortir et
+  recalculer**. Ce qui a changé est l'étendue de la condition. L'issue proposait « recalculer quand
+  `household_vehicles` change pour un profil rarement — condition étroite et testable » ; cette
+  condition reposait sur la prémisse que cette réponse est la seule à entrer dans le calcul, et la
+  correction de §3 montre qu'elles sont trois. Une condition étroite aurait donc laissé
+  `mobility_constrained` périmé.
+  **Le recalcul est donc inconditionnel, et c'est sans risque parce qu'il est idempotent** :
+  `recompute_assessment_results` relit les mêmes réponses de trajet et borne les facteurs à la
+  **date du bilan**, donc à réponses de transport inchangées il réécrit exactement les mêmes
+  totaux. Éprouvé sur la base le 19/09/2026, en `BEGIN`/`ROLLBACK` sur deux comptes réels : un
+  profil « sorties rares » passe de **10,88 kg à 55,56 kg** quand le foyer gagne un véhicule ; un
+  profil urbain passé en « rural, aucun transport en commun » voit son plan tomber de **onze à
+  huit actions** et `mobility_constrained` basculer de `false` à `true` ; et dans les deux cas
+  `submitted_at` ne bouge pas, aucun second bilan n'apparaît dans le suivi.
+  **La troisième issue — couper le fil — n'est pas écartée, elle n'est pas posée.** Elle reste la
+  plus propre, et la question qu'elle pose (« dans quel sens est-on juste ? ») n'a pas reçu de
+  réponse ; ce chantier ne la préempte pas, il rend seulement la réponse actuelle corrigeable par
+  la personne.
 
 ## 7. Ce qu'il ne faut pas casser
 
@@ -216,8 +259,18 @@ central du produit.
 | C6.1 | Les libellés du re-bilan disent ce que le geste fait (D1), et le pied du suivi cesse d'être le complément de la suggestion (D2) | [#229](https://github.com/ScratchMe/Ramille/issues/229) | — |
 | C6.2 | L'avertissement avant une soumission qui libère un engagement (D3, D4) | [#230](https://github.com/ScratchMe/Ramille/issues/230) | — |
 | C6.3 | La cadence : proposer à la bascule de saison, ré-insister à deux saisons | [#231](https://github.com/ScratchMe/Ramille/issues/231) | C2.8 |
-| C6.4 | L'écran de contexte, sorti du questionnaire (D5) | [#232](https://github.com/ScratchMe/Ramille/issues/232) | §6.3, §6.4 |
+| C6.4 | L'écran de contexte, sorti du questionnaire (D5) — **livré le 19/09/2026** | [#232](https://github.com/ScratchMe/Ramille/issues/232) | §6.3, §6.4 |
 | C6.5 | Le moment anniversaire | [#233](https://github.com/ScratchMe/Ramille/issues/233) | §6.1, §6.2 — brief de design |
+
+**C6.4, livré le 19/09/2026** : migration `20260919230000_le_contexte_sort_du_questionnaire.sql`
+(le RPC `mettre_a_jour_le_contexte`, la cause de régénération `p_cause`, la quatrième raison
+d'archivage `contexte`), l'écran `/contexte` et ses deux portes, `ChampsDeContexte` partagé avec
+l'étape du questionnaire. Trois choses relevées en le construisant et qui ne sont pas dans l'issue :
+**trois réponses sur quatre entrent dans le résultat et non une** (§3, correction) ; la phrase
+« elles n'entrent pas dans le calcul de ton bilan » était donc **déjà fausse** pour un profil avant
+ce chantier, et elle se dérive maintenant (`phraseDuCalculDuContexte`) ; et l'encart orphelin du
+plan nommait « ton nouveau bilan » comme cause, ce qu'un changement de contexte n'est pas — d'où
+`RAISONS_ANNONCABLES`, les **deux** libérations qu'un écran a le droit d'annoncer.
 
 **C6.1 et C6.2 sont indépendants et ferment le défaut trouvé en recette** ; les trois autres
 demandent qu'une des questions ouvertes soit tranchée avant d'être instruits. L'ordre n'est pas
