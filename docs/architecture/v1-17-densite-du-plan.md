@@ -279,6 +279,23 @@ Inchangés, et **chacun commence par une page de décision `v1-1N`, pas par du c
 bloquent aucun chantier du lot 5 et n'en précèdent aucun. Ordre proposé, par valeur pour la
 personne puis par coût :
 
+> **Les six pages ont été écrites le 19/09/2026**, dans cet ordre, et numérotées `v1-21` à `v1-26`
+> (`v1-19` et `docs/design/v1-20-moment-anniversaire/` étant pris) :
+> [`v1-21`](v1-21-modes-manquants.md) · [`v1-22`](v1-22-retirer-un-bilan.md) ·
+> [`v1-23`](v1-23-point-quantitatif.md) · [`v1-24`](v1-24-deplacements-professionnels.md) ·
+> [`v1-25`](v1-25-coup-de-pouce-la-veille.md) · [`v1-26`](v1-26-meme-saison-un-an-apres.md).
+>
+> **Trois des six chantiers sont plus petits que leur fiche ne le dit**, et le relevé l'a montré :
+> l'occupation d'un long trajet (C4.4) est livrée depuis C3.5 ; la proposition de re-bilan à
+> l'anniversaire saisonnier (C4.8) est livrée depuis C6.3 ; et la moitié gratuite de C4.3 — une
+> phrase d'aide, décidée le 10/09 — **n'a jamais été livrée**, ce qui est l'inverse. Un quatrième
+> l'est moins : le chantier C4.7 annonçait « trois lectures de `completed` à relire », il y en a
+> **douze**, et une treizième est née le jour même.
+>
+> **Deux pages concluent à ne pas faire.** `v1-23` recommande de fermer C4.1 par écrit pour la V1,
+> avec sa condition de réouverture ; `v1-24` recommande de sortir le poste professionnel du lot 4.
+> Les quatre autres demandent des arbitrages listés en tête de chacune.
+
 | | Chantier | Issue | Pourquoi là |
 |---|---|---|---|
 | 1 | **C4.4** — vélo à assistance électrique, RER, autocar, occupation longue distance | [#146](https://github.com/ScratchMe/TraceVerte/issues/146) | Le seul qui corrige un **chiffre** : un cycliste à assistance est compté au tarif du vélo mécanique. Et les ajouts de mode se groupent en **une** migration, sans quoi chacun invalide toutes les assertions chiffrées du test 07 |
