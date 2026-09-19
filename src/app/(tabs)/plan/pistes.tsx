@@ -5,15 +5,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
 import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste';
+import { PastilleEngagee } from '@/components/plan/pastille-engagee';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { POSTE_LABEL } from '@/constants/postes';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
+import { useTheme } from '@/hooks/use-theme';
 import { formatKg } from '@/lib/format';
 import { ensureSession, supabase } from '@/lib/supabase';
-import { pistesParPoste, separationsDesLignes } from '@/types/plan';
+import { filetsDesLignes, pistesParPoste, separationsDesLignes } from '@/types/plan';
 import { usePassageDEngagement } from './_layout';
 
 /**
@@ -175,9 +177,25 @@ export default function PistesScreen() {
 
           {groupes.map((groupe) => (
             <View key={groupe.poste ?? 'sans-poste'} style={styles.groupe}>
-              {/* Les têtes de groupe s'annoncent en en-tête : `ThemedText` le fait par son `type`,
-                  jamais par un attribut recopié à côté du texte visible (règle de CLAUDE.md). */}
-              <ThemedText type="cardTitle">
+              {/* **Une étiquette de section, et non un titre de carte** (planche A2, #234). Elle
+                  était rendue en `cardTitle` — 17 px, couleur pleine —, c'est-à-dire dans le
+                  registre d'un **titre d'action**, à trois pixels du contenu qu'elle annonce. La
+                  planche demande l'inverse : une étiquette discrète, qui suffit à découper *parce
+                  que* les lignes portent un filet. On avait pris la moitié qui compense et laissé
+                  celle qui structure.
+
+                  **Le rôle d'en-tête s'écrit ici**, et c'est un correctif dans le correctif : le
+                  commentaire d'origine affirmait que « `ThemedText` le fait par son `type` », ce
+                  qui est vrai de `title`, `subtitle` et `screenTitle` — et faux de `cardTitle`
+                  comme de `small`. La tête de groupe n'a donc jamais été annoncée comme un
+                  en-tête. `ThemedText` laisse la surcharge passer devant son défaut. */}
+              <ThemedText
+                type="small"
+                weight={600}
+                themeColor="textTertiary"
+                accessibilityRole="header"
+                style={styles.teteDeGroupe}
+              >
                 {groupe.poste !== null
                   ? (POSTE_LABEL[groupe.poste as keyof typeof POSTE_LABEL] ?? 'Tes trajets')
                   : 'Tes trajets'}
@@ -187,6 +205,14 @@ export default function PistesScreen() {
                 ouvertes={ouvertes}
                 engageeId={engageeId}
                 onOuvrir={(id) => setOuvertes((set) => new Set(set).add(id))}
+                onFermer={(id) =>
+                  setOuvertes((set) => {
+                    // Réécrit plutôt que muté, comme à l'ouverture : React compare par référence.
+                    const suivant = new Set(set);
+                    suivant.delete(id);
+                    return suivant;
+                  })
+                }
                 onEngage={(poste) => {
                   // **Le drapeau se pose avant `router.back()`**, jamais après ni sous condition :
                   // la feuille des rappels ne s'ouvre qu'une fois par appareil, donc la manquer la
@@ -215,6 +241,7 @@ function Lignes({
   ouvertes,
   engageeId,
   onOuvrir,
+  onFermer,
   onEngage,
   onChanged,
   onRefus,
@@ -223,29 +250,40 @@ function Lignes({
   ouvertes: ReadonlySet<string>;
   engageeId: string | null;
   onOuvrir: (id: string) => void;
+  onFermer: (id: string) => void;
   onEngage: (poste: string | null) => void;
   onChanged: () => void;
   onRefus: (message: string | null) => void;
 }) {
+  const theme = useTheme();
+
   // **L'écart se pose sur un seul côté, et seulement là où il manque** (13.5, recette web du
   // 16/09/2026). La règle et ses deux pièges — Yoga ne fusionne pas les marges, et un `gap` au
   // conteneur séparerait les lignes fermées — vivent dans `separationsDesLignes`, avec leur test.
   //
-  // **Ce qu'on lui passe est « rendue en carte », pas « ouverte au toucher »** (contre-lecture du
-  // lot 5) : l'action engagée est une carte sans avoir été dépliée, donc lui passer `ouvertes`
-  // laissait la ligne qui la suit se coller sous elle — 13.5 recréé ici même.
+  // **L'ensemble est désormais exactement celui des lignes ouvertes** (#234). Il contenait aussi
+  // l'action engagée, qui était rendue en carte sans avoir été dépliée ; la planche A2 la veut en
+  // **ligne**, donc cette raison-là tombe. Le contrat de la fonction, lui, ne bouge pas : elle parle
+  // de cartes rendues, quelle qu'en soit la cause.
+  // **`committed_at === null` n'est pas une ceinture de plus** : on peut ouvrir une ligne, s'y
+  // engager depuis la carte, et revenir sur cet écran encore monté — la ligne serait alors dans
+  // `ouvertes` alors que la planche A2 dit qu'une ligne engagée ne s'ouvre pas. La règle se tient
+  // donc à l'état réel de la ligne, pas à l'historique des touchers.
   const enCarte = new Set(
-    pistes.filter((p) => ouvertes.has(p.id) || p.committed_at !== null).map((p) => p.id)
+    pistes.filter((p) => ouvertes.has(p.id) && p.committed_at === null).map((p) => p.id)
   );
-  const separations = separationsDesLignes(
-    pistes.map((p) => p.id),
-    enCarte
-  );
+  const ids = pistes.map((p) => p.id);
+  const separations = separationsDesLignes(ids, enCarte);
+  const filets = filetsDesLignes(ids, enCarte);
 
   return (
     <View style={styles.lignesPistes}>
       {pistes.map((action, rang) => {
         const separee = separations[rang];
+        const filetee = filets[rang];
+        const titre = action.action_templates?.action_text ?? 'Action à préciser.';
+        const gain =
+          action.saving_kg_year !== null ? `− ${formatKg(action.saving_kg_year)} kg` : null;
 
         if (enCarte.has(action.id)) {
           return (
@@ -257,18 +295,67 @@ function Lignes({
                 onChanged={onChanged}
                 onRefus={onRefus}
               />
+              {/* **La sortie manquait, et ce n'était pas cosmétique** (planche A2, #234). Cet écran
+                  existe pour **comparer** deux leviers — c'est la raison écrite pour laquelle
+                  plusieurs lignes s'ouvrent à la fois (`v1-16` §5) — et sans « Réduire », trois
+                  lignes ouvertes faisaient un mur de cartes dont on ne revenait à la liste qu'en
+                  quittant l'écran. Refermer n'est pas un accordéon : les autres restent ouvertes. */}
+              <TextLink
+                label="Réduire"
+                onPress={() => onFermer(action.id)}
+                type="small"
+                themeColor="textTertiary"
+                style={styles.reduire}
+              />
             </View>
           );
         }
 
-        const titre = action.action_templates?.action_text ?? 'Action à préciser.';
-        const gain =
-          action.saving_kg_year !== null ? `− ${formatKg(action.saving_kg_year)} kg` : null;
+        // **L'action engagée reste une ligne** (planche A2, #234) : elle était rendue en carte
+        // pleine au milieu d'une liste qu'on est venu parcourir, donc elle occupait l'écran au lieu
+        // d'y être repérable. La pastille et le mot prennent la place de « Choisir », et la ligne ne
+        // s'ouvre pas — il n'y a rien à y choisir.
+        if (action.committed_at !== null) {
+          return (
+            <View
+              key={action.id}
+              style={[
+                styles.lignePiste,
+                separee && styles.pisteSeparee,
+                filetee && { borderBottomWidth: 1, borderBottomColor: theme.border },
+              ]}
+              accessible
+              accessibilityLabel={`${titre.replace(/\.$/, '')}${gain !== null ? `. ${gain} par an` : ''}. Action engagée.`}
+            >
+              <ThemedText type="small" themeColor="text" style={styles.lignePisteTitre}>
+                {titre}
+              </ThemedText>
+              <View style={styles.lignePisteFin}>
+                {gain !== null && (
+                  <ThemedText type="small" themeColor="textTertiary">
+                    {gain}
+                  </ThemedText>
+                )}
+                <PastilleEngagee />
+                <ThemedText type="small" weight={600} themeColor="accentText">
+                  Engagée
+                </ThemedText>
+              </View>
+            </View>
+          );
+        }
 
         return (
           <Pressable
             key={action.id}
-            style={[styles.lignePiste, separee && styles.pisteSeparee]}
+            style={[
+              styles.lignePiste,
+              separee && styles.pisteSeparee,
+              // **Le filet, oublié à la livraison de C5.2** : sans lui, onze lignes de 14 px
+              // forment un pavé continu. Quelles lignes le portent se décide dans
+              // `filetsDesLignes`, avec ses deux exclusions et leurs tests.
+              filetee && { borderBottomWidth: 1, borderBottomColor: theme.border },
+            ]}
             onPress={() => onOuvrir(action.id)}
             accessibilityRole="button"
             // Une cible qui porte plusieurs textes : on les recompose plutôt que de laisser
@@ -315,7 +402,16 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scroll: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   etatSimple: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
-  groupe: { gap: Spacing.two, borderRadius: Radius.card },
+  // **Le rayon qui n'arrondissait rien est parti** (#234) : `borderRadius` sans fond ni bordure,
+  // reste d'une version où le groupe était une carte. Le `gap` tombe à zéro parce que la tête porte
+  // désormais ses propres marges — 16 dessus, 4 dessous, comme la planche A2 le demande —, et qu'un
+  // `gap` par-dessus les rajouterait aux deux.
+  groupe: { gap: 0 },
+  // La planche demande 16 dessus et 4 dessous. Les 16 sont déjà là — `scroll` porte un `gap` de
+  // `three` entre ses enfants, dont chaque groupe — donc les écrire ici les doublerait.
+  teteDeGroupe: { paddingBottom: Spacing.one },
+  // Aligné à gauche sous la carte, en tertiaire : c'est une sortie, pas une proposition.
+  reduire: { alignSelf: 'flex-start', paddingTop: Spacing.one },
   lignesPistes: { gap: 0 },
   // La même valeur que les cartes du plan : une ligne dépliée devient une carte, elle doit donc
   // respirer au rythme des cartes et non à un rythme à elle.

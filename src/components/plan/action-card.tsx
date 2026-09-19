@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
 import { formatKg } from '@/lib/format';
+import { PastilleEngagee } from '@/components/plan/pastille-engagee';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -106,18 +106,7 @@ export function ActionCard({
       <View accessible accessibilityLabel={annonce} style={styles.bloc}>
         {engagee && (
           <View style={styles.enTete}>
-            <View style={[styles.pastille, { backgroundColor: theme.accent }]}>
-              <Svg width={12} height={12} viewBox="0 0 24 24">
-                <Path
-                  d="M5 13l4 4L19 7"
-                  stroke="#FFFFFF"
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-              </Svg>
-            </View>
+            <PastilleEngagee />
             {/* **L'étiquette nomme la chose, pas la personne.** « Tu t'y es engagé » accordait au
                 masculin celui ou celle à qui elle parle — le seul endroit du produit où il
                 restait un participe accordé sur la personne, `/compte/suppression` ayant été
@@ -188,7 +177,6 @@ const styles = StyleSheet.create({
   // regrouper pour le lecteur d'écran ne doit rien changer à l'œil.
   bloc: { gap: Spacing.two },
   enTete: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  pastille: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   etiquette: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
   gain: { gap: 2 },
   gainValeur: { fontSize: 20, lineHeight: 26 },

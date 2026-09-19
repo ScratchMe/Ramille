@@ -336,6 +336,28 @@ export function separationsDesLignes(ids: string[], enCarte: ReadonlySet<string>
   );
 }
 
+/**
+ * Quelles lignes portent le **filet** qui les sépare (planche A2 du canvas `v1-17`).
+ *
+ * **C'est lui qui structure l'écran, et il avait été oublié à la livraison de C5.2.** Sans filet,
+ * onze lignes de la même taille et de la même couleur forment un pavé continu : c'est toute la
+ * plainte « aucune emphase, dur de voir qu'il y a différentes catégories » de la recette du
+ * 18/09/2026. Les têtes de groupe avaient été montées d'un cran pour compenser — on avait donc pris
+ * la moitié qui console et laissé celle qui découpe.
+ *
+ * Deux exclusions, et chacune répare une fausseté visible :
+ * - **une ligne rendue en carte n'en porte pas** : la carte a sa propre bordure, et un filet sous
+ *   elle dessinerait un second bord à deux pixels du premier ;
+ * - **la dernière ligne d'un groupe non plus** : un filet y annoncerait une ligne de plus, alors
+ *   que ce qui suit est la tête du groupe suivant — ou rien.
+ *
+ * Elle est écrite ici et non dans l'écran pour la même raison que sa voisine : c'est une dérivation
+ * d'affichage, donc elle se teste (`FRONT.md` §1.1).
+ */
+export function filetsDesLignes(ids: string[], enCarte: ReadonlySet<string>): boolean[] {
+  return ids.map((id, rang) => !enCarte.has(id) && rang < ids.length - 1);
+}
+
 // ── L'encart de contexte du plan (C5.5, écarts 9 et 10) ────────────────────────────────────────
 
 /**
