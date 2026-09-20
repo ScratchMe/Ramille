@@ -447,9 +447,11 @@ export default function Plan() {
     }, [passage, proposerLesRappels])
   );
 
-  // **La confirmation se termine hors de l'app** : la personne clique le lien reçu par email
-  // et revient ici, `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la
-  // boucle ouverte par « Vérifie tes emails » ne se refermait nulle part. On l'annonce une
+  // **La confirmation passe par la boîte de réception** : la personne y lit son code, le tape, et
+  // arrive ici avec `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la boucle
+  // ouverte par l'écran des e-mails ne se refermait nulle part. (C'était un lien à cliquer jusqu'au
+  // 20/09/2026 ; le rattachement se terminait alors hors de l'app, ce qui rendait cette annonce
+  // encore plus nécessaire — elle reste, puisque le code se tape sur un écran qui mène droit ici.) On l'annonce une
   // seule fois : c'est une nouvelle, pas un état permanent en tête du plan. Qui veut le
   // revoir le trouve sur « Toi ».
   //

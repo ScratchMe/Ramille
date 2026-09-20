@@ -7,9 +7,11 @@
  * confondre une adresse écrite non confirmée avec une session anonyme : dans les deux cas la
  * suppression est la même. Celui-ci répond « qu'est-ce que la personne doit lire à l'écran ? »,
  * et là cette confusion est précisément le défaut à corriger (issue #62) : entre
- * `updateUser({ email })` et le clic de confirmation, l'écran « Toi » proposait de rattacher
- * un compte, comme si la demande n'avait jamais eu lieu. La boucle ouverte par
- * « Vérifie tes emails » ne se refermait nulle part.
+ * `updateUser({ email })` et la confirmation, l'écran « Toi » proposait de rattacher un compte,
+ * comme si la demande n'avait jamais eu lieu. La boucle ouverte par l'écran des e-mails ne se
+ * refermait nulle part. Depuis le 20/09/2026 la confirmation est un **code tapé** et non un lien
+ * cliqué, et « Toi » porte la porte qui y ramène — sans quoi la phrase de l'écran de code, qui
+ * promet de retrouver la saisie depuis là, serait fausse.
  */
 
 import type { SessionCompte } from '@/types/compte-suppression';

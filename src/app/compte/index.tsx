@@ -176,10 +176,29 @@ export default function Compte() {
             )}
 
             {etat?.kind === 'a_confirmer' && (
-              <ThemedText type="body" themeColor="textSecondary">
-                Adresse à confirmer : {etat.email}. Le lien est parti par email ; ton bilan te
-                suivra d’un appareil à l’autre une fois que tu auras cliqué dessus.
-              </ThemedText>
+              <>
+                <ThemedText type="body" themeColor="textSecondary">
+                  Adresse à confirmer : {etat.email}. Un code est parti par email ; une fois tapé,
+                  ton bilan te suivra d’un appareil à l’autre.
+                </ThemedText>
+                {/* **Cette porte rend vraie une phrase écrite ailleurs.** L'écran de code dit « si tu
+                    quittes cet écran, tu retrouves la saisie du code depuis “Toi” » — c'était faux
+                    tant que cet écran ne portait qu'un constat, et le cas n'est pas rare : sur web,
+                    aller chercher le code dans sa messagerie peut emporter l'onglet. L'écran de
+                    rattachement relit l'adresse en local et s'ouvre directement sur la saisie, sans
+                    renvoyer de code — celui qui est déjà dans la boîte vaut encore, et « Renvoyer un
+                    code » est là pour l'autre cas.
+
+                    Un fait et une porte, pas une relance : ni « pense à », ni bouton de renvoi ici. */}
+                <TextLink
+                  label="Saisir le code"
+                  onPress={() => router.push({ pathname: '/connexion/email', params: { reprise: '1' } })}
+                  role="link"
+                  type="small"
+                  weight={600}
+                  themeColor="accentText"
+                />
+              </>
             )}
 
             {etat?.kind === 'local' && (

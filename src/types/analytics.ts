@@ -225,8 +225,9 @@ export type UsageEventPropsByName = {
   // n'écrit que dans `auth`. `collision` dit que l'appareil portait déjà un bilan anonyme —
   // c'est ce chiffre-là qui décide si la collision Google (#60) mérite un écran dédié.
   retrouver_view: { source: SourceRetrouver; collision: boolean };
-  // Le clic sur « Recevoir le lien », sans distinguer adresse connue ou inconnue : la réponse
+  // Le toucher de « Recevoir un code », sans distinguer adresse connue ou inconnue : la réponse
   // est volontairement la même dans les deux cas, sans quoi l'écran dirait qui utilise Ramille.
+  // C'était « Recevoir le lien » jusqu'au 20/09/2026 ; le geste mesuré est le même, la demande.
   retrouver_send: never;
   /** La feuille des rappels s'est affichée. Elle ne s'ouvre que depuis un engagement,
    *  donc elle n'a pas de propriété de provenance : il n'y en a qu'une. */

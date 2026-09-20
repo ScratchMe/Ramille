@@ -12,9 +12,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Marque locale « on a déjà annoncé que le compte est rattaché ».
 //
-// Le rattachement se termine hors de l'app : la personne clique le lien de confirmation dans
-// sa messagerie et revient sur `/plan`. Sans cette marque, il n'y avait aucune surface pour
-// lui dire que ça avait marché (issue #62) — et avec une marque, l'annonce se fait **une
+// Le rattachement passe par la boîte de réception : la personne y lit son code, le tape, et arrive
+// sur `/plan` (jusqu'au 20/09/2026 c'était un lien cliqué dans la messagerie, donc un retour dans
+// l'app depuis l'extérieur). Sans cette marque, il n'y avait aucune surface pour lui dire que ça
+// avait marché (issue #62) — et avec une marque, l'annonce se fait **une
 // seule fois** : c'est une nouvelle, pas un état permanent à afficher en tête du plan. Qui
 // veut le revoir le trouve sur « Toi ».
 const RATTACHEMENT_KEY = 'traceverte.rattachement_annonce.v1';
