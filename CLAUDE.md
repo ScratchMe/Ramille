@@ -140,6 +140,13 @@ a su qu'un profil donné rend **onze** actions au plan (15/09/2026) plutôt que 
 **jamais** : elle lit le succès de `tail`. Relevé le 15/09/2026 — trois « tentatives » de
 suppression de branche n'en étaient qu'une, et le `403` n'est apparu qu'en retirant le tube.
 
+**`pgrep -f motif` se trouve lui-même quand le motif est dans sa propre ligne de commande.** Une
+boucle `until [ "$(pgrep -f 'x.sh' | wc -l)" = 0 ]` écrite dans un shell dont la commande contient
+`x.sh` n'en sort **jamais** : elle compte le shell qui l'exécute. Relevé le 20/09/2026 — deux
+guetteurs et un pgTAP « en cours » pendant une heure, qui n'avait pas démarré. Filtrer par le nom
+exact du processus (`pgrep -x`), ou exclure son propre PID (`pgrep -f motif | grep -v "^$$"`), ou
+mieux : attendre le processus lui-même (`wait`), pas son nom.
+
 **Un marqueur accentué absent d'un bundle minifié ne prouve rien** : `é` y est échappé en
 `\u00e9`. Cherché le 15/09/2026 pour vérifier qu'un déploiement était bien passé — il l'était, et
 la conclusion inverse a failli être tirée. Chercher un marqueur **ASCII** (un nom de style, une clé
