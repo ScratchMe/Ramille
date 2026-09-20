@@ -231,7 +231,32 @@ tel quel après une restauration — et `18_grants_explicites.test.sql` épingle
 **Ajouter une table impose donc un geste explicite** : un `grant` dans ce fichier si l'app y
 touche, ou un `revoke all privileges … from anon, authenticated` dans sa propre migration si elle
 est serveur-only. Ne rien écrire la rend invisible pour l'app, en silence — même mécanique que
-`emission_factor_sources` et `usage_event_types`. Un privilège se justifie par un appel réel
+`emission_factor_sources` et `usage_event_types`.
+
+**Et « invisible » était faux jusqu'au 20/09/2026 : c'était « ouverte à tous ».** Le raisonnement
+ci-dessus ne regardait que les `grant` écrits dans les migrations, et oubliait
+`pg_default_acl` — les privilèges que Postgres accorde **d'office** sur tout objet créé dans un
+schéma. Un projet Supabase en pose deux jeux, un par créateur (`postgres` et `supabase_admin`),
+et chacun donne `arwdDxtm` à `anon` et à `authenticated` : une table neuve était donc lisible,
+modifiable et **supprimable** sans session, RLS inactive par-dessus le marché. Retirer
+`auto_expose_new_tables` n'y changeait rien, contrairement à ce que l'en-tête de
+`20260910110000_grants_explicites.sql` laissait croire : ce drapeau pilotait l'exposition
+PostgREST, pas les privilèges par défaut.
+
+Trois choses à retenir, portables :
+
+1. **`alter default privileges` est le seul outil**, et il est borné au rôle créateur :
+   `alter default privileges in schema public revoke all on tables from anon, authenticated`
+   ne couvre que les objets créés par le rôle qui l'exécute. Les migrations tournant en
+   `postgres`, c'est bien la moitié qui décide du sort de nos tables.
+2. **`postgres` ne peut pas toucher celle de `supabase_admin`** (`permission denied to change
+   default privileges`, constaté) : cette moitié-là se désactive au tableau de bord (« Default
+   privileges for new entities »), et se consigne dans `docs/exploitation/`.
+3. **Ni la CI ni pgTAP n'auraient vu l'oubli**, parce que la stack locale porte exactement les
+   mêmes entrées que le distant. La garde qui manque est donc une **assertion**, pas une
+   relecture : `31_gardes_sous_les_gardes.test.sql` en porte trois, dont une lue sur
+   `pg_default_acl` lui-même — l'absence de ligne étant le bon état, Postgres la retirant quand
+   il ne reste que le défaut. Un privilège se justifie par un appel réel
 depuis `src/`, jamais par « un test en a besoin » ; et un test qui n'assure qu'un refus reste vert
 après un `revoke`, « permission denied » et « violates row-level security » portant tous deux le
 SQLSTATE 42501.

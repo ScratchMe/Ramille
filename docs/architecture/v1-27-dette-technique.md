@@ -596,12 +596,115 @@ même mutation rend maintenant un écart par route, nommant la vraie cause.
   l'expression devenait `0 < 2373`, vraie, sous un message affirmant l'inverse. Elle ne voyait
   qu'une réorganisation, jamais une suppression. Les deux motifs doivent désormais être présents.
 
-**Connu et non traité** (tautologies sans conséquence de production, à reprendre à l'occasion) :
-`mascotte.test.ts` compare `MASCOT_NAME` à `APP_NAME` alors que le source écrit
-`MASCOT_NAME = APP_NAME` ; `analytics.test.ts` compare un littéral au même littéral ;
-`carbon-reference.test.ts` compare deux alias à eux-mêmes et réécrit l'implémentation du repère 2050
-au lieu de l'éprouver.
+**Trois autres signalées comme « tautologies sans conséquence » — et le relevé s'est trompé sur
+deux d'entre elles.** Reprises le 20/09/2026, mutation à l'appui plutôt qu'à la lecture :
+
+- **`carbon-reference.test.ts` n'était pas une tautologie.** Le relevé disait « compare deux alias à
+  eux-mêmes » ; or remplacer `FRANCE_AVERAGE_TOTAL_T = CONSUMPTION_POSTES_TOTAL_T` par `9.3` — le
+  défaut historique exact que l'en-tête du fichier raconte, un total repris d'une autre publication
+  — **fait tomber l'assertion**. Elle garde bien ce qu'elle annonce. Ce qui lui échappait est
+  ailleurs : `toBeCloseTo(…, 1)` tolère 0,05 sur une valeur de 0,6, donc l'arrondi du repère 2050
+  entièrement retiré la laisse verte — et cet arrondi n'est pas de la mise en forme, c'est le
+  **seuil** de `comparisonNote` (600 kg arrondi, 589 sans). Une assertion de propriété a été
+  ajoutée ; l'ancienne reste.
+- **`mascotte.test.ts` tombe sur une valeur différente et pas sur un littéral égal.** Deux
+  mutations : `MASCOT_NAME = 'Rami'` la fait tomber, `MASCOT_NAME = 'Ramille'` la laisse verte.
+  Aucune assertion de runtime ne distingue un alias d'un littéral égal, donc c'est le **titre** qui
+  était faux (« à changer ici et nulle part ailleurs ») : il annonçait une propriété de la source.
+  Le titre dit maintenant ce que l'assertion voit, et les deux mesures sont écrites au-dessus.
+- **`analytics.test.ts` était bien vacante**, et son commentaire le disait (« purement statique »).
+  Jest efface les types : l'assertion ne pouvait tomber pour aucune raison. Ce qu'elle annonçait
+  garder — « le démarrage et le retour au premier plan n'écrivent pas des lignes indistinguables » —
+  n'était éprouvé nulle part, et en cherchant où, on trouve le vrai trou : **la règle du retour au
+  premier plan vivait en variable mutable dans le layout racine**, sans test. Elle porte un piège
+  iOS (`inactive` traversé à l'aller *et* au retour) dont l'oubli ferait perdre **la totalité** du
+  chemin du rappel, en silence — la série ne montrerait pas un trou, elle montrerait une plateforme
+  qui ne revient jamais au premier plan. Extraite en `suivreLEtatDeLApp` (`src/types/analytics.ts`),
+  quatre tests, trois mutations qui tombent chacune sur la sienne.
+
+**La leçon de ce sous-lot** : un relevé de tautologies fait à la lecture se trompe dans les deux
+sens. Deux des trois gardes accusées tenaient ; celle qui ne tenait pas cachait un défaut plus
+grand qu'elle.
 
 **La leçon, et c'est la quatrième fois dans la journée** : une garde s'écrit en se demandant ce qui
 doit la faire tomber, jamais ce qu'elle doit confirmer. Les quatre défauts ci-dessus étaient verts,
 documentés, et cités comme preuve dans trois fichiers.
+
+### 12.9 Revue de sécurité avant ouverture au public (20/09/2026)
+
+Quatre revues menées en parallèle sur des surfaces disjointes — authentification, contrôle d'accès
+en base, surfaces publiques, client et vie privée —, **chaque constat re-vérifié à la main avant
+d'être retenu**. C'est la discipline que la journée a imposée : un rapport n'est pas une preuve.
+Deux constats sur les onze remontés ne se sont pas reproduits tels qu'annoncés, et un troisième
+s'est reproduit pour une autre raison que celle donnée.
+
+**Ce qui tient, et qui ne tenait pas d'évidence.** Les 24 policies sont bornées au propriétaire ;
+rejouées depuis la session d'un tiers contre un compte complet, les lectures croisées rendent zéro
+ligne sur les onze tables de données personnelles. Le schéma `analytics` n'est pas exposé. Le jeton
+de désinscription est à usage unique, ne distingue pas l'inconnu de l'utilisé, et ne peut rien
+d'autre que couper les rappels de son porteur. Zéro secret dans l'arbre **et dans les 340
+révisions**. Les deux fonctions `api/` ont été bombardées d'entrées hostiles sous Node — 5 000
+caractères, paires de substitution coupées, `U+202E`, NUL, `1e400` — sans une panne.
+
+**Les trois failles de base, toutes de la même forme** : une garde existait, elle tenait sur le
+chemin qu'on avait regardé, et un second chemin la contournait sans rien lever.
+`20260920190000_trois_gardes_qui_manquaient_sous_les_gardes.sql` les ferme, `31` les épingle, et
+les trois mutations tombent chacune sur ses propres assertions sans toucher aux moitiés positives.
+Le détail est en tête de la migration ; ce qui mérite d'être retenu ici :
+
+1. **Les privilèges par défaut rendaient FAUSSE la règle la plus citée du dépôt.** Détaillé en
+   §12.8 ci-dessus pour la leçon, en `SUPABASE.md` §2.2 pour la mécanique. C'est le seul des trois
+   qui **grandissait tout seul** : il ne coûtait rien aujourd'hui et aurait coûté une table entière
+   ouverte à `anon` le jour où quelqu'un aurait fait confiance à `CLAUDE.md`.
+2. **Le plafond de retours comptait une date que le client posait.** 500 lignes de 2 000 caractères
+   acceptées d'affilée, mesurées, depuis une session anonyme obtenue à la simple ouverture de
+   l'app. Et un retour daté dans le futur rendait le compte **immortel** face à la purge à 90 jours.
+   Le correctif est un trigger d'estampille et non un privilège de colonne, parce que la date doit
+   valoir `now()` pour tout le monde — c'est la forme qu'ont déjà ses deux jumelles, et
+   `feedback.created_at` était la seule des trois à ne pas l'avoir.
+3. **Le bornage écrit le matin même se franchissait en trois ordres.** `20260920160000` a borné
+   l'UPDATE d'`assessment_answers` à `status = 'in_progress'` ; la borne tient en direct (`UPDATE
+   0`, mesuré) et tombait en rouvrant le bilan, réécrivant, refermant. Le troisième ordre repose en
+   plus `submitted_at` **par le trigger d'estampille** — donc libère l'action engagée que C2.2
+   existe pour protéger, et ment sur l'âge du bilan. C'est le constat le plus instructif de la
+   journée : *le correctif du matin était juste et incomplet, et rien dans sa propre suite de tests
+   ne pouvait le dire — elle éprouvait le chemin qu'il avait fermé.*
+
+**Corrigé dans le même lot, côté client et surfaces publiques** :
+
+- **L'adresse e-mail sortait dans une URL.** `/connexion/email` renvoyait vers
+  `/connexion/retrouver?email=…` sur une collision : donc dans la barre d'adresse, l'historique du
+  navigateur et son autocomplétion, et dans les journaux d'accès. C'était la **seule** donnée
+  personnelle du produit à voyager ainsi — tout le reste est un uuid ou un mot d'un vocabulaire
+  fermé. Le mécanisme sans URL existait déjà à dix lignes de là (`memoriserAdresseDuLien`) ; c'est
+  son garde qui l'écartait de ce chemin. Le paramètre `email` a été **retiré du type de l'écran**,
+  pour qu'il se lise « retiré » et non « réservé ».
+- **La page de partage recopiait sa chaîne de requête entière** dans l'`og:image`. Un paramètre
+  inconnu ajouté par un tiers voyageait donc jusqu'à l'URL que chaque lecteur d'aperçu va chercher,
+  et `share-card` posant un cache d'un an, chaque valeur inédite était une clé de cache neuve —
+  donc un rendu satori + resvg complet, à volonté. La query est reconstruite à partir des trois
+  valeurs lues ; `verifier-api.mjs` porte l'assertion inverse de celle qui existait (« ce
+  paramètre-ci ne doit **pas** survivre »), et la mutation la fait tomber.
+- **`url.origin` était la seule valeur injectée dans un attribut sans échappement**, sous un
+  commentaire qui justifiait de ne pas réécrire les `&` — ce qui est juste, et ne disait rien de
+  l'origine. Inatteignable derrière le routage de Vercel ; l'asymétrie se lisait comme un oubli.
+- **`feedback.context` n'était pas écrêté** alors que la colonne porte `check (length <= 120)` : un
+  lien `/feedback?context=<121 caractères>` faisait lever un `23514` que `sendFeedback` ne
+  reconnaît pas, donc « Vérifie ta connexion » sur le **seul canal de retour du produit**,
+  indéfiniment, alors que la connexion va bien.
+
+**Et deux affirmations fausses dans les documents qui sont eux-mêmes la garde** : `CLAUDE.md`
+attribuait le périmètre Android à `assetlinks.json`, qui délègue en réalité **tout** le domaine
+(`handle_all_urls` est la seule relation qu'Android accepte) — ce qui tient le périmètre est le
+`pathPrefix` d'`app.json`, et lui seul ; et `redirect-urls.md` §4 écrivait que la confirmation
+d'adresse ne passe aucune redirection, faux depuis que `linkEmail` prend un `redirectTo`
+obligatoire — un relecteur appliquant ce paragraphe aurait pu retirer l'entrée dont ce flux dépend.
+
+**Ce qui reste ouvert, et pourquoi ça n'a pas été fait ici** : les quatre entrées `vercel.app` de
+la liste des Redirect URLs (`docs/exploitation/redirect-urls.md` §3.1 bis — relevé en direct,
+condition tombée, geste refusé par le garde-fou de permissions de l'environnement), l'entrée
+`localhost:8081` (question ouverte depuis le 10/09, et c'est une décision qui se prend, pas une
+règle qui s'applique), le passage en `flowType: 'pkce'` (qui change ce que la personne peut faire :
+un lien ne s'ouvrirait plus que sur l'appareil qui l'a demandé), le pré-détournement d'adresse par
+`/connexion/email`, et la CSP en `Report-Only` sans collecteur (§12.3, dont ce moment **est** la
+condition de réouverture).

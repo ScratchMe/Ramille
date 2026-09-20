@@ -34,7 +34,7 @@ import {
   preparerLeCanalAndroid,
 } from '@/lib/rappels';
 import { configurationSupabase, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
-import { appErrorCategory } from '@/types/analytics';
+import { appErrorCategory, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
 import { lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
 
 SplashScreen.preventAutoHideAsync();
@@ -43,13 +43,6 @@ SplashScreen.preventAutoHideAsync();
 // servirait à rien. Sans lui, un rappel reçu app ouverte disparaît sans laisser de trace —
 // or c'est le moment où la personne peut y répondre en un geste.
 if (estNatif) afficherLesNotificationsAuPremierPlan();
-
-// Au-delà de ce temps passé derrière, revenir au premier plan est une nouvelle ouverture.
-// En dessous, c'est un aller-retour vers une autre app — consulter un message, copier une
-// adresse — et le compter gonflerait le dénominateur de tous les entonnoirs. Cinq minutes :
-// assez long pour qu'un détour ne compte pas, assez court pour qu'une reprise le lendemain
-// matin, ou l'ouverture d'un rappel, compte toujours.
-const DELAI_NOUVELLE_OUVERTURE_MS = 5 * 60 * 1000;
 
 // Une ouverture par chargement du bundle, et le garde vit **hors du composant**. C'est ce que
 // `useTrackView` offrait avec son `useRef` et qu'on perd en émettant depuis un `.then` : en
@@ -191,21 +184,16 @@ export default function RootLayout() {
   useEffect(() => {
     if (!configurationSupabase.complete || !estNatif) return;
 
-    // Daté au départ, jamais écrasé pendant le séjour derrière : iOS passe par `inactive` avant
-    // `background` à l'aller comme au retour, et garder la première date est ce qui mesure le
-    // séjour entier.
-    let departArrierePlan: number | null = null;
+    // La règle — dater le départ une seule fois, et ne compter que les séjours assez longs —
+    // vit dans `suivreLEtatDeLApp` (`src/types/analytics.ts`) avec ses tests. Elle a été écrite
+    // ici, en variable mutable, et rien ne l'éprouvait : son piège iOS (`inactive` traversé à
+    // l'aller **et** au retour) fait perdre la totalité du chemin du rappel, en silence.
+    let sejour = SEJOUR_INITIAL;
 
     const abonnement = AppState.addEventListener('change', (etat) => {
-      if (etat !== 'active') {
-        if (departArrierePlan === null) departArrierePlan = Date.now();
-        return;
-      }
-      const depart = departArrierePlan;
-      departArrierePlan = null;
-      if (depart !== null && Date.now() - depart >= DELAI_NOUVELLE_OUVERTURE_MS) {
-        track('app_open', { origine: 'retour' });
-      }
+      const suite = suivreLEtatDeLApp(sejour, etat, Date.now());
+      sejour = suite.sejour;
+      if (suite.ouverture) track('app_open', { origine: 'retour' });
     });
 
     // `?.` et pas un appel sec, bien que l'effet sorte désormais hors natif : la garde coûte un

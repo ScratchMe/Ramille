@@ -26,6 +26,9 @@ export const FEEDBACK_MAX_LENGTH = 2000;
  */
 export const CODE_TROP_DE_RETOURS = 'RM002';
 
+/** Borne de `feedback.context` (`20260905150000_feedback.sql`), recopiée pour écrêter avant l'insert. */
+export const MAX_CONTEXT_LENGTH = 120;
+
 export type SendFeedbackResult = { ok: true } | { ok: false; message: string };
 
 export async function sendFeedback(
@@ -45,7 +48,13 @@ export async function sendFeedback(
     user_id: user.id,
     kind,
     message: message.trim(),
-    context: context ?? null,
+    // **Écrêté, et pour la raison écrite en tête de `sanitizeEventProps`** : la colonne porte
+    // `check (length(context) <= 120)`, la valeur vient du code (c'est un nom d'écran), donc la
+    // dépasser est un bug de notre côté et pas une saisie à valider. Sans cet écrêtage, un lien
+    // `/feedback?context=<121 caractères>` faisait lever un `23514` que `sendFeedback` ne
+    // reconnaît pas — il ne distingue que `RM002` —, donc « Vérifie ta connexion » sur le
+    // **seul canal de retour du produit**, indéfiniment, alors que la connexion va bien.
+    context: context ? context.slice(0, MAX_CONTEXT_LENGTH) : null,
   });
 
   if (error) {

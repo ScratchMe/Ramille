@@ -63,6 +63,23 @@ insert into public.assessment_answers (
 
 update public.assessments set status = 'completed' where id = '30000000-0000-0000-0000-0000000000a1';
 
+-- **Un second bilan, laissé `in_progress`** — c'est sur lui que la moitié positive de la section C
+-- s'éprouve. Ce fichier repassait le premier en `in_progress` le moment venu ; depuis
+-- `20260920190000`, cette transition arrière est **refusée pour tout le monde** (`RM005`), parce
+-- qu'elle franchissait en trois ordres le bornage que la section C éprouve. La fixture suit donc
+-- la règle que le dépôt s'est donnée ailleurs : un bilan qu'un re-bilan reprend est une
+-- **nouvelle ligne**, jamais l'ancienne rouverte — et une fixture qui écrit un état que la
+-- production ne peut pas produire éprouve une fiction.
+insert into public.assessments (id, user_id, status) values
+  ('30000000-0000-0000-0000-0000000000a2', '30000000-0000-0000-0000-000000000001', 'in_progress');
+
+insert into public.assessment_answers (
+  assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
+  commute_is_carpool, commute_second_mode_used, leisure_frequency
+) values (
+  '30000000-0000-0000-0000-0000000000a2', true, 5, 20, 'voiture', false, false, 'rarely'
+);
+
 select set_config('role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', '30000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 
@@ -156,23 +173,19 @@ select is(
 -- **Et la moitié positive**, sans laquelle ce fichier éprouverait qu'on a cassé le produit : tant
 -- que le bilan est en cours, la soumission réécrit ses réponses — c'est l'`upsert` de reprise que
 -- `20260911120000_soumission_bilan.sql` a imposé contre le bilan fantôme.
-select set_config('role', 'postgres', true);
-update public.assessments set status = 'in_progress' where id = '30000000-0000-0000-0000-0000000000a1';
-select set_config('role', 'authenticated', true);
-
 -- **Une valeur différente de celle tentée plus haut, et ce n'est pas cosmétique** : écrites toutes
 -- deux à 200, ces deux assertions se couplaient — un prédicat inversé laissait passer l'écriture
 -- refusée de la section précédente, et celle-ci lisait alors 200 sans que son propre ordre ait rien
 -- fait. Elle passait pour la mauvaise raison. Relevé en relisant ce fichier, mutation à l'appui.
 select lives_ok(
   $$ update public.assessment_answers set commute_distance_km = 150
-      where assessment_id = '30000000-0000-0000-0000-0000000000a1' $$,
+      where assessment_id = '30000000-0000-0000-0000-0000000000a2' $$,
   'sur un bilan `in_progress`, la reprise du questionnaire réécrit toujours ses réponses'
 );
 
 select is(
   (select commute_distance_km::int from public.assessment_answers
-    where assessment_id = '30000000-0000-0000-0000-0000000000a1'),
+    where assessment_id = '30000000-0000-0000-0000-0000000000a2'),
   150,
   'et cette fois la valeur est bien passée : le resserrement borne le statut, pas le propriétaire'
 );
@@ -185,7 +198,7 @@ select is(
 -- pas tout à fait la même requête : relevé en relisant ce fichier, et comblé ici.
 select lives_ok(
   $$ insert into public.assessment_answers (assessment_id, commute_has_regular_trip, leisure_frequency)
-     values ('30000000-0000-0000-0000-0000000000a1', true, 'rarely')
+     values ('30000000-0000-0000-0000-0000000000a2', true, 'rarely')
      on conflict (assessment_id) do update set commute_has_regular_trip = excluded.commute_has_regular_trip $$,
   'et l’`upsert` de reprise passe aussi : c’est la forme que la soumission emploie vraiment'
 );

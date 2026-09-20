@@ -283,3 +283,56 @@ export function sanitizeEventProps(props: UsageEventProps | undefined): UsageEve
   }
   return safe;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Ce qui compte comme une ouverture quand l'app revient au premier plan
+// ---------------------------------------------------------------------------------------------
+//
+// `app_open` a deux chemins d'émission (cf. `UsageEventPropsByName['app_open']`), et le second —
+// le retour au premier plan, celui du rappel — porte une règle que rien n'éprouvait : elle vivait
+// dans l'écoute `AppState` du layout racine, en variable mutable, à l'endroit du produit où une
+// exception n'a plus personne au-dessus d'elle.
+//
+// **La subtilité est la date de départ, qui ne se réécrit jamais pendant le séjour derrière.**
+// iOS passe par `inactive` avant `background` à l'aller **comme au retour** : dater à chaque
+// événement non-actif remettrait le compteur à zéro sur l'`inactive` du retour, l'écart mesuré
+// vaudrait quelques millisecondes, et **aucun retour ne serait jamais compté**. La perte est
+// totale et silencieuse — la série ne montre pas un trou, elle montre une plateforme qui ne
+// revient jamais au premier plan.
+//
+// L'état de l'app est pris en `string` plutôt qu'en union recopiée de `AppStateStatus` : cette
+// dérivation ne distingue que « actif » de « pas actif », et une seconde copie d'un type de
+// react-native serait un miroir de plus à tenir pour une distinction qu'elle ne fait pas.
+
+/**
+ * En dessous de ce séjour derrière, le retour n'est pas une nouvelle ouverture — c'est un
+ * aller-retour dans les réglages du téléphone, une notification balayée, un appel pris.
+ */
+export const DELAI_NOUVELLE_OUVERTURE_MS = 5 * 60 * 1000;
+
+/** Depuis quand l'app est derrière, ou `null` si elle est au premier plan. */
+export type SejourDerriere = { readonly depuis: number | null };
+
+export const SEJOUR_INITIAL: SejourDerriere = { depuis: null };
+
+/**
+ * Le pas de l'écoute `AppState` : l'état suivant, et si ce passage est une ouverture.
+ *
+ * Un `active` sans départ enregistré ne compte pas : c'est le tout premier événement du
+ * lancement, et le démarrage a déjà écrit son `app_open` — le compter ici en écrirait deux
+ * pour une seule ouverture.
+ */
+export function suivreLEtatDeLApp(
+  sejour: SejourDerriere,
+  etatDeLApp: string,
+  maintenant: number,
+): { sejour: SejourDerriere; ouverture: boolean } {
+  if (etatDeLApp !== 'active') {
+    return { sejour: { depuis: sejour.depuis ?? maintenant }, ouverture: false };
+  }
+  const depart = sejour.depuis;
+  return {
+    sejour: SEJOUR_INITIAL,
+    ouverture: depart !== null && maintenant - depart >= DELAI_NOUVELLE_OUVERTURE_MS,
+  };
+}

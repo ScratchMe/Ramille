@@ -142,7 +142,19 @@ describe('Ramille', () => {
     }
   });
 
-  it('porte le nom du produit — décision du 05/09/2026, à changer ici et nulle part ailleurs', () => {
+  /**
+   * **Ce que cette assertion voit, et ce qu'elle ne voit pas** — mesuré le 20/09/2026, parce que
+   * son titre d'avant (« à changer ici et nulle part ailleurs ») annonçait la moitié qu'elle ne
+   * garde pas. Deux mutations :
+   *   - `MASCOT_NAME = 'Rami'` → elle tombe. C'est le défaut réel : la mascotte et le produit
+   *     portent le même nom depuis le 05/09/2026, et l'app dirait « Moi, c'est Rami » dans une
+   *     app qui s'appelle Ramille ;
+   *   - `MASCOT_NAME = 'Ramille'`, un littéral de même valeur → **elle reste verte**. Aucune
+   *     assertion de runtime ne distingue un alias d'un littéral égal : la règle « le nom se
+   *     change à un seul endroit » est une propriété de la SOURCE, et c'est
+   *     `scripts/verifier-le-nom-du-produit.mjs` qui la tient, pas ce fichier.
+   */
+  it('porte la même valeur que le nom du produit — décision du 05/09/2026', () => {
     expect(MASCOT_NAME).toBe(APP_NAME);
   });
 

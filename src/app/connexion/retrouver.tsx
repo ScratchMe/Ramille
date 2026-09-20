@@ -77,7 +77,10 @@ export default function RetrouverMonCompte() {
   // dit par quelle porte on est entré — l'accueil de l'onboarding ou l'écran email — et c'est
   // la moitié de ce qu'on cherche à savoir : combien de personnes changent d'appareil **avant**
   // de refaire un bilan, la porte qui doit rendre la collision rare (v1-10 §2.D).
-  const params = useLocalSearchParams<{ email?: string; source?: string; motif?: string }>();
+  // **Pas de `email` ici**, et l'absence est délibérée : plus aucun appelant n'en passe, et le
+  // déclarer se lirait « réservé » quand c'est « retiré » — l'adresse de quelqu'un n'a rien à
+  // faire dans une barre d'adresse. Elle se relit en local, plus bas.
+  const params = useLocalSearchParams<{ source?: string; motif?: string }>();
 
   // **`motif` est la seule surface où un lien mort se voit.** Le layout racine ouvre cet écran
   // quand l'URL entrante porte un échec au lieu de jetons (A1-6, A6-6) ; il relit le paramètre par
@@ -86,7 +89,7 @@ export default function RetrouverMonCompte() {
   // qu'il se garde d'une phase à l'autre jusqu'à la tentative suivante, qui l'efface.
   const motif = motifRetourLien(params.motif);
   const [phase, setPhase] = useState<Phase>('chargement');
-  const [email, setEmail] = useState(params.email ?? '');
+  const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(
     motif ? messageDuRetourDeLien(motif) : null
@@ -114,12 +117,17 @@ export default function RetrouverMonCompte() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Arrivée par un lien qui n'a pas marché : l'adresse est celle qu'on a demandée depuis cet
-  // appareil, relue en local et jamais déduite d'une réponse serveur (non-divulgation, cf.
-  // `src/lib/connexion-prefs.ts`). Sans elle, une expiration se paie d'une ressaisie. Ne s'écrit
-  // que sur un champ encore vide : une frappe en cours passe avant.
+  // Arrivée par un lien qui n'a pas marché, **ou** renvoyée ici par `/connexion/email` sur une
+  // adresse déjà prise : l'adresse est celle qu'on a demandée ou saisie depuis cet appareil,
+  // relue en local et jamais déduite d'une réponse serveur (non-divulgation, cf.
+  // `src/lib/connexion-prefs.ts`). Sans elle, une expiration ou une collision se paie d'une
+  // ressaisie. Ne s'écrit que sur un champ encore vide : une frappe en cours passe avant.
+  //
+  // **Le second cas passait l'adresse en paramètre d'URL** — donc dans la barre d'adresse, dans
+  // l'historique du navigateur et dans les journaux d'accès. Le mécanisme local existait déjà à
+  // dix lignes de là ; c'est son garde qui l'écartait de ce chemin-là.
   useEffect(() => {
-    if (!motif || params.email) return;
+    if (!motif && params.source !== 'email') return;
     let annule = false;
     void lireAdresseDuLien().then((adresse) => {
       if (annule || !adresse) return;

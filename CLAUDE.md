@@ -811,10 +811,18 @@ l'app venait de créer, et le plan répondait « Ton bilan n'est pas encore fait
 « Faire mon bilan » — et la consigne de désinscription du même email réglait la préférence d'une
 session qui n'est personne. Le paramètre ne sert que là, et **seulement sans bilan local**. Une
 nouvelle route à la place du paramètre aurait fait ouvrir le lien dans le navigateur sur Android :
-`assetlinks.json` ne revendique nommément que `/plan`, et ce périmètre étroit est voulu (Play exige
-que les pages légales et `/compte/suppression` restent atteignables **sans** l'app). Une chaîne de
-requête ne fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux
-moitiés de la règle.
+le périmètre Android ne revendique nommément que `/plan`, et il est voulu étroit (Play exige que les
+pages légales et `/compte/suppression` restent atteignables **sans** l'app). Une chaîne de requête ne
+fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux moitiés de
+la règle.
+
+**Ce périmètre tient au `pathPrefix` d'`app.json`, et à lui seul** — ce fichier a écrit jusqu'au
+20/09/2026 qu'`assetlinks.json` le portait, et c'est faux : il déclare
+`delegate_permission/common.handle_all_urls`, seule relation qu'Android accepte pour un App Link,
+donc il délègue **tout** `www.ramille.fr`. Deux conséquences à connaître avant d'y toucher : un
+second `intentFilter` ajouté plus tard n'aurait aucun garde-fou du côté d'`assetlinks.json`, et
+`pathPrefix` est un préfixe de **chaîne** et non de segment — une future route publique nommée
+`/planning` ou `/plan-b` serait capturée par l'app sans que rien ne le dise.
 
 **Un jeton refusé parce qu'il est TROP NEUF n'est pas un refus, c'est une attente** (`PGRST303`
 « JWT issued at future », `fetchAvecSecondeChance` dans `src/types/postgrest.ts`) — cinq choses à
@@ -837,6 +845,20 @@ retouche à la main** — comment, et ce que la CI en vérifie : `SUPABASE.md` �
 `supabase/config.toml` ne porte plus `auto_expose_new_tables`) : **ajouter une table impose un
 `grant` ou un `revoke` explicite**, sinon elle est invisible pour l'app, en silence —
 `SUPABASE.md` §2.2.
+
+**Et cette phrase a été FAUSSE jusqu'au 20/09/2026, dans le sens le plus dangereux** : une table
+neuve n'était pas invisible, elle était **grande ouverte**. `pg_default_acl` accordait `arwdDxtm`
+— dont `select`, `update` et `delete` — à `anon` **et** à `authenticated` sur toute table créée
+dans `public`, RLS inactive par défaut. Mesuré en transaction annulée, en local comme sur le
+distant : une table neuve, une ligne dedans, `set local role anon` sans aucune session — `anon`
+l'a lue, puis l'a supprimée. Aucune des vingt tables existantes n'était concernée ; le danger
+était la **prochaine migration**, écrite par quelqu'un qui croit le paragraphe ci-dessus, donc qui
+ne vérifie pas — et que ni la CI ni pgTAP n'auraient attrapée, le local se comportant comme le
+distant. `20260920190000_trois_gardes_qui_manquaient_sous_les_gardes.sql` ferme la moitié qui nous
+concerne (les objets créés par `postgres`, c'est-à-dire par les migrations) ; l'autre moitié
+appartient à `supabase_admin` et se désactive au tableau de bord — `SUPABASE.md` §2.2 et
+`docs/exploitation/README.md`. Trois assertions de `31` épinglent le fait, dont une sur le
+catalogue.
 
 **Une policy appelle `auth.uid()` dans un sous-select, et une clé étrangère neuve veut son
 index** — aucun des deux ne se voit à la lecture : `SUPABASE.md` §2.2.

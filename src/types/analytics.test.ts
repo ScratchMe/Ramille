@@ -1,5 +1,6 @@
 import {
   appErrorCategory,
+  DELAI_NOUVELLE_OUVERTURE_MS,
   MAX_PROP_KEYS,
   MAX_PROP_VALUE_LENGTH,
   sanitizeEventProps,
@@ -8,6 +9,8 @@ import {
   SOURCES_RETROUVER,
   USAGE_EVENT_NAMES,
   sourceRetrouver,
+  SEJOUR_INITIAL,
+  suivreLEtatDeLApp,
   type UsageEventName,
   type UsageEventPropsByName,
 } from './analytics';
@@ -81,15 +84,78 @@ describe('USAGE_EVENT_NAMES', () => {
   });
 });
 
-describe('app_open', () => {
-  it('distingue ses deux chemins d’émission', () => {
-    // Purement statique : le typecheck refuse une valeur inconnue, et `app_open` redevenu
-    // `never` ferait échouer cette ligne. Ce qui est épinglé, c'est que le démarrage et le
-    // retour au premier plan n'écrivent pas des lignes indistinguables — sans quoi on ne peut
-    // ni vérifier que le chemin du rappel fonctionne, ni comparer les séries d'avant et
-    // d'après le 11/09/2026 (v1-13 C1.2, constat A1-4).
-    const origines: UsageEventPropsByName['app_open']['origine'][] = ['demarrage', 'retour'];
-    expect(origines).toEqual(['demarrage', 'retour']);
+describe('suivreLEtatDeLApp', () => {
+  // **Ce bloc éprouvait un littéral contre lui-même** (`expect(['demarrage', 'retour'])
+  // .toEqual(['demarrage', 'retour'])`, sous une annotation de type). Son commentaire le disait
+  // — « purement statique » — et c'était vrai : jest efface les types, donc l'assertion ne
+  // pouvait tomber pour aucune raison. Ce qu'elle annonçait garder, « le démarrage et le retour
+  // au premier plan n'écrivent pas des lignes indistinguables », est en réalité tenu par le
+  // typecheck du côté du type — et, du côté du **fait**, par la règle ci-dessous, qui vivait
+  // en variable mutable dans le layout racine sans qu'aucun test ne la voie.
+  //
+  // Éprouvé en la cassant, le 20/09/2026 (TESTING.md §1.1) — trois mutations :
+  //   - `sejour.depuis ?? maintenant` remplacé par `maintenant` (dater à chaque événement
+  //     non-actif) → le parcours iOS tombe, et lui seul ;
+  //   - `>=` remplacé par `>` → la borne tombe, et elle seule ;
+  //   - `depart !== null &&` retiré → le premier `active` du lancement tombe, et lui seul.
+
+  const T0 = 1_700_000_000_000;
+
+  it('ne compte pas le tout premier `active` du lancement', () => {
+    // Le démarrage a déjà écrit son `app_open` depuis `ensureSession()` : compter aussi celui-ci
+    // écrirait deux ouvertures pour une seule, sur le chemin le plus fréquent du produit.
+    const { ouverture } = suivreLEtatDeLApp(SEJOUR_INITIAL, 'active', T0);
+    expect(ouverture).toBe(false);
+  });
+
+  it('compte le retour après un séjour assez long, et pas un aller-retour', () => {
+    const parti = suivreLEtatDeLApp(SEJOUR_INITIAL, 'background', T0);
+    expect(parti.sejour.depuis).toBe(T0);
+
+    const detour = suivreLEtatDeLApp(parti.sejour, 'active', T0 + 60_000);
+    expect(detour.ouverture).toBe(false);
+    expect(detour.sejour.depuis).toBeNull();
+
+    const reparti = suivreLEtatDeLApp(detour.sejour, 'background', T0 + 120_000);
+    const revenu = suivreLEtatDeLApp(reparti.sejour, 'active', T0 + 120_000 + DELAI_NOUVELLE_OUVERTURE_MS);
+    expect(revenu.ouverture).toBe(true);
+  });
+
+  it('compte à la borne exacte — le délai est atteint, pas dépassé', () => {
+    const parti = suivreLEtatDeLApp(SEJOUR_INITIAL, 'background', T0);
+    expect(suivreLEtatDeLApp(parti.sejour, 'active', T0 + DELAI_NOUVELLE_OUVERTURE_MS).ouverture).toBe(true);
+    expect(suivreLEtatDeLApp(parti.sejour, 'active', T0 + DELAI_NOUVELLE_OUVERTURE_MS - 1).ouverture).toBe(false);
+  });
+
+  it('survit à l’`inactive` qu’iOS traverse AU RETOUR — la mutation qui perdrait tout', () => {
+    // Le parcours réel d'iOS : `inactive` puis `background` à l'aller, `inactive` puis `active`
+    // au retour. Dater à chaque événement non-actif remettrait le compteur à zéro sur
+    // l'`inactive` du retour — l'écart mesuré vaudrait une seconde, et **aucun** retour ne
+    // serait jamais compté. La perte est totale et muette : la série ne montre pas un trou,
+    // elle montre une plateforme qui ne revient jamais au premier plan.
+    let sejour = SEJOUR_INITIAL;
+    let ouvertures = 0;
+    const parcours: [string, number][] = [
+      ['inactive', T0],
+      ['background', T0 + 1_000],
+      ['inactive', T0 + DELAI_NOUVELLE_OUVERTURE_MS + 1_000],
+      ['active', T0 + DELAI_NOUVELLE_OUVERTURE_MS + 2_000],
+    ];
+    for (const [etat, quand] of parcours) {
+      const suite = suivreLEtatDeLApp(sejour, etat, quand);
+      sejour = suite.sejour;
+      if (suite.ouverture) ouvertures += 1;
+    }
+    expect(ouvertures).toBe(1);
+  });
+
+  it('n’a que deux origines, et la seconde est celle qu’elle produit', () => {
+    // Ce qui reste de l'assertion statique d'avant, gardé pour ce qu'elle disait de vrai : la
+    // valeur qu'écrit le retour au premier plan appartient bien à l'union déclarée. C'est le
+    // typecheck qui tombe si l'union se réduit — `npm test` ne peut pas le voir, et le dire
+    // ici évite qu'on reprenne un jour cette ligne pour une garde qu'elle n'est pas.
+    const origine: UsageEventPropsByName['app_open']['origine'] = 'retour';
+    expect(origine).toBe('retour');
   });
 });
 
