@@ -77,6 +77,3 @@ ds-bundle/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules
-
-# Capture laissée par scripts/verifier-parcours-reel.mjs sur un échec — à regarder, pas à versionner.
-parcours-reel-echec.png

@@ -353,5 +353,5 @@ en nommant l'étape et la requête refusée. Le compte détaillé est en tête d
 **Sur un échec, lire dans cet ordre** : l'étape nommée, les requêtes refusées (le script journalise
 tout `4xx`/`5xx` avec le corps — un `PGRST303` « JWT issued at future » sur la première requête
 d'une session est **attendu**, l'app le rejoue, cf. `src/types/postgrest.ts`), le texte visible,
-puis la capture `parcours-reel-echec.png`. Un parcours local qui s'arrête laisse son compte anonyme
+puis la capture, dont le chemin est imprimé (dossier temporaire). Un parcours local qui s'arrête laisse son compte anonyme
 dans la stack ; `supabase db reset` remet la base à neuf.

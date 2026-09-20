@@ -32,8 +32,8 @@
 //   SUPABASE_SERVICE_ROLE_KEY      sa clé service_role — pour appeler le générateur de points, que
 //                                  ni anon ni authenticated ne peuvent appeler (et c'est voulu)
 //
-// Sur un échec, la page est capturée dans `parcours-reel-echec.png` et le texte visible est imprimé,
-// avec les requêtes refusées : c'est ce qu'on regarde en premier, avant le code.
+// Sur un échec, la page est capturée dans le dossier temporaire (le chemin est imprimé) et le texte
+// visible l'est aussi, avec les requêtes refusées : c'est ce qu'on regarde en premier, avant le code.
 //
 // **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1), trois mutations sur l'arbre de travail,
 // chacune suivie d'un export (le code est dans le bundle) et remise en place par l'opération inverse :
@@ -47,6 +47,8 @@
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
+import os from 'node:os';
+import path from 'node:path';
 import process from 'node:process';
 
 import { chromium } from 'playwright';
@@ -58,7 +60,9 @@ const API = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ATTENTE = 20_000;
-const CAPTURE = 'parcours-reel-echec.png';
+// Dans le dossier temporaire et pas dans le dépôt : une capture à la racine aurait demandé une ligne
+// de `.gitignore`, et toucher ce fichier fait construire Vercel (scripts/vercel-ignorer-le-build.sh).
+const CAPTURE = path.join(os.tmpdir(), 'ramille-parcours-reel-echec.png');
 
 if (!API || !ANON || !SERVICE) {
   console.error(
