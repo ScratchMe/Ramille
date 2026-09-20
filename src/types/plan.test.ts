@@ -135,12 +135,17 @@ describe('cadreDuPlan', () => {
     ).toBe(true);
   });
 
-  // La seconde cause, prise à part. Elle est inatteignable aujourd'hui — `pistesDuPlan` remplit
-  // toujours `enAvant` dès qu'il y a une action — et c'est justement pourquoi elle est éprouvée :
-  // le jour où elle cesserait de l'être, la cumuler avec la première effacerait le cap d'un plan
-  // qui en a un.
-  it('garde le cap d’un plan dont aucune action n’est en avant', () => {
-    expect(cadreDuPlan({ postesEnAvant: [], nombreDActions: 5 }).chiffreLeCap).toBe(true);
+  // **`postesEnAvant` ne décide de rien, et c'est ça qu'il faut épingler.** L'assertion précédente
+  // de ce bloc affirmait `.toBe(true)` sur une liste vide, ce que le repli rendait déjà : elle ne
+  // pouvait pas tomber. Celle-ci compare les **deux** formes à nombre d'actions égal, donc elle
+  // tombe le jour où quelqu'un fusionne les conditions en
+  // `nombreDActions === 0 || postesEnAvant.length === 0` — la régression que la doc de cette
+  // dérivation a invitée à écrire jusqu'au 20/09/2026, et qui ôterait son cap à un plan qui en a un.
+  it('ne fait pas dépendre le cap des actions mises en avant', () => {
+    const sansMiseEnAvant = cadreDuPlan({ postesEnAvant: [], nombreDActions: 5 });
+    const avecMiseEnAvant = cadreDuPlan({ postesEnAvant: ['commute'], nombreDActions: 5 });
+    expect(sansMiseEnAvant.chiffreLeCap).toBe(true);
+    expect(sansMiseEnAvant).toEqual(avecMiseEnAvant);
   });
 });
 

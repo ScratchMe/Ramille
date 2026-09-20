@@ -179,7 +179,10 @@ Trois règles, en revanche, se cassent sans qu'on ait rien décidé, donc elles 
   écran ; `api/` et les SVG le répètent en littéral, faute de pouvoir importer `src/`. **Trois
   choses gardent volontairement l'ancien nom et ne se « corrigent » pas** : les clés AsyncStorage
   (`traceverte.*` — les renommer effacerait les brouillons), les migrations déjà appliquées, et le
-  projet Supabase distant, toujours `TraceVerte-v1` dans son tableau de bord. Les documents `v1-01`
+  projet Supabase distant, que le dépôt appelle `TraceVerte-v1` et dont le **tableau de bord
+  affiche `TraceVerte`** (réf. `nuugfepfsypqgvsvyzht`) — ce fichier a longtemps écrit l'inverse,
+  relevé le 20/09/2026 en interrogeant l'API de management ; `docs/exploitation/README.md` §3.1
+  portait le bon nom depuis le 10/09. Les documents `v1-01`
   à `v1-08` en parlent aussi : ce sont des décisions datées, on ne les réécrit pas. Détail en
   `v1-09-renommage-ramille.md` ;
 - **V1 = Google Play uniquement** — pas d'App Store, pas de Sign in with Apple.
@@ -222,11 +225,20 @@ fichier est tenu à la main, et le typecheck ne peut pas voir cette
 dérive : `SUPABASE.md` §2.1.
 
 **Et depuis le 20/09/2026 il compare aussi les listes de valeurs**
-(`scripts/verifier-miroirs-de-check.mjs`) : dix-sept constantes et types TypeScript recopient un
-`check` du schéma, et jusque-là chacun était épinglé par un test portant les **mêmes valeurs
-recopiées une seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui
-compte, que la base ait changé d'avis. **Toucher à un `check` impose donc de suivre côté
-TypeScript**, et le contrôle dit lequel : `TESTING.md` §2.7.
+(`scripts/verifier-miroirs-de-check.mjs`) : les constantes et unions de littéraux qui recopient un
+`check` du schéma sont **déclarées une par une** dans son tableau `MIROIRS` et comparées à la base,
+là où chacune était jusque-là épinglée par un test portant les **mêmes valeurs recopiées une
+seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui compte, que la
+base ait changé d'avis. **Toucher à un `check` impose donc de suivre côté TypeScript**, et le
+contrôle dit lequel : `TESTING.md` §2.7.
+
+**Et écrire une constante qui recopie un `check` impose d'ajouter sa ligne à `MIROIRS`** : c'est une
+liste déclarée, donc un miroir que personne n'y déclare lui reste invisible, et rien ne balaie le
+dépôt pour le trouver. Ce fichier a d'abord écrit l'inverse — que **toute** recopie y figurait —,
+et c'était faux le jour même : la contre-lecture du soir en a trouvé quatre non déclarés, dont la
+préférence de canal de rappel. La leçon n'est pas le compte, c'est qu'**une garde déclarative ne
+s'annonce jamais exhaustive** : on dit ce qu'elle couvre et ce qui lui échappe, et `TESTING.md`
+§2.7 nomme les deux formes qui lui échappent structurellement.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
 y compris celles qui ne nomment pas le facteur touché — et « toucher » inclut en ajouter un.**
@@ -265,9 +277,11 @@ contexte tourne en Web Fetch API (Request/Response), pas dans React Native. Util
 négociable, et son échec est muet** (`FUNCTION_INVOCATION_FAILED` générique, aucun détail côté
 client) : `VERCEL.md` §1.6, et le détail de chaque point avec les vrais logs qui l'ont diagnostiqué
 en `docs/architecture/v1-06-partage-social.md` §3. **Et depuis le 20/09/2026, les deux fonctions
-sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, cinq mutations datées en tête) :
-la carte par son vrai chemin, la page avec son chiffre — la panne muette a une garde, qui ne voit
-pas le seul point que Vercel ajoute, le traçage des assets.
+sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, sept mutations datées en tête) :
+la carte par son vrai chemin — et une seconde fois sur un chemin **relatif**, plus une troisième
+sans paramètre pour prouver que la chaîne de requête atteint le rendu —, la page avec son chiffre.
+La panne muette a donc une garde ; ce qu'elle ne voit pas est nommé en `VERCEL.md` §1.6, et c'est
+**deux** points et non un : le traçage des assets et `maxDuration`, que rien ne chronomètre.
 
 **Routing** : `src/app/` (Expo Router, file-based), organisé autour d'une **barre à deux
 onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit :
@@ -805,7 +819,8 @@ retire : `SUPABASE.md` §1.2 et §2.5.
 
 ### Base de données
 
-Migrations dans `supabase/migrations/`, appliquées sur le projet distant `TraceVerte-v1` par
+Migrations dans `supabase/migrations/`, appliquées sur le projet distant `TraceVerte-v1` (son
+tableau de bord l'affiche `TraceVerte`) par
 `mcp__Supabase__apply_migration` ; **après toute migration, `src/lib/database.types.ts` se
 retouche à la main** — comment, et ce que la CI en vérifie : `SUPABASE.md` §2.1.
 
@@ -1012,9 +1027,11 @@ snapshotés qui existent précisément pour qu'un re-bilan ne réécrive pas un 
 qui accepte `expired` — un point en attente pouvait disparaître de la carte du plan sans avoir été
 répondu ; et `responded_at`, qui venait de l'horloge du téléphone. Le RPC pose les trois seules
 colonnes d'une réponse, avec `now()` du serveur, et refuse un point déjà répondu ou clos. C'est
-aussi le seul endroit où la forme de la réponse changera quand une troisième réponse (« pas de
-trajet cette période ») arrivera — mais `p_reponse boolean` ne peut pas porter un troisième état :
-ce sera une migration, pas un paramètre de plus.
+aussi le seul endroit où la forme d'une réponse change. **C'est arrivé dès le lendemain** : la
+troisième réponse (« pas de trajet cette période ») est livrée depuis C2.4, et `p_reponse boolean`
+ne pouvant pas porter un troisième état, ce fut bien une migration et non un paramètre de plus —
+la signature est `repondre_au_checkin(uuid, text)`, la version booléenne **supprimée**, et le
+raisonnement complet est au paragraphe de C2.4 ci-dessous.
 
 **Aucun chemin du produit ne détruit un engagement sans en laisser une trace** (C2.2, 11/09/2026,
 `20260912150000_engagement_qui_survit.sql`). Il y en avait quatre, et ils se ressemblent assez pour
@@ -1041,8 +1058,9 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
 - **`plan_actions` a désormais deux clés étrangères vers `plan_cycles`**, donc toute lecture
   imbriquée doit nommer la sienne : `plan_actions!plan_actions_plan_cycle_id_fkey(…)`. Sans le nom,
   PostgREST refuse la requête (« more than one relationship was found ») et l'écran du plan ne
-  charge plus **du tout**. Le typecheck l'attrape, et c'est le seul garde qui le fait — la chaîne du
-  `select` est analysée au niveau des types.
+  charge plus **du tout**. Le typecheck l'attrape — la chaîne du `select` est analysée au niveau
+  des types —, et depuis le 20/09/2026 le parcours réel aussi, qui charge cet écran contre une
+  vraie stack et s'arrêterait à l'étape « plan ».
 - **`assessments.submitted_at` vient du serveur** (trigger `stamp_assessment_submitted_at`, posé au
   seul passage en `completed`). Il venait du téléphone, et la garde d'idempotence du plan le
   comparait à un horodatage serveur : un téléphone en avance faisait reconstruire le plan à chaque
@@ -1149,8 +1167,12 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
   cap est une quantité à atteindre, aucun endroit du produit ne vérifie d'où vient la réduction.
   Elle était rare tant que le poste dominant remplissait les deux premières cartes ; **le
   classement de C5.1 l'aurait réveillée sur la plupart des plans**, les meilleurs leviers venant
-  souvent d'ailleurs. La dérivation reste malgré son unique booléen, parce qu'il porte **deux
-  causes** qu'un `||` rendrait à moitié inéprouvables.
+  souvent d'ailleurs. La dérivation reste malgré son unique booléen parce que l'écran
+  ne doit pas trancher ça en ternaire — et **non** parce qu'elle porterait deux causes. Ce fichier
+  l'a écrit jusqu'au 20/09/2026 (« deux causes qu'un `||` rendrait à moitié inéprouvables ») : c'était
+  l'état d'avant C5.3, et la phrase **dictait une régression** — appliquer ce `||` ôterait son cap à
+  un plan à cinq actions dont aucune n'est en avant. Une seule cause vaut : zéro action. Un test
+  compare désormais les deux formes à nombre d'actions égal, et il tombe sur cette fusion.
 
 **`action_text` est la clé naturelle du référentiel d'actions, et elle porte enfin un index
 unique.** Tout le dépôt apparie les gabarits par elle — `action_templates.id` vaut

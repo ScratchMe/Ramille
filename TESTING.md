@@ -1,7 +1,7 @@
 # Tests — conventions et pièges
 
-Ce que Ramille a appris en écrivant ses deux suites (Jest sur la logique pure, pgTAP sur la
-base). La **§1 vaut sur n'importe quel projet** ; la **§2** porte les fichiers, les chiffres et les
+Ce que Ramille a appris en écrivant ses trois suites (Jest sur la logique pure, pgTAP sur la
+base, et le parcours réel contre une vraie stack depuis le 20/09/2026). La **§1 vaut sur n'importe quel projet** ; la **§2** porte les fichiers, les chiffres et les
 pièges propres à Ramille, et ne voyage pas. L'histoire complète est dans `CLAUDE.md` (mécaniques)
 et dans les documents `docs/architecture/v1-0N-*.md` que chaque paragraphe cite.
 
@@ -122,7 +122,7 @@ Les connaître évite de « corriger » un test qui n'a rien (§2.3).
 
 ## 2. Propre à Ramille
 
-### 2.1 Les deux suites, et où passe la ligne
+### 2.1 Les suites, et où passe la ligne
 
 Deux suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
 (chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
@@ -207,7 +207,8 @@ bout-en-bout (écrans, flux de connexion) :
   cet environnement (pas de daemon Docker) — validé à la place via des transactions
   `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
 
-Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
+Les trois suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request — la
+troisième, le parcours réel, a sa §2.6.
 
 ### 2.2 Le référentiel des facteurs et les assertions chiffrées
 
@@ -289,12 +290,14 @@ contexte ne reproduit pas le rôle sous lequel il tournera.
 
 ### 2.6 Le parcours réel, contre une vraie stack — et ce que Docker change ici
 
-**Le trou, mesuré le 20/09/2026** : 15 143 lignes d'écrans et de composants et 1 216 lignes
-d'entrée-sortie (`src/lib`) n'étaient gardées par rien d'autre que la recette sur appareil. Les deux
+**Le trou, mesuré le 20/09/2026** : 15 147 lignes d'écrans, de composants et de hooks, et 1 485 lignes
+d'entrée-sortie — **les fichiers de `src/lib` qui importent le client**, et non `src/lib` entier, qui
+en compte 3 307 — n'étaient gardées par rien d'autre que la recette sur appareil. Les deux
 premières suites prouvent la logique pure et la base ; entre les deux — les requêtes, les RPC, ce
 que l'écran montre après une écriture — rien. Un `.eq('status', 'complete')` passait vert.
 
-**`scripts/verifier-parcours-reel.mjs` joue le chemin nominal, et lui seul**, sur le profil de
+**`scripts/verifier-parcours-reel.mjs` joue le chemin nominal, et lui seul**, sur **deux profils**
+— décrits plus bas ; celui-ci est le premier, tiré de
 `docs/recette/premier-parcours-web.md` : onboarding → questionnaire → soumission → restitution →
 proposition de compte refusée → plan → engagement → un point généré comme le cron le ferait
 (`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi → suppression du
@@ -358,13 +361,16 @@ dans le même contexte éprouverait un appareil qui a déjà tout vu.
   (`display: 'none'`), donc « la barre est absente » se mesure sur la visibilité, jamais sur le
   compte des libellés.
 
-**Éprouvé en le cassant, le 20/09/2026**, six mutations sur l'arbre de travail, chacune suivie d'un
+**Éprouvé en le cassant, le 20/09/2026**, sept mutations sur l'arbre de travail, chacune suivie d'un
 export — puisque le code est dans le bundle — et remise en place par l'opération inverse. Trois sur
 le premier profil : un filtre écrit de mémoire (`'complete'`), un RPC au mauvais nom
 (`commit_plan_actions`), la réponse au point vers un RPC au mauvais nom ; le parcours s'arrête
 respectivement au plan, à l'engagement et au point, en nommant l'étape et la requête refusée. Trois
 sur le second : la carte du premier plan rendue malgré un plan à zéro action, le cap qui chiffre
-quand même, la félicitation reformulée.
+quand même, la félicitation reformulée. **La septième est arrivée après coup**, l'assertion des
+kilos ayant été ajoutée sans elle — ce que §1.1 interdit, et que seule une relecture du diff a vu :
+le seuil de `valeurEtUnite` passé de `kilos < 1000` à `kilos < 10` fait tomber « 11 kg CO₂e » et
+rien d'autre, le premier profil restant en tonnes à 4 231 kg.
 
 **Et l'une d'elles a changé le script plutôt que de le confirmer.** Rendre la carte du premier plan
 sur un plan à zéro action empêche aussi la barre d'onglets d'arriver — fermer la carte est ce qui la
@@ -382,9 +388,9 @@ dans la stack ; `supabase db reset` remet la base à neuf.
 
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
-**Dix-sept endroits du code recopient une contrainte de la base** — une puce du questionnaire, un
-`.eq('status', …)`, une union de littéraux. Rien, depuis TypeScript, ne peut lire ce que la colonne
-accepte : la convention était donc d'épingler chaque miroir par un test Jest portant les mêmes
+**Le code recopie une contrainte de la base en bien plus d'endroits qu'on ne le croit** — une puce
+du questionnaire, un `.eq('status', …)`, une union de littéraux. Rien, depuis TypeScript, ne peut
+lire ce que la colonne accepte : la convention était donc d'épingler chaque miroir par un test Jest portant les mêmes
 valeurs **recopiées une seconde fois**. C'est une garde du code contre lui-même, et elle ne peut
 pas voir la seule chose qui compte ici : que la base ait changé d'avis. Un `check` élargi laisse le
 test vert et la liste courte ; un `check` resserré laisse le test vert et la puce refusée à la
@@ -417,7 +423,24 @@ base que `supabase/migrations/` vient de construire. Quatre choses à savoir ava
   énumérantes sur la même colonne font échouer le contrôle plutôt que d'en choisir une.
 
 Ajouter un miroir, c'est ajouter **une ligne** au tableau `MIROIRS` ; le reste se lit dans la base
-et dans le module. **Éprouvé en le cassant** (§1.1), huit mutations datées en tête du script — dont
-la dernière est venue d'une contre-lecture du diff plutôt que d'une idée de départ : une colonne
-peut porter **deux** contraintes bornantes, et n'en lire qu'une ferait affirmer au contrôle le
-contraire de ce que la base applique.
+et dans le module. **Éprouvé en le cassant** (§1.1), douze mutations datées en tête du script —
+dont la huitième est venue d'une contre-lecture du diff plutôt que d'une idée de départ : une
+colonne peut porter **deux** contraintes bornantes, et n'en lire qu'une ferait affirmer au contrôle
+le contraire de ce que la base applique.
+
+**Et c'est une liste déclarée, jamais un inventaire prouvé complet.** Rien ne balaie le dépôt à la
+recherche d'un miroir que personne n'a déclaré : la parade est l'habitude d'ajouter sa ligne en
+écrivant la constante. `CLAUDE.md` a d'abord promis l'inverse, et la contre-lecture du soir même a
+trouvé **quatre** miroirs non déclarés — `CanalPrefere` (la préférence de canal de rappel),
+`IntentionTiming`, `LoopType` et `POSTES` —, tous ajoutés et éprouvés depuis. Deux formes lui
+échappent **structurellement**, et il vaut mieux les connaître que de croire la liste close :
+
+- **une union recopiée en ligne** plutôt qu'importée depuis son `export type` — la lecture ne
+  connaît qu'une forme, `export type X = 'a' | 'b';`. `loop_type` l'a été jusqu'au 20/09/2026 :
+  `LoopType` existait déjà, et six endroits réécrivaient `'commute' | 'extras'` à la main, si bien
+  que déclarer le miroir n'aurait gardé personne. Les six l'importent désormais — **la correction
+  d'une recopie en ligne est de la rapprocher du type nommé**, le contrôle ne pouvant pas aller la
+  chercher ;
+- **une borne que la base confie à une fonction** plutôt qu'à une expression. `IntentionDay` (1…7)
+  fait face à `check (public.check_intention_days(intention_days))` : ni littéral à énumérer, ni
+  expression nommant la colonne seule, donc aucun des trois genres ne s'y applique.

@@ -1,9 +1,29 @@
 // Les listes de valeurs écrites en TypeScript disent-elles encore ce que le `check` du schéma
 // accepte ? (dette `v1-27` §11 ligne 8, §12.5)
 //
-// **Dix-sept endroits du code recopient à la main une contrainte de la base.** Une puce du
+// **Le code recopie à la main une contrainte de la base en bien des endroits.** Une puce du
 // questionnaire, un `.eq('status', …)`, une union de littéraux : rien, depuis TypeScript, ne peut
-// lire ce que la colonne accepte. La convention du dépôt était d'épingler chaque miroir par un test
+// lire ce que la colonne accepte. Leur compte ne s'écrit nulle part — il est imprimé par les
+// passages **verts**, et il grossit d'une ligne du tableau `MIROIRS` à la fois. Un passage rouge,
+// lui, imprime les écarts et rien d'autre : c'est ce qu'on lit alors, et le compte n'y aiderait pas.
+//
+// **`MIROIRS` est une liste déclarée, pas un inventaire prouvé complet, et c'est sa limite.** Rien
+// ne balaie le dépôt à la recherche d'un miroir que personne n'a déclaré — la parade est une
+// habitude : qui écrit une constante recopiant un `check` ajoute sa ligne ici. Deux formes y
+// échappent même quand on y pense, et il vaut mieux les connaître que de croire la liste close :
+//   - **une union recopiée en ligne** plutôt qu'importée depuis son `export type` : la lecture ne
+//     connaît qu'une forme, `export type X = 'a' | 'b';`. `loop_type` l'a été jusqu'au 20/09/2026 —
+//     `LoopType` existait, et six endroits réécrivaient `'commute' | 'extras'` à la main plutôt que
+//     de l'importer, donc déclarer le miroir n'en gardait aucun. Les six importent désormais, et
+//     c'est la seule forme de correction qui vaille ici : **rapprocher la recopie du type nommé**,
+//     puisque le contrôle ne peut pas aller la chercher ;
+//   - **une borne que la base confie à une fonction, sur une colonne qui est un tableau.**
+//     `IntentionDay` (1…7) fait face à `check (public.check_intention_days(intention_days))` :
+//     aucun littéral à énumérer pour `valeurs` ni `type`, et `domaine` substitue une valeur
+//     **scalaire** là où la colonne est un `smallint[]`, donc la substitution ne typerait même
+//     pas. Le jour où cette borne bouge en base, seule la relecture le verra.
+//
+// La convention du dépôt était d'épingler chaque miroir par un test
 // Jest portant les valeurs **recopiées une seconde fois** — ce qui garde le code contre lui-même,
 // jamais contre la base. Un `check` élargi par une migration laisse le test vert et la liste
 // courte ; un `check` resserré laisse le test vert et la puce refusée à la soumission, en anglais,
@@ -34,9 +54,17 @@
 //     valeur proposée est **évaluée par Postgres** contre l'expression réelle de la contrainte. Et
 //     quand la liste est un intervalle d'entiers (`bornes: true`), les deux valeurs qui l'encadrent
 //     doivent être **refusées** — sans quoi un plafond déplacé en base ne se verrait pas, alors que
-//     la puce « 6+ » promet qu'il n'y a rien au-dessus.
+//     la puce « 6+ » promet qu'il n'y a rien au-dessus. **Ce genre-là ne convient qu'à une colonne
+//     dont toutes les contraintes ne parlent que d'elle** : l'expression évaluée est leur
+//     conjonction, donc en déclarer un sur une colonne portant une contrainte de cohérence entre
+//     deux colonnes (`engagement_checkins.status`, par exemple) ferait échouer la requête sur une
+//     colonne inconnue. L'échec est bruyant — sortie 2 —, **mais il porte le masque d'une panne de
+//     connexion** : toutes les expressions partent dans un `select` unique, donc `interroger`
+//     attrape l'erreur de `psql` et affiche « Impossible d'interroger la base » puis « la stack
+//     locale se démarre par `supabase start` ». Devant ce message après avoir ajouté un miroir,
+//     c'est la ligne ajoutée qu'il faut relire, pas Docker.
 //
-// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — huit mutations, et ce que chacune
+// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — douze mutations, et ce que chacune
 // fait tomber :
 //   - `STATUT_DE_BILAN.complete` → `'complete'`             → 2 écarts (la proposée refusée, et
 //     `completed` que la base accepte sans que personne ne l'écrive plus) ;
@@ -54,6 +82,13 @@
 //     deux contraintes aurait été jugée sur une seule, et le contrôle aurait affirmé le contraire
 //     de ce que la base fait. Les trois colonnes bornées n'en portent qu'une aujourd'hui — c'est
 //     précisément ce qui rendait le raccourci invisible.
+// Puis quatre, le soir même, avec les quatre miroirs que la contre-lecture de la contre-lecture a
+// trouvés non déclarés — `CLAUDE.md` promettait alors que **toute** recopie d'un `check` figurait
+// ici, ce qui était faux le jour où la phrase a été écrite :
+//   - `CanalPrefere` : `'none'` → `'aucun'`             → 2 écarts (la fantôme et l'absente) ;
+//   - `IntentionTiming` gagne `'un_jour_ferie'`         → 1 écart (proposée, refusée en base) ;
+//   - `LoopType` : `'extras'` → `'loisirs'`             → 2 écarts ;
+//   - `POSTES` gagne `'domicile'`                       → 1 écart.
 // Et deux passages qui doivent rester **verts** : la seconde contrainte de `response_kind` (celle
 // de cohérence, qui nomme les mêmes valeurs sans les énumérer) n'est pas lue comme une
 // énumération ; et `teletravail`, dont le `check` autorise `NULL` avant d'énumérer, compare les
@@ -132,6 +167,13 @@ const MIROIRS = [
     module: 'src/types/bilan.ts',
     colonne: 'assessment_answers.teletravail',
   },
+  // Le poste dominant : la base le borne aussi, et `POSTES` est la liste que l'app lit partout.
+  {
+    genre: 'valeurs',
+    constante: 'POSTES',
+    module: 'src/constants/postes.ts',
+    colonne: 'assessment_results.dominant_poste',
+  },
 
   // --- Les unions de littéraux : la famille que rien d'autre ne peut voir ---
   { genre: 'type', constante: 'ZoneType', module: 'src/types/bilan.ts', colonne: 'assessment_answers.zone_type' },
@@ -160,6 +202,35 @@ const MIROIRS = [
     constante: 'GenreDeQuestion',
     module: 'src/types/checkin.ts',
     colonne: 'engagement_checkins.question_kind',
+  },
+  // Ces deux-là, comme `POSTES` au-dessus et `LoopType` en dessous, manquaient à la liste —
+  // relevé en contre-lisant la contre-lecture du 20/09/2026 :
+  // `CLAUDE.md` affirmait que **toute** constante recopiant un `check` était déclarée ici, ce qui
+  // était faux le jour où la phrase a été écrite. La préférence de rappel est le cas où la dérive
+  // coûterait le plus cher à voir : un canal ajouté en base et pas ici part par le repli e-mail
+  // sans que rien ne le dise, et c'est `reminder_channel_for()` qui décide de ce qui est envoyé.
+  {
+    genre: 'type',
+    constante: 'CanalPrefere',
+    module: 'src/types/rappels.ts',
+    colonne: 'profiles.reminder_channel',
+  },
+  {
+    genre: 'type',
+    constante: 'IntentionTiming',
+    module: 'src/types/plan.ts',
+    colonne: 'plan_actions.intention_timing',
+  },
+  // Déclarer ce miroir n'a pris son sens qu'avec le geste qui l'accompagne : `LoopType` était
+  // nommé dans `src/constants/postes.ts`, mais six endroits réécrivaient `'commute' | 'extras'` à
+  // la main (`src/types/checkin.ts` quatre fois, `src/types/suivi.ts`, `checkin-card.tsx`) — donc
+  // garder le type nommé seul n'aurait gardé personne. Les six l'importent désormais, et toute
+  // nouvelle recopie en ligne ressortirait de la même façon : invisible à ce contrôle.
+  {
+    genre: 'type',
+    constante: 'LoopType',
+    module: 'src/constants/postes.ts',
+    colonne: 'engagement_checkins.loop_type',
   },
   {
     genre: 'type',

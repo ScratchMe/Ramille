@@ -3,7 +3,7 @@
 // alimentent vivent dans `src/lib/bilan-history.ts`.
 
 import { MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
-import { POSTES, type Poste } from '@/constants/postes';
+import { POSTES, type LoopType, type Poste } from '@/constants/postes';
 import { formatTonnesNu } from '@/lib/format';
 import { saisonDuJour, saisonsEcouleesDepuis } from '@/types/saison';
 
@@ -26,7 +26,7 @@ export type AssessmentSnapshot = {
 
 export type CheckinRecord = {
   id: string;
-  loopType: 'commute' | 'extras';
+  loopType: LoopType;
   periodLabel: string;
   periodStart: string;
   /**

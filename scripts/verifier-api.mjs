@@ -21,10 +21,15 @@
 //     recopiée dans les deux fichiers, et un aperçu dont le titre et l'image ne s'accordent pas est
 //     exactement ce que cette recopie promet d'éviter ;
 //   - **40 kg et non 0,0 t** : la règle des kilos sous la tonne, recopiée de `src/lib/format.ts`
-//     faute de pouvoir l'importer (constat A3-1, revenu par la porte de l'aperçu).
+//     faute de pouvoir l'importer (constat A3-1, revenu par la porte de l'aperçu) ;
+//   - **la carte rend aussi sur un chemin RELATIF** — la forme que Vercel donne à `request.url` en
+//     runtime Node.js —, **elle y rend la même image qu'à l'absolue, et une autre qu'à vide.** Les
+//     deux dernières se tiennent : l'égalité seule ne verrait pas une analyse qui perd la chaîne
+//     de requête, puisqu'elle la perdrait sur les deux appels à la fois ; c'est la comparaison à
+//     un rendu **sans paramètre** qui dit que la carte porte bien le chiffre de quelqu'un.
 //
-// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1), sur l'arbre de travail, chaque
-// mutation remise en place aussitôt :
+// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — sept mutations sur l'arbre de
+// travail, chacune remise en place aussitôt par l'opération inverse :
 //   - `api/fonts/SplineSans-Bold.ttf` renommé      → l'import lève, sortie 1 (la police est lue
 //     au chargement du module, avant tout rendu) ;
 //   - `initWasm` privé de son binaire (chemin faux)  → la carte part par le repli : « servie
@@ -33,7 +38,29 @@
 //     1200 par `fitTo`, et la hauteur suit), 1 écart ;
 //   - `TOTAL_TONNES_MAX = 200` → `1` dans partage.ts  → le titre et la description perdent le
 //     chiffre, 2 écarts ;
-//   - `kilos < 1000` → `< 10` dans partage.ts         → « 0,0 t CO₂e » au lieu de « 40 kg », 1 écart.
+//   - `kilos < 1000` → `< 10` dans partage.ts         → « 0,0 t CO₂e » au lieu de « 40 kg », 1 écart ;
+//   - la base factice de `new URL(request.url, 'http://localhost')` retirée dans share-card.ts
+//     → « carte sur URL relative : c'est le repli statique », 1 écart. Celle-là est venue d'une
+//     contre-lecture : les autres appels passent une URL **absolue**, donc ils traversaient tout
+//     aussi bien un `new URL(request.url)` nu — le point le plus discret de la checklist de
+//     `VERCEL.md` §1.6 n'était pas gardé, et ce fichier affirmait le contraire ;
+//   - `request.url` → `request.url.split('?')[0]` dans la base factice de share-card.ts
+//     → « identique à un rendu sans aucun paramètre », 1 écart. Celle-là vient de la
+//     contre-lecture de la contre-lecture, et elle a **changé le script au lieu de le confirmer** :
+//     la base factice restait en place, `new URL` réussissait, le statut valait 200 et le
+//     `cache-control` `public`, la carte ne portait plus aucun chiffre — et l'égalité avec le
+//     rendu absolu restait verte, la mutation dégradant les deux appels à l'identique. D'où le
+//     témoin sans paramètre. Deux choses sont parties au passage : l'assertion de **statut** de ce
+//     bloc, que rien ne pouvait faire tomber (`GET` n'a que deux sorties, toutes deux en 200), et
+//     l'évaluation inconditionnelle des deux dernières, qui faisait rendre à la mutation
+//     précédente trois écarts dont deux décrivaient une cause fausse ;
+//   - une exception jetée en tête du rendu de **chaque** fonction → 5 écarts chacune, et **pas un
+//     mot sur le statut ni sur le `content-type`**, alors que le rendu était intégralement cassé.
+//     Ces quatre assertions-là vivaient encore dans les blocs 1 et 2 pendant que cet en-tête
+//     annonçait, deux puces plus haut, les avoir retirées du bloc 1 bis — le même défaut une
+//     quatrième fois dans la même journée, relevé par une relecture des gardes. Elles sont
+//     parties, et les deux blocs disent désormais **pourquoi** plutôt que de laisser croire à une
+//     couverture qui n'existait pas.
 //
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
@@ -87,11 +114,14 @@ const TITRE_SANS_CHIFFRE = '<title>Mon empreinte transport</title>';
 // ── 1. La carte, sur un partage réaliste ──────────────────────────────────────────────────
 const carte = await GET(new Request(`${ORIGINE}/api/share-card?${PARAMS}`));
 const png = Buffer.from(await carte.arrayBuffer());
-verifier(carte.status === 200, `carte : statut ${carte.status}, attendu 200`);
-verifier(
-  carte.headers.get('content-type') === 'image/png',
-  `carte : content-type « ${carte.headers.get('content-type')} », attendu image/png`
-);
+// **Ni le statut ni le `content-type` ne sont affirmés, et c'est délibéré.** Les deux fonctions
+// enveloppent tout leur corps dans un `try/catch` par décision documentée — jamais de 500 sur un
+// endpoint lu par des aperçus de lien —, et leurs deux sorties passent par le même constructeur
+// de réponse, qui ne pose pas de statut et écrit le type en littéral. Aucune entrée, aucune panne
+// du rendu ne peut donc faire tomber ces deux assertions-là : mesuré le 20/09/2026 en jetant une
+// exception en tête du rendu, elles sont restées vertes pendant que cinq autres tombaient. Une
+// assertion qui ne peut pas tomber se lit comme de la couverture et n'en est pas ; c'est le
+// `cache-control` qui distingue le vrai rendu de son repli, et lui seul.
 const cache = carte.headers.get('cache-control') ?? '';
 verifier(
   cache.startsWith('public'),
@@ -111,14 +141,66 @@ verifier(
 );
 if (process.env.VERIFIER_API_PNG) writeFileSync(process.env.VERIFIER_API_PNG, png);
 
+// ── 1 bis. `request.url` RELATIF, comme Vercel le donne en runtime Node.js ─────────────────
+//
+// Le point le plus discret de la checklist de `VERCEL.md` §1.6 : en Function Node.js, contrairement
+// au runtime Edge, `request.url` est un **chemin**, pas une URL absolue — d'où la base factice de
+// `new URL(request.url, 'http://localhost')` dans `api/share-card.ts`. Les appels ci-dessus passent
+// une URL absolue, donc ils traverseraient tout aussi bien un `new URL(request.url)` nu : ils ne
+// gardent pas ce point. Relevé en contre-lisant la journée du 20/09/2026, qui affirmait le
+// contraire dans `VERCEL.md`.
+//
+// `GET` ne lit que `request.url`, donc un objet nu **est** la simulation fidèle — et c'est plus
+// juste qu'une `Request`, que Node refuse de construire sur un chemin relatif.
+const carteRelative = await GET({ url: `/api/share-card?${PARAMS}` });
+const pngRelatif = Buffer.from(await carteRelative.arrayBuffer());
+const relatifRendu = (carteRelative.headers.get('cache-control') ?? '').startsWith('public');
+verifier(
+  relatifRendu,
+  'carte sur URL relative : c’est le repli statique, donc le rendu a échoué sur un chemin ' +
+    'relatif — exactement ce que Vercel envoie en runtime Node.js'
+);
+// Les deux assertions suivantes ne se posent **que si le rendu a eu lieu** : sur le repli, les
+// trois images sont le même pixel de 69 octets, donc elles tomberaient toutes les trois en
+// décrivant chacune une cause différente, dont deux fausses. Un échec doit nommer ce qui s'est
+// passé, pas offrir trois hypothèses — c'est la leçon que la contre-lecture du 20/09/2026 a
+// payée ailleurs dans ce fichier, et elle vaut ici aussi.
+if (relatifRendu) {
+  // **L'image doit être la même qu'à l'absolue.** `new URL` peut parfaitement réussir en perdant
+  // la chaîne de requête : les trois paramètres retombent alors sur leur repli, satori rend
+  // « — / an » sans un chiffre, et le statut comme le `cache-control` restent ceux d'un rendu
+  // réussi. Le statut, lui, n'est pas affirmé ici : `GET` n'a que deux sorties et toutes deux
+  // rendent 200, donc aucune entrée ne pourrait faire tomber une telle assertion.
+  //
+  // L'égalité **octet à octet** suppose le rendu déterministe, ce qui se mesure et ne se raisonne
+  // pas : cinq passages consécutifs, cinq fois la même image (20/09/2026). Si satori ou resvg
+  // venaient à dater leur sortie, cette assertion clignoterait — elle se remplacerait alors par
+  // une comparaison de tailles, moins serrée mais stable.
+  verifier(
+    pngRelatif.equals(png),
+    `carte sur URL relative : ${pngRelatif.length} octets contre ${png.length} sur l'absolue — le ` +
+      `chemin s'analyse, mais il ne rend pas la même image`
+  );
+  // **Et la carte doit changer quand les paramètres changent.** L'égalité ci-dessus ne suffit
+  // pas, et c'est une mutation qui l'a dit : une analyse qui perd la chaîne de requête la perd
+  // sur les **deux** appels à la fois, donc les deux images restent identiques et l'assertion
+  // reste verte. Un rendu sans paramètre est le témoin — la carte y titre « — / an » sans le
+  // moindre chiffre et pèse encore 21 ko, donc le seuil de 10 000 octets de la section 1 la
+  // laisse passer tout autant.
+  const pngSansParametre = Buffer.from(await (await GET({ url: '/api/share-card' })).arrayBuffer());
+  verifier(
+    !pngRelatif.equals(pngSansParametre),
+    `carte sur URL relative : identique à un rendu sans aucun paramètre ` +
+      `(${pngSansParametre.length} octets) — l'URL s'analyse, mais la chaîne de requête n'atteint ` +
+      `pas le rendu, donc la carte ne porte le chiffre de personne`
+  );
+}
+
 // ── 2. La page de partage, même URL ───────────────────────────────────────────────────────
 const page = await partage(new Request(`${ORIGINE}/api/partage?${PARAMS}`));
 const html = await page.text();
-verifier(page.status === 200, `page : statut ${page.status}, attendu 200`);
-verifier(
-  (page.headers.get('content-type') ?? '').startsWith('text/html'),
-  `page : content-type « ${page.headers.get('content-type')} », attendu text/html`
-);
+
+
 verifier(
   html.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
   'page : le titre ne porte pas « 2,4 t CO₂e par an »'
@@ -177,5 +259,5 @@ if (ecarts.length > 0) {
 
 console.log(
   `api/ : carte de partage rendue (${png.length} octets, 1200 × 630, cache public) et page d'aperçu ` +
-    `conforme sur quatre URL.`
+    `conforme sur quatre URL — carte rejouée sur un chemin relatif, comme Vercel l'envoie.`
 );

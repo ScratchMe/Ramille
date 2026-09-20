@@ -1,8 +1,12 @@
 // Le parcours réel, joué de bout en bout contre une vraie stack Supabase — à chaque PR.
 //
-// **Le trou que ce script bouche, mesuré le 20/09/2026** : 15 143 lignes d'écrans et de composants
-// (`src/app`, `src/components`, `src/hooks`) et 1 216 lignes d'entrée-sortie (`src/lib` : les
-// requêtes, les RPC) n'étaient gardées par rien d'autre que la recette sur appareil. La CI prouvait
+// **Le trou que ce script bouche, mesuré le 20/09/2026** : 15 147 lignes d'écrans et de composants
+// (`src/app`, `src/components`, `src/hooks`) et 1 485 lignes d'entrée-sortie — **les fichiers de
+// `src/lib` qui importent le client Supabase**, pas `src/lib` entier, qui en compte 3 307 — n'étaient
+// gardées par rien d'autre que la recette sur appareil. Le second chiffre a d'abord été écrit
+// « 1 216 » sous la définition « `src/lib` », ce qui était faux des deux côtés : c'est la définition
+// qui compte, pas le nombre, et une mesure dont on ne peut pas redire la définition ne se vérifie
+// plus (relevé en contre-lisant la journée). La CI prouvait
 // que l'export web *démarre* et affiche quelques états sans réseau ; elle ne prouvait pas qu'une
 // seule requête ramène les bonnes lignes, qu'un seul RPC part avec les bons arguments, ni que le
 // plan montre les bonnes pistes. Un `.eq('status', 'complete')` serait passé vert.
@@ -46,7 +50,7 @@
 // Sur un échec, la page est capturée dans le dossier temporaire (le chemin est imprimé) et le texte
 // visible l'est aussi, avec les requêtes refusées : c'est ce qu'on regarde en premier, avant le code.
 //
-// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1), six mutations sur l'arbre de travail,
+// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1), sept mutations sur l'arbre de travail,
 // chacune suivie d'un export (le code est dans le bundle) et remise en place par l'opération inverse.
 //
 // Sur le premier profil, les trois familles que rien d'autre ne voyait — un filtre, un nom, un
@@ -69,6 +73,14 @@
 //   - la félicitation reformulée → « “Tu fais déjà l'essentiel sur ce poste.” n'est jamais apparu à
 //     l'écran ». Cette phrase-là est le second apport de la mutation : `attendreTexte` rendait un
 //     délai dépassé anonyme, elle nomme désormais le texte attendu, pour tous ses appels.
+//
+// Et une septième, le soir même, parce que l'assertion des kilos avait été ajoutée **sans** la
+// sienne — relevé en contre-lisant la contre-lecture, et c'est précisément ce que §1.1 interdit :
+//   - le seuil de `valeurEtUnite` (`src/lib/format.ts`) : `kilos < 1000` → `kilos < 10` → « « 11 kg
+//     CO₂e » n'est jamais apparu à l'écran », et **rien d'autre** : à 4 231 kg le premier profil
+//     reste en tonnes, donc il traverse le parcours entier avant que le cycliste ne tombe. C'est ce
+//     qui rend la mutation concluante — une qui aurait fait rougir les deux profils n'aurait pas
+//     dit laquelle des deux branches du formateur est gardée ici.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -495,6 +507,11 @@ try {
 
   etape('cycliste — restitution, puis le plan sans action');
   await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
+  // **Le second profil traverse l'autre branche du formateur**, et c'est une raison de plus de
+  // l'écrire : le premier rend des tonnes (« 4,2 t »), celui-ci des kilos. Le seuil vit dans
+  // `valeurEtUnite` (`src/lib/format.ts`) et aucun parcours ne le franchissait — seule l'assertion
+  // en base aurait tenu si l'écran s'était mis à dire « 0,0 t ».
+  await attendreTexte(`${ATTENDU_SOBRE.totalKg} kg CO₂e`);
   assurer(!(await barreVisible()), 'la barre d’onglets est visible sur la restitution du cycliste (C5.7)');
   const sobre = await session();
   const [resultatSobre] = await lire('assessment_results?select=total_co2_kg_year,dominant_poste_co2_kg_year', sobre.jeton);

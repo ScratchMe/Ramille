@@ -185,8 +185,21 @@ for (const { chemin, marqueur } of ROUTES) {
     // `__reactContainer$…` aujourd'hui — qu'aucun HTML statique ne peut porter : la chercher sur
     // `#root` (le conteneur de l'export, présent dans les vingt-et-une pages de `dist/`) est donc
     // le seul signal qui distingue « servi » de « monté ». Le préfixe est lâche exprès, le suffixe
-    // étant aléatoire et le nom propre à la version de React ; l'attente n'est pas bloquante en
-    // cas d'expiration, ce sont les contrôles ci-dessous qui disent ce qui a échoué.
+    // étant aléatoire et le nom propre à la version de React.
+    //
+    // **Et son expiration EST un échec** — ce résultat a été avalé par un `.catch(() => {})`
+    // jusqu'au 20/09/2026, sous un commentaire qui affirmait « ce sont les contrôles ci-dessous qui
+    // disent ce qui a échoué ». C'était une erreur de raisonnement, et elle vidait ce script de sa
+    // raison d'être : les contrôles ci-dessous lisent le corps de la page, or l'export **pré-rend**
+    // ce corps — le paragraphe ci-dessus le dit lui-même —, donc ils restent verts sur une app qui
+    // ne monte jamais. Mesuré en le cassant : le bundle d'entrée retiré de `dist/`, l'app morte dans
+    // le navigateur, ce script sortait **0** en annonçant « 12 routes rendues, aucun écran de
+    // panne ». C'est exactement la panne du 08/09/2026 qu'il existe pour attraper.
+    //
+    // `page.on('pageerror')` ne rattrape pas ce cas : il ne se déclenche que si le bundle
+    // s'exécute **et** lève. Un bundle qui ne se charge pas du tout — morceau en 404, `src`
+    // cassée, CSP — n'émet rien.
+    let monte = true;
     await page
       .waitForFunction(
         () => {
@@ -196,7 +209,9 @@ for (const { chemin, marqueur } of ROUTES) {
         null,
         { timeout: ATTENTE_MAX },
       )
-      .catch(() => {});
+      .catch(() => {
+        monte = false;
+      });
     // Puis le marqueur quand il y en a un, sinon la première trace de contenu — avec un plafond
     // large, un runner de CI étant plus lent qu'un poste. L'expiration n'est pas traitée comme
     // une erreur ici : c'est aux contrôles ci-dessous de dire *lequel* des trois a échoué, avec
@@ -222,7 +237,18 @@ for (const { chemin, marqueur } of ROUTES) {
     // signaler « le marqueur est absent » cacherait la cause derrière son symptôme.
     const panne = ECRANS_DE_PANNE.find((ecran) => texte.includes(ecran.texte));
 
-    if (!texte) {
+    if (!monte) {
+      // **En tête de la cascade**, pour la raison qui ordonne déjà les trois suivants : une app qui
+      // ne monte pas rend le corps pré-rendu, donc le texte et le marqueur seraient trouvés et le
+      // script se tairait. Dire « le marqueur est là » d'une page morte cacherait la cause
+      // derrière l'absence de symptôme.
+      echecs.push(
+        `${chemin} : React n'a jamais pris la main — le corps affiché est le pré-rendu de l'export,` +
+          ` pas l'app. Rien n'est cliquable. Regarder d'abord le chargement du bundle (un morceau` +
+          ` en 404, une « src » cassée), puis une exception au rendu du layout racine.` +
+          `${bloquantes[0] ? ` Exception relevée — ${bloquantes[0].slice(0, 200)}` : ''}`
+      );
+    } else if (!texte) {
       echecs.push(`${chemin} : la page est vide.${bloquantes[0] ? ` Cause probable — ${bloquantes[0].slice(0, 220)}` : ''}`);
     } else if (panne) {
       echecs.push(

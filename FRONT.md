@@ -357,7 +357,10 @@ exactement ce qui avait laissé passer le mauvais caractère.
   L'oubli ne se voit d'aucun côté pris séparément : quand `formatTonnes` a basculé en kilos sous
   1 t, le message de partage s'est mis à dire « 40 kg CO₂e » pendant que l'aperçu et l'image
   gardaient « 0,0 t CO₂e » — les deux chiffres du même partage se contredisaient, sur la seule
-  surface publique du produit, et aucune des deux suites de tests ne regarde les deux à la fois.
+  surface publique du produit. Chaque côté est épinglé depuis le 20/09/2026 — Jest sur
+  `src/lib/format.ts`, `scripts/verifier-api.mjs` sur le « 40 kg et non 0,0 t » d'`api/` — mais
+  **aucune suite ne compare les deux entre eux** : chacune pingle sa moitié sur une valeur écrite
+  à la main, donc changer la règle des deux côtés sauf un la laisse verte des deux côtés.
   Toucher à un formatage affiché impose donc de chercher son jumeau dans `api/`.
 - **Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche** — lire la
   variable dans un `const`, jamais en valeur d'une propriété homonyme ;

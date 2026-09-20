@@ -194,14 +194,22 @@ n'était dans aucune fiche :
 [`v1-27-dette-technique.md`](v1-27-dette-technique.md), écrit après la relecture des six jours du
 14 au 19/09. Il commence par ce que la relecture a trouvé **sain** — les six paires SQL/TypeScript
 comparées valeur par valeur à la base, les miroirs de `check`, le référentiel d'événements, les
-gardes d'annulation —, puis liste huit endroits où le produit est plus coûteux à changer qu'il ne
-devrait. Aucun ne bloque le lot 4 : c'est de la dette de **modification**, pas de fonctionnement.
-**Sa §12 (20/09/2026) est l'audit technique intégral et ce qu'il a changé** : la CI compare aussi les
-signatures de fonctions de `database.types.ts`, rend les deux fonctions d'`api/` sous Node, et
-**joue le parcours réel contre une stack Supabase locale à chaque PR** — le chemin nominal du profil
-de la recette, la base relue après chaque écriture (`TESTING.md` §2.6). Le dépôt a désormais trois
-suites, et la question « qu'est-ce qui pourrait casser sans qu'on s'en rende compte ? » a une réponse
-mesurée plutôt qu'un sentiment : ce qui reste hors garde est nommé en §12.5.
+gardes d'annulation —, puis range en §11 les endroits où le produit est plus coûteux à changer qu'il
+ne devrait, dans l'ordre où les prendre. Aucun ne bloque le lot 4 : c'est de la dette de
+**modification**, pas de fonctionnement.
+
+**Sa §12 (20/09/2026) est l'audit technique intégral et ce qu'il a changé.** La CI compare aussi les
+signatures de fonctions de `database.types.ts` et les **miroirs de `check`** à la base qui vient
+d'être construite, rend les deux fonctions d'`api/` sous Node — et la carte une seconde fois sur un chemin
+relatif, comme Vercel l'envoie à une Function Node.js —, et **joue le parcours réel contre une stack Supabase locale à chaque
+PR** : le chemin nominal sur **deux profils**, celui de la recette et un cycliste dont le plan ne
+porte aucune action, la base relue après chaque écriture (`TESTING.md` §2.6 et §2.7). Le dépôt a
+désormais trois suites, et la question « qu'est-ce qui pourrait casser sans qu'on s'en rende
+compte ? » a une réponse mesurée plutôt qu'un sentiment : ce qui reste hors garde est nommé en
+§12.5. Trois des neuf lignes de §11 ont été traitées le jour même. **Et la contre-lecture de la
+journée a été contre-lue à son tour** (§12.6) : elle portait elle-même des défauts de la famille
+qu'elle corrigeait, dont une garde qui affirmait un point qu'aucune entrée ne pouvait faire
+tomber. Le comparateur des miroirs y a gagné quatre entrées, passant de 17 à 21.
 
 **Un lot 6 est demandé et n'est pas instruit : l'administration** (demande du 17/09/2026, après la
 livraison du lot 5). Il n'appartient pas à l'audit du 09/09/2026 — c'est un besoin neuf, et il vit

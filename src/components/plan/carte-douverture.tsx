@@ -42,7 +42,8 @@ const ENTREE = 320;
  * cycle suivant se créait dans la nuit, et la seule trace en était la puce « Cadence : Hiver
  * 2026-2027 » qui changeait de texte sans rien annoncer.
  *
- * Trois choses à ne pas défaire :
+ * Quatre choses à ne pas défaire — et la quatrième est arrivée avec C5.7 sans que ce compte soit
+ * repris, ce qui la laissait hors de la liste qu'on croit lire :
  *
  * — **Ramille est dessous et hors du cadre.** La carte porte deux nombres — les points répondus et
  *   les changements — et la règle du produit est qu'elle n'apparaît jamais à côté d'un chiffre qui

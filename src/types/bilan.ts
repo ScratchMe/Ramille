@@ -166,10 +166,17 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
  * (`20260823094800_core_schema.sql` : `in ('in_progress', 'completed')`).
  *
  * La colonne est un `text` sans enum, donc `database.types.ts` la type `string` et rien, au
- * typecheck, ne distingue `'completed'` de `'complete'`. Six sites d'appel écrivaient la valeur de
- * mémoire le 20/09/2026 — un `.eq('status', …)` faux ne serait vu par personne avant la recette,
- * et il se lirait « Ton bilan n'est pas encore fait » pour tout le monde. Ils lisent ceci, et le
- * test épingle les deux valeurs sur celles du `check`, comme pour `PARTS_DU_SECOND_MODE`.
+ * typecheck, ne distingue `'completed'` de `'complete'`. **Chaque requête qui filtre sur ce statut
+ * lit donc ceci, et aucune ne réécrit la valeur** — un `.eq('status', …)` faux ne serait vu par
+ * personne avant la recette, et il se lirait « Ton bilan n'est pas encore fait » pour tout le
+ * monde. Le compte de ces sites ne s'écrit pas ici : celui qui y figurait (« six ») était faux le
+ * jour même — il y en avait neuf — et c'est la règle que `CLAUDE.md` s'est déjà donnée sur le point
+ * de résolution, où un « six endroits » écrit une fois avait vieilli en silence.
+ *
+ * Deux gardes, et elles ne regardent pas la même chose : le test de ce fichier épingle les deux
+ * valeurs **sans base**, et `scripts/verifier-miroirs-de-check.mjs` les compare au `check` réel
+ * dans le travail `db-tests`. La première dit que le code ne se contredit pas, la seconde que la
+ * base n'a pas changé d'avis.
  *
  * `enCours` est l'état que rien ne lit (la soumission l'écrit d'abord, pour qu'une panne entre
  * deux écritures ne laisse pas un bilan fantôme — CLAUDE.md) ; `complete` est celui sur lequel la

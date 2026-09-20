@@ -75,8 +75,16 @@ l'analyseur contre les deux formes.
 
 ## 3. Un script de garde que rien n'appelle
 
-**Mesuré.** Des onze scripts de `scripts/`, dix sont appelés par la CI, par `vercel.json` ou par un
-autre script. `rendre-favicon.mjs` ne l'est **par rien** — ni CI, ni `package.json`.
+**Mesuré.** Tous les scripts de `scripts/` sont appelés — par la CI, par `vercel.json`, par Jest ou
+par un autre script — **sauf un** : `rendre-favicon.mjs` ne l'est par rien, ni CI, ni
+`package.json`. Le compte exact ne s'écrit pas ici : il disait « onze scripts, dix appelés » et le
+dossier en portait quinze deux jours plus tard, ce qui est précisément le défaut du §6 de ce même
+document. La vérification se refait en une commande, et c'est elle qui compte :
+
+```bash
+for f in $(ls scripts/); do grep -rq "$f" .github/workflows/ package.json vercel.json scripts/ \
+  --exclude="$f" || echo "orphelin : $f"; done
+```
 
 Son en-tête dit : « Sans ce script, le SVG serait "source de vérité" en commentaire seulement : le
 PNG est ce qu'Expo lit, et rien ne garantirait qu'il descend encore du dessin d'à côté. » **C'est
@@ -292,20 +300,25 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   condition qui la rouvre.
 - **Le parcours réel en CI** (l'après-midi, sur le mandat « lead dev » du même jour). La question
   posée le matin — « y a-t-il quelque chose qui pourrait casser sans qu'on s'en rende compte ? » —
-  avait une réponse mesurée : oui, 15 143 lignes d'écrans et 1 216 lignes de requêtes que seule la
-  recette gardait. `scripts/verifier-parcours-reel.mjs` joue le chemin nominal contre la stack
-  Supabase locale à chaque PR, sur le profil de la recette, la base relue après chaque écriture
+  avait une réponse mesurée : oui, 15 147 lignes d'écrans, de composants et de hooks, et 1 485
+  lignes des fichiers de `src/lib` qui importent le client Supabase — que seule la recette gardait.
+  (Les deux chiffres sont ceux du 20/09 au soir ; le second avait d'abord été écrit « 1 216 » sous
+  la définition « `src/lib` », qui en compte 3 307 — c'est la définition qui se vérifie, pas le
+  nombre.) `scripts/verifier-parcours-reel.mjs` joue le chemin nominal contre la stack
+  Supabase locale à chaque PR, sur **deux profils** — celui de la recette et un cycliste au plan
+  à zéro action —, la base relue après chaque écriture
   (`TESTING.md` §2.6). Deux constats de plus au passage : **Docker tourne dans l'environnement
   d'agent** (`sudo dockerd &`), donc pgTAP et ce parcours s'y exécutent — ce dépôt avait écrit le
   contraire ; et les `EXPO_PUBLIC_*` sont mises en cache par Metro hors de sa clé, donc un export qui
   change de configuration exige `--clear`.
 
 - **Le comparateur des miroirs de `check`** (le soir même, §12.5 ligne 1 ci-dessous). Le relevé le
-  donnait « petit, au troisième miroir ou à la première dérive » ; il y en avait **dix-sept**, et la
-  dérive était déjà arrivée une fois en silence (`tc_access` a dit `aucun` avant de dire
-  `inexistant`). `scripts/verifier-miroirs-de-check.mjs` lit `pg_constraint` sur la base que les
+  donnait « petit, au troisième miroir ou à la première dérive » ; il y en avait **bien plus que
+  trois**, et la dérive était déjà arrivée une fois en silence (`tc_access` a dit `aucun` avant de
+  dire `inexistant`). Le compte exact ne s'écrit pas ici — le script l'imprime à chaque passage, et
+  il grossit au prochain miroir déclaré. `scripts/verifier-miroirs-de-check.mjs` lit `pg_constraint` sur la base que les
   migrations viennent de construire, dans le travail `db-tests`, et compare — `TESTING.md` §2.7,
-  sept mutations datées en tête du script. Trois choses valent d'être notées, parce qu'elles ont
+  douze mutations datées en tête du script. Trois choses valent d'être notées, parce qu'elles ont
   changé la forme prévue :
   - **le relevé se trompait de source.** Il proposait de relire le dernier `check (col in (…))` des
     fichiers de migration ; c'est faux dès qu'une contrainte est remplacée par un
@@ -402,3 +415,150 @@ Deux points, et aucun n'est un défaut :
   plan à zéro action, bloc 09 de la recette. Il coûtait bien moins que le premier — la mécanique
   était là —, et il a rendu trois branches d'écran qu'aucun des deux filets ne touchait. Ce qui
   reste au-dessus est inchangé.
+
+### 12.6 La contre-lecture de la contre-lecture (20/09/2026, le soir)
+
+La contre-lecture de la journée avait corrigé six affirmations fausses. **Relue à son tour, elle en
+portait elle-même.** Le fait mérite d'être écrit tel quel : une contre-lecture n'est pas une
+garantie, c'est un passage de plus, et rien ne dit qu'il faille s'arrêter au deuxième.
+
+Ce que la relecture du diff a trouvé, et qui a été corrigé :
+
+- **La garde d'`api/` affirmait un point qu'elle ne pouvait pas voir.** L'assertion neuve
+  `carteRelative.status === 200` ne pouvait tomber sous **aucune** entrée — `GET` n'a que deux
+  sorties, le rendu et le repli, et toutes deux rendent 200 —, et son message nommait pourtant la
+  base factice disparue. Pire : la garde ne prouvait pas que la chaîne de requête **survive** à
+  l'analyse. Mesuré en la cassant : `request.url` → `request.url.split('?')[0]` laisse la suite
+  **entièrement verte** alors que la carte ne porte plus aucun chiffre, parce que la mutation
+  dégrade les deux appels à l'identique et que le seuil de 10 000 octets tient encore à 21 ko. Un
+  troisième rendu, **sans aucun paramètre**, est le témoin qui tranche.
+- **Quatre miroirs de `check` n'étaient pas déclarés**, alors que `CLAUDE.md` promettait le jour
+  même que **toute** recopie l'était : `CanalPrefere` (la préférence de canal de rappel),
+  `IntentionTiming`, `LoopType` et `POSTES`. Déclarés et éprouvés — le comparateur passe de 17 à
+  **21** miroirs. La promesse d'exhaustivité est remplacée par ce qui est vrai : une liste
+  **déclarée**, plus les deux formes qui lui échappent structurellement (`TESTING.md` §2.7).
+- **Le geste qui rendait `LoopType` utile manquait.** Le type était nommé depuis
+  `src/constants/postes.ts`, mais six endroits réécrivaient `'commute' | 'extras'` à la main : le
+  déclarer n'aurait donc gardé personne. Les six l'importent désormais.
+- **Une garde neuve était partie sans sa mutation** — l'assertion des kilos du second profil, ce que
+  `TESTING.md` §1.1 interdit explicitement. Faite depuis : le seuil de `valeurEtUnite` passé de
+  `kilos < 1000` à `kilos < 10` fait tomber « 11 kg CO₂e » et **rien d'autre**, le premier profil
+  restant en tonnes à 4 231 kg.
+- **Cinq comptes ou pointeurs faux**, tous de la famille « une phrase qui décrit ce que le code
+  faisait avant » : 15 143 lignes au lieu de 15 147 dans l'en-tête du parcours ; le seuil kg/t
+  annoncé dans `src/types/resultat.ts` alors qu'il vit dans `src/lib/format.ts` ; deux lignes de
+  dette traitées annoncées dans `produit.md` là où le tableau en marque trois ; le profil du
+  parcours au singulier dans `v1-27` §12.2 et `TESTING.md` §2.6 après l'arrivée du second ; et
+  « sept mutations » pour le comparateur, qui en documentait huit.
+- **`VERCEL.md` comptait mal ce qu'il garde.** « Tout sauf le deuxième point s'éprouve » en oubliait
+  un cinquième : `maxDuration` n'est chronométré par rien. Les points gardés sont nommés un par un,
+  et les deux qui ne le sont pas aussi.
+
+**Ce qu'il faut en retenir, et qui vaut plus que les corrections** : les défauts d'une contre-lecture
+sont de la **même famille** que ceux qu'elle corrige — un compte qui se périme, une phrase restée sur
+l'état d'avant, une garde affirmée plus large qu'elle n'est. Écrire « j'ai contre-lu » ne met à l'abri
+de rien. La seule chose qui a réellement tranché, ici comme le matin, c'est **la mutation** : deux des
+six défauts ne se voyaient qu'en cassant ce que la garde prétendait garder, et l'un d'eux a survécu à
+une première correction avant de tomber sur la seconde.
+
+### 12.7 La relecture du dépôt entier (20/09/2026, après la précédente)
+
+Troisième passage de la journée, demandé après que le second eut trouvé seize défauts dans le
+premier. **Il en a trouvé neuf de plus**, dont trois en base. Le fait à retenir n'est pas le
+nombre : c'est qu'**aucun des trois passages n'a épuisé le sujet**, et que rien ne dit que le
+quatrième le ferait.
+
+**Traité tout de suite** (technique, sans conséquence sur le produit) :
+
+- **`cadreDuPlan` portait une branche qui ne pouvait rien changer** — `postesEnAvant.length === 0`
+  rendait le **littéral identique** au repli deux lignes plus bas, depuis que C5.3 avait retiré
+  `intro` et `noteDuCap` sans reprendre la justification. Le test qui la « gardait » affirmait
+  `.toBe(true)`, ce que le repli rendait déjà : il ne pouvait pas tomber.
+- **Et la doc dictait une régression.** Ce fichier et `CLAUDE.md` annonçaient « deux causes qu'un
+  `||` rendrait à moitié inéprouvables ». Appliquer cette phrase donne
+  `nombreDActions === 0 || postesEnAvant.length === 0`, en croyant la fusion neutre — et **un plan à
+  cinq actions dont aucune n'est en avant cesserait de chiffrer son cap**, exactement ce que le
+  commentaire de la branche jurait empêcher. Le test compare désormais les deux formes à nombre
+  d'actions égal ; la mutation le confirme, il tombe sur la fusion et sur elle seule.
+- **`/plan/pistes` jetait le message d'un remplacement refusé.** Le contrat d'`ActionCommitment` est
+  explicite — « C'est l'écran qui la porte » —, l'écran du plan le fait depuis le 14/09/2026, et
+  l'écran que C5.2 a ajouté après ce correctif ignorait le paramètre et ne rendait rien : la liste
+  se réordonnait sans qu'un mot dise pourquoi le choix n'avait pas été pris. Le message est rendu
+  **juste au-dessus de la liste** et non en tête d'écran, pour rester dans le champ de vision.
+- Deux comptes périmés dans des blocs de doc (« trois phrases en dépendent » pour un champ lu une
+  fois ; « Trois choses à ne pas défaire » suivi de quatre puces, la quatrième — celle qui interdit
+  une valeur par défaut sur la ligne de Ramille — tombant hors du compte annoncé).
+
+**Ouvert, et volontairement pas fait sans un mot de la personne qui pilote** — ça touche la RLS et
+ça déploie :
+
+1. **Le garde-fou de volume du canal de retour ne tient pas.** `feedback` a une policy `DELETE`
+   owner-scoped et le privilège qui va avec ; le trigger compte les lignes **vivantes** sur 24 h.
+   Dix retours, on efface, on recommence. Le droit à l'effacement n'est pas en cause (RGPD, annoncé
+   par `/confidentialite`) : le défaut est de compter ce que la personne peut effacer. Le correctif
+   ne retire pas le `DELETE` — il compte autre chose.
+2. **`assessment_answers` a une policy `UPDATE` sans prédicat de statut.** Un client peut réécrire
+   les réponses d'un bilan **déjà `completed`** : `assessment_results` reste figé sur l'ancien
+   chiffre, puis le prochain recalcul serveur fait bondir le total **sans qu'aucune ligne ne soit
+   ajoutée à `assessments`**. C6.4 justifie pourtant son RPC par « le bornage des colonnes », et son
+   commentaire dit : « Le dire évite qu'un prochain passage retire le RPC en simplifiant. » Le RPC
+   ne borne rien tant que la policy est là. Correctif : `and a.status = 'in_progress'` dans
+   `using`/`with check` — la soumission upserte avant la bascule, donc rien ne casse.
+3. **`assessments.submitted_at` n'est pas une date serveur.** Le trigger ne la pose qu'à la
+   **transition** ; ensuite la policy `UPDATE` owner-scoped laisse le client l'écrire. La garde
+   d'idempotence du plan croit comparer deux horodatages serveur. **Latent** : l'app n'envoie jamais
+   cette colonne, et l'engagement survit à la reconstruction (C2.2 fait son travail). Attention au
+   correctif : figer la colonne hors transition entre en conflit avec les fixtures pgTAP, qui
+   reculent la date par `update` — elles devraient désarmer le trigger comme le fait le backfill de
+   C2.4.
+
+**Ouvert aussi, plus léger** : quatre navigations vers `/connexion/retrouver` ne passent pas de
+`source` (les deux états vides du plan, celui du suivi, la session refusée) et sont comptées comme
+venant de l'accueil de l'onboarding — le défaut exact que `SOURCES_RETROUVER` dit avoir corrigé pour
+`lien`. Quelqu'un qui ouvre un rappel sur un téléphone neuf est enregistré comme une découverte.
+`CLAUDE.md` annonce « quatre endroits » ; il y a huit appelants.
+
+### 12.8 La garde de l'écran blanc était aveugle à l'écran blanc (20/09/2026)
+
+Le constat le plus grave de la journée, et il vient de la quatrième relecture — celle qui ne
+cherchait qu'une chose : **quelle assertion ne peut pas tomber ?**
+
+`scripts/verifier-rendu-export.mjs` existe pour attraper la page blanche du 08/09/2026. Il attendait
+bien le signal qui distingue « servi » de « monté » — une propriété que React pose sur son conteneur
+au montage —, **mais il avalait le résultat** (`.catch(() => {})`), sous un commentaire qui affirmait
+« ce sont les contrôles ci-dessous qui disent ce qui a échoué ». C'était une erreur de raisonnement :
+les contrôles ci-dessous lisent le corps de la page, or l'export d'Expo Router **pré-rend** ce corps —
+le paragraphe juste au-dessus le disait lui-même. Ils restent donc verts sur une app qui ne monte
+jamais.
+
+**Mesuré en le cassant** : le bundle d'entrée retiré de `dist/`, l'app intégralement morte dans le
+navigateur, le script sortait **0** en annonçant « 12 routes rendues, aucun écran de panne, aucune
+exception bloquante ». `page.on('pageerror')` ne rattrape pas ce cas : il ne se déclenche que si le
+bundle s'exécute **et** lève ; un bundle qui ne se charge pas du tout n'émet rien.
+
+L'attente est désormais une assertion, **en tête de la cascade** — une app qui ne monte pas rend le
+pré-rendu, donc dire « le marqueur est là » cacherait la cause derrière l'absence de symptôme. La
+même mutation rend maintenant un écart par route, nommant la vraie cause.
+
+**Trois autres assertions qui ne pouvaient pas tomber, corrigées dans la foulée** :
+
+- `verifier-api.mjs` affirmait le **statut** et le **content-type** des deux fonctions, dans les
+  blocs 1 et 2, pendant que son propre en-tête annonçait les avoir retirés du bloc 1 bis. Les deux
+  fonctions enveloppent tout leur corps dans un `try/catch` et leurs deux sorties passent par le
+  même constructeur de réponse : aucune panne du rendu ne pouvait les faire tomber — vérifié, une
+  exception jetée en tête du rendu donne cinq écarts et pas un mot sur ces quatre-là. Retirées ; la
+  suppression ne coûte rien, la même mutation rend toujours cinq écarts.
+- `26_pistes_et_premier_pas.test.sql` comparait deux `position()` pour affirmer que le refus `RM001`
+  précède la libération. **`position()` rend 0 quand le motif est absent** : sans la garde,
+  l'expression devenait `0 < 2373`, vraie, sous un message affirmant l'inverse. Elle ne voyait
+  qu'une réorganisation, jamais une suppression. Les deux motifs doivent désormais être présents.
+
+**Connu et non traité** (tautologies sans conséquence de production, à reprendre à l'occasion) :
+`mascotte.test.ts` compare `MASCOT_NAME` à `APP_NAME` alors que le source écrit
+`MASCOT_NAME = APP_NAME` ; `analytics.test.ts` compare un littéral au même littéral ;
+`carbon-reference.test.ts` compare deux alias à eux-mêmes et réécrit l'implémentation du repère 2050
+au lieu de l'éprouver.
+
+**La leçon, et c'est la quatrième fois dans la journée** : une garde s'écrit en se demandant ce qui
+doit la faire tomber, jamais ce qu'elle doit confirmer. Les quatre défauts ci-dessus étaient verts,
+documentés, et cités comme preuve dans trois fichiers.

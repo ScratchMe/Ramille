@@ -41,17 +41,19 @@ Trois suites, et la règle plutôt qu'une liste qui se périme au fichier suivan
   le répertoire.
 - **Le parcours réel** — le chemin nominal de bout en bout (questionnaire, restitution, plan,
   engagement, point répondu, suivi, suppression du compte) contre une vraie stack Supabase, la base
-  relue après chaque écriture. C'est ce qui garde les écrans et les requêtes, que les deux autres
+  relue après chaque écriture, sur **deux profils** : celui de la recette, et un cycliste dont le
+  plan ne porte aucune action. C'est ce qui garde les écrans et les requêtes, que les deux autres
   suites ne voient pas.
 
 Plusieurs de ces tests n'épinglent pas un comportement mais une **décision**, pour qu'elle ne
 soit pas « corrigée » par réflexe (ordre ACV des motorisations, source des facteurs, invariant
 SDES de la moyenne française, table de vérité du canal de rappel). Voir `CLAUDE.md` pour le
-détail des deux suites et des pièges qui vont avec.
+détail des trois suites et des pièges qui vont avec.
 
 ## Base de données
 
-Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1`.
+Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase que le dépôt appelle
+`TraceVerte-v1` et que son tableau de bord affiche `TraceVerte`.
 Après toute migration, régénérer `src/lib/database.types.ts` (types TypeScript du schéma).
 
 ## Licence et attributions

@@ -208,13 +208,29 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 - `maxDuration` se surveille si le démarrage à froid est lourd (un rendu d'image à partir de
   WASM l'est).
 
-**Et depuis le 20/09/2026, tout sauf le deuxième point s'éprouve avant de déployer** :
+**Et depuis le 20/09/2026, les points 1, 3 et 4 s'éprouvent avant de déployer** :
 `scripts/verifier-api.mjs` importe les deux fonctions sous Node 22 (type stripping natif, le même
 TypeScript que Vercel compile) et les appelle en CI — la carte doit rendre par son vrai chemin, pas
 par le repli `no-store` qui est la seule trace d'un satori, d'un resvg ou d'une police en panne.
-Ce que la garde ne voit pas, c'est précisément `includeFiles` : en local, `hb.wasm` est lu depuis
-`node_modules` sans traçage, donc une dépendance nouvelle qui charge un asset se vérifie encore au
-premier déploiement, dans *Project → Logs*.
+
+**Le troisième point a failli être affirmé sans être gardé**, et c'est la contre-lecture du soir
+même qui l'a rattrapé : tous les appels passaient une URL **absolue**, donc ils traversaient tout
+aussi bien un `new URL(request.url)` nu. La carte est donc rejouée une seconde fois sur un objet
+`{ url: '/api/share-card?…' }` — un chemin, comme Vercel l'envoie, et une simulation plus fidèle
+qu'une `Request`, que Node refuse de construire sur un relatif. **Et une troisième fois sans aucun
+paramètre**, parce que la contre-lecture du lendemain a montré que les deux premières ne suffisaient
+pas : une analyse qui perd la chaîne de requête la perd sur les **deux** appels à la fois, les deux
+images restent donc identiques, le statut vaut 200, le cache reste `public` — et la carte ne porte
+plus le chiffre de personne. C'est le rendu à vide qui tranche.
+
+**Ce que la garde ne voit pas, ce sont les points 2 et 5**, et les nommer vaut mieux que de les
+laisser dans un « tout sauf » — cette phrase-là en oubliait un :
+
+- `includeFiles` : en local, `hb.wasm` est lu depuis `node_modules` sans traçage, donc une
+  dépendance nouvelle qui charge un asset se vérifie encore au premier déploiement, dans
+  *Project → Logs* ;
+- `maxDuration` : le script rend, mesure l'image et s'arrête — il ne chronomètre rien. Un démarrage
+  à froid qui passerait la limite de la fonction laisserait cette CI entièrement verte.
 
 ### 1.7 Ce qui pèse dans une fonction
 

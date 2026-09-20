@@ -147,11 +147,18 @@ select throws_ok(
 -- tout ce que l'ordre a écrit avant de lever est annulé, et un `count(*) = 0` serait vrai même si la
 -- fonction archivait avant de refuser. Ce qui est réellement éprouvable est l'**ordre du corps** —
 -- le refus précède la libération — et il se lit sur la définition installée.
-select cmp_ok(
-  (select position('errcode = ''RM001''' in pg_get_functiondef('public.commit_plan_action(uuid,smallint[],text,boolean)'::regprocedure))),
-  '<',
-  (select position('archiver_engagement_de_laction' in pg_get_functiondef('public.commit_plan_action(uuid,smallint[],text,boolean)'::regprocedure))),
-  'le refus est levé avant toute libération : rien ne peut être archivé puis annulé'
+-- **`position()` rend 0 quand le motif est ABSENT**, et c'est ce qui rendait cette assertion
+-- incapable de voir la disparition de ce qu'elle nomme : sans la garde `RM001`, l'expression
+-- devenait `0 < 2373`, donc vraie, sous un message affirmant « le refus est levé avant toute
+-- libération » alors qu'il n'y avait plus de refus du tout. Elle ne détectait qu'une
+-- réorganisation, jamais une suppression. On exige donc les deux motifs **présents** avant de
+-- comparer leur ordre (relevé le 20/09/2026, en relisant les gardes).
+select ok(
+  (select position('errcode = ''RM001''' in pg_get_functiondef('public.commit_plan_action(uuid,smallint[],text,boolean)'::regprocedure))) > 0
+    and (select position('archiver_engagement_de_laction' in pg_get_functiondef('public.commit_plan_action(uuid,smallint[],text,boolean)'::regprocedure))) > 0
+    and (select position('errcode = ''RM001''' in pg_get_functiondef('public.commit_plan_action(uuid,smallint[],text,boolean)'::regprocedure)))
+      < (select position('archiver_engagement_de_laction' in pg_get_functiondef('public.commit_plan_action(uuid,smallint[],text,boolean)'::regprocedure))),
+  'le refus RM001 et la libération sont tous deux présents, et le refus est levé avant : rien ne peut être archivé puis annulé'
 );
 
 -- Avec `p_replace`, la libération a lieu **et** laisse sa trace : c'est le contrat de C2.2, que ce
