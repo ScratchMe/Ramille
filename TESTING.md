@@ -382,9 +382,9 @@ dans la stack ; `supabase db reset` remet la base à neuf.
 
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
-**Dix-sept endroits du code recopient une contrainte de la base** — une puce du questionnaire, un
-`.eq('status', …)`, une union de littéraux. Rien, depuis TypeScript, ne peut lire ce que la colonne
-accepte : la convention était donc d'épingler chaque miroir par un test Jest portant les mêmes
+**Le code recopie une contrainte de la base en bien plus d'endroits qu'on ne le croit** — une puce
+du questionnaire, un `.eq('status', …)`, une union de littéraux. Rien, depuis TypeScript, ne peut
+lire ce que la colonne accepte : la convention était donc d'épingler chaque miroir par un test Jest portant les mêmes
 valeurs **recopiées une seconde fois**. C'est une garde du code contre lui-même, et elle ne peut
 pas voir la seule chose qui compte ici : que la base ait changé d'avis. Un `check` élargi laisse le
 test vert et la liste courte ; un `check` resserré laisse le test vert et la puce refusée à la

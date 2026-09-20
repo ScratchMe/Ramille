@@ -212,6 +212,12 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 `scripts/verifier-api.mjs` importe les deux fonctions sous Node 22 (type stripping natif, le même
 TypeScript que Vercel compile) et les appelle en CI — la carte doit rendre par son vrai chemin, pas
 par le repli `no-store` qui est la seule trace d'un satori, d'un resvg ou d'une police en panne.
+
+**Le troisième point a failli être affirmé sans être gardé**, et c'est la contre-lecture du soir
+même qui l'a rattrapé : tous les appels passaient une URL **absolue**, donc ils traversaient tout
+aussi bien un `new URL(request.url)` nu. La carte est donc rejouée une seconde fois sur un objet
+`{ url: '/api/share-card?…' }` — un chemin, comme Vercel l'envoie, et une simulation plus fidèle
+qu'une `Request`, que Node refuse de construire sur un relatif.
 Ce que la garde ne voit pas, c'est précisément `includeFiles` : en local, `hb.wasm` est lu depuis
 `node_modules` sans traçage, donc une dépendance nouvelle qui charge un asset se vérifie encore au
 premier déploiement, dans *Project → Logs*.

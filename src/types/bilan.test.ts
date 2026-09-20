@@ -629,7 +629,8 @@ describe('les tables de réponses chiffrées', () => {
   // ici à la main comme les bornes du dessous : une constante qui dérive de son `check` ne se voit
   // ni au typecheck (la colonne est un `text`) ni en CI — elle se lit « Ton bilan n'est pas encore
   // fait », en production. Éprouvé le 20/09/2026 : `'completed'` → `'complete'` fait tomber ce
-  // seul test.
+  // test — et, depuis le même jour, le comparateur des miroirs (`TESTING.md` §2.7), qui lui rend
+  // deux écarts parce qu'il voit aussi la valeur que la base accepte et que plus personne n'écrit.
   it('les statuts de bilan sont ceux du check du schéma', () => {
     expect(Object.values(STATUT_DE_BILAN)).toEqual(['in_progress', 'completed']);
   });

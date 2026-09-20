@@ -1,9 +1,12 @@
 // Les listes de valeurs écrites en TypeScript disent-elles encore ce que le `check` du schéma
 // accepte ? (dette `v1-27` §11 ligne 8, §12.5)
 //
-// **Dix-sept endroits du code recopient à la main une contrainte de la base.** Une puce du
+// **Le code recopie à la main une contrainte de la base en bien des endroits.** Une puce du
 // questionnaire, un `.eq('status', …)`, une union de littéraux : rien, depuis TypeScript, ne peut
-// lire ce que la colonne accepte. La convention du dépôt était d'épingler chaque miroir par un test
+// lire ce que la colonne accepte. Leur compte ne s'écrit nulle part — il est imprimé à la fin de
+// chaque passage, et il grossit d'une ligne du tableau `MIROIRS` à la fois.
+//
+// La convention du dépôt était d'épingler chaque miroir par un test
 // Jest portant les valeurs **recopiées une seconde fois** — ce qui garde le code contre lui-même,
 // jamais contre la base. Un `check` élargi par une migration laisse le test vert et la liste
 // courte ; un `check` resserré laisse le test vert et la puce refusée à la soumission, en anglais,
@@ -34,7 +37,11 @@
 //     valeur proposée est **évaluée par Postgres** contre l'expression réelle de la contrainte. Et
 //     quand la liste est un intervalle d'entiers (`bornes: true`), les deux valeurs qui l'encadrent
 //     doivent être **refusées** — sans quoi un plafond déplacé en base ne se verrait pas, alors que
-//     la puce « 6+ » promet qu'il n'y a rien au-dessus.
+//     la puce « 6+ » promet qu'il n'y a rien au-dessus. **Ce genre-là ne convient qu'à une colonne
+//     dont toutes les contraintes ne parlent que d'elle** : l'expression évaluée est leur
+//     conjonction, donc en déclarer un sur une colonne portant une contrainte de cohérence entre
+//     deux colonnes (`engagement_checkins.status`, par exemple) ferait échouer la requête sur une
+//     colonne inconnue. L'échec est bruyant, pas silencieux — mais autant le savoir avant.
 //
 // **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — huit mutations, et ce que chacune
 // fait tomber :

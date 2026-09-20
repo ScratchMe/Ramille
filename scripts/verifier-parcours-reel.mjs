@@ -495,6 +495,11 @@ try {
 
   etape('cycliste — restitution, puis le plan sans action');
   await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
+  // **Le second profil traverse l'autre branche du formateur**, et c'est une raison de plus de
+  // l'écrire : le premier rend des tonnes (« 4,2 t »), celui-ci des kilos. Le seuil vit dans
+  // `src/types/resultat.ts` et aucun parcours ne le franchissait — seule l'assertion en base
+  // aurait tenu si l'écran s'était mis à dire « 0,0 t ».
+  await attendreTexte(`${ATTENDU_SOBRE.totalKg} kg CO₂e`);
   assurer(!(await barreVisible()), 'la barre d’onglets est visible sur la restitution du cycliste (C5.7)');
   const sobre = await session();
   const [resultatSobre] = await lire('assessment_results?select=total_co2_kg_year,dominant_poste_co2_kg_year', sobre.jeton);

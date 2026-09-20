@@ -301,9 +301,10 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   change de configuration exige `--clear`.
 
 - **Le comparateur des miroirs de `check`** (le soir même, §12.5 ligne 1 ci-dessous). Le relevé le
-  donnait « petit, au troisième miroir ou à la première dérive » ; il y en avait **dix-sept**, et la
-  dérive était déjà arrivée une fois en silence (`tc_access` a dit `aucun` avant de dire
-  `inexistant`). `scripts/verifier-miroirs-de-check.mjs` lit `pg_constraint` sur la base que les
+  donnait « petit, au troisième miroir ou à la première dérive » ; il y en avait **bien plus que
+  trois**, et la dérive était déjà arrivée une fois en silence (`tc_access` a dit `aucun` avant de
+  dire `inexistant`). Le compte exact ne s'écrit pas ici — le script l'imprime à chaque passage, et
+  il grossit au prochain miroir déclaré. `scripts/verifier-miroirs-de-check.mjs` lit `pg_constraint` sur la base que les
   migrations viennent de construire, dans le travail `db-tests`, et compare — `TESTING.md` §2.7,
   sept mutations datées en tête du script. Trois choses valent d'être notées, parce qu'elles ont
   changé la forme prévue :

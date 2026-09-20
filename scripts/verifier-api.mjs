@@ -33,7 +33,12 @@
 //     1200 par `fitTo`, et la hauteur suit), 1 écart ;
 //   - `TOTAL_TONNES_MAX = 200` → `1` dans partage.ts  → le titre et la description perdent le
 //     chiffre, 2 écarts ;
-//   - `kilos < 1000` → `< 10` dans partage.ts         → « 0,0 t CO₂e » au lieu de « 40 kg », 1 écart.
+//   - `kilos < 1000` → `< 10` dans partage.ts         → « 0,0 t CO₂e » au lieu de « 40 kg », 1 écart ;
+//   - la base factice de `new URL(request.url, 'http://localhost')` retirée dans share-card.ts
+//     → « carte sur URL relative : c'est le repli statique », 1 écart. Celle-là est venue d'une
+//     contre-lecture : les autres appels passent une URL **absolue**, donc ils traversaient tout
+//     aussi bien un `new URL(request.url)` nu — le point le plus discret de la checklist de
+//     `VERCEL.md` §1.6 n'était pas gardé, et ce fichier affirmait le contraire.
 //
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
@@ -111,6 +116,29 @@ verifier(
 );
 if (process.env.VERIFIER_API_PNG) writeFileSync(process.env.VERIFIER_API_PNG, png);
 
+// ── 1 bis. `request.url` RELATIF, comme Vercel le donne en runtime Node.js ─────────────────
+//
+// Le point le plus discret de la checklist de `VERCEL.md` §1.6 : en Function Node.js, contrairement
+// au runtime Edge, `request.url` est un **chemin**, pas une URL absolue — d'où la base factice de
+// `new URL(request.url, 'http://localhost')` dans `api/share-card.ts`. Les appels ci-dessus passent
+// une URL absolue, donc ils traverseraient tout aussi bien un `new URL(request.url)` nu : ils ne
+// gardent pas ce point. Relevé en contre-lisant la journée du 20/09/2026, qui affirmait le
+// contraire dans `VERCEL.md`.
+//
+// `GET` ne lit que `request.url`, donc un objet nu **est** la simulation fidèle — et c'est plus
+// juste qu'une `Request`, que Node refuse de construire sur un chemin relatif.
+const carteRelative = await GET({ url: `/api/share-card?${PARAMS}` });
+verifier(
+  carteRelative.status === 200,
+  `carte sur URL relative : statut ${carteRelative.status}, attendu 200 — la base factice de ` +
+    `\`new URL(request.url, …)\` a-t-elle disparu ? (VERCEL.md §1.6)`
+);
+verifier(
+  (carteRelative.headers.get('cache-control') ?? '').startsWith('public'),
+  'carte sur URL relative : c’est le repli statique, donc le rendu a échoué sur un chemin ' +
+    'relatif — exactement ce que Vercel envoie en runtime Node.js'
+);
+
 // ── 2. La page de partage, même URL ───────────────────────────────────────────────────────
 const page = await partage(new Request(`${ORIGINE}/api/partage?${PARAMS}`));
 const html = await page.text();
@@ -177,5 +205,5 @@ if (ecarts.length > 0) {
 
 console.log(
   `api/ : carte de partage rendue (${png.length} octets, 1200 × 630, cache public) et page d'aperçu ` +
-    `conforme sur quatre URL.`
+    `conforme sur quatre URL — carte rejouée sur un chemin relatif, comme Vercel l'envoie.`
 );

@@ -222,9 +222,9 @@ fichier est tenu à la main, et le typecheck ne peut pas voir cette
 dérive : `SUPABASE.md` §2.1.
 
 **Et depuis le 20/09/2026 il compare aussi les listes de valeurs**
-(`scripts/verifier-miroirs-de-check.mjs`) : dix-sept constantes et types TypeScript recopient un
-`check` du schéma, et jusque-là chacun était épinglé par un test portant les **mêmes valeurs
-recopiées une seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui
+(`scripts/verifier-miroirs-de-check.mjs`) : **toute constante ou union de littéraux qui recopie un
+`check` du schéma** y est déclarée, et jusque-là chacune était épinglée par un test portant les
+**mêmes valeurs recopiées une seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui
 compte, que la base ait changé d'avis. **Toucher à un `check` impose donc de suivre côté
 TypeScript**, et le contrôle dit lequel : `TESTING.md` §2.7.
 
@@ -265,7 +265,7 @@ contexte tourne en Web Fetch API (Request/Response), pas dans React Native. Util
 négociable, et son échec est muet** (`FUNCTION_INVOCATION_FAILED` générique, aucun détail côté
 client) : `VERCEL.md` §1.6, et le détail de chaque point avec les vrais logs qui l'ont diagnostiqué
 en `docs/architecture/v1-06-partage-social.md` §3. **Et depuis le 20/09/2026, les deux fonctions
-sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, cinq mutations datées en tête) :
+sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, six mutations datées en tête) :
 la carte par son vrai chemin, la page avec son chiffre — la panne muette a une garde, qui ne voit
 pas le seul point que Vercel ajoute, le traçage des assets.
 
