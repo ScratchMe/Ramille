@@ -284,8 +284,9 @@ La panne muette a donc une garde ; ce qu'elle ne voit pas est nommé en `VERCEL.
 **deux** points et non un : le traçage des assets et `maxDuration`, que rien ne chronomètre.
 
 **Routing** : `src/app/` (Expo Router, file-based), organisé autour d'une **barre à deux
-onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit :
-`plan.tsx` (le présent — action engagée, point de la période) et la pile `suivi/`, dont
+onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit, et
+**tous deux sont des piles depuis C5.2** : `plan/`, dont `plan/index.tsx` est le présent (action
+engagée, point de la période) et `plan/pistes.tsx` la liste exhaustive ; et `suivi/`, dont
 `suivi/index.tsx` est l'historique et `suivi/bilan.tsx` la restitution d'un bilan
 (`/suivi/bilan?id=`, `&nouveau=1` à la sortie du questionnaire). **La restitution n'est pas un
 troisième lieu** : c'est la dernière page d'un flux, ou le détail d'une entrée du suivi — d'où
@@ -305,12 +306,20 @@ Le parcours : `/` route sur `/plan` si un bilan complété existe, sinon `/onboa
 `/suivi/bilan?id=…&nouveau=1`, d'où l'on rejoint le plan. `/connexion` s'atteint depuis la
 restitution — transition imposée (`resultat_transition`) et bouton délibéré (`resultat_cta`),
 deux provenances que la mesure distingue — et depuis `/compte` (`compte`).
-`/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis quatre
-endroits, énumérés par `SOURCES_RETROUVER` : l'accueil de l'onboarding (« J'ai déjà un
+`/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis **huit**
+endroits, et `SOURCES_RETROUVER` les énumère — le compte ne s'écrit ici que parce que la liste est
+la source, pas ce paragraphe. Quatre sont d'origine : l'accueil de l'onboarding (« J'ai déjà un
 compte »), `/connexion/email` quand l'adresse est déjà prise, `/connexion` sur une collision
 Google, et un lien de connexion arrivé en **échec** (expiré, déjà utilisé), que le layout racine
 route ici avec son motif (`src/app/_layout.tsx`) — un lien valide, lui, ouvre la session et ne
-passe pas par cet écran. Le compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
+passe pas par cet écran. **Les quatre autres étaient muettes jusqu'au 20/09/2026** : les deux
+états vides du plan et celui du suivi (ouverts par C2.11) et l'écran de session refusée ne
+passaient aucune provenance, donc le repli les comptait toutes comme l'accueil de l'onboarding.
+La plus coûteuse était `rappel` — le rappel e-mail ouvert sur un appareil sans session,
+c'est-à-dire le chiffre même que C2.11 existe pour produire. **Et le garde qui les ramenait aux
+valeurs déclarées vivait dans l'écran, avec une seconde liste écrite à la main** ; il est
+désormais `sourceRetrouver` dans `src/types/analytics.ts`, dérivé de la liste et testé comme sa
+jumelle `sourceConnexion` — la règle du dépôt, qu'il ne suivait pas. Le compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
 
 **`/bilan/resultat` existe toujours, et c'est exprès** : un `<Redirect>` de quinze lignes vers
 `/suivi/bilan`, parce que l'adresse est citée dans `page-titles.ts`, dans l'en-tête
@@ -949,6 +958,8 @@ migration de C4.4, qui réécrit déjà ces deux fonctions. Voir
 `supabase/migrations/20260904090000_car_engine.sql`, `20260905140000_motorisation_hybride.sql`
 puis `20260905200000_cylindree_deux_roues.sql`.
 
+**Et depuis le 20/09/2026, les chemins que les documents citent sont vérifiés à chaque PR** (`scripts/verifier-renvois-des-documents.mjs`, `TESTING.md` §2.8) : un fichier renommé ou déplacé fait rougir la CI plutôt que d'attendre une relecture. Ce contrôle voit le **renommage**, pas le mensonge — un document peut nommer le bon fichier et raconter n'importe quoi de son contenu.
+
 **L'ordre des motorisations en ACV n'est pas celui qu'on attend, et un test pgTAP l'épingle
 pour qu'on ne le « corrige » pas** : hybride (0,146579) > thermique (0,142253) > hybride
 rechargeable (0,133900) > électrique (0,067365). La thermique de référence de l'ADEME est une
@@ -1062,7 +1073,12 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   des types —, et depuis le 20/09/2026 le parcours réel aussi, qui charge cet écran contre une
   vraie stack et s'arrêterait à l'étape « plan ».
 - **`assessments.submitted_at` vient du serveur** (trigger `stamp_assessment_submitted_at`, posé au
-  seul passage en `completed`). Il venait du téléphone, et la garde d'idempotence du plan le
+  seul passage en `completed`, **et privilège de colonne depuis le 20/09/2026**). Le trigger seul ne
+  suffisait pas, et cette phrase a été fausse un temps : il ne pose la date qu'à la **transition**,
+  donc un `update` ne touchant que cette colonne sur un bilan déjà complet passait au travers, et la
+  policy owner-scoped l'autorisait — la garde d'idempotence du plan croyait comparer deux
+  horodatages serveur. `authenticated` ne porte plus l'`update` que sur `status`, la seule colonne
+  que la soumission écrit. Il venait du téléphone, et la garde d'idempotence du plan le
   comparait à un horodatage serveur : un téléphone en avance faisait reconstruire le plan à chaque
   passage du cron — donc, avant cette migration, effacer l'engagement chaque nuit. Corollaire pour
   les tests : **une fixture ne peut plus choisir `submitted_at` à l'insert**, elle insère puis met la
@@ -1218,6 +1234,12 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   recalculer et régénérer doivent réussir ensemble) et le **bornage des colonnes** — la RLS filtre
   des lignes, jamais des colonnes, donc un `update` client sur cette table atteint les distances et
   les modes, donc le chiffre. Le dire évite qu'un prochain passage retire le RPC en simplifiant.
+  **Et jusqu'au 20/09/2026 le RPC ne bornait rien** : la policy qu'il est censé remplacer n'avait
+  aucun prédicat de statut, donc les réponses d'un bilan **complété** se réécrivaient en direct —
+  `assessment_results` restant figé, puis le premier recalcul serveur faisait bondir le total sans
+  qu'aucune ligne ne soit ajoutée à `assessments`. La policy est désormais bornée à
+  `status = 'in_progress'`, et le RPC passe parce qu'il est `security definer` sur une table sans
+  `force row level security`.
 - **Un seul paramètre porte la cause, et les deux conséquences s'en dérivent.** La première forme
   écrite était `p_forcer boolean`, qui obligeait à poser ailleurs la raison d'archivage — donc à
   tenir d'accord deux paramètres disant la même chose. `p_cause` (`'bilan'` par défaut,
@@ -1370,6 +1392,11 @@ export silencieusement incomplet.
 libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à
 `authenticated` revient à l'ouvrir à quiconque sait appeler l'API — d'où le trigger
 `enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et les bornes de longueur.
+**Et la table est insert-only côté client, ce que le schéma ne disait pas encore le 20/09/2026** :
+une policy `DELETE` owner-scoped traînait, sans justification dans sa migration et sans qu'aucun
+écran l'emprunte, alors que le trigger compte les lignes **vivantes** — dix retours, on efface, on
+recommence. Elle est partie ; l'effacement reste garanti là où il est promis, par la cascade de la
+suppression de compte et par la purge à 90 jours.
 **Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
 passer sans rien éprouver de **deux** façons, et les deux se sont produites — `TESTING.md` §2.5,
 qui dit aussi pourquoi un fichier pgTAP se rejoue en séquence entière.

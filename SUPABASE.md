@@ -90,6 +90,21 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   d'idempotence, un statut) ouvre **toutes** les colonnes. Une écriture qui ne doit toucher qu'à
   trois colonnes passe par un RPC `security definer` qui vérifie la propriété, et la table ne
   garde que `select` ; deux gardes indépendantes (pas de policy, pas de privilège).
+
+  **Et quand le client doit écrire UNE colonne et une seule, le bon outil est le privilège de
+  colonne**, pas un RPC de plus : `revoke update on t from authenticated;` puis
+  `grant update (col) on t to authenticated;`. C'est ce que Postgres donne exactement là où la RLS
+  s'arrête. Trois choses à savoir avant de s'en servir :
+    * **l'ordre compte** — un `grant` de colonne s'**ajoute** au privilège de table, il ne le
+      remplace pas, donc la révocation doit précéder sous peine de ne rien changer ;
+    * **`information_schema.role_table_grants` ne le voit pas.** Une matrice de privilèges bâtie
+      sur cette vue lit « plus aucun UPDATE » et ne dit rien de la colonne qui reste ouverte : il
+      faut une assertion séparée sur `column_privileges` ;
+    * **le refus est bruyant** (`42501`) mais seulement si l'ordre **nomme** la colonne interdite,
+      d'où des assertions qui en écrivent une à la fois.
+  Premier emploi dans ce dépôt : `assessments`, dont le client n'écrit que `status` à la
+  soumission alors qu'il portait l'`update` sur les cinq colonnes, `submitted_at` et `user_id`
+  comprises (`20260920160000`).
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
   `security definer`** — sinon, depuis le rôle applicatif, le comptage ne voit rien et le quota
   ne se déclenche jamais. Corollaire pour les tests : remplir un quota sous `postgres` par

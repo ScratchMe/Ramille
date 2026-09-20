@@ -5,7 +5,9 @@ import {
   sanitizeEventProps,
   sourceConnexion,
   SOURCES_CONNEXION,
+  SOURCES_RETROUVER,
   USAGE_EVENT_NAMES,
+  sourceRetrouver,
   type UsageEventName,
   type UsageEventPropsByName,
 } from './analytics';
@@ -115,6 +117,37 @@ describe('sourceConnexion', () => {
 
   it('ne déclare aucune provenance qu’aucun écran n’émet', () => {
     expect([...SOURCES_CONNEXION]).toEqual(['resultat_transition', 'resultat_cta', 'compte']);
+  });
+});
+
+describe('sourceRetrouver', () => {
+  // **La jumelle, et elle a coûté le même défaut que sa sœur, un écran plus loin.** Jusqu'au
+  // 20/09/2026 elle vivait dans `/connexion/retrouver` sous la forme d'une **seconde liste écrite
+  // à la main** — `if (source === 'email') …` sur trois valeurs — et l'écran n'étant pas testé,
+  // rien ne pouvait dire qu'elle avait manqué les quatre portes ouvertes par C2.11. Les quatre
+  // arrivées étaient donc comptées comme venant de l'accueil de l'onboarding.
+  //
+  // Cette boucle est ce qui l'aurait vu : elle tombe dès que le garde cesse d'être **dérivé** de
+  // la liste, quelle que soit la valeur oubliée.
+  it('reconnaît toutes les portes déclarées', () => {
+    for (const source of SOURCES_RETROUVER) {
+      expect(sourceRetrouver(source)).toBe(source);
+    }
+  });
+
+  it('retombe sur l’accueil pour une porte absente ou inconnue', () => {
+    // Un lien direct, un retour arrière : mieux vaut compté sur le chemin historique que perdu.
+    expect(sourceRetrouver(undefined)).toBe('onboarding');
+    expect(sourceRetrouver('')).toBe('onboarding');
+    // Et une valeur inconnue ne doit pas se rattraper en douce : elle se replie, visiblement.
+    expect(sourceRetrouver('compte')).toBe('onboarding');
+  });
+
+  // `session_refusee` est un **état de panne** et non une arrivée volontaire : elle a son nom pour
+  // pouvoir être soustraite. L'épingler séparément dit qu'elle n'est pas là par inadvertance.
+  it('distingue l’état de panne des portes volontaires', () => {
+    expect(sourceRetrouver('session_refusee')).toBe('session_refusee');
+    expect(SOURCES_RETROUVER).toContain('rappel');
   });
 });
 

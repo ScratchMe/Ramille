@@ -444,3 +444,46 @@ trouvé **quatre** miroirs non déclarés — `CanalPrefere` (la préférence de
 - **une borne que la base confie à une fonction** plutôt qu'à une expression. `IntentionDay` (1…7)
   fait face à `check (public.check_intention_days(intention_days))` : ni littéral à énumérer, ni
   expression nommant la colonne seule, donc aucun des trois genres ne s'y applique.
+
+### 2.8 Les renvois des documents, vérifiés à chaque PR
+
+**La famille de défaut la plus fréquente de ce dépôt n'est pas dans le calcul : c'est une phrase
+qui décrit ce que le code faisait avant.** Les quatre relectures du 20/09/2026 ont trouvé
+trente-cinq affirmations fausses et **aucune** erreur de calcul, aucun mauvais argument, aucune
+écriture d'état après garde. Une bonne part d'entre elles étaient des **renvois** : un seuil
+annoncé dans un fichier où il ne vit pas, un test cité sous un nom qu'il n'a plus, un écran
+désigné par un chemin qu'un chantier a déplacé.
+
+`scripts/verifier-renvois-des-documents.mjs` compare les chemins cités entre accents graves dans
+les **documents vivants** aux fichiers réellement présents. Il tourne dans le travail
+« Typecheck & lint », sans `npm ci` ni export : il ne lit que le système de fichiers.
+
+Celui qui l'a motivé : `CLAUDE.md` présentait le groupe d'onglets comme portant « plan.tsx … et
+la pile suivi/ », alors que C5.2 avait fait du plan **une pile aussi**. (Le nom révolu est écrit
+ici **sans accents graves**, et c'est une discipline que ce contrôle impose d'elle-même : un
+chemin entre accents graves annonce un fichier qui existe. Citer un nom mort comme s'il était
+vivant, c'est exactement ce qu'on cherche à empêcher — la garde a d'ailleurs rougi sur ce
+paragraphe-ci en premier.) Le paragraphe
+d'orientation le plus lu du dépôt se trompait deux fois, depuis des jours, et un `grep` l'aurait
+vu en une seconde — mais personne ne le lance.
+
+**Quatre choses à connaître avant d'y toucher :**
+
+- **Il voit le renommage, pas le mensonge.** Un document peut nommer le bon fichier et raconter
+  n'importe quoi de son contenu ; ça, seule une relecture le voit. C'est déjà la moitié de ce qui
+  nous est arrivé.
+- **Les documents datés sont hors périmètre**, volontairement : `docs/audit/` et les `v1-0N` sont
+  des instantanés d'un jour. Un renvoi périmé y est **exact** — il dit où la chose était alors.
+  Seuls `produit.md` et `v1-27` y entrent, parce que le dépôt les tient à jour.
+- **La comparaison se fait sur un suffixe de segment**, pas sur le nom de base : `plan/index.tsx`
+  doit pouvoir se distinguer de `suivi/index.tsx`, sans quoi un déplacement de dossier passerait.
+  Deux formes s'y ajoutent, chacune avec sa raison en tête du script : le chemin **servi**
+  (`/.well-known/assetlinks.json`, dont le fichier vit sous `public/`) et le nom **lisible** d'une
+  migration, sans son horodatage généré — cette dernière est bornée à `supabase/migrations/`.
+- **Une tolérance qui ne couvre plus rien fait rougir le contrôle**, et c'est la seconde moitié du
+  script. Une liste d'exceptions est exactement ce qui pourrit : celle qui a perdu son objet
+  attend qu'un vrai écart porte le même nom pour le couvrir à son tour. Chaque entrée porte donc
+  sa raison, et le passage vert les compte.
+
+**Éprouvé en le cassant** (§1.1), une mutation par branche : un chemin déplacé dans `CLAUDE.md`,
+et une tolérance qu'aucun document n'emprunte.

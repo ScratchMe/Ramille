@@ -306,7 +306,9 @@ export default function Suivi() {
                 son plan et ses points sont rattachés à son compte, pas à l'appareil. */}
             <TextLink
               label="J’ai déjà un compte"
-              onPress={() => router.push('/connexion/retrouver')}
+              onPress={() =>
+                router.push({ pathname: '/connexion/retrouver', params: { source: 'suivi_vide' } })
+              }
             />
           </View>
         </SafeAreaView>

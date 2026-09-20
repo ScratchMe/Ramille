@@ -78,6 +78,13 @@ jobs:
       # racine exclut les types Node, volontairement). Ici, sans export préalable, contrairement
       # aux quatre autres gardes.
       - run: node scripts/verifier-hypotheses-calcul.mjs
+      # **Les chemins que les documents citent existent-ils encore ?** La famille de défaut la
+      # plus fréquente de ce dépôt n'est pas dans le calcul mais dans la prose : quatre
+      # relectures du 20/09/2026 ont trouvé trente-cinq affirmations fausses et aucune erreur
+      # de calcul. Celle qui a motivé cette étape : `CLAUDE.md` désignait l'écran du plan par
+      # un fichier que C5.2 avait remplacé par une pile, dans son paragraphe d'orientation.
+      # Ni npm ci ni export requis — le script ne lit que le système de fichiers.
+      - run: node scripts/verifier-renvois-des-documents.mjs
       # Les dépendances n'étaient regardées par aucune des trois étapes. expo-doctor est la
       # garde la moins chère : versions incohérentes avec le SDK, modules natifs mal déclarés,
       # configuration d'app qui ne correspond plus aux paquets installés — tout ce qui ne se

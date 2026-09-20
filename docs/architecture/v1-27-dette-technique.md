@@ -489,8 +489,10 @@ quatrième le ferait.
   fois ; « Trois choses à ne pas défaire » suivi de quatre puces, la quatrième — celle qui interdit
   une valeur par défaut sur la ligne de Ramille — tombant hors du compte annoncé).
 
-**Ouvert, et volontairement pas fait sans un mot de la personne qui pilote** — ça touche la RLS et
-ça déploie :
+**Traité le 20/09/2026 au soir, après accord** (migration
+`20260920160000_trois_surfaces_plus_larges_que_leur_intention.sql`, assertions en
+`30_surfaces_d_ecriture.test.sql`, trois mutations datées). Le relevé est gardé tel quel parce
+qu'il dit pourquoi **deux des trois correctifs ne sont pas ceux qui étaient proposés ici** :
 
 1. **Le garde-fou de volume du canal de retour ne tient pas.** `feedback` a une policy `DELETE`
    owner-scoped et le privilège qui va avec ; le trigger compte les lignes **vivantes** sur 24 h.
@@ -512,11 +514,52 @@ quatrième le ferait.
    reculent la date par `update` — elles devraient désarmer le trigger comme le fait le backfill de
    C2.4.
 
-**Ouvert aussi, plus léger** : quatre navigations vers `/connexion/retrouver` ne passent pas de
-`source` (les deux états vides du plan, celui du suivi, la session refusée) et sont comptées comme
-venant de l'accueil de l'onboarding — le défaut exact que `SOURCES_RETROUVER` dit avoir corrigé pour
-`lien`. Quelqu'un qui ouvre un rappel sur un téléphone neuf est enregistré comme une découverte.
-`CLAUDE.md` annonce « quatre endroits » ; il y a huit appelants.
+**Ce que la mise en œuvre a changé au plan ci-dessus**, et qui vaut plus que les correctifs :
+
+- **Pour `feedback`, le relevé recommandait de « ne pas retirer le DELETE (droit à l'effacement
+  RGPD) » et de compter autre chose. C'était une prémisse non vérifiée, et elle était fausse** : la
+  policy ne porte **aucune** justification dans sa migration, là où chaque autre décision du même
+  fichier porte la sienne ; aucun écran ne l'emprunte (`src/lib/feedback.ts` ne fait qu'un
+  `insert`) ; et `src/app/confidentialite.tsx` documente déjà la table comme « insert-only côté
+  client ». Le schéma contredisait la page qui l'explique aux gens. Le DELETE est donc parti, ce
+  qui ferme le trou sans table annexe, sans changement d'export et sans toucher aux types.
+  L'effacement reste garanti là où il est promis : cascade à la suppression de compte, purge à
+  90 jours.
+- **Pour `submitted_at`, le correctif n'est pas un trigger mais un privilège de COLONNE.** Le
+  relevé prévenait qu'un trigger entrerait en conflit avec les fixtures pgTAP qui reculent la
+  date ; le privilège de colonne ne les touche pas (elles tournent en propriétaire), resserre les
+  **quatre** colonnes du même geste plutôt que la seule qu'on avait remarquée — `authenticated`
+  pouvait écrire `id` et `user_id` aussi —, et c'est l'outil que Postgres donne exactement là où
+  la RLS s'arrête. Premier emploi dans ce dépôt ; `SUPABASE.md` §2.2 dit ses trois pièges, dont
+  celui-ci : `role_table_grants` ne voit pas les privilèges de colonne, donc une matrice bâtie sur
+  cette vue lit « plus aucun UPDATE » et ne dit rien de la colonne restée ouverte.
+- **Et la matrice du test `18` a rougi d'elle-même**, ce qui est la garde faisant son travail :
+  elle porte le schéma entier, donc toute migration qui change un privilège doit passer par elle.
+  Deux assertions y ont été ajoutées pour la forme qu'elle ne peut pas voir.
+
+**Traité aussi le 20/09/2026 au soir** (migration
+`20260920170000_les_quatre_portes_que_la_mesure_ne_voyait_pas.sql`) : quatre navigations vers
+`/connexion/retrouver` ne passaient pas de `source` — les deux états vides du plan, celui du suivi,
+la session refusée — et étaient comptées comme venant de l'accueil de l'onboarding, sur leurs
+**deux** dimensions. Le défaut exact que le commentaire de `SOURCES_RETROUVER` décrit pour `lien`,
+vivant à quatre autres endroits pendant qu'il l'expliquait. La plus coûteuse est `rappel` :
+quelqu'un qui ouvre le rappel e-mail sur un appareil sans session, c'est-à-dire le chiffre même
+que C2.11 existe pour produire, rendu indiscernable d'une découverte.
+
+**Et la cause tenait à un endroit, pas à quatre oublis.** Le garde qui ramène la provenance aux
+valeurs déclarées — `sourceMesuree` — vivait **dans l'écran**, sous la forme d'une **seconde liste
+écrite à la main** (`if (source === 'email') …` sur trois valeurs), alors que sa jumelle
+`sourceConnexion` vit dans `src/types/analytics.ts` et se dérive de la sienne. Or les écrans ne sont
+pas testés, par décision : **rien ne pouvait le dire**. C'est la règle du dépôt qui n'était pas
+suivie — toute dérivation pure décidant d'une navigation vit dans `src/types`. Elle s'y trouve
+désormais, sous le nom `sourceRetrouver`, dérivée et éprouvée : remettre la liste manuelle fait
+tomber deux assertions, avec le message du défaut réel (`rappel` → `onboarding`).
+
+Ce que la migration fait, elle, est mince et son en-tête le dit : elle réécrit la **description** du
+référentiel, seul endroit où la base peut porter les valeurs attendues — `check_usage_event_props`
+ne compte que des clés et des longueurs. **Aucun contrôle ne compare cette description à
+`SOURCES_RETROUVER`** : c'est de la prose, et le comparateur de miroirs ne lit que des `check`. La
+parade reste l'habitude, et c'est écrit plutôt que supposé.
 
 ### 12.8 La garde de l'écran blanc était aveugle à l'écran blanc (20/09/2026)
 

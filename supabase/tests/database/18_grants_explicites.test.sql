@@ -24,7 +24,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(17);
 
 -- ── 1. La matrice entière ───────────────────────────────────────────────────────────────
 -- Les sept privilèges de table qui touchent aux données ou au schéma, pour les deux rôles
@@ -60,7 +60,6 @@ select bag_eq(
        ('authenticated', 'profiles', 'UPDATE'),
        ('authenticated', 'assessments', 'SELECT'),
        ('authenticated', 'assessments', 'INSERT'),
-       ('authenticated', 'assessments', 'UPDATE'),
        ('authenticated', 'assessment_answers', 'SELECT'),
        ('authenticated', 'assessment_answers', 'INSERT'),
        ('authenticated', 'assessment_answers', 'UPDATE'),
@@ -74,7 +73,6 @@ select bag_eq(
        ('authenticated', 'plan_action_commitments_archive', 'SELECT'),
        ('authenticated', 'feedback', 'SELECT'),
        ('authenticated', 'feedback', 'INSERT'),
-       ('authenticated', 'feedback', 'DELETE'),
        ('authenticated', 'push_tokens', 'SELECT'),
        ('authenticated', 'push_tokens', 'DELETE'),
        ('authenticated', 'usage_events', 'INSERT'),
@@ -211,6 +209,36 @@ select is(
         or has_table_privilege('authenticated', c.oid, 'select'))),
   0,
   'schéma analytics : aucune table ni vue lisible depuis anon ou authenticated'
+);
+
+-- ── Le privilège de COLONNE, forme que la matrice ci-dessus ne peut pas porter ───────────────
+--
+-- `information_schema.role_table_grants` ne voit que les privilèges de **table** : depuis le
+-- 20/09/2026, `assessments` n'y porte plus d'UPDATE du tout, et ce qui reste — l'unique colonne
+-- que la soumission écrit — vit dans `column_privileges`. Sans ces deux assertions, le
+-- resserrement se lirait « le client ne peut plus rien mettre à jour », et un futur `grant update`
+-- de table rentrerait sans bruit dans la matrice comme dans le produit.
+--
+-- C'est le seul endroit du schéma qui utilise cette forme, et c'est voulu : la RLS filtre des
+-- lignes, jamais des colonnes, donc c'est l'outil qui manquait pour borner une table dont une
+-- seule colonne est écrite par le client.
+
+select is(
+  (select array_agg(column_name::text order by column_name)
+     from information_schema.column_privileges
+    where table_schema = 'public' and table_name = 'assessments'
+      and grantee = 'authenticated' and privilege_type = 'UPDATE'),
+  array['status'],
+  'assessments : `status` est la seule colonne que le client peut mettre à jour'
+);
+
+select ok(
+  not exists (
+    select 1 from information_schema.role_table_grants
+     where table_schema = 'public' and table_name = 'assessments'
+       and grantee = 'authenticated' and privilege_type = 'UPDATE'
+  ),
+  'et le privilège UPDATE de table a bien disparu : sinon le grant de colonne ne bornerait rien'
 );
 
 select * from finish();
