@@ -821,3 +821,34 @@ désormais dans `src/tests/ecrans/`.
 `src/lib` et `src/constants`. Un test d'écran n'y entre pas, donc la couverture affichée ne
 bougera pas d'un point — à corriger le jour où cette famille grandit, sans quoi le chiffre dira
 l'inverse de ce qui se passe.
+
+### 12.12 Ce que la session de design a laissé en dette (20/09/2026)
+
+La session de design du **moment du compte** (`docs/design/v1-21-le-moment-du-compte/`) a produit
+deux dettes, l'une assumée et l'autre à corriger dans le chantier qui suivra.
+
+**Assumée — le code à usage unique ne referme pas §4.3 structurellement, et on ne bâtira pas le
+mécanisme qui le ferait.** Mesuré le jour même : `POST /auth/v1/verify` avec `type: 'email_change'`
+et le jeton, **sans aucune session**, confirme l'adresse et rend une session complète sur le compte
+du demandeur. Le jeton est un porteur, pas un jumeau du vérifieur PKCE. Passer du lien au code
+supprime donc le fait qu'un **clic** confirme — ce qui est le gros du danger, un réflexe contre une
+démarche — mais un tiers qui recopierait le code confirmerait toujours l'adresse sur le compte d'un
+autre, et sa propre app basculerait sur cette session. La seule forme qui refermerait la porte
+serait un code engendré, envoyé et vérifié par le produit, la vérification exigeant la session
+demanderesse — donc des écritures dans `auth.users` et `auth.identities` depuis une fonction à nous,
+c'est-à-dire un second mécanisme d'authentification à tenir à côté de GoTrue. Le gain ne porte que
+sur le tiers qui recopie un code qu'il n'a pas demandé ; le coût est un chemin d'authentification
+maison. **On ne le fait pas**, et la parade reste le texte de l'e-mail, déjà en production depuis le
+20/09/2026 : il dit que l'adresse vient d'être saisie et qu'il n'y a rien à faire. La condition de
+réouverture est un incident réel, ou le jour où l'adresse d'un tiers vaut quelque chose à prendre.
+
+**À corriger — le retour de lien ne balaie pas les marques locales de la session qu'on quitte.**
+`effacerLesMarquesLocales` (`src/lib/compte.ts`) n'est appelée que par les deux sorties de cet
+appareil, suppression de compte et déconnexion ; `createSessionFromUrl` puis `router.replace('/')`
+dans `src/app/_layout.tsx` change d'utilisateur **sans rien balayer**. Après une collision
+retrouvée, le compte retrouvé lit donc les marques de l'autre — dont l'annonce de rattachement et
+l'étape du premier parcours, qui décide de la barre d'onglets. Le défaut est de la même famille que
+la marque `a_un_bilan` de C4.5 : une marque locale qui survit à un changement d'utilisateur. La
+réserve à tenir en le corrigeant est le **brouillon de bilan** : le balayer effacerait un
+questionnaire en cours, ce que ni la déconnexion ni la suppression n'ont à ménager mais qu'un
+changement de compte par lien, lui, doit peser.
