@@ -284,8 +284,9 @@ La panne muette a donc une garde ; ce qu'elle ne voit pas est nommé en `VERCEL.
 **deux** points et non un : le traçage des assets et `maxDuration`, que rien ne chronomètre.
 
 **Routing** : `src/app/` (Expo Router, file-based), organisé autour d'une **barre à deux
-onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit :
-`plan.tsx` (le présent — action engagée, point de la période) et la pile `suivi/`, dont
+onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit, et
+**tous deux sont des piles depuis C5.2** : `plan/`, dont `plan/index.tsx` est le présent (action
+engagée, point de la période) et `plan/pistes.tsx` la liste exhaustive ; et `suivi/`, dont
 `suivi/index.tsx` est l'historique et `suivi/bilan.tsx` la restitution d'un bilan
 (`/suivi/bilan?id=`, `&nouveau=1` à la sortie du questionnaire). **La restitution n'est pas un
 troisième lieu** : c'est la dernière page d'un flux, ou le détail d'une entrée du suivi — d'où
@@ -948,6 +949,8 @@ moteur**, donc rien à corriger en urgence ; le bon moment pour les ramener au p
 migration de C4.4, qui réécrit déjà ces deux fonctions. Voir
 `supabase/migrations/20260904090000_car_engine.sql`, `20260905140000_motorisation_hybride.sql`
 puis `20260905200000_cylindree_deux_roues.sql`.
+
+**Et depuis le 20/09/2026, les chemins que les documents citent sont vérifiés à chaque PR** (`scripts/verifier-renvois-des-documents.mjs`, `TESTING.md` §2.8) : un fichier renommé ou déplacé fait rougir la CI plutôt que d'attendre une relecture. Ce contrôle voit le **renommage**, pas le mensonge — un document peut nommer le bon fichier et raconter n'importe quoi de son contenu.
 
 **L'ordre des motorisations en ACV n'est pas celui qu'on attend, et un test pgTAP l'épingle
 pour qu'on ne le « corrige » pas** : hybride (0,146579) > thermique (0,142253) > hybride
