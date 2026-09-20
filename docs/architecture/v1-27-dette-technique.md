@@ -177,7 +177,42 @@ et rien ne les sépare. Une règle ajoutée au mauvais endroit changerait le tot
 `normaliserReponses` leur application en séquence. **Risque produit réel** — cette fonction décide de
 ce qui part à la soumission — donc elle relève d'une page de décision, pas d'un nettoyage.
 
-## 9. Ce qui a été traité le soir même
+## 9. Le dépôt et le distant ne s'apparient plus migration par migration
+
+**Mesuré le 19/09/2026.** Le projet distant porte **91** enregistrements de migration, le dépôt
+**84** fichiers. Dix noms du distant n'ont pas de fichier homonyme, trois fichiers n'ont pas
+d'enregistrement homonyme, et **49 des 84** portent un horodatage différent de celui enregistré à
+distance.
+
+**Ce que ce n'est pas.** Ce n'est **pas** une divergence de schéma, et il faut le dire avant tout le
+reste parce que la conclusion inverse est tentante. Les écarts relevés sont des **découpages** et
+des **renommages** au moment d'appliquer : le distant a `actions_chiffrees_1_schema`,
+`_2_recompute`, `_3_estimateur` là où le dépôt a un seul `actions_chiffrees.sql` ;
+`horodatage_serveur_usage_events` là où le dépôt a `horodatage_serveur.sql`. Et le contenu des
+enregistrements sans homonyme a été retrouvé dans le dépôt — le `set search_path` de
+`resolve_car_mode` est bien en `car_engine.sql` l. 76, la bascule de résolution en
+`cylindree_deux_roues.sql` l. 96 et 121.
+
+La preuve de fond est ailleurs, et elle est plus forte que l'appariement des noms : **la CI
+construit le schéma à partir des seuls fichiers du dépôt**, et 536 assertions pgTAP y passent —
+dont celles qui éprouvent les privilèges, les `search_path` et les refus d'écriture.
+
+**Ce que ça coûte quand même.** On ne peut pas, en partant d'un enregistrement distant, retrouver le
+fichier qui l'a produit. C'est exactement ce qui fonde la règle la plus contre-intuitive de
+`SUPABASE.md` — *réécrire une fonction part de `pg_get_functiondef`, jamais du fichier qui l'a
+créée*. Cette règle est un contournement, pas une solution, et elle a déjà été oubliée une fois
+(C2.2, trois gardes supprimées en silence).
+
+**Ce qu'il ne faut pas faire** : réécrire l'historique des migrations pour le faire coïncider. Un
+historique de migrations est un journal, pas un état ; le réécrire pour qu'il soit joli est le seul
+geste qui puisse casser une base qui va bien.
+
+**Ce qu'on peut faire, et c'est modeste** : appliquer désormais les migrations avec **le même nom
+et le même horodatage que le fichier**, pour que la divergence cesse de croître. Les trois dernières
+(`classement_du_plan`, `teletravail_en_jours`, `le_contexte_sort_du_questionnaire`) ont toutes
+dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées.
+
+## 10. Ce qui a été traité le soir même
 
 - **`estRaisonAnnoncable`** (`src/types/plan.ts`), écrit le matin et appelé nulle part : supprimé,
   son assertion réécrite sur `RAISONS_ANNONCABLES`.
@@ -189,7 +224,7 @@ ce qui part à la soumission — donc elle relève d'une page de décision, pas 
 - **La signature morte de `02_generate_plan_cycle_for_user`** — une garde de privilège que C6.4 avait
   fait disparaître en silence, rattrapée par la CI et corrigée.
 
-## 10. Dans quel ordre, si on en fait quelque chose
+## 11. Dans quel ordre, si on en fait quelque chose
 
 | | Chantier | Effort | Quand |
 |---|---|---|---|
@@ -199,6 +234,7 @@ ce qui part à la soumission — donc elle relève d'une page de décision, pas 
 | 4 | §4 — la décision d'affichage du plan | moyen, risque réel | page de décision d'abord, recette dédiée ensuite |
 | 5 | §5 — le découpage des fonctions de calcul | grand | à instruire, jamais en marge d'une vague |
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | page de décision |
+| 7 | §9 — appliquer les migrations sous le nom et l'horodatage du fichier | une habitude | à la prochaine migration |
 
 **Aucune de ces lignes ne bloque le lot 4**, et c'est volontaire : la dette relevée est de la dette
 de *modification*, pas de fonctionnement. Le produit se comporte comme il doit ; il est seulement
