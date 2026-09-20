@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Fragment, useState } from 'react';
 import { Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
@@ -160,6 +161,35 @@ export function FeuilleRappels({
                   <TextLink
                     label="Ouvrir les réglages du téléphone"
                     onPress={() => void Linking.openSettings()}
+                    role="link"
+                    type="small"
+                    weight={600}
+                    themeColor="accentText"
+                    containerStyle={styles.reglages}
+                  />
+                )}
+
+                {/* **La porte qui manquait, et c'est le seul ajout de produit du 20/09/2026.**
+                    Cette feuille demande « comment te faire signe ? » et grisait « Par email »
+                    avec « Rattache un compte pour l'activer » — sans rien à toucher. C'était le
+                    seul écran du produit qui pose la question à laquelle le compte répond, et le
+                    seul où on ne le proposait pas. Même forme, même place et même raison que le
+                    lien des réglages juste au-dessus : rendu **dans** la boucle, parce que
+                    détaché il se lirait comme appartenant à « Sans rappel ».
+
+                    Le `Modal` doit être refermé avant de naviguer — sur natif, une route poussée
+                    sous un `Modal` ouvert reste dessous. On ne change donc pas la préférence : on
+                    rend celle qui est déjà là, et la personne revient à une feuille qu'elle a
+                    déjà vue. Ce qu'elle trouve au retour est juste sans rien réécrire, la
+                    préférence en base valant `email` par défaut. */}
+                {ligne.porteVersLeCompte && (
+                  <TextLink
+                    label="Rattacher un compte"
+                    onPress={() => {
+                      void marquerFeuilleDeRappelVue();
+                      onFerme(prefs.prefere, prefs.jetonActif);
+                      router.push({ pathname: '/connexion', params: { source: 'rappels' } });
+                    }}
                     role="link"
                     type="small"
                     weight={600}

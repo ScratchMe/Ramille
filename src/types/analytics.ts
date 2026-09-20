@@ -69,7 +69,31 @@ export type UsageEventProps = Record<string, UsageEventPropValue>;
 // restitution (l'interstitiel imposé en allant au plan, et le clic délibéré sur la bannière) et
 // « Toi ». `plan` et `suivi` ont été retirées par v1-13 C1.2 — déclarées, jamais émises depuis
 // que le compte est sorti du suivi (v1-11 §2.5), elles se lisaient zéro.
-export const SOURCES_CONNEXION = ['resultat_transition', 'resultat_cta', 'compte'] as const;
+// **`rappels` est la quatrième porte, ouverte le 20/09/2026 avec le retrait de l'interstitiel.**
+// C'est la feuille des rappels, seul écran du produit qui POSE la question à laquelle le compte
+// répond (« comment te faire signe ? ») : sa ligne « Par email » était grisée sans porte. La
+// valeur s'ajoute des deux côtés ensemble — ici pour le type et le garde, et dans la description
+// du référentiel en base, seul endroit où les valeurs attendues d'une propriété peuvent vivre
+// (`check_usage_event_props` ne compte que des clés et des longueurs, donc rien n'arrête la
+// dérive côté serveur).
+//
+// **Et `resultat_transition` reste déclarée alors que plus rien ne l'émet**, à dessein : c'était
+// l'interstitiel imposé, et les lignes déjà en base la portent. La retirer rendrait illisible
+// l'historique d'avant le retrait, c'est-à-dire la seule mesure à laquelle comparer l'après.
+//
+// **Et le repli du garde a dû changer de valeur le même jour**, sinon le retrait se payait d'un
+// mensonge : il rendait `resultat_transition`, « mieux compté sur le chemin historique que perdu ».
+// Ce chemin n'existe plus, donc chaque arrivée sans provenance — une URL collée, un favori, un
+// retour arrière — se serait ajoutée aux lignes de l'interstitiel, c'est-à-dire **au seul chiffre
+// qu'on garde pour mesurer ce que le retrait a changé**. D'où `inconnue`, qui est un fait et non
+// une supposition : on ne sait pas d'où la personne vient, et on le dit.
+export const SOURCES_CONNEXION = [
+  'resultat_transition',
+  'resultat_cta',
+  'compte',
+  'rappels',
+  'inconnue',
+] as const;
 
 export type SourceConnexion = (typeof SOURCES_CONNEXION)[number];
 
@@ -116,7 +140,7 @@ export type SourceRetrouver = (typeof SOURCES_RETROUVER)[number];
  * (lien direct, retour arrière) vaut mieux compté là que perdu.
  */
 export function sourceConnexion(valeur: string | undefined): SourceConnexion {
-  return SOURCES_CONNEXION.find((source) => source === valeur) ?? 'resultat_transition';
+  return SOURCES_CONNEXION.find((source) => source === valeur) ?? 'inconnue';
 }
 
 /**
@@ -182,6 +206,17 @@ export type UsageEventPropsByName = {
    *  bascule d'`is_anonymous` côté email (que `/plan` observe déjà pour annoncer le
    *  rattachement). Les deux valeurs mesurent donc le même fait, et se comparent. */
   connexion_success: { method: 'google' | 'email' };
+  /**
+   * **Retiré le 20/09/2026 : plus aucun code ne l'émet.** C'était « Continuer sans compte » sur
+   * l'interstitiel de compte, qui ne s'interpose plus — on ne refuse plus rien, on reporte.
+   *
+   * La règle du dépôt dit qu'un événement que rien n'émet se retire, parce qu'il se lit **zéro** et
+   * non « pas encore instrumenté ». Elle suppose un événement **sans histoire** : ici cinq lignes
+   * existent en base, et `usage_events.name` référence le référentiel. Les supprimer détruirait une
+   * mesure réelle pour respecter une règle qui vise l'inverse. La déclaration reste donc, et la
+   * description du référentiel porte la date de retrait (migration `20260920220000`) : un zéro daté
+   * est lisible, un zéro muet ne l'est pas.
+   */
   connexion_dismiss: never;
   plan_view: never;
   suivi_view: never;

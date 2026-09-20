@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
@@ -9,24 +9,31 @@ import { Mascot } from '@/components/mascot';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
-import { markConnexionProposalSeen } from '@/lib/connexion-prefs';
+import { Spacing } from '@/constants/theme';
 import { useTrackView } from '@/hooks/use-track-view';
-import { formatTonnes } from '@/lib/format';
 import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
 import { sourceConnexion } from '@/types/analytics';
-import { identiteDejaRattachee } from '@/types/connexion';
-import { supabase } from '@/lib/supabase';
+import { identiteDejaRattachee, introDeLaConnexion } from '@/types/connexion';
 
-type Recap = { total_co2_kg_year: number; dominant_poste_label: string } | null;
-
-// "Connexion — proposition après bilan" — plein écran, jamais une pop-up (cf. annotation
-// design) : affichée une seule fois, juste après que l'utilisateur ait vu sa restitution
-// (cf. bilan/resultat.tsx, qui route ici tant que la proposition n'a pas été vue/déclinée).
+// « Rattacher un compte » — **un détour, plus un interstitiel** (arbitrage du 20/09/2026).
+//
+// Cet écran s'interposait entre la restitution et le plan : « Voir ce que je peux faire » ouvrait
+// une demande de compte. Trois choses le condamnaient — le bouton ne faisait pas ce qu'il disait,
+// son titre (« Garde ce résultat ») était faux depuis que `v1-04` a mis le bilan en base, et la
+// proposition arrivait avant qu'aucune des trois choses qu'un compte apporte n'existe dans
+// l'expérience de la personne. Il reste, atteignable depuis « Toi », la bannière de la restitution
+// et la feuille des rappels : c'est son titre qui était faux, pas son existence.
+//
+// **Ce qui est parti avec l'interposition** : le bloc « Ce qui est déjà enregistré » et sa lecture
+// d'`assessment_results` (il répétait l'écran qu'on venait de quitter), « Continuer sans compte »
+// (il n'y a plus rien à continuer), l'événement `connexion_dismiss` et la marque locale
+// « proposition vue » — plus rien n'a besoin de survivre au déchargement de la page, puisque plus
+// rien ne compte les passages.
 export default function ConnexionProposition() {
-  const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
+  // `id` n'est plus passé par personne : cet écran ne lit plus le résultat du bilan.
+  const { source } = useLocalSearchParams<{ source?: string }>();
 
   // **Le garde se dérive de la liste du type, il ne la recopie pas** (`sourceConnexion`). La
   // copie écrite ici à la main avait perdu `compte` en route : une arrivée depuis « Toi » —
@@ -42,43 +49,20 @@ export default function ConnexionProposition() {
   // d'avis était donc déposé sur le plan, sans retour, la proposition plein écran consommée au
   // passage et un refus d'interstitiel compté qui n'en était pas un (A6-21). La provenance se lit
   // par le même garde que la mesure — une seule dérivation, pas deux lectures du paramètre.
-  const vientDeCompte = sourceConnexion(source) === 'compte';
-  const [recap, setRecap] = useState<Recap>(null);
+  const provenance = sourceConnexion(source);
+  const vientDeCompte = provenance === 'compte';
   const [googleLoading, setGoogleLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!id) return;
-    supabase
-      .from('assessment_results')
-      .select('total_co2_kg_year, dominant_poste_label')
-      .eq('assessment_id', id)
-      .single()
-      .then(({ data }) => setRecap(data));
-  }, [id]);
-
-  const dismiss = async () => {
-    track('connexion_dismiss');
-    await markConnexionProposalSeen();
-    router.replace('/plan');
-  };
 
   const onGoogle = async () => {
     setGoogleLoading(true);
     setMessage(null);
 
-    // **Sur web, la marque se pose avant l'appel** (A6-20). `linkIdentity` y déclenche une
-    // redirection plein écran et rend la main aussitôt : tout ce qui suit s'exécute pendant que
-    // le document se décharge, et le retour d'OAuth atterrit directement sur `/plan` sans
-    // repasser par ici. Ce qui doit survivre au départ de la page est donc écrit maintenant ; le
-    // constat du rattachement, lui, est laissé au plan, qui voit la bascule d'`is_anonymous`.
-    //
-    // Poser la marque avant de savoir si l'appel aboutit la pose parfois pour rien (liaison
-    // désactivée, réseau coupé) : le coût est que l'interstitiel plein écran ne se rejoue pas, la
-    // bannière discrète restant là. C'est moins cher que la mesure perdue, et de toute façon la
-    // proposition ne se rejoue pas après un rattachement réussi.
-    if (Platform.OS === 'web') await markConnexionProposalSeen();
-
+    // **Plus rien à poser avant l'appel, et c'est le retrait de l'interstitiel qui l'a libéré**
+    // (A6-20). Sur web, `linkIdentity` déclenche une redirection plein écran et rend la main
+    // aussitôt : tout ce qui suivait s'exécutait pendant que le document se déchargeait, d'où une
+    // marque « proposition vue » posée avant de savoir si l'appel aboutissait. Cette marque n'a
+    // plus d'objet — rien ne compte les passages —, donc la course n'existe plus.
     const resultat = await linkGoogleIdentity();
 
     // La page s'en va vers Google : le bouton reste en attente plutôt que de redevenir inerte
@@ -106,7 +90,7 @@ export default function ConnexionProposition() {
       // tout dire : la collision, le choix entre retrouver et garder ce bilan, et l'envoi du
       // lien. L'adresse Google en est une, le geste est le même.
       if (identiteDejaRattachee(resultat.error)) {
-        router.push({ pathname: '/connexion/retrouver', params: { id, source: 'google' } });
+        router.push({ pathname: '/connexion/retrouver', params: { source: 'google' } });
         return;
       }
       // Le message de Supabase est repris tel quel : il est en anglais et technique, mais
@@ -131,7 +115,6 @@ export default function ConnexionProposition() {
     const etat = await lireEtatDuRattachement().catch(() => null);
     if (etat?.kind === 'rattache') {
       track('connexion_success', { method: 'google' });
-      await markConnexionProposalSeen();
     }
     router.replace('/plan');
   };
@@ -149,98 +132,64 @@ export default function ConnexionProposition() {
           <Mascot mood="calm" size={44} style={styles.logo} />
           <View style={styles.textBlock}>
             <ThemedText type="title" weight={600} style={styles.title}>
-              Garde ce résultat et suis ta progression
+              Ton bilan, d’un appareil à l’autre
             </ThemedText>
-            {/* **La promesse était fausse par vieillissement** (C3.9, constat A12-15) : « ton
-                historique de points mensuels » est un texte du handoff, écrit avant que la boucle
-                hebdomadaire n'existe. Quelqu'un dont le poste dominant est le trajet
-                domicile-travail reçoit un point par **semaine**, et le produit lui annonçait des
-                points mensuels. La phrase nomme maintenant ce qui suit vraiment le compte — les
-                trois choses que la personne perdrait — sans promettre de cadence. */}
+            {/* **Le corps se dérive de la provenance** (`introDeLaConnexion`), parce que les trois
+                portes ne posent pas la même question : depuis la restitution ou « Toi », c'est
+                « et si je change d'appareil ? » ; depuis la feuille des rappels, c'est « comment
+                tu me fais signe ? », et le compte y est ce qui rend l'e-mail possible. */}
             <ThemedText themeColor="textSecondary" style={styles.body}>
-              Ton bilan est calculé. Avec un compte, il te suit d&apos;un appareil à l&apos;autre,
-              saison après saison : tes bilans, tes réponses, ton plan.
+              {introDeLaConnexion(provenance)}
             </ThemedText>
           </View>
-
-          {recap && (
-            <ThemedView type="backgroundSelected" style={styles.recapCard}>
-              <ThemedText weight={600} themeColor="accentText" type="small">
-                Ce qui est déjà enregistré
-              </ThemedText>
-              <ThemedText type="body" themeColor="textSecondary">
-                {formatTonnes(recap.total_co2_kg_year)} par an · {recap.dominant_poste_label} identifié comme
-                poste principal
-              </ThemedText>
-            </ThemedView>
-          )}
 
           <View style={styles.options}>
             <GoogleButton onPress={onGoogle} loading={googleLoading} />
             <MessageInline message={message} />
             <TextLink
               label="Utiliser un email à la place"
-              onPress={() => router.push({ pathname: '/connexion/email', params: { id } })}
+              // `source` est propagée, `id` ne l'est plus : `/connexion` ne lit plus le résultat
+              // du bilan, donc plus rien n'a besoin de l'identifiant ici.
+              onPress={() => router.push({ pathname: '/connexion/email', params: { source: provenance } })}
               role="link"
               type="linkPrimary"
               style={styles.emailLink}
             />
           </View>
 
-          {/* Deux sorties qui ne disent pas la même chose, et une seule à la fois. Depuis « Toi »,
-              on revient d'où l'on vient : rien n'est décliné, donc rien n'est marqué ni compté.
-              Depuis la restitution, c'est l'interstitiel qu'on passe, et le produit dit ce que
-              ça implique. */}
+          {/* **Deux sorties, et aucune ne marque plus rien.** Depuis « Toi » on revient d'où l'on
+              vient ; depuis la restitution ou la feuille, on reporte — on n'a rien refusé, il n'y
+              a donc rien à compter ni à retenir. C'est ce que le retrait de l'interstitiel change
+              ici : « Continuer sans compte » supposait une interposition à franchir. */}
           <View style={styles.skip}>
-            {vientDeCompte ? (
-              <TextLink
-                label="Retour"
-                // `canGoBack()` d'abord : `/connexion?source=compte` est une vraie URL web,
-                // atteignable sans pile derrière elle (favori, lien collé, démarrage à froid), et
-                // un `router.back()` nu ne fait alors **rien** — la personne reste enfermée sur
-                // l'écran. Le repli va sur « Toi », l'écran d'où cette sortie prétend revenir :
-                // c'est une destination, pas un dépilement. Même garde que
-                // `connexion/retrouver.tsx` et `connexion/email.tsx`.
-                onPress={() => (router.canGoBack() ? router.back() : router.replace('/compte'))}
-                role="link"
-                type="small"
-                themeColor="textTertiary"
-              />
-            ) : (
-              <>
-                {/* Pas de `hint` ici : il reprenait mot pour mot le paragraphe ci-dessous, et un
-                    lecteur d'écran annonçait donc la phrase deux fois de suite (A6-22). Le `hint`
-                    de `TextLink` est fait pour les intitulés ambigus hors contexte, pas pour
-                    doubler un texte déjà présent — et les deux copies avaient déjà divergé d'un
-                    point final. Le paragraphe visible reste : il rassure au moment précis où
-                    quelqu'un renonce à un compte. */}
-                <TextLink
-                  label="Continuer sans compte"
-                  onPress={dismiss}
-                  type="small"
-                  themeColor="textTertiary"
-                />
-                {/* **Ce qu'on perd sans compte n'était dit que dans les pages légales** (C3.9,
-                    constat A1-11) : « reste accessible sur cet appareil » est vrai et ne dit pas
-                    ce qu'il faut entendre — que changer de téléphone perd tout, et que la purge
-                    des sessions anonymes ferme le compte après trois mois d'inactivité
-                    (`purge_stale_anonymous_accounts`, fenêtre de 90 jours). Les deux faits sont
-                    écrits là où la personne renonce, pas dans une page qu'elle n'ouvrira pas. */}
-                {/* `small` et non `code` : la ligne était en monospace, ce qui passait sur une
-                    phrase courte et se lit comme une sortie technique sur trois lignes. Vu au
-                    rendu, pas à la lecture.
-                    La phrase qui figurait ici — « dans ce dépôt `code` est réservé au texte destiné
-                    à être recopié » — énonçait une convention que le dépôt ne suit pas : `code` y
-                    porte huit usages, dont une source de chiffre, un disclaimer et une règle de
-                    calcul, c'est-à-dire une mention en petit de registre technique ou institutionnel.
-                    Ce qui vaut ici est plus simple : trois lignes de monospace se lisent comme une
-                    sortie machine (relevé le 14/09/2026). */}
-                <ThemedText type="small" themeColor="textTertiary" style={styles.skipHint}>
-                  Sur cet appareil seulement : si tu changes de téléphone ou si tu ne reviens pas
-                  pendant trois mois, ton bilan ne te suivra pas.
-                </ThemedText>
-              </>
-            )}
+            <TextLink
+              label={vientDeCompte ? 'Retour' : 'Plus tard'}
+              // `canGoBack()` d'abord : `/connexion` est une vraie URL web, atteignable sans pile
+              // derrière elle (favori, lien collé, démarrage à froid), et un `router.back()` nu ne
+              // fait alors **rien** — la personne reste enfermée sur l'écran. Le repli est une
+              // destination, pas un dépilement, et il diffère selon d'où l'on prétend revenir.
+              onPress={() =>
+                router.canGoBack()
+                  ? router.back()
+                  : router.replace(vientDeCompte ? '/compte' : '/plan')
+              }
+              role="link"
+              type="small"
+              themeColor="textTertiary"
+            />
+            {/* **Ce qu'on perd sans compte n'était dit que dans les pages légales** (C3.9,
+                constat A1-11) : changer de téléphone perd tout, et la purge des sessions anonymes
+                ferme le compte après trois mois d'inactivité
+                (`purge_stale_anonymous_accounts`, fenêtre de 90 jours, comptée sur le dernier
+                signe de vie et non sur la création). Elle est rendue pour **toutes** les
+                provenances depuis le 20/09/2026, et c'est une conséquence du retrait de
+                l'interstitiel : il la faisait lire à tout le monde au passage, en petit, sous un
+                lien qu'on touche sans lire. Où elle vit d'autre — sur « Toi » en état local —
+                reste à arbitrer (§10.4 du canvas v1-21). */}
+            <ThemedText type="small" themeColor="textTertiary" style={styles.skipHint}>
+              Sur cet appareil seulement : si tu changes de téléphone ou si tu ne reviens pas
+              pendant trois mois, ton bilan ne te suivra pas.
+            </ThemedText>
           </View>
 
           {/* Les deux pages légales sont accessibles là où quelqu'un s'apprête à créer un
@@ -279,7 +228,6 @@ const styles = StyleSheet.create({
   textBlock: { gap: Spacing.two },
   title: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   body: { fontSize: 16, lineHeight: 24 },
-  recapCard: { borderRadius: Radius.card, padding: 18, gap: 8 },
   options: { gap: Spacing.three },
   emailLink: { textAlign: 'center' },
   skip: { marginTop: Spacing.two, alignItems: 'center', gap: 10 },

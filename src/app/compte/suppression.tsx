@@ -13,11 +13,15 @@ import { CONTACT_EMAIL } from '@/constants/editeur';
 import { RAMILLE } from '@/constants/mascotte';
 import { APP_NAME } from '@/constants/produit';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { APP_URL } from '@/lib/app-url';
-import { sendAccountAccessLink } from '@/lib/auth';
+import { SaisieDuCode } from '@/components/auth/saisie-du-code';
+import { demanderLaConnexion } from '@/lib/auth';
 import { deleteMyAccount, lireEtatDuCompte } from '@/lib/compte';
 import { type EtatSuppression } from '@/types/compte-suppression';
-import { adresseSemblePlausible, estLimiteDEnvoi, estPanneDeTransport } from '@/types/connexion';
+import {
+  adresseSemblePlausible,
+  messageDeLaDemande,
+  suiteDeLaDemandeDeCode,
+} from '@/types/connexion';
 
 // Page publique de suppression de compte — **exigée par Google Play** en plus du chemin
 // dans l'app : la fiche réclame une URL atteignable depuis un navigateur, par quelqu'un qui
@@ -27,7 +31,7 @@ import { adresseSemblePlausible, estLimiteDEnvoi, estPanneDeTransport } from '@/
 // Le problème, propre au modèle d'auth de Ramille : cette personne arrive dans un navigateur
 // où `ensureSession` vient de créer une session anonyme **vide**, qui n'est pas son compte.
 // Aucune des fonctions d'auth existantes ne pouvait l'aider — elles rattachent toutes une
-// identité à la session courante. D'où `sendAccountAccessLink`, premier chemin du produit
+// identité à la session courante. D'où `demanderLaConnexion`, premier chemin du produit
 // vers un compte *déjà existant*, et `shouldCreateUser: false` pour qu'une page de
 // suppression ne puisse jamais fabriquer un compte.
 //
@@ -43,7 +47,7 @@ import { adresseSemblePlausible, estLimiteDEnvoi, estPanneDeTransport } from '@/
 type Phase =
   | { kind: 'chargement' }
   | { kind: 'pret'; etat: EtatSuppression; confirme: boolean }
-  | { kind: 'lien-envoye' }
+  | { kind: 'code' }
   | { kind: 'supprime' };
 
 export default function SuppressionCompte() {
@@ -66,43 +70,32 @@ export default function SuppressionCompte() {
     };
   }, []);
 
-  const envoyerLeLien = async () => {
+  const demanderLeCode = async () => {
     setMessage(null);
     if (!adresseSemblePlausible(email)) {
       setMessage('Cette adresse semble incomplète.');
       return;
     }
     setBusy(true);
-    // Le lien ramène ici : au retour, la session est celle du compte et l'écran passe de
-    // lui-même en « rattaché ».
-    const { error } = await sendAccountAccessLink(email, `${APP_URL}/compte/suppression`);
+    // **Le code est ce qui rend cette page simple.** Elle s'ouvre par définition dans un
+    // navigateur neuf — Google Play exige qu'elle soit atteignable sans l'application —, et un
+    // lien en PKCE n'y valait que s'il revenait dans ce même navigateur : le cas le plus dur du
+    // produit était celui dont Play dépend. Un code se tape là où l'écran l'attend.
+    const { error } = await demanderLaConnexion(email);
     setBusy(false);
 
-    // **La demande n'a pas abouti** (A6-12) : annoncer un lien envoyé enverrait attendre un
+    // **La demande n'a pas abouti** (A6-12) : annoncer un code envoyé enverrait attendre un
     // message qui ne partira jamais, sur la page que Google Play exige et que quelqu'un ouvre
-    // justement parce qu'il n'a plus l'application. Liste blanche (`src/types/connexion.ts`) :
-    // réseau coupé et 5xx, rien d'autre — le 422 d'une adresse inconnue continue de mener à
-    // l'écran d'attente, sinon cette page dirait qui a un compte.
-    //
-    // Le texte ne dit pas « pas partie » : sur un 5xx la demande a bien quitté le navigateur,
-    // c'est l'envoi qui n'a pas abouti — et le geste à faire est le même dans les deux cas.
-    if (estPanneDeTransport(error)) {
-      setMessage('Ta demande n’a pas abouti. Vérifie ta connexion et réessaie.');
+    // justement parce qu'il n'a plus l'application. Le tri est la liste blanche partagée
+    // (`suiteDeLaDemandeDeCode`) : limite d'envoi et panne de transport se disent, **tout le
+    // reste mène à l'écran de code**, y compris le 422 d'une adresse inconnue — sinon cette page
+    // dirait qui a un compte Ramille.
+    if (suiteDeLaDemandeDeCode('connexion', error) === 'message') {
+      setMessage(messageDeLaDemande(error));
       return;
     }
 
-    // Deux cas méritent un message distinct ; celui-ci est la limite d'envoi, où réessayer tout
-    // de suite ne servirait à rien (cf. `estLimiteDEnvoi`, partagée avec `/connexion/retrouver`).
-    if (estLimiteDEnvoi(error)) {
-      setMessage('Trop de demandes coup sur coup. Réessaie dans quelques minutes.');
-      return;
-    }
-
-    // Tout le reste mène au même écran, y compris l'échec. Une adresse sans compte renvoie un
-    // 422 `otp_disabled` (« Signups not allowed for otp ») — c'est la preuve que
-    // `shouldCreateUser: false` a fait son travail, pas une panne : le surfacer dirait à
-    // n'importe qui si telle adresse a un compte Ramille.
-    setPhase({ kind: 'lien-envoye' });
+    setPhase({ kind: 'code' });
   };
 
   const supprimer = async () => {
@@ -138,9 +131,9 @@ export default function SuppressionCompte() {
             {phase.kind === 'pret' && phase.etat.kind === 'inconnu' && (
               <>
                 <ThemedText themeColor="textSecondary" style={styles.corps}>
-                  Ce navigateur n’est rattaché à aucun compte. Indique l’adresse de ton compte :
-                  on t’envoie un lien qui te ramènera ici, session ouverte, pour confirmer la
-                  suppression.
+                  Ce navigateur n’est rattaché à aucun compte. Indique l’adresse de ton compte,
+                  puis le code reçu par email : la session s’ouvre ici, et la suppression se fait
+                  en un geste.
                 </ThemedText>
                 <View style={styles.bloc}>
                   <TextField
@@ -151,8 +144,8 @@ export default function SuppressionCompte() {
                     placeholder="toi@exemple.fr"
                   />
                   <Button
-                    title={busy ? 'Envoi…' : 'Recevoir le lien'}
-                    onPress={envoyerLeLien}
+                    title={busy ? 'Envoi…' : 'Recevoir un code'}
+                    onPress={demanderLeCode}
                     disabled={busy}
                   />
                 </View>
@@ -199,18 +192,23 @@ export default function SuppressionCompte() {
               </>
             )}
 
-            {phase.kind === 'lien-envoye' && (
-              <>
-                <ThemedText themeColor="textSecondary" style={styles.corps}>
-                  Si un compte {APP_NAME} existe avec cette adresse, un lien vient d’y être
-                  envoyé. Ouvre-le depuis ce navigateur : tu reviendras sur cette page, session
-                  ouverte, et la suppression se fera en un geste.
-                </ThemedText>
-                <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
-                  Le lien ne crée jamais de compte : s’il n’y en a pas à cette adresse, rien ne
-                  part et rien n’est créé.
-                </ThemedText>
-              </>
+            {phase.kind === 'code' && (
+              <SaisieDuCode
+                contexte="connexion"
+                adresse={email.trim()}
+                libelleBouton="Ouvrir ma session"
+                onOuverte={async () => {
+                  // La session est celle du compte : on relit l'état et la page passe d'elle-même
+                  // au bloc de suppression, comme elle le faisait quand le lien revenait ici.
+                  const etat = await lireEtatDuCompte().catch(() => ({ kind: 'inconnu' }) as const);
+                  setPhase({ kind: 'pret', etat, confirme: false });
+                }}
+                onAutreAdresse={() => {
+                  setMessage(null);
+                  setPhase({ kind: 'pret', etat: { kind: 'inconnu' }, confirme: false });
+                }}
+                renvoyer={demanderLaConnexion}
+              />
             )}
 
             {phase.kind === 'supprime' && (

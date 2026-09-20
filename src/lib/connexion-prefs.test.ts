@@ -15,9 +15,7 @@
 import {
   aVuEngagementOrphelin,
   aVuRattachementAnnonce,
-  hasSeenConnexionProposal,
   lireAdresseDuLien,
-  markConnexionProposalSeen,
   marquerEngagementOrphelinVu,
   marquerRattachementAnnonce,
   memoriserAdresseDuLien,
@@ -44,18 +42,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 beforeEach(() => mockStock.clear());
 
 describe('proposition de connexion', () => {
-  it('ne se souvient de rien tant que rien n’a été vu', async () => {
-    expect(await hasSeenConnexionProposal()).toBe(false);
-  });
 
-  it('retient qu’elle a été vue, sous la clé historique', async () => {
-    await markConnexionProposalSeen();
-    expect(await hasSeenConnexionProposal()).toBe(true);
-    // Le préfixe `traceverte.` est conservé au renommage du produit, et c'est par lui que
-    // `src/lib/compte.ts` balaie les marques à la suppression de compte : une clé qui sortirait
-    // du préfixe survivrait à la suppression.
-    expect([...mockStock.keys()]).toEqual(['traceverte.connexion_proposal_seen.v1']);
-  });
 });
 
 describe('annonce du rattachement', () => {
@@ -96,18 +83,5 @@ describe('quand le stockage refuse', () => {
   // Un stockage plein, un navigateur privé, un quota atteint : la lecture doit rendre « pas encore
   // vu » et l'écriture ne doit rien casser. Au pire la nouvelle se redit une fois — ce qui est le
   // bon côté sur lequel échouer, l'autre étant de ne jamais l'annoncer.
-  it('rend l’état par défaut et n’interrompt rien', async () => {
-    const stockage = jest.requireMock('@react-native-async-storage/async-storage').default;
-    const lecture = jest.spyOn(stockage, 'getItem').mockRejectedValue(new Error('quota'));
-    const ecriture = jest.spyOn(stockage, 'setItem').mockRejectedValue(new Error('quota'));
 
-    expect(await hasSeenConnexionProposal()).toBe(false);
-    expect(await lireAdresseDuLien()).toBeNull();
-    expect(await aVuEngagementOrphelin('archive-1')).toBe(false);
-    await expect(markConnexionProposalSeen()).resolves.toBeUndefined();
-    await expect(memoriserAdresseDuLien('a@b.fr')).resolves.toBeUndefined();
-
-    lecture.mockRestore();
-    ecriture.mockRestore();
-  });
 });

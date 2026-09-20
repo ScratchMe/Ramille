@@ -1,29 +1,14 @@
-// Marque locale "l'utilisateur a déjà vu/décliné la proposition de connexion plein écran"
-// — au premier passage sur la restitution après un bilan, cette proposition s'affiche en
-// plein écran (cf. maquette "Connexion — proposition après bilan") ; aux passages
-// suivants, elle laisse place à un bandeau discret ("Bilan anonyme — relance douce") plutôt
-// que de réinterrompre l'utilisateur à chaque retour. Device-local (AsyncStorage), même
-// rationale que src/lib/bilan-draft.ts.
+// Marques locales des écrans de compte — device-local (AsyncStorage), même rationale que
+// `src/lib/bilan-draft.ts`, et toutes sous le préfixe historique `traceverte.` qui permet à
+// `src/lib/compte.ts` de les balayer d'un geste.
+//
+// **Une quatrième marque vivait ici jusqu'au 20/09/2026 : « proposition de connexion vue ».** Elle
+// existait pour que l'interstitiel de compte ne se rejoue pas à chaque restitution. L'interstitiel
+// est retiré (arbitrage du même jour), donc plus rien ne compte les passages : une ligne qu'on ne
+// touche pas ne s'use pas. La clé `traceverte.connexion_proposal_seen.v1` peut rester sur les
+// appareils qui l'ont écrite — plus personne ne la lit, et le balayage par préfixe l'emporte au
+// premier changement de compte.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Préfixe historique conservé au renommage en Ramille, comme DRAFT_KEY dans bilan-draft.ts.
-const SEEN_KEY = 'traceverte.connexion_proposal_seen.v1';
-
-export async function hasSeenConnexionProposal(): Promise<boolean> {
-  try {
-    return (await AsyncStorage.getItem(SEEN_KEY)) === '1';
-  } catch {
-    return false;
-  }
-}
-
-export async function markConnexionProposalSeen(): Promise<void> {
-  try {
-    await AsyncStorage.setItem(SEEN_KEY, '1');
-  } catch {
-    // best-effort : au pire la proposition plein écran réapparaît une fois de plus.
-  }
-}
 
 // Marque locale « on a déjà annoncé que le compte est rattaché ».
 //

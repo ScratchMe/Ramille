@@ -520,3 +520,48 @@ describe('boucleDeLAction', () => {
     expect(boucleDeLAction(null)).toBe('mensuel');
   });
 });
+
+describe('porteVersLeCompte', () => {
+  const base = {
+    prefere: 'email' as const,
+    jetonActif: false,
+    boucle: 'hebdo' as const,
+    plateforme: 'natif' as const,
+    permission: 'accordee' as const,
+  };
+
+  it('s’ouvre sur la ligne email quand il n’y a pas d’adresse utilisable', () => {
+    const lignes = lignesDeReglage({ ...base, emailPossible: false, email: null });
+    const email = lignes.find((l) => l.canal === 'email');
+    expect(email?.porteVersLeCompte).toBe(true);
+    expect(email?.detail).toBe('Rattache un compte pour l’activer.');
+  });
+
+  it('se referme dès que l’adresse est là', () => {
+    const lignes = lignesDeReglage({ ...base, emailPossible: true, email: 'camille@exemple.fr' });
+    expect(lignes.find((l) => l.canal === 'email')?.porteVersLeCompte).toBe(false);
+  });
+
+  /**
+   * **La porte et le détail sortent de la même condition**, et c'est ce qui les empêche de se
+   * contredire : une porte sous « À camille@exemple.fr. » proposerait de rattacher un compte à
+   * quelqu'un qui en a un, et l'inverse laisserait le mur que ce chantier retire. Le test compare
+   * les deux plutôt que de les épingler séparément, sur les quatre combinaisons du couple.
+   */
+  it('ne s’ouvre jamais sous un détail qui nomme l’adresse', () => {
+    for (const emailPossible of [false, true]) {
+      for (const email of [null, 'camille@exemple.fr']) {
+        const ligne = lignesDeReglage({ ...base, emailPossible, email })
+          .find((l) => l.canal === 'email');
+        expect(ligne?.porteVersLeCompte).toBe(ligne?.detail === 'Rattache un compte pour l’activer.');
+      }
+    }
+  });
+
+  it('ne s’ouvre sur aucune autre ligne', () => {
+    const lignes = lignesDeReglage({ ...base, emailPossible: false, email: null });
+    for (const ligne of lignes.filter((l) => l.canal !== 'email')) {
+      expect(ligne.porteVersLeCompte).toBe(false);
+    }
+  });
+});

@@ -7,7 +7,12 @@ import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from '@/lib/supabase';
-import { codeDuRetourDeLien, issueDuNavigateurDAuth, lireRetourDeLien } from '@/types/connexion';
+import {
+  codeDuRetourDeLien,
+  issueDuNavigateurDAuth,
+  lireRetourDeLien,
+  type ContexteDuCode,
+} from '@/types/connexion';
 
 // Requis uniquement sur web (referme l'onglet/popup d'auth quand le redirect revient) —
 // no-op inoffensif sur natif, cf. doc Supabase "Native Mobile Deep Linking".
@@ -133,59 +138,86 @@ export async function createSessionFromUrl(url: string): Promise<AuthResult> {
   return { error };
 }
 
-// Lie une adresse email à la session anonyme courante (conversion en compte permanent, cf.
-// doc §1 — pas signUp ni signInWithOtp, qui créeraient un utilisateur séparé et perdraient
-// le bilan). **Sans mot de passe** depuis v1-10 §2.D : il n'a jamais servi — aucun
-// `signInWithPassword` dans le produit, zéro compte sur 223 n'en portait. Supabase envoie un
-// email de confirmation, et `is_anonymous` ne bascule à `false` qu'une fois le lien cliqué.
-// Retrouver le compte plus tard se fait par lien (`sendAccountAccessLink`), jamais par
-// secret.
+// ── Le code à usage unique ─────────────────────────────────────────────────────────────
 //
-// Une adresse déjà rattachée à un autre compte renvoie `422 email_exists` — ce n'est pas une
-// erreur à afficher, c'est le signe que la personne cherchait l'écran « retrouver »
-// (cf. `adresseDejaRattachee` dans `src/types/connexion.ts`).
+// **Les deux e-mails du produit ne portent plus de lien depuis le 20/09/2026**, et ce n'est pas
+// une simplification : dans l'e-mail de rattachement, le lien ÉTAIT la faille. Mesuré la veille —
+// un `GET /auth/v1/verify` confirme l'adresse côté serveur avant toute redirection, donc n'importe
+// qui recevant cet e-mail rattachait son adresse au compte d'un inconnu d'un seul clic, et le
+// passage en PKCE n'y changeait rien (il protège la session, pas la confirmation).
 //
-// **`redirectTo` n'est pas optionnel, et son absence coûtait la fin du parcours.** Sans lui, le
-// lien de confirmation retombe sur la Site URL du tableau de bord : sur natif il s'ouvre donc
-// dans le navigateur et pas dans l'app, la personne revient à Ramille à la main, sans aucune URL
-// entrante — il n'y a alors strictement rien pour lui annoncer que son compte est rattaché
-// (contre-vérification d'A6-5). Avec lui, le retour passe par le scheme `ramille://`, que
-// `_layout.tsx` traite, et l'annonce du plan se referme. L'adresse doit figurer dans les
-// Redirect URLs du tableau de bord, sinon elle est ignorée en silence (`v1-10` §8.4).
-export async function linkEmail(email: string, redirectTo: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.updateUser(
-    { email: email.trim() },
-    { emailRedirectTo: redirectTo }
-  );
+// Ce que le code change, mesuré lui aussi (20/09/2026, stack locale fidèle à la production) :
+//   - le code seul confirme le rattachement — `403 otp_expired` s'il est rejoué ;
+//   - il n'est lié NI à la session NI au client qui l'a demandé : c'est un porteur, pas un jumeau
+//     du vérifieur PKCE. Il ne referme donc pas la porte, il en relève le prix — un clic devient
+//     huit chiffres recopiés dans une app qu'il faut trouver. La dette est en `v1-27` §12.12 ;
+//   - **les deux flux ne se croisent pas** : un code de rattachement présenté au flux de connexion
+//     est refusé, et l'inverse aussi. C'est ce qui rend la bascule de `/connexion/email` sûre.
+//
+// `emailRedirectTo` a disparu des deux appels, et son absence est le signe du chantier : il ne
+// remplissait que `{{ .ConfirmationURL }}`, que plus aucun gabarit n'emprunte. Le garder ferait
+// croire qu'un lien voyage encore, et obligerait à tenir une entrée de Redirect URL pour rien.
+// Les Redirect URLs ne servent plus qu'à Google (`docs/exploitation/redirect-urls.md`).
+
+/**
+ * Demande le code qui rattache une adresse à la session anonyme courante.
+ *
+ * Toujours `updateUser` et jamais `signUp` ni `signInWithOtp` : c'est ce qui garde le même
+ * `user_id`, donc le bilan déjà en base (`v1-04` §1). `is_anonymous` ne bascule qu'à la
+ * vérification du code.
+ *
+ * Une adresse déjà rattachée à un autre compte rend `422 email_exists` — ce n'est pas une erreur
+ * à afficher mais le signe que la personne cherchait « retrouver » (`suiteDeLaDemandeDeCode`).
+ */
+export async function demanderLeRattachement(email: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.updateUser({ email: email.trim() });
   return { error };
 }
 
 /**
- * Envoie un lien d'accès à usage unique à l'adresse d'un compte **déjà existant**.
+ * Demande le code qui rouvre un compte **déjà existant** depuis un appareil neuf.
  *
- * C'est le seul endroit du produit qui *connecte* à un compte au lieu d'en rattacher un :
- * tout le reste de ce fichier lie une identité à la session anonyme courante. Né pour la page
- * web de suppression, c'est depuis v1-10 §2.D **le** chemin de reconnexion du produit
- * (`/connexion/retrouver`) — quelqu'un qui arrive sur un nouvel appareil y reçoit une session
- * anonyme vide qui n'est pas son compte, et ni `linkIdentity` ni `updateUser` ne peuvent
- * l'aider : la première échoue si l'identité appartient déjà à quelqu'un, la seconde
- * modifierait la session vide. Le lien vaut pour un compte Google comme pour un compte
- * email : les deux portent une adresse sur `auth.users`.
+ * C'est le seul appel du produit qui *connecte* à un compte au lieu d'en rattacher un : tout le
+ * reste de ce fichier lie une identité à la session anonyme courante. Né pour la page web de
+ * suppression, c'est depuis `v1-10` §2.D **le** chemin de reconnexion — sur un appareil neuf,
+ * `ensureSession()` vient de créer une session anonyme vide qui n'est pas le compte de la
+ * personne, et ni `linkIdentity` ni `updateUser` ne peuvent l'aider.
  *
  * **`shouldCreateUser: false` est la garantie centrale** : sans lui, saisir n'importe quelle
  * adresse créerait un compte — et une page de suppression qui fabrique des comptes serait
- * exactement le contraire de ce qu'on affiche.
- *
- * Le retour ne distingue jamais « adresse inconnue » de « lien envoyé » — répondre
- * différemment transformerait l'écran en outil pour savoir qui utilise Ramille.
- *
- * `redirectTo` doit figurer dans la liste des Redirect URLs du tableau de bord Supabase,
- * sinon il est ignoré en silence et le lien retombe sur la Site URL (`v1-10` §8.4).
+ * exactement le contraire de ce qu'elle affiche. Le retour ne distingue jamais « adresse
+ * inconnue » (`422 otp_disabled`) de « code envoyé » : c'est `suiteDeLaDemandeDeCode` qui tient
+ * cette règle, et elle est non négociable.
  */
-export async function sendAccountAccessLink(email: string, redirectTo: string): Promise<AuthResult> {
+export async function demanderLaConnexion(email: string): Promise<AuthResult> {
   const { error } = await supabase.auth.signInWithOtp({
     email: email.trim(),
-    options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
+    options: { shouldCreateUser: false },
+  });
+  return { error };
+}
+
+/**
+ * Vérifie un code, et ouvre la session.
+ *
+ * **Le `type` est ce qui sépare les deux flux, et il n'est pas interchangeable** : `email_change`
+ * confirme l'adresse d'un rattachement, `email` rouvre un compte existant. Mesuré le 20/09/2026,
+ * dans les deux sens : un code émis pour l'un et présenté à l'autre rend `403 otp_expired`. Le
+ * dériver du contexte ici, en un seul endroit, est ce qui empêche un écran de se tromper de flux
+ * — et ce qui rend la bascule de `/connexion/email` sûre sans un mot de plus à l'écran.
+ *
+ * Les chiffres sont normalisés par l'appelant (`chiffresDuCode`) ; ce qui arrive ici est déjà
+ * huit chiffres.
+ */
+export async function verifierLeCode(params: {
+  email: string;
+  code: string;
+  contexte: ContexteDuCode;
+}): Promise<AuthResult> {
+  const { error } = await supabase.auth.verifyOtp({
+    email: params.email.trim(),
+    token: params.code,
+    type: params.contexte === 'rattachement' ? 'email_change' : 'email',
   });
   return { error };
 }

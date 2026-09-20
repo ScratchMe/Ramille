@@ -503,7 +503,7 @@ vu en une seconde — mais personne ne le lance.
 **Éprouvé en le cassant** (§1.1), une mutation par branche : un chemin déplacé dans `CLAUDE.md`,
 et une tolérance qu'aucun document n'emprunte.
 
-### 2.9 Le lien de connexion, joué de bout en bout
+### 2.9 Le chemin du compte, joué de bout en bout
 
 **Le seul chemin du produit vers un compte existant n'était gardé par rien** jusqu'au 20/09/2026.
 Jest ne voit pas partir un e-mail, pgTAP ne voit pas GoTrue, et le parcours réel ne joue que la
@@ -511,11 +511,30 @@ session anonyme. Quelqu'un qui change d'appareil, qui réinstalle, ou qui arrive
 `/compte/suppression` depuis un navigateur neuf n'a que ce chemin — et le passage en PKCE du même
 jour touchait ses trois branches d'un coup.
 
-`scripts/verifier-lien-de-connexion.mjs` demande un lien **par l'écran** (c'est le client qui
-fabrique le défi PKCE et range le vérifieur), lit l'e-mail réellement reçu, et éprouve trois
-choses dont **une seule est un chemin heureux** : le lien ouvert au bon endroit ouvre la session ;
-ouvert ailleurs il échoue **en le disant** ; et une URL portant des jetons valides ne fait plus
-basculer de compte.
+`scripts/verifier-code-de-connexion.mjs` — il portait le mot « lien » dans son nom jusqu'au passage
+au code, le 20/09/2026, et a été renommé avec son sujet — demande un code **par l'écran**, lit l'e-mail réellement reçu, et
+éprouve **cinq** choses dont deux seulement sont des chemins heureux :
+
+1. le code rattache une adresse — jusqu'à une session non anonyme, et la base relue derrière ;
+2. il rouvre un compte depuis un **navigateur neuf**, c'est-à-dire le cas que le lien ne pouvait
+   pas faire (en PKCE il ne valait que là où il avait été demandé) ;
+3. un code d'un flux **ne vaut pas** dans l'autre — c'est ce qui rend sûr de montrer le même écran
+   de code dans les deux contextes ;
+4. une adresse **sans compte** ouvre quand même la saisie du code (la non-divulgation, nommée
+   plutôt que subie : sans cette assertion, le défaut se manifestait par un timeout) et aucun des
+   deux e-mails ne porte de lien ;
+5. une URL portant des jetons valides ne fait pas basculer de compte (celle-là garde PKCE, pas le
+   code).
+
+**Ce qu'aucune assertion ne peut prétendre** : que le code referme la confirmation d'une adresse
+tierce. Il est un **porteur** — mesuré, un `POST /auth/v1/verify` sans aucune session confirme et
+rend une session sur le compte du demandeur. Le code relève le prix du mauvais geste, il ne le
+supprime pas, et l'en-tête du script le dit pour que personne ne lise l'inverse dans le vert.
+
+**Et une mutation de gabarit exige un redémarrage de la stack** : GoTrue inline les gabarits au
+démarrage du conteneur, donc modifier `supabase/templates/` sans `supabase stop && start` ne change
+rien à l'e-mail envoyé — la garde reste verte, et on croit avoir éprouvé l'assertion 4. Relevé le
+20/09/2026 en jouant justement cette mutation.
 
 **Deux prérequis à connaître avant de s'étonner qu'il ne tourne pas** :
 

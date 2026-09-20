@@ -47,8 +47,7 @@ import {
 } from '@/constants/carbon-reference';
 import { formatTonnes } from '@/lib/format';
 import { nextPalier, palierEstDerriere, showsTarget2050 } from '@/types/palier';
-import { hasSeenConnexionProposal } from '@/lib/connexion-prefs';
-import { etatDeLaProposition, type EtatProposition } from '@/types/connexion';
+import { etatDeLaBanniere, type EtatDeLaBanniere } from '@/types/connexion';
 import type { Database } from '@/lib/database.types';
 import { RAMILLE } from '@/constants/mascotte';
 import { APP_NAME } from '@/constants/produit';
@@ -161,11 +160,14 @@ async function copierDansLePressePapier(
   }
 }
 
-// Anonyme et pas encore proposé un compte : au clic sur le CTA, on passe d'abord par la
-// proposition plein écran (cf. maquette "Connexion — proposition après bilan", qui
-// apparaît explicitement *après* avoir vu ce résultat). Anonyme et déjà décliné une fois :
-// bandeau discret ("Bilan anonyme — relance douce") plutôt que de réinterrompre à chaque
-// retour, le CTA va alors directement au plan.
+// **« Voir ce que je peux faire » mène au plan, toujours** (arbitrage du 20/09/2026). Cet écran
+// routait vers l'interstitiel de compte tant que la proposition n'avait pas été vue : le bouton ne
+// faisait donc pas ce qu'il disait, au moment exact où la personne vient de comprendre son chiffre.
+// Ce qui reste est une ligne en tête du contenu — la bannière qui existait déjà pour les passages
+// suivants, rendue **dès le premier** puisque plus rien ne s'interpose avant elle.
+//
+// Elle ne se rend pas en relecture, et c'était déjà le cas : le suivi est l'histoire de la
+// personne, pas un endroit où relancer.
 export default function BilanResultat() {
   const theme = useTheme();
   // Deux entrées, un seul écran (cf. `src/types/resultat.ts`) : la fin du questionnaire pose
@@ -207,11 +209,11 @@ export default function BilanResultat() {
   // l'interstitiel **ni** la bannière, c'est-à-dire plus aucune occasion de garder son bilan.
   // `getSession()` suffit et supprime l'aller-retour : c'est le cache local, et la seule chose
   // qu'on lui demande est `is_anonymous` (cf. `src/lib/analytics.ts`, même lecture).
-  const [propositionLue, setPropositionLue] = useState<EtatProposition>('inconnu');
+  const [banniereLue, setBanniereLue] = useState<EtatDeLaBanniere>('inconnu');
   // La relecture n'est pas un état à tenir à jour, c'est une propriété de l'entrée dans l'écran :
   // elle se dérive du rendu, là où l'écrire depuis l'effet serait un `setState` synchrone que le
   // React Compiler refuse (`react-hooks/set-state-in-effect`).
-  const proposition: EtatProposition = mode === 'relecture' ? 'autre' : propositionLue;
+  const banniere: EtatDeLaBanniere = mode === 'relecture' ? 'autre' : banniereLue;
   const [partage, setPartage] = useState<EtatPartage>({ statut: 'inactif' });
 
   useEffect(() => {
@@ -356,28 +358,29 @@ export default function BilanResultat() {
     if (mode === 'relecture' || state.status !== 'ok') return;
     let annule = false;
     (async () => {
-      // **Le repli n'enferme pas.** `inconnu` désactive le bouton, et cet effet ne dépend que de
-      // `[mode, state.status]` : rien ne le relance. Une lecture qui lève, ou une session que le
-      // cache ne rend pas, laissait donc « Voir ce que je peux faire » désactivé **pour de bon**,
-      // sans un mot — la seule sortie de l'écran fermée, ce qui est plus grave que le booléen
-      // optimiste d'A3-20 qu'on corrige ici. `anonyme-jamais-proposee` est le repli sûr : il passe
-      // par l'interstitiel, qui porte lui-même « Continuer sans compte » et mène au plan.
+      // **Le repli ne dit rien plutôt que d'affirmer.** `inconnu` ne rend pas la bannière, et cet
+      // effet ne dépend que de `[mode, state.status]` : rien ne le relance. Une lecture qui lève
+      // laisse donc la ligne absente — ce qui coûte une invitation, jamais une phrase fausse.
+      // C'est l'inverse du défaut d'A3-20, où le booléen optimiste sautait la proposition ; et le
+      // bouton, lui, ne dépend plus de cette lecture du tout, puisqu'il va au plan dans tous les
+      // cas. La seule sortie de l'écran ne peut donc plus se fermer.
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
         if (annule) return;
-        if (!session) {
-          setPropositionLue('anonyme-jamais-proposee');
-          return;
-        }
-        const estAnonyme = session.user.is_anonymous === true;
-        const dejaProposee = estAnonyme ? await hasSeenConnexionProposal() : false;
-        if (annule) return;
-        setPropositionLue(etatDeLaProposition({ estAnonyme, dejaProposee }));
+        if (!session) return;
+        // `new_email` est posé par `updateUser({ email })` et retiré à la vérification du code :
+        // il dit « le geste est commencé » sans aucun appel réseau de plus. Lui reproposer le
+        // départ du chemin qu'elle vient de prendre se lirait comme un échec.
+        setBanniereLue(
+          etatDeLaBanniere({
+            estAnonyme: session.user.is_anonymous === true,
+            adresseAConfirmer: Boolean(session.user.new_email),
+          })
+        );
       } catch (erreur) {
-        console.error('L’état de la proposition de compte n’a pas pu être lu :', erreur);
-        if (!annule) setPropositionLue('anonyme-jamais-proposee');
+        console.error('L’état de la session n’a pas pu être lu :', erreur);
       }
     })();
     return () => {
@@ -385,16 +388,12 @@ export default function BilanResultat() {
     };
   }, [mode, state.status]);
 
-  const goToPlan = () => {
-    // `inconnu` n'arrive pas ici — le bouton est désactivé tant qu'on ne sait pas —, et le test
-    // reste : sans lui, la première valeur lue déciderait du routage par défaut.
-    if (proposition === 'inconnu') return;
-    if (proposition === 'anonyme-jamais-proposee') {
-      router.push({ pathname: '/connexion', params: { id, source: 'resultat_transition' } });
-      return;
-    }
-    router.push('/plan');
-  };
+  // **Le plan, toujours.** C'est tout ce que ce bouton fait depuis le 20/09/2026, et c'est
+  // l'arbitrage : la prise de conscience du chiffre est ce que l'app existe pour produire, et la
+  // risquer pour un compte demandé trop tôt était le mauvais échange. La provenance
+  // `resultat_transition` de `connexion_view` n'est donc plus émise par personne — elle reste
+  // déclarée pour que l'historique d'avant le retrait se lise (`src/types/analytics.ts`).
+  const goToPlan = () => router.push('/plan');
 
   // Boucle de croissance (décision produit du 04/09/2026) : un lien vers /api/partage
   // (Vercel Edge Function, hors export statique Expo — cf. son commentaire d'en-tête) plutôt
@@ -551,23 +550,25 @@ export default function BilanResultat() {
             bouton retour dont iOS aura besoin sur cet écran de détail. */}
         <BandeHaute />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {proposition === 'anonyme-deja-proposee' && (
+          {banniere === 'anonyme' && (
             <Pressable
-              onPress={() =>
-                router.push({ pathname: '/connexion', params: { id, source: 'resultat_cta' } })
-              }
+              // Sans `id` : `/connexion` ne lit plus le résultat du bilan.
+              onPress={() => router.push({ pathname: '/connexion', params: { source: 'resultat_cta' } })}
               // La bannière porte deux textes mais un seul geste : sans libellé explicite, un
               // lecteur d'écran les annoncerait l'un après l'autre sans dire qu'il s'agit d'une
               // seule cible. Le libellé les recompose en une phrase.
               accessibilityRole="link"
-              accessibilityLabel="Ce bilan n’est enregistré que sur cet appareil. Le garder en créant un compte."
+              // « Le garder » supposait qu'il pouvait se perdre là où il est déjà en base, et
+              // « enregistré » disait la mauvaise chose : ce qui est vrai, c'est qu'il n'est
+              // accessible que d'ici. Un fait, pas une menace — et l'action dit ce qu'elle fait.
+              accessibilityLabel="Ce bilan n’est accessible que depuis cet appareil. Le retrouver ailleurs, en rattachant un compte."
               style={[styles.banner, { backgroundColor: theme.backgroundElement }]}
             >
               <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
-                Ce bilan n&apos;est enregistré que sur cet appareil.
+                Ce bilan n’est accessible que depuis cet appareil.
               </ThemedText>
               <ThemedText type="small" weight={600} themeColor="accentText">
-                Le garder
+                Le retrouver ailleurs
               </ThemedText>
             </Pressable>
           )}
@@ -891,12 +892,12 @@ export default function BilanResultat() {
 
         {mode === 'nouveau' && (
           <View style={[styles.footer, { borderTopColor: theme.border }]}>
-            {/* Désactivé tant que la session n'est pas lue : appuyer avant que la proposition
-                de compte soit connue faisait sauter l'interstitiel comme la bannière (A3-20). */}
+            {/* Plus jamais désactivé pour une raison de compte : il mène au plan, et le plan
+                n'attend rien de la session. La garde d'A3-20 protégeait un routage qui n'existe
+                plus. */}
             <Button
               title="Voir ce que je peux faire"
               onPress={goToPlan}
-              disabled={proposition === 'inconnu'}
               // Le pied est hors du `ScrollView`, donc la largeur maximale du contenu ne
               // l'atteint pas : sans ça, le bouton s'étirerait sur toute la fenêtre pendant que
               // les barres au-dessus sont bornées à 800 px (A5-21). Le filet, lui, reste pleine

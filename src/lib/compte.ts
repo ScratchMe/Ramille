@@ -158,10 +158,20 @@ export async function lireEtatDuCompte(): Promise<EtatSuppression> {
  *
  * Best-effort et **après** le succès du RPC : un AsyncStorage indisponible ne doit pas faire
  * échouer une suppression déjà effectuée côté serveur.
+ *
+ * **Exportée depuis le 20/09/2026, pour un troisième appelant : le changement d'utilisateur.**
+ * Les deux premiers sont des sorties de cet appareil ; le troisième est une arrivée — un compte
+ * retrouvé par code, depuis un appareil qui portait la session de quelqu'un d'autre. Sans
+ * balayage, le compte retrouvé lit les marques de la session qu'on vient de quitter, dont
+ * l'annonce de rattachement et l'étape du premier parcours, qui décide de la barre d'onglets.
+ * C'est le défaut que le canvas v1-21 a relevé sur le retour de lien (`v1-27` §12.12), et le
+ * chemin par code le reprend au bon endroit. Ce qui part avec, et qu'il faut savoir : le
+ * brouillon de questionnaire. C'est le bon choix quand on change de compte — le brouillon
+ * appartenait à l'autre session — et c'est déjà ce que fait la déconnexion.
  */
 const PREFIXE_CLES_LOCALES = 'traceverte.';
 
-async function effacerLesMarquesLocales(): Promise<void> {
+export async function effacerLesMarquesLocales(): Promise<void> {
   try {
     const cles = await AsyncStorage.getAllKeys();
     const aEffacer = cles.filter((cle) => cle.startsWith(PREFIXE_CLES_LOCALES));
