@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { BilanAnswers } from '@/types/bilan';
+import { type BilanAnswers, STATUT_DE_BILAN } from '@/types/bilan';
 import {
   lireLeContexte,
   type ChoixDeContexte,
@@ -37,7 +37,7 @@ export async function lireLeContexteCourant(): Promise<LectureDuContexte> {
   const { data: bilan, error: erreurBilan } = await supabase
     .from('assessments')
     .select('id')
-    .eq('status', 'completed')
+    .eq('status', STATUT_DE_BILAN.complete)
     .order('submitted_at', { ascending: false })
     .limit(1)
     .maybeSingle();

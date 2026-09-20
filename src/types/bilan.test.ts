@@ -13,6 +13,7 @@ import {
   distanceBracketMidpointKm,
   OCCUPATIONS_LONG_TRAJET,
   PARTS_DU_SECOND_MODE,
+  STATUT_DE_BILAN,
   TAILLES_DE_COVOITURAGE,
   distanceDomicileTravailARelire,
   distanceDomicileTravailKm,
@@ -624,6 +625,15 @@ describe('les tables de réponses chiffrées', () => {
   // valeur hors bornes ne serait refusée qu'à la soumission, neuf étapes trop tard et en
   // anglais. Les bornes sont recopiées ici parce que rien ne peut les lire depuis le SQL — même
   // limite que `distanceBracketMidpointKm`, et même raison de l'épingler.
+  // Les deux valeurs sont celles du `check` de `assessments.status` (20260823094800), recopiées
+  // ici à la main comme les bornes du dessous : une constante qui dérive de son `check` ne se voit
+  // ni au typecheck (la colonne est un `text`) ni en CI — elle se lit « Ton bilan n'est pas encore
+  // fait », en production. Éprouvé le 20/09/2026 : `'completed'` → `'complete'` fait tomber ce
+  // seul test.
+  it('les statuts de bilan sont ceux du check du schéma', () => {
+    expect(Object.values(STATUT_DE_BILAN)).toEqual(['in_progress', 'completed']);
+  });
+
   it('la part du second mode tient dans ses bornes strictes', () => {
     for (const { value } of PARTS_DU_SECOND_MODE) {
       expect(value).toBeGreaterThan(0);

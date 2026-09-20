@@ -13,8 +13,8 @@
 // Les calculs purs qui exploitent ces données (écart entre deux bilans, dédoublonnage par
 // jour, ancienneté) vivent dans `src/types/suivi.ts`, sans dépendance au client Supabase.
 import { supabase } from '@/lib/supabase';
-import type { BilanAnswers } from '@/types/bilan';
-import { genreDeReponse } from '@/types/checkin';
+import { type BilanAnswers, STATUT_DE_BILAN } from '@/types/bilan';
+import { genreDeReponse, STATUT_DU_POINT } from '@/types/checkin';
 import {
   decisionsParSaison,
   keepLatestPerDay,
@@ -45,7 +45,7 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
     .select(
       'id, submitted_at, assessment_results(total_co2_kg_year, dominant_poste, dominant_poste_label, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year)'
     )
-    .eq('status', 'completed')
+    .eq('status', STATUT_DE_BILAN.complete)
     .order('submitted_at', { ascending: true });
 
   if (error || !data) return { ok: false };
@@ -91,7 +91,7 @@ export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> 
   const { data, error } = await supabase
     .from('engagement_checkins')
     .select('id, loop_type, period_label, period_start, response_kind, responded_at')
-    .eq('status', 'answered')
+    .eq('status', STATUT_DU_POINT.repondu)
     .order('period_start', { ascending: false });
 
   if (error || !data) return { ok: false };
@@ -208,7 +208,7 @@ export async function loadBilanPrecedent(
   const { data, error } = await supabase
     .from('assessments')
     .select('id, submitted_at, assessment_results(total_co2_kg_year)')
-    .eq('status', 'completed')
+    .eq('status', STATUT_DE_BILAN.complete)
     .order('submitted_at', { ascending: false })
     .limit(2);
 
@@ -266,7 +266,7 @@ export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
   const { data: assessment } = await supabase
     .from('assessments')
     .select('id')
-    .eq('status', 'completed')
+    .eq('status', STATUT_DE_BILAN.complete)
     .order('submitted_at', { ascending: false })
     .limit(1)
     .maybeSingle();

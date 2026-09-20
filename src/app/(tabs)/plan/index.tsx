@@ -72,12 +72,14 @@ import {
 } from '@/lib/notification-prefs';
 import { lirePermission } from '@/lib/rappels';
 import { supabase } from '@/lib/supabase';
+import { STATUT_DE_BILAN } from '@/types/bilan';
 import {
   debutDePeriodeInterrogee,
   estDeLaPeriodeCourante,
   genreDeReponse,
   periodePrecedente,
   type PointRepondu,
+  STATUT_DU_POINT,
 } from '@/types/checkin';
 import {
   boucleDeLAction,
@@ -138,7 +140,7 @@ function keepLatestPerLoop(checkins: EngagementCheckin[]): EngagementCheckin[] {
   const seen = new Set<EngagementCheckin['loop_type']>();
   return checkins.filter((checkin) => {
     if (seen.has(checkin.loop_type)) return false;
-    if (checkin.status === 'answered' && !estDeLaPeriodeCourante(checkin)) return false;
+    if (checkin.status === STATUT_DU_POINT.repondu && !estDeLaPeriodeCourante(checkin)) return false;
     seen.add(checkin.loop_type);
     return true;
   });
@@ -539,7 +541,7 @@ export default function Plan() {
         const { data: assessment, error: erreurBilan } = await supabase
           .from('assessments')
           .select('id, submitted_at')
-          .eq('status', 'completed')
+          .eq('status', STATUT_DE_BILAN.complete)
           .order('submitted_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -638,7 +640,7 @@ export default function Plan() {
           // disparaissait au premier changement d'onglet — la personne répondait, voyait le mot de
           // Ramille, revenait, et ne trouvait plus rien du tout. `expired` reste dehors : un point
           // que la période suivante a clos n'a rien à montrer.
-          .in('status', ['pending', 'answered'])
+          .in('status', [STATUT_DU_POINT.enAttente, STATUT_DU_POINT.repondu])
           // La fenêtre borne une lecture qui grossirait sans fin depuis qu'elle prend les points
           // répondus : trois périodes mensuelles couvrent ce dont le second renforcement a besoin.
           .gte('period_start', fenetreDesPoints(new Date(), cyclePrecedent?.period_start))
