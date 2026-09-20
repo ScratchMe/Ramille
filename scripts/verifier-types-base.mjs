@@ -15,6 +15,34 @@
 // désarmé. Ce qui compte est l'ensemble `(table, bloc, colonne) → type`, et il se lit des deux
 // côtés avec le même analyseur : les deux fichiers ont la même forme, seule leur fraîcheur diffère.
 //
+// **Le bloc `Functions` est comparé de la même façon, sur les noms d'arguments et leur optionalité —
+// jamais sur leur type** (20/09/2026, v1-27 §2). Ce bloc est tenu à la main lui aussi, et un nom
+// d'argument faux s'y paie de la même façon qu'une colonne fantôme : `supabase.rpc()` part avec une
+// clé que la fonction ne connaît pas, et PostgREST répond « function not found » à l'exécution. Le
+// type, lui, est exclu de la comparaison pour une raison mesurée le jour où le contrôle a été écrit :
+// le générateur rend `string` pour tout argument `text`, sans savoir si la fonction accepte
+// `null` — `mettre_a_jour_le_contexte(p_teletravail)` l'accepte, et le fichier du dépôt dit donc
+// `string | null`, ce qui est plus juste que la sortie du générateur. Comparer les types ferait
+// choisir entre un contrôle rouge à demeure et un type faux dans le code.
+//
+// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1), sur une copie du fichier du dépôt
+// jouant le rôle du fichier généré — huit mutations, et ce que chacune fait tomber :
+//   - un argument renommé (`p_cause` → `p_causee`)            → 2 écarts (manque + fantôme) ;
+//   - un `?` retiré (`p_cause?` → `p_cause`)                  → 1 écart d'optionalité ;
+//   - une fonction renommée (`season_bounds` → `_v2`)          → 2 écarts (absente + fantôme) ;
+//   - un argument ajouté, forme développée (`archiver_engagement`) → 1 écart ;
+//   - un argument ajouté, forme sur une ligne (`check_intention_days`) → 1 écart ;
+//   - le bloc `Functions` retiré                              → « Aucune fonction lue », sortie 1 ;
+//   - le seul type changé (`p_teletravail: string | null` → `string`) → 0 écart, **voulu** ;
+//   - `Args: never` réécrit `Args: Record<PropertyKey, never>` → 0 écart, **voulu** (l'ancienne
+//     écriture du CLI pour une fonction sans argument, qui doit lire pareil) ;
+//   - un schéma `graphql_public` posé **devant** `public`, avec une table et une fonction à lui
+//     (la forme réelle du CLI 2.117.0)                        → 0 écart, **voulu** ;
+//   - la même forme, mais le bloc `Functions` de `public` retiré → « Aucune fonction lue », sortie 1
+//     (le bornage au schéma ne rend pas la garde aveugle : celui de `graphql_public` ne compte pas).
+// Ce que l'analyseur ne voit pas, des deux côtés : une **surcharge** (deux signatures du même nom),
+// que le générateur rend en union — le dépôt n'en a aucune, par décision (C2.4, C4.6).
+//
 // Usage : node scripts/verifier-types-base.mjs <fichier-genere.ts>
 // En CI, le fichier généré vient de `supabase gen types typescript --local`, donc de la base que
 // `supabase/migrations/` vient de construire — la même que celle des tests pgTAP.
@@ -37,18 +65,33 @@ if (!genere) {
 /**
  * Les colonnes de chaque table, par bloc (`Row`, `Insert`, `Update`).
  *
- * L'analyse s'appuie sur l'indentation du générateur, qui est stable : une table est introduite à
- * six espaces, un bloc à huit, une colonne à dix. Les vues et les fonctions vivent dans d'autres
- * sections du fichier et portent la même indentation ; c'est sans conséquence — ce qu'on compare
- * est un ensemble, et il est lu identiquement des deux côtés.
+ * L'analyse s'appuie sur l'indentation du générateur, qui est stable : un schéma est introduit à
+ * deux espaces, une table à six, un bloc à huit, une colonne à dix. Les vues et les fonctions vivent
+ * dans d'autres sections du fichier et portent la même indentation ; c'est sans conséquence — ce
+ * qu'on compare est un ensemble, et il est lu identiquement des deux côtés.
+ *
+ * **Seul le schéma `public` est lu, et ce n'est pas une simplification** (20/09/2026, CI rouge de la
+ * PR qui a ajouté les fonctions) : le CLI émet aussi `graphql_public` — **avant** `public`, ordre
+ * alphabétique — avec sa fonction `graphql`, là où le générateur du distant n'émet que `public`.
+ * Sans ce bornage, tout ce que porte un autre schéma se lit « absent du fichier », pour une raison
+ * de forme, c'est-à-dire le cas exact que l'en-tête promet d'éviter.
  */
 function colonnesParTable(chemin) {
   const lignes = fs.readFileSync(chemin, 'utf8').split('\n');
   const tables = new Map();
+  let schema = null;
   let table = null;
   let bloc = null;
 
   for (const ligne of lignes) {
+    const debutSchema = ligne.match(/^ {2}(\w+): \{$/);
+    if (debutSchema) {
+      schema = debutSchema[1];
+      table = null;
+      bloc = null;
+      continue;
+    }
+    if (schema !== 'public') continue;
     const debutTable = ligne.match(/^ {6}(\w+): \{$/);
     if (debutTable) {
       table = debutTable[1];
@@ -78,13 +121,99 @@ function colonnesParTable(chemin) {
   return tables;
 }
 
+/**
+ * Les arguments de chaque fonction, avec leur optionalité (`?`) et sans leur type.
+ *
+ * Le générateur produit deux formes selon la longueur : une fonction courte tient sur une ligne
+ * (`nom: { Args: { a: t; b?: t }; Returns: t }`, ou `Args: never` sans argument), une longue se
+ * développe (`Args: {` puis un argument par ligne à dix espaces). Les deux sont lues, parce que le
+ * fichier du dépôt et le fichier généré peuvent choisir différemment pour une même fonction — une
+ * retouche à la main allonge une ligne sans la replier. Les blocs `Returns: {` et `SetofOptions`
+ * portent la même indentation que les arguments et sont ignorés : seul ce qui suit `Args` compte.
+ */
+function argumentsParFonction(chemin) {
+  const lignes = fs.readFileSync(chemin, 'utf8').split('\n');
+  const fonctions = new Map();
+  let schema = null;
+  let dansLeBloc = false;
+  let fonction = null;
+  let dansLesArgs = false;
+
+  for (const ligne of lignes) {
+    const debutSchema = ligne.match(/^ {2}(\w+): \{$/);
+    if (debutSchema) {
+      schema = debutSchema[1];
+      dansLeBloc = false;
+      fonction = null;
+      continue;
+    }
+    if (schema !== 'public') continue;
+    if (!dansLeBloc) {
+      if (/^ {4}Functions: \{$/.test(ligne)) dansLeBloc = true;
+      continue;
+    }
+    if (/^ {4}\}$/.test(ligne)) {
+      dansLeBloc = false;
+      continue;
+    }
+
+    const surUneLigne = ligne.match(/^ {6}(\w+): \{ Args: (?:never|Record<PropertyKey, never>|\{ (.*?) \}); Returns: .*\}$/);
+    if (surUneLigne) {
+      fonctions.set(surUneLigne[1], argumentsEnLigne(surUneLigne[2]));
+      continue;
+    }
+    const debut = ligne.match(/^ {6}(\w+): \{$/);
+    if (debut) {
+      fonction = debut[1];
+      fonctions.set(fonction, new Map());
+      dansLesArgs = false;
+      continue;
+    }
+    if (!fonction) continue;
+    if (/^ {6}\}$/.test(ligne)) {
+      fonction = null;
+      continue;
+    }
+    const argsEnLigne = ligne.match(/^ {8}Args: (?:never|Record<PropertyKey, never>|\{ (.*?) \})$/);
+    if (argsEnLigne) {
+      fonctions.set(fonction, argumentsEnLigne(argsEnLigne[1]));
+      continue;
+    }
+    if (/^ {8}Args: \{$/.test(ligne)) {
+      dansLesArgs = true;
+      continue;
+    }
+    if (dansLesArgs && /^ {8}\}$/.test(ligne)) {
+      dansLesArgs = false;
+      continue;
+    }
+    const argument = dansLesArgs ? ligne.match(/^ {10}(\w+)(\??): /) : null;
+    if (argument) fonctions.get(fonction).set(argument[1], argument[2]);
+  }
+  return fonctions;
+}
+
+/** `a: t; b?: t` → { a → '', b → '?' } ; `undefined` (la forme `never`) → aucun argument. */
+function argumentsEnLigne(texte) {
+  const args = new Map();
+  if (!texte) return args;
+  for (const morceau of texte.split(';')) {
+    const argument = morceau.trim().match(/^(\w+)(\??): /);
+    if (argument) args.set(argument[1], argument[2]);
+  }
+  return args;
+}
+
+const fonctionsAttendues = argumentsParFonction(genere);
+const fonctionsPresentes = argumentsParFonction(TENU_A_LA_MAIN);
+
 const attendu = colonnesParTable(genere);
 const present = colonnesParTable(TENU_A_LA_MAIN);
 
-if (attendu.size === 0) {
+if (attendu.size === 0 || fonctionsAttendues.size === 0) {
   console.error(
-    `Aucune table lue dans ${genere} : le générateur n'a rien produit, ou sa forme a changé.\n` +
-      `Le contrôle ne peut rien comparer, et passer serait pire que rougir.`
+    `Aucune ${attendu.size === 0 ? 'table' : 'fonction'} lue dans ${genere} : le générateur n'a rien ` +
+      `produit, ou sa forme a changé.\nLe contrôle ne peut rien comparer, et passer serait pire que rougir.`
   );
   process.exit(1);
 }
@@ -111,6 +240,31 @@ for (const cle of present.keys()) {
   if (!attendu.has(cle)) ecarts.push(`${cle} : dans le fichier, absent de la base`);
 }
 
+for (const [nom, args] of fonctionsAttendues) {
+  const local = fonctionsPresentes.get(nom);
+  if (!local) {
+    ecarts.push(`Functions.${nom} : absente de src/lib/database.types.ts`);
+    continue;
+  }
+  for (const [argument, optionnel] of args) {
+    if (!local.has(argument))
+      ecarts.push(`Functions.${nom}.${argument} : manque (la base le porte, le fichier non)`);
+    else if (local.get(argument) !== optionnel)
+      ecarts.push(
+        `Functions.${nom}.${argument} : ${optionnel ? 'facultatif' : 'obligatoire'} en base, ` +
+          `${local.get(argument) ? 'facultatif' : 'obligatoire'} dans le fichier`
+      );
+  }
+  for (const argument of local.keys()) {
+    if (!args.has(argument))
+      ecarts.push(`Functions.${nom}.${argument} : fantôme (le fichier le porte, la base non)`);
+  }
+}
+
+for (const nom of fonctionsPresentes.keys()) {
+  if (!fonctionsAttendues.has(nom)) ecarts.push(`Functions.${nom} : dans le fichier, absente de la base`);
+}
+
 if (ecarts.length > 0) {
   console.error(
     `src/lib/database.types.ts ne décrit plus la base.\n` +
@@ -123,4 +277,6 @@ if (ecarts.length > 0) {
   process.exit(1);
 }
 
-console.log(`${attendu.size} blocs de colonnes comparés, aucun écart avec la base.`);
+console.log(
+  `${attendu.size} blocs de colonnes et ${fonctionsAttendues.size} fonctions comparés, aucun écart avec la base.`
+);

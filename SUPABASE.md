@@ -174,6 +174,20 @@ La comparaison porte sur les **colonnes** et jamais sur le texte : le fichier du
 projet distant et la CI du CLI local, donc un `diff` brut serait rouge dès le premier passage pour
 une raison de forme, et finirait désarmé.
 
+**Depuis le 20/09/2026, le bloc `Functions` est comparé aussi** — le nom de chaque fonction, le nom
+de ses arguments et leur optionalité, **jamais leur type**. La raison est mesurée, pas de principe :
+le générateur rend `string` pour tout argument `text` sans savoir si la fonction accepte `null`, et
+`mettre_a_jour_le_contexte(p_teletravail)` l'accepte — le fichier du dépôt dit donc
+`string | null`, plus juste que la sortie du générateur. Comparer les types obligerait à choisir
+entre un contrôle rouge à demeure et un type faux dans le code. Ce que le contrôle ne voit pas : une
+**surcharge** (deux signatures du même nom), que le générateur rend en union et que l'analyseur
+ignore des deux côtés — le dépôt n'en a aucune, par décision (C2.4 et C4.6 remplacent une signature
+plutôt que d'en ajouter une). L'analyseur lit les deux formes du générateur (une fonction courte sur
+une ligne, une longue développée) et l'ancienne écriture `Args: Record<PropertyKey, never>` du CLI
+à côté de `Args: never`, et il ne lit que le schéma `public` — le CLI émet aussi `graphql_public`,
+**devant** lui, ce que le générateur du distant ne fait pas, et la première CI de ce contrôle a rougi
+là-dessus. Dix mutations datées en tête du script disent ce qu'il attrape.
+
 ### 2.2 Privilèges, policies et index
 
 **Les privilèges de table sont écrits, et `supabase/config.toml` ne porte plus
@@ -209,6 +223,18 @@ Les deux se sont fait prendre en contre-lisant la vague 4, et aucune ne se voit 
   `20260912180000`, deux partiels (la colonne est nulle dans l'immense majorité des lignes). Ils ne
   servent **aucune lecture** du produit, seulement les suppressions — donc le lint `unused_index`
   les signalera un jour sans qu'il faille les retirer.
+- **L'inverse existe aussi, et il est mesuré** (20/09/2026) : le lint `unindexed_foreign_keys`
+  signale **sept** clés étrangères sans index, toutes vers `transport_modes`
+  (`assessment_answers.commute_mode`, `.commute_second_mode`, `.leisure_mode`,
+  `assessment_results.commute_poste_mode`, `.dominant_poste_mode`,
+  `action_templates.substitute_mode_id`, `engagement_checkins.mode`). Elles restent sans index
+  **exprès** : un référentiel d'une vingtaine de lignes qu'aucun code ne supprime (le seul
+  `delete from transport_modes` du dépôt est le re-seed de `20260824180000`, joué quand aucune table
+  enfant n'existait), des clés en `on delete no action`, et aucune lecture du produit qui parte d'un
+  mode vers ses lignes enfants — sept index n'auraient ni suppression à protéger ni requête à servir.
+  L'avis les signalera à chaque passe ; ce paragraphe est là pour que le tri soit une lecture et non
+  une re-décision. Ce qui le rouvre : retirer un mode du référentiel — poser les index **avant** le
+  `delete`.
 
 Deux pièges vérifiés en construisant `usage_events`, tous deux silencieux (le troisième, sur les
 colonnes homonymes de `profiles`, est resté dans `CLAUDE.md` avec la mesure d'usage) :
