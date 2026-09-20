@@ -708,3 +708,46 @@ règle qui s'applique), le passage en `flowType: 'pkce'` (qui change ce que la p
 un lien ne s'ouvrirait plus que sur l'appareil qui l'a demandé), le pré-détournement d'adresse par
 `/connexion/email`, et la CSP en `Report-Only` sans collecteur (§12.3, dont ce moment **est** la
 condition de réouverture).
+
+### 12.10 Le passage en PKCE, et trois gardes qui ne pouvaient pas tomber (20/09/2026)
+
+Arbitré par la personne qui pilote le 20/09/2026 (« OK pour passer à PKCE »), après le relevé du
+§12.9 : en `implicit`, la liste des Redirect URLs était le **seul** contrôle existant sur un
+compte, et quatre entrées trop larges y avaient été trouvées le jour même. Le coût assumé est
+produit : **un lien ne s'ouvre plus que là où il a été demandé.**
+
+**Ce que le chantier a réellement fermé, mesuré des deux côtés.** Avec le flux implicite, une URL
+portant les jetons d'un tiers fait basculer la session de la victime sur le compte de l'attaquant
+(`05b1f277…` → `a7b84d72…`, joué dans un navigateur) ; en PKCE elle ne bouge pas. Le scheme
+`ramille` étant BROWSABLE, n'importe quelle page web du téléphone pouvait déclencher ça.
+
+**Le vrai enseignement n'est pas le chantier, ce sont les trois gardes qui sont passées pour une
+mauvaise raison** — trois fois dans la même journée, sur le même chantier, et chacune trouvée par
+le cran du dessus :
+
+1. **Une restauration de mutation a interverti deux messages.** `str.replace(x, y, 1)` a remplacé
+   la **première** occurrence de la chaîne, qui n'était pas celle qu'on venait de muter :
+   `lien_expire` et `lien_ouvert_ailleurs` ont échangé leurs textes. Le typecheck, le linter et
+   les tests sont restés verts — l'assertion existante vérifiait que les messages sont
+   **différents**, pas qu'ils sont à la bonne place. Quelqu'un dont le lien est parfaitement
+   valable aurait lu « il a expiré », en aurait redemandé un, et serait retombé sur le même mur.
+   *Trouvé par le script de bout en bout, qui a lu l'écran.*
+2. **L'assertion d'injection relisait « une » session au lieu d'attendre un changement**, donc
+   ramenait l'ancienne avant que le SDK n'ait fini.
+3. **Et surtout : elle injectait pendant que l'app se routait encore.** La racine redirige côté
+   client, et cette redirection emporte la navigation lancée en même temps, fragment compris —
+   l'attaque n'avait pas lieu, et le script concluait « refusée ». Flux implicite remis, il
+   restait **vert sur la faille qu'il existe pour voir**. *Trouvé en exigeant qu'une mutation
+   fasse tomber ce qu'elle est censée faire tomber, et en instrumentant quand ce n'est pas le
+   cas.*
+
+**La règle qui en sort, et elle est portable** (écrite en `TESTING.md` §1.1 et §2.9) : *une garde
+dont le succès est une **absence** doit laisser à ce qu'elle interdit le temps **et** les
+conditions de réussir.* Sinon elle mesure son propre empressement. Et corollaire de mécanique :
+**une mutation se défait en réécrivant l'état d'avant, jamais par un second remplacement
+textuel** — la chaîne qu'on remet existe souvent ailleurs dans le fichier.
+
+**Ce que la couverture ne prend pas — écrit, pour que personne ne le déduise du silence** : le script est web, donc
+`createSessionFromUrl` — la branche native — n'y est pas jouée. Le pas sur appareil reste à
+`RECETTE.md`, et c'est le seul endroit où le retour Google natif et le lien ouvert depuis une
+messagerie se vérifient.

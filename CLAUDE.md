@@ -798,6 +798,38 @@ formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laiss
 natif, le lien arrive hors de l'app (messagerie) et remonte par `Linking.useURL()` dans
 `_layout.tsx` ; le scheme `ramille://` doit donc figurer dans les Redirect URLs Supabase.
 
+**Le flux est en PKCE depuis le 20/09/2026, et le lien ne s'ouvre plus que là où il a été
+demandé.** Le défaut d'`auth-js` est `implicit` : tout lien livrait alors `access_token` **et**
+`refresh_token` en clair dans le fragment de l'adresse d'arrivée, donc la liste des Redirect URLs
+Supabase était le **seul** contrôle existant sur un compte — et quatre entrées trop larges y ont
+été trouvées le jour même. En PKCE, le lien ne porte qu'un `code`, qui ne vaut rien sans le
+vérifieur resté dans le stockage du client demandeur. Cinq points à connaître :
+
+- **L'injection de session par lien profond est fermée du même geste** : `auth-js` refuse un
+  fragment implicite quand le client est en PKCE. Le scheme `ramille` est BROWSABLE, donc
+  n'importe quelle page web du téléphone pouvait ouvrir `ramille://x#access_token=<les siens>` et
+  faire basculer l'app sur le compte de quelqu'un d'autre. **Mesuré avant et après** : en
+  implicite la session de la victime devenait celle de l'attaquant, en PKCE elle ne bouge pas.
+- **`createSessionFromUrl` échange un code, et refuse la forme « jetons » nommément.** C'est
+  exactement la forme qu'un lien injecté porte — un attaquant ne peut pas fabriquer un `code`
+  échangeable —, donc la distinguer permet de la refuser avec une phrase vraie plutôt que de la
+  laisser échouer sur un message technique.
+- **Le piège du chantier est un silence, pas une erreur** : `_isPKCECallback` rend **faux** quand
+  le vérifieur manque, donc sur web le SDK ne tente rien et ne lève rien. Sans la branche `code`
+  du layout racine, la personne atterrissait sur l'accueil, déconnectée, sans un mot, son lien
+  encore valable dans la barre d'adresse. La branche tranche après `getSession()`, qui attend
+  l'initialisation du SDK — donc sans course —, et le signal est le `code` **toujours présent**
+  dans l'URL, qu'`auth-js` retire quand il réussit.
+- **Un troisième motif de retour existe, `lien_ouvert_ailleurs`**, et c'est le seul des trois qui
+  décrit un lien **encore valable** : lui donner le message de l'expiration ferait redemander un
+  lien à l'infini, chacun échouant pareil. Le vérifieur manquant se reconnaît au **code**
+  (`pkce_code_verifier_not_found`), jamais au message — celui d'`auth-js` est anglais et parle de
+  Next.js.
+- **Le flux entier est joué à chaque PR** (`scripts/verifier-lien-de-connexion.mjs`, `TESTING.md`
+  §2.9), contre une vraie stack et un vrai e-mail : c'est ce qui a rendu ce chantier vérifiable
+  au lieu de plausible, et c'est lui qui a trouvé deux défauts de plus — dont une interversion de
+  messages qu'aucun test unitaire ne voyait.
+
 **`estPanneDeTransport` couvre les 5xx, et c'est assumé** — `auth-js` lève
 `AuthRetryableFetchError` pour chacun d'eux : `SUPABASE.md` §2.4.
 

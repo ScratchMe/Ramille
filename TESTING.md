@@ -38,6 +38,21 @@ Corollaire pour une valeur attendue : **une hypothèse sur les données se mesur
 raisonnement**. Une assertion chiffrée se recalcule par une requête sur la base, et n'écrit que ce
 qui a été ainsi vérifié (§2.2).
 
+
+**Une mutation se défait en réécrivant l'état d'avant, jamais par un second remplacement
+textuel.** Relevé le 20/09/2026 : la chaîne remise en place existait **ailleurs** dans le même
+fichier, le remplacement a frappé la première occurrence, et deux messages d'erreur se sont
+retrouvés intervertis — verts au typecheck, au linter et aux tests, parce que l'assertion en place
+vérifiait qu'ils sont *différents* et non qu'ils sont *à la bonne place*. Garder une copie de
+l'état d'avant et la réécrire coûte une ligne.
+
+**Et une garde dont le succès est une ABSENCE doit laisser à ce qu'elle interdit le temps et les
+conditions de réussir.** Même journée, deux fois : une assertion « la session n'a pas basculé »
+relisait l'état trop tôt, puis déclenchait l'attaque pendant que l'app se routait encore — la
+redirection emportait la navigation, donc l'attaque n'avait pas lieu et la garde concluait
+« refusée ». Avec la faille grande ouverte, elle restait verte. Le test d'une garde de cette forme
+n'est donc pas « passe-t-elle ? » mais « **tombe-t-elle quand je remets le défaut ?** » — et si
+elle ne tombe pas, c'est la garde qu'on instrumente, pas le produit qu'on déclare sain.
 ### 1.2 Où passe la ligne entre logique pure et entrée-sortie
 
 La ligne passe par **ce qu'un test doit dresser avant de pouvoir affirmer**, et non par le nom
@@ -487,3 +502,44 @@ vu en une seconde — mais personne ne le lance.
 
 **Éprouvé en le cassant** (§1.1), une mutation par branche : un chemin déplacé dans `CLAUDE.md`,
 et une tolérance qu'aucun document n'emprunte.
+
+### 2.9 Le lien de connexion, joué de bout en bout
+
+**Le seul chemin du produit vers un compte existant n'était gardé par rien** jusqu'au 20/09/2026.
+Jest ne voit pas partir un e-mail, pgTAP ne voit pas GoTrue, et le parcours réel ne joue que la
+session anonyme. Quelqu'un qui change d'appareil, qui réinstalle, ou qui arrive sur
+`/compte/suppression` depuis un navigateur neuf n'a que ce chemin — et le passage en PKCE du même
+jour touchait ses trois branches d'un coup.
+
+`scripts/verifier-lien-de-connexion.mjs` demande un lien **par l'écran** (c'est le client qui
+fabrique le défi PKCE et range le vérifieur), lit l'e-mail réellement reçu, et éprouve trois
+choses dont **une seule est un chemin heureux** : le lien ouvert au bon endroit ouvre la session ;
+ouvert ailleurs il échoue **en le disant** ; et une URL portant des jetons valides ne fait plus
+basculer de compte.
+
+**Deux prérequis à connaître avant de s'étonner qu'il ne tourne pas** :
+
+- **`[local_smtp]` doit être activé** dans `supabase/config.toml`. Il l'est depuis le 20/09/2026,
+  et c'est ce qui rend ce script possible. Le collecteur est **Mailpit** et non Inbucket : le CLI
+  a changé d'outil, les routes diffèrent (`/api/v1/search` contre `/api/v1/mailbox/<nom>`), et
+  `supabase status -o env` publie encore la variable sous les **deux** noms — la première version
+  du script prenait des 404 pour une boîte vide.
+- **Il sert l'export sur le port 3000, et ce n'est pas négociable.** L'app calcule son
+  `redirectTo` depuis `window.location.origin`, et GoTrue n'accepte que les origines de sa liste,
+  dont `site_url = http://127.0.0.1:3000`. Sur un port au hasard, le lien retomberait sur la Site
+  URL **sans rien dire**, et le script éprouverait autre chose que ce qu'il annonce.
+
+**Et la leçon qui vaut pour n'importe quelle garde de bout en bout, payée deux fois ici.** Les
+deux assertions dont le succès est une **absence** — « la session n'a pas basculé », « le lien
+n'a pas ouvert de compte » — passaient toutes les deux pour la mauvaise raison :
+
+1. elles relisaient « une » session au lieu d'attendre un **changement**, donc ramenaient
+   l'ancienne avant que le SDK n'ait fini ;
+2. et l'injection était lancée **pendant que l'app se routait encore** — la racine redirige côté
+   client, et cette redirection emporte la navigation lancée en même temps, fragment compris.
+   L'attaque n'avait donc pas lieu, et le script disait « refusée ».
+
+Avec le flux implicite remis — c'est-à-dire la faille grande ouverte —, il restait **vert**. Une
+garde dont le succès est une absence doit laisser à ce qu'elle interdit le **temps** et les
+**conditions** de réussir ; sinon elle mesure son propre empressement. `TRACE_LIEN=1` imprime les
+identifiants et l'URL finale, et c'est ce qui l'a montré.

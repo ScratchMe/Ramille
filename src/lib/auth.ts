@@ -3,12 +3,11 @@
 // `user_id`, cf. doc §1) plutôt que de créer une nouvelle session : c'est ce qui permet
 // au bilan déjà en base de rester attaché sans code de migration applicatif.
 import { makeRedirectUri } from 'expo-auth-session';
-import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from '@/lib/supabase';
-import { issueDuNavigateurDAuth, lireRetourDeLien } from '@/types/connexion';
+import { codeDuRetourDeLien, issueDuNavigateurDAuth, lireRetourDeLien } from '@/types/connexion';
 
 // Requis uniquement sur web (referme l'onglet/popup d'auth quand le redirect revient) —
 // no-op inoffensif sur natif, cf. doc Supabase "Native Mobile Deep Linking".
@@ -95,28 +94,42 @@ export async function linkGoogleIdentity(): Promise<IssueGoogle> {
   };
 }
 
-// Ouvre la session portée par une URL de retour (`#access_token=…&refresh_token=…`). Deux
-// appelants sur natif : le retour Google ci-dessus, et le lien de connexion par email, qui
-// arrive hors de l'app (ouvert depuis la messagerie) et remonte par `Linking.useURL()` dans
-// `_layout.tsx`. Sur web, `detectSessionInUrl` fait ce travail tout seul.
+// Ouvre la session portée par une URL de retour (`?code=…`). Deux appelants sur natif : le
+// retour Google ci-dessus, et le lien de connexion par email, qui arrive hors de l'app (ouvert
+// depuis la messagerie) et remonte par `Linking.useURL()` dans `_layout.tsx`. Sur web,
+// `detectSessionInUrl` fait ce travail tout seul.
+//
+// **Depuis le passage en PKCE (20/09/2026), cette fonction échange un code au lieu de poser des
+// jetons**, et la différence n'est pas une histoire de format : `setSession` acceptait
+// n'importe quelle paire de jetons venue de n'importe où, donc n'importe quelle page web du
+// téléphone pouvait ouvrir `ramille://x#access_token=<les siens>` et faire basculer l'app sur
+// le compte de quelqu'un d'autre — le scheme est BROWSABLE. Un `code`, lui, ne s'échange
+// qu'avec le vérifieur resté dans le stockage de cette installation.
+//
+// La forme `jetons` est donc **refusée nommément** plutôt que laissée à échouer : c'est
+// exactement la forme qu'un lien injecté porte, et un refus muet se lirait comme une panne.
 export async function createSessionFromUrl(url: string): Promise<AuthResult> {
-  // **L'échec du lien arrive dans le même fragment que les jetons**, sous une autre forme
-  // (`#error=access_denied&error_code=otp_expired`). Le test d'avant portait sur le champ
-  // `errorCode` de `getQueryParams`, qui ne lit que ce nom-là — en camel, jamais envoyé par
-  // Supabase : il valait donc toujours `null`, et un lien expiré ressortait d'ici avec
-  // « Jetons de session manquants ». La lecture vit maintenant dans `src/types/connexion.ts`,
-  // testée, et c'est la même que celle du layout racine.
-  if (lireRetourDeLien(url) === 'erreur') {
+  // **L'échec du lien arrive dans le même bloc que le code**, sous une autre forme
+  // (`error=access_denied&error_code=otp_expired`). Le test d'avant portait sur le champ
+  // `errorCode` de `getQueryParams` (`expo-auth-session`), qui ne lit que ce nom-là — en camel,
+  // jamais envoyé par Supabase : il valait donc toujours `null`, et un lien expiré ressortait
+  // d'ici avec « Jetons de session manquants ». La lecture vit maintenant dans
+  // `src/types/connexion.ts`, testée, et c'est la même que celle du layout racine — ce module
+  // n'est d'ailleurs plus importé du tout ici.
+  const retour = lireRetourDeLien(url);
+  if (retour === 'erreur') {
     return { error: new Error('Ce lien de connexion n’est plus valable.') };
   }
-
-  const { params } = QueryParams.getQueryParams(url);
-  const { access_token, refresh_token } = params;
-  if (!access_token || !refresh_token) {
-    return { error: new Error('Jetons de session manquants dans la redirection.') };
+  if (retour === 'jetons') {
+    return { error: new Error('Ce lien porte une session qui n’a pas été demandée depuis cet appareil.') };
   }
 
-  const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+  const code = codeDuRetourDeLien(url);
+  if (!code) {
+    return { error: new Error('Code de session manquant dans la redirection.') };
+  }
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
   return { error };
 }
 

@@ -46,7 +46,17 @@ function resoudre(dist, url) {
 }
 
 /** Démarre le serveur sur un port libre et rend son adresse, plus de quoi le refermer. */
-export async function servirExport(dist) {
+/**
+ * @param dist  le dossier d'export à servir
+ * @param port  le port à écouter, ou `0` pour en laisser choisir un libre.
+ *
+ * **Le port fixe n'est pas une commodité** : `verifier-lien-de-connexion.mjs` en a besoin parce
+ * que l'app calcule son `redirectTo` depuis `window.location.origin` (`src/lib/app-url.ts`), et
+ * que GoTrue n'accepte que les origines de sa liste — `site_url` vaut `http://127.0.0.1:3000`
+ * dans `supabase/config.toml`. Servir sur un port au hasard ferait retomber le lien sur la Site
+ * URL en silence, c'est-à-dire éprouver autre chose que ce qu'on croit.
+ */
+export async function servirExport(dist, port = 0) {
   const serveur = createServer((requete, reponse) => {
     const fichier = resoudre(dist, requete.url ?? '/');
     if (!fichier) {
@@ -59,7 +69,7 @@ export async function servirExport(dist) {
     createReadStream(fichier).pipe(reponse);
   });
 
-  await new Promise((pret) => serveur.listen(0, '127.0.0.1', pret));
+  await new Promise((pret) => serveur.listen(port, '127.0.0.1', pret));
   return {
     base: `http://127.0.0.1:${serveur.address().port}`,
     fermer: () => serveur.close(),

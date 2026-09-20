@@ -35,7 +35,7 @@ import {
 } from '@/lib/rappels';
 import { configurationSupabase, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
 import { appErrorCategory, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
-import { lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
+import { estVerifieurManquant, lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -276,7 +276,19 @@ export default function RootLayout() {
     if (!configurationSupabase.complete || !urlEntrante) return;
     const retour = lireRetourDeLien(urlEntrante);
     if (retour === 'aucun') return;
-    if (Platform.OS === 'web' && (retour !== 'erreur' || window.location.pathname !== '/')) return;
+    // **Sur web, `auth-js` tient le chemin nominal et c'est son silence qu'on rattrape.** Il
+    // échange le `code` pendant son initialisation, puis le retire de l'URL ; mais son
+    // `_isPKCECallback` rend **faux** quand le vérifieur manque — c'est-à-dire quand le lien a
+    // été ouvert dans un autre navigateur —, donc il ne tente rien et ne lève rien. La personne
+    // atterrirait sur l'accueil, déconnectée, sans un mot, avec son lien encore valable dans la
+    // barre d'adresse. D'où l'ajout de `code` à cette porte : la branche plus bas ne parle que
+    // si le code est **toujours là** après l'initialisation.
+    if (
+      Platform.OS === 'web' &&
+      ((retour !== 'erreur' && retour !== 'code') || window.location.pathname !== '/')
+    ) {
+      return;
+    }
 
     let annule = false;
     // `.catch` et pas une promesse nue : c'est le layout racine, où un rejet non rattrapé n'a
@@ -289,19 +301,38 @@ export default function RootLayout() {
       if (annule) return;
 
       // Valeur du cas `erreur`, où le lien est revenu porteur d'un échec et où il n'y a rien à
-      // tenter ; la branche `jetons` la corrige si c'est la session qui n'a pas pu s'ouvrir.
+      // tenter ; les branches ci-dessous la corrigent selon ce qui a échoué.
       let motif: MotifRetourLien = 'lien_expire';
+
+      // **Un lien qui porte des jetons n'est plus un lien de ce produit** (PKCE, 20/09/2026).
+      // C'est la forme qu'un lien **injecté** porte : le scheme `ramille` est BROWSABLE, donc
+      // n'importe quelle page web du téléphone pouvait ouvrir `ramille://x#access_token=…` et
+      // faire basculer l'app sur le compte de quelqu'un d'autre. On ne tente donc même pas
+      // l'échange, et le message dit la seule chose vraie et utile : ce lien ne vient pas d'ici.
       if (retour === 'jetons') {
+        motif = 'lien_ouvert_ailleurs';
+      } else if (retour === 'code' && Platform.OS === 'web') {
+        // `getSession()` attend `initializePromise` (vérifié dans le code d'`auth-js`), donc
+        // après cette ligne l'échange a eu lieu ou n'aura pas lieu — pas de course à arbitrer.
+        // Le signal est le `code` lui-même : `auth-js` le retire de l'URL quand il réussit.
+        await supabase.auth.getSession();
+        if (annule) return;
+        if (!window.location.search.includes('code=')) return;
+        motif = 'lien_ouvert_ailleurs';
+      } else if (retour === 'code') {
         const { error } = await createSessionFromUrl(urlEntrante);
         if (annule) return;
         if (!error) {
           router.replace('/');
           return;
         }
-        // Les jetons étaient là et la session n'a pas pu s'ouvrir : redemander un lien ne sert
-        // à rien tant que le réseau ne répond pas, et l'écran le dit autrement.
+        // **Deux échecs très différents sous une même branche.** Le vérifieur manquant est le
+        // seul échec *attendu* du flux PKCE — le lien est valable, il a juste été ouvert
+        // ailleurs —, et lui dire « vérifie ta connexion » ferait redemander un lien à l'infini.
+        // Le reste est une vraie panne : redemander un lien n'y changera rien tant que le réseau
+        // ne répond pas, et l'écran le dit autrement.
         console.error('Le lien de connexion n’a pas pu ouvrir de session :', error);
-        motif = 'session_non_ouverte';
+        motif = estVerifieurManquant(error) ? 'lien_ouvert_ailleurs' : 'session_non_ouverte';
       }
 
       // Une lecture qui échoue retombe sur l'écran qui reconnecte : c'est le cas majoritaire, et

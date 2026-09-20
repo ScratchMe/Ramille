@@ -71,6 +71,30 @@ export const supabase = configurationSupabase.complete
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: Platform.OS === 'web',
+        // **PKCE, et le défaut d'`auth-js` est `implicit`** (20/09/2026, revue de sécurité).
+        //
+        // En implicite, tout lien de connexion livre `access_token` **et** `refresh_token` en
+        // clair dans le fragment de l'adresse d'arrivée : la liste des Redirect URLs Supabase
+        // est alors le **seul** contrôle qui existe sur un compte, et la moindre entrée trop
+        // large — un domaine de preview, un joker sur un espace de noms partagé, une entrée
+        // ajoutée un soir pour débloquer un test — devient une prise de contrôle. C'est ce
+        // qu'on a trouvé en production le 20/09 : quatre entrées `*.vercel.app` dont le motif
+        // s'obtenait en créant un projet du bon nom.
+        //
+        // En PKCE, le lien ne porte plus qu'un `code`, et ce code ne vaut **rien** sans le
+        // vérifieur resté dans le stockage du client qui a demandé le lien. La même erreur de
+        // liste ne remet plus de session à personne. Et `auth-js` refuse explicitement un
+        // fragment implicite quand le client est en PKCE, ce qui ferme du même geste
+        // l'injection de session par lien profond (`ramille://x#access_token=…`) : le scheme
+        // est BROWSABLE, donc n'importe quelle page web du téléphone pouvait l'ouvrir.
+        //
+        // **Ce que ça coûte, et c'est un arbitrage produit pris le 20/09** : le lien ne
+        // s'ouvre plus que sur l'appareil qui l'a demandé. L'écran le disait déjà
+        // (« Ouvre-le depuis cet appareil »), c'est maintenant vrai. Le cas où il ne l'est pas
+        // ne doit jamais être muet — `_isPKCECallback` d'`auth-js` rend **faux** quand le
+        // vérifieur manque, donc rien ne lève : voir la branche `code` de
+        // `src/app/_layout.tsx`, qui est ce qui rattrape ce silence.
+        flowType: 'pkce',
       },
       // **Un jeton refusé parce qu'il est trop neuf n'est pas un refus, c'est une attente** —
       // incident du 13/09/2026, raisonnement et règle en tête de `src/types/postgrest.ts`. Le

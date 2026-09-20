@@ -162,14 +162,54 @@ export function issueDuNavigateurDAuth(resultat: {
  * ici, et l'échec retombait sur « Jetons de session manquants », message technique que
  * personne ne voit.
  */
-export type RetourDeLien = 'jetons' | 'erreur' | 'aucun';
+export type RetourDeLien = 'code' | 'jetons' | 'erreur' | 'aucun';
 
+/**
+ * **`code` est la forme du produit depuis le passage en PKCE** (20/09/2026), et `jetons` reste
+ * lue pour une raison précise : c'est elle qu'un lien **injecté** porte. Un attaquant qui veut
+ * poser sa propre session dans l'app de quelqu'un n'a que ses jetons à lui — il ne peut pas
+ * fabriquer un `code` échangeable, puisque l'échange exige le vérifieur resté sur l'appareil qui
+ * a demandé le lien. Distinguer les deux formes est donc ce qui permet de **refuser** la
+ * première par son nom, plutôt que de la laisser échouer plus loin sur un message technique.
+ *
+ * L'ordre de lecture n'est pas décoratif : l'échec se teste d'abord (un lien peut porter les
+ * deux blocs), puis `code`, et `jetons` en dernier — la forme qu'on n'accepte plus.
+ */
 export function lireRetourDeLien(url: string): RetourDeLien {
   const params = parametresDeLUrl(url);
   // L'échec se teste d'abord : si les deux formes cohabitaient, c'est lui qui compte.
   if (params.error || params.error_code || params.error_description) return 'erreur';
+  if (params.code) return 'code';
   if (params.access_token) return 'jetons';
   return 'aucun';
+}
+
+/**
+ * Le `code` d'une URL de retour PKCE, ou `null`.
+ *
+ * Séparé de `lireRetourDeLien` parce que ce sont deux questions : « de quelle forme est ce
+ * retour ? » et « que vaut-il ? ». L'appelant natif a besoin des deux, le layout web seulement
+ * de la première.
+ */
+export function codeDuRetourDeLien(url: string): string | null {
+  return parametresDeLUrl(url).code || null;
+}
+
+/**
+ * Le vérifieur PKCE manque-t-il — c'est-à-dire : ce lien a-t-il été ouvert ailleurs ?
+ *
+ * **Reconnu au code et jamais au message**, comme `over_email_send_rate_limit` et `RM001` : le
+ * texte d'`auth-js` est anglais, long, et parle de Next.js. Le code, lui, est stable
+ * (`pkce_code_verifier_not_found`, classe `AuthPKCECodeVerifierMissingError`).
+ *
+ * C'est le seul échec **attendu** du nouveau flux, et il a besoin de son propre message : dire
+ * « ce lien a expiré » à quelqu'un dont le lien est parfaitement valide mais ouvert dans un
+ * autre navigateur le ferait en redemander un, à l'infini, sans jamais comprendre.
+ */
+export function estVerifieurManquant(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { code?: unknown; name?: unknown };
+  return e.code === 'pkce_code_verifier_not_found' || e.name === 'AuthPKCECodeVerifierMissingError';
 }
 
 /**
@@ -219,7 +259,11 @@ function decoderMorceau(valeur: string): string {
  * suivant refuse de dire, et le test de non-divulgation ne l'attrapait pas : il ne cherchait
  * que le mot « compte ». Il cherche maintenant la promesse aussi.
  */
-export const MOTIFS_RETOUR_LIEN = ['lien_expire', 'session_non_ouverte'] as const;
+export const MOTIFS_RETOUR_LIEN = [
+  'lien_expire',
+  'session_non_ouverte',
+  'lien_ouvert_ailleurs',
+] as const;
 
 export type MotifRetourLien = (typeof MOTIFS_RETOUR_LIEN)[number];
 
@@ -228,9 +272,18 @@ export function motifRetourLien(valeur: string | undefined): MotifRetourLien | n
 }
 
 export function messageDuRetourDeLien(motif: MotifRetourLien): string {
-  return motif === 'lien_expire'
-    ? 'Ce lien ne marche plus : il a expiré, ou il a déjà servi. Demande-en un nouveau depuis cet écran.'
-    : 'Ce lien n’a pas réussi à ouvrir ta session. Vérifie ta connexion, puis redemande un lien.';
+  switch (motif) {
+    case 'lien_expire':
+      return 'Ce lien ne marche plus : il a expiré, ou il a déjà servi. Demande-en un nouveau depuis cet écran.';
+    case 'lien_ouvert_ailleurs':
+      // **Le seul des trois qui décrit un lien encore VALABLE**, et c'est pourquoi il ne dit
+      // pas « demande-en un nouveau » en premier : le geste utile est de rouvrir le lien reçu
+      // au bon endroit. Depuis le passage en PKCE, un lien ne vaut que dans le navigateur ou
+      // l'app qui l'a demandé — c'est ce qui empêche qu'il serve à quelqu'un d'autre.
+      return 'Ce lien doit s’ouvrir là où tu l’as demandé. Rouvre-le depuis cet appareil et ce navigateur, ou redemande-en un ici.';
+    case 'session_non_ouverte':
+      return 'Ce lien n’a pas réussi à ouvrir ta session. Vérifie ta connexion, puis redemande un lien.';
+  }
 }
 
 // ── Proposition de compte sur la restitution ───────────────────────────────────────────
