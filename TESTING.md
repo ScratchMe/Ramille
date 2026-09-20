@@ -249,6 +249,18 @@ distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des 
 
 ### 2.3 Ce que le projet distant ne prouve pas
 
+**Et ce piège a lui-même un symétrique LOCAL, relevé le 20/09/2026 : la suite pgTAP ne passe pas sur
+une stack locale qui a déjà servi les gardes de bout en bout.** Le parcours réel et le chemin du
+compte émettent de **vrais** `usage_events` — soixante-quatre `app_open`, dix-huit
+`connexion_demande` après une soirée de mesures —, et l'assertion 9 de `12_usage_events` lit
+`min(occurred_at)` sur **toute** la table. Cinq minutes plus tard, elle échoue. Le message est
+exactement celui d'un défaut d'horodatage côté serveur, alors que rien n'est cassé.
+
+La parade tient en une commande : **`supabase db reset` avant `supabase test db`** quand les gardes
+de bout en bout ont tourné depuis. En CI la question ne se pose pas — `db-tests` et le parcours sont
+deux travaux, donc deux bases —, et c'est précisément pour ça que le piège n'attend qu'en local, au
+moment où l'on croit tout rejouer pour être sûr.
+
 **Et le piège a un symétrique, relevé le 11/09/2026 : trois assertions de la suite échouent sur le
 projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les connaître évite de
 « corriger » un test qui n'a rien.

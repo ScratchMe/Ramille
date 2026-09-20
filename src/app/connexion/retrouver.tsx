@@ -49,16 +49,20 @@ import { sourceRetrouver } from '@/types/analytics';
 type Phase = 'chargement' | 'collision' | 'saisie' | 'code';
 
 /**
- * Un paramètre d'URL vient de l'extérieur : on ne le relaie pas tel quel dans une mesure.
+ * Un paramètre d'URL vient de l'extérieur : on ne le relaie pas tel quel dans une mesure — d'où
+ * `sourceRetrouver`, qui **dérive** le garde de la liste déclarée au lieu de la recopier.
  *
- * **Une quatrième porte existe désormais et n'a pas encore sa valeur** : le layout racine ouvre
- * cet écran avec `source: 'lien'` quand une URL entrante porte un échec au lieu de jetons, et
- * cette arrivée est encore comptée comme l'accueil de l'onboarding, faute d'un `'lien'` dans
- * `retrouver_view.source` (`src/types/analytics.ts`). Les deux côtés s'ajoutent ensemble ou pas
- * du tout : une valeur émise et non déclarée ne passe pas le typecheck, une valeur déclarée que
- * rien n'émet se lit zéro (CLAUDE.md). Le jour où la liste du type l'accueille, la ligne à
- * ajouter ici est `if (source === 'lien') return 'lien';` — et le chiffre de la porte qu'on vient
- * d'ouvrir cesse d'être faux.
+ * **Ce commentaire décrivait un manque qui a été comblé**, et il l'a décrit un jour de trop : il
+ * disait que la porte `lien` était « émise sans être déclarée », donc comptée comme l'accueil de
+ * l'onboarding, et donnait la ligne à ajouter le jour où la liste l'accueillerait. Elle l'accueille
+ * depuis le 20/09/2026 — avec `rappel`, `plan_vide`, `suivi_vide` et `session_refusee`, les quatre
+ * autres portes muettes trouvées le même jour —, et le garde les rend toutes. Relevé en
+ * contre-lisant le chantier du code, et c'est la famille de défaut que cette relecture cherche :
+ * **une phrase qui décrit ce que le code faisait avant.**
+ *
+ * La règle qu'il énonçait, elle, reste vraie et vaut d'être gardée : les deux côtés s'ajoutent
+ * ensemble ou pas du tout — une valeur émise et non déclarée ne passe pas le typecheck, une valeur
+ * déclarée que rien n'émet se lit **zéro** (CLAUDE.md).
  */
 /**
  * Sortir d'ici sans cul-de-sac.
@@ -194,8 +198,9 @@ export default function RetrouverMonCompte() {
                 On peut le refaire ensemble après, ça va vite.
               </ThemedText>
               {/* **Le motif s'affiche ici aussi, et c'est le cas le plus fréquent.** Un appareil
-                  qui a demandé un lien porte presque toujours un bilan anonyme : `collision` est
-                  donc l'écran que voit la personne qui vient de cliquer un lien mort, et sans
+                  qui a demandé un code porte presque toujours un bilan anonyme : `collision` est
+                  donc aussi l'écran que voit la personne dont un lien parti avant le 20/09/2026
+                  revient mort — et sans
                   cette ligne rien ne lui disait pourquoi l'app s'était ouverte là — exactement le
                   silence que le paramètre existe pour supprimer. */}
               <MessageInline message={message} />
