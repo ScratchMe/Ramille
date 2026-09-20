@@ -239,8 +239,8 @@ dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées
 | 5 | §5 — le découpage des fonctions de calcul | grand | à instruire, jamais en marge d'une vague |
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | page de décision |
 | 7 | §9 — appliquer les migrations sous le nom et l'horodatage du fichier | une habitude | à la prochaine migration |
-| 8 | §12.5 — un comparateur mécanique des miroirs de `check` | petit | au troisième miroir, ou à la première dérive |
-| 9 | §12.5 — l'artefact de la recette du premier parcours à régénérer depuis son `.md` | une manipulation | avant la prochaine séance |
+| 8 | §12.5 — un comparateur mécanique des miroirs de `check` | petit | **fait le 20/09/2026** (§12.2) |
+| 9 | §12.5 — l'artefact de la recette du premier parcours à régénérer depuis son `.md` | une manipulation | **fait le 20/09/2026** (§12.2) |
 
 **Aucune de ces lignes ne bloque le lot 4**, et c'est volontaire : la dette relevée est de la dette
 de *modification*, pas de fonctionnement. Le produit se comporte comme il doit ; il est seulement
@@ -300,6 +300,34 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   contraire ; et les `EXPO_PUBLIC_*` sont mises en cache par Metro hors de sa clé, donc un export qui
   change de configuration exige `--clear`.
 
+- **Le comparateur des miroirs de `check`** (le soir même, §12.5 ligne 1 ci-dessous). Le relevé le
+  donnait « petit, au troisième miroir ou à la première dérive » ; il y en avait **dix-sept**, et la
+  dérive était déjà arrivée une fois en silence (`tc_access` a dit `aucun` avant de dire
+  `inexistant`). `scripts/verifier-miroirs-de-check.mjs` lit `pg_constraint` sur la base que les
+  migrations viennent de construire, dans le travail `db-tests`, et compare — `TESTING.md` §2.7,
+  sept mutations datées en tête du script. Trois choses valent d'être notées, parce qu'elles ont
+  changé la forme prévue :
+  - **le relevé se trompait de source.** Il proposait de relire le dernier `check (col in (…))` des
+    fichiers de migration ; c'est faux dès qu'une contrainte est remplacée par un
+    `drop` + `add` — il y en a — et dès qu'une colonne homonyme a vécu ailleurs avec un autre
+    vocabulaire. `pg_constraint` sait ce que le texte ne sait plus ;
+  - **la fragilité qu'il craignait a été contournée plutôt que réduite.** Un analyseur d'`as const`
+    par expression régulière est ce qui inquiétait ; les constantes sont donc **importées** (Node
+    retire les types, un crochet résout `@/`). Il ne reste d'analyse de texte que pour les unions de
+    littéraux, qui n'existent pas à l'exécution — et c'est justement la famille que **rien** d'autre
+    ne pouvait garder, un test Jest ne sachant pas énumérer un type ;
+  - **les bornes numériques ne s'énumèrent pas**, donc elles s'évaluent : Postgres tranche
+    lui-même l'expression de la contrainte pour chaque valeur proposée, et le plafond du covoiturage
+    se prouve en constatant que `7` est refusé. Sans ça, une borne déplacée en base laisserait la
+    puce « 6+ » mentir.
+
+- **L'artefact de la recette du premier parcours, régénéré** — et la manipulation a trouvé plus que
+  la note à reporter : l'artefact gardait son avancement dans le `localStorage`, c'est-à-dire
+  précisément ce que `RECETTE.md` §1.7 interdit depuis le 17/09/2026, dans l'artefact qui avait servi
+  à écrire la règle. Il porte maintenant la base partagée, et le repli local dit qu'il est un repli.
+  La leçon est de forme : une règle écrite le jour même ne s'applique pas rétroactivement à ce qui
+  l'a inspirée, et c'est en régénérant qu'on s'en aperçoit. `RECETTE.md` §2.5.
+
 ### 12.3 Ce qui revient à la personne qui pilote
 
 Deux points, et aucun n'est un défaut :
@@ -337,8 +365,11 @@ Deux points, et aucun n'est un défaut :
 
 ### 12.5 Ce que la journée a ajouté au relevé
 
-- **Les miroirs de `check` sont épinglés par des tests à valeurs recopiées, pas comparés au
-  schéma.** `STATUT_DE_BILAN` et `STATUT_DU_POINT` (20/09) rejoignent `PARTS_DU_SECOND_MODE`,
+- **Les miroirs de `check` étaient épinglés par des tests à valeurs recopiées, pas comparés au
+  schéma** — traité le soir même (§12.2), mais le relevé est gardé tel quel : c'est lui qui dit
+  pourquoi la forme prévue a changé.
+
+  `STATUT_DE_BILAN` et `STATUT_DU_POINT` (20/09) rejoignent `PARTS_DU_SECOND_MODE`,
   `TAILLES_DE_COVOITURAGE`, `OCCUPATIONS_LONG_TRAJET` et les deux listes de tranches : chacun a son
   test, chaque test porte les valeurs du `check` **recopiées à la main**, datées. C'est la convention
   du dépôt et elle tient ; ce qu'elle ne fait pas, c'est lire la migration. Un comparateur de la

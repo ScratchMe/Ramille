@@ -234,6 +234,15 @@ destination légitime, et elle se note comme telle.
 |---|---|---|
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
 
+**L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
+règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
+là où l'agent ne le lit pas — exactement le défaut que §1.7 venait de consigner, reproduit le jour même
+dans l'artefact qui l'illustrait. Il porte désormais la base partagée (capacité `db`, un document
+`recette/premier-parcours`), le repli local **dit** qu'il est un repli (une pastille dans l'en-tête), et
+la page se rend entière avant que la base ne réponde. Deux règles de §1.7 sont écrites dans son code, en
+commentaire, parce qu'elles se réintroduisent toutes seules : l'état se **copie** depuis l'instantané, et
+une coche s'écrit tout de suite là où seule la frappe se regroupe.
+
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est
 exactement ce que ce format existe pour ne plus reproduire.

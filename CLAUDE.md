@@ -219,6 +219,13 @@ construire** (C3.12 — les colonnes, et les signatures de fonctions depuis le 2
 fichier est tenu à la main, et le typecheck ne peut pas voir cette
 dérive : `SUPABASE.md` §2.1.
 
+**Et depuis le 20/09/2026 il compare aussi les listes de valeurs**
+(`scripts/verifier-miroirs-de-check.mjs`) : dix-sept constantes et types TypeScript recopient un
+`check` du schéma, et jusque-là chacun était épinglé par un test portant les **mêmes valeurs
+recopiées une seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui
+compte, que la base ait changé d'avis. **Toucher à un `check` impose donc de suivre côté
+TypeScript**, et le contrôle dit lequel : `TESTING.md` §2.7.
+
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
 y compris celles qui ne nomment pas le facteur touché — et « toucher » inclut en ajouter un.**
 Trois CI rouges pour l'apprendre (PR #34, #41, #48) ; la méthode qui marche, recalculer chaque
@@ -869,9 +876,11 @@ répondre, ce que chacun des trois chantiers corrige. Cinq points à connaître 
   valeur — partager divise la base par trois dans les deux cas, et ce qui sépare le juste du faux
   est que partager rend aussi le train moins intéressant.
 - **`PARTS_DU_SECOND_MODE`, `TAILLES_DE_COVOITURAGE` et `OCCUPATIONS_LONG_TRAJET`
-  (`src/types/bilan.ts`) sont des miroirs des `check` du schéma**, épinglés par un test : rien ne
-  peut lire ces bornes depuis TypeScript, et une valeur hors bornes ne serait refusée qu'à la
-  soumission, en anglais, neuf étapes trop tard.
+  (`src/types/bilan.ts`) sont des miroirs des `check` du schéma** : rien ne peut lire ces bornes
+  depuis TypeScript, et une valeur hors bornes ne serait refusée qu'à la soumission, en anglais,
+  neuf étapes trop tard. Depuis le 20/09/2026 elles ne sont plus épinglées par des valeurs
+  recopiées mais **comparées à la base en CI**, bornes comprises — le plafond `6` du covoiturage
+  est vérifié en constatant que `7` est refusé (`TESTING.md` §2.7).
 - **`distanceSortieKm` est la jumelle de `distanceDomicileTravailKm`**, et pour le même piège : la
   colonne porte `check (leisure_distance_km > 0)`, donc un « 0 » saisi n'est pas une distance.
   `leisure_distance_km` ne survit qu'à la tranche ouverte, parce que le calcul la préfère à

@@ -355,3 +355,45 @@ tout `4xx`/`5xx` avec le corps — un `PGRST303` « JWT issued at future » sur 
 d'une session est **attendu**, l'app le rejoue, cf. `src/types/postgrest.ts`), le texte visible,
 puis la capture, dont le chemin est imprimé (dossier temporaire). Un parcours local qui s'arrête laisse son compte anonyme
 dans la stack ; `supabase db reset` remet la base à neuf.
+
+### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
+
+**Dix-sept endroits du code recopient une contrainte de la base** — une puce du questionnaire, un
+`.eq('status', …)`, une union de littéraux. Rien, depuis TypeScript, ne peut lire ce que la colonne
+accepte : la convention était donc d'épingler chaque miroir par un test Jest portant les mêmes
+valeurs **recopiées une seconde fois**. C'est une garde du code contre lui-même, et elle ne peut
+pas voir la seule chose qui compte ici : que la base ait changé d'avis. Un `check` élargi laisse le
+test vert et la liste courte ; un `check` resserré laisse le test vert et la puce refusée à la
+soumission, en anglais, neuf étapes trop tard. C'est arrivé une fois, en silence — `tc_access`
+disait `aucun` avant de dire `inexistant`.
+
+`scripts/verifier-miroirs-de-check.mjs` (travail `db-tests`, 20/09/2026) lit `pg_constraint` sur la
+base que `supabase/migrations/` vient de construire. Quatre choses à savoir avant d'y toucher :
+
+- **Il lit la base, jamais les migrations.** Relire le dernier `check (col in (…))` des fichiers est
+  faux dès qu'une migration fait `drop constraint` puis `add constraint` — il y en a —, et dès
+  qu'une colonne homonyme a vécu sur deux tables avec deux vocabulaires (`zone_type` sur `profiles`).
+- **Il importe les constantes au lieu de les analyser.** Un analyseur d'`as const` par expression
+  régulière est exactement là où la fragilité vit : la valeur comparée est celle que l'app utilise
+  (Node retire les types, `scripts/resolveur-alias.mjs` résout `@/`). L'exception est structurelle :
+  une **union de littéraux** est un type, donc effacée à l'exécution, et se lit dans le source par
+  une expression régulière qui ne couvre qu'une forme — `export type X = 'a' | 'b';`. C'est aussi la
+  famille que rien d'autre ne peut garder : un test Jest ne sait pas énumérer un type.
+- **Trois genres, parce que trois contraintes.** `valeurs` et `type` font une **égalité
+  d'ensembles**, dans les deux sens — une valeur que la base accepte et que personne ne propose est
+  un écart autant que l'inverse, et c'est ainsi qu'on voit qu'une migration a ouvert une réponse que
+  l'écran ne montre pas. `domaine` s'applique aux bornes numériques (`between 2 and 6`), où il n'y a
+  rien à énumérer : chaque valeur proposée est **évaluée par Postgres** contre l'expression réelle
+  de la contrainte, et quand la liste est un intervalle d'entiers, les deux valeurs qui l'encadrent
+  doivent être **refusées** — sans quoi un plafond déplacé en base passerait inaperçu alors que la
+  puce « 6+ » promet qu'il n'y a rien au-dessus.
+- **Une colonne peut porter plusieurs `check`, et un seul énumère.** `engagement_checkins.response_kind`
+  en a deux : celle du domaine, et celle de cohérence avec `response`, qui nomme les mêmes trois
+  valeurs sans les énumérer. Seule la forme `colonne = ANY (ARRAY[…])` est lue — et deux contraintes
+  énumérantes sur la même colonne font échouer le contrôle plutôt que d'en choisir une.
+
+Ajouter un miroir, c'est ajouter **une ligne** au tableau `MIROIRS` ; le reste se lit dans la base
+et dans le module. **Éprouvé en le cassant** (§1.1), huit mutations datées en tête du script — dont
+la dernière est venue d'une contre-lecture du diff plutôt que d'une idée de départ : une colonne
+peut porter **deux** contraintes bornantes, et n'en lire qu'une ferait affirmer au contrôle le
+contraire de ce que la base applique.
