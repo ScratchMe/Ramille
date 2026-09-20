@@ -543,3 +543,35 @@ Avec le flux implicite remis — c'est-à-dire la faille grande ouverte —, il 
 garde dont le succès est une absence doit laisser à ce qu'elle interdit le **temps** et les
 **conditions** de réussir ; sinon elle mesure son propre empressement. `TRACE_LIEN=1` imprime les
 identifiants et l'URL finale, et c'est ce qui l'a montré.
+
+### 2.10 Tester un écran — le critère, et ce que ça coûte
+
+Un test d'écran est possible depuis le 20/09/2026 (`@testing-library/react-native`, et un
+`moduleNameMapper` qui neutralise l'import CSS de `src/constants/theme.ts` — sans lui **tout**
+test d'écran échoue au chargement). Le relevé de coût complet est en `v1-27` §12.11 ; ce qu'il
+faut retenir ici tient en un critère et trois frottements.
+
+**Le critère : on peut nommer la mutation qu'il fait tomber, et elle n'est visible ni par
+`src/types` ni par le parcours réel.** Ça vise une famille étroite — les **branches d'état**
+(chargement / erreur / vide / plein) et le **câblage d'un message** —, c'est-à-dire exactement
+là où vit la règle de C1.4 : *un échec de lecture ne dit jamais « tu n'as rien »*. La mise en
+page, l'apparence et « est-ce que ça rend » restent à la recette et à
+`verifier-etats-export.mjs` : les y mettre coûterait du temps de CI pour une garde qui casse à
+chaque retouche de maquette.
+
+**Ce que ça coûte, mesuré** : un fichier de 173 lignes pour 4 assertions, 18 lignes de doublage
+contre 13 d'assertion, 4 modules doublés, et **+21 % sur la suite / +64 % de temps CPU** pour ce
+seul fichier. Le second chiffre est celui qui compte sur un runner.
+
+**Trois frottements qui ne se voient pas quand on ne teste que de la logique pure** :
+
+1. une variable citée dans une fabrique `jest.mock()` doit être préfixée `mock` — jest hisse les
+   appels au-dessus des déclarations du fichier et refuse toute autre variable hors portée ;
+2. `react-test-renderer` doit correspondre **exactement** à la version de React installée, sinon
+   la bibliothèque refuse de se charger ;
+3. le CSS, ci-dessus.
+
+**Et le piège de fond, trouvé en mutant** : un test d'écran écrit spontanément n'affirme que des
+**présences**. Il laisse alors passer tout ce qui est en trop — une phrase d'état vide rendue
+au-dessus des pistes, par exemple, ne fait bouger aucune assertion de présence. Chaque branche
+qu'on prétend garder demande donc sa moitié négative.

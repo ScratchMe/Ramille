@@ -751,3 +751,65 @@ textuel** — la chaîne qu'on remet existe souvent ailleurs dans le fichier.
 `createSessionFromUrl` — la branche native — n'y est pas jouée. Le pas sur appareil reste à
 `RECETTE.md`, et c'est le seul endroit où le retour Google natif et le lien ouvert depuis une
 messagerie se vérifient.
+
+### 12.11 Ce que coûte un test d'écran — mesuré sur `pistes.tsx` (20/09/2026)
+
+La question posée le 20/09/2026 (« vu ton point 2, on ne devrait pas se mettre à tester les
+écrans ? ») ne se tranche pas par argument : 15 000 lignes d'écrans ne sont gardées que par la
+recette sur appareil, et c'est beaucoup — mais un test qui coûte cher et n'attrape rien est pire
+que pas de test. Un test a donc été écrit pour **mesurer**, sur un écran représentatif
+(453 lignes, quatre dépendances à doubler, deux états d'échec).
+
+**Le prix, relevé et non estimé.**
+
+| Ce qu'on paie | Mesure |
+| --- | --- |
+| Dépendances | 17 paquets, +9 Mo dans `node_modules` |
+| Réglages | un `moduleNameMapper` pour le CSS + un fichier de doublure |
+| Le fichier | 173 lignes pour **4 assertions utiles** |
+| Doublage / assertions | 18 lignes de doublure contre 13 lignes d'assertion |
+| Modules doublés | 4 (le transport, le contexte de pile, la navigation, la carte) |
+| Temps de suite | 4,44 s → **5,39 s** (+21 %) |
+| Temps CPU | 9,3 s → **15,2 s** (+64 %) — c'est le chiffre qui compte sur un runner |
+
+**Trois frottements d'installation**, tous invisibles tant qu'on ne teste que de la logique pure :
+une variable citée dans une fabrique `jest.mock()` doit être préfixée `mock` (jest hisse les
+appels) ; `react-test-renderer` doit correspondre **exactement** à la version de React ; et
+`src/constants/theme.ts` importe `@/global.css`, que jest ne sait pas lire — donc **tout** test
+d'écran échouait au chargement avant qu'une doublure ne soit posée.
+
+**Ce que ça attrape, et c'est la moitié qui décide.** Les quatre assertions portent sur des
+**branches de rendu**, pas sur des dérivations : aucune n'est visible depuis `src/types` (qui ne
+connaît pas l'écran) ni depuis le parcours réel (qui ne joue que le chemin heureux). Quatre
+mutations, quatre chutes :
+
+- l'échec de lecture qui reçoit le libellé de l'état vide — c'est la règle de C1.4, « on ne dit
+  jamais *tu n'as rien* quand c'est la lecture qui a manqué », et elle n'était gardée nulle part ;
+- la phrase d'intro figée sur sa branche « sans engagement » ;
+- `onRefus` ramené à `rafraichir()` seul, c'est-à-dire **l'état d'avant le correctif du
+  20/09/2026** : le défaut réel rejoué, et le test tombe ;
+- l'état vide affiché **au-dessus** des pistes.
+
+**Et la quatrième a d'abord révélé un trou dans le test lui-même** : il n'affirmait que des
+présences, jamais une absence, donc la condition pouvait sauter entièrement sans qu'il bouge. Une
+garde qui ne vérifie qu'une présence laisse toujours passer l'excès — corollaire direct de la
+règle écrite en `TESTING.md` §1.1.
+
+**Ce que ça ne vaut pas.** Le test du refus doit rejouer **deux gestes** (ouvrir la ligne, puis
+agir sur la carte), donc il se couple à la conception d'interaction et non à un contrat : le jour
+où les cartes s'ouvrent autrement, il casse sans qu'aucune promesse n'ait bougé. Et la carte est
+doublée — ce qu'on monte est **l'écran moins ses cartes**, pas « la page telle qu'elle est ».
+
+**Recommandation — oui, mais sur un critère, pas sur une surface.** Pas de campagne de couverture
+d'écrans : le coût CPU est réel et la brittleness l'est aussi. On écrit un test d'écran quand, et
+seulement quand, **on peut nommer la mutation qu'il fait tomber** et que cette mutation n'est
+visible ni par `src/types` ni par le parcours réel. En pratique ça vise une famille étroite et
+précieuse : les **branches d'état** (chargement / erreur / vide / plein, où vit la règle de C1.4)
+et le **câblage d'un message** — c'est-à-dire exactement les deux endroits où les défauts de la
+contre-lecture du 20/09 se trouvaient. Tout le reste — la mise en page, « est-ce que ça rend »,
+l'apparence — reste à la recette sur appareil et à `verifier-etats-export.mjs`.
+
+**Le relevé de couverture qui reste à faire** : `collectCoverageFrom` ne prend que `src/types`,
+`src/lib` et `src/constants`. Un test d'écran n'y entre pas, donc la couverture affichée ne
+bougera pas d'un point — à corriger le jour où cette famille grandit, sans quoi le chiffre dira
+l'inverse de ce qui se passe.
