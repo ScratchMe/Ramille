@@ -51,6 +51,9 @@ compromis — c'est exactement là que la régression de C2.2 s'était produite.
 
 ## 2. Les signatures de fonctions de `database.types.ts` ne sont comparées à rien
 
+> **Traité le 20/09/2026** (§12.2) : le générateur a été appelé une fois, ses deux formes lues, et
+> l'analyseur éprouvé par huit mutations. Le relevé ci-dessous est celui du 19/09, gardé tel quel.
+
 **Mesuré.** `scripts/verifier-types-base.mjs` compare les **colonnes** du fichier tenu à la main à
 celles de la base construite en CI. Il ne compare pas le bloc `Functions`. Or ce bloc est tenu à la
 main lui aussi — deux entrées y ont été écrites à la main le 19/09/2026 (`mettre_a_jour_le_contexte`,
@@ -223,13 +226,14 @@ dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées
 - **Les deux comptes périmés de `CLAUDE.md`** (§6).
 - **La signature morte de `02_generate_plan_cycle_for_user`** — une garde de privilège que C6.4 avait
   fait disparaître en silence, rattrapée par la CI et corrigée.
+- **Le lendemain, §2** — voir §12.2.
 
 ## 11. Dans quel ordre, si on en fait quelque chose
 
 | | Chantier | Effort | Quand |
 |---|---|---|---|
 | 1 | §1 — les deux entorses au point de résolution | ~nul | **dans la migration de C4.4**, pas avant |
-| 2 | §2 — les signatures dans le contrôle de types | petit | dès qu'une session peut générer le fichier et valider l'analyseur |
+| 2 | §2 — les signatures dans le contrôle de types | petit | **fait le 20/09/2026** (§12.2) |
 | 3 | §3 — la promesse du favicon | une décision | quand on y touche |
 | 4 | §4 — la décision d'affichage du plan | moyen, risque réel | page de décision d'abord, recette dédiée ensuite |
 | 5 | §5 — le découpage des fonctions de calcul | grand | à instruire, jamais en marge d'une vague |
@@ -239,3 +243,81 @@ dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées
 **Aucune de ces lignes ne bloque le lot 4**, et c'est volontaire : la dette relevée est de la dette
 de *modification*, pas de fonctionnement. Le produit se comporte comme il doit ; il est seulement
 plus coûteux à changer à certains endroits qu'à d'autres.
+
+## 12. L'audit technique du 20/09/2026 — balayé, trouvé, et ce qui revient à la personne qui pilote
+
+> Demandé le 20/09/2026 au matin : relire l'ensemble depuis le 23/08 et traiter seul ce qui est
+> purement technique. Même règle qu'en §0 : chaque ligne est **mesurée**, sur la base vivante et sur
+> l'arbre de travail, jamais déduite.
+
+### 12.1 Ce qui a été balayé et trouvé sain
+
+| Ce qui a été comparé | Résultat |
+|---|---|
+| Les 31 fonctions `security definer` de `public` et leur `search_path` | **toutes en `search_path=public`**, sauf la procédure `envoyer_rappels`, qui n'en porte pas **exprès** (`CLAUDE.md` : `set search_path` rend le contexte atomique et fait échouer son `commit`) — l'avis de sécurité Supabase la signalera à chaque passe, et il ne faut pas la « corriger » |
+| Les 20 tables de `public` | **RLS active partout** ; cinq sans policy ni privilège client (`emission_factor_sync_runs`, `notification_outbox`, `purge_runs`, `reminder_send_runs`, `usage_event_types`), toutes serveur-only — l'avis `rls_enabled_no_policy` les nomme, et c'est l'état voulu |
+| Les 23 policies | **toutes en `(select auth.uid())`**, aucune en appel direct |
+| La matrice de privilèges | **identique à `20260910110000_grants_explicites.sql`**, ses trois privilèges inertes compris (la §5 de cette migration dit pourquoi ils existent) |
+| Les fonctions que `anon` peut appeler | les pures (`emission_factor`, `resolve_*`, `season_bounds`, `rolling_quarter_bounds`, les deux `check_*`) et `desinscrire_des_rappels`, dont le jeton est l'autorisation — rien d'autre |
+| Le schéma `analytics` | **inaccessible** à `anon` comme à `authenticated` : ni `usage` sur le schéma, ni privilège sur ses dix vues |
+| Les 9 travaux `pg_cron` | **les sept qui avaient une échéance dans les 14 derniers jours sont tous verts** — les deux autres (facteurs, trimestriel ; boucle mensuelle, le 1er) n’en avaient pas —, aucune exécution en échec, chacun branché sur une fonction qui existe |
+| Le jeu de fonctions du distant contre les migrations | **51 = 52 − 1** : la seule différence est `generate_monthly_checkins`, créée puis supprimée par le dépôt lui-même ; sept triggers, les mêmes des deux côtés |
+| Le bloc `Functions` de `database.types.ts` contre le générateur | **identique**, à un caractère près qui est voulu (`p_teletravail: string | null`, §2) |
+| Postgres et extensions | 17.6, canal `ga` ; `http` 1.6, `pg_cron` 1.6.4, `pgtap` 1.3.3 |
+| TypeScript | `strict`, **zéro `any`** dans `src/` et `api/`, quatre `eslint-disable` tous argumentés sur place (des effets volontairement au montage seul) |
+| Les modules de `src/types` | **chacun a son fichier de test** ; 810 tests, 39 suites |
+| Les actions de la CI | `checkout` et `setup-node` en v7, `setup-cli` en v3, Node 22 partout, `expo-doctor` **21/21** (1.20.4 en CI, le même résultat en local le 20/09) |
+| Les secrets | **aucun** motif de clé (JWT, Resend, AWS, clé privée) dans l'arbre de travail ; `.env` ignoré |
+| Le dépôt public | `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md` présents ; en-têtes Vercel posés (`nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, CSP en rapport seul — §12.3) |
+
+### 12.2 Ce qui a été traité
+
+- **§2, le contrôle des signatures** — fait : `scripts/verifier-types-base.mjs` compare le bloc
+  `Functions` (noms, arguments, optionalité — pas les types, et le script dit pourquoi), huit
+  mutations datées en tête, `SUPABASE.md` §2.1. Aucune plomberie CI ajoutée : le job produisait déjà
+  le fichier.
+- **L'alerte `fflate`** (`docs/exploitation/README.md` §8.8) — jugée inatteignable le 17/09, elle
+  serait restée ouverte à chaque passe : `satori` épingle `0.7.3` au caractère près. Un `overrides`
+  la porte à `0.7.5`, et la preuve que rien n'a bougé est **la carte rendue par le vrai `GET`
+  d'`api/share-card.ts`, identique octet à octet avant et après** (32 693 octets, rendu déterministe
+  vérifié sur deux passes). `npm audit` passe de 13 à 11 avis modérés ; les 11 restants sont la
+  chaîne `uuid` ← `xcode@3.0.1` ← `@expo/config-plugins`, du code iOS que ce projet n'exécute jamais
+  et qu'aucune montée d'amont ne ferme aujourd'hui.
+- **Les sept clés étrangères sans index** que signale l'avis de performance — toutes vers
+  `transport_modes` — restent sans index **par décision écrite** (`SUPABASE.md` §2.2), avec la
+  condition qui la rouvre.
+
+### 12.3 Ce qui revient à la personne qui pilote
+
+Deux points, et aucun n'est un défaut :
+
+1. **Dependabot sur l'écosystème `github-actions`.** `docs/exploitation/README.md` §8.9 l'a déjà
+   posé comme un arbitrage de rythme (« une PR de plus à traiter à chaque publication d'une
+   action »), donc il n'a pas été fait ici. Recommandation : **oui, en regroupant par mois**
+   (`groups` + `schedule: monthly`), parce que la dérive de trois majeures du 18/09 a coûté une
+   session, qu'une PR de Dependabot ne déclenche **aucun déploiement** (`.github/` est dans la liste
+   blanche de `vercel-ignorer-le-build.sh`) et que la CI est gratuite sur un dépôt public. Ce qu'on
+   casse si on se trompe : rien — une PR qu'on ferme.
+2. **La `Content-Security-Policy-Report-Only` ne rapporte à personne.** Elle n'a ni `report-to` ni
+   `report-uri` : les violations vont dans la console du navigateur de chaque visiteur et nulle part
+   ailleurs, donc elle ne prépare pas la bascule en mode bloquant qu'un « report-only » existe pour
+   préparer. Trois options — la laisser (elle ne coûte rien), lui donner un collecteur (une fonction
+   `api/` de plus, donc du Functions Storage), ou la passer en bloquant sans mesure (le risque exact
+   que le mode rapport existe pour éviter). Recommandation : **la laisser tant qu'il n'y a pas de
+   trafic**, et rouvrir la question à la mise sur Play. Ce qu'on casse si on se trompe dans le sens
+   « bloquant » : l'app entière, sur web, pour tout le monde.
+
+### 12.4 Examiné, et laissé tel quel
+
+- **Le rafraîchissement de session sur natif** (`src/lib/supabase.ts`). Supabase recommande de
+  brancher `startAutoRefresh` / `stopAutoRefresh` sur `AppState` en React Native ; ce n'est pas
+  fait, et ce n'est pas un défaut de correction : `getSession()` rafraîchit à la demande un jeton
+  expiré, et `useRafraichirAuRetour` relit déjà au premier plan. C'est de l'hygiène de batterie, sur
+  du code d'auth — déclencheur `SUPABASE.md` — et ça se fera avec un chantier d'auth, pas en marge
+  d'un audit.
+- **Quatre index « inutilisés »** (`unused_index`) : le produit n'a pas de trafic, et deux d'entre eux
+  ne servent que des suppressions (`SUPABASE.md` §2.2).
+- **`minimum_password_length = 6`** dans `supabase/config.toml` : il n'y a pas de mot de passe dans le
+  produit (`v1-10` §2.D), la valeur ne gouverne rien.
+- **Les migrations sans horodatage apparié** (§9) : rien de neuf, la règle vaut à la prochaine
+  migration.
