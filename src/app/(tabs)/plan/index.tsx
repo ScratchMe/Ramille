@@ -941,7 +941,12 @@ export default function Plan() {
               </ThemedText>
               <Button
                 title="J’ai déjà un compte"
-                onPress={() => router.push('/connexion/retrouver')}
+                // `rappel` est **la** provenance que C2.11 existe pour produire : quelqu'un qui
+                // ouvre le rappel e-mail sur un appareil où il n'est pas connecté. Sans elle, ce
+                // chiffre était indiscernable d'une découverte depuis l'onboarding.
+                onPress={() =>
+                  router.push({ pathname: '/connexion/retrouver', params: { source: 'rappel' } })
+                }
                 style={styles.emptyButton}
               />
               <TextLink
@@ -975,7 +980,9 @@ export default function Plan() {
                 lien que l'accueil de l'onboarding, et même libellé. */}
             <TextLink
               label="J’ai déjà un compte"
-              onPress={() => router.push('/connexion/retrouver')}
+              onPress={() =>
+                router.push({ pathname: '/connexion/retrouver', params: { source: 'plan_vide' } })
+              }
             />
           </View>
         </SafeAreaView>

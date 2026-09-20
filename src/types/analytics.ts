@@ -75,12 +75,31 @@ export type SourceConnexion = (typeof SOURCES_CONNEXION)[number];
 
 // ## Les portes de `/connexion/retrouver`, même règle
 //
-// `lien` est la quatrième et la plus tardive : le layout racine ouvre cet écran quand l'URL
-// entrante porte un échec de lien au lieu de jetons (A1-6, A6-6). Déclarée ici parce qu'elle
-// était émise sans l'être — `sourceMesuree` la repliait sur `onboarding`, gonflant la porte à
-// laquelle on voulait la comparer. L'inverse du défaut d'une valeur déclarée et jamais émise, et
-// aussi silencieux.
-export const SOURCES_RETROUVER = ['onboarding', 'email', 'google', 'lien'] as const;
+// `lien` a été déclarée parce qu'elle était **émise sans l'être** — le garde de l'écran la repliait
+// sur `onboarding`, gonflant la porte à laquelle on voulait la comparer. L'inverse du défaut
+// d'une valeur déclarée et jamais émise, et aussi silencieux.
+//
+// **Et le même défaut vivait à quatre autres portes pendant que ce commentaire le décrivait**
+// (relevé le 20/09/2026, en relisant le dépôt entier). C2.11 en a ouvert trois — les deux états
+// vides du plan et celui du suivi — et `SessionRefusee` la quatrième ; aucune ne passait de
+// `source`, donc les quatre étaient comptées comme venant de l'accueil de l'onboarding, sur leurs
+// **deux** dimensions (`collision` étant faux dans les deux cas). Celle qui coûtait le plus cher :
+// `rappel`, quelqu'un qui ouvre le rappel e-mail sur un appareil neuf — c'est-à-dire le chiffre
+// que C2.11 existe pour produire, rendu indiscernable d'une découverte.
+//
+// `session_refusee` n'est pas une porte comme les autres : c'est un **état de panne** (un jeton
+// refusé, C2.11), et le compter comme une arrivée volontaire mélangerait un incident à une
+// intention. Il vaut mieux qu'elle ait son nom et qu'on la soustraie, que de ne pas la voir.
+export const SOURCES_RETROUVER = [
+  'onboarding',
+  'email',
+  'google',
+  'lien',
+  'rappel',
+  'plan_vide',
+  'suivi_vide',
+  'session_refusee',
+] as const;
 
 export type SourceRetrouver = (typeof SOURCES_RETROUVER)[number];
 
@@ -98,6 +117,25 @@ export type SourceRetrouver = (typeof SOURCES_RETROUVER)[number];
  */
 export function sourceConnexion(valeur: string | undefined): SourceConnexion {
   return SOURCES_CONNEXION.find((source) => source === valeur) ?? 'resultat_transition';
+}
+
+/**
+ * La porte par laquelle on est entré dans `/connexion/retrouver`, ramenée aux valeurs déclarées.
+ *
+ * **Jumelle de `sourceConnexion`, et elle vivait dans l'écran jusqu'au 20/09/2026** — avec une
+ * **seconde liste écrite à la main** (`if (source === 'email') …`), c'est-à-dire exactement la
+ * forme que le commentaire ci-dessus dit avoir supprimée pour l'autre écran. Les deux défauts
+ * qu'elle a coûtés sont les deux faces de la même : la liste manuelle n'a jamais reçu les quatre
+ * portes ouvertes par C2.11, et l'écran n'étant pas testé (décision du dépôt), rien ne pouvait
+ * le dire.
+ *
+ * Elle est ici parce que c'est la règle : **toute dérivation pure décidant d'une navigation ou
+ * affichée à la personne vit dans `src/types`**, où Jest la lit. Le repli sur `onboarding` reste
+ * — une arrivée sans provenance (lien direct, retour arrière) vaut mieux comptée là que perdue —
+ * mais il ne peut plus avaler une porte que le type déclare.
+ */
+export function sourceRetrouver(valeur: string | undefined): SourceRetrouver {
+  return SOURCES_RETROUVER.find((source) => source === valeur) ?? 'onboarding';
 }
 
 // Propriétés attendues par événement. Le typage sert au moment de l'appel : il est trop

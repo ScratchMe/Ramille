@@ -306,12 +306,20 @@ Le parcours : `/` route sur `/plan` si un bilan complété existe, sinon `/onboa
 `/suivi/bilan?id=…&nouveau=1`, d'où l'on rejoint le plan. `/connexion` s'atteint depuis la
 restitution — transition imposée (`resultat_transition`) et bouton délibéré (`resultat_cta`),
 deux provenances que la mesure distingue — et depuis `/compte` (`compte`).
-`/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis quatre
-endroits, énumérés par `SOURCES_RETROUVER` : l'accueil de l'onboarding (« J'ai déjà un
+`/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis **huit**
+endroits, et `SOURCES_RETROUVER` les énumère — le compte ne s'écrit ici que parce que la liste est
+la source, pas ce paragraphe. Quatre sont d'origine : l'accueil de l'onboarding (« J'ai déjà un
 compte »), `/connexion/email` quand l'adresse est déjà prise, `/connexion` sur une collision
 Google, et un lien de connexion arrivé en **échec** (expiré, déjà utilisé), que le layout racine
 route ici avec son motif (`src/app/_layout.tsx`) — un lien valide, lui, ouvre la session et ne
-passe pas par cet écran. Le compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
+passe pas par cet écran. **Les quatre autres étaient muettes jusqu'au 20/09/2026** : les deux
+états vides du plan et celui du suivi (ouverts par C2.11) et l'écran de session refusée ne
+passaient aucune provenance, donc le repli les comptait toutes comme l'accueil de l'onboarding.
+La plus coûteuse était `rappel` — le rappel e-mail ouvert sur un appareil sans session,
+c'est-à-dire le chiffre même que C2.11 existe pour produire. **Et le garde qui les ramenait aux
+valeurs déclarées vivait dans l'écran, avec une seconde liste écrite à la main** ; il est
+désormais `sourceRetrouver` dans `src/types/analytics.ts`, dérivé de la liste et testé comme sa
+jumelle `sourceConnexion` — la règle du dépôt, qu'il ne suivait pas. Le compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
 
 **`/bilan/resultat` existe toujours, et c'est exprès** : un `<Redirect>` de quinze lignes vers
 `/suivi/bilan`, parce que l'adresse est citée dans `page-titles.ts`, dans l'en-tête

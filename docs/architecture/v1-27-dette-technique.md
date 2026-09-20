@@ -537,11 +537,29 @@ qu'il dit pourquoi **deux des trois correctifs ne sont pas ceux qui étaient pro
   elle porte le schéma entier, donc toute migration qui change un privilège doit passer par elle.
   Deux assertions y ont été ajoutées pour la forme qu'elle ne peut pas voir.
 
-**Ouvert aussi, plus léger** : quatre navigations vers `/connexion/retrouver` ne passent pas de
-`source` (les deux états vides du plan, celui du suivi, la session refusée) et sont comptées comme
-venant de l'accueil de l'onboarding — le défaut exact que `SOURCES_RETROUVER` dit avoir corrigé pour
-`lien`. Quelqu'un qui ouvre un rappel sur un téléphone neuf est enregistré comme une découverte.
-`CLAUDE.md` annonce « quatre endroits » ; il y a huit appelants.
+**Traité aussi le 20/09/2026 au soir** (migration
+`20260920170000_les_quatre_portes_que_la_mesure_ne_voyait_pas.sql`) : quatre navigations vers
+`/connexion/retrouver` ne passaient pas de `source` — les deux états vides du plan, celui du suivi,
+la session refusée — et étaient comptées comme venant de l'accueil de l'onboarding, sur leurs
+**deux** dimensions. Le défaut exact que le commentaire de `SOURCES_RETROUVER` décrit pour `lien`,
+vivant à quatre autres endroits pendant qu'il l'expliquait. La plus coûteuse est `rappel` :
+quelqu'un qui ouvre le rappel e-mail sur un appareil sans session, c'est-à-dire le chiffre même
+que C2.11 existe pour produire, rendu indiscernable d'une découverte.
+
+**Et la cause tenait à un endroit, pas à quatre oublis.** Le garde qui ramène la provenance aux
+valeurs déclarées — `sourceMesuree` — vivait **dans l'écran**, sous la forme d'une **seconde liste
+écrite à la main** (`if (source === 'email') …` sur trois valeurs), alors que sa jumelle
+`sourceConnexion` vit dans `src/types/analytics.ts` et se dérive de la sienne. Or les écrans ne sont
+pas testés, par décision : **rien ne pouvait le dire**. C'est la règle du dépôt qui n'était pas
+suivie — toute dérivation pure décidant d'une navigation vit dans `src/types`. Elle s'y trouve
+désormais, sous le nom `sourceRetrouver`, dérivée et éprouvée : remettre la liste manuelle fait
+tomber deux assertions, avec le message du défaut réel (`rappel` → `onboarding`).
+
+Ce que la migration fait, elle, est mince et son en-tête le dit : elle réécrit la **description** du
+référentiel, seul endroit où la base peut porter les valeurs attendues — `check_usage_event_props`
+ne compte que des clés et des longueurs. **Aucun contrôle ne compare cette description à
+`SOURCES_RETROUVER`** : c'est de la prose, et le comparateur de miroirs ne lit que des `check`. La
+parade reste l'habitude, et c'est écrit plutôt que supposé.
 
 ### 12.8 La garde de l'écran blanc était aveugle à l'écran blanc (20/09/2026)
 

@@ -24,7 +24,7 @@ import {
   motifRetourLien,
 } from '@/types/connexion';
 import { track } from '@/lib/analytics';
-import type { SourceRetrouver } from '@/types/analytics';
+import { sourceRetrouver } from '@/types/analytics';
 
 // "Retrouver mon compte" — l'écran qui manquait (docs/design/v1-10-retrouver-son-compte) :
 // jusqu'à v1-10, le produit n'avait aucun chemin vers un compte *existant*. Sur un nouvel
@@ -72,23 +72,6 @@ function revenirOuRacine() {
   else router.replace('/');
 }
 
-/**
- * La porte par laquelle on est entré, ramenée aux valeurs que le référentiel déclare.
- *
- * **`lien` est la quatrième, et elle est neuve** : le layout racine ouvre cet écran quand l'URL
- * entrante porte un échec de lien au lieu de jetons. Sans elle, ces arrivées se repliaient sur
- * `onboarding` et gonflaient exactement la porte à laquelle on voulait les comparer — le même
- * défaut que les provenances de `/connexion` dans la même vague. Une valeur de propriété ne coûte
- * aucune ligne de référentiel (`check_usage_event_props` ne valide que les clés et les longueurs),
- * seulement la description à tenir côté base et le type ici.
- */
-function sourceMesuree(source: string | undefined): SourceRetrouver {
-  if (source === 'email') return 'email';
-  if (source === 'google') return 'google';
-  if (source === 'lien') return 'lien';
-  return 'onboarding';
-}
-
 export default function RetrouverMonCompte() {
   // `email` prérempli quand on arrive de /connexion/email après un `email_exists`. `source`
   // dit par quelle porte on est entré — l'accueil de l'onboarding ou l'écran email — et c'est
@@ -119,7 +102,7 @@ export default function RetrouverMonCompte() {
         // **L'affichage se mesure ici, pas au montage.** L'écran ne sait pas encore, en
         // arrivant, s'il y a collision — et c'est ce booléen qui porte toute la valeur de la
         // mesure. `useTrackView` émettrait trop tôt, avec la moitié de l'information.
-        track('retrouver_view', { source: sourceMesuree(params.source), collision });
+        track('retrouver_view', { source: sourceRetrouver(params.source), collision });
       })
       .catch(() => {
         if (!annule) setPhase('saisie');

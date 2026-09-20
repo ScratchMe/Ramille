@@ -368,7 +368,10 @@ export default function RootLayout() {
             <SessionRefusee
               onRetrouver={() => {
                 setSessionRefusee(false);
-                router.replace('/connexion/retrouver');
+                // `session_refusee` et non le repli muet sur `onboarding` : c'est un état de
+                // panne (un jeton refusé), et le compter comme une découverte mêlerait un
+                // incident à une intention.
+                router.replace({ pathname: '/connexion/retrouver', params: { source: 'session_refusee' } });
               }}
               onCommencer={() => {
                 setSessionRefusee(false);
