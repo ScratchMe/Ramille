@@ -213,6 +213,21 @@ jobs:
       # l'en-tête du script.
       - run: supabase gen types typescript --local > /tmp/database.types.generated.ts
       - run: node scripts/verifier-types-base.mjs /tmp/database.types.generated.ts
+      # **Dix-sept listes de valeurs écrites en TypeScript recopient un `check` du schéma**, et la
+      # convention du dépôt les épinglait par des tests portant les mêmes valeurs recopiées une
+      # seconde fois : le code était gardé contre lui-même, jamais contre la base. Ce contrôle lit
+      # `pg_constraint` sur la base que `supabase/migrations/` vient de construire. Détail, et les
+      # sept mutations qui l'ont éprouvé, dans l'en-tête du script.
+      #
+      # Deux choses que ce travail n'a pas et qu'il ne lui faut pas : `npm ci` (le graphe importé
+      # ne sort pas de `src/`) et `psql` installé (l'image ubuntu-24.04 embarque le client 16, qui
+      # interroge très bien un serveur 17 — c'est `pg_dump` qui exige la même majeure, cf.
+      # `.github/workflows/sauvegarde.yml`). Node, en revanche, doit être en 22.18 au moins : c'est
+      # lui qui retire les types pour importer `src/types/*.ts`.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: node scripts/verifier-miroirs-de-check.mjs
 
   parcours-reel:
     name: Parcours réel (stack locale)
