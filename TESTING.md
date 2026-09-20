@@ -393,4 +393,7 @@ base que `supabase/migrations/` vient de construire. Quatre choses à savoir ava
   énumérantes sur la même colonne font échouer le contrôle plutôt que d'en choisir une.
 
 Ajouter un miroir, c'est ajouter **une ligne** au tableau `MIROIRS` ; le reste se lit dans la base
-et dans le module. **Éprouvé en le cassant** (§1.1), sept mutations datées en tête du script.
+et dans le module. **Éprouvé en le cassant** (§1.1), huit mutations datées en tête du script — dont
+la dernière est venue d'une contre-lecture du diff plutôt que d'une idée de départ : une colonne
+peut porter **deux** contraintes bornantes, et n'en lire qu'une ferait affirmer au contrôle le
+contraire de ce que la base applique.

@@ -36,7 +36,7 @@
 //     doivent être **refusées** — sans quoi un plafond déplacé en base ne se verrait pas, alors que
 //     la puce « 6+ » promet qu'il n'y a rien au-dessus.
 //
-// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — sept mutations, et ce que chacune
+// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — huit mutations, et ce que chacune
 // fait tomber :
 //   - `STATUT_DE_BILAN.complete` → `'complete'`             → 2 écarts (la proposée refusée, et
 //     `completed` que la base accepte sans que personne ne l'écrive plus) ;
@@ -47,7 +47,13 @@
 //   - `OCCUPATIONS_LONG_TRAJET` gagne `6`                   → 1 écart (valeur refusée par la base) ;
 //   - `PLAFOND_COVOITURAGE` 6 → 5                           → 1 écart, et c'est celui qui justifie
 //     `bornes` : les cinq valeurs restantes sont toutes acceptées, seule la borne haute ment ;
-//   - le `check` de `assessments.status` supprimé en base    → 1 écart (« aucune contrainte »).
+//   - le `check` de `assessments.status` supprimé en base    → 1 écart (« aucune contrainte ») ;
+//   - une **seconde** contrainte posée sur `car_long_trips_occupancy` (`<= 4`) → 1 écart (« le
+//     produit propose 5, que la base refuse »). Celle-là est venue d'une contre-lecture du diff
+//     plutôt que d'une idée de départ : le code lisait `definitions[0]`, donc une colonne portant
+//     deux contraintes aurait été jugée sur une seule, et le contrôle aurait affirmé le contraire
+//     de ce que la base fait. Les trois colonnes bornées n'en portent qu'une aujourd'hui — c'est
+//     précisément ce qui rendait le raccourci invisible.
 // Et deux passages qui doivent rester **verts** : la seconde contrainte de `response_kind` (celle
 // de cohérence, qui nomme les mêmes valeurs sans les énumérer) n'est pas lue comme une
 // énumération ; et `teletravail`, dont le `check` autorise `NULL` avant d'énumérer, compare les
@@ -253,9 +259,16 @@ function valeursEnumerees(definitions, colonne) {
   );
 }
 
-/** L'expression d'une contrainte, sans son `CHECK ( … )`, pour la donner à évaluer à Postgres. */
-function expressionDe(definition) {
-  return definition.replace(/^CHECK\s*/, '');
+/**
+ * L'expression à évaluer pour une colonne : **toutes** ses contraintes, jointes par « et ».
+ *
+ * Prendre la première suffirait aujourd'hui — les trois colonnes bornées n'en portent qu'une —, et
+ * c'est exactement le genre de raccourci qui devient faux en silence : une seconde contrainte
+ * ajoutée sur la même colonne serait ignorée, et le contrôle affirmerait « toutes les valeurs
+ * proposées sont acceptées » pendant que la base en refuse une. La base, elle, les applique toutes.
+ */
+function expressionDe(definitions) {
+  return definitions.map((d) => `(${d.replace(/^CHECK\s*/, '')})`).join(' and ');
 }
 
 /** Les valeurs d'une constante importée, quelle que soit la forme qu'elle a prise. */
@@ -385,7 +398,7 @@ for (const miroir of MIROIRS) {
 
   // La contrainte de la colonne, l'identifiant remplacé par la valeur à éprouver. `\b` suffit :
   // `_` est un caractère de mot, donc `commute_carpool_size` ne se trouve pas dans un autre nom.
-  const expression = expressionDe(definitions[0]);
+  const expression = expressionDe(definitions);
   const remplacer = (valeur) =>
     expression.replace(new RegExp(`\\b${nomDeColonne}\\b`, 'g'), `(${valeur})`);
 
