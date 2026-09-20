@@ -53,7 +53,14 @@
 //     témoin sans paramètre. Deux choses sont parties au passage : l'assertion de **statut** de ce
 //     bloc, que rien ne pouvait faire tomber (`GET` n'a que deux sorties, toutes deux en 200), et
 //     l'évaluation inconditionnelle des deux dernières, qui faisait rendre à la mutation
-//     précédente trois écarts dont deux décrivaient une cause fausse.
+//     précédente trois écarts dont deux décrivaient une cause fausse ;
+//   - une exception jetée en tête du rendu de **chaque** fonction → 5 écarts chacune, et **pas un
+//     mot sur le statut ni sur le `content-type`**, alors que le rendu était intégralement cassé.
+//     Ces quatre assertions-là vivaient encore dans les blocs 1 et 2 pendant que cet en-tête
+//     annonçait, deux puces plus haut, les avoir retirées du bloc 1 bis — le même défaut une
+//     quatrième fois dans la même journée, relevé par une relecture des gardes. Elles sont
+//     parties, et les deux blocs disent désormais **pourquoi** plutôt que de laisser croire à une
+//     couverture qui n'existait pas.
 //
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
@@ -107,11 +114,14 @@ const TITRE_SANS_CHIFFRE = '<title>Mon empreinte transport</title>';
 // ── 1. La carte, sur un partage réaliste ──────────────────────────────────────────────────
 const carte = await GET(new Request(`${ORIGINE}/api/share-card?${PARAMS}`));
 const png = Buffer.from(await carte.arrayBuffer());
-verifier(carte.status === 200, `carte : statut ${carte.status}, attendu 200`);
-verifier(
-  carte.headers.get('content-type') === 'image/png',
-  `carte : content-type « ${carte.headers.get('content-type')} », attendu image/png`
-);
+// **Ni le statut ni le `content-type` ne sont affirmés, et c'est délibéré.** Les deux fonctions
+// enveloppent tout leur corps dans un `try/catch` par décision documentée — jamais de 500 sur un
+// endpoint lu par des aperçus de lien —, et leurs deux sorties passent par le même constructeur
+// de réponse, qui ne pose pas de statut et écrit le type en littéral. Aucune entrée, aucune panne
+// du rendu ne peut donc faire tomber ces deux assertions-là : mesuré le 20/09/2026 en jetant une
+// exception en tête du rendu, elles sont restées vertes pendant que cinq autres tombaient. Une
+// assertion qui ne peut pas tomber se lit comme de la couverture et n'en est pas ; c'est le
+// `cache-control` qui distingue le vrai rendu de son repli, et lui seul.
 const cache = carte.headers.get('cache-control') ?? '';
 verifier(
   cache.startsWith('public'),
@@ -189,11 +199,8 @@ if (relatifRendu) {
 // ── 2. La page de partage, même URL ───────────────────────────────────────────────────────
 const page = await partage(new Request(`${ORIGINE}/api/partage?${PARAMS}`));
 const html = await page.text();
-verifier(page.status === 200, `page : statut ${page.status}, attendu 200`);
-verifier(
-  (page.headers.get('content-type') ?? '').startsWith('text/html'),
-  `page : content-type « ${page.headers.get('content-type')} », attendu text/html`
-);
+
+
 verifier(
   html.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
   'page : le titre ne porte pas « 2,4 t CO₂e par an »'

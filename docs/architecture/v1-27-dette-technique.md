@@ -517,3 +517,48 @@ quatrième le ferait.
 venant de l'accueil de l'onboarding — le défaut exact que `SOURCES_RETROUVER` dit avoir corrigé pour
 `lien`. Quelqu'un qui ouvre un rappel sur un téléphone neuf est enregistré comme une découverte.
 `CLAUDE.md` annonce « quatre endroits » ; il y a huit appelants.
+
+### 12.8 La garde de l'écran blanc était aveugle à l'écran blanc (20/09/2026)
+
+Le constat le plus grave de la journée, et il vient de la quatrième relecture — celle qui ne
+cherchait qu'une chose : **quelle assertion ne peut pas tomber ?**
+
+`scripts/verifier-rendu-export.mjs` existe pour attraper la page blanche du 08/09/2026. Il attendait
+bien le signal qui distingue « servi » de « monté » — une propriété que React pose sur son conteneur
+au montage —, **mais il avalait le résultat** (`.catch(() => {})`), sous un commentaire qui affirmait
+« ce sont les contrôles ci-dessous qui disent ce qui a échoué ». C'était une erreur de raisonnement :
+les contrôles ci-dessous lisent le corps de la page, or l'export d'Expo Router **pré-rend** ce corps —
+le paragraphe juste au-dessus le disait lui-même. Ils restent donc verts sur une app qui ne monte
+jamais.
+
+**Mesuré en le cassant** : le bundle d'entrée retiré de `dist/`, l'app intégralement morte dans le
+navigateur, le script sortait **0** en annonçant « 12 routes rendues, aucun écran de panne, aucune
+exception bloquante ». `page.on('pageerror')` ne rattrape pas ce cas : il ne se déclenche que si le
+bundle s'exécute **et** lève ; un bundle qui ne se charge pas du tout n'émet rien.
+
+L'attente est désormais une assertion, **en tête de la cascade** — une app qui ne monte pas rend le
+pré-rendu, donc dire « le marqueur est là » cacherait la cause derrière l'absence de symptôme. La
+même mutation rend maintenant un écart par route, nommant la vraie cause.
+
+**Trois autres assertions qui ne pouvaient pas tomber, corrigées dans la foulée** :
+
+- `verifier-api.mjs` affirmait le **statut** et le **content-type** des deux fonctions, dans les
+  blocs 1 et 2, pendant que son propre en-tête annonçait les avoir retirés du bloc 1 bis. Les deux
+  fonctions enveloppent tout leur corps dans un `try/catch` et leurs deux sorties passent par le
+  même constructeur de réponse : aucune panne du rendu ne pouvait les faire tomber — vérifié, une
+  exception jetée en tête du rendu donne cinq écarts et pas un mot sur ces quatre-là. Retirées ; la
+  suppression ne coûte rien, la même mutation rend toujours cinq écarts.
+- `26_pistes_et_premier_pas.test.sql` comparait deux `position()` pour affirmer que le refus `RM001`
+  précède la libération. **`position()` rend 0 quand le motif est absent** : sans la garde,
+  l'expression devenait `0 < 2373`, vraie, sous un message affirmant l'inverse. Elle ne voyait
+  qu'une réorganisation, jamais une suppression. Les deux motifs doivent désormais être présents.
+
+**Connu et non traité** (tautologies sans conséquence de production, à reprendre à l'occasion) :
+`mascotte.test.ts` compare `MASCOT_NAME` à `APP_NAME` alors que le source écrit
+`MASCOT_NAME = APP_NAME` ; `analytics.test.ts` compare un littéral au même littéral ;
+`carbon-reference.test.ts` compare deux alias à eux-mêmes et réécrit l'implémentation du repère 2050
+au lieu de l'éprouver.
+
+**La leçon, et c'est la quatrième fois dans la journée** : une garde s'écrit en se demandant ce qui
+doit la faire tomber, jamais ce qu'elle doit confirmer. Les quatre défauts ci-dessus étaient verts,
+documentés, et cités comme preuve dans trois fichiers.
