@@ -250,7 +250,16 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+#
+# **Aligné sur le distant le 20/09/2026, et ce n'était pas un détail de confort.** La valeur était
+# `false` en local alors que le projet distant exige la confirmation (`mailer_autoconfirm: false`) :
+# une session anonyme pouvait donc s'attribuer **n'importe quelle adresse instantanément**, sans
+# qu'aucun e-mail ne parte. Autrement dit, la stack locale ne rejouait pas le chemin de rattachement
+# du produit — elle en rejouait un autre, plus permissif, ce qui rend un test local de ce flux
+# trompeur dans le sens le plus dangereux : ce qui passe ici pourrait échouer là-bas, et ce qui est
+# grave là-bas paraît trivial ici. Vérifié après l'alignement : le parcours réel et le contrôle du
+# lien de connexion restent verts, donc rien du produit ne dépendait de l'auto-confirmation.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
