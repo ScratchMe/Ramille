@@ -75,6 +75,7 @@ const TOLERES = new Map([
   ['build/useScreens.js', 'chemin interne d’`expo-router`, lu dans une trace de pile'],
   ['getRouteInfoFromState.js', 'idem — trace de pile d’`expo-router`'],
   ['setup.js', 'fichier interne de `jest-expo`, cité pour expliquer son doublage'],
+  ['getRoutesCore.js', 'chemin interne d’`expo-router`, lu pour savoir ce qu’il ignore du routage'],
 ]);
 
 /** Tous les fichiers du dépôt, chemins relatifs à la racine. La règle de comparaison est plus

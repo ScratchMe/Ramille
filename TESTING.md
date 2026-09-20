@@ -563,6 +563,14 @@ chaque retouche de maquette.
 contre 13 d'assertion, 4 modules doublés, et **+21 % sur la suite / +64 % de temps CPU** pour ce
 seul fichier. Le second chiffre est celui qui compte sur un runner.
 
+**Un test d'écran ne se colocalise PAS**, et c'est une contrainte et non un choix : `src/app/`
+**est** le routeur, et `expo-router` n'ignore que `+html`, `+native-intent`, `+api` et
+`+middleware` (relevé dans son `getRoutesCore.js`). Un fichier de test posé à côté de
+`pistes.tsx` produit une **route** « /plan/pistes.test », exportée et servie. Mesuré le 20/09/2026
+sur la CI : l'export l'a bien rendue, et c'est `verifier-titres-export.mjs` qui l'a arrêtée — elle
+n'avait pas de ligne dans `PAGE_TITLES`. Les tests d'écran vivent donc dans `src/tests/ecrans/`,
+et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
+
 **Trois frottements qui ne se voient pas quand on ne teste que de la logique pure** :
 
 1. une variable citée dans une fabrique `jest.mock()` doit être préfixée `mock` — jest hisse les

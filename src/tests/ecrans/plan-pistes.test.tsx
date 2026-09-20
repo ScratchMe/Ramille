@@ -1,6 +1,15 @@
 /**
  * Un test d'écran, écrit pour **mesurer ce qu'il coûte** — autorisé le 20/09/2026.
  *
+ * **Il n'est pas colocalisé, et ce n'est pas un choix : c'est une contrainte.** Ce dépôt colocalise
+ * ses tests à côté de ce qu'ils éprouvent, et un test d'écran ne le peut pas —
+ * `src/app/` **est** le routeur, et `expo-router` n'ignore que `+html`, `+native-intent`, `+api` et
+ * `+middleware` (relevé dans son `getRoutesCore.js`). Un `pistes.test.tsx` posé à côté de
+ * `pistes.tsx` produit donc une **route** `/plan/pistes.test`, exportée et servie en production.
+ * Mesuré le 20/09/2026 : l'export a bien rendu la page, et c'est `verifier-titres-export.mjs` qui
+ * l'a arrêtée — elle n'avait pas de ligne dans `PAGE_TITLES`. Sans cette garde, l'adresse partait
+ * en production.
+ *
  * Ce dépôt teste les dérivations pures (`src/types`) et le chemin nominal de bout en bout
  * (`verifier-parcours-reel.mjs`). Entre les deux, 15 000 lignes d'écrans ne sont gardées que par
  * la recette sur appareil. La question n'est pas « peut-on tester un écran ? » — on peut — mais
@@ -30,7 +39,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
-import PistesScreen from './pistes';
+import PistesScreen from '@/app/(tabs)/plan/pistes';
 
 // ── Les doublures, et c'est ici que se lit le coût réel d'un test d'écran ─────────────────────
 //
@@ -56,7 +65,7 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
-jest.mock('./_layout', () => ({
+jest.mock('@/app/(tabs)/plan/_layout', () => ({
   usePassageDEngagement: () => ({ deposer: jest.fn(), retirer: jest.fn(), prendre: jest.fn() }),
 }));
 

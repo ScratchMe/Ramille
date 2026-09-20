@@ -809,6 +809,14 @@ et le **câblage d'un message** — c'est-à-dire exactement les deux endroits o
 contre-lecture du 20/09 se trouvaient. Tout le reste — la mise en page, « est-ce que ça rend »,
 l'apparence — reste à la recette sur appareil et à `verifier-etats-export.mjs`.
 
+**Et un quatrième frottement, trouvé par la CI et pas en local** : un test d'écran **ne se
+colocalise pas**. `src/app/` est le routeur, `expo-router` n'ignore que quatre préfixes, donc un
+fichier de test posé à côté de `pistes.tsx` a produit une **route** « /plan/pistes.test »,
+exportée et servie. `verifier-titres-export.mjs` l'a arrêtée — elle n'avait pas de ligne dans
+`PAGE_TITLES` —, ce qui est exactement le travail de cette garde et la deuxième fois de la journée
+qu'un contrôle d'export attrape ce qu'aucune suite locale ne voit. Les tests d'écran vivent
+désormais dans `src/tests/ecrans/`.
+
 **Le relevé de couverture qui reste à faire** : `collectCoverageFrom` ne prend que `src/types`,
 `src/lib` et `src/constants`. Un test d'écran n'y entre pas, donc la couverture affichée ne
 bougera pas d'un point — à corriger le jour où cette famille grandit, sans quoi le chiffre dira
