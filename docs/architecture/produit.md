@@ -190,6 +190,13 @@ n'était dans aucune fiche :
 | [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | À instruire, avec cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
 | [`v1-26`](v1-26-meme-saison-un-an-apres.md) | C4.8, la même saison un an après | **Moitié livrée par C6.3**. Le reste recouvre le moment anniversaire : une dérivation pour deux surfaces, ou deux chiffres qui se contrediront |
 
+**Et la dette technique a son relevé depuis le 19/09/2026** :
+[`v1-27-dette-technique.md`](v1-27-dette-technique.md), écrit après la relecture des six jours du
+14 au 19/09. Il commence par ce que la relecture a trouvé **sain** — les six paires SQL/TypeScript
+comparées valeur par valeur à la base, les miroirs de `check`, le référentiel d'événements, les
+gardes d'annulation —, puis liste huit endroits où le produit est plus coûteux à changer qu'il ne
+devrait. Aucun ne bloque le lot 4 : c'est de la dette de **modification**, pas de fonctionnement.
+
 **Un lot 6 est demandé et n'est pas instruit : l'administration** (demande du 17/09/2026, après la
 livraison du lot 5). Il n'appartient pas à l'audit du 09/09/2026 — c'est un besoin neuf, et il vit
 donc ici et non dans `v1-13`. Ce qui est demandé, mot pour mot : **exploiter tout ce que le produit

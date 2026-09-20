@@ -384,10 +384,6 @@ export const RAISONS_ANNONCABLES = ['rebilan', 'contexte'] as const;
 
 export type RaisonAnnoncable = (typeof RAISONS_ANNONCABLES)[number];
 
-export function estRaisonAnnoncable(raison: string): raison is RaisonAnnoncable {
-  return (RAISONS_ANNONCABLES as readonly string[]).includes(raison);
-}
-
 /**
  * Ce que l'encart orphelin dit, selon ce qui a emporté l'engagement.
  *

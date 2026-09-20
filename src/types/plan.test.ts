@@ -10,7 +10,6 @@ import {
   intentionKindForPoste,
   intentionTimingsForPoste,
   isIntentionComplete,
-  estRaisonAnnoncable,
   motsDuContexte,
   phraseDeLOrphelin,
   RAISONS_ANNONCABLES,
@@ -432,8 +431,12 @@ describe('l’encart orphelin', () => {
   // personne. Les lui apprendre serait inutile ou condescendant.
   it('n’annonce que les deux libérations que la personne n’a pas choisies', () => {
     expect([...RAISONS_ANNONCABLES]).toEqual(['rebilan', 'contexte']);
-    expect(estRaisonAnnoncable('saison')).toBe(false);
-    expect(estRaisonAnnoncable('changement')).toBe(false);
+    // Les deux tues, nommées : `saison` est une reconduction qui a échoué à la frontière d'une
+    // saison, `changement` est la décision de la personne. La liste des quatre raisons vit dans le
+    // `check` de `plan_action_commitments_archive`, qu'un test pgTAP éprouve de son côté.
+    for (const tue of ['saison', 'changement']) {
+      expect(RAISONS_ANNONCABLES).not.toContain(tue);
+    }
   });
 
   // **La phrase nommait le nouveau bilan, et il n'y en a pas toujours un** : depuis C6.4, corriger
