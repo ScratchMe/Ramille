@@ -262,8 +262,9 @@ Chaque ligne dit le fait, l'enjeu, la recommandation et ce qu'on casse en se tro
 ## Ce que l'implémentation corrigera par rapport au canvas
 
 À consigner ici au fil du chantier C6.5, comme `v1-14-boucle-engagement/README.md` et
-`v1-17-densite-du-plan/README.md` le font : le dépôt gagne, le canvas ne se réécrit pas. Deux points
-déjà connus au moment de livrer :
+`v1-17-densite-du-plan/README.md` le font : le dépôt gagne, le canvas ne se réécrit pas.
+
+**Deux points déjà connus au moment de livrer :**
 
 1. **Les valeurs des planches sont des valeurs de démonstration** (31 points, 18 changements,
    3 changements tenus, 3,4 t puis 2,8 t — les tonnes sont celles du kit, « à confirmer côté
@@ -272,3 +273,33 @@ déjà connus au moment de livrer :
    sujet (« Cette année ») ; la sortir avec le sujet en paramètre est la façon de garantir que la
    carte de saison et la page d'année ne divergent pas d'un mot. Si l'implémentation préfère une
    seconde phrase, un test doit tenir les deux ensemble.
+
+**Et deux trouvés en contre-lisant le canvas contre le code, le 20/09/2026** — la différence entre
+les deux familles vaut d'être notée : les premiers se voyaient à la lecture, les seconds non.
+
+3. **`formatDate` ne passe plus par `toLocaleDateString`.** Le canvas relevait l'écart et
+   choisissait de réutiliser la fonction telle quelle pour que les dates de la page se lisent comme
+   celles du suivi — le bon réflexe. En le vérifiant, on a trouvé que le dépôt assumait déjà ce
+   risque par écrit, et que son argument (« une date d'affichage ») ne tenait plus : la date
+   s'écrit à quatre endroits visibles, et un Hermes sans ICU complet y rendrait un mois en anglais.
+   Elle est désormais composée sur `MOIS_FRANCAIS` ; la page d'année hérite du correctif sans rien
+   avoir à décider.
+4. **La ligne « {k} changements ont tenu deux fois de suite. » compte l'inverse de ce qu'elle
+   annonce.** Mesuré en exécutant `estDeuxiemeFoisDeSuite` sur cinquante-deux semaines plutôt qu'en
+   la lisant : la dérivation ne se déclenche qu'à l'**entrée** dans une série (deux « oui » de
+   suite **et** pas de « oui » avant, C2.10), donc la compter sur une année ne compte pas des
+   habitudes mais des **démarrages de série**.
+
+   | Ce qu'a vécu la personne | Ce que la ligne afficherait |
+   | --- | --- |
+   | « oui » cinquante-deux semaines d'affilée | **1** |
+   | oui, oui, non, oui, oui, non, … | **17** |
+   | une semaine sur deux, jamais deux de suite | 0 |
+
+   La page dirait « 1 » à la personne la plus régulière de l'année et « 17 » à la plus
+   intermittente. Le canvas ne pouvait pas le voir : la dérivation existe, elle est testée, et son
+   nom décrit exactement ce que le canvas voulait dire — c'est son **usage cumulé** qui est faux,
+   et ça ne se voit qu'en l'exécutant. Deux issues, à trancher avec le point 1 de la section
+   précédente : retirer la ligne, ou la remplacer par la **plus longue série**, qui se dérive des
+   mêmes données et dit vraiment l'habitude — au prix d'un record, c'est-à-dire du seul chiffre de
+   la page qui invite à se comparer à soi.
