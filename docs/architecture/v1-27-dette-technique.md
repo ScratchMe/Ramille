@@ -240,7 +240,7 @@ dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | page de décision |
 | 7 | §9 — appliquer les migrations sous le nom et l'horodatage du fichier | une habitude | à la prochaine migration |
 | 8 | §12.5 — un comparateur mécanique des miroirs de `check` | petit | **fait le 20/09/2026** (§12.2) |
-| 9 | §12.5 — l'artefact de la recette du premier parcours à régénérer depuis son `.md` | une manipulation | avant la prochaine séance |
+| 9 | §12.5 — l'artefact de la recette du premier parcours à régénérer depuis son `.md` | une manipulation | **fait le 20/09/2026** (§12.2) |
 
 **Aucune de ces lignes ne bloque le lot 4**, et c'est volontaire : la dette relevée est de la dette
 de *modification*, pas de fonctionnement. Le produit se comporte comme il doit ; il est seulement
@@ -320,6 +320,13 @@ plus coûteux à changer à certains endroits qu'à d'autres.
     lui-même l'expression de la contrainte pour chaque valeur proposée, et le plafond du covoiturage
     se prouve en constatant que `7` est refusé. Sans ça, une borne déplacée en base laisserait la
     puce « 6+ » mentir.
+
+- **L'artefact de la recette du premier parcours, régénéré** — et la manipulation a trouvé plus que
+  la note à reporter : l'artefact gardait son avancement dans le `localStorage`, c'est-à-dire
+  précisément ce que `RECETTE.md` §1.7 interdit depuis le 17/09/2026, dans l'artefact qui avait servi
+  à écrire la règle. Il porte maintenant la base partagée, et le repli local dit qu'il est un repli.
+  La leçon est de forme : une règle écrite le jour même ne s'applique pas rétroactivement à ce qui
+  l'a inspirée, et c'est en régénérant qu'on s'en aperçoit. `RECETTE.md` §2.5.
 
 ### 12.3 Ce qui revient à la personne qui pilote
 
