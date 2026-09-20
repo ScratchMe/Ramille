@@ -46,6 +46,23 @@ describe('repères carbone', () => {
     expect(TARGET_2050_TRANSPORT_T).toBeCloseTo(TARGET_2050_TOTAL_T * share, 1);
   });
 
+  /**
+   * **L'arrondi au dixième n'est pas de la mise en forme : c'est un seuil.**
+   *
+   * `TARGET_2050_TRANSPORT_T * 1000` sert de borne à `comparisonNote` (`src/types/resultat.ts`)
+   * et à `nextPalier` : 600 kg arrondi, 589 kg sans l'arrondi. Quelqu'un à 595 kg lit « tu es
+   * déjà sous le repère 2050 » dans un cas et l'inverse dans l'autre — la phrase la plus forte
+   * de la restitution, pour un écart de 1,8 %.
+   *
+   * **L'assertion au-dessus ne peut pas le voir** : à une décimale près, `toBeCloseTo` tolère
+   * 0,05 sur une valeur de 0,6 — mesuré le 20/09/2026, l'arrondi entièrement retiré la laisse
+   * verte. Celle-ci est une **propriété** et non une réécriture de l'implémentation : elle dit
+   * que la valeur est ronde au dixième, sans redire comment on l'obtient.
+   */
+  it('est arrondi au dixième, parce que ce repère est aussi un seuil', () => {
+    expect(TARGET_2050_TRANSPORT_T).toBe(Math.round(TARGET_2050_TRANSPORT_T * 10) / 10);
+  });
+
   it('le repère 2050 est très en dessous de la moyenne actuelle', () => {
     // Garde-fou de sens : si une retouche inversait le rapport, l'écran de restitution
     // afficherait une cible plus haute que la moyenne, ce qui n'aurait aucun sens.

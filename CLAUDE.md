@@ -798,6 +798,38 @@ formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laiss
 natif, le lien arrive hors de l'app (messagerie) et remonte par `Linking.useURL()` dans
 `_layout.tsx` ; le scheme `ramille://` doit donc figurer dans les Redirect URLs Supabase.
 
+**Le flux est en PKCE depuis le 20/09/2026, et le lien ne s'ouvre plus que là où il a été
+demandé.** Le défaut d'`auth-js` est `implicit` : tout lien livrait alors `access_token` **et**
+`refresh_token` en clair dans le fragment de l'adresse d'arrivée, donc la liste des Redirect URLs
+Supabase était le **seul** contrôle existant sur un compte — et quatre entrées trop larges y ont
+été trouvées le jour même. En PKCE, le lien ne porte qu'un `code`, qui ne vaut rien sans le
+vérifieur resté dans le stockage du client demandeur. Cinq points à connaître :
+
+- **L'injection de session par lien profond est fermée du même geste** : `auth-js` refuse un
+  fragment implicite quand le client est en PKCE. Le scheme `ramille` est BROWSABLE, donc
+  n'importe quelle page web du téléphone pouvait ouvrir `ramille://x#access_token=<les siens>` et
+  faire basculer l'app sur le compte de quelqu'un d'autre. **Mesuré avant et après** : en
+  implicite la session de la victime devenait celle de l'attaquant, en PKCE elle ne bouge pas.
+- **`createSessionFromUrl` échange un code, et refuse la forme « jetons » nommément.** C'est
+  exactement la forme qu'un lien injecté porte — un attaquant ne peut pas fabriquer un `code`
+  échangeable —, donc la distinguer permet de la refuser avec une phrase vraie plutôt que de la
+  laisser échouer sur un message technique.
+- **Le piège du chantier est un silence, pas une erreur** : `_isPKCECallback` rend **faux** quand
+  le vérifieur manque, donc sur web le SDK ne tente rien et ne lève rien. Sans la branche `code`
+  du layout racine, la personne atterrissait sur l'accueil, déconnectée, sans un mot, son lien
+  encore valable dans la barre d'adresse. La branche tranche après `getSession()`, qui attend
+  l'initialisation du SDK — donc sans course —, et le signal est le `code` **toujours présent**
+  dans l'URL, qu'`auth-js` retire quand il réussit.
+- **Un troisième motif de retour existe, `lien_ouvert_ailleurs`**, et c'est le seul des trois qui
+  décrit un lien **encore valable** : lui donner le message de l'expiration ferait redemander un
+  lien à l'infini, chacun échouant pareil. Le vérifieur manquant se reconnaît au **code**
+  (`pkce_code_verifier_not_found`), jamais au message — celui d'`auth-js` est anglais et parle de
+  Next.js.
+- **Le flux entier est joué à chaque PR** (`scripts/verifier-lien-de-connexion.mjs`, `TESTING.md`
+  §2.9), contre une vraie stack et un vrai e-mail : c'est ce qui a rendu ce chantier vérifiable
+  au lieu de plausible, et c'est lui qui a trouvé deux défauts de plus — dont une interversion de
+  messages qu'aucun test unitaire ne voyait.
+
 **`estPanneDeTransport` couvre les 5xx, et c'est assumé** — `auth-js` lève
 `AuthRetryableFetchError` pour chacun d'eux : `SUPABASE.md` §2.4.
 
@@ -811,10 +843,18 @@ l'app venait de créer, et le plan répondait « Ton bilan n'est pas encore fait
 « Faire mon bilan » — et la consigne de désinscription du même email réglait la préférence d'une
 session qui n'est personne. Le paramètre ne sert que là, et **seulement sans bilan local**. Une
 nouvelle route à la place du paramètre aurait fait ouvrir le lien dans le navigateur sur Android :
-`assetlinks.json` ne revendique nommément que `/plan`, et ce périmètre étroit est voulu (Play exige
-que les pages légales et `/compte/suppression` restent atteignables **sans** l'app). Une chaîne de
-requête ne fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux
-moitiés de la règle.
+le périmètre Android ne revendique nommément que `/plan`, et il est voulu étroit (Play exige que les
+pages légales et `/compte/suppression` restent atteignables **sans** l'app). Une chaîne de requête ne
+fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux moitiés de
+la règle.
+
+**Ce périmètre tient au `pathPrefix` d'`app.json`, et à lui seul** — ce fichier a écrit jusqu'au
+20/09/2026 qu'`assetlinks.json` le portait, et c'est faux : il déclare
+`delegate_permission/common.handle_all_urls`, seule relation qu'Android accepte pour un App Link,
+donc il délègue **tout** `www.ramille.fr`. Deux conséquences à connaître avant d'y toucher : un
+second `intentFilter` ajouté plus tard n'aurait aucun garde-fou du côté d'`assetlinks.json`, et
+`pathPrefix` est un préfixe de **chaîne** et non de segment — une future route publique nommée
+`/planning` ou `/plan-b` serait capturée par l'app sans que rien ne le dise.
 
 **Un jeton refusé parce qu'il est TROP NEUF n'est pas un refus, c'est une attente** (`PGRST303`
 « JWT issued at future », `fetchAvecSecondeChance` dans `src/types/postgrest.ts`) — cinq choses à
@@ -837,6 +877,20 @@ retouche à la main** — comment, et ce que la CI en vérifie : `SUPABASE.md` �
 `supabase/config.toml` ne porte plus `auto_expose_new_tables`) : **ajouter une table impose un
 `grant` ou un `revoke` explicite**, sinon elle est invisible pour l'app, en silence —
 `SUPABASE.md` §2.2.
+
+**Et cette phrase a été FAUSSE jusqu'au 20/09/2026, dans le sens le plus dangereux** : une table
+neuve n'était pas invisible, elle était **grande ouverte**. `pg_default_acl` accordait `arwdDxtm`
+— dont `select`, `update` et `delete` — à `anon` **et** à `authenticated` sur toute table créée
+dans `public`, RLS inactive par défaut. Mesuré en transaction annulée, en local comme sur le
+distant : une table neuve, une ligne dedans, `set local role anon` sans aucune session — `anon`
+l'a lue, puis l'a supprimée. Aucune des vingt tables existantes n'était concernée ; le danger
+était la **prochaine migration**, écrite par quelqu'un qui croit le paragraphe ci-dessus, donc qui
+ne vérifie pas — et que ni la CI ni pgTAP n'auraient attrapée, le local se comportant comme le
+distant. `20260920190000_trois_gardes_qui_manquaient_sous_les_gardes.sql` ferme la moitié qui nous
+concerne (les objets créés par `postgres`, c'est-à-dire par les migrations) ; l'autre moitié
+appartient à `supabase_admin` et se désactive au tableau de bord — `SUPABASE.md` §2.2 et
+`docs/exploitation/README.md`. Trois assertions de `31` épinglent le fait, dont une sur le
+catalogue.
 
 **Une policy appelle `auth.uid()` dans un sous-select, et une clé étrangère neuve veut son
 index** — aucun des deux ne se voit à la lecture : `SUPABASE.md` §2.2.

@@ -596,12 +596,228 @@ même mutation rend maintenant un écart par route, nommant la vraie cause.
   l'expression devenait `0 < 2373`, vraie, sous un message affirmant l'inverse. Elle ne voyait
   qu'une réorganisation, jamais une suppression. Les deux motifs doivent désormais être présents.
 
-**Connu et non traité** (tautologies sans conséquence de production, à reprendre à l'occasion) :
-`mascotte.test.ts` compare `MASCOT_NAME` à `APP_NAME` alors que le source écrit
-`MASCOT_NAME = APP_NAME` ; `analytics.test.ts` compare un littéral au même littéral ;
-`carbon-reference.test.ts` compare deux alias à eux-mêmes et réécrit l'implémentation du repère 2050
-au lieu de l'éprouver.
+**Trois autres signalées comme « tautologies sans conséquence » — et le relevé s'est trompé sur
+deux d'entre elles.** Reprises le 20/09/2026, mutation à l'appui plutôt qu'à la lecture :
+
+- **`carbon-reference.test.ts` n'était pas une tautologie.** Le relevé disait « compare deux alias à
+  eux-mêmes » ; or remplacer `FRANCE_AVERAGE_TOTAL_T = CONSUMPTION_POSTES_TOTAL_T` par `9.3` — le
+  défaut historique exact que l'en-tête du fichier raconte, un total repris d'une autre publication
+  — **fait tomber l'assertion**. Elle garde bien ce qu'elle annonce. Ce qui lui échappait est
+  ailleurs : `toBeCloseTo(…, 1)` tolère 0,05 sur une valeur de 0,6, donc l'arrondi du repère 2050
+  entièrement retiré la laisse verte — et cet arrondi n'est pas de la mise en forme, c'est le
+  **seuil** de `comparisonNote` (600 kg arrondi, 589 sans). Une assertion de propriété a été
+  ajoutée ; l'ancienne reste.
+- **`mascotte.test.ts` tombe sur une valeur différente et pas sur un littéral égal.** Deux
+  mutations : `MASCOT_NAME = 'Rami'` la fait tomber, `MASCOT_NAME = 'Ramille'` la laisse verte.
+  Aucune assertion de runtime ne distingue un alias d'un littéral égal, donc c'est le **titre** qui
+  était faux (« à changer ici et nulle part ailleurs ») : il annonçait une propriété de la source.
+  Le titre dit maintenant ce que l'assertion voit, et les deux mesures sont écrites au-dessus.
+- **`analytics.test.ts` était bien vacante**, et son commentaire le disait (« purement statique »).
+  Jest efface les types : l'assertion ne pouvait tomber pour aucune raison. Ce qu'elle annonçait
+  garder — « le démarrage et le retour au premier plan n'écrivent pas des lignes indistinguables » —
+  n'était éprouvé nulle part, et en cherchant où, on trouve le vrai trou : **la règle du retour au
+  premier plan vivait en variable mutable dans le layout racine**, sans test. Elle porte un piège
+  iOS (`inactive` traversé à l'aller *et* au retour) dont l'oubli ferait perdre **la totalité** du
+  chemin du rappel, en silence — la série ne montrerait pas un trou, elle montrerait une plateforme
+  qui ne revient jamais au premier plan. Extraite en `suivreLEtatDeLApp` (`src/types/analytics.ts`),
+  quatre tests, trois mutations qui tombent chacune sur la sienne.
+
+**La leçon de ce sous-lot** : un relevé de tautologies fait à la lecture se trompe dans les deux
+sens. Deux des trois gardes accusées tenaient ; celle qui ne tenait pas cachait un défaut plus
+grand qu'elle.
 
 **La leçon, et c'est la quatrième fois dans la journée** : une garde s'écrit en se demandant ce qui
 doit la faire tomber, jamais ce qu'elle doit confirmer. Les quatre défauts ci-dessus étaient verts,
 documentés, et cités comme preuve dans trois fichiers.
+
+### 12.9 Revue de sécurité avant ouverture au public (20/09/2026)
+
+Quatre revues menées en parallèle sur des surfaces disjointes — authentification, contrôle d'accès
+en base, surfaces publiques, client et vie privée —, **chaque constat re-vérifié à la main avant
+d'être retenu**. C'est la discipline que la journée a imposée : un rapport n'est pas une preuve.
+Deux constats sur les onze remontés ne se sont pas reproduits tels qu'annoncés, et un troisième
+s'est reproduit pour une autre raison que celle donnée.
+
+**Ce qui tient, et qui ne tenait pas d'évidence.** Les 24 policies sont bornées au propriétaire ;
+rejouées depuis la session d'un tiers contre un compte complet, les lectures croisées rendent zéro
+ligne sur les onze tables de données personnelles. Le schéma `analytics` n'est pas exposé. Le jeton
+de désinscription est à usage unique, ne distingue pas l'inconnu de l'utilisé, et ne peut rien
+d'autre que couper les rappels de son porteur. Zéro secret dans l'arbre **et dans les 340
+révisions**. Les deux fonctions `api/` ont été bombardées d'entrées hostiles sous Node — 5 000
+caractères, paires de substitution coupées, `U+202E`, NUL, `1e400` — sans une panne.
+
+**Les trois failles de base, toutes de la même forme** : une garde existait, elle tenait sur le
+chemin qu'on avait regardé, et un second chemin la contournait sans rien lever.
+`20260920190000_trois_gardes_qui_manquaient_sous_les_gardes.sql` les ferme, `31` les épingle, et
+les trois mutations tombent chacune sur ses propres assertions sans toucher aux moitiés positives.
+Le détail est en tête de la migration ; ce qui mérite d'être retenu ici :
+
+1. **Les privilèges par défaut rendaient FAUSSE la règle la plus citée du dépôt.** Détaillé en
+   §12.8 ci-dessus pour la leçon, en `SUPABASE.md` §2.2 pour la mécanique. C'est le seul des trois
+   qui **grandissait tout seul** : il ne coûtait rien aujourd'hui et aurait coûté une table entière
+   ouverte à `anon` le jour où quelqu'un aurait fait confiance à `CLAUDE.md`.
+2. **Le plafond de retours comptait une date que le client posait.** 500 lignes de 2 000 caractères
+   acceptées d'affilée, mesurées, depuis une session anonyme obtenue à la simple ouverture de
+   l'app. Et un retour daté dans le futur rendait le compte **immortel** face à la purge à 90 jours.
+   Le correctif est un trigger d'estampille et non un privilège de colonne, parce que la date doit
+   valoir `now()` pour tout le monde — c'est la forme qu'ont déjà ses deux jumelles, et
+   `feedback.created_at` était la seule des trois à ne pas l'avoir.
+3. **Le bornage écrit le matin même se franchissait en trois ordres.** `20260920160000` a borné
+   l'UPDATE d'`assessment_answers` à `status = 'in_progress'` ; la borne tient en direct (`UPDATE
+   0`, mesuré) et tombait en rouvrant le bilan, réécrivant, refermant. Le troisième ordre repose en
+   plus `submitted_at` **par le trigger d'estampille** — donc libère l'action engagée que C2.2
+   existe pour protéger, et ment sur l'âge du bilan. C'est le constat le plus instructif de la
+   journée : *le correctif du matin était juste et incomplet, et rien dans sa propre suite de tests
+   ne pouvait le dire — elle éprouvait le chemin qu'il avait fermé.*
+
+**Corrigé dans le même lot, côté client et surfaces publiques** :
+
+- **L'adresse e-mail sortait dans une URL.** `/connexion/email` renvoyait vers
+  `/connexion/retrouver?email=…` sur une collision : donc dans la barre d'adresse, l'historique du
+  navigateur et son autocomplétion, et dans les journaux d'accès. C'était la **seule** donnée
+  personnelle du produit à voyager ainsi — tout le reste est un uuid ou un mot d'un vocabulaire
+  fermé. Le mécanisme sans URL existait déjà à dix lignes de là (`memoriserAdresseDuLien`) ; c'est
+  son garde qui l'écartait de ce chemin. Le paramètre `email` a été **retiré du type de l'écran**,
+  pour qu'il se lise « retiré » et non « réservé ».
+- **La page de partage recopiait sa chaîne de requête entière** dans l'`og:image`. Un paramètre
+  inconnu ajouté par un tiers voyageait donc jusqu'à l'URL que chaque lecteur d'aperçu va chercher,
+  et `share-card` posant un cache d'un an, chaque valeur inédite était une clé de cache neuve —
+  donc un rendu satori + resvg complet, à volonté. La query est reconstruite à partir des trois
+  valeurs lues ; `verifier-api.mjs` porte l'assertion inverse de celle qui existait (« ce
+  paramètre-ci ne doit **pas** survivre »), et la mutation la fait tomber.
+- **`url.origin` était la seule valeur injectée dans un attribut sans échappement**, sous un
+  commentaire qui justifiait de ne pas réécrire les `&` — ce qui est juste, et ne disait rien de
+  l'origine. Inatteignable derrière le routage de Vercel ; l'asymétrie se lisait comme un oubli.
+- **`feedback.context` n'était pas écrêté** alors que la colonne porte `check (length <= 120)` : un
+  lien `/feedback?context=<121 caractères>` faisait lever un `23514` que `sendFeedback` ne
+  reconnaît pas, donc « Vérifie ta connexion » sur le **seul canal de retour du produit**,
+  indéfiniment, alors que la connexion va bien.
+
+**Et deux affirmations fausses dans les documents qui sont eux-mêmes la garde** : `CLAUDE.md`
+attribuait le périmètre Android à `assetlinks.json`, qui délègue en réalité **tout** le domaine
+(`handle_all_urls` est la seule relation qu'Android accepte) — ce qui tient le périmètre est le
+`pathPrefix` d'`app.json`, et lui seul ; et `redirect-urls.md` §4 écrivait que la confirmation
+d'adresse ne passe aucune redirection, faux depuis que `linkEmail` prend un `redirectTo`
+obligatoire — un relecteur appliquant ce paragraphe aurait pu retirer l'entrée dont ce flux dépend.
+
+**Ce qui reste ouvert, et pourquoi ça n'a pas été fait ici** : les quatre entrées `vercel.app` de
+la liste des Redirect URLs (`docs/exploitation/redirect-urls.md` §3.1 bis — relevé en direct,
+condition tombée, geste refusé par le garde-fou de permissions de l'environnement), l'entrée
+`localhost:8081` (question ouverte depuis le 10/09, et c'est une décision qui se prend, pas une
+règle qui s'applique), le passage en `flowType: 'pkce'` (qui change ce que la personne peut faire :
+un lien ne s'ouvrirait plus que sur l'appareil qui l'a demandé), le pré-détournement d'adresse par
+`/connexion/email`, et la CSP en `Report-Only` sans collecteur (§12.3, dont ce moment **est** la
+condition de réouverture).
+
+### 12.10 Le passage en PKCE, et trois gardes qui ne pouvaient pas tomber (20/09/2026)
+
+Arbitré par la personne qui pilote le 20/09/2026 (« OK pour passer à PKCE »), après le relevé du
+§12.9 : en `implicit`, la liste des Redirect URLs était le **seul** contrôle existant sur un
+compte, et quatre entrées trop larges y avaient été trouvées le jour même. Le coût assumé est
+produit : **un lien ne s'ouvre plus que là où il a été demandé.**
+
+**Ce que le chantier a réellement fermé, mesuré des deux côtés.** Avec le flux implicite, une URL
+portant les jetons d'un tiers fait basculer la session de la victime sur le compte de l'attaquant
+(`05b1f277…` → `a7b84d72…`, joué dans un navigateur) ; en PKCE elle ne bouge pas. Le scheme
+`ramille` étant BROWSABLE, n'importe quelle page web du téléphone pouvait déclencher ça.
+
+**Le vrai enseignement n'est pas le chantier, ce sont les trois gardes qui sont passées pour une
+mauvaise raison** — trois fois dans la même journée, sur le même chantier, et chacune trouvée par
+le cran du dessus :
+
+1. **Une restauration de mutation a interverti deux messages.** `str.replace(x, y, 1)` a remplacé
+   la **première** occurrence de la chaîne, qui n'était pas celle qu'on venait de muter :
+   `lien_expire` et `lien_ouvert_ailleurs` ont échangé leurs textes. Le typecheck, le linter et
+   les tests sont restés verts — l'assertion existante vérifiait que les messages sont
+   **différents**, pas qu'ils sont à la bonne place. Quelqu'un dont le lien est parfaitement
+   valable aurait lu « il a expiré », en aurait redemandé un, et serait retombé sur le même mur.
+   *Trouvé par le script de bout en bout, qui a lu l'écran.*
+2. **L'assertion d'injection relisait « une » session au lieu d'attendre un changement**, donc
+   ramenait l'ancienne avant que le SDK n'ait fini.
+3. **Et surtout : elle injectait pendant que l'app se routait encore.** La racine redirige côté
+   client, et cette redirection emporte la navigation lancée en même temps, fragment compris —
+   l'attaque n'avait pas lieu, et le script concluait « refusée ». Flux implicite remis, il
+   restait **vert sur la faille qu'il existe pour voir**. *Trouvé en exigeant qu'une mutation
+   fasse tomber ce qu'elle est censée faire tomber, et en instrumentant quand ce n'est pas le
+   cas.*
+
+**La règle qui en sort, et elle est portable** (écrite en `TESTING.md` §1.1 et §2.9) : *une garde
+dont le succès est une **absence** doit laisser à ce qu'elle interdit le temps **et** les
+conditions de réussir.* Sinon elle mesure son propre empressement. Et corollaire de mécanique :
+**une mutation se défait en réécrivant l'état d'avant, jamais par un second remplacement
+textuel** — la chaîne qu'on remet existe souvent ailleurs dans le fichier.
+
+**Ce que la couverture ne prend pas — écrit, pour que personne ne le déduise du silence** : le script est web, donc
+`createSessionFromUrl` — la branche native — n'y est pas jouée. Le pas sur appareil reste à
+`RECETTE.md`, et c'est le seul endroit où le retour Google natif et le lien ouvert depuis une
+messagerie se vérifient.
+
+### 12.11 Ce que coûte un test d'écran — mesuré sur `pistes.tsx` (20/09/2026)
+
+La question posée le 20/09/2026 (« vu ton point 2, on ne devrait pas se mettre à tester les
+écrans ? ») ne se tranche pas par argument : 15 000 lignes d'écrans ne sont gardées que par la
+recette sur appareil, et c'est beaucoup — mais un test qui coûte cher et n'attrape rien est pire
+que pas de test. Un test a donc été écrit pour **mesurer**, sur un écran représentatif
+(453 lignes, quatre dépendances à doubler, deux états d'échec).
+
+**Le prix, relevé et non estimé.**
+
+| Ce qu'on paie | Mesure |
+| --- | --- |
+| Dépendances | 17 paquets, +9 Mo dans `node_modules` |
+| Réglages | un `moduleNameMapper` pour le CSS + un fichier de doublure |
+| Le fichier | 173 lignes pour **4 assertions utiles** |
+| Doublage / assertions | 18 lignes de doublure contre 13 lignes d'assertion |
+| Modules doublés | 4 (le transport, le contexte de pile, la navigation, la carte) |
+| Temps de suite | 4,44 s → **5,39 s** (+21 %) |
+| Temps CPU | 9,3 s → **15,2 s** (+64 %) — c'est le chiffre qui compte sur un runner |
+
+**Trois frottements d'installation**, tous invisibles tant qu'on ne teste que de la logique pure :
+une variable citée dans une fabrique `jest.mock()` doit être préfixée `mock` (jest hisse les
+appels) ; `react-test-renderer` doit correspondre **exactement** à la version de React ; et
+`src/constants/theme.ts` importe `@/global.css`, que jest ne sait pas lire — donc **tout** test
+d'écran échouait au chargement avant qu'une doublure ne soit posée.
+
+**Ce que ça attrape, et c'est la moitié qui décide.** Les quatre assertions portent sur des
+**branches de rendu**, pas sur des dérivations : aucune n'est visible depuis `src/types` (qui ne
+connaît pas l'écran) ni depuis le parcours réel (qui ne joue que le chemin heureux). Quatre
+mutations, quatre chutes :
+
+- l'échec de lecture qui reçoit le libellé de l'état vide — c'est la règle de C1.4, « on ne dit
+  jamais *tu n'as rien* quand c'est la lecture qui a manqué », et elle n'était gardée nulle part ;
+- la phrase d'intro figée sur sa branche « sans engagement » ;
+- `onRefus` ramené à `rafraichir()` seul, c'est-à-dire **l'état d'avant le correctif du
+  20/09/2026** : le défaut réel rejoué, et le test tombe ;
+- l'état vide affiché **au-dessus** des pistes.
+
+**Et la quatrième a d'abord révélé un trou dans le test lui-même** : il n'affirmait que des
+présences, jamais une absence, donc la condition pouvait sauter entièrement sans qu'il bouge. Une
+garde qui ne vérifie qu'une présence laisse toujours passer l'excès — corollaire direct de la
+règle écrite en `TESTING.md` §1.1.
+
+**Ce que ça ne vaut pas.** Le test du refus doit rejouer **deux gestes** (ouvrir la ligne, puis
+agir sur la carte), donc il se couple à la conception d'interaction et non à un contrat : le jour
+où les cartes s'ouvrent autrement, il casse sans qu'aucune promesse n'ait bougé. Et la carte est
+doublée — ce qu'on monte est **l'écran moins ses cartes**, pas « la page telle qu'elle est ».
+
+**Recommandation — oui, mais sur un critère, pas sur une surface.** Pas de campagne de couverture
+d'écrans : le coût CPU est réel et la brittleness l'est aussi. On écrit un test d'écran quand, et
+seulement quand, **on peut nommer la mutation qu'il fait tomber** et que cette mutation n'est
+visible ni par `src/types` ni par le parcours réel. En pratique ça vise une famille étroite et
+précieuse : les **branches d'état** (chargement / erreur / vide / plein, où vit la règle de C1.4)
+et le **câblage d'un message** — c'est-à-dire exactement les deux endroits où les défauts de la
+contre-lecture du 20/09 se trouvaient. Tout le reste — la mise en page, « est-ce que ça rend »,
+l'apparence — reste à la recette sur appareil et à `verifier-etats-export.mjs`.
+
+**Et un quatrième frottement, trouvé par la CI et pas en local** : un test d'écran **ne se
+colocalise pas**. `src/app/` est le routeur, `expo-router` n'ignore que quatre préfixes, donc un
+fichier de test posé à côté de `pistes.tsx` a produit une **route** « /plan/pistes.test »,
+exportée et servie. `verifier-titres-export.mjs` l'a arrêtée — elle n'avait pas de ligne dans
+`PAGE_TITLES` —, ce qui est exactement le travail de cette garde et la deuxième fois de la journée
+qu'un contrôle d'export attrape ce qu'aucune suite locale ne voit. Les tests d'écran vivent
+désormais dans `src/tests/ecrans/`.
+
+**Le relevé de couverture qui reste à faire** : `collectCoverageFrom` ne prend que `src/types`,
+`src/lib` et `src/constants`. Un test d'écran n'y entre pas, donc la couverture affichée ne
+bougera pas d'un point — à corriger le jour où cette famille grandit, sans quoi le chiffre dira
+l'inverse de ce qui se passe.

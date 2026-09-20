@@ -133,8 +133,30 @@ export function variationNote(previousKg: number, currentKg: number): string {
  * prévu par CLAUDE.md) déplace le second : les deux écrans dateraient alors le même bilan
  * différemment, sans que rien ne le signale.
  */
+/**
+ * La date d'un bilan, à la française — **sans `toLocaleDateString`, depuis le 20/09/2026**.
+ *
+ * Cette fonction passait par `toLocaleDateString('fr-FR', { month: 'long' })`, et le dépôt le
+ * savait : le commentaire de `MOIS_FRANCAIS` (`src/types/checkin.ts`) écrit noir sur blanc
+ * qu'Hermes peut être construit sans données ICU complètes et rendre alors **un mois en anglais
+ * ou un numéro**, puis conclut que « `formatDate` du suivi prend ce risque pour une date
+ * d'affichage ». C'était un arbitrage défendable quand la date vivait à un endroit.
+ *
+ * **Il ne l'est plus** : la date s'écrit désormais dans la liste du suivi, sur l'étiquette
+ * d'accessibilité de chaque barre, en tête d'un bilan relu, et dans le bloc « Comment ce chiffre
+ * est calculé ». Quatre endroits, invisibles en CI (Node porte l'ICU complet) et visibles
+ * seulement sur l'appareil — c'est-à-dire découverts par la personne et pas par nous. La liste
+ * `MOIS_FRANCAIS` existe déjà, épinglée par ses tests et jumelle de `public.mois_francais` : la
+ * réutiliser ne coûte rien et retire la seule dépendance à l'ICU du produit.
+ */
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const date = new Date(iso);
+  // **Le jour LOCAL, et c'est la même règle que `jourLocalDe`** : quand on date ce qu'une personne
+  // a fait, c'est son calendrier qui décide. `getDate`/`getMonth`/`getFullYear` lisent le local,
+  // exactement comme le faisait `toLocaleDateString` — la sortie ne change pas d'un caractère là
+  // où l'ICU est complet.
+  const jour = String(date.getDate()).padStart(2, '0');
+  return `${jour} ${MOIS_FRANCAIS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 /**

@@ -3,6 +3,8 @@ import {
   adresseSemblePlausible,
   estLimiteDEnvoi,
   estPanneDeTransport,
+  codeDuRetourDeLien,
+  estVerifieurManquant,
   etatDeLaProposition,
   identiteDejaRattachee,
   issueDuNavigateurDAuth,
@@ -217,12 +219,84 @@ describe('lireRetourDeLien', () => {
     // casser les dents.
     expect(lireRetourDeLien('ramille://#access_token=&refresh_token=')).toBe('aucun');
   });
+
+  // ── Depuis le passage en PKCE (20/09/2026) ────────────────────────────────────────────
+
+  it('reconnaît le `code` — la forme du produit depuis PKCE', () => {
+    expect(lireRetourDeLien('ramille://?code=abc123')).toBe('code');
+    expect(lireRetourDeLien('https://www.ramille.fr/?code=abc123&sb_flow_id=xyz')).toBe('code');
+  });
+
+  /**
+   * **La forme `jetons` reste lue, et c'est tout l'intérêt de la distinction.**
+   *
+   * Un attaquant qui veut poser sa propre session dans l'app de quelqu'un n'a que ses jetons à
+   * lui : il ne peut pas fabriquer un `code` échangeable, l'échange exigeant le vérifieur resté
+   * sur l'appareil qui a demandé le lien. Rendre `'aucun'` sur un fragment de jetons ferait
+   * ignorer la tentative en silence ; la nommer permet de la refuser avec une phrase vraie.
+   */
+  it('nomme encore les jetons, pour pouvoir les refuser', () => {
+    expect(lireRetourDeLien('ramille://x#access_token=ey.JJ&refresh_token=abc')).toBe('jetons');
+  });
+
+  it('fait passer le `code` avant les jetons, et l’échec avant les deux', () => {
+    // Une URL qui porterait les deux est déjà anormale ; ce qui compte est que l'ordre soit
+    // décidé ici et pas par le hasard de l'écriture.
+    expect(lireRetourDeLien('ramille://?code=abc#access_token=ey.JJ')).toBe('code');
+    expect(lireRetourDeLien('ramille://?code=abc&error_code=otp_expired')).toBe('erreur');
+  });
+
+  it('ignore un `code` vide', () => {
+    expect(lireRetourDeLien('ramille://?code=')).toBe('aucun');
+  });
+});
+
+describe('codeDuRetourDeLien', () => {
+  it('rend le code, décodé, depuis la requête comme depuis le fragment', () => {
+    expect(codeDuRetourDeLien('ramille://?code=abc123')).toBe('abc123');
+    expect(codeDuRetourDeLien('https://www.ramille.fr/#code=a%2Bb')).toBe('a+b');
+  });
+
+  it('rend `null` quand il n’y en a pas, ou qu’il est vide', () => {
+    expect(codeDuRetourDeLien('ramille://?code=')).toBeNull();
+    expect(codeDuRetourDeLien('https://www.ramille.fr/plan')).toBeNull();
+    expect(codeDuRetourDeLien('ramille://#access_token=ey.JJ')).toBeNull();
+  });
+});
+
+describe('estVerifieurManquant', () => {
+  /**
+   * **Reconnu au code, jamais au message** — la règle du dépôt, et ici elle n'est pas théorique :
+   * le texte d'`auth-js` fait quatre lignes, il est en anglais et il parle de Next.js et de
+   * `@supabase/ssr`. Le reformuler d'une version à l'autre ne coûterait rien à personne, sauf à
+   * nous.
+   *
+   * Ce que ça décide : le seul échec **attendu** du flux PKCE — un lien valable ouvert dans un
+   * autre navigateur — et donc le seul qui doive dire « rouvre-le là où tu l'as demandé » plutôt
+   * que « vérifie ta connexion », qui ferait redemander un lien à l'infini.
+   */
+  it('reconnaît le vérifieur manquant à son code comme à son nom de classe', () => {
+    expect(estVerifieurManquant({ code: 'pkce_code_verifier_not_found' })).toBe(true);
+    expect(estVerifieurManquant({ name: 'AuthPKCECodeVerifierMissingError' })).toBe(true);
+  });
+
+  it('ne confond pas un échange refusé avec un vérifieur absent', () => {
+    // `AuthPKCEGrantCodeExchangeError` est l'autre erreur PKCE d'`auth-js` : elle dit « cette URL
+    // n'est pas un retour PKCE valable », ce qui est une vraie panne et pas un lien mal ouvert.
+    expect(estVerifieurManquant({ name: 'AuthPKCEGrantCodeExchangeError' })).toBe(false);
+    expect(estVerifieurManquant({ code: 'otp_expired' })).toBe(false);
+    expect(estVerifieurManquant(new Error('pkce_code_verifier_not_found'))).toBe(false);
+    expect(estVerifieurManquant(null)).toBe(false);
+    expect(estVerifieurManquant(undefined)).toBe(false);
+    expect(estVerifieurManquant('pkce_code_verifier_not_found')).toBe(false);
+  });
 });
 
 describe('motifRetourLien', () => {
   it('n’accepte que les motifs déclarés', () => {
     expect(motifRetourLien('lien_expire')).toBe('lien_expire');
     expect(motifRetourLien('session_non_ouverte')).toBe('session_non_ouverte');
+    expect(motifRetourLien('lien_ouvert_ailleurs')).toBe('lien_ouvert_ailleurs');
     expect(motifRetourLien('autre_chose')).toBeNull();
     expect(motifRetourLien(undefined)).toBeNull();
   });
@@ -241,6 +315,47 @@ describe('motifRetourLien', () => {
       expect(message).not.toMatch(/compte/i);
       expect(message).not.toMatch(/envoy|part /i);
     }
+  });
+
+  /**
+   * **Les trois motifs disent trois gestes différents, et c'est leur seule raison d'exister.**
+   *
+   * `lien_ouvert_ailleurs` est arrivé avec PKCE, et il décrit le seul des trois où **le lien est
+   * encore valable** : le geste utile est de le rouvrir au bon endroit, pas d'en redemander un.
+   * Le confondre avec `lien_expire` enverrait quelqu'un en redemander indéfiniment, chacun
+   * échouant pour la même raison, sans que rien ne le dise.
+   *
+   * Le test porte sur la **distinction** et pas sur les mots, pour qu'une reformulation le laisse
+   * vert : trois motifs, trois messages deux à deux différents.
+   */
+  it('ne donne jamais le même message à deux motifs', () => {
+    const messages = MOTIFS_RETOUR_LIEN.map(messageDuRetourDeLien);
+    expect(new Set(messages).size).toBe(MOTIFS_RETOUR_LIEN.length);
+  });
+
+  /**
+   * **Trois messages distincts ne suffisent pas : encore faut-il qu'ils soient à la bonne
+   * place.** Le 20/09/2026, une restauration de mutation a remplacé la mauvaise occurrence d'une
+   * chaîne et **interverti** `lien_expire` et `lien_ouvert_ailleurs`. L'assertion de distinction
+   * ci-dessus est restée verte — les deux messages étaient toujours différents —, le typecheck
+   * aussi, le linter aussi. C'est `scripts/verifier-lien-de-connexion.mjs` qui l'a vu, en
+   * ouvrant vraiment un lien dans un second navigateur et en lisant l'écran.
+   *
+   * Ce que ça coûtait : quelqu'un dont le lien est parfaitement valable lisait « il a expiré, ou
+   * il a déjà servi », en redemandait un, et retombait sur le même mur — indéfiniment, sans que
+   * rien ne lui dise que le problème est *l'endroit* où il l'ouvre.
+   *
+   * L'assertion porte sur **ce que chaque message affirme** et pas sur sa formulation : celui du
+   * lien expiré dit que le lien ne vaut plus, celui du lien ouvert ailleurs ne le dit surtout
+   * pas — c'est toute la différence entre les deux, et une reformulation qui la perdrait serait
+   * un vrai changement de sens.
+   */
+  it('n’annonce un lien mort que pour le motif où il l’est', () => {
+    const mort = /expir|d[ée]j[àa] servi|ne marche plus/i;
+    expect(messageDuRetourDeLien('lien_expire')).toMatch(mort);
+    expect(messageDuRetourDeLien('lien_ouvert_ailleurs')).not.toMatch(mort);
+    // Et celui-ci décrit une panne de notre côté, pas un lien fautif.
+    expect(messageDuRetourDeLien('session_non_ouverte')).not.toMatch(mort);
   });
 });
 

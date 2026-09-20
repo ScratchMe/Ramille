@@ -34,6 +34,28 @@ function totalBorne(raw: string | null): number | null {
   return tonnes;
 }
 
+/**
+ * L'origine, rendue sûre pour une **valeur d'attribut** — et elle seule.
+ *
+ * `url.origin` vient de l'en-tête `Host`, donc du client. Le guillemet n'est pas un
+ * « forbidden host code point » du parseur URL : un hôte qui en porte un traverse `new URL()`
+ * sans lever et ressort intact dans `content="…"`, qui se referme alors dessus. Vercel ne
+ * route que les hôtes assignés au projet, donc rien n'est atteignable aujourd'hui — mais la
+ * garde était une propriété de l'hébergeur et pas une ligne de ce fichier, et l'asymétrie avec
+ * `titre`/`description` se lisait comme un oubli alors que le commentaire d'à côté la
+ * présentait comme un choix.
+ *
+ * **Les `&` ne sont pas touchés**, et c'est la moitié qu'il ne faut pas « uniformiser » : la
+ * chaîne de requête passe par `URLSearchParams`, dont la sortie a été éprouvée en conditions
+ * réelles (v1-06 §2-3), et un lecteur d'aperçu qui n'interprète pas les entités irait chercher
+ * une autre URL. Une origine, elle, n'en contient jamais.
+ */
+function attributSur(origine: string): string {
+  return origine.replace(/["'<>]/g, (char) =>
+    char === '"' ? '&quot;' : char === "'" ? '&#39;' : char === '<' ? '&lt;' : '&gt;',
+  );
+}
+
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => {
     switch (char) {
@@ -112,12 +134,25 @@ function pageDePartage(request: Request): Response {
       : 'Calcule la tienne en 5 minutes sur Ramille.'
     : DESCRIPTION_SANS_CHIFFRE;
 
+  // **La query de la carte est reconstruite, jamais recopiée.** `url.searchParams.toString()`
+  // reprenait la chaîne entrante *en entier* : un paramètre inconnu ajouté par un tiers
+  // survivait donc jusque dans l'`og:image`, c'est-à-dire dans l'URL que chaque lecteur
+  // d'aperçu va chercher — et, `share-card` posant un cache d'un an, chaque valeur inédite
+  // est une clé de cache neuve, donc un rendu complet (satori + resvg) qui se paie en
+  // invocations. Trois paramètres, dans un ordre fixe : c'est exactement ce que la carte lit,
+  // et deux partages identiques produisent maintenant la même clé.
+  const queryDeLaCarte = new URLSearchParams();
+  if (tonnes !== null) queryDeLaCarte.set('total', url.searchParams.get('total') ?? '');
+  if (poste) queryDeLaCarte.set('poste', poste);
+  if (percent !== null) queryDeLaCarte.set('percent', String(percent));
+
+  const origine = attributSur(url.origin);
   return reponseHtml(
     htmlDePartage({
       titre,
       description,
-      imageUrl: `${url.origin}/api/share-card?${url.searchParams.toString()}`,
-      accueilUrl: `${url.origin}/`,
+      imageUrl: `${origine}/api/share-card?${queryDeLaCarte.toString()}`,
+      accueilUrl: `${origine}/`,
     }),
   );
 }

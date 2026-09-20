@@ -38,6 +38,21 @@ Corollaire pour une valeur attendue : **une hypothèse sur les données se mesur
 raisonnement**. Une assertion chiffrée se recalcule par une requête sur la base, et n'écrit que ce
 qui a été ainsi vérifié (§2.2).
 
+
+**Une mutation se défait en réécrivant l'état d'avant, jamais par un second remplacement
+textuel.** Relevé le 20/09/2026 : la chaîne remise en place existait **ailleurs** dans le même
+fichier, le remplacement a frappé la première occurrence, et deux messages d'erreur se sont
+retrouvés intervertis — verts au typecheck, au linter et aux tests, parce que l'assertion en place
+vérifiait qu'ils sont *différents* et non qu'ils sont *à la bonne place*. Garder une copie de
+l'état d'avant et la réécrire coûte une ligne.
+
+**Et une garde dont le succès est une ABSENCE doit laisser à ce qu'elle interdit le temps et les
+conditions de réussir.** Même journée, deux fois : une assertion « la session n'a pas basculé »
+relisait l'état trop tôt, puis déclenchait l'attaque pendant que l'app se routait encore — la
+redirection emportait la navigation, donc l'attaque n'avait pas lieu et la garde concluait
+« refusée ». Avec la faille grande ouverte, elle restait verte. Le test d'une garde de cette forme
+n'est donc pas « passe-t-elle ? » mais « **tombe-t-elle quand je remets le défaut ?** » — et si
+elle ne tombe pas, c'est la garde qu'on instrumente, pas le produit qu'on déclare sain.
 ### 1.2 Où passe la ligne entre logique pure et entrée-sortie
 
 La ligne passe par **ce qu'un test doit dresser avant de pouvoir affirmer**, et non par le nom
@@ -487,3 +502,84 @@ vu en une seconde — mais personne ne le lance.
 
 **Éprouvé en le cassant** (§1.1), une mutation par branche : un chemin déplacé dans `CLAUDE.md`,
 et une tolérance qu'aucun document n'emprunte.
+
+### 2.9 Le lien de connexion, joué de bout en bout
+
+**Le seul chemin du produit vers un compte existant n'était gardé par rien** jusqu'au 20/09/2026.
+Jest ne voit pas partir un e-mail, pgTAP ne voit pas GoTrue, et le parcours réel ne joue que la
+session anonyme. Quelqu'un qui change d'appareil, qui réinstalle, ou qui arrive sur
+`/compte/suppression` depuis un navigateur neuf n'a que ce chemin — et le passage en PKCE du même
+jour touchait ses trois branches d'un coup.
+
+`scripts/verifier-lien-de-connexion.mjs` demande un lien **par l'écran** (c'est le client qui
+fabrique le défi PKCE et range le vérifieur), lit l'e-mail réellement reçu, et éprouve trois
+choses dont **une seule est un chemin heureux** : le lien ouvert au bon endroit ouvre la session ;
+ouvert ailleurs il échoue **en le disant** ; et une URL portant des jetons valides ne fait plus
+basculer de compte.
+
+**Deux prérequis à connaître avant de s'étonner qu'il ne tourne pas** :
+
+- **`[local_smtp]` doit être activé** dans `supabase/config.toml`. Il l'est depuis le 20/09/2026,
+  et c'est ce qui rend ce script possible. Le collecteur est **Mailpit** et non Inbucket : le CLI
+  a changé d'outil, les routes diffèrent (`/api/v1/search` contre `/api/v1/mailbox/<nom>`), et
+  `supabase status -o env` publie encore la variable sous les **deux** noms — la première version
+  du script prenait des 404 pour une boîte vide.
+- **Il sert l'export sur le port 3000, et ce n'est pas négociable.** L'app calcule son
+  `redirectTo` depuis `window.location.origin`, et GoTrue n'accepte que les origines de sa liste,
+  dont `site_url = http://127.0.0.1:3000`. Sur un port au hasard, le lien retomberait sur la Site
+  URL **sans rien dire**, et le script éprouverait autre chose que ce qu'il annonce.
+
+**Et la leçon qui vaut pour n'importe quelle garde de bout en bout, payée deux fois ici.** Les
+deux assertions dont le succès est une **absence** — « la session n'a pas basculé », « le lien
+n'a pas ouvert de compte » — passaient toutes les deux pour la mauvaise raison :
+
+1. elles relisaient « une » session au lieu d'attendre un **changement**, donc ramenaient
+   l'ancienne avant que le SDK n'ait fini ;
+2. et l'injection était lancée **pendant que l'app se routait encore** — la racine redirige côté
+   client, et cette redirection emporte la navigation lancée en même temps, fragment compris.
+   L'attaque n'avait donc pas lieu, et le script disait « refusée ».
+
+Avec le flux implicite remis — c'est-à-dire la faille grande ouverte —, il restait **vert**. Une
+garde dont le succès est une absence doit laisser à ce qu'elle interdit le **temps** et les
+**conditions** de réussir ; sinon elle mesure son propre empressement. `TRACE_LIEN=1` imprime les
+identifiants et l'URL finale, et c'est ce qui l'a montré.
+
+### 2.10 Tester un écran — le critère, et ce que ça coûte
+
+Un test d'écran est possible depuis le 20/09/2026 (`@testing-library/react-native`, et un
+`moduleNameMapper` qui neutralise l'import CSS de `src/constants/theme.ts` — sans lui **tout**
+test d'écran échoue au chargement). Le relevé de coût complet est en `v1-27` §12.11 ; ce qu'il
+faut retenir ici tient en un critère et trois frottements.
+
+**Le critère : on peut nommer la mutation qu'il fait tomber, et elle n'est visible ni par
+`src/types` ni par le parcours réel.** Ça vise une famille étroite — les **branches d'état**
+(chargement / erreur / vide / plein) et le **câblage d'un message** —, c'est-à-dire exactement
+là où vit la règle de C1.4 : *un échec de lecture ne dit jamais « tu n'as rien »*. La mise en
+page, l'apparence et « est-ce que ça rend » restent à la recette et à
+`verifier-etats-export.mjs` : les y mettre coûterait du temps de CI pour une garde qui casse à
+chaque retouche de maquette.
+
+**Ce que ça coûte, mesuré** : un fichier de 173 lignes pour 4 assertions, 18 lignes de doublage
+contre 13 d'assertion, 4 modules doublés, et **+21 % sur la suite / +64 % de temps CPU** pour ce
+seul fichier. Le second chiffre est celui qui compte sur un runner.
+
+**Un test d'écran ne se colocalise PAS**, et c'est une contrainte et non un choix : `src/app/`
+**est** le routeur, et `expo-router` n'ignore que `+html`, `+native-intent`, `+api` et
+`+middleware` (relevé dans son `getRoutesCore.js`). Un fichier de test posé à côté de
+`pistes.tsx` produit une **route** « /plan/pistes.test », exportée et servie. Mesuré le 20/09/2026
+sur la CI : l'export l'a bien rendue, et c'est `verifier-titres-export.mjs` qui l'a arrêtée — elle
+n'avait pas de ligne dans `PAGE_TITLES`. Les tests d'écran vivent donc dans `src/tests/ecrans/`,
+et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
+
+**Trois frottements qui ne se voient pas quand on ne teste que de la logique pure** :
+
+1. une variable citée dans une fabrique `jest.mock()` doit être préfixée `mock` — jest hisse les
+   appels au-dessus des déclarations du fichier et refuse toute autre variable hors portée ;
+2. `react-test-renderer` doit correspondre **exactement** à la version de React installée, sinon
+   la bibliothèque refuse de se charger ;
+3. le CSS, ci-dessus.
+
+**Et le piège de fond, trouvé en mutant** : un test d'écran écrit spontanément n'affirme que des
+**présences**. Il laisse alors passer tout ce qui est en trop — une phrase d'état vide rendue
+au-dessus des pistes, par exemple, ne fait bouger aucune assertion de présence. Chaque branche
+qu'on prétend garder demande donc sa moitié négative.

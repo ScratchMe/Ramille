@@ -97,6 +97,10 @@ export default function ConnexionEmail() {
     // L'adresse a déjà un compte : la personne est au mauvais écran, pas en erreur. On le
     // dit et on l'envoie vers « retrouver » avec l'adresse déjà saisie.
     if (adresseDejaRattachee(error)) {
+      // Mémorisée **ici aussi**, et pas seulement sur le chemin nominal plus bas : c'est ce qui
+      // permet à « Retrouver mon compte » de repartir avec l'adresse déjà saisie sans la faire
+      // voyager dans l'URL. Voir le commentaire du bouton.
+      await memoriserAdresseDuLien(email);
       setPhase('deja-un-compte');
       return;
     }
@@ -163,7 +167,16 @@ export default function ConnexionEmail() {
             </ThemedText>
             <Button
               title="Retrouver mon compte"
-              onPress={() => router.replace({ pathname: '/connexion/retrouver', params: { email: email.trim(), source: 'email' } })}
+              // **L'adresse ne passe pas par l'URL**, elle est relue en local à l'arrivée
+              // (`lireAdresseDuLien`, mécanisme déjà en place pour le lien expiré). Un paramètre
+              // `email=` s'écrit dans la barre d'adresse sur web, donc dans l'historique du
+              // navigateur et son autocomplétion — sur un poste partagé, c'est le chemin par
+              // lequel une adresse se retrouve devant quelqu'un d'autre — et dans les journaux
+              // d'accès dès qu'on recharge ou met en favori. C'était la seule donnée personnelle
+              // du produit à sortir dans une URL : tout le reste est un uuid ou un mot d'un
+              // vocabulaire fermé. Les deux sorties de `src/lib/compte.ts` balaient la marque
+              // locale ; elles ne peuvent rien contre un historique de navigateur.
+              onPress={() => router.replace({ pathname: '/connexion/retrouver', params: { source: 'email' } })}
               style={styles.continueButton}
             />
             <TextLink

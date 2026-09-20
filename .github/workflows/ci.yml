@@ -279,3 +279,8 @@ jobs:
       # qu'il laisse volontairement aux autres gardes. Sur un échec, il imprime l'étape, le texte
       # visible et les requêtes refusées — c'est ce qu'on lit avant le code.
       - run: node scripts/verifier-parcours-reel.mjs
+      # Le lien de connexion, de bout en bout : le collecteur d'e-mails local (`[local_smtp]`,
+      # allumé le 20/09/2026) rend enfin testable le seul chemin du produit vers un compte
+      # existant. Trois assertions, et une seule est un chemin heureux — l'en-tête du script dit
+      # laquelle garde quoi, et ce que chaque mutation fait tomber.
+      - run: node scripts/verifier-lien-de-connexion.mjs

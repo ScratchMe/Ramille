@@ -230,6 +230,30 @@ verifier(
   'page : og:image:width/height n’annoncent pas 1200 × 630'
 );
 
+// ── 2 bis. Ce que la page NE reflète PAS ──────────────────────────────────────────────────
+//
+// La boucle ci-dessus dit que les trois paramètres attendus survivent ; elle ne dit rien de ce
+// qui arriverait en plus. Or la query de l'`og:image` était **recopiée entière** : un paramètre
+// inconnu ajouté par un tiers voyageait jusque dans l'URL que chaque lecteur d'aperçu va
+// chercher, et `share-card` posant un cache d'un an, chaque valeur inédite était une clé de
+// cache neuve — donc un rendu satori + resvg complet, facturé, à volonté. Depuis le 20/09/2026
+// la query est **reconstruite** à partir des trois valeurs lues.
+//
+// L'assertion porte sur le HTML entier et pas seulement sur l'`og:image` : le même paramètre
+// serait tout aussi faux dans le `twitter:image`, qui est écrit à un autre endroit du gabarit.
+const PARASITE = 'zzparasite';
+const pageParasitee = await (
+  await partage(new Request(`${ORIGINE}/api/partage?${PARAMS}&${PARASITE}=1`))
+).text();
+verifier(
+  !pageParasitee.includes(PARASITE),
+  `page : un paramètre inconnu (« ${PARASITE} ») se retrouve dans le HTML rendu — la query de la carte est recopiée au lieu d'être reconstruite`
+);
+verifier(
+  pageParasitee.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
+  'page : le paramètre parasite a emporté le titre avec lui'
+);
+
 // ── 3. Hors borne, les deux côtés retombent ensemble ──────────────────────────────────────
 const pageHorsBorne = await (await partage(new Request(`${ORIGINE}/api/partage?total=201`))).text();
 verifier(pageHorsBorne.includes(TITRE_SANS_CHIFFRE), 'page : 201 t devrait rendre le titre sans chiffre');
