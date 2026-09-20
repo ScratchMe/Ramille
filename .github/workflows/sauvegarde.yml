@@ -45,7 +45,13 @@ concurrency:
 jobs:
   dump:
     name: Export chiffré (pg_dump)
-    runs-on: ubuntu-latest
+    # Épinglée pour la raison écrite en tête de ci.yml (annotation du 20/09/2026, migration de
+    # `ubuntu-latest` vers Ubuntu 26 le 19/10/2026) — et ici elle compte davantage : ce travail
+    # installe le client PostgreSQL depuis apt.postgresql.org par `$(lsb_release -cs)-pgdg`, un nom
+    # de code que le dépôt pgdg ne sert pas forcément le jour de la sortie d'une Ubuntu, et un
+    # workflow planifié qui échoue ne se signale que par un email. Pour monter : changer le numéro,
+    # puis lancer ce workflow à la main (`workflow_dispatch`) — la CI d'une PR ne l'exerce pas.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -93,7 +99,7 @@ jobs:
             exit 1
           fi
 
-      # Le runner ubuntu-latest embarque un client PostgreSQL dont la version suit l'image et
+      # L'image ubuntu-24.04 embarque un client PostgreSQL dont la version suit l'image et
       # peut être antérieure au serveur : `pg_dump` refuse de dumper une base plus récente que
       # lui. Le serveur est en **PostgreSQL 17.6** (relevé le 10/09/2026 sur le projet distant),
       # donc le client 15 ou 16 du runner échouerait. On installe explicitement le client 17
@@ -228,7 +234,7 @@ jobs:
       # `--pinentry-mode loopback` n'est pas décoratif. Depuis GnuPG 2.1, une phrase de passe
       # fournie par `--passphrase-fd` n'est acceptée que si la boucle locale est demandée
       # explicitement : sans elle, gpg s'adresse à son agent et sort en « problem with the
-      # agent » / « Inappropriate ioctl for device ». ubuntu-latest embarque gpg 2.4, donc le job
+      # agent » / « Inappropriate ioctl for device ». L'image ubuntu-24.04 embarque gpg 2.4, donc le job
       # échouerait à **toutes** ses exécutions et la sauvegarde ne produirait jamais d'artefact —
       # panne que rien dans le dépôt ne peut attraper, la CI ne jouant pas ce workflow.
       - name: Chiffrer l'archive
