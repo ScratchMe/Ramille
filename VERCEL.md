@@ -208,6 +208,14 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 - `maxDuration` se surveille si le démarrage à froid est lourd (un rendu d'image à partir de
   WASM l'est).
 
+**Et depuis le 20/09/2026, tout sauf le deuxième point s'éprouve avant de déployer** :
+`scripts/verifier-api.mjs` importe les deux fonctions sous Node 22 (type stripping natif, le même
+TypeScript que Vercel compile) et les appelle en CI — la carte doit rendre par son vrai chemin, pas
+par le repli `no-store` qui est la seule trace d'un satori, d'un resvg ou d'une police en panne.
+Ce que la garde ne voit pas, c'est précisément `includeFiles` : en local, `hb.wasm` est lu depuis
+`node_modules` sans traçage, donc une dépendance nouvelle qui charge un asset se vérifie encore au
+premier déploiement, dans *Project → Logs*.
+
 ### 1.7 Ce qui pèse dans une fonction
 
 - Chez Tour de Growth : **`sharp` (~48 Mo)** est tracé dès que `next/image` *pourrait* servir, et
