@@ -99,7 +99,7 @@ jobs:
             exit 1
           fi
 
-      # Le runner ubuntu-latest embarque un client PostgreSQL dont la version suit l'image et
+      # L'image ubuntu-24.04 embarque un client PostgreSQL dont la version suit l'image et
       # peut être antérieure au serveur : `pg_dump` refuse de dumper une base plus récente que
       # lui. Le serveur est en **PostgreSQL 17.6** (relevé le 10/09/2026 sur le projet distant),
       # donc le client 15 ou 16 du runner échouerait. On installe explicitement le client 17
@@ -234,7 +234,7 @@ jobs:
       # `--pinentry-mode loopback` n'est pas décoratif. Depuis GnuPG 2.1, une phrase de passe
       # fournie par `--passphrase-fd` n'est acceptée que si la boucle locale est demandée
       # explicitement : sans elle, gpg s'adresse à son agent et sort en « problem with the
-      # agent » / « Inappropriate ioctl for device ». ubuntu-latest embarque gpg 2.4, donc le job
+      # agent » / « Inappropriate ioctl for device ». l'image ubuntu-24.04 embarque gpg 2.4, donc le job
       # échouerait à **toutes** ses exécutions et la sauvegarde ne produirait jamais d'artefact —
       # panne que rien dans le dépôt ne peut attraper, la CI ne jouant pas ce workflow.
       - name: Chiffrer l'archive
