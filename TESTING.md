@@ -329,6 +329,20 @@ Et c'est aussi ce qui rend **pgTAP exécutable ici** (`npx supabase@2.117.0 test
 n'est plus la seule validation d'un fichier pgTAP, et ce n'est pas la meilleure — le distant porte
 des données que trois assertions ne supportent pas (§2.3).
 
+**Deux profils, et le second n'est pas un doublon** (20/09/2026). Le premier est celui de la
+recette — voiture, vols, huit pistes. Le second est un **cycliste dont le plan ne porte aucune
+action**, et ce n'est pas un cas de bord : depuis C2.5, tout cycliste et tout profil sédentaire y
+tombe. C'est surtout le seul chemin où la carte « Ton premier plan » ne se rend **jamais** (elle
+demande une action), donc le seul où la barre d'onglets doit arriver autrement — au premier
+affichage du plan, avec la carte « Plan et Suivi ». Le premier profil, lui, passe par « Compris ».
+Trois branches d'écran basculent d'un profil à l'autre, et aucune n'était jouée : la félicitation à
+la place des cartes, le cap qui **ne chiffre pas** (`cadreDuPlan`, C5.3), et l'absence de l'encart de
+contexte comme du lien vers les pistes.
+
+Le second profil tourne dans un **contexte de navigateur neuf**, et c'est structurel : « premier »
+veut dire premier **sur cet appareil** (C5.7), et les marques vivent dans le stockage. Le rejouer
+dans le même contexte éprouverait un appareil qui a déjà tout vu.
+
 **Deux pièges payés en l'écrivant, tous deux silencieux :**
 
 - **Les `EXPO_PUBLIC_*` sont inlinées à la transformation, et le cache de Metro ne les met pas dans
@@ -344,11 +358,21 @@ des données que trois assertions ne supportent pas (§2.3).
   (`display: 'none'`), donc « la barre est absente » se mesure sur la visibilité, jamais sur le
   compte des libellés.
 
-**Éprouvé en le cassant, le 20/09/2026**, trois mutations sur l'arbre de travail — un filtre écrit de
-mémoire (`'complete'`), un RPC au mauvais nom (`commit_plan_actions`), la réponse au point vers un RPC
-au mauvais nom — chacune suivie d'un export, puisque le code est dans le bundle, et remise en place
-par l'opération inverse : le parcours s'arrête respectivement au plan, à l'engagement et au point,
-en nommant l'étape et la requête refusée. Le compte détaillé est en tête du script.
+**Éprouvé en le cassant, le 20/09/2026**, six mutations sur l'arbre de travail, chacune suivie d'un
+export — puisque le code est dans le bundle — et remise en place par l'opération inverse. Trois sur
+le premier profil : un filtre écrit de mémoire (`'complete'`), un RPC au mauvais nom
+(`commit_plan_actions`), la réponse au point vers un RPC au mauvais nom ; le parcours s'arrête
+respectivement au plan, à l'engagement et au point, en nommant l'étape et la requête refusée. Trois
+sur le second : la carte du premier plan rendue malgré un plan à zéro action, le cap qui chiffre
+quand même, la félicitation reformulée.
+
+**Et l'une d'elles a changé le script plutôt que de le confirmer.** Rendre la carte du premier plan
+sur un plan à zéro action empêche aussi la barre d'onglets d'arriver — fermer la carte est ce qui la
+fait venir —, donc tant que l'attente de la barre venait avant les assertions de texte, l'échec se
+lisait « Timeout 20000ms exceeded » sans nommer la cause. Les assertions passent devant. Même
+famille, trouvée par la troisième : `attendreTexte` rendait un délai dépassé anonyme, elle nomme
+désormais le texte attendu — pour tous ses appels, pas seulement celui-là. Le compte détaillé est en
+tête du script.
 
 **Sur un échec, lire dans cet ordre** : l'étape nommée, les requêtes refusées (le script journalise
 tout `4xx`/`5xx` avec le corps — un `PGRST303` « JWT issued at future » sur la première requête

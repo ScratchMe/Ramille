@@ -9,9 +9,14 @@
 
 > **Depuis le 20/09/2026, la CI joue ce profil à chaque PR** (`scripts/verifier-parcours-reel.mjs`,
 > `TESTING.md` §2.6) : les mêmes réponses, les mêmes 4 231 kg, les huit pistes dans cet ordre,
-> l'engagement, un point répondu, le suivi — la base relue derrière chaque écran. Ce que cette séance
-> regarde encore, et que le script ne voit pas : le visuel, Ramille, la barre qui arrive et se nomme,
-> le bloc 09 (le plan à zéro action) et tout ce qui se joue sur l'appareil.
+> l'engagement, un point répondu, le suivi — la base relue derrière chaque écran. **Et le bloc 09
+> aussi**, depuis le même jour : un second profil, le cycliste, y joue le plan à zéro action, la
+> barre d'onglets qui arrive sans « Compris », et le cap qui ne chiffre pas.
+>
+> Ce que cette séance regarde encore, et que les deux profils ne voient pas : le **visuel**, Ramille,
+> les libellés exacts de la barre quand elle se nomme, le bloc 10 (le re-bilan), et tout ce qui se
+> joue sur l'appareil. Une ligne qui tombe ici n'est donc pas forcément une régression neuve — c'est
+> peut-être quelque chose que rien n'avait jamais regardé.
 
 ## Pourquoi cette séance
 

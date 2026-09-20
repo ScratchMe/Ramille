@@ -204,7 +204,9 @@ Trois suites : **Jest** (`npm test`, logique pure côté client, `src/**/*.test.
 numérotés, un fichier par sujet, `supabase test db`) et, depuis le 20/09/2026, **le parcours réel**
 (`scripts/verifier-parcours-reel.mjs` : le chemin nominal joué par Playwright contre la stack
 Supabase locale, la base relue après chaque écriture — `TESTING.md` §2.6, qui dit aussi ce qu'il
-laisse volontairement aux deux autres). **Docker tourne dans cet environnement** — `sudo dockerd &`,
+laisse volontairement aux deux autres). **Deux profils**, et le second n'est pas un doublon : le
+cycliste au **plan à zéro action** est le seul chemin où la carte « Ton premier plan » ne se rend
+jamais, donc le seul où la barre d'onglets arrive autrement. **Docker tourne dans cet environnement** — `sudo dockerd &`,
 mesuré le 20/09/2026 —, donc pgTAP et le parcours s'exécutent ici, et le `BEGIN`/`ROLLBACK` sur le
 projet distant n'est plus la seule validation d'un fichier pgTAP. Les trois tournent en CI sur
 chaque pull request. La
