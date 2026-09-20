@@ -289,8 +289,9 @@ contexte ne reproduit pas le rôle sous lequel il tournera.
 
 ### 2.6 Le parcours réel, contre une vraie stack — et ce que Docker change ici
 
-**Le trou, mesuré le 20/09/2026** : 15 143 lignes d'écrans et de composants et 1 216 lignes
-d'entrée-sortie (`src/lib`) n'étaient gardées par rien d'autre que la recette sur appareil. Les deux
+**Le trou, mesuré le 20/09/2026** : 15 147 lignes d'écrans, de composants et de hooks, et 1 485 lignes
+d'entrée-sortie — **les fichiers de `src/lib` qui importent le client**, et non `src/lib` entier, qui
+en compte 3 307 — n'étaient gardées par rien d'autre que la recette sur appareil. Les deux
 premières suites prouvent la logique pure et la base ; entre les deux — les requêtes, les RPC, ce
 que l'écran montre après une écriture — rien. Un `.eq('status', 'complete')` passait vert.
 

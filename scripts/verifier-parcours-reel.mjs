@@ -1,8 +1,12 @@
 // Le parcours réel, joué de bout en bout contre une vraie stack Supabase — à chaque PR.
 //
 // **Le trou que ce script bouche, mesuré le 20/09/2026** : 15 143 lignes d'écrans et de composants
-// (`src/app`, `src/components`, `src/hooks`) et 1 216 lignes d'entrée-sortie (`src/lib` : les
-// requêtes, les RPC) n'étaient gardées par rien d'autre que la recette sur appareil. La CI prouvait
+// (`src/app`, `src/components`, `src/hooks`) et 1 485 lignes d'entrée-sortie — **les fichiers de
+// `src/lib` qui importent le client Supabase**, pas `src/lib` entier, qui en compte 3 307 — n'étaient
+// gardées par rien d'autre que la recette sur appareil. Le second chiffre a d'abord été écrit
+// « 1 216 » sous la définition « `src/lib` », ce qui était faux des deux côtés : c'est la définition
+// qui compte, pas le nombre, et une mesure dont on ne peut pas redire la définition ne se vérifie
+// plus (relevé en contre-lisant la journée). La CI prouvait
 // que l'export web *démarre* et affiche quelques états sans réseau ; elle ne prouvait pas qu'une
 // seule requête ramène les bonnes lignes, qu'un seul RPC part avec les bons arguments, ni que le
 // plan montre les bonnes pistes. Un `.eq('status', 'complete')` serait passé vert.

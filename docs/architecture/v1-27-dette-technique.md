@@ -292,8 +292,11 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   condition qui la rouvre.
 - **Le parcours réel en CI** (l'après-midi, sur le mandat « lead dev » du même jour). La question
   posée le matin — « y a-t-il quelque chose qui pourrait casser sans qu'on s'en rende compte ? » —
-  avait une réponse mesurée : oui, 15 143 lignes d'écrans et 1 216 lignes de requêtes que seule la
-  recette gardait. `scripts/verifier-parcours-reel.mjs` joue le chemin nominal contre la stack
+  avait une réponse mesurée : oui, 15 147 lignes d'écrans, de composants et de hooks, et 1 485
+  lignes des fichiers de `src/lib` qui importent le client Supabase — que seule la recette gardait.
+  (Les deux chiffres sont ceux du 20/09 au soir ; le second avait d'abord été écrit « 1 216 » sous
+  la définition « `src/lib` », qui en compte 3 307 — c'est la définition qui se vérifie, pas le
+  nombre.) `scripts/verifier-parcours-reel.mjs` joue le chemin nominal contre la stack
   Supabase locale à chaque PR, sur le profil de la recette, la base relue après chaque écriture
   (`TESTING.md` §2.6). Deux constats de plus au passage : **Docker tourne dans l'environnement
   d'agent** (`sudo dockerd &`), donc pgTAP et ce parcours s'y exécutent — ce dépôt avait écrit le
