@@ -184,7 +184,9 @@ entre un contrôle rouge à demeure et un type faux dans le code. Ce que le cont
 ignore des deux côtés — le dépôt n'en a aucune, par décision (C2.4 et C4.6 remplacent une signature
 plutôt que d'en ajouter une). L'analyseur lit les deux formes du générateur (une fonction courte sur
 une ligne, une longue développée) et l'ancienne écriture `Args: Record<PropertyKey, never>` du CLI
-à côté de `Args: never` ; huit mutations datées en tête du script disent ce qu'il attrape.
+à côté de `Args: never`, et il ne lit que le schéma `public` — le CLI émet aussi `graphql_public`,
+**devant** lui, ce que le générateur du distant ne fait pas, et la première CI de ce contrôle a rougi
+là-dessus. Dix mutations datées en tête du script disent ce qu'il attrape.
 
 ### 2.2 Privilèges, policies et index
 

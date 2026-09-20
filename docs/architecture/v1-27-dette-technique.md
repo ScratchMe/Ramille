@@ -273,8 +273,10 @@ plus coûteux à changer à certains endroits qu'à d'autres.
 ### 12.2 Ce qui a été traité
 
 - **§2, le contrôle des signatures** — fait : `scripts/verifier-types-base.mjs` compare le bloc
-  `Functions` (noms, arguments, optionalité — pas les types, et le script dit pourquoi), huit
-  mutations datées en tête, `SUPABASE.md` §2.1. Aucune plomberie CI ajoutée : le job produisait déjà
+  `Functions` (noms, arguments, optionalité — pas les types, et le script dit pourquoi), dix
+  mutations datées en tête, `SUPABASE.md` §2.1. Sa première CI a rougi sur une forme que le
+  distant ne produit pas — le CLI émet `graphql_public` devant `public` — et c'est exactement ce
+  que la PR devait éprouver ; les deux analyseurs sont bornés au schéma `public` depuis. Aucune plomberie CI ajoutée : le job produisait déjà
   le fichier.
 - **L'alerte `fflate`** (`docs/exploitation/README.md` §8.8) — jugée inatteignable le 17/09, elle
   serait restée ouverte à chaque passe : `satori` épingle `0.7.3` au caractère près. Un `overrides`

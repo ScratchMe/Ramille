@@ -35,7 +35,11 @@
 //   - le bloc `Functions` retiré                              → « Aucune fonction lue », sortie 1 ;
 //   - le seul type changé (`p_teletravail: string | null` → `string`) → 0 écart, **voulu** ;
 //   - `Args: never` réécrit `Args: Record<PropertyKey, never>` → 0 écart, **voulu** (l'ancienne
-//     écriture du CLI pour une fonction sans argument, qui doit lire pareil).
+//     écriture du CLI pour une fonction sans argument, qui doit lire pareil) ;
+//   - un schéma `graphql_public` posé **devant** `public`, avec une table et une fonction à lui
+//     (la forme réelle du CLI 2.117.0)                        → 0 écart, **voulu** ;
+//   - la même forme, mais le bloc `Functions` de `public` retiré → « Aucune fonction lue », sortie 1
+//     (le bornage au schéma ne rend pas la garde aveugle : celui de `graphql_public` ne compte pas).
 // Ce que l'analyseur ne voit pas, des deux côtés : une **surcharge** (deux signatures du même nom),
 // que le générateur rend en union — le dépôt n'en a aucune, par décision (C2.4, C4.6).
 //
@@ -61,18 +65,33 @@ if (!genere) {
 /**
  * Les colonnes de chaque table, par bloc (`Row`, `Insert`, `Update`).
  *
- * L'analyse s'appuie sur l'indentation du générateur, qui est stable : une table est introduite à
- * six espaces, un bloc à huit, une colonne à dix. Les vues et les fonctions vivent dans d'autres
- * sections du fichier et portent la même indentation ; c'est sans conséquence — ce qu'on compare
- * est un ensemble, et il est lu identiquement des deux côtés.
+ * L'analyse s'appuie sur l'indentation du générateur, qui est stable : un schéma est introduit à
+ * deux espaces, une table à six, un bloc à huit, une colonne à dix. Les vues et les fonctions vivent
+ * dans d'autres sections du fichier et portent la même indentation ; c'est sans conséquence — ce
+ * qu'on compare est un ensemble, et il est lu identiquement des deux côtés.
+ *
+ * **Seul le schéma `public` est lu, et ce n'est pas une simplification** (20/09/2026, CI rouge de la
+ * PR qui a ajouté les fonctions) : le CLI émet aussi `graphql_public` — **avant** `public`, ordre
+ * alphabétique — avec sa fonction `graphql`, là où le générateur du distant n'émet que `public`.
+ * Sans ce bornage, tout ce que porte un autre schéma se lit « absent du fichier », pour une raison
+ * de forme, c'est-à-dire le cas exact que l'en-tête promet d'éviter.
  */
 function colonnesParTable(chemin) {
   const lignes = fs.readFileSync(chemin, 'utf8').split('\n');
   const tables = new Map();
+  let schema = null;
   let table = null;
   let bloc = null;
 
   for (const ligne of lignes) {
+    const debutSchema = ligne.match(/^ {2}(\w+): \{$/);
+    if (debutSchema) {
+      schema = debutSchema[1];
+      table = null;
+      bloc = null;
+      continue;
+    }
+    if (schema !== 'public') continue;
     const debutTable = ligne.match(/^ {6}(\w+): \{$/);
     if (debutTable) {
       table = debutTable[1];
@@ -115,16 +134,28 @@ function colonnesParTable(chemin) {
 function argumentsParFonction(chemin) {
   const lignes = fs.readFileSync(chemin, 'utf8').split('\n');
   const fonctions = new Map();
+  let schema = null;
   let dansLeBloc = false;
   let fonction = null;
   let dansLesArgs = false;
 
   for (const ligne of lignes) {
+    const debutSchema = ligne.match(/^ {2}(\w+): \{$/);
+    if (debutSchema) {
+      schema = debutSchema[1];
+      dansLeBloc = false;
+      fonction = null;
+      continue;
+    }
+    if (schema !== 'public') continue;
     if (!dansLeBloc) {
       if (/^ {4}Functions: \{$/.test(ligne)) dansLeBloc = true;
       continue;
     }
-    if (/^ {4}\}$/.test(ligne)) break;
+    if (/^ {4}\}$/.test(ligne)) {
+      dansLeBloc = false;
+      continue;
+    }
 
     const surUneLigne = ligne.match(/^ {6}(\w+): \{ Args: (?:never|Record<PropertyKey, never>|\{ (.*?) \}); Returns: .*\}$/);
     if (surUneLigne) {
