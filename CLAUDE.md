@@ -196,7 +196,8 @@ les quatre pièges de la suite Jest (doubles, fuseau, résolveurs, couverture) :
 et sa §1 pour ce qui vaut sur n'importe quel projet.
 
 **Le job `db-tests` compare aussi `src/lib/database.types.ts` à la base qu'il vient de
-construire** (C3.12) — le fichier est tenu à la main, et le typecheck ne peut pas voir cette
+construire** (C3.12 — les colonnes, et les signatures de fonctions depuis le 20/09/2026) — le
+fichier est tenu à la main, et le typecheck ne peut pas voir cette
 dérive : `SUPABASE.md` §2.1.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
