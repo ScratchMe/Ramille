@@ -238,6 +238,44 @@ Quatre choses à savoir avant de l'instruire, parce qu'elles décident de la tai
   répondre à Play ; hors de l'app, il a à répondre de son authentification. **Rien ne s'écrit avant
   cet arbitrage.**
 
+**Et une cinquième, demandée le 20/09/2026 : le churn a déjà une forme, et la purge en efface la
+preuve.** Ce qui est demandé, mot pour mot : *« des utilisateurs peuvent venir, ne pas rattacher de
+compte et disparaître au bout de 3 mois. Un utilisateur qui part au bout de 3 mois, c'est du churn
+définitivement validé »*, avec l'intuition qui va avec — sur une app au rythme **hebdomadaire**, la
+définition utile arrivera plus tôt que quatre-vingt-dix jours. Trois choses relevées le jour même,
+qui décident de ce que ce lot pourra calculer :
+
+- **La purge est le seul événement du produit qui soit un churn certain, et elle ne laisse aucune
+  cohorte derrière elle.** `purge_stale_anonymous_accounts()` supprime une ligne d'`auth.users`, et
+  la cascade fait le reste : `profiles` en dépend (`on delete cascade`), `usage_events.user_id`
+  dépend de `profiles` de la même façon. **Tout ce que la personne avait fait disparaît avec elle** —
+  ses ouvertures, son bilan, ses points. Ce qui survit est un **compte**, pas une cohorte :
+  `purge_runs` porte `candidates` et `deleted` à chaque passage. On saura donc *combien* partent,
+  jamais *qui* ni *après quoi* — pas « avait-elle fini son bilan », pas « combien de semaines a-t-elle
+  tenu », pas son segment. **Corollaire dimensionnant : toute mesure de forme cohorte doit être
+  agrégée AVANT la purge**, donc écrite par un cron qui tourne plus souvent qu'elle, dans une table
+  d'agrégats qui ne dépend pas de `profiles`. Si ce lot ne fait qu'une chose, c'est celle-là : elle
+  est la seule dont le retard ne se rattrape pas, chaque jour sans elle étant un jour de cohortes
+  perdu pour toujours.
+- **Le produit calcule déjà une échelle d'essoufflement, et il ne faut pas en écrire une seconde.**
+  `public.regime_de_rappel(user_id, loop_type)` (C2.9) rend `normal` / `espace` / `silence` en
+  comptant les points clos sans réponse **depuis le dernier signe de vie** — quatre font s'espacer
+  les messages, huit les font taire. C'est, à un nom près, la définition précoce que l'intuition
+  ci-dessus cherche : elle est hebdomadaire, elle est serveur, elle est testée, et elle décide déjà
+  d'un comportement du produit. Une définition de churn écrite à côté ferait deux échelles qui
+  divergent — le défaut que ce dépôt attrape partout ailleurs. La décision produit n'est donc pas
+  « quelle définition » mais **à quel barreau de cette échelle on donne le nom**, et ce qu'on appelle
+  encore actif au barreau du dessus.
+- **Ce qui reste hors de portée, et qu'il faut dire** : quelqu'un qui ouvre l'app et repart sans
+  émettre d'`app_open` n'existe nulle part — `track()` renonce quand la session n'est pas encore
+  prête —, et sur le web un visiteur qui ne revient jamais laisse une session anonyme indiscernable
+  d'un appareil neuf. Le haut de l'entonnoir est donc la partie la moins mesurable du produit, et
+  aucune requête n'y changera rien.
+
+**Le vocabulaire de ce lot s'appuiera sur le glossaire de `tourdegrowth.com`** (demande du
+20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
+surtout pour que les chiffres qui sortiront d'ici se comparent à ceux d'ailleurs.
+
 Rien n'est chiffré ni ordonné ici : ce paragraphe existe pour que la demande ne se perde pas entre
 la fin du lot 5 et le lot 4.
 

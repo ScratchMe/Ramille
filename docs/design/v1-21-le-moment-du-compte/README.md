@@ -466,3 +466,25 @@ contredisent ce document, et c'est lui qui a tort.
   **changer** une adresse déjà rattachée : là, les deux confirmations s'appliqueront.
 - **Le relevé hors périmètre du §9 est confirmé** : `effacerLesMarquesLocales` n'est appelée que par
   les deux sorties de `src/lib/compte.ts`, et le retour de lien (`_layout.tsx`) ne la traverse pas.
+
+## 12. Les arbitrages rendus
+
+Ce qui a été tranché par la personne qui pilote, au fil de la restitution. Le §10 garde ses énoncés
+tels qu'ils ont été posés ; c'est ici qu'on lit la réponse.
+
+**§10.1 — retirer l'interstitiel : oui** (20/09/2026). La raison donnée est plus forte que
+l'argument du canvas, et elle appartient au produit : *« je préfère que les utilisateurs voient leur
+bilan et aient la prise de conscience — c'est tout le but de l'app — plutôt que de risquer qu'ils
+quittent juste avant parce qu'on demande un compte trop tôt »*. C'est le test 1 du critère, énoncé
+par sa finalité et non par sa forme : ce que la personne veut à cet instant, c'est comprendre son
+chiffre, et le compte ne l'y aide pas. Ce qui est donc acté : l'écran `/connexion` cesse de
+s'interposer, « Voir ce que je peux faire » mène au plan, la bannière de la restitution se rend dès
+le premier passage, et la feuille des rappels gagne sa porte. **Ce que l'arbitrage ne couvre pas** :
+`/connexion` ne disparaît pas — il reste le détour atteignable depuis « Toi », la carte d'attente et
+la feuille, avec sa copy à corriger, puisque c'est son titre qui était faux et non son existence.
+
+**Le risque que cet arbitrage laisse ouvert est désormais un sujet de suivi, pas un impensé.** Moins
+de rattachements veut dire des gens qui viennent, comprennent leur empreinte, et disparaissent à la
+purge sans qu'on sache rien d'eux. C'est nommé comme tel dans le lot d'administration
+(`docs/architecture/produit.md`, la cinquième chose à savoir) : un départ à quatre-vingt-dix jours
+est un churn certain, la purge en efface la cohorte, et il faut donc agréger avant elle.
