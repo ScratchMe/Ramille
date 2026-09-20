@@ -7,7 +7,7 @@ import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { formeInserable } from '@/constants/postes';
+import { formeInserable, type LoopType } from '@/constants/postes';
 import { Radius, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import {
@@ -24,7 +24,7 @@ import {
 
 export type EngagementCheckin = {
   id: string;
-  loop_type: 'commute' | 'extras';
+  loop_type: LoopType;
   period_label: string;
   trip_label: string;
   /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */

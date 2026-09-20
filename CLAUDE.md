@@ -222,11 +222,20 @@ fichier est tenu à la main, et le typecheck ne peut pas voir cette
 dérive : `SUPABASE.md` §2.1.
 
 **Et depuis le 20/09/2026 il compare aussi les listes de valeurs**
-(`scripts/verifier-miroirs-de-check.mjs`) : **toute constante ou union de littéraux qui recopie un
-`check` du schéma** y est déclarée, et jusque-là chacune était épinglée par un test portant les
-**mêmes valeurs recopiées une seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui
-compte, que la base ait changé d'avis. **Toucher à un `check` impose donc de suivre côté
-TypeScript**, et le contrôle dit lequel : `TESTING.md` §2.7.
+(`scripts/verifier-miroirs-de-check.mjs`) : les constantes et unions de littéraux qui recopient un
+`check` du schéma sont **déclarées une par une** dans son tableau `MIROIRS` et comparées à la base,
+là où chacune était jusque-là épinglée par un test portant les **mêmes valeurs recopiées une
+seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui compte, que la
+base ait changé d'avis. **Toucher à un `check` impose donc de suivre côté TypeScript**, et le
+contrôle dit lequel : `TESTING.md` §2.7.
+
+**Et écrire une constante qui recopie un `check` impose d'ajouter sa ligne à `MIROIRS`** : c'est une
+liste déclarée, donc un miroir que personne n'y déclare lui reste invisible, et rien ne balaie le
+dépôt pour le trouver. Ce fichier a d'abord écrit l'inverse — que **toute** recopie y figurait —,
+et c'était faux le jour même : la contre-lecture du soir en a trouvé quatre non déclarés, dont la
+préférence de canal de rappel. La leçon n'est pas le compte, c'est qu'**une garde déclarative ne
+s'annonce jamais exhaustive** : on dit ce qu'elle couvre et ce qui lui échappe, et `TESTING.md`
+§2.7 nomme les deux formes qui lui échappent structurellement.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
 y compris celles qui ne nomment pas le facteur touché — et « toucher » inclut en ajouter un.**

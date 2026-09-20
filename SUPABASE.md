@@ -190,7 +190,9 @@ là-dessus. Dix mutations datées en tête du script disent ce qu'il attrape.
 
 **Et le même travail compare les listes de valeurs** (`scripts/verifier-miroirs-de-check.mjs`,
 20/09/2026) : les constantes et unions de littéraux qui recopient un `check` du schéma y sont
-déclarées une par une, et rien depuis TypeScript ne peut lire ce que la colonne accepte. Le contrôle lit `pg_constraint` sur la base que
+déclarées une par une — **déclarées, pas détectées** : un miroir absent du tableau `MIROIRS` n'est
+gardé par rien, et écrire une constante qui recopie un `check` impose d'y ajouter sa ligne. Rien
+depuis TypeScript ne peut lire ce que la colonne accepte. Le contrôle lit `pg_constraint` sur la base que
 les migrations viennent de construire — jamais les fichiers de migration, qui mentent dès qu'une
 contrainte a été remplacée ou qu'une colonne homonyme a vécu ailleurs (`zone_type` sur `profiles`).
 **Corollaire pour qui écrit une migration** : changer un `check` sans suivre côté TypeScript rend ce

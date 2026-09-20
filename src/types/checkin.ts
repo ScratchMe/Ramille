@@ -29,7 +29,7 @@
 // rien ne tombe.
 
 import { RAMILLE } from '@/constants/mascotte';
-import { formeInserable } from '@/constants/postes';
+import { formeInserable, type LoopType } from '@/constants/postes';
 
 /**
  * Le genre de question posée, miroir de `engagement_checkins.question_kind` (C2.1).
@@ -66,7 +66,7 @@ export function genreDeReponse(valeur: string | null | undefined): ReponseDuPoin
 
 /** Ce qu'il faut d'un point pour en composer la question. Un sous-ensemble de la ligne en base. */
 export type PointInterrogeable = {
-  loop_type: 'commute' | 'extras';
+  loop_type: LoopType;
   /** `commute` | `leisure` | `travel`, snapshoté à la génération (C2.6). */
   poste: string | null;
   /** `generique` par défaut en base ; une ligne d'avant C2.5 n'en porte pas d'autre. */
@@ -429,7 +429,7 @@ export function libelleSansObjet(point: Pick<PointInterrogeable, 'loop_type' | '
  * toujours, un « Répondu lundi » et la promesse d'un point qui ne viendra pas.
  */
 export function debutDePeriodeInterrogee(
-  loopType: 'commute' | 'extras',
+  loopType: LoopType,
   maintenant: Date = new Date()
 ): string {
   if (loopType === 'commute') {
@@ -479,7 +479,7 @@ export function estDeLaPeriodeCourante(
  * Comme `debutDePeriodeInterrogee`, elle lit l'**UTC** : c'est la même arithmétique que celle du
  * serveur, pas une date affichée à quelqu'un.
  */
-export function periodePrecedente(loopType: 'commute' | 'extras', periodStartIso: string): string {
+export function periodePrecedente(loopType: LoopType, periodStartIso: string): string {
   const an = Number(periodStartIso.slice(0, 4));
   const mois = Number(periodStartIso.slice(5, 7));
   const jour = Number(periodStartIso.slice(8, 10));
@@ -512,7 +512,7 @@ function isoUtc(d: Date): string {
  * `null` quand l'horodatage manque : une carte répondue sans date vaut mieux qu'une date inventée.
  */
 export function piedDuPointRepondu(
-  point: { loop_type: 'commute' | 'extras'; responded_at: string | null | undefined },
+  point: { loop_type: LoopType; responded_at: string | null | undefined },
   maintenant: Date = new Date()
 ): string | null {
   if (!point.responded_at) return null;
