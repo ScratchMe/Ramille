@@ -52,7 +52,8 @@ détail des trois suites et des pièges qui vont avec.
 
 ## Base de données
 
-Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1`.
+Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase que le dépôt appelle
+`TraceVerte-v1` et que son tableau de bord affiche `TraceVerte`.
 Après toute migration, régénérer `src/lib/database.types.ts` (types TypeScript du schéma).
 
 ## Licence et attributions

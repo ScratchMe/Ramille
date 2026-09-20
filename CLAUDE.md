@@ -179,7 +179,10 @@ Trois règles, en revanche, se cassent sans qu'on ait rien décidé, donc elles 
   écran ; `api/` et les SVG le répètent en littéral, faute de pouvoir importer `src/`. **Trois
   choses gardent volontairement l'ancien nom et ne se « corrigent » pas** : les clés AsyncStorage
   (`traceverte.*` — les renommer effacerait les brouillons), les migrations déjà appliquées, et le
-  projet Supabase distant, toujours `TraceVerte-v1` dans son tableau de bord. Les documents `v1-01`
+  projet Supabase distant, que le dépôt appelle `TraceVerte-v1` et dont le **tableau de bord
+  affiche `TraceVerte`** (réf. `nuugfepfsypqgvsvyzht`) — ce fichier a longtemps écrit l'inverse,
+  relevé le 20/09/2026 en interrogeant l'API de management ; `docs/exploitation/README.md` §3.1
+  portait le bon nom depuis le 10/09. Les documents `v1-01`
   à `v1-08` en parlent aussi : ce sont des décisions datées, on ne les réécrit pas. Détail en
   `v1-09-renommage-ramille.md` ;
 - **V1 = Google Play uniquement** — pas d'App Store, pas de Sign in with Apple.
@@ -816,7 +819,8 @@ retire : `SUPABASE.md` §1.2 et §2.5.
 
 ### Base de données
 
-Migrations dans `supabase/migrations/`, appliquées sur le projet distant `TraceVerte-v1` par
+Migrations dans `supabase/migrations/`, appliquées sur le projet distant `TraceVerte-v1` (son
+tableau de bord l'affiche `TraceVerte`) par
 `mcp__Supabase__apply_migration` ; **après toute migration, `src/lib/database.types.ts` se
 retouche à la main** — comment, et ce que la CI en vérifie : `SUPABASE.md` §2.1.
 

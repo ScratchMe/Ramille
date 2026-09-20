@@ -157,7 +157,8 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
 
 ### 2.1 Migrations, types et CI
 
-Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1`
+Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1` — nom
+du dépôt ; le tableau de bord l'affiche `TraceVerte`, et c'est sous ce nom-là qu'on le cherche —
 (via `mcp__Supabase__apply_migration`). **Après toute migration, régénérer
 `src/lib/database.types.ts`** (`mcp__Supabase__generate_typescript_types`) — le fichier n'a
 pas de formateur automatique dans ce repo (pas de prettier installé), donc respecter le
