@@ -297,7 +297,8 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   (Les deux chiffres sont ceux du 20/09 au soir ; le second avait d'abord été écrit « 1 216 » sous
   la définition « `src/lib` », qui en compte 3 307 — c'est la définition qui se vérifie, pas le
   nombre.) `scripts/verifier-parcours-reel.mjs` joue le chemin nominal contre la stack
-  Supabase locale à chaque PR, sur le profil de la recette, la base relue après chaque écriture
+  Supabase locale à chaque PR, sur **deux profils** — celui de la recette et un cycliste au plan
+  à zéro action —, la base relue après chaque écriture
   (`TESTING.md` §2.6). Deux constats de plus au passage : **Docker tourne dans l'environnement
   d'agent** (`sudo dockerd &`), donc pgTAP et ce parcours s'y exécutent — ce dépôt avait écrit le
   contraire ; et les `EXPO_PUBLIC_*` sont mises en cache par Metro hors de sa clé, donc un export qui
@@ -309,7 +310,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   dire `inexistant`). Le compte exact ne s'écrit pas ici — le script l'imprime à chaque passage, et
   il grossit au prochain miroir déclaré. `scripts/verifier-miroirs-de-check.mjs` lit `pg_constraint` sur la base que les
   migrations viennent de construire, dans le travail `db-tests`, et compare — `TESTING.md` §2.7,
-  sept mutations datées en tête du script. Trois choses valent d'être notées, parce qu'elles ont
+  douze mutations datées en tête du script. Trois choses valent d'être notées, parce qu'elles ont
   changé la forme prévue :
   - **le relevé se trompait de source.** Il proposait de relire le dernier `check (col in (…))` des
     fichiers de migration ; c'est faux dès qu'une contrainte est remplacée par un
@@ -406,3 +407,48 @@ Deux points, et aucun n'est un défaut :
   plan à zéro action, bloc 09 de la recette. Il coûtait bien moins que le premier — la mécanique
   était là —, et il a rendu trois branches d'écran qu'aucun des deux filets ne touchait. Ce qui
   reste au-dessus est inchangé.
+
+### 12.6 La contre-lecture de la contre-lecture (20/09/2026, le soir)
+
+La contre-lecture de la journée avait corrigé six affirmations fausses. **Relue à son tour, elle en
+portait elle-même.** Le fait mérite d'être écrit tel quel : une contre-lecture n'est pas une
+garantie, c'est un passage de plus, et rien ne dit qu'il faille s'arrêter au deuxième.
+
+Ce que la relecture du diff a trouvé, et qui a été corrigé :
+
+- **La garde d'`api/` affirmait un point qu'elle ne pouvait pas voir.** L'assertion neuve
+  `carteRelative.status === 200` ne pouvait tomber sous **aucune** entrée — `GET` n'a que deux
+  sorties, le rendu et le repli, et toutes deux rendent 200 —, et son message nommait pourtant la
+  base factice disparue. Pire : la garde ne prouvait pas que la chaîne de requête **survive** à
+  l'analyse. Mesuré en la cassant : `request.url` → `request.url.split('?')[0]` laisse la suite
+  **entièrement verte** alors que la carte ne porte plus aucun chiffre, parce que la mutation
+  dégrade les deux appels à l'identique et que le seuil de 10 000 octets tient encore à 21 ko. Un
+  troisième rendu, **sans aucun paramètre**, est le témoin qui tranche.
+- **Quatre miroirs de `check` n'étaient pas déclarés**, alors que `CLAUDE.md` promettait le jour
+  même que **toute** recopie l'était : `CanalPrefere` (la préférence de canal de rappel),
+  `IntentionTiming`, `LoopType` et `POSTES`. Déclarés et éprouvés — le comparateur passe de 17 à
+  **21** miroirs. La promesse d'exhaustivité est remplacée par ce qui est vrai : une liste
+  **déclarée**, plus les deux formes qui lui échappent structurellement (`TESTING.md` §2.7).
+- **Le geste qui rendait `LoopType` utile manquait.** Le type était nommé depuis
+  `src/constants/postes.ts`, mais six endroits réécrivaient `'commute' | 'extras'` à la main : le
+  déclarer n'aurait donc gardé personne. Les six l'importent désormais.
+- **Une garde neuve était partie sans sa mutation** — l'assertion des kilos du second profil, ce que
+  `TESTING.md` §1.1 interdit explicitement. Faite depuis : le seuil de `valeurEtUnite` passé de
+  `kilos < 1000` à `kilos < 10` fait tomber « 11 kg CO₂e » et **rien d'autre**, le premier profil
+  restant en tonnes à 4 231 kg.
+- **Cinq comptes ou pointeurs faux**, tous de la famille « une phrase qui décrit ce que le code
+  faisait avant » : 15 143 lignes au lieu de 15 147 dans l'en-tête du parcours ; le seuil kg/t
+  annoncé dans `src/types/resultat.ts` alors qu'il vit dans `src/lib/format.ts` ; deux lignes de
+  dette traitées annoncées dans `produit.md` là où le tableau en marque trois ; le profil du
+  parcours au singulier dans `v1-27` §12.2 et `TESTING.md` §2.6 après l'arrivée du second ; et
+  « sept mutations » pour le comparateur, qui en documentait huit.
+- **`VERCEL.md` comptait mal ce qu'il garde.** « Tout sauf le deuxième point s'éprouve » en oubliait
+  un cinquième : `maxDuration` n'est chronométré par rien. Les points gardés sont nommés un par un,
+  et les deux qui ne le sont pas aussi.
+
+**Ce qu'il faut en retenir, et qui vaut plus que les corrections** : les défauts d'une contre-lecture
+sont de la **même famille** que ceux qu'elle corrige — un compte qui se périme, une phrase restée sur
+l'état d'avant, une garde affirmée plus large qu'elle n'est. Écrire « j'ai contre-lu » ne met à l'abri
+de rien. La seule chose qui a réellement tranché, ici comme le matin, c'est **la mutation** : deux des
+six défauts ne se voyaient qu'en cassant ce que la garde prétendait garder, et l'un d'eux a survécu à
+une première correction avant de tomber sur la seconde.
