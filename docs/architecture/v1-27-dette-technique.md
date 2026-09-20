@@ -852,3 +852,24 @@ la marque `a_un_bilan` de C4.5 : une marque locale qui survit à un changement d
 réserve à tenir en le corrigeant est le **brouillon de bilan** : le balayer effacerait un
 questionnaire en cours, ce que ni la déconnexion ni la suppression n'ont à ménager mais qu'un
 changement de compte par lien, lui, doit peser.
+
+
+### 12.13 Neuf textes JSX rendent une apostrophe droite (20/09/2026)
+
+Trouvé en écrivant une assertion sur la bannière de la restitution : elle ne matchait pas, parce que
+le texte visible portait `'` (U+0027) là où l'assertion cherchait `’` (U+2019). La cause est
+`&apos;`, l'entité HTML qui rend l'apostrophe **droite** — celle d'un clavier de machine à écrire,
+pas celle de la typographie française.
+
+**Le dépôt fait les deux**, et la minorité est celle qui a tort : toutes les chaînes dérivées
+(`src/types/*`, les répliques de Ramille, les messages) portent `’`, et neuf textes JSX portent
+`&apos;`. L'écart est visible à l'écran, dans la même phrase parfois, et c'est un défaut de rendu
+qu'aucune garde ne voit — le linter, lui, ne réclame l'échappement que de l'apostrophe ASCII, donc
+écrire `’` directement en JSX passe très bien (`src/app/compte/index.tsx` le fait déjà).
+
+**Ce qui a été corrigé** : les textes écrits par le chantier du moment du compte, là où il en
+écrivait. **Ce qui reste** : neuf occurrences dans cinq fichiers, dont cinq dans
+`src/app/connexion/retrouver.tsx`. Le correctif est mécanique et sans risque ; il n'a pas été fait
+ici pour ne pas mélanger un balayage typographique à un chantier de sécurité, et parce que rien ne
+garde le résultat — ajouter une règle qui interdirait `&apos;` dans le JSX serait le vrai correctif,
+et c'est ce qu'il faudra faire plutôt qu'un remplacement de plus.

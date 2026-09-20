@@ -272,6 +272,20 @@ qui décident de ce que ce lot pourra calculer :
   d'un appareil neuf. Le haut de l'entonnoir est donc la partie la moins mesurable du produit, et
   aucune requête n'y changera rien.
 
+**Et l'entonnoir de la suppression est impossible en l'état, pour la même raison que le churn de la
+purge** (demande du 20/09/2026 : mesurer l'écart entre la demande et le geste réel, côté
+rattachement comme côté suppression). Le rattachement, lui, est déjà mesurable —
+`connexion_demande` à la demande du code, `connexion_success` au constat de la bascule, et l'écart
+entre les deux est le taux de codes jamais tapés (`v1-28` §6). La suppression non : une suppression
+réussie **efface les deux côtés de son propre entonnoir**, puisque `usage_events` dépend en cascade
+d'`auth.users`. Deux conséquences utilisables :
+
+- une demande **restée** en base est une demande qui n'a pas abouti — la cascade fait l'arithmétique
+  à notre place, ce qui donne les abandons sans rien écrire de plus ;
+- le compte des suppressions **faites** doit vivre dans une table **hors de la cascade**, écrite par
+  `delete_my_account` avant qu'elle ne supprime, et sans identifiant de personne : ce qu'on veut
+  savoir est combien, jamais qui.
+
 **Le vocabulaire de ce lot s'appuiera sur le glossaire de `tourdegrowth.com`** (demande du
 20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
 surtout pour que les chiffres qui sortiront d'ici se comparent à ceux d'ailleurs.
@@ -302,6 +316,30 @@ qu'il n'est ni clair ni fluide. Le lot 4 garde l'ordre proposé en `v1-17` §5.1
 et sans ajouter d'entrée au suivi. Ce qui n'était pas prévu : **trois réponses de contexte sur
 quatre entrent dans le résultat et non une**, donc le recalcul est inconditionnel — mesuré en base
 plutôt que déduit de la description du calcul.
+
+**Et un increment s'est ouvert et s'est fermé dans la même journée, le 20/09/2026 : le moment du
+compte** ([`v1-28-le-moment-du-compte.md`](v1-28-le-moment-du-compte.md)). Il naît de la revue de
+sécurité du même jour, qui a trouvé que **PKCE protège la session mais pas la confirmation de
+l'adresse** : un clic sur le lien de l'e-mail de rattachement confirmait l'adresse côté serveur,
+donc n'importe qui recevant cet e-mail rattachait la sienne au compte d'un inconnu. Deux arbitrages
+de produit ont suivi le retour d'une session de design élargie au parcours d'entrée entier.
+
+**L'écran de compte ne s'interpose plus** entre la restitution et le plan : « Voir ce que je peux
+faire » mène au plan, toujours, et la raison donnée par la personne qui pilote est celle du produit
+— la prise de conscience du chiffre est ce que l'app existe pour produire, et la risquer pour un
+compte demandé trop tôt est le mauvais échange. Ce qui reste est une bannière vraie, rendue dès le
+premier passage, et **une porte neuve sous la ligne « Par email » de la feuille des rappels** : le
+seul écran du produit qui *pose* la question à laquelle le compte répond, et dont la réponse était
+un mur. **Et les deux e-mails ne portent plus qu'un code à huit chiffres**, plus aucun lien.
+
+Trois choses que la mesure a apprises et qui ne se devinaient pas : le code est un **porteur** — il
+relève le prix du mauvais geste, il ne le ferme pas (dette en `v1-27` §12.12) ; il fait **huit**
+chiffres en production là où le canvas en écrivait six, et la longueur est une valeur de sécurité ;
+et la stack locale divergeait de la production sur **trois** réglages d'envoi, tous dans le sens qui
+fait passer un échec de production pour un succès. Le critère que la session de design a posé —
+*le compte se propose là où il est la réponse à une question que la personne se pose à cet instant*
+— est l'apport le plus durable du chantier : il est opposable, là où « après la restitution » ne
+l'était pas.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 
