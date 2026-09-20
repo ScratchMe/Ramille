@@ -1062,7 +1062,12 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   des types —, et depuis le 20/09/2026 le parcours réel aussi, qui charge cet écran contre une
   vraie stack et s'arrêterait à l'étape « plan ».
 - **`assessments.submitted_at` vient du serveur** (trigger `stamp_assessment_submitted_at`, posé au
-  seul passage en `completed`). Il venait du téléphone, et la garde d'idempotence du plan le
+  seul passage en `completed`, **et privilège de colonne depuis le 20/09/2026**). Le trigger seul ne
+  suffisait pas, et cette phrase a été fausse un temps : il ne pose la date qu'à la **transition**,
+  donc un `update` ne touchant que cette colonne sur un bilan déjà complet passait au travers, et la
+  policy owner-scoped l'autorisait — la garde d'idempotence du plan croyait comparer deux
+  horodatages serveur. `authenticated` ne porte plus l'`update` que sur `status`, la seule colonne
+  que la soumission écrit. Il venait du téléphone, et la garde d'idempotence du plan le
   comparait à un horodatage serveur : un téléphone en avance faisait reconstruire le plan à chaque
   passage du cron — donc, avant cette migration, effacer l'engagement chaque nuit. Corollaire pour
   les tests : **une fixture ne peut plus choisir `submitted_at` à l'insert**, elle insère puis met la
@@ -1218,6 +1223,12 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   recalculer et régénérer doivent réussir ensemble) et le **bornage des colonnes** — la RLS filtre
   des lignes, jamais des colonnes, donc un `update` client sur cette table atteint les distances et
   les modes, donc le chiffre. Le dire évite qu'un prochain passage retire le RPC en simplifiant.
+  **Et jusqu'au 20/09/2026 le RPC ne bornait rien** : la policy qu'il est censé remplacer n'avait
+  aucun prédicat de statut, donc les réponses d'un bilan **complété** se réécrivaient en direct —
+  `assessment_results` restant figé, puis le premier recalcul serveur faisait bondir le total sans
+  qu'aucune ligne ne soit ajoutée à `assessments`. La policy est désormais bornée à
+  `status = 'in_progress'`, et le RPC passe parce qu'il est `security definer` sur une table sans
+  `force row level security`.
 - **Un seul paramètre porte la cause, et les deux conséquences s'en dérivent.** La première forme
   écrite était `p_forcer boolean`, qui obligeait à poser ailleurs la raison d'archivage — donc à
   tenir d'accord deux paramètres disant la même chose. `p_cause` (`'bilan'` par défaut,
@@ -1370,6 +1381,11 @@ export silencieusement incomplet.
 libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à
 `authenticated` revient à l'ouvrir à quiconque sait appeler l'API — d'où le trigger
 `enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et les bornes de longueur.
+**Et la table est insert-only côté client, ce que le schéma ne disait pas encore le 20/09/2026** :
+une policy `DELETE` owner-scoped traînait, sans justification dans sa migration et sans qu'aucun
+écran l'emprunte, alors que le trigger compte les lignes **vivantes** — dix retours, on efface, on
+recommence. Elle est partie ; l'effacement reste garanti là où il est promis, par la cascade de la
+suppression de compte et par la purge à 90 jours.
 **Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
 passer sans rien éprouver de **deux** façons, et les deux se sont produites — `TESTING.md` §2.5,
 qui dit aussi pourquoi un fichier pgTAP se rejoue en séquence entière.
