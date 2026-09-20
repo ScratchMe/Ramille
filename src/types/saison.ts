@@ -33,7 +33,7 @@
  * fabrique aucune de ces phrases et ne compte rien.
  */
 
-import { jourDuMois, MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
+import { jourDuMois, MOIS_FRANCAIS, type ReponseDuPoint, STATUT_DU_POINT } from '@/types/checkin';
 
 export const SAISONS = ['hiver', 'printemps', 'ete', 'automne'] as const;
 
@@ -239,7 +239,7 @@ export function recapDeLaPeriode(
   let changements = 0;
 
   for (const point of points) {
-    if (point.status !== 'answered') continue;
+    if (point.status !== STATUT_DU_POINT.repondu) continue;
     const jour = point.periodStart.slice(0, 10);
     if (jour < debut.slice(0, 10) || jour > fin.slice(0, 10)) continue;
     repondus += 1;

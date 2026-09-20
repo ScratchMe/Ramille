@@ -94,6 +94,19 @@ export type PointInterrogeable = {
 };
 
 /**
+ * Les trois statuts d'un point, **miroir du `check` de `engagement_checkins.status`**
+ * (`20260904180000_checkin_expiry_and_plan_refresh.sql` : `in ('pending', 'answered', 'expired')`).
+ *
+ * Même raison que `STATUT_DE_BILAN` : la colonne est un `text`, le typecheck ne distingue pas
+ * `'answered'` d'`'answerd'`, et un filtre faux ne se voit qu'à la recette. `repondu` est le seul
+ * filtre honnête d'une lecture de réponses (C2.4 : jamais `response is not null`), `clos` est ce
+ * que les générateurs posent sur une période révolue, et le client n'écrit aucun des trois —
+ * `repondre_au_checkin` est le seul écrivain.
+ */
+export const STATUT_DU_POINT = { enAttente: 'pending', repondu: 'answered', clos: 'expired' } as const;
+export type StatutDuPoint = (typeof STATUT_DU_POINT)[keyof typeof STATUT_DU_POINT];
+
+/**
  * Les douze mois en français — **jumelle de `public.mois_francais(date)`**, à toucher avec elle.
  *
  * Deux fois la même liste, et c'est assumé pour la même raison que le reste de ce module : le

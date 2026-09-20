@@ -59,6 +59,15 @@ jobs:
       # `FUNCTION_INVOCATION_FAILED` sans détail côté client — le mode d'échec dont l'en-tête
       # d'api/share-card.ts raconte le coût de diagnostic.
       - run: npm run typecheck:api
+      # Et depuis le 20/09/2026, le typecheck n'est plus la seule chose qui regarde `api/` : les deux
+      # fonctions sont **importées et appelées** sous Node — Node 22 exécute leur TypeScript tel quel —
+      # sur les mêmes polices et le même wasm que Vercel embarque. La carte doit rendre par son vrai
+      # chemin (le repli statique sert un pixel en `no-store`, et c'est la seule trace qui le
+      # distingue d'un rendu réussi), la page doit porter le chiffre et l'image du même `?…`. Ce que
+      # cette étape ne voit pas : le traçage des assets par Vercel (`includeFiles` de vercel.json),
+      # qui n'existe qu'au déploiement — VERCEL.md §1.6. L'avertissement retiré est celui du type
+      # stripping, encore marqué expérimental en 22.x.
+      - run: node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
       - run: npm run lint
       # Cinquième garde de la famille « ce qui se lit n'est pas ce qui s'exécute » (C3.2). Le bloc
       # « Comment ce chiffre est calculé » de la restitution affiche les hypothèses du calcul —

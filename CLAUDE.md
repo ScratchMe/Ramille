@@ -45,6 +45,13 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
   la recommandation, et **ce qu'on casse si on se trompe** — les deux seules questions qui ont
   demandé une décision portaient chacune un piège que leur énoncé ne laissait pas voir. Cadrer,
   c'est déjà la moitié du travail.
+- **La partie technique est la responsabilité de l'agent, et elle ne se demande pas** (20/09/2026 :
+  « comporte-toi comme un vrai lead dev senior »). Une dette légère se corrige quand on la voit ;
+  une doc qui manque s'écrit ; un test qui manque s'écrit — sans go, dans la PR en cours si c'est
+  petit, dans la sienne sinon, et toujours éprouvé en le cassant. Ce qui reste à demander, c'est
+  ce qui change le **produit** (ce qu'on montre, ce qu'on demande, dans quel ordre on livre) et ce
+  qui pèse sur le **rythme** (un build EAS, un déploiement, une PR de plus à traiter chaque jour).
+  Le relevé de dette (`v1-27`) reste le lieu où l'on note ce qu'on ne fait pas tout de suite.
 - **Une tâche par chantier, tenue à jour pendant le travail** et pas après coup (14/09/2026 :
   « c'est pénible de ne pas savoir où tu en es »). C'est la seule fenêtre sur l'avancement.
 - **Un numéro ne se cite jamais seul.** Un lot, une issue, un chantier : on écrit à chaque fois de
@@ -236,7 +243,10 @@ contexte tourne en Web Fetch API (Request/Response), pas dans React Native. Util
 `src/app/(tabs)/suivi/bilan.tsx`. **Une Vercel Function en runtime Node.js a une checklist non
 négociable, et son échec est muet** (`FUNCTION_INVOCATION_FAILED` générique, aucun détail côté
 client) : `VERCEL.md` §1.6, et le détail de chaque point avec les vrais logs qui l'ont diagnostiqué
-en `docs/architecture/v1-06-partage-social.md` §3.
+en `docs/architecture/v1-06-partage-social.md` §3. **Et depuis le 20/09/2026, les deux fonctions
+sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, cinq mutations datées en tête) :
+la carte par son vrai chemin, la page avec son chiffre — la panne muette a une garde, qui ne voit
+pas le seul point que Vercel ajoute, le traçage des assets.
 
 **Routing** : `src/app/` (Expo Router, file-based), organisé autour d'une **barre à deux
 onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit :

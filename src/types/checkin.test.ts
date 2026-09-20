@@ -19,6 +19,7 @@ import {
   repliqueDuPoint,
   variantePourLaPeriode,
   type PointInterrogeable,
+  STATUT_DU_POINT,
 } from '@/types/checkin';
 
 /**
@@ -791,5 +792,17 @@ describe('variantePourLaPeriode', () => {
   // `undefined` afficherait une réplique vide à la place de celle de Ramille.
   it('une liste vide lève', () => {
     expect(() => variantePourLaPeriode([], '2026-09-07')).toThrow();
+  });
+});
+
+// Les trois valeurs sont celles du `check` de `engagement_checkins.status` (20260904180000),
+// recopiées à la main pour la raison écrite sur `STATUT_DE_BILAN` : un `text` sans enum, que rien
+// d'autre ne garde. Éprouvé le 20/09/2026 : `'answered'` → `'answerd'` fait tomber **14 tests** —
+// celui-ci, et treize de `saison.test.ts` qui lisent la constante à travers `recapDeSaison` sur des
+// fixtures écrites `'answered'`. C'est voulu et c'est le signe cherché : la constante est lue là où
+// le filtre compte, pas seulement épinglée ici.
+describe('STATUT_DU_POINT', () => {
+  it('porte les trois statuts du check du schéma', () => {
+    expect(Object.values(STATUT_DU_POINT)).toEqual(['pending', 'answered', 'expired']);
   });
 });

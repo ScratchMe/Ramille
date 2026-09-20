@@ -10,6 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { loadBilanDraft } from '@/lib/bilan-draft';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
 import { ensureSession, supabase } from '@/lib/supabase';
+import { STATUT_DE_BILAN } from '@/types/bilan';
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
 import { destinationDuDemarrage, lireLeBilan, type LectureDuBilan } from '@/types/demarrage';
 import { decrireErreur } from '@/types/erreur';
@@ -70,7 +71,7 @@ export default function Index() {
             : supabase
                 .from('assessments')
                 .select('id')
-                .eq('status', 'completed')
+                .eq('status', STATUT_DE_BILAN.complete)
                 .limit(1)
                 .maybeSingle(),
           // Un échec de lecture locale ne doit pas emporter le démarrage : sans brouillon on

@@ -28,6 +28,11 @@ garder quelque chose ; avec, on sait laquelle. Deux règles qui en découlent :
 - **Une mutation qui passe est elle-même un signal**, pas une formalité ratée : soit la garde ne
   garde rien, soit le défaut n'est pas observable là où on le cherche. Les deux valent d'être
   écrits avant de conclure.
+- **La remise en place ne passe jamais par `git checkout --` tant que le travail n'est pas commis.**
+  Le 20/09/2026, deux constantes neuves sont parties avec la mutation qu'on annulait, et la mesure
+  suivante a compté les tests d'une constante absente — quatorze échecs lus comme le résultat de la
+  mutation. Commettre d'abord, ou annuler par l'opération inverse (le `sed` miroir), et relire
+  `git status` avant de croire un compte.
 
 Corollaire pour une valeur attendue : **une hypothèse sur les données se mesure, jamais au
 raisonnement**. Une assertion chiffrée se recalcule par une requête sur la base, et n'écrit que ce

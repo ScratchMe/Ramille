@@ -49,6 +49,7 @@ import {
   type BilanAnswers,
   type BilanStepId,
   visibleSteps,
+  STATUT_DE_BILAN,
 } from '@/types/bilan';
 import { decrireErreur } from '@/types/erreur';
 
@@ -416,7 +417,7 @@ export default function BilanQuestionnaire() {
         const { data: repris, error: repriseError } = await supabase
           .from('assessments')
           .select('id')
-          .eq('status', 'in_progress')
+          .eq('status', STATUT_DE_BILAN.enCours)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -427,7 +428,7 @@ export default function BilanQuestionnaire() {
       if (assessmentId === null) {
         const { data: assessment, error: assessmentError } = await supabase
           .from('assessments')
-          .insert({ user_id: userId, status: 'in_progress' })
+          .insert({ user_id: userId, status: STATUT_DE_BILAN.enCours })
           .select('id')
           .single();
         if (assessmentError || !assessment) {
@@ -504,7 +505,7 @@ export default function BilanQuestionnaire() {
       // serait sans effet, mais laisserait croire que c'est le client qui décide.
       const { error: finalisationError } = await supabase
         .from('assessments')
-        .update({ status: 'completed' })
+        .update({ status: STATUT_DE_BILAN.complete })
         .eq('id', assessmentId);
       if (finalisationError) throw finalisationError;
 

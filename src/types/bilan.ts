@@ -162,6 +162,23 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
 };
 
 /**
+ * Les deux statuts d'un bilan, **miroir du `check` de `assessments.status`**
+ * (`20260823094800_core_schema.sql` : `in ('in_progress', 'completed')`).
+ *
+ * La colonne est un `text` sans enum, donc `database.types.ts` la type `string` et rien, au
+ * typecheck, ne distingue `'completed'` de `'complete'`. Six sites d'appel écrivaient la valeur de
+ * mémoire le 20/09/2026 — un `.eq('status', …)` faux ne serait vu par personne avant la recette,
+ * et il se lirait « Ton bilan n'est pas encore fait » pour tout le monde. Ils lisent ceci, et le
+ * test épingle les deux valeurs sur celles du `check`, comme pour `PARTS_DU_SECOND_MODE`.
+ *
+ * `enCours` est l'état que rien ne lit (la soumission l'écrit d'abord, pour qu'une panne entre
+ * deux écritures ne laisse pas un bilan fantôme — CLAUDE.md) ; `complete` est celui sur lequel la
+ * racine route et que le cron sélectionne.
+ */
+export const STATUT_DE_BILAN = { enCours: 'in_progress', complete: 'completed' } as const;
+export type StatutDeBilan = (typeof STATUT_DE_BILAN)[keyof typeof STATUT_DE_BILAN];
+
+/**
  * Les trois parts proposées pour le second mode du trajet domicile-travail (C3.4).
  *
  * **Miroir des bornes du schéma**, pas un choix d'écran : `assessment_answers` porte
