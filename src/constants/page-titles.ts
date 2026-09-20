@@ -174,8 +174,18 @@ export function pageDescription(pathname: string): string | null {
  * Une page est offerte à l'indexation si, et seulement si, elle a une description écrite.
  *
  * Les deux faits sont le même : une page publique mérite une description, une page applicative
- * n'a rien à faire dans un index. Les lier évite la dérive classique — une entrée ajoutée d'un
- * côté, oubliée de l'autre, et une page d'app qui part dans Google avec un extrait vide.
+ * n'a rien à faire dans un index.
+ *
+ * **Ce prédicat ne garde rien par lui-même, et son commentaire l'affirmait** (relevé le
+ * 19/09/2026). Il disait que « les lier évite la dérive classique » ; or aucun écran ne l'appelle —
+ * `TitreDePage` a besoin de la description elle-même pour ses balises, donc il teste directement
+ * sa nullité, ce qui est plus court et aussi juste. Ce qui garde réellement la dérive est
+ * `scripts/verifier-titres-export.mjs`, qui relit le **HTML produit** et fait échouer l'export dans
+ * les deux sens : une surface publique en `noindex`, ou une page d'app offerte à l'index.
+ *
+ * Il reste parce qu'il **nomme** la règle pour les assertions qui la vérifient, et pour aucune
+ * autre raison. Le jour où un écran en a besoin, il est là ; d'ici là, ne pas lui prêter une
+ * protection qu'il n'exerce pas.
  */
 export function pageEstIndexable(pathname: string): boolean {
   return pageDescription(pathname) !== null;

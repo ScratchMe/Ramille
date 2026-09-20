@@ -881,11 +881,22 @@ rejouer un fichier ancien peut défaire une migration plus récente ; et réécr
 de `pg_get_functiondef`, jamais du fichier qui l'a créée — `SUPABASE.md` §2.3.
 
 **Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine, type)`**,
-qui compose `resolve_car_mode` et `resolve_two_wheeler_mode`. Ne jamais rappeler les deux
+qui compose `resolve_car_mode` et `resolve_two_wheeler_mode` — littéralement
+`resolve_two_wheeler_mode(resolve_car_mode(mode, moteur), type)`. Ne jamais rappeler les deux
 fonctions spécialisées en imbriqué dans `recompute_assessment_results` ou
-`estimate_action_savings` : elles y sont appelées à six endroits, et un oubli serait silencieux
-— le mode générique existe, son facteur existe, le calcul rendrait un nombre. Moteur ou type non
-renseigné (bilans soumis avant ces migrations) retombe sur le générique. Voir
+`estimate_action_savings` : un oubli serait silencieux — le mode générique existe, son facteur
+existe, le calcul rendrait un nombre. Moteur ou type non renseigné (bilans soumis avant ces
+migrations) retombe sur le générique.
+
+**Le compte d'appels qui figurait ici (« six endroits ») était faux, et il n'est pas remplacé** :
+relevé le 19/09/2026, il y en a quatre. C'est la règle que ce fichier s'est déjà donnée ailleurs —
+un compte écrit dans un document se périme en silence à la vague suivante, donc on écrit
+l'invariant et pas le nombre. **Et le relevé a trouvé deux entorses**, sans conséquence
+aujourd'hui : `recompute_assessment_results` et `estimate_action_savings` appellent chacune
+`resolve_car_mode('voiture', car_long_trips_engine)` en direct pour les voyages longue distance.
+L'équivalence avec `resolve_mode('voiture', moteur, null)` a été **éprouvée sur les six valeurs de
+moteur**, donc rien à corriger en urgence ; le bon moment pour les ramener au point unique est la
+migration de C4.4, qui réécrit déjà ces deux fonctions. Voir
 `supabase/migrations/20260904090000_car_engine.sql`, `20260905140000_motorisation_hybride.sql`
 puis `20260905200000_cylindree_deux_roues.sql`.
 
@@ -1183,7 +1194,9 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
 prendre pour du code mort.** Toute la chaîne serveur existe et est testée — `rolling_quarter_bounds`,
 le branchement de `generate_plan_cycle_for_user`, le snapshot `plan_cycles.cadence_type`, quatre
 assertions du test 00 et le scénario B du test 02 — mais **aucun écran ne l'écrit ni ne la lit** :
-les 19 profils de la base valent tous `season`, la valeur par défaut (relevé le 11/09/2026).
+tous les profils de la base valent `season`, la valeur par défaut — vérifié le 11/09/2026 puis le
+19/09/2026, où ils étaient passés de 19 à 65 sans qu'aucun ne change de cadence. Le nombre ne
+s'écrit plus : c'est le fait qui compte, et lui seul se vérifie d'une fois sur l'autre.
 `v1-01` la décrivait comme un « paramètre réservé pour la brique 3, stocké dès maintenant pour ne
 pas migrer le profil plus tard » ; la brique 3 est livrée depuis `v1-03` et rien ne disait pourquoi
 le réglage n'a jamais été ouvert. La réponse est qu'il ne l'a pas encore été, pas qu'il a été
