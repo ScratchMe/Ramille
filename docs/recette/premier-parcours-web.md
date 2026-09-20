@@ -7,6 +7,12 @@
 > n'a besoin de rien de natif : les deux marques qui le pilotent vivent en stockage local, et les
 > trois cartes sont du rendu.
 
+> **Depuis le 20/09/2026, la CI joue ce profil à chaque PR** (`scripts/verifier-parcours-reel.mjs`,
+> `TESTING.md` §2.6) : les mêmes réponses, les mêmes 4 231 kg, les huit pistes dans cet ordre,
+> l'engagement, un point répondu, le suivi — la base relue derrière chaque écran. Ce que cette séance
+> regarde encore, et que le script ne voit pas : le visuel, Ramille, la barre qui arrive et se nomme,
+> le bloc 09 (le plan à zéro action) et tout ce qui se joue sur l'appareil.
+
 ## Pourquoi cette séance
 
 Le lot 5 a livré le **premier parcours** — la barre d'onglets qui attend, la carte « Ton premier

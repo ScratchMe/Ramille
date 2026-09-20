@@ -288,6 +288,15 @@ plus coûteux à changer à certains endroits qu'à d'autres.
 - **Les sept clés étrangères sans index** que signale l'avis de performance — toutes vers
   `transport_modes` — restent sans index **par décision écrite** (`SUPABASE.md` §2.2), avec la
   condition qui la rouvre.
+- **Le parcours réel en CI** (l'après-midi, sur le mandat « lead dev » du même jour). La question
+  posée le matin — « y a-t-il quelque chose qui pourrait casser sans qu'on s'en rende compte ? » —
+  avait une réponse mesurée : oui, 15 143 lignes d'écrans et 1 216 lignes de requêtes que seule la
+  recette gardait. `scripts/verifier-parcours-reel.mjs` joue le chemin nominal contre la stack
+  Supabase locale à chaque PR, sur le profil de la recette, la base relue après chaque écriture
+  (`TESTING.md` §2.6). Deux constats de plus au passage : **Docker tourne dans l'environnement
+  d'agent** (`sudo dockerd &`), donc pgTAP et ce parcours s'y exécutent — ce dépôt avait écrit le
+  contraire ; et les `EXPO_PUBLIC_*` sont mises en cache par Metro hors de sa clé, donc un export qui
+  change de configuration exige `--clear`.
 
 ### 12.3 Ce qui revient à la personne qui pilote
 

@@ -213,3 +213,47 @@ jobs:
       # l'en-tête du script.
       - run: supabase gen types typescript --local > /tmp/database.types.generated.ts
       - run: node scripts/verifier-types-base.mjs /tmp/database.types.generated.ts
+
+  parcours-reel:
+    name: Parcours réel (stack locale)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Même version que le travail pgTAP, pour la même raison : c'est le CLI qui apporte la stack.
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+      # **`supabase start`, et pas `db start` comme pour pgTAP** : le parcours a besoin de GoTrue (la
+      # session anonyme que chaque visiteur reçoit) et de PostgREST (toutes les lectures de l'app),
+      # pas seulement de Postgres. Les services que supabase/config.toml désactive (studio, realtime,
+      # storage, mail) ne démarrent pas ; le reste applique supabase/migrations/ — la même base que
+      # les tests pgTAP, avec l'API devant.
+      - run: supabase start
+      # Les clés de la stack locale sont des JWT de démonstration, publics et identiques sur toute
+      # machine (le CLI les imprime) : elles passent par l'environnement du travail, jamais par un
+      # fichier, et `supabase status -o env` les donne sous la forme `CLE="valeur"`, que le shell lit.
+      - run: |
+          supabase status -o env > /tmp/stack.env
+          . /tmp/stack.env
+          {
+            echo "EXPO_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+      # Un second export, branché sur la stack locale — celui du travail « Export web » porte une
+      # configuration factice, exprès. `--clear` parce que les `EXPO_PUBLIC_*` sont inlinées à la
+      # transformation et que le cache de Metro ne les met pas dans sa clé : sans lui, un export qui
+      # suit un autre garde l'URL de l'autre (mesuré le 20/09/2026, TESTING.md §2.6). Sur un runner
+      # neuf le cache est vide, et l'option est là pour que la commande soit la même qu'en local.
+      - run: npx expo export --platform web --clear
+      - run: npx playwright install --with-deps chromium
+      # Le parcours nominal de bout en bout, sur le profil de docs/recette/premier-parcours-web.md,
+      # avec la base relue après chaque écriture : l'en-tête du script dit ce qu'il couvre et ce
+      # qu'il laisse volontairement aux autres gardes. Sur un échec, il imprime l'étape, le texte
+      # visible et les requêtes refusées — c'est ce qu'on lit avant le code.
+      - run: node scripts/verifier-parcours-reel.mjs
