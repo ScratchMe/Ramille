@@ -16,10 +16,21 @@ on:
 permissions:
   contents: read
 
+# **L'image du runner est épinglée, et pas `ubuntu-latest`** — même raisonnement que le CLI Supabase
+# et expo-doctor plus bas : un `latest` change sous nos pieds, un numéro se change dans un diff que
+# la CI de la PR prouve. Déclencheur : l'annotation « The ubuntu-latest label will migrate to
+# Ubuntu 26 beginning October 19, 2026 » (actions/runner-images#14748), lue sur le passage du
+# 20/09/2026. Ce jour-là `ubuntu-latest` valait l'image `ubuntu-24.04` (`20260907.300.1`, relevé
+# dans le journal du travail Jest), donc écrire `ubuntu-24.04` ne change rien au passage courant.
+#
+# Pour monter : passer les quatre `runs-on` ci-dessous en `ubuntu-26.04`, et laisser la CI de la PR
+# le prouver — Playwright (`install --with-deps`) et Docker sont les deux étapes qui dépendent de
+# l'image. Puis `sauvegarde.yml`, qui porte le cinquième et dépend du dépôt pgdg : voir son propre
+# commentaire. Registre : docs/exploitation/README.md §8.9.
 jobs:
   checks:
     name: Typecheck & lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -85,7 +96,7 @@ jobs:
 
   unit-tests:
     name: Tests unitaires (Jest)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -108,7 +119,7 @@ jobs:
 
   web-export:
     name: Export web
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -151,7 +162,7 @@ jobs:
 
   db-tests:
     name: Tests base de données (pgTAP)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       # Démarre une stack Postgres locale (Docker) à partir de supabase/config.toml et
