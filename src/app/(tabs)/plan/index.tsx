@@ -1048,7 +1048,8 @@ export default function Plan() {
   // `plan/pistes`. La dérivation copie avant de trier : `sort` mute, et `cycle` vient du state.
   const pistes = pistesDuPlan(cycle.plan_actions);
   // Ce que l'écran annonce de lui-même, et ce que son cap a le droit de chiffrer (C3.8 §3). Dérivé
-  // dans `src/types/plan.ts` plutôt qu'écrit en ternaires ici : trois phrases en dépendent, et
+  // dans `src/types/plan.ts` plutôt qu'écrit en ternaires ici — une seule chose en dépend depuis que
+  // C5.3 a retiré `intro` et `noteDuCap`, et ce commentaire a longtemps dit « trois phrases » ; c'est
   // c'est la forme qui a laissé l'intro annoncer « pour ton trajet domicile-travail » au-dessus
   // d'actions qui n'en étaient pas.
   const cadre = cadreDuPlan({

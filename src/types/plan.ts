@@ -182,9 +182,18 @@ export type CadreDuPlan = {
 /**
  * Ce que la carte de cap a le droit de chiffrer, dérivé plutôt qu'écrit dans le rendu.
  *
- * La dérivation garde sa forme et son test alors qu'elle ne rend plus qu'un booléen, parce que ce
- * booléen porte **deux causes distinctes** qu'il ne faut pas réunir dans un `||` — l'une d'elles
- * deviendrait inéprouvable, la première suffisant toujours à faire passer l'assertion.
+ * **Une seule cause le rend faux : un plan à zéro action.** Ce fichier a longtemps annoncé « deux
+ * causes distinctes qu'il ne faut pas réunir dans un `||` », et `CLAUDE.md` le répétait — c'était
+ * l'état d'avant C5.3, où `CadreDuPlan` portait trois champs et où la seconde branche se
+ * distinguait par son `intro`. C5.3 a retiré `intro` et `noteDuCap` sans reprendre la
+ * justification : la seconde branche rendait depuis le **littéral identique** au repli, donc elle
+ * ne pouvait plus rien changer, et l'assertion qui la « gardait » passait branche ou pas.
+ *
+ * La phrase était pire qu'inutile, elle dictait une régression : un passage qui l'applique fusionne
+ * les deux conditions en `nombreDActions === 0 || postesEnAvant.length === 0`, en croyant l'opération
+ * neutre — et un plan à cinq actions dont aucune n'est en avant cesserait de chiffrer son cap,
+ * c'est-à-dire exactement ce que la branche jurait empêcher. Les deux conditions rendent des
+ * valeurs **opposées** ; un `||` n'est pas moins éprouvable, il est faux. Relevé le 20/09/2026.
  */
 export function cadreDuPlan({
   postesEnAvant,
@@ -200,15 +209,10 @@ export function cadreDuPlan({
     return { chiffreLeCap: false };
   }
 
-  // Un plan qui a des actions mais n'en met **aucune en avant** garde son cap : les actions sont
-  // là, sur l'écran des pistes. La branche est inatteignable aujourd'hui (`pistesDuPlan` remplit
-  // toujours `enAvant` dès qu'il y a une action), et c'est justement pourquoi elle se tranche ici :
-  // le jour où elle cesserait de l'être, la cumuler avec la précédente effacerait le cap d'un plan
-  // qui en a un.
-  if (postesEnAvant.length === 0) {
-    return { chiffreLeCap: true };
-  }
-
+  // Un plan qui a des actions garde son cap, qu'il en mette ou non en avant : les actions sont là,
+  // sur l'écran des pistes. `postesEnAvant` n'entre donc **pas** dans la décision — il reste au
+  // paramètre parce qu'il dit ce que la carte décrit, et qu'un prochain champ de `CadreDuPlan` le
+  // lira ; la branche qui l'examinait rendait le même littéral que cette ligne-ci.
   return { chiffreLeCap: true };
 }
 

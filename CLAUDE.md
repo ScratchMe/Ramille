@@ -1167,8 +1167,12 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
   cap est une quantité à atteindre, aucun endroit du produit ne vérifie d'où vient la réduction.
   Elle était rare tant que le poste dominant remplissait les deux premières cartes ; **le
   classement de C5.1 l'aurait réveillée sur la plupart des plans**, les meilleurs leviers venant
-  souvent d'ailleurs. La dérivation reste malgré son unique booléen, parce qu'il porte **deux
-  causes** qu'un `||` rendrait à moitié inéprouvables.
+  souvent d'ailleurs. La dérivation reste malgré son unique booléen parce que l'écran
+  ne doit pas trancher ça en ternaire — et **non** parce qu'elle porterait deux causes. Ce fichier
+  l'a écrit jusqu'au 20/09/2026 (« deux causes qu'un `||` rendrait à moitié inéprouvables ») : c'était
+  l'état d'avant C5.3, et la phrase **dictait une régression** — appliquer ce `||` ôterait son cap à
+  un plan à cinq actions dont aucune n'est en avant. Une seule cause vaut : zéro action. Un test
+  compare désormais les deux formes à nombre d'actions égal, et il tombe sur cette fusion.
 
 **`action_text` est la clé naturelle du référentiel d'actions, et elle porte enfin un index
 unique.** Tout le dépôt apparie les gabarits par elle — `action_templates.id` vaut

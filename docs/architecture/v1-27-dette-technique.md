@@ -460,3 +460,60 @@ l'état d'avant, une garde affirmée plus large qu'elle n'est. Écrire « j'ai c
 de rien. La seule chose qui a réellement tranché, ici comme le matin, c'est **la mutation** : deux des
 six défauts ne se voyaient qu'en cassant ce que la garde prétendait garder, et l'un d'eux a survécu à
 une première correction avant de tomber sur la seconde.
+
+### 12.7 La relecture du dépôt entier (20/09/2026, après la précédente)
+
+Troisième passage de la journée, demandé après que le second eut trouvé seize défauts dans le
+premier. **Il en a trouvé neuf de plus**, dont trois en base. Le fait à retenir n'est pas le
+nombre : c'est qu'**aucun des trois passages n'a épuisé le sujet**, et que rien ne dit que le
+quatrième le ferait.
+
+**Traité tout de suite** (technique, sans conséquence sur le produit) :
+
+- **`cadreDuPlan` portait une branche qui ne pouvait rien changer** — `postesEnAvant.length === 0`
+  rendait le **littéral identique** au repli deux lignes plus bas, depuis que C5.3 avait retiré
+  `intro` et `noteDuCap` sans reprendre la justification. Le test qui la « gardait » affirmait
+  `.toBe(true)`, ce que le repli rendait déjà : il ne pouvait pas tomber.
+- **Et la doc dictait une régression.** Ce fichier et `CLAUDE.md` annonçaient « deux causes qu'un
+  `||` rendrait à moitié inéprouvables ». Appliquer cette phrase donne
+  `nombreDActions === 0 || postesEnAvant.length === 0`, en croyant la fusion neutre — et **un plan à
+  cinq actions dont aucune n'est en avant cesserait de chiffrer son cap**, exactement ce que le
+  commentaire de la branche jurait empêcher. Le test compare désormais les deux formes à nombre
+  d'actions égal ; la mutation le confirme, il tombe sur la fusion et sur elle seule.
+- **`/plan/pistes` jetait le message d'un remplacement refusé.** Le contrat d'`ActionCommitment` est
+  explicite — « C'est l'écran qui la porte » —, l'écran du plan le fait depuis le 14/09/2026, et
+  l'écran que C5.2 a ajouté après ce correctif ignorait le paramètre et ne rendait rien : la liste
+  se réordonnait sans qu'un mot dise pourquoi le choix n'avait pas été pris. Le message est rendu
+  **juste au-dessus de la liste** et non en tête d'écran, pour rester dans le champ de vision.
+- Deux comptes périmés dans des blocs de doc (« trois phrases en dépendent » pour un champ lu une
+  fois ; « Trois choses à ne pas défaire » suivi de quatre puces, la quatrième — celle qui interdit
+  une valeur par défaut sur la ligne de Ramille — tombant hors du compte annoncé).
+
+**Ouvert, et volontairement pas fait sans un mot de la personne qui pilote** — ça touche la RLS et
+ça déploie :
+
+1. **Le garde-fou de volume du canal de retour ne tient pas.** `feedback` a une policy `DELETE`
+   owner-scoped et le privilège qui va avec ; le trigger compte les lignes **vivantes** sur 24 h.
+   Dix retours, on efface, on recommence. Le droit à l'effacement n'est pas en cause (RGPD, annoncé
+   par `/confidentialite`) : le défaut est de compter ce que la personne peut effacer. Le correctif
+   ne retire pas le `DELETE` — il compte autre chose.
+2. **`assessment_answers` a une policy `UPDATE` sans prédicat de statut.** Un client peut réécrire
+   les réponses d'un bilan **déjà `completed`** : `assessment_results` reste figé sur l'ancien
+   chiffre, puis le prochain recalcul serveur fait bondir le total **sans qu'aucune ligne ne soit
+   ajoutée à `assessments`**. C6.4 justifie pourtant son RPC par « le bornage des colonnes », et son
+   commentaire dit : « Le dire évite qu'un prochain passage retire le RPC en simplifiant. » Le RPC
+   ne borne rien tant que la policy est là. Correctif : `and a.status = 'in_progress'` dans
+   `using`/`with check` — la soumission upserte avant la bascule, donc rien ne casse.
+3. **`assessments.submitted_at` n'est pas une date serveur.** Le trigger ne la pose qu'à la
+   **transition** ; ensuite la policy `UPDATE` owner-scoped laisse le client l'écrire. La garde
+   d'idempotence du plan croit comparer deux horodatages serveur. **Latent** : l'app n'envoie jamais
+   cette colonne, et l'engagement survit à la reconstruction (C2.2 fait son travail). Attention au
+   correctif : figer la colonne hors transition entre en conflit avec les fixtures pgTAP, qui
+   reculent la date par `update` — elles devraient désarmer le trigger comme le fait le backfill de
+   C2.4.
+
+**Ouvert aussi, plus léger** : quatre navigations vers `/connexion/retrouver` ne passent pas de
+`source` (les deux états vides du plan, celui du suivi, la session refusée) et sont comptées comme
+venant de l'accueil de l'onboarding — le défaut exact que `SOURCES_RETROUVER` dit avoir corrigé pour
+`lien`. Quelqu'un qui ouvre un rappel sur un téléphone neuf est enregistré comme une découverte.
+`CLAUDE.md` annonce « quatre endroits » ; il y a huit appelants.

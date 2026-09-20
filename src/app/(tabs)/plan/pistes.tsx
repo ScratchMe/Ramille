@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
+import { MessageInline } from '@/components/message-inline';
 import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste';
 import { PastilleEngagee } from '@/components/plan/pastille-engagee';
 import { TextLink } from '@/components/text-link';
@@ -41,6 +42,18 @@ type Etat =
 export default function PistesScreen() {
   const [etat, setEtat] = useState<Etat>({ genre: 'chargement' });
   const [cle, setCle] = useState(0);
+
+  /**
+   * La phrase d'un remplacement refusé (`RM001`), portée par l'écran et non par la carte.
+   *
+   * C'est le contrat explicite d'`ActionCommitment` : le même chemin appelle `onChanged()`, donc
+   * la liste est relue et la carte remontée — une phrase gardée dans son état local disparaîtrait
+   * au rendu suivant. L'écran du plan le fait depuis le 14/09/2026 ; **cet écran-ci, ajouté par
+   * C5.2 après ce correctif, jetait le paramètre** et ne rendait rien : la liste se réordonnait
+   * sous les yeux de la personne sans qu'un mot dise pourquoi son choix n'avait pas été pris.
+   * Relevé le 20/09/2026.
+   */
+  const [refusDeRemplacement, setRefusDeRemplacement] = useState<string | null>(null);
   const passage = usePassageDEngagement();
 
   /**
@@ -163,6 +176,13 @@ export default function PistesScreen() {
               : 'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan.'}
           </ThemedText>
 
+          {/* **Le refus se dit ici, juste au-dessus de la liste**, et non en tête d'écran : les
+              cartes commencent quelques lignes plus bas, donc la phrase reste dans le champ de
+              vision de la personne qui vient de toucher « C'est noté ». La ligne se relit à chaque
+              refus — `onRefus(null)` est appelé avant le RPC —, donc elle ne survit pas à une
+              tentative réussie. */}
+          {refusDeRemplacement && <MessageInline message={refusDeRemplacement} />}
+
           {/* **Un écran atteignable sans porte doit savoir ne rien avoir à montrer**
               (contre-lecture du lot 5). La porte du plan ne s'affiche qu'au-delà de deux pistes,
               mais l'adresse existe sur web et se tape : sans cette phrase, un plan à zéro action —
@@ -221,10 +241,11 @@ export default function PistesScreen() {
                   router.back();
                 }}
                 onChanged={rafraichir}
-                onRefus={() => {
+                onRefus={(message) => {
                   // Le refus `RM001` veut presque toujours dire que l'état a changé depuis
                   // l'affichage : on relit plutôt que de parler de réseau, et la ligne reste
                   // ouverte pour que le message porte sur une action qu'on voit encore.
+                  setRefusDeRemplacement(message);
                   rafraichir();
                 }}
               />
