@@ -16,7 +16,7 @@
 --     ligne, en silence. C'est le cas le plus traître, donc il s'éprouve en relisant la donnée,
 --     jamais en attendant une erreur.
 --
--- **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — trois mutations, appliquées à la
+-- **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — quatre mutations, appliquées à la
 -- base puis retirées par l'opération inverse, et ce que chacune fait tomber :
 --   - la policy DELETE de `feedback` et son privilège remis → la matrice du test `18` (qui porte
 --     le schéma entier), plus les deux assertions de la section A ;
@@ -27,12 +27,23 @@
 --     qui relit la donnée. Ni la matrice ni aucun `throws_ok` ne bouge, parce que ce refus-là est
 --     muet. C'est la mutation qui justifie la forme de la section C.
 --
+--   - le prédicat écrit **à l'envers** (`status = 'completed'`) → trois assertions, et c'est la
+--     mutation la plus instructive : elle rouvre le trou (9) **et** casse le produit (11 et 12,
+--     la reprise du questionnaire refusée). Un resserrement se juge par ses deux moitiés.
+--
+-- **Et cette dernière a d'abord révélé un défaut de ce fichier.** Les assertions 8 et 10 écrivaient
+-- toutes deux la valeur 200 : sous le prédicat inversé, l'écriture que la 9 doit voir refusée
+-- passait, et la 11 relisait alors 200 sans que son propre ordre ait rien fait — elle passait pour
+-- la mauvaise raison, donc elle ne gardait rien. Deux valeurs distinctes (200 tentée, 150 écrite)
+-- les découplent, et la mutation en fait tomber trois au lieu de deux. Une assertion qui dépend de
+-- l'écriture d'une autre n'éprouve pas ce qu'elle annonce.
+--
 -- Et un passage qui doit rester **vert** : la moitié positive de chaque section — dix retours
 -- acceptés, `status` toujours écrivable, réponses réécrites tant que le bilan est en cours.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(12);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('30000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-surf-a@test.local', 'x', now(), now());
@@ -149,8 +160,12 @@ select set_config('role', 'postgres', true);
 update public.assessments set status = 'in_progress' where id = '30000000-0000-0000-0000-0000000000a1';
 select set_config('role', 'authenticated', true);
 
+-- **Une valeur différente de celle tentée plus haut, et ce n'est pas cosmétique** : écrites toutes
+-- deux à 200, ces deux assertions se couplaient — un prédicat inversé laissait passer l'écriture
+-- refusée de la section précédente, et celle-ci lisait alors 200 sans que son propre ordre ait rien
+-- fait. Elle passait pour la mauvaise raison. Relevé en relisant ce fichier, mutation à l'appui.
 select lives_ok(
-  $$ update public.assessment_answers set commute_distance_km = 200
+  $$ update public.assessment_answers set commute_distance_km = 150
       where assessment_id = '30000000-0000-0000-0000-0000000000a1' $$,
   'sur un bilan `in_progress`, la reprise du questionnaire réécrit toujours ses réponses'
 );
@@ -158,8 +173,21 @@ select lives_ok(
 select is(
   (select commute_distance_km::int from public.assessment_answers
     where assessment_id = '30000000-0000-0000-0000-0000000000a1'),
-  200,
+  150,
   'et cette fois la valeur est bien passée : le resserrement borne le statut, pas le propriétaire'
+);
+
+-- **Et la forme réelle de la production est un `upsert`, pas un `update`.** La soumission écrit
+-- `insert … on conflict (assessment_id) do update` — c'est la reprise imposée par
+-- `20260911120000_soumission_bilan.sql`, dont la clé primaire est `assessment_id`. Postgres
+-- évalue alors la policy **UPDATE** sur la branche de conflit, donc c'est bien elle que ce
+-- resserrement pouvait casser. L'assertion du dessus l'éprouve par un `update` nu, ce qui n'est
+-- pas tout à fait la même requête : relevé en relisant ce fichier, et comblé ici.
+select lives_ok(
+  $$ insert into public.assessment_answers (assessment_id, commute_has_regular_trip, leisure_frequency)
+     values ('30000000-0000-0000-0000-0000000000a1', true, 'rarely')
+     on conflict (assessment_id) do update set commute_has_regular_trip = excluded.commute_has_regular_trip $$,
+  'et l’`upsert` de reprise passe aussi : c’est la forme que la soumission emploie vraiment'
 );
 
 select set_config('request.jwt.claims', ''::text, true);
