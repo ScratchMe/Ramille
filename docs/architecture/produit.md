@@ -196,6 +196,12 @@ n'était dans aucune fiche :
 comparées valeur par valeur à la base, les miroirs de `check`, le référentiel d'événements, les
 gardes d'annulation —, puis liste huit endroits où le produit est plus coûteux à changer qu'il ne
 devrait. Aucun ne bloque le lot 4 : c'est de la dette de **modification**, pas de fonctionnement.
+**Sa §12 (20/09/2026) est l'audit technique intégral et ce qu'il a changé** : la CI compare aussi les
+signatures de fonctions de `database.types.ts`, rend les deux fonctions d'`api/` sous Node, et
+**joue le parcours réel contre une stack Supabase locale à chaque PR** — le chemin nominal du profil
+de la recette, la base relue après chaque écriture (`TESTING.md` §2.6). Le dépôt a désormais trois
+suites, et la question « qu'est-ce qui pourrait casser sans qu'on s'en rende compte ? » a une réponse
+mesurée plutôt qu'un sentiment : ce qui reste hors garde est nommé en §12.5.
 
 **Un lot 6 est demandé et n'est pas instruit : l'administration** (demande du 17/09/2026, après la
 livraison du lot 5). Il n'appartient pas à l'audit du 09/09/2026 — c'est un besoin neuf, et il vit

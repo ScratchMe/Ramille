@@ -239,6 +239,8 @@ dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées
 | 5 | §5 — le découpage des fonctions de calcul | grand | à instruire, jamais en marge d'une vague |
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | page de décision |
 | 7 | §9 — appliquer les migrations sous le nom et l'horodatage du fichier | une habitude | à la prochaine migration |
+| 8 | §12.5 — un comparateur mécanique des miroirs de `check` | petit | au troisième miroir, ou à la première dérive |
+| 9 | §12.5 — l'artefact de la recette du premier parcours à régénérer depuis son `.md` | une manipulation | avant la prochaine séance |
 
 **Aucune de ces lignes ne bloque le lot 4**, et c'est volontaire : la dette relevée est de la dette
 de *modification*, pas de fonctionnement. Le produit se comporte comme il doit ; il est seulement
@@ -332,3 +334,27 @@ Deux points, et aucun n'est un défaut :
   produit (`v1-10` §2.D), la valeur ne gouverne rien.
 - **Les migrations sans horodatage apparié** (§9) : rien de neuf, la règle vaut à la prochaine
   migration.
+
+### 12.5 Ce que la journée a ajouté au relevé
+
+- **Les miroirs de `check` sont épinglés par des tests à valeurs recopiées, pas comparés au
+  schéma.** `STATUT_DE_BILAN` et `STATUT_DU_POINT` (20/09) rejoignent `PARTS_DU_SECOND_MODE`,
+  `TAILLES_DE_COVOITURAGE`, `OCCUPATIONS_LONG_TRAJET` et les deux listes de tranches : chacun a son
+  test, chaque test porte les valeurs du `check` **recopiées à la main**, datées. C'est la convention
+  du dépôt et elle tient ; ce qu'elle ne fait pas, c'est lire la migration. Un comparateur de la
+  famille de `verifier-hypotheses-calcul.mjs` — lire le dernier `check (col in (…))` de chaque
+  colonne dans `supabase/migrations/`, le comparer à la constante TypeScript — fermerait la dérive
+  pour les six d'un coup. Pas fait le 20/09 : un analyseur de `as const` par expression régulière
+  est exactement là où la fragilité vit, et il vaut mieux l'écrire une fois pour six que deux fois
+  en passant.
+- **L'artefact de la recette du premier parcours** (`RECETTE.md` §2.5) n'a pas été régénéré après
+  la note ajoutée en tête de `docs/recette/premier-parcours-web.md` le 20/09 : la note est du
+  contexte, pas une ligne à cocher, donc l'artefact n'est pas faux — mais §1.1 de `RECETTE.md` dit
+  que le `.md` est la source et que l'artefact se régénère depuis lui, et cette règle ne souffre pas
+  d'exception « pour une phrase ». À faire avant la prochaine séance.
+- **Ce que le parcours réel ne garde pas**, pour que personne ne le lui prête : les exclusions de
+  cartes (§4 — le chantier D, à instruire), les états d'erreur au-delà de ceux de
+  `verifier-etats-export.mjs`, tout ce qui est natif (notifications, jeton d'appareil, retour au
+  premier plan), et le second bilan — le re-bilan, la reconduction d'une saison, le contexte corrigé
+  depuis `/contexte`. Un second profil (le cycliste au plan à zéro action, bloc 09 de la recette)
+  serait le prochain parcours à écrire, et il coûte moins que le premier : la mécanique est là.
