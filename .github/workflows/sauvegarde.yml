@@ -234,7 +234,7 @@ jobs:
       # `--pinentry-mode loopback` n'est pas décoratif. Depuis GnuPG 2.1, une phrase de passe
       # fournie par `--passphrase-fd` n'est acceptée que si la boucle locale est demandée
       # explicitement : sans elle, gpg s'adresse à son agent et sort en « problem with the
-      # agent » / « Inappropriate ioctl for device ». l'image ubuntu-24.04 embarque gpg 2.4, donc le job
+      # agent » / « Inappropriate ioctl for device ». L'image ubuntu-24.04 embarque gpg 2.4, donc le job
       # échouerait à **toutes** ses exécutions et la sauvegarde ne produirait jamais d'artefact —
       # panne que rien dans le dépôt ne peut attraper, la CI ne jouant pas ce workflow.
       - name: Chiffrer l'archive
