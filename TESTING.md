@@ -1,7 +1,7 @@
 # Tests — conventions et pièges
 
-Ce que Ramille a appris en écrivant ses deux suites (Jest sur la logique pure, pgTAP sur la
-base). La **§1 vaut sur n'importe quel projet** ; la **§2** porte les fichiers, les chiffres et les
+Ce que Ramille a appris en écrivant ses trois suites (Jest sur la logique pure, pgTAP sur la
+base, et le parcours réel contre une vraie stack depuis le 20/09/2026). La **§1 vaut sur n'importe quel projet** ; la **§2** porte les fichiers, les chiffres et les
 pièges propres à Ramille, et ne voyage pas. L'histoire complète est dans `CLAUDE.md` (mécaniques)
 et dans les documents `docs/architecture/v1-0N-*.md` que chaque paragraphe cite.
 
@@ -122,7 +122,7 @@ Les connaître évite de « corriger » un test qui n'a rien (§2.3).
 
 ## 2. Propre à Ramille
 
-### 2.1 Les deux suites, et où passe la ligne
+### 2.1 Les suites, et où passe la ligne
 
 Deux suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
 (chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
@@ -207,7 +207,8 @@ bout-en-bout (écrans, flux de connexion) :
   cet environnement (pas de daemon Docker) — validé à la place via des transactions
   `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
 
-Les deux suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request.
+Les trois suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request — la
+troisième, le parcours réel, a sa §2.6.
 
 ### 2.2 Le référentiel des facteurs et les assertions chiffrées
 

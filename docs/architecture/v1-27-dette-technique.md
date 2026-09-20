@@ -75,8 +75,16 @@ l'analyseur contre les deux formes.
 
 ## 3. Un script de garde que rien n'appelle
 
-**Mesuré.** Des onze scripts de `scripts/`, dix sont appelés par la CI, par `vercel.json` ou par un
-autre script. `rendre-favicon.mjs` ne l'est **par rien** — ni CI, ni `package.json`.
+**Mesuré.** Tous les scripts de `scripts/` sont appelés — par la CI, par `vercel.json`, par Jest ou
+par un autre script — **sauf un** : `rendre-favicon.mjs` ne l'est par rien, ni CI, ni
+`package.json`. Le compte exact ne s'écrit pas ici : il disait « onze scripts, dix appelés » et le
+dossier en portait quinze deux jours plus tard, ce qui est précisément le défaut du §6 de ce même
+document. La vérification se refait en une commande, et c'est elle qui compte :
+
+```bash
+for f in $(ls scripts/); do grep -rq "$f" .github/workflows/ package.json vercel.json scripts/ \
+  --exclude="$f" || echo "orphelin : $f"; done
+```
 
 Son en-tête dit : « Sans ce script, le SVG serait "source de vérité" en commentaire seulement : le
 PNG est ce qu'Expo lit, et rien ne garantirait qu'il descend encore du dessin d'à côté. » **C'est

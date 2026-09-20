@@ -274,9 +274,11 @@ contexte tourne en Web Fetch API (Request/Response), pas dans React Native. Util
 négociable, et son échec est muet** (`FUNCTION_INVOCATION_FAILED` générique, aucun détail côté
 client) : `VERCEL.md` §1.6, et le détail de chaque point avec les vrais logs qui l'ont diagnostiqué
 en `docs/architecture/v1-06-partage-social.md` §3. **Et depuis le 20/09/2026, les deux fonctions
-sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, six mutations datées en tête) :
-la carte par son vrai chemin, la page avec son chiffre — la panne muette a une garde, qui ne voit
-pas le seul point que Vercel ajoute, le traçage des assets.
+sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, sept mutations datées en tête) :
+la carte par son vrai chemin — et une seconde fois sur un chemin **relatif**, plus une troisième
+sans paramètre pour prouver que la chaîne de requête atteint le rendu —, la page avec son chiffre.
+La panne muette a donc une garde ; ce qu'elle ne voit pas est nommé en `VERCEL.md` §1.6, et c'est
+**deux** points et non un : le traçage des assets et `maxDuration`, que rien ne chronomètre.
 
 **Routing** : `src/app/` (Expo Router, file-based), organisé autour d'une **barre à deux
 onglets** depuis `v1-11`. Le groupe `src/app/(tabs)/` porte les deux seuls lieux du produit :
@@ -1021,9 +1023,11 @@ snapshotés qui existent précisément pour qu'un re-bilan ne réécrive pas un 
 qui accepte `expired` — un point en attente pouvait disparaître de la carte du plan sans avoir été
 répondu ; et `responded_at`, qui venait de l'horloge du téléphone. Le RPC pose les trois seules
 colonnes d'une réponse, avec `now()` du serveur, et refuse un point déjà répondu ou clos. C'est
-aussi le seul endroit où la forme de la réponse changera quand une troisième réponse (« pas de
-trajet cette période ») arrivera — mais `p_reponse boolean` ne peut pas porter un troisième état :
-ce sera une migration, pas un paramètre de plus.
+aussi le seul endroit où la forme d'une réponse change. **C'est arrivé dès le lendemain** : la
+troisième réponse (« pas de trajet cette période ») est livrée depuis C2.4, et `p_reponse boolean`
+ne pouvant pas porter un troisième état, ce fut bien une migration et non un paramètre de plus —
+la signature est `repondre_au_checkin(uuid, text)`, la version booléenne **supprimée**, et le
+raisonnement complet est au paragraphe de C2.4 ci-dessous.
 
 **Aucun chemin du produit ne détruit un engagement sans en laisser une trace** (C2.2, 11/09/2026,
 `20260912150000_engagement_qui_survit.sql`). Il y en avait quatre, et ils se ressemblent assez pour
@@ -1050,8 +1054,9 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
 - **`plan_actions` a désormais deux clés étrangères vers `plan_cycles`**, donc toute lecture
   imbriquée doit nommer la sienne : `plan_actions!plan_actions_plan_cycle_id_fkey(…)`. Sans le nom,
   PostgREST refuse la requête (« more than one relationship was found ») et l'écran du plan ne
-  charge plus **du tout**. Le typecheck l'attrape, et c'est le seul garde qui le fait — la chaîne du
-  `select` est analysée au niveau des types.
+  charge plus **du tout**. Le typecheck l'attrape — la chaîne du `select` est analysée au niveau
+  des types —, et depuis le 20/09/2026 le parcours réel aussi, qui charge cet écran contre une
+  vraie stack et s'arrêterait à l'étape « plan ».
 - **`assessments.submitted_at` vient du serveur** (trigger `stamp_assessment_submitted_at`, posé au
   seul passage en `completed`). Il venait du téléphone, et la garde d'idempotence du plan le
   comparait à un horodatage serveur : un téléphone en avance faisait reconstruire le plan à chaque
