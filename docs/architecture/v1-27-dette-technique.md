@@ -328,6 +328,15 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   La leçon est de forme : une règle écrite le jour même ne s'applique pas rétroactivement à ce qui
   l'a inspirée, et c'est en régénérant qu'on s'en aperçoit. `RECETTE.md` §2.5.
 
+- **Le second profil du parcours réel** — le cycliste dont le plan ne porte aucune action. Ce
+  n'est pas un cas de bord : depuis C2.5, tout cycliste et tout profil sédentaire y tombe, et c'est
+  le seul chemin où la carte « Ton premier plan » ne se rend **jamais**, donc le seul où la barre
+  d'onglets doit arriver autrement. Trois branches d'écran basculent d'un profil à l'autre, et
+  aucune n'était jouée : la félicitation à la place des cartes, le cap qui ne chiffre pas, et
+  l'absence de l'encart de contexte comme du lien vers les pistes. Le second profil tourne dans un
+  contexte de navigateur **neuf**, parce que « premier » veut dire premier sur cet appareil.
+  `TESTING.md` §2.6.
+
 ### 12.3 Ce qui revient à la personne qui pilote
 
 Deux points, et aucun n'est un défaut :
@@ -387,5 +396,9 @@ Deux points, et aucun n'est un défaut :
   cartes (§4 — le chantier D, à instruire), les états d'erreur au-delà de ceux de
   `verifier-etats-export.mjs`, tout ce qui est natif (notifications, jeton d'appareil, retour au
   premier plan), et le second bilan — le re-bilan, la reconduction d'une saison, le contexte corrigé
-  depuis `/contexte`. Un second profil (le cycliste au plan à zéro action, bloc 09 de la recette)
-  serait le prochain parcours à écrire, et il coûte moins que le premier : la mécanique est là.
+  depuis `/contexte`.
+
+  **Le second profil annoncé ici le jour même a été écrit le soir même** (§12.2) : le cycliste au
+  plan à zéro action, bloc 09 de la recette. Il coûtait bien moins que le premier — la mécanique
+  était là —, et il a rendu trois branches d'écran qu'aucun des deux filets ne touchait. Ce qui
+  reste au-dessus est inchangé.

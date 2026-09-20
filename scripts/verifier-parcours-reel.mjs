@@ -15,10 +15,21 @@
 // chaque écriture, il relit la base **comme la personne** (PostgREST, sous sa session, donc sous la
 // RLS), et une fois comme le serveur (le générateur de points, que seul le cron appelle).
 //
-// **Ce qu'il ne fait pas, et ce n'est pas un oubli** : il ne couvre ni les exclusions de cartes ni
-// les états d'erreur — c'est le travail des dérivations de `src/types` et de
-// `verifier-etats-export.mjs`. Un parcours qui voudrait tout voir serait fragile, et un garde-fou
-// fragile finit ignoré.
+// **Puis un second profil, et ce n'est pas un doublon** (20/09/2026) : un **cycliste dont le plan ne
+// porte aucune action**. Depuis C2.5 ce n'est pas un cas de bord — tout cycliste et tout profil
+// sédentaire y tombe —, et c'est surtout le seul chemin où la carte « Ton premier plan » ne se rend
+// **jamais**, puisqu'elle demande une action. Donc le seul où la barre d'onglets doit arriver
+// autrement : au premier affichage du plan, avec la carte « Plan et Suivi ». Trois branches d'écran
+// basculent entre les deux profils, et aucune n'était jouée : la félicitation à la place des cartes,
+// le cap qui **ne chiffre pas** (`cadreDuPlan`, C5.3), et l'absence de l'encart de contexte comme du
+// lien vers les pistes. Il tourne dans un **contexte de navigateur neuf**, parce que « premier » veut
+// dire premier **sur cet appareil** (C5.7) et que les marques vivent dans le stockage.
+//
+// **Ce qu'il ne fait pas, et ce n'est pas un oubli** : il ne couvre ni les états d'erreur — c'est le
+// travail de `verifier-etats-export.mjs` — ni les exclusions de cartes en général, qui restent aux
+// dérivations de `src/types` et au chantier D (`v1-27` §4). Ce que le second profil en éprouve est
+// la seule combinaison que le produit rend aujourd'hui sans qu'on la choisisse. Un parcours qui
+// voudrait tout voir serait fragile, et un garde-fou fragile finit ignoré.
 //
 // ── Comment il tourne ────────────────────────────────────────────────────────────────────────────
 //
@@ -35,15 +46,29 @@
 // Sur un échec, la page est capturée dans le dossier temporaire (le chemin est imprimé) et le texte
 // visible l'est aussi, avec les requêtes refusées : c'est ce qu'on regarde en premier, avant le code.
 //
-// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1), trois mutations sur l'arbre de travail,
-// chacune suivie d'un export (le code est dans le bundle) et remise en place par l'opération inverse :
+// **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1), six mutations sur l'arbre de travail,
+// chacune suivie d'un export (le code est dans le bundle) et remise en place par l'opération inverse.
+//
+// Sur le premier profil, les trois familles que rien d'autre ne voyait — un filtre, un nom, un
+// argument de RPC :
 //   - le filtre du plan écrit de mémoire (`STATUT_DE_BILAN.complete` → `'complete'`) → s'arrête à
 //     l'étape « plan », le bilan introuvable pour l'écran ;
 //   - un RPC au mauvais nom (`commit_plan_action` → `commit_plan_actions`)     → s'arrête à
 //     « engagement », sur un `PGRST202` que le journal imprime en clair ;
 //   - la réponse au point vers un RPC au mauvais nom (`repondre_au_checkin`)    → s'arrête à
 //     « point », les deux boutons restant à l'écran.
-// Ce sont les trois familles que rien d'autre ne voyait : un filtre, un nom, un argument de RPC.
+//
+// Sur le second, les trois branches qu'il existe pour garder :
+//   - la carte « Ton premier plan » rendue malgré un plan à zéro action (la garde
+//     `cycle.plan_actions.length > 0` retirée) → « la carte “Ton premier plan” se rend sur un plan
+//     à zéro action ». **Et c'est cette mutation qui a fixé l'ordre des assertions** : elle empêche
+//     aussi la barre d'arriver, donc tant que l'attente de la barre venait en premier, l'échec se
+//     lisait « Timeout 20000ms exceeded » sans nommer la cause ;
+//   - le cap qui chiffre quand même (la garde `nombreDActions === 0` de `cadreDuPlan` neutralisée)
+//     → « le cap du plan à zéro action annonce un chiffre » ;
+//   - la félicitation reformulée → « “Tu fais déjà l'essentiel sur ce poste.” n'est jamais apparu à
+//     l'écran ». Cette phrase-là est le second apport de la mutation : `attendreTexte` rendait un
+//     délai dépassé anonyme, elle nomme désormais le texte attendu, pour tous ses appels.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -93,6 +118,15 @@ const ATTENDU = {
   ],
 };
 
+/**
+ * Le second profil — le cycliste — et ce qu'il rend.
+ *
+ * Mesuré le 20/09/2026 sur la stack locale, comme le premier : trois jours de vélo sur 5 km, des
+ * sorties rares, aucun voyage, pas de véhicule au foyer. Ce qui compte ici n'est pas le total mais
+ * le **zéro** qui le suit : c'est lui qui fait basculer trois branches d'écran à la fois.
+ */
+const ATTENDU_SOBRE = { totalKg: 11 };
+
 // ── Outils ───────────────────────────────────────────────────────────────────────────────────────
 class Ecart extends Error {}
 function assurer(condition, message) {
@@ -103,22 +137,35 @@ const { base, fermer } = await servirExport(DIST);
 const navigateur = await chromium.launch(
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}
 );
-const contexte = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
-const page = await contexte.newPage();
 const exceptions = [];
-page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
 // Ce que l'app dit et ce que le réseau refuse : sur un échec, c'est ce qu'on lit en premier — une
 // requête en 401 ou en 42501 explique plus qu'une capture d'écran.
 const journal = [];
-page.on('console', (message) => {
-  if (message.type() === 'error' || message.type() === 'warning') journal.push(`[console.${message.type()}] ${message.text()}`);
-});
-page.on('requestfailed', (requete) => journal.push(`[réseau] ${requete.method()} ${requete.url()} — ${requete.failure()?.errorText}`));
-page.on('response', async (reponse) => {
-  if (reponse.status() < 400) return;
-  const corps = await reponse.text().catch(() => '');
-  journal.push(`[réseau] ${reponse.request().method()} ${reponse.url()} → HTTP ${reponse.status()} ${corps.slice(0, 200)}`);
-});
+
+/**
+ * Un onglet neuf dans un contexte neuf.
+ *
+ * Le second profil en demande un : les marques du premier parcours (`traceverte.*`) vivent dans le
+ * stockage, et « premier » veut dire **premier sur cet appareil** (C5.7). Rejouer dans le même
+ * contexte éprouverait un appareil qui a déjà tout vu, c'est-à-dire pas ce qu'on vient voir.
+ */
+async function nouvelOnglet() {
+  const contexte = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const onglet = await contexte.newPage();
+  onglet.on('pageerror', (erreur) => exceptions.push(String(erreur)));
+  onglet.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') journal.push(`[console.${message.type()}] ${message.text()}`);
+  });
+  onglet.on('requestfailed', (requete) => journal.push(`[réseau] ${requete.method()} ${requete.url()} — ${requete.failure()?.errorText}`));
+  onglet.on('response', async (reponse) => {
+    if (reponse.status() < 400) return;
+    const corps = await reponse.text().catch(() => '');
+    journal.push(`[réseau] ${reponse.request().method()} ${reponse.url()} → HTTP ${reponse.status()} ${corps.slice(0, 200)}`);
+  });
+  return onglet;
+}
+
+let page = await nouvelOnglet();
 
 let etapeCourante = 'démarrage';
 function etape(nom) {
@@ -183,8 +230,19 @@ async function barreVisible() {
   }
   return false;
 }
+/**
+ * Attendre un texte — et, s'il ne vient pas, **dire lequel**.
+ *
+ * Sans cette enveloppe, une phrase disparue rend un `locator.waitFor: Timeout 20000ms exceeded`
+ * qui ne nomme rien : il faut alors retrouver dans le script la ligne où l'on en était. Mesuré en
+ * cassant une phrase de l'écran (mutation 3 du second profil, 20/09/2026).
+ */
 async function attendreTexte(motif) {
-  await page.getByText(motif).first().waitFor({ state: 'visible', timeout: ATTENTE });
+  try {
+    await page.getByText(motif).first().waitFor({ state: 'visible', timeout: ATTENTE });
+  } catch {
+    throw new Ecart(`« ${motif} » n'est jamais apparu à l'écran`);
+  }
 }
 
 /** La session que l'app a ouverte, lue là où le SDK la range (`sb-<ref>-auth-token`). */
@@ -389,10 +447,117 @@ try {
     assurer(restes.length === 0, `${table.split('?')[0]} garde ${restes.length} ligne(s) après la suppression`);
   }
 
+  // ── 10. Le second profil : le cycliste, dont le plan ne porte aucune action ─────────────────
+  //
+  // **Ce n'est pas un cas de bord** : depuis C2.5, tout cycliste et tout profil sédentaire y tombe.
+  // Et c'est le seul chemin où la carte « Ton premier plan » ne se rend **jamais** — elle demande un
+  // plan à au moins une action —, donc le seul où la barre d'onglets doit arriver autrement : au
+  // premier affichage du plan, avec la carte « Plan et Suivi ». Le premier profil ne l'exerce pas,
+  // et rien d'autre ne le faisait.
+  etape('cycliste — onboarding et questionnaire');
+  await page.context().close();
+  page = await nouvelOnglet();
+  await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  await boutonDuPager('Découvrir mon impact', 0);
+  await boutonDuPager('Continuer', 1);
+  await boutonDuPager('Continuer', 2);
+  await boutonDuPager('Commencer mon bilan', 3);
+  await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
+
+  await choisir('Oui');
+  await bouton('Suivant');
+  await choisir('3');
+  const distanceVelo = page.getByRole('textbox', { name: 'Distance pour un aller, en km' });
+  await distanceVelo.waitFor({ state: 'visible', timeout: ATTENTE });
+  await distanceVelo.fill('5');
+  await bouton('Suivant');
+  // Le vélo n'ouvre ni motorisation ni type : ces deux révélations sont propres à la voiture et au
+  // deux-roues motorisé. En demander une ici s'arrêterait sur « aucun contrôle nommé ».
+  await choisir('Vélo');
+  await bouton('Suivant');
+  await choisir('Non');
+  await bouton('Suivant');
+  // « Rarement » fait disparaître les questions de détail des sorties : l'étape suivante est celle
+  // des vols, et non le mode ni la tranche de distance.
+  await choisir(/^Rarement/, { exact: false });
+  await bouton('Suivant');
+  await choisir('0'); // aucun vol — et à zéro, la question « combien sont courts ? » ne se pose pas
+  await bouton('Suivant');
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '0', exact: true }).click();
+  await bouton('Suivant');
+  await choisir('Urbain dense');
+  await choisir('Bon');
+  await choisir('0');
+  await choisir(/^Aucun/, { exact: false });
+  await bouton('Voir mon bilan');
+
+  etape('cycliste — restitution, puis le plan sans action');
+  await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
+  assurer(!(await barreVisible()), 'la barre d’onglets est visible sur la restitution du cycliste (C5.7)');
+  const sobre = await session();
+  const [resultatSobre] = await lire('assessment_results?select=total_co2_kg_year,dominant_poste_co2_kg_year', sobre.jeton);
+  assurer(resultatSobre, 'aucun assessment_results lisible pour le cycliste');
+  assurer(
+    Math.round(resultatSobre.total_co2_kg_year) === ATTENDU_SOBRE.totalKg,
+    `total du cycliste ${resultatSobre.total_co2_kg_year} kg, attendu ${ATTENDU_SOBRE.totalKg}`
+  );
+
+  await bouton('Voir ce que je peux faire');
+  await page.waitForURL(/\/connexion\?.*source=resultat_transition/, { timeout: ATTENTE });
+  await (await controle('Continuer sans compte')).click();
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+
+  // Le plan est vide d'actions **en base** : c'est ce qui rend vrai tout le reste de ce bloc.
+  const pistesSobres = await lire('plan_actions?select=rank', sobre.jeton);
+  assurer(pistesSobres.length === 0, `${pistesSobres.length} piste(s) figée(s) pour le cycliste, attendu 0`);
+  const cyclesSobres = await lire('plan_cycles?select=id', sobre.jeton);
+  assurer(cyclesSobres.length === 1, `${cyclesSobres.length} cycle(s) de plan, attendu 1`);
+
+  // La félicitation, et non un écran vide : le plan à zéro action dit pourquoi il est vide.
+  await attendreTexte('Tu fais déjà l’essentiel sur ce poste.');
+  // Le cap se rend quand même — c'est lui qui nomme la période depuis C2.8 — mais sans chiffrer.
+  await attendreTexte(/Automne 2026/);
+
+  // **Ce qui ne doit PAS être là se lit avant d'attendre la barre**, et l'ordre n'est pas du
+  // confort : rendre la carte du premier plan sur ce plan-là empêche aussi la barre d'arriver
+  // (fermer la carte est ce qui la fait venir), donc l'attente de la barre tomberait la première
+  // et rendrait un délai dépassé là où l'assertion nomme la cause. Mesuré en le cassant.
+  const texteDuPlan = await page.evaluate(() => document.body.innerText);
+  assurer(
+    !texteDuPlan.includes('TON PREMIER PLAN') && !texteDuPlan.includes('Une action pour'),
+    'la carte « Ton premier plan » se rend sur un plan à zéro action (C5.6)'
+  );
+  assurer(
+    !/Voir toutes les pistes/.test(texteDuPlan),
+    'le plan à zéro action propose encore « Voir toutes les pistes »'
+  );
+  assurer(
+    !/Ton plan tient compte de ton contexte/.test(texteDuPlan),
+    'l’encart de contexte se rend sur un plan à zéro action (C5.5)'
+  );
+  assurer(
+    !/−\s?\d+\s?kg/.test(texteDuPlan),
+    `le cap du plan à zéro action annonce un chiffre (cadreDuPlan, C5.3) : ${texteDuPlan.slice(0, 400)}`
+  );
+
+  // La barre arrive **sans** qu'on ait rien refermé : c'est la moitié de C5.7 que le premier
+  // profil ne joue pas, puisque lui passe par « Compris ».
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('*')].some((e) => e.textContent === 'Suivi' && e.getClientRects().length > 0),
+    undefined,
+    { timeout: ATTENTE }
+  );
+  await attendreTexte('Deux endroits, pas plus.');
+
+  await rpc('delete_my_account', sobre.jeton);
+
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
   console.log(
     `Parcours réel joué de bout en bout : bilan ${ATTENDU.totalKg} kg, ${ATTENDU.pistes.length} pistes dans ` +
-      `l'ordre attendu, engagement, point répondu, suivi, compte supprimé.`
+      `l'ordre attendu, engagement, point répondu, suivi, compte supprimé — puis le cycliste, ` +
+      `${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, barre d'onglets venue sans « Compris ».`
   );
 } catch (erreur) {
   try {
