@@ -286,3 +286,72 @@ RLS (`42501`). Elle doit donc venir avant le remplissage du quota **et** sous la
 propriétaire. Plus généralement, pour valider un test pgTAP en base, rejouer la **séquence
 entière** du fichier, bascules de `request.jwt.claims` comprises — un scénario extrait de son
 contexte ne reproduit pas le rôle sous lequel il tournera.
+
+### 2.6 Le parcours réel, contre une vraie stack — et ce que Docker change ici
+
+**Le trou, mesuré le 20/09/2026** : 15 143 lignes d'écrans et de composants et 1 216 lignes
+d'entrée-sortie (`src/lib`) n'étaient gardées par rien d'autre que la recette sur appareil. Les deux
+premières suites prouvent la logique pure et la base ; entre les deux — les requêtes, les RPC, ce
+que l'écran montre après une écriture — rien. Un `.eq('status', 'complete')` passait vert.
+
+**`scripts/verifier-parcours-reel.mjs` joue le chemin nominal, et lui seul**, sur le profil de
+`docs/recette/premier-parcours-web.md` : onboarding → questionnaire → soumission → restitution →
+proposition de compte refusée → plan → engagement → un point généré comme le cron le ferait
+(`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi → suppression du
+compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
+(PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, huit
+pistes dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
+la base construite depuis `supabase/migrations/`, ces chiffres ne dépendent d'aucune
+synchronisation de facteurs. Ce qu'il ne fait **pas**, et ce n'est pas un oubli : les exclusions
+de cartes et les états d'erreur restent aux dérivations de `src/types` et à
+`verifier-etats-export.mjs` — un parcours qui voudrait tout voir serait fragile, et un garde-fou
+fragile finit ignoré.
+
+**En CI**, c'est le travail « Parcours réel (stack locale) » de `ci.yml` : `supabase start` — et
+pas `db start` comme pour pgTAP, parce que la session anonyme vient de GoTrue et les lectures de
+PostgREST —, un second export branché sur cette stack, Playwright, le script.
+
+**En local, et dans l'environnement d'agent aussi** — contrairement à ce que ce dépôt a cru jusqu'au
+20/09/2026, Docker y tourne : le démon ne démarre pas seul, mais `sudo dockerd > /tmp/dockerd.log
+2>&1 &` suffit (mesuré, l'agent y est `root`). Ensuite :
+
+```bash
+npx supabase@2.117.0 start                      # ~3 min la première fois : les images
+npx supabase@2.117.0 status -o env              # ANON_KEY, SERVICE_ROLE_KEY, API_URL
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 EXPO_PUBLIC_SUPABASE_ANON_KEY=… \
+  npx expo export --platform web --clear
+EXPO_PUBLIC_SUPABASE_URL=… EXPO_PUBLIC_SUPABASE_ANON_KEY=… SUPABASE_SERVICE_ROLE_KEY=… \
+  CHROMIUM_PATH=/opt/pw-browsers/chromium node scripts/verifier-parcours-reel.mjs
+```
+
+Et c'est aussi ce qui rend **pgTAP exécutable ici** (`npx supabase@2.117.0 test db`, après un
+`db reset` si des parcours ont laissé des comptes) : le `BEGIN`/`ROLLBACK` sur le projet distant
+n'est plus la seule validation d'un fichier pgTAP, et ce n'est pas la meilleure — le distant porte
+des données que trois assertions ne supportent pas (§2.3).
+
+**Deux pièges payés en l'écrivant, tous deux silencieux :**
+
+- **Les `EXPO_PUBLIC_*` sont inlinées à la transformation, et le cache de Metro ne les met pas dans
+  sa clé.** Un export qui en suit un autre garde l'URL de l'autre — l'app a appelé
+  `exemple.supabase.co` pendant deux passes avec la bonne variable dans l'environnement, et
+  `EXPO_NO_DOTENV=1` n'y changeait rien. `--clear` à chaque changement de configuration, et le
+  `grep` de l'URL dans `dist/_expo/static/js/web/*.js` est ce qui a tranché.
+- **Les pages hors champ du pager sont `inert` et `aria-hidden`, mais l'état qui les cache suit
+  l'animation, pas le clic.** Deux « Continuer » cliqués trop vite touchent deux fois la même page —
+  la première passe est passée, la seconde a tourné en rond. Le script attend que le défilement soit
+  posé sur la page attendue, puis clique le bouton **dans la fenêtre**, pas le premier que l'arbre
+  d'accessibilité rend. Même famille : la barre d'onglets masquée reste dans le DOM
+  (`display: 'none'`), donc « la barre est absente » se mesure sur la visibilité, jamais sur le
+  compte des libellés.
+
+**Éprouvé en le cassant, le 20/09/2026**, trois mutations sur l'arbre de travail — un filtre écrit de
+mémoire (`'complete'`), un RPC au mauvais nom (`commit_plan_actions`), la réponse au point vers un RPC
+au mauvais nom — chacune suivie d'un export, puisque le code est dans le bundle, et remise en place
+par l'opération inverse : le parcours s'arrête respectivement au plan, à l'engagement et au point,
+en nommant l'étape et la requête refusée. Le compte détaillé est en tête du script.
+
+**Sur un échec, lire dans cet ordre** : l'étape nommée, les requêtes refusées (le script journalise
+tout `4xx`/`5xx` avec le corps — un `PGRST303` « JWT issued at future » sur la première requête
+d'une session est **attendu**, l'app le rejoue, cf. `src/types/postgrest.ts`), le texte visible,
+puis la capture `parcours-reel-echec.png`. Un parcours local qui s'arrête laisse son compte anonyme
+dans la stack ; `supabase db reset` remet la base à neuf.

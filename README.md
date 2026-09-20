@@ -28,13 +28,21 @@ npm test           # tests unitaires (Jest)
 Tests SQL (pgTAP) : `npx supabase@latest db start` puis `npx supabase@latest test db`
 (nécessite Docker).
 
-Deux suites, et la règle plutôt qu'une liste qui se périme au fichier suivant :
+Le parcours réel (Playwright contre la stack locale complète) : `npx supabase@latest start`, un
+export web branché dessus, puis `node scripts/verifier-parcours-reel.mjs` — la marche à suivre
+exacte est en `TESTING.md` §2.6.
+
+Trois suites, et la règle plutôt qu'une liste qui se périme au fichier suivant :
 
 - **Jest** — toute dérivation pure affichée à la personne ou décidant d'une navigation est
   testée, dans un `*.test.ts` colocalisé. L'inventaire se lit en listant `src/**/*.test.ts`.
 - **pgTAP** — un fichier numéroté par sujet dans `supabase/tests/database/` : fonctions de
   calcul, policies RLS, privilèges de table, crons et référentiels. L'inventaire se lit dans
   le répertoire.
+- **Le parcours réel** — le chemin nominal de bout en bout (questionnaire, restitution, plan,
+  engagement, point répondu, suivi, suppression du compte) contre une vraie stack Supabase, la base
+  relue après chaque écriture. C'est ce qui garde les écrans et les requêtes, que les deux autres
+  suites ne voient pas.
 
 Plusieurs de ces tests n'épinglent pas un comportement mais une **décision**, pour qu'elle ne
 soit pas « corrigée » par réflexe (ordre ACV des motorisations, source des facteurs, invariant

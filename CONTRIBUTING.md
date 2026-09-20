@@ -65,6 +65,10 @@ npm test            # Jest — logique pure
 Les tests de base de données demandent Docker : `npx supabase@latest db start` puis
 `npx supabase@latest test db`.
 
+Le parcours réel — le chemin nominal joué par Playwright contre la stack locale complète, la base
+relue après chaque écriture — demande `npx supabase@latest start` et un export branché dessus :
+`TESTING.md` §2.6 donne les commandes exactes, et ce que ce garde-fou laisse aux deux autres suites.
+
 ## Si une pull request arrive quand même
 
 Elle entre sous la licence du dépôt, l'AGPL-3.0-or-later : l'ouvrir vaut acceptation de ce cadre.

@@ -192,10 +192,15 @@ expo export --platform web # build statique web (= script vercel-build), utile p
 
 ### Tests
 
-Deux suites : **Jest** (`npm test`, logique pure côté client, `src/**/*.test.ts` colocalisés,
-`TZ=Europe/Paris` forcé et ce n'est pas cosmétique) et **pgTAP** (`supabase/tests/database/*.sql`,
-numérotés, un fichier par sujet, `supabase test db` — non exécutable ici sans Docker, validé par
-`BEGIN`/`ROLLBACK` sur le projet distant). Les deux tournent en CI sur chaque pull request. La
+Trois suites : **Jest** (`npm test`, logique pure côté client, `src/**/*.test.ts` colocalisés,
+`TZ=Europe/Paris` forcé et ce n'est pas cosmétique), **pgTAP** (`supabase/tests/database/*.sql`,
+numérotés, un fichier par sujet, `supabase test db`) et, depuis le 20/09/2026, **le parcours réel**
+(`scripts/verifier-parcours-reel.mjs` : le chemin nominal joué par Playwright contre la stack
+Supabase locale, la base relue après chaque écriture — `TESTING.md` §2.6, qui dit aussi ce qu'il
+laisse volontairement aux deux autres). **Docker tourne dans cet environnement** — `sudo dockerd &`,
+mesuré le 20/09/2026 —, donc pgTAP et le parcours s'exécutent ici, et le `BEGIN`/`ROLLBACK` sur le
+projet distant n'est plus la seule validation d'un fichier pgTAP. Les trois tournent en CI sur
+chaque pull request. La
 règle qui décide de ce qui se teste (**toute dérivation pure affichée à la personne ou décidant
 d'une navigation**), où passe la ligne entre logique pure (`src/types`) et entrée-sortie
 (`src/lib`), les tests de **jugement** à connaître avant de « corriger » ce qu'ils épinglent, et
