@@ -304,8 +304,9 @@ select ok(
 
 -- **Épinglé le 21/09/2026 (`v1-28` §7.3), et c'est une garde sur une COÏNCIDENCE.**
 --
--- La feuille des rappels grise « Par email » sans compte et porte une porte « Rattacher un
--- compte ». La toucher referme la feuille et navigue **sans enregistrer de canal** : sur natif,
+-- La feuille des rappels grise « Par email » sans compte, et porte depuis le 20/09/2026 un lien
+-- « Rattacher un compte ». Le toucher referme la feuille et navigue **sans enregistrer de canal** :
+-- sur natif,
 -- une route poussée sous un `Modal` ouvert reste dessous, donc il n'y a pas le choix. Au retour,
 -- la personne reçoit bien ses rappels par e-mail — mais parce que cette colonne vaut `email` par
 -- défaut, pas parce qu'elle l'a demandé.
@@ -319,12 +320,19 @@ select ok(
 -- La valeur se lit sur le catalogue et non en insérant une ligne : ce qu'on garde est le
 -- **défaut déclaré**, pas ce qu'une ligne reçoit — les deux se confondent aujourd'hui et
 -- pourraient cesser de le faire si un trigger s'en mêlait.
+--
+-- **Et elle se lit dans `pg_catalog`, pas dans `information_schema`.** La première version
+-- interrogeait `information_schema.columns`, qui **filtre par privilège** : à cet endroit du
+-- fichier le rôle courant est `authenticated`, donc le jour où un `grant` bougerait sur
+-- `profiles`, la vue ne rendrait plus aucune ligne et l'assertion rougirait — pour une raison
+-- étrangère à ce qu'elle garde. C'est le défaut que la même vague vient de corriger dans
+-- `12_usage_events`, et il aurait été ajouté par la main qui le corrigeait.
 select is(
-  (select column_default
-     from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'profiles'
-      and column_name = 'reminder_channel'),
+  (select pg_get_expr(d.adbin, d.adrelid)
+     from pg_attrdef d
+     join pg_attribute a on a.attrelid = d.adrelid and a.attnum = d.adnum
+    where d.adrelid = 'public.profiles'::regclass
+      and a.attname = 'reminder_channel'),
   '''email''::text',
   'profiles.reminder_channel vaut « email » par défaut — ce dont dépend la porte de la feuille des rappels'
 );

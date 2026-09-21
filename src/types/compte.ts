@@ -105,8 +105,15 @@ export const CONDITIONS_DE_PERTE_SANS_COMPTE = `si tu changes de téléphone ou 
 export const PHRASE_SANS_COMPTE_SOUS_LA_SORTIE = `Sur cet appareil seulement : ${CONDITIONS_DE_PERTE_SANS_COMPTE}, ton bilan ne te suivra pas.`;
 
 /**
- * Sur « Toi » en état `local`. L'avantage d'abord, l'échéance ensuite : « il » reprend le bilan
- * nommé par la première phrase, ce qui évite de le répéter et garde la clause partagée
- * identique des deux côtés.
+ * Sur « Toi » en état `local`. L'avantage d'abord, l'échéance ensuite.
+ *
+ * **Le démonstratif n'est pas du style : un pronom s'y lisait à l'envers.** La première version
+ * finissait par « …, il ne te suivra pas », et ce commentaire affirmait que « il » reprenait le
+ * bilan de la première phrase. C'était mon intention, pas ce que la grammaire rend : l'antécédent
+ * le plus proche est **« un compte »**, donc la phrase pouvait se lire « le compte ne te suivra
+ * pas » — l'inverse exact de ce qu'elle veut dire, sur l'écran qui existe pour proposer ce compte.
+ * Relevé en contre-lisant la vague le 21/09/2026.
+ *
+ * « ce bilan » lève l'ambiguïté sans répéter « ton bilan », et sans toucher à la clause partagée.
  */
-export const PHRASE_SANS_COMPTE_SUR_TOI = `Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs — ${CONDITIONS_DE_PERTE_SANS_COMPTE}, il ne te suivra pas.`;
+export const PHRASE_SANS_COMPTE_SUR_TOI = `Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs — ${CONDITIONS_DE_PERTE_SANS_COMPTE}, ce bilan ne te suivra pas.`;

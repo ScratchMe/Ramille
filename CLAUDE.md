@@ -1146,7 +1146,9 @@ anonyme. Ce n'est donc pas un correctif mais une assurance. Trois points à conn
   vraiment et que l'ADEME l'accepte. La CI n'a pas de secret, et rejouer sur le distant consomme un
   appel réel. Mesuré à la main le 21/09/2026 des deux côtés, et vérifié sur le distant après la
   migration : `authentifie = true`, `status = success`, zéro mode mis à jour — les valeurs n'ayant
-  pas bougé, aucune version de bruit n'est écrite. Le mapping vers les **slugs** Impact CO2 vit dans
+  pas bougé, aucune version de bruit n'est écrite.
+
+Le mapping vers les **slugs** Impact CO2 vit dans
 `emission_factor_sources`, pas en dur dans la fonction : **ajouter un mode au produit impose
 d'y ajouter une ligne**, sinon il reste figé à sa valeur de seed en silence (un test pgTAP
 garde ce point). Pour l'avion, le slug retenu doit rester cohérent avec les distances codées

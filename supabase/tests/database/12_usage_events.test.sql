@@ -107,9 +107,13 @@ select set_config('role', 'postgres', true);
 -- l'assertion disait bien ce qu'elle voulait dire — mais sur une base qui a vécu (la stack
 -- locale après un passage de `verifier-parcours-reel.mjs`, par exemple) elle attrape une ligne
 -- légitime plus vieille que cinq minutes et rougit pour une raison étrangère à ce qu'elle garde.
--- Relevé le 21/09/2026, même famille que les trois assertions de `TESTING.md` §2.3 qui supposent
--- une base vierge, et c'est la seule des quatre qu'on peut fermer sans rien perdre : le fixture
--- porte un identifiant que la production ne produit pas.
+-- Relevé le 21/09/2026. Ce n'est pas une quatrième de la famille : c'est **exactement** l'une des
+-- trois que `TESTING.md` §2.3 documente comme supposant une base vierge, et la seule des trois
+-- qu'on peut fermer sans rien perdre — le fixture porte un identifiant que la production ne
+-- produit pas (mesuré : zéro ligne pour cet uuid sur le distant, contre 254 lignes réelles). Les
+-- deux autres sont dans `17_rappels_canal` et tiennent aux secrets Vault, donc elles restent.
+-- §2.3 a été corrigée en même temps : elle prescrivait un `supabase db reset` avant chaque suite
+-- locale à cause de cette assertion-ci, ce qui n'est plus nécessaire pour elle.
 select ok(
   (select min(occurred_at)
      from public.usage_events
