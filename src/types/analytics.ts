@@ -66,8 +66,9 @@ export type UsageEventProps = Record<string, UsageEventPropValue>;
 // ## Les provenances de `/connexion`, et pourquoi elles tiennent dans une seule liste
 //
 // Chacune doit correspondre à un écran qui navigue vraiment vers `/connexion` : aujourd'hui la
-// restitution (l'interstitiel imposé en allant au plan, et le clic délibéré sur la bannière) et
-// « Toi ». `plan` et `suivi` ont été retirées par v1-13 C1.2 — déclarées, jamais émises depuis
+// bannière de la restitution, « Toi », et la feuille des rappels. (L'interstitiel imposé en allant
+// au plan en était une quatrième jusqu'au 20/09/2026 ; il est retiré, et sa provenance reste
+// déclarée pour que son historique se lise.) `plan` et `suivi` ont été retirées par v1-13 C1.2 — déclarées, jamais émises depuis
 // que le compte est sorti du suivi (v1-11 §2.5), elles se lisaient zéro.
 // **`rappels` est la quatrième porte, ouverte le 20/09/2026 avec le retrait de l'interstitiel.**
 // C'est la feuille des rappels, seul écran du produit qui POSE la question à laquelle le compte
@@ -185,11 +186,15 @@ export type UsageEventPropsByName = {
    *  biais que `plan_view` au montage. */
   resultat_view: { mode: ModeResultat };
   resultat_share: never;
-  // Les deux entrées de la restitution vers /connexion ne disent pas la même chose :
-  // `resultat_transition` est l'interstitiel imposé en allant au plan, `resultat_cta` un clic
-  // délibéré sur la bannière. Comparer leurs taux de conversion, c'est répondre à
-  // « l'interstitiel mérite-t-il sa friction ? » — et `compte` est le repère de cette
-  // comparaison : quelqu'un qui vient de lui-même, sans interstitiel du tout.
+  // **La question que cet événement servait à trancher est tranchée**, et il faut le savoir pour ne
+  // pas lire son historique de travers. `resultat_transition` était l'interstitiel imposé en allant
+  // au plan, `resultat_cta` le clic délibéré sur la bannière ; comparer leurs taux répondait à
+  // « l'interstitiel mérite-t-il sa friction ? », avec `compte` pour repère — quelqu'un qui vient de
+  // lui-même. La réponse est venue d'ailleurs le 20/09/2026 : l'interstitiel perdait les trois
+  // tests du critère de `v1-28`, dont celui de la vérité, et un titre faux ne se rachète pas par un
+  // taux. Ce que l'événement mesure maintenant est la question **suivante** — les trois portes qui
+  // restent se valent-elles ? — et `resultat_transition` devient la mesure de l'avant, à laquelle
+  // les trois se comparent. D'où le repli du garde sur `inconnue` et non sur elle.
   connexion_view: { source: SourceConnexion };
   /** **Une demande de lien, pas un rattachement.** L'écran email émettait `connexion_success`
    *  juste après `updateUser({ email })` ; le modèle de données dit l'inverse et de façon
