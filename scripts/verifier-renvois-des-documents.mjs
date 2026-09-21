@@ -28,8 +28,9 @@
 //   - une tolérance ajoutée à `TOLERES` qu'aucun document n'emprunte → 1 écart de l'autre
 //     espèce. Cette seconde branche existe parce qu'une exception qui ne couvre plus rien ne
 //     disparaît pas : elle attend qu'un vrai écart porte le même nom pour le couvrir à son tour.
-// Et un passage qui doit rester **vert** : les huit renvois tolérés ci-dessous, dont la moitié
-// désigne des fichiers qui n'ont jamais eu à exister dans le dépôt.
+// Et un passage qui doit rester **vert** : les renvois tolérés ci-dessous, dont beaucoup
+// désignent des fichiers qui n'ont jamais eu à exister dans le dépôt. Leur nombre ne s'écrit
+// pas — il s'est périmé le 21/09/2026, à la tolérance suivante.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -76,6 +77,10 @@ const TOLERES = new Map([
   ['getRouteInfoFromState.js', 'idem — trace de pile d’`expo-router`'],
   ['setup.js', 'fichier interne de `jest-expo`, cité pour expliquer son doublage'],
   ['getRoutesCore.js', 'chemin interne d’`expo-router`, lu pour savoir ce qu’il ignore du routage'],
+  [
+    'api/package-lock.json',
+    'écrit par `vercel build` et que le dépôt ne veut pas — son absence EST la règle, `VERCEL.md` §1.2 dit de le supprimer après chaque mesure',
+  ],
 ]);
 
 /** Tous les fichiers du dépôt, chemins relatifs à la racine. La règle de comparaison est plus

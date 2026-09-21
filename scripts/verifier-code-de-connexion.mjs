@@ -25,6 +25,12 @@
 //   5. **Une URL portant des jetons valides ne fait pas basculer la session.** Elle ne concerne pas
 //      le code : elle garde PKCE, que le scheme `ramille://` expose encore (il est BROWSABLE, donc
 //      n'importe quelle page web du téléphone peut l'ouvrir). Le chemin reste, comme filet.
+//   6. **Les deux branches de `/connexion/email` sont indistinguables à l'écran** (arbitrage du
+//      21/09/2026, `v1-28` §7.1). L'écran envoie un code que l'adresse soit libre ou déjà prise, au
+//      lieu d'annoncer « cette adresse a déjà un compte ». Le mécanisme ne suffit pas : si un seul
+//      mot suivait la branche, l'oracle se rouvrirait par le texte. On compare donc les textes
+//      visibles, adresse masquée — puis on vérifie que la branche « prise » ramène bien au compte
+//      **existant**, sans quoi l'écran serait indistinguable et ne mènerait nulle part.
 //
 // ── Ce qu'il ne peut pas garder, et il faut le savoir ─────────────────────────────────────────────
 //
@@ -52,6 +58,15 @@
 //   - la reprise de `/connexion/email?reprise=1` n'ouvre plus la saisie → l'assertion **1** tombe
 //     sur sa branche de reprise, et c'est un cul-de-sac qu'elle garde : une adresse en attente sans
 //     moyen de la confirmer.
+//
+// Jouées le 21/09/2026, sur l'assertion 6 :
+//   - `corpsDeLaSaisie` ou `messageDuRenvoi` reprend un paramètre de **flux** au lieu de la voix →
+//     l'assertion **6** tombe en imprimant les deux textes côte à côte, donc en nommant le mot qui
+//     trahit.
+//   - `consequenceDeLaSaisie` rend `null` en voix `parti` → la seconde moitié de **6** tombe : la
+//     personne basculerait de compte sans avoir été prévenue.
+//   - la branche `bascule` de `/connexion/email` remise sur l'écran de collision → **6** tombe dès
+//     le premier `waitFor` du champ de code, sur l'adresse prise.
 //
 // **Et une mutation qui ne fait rien tomber**, à connaître avant de croire une garde verte :
 // modifier un gabarit de `supabase/templates/` **sans redémarrer la stack**. GoTrue les inline au
@@ -309,9 +324,9 @@ try {
   // s'ouvre **directement** sur la saisie, sans renvoyer de code (celui qui est déjà dans la boîte
   // vaut encore, et le distant n'accepte de toute façon qu'un envoi par minute et par adresse).
   //
-  // Sans cette assertion, la phrase du pied de l'écran de code — « si tu quittes cet écran, tu
-  // retrouves la saisie du code depuis “Toi” » — serait une promesse que rien ne garde, et son
-  // échec est un cul-de-sac : une adresse en attente, aucun moyen de la confirmer.
+  // Sans cette assertion, la phrase du pied de l'écran de code — « ton adresse reste gardée ici :
+  // tu peux reprendre depuis “Toi” » — serait une promesse que rien ne garde, et son échec est un
+  // cul-de-sac : une adresse en attente, aucun moyen de la confirmer.
   await pageA.goto(`${serveur.base}/connexion/email?reprise=1`, { waitUntil: 'domcontentloaded' });
   const champRepris = pageA.getByRole('textbox', { name: /Code reçu par email/ });
   const repriseOuverte = await champRepris
@@ -324,7 +339,7 @@ try {
   );
 
   // Collé **avec des espaces**, comme une messagerie le rend : c'est la forme qui a échoué.
-  await taperLeCode(pageA, courrielA.code, 'Rattacher mon adresse', { avecEspaces: true });
+  await taperLeCode(pageA, courrielA.code, 'Valider mon code', { avecEspaces: true });
   const sessionA = await attendreUneSessionPermanente(pageA);
   verifier(sessionA !== null, 'aucune session après avoir tapé le code de rattachement');
   verifier(
@@ -512,6 +527,64 @@ try {
     await contexteE.close();
   }
 
+  // ── 6. Les deux branches de /connexion/email sont indistinguables ────────────────────────────
+  //
+  // **C'est l'assertion de l'arbitrage du 21/09/2026** (`v1-28` §7.1). L'écran envoie désormais un
+  // code dans les deux cas — rattachement si l'adresse est libre, connexion si elle est prise — au
+  // lieu d'annoncer « cette adresse a déjà un compte ». Le mécanisme ne suffit pas : si **un seul
+  // mot** de l'écran suivait la branche, l'oracle qu'on ferme par l'envoi se rouvrirait par le
+  // texte, et c'est exactement le piège que ce chantier avait à éviter.
+  //
+  // On compare donc les **textes visibles** des deux écrans, l'adresse masquée. Une adresse dédiée
+  // est créée par l'API d'administration plutôt que de réutiliser celle du flux 1 : celle-là a déjà
+  // reçu un e-mail, et `smtp_max_frequency` (60 s) ferait échouer le second envoi pour une raison
+  // étrangère — le genre de faux rouge qui coûte une heure.
+  etape = 'les deux branches ne se distinguent pas';
+  const adresseF = `code-f-${marque}@test.local`;
+  const idF = await creerUnCompte(adresseF);
+  const adresseLibre = `code-g-${marque}@test.local`;
+
+  const texteDeLaSaisie = async (page, adresse) => {
+    await page.getByRole('textbox', { name: /Code reçu par email/ }).waitFor({ state: 'visible', timeout: 20000 });
+    const brut = await page.locator('body').innerText();
+    // L'adresse elle-même diffère forcément : c'est celle que la personne a tapée, pas une réponse
+    // du serveur. On la masque pour comparer tout le reste.
+    return brut.replace(new RegExp(adresse, 'g'), '<adresse>').trim();
+  };
+
+  const contexteF = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const pageF = await contexteF.newPage();
+  const courrielF = await demanderUnCode(pageF, serveur.base, adresseF, 'rattachement');
+  const ecranPris = await texteDeLaSaisie(pageF, adresseF);
+
+  const contexteG = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const pageG = await contexteG.newPage();
+  await demanderUnCode(pageG, serveur.base, adresseLibre, 'rattachement');
+  const ecranLibre = await texteDeLaSaisie(pageG, adresseLibre);
+
+  verifier(
+    ecranPris === ecranLibre,
+    `l’écran de code trahit si l’adresse a un compte — l’oracle est rouvert par le texte.\n` +
+      `      adresse prise : ${JSON.stringify(ecranPris.slice(0, 240))}\n` +
+      `      adresse libre : ${JSON.stringify(ecranLibre.slice(0, 240))}`,
+  );
+  verifier(
+    ecranPris.includes('S’il existait déjà un compte'),
+    'la phrase conditionnelle a disparu : la personne bascule de compte sans avoir été prévenue',
+  );
+
+  // Et la branche prise fait bien ce qu'elle promet : le code ramène au compte EXISTANT, pas à un
+  // nouveau. Sans cette moitié, l'écran pourrait être indistinguable et ne mener nulle part.
+  await taperLeCode(pageF, courrielF.code, 'Valider mon code');
+  const sessionF = await attendreUneSessionPermanente(pageF);
+  verifier(
+    sessionF?.id === idF,
+    `le code d’une adresse déjà prise n’a pas ramené à son compte (${sessionF?.id ?? 'rien'} au lieu de ${idF})`,
+  );
+
+  await contexteF.close();
+  await contexteG.close();
+
   await contexteA.close();
   await contexteB.close();
   await contexteC.close();
@@ -527,9 +600,10 @@ if (ecarts.length > 0) {
   console.error('Le chemin du compte ne fait pas ce qu’il promet :\n');
   for (const ecart of ecarts) console.error(`  - ${ecart}`);
   console.error(
-    `\nLes cinq assertions ne se remplacent pas : 1 et 2 sont le produit (rattacher, retrouver),\n` +
+    `\nLes six assertions ne se remplacent pas : 1 et 2 sont le produit (rattacher, retrouver),\n` +
       `3 est ce qui rend sûr de montrer le même écran dans les deux flux, 4 est la faille fermée par\n` +
-      `construction, 5 garde PKCE. Détail en tête de ce fichier.\n` +
+      `construction, 5 garde PKCE, et 6 garde que l'écran de code ne trahit pas si l'adresse a un\n` +
+      `compte. Détail en tête de ce fichier.\n` +
       `Dossier temporaire pour les captures : ${os.tmpdir()}`,
   );
   process.exit(1);
@@ -538,5 +612,6 @@ if (ecarts.length > 0) {
 console.log(
   'Chemin du compte : le code rattache une adresse et rouvre un compte depuis un navigateur neuf, ' +
     'un code d’un flux ne vaut pas dans l’autre, aucun e-mail ne porte de lien, ' +
-    'et une URL portant des jetons valides ne fait pas basculer de compte.',
+    'une URL portant des jetons valides ne fait pas basculer de compte, ' +
+    'et l’écran de code ne dit pas si l’adresse a déjà un compte.',
 );

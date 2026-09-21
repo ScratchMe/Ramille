@@ -486,18 +486,62 @@ export const MESSAGE_DE_LA_SUITE_MANQUEE =
   'Ta session est ouverte, mais l’écran suivant n’a pas suivi. Demande un nouveau code, ou reviens dans un instant.';
 
 /**
- * Le corps de l'écran de saisie, **par contexte**, et la différence est la non-divulgation.
+ * **Ce que l'écran de saisie a le droit d'AFFIRMER, et c'est une notion distincte du flux.**
  *
- * En `rattachement`, l'adresse est forcément libre : c'est la personne qui vient de la taper, et
- * un code est parti. En `connexion`, on ne peut pas affirmer qu'un code est parti sans dire si
- * l'adresse a un compte — d'où le « si ». Recopier la phrase du premier dans le second serait la
- * fuite exacte que `/connexion/retrouver` existe pour éviter.
+ * `ContexteDuCode` décide le `type` envoyé à l'API — `email_change` ou `email` — et il **suit la
+ * branche** : une adresse libre est rattachée, une adresse prise rouvre son compte. La voix, elle,
+ * est une propriété de l'**écran hôte** et ne bouge pas d'une branche à l'autre.
+ *
+ * **Les confondre rouvrirait par le texte l'oracle qu'on ferme par le mécanisme** (arbitrage du
+ * 21/09/2026, `v1-28` §7.1). C'est le piège central de ce chantier : `/connexion/email` envoie
+ * désormais un code dans les deux cas, mais si l'écran disait « un code est parti à camille@… »
+ * quand l'adresse est libre et « **si** un compte existe… » quand elle est prise, n'importe qui
+ * lirait la réponse dans la phrase. Le mécanisme serait juste et la fuite intacte.
+ *
+ * Deux voix, et leur nom dit ce qu'elles peuvent affirmer :
+ *
+ * - **`parti`** — on sait qu'un code est parti à cette adresse. C'est le cas de `/connexion/email`,
+ *   **dans ses deux branches** : l'adresse libre reçoit un code de rattachement, l'adresse prise un
+ *   code de connexion. Rien dans la phrase ne dit laquelle.
+ * - **`peut_etre`** — on ne peut pas l'affirmer sans dire si l'adresse a un compte, d'où le « si ».
+ *   C'est `/connexion/retrouver` et `/compte/suppression`, où `shouldCreateUser: false` fait qu'une
+ *   adresse inconnue ne reçoit rien.
+ *
+ * Recopier la phrase de `parti` dans `peut_etre` serait la fuite que « retrouver » existe pour
+ * éviter ; faire dépendre la voix du contexte serait la même fuite par l'autre bout. Un test garde
+ * les deux sens.
  */
-export function corpsDeLaSaisie(contexte: ContexteDuCode, adresse: string, app: string): string {
+export type VoixDeLaSaisie = 'parti' | 'peut_etre';
+
+export function corpsDeLaSaisie(voix: VoixDeLaSaisie, adresse: string, app: string): string {
   const chiffres = `un code à ${LONGUEUR_DU_CODE} chiffres`;
-  return contexte === 'rattachement'
+  return voix === 'parti'
     ? `Un code à ${LONGUEUR_DU_CODE} chiffres vient de partir à ${adresse}. Tape-le ici — il vaut une heure.`
     : `Si un compte ${app} existe avec cette adresse, ${chiffres} vient d’y partir. Tape-le ici — il vaut une heure.`;
+}
+
+/**
+ * **La phrase conditionnelle qui remplace l'écran de collision**, et qui est tout le prix de
+ * l'arbitrage.
+ *
+ * Jusqu'au 21/09/2026, une adresse déjà prise menait à un écran qui le **disait** (« Cette adresse
+ * a déjà un compte ») et offrait deux sorties. C'était honnête et c'était un oracle : l'écran
+ * répondait « oui » ou « non » sur n'importe quelle adresse, sans plafond — vingt sondes d'affilée
+ * depuis une seule session anonyme, mesuré le 21/09/2026.
+ *
+ * Le canvas proposait de tout taire, donc de faire basculer de compte quelqu'un qui s'est trompé
+ * d'adresse, sans un mot et sans retour. Cette phrase est la troisième voie : elle est
+ * **conditionnelle**, donc vraie dans les deux branches — sur une adresse libre l'antécédent est
+ * faux, sur une adresse prise elle décrit exactement ce qui va se passer —, donc elle se montre
+ * dans les deux et ne divulgue rien. Et elle arrive **avant** que le code soit tapé, ce qui laisse
+ * la sortie : ne pas le taper.
+ *
+ * Elle ne se rend qu'en voix `parti` : en `peut_etre` un code n'est peut-être jamais parti, et il
+ * n'y a pas de bilan de cet appareil à laisser derrière soi.
+ */
+export function consequenceDeLaSaisie(voix: VoixDeLaSaisie, app: string): string | null {
+  if (voix !== 'parti') return null;
+  return `S’il existait déjà un compte ${app} à cette adresse, ce code t’y ramène — et le bilan de cet appareil ne l’y rejoindra pas.`;
 }
 
 /**
@@ -535,8 +579,17 @@ export function introDeLaConnexion(source: SourceConnexion): string {
  *   - la **limite d'envoi** et la **panne de transport** se disent, comme partout : ni l'une ni
  *     l'autre ne parle de l'adresse ;
  *   - l'**adresse déjà prise** ne peut arriver qu'en rattachement (`signInWithOtp` ne rattache
- *     rien), et là il n'y a rien à taire — le produit le dit déjà au premier envoi. Elle se dit,
- *     parce qu'annoncer un code parti quand rien n'est parti ferait attendre pour rien ;
+ *     rien), et depuis l'arbitrage du 21/09/2026 elle ne peut plus arriver qu'en **course** : le
+ *     premier envoi détourne une adresse prise vers le flux de connexion, donc atteindre ce
+ *     renvoi-ci demande qu'elle ait été libre au premier envoi et prise au second. Qui l'a prise
+ *     dans l'intervalle le sait déjà, et le message ne nomme rien (`messageDeLaDemande` rend
+ *     « L'envoi n'a pas abouti », jamais l'état de l'adresse). Ce que la branche achète est
+ *     l'absence de cul-de-sac : annoncer un code parti quand `updateUser` vient de refuser ferait
+ *     attendre un code qui ne viendra jamais — le défaut même que la troisième voie a écarté.
+ *     **Ce commentaire a dit jusqu'au 21/09/2026 « il n'y a rien à taire, le produit le dit déjà au
+ *     premier envoi »**, et c'était devenu faux le jour même : le produit ne le dit plus nulle
+ *     part, et laisser cette phrase aurait invité le prochain passage à faire nommer l'adresse par
+ *     le message, c'est-à-dire à rouvrir l'oracle par le renvoi ;
  *   - **tout le reste se lit comme un renvoi réussi**, `otp_disabled` en tête. C'est la règle de
  *     non-divulgation, et elle ne connaît pas d'exception selon qu'on en est au premier envoi ou
  *     au troisième.
@@ -550,8 +603,13 @@ export function suiteDuRenvoi(contexte: ContexteDuCode, error: ErreurAuth): Suit
   return 'renvoye';
 }
 
-export function messageDuRenvoi(contexte: ContexteDuCode): string {
-  return contexte === 'rattachement'
+/**
+ * **Le renvoi suit la VOIX, pas le contexte** — sinon l'oracle se rouvre au second envoi, ce qui
+ * serait le même défaut que celui relevé en revue le 21/09/2026 par une autre porte. Depuis
+ * `/connexion/email`, les deux branches renvoient un code pour de vrai : la phrase peut l'affirmer.
+ */
+export function messageDuRenvoi(voix: VoixDeLaSaisie): string {
+  return voix === 'parti'
     ? 'Un nouveau code vient de partir.'
     : 'Si un compte existe avec cette adresse, un nouveau code vient d’y partir.';
 }

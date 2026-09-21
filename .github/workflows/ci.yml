@@ -290,8 +290,9 @@ jobs:
       # visible et les requêtes refusées — c'est ce qu'on lit avant le code.
       - run: node scripts/verifier-parcours-reel.mjs
       # Le chemin du compte, de bout en bout : le collecteur d'e-mails local (`[local_smtp]`,
-      # allumé le 20/09/2026) rend testable le rattachement comme la reconnexion. Cinq assertions,
-      # dont deux seulement sont des chemins heureux — l'en-tête du script dit laquelle garde quoi,
+      # allumé le 20/09/2026) rend testable le rattachement comme la reconnexion. Peu d'assertions,
+      # dont deux seulement sont des chemins heureux — leur nombre ne s'écrit pas ici, il s'est
+      # périmé le 21/09/2026 ; l'en-tête du script dit laquelle garde quoi,
       # ce que chaque mutation fait tomber, et ce qu'aucune ne peut prétendre (le code est un
       # porteur : il relève le prix de la mauvaise confirmation, il ne la ferme pas).
       - run: node scripts/verifier-code-de-connexion.mjs

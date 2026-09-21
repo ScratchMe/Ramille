@@ -12,14 +12,21 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
-import { demanderLeRattachement } from '@/lib/auth';
-import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
+import { demanderLaConnexion, demanderLeRattachement } from '@/lib/auth';
+import { effacerLesMarquesLocales } from '@/lib/compte';
+import {
+  lireAdresseDuLien,
+  lireFluxDuCode,
+  memoriserAdresseDuLien,
+  memoriserFluxDuCode,
+} from '@/lib/connexion-prefs';
 import {
   adresseSemblePlausible,
   messageDeLaDemande,
   messageDuRetourDeLien,
   motifRetourLien,
   suiteDeLaDemandeDeCode,
+  type ContexteDuCode,
 } from '@/types/connexion';
 
 /**
@@ -42,16 +49,24 @@ function revenirOuRacine() {
  * Le code ne referme pas cette porte — il n'est lié ni à la session ni au client qui l'a demandé
  * (mesuré) — il en relève le prix : un réflexe devient une démarche. La dette est en `v1-27` §12.12.
  *
- * Trois phases, et la deuxième est partagée avec deux autres écrans (`SaisieDuCode`).
+ * **Deux phases, et l'adresse déjà prise ne se dit plus** (arbitrage du 21/09/2026, `v1-28` §7.1).
+ * L'écran portait une phase `deja-un-compte` qui l'annonçait — honnête, et un oracle : il répondait
+ * « oui » ou « non » sur n'importe quelle adresse, sans plafond, depuis un écran qui s'atteint sans
+ * bilan (vingt sondes d'affilée depuis une seule session anonyme, mesuré le 21/09/2026). Le canvas
+ * proposait de tout taire, ce qui aurait fait **basculer de compte** quelqu'un qui s'est trompé
+ * d'adresse, sans un mot et sans retour.
  *
- * **Ce que ce chantier ne change PAS, et c'est délibéré** : l'adresse déjà prise se dit toujours
- * **avant** (phase `deja-un-compte`), comme aujourd'hui. Le canvas propose de vérifier d'abord et
- * de ne le dire qu'après — ce serait refermer un oracle gratuit, puisque cet écran s'atteint depuis
- * « Toi » sans bilan et qu'un `email_exists` n'envoie rien, donc n'est plafonné par rien —, mais
- * c'est un arbitrage de produit (§10.3 du canvas) : la personne qui voulait garder le bilan de cet
- * appareil sans rejoindre son ancien compte l'apprendrait après cinq minutes de réponses. Tant
- * qu'il n'est pas rendu, l'écran garde le constat avant ; seule sa phrase change, le lien qu'elle
- * promettait n'existant plus.
+ * Ce qui a été retenu est une troisième voie : une adresse prise reçoit un code de **connexion**, et
+ * arrive sur la **même** saisie que l'adresse libre — même corps, même bouton, même pied, même
+ * message de renvoi. Ce que la personne perd, elle le lit **avant** de taper : une phrase
+ * conditionnelle (`consequenceDeLaSaisie`) dit que si un compte existait déjà à cette adresse, ce
+ * code l'y ramène et le bilan de cet appareil ne l'y rejoindra pas. Vraie dans les deux branches,
+ * donc montrable dans les deux, donc sans fuite — et la sortie reste : ne pas taper le code.
+ *
+ * Deux prix, tous deux assumés : le bouton a perdu son verbe (« Valider mon code », parce que
+ * « Rattacher mon adresse » serait faux une fois sur deux), et le choix arrive **avant** de savoir
+ * au lieu d'après. Ce qu'on gagne est que l'écran cesse de répondre à « telle adresse utilise-t-elle
+ * Ramille ? ».
  */
 export default function ConnexionEmail() {
   // `id` a disparu des paramètres lus : plus aucun écran ne le passe depuis que `/connexion` ne lit
@@ -74,7 +89,14 @@ export default function ConnexionEmail() {
   const [message, setMessage] = useState<string | null>(
     motif ? messageDuRetourDeLien(motif) : null
   );
-  const [phase, setPhase] = useState<'saisie' | 'code' | 'deja-un-compte'>('saisie');
+  // **La phase porte le flux, et l'écran de collision a disparu** (arbitrage du 21/09/2026,
+  // `v1-28` §7.1). Une adresse déjà prise ne mène plus à un écran qui le dit : elle reçoit un code
+  // de **connexion** et arrive sur la même saisie, mot pour mot, que l'adresse libre. Le flux ne
+  // sert donc plus qu'à deux choses invisibles — le `type` vérifié, et ce qu'on fait de la session
+  // ouverte — et jamais à un mot de l'écran, sinon l'oracle se rouvrirait par le texte.
+  const [phase, setPhase] = useState<
+    { kind: 'saisie' } | { kind: 'code'; flux: ContexteDuCode }
+  >({ kind: 'saisie' });
 
   // Deux raisons de relire l'adresse tapée sur cet appareil, et aucune ne passe par l'URL (une
   // adresse dans la barre d'adresse entre dans l'historique du navigateur et son autocomplétion) :
@@ -84,11 +106,13 @@ export default function ConnexionEmail() {
   useEffect(() => {
     if (!motif && !reprise) return;
     let annule = false;
-    void lireAdresseDuLien().then((adresse) => {
+    void Promise.all([lireAdresseDuLien(), lireFluxDuCode()]).then(([adresse, flux]) => {
       if (annule || !adresse) return;
       setEmail((actuelle) => (actuelle ? actuelle : adresse));
-      // Pas de nouvel envoi : rien n'a échoué, on rouvre une saisie interrompue.
-      if (reprise && !motif) setPhase('code');
+      // Pas de nouvel envoi : rien n'a échoué, on rouvre une saisie interrompue. **Le flux se relit
+      // avec l'adresse** : depuis que cet écran peut envoyer l'un ou l'autre, rouvrir au hasard
+      // ferait vérifier un code de connexion contre `email_change`, donc refuser un code valide.
+      if (reprise && !motif) setPhase({ kind: 'code', flux });
     });
     return () => {
       annule = true;
@@ -117,14 +141,32 @@ export default function ConnexionEmail() {
     }
 
     if (suite === 'bascule') {
-      // L'adresse a déjà un compte : la personne est au mauvais écran, pas en erreur. On le dit
-      // et on l'envoie vers « retrouver » avec l'adresse déjà mémorisée (elle l'est plus haut,
-      // avant l'appel, donc rien à faire ici).
+      // **L'adresse a déjà un compte, et on ne le dit plus** (arbitrage du 21/09/2026). L'écran de
+      // collision le disait, ce qui était honnête et offrait un choix — et faisait de cet écran un
+      // oracle sans plafond sur n'importe quelle adresse (vingt sondes d'affilée depuis une seule
+      // session anonyme, mesuré). On envoie donc un code de **connexion**, et la saisie qui suit est
+      // celle de l'autre branche, mot pour mot. Ce que la personne perd, elle le lit avant de taper :
+      // `consequenceDeLaSaisie` dit, au conditionnel, que ce code la ramènera à un compte que le
+      // bilan de cet appareil ne rejoindra pas.
+      const { error: erreurConnexion } = await demanderLaConnexion(email);
+      // **Trié par la même liste blanche que le premier envoi**, et c'est ce qui empêche la fuite de
+      // revenir par l'échec : une limite d'envoi et une panne de transport se disent, parce qu'elles
+      // arrivent aussi sur une adresse libre et ne parlent jamais de l'adresse. Tout le reste mène à
+      // la saisie. `otp_disabled` ne peut pas arriver ici — l'adresse existe, c'est ce qui nous a
+      // amenés dans cette branche.
+      if (suiteDeLaDemandeDeCode('connexion', erreurConnexion) === 'message') {
+        setEnvoi(false);
+        setMessage(messageDeLaDemande(erreurConnexion));
+        return;
+      }
+      await memoriserFluxDuCode('connexion');
       setEnvoi(false);
-      setPhase('deja-un-compte');
+      track('connexion_demande');
+      setPhase({ kind: 'code', flux: 'connexion' });
       return;
     }
 
+    await memoriserFluxDuCode('rattachement');
     setEnvoi(false);
     // **Une demande, pas un rattachement.** `connexion_success` n'est pas émis ici et ne l'a jamais
     // été depuis la correction du 11/09/2026 : il est émis par l'annonce de `/plan`, au constat de
@@ -132,10 +174,25 @@ export default function ConnexionEmail() {
     // mesure demandée le 20/09/2026, et elle ne tient que si ces deux émetteurs restent ce qu'ils
     // sont : retirer celui du plan ferait lire zéro succès par email.
     track('connexion_demande');
-    setPhase('code');
+    setPhase({ kind: 'code', flux: 'rattachement' });
   };
 
-  const codeAccepte = () => {
+  /**
+   * Ce qu'on fait de la session ouverte — **et c'est la seule chose que le flux décide encore, avec
+   * le `type` vérifié.** Les deux branches ne mènent pas au même endroit, et ça ne se voit pas :
+   * l'écran de saisie est identique, la différence arrive après que le code a été tapé.
+   */
+  const codeAccepte = async (flux: ContexteDuCode) => {
+    if (flux === 'connexion') {
+      // **On vient de changer d'utilisateur**, comme sur `/connexion/retrouver` et pour la même
+      // raison : les marques locales décrivent celui qu'on quitte — annonce de rattachement, étape
+      // du premier parcours (qui décide de la barre d'onglets), brouillon, et l'adresse mémorisée
+      // elle-même. La racine route ensuite vers le plan si le compte retrouvé porte un bilan
+      // complété, vers l'onboarding sinon.
+      await effacerLesMarquesLocales();
+      router.replace('/');
+      return;
+    }
     // **On ne relit rien ici, et c'est un correctif.** Cette fonction attendait un
     // `lireEtatDuRattachement()` dont elle jetait le résultat : un aller-retour réseau inséré entre
     // le dernier chiffre et le plan, pendant lequel la personne regardait l'écran de code d'un
@@ -144,54 +201,30 @@ export default function ConnexionEmail() {
     router.replace('/plan');
   };
 
-  if (phase === 'code') {
+  if (phase.kind === 'code') {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <SaisieDuCode
-            contexte="rattachement"
+            // Le flux décide le `type` vérifié et l'envoi du renvoi. Rien d'autre : ni un mot, ni un
+            // libellé, ni une carte — c'est `voix` qui gouverne tout ce qui se lit, et elle vaut
+            // « parti » dans les deux branches parce qu'un code est bel et bien parti dans les deux.
+            contexte={phase.flux}
+            voix="parti"
             adresse={email.trim()}
-            libelleBouton="Rattacher mon adresse"
-            onOuverte={codeAccepte}
+            // **Un seul libellé pour les deux branches, et il a dû perdre son verbe.** Il disait
+            // « Rattacher mon adresse », ce qui est faux quand l'adresse est déjà prise : rien n'est
+            // rattaché, on rejoint un compte. En mettre un par branche aurait rouvert l'oracle sur
+            // le bouton lui-même. C'est le second prix de l'arbitrage, après la phrase
+            // conditionnelle — et le moins cher des deux.
+            libelleBouton="Valider mon code"
+            onOuverte={() => codeAccepte(phase.flux)}
             onAutreAdresse={() => {
               setMessage(null);
-              setPhase('saisie');
+              setPhase({ kind: 'saisie' });
             }}
-            renvoyer={demanderLeRattachement}
+            renvoyer={phase.flux === 'connexion' ? demanderLaConnexion : demanderLeRattachement}
           />
-        </SafeAreaView>
-      </ThemedView>
-    );
-  }
-
-  if (phase === 'deja-un-compte') {
-    return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.centre}>
-            <ThemedText type="screenTitle">Cette adresse a déjà un compte</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              Le bilan que tu viens de faire ne peut pas le rejoindre, mais tu peux retrouver ton
-              compte : un code reçu par email t’y ramène.
-            </ThemedText>
-            <Button
-              title="Retrouver mon compte"
-              // **L'adresse ne passe pas par l'URL**, elle est relue en local à l'arrivée
-              // (`lireAdresseDuLien`). Un paramètre `email=` s'écrit dans la barre d'adresse sur
-              // web, donc dans l'historique du navigateur et son autocomplétion — sur un poste
-              // partagé, c'est le chemin par lequel une adresse se retrouve devant quelqu'un
-              // d'autre — et dans les journaux d'accès dès qu'on recharge ou met en favori.
-              onPress={() => router.replace({ pathname: '/connexion/retrouver', params: { source: 'email' } })}
-              style={styles.bouton}
-            />
-            <TextLink
-              label="Garder ce bilan sans compte"
-              onPress={() => router.replace('/plan')}
-              type="small"
-              themeColor="textTertiary"
-              style={styles.backLink}
-            />
-          </View>
         </SafeAreaView>
       </ThemedView>
     );

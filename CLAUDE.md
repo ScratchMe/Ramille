@@ -311,7 +311,9 @@ deux provenances que la mesure distingue — et depuis `/compte` (`compte`).
 `/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis **huit**
 endroits, et `SOURCES_RETROUVER` les énumère — le compte ne s'écrit ici que parce que la liste est
 la source, pas ce paragraphe. Quatre sont d'origine : l'accueil de l'onboarding (« J'ai déjà un
-compte »), `/connexion/email` quand l'adresse est déjà prise, `/connexion` sur une collision
+compte »), le lien délibéré « J'ai déjà un compte » du formulaire de `/connexion/email` — **et
+non plus l'adresse déjà prise, qui depuis le 21/09/2026 reçoit un code au lieu d'un écran**,
+`v1-28` §7.1 —, `/connexion` sur une collision
 Google, et un lien de connexion arrivé en **échec** (expiré, déjà utilisé), que le layout racine
 route ici avec son motif (`src/app/_layout.tsx`) — un lien valide, lui, ouvre la session et ne
 passe pas par cet écran. **Les quatre autres étaient muettes jusqu'au 20/09/2026** : les deux
@@ -791,12 +793,37 @@ pattern Expo documenté par Supabase : `makeRedirectUri()` + `WebBrowser.openAut
 faisait déjà tout le travail. Le seul chemin vers un compte **existant** (nouvel appareil) est
 `sendAccountAccessLink` (`signInWithOtp` avec `shouldCreateUser: false`), écran
 `/connexion/retrouver`, atteignable depuis l'accueil de l'onboarding (« J'ai déjà un compte »)
-et depuis `/connexion/email` — qui y renvoie aussi de lui-même quand `updateUser` répond
-`email_exists`. Trois règles gardées par `src/types/connexion.ts` : une adresse inconnue
+et depuis le lien du même nom sur le formulaire de `/connexion/email`. Trois règles gardées par
+`src/types/connexion.ts` : une adresse inconnue
 (`422 otp_disabled`) mène au **même** écran qu'un envoi réussi, sinon l'écran dit qui utilise
 Ramille ; la limite d'envoi se reconnaît au **code** `over_email_send_rate_limit`, jamais au
 message ; et un appareil qui porte déjà un bilan anonyme voit l'écran de collision avant le
-formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laisse choisir. Sur
+formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laisse choisir. **Cet
+écran-là n'est pas l'oracle fermé le 21/09/2026 et ne se « corrige » pas par symétrie** : il ne se
+rend que sur `/connexion/retrouver`, où la personne vient chercher un compte **existant** et où il
+n'y a donc rien à taire ; ce qui a disparu est l'écran homonyme de `/connexion/email`, qui, lui,
+répondait « cette adresse a-t-elle un compte ? » à qui n'avait rien demandé.
+
+**`/connexion/email` envoie désormais un code dans les deux cas, et l'écran ne dit pas lequel**
+(arbitrage du 21/09/2026, `v1-28` §7.1). Une adresse libre reçoit un code de **rattachement**, une
+adresse prise un code de **connexion** — et les deux atterrissent sur le **même** écran de code.
+L'oracle qu'on ferme là était mesuré, pas supposé : une seule session anonyme a sondé vingt fois de
+suite la même adresse prise, vingt refus, aucun plafond. Trois choses à ne pas reconfondre :
+
+- **Le contexte suit la branche, la voix suit l'écran hôte.** `ContexteDuCode` décide le `type`
+  envoyé à l'API (`email_change` / `email`) et **doit** suivre la branche, les deux flux ne se
+  croisant pas. `VoixDeLaSaisie` (`parti` | `peut_etre`) décide ce que l'écran a le droit
+  d'**affirmer**, et c'est une propriété de l'hôte : `/connexion/email` est en `parti` dans ses
+  **deux** branches. Les confondre rouvrirait par le texte l'oracle fermé par le mécanisme — le
+  mécanisme serait juste et la fuite intacte. Détail et gardes en `FRONT.md` §2.7 bis.
+- **La phrase conditionnelle est le prix de l'arbitrage**, et son « si » n'est pas du style : « S'il
+  existait déjà un compte Ramille à cette adresse, ce code t'y ramène — et le bilan de cet appareil
+  ne l'y rejoindra pas. » Vraie dans les deux branches, donc montrable aux deux ; et posée **avant**
+  la saisie du code, ce qui laisse la sortie. À l'indicatif, elle redeviendrait l'oracle.
+- **Ce que ça ne ferme pas** : le renvoi depuis la branche de rattachement peut encore échouer si
+  l'adresse a été prise entre les deux envois. Le message y reste le générique, qui ne nomme pas
+  l'état de l'adresse, et l'atteindre demande une course que seul celui qui a pris l'adresse peut
+  provoquer. Sur
 natif, le lien arrive hors de l'app (messagerie) et remonte par `Linking.useURL()` dans
 `_layout.tsx` ; le scheme `ramille://` doit donc figurer dans les Redirect URLs Supabase.
 

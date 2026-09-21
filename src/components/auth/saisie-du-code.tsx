@@ -12,6 +12,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { verifierLeCode } from '@/lib/auth';
 import {
   codeSemblePlausible,
+  consequenceDeLaSaisie,
   corpsDeLaSaisie,
   issueDeLaVerification,
   LONGUEUR_DU_CODE,
@@ -22,6 +23,7 @@ import {
   suiteDuRenvoi,
   type IssueDeLaVerification,
   type ContexteDuCode,
+  type VoixDeLaSaisie,
   type ErreurAuth,
 } from '@/types/connexion';
 
@@ -38,9 +40,18 @@ import {
  * un `email_change`, `connexion` un `email`, et les deux ne se croisent pas (mesuré le
  * 20/09/2026 : `403 otp_expired` dans les deux sens). C'est ce qui rend la bascule de
  * `/connexion/email` sûre sans un mot de plus à l'écran.
+ *
+ * **Et depuis le 21/09/2026 le contexte ne décide PLUS les mots** : c'est `voix` qui s'en charge, et
+ * les deux ne sont pas la même chose. Le contexte suit la **branche** (adresse libre ou prise) ; la
+ * voix suit l'**écran hôte** et ne bouge pas d'une branche à l'autre. Les laisser confondus
+ * rouvrirait par le texte l'oracle que `/connexion/email` ferme par le mécanisme — le corps, la
+ * carte, le pied et le message de renvoi diffèrent tous entre les deux contextes, donc chacun
+ * répondrait « cette adresse a-t-elle un compte ? » à qui sait lire. `src/types/connexion.ts` le
+ * dit en long sur `VoixDeLaSaisie`.
  */
 export function SaisieDuCode({
   contexte,
+  voix,
   adresse,
   libelleBouton,
   onOuverte,
@@ -48,6 +59,8 @@ export function SaisieDuCode({
   renvoyer,
 }: {
   contexte: ContexteDuCode;
+  /** Ce que l'écran a le droit d'affirmer — propriété de l'hôte, jamais de la branche. */
+  voix: VoixDeLaSaisie;
   adresse: string;
   libelleBouton: string;
   onOuverte: () => void | Promise<void>;
@@ -64,6 +77,7 @@ export function SaisieDuCode({
   // « Ce code ne marche pas » juste après qu'il a marché. Même raison que le verrou de soumission
   // du questionnaire.
   const enCours = useRef(false);
+  const consequence = consequenceDeLaSaisie(voix, APP_NAME);
 
   /** Rouvre l'écran après un refus, ou après une panne : le verrou et le bouton ensemble. */
   const relacher = (texte: string | null) => {
@@ -142,7 +156,7 @@ export function SaisieDuCode({
     setMessage(
       suiteDuRenvoi(contexte, error) === 'message'
         ? messageDeLaDemande(error)
-        : messageDuRenvoi(contexte)
+        : messageDuRenvoi(voix)
     );
   };
 
@@ -151,11 +165,20 @@ export function SaisieDuCode({
       <View style={styles.bloc}>
         <ThemedText type="screenTitle">Regarde tes emails</ThemedText>
         <ThemedText type="body" themeColor="textSecondary">
-          {corpsDeLaSaisie(contexte, adresse, APP_NAME)}
+          {corpsDeLaSaisie(voix, adresse, APP_NAME)}
         </ThemedText>
+        {/* **La phrase qui remplace l'écran de collision**, et le prix de l'arbitrage du
+            21/09/2026 : conditionnelle, donc vraie dans les deux branches, donc montrable dans les
+            deux sans rien divulguer — et posée AVANT que le code soit tapé, ce qui laisse la sortie.
+            Elle ne se rend qu'en voix « parti » ; `consequenceDeLaSaisie` rend `null` ailleurs. */}
+        {consequence && (
+          <ThemedText type="body" themeColor="textSecondary">
+            {consequence}
+          </ThemedText>
+        )}
       </View>
 
-      {contexte === 'connexion' && (
+      {voix === 'peut_etre' && (
         <ThemedView type="backgroundSelected" style={styles.carte}>
           <ThemedText type="small" weight={600}>
             Le code ne crée jamais de compte
@@ -194,9 +217,16 @@ export function SaisieDuCode({
           themeColor="textTertiary"
           style={styles.centre}
         />
-        {contexte === 'rattachement' && (
+        {/* **Le pied suit la voix, et sa promesse a dû rétrécir pour rester vraie.** Il disait « tu
+            retrouves la saisie du code depuis “Toi” » : c'est vrai quand l'adresse était libre — la
+            session porte alors une adresse en attente, et « Toi » ouvre la porte —, et **faux quand
+            elle était prise**, puisque `updateUser` a échoué et que rien n'est en attente. Le garder
+            tel quel et le montrer dans les deux branches aurait été une phrase fausse une fois sur
+            deux ; ne le montrer que dans l'une aurait rouvert l'oracle. Ce qui reste vrai des deux
+            côtés, c'est que l'adresse est gardée localement et qu'on repasse par « Toi ». */}
+        {voix === 'parti' && (
           <ThemedText type="small" themeColor="textTertiary" style={styles.centre}>
-            Si tu quittes cet écran, tu retrouves la saisie du code depuis « Toi ».
+            Si tu quittes cet écran, ton adresse reste gardée ici : tu peux reprendre depuis « Toi ».
           </ThemedText>
         )}
       </View>

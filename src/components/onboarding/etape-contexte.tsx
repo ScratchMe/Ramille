@@ -49,7 +49,7 @@ export function EtapeContexte({ onSuivant }: { onSuivant: () => void }) {
               {formatTonnesTexte(TARGET_2050_TOTAL_T)} visées en 2050
             </ThemedText>
             <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
-              C&apos;est l&apos;empreinte annuelle moyenne d&apos;une personne en France, et la
+              C’est l’empreinte annuelle moyenne d’une personne en France, et la
               cible pour 2050.
             </ThemedText>
           </View>

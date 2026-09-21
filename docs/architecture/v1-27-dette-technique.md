@@ -867,12 +867,35 @@ pas celle de la typographie française.
 qu'aucune garde ne voit — le linter, lui, ne réclame l'échappement que de l'apostrophe ASCII, donc
 écrire `’` directement en JSX passe très bien (`src/app/compte/index.tsx` le fait déjà).
 
-**Ce qui a été corrigé** : les textes écrits par le chantier du moment du compte, là où il en
-écrivait. **Ce qui reste** : neuf occurrences dans cinq fichiers, dont cinq dans
-`src/app/connexion/retrouver.tsx`. Le correctif est mécanique et sans risque ; il n'a pas été fait
-ici pour ne pas mélanger un balayage typographique à un chantier de sécurité, et parce que rien ne
-garde le résultat — ajouter une règle qui interdirait `&apos;` dans le JSX serait le vrai correctif,
-et c'est ce qu'il faudra faire plutôt qu'un remplacement de plus.
+**Ce qui a été corrigé le 20/09** : les textes écrits par le chantier du moment du compte, là où
+il en écrivait. Le reste n'a pas été fait ce jour-là pour ne pas mélanger un balayage typographique
+à un chantier de sécurité, et parce que rien n'aurait gardé le résultat.
+
+**Soldé le 21/09/2026**, empilé sur la PR du chantier de l'oracle — cinq des occurrences vivaient
+dans `src/app/connexion/retrouver.tsx`, que cette PR touchait déjà, donc les séparer aurait fait
+deux PR sur le même fichier pour un remplacement mécanique. Ce qui a été fait est **la règle**, pas
+le remplacement : `no-restricted-syntax` interdit désormais `&apos;` dans tout `src/**/*.tsx`, aux
+deux places de la grammaire où il peut apparaître (le texte d'un élément, la chaîne d'un attribut).
+
+Trois choses relevées en le faisant, et les trois sont des leçons plutôt que des lignes :
+
+- **Le compte de ce paragraphe était faux, exactement du défaut que la §6 décrit.** « Neuf
+  occurrences » comptait les **lignes** rendues par `grep -n` ; il y en avait **onze**, dont trois
+  sur une même ligne d'`etape-contexte.tsx`. Un compte écrit dans un document se périme, et
+  celui-ci n'était même pas juste le jour où il a été écrit.
+- **La première version de la règle était inerte, et seule la mutation l'a dit.** Elle portait
+  `JSXText[value=/&apos;/]`, et le lint est resté vert sur un `&apos;` fraîchement remis dans le
+  texte. La cause, trouvée en dumpant l'AST plutôt qu'en raisonnant : le parseur **décode déjà**
+  l'entité, donc `value` vaut `Tu n'as pas` là où la source dit `Tu n&apos;as pas`. Seul `raw`
+  porte ce que le fichier contient. C'est le cas d'école de la règle du dépôt — sans le passage
+  qui casse, on livrait une garde qui ne garde rien, en croyant le sujet fermé.
+- **Et le commentaire de cette règle affirmait une différence qui n'existe pas** : que l'entité
+  serait décodée dans le texte mais pas dans une chaîne d'attribut. Le même dump montre que
+  l'attribut est décodé pareil. La phrase a été corrigée en même temps que le sélecteur.
+
+Deux mutations datées gardent la règle (l'entité dans un texte, puis dans un attribut) ; ce qui lui
+**échappe** est écrit dans son commentaire plutôt que tu : une chaîne de `.ts` hors JSX, et un
+littéral construit par concaténation ou par gabarit.
 
 
 ### 12.14 Les deux contre-lectures du chantier du compte, faites APRÈS la fusion (21/09/2026)

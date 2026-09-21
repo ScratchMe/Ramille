@@ -17,6 +17,18 @@
  * et les deux branches ne se disputent aucune erreur réelle. Le commentaire a été corrigé plutôt
  * que le test rendu capable de tomber sur une entrée que le SDK ne produit jamais : c'est
  * exactement le piège déjà consigné pour le 500 sans `name`.
+ *
+ * **Trois mutations de plus le 21/09/2026**, sur l'arbitrage de la troisième voie (`v1-28` §7.1) :
+ *
+ * | Mutation | Ce qui tombe |
+ * | --- | --- |
+ * | `messageDeLaDemande` nomme l'adresse prise (« Cette adresse a déjà un compte. ») | « coupe l'annonce d'un code qui n'est pas parti, sans rien dire de l'adresse » |
+ * | `corpsDeLaSaisie` reçoit un quatrième paramètre `flux` | « ne laisse pas le flux entrer dans les phrases de l'écran de code » |
+ * | le même paramètre, mais **à valeur par défaut** | **rien** — `Function.length` ne le compte pas |
+ *
+ * La troisième est le relevé qui compte : elle dit la forme exacte que la garde d'arité ne voit
+ * pas, et c'est pour ça qu'elle est écrite ici plutôt que tue. Ce qui la rattrape est l'assertion 6
+ * de `scripts/verifier-code-de-connexion.mjs`, qui lit le texte rendu et non la signature.
  */
 
 import {
@@ -35,6 +47,7 @@ import {
   MOTIFS_RETOUR_LIEN,
   chiffresDuCode,
   codeSemblePlausible,
+  consequenceDeLaSaisie,
   corpsDeLaSaisie,
   issueDeLaVerification,
   LONGUEUR_DU_CODE,
@@ -572,14 +585,24 @@ describe('suiteDuRenvoi', () => {
   });
 
   /**
-   * L'adresse prise ne peut arriver qu'en rattachement — `signInWithOtp` ne rattache rien — et là
-   * il n'y a rien à taire : le produit le dit déjà au premier envoi. Elle se dit, parce qu'annoncer
-   * un code parti quand rien n'est parti ferait attendre pour rien.
+   * L'adresse prise ne peut arriver qu'en rattachement — `signInWithOtp` ne rattache rien —, et
+   * depuis l'arbitrage du 21/09/2026 elle n'y arrive plus que par une **course** : le premier envoi
+   * détourne une adresse prise vers le flux de connexion, donc il faut qu'elle ait été libre au
+   * premier envoi et prise au second. Ce que `message` achète est l'absence de cul-de-sac — un code
+   * annoncé quand `updateUser` vient de refuser ferait attendre pour rien —, et il ne divulgue rien
+   * parce que le texte qui suit (`messageDeLaDemande`) ne nomme pas l'état de l'adresse. Ce
+   * commentaire a dit jusqu'au 21/09/2026 « le produit le dit déjà au premier envoi » : il ne le dit
+   * plus nulle part, et garder cette phrase aurait invité à faire nommer l'adresse par le message.
    */
-  it('dit l’adresse déjà prise en rattachement, et la tait dans l’autre flux', () => {
+  it('coupe l’annonce d’un code qui n’est pas parti, sans rien dire de l’adresse', () => {
     const prise = { code: 'email_exists', status: 422 };
     expect(suiteDuRenvoi('rattachement', prise)).toBe('message');
     expect(suiteDuRenvoi('connexion', prise)).toBe('renvoye');
+    // Et la seconde moitié de la promesse : le texte que ce `message` fait afficher est le
+    // générique, mot pour mot celui d'une erreur qui ne parle pas de l'adresse. Sans cette
+    // assertion, le commentaire ci-dessus décrirait une propriété que rien ne tient.
+    expect(messageDeLaDemande(prise)).toBe(messageDeLaDemande({ code: 'validation_failed' }));
+    expect(messageDeLaDemande(prise)).not.toMatch(/compte|adresse déjà|existe/i);
   });
 
   /**
@@ -641,30 +664,93 @@ describe('les phrases de la demande et de la saisie', () => {
   });
 
   /**
-   * **La différence entre les deux contextes EST la non-divulgation.** En rattachement, la
-   * personne vient de taper l'adresse et un code est parti : on l'affirme. En connexion, on ne
-   * peut pas l'affirmer sans dire si l'adresse a un compte — d'où le « si ». Recopier la
-   * première phrase dans le second serait la fuite exacte que « retrouver » existe pour éviter.
+   * **La différence entre les deux VOIX est la non-divulgation, et elle ne suit plus le flux.**
+   * `parti` affirme qu'un code est parti, parce que c'est vrai dans les deux branches de
+   * `/connexion/email` depuis l'arbitrage du 21/09/2026. `peut_etre` ne peut pas l'affirmer sans
+   * dire si l'adresse a un compte — d'où le « si ». Recopier la première phrase dans la seconde
+   * serait la fuite exacte que « retrouver » existe pour éviter.
    */
   it('n’affirme qu’un code est parti que là où c’est vrai', () => {
-    const rattachement = corpsDeLaSaisie('rattachement', 'camille@exemple.fr', 'Ramille');
-    const connexion = corpsDeLaSaisie('connexion', 'camille@exemple.fr', 'Ramille');
-    expect(rattachement).toContain('camille@exemple.fr');
-    expect(rattachement).not.toMatch(/^Si /);
-    expect(connexion).toMatch(/^Si un compte Ramille existe/);
-    expect(connexion).not.toContain('camille@exemple.fr');
+    const parti = corpsDeLaSaisie('parti', 'camille@exemple.fr', 'Ramille');
+    const peutEtre = corpsDeLaSaisie('peut_etre', 'camille@exemple.fr', 'Ramille');
+    expect(parti).toContain('camille@exemple.fr');
+    expect(parti).not.toMatch(/^Si /);
+    expect(peutEtre).toMatch(/^Si un compte Ramille existe/);
+    expect(peutEtre).not.toContain('camille@exemple.fr');
   });
 
   it('dit la longueur du code, et la même des deux côtés', () => {
-    for (const contexte of ['rattachement', 'connexion'] as const) {
-      expect(corpsDeLaSaisie(contexte, 'camille@exemple.fr', 'Ramille')).toContain(
+    for (const voix of ['parti', 'peut_etre'] as const) {
+      expect(corpsDeLaSaisie(voix, 'camille@exemple.fr', 'Ramille')).toContain(
         `${LONGUEUR_DU_CODE} chiffres`
       );
     }
   });
 
   it('garde le même « si » au renvoi', () => {
-    expect(messageDuRenvoi('rattachement')).not.toMatch(/^Si /);
-    expect(messageDuRenvoi('connexion')).toMatch(/^Si un compte existe/);
+    expect(messageDuRenvoi('parti')).not.toMatch(/^Si /);
+    expect(messageDuRenvoi('peut_etre')).toMatch(/^Si un compte existe/);
+  });
+
+  /**
+   * **La garde de l'arbitrage du 21/09/2026 — et elle a d'abord été écrite en tautologie.**
+   *
+   * `/connexion/email` envoie un code dans les deux branches — rattachement si l'adresse est libre,
+   * connexion si elle est prise — et les deux doivent être **indistinguables à l'écran**. Le
+   * mécanisme ne suffit pas : si un seul mot suivait le flux au lieu de la voix, l'oracle qu'on
+   * ferme par l'envoi se rouvrirait par le texte.
+   *
+   * La première version appelait les trois fonctions deux fois et comparait les deux résultats.
+   * Trois fonctions pures appelées avec les mêmes arguments rendent toujours la même chose : elle
+   * ne pouvait tomber sous **aucune** mutation, pas même celle que son commentaire annonçait
+   * (ajouter un quatrième paramètre laisse les appels à trois arguments parfaitement égaux entre
+   * eux). Relevée en contre-lisant ce chantier le 21/09/2026, même famille que les trois
+   * tautologies déjà mesurées.
+   *
+   * Ce qui garde vraiment est l'**arité** : la voix et l'adresse entrent, le flux n'entre pas. Lui
+   * rouvrir une porte change le compte de paramètres, et ce test tombe — mesuré, un quatrième
+   * paramètre `flux` le fait tomber.
+   *
+   * **Et il lui échappe deux formes, toutes deux mesurées le 21/09/2026 plutôt que supposées** —
+   * une garde déclarative ne s'annonce jamais exhaustive :
+   *   - un paramètre **à valeur par défaut** (`flux: ContexteDuCode = 'rattachement'`) ne compte
+   *     pas dans `Function.length`, donc la suite reste verte ;
+   *   - un hôte qui passerait `voix={flux === 'connexion' ? …}` laisserait ces trois fonctions
+   *     parfaitement pures et l'écran mentirait quand même.
+   *
+   * Les deux sont tenues par l'assertion 6 de `scripts/verifier-code-de-connexion.mjs`, qui compare
+   * les deux branches **réellement rendues**, adresse masquée : c'est elle qui voit le texte, et ce
+   * test-ci ne garde que la porte d'entrée.
+   */
+  it('ne laisse pas le flux entrer dans les phrases de l’écran de code', () => {
+    // La voix et l'adresse, jamais le flux : trois paramètres, deux, un.
+    expect(corpsDeLaSaisie).toHaveLength(3);
+    expect(consequenceDeLaSaisie).toHaveLength(2);
+    expect(messageDuRenvoi).toHaveLength(1);
+    // Et les trois surfaces sont bien renseignées à la voix des deux branches, sans quoi garder
+    // leur signature ne garderait rien.
+    const surfaces = [
+      corpsDeLaSaisie('parti', 'camille@exemple.fr', 'Ramille'),
+      consequenceDeLaSaisie('parti', 'Ramille'),
+      messageDuRenvoi('parti'),
+    ];
+    expect(surfaces.every((phrase) => phrase !== null && phrase.length > 0)).toBe(true);
+  });
+
+  /**
+   * **La phrase conditionnelle est le prix de l'arbitrage, et elle doit rester conditionnelle.**
+   * Écrite à l'indicatif (« cette adresse a déjà un compte »), elle redeviendrait l'oracle que
+   * l'écran de collision était. Le « si » n'est donc pas du style : c'est ce qui la rend vraie sur
+   * une adresse libre, donc montrable aux deux.
+   */
+  it('n’annonce la conséquence qu’au conditionnel, et seulement quand un code est parti', () => {
+    const phrase = consequenceDeLaSaisie('parti', 'Ramille');
+    expect(phrase).toMatch(/^S’il existait déjà un compte Ramille/);
+    expect(phrase).toContain('ne l’y rejoindra pas');
+    // Aucune affirmation sur l'adresse : ni son nom, ni un verbe au présent qui trancherait.
+    expect(phrase).not.toContain('camille@exemple.fr');
+    expect(phrase).not.toMatch(/a déjà un compte/);
+    // En « peut_etre », un code n'est peut-être jamais parti : il n'y a pas de conséquence à dire.
+    expect(consequenceDeLaSaisie('peut_etre', 'Ramille')).toBeNull();
   });
 });

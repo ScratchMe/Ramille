@@ -34,7 +34,7 @@ export function EtapeReassurance({ onSuivant }: { onSuivant: () => void }) {
             </ThemedText>
             <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
               Tes réponses restent privées. Aucun classement, aucune comparaison avec
-              d&apos;autres utilisateurs.
+              d’autres utilisateurs.
             </ThemedText>
             {/* **Rien ne menait aux pages légales avant la première écriture serveur** (C3.9,
                 constat A1-9), alors que la session anonyme est ouverte dès le lancement : la

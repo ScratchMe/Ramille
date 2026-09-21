@@ -73,6 +73,40 @@ export async function lireAdresseDuLien(): Promise<string | null> {
   }
 }
 
+// Le flux dans lequel le dernier code a été demandé depuis cet appareil — `rattachement` ou
+// `connexion`.
+//
+// **Il existe parce que l'écran de rattachement peut désormais envoyer l'un OU l'autre** (arbitrage
+// du 21/09/2026, `v1-28` §7.1) : une adresse libre reçoit un code de rattachement, une adresse déjà
+// prise un code de connexion, et l'écran ne dit pas laquelle. Or les deux codes ne se vérifient pas
+// avec le même `type` — un code émis pour l'un et présenté à l'autre rend `403 otp_expired`
+// (mesuré le 20/09/2026). Sans cette marque, la reprise depuis « Toi » (`?reprise=1`) rouvrirait
+// donc la saisie avec le mauvais type, et refuserait un code parfaitement valide.
+//
+// Deux choses qu'elle n'est pas. Ce n'est pas une divulgation : elle ne dit rien que la personne
+// n'ait tapé elle-même, et elle ne vit que sur son appareil. Et ce n'est pas une source de vérité :
+// une valeur illisible ou inconnue retombe sur `rattachement`, qui est le flux de cet écran depuis
+// toujours — au pire un code est refusé et « Renvoyer un code » repart du bon pied.
+const FLUX_KEY = 'traceverte.dernier_flux_de_code.v1';
+
+export type FluxMemorise = 'rattachement' | 'connexion';
+
+export async function memoriserFluxDuCode(flux: FluxMemorise): Promise<void> {
+  try {
+    await AsyncStorage.setItem(FLUX_KEY, flux);
+  } catch {
+    // best-effort : au pire la reprise repart sur le rattachement, et le renvoi rattrape.
+  }
+}
+
+export async function lireFluxDuCode(): Promise<FluxMemorise> {
+  try {
+    return (await AsyncStorage.getItem(FLUX_KEY)) === 'connexion' ? 'connexion' : 'rattachement';
+  } catch {
+    return 'rattachement';
+  }
+}
+
 // Marque locale « on a déjà dit que le re-bilan avait emporté l'engagement » (C2.2).
 //
 // Quand un nouveau bilan change le poste dominant, le gabarit engagé peut disparaître du plan.

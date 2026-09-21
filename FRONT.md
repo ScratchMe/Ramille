@@ -493,7 +493,8 @@ supprimer —, et ils partagent **un** composant (`SaisieDuCode`) qui en porte u
 en C5.2, et elle vaut ici encore plus, parce que ce qui doit rester identique entre les trois est la
 **règle de non-divulgation**.
 
-Six points, dans l'ordre où ils se cassent :
+Les points à connaître, dans l'ordre où ils se cassent — sans les compter, un compte écrit ici se
+périmerait en silence au prochain passage :
 
 - **Un seul champ, jamais huit cases.** Huit cases coûtent huit champs à un lecteur d'écran, un
   composant qui gère le focus à la frappe et au collé, et n'apportent rien qu'un champ centré ne
@@ -513,11 +514,34 @@ Six points, dans l'ordre où ils se cassent :
 - **Le champ garde ses chiffres sur un refus, et ne se vide qu'au renvoi.** Sur un refus, la personne
   compare avec son e-mail ; au renvoi, l'ancien code vient d'être invalidé (mesuré), donc garder ses
   chiffres ferait réessayer un code mort.
-- **Le corps de l'écran change avec le contexte, et la différence EST la non-divulgation.** En
-  rattachement on affirme qu'un code est parti (la personne vient de taper l'adresse) ; en connexion
-  on ne peut pas l'affirmer sans dire si l'adresse a un compte, d'où le « si ». Recopier la première
-  phrase dans la seconde serait la fuite exacte que « retrouver » existe pour éviter, et un test la
-  garde.
+- **Le corps de l'écran suit la VOIX, et la voix n'est pas le contexte** (arbitrage du 21/09/2026,
+  `v1-28` §7.1). Ce fichier a écrit jusqu'à ce jour que « le corps change avec le contexte, et la
+  différence EST la non-divulgation » : c'est devenu faux, et faux dans le sens qui **dicte une
+  régression** — l'appliquer rouvrirait l'oracle. Deux notions distinctes :
+  - **`ContexteDuCode` décide le `type` envoyé à l'API** (`email_change` ou `email`) et **suit la
+    branche** — une adresse libre est rattachée, une adresse prise rouvre son compte. Il le doit :
+    les deux flux ne se croisent pas, un code présenté au mauvais rend `403 otp_expired`.
+  - **`VoixDeLaSaisie` (`parti` | `peut_etre`) décide ce que l'écran a le droit d'AFFIRMER**, et
+    c'est une propriété de l'**hôte** : elle ne bouge pas d'une branche à l'autre.
+  `/connexion/email` est en voix `parti` **dans ses deux branches**, parce qu'un code part
+  réellement dans les deux et que la personne vient de taper l'adresse ; `/connexion/retrouver` et
+  `/compte/suppression` sont en `peut_etre`, où `shouldCreateUser: false` fait qu'une adresse
+  inconnue ne reçoit rien, d'où le « si ». Faire suivre la voix au contexte rendrait le mécanisme
+  juste et la fuite intacte : n'importe qui lirait dans la phrase si l'adresse a un compte. Recopier
+  la phrase de `parti` dans `peut_etre` serait la même fuite par l'autre bout. Un test unitaire
+  garde la porte d'entrée (le flux n'entre dans aucune des trois dérivations), et l'assertion 6 de
+  `scripts/verifier-code-de-connexion.mjs` compare les deux branches réellement rendues.
+- **Une phrase conditionnelle est le prix de cet arbitrage, et elle ne se rend qu'en voix `parti`**
+  (`consequenceDeLaSaisie`) : « S'il existait déjà un compte Ramille à cette adresse, ce code t'y
+  ramène — et le bilan de cet appareil ne l'y rejoindra pas. » Au conditionnel, donc vraie dans les
+  deux branches, donc montrable aux deux ; et **avant** que le code soit tapé, ce qui laisse la
+  sortie. L'écrire à l'indicatif la rendrait l'oracle que l'écran de collision était. En
+  `peut_etre`, elle est nulle : un code n'est peut-être jamais parti, et il n'y a pas de bilan de
+  cet appareil à laisser derrière soi.
+- **Le libellé du bouton est un seul pour les deux branches, et il a dû perdre son verbe.** Il
+  disait « Rattacher mon adresse », faux quand l'adresse est déjà prise — rien n'est rattaché, on
+  rejoint un compte. En mettre un par branche aurait rouvert l'oracle sur le bouton lui-même, d'où
+  « Valider mon code ».
 - **Le libellé annoncé dit la longueur** (« Code reçu par email, huit chiffres »), parce que c'est ce
   qu'on ne peut pas voir — règle §1.4.
 
