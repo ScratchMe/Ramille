@@ -39,7 +39,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(31);
 
 -- ── La forme de la question de maintien ─────────────────────────────────────────────────
 
@@ -88,7 +88,8 @@ from unnest(array[
   'e2500000-0000-0000-0000-000000000003',        -- C : loisirs rares, voiture au foyer
   'e2500000-0000-0000-0000-000000000004',        -- D : bilan à zéro, sans trajet régulier
   'e2500000-0000-0000-0000-000000000005',        -- E : loisirs rares, aucun véhicule au foyer
-  'e2500000-0000-0000-0000-000000000006'         -- F : témoin, loisirs déclarés
+  'e2500000-0000-0000-0000-000000000006',        -- F : témoin, loisirs déclarés
+  'e2500000-0000-0000-0000-000000000007'         -- G : l'autocar pour seule base déclarée (C4.4)
 ]) u;
 
 update public.profiles set reminder_channel = 'email' where id::text like 'e2500000%';
@@ -98,10 +99,12 @@ select a, u, 'completed', now()
 from unnest(
   array['e2510000-0000-0000-0000-000000000001'::uuid, 'e2510000-0000-0000-0000-000000000002',
         'e2510000-0000-0000-0000-000000000003', 'e2510000-0000-0000-0000-000000000004',
-        'e2510000-0000-0000-0000-000000000005', 'e2510000-0000-0000-0000-000000000006'],
+        'e2510000-0000-0000-0000-000000000005', 'e2510000-0000-0000-0000-000000000006',
+        'e2510000-0000-0000-0000-000000000007'],
   array['e2500000-0000-0000-0000-000000000001'::uuid, 'e2500000-0000-0000-0000-000000000002',
         'e2500000-0000-0000-0000-000000000003', 'e2500000-0000-0000-0000-000000000004',
-        'e2500000-0000-0000-0000-000000000005', 'e2500000-0000-0000-0000-000000000006']
+        'e2500000-0000-0000-0000-000000000005', 'e2500000-0000-0000-0000-000000000006',
+        'e2500000-0000-0000-0000-000000000007']
 ) as t(a, u);
 
 -- A : va au travail à vélo, sort rarement, aucun voyage. Le profil du constat A13-3.
@@ -145,12 +148,22 @@ insert into public.assessment_answers (assessment_id, commute_has_regular_trip, 
 values ('e2510000-0000-0000-0000-000000000006', true, 5, 20, 'voiture', 'thermique', 'weekly',
         'voiture', '15_30', 'thermique', '1', 'periurbain', 'bon');
 
+-- G : **aucune sortie, aucun vol, aucun train, aucune voiture — quatre longs trajets en autocar**
+-- (C4.4). Le filtre de base déclarée énumère les compteurs un par un, et ce profil est celui
+-- qu'il oubliait : un poste réel (« Voyages longue distance (Autocar) », 105 kg/an), un plan
+-- portant « Remplacer un de tes longs trajets en autocar par le train », et aucun point mensuel —
+-- donc jamais la question que cette action existe pour refermer.
+insert into public.assessment_answers (assessment_id, commute_has_regular_trip,
+  leisure_frequency, coach_long_trips_per_year, household_vehicles, zone_type, tc_access)
+values ('e2510000-0000-0000-0000-000000000007', false, 'rarely', 4, '0', 'rural', 'limite');
+
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000001');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000002');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000003');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000004');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000005');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000006');
+select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000007');
 
 -- ── 1. Le cycliste reçoit une question de maintien ──────────────────────────────────────
 
@@ -215,6 +228,23 @@ select is(
    where user_id = 'e2500000-0000-0000-0000-000000000006' and loop_type = 'extras'),
   1,
   'témoin : des sorties déclarées donnent bien un point mensuel — le filtre ne ferme pas la boucle'
+);
+
+-- **Le quatrième compteur compte comme les trois autres** (C4.4, relevé en contre-lisant la PR :
+-- le filtre les énumère à la main et l'autocar y manquait). Cette assertion est ce qui tombera le
+-- jour où un cinquième compteur s'ajoutera sans sa ligne — et le libellé dit où aller.
+select is(
+  (select count(*)::int from public.engagement_checkins
+   where user_id = 'e2500000-0000-0000-0000-000000000007' and loop_type = 'extras'),
+  1,
+  'l''autocar est une base déclarée : quatre longs trajets en car donnent un point mensuel (filtre de generate_extras_checkins)'
+);
+
+select is(
+  (select trip_label from public.engagement_checkins
+   where user_id = 'e2500000-0000-0000-0000-000000000007' and loop_type = 'extras'),
+  'Voyages longue distance (Autocar)',
+  'et le point nomme le poste par le mode réel, pas par un résiduel'
 );
 
 -- La question de maintien n'existe **que** sur la boucle hebdomadaire : aller au travail à vélo

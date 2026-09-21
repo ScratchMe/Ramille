@@ -552,6 +552,15 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   (`recompute_assessment_results` lève sans elles), ce sont les **fixtures de test** qui s'en
   passaient. Et un bilan à zéro nomme le poste où quelque chose est déclaré : plus de
   « Trajet domicile-travail () ».
+  **Ce filtre énumère les compteurs de voyages un par un, donc ajouter une réponse au questionnaire
+  impose d'ajouter sa ligne ici** — relevé en contre-lisant C4.4, qui avait livré l'autocar sans :
+  un profil dont les seuls longs trajets sont en car avait un poste réel, un plan portant
+  « Remplacer un de tes longs trajets en autocar par le train », et **aucun point mensuel**, donc
+  jamais la question que cette action existe pour refermer. Ce qui l'a trouvé n'est pas une
+  relecture du diff mais le fait de **jouer les deux crons de 6 h** sur un profil neuf ; ce qui le
+  garde est une assertion de `20_qui_recoit_quelle_boucle.test.sql`, qui tombera au cinquième
+  compteur. C'est la même forme que le défaut de la soumission du bilan trouvé le même jour : une
+  liste de réponses écrite à la main, qui se périme en silence.
 
 **Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
 (C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement

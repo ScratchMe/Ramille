@@ -882,6 +882,91 @@ $function$;
 drop function if exists public.resolve_mode(text, text, text);
 
 -- ---------------------------------------------------------------------------------------------
+-- 7 bis. La boucle mensuelle reconnaît l'autocar comme une base déclarée
+-- ---------------------------------------------------------------------------------------------
+--
+-- **Relevé en contre-lisant la PR, en jouant les deux crons de 6 h plutôt qu'en les raisonnant.**
+-- `generate_extras_checkins` ne génère le point mensuel que si la personne a **déclaré** quelque
+-- chose — sans ce filtre, un profil qui sort rarement et n'a ni vol ni long trajet recevrait chaque
+-- mois une question sur des déplacements qui n'existent que dans le résiduel de calcul (C2.5).
+--
+-- Le filtre énumère les compteurs **un par un**, et C4.4 en ajoute un quatrième. Sans cette ligne,
+-- quelqu'un dont les seuls longs trajets sont en autocar a un poste réel, un libellé
+-- (« Voyages longue distance (Autocar) »), un plan portant « Remplacer un de tes longs trajets en
+-- autocar par le train » — et **aucun point mensuel**, c'est-à-dire jamais la question que cette
+-- action existe pour refermer. Le chantier aurait livré un levier sans sa boucle.
+--
+-- C'est la même forme que le défaut trouvé à la soumission du bilan une heure plus tôt : **une
+-- liste de réponses écrite à la main, qui se périme en silence quand une réponse s'ajoute.** Ici
+-- elle ne peut pas se dériver — elle mêle une fréquence et des compteurs —, donc ce qui garde est
+-- une assertion : `32_les_modes_qui_manquent.test.sql` vérifie qu'un profil autocar reçoit son
+-- point, et elle tombe si un prochain compteur est ajouté sans sa ligne ici.
+
+CREATE OR REPLACE FUNCTION public.generate_extras_checkins()
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_period_start date := (date_trunc('month', now()) - interval '1 month')::date;
+  v_period_label text := public.mois_francais(v_period_start)
+    || ' ' || extract(year from v_period_start)::text;
+begin
+  update public.engagement_checkins
+  set status = 'expired'
+  where loop_type = 'extras' and status = 'pending' and period_start < v_period_start;
+
+  insert into public.engagement_checkins (
+    user_id, loop_type, period_start, period_label, trip_label, poste, question_kind,
+    committed_action_text, committed_intention_days, committed_intention_timing, committed_question
+  )
+  select distinct on (a.user_id)
+    a.user_id, 'extras', v_period_start, v_period_label, ar.extras_poste_label, ar.extras_poste,
+    g.genre,
+    eng.action_text, eng.intention_days, eng.intention_timing,
+    public.checkin_question('extras', g.genre, ar.extras_poste, null, v_period_start,
+                            eng.question_template, eng.intention_days)
+  from public.assessments a
+  join public.assessment_results ar on ar.assessment_id = a.id
+  join public.assessment_answers ans on ans.assessment_id = a.id
+  left join lateral (
+    select pa.intention_days, pa.intention_timing, t.action_text, t.question_template
+    from public.plan_actions pa
+    join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+    join public.action_templates t on t.id = pa.action_template_id
+    where pc.user_id = a.user_id
+      and pa.committed_at is not null
+      and t.poste = ar.extras_poste
+      and v_period_start between pc.period_start and pc.period_end
+    order by pa.committed_at desc
+    limit 1
+  ) eng on true
+  cross join lateral (
+    -- Pas de `maintien` ici : la catégorie vélo/marche ne qualifie que le trajet quotidien.
+    select case when eng.question_template is not null then 'occasion' else 'generique' end as genre
+  ) g
+  where a.status = 'completed'
+    and ar.extras_poste_label is not null
+    and (
+      ans.leisure_frequency <> 'rarely'
+      or coalesce(ans.flights_total_per_year, 0) > 0
+      or coalesce(ans.train_long_trips_per_year, 0) > 0
+      or coalesce(ans.car_long_trips_per_year, 0) > 0
+      -- C4.4 : l'autocar est une base déclarée comme les trois autres, et l'oublier ici coûtait
+      -- la boucle entière. Un profil dont les seuls longs trajets sont en car a un poste réel
+      -- (105 kg pour quatre trajets), un plan avec une action écrite pour lui — et ne recevait
+      -- aucun point mensuel, donc jamais la question que cette action existe pour refermer.
+      or coalesce(ans.coach_long_trips_per_year, 0) > 0
+    )
+  order by a.user_id, a.submitted_at desc nulls last
+  on conflict (user_id, loop_type, period_start) do nothing;
+
+  perform public.enqueue_checkin_reminders();
+end;
+$function$;
+
+-- ---------------------------------------------------------------------------------------------
 -- 8. Les gabarits d'action que les nouveaux modes rendent possibles
 -- ---------------------------------------------------------------------------------------------
 --
@@ -1027,6 +1112,16 @@ begin
 
   if exists (select 1 from public.action_templates where action_text = 'Passer deux trajets sur cinq en train ou en RER') then
     raise exception 'C4.4 : le gabarit promet encore le RER, que le gain ne chiffre pas';
+  end if;
+
+  -- La boucle mensuelle reconnaît-elle le quatrième compteur ? Sans lui, un profil autocar a un
+  -- poste, un plan, une action — et jamais le point qui la referme.
+  select regexp_replace(pg_get_functiondef(p.oid), '--[^' || chr(10) || ']*', '', 'g')
+    into v_def
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.proname = 'generate_extras_checkins';
+  if v_def not like '%coach_long_trips_per_year%' then
+    raise exception 'C4.4 : le filtre de base déclarée de la boucle mensuelle ignore l''autocar';
   end if;
 end;
 $$;
