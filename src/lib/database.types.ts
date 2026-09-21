@@ -385,6 +385,7 @@ export type Database = {
       }
       emission_factor_sync_runs: {
         Row: {
+          authentifie: boolean
           detail: string | null
           id: string
           modes_updated: number
@@ -392,6 +393,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          authentifie?: boolean
           detail?: string | null
           id?: string
           modes_updated?: number
@@ -399,6 +401,7 @@ export type Database = {
           status: string
         }
         Update: {
+          authentifie?: boolean
           detail?: string | null
           id?: string
           modes_updated?: number

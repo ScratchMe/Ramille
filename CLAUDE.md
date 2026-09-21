@@ -1124,9 +1124,29 @@ le vélo soit non nul — le garde-fou des ±50 % ne peut rien voir ici, puisque
 l'endpoint interrogé et non sur la valeur renvoyée. Historique complet en `v1-07` §1.5.
 
 **Les facteurs se resynchronisent seuls** : `sync_emission_factors()` (SQL pur via l'extension
-`http`, pas d'Edge Function — pas de secret à gérer, même modèle que les autres crons)
+`http`, pas d'Edge Function — même modèle que les autres crons)
 interroge cet endpoint chaque trimestre et **insère une nouvelle version** dans
-`emission_factors`, sans jamais écraser. Le mapping vers les **slugs** Impact CO2 vit dans
+`emission_factors`, sans jamais écraser.
+
+**Et elle s'authentifie depuis le 21/09/2026, ce qui ne change aucun chiffre** — ce paragraphe a
+écrit « pas de secret à gérer » jusqu'à cette date, et c'est devenu faux. La clé de l'ADEME vit au
+Vault (`impactco2_api_key`, même modèle que `resend_api_key`), et **mesurer avant d'écrire a changé
+l'urgence du sujet** : la réponse authentifiée est identique champ pour champ sur les 47 entrées,
+seul un `warning` disparaît — celui qui annonce que l'ADEME se réserve le droit de couper l'accès
+anonyme. Ce n'est donc pas un correctif mais une assurance. Trois points à connaître :
+
+- **Le secret absent retombe sur l'appel anonyme plutôt que d'échouer** : la CI et la stack locale
+  n'ont pas de Vault garni, et échouer dur ferait rougir la synchronisation partout où le secret
+  n'existe pas, pour un chemin qui marche encore. Un secret **blanc** ne compte pas comme une clé
+  (`btrim`), sans quoi on enverrait un porteur vide en annonçant le contraire.
+- **Ce repli est silencieux par nature, d'où `emission_factor_sync_runs.authentifie`** : sans cette
+  colonne, un secret qui disparaît du Vault ferait basculer la synchronisation en anonyme sans que
+  rien ne le dise — c'est-à-dire le risque même que ce chantier ferme.
+- **Ce qu'aucune suite ne peut voir**, et qu'il ne faut pas prétendre gardé : que l'en-tête parte
+  vraiment et que l'ADEME l'accepte. La CI n'a pas de secret, et rejouer sur le distant consomme un
+  appel réel. Mesuré à la main le 21/09/2026 des deux côtés, et vérifié sur le distant après la
+  migration : `authentifie = true`, `status = success`, zéro mode mis à jour — les valeurs n'ayant
+  pas bougé, aucune version de bruit n'est écrite. Le mapping vers les **slugs** Impact CO2 vit dans
 `emission_factor_sources`, pas en dur dans la fonction : **ajouter un mode au produit impose
 d'y ajouter une ligne**, sinon il reste figé à sa valeur de seed en silence (un test pgTAP
 garde ce point). Pour l'avion, le slug retenu doit rester cohérent avec les distances codées

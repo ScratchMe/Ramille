@@ -18,7 +18,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(13);
 
 -- ── Complétude du mapping ───────────────────────────────────────────────────────────────
 -- Le vrai risque de régression : ajouter un mode au produit sans lui donner de source, ce
@@ -104,6 +104,42 @@ select is(
   (select schedule from cron.job where jobname = 'sync-emission-factors'),
   '0 3 1 1,4,7,10 *',
   'La synchronisation est planifiée trimestriellement'
+);
+
+-- ── La clé Impact CO2, et le repli qui doit rester ──────────────────────────────────────
+
+-- **Épinglé le 21/09/2026.** La synchronisation s'authentifie désormais auprès de l'ADEME
+-- (`impactco2_api_key` au Vault). Trois choses valent d'être gardées, et aucune ne se voit à la
+-- lecture du corps :
+--
+--   1. la fonction lit bien le secret — sans quoi elle appelle en anonyme pour toujours, ce que
+--      seul le journal trahirait, et personne ne le lit ;
+--   2. **le repli anonyme est encore là** : c'est ce qui permet à la CI et à la stack locale de
+--      synchroniser sans Vault garni, et le retirer ferait rougir cette suite pour la mauvaise
+--      raison ;
+--   3. le journal porte de quoi dire quel chemin a servi. Sans cette colonne, un secret qui
+--      disparaît du Vault laisserait la synchronisation basculer en anonyme **en silence** —
+--      c'est-à-dire exactement le risque que ce chantier ferme.
+--
+-- Ce que ces assertions **ne** voient pas, et qu'il ne faut pas leur prêter : que l'en-tête
+-- parte vraiment, ni que l'ADEME l'accepte. Aucune suite ne peut le voir — la CI n'a pas de
+-- secret, et le rejouer sur le distant consommerait un appel réel. Ç'a été mesuré à la main le
+-- 21/09/2026, des deux côtés : réponses identiques champ pour champ, `authentifie = true` et
+-- `status = success` sur le distant.
+
+select ok(
+  position('impactco2_api_key' in pg_get_functiondef('public.sync_emission_factors()'::regprocedure)) > 0,
+  'La synchronisation lit la clé Impact CO2 du Vault'
+);
+
+select ok(
+  position('http_get(' in pg_get_functiondef('public.sync_emission_factors()'::regprocedure)) > 0,
+  'Le repli anonyme est conservé : sans secret, la synchronisation appelle quand même'
+);
+
+select has_column(
+  'public', 'emission_factor_sync_runs', 'authentifie',
+  'Le journal dit lequel des deux chemins a servi'
 );
 
 select * from finish();
