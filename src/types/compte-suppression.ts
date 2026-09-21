@@ -30,8 +30,8 @@ export function etatDuCompte(session: SessionCompte | null): EtatSuppression {
   if (!session) return { kind: 'inconnu' };
 
   // `is_anonymous` prime sur la présence d'une adresse, et ce n'est pas un détail : entre
-  // `updateUser({ email })` et le clic sur l'email de confirmation, la ligne porte déjà
-  // l'adresse alors que le compte n'est pas rattaché. Se fier à `email` afficherait
+  // `updateUser({ email })` et la vérification du code, la ligne porte déjà l'adresse alors que le
+  // compte n'est pas rattaché (c'était un clic de confirmation jusqu'au 20/09/2026). Se fier à `email` afficherait
   // « compte rattaché à … » pour quelqu'un qui n'a jamais confirmé.
   if (!session.isAnonymous) return { kind: 'rattache', email: session.email };
 

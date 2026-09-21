@@ -362,6 +362,14 @@ natif (chantier F) s'ajoutera `ramille://**` : le lien de connexion ouvert depui
 messagerie du téléphone revient par ce scheme (`makeRedirectUri()` dans
 `/connexion/retrouver`).
 
+> 📌 **Mise à jour du 20/09/2026 — la référence vivante des gabarits est désormais
+> [`docs/exploitation/gabarits-email.md`](../exploitation/gabarits-email.md).** Ce §8.5 reste la
+> décision datée qui a fait traduire les quatre gabarits, et il n'est pas réécrit — mais **le texte
+> de *Change Email Address* ci-dessous n'est plus celui de la production** : il présupposait que le
+> destinataire avait demandé le changement, ce qui est faux dans le seul cas qui compte (n'importe
+> qui peut saisir l'adresse de n'importe qui sur sa propre session anonyme). Le nouveau texte et le
+> raisonnement sont au §3 du document d'exploitation.
+
 **8.5 — Les gabarits d'email sont en anglais par défaut.** Le produit est exclusivement
 francophone : un « Confirm your signup » signé Supabase est le premier email que recevra un
 utilisateur. Les quatre gabarits à réécrire sous Authentication → Emails sont *Magic Link*,

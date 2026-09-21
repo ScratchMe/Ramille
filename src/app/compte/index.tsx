@@ -133,11 +133,12 @@ export default function Compte() {
             />
             <ThemedText type="screenTitle">Toi</ThemedText>
 
-            {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et le clic
-                de confirmation, la ligne porte déjà l'adresse alors que le compte n'est pas
-                rattaché : cet écran proposait alors de « rattacher un compte », comme si la
-                demande n'avait jamais eu lieu — et la boucle ouverte par « Vérifie tes
-                emails » ne se refermait nulle part. `etatDuRattachement` nomme cet
+            {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et la saisie du
+                code, la ligne porte déjà l'adresse alors que le compte n'est pas rattaché : cet
+                écran proposait alors de « rattacher un compte », comme si la demande n'avait jamais
+                eu lieu — et la boucle ouverte par l'écran des e-mails ne se refermait nulle part.
+                (C'était un clic de confirmation jusqu'au 20/09/2026 ; c'est un code depuis, et cet
+                état porte désormais la porte qui ramène à la saisie.) `etatDuRattachement` nomme cet
                 entre-deux, là où `etatDuCompte` a raison de le confondre avec l'anonymat.
 
                 Registre : un fait, jamais une relance. Pas de « pense à confirmer », pas de
@@ -176,10 +177,29 @@ export default function Compte() {
             )}
 
             {etat?.kind === 'a_confirmer' && (
-              <ThemedText type="body" themeColor="textSecondary">
-                Adresse à confirmer : {etat.email}. Le lien est parti par email ; ton bilan te
-                suivra d’un appareil à l’autre une fois que tu auras cliqué dessus.
-              </ThemedText>
+              <>
+                <ThemedText type="body" themeColor="textSecondary">
+                  Adresse à confirmer : {etat.email}. Un code est parti par email ; une fois tapé,
+                  ton bilan te suivra d’un appareil à l’autre.
+                </ThemedText>
+                {/* **Cette porte rend vraie une phrase écrite ailleurs.** L'écran de code dit « si tu
+                    quittes cet écran, tu retrouves la saisie du code depuis “Toi” » — c'était faux
+                    tant que cet écran ne portait qu'un constat, et le cas n'est pas rare : sur web,
+                    aller chercher le code dans sa messagerie peut emporter l'onglet. L'écran de
+                    rattachement relit l'adresse en local et s'ouvre directement sur la saisie, sans
+                    renvoyer de code — celui qui est déjà dans la boîte vaut encore, et « Renvoyer un
+                    code » est là pour l'autre cas.
+
+                    Un fait et une porte, pas une relance : ni « pense à », ni bouton de renvoi ici. */}
+                <TextLink
+                  label="Saisir le code"
+                  onPress={() => router.push({ pathname: '/connexion/email', params: { reprise: '1' } })}
+                  role="link"
+                  type="small"
+                  weight={600}
+                  themeColor="accentText"
+                />
+              </>
             )}
 
             {etat?.kind === 'local' && (

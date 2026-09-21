@@ -365,12 +365,25 @@ try {
     `poste dominant ${resultat.dominant_poste_co2_kg_year} kg, attendu ${ATTENDU.dominantKg}`
   );
 
-  // ── 4. La transition imposée vers le compte, refusée ────────────────────────────────────────
-  etape('proposition de compte');
+  // ── 4. La restitution mène au plan, et à rien d'autre ───────────────────────────────────────
+  //
+  // **C'est la garde de l'arbitrage du 20/09/2026.** Le bouton passait par un écran de compte
+  // (`/connexion?source=resultat_transition`), qu'il fallait refuser par « Continuer sans compte »
+  // pour atteindre le plan : le bouton ne faisait pas ce qu'il disait, au moment exact où la
+  // personne vient de comprendre son chiffre. Ce qui reste est la bannière en tête du contenu, et
+  // elle se rend **dès le premier passage** — c'est ce que la ligne vérifiée juste avant garde.
+  //
+  // L'assertion la plus importante des trois est la négative : on affirme qu'aucun écran de compte
+  // ne s'interpose. Sans elle, remettre l'interposition laisserait la suite verte (le plan est
+  // atteint, une redirection plus loin).
+  etape('la restitution mène au plan');
+  await attendreTexte('Ce bilan n’est accessible que depuis cet appareil.');
   await bouton('Voir ce que je peux faire');
-  await page.waitForURL(/\/connexion\?.*source=resultat_transition/, { timeout: ATTENTE });
-  await attendreTexte('4,2 t CO₂e par an · Trajet domicile-travail (Voiture thermique) identifié comme poste principal');
-  await (await controle('Continuer sans compte')).click();
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  assurer(
+    !/\/connexion/.test(page.url()),
+    `un écran de compte s'interpose encore entre la restitution et le plan : ${page.url()}`
+  );
 
   // ── 5. Le plan : les huit pistes, le cap, la carte du premier plan ──────────────────────────
   etape('plan');
@@ -522,9 +535,15 @@ try {
   );
 
   await bouton('Voir ce que je peux faire');
-  await page.waitForURL(/\/connexion\?.*source=resultat_transition/, { timeout: ATTENTE });
-  await (await controle('Continuer sans compte')).click();
+  // Comme sur le premier profil : plus aucun écran de compte entre la restitution et le plan
+  // (arbitrage du 20/09/2026). Le second profil le rejoue parce que c'est le seul chemin où la
+  // carte « Ton premier plan » ne se rend jamais — donc le seul où la barre d'onglets arrive
+  // autrement, et le seul qui pourrait masquer une interposition revenue.
   await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  assurer(
+    !/\/connexion/.test(page.url()),
+    `un écran de compte s'interpose encore entre la restitution et le plan : ${page.url()}`
+  );
 
   // Le plan est vide d'actions **en base** : c'est ce qui rend vrai tout le reste de ce bloc.
   const pistesSobres = await lire('plan_actions?select=rank', sobre.jeton);

@@ -484,6 +484,43 @@ exactement ce qui avait laissé passer le mauvais caractère.
   phrases « sur ce téléphone » et « on ne désactive que le sien ». Sans marque locale, on ne
   désactive rien — fenêtre de transition assumée et commentée dans `src/lib/rappels.ts`, sans
   conséquence tant que `push_tokens` est vide.
+### 2.7 bis Le champ de code, et pourquoi il n'y a pas huit cases
+
+Depuis le 20/09/2026, les deux e-mails du produit portent un **code à huit chiffres** et plus aucun
+lien (`v1-28`). Trois écrans demandent une adresse et attendent ce code — rattacher, retrouver,
+supprimer —, et ils partagent **un** composant (`SaisieDuCode`) qui en porte un second
+(`ChampDeCode`). En écrire trois garantirait qu'ils divergent : c'est la leçon de `CarteDePiste`
+en C5.2, et elle vaut ici encore plus, parce que ce qui doit rester identique entre les trois est la
+**règle de non-divulgation**.
+
+Six points, dans l'ordre où ils se cassent :
+
+- **Un seul champ, jamais huit cases.** Huit cases coûtent huit champs à un lecteur d'écran, un
+  composant qui gère le focus à la frappe et au collé, et n'apportent rien qu'un champ centré ne
+  rende. Le kit écrit de `TextField` qu'il est « en pratique le seul champ texte du produit » : il en
+  existe deux depuis ce jour, et celui-ci reprend sa boîte — hauteur, rayon, fond, bordure d'accent
+  dès qu'un chiffre est là — pour que ce soit visiblement la même famille. Les chiffres en 24/30,
+  interlettrage 6, centrés : une taille hors échelle, en dur là où elle sert.
+- **La normalisation est dans la dérivation, pas dans le composant** (`chiffresDuCode`, testé) : une
+  espace collée avec le code est **retirée et non refusée** — les messageries en insèrent, et refuser
+  un collé qui contient le bon code ferait chercher une faute qui n'existe pas. Un collé trop long
+  garde ses chiffres utiles.
+- **Au dernier chiffre, la vérification part d'elle-même**, et le bouton reste — pour qui colle,
+  corrige, ou lit l'écran avec un lecteur d'écran. Le verrou vit dans une `ref` et pas dans l'état
+  d'affichage, qui ne vaut `true` qu'au rendu suivant : sans lui, un collé suivi d'un toucher enverrait
+  deux appels, dont le second sur un code déjà consommé — c'est-à-dire « ce code ne marche pas » juste
+  après qu'il a marché. Même raison que le verrou de soumission du questionnaire.
+- **Le champ garde ses chiffres sur un refus, et ne se vide qu'au renvoi.** Sur un refus, la personne
+  compare avec son e-mail ; au renvoi, l'ancien code vient d'être invalidé (mesuré), donc garder ses
+  chiffres ferait réessayer un code mort.
+- **Le corps de l'écran change avec le contexte, et la différence EST la non-divulgation.** En
+  rattachement on affirme qu'un code est parti (la personne vient de taper l'adresse) ; en connexion
+  on ne peut pas l'affirmer sans dire si l'adresse a un compte, d'où le « si ». Recopier la première
+  phrase dans la seconde serait la fuite exacte que « retrouver » existe pour éviter, et un test la
+  garde.
+- **Le libellé annoncé dit la longueur** (« Code reçu par email, huit chiffres »), parce que c'est ce
+  qu'on ne peut pas voir — règle §1.4.
+
 ### 2.8 Web et natif : les pièges déjà payés
 
 - **Le mode clair est forcé sur web, et ce n'est pas un oubli** (`src/hooks/use-theme.ts`, et le

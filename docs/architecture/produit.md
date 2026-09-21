@@ -238,6 +238,58 @@ Quatre choses à savoir avant de l'instruire, parce qu'elles décident de la tai
   répondre à Play ; hors de l'app, il a à répondre de son authentification. **Rien ne s'écrit avant
   cet arbitrage.**
 
+**Et une cinquième, demandée le 20/09/2026 : le churn a déjà une forme, et la purge en efface la
+preuve.** Ce qui est demandé, mot pour mot : *« des utilisateurs peuvent venir, ne pas rattacher de
+compte et disparaître au bout de 3 mois. Un utilisateur qui part au bout de 3 mois, c'est du churn
+définitivement validé »*, avec l'intuition qui va avec — sur une app au rythme **hebdomadaire**, la
+définition utile arrivera plus tôt que quatre-vingt-dix jours. Trois choses relevées le jour même,
+qui décident de ce que ce lot pourra calculer :
+
+- **La purge est le seul événement du produit qui soit un churn certain, et elle ne laisse aucune
+  cohorte derrière elle.** `purge_stale_anonymous_accounts()` supprime une ligne d'`auth.users`, et
+  la cascade fait le reste : `profiles` en dépend (`on delete cascade`), `usage_events.user_id`
+  dépend de `profiles` de la même façon. **Tout ce que la personne avait fait disparaît avec elle** —
+  ses ouvertures, son bilan, ses points. Ce qui survit est un **compte**, pas une cohorte :
+  `purge_runs` porte `candidates` et `deleted` à chaque passage. On saura donc *combien* partent,
+  jamais *qui* ni *après quoi* — pas « avait-elle fini son bilan », pas « combien de semaines a-t-elle
+  tenu », pas son segment. **Corollaire dimensionnant : toute mesure de forme cohorte doit être
+  agrégée AVANT la purge**, donc écrite par un cron qui tourne plus souvent qu'elle, dans une table
+  d'agrégats qui ne dépend pas de `profiles`. Si ce lot ne fait qu'une chose, c'est celle-là : elle
+  est la seule dont le retard ne se rattrape pas, chaque jour sans elle étant un jour de cohortes
+  perdu pour toujours.
+- **Le produit calcule déjà une échelle d'essoufflement, et il ne faut pas en écrire une seconde.**
+  `public.regime_de_rappel(user_id, loop_type)` (C2.9) rend `normal` / `espace` / `silence` en
+  comptant les points clos sans réponse **depuis le dernier signe de vie** — quatre font s'espacer
+  les messages, huit les font taire. C'est, à un nom près, la définition précoce que l'intuition
+  ci-dessus cherche : elle est hebdomadaire, elle est serveur, elle est testée, et elle décide déjà
+  d'un comportement du produit. Une définition de churn écrite à côté ferait deux échelles qui
+  divergent — le défaut que ce dépôt attrape partout ailleurs. La décision produit n'est donc pas
+  « quelle définition » mais **à quel barreau de cette échelle on donne le nom**, et ce qu'on appelle
+  encore actif au barreau du dessus.
+- **Ce qui reste hors de portée, et qu'il faut dire** : quelqu'un qui ouvre l'app et repart sans
+  émettre d'`app_open` n'existe nulle part — `track()` renonce quand la session n'est pas encore
+  prête —, et sur le web un visiteur qui ne revient jamais laisse une session anonyme indiscernable
+  d'un appareil neuf. Le haut de l'entonnoir est donc la partie la moins mesurable du produit, et
+  aucune requête n'y changera rien.
+
+**Et l'entonnoir de la suppression est impossible en l'état, pour la même raison que le churn de la
+purge** (demande du 20/09/2026 : mesurer l'écart entre la demande et le geste réel, côté
+rattachement comme côté suppression). Le rattachement, lui, est déjà mesurable —
+`connexion_demande` à la demande du code, `connexion_success` au constat de la bascule, et l'écart
+entre les deux est le taux de codes jamais tapés (`v1-28` §6). La suppression non : une suppression
+réussie **efface les deux côtés de son propre entonnoir**, puisque `usage_events` dépend en cascade
+d'`auth.users`. Deux conséquences utilisables :
+
+- une demande **restée** en base est une demande qui n'a pas abouti — la cascade fait l'arithmétique
+  à notre place, ce qui donne les abandons sans rien écrire de plus ;
+- le compte des suppressions **faites** doit vivre dans une table **hors de la cascade**, écrite par
+  `delete_my_account` avant qu'elle ne supprime, et sans identifiant de personne : ce qu'on veut
+  savoir est combien, jamais qui.
+
+**Le vocabulaire de ce lot s'appuiera sur le glossaire de `tourdegrowth.com`** (demande du
+20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
+surtout pour que les chiffres qui sortiront d'ici se comparent à ceux d'ailleurs.
+
 Rien n'est chiffré ni ordonné ici : ce paragraphe existe pour que la demande ne se perde pas entre
 la fin du lot 5 et le lot 4.
 
@@ -264,6 +316,30 @@ qu'il n'est ni clair ni fluide. Le lot 4 garde l'ordre proposé en `v1-17` §5.1
 et sans ajouter d'entrée au suivi. Ce qui n'était pas prévu : **trois réponses de contexte sur
 quatre entrent dans le résultat et non une**, donc le recalcul est inconditionnel — mesuré en base
 plutôt que déduit de la description du calcul.
+
+**Et un increment s'est ouvert et s'est fermé dans la même journée, le 20/09/2026 : le moment du
+compte** ([`v1-28-le-moment-du-compte.md`](v1-28-le-moment-du-compte.md)). Il naît de la revue de
+sécurité du même jour, qui a trouvé que **PKCE protège la session mais pas la confirmation de
+l'adresse** : un clic sur le lien de l'e-mail de rattachement confirmait l'adresse côté serveur,
+donc n'importe qui recevant cet e-mail rattachait la sienne au compte d'un inconnu. Deux arbitrages
+de produit ont suivi le retour d'une session de design élargie au parcours d'entrée entier.
+
+**L'écran de compte ne s'interpose plus** entre la restitution et le plan : « Voir ce que je peux
+faire » mène au plan, toujours, et la raison donnée par la personne qui pilote est celle du produit
+— la prise de conscience du chiffre est ce que l'app existe pour produire, et la risquer pour un
+compte demandé trop tôt est le mauvais échange. Ce qui reste est une bannière vraie, rendue dès le
+premier passage, et **une porte neuve sous la ligne « Par email » de la feuille des rappels** : le
+seul écran du produit qui *pose* la question à laquelle le compte répond, et dont la réponse était
+un mur. **Et les deux e-mails ne portent plus qu'un code à huit chiffres**, plus aucun lien.
+
+Trois choses que la mesure a apprises et qui ne se devinaient pas : le code est un **porteur** — il
+relève le prix du mauvais geste, il ne le ferme pas (dette en `v1-27` §12.12) ; il fait **huit**
+chiffres en production là où le canvas en écrivait six, et la longueur est une valeur de sécurité ;
+et la stack locale divergeait de la production sur **trois** réglages d'envoi, tous dans le sens qui
+fait passer un échec de production pour un succès. Le critère que la session de design a posé —
+*le compte se propose là où il est la réponse à une question que la personne se pose à cet instant*
+— est l'apport le plus durable du chantier : il est opposable, là où « après la restitution » ne
+l'était pas.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 

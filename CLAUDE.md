@@ -825,10 +825,52 @@ vérifieur resté dans le stockage du client demandeur. Cinq points à connaîtr
   lien à l'infini, chacun échouant pareil. Le vérifieur manquant se reconnaît au **code**
   (`pkce_code_verifier_not_found`), jamais au message — celui d'`auth-js` est anglais et parle de
   Next.js.
-- **Le flux entier est joué à chaque PR** (`scripts/verifier-lien-de-connexion.mjs`, `TESTING.md`
+- **Le flux entier est joué à chaque PR** (`scripts/verifier-code-de-connexion.mjs`, `TESTING.md`
   §2.9), contre une vraie stack et un vrai e-mail : c'est ce qui a rendu ce chantier vérifiable
   au lieu de plausible, et c'est lui qui a trouvé deux défauts de plus — dont une interversion de
   messages qu'aucun test unitaire ne voyait.
+
+**Et le lien a disparu des deux e-mails le même jour, au profit d'un code à huit chiffres** — c'est
+le correctif de sécurité du 20/09/2026, et PKCE n'en dispensait pas : **il protège la session, pas
+la confirmation de l'adresse**. Le défaut mesuré la veille : un `GET /auth/v1/verify` confirme
+l'adresse côté serveur **avant** toute redirection, donc n'importe qui recevant l'e-mail de
+rattachement rattachait son adresse au compte d'un inconnu d'un seul clic. Sept points à connaître :
+
+- **Le code n'est PAS un jumeau du vérifieur PKCE : c'est un porteur.** Mesuré — un
+  `POST /auth/v1/verify` avec le jeton et **aucune session** confirme l'adresse et rend une session
+  complète sur le compte du demandeur. Le code ne referme donc pas la porte, il en **relève le
+  prix** : un clic devient huit chiffres à recopier dans une app qu'il faut trouver et ouvrir. Ce
+  qui reste ouvert, et qu'il ne faut pas prétendre fermé : un tiers qui taperait le code confirme
+  l'adresse sur le compte de l'attaquant **et sa propre app bascule sur cette session**. La parade
+  est le texte de l'e-mail ; la dette et sa condition de réouverture sont en `v1-27` §12.12.
+- **Huit chiffres, pas six, et c'est une valeur de sécurité.** `mailer_otp_length = 8` sur le
+  distant ; `supabase/config.toml` portait `6` et la session de design a conclu « six » en le
+  lisant. Avec `rate_limit_verify = 30` par tranche de cinq minutes et par adresse IP et une
+  validité d'une heure, six chiffres laissent une chance sur trois à un attaquant disposant d'un
+  millier d'adresses IP — et le chemin de reconnexion (`shouldCreateUser: false`) fait de cette
+  différence une prise de compte. La constante vit dans `src/types/connexion.ts`
+  (`LONGUEUR_DU_CODE`) et **y toucher impose de toucher les deux configurations**, ce que rien ne
+  vérifie.
+- **Le `type` sépare les deux flux et n'est pas interchangeable** : `email_change` confirme un
+  rattachement, `email` rouvre un compte existant. Mesuré dans les deux sens — un code émis pour
+  l'un et présenté à l'autre rend `403 otp_expired`. C'est ce qui rend sûr de montrer le **même**
+  écran de code dans les deux contextes, donc de ne rien divulguer sur l'adresse. Le choix se fait
+  en un seul endroit (`verifierLeCode`), et la garde de bout en bout tombe si on l'uniformise.
+- **Un code faux et un code expiré rendent la même erreur** (`403 otp_expired`, « Token has
+  expired or is invalid »). Les distinguer à l'écran serait inventer une information qu'on n'a
+  pas : un seul message, qui nomme les deux causes et donne le même geste.
+- **Un renvoi invalide le code précédent** (mesuré), donc « ce n'est pas le plus récent » est vrai
+  dans le message de refus ; et le champ ne se vide **qu'au renvoi**, jamais sur un refus — la
+  personne compare ses chiffres avec l'e-mail.
+- **Les deux gabarits vivent dans le dépôt** (`supabase/templates/`, déclarés dans
+  `supabase/config.toml`) pour que la stack locale rejoue le texte de la production. Leur
+  référence vivante reste `docs/exploitation/gabarits-email.md`. **Un gabarit n'est pas relu à
+  chaud** : GoTrue l'inline au démarrage du conteneur, donc une mutation de gabarit sans
+  `supabase stop && start` ne fait rien — et la garde reste verte pour la mauvaise raison.
+- **Les Redirect URLs ne servent plus qu'à Google.** `emailRedirectTo` a disparu des deux appels :
+  il ne remplissait que `{{ .ConfirmationURL }}`, que plus aucun gabarit n'emprunte. Le chemin de
+  lien profond (`Linking.useURL()`, le scheme `ramille://`, `createSessionFromUrl`) reste comme
+  **filet** pour un lien parti avant le changement, et pour le retour OAuth sur natif.
 
 **`estPanneDeTransport` couvre les 5xx, et c'est assumé** — `auth-js` lève
 `AuthRetryableFetchError` pour chacun d'eux : `SUPABASE.md` §2.4.

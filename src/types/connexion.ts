@@ -5,6 +5,8 @@
  * `@/lib/supabase`, pour rester testable (même découpage que `src/types/bilan.ts`).
  */
 
+import type { SourceConnexion } from '@/types/analytics';
+
 /**
  * Forme minimale d'une erreur Supabase Auth telle qu'elle arrive dans les écrans. Le type
  * `AuthError` du SDK n'est pas importé pour ne pas tirer `@supabase/supabase-js` dans un
@@ -286,37 +288,210 @@ export function messageDuRetourDeLien(motif: MotifRetourLien): string {
   }
 }
 
-// ── Proposition de compte sur la restitution ───────────────────────────────────────────
+// ── La bannière de la restitution ──────────────────────────────────────────────────────
 
 /**
- * Faut-il proposer un compte à cette personne, et sous quelle forme ?
+ * Faut-il dire, sur la restitution, que ce bilan ne vit que sur cet appareil ?
  *
- * **Le booléen optimiste d'avant sautait la proposition** (A3-20) : `proposalSeen` démarrait à
- * `true` et n'était corrigé qu'après un aller-retour réseau suivi d'une lecture AsyncStorage.
- * Quelqu'un qui appuie vite sur « Voir ce que je peux faire », ou dont le réseau traîne, ne
- * voyait ni l'interstitiel **ni** la bannière de repli — c'est-à-dire plus aucune occasion de
- * garder son bilan, au seul endroit où le produit la propose. Le défaut sûr est d'attendre,
- * pas de sauter.
+ * **Cette dérivation décidait jusqu'au 20/09/2026 d'un écran qui s'interposait**
+ * (`etatDeLaProposition`, quatre états dont deux pour distinguer « jamais proposé » de « déjà
+ * proposé »). L'arbitrage du produit a retiré l'interstitiel : « Voir ce que je peux faire » mène
+ * au plan, toujours, et ce qui reste est une ligne en tête du contenu. La question posée change
+ * donc de nature — elle ne dit plus *par où passe le bouton* mais *si une phrase est vraie* —, et
+ * la marque locale « proposition vue » disparaît avec la quatrième valeur : une ligne qu'on ne
+ * touche pas ne s'use pas, donc rien n'a besoin de compter les passages.
  *
- * Quatre états et non trois : la quatrième valeur est la bannière discrète, qui se lisait
- * jusqu'ici sur la même variable que le routage et aurait disparu en réduisant la liste.
+ * **Trois états, et `inconnu` reste le défaut sûr** (A3-20) : tant que la session n'est pas lue,
+ * on ne dit rien. Le booléen optimiste d'avant sautait la proposition chez quelqu'un dont le
+ * réseau traînait ; ici il ferait afficher « ce bilan ne vit que sur cet appareil » à quelqu'un
+ * qui a un compte — c'est-à-dire une phrase fausse, ce que ce produit refuse partout ailleurs.
+ *
+ * `a_confirmer` compte comme `autre`, et ce n'est pas un détail : la personne a déjà tapé son
+ * adresse, « Toi » porte la suite du geste, et lui reproposer le départ du chemin qu'elle a
+ * commencé se lirait comme un échec.
  */
-export type EtatProposition =
-  /** La session n'est pas encore lisible : on ne conclut rien, et on n'ouvre pas le chemin. */
+export type EtatDeLaBanniere =
+  /** La session n'est pas encore lisible : on ne conclut rien et on n'affiche rien. */
   | 'inconnu'
-  /** Jamais proposé : le bouton passe par l'interstitiel plein écran. */
-  | 'anonyme-jamais-proposee'
-  /** Déjà proposé une fois : bannière discrète, le bouton va droit au plan. */
-  | 'anonyme-deja-proposee'
-  /** Compte rattaché, ou relecture d'un ancien bilan : rien à proposer. */
+  /** Session anonyme sans adresse en attente : la ligne est vraie, elle se rend. */
+  | 'anonyme'
+  /** Compte rattaché, adresse à confirmer : rien à dire ici. */
   | 'autre';
 
-export function etatDeLaProposition(lu: {
+export function etatDeLaBanniere(lu: {
   /** `null` quand la session n'a pas pu être lue. */
   estAnonyme: boolean | null;
-  dejaProposee: boolean;
-}): EtatProposition {
+  /** Vrai entre `updateUser({ email })` et la saisie du code — le geste est commencé. */
+  adresseAConfirmer: boolean;
+}): EtatDeLaBanniere {
   if (lu.estAnonyme === null) return 'inconnu';
-  if (!lu.estAnonyme) return 'autre';
-  return lu.dejaProposee ? 'anonyme-deja-proposee' : 'anonyme-jamais-proposee';
+  if (!lu.estAnonyme || lu.adresseAConfirmer) return 'autre';
+  return 'anonyme';
+}
+
+// ── Le code à usage unique ─────────────────────────────────────────────────────────────
+
+/**
+ * **Huit chiffres, et ce nombre est une valeur de sécurité — pas une préférence d'affichage.**
+ *
+ * Il est lu sur la configuration du projet distant (`mailer_otp_length = 8`, relevé le
+ * 20/09/2026), et la session de design avait conclu « six » en lisant la configuration locale,
+ * qui portait encore le défaut de GoTrue. Le calcul qui départage : `rate_limit_verify` plafonne
+ * à trente vérifications par tranche de cinq minutes et par adresse IP, soit trois cent soixante
+ * essais dans la fenêtre de validité d'une heure — une chance sur deux mille huit cents à six
+ * chiffres, une sur deux cent soixante-dix-huit mille à huit. Six suffirait contre une adresse
+ * IP et pas contre un millier, et le chemin de reconnexion (`shouldCreateUser: false`) fait de
+ * cette différence une prise de compte.
+ *
+ * Toucher à cette constante impose donc de toucher `mailer_otp_length` des deux côtés —
+ * `supabase/config.toml` et le projet distant — et rien ici ne peut le vérifier.
+ */
+export const LONGUEUR_DU_CODE = 8;
+
+/**
+ * Les deux flux qui demandent un code, et ils ne se croisent pas : un code de rattachement
+ * présenté au flux de connexion est refusé, et l'inverse aussi (mesuré le 20/09/2026, `403
+ * otp_expired` dans les deux sens). C'est ce qui rend la bascule de `/connexion/email` sûre.
+ */
+export type ContexteDuCode = 'rattachement' | 'connexion';
+
+/**
+ * Ce que la frappe laisse passer : les chiffres, et rien d'autre.
+ *
+ * **Une espace collée avec le code est retirée, pas refusée** — les messageries en insèrent, et
+ * refuser un collé qui contient le bon code ferait chercher une faute qui n'existe pas. La
+ * troncature à la longueur attendue est ici et non dans le composant, pour que le collé d'un
+ * code suivi de texte garde les chiffres utiles.
+ */
+export function chiffresDuCode(saisie: string): string {
+  return saisie.replace(/\D/g, '').slice(0, LONGUEUR_DU_CODE);
+}
+
+export function codeSemblePlausible(saisie: string): boolean {
+  return chiffresDuCode(saisie).length === LONGUEUR_DU_CODE;
+}
+
+/**
+ * Ce que la demande de code a donné, ramené aux trois suites qui changent l'écran.
+ *
+ * `bascule` n'existe qu'en contexte `rattachement` : c'est le `422 email_exists` d'`updateUser`,
+ * l'adresse qui appartient déjà à un compte. **En contexte `connexion` il ne peut pas arriver** —
+ * `signInWithOtp` ne rattache rien — et le lui faire produire une bascule serait une boucle.
+ *
+ * **Tout le reste mène à l'écran de code, `otp_disabled` compris.** C'est la règle de
+ * non-divulgation, et elle est la raison d'être de cette dérivation : une adresse sans compte
+ * rend un `422 otp_disabled` qui doit mener au **même** écran qu'un envoi accepté, sinon l'écran
+ * dit qui utilise Ramille. Seuls deux échecs se disent, parce qu'aucun des deux ne parle de
+ * l'adresse : la limite d'envoi et la panne de transport.
+ */
+export type SuiteDeLaDemande = 'code' | 'bascule' | 'message';
+
+export function suiteDeLaDemandeDeCode(
+  contexte: ContexteDuCode,
+  error: ErreurAuth
+): SuiteDeLaDemande {
+  if (!error) return 'code';
+  if (contexte === 'rattachement' && adresseDejaRattachee(error)) return 'bascule';
+  if (estLimiteDEnvoi(error) || estPanneDeTransport(error)) return 'message';
+  return 'code';
+}
+
+/**
+ * Le message d'un envoi qui ne s'est pas fait — deux cas, et jamais un mot de l'adresse.
+ *
+ * Le troisième renvoi (`echec`) n'est **pas** atteignable par `suiteDeLaDemandeDeCode`, qui range
+ * tout le reste dans `code` : il n'existe que pour l'écran de suppression, qui connaît déjà le
+ * compte et n'a donc rien à taire.
+ */
+export function messageDeLaDemande(error: ErreurAuth): string {
+  if (estLimiteDEnvoi(error)) {
+    return 'Trop de demandes coup sur coup. Réessaie dans quelques minutes.';
+  }
+  if (estPanneDeTransport(error)) {
+    return 'Ta demande n’a pas abouti. Vérifie ta connexion et réessaie.';
+  }
+  return 'L’envoi n’a pas abouti. Vérifie l’adresse et réessaie.';
+}
+
+/**
+ * Ce que la vérification d'un code a donné.
+ *
+ * **`refuse` recouvre le code faux ET le code expiré, et c'est l'API qui l'impose** : les deux
+ * rendent `403 otp_expired` (mesuré le 20/09/2026, « Token has expired or is invalid »). Les
+ * distinguer serait donc inventer une information qu'on n'a pas — d'où un seul message, qui
+ * nomme les deux causes et donne le même geste.
+ *
+ * `trop_dessais` est le plafond de vérification, reconnu au code comme la limite d'envoi l'est,
+ * jamais au message. C'est le seul cas où réessayer tout de suite ne sert à rien.
+ */
+export type IssueDeLaVerification = 'ouverte' | 'refuse' | 'trop_dessais' | 'transport' | 'echec';
+
+export function issueDeLaVerification(error: ErreurAuth): IssueDeLaVerification {
+  if (!error) return 'ouverte';
+  // **L'ordre de ces trois tests n'est PAS porteur, et le commentaire d'avant disait le
+  // contraire** — relevé le 20/09/2026 en mutant l'ordre : aucune assertion n'est tombée. La
+  // raison est dans `auth-js`, qui ne nomme `AuthRetryableFetchError` que sur les 5xx : un 403
+  // n'est donc jamais une panne de transport, et les deux branches ne peuvent pas se disputer
+  // une même erreur. Ce qui EST porteur, c'est l'existence de la branche de transport — la
+  // retirer fait lire une panne de serveur comme un échec anonyme, et c'est la mutation qui
+  // tombe. On garde le transport en tête par symétrie avec `estPanneDeTransport`, pas par
+  // nécessité, et on ne prétend pas l'inverse.
+  if (estPanneDeTransport(error)) return 'transport';
+  if (error.code === 'over_request_rate_limit' || error.status === 429) return 'trop_dessais';
+  if (error.code === 'otp_expired' || error.status === 403) return 'refuse';
+  return 'echec';
+}
+
+export function messageDeLaVerification(issue: IssueDeLaVerification): string | null {
+  switch (issue) {
+    case 'ouverte':
+      return null;
+    case 'refuse':
+      return 'Ce code ne marche pas : il a expiré, ou ce n’est pas le plus récent. Demande-en un nouveau.';
+    case 'trop_dessais':
+      return 'Trop d’essais coup sur coup. Réessaie dans quelques minutes.';
+    case 'transport':
+      return 'Ta demande n’a pas abouti. Vérifie ta connexion et réessaie.';
+    case 'echec':
+      return 'La vérification n’a pas abouti. Réessaie dans un instant.';
+  }
+}
+
+/**
+ * Le corps de l'écran de saisie, **par contexte**, et la différence est la non-divulgation.
+ *
+ * En `rattachement`, l'adresse est forcément libre : c'est la personne qui vient de la taper, et
+ * un code est parti. En `connexion`, on ne peut pas affirmer qu'un code est parti sans dire si
+ * l'adresse a un compte — d'où le « si ». Recopier la phrase du premier dans le second serait la
+ * fuite exacte que `/connexion/retrouver` existe pour éviter.
+ */
+export function corpsDeLaSaisie(contexte: ContexteDuCode, adresse: string, app: string): string {
+  const chiffres = `un code à ${LONGUEUR_DU_CODE} chiffres`;
+  return contexte === 'rattachement'
+    ? `Un code à ${LONGUEUR_DU_CODE} chiffres vient de partir à ${adresse}. Tape-le ici — il vaut une heure.`
+    : `Si un compte ${app} existe avec cette adresse, ${chiffres} vient d’y partir. Tape-le ici — il vaut une heure.`;
+}
+
+/**
+ * Le corps de `/connexion`, **dérivé de la provenance** — et ce n'est pas du style.
+ *
+ * L'écran s'atteint désormais depuis trois endroits qui ne posent pas la même question. Depuis la
+ * restitution ou « Toi », la question est « et si je change d'appareil ? ». Depuis la feuille des
+ * rappels, elle est « comment tu me fais signe ? », et le compte y est littéralement ce qui rend le
+ * rappel par e-mail possible : répondre par le texte de l'appareil laisserait sans réponse la seule
+ * personne qui vient de poser une question.
+ *
+ * Le repli va sur la phrase de l'appareil, qui est vraie partout.
+ */
+export function introDeLaConnexion(source: SourceConnexion): string {
+  if (source === 'rappels') {
+    return 'Le rappel par email a besoin d’une adresse. Avec un compte rattaché, il t’arrive — et ton bilan te suit d’un appareil à l’autre, tes points et ton plan aussi.';
+  }
+  return 'Il est enregistré ici, sur cet appareil. Avec un compte rattaché, tu le retrouves sur un autre téléphone ou un ordinateur — tes points et ton plan aussi —, et le mot de chaque point peut t’arriver par email.';
+}
+
+export function messageDuRenvoi(contexte: ContexteDuCode): string {
+  return contexte === 'rattachement'
+    ? 'Un nouveau code vient de partir.'
+    : 'Si un compte existe avec cette adresse, un nouveau code vient d’y partir.';
 }

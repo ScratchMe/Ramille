@@ -79,6 +79,16 @@ export type LigneDeReglage = {
    * chercher un réglage à trois niveaux de menu.
    */
   lienVersLesReglages: boolean;
+  /**
+   * La porte « Rattacher un compte », sous la ligne « Par email » et nulle part ailleurs.
+   *
+   * **C'est le seul ajout de produit du retrait de l'interstitiel** (20/09/2026), et le seul
+   * moment vraiment neuf : la feuille est le seul écran qui POSE la question à laquelle le compte
+   * répond (« comment te faire signe ? »), et sa réponse était un mur — une ligne grisée, sans
+   * rien à toucher. Jumelle de `lienVersLesReglages` par construction : vraie dans le seul état
+   * où elle mène quelque part, et nommée sur la dérivation plutôt que testée dans l'écran.
+   */
+  porteVersLeCompte: boolean;
 };
 
 /**
@@ -116,6 +126,7 @@ export function lignesDeReglage(
     choisissable: true,
     choisi: prefere === 'push',
     lienVersLesReglages: permission === 'fermee',
+    porteVersLeCompte: false,
   };
 
   const courriel: LigneDeReglage = {
@@ -125,6 +136,10 @@ export function lignesDeReglage(
     choisissable: emailPossible,
     choisi: prefere === 'email',
     lienVersLesReglages: false,
+    // La porte s'ouvre exactement là où le détail dit ce qui manque, donc sur la même condition :
+    // deux tests séparés finiraient par se contredire, et on afficherait « Rattache un compte »
+    // à quelqu'un qui en a un, ou l'inverse.
+    porteVersLeCompte: !(emailPossible && email),
   };
 
   const aucun: LigneDeReglage = {
@@ -132,6 +147,7 @@ export function lignesDeReglage(
     titre: 'Sans rappel',
     detail: 'On se retrouve dans l’app, à chaque point.',
     choisissable: true,
+    porteVersLeCompte: false,
     choisi: prefere === 'none',
     lienVersLesReglages: false,
   };

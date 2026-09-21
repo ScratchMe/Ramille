@@ -223,7 +223,14 @@ password_requirements = ""
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 2
+#
+# **Aligné sur le distant le 20/09/2026** (`rate_limit_email_sent = 30`). La valeur par défaut, `2`,
+# est un plafond par projet et par heure : elle suffit tout juste au contrôle du lien de connexion et
+# rend inexécutable toute batterie qui demande un code, en renvoie un, puis en demande un autre —
+# c'est-à-dire exactement le chemin que le produit a depuis le passage au code seul. Un plafond local
+# plus bas que celui de la production ne protège rien : il fabrique des échecs que la production
+# n'aurait pas.
+email_sent = 30
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
@@ -250,13 +257,36 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+#
+# **Aligné sur le distant le 20/09/2026, et ce n'était pas un détail de confort.** La valeur était
+# `false` en local alors que le projet distant exige la confirmation (`mailer_autoconfirm: false`) :
+# une session anonyme pouvait donc s'attribuer **n'importe quelle adresse instantanément**, sans
+# qu'aucun e-mail ne parte. Autrement dit, la stack locale ne rejouait pas le chemin de rattachement
+# du produit — elle en rejouait un autre, plus permissif, ce qui rend un test local de ce flux
+# trompeur dans le sens le plus dangereux : ce qui passe ici pourrait échouer là-bas, et ce qui est
+# grave là-bas paraît trivial ici. Vérifié après l'alignement : le parcours réel et le contrôle du
+# lien de connexion restent verts, donc rien du produit ne dépendait de l'auto-confirmation.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "1s"
+#
+# **Aligné sur le distant le 20/09/2026** (`smtp_max_frequency = 60`, en secondes). `1s` en local
+# cachait un refus que la production oppose : « Renvoyer un code » touché dans la minute y répond
+# `over_email_send_rate_limit`. C'est l'écart dans le sens dangereux — ce qui passe ici échouerait
+# là-bas —, la même famille qu'`enable_confirmations` la veille. Conséquence pour les suites : aucun
+# contrôle ne peut demander deux codes pour la MÊME adresse à moins d'une minute d'intervalle ; ils
+# utilisent une adresse distincte par assertion.
+max_frequency = "60s"
 # Number of characters used in the email OTP.
-otp_length = 6
+#
+# **Aligné sur le distant le 20/09/2026, et c'est une valeur de sécurité.** Le projet distant porte
+# `mailer_otp_length = 8` ; le local portait `6`, et la session de design a conclu « six chiffres »
+# en lisant ce fichier plutôt que la production. La longueur décide de la résistance à la force
+# brute : `token_verifications` plafonne à 30 vérifications par tranche de cinq minutes et par
+# adresse IP, soit 360 essais dans la fenêtre de validité d'une heure — une chance sur 2 800 à six
+# chiffres, une sur 278 000 à huit. Six suffirait contre une adresse IP et pas contre un millier.
+otp_length = 8
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
@@ -269,6 +299,23 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
+
+# Les deux SEULS gabarits que le produit emprunte, tenus ici pour que la stack locale rejoue le
+# texte de la production et non celui de GoTrue. Ils ne portent **aucun lien** : le code à usage
+# unique est le seul mécanisme depuis le 20/09/2026 (arbitrage du produit), et dans le gabarit de
+# rattachement le lien était la faille elle-même — un clic confirmait l'adresse côté serveur, même
+# depuis un navigateur incapable de finir l'échange. La référence vivante de ces textes est
+# `docs/exploitation/gabarits-email.md` ; ce fichier en est la copie exécutable.
+#
+# `Confirm signup` et `Reset Password` ne sont pas déclarés : aucun chemin du produit ne les
+# emprunte (il n'y a pas de mot de passe, et le rattachement passe par `email_change`).
+[auth.email.template.magic_link]
+subject = "Ton code pour retrouver ton compte"
+content_path = "./supabase/templates/lien-de-connexion.html"
+
+[auth.email.template.email_change]
+subject = "Cette adresse vient d'être saisie dans Ramille"
+content_path = "./supabase/templates/rattachement-adresse.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

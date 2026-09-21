@@ -171,18 +171,40 @@ describe('sourceConnexion', () => {
     }
   });
 
-  it('retombe sur l’interstitiel pour une provenance absente ou inconnue', () => {
-    // Un lien direct, un retour arrière : mieux vaut compté sur le chemin historique que perdu.
-    expect(sourceConnexion(undefined)).toBe('resultat_transition');
-    expect(sourceConnexion('')).toBe('resultat_transition');
+  /**
+   * **Le repli dit « on ne sait pas », il ne devine pas.** Il rendait `resultat_transition`
+   * jusqu'au 20/09/2026 — « mieux compté sur le chemin historique que perdu » —, et le retrait de
+   * l'interstitiel a rendu cette phrase fausse : plus personne n'émet cette provenance, donc
+   * chaque arrivée sans source se serait ajoutée aux lignes de l'interstitiel, c'est-à-dire au
+   * seul chiffre qui sert à mesurer ce que le retrait a changé.
+   */
+  it('range une provenance absente ou inconnue dans « inconnue », et jamais sur une vraie porte', () => {
+    expect(sourceConnexion(undefined)).toBe('inconnue');
+    expect(sourceConnexion('')).toBe('inconnue');
     // `plan` et `suivi` ont été retirées faute d'émetteur : elles ne doivent pas se rattraper
     // en douce par le garde.
-    expect(sourceConnexion('plan')).toBe('resultat_transition');
-    expect(sourceConnexion('suivi')).toBe('resultat_transition');
+    expect(sourceConnexion('plan')).toBe('inconnue');
+    expect(sourceConnexion('suivi')).toBe('inconnue');
+    // Et surtout : le repli ne gonfle aucune porte réelle.
+    for (const porte of ['resultat_transition', 'resultat_cta', 'compte', 'rappels'] as const) {
+      expect(sourceConnexion(undefined)).not.toBe(porte);
+    }
   });
 
-  it('ne déclare aucune provenance qu’aucun écran n’émet', () => {
-    expect([...SOURCES_CONNEXION]).toEqual(['resultat_transition', 'resultat_cta', 'compte']);
+  /**
+   * **Deux valeurs déclarées n'ont pas d'émetteur d'écran, et chacune pour sa raison** :
+   * `resultat_transition` est l'interstitiel retiré le 20/09/2026, gardée pour que l'historique
+   * d'avant se lise ; `inconnue` n'est émise que par le garde ci-dessus. Le test les nomme pour
+   * que la liste ne grossisse pas d'une valeur muette sans qu'on s'en aperçoive.
+   */
+  it('ne déclare que les portes réelles, plus l’interstitiel retiré et le repli', () => {
+    expect([...SOURCES_CONNEXION]).toEqual([
+      'resultat_transition',
+      'resultat_cta',
+      'compte',
+      'rappels',
+      'inconnue',
+    ]);
   });
 });
 

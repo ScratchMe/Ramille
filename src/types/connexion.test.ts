@@ -1,3 +1,24 @@
+/**
+ * Les gardes de ce fichier sont éprouvées en les cassant, et le compte des mutations est daté
+ * (`TESTING.md` §1.1). Quatre mutations jouées le 20/09/2026, sur le chantier du code à usage
+ * unique, avec le relevé de ce qui est tombé :
+ *
+ * | Mutation | Ce qui tombe |
+ * | --- | --- |
+ * | `etatDeLaBanniere` oublie `adresseAConfirmer` | « se tait dès que le geste est commencé ou fini » ET « n'a qu'une seule entrée qui parle » |
+ * | `corpsDeLaSaisie` affirme l'envoi dans les deux contextes | « n'affirme qu'un code est parti que là où c'est vrai » |
+ * | `suiteDeLaDemandeDeCode` rend `message` pour tout échec | « mène à l'écran de code pour une adresse sans compte » ET « ne bascule jamais depuis le flux de connexion » |
+ * | la branche de transport d'`issueDeLaVerification` est retirée | « reconnaît la panne de transport plutôt qu'un échec anonyme » |
+ *
+ * **Une cinquième mutation n'a rien fait tomber, et c'est elle qui a appris quelque chose** :
+ * intervertir l'ordre des tests d'`issueDeLaVerification` laisse la suite entièrement verte. Le
+ * commentaire du module affirmait pourtant que l'ordre était porteur. Il avait tort — `auth-js` ne
+ * nomme `AuthRetryableFetchError` que sur les 5xx, donc un 403 n'est jamais une panne de transport
+ * et les deux branches ne se disputent aucune erreur réelle. Le commentaire a été corrigé plutôt
+ * que le test rendu capable de tomber sur une entrée que le SDK ne produit jamais : c'est
+ * exactement le piège déjà consigné pour le 500 sans `name`.
+ */
+
 import {
   adresseDejaRattachee,
   adresseSemblePlausible,
@@ -5,13 +26,22 @@ import {
   estPanneDeTransport,
   codeDuRetourDeLien,
   estVerifieurManquant,
-  etatDeLaProposition,
+  etatDeLaBanniere,
   identiteDejaRattachee,
   issueDuNavigateurDAuth,
   lireRetourDeLien,
   messageDuRetourDeLien,
   motifRetourLien,
   MOTIFS_RETOUR_LIEN,
+  chiffresDuCode,
+  codeSemblePlausible,
+  corpsDeLaSaisie,
+  issueDeLaVerification,
+  LONGUEUR_DU_CODE,
+  messageDeLaDemande,
+  messageDeLaVerification,
+  messageDuRenvoi,
+  suiteDeLaDemandeDeCode,
 } from './connexion';
 
 describe('estLimiteDEnvoi', () => {
@@ -359,25 +389,198 @@ describe('motifRetourLien', () => {
   });
 });
 
-describe('etatDeLaProposition', () => {
-  it('attend au lieu de sauter quand la session n’est pas lisible', () => {
-    // Le défaut d'origine penchait du mauvais côté : le booléen optimiste routait droit au plan
-    // et la personne ne voyait ni l'interstitiel ni la bannière.
-    expect(etatDeLaProposition({ estAnonyme: null, dejaProposee: false })).toBe('inconnu');
-    expect(etatDeLaProposition({ estAnonyme: null, dejaProposee: true })).toBe('inconnu');
+describe('etatDeLaBanniere', () => {
+  it('ne dit rien tant que la session n’est pas lisible', () => {
+    // Le défaut sûr est d'attendre (A3-20). Ici, se tromper ferait affirmer « ce bilan ne vit
+    // que sur cet appareil » à quelqu'un qui a un compte — une phrase fausse.
+    expect(etatDeLaBanniere({ estAnonyme: null, adresseAConfirmer: false })).toBe('inconnu');
+    expect(etatDeLaBanniere({ estAnonyme: null, adresseAConfirmer: true })).toBe('inconnu');
   });
 
-  it('distingue la première proposition de la relance discrète', () => {
-    expect(etatDeLaProposition({ estAnonyme: true, dejaProposee: false })).toBe(
-      'anonyme-jamais-proposee'
+  it('se rend pour une session anonyme sans adresse en attente', () => {
+    expect(etatDeLaBanniere({ estAnonyme: true, adresseAConfirmer: false })).toBe('anonyme');
+  });
+
+  it('se tait dès que le geste est commencé ou fini', () => {
+    expect(etatDeLaBanniere({ estAnonyme: true, adresseAConfirmer: true })).toBe('autre');
+    expect(etatDeLaBanniere({ estAnonyme: false, adresseAConfirmer: false })).toBe('autre');
+    expect(etatDeLaBanniere({ estAnonyme: false, adresseAConfirmer: true })).toBe('autre');
+  });
+
+  /**
+   * La garde qui tient la promesse du chantier : **une seule entrée rend la bannière**, et les
+   * trois autres se taisent. Une condition qui s'élargirait — en oubliant `adresseAConfirmer`,
+   * par exemple — repasserait la proposition à quelqu'un qui vient de taper son adresse.
+   */
+  it('n’a qu’une seule entrée qui parle', () => {
+    const entrees = [false, true].flatMap((estAnonyme) =>
+      [false, true].map((adresseAConfirmer) => ({ estAnonyme, adresseAConfirmer }))
     );
-    expect(etatDeLaProposition({ estAnonyme: true, dejaProposee: true })).toBe(
-      'anonyme-deja-proposee'
+    const parlantes = entrees.filter((e) => etatDeLaBanniere(e) === 'anonyme');
+    expect(parlantes).toEqual([{ estAnonyme: true, adresseAConfirmer: false }]);
+  });
+});
+
+describe('chiffresDuCode', () => {
+  it('garde les chiffres et retire ce qu’une messagerie colle autour', () => {
+    // Refuser un collé qui contient le bon code ferait chercher une faute qui n'existe pas.
+    expect(chiffresDuCode(' 847 924 69 ')).toBe('84792469');
+    expect(chiffresDuCode('code : 84792469')).toBe('84792469');
+  });
+
+  it('tronque à la longueur attendue, et garde les chiffres utiles d’un collé trop long', () => {
+    expect(chiffresDuCode('8479246912345')).toBe('84792469');
+    expect(chiffresDuCode('84792469')).toHaveLength(LONGUEUR_DU_CODE);
+  });
+
+  it('n’est plausible qu’à la longueur exacte', () => {
+    expect(codeSemblePlausible('8479246')).toBe(false);
+    expect(codeSemblePlausible('84792469')).toBe(true);
+    // Un collé plus long est tronqué, donc plausible : c'est voulu, les chiffres sont là.
+    expect(codeSemblePlausible('84792469 merci')).toBe(true);
+  });
+});
+
+describe('suiteDeLaDemandeDeCode', () => {
+  it('mène à l’écran de code quand l’envoi est accepté', () => {
+    expect(suiteDeLaDemandeDeCode('rattachement', null)).toBe('code');
+    expect(suiteDeLaDemandeDeCode('connexion', null)).toBe('code');
+  });
+
+  /**
+   * **La règle de non-divulgation, et elle est la raison d'être de cette dérivation.** Une
+   * adresse sans compte rend `422 otp_disabled` (mesuré le 20/09/2026) : elle doit mener au
+   * MÊME écran qu'un envoi accepté, sinon l'écran dit qui utilise Ramille.
+   */
+  it('mène à l’écran de code pour une adresse sans compte, exactement comme pour un envoi réussi', () => {
+    const inconnue = { code: 'otp_disabled', status: 422, message: 'Signups not allowed for otp' };
+    expect(suiteDeLaDemandeDeCode('connexion', inconnue)).toBe('code');
+    expect(suiteDeLaDemandeDeCode('connexion', inconnue)).toBe(
+      suiteDeLaDemandeDeCode('connexion', null)
     );
   });
 
-  it('ne propose rien à qui a déjà un compte', () => {
-    expect(etatDeLaProposition({ estAnonyme: false, dejaProposee: false })).toBe('autre');
-    expect(etatDeLaProposition({ estAnonyme: false, dejaProposee: true })).toBe('autre');
+  it('bascule vers la reconnexion quand l’adresse a déjà un compte', () => {
+    expect(suiteDeLaDemandeDeCode('rattachement', { code: 'email_exists', status: 422 })).toBe(
+      'bascule'
+    );
+  });
+
+  /**
+   * `signInWithOtp` ne rattache rien, donc `email_exists` ne peut pas en sortir. Si la bascule
+   * était rendue ici, l'écran de connexion se renverrait à lui-même — une boucle.
+   */
+  it('ne bascule jamais depuis le flux de connexion', () => {
+    expect(suiteDeLaDemandeDeCode('connexion', { code: 'email_exists', status: 422 })).toBe('code');
+  });
+
+  it('ne dit que les deux échecs qui ne parlent pas de l’adresse', () => {
+    expect(suiteDeLaDemandeDeCode('rattachement', { code: 'over_email_send_rate_limit' })).toBe(
+      'message'
+    );
+    expect(suiteDeLaDemandeDeCode('connexion', { name: 'AuthRetryableFetchError', status: 0 })).toBe(
+      'message'
+    );
+  });
+});
+
+describe('issueDeLaVerification', () => {
+  it('ouvre la session quand il n’y a pas d’erreur', () => {
+    expect(issueDeLaVerification(null)).toBe('ouverte');
+  });
+
+  /**
+   * **Le code faux et le code expiré rendent tous deux `403 otp_expired`** — mesuré contre
+   * l'API le 20/09/2026, message « Token has expired or is invalid ». Les distinguer serait
+   * inventer une information qu'on n'a pas.
+   */
+  it('range le code faux et le code expiré au même endroit', () => {
+    const otp = { code: 'otp_expired', status: 403, message: 'Token has expired or is invalid' };
+    expect(issueDeLaVerification(otp)).toBe('refuse');
+    expect(issueDeLaVerification({ status: 403 })).toBe('refuse');
+  });
+
+  /**
+   * **Ce qui est éprouvé ici est l'existence de la branche, pas l'ordre des tests.** Muter
+   * l'ordre ne fait tomber aucune assertion, et c'est juste : `auth-js` ne nomme
+   * `AuthRetryableFetchError` que sur les 5xx, donc un 403 n'est jamais une panne de transport
+   * et les deux branches ne se disputent aucune erreur réelle. Retirer la branche, en revanche,
+   * fait lire une panne de serveur comme un échec anonyme — la personne recopie alors
+   * indéfiniment un code qui est bon.
+   */
+  it('reconnaît la panne de transport plutôt qu’un échec anonyme', () => {
+    expect(issueDeLaVerification({ name: 'AuthRetryableFetchError', status: 503 })).toBe(
+      'transport'
+    );
+    expect(issueDeLaVerification({ name: 'AuthRetryableFetchError', status: 0 })).toBe('transport');
+  });
+
+  it('nomme le plafond de vérification, qui est le seul cas où réessayer ne sert à rien', () => {
+    expect(issueDeLaVerification({ code: 'over_request_rate_limit', status: 429 })).toBe(
+      'trop_dessais'
+    );
+  });
+
+  it('garde un dernier renvoi pour ce qu’on ne sait pas nommer', () => {
+    expect(issueDeLaVerification({ code: 'validation_failed', status: 400 })).toBe('echec');
+  });
+
+  it('ne donne un message qu’aux issues qui en ont besoin', () => {
+    expect(messageDeLaVerification('ouverte')).toBeNull();
+    for (const issue of ['refuse', 'trop_dessais', 'transport', 'echec'] as const) {
+      expect(messageDeLaVerification(issue)).toBeTruthy();
+    }
+  });
+
+  /**
+   * Le message d'un code refusé doit donner le geste utile — en redemander un — et celui d'un
+   * plafond doit dire d'attendre. Les intervertir enverrait la personne redemander un code que
+   * le plafond refusera, ou attendre alors qu'un nouveau code marcherait.
+   */
+  it('ne dit « demande-en un nouveau » que là où c’est le bon geste', () => {
+    expect(messageDeLaVerification('refuse')).toMatch(/nouveau/i);
+    expect(messageDeLaVerification('trop_dessais')).not.toMatch(/nouveau/i);
+    expect(messageDeLaVerification('trop_dessais')).toMatch(/r[ée]essaie/i);
+  });
+});
+
+describe('les phrases de la demande et de la saisie', () => {
+  it('ne nomme jamais l’adresse dans un message d’échec', () => {
+    const adresse = 'camille@exemple.fr';
+    for (const error of [
+      { code: 'over_email_send_rate_limit' },
+      { name: 'AuthRetryableFetchError', status: 0 },
+      { code: 'email_exists', status: 422 },
+    ]) {
+      expect(messageDeLaDemande(error)).not.toContain(adresse);
+    }
+  });
+
+  /**
+   * **La différence entre les deux contextes EST la non-divulgation.** En rattachement, la
+   * personne vient de taper l'adresse et un code est parti : on l'affirme. En connexion, on ne
+   * peut pas l'affirmer sans dire si l'adresse a un compte — d'où le « si ». Recopier la
+   * première phrase dans le second serait la fuite exacte que « retrouver » existe pour éviter.
+   */
+  it('n’affirme qu’un code est parti que là où c’est vrai', () => {
+    const rattachement = corpsDeLaSaisie('rattachement', 'camille@exemple.fr', 'Ramille');
+    const connexion = corpsDeLaSaisie('connexion', 'camille@exemple.fr', 'Ramille');
+    expect(rattachement).toContain('camille@exemple.fr');
+    expect(rattachement).not.toMatch(/^Si /);
+    expect(connexion).toMatch(/^Si un compte Ramille existe/);
+    expect(connexion).not.toContain('camille@exemple.fr');
+  });
+
+  it('dit la longueur du code, et la même des deux côtés', () => {
+    for (const contexte of ['rattachement', 'connexion'] as const) {
+      expect(corpsDeLaSaisie(contexte, 'camille@exemple.fr', 'Ramille')).toContain(
+        `${LONGUEUR_DU_CODE} chiffres`
+      );
+    }
+  });
+
+  it('garde le même « si » au renvoi', () => {
+    expect(messageDuRenvoi('rattachement')).not.toMatch(/^Si /);
+    expect(messageDuRenvoi('connexion')).toMatch(/^Si un compte existe/);
   });
 });
