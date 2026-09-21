@@ -443,18 +443,27 @@ export default function BilanQuestionnaire() {
       // une reprise dont les réponses étaient déjà écrites buterait sur un doublon (23505). Les
       // réponses de cette tentative-ci sont les bonnes — la personne a pu corriger un champ entre
       // les deux essais.
+      //
+      // **Une diffusion de `answers`, et non une énumération de colonnes** — corrigé le 21/09/2026
+      // en contre-lisant C4.4. Cet objet listait les colonnes une par une, et les cinq réponses
+      // neuves du chantier n'y avaient pas été ajoutées : elles étaient posées à l'écran,
+      // normalisées, affichées dans un re-bilan… et jetées à la soumission. **Rien ne le disait** —
+      // une colonne ajoutée par une migration arrive `optional` dans `Insert`, donc le typecheck
+      // reste vert, et le calcul retombe sur le repli, qui est exactement le défaut que le
+      // chantier venait de corriger.
+      //
+      // La diffusion ne garde pas contre l'oubli : elle le rend **impossible**. `BilanAnswers` est
+      // un miroir exact des colonnes (relevé le 21/09/2026 : aucune clé qui ne soit une colonne,
+      // et seules `assessment_id` et `updated_at` existent en base sans y figurer), donc ajouter
+      // une réponse au questionnaire suffit à l'écrire. Ce que ça demande en échange : **ne jamais
+      // mettre dans `BilanAnswers` un champ qui n'est pas une colonne** — PostgREST refuserait
+      // l'insert entier, et le parcours réel, qui soumet un bilan à chaque PR, le dirait tout de
+      // suite. Les cinq clés qui suivent ne sont pas des exceptions à la règle : ce sont des
+      // valeurs que la colonne exige et que le questionnaire n'a pas sous cette forme.
       const { error: answersError } = await supabase.from('assessment_answers').upsert(
         {
+          ...answers,
           assessment_id: assessmentId,
-          commute_has_regular_trip: answers.commute_has_regular_trip ?? false,
-          commute_days_per_week: answers.commute_days_per_week,
-          // Même lecture que la complétude de l'étape : un « 0 » n'est pas une distance, et la
-          // colonne porte `check (commute_distance_km > 0)`.
-          commute_distance_km: distanceDomicileTravailKm(answers),
-          commute_distance_bracket: answers.commute_distance_bracket,
-          commute_mode: answers.commute_mode,
-          commute_is_carpool: answers.commute_is_carpool,
-          commute_carpool_size: answers.commute_carpool_size,
           // **Ce repli est inatteignable, et il est écrit quand même** (`v1-16` §4). Le champ porte
           // un troisième état « pas encore répondu » côté questionnaire, que la colonne n'a pas :
           // elle est `not null`, et c'est voulu — un bilan soumis a toujours une réponse. Aucune
@@ -462,30 +471,12 @@ export default function BilanQuestionnaire() {
           // invisible ⇒ `normaliserReponses` a écrit `false`), mais le typecheck l'exige — et
           // c'est le seul garde qui voit cette dérive, `database.types.ts` étant tenu à la main.
           commute_second_mode_used: answers.commute_second_mode_used ?? false,
-          commute_second_mode: answers.commute_second_mode,
-          commute_second_mode_share: answers.commute_second_mode_share,
-          commute_car_engine: answers.commute_car_engine,
-          commute_two_wheeler_type: answers.commute_two_wheeler_type,
+          commute_has_regular_trip: answers.commute_has_regular_trip ?? false,
           leisure_frequency: answers.leisure_frequency ?? 'rarely',
-          leisure_mode: answers.leisure_mode,
-          leisure_distance_bracket: answers.leisure_distance_bracket,
-          // Même garde que `commute_distance_km` juste au-dessus : un « 0 » saisi n'est pas
-          // une distance, et la colonne porte `check (leisure_distance_km > 0)`.
+          // Même lecture que la complétude des étapes : un « 0 » n'est pas une distance, et les
+          // deux colonnes portent `check (… > 0)`.
+          commute_distance_km: distanceDomicileTravailKm(answers),
           leisure_distance_km: distanceSortieKm(answers),
-          leisure_is_carpool: answers.leisure_is_carpool,
-          leisure_carpool_size: answers.leisure_carpool_size,
-          leisure_car_engine: answers.leisure_car_engine,
-          leisure_two_wheeler_type: answers.leisure_two_wheeler_type,
-          flights_total_per_year: answers.flights_total_per_year,
-          flights_short_per_year: answers.flights_short_per_year,
-          train_long_trips_per_year: answers.train_long_trips_per_year,
-          car_long_trips_per_year: answers.car_long_trips_per_year,
-          car_long_trips_engine: answers.car_long_trips_engine,
-          car_long_trips_occupancy: answers.car_long_trips_occupancy,
-          zone_type: answers.zone_type,
-          tc_access: answers.tc_access,
-          household_vehicles: answers.household_vehicles,
-          teletravail: answers.teletravail,
         },
         { onConflict: 'assessment_id' }
       );

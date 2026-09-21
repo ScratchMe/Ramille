@@ -23,6 +23,15 @@ dépôt s'est données tiennent.** Vérifié contre la base vivante le 19/09/202
 
 ## 1. Deux entorses au point de résolution unique du calcul
 
+> **Fermé le 21/09/2026 par C4.4**, exactement comme cette ligne le prescrivait : les deux appels
+> directs sont rentrés au point unique dans la migration qui réécrivait déjà les deux fonctions.
+> Et la garde qui manquait a été écrite du même geste — une assertion pgTAP interdit qu'un
+> résolveur spécialisé soit rappelé en direct depuis le calcul, en **retirant les commentaires** du
+> corps avant de chercher, sans quoi la phrase qui explique la règle ferait échouer le contrôle
+> qu'elle décrit. Le reste de cette section est conservé tel quel : c'est le relevé du 19/09, et
+> sa dernière phrase — « le jour où `resolve_mode` gagne une dimension, ces deux sites ne la
+> recevront pas » — a eu raison deux jours plus tard.
+
 **Mesuré.** `CLAUDE.md` pose que « le calcul n'a qu'un seul point de résolution,
 `public.resolve_mode(mode_id, engine, type)` » et interdit d'appeler les fonctions spécialisées en
 direct. Relevé dans les définitions vivantes : **deux sites le font**, tous deux pour la voiture des
@@ -223,6 +232,25 @@ et le même horodatage que le fichier**, pour que la divergence cesse de croîtr
 (`classement_du_plan`, `teletravail_en_jours`, `le_contexte_sort_du_questionnaire`) ont toutes
 dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées.
 
+**Et c'est exactement ce qui s'est reproduit à la migration suivante** (21/09/2026, C4.4). Le
+fichier portait l'horodatage `20260921160000`, l'enregistrement distant porte `20260921165612` :
+même nom de migration, cinquante-six minutes d'écart, et pour la raison que le paragraphe
+ci-dessus nommait sans en tirer la conséquence — **`apply_migration` pose son horodatage, et
+l'appelant ne le choisit pas**. La consigne était donc inapplicable telle qu'écrite : elle
+demandait de choisir quelque chose qui n'est pas offert.
+
+**La réparation se fait après coup, et c'est la seule disponible** : relever l'horodatage
+enregistré, puis renommer le fichier du dépôt dessus. Ce n'est pas « réécrire l'historique » au
+sens interdit deux paragraphes plus haut — rien de ce qui a été appliqué ne change, aucun ordre ne
+bouge, aucune base n'est touchée ; c'est donner au fichier le nom de son enregistrement.
+`20260921165612_les_modes_qui_manquent.sql` est ainsi **la première migration du dépôt qui
+s'apparie exactement à la sienne**.
+
+**La règle devient donc** : appliquer, relever, renommer, pousser — et le relevé tient en une
+requête sur `supabase_migrations.schema_migrations`. Elle est consignée en `SUPABASE.md` §1.5,
+parce qu'elle ne doit rien à Ramille : elle vaut partout où un outil applique les migrations à la
+place de la personne qui les a écrites.
+
 ## 10. Ce qui a été traité le soir même
 
 - **`estRaisonAnnoncable`** (`src/types/plan.ts`), écrit le matin et appelé nulle part : supprimé,
@@ -240,13 +268,13 @@ dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées
 
 | | Chantier | Effort | Quand |
 |---|---|---|---|
-| 1 | §1 — les deux entorses au point de résolution | ~nul | **dans la migration de C4.4**, pas avant |
+| 1 | §1 — les deux entorses au point de résolution | ~nul | **fait le 21/09/2026**, dans la migration de C4.4 |
 | 2 | §2 — les signatures dans le contrôle de types | petit | **fait le 20/09/2026** (§12.2) |
 | 3 | §3 — la promesse du favicon | une décision | quand on y touche |
 | 4 | §4 — la décision d'affichage du plan | moyen, risque réel | page de décision d'abord, recette dédiée ensuite |
 | 5 | §5 — le découpage des fonctions de calcul | grand | à instruire, jamais en marge d'une vague |
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | page de décision |
-| 7 | §9 — appliquer les migrations sous le nom et l'horodatage du fichier | une habitude | à la prochaine migration |
+| 7 | §9 — renommer le fichier sous l'horodatage **enregistré**, une fois la migration appliquée | une habitude | **commencé le 21/09/2026** (C4.4) : une migration appariée, et la consigne d'avant était inapplicable |
 | 8 | §12.5 — un comparateur mécanique des miroirs de `check` | petit | **fait le 20/09/2026** (§12.2) |
 | 9 | §12.5 — l'artefact de la recette du premier parcours à régénérer depuis son `.md` | une manipulation | **fait le 20/09/2026** (§12.2) |
 
@@ -1057,3 +1085,30 @@ contre 254 lignes réelles.
 la liste de trois, et surtout la parade qu'elle prescrivait — `supabase db reset` avant chaque suite
 locale. Le réflexe de faire porter à l'appelant une manipulation que l'assertion aurait dû éviter
 est le vrai enseignement de cette ligne.
+
+## 12.16 — Le RER n'est pas proposable comme action, faute de savoir où l'on habite
+
+**Relevé en livrant C4.4, le 21/09/2026.** Le chantier ferme la moitié coûteuse du défaut du RER :
+le bilan d'un usager du RER passe de 249,2 à 88,0 kg/an sur le profil de référence, soit le facteur
+2,83 que `v1-21` §3.1 avait mesuré. **L'autre moitié reste ouverte**, et il vaut mieux l'écrire que
+de laisser croire le sujet clos.
+
+`v1-21` §3.1 relevait que le gain de « Passer deux trajets sur cinq en train » est chiffré au tarif
+du TER, donc **sous-estimé de 64,5 kg/an** pour quelqu'un dont l'alternative réelle est le RER —
+c'est-à-dire en Île-de-France, là où il y a le plus de monde à convaincre.
+
+**Pourquoi ce n'est pas corrigé.** Proposer le RER demanderait de savoir où la personne habite *au
+sens du réseau*, et le produit ne le demande pas. Le seul filtre disponible est `zone_type`, dont la
+valeur `urbain_dense` recouvre Toulouse, Nantes et Rennes autant que la banlieue francilienne :
+borner le gabarit à cette zone proposerait le RER là où il n'y en a pas, c'est-à-dire **le défaut
+exact que C3.8 a fermé** (« le plan ne propose plus l'impossible »). Entre un gain sous-estimé et
+une action impossible, le second coûte plus cher — on perd la confiance, pas 64 kg.
+
+**Ce qui a été fait à la place** : le gabarit a perdu « ou en RER » de son libellé. Il promettait ce
+que son gain ne chiffrait pas ; il ne promet plus que le train, qu'un TER dessert partout.
+
+**Condition de réouverture** : une question de région, ou n'importe quelle réponse qui distingue
+l'Île-de-France. Elle n'existe nulle part dans le questionnaire aujourd'hui, et l'ajouter pour un
+seul gabarit serait cher — c'est une décision de produit, pas une correction. Le jour où le
+questionnaire demande quelque chose de ce genre pour une autre raison, ce gabarit-là est le premier
+à en profiter.

@@ -50,6 +50,10 @@ const OPTIONS_OCCUPATION = OCCUPATIONS_LONG_TRAJET.map((n) => ({
 }));
 
 // B3.3 / B3.4 — la dernière puce stocke sa valeur nominale, même simplification que flights.tsx.
+//
+// Trois séries depuis C4.4, toutes trois rendues depuis `COUNT_CHOICES` : l'autocar a la même
+// plage que le train et la voiture, parce que rien ne justifie qu'on plafonne plus bas le mode
+// qu'on vient d'ouvrir — et un plafond propre à une série serait un second nombre à tenir.
 export function LongTripsStep({
   answers,
   update,
@@ -73,9 +77,9 @@ export function LongTripsStep({
           En train
         </ThemedText>
         {/* `radiogroup` ferme la série, et **c'est son libellé qui la distingue, pas son rôle**
-            (A2-9) : les deux séries de l'étape sont rigoureusement identiques — la même rangée,
-            de « 0 » au plafond, rendue deux fois depuis la même liste — et l'intitulé qui les
-            qualifie est un frère dans l'arbre, pas un libellé rattaché. En lecture séquentielle
+            (A2-9) : les séries de l'étape sont rigoureusement identiques — la même rangée, de
+            « 0 » au plafond, rendue depuis la même liste, trois fois depuis C4.4 — et l'intitulé
+            qui les qualifie est un frère dans l'arbre, pas un libellé rattaché. En lecture séquentielle
             il précède bien le groupe, mais en navigation de contrôle en contrôle ou en
             exploration tactile plus rien ne disait dans lequel on se trouve. Nommer le groupe le
             dit une fois ; le répéter sur chaque puce le dirait autant de fois qu'il y en a — un
@@ -94,6 +98,40 @@ export function LongTripsStep({
               role="radio"
               selected={answers.train_long_trips_per_year === n}
               onPress={() => update({ train_long_trips_per_year: n })}
+              radius={14}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* C4.4 — le troisième compteur, entre les deux modes collectifs et la voiture. B3.4 ne
+          proposait que l'avion, le train et la voiture, donc un Paris-Lyon en car était compté
+          comme s'il n'avait pas eu lieu.
+
+          **Il n'a pas de question de suivi**, et c'est ce qui le distingue de la voiture juste
+          en dessous : la personne ne choisit ni la motorisation ni le remplissage d'un autocar —
+          ce n'est pas son véhicule, donc il n'y a rien à lui demander de plus.
+
+          Ce que ce compteur ne raconte pas, c'est une histoire flatteuse : l'autocar émet
+          0,037560 kg/km, soit **plus qu'un TER** et douze fois un TGV. C'est précisément pour ça
+          qu'il fallait le poser. */}
+      <View style={styles.field}>
+        <ThemedText type="small" themeColor="textTertiary">
+          En autocar
+        </ThemedText>
+        <View
+          style={styles.chipsWrap}
+          accessibilityRole="radiogroup"
+          accessibilityLabel="Trajets longue distance en autocar"
+        >
+          {COUNT_CHOICES.map((n) => (
+            <Chip
+              key={n}
+              label={n === MAX_TRAJETS ? `${MAX_TRAJETS}+` : String(n)}
+              accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
+              role="radio"
+              selected={answers.coach_long_trips_per_year === n}
+              onPress={() => update({ coach_long_trips_per_year: n })}
               radius={14}
             />
           ))}
@@ -155,7 +193,7 @@ export function LongTripsStep({
       </View>
 
       <ThemedText type="code" themeColor="textTertiary">
-        distances moyennes par défaut · 800 km train, 700 km voiture
+        distances moyennes par défaut · 800 km train, 700 km autocar et voiture
       </ThemedText>
     </View>
   );

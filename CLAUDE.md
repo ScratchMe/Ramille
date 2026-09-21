@@ -238,9 +238,14 @@ contrôle dit lequel : `TESTING.md` §2.7.
 liste déclarée, donc un miroir que personne n'y déclare lui reste invisible, et rien ne balaie le
 dépôt pour le trouver. Ce fichier a d'abord écrit l'inverse — que **toute** recopie y figurait —,
 et c'était faux le jour même : la contre-lecture du soir en a trouvé quatre non déclarés, dont la
-préférence de canal de rappel. La leçon n'est pas le compte, c'est qu'**une garde déclarative ne
-s'annonce jamais exhaustive** : on dit ce qu'elle couvre et ce qui lui échappe, et `TESTING.md`
-§2.7 nomme les deux formes qui lui échappent structurellement.
+préférence de canal de rappel. **Puis C4.4 en a trouvé deux familles de plus le 21/09/2026** — la
+motorisation et le type de deux-roues, épinglées jusque-là par des tests Jest portant les mêmes
+valeurs recopiées une seconde fois, c'est-à-dire par le code contre lui-même. La leçon n'est pas
+le compte, c'est qu'**une garde déclarative ne s'annonce jamais exhaustive** : on dit ce qu'elle
+couvre et ce qui lui échappe, et `TESTING.md` §2.7 nomme les deux formes qui lui échappent
+structurellement. Corollaire de la même vague : une constante s'y déclare **une fois par colonne
+qu'elle sert**, trois portant le `check` de la motorisation sans que rien n'oblige une migration à
+les faire bouger ensemble.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
 y compris celles qui ne nomment pas le facteur touché — et « toucher » inclut en ajouter un.**
@@ -515,10 +520,13 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   piétons et laisserait les cyclistes recevoir chaque lundi une question dont la seule réponse
   honnête est « Non ». `engagement_checkins.question_kind` (`changement` | `maintien`) et `.mode`
   sont **deux** colonnes parce que ce sont deux faits : le genre, que C2.1 fera grossir, et le mode
-  qui remplit le texte. La catégorie `velo_marche` compte **trois** modes (`velo`, `marche`,
-  `trottinette`) : en ajouter un quatrième impose un complément dans
+  qui remplit le texte. La catégorie `velo_marche` compte `velo`, `marche`, `trottinette` et,
+  depuis C4.4, `velo_electrique` : en ajouter un impose un complément dans
   `public.complement_de_maintien` **et** dans sa jumelle `src/types/checkin.ts`, sinon il reçoit
-  « autrement » en silence des deux côtés. Un test pgTAP épingle la liste.
+  « autrement » en silence des deux côtés. Un test pgTAP épingle la liste, **et c'est lui qui a
+  rattrapé C4.4** — le compte ne s'écrit plus ici, il se lit en base. La réplique du « Non » se
+  choisit, elle, par `varianteDeMaintien` : le vélo à assistance partage l'identité du vélo
+  (« Le vélo reste ton trajet »), là où la question garde son complément exact.
 - **Le « Non » d'un maintien ne reçoit jamais `checkinNon`** : cette réplique console d'un échec, et
   répondre « non » à « ton trajet s'est-il fait à vélo ? » n'en est pas un. D'où `maintienNon`, en
   visage `calm`. Le choix vit dans `repliqueDuPoint`, avec son test — jamais en ternaire dans la
@@ -544,6 +552,15 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   (`recompute_assessment_results` lève sans elles), ce sont les **fixtures de test** qui s'en
   passaient. Et un bilan à zéro nomme le poste où quelque chose est déclaré : plus de
   « Trajet domicile-travail () ».
+  **Ce filtre énumère les compteurs de voyages un par un, donc ajouter une réponse au questionnaire
+  impose d'ajouter sa ligne ici** — relevé en contre-lisant C4.4, qui avait livré l'autocar sans :
+  un profil dont les seuls longs trajets sont en car avait un poste réel, un plan portant
+  « Remplacer un de tes longs trajets en autocar par le train », et **aucun point mensuel**, donc
+  jamais la question que cette action existe pour refermer. Ce qui l'a trouvé n'est pas une
+  relecture du diff mais le fait de **jouer les deux crons de 6 h** sur un profil neuf ; ce qui le
+  garde est une assertion de `20_qui_recoit_quelle_boucle.test.sql`, qui tombera au cinquième
+  compteur. C'est la même forme que le défaut de la soumission du bilan trouvé le même jour : une
+  liste de réponses écrite à la main, qui se périme en silence.
 
 **Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
 (C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement
@@ -1056,7 +1073,24 @@ un scooter. Les quatre étaient comptés au tarif du scooter, ce qui sous-estima
 l'empreinte d'un motard — dans le sens qui fait passer le deux-roues pour vertueux. Un test
 pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe. Piège de relevé :
 l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
-distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant que la voiture.
+distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant pas de deux-roues.
+
+**Et depuis C4.4 le train et le vélo ont la leur** (`commute_train_type` / `leisure_train_type` :
+TER, RER ou Transilien, Intercités ; `commute_velo_type` / `leisure_velo_type` : mécanique ou à
+assistance). Deux champs par poste et non par jambe, comme la motorisation — B1.7 exclut le mode
+déjà choisi en B1.4, donc au plus une jambe porte le train à un instant donné. Trois choses à ne
+pas défaire :
+
+- **la trottinette ne reçoit pas de question** : elle est déjà à 0,0249 et n'a pas de variante
+  mécanique crédible — une question dont une seule réponse existe n'est pas une question ;
+- **`normaliserReponses` efface ces deux réponses sur des loisirs « rarement », là où la
+  motorisation reste** — l'asymétrie est celle du covoiturage, et elle a une conséquence
+  mesurable : le résiduel de « rarement » vaut `train` quand le foyer n'a pas de voiture, donc un
+  type survivant y serait lu et un bilan resoumis à l'identique changerait de total ;
+- **B3.4 gagne un troisième compteur, l'autocar** (`coach_long_trips_per_year`), et il n'a **pas**
+  de question de suivi : la personne ne choisit ni la motorisation ni le remplissage d'un
+  autocar — ce n'est pas son véhicule, donc il n'y a rien à lui demander de plus. Son chiffre
+  surprend et c'est le sujet — 0,03756, soit **plus qu'un TER** et douze fois un TGV.
 
 **Six règles de migration apprises sur le distant, et aucune ne se voit en CI** : une migration de
 données ne désigne jamais une ligne par un identifiant généré (`action_text` est la clé naturelle
@@ -1066,23 +1100,33 @@ porte les corps de fonction sans les commentaires du dépôt, donc une ancre n'e
 rejouer un fichier ancien peut défaire une migration plus récente ; et réécrire une fonction part
 de `pg_get_functiondef`, jamais du fichier qui l'a créée — `SUPABASE.md` §2.3.
 
-**Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine, type)`**,
-qui compose `resolve_car_mode` et `resolve_two_wheeler_mode` — littéralement
-`resolve_two_wheeler_mode(resolve_car_mode(mode, moteur), type)`. Ne jamais rappeler les deux
-fonctions spécialisées en imbriqué dans `recompute_assessment_results` ou
+**Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine,
+two_wheeler, train, velo)`**, qui compose **quatre** résolveurs spécialisés depuis C4.4
+(`resolve_car_mode`, `resolve_two_wheeler_mode`, `resolve_train_mode`, `resolve_velo_mode`). Ne
+jamais les rappeler en imbriqué dans `recompute_assessment_results` ou
 `estimate_action_savings` : un oubli serait silencieux — le mode générique existe, son facteur
-existe, le calcul rendrait un nombre. Moteur ou type non renseigné (bilans soumis avant ces
-migrations) retombe sur le générique.
+existe, le calcul rendrait un nombre. Une réponse non renseignée **ou inconnue** retombe sur le
+générique, jamais sur `null`, qui ferait lever `emission_factor` et emporterait le bilan entier.
+La signature a **remplacé** l'ancienne à trois arguments au lieu de la doubler, et un test pgTAP
+épingle que l'ancienne ne survit pas.
+
+**La règle qui décide de ce qui reçoit un mode propre est écrite en tête de la migration de C4.4** :
+le générique est le repli des bilans d'avant la question, et une réponse reçoit un mode à elle
+quand elle change le facteur **ou les mots**. `train_ter` existe pour la seconde raison — « Train »
+ne peut pas être le libellé d'une réponse qui dit TER, exactement comme `voiture_thermique` vit à
+côté de `voiture` avec le même slug et la même valeur ; `velo_mecanique` n'existe pas, parce que
+« Vélo » et « à vélo » sont déjà les mots exacts du vélo mécanique.
 
 **Le compte d'appels qui figurait ici (« six endroits ») était faux, et il n'est pas remplacé** :
 relevé le 19/09/2026, il y en a quatre. C'est la règle que ce fichier s'est déjà donnée ailleurs —
 un compte écrit dans un document se périme en silence à la vague suivante, donc on écrit
-l'invariant et pas le nombre. **Et le relevé a trouvé deux entorses**, sans conséquence
-aujourd'hui : `recompute_assessment_results` et `estimate_action_savings` appellent chacune
-`resolve_car_mode('voiture', car_long_trips_engine)` en direct pour les voyages longue distance.
-L'équivalence avec `resolve_mode('voiture', moteur, null)` a été **éprouvée sur les six valeurs de
-moteur**, donc rien à corriger en urgence ; le bon moment pour les ramener au point unique est la
-migration de C4.4, qui réécrit déjà ces deux fonctions. Voir
+l'invariant et pas le nombre. **Le relevé avait trouvé deux entorses** — `recompute_assessment_results` et
+`estimate_action_savings` appelaient chacune `resolve_car_mode('voiture', car_long_trips_engine)`
+en direct pour les voyages longue distance —, et **elles sont fermées depuis C4.4**, qui réécrivait
+déjà ces deux fonctions : c'était le moment que ce fichier avait prévu. Une assertion pgTAP interdit
+désormais qu'un résolveur spécialisé soit rappelé en direct depuis le calcul, en **retirant les
+commentaires** du corps avant de chercher — sans quoi la phrase qui explique la règle ferait échouer
+le contrôle qu'elle décrit. Voir
 `supabase/migrations/20260904090000_car_engine.sql`, `20260905140000_motorisation_hybride.sql`
 puis `20260905200000_cylindree_deux_roues.sql`.
 
@@ -1107,8 +1151,9 @@ Cette migration porte aussi deux corrections de chiffre à connaître : le facte
 dépend du segment (court / moyen / long-courrier), relevé aux distances de référence du calcul
 — `dist_flight_short` = 1500 km, donc un *moyen*-courrier au sens ADEME, et `dist_flight_long`
 = 9000 km ; et le poste **voyages en train** (B3.3, « > 300 km ») utilise
-`train_longue_distance` (TGV) et non le mode générique `train` qui reste le TER du
-trajet quotidien B1.4. `train_longue_distance` n'est jamais sélectionnable dans le
+`train_longue_distance` (TGV) et non le mode générique `train`, qui est depuis C4.4 le **repli**
+du trajet quotidien B1.4 — les trois réponses réelles (`train_ter`, `train_rer`,
+`train_intercites`) ont chacune leur mode, et le RER vaut 2,83 fois moins qu'un TER. `train_longue_distance` n'est jamais sélectionnable dans le
 questionnaire — il n'apparaît donc pas dans `src/constants/transport-modes.ts`, mais bien dans
 `MODE_PREPOSITION` (`src/types/resultat.ts`) puisqu'il peut être le `dominant_poste_mode`.
 

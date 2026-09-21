@@ -183,7 +183,7 @@ n'était dans aucune fiche :
 
 | Page | Chantier | Ce qu'elle conclut |
 |---|---|---|
-| [`v1-21`](v1-21-modes-manquants.md) | C4.4, les modes manquants | À faire, et **à trois volets et non quatre**. Le « Train ou RER » du produit est compté au tarif du TER alors qu'un facteur RER existe à 2,83 fois moins ; le vélo à assistance est compté 64 fois trop bas ; l'autocar, absent, émet plus qu'un TER |
+| [`v1-21`](v1-21-modes-manquants.md) | C4.4, les modes manquants | **Livré le 21/09/2026.** Le « Train ou RER » était compté au tarif du TER : 249,2 kg/an là où 88,0 étaient justes, rapport 2,83 mesuré. Le vélo à assistance et l'autocar existent désormais, et l'autocar émet **plus qu'un TER** — un test pgTAP l'épingle pour qu'on ne le « corrige » pas par réflexe. Une moitié reste ouverte (`v1-27` §12.16) : le **gain** de l'action « en train » reste au tarif du TER, faute de pouvoir cibler le RER sans savoir où l'on habite |
 | [`v1-22`](v1-22-retirer-un-bilan.md) | C4.7, retirer un bilan | À faire. `status = 'withdrawn'` rend justes **douze** lectures d'un coup — la fiche en annonçait trois |
 | [`v1-23`](v1-23-point-quantitatif.md) | C4.1, le point quantitatif | **Fermer par écrit pour la V1**, avec sa condition de réouverture : la boucle n'a tourné sur personne, et le gain principal annoncé est celui qu'il ne faut pas prendre |
 | [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **Livrer la phrase décidée le 10/09 et jamais livrée**, puis sortir le poste du lot 4 : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions |

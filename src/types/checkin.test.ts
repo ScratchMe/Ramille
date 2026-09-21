@@ -4,6 +4,7 @@ import {
   JOURS_FRANCAIS,
   MOIS_FRANCAIS,
   complementDeMaintien,
+  varianteDeMaintien,
   composerQuestionDuPoint,
   debutDePeriodeInterrogee,
   estDeLaPeriodeCourante,
@@ -103,11 +104,42 @@ describe('moisFrancais', () => {
   });
 });
 
+describe('varianteDeMaintien', () => {
+  // **Le vélo à assistance partage l'identité du vélo, et c'est le sujet du test.** La phrase
+  // nomme ce qu'on renforce (« Le vélo reste ton trajet »), et personne ne dit « le vélo
+  // électrique reste ton trajet » — alors que la question, elle, garde son complément exact.
+  it.each([
+    ['velo', 'velo'],
+    ['velo_electrique', 'velo'],
+    ['marche', 'marche'],
+    ['trottinette', 'trottinette'],
+  ])('%s → variante « %s »', (mode, variante) => {
+    expect(varianteDeMaintien(mode)).toBe(variante);
+  });
+
+  it('ferme sur « autre » plutôt que de laisser un mode inattendu tomber sur checkinNon', () => {
+    for (const valeur of [null, undefined, '', 'voiture_thermique', 'train_rer']) {
+      expect(varianteDeMaintien(valeur)).toBe('autre');
+    }
+  });
+
+  // **L'invariant, et non la liste** : ce qui doit tenir est que toute variante rendue ait sa
+  // réplique. Une liste recopiée ici garderait le code contre lui-même ; ceci tombe le jour où
+  // quelqu'un ajoute une variante d'un côté sans l'autre.
+  it('toute variante qu’elle rend a sa réplique dans RAMILLE.maintienNon', () => {
+    const modes = [...Object.keys(COMPLEMENT_DE_MAINTIEN), null, 'voiture_thermique'];
+    for (const mode of modes) {
+      expect(RAMILLE.maintienNon[varianteDeMaintien(mode)]).toEqual(expect.any(String));
+    }
+  });
+});
+
 describe('complementDeMaintien', () => {
-  // La catégorie `velo_marche` compte **trois** modes en base, pas deux : un repli sur le vélo
+  // La catégorie `velo_marche` compte **quatre** modes en base, pas deux : un repli sur le vélo
   // demanderait « ton trajet s'est-il fait à vélo ? » à quelqu'un qui n'en a pas.
   it.each([
     ['velo', 'à vélo'],
+    ['velo_electrique', 'à vélo électrique'],
     ['marche', 'à pied'],
     ['trottinette', 'en trottinette'],
   ])('%s → « %s »', (mode, complement) => {
@@ -122,7 +154,12 @@ describe('complementDeMaintien', () => {
   });
 
   it('ne couvre que la catégorie vélo/marche', () => {
-    expect(Object.keys(COMPLEMENT_DE_MAINTIEN).sort()).toEqual(['marche', 'trottinette', 'velo']);
+    expect(Object.keys(COMPLEMENT_DE_MAINTIEN).sort()).toEqual([
+      'marche',
+      'trottinette',
+      'velo',
+      'velo_electrique',
+    ]);
   });
 });
 

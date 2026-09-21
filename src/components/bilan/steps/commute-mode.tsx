@@ -8,7 +8,9 @@ import { ThemedText } from '@/components/themed-text';
 import {
   CAR_ENGINE_OPTIONS,
   COMMUTE_MODE_CHOICES,
+  TRAIN_TYPE_OPTIONS,
   TWO_WHEELER_TYPE_OPTIONS,
+  VELO_TYPE_OPTIONS,
 } from '@/constants/transport-modes';
 import { Spacing } from '@/constants/theme';
 import { TAILLES_DE_COVOITURAGE, type BilanAnswers } from '@/types/bilan';
@@ -66,6 +68,36 @@ export function CommuteModeStep({
                     options={TWO_WHEELER_TYPE_OPTIONS}
                     valeur={answers.commute_two_wheeler_type}
                     onChange={(value) => update({ commute_two_wheeler_type: value })}
+                  />
+                </View>
+              )}
+
+              {/* C4.4 — deux révélations de plus, sur le patron exact de la motorisation. Le mode
+                  s'appelait « Train ou RER » et portait le facteur du TER, soit 2,83 fois celui du
+                  RER : le produit promettait une chose et en comptait une autre. Et « Vélo » ne
+                  distinguait pas l'assistance électrique, 64 fois plus émettrice — petit en
+                  valeur absolue, mais sur le profil dont le total est de l'ordre de la dizaine de
+                  kilos. Jamais des entrées de plus dans la liste : une liste qui gonfle est ce qui
+                  fait abandonner un questionnaire, une question de suivi ne coûte qu'à ceux
+                  qu'elle concerne. */}
+              {selected && choice.modeId === 'train' && (
+                <View style={styles.precision}>
+                  <PrecisionMode
+                    question="Quel type de train ?"
+                    options={TRAIN_TYPE_OPTIONS}
+                    valeur={answers.commute_train_type}
+                    onChange={(value) => update({ commute_train_type: value })}
+                  />
+                </View>
+              )}
+
+              {selected && choice.modeId === 'velo' && (
+                <View style={styles.precision}>
+                  <PrecisionMode
+                    question="Quel type de vélo ?"
+                    options={VELO_TYPE_OPTIONS}
+                    valeur={answers.commute_velo_type}
+                    onChange={(value) => update({ commute_velo_type: value })}
                   />
                 </View>
               )}

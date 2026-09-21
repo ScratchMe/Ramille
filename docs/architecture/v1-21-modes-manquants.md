@@ -7,6 +7,30 @@
 > C4.4 est **le seul chantier du lot 4 qui corrige un chiffre.** Les cinq autres ajoutent une
 > question, un écran ou une comparaison ; celui-ci change ce que le produit répond à quelqu'un qui
 > a déjà répondu juste.
+>
+> ---
+>
+> **Livré le 21/09/2026.** Les quatre arbitrages (D1 à D4) sont allés dans le sens recommandé.
+> Ce que le chantier a fait **au-delà** de cette page, et qui ne s'y lit donc pas :
+>
+> - **cinq modes et non quatre** — `train_ter` s'ajoute aux trois prévus, sur une règle écrite en
+>   tête de la migration : le générique est le repli des bilans d'avant la question, et une réponse
+>   reçoit un mode à elle quand elle change le facteur **ou les mots**. Par la même règle,
+>   `velo_mecanique` n'existe pas ;
+> - **`min_distance_km` sur les gabarits d'action**, sans quoi le gabarit VAE aurait doublé le
+>   gabarit vélo au lieu de prendre la fenêtre au-dessus : jusqu'à 10 km le vélo, au-delà le VAE,
+>   jamais les deux ;
+> - **quatre gabarits d'action** (VAE en trajet et en sortie, autocar depuis la voiture, train
+>   depuis l'autocar), demandés en cours de chantier — le §5 disait « un gabarit possible » ;
+> - **les deux entorses au point de résolution unique** (`v1-27` §1) sont fermées du même geste,
+>   comme cette dette le prescrivait.
+>
+> **Et une moitié du §3.1 reste ouverte, consignée en `v1-27` §12.16** : le bilan du RER est
+> corrigé (249,2 → 88,0 kg/an, rapport 2,83 mesuré), mais le **gain** de l'action « en train »
+> reste chiffré au tarif du TER. Cibler le RER demanderait de savoir où la personne habite au sens
+> du réseau, et `zone_type = 'urbain_dense'` recouvre Toulouse autant que la banlieue francilienne
+> — le proposer là serait le défaut exact que C3.8 a fermé. Le gabarit a donc perdu « ou en RER »
+> de son libellé : on ne promet que ce qu'on chiffre.
 
 ## 1. D'où ça vient
 

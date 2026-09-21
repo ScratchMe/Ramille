@@ -144,6 +144,14 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   créée — les gardes ajoutées depuis disparaissent en silence, et seul le fichier de test qui
   possède la fonction l'attrape. Corollaire : une migration qui touche une fonction existante
   impose de rejouer le fichier de test qui la possède.
+- **L'outil qui applique pose son propre horodatage, donc le nom du fichier et celui de
+  l'enregistrement divergent — et la parade se joue APRÈS, pas avant.** « Appliquer sous
+  l'horodatage du fichier » est une consigne qu'on ne peut pas tenir : l'appelant ne le choisit
+  pas. Ce qu'on peut tenir, c'est relever l'horodatage enregistré une fois l'application faite
+  (une requête sur la table de migrations du projet) et **renommer le fichier dessus** avant de
+  pousser. Ce n'est pas réécrire un historique — rien d'appliqué ne change, aucun ordre ne bouge :
+  c'est donner au fichier le nom de son enregistrement, pour qu'on puisse, en partant d'un
+  enregistrement, retrouver le fichier qui l'a produit.
 - **Un fichier de types tenu à la main dérive sans que le typecheck le voie** — il vérifie le code
   contre le fichier, jamais le fichier contre la base. Comparer en CI les **colonnes** du fichier
   à celles d'une base reconstruite (`supabase gen types typescript --local`), et jamais le

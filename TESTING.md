@@ -405,7 +405,8 @@ n'est plus la seule validation d'un fichier pgTAP, et ce n'est pas la meilleure 
 des données que trois assertions ne supportent pas (§2.3).
 
 **Deux profils, et le second n'est pas un doublon** (20/09/2026). Le premier est celui de la
-recette — voiture, vols, huit pistes. Le second est un **cycliste dont le plan ne porte aucune
+recette — voiture, vols, dix pistes depuis C4.4 (le compte est dans le script, pas ici : il a déjà
+bougé une fois). Le second est un **cycliste dont le plan ne porte aucune
 action**, et ce n'est pas un cas de bord : depuis C2.5, tout cycliste et tout profil sédentaire y
 tombe. C'est surtout le seul chemin où la carte « Ton premier plan » ne se rend **jamais** (elle
 demande une action), donc le seul où la barre d'onglets doit arriver autrement — au premier
@@ -504,8 +505,20 @@ le contraire de ce que la base applique.
 recherche d'un miroir que personne n'a déclaré : la parade est l'habitude d'ajouter sa ligne en
 écrivant la constante. `CLAUDE.md` a d'abord promis l'inverse, et la contre-lecture du soir même a
 trouvé **quatre** miroirs non déclarés — `CanalPrefere` (la préférence de canal de rappel),
-`IntentionTiming`, `LoopType` et `POSTES` —, tous ajoutés et éprouvés depuis. Deux formes lui
-échappent **structurellement**, et il vaut mieux les connaître que de croire la liste close :
+`IntentionTiming`, `LoopType` et `POSTES` —, tous ajoutés et éprouvés depuis. **Puis C4.4 en a
+trouvé deux familles de plus le 21/09/2026**, en venant déclarer les siennes : `CarEngine` et
+`TwoWheelerType`, avec les tableaux d'options qui les accompagnent. Elles étaient épinglées, mais
+par des tests Jest portant les mêmes valeurs recopiées une seconde fois — précisément la garde que
+cette section existe pour remplacer. Le motif se répète assez pour être nommé : **ce sont les
+miroirs les plus anciens qui manquent**, écrits avant la règle, et rien ne les rappelle à personne.
+
+Depuis la même vague, une constante s'y déclare **une fois par colonne qu'elle sert** : trois
+colonnes portent le `check` de la motorisation, et rien n'oblige une migration à les faire bouger
+ensemble — une déclaration unique les jugerait toutes les trois sur une. Le contrôle rend alors un
+écart par colonne, ce qui dit aussi **laquelle** a dérivé.
+
+Deux formes lui échappent **structurellement**, et il vaut mieux les connaître que de croire la
+liste close :
 
 - **une union recopiée en ligne** plutôt qu'importée depuis son `export type` — la lecture ne
   connaît qu'une forme, `export type X = 'a' | 'b';`. `loop_type` l'a été jusqu'au 20/09/2026 :

@@ -27,8 +27,10 @@
 --     vaut 0 mais `velo` 0,00017 et `trottinette` 0,0249. Il n'attraperait que les piétons, et les
 --     cyclistes — la population que ce chantier existe pour soulager — continueraient de recevoir
 --     la question ;
---   * **la catégorie compte trois modes, pas deux.** Une assertion le vérifie en base : ajouter un
---     quatrième mode vélo/marche obligerait à lui donner son complément des deux côtés de la paire ;
+--   * **la catégorie compte quatre modes, pas deux** — trois jusqu'au 21/09/2026, où C4.4 y a
+--     ajouté le vélo à assistance électrique. Une assertion le vérifie en base, et **c'est elle
+--     qui a rattrapé ce chantier-là** : ajouter un mode vélo/marche oblige à lui donner son
+--     complément des deux côtés de la paire, faute de quoi il reçoit « autrement » en silence ;
 --   * **le « Non » d'un maintien n'est pas un échec** — la réplique est côté client, mais c'est
 --     `question_kind` qui la décide, et il est posé ici ;
 --   * **le résiduel de 15 km reste** (D5, spec §5) : seules ses *conséquences* sont retirées. Les
@@ -37,7 +39,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(31);
 
 -- ── La forme de la question de maintien ─────────────────────────────────────────────────
 
@@ -54,13 +56,17 @@ select ok(length(public.complement_de_maintien(null)) > 0,
 
 -- **La liste de modes sur laquelle tout le chantier repose.** Le générateur pose la question de
 -- maintien pour toute la catégorie `velo_marche` ; `complement_de_maintien` et sa jumelle
--- TypeScript en nomment trois. Un quatrième mode ajouté à cette catégorie recevrait « autrement »
--- en silence, des deux côtés.
+-- TypeScript les nomment un par un. Un mode ajouté à cette catégorie sans son complément
+-- recevrait « autrement » en silence, des deux côtés — et cette assertion est exactement ce qui a
+-- fait tomber C4.4 le 21/09/2026, avant que le vélo à assistance n'atteigne personne.
 select results_eq(
   $$ select id from public.transport_modes where category = 'velo_marche' order by id $$,
-  $$ values ('marche'::text), ('trottinette'::text), ('velo'::text) $$,
-  'la catégorie velo_marche compte exactement trois modes — en ajouter un impose un complément'
+  $$ values ('marche'::text), ('trottinette'::text), ('velo'::text), ('velo_electrique'::text) $$,
+  'la catégorie velo_marche compte exactement quatre modes — en ajouter un impose un complément'
 );
+
+select is(public.complement_de_maintien('velo_electrique'), 'à vélo électrique',
+  'complement_de_maintien: le vélo à assistance a sa phrase, pas le repli « autrement »');
 
 select ok(not has_function_privilege('authenticated', 'public.complement_de_maintien(text)', 'execute'),
   'complement_de_maintien: authenticated ne peut pas l''appeler');
@@ -82,7 +88,8 @@ from unnest(array[
   'e2500000-0000-0000-0000-000000000003',        -- C : loisirs rares, voiture au foyer
   'e2500000-0000-0000-0000-000000000004',        -- D : bilan à zéro, sans trajet régulier
   'e2500000-0000-0000-0000-000000000005',        -- E : loisirs rares, aucun véhicule au foyer
-  'e2500000-0000-0000-0000-000000000006'         -- F : témoin, loisirs déclarés
+  'e2500000-0000-0000-0000-000000000006',        -- F : témoin, loisirs déclarés
+  'e2500000-0000-0000-0000-000000000007'         -- G : l'autocar pour seule base déclarée (C4.4)
 ]) u;
 
 update public.profiles set reminder_channel = 'email' where id::text like 'e2500000%';
@@ -92,10 +99,12 @@ select a, u, 'completed', now()
 from unnest(
   array['e2510000-0000-0000-0000-000000000001'::uuid, 'e2510000-0000-0000-0000-000000000002',
         'e2510000-0000-0000-0000-000000000003', 'e2510000-0000-0000-0000-000000000004',
-        'e2510000-0000-0000-0000-000000000005', 'e2510000-0000-0000-0000-000000000006'],
+        'e2510000-0000-0000-0000-000000000005', 'e2510000-0000-0000-0000-000000000006',
+        'e2510000-0000-0000-0000-000000000007'],
   array['e2500000-0000-0000-0000-000000000001'::uuid, 'e2500000-0000-0000-0000-000000000002',
         'e2500000-0000-0000-0000-000000000003', 'e2500000-0000-0000-0000-000000000004',
-        'e2500000-0000-0000-0000-000000000005', 'e2500000-0000-0000-0000-000000000006']
+        'e2500000-0000-0000-0000-000000000005', 'e2500000-0000-0000-0000-000000000006',
+        'e2500000-0000-0000-0000-000000000007']
 ) as t(a, u);
 
 -- A : va au travail à vélo, sort rarement, aucun voyage. Le profil du constat A13-3.
@@ -139,12 +148,22 @@ insert into public.assessment_answers (assessment_id, commute_has_regular_trip, 
 values ('e2510000-0000-0000-0000-000000000006', true, 5, 20, 'voiture', 'thermique', 'weekly',
         'voiture', '15_30', 'thermique', '1', 'periurbain', 'bon');
 
+-- G : **aucune sortie, aucun vol, aucun train, aucune voiture — quatre longs trajets en autocar**
+-- (C4.4). Le filtre de base déclarée énumère les compteurs un par un, et ce profil est celui
+-- qu'il oubliait : un poste réel (« Voyages longue distance (Autocar) », 105 kg/an), un plan
+-- portant « Remplacer un de tes longs trajets en autocar par le train », et aucun point mensuel —
+-- donc jamais la question que cette action existe pour refermer.
+insert into public.assessment_answers (assessment_id, commute_has_regular_trip,
+  leisure_frequency, coach_long_trips_per_year, household_vehicles, zone_type, tc_access)
+values ('e2510000-0000-0000-0000-000000000007', false, 'rarely', 4, '0', 'rural', 'limite');
+
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000001');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000002');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000003');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000004');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000005');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000006');
+select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000007');
 
 -- ── 1. Le cycliste reçoit une question de maintien ──────────────────────────────────────
 
@@ -209,6 +228,23 @@ select is(
    where user_id = 'e2500000-0000-0000-0000-000000000006' and loop_type = 'extras'),
   1,
   'témoin : des sorties déclarées donnent bien un point mensuel — le filtre ne ferme pas la boucle'
+);
+
+-- **Le quatrième compteur compte comme les trois autres** (C4.4, relevé en contre-lisant la PR :
+-- le filtre les énumère à la main et l'autocar y manquait). Cette assertion est ce qui tombera le
+-- jour où un cinquième compteur s'ajoutera sans sa ligne — et le libellé dit où aller.
+select is(
+  (select count(*)::int from public.engagement_checkins
+   where user_id = 'e2500000-0000-0000-0000-000000000007' and loop_type = 'extras'),
+  1,
+  'l''autocar est une base déclarée : quatre longs trajets en car donnent un point mensuel (filtre de generate_extras_checkins)'
+);
+
+select is(
+  (select trip_label from public.engagement_checkins
+   where user_id = 'e2500000-0000-0000-0000-000000000007' and loop_type = 'extras'),
+  'Voyages longue distance (Autocar)',
+  'et le point nomme le poste par le mode réel, pas par un résiduel'
 );
 
 -- La question de maintien n'existe **que** sur la boucle hebdomadaire : aller au travail à vélo

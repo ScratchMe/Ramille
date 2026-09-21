@@ -135,16 +135,22 @@ const ATTENDU = {
   dominantKg: 1920,
   capKg: 384,
   pistes: [
-    ['Passer deux trajets sur cinq en train ou en RER', 619],
+    ['Passer deux trajets sur cinq en train', 619],
     ['Renoncer à un vol long-courrier cette année', 1601],
     ['Faire ce trajet à deux au moins un jour sur deux', 480],
     ['Travailler depuis chez toi un jour par semaine', 384],
     ['Renoncer à un vol court ou moyen-courrier cette année', 277],
     ['Remplacer un aller-retour en avion par le train', 273],
+    // **Deux lignes de plus depuis C4.4**, et elles ne sont pas du décor : ce profil fait ses
+    // sorties à 22,5 km, c'est-à-dire au-dessus de ce qu'un vélo mécanique tient (15 km) et dans
+    // la fenêtre du VAE ; et il déclare deux longs trajets en voiture à deux, où l'autocar gagne
+    // encore 47 %. Aucune des deux n'existait, donc aucune n'était proposée.
+    ['Faire une sortie sur trois à vélo à assistance électrique', 101],
     ['Regrouper deux sorties en une seule, une fois sur cinq', 67],
     // L'apostrophe droite est celle du référentiel (`action_text` est sa clé naturelle), pas celle
     // de la recette, qui l'écrit typographique.
     ["Faire un de tes longs trajets en train plutôt qu'en voiture", 48],
+    ["Faire un de tes longs trajets en autocar plutôt qu'en voiture", 23],
   ],
 };
 
@@ -352,6 +358,9 @@ try {
 
   etape('questionnaire — longs trajets');
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
+  // C4.4 : la troisième série, cliquée à zéro. Elle vaut déjà zéro par défaut, donc ce clic
+  // n'existe que pour qu'un compteur qui disparaîtrait de l'écran fasse échouer le parcours.
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '2', exact: true }).click();
   await choisir('Thermique');
   await choisir('2 personnes');
@@ -416,7 +425,7 @@ try {
   );
   assurer(/\/plan/.test(page.url()), `« Voir ce que je peux faire » n'a pas mené au plan : ${page.url()}`);
 
-  // ── 5. Le plan : les huit pistes, le cap, la carte du premier plan ──────────────────────────
+  // ── 5. Le plan : les dix pistes, le cap, la carte du premier plan ───────────────────────────
   etape('plan');
   await page.waitForURL(/\/plan/, { timeout: ATTENTE });
   await attendreTexte(ATTENDU.pistes[0][0]);
@@ -528,9 +537,12 @@ try {
   await distanceVelo.waitFor({ state: 'visible', timeout: ATTENTE });
   await distanceVelo.fill('5');
   await bouton('Suivant');
-  // Le vélo n'ouvre ni motorisation ni type : ces deux révélations sont propres à la voiture et au
-  // deux-roues motorisé. En demander une ici s'arrêterait sur « aucun contrôle nommé ».
+  // **Le vélo ouvre sa propre révélation depuis C4.4** — ce commentaire disait l'inverse jusqu'au
+  // 21/09/2026, et c'est le genre de phrase qui survit à ce qu'elle décrit. « Mécanique » garde
+  // le facteur d'avant le chantier (0,000170), donc les chiffres de ce profil ne bougent pas :
+  // c'est la réponse qui isole la nouveauté de l'écran de celle du calcul.
   await choisir('Vélo');
+  await choisir('Mécanique');
   await bouton('Suivant');
   await choisir('Non');
   await bouton('Suivant');
@@ -541,6 +553,7 @@ try {
   await choisir('0'); // aucun vol — et à zéro, la question « combien sont courts ? » ne se pose pas
   await bouton('Suivant');
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '0', exact: true }).click();
   await bouton('Suivant');
   await choisir('Urbain dense');
@@ -563,6 +576,23 @@ try {
   assurer(
     Math.round(resultatSobre.total_co2_kg_year) === ATTENDU_SOBRE.totalKg,
     `total du cycliste ${resultatSobre.total_co2_kg_year} kg, attendu ${ATTENDU_SOBRE.totalKg}`
+  );
+
+  // **La réponse à une révélation imbriquée atteint-elle la colonne ?** Écrit le 21/09/2026 après
+  // un défaut que rien n'a vu : la soumission énumérait les colonnes à la main, et les cinq
+  // réponses neuves de C4.4 n'y figuraient pas — posées, normalisées, affichées, jamais écrites.
+  // Ni le typecheck (une colonne neuve est `optional` dans `Insert`) ni le total de ce profil ne
+  // pouvaient le dire : « mécanique » et « pas de réponse » résolvent tous deux vers `velo`, donc
+  // les chiffres étaient identiques. **C'est le seul endroit du parcours où une réponse neuve
+  // porte une valeur que le défaut de la colonne ne donne pas**, donc la seule assertion qui
+  // pouvait attraper cette famille-là. Une réponse ajoutée au questionnaire mérite la sienne ici.
+  const [reponsesSobres] = await lire(
+    'assessment_answers?select=commute_velo_type,coach_long_trips_per_year',
+    sobre.jeton
+  );
+  assurer(
+    reponsesSobres?.commute_velo_type === 'mecanique',
+    `le type de vélo répondu n'est pas arrivé en base : ${JSON.stringify(reponsesSobres)}`
   );
 
   // Comme sur le premier profil : plus aucun écran de compte entre la restitution et le plan

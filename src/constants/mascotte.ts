@@ -151,8 +151,15 @@ export const RAMILLE = {
    * Le mode est nommé parce que c'est lui qui porte l'identité qu'on renforce — « le vélo reste
    * ton trajet » ne vaut pas « ce trajet reste le tien ». Le canvas n'a écrit que les deux
    * premières variantes ; `trottinette` et `autre` sont ajoutées parce que la catégorie
-   * `velo_marche` compte **trois** modes en base et qu'un mode inattendu ne doit pas retomber sur
+   * `velo_marche` compte plusieurs modes en base et qu'un mode inattendu ne doit pas retomber sur
    * `checkinNon` (écart consigné en `v1-14` §10).
+   *
+   * **Il n'y a pas de variante pour le vélo à assistance**, ajouté à la catégorie par C4.4 : il
+   * reçoit celle du vélo, parce que la phrase nomme l'identité qu'on renforce et que personne ne
+   * dit « le vélo électrique reste ton trajet ». C'est `varianteDeMaintien`
+   * (`src/types/checkin.ts`) qui fait cette correspondance, et elle a remplacé la liste de modes
+   * que la réplique recopiait en ternaire — une liste écrite là aurait dû être retouchée ici
+   * aussi, sans que rien ne le dise.
    */
   maintienNon: {
     velo: 'Noté. Le vélo reste ton trajet ; une semaine autrement n’y change rien.',

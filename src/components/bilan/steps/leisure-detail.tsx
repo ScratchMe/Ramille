@@ -12,9 +12,11 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import {
   CAR_ENGINE_OPTIONS,
+  TRAIN_TYPE_OPTIONS,
   LEISURE_MODE_CHOICES_MORE,
   LEISURE_MODE_CHOICES_PRIMARY,
   TWO_WHEELER_TYPE_OPTIONS,
+  VELO_TYPE_OPTIONS,
 } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -113,6 +115,31 @@ export function LeisureDetailStep({
                       options={TWO_WHEELER_TYPE_OPTIONS}
                       valeur={answers.leisure_two_wheeler_type}
                       onChange={(value) => update({ leisure_two_wheeler_type: value })}
+                    />
+                  </View>
+                )}
+
+                {/* C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont
+                    posées ici plutôt que déduites de B1 parce qu'on ne fait pas ses sorties
+                    comme son trajet : on peut aller au travail en RER et en week-end en TER. */}
+                {selected && choice.modeId === 'train' && (
+                  <View style={styles.precision}>
+                    <PrecisionMode
+                      question="Quel type de train ?"
+                      options={TRAIN_TYPE_OPTIONS}
+                      valeur={answers.leisure_train_type}
+                      onChange={(value) => update({ leisure_train_type: value })}
+                    />
+                  </View>
+                )}
+
+                {selected && choice.modeId === 'velo' && (
+                  <View style={styles.precision}>
+                    <PrecisionMode
+                      question="Quel type de vélo ?"
+                      options={VELO_TYPE_OPTIONS}
+                      valeur={answers.leisure_velo_type}
+                      onChange={(value) => update({ leisure_velo_type: value })}
                     />
                   </View>
                 )}

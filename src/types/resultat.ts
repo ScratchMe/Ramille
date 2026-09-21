@@ -64,7 +64,8 @@ export type ResultatBilan = {
 };
 
 /**
- * Les identifiants de `public.transport_modes`, **relevés en base à la main le 11/09/2026**.
+ * Les identifiants de `public.transport_modes`, **relevés en base à la main** — le 11/09/2026,
+ * puis le 21/09/2026 quand C4.4 y a ajouté cinq modes.
  *
  * C'est un miroir tenu à la main, et il faut lire exactement ce que la garde de type couvre :
  * `MODE_PREPOSITION` étant un `Record` sur cette liste, elle garantit la cohérence **interne**
@@ -77,10 +78,13 @@ export type ResultatBilan = {
  * quatre deux-roues motorisés manquaient alors que `recompute_assessment_results` passe par
  * `resolve_mode` et qu'ils peuvent parfaitement être le `dominant_poste_mode`.
  *
- * La garde qui manque est donc côté SQL : une assertion pgTAP épinglant la liste exacte des
- * identifiants de `public.transport_modes`, sur le modèle de « tout mode a une source » — une
- * migration qui ajoute un mode tomberait alors en CI et nommerait ce fichier. À écrire (cf.
- * `v1-13`, reste du chantier C1.8).
+ * **Cette garde existe depuis le 21/09/2026**, et elle est en SQL parce que pgTAP ne peut pas
+ * lire du TypeScript : `07_sync_emission_factors.test.sql` épingle la liste exacte des
+ * identifiants de `public.transport_modes`, donc une migration qui ajoute un mode rougit en CI
+ * et son message nomme ce fichier. C'est un **fil-piège**, pas une comparaison — il ne dit pas
+ * que `MODE_PREPOSITION` est juste, il dit qu'il faut venir la relire. C'est exactement ce qui
+ * manquait en A3-6, et c'est ce qui a fait ajouter les cinq modes de C4.4 ici du même geste que
+ * dans la migration.
  *
  * Tous ne sont pas sélectionnables dans le questionnaire — `train_longue_distance` (le TGV du
  * poste voyages, B3.3) ne l'est pas, et les quatre motorisations de voiture et les quatre
@@ -102,10 +106,15 @@ export const MODE_IDS = [
   'bus',
   'metro_tram',
   'train',
+  'train_ter',
+  'train_rer',
+  'train_intercites',
   'train_longue_distance',
   'velo',
+  'velo_electrique',
   'marche',
   'trottinette',
+  'autocar',
   'avion_court_moyen_courrier',
   'avion_long_courrier',
 ] as const;
@@ -133,14 +142,24 @@ export const MODE_PREPOSITION: Record<ModeId, string> = {
   deux_roues_moto_petite: 'en moto de petite cylindrée',
   deux_roues_moto_grosse: 'en moto de grosse cylindrée',
   train: 'en train',
+  // Les trois réponses de la révélation sous « Train » (C4.4). Le vocabulaire suit celui du
+  // questionnaire (`TRAIN_TYPE_OPTIONS`) : c'est là que la personne a répondu, elle doit se
+  // reconnaître — et c'est le cas où nommer le mode compte le plus, un TER valant 2,83 fois
+  // un RER.
+  train_ter: 'en TER',
+  train_rer: 'en RER ou Transilien',
+  train_intercites: 'en Intercités',
   // Mode du poste voyages uniquement (B3.3, trajets > 300 km) — jamais sélectionnable dans
   // les listes du questionnaire, cf. migration 20260904140000.
   train_longue_distance: 'en TGV',
   bus: 'en bus',
   metro_tram: 'en métro ou tram',
   velo: 'à vélo',
+  velo_electrique: 'à vélo électrique',
   marche: 'à pied',
   trottinette: 'en trottinette',
+  // Mode du poste voyages uniquement (B3.4), comme le TGV — et il émet PLUS qu'un TER.
+  autocar: 'en autocar',
   avion_court_moyen_courrier: 'en avion (court/moyen-courrier)',
   avion_long_courrier: 'en avion long-courrier',
 };
