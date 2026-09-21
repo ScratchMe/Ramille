@@ -156,57 +156,91 @@ pour le churn de la purge, et il est consigné avec lui dans
 
 ## 7. Ce qui reste à arbitrer
 
-Le §10 du canvas posait sept questions. Deux sont tranchées (§3 et §4). Deux se sont révélées sans
-objet — la bannière ne se rendait déjà jamais en relecture, et le verbe « rattacher » était déjà
-celui de trois surfaces. **Trois attendent** :
+Le §10 du canvas posait sept questions. **Trois sont tranchées** (§3, §4 et la première
+ci-dessous). Deux se sont révélées sans objet — la bannière ne se rendait déjà jamais en relecture,
+et le verbe « rattacher » était déjà celui de trois surfaces. **Deux attendent** (§7.2 et §7.3).
 
-1. **« Cette adresse a déjà un compte » : le dire avant, ou vérifier d'abord ?**
+1. **« Cette adresse a déjà un compte » : tranché le 21/09/2026 — la troisième voie, livrée.**
 
-   **Le fait, mesuré le 21/09/2026 et non raisonné.** `/connexion/email` répond `200` sur une
-   adresse libre et `422 email_exists` sur une adresse qui a un compte. Sur la stack locale, alignée
-   sur la production pour les trois réglages qui comptent, une **seule** session anonyme a sondé
-   vingt fois de suite la même adresse prise : vingt refus, **aucun plafond**. Puis dix sessions
-   anonymes distinctes, une sonde chacune : dix fois le même refus. C'est donc un oracle binaire
-   propre, sans coût, sans trace et sans limite, sur un écran qu'aucun bilan ne garde — atteignable
-   depuis « Toi », ou par son adresse sur web. Ce qui n'a **pas** été mesuré, et qu'il ne faut pas
-   prétendre : le distant lui-même, dont le sondage demanderait soit d'écrire sur une session de
-   production, soit de viser l'adresse d'un vrai compte.
+   **Le fait, mesuré et non raisonné.** `/connexion/email` répondait `200` sur une adresse libre et
+   `422 email_exists` sur une adresse qui a un compte, et l'écran le **disait**. Sur la stack
+   locale, alignée sur la production pour les trois réglages qui comptent, une **seule** session
+   anonyme a sondé vingt fois de suite la même adresse prise : vingt refus, **aucun plafond**. Puis
+   dix sessions anonymes distinctes, une sonde chacune : dix fois le même refus. C'était donc un
+   oracle binaire propre, sans coût, sans trace et sans limite, sur un écran qu'aucun bilan ne garde
+   — atteignable depuis « Toi », ou par son adresse sur web. Ce qui n'a **pas** été mesuré, et qu'il
+   ne faut pas prétendre : le distant lui-même, dont le sondage demanderait soit d'écrire sur une
+   session de production, soit de viser l'adresse d'un vrai compte.
 
-   **Ce qui est en jeu.** La règle de non-divulgation est tenue partout ailleurs — la page de
+   **Ce qui était en jeu.** La règle de non-divulgation est tenue partout ailleurs — la page de
    suppression, « retrouver mon compte » —, et elle l'est parce qu'appartenir à Ramille dit quelque
-   chose d'une personne : qu'elle se soucie de son empreinte transport. Ici la règle est trouée, et
-   elle l'est sur le chemin le plus fréquenté des deux.
+   chose d'une personne : qu'elle se soucie de son empreinte transport. La règle était trouée, et
+   elle l'était sur le chemin le plus fréquenté des deux.
 
-   **Trois voies, et la troisième n'était pas au canvas.**
-   - *Le statu quo* dit le fait et **offre un choix** : l'écran nomme la conséquence (« le bilan que
-     tu viens de faire ne peut pas le rejoindre ») et porte deux sorties, « Retrouver mon compte »
-     et « Garder ce bilan sans compte ». C'est honnête, et c'est ce que l'oracle achète.
-   - *Le canvas* envoie un code de connexion **sans rien dire** : seul le titulaire de la boîte va
-     plus loin. L'oracle est fermé — mais la phrase et le choix partent avec lui, et quelqu'un qui
-     s'est trompé d'adresse bascule sur un autre compte **sans avertissement et sans retour**, le
-     bilan qu'il vient de remplir restant sur la session qu'il quitte, que la purge emportera à
-     quatre-vingt-dix jours.
-   - *Une troisième voie*, qui garde les deux : sur `email_exists`, envoyer le code de **connexion**
-     et montrer le même écran de code, avec une phrase **conditionnelle** — « s'il existait déjà un
-     compte à cette adresse, ce code t'y ramène, et le bilan de cet appareil reste ici ». Elle est
-     vraie dans les deux branches, donc elle peut être montrée dans les deux, donc elle ne divulgue
-     rien ; et le cas normal ne tombe jamais dans cette branche (une adresse libre rend `200`, donc
-     le code de rattachement part comme aujourd'hui) — il n'y a donc **pas** de cul-de-sac où l'on
-     attendrait un code qui ne vient pas, ce qui est ce qui condamne la version naïve du canvas.
+   **Les deux voies écartées, et pourquoi.**
+   - *Le statu quo* disait le fait et **offrait un choix** : l'écran nommait la conséquence (« le
+     bilan que tu viens de faire ne peut pas le rejoindre ») et portait deux sorties, « Retrouver
+     mon compte » et « Garder ce bilan sans compte ». C'était honnête, et c'est ce que l'oracle
+     achetait. Écarté : une règle à géométrie variable, et le jour où quelqu'un s'en sert, c'est une
+     liste d'adresses avec « se soucie de son empreinte transport » à côté.
+   - *Le canvas* envoyait un code de connexion **sans rien dire** : seul le titulaire de la boîte
+     allait plus loin. L'oracle était fermé — mais la phrase et le choix partaient avec lui, et
+     quelqu'un qui s'est trompé d'adresse basculait sur un autre compte **sans avertissement et sans
+     retour**, le bilan qu'il vient de remplir restant sur la session qu'il quitte, que la purge
+     emporte à quatre-vingt-dix jours. Écarté : faire perdre un bilan fraîchement rempli au moment
+     exact de la prise de conscience est la pire chose que ce produit puisse faire.
 
-   **La recommandation : la troisième voie.** Elle ferme l'oracle sans jamais faire basculer
-   quelqu'un par surprise. Son coût est une phrase conditionnelle que la grande majorité lira pour
-   rien, et un choix qui devient plus faible qu'aujourd'hui — on décide de taper le code **avant** de
-   savoir, au lieu de décider après avoir lu le fait.
+   **Ce qui est livré : la troisième voie, qui n'était pas au canvas.** Sur `email_exists`,
+   `/connexion/email` envoie un code de **connexion** et montre le **même** écran de code que la
+   branche libre, avec une phrase **conditionnelle** : « S'il existait déjà un compte Ramille à
+   cette adresse, ce code t'y ramène — et le bilan de cet appareil ne l'y rejoindra pas. » Elle est
+   vraie dans les deux branches — sur une adresse libre l'antécédent est faux, sur une adresse prise
+   elle décrit exactement ce qui va se passer —, donc elle se montre aux deux et ne divulgue rien.
+   Et elle arrive **avant** que le code soit tapé, ce qui laisse la sortie : ne pas le taper. Il n'y
+   a pas non plus de cul-de-sac où l'on attendrait un code qui ne vient pas — c'est ce qui
+   condamnait la version naïve du canvas : un code part dans les deux cas.
 
-   **Ce qu'on casse si on se trompe.** Garder le statu quo, c'est une règle à géométrie variable, et
-   le jour où quelqu'un s'en sert, c'est une liste d'adresses avec « se soucie de son empreinte
-   transport » à côté. Prendre le canvas tel quel, c'est faire perdre un bilan fraîchement rempli au
-   moment exact de la prise de conscience — la pire chose que ce produit puisse faire. Prendre la
-   troisième voie, c'est une phrase de plus sur un écran calme.
+   **Le piège central, et c'est lui qu'il faut retenir : le contexte suit la branche, la voix suit
+   l'écran hôte.** `ContexteDuCode` décide le `type` envoyé à l'API (`email_change` ou `email`) et
+   il **doit** suivre la branche, sans quoi le code est refusé (mesuré le 20/09/2026 : les deux flux
+   ne se croisent pas, `403 otp_expired` dans les deux sens). La **voix** — ce que l'écran a le droit
+   d'affirmer — est une propriété de l'hôte et ne bouge pas d'une branche à l'autre. Les confondre
+   rouvrirait par le texte l'oracle qu'on ferme par le mécanisme : si l'écran disait « un code est
+   parti à camille@… » sur une adresse libre et « **si** un compte existe… » sur une adresse prise,
+   n'importe qui lirait la réponse dans la phrase — le mécanisme serait juste et la fuite intacte.
+   D'où `VoixDeLaSaisie` (`parti` | `peut_etre`) dans `src/types/connexion.ts`, distincte de
+   `ContexteDuCode`, et `/connexion/email` en voix `parti` **dans ses deux branches**.
 
-   **Le code l'a rendu possible ; l'implémentation garde le comportement d'aujourd'hui tant que ce
-   n'est pas tranché.**
+   **Ce que ça a coûté, et c'est exactement ce qui avait été annoncé.** Une phrase conditionnelle
+   que la grande majorité lira pour rien ; un choix plus faible qu'avant — on décide de taper le
+   code **avant** de savoir, au lieu de décider après avoir lu le fait ; et un second prix non
+   prévu, le libellé du bouton, qui disait « Rattacher mon adresse » et est faux quand l'adresse est
+   déjà prise — rien n'est rattaché, on rejoint un compte. En mettre un par branche aurait rouvert
+   l'oracle sur le bouton lui-même, d'où « Valider mon code » pour les deux.
+
+   **Ce qui a disparu.** La phase `deja-un-compte` et son écran. `SOURCES_RETROUVER` ne perd rien :
+   la provenance `email` est toujours émise, par le lien délibéré « J'ai déjà un compte » du
+   formulaire, qui reste la porte vers un compte existant — elle n'est simplement plus empruntée
+   automatiquement. L'écran de **collision** de `/connexion/retrouver`, lui, n'a pas bougé : il se
+   rend quand l'appareil porte déjà un bilan anonyme, et là il n'y a rien à taire puisque la
+   personne a demandé à retrouver un compte.
+
+   **Ce qui garde la décision.** Deux tests unitaires sur les phrases (l'un sur l'arité, pour que le
+   flux ne puisse pas rentrer dans une dérivation ; l'autre sur le conditionnel de la phrase), et
+   surtout l'**assertion 6** de `scripts/verifier-code-de-connexion.mjs`, jouée à chaque PR contre
+   une vraie stack : elle crée une adresse prise, joue les deux branches et compare leurs deux
+   écrans **réellement rendus**, adresse masquée, puis vérifie que la branche « adresse prise » a
+   bien ouvert la session du compte **existant**. Deux mutations l'ont éprouvée — faire suivre la
+   voix au flux la fait tomber en imprimant les deux écrans côte à côte ; faire rendre `null` à la
+   phrase conditionnelle n'en fait tomber que la seconde moitié, la preuve isolée.
+
+   **Ce que ça ne ferme PAS, et qu'il ne faut pas prétendre fermé.** Le renvoi de code depuis la
+   branche `rattachement` peut encore rendre un message d'échec si l'adresse a été prise **entre**
+   le premier envoi et le renvoi. Ce n'est pas un oracle exploitable — il faut qu'elle ait été libre
+   au premier envoi, donc que quelqu'un la prenne dans l'intervalle, et celui-là le sait déjà — et
+   le message reste le générique, qui ne nomme pas l'état de l'adresse. Le commentaire qui
+   justifiait cette branche par « le produit le dit déjà au premier envoi » est devenu faux le jour
+   même et a été corrigé : il ne le dit plus nulle part.
 
 2. **Où vit la phrase des trois mois.** Elle est sous la sortie de `/connexion`, pour toutes les
    provenances depuis ce chantier. Le canvas propose de l'ajouter sur « Toi » en état `local`.

@@ -384,7 +384,7 @@ n'est pas une marge acquise, c'est une marge prêtée : elle se referme au premi
 reprend. Les quatre règles ci-dessous restent donc à demeure, et la 3 garde son plafond — ce qui a
 changé est la tension, pas la discipline.
 
-Quatre règles, à demeure :
+Les règles, à demeure :
 
 1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
    (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le
@@ -398,6 +398,19 @@ Quatre règles, à demeure :
    n'est pas qu'à nous.
 4. **Une fusion de documentation part seule et doit être sautée** (§1.3) : c'est gratuit, et
    chacune vérifie que le script fait ce qu'il dit.
+5. **Avant chaque fusion de code, mesurer ce que le déploiement va ajouter** — `vercel build`, puis
+   la somme des `.func` selon la recette de §1.2 — et **le comparer au relevé précédent**. Demandé
+   le 21/09/2026, et la demande dit exactement à quoi ça sert : *« juste pour vérifier que tu n'as
+   pas fait de bêtise et que le chiffre n'augmente pas soudainement sans qu'on s'en rende compte »*.
+   Ce n'est donc **pas** une remesure du coût unitaire — il est connu, il a été mesuré deux fois, et
+   le remesurer quinze fois est précisément ce qui a été reproché le même jour. C'est une **garde de
+   non-régression** : le chiffre attendu est stable (4,33 Mo de disque le 15/09, 4,16 Mio le
+   21/09 — ≈ 1,5 Mio retenus), donc ce qu'on cherche est l'**écart**, pas la valeur. Un saut veut
+   dire qu'une dépendance est entrée dans `api/`, et c'est le seul moment où on peut le voir avant
+   de le payer trente jours.
+   Deux traces à nettoyer après coup, sans quoi elles partent dans la PR : `.vercel/` (ignoré par
+   git, mais présent) et `api/package-lock.json`, que `vercel build` écrit et que le dépôt ne veut
+   pas (§1.2). Un `git status` après la mesure, à chaque fois.
 
 Ce que cette convention corrige : le 15/09/2026, cinq fusions dans la journée, dont trois qui ne
 touchaient que de la documentation — le motif exact contre lequel Tour de Growth avait écrit sa

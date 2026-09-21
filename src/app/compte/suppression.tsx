@@ -195,6 +195,11 @@ export default function SuppressionCompte() {
             {phase.kind === 'code' && (
               <SaisieDuCode
                 contexte="connexion"
+            // Cet écran ne peut PAS affirmer qu'un code est parti — `shouldCreateUser: false`
+            // fait qu'une adresse inconnue ne reçoit rien, et le dire divulguerait qui a un
+            // compte. La voix porte ce « si », là où `/connexion/email` peut l'affirmer dans ses
+            // deux branches (`src/types/connexion.ts`, `VoixDeLaSaisie`).
+            voix="peut_etre"
                 adresse={email.trim()}
                 libelleBouton="Ouvrir ma session"
                 onOuverte={async () => {
