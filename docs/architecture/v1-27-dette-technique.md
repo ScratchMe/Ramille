@@ -232,6 +232,25 @@ et le même horodatage que le fichier**, pour que la divergence cesse de croîtr
 (`classement_du_plan`, `teletravail_en_jours`, `le_contexte_sort_du_questionnaire`) ont toutes
 dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées.
 
+**Et c'est exactement ce qui s'est reproduit à la migration suivante** (21/09/2026, C4.4). Le
+fichier portait l'horodatage `20260921160000`, l'enregistrement distant porte `20260921165612` :
+même nom de migration, cinquante-six minutes d'écart, et pour la raison que le paragraphe
+ci-dessus nommait sans en tirer la conséquence — **`apply_migration` pose son horodatage, et
+l'appelant ne le choisit pas**. La consigne était donc inapplicable telle qu'écrite : elle
+demandait de choisir quelque chose qui n'est pas offert.
+
+**La réparation se fait après coup, et c'est la seule disponible** : relever l'horodatage
+enregistré, puis renommer le fichier du dépôt dessus. Ce n'est pas « réécrire l'historique » au
+sens interdit deux paragraphes plus haut — rien de ce qui a été appliqué ne change, aucun ordre ne
+bouge, aucune base n'est touchée ; c'est donner au fichier le nom de son enregistrement.
+`20260921165612_les_modes_qui_manquent.sql` est ainsi **la première migration du dépôt qui
+s'apparie exactement à la sienne**.
+
+**La règle devient donc** : appliquer, relever, renommer, pousser — et le relevé tient en une
+requête sur `supabase_migrations.schema_migrations`. Elle est consignée en `SUPABASE.md` §1.5,
+parce qu'elle ne doit rien à Ramille : elle vaut partout où un outil applique les migrations à la
+place de la personne qui les a écrites.
+
 ## 10. Ce qui a été traité le soir même
 
 - **`estRaisonAnnoncable`** (`src/types/plan.ts`), écrit le matin et appelé nulle part : supprimé,
@@ -255,7 +274,7 @@ dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées
 | 4 | §4 — la décision d'affichage du plan | moyen, risque réel | page de décision d'abord, recette dédiée ensuite |
 | 5 | §5 — le découpage des fonctions de calcul | grand | à instruire, jamais en marge d'une vague |
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | page de décision |
-| 7 | §9 — appliquer les migrations sous le nom et l'horodatage du fichier | une habitude | à la prochaine migration |
+| 7 | §9 — renommer le fichier sous l'horodatage **enregistré**, une fois la migration appliquée | une habitude | **commencé le 21/09/2026** (C4.4) : une migration appariée, et la consigne d'avant était inapplicable |
 | 8 | §12.5 — un comparateur mécanique des miroirs de `check` | petit | **fait le 20/09/2026** (§12.2) |
 | 9 | §12.5 — l'artefact de la recette du premier parcours à régénérer depuis son `.md` | une manipulation | **fait le 20/09/2026** (§12.2) |
 
