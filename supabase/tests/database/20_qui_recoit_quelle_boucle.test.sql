@@ -27,8 +27,10 @@
 --     vaut 0 mais `velo` 0,00017 et `trottinette` 0,0249. Il n'attraperait que les piétons, et les
 --     cyclistes — la population que ce chantier existe pour soulager — continueraient de recevoir
 --     la question ;
---   * **la catégorie compte trois modes, pas deux.** Une assertion le vérifie en base : ajouter un
---     quatrième mode vélo/marche obligerait à lui donner son complément des deux côtés de la paire ;
+--   * **la catégorie compte quatre modes, pas deux** — trois jusqu'au 21/09/2026, où C4.4 y a
+--     ajouté le vélo à assistance électrique. Une assertion le vérifie en base, et **c'est elle
+--     qui a rattrapé ce chantier-là** : ajouter un mode vélo/marche oblige à lui donner son
+--     complément des deux côtés de la paire, faute de quoi il reçoit « autrement » en silence ;
 --   * **le « Non » d'un maintien n'est pas un échec** — la réplique est côté client, mais c'est
 --     `question_kind` qui la décide, et il est posé ici ;
 --   * **le résiduel de 15 km reste** (D5, spec §5) : seules ses *conséquences* sont retirées. Les
@@ -37,7 +39,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(29);
 
 -- ── La forme de la question de maintien ─────────────────────────────────────────────────
 
@@ -54,13 +56,17 @@ select ok(length(public.complement_de_maintien(null)) > 0,
 
 -- **La liste de modes sur laquelle tout le chantier repose.** Le générateur pose la question de
 -- maintien pour toute la catégorie `velo_marche` ; `complement_de_maintien` et sa jumelle
--- TypeScript en nomment trois. Un quatrième mode ajouté à cette catégorie recevrait « autrement »
--- en silence, des deux côtés.
+-- TypeScript les nomment un par un. Un mode ajouté à cette catégorie sans son complément
+-- recevrait « autrement » en silence, des deux côtés — et cette assertion est exactement ce qui a
+-- fait tomber C4.4 le 21/09/2026, avant que le vélo à assistance n'atteigne personne.
 select results_eq(
   $$ select id from public.transport_modes where category = 'velo_marche' order by id $$,
-  $$ values ('marche'::text), ('trottinette'::text), ('velo'::text) $$,
-  'la catégorie velo_marche compte exactement trois modes — en ajouter un impose un complément'
+  $$ values ('marche'::text), ('trottinette'::text), ('velo'::text), ('velo_electrique'::text) $$,
+  'la catégorie velo_marche compte exactement quatre modes — en ajouter un impose un complément'
 );
+
+select is(public.complement_de_maintien('velo_electrique'), 'à vélo électrique',
+  'complement_de_maintien: le vélo à assistance a sa phrase, pas le repli « autrement »');
 
 select ok(not has_function_privilege('authenticated', 'public.complement_de_maintien(text)', 'execute'),
   'complement_de_maintien: authenticated ne peut pas l''appeler');

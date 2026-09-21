@@ -135,7 +135,7 @@ const ATTENDU = {
   dominantKg: 1920,
   capKg: 384,
   pistes: [
-    ['Passer deux trajets sur cinq en train ou en RER', 619],
+    ['Passer deux trajets sur cinq en train', 619],
     ['Renoncer à un vol long-courrier cette année', 1601],
     ['Faire ce trajet à deux au moins un jour sur deux', 480],
     ['Travailler depuis chez toi un jour par semaine', 384],

@@ -141,14 +141,14 @@ select ok(
 select ok(
   exists (
     select 1 from public.estimate_action_savings('b1111111-1111-1111-1111-111111111111')
-    where action_text ilike '%métro%' or action_text ilike '%train ou en RER%'
+    where action_text ilike '%métro%' or action_text ilike '%sur cinq en train%'
   ),
   'desserte correcte -> les actions en transports en commun sont bien proposées'
 );
 
 select is_empty(
   $$ select action_text from public.estimate_action_savings('b1111111-1111-1111-1111-111111111112')
-     where action_text ilike '%métro%' or action_text ilike '%train ou en RER%' $$,
+     where action_text ilike '%métro%' or action_text ilike '%sur cinq en train%' $$,
   'tc_access = inexistant -> aucune action en transports en commun (T9, spec §5)'
 );
 
@@ -189,15 +189,19 @@ select is_empty(
 );
 
 -- **Le filtre retire l'impossible, il n'appauvrit pas le plan**, et c'est la moitié qu'il est le
--- plus facile de casser en « corrigeant » : un TER dessert des communes rurales, donc « train ou
--- RER » garde son seul `requires_tc`. Lui coller la même zone retirerait à ce profil la seule
+-- plus facile de casser en « corrigeant » : un TER dessert des communes rurales, donc le train
+-- garde son seul `requires_tc`. Lui coller la même zone retirerait à ce profil la seule
 -- alternative qui lui reste.
+--
+-- C4.4 a retiré « ou en RER » du libellé, et c'est le même raisonnement pris par l'autre bout :
+-- le gain est chiffré au tarif du TER, le RER n'est pas ciblable sans savoir où la personne
+-- habite au sens du réseau — donc on ne promet que ce qu'on chiffre.
 select ok(
   exists (
     select 1 from public.estimate_action_savings('b1111111-1111-1111-1111-111111111114')
-    where action_text ilike '%train ou en RER%'
+    where action_text ilike '%sur cinq en train%'
   ),
-  'rural à desserte limitée -> le train ou RER reste proposé, lui'
+  'rural à desserte limitée -> le train reste proposé, lui'
 );
 
 -- ── 5. C3.8 §2 : le télétravail est demandé, plus présupposé ────────────────────────────

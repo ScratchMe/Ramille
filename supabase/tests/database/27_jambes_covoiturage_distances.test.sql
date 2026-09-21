@@ -202,7 +202,7 @@ select is(
 -- ne substituent rien, donc aucun ne peut dire sur quelle jambe une substitution porte.
 select is(
   (select saving_kg_year::numeric from public.estimate_action_savings('a3400000-0000-0000-0000-000000000001')
-     where action_text = 'Passer deux trajets sur cinq en train ou en RER'),
+     where action_text = 'Passer deux trajets sur cinq en train'),
   309::numeric,  -- 0,40 × 960,20775 × (1 − 0,027690 / 0,142253) = 309,3201 ; sur les deux jambes : 329,39
   'C3.4 : une substitution porte sur la jambe principale, et sur elle seule'
 );
@@ -215,7 +215,7 @@ select is(
 select ok(
   (select detail_text like '%Sur la partie en%de ton trajet.'
      from public.estimate_action_savings('a3400000-0000-0000-0000-000000000001')
-    where action_text = 'Passer deux trajets sur cinq en train ou en RER')
+    where action_text = 'Passer deux trajets sur cinq en train')
   and (select detail_text not like '%Sur la partie en%'
      from public.estimate_action_savings('a3400000-0000-0000-0000-000000000001')
     where action_text = 'Travailler depuis chez toi un jour par semaine'),

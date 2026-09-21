@@ -8,7 +8,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(14);
 
 -- ── L'ordre des facteurs ────────────────────────────────────────────────────────────────
 
@@ -71,15 +71,32 @@ select is(
 
 -- ── La composition ──────────────────────────────────────────────────────────────────────
 -- `resolve_mode` existe pour qu'il n'y ait **qu'un seul** point de résolution dans le calcul :
--- six appels imbriqués `resolve_two_wheeler_mode(resolve_car_mode(...))` auraient fini par en
--- laisser un de côté, et l'oubli serait silencieux — le mode générique existe, son facteur
--- existe, le calcul rendrait un nombre.
+-- des appels imbriqués `resolve_two_wheeler_mode(resolve_car_mode(...))` écrits à chaque endroit
+-- auraient fini par en laisser un de côté, et l'oubli serait silencieux — le mode générique
+-- existe, son facteur existe, le calcul rendrait un nombre.
+--
+-- **Ils sont quatre depuis C4.4** (le train et le vélo s'ajoutent), et l'assertion porte sur ce
+-- qui compte : chaque résolveur ne répond qu'à son mode, et les réponses des autres postes
+-- traversent sans rien changer. La dernière ligne le dit en donnant au vélo une motorisation, une
+-- cylindrée et un type de train : il reste un vélo mécanique.
 select results_eq(
-  $$ select public.resolve_mode('voiture', 'electrique', null),
-            public.resolve_mode('deux_roues_motorise', null, 'moto_petite'),
-            public.resolve_mode('velo', 'thermique', 'moto_grosse') $$,
-  $$ values ('voiture_electrique'::text, 'deux_roues_moto_petite'::text, 'velo'::text) $$,
-  'resolve_mode compose les deux résolutions sans interférence entre elles'
+  $$ select public.resolve_mode('voiture', 'electrique', null, 'rer', 'electrique'),
+            public.resolve_mode('deux_roues_motorise', null, 'moto_petite', 'rer', 'electrique'),
+            public.resolve_mode('train', 'electrique', 'moto_grosse', 'rer', 'electrique'),
+            public.resolve_mode('velo', 'thermique', 'moto_grosse', 'rer', null) $$,
+  $$ values ('voiture_electrique'::text, 'deux_roues_moto_petite'::text, 'train_rer'::text, 'velo'::text) $$,
+  'resolve_mode compose les quatre résolutions sans interférence entre elles'
+);
+
+-- Le repli, et c'est lui qui garde les bilans déjà en base : une réponse absente ou inconnue rend
+-- le mode générique, jamais nul — un `null` ici ferait lever `emission_factor` et emporterait le
+-- bilan entier.
+select results_eq(
+  $$ select public.resolve_mode('train', null, null, null, null),
+            public.resolve_mode('train', null, null, 'aubrac', null),
+            public.resolve_mode('velo', null, null, null, 'mecanique') $$,
+  $$ values ('train'::text, 'train'::text, 'velo'::text) $$,
+  'une réponse absente ou inconnue retombe sur le mode générique, jamais sur rien'
 );
 
 -- ── Le chemin complet, de la réponse au chiffre ─────────────────────────────────────────
@@ -88,7 +105,7 @@ select results_eq(
 -- facteurs sont épinglés un par un, `resolve_mode` est épinglée seule — mais qu'un bilan qui
 -- *répond* « moto de grosse cylindrée » finisse par être *facturé* à ce tarif-là, personne ne le
 -- vérifiait. C'est pourtant là que l'erreur se produirait : `recompute_assessment_results` appelle
--- `resolve_mode` à six endroits, et un oubli y serait **silencieux** — le mode générique existe,
+-- `resolve_mode` à chaque poste, et un oubli y serait **silencieux** — le mode générique existe,
 -- son facteur existe, le calcul rendrait un nombre parfaitement plausible et 2,8 fois trop bas.
 --
 -- **Les valeurs attendues sont dérivées de `public.emission_factor(...)`, pas écrites en clair**,
