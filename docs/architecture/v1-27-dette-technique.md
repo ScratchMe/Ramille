@@ -938,7 +938,7 @@ dont on jetait le résultat.
 #### Ce que la SECONDE passe a trouvé, et pourquoi elle valait d'être faite
 
 C'est le résultat le plus instructif : **une passe de relecture produit elle-même des défauts, et il
-faut relire les correctifs.** Cinq trouvailles, dont deux qui sont mes propres corrections de la
+faut relire les correctifs.** Six trouvailles, dont deux qui sont mes propres corrections de la
 veille :
 
 1. **Le correctif de la tautologie l'avait rejouée sur l'autre profil.** Le premier profil arme son
@@ -966,6 +966,18 @@ veille :
 5. **Le commentaire de la marque locale d'adresse décrivait encore les liens** (« elle existe pour
    un seul cas : un lien qui ne marche plus »), alors que son cas principal est devenu la reprise de
    la saisie du code.
+6. **Deux expressions pour un seul fait, sous un commentaire qui en annonçait une** — trouvé en
+   relisant les écrans de #252 que la première passe n'avait pas ouverts. Sur la ligne « Par email »
+   de la feuille des rappels, le détail et la porte lisaient `emailPossible && email` quand
+   `choisissable` lisait `emailPossible` seul, sous un commentaire disant que « deux tests séparés
+   finiraient par se contredire ». Les trois s'accordent en production, mais **par une coïncidence
+   chez leur unique producteur** — `loadReminderPrefs` exige `!!user.email` pour poser
+   `emailPossible`. Un second producteur aurait rendu une ligne **cochable** dont le détail dit
+   qu'elle ne marche pas, et rien n'aurait rougi : le test de partition balayait bien cette
+   combinaison, mais ne regardait pas `choisissable`. Les trois sortent maintenant d'un seul local,
+   le test compare les trois, et la mutation qui le fait tomber est le retour à l'ancienne forme.
+   **La leçon est que « la même condition » se vérifie en lisant les expressions, pas le
+   commentaire** — et qu'un test de partition ne garde que les champs qu'il nomme.
 
 #### Ce qui n'a rien donné, et ce que ça vaut
 

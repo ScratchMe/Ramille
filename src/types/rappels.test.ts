@@ -543,17 +543,27 @@ describe('porteVersLeCompte', () => {
   });
 
   /**
-   * **La porte et le détail sortent de la même condition**, et c'est ce qui les empêche de se
-   * contredire : une porte sous « À camille@exemple.fr. » proposerait de rattacher un compte à
-   * quelqu'un qui en a un, et l'inverse laisserait le mur que ce chantier retire. Le test compare
-   * les deux plutôt que de les épingler séparément, sur les quatre combinaisons du couple.
+   * **La porte, le détail ET le caractère cochable sortent de la même condition**, et c'est ce qui
+   * les empêche de se contredire : une porte sous « À camille@exemple.fr. » proposerait de rattacher
+   * un compte à quelqu'un qui en a un ; l'inverse laisserait le mur que ce chantier retire ; et une
+   * ligne **cochable** sous « Rattache un compte pour l'activer » enverrait choisir un canal qui ne
+   * peut rien envoyer.
+   *
+   * **La troisième n'était pas comparée, et il y avait bien deux expressions** (relevé en
+   * contre-lecture le 21/09/2026) : `choisissable` lisait `emailPossible` seul là où les deux autres
+   * lisaient `emailPossible && email`. Ce test balayait déjà les quatre combinaisons — y compris
+   * celle que la production ne produit pas — mais ne regardait pas `choisissable`, donc il passait
+   * sur une ligne cochable et inutilisable. La mutation qui le fait tomber est le retour à
+   * `choisissable: emailPossible`.
    */
-  it('ne s’ouvre jamais sous un détail qui nomme l’adresse', () => {
+  it('ne s’ouvre jamais sous un détail qui nomme l’adresse, et la ligne n’est cochable que là', () => {
     for (const emailPossible of [false, true]) {
       for (const email of [null, 'camille@exemple.fr']) {
         const ligne = lignesDeReglage({ ...base, emailPossible, email })
           .find((l) => l.canal === 'email');
-        expect(ligne?.porteVersLeCompte).toBe(ligne?.detail === 'Rattache un compte pour l’activer.');
+        const mur = ligne?.detail === 'Rattache un compte pour l’activer.';
+        expect(ligne?.porteVersLeCompte).toBe(mur);
+        expect(ligne?.choisissable).toBe(!mur);
       }
     }
   });

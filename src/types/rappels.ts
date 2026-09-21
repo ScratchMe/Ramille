@@ -129,17 +129,29 @@ export function lignesDeReglage(
     porteVersLeCompte: false,
   };
 
+  // **Une adresse utilisable, calculée une fois** — le détail, le choix et la porte en sortent tous
+  // les trois, et c'est ce qui les empêche de se contredire : une porte sous « À camille@… »
+  // proposerait de rattacher un compte à quelqu'un qui en a un, et une ligne cochable sous
+  // « Rattache un compte pour l'activer » enverrait choisir un canal qui ne peut rien envoyer.
+  //
+  // **Il y avait deux expressions pour ce fait, pas une, et le commentaire d'avant disait le
+  // contraire** (relevé en contre-lecture le 21/09/2026) : le détail et la porte lisaient
+  // `emailPossible && email`, le choix lisait `emailPossible` seul. Les trois s'accordaient
+  // néanmoins, mais par une coïncidence chez leur unique producteur — `loadReminderPrefs`
+  // (`src/lib/notification-prefs.ts`) exige `!!user.email` pour poser `emailPossible`, et ne remplit
+  // `email` que dans ce cas. Un second producteur qui poserait `emailPossible` sans adresse rendait
+  // une ligne **cochable** dont le détail dit qu'elle ne marche pas. Rien n'aurait rougi : le test de
+  // partition balayait bien cette combinaison, mais ne regardait pas `choisissable`.
+  const adresseUtilisable = emailPossible && email ? email : null;
+
   const courriel: LigneDeReglage = {
     canal: 'email',
     titre: 'Par email',
-    detail: emailPossible && email ? `À ${email}.` : 'Rattache un compte pour l’activer.',
-    choisissable: emailPossible,
+    detail: adresseUtilisable ? `À ${adresseUtilisable}.` : 'Rattache un compte pour l’activer.',
+    choisissable: adresseUtilisable !== null,
     choisi: prefere === 'email',
     lienVersLesReglages: false,
-    // La porte s'ouvre exactement là où le détail dit ce qui manque, donc sur la même condition :
-    // deux tests séparés finiraient par se contredire, et on afficherait « Rattache un compte »
-    // à quelqu'un qui en a un, ou l'inverse.
-    porteVersLeCompte: !(emailPossible && email),
+    porteVersLeCompte: adresseUtilisable === null,
   };
 
   const aucun: LigneDeReglage = {
