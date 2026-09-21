@@ -58,7 +58,14 @@ export function ChampDeCode({
           accessibilityHint={helperText}
           keyboardType="number-pad"
           inputMode="numeric"
-          maxLength={LONGUEUR_DU_CODE}
+          // **Pas de `maxLength`, et c'est un correctif** (mesuré au navigateur le 21/09/2026). La
+          // limite s'applique à la saisie **brute**, avant que `chiffresDuCode` n'ait retiré quoi que
+          // ce soit : un collé de « 847 924 69 » était tronqué à huit caractères, donc « 847 924 »,
+          // donc **six** chiffres — bouton inerte, aucun message, et rien pour comprendre. Collé
+          // depuis une messagerie, « code : 84792469 » n'en gardait qu'**un**. La frappe, elle,
+          // marchait (chaque espace est rejeté avant d'atteindre la limite), ce qui rendait le défaut
+          // invisible à qui tape. La troncature vit dans `chiffresDuCode`, qui la fait sur les
+          // chiffres et non sur les caractères — donc la limite du DOM n'ajoutait rien, et retirait.
           // Posés sans rien en attendre : aucune plateforme de la V1 ne remplit un code reçu par
           // e-mail. Ils ne coûtent rien et servent le jour où l'une le fera.
           autoComplete="one-time-code"

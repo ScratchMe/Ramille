@@ -50,11 +50,17 @@ function resoudre(dist, url) {
  * @param dist  le dossier d'export à servir
  * @param port  le port à écouter, ou `0` pour en laisser choisir un libre.
  *
- * **Le port fixe n'est pas une commodité** : `verifier-lien-de-connexion.mjs` en a besoin parce
- * que l'app calcule son `redirectTo` depuis `window.location.origin` (`src/lib/app-url.ts`), et
- * que GoTrue n'accepte que les origines de sa liste — `site_url` vaut `http://127.0.0.1:3000`
- * dans `supabase/config.toml`. Servir sur un port au hasard ferait retomber le lien sur la Site
- * URL en silence, c'est-à-dire éprouver autre chose que ce qu'on croit.
+ * **Le port fixe a eu une raison forte, et elle est tombée le 20/09/2026.** Elle était que l'app
+ * calcule son `redirectTo` depuis `window.location.origin` (`src/lib/app-url.ts`) et que GoTrue
+ * n'accepte que les origines de sa liste : servir sur un port au hasard faisait retomber le lien
+ * sur la Site URL en silence. Les deux e-mails du produit ne portent plus de lien mais un code, et
+ * `emailRedirectTo` a disparu des deux appels — donc plus aucun envoi ne dépend de l'origine.
+ *
+ * Ce qui reste, et qui suffit à garder `3000` par défaut : un port fixe rend un échec
+ * **reproductible** (le même port d'un passage à l'autre, dans les captures comme dans les
+ * journaux), et le retour OAuth est le seul chemin qui aurait encore besoin d'une origine
+ * autorisée — rien ne l'éprouve ici aujourd'hui. `servirExport(dist, 0)` reste disponible pour une
+ * machine où le port est pris : plus rien ne s'y casserait en silence.
  */
 export async function servirExport(dist, port = 0) {
   const serveur = createServer((requete, reponse) => {

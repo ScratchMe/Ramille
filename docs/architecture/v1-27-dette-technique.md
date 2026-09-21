@@ -873,3 +873,121 @@ qu'aucune garde ne voit — le linter, lui, ne réclame l'échappement que de l'
 ici pour ne pas mélanger un balayage typographique à un chantier de sécurité, et parce que rien ne
 garde le résultat — ajouter une règle qui interdirait `&apos;` dans le JSX serait le vrai correctif,
 et c'est ce qu'il faudra faire plutôt qu'un remplacement de plus.
+
+
+### 12.14 Les deux contre-lectures du chantier du compte, faites APRÈS la fusion (21/09/2026)
+
+Le chantier du moment du compte (`v1-28`) a été fusionné dans la nuit, puis relu deux fois. Les deux
+passes ont trouvé de vrais défauts, et le fait que ce soit **après** la fusion est la première chose
+à consigner : la règle du dépôt dit qu'une vague se contre-lit **avant** d'ouvrir sa PR, et elle
+n'a pas été suivie ici — le GO de fusion avait été donné d'avance, sous condition de poids de
+déploiement, et il a été pris pour un GO à ne pas relire.
+
+#### Ce que la première passe a trouvé, par famille
+
+Les trois familles que `CLAUDE.md` nomme ont toutes rendu quelque chose, et **trois défauts ont été
+confirmés par la mesure** plutôt que par le raisonnement :
+
+**Une dérivation qui lit le mauvais champ, donc un état inatteignable.** `etatDuRattachement`
+cherchait l'adresse en attente dans `session.email`. Mesuré contre GoTrue : sur une session anonyme,
+`updateUser({ email })` laisse `email` **vide** et n'écrit que `new_email`. L'état `a_confirmer`
+n'était donc rendu pour **personne** — la porte « Saisir le code » ajoutée la nuit même sur « Toi »
+était du code mort, et la phrase du pied de l'écran de code, qui promet de retrouver la saisie
+là-bas, était fausse. Le test qui gardait cette dérivation passait sur une **forme d'entrée que la
+production ne produit pas : c'est « le test garde la fonction, jamais ses appels » un cran plus
+haut**, et c'est la leçon la plus transférable de la journée.
+
+**Un oracle de non-divulgation, ouvert par le renvoi et pas par l'envoi.** « Renvoyer un code »
+passait son erreur brute à `messageDeLaDemande` : une adresse **sans compte** (`422 otp_disabled`) y
+recevait « L'envoi n'a pas abouti », là où une adresse connue lisait « un nouveau code vient d'y
+partir ». Deux réponses différentes, donc de quoi savoir qui utilise Ramille — sur la page de
+suppression que Google Play exige de garder publique. Le premier envoi ne l'avait pas, parce qu'il
+passe par `suiteDeLaDemandeDeCode` ; la règle n'était écrite que pour lui. D'où `suiteDuRenvoi`, et
+une garde de **partition** qui énumère ce que le flux de connexion a le droit de dire.
+
+**Un collé qui perd des chiffres, là où la frappe passe.** Le champ portait un `maxLength`, qui
+tronque la saisie **brute** avant que la dérivation n'ait retiré les espaces : « 847 924 69 » ne
+laissait que six chiffres, bouton inerte et aucun message. Depuis une messagerie, « code :
+84792469 » n'en gardait qu'un. La frappe marchait (chaque espace est rejeté avant d'atteindre la
+limite), ce qui rendait le défaut invisible à qui tape — et la garde de bout en bout utilisait
+`fill`, qui écrit la valeur du DOM et contourne tout. Elle utilise `keyboard.insertText` depuis.
+
+**Deux gardes incapables de tomber.** Une assertion « aucun écran de compte ne s'interpose » testait
+`page.url()` **après** un `waitForURL(/\/plan/)` — une tautologie, sous un commentaire qui la
+disait « la plus importante des trois ». Et `attendreUnChangementDeSession(page, null)` était
+**inerte** sur le rattachement, qui garde le même `user_id` : sa boucle rendait à la première
+lecture, n'importe quel identifiant différant de `null`.
+
+**Un cul-de-sac sur la page que Play exige.** Le repli de `/compte/suppression` après un code
+accepté rendait `inconnu`, donc « Ce navigateur n'est rattaché à aucun compte » — sur un code qui
+vient d'être **consommé**, avec pour seule sortie d'en demander un autre, que `smtp_max_frequency`
+refuse pendant une minute.
+
+**Un verrou relâché trop tôt, et une promesse qui peut lever.** Le verrou anti-double-appel était
+rendu **avant** `await onOuverte()`, donc le bouton redevenait actif pendant la navigation : un
+second toucher rejouait un code consommé et peignait « Ce code ne marche pas » par-dessus une
+connexion réussie. Et `verifyOtp` peut **lever** au lieu de rendre son erreur — l'écran restait
+alors sur « Vérification… », renvoi bloqué par le même verrou, sans un mot.
+
+**Et cinq phrases qui décrivaient le mécanisme d'avant**, dont deux dans des documents et trois dans
+le code : le repli de `sourceConnexion` annoncé comme `resultat_transition` alors que le corps rend
+`inconnue`, la raison du port fixe de `servir-export.mjs` (tombée avec les liens), le paragraphe de
+retour web du layout racine, un paramètre `id` qui voyageait `undefined`, et un aller-retour réseau
+dont on jetait le résultat.
+
+#### Ce que la SECONDE passe a trouvé, et pourquoi elle valait d'être faite
+
+C'est le résultat le plus instructif : **une passe de relecture produit elle-même des défauts, et il
+faut relire les correctifs.** Cinq trouvailles, dont deux qui sont mes propres corrections de la
+veille :
+
+1. **Le correctif de la tautologie l'avait rejouée sur l'autre profil.** Le premier profil arme son
+   guetteur de navigations **avant** le toucher ; le second l'armait **après**, donc un interstitiel
+   traversé pendant le clic n'entrait dans aucune liste et l'assertion redevenait incapable de
+   tomber par l'autre bout. C'est exactement « une exclusion vérifiée sur une paire de moins ».
+2. **Le rattrapage du rejet d'`onOuverte` empruntait le message d'un refus.** Il retombait sur
+   « La vérification n'a pas abouti » alors que la vérification a abouti, que le code est consommé,
+   et que le seul geste proposé ne peut plus rendre qu'un refus. D'où `MESSAGE_DE_LA_SUITE_MANQUEE`,
+   et une garde écrite sur l'**invariant** — le message n'emprunte aucune des cinq issues — qui tombe
+   sur la « simplification » dont il sort. Aucun des trois hôtes ne produit ce rejet aujourd'hui, et
+   c'est précisément le raisonnement du repli de `{jours}` en C2.3 : une phrase fausse que rien
+   n'exerce attend le quatrième hôte qui la rendra atteignable.
+3. **`gabarits-email.md` promettait une garde qui n'existait pas** — « un contrôle relit l'égalité à
+   chaque passage de `scripts/verifier-code-de-connexion.mjs` » —, alors que cette garde-là rend un
+   e-mail contre la stack locale et ne compare **jamais** le document aux fichiers. C'est pire qu'un
+   commentaire périmé : un prochain passage aurait cru la dérive attrapée. **La garde manquante a
+   été écrite plutôt que la phrase affaiblie** (`scripts/verifier-gabarits-email.mjs`, trois
+   mutations jouées) : elle compare les deux blocs du document aux deux fichiers caractère par
+   caractère, vérifie que `supabase/config.toml` les déclare — sans quoi GoTrue retombe en silence
+   sur son gabarit anglais — et qu'aucun ne porte de lien de confirmation, l'invariant du correctif
+   de sécurité du 20/09, qui n'était jusque-là éprouvé que dans le seul travail exigeant Docker.
+4. **L'ouverture du même document disait encore que ces textes vivent « hors du dépôt »**, ce qui
+   n'est plus vrai de la moitié d'entre eux depuis que `supabase/templates/` existe.
+5. **Le commentaire de la marque locale d'adresse décrivait encore les liens** (« elle existe pour
+   un seul cas : un lien qui ne marche plus »), alors que son cas principal est devenu la reprise de
+   la saisie du code.
+
+#### Ce qui n'a rien donné, et ce que ça vaut
+
+**La revue de sécurité du diff n'a trouvé aucune faille nouvelle** — et c'est une information, pas
+une absence : le repli de suppression qui affirme `rattache` n'accorde rien, `delete_my_account`
+agissant sur `auth.uid()` ; le retrait du `maxLength` ne laisse rien passer, la troncature vivant
+dans `chiffresDuCode` ; `new_email` est l'adresse de la personne elle-même ; les deux migrations ne
+touchent que des descriptions ; et les trois écarts de `supabase/config.toml` sont locaux, donc sans
+effet sur la production. La seule chose qui reste ouverte est la dette déjà écrite en §12.12 : le
+code est un **porteur**.
+
+#### La leçon de processus, qui est la vraie sortie de la journée
+
+Trois choses à retenir, et la troisième est nouvelle :
+
+- **Un GO de fusion conditionnel n'est pas un GO à ne pas contre-lire.** La condition portait sur le
+  poids du déploiement, pas sur la qualité du diff.
+- **Un test peut garder une forme d'entrée que la production ne produit pas**, et alors il ne garde
+  rien. La parade n'est pas de relire le test, c'est de **mesurer la forme réelle** avant d'écrire
+  la fixture — comme on mesure une hypothèse sur les données en base plutôt qu'au raisonnement.
+- **Les correctifs d'une contre-lecture se contre-lisent.** Deux des cinq trouvailles de la seconde
+  passe sont des défauts introduits par la première, et aucune des deux n'aurait été vue par une
+  suite verte : l'une rend une assertion incapable de tomber, l'autre écrit une phrase fausse dans
+  une branche que rien n'exerce. Ce sont les deux formes que la relecture adversariale existe pour
+  attraper, et elles viennent d'être produites par la relecture elle-même.

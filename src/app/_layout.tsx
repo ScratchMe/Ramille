@@ -244,14 +244,17 @@ export default function RootLayout() {
   // comme un succès. L'état du rattachement les distingue sans ambiguïté (`a_confirmer`), et
   // `/connexion/email` sait, lui, renvoyer une demande.
   //
-  // **Sur web, seul le chemin d'arrivée sépare les retours, et il est fiable** : les deux
-  // `redirectTo` sont écrits par l'app elle-même — `${APP_URL}/` pour les liens (`connexion/email`
-  // et `connexion/retrouver`), `origin + /plan` pour le consentement Google, qui revient en
-  // `…/plan#error=access_denied` et n'a rien à voir avec un lien à redemander. On ne traite donc
-  // sur web que les échecs arrivés sur `/`, et les jetons jamais (`detectSessionInUrl` s'en
+  // **Sur web, seul le chemin d'arrivée sépare les retours, et il est fiable** parce que les
+  // adresses de retour sont écrites par l'app elle-même. Elles étaient deux : `${APP_URL}/` pour
+  // les liens reçus par e-mail (`connexion/email` et `connexion/retrouver`), et `origin + /plan`
+  // pour le consentement Google, qui revient en `…/plan#error=access_denied` et n'a rien à voir
+  // avec un lien à redemander. **La première a disparu le 20/09/2026 avec les liens** : les deux
+  // e-mails portent un code, et `emailRedirectTo` n'est plus passé — il ne reste donc que le retour
+  // Google, et tout ce bloc est devenu un **filet** pour un lien parti avant ce changement. On ne
+  // traite sur web que les échecs arrivés sur `/`, et les jetons jamais (`detectSessionInUrl` s'en
   // charge, et l'erreur, elle, laisse le fragment en place). Reste dehors le lien demandé depuis
-  // `/compte/suppression`, qui revient sur son propre chemin : c'est à cette page de le dire, pas
-  // à celle qui reconnecte.
+  // `/compte/suppression`, qui revenait sur son propre chemin : c'était à cette page de le dire,
+  // pas à celle qui reconnecte.
   //
   // **La navigation ne part jamais du rendu courant.** Le corps d'une fonction `async` tourne
   // synchronement jusqu'à son premier `await` : la branche `erreur` — le cas principal, un lien

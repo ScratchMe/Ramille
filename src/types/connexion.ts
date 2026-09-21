@@ -399,9 +399,14 @@ export function suiteDeLaDemandeDeCode(
 /**
  * Le message d'un envoi qui ne s'est pas fait — deux cas, et jamais un mot de l'adresse.
  *
- * Le troisième renvoi (`echec`) n'est **pas** atteignable par `suiteDeLaDemandeDeCode`, qui range
- * tout le reste dans `code` : il n'existe que pour l'écran de suppression, qui connaît déjà le
- * compte et n'a donc rien à taire.
+ * **Le troisième renvoi (`echec`) n'est atteignable que par un appelant qui n'a pas trié son
+ * erreur**, et ce commentaire affirmait l'inverse : il disait que la branche « n'existe que pour
+ * l'écran de suppression, qui connaît déjà le compte et n'a donc rien à taire ». C'était faux
+ * deux fois — l'écran de suppression trie désormais par `suiteDeLaDemandeDeCode` comme les autres,
+ * et le seul appelant qui passait une erreur brute était le **renvoi** de l'écran de code, où ce
+ * message-ci révélait qu'une adresse n'a pas de compte (relevé en revue le 21/09/2026). La règle
+ * est donc simple et sans exception : **cette fonction ne se lit qu'après un tri**, `suiteDeLaDemande…`
+ * ou `suiteDuRenvoi`, et jamais sur l'erreur nue.
  */
 export function messageDeLaDemande(error: ErreurAuth): string {
   if (estLimiteDEnvoi(error)) {
@@ -458,6 +463,29 @@ export function messageDeLaVerification(issue: IssueDeLaVerification): string | 
 }
 
 /**
+ * Ce qui s'affiche quand **le code a été accepté et que la suite n'a pas abouti** — l'écran
+ * d'après, la relecture du compte, le balayage des marques locales.
+ *
+ * **Ce cas ne doit surtout pas emprunter un message de `messageDeLaVerification`**, et c'est le
+ * correctif : le rejet de `onOuverte` retombait sur `'echec'`, donc « La vérification n'a pas
+ * abouti », alors que la vérification a parfaitement abouti — le code est **consommé**, et le
+ * réessayer ne peut plus rendre qu'un refus. La phrase disait donc le contraire de ce qui venait
+ * de se passer, et invitait au seul geste qui ne peut plus marcher.
+ *
+ * **Aucun des trois hôtes ne produit ce rejet aujourd'hui** (`/connexion/email` navigue et rien de
+ * plus, `/connexion/retrouver` appelle un balayage qui avale ses propres erreurs, et
+ * `/compte/suppression` attrape la sienne), et c'est justement pourquoi la phrase valait d'être
+ * corrigée : une phrase fausse que rien n'exerce attend le quatrième hôte qui la rendra atteignable
+ * — le raisonnement du repli de `{jours}` en C2.3. La branche, elle, est porteuse : le verrou reste
+ * pris pendant `onOuverte`, donc sans elle un rejet laisserait l'écran figé sur « Vérification… ».
+ *
+ * Elle ne propose pas de retaper le code : l'appelant vide le champ, et « Renvoyer un code » reste
+ * la sortie — un code neuf rejoue la suite entière.
+ */
+export const MESSAGE_DE_LA_SUITE_MANQUEE =
+  'Ta session est ouverte, mais l’écran suivant n’a pas suivi. Demande un nouveau code, ou reviens dans un instant.';
+
+/**
  * Le corps de l'écran de saisie, **par contexte**, et la différence est la non-divulgation.
  *
  * En `rattachement`, l'adresse est forcément libre : c'est la personne qui vient de la taper, et
@@ -488,6 +516,38 @@ export function introDeLaConnexion(source: SourceConnexion): string {
     return 'Le rappel par email a besoin d’une adresse. Avec un compte rattaché, il t’arrive — et ton bilan te suit d’un appareil à l’autre, tes points et ton plan aussi.';
   }
   return 'Il est enregistré ici, sur cet appareil. Avec un compte rattaché, tu le retrouves sur un autre téléphone ou un ordinateur — tes points et ton plan aussi —, et le mot de chaque point peut t’arriver par email.';
+}
+
+/**
+ * Ce qu'un **renvoi** de code a donné, et c'est une dérivation à part parce que la
+ * non-divulgation y était trouée.
+ *
+ * `surRenvoi` passait l'erreur brute à `messageDeLaDemande` : un `422 otp_disabled` — une adresse
+ * **sans compte** — n'étant ni une limite d'envoi ni une panne de transport, il retombait sur
+ * « L'envoi n'a pas abouti. Vérifie l'adresse et réessaie. », là où une adresse connue lisait
+ * « Si un compte existe avec cette adresse, un nouveau code vient d'y partir. » **Deux réponses
+ * différentes, donc un oracle** : n'importe qui pouvait savoir si une adresse utilise Ramille, sur
+ * la page de suppression que Google Play exige d'ailleurs de garder publique. Relevé en revue le
+ * 21/09/2026, et le premier envoi ne l'avait pas parce qu'il passe, lui, par
+ * `suiteDeLaDemandeDeCode`.
+ *
+ * Trois cas, dans cet ordre :
+ *   - la **limite d'envoi** et la **panne de transport** se disent, comme partout : ni l'une ni
+ *     l'autre ne parle de l'adresse ;
+ *   - l'**adresse déjà prise** ne peut arriver qu'en rattachement (`signInWithOtp` ne rattache
+ *     rien), et là il n'y a rien à taire — le produit le dit déjà au premier envoi. Elle se dit,
+ *     parce qu'annoncer un code parti quand rien n'est parti ferait attendre pour rien ;
+ *   - **tout le reste se lit comme un renvoi réussi**, `otp_disabled` en tête. C'est la règle de
+ *     non-divulgation, et elle ne connaît pas d'exception selon qu'on en est au premier envoi ou
+ *     au troisième.
+ */
+export type SuiteDuRenvoi = 'renvoye' | 'message';
+
+export function suiteDuRenvoi(contexte: ContexteDuCode, error: ErreurAuth): SuiteDuRenvoi {
+  if (!error) return 'renvoye';
+  if (estLimiteDEnvoi(error) || estPanneDeTransport(error)) return 'message';
+  if (contexte === 'rattachement' && adresseDejaRattachee(error)) return 'message';
+  return 'renvoye';
 }
 
 export function messageDuRenvoi(contexte: ContexteDuCode): string {

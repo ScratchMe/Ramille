@@ -173,3 +173,32 @@ celui de trois surfaces. **Trois attendent** :
    l'implémentation fait, faute de pouvoir naviguer sous un `Modal` ouvert ; sur natif, la personne
    ne donne pas la permission push ce jour-là et recevra le mot par email (la préférence par
    défaut), corrigeable dans « Toi ».
+
+## 8. Ce que les deux contre-lectures ont corrigé, après la fusion
+
+Le chantier a été fusionné dans la nuit du 20 au 21/09/2026, puis relu deux fois le 21. **Les deux
+passes ont trouvé de vrais défauts**, dont trois confirmés par la mesure, et le relevé complet — par
+famille, avec la leçon de processus — est en
+[`v1-27` §12.14](v1-27-dette-technique.md). Ce qu'il faut savoir en lisant ce document-ci :
+
+- **la porte « Saisir le code » de « Toi » était du code mort le jour de sa livraison.** Le §4
+  décrit la boucle comme refermée là ; elle ne l'était pas, parce que `etatDuRattachement` cherchait
+  l'adresse en attente dans `session.email` alors que GoTrue ne remplit que `new_email` sur une
+  session anonyme. Mesuré, corrigé, et la phrase du pied de l'écran de code — qui promet de
+  retrouver la saisie depuis « Toi » — est vraie depuis ;
+- **la règle de non-divulgation du §4 n'était écrite que pour le premier envoi.** « Renvoyer un
+  code » distinguait une adresse sans compte d'une adresse connue : un oracle sur la page que Google
+  Play exige publique. C'est la seule trouvaille de sécurité des deux passes, et elle est fermée par
+  une dérivation à elle (`suiteDuRenvoi`) plutôt que par une condition dans l'écran ;
+- **un code recopié depuis une messagerie ne pouvait pas être saisi** : le champ tronquait la saisie
+  brute avant que les espaces n'aient été retirés. C'est le défaut le plus visible du chantier, et il
+  était invisible à qui **tape** — donc invisible à la recette, qui tape ;
+- **le §5 reste exact.** Rien des deux passes ne change ce qui est ouvert : le code est un porteur,
+  la dette est en `v1-27` §12.12, et sa condition de réouverture est inchangée ;
+- **le §7 reste ouvert tel quel.** Les trois arbitrages n'ont pas été tranchés par la relecture, et
+  l'implémentation garde le comportement d'aujourd'hui sur les trois.
+
+Et une garde a été ajoutée là où ce chantier reposait sur une vérification faite à la main : les deux
+gabarits d'e-mail sont désormais comparés à leur référence à chaque PR, **avec l'assertion qu'aucun
+ne porte de lien de confirmation** — l'invariant du §4, qui n'était jusque-là éprouvé que dans le
+seul travail de CI exigeant Docker (`TESTING.md` §2.11).

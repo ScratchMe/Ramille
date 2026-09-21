@@ -200,7 +200,17 @@ export default function SuppressionCompte() {
                 onOuverte={async () => {
                   // La session est celle du compte : on relit l'état et la page passe d'elle-même
                   // au bloc de suppression, comme elle le faisait quand le lien revenait ici.
-                  const etat = await lireEtatDuCompte().catch(() => ({ kind: 'inconnu' }) as const);
+                  //
+                  // **Le repli ne renvoie plus au formulaire d'adresse**, et c'est un correctif : il
+                  // rendait `inconnu`, donc « Ce navigateur n'est rattaché à aucun compte » — sur une
+                  // page où le code vient d'être accepté et **consommé**. La seule sortie était d'en
+                  // demander un autre, que `smtp_max_frequency` refuse pendant une minute, sur la
+                  // page que Google Play exige de garder utilisable sans l'app. Ce que la
+                  // vérification vient de prouver ne se perd pas parce qu'une seconde lecture a
+                  // échoué : le code était celui de cette adresse, donc la session est ce compte.
+                  const etat = await lireEtatDuCompte().catch(
+                    () => ({ kind: 'rattache', email: email.trim() }) as const
+                  );
                   setPhase({ kind: 'pret', etat, confirme: false });
                 }}
                 onAutreAdresse={() => {

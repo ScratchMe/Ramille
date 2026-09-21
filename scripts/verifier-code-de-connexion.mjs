@@ -44,6 +44,11 @@
 //   - `suiteDeLaDemandeDeCode` rend `message` sur `otp_disabled` → l'assertion **2** tombe : l'écran
 //     de code ne s'ouvre plus, donc la non-divulgation devient visible de l'extérieur.
 //   - `flowType: 'pkce'` retiré de `src/lib/supabase.ts` → l'assertion **5** tombe.
+//   - le champ de code reprend un `maxLength` → l'assertion **1** tombe sur le collé, en nommant le
+//     nombre de chiffres retenus (mutation jouée le 21/09/2026, après que la revue a trouvé le
+//     défaut : le collé perdait des chiffres là où la frappe passait).
+//   - `verifierLeCode` relit `session.email` au lieu de l'adresse en attente → rien ne tombe ici,
+//     c'est `src/types/compte.test.ts` qui le garde ; noté pour qu'on ne cherche pas ici.
 //   - la reprise de `/connexion/email?reprise=1` n'ouvre plus la saisie → l'assertion **1** tombe
 //     sur sa branche de reprise, et c'est un cul-de-sac qu'elle garde : une adresse en attente sans
 //     moyen de la confirmer.
@@ -226,11 +231,49 @@ async function demanderUnCode(page, base, adresse, flux) {
   return dernierCourrielRecu(adresse, avant);
 }
 
-/** Tape le code sur l'écran de saisie et valide. */
-async function taperLeCode(page, code, libelleBouton) {
+/**
+ * La session de la page une fois qu'elle n'est plus anonyme.
+ *
+ * **`attendreUnChangementDeSession` ne convient pas au rattachement**, et s'en servir était un
+ * défaut de cette garde : le rattachement garde le **même** `user_id`, donc il n'y a aucun
+ * identifiant à voir changer. Appelée avec `null` pour repère, sa boucle rendait dès la première
+ * lecture — n'importe quel identifiant diffère de `null` —, donc l'attente était **inerte** et
+ * l'assertion ne passait que grâce au `networkidle` qui la précède (relevé en revue le 21/09/2026).
+ * Ce qui bascule au rattachement est `is_anonymous` : c'est lui qu'on attend.
+ */
+async function attendreUneSessionPermanente(page, ms = 12000) {
+  const fin = Date.now() + ms;
+  let vu = null;
+  while (Date.now() < fin) {
+    vu = await utilisateurDeLaPage(page, 1);
+    if (vu && vu.anonyme === false) return vu;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return vu;
+}
+
+/**
+ * Colle le code sur l'écran de saisie et valide.
+ *
+ * **Un collé et non une frappe, et ce n'est pas un détail de confort.** `fill` écrit la valeur du
+ * DOM et contourne tout ce que le navigateur applique à une saisie ; `insertText` produit **un
+ * seul** événement d'entrée, c'est-à-dire exactement ce qu'un collé produit. La différence a caché
+ * un vrai défaut jusqu'au 21/09/2026 : le champ portait un `maxLength`, qui tronque la saisie
+ * **brute** avant que la dérivation n'ait retiré les espaces — donc un collé de « 847 924 69 » ne
+ * laissait que six chiffres, bouton inerte et aucun message, tandis que la frappe marchait (chaque
+ * espace est rejeté avant d'atteindre la limite). `avecEspaces` rejoue le cas de la messagerie.
+ */
+async function taperLeCode(page, code, libelleBouton, { avecEspaces = false } = {}) {
   const champ = page.getByRole('textbox', { name: /Code reçu par email/ });
   await champ.waitFor({ state: 'visible', timeout: 20000 });
-  await champ.fill(code);
+  await champ.click();
+  const colle = avecEspaces ? code.replace(/(\d{3})(\d{3})(\d{2})/, '$1 $2 $3') : code;
+  await page.keyboard.insertText(colle);
+  const retenu = await champ.inputValue();
+  verifier(
+    retenu.length === code.length,
+    `le champ n'a gardé que ${retenu.length} chiffres d'un collé de « ${colle} » — un code recopié depuis une messagerie ne peut pas être saisi`
+  );
   // Le dernier chiffre déclenche la vérification tout seul ; le bouton est là pour qui colle ou
   // corrige, et le toucher deux fois est sans effet (verrou en `ref`). On le touche quand il est
   // encore actif, sinon la vérification automatique a déjà pris la main.
@@ -280,8 +323,9 @@ try {
     'la reprise depuis « Toi » n’ouvre pas la saisie du code : l’adresse reste en attente sans moyen de la confirmer',
   );
 
-  await taperLeCode(pageA, courrielA.code, 'Rattacher mon adresse');
-  const sessionA = await attendreUnChangementDeSession(pageA, null, 12000);
+  // Collé **avec des espaces**, comme une messagerie le rend : c'est la forme qui a échoué.
+  await taperLeCode(pageA, courrielA.code, 'Rattacher mon adresse', { avecEspaces: true });
+  const sessionA = await attendreUneSessionPermanente(pageA);
   verifier(sessionA !== null, 'aucune session après avoir tapé le code de rattachement');
   verifier(
     sessionA?.id === anonymeA?.id,

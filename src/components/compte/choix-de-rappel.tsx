@@ -125,6 +125,14 @@ export function ChoixDeRappel({
                 choix-là. Il entre donc dans le `radiogroup`, ce qui est le moindre mal : ce
                 n'est pas un `radio` et rien ne le compte comme une option, alors qu'un lien
                 détaché de sa phrase ne désigne plus rien. */}
+              {/* **`porteVersLeCompte` n'est volontairement PAS rendue ici**, et il faut le dire :
+                  `lignesDeReglage` la pose à `true` sur la ligne « Par email » sans adresse, et la
+                  feuille des rappels (`feuille-rappels.tsx`) la rend — ce composant non. La raison
+                  est la place : sur « Toi », le bouton « Rattacher un compte » de la section compte
+                  est cent pixels plus haut, et deux portes identiques sur un écran calme n'en valent
+                  pas une. Sans cette note, l'écart entre les deux rendeurs d'une même dérivation se
+                  lit comme un oubli — il a d'ailleurs été relevé comme tel en revue le 21/09/2026. */}
+
             {ligne.lienVersLesReglages && (
               <TextLink
                 label="Ouvrir les réglages du téléphone"

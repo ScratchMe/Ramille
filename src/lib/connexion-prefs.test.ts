@@ -7,11 +7,18 @@
 // l'entrée-sortie, et c'est **elle** qu'on éprouve ici, donc le double d'AsyncStorage n'est pas un
 // contournement de la règle, c'est le sujet. Même arbitrage que `bilan-draft.test.ts`.
 //
-// Ce que ces quatre marques ont en commun, et ce qui se casse quand elles se cassent : chacune
-// transforme une **nouvelle** en **état**. Sans elles, la proposition de connexion réinterrompt à
-// chaque retour sur la restitution, le rattachement confirmé ne se dit jamais, l'adresse du lien
-// est à retaper au moment précis où le lien vient d'expirer, et l'encart de l'engagement emporté par
-// un re-bilan devient un reproche permanent en tête du plan.
+// Ce que ces **trois** marques ont en commun, et ce qui se casse quand elles se cassent : chacune
+// transforme une **nouvelle** en **état**. Sans elles, le rattachement confirmé ne se dit jamais,
+// l'adresse tapée est à retaper au moment précis où l'on revient saisir son code, et l'encart de
+// l'engagement emporté par un re-bilan devient un reproche permanent en tête du plan.
+//
+// **Il y en avait une quatrième, « proposition de connexion vue »**, retirée le 20/09/2026 avec
+// l'interstitiel : plus rien ne compte les passages, donc plus rien à retenir. Son bloc de test est
+// parti avec elle — et il a emporté au passage celui de la dégradation du stockage, qui couvrait les
+// trois autres : relevé en revue le 21/09/2026, deux `describe` étaient restés **vides**, ce que
+// Jest ne signale pas (il compte zéro test et passe).
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import {
   aVuEngagementOrphelin,
   aVuRattachementAnnonce,
@@ -40,10 +47,6 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 beforeEach(() => mockStock.clear());
-
-describe('proposition de connexion', () => {
-
-});
 
 describe('annonce du rattachement', () => {
   it('se dit une fois, puis se tait', async () => {
@@ -83,5 +86,33 @@ describe('quand le stockage refuse', () => {
   // Un stockage plein, un navigateur privé, un quota atteint : la lecture doit rendre « pas encore
   // vu » et l'écriture ne doit rien casser. Au pire la nouvelle se redit une fois — ce qui est le
   // bon côté sur lequel échouer, l'autre étant de ne jamais l'annoncer.
+  //
+  // **Ce bloc était vide**, vidé par le retrait de la quatrième marque : les `it` qui restaient
+  // citaient tous la marque disparue, et les retirer a emporté la seule couverture de la
+  // dégradation pour les trois autres. Rien n'épinglait plus leurs `try/catch`, donc les retirer
+  // passait la CI — et `lireAdresseDuLien` qui lèverait au lieu de rendre `null` casse en silence
+  // la reprise de la saisie du code depuis « Toi ».
+  beforeEach(() => {
+    jest.spyOn(AsyncStorage, 'getItem').mockRejectedValue(new Error('stockage indisponible'));
+    jest.spyOn(AsyncStorage, 'setItem').mockRejectedValue(new Error('stockage plein'));
+  });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('une lecture qui refuse se lit « pas encore vu », jamais une exception', async () => {
+    await expect(aVuRattachementAnnonce()).resolves.toBe(false);
+    await expect(aVuEngagementOrphelin('archive-1')).resolves.toBe(false);
+  });
+
+  it('l’adresse tapée rend null plutôt que de lever — c’est ce qui garde la reprise du code', async () => {
+    await expect(lireAdresseDuLien()).resolves.toBeNull();
+  });
+
+  it('une écriture qui refuse ne casse rien : au pire la nouvelle se redit', async () => {
+    await expect(marquerRattachementAnnonce()).resolves.toBeUndefined();
+    await expect(memoriserAdresseDuLien('camille@exemple.fr')).resolves.toBeUndefined();
+    await expect(marquerEngagementOrphelinVu('archive-1')).resolves.toBeUndefined();
+  });
 });

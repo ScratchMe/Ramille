@@ -36,11 +36,20 @@ export async function marquerRattachementAnnonce(): Promise<void> {
   }
 }
 
-// L'adresse du dernier lien demandé depuis cet appareil.
+// La dernière adresse saisie depuis cet appareil.
 //
-// Elle existe pour un seul cas : un lien qui ne marche plus. La personne a fait le bon geste,
-// revient dans l'app, et l'écran lui dit d'en redemander un — lui faire retaper son adresse à
-// ce moment-là, c'est la faire payer une expiration qui n'est pas de son fait.
+// **Ce commentaire disait « l'adresse du dernier lien demandé », et « elle existe pour un seul cas :
+// un lien qui ne marche plus »** — le mécanisme d'avant le 20/09/2026, où l'unique usage était de ne
+// pas faire retaper son adresse à quelqu'un qui revenait d'un lien expiré. Les liens sont partis ;
+// le cas principal est devenu la **reprise de la saisie du code** (`/connexion/email?reprise=1`,
+// ouverte depuis « Toi » quand l'onglet est parti avant que le code soit tapé) et son équivalent sur
+// `/connexion/retrouver`, où l'adresse arrive d'ici plutôt que d'un paramètre d'URL. Le lien périmé
+// reste servi, comme filet pour un e-mail parti avant le changement. Relevé au second passage de
+// contre-lecture, le 21/09/2026.
+//
+// Le nom de la clé garde le mot « lien » et ne se « corrige » pas : la renommer effacerait le
+// préremplissage sur chaque appareil qui l'a écrite, pour un mot que personne ne lit — même
+// raisonnement que le préfixe `traceverte.` lui-même.
 //
 // **Une préférence locale, jamais une déduction serveur** : prérenseigner depuis une réponse de
 // l'API dirait qui utilise Ramille, ce que la règle de non-divulgation interdit (cf.

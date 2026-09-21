@@ -148,9 +148,11 @@ export default function ConnexionProposition() {
             <MessageInline message={message} />
             <TextLink
               label="Utiliser un email à la place"
-              // `source` est propagée, `id` ne l'est plus : `/connexion` ne lit plus le résultat
-              // du bilan, donc plus rien n'a besoin de l'identifiant ici.
-              onPress={() => router.push({ pathname: '/connexion/email', params: { source: provenance } })}
+              // **Aucun paramètre**, et c'est délibéré : `/connexion/email` ne lit ni `id` (plus
+              // personne ne le passe depuis que cet écran ne lit plus le résultat du bilan) ni
+              // `source` (la provenance qu'il transmet à « retrouver » est la porte d'ici, `email`).
+              // En passer un que rien ne lit se lit « réservé » là où il est inutile.
+              onPress={() => router.push('/connexion/email')}
               role="link"
               type="linkPrimary"
               style={styles.emailLink}

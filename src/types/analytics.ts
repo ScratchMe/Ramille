@@ -137,8 +137,14 @@ export type SourceRetrouver = (typeof SOURCES_RETROUVER)[number];
  * chercher le rattachement hors de tout interstitiel — était enregistrée comme l'interstitiel
  * lui-même, et gonflait exactement le chiffre qu'on voulait lui comparer.
  *
- * Le repli est `resultat_transition` parce que c'est le chemin historique : un paramètre absent
- * (lien direct, retour arrière) vaut mieux compté là que perdu.
+ * **Le repli est `inconnue`, et ce commentaire disait le contraire du corps** jusqu'au 21/09/2026 :
+ * il annonçait `resultat_transition`, « parce que c'est le chemin historique ». C'était vrai la
+ * veille et faux le jour d'après — l'interstitiel retiré, cette provenance est devenue la **mesure
+ * de l'avant**, donc y verser chaque arrivée sans paramètre polluait le seul chiffre qui sert à
+ * juger le retrait. Un paramètre absent (lien direct, favori, retour arrière) est un fait, pas une
+ * supposition : il se compte pour ce qu'il est. Le bloc en tête de `SOURCES_CONNEXION` dit le
+ * calcul ; c'est la famille de défaut que la contre-lecture cherche (« une phrase qui décrit ce que
+ * le code faisait avant »), et elle a survécu à la passe qui en a corrigé cinq autres.
  */
 export function sourceConnexion(valeur: string | undefined): SourceConnexion {
   return SOURCES_CONNEXION.find((source) => source === valeur) ?? 'inconnue';

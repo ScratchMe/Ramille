@@ -864,7 +864,10 @@ rattachement rattachait son adresse au compte d'un inconnu d'un seul clic. Sept 
   personne compare ses chiffres avec l'e-mail.
 - **Les deux gabarits vivent dans le dépôt** (`supabase/templates/`, déclarés dans
   `supabase/config.toml`) pour que la stack locale rejoue le texte de la production. Leur
-  référence vivante reste `docs/exploitation/gabarits-email.md`. **Un gabarit n'est pas relu à
+  référence vivante reste `docs/exploitation/gabarits-email.md`, et **l'égalité entre les deux est
+  comparée à chaque PR** depuis le 21/09/2026 (`scripts/verifier-gabarits-email.mjs`, `TESTING.md`
+  §2.11), avec l'assertion qu'aucun ne porte de lien de confirmation — ce document affirmait cette
+  comparaison avant qu'elle n'existe. **Un gabarit n'est pas relu à
   chaud** : GoTrue l'inline au démarrage du conteneur, donc une mutation de gabarit sans
   `supabase stop && start` ne fait rien — et la garde reste verte pour la mauvaise raison.
 - **Les Redirect URLs ne servent plus qu'à Google.** `emailRedirectTo` a disparu des deux appels :
