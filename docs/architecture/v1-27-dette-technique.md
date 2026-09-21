@@ -1128,8 +1128,13 @@ de documentation. Rien dans le diff ne pouvait l'atteindre.
   (`demanderUnCode` cinq fois, plus le clic de la branche `otp_disabled`) ; `supabase/config.toml`
   porte `email_sent = 30` par heure. On est à un cinquième du plafond ;
 - **le plafond de sessions anonymes non plus.** Les deux scripts du même travail ouvrent **huit**
-  contextes de navigateur au total — un pour le parcours réel, sept ici —, donc au plus huit
-  inscriptions anonymes, pour un `anonymous_users = 30` par heure et par adresse IP.
+  contextes de navigateur au total — un pour le parcours réel, sept ici. Attention à ce que ce
+  chiffre est : un contexte n'est pas une inscription. Le parcours réel en produit **au moins
+  deux** dans son unique contexte, puisqu'il supprime le compte du premier profil avant de jouer le
+  cycliste, et qu'`ensureSession()` en ouvre alors une neuve. L'ordre de grandeur reste la dizaine,
+  pour un `anonymous_users = 30` par heure et par adresse IP — ce qui suffit à écarter
+  l'hypothèse, mais **ce qui a été compté sont les contextes**, et l'écrire autrement serait
+  donner à cette section la précision qu'elle reproche au mot « flake ».
 
 **La cause reste donc inconnue, et il ne faut pas écrire le contraire.** « Flake » n'est pas une
 cause : c'est le nom qu'on donne à une cause qu'on n'a pas cherchée.
