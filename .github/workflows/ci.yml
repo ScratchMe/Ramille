@@ -28,9 +28,21 @@ permissions:
 # l'image. Puis `sauvegarde.yml`, qui porte le cinquième et dépend du dépôt pgdg : voir son propre
 # commentaire. Registre : docs/exploitation/README.md §8.9.
 jobs:
+  # **Chaque travail porte un plafond, et il a été payé le 21/09/2026.** Deux travaux de la même
+  # exécution ont cessé d'avancer à la même seconde, sur deux machines différentes et deux
+  # commandes différentes — l'un sur `expo export --clear`, l'autre sur un script Playwright —,
+  # ce qui désigne l'infrastructure et non le dépôt. Sans `timeout-minutes`, GitHub applique son
+  # défaut de **six heures** : une exécution bloquée immobilise donc le retour pendant une
+  # demi-journée, et consomme le quota d'autant.
+  #
+  # Vingt minutes est très au-dessus du besoin — les durées saines relevées ce jour-là vont de
+  # 40 s (Jest) à 3 min 30 (export web et parcours réel) — et très en dessous du défaut. Un
+  # plafond qui ne se déclenche jamais sur une exécution saine, et qui rend un blocage en vingt
+  # minutes au lieu de six heures.
   checks:
     name: Typecheck & lint
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -123,6 +135,7 @@ jobs:
   unit-tests:
     name: Tests unitaires (Jest)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -146,6 +159,7 @@ jobs:
   web-export:
     name: Export web
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -189,6 +203,7 @@ jobs:
   db-tests:
     name: Tests base de données (pgTAP)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       # Démarre une stack Postgres locale (Docker) à partir de supabase/config.toml et
@@ -249,6 +264,7 @@ jobs:
   parcours-reel:
     name: Parcours réel (stack locale)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
