@@ -10,7 +10,10 @@
 // ── Ce que chaque assertion garde, et pourquoi aucune ne remplace une autre ───────────────────────
 //
 //   1. **Le rattachement par code marche**, du champ d'adresse jusqu'à une session non anonyme
-//      portant l'adresse. C'est le produit : s'il tombe, plus personne ne peut se rattacher.
+//      portant l'adresse — **en passant par la reprise depuis « Toi »**, c'est-à-dire en quittant
+//      l'écran de code entre l'envoi et la saisie. C'est le produit : s'il tombe, plus personne ne
+//      peut se rattacher ; et si la reprise tombe, une adresse reste en attente sans moyen de la
+//      confirmer, ce qui est un cul-de-sac.
 //   2. **La reconnexion par code depuis un navigateur NEUF marche.** C'est le cas que le lien ne
 //      pouvait pas faire — en PKCE il ne valait que dans le navigateur qui l'avait demandé, donc un
 //      bilan fait sur un ordinateur et un e-mail lu sur un téléphone ne se rejoignaient jamais.
@@ -41,6 +44,19 @@
 //   - `suiteDeLaDemandeDeCode` rend `message` sur `otp_disabled` → l'assertion **2** tombe : l'écran
 //     de code ne s'ouvre plus, donc la non-divulgation devient visible de l'extérieur.
 //   - `flowType: 'pkce'` retiré de `src/lib/supabase.ts` → l'assertion **5** tombe.
+//   - la reprise de `/connexion/email?reprise=1` n'ouvre plus la saisie → l'assertion **1** tombe
+//     sur sa branche de reprise, et c'est un cul-de-sac qu'elle garde : une adresse en attente sans
+//     moyen de la confirmer.
+//
+// **Et une mutation qui ne fait rien tomber**, à connaître avant de croire une garde verte :
+// modifier un gabarit de `supabase/templates/` **sans redémarrer la stack**. GoTrue les inline au
+// démarrage du conteneur, donc l'e-mail envoyé ne change pas. Il faut `supabase stop && start` pour
+// que l'assertion 4 soit réellement éprouvée — mesuré le 20/09/2026, en jouant justement cette
+// mutation et en la croyant d'abord inoffensive.
+//
+// **Et un piège du harnais lui-même** : restaurer la source après une mutation ne suffit pas, il
+// faut **reconstruire l'export**. Sans ça, `dist/` porte encore la mutation précédente et une
+// assertion tombe pour une raison qui n'a rien à voir (relevé le même jour, sur l'assertion 5).
 //
 // ── Comment il tourne ────────────────────────────────────────────────────────────────────────────
 //
@@ -243,6 +259,26 @@ try {
   const courrielA = await demanderUnCode(pageA, serveur.base, adresseA, 'rattachement');
   const anonymeA = await utilisateurDeLaPage(pageA);
   verifier(anonymeA?.anonyme === true, 'la session de départ n’est pas anonyme : le rattachement n’éprouve rien');
+
+  // **La reprise depuis « Toi », jouée dans le même souffle** — parce que c'est le cas où l'écran
+  // de code a le plus de chances d'avoir disparu : sur web, aller chercher le code dans sa
+  // messagerie peut emporter l'onglet. L'écran de rattachement relit l'adresse en local et
+  // s'ouvre **directement** sur la saisie, sans renvoyer de code (celui qui est déjà dans la boîte
+  // vaut encore, et le distant n'accepte de toute façon qu'un envoi par minute et par adresse).
+  //
+  // Sans cette assertion, la phrase du pied de l'écran de code — « si tu quittes cet écran, tu
+  // retrouves la saisie du code depuis “Toi” » — serait une promesse que rien ne garde, et son
+  // échec est un cul-de-sac : une adresse en attente, aucun moyen de la confirmer.
+  await pageA.goto(`${serveur.base}/connexion/email?reprise=1`, { waitUntil: 'domcontentloaded' });
+  const champRepris = pageA.getByRole('textbox', { name: /Code reçu par email/ });
+  const repriseOuverte = await champRepris
+    .waitFor({ state: 'visible', timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+  verifier(
+    repriseOuverte,
+    'la reprise depuis « Toi » n’ouvre pas la saisie du code : l’adresse reste en attente sans moyen de la confirmer',
+  );
 
   await taperLeCode(pageA, courrielA.code, 'Rattacher mon adresse');
   const sessionA = await attendreUnChangementDeSession(pageA, null, 12000);
