@@ -411,6 +411,18 @@ exactement ce qui avait laissé passer le mauvais caractère.
   B1.4, par `PrecisionChiffres`, après la motorisation — les deux précisions décrivent la même
   voiture. Le seul écart qui reste est la distance ouverte des loisirs, et sa raison est écrite sur
   place : une rangée de puces n'a pas d'élément sous lequel se glisser.
+- **Deux précisions de plus depuis C4.4, et une asymétrie d'effacement qui n'est pas évidente.**
+  « Train » ouvre TER / RER ou Transilien / Intercités, « Vélo » ouvre mécanique / à assistance,
+  sur les trois écrans qui posent un mode — on ne prend pas le même train pour aller travailler et
+  pour partir en week-end. Un champ par **poste** et non par jambe, comme la motorisation, parce
+  que B1.7 exclut le mode déjà choisi en B1.4. Ce qu'il ne faut pas uniformiser :
+  `normaliserReponses` efface ces deux réponses sur des loisirs « rarement », **là où la
+  motorisation reste** — une motorisation décrit le véhicule qu'on possède encore et rend le
+  résiduel plus juste, un type de train décrit un trajet qu'on ne déclare plus. Et ce n'est pas
+  théorique : le résiduel de « rarement » vaut `train` quand le foyer n'a pas de voiture, donc un
+  type survivant y serait lu et un bilan resoumis à l'identique changerait de total. La
+  trottinette, elle, ne reçoit **aucune** question — une question dont une seule réponse existe
+  n'en est pas une.
 - **La virgule est un séparateur décimal, et la traiter comme un caractère à jeter coûtait un
   facteur dix.** Le champ de distance filtrait tout ce qui n'était pas un chiffre : « 3,5 » ne
   donnait ni erreur ni refus, il donnait **35**. Le clavier numérique d'Android propose une
@@ -750,5 +762,10 @@ périmerait en silence au prochain passage :
   **rien** sur la correspondance avec la base : ajouter un mode au produit est une migration SQL,
   et un mode résolu côté serveur (les quatre deux-roues, les quatre motorisations, le TGV) ne
   traverse aucun fichier TypeScript. C'est le chemin qui avait laissé les quatre deux-roues
-  motorisés sans préposition alors qu'ils peuvent parfaitement être le `dominant_poste_mode`. La
-  garde qui manque est côté SQL et reste à écrire.
+  motorisés sans préposition alors qu'ils peuvent parfaitement être le `dominant_poste_mode`.
+  **Cette garde existe depuis le 21/09/2026**, et elle est en SQL parce que pgTAP ne peut pas lire
+  du TypeScript : `07_sync_emission_factors.test.sql` épingle la liste exacte des identifiants de
+  `public.transport_modes`, donc une migration qui ajoute un mode rougit en CI et son message
+  nomme ce fichier. C'est un **fil-piège**, pas une comparaison — il ne dit pas que
+  `MODE_PREPOSITION` est juste, il dit qu'il faut venir la relire, ce qui est exactement ce qui
+  manquait. C4.4 y a ajouté cinq modes du même geste que dans sa migration.

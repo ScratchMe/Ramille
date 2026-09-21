@@ -8,7 +8,7 @@
 > trois cartes sont du rendu.
 
 > **Depuis le 20/09/2026, la CI joue ce profil à chaque PR** (`scripts/verifier-parcours-reel.mjs`,
-> `TESTING.md` §2.6) : les mêmes réponses, les mêmes 4 231 kg, les huit pistes dans cet ordre,
+> `TESTING.md` §2.6) : les mêmes réponses, les mêmes 4 231 kg, les dix pistes dans cet ordre,
 > l'engagement, un point répondu, le suivi — la base relue derrière chaque écran. **Et le bloc 09
 > aussi**, depuis le même jour : un second profil, le cycliste, y joue le plan à zéro action, la
 > barre d'onglets qui arrive sans « Compris », et le cap qui ne chiffre pas.
@@ -75,6 +75,7 @@ ces chiffres, et une ligne de plus ou de moins dans le plan.
 | Second mode | **Non** |
 | Sorties du week-end | **Une fois par semaine**, en **voiture** thermique, tranche **15 à 30 km**, sans covoiturage |
 | Vols | **2** dans l'année, dont **1** court → l'écran doit écrire « 1 vol long-courrier sera compté. » |
+| Longs trajets en autocar | **0** par an — le compteur existe depuis C4.4, et il faut le laisser à zéro pour retrouver ces chiffres |
 | Longs trajets en voiture | **2** par an, thermique, **2** personnes à bord |
 | Contexte | **Périurbain**, transports en commun **Limité**, **1** véhicule |
 | Télétravail | **Un jour** |
@@ -84,18 +85,26 @@ Ce que ce profil rend, mesuré :
 - un bilan de **4 231 kg/an**, poste dominant **trajet domicile-travail** (**1 920 kg**) ;
 - un cycle **« Automne 2026 »**, du 1er septembre au **30 novembre** ;
 - un cap de **− 384 kg** (− 20 % du poste dominant) ;
-- **huit** pistes, dans cet ordre :
+- **dix** pistes, dans cet ordre :
 
 | Rang | Poste | Action | Gain |
 |---|---|---|---|
-| 1 | Trajet domicile-travail | Passer deux trajets sur cinq en train ou en RER | **619 kg** |
+| 1 | Trajet domicile-travail | Passer deux trajets sur cinq en train | **619 kg** |
 | 2 | Voyages longue distance | Renoncer à un vol long-courrier cette année | **1 601 kg** |
 | 3 | Trajet domicile-travail | Faire ce trajet à deux au moins un jour sur deux | 480 kg |
 | 4 | Trajet domicile-travail | Travailler depuis chez toi un jour par semaine | 384 kg |
 | 5 | Voyages longue distance | Renoncer à un vol court ou moyen-courrier cette année | 277 kg |
 | 6 | Voyages longue distance | Remplacer un aller-retour en avion par le train | 273 kg |
-| 7 | Loisirs du week-end | Regrouper deux sorties en une seule, une fois sur cinq | 67 kg |
-| 8 | Voyages longue distance | Faire un de tes longs trajets en train plutôt qu'en voiture | 48 kg |
+| 7 | Loisirs du week-end | Faire une sortie sur trois à vélo à assistance électrique | 101 kg |
+| 8 | Loisirs du week-end | Regrouper deux sorties en une seule, une fois sur cinq | 67 kg |
+| 9 | Voyages longue distance | Faire un de tes longs trajets en train plutôt qu'en voiture | 48 kg |
+| 10 | Voyages longue distance | Faire un de tes longs trajets en autocar plutôt qu'en voiture | 23 kg |
+
+**Les rangs 7 et 10 sont nés de C4.4** (21/09/2026), et ils disent ce que le chantier a ouvert :
+les sorties de ce profil font 22,5 km, au-dessus de ce qu'un vélo mécanique tient (15 km) et dans
+la fenêtre du vélo à assistance ; et ses deux longs trajets en voiture à deux laissent encore 47 %
+à gagner en autocar. Le rang 1 a perdu « ou en RER » de son libellé : le gain est chiffré au tarif
+du TER, et le produit ne promet que ce qu'il chiffre.
 
 **Le rang 2 pèse plus lourd que le rang 1, et c'est exactement ce qu'on vient voir** : le rang 1 est
 la meilleure piste du **poste dominant**, le reste suit le gain décroissant (C5.1). Avant ce
@@ -103,7 +112,7 @@ chantier, tout le poste dominant passait devant, et le vol à 1 601 kg serait to
 
 **Si les chiffres ne tombent pas juste**, ce n'est pas forcément un écart : les facteurs d'émission
 se resynchronisent chaque trimestre, et une nouvelle version ADEME les déplace tous. Ce qui doit
-tenir quoi qu'il arrive, c'est la **forme** — l'ordre des huit lignes, le rang 2 plus lourd que le
+tenir quoi qu'il arrive, c'est la **forme** — l'ordre des dix lignes, le rang 2 plus lourd que le
 rang 1, et le fait qu'un nombre dépasse le millier. Un écart de forme est un vrai constat ; un
 écart de décimale se vérifie contre `emission_factor_sync_runs` avant d'être consigné.
 

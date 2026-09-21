@@ -23,6 +23,15 @@ dépôt s'est données tiennent.** Vérifié contre la base vivante le 19/09/202
 
 ## 1. Deux entorses au point de résolution unique du calcul
 
+> **Fermé le 21/09/2026 par C4.4**, exactement comme cette ligne le prescrivait : les deux appels
+> directs sont rentrés au point unique dans la migration qui réécrivait déjà les deux fonctions.
+> Et la garde qui manquait a été écrite du même geste — une assertion pgTAP interdit qu'un
+> résolveur spécialisé soit rappelé en direct depuis le calcul, en **retirant les commentaires** du
+> corps avant de chercher, sans quoi la phrase qui explique la règle ferait échouer le contrôle
+> qu'elle décrit. Le reste de cette section est conservé tel quel : c'est le relevé du 19/09, et
+> sa dernière phrase — « le jour où `resolve_mode` gagne une dimension, ces deux sites ne la
+> recevront pas » — a eu raison deux jours plus tard.
+
 **Mesuré.** `CLAUDE.md` pose que « le calcul n'a qu'un seul point de résolution,
 `public.resolve_mode(mode_id, engine, type)` » et interdit d'appeler les fonctions spécialisées en
 direct. Relevé dans les définitions vivantes : **deux sites le font**, tous deux pour la voiture des
@@ -240,7 +249,7 @@ dérivé de quelques heures, sans raison autre que l'outil qui les a appliquées
 
 | | Chantier | Effort | Quand |
 |---|---|---|---|
-| 1 | §1 — les deux entorses au point de résolution | ~nul | **dans la migration de C4.4**, pas avant |
+| 1 | §1 — les deux entorses au point de résolution | ~nul | **fait le 21/09/2026**, dans la migration de C4.4 |
 | 2 | §2 — les signatures dans le contrôle de types | petit | **fait le 20/09/2026** (§12.2) |
 | 3 | §3 — la promesse du favicon | une décision | quand on y touche |
 | 4 | §4 — la décision d'affichage du plan | moyen, risque réel | page de décision d'abord, recette dédiée ensuite |
@@ -1057,3 +1066,30 @@ contre 254 lignes réelles.
 la liste de trois, et surtout la parade qu'elle prescrivait — `supabase db reset` avant chaque suite
 locale. Le réflexe de faire porter à l'appelant une manipulation que l'assertion aurait dû éviter
 est le vrai enseignement de cette ligne.
+
+## 12.16 — Le RER n'est pas proposable comme action, faute de savoir où l'on habite
+
+**Relevé en livrant C4.4, le 21/09/2026.** Le chantier ferme la moitié coûteuse du défaut du RER :
+le bilan d'un usager du RER passe de 249,2 à 88,0 kg/an sur le profil de référence, soit le facteur
+2,83 que `v1-21` §3.1 avait mesuré. **L'autre moitié reste ouverte**, et il vaut mieux l'écrire que
+de laisser croire le sujet clos.
+
+`v1-21` §3.1 relevait que le gain de « Passer deux trajets sur cinq en train » est chiffré au tarif
+du TER, donc **sous-estimé de 64,5 kg/an** pour quelqu'un dont l'alternative réelle est le RER —
+c'est-à-dire en Île-de-France, là où il y a le plus de monde à convaincre.
+
+**Pourquoi ce n'est pas corrigé.** Proposer le RER demanderait de savoir où la personne habite *au
+sens du réseau*, et le produit ne le demande pas. Le seul filtre disponible est `zone_type`, dont la
+valeur `urbain_dense` recouvre Toulouse, Nantes et Rennes autant que la banlieue francilienne :
+borner le gabarit à cette zone proposerait le RER là où il n'y en a pas, c'est-à-dire **le défaut
+exact que C3.8 a fermé** (« le plan ne propose plus l'impossible »). Entre un gain sous-estimé et
+une action impossible, le second coûte plus cher — on perd la confiance, pas 64 kg.
+
+**Ce qui a été fait à la place** : le gabarit a perdu « ou en RER » de son libellé. Il promettait ce
+que son gain ne chiffrait pas ; il ne promet plus que le train, qu'un TER dessert partout.
+
+**Condition de réouverture** : une question de région, ou n'importe quelle réponse qui distingue
+l'Île-de-France. Elle n'existe nulle part dans le questionnaire aujourd'hui, et l'ajouter pour un
+seul gabarit serait cher — c'est une décision de produit, pas une correction. Le jour où le
+questionnaire demande quelque chose de ce genre pour une autre raison, ce gabarit-là est le premier
+à en profiter.
