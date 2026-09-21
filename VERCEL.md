@@ -271,9 +271,9 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
 | **Poids par déploiement, mesuré sur le compteur** | **1,76 Mo**, deux fois (16/09/2026, voir ci-dessous) — et c'est un **plancher** |
 | Fusions sur `main`, 16/08 → 15/09 | 82, dont **13 doc seule** (16 %) |
 | Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
-| **Compteur Functions Storage du compte** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*), tous projets confondus — pas de baisse avant au moins dix jours |
-| **Part de Ramille** | **437,53 Mo**, soit ≈ 273 déploiements à 1,6 Mo en dix jours de vie du projet (82 fusions de production et ~190 prévisualisations, une par push jusqu'au 15/09 à midi) |
-| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — c'est tout ce qui reste avant la limite |
+| **Compteur Functions Storage du compte** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*), tous projets confondus — pas de baisse avant au moins dix jours. **Relevé suivant : 9,88 Go le 21/09/2026**, voir le bloc daté plus bas |
+| **Part de Ramille** | **437,53 Mo** le 15/09/2026, soit ≈ 273 déploiements à 1,6 Mo en dix jours de vie du projet (82 fusions de production et ~190 prévisualisations, une par push jusqu'au 15/09 à midi). **472,8 Mo le 21/09/2026** |
+| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — c'est tout ce qui reste avant la limite. **35,3 Mo consommés au 21/09**, dont ≈ 115 à 125 Mo de marge réelle sur le compte |
 
 > **Réconcilié le 15/09/2026, en deux temps.** Le premier relevé — « 9,85 Go sur 10 » — ne se
 > déduisait ni de 1,6 Mo × 82 fusions (131 Mo) ni de 4,4 Mo × (fusions + prévisualisations) : il
@@ -305,6 +305,33 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
 > journée par un nombre de fusions, donc elle mélangeait les ajouts et les retraits de la fenêtre.
 > Un écart mesuré sur **un** déploiement ne fait pas ce mélange — c'est la seule forme de mesure à
 > laquelle se fier ici, et la règle portable est en §1.1.
+
+> **Relevé du 21/09/2026 : 9,88 Go sur 10 pour le compte, 472,8 Mo pour Ramille** (Antoine, six
+> jours après le précédent). Ce que ça dit, et ce que ça ne dit pas :
+>
+> - **Ramille a ajouté 35,3 Mo, et c'est un ajout PUR** — pas un net. Le projet Vercel a été créé
+>   vers le 05/09, donc à la date du relevé **aucun de ses déploiements n'est encore sorti** de la
+>   fenêtre de trente jours. C'est la seule situation où un intervalle de plusieurs jours se lit
+>   sans le mélange que §1.1 interdit, et elle prendra fin le 05/10.
+> - **Le compte, lui, n'a monté que de 30 Mo** (9,85 → 9,88) pendant que Ramille en ajoutait 35,3.
+>   L'écart est du **retrait** : de vieux déploiements de l'autre projet sortent de la fenêtre.
+>   C'est cohérent avec « Ramille est le seul projet qui déploie en ce moment » (Antoine).
+> - **Ce qui reste avant la limite : ≈ 120 Mo**, et la précision de l'affichage compte — « 9,88 »
+>   est arrondi au centième, donc la vraie valeur est entre 9,875 et 9,885, soit **115 à 125 Mo**.
+>   L'incertitude vaut à elle seule trois fusions : on budgète sur la borne basse.
+> - À 1,76 Mo la fusion, 115 Mo valent **≈ 65 fusions**. La convention de deux fusions de code par
+>   jour (§2.3) en consomme une dizaine d'ici au 25/09, soit ~18 Mo. **La contrainte n'est plus
+>   serrée** — et elle ne l'est plus parce que l'autre projet s'est arrêté, pas parce qu'on a été
+>   économe. Elle se resserrerait au premier déploiement qu'il reprendrait.
+>
+> **Et une prédiction, parce qu'elle change la façon de lire le compteur en octobre.** Les 472,8 Mo
+> de Ramille sont dominés par la **salve initiale** — ≈ 273 déploiements entre le 05 et le 15/09,
+> dont ~190 prévisualisations, une par push, jusqu'à ce que `git.deploymentEnabled` les coupe
+> (§2.2). Cette salve sort de la fenêtre **entre le 05 et le 15/10**, donc la part de Ramille doit
+> **chuter de ~400 Mo** sur cette période, pour se stabiliser autour de (cadence × 30 jours ×
+> 1,76 Mo) — soit ≈ 106 Mo à deux fusions par jour, et moitié moins à une. Le compteur de Ramille
+> n'est pas monotone : il plafonne. **Si la chute n'a pas lieu à ces dates, c'est le modèle qui est
+> faux**, et il faudra reprendre la mesure avant d'en tirer une règle de cadence.
 
 Ce que le budget vaut en déploiements de Ramille : ≈ 94 — **si l'autre projet ne fusionne pas** ;
 trois de ses fusions suffisent à consommer les 150 Mo. Un déploiement de Ramille est bon marché,
@@ -347,7 +374,17 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 Chaque fusion sur `main` coûte **≈ 1,8 Mo** pendant trente jours (1,76 mesuré, §2.1). Entre le 15 et le 25/09/2026,
 **150 Mo sont tout ce qui reste au compte entier**, partagés avec un projet dont une fusion en
 vaut trente de Ramille — et une limite atteinte, c'est un correctif qui ne part plus, sur les
-deux projets. Quatre règles, à demeure :
+deux projets.
+
+**Où en est ce budget, au 21/09/2026** : 35,3 Mo consommés sur les 150, et ≈ 115 à 125 Mo de marge
+réelle sur le compte (§2.1). À 1,76 Mo la fusion, c'est **une soixantaine de fusions** — la
+contrainte s'est desserrée, et il faut savoir **pourquoi** avant d'en profiter : l'autre projet ne
+déploie plus, donc de vieux déploiements à lui sortent de la fenêtre et compensent les nôtres. Ce
+n'est pas une marge acquise, c'est une marge prêtée : elle se referme au premier déploiement qu'il
+reprend. Les quatre règles ci-dessous restent donc à demeure, et la 3 garde son plafond — ce qui a
+changé est la tension, pas la discipline.
+
+Quatre règles, à demeure :
 
 1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
    (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le

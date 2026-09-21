@@ -59,8 +59,10 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 - **Au plus un build EAS tous les deux jours** (15/09/2026), et la raison est au registre
   d'exploitation §3.3 : le quota du plan gratuit ne se lit qu'en le heurtant.
 - **Pas plus de 150 Mo de Functions Storage ajoutés chez Vercel entre le 15 et le 25/09/2026**
-  (15/09/2026) — c'est tout ce qui reste au **compte** Vercel, à 9,85 Go sur 10 dont 437 Mo pour
-  Ramille —, et à demeure : **chaque fusion sur `main` est un déploiement qui se paie trente
+  (15/09/2026) — c'est tout ce qui reste au **compte** Vercel, relevé à 9,85 Go sur 10 dont
+  437 Mo pour Ramille ce jour-là, **puis 9,88 Go dont 472,8 Mo le 21/09/2026** (35,3 Mo consommés,
+  ≈ 115 à 125 Mo de marge : `VERCEL.md` §2.1, qui dit aussi pourquoi cette marge est *prêtée* et
+  pourquoi la part de Ramille doit **chuter** début octobre) —, et à demeure : **chaque fusion sur `main` est un déploiement qui se paie trente
   jours** (≈ 1,8 Mo — 1,76 mesuré deux fois le 16/09/2026, et c'est un plancher : `VERCEL.md`
   §1.1 dit pourquoi un écart d'une journée divisé par le nombre de fusions ment), l'agent ne peut
   pas lire le compteur, donc il se demande avant de fusionner,
