@@ -13,7 +13,6 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
 import { demanderLeRattachement } from '@/lib/auth';
-import { lireEtatDuRattachement } from '@/lib/compte';
 import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
 import {
   adresseSemblePlausible,
@@ -55,8 +54,12 @@ function revenirOuRacine() {
  * promettait n'existant plus.
  */
 export default function ConnexionEmail() {
-  const { id, motif: motifBrut, reprise } = useLocalSearchParams<{
-    id?: string;
+  // `id` a disparu des paramètres lus : plus aucun écran ne le passe depuis que `/connexion` ne lit
+  // plus le résultat du bilan, et le garder ici le faisait voyager `undefined` jusqu'à
+  // `/connexion/retrouver` — un paramètre qui se lit « réservé » là où il est retiré. `source`, que
+  // `/connexion` passe encore, n'est volontairement pas lu : la provenance de `retrouver` est la
+  // porte d'ici (`'email'`), pas celle d'avant.
+  const { motif: motifBrut, reprise } = useLocalSearchParams<{
     motif?: string;
     reprise?: string;
   }>();
@@ -132,10 +135,12 @@ export default function ConnexionEmail() {
     setPhase('code');
   };
 
-  const codeAccepte = async () => {
-    // Le plan annonce le rattachement et compte le succès ; si la lecture échoue on y va quand
-    // même — la session est ouverte, l'annonce se refermera au passage suivant.
-    await lireEtatDuRattachement().catch(() => null);
+  const codeAccepte = () => {
+    // **On ne relit rien ici, et c'est un correctif.** Cette fonction attendait un
+    // `lireEtatDuRattachement()` dont elle jetait le résultat : un aller-retour réseau inséré entre
+    // le dernier chiffre et le plan, pendant lequel la personne regardait l'écran de code d'un
+    // rattachement déjà réussi. `verifyOtp` a mis la session à jour en local, et c'est le plan qui
+    // lit l'état, annonce le rattachement et compte le succès — lui seul en a besoin.
     router.replace('/plan');
   };
 
@@ -215,7 +220,7 @@ export default function ConnexionEmail() {
             <MessageInline message={message} />
             <TextLink
               label="J’ai déjà un compte"
-              onPress={() => router.push({ pathname: '/connexion/retrouver', params: { id, source: 'email' } })}
+              onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'email' } })}
               role="link"
               type="linkPrimary"
             />

@@ -107,6 +107,42 @@ code sans rien affirmer. Relever la couverture sur le périmètre qui est *cens�
 logique pure), sans y lister ce qui n'est pas testé par décision (les écrans, à 0 %, noieraient
 la carte).
 
+### 1.8 Un `describe` vide passe au vert, et Jest ne le dit pas
+
+Relevé le 21/09/2026 en relisant un fichier dont un chantier avait retiré des tests : deux
+`describe` ne contenaient plus **aucun** `it`. La suite les compte comme des suites passantes, sans
+avertissement, et la ligne « 40 passed » ne bouge pas — le fichier annonçait donc trois marques
+gardées quand il n'en gardait plus qu'une.
+
+C'est la même famille que la couverture sans seuil (§1.6) : ce qui manque ne se signale pas. Deux
+parades, et la seconde est la bonne : au moment de **retirer** un test, se demander si son
+`describe` reste habité ; et, quand une garde disparaît parce que son mécanisme a disparu, écrire ce
+qui reste vrai plutôt que de laisser la coquille — ici, trois assertions de dégradation du stockage
+(`jest.spyOn(Storage, …).mockRejectedValue(…)`), qui gardent la seule promesse restante : une marque
+illisible ne fait jamais échouer l'écran.
+
+### 1.9 Coller n'est pas taper, et `fill` n'est ni l'un ni l'autre
+
+Trois façons d'écrire dans un champ, et elles n'éprouvent pas la même chose — mesuré le 21/09/2026,
+où la différence cachait un vrai défaut :
+
+| Geste | Ce que le navigateur applique | Ce que ça éprouve |
+|---|---|---|
+| `locator.fill(v)` | rien : la valeur du DOM est écrite | le composant reçoit `v`, et c'est tout |
+| `locator.type(v)` | un événement d'entrée **par caractère** | la frappe, caractère par caractère |
+| `keyboard.insertText(v)` | **un seul** événement d'entrée | le collé |
+
+Le défaut : un champ de code portait `maxLength`, qui tronque la saisie **brute** avant que la
+dérivation n'ait retiré les espaces. Un collé de « 847 924 69 » ne laissait donc que six chiffres,
+bouton inerte et aucun message ; la **frappe** marchait, chaque espace étant rejeté avant
+d'atteindre la limite. La garde utilisait `fill`, qui contourne les deux et ne pouvait rien voir.
+
+La règle : **un champ qu'on remplit en collant se teste en collant.** Et quand le geste réel porte
+ce que la dérivation doit retirer — des espaces, un préfixe « code : » —, le coller **tel quel**, puis
+asserter ce que le champ a **gardé**, pas seulement ce que l'écran fait ensuite : l'assertion sur la
+valeur retenue nomme le nombre de chiffres perdus, là où une assertion d'aval ne dit qu'un délai
+expiré.
+
 ### 1.7 pgTAP : cinq pièges d'une transaction
 
 - **`now()` est l'horodatage de début de transaction.** Deux lignes écrites par le même appel
@@ -614,3 +650,42 @@ et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
 **présences**. Il laisse alors passer tout ce qui est en trop — une phrase d'état vide rendue
 au-dessus des pistes, par exemple, ne fait bouger aucune assertion de présence. Chaque branche
 qu'on prétend garder demande donc sa moitié négative.
+
+### 2.11 Les gabarits d'e-mail, comparés à leur référence
+
+`scripts/verifier-gabarits-email.mjs`, dans le travail `Typecheck & lint` à côté de `§2.8` : ni npm
+ci, ni export, ni Docker — il ne lit que des fichiers, et tombe en une seconde.
+
+**Pourquoi il existe.** Les deux gabarits que le produit emprunte vivent à **deux endroits** :
+`supabase/templates/`, la copie que GoTrue inline au démarrage de la stack locale, et
+`docs/exploitation/gabarits-email.md`, la référence relisable — celle qu'on ouvre pour savoir ce que
+la production envoie. Deux copies d'un même texte divergent par une faute de frappe que personne ne
+relit : c'est le raisonnement de `mois_francais` et de sa jumelle `MOIS_FRANCAIS`, et celui du
+tableau `MIROIRS` de §2.7.
+
+**Et le document affirmait que cette égalité était déjà relue**, en désignant
+`scripts/verifier-code-de-connexion.mjs` (§2.9) — qui rend un vrai e-mail contre la stack locale et
+vérifie qu'il porte un code et aucun lien, mais **ne compare jamais le document aux fichiers**.
+Relevé le 21/09/2026. Une garde promise et absente est pire qu'un commentaire périmé : le prochain
+passage croit la dérive attrapée. La garde a été écrite plutôt que la phrase affaiblie.
+
+**Trois familles d'assertion, et la troisième touche à la sécurité** :
+
+1. le bloc ```` ```html ```` du document et le fichier disent exactement la même chose — la
+   divergence est signalée avec la **ligne** et les deux versions ;
+2. `supabase/config.toml` déclare chaque fichier. Sans son `content_path`, GoTrue retombe **en
+   silence** sur son gabarit anglais par défaut, et §2.9 resterait verte pour la mauvaise raison ;
+3. chaque gabarit porte `{{ .Token }}` et **aucune** forme de lien de confirmation
+   (`{{ .ConfirmationURL }}`, `{{ .TokenHash }}`). C'est l'invariant du correctif du 20/09/2026 —
+   aucun clic ne doit plus rien confirmer — et il n'était éprouvé que dans le seul travail exigeant
+   Docker.
+
+**Ce qui lui échappe**, et c'est structurel : `GABARITS` est une liste **déclarée**, comme `MIROIRS`,
+donc un gabarit que personne n'y déclare lui reste invisible — aucune garde déclarative ne s'annonce
+exhaustive. *Confirm signup* et *Reset Password* sont traduits dans le document et ne vivent **que**
+dans le tableau de bord : aucun fichier du dépôt ne les porte. Et le tableau de bord lui-même reste
+hors de portée de toute garde du dépôt, c'est le rôle de `docs/exploitation/`.
+
+Mutations jouées le 21/09/2026 : une espace ajoutée dans le document → famille 1 tombe en nommant la
+ligne ; `content_path` retiré → famille 2 ; `{{ .Token }}` remplacé par `{{ .ConfirmationURL }}` dans
+le fichier → famille 3, et la 1 avec elle, le document n'ayant pas bougé.

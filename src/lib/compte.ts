@@ -116,7 +116,15 @@ export async function lireEtatDuRattachement(): Promise<EtatRattachement> {
   const user = data.user;
 
   return etatDuRattachement({
-    session: user ? { isAnonymous: user.is_anonymous === true, email: user.email ?? null } : null,
+    session: user
+      ? {
+          isAnonymous: user.is_anonymous === true,
+          email: user.email ?? null,
+          // `new_email` est le champ que GoTrue remplit avant la confirmation — mesuré, `email`
+          // reste vide sur une session anonyme (`src/types/compte-suppression.ts` dit le détail).
+          emailEnAttente: user.new_email ?? null,
+        }
+      : null,
     lectureEnEchec: error !== null,
   });
 }
@@ -133,6 +141,9 @@ export async function lireEtatDuCompte(): Promise<EtatSuppression> {
   return etatDuCompte({
     isAnonymous: user.is_anonymous === true,
     email: user.email ?? null,
+    // Passé bien que `etatDuCompte` ne le lise pas : une adresse en attente ne change rien à ce
+    // qu'une suppression efface, et le champ est requis pour que l'oubli ne soit pas silencieux.
+    emailEnAttente: user.new_email ?? null,
     aDesDonnees: (data?.length ?? 0) > 0,
   });
 }

@@ -41,7 +41,10 @@ import {
   messageDeLaDemande,
   messageDeLaVerification,
   messageDuRenvoi,
+  MESSAGE_DE_LA_SUITE_MANQUEE,
   suiteDeLaDemandeDeCode,
+  suiteDuRenvoi,
+  type IssueDeLaVerification,
 } from './connexion';
 
 describe('estLimiteDEnvoi', () => {
@@ -541,6 +544,87 @@ describe('issueDeLaVerification', () => {
     expect(messageDeLaVerification('refuse')).toMatch(/nouveau/i);
     expect(messageDeLaVerification('trop_dessais')).not.toMatch(/nouveau/i);
     expect(messageDeLaVerification('trop_dessais')).toMatch(/r[ée]essaie/i);
+  });
+});
+
+describe('suiteDuRenvoi', () => {
+  it('annonce un renvoi quand l’envoi est accepté', () => {
+    expect(suiteDuRenvoi('rattachement', null)).toBe('renvoye');
+    expect(suiteDuRenvoi('connexion', null)).toBe('renvoye');
+  });
+
+  /**
+   * **L'oracle que cette dérivation ferme.** Le renvoi passait son erreur brute à
+   * `messageDeLaDemande` : un `otp_disabled` — adresse sans compte — n'étant ni une limite d'envoi
+   * ni une panne, il retombait sur « L'envoi n'a pas abouti », là où une adresse connue lisait
+   * « un nouveau code vient d'y partir ». Deux réponses = on sait qui utilise Ramille, et sur la
+   * page de suppression que Google Play exige publique. Relevé en revue le 21/09/2026.
+   */
+  it('ne distingue pas une adresse sans compte d’un renvoi réussi', () => {
+    const inconnue = { code: 'otp_disabled', status: 422, message: 'Signups not allowed for otp' };
+    expect(suiteDuRenvoi('connexion', inconnue)).toBe('renvoye');
+    expect(suiteDuRenvoi('connexion', inconnue)).toBe(suiteDuRenvoi('connexion', null));
+  });
+
+  it('dit les deux échecs qui ne parlent pas de l’adresse', () => {
+    expect(suiteDuRenvoi('connexion', { code: 'over_email_send_rate_limit' })).toBe('message');
+    expect(suiteDuRenvoi('connexion', { name: 'AuthRetryableFetchError', status: 0 })).toBe('message');
+  });
+
+  /**
+   * L'adresse prise ne peut arriver qu'en rattachement — `signInWithOtp` ne rattache rien — et là
+   * il n'y a rien à taire : le produit le dit déjà au premier envoi. Elle se dit, parce qu'annoncer
+   * un code parti quand rien n'est parti ferait attendre pour rien.
+   */
+  it('dit l’adresse déjà prise en rattachement, et la tait dans l’autre flux', () => {
+    const prise = { code: 'email_exists', status: 422 };
+    expect(suiteDuRenvoi('rattachement', prise)).toBe('message');
+    expect(suiteDuRenvoi('connexion', prise)).toBe('renvoye');
+  });
+
+  /**
+   * La garde qui tient la promesse : **le seul message que le flux de connexion peut produire est
+   * un message qui ne parle pas de l'adresse.** Une entrée de plus qui produirait `message` là
+   * rouvrirait l'oracle, quel qu'en soit le texte.
+   */
+  it('ne laisse le flux de connexion parler que des deux échecs neutres', () => {
+    const entrees = [
+      null,
+      { code: 'otp_disabled', status: 422 },
+      { code: 'email_exists', status: 422 },
+      { code: 'validation_failed', status: 400 },
+      { status: 403 },
+      { code: 'over_email_send_rate_limit' },
+      { name: 'AuthRetryableFetchError', status: 503 },
+    ];
+    const parlants = entrees.filter((e) => suiteDuRenvoi('connexion', e) === 'message');
+    expect(parlants).toEqual([
+      { code: 'over_email_send_rate_limit' },
+      { name: 'AuthRetryableFetchError', status: 503 },
+    ]);
+  });
+});
+
+describe('MESSAGE_DE_LA_SUITE_MANQUEE', () => {
+  /**
+   * **Le code a marché, donc aucune phrase de `messageDeLaVerification` ne convient.** Le rejet de
+   * `onOuverte` retombait sur `'echec'` (« La vérification n'a pas abouti »), ce qui est faux : la
+   * vérification a abouti, le code est consommé, et réessayer ne peut plus rendre qu'un refus.
+   *
+   * La garde est écrite sur l'**invariant** et non sur le texte : elle tombe si quelqu'un
+   * « simplifie » en réempruntant l'une des cinq issues, quel que soit le mot choisi — ce qui est
+   * exactement la mutation dont ce message sort.
+   */
+  it('n’emprunte aucune phrase de la vérification', () => {
+    const issues: IssueDeLaVerification[] = ['ouverte', 'refuse', 'trop_dessais', 'transport', 'echec'];
+    for (const issue of issues) {
+      expect(MESSAGE_DE_LA_SUITE_MANQUEE).not.toBe(messageDeLaVerification(issue));
+    }
+  });
+
+  // Elle ne renvoie pas vers le geste qui ne peut plus marcher — retaper le code consommé.
+  it('ne demande pas de retaper le code', () => {
+    expect(MESSAGE_DE_LA_SUITE_MANQUEE).not.toMatch(/ne marche pas|Réessaie dans un instant\.$/);
   });
 });
 

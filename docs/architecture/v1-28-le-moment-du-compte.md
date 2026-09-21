@@ -160,16 +160,86 @@ Le §10 du canvas posait sept questions. Deux sont tranchées (§3 et §4). Deux
 objet — la bannière ne se rendait déjà jamais en relecture, et le verbe « rattacher » était déjà
 celui de trois surfaces. **Trois attendent** :
 
-1. **« Cette adresse a déjà un compte » : le dire avant, ou vérifier d'abord ?** Aujourd'hui l'écran
-   le dit avant, et c'est un oracle gratuit — il s'atteint depuis « Toi » sans bilan, et un
-   `email_exists` n'envoie rien donc n'est plafonné par rien. Le canvas propose de demander un code
-   de connexion **sans le dire** et de ne l'annoncer qu'après : seul le titulaire de la boîte va
-   plus loin. Ce que ça coûte : la personne qui voulait garder le bilan de cet appareil sans
-   rejoindre son ancien compte l'apprend après cinq minutes de réponses. **Le code l'a rendu
-   possible ; l'implémentation garde le comportement d'aujourd'hui tant que ce n'est pas tranché.**
+1. **« Cette adresse a déjà un compte » : le dire avant, ou vérifier d'abord ?**
+
+   **Le fait, mesuré le 21/09/2026 et non raisonné.** `/connexion/email` répond `200` sur une
+   adresse libre et `422 email_exists` sur une adresse qui a un compte. Sur la stack locale, alignée
+   sur la production pour les trois réglages qui comptent, une **seule** session anonyme a sondé
+   vingt fois de suite la même adresse prise : vingt refus, **aucun plafond**. Puis dix sessions
+   anonymes distinctes, une sonde chacune : dix fois le même refus. C'est donc un oracle binaire
+   propre, sans coût, sans trace et sans limite, sur un écran qu'aucun bilan ne garde — atteignable
+   depuis « Toi », ou par son adresse sur web. Ce qui n'a **pas** été mesuré, et qu'il ne faut pas
+   prétendre : le distant lui-même, dont le sondage demanderait soit d'écrire sur une session de
+   production, soit de viser l'adresse d'un vrai compte.
+
+   **Ce qui est en jeu.** La règle de non-divulgation est tenue partout ailleurs — la page de
+   suppression, « retrouver mon compte » —, et elle l'est parce qu'appartenir à Ramille dit quelque
+   chose d'une personne : qu'elle se soucie de son empreinte transport. Ici la règle est trouée, et
+   elle l'est sur le chemin le plus fréquenté des deux.
+
+   **Trois voies, et la troisième n'était pas au canvas.**
+   - *Le statu quo* dit le fait et **offre un choix** : l'écran nomme la conséquence (« le bilan que
+     tu viens de faire ne peut pas le rejoindre ») et porte deux sorties, « Retrouver mon compte »
+     et « Garder ce bilan sans compte ». C'est honnête, et c'est ce que l'oracle achète.
+   - *Le canvas* envoie un code de connexion **sans rien dire** : seul le titulaire de la boîte va
+     plus loin. L'oracle est fermé — mais la phrase et le choix partent avec lui, et quelqu'un qui
+     s'est trompé d'adresse bascule sur un autre compte **sans avertissement et sans retour**, le
+     bilan qu'il vient de remplir restant sur la session qu'il quitte, que la purge emportera à
+     quatre-vingt-dix jours.
+   - *Une troisième voie*, qui garde les deux : sur `email_exists`, envoyer le code de **connexion**
+     et montrer le même écran de code, avec une phrase **conditionnelle** — « s'il existait déjà un
+     compte à cette adresse, ce code t'y ramène, et le bilan de cet appareil reste ici ». Elle est
+     vraie dans les deux branches, donc elle peut être montrée dans les deux, donc elle ne divulgue
+     rien ; et le cas normal ne tombe jamais dans cette branche (une adresse libre rend `200`, donc
+     le code de rattachement part comme aujourd'hui) — il n'y a donc **pas** de cul-de-sac où l'on
+     attendrait un code qui ne vient pas, ce qui est ce qui condamne la version naïve du canvas.
+
+   **La recommandation : la troisième voie.** Elle ferme l'oracle sans jamais faire basculer
+   quelqu'un par surprise. Son coût est une phrase conditionnelle que la grande majorité lira pour
+   rien, et un choix qui devient plus faible qu'aujourd'hui — on décide de taper le code **avant** de
+   savoir, au lieu de décider après avoir lu le fait.
+
+   **Ce qu'on casse si on se trompe.** Garder le statu quo, c'est une règle à géométrie variable, et
+   le jour où quelqu'un s'en sert, c'est une liste d'adresses avec « se soucie de son empreinte
+   transport » à côté. Prendre le canvas tel quel, c'est faire perdre un bilan fraîchement rempli au
+   moment exact de la prise de conscience — la pire chose que ce produit puisse faire. Prendre la
+   troisième voie, c'est une phrase de plus sur un écran calme.
+
+   **Le code l'a rendu possible ; l'implémentation garde le comportement d'aujourd'hui tant que ce
+   n'est pas tranché.**
+
 2. **Où vit la phrase des trois mois.** Elle est sous la sortie de `/connexion`, pour toutes les
    provenances depuis ce chantier. Le canvas propose de l'ajouter sur « Toi » en état `local`.
 3. **La porte de la feuille referme la feuille sans valider de canal.** C'est ce que
    l'implémentation fait, faute de pouvoir naviguer sous un `Modal` ouvert ; sur natif, la personne
    ne donne pas la permission push ce jour-là et recevra le mot par email (la préférence par
    défaut), corrigeable dans « Toi ».
+
+## 8. Ce que les deux contre-lectures ont corrigé, après la fusion
+
+Le chantier a été fusionné dans la nuit du 20 au 21/09/2026, puis relu deux fois le 21. **Les deux
+passes ont trouvé de vrais défauts**, dont trois confirmés par la mesure, et le relevé complet — par
+famille, avec la leçon de processus — est en
+[`v1-27` §12.14](v1-27-dette-technique.md). Ce qu'il faut savoir en lisant ce document-ci :
+
+- **la porte « Saisir le code » de « Toi » était du code mort le jour de sa livraison.** Le §4
+  décrit la boucle comme refermée là ; elle ne l'était pas, parce que `etatDuRattachement` cherchait
+  l'adresse en attente dans `session.email` alors que GoTrue ne remplit que `new_email` sur une
+  session anonyme. Mesuré, corrigé, et la phrase du pied de l'écran de code — qui promet de
+  retrouver la saisie depuis « Toi » — est vraie depuis ;
+- **la règle de non-divulgation du §4 n'était écrite que pour le premier envoi.** « Renvoyer un
+  code » distinguait une adresse sans compte d'une adresse connue : un oracle sur la page que Google
+  Play exige publique. C'est la seule trouvaille de sécurité des deux passes, et elle est fermée par
+  une dérivation à elle (`suiteDuRenvoi`) plutôt que par une condition dans l'écran ;
+- **un code recopié depuis une messagerie ne pouvait pas être saisi** : le champ tronquait la saisie
+  brute avant que les espaces n'aient été retirés. C'est le défaut le plus visible du chantier, et il
+  était invisible à qui **tape** — donc invisible à la recette, qui tape ;
+- **le §5 reste exact.** Rien des deux passes ne change ce qui est ouvert : le code est un porteur,
+  la dette est en `v1-27` §12.12, et sa condition de réouverture est inchangée ;
+- **le §7 reste ouvert tel quel.** Les trois arbitrages n'ont pas été tranchés par la relecture, et
+  l'implémentation garde le comportement d'aujourd'hui sur les trois.
+
+Et une garde a été ajoutée là où ce chantier reposait sur une vérification faite à la main : les deux
+gabarits d'e-mail sont désormais comparés à leur référence à chaque PR, **avec l'assertion qu'aucun
+ne porte de lien de confirmation** — l'invariant du §4, qui n'était jusque-là éprouvé que dans le
+seul travail de CI exigeant Docker (`TESTING.md` §2.11).

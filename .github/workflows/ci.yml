@@ -85,6 +85,16 @@ jobs:
       # un fichier que C5.2 avait remplacé par une pile, dans son paragraphe d'orientation.
       # Ni npm ci ni export requis — le script ne lit que le système de fichiers.
       - run: node scripts/verifier-renvois-des-documents.mjs
+      # **Les deux gabarits d'e-mail vivent à deux endroits du dépôt, et rien ne les comparait.**
+      # `supabase/templates/` est la copie que GoTrue inline ; `docs/exploitation/gabarits-email.md`
+      # est la référence qu'on ouvre pour savoir ce que la production envoie. Deux copies d'un texte
+      # divergent par une faute de frappe que personne ne relit — le raisonnement de `mois_francais`
+      # et de sa jumelle. Le document affirmait d'ailleurs que cette égalité était déjà relue, et
+      # c'était faux : la garde de bout en bout rend un e-mail, elle ne compare rien (relevé le
+      # 21/09/2026). Elle vérifie aussi qu'aucun gabarit n'a repris un lien de confirmation — le
+      # correctif de sécurité du 20/09 — et tombe ici en une seconde, là où la garde de bout en bout
+      # demande Docker. Ni npm ci ni export requis.
+      - run: node scripts/verifier-gabarits-email.mjs
       # Les dépendances n'étaient regardées par aucune des trois étapes. expo-doctor est la
       # garde la moins chère : versions incohérentes avec le SDK, modules natifs mal déclarés,
       # configuration d'app qui ne correspond plus aux paquets installés — tout ce qui ne se

@@ -82,6 +82,24 @@
 //     qui rend la mutation concluante — une qui aurait fait rougir les deux profils n'aurait pas
 //     dit laquelle des deux branches du formateur est gardée ici.
 //
+// **Et deux mutations de plus le 21/09/2026**, sur l'assertion « aucun écran de compte ne
+// s'interpose » — celle que la veille avait ajoutée aux deux profils, et qui était une tautologie
+// sur le premier avant d'être réparée :
+//   - l'interstitiel remis (`goToPlan` → `router.push('/connexion?source=resultat_transition')`, et
+//     rien derrière, comme le vrai défaut qui gardait l'écran) → l'assertion du **cycliste** tombe
+//     en nommant l'URL traversée. Elle demande de neutraliser les deux assertions du premier profil,
+//     qui parlent d'abord — sans quoi le parcours s'arrête avant le second ;
+//   - et la **réciproque**, qui est la vraie leçon : le guetteur de navigations remis **après** le
+//     toucher (l'ordre que ce fichier portait avant le correctif) fait **passer** l'assertion
+//     négative en silence sous la même mutation, seule celle du destinataire parlant — et elle parle
+//     d'un délai, pas de la promesse cassée. C'est la démonstration qu'une assertion négative n'est
+//     gardée que si son guetteur est armé **avant** le geste.
+//
+// Deux mutations ont échoué à produire la condition, et c'est utile à savoir avant de les rejouer :
+// un interstitiel **fugitif** obtenu par `setTimeout(… , 400)` avorte les requêtes du plan et fait
+// échouer le parcours pour une raison étrangère ; et un `push` suivi d'un `replace` **dans le même
+// tick** ne produit aucune navigation — expo-router les fusionne, donc `framenavigated` ne voit rien.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import os from 'node:os';
@@ -378,12 +396,25 @@ try {
   // atteint, une redirection plus loin).
   etape('la restitution mène au plan');
   await attendreTexte('Ce bilan n’est accessible que depuis cet appareil.');
+  // **L'assertion négative se lit sur les navigations, pas sur l'URL d'arrivée**, et c'est un
+  // correctif : elle testait `page.url()` **après** `waitForURL(/\/plan/)`, donc elle ne pouvait
+  // pas tomber — un écran de compte qui s'interpose fait expirer l'attente, et le message parle
+  // alors d'un délai et non de la promesse cassée. Une tautologie dont le commentaire affirmait
+  // qu'elle était « la plus importante des trois » (relevé en revue le 21/09/2026). En écoutant les
+  // navigations, on peut affirmer qu'aucun écran de compte n'a été traversé, même fugitivement.
+  const visitees = [];
+  const noter = (frame) => {
+    if (frame === page.mainFrame()) visitees.push(frame.url());
+  };
+  page.on('framenavigated', noter);
   await bouton('Voir ce que je peux faire');
-  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE }).catch(() => {});
+  page.off('framenavigated', noter);
   assurer(
-    !/\/connexion/.test(page.url()),
-    `un écran de compte s'interpose encore entre la restitution et le plan : ${page.url()}`
+    !visitees.some((u) => /\/connexion/.test(u)),
+    `un écran de compte s'est interposé entre la restitution et le plan : ${visitees.join(' → ') || '(aucune navigation vue)'}`
   );
+  assurer(/\/plan/.test(page.url()), `« Voir ce que je peux faire » n'a pas mené au plan : ${page.url()}`);
 
   // ── 5. Le plan : les huit pistes, le cap, la carte du premier plan ──────────────────────────
   etape('plan');
@@ -534,16 +565,30 @@ try {
     `total du cycliste ${resultatSobre.total_co2_kg_year} kg, attendu ${ATTENDU_SOBRE.totalKg}`
   );
 
-  await bouton('Voir ce que je peux faire');
   // Comme sur le premier profil : plus aucun écran de compte entre la restitution et le plan
   // (arbitrage du 20/09/2026). Le second profil le rejoue parce que c'est le seul chemin où la
   // carte « Ton premier plan » ne se rend jamais — donc le seul où la barre d'onglets arrive
   // autrement, et le seul qui pourrait masquer une interposition revenue.
-  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  //
+  // **L'écoute s'arme AVANT le toucher, et ici elle ne l'était pas** : la version écrite en
+  // corrigeant la tautologie du premier profil posait le guetteur après `bouton(…)`, donc après le
+  // geste qui déclenche la navigation — un interstitiel traversé pendant le clic n'entrait dans
+  // aucune liste, et l'assertion redevenait incapable de tomber par l'autre bout. Le premier profil
+  // l'avait bien ; le second non, et c'est exactement la famille « une exclusion vérifiée sur une
+  // paire de moins » que la contre-lecture cherche (relevé au second passage, 21/09/2026).
+  const visiteesCycliste = [];
+  const noterCycliste = (frame) => {
+    if (frame === page.mainFrame()) visiteesCycliste.push(frame.url());
+  };
+  page.on('framenavigated', noterCycliste);
+  await bouton('Voir ce que je peux faire');
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE }).catch(() => {});
+  page.off('framenavigated', noterCycliste);
   assurer(
-    !/\/connexion/.test(page.url()),
-    `un écran de compte s'interpose encore entre la restitution et le plan : ${page.url()}`
+    !visiteesCycliste.some((u) => /\/connexion/.test(u)),
+    `un écran de compte s'est interposé entre la restitution et le plan : ${visiteesCycliste.join(' → ') || '(aucune navigation vue)'}`
   );
+  assurer(/\/plan/.test(page.url()), `« Voir ce que je peux faire » n'a pas mené au plan : ${page.url()}`);
 
   // Le plan est vide d'actions **en base** : c'est ce qui rend vrai tout le reste de ce bloc.
   const pistesSobres = await lire('plan_actions?select=rank', sobre.jeton);

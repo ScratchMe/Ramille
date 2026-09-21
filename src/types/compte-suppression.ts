@@ -14,6 +14,22 @@ export type SessionCompte = {
   /** `auth.users.is_anonymous` — vrai tant que l'identité n'est pas **confirmée**. */
   isAnonymous: boolean;
   email: string | null;
+  /**
+   * L'adresse **en attente de confirmation** — `auth.users.email_change`, que le SDK expose sous
+   * `new_email`.
+   *
+   * **Mesuré le 21/09/2026, et ça contredit ce que tout ce dossier supposait** : sur une session
+   * anonyme, `updateUser({ email })` laisse `email` **vide** et ne remplit que celui-ci. Le champ
+   * qui dit « le geste est commencé » n'est donc pas `email`, et les confondre rendait l'état
+   * `a_confirmer` de `etatDuRattachement` **inatteignable** — donc la porte « Saisir le code » de
+   * « Toi » morte, et la phrase de l'écran de code qui promet de la retrouver là, fausse.
+   *
+   * `etatDuCompte` ci-dessous ne le lit pas, et c'est juste : une adresse en attente ne change
+   * rien à ce qu'une suppression efface. Il est requis quand même, pour que tout constructeur de
+   * `SessionCompte` ait à se poser la question — c'est la seule façon qu'un troisième appelant ne
+   * l'oublie pas en silence.
+   */
+  emailEnAttente: string | null;
   /** Au moins un bilan visible sous la RLS de cette session. */
   aDesDonnees: boolean;
 };

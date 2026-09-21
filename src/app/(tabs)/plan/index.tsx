@@ -451,9 +451,9 @@ export default function Plan() {
   // arrive ici avec `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la boucle
   // ouverte par l'écran des e-mails ne se refermait nulle part. (C'était un lien à cliquer jusqu'au
   // 20/09/2026 ; le rattachement se terminait alors hors de l'app, ce qui rendait cette annonce
-  // encore plus nécessaire — elle reste, puisque le code se tape sur un écran qui mène droit ici.) On l'annonce une
-  // seule fois : c'est une nouvelle, pas un état permanent en tête du plan. Qui veut le
-  // revoir le trouve sur « Toi ».
+  // encore plus nécessaire — elle reste, puisque le code se tape sur un écran qui mène droit ici.)
+  // On l'annonce une seule fois : c'est une nouvelle, pas un état permanent en tête du plan. Qui
+  // veut le revoir le trouve sur « Toi ».
   //
   // **C'est aussi le seul endroit qui peut constater un rattachement par email, donc c'est ici
   // que part `connexion_success`** (v1-13 C1.2). L'écran email l'émettait juste après

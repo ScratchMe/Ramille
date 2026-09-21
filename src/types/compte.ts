@@ -45,7 +45,7 @@ export type EtatRattachement =
  */
 export function etatDuRattachement(lu: {
   /** `null` quand aucune session n'a pu être lue — ce qui ne dit pas encore pourquoi. */
-  session: Pick<SessionCompte, 'isAnonymous' | 'email'> | null;
+  session: Pick<SessionCompte, 'isAnonymous' | 'email' | 'emailEnAttente'> | null;
   /** `true` quand l'appel a rendu une erreur : hors ligne, Supabase indisponible, jeton refusé. */
   lectureEnEchec: boolean;
 }): EtatRattachement {
@@ -58,6 +58,17 @@ export function etatDuRattachement(lu: {
   // signifie pas que le compte est rattaché.
   if (!session.isAnonymous) return { kind: 'rattache', email: session.email };
 
-  const email = session.email?.trim();
-  return email ? { kind: 'a_confirmer', email } : { kind: 'local' };
+  // **L'adresse en attente vient de `emailEnAttente`, jamais d'`email`** — mesuré le 21/09/2026 :
+  // sur une session anonyme, `updateUser({ email })` laisse `email` vide et ne remplit que
+  // `new_email`. Cette ligne lisait `email`, donc `a_confirmer` n'était rendu pour **personne** :
+  // l'écran « Toi » proposait de rattacher un compte à quelqu'un qui venait de taper son adresse,
+  // c'est-à-dire exactement le défaut que cet état existe pour corriger (issue #62), et la porte
+  // « Saisir le code » ajoutée le 20/09/2026 ne s'affichait jamais.
+  //
+  // `email` reste en repli, et il est sans risque : la branche `!isAnonymous` ci-dessus a déjà
+  // attrapé tout compte confirmé, donc une adresse présente sur une session **anonyme** ne peut
+  // vouloir dire qu'une chose — une confirmation en attente. Le repli couvre le jour où GoTrue
+  // changerait d'avis sur le champ qu'il remplit, ce que rien ici ne pourrait voir autrement.
+  const enAttente = session.emailEnAttente?.trim() || session.email?.trim();
+  return enAttente ? { kind: 'a_confirmer', email: enAttente } : { kind: 'local' };
 }
