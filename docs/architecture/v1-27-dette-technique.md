@@ -1086,7 +1086,7 @@ la liste de trois, et surtout la parade qu'elle prescrivait — `supabase db res
 locale. Le réflexe de faire porter à l'appelant une manipulation que l'assertion aurait dû éviter
 est le vrai enseignement de cette ligne.
 
-## 12.16 — Le RER n'est pas proposable comme action, faute de savoir où l'on habite
+### 12.16 Le RER n'est pas proposable comme action, faute de savoir où l'on habite (21/09/2026)
 
 **Relevé en livrant C4.4, le 21/09/2026.** Le chantier ferme la moitié coûteuse du défaut du RER :
 le bilan d'un usager du RER passe de 249,2 à 88,0 kg/an sur le profil de référence, soit le facteur
@@ -1112,3 +1112,44 @@ l'Île-de-France. Elle n'existe nulle part dans le questionnaire aujourd'hui, et
 seul gabarit serait cher — c'est une décision de produit, pas une correction. Le jour où le
 questionnaire demande quelque chose de ce genre pour une autre raison, ce gabarit-là est le premier
 à en profiter.
+
+### 12.17 Une garde du chemin du compte a rougi sans cause trouvée (21/09/2026)
+
+**Relevé en fusionnant C4.4.** `scripts/verifier-code-de-connexion.mjs` a échoué une fois en CI sur
+son assertion 6 — celle qui vérifie que les deux branches de `/connexion/email` sont
+indistinguables — avec « Aucun e-mail reçu pour `code-g-…@test.local` après 30 s », c'est-à-dire sur
+la branche de l'adresse **libre**. Le commit visé ne touchait qu'un nom de fichier de migration et
+deux `.md` ; le travail est repassé vert sur le commit suivant, qui n'en diffère que par trois lignes
+de documentation. Rien dans le diff ne pouvait l'atteindre.
+
+**Deux causes ont été mesurées et écartées**, et c'est le seul contenu solide de cette section :
+
+- **le plafond d'e-mails n'est pas en cause.** Le script déclenche **six** envois sur un run
+  (`demanderUnCode` cinq fois, plus le clic de la branche `otp_disabled`) ; `supabase/config.toml`
+  porte `email_sent = 30` par heure. On est à un cinquième du plafond ;
+- **le plafond de sessions anonymes non plus.** Les deux scripts du même travail ouvrent **huit**
+  contextes de navigateur au total — un pour le parcours réel, sept ici. Attention à ce que ce
+  chiffre est : un contexte n'est pas une inscription. Le parcours réel en produit **au moins
+  deux** dans son unique contexte, puisqu'il supprime le compte du premier profil avant de jouer le
+  cycliste, et qu'`ensureSession()` en ouvre alors une neuve. L'ordre de grandeur reste la dizaine,
+  pour un `anonymous_users = 30` par heure et par adresse IP — ce qui suffit à écarter
+  l'hypothèse, mais **ce qui a été compté sont les contextes**, et l'écrire autrement serait
+  donner à cette section la précision qu'elle reproche au mot « flake ».
+
+**La cause reste donc inconnue, et il ne faut pas écrire le contraire.** « Flake » n'est pas une
+cause : c'est le nom qu'on donne à une cause qu'on n'a pas cherchée.
+
+**Ce qui empêche de la trouver est une propriété du script, et c'est là qu'est le vrai sujet.**
+`demanderUnCode` ignore délibérément la réponse de l'envoi — il le faut, puisque l'assertion existe
+précisément pour vérifier que les deux branches ne se distinguent pas — puis attend l'e-mail. Un
+envoi **refusé** par GoTrue et un SMTP **lent** produisent donc exactement le même symptôme et
+exactement le même message. La garde sait dire qu'elle n'a rien reçu ; elle ne sait pas dire
+pourquoi.
+
+**La direction, si on y revient** : relever la réponse de l'appel réseau **à des fins de diagnostic
+seulement**, hors de la comparaison des deux écrans — le message d'échec nommerait alors un refus et
+son code, là où il ne nomme aujourd'hui qu'une attente. Ce n'est pas un correctif de la panne, c'est
+ce qui permettrait de la diagnostiquer la prochaine fois, au lieu de remesurer deux plafonds.
+
+**Ce qu'il ne faut pas faire** : allonger le délai de 30 s en espérant que ça passe. Ça ne
+supprimerait pas la cause, ça la rendrait plus rare — donc plus chère à attraper.
