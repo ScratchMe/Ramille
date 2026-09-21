@@ -28,9 +28,28 @@ permissions:
 # l'image. Puis `sauvegarde.yml`, qui porte le cinquième et dépend du dépôt pgdg : voir son propre
 # commentaire. Registre : docs/exploitation/README.md §8.9.
 jobs:
+  # **Chaque travail porte un plafond, et il a été payé le 21/09/2026.** Deux travaux de la même
+  # exécution ont cessé d'avancer à la même seconde, sur deux machines différentes et deux
+  # commandes différentes — l'un sur `expo export --clear`, l'autre sur un script Playwright —,
+  # ce qui désigne l'infrastructure et non le dépôt. Sans `timeout-minutes`, GitHub applique son
+  # défaut de **six heures** : une exécution bloquée immobilise donc le retour pendant une
+  # demi-journée, et consomme le quota d'autant.
+  #
+  # **Trente minutes, et le premier chiffre écrit ici était vingt — il était trop serré.** Le
+  # raisonnement fautif partait des durées SAINES (40 s pour Jest, 3 min 30 pour l'export web et
+  # le parcours réel) en oubliant que ces travaux portent des gardes Playwright dont le pire cas
+  # se calcule : `verifier-rendu-export.mjs` parcourt douze routes à 45 s de `goto` + 20 s
+  # d'attente + 6 s de repos, soit **quatorze minutes à elle seule**, et deux scripts la suivent
+  # dans le même travail. Un plafond à vingt minutes aurait donc tué un travail simplement lent —
+  # il aurait transformé de la lenteur en rouge, ce qui est pire que l'attente qu'il corrige.
+  #
+  # Trente minutes reste dix fois la durée saine et deux fois le pire cas modélisé, tout en
+  # rendant un vrai blocage en une demi-heure au lieu de six heures. Relevé avant d'en payer le
+  # prix, en modélisant le pire cas au lieu de raisonner sur la moyenne.
   checks:
     name: Typecheck & lint
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -123,6 +142,7 @@ jobs:
   unit-tests:
     name: Tests unitaires (Jest)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -146,6 +166,7 @@ jobs:
   web-export:
     name: Export web
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -189,6 +210,7 @@ jobs:
   db-tests:
     name: Tests base de données (pgTAP)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       # Démarre une stack Postgres locale (Docker) à partir de supabase/config.toml et
@@ -249,6 +271,7 @@ jobs:
   parcours-reel:
     name: Parcours réel (stack locale)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

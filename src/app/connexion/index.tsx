@@ -15,6 +15,7 @@ import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
 import { sourceConnexion } from '@/types/analytics';
+import { PHRASE_SANS_COMPTE_SOUS_LA_SORTIE } from '@/types/compte';
 import { identiteDejaRattachee, introDeLaConnexion } from '@/types/connexion';
 
 // « Rattacher un compte » — **un détour, plus un interstitiel** (arbitrage du 20/09/2026).
@@ -186,11 +187,13 @@ export default function ConnexionProposition() {
                 signe de vie et non sur la création). Elle est rendue pour **toutes** les
                 provenances depuis le 20/09/2026, et c'est une conséquence du retrait de
                 l'interstitiel : il la faisait lire à tout le monde au passage, en petit, sous un
-                lien qu'on touche sans lire. Où elle vit d'autre — sur « Toi » en état local —
-                reste à arbitrer (§10.4 du canvas v1-21). */}
+                lien qu'on touche sans lire. **Elle est aussi sur « Toi » en état local depuis le
+                21/09/2026** (`v1-28` §7.2) : ici elle n'atteignait que ceux qui envisageaient
+                déjà un compte. Le texte n'a pas bougé — il sort seulement de l'écran, la clause
+                et le délai venant de `src/types/compte.ts` pour que les deux endroits ne
+                puissent pas diverger (règle §1.6 de FRONT.md). */}
             <ThemedText type="small" themeColor="textTertiary" style={styles.skipHint}>
-              Sur cet appareil seulement : si tu changes de téléphone ou si tu ne reviens pas
-              pendant trois mois, ton bilan ne te suivra pas.
+              {PHRASE_SANS_COMPTE_SOUS_LA_SORTIE}
             </ThemedText>
           </View>
 

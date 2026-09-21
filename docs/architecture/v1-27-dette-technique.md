@@ -1026,3 +1026,34 @@ Trois choses à retenir, et la troisième est nouvelle :
   suite verte : l'une rend une assertion incapable de tomber, l'autre écrit une phrase fausse dans
   une branche que rien n'exerce. Ce sont les deux formes que la relecture adversariale existe pour
   attraper, et elles viennent d'être produites par la relecture elle-même.
+
+### 12.15 Une assertion pgTAP qui rougissait sur une base vécue (21/09/2026)
+
+Trouvée en jouant la suite complète après un passage de `verifier-parcours-reel.mjs` :
+`12_usage_events.test.sql` échouait sur « un horodatage antidaté fourni par le client est écrasé
+par celui du serveur ». L'échec existait aussi sur `main`, donc il n'appartenait pas au chantier en
+cours — et il n'appartenait pas non plus à la CI, verte, parce qu'elle part d'une base neuve.
+
+**La cause est dans l'assertion, pas dans l'environnement.** Elle lisait
+`min(occurred_at) from public.usage_events` — **toute la table**. Sur une base vierge, la seule
+ligne est celle qu'on vient d'insérer, donc l'assertion dit bien ce qu'elle veut dire. Sur une base
+qui a vécu, elle attrape une ligne légitime plus vieille que cinq minutes et rougit pour une raison
+étrangère à ce qu'elle garde. Elle est bornée au fixture, dont l'identifiant ne peut pas venir de
+la production.
+
+Ce n'est pas un faux positif inoffensif : une garde qui rougit pour la mauvaise raison finit
+« corrigée » de travers ou ignorée, et c'est exactement le défaut contre lequel `TESTING.md` §2.3
+met en garde. **Et elle n'était pas voisine de cette §2.3 : elle EN faisait partie** — c'est l'une
+des trois assertions qu'elle listait comme supposant une base vierge, et la seule des trois qu'on
+peut fermer sans rien perdre. Les deux autres (`17_rappels_canal` 15 et 16) n'échouent pas sur un
+balayage trop large mais sur une **configuration** : sur le distant, les secrets Vault des rappels
+existent, donc la fonction envoie vraiment là où la CI la voit sauter. Rien à borner là-dedans.
+
+Vérifié en désarmant le trigger `usage_events_stamp_time` : la version bornée tombe toujours sur ce
+qu'elle garde. Et mesuré plutôt que supposé pour le distant : zéro ligne portant l'uuid du fixture,
+contre 254 lignes réelles.
+
+`TESTING.md` §2.3 a été corrigée du même geste, et elle portait **deux** phrases devenues fausses :
+la liste de trois, et surtout la parade qu'elle prescrivait — `supabase db reset` avant chaque suite
+locale. Le réflexe de faire porter à l'appelant une manipulation que l'assertion aurait dû éviter
+est le vrai enseignement de cette ligne.

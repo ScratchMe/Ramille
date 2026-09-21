@@ -156,9 +156,9 @@ pour le churn de la purge, et il est consigné avec lui dans
 
 ## 7. Ce qui reste à arbitrer
 
-Le §10 du canvas posait sept questions. **Trois sont tranchées** (§3, §4 et la première
+Le §10 du canvas posait sept questions. **Cinq sont tranchées** (§3, §4, et les trois
 ci-dessous). Deux se sont révélées sans objet — la bannière ne se rendait déjà jamais en relecture,
-et le verbe « rattacher » était déjà celui de trois surfaces. **Deux attendent** (§7.2 et §7.3).
+et le verbe « rattacher » était déjà celui de trois surfaces. **Il n'en attend plus.**
 
 1. **« Cette adresse a déjà un compte » : tranché le 21/09/2026 — la troisième voie, livrée.**
 
@@ -242,12 +242,61 @@ et le verbe « rattacher » était déjà celui de trois surfaces. **Deux attend
    justifiait cette branche par « le produit le dit déjà au premier envoi » est devenu faux le jour
    même et a été corrigé : il ne le dit plus nulle part.
 
-2. **Où vit la phrase des trois mois.** Elle est sous la sortie de `/connexion`, pour toutes les
-   provenances depuis ce chantier. Le canvas propose de l'ajouter sur « Toi » en état `local`.
-3. **La porte de la feuille referme la feuille sans valider de canal.** C'est ce que
-   l'implémentation fait, faute de pouvoir naviguer sous un `Modal` ouvert ; sur natif, la personne
-   ne donne pas la permission push ce jour-là et recevra le mot par email (la préférence par
-   défaut), corrigeable dans « Toi ».
+2. **Où vit la phrase des trois mois : tranché le 21/09/2026 — aussi sur « Toi », le délai
+   dérivé.**
+
+   **Le fait.** La phrase vivait sous la sortie de `/connexion`, pour toutes les provenances
+   depuis ce chantier : « Sur cet appareil seulement : si tu changes de téléphone ou si tu ne
+   reviens pas pendant trois mois, ton bilan ne te suivra pas. » Sur « Toi » en état `local`, on
+   lisait autre chose — « Ton bilan reste sur cet appareil. Un compte le fait te suivre
+   ailleurs. » —, c'est-à-dire l'**avantage** et jamais l'**échéance**.
+
+   **Ce qui était en jeu, et c'est ce qui a emporté la décision.** La seule personne qui lisait le
+   délai était donc celle qui envisageait déjà un compte. Celle que
+   `purge_stale_anonymous_accounts` efface pour de bon — qui n'a jamais ouvert `/connexion` — ne
+   le lisait nulle part, et son bilan partait sans qu'un mot l'ait jamais prévenue. Des deux
+   erreurs possibles, un écran de réglages un peu plus lourd est réversible en une ligne ; un
+   bilan effacé sans avertissement ne l'est pas.
+
+   **Ce qui est livré.** « Toi » en état `local` dit les deux : « Ton bilan reste sur cet
+   appareil. Un compte le fait te suivre ailleurs — si tu changes de téléphone ou si tu ne
+   reviens pas pendant trois mois, il ne te suivra pas. » Le délai et les conditions vivent dans
+   **une constante** de `src/types/compte.ts`, lue par les deux écrans : règle §1.6 de `FRONT.md`,
+   et la leçon de la puce « Cadence » en C2.8 — nommer un même fait à deux endroits est le plus
+   sûr moyen de les voir un jour se contredire. Le texte de `/connexion` n'est **pas** retouché :
+   il était arbitré et en production, la seule chose à faire était de le faire lire ailleurs, et
+   une assertion épingle qu'il n'a pas bougé.
+
+   **Ce que la garde voit, et ce qu'elle ne voit pas.** Deux mutations la font tomber : réécrire
+   le délai à la main dans l'une des deux phrases, et retirer l'échéance de « Toi ». Ce qu'elle ne
+   voit **pas** : un troisième écran qui dirait le fait sans passer par la constante — rien ne
+   balaie le dépôt pour le trouver, même limite que `MIROIRS` en `TESTING.md` §2.7.
+
+3. **La porte de la feuille des rappels : tranché le 21/09/2026 — statu quo, et la coïncidence
+   épinglée.**
+
+   **Le fait.** La feuille grise « Par email » sans compte et porte, depuis le 20/09, un lien
+   « Rattacher un compte ». Le toucher referme la feuille et navigue **sans enregistrer de
+   canal** — et ce n'est pas un oubli : sur natif, une route poussée sous un `Modal` ouvert reste
+   dessous, donc la feuille doit se refermer d'abord. Au retour, la personne reçoit bien ses
+   rappels par e-mail, mais **parce que `profiles.reminder_channel` vaut `email` par défaut**, pas
+   parce qu'elle l'a demandé.
+
+   **Ce qui était en jeu.** Deux corrections étaient possibles — écrire la préférence avant de
+   naviguer, ou rouvrir la feuille après le rattachement. La première fait écrire une préférence à
+   un écran dont le rôle est de **demander**, pour une session qui peut ne jamais aboutir, et le
+   résultat observable est identique puisque le défaut est déjà `email` : on paierait une écriture
+   pour rien de visible. La seconde est un flux qui traverse trois écrans et doit se souvenir d'où
+   il vient, pour un cas qui se résout tout seul.
+
+   **Ce qui est livré : rien du comportement, tout de la garde.** Ce qui a été refusé, c'est que
+   la justesse reste **accidentelle**. Relevé le 21/09/2026 : `reminder_channel text not null
+   default 'email'`, et **aucun test n'épinglait ce défaut**. Une migration qui le passerait à
+   `push` ou `none` ferait donc taire les rappels de tous ceux qui sont passés par cette porte,
+   sans qu'aucun test ne bouge et sans qu'aucun écran ne mente. Une assertion de
+   `17_rappels_canal.test.sql` lit désormais le **défaut déclaré** sur le catalogue — et non ce
+   qu'une ligne insérée reçoit, parce que les deux se confondent aujourd'hui et pourraient cesser
+   de le faire si un trigger s'en mêlait.
 
 ## 8. Ce que les deux contre-lectures ont corrigé, après la fusion
 

@@ -285,24 +285,33 @@ distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des 
 
 ### 2.3 Ce que le projet distant ne prouve pas
 
-**Et ce piège a lui-même un symétrique LOCAL, relevé le 20/09/2026 : la suite pgTAP ne passe pas sur
-une stack locale qui a déjà servi les gardes de bout en bout.** Le parcours réel et le chemin du
-compte émettent de **vrais** `usage_events` — soixante-quatre `app_open`, dix-huit
-`connexion_demande` après une soirée de mesures —, et l'assertion 9 de `12_usage_events` lit
-`min(occurred_at)` sur **toute** la table. Cinq minutes plus tard, elle échoue. Le message est
-exactement celui d'un défaut d'horodatage côté serveur, alors que rien n'est cassé.
+**Ce piège avait un symétrique LOCAL, et il est fermé depuis le 21/09/2026.** Relevé le
+20/09/2026 : la suite pgTAP ne passait pas sur une stack locale qui avait déjà servi les gardes de
+bout en bout. Le parcours réel et le chemin du compte émettent de **vrais** `usage_events` — et
+l'assertion 9 de `12_usage_events` lisait `min(occurred_at)` sur **toute** la table. Cinq minutes
+plus tard, elle échouait, avec le message exact d'un défaut d'horodatage côté serveur alors que
+rien n'était cassé.
 
-La parade tient en une commande : **`supabase db reset` avant `supabase test db`** quand les gardes
-de bout en bout ont tourné depuis. En CI la question ne se pose pas — `db-tests` et le parcours sont
-deux travaux, donc deux bases —, et c'est précisément pour ça que le piège n'attend qu'en local, au
-moment où l'on croit tout rejouer pour être sûr.
+La parade prescrite ici était `supabase db reset` avant `supabase test db`. **Ce n'était pas la
+bonne**, et ce paragraphe a mis un jour à s'en apercevoir : le défaut n'était pas dans
+l'environnement mais dans l'assertion, qui balayait la table entière là où elle ne parle que de la
+ligne qu'elle vient d'écrire. Elle est bornée au fixture, dont l'identifiant ne peut pas venir de
+la production — ce qui ferme du même geste le cas local **et** le cas distant plus bas. Vérifié en
+désarmant `usage_events_stamp_time` : la version bornée tombe toujours sur ce qu'elle garde.
 
-**Et le piège a un symétrique, relevé le 11/09/2026 : trois assertions de la suite échouent sur le
+La leçon vaut au-delà de cette ligne : **une garde qui rougit pour une raison étrangère à ce
+qu'elle garde n'est pas un désagrément d'environnement, c'est un défaut de la garde** — elle finit
+« corrigée » de travers, ou ignorée, ce qui revient au même. Le réflexe de prescrire une
+manipulation à l'appelant est le mauvais ; on borne l'assertion.
+
+**Et le piège a un symétrique, relevé le 11/09/2026 : des assertions de la suite échouent sur le
 projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les connaître évite de
-« corriger » un test qui n'a rien.
-- `12_usage_events` assertion 9 (« un horodatage antidaté est écrasé par celui du serveur ») lit
-  `min(occurred_at)` sur **toute** la table : le projet distant porte des lignes réelles
-  antérieures à sa fenêtre de cinq minutes, une stack locale neuve n'en a aucune.
+« corriger » un test qui n'a rien. Elles étaient trois ; **il en reste deux depuis le 21/09/2026**,
+et le nombre ne s'écrit plus en titre pour qu'il ne se périme pas une seconde fois.
+- ~~`12_usage_events` assertion 9~~ — **fermée le 21/09/2026**, elle est bornée au fixture et passe
+  désormais des deux côtés (mesuré : zéro ligne pour cet uuid sur le distant, contre 254 réelles).
+  Elle reste listée parce qu'une exception retirée d'une liste se réinvente : la prochaine
+  assertion qui balaiera une table entière aura ce précédent-ci en face d'elle.
 - `17_rappels_canal` assertions 15 et 16 attendent un envoi **sauté** faute de secrets Vault. Sur
   le distant, `resend_api_key` et `reminder_from_address` existent : la fonction envoie vraiment, et
   la ligne passe en `sent` / le passage en `success`.

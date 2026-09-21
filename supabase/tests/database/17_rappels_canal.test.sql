@@ -13,7 +13,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(26);
+select plan(27);
 
 -- Six comptes, un par ligne de la table de vérité.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
@@ -298,6 +298,43 @@ select is(
 select ok(
   (select disabled_at is null from public.push_tokens where token = 'ExponentPushToken[pgtap-cap-f]'),
   'L''appareil qui vient de s''enregistrer reste actif'
+);
+
+-- ── Le défaut de la colonne, dont dépend la porte de la feuille des rappels ────────────
+
+-- **Épinglé le 21/09/2026 (`v1-28` §7.3), et c'est une garde sur une COÏNCIDENCE.**
+--
+-- La feuille des rappels grise « Par email » sans compte, et porte depuis le 20/09/2026 un lien
+-- « Rattacher un compte ». Le toucher referme la feuille et navigue **sans enregistrer de canal** :
+-- sur natif,
+-- une route poussée sous un `Modal` ouvert reste dessous, donc il n'y a pas le choix. Au retour,
+-- la personne reçoit bien ses rappels par e-mail — mais parce que cette colonne vaut `email` par
+-- défaut, pas parce qu'elle l'a demandé.
+--
+-- L'arbitrage a gardé ce comportement : écrire la préférence depuis un écran dont le rôle est de
+-- demander coûterait une écriture pour un résultat identique. Ce qui a été refusé, c'est que la
+-- justesse reste **accidentelle** : rien n'épinglait ce défaut, donc une migration qui le
+-- passerait à `push` ou `none` ferait taire les rappels de tous ceux qui sont passés par cette
+-- porte, sans qu'aucun test ne bouge et sans qu'aucun écran ne mente.
+--
+-- La valeur se lit sur le catalogue et non en insérant une ligne : ce qu'on garde est le
+-- **défaut déclaré**, pas ce qu'une ligne reçoit — les deux se confondent aujourd'hui et
+-- pourraient cesser de le faire si un trigger s'en mêlait.
+--
+-- **Et elle se lit dans `pg_catalog`, pas dans `information_schema`.** La première version
+-- interrogeait `information_schema.columns`, qui **filtre par privilège** : à cet endroit du
+-- fichier le rôle courant est `authenticated`, donc le jour où un `grant` bougerait sur
+-- `profiles`, la vue ne rendrait plus aucune ligne et l'assertion rougirait — pour une raison
+-- étrangère à ce qu'elle garde. C'est le défaut que la même vague vient de corriger dans
+-- `12_usage_events`, et il aurait été ajouté par la main qui le corrigeait.
+select is(
+  (select pg_get_expr(d.adbin, d.adrelid)
+     from pg_attrdef d
+     join pg_attribute a on a.attrelid = d.adrelid and a.attnum = d.adnum
+    where d.adrelid = 'public.profiles'::regclass
+      and a.attname = 'reminder_channel'),
+  '''email''::text',
+  'profiles.reminder_channel vaut « email » par défaut — ce dont dépend la porte de la feuille des rappels'
 );
 
 -- ── Verrouillage ───────────────────────────────────────────────────────────────────────
