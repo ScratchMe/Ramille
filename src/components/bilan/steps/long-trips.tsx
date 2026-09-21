@@ -50,6 +50,10 @@ const OPTIONS_OCCUPATION = OCCUPATIONS_LONG_TRAJET.map((n) => ({
 }));
 
 // B3.3 / B3.4 — la dernière puce stocke sa valeur nominale, même simplification que flights.tsx.
+//
+// Trois séries depuis C4.4, toutes trois rendues depuis `COUNT_CHOICES` : l'autocar a la même
+// plage que le train et la voiture, parce que rien ne justifie qu'on plafonne plus bas le mode
+// qu'on vient d'ouvrir — et un plafond propre à une série serait un second nombre à tenir.
 export function LongTripsStep({
   answers,
   update,
@@ -94,6 +98,40 @@ export function LongTripsStep({
               role="radio"
               selected={answers.train_long_trips_per_year === n}
               onPress={() => update({ train_long_trips_per_year: n })}
+              radius={14}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* C4.4 — le troisième compteur, entre les deux modes collectifs et la voiture. B3.4 ne
+          proposait que l'avion, le train et la voiture, donc un Paris-Lyon en car était compté
+          comme s'il n'avait pas eu lieu.
+
+          **Il n'a pas de question de suivi**, et c'est ce qui le distingue de la voiture juste
+          en dessous : un autocar est partagé par construction, son facteur ADEME est déjà par
+          voyageur, et il n'a pas de motorisation à choisir.
+
+          Ce que ce compteur ne raconte pas, c'est une histoire flatteuse : l'autocar émet
+          0,037560 kg/km, soit **plus qu'un TER** et douze fois un TGV. C'est précisément pour ça
+          qu'il fallait le poser. */}
+      <View style={styles.field}>
+        <ThemedText type="small" themeColor="textTertiary">
+          En autocar
+        </ThemedText>
+        <View
+          style={styles.chipsWrap}
+          accessibilityRole="radiogroup"
+          accessibilityLabel="Trajets longue distance en autocar"
+        >
+          {COUNT_CHOICES.map((n) => (
+            <Chip
+              key={n}
+              label={n === MAX_TRAJETS ? `${MAX_TRAJETS}+` : String(n)}
+              accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
+              role="radio"
+              selected={answers.coach_long_trips_per_year === n}
+              onPress={() => update({ coach_long_trips_per_year: n })}
               radius={14}
             />
           ))}
@@ -155,7 +193,7 @@ export function LongTripsStep({
       </View>
 
       <ThemedText type="code" themeColor="textTertiary">
-        distances moyennes par défaut · 800 km train, 700 km voiture
+        distances moyennes par défaut · 800 km train, 700 km autocar et voiture
       </ThemedText>
     </View>
   );

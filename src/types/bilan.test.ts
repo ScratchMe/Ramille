@@ -350,9 +350,14 @@ describe('isStepComplete', () => {
   });
 
   it('leisure_detail : mode et distance requis, plus le type de moteur si "voiture"', () => {
+    // C4.4 : « Vélo » porte désormais sa propre révélation, donc la fixture doit y répondre —
+    // sans quoi ce test éprouverait l'étape par une réponse que le questionnaire refuse.
     expect(isStepComplete('leisure_detail', answers({ leisure_mode: 'velo' }))).toBe(false);
     expect(
-      isStepComplete('leisure_detail', answers({ leisure_mode: 'velo', leisure_distance_bracket: 'lt_5' }))
+      isStepComplete(
+        'leisure_detail',
+        answers({ leisure_mode: 'velo', leisure_velo_type: 'mecanique', leisure_distance_bracket: 'lt_5' })
+      )
     ).toBe(true);
     expect(
       isStepComplete(
@@ -507,6 +512,38 @@ describe('distanceBracketMidpointKm', () => {
 });
 
 describe('manqueDeLEtape', () => {
+  // C4.4 : trois endroits, sur le patron de la motorisation — et les trois comptent. Le mode
+  // principal, le second mode et les sorties posent chacun la question, parce qu'on ne prend pas
+  // le même train pour aller travailler et pour partir en week-end.
+  // L'étape et le manque d'abord, le patch en dernier : `it.each` remplit les `%s` dans l'ordre
+  // du tuple, et un objet en deuxième position rendait le titre d'échec illisible.
+  it.each([
+    ['commute_mode', 'le type de train', { commute_mode: 'train' as const }],
+    ['commute_mode', 'le type de vélo', { commute_mode: 'velo' as const }],
+    [
+      'commute_extra',
+      'le type de train',
+      { commute_second_mode_used: true, commute_second_mode: 'train' as const, commute_second_mode_share: 0.25 },
+    ],
+    [
+      'commute_extra',
+      'le type de vélo',
+      { commute_second_mode_used: true, commute_second_mode: 'velo' as const, commute_second_mode_share: 0.25 },
+    ],
+    [
+      'leisure_detail',
+      'le type de train',
+      { leisure_mode: 'train' as const, leisure_distance_bracket: 'lt_5' as const },
+    ],
+    [
+      'leisure_detail',
+      'le type de vélo',
+      { leisure_mode: 'velo' as const, leisure_distance_bracket: 'lt_5' as const },
+    ],
+  ])('%s nomme « %s » tant que la révélation est sans réponse', (etape, manque, patch) => {
+    expect(manqueDeLEtape(etape as Parameters<typeof manqueDeLEtape>[0], answers(patch))).toBe(manque);
+  });
+
   it('rend null quand l’étape est complète', () => {
     expect(manqueDeLEtape('commute_has_trip', answers({ commute_has_regular_trip: false }))).toBeNull();
   });
@@ -699,6 +736,53 @@ describe('saisie numérique', () => {
 });
 
 describe('normaliserReponses', () => {
+  // ── C4.4 · le type de train et le type de vélo ──────────────────────────────────────────
+  it('garde le type de train tant qu’UNE des deux jambes est un train', () => {
+    // Un seul champ pour les deux jambes, comme la motorisation : l'effacer parce que le mode
+    // principal a changé retirerait la réponse d'une seconde jambe qui la porte encore.
+    const a = normaliserReponses(
+      answers({
+        commute_mode: 'voiture',
+        commute_car_engine: 'thermique',
+        commute_second_mode_used: true,
+        commute_second_mode: 'train',
+        commute_second_mode_share: 0.25,
+        commute_train_type: 'rer',
+      })
+    );
+    expect(a.commute_train_type).toBe('rer');
+
+    const b = normaliserReponses(answers({ commute_mode: 'voiture', commute_train_type: 'rer' }));
+    expect(b.commute_train_type).toBeNull();
+  });
+
+  it('efface le type de vélo quand plus aucune jambe n’est un vélo', () => {
+    const a = normaliserReponses(answers({ commute_mode: 'velo', commute_velo_type: 'electrique' }));
+    expect(a.commute_velo_type).toBe('electrique');
+    const b = normaliserReponses(answers({ commute_mode: 'marche', commute_velo_type: 'electrique' }));
+    expect(b.commute_velo_type).toBeNull();
+  });
+
+  it('sur « rarement », le type de train et le type de vélo partent — à l’inverse de la motorisation', () => {
+    // **L'asymétrie est le sujet du test.** La motorisation décrit le véhicule de la personne,
+    // qu'elle possède encore, donc elle rend le résiduel plus juste ; un type de train décrit un
+    // trajet qu'on ne déclare plus. Et ce n'est pas théorique : le résiduel de « rarement » vaut
+    // `train` quand le foyer n'a pas de voiture, donc un type survivant y serait lu — et un bilan
+    // resoumis à l'identique changerait de total.
+    const a = normaliserReponses({
+      ...EMPTY_BILAN_ANSWERS,
+      leisure_frequency: 'rarely',
+      leisure_mode: 'train',
+      leisure_car_engine: 'electrique',
+      leisure_train_type: 'rer',
+      leisure_velo_type: 'electrique',
+    });
+    expect(a.leisure_train_type).toBeNull();
+    expect(a.leisure_velo_type).toBeNull();
+    expect(a.leisure_car_engine).toBe('electrique');
+    expect(normaliserReponses(a)).toEqual(a);
+  });
+
   it('efface le mode et la tranche des loisirs quand la fréquence passe à « rarement »', () => {
     // Les deux chemins d'entrée doivent converger : l'étape B2.1 tenait sa propre liste, donc un
     // brouillon relu gardait un mode que le clic effaçait. La motorisation, elle, reste — le calcul

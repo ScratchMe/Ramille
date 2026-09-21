@@ -18,7 +18,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(14);
 
 -- ── Complétude du mapping ───────────────────────────────────────────────────────────────
 -- Le vrai risque de régression : ajouter un mode au produit sans lui donner de source, ce
@@ -41,6 +41,33 @@ select is_empty(
   $$ select transport_mode_id from public.emission_factor_sources s
      where not exists (select 1 from public.emission_factors f where f.transport_mode_id = s.transport_mode_id) $$,
   'Tout mode mappé a au moins une valeur en base — la synchronisation compare toujours à un existant'
+);
+
+-- ── La liste exacte des modes, et le fichier TypeScript qui la recopie ─────────────────
+--
+-- **Le garde-fou que `src/types/resultat.ts` réclamait depuis C1.8**, écrit le 21/09/2026 en
+-- ajoutant les cinq modes de C4.4. Son commentaire le décrivait mot pour mot : « la garde qui
+-- manque est côté SQL : une assertion pgTAP épinglant la liste exacte des identifiants de
+-- `public.transport_modes` — une migration qui ajoute un mode tomberait alors en CI et nommerait
+-- ce fichier ».
+--
+-- Ce n'est pas une comparaison, c'est un **fil-piège** : pgTAP ne peut pas lire du TypeScript.
+-- La liste est écrite ici à la main, donc ajouter un mode rougit, et le message dit où aller.
+-- Ce qu'il attrape est exactement ce qui est arrivé en A3-6 : les quatre deux-roues résolus côté
+-- serveur manquaient à `MODE_PREPOSITION` alors qu'ils peuvent être `dominant_poste_mode`, et
+-- rien ne l'a dit — le `Record` ne se déclenche que si on a déjà pensé à venir ici.
+select results_eq(
+  $$ select id from public.transport_modes order by id $$,
+  $$ values ('autocar'::text), ('avion_court_moyen_courrier'::text), ('avion_long_courrier'::text),
+            ('bus'::text), ('deux_roues_moto_grosse'::text), ('deux_roues_moto_petite'::text),
+            ('deux_roues_motorise'::text), ('deux_roues_scooter_electrique'::text),
+            ('deux_roues_scooter_thermique'::text), ('marche'::text), ('metro_tram'::text),
+            ('train'::text), ('train_intercites'::text), ('train_longue_distance'::text),
+            ('train_rer'::text), ('train_ter'::text), ('trottinette'::text), ('velo'::text),
+            ('velo_electrique'::text), ('voiture'::text), ('voiture_electrique'::text),
+            ('voiture_hybride'::text), ('voiture_hybride_rechargeable'::text),
+            ('voiture_thermique'::text) $$,
+  'la liste des modes n''a pas bougé — si elle a bougé, MODE_IDS et MODE_PREPOSITION (src/types/resultat.ts) sont à suivre, et un mode absent de MODE_PREPOSITION ne se voit nulle part'
 );
 
 -- ── Le segment aérien reste cohérent avec les distances du calcul (v1-07 §1.5) ─────────

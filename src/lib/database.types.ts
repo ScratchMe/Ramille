@@ -18,6 +18,7 @@ export type Database = {
           first_step: string | null
           id: string
           max_distance_km: number | null
+          min_distance_km: number | null
           operation: string | null
           poste: string | null
           question_template: string | null
@@ -36,6 +37,7 @@ export type Database = {
           first_step?: string | null
           id?: string
           max_distance_km?: number | null
+          min_distance_km?: number | null
           operation?: string | null
           poste?: string | null
           question_template?: string | null
@@ -54,6 +56,7 @@ export type Database = {
           first_step?: string | null
           id?: string
           max_distance_km?: number | null
+          min_distance_km?: number | null
           operation?: string | null
           poste?: string | null
           question_template?: string | null
@@ -82,6 +85,7 @@ export type Database = {
           car_long_trips_engine: string | null
           car_long_trips_occupancy: number | null
           car_long_trips_per_year: number
+          coach_long_trips_per_year: number
           commute_car_engine: string | null
           commute_carpool_size: number | null
           commute_days_per_week: number | null
@@ -93,7 +97,9 @@ export type Database = {
           commute_second_mode: string | null
           commute_second_mode_share: number | null
           commute_second_mode_used: boolean
+          commute_train_type: string | null
           commute_two_wheeler_type: string | null
+          commute_velo_type: string | null
           flights_short_per_year: number | null
           flights_total_per_year: number
           household_vehicles: string | null
@@ -104,7 +110,9 @@ export type Database = {
           leisure_frequency: string
           leisure_is_carpool: boolean
           leisure_mode: string | null
+          leisure_train_type: string | null
           leisure_two_wheeler_type: string | null
+          leisure_velo_type: string | null
           tc_access: string | null
           teletravail: string | null
           train_long_trips_per_year: number
@@ -116,6 +124,7 @@ export type Database = {
           car_long_trips_engine?: string | null
           car_long_trips_occupancy?: number | null
           car_long_trips_per_year?: number
+          coach_long_trips_per_year?: number
           commute_car_engine?: string | null
           commute_carpool_size?: number | null
           commute_days_per_week?: number | null
@@ -127,7 +136,9 @@ export type Database = {
           commute_second_mode?: string | null
           commute_second_mode_share?: number | null
           commute_second_mode_used?: boolean
+          commute_train_type?: string | null
           commute_two_wheeler_type?: string | null
+          commute_velo_type?: string | null
           flights_short_per_year?: number | null
           flights_total_per_year?: number
           household_vehicles?: string | null
@@ -138,7 +149,9 @@ export type Database = {
           leisure_frequency: string
           leisure_is_carpool?: boolean
           leisure_mode?: string | null
+          leisure_train_type?: string | null
           leisure_two_wheeler_type?: string | null
+          leisure_velo_type?: string | null
           tc_access?: string | null
           teletravail?: string | null
           train_long_trips_per_year?: number
@@ -150,6 +163,7 @@ export type Database = {
           car_long_trips_engine?: string | null
           car_long_trips_occupancy?: number | null
           car_long_trips_per_year?: number
+          coach_long_trips_per_year?: number
           commute_car_engine?: string | null
           commute_carpool_size?: number | null
           commute_days_per_week?: number | null
@@ -161,7 +175,9 @@ export type Database = {
           commute_second_mode?: string | null
           commute_second_mode_share?: number | null
           commute_second_mode_used?: boolean
+          commute_train_type?: string | null
           commute_two_wheeler_type?: string | null
+          commute_velo_type?: string | null
           flights_short_per_year?: number | null
           flights_total_per_year?: number
           household_vehicles?: string | null
@@ -172,7 +188,9 @@ export type Database = {
           leisure_frequency?: string
           leisure_is_carpool?: boolean
           leisure_mode?: string | null
+          leisure_train_type?: string | null
           leisure_two_wheeler_type?: string | null
+          leisure_velo_type?: string | null
           tc_access?: string | null
           teletravail?: string | null
           train_long_trips_per_year?: number
@@ -237,6 +255,7 @@ export type Database = {
           total_co2_kg_year: number
           travel_car_co2_kg_year: number | null
           travel_co2_kg_year: number
+          travel_coach_co2_kg_year: number | null
           travel_flight_long_co2_kg_year: number | null
           travel_flight_short_co2_kg_year: number | null
           travel_train_co2_kg_year: number | null
@@ -267,6 +286,7 @@ export type Database = {
           total_co2_kg_year: number
           travel_car_co2_kg_year?: number | null
           travel_co2_kg_year: number
+          travel_coach_co2_kg_year?: number | null
           travel_flight_long_co2_kg_year?: number | null
           travel_flight_short_co2_kg_year?: number | null
           travel_train_co2_kg_year?: number | null
@@ -297,6 +317,7 @@ export type Database = {
           total_co2_kg_year?: number
           travel_car_co2_kg_year?: number | null
           travel_co2_kg_year?: number
+          travel_coach_co2_kg_year?: number | null
           travel_flight_long_co2_kg_year?: number | null
           travel_flight_short_co2_kg_year?: number | null
           travel_train_co2_kg_year?: number | null
@@ -1166,11 +1187,21 @@ export type Database = {
         Args: {
           p_car_engine: string
           p_mode_id: string
+          p_train_type: string
           p_two_wheeler_type: string
+          p_velo_type: string
         }
         Returns: string
       }
+      resolve_train_mode: {
+        Args: { p_mode_id: string; p_type: string }
+        Returns: string
+      }
       resolve_two_wheeler_mode: {
+        Args: { p_mode_id: string; p_type: string }
+        Returns: string
+      }
+      resolve_velo_mode: {
         Args: { p_mode_id: string; p_type: string }
         Returns: string
       }

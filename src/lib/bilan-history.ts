@@ -295,6 +295,8 @@ export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
     commute_car_engine: answers.commute_car_engine as BilanAnswers['commute_car_engine'],
     commute_two_wheeler_type:
       answers.commute_two_wheeler_type as BilanAnswers['commute_two_wheeler_type'],
+    commute_train_type: answers.commute_train_type as BilanAnswers['commute_train_type'],
+    commute_velo_type: answers.commute_velo_type as BilanAnswers['commute_velo_type'],
 
     leisure_frequency: answers.leisure_frequency as BilanAnswers['leisure_frequency'],
     leisure_mode: answers.leisure_mode as BilanAnswers['leisure_mode'],
@@ -305,6 +307,8 @@ export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
     leisure_car_engine: answers.leisure_car_engine as BilanAnswers['leisure_car_engine'],
     leisure_two_wheeler_type:
       answers.leisure_two_wheeler_type as BilanAnswers['leisure_two_wheeler_type'],
+    leisure_train_type: answers.leisure_train_type as BilanAnswers['leisure_train_type'],
+    leisure_velo_type: answers.leisure_velo_type as BilanAnswers['leisure_velo_type'],
 
     flights_total_per_year: answers.flights_total_per_year,
     flights_short_per_year: answers.flights_short_per_year,
@@ -312,6 +316,7 @@ export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
     car_long_trips_per_year: answers.car_long_trips_per_year,
     car_long_trips_engine: answers.car_long_trips_engine as BilanAnswers['car_long_trips_engine'],
     car_long_trips_occupancy: answers.car_long_trips_occupancy,
+    coach_long_trips_per_year: answers.coach_long_trips_per_year,
 
     zone_type: answers.zone_type as BilanAnswers['zone_type'],
     tc_access: answers.tc_access as BilanAnswers['tc_access'],

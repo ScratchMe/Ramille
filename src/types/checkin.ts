@@ -151,9 +151,14 @@ export function moisFrancais(periodStartIso: string): string | null {
 /**
  * Le complément de la question de maintien — **jumelle de `public.complement_de_maintien(text)`**.
  *
- * Trois modes et non deux : la catégorie `velo_marche` compte `velo`, `marche` et `trottinette`
- * en base (relevé le 11/09/2026). Un repli sur le vélo demanderait « ton trajet s'est-il fait à
+ * Quatre modes et non deux : la catégorie `velo_marche` compte `velo`, `marche`, `trottinette` et,
+ * depuis C4.4, `velo_electrique`. Un repli sur le vélo demanderait « ton trajet s'est-il fait à
  * vélo ? » à quelqu'un qui n'en a pas.
+ *
+ * **C'est la paire la plus facile à oublier du dépôt**, parce qu'elle n'a rien à voir avec un
+ * facteur : un mode ajouté à cette catégorie sans son complément reçoit « autrement » des deux
+ * côtés, en silence. Ce qui l'a rattrapée le 21/09/2026 n'est pas ce commentaire mais l'assertion
+ * de `20_qui_recoit_quelle_boucle.test.sql` qui compte les modes de la catégorie en base.
  *
  * `autrement` ferme la liste plutôt que de laisser la phrase tronquée : un mode hors catégorie ne
  * devrait jamais arriver ici — le générateur ne pose `question_kind = 'maintien'` que sur cette
@@ -161,6 +166,7 @@ export function moisFrancais(periodStartIso: string): string | null {
  */
 export const COMPLEMENT_DE_MAINTIEN: Record<string, string> = {
   velo: 'à vélo',
+  velo_electrique: 'à vélo électrique',
   marche: 'à pied',
   trottinette: 'en trottinette',
 };
@@ -168,6 +174,20 @@ export const COMPLEMENT_DE_MAINTIEN: Record<string, string> = {
 export function complementDeMaintien(mode: string | null | undefined): string {
   if (!mode) return 'autrement';
   return COMPLEMENT_DE_MAINTIEN[mode] ?? 'autrement';
+}
+
+/**
+ * La variante de `RAMILLE.maintienNon` qu'un mode reçoit — dérivée plutôt qu'écrite en ternaire
+ * dans la réplique, où la liste des modes était recopiée à la main.
+ *
+ * **Le vélo à assistance partage l'identité du vélo, et c'est voulu** : la phrase nomme ce qu'on
+ * renforce (« Le vélo reste ton trajet »), et personne ne dit « le vélo électrique reste ton
+ * trajet ». La question, elle, garde le complément exact — les deux disent vrai sans se répéter.
+ */
+export function varianteDeMaintien(mode: string | null | undefined): 'velo' | 'marche' | 'trottinette' | 'autre' {
+  if (mode === 'velo' || mode === 'velo_electrique') return 'velo';
+  if (mode === 'marche' || mode === 'trottinette') return mode;
+  return 'autre';
 }
 
 /**
@@ -326,12 +346,7 @@ export function repliqueDuPoint(
   }
 
   if (point.question_kind === 'maintien') {
-    const variante = point.mode ?? '';
-    const ligne =
-      variante === 'velo' || variante === 'marche' || variante === 'trottinette'
-        ? RAMILLE.maintienNon[variante]
-        : RAMILLE.maintienNon.autre;
-    return { ligne, mood: 'calm' };
+    return { ligne: RAMILLE.maintienNon[varianteDeMaintien(point.mode)], mood: 'calm' };
   }
 
   return {

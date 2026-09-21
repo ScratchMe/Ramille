@@ -239,6 +239,82 @@ const MIROIRS = [
     colonne: 'engagement_checkins.response_kind',
   },
 
+  // --- Les révélations imbriquées : une constante, et autant de colonnes qu'elle sert ---
+  //
+  // **Les deux premières familles manquaient à cette liste**, relevé en y ajoutant celles de C4.4
+  // le 21/09/2026 : la motorisation et le type de deux-roues étaient épinglés par des tests Jest
+  // portant les mêmes valeurs recopiées une seconde fois, c'est-à-dire par le code contre
+  // lui-même. C'est la troisième fois que ce fichier accueille des miroirs qu'on croyait
+  // couverts, et la leçon ne change pas : **une garde déclarative ne s'annonce jamais
+  // exhaustive**.
+  //
+  // Une même constante est déclarée **une fois par colonne qu'elle sert**, et ce n'est pas de la
+  // redondance : trois colonnes portent le `check` de la motorisation, et rien n'oblige une
+  // migration à les faire bouger ensemble. Une seule déclaration jugerait les trois sur une.
+  { genre: 'type', constante: 'CarEngine', module: 'src/types/bilan.ts', colonne: 'assessment_answers.commute_car_engine' },
+  {
+    genre: 'type',
+    constante: 'TwoWheelerType',
+    module: 'src/types/bilan.ts',
+    colonne: 'assessment_answers.commute_two_wheeler_type',
+  },
+  { genre: 'type', constante: 'TrainType', module: 'src/types/bilan.ts', colonne: 'assessment_answers.commute_train_type' },
+  { genre: 'type', constante: 'VeloType', module: 'src/types/bilan.ts', colonne: 'assessment_answers.commute_velo_type' },
+  {
+    genre: 'valeurs',
+    constante: 'CAR_ENGINE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.commute_car_engine',
+  },
+  {
+    genre: 'valeurs',
+    constante: 'CAR_ENGINE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.leisure_car_engine',
+  },
+  {
+    genre: 'valeurs',
+    constante: 'CAR_ENGINE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.car_long_trips_engine',
+  },
+  {
+    genre: 'valeurs',
+    constante: 'TWO_WHEELER_TYPE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.commute_two_wheeler_type',
+  },
+  {
+    genre: 'valeurs',
+    constante: 'TWO_WHEELER_TYPE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.leisure_two_wheeler_type',
+  },
+  {
+    genre: 'valeurs',
+    constante: 'TRAIN_TYPE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.commute_train_type',
+  },
+  {
+    genre: 'valeurs',
+    constante: 'TRAIN_TYPE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.leisure_train_type',
+  },
+  {
+    genre: 'valeurs',
+    constante: 'VELO_TYPE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.commute_velo_type',
+  },
+  {
+    genre: 'valeurs',
+    constante: 'VELO_TYPE_OPTIONS',
+    module: 'src/constants/transport-modes.ts',
+    colonne: 'assessment_answers.leisure_velo_type',
+  },
+
   // --- Les bornes numériques : rien à énumérer, tout à évaluer (C3.5) ---
   {
     genre: 'domaine',

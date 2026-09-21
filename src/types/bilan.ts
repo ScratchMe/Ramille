@@ -40,6 +40,16 @@ export type CarEngine = 'thermique' | 'hybride' | 'hybride_rechargeable' | 'elec
 // c'est la distinction « petite / grosse cylindrée » que les gens ont en tête.
 export type TwoWheelerType = 'scooter_thermique' | 'scooter_electrique' | 'moto_petite' | 'moto_grosse';
 
+// C4.4, même mécanique encore, et cette fois le défaut était dans le **libellé** : le mode
+// s'appelait « Train ou RER » et portait le facteur du TER, soit 2,83 fois celui du RER. Le
+// produit promettait une chose et en comptait une autre, à tout usager du RER ou du Transilien.
+export type TrainType = 'ter' | 'rer' | 'intercites';
+
+// Et sous « Vélo » : l'assistance électrique vaut 64 fois le mécanique (0,010950 contre
+// 0,000170). `velo` reste le mode du vélo mécanique — même facteur, mêmes mots —, donc
+// « mecanique » et « pas de réponse » résolvent tous deux vers lui côté serveur.
+export type VeloType = 'mecanique' | 'electrique';
+
 export type BilanAnswers = {
   commute_has_regular_trip: boolean | null;
   commute_days_per_week: number | null;
@@ -83,6 +93,9 @@ export type BilanAnswers = {
   // donc au plus une jambe est concernée à un instant donné.
   commute_car_engine: CarEngine | null;
   commute_two_wheeler_type: TwoWheelerType | null;
+  /** Un seul champ pour les deux jambes, comme la motorisation juste au-dessus (C4.4). */
+  commute_train_type: TrainType | null;
+  commute_velo_type: VeloType | null;
 
   leisure_frequency: LeisureFrequency | null;
   leisure_mode: TransportModeId | null;
@@ -103,6 +116,8 @@ export type BilanAnswers = {
   leisure_carpool_size: number | null;
   leisure_car_engine: CarEngine | null;
   leisure_two_wheeler_type: TwoWheelerType | null;
+  leisure_train_type: TrainType | null;
+  leisure_velo_type: VeloType | null;
 
   flights_total_per_year: number;
   flights_short_per_year: number | null;
@@ -113,6 +128,15 @@ export type BilanAnswers = {
    *  trois est plus courant sur 700 km qu'au quotidien, et le calcul supposait « seul »
    *  sans le dire. */
   car_long_trips_occupancy: number | null;
+  /**
+   * Le troisième compteur de B3.4 (C4.4) — l'autocar, qui n'existait nulle part, donc un
+   * Paris-Lyon en car était compté comme s'il n'avait pas eu lieu.
+   *
+   * Pas de question de suivi sous ce compteur, et c'est la différence avec la voiture : l'autocar
+   * est partagé par construction, son facteur ADEME est déjà par voyageur, et il n'a pas de
+   * motorisation à choisir.
+   */
+  coach_long_trips_per_year: number;
 
   zone_type: ZoneType | null;
   tc_access: TcAccess | null;
@@ -138,6 +162,8 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   commute_second_mode_share: null,
   commute_car_engine: null,
   commute_two_wheeler_type: null,
+  commute_train_type: null,
+  commute_velo_type: null,
 
   leisure_frequency: null,
   leisure_mode: null,
@@ -147,6 +173,8 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   leisure_carpool_size: null,
   leisure_car_engine: null,
   leisure_two_wheeler_type: null,
+  leisure_train_type: null,
+  leisure_velo_type: null,
 
   flights_total_per_year: 0,
   flights_short_per_year: null,
@@ -154,6 +182,7 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   car_long_trips_per_year: 0,
   car_long_trips_engine: null,
   car_long_trips_occupancy: null,
+  coach_long_trips_per_year: 0,
 
   zone_type: null,
   tc_access: null,
@@ -556,6 +585,13 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
   ) {
     a.commute_two_wheeler_type = null;
   }
+  // C4.4 : mêmes deux jambes, même champ unique, même règle d'effacement.
+  if (a.commute_mode !== 'train' && a.commute_second_mode !== 'train') {
+    a.commute_train_type = null;
+  }
+  if (a.commute_mode !== 'velo' && a.commute_second_mode !== 'velo') {
+    a.commute_velo_type = null;
+  }
 
   // Loisirs : un seul mode, donc une seule jambe à regarder — **sauf sur « rarement »**, et
   // cette exception tient au calcul, pas à l'écran. `recompute_assessment_results` y force le
@@ -589,9 +625,20 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
     // à vrai — et rien de ce qui s'écrit ici ne touche un bilan déjà en base. L'en créditer
     // ferait croire cette promesse gardée par un test qui ne l'éprouve pas.
     a.leisure_is_carpool = false;
+    // **Le type de train et le type de vélo partent avec le covoiturage, pas avec la
+    // motorisation** (C4.4), et l'asymétrie mérite d'être dite parce qu'elle n'est pas
+    // évidente : la motorisation décrit le **véhicule** de la personne, qu'elle possède
+    // encore, donc elle rend le résiduel plus juste ; un type de train ou de vélo décrit un
+    // **trajet** qu'on ne déclare plus. Et il y a une conséquence mesurable — le résiduel de
+    // « rarement » vaut `train` quand le foyer n'a pas de voiture, donc un `leisure_train_type`
+    // survivant y serait lu, et un bilan resoumis à l'identique changerait de total.
+    a.leisure_train_type = null;
+    a.leisure_velo_type = null;
   } else {
     if (a.leisure_mode !== 'voiture') a.leisure_car_engine = null;
     if (a.leisure_mode !== 'deux_roues_motorise') a.leisure_two_wheeler_type = null;
+    if (a.leisure_mode !== 'train') a.leisure_train_type = null;
+    if (a.leisure_mode !== 'velo') a.leisure_velo_type = null;
     // Le covoiturage de loisirs ne se déclare que sur une voiture, comme celui du quotidien :
     // c'est le choix « Voiture (covoiturage) » de B2.2 qui le porte, aucune autre ligne.
     if (a.leisure_mode !== 'voiture') a.leisure_is_carpool = false;
@@ -731,6 +778,13 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
         return 'la motorisation';
       if (answers.commute_mode === 'deux_roues_motorise' && answers.commute_two_wheeler_type === null)
         return 'le type de deux-roues';
+      // C4.4 : obligatoires dès que leur déclencheur est là, comme la motorisation. Laisser le
+      // choix facultatif reviendrait à garder le défaut — le TER — pour tous ceux qui passent
+      // sans répondre, c'est-à-dire exactement le défaut que ce chantier corrige.
+      if (answers.commute_mode === 'train' && answers.commute_train_type === null)
+        return 'le type de train';
+      if (answers.commute_mode === 'velo' && answers.commute_velo_type === null)
+        return 'le type de vélo';
       // La taille du covoiturage vient de l'étape suivante (recette du 14/09/2026, `v1-16` §3) :
       // elle se rend désormais sous « Voiture (covoiturage) », après la motorisation, comme la
       // jumelle des sorties. Elle reste obligatoire pour la raison qui vaut des deux côtés : le
@@ -754,6 +808,10 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
         answers.commute_two_wheeler_type === null
       )
         return 'le type de deux-roues';
+      if (answers.commute_second_mode === 'train' && answers.commute_train_type === null)
+        return 'le type de train';
+      if (answers.commute_second_mode === 'velo' && answers.commute_velo_type === null)
+        return 'le type de vélo';
       // En dernier, et pour la même raison que la distance des loisirs : la part se rend sous
       // la précision du mode, donc on ne la nomme qu'une fois le reste rempli.
       //
@@ -774,6 +832,10 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
         return 'la motorisation';
       if (answers.leisure_mode === 'deux_roues_motorise' && answers.leisure_two_wheeler_type === null)
         return 'le type de deux-roues';
+      if (answers.leisure_mode === 'train' && answers.leisure_train_type === null)
+        return 'le type de train';
+      if (answers.leisure_mode === 'velo' && answers.leisure_velo_type === null)
+        return 'le type de vélo';
       // La taille du covoiturage se rend sous « Voiture (covoiturage) », après la motorisation.
       // Elle est obligatoire pour la raison qui vaut déjà côté quotidien : le calcul ne divise
       // que si elle est renseignée, donc sans elle le choix « covoiturage » ne change **rien**

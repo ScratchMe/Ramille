@@ -15,7 +15,7 @@ export type TransportModeId =
 export const TRANSPORT_MODE_LABELS: Record<TransportModeId, string> = {
   voiture: 'Voiture',
   bus: 'Bus',
-  train: 'Train ou RER',
+  train: 'Train',
   metro_tram: 'Métro ou tram',
   velo: 'Vélo',
   marche: 'Marche',
@@ -33,7 +33,7 @@ export const COMMUTE_MODE_CHOICES: CommuteModeChoice[] = [
   { key: 'voiture_solo', modeId: 'voiture', carpool: false, label: 'Voiture (seul)' },
   { key: 'voiture_covoiturage', modeId: 'voiture', carpool: true, label: 'Voiture (covoiturage)' },
   { key: 'bus', modeId: 'bus', carpool: false, label: 'Bus' },
-  { key: 'train', modeId: 'train', carpool: false, label: 'Train ou RER' },
+  { key: 'train', modeId: 'train', carpool: false, label: 'Train' },
   { key: 'metro_tram', modeId: 'metro_tram', carpool: false, label: 'Métro ou tram' },
   { key: 'velo', modeId: 'velo', carpool: false, label: 'Vélo' },
   { key: 'marche', modeId: 'marche', carpool: false, label: 'Marche' },
@@ -47,7 +47,7 @@ export const COMMUTE_MODE_CHOICES: CommuteModeChoice[] = [
 export const LEISURE_MODE_CHOICES_PRIMARY: CommuteModeChoice[] = [
   { key: 'voiture_solo', modeId: 'voiture', carpool: false, label: 'Voiture (seul)' },
   { key: 'voiture_covoiturage', modeId: 'voiture', carpool: true, label: 'Voiture (covoiturage)' },
-  { key: 'train', modeId: 'train', carpool: false, label: 'Train ou RER' },
+  { key: 'train', modeId: 'train', carpool: false, label: 'Train' },
   { key: 'velo', modeId: 'velo', carpool: false, label: 'Vélo' },
 ];
 
@@ -91,4 +91,30 @@ export const CAR_ENGINE_OPTIONS: {
   { value: 'hybride', label: 'Hybride' },
   { value: 'hybride_rechargeable', label: 'Hybride rechargeable' },
   { value: 'electrique', label: 'Électrique' },
+];
+
+// Question de suivi affichée dès que « Train » est choisi (B1.4/B1.7/B2.2) — même mécanique que
+// la motorisation, et pour un écart plus grand encore : le mode s'appelait « Train ou RER » et
+// portait le facteur du **TER**, soit **2,83 fois** celui du RER (0,027690 contre 0,009780). Un
+// usager du RER voyait 249,2 kg/an là où 88,0 étaient justes, sur le poste qui décide du plan.
+//
+// Trois réponses et non une moyenne : le métro et le tram sont à 2 % l'un de l'autre, ce qui rend
+// leur moyenne honnête ; le TER et le RER sont à 283 %, donc moyenner ne réduirait pas l'erreur,
+// il la répartirait sur deux populations qui n'ont rien en commun (v1-21 D1).
+export const TRAIN_TYPE_OPTIONS: { value: 'ter' | 'rer' | 'intercites'; label: string }[] = [
+  { value: 'ter', label: 'TER ou train régional' },
+  { value: 'rer', label: 'RER ou Transilien' },
+  { value: 'intercites', label: 'Intercités' },
+];
+
+// Et la même sous « Vélo » : l'assistance électrique vaut 0,010950 contre 0,000170, soit 64 fois.
+// L'écart absolu est petit, et il faut le dire ainsi — mais il tombe sur le profil sobre, dont le
+// total est de l'ordre de la dizaine de kilos, et sur le mode qui remplace une voiture.
+//
+// **Deux réponses, et la trottinette n'en reçoit aucune** : elle est déjà à 0,0249 et n'a pas de
+// variante mécanique crédible — une question dont une seule réponse existe n'est pas une question
+// (v1-21 D2).
+export const VELO_TYPE_OPTIONS: { value: 'mecanique' | 'electrique'; label: string }[] = [
+  { value: 'mecanique', label: 'Mécanique' },
+  { value: 'electrique', label: 'À assistance électrique' },
 ];

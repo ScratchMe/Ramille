@@ -9,8 +9,10 @@ import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
 import {
   CAR_ENGINE_OPTIONS,
+  TRAIN_TYPE_OPTIONS,
   TRANSPORT_MODE_LABELS,
   TWO_WHEELER_TYPE_OPTIONS,
+  VELO_TYPE_OPTIONS,
   type TransportModeId,
 } from '@/constants/transport-modes';
 import { PARTS_DU_SECOND_MODE, type BilanAnswers } from '@/types/bilan';
@@ -100,6 +102,31 @@ export function CommuteExtraStep({
                       options={TWO_WHEELER_TYPE_OPTIONS}
                       valeur={answers.commute_two_wheeler_type}
                       onChange={(value) => update({ commute_two_wheeler_type: value })}
+                    />
+                  </View>
+                )}
+
+                {/* C4.4 — un seul champ pour les deux jambes, comme la motorisation juste
+                    au-dessus : B1.7 exclut le mode déjà choisi en B1.4, donc au plus une jambe
+                    porte le train (ou le vélo) à un instant donné. */}
+                {answers.commute_second_mode === modeId && modeId === 'train' && (
+                  <View style={styles.precision}>
+                    <PrecisionMode
+                      question="Quel type de train ?"
+                      options={TRAIN_TYPE_OPTIONS}
+                      valeur={answers.commute_train_type}
+                      onChange={(value) => update({ commute_train_type: value })}
+                    />
+                  </View>
+                )}
+
+                {answers.commute_second_mode === modeId && modeId === 'velo' && (
+                  <View style={styles.precision}>
+                    <PrecisionMode
+                      question="Quel type de vélo ?"
+                      options={VELO_TYPE_OPTIONS}
+                      valeur={answers.commute_velo_type}
+                      onChange={(value) => update({ commute_velo_type: value })}
                     />
                   </View>
                 )}
