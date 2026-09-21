@@ -133,11 +133,12 @@ export default function Compte() {
             />
             <ThemedText type="screenTitle">Toi</ThemedText>
 
-            {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et le clic
-                de confirmation, la ligne porte déjà l'adresse alors que le compte n'est pas
-                rattaché : cet écran proposait alors de « rattacher un compte », comme si la
-                demande n'avait jamais eu lieu — et la boucle ouverte par « Vérifie tes
-                emails » ne se refermait nulle part. `etatDuRattachement` nomme cet
+            {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et la saisie du
+                code, la ligne porte déjà l'adresse alors que le compte n'est pas rattaché : cet
+                écran proposait alors de « rattacher un compte », comme si la demande n'avait jamais
+                eu lieu — et la boucle ouverte par l'écran des e-mails ne se refermait nulle part.
+                (C'était un clic de confirmation jusqu'au 20/09/2026 ; c'est un code depuis, et cet
+                état porte désormais la porte qui ramène à la saisie.) `etatDuRattachement` nomme cet
                 entre-deux, là où `etatDuCompte` a raison de le confondre avec l'anonymat.
 
                 Registre : un fait, jamais une relance. Pas de « pense à confirmer », pas de
