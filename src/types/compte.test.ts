@@ -1,4 +1,10 @@
-import { etatDuRattachement } from './compte';
+import {
+  CONDITIONS_DE_PERTE_SANS_COMPTE,
+  DELAI_SANS_COMPTE_EN_MOTS,
+  etatDuRattachement,
+  PHRASE_SANS_COMPTE_SOUS_LA_SORTIE,
+  PHRASE_SANS_COMPTE_SUR_TOI,
+} from './compte';
 
 describe('etatDuRattachement', () => {
   it('sans session et sans échec, tout est local', () => {
@@ -104,5 +110,48 @@ describe('etatDuRattachement', () => {
         lectureEnEchec: true,
       })
     ).toEqual({ kind: 'rattache', email: 'camille@exemple.fr' });
+  });
+});
+
+describe('ce qu’on perd sans compte', () => {
+  /**
+   * **La garde de l’arbitrage du 21/09/2026 (`v1-28` §7.2), et elle est écrite sur la
+   * non-divergence, pas sur le texte.**
+   *
+   * Deux écrans disent le même fait — la sortie de `/connexion` et « Toi » en état local. Le
+   * risque n’est pas qu’une phrase soit mal tournée : c’est qu’on en retouche **une** et que
+   * l’autre continue d’annoncer un autre délai, chacune ayant l’air juste toute seule. C’est
+   * exactement ce qui est arrivé à la puce « Cadence » en C2.8.
+   *
+   * Ce test tombe dès qu’une des deux cesse de porter la clause commune — donc dès qu’on y
+   * réécrit le délai à la main. Ce qu’il ne voit **pas**, et qu’il ne faut pas lui prêter : un
+   * troisième écran qui dirait le fait sans passer par ici. Rien ne balaie le dépôt pour le
+   * trouver, comme pour `MIROIRS` en `TESTING.md` §2.7.
+   */
+  it('dit le même délai aux deux endroits, par la même clause', () => {
+    expect(PHRASE_SANS_COMPTE_SOUS_LA_SORTIE).toContain(CONDITIONS_DE_PERTE_SANS_COMPTE);
+    expect(PHRASE_SANS_COMPTE_SUR_TOI).toContain(CONDITIONS_DE_PERTE_SANS_COMPTE);
+    expect(CONDITIONS_DE_PERTE_SANS_COMPTE).toContain(DELAI_SANS_COMPTE_EN_MOTS);
+  });
+
+  /**
+   * **« Toi » disait l’avantage et jamais l’échéance**, et c’est le défaut que l’arbitrage a
+   * tranché. La phrase doit donc porter les deux : ce qu’un compte apporte, et ce que son
+   * absence coûte. Sans la seconde moitié, la seule personne prévenue est celle qui envisageait
+   * déjà un compte — pas celle que la purge efface.
+   */
+  it('dit sur « Toi » l’avantage ET l’échéance', () => {
+    expect(PHRASE_SANS_COMPTE_SUR_TOI).toContain('te suivre ailleurs');
+    expect(PHRASE_SANS_COMPTE_SUR_TOI).toContain(DELAI_SANS_COMPTE_EN_MOTS);
+  });
+
+  /**
+   * Le texte de `/connexion` était arbitré et en production : ce chantier le fait lire ailleurs,
+   * il ne le réécrit pas. Cette assertion est ce qui rend cette promesse vérifiable.
+   */
+  it('ne retouche pas le texte déjà en production sous la sortie de /connexion', () => {
+    expect(PHRASE_SANS_COMPTE_SOUS_LA_SORTIE).toBe(
+      'Sur cet appareil seulement : si tu changes de téléphone ou si tu ne reviens pas pendant trois mois, ton bilan ne te suivra pas.'
+    );
   });
 });

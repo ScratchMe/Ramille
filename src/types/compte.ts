@@ -72,3 +72,41 @@ export function etatDuRattachement(lu: {
   const enAttente = session.emailEnAttente?.trim() || session.email?.trim();
   return enAttente ? { kind: 'a_confirmer', email: enAttente } : { kind: 'local' };
 }
+
+/**
+ * **Ce qu'on perd sans compte, écrit une seule fois pour les deux écrans qui le disent.**
+ *
+ * Le fait vient de `purge_stale_anonymous_accounts` : les sessions anonymes sont fermées après
+ * une fenêtre de 90 jours, comptée sur le **dernier signe de vie** et non sur la création. Deux
+ * écrans doivent le dire, et ils ne le disaient pas tous les deux — arbitré le 21/09/2026
+ * (`v1-28` §7.2) :
+ *
+ * - sous la sortie de `/connexion`, depuis C3.9 (constat A1-11), pour toutes les provenances ;
+ * - sur « Toi » en état `local`, qui jusqu'ici disait l'**avantage** (« un compte le fait te
+ *   suivre ailleurs ») et jamais l'**échéance**. Conséquence : la seule personne qui lisait le
+ *   délai était celle qui envisageait déjà un compte. Celle que la purge efface pour de bon —
+ *   qui n'a jamais ouvert `/connexion` — ne le lisait nulle part, et son bilan partait sans
+ *   qu'un mot l'ait prévenue.
+ *
+ * **Le délai et les conditions vivent dans une constante, pas dans les deux phrases** — règle
+ * §1.6 de `FRONT.md`, et la leçon de la puce « Cadence » en C2.8 : nommer un même fait à deux
+ * endroits d'un produit est le plus sûr moyen de les voir un jour se contredire. Un test lit les
+ * deux phrases et tombe si l'une cesse de porter la clause commune.
+ *
+ * Le texte de `/connexion` n'est **pas** retouché au passage : il a été arbitré, il est en
+ * production, et la seule chose que ce chantier avait à faire était de le faire lire ailleurs.
+ */
+export const DELAI_SANS_COMPTE_EN_MOTS = 'trois mois';
+
+/** Les deux façons de perdre un bilan sans compte. La clause partagée, mot pour mot. */
+export const CONDITIONS_DE_PERTE_SANS_COMPTE = `si tu changes de téléphone ou si tu ne reviens pas pendant ${DELAI_SANS_COMPTE_EN_MOTS}`;
+
+/** Sous la sortie de `/connexion` — texte inchangé depuis C3.9, la clause en moins. */
+export const PHRASE_SANS_COMPTE_SOUS_LA_SORTIE = `Sur cet appareil seulement : ${CONDITIONS_DE_PERTE_SANS_COMPTE}, ton bilan ne te suivra pas.`;
+
+/**
+ * Sur « Toi » en état `local`. L'avantage d'abord, l'échéance ensuite : « il » reprend le bilan
+ * nommé par la première phrase, ce qui évite de le répéter et garde la clause partagée
+ * identique des deux côtés.
+ */
+export const PHRASE_SANS_COMPTE_SUR_TOI = `Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs — ${CONDITIONS_DE_PERTE_SANS_COMPTE}, il ne te suivra pas.`;

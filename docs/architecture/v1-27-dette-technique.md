@@ -898,6 +898,27 @@ Deux mutations datées gardent la règle (l'entité dans un texte, puis dans un 
 littéral construit par concaténation ou par gabarit.
 
 
+### 12.15 Une assertion pgTAP qui rougissait sur une base vécue (21/09/2026)
+
+Trouvée en jouant la suite complète après un passage de `verifier-parcours-reel.mjs` :
+`12_usage_events.test.sql` échouait sur « un horodatage antidaté fourni par le client est écrasé
+par celui du serveur ». L'échec existait aussi sur `main`, donc il n'appartenait pas au chantier en
+cours — et il n'appartenait pas non plus à la CI, verte, parce qu'elle part d'une base neuve.
+
+**La cause est dans l'assertion, pas dans l'environnement.** Elle lisait
+`min(occurred_at) from public.usage_events` — **toute la table**. Sur une base vierge, la seule
+ligne est celle qu'on vient d'insérer, donc l'assertion dit bien ce qu'elle veut dire. Sur une base
+qui a vécu, elle attrape une ligne légitime plus vieille que cinq minutes et rougit pour une raison
+étrangère à ce qu'elle garde. Elle est bornée au fixture, dont l'identifiant ne peut pas venir de
+la production.
+
+Ce n'est pas un faux positif inoffensif : une garde qui rougit pour la mauvaise raison finit
+« corrigée » de travers ou ignorée, et c'est exactement le défaut contre lequel `TESTING.md` §2.3
+met en garde. La différence avec les trois assertions qu'il décrit, c'est que celle-ci se ferme
+sans rien perdre — les autres supposent une base vierge pour ce qu'elles *comptent*, pas pour ce
+qu'elles *bornent*. Vérifié en désarmant le trigger `usage_events_stamp_time` : la version bornée
+tombe toujours sur ce qu'elle garde.
+
 ### 12.14 Les deux contre-lectures du chantier du compte, faites APRÈS la fusion (21/09/2026)
 
 Le chantier du moment du compte (`v1-28`) a été fusionné dans la nuit, puis relu deux fois. Les deux

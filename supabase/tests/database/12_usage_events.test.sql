@@ -102,8 +102,18 @@ values ('a1111111-1111-1111-1111-111111111111', 'app_open', 'web', '2001-01-01T0
 
 select set_config('role', 'postgres', true);
 
+-- **Le `min` est borné à la ligne qu'on vient d'écrire, et ce n'est pas cosmétique.**
+-- Il balayait toute la table : sur une base vierge le seul enregistrement est celui-ci, donc
+-- l'assertion disait bien ce qu'elle voulait dire — mais sur une base qui a vécu (la stack
+-- locale après un passage de `verifier-parcours-reel.mjs`, par exemple) elle attrape une ligne
+-- légitime plus vieille que cinq minutes et rougit pour une raison étrangère à ce qu'elle garde.
+-- Relevé le 21/09/2026, même famille que les trois assertions de `TESTING.md` §2.3 qui supposent
+-- une base vierge, et c'est la seule des quatre qu'on peut fermer sans rien perdre : le fixture
+-- porte un identifiant que la production ne produit pas.
 select ok(
-  (select min(occurred_at) from public.usage_events) > now() - interval '5 minutes',
+  (select min(occurred_at)
+     from public.usage_events
+    where user_id = 'a1111111-1111-1111-1111-111111111111') > now() - interval '5 minutes',
   'un horodatage antidaté fourni par le client est écrasé par celui du serveur'
 );
 

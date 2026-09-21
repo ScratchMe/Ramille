@@ -16,7 +16,7 @@ import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
 import { loadReminderPrefs, setReminderChannel, type ReminderPrefs } from '@/lib/notification-prefs';
 import { supabase } from '@/lib/supabase';
-import { type EtatRattachement } from '@/types/compte';
+import { PHRASE_SANS_COMPTE_SUR_TOI, type EtatRattachement } from '@/types/compte';
 import { type CanalPrefere } from '@/types/rappels';
 
 // « Toi » — tout ce qui touche au compte, sorti de /suivi (v1-11 §2.5).
@@ -204,8 +204,14 @@ export default function Compte() {
 
             {etat?.kind === 'local' && (
               <>
+                {/* **L'échéance, et pas seulement l'avantage** (arbitré le 21/09/2026,
+                    `v1-28` §7.2). Cet écran disait ce qu'un compte apporte et jamais ce que son
+                    absence coûte, donc le délai de la purge n'était lu que par ceux qui avaient
+                    déjà ouvert `/connexion` — c'est-à-dire pas par la personne que la purge
+                    efface. La clause et le délai sont partagés avec cet écran-là, à un seul
+                    endroit. */}
                 <ThemedText type="body" themeColor="textSecondary">
-                  Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs.
+                  {PHRASE_SANS_COMPTE_SUR_TOI}
                 </ThemedText>
                 <Button
                   title="Rattacher un compte"
