@@ -233,6 +233,7 @@ destination légitime, et elle se note comme telle.
 | Séance | Document (la mémoire) | Artefact (l'outil) |
 |---|---|---|
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
+| Le compte, le contexte et les modes — ce qui est neuf depuis le 18/09/2026 | `docs/recette/le-compte-et-les-modes.md` | *pas encore fabriqué* |
 
 **L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
 règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
@@ -242,6 +243,13 @@ dans l'artefact qui l'illustrait. Il porte désormais la base partagée (capacit
 la page se rend entière avant que la base ne réponde. Deux règles de §1.7 sont écrites dans son code, en
 commentaire, parce qu'elles se réintroduisent toutes seules : l'état se **copie** depuis l'instantané, et
 une coche s'écrit tout de suite là où seule la frappe se regroupe.
+
+**La seconde feuille, écrite le 21/09/2026, change de principe** : elle ne rejoue pas un parcours,
+elle ne joue que **ce qui est neuf depuis la séance précédente**, en posant qu'il n'y a pas de
+régression sur le reste. Le pari est que les gardes automatiques couvrent le chemin nominal — le
+parcours réel le rejoue à chaque PR sur deux profils — et que le temps humain vaut mieux sur ce qui
+n'a **jamais** été parcouru à la main. Son prix est écrit dans son en-tête : une régression sur un
+écran ancien que ni la CI ni la feuille ne regardent lui échappera.
 
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est

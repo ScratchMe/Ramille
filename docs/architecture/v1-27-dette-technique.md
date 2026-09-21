@@ -1115,12 +1115,18 @@ questionnaire demande quelque chose de ce genre pour une autre raison, ce gabari
 
 ### 12.17 Une garde du chemin du compte a rougi sans cause trouvée (21/09/2026)
 
-**Relevé en fusionnant C4.4.** `scripts/verifier-code-de-connexion.mjs` a échoué une fois en CI sur
-son assertion 6 — celle qui vérifie que les deux branches de `/connexion/email` sont
-indistinguables — avec « Aucun e-mail reçu pour `code-g-…@test.local` après 30 s », c'est-à-dire sur
-la branche de l'adresse **libre**. Le commit visé ne touchait qu'un nom de fichier de migration et
-deux `.md` ; le travail est repassé vert sur le commit suivant, qui n'en diffère que par trois lignes
-de documentation. Rien dans le diff ne pouvait l'atteindre.
+**Relevé en fusionnant C4.4, et corrigé une heure plus tard : ce n'est pas arrivé une fois mais
+DEUX.** `scripts/verifier-code-de-connexion.mjs` a échoué sur son assertion 6 — celle qui vérifie
+que les deux branches de `/connexion/email` sont indistinguables — avec « Aucun e-mail reçu pour
+`code-g-…@test.local` après 30 s », c'est-à-dire sur la branche de l'adresse **libre**. Une première
+fois sur `9e14e3a` (17 h 08), une seconde sur `38d8533` (17 h 31), à vingt-trois minutes d'écart.
+**Les deux commits ne touchaient que de la documentation et un nom de fichier de migration**, et les
+deux fois le travail est repassé vert au commit suivant, qui n'en différait que par quelques lignes
+de `.md`. Rien dans aucun des deux diffs ne pouvait l'atteindre.
+
+La première rédaction de cette section disait « une fois », parce que la seconde occurrence dormait
+dans une notification non lue au moment de l'écrire. C'est le genre d'erreur que cette section
+existe pour ne pas commettre : **sous-estimer une fréquence, c'est sous-estimer un défaut.**
 
 **Deux causes ont été mesurées et écartées**, et c'est le seul contenu solide de cette section :
 
@@ -1138,6 +1144,19 @@ de documentation. Rien dans le diff ne pouvait l'atteindre.
 
 **La cause reste donc inconnue, et il ne faut pas écrire le contraire.** « Flake » n'est pas une
 cause : c'est le nom qu'on donne à une cause qu'on n'a pas cherchée.
+
+**Mais la seconde occurrence apprend quelque chose que la première ne pouvait pas dire.** Les deux
+échecs tombent sur la **même** assertion parmi six, sur la **même** branche de cette assertion
+(l'adresse libre), et au **même** endroit : le second des deux envois consécutifs que l'assertion 6
+enchaîne — `pageF` sur une adresse déjà prise, puis `pageG` sur une adresse libre, dos à dos. Et à
+chaque fois `pageF` passe juste avant.
+
+C'est un argument **contre** l'explication la plus tentante. Une lenteur SMTP générique, ou un
+runner chargé, frapperait n'importe laquelle des six assertions et n'importe lequel des six envois ;
+on les verrait se disperser. Leur concentration sur une seule étape désigne quelque chose de propre
+à cette étape — **deux envois enchaînés sans délai** — et c'est là qu'il faudra chercher. Ce n'est
+pas une cause établie, c'est la première piste que les faits désignent plutôt qu'une hypothèse qu'on
+aurait aimé vérifier.
 
 **Ce qui empêche de la trouver est une propriété du script, et c'est là qu'est le vrai sujet.**
 `demanderUnCode` ignore délibérément la réponse de l'envoi — il le faut, puisque l'assertion existe
