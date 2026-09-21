@@ -36,7 +36,7 @@ export function EtapeTransition() {
             On passe à ton bilan
           </ThemedText>
           <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
-            Quelques questions sur tes déplacements habituels. Tu peux t&apos;arrêter et
+            Quelques questions sur tes déplacements habituels. Tu peux t’arrêter et
             reprendre plus tard, tes réponses sont conservées.
           </ThemedText>
           <ThemedView type="backgroundElement" style={styles.durationBlock}>

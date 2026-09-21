@@ -191,8 +191,8 @@ export default function RetrouverMonCompte() {
                 Cet appareil porte déjà un bilan
               </ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
-                Tu as répondu au questionnaire ici, sans compte. En retrouvant le tien, c&apos;est
-                son historique qui s&apos;ouvre — ce bilan-ci ne le rejoindra pas.
+                Tu as répondu au questionnaire ici, sans compte. En retrouvant le tien, c’est
+                son historique qui s’ouvre — ce bilan-ci ne le rejoindra pas.
               </ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
                 On peut le refaire ensemble après, ça va vite.
@@ -265,7 +265,7 @@ export default function RetrouverMonCompte() {
               Retrouver mon compte
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Indique l&apos;adresse de ton compte : un code à taper ici te reconnecte, avec tes
+              Indique l’adresse de ton compte : un code à taper ici te reconnecte, avec tes
               bilans et ton plan.
             </ThemedText>
           </View>
@@ -292,14 +292,14 @@ export default function RetrouverMonCompte() {
               Ton compte est un compte Google ?
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              C&apos;est la même adresse — celle de ton compte Google. Pas besoin de mot de passe :
+              C’est la même adresse — celle de ton compte Google. Pas besoin de mot de passe :
               le code suffit.
             </ThemedText>
           </ThemedView>
         </View>
         <View style={styles.footer}>
           <ThemedText type="small" themeColor="textTertiary" style={styles.hint}>
-            Tu n&apos;as jamais créé de compte ? Reviens en arrière : tout est accessible sans.
+            Tu n’as jamais créé de compte ? Reviens en arrière : tout est accessible sans.
           </ThemedText>
           <TextLink
             label="Retour"

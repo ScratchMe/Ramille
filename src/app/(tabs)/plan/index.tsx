@@ -969,7 +969,7 @@ export default function Plan() {
             {banniereRelecture(true)}
             <EmptyStateIllustration style={styles.emptyIllustration} />
             <ThemedText type="screenTitle">
-              Ton bilan n&apos;est pas encore fait
+              Ton bilan n’est pas encore fait
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
               Sans bilan, on ne peut pas savoir quel déplacement compte le plus pour toi. Environ 5
