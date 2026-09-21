@@ -19,7 +19,7 @@
 -- **rapport** entre deux profils jumeaux, ou l'égalité entre un total et le produit qui devrait le
 -- rendre — ce qui reste vrai quelle que soit la valeur du jour.
 --
--- **Éprouvé en le cassant le 21/09/2026** (`TESTING.md` §1.1) — onze mutations, et ce que chacune
+-- **Éprouvé en le cassant le 21/09/2026** (`TESTING.md` §1.1) — treize mutations, et ce que chacune
 -- fait réellement tomber (mesuré, pas prévu : deux de ces lignes disent l'inverse de ce que
 -- j'attendais) :
 --   - le slug de `train_rer` pointé sur `ter`                     → 1 (les slugs, et **eux seuls** :
@@ -47,7 +47,13 @@
 --     vide — un gabarit que personne ne peut recevoir, et que rien d'autre ne signalerait) ;
 --   - l'appel direct `resolve_car_mode('voiture', …)` remis dans
 --     `estimate_action_savings`                                    → 1 (le point unique) ;
---   - l'ancienne signature `resolve_mode(text, text, text)` recréée → 1 (la surcharge morte).
+--   - l'ancienne signature `resolve_mode(text, text, text)` recréée → 1 (la surcharge morte) ;
+--   - `dist_coach_long` porté de 700 à 800                        → 1 (le produit des voyages) ;
+--   - l'autocar retiré de la somme de `v_travel_co2`              → 2 (le total, et le poste nommé).
+--
+-- Les deux dernières ont été ajoutées en contre-lisant ce fichier : la §D était la seule famille
+-- d'assertions qu'aucune mutation n'avait éprouvée, et une assertion qu'on n'a pas cassée est une
+-- assertion dont on ne sait rien.
 
 begin;
 create extension if not exists pgtap with schema extensions;

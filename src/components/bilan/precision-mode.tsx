@@ -5,8 +5,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
 
-// Question de précision attachée au mode qui la déclenche — motorisation d'une voiture,
-// type de deux-roues.
+// Question de précision attachée au mode qui la déclenche — motorisation d'une voiture, type de
+// deux-roues, et depuis C4.4 type de train et type de vélo. La liste ne s'écrit pas ici : ce
+// composant ne connaît qu'une question et des options, et c'est l'écran qui décide sous quel mode
+// il l'ouvre.
 //
 // **Elle se rend juste sous l'élément sélectionné, à l'intérieur de la liste**, et c'est la
 // première raison d'être de ce composant. Elle vivait auparavant après la liste entière : sur

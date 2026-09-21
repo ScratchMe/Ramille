@@ -467,8 +467,11 @@ begin
   -- ce que le calcul supposait sans le dire.
   v_travel_voiture := v_travel_voiture / coalesce(a.car_long_trips_occupancy, 1);
 
-  -- C4.4 : pas de division par une occupation. Un autocar est partagé par construction, et son
-  -- facteur ADEME est déjà par voyageur.
+  -- C4.4 : pas de division par une occupation, à l'inverse de la voiture — la personne ne choisit pas le
+  -- remplissage d'un autocar : ce n'est pas son véhicule, et l'occupation n'est pas une réponse
+  -- qu'elle pourrait donner. C'est la seule raison, et elle suffit — ce commentaire a d'abord dit
+  -- « son facteur ADEME est déjà par voyageur », ce qui est vrai de **tous** les facteurs du
+  -- référentiel, voiture comprise, donc ne distinguait rien.
   v_travel_autocar := coalesce(a.coach_long_trips_per_year, 0) * dist_coach_long
     * public.emission_factor('autocar', v_factor_date);
 
@@ -794,8 +797,10 @@ begin
           v_count, case when v_count > 1 then 's' else '' end, case when v_count > 1 then 's' else '' end,
           case when v_count > 1 then 's' else '' end);
       elsif t.segment = 'coach' then
-        -- C4.4 : pas de division par une occupation, à l'inverse de la voiture — l'autocar est
-        -- partagé par construction, et son facteur ADEME est déjà par voyageur.
+        -- C4.4 : pas de division par une occupation, à l'inverse de la voiture — la personne ne
+        -- choisit pas le remplissage d'un autocar, ce n'est pas son véhicule. Cf. le même point
+        -- dans `recompute_assessment_results`, qui dit pourquoi « le facteur est déjà par
+        -- voyageur » ne distinguerait rien.
         v_count := coalesce(a.coach_long_trips_per_year, 0);
         v_base_co2 := coalesce(r.travel_coach_co2_kg_year, 0);
         v_current_factor := public.emission_factor('autocar', v_factor_date);
@@ -809,6 +814,13 @@ begin
       if v_count < 1 or v_base_co2 <= 0 then continue; end if;
       -- C3.8 §4 : on ne propose pas de partager une voiture déjà partagée. C'est la réponse que
       -- C3.5 vient de rendre disponible.
+      --
+      -- **Cette garde lit l'occupation de la VOITURE, quel que soit le segment**, et C4.4 en fait
+      -- un piège dormant en ouvrant le segment `coach` : un gabarit `share_vehicle` posé un jour
+      -- sur un autre segment serait écarté par une réponse qui ne le concerne pas, en silence.
+      -- Elle n'est pas resserrée ici parce qu'aucun gabarit n'a ce besoin — resserrer un filtre
+      -- pour un cas qui n'existe pas, c'est décider sans données. Le jour où ce gabarit s'écrit,
+      -- c'est cette ligne qu'il faut relire d'abord.
       if t.operation = 'share_vehicle' and coalesce(a.car_long_trips_occupancy, 1) > 1 then
         continue;
       end if;
@@ -897,7 +909,11 @@ insert into public.action_templates (
   ('Faire un trajet sur cinq à vélo à assistance électrique', 'commute', 'main_leg', 'substitute',
    'velo_electrique', 0.20, null, 10, 20, false, false, 'commute_distance',
    '{jours}, as-tu fait ce trajet à vélo électrique ?',
-   'Essaie-en un avant de t''équiper : beaucoup de villes en louent au mois.'),
+   -- **Pas « beaucoup de villes en louent au mois »**, qui était la première rédaction : c'est une
+   -- affirmation sur le monde, sans source, et la règle du dépôt l'interdit — c'est elle qui a
+   -- fait écarter la norme dynamique de D16 (« de plus en plus de gens changent un trajet »). Un
+   -- premier pas décrit un geste que la personne peut faire, jamais un état du monde.
+   'Fais le trajet une fois avec un vélo à assistance, emprunté ou loué, avant de t''équiper.'),
   ('Faire une sortie sur trois à vélo à assistance électrique', 'leisure', 'main_leg', 'substitute',
    'velo_electrique', 0.33, null, 15, 30, false, false, 'leisure_frequency',
    'En {mois}, as-tu fait une sortie à vélo électrique ?',

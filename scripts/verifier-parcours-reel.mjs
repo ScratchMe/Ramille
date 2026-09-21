@@ -578,6 +578,23 @@ try {
     `total du cycliste ${resultatSobre.total_co2_kg_year} kg, attendu ${ATTENDU_SOBRE.totalKg}`
   );
 
+  // **La réponse à une révélation imbriquée atteint-elle la colonne ?** Écrit le 21/09/2026 après
+  // un défaut que rien n'a vu : la soumission énumérait les colonnes à la main, et les cinq
+  // réponses neuves de C4.4 n'y figuraient pas — posées, normalisées, affichées, jamais écrites.
+  // Ni le typecheck (une colonne neuve est `optional` dans `Insert`) ni le total de ce profil ne
+  // pouvaient le dire : « mécanique » et « pas de réponse » résolvent tous deux vers `velo`, donc
+  // les chiffres étaient identiques. **C'est le seul endroit du parcours où une réponse neuve
+  // porte une valeur que le défaut de la colonne ne donne pas**, donc la seule assertion qui
+  // pouvait attraper cette famille-là. Une réponse ajoutée au questionnaire mérite la sienne ici.
+  const [reponsesSobres] = await lire(
+    'assessment_answers?select=commute_velo_type,coach_long_trips_per_year',
+    sobre.jeton
+  );
+  assurer(
+    reponsesSobres?.commute_velo_type === 'mecanique',
+    `le type de vélo répondu n'est pas arrivé en base : ${JSON.stringify(reponsesSobres)}`
+  );
+
   // Comme sur le premier profil : plus aucun écran de compte entre la restitution et le plan
   // (arbitrage du 20/09/2026). Le second profil le rejoue parce que c'est le seul chemin où la
   // carte « Ton premier plan » ne se rend jamais — donc le seul où la barre d'onglets arrive

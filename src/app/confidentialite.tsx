@@ -120,9 +120,10 @@ const SECTIONS: LegalSection[] = [
             term: 'Tes réponses au bilan',
             text:
               'Existence d’un trajet domicile-travail régulier, nombre de jours par semaine, distance, mode ou modes de transport, ' +
-              'type de motorisation, covoiturage et nombre de personnes, fréquence et distance de tes trajets loisirs, ' +
-              'nombre de vols, de trajets longue distance en train et en voiture par an, type de zone d’habitation, ' +
-              'accès perçu aux transports en commun, nombre de véhicules du foyer.',
+              'précisions sur ce mode (motorisation, type de deux-roues, type de train, vélo mécanique ou à assistance), ' +
+              'covoiturage et nombre de personnes, fréquence et distance de tes trajets loisirs, ' +
+              'nombre de vols, de trajets longue distance en train, en autocar et en voiture par an, type de zone d’habitation, ' +
+              'accès perçu aux transports en commun, nombre de véhicules du foyer, jours de télétravail possibles.',
           },
           {
             term: 'Les résultats calculés',

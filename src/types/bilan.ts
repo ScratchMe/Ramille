@@ -132,9 +132,9 @@ export type BilanAnswers = {
    * Le troisième compteur de B3.4 (C4.4) — l'autocar, qui n'existait nulle part, donc un
    * Paris-Lyon en car était compté comme s'il n'avait pas eu lieu.
    *
-   * Pas de question de suivi sous ce compteur, et c'est la différence avec la voiture : l'autocar
-   * est partagé par construction, son facteur ADEME est déjà par voyageur, et il n'a pas de
-   * motorisation à choisir.
+   * Pas de question de suivi sous ce compteur, et c'est la différence avec la voiture : la
+   * personne ne choisit ni la motorisation ni le remplissage d'un autocar — ce n'est pas son
+   * véhicule, donc il n'y a rien à lui demander de plus.
    */
   coach_long_trips_per_year: number;
 

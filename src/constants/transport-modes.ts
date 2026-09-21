@@ -98,9 +98,16 @@ export const CAR_ENGINE_OPTIONS: {
 // portait le facteur du **TER**, soit **2,83 fois** celui du RER (0,027690 contre 0,009780). Un
 // usager du RER voyait 249,2 kg/an là où 88,0 étaient justes, sur le poste qui décide du plan.
 //
-// Trois réponses et non une moyenne : le métro et le tram sont à 2 % l'un de l'autre, ce qui rend
-// leur moyenne honnête ; le TER et le RER sont à 283 %, donc moyenner ne réduirait pas l'erreur,
-// il la répartirait sur deux populations qui n'ont rien en commun (v1-21 D1).
+// Trois réponses et non une moyenne. `metro_tram` en fait une, légitimement : le métro (0,00444)
+// et le tram (0,00428) sont à **3,7 %** l'un de l'autre, donc la moyenne ne coûte rien à personne.
+// Le TER vaut **2,83 fois** le RER : moyenner ne réduirait pas l'erreur, il la répartirait sur
+// deux populations qui n'ont rien en commun (v1-21 D1).
+//
+// **Les deux écarts sont mesurés ici plutôt que repris de `v1-21`**, qui les donne « à 2 % » et
+// « à 283 % » : le premier est faux (relevé le 21/09/2026 sur l'endpoint ACV, l'écart est de
+// 3,7 %) et les deux ne comptent pas dans la même unité — un écart relatif d'un côté, un rapport
+// de l'autre. La page de décision est datée, on ne la réécrit pas ; ce commentaire-ci est du code
+// vivant, il doit être juste.
 export const TRAIN_TYPE_OPTIONS: { value: 'ter' | 'rer' | 'intercites'; label: string }[] = [
   { value: 'ter', label: 'TER ou train régional' },
   { value: 'rer', label: 'RER ou Transilien' },

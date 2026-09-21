@@ -1079,9 +1079,9 @@ pas défaire :
   mesurable : le résiduel de « rarement » vaut `train` quand le foyer n'a pas de voiture, donc un
   type survivant y serait lu et un bilan resoumis à l'identique changerait de total ;
 - **B3.4 gagne un troisième compteur, l'autocar** (`coach_long_trips_per_year`), et il n'a **pas**
-  de question de suivi : un autocar est partagé par construction, son facteur ADEME est déjà par
-  voyageur, et il n'a pas de motorisation à choisir. Son chiffre surprend et c'est le sujet —
-  0,03756, soit **plus qu'un TER** et douze fois un TGV.
+  de question de suivi : la personne ne choisit ni la motorisation ni le remplissage d'un
+  autocar — ce n'est pas son véhicule, donc il n'y a rien à lui demander de plus. Son chiffre
+  surprend et c'est le sujet — 0,03756, soit **plus qu'un TER** et douze fois un TGV.
 
 **Six règles de migration apprises sur le distant, et aucune ne se voit en CI** : une migration de
 données ne désigne jamais une ligne par un identifiant généré (`action_text` est la clé naturelle

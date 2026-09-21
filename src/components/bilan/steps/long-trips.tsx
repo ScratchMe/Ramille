@@ -77,9 +77,9 @@ export function LongTripsStep({
           En train
         </ThemedText>
         {/* `radiogroup` ferme la série, et **c'est son libellé qui la distingue, pas son rôle**
-            (A2-9) : les deux séries de l'étape sont rigoureusement identiques — la même rangée,
-            de « 0 » au plafond, rendue deux fois depuis la même liste — et l'intitulé qui les
-            qualifie est un frère dans l'arbre, pas un libellé rattaché. En lecture séquentielle
+            (A2-9) : les séries de l'étape sont rigoureusement identiques — la même rangée, de
+            « 0 » au plafond, rendue depuis la même liste, trois fois depuis C4.4 — et l'intitulé
+            qui les qualifie est un frère dans l'arbre, pas un libellé rattaché. En lecture séquentielle
             il précède bien le groupe, mais en navigation de contrôle en contrôle ou en
             exploration tactile plus rien ne disait dans lequel on se trouve. Nommer le groupe le
             dit une fois ; le répéter sur chaque puce le dirait autant de fois qu'il y en a — un
@@ -109,8 +109,8 @@ export function LongTripsStep({
           comme s'il n'avait pas eu lieu.
 
           **Il n'a pas de question de suivi**, et c'est ce qui le distingue de la voiture juste
-          en dessous : un autocar est partagé par construction, son facteur ADEME est déjà par
-          voyageur, et il n'a pas de motorisation à choisir.
+          en dessous : la personne ne choisit ni la motorisation ni le remplissage d'un autocar —
+          ce n'est pas son véhicule, donc il n'y a rien à lui demander de plus.
 
           Ce que ce compteur ne raconte pas, c'est une histoire flatteuse : l'autocar émet
           0,037560 kg/km, soit **plus qu'un TER** et douze fois un TGV. C'est précisément pour ça

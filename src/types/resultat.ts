@@ -64,7 +64,8 @@ export type ResultatBilan = {
 };
 
 /**
- * Les identifiants de `public.transport_modes`, **relevés en base à la main le 11/09/2026**.
+ * Les identifiants de `public.transport_modes`, **relevés en base à la main** — le 11/09/2026,
+ * puis le 21/09/2026 quand C4.4 y a ajouté cinq modes.
  *
  * C'est un miroir tenu à la main, et il faut lire exactement ce que la garde de type couvre :
  * `MODE_PREPOSITION` étant un `Record` sur cette liste, elle garantit la cohérence **interne**
