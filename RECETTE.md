@@ -233,7 +233,7 @@ destination légitime, et elle se note comme telle.
 | Séance | Document (la mémoire) | Artefact (l'outil) |
 |---|---|---|
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
-| Le compte, le contexte et les modes — ce qui est neuf depuis le 18/09/2026 | `docs/recette/le-compte-et-les-modes.md` | *pas encore fabriqué* |
+| Le compte, le contexte et les modes — ce qui est neuf depuis le 18/09/2026 | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
 
 **L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
 règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
