@@ -164,6 +164,56 @@ distincts, donc `issue_write` peut être refusé pendant que tout le reste passe
 le compteur Functions Storage de Vercel (§3.2), dont la règle vit dans `VERCEL.md` parce qu'elle
 est portable : c'est le seul des trois que le dépôt peut alléger lui-même, par l'Ignored Build Step.
 
+### Les plug-ins s'installent à la main, dans le dépôt
+
+**claude.ai ne livre pas les plug-ins aux sessions cloud** (24/09/2026) : Product Management était
+activé sur le compte, et la session ne le voyait pas — liste des plug-ins du compte vide, catalogue
+« non activé », dossier de synchronisation vide. Le dépôt est la seule chose qu'une session cloud est
+sûre d'emporter : un plug-in arrive donc en `.zip` et s'installe par
+`node scripts/installer-un-plugin.mjs <archive>`, qui le met aussi à jour quand on le relance sur une
+archive plus récente, et le retire par `--retirer <plug-in>` — exactement ce qu'il avait posé, jamais
+tout ce qui porte son préfixe. Ce qui est installé, et ce qui ne l'est pas, se lit dans
+l'`installation.json` de chaque plug-in, sous `.claude/plugins-importes/`, à côté de sa licence.
+**Le dépôt est public, donc installer un plug-in, c'est le redistribuer** : sa licence voyage avec
+la provenance, et quand l'archive n'en porte pas, `--licence <fichier>` la joint — c'est le cas de
+Design, dont la licence (Apache 2.0) est à la racine du dépôt d'amont et non dans son dossier.
+Trois règles, dont les deux premières sont détaillées en tête du script et gardées par son test :
+
+- **tout nom est préfixé par celui du plug-in** — `/product-management-write-spec` et non
+  `/write-spec`, renvois et liens des consignes compris. Marketing et Product Management portent tous
+  deux `competitive-brief`, et Engineering apporte un `code-review`, le nom du `/code-review` intégré ;
+- **hooks, connecteurs et agents ne s'installent jamais d'office** : un hook exécute du code à chaque
+  événement, un connecteur ouvre un compte tiers. Le script les liste ; les brancher est une décision
+  prise après lecture — et un hook qui relit chaque tour pèse aussi sur le rythme, donc elle se
+  demande ;
+- **les règles du dépôt passent devant les consignes d'un plug-in.** Ces consignes sont écrites en
+  anglais pour un produit SaaS quelconque : le français, le format des `v1-NN` et la façon de poser
+  une question de produit (plus haut) restent. Leur texte n'est pas traduit — une traduction rendrait
+  chaque mise à jour impossible à rejouer —, et « tout est en français » vaut pour le produit et son
+  code, pas pour des consignes tierces.
+
+Ce que le script ne voit pas, c'est ce que les consignes **disent** : il imprime ce qui mérite un
+regard (adresses, commandes shell, outils pré-autorisés, liens morts, fichiers qui ne sont pas des
+consignes), et elles se relisent avant de commettre. Deux choses qu'on y trouve, et leur réponse :
+
+- **une consigne qui se déclare incontournable s'installe en `--manuel`.** Chaque skill charge sa
+  description dans le contexte de chaque session et peut se déclencher seul ; en `--manuel`, il sort
+  de la liste présentée — mesuré le 24/09/2026 — et reste appelable par son nom. Modern Web Guidance
+  y est : sa description exige de passer « en premier » sur tout HTML, CSS ou JavaScript, sur un
+  produit en React Native ;
+- **aucun contenu de Ramille ne relaie la publicité d'un plug-in.** SearchFit SEO demandait de
+  proposer SearchFit.ai et signait ses gabarits « Powered by SearchFit.ai » ; il a été retiré le jour
+  même, et la règle reste pour le suivant.
+
+**Et chaque plug-in qui arrive se décide avec la personne qui pilote, un par un, avant de
+s'installer** (24/09/2026 : « Pourquoi tu ne m'as pas posé tes questions pour chacun ? On aurait pu
+discuter »). Ce n'est pas un détail d'implémentation : ce sont des consignes que l'agent suivra à
+chaque session. Le premier lot a été tranché seul, en gardant deux questions pour la fin — un mode
+manuel choisi sans le dire, une publicité installée avec une règle pour la taire —, et SearchFit SEO
+est reparti dès qu'on en a parlé. La forme est celle d'une question de produit (plus haut) : ce qu'il
+fait, ce qui est en jeu, la recommandation, ce qu'on casse si on se trompe — et rien ne s'installe
+avant la réponse.
+
 ## Le produit, en trois règles et un renvoi
 
 **Ramille** est une app de sensibilisation à l'empreinte carbone des transports, pour la France.

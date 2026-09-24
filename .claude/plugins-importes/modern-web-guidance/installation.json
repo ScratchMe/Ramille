@@ -1,0 +1,31 @@
+{
+  "plugin": "modern-web-guidance",
+  "prefixe": "modern-web-guidance",
+  "manuel": true,
+  "version": "0.0.190",
+  "source": "b5a1c32c-Modern_Web_Guidance-0.0.190-v23.zip",
+  "sha256": "091580a0fef0bbbeb220a4df9aef43cc501eb85ca226b8b9c0a2de3abe1e15a6",
+  "installe_le": "2026-09-24",
+  "installe_par": "scripts/installer-un-plugin.mjs",
+  "skills": [
+    {
+      "amont": "modern-web-guidance",
+      "installe": "modern-web-guidance"
+    },
+    {
+      "amont": "chrome-extensions",
+      "installe": "modern-web-guidance-chrome-extensions"
+    }
+  ],
+  "commandes": [],
+  "non_installe": {
+    "hooks": [],
+    "connecteurs": [],
+    "agents": [],
+    "autres": [
+      "assets",
+      "package.json",
+      "policies"
+    ]
+  }
+}

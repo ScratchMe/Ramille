@@ -1,0 +1,61 @@
+{
+  "plugin": "design",
+  "prefixe": "design",
+  "manuel": false,
+  "version": "1.2.0",
+  "source": "6ce3084e-Design-1.2.0-v40.zip",
+  "sha256": "867f35d3a90961b2db8434ebc326311511729d6d49d87302673f04f2a7db9bf4",
+  "licence_fournie": {
+    "fichier": "LICENSE",
+    "sha256": "a6946284993aeec75c7d75906064b66210c46051e562077efb30eb6dcfe72e26"
+  },
+  "installe_le": "2026-09-24",
+  "installe_par": "scripts/installer-un-plugin.mjs",
+  "skills": [
+    {
+      "amont": "accessibility-review",
+      "installe": "design-accessibility-review"
+    },
+    {
+      "amont": "design-critique",
+      "installe": "design-critique"
+    },
+    {
+      "amont": "design-handoff",
+      "installe": "design-handoff"
+    },
+    {
+      "amont": "research-synthesis",
+      "installe": "design-research-synthesis"
+    },
+    {
+      "amont": "design-system",
+      "installe": "design-system"
+    },
+    {
+      "amont": "user-research",
+      "installe": "design-user-research"
+    },
+    {
+      "amont": "ux-copy",
+      "installe": "design-ux-copy"
+    }
+  ],
+  "commandes": [],
+  "non_installe": {
+    "hooks": [],
+    "connecteurs": [
+      "asana",
+      "atlassian",
+      "figma",
+      "gmail",
+      "google calendar",
+      "intercom",
+      "linear",
+      "notion",
+      "slack"
+    ],
+    "agents": [],
+    "autres": []
+  }
+}

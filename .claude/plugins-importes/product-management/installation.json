@@ -1,0 +1,73 @@
+{
+  "plugin": "product-management",
+  "prefixe": "product-management",
+  "manuel": false,
+  "version": "1.2.0",
+  "source": "ac0b81ed-Product_Management-1.2.0-v40.zip",
+  "sha256": "6a242524a348a0733c4b22f039ea10e32e8794a2df41b970ea1b3cc1b52fa0a1",
+  "installe_le": "2026-09-24",
+  "installe_par": "scripts/installer-un-plugin.mjs",
+  "skills": [
+    {
+      "amont": "competitive-brief",
+      "installe": "product-management-competitive-brief"
+    },
+    {
+      "amont": "metrics-review",
+      "installe": "product-management-metrics-review"
+    },
+    {
+      "amont": "product-brainstorming",
+      "installe": "product-management-product-brainstorming"
+    },
+    {
+      "amont": "roadmap-update",
+      "installe": "product-management-roadmap-update"
+    },
+    {
+      "amont": "sprint-planning",
+      "installe": "product-management-sprint-planning"
+    },
+    {
+      "amont": "stakeholder-update",
+      "installe": "product-management-stakeholder-update"
+    },
+    {
+      "amont": "synthesize-research",
+      "installe": "product-management-synthesize-research"
+    },
+    {
+      "amont": "write-spec",
+      "installe": "product-management-write-spec"
+    }
+  ],
+  "commandes": [
+    {
+      "amont": "brainstorm",
+      "installe": "product-management-brainstorm"
+    }
+  ],
+  "non_installe": {
+    "hooks": [],
+    "connecteurs": [
+      "amplitude",
+      "amplitude-eu",
+      "asana",
+      "atlassian",
+      "clickup",
+      "figma",
+      "fireflies",
+      "gmail",
+      "google calendar",
+      "intercom",
+      "linear",
+      "monday",
+      "notion",
+      "pendo",
+      "similarweb",
+      "slack"
+    ],
+    "agents": [],
+    "autres": []
+  }
+}
