@@ -53,7 +53,11 @@ export function TextLink({
       accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityHint={hint}
-      accessibilityState={{ disabled: !!disabled, ...(expanded === undefined ? {} : { expanded }) }}
+      // `aria-expanded` et non `accessibilityState.expanded`, que react-native-web ignore : sur web,
+      // « Voir les autres pistes » ne disait ni « développé » ni « réduit ». `undefined` ne rend
+      // aucun attribut, ce qui est la règle de la prop. L'inactivité passe par `disabled`, dont
+      // `Pressable` tire `aria-disabled` des deux côtés.
+      aria-expanded={expanded}
       style={[styles.cible, containerStyle]}
     >
       <ThemedText {...textProps} style={style}>

@@ -62,12 +62,20 @@ export function Chip({
       onPress={onPress}
       accessibilityRole={role}
       accessibilityLabel={accessibilityLabel ?? label}
-      // Un rôle de choix porte **les deux** états, comme les quatre autres contrôles exclusifs
-      // du produit (`mode-list-item`, `choice-row`, `choix-de-rappel`, `feuille-rappels`) :
-      // `checked` est ce que TalkBack attend d'un `radio` ou d'une `checkbox`, et `selected` est
-      // ce que VoiceOver sait rendre — iOS n'a pas de trait `radio` et ne lit `checked` que sur
-      // un interrupteur ou une case, donc n'annoncerait aucun état sans lui.
-      accessibilityState={{ selected, checked: selected }}
+      // **L'état passe par `aria-checked`, jamais par l'objet `accessibilityState`** (24/09/2026,
+      // audit d'accessibilité 4.1.2). Ce commentaire répartissait `checked` et `selected` entre
+      // TalkBack et VoiceOver, sans voir que le web ne recevait **ni l'un ni l'autre** :
+      // react-native-web 0.21 ignore cet objet et ne traduit que les props `aria-*`. Dans
+      // l'export, « Une idée », visiblement choisie, sortait en `role="radio"` sans `aria-checked`
+      // — donc « non coché » pour tout lecteur d'écran web, réponse préremplie d'un re-bilan
+      // comprise. `aria-checked` est lu par les deux moteurs : react-native-web l'écrit dans le
+      // DOM, React Native le range dans l'état natif que TalkBack annonce.
+      //
+      // `selected` n'est plus posé : `aria-selected` est invalide sur un `radio`, et la raison qui
+      // le justifiait — VoiceOver, faute de trait `radio` sur iOS — ne vaut pas pour une V1 publiée
+      // sur Google Play seulement. `scripts/verifier-rendu-export.mjs` garde la règle : tout
+      // `radio`, `checkbox` ou `switch` rendu doit porter `aria-checked`.
+      aria-checked={selected}
       style={[
         styles.base,
         flex ? styles.baseFlex : styles.basePilule,

@@ -97,7 +97,9 @@ export function ChoixDeRappel({
               // Le libellé annoncé recompose ce que l'œil lit sur deux lignes : le titre seul ne
               // dirait pas qu'un canal est hors d'atteinte, ni pourquoi.
               accessibilityLabel={`${ligne.titre}. ${ligne.detail}`}
-              accessibilityState={{ selected: ligne.choisi, checked: ligne.choisi, disabled: !ligne.choisissable }}
+              // `aria-checked`, le seul état que le web reçoive (cf. `chip.tsx`) ; l'inactivité
+              // passe par `disabled`, dont `Pressable` tire `aria-disabled`.
+              aria-checked={ligne.choisi}
               style={[
                 styles.ligne,
                 {

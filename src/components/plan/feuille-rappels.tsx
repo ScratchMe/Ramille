@@ -133,11 +133,9 @@ export function FeuilleRappels({
                   disabled={!ligne.choisissable || occupe}
                   accessibilityRole="radio"
                   accessibilityLabel={`${ligne.titre}. ${ligne.detail}`}
-                  accessibilityState={{
-                    selected: ligne.choisi,
-                    checked: ligne.choisi,
-                    disabled: !ligne.choisissable,
-                  }}
+                  // `aria-checked`, le seul état que le web reçoive (cf. `chip.tsx`) ; l'inactivité
+                  // passe par `disabled`, dont `Pressable` tire `aria-disabled`.
+                  aria-checked={ligne.choisi}
                   style={[
                     styles.ligne,
                     {

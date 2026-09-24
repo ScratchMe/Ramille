@@ -69,7 +69,9 @@ export function GoogleButton({ onPress, loading }: { onPress: () => void; loadin
       disabled={loading}
       accessibilityRole="button"
       accessibilityLabel={LIBELLE}
-      accessibilityState={{ disabled: !!loading, busy: !!loading }}
+      // `aria-busy` et non `accessibilityState.busy`, que react-native-web ignore : l'attente de la
+      // fenêtre Google ne s'annonçait pas sur web. `disabled` porte l'inactivité des deux côtés.
+      aria-busy={!!loading}
       style={[styles.button, { backgroundColor: theme.background, borderColor: theme.border }]}
     >
       {loading ? (

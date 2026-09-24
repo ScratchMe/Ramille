@@ -30,7 +30,8 @@ export function ModeListItem({
       // ne dit pas — et c'est justement l'information dont on a besoin ici.
       accessibilityRole="radio"
       accessibilityLabel={label}
-      accessibilityState={{ selected, checked: selected }}
+      // L'état par `aria-checked`, le seul que le web reçoive (cf. `chip.tsx`).
+      aria-checked={selected}
       style={[
         styles.item,
         {

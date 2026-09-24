@@ -21,7 +21,8 @@ export function ChoiceRow({
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityLabel={label}
-      accessibilityState={{ selected, checked: selected }}
+      // `aria-checked` et non `accessibilityState`, que react-native-web ignore (cf. `chip.tsx`).
+      aria-checked={selected}
       style={[
         styles.row,
         {

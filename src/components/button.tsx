@@ -49,7 +49,9 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: !!disabled }}
+      // Pas d'`accessibilityState` : `disabled` suffit, et il est le seul à atteindre le web.
+      // `Pressable` de react-native-web en tire `aria-disabled` (et l'attribut `disabled` du
+      // `<button>` qu'il rend), React Native le range dans l'état que TalkBack annonce.
       style={[styles.base, { backgroundColor, flex: flex ? 1 : undefined }, style]}
     >
       <ThemedText weight={variant === 'secondary' ? 500 : 600} style={{ color: textColor, fontSize: 16 }}>
