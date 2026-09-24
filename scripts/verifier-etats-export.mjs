@@ -89,8 +89,11 @@ const navigateur = await chromium.launch(
  * layout ou dans le premier effet de l'écran, donc les poser après coup ne testerait que le
  * rechargement. AsyncStorage sur web est `window.localStorage`, clé pour clé, sans préfixe.
  */
-async function ouvrir(chemin, marques = {}, { exceptions = null } = {}) {
+async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null } = {}) {
   const page = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
+  // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
+  // au chargement du module (section E).
+  if (reduire) await page.emulateMedia({ reducedMotion: 'reduce' });
   // Les exceptions sont écoutées dès avant la navigation : une erreur d'hydratation part pendant
   // que le bundle monte l'app, avant que l'attente ci-dessous ne rende la main (section D).
   if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
@@ -461,6 +464,74 @@ for (const { chemin, attendu, interdit } of PARAMETRES) {
   }
 }
 
+// ── E. L'onboarding : le focus suit la page, et le défilement suit « réduire les animations » ─
+//
+// « Continuer » rend inerte la page qui porte le bouton : sans rien de plus, le focus retombe sur
+// le document (`<body>`, relevé sur l'export le 24/09/2026). Il doit aller au **titre** de la
+// page qui arrive, et hors de toute page inerte. Le geste est joué **au clavier**, comme le ferait
+// quelqu'un qui n'utilise pas la souris.
+//
+// Et sous « réduire les animations », la page change d'un coup : le défilement animé du pager ne
+// consultait pas la préférence (`behavior: 'smooth'` du navigateur). La preuve est l'absence de
+// **toute** position intermédiaire pendant le passage — avant le correctif, il en passait cinq.
+for (const reduire of [false, true]) {
+  const page = await ouvrir('/onboarding', {}, { reduire });
+  try {
+    await page.getByRole('button', { name: 'Découvrir mon impact' }).focus();
+    await page.keyboard.press('Enter');
+    const positions = [];
+    for (let i = 0; i < 8; i++) {
+      positions.push(
+        await page.evaluate(() => {
+          const pager = [...document.querySelectorAll('div')].find((d) =>
+            ['auto', 'scroll'].includes(getComputedStyle(d).overflowX)
+          );
+          return pager ? { gauche: Math.round(pager.scrollLeft), page: Math.round(pager.clientWidth) } : null;
+        })
+      );
+      await page.waitForTimeout(40);
+    }
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(() => {
+      const actif = document.activeElement;
+      let inerte = false;
+      for (let n = actif; n; n = n.parentElement) if (n.hasAttribute?.('inert')) inerte = true;
+      return {
+        corps: actif === document.body || actif === null,
+        titre: actif?.tagName === 'H1' || actif?.getAttribute?.('role') === 'heading',
+        texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+        inerte,
+      };
+    });
+
+    if (focus.corps || !focus.titre || focus.inerte) {
+      echecs.push(
+        `/onboarding : après « Découvrir mon impact » au clavier, le focus est sur` +
+          ` ${focus.corps ? 'le document' : `« ${focus.texte} »`}${focus.inerte ? ', dans une page inerte' : ''}` +
+          ' — il doit être sur le titre de la page qui arrive (`donnerLeFocus`, src/lib/focus.ts).'
+      );
+    }
+    if (reduire) {
+      if (positions.some((p) => p === null)) {
+        echecs.push('/onboarding : le défileur du pager est introuvable, le défilement n’a pas pu être mesuré.');
+      } else {
+        const intermediaires = positions.filter((p) => p.gauche !== 0 && p.gauche !== p.page);
+        if (intermediaires.length > 0) {
+          echecs.push(
+            '/onboarding : sous « réduire les animations », la page glisse encore (positions' +
+              ` relevées : ${intermediaires.map((p) => p.gauche).join(', ')} px) — le défilement` +
+              ' du pager doit sauter d’une page à l’autre.'
+          );
+        }
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`/onboarding (réduire les animations : ${reduire ? 'oui' : 'non'}) : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -468,10 +539,11 @@ if (echecs.length > 0) {
   console.error('L’export s’affiche mais pas dans l’état attendu :\n');
   for (const echec of echecs) console.error(`  - ${echec}`);
   console.error(
-    '\nCes états se décident **sur l’appareil** — une marque locale, un paramètre d’URL — donc' +
-      '\nsans réseau et sans rien qui lève. Aucune autre garde du dépôt ne les voit : les tests' +
-      '\nJest ne montent pas d’écran, et `verifier-rendu-export.mjs` vérifie que la page s’affiche,' +
-      '\npas ce qu’elle affiche. Rejouer en local : expo export --platform web, puis ce script.'
+    '\nCes états se décident **sur l’appareil** — une marque locale, un paramètre d’URL, une' +
+      '\npréférence du système, un geste — donc sans réseau et sans rien qui lève. Aucune autre' +
+      '\ngarde du dépôt ne les voit : les tests Jest ne montent pas d’écran, et' +
+      '\n`verifier-rendu-export.mjs` vérifie que la page s’affiche, pas ce qu’elle affiche.' +
+      '\nRejouer en local : expo export --platform web, puis ce script.'
   );
   process.exit(1);
 }
@@ -479,5 +551,6 @@ if (echecs.length > 0) {
 console.log(
   `${ETATS_DE_BARRE.length} états de barre d’onglets et ${ETAPES.length} ouvertures du` +
     ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte ;` +
-    ` ${PARAMETRES.length} routes à paramètre hydratées sans écart.`
+    ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; focus et animations réduites` +
+    ' de l’onboarding conformes.'
 );

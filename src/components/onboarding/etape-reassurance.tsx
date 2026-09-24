@@ -9,6 +9,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { type TitreFocalisable } from '@/lib/focus';
 
 // Étape 3/4 de l'onboarding, rendue par le pager de `src/app/onboarding/index.tsx`.
 //
@@ -18,14 +19,21 @@ import { Spacing } from '@/constants/theme';
 // Onboarding — Réassurance. Seul écran à fond teinté de l'onboarding, corps de
 // texte plus généreux (17/26 au lieu de 16/24) — le seul écran « chaleureux »,
 // cf. handoff design.
-export function EtapeReassurance({ onSuivant }: { onSuivant: () => void }) {
+export function EtapeReassurance({
+  onSuivant,
+  titre,
+}: {
+  onSuivant: () => void;
+  /** De quoi recevoir le focus quand le pager arrive sur cette page (`src/lib/focus.ts`). */
+  titre?: TitreFocalisable;
+}) {
   return (
     <ThemedView type="backgroundTinted" style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <ReassuranceIllustration style={styles.illustration} />
           <View style={styles.textBlock}>
-            <ThemedText type="display">
+            <ThemedText type="display" {...titre}>
               Pas de jugement. Un état des lieux honnête.
             </ThemedText>
             <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>

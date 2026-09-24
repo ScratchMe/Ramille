@@ -9,6 +9,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { EtapeAccroche } from '@/components/onboarding/etape-accroche';
 import { EtapeContexte } from '@/components/onboarding/etape-contexte';
@@ -16,6 +17,7 @@ import { EtapeReassurance } from '@/components/onboarding/etape-reassurance';
 import { EtapeTransition } from '@/components/onboarding/etape-transition';
 import { ThemedView } from '@/components/themed-view';
 import { track } from '@/lib/analytics';
+import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
 
 // Onboarding — les quatre étapes dans un seul écran qui se balaie au doigt (issue #68).
 //
@@ -86,9 +88,44 @@ export default function Onboarding() {
     track('onboarding_step_view', { step: etape });
   }, [index]);
 
+  // **Le focus suit la page, sinon il se perd** (24/09/2026, `v1-29`). « Continuer » rend inerte
+  // la page qui le porte (voir `propsDePage` plus bas) : le bouton qui avait le focus sort de
+  // l'arbre accessible, et le focus retombait sur le document — relevé sur l'export, `<body>`
+  // après « Découvrir mon impact » pressé au clavier. Au lecteur d'écran, la page qui arrive
+  // n'était pas annoncée ; au clavier, la tabulation repartait du haut. Le focus va donc au
+  // **titre** de la page qui arrive — le mécanisme de `StepShell` dans le questionnaire, posé ici
+  // sur le titre lui-même plutôt que sur un conteneur, pour que l'annonce soit celle d'un en-tête.
+  //
+  // Toute arrivée compte, pas seulement le bouton : le balayage et le retour matériel changent la
+  // page de la même façon, et l'inertie qui retire le focus aussi. **Pas au montage**, où
+  // personne n'a encore agi — et la garde compare l'index à celui du dernier passage plutôt que
+  // de compter les passages : un effet de montage peut être rejoué sans que rien n'ait bougé (le
+  // Fast Refresh du développement le fait), et un drapeau « premier passage » laisserait alors
+  // partir un focus que personne n'a demandé.
+  const titreAccroche = useRef<unknown>(null);
+  const titreContexte = useRef<unknown>(null);
+  const titreReassurance = useRef<unknown>(null);
+  const titreTransition = useRef<unknown>(null);
+  const pageDuFocus = useRef(index);
+
+  useEffect(() => {
+    if (pageDuFocus.current === index) return;
+    pageDuFocus.current = index;
+    donnerLeFocus([titreAccroche, titreContexte, titreReassurance, titreTransition][index]?.current);
+  }, [index]);
+
+  // **Le défilement suit « réduire les animations »** (24/09/2026, `v1-29`). `scrollTo` animé ne la
+  // consulte pas sur web : le navigateur ne l'applique qu'au CSS, et `react-native-web` traduit
+  // l'animation en `behavior: 'smooth'`. Mesuré sur l'export avec la préférence active : la page
+  // glissait quand même, relevée en chemin à 8, 52, 102, 199 puis 295 px sur 390. La préférence
+  // est celle que lisent déjà la mascotte et l'écran de lancement (`useReducedMotion`, lue au
+  // démarrage de l'app) ; sous elle, la page change d'un coup. Le balayage, lui, n'est pas touché :
+  // c'est le doigt de la personne qui fait le mouvement.
+  const animationsReduites = useReducedMotion();
+
   const allerA = (cible: number) => {
     const borne = Math.max(0, Math.min(ETAPES.length - 1, cible));
-    defilement.current?.scrollTo({ x: borne * width, animated: true });
+    defilement.current?.scrollTo({ x: borne * width, animated: !animationsReduites });
     // L'état n'attend pas la fin de l'animation : le bouton doit se sentir aussi immédiat
     // que le doigt, et `onScroll` confirmera la même valeur en chemin.
     setIndex(borne);
@@ -205,28 +242,38 @@ export default function Onboarding() {
           contentContainerStyle={contenuDePage}
           showsVerticalScrollIndicator={false}
         >
-          <EtapeAccroche onSuivant={() => allerA(1)} hauteurDePage={hauteur} />
+          <EtapeAccroche
+            onSuivant={() => allerA(1)}
+            hauteurDePage={hauteur}
+            titre={{ ref: titreAccroche, ...FOCALISABLE_PAR_PROGRAMME }}
+          />
         </ScrollView>
         <ScrollView
           {...propsDePage(1)}
           contentContainerStyle={contenuDePageFixe}
           showsVerticalScrollIndicator={false}
         >
-          <EtapeContexte onSuivant={() => allerA(2)} />
+          <EtapeContexte
+            onSuivant={() => allerA(2)}
+            titre={{ ref: titreContexte, ...FOCALISABLE_PAR_PROGRAMME }}
+          />
         </ScrollView>
         <ScrollView
           {...propsDePage(2)}
           contentContainerStyle={contenuDePage}
           showsVerticalScrollIndicator={false}
         >
-          <EtapeReassurance onSuivant={() => allerA(3)} />
+          <EtapeReassurance
+            onSuivant={() => allerA(3)}
+            titre={{ ref: titreReassurance, ...FOCALISABLE_PAR_PROGRAMME }}
+          />
         </ScrollView>
         <ScrollView
           {...propsDePage(3)}
           contentContainerStyle={contenuDePage}
           showsVerticalScrollIndicator={false}
         >
-          <EtapeTransition />
+          <EtapeTransition titre={{ ref: titreTransition, ...FOCALISABLE_PAR_PROGRAMME }} />
         </ScrollView>
       </ScrollView>
     </ThemedView>
