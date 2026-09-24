@@ -33,8 +33,8 @@
 //      `radio` soit **coché** : sans elle, la vérification passerait sur une page qui ne rend aucun
 //      choix, ou sur des choix tous annoncés « non coché » quel que soit l'écran.
 //
-//      **Éprouvée en la cassant le 24/09/2026**, un export par mutation, et chacune ne fait tomber
-//      que ce qu'elle devait :
+//      **Éprouvée en la cassant le 24/09/2026** : trois mutations, trois exports, et chacune ne fait
+//      tomber que ce qu'elle devait :
 //
 //      | Ce qu'on casse | Ce qui tombe |
 //      |---|---|
