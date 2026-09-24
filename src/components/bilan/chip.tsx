@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Stroke } from '@/constants/theme';
+import { ControlHeight, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ChipProps = {
@@ -103,7 +103,14 @@ export function Chip({
 }
 
 const styles = StyleSheet.create({
+  // **48 au moins, en hauteur comme en largeur** (24/09/2026, décision n° 7) : la puce mesurait 47
+  // de haut (12 + 20 + 12, plus ses deux traits), et une puce « 1 » à largeur naturelle tombait sous
+  // 48 de large. Des minimums, pas des mesures : le libellé grandit avec la taille de police du
+  // système, la puce doit suivre (A10-21, la même règle que `Button`). Par la taille et jamais par
+  // `hitSlop`, qui ferait se recouvrir les cibles de deux puces voisines.
   base: {
+    minHeight: ControlHeight.target,
+    minWidth: ControlHeight.target,
     paddingVertical: 12,
     borderWidth: Stroke.selected,
     alignItems: 'center',

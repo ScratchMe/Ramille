@@ -1,5 +1,7 @@
-import type { ReactNode } from 'react';
-import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { Children, type ReactNode } from 'react';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+
+import { Spacing } from '@/constants/theme';
 
 /**
  * Le conteneur d'une série de puces : un `radiogroup` quand on n'en choisit qu'une, un `group`
@@ -20,10 +22,20 @@ import { View, type StyleProp, type ViewStyle } from 'react-native';
  *
  * `role` et `aria-label` plutôt que `accessibilityRole` : le rôle d'un groupe de cases, `group`,
  * n'existe que dans le vocabulaire ARIA que React Native accepte depuis la 0.71.
+ *
+ * **`colonnes` range la série en grille, pour les jours** (décision n° 7 du 24/09/2026 : une cible
+ * de 48 × 48). Sur une ligne, les sept jours ne laissaient que 38 à 42 px à chacun dans le
+ * questionnaire, et 27 à 31 dans la carte d'une action, sur un téléphone de 360 à 390 dp ; ils n'y
+ * tiennent à 48 qu'au-delà de 432 dp. La grille garde des colonnes égales d'une ligne à l'autre —
+ * « 1 2 3 4 / 5 6 7 », « L M M J / V S D » — là où un simple retour à la ligne laissait un jour seul
+ * sur la seconde, ou l'étirait sur toute la largeur. L'écart vient d'une marge intérieure de chaque
+ * cellule et non d'un `gap`, qui s'ajoute aux largeurs en pourcentage au lieu de s'en retrancher ;
+ * les cellules ne portent aucun rôle, donc le lecteur d'écran ne les voit pas.
  */
 export function GroupeDeChoix({
   question,
   cumulable = false,
+  colonnes,
   style,
   children,
 }: {
@@ -31,12 +43,37 @@ export function GroupeDeChoix({
   question: string;
   /** Vrai quand les puces se cumulent (des `checkbox`) : le groupe n'est alors pas un `radiogroup`. */
   cumulable?: boolean;
+  /** Nombre de colonnes d'une grille ; sans lui, les puces suivent la mise en page de `style`. */
+  colonnes?: number;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
 }) {
+  const role = cumulable ? 'group' : 'radiogroup';
+
+  if (colonnes === undefined) {
+    return (
+      <View role={role} aria-label={question} style={style}>
+        {children}
+      </View>
+    );
+  }
+
+  const largeur = `${100 / colonnes}%` as const;
   return (
-    <View role={cumulable ? 'group' : 'radiogroup'} aria-label={question} style={style}>
-      {children}
+    <View role={role} aria-label={question} style={[styles.grille, style]}>
+      {Children.map(children, (puce) => (
+        <View style={[styles.cellule, { width: largeur }]}>{puce}</View>
+      ))}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  grille: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: Spacing.two,
+    marginHorizontal: -Spacing.two / 2,
+  },
+  cellule: { paddingHorizontal: Spacing.two / 2 },
+});

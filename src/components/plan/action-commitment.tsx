@@ -179,8 +179,10 @@ export function ActionCommitment({
 
       {kind === 'days' ? (
         // Les jours se **cumulent** : des `checkbox` dans un groupe nommé, jamais des `radio` — qui
-        // annonceraient qu'en cocher un décoche les autres.
-        <GroupeDeChoix question={question} cumulable style={styles.dayRow}>
+        // annonceraient qu'en cocher un décoche les autres. Et ils vont sur **quatre colonnes** : sur
+        // une ligne, entre les marges de la carte et celles du sélecteur, chacun ne mesurait que 27 à
+        // 31 px de large à 360-390 dp, sous la cible de 48 (décision n° 7, `GroupeDeChoix`).
+        <GroupeDeChoix question={question} cumulable colonnes={4}>
           {INTENTION_DAYS.map((day) => (
             <Chip
               // Deux jours portent l'initiale « M » : l'accessibilité passe par le libellé
@@ -191,7 +193,6 @@ export function ActionCommitment({
               role="checkbox"
               selected={days.includes(day.value)}
               onPress={() => toggleDay(day.value)}
-              flex
               radius={Radius.chip}
             />
           ))}
@@ -240,7 +241,6 @@ export function ActionCommitment({
 const styles = StyleSheet.create({
   footer: { marginTop: Spacing.three },
   picker: { marginTop: Spacing.three, borderRadius: Radius.field, padding: Spacing.four, gap: Spacing.three },
-  dayRow: { flexDirection: 'row', gap: 6 },
   timingColumn: { gap: Spacing.two },
   pickerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
   link: { textDecorationLine: 'underline' },

@@ -52,7 +52,10 @@ export function CommuteDaysDistanceStep({
     <View style={styles.container}>
       <View style={styles.block}>
         <ThemedText type="screenTitle">{QUESTION_JOURS}</ThemedText>
-        <GroupeDeChoix question={QUESTION_JOURS} style={styles.daysRow}>
+        {/* **Quatre colonnes, donc deux lignes** (24/09/2026, décision n° 7 : une cible de 48). Sur une
+            ligne, les sept puces ne mesuraient que 38 à 42 px de large sur un téléphone de 360 à
+            390 dp — cf. `GroupeDeChoix`. */}
+        <GroupeDeChoix question={QUESTION_JOURS} colonnes={4}>
           {DAYS.map((day) => (
             <Chip
               key={day}
@@ -60,7 +63,6 @@ export function CommuteDaysDistanceStep({
               role="radio"
               selected={answers.commute_days_per_week === day}
               onPress={() => update({ commute_days_per_week: day })}
-              flex
               radius={Radius.chip}
             />
           ))}
@@ -162,7 +164,6 @@ export function CommuteDaysDistanceStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  daysRow: { flexDirection: 'row', gap: Spacing.two },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   separator: { height: 1 },
   bracketList: { gap: Spacing.two + 2 },
