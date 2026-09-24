@@ -6,7 +6,7 @@ import { POSTE_LABEL } from '@/constants/postes';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatTonnesNu } from '@/lib/format';
-import type { EcartDePoste } from '@/types/suivi';
+import { legendeDeLEcart, type EcartDePoste } from '@/types/suivi';
 
 /** Hauteur des deux barres d'un poste, et leur rayon. Six barres à lire d'un coup. */
 const HAUTEUR = 10;
@@ -27,7 +27,7 @@ const HAUTEUR = 10;
  *   améliorer » : deux nombres et deux barres, le lecteur voit le sens tout seul.
  *
  * Les barres sont masquées au lecteur d'écran : la ligne au-dessus porte déjà les deux valeurs, et
- * la légende dit ce que chaque forme veut dire.
+ * la légende dit ce que chaque forme veut dire — et, depuis le 24/09/2026, quel poste porte l'accent.
  */
 export function EcartParPoste({ ecarts }: { ecarts: EcartDePoste[] }) {
   const theme = useTheme();
@@ -45,7 +45,7 @@ export function EcartParPoste({ ecarts }: { ecarts: EcartDePoste[] }) {
             <ThemedText type="small" themeColor="textSecondary" style={styles.libelle}>
               {POSTE_LABEL[ecart.poste]}
             </ThemedText>
-            <ThemedText type="small" weight={600}>
+            <ThemedText type="small" weight={600} style={styles.chiffres}>
               {formatTonnesNu(ecart.precedentKg)} → {formatTonnesNu(ecart.courantKg)}
             </ThemedText>
           </View>
@@ -73,10 +73,13 @@ export function EcartParPoste({ ecarts }: { ecarts: EcartDePoste[] }) {
           `dominant_poste` peut désigner un poste visiblement plus court que celui du dessus, et la
           légende devenait fausse à l'écran. C'est bien ce poste qu'il faut accentuer : c'est celui
           sur lequel le cap et les actions travaillent. Le classement par poids, lui, se lit déjà
-          dans l'ordre des barres. */}
+          dans l'ordre des barres.
+
+          **Et la légende le nomme** (24/09/2026, `v1-29`) : elle disait ce que l'accent signifie
+          sans dire quel poste le portait — une information qui n'existait qu'en couleur, sous des
+          barres masquées aux lecteurs d'écran. `legendeDeLEcart` la compose, avec ses tests. */}
       <ThemedText themeColor="textTertiary" style={styles.legende}>
-        Contour : bilan précédent · plein : ce bilan · accent : le poste sur lequel ton plan
-        travaille
+        {legendeDeLEcart(ecarts)}
       </ThemedText>
     </View>
   );
@@ -89,6 +92,9 @@ const styles = StyleSheet.create({
   // Le libellé cède la place au couple de valeurs, qui ne doit jamais se couper : c'est lui qui
   // porte l'information, l'étiquette se comprend tronquée.
   libelle: { flexShrink: 1, minWidth: 0 },
+  // **Chiffres tabulaires** (24/09/2026, `v1-29`) : les couples de valeurs s'alignent à droite, d'une
+  // ligne à l'autre. Spline Sans porte la fonction `tnum`.
+  chiffres: { fontVariant: ['tabular-nums'] },
   rail: { width: '100%', height: HAUTEUR },
   plein: { height: '100%', borderRadius: HAUTEUR / 2 },
   // 12/16 : la légende, une seule occurrence de cette taille ici.
