@@ -1064,7 +1064,7 @@ export default function Plan() {
   // Ce que l'écran annonce de lui-même, et ce que son cap a le droit de chiffrer (C3.8 §3). Dérivé
   // dans `src/types/plan.ts` plutôt qu'écrit en ternaires ici — une seule chose en dépend depuis que
   // C5.3 a retiré `intro` et `noteDuCap`, et ce commentaire a longtemps dit « trois phrases » ; c'est
-  // c'est la forme qui a laissé l'intro annoncer « pour ton trajet domicile-travail » au-dessus
+  // la forme qui a laissé l'intro annoncer « pour ton trajet domicile-travail » au-dessus
   // d'actions qui n'en étaient pas.
   const cadre = cadreDuPlan({
     postesEnAvant: pistes.enAvant.map((action) => action.action_templates?.poste ?? null),
@@ -1276,8 +1276,15 @@ export default function Plan() {
     <Fragment key="pistes">
       {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce
           moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte
-          déjà le bon ordre — poste dominant d'abord, puis gain décroissant. */}
-      <View style={styles.actions}>{pistes.enAvant.map((action) => carteDaction(action))}</View>
+          déjà le bon ordre — poste dominant d'abord, puis gain décroissant.
+
+          **Pas de conteneur vide** (24/09/2026, `v1-29`) : sur un plan à zéro action, la vue se
+          rendait quand même, et le `gap` de la liste défilante lui réservait sa place — un écart
+          fantôme sous le cap, puis au-dessus de lui depuis que le premier plan met les pistes
+          devant. */}
+      {pistes.enAvant.length > 0 && (
+        <View style={styles.actions}>{pistes.enAvant.map((action) => carteDaction(action))}</View>
+      )}
 
       {/* **Toutes les pistes, sur un écran à elles** (C5.2, écarts 2 à 5). Le plan en montrait
           deux, puis dépliait jusqu'à onze cartes sous un « Replier » sorti de l'écran :
@@ -1778,7 +1785,7 @@ const styles = StyleSheet.create({
   // reste donc à zéro, et l'écart ne se pose qu'aux frontières qui touchent une carte dépliée
   // (`pisteSeparee`, décidée au rendu — le conteneur ne sait pas lesquelles sont ouvertes).
   contexteCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
-  // `alignSelf` pour que la cible de 44 px du lien ne s'étende pas sur toute la largeur de la
+  // `alignSelf` pour que la cible tactile du lien ne s'étende pas sur toute la largeur de la
   // carte : une zone tactile plus large que son texte se touche par accident.
   contextePorte: { alignSelf: 'flex-start' },
   emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
@@ -1789,7 +1796,7 @@ const styles = StyleSheet.create({
   rebilanCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
   calmeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   calmeTexte: { flex: 1, minWidth: 0, gap: 2 },
-  // `alignSelf` pour que la cible de 44 px du lien ne s'étende pas sur toute la largeur de la
+  // `alignSelf` pour que la cible tactile du lien ne s'étende pas sur toute la largeur de la
   // carte : une zone tactile plus large que son texte se touche par accident.
   calmePorte: { alignSelf: 'flex-start' },
   lienBilan: { textAlign: 'center' },

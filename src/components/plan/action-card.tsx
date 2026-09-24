@@ -108,8 +108,8 @@ export function ActionCard({
         {
           // Trois cadres : l'action engagée (accent, 2 px, fond teinté), une proposition (filet
           // `border`), et une proposition estompée parce qu'une autre est engagée — son filet passe
-          // au plus pâle des gris de la palette, `backgroundElement`. Ni opacité ni couleur de
-          // texte ne bougent : ce qui recule, c'est la boîte.
+          // de `border` à `backgroundElement`, un cran plus près du fond dans les deux thèmes. Ni
+          // opacité ni couleur de texte ne bougent : ce qui recule, c'est la boîte.
           borderColor: engagee ? theme.accent : estompee ? theme.backgroundElement : theme.border,
           borderWidth: engagee ? Stroke.engaged : Stroke.hairline,
           backgroundColor: engagee ? theme.backgroundTinted : 'transparent',
