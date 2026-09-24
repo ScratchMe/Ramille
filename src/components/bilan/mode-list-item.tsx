@@ -32,14 +32,20 @@ export function ModeListItem({
       accessibilityLabel={label}
       // L'état par `aria-checked`, le seul que le web reçoive (cf. `chip.tsx`).
       aria-checked={selected}
-      style={[
+      // Sous le doigt, la surface prend sa teinte appuyée, sans animation (décision n° 6, `v1-29`) —
+      // la même pour un item posé sur blanc dans un encart : elle tranche sur les deux fonds.
+      style={({ pressed }) => [
         styles.item,
         {
           backgroundColor: selected
-            ? theme.backgroundSelected
-            : nestedBackground
-              ? theme.background
-              : theme.backgroundElement,
+            ? pressed
+              ? theme.backgroundSelectedPressed
+              : theme.backgroundSelected
+            : pressed
+              ? theme.backgroundPressed
+              : nestedBackground
+                ? theme.background
+                : theme.backgroundElement,
           borderColor: selected ? theme.accent : 'transparent',
         },
       ]}

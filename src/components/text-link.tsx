@@ -15,6 +15,10 @@ import { ControlHeight } from '@/constants/theme';
 // La cible tactile est portée à 44 px de haut (recommandation WCAG 2.5.8 / Material) sans
 // changer la position du texte : le padding est vertical et le composant reste aligné comme
 // avant dans les colonnes où il vit.
+//
+// **Sous le doigt, le texte se souligne** (24/09/2026, décision n° 6, `v1-29`) : c'est le retour au
+// toucher d'un lien, instantané et sans animation, qui ne change ni sa couleur — elle porte déjà un
+// sens (accent, tertiaire) — ni sa place.
 export function TextLink({
   label,
   onPress,
@@ -60,13 +64,16 @@ export function TextLink({
       aria-expanded={expanded}
       style={[styles.cible, containerStyle]}
     >
-      <ThemedText {...textProps} style={style}>
-        {label}
-      </ThemedText>
+      {({ pressed }) => (
+        <ThemedText {...textProps} style={[style, pressed && !disabled && styles.appuye]}>
+          {label}
+        </ThemedText>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   cible: { minHeight: ControlHeight.target, justifyContent: 'center' },
+  appuye: { textDecorationLine: 'underline' },
 });

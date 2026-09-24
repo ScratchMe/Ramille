@@ -72,7 +72,15 @@ export function GoogleButton({ onPress, loading }: { onPress: () => void; loadin
       // `aria-busy` et non `accessibilityState.busy`, que react-native-web ignore : l'attente de la
       // fenêtre Google ne s'annonçait pas sur web. `disabled` porte l'inactivité des deux côtés.
       aria-busy={!!loading}
-      style={[styles.button, { backgroundColor: theme.background, borderColor: theme.border }]}
+      // Sous le doigt, la surface neutre prend sa teinte appuyée, sans animation (décision n° 6,
+      // `v1-29`) — le logo et le libellé, eux, ne bougent pas : ce sont ceux de la marque.
+      style={({ pressed }) => [
+        styles.button,
+        {
+          backgroundColor: pressed && !loading ? theme.backgroundPressed : theme.background,
+          borderColor: theme.border,
+        },
+      ]}
     >
       {loading ? (
         <ActivityIndicator color={theme.text} />

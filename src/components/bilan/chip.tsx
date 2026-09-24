@@ -54,6 +54,14 @@ export function Chip({
       ? theme.accent
       : theme.backgroundSelected
     : theme.backgroundElement;
+  // La teinte sous le doigt (24/09/2026, décision n° 6) : chaque surface a la sienne, pour que le
+  // texte garde son contraste — `accentPressed` sous le blanc d'une puce pleine,
+  // `backgroundSelectedPressed` sous l'accent d'une puce choisie, `backgroundPressed` ailleurs.
+  const backgroundAppuye = selected
+    ? selectedStyle === 'solid'
+      ? theme.accentPressed
+      : theme.backgroundSelectedPressed
+    : theme.backgroundPressed;
   const borderColor = selected && selectedStyle === 'outline' ? theme.accent : 'transparent';
   const textColor = selected && selectedStyle === 'solid' ? theme.onAccent : theme.text;
 
@@ -76,10 +84,15 @@ export function Chip({
       // sur Google Play seulement. `scripts/verifier-rendu-export.mjs` garde la règle : tout
       // `radio`, `checkbox` ou `switch` rendu doit porter `aria-checked`.
       aria-checked={selected}
-      style={[
+      style={({ pressed }) => [
         styles.base,
         flex ? styles.baseFlex : styles.basePilule,
-        { borderRadius: radius, backgroundColor, borderColor, flex: flex ? 1 : undefined },
+        {
+          borderRadius: radius,
+          backgroundColor: pressed ? backgroundAppuye : backgroundColor,
+          borderColor,
+          flex: flex ? 1 : undefined,
+        },
       ]}
     >
       <ThemedText weight={selected ? 600 : 400} style={[styles.label, { color: textColor }]}>

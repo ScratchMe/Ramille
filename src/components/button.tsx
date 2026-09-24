@@ -24,6 +24,13 @@ export type ButtonProps = {
 // boîte figée à 54 px ne grandissait pas avec lui. À 150 ou 200 %, le libellé débordait de son
 // bouton. `minHeight` + `paddingVertical` donnent exactement la même allure à taille normale
 // (24 px d'interligne + 2 × 15 = 54) et laissent le bouton grandir au lieu de déborder.
+//
+// **Il répond au toucher depuis le 24/09/2026** (décision n° 6 du challenge du design system,
+// `v1-29`) : aucun contrôle du produit ne changeait sous le doigt, ce qui se lit « l'app n'a pas pris
+// mon geste ». La surface prend sa teinte appuyée — `accentPressed` pour le principal,
+// `backgroundPressed` pour le secondaire — **instantanément et sans animation**, par le `style`
+// fonction de `Pressable`. Ni ondulation Android ni opacité : la première ne se voit pas sur web, la
+// seconde ferait baisser le contraste du libellé au moment même où on le touche.
 export function Button({
   title,
   onPress,
@@ -40,6 +47,7 @@ export function Button({
     : variant === 'primary'
       ? theme.accent
       : theme.backgroundElement;
+  const backgroundAppuye = variant === 'primary' ? theme.accentPressed : theme.backgroundPressed;
   const textColor = disabled ? theme.textTertiary : variant === 'primary' ? theme.onAccent : theme.text;
 
   return (
@@ -52,7 +60,11 @@ export function Button({
       // Pas d'`accessibilityState` : `disabled` suffit, et il est le seul à atteindre le web.
       // `Pressable` de react-native-web en tire `aria-disabled` (et l'attribut `disabled` du
       // `<button>` qu'il rend), React Native le range dans l'état que TalkBack annonce.
-      style={[styles.base, { backgroundColor, flex: flex ? 1 : undefined }, style]}
+      style={({ pressed }) => [
+        styles.base,
+        { backgroundColor: pressed && !disabled ? backgroundAppuye : backgroundColor, flex: flex ? 1 : undefined },
+        style,
+      ]}
     >
       <ThemedText weight={variant === 'secondary' ? 500 : 600} style={{ color: textColor, fontSize: 16 }}>
         {title}

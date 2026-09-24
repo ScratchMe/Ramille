@@ -23,10 +23,17 @@ export function ChoiceRow({
       accessibilityLabel={label}
       // `aria-checked` et non `accessibilityState`, que react-native-web ignore (cf. `chip.tsx`).
       aria-checked={selected}
-      style={[
+      // Sous le doigt, la surface prend sa teinte appuyée, sans animation (décision n° 6, `v1-29`).
+      style={({ pressed }) => [
         styles.row,
         {
-          backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement,
+          backgroundColor: selected
+            ? pressed
+              ? theme.backgroundSelectedPressed
+              : theme.backgroundSelected
+            : pressed
+              ? theme.backgroundPressed
+              : theme.backgroundElement,
           borderColor: selected ? theme.accent : 'transparent',
         },
       ]}

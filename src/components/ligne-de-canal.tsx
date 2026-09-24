@@ -48,10 +48,18 @@ export function LigneDeCanal({
       accessibilityLabel={`${ligne.titre}. ${ligne.detail}`}
       // `aria-checked`, le seul état que le web reçoive (cf. `chip.tsx`).
       aria-checked={coche}
-      style={[
+      // Sous le doigt, la surface prend sa teinte appuyée, sans animation (décision n° 6, `v1-29`).
+      // Une ligne désactivée ne s'appuie pas : `Pressable` ne passe jamais à `pressed`.
+      style={({ pressed }) => [
         styles.ligne,
         {
-          backgroundColor: coche ? theme.backgroundSelected : theme.backgroundElement,
+          backgroundColor: coche
+            ? pressed
+              ? theme.backgroundSelectedPressed
+              : theme.backgroundSelected
+            : pressed
+              ? theme.backgroundPressed
+              : theme.backgroundElement,
           borderColor: coche ? theme.accent : 'transparent',
           opacity: ligne.choisissable ? 1 : 0.6,
         },
