@@ -194,6 +194,8 @@ export function ActionCommitment({
               selected={days.includes(day.value)}
               onPress={() => toggleDay(day.value)}
               radius={Radius.chip}
+              // Le sélecteur est un encart teinté : sans le fond de la page, la puce n'a pas de bord.
+              nestedBackground
             />
           ))}
         </GroupeDeChoix>
@@ -211,6 +213,7 @@ export function ActionCommitment({
               onPress={() => setTiming(option.value)}
               radius={16}
               selectedStyle="outline"
+              nestedBackground
             />
           ))}
         </GroupeDeChoix>

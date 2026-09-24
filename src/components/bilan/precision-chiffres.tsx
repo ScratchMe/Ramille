@@ -50,6 +50,9 @@ export function PrecisionChiffres({
             onPress={() => onChange(option.value)}
             flex
             radius={Radius.chip}
+            // Dans l'encart teinté, le fond de la page est ce qui fait voir la puce (cf. `Chip`) —
+            // la même réponse que les rangées de `PrecisionMode`, sa jumelle.
+            nestedBackground
           />
         ))}
       </View>

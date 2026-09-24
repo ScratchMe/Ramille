@@ -15,6 +15,13 @@ export type ChipProps = {
    *  teinté + bordure accent (Oui/Non, mode sélectionné dans une liste). */
   selectedStyle?: 'solid' | 'outline';
   radius?: number;
+  /**
+   * La puce est posée dans un encart déjà teinté (`backgroundElement`) : son fond non choisi
+   * reprend celui de la page (`background` — blanc en clair, noir en sombre), sinon il se confond
+   * avec l'encart et la puce se lit comme du texte. C'est la réponse que `ModeListItem` apporte au
+   * même problème, sous le même nom.
+   */
+  nestedBackground?: boolean;
   /** Quand le libellé visible est une abréviation ambiguë — deux jours de la semaine portent
    *  l'initiale « M » — le lecteur d'écran doit entendre le mot entier. */
   accessibilityLabel?: string;
@@ -44,16 +51,24 @@ export function Chip({
   flex,
   selectedStyle = 'solid',
   radius = 22,
+  nestedBackground,
   accessibilityLabel,
   role,
 }: ChipProps) {
   const theme = useTheme();
 
+  // Posée dans un encart teinté, la puce non choisie prend le fond de la page (`nestedBackground`) :
+  // sur le même `backgroundElement` que l'encart, elle n'avait plus de bord visible. La grille des jours
+  // de l'engagement (24/09/2026) l'a montré — sept lettres flottant dans des cellules de 48 — et
+  // les puces de `PrecisionChiffres` avaient le même défaut, que `precision-mode.tsx` décrivait déjà
+  // pour les rangées.
   const backgroundColor = selected
     ? selectedStyle === 'solid'
       ? theme.accent
       : theme.backgroundSelected
-    : theme.backgroundElement;
+    : nestedBackground
+      ? theme.background
+      : theme.backgroundElement;
   // La teinte sous le doigt (24/09/2026, décision n° 6) : chaque surface a la sienne, pour que le
   // texte garde son contraste — `accentPressed` sous le blanc d'une puce pleine,
   // `backgroundSelectedPressed` sous l'accent d'une puce choisie, `backgroundPressed` ailleurs.
