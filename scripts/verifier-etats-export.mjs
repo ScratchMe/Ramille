@@ -22,7 +22,9 @@
 // quoi que ce soit reviendrait à épingler une copie d'erreur.
 //
 // Ce qui reste, et qui est exactement ce qui a cassé : les états qui se décident **sur l'appareil**,
-// donc sans réseau — une marque locale, un paramètre d'URL. Ce sont aussi les seuls qu'un
+// donc sans réseau — une marque locale, un paramètre d'URL, et depuis le 24/09/2026 une préférence
+// du système (« réduire les animations ») et la mesure de ce qui est rendu (hauteur d'une cible,
+// contraste d'un indicateur, place du focus après un geste). Ce sont aussi les seuls qu'un
 // utilisateur peut atteindre sans que rien ne se soit encore chargé, donc les plus silencieux.
 //
 // ── Éprouvé en cassant ce qu'il garde, le 17/09/2026 ───────────────────────────────────────────
@@ -44,6 +46,36 @@
 // dérivation, qui ne masque que sur `'questionnaire'` **exactement**. Casser la première laisse la
 // seconde tenir. Ce que ce script-ci éprouve est donc la **dérivation** telle qu'elle est rendue,
 // et c'est la quatrième mutation qui le montre.
+//
+// ── Sections C, D et E, éprouvées en cassant le 24/09/2026 ─────────────────────────────────────
+//
+// Dix mutations, un export chacune, plus un témoin sans mutation qui sort vert. Chacune fait
+// tomber ce qu'elle devait faire tomber, et rien d'autre :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | marges de la barre remises à 8 et 12 | « Plan » **et** « Suivi » à 39 px (C) |
+//   | pastille remise en `backgroundSelected` | l'actif sans forme pleine, 1,18:1 (C) |
+//   | pastille pleine sur les deux couches | l'inactif porte une forme pleine, 6,12:1 (C) |
+//   | `/connexion` lit la provenance au premier rendu | l'hydratation de `?source=compte` (D) |
+//   | `/connexion` n'affiche jamais la provenance | « Retour » absent (D) |
+//   | `/rappels/stop` déduit l'état du jeton au premier rendu | l'hydratation de `?jeton=` **et** le HTML statique « plus valable » (D) |
+//   | `/rappels/stop` sans jeton reste « en cours » | « plus valable » absent une fois montée (D) |
+//   | l'onboarding ne déplace plus le focus | le focus, avec **et** sans « réduire » (E) |
+//   | le pager anime toujours | les positions intermédiaires sous « réduire » (E) |
+//   | le titre n'a plus de `tabIndex` sur web | le focus, avec **et** sans « réduire » (E) |
+//
+// La dernière dit ce que l'avant-dernière ne dit pas : un focus demandé sur un titre que le
+// navigateur ne sait pas focaliser **échoue sans bruit**, et c'est `FOCALISABLE_PAR_PROGRAMME`
+// (`src/lib/focus.ts`) qui le rend possible. Et l'hydratation de `/connexion` a ses deux moitiés :
+// sans la seconde, une correction qui ignorerait le paramètre passerait pour juste.
+//
+// **Chaque export muté a été fait avec son propre cache Metro (`TMPDIR`) et `--clear`**, et ce
+// n'est pas un détail : la première série de mesures, faite sans `--clear` pendant que d'autres
+// worktrees exportaient, a produit des bundles qui n'étaient pas ceux de l'arbre — l'ancien texte
+// d'une page, un module absent — et donc un tableau faux de bout en bout. Metro range son cache
+// dans le répertoire temporaire du système, partagé par tous ceux qui exportent. Qui rejoue ces
+// mutations vérifie d'abord qu'un marqueur du code courant est bien dans le bundle.
 //
 // Lancé en CI après `expo export`, à côté des quatre autres gardes, cf. .github/workflows/ci.yml.
 import { readFileSync } from 'node:fs';
@@ -543,7 +575,8 @@ if (echecs.length > 0) {
       '\npréférence du système, un geste — donc sans réseau et sans rien qui lève. Aucune autre' +
       '\ngarde du dépôt ne les voit : les tests Jest ne montent pas d’écran, et' +
       '\n`verifier-rendu-export.mjs` vérifie que la page s’affiche, pas ce qu’elle affiche.' +
-      '\nRejouer en local : expo export --platform web, puis ce script.'
+      '\nRejouer en local : expo export --platform web --clear, puis ce script (sans --clear, un' +
+      '\ncache Metro partagé peut servir un autre arbre — voir l’en-tête).'
   );
   process.exit(1);
 }
