@@ -6,8 +6,13 @@ import { ControlHeight, FontFamily, Radius, Spacing, Stroke, TypeScale } from '@
 import { useTheme } from '@/hooks/use-theme';
 import { afficherNombreSaisi, nettoyerSaisieNumerique, saisieVersNombre } from '@/types/bilan';
 
-// Champ numérique encadré (B1.2/B1.3 "Quelle distance pour un aller ?") — bordure
-// accent permanente dans la maquette, pas seulement au focus.
+// Champ numérique encadré (B1.2/B1.3 "Quelle distance pour un aller ?").
+//
+// **La maquette lui donnait une bordure accent permanente, et il suit désormais la règle des deux
+// autres champs** (24/09/2026, `v1-29`) : `fieldBorder` au repos, l'accent une fois un nombre saisi.
+// L'accent marque ce qui est choisi ou rempli ; sur un champ vide, il disait « rempli » d'un champ
+// qui ne l'était pas, et c'était le seul champ du produit à le faire. Le contour au repos reste
+// visible — 3,45:1 sur le blanc —, ce qui est tout ce que l'accent permanent achetait.
 export function NumericField({
   value,
   onChange,
@@ -38,7 +43,12 @@ export function NumericField({
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundElement, borderColor: theme.accent }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.backgroundElement, borderColor: saisie.length > 0 ? theme.accent : theme.fieldBorder },
+      ]}
+    >
       <TextInput
         value={saisie}
         onChangeText={(texte) => {

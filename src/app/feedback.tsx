@@ -133,9 +133,16 @@ export default function Feedback() {
               // caractères affiché dessous n'est rattaché à rien.
               accessibilityLabel={LIBELLE_MESSAGE}
               accessibilityHint={`${FEEDBACK_MAX_LENGTH} caractères au maximum.`}
+              // Le contour au repos est `fieldBorder` (24/09/2026, `v1-29`) : `border` n'y tenait que
+              // 1,33:1, on ne voyait pas le seul champ de texte libre du produit. L'accent une fois
+              // qu'il y a un texte, comme `TextField`.
               style={[
                 styles.input,
-                { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.border },
+                {
+                  backgroundColor: theme.backgroundElement,
+                  color: theme.text,
+                  borderColor: message.length > 0 ? theme.accent : theme.fieldBorder,
+                },
               ]}
             />
             <ThemedText type="code" themeColor="textTertiary">

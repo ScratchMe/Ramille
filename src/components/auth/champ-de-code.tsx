@@ -12,7 +12,9 @@ import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
  * focus à la frappe et au collé, et n'apporteraient rien qu'un champ centré ne rende. Le kit
  * écrit d'ailleurs de `TextField` qu'il est « en pratique le seul champ texte du produit » : il y
  * en a deux à partir d'aujourd'hui, et celui-ci reprend sa boîte — hauteur, rayon, fond, bordure
- * d'accent dès qu'un chiffre est là — pour que ce soit visiblement la même famille.
+ * d'accent dès qu'un chiffre est là — pour que ce soit visiblement la même famille. Le contour au
+ * repos aussi : `fieldBorder` depuis le 24/09/2026, là où le champ vide ne tranchait qu'à 1,14:1
+ * (cf. `TextField`).
  *
  * **La normalisation n'est pas ici mais dans `chiffresDuCode`** (module pur, testé) : une espace
  * collée avec le code est retirée et non refusée, et un collé trop long garde ses chiffres utiles.
@@ -45,7 +47,7 @@ export function ChampDeCode({
           styles.box,
           {
             backgroundColor: theme.backgroundElement,
-            borderColor: value.length > 0 ? theme.accent : 'transparent',
+            borderColor: value.length > 0 ? theme.accent : theme.fieldBorder,
           },
         ]}
       >

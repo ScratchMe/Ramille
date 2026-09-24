@@ -8,6 +8,12 @@ import { useTheme } from '@/hooks/use-theme';
 // Champ labellisé des écrans de connexion (adresse email) — rayon 16, fond teinté,
 // bordure accent uniquement quand le champ a du contenu ou une action associée (mot de
 // passe), pour rester proche de la maquette sans dupliquer un style par écran.
+//
+// **Au repos, le contour est `fieldBorder`, et non plus transparent** (24/09/2026, `v1-29`, audit
+// d'accessibilité 1.4.11). Vide, le champ n'était qu'un fond `backgroundElement` à 1,14:1 sur le
+// blanc : on ne voyait pas où taper, sur l'écran de la suppression de compte que Google Play exige
+// comme sur les deux de la connexion. `fieldBorder` tient 3,45:1 sur le blanc et 3,04:1 sur le fond
+// du champ ; l'accent reste réservé au champ rempli, comme avant.
 export function TextField({
   label,
   value,
@@ -44,7 +50,7 @@ export function TextField({
           styles.box,
           {
             backgroundColor: theme.backgroundElement,
-            borderColor: accented ? theme.accent : 'transparent',
+            borderColor: accented ? theme.accent : theme.fieldBorder,
           },
         ]}
       >
