@@ -2,6 +2,7 @@
 //
 //   node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto]
 //                                        [--racine <dépôt>]
+//   node scripts/installer-un-plugin.mjs --retirer <plug-in> [--racine <dépôt>]
 //
 // **Pourquoi à la main : claude.ai ne livre pas les plug-ins aux sessions cloud.** Constaté le
 // 24/09/2026 : Product Management activé sur le compte, et la session ne le voyait pas — liste des
@@ -12,6 +13,11 @@
 // Relancer le script sur une archive plus récente du même plug-in le met à jour : ce qu'il avait
 // posé est retiré d'abord, donc un skill disparu en amont disparaît aussi d'ici. Le préfixe et le
 // mode choisis la première fois sont gardés dans `installation.json` : une mise à jour les reprend.
+//
+// **`--retirer <plug-in>` défait une installation** : exactement ce que son `installation.json` dit
+// avoir posé, puis sa provenance — jamais tout ce qui commence par le préfixe, qui emporterait un
+// skill écrit ici sous un nom voisin. Ce qui cite le plug-in ailleurs dans le dépôt (CLAUDE.md, un
+// document) reste à relire à la main, et le script le rappelle.
 //
 // **`--manuel` installe un plug-in utile mais bavard.** Chaque skill installé charge sa description
 // dans le contexte de CHAQUE session et peut se déclencher seul sur un sujet voisin — Auth0 en
@@ -46,7 +52,10 @@
 //      skill ou une commande qui déclare des hooks dans son en-tête est refusé, pour la même raison.
 //   3. **Rien n'est écrit tant que tout n'a pas été vérifié** — entrées d'archive qui sortiraient
 //      de leur dossier, liens symboliques, en-têtes illisibles, collisions de noms. Un refus laisse
-//      le dépôt tel qu'il était.
+//      le dépôt tel qu'il était. Rien n'est retiré non plus avant d'avoir été vérifié : les noms
+//      relus dans `installation.json`, par une mise à jour comme par `--retirer`, sont revalidés
+//      d'abord — le fichier vit dans le dépôt, qu'une PR peut modifier, et un nom en `../../src` y
+//      ferait effacer autre chose qu'un skill.
 //
 // **Ce que le script ne voit pas : ce que les consignes DISENT.** Il imprime ce qui mérite un
 // regard — adresses, commandes shell, outils pré-autorisés, liens qui ne mènent à rien d'installé,
@@ -70,7 +79,8 @@ import path from 'node:path';
 import process from 'node:process';
 
 const USAGE =
-  'Usage : node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto] [--racine <dépôt>]';
+  'Usage : node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto] [--racine <dépôt>]\n' +
+  '        node scripts/installer-un-plugin.mjs --retirer <plug-in> [--racine <dépôt>]';
 
 /** Ce que Claude Code accepte comme nom de skill : minuscules et chiffres, des tirets entre eux
  * mais jamais au bord ni doublés, 64 caractères au plus. */
@@ -112,6 +122,7 @@ function refuser(message) {
 function lireArguments(argv) {
   let racine = path.join(import.meta.dirname, '..');
   let source = null;
+  let retirer = null;
   let prefixe;
   let manuel;
   const args = [...argv];
@@ -121,6 +132,9 @@ function lireArguments(argv) {
       const valeur = args.shift();
       if (!valeur) refuser('--racine attend un dossier.');
       racine = path.resolve(valeur);
+    } else if (arg === '--retirer') {
+      retirer = args.shift();
+      if (!retirer) refuser('--retirer attend le nom d’un plug-in installé.');
     } else if (arg === '--manuel' || arg === '--auto') {
       manuel = arg === '--manuel';
     } else if (arg === '--prefixe') {
@@ -133,6 +147,14 @@ function lireArguments(argv) {
     } else {
       refuser(`une seule archive à la fois.\n${USAGE}`);
     }
+  }
+  if (retirer !== null) {
+    // Une archive, un préfixe ou un mode à côté disent qu'on s'est trompé de commande : deviner
+    // laquelle était voulue serait pire que refuser, puisque l'une des deux efface.
+    if (source !== null || prefixe !== undefined || manuel !== undefined) {
+      refuser(`--retirer ne prend que le nom du plug-in (et --racine).\n${USAGE}`);
+    }
+    return { retirer, racine };
   }
   if (source === null) refuser(USAGE);
   if (!fs.existsSync(source)) refuser(`introuvable : ${source}`);
@@ -582,17 +604,28 @@ function existe(chemin) {
   return fs.lstatSync(chemin, { throwIfNoEntry: false }) !== undefined;
 }
 
-/** La dernière installation de ce plug-in, telle que `installation.json` la décrit — ou `null`. */
+const cheminSkill = (nom) => path.join('.claude', 'skills', nom);
+const cheminCommande = (nom) => path.join('.claude', 'commands', `${nom}.md`);
+
+/** La dernière installation de ce plug-in, telle que `installation.json` la décrit — ou `null`.
+ * Chaque nom relu est revalidé avant qu'on s'en serve pour retirer quoi que ce soit (règle 3). */
 function installationPrecedente(racine, nom) {
-  const fichier = path.join(racine, PROVENANCE, nom, 'installation.json');
-  return existe(fichier) ? JSON.parse(fs.readFileSync(fichier, 'utf8')) : null;
+  const relatif = `${PROVENANCE}/${nom}/installation.json`;
+  const fichier = path.join(racine, relatif);
+  if (!existe(fichier)) return null;
+  const installation = JSON.parse(fs.readFileSync(fichier, 'utf8'));
+  const invalides = [...(installation.skills ?? []), ...(installation.commandes ?? [])]
+    .map((element) => element?.installe)
+    .filter((installe) => typeof installe !== 'string' || !NOM.test(installe));
+  if (invalides.length > 0) {
+    refuser(`${relatif} porte un nom qui n’en est pas un : ${invalides.map((n) => `« ${n} »`).join(', ')}. Rien n’a été touché.`);
+  }
+  return installation;
 }
 
 /** Ce que l'installation écrira et retirera — calculé entièrement avant la première écriture. */
 function planifier(inventaire, racine, precedente) {
   const provenance = path.join(racine, PROVENANCE, inventaire.nom);
-  const cheminSkill = (nom) => path.join('.claude', 'skills', nom);
-  const cheminCommande = (nom) => path.join('.claude', 'commands', `${nom}.md`);
 
   // Ce que la version précédente avait posé est à nous : on le remplace sans que ce soit une
   // collision. `installation.json` est la seule source de cette liste.
@@ -684,9 +717,43 @@ function rendreCompte(inventaire, plan, remarques, ecritures) {
   console.log(lignes.join('\n'));
 }
 
+/** Défait une installation : ce que `installation.json` dit avoir posé, puis la provenance. Jamais un
+ * motif de noms — `<préfixe>-*` emporterait un skill écrit ici sous un nom voisin, que rien ne
+ * distingue d'un skill du plug-in, sinon cette liste. */
+function retirerLePlugin(racine, nom) {
+  if (!NOM.test(nom)) refuser(`« ${nom} » n’est pas un nom de plug-in valide.`);
+  const installation = installationPrecedente(racine, nom);
+  if (installation === null) {
+    const dossier = path.join(racine, PROVENANCE);
+    const installes = existe(dossier)
+      ? fs.readdirSync(dossier, { withFileTypes: true }).filter((entree) => entree.isDirectory()).map((entree) => entree.name).sort()
+      : [];
+    refuser(
+      `aucun plug-in « ${nom} » n’est installé ici (${PROVENANCE}/${nom}/installation.json n’existe pas). ` +
+        `Installés : ${installes.length > 0 ? installes.join(', ') : 'aucun'}.`,
+    );
+  }
+  const skills = installation.skills ?? [];
+  const commandes = installation.commandes ?? [];
+  for (const { installe } of skills) fs.rmSync(path.join(racine, cheminSkill(installe)), { recursive: true, force: true });
+  for (const { installe } of commandes) fs.rmSync(path.join(racine, cheminCommande(installe)), { force: true });
+  fs.rmSync(path.join(racine, PROVENANCE, nom), { recursive: true, force: true });
+
+  console.log(
+    [
+      `Plug-in ${nom} ${installation.version ?? '(sans version)'} retiré — ${skills.length} skill(s), ` +
+        `${commandes.length} commande(s), et sa provenance.`,
+      '',
+      ...[...skills, ...commandes].map(({ installe }) => `  /${installe}`),
+      '',
+      '  Ce qui le cite ailleurs dans le dépôt (CLAUDE.md, un document) reste à relire à la main.',
+    ].join('\n'),
+  );
+}
+
 let ouverture = null;
-try {
-  const { source, racine, prefixe: prefixeDemande, manuel: manuelDemande } = lireArguments(process.argv.slice(2));
+
+function installer({ source, racine, prefixe: prefixeDemande, manuel: manuelDemande }) {
   ouverture = ouvrir(source);
   const racinePlugin = racineDuPlugin(ouverture.dossier);
   refuserLesLiens(racinePlugin);
@@ -703,6 +770,12 @@ try {
   const remarques = aRelire(ecritures, inventaire);
   ecrire(ecritures, inventaire, plan, racine, racinePlugin, ouverture, source);
   rendreCompte(inventaire, plan, remarques, ecritures);
+}
+
+try {
+  const demande = lireArguments(process.argv.slice(2));
+  if (demande.retirer) retirerLePlugin(demande.racine, demande.retirer);
+  else installer(demande);
 } catch (erreur) {
   if (!(erreur instanceof Refus)) throw erreur;
   console.error(`Refusé : ${erreur.message}`);

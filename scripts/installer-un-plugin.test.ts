@@ -6,11 +6,12 @@
  * Ce qui est éprouvé, c'est chacune des trois règles de l'en-tête du script — le préfixe avec ses
  * renvois et ses liens, ce qui ne s'installe jamais, et « rien n'est écrit avant que tout soit
  * vérifié » —, plus ce qui dure d'une installation à la suivante : la mise à jour, qui est la seule
- * façon d'installer deux fois le même plug-in sans que ce soit une collision, et le préfixe et le
- * mode `--manuel` choisis la première fois.
+ * façon d'installer deux fois le même plug-in sans que ce soit une collision, le préfixe et le
+ * mode `--manuel` choisis la première fois, et `--retirer`, qui défait exactement ce qu'une
+ * installation a posé.
  *
- * Non-vacuité, mesurée le 24/09/2026 en cassant le script vingt-six fois (chaque mutation remise en
- * place depuis une copie avant la suivante), les tests tombés entre parenthèses :
+ * Non-vacuité, mesurée le 24/09/2026 en cassant le script trente-quatre fois (chaque mutation remise
+ * en place depuis une copie avant la suivante), les tests tombés entre parenthèses :
  *   - le préfixe : ne plus réécrire le champ `name`, 1 (le nominal) ; le redoubler sur un nom qui le
  *     porte déjà, 2 (le préfixe porté, le préfixe court) ; oublier celui de la dernière
  *     installation, 1 (le préfixe court) ; ignorer les chemins que le manifeste déclare, 1 ; en
@@ -32,7 +33,13 @@
  *     mise à jour) ; compter ce qu'elle avait posé comme une collision, 3 (la mise à jour, le préfixe
  *     court, le mode manuel) ; ne plus poser l'appel manuel, 1 ; oublier le mode de la dernière
  *     installation, 1 (les deux : le mode manuel) ;
- *   - le compte rendu : lister chaque donnée comme un script à lire, 1 (les données).
+ *   - le compte rendu : lister chaque donnée comme un script à lire, 1 (les données) ;
+ *   - le retrait : retirer tout ce qui porte le préfixe au lieu de la liste, ne plus retirer les
+ *     commandes, ne plus retirer la provenance, 1 chacune (le retrait nominal) ; ne plus revalider les
+ *     noms relus dans `installation.json`, les valider au fil du retrait plutôt qu'avant, 1 chacune
+ *     (le nom piégé) ; ne plus valider le nom passé à `--retirer`, 1 (le nom invalide) ; retirer en
+ *     silence un plug-in absent, 1 (le plug-in absent) ; accepter `--retirer` à côté d'une archive
+ *     ou d'un mode, 1 (les commandes mêlées).
  * Aucune mutation ne passe.
  */
 import { spawnSync } from 'node:child_process';
@@ -65,10 +72,12 @@ const manifeste = (version = '1.0.0') => JSON.stringify({ name: 'outil', version
 const skill = (nom: string, enTeteEnPlus = '') =>
   `---\nname: ${nom}\ndescription: Le skill ${nom}.\n${enTeteEnPlus}---\n\nConsignes de ${nom}.\n`;
 
-function installer(source: string, depot: string, ...options: string[]) {
-  const r = spawnSync(process.execPath, [script, source, '--racine', depot, ...options], { encoding: 'utf8' });
+function lancer(...args: string[]) {
+  const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
   return { code: r.status, sortie: `${r.stdout}${r.stderr}` };
 }
+const installer = (source: string, depot: string, ...options: string[]) => lancer(source, '--racine', depot, ...options);
+const retirer = (nom: string, depot: string, ...options: string[]) => lancer('--retirer', nom, '--racine', depot, ...options);
 
 const lire = (depot: string, relatif: string) => fs.readFileSync(path.join(depot, relatif), 'utf8');
 const existe = (depot: string, relatif: string) => fs.existsSync(path.join(depot, relatif));
@@ -464,5 +473,84 @@ describe('installer un plug-in', () => {
     expect(r.code).toBe(1);
     expect(r.sortie).toContain(motif);
     expect(existe(depot, '.claude')).toBe(false);
+  });
+});
+
+describe('retirer un plug-in', () => {
+  const source = () =>
+    plugin({
+      '.claude-plugin/plugin.json': manifeste(),
+      'skills/ecrire/SKILL.md': skill('ecrire'),
+      'skills/lire/SKILL.md': skill('lire'),
+      'commands/idee.md': '---\ndescription: Une idée.\n---\nTrouve une idée.\n',
+      LICENSE: 'Licence.\n',
+    });
+
+  test('retire ce que l’installation a posé, et rien de ce qui lui ressemble', () => {
+    const depot = temporaire('ramille-depot-');
+    expect(installer(source(), depot).code).toBe(0);
+    // Écrits ici sous le préfixe du plug-in : seul `installation.json` les distingue des siens.
+    fs.mkdirSync(path.join(depot, '.claude/skills/outil-maison'));
+    fs.writeFileSync(path.join(depot, '.claude/skills/outil-maison/SKILL.md'), 'à nous\n');
+    fs.writeFileSync(path.join(depot, '.claude/commands/outil-maison.md'), 'à nous\n');
+
+    const r = retirer('outil', depot);
+
+    expect(r.code).toBe(0);
+    for (const chemin of [
+      '.claude/skills/outil-ecrire',
+      '.claude/skills/outil-lire',
+      '.claude/commands/outil-idee.md',
+      '.claude/plugins-importes/outil',
+    ]) {
+      expect(existe(depot, chemin)).toBe(false);
+    }
+    expect(lire(depot, '.claude/skills/outil-maison/SKILL.md')).toBe('à nous\n');
+    expect(lire(depot, '.claude/commands/outil-maison.md')).toBe('à nous\n');
+    expect(r.sortie).toContain('Plug-in outil 1.0.0 retiré — 2 skill(s), 1 commande(s), et sa provenance.');
+  });
+
+  test.each([
+    ['un plug-in qui n’est pas installé', 'autre', ['aucun plug-in « autre »', 'Installés : outil.']],
+    ['un nom qui n’en est pas un', '../outil', ['pas un nom de plug-in valide']],
+  ])('refuse %s, sans rien toucher', (_, nom, motifs) => {
+    const depot = temporaire('ramille-depot-');
+    expect(installer(source(), depot).code).toBe(0);
+
+    const r = retirer(nom, depot);
+
+    expect(r.code).toBe(1);
+    for (const motif of motifs) expect(r.sortie).toContain(motif);
+    expect(existe(depot, '.claude/skills/outil-ecrire/SKILL.md')).toBe(true);
+  });
+
+  test('refuse un installation.json qui désignerait autre chose qu’un skill, au retrait comme à la mise à jour', () => {
+    const depot = temporaire('ramille-depot-');
+    expect(installer(source(), depot).code).toBe(0);
+    fs.mkdirSync(path.join(depot, 'src'));
+    fs.writeFileSync(path.join(depot, 'src/garde.ts'), 'à garder\n');
+    // Le nom piégé vient APRÈS deux noms valides : un retrait qui validerait au fil de l'eau aurait
+    // déjà effacé les premiers, et c'est ce qu'on veut voir tomber.
+    const suivi = installation(depot);
+    suivi.skills.push({ amont: 'piege', installe: '../../src' });
+    fs.writeFileSync(path.join(depot, '.claude/plugins-importes/outil/installation.json'), JSON.stringify(suivi));
+
+    for (const r of [retirer('outil', depot), installer(source(), depot)]) {
+      expect(r.code).toBe(1);
+      expect(r.sortie).toContain('porte un nom qui n’en est pas un : « ../../src »');
+    }
+    expect(lire(depot, 'src/garde.ts')).toBe('à garder\n');
+    expect(existe(depot, '.claude/skills/outil-ecrire/SKILL.md')).toBe(true);
+  });
+
+  test('refuse --retirer à côté d’une archive ou d’un mode : l’une des deux commandes efface', () => {
+    const depot = temporaire('ramille-depot-');
+    expect(installer(source(), depot).code).toBe(0);
+
+    for (const r of [installer(source(), depot, '--retirer', 'outil'), retirer('outil', depot, '--manuel')]) {
+      expect(r.code).toBe(1);
+      expect(r.sortie).toContain('--retirer ne prend que le nom du plug-in');
+    }
+    expect(existe(depot, '.claude/skills/outil-ecrire/SKILL.md')).toBe(true);
   });
 });
