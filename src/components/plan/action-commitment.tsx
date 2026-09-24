@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -29,7 +30,10 @@ import {
 //     score. On peut changer d'action ou retirer son engagement sans que rien ne le compte
 //     contre soi — même registre que l'écran /suivi.
 //   - il ne passe pas par `Alert.alert` : sur web, l'alerte retombe sur `window.alert()`, qui
-//     n'invoque pas fiablement `onPress` (cf. CLAUDE.md). L'erreur est un état du composant.
+//     n'invoque pas fiablement `onPress` (cf. CLAUDE.md). L'erreur est un état du composant, et
+//     elle se dit par `MessageInline`, la seule façon du produit de dire qu'une action n'a pas
+//     abouti — elle était un `ThemedText` nu jusqu'au 24/09/2026, donc annoncée à personne
+//     (audit d'accessibilité, 4.1.3).
 export function ActionCommitment({
   actionId,
   poste,
@@ -150,11 +154,7 @@ export function ActionCommitment({
           themeColor="textTertiary"
           style={styles.link}
         />
-        {error && (
-          <ThemedText type="small" themeColor="textSecondary">
-            {error}
-          </ThemedText>
-        )}
+        <MessageInline message={error} />
       </View>
     );
   }
@@ -215,11 +215,7 @@ export function ActionCommitment({
         </GroupeDeChoix>
       )}
 
-      {error && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-      )}
+      <MessageInline message={error} />
 
       <View style={styles.pickerActions}>
         <TextLink
