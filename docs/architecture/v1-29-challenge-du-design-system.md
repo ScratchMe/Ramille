@@ -1,0 +1,244 @@
+# v1-29 — Le design system mis à l'épreuve : ce qui tient, ce qui change, ce qui attend
+
+> **Décidé et livré le 24/09/2026.** Une séance de challenge du design system, demandée pour qu'il
+> puisse aussi **éclairer les choix d'UX à venir**, a rendu onze arbitrages de produit, onze petites
+> corrections acceptées sans veto et une liste de corrections techniques. Ce document dit ce qui a
+> été décidé, ce qui a été fait, ce que la mesure a corrigé en chemin, et ce qui reste ouvert —
+> en particulier trois chantiers qui ne sont **pas** dans cette livraison : le thème sombre (§6.1),
+> le déverrouillage du portrait (§6.2) et la synchronisation complète du kit (§5).
+
+## 1. D'où ça vient
+
+La demande, mot pour mot : *« un rechallenge sincère de notre design system, et qu'il puisse
+éventuellement nous aider dans nos choix d'UX à venir »*. La séance a suivi l'installation des
+plug-ins Design et Marketing (ScratchMe/Ramille#261), et elle a utilisé les méthodes du premier —
+grille de critique d'écran, audit de design system, revue WCAG — plus une base de référence externe,
+UI UX Pro Max, lue depuis son archive sans être installée.
+
+Quatre relevés, tous en lecture seule, puis une critique d'écrans :
+
+- **les jetons et leur dérive** : chaque valeur de style du dépôt relevée et comptée, comparée à
+  `src/constants/theme.ts` et au kit `docs/design/design-system/` ;
+- **l'accessibilité**, WCAG 2.1 AA plus 2.5.8 et 3.3.8 de la 2.2 : contrastes calculés par la formule
+  de luminance, sémantique relevée dans le code **et dans l'export web**, où react-native-web décide
+  de ce qu'un lecteur d'écran entend ;
+- **la base de référence** : ce qu'elle confirme, ce qu'elle contredit, et ce qu'elle apporte ;
+- **76 captures** du parcours réel (fenêtre 390 × 844, stack Supabase locale, profil de la recette),
+  regardées écran par écran.
+
+**Ce qui tient, et qu'il ne faut pas « corriger »** : en thème clair, tous les textes passent les
+seuils de contraste, le plus faible à 5,08:1 ; l'accent unique, le ton calme et l'absence de
+gamification sont confirmés par la base de référence — qui recommandait par ailleurs des badges, des
+séries et un rouge d'alerte, que le produit refuse pour de bonnes raisons (`FRONT.md` §2.3) ; la
+mascotte et les illustrations sont masquées aux lecteurs d'écran ; la préférence « réduire les
+animations » est respectée là où ça compte ; le questionnaire suit les bonnes pratiques (étapes,
+retour, brouillon, préremplissage).
+
+## 2. Les arbitrages de la personne qui pilote
+
+Posés un par un, sous la forme de `CLAUDE.md` — le fait, la recommandation, ce qu'on casse si on se
+trompe —, et rendus le 24/09/2026 : **toutes les recommandations sont suivies, sauf la n° 11**.
+
+| N° | Le fait | Décision |
+|---|---|---|
+| 1 | « Le déplacement qui pèse le plus » coiffe le domicile-travail (1,9 t) au-dessus de barres où les voyages pèsent 2,0 t : c'est le départage à 5 % de `v1-05`, qui donne la place au poste le plus régulier | **Garder la règle, changer l'étiquette quand elle joue** : « Le plus régulier, presque à égalité avec tes voyages » |
+| 2 | Sur la carte du point, « Oui » est un bouton vert plein et « Non » un bouton gris : le classement que le suivi a retiré en C2.7 | **Même poids visuel** pour « Oui » et « Non » ; le troisième choix reste un lien |
+| 3 | Au tout premier plan, le premier écran montre la carte « Ton premier plan », la mascotte, le titre et le cap ; la première action arrive coupée en bas | **Au premier plan, les cartes d'action passent avant le cap** |
+| 4 | « Ton cap pour cette saison − 384 kg » est un chiffre **annuel**, et les pistes juste dessous annoncent « − 619 kg par an » : rien ne dit comment les deux se rapportent | **« par an »** sous le chiffre, et, quand elle est vraie, **une phrase qui dit le lien** (« Chacune des deux pistes proposées suffit à le franchir. ») |
+| 5 | L'onglet actif et l'inactif ont la même luminance (1,02:1), la pastille active ne ressort qu'à 1,18:1 : pour qui distingue mal les couleurs, les deux onglets sont identiques (WCAG 1.4.1) | **Une pastille verte pleine, icône blanche** (6,12:1) |
+| 6 | Aucun élément touchable ne change d'aspect sous le doigt : sur Android, on ne sait pas si l'appui a été pris | **Une teinte instantanée, sans animation** |
+| 7 | `theme.ts` attribuait 44 px à « WCAG 2.5.8 / Material » ; Material dit 48 dp, 2.5.8 dit 24, et 44 est le seuil de 2.5.5 (AAA). Trois cibles étaient sous 44 | **48**, et les trois cibles corrigées |
+| 8 | Le thème sombre est défini mais jamais rendu ; l'activer demande un contraste à corriger, sept endroits du code, les variantes du splash et de l'icône, et un build EAS | **Après le lancement** — la liste de reprise est en §6.1 |
+| 9 | L'écran est verrouillé en portrait par le défaut du gabarit Expo, que rien n'a décidé, et c'est un écart WCAG (1.3.4) | **Portrait gardé pour la V1**, écart connu consigné en §6.2 |
+| 10 | La chasse fixe, que le kit réserve aux sources, porte aussi des phrases adressées à la personne — dont « Ton mode n’est pas dans la liste ? Dis-le-nous. », en 12 px gris, qui se lit comme une ligne de débogage | **Spline Sans pour toute phrase adressée à la personne**, la chasse fixe pour les sources et les codes techniques seulement |
+| 11 | Le kit a décroché du code : composants absents, anciens noms, fichiers inexistants, et une contradiction sur l'état désactivé. Recommandation : le réduire à ce qui ne dérive pas | **Refusé : le kit se synchronise** — *« je tâcherai de m'en souvenir »*. Ce document s'en souvient à sa place : §5 |
+
+**Les petites corrections, acceptées sans veto** : un contour gris au repos sur les champs vides
+(1,14:1 sans lui) ; la carte estompée par son cadre et non par l'opacité de son texte (3,25:1) ;
+l'espace insécable avant « ? », « ! » et « : » ; « Le check-in reste là » devenu « Le point reste
+là » ; la félicitation du plan à zéro action qui nomme le poste ; « par an » ramené à côté du
+chiffre sur la carte engagée ; « Télécharger mes données » reconnaissable comme un bouton ; « Par
+email » désactivé qui avait l'air choisi ; la barre pleine du suivi à un seul bilan ; la page de
+confidentialité qui ne connaissait que « oui » et « non » ; et « Recevoir un code » inactif sans dire
+pourquoi.
+
+**Ce qui était technique, donc pris sans le demander** (`CLAUDE.md`, « La partie technique est la
+responsabilité de l'agent ») : l'état des choix sur web, seul défaut **critique** de l'audit (§3.2) ;
+onze séries de puces annoncées comme des boutons ; les erreurs d'engagement et trois écrans
+remplacés sans annonce ; les valeurs répétées sans jeton ; cinq endroits où la documentation
+contredisait le code ; deux composants en double ; une erreur d'hydratation au chargement direct de
+`/connexion` ; la largeur de lecture des pages légales sur ordinateur.
+
+## 3. Ce qui a été fait
+
+### 3.1 Le socle : les jetons et `ThemedText`
+
+`src/constants/theme.ts` porte désormais ce que les écrans recopiaient, **sous les noms que le kit
+leur donnait déjà** quand il en avait un :
+
+- **six jetons de couleur d'état**, dans les deux palettes, contrastes mesurés en commentaire :
+  `onAccent` (le blanc posé sur l'accent, écrit en dur trois fois), `accentPressed`,
+  `backgroundPressed` et `backgroundSelectedPressed` (la surface sous le doigt), `fieldBorder` (le
+  contour d'un champ au repos : 3,45:1 sur blanc, 3,04:1 sur le fond du champ) et `scrim` (le voile
+  d'une feuille, écrit en dur deux fois) ;
+- **`TypeScale.display`** (32/38/−0,64, six recopies) et **`TypeScale.label`** (13/18/0,3, l'étiquette
+  en capitales, trois recopies) ;
+- **`Radius.notice`** (12) et **`Radius.chip`** (14, douze recopies). `Radius.chip` **a changé de
+  sens** : il valait 8 pour la puce « Cadence » du plan, disparue avec C2.8, et plus rien ne le lisait ;
+- **`ControlHeight.target` à 48**, et `topBand` (52), `tabBar` (60), `numeric` (64) ;
+- **`Rail`** (6 px, rayon 3) et **`Stroke`** (`hairline` 1, `selected` 1,5, `engaged` 2).
+
+Et ce qui n'était lu nulle part est parti : `Fonts.sans`, `Fonts.serif` et `Fonts.rounded` — Spline
+Sans passe par `FontFamily` —, avec les trois variables CSS qui les portaient.
+
+`ThemedText` gagne trois choses, parce que ce sont trois choses qu'aucun écran ne doit avoir à faire
+lui-même :
+
+- le type **`display`**, en-tête de niveau 1 comme `title` et `screenTitle` ;
+- un **niveau d'en-tête sur web** : react-native-web rendait chaque en-tête en `<h1>`, donc un
+  lecteur d'écran qui parcourt une page par titres ne distinguait plus l'écran de ses sections. Le
+  niveau se déduit du type (1 pour un titre d'écran, 2 pour tout autre en-tête) et se surcharge par
+  `headingLevel` ;
+- **les espaces insécables de la typographie française, posées au rendu** (`src/types/typographie.ts`,
+  avec ses tests) : avant `?`, `!`, `:` et `;`, et à l'intérieur des guillemets. C'est U+00A0 et non
+  l'espace fine U+202F, pour la raison que `FRONT.md` §1 a déjà mesurée : 71 unités sur 1 000 dans
+  Spline Sans, le signe paraît collé. Les dérivations de `src/types/` rendent toujours des espaces
+  ordinaires, et leurs tests les comparent telles quelles.
+
+Les deux attentes de texte des contrôles d'export (`verifier-etats-export.mjs`,
+`verifier-rendu-export.mjs`) normalisent désormais les blancs, comme leur comparaison finale le
+faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aurait attendue en vain.
+
+### 3.2 à 3.4
+
+*(Complétés à l'intégration des trois chantiers : contrôles et formulaires, plan et suivi,
+navigation et pages.)*
+
+## 4. Ce que la mesure a corrigé en chemin
+
+*(Complété à l'intégration.)*
+
+## 5. Le kit : synchronisé, et ce que ça engage
+
+**La décision n° 11 change le statut du kit.** Il était une photographie datée du 10/09/2026, dont
+les écarts se consignaient dans le README du canvas concerné (`.claude/skills/ramille-design/SKILL.md`) ;
+il devient un **miroir tenu**, et un miroir tenu n'a de valeur que si quelque chose le tient. Deux
+règles, à partir du 24/09/2026 :
+
+- **ce qui change un jeton ou une règle du kit le met à jour dans la même PR.** C'est écrit en tête de
+  `theme.ts`, et c'est ce que cette livraison fait pour ses propres jetons : `tokens/*.css` recopie
+  les six couleurs d'état, `display`, `label`, les rayons, les hauteurs et les traits ;
+- **les phrases du `readme.md` du kit que cette livraison rend fausses sont corrigées ici** — l'état
+  pressé, la cible de 44, le total en 48/52 (il est en `salient` 30/36 depuis A3-22, le 11/09/2026),
+  et le dépôt `ScratchMe/TraceVerte`.
+
+**Ce qui reste est un chantier, pas une correction**, et il demande une session de design : c'est
+elle qui sait redessiner un composant dans le kit. Son inventaire, relevé le 24/09/2026 :
+
+- **les composants absents** : un fichier de `src/components/` est compté représenté si l'une de ses
+  fonctions exportées porte le nom d'un composant du kit. À cette définition, **36 fichiers sur 63**
+  n'y sont pas — la séance en comptait 31 sur une autre définition, et c'est la définition qui se
+  vérifie, pas le nombre. Tout le questionnaire étape par étape, les quatre étapes de l'onboarding,
+  la saisie du code, les cartes de piste et d'ouverture, le trait de temps, les trois composants du
+  suivi, les pages légales et les écrans d'erreur. Le relevé se refait par la commande de §7 ;
+- **`BarreOnglets`** existe dans le kit et pas comme composant du code : la barre est le layout
+  `src/app/(tabs)/_layout.tsx` ;
+- **le catalogue des 38 écrans** (`ui_kits/ramille/`) reprend le handoff V1, dont des écrans à mot de
+  passe qui n'existent plus depuis `v1-10` §2.D, et cite l'ancien nom du produit ;
+- **`SKILL.md` du kit** renvoie à un `README.md` qui s'appelle `readme.md` ;
+- **l'état désactivé** : le kit écrit « jamais une opacité », et deux lignes de canal de rappel en
+  portaient une (0,6) — ce que la livraison en a fait est en §3 ;
+- les composants que cette livraison crée ou fusionne (la feuille du bas partagée, la ligne de canal
+  partagée) sont à ajouter.
+
+**Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
+partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.
+
+## 6. Ce qui reste ouvert
+
+### 6.1 Le thème sombre, après le lancement
+
+Tout est défini, rien n'est rendu : le clair est forcé sur web (`src/hooks/use-theme.ts`) et
+`app.json` porte `userInterfaceStyle: light` sur natif. **La liste de reprise**, pour que le jour venu
+ne commence pas par un relevé :
+
+1. `app.json` : `userInterfaceStyle: automatic`, les variantes sombres du splash et de l'icône
+   adaptative — donc **un build EAS** (au plus un tous les deux jours, `CLAUDE.md`) ;
+2. `src/hooks/use-theme.ts` : lever le forçage du clair sur web, **en réglant d'abord le flash** :
+   l'export statique ne connaît pas `prefers-color-scheme`, donc le premier rendu est clair chez tout
+   le monde (`EXPO.md` §2.2 — la règle d'hydratation) ; il faudra des variables CSS sous
+   `@media (prefers-color-scheme: dark)` plutôt qu'une lecture JavaScript ;
+3. `src/app/_layout.tsx` : `DefaultTheme` en dur autour de la navigation, à passer sur la palette
+   courante ;
+4. **la mascotte et les illustrations lisent `Colors.light` directement** : deux gels dans
+   `src/components/mascot.tsx` (le `COULEUR` au niveau du module et le corps du composant), et les
+   trois illustrations de `src/components/illustrations/`. La table de `theme.ts` dit déjà ce qui
+   bascule et ce qui ne bascule pas ;
+5. **trois contrastes sombres sous le seuil** : le blanc sur l'accent sombre `#3D9B6F` (3,43:1 —
+   `onAccent` ou l'accent sombre est à changer ; `#0B1F15` sur `#3D9B6F` tient 5,01:1),
+   `textTertiary` et `accent` sur `backgroundSelected` sombre (4,39 et 4,18). Et `border` (1,10 à 1,61)
+   comme `accentMuted` (1,69 à 2,47) sont à revoir partout où ils portent une information ;
+6. les valeurs sombres des six jetons d'état de §3.1 sont **provisoires** et n'ont été regardées sur
+   aucun écran ;
+7. une recette complète en sombre, sur appareil.
+
+### 6.2 Le portrait, écart connu de la V1
+
+`app.json` porte `"orientation": "portrait"` : c'est le défaut du gabarit Expo, et **rien ne l'avait
+décidé** avant le 24/09/2026. C'est un écart WCAG 1.3.4 (orientation), assumé pour la V1. Le lever
+coûte un build EAS et **une recette en paysage de chaque écran** — le pager de l'onboarding, les deux
+feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
+
+### 6.3 Ce qui n'a pas été arbitré, et ne se fait donc pas
+
+- **Un « Précédent » (ou un « Passer ») dans l'onboarding** : l'audit relève qu'aucun contrôle ne
+  permet d'y revenir en arrière, sinon le balayage ou le retour Android. C'est une question de
+  produit — ce qu'on demande à la personne, et dans quel ordre —, pas une correction ;
+- **l'avertissement de la vérification automatique** : le code part seul au huitième chiffre
+  (`FRONT.md` §2.7 bis) sans que l'écran le dise (WCAG 3.2.2). La décision est documentée ; seule la
+  phrase manque, et c'est une phrase à arbitrer ;
+- **les points de pagination de l'onboarding** ne ressortent qu'à 1,37:1 sur leur fond (WCAG 1.4.11) ;
+- ce que la base de référence apportait et que le produit n'a pas retenu : des graphiques à quatre
+  points au moins, un réglage de la recette à 200 % de taille de police et en mouvement réduit —
+  ce dernier est repris en §6.5.
+
+### 6.4 Les limites du web, qu'aucun code du dépôt ne lève
+
+- **`accessibilityHint` n'existe pas sur web** : react-native-web l'ignore. Le rappel de la question
+  sur « Oui » et « Non » du point, et la longueur maximale du retour, n'y sont pas annoncés ;
+- **la barre d'espace n'active pas un `radio`** : react-native-web ne la gère que sur un `button` ;
+- la préférence « réduire les animations » n'est lue qu'au démarrage (reanimated le documente).
+
+### 6.5 Ce que la prochaine recette sur appareil doit regarder
+
+Rien de ce qui suit ne se voit en CI :
+
+- **TalkBack** : chaque série de puces annoncée « case d'option, n sur m » avec sa question, les jours
+  de l'engagement en cases à cocher, l'onglet actif, les feuilles nommées par leur titre, les erreurs
+  d'engagement et les trois écrans remplacés (point répondu, retour envoyé, calcul du bilan) ;
+- **la teinte sous le doigt**, sur chaque contrôle, et qu'elle ne reste pas collée après un geste de
+  défilement ;
+- **les cibles de 48** : onglets, jours de l'engagement (qui peuvent passer sur deux lignes), jours du
+  questionnaire ;
+- **la taille de police à 200 %** : la barre d'onglets, les champs (56) et le champ numérique (64) ont
+  des hauteurs fixes ;
+- **le mouvement réduit** : le défilement du pager de l'onboarding et l'arrivée des feuilles.
+
+## 7. Refaire les relevés
+
+Les deux commandes qui ont produit les nombres de ce document, pour qu'ils se vérifient :
+
+```bash
+# Les valeurs de style répétées sans jeton (ici les rayons ; même forme pour borderWidth, fontSize…)
+grep -rhoE "borderRadius: *[0-9.]+" src | sort | uniq -c | sort -rn
+
+# Les fichiers de composants absents du kit (définition de §5)
+python3 - <<'EOF'
+import pathlib, re
+kit = {p.stem for p in pathlib.Path('docs/design/design-system/components').rglob('*.jsx')}
+fichiers = sorted(pathlib.Path('src/components').rglob('*.tsx'))
+absents = [f for f in fichiers
+           if not set(re.findall(r'^export (?:default )?function (\w+)', f.read_text(), re.M)) & kit]
+print(len(absents), 'sur', len(fichiers))
+EOF
+```

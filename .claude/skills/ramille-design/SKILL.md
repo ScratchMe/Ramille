@@ -10,10 +10,14 @@ plus récent est `docs/design/v1-14-boucle-engagement/` (README, HANDOFF, captur
 
 **La vérité du code reste le dépôt** : `src/constants/theme.ts`, `src/components/**`,
 `src/constants/mascotte.ts`, `src/types/mascot.ts` et CLAUDE.md. En cas d'écart entre le kit et le
-code, le code gagne, et l'écart se consigne dans le README du canvas concerné. Deux points du kit
-sont périmés dès sa livraison (10/09/2026) : le catalogue des 38 écrans reprend le handoff V1, dont
-des écrans à mot de passe qui n'existent plus (v1-10 §2.D), et l'exemple « Le mot de passe doit
-contenir au moins 8 caractères » du readme n'a pas d'équivalent dans le produit.
+code, le code gagne.
+
+**Le kit se synchronise depuis le 24/09/2026** (décision de la personne qui pilote,
+`docs/architecture/v1-29-challenge-du-design-system.md` §5) : il était une photographie datée, il
+devient un miroir tenu. Une PR qui change un jeton ou une règle du kit le met à jour elle-même ; ce
+qui reste à rattraper — des composants absents, le catalogue des 38 écrans qui reprend le handoff V1
+et ses écrans à mot de passe (v1-10 §2.D), l'exemple « Le mot de passe doit contenir au moins 8
+caractères » du readme — est inventorié dans cette §5, avec la commande qui refait le relevé.
 
 Les `.jsx` du kit sont des recréations web : on y lit des valeurs, on ne les importe jamais dans
 `src/`. Jetons plutôt que valeurs en dur ; chaque couleur dans les deux thèmes ; aucun jugement,

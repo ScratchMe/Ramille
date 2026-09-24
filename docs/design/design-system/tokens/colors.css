@@ -15,6 +15,11 @@
   --color-pagination-inactive: #CDD7CF;
   --color-on-accent: #FFFFFF;
   --color-scrim: rgba(19, 22, 18, 0.42);
+  /* États (24/09/2026, v1-29 §3.1) : sous le doigt, et le contour d'un champ au repos */
+  --color-accent-pressed: #14563A;
+  --color-background-pressed: #E4E6DF;
+  --color-background-selected-pressed: #D6E7DC;
+  --color-field-border: #858C86;
   --color-canvas: #EAECE6;
   /* Encre du visage de Ramille — fixe dans les deux thèmes (mascot.tsx lit Colors.light) */
   --color-mascot-ink: #131612;
@@ -54,6 +59,11 @@
   --color-pagination-inactive: #3A3D3A;
   --color-on-accent: #FFFFFF;
   --color-scrim: rgba(0, 0, 0, 0.6);
+  /* Provisoires, comme tout le thème sombre (v1-29 §6.1) */
+  --color-accent-pressed: #2F7F59;
+  --color-background-pressed: #2A2C2F;
+  --color-background-selected-pressed: #24392B;
+  --color-field-border: #767D77;
   --color-canvas: #0A0B0A;
   --color-mascot-warm: #B98A5E;
   --shadow-tier: none;

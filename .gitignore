@@ -77,3 +77,7 @@ ds-bundle/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules
+
+# Worktrees des sous-agents de Claude Code (Agent, isolation « worktree ») : des dépôts
+# git à part entière, qu’un `git add -A` embarquerait comme sous-modules.
+.claude/worktrees/

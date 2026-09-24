@@ -1,4 +1,4 @@
-/* Ramille — espacement, rayons, hauteurs. Source : theme.ts (Spacing, Radius, ControlHeight). */
+/* Ramille — espacement, rayons, hauteurs, traits. Source : theme.ts (Spacing, Radius, ControlHeight, Stroke, Rail). */
 :root {
   --space-half: 2px;
   --space-1: 4px;
@@ -8,15 +8,17 @@
   --space-5: 32px;
   --space-6: 64px;
 
-  --radius-chip: 8px;
+  /* --radius-chip valait 8 (la puce « Cadence », disparue avec C2.8) ; il porte le 14 des puces de
+     choix et des lignes de mode depuis le 24/09/2026 (v1-29 §3.1), qui s'appelait --radius-mode-item. */
   --radius-notice: 12px;
-  --radius-mode-item: 14px;
+  --radius-chip: 14px;
   --radius-field: 16px;
   --radius-card: 18px;
   --radius-pill: 22px;
   --radius-button: 27px;
 
-  --height-target: 44px;
+  /* 48 depuis le 24/09/2026 (Material, 48 dp) ; 44 est le seuil de WCAG 2.5.5, pas de 2.5.8 */
+  --height-target: 48px;
   --height-button: 54px;
   --height-field: 56px;
   --height-numeric: 64px;
@@ -27,6 +29,7 @@
   --stroke-selected: 1.5px;
   --stroke-engaged: 2px;
   --progress-height: 6px;
+  --progress-radius: 3px;
 
   --screen-padding: 24px;
   --max-content-width: 800px;

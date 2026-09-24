@@ -13,6 +13,8 @@
   --type-salient-size: 30px;  --type-salient-line: 36px;  --type-salient-tracking: -0.6px;
   --type-card-size: 17px;     --type-card-line: 24px;
   --type-body-size: 15px;     --type-body-line: 22px;
+  --type-display-size: 32px;  --type-display-line: 38px;  --type-display-tracking: -0.64px;
+  --type-label-size: 13px;    --type-label-line: 18px;    --type-label-tracking: 0.3px;
 
   /* ThemedText.baseSizes */
   --type-default-size: 16px;  --type-default-line: 24px;
@@ -25,5 +27,4 @@
   /* Tailles uniques laissées en dur dans le dépôt (documentées, pas des jetons) */
   --type-hero-size: 34px;     --type-hero-line: 40px;     --type-hero-tracking: -0.68px;
   --type-tab-size: 12px;      --type-tab-line: 16px;
-  --type-label-caps-size: 13px; --type-label-caps-line: 18px; --type-label-caps-tracking: 0.3px;
 }
