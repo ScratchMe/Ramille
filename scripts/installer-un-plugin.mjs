@@ -543,6 +543,10 @@ function aRelire(ecritures, inventaire) {
     .filter((element) => element.amont !== element.installe)
     .map((element) => echapper(element.amont));
   const resteDAmont = renommes.length > 0 ? new RegExp(`/(${renommes.join('|')})(?![a-z0-9-])`) : null;
+  // La forme `plugin:skill` n'est un renvoi que suivie d'un vrai nom du plug-in : Auth0 écrit
+  // `com.auth0.android:auth0:3.x`, une coordonnée Gradle et non un skill.
+  const tous = [...inventaire.skills, ...inventaire.commandes].map((element) => echapper(element.amont));
+  const renvoiEspace = new RegExp(`(^|[^a-z0-9.-])${echapper(inventaire.nom)}:(${tous.join('|')})(?![a-z0-9-])`);
   const remarques = [];
   const donnees = new Map();
   for (const { cible, texte, liensMorts } of ecritures) {
@@ -559,7 +563,7 @@ function aRelire(ecritures, inventaire) {
     texte.split('\n').forEach((ligne, index) => {
       if (ligne.startsWith(AVIS)) return;
       const raisons = A_REGARDER.filter(([motif]) => motif.test(ligne)).map(([, raison]) => raison);
-      if (ligne.includes(`${inventaire.nom}:`) || resteDAmont?.test(ligne)) {
+      if (renvoiEspace.test(ligne) || resteDAmont?.test(ligne)) {
         raisons.push('nom d’amont resté tel quel');
       }
       if (raisons.length > 0) {

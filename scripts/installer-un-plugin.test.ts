@@ -9,7 +9,7 @@
  * façon d'installer deux fois le même plug-in sans que ce soit une collision, et le préfixe et le
  * mode `--manuel` choisis la première fois.
  *
- * Non-vacuité, mesurée le 24/09/2026 en cassant le script vingt-cinq fois (chaque mutation remise en
+ * Non-vacuité, mesurée le 24/09/2026 en cassant le script vingt-six fois (chaque mutation remise en
  * place depuis une copie avant la suivante), les tests tombés entre parenthèses :
  *   - le préfixe : ne plus réécrire le champ `name`, 1 (le nominal) ; le redoubler sur un nom qui le
  *     porte déjà, 2 (le préfixe porté, le préfixe court) ; oublier celui de la dernière
@@ -17,7 +17,8 @@
  *     accepter un qui sort du plug-in, 1 (les deux : les chemins déclarés) ;
  *   - les renvois et les liens : ne plus réécrire les renvois, 2 (les renvois, le préfixe porté) ;
  *     ne plus marquer un fichier modifié, 2 (le nominal, les renvois) ; ne plus signaler un nom
- *     d'amont resté tel quel, 1 ; lire l'avis ajouté comme une consigne, 1 (le préfixe court) ; ne
+ *     d'amont resté tel quel, 1 ; prendre pour un renvoi toute forme `plugin:` — une coordonnée
+ *     Gradle d'Auth0 en est une —, 1 ; lire l'avis ajouté comme une consigne, 1 (le préfixe court) ; ne
  *     plus recalculer les liens, 1 ; ne plus signaler un lien mort, 1 ; recalculer un lien vers un
  *     fichier absent en amont, 1 (ces trois : les liens) ;
  *   - ce qui ne s'installe pas : accepter des hooks dans un en-tête, 2 (le skill, la commande) ;
@@ -115,7 +116,9 @@ describe('installer un plug-in', () => {
         'skills/ecrire/SKILL.md': skill('ecrire'),
         'commands/idee.md':
           '---\ndescription: Une idée.\n---\n# /idee\n\nEnsuite → `/ecrire`, ou outil:ecrire.\n' +
-          'Voir skills/ecrire/SKILL.md, et /ecrire-bis qui n’est pas à nous.\n',
+          'Voir skills/ecrire/SKILL.md, et /ecrire-bis qui n’est pas à nous.\n' +
+          // Une coordonnée à la Gradle, où le nom du plug-in précède « : » sans désigner un skill.
+          'La bibliothèque `com.outil:outil:1.0`.\n',
       }),
       depot,
     );
@@ -127,6 +130,7 @@ describe('installer un plug-in', () => {
     expect(commande).toContain('Voir skills/ecrire/SKILL.md, et /ecrire-bis qui n’est pas à nous.\n');
     expect(commande).toContain('Modifié pour Ramille');
     expect(r.sortie).toMatch(/outil-idee\.md:7 \(nom d’amont resté tel quel\)/);
+    expect(r.sortie).not.toContain('outil-idee.md:8');
   });
 
   test('recalcule les liens relatifs pour la nouvelle place des fichiers, et signale les morts', () => {
