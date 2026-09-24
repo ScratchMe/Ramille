@@ -18,6 +18,7 @@ import {
   bilanSansEmissions,
   comparisonNote,
   dominantHeadline,
+  etiquetteDuPosteDominant,
   modeResultat,
   montreMoyenneFrancaise,
   NOTE_MOBILITE_CONTRAINTE,
@@ -591,8 +592,13 @@ export default function BilanResultat() {
           <ThemedView type="backgroundSelected" style={styles.dominantCard}>
             {hasEmissions ? (
               <>
+                {/* **« Le déplacement qui pèse le plus » était faux quand le départage joue**
+                    (24/09/2026, `v1-29`) : à 5 % près le serveur retient le poste le plus régulier,
+                    et le profil de la recette voyait le domicile-travail (1,9 t) coiffé de cette
+                    étiquette au-dessus d'une barre de voyages à 2,0 t. L'étiquette se dérive des
+                    mêmes kilos que les barres ci-dessous — rien n'est recalculé ici. */}
                 <ThemedText weight={600} themeColor="accentText" style={styles.dominantLabel}>
-                  Le déplacement qui pèse le plus
+                  {etiquetteDuPosteDominant(results)}
                 </ThemedText>
                 <ThemedText type="subtitle" weight={600} style={styles.dominantHeadline}>
                   {dominantHeadline(results)}
