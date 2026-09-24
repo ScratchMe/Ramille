@@ -1,7 +1,7 @@
 import { Children, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
+import { ControlHeight, Spacing } from '@/constants/theme';
 
 /**
  * Le conteneur d'une série de puces : un `radiogroup` quand on n'en choisit qu'une, un `group`
@@ -31,6 +31,13 @@ import { Spacing } from '@/constants/theme';
  * sur la seconde, ou l'étirait sur toute la largeur. L'écart vient d'une marge intérieure de chaque
  * cellule et non d'un `gap`, qui s'ajoute aux largeurs en pourcentage au lieu de s'en retrancher ;
  * les cellules ne portent aucun rôle, donc le lecteur d'écran ne les voit pas.
+ *
+ * **`colonnes` est un maximum, pas une promesse** : une cellule ne descend jamais sous une cible
+ * plus son écart. Dans la carte d'une action, à 320 dp — un petit téléphone, ou un téléphone courant
+ * dont on a agrandi la taille d'affichage d'Android, c'est-à-dire souvent l'écran de qui voit mal —,
+ * quatre colonnes ne laissaient que 47,5 px par cellule : les puces, tenues à 48 par leur
+ * `minWidth`, débordaient et se touchaient (mesuré le 24/09/2026). Avec ce minimum, la rangée passe
+ * d'elle-même à trois colonnes égales, sans mesure ni second rendu.
  */
 export function GroupeDeChoix({
   question,
@@ -43,7 +50,10 @@ export function GroupeDeChoix({
   question: string;
   /** Vrai quand les puces se cumulent (des `checkbox`) : le groupe n'est alors pas un `radiogroup`. */
   cumulable?: boolean;
-  /** Nombre de colonnes d'une grille ; sans lui, les puces suivent la mise en page de `style`. */
+  /**
+   * Nombre de colonnes d'une grille — au plus : moins quand une cible de 48 n'y tiendrait plus.
+   * Sans lui, les puces suivent la mise en page de `style`.
+   */
   colonnes?: number;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
@@ -75,5 +85,5 @@ const styles = StyleSheet.create({
     rowGap: Spacing.two,
     marginHorizontal: -Spacing.two / 2,
   },
-  cellule: { paddingHorizontal: Spacing.two / 2 },
+  cellule: { paddingHorizontal: Spacing.two / 2, minWidth: ControlHeight.target + Spacing.two },
 });
