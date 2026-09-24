@@ -220,7 +220,8 @@ for (const { chemin, marqueur } of ROUTES) {
     // Puis le repos, qui n'est pas du luxe : une exception levée dans un effet arrive **après**
     // le premier rendu, et c'est la moitié de ce que ce script cherche.
     await (marqueur
-      ? page.waitForFunction((attendu) => document.body.innerText.includes(attendu), marqueur, {
+      ? // Blancs normalisés comme plus bas : l'espace d'avant « ? » est insécable au rendu.
+        page.waitForFunction((attendu) => document.body.innerText.replace(/\s+/g, ' ').includes(attendu), marqueur, {
           timeout: ATTENTE_MAX,
         })
       : page.waitForFunction(() => document.body.innerText.trim().length > 0, null, {

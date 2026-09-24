@@ -241,7 +241,11 @@ for (const { chemin, marques, attendu, interdit, quoi } of ETAPES) {
   const page = await ouvrir(chemin, marques);
   try {
     await page
-      .waitForFunction((t) => document.body.innerText.includes(t), attendu, { timeout: ATTENTE })
+      // Blancs normalisés comme plus bas : `ThemedText` rend insécable l'espace d'avant « ? »
+      // (`src/types/typographie.ts`), et `innerText` la garde telle quelle.
+      .waitForFunction((t) => document.body.innerText.replace(/\s+/g, ' ').includes(t), attendu, {
+        timeout: ATTENTE,
+      })
       .catch(() => {});
     const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ').trim();
 
