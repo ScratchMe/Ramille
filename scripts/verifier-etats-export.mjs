@@ -46,6 +46,8 @@
 // et c'est la quatrième mutation qui le montre.
 //
 // Lancé en CI après `expo export`, à côté des quatre autres gardes, cf. .github/workflows/ci.yml.
+import { readFileSync } from 'node:fs';
+
 import { chromium } from 'playwright';
 
 import { servirExport } from './servir-export.mjs';
@@ -261,6 +263,120 @@ for (const { chemin, marques, attendu, interdit, quoi } of ETAPES) {
   }
 }
 
+// ── C. La barre d'onglets : une cible de 48, et un actif qui se voit autrement qu'à sa teinte ─
+//
+// Deux décisions du 24/09/2026 (`v1-29`), et aucune ne se lit dans le code : la hauteur d'un
+// onglet est ce que la barre laisse une fois ôtés son filet et ses marges, et la couleur qu'on
+// perçoit est celle d'une couche parmi deux que react-navigation superpose. Toutes deux se
+// **mesurent** donc sur l'export.
+//
+// - **Chaque onglet mesure au moins `ControlHeight.target` de haut** — lu dans
+//   `src/constants/theme.ts` plutôt que recopié. Il en mesurait 39 : 60 moins un filet de 1 et des
+//   marges de 8 et 12 (l'audit disait 40, en oubliant le filet).
+// - **L'onglet actif porte une forme pleine qui tranche à 3:1 au moins sur la barre, et
+//   l'inactif n'en porte aucune** (WCAG 1.4.1 et 1.4.11). La seconde moitié n'est pas une
+//   précaution : une pastille sur les deux onglets remettrait toute la différence dans la teinte,
+//   c'est-à-dire exactement le défaut corrigé. La pastille d'avant, `backgroundSelected`, ne
+//   tranchait qu'à 1,18:1.
+const CIBLE_TACTILE = (() => {
+  const source = readFileSync('src/constants/theme.ts', 'utf8');
+  const valeur = Number(source.match(/ControlHeight\s*=\s*\{[^}]*?\btarget:\s*(\d+)/)?.[1]);
+  if (!Number.isFinite(valeur) || valeur <= 0) {
+    console.error(
+      '`ControlHeight.target` est introuvable dans src/constants/theme.ts — ce script le lit par' +
+        '\nmotif pour ne pas recopier la cible tactile du produit. Si la déclaration a changé de' +
+        '\nforme, adapter le motif.'
+    );
+    process.exit(1);
+  }
+  return valeur;
+})();
+const CONTRASTE_MINIMAL = 3;
+
+{
+  const page = await ouvrir('/plan');
+  try {
+    const vue = await page.evaluate(() => {
+      // Couleur CSS → [r, g, b, a].
+      const lire = (css) => {
+        const m = css.match(/rgba?\(([^)]+)\)/);
+        if (!m) return null;
+        const [r, g, b, a = '1'] = m[1].split(',').map((x) => x.trim());
+        return [Number(r), Number(g), Number(b), Number(a)];
+      };
+      const luminance = ([r, g, b]) => {
+        const canal = (c) => {
+          const s = c / 255;
+          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
+      };
+      const contraste = (a, b) => {
+        const [l1, l2] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return (l1 + 0.05) / (l2 + 0.05);
+      };
+      const tablist = document.querySelector('[role="tablist"]');
+      const fondDeLaBarre = tablist ? lire(getComputedStyle(tablist.parentElement).backgroundColor) : null;
+
+      return [...document.querySelectorAll('[role="tab"]')].map((onglet) => {
+        // Les formes pleines **réellement visibles** de l'onglet : react-navigation superpose une
+        // couche active et une couche inactive et règle leur opacité, donc une forme présente dans
+        // le DOM peut très bien être invisible. On compose l'opacité jusqu'à l'onglet.
+        let meilleur = 0;
+        for (const noeud of onglet.querySelectorAll('div')) {
+          const fond = lire(getComputedStyle(noeud).backgroundColor);
+          if (!fond || fond[3] === 0 || !fondDeLaBarre) continue;
+          let opacite = fond[3];
+          for (let n = noeud; n && n !== onglet; n = n.parentElement) {
+            opacite *= Number(getComputedStyle(n).opacity);
+          }
+          if (opacite < 0.99) continue;
+          meilleur = Math.max(meilleur, contraste(fond, fondDeLaBarre));
+        }
+        return {
+          nom: onglet.innerText.trim(),
+          actif: onglet.getAttribute('aria-selected') === 'true',
+          hauteur: onglet.getBoundingClientRect().height,
+          contraste: Math.round(meilleur * 100) / 100,
+        };
+      });
+    });
+
+    if (vue.length !== 2) {
+      echecs.push(`Barre d’onglets : ${vue.length} onglet(s) mesuré(s) sur /plan, deux attendus.`);
+    }
+    for (const onglet of vue) {
+      if (onglet.hauteur + 0.5 < CIBLE_TACTILE) {
+        echecs.push(
+          `L’onglet « ${onglet.nom} » mesure ${onglet.hauteur} px de haut, sous la cible de` +
+            ` ${CIBLE_TACTILE} (ControlHeight.target) : la barre lui laisse sa hauteur moins son` +
+            ' filet et ses deux marges.'
+        );
+      }
+      if (onglet.actif && onglet.contraste < CONTRASTE_MINIMAL) {
+        echecs.push(
+          `L’onglet actif « ${onglet.nom} » n’a aucune forme pleine à ${CONTRASTE_MINIMAL}:1 sur` +
+            ` la barre (la meilleure tranche à ${onglet.contraste}:1) : l’état actif ne se lit plus` +
+            ' qu’à la teinte (WCAG 1.4.1, 1.4.11).'
+        );
+      }
+      if (!onglet.actif && onglet.contraste >= CONTRASTE_MINIMAL) {
+        echecs.push(
+          `L’onglet inactif « ${onglet.nom} » porte une forme pleine à ${onglet.contraste}:1 :` +
+            ' si l’inactif a la même pastille que l’actif, seule la teinte les distingue.'
+        );
+      }
+    }
+    if (!vue.some((onglet) => onglet.actif)) {
+      echecs.push('Barre d’onglets : aucun onglet n’est annoncé actif (`aria-selected`) sur /plan.');
+    }
+  } catch (erreur) {
+    echecs.push(`Barre d’onglets, cible et indicateur : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -278,5 +394,5 @@ if (echecs.length > 0) {
 
 console.log(
   `${ETATS_DE_BARRE.length} états de barre d’onglets et ${ETAPES.length} ouvertures du` +
-    ' questionnaire conformes.'
+    ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte.`
 );
