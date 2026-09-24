@@ -11,7 +11,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { POSTE_LABEL } from '@/constants/postes';
-import { Spacing } from '@/constants/theme';
+import { Spacing, Stroke } from '@/constants/theme';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKg } from '@/lib/format';
@@ -113,6 +113,8 @@ export default function PistesScreen() {
     <TextLink
       label="Retour au plan"
       onPress={() => router.back()}
+      // Une navigation, donc un lien (24/09/2026, `v1-29`).
+      role="link"
       type="small"
       weight={600}
       themeColor="accentText"
@@ -343,7 +345,7 @@ function Lignes({
               style={[
                 styles.lignePiste,
                 separee && styles.pisteSeparee,
-                filetee && { borderBottomWidth: 1, borderBottomColor: theme.border },
+                filetee && { borderBottomWidth: Stroke.hairline, borderBottomColor: theme.border },
               ]}
               accessible
               accessibilityLabel={`${titre.replace(/\.$/, '')}${gain !== null ? `. ${gain} par an` : ''}. Action engagée.`}
@@ -353,7 +355,7 @@ function Lignes({
               </ThemedText>
               <View style={styles.lignePisteFin}>
                 {gain !== null && (
-                  <ThemedText type="small" themeColor="textTertiary">
+                  <ThemedText type="small" themeColor="textTertiary" style={styles.chiffres}>
                     {gain}
                   </ThemedText>
                 )}
@@ -369,13 +371,18 @@ function Lignes({
         return (
           <Pressable
             key={action.id}
-            style={[
+            style={({ pressed }) => [
               styles.lignePiste,
               separee && styles.pisteSeparee,
               // **Le filet, oublié à la livraison de C5.2** : sans lui, onze lignes de 14 px
               // forment un pavé continu. Quelles lignes le portent se décide dans
               // `filetsDesLignes`, avec ses deux exclusions et leurs tests.
-              filetee && { borderBottomWidth: 1, borderBottomColor: theme.border },
+              filetee && { borderBottomWidth: Stroke.hairline, borderBottomColor: theme.border },
+              // **La ligne répond au doigt** (24/09/2026, `v1-29`) : la teinte `backgroundPressed`,
+              // tout de suite et sans animation. Pas de marge négative ici, à la différence des
+              // lignes du suivi : elle élargirait aussi le filet, qui s'aligne sur les têtes de
+              // groupe.
+              pressed && { backgroundColor: theme.backgroundPressed },
             ]}
             onPress={() => onOuvrir(action.id)}
             accessibilityRole="button"
@@ -400,7 +407,7 @@ function Lignes({
                 trois enfants feraient flotter le chiffre au milieu. */}
             <View style={styles.lignePisteFin}>
               {gain !== null && (
-                <ThemedText type="small" themeColor="textTertiary">
+                <ThemedText type="small" themeColor="textTertiary" style={styles.chiffres}>
                   {gain}
                 </ThemedText>
               )}
@@ -443,11 +450,16 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: Spacing.two,
     // `three` et non `two` depuis que la ligne se touche (`v1-16` §5) : à 8 px la rangée mesurait
-    // 34 px, sous la cible de 44 que `ControlHeight.target` nomme et que `TextLink` tient déjà. Du
-    // `hitSlop` aurait marché sans déplacer le texte, mais les rangées se touchent (`gap: 0`) et
-    // leurs zones se seraient recouvertes — c'est la hauteur qu'il faut, pas une marge invisible.
+    // 34 px, sous la cible de 44 que `ControlHeight.target` nommait alors. Du `hitSlop` aurait
+    // marché sans déplacer le texte, mais les rangées se touchent (`gap: 0`) et leurs zones se
+    // seraient recouvertes — c'est la hauteur qu'il faut, pas une marge invisible. À 16 px, la
+    // rangée monte à 52 au moins (16 + 20 + 16) : elle tient aussi la cible de 48 que ce jeton
+    // porte depuis le 24/09/2026 (`v1-29`).
     paddingVertical: Spacing.three,
   },
   lignePisteTitre: { flex: 1, minWidth: 0 },
   lignePisteFin: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
+  // **Chiffres tabulaires** (24/09/2026, `v1-29`) : les gains se lisent en colonne, d'une ligne à
+  // l'autre. Spline Sans porte la fonction `tnum`.
+  chiffres: { fontVariant: ['tabular-nums'] },
 });
