@@ -164,6 +164,34 @@ distincts, donc `issue_write` peut être refusé pendant que tout le reste passe
 le compteur Functions Storage de Vercel (§3.2), dont la règle vit dans `VERCEL.md` parce qu'elle
 est portable : c'est le seul des trois que le dépôt peut alléger lui-même, par l'Ignored Build Step.
 
+### Les plug-ins s'installent à la main, dans le dépôt
+
+**claude.ai ne livre pas les plug-ins aux sessions cloud** (24/09/2026) : Product Management était
+activé sur le compte, et la session ne le voyait pas — liste des plug-ins du compte vide, catalogue
+« non activé », dossier de synchronisation vide. Le dépôt est la seule chose qu'une session cloud est
+sûre d'emporter : un plug-in arrive donc en `.zip` et s'installe par
+`node scripts/installer-un-plugin.mjs <archive>`, qui le met aussi à jour quand on le relance sur une
+archive plus récente. Ce qui est installé, et ce qui ne l'est pas, se lit dans l'`installation.json`
+de chaque plug-in, sous `.claude/plugins-importes/`, à côté de sa licence. Trois règles, dont les deux
+premières sont détaillées en tête du script et gardées par son test :
+
+- **tout nom est préfixé par celui du plug-in** — `/product-management-write-spec` et non
+  `/write-spec`, renvois et liens des consignes compris. Marketing et Product Management portent tous
+  deux `competitive-brief`, et Engineering apporte un `code-review`, le nom du `/code-review` intégré ;
+- **hooks, connecteurs et agents ne s'installent jamais d'office** : un hook exécute du code à chaque
+  événement, un connecteur ouvre un compte tiers. Le script les liste ; les brancher est une décision
+  prise après lecture — et un hook qui relit chaque tour pèse aussi sur le rythme, donc elle se
+  demande ;
+- **les règles du dépôt passent devant les consignes d'un plug-in.** Ces consignes sont écrites en
+  anglais pour un produit SaaS quelconque : le français, le format des `v1-NN` et la façon de poser
+  une question de produit (plus haut) restent. Leur texte n'est pas traduit — une traduction rendrait
+  chaque mise à jour impossible à rejouer —, et « tout est en français » vaut pour le produit et son
+  code, pas pour des consignes tierces.
+
+Ce que le script ne voit pas, c'est ce que les consignes **disent** : il imprime ce qui mérite un
+regard (adresses, commandes shell, outils pré-autorisés, liens morts, fichiers qui ne sont pas des
+consignes), et elles se relisent avant de commettre.
+
 ## Le produit, en trois règles et un renvoi
 
 **Ramille** est une app de sensibilisation à l'empreinte carbone des transports, pour la France.
