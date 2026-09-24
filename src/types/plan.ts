@@ -193,10 +193,11 @@ export type CadreDuPlan = {
    * C'est le cas de bord que C2.5 a rendu courant : depuis que les gabarits de loisirs sont
    * refusés aux sorties rares, **tout cycliste et tout profil sédentaire** a un plan à zéro
    * action — vérifié sur le distant. La carte du cap ne dépendait que de `capKg !== null`, donc
-   * « − 11 kg, soit − 20 % sur tes sorties du week-end » s'affichait juste **au-dessus** de « Tu
-   * fais déjà l'essentiel sur ce poste ». Le commentaire du cap dit lui-même pourquoi il existe :
-   * qu'on voie qu'en cumulant deux actions on l'atteint. Sans action, il n'a plus d'objet, et son
-   * chiffre y est de surcroît dérivé d'un résiduel de calcul de 15 km.
+   * « − 11 kg, soit − 20 % sur tes sorties du week-end » s'affichait juste **au-dessus** de la
+   * félicitation du plan sans action (« Tu fais déjà l'essentiel sur … »). Le commentaire du cap
+   * dit lui-même pourquoi il existe : qu'on voie d'un coup d'œil qu'une action l'atteint — ou ne
+   * l'atteint pas. Sans action, il n'a plus d'objet, et son chiffre y est de surcroît dérivé d'un
+   * résiduel de calcul de 15 km.
    *
    * La carte, elle, se rend toujours : elle est depuis C2.8 l'endroit où la période se nomme.
    */

@@ -147,14 +147,15 @@ describe('cadreDuPlan', () => {
   /**
    * **Il ne reste qu'un booléen, et la dérivation reste** (C5.3). `intro` et `noteDuCap` sont
    * parties — la première décrivait les cartes posées dessous en taisant les autres, la seconde
-   * énonçait une règle que rien n'applique. Ce qui reste porte **deux causes distinctes**, et
-   * c'est pourquoi la fonction n'est pas remplacée par un `nombreDActions > 0` écrit dans l'écran :
-   * les réunir rendrait la seconde inéprouvable, la première suffisant toujours à faire passer
-   * l'assertion.
+   * énonçait une règle que rien n'applique. Ce qui reste n'a **qu'une cause**, le plan à zéro
+   * action, et la fonction n'est pas remplacée par un `nombreDActions > 0` écrit dans l'écran parce
+   * que l'écran ne doit pas trancher ça en ternaire. Ce commentaire lui prêtait encore « deux causes
+   * distinctes » jusqu'au 24/09/2026, soit la phrase que la doc de `cadreDuPlan` réfute depuis le
+   * 20/09/2026 : celle qui dictait la régression épinglée par le dernier test de ce bloc.
    */
   it('ne chiffre pas le cap d’un plan sans action', () => {
     // Tout cycliste et tout profil sédentaire depuis C2.5 : « − 11 kg sur tes sorties » juste
-    // au-dessus de « Tu fais déjà l'essentiel sur ce poste » était le défaut.
+    // au-dessus de la félicitation du plan sans action était le défaut.
     expect(cadreDuPlan({ postesEnAvant: [], nombreDActions: 0 }).chiffreLeCap).toBe(false);
   });
 
