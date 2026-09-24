@@ -1,11 +1,12 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { LigneDeCanal } from '@/components/ligne-de-canal';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing, Stroke } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
-import { useTheme } from '@/hooks/use-theme';
 import type { ReminderPrefs } from '@/lib/notification-prefs';
 import { enregistrerLeJeton, lirePermission } from '@/lib/rappels';
 import { lignesDeReglage, type CanalPrefere, type Permission } from '@/types/rappels';
@@ -23,7 +24,8 @@ import { lignesDeReglage, type CanalPrefere, type Permission } from '@/types/rap
  * dans les réglages du téléphone suffit à la faire repartir ; et sur web la ligne
  * notification n'existe pas du tout plutôt que d'être grisée sans explication.
  *
- * `radio` et non `button` : c'est le seul rôle qui annonce « sélectionné » (règle T11).
+ * La ligne elle-même est `LigneDeCanal`, partagée avec la feuille des rappels : `radio` et non
+ * `button`, c'est le seul rôle qui annonce « sélectionné » (règle T11).
  *
  * **La permission système est lue ici**, et pas reçue en accessoire : c'est un fait de
  * l'appareil, pas une donnée de compte, et seul ce bloc s'en sert. Elle est relue au retour de
@@ -40,6 +42,9 @@ import { lignesDeReglage, type CanalPrefere, type Permission } from '@/types/rap
  * démarrage à froid. C'est la « petite trahison » d'A4-8, réintroduite par la porte qu'on
  * vient d'ouvrir.
  */
+/** Le titre du bloc, écrit une fois : l'en-tête affiché et le nom du groupe de lignes. */
+const TITRE = 'Les rappels';
+
 export function ChoixDeRappel({
   prefs,
   onChoisir,
@@ -47,8 +52,6 @@ export function ChoixDeRappel({
   prefs: ReminderPrefs;
   onChoisir: (canal: CanalPrefere) => void;
 }) {
-  const theme = useTheme();
-
   // Point de départ `demandable` : c'est l'état neutre, le seul qui ne promette pas une
   // notification qui marche ni n'accuse un réglage que personne n'a touché, le temps que la
   // vraie valeur arrive (elle est locale, donc au rendu suivant).
@@ -76,7 +79,7 @@ export function ChoixDeRappel({
     <View style={styles.bloc}>
       <View style={styles.entete}>
         <ThemedText weight={600} type="cardTitle">
-          Les rappels
+          {TITRE}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           Un mot à chaque point de suivi, jamais plus.
@@ -84,38 +87,14 @@ export function ChoixDeRappel({
       </View>
 
       {/* Le rôle `radiogroup` ne porte que sur le bloc des lignes : l'en-tête n'est pas un
-          choix, et l'y inclure ferait annoncer une option qui n'en est pas une. Le lien des
+          choix, et l'y inclure ferait annoncer une option qui n'en est pas une. Il le **nomme**
+          en revanche (24/09/2026) : le groupe s'annonçait sans nom. Le lien des
           réglages, lui, vit à l'intérieur — il appartient à la ligne « notification », et le
           détacher d'elle était le défaut (voir son commentaire). */}
-      <View style={styles.lignes} accessibilityRole="radiogroup">
+      <GroupeDeChoix question={TITRE} style={styles.lignes}>
         {lignes.map((ligne) => (
           <Fragment key={ligne.canal}>
-            <Pressable
-              onPress={() => ligne.choisissable && onChoisir(ligne.canal)}
-              disabled={!ligne.choisissable}
-              accessibilityRole="radio"
-              // Le libellé annoncé recompose ce que l'œil lit sur deux lignes : le titre seul ne
-              // dirait pas qu'un canal est hors d'atteinte, ni pourquoi.
-              accessibilityLabel={`${ligne.titre}. ${ligne.detail}`}
-              // `aria-checked`, le seul état que le web reçoive (cf. `chip.tsx`) ; l'inactivité
-              // passe par `disabled`, dont `Pressable` tire `aria-disabled`.
-              aria-checked={ligne.choisi}
-              style={[
-                styles.ligne,
-                {
-                  backgroundColor: ligne.choisi ? theme.backgroundSelected : theme.backgroundElement,
-                  borderColor: ligne.choisi ? theme.accent : 'transparent',
-                  opacity: ligne.choisissable ? 1 : 0.6,
-                },
-              ]}
-            >
-              <ThemedText weight={ligne.choisi ? 600 : 400} style={styles.titre}>
-                {ligne.titre}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {ligne.detail}
-              </ThemedText>
-            </Pressable>
+            <LigneDeCanal ligne={ligne} onChoisir={onChoisir} />
 
             {/* Le lien du canvas, dans le seul état où il mène quelque part : les notifications
                 sont fermées côté système, et c'est là-bas que ça se rouvre. Le dire sans donner
@@ -148,7 +127,7 @@ export function ChoixDeRappel({
             )}
           </Fragment>
         ))}
-      </View>
+      </GroupeDeChoix>
     </View>
   );
 }
@@ -157,13 +136,5 @@ const styles = StyleSheet.create({
   bloc: { gap: Spacing.two },
   entete: { gap: 2 },
   lignes: { gap: Spacing.two },
-  ligne: {
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radius.field,
-    borderWidth: Stroke.selected,
-    gap: 2,
-  },
-  titre: { fontSize: 16, lineHeight: 22 },
   reglages: { alignSelf: 'flex-start', paddingHorizontal: Spacing.four },
 });

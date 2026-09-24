@@ -1,11 +1,9 @@
-import { Modal, StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
+import { FeuilleDuBas } from '@/components/feuille-du-bas';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing, Stroke } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/rebilan';
 
 /**
@@ -44,62 +42,36 @@ export function FeuilleNouveauBilan({
   /** Refermer sans rien soumettre : on reste sur la dernière étape du questionnaire. */
   onFerme: () => void;
 }) {
-  const theme = useTheme();
-
   return (
-    <Modal
-      visible
-      animationType="slide"
-      transparent
-      // Le geste de retour referme sans soumettre. C'est le même contrat que la feuille des
-      // rappels : une feuille qu'on ne peut pas fermer n'est plus une proposition.
-      onRequestClose={onFerme}
-    >
-      <View style={styles.fond}>
-        <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
-          <View style={[styles.poignee, { backgroundColor: theme.border }]} />
+    // Le geste de retour referme sans soumettre — le contrat du cadre (`FeuilleDuBas`), qui porte
+    // aussi le titre : il nomme le dialogue, qui s'annonçait sans nom sur web.
+    <FeuilleDuBas titre="Ton plan va être recalculé" onFerme={onFerme}>
+      <ThemedText type="body" themeColor="textSecondary">
+        {phraseDeLEngagementRecalcule(engagement)}
+      </ThemedText>
 
-          <ThemedText type="cardTitle">Ton plan va être recalculé</ThemedText>
+      {/* Le cadrage du 18/09/2026, et il n'est pas décoratif : la raison principale de ne pas
+          refaire un bilan à mi-saison est qu'une habitude n'a pas encore eu le temps de
+          prendre, donc la mesurer ne dirait rien. On le dit sans l'imposer. */}
+      <ThemedText type="small" themeColor="textTertiary">
+        Rien ne presse : une habitude met du temps à prendre. Si tes trajets n’ont pas changé,
+        ton bilan actuel est toujours juste.
+      </ThemedText>
 
-          <ThemedText type="body" themeColor="textSecondary">
-            {phraseDeLEngagementRecalcule(engagement)}
-          </ThemedText>
+      <Button title="Soumettre mon bilan" onPress={onSoumettre} />
 
-          {/* Le cadrage du 18/09/2026, et il n'est pas décoratif : la raison principale de ne pas
-              refaire un bilan à mi-saison est qu'une habitude n'a pas encore eu le temps de
-              prendre, donc la mesurer ne dirait rien. On le dit sans l'imposer. */}
-          <ThemedText type="small" themeColor="textTertiary">
-            Rien ne presse : une habitude met du temps à prendre. Si tes trajets n’ont pas changé,
-            ton bilan actuel est toujours juste.
-          </ThemedText>
-
-          <Button title="Soumettre mon bilan" onPress={onSoumettre} />
-
-          <TextLink
-            label="Pas maintenant"
-            onPress={onFerme}
-            type="small"
-            weight={600}
-            themeColor="accentText"
-            style={styles.sortie}
-          />
-        </ThemedView>
-      </View>
-    </Modal>
+      <TextLink
+        label="Pas maintenant"
+        onPress={onFerme}
+        type="small"
+        weight={600}
+        themeColor="accentText"
+        style={styles.sortie}
+      />
+    </FeuilleDuBas>
   );
 }
 
 const styles = StyleSheet.create({
-  fond: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(19, 22, 18, 0.42)' },
-  feuille: {
-    borderTopLeftRadius: Radius.card,
-    borderTopRightRadius: Radius.card,
-    borderTopWidth: Stroke.hairline,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
-  poignee: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.two },
   sortie: { textAlign: 'center' },
 });

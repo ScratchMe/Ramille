@@ -1,16 +1,17 @@
 import { router } from 'expo-router';
 import { Fragment, useState } from 'react';
-import { Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { FeuilleDuBas } from '@/components/feuille-du-bas';
+import { LigneDeCanal } from '@/components/ligne-de-canal';
 import { MessageInline } from '@/components/message-inline';
 import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { RAMILLE } from '@/constants/mascotte';
-import { Radius, Spacing, Stroke } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Spacing } from '@/constants/theme';
 import { demanderLaPermission, enregistrerLeJeton } from '@/lib/rappels';
 import { setReminderChannel, marquerFeuilleDeRappelVue, type ReminderPrefs } from '@/lib/notification-prefs';
 import {
@@ -36,6 +37,11 @@ import {
  * dialogue système ne s'affiche plus jamais après deux refus. Un « non » ici ne coûte rien ;
  * un « non » au système ferme le canal pour de bon. D'où le libellé du bouton, qui n'annonce
  * un dialogue que s'il va vraiment s'en ouvrir un.
+ *
+ * **Elle porte un titre depuis le 24/09/2026, « Les rappels »** — le nom du réglage de « Toi », où la
+ * dernière ligne renvoie. Sur web, la fenêtre s'annonçait en dialogue **sans nom** (audit
+ * d'accessibilité, 1.3.1) ; le cadre partagé (`FeuilleDuBas`) nomme le dialogue par son titre, et
+ * celui-ci ne pouvait pas être la ligne de Ramille, qui change avec la boucle.
  */
 export function FeuilleRappels({
   prefs,
@@ -49,7 +55,6 @@ export function FeuilleRappels({
   /** Le canal retenu, pour que le plan rafraîchisse sa carte d'attente sans relire la base. */
   onFerme: (canal: CanalPrefere, jetonActif: boolean) => void;
 }) {
-  const theme = useTheme();
   const plateforme = Platform.OS === 'web' ? 'web' : 'natif';
 
   // Présélection dérivée, jamais une ligne grisée : la préférence si elle est choisissable,
@@ -93,147 +98,98 @@ export function FeuilleRappels({
   };
 
   return (
-    <Modal
-      visible
-      animationType="slide"
-      transparent
+    <FeuilleDuBas
+      titre="Les rappels"
       // Le geste de retour ferme la feuille sans rien choisir : refuser de la fermer serait
       // transformer une proposition en passage obligé.
-      onRequestClose={() => {
+      onFerme={() => {
         void marquerFeuilleDeRappelVue();
         onFerme(prefs.prefere, prefs.jetonActif);
       }}
     >
-      <View style={styles.fond}>
-        <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
-          <View style={[styles.poignee, { backgroundColor: theme.border }]} />
+      <RamilleDit
+        ligne={boucle === 'hebdo' ? RAMILLE.engagementAttenteHebdo : RAMILLE.engagementAttenteMensuel}
+        mood="calm"
+        size={44}
+        themeColor="text"
+        style={styles.mot}
+      />
 
-          <RamilleDit
-            ligne={boucle === 'hebdo' ? RAMILLE.engagementAttenteHebdo : RAMILLE.engagementAttenteMensuel}
-            mood="calm"
-            size={44}
-            themeColor="text"
-            style={styles.mot}
-          />
+      <ThemedText type="body" themeColor="textSecondary">
+        {RAMILLE.choixCanal}
+      </ThemedText>
 
-          <ThemedText type="body" themeColor="textSecondary">
-            {RAMILLE.choixCanal}
-          </ThemedText>
+      {/* Le rôle `radiogroup` ne porte que sur ce bloc, **nommé par la question de Ramille** qui le
+          précède (24/09/2026) : il s'annonçait sans nom. Le lien des réglages y entre, parce
+          qu'il appartient à la ligne « notification » : rendu après le groupe, il tombait
+          sous « Sans rappel » et se lisait comme appartenant à ce choix-là (canvas
+          `Main.dc.html` / `Toi.dc.html` : il suit la rangée atténuée). Il n'est pas un
+          `radio` et rien ne le compte comme une option. */}
+      <GroupeDeChoix question={RAMILLE.choixCanal} style={styles.lignes}>
+        {lignes.map((ligne) => (
+          <Fragment key={ligne.canal}>
+            <LigneDeCanal ligne={ligne} onChoisir={setCanal} occupe={occupe} />
 
-          {/* Le rôle `radiogroup` ne porte que sur ce bloc. Le lien des réglages y entre, parce
-              qu'il appartient à la ligne « notification » : rendu après le groupe, il tombait
-              sous « Sans rappel » et se lisait comme appartenant à ce choix-là (canvas
-              `Main.dc.html` / `Toi.dc.html` : il suit la rangée atténuée). Il n'est pas un
-              `radio` et rien ne le compte comme une option. */}
-          <View style={styles.lignes} accessibilityRole="radiogroup">
-            {lignes.map((ligne) => (
-              <Fragment key={ligne.canal}>
-                <Pressable
-                  onPress={() => ligne.choisissable && setCanal(ligne.canal)}
-                  disabled={!ligne.choisissable || occupe}
-                  accessibilityRole="radio"
-                  accessibilityLabel={`${ligne.titre}. ${ligne.detail}`}
-                  // `aria-checked`, le seul état que le web reçoive (cf. `chip.tsx`) ; l'inactivité
-                  // passe par `disabled`, dont `Pressable` tire `aria-disabled`.
-                  aria-checked={ligne.choisi}
-                  style={[
-                    styles.ligne,
-                    {
-                      backgroundColor: ligne.choisi ? theme.backgroundSelected : theme.backgroundElement,
-                      borderColor: ligne.choisi ? theme.accent : 'transparent',
-                      opacity: ligne.choisissable ? 1 : 0.6,
-                    },
-                  ]}
-                >
-                  <ThemedText weight={ligne.choisi ? 600 : 400} style={styles.titre}>
-                    {ligne.titre}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {ligne.detail}
-                  </ThemedText>
-                </Pressable>
+            {/* Le seul état où la phrase appelle un geste hors de l'app : les notifications
+                sont fermées pour de bon côté système, et rien ici ne peut les rouvrir. */}
+            {ligne.lienVersLesReglages && (
+              <TextLink
+                label="Ouvrir les réglages du téléphone"
+                onPress={() => void Linking.openSettings()}
+                role="link"
+                type="small"
+                weight={600}
+                themeColor="accentText"
+                containerStyle={styles.reglages}
+              />
+            )}
 
-                {/* Le seul état où la phrase appelle un geste hors de l'app : les notifications
-                    sont fermées pour de bon côté système, et rien ici ne peut les rouvrir. */}
-                {ligne.lienVersLesReglages && (
-                  <TextLink
-                    label="Ouvrir les réglages du téléphone"
-                    onPress={() => void Linking.openSettings()}
-                    role="link"
-                    type="small"
-                    weight={600}
-                    themeColor="accentText"
-                    containerStyle={styles.reglages}
-                  />
-                )}
+            {/* **La porte qui manquait, et c'est le seul ajout de produit du 20/09/2026.**
+                Cette feuille demande « comment te faire signe ? » et grisait « Par email »
+                avec « Rattache un compte pour l'activer » — sans rien à toucher. C'était le
+                seul écran du produit qui pose la question à laquelle le compte répond, et le
+                seul où on ne le proposait pas. Même forme, même place et même raison que le
+                lien des réglages juste au-dessus : rendu **dans** la boucle, parce que
+                détaché il se lirait comme appartenant à « Sans rappel ».
 
-                {/* **La porte qui manquait, et c'est le seul ajout de produit du 20/09/2026.**
-                    Cette feuille demande « comment te faire signe ? » et grisait « Par email »
-                    avec « Rattache un compte pour l'activer » — sans rien à toucher. C'était le
-                    seul écran du produit qui pose la question à laquelle le compte répond, et le
-                    seul où on ne le proposait pas. Même forme, même place et même raison que le
-                    lien des réglages juste au-dessus : rendu **dans** la boucle, parce que
-                    détaché il se lirait comme appartenant à « Sans rappel ».
+                Le `Modal` doit être refermé avant de naviguer — sur natif, une route poussée
+                sous un `Modal` ouvert reste dessous. On ne change donc pas la préférence : on
+                rend celle qui est déjà là, et la personne revient à une feuille qu'elle a
+                déjà vue. Ce qu'elle trouve au retour est juste sans rien réécrire, la
+                préférence en base valant `email` par défaut. */}
+            {ligne.porteVersLeCompte && (
+              <TextLink
+                label="Rattacher un compte"
+                onPress={() => {
+                  void marquerFeuilleDeRappelVue();
+                  onFerme(prefs.prefere, prefs.jetonActif);
+                  router.push({ pathname: '/connexion', params: { source: 'rappels' } });
+                }}
+                role="link"
+                type="small"
+                weight={600}
+                themeColor="accentText"
+                containerStyle={styles.reglages}
+              />
+            )}
+          </Fragment>
+        ))}
+      </GroupeDeChoix>
 
-                    Le `Modal` doit être refermé avant de naviguer — sur natif, une route poussée
-                    sous un `Modal` ouvert reste dessous. On ne change donc pas la préférence : on
-                    rend celle qui est déjà là, et la personne revient à une feuille qu'elle a
-                    déjà vue. Ce qu'elle trouve au retour est juste sans rien réécrire, la
-                    préférence en base valant `email` par défaut. */}
-                {ligne.porteVersLeCompte && (
-                  <TextLink
-                    label="Rattacher un compte"
-                    onPress={() => {
-                      void marquerFeuilleDeRappelVue();
-                      onFerme(prefs.prefere, prefs.jetonActif);
-                      router.push({ pathname: '/connexion', params: { source: 'rappels' } });
-                    }}
-                    role="link"
-                    type="small"
-                    weight={600}
-                    themeColor="accentText"
-                    containerStyle={styles.reglages}
-                  />
-                )}
-              </Fragment>
-            ))}
-          </View>
+      <MessageInline message={erreur} />
 
-          <MessageInline message={erreur} />
+      <Button title={libelleBouton(canal, permission)} onPress={valider} disabled={occupe} />
 
-          <Button title={libelleBouton(canal, permission)} onPress={valider} disabled={occupe} />
-
-          <ThemedText type="small" themeColor="textTertiary" style={styles.sortie}>
-            Tu pourras changer d’avis dans « Toi ».
-          </ThemedText>
-        </ThemedView>
-      </View>
-    </Modal>
+      <ThemedText type="small" themeColor="textTertiary" style={styles.sortie}>
+        Tu pourras changer d’avis dans « Toi ».
+      </ThemedText>
+    </FeuilleDuBas>
   );
 }
 
 const styles = StyleSheet.create({
-  fond: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(19, 22, 18, 0.42)' },
-  feuille: {
-    borderTopLeftRadius: Radius.card,
-    borderTopRightRadius: Radius.card,
-    borderTopWidth: Stroke.hairline,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
-  poignee: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.two },
   mot: { alignItems: 'flex-start' },
   lignes: { gap: Spacing.two },
   reglages: { alignSelf: 'flex-start', paddingHorizontal: Spacing.four },
-  ligne: {
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radius.field,
-    borderWidth: Stroke.selected,
-    gap: 2,
-  },
-  titre: { fontSize: 16, lineHeight: 22 },
   sortie: { textAlign: 'center' },
 });
