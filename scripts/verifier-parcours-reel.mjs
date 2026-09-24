@@ -377,6 +377,12 @@ try {
   etape('restitution');
   await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
   await attendreTexte('4,2 t CO₂e');
+  // **Ce profil est le cas d'égalité du départage** (24/09/2026, `v1-29`) : voyages 2,0 t,
+  // domicile-travail 1,9 t, et le serveur retient le plus régulier à 5 % près. L'étiquette disait
+  // « Le déplacement qui pèse le plus » au-dessus de barres qui montrent l'inverse ; elle le dit
+  // maintenant (`etiquetteDuPosteDominant`), et seul ce parcours la voit rendue depuis de vrais
+  // chiffres serveur.
+  await attendreTexte('Le plus régulier, presque à égalité avec tes voyages');
   assurer(!(await barreVisible()), 'la barre d’onglets est visible sur la restitution du premier bilan (C5.7)');
   const { jeton, userId } = await session();
   const bilans = await lire('assessments?select=id,status', jeton);
@@ -433,6 +439,10 @@ try {
   // Deux cartes pleines, puis la porte vers l’écran « Toutes les pistes » (C5.2), qui compte tout.
   await attendreTexte(`Voir toutes les pistes · ${ATTENDU.pistes.length}`);
   await attendreTexte(new RegExp(`−\\s?${ATTENDU.capKg}\\s?kg`)); // « − 384 kg », le signe moins typographique
+  // Le cap est annuel, comme les gains des pistes, et les deux premières le franchissent chacune
+  // (619 et 1 601 kg contre 384) : la carte du cap le dit tant que rien n'est engagé (24/09/2026,
+  // `v1-29`, `phraseDesPistesSuffisantes`).
+  await attendreTexte('Chacune des deux pistes proposées suffit à le franchir.');
   const pistes = await lire(
     'plan_actions?select=rank,saving_kg_year,committed_at,action_templates(action_text)&order=rank',
     jeton
