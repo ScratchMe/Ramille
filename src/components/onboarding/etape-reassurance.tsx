@@ -25,7 +25,7 @@ export function EtapeReassurance({ onSuivant }: { onSuivant: () => void }) {
         <View style={styles.content}>
           <ReassuranceIllustration style={styles.illustration} />
           <View style={styles.textBlock}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="display">
               Pas de jugement. Un état des lieux honnête.
             </ThemedText>
             <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
@@ -69,7 +69,6 @@ const styles = StyleSheet.create({
   content: { gap: Spacing.five },
   illustration: { height: 180 },
   textBlock: { gap: Spacing.four },
-  title: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   body: { fontSize: 17, lineHeight: 26 },
   footer: { gap: Spacing.five },
 });

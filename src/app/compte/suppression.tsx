@@ -118,9 +118,7 @@ export default function SuppressionCompte() {
             <ThemedText type="small" themeColor="textTertiary">
               {APP_NAME}
             </ThemedText>
-            <ThemedText type="title" weight={600} style={styles.titre}>
-              Supprimer mon compte
-            </ThemedText>
+            <ThemedText type="display">Supprimer mon compte</ThemedText>
 
             {phase.kind === 'chargement' && (
               <ThemedText themeColor="textSecondary" style={styles.corps}>
@@ -293,7 +291,6 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scrollContent: { padding: Spacing.four, paddingBottom: Spacing.six },
   page: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.three },
-  titre: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   corps: { fontSize: 16, lineHeight: 24 },
   bloc: { gap: Spacing.three },
   actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },

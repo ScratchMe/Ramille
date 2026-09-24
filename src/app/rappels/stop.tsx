@@ -85,9 +85,7 @@ export default function StopRappels() {
             <ThemedText type="small" themeColor="textTertiary">
               {APP_NAME}
             </ThemedText>
-            <ThemedText type="title" weight={600} style={styles.titre}>
-              Ne plus recevoir de rappels
-            </ThemedText>
+            <ThemedText type="display">Ne plus recevoir de rappels</ThemedText>
 
             {etat === 'en-cours' && (
               <ThemedText themeColor="textSecondary" style={styles.corps}>
@@ -163,7 +161,6 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scrollContent: { padding: Spacing.four, paddingBottom: Spacing.six },
   page: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.three },
-  titre: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   corps: { fontSize: 16, lineHeight: 24 },
   pied: { marginTop: Spacing.four },
 });
