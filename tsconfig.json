@@ -23,6 +23,7 @@
     "api/**",
     ".ds-sync/**",
     ".design-sync/**",
-    "ds-bundle/**"
+    "ds-bundle/**",
+    ".claude/worktrees/**"
   ]
 }
