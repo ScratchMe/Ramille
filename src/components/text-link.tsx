@@ -59,9 +59,9 @@ export function TextLink({
       accessibilityLabel={label}
       accessibilityHint={hint}
       // `aria-expanded` et non `accessibilityState.expanded`, que react-native-web ignore : sur web,
-      // « Voir les autres pistes » ne disait ni « développé » ni « réduit ». `undefined` ne rend
-      // aucun attribut, ce qui est la règle de la prop. L'inactivité passe par `disabled`, dont
-      // `Pressable` tire `aria-disabled` des deux côtés.
+      // « Comment ce chiffre est calculé » (`BlocMethode`) ne disait ni « développé » ni « réduit ».
+      // `undefined` ne rend aucun attribut, ce qui est la règle de la prop. L'inactivité passe par
+      // `disabled`, dont `Pressable` tire `aria-disabled` des deux côtés.
       aria-expanded={expanded}
       style={[styles.cible, containerStyle]}
     >
