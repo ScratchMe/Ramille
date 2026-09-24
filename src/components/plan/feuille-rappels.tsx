@@ -9,7 +9,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { RAMILLE } from '@/constants/mascotte';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { demanderLaPermission, enregistrerLeJeton } from '@/lib/rappels';
 import { setReminderChannel, marquerFeuilleDeRappelVue, type ReminderPrefs } from '@/lib/notification-prefs';
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   feuille: {
     borderTopLeftRadius: Radius.card,
     borderTopRightRadius: Radius.card,
-    borderTopWidth: 1,
+    borderTopWidth: Stroke.hairline,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.six,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     gap: 2,
   },
   titre: { fontSize: 16, lineHeight: 22 },

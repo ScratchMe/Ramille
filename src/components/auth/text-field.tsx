@@ -2,7 +2,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Radius } from '@/constants/theme';
+import { ControlHeight, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Champ labellisé des écrans de connexion (adresse email) — rayon 16, fond teinté,
@@ -82,14 +82,14 @@ export function TextField({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 8 },
+  container: { gap: Spacing.two },
   box: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     height: ControlHeight.field,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     paddingHorizontal: 18,
   },
   input: { flex: 1, minWidth: 0, fontSize: 16 },

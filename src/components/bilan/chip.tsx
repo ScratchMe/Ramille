@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ChipProps = {
@@ -59,7 +60,7 @@ export function Chip({
       : theme.backgroundSelected
     : theme.backgroundElement;
   const borderColor = selected && selectedStyle === 'outline' ? theme.accent : 'transparent';
-  const textColor = selected && selectedStyle === 'solid' ? '#FFFFFF' : theme.text;
+  const textColor = selected && selectedStyle === 'solid' ? theme.onAccent : theme.text;
 
   return (
     <Pressable
@@ -89,7 +90,7 @@ export function Chip({
 const styles = StyleSheet.create({
   base: {
     paddingVertical: 12,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     alignItems: 'center',
     justifyContent: 'center',
   },

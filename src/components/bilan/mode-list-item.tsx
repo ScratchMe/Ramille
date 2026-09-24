@@ -1,11 +1,11 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Item de liste des pickers de mode (B1.4 mode principal, B2.2 mode loisirs, B1.6
-// "Lequel ?" imbriqué) — rayon 14px, sélection = fond teinté + bordure accent.
+// "Lequel ?" imbriqué) — rayon `Radius.chip`, sélection = fond teinté + bordure accent.
 export function ModeListItem({
   label,
   selected,
@@ -54,8 +54,8 @@ const styles = StyleSheet.create({
   item: {
     paddingVertical: 14,
     paddingHorizontal: Spacing.three,
-    borderRadius: 14,
-    borderWidth: 1.5,
+    borderRadius: Radius.chip,
+    borderWidth: Stroke.selected,
   },
   label: { fontSize: 16, lineHeight: 22 },
 });

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, FontFamily } from '@/constants/theme';
+import { ControlHeight, FontFamily, Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { afficherNombreSaisi, nettoyerSaisieNumerique, saisieVersNombre } from '@/types/bilan';
 
@@ -67,15 +67,15 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    height: 64,
+    gap: Spacing.two,
+    height: ControlHeight.numeric,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     paddingHorizontal: 20,
   },
   // `minWidth: 0` est nécessaire sur web : un <input> a une largeur intrinsèque que
   // flexbox ne réduit pas automatiquement (contrairement à RN natif), donc sans ça le
   // champ refuse de rétrécir et pousse "km" à cheval sur son bord droit.
   input: { flex: 1, minWidth: 0, fontSize: 28, fontFamily: FontFamily.semibold, padding: 0 },
-  unit: { fontSize: 17, flexShrink: 0 },
+  unit: { ...TypeScale.card, flexShrink: 0 },
 });

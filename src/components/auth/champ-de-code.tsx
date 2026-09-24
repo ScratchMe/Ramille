@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Radius } from '@/constants/theme';
+import { ControlHeight, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
 
@@ -81,12 +81,12 @@ export function ChampDeCode({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 8 },
+  container: { gap: Spacing.two },
   box: {
     justifyContent: 'center',
     height: ControlHeight.field,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     paddingHorizontal: 18,
   },
   input: { fontSize: 24, lineHeight: 30, letterSpacing: 6, textAlign: 'center' },

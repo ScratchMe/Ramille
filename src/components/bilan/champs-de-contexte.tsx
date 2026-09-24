@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { REPONSES_TELETRAVAIL, teletravailSePose, type BilanAnswers } from '@/types/bilan';
 import {
   CHOIX_DE_TC,
@@ -50,7 +50,7 @@ export function ChampsDeContexte({
               selected={choix.zone_type === option.value}
               onPress={() => update({ zone_type: option.value })}
               flex
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
         </View>
@@ -68,7 +68,7 @@ export function ChampsDeContexte({
               selected={choix.tc_access === option.value}
               onPress={() => update({ tc_access: option.value })}
               flex
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
         </View>
@@ -86,7 +86,7 @@ export function ChampsDeContexte({
               selected={choix.household_vehicles === option.value}
               onPress={() => update({ household_vehicles: option.value })}
               flex
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
         </View>
@@ -119,7 +119,7 @@ export function ChampsDeContexte({
                 selected={choix.teletravail === option.value}
                 onPress={() => update({ teletravail: option.value })}
                 flex
-                radius={14}
+                radius={Radius.chip}
               />
             ))}
           </View>

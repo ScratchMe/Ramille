@@ -3,7 +3,7 @@ import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import type { ReminderPrefs } from '@/lib/notification-prefs';
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     gap: 2,
   },
   titre: { fontSize: 16, lineHeight: 22 },

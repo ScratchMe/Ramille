@@ -40,7 +40,7 @@ export function Button({
     : variant === 'primary'
       ? theme.accent
       : theme.backgroundElement;
-  const textColor = disabled ? theme.textTertiary : variant === 'primary' ? '#FFFFFF' : theme.text;
+  const textColor = disabled ? theme.textTertiary : variant === 'primary' ? theme.onAccent : theme.text;
 
   return (
     <Pressable

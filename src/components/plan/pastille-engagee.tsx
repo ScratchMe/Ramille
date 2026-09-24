@@ -4,7 +4,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
- * La coche qui marque une action engagée — 20 px, fond `accent`, trait blanc de 3.
+ * La coche qui marque une action engagée — 20 px, fond `accent`, trait `onAccent` de 3 (le blanc
+ * écrit en dur jusqu'au 24/09/2026, `v1-29` §3).
  *
  * **Une seule implémentation pour deux surfaces** : l'en-tête d'une carte d'action, et la ligne
  * engagée de « Toutes les pistes » (planche A2 du canvas `v1-17`). Elle vivait en clair dans
@@ -24,7 +25,7 @@ export function PastilleEngagee() {
       <Svg width={12} height={12} viewBox="0 0 24 24">
         <Path
           d="M5 13l4 4L19 7"
-          stroke="#FFFFFF"
+          stroke={theme.onAccent}
           strokeWidth={3}
           strokeLinecap="round"
           strokeLinejoin="round"

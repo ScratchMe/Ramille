@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Chip } from '@/components/bilan/chip';
 import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { grouperLesMilliers } from '@/lib/format';
 import type { BilanAnswers } from '@/types/bilan';
@@ -81,7 +81,7 @@ export function FlightsStep({
                   label={String(n)}
                   selected={answers.flights_short_per_year === n}
                   onPress={() => update({ flights_short_per_year: n })}
-                  radius={14}
+                  radius={Radius.chip}
                 />
               ))}
             </View>

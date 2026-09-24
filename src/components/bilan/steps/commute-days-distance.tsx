@@ -6,7 +6,7 @@ import { Chip } from '@/components/bilan/chip';
 import { NumericField } from '@/components/bilan/numeric-field';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   afficherNombreSaisi,
@@ -57,7 +57,7 @@ export function CommuteDaysDistanceStep({
               selected={answers.commute_days_per_week === day}
               onPress={() => update({ commute_days_per_week: day })}
               flex
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
         </View>

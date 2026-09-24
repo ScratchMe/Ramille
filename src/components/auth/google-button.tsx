@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Radius } from '@/constants/theme';
+import { ControlHeight, Radius, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Bouton « Se connecter avec Google ». Un seul appelant aujourd'hui, la proposition post-bilan
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     minHeight: ControlHeight.button,
     paddingVertical: 15,
     borderRadius: Radius.button,
-    borderWidth: 1,
+    borderWidth: Stroke.hairline,
   },
   label: { fontSize: 16 },
 });

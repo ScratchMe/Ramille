@@ -4,7 +4,7 @@ import { Button } from '@/components/button';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/rebilan';
 
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   feuille: {
     borderTopLeftRadius: Radius.card,
     borderTopRightRadius: Radius.card,
-    borderTopWidth: 1,
+    borderTopWidth: Stroke.hairline,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.six,

@@ -7,7 +7,7 @@ import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
 // scrollable, footer Retour/Suivant. `onBack` absent = rien derrière, donc pas de bouton
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   headerBlock: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
-  notice: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: Spacing.three },
+  notice: { borderRadius: Radius.notice, paddingVertical: 10, paddingHorizontal: Spacing.three },
   motDeRamille: { lineHeight: 20 },
   scrollContent: { padding: Spacing.four, gap: Spacing.five, flexGrow: 1 },
   // Le padding vit sur le bloc, pas sur la rangée : le message doit être aligné sur les

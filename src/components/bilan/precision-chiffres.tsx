@@ -49,7 +49,7 @@ export function PrecisionChiffres({
             selected={valeur === option.value}
             onPress={() => onChange(option.value)}
             flex
-            radius={14}
+            radius={Radius.chip}
           />
         ))}
       </View>

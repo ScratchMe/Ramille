@@ -184,7 +184,7 @@ export function ActionCommitment({
               selected={days.includes(day.value)}
               onPress={() => toggleDay(day.value)}
               flex
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
         </View>

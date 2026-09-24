@@ -10,7 +10,7 @@ import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   FEEDBACK_KINDS,
@@ -176,11 +176,11 @@ const styles = StyleSheet.create({
   scrollContent: { padding: Spacing.four, gap: Spacing.three },
   intro: { gap: Spacing.two },
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  fieldBlock: { gap: 8 },
+  fieldBlock: { gap: Spacing.two },
   input: {
     minHeight: 140,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     padding: 16,
     fontSize: 16,
     lineHeight: 22,
