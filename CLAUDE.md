@@ -171,9 +171,10 @@ activé sur le compte, et la session ne le voyait pas — liste des plug-ins du 
 « non activé », dossier de synchronisation vide. Le dépôt est la seule chose qu'une session cloud est
 sûre d'emporter : un plug-in arrive donc en `.zip` et s'installe par
 `node scripts/installer-un-plugin.mjs <archive>`, qui le met aussi à jour quand on le relance sur une
-archive plus récente. Ce qui est installé, et ce qui ne l'est pas, se lit dans l'`installation.json`
-de chaque plug-in, sous `.claude/plugins-importes/`, à côté de sa licence. Trois règles, dont les deux
-premières sont détaillées en tête du script et gardées par son test :
+archive plus récente, et le retire par `--retirer <plug-in>` — exactement ce qu'il avait posé, jamais
+tout ce qui porte son préfixe. Ce qui est installé, et ce qui ne l'est pas, se lit dans
+l'`installation.json` de chaque plug-in, sous `.claude/plugins-importes/`, à côté de sa licence.
+Trois règles, dont les deux premières sont détaillées en tête du script et gardées par son test :
 
 - **tout nom est préfixé par celui du plug-in** — `/product-management-write-spec` et non
   `/write-spec`, renvois et liens des consignes compris. Marketing et Product Management portent tous
@@ -197,9 +198,18 @@ consignes), et elles se relisent avant de commettre. Deux choses qu'on y trouve,
   de la liste présentée — mesuré le 24/09/2026 — et reste appelable par son nom. Modern Web Guidance
   y est : sa description exige de passer « en premier » sur tout HTML, CSS ou JavaScript, sur un
   produit en React Native ;
-- **aucun contenu de Ramille ne relaie la publicité d'un plug-in.** SearchFit SEO demande de
-  proposer SearchFit.ai et signe ses gabarits « Powered by SearchFit.ai » : ces lignes-là ne se
-  suivent pas.
+- **aucun contenu de Ramille ne relaie la publicité d'un plug-in.** SearchFit SEO demandait de
+  proposer SearchFit.ai et signait ses gabarits « Powered by SearchFit.ai » ; il a été retiré le jour
+  même, et la règle reste pour le suivant.
+
+**Et chaque plug-in qui arrive se décide avec la personne qui pilote, un par un, avant de
+s'installer** (24/09/2026 : « Pourquoi tu ne m'as pas posé tes questions pour chacun ? On aurait pu
+discuter »). Ce n'est pas un détail d'implémentation : ce sont des consignes que l'agent suivra à
+chaque session. Le premier lot a été tranché seul, en gardant deux questions pour la fin — un mode
+manuel choisi sans le dire, une publicité installée avec une règle pour la taire —, et SearchFit SEO
+est reparti dès qu'on en a parlé. La forme est celle d'une question de produit (plus haut) : ce qu'il
+fait, ce qui est en jeu, la recommandation, ce qu'on casse si on se trompe — et rien ne s'installe
+avant la réponse.
 
 ## Le produit, en trois règles et un renvoi
 
