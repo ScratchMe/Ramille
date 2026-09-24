@@ -1,4 +1,4 @@
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
@@ -25,6 +25,7 @@ export function TextField({
   autoCapitalize = 'none',
   placeholder,
   helperText,
+  autoComplete,
 }: {
   label: string;
   value: string;
@@ -36,9 +37,20 @@ export function TextField({
   autoCapitalize?: 'none' | 'sentences';
   placeholder?: string;
   helperText?: string;
+  /**
+   * Ce que le navigateur ou le système peut proposer de remplir. **Déduit du clavier quand
+   * l'appelant ne dit rien** : un champ d'adresse (`email-address`) reçoit `email`.
+   */
+  autoComplete?: TextInputProps['autoComplete'];
 }) {
   const theme = useTheme();
   const accented = value.length > 0 || !!rightActionLabel;
+  // **Le clavier dit déjà que c'est une adresse, et c'est lui qui décide** (24/09/2026, audit
+  // d'accessibilité 1.3.5) : sans valeur, react-native-web écrivait `autocomplete="on"`, et ni le
+  // navigateur ni un gestionnaire de mots de passe ne savaient qu'il s'agit d'une adresse — sur les
+  // trois écrans qui en demandent une, dont `/compte/suppression`. La déduire ici plutôt que de
+  // l'écrire dans chaque écran, c'est qu'un quatrième champ d'adresse l'aura sans y penser.
+  const remplissage = autoComplete ?? (keyboardType === 'email-address' ? 'email' : undefined);
 
   return (
     <View style={styles.container}>
@@ -63,6 +75,7 @@ export function TextField({
           accessibilityHint={helperText}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
+          autoComplete={remplissage}
           autoCapitalize={autoCapitalize}
           placeholder={placeholder}
           placeholderTextColor={theme.textTertiary}
