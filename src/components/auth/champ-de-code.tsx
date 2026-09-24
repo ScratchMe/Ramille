@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Radius, Spacing, Stroke } from '@/constants/theme';
+import { ControlHeight, FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
 
@@ -93,5 +93,14 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.selected,
     paddingHorizontal: 18,
   },
-  input: { fontSize: 24, lineHeight: 30, letterSpacing: 6, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  // En Spline Sans, comme `TextField` (24/09/2026) : sans `fontFamily`, les huit chiffres sortaient dans
+  // la police du système, et `tabular-nums` s'appliquait à elle plutôt qu'à la nôtre.
+  input: {
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: 6,
+    textAlign: 'center',
+    fontFamily: FontFamily.regular,
+    fontVariant: ['tabular-nums'],
+  },
 });

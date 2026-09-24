@@ -11,7 +11,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TitreDArrivee } from '@/components/titre-d-arrivee';
-import { Radius, Spacing, Stroke } from '@/constants/theme';
+import { FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   FEEDBACK_KINDS,
@@ -213,6 +213,9 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     lineHeight: 22,
+    // En Spline Sans, comme `TextField` (24/09/2026) : sans elle, le texte libre s'écrivait dans la
+    // police du système.
+    fontFamily: FontFamily.regular,
     textAlignVertical: 'top',
   },
   compteur: { fontVariant: ['tabular-nums'] },

@@ -2,7 +2,7 @@ import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Radius, Spacing, Stroke } from '@/constants/theme';
+import { ControlHeight, FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Champ labellisé des écrans de connexion (adresse email) — rayon 16, fond teinté,
@@ -111,5 +111,8 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.selected,
     paddingHorizontal: 18,
   },
-  input: { flex: 1, minWidth: 0, fontSize: 16 },
+  // **Le texte saisi est en Spline Sans** (24/09/2026, `v1-29`) : sans `fontFamily`, le champ prenait
+  // la police du système — Arial ou Helvetica sur web, Roboto sur Android — au milieu d'un écran tout
+  // en Spline Sans. Graisse normale, celle que le kit donne au champ (`TextField.jsx`, `--font-sans`).
+  input: { flex: 1, minWidth: 0, fontSize: 16, fontFamily: FontFamily.regular },
 });
