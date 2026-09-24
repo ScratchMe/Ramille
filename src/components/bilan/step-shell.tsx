@@ -8,7 +8,7 @@ import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
-import { porterLeFocus } from '@/lib/focus';
+import { donnerLeFocus } from '@/lib/focus';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
 // scrollable, footer Retour/Suivant. `onBack` absent = rien derrière, donc pas de bouton
@@ -71,19 +71,29 @@ export function StepShell({
   // cette coquille ne possède pas. Déplacer le focus sur le conteneur fait reprendre la lecture à
   // son premier descendant, c'est-à-dire au titre de l'étape.
   const contenu = useRef<View>(null);
+  const defilement = useRef<ScrollView>(null);
   const premierRendu = useRef(true);
 
   useEffect(() => {
-    // Pas au montage : personne n'a encore agi, et sur web un `focus()` au chargement provoque un
-    // saut de défilement pour tout le monde, y compris qui n'utilise pas de lecteur d'écran.
+    // Pas au montage : personne n'a encore agi. (Sur web, un `focus()` au chargement faisait aussi
+    // sauter le défilement pour tout le monde ; `donnerLeFocus` le pose désormais sans défiler, mais
+    // la règle tient pour la première raison.)
     if (premierRendu.current) {
       premierRendu.current = false;
       return;
     }
+    // **La nouvelle étape s'ouvre par le haut** (24/09/2026, relevé en mesurant le focus). Cette
+    // coquille reste montée d'une étape à l'autre, donc sa `ScrollView` gardait le défilement de la
+    // précédente : qui était descendu jusqu'au bas d'une étape arrivait sur la suivante au même
+    // décalage, le titre de la question hors de l'écran. Le focus ne rattrapait rien — le conteneur
+    // étant en partie visible, le navigateur ne défilait pas pour lui (mesuré à 360 × 440 : décalage
+    // inchangé, titre invisible), et il se pose maintenant sans défiler du tout. Sans animation : on
+    // change de question, on ne la parcourt pas.
+    defilement.current?.scrollTo({ y: 0, animated: false });
     // `tabIndex={-1}` ci-dessous rend le nœud focalisable sans l'ajouter à l'ordre de tabulation :
     // on peut lui donner le focus par programme, on ne l'atteint pas à la touche. Le mécanisme vit
-    // dans `porterLeFocus` depuis que deux écrans de plus s'en servent (24/09/2026).
-    porterLeFocus(contenu.current);
+    // dans `donnerLeFocus` depuis que deux écrans de plus s'en servent (24/09/2026).
+    donnerLeFocus(contenu.current);
   }, [step]);
 
   return (
@@ -104,7 +114,7 @@ export function StepShell({
             </ThemedText>
           )}
         </View>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={defilement} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View ref={contenu} {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
             {children}
           </View>
