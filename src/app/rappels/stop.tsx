@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { CONTACT_EMAIL } from '@/constants/editeur';
 import { APP_NAME } from '@/constants/produit';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { couperLesRappels } from '@/lib/desinscription';
 import { etatApres, jetonDuLien, type EtatDesinscription } from '@/types/desinscription';
 
@@ -43,7 +44,8 @@ import { etatApres, jetonDuLien, type EtatDesinscription } from '@/types/desinsc
 export default function StopRappels() {
   const { jeton: brut } = useLocalSearchParams<{ jeton?: string | string[] }>();
   const jeton = jetonDuLien(brut);
-  const [etat, setEtat] = useState<EtatDesinscription>(jeton ? 'en-cours' : 'lien-invalide');
+  // La réponse du serveur pour l'essai en cours, `null` tant qu'elle n'est pas arrivée.
+  const [reponse, setReponse] = useState<EtatDesinscription | null>(null);
   // Une clé d'essai plutôt qu'un second chemin d'appel : même idiome que les deux écrans
   // d'onglet. Arriver puis réessayer lance deux appels et rien ne garantit l'ordre des réponses —
   // chaque nouvelle clé démonte l'effet précédent, donc seul le dernier lancé écrit.
@@ -52,13 +54,28 @@ export default function StopRappels() {
   useEffect(() => {
     if (!jeton) return;
     let annule = false;
-    couperLesRappels(jeton).then((reponse) => {
-      if (!annule) setEtat(etatApres(reponse));
+    couperLesRappels(jeton).then((resultat) => {
+      if (!annule) setReponse(etatApres(resultat));
     });
     return () => {
       annule = true;
     };
   }, [jeton, essai]);
+
+  // **Avant l'hydratation, la page dit « un instant », jamais « ce lien n'est plus valable »**
+  // (24/09/2026, `v1-29`). L'état se déduisait du jeton dès le premier rendu, or l'export statique
+  // ne connaît pas la chaîne de requête : il rendait donc l'état sans jeton, « Ce lien n'est plus
+  // valable — il ne sert qu'une fois », et c'est ce que lisait **tout le monde** en ouvrant le lien
+  // d'un rappel, le temps que l'app démarre — puis React constatait l'écart et jetait la page
+  // (erreur n° 418, relevée sur l'export). L'état de départ est désormais celui qui n'affirme rien
+  // de faux à qui arrive par le lien, c'est-à-dire presque tout le monde ; sans jeton, la page le
+  // dit une fois hydratée (`EXPO.md` §2.2, `useApresHydratation`).
+  const apresHydratation = useApresHydratation();
+  const etat: EtatDesinscription = !apresHydratation
+    ? 'en-cours'
+    : jeton === null
+      ? 'lien-invalide'
+      : (reponse ?? 'en-cours');
 
   return (
     <ThemedView style={styles.container}>
@@ -123,7 +140,7 @@ export default function StopRappels() {
                   <Button
                     title="Réessayer"
                     onPress={() => {
-                      setEtat('en-cours');
+                      setReponse(null);
                       setEssai((n) => n + 1);
                     }}
                   />

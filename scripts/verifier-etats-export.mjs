@@ -47,6 +47,7 @@
 //
 // Lancé en CI après `expo export`, à côté des quatre autres gardes, cf. .github/workflows/ci.yml.
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { chromium } from 'playwright';
 
@@ -88,8 +89,11 @@ const navigateur = await chromium.launch(
  * layout ou dans le premier effet de l'écran, donc les poser après coup ne testerait que le
  * rechargement. AsyncStorage sur web est `window.localStorage`, clé pour clé, sans préfixe.
  */
-async function ouvrir(chemin, marques = {}) {
+async function ouvrir(chemin, marques = {}, { exceptions = null } = {}) {
   const page = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
+  // Les exceptions sont écoutées dès avant la navigation : une erreur d'hydratation part pendant
+  // que le bundle monte l'app, avant que l'attente ci-dessous ne rende la main (section D).
+  if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
   await page.addInitScript((entrees) => {
     for (const [cle, valeur] of Object.entries(entrees)) window.localStorage.setItem(cle, valeur);
   }, marques);
@@ -377,6 +381,86 @@ const CONTRASTE_MINIMAL = 3;
   }
 }
 
+// ── D. Un paramètre d'URL ne défait pas l'hydratation ─────────────────────────────────────────
+//
+// L'export rend chaque page **sans chaîne de requête** : un texte qui dépend de `?source=` ou de
+// `?jeton=` différait donc entre le HTML servi et le premier rendu du navigateur, et React jetait
+// la page (erreur n° 418). `verifier-rendu-export.mjs` classe ces erreurs en avertissements, par
+// conception ; ici elles sont **bloquantes pour les routes qu'on a corrigées**, parce qu'un retour
+// de l'écart ne se verrait nulle part ailleurs — la page s'affiche juste, une fois refaite.
+//
+// Chaque route porte aussi sa moitié positive : sans elle, une correction qui ignorerait le
+// paramètre passerait pour une correction qui l'attend.
+const HYDRATATION = /Minified React error #(418|421|422|423|425)\b|hydrat/i;
+const JETON_DE_FORME_VALIDE = '6f1f3a9e-2b7c-4d1e-9a3b-1c2d3e4f5a6b';
+
+const PARAMETRES = [
+  {
+    // Ouvert depuis « Toi », l'écran rend « Retour » ; le HTML statique, sans provenance, « Plus
+    // tard ». Les deux sont justes — à condition que le second ne serve qu'au rendu d'hydratation.
+    chemin: '/connexion?source=compte',
+    attendu: 'Retour',
+    interdit: 'Plus tard',
+  },
+  {
+    // Un jeton de forme valide mais inconnu : la page appelle le serveur, et ce qu'elle affiche
+    // ensuite dépend de la base (refus en local, panne avec la configuration factice de la CI).
+    // Seul le titre est donc attendu ici ; ce que le HTML dit **avant** l'app est vérifié
+    // ci-dessous, dans le fichier.
+    chemin: `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`,
+    attendu: 'Ne plus recevoir de rappels',
+    interdit: null,
+  },
+  {
+    // Sans jeton, rien n'est appelé : l'état ne dépend que de l'URL. Le HTML statique dit « un
+    // instant » à tout le monde, donc c'est ici que se vérifie que la page en sort une fois montée
+    // — sans quoi un lien tronqué resterait sur « Un instant, on coupe tes rappels. » pour toujours.
+    chemin: '/rappels/stop',
+    attendu: 'plus valable',
+    interdit: 'Un instant',
+  },
+];
+
+for (const { chemin, attendu, interdit } of PARAMETRES) {
+  const exceptions = [];
+  const page = await ouvrir(chemin, {}, { exceptions });
+  try {
+    const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ').trim();
+    const hydratation = exceptions.filter((e) => HYDRATATION.test(e));
+    if (hydratation.length > 0) {
+      echecs.push(
+        `${chemin} : l’hydratation échoue (${hydratation[0].slice(0, 90)}…). Le premier rendu du` +
+          ' navigateur lit la chaîne de requête que le HTML statique ne connaît pas : il doit' +
+          ' rendre la même chose que lui, puis changer (`useApresHydratation`, EXPO.md §2.2).'
+      );
+    }
+    if (!texte.includes(attendu)) {
+      echecs.push(`${chemin} : « ${attendu} » est absent une fois l’app montée. Rendu : « ${texte.slice(0, 160)}… »`);
+    } else if (interdit && texte.includes(interdit)) {
+      echecs.push(`${chemin} : « ${interdit} » s’affiche encore une fois l’app montée : le paramètre n’est pas lu.`);
+    }
+  } catch (erreur) {
+    echecs.push(`${chemin} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// Ce que lit la personne qui ouvre le lien d'un rappel **avant** que l'app ne démarre : le HTML
+// statique. Il disait « Ce lien n'est plus valable » à tout le monde, faute de connaître le jeton.
+{
+  const html = readFileSync(join(DIST, 'rappels', 'stop.html'), 'utf8');
+  if (html.includes('plus valable')) {
+    echecs.push(
+      '/rappels/stop : le HTML statique annonce « Ce lien n’est plus valable » — c’est ce que lit' +
+        ' quiconque ouvre le lien d’un rappel, le temps que l’app démarre. L’état de départ doit' +
+        ' être celui qui n’affirme rien (FRONT.md §1.3).'
+    );
+  } else if (!html.includes('Un instant')) {
+    echecs.push('/rappels/stop : le HTML statique ne porte plus « Un instant, on coupe tes rappels. ».');
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -394,5 +478,6 @@ if (echecs.length > 0) {
 
 console.log(
   `${ETATS_DE_BARRE.length} états de barre d’onglets et ${ETAPES.length} ouvertures du` +
-    ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte.`
+    ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte ;` +
+    ` ${PARAMETRES.length} routes à paramètre hydratées sans écart.`
 );
