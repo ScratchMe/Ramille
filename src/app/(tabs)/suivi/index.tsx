@@ -13,7 +13,7 @@ import { EcartParPoste } from '@/components/suivi/ecart-par-poste';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackFocus } from '@/hooks/use-track-focus';
@@ -25,6 +25,7 @@ import {
 import { POSTE_LABEL } from '@/types/resultat';
 import { formatIntention } from '@/types/plan';
 import {
+  barresDeLHistorique,
   daysSince,
   phraseDuRegimeDeRebilan,
   regimeDeRebilan,
@@ -309,6 +310,7 @@ export default function Suivi() {
               onPress={() =>
                 router.push({ pathname: '/connexion/retrouver', params: { source: 'suivi_vide' } })
               }
+              role="link"
             />
           </View>
         </SafeAreaView>
@@ -322,8 +324,10 @@ export default function Suivi() {
   const first = history[0];
 
   // Échelle commune à toutes les barres : la comparaison n'a de sens que si les bilans
-  // partagent le même repère.
-  const maxKg = Math.max(...history.map((snapshot) => snapshot.totalKg), 1);
+  // partagent le même repère. **Et sans second bilan, pas de barre du tout** (24/09/2026, `v1-29`) :
+  // la seule barre était pleine, puisque le seul bilan est le plus lourd — une jauge qui ne mesure
+  // rien. Le chiffre reste. `null` ici, et l'écran ne dessine que le texte.
+  const barres = barresDeLHistorique(history.map((snapshot) => snapshot.totalKg));
   // `reponse === 'oui'` et non une valeur truthy : depuis C2.4 il y a trois réponses, et
   // « pas de trajet » n'est pas un changement (elle compte en revanche dans « N points de suivi »,
   // ci-dessous — on compte les fois où la personne a répondu, jamais celles qu'elle a laissées
@@ -390,17 +394,26 @@ export default function Suivi() {
                 // déjà un identifiant, seul le lien manquait — une entrée de l'historique
                 // qu'on ne peut pas ouvrir est une impasse.
                 //
-                // `Pressable` nu et non `TextLink` : la cible porte trois textes et une barre,
-                // et le libellé annoncé doit les recomposer (cf. CLAUDE.md).
+                // `Pressable` nu et non `TextLink` : la cible porte trois textes et, dès deux
+                // bilans, une barre, et le libellé annoncé doit les recomposer (cf. CLAUDE.md).
+                //
+                // **Un lien, et une surface qui répond au doigt** (24/09/2026, `v1-29`). La ligne
+                // ouvre un autre écran : `link` et non `button`. Et rien ne répondait au toucher, ce
+                // qui se lit « l'app n'a pas pris mon geste » : la teinte `backgroundPressed` vient
+                // tout de suite, sans animation. La marge négative et le rembourrage égal donnent de
+                // l'air à cette teinte sans déplacer un pixel du contenu.
                 <Pressable
                   key={snapshot.assessmentId}
                   onPress={() =>
                     router.push({ pathname: '/suivi/bilan', params: { id: snapshot.assessmentId } })
                   }
-                  accessibilityRole="button"
+                  accessibilityRole="link"
                   accessibilityLabel={`Bilan du ${formatDate(snapshot.submittedAt)}, ${formatTonnes(snapshot.totalKg)}`}
                   accessibilityHint="Ouvre le détail de ce bilan"
-                  style={styles.historyRow}
+                  style={({ pressed }) => [
+                    styles.historyRow,
+                    pressed && { backgroundColor: theme.backgroundPressed },
+                  ]}
                 >
                   <View style={styles.historyHeader}>
                     <ThemedText
@@ -414,21 +427,24 @@ export default function Suivi() {
                       type="small"
                       weight={index === history.length - 1 ? 600 : 400}
                       themeColor={index === history.length - 1 ? 'text' : 'textSecondary'}
+                      style={styles.chiffres}
                     >
                       {formatTonnes(snapshot.totalKg)}
                     </ThemedText>
                   </View>
-                  <View style={[styles.barRail, { backgroundColor: theme.border }]}>
-                    <View
-                      style={[
-                        styles.barFill,
-                        {
-                          width: `${Math.max((snapshot.totalKg / maxKg) * 100, 3)}%`,
-                          backgroundColor: index === history.length - 1 ? theme.accent : theme.accentMuted,
-                        },
-                      ]}
-                    />
-                  </View>
+                  {barres !== null && (
+                    <View style={[styles.barRail, { backgroundColor: theme.border }]}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          {
+                            width: `${barres[index]}%`,
+                            backgroundColor: index === history.length - 1 ? theme.accent : theme.accentMuted,
+                          },
+                        ]}
+                      />
+                    </View>
+                  )}
                   <ThemedText type="small" themeColor="textTertiary">
                     Poste principal : {POSTE_LABEL[snapshot.dominantPoste] ?? snapshot.dominantLabel}
                   </ThemedText>
@@ -488,7 +504,7 @@ export default function Suivi() {
                     key={decision.cycleId}
                     style={[
                       styles.decisionRow,
-                      index > 0 && { borderTopWidth: 1, borderTopColor: theme.border },
+                      index > 0 && { borderTopWidth: Stroke.hairline, borderTopColor: theme.border },
                     ]}
                   >
                     <ThemedText type="small" themeColor="textSecondary">
@@ -576,7 +592,7 @@ export default function Suivi() {
                       <ThemedText type="small" weight={600}>
                         {groupe.libelle}
                       </ThemedText>
-                      <ThemedText type="small" themeColor="textTertiary">
+                      <ThemedText type="small" themeColor="textTertiary" style={styles.chiffres}>
                         {groupe.points.length} point{groupe.points.length > 1 ? 's' : ''}
                       </ThemedText>
                     </View>
@@ -597,10 +613,15 @@ export default function Suivi() {
                         </View>
                       ))}
                     </View>
+                    {/* **Le lien dit qu'il déplie** (24/09/2026, `v1-29`) : « Voir tout » s'annonçait
+                        comme un bouton quelconque, sans rien dire de l'état du groupe. `expanded`
+                        donne cet état à `TextLink`, à qui il revient de le faire dire « réduit » ou
+                        « développé » au lecteur d'écran — la même prop que le bloc de méthode. */}
                     {groupe.points.length > POINTS_VISIBLES && (
                       <TextLink
                         label={deplie ? 'Replier' : 'Voir tout'}
                         onPress={() => basculerLeGroupe(groupe.libelle)}
+                        expanded={deplie}
                         type="small"
                         weight={600}
                         themeColor="accentText"
@@ -706,8 +727,20 @@ const styles = StyleSheet.create({
   intro: { gap: Spacing.two },
   card: { borderRadius: 20, padding: 20, gap: 14 },
   bars: { gap: Spacing.three },
-  historyRow: { gap: 6 },
+  // Marge négative et rembourrage égaux : la teinte du toucher déborde de 8 px autour du contenu,
+  // qui ne bouge pas d'un pixel, et le `gap` entre les lignes reste le même.
+  historyRow: {
+    gap: 6,
+    marginHorizontal: -Spacing.two,
+    paddingHorizontal: Spacing.two,
+    marginVertical: -Spacing.one,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.notice,
+  },
   historyHeader: { flexDirection: 'row', justifyContent: 'space-between' },
+  // **Chiffres tabulaires** (24/09/2026, `v1-29`) : les totaux et les comptes s'alignent à droite,
+  // d'une ligne à l'autre. Spline Sans porte la fonction `tnum`.
+  chiffres: { fontVariant: ['tabular-nums'] },
   barRail: { height: 14, borderRadius: 7, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 7 },
   checkinsHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

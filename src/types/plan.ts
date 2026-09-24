@@ -14,7 +14,7 @@
  * ici parce que c'est le module que l'écran du plan et la carte de point importent déjà ;
  * **la définition et son commentaire sont là-bas.**
  */
-import { formeInserable } from '@/constants/postes';
+import { FORME_INSERABLE, formeInserable } from '@/constants/postes';
 
 export { formeInserable };
 
@@ -131,6 +131,30 @@ export function formatIntention(
 }
 
 /**
+ * La ligne posée sous le gain d'une carte d'action : « par an · le mardi et le jeudi · 15 % de ton
+ * empreinte » (24/09/2026, `v1-29`).
+ *
+ * **« par an » vient toujours en premier, collé au chiffre qu'il qualifie.** L'intention d'une
+ * action engagée s'intercalait devant lui — « Le mardi et le jeudi · par an · 15 % » —, si bien que
+ * « par an » se lisait comme le rythme des jours choisis et non comme l'unité du gain juste
+ * au-dessus. Les cartes non engagées disaient déjà « par an · 15 % de ton empreinte » ; celle qu'on
+ * suit dit désormais la même chose, l'intention ensuite.
+ *
+ * L'intention arrive en minuscules (`formatIntention`, écrite pour s'insérer dans une phrase) et le
+ * reste : elle n'est plus en tête de ligne. Le libellé accessible de la carte, lui, découpe en
+ * phrases et y remet sa majuscule.
+ */
+export function ligneDuGain(intention: string | null, partPercent: number | null): string {
+  return [
+    'par an',
+    intention,
+    partPercent !== null ? `${Math.round(partPercent)} % de ton empreinte` : null,
+  ]
+    .filter((morceau): morceau is string => morceau !== null && morceau !== '')
+    .join(' · ');
+}
+
+/**
  * Une intention est valide si elle porte exactement une des deux formes — miroir de la
  * contrainte `plan_actions_engagement_coherent`. Vérifié côté client pour ne pas envoyer un
  * appel que la base refusera, jamais à sa place.
@@ -169,10 +193,11 @@ export type CadreDuPlan = {
    * C'est le cas de bord que C2.5 a rendu courant : depuis que les gabarits de loisirs sont
    * refusés aux sorties rares, **tout cycliste et tout profil sédentaire** a un plan à zéro
    * action — vérifié sur le distant. La carte du cap ne dépendait que de `capKg !== null`, donc
-   * « − 11 kg, soit − 20 % sur tes sorties du week-end » s'affichait juste **au-dessus** de « Tu
-   * fais déjà l'essentiel sur ce poste ». Le commentaire du cap dit lui-même pourquoi il existe :
-   * qu'on voie qu'en cumulant deux actions on l'atteint. Sans action, il n'a plus d'objet, et son
-   * chiffre y est de surcroît dérivé d'un résiduel de calcul de 15 km.
+   * « − 11 kg, soit − 20 % sur tes sorties du week-end » s'affichait juste **au-dessus** de la
+   * félicitation du plan sans action (« Tu fais déjà l'essentiel sur … »). Le commentaire du cap
+   * dit lui-même pourquoi il existe : qu'on voie d'un coup d'œil qu'une action l'atteint — ou ne
+   * l'atteint pas. Sans action, il n'a plus d'objet, et son chiffre y est de surcroît dérivé d'un
+   * résiduel de calcul de 15 km.
    *
    * La carte, elle, se rend toujours : elle est depuis C2.8 l'endroit où la période se nomme.
    */
@@ -214,6 +239,75 @@ export function cadreDuPlan({
   // paramètre parce qu'il dit ce que la carte décrit, et qu'un prochain champ de `CadreDuPlan` le
   // lira ; la branche qui l'examinait rendait le même littéral que cette ligne-ci.
   return { chiffreLeCap: true };
+}
+
+/**
+ * Ce que le cap dit des pistes posées à côté de lui, **quand c'est vrai** (24/09/2026, `v1-29`).
+ *
+ * Le cap est un chiffre **annuel** — 20 % du poste dominant, sur un an — et les pistes annoncent
+ * leur gain « par an » : même unité, donc on peut dire le lien, et c'est la question que la
+ * personne se pose devant la carte du cap. « Ton cap pour cette saison − 384 kg » au-dessus de
+ * « − 619 kg par an » laissait croire qu'il fallait les additionner, ou qu'une saison valait un an.
+ *
+ * Trois phrases, et le silence partout ailleurs :
+ *  - une seule carte en avant, qui atteint le cap → « La piste proposée suffit à le franchir. » ;
+ *  - deux cartes qui l'atteignent toutes les deux → « Chacune des deux pistes proposées… » ;
+ *  - deux cartes dont une seule l'atteint → « L'une des deux pistes proposées… ».
+ * Aucune ne l'atteint, une action est engagée (la personne a choisi, le lien n'a plus à être dit),
+ * ou le cap n'est pas chiffré : pas de phrase. Au-delà de deux cartes — l'écran n'en met jamais
+ * plus que `ACTIONS_EN_AVANT` — rien non plus : une formulation pour trois n'a pas été décidée, et
+ * une phrase fausse coûte plus qu'une phrase absente.
+ *
+ * **« Atteindre », c'est un gain au moins égal au cap, comparé sur ce que la personne lit.** Les
+ * deux chiffres s'affichent arrondis au kilo (`formatKg`), et l'égalité n'est pas un cas d'école :
+ * sur cinq jours de trajet, « Travailler depuis chez toi un jour par semaine » retire 20 % du trajet
+ * domicile-travail — exactement le cap quand ce trajet est le poste dominant (384 kg des deux côtés
+ * sur le profil de la recette). À 383,6 kg contre 384, l'écran montre deux fois « 384 » ; comparer
+ * les valeurs brutes y ferait taire la phrase.
+ */
+export function phraseDesPistesSuffisantes({
+  capKg,
+  gainsEnAvant,
+  actionEngagee,
+}: {
+  /** Le cap affiché, en kilos par an — `null` quand la carte ne le chiffre pas. */
+  capKg: number | null;
+  /** Le gain annuel de chaque carte mise en avant (`saving_kg_year`), dans l'ordre de l'écran. */
+  gainsEnAvant: (number | null)[];
+  /** Une action du cycle est-elle engagée ? La phrase aide à choisir, pas à relire un choix. */
+  actionEngagee: boolean;
+}): string | null {
+  if (capKg === null || actionEngagee) return null;
+  const cap = Math.round(capKg);
+  if (cap <= 0) return null;
+
+  const suffisantes = gainsEnAvant.filter((gain) => gain !== null && Math.round(gain) >= cap).length;
+  if (suffisantes === 0) return null;
+
+  if (gainsEnAvant.length === 1) return 'La piste proposée suffit à le franchir.';
+  if (gainsEnAvant.length === 2) {
+    return suffisantes === 2
+      ? 'Chacune des deux pistes proposées suffit à le franchir.'
+      : 'L’une des deux pistes proposées suffit à le franchir.';
+  }
+  return null;
+}
+
+/**
+ * Le titre de la carte d'un plan à zéro action, qui nomme le poste (24/09/2026, `v1-29`).
+ *
+ * « Tu fais déjà l'essentiel sur ce poste. » ne disait pas lequel, sur un écran où rien d'autre ne
+ * le nomme : un plan sans action ne chiffre pas son cap (`cadreDuPlan`), donc la ligne « soit − 20 %
+ * sur … » n'y est pas. Le poste est celui du cycle (`plan_cycles.poste`, le dominant du bilan), dans
+ * le registre qu'on insère après une préposition.
+ *
+ * **Un poste inconnu garde l'ancienne phrase**, et c'est délibéré : `formeInserable` retombe sur
+ * « tes sorties du week-end » faute de mieux, repli pensé pour la boucle mensuelle — sur une
+ * félicitation, un poste deviné serait une fausseté lisible, alors que « ce poste » ne ment pas.
+ */
+export function felicitationDuPlanSansAction(poste: string | null): string {
+  const forme = poste ? FORME_INSERABLE[poste] : undefined;
+  return forme ? `Tu fais déjà l’essentiel sur ${forme}.` : 'Tu fais déjà l’essentiel sur ce poste.';
 }
 
 

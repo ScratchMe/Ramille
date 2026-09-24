@@ -3,8 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import { formatKg } from '@/lib/format';
 import { PastilleEngagee } from '@/components/plan/pastille-engagee';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { ligneDuGain } from '@/types/plan';
 
 // Carte d'une action du plan — extraite de l'écran (v1-11 lot 1).
 //
@@ -20,6 +21,12 @@ import { useTheme } from '@/hooks/use-theme';
 // L'action non retenue s'estompe **sans disparaître et sans perdre son bouton** : changer
 // d'avis ne doit jamais ressembler à un renoncement (même registre que /suivi, qui ne compte
 // jamais ce qu'on a laissé passer).
+//
+// **Et elle s'estompe par son cadre, jamais par son texte** (24/09/2026, `v1-29`). Une opacité de
+// 0,72 sur toute la carte faisait tomber le détail à 3,25:1, le gain à 4,21:1, et « C'est noté »
+// à 3,39:1 dans le sélecteur ouvert dedans — sous le seuil de 4,5:1, dans l'état ordinaire d'un
+// plan en cours puisqu'une action y est engagée. C'est la bordure qui recule désormais ; le texte
+// et les contrôles gardent leurs contrastes.
 export function ActionCard({
   titre,
   gainKg,
@@ -55,7 +62,10 @@ export function ActionCard({
    * commence ne remet pas le choix à zéro : elle le reconduit, et le dit.
    */
   reconduite: boolean;
-  /** Une autre action porte l'engagement : celle-ci passe au second plan, sans se désactiver. */
+  /**
+   * Une autre action porte l'engagement : celle-ci passe au second plan, sans se désactiver — par
+   * son cadre seulement.
+   */
   estompee: boolean;
   children: React.ReactNode;
 }) {
@@ -96,10 +106,13 @@ export function ActionCard({
       style={[
         styles.carte,
         {
-          borderColor: engagee ? theme.accent : theme.border,
-          borderWidth: engagee ? 2 : 1,
+          // Trois cadres : l'action engagée (accent, 2 px, fond teinté), une proposition (filet
+          // `border`), et une proposition estompée parce qu'une autre est engagée — son filet passe
+          // de `border` à `backgroundElement`, un cran plus près du fond dans les deux thèmes. Ni
+          // opacité ni couleur de texte ne bougent : ce qui recule, c'est la boîte.
+          borderColor: engagee ? theme.accent : estompee ? theme.backgroundElement : theme.border,
+          borderWidth: engagee ? Stroke.engaged : Stroke.hairline,
           backgroundColor: engagee ? theme.backgroundTinted : 'transparent',
-          opacity: estompee ? 0.72 : 1,
         },
       ]}
     >
@@ -129,9 +142,11 @@ export function ActionCard({
             <ThemedText weight={600} themeColor="accentText" style={styles.gainValeur}>
               − {formatKg(gainKg)} kg CO₂e
             </ThemedText>
+            {/* **« par an » colle au chiffre** (24/09/2026, `v1-29`) : l'intention d'une action
+                engagée s'intercalait devant lui — « Le mardi et le jeudi · par an · 15 % ». La ligne
+                se compose dans `ligneDuGain`, avec ses tests. */}
             <ThemedText type="small" themeColor="textSecondary">
-              {intention ? `${majuscule(intention)} · par an` : 'par an'}
-              {partPercent !== null ? ` · ${Math.round(partPercent)} % de ton empreinte` : ''}
+              {ligneDuGain(intention, partPercent)}
             </ThemedText>
           </View>
         )}
@@ -155,7 +170,7 @@ export function ActionCard({
           <ThemedText themeColor="textTertiary" weight={600} style={styles.premierPasTitre}>
             PREMIER PAS
           </ThemedText>
-          <ThemedText style={styles.premierPasTexte}>{premierPas}</ThemedText>
+          <ThemedText type="small">{premierPas}</ThemedText>
         </View>
       )}
 
@@ -177,13 +192,16 @@ const styles = StyleSheet.create({
   // regrouper pour le lecteur d'écran ne doit rien changer à l'œil.
   bloc: { gap: Spacing.two },
   enTete: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  etiquette: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
+  // L'étiquette en capitales du produit, nommée dans `TypeScale` le 24/09/2026 (`v1-29`) : elle
+  // était recopiée ici deux fois et une fois dans `carte-douverture.tsx`.
+  etiquette: TypeScale.label,
   gain: { gap: 2 },
-  gainValeur: { fontSize: 20, lineHeight: 26 },
+  // 20/26, la seule occurrence de cette taille : elle reste en dur. Les chiffres sont **tabulaires**
+  // (24/09/2026, `v1-29`) : d'une carte à l'autre, les gains se lisent en colonne.
+  gainValeur: { fontSize: 20, lineHeight: 26, fontVariant: ['tabular-nums'] },
   // 12/16 de padding vertical, 16 horizontal, rayon `Radius.field` : un bloc interne de carte, ce
   // que ce rayon nomme déjà.
   premierPas: { borderRadius: Radius.field, paddingVertical: 12, paddingHorizontal: Spacing.three, gap: 2 },
-  // 13/18 et 14/20 : les deux seules occurrences de ces tailles ici, elles restent en dur.
-  premierPasTitre: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
-  premierPasTexte: { fontSize: 14, lineHeight: 20 },
+  // Le texte du premier pas est en `small` (14/20), qu'il recopiait jusqu'ici à la main.
+  premierPasTitre: TypeScale.label,
 });

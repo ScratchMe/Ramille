@@ -27,10 +27,13 @@ export type PisteDuPlan = {
 
 type Props = {
   action: PisteDuPlan;
-  /** L'action engagée du cycle, s'il y en a une : elle décide de l'estompage des autres. */
+  /**
+   * L'action engagée du cycle, s'il y en a une : elle décide de l'estompage des autres — et elle
+   * seule depuis le 24/09/2026 (`v1-29`). Une prop `estompeeParLeRang` estompait « malgré tout, le
+   * rang le demande sur certains écrans » ; aucun écran ne la passait plus depuis que C5.2 a sorti
+   * les rangs du plan, et une branche que rien n'exerce se lit comme une règle en vigueur.
+   */
   committedActionId: string | null;
-  /** Estomper malgré tout, quel que soit l'engagement — le rang le demande sur certains écrans. */
-  estompeeParLeRang?: boolean;
   /** Appelée quand un engagement vient d'être pris, avec le poste de l'action (C2.1). */
   onEngage: (poste: string | null) => void;
   /** Appelée après toute écriture réussie : l'écran relit. */
@@ -47,14 +50,7 @@ type Props = {
  * écran, la recopier serait garantir qu'elles divergent — et la divergence porterait sur le geste le
  * plus irréversible du produit, l'engagement.
  */
-export function CarteDePiste({
-  action,
-  committedActionId,
-  estompeeParLeRang = false,
-  onEngage,
-  onChanged,
-  onRefus,
-}: Props) {
+export function CarteDePiste({ action, committedActionId, onEngage, onChanged, onRefus }: Props) {
   const uneAutreEstEngagee = committedActionId !== null && committedActionId !== action.id;
 
   return (
@@ -67,7 +63,7 @@ export function CarteDePiste({
       premierPas={action.first_step}
       engagee={action.committed_at !== null}
       reconduite={action.carried_over_from !== null}
-      estompee={estompeeParLeRang || uneAutreEstEngagee}
+      estompee={uneAutreEstEngagee}
     >
       {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la fois par
           cycle — s'engager sur les deux revient à ne s'engager sur aucune, et la base le

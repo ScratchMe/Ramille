@@ -26,7 +26,13 @@ import {
 } from '@/constants/carbon-reference';
 import { formatTonnes, grouperLesMilliers } from '@/lib/format';
 import type { Palier } from '@/types/palier';
-import { POSTE_EN_PHRASE, POSTE_LABEL, POSTE_SUBJECT } from '@/constants/postes';
+import {
+  POSTE_EN_PHRASE,
+  POSTE_LABEL,
+  POSTE_SUBJECT,
+  formeInserable,
+  type Poste,
+} from '@/constants/postes';
 
 export type ModeResultat = 'nouveau' | 'relecture';
 
@@ -230,6 +236,77 @@ export function dominantShareLabel(results: ResultatBilan): string {
   const posteLabel = POSTE_LABEL[results.dominant_poste] ?? results.dominant_poste_label;
   const preposition = prepositionDuMode(results.dominant_poste_mode);
   return preposition ? `${posteLabel} ${preposition}` : posteLabel;
+}
+
+/**
+ * Le poids de chaque poste, tel que la restitution l'affiche dans ses barres — et le poste que le
+ * serveur a désigné. Forme structurelle, comme `ResultatBilan` : la ligne d'`assessment_results`
+ * la satisfait telle quelle, et l'écran n'a rien à recalculer.
+ */
+export type PoidsDesPostes = {
+  dominant_poste: string;
+  commute_co2_kg_year: number;
+  leisure_co2_kg_year: number;
+  travel_co2_kg_year: number;
+};
+
+/** L'étiquette générale, celle qui vaut tant que le dominant est aussi le plus lourd. */
+export const ETIQUETTE_DU_PLUS_LOURD = 'Le déplacement qui pèse le plus';
+
+/**
+ * L'ordre du départage, du plus régulier au moins régulier — celui de
+ * `recompute_assessment_results` (`tie_break_margin = 0.05`, `v1-05`). Écrit ici et non déduit de
+ * `POSTES`, qui dit comment la base nomme les postes, pas lequel l'emporte.
+ */
+const ORDRE_DU_DEPARTAGE: readonly Poste[] = ['commute', 'leisure', 'travel'];
+
+function poidsDuPoste(poids: PoidsDesPostes, poste: Poste): number {
+  if (poste === 'commute') return poids.commute_co2_kg_year;
+  if (poste === 'leisure') return poids.leisure_co2_kg_year;
+  return poids.travel_co2_kg_year;
+}
+
+/**
+ * L'étiquette posée au-dessus du poste dominant, et ce qu'elle a le droit d'affirmer
+ * (24/09/2026, `v1-29`).
+ *
+ * **« Le déplacement qui pèse le plus » était faux quand le départage joue.** Le serveur désigne le
+ * poste dominant avec une marge : à 5 % près, le poste le plus **régulier** l'emporte —
+ * domicile-travail, puis loisirs, puis voyages —, parce qu'un plan se construit mieux sur ce qui
+ * revient chaque semaine. Sur le profil de la recette, les voyages pèsent 2,0 t et le
+ * domicile-travail 1,9 t : le titre désignait le domicile-travail au-dessus de barres qui montrent
+ * l'inverse. La règle reste ; l'étiquette dit ce qui s'est passé, et nomme l'autre poste dans le
+ * registre qu'on insère dans une phrase (`formeInserable`) — « tes voyages », jamais « Voyages
+ * longue distance ».
+ *
+ * **Les candidats sont les postes moins réguliers que le dominant, et pas tous les autres.** C'est
+ * ce qui rend « le plus régulier » vrai par construction : le serveur ne laisse jamais un poste plus
+ * régulier et plus lourd perdre le départage. Le domicile-travail, premier de l'ordre, ne peut donc
+ * jamais être le plus lourd sans être dominant ; une ligne qui le prétendrait ne peut venir que
+ * d'une règle serveur changée sans passer ici, et l'étiquette retombe alors sur la phrase générale
+ * plutôt que de dire « presque à égalité avec ton trajet domicile-travail » — qui ferait passer les
+ * loisirs pour plus réguliers que lui. Sur tout ce que la règle actuelle produit, c'est exactement
+ * « un autre poste pèse strictement plus » : aucune différence, sinon celle-là.
+ *
+ * **Strictement plus**, et s'il y en a deux, le plus lourd : à égalité exacte le dominant est aussi
+ * le plus lourd, et l'étiquette générale redevient vraie.
+ */
+export function etiquetteDuPosteDominant(poids: PoidsDesPostes): string {
+  const rang = ORDRE_DU_DEPARTAGE.indexOf(poids.dominant_poste as Poste);
+  if (rang === -1) return ETIQUETTE_DU_PLUS_LOURD;
+
+  const dominantKg = poidsDuPoste(poids, ORDRE_DU_DEPARTAGE[rang]);
+  let plusLourd: Poste | null = null;
+  for (const poste of ORDRE_DU_DEPARTAGE.slice(rang + 1)) {
+    const kg = poidsDuPoste(poids, poste);
+    if (kg > dominantKg && (plusLourd === null || kg > poidsDuPoste(poids, plusLourd))) {
+      plusLourd = poste;
+    }
+  }
+
+  return plusLourd === null
+    ? ETIQUETTE_DU_PLUS_LOURD
+    : `Le plus régulier, presque à égalité avec ${formeInserable(plusLourd)}`;
 }
 
 /**

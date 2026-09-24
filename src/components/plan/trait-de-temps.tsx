@@ -1,9 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
+import { Rail } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
- * Le temps écoulé dans la période — un trait de 6 px sous la carte du cap (C2.8, planche B1).
+ * Le temps écoulé dans la période — un trait sous la carte du cap (C2.8, planche B1), sur le rail
+ * que partagent les barres de progression du produit (`Rail`).
  *
  * **Il mesure la saison, pas la personne**, et c'est la raison pour laquelle il se remplit en
  * `accentMuted` et jamais en `accent` : rien de ce que la personne fait ne le fait avancer, et rien
@@ -34,8 +36,6 @@ export function TraitDeTemps({ progression }: { progression: number }) {
 }
 
 const styles = StyleSheet.create({
-  // 6 px, rayon 3 : la seule occurrence de ces deux valeurs dans le produit, donc elles restent
-  // en dur ici — les nommer dans `theme.ts` encoderait une équivalence qui n'existe pas.
-  rail: { height: 6, borderRadius: 3, overflow: 'hidden', marginTop: 6 },
-  ecoule: { height: '100%', borderRadius: 3 },
+  rail: { height: Rail.height, borderRadius: Rail.radius, overflow: 'hidden', marginTop: 6 },
+  ecoule: { height: '100%', borderRadius: Rail.radius },
 });

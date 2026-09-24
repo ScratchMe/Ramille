@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
@@ -79,6 +79,24 @@ const REFUS_DU_RPC: Record<string, string | undefined> = {
     'Ce point de suivi n’est plus rattaché à ton compte. Il disparaîtra de ton plan à la prochaine relecture.',
 };
 
+/**
+ * Porte le focus sur ce qui vient de remplacer le bouton touché — celui du clavier sur web, celui
+ * du lecteur d'écran sur natif (24/09/2026, `v1-29`).
+ *
+ * Même idiome que `StepShell` : sur web, un nœud rendu avec `tabIndex={-1}` et un `focus()` ; sur
+ * natif, un événement d'accessibilité. `sendAccessibilityEvent` et non `setAccessibilityFocus`,
+ * que React Native marque obsolète et qui passe par l'ancien gestionnaire d'interface. Sur web,
+ * react-native-web laisse les deux vides : seul le DOM peut déplacer le focus.
+ */
+function porterLeFocusSur(cible: View | null) {
+  if (!cible) return;
+  if (Platform.OS === 'web') {
+    (cible as unknown as { focus?: () => void }).focus?.();
+    return;
+  }
+  AccessibilityInfo.sendAccessibilityEvent(cible, 'focus');
+}
+
 // Contenu et comportement adaptatif minimal cf. spec-fonctionnelle §7 : une question
 // fermée ancrée sur un fait précis (pas d'auto-évaluation globale floue), réponse positive
 // = renforcement bref, réponse négative = relance factuelle non culpabilisante — jamais de
@@ -114,6 +132,21 @@ export function CheckinCard({
   /** La réponse n'est pas partie : les boutons restent, il n'y a qu'à recommencer. */
   const [erreur, setErreur] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  /**
+   * **La réplique prend le focus quand elle remplace les boutons** (24/09/2026, `v1-29`). La carte
+   * retirait « Oui », « Non » et le lien au moment même où l'un d'eux venait d'être touché, sans
+   * rien annoncer : au clavier, le focus retombait en haut de la page ; au lecteur d'écran, le mot
+   * de Ramille — la seule trace que la réponse est partie — n'était jamais lu.
+   *
+   * **Seulement sur une réponse donnée ici**, jamais au montage : une carte déjà répondue qu'on
+   * retrouve en revenant sur le plan n'a volé le focus à personne, et le prendre au chargement
+   * ferait sauter l'écran de quiconque ouvre le plan.
+   */
+  const replique = useRef<View>(null);
+  useEffect(() => {
+    if (reponseLocale !== null) porterLeFocusSur(replique.current);
+  }, [reponseLocale]);
 
   // Comparaison de libellés et non d'identifiants : la carte ne porte pas l'identifiant du gabarit,
   // et le libellé est ce que la personne a lu en choisissant. Deux actions de libellés identiques
@@ -226,7 +259,12 @@ export function CheckinCard({
               <View style={styles.actions}>
                 {/* « Oui » et « Non » hors contexte ne veulent rien dire : le lecteur d'écran
                     annonce la question juste avant, mais rien ne garantit qu'elle soit encore en
-                    mémoire au moment du geste. Le hint la rappelle sur chaque bouton. */}
+                    mémoire au moment du geste. Le hint la rappelle sur chaque bouton.
+
+                    **Les deux au même poids** (24/09/2026, `v1-29`) : « Oui » était un bouton vert
+                    plein, « Non » un bouton gris — la carte désignait la bonne réponse avant qu'on
+                    la donne. Aucune des deux n'est un échec, comme dans le suivi, où « Changement
+                    fait » et « Pas cette fois » sont au même niveau typographique. */}
                 <Button
                   title="Non"
                   variant="secondary"
@@ -237,6 +275,7 @@ export function CheckinCard({
                 />
                 <Button
                   title="Oui"
+                  variant="secondary"
                   onPress={() => answer('oui')}
                   disabled={saving}
                   flex
@@ -252,8 +291,9 @@ export function CheckinCard({
                   par an », dix mois sur douze devenaient ainsi une suite de « Non ».
 
                   Un lien et non un troisième bouton : c'est une sortie, pas une réponse qu'on
-                  propose à égalité avec les deux autres. `TextLink` porte les 44 px de cible sans
-                  déplacer le texte, et son libellé accessible **est** le texte affiché. */}
+                  propose à égalité avec les deux autres. `TextLink` porte la cible tactile
+                  (`ControlHeight.target`) sans déplacer le texte, et son libellé accessible **est**
+                  le texte affiché. */}
               <TextLink
                 label={libelleSansObjet(checkin)}
                 onPress={() => answer('sans_objet')}
@@ -273,8 +313,14 @@ export function CheckinCard({
           {/* **Un point de maintien ne reçoit jamais `checkinNon`** (C2.5) : cette réplique console
               d'un échec, et répondre « non » à « ton trajet s'est-il fait à vélo ? » n'en est pas
               un. Même raison pour `sans_objet`, qui reçoit une attente et non une relance (C2.4).
-              Le choix se fait dans `repliqueDuPoint`, avec son test, plutôt qu'en ternaire ici. */}
-          <RamilleDit {...repliqueDuPoint(checkin, reponse)} />
+              Le choix se fait dans `repliqueDuPoint`, avec son test, plutôt qu'en ternaire ici.
+
+              **Le conteneur reçoit le focus après une réponse donnée ici** (cf. `replique`) :
+              `tabIndex={-1}` le rend focalisable sur web sans l'ajouter à l'ordre de tabulation, et
+              `accessible` en fait un seul nœud sur natif — le visage est masqué, la phrase est lue. */}
+          <View ref={replique} accessible {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
+            <RamilleDit {...repliqueDuPoint(checkin, reponse)} />
+          </View>
           {/* **La phrase du handoff, enfin affichée** (C2.10) : elle est dans la spec §7 comme signal
               d'engagement et en §9 comme indicateur de succès, et n'avait jamais été calculée nulle
               part. Voix produit et non celle de Ramille — elle constate un fait sur deux périodes, et

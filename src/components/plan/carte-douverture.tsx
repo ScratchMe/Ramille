@@ -12,7 +12,7 @@ import { Button } from '@/components/button';
 import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ContenuDOuverture, SortieDouverture } from '@/types/saison';
 
@@ -143,9 +143,10 @@ export function CarteDOuverture({
 
 const styles = StyleSheet.create({
   bloc: { gap: Spacing.three },
-  carte: { borderWidth: 1, borderRadius: Radius.card, padding: 20, gap: 12 },
-  // Même étiquette que celle de `ActionCard` : 13/18/700, interlettrage +0,3.
-  etiquette: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
+  carte: { borderWidth: Stroke.hairline, borderRadius: Radius.card, padding: 20, gap: 12 },
+  // Même étiquette que celle de `ActionCard` — 13/18, interlettrage +0,3, en 700 par la prop
+  // `weight` —, nommée `TypeScale.label` depuis le 24/09/2026 (`v1-29`).
+  etiquette: TypeScale.label,
   // 4 px de plus que le `gap` de la carte : les boutons forment un groupe, pas deux lignes de
   // texte de plus.
   sorties: { gap: Spacing.two, marginTop: 4 },
