@@ -1,4 +1,5 @@
-import { StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+import { useEffect } from 'react';
+import { AccessibilityInfo, Platform, StyleSheet, type StyleProp, type TextStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 
@@ -12,9 +13,25 @@ import { ThemedText } from '@/components/themed-text';
 //
 // **Le `role="alert"` n'est pas décoratif, il évite une régression.** Une boîte système est
 // annoncée par un lecteur d'écran ; un texte qui apparaît dans la page ne l'est pas. Remplacer
-// l'une par l'autre sans région vivante rendrait l'échec silencieux pour qui ne voit pas
-// l'écran — moins bon qu'avant. `accessibilityLiveRegion` couvre Android,
-// `role="alert"` couvre le web (react-native-web le rend en `aria-live`).
+// l'une par l'autre sans annonce rendrait l'échec silencieux pour qui ne voit pas l'écran —
+// moins bon qu'avant.
+//
+// **Et l'annonce ne passe pas par le même chemin sur les deux plateformes** (24/09/2026, `v1-29`,
+// audit d'accessibilité 4.1.3). Le composant se **monte avec son texte** : il n'existe pas tant
+// qu'il n'y a rien à dire, et c'est ce qui laisse ses dix-sept appelants écrire
+// `<MessageInline message={…} />` sans espace réservé ni `{message && …}`.
+//   - Sur web, c'est exactement ce qu'il faut : un élément de rôle `alert` **inséré** dans la page
+//     est annoncé par les navigateurs (ils émettent l'événement d'alerte à l'insertion), et un
+//     texte qui change dans un élément déjà là l'est comme une région vivante. react-native-web rend
+//     `role="alert"` tel quel.
+//   - Sur Android, non. Une région vivante (`accessibilityLiveRegion`) annonce les changements d'un
+//     nœud **déjà présent**, pas son apparition : un message qui se monte avec son texte n'était
+//     donc pas annoncé à coup sûr, et la recette TalkBack du 14/09/2026 ne l'avait pas éprouvé.
+//     L'annonce y est donc **demandée** (`announceForAccessibility`) au montage et à chaque
+//     changement de texte — et la région vivante est retirée sur natif, sans quoi un texte qui
+//     change sous un message déjà affiché serait dit deux fois.
+// Un espace vivant monté en permanence aurait réglé Android autrement, mais il aurait ajouté un
+// élément vide — donc un `gap` de plus — sous l'action de chacun des dix-sept écrans.
 //
 // Trois écrans disaient déjà l'échec ainsi, chacun avec son propre bout de JSX
 // (`/connexion/email`, `/connexion/retrouver`, `/compte/suppression`) : ils passent par ce
@@ -28,6 +45,11 @@ export function MessageInline({
   message: string | null;
   style?: StyleProp<TextStyle>;
 }) {
+  useEffect(() => {
+    if (!message || Platform.OS === 'web') return;
+    AccessibilityInfo.announceForAccessibility(message);
+  }, [message]);
+
   if (!message) return null;
 
   return (
@@ -35,7 +57,9 @@ export function MessageInline({
       type="small"
       themeColor="textSecondary"
       role="alert"
-      accessibilityLiveRegion="polite"
+      // Web seulement : `aria-live` accompagne le rôle `alert` pour les changements de texte. Sur
+      // natif, l'annonce est demandée ci-dessus, et une région vivante la doublerait.
+      accessibilityLiveRegion={Platform.OS === 'web' ? 'polite' : undefined}
       style={[styles.message, style]}
     >
       {message}
