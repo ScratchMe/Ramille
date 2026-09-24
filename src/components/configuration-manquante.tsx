@@ -31,6 +31,9 @@ export function ConfigurationManquante({ problemes }: { problemes: ProblemeConfi
             L’app ne peut pas démarrer sans sa connexion à Supabase.
           </ThemedText>
 
+          {/* La chasse fixe reste (24/09/2026, `v1-29`, où elle est réservée aux sources et aux codes
+              techniques) : chaque ligne nomme une variable d'environnement et, s'il y a lieu, sa
+              valeur fautive — des clés à recopier au caractère près. */}
           <View style={[styles.bloc, { borderColor: theme.border }]}>
             {problemes.map((probleme, index) => (
               <ThemedText

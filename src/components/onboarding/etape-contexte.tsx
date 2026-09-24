@@ -98,6 +98,9 @@ export function EtapeContexte({
                 />
               ))}
             </View>
+            {/* La chasse fixe reste, et c'est la règle et non une exception (24/09/2026, `v1-29`) :
+                elle est réservée aux sources et aux codes techniques, et cette ligne est la source
+                des chiffres de l'écran. */}
             <ThemedText type="code" themeColor="textTertiary">
               {CARBON_SOURCE_LABEL}
             </ThemedText>

@@ -214,23 +214,27 @@ export default function ConnexionProposition() {
 
           {/* Les deux pages légales sont accessibles là où quelqu'un s'apprête à créer un
               compte — c'est le moment où elles l'engagent. Leurs URL publiques sont aussi
-              exigées par l'écran de consentement Google OAuth et par la fiche Play Store. */}
+              exigées par l'écran de consentement Google OAuth et par la fiche Play Store.
+
+              En Spline Sans et plus en chasse fixe (24/09/2026, `v1-29`) : la chasse fixe est
+              réservée aux sources et aux codes techniques, et ce sont deux liens que la personne
+              lit. */}
           <View style={styles.legal}>
             <TextLink
               label="Confidentialité"
               onPress={() => router.push('/confidentialite')}
               role="link"
-              type="code"
+              type="small"
               themeColor="textTertiary"
             />
-            <ThemedText type="code" themeColor="textTertiary">
+            <ThemedText type="small" themeColor="textTertiary">
               ·
             </ThemedText>
             <TextLink
               label="Conditions d’utilisation"
               onPress={() => router.push('/conditions')}
               role="link"
-              type="code"
+              type="small"
               themeColor="textTertiary"
             />
           </View>
