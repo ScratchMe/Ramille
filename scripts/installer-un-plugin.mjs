@@ -1,7 +1,7 @@
 // Installe un plug-in Claude Code dans le dépôt, depuis son archive `.zip` ou son dossier.
 //
 //   node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto]
-//                                        [--racine <dépôt>]
+//                                        [--licence <fichier>] [--racine <dépôt>]
 //   node scripts/installer-un-plugin.mjs --retirer <plug-in> [--racine <dépôt>]
 //
 // **Pourquoi à la main : claude.ai ne livre pas les plug-ins aux sessions cloud.** Constaté le
@@ -23,7 +23,16 @@
 // dans le contexte de CHAQUE session et peut se déclencher seul sur un sujet voisin — Auth0 en
 // apporte quarante-cinq, pour un fournisseur que Ramille n'utilise pas. En `--manuel`, chaque
 // skill et chaque commande reçoivent `disable-model-invocation: true` : rien ne se charge, rien ne
-// se déclenche, et tout reste appelable par son nom. `--auto` revient au mode ordinaire.
+// se déclenche, et tout reste appelable par son nom. `--auto` revient au mode ordinaire. Un skill
+// que l'amont réserve à l'agent (`user-invocable: false`) deviendrait alors inatteignable — la
+// documentation de Claude Code dit que ce champ l'ôte à la personne, et `disable-model-invocation`
+// à l'agent : en `--manuel`, il devient appelable par son nom comme le reste du plug-in.
+//
+// **`--licence <fichier>` joint un texte de licence quand l'archive n'en porte pas.** Le dépôt est
+// public : y installer un plug-in, c'est le redistribuer. Design d'Anthropic en est l'exemple — sa
+// licence (Apache 2.0) est à la racine du dépôt d'amont et non dans le dossier du plug-in, donc
+// l'archive ne l'emporte pas. Le texte fourni est gardé avec la provenance et repris à chaque mise
+// à jour, sans quoi la première l'effacerait sans un mot ; un plug-in qui n'en a aucune est signalé.
 //
 // **Trois règles, et chacune répond à un défaut qu'on aurait eu sans elle :**
 //
@@ -79,7 +88,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 const USAGE =
-  'Usage : node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto] [--racine <dépôt>]\n' +
+  'Usage : node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto] [--licence <fichier>] [--racine <dépôt>]\n' +
   '        node scripts/installer-un-plugin.mjs --retirer <plug-in> [--racine <dépôt>]';
 
 /** Ce que Claude Code accepte comme nom de skill : minuscules et chiffres, des tirets entre eux
@@ -94,6 +103,9 @@ const PROVENANCE = '.claude/plugins-importes';
 /** Ce qu'on garde à côté de la provenance : la licence et la notice, qu'Apache 2.0 exige pour
  * redistribuer, et `CONNECTORS.md`, qui explique les `~~catégorie` que les consignes emploient. */
 const A_GARDER = /^((LICENSE|NOTICE|COPYING)(\.[a-z]+)?|CONNECTORS\.md)$/i;
+
+/** Parmi ce qu'on garde, ce qui est une licence — une notice seule n'en est pas une. */
+const LICENCE = /^(LICENSE|COPYING)(\.[a-z]+)?$/i;
 
 /** Ce qui se lit sans s'installer : la documentation d'un dépôt d'amont et les manifestes des
  * autres agents (Codex, Cursor, Gemini…) qu'un plug-in publié pour plusieurs outils porte à sa
@@ -123,6 +135,7 @@ function lireArguments(argv) {
   let racine = path.join(import.meta.dirname, '..');
   let source = null;
   let retirer = null;
+  let licence = null;
   let prefixe;
   let manuel;
   const args = [...argv];
@@ -135,6 +148,11 @@ function lireArguments(argv) {
     } else if (arg === '--retirer') {
       retirer = args.shift();
       if (!retirer) refuser('--retirer attend le nom d’un plug-in installé.');
+    } else if (arg === '--licence') {
+      const valeur = args.shift();
+      if (!valeur) refuser('--licence attend un fichier.');
+      licence = path.resolve(valeur);
+      if (!fs.existsSync(licence) || !fs.statSync(licence).isFile()) refuser(`--licence : fichier introuvable : ${licence}`);
     } else if (arg === '--manuel' || arg === '--auto') {
       manuel = arg === '--manuel';
     } else if (arg === '--prefixe') {
@@ -151,14 +169,14 @@ function lireArguments(argv) {
   if (retirer !== null) {
     // Une archive, un préfixe ou un mode à côté disent qu'on s'est trompé de commande : deviner
     // laquelle était voulue serait pire que refuser, puisque l'une des deux efface.
-    if (source !== null || prefixe !== undefined || manuel !== undefined) {
+    if (source !== null || prefixe !== undefined || manuel !== undefined || licence !== null) {
       refuser(`--retirer ne prend que le nom du plug-in (et --racine).\n${USAGE}`);
     }
     return { retirer, racine };
   }
   if (source === null) refuser(USAGE);
   if (!fs.existsSync(source)) refuser(`introuvable : ${source}`);
-  return { source, racine, prefixe, manuel };
+  return { source, racine, prefixe, manuel, licence };
 }
 
 /** Un dossier se lit tel quel ; une archive s'ouvre dans un dossier temporaire, et son empreinte
@@ -244,19 +262,28 @@ function ligneDuChamp(entete, cle) {
   return -1;
 }
 
+/** Vrai si l'en-tête réserve le fichier à l'agent : `user-invocable: false`. */
+function reserveALAgent(texte) {
+  const entete = enTete(texte);
+  const index = entete === null ? -1 : ligneDuChamp(entete, 'user-invocable');
+  return index !== -1 && /^user-invocable:\s*['"]?false['"]?\s*$/i.test(entete.lignes[index].replace(/\r$/, ''));
+}
+
 /** Lit l'en-tête d'un fichier de consignes et refuse ce que la règle 2 interdit. */
 /** Un skill sans en-tête n'a ni nom ni description, et Claude Code ne le présenterait pas ; une
  * commande, elle, peut s'en passer — son nom est celui du fichier. */
 function lireConsignes(fichier, racinePlugin, { enTeteObligatoire }) {
   const relatif = path.relative(racinePlugin, fichier);
-  const entete = enTete(fs.readFileSync(fichier, 'utf8'));
+  const texte = fs.readFileSync(fichier, 'utf8');
+  const entete = enTete(texte);
   if (entete === null) {
     if (enTeteObligatoire) refuser(`${relatif} n’a pas d’en-tête (--- … ---) : Claude Code ne le lirait pas.`);
-    return;
+    return { reserveALAgent: false };
   }
   if (ligneDuChamp(entete, 'hooks') !== -1) {
     refuser(`${relatif} déclare des hooks dans son en-tête : ils s’exécuteraient à chaque usage (règle 2).`);
   }
+  return { reserveALAgent: reserveALAgent(texte) };
 }
 
 /** Le nom installé : le préfixe, puis le nom d'amont — sauf quand celui-ci porte déjà le préfixe.
@@ -334,10 +361,10 @@ function inventorier(racinePlugin, manifeste, prefixe) {
       }
       // Le nom d'amont est celui du dossier, pas celui de l'en-tête : c'est lui que Claude Code
       // présente (règle 1), donc c'est lui que la personne a pu lire ou taper ailleurs.
-      lireConsignes(fichier, racinePlugin, { enTeteObligatoire: true });
+      const lu = lireConsignes(fichier, racinePlugin, { enTeteObligatoire: true });
       const nom = entree.name;
       const installe = nomInstalle(prefixe, nom, relatif(dossier));
-      skills.push({ amont: nom, installe, dossier, relatif: relatif(dossier) });
+      skills.push({ amont: nom, installe, dossier, relatif: relatif(dossier), reserveALAgent: lu.reserveALAgent });
     }
   }
 
@@ -351,10 +378,10 @@ function inventorier(racinePlugin, manifeste, prefixe) {
         nonInstalle.autres.push(relatif(fichier));
         continue;
       }
-      lireConsignes(fichier, racinePlugin, { enTeteObligatoire: false });
+      const lu = lireConsignes(fichier, racinePlugin, { enTeteObligatoire: false });
       const nom = entree.name.slice(0, -'.md'.length);
       const installe = nomInstalle(prefixe, nom, relatif(fichier));
-      commandes.push({ amont: nom, installe, fichier, relatif: relatif(fichier) });
+      commandes.push({ amont: nom, installe, fichier, relatif: relatif(fichier), reserveALAgent: lu.reserveALAgent });
     }
   }
 
@@ -494,9 +521,12 @@ function poserLeChamp(texte, cle, valeur) {
 /** En `--manuel`, un skill ou une commande ne se déclenche que si on l'appelle par son nom, et sa
  * description ne se charge plus dans le contexte de chaque session — mesuré le 24/09/2026 : un
  * skill portant `disable-model-invocation: true` disparaît de la liste que Claude Code présente,
- * son témoin sans le champ y reste. C'est la place d'un plug-in utile mais bavard. */
+ * son témoin sans le champ y reste. C'est la place d'un plug-in utile mais bavard. Un fichier que
+ * l'amont réserve à l'agent y deviendrait inatteignable : il est rendu à la personne. */
 function enManuel(texte, inventaire) {
-  return inventaire.manuel ? poserLeChamp(texte, 'disable-model-invocation', 'true') : texte;
+  if (!inventaire.manuel) return texte;
+  const manuel = poserLeChamp(texte, 'disable-model-invocation', 'true');
+  return reserveALAgent(manuel) ? poserLeChamp(manuel, 'user-invocable', 'true') : manuel;
 }
 
 /** Le début de l'avis qu'un fichier modifié porte — une seule écriture, parce que `aRelire` doit
@@ -512,7 +542,7 @@ function marquer(original, modifie, inventaire) {
   return (
     `${modifie.replace(/\n*$/, '\n')}\n${AVIS} : ` +
     `noms préfixés par « ${prefixe}- » (champ name, renvois aux commandes) et liens relatifs recalculés` +
-    `${inventaire.manuel ? ', appel manuel seulement (disable-model-invocation)' : ''}. ` +
+    `${inventaire.manuel ? ', appel manuel seulement (disable-model-invocation ; user-invocable rétabli s’il était à false)' : ''}. ` +
     `Plug-in ${nom} ${version} ; ` +
     `licence et provenance dans ${PROVENANCE}/${nom}/. -->\n`
   );
@@ -560,11 +590,16 @@ const EXECUTABLE = /\.(py|js|cjs|mjs|ts|tsx|jsx|sh|bash|zsh|rb|pl|php|ps1|bat|cm
 function aRelire(ecritures, inventaire) {
   // Un nom d'amont resté tel quel ne se cherche que parmi ceux qui ont CHANGÉ, et entier : un nom
   // qui porte déjà le préfixe n'est pas renommé (`/outil` reste `/outil`), et `/outil-idee` —
-  // réécrit à juste titre — contient `/outil` sans le désigner.
+  // réécrit à juste titre — contient `/outil` sans le désigner. Et seulement là où il désigne
+  // quelque chose : isolé comme un renvoi que la réécriture a manqué, ou segment d'un chemin
+  // (`skills/update/`). Collé à un mot, c'est de la prose — « Create/update memory » chez
+  // Productivity, qui a un skill `update` —, et le signaler noierait les vrais restes.
   const renommes = [...inventaire.skills, ...inventaire.commandes]
     .filter((element) => element.amont !== element.installe)
     .map((element) => echapper(element.amont));
-  const resteDAmont = renommes.length > 0 ? new RegExp(`/(${renommes.join('|')})(?![a-z0-9-])`) : null;
+  const noms = renommes.join('|');
+  const resteDAmont =
+    renommes.length > 0 ? new RegExp(`(^|[\\s\`'"(\\[])/(${noms})(?![a-z0-9-])|/(${noms})/`) : null;
   // La forme `plugin:skill` n'est un renvoi que suivie d'un vrai nom du plug-in : Auth0 écrit
   // `com.auth0.android:auth0:3.x`, une coordonnée Gradle et non un skill.
   const tous = [...inventaire.skills, ...inventaire.commandes].map((element) => echapper(element.amont));
@@ -623,9 +658,25 @@ function installationPrecedente(racine, nom) {
   return installation;
 }
 
+/** Le texte de licence à garder avec la provenance quand l'archive n'en porte pas : celui qu'on
+ * fournit, sinon celui qu'on avait fourni à la dernière installation — lu maintenant, parce que
+ * `ecrire` efface la provenance avant de la reposer. */
+function licenceFournie(inventaire, racine, precedente, demandee) {
+  if (inventaire.gardes.some((nom) => LICENCE.test(nom))) {
+    if (demandee) refuser('l’archive porte déjà sa licence : --licence n’a rien à ajouter. Rien n’a été écrit.');
+    return null;
+  }
+  const precedenteFournie = precedente?.licence_fournie ? path.join(racine, PROVENANCE, inventaire.nom, 'LICENSE') : null;
+  const source = demandee ?? precedenteFournie;
+  if (source === null || !existe(source)) return null;
+  const contenu = fs.readFileSync(source);
+  return { contenu, sha256: crypto.createHash('sha256').update(contenu).digest('hex') };
+}
+
 /** Ce que l'installation écrira et retirera — calculé entièrement avant la première écriture. */
-function planifier(inventaire, racine, precedente) {
+function planifier(inventaire, racine, precedente, licenceDemandee) {
   const provenance = path.join(racine, PROVENANCE, inventaire.nom);
+  const licence = licenceFournie(inventaire, racine, precedente, licenceDemandee);
 
   // Ce que la version précédente avait posé est à nous : on le remplace sans que ce soit une
   // collision. `installation.json` est la seule source de cette liste.
@@ -642,7 +693,7 @@ function planifier(inventaire, racine, precedente) {
   if (collisions.length > 0) {
     refuser(`déjà présent, et pas installé par ce plug-in : ${collisions.join(', ')}. Rien n’a été écrit.`);
   }
-  return { provenance, aRetirer, precedente };
+  return { provenance, aRetirer, precedente, licence };
 }
 
 function ecrire(ecritures, inventaire, plan, racine, racinePlugin, ouverture, source) {
@@ -659,6 +710,7 @@ function ecrire(ecritures, inventaire, plan, racine, racinePlugin, ouverture, so
   fs.mkdirSync(plan.provenance, { recursive: true });
   fs.copyFileSync(path.join(racinePlugin, '.claude-plugin', 'plugin.json'), path.join(plan.provenance, 'plugin.json'));
   for (const nom of inventaire.gardes) fs.copyFileSync(path.join(racinePlugin, nom), path.join(plan.provenance, nom));
+  if (plan.licence) fs.writeFileSync(path.join(plan.provenance, 'LICENSE'), plan.licence.contenu);
 
   const installation = {
     plugin: inventaire.nom,
@@ -667,6 +719,7 @@ function ecrire(ecritures, inventaire, plan, racine, racinePlugin, ouverture, so
     version: inventaire.manifeste.version ?? null,
     source: path.basename(source),
     sha256: ouverture.sha256,
+    ...(plan.licence ? { licence_fournie: { fichier: 'LICENSE', sha256: plan.licence.sha256 } } : {}),
     installe_le: new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }),
     installe_par: 'scripts/installer-un-plugin.mjs',
     skills: inventaire.skills.map(({ amont, installe }) => ({ amont, installe })),
@@ -689,6 +742,15 @@ function rendreCompte(inventaire, plan, remarques, ecritures) {
   }
   if (inventaire.prefixe !== inventaire.nom) lignes.push(`  Préfixe : ${inventaire.prefixe}- (gardé pour les mises à jour).`, '');
   if (plan.precedente) lignes.push(`  Remplace la version ${plan.precedente.version ?? '(sans version)'}.`, '');
+  if (plan.licence) {
+    lignes.push('  Licence : fournie à l’installation, l’archive n’en portant pas (gardée pour les mises à jour).', '');
+  } else if (!inventaire.gardes.some((nom) => LICENCE.test(nom))) {
+    lignes.push('  Aucune licence : l’archive n’en porte pas, et le dépôt est public — --licence <fichier> en joint une.', '');
+  }
+  const rendus = [...inventaire.skills, ...inventaire.commandes].filter((element) => element.reserveALAgent);
+  if (inventaire.manuel && rendus.length > 0) {
+    lignes.push(`  Réservés à l’agent en amont, rendus appelables par leur nom : ${rendus.map(({ installe }) => `/${installe}`).join(', ')}.`, '');
+  }
   const liste = (titre, elements) => {
     if (elements.length === 0) return;
     lignes.push(`  ${titre} :`);
@@ -753,7 +815,7 @@ function retirerLePlugin(racine, nom) {
 
 let ouverture = null;
 
-function installer({ source, racine, prefixe: prefixeDemande, manuel: manuelDemande }) {
+function installer({ source, racine, prefixe: prefixeDemande, manuel: manuelDemande, licence: licenceDemandee }) {
   ouverture = ouvrir(source);
   const racinePlugin = racineDuPlugin(ouverture.dossier);
   refuserLesLiens(racinePlugin);
@@ -765,7 +827,7 @@ function installer({ source, racine, prefixe: prefixeDemande, manuel: manuelDema
   if (!NOM.test(prefixe)) refuser(`--prefixe : « ${prefixe} » n’est pas un préfixe valide (minuscules, chiffres, tirets).`);
   const manuel = manuelDemande ?? precedente?.manuel ?? false;
   const inventaire = { ...inventorier(racinePlugin, manifeste, prefixe), manuel };
-  const plan = planifier(inventaire, racine, precedente);
+  const plan = planifier(inventaire, racine, precedente, licenceDemandee);
   const ecritures = preparer(inventaire, racinePlugin);
   const remarques = aRelire(ecritures, inventaire);
   ecrire(ecritures, inventaire, plan, racine, racinePlugin, ouverture, source);

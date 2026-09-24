@@ -6,22 +6,24 @@
  * Ce qui est éprouvé, c'est chacune des trois règles de l'en-tête du script — le préfixe avec ses
  * renvois et ses liens, ce qui ne s'installe jamais, et « rien n'est écrit avant que tout soit
  * vérifié » —, plus ce qui dure d'une installation à la suivante : la mise à jour, qui est la seule
- * façon d'installer deux fois le même plug-in sans que ce soit une collision, le préfixe et le
- * mode `--manuel` choisis la première fois, et `--retirer`, qui défait exactement ce qu'une
- * installation a posé.
+ * façon d'installer deux fois le même plug-in sans que ce soit une collision, le préfixe, le mode
+ * `--manuel` et la licence fournie la première fois, et `--retirer`, qui défait exactement ce
+ * qu'une installation a posé.
  *
- * Non-vacuité, mesurée le 24/09/2026 en cassant le script trente-quatre fois (chaque mutation remise
- * en place depuis une copie avant la suivante), les tests tombés entre parenthèses :
+ * Non-vacuité, mesurée le 24/09/2026 en cassant le script quarante-quatre fois (chaque mutation
+ * remise en place depuis une copie avant la suivante), les tests tombés entre parenthèses :
  *   - le préfixe : ne plus réécrire le champ `name`, 1 (le nominal) ; le redoubler sur un nom qui le
  *     porte déjà, 2 (le préfixe porté, le préfixe court) ; oublier celui de la dernière
  *     installation, 1 (le préfixe court) ; ignorer les chemins que le manifeste déclare, 1 ; en
  *     accepter un qui sort du plug-in, 1 (les deux : les chemins déclarés) ;
  *   - les renvois et les liens : ne plus réécrire les renvois, 2 (les renvois, le préfixe porté) ;
  *     ne plus marquer un fichier modifié, 2 (le nominal, les renvois) ; ne plus signaler un nom
- *     d'amont resté tel quel, 1 ; prendre pour un renvoi toute forme `plugin:` — une coordonnée
- *     Gradle d'Auth0 en est une —, 1 ; lire l'avis ajouté comme une consigne, 1 (le préfixe court) ; ne
- *     plus recalculer les liens, 1 ; ne plus signaler un lien mort, 1 ; recalculer un lien vers un
- *     fichier absent en amont, 1 (ces trois : les liens) ;
+ *     d'amont resté tel quel, le chercher sans frontière avant — « lire/ecrire » est de la prose —,
+ *     ne plus le chercher comme segment de chemin, 1 chacune ; prendre pour un renvoi toute forme
+ *     `plugin:` — une coordonnée Gradle d'Auth0 en est une —, 1 (ces quatre : les renvois) ; lire
+ *     l'avis ajouté comme une consigne, 1 (le préfixe court) ; ne plus recalculer les liens, 1 ; ne
+ *     plus signaler un lien mort, 1 ; recalculer un lien vers un fichier absent en amont, 1 (ces
+ *     trois : les liens) ;
  *   - ce qui ne s'installe pas : accepter des hooks dans un en-tête, 2 (le skill, la commande) ;
  *     nommer `AGENT` un agent rangé dans son dossier, 1 ; signaler les fichiers d'un dépôt d'amont,
  *     1 (les deux : les hooks) ;
@@ -30,16 +32,20 @@
  *     symbolique, 1 ; extraire sans lire d'abord la liste des entrées, 1 (l'évasion) ; exiger un
  *     en-tête d'une commande, 1 (le préfixe porté) ;
  *   - d'une installation à l'autre : ne plus retirer ce que la version précédente avait posé, 1 (la
- *     mise à jour) ; compter ce qu'elle avait posé comme une collision, 3 (la mise à jour, le préfixe
- *     court, le mode manuel) ; ne plus poser l'appel manuel, 1 ; oublier le mode de la dernière
- *     installation, 1 (les deux : le mode manuel) ;
+ *     mise à jour) ; compter ce qu'elle avait posé comme une collision, 4 (la mise à jour, le préfixe
+ *     court, le mode manuel, la licence reprise) ; ne plus poser l'appel manuel, 1 ; oublier le mode
+ *     de la dernière installation, 1 ; laisser inatteignable en manuel un skill réservé à l'agent, 1 ;
+ *     le rendre à la personne même en automatique, 1 ; ne plus le dire, 1 (ces cinq : le mode manuel) ;
+ *   - la licence : ne plus écrire celle qu'on fournit, ne plus la reprendre à la mise à jour, 1
+ *     chacune (la licence reprise) ; ne plus signaler un plug-in qui n'en a pas, en accepter une en
+ *     plus de celle de l'archive, 1 chacune (le plug-in sans licence) ;
  *   - le compte rendu : lister chaque donnée comme un script à lire, 1 (les données) ;
  *   - le retrait : retirer tout ce qui porte le préfixe au lieu de la liste, ne plus retirer les
  *     commandes, ne plus retirer la provenance, 1 chacune (le retrait nominal) ; ne plus revalider les
  *     noms relus dans `installation.json`, les valider au fil du retrait plutôt qu'avant, 1 chacune
  *     (le nom piégé) ; ne plus valider le nom passé à `--retirer`, 1 (le nom invalide) ; retirer en
  *     silence un plug-in absent, 1 (le plug-in absent) ; accepter `--retirer` à côté d'une archive
- *     ou d'un mode, 1 (les commandes mêlées).
+ *     ou d'un mode, puis d'une licence, 1 chacune (les commandes mêlées).
  * Aucune mutation ne passe.
  */
 import { spawnSync } from 'node:child_process';
@@ -127,7 +133,9 @@ describe('installer un plug-in', () => {
           '---\ndescription: Une idée.\n---\n# /idee\n\nEnsuite → `/ecrire`, ou outil:ecrire.\n' +
           'Voir skills/ecrire/SKILL.md, et /ecrire-bis qui n’est pas à nous.\n' +
           // Une coordonnée à la Gradle, où le nom du plug-in précède « : » sans désigner un skill.
-          'La bibliothèque `com.outil:outil:1.0`.\n',
+          'La bibliothèque `com.outil:outil:1.0`.\n' +
+          // De la prose : le nom d'amont collé à un mot n'est ni un renvoi ni un chemin.
+          'Tu peux lire/ecrire à ta guise.\n',
       }),
       depot,
     );
@@ -137,9 +145,11 @@ describe('installer un plug-in', () => {
     expect(commande).toContain('# /outil-idee\n');
     expect(commande).toContain('Ensuite → `/outil-ecrire`, ou outil-ecrire.\n');
     expect(commande).toContain('Voir skills/ecrire/SKILL.md, et /ecrire-bis qui n’est pas à nous.\n');
+    expect(commande).toContain('Tu peux lire/ecrire à ta guise.\n');
     expect(commande).toContain('Modifié pour Ramille');
     expect(r.sortie).toMatch(/outil-idee\.md:7 \(nom d’amont resté tel quel\)/);
     expect(r.sortie).not.toContain('outil-idee.md:8');
+    expect(r.sortie).not.toContain('outil-idee.md:9');
   });
 
   test('recalcule les liens relatifs pour la nouvelle place des fichiers, et signale les morts', () => {
@@ -295,19 +305,65 @@ describe('installer un plug-in', () => {
       plugin({
         '.claude-plugin/plugin.json': manifeste(),
         'skills/ecrire/SKILL.md': skill('ecrire'),
+        // Réservé à l'agent en amont : en manuel, plus personne ne pourrait l'appeler.
+        'skills/fond/SKILL.md': skill('fond', 'user-invocable: false\n'),
         'commands/idee.md': '---\ndescription: Une idée.\n---\nTrouve une idée.\n',
       });
 
     expect(installer(source(), depot, '--manuel').code).toBe(0);
-    expect(installer(source(), depot).code).toBe(0);
+    const r = installer(source(), depot);
+    expect(r.code).toBe(0);
 
     expect(lire(depot, '.claude/skills/outil-ecrire/SKILL.md')).toMatch(/\ndisable-model-invocation: true\n---\n/);
     expect(lire(depot, '.claude/commands/outil-idee.md')).toMatch(/\ndisable-model-invocation: true\n---\n/);
+    expect(lire(depot, '.claude/skills/outil-fond/SKILL.md')).toMatch(/\nuser-invocable: true\n/);
+    expect(lire(depot, '.claude/skills/outil-ecrire/SKILL.md')).not.toMatch(/^user-invocable:/m);
+    expect(r.sortie).toContain('rendus appelables par leur nom : /outil-fond.');
     expect(installation(depot).manuel).toBe(true);
 
     expect(installer(source(), depot, '--auto').code).toBe(0);
     expect(lire(depot, '.claude/skills/outil-ecrire/SKILL.md')).not.toContain('disable-model-invocation');
+    expect(lire(depot, '.claude/skills/outil-fond/SKILL.md')).toMatch(/\nuser-invocable: false\n/);
     expect(installation(depot).manuel).toBe(false);
+  });
+
+  test('joint la licence fournie quand l’archive n’en porte pas, et la reprend à chaque mise à jour', () => {
+    const depot = temporaire('ramille-depot-');
+    const texte = path.join(temporaire('ramille-licence-'), 'LICENSE');
+    fs.writeFileSync(texte, 'Apache License, Version 2.0\n');
+    const source = () => plugin({ '.claude-plugin/plugin.json': manifeste(), 'skills/ecrire/SKILL.md': skill('ecrire') });
+
+    const r = installer(source(), depot, '--licence', texte);
+    expect(r.code).toBe(0);
+    expect(r.sortie).toContain('Licence : fournie à l’installation');
+    expect(installation(depot).licence_fournie).toEqual({ fichier: 'LICENSE', sha256: expect.stringMatching(/^[0-9a-f]{64}$/) });
+
+    // La mise à jour efface la provenance avant de la reposer : sans reprise, la licence partirait.
+    expect(installer(source(), depot).code).toBe(0);
+    expect(lire(depot, '.claude/plugins-importes/outil/LICENSE')).toBe('Apache License, Version 2.0\n');
+    expect(installation(depot).licence_fournie).toBeDefined();
+  });
+
+  test('signale un plug-in sans licence, et refuse d’en ajouter une à une archive qui a la sienne', () => {
+    const sans = installer(
+      plugin({ '.claude-plugin/plugin.json': manifeste(), 'skills/ecrire/SKILL.md': skill('ecrire') }),
+      temporaire('ramille-depot-'),
+    );
+    expect(sans.code).toBe(0);
+    expect(sans.sortie).toContain('Aucune licence : l’archive n’en porte pas');
+
+    const texte = path.join(temporaire('ramille-licence-'), 'LICENSE');
+    fs.writeFileSync(texte, 'Une autre licence.\n');
+    const depot = temporaire('ramille-depot-');
+    const avec = installer(
+      plugin({ '.claude-plugin/plugin.json': manifeste(), 'skills/ecrire/SKILL.md': skill('ecrire'), LICENSE: 'La sienne.\n' }),
+      depot,
+      '--licence',
+      texte,
+    );
+    expect(avec.code).toBe(1);
+    expect(avec.sortie).toContain('l’archive porte déjà sa licence');
+    expect(existe(depot, '.claude')).toBe(false);
   });
 
   test('liste un par un les scripts à lire, et compte les données', () => {
@@ -543,11 +599,17 @@ describe('retirer un plug-in', () => {
     expect(existe(depot, '.claude/skills/outil-ecrire/SKILL.md')).toBe(true);
   });
 
-  test('refuse --retirer à côté d’une archive ou d’un mode : l’une des deux commandes efface', () => {
+  test('refuse --retirer à côté d’une archive, d’un mode ou d’une licence : l’une des deux commandes efface', () => {
     const depot = temporaire('ramille-depot-');
     expect(installer(source(), depot).code).toBe(0);
+    const texte = path.join(temporaire('ramille-licence-'), 'LICENSE');
+    fs.writeFileSync(texte, 'Licence.\n');
 
-    for (const r of [installer(source(), depot, '--retirer', 'outil'), retirer('outil', depot, '--manuel')]) {
+    for (const r of [
+      installer(source(), depot, '--retirer', 'outil'),
+      retirer('outil', depot, '--manuel'),
+      retirer('outil', depot, '--licence', texte),
+    ]) {
       expect(r.code).toBe(1);
       expect(r.sortie).toContain('--retirer ne prend que le nom du plug-in');
     }
