@@ -121,11 +121,18 @@ export default function ConnexionEmail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const valide = adresseSemblePlausible(email);
-
   const demander = async () => {
-    if (!valide || envoi) return;
+    if (envoi) return;
     setMessage(null);
+    // **Le bouton ne reste plus inactif sans dire pourquoi** (24/09/2026, audit d'accessibilité
+    // 3.3.1) : grisé tant que l'adresse ne semblait pas plausible, il n'expliquait rien — et, inactif,
+    // il n'était même pas atteignable au clavier ni par un lecteur d'écran. Il agit donc toujours,
+    // et une adresse incomplète le dit, dans la même phrase et sur la même règle que
+    // `/connexion/retrouver` et `/compte/suppression`.
+    if (!adresseSemblePlausible(email)) {
+      setMessage('Cette adresse semble incomplète.');
+      return;
+    }
     setEnvoi(true);
     // Mémorisée **avant** l'appel : c'est l'adresse que la personne a tapée ici, jamais une
     // déduction d'une réponse de l'API — prérenseigner depuis le serveur dirait qui utilise
@@ -264,7 +271,7 @@ export default function ConnexionEmail() {
           <Button
             title={envoi ? 'Envoi…' : 'Recevoir un code'}
             onPress={() => void demander()}
-            disabled={!valide || envoi}
+            disabled={envoi}
           />
           <TextLink
             label="Revenir aux autres options"

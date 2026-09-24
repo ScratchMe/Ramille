@@ -56,6 +56,12 @@ export default function Feedback() {
 
   const trimmed = message.trim();
   const canSend = trimmed.length >= 3 && !sending;
+  // **Le minimum se dit dès qu'il manque quelque chose** (24/09/2026, audit d'accessibilité 3.3.2) :
+  // « Envoyer » restait grisé sur un texte d'un ou deux caractères sans que rien ne dise pourquoi.
+  // Pas avant la première frappe — un champ vide n'a encore rien de trop court — et en texte calme,
+  // sans `role="alert"` : ce n'est pas un échec, c'est ce qui manque, et l'annoncer à chaque frappe
+  // rendrait le lecteur d'écran inutilisable (la règle du `manque` de `StepShell`).
+  const tropCourt = trimmed.length > 0 && trimmed.length < 3;
 
   const onSend = async () => {
     setSending(true);
@@ -154,6 +160,11 @@ export default function Feedback() {
             <ThemedText type="code" themeColor="textTertiary">
               {trimmed.length} / {FEEDBACK_MAX_LENGTH}
             </ThemedText>
+            {tropCourt && (
+              <ThemedText type="small" themeColor="textTertiary">
+                Trois caractères au moins pour pouvoir l’envoyer.
+              </ThemedText>
+            )}
           </View>
 
           {/* L'échec passe par `MessageInline` comme partout ailleurs : une carte maison dit la
