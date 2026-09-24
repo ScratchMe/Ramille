@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { AccessibilityInfo, findNodeHandle, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProgressHeader } from '@/components/bilan/progress-header';
@@ -8,6 +8,7 @@ import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
+import { porterLeFocus } from '@/lib/focus';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
 // scrollable, footer Retour/Suivant. `onBack` absent = rien derrière, donc pas de bouton
@@ -79,17 +80,10 @@ export function StepShell({
       premierRendu.current = false;
       return;
     }
-    const cible = contenu.current;
-    if (!cible) return;
-
-    if (Platform.OS === 'web') {
-      // `tabIndex={-1}` ci-dessous rend le nœud focalisable sans l'ajouter à l'ordre de
-      // tabulation : on peut lui donner le focus par programme, on ne l'atteint pas à la touche.
-      (cible as unknown as { focus?: () => void }).focus?.();
-      return;
-    }
-    const handle = findNodeHandle(cible);
-    if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+    // `tabIndex={-1}` ci-dessous rend le nœud focalisable sans l'ajouter à l'ordre de tabulation :
+    // on peut lui donner le focus par programme, on ne l'atteint pas à la touche. Le mécanisme vit
+    // dans `porterLeFocus` depuis que deux écrans de plus s'en servent (24/09/2026).
+    porterLeFocus(contenu.current);
   }, [step]);
 
   return (

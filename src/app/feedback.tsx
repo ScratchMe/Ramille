@@ -10,6 +10,7 @@ import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -73,9 +74,14 @@ export default function Feedback() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.sentSafeArea}>
           <Mascot mood="happy" size={56} />
-          <ThemedText type="screenTitle" style={styles.sentTitle}>
-            C’est envoyé, merci.
-          </ThemedText>
+          {/* **Le focus vient ici** (24/09/2026, audit d'accessibilité 4.1.3) : cet écran remplace
+              le formulaire sous le doigt, et « Envoyer » disparaît avec lui. Sans ce déplacement,
+              un lecteur d'écran ne disait rien de l'envoi réussi. */}
+          <TitreDArrivee>
+            <ThemedText type="screenTitle" style={styles.sentTitle}>
+              C’est envoyé, merci.
+            </ThemedText>
+          </TitreDArrivee>
           <ThemedText type="body" themeColor="textSecondary">
             Ton retour est lu à la main. Il n’y aura pas de réponse automatique — on préfère te
             le dire plutôt que de te laisser l’attendre.
