@@ -14,7 +14,7 @@
  * ici parce que c'est le module que l'écran du plan et la carte de point importent déjà ;
  * **la définition et son commentaire sont là-bas.**
  */
-import { formeInserable } from '@/constants/postes';
+import { FORME_INSERABLE, formeInserable } from '@/constants/postes';
 
 export { formeInserable };
 
@@ -238,6 +238,75 @@ export function cadreDuPlan({
   // paramètre parce qu'il dit ce que la carte décrit, et qu'un prochain champ de `CadreDuPlan` le
   // lira ; la branche qui l'examinait rendait le même littéral que cette ligne-ci.
   return { chiffreLeCap: true };
+}
+
+/**
+ * Ce que le cap dit des pistes posées à côté de lui, **quand c'est vrai** (24/09/2026, `v1-29`).
+ *
+ * Le cap est un chiffre **annuel** — 20 % du poste dominant, sur un an — et les pistes annoncent
+ * leur gain « par an » : même unité, donc on peut dire le lien, et c'est la question que la
+ * personne se pose devant la carte du cap. « Ton cap pour cette saison − 384 kg » au-dessus de
+ * « − 619 kg par an » laissait croire qu'il fallait les additionner, ou qu'une saison valait un an.
+ *
+ * Trois phrases, et le silence partout ailleurs :
+ *  - une seule carte en avant, qui atteint le cap → « La piste proposée suffit à le franchir. » ;
+ *  - deux cartes qui l'atteignent toutes les deux → « Chacune des deux pistes proposées… » ;
+ *  - deux cartes dont une seule l'atteint → « L'une des deux pistes proposées… ».
+ * Aucune ne l'atteint, une action est engagée (la personne a choisi, le lien n'a plus à être dit),
+ * ou le cap n'est pas chiffré : pas de phrase. Au-delà de deux cartes — l'écran n'en met jamais
+ * plus que `ACTIONS_EN_AVANT` — rien non plus : une formulation pour trois n'a pas été décidée, et
+ * une phrase fausse coûte plus qu'une phrase absente.
+ *
+ * **« Atteindre », c'est un gain au moins égal au cap, comparé sur ce que la personne lit.** Les
+ * deux chiffres s'affichent arrondis au kilo (`formatKg`), et l'égalité n'est pas un cas d'école :
+ * sur cinq jours de trajet, « Travailler depuis chez toi un jour par semaine » retire 20 % du trajet
+ * domicile-travail — exactement le cap quand ce trajet est le poste dominant (384 kg des deux côtés
+ * sur le profil de la recette). À 383,6 kg contre 384, l'écran montre deux fois « 384 » ; comparer
+ * les valeurs brutes y ferait taire la phrase.
+ */
+export function phraseDesPistesSuffisantes({
+  capKg,
+  gainsEnAvant,
+  actionEngagee,
+}: {
+  /** Le cap affiché, en kilos par an — `null` quand la carte ne le chiffre pas. */
+  capKg: number | null;
+  /** Le gain annuel de chaque carte mise en avant (`saving_kg_year`), dans l'ordre de l'écran. */
+  gainsEnAvant: (number | null)[];
+  /** Une action du cycle est-elle engagée ? La phrase aide à choisir, pas à relire un choix. */
+  actionEngagee: boolean;
+}): string | null {
+  if (capKg === null || actionEngagee) return null;
+  const cap = Math.round(capKg);
+  if (cap <= 0) return null;
+
+  const suffisantes = gainsEnAvant.filter((gain) => gain !== null && Math.round(gain) >= cap).length;
+  if (suffisantes === 0) return null;
+
+  if (gainsEnAvant.length === 1) return 'La piste proposée suffit à le franchir.';
+  if (gainsEnAvant.length === 2) {
+    return suffisantes === 2
+      ? 'Chacune des deux pistes proposées suffit à le franchir.'
+      : 'L’une des deux pistes proposées suffit à le franchir.';
+  }
+  return null;
+}
+
+/**
+ * Le titre de la carte d'un plan à zéro action, qui nomme le poste (24/09/2026, `v1-29`).
+ *
+ * « Tu fais déjà l'essentiel sur ce poste. » ne disait pas lequel, sur un écran où rien d'autre ne
+ * le nomme : un plan sans action ne chiffre pas son cap (`cadreDuPlan`), donc la ligne « soit − 20 %
+ * sur … » n'y est pas. Le poste est celui du cycle (`plan_cycles.poste`, le dominant du bilan), dans
+ * le registre qu'on insère après une préposition.
+ *
+ * **Un poste inconnu garde l'ancienne phrase**, et c'est délibéré : `formeInserable` retombe sur
+ * « tes sorties du week-end » faute de mieux, repli pensé pour la boucle mensuelle — sur une
+ * félicitation, un poste deviné serait une fausseté lisible, alors que « ce poste » ne ment pas.
+ */
+export function felicitationDuPlanSansAction(poste: string | null): string {
+  const forme = poste ? FORME_INSERABLE[poste] : undefined;
+  return forme ? `Tu fais déjà l’essentiel sur ${forme}.` : 'Tu fais déjà l’essentiel sur ce poste.';
 }
 
 

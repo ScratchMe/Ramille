@@ -4,6 +4,7 @@ import {
   INTENTION_TIMINGS_LOISIRS,
   INTENTION_TIMINGS_VOYAGES,
   cadreDuPlan,
+  felicitationDuPlanSansAction,
   formatIntention,
   formatIntentionDays,
   formatIntentionTiming,
@@ -13,6 +14,7 @@ import {
   ligneDuGain,
   motsDuContexte,
   phraseDeLOrphelin,
+  phraseDesPistesSuffisantes,
   RAISONS_ANNONCABLES,
   pistesDuPlan,
   pistesParPoste,
@@ -174,6 +176,100 @@ describe('cadreDuPlan', () => {
     const avecMiseEnAvant = cadreDuPlan({ postesEnAvant: ['commute'], nombreDActions: 5 });
     expect(sansMiseEnAvant.chiffreLeCap).toBe(true);
     expect(sansMiseEnAvant).toEqual(avecMiseEnAvant);
+  });
+});
+
+/**
+ * **Le cap et les pistes parlent la même unité, et la phrase ne se dit que quand elle est vraie**
+ * (24/09/2026, `v1-29`). Le cap est annuel ; « − 384 kg » sous « Ton cap pour cette saison »,
+ * au-dessus de pistes à « − 619 kg par an », laissait croire qu'une saison valait un an.
+ *
+ * Éprouvé en cassant ce qu'il garde, le 24/09/2026 — quatre mutations :
+ *   - `>=` → `>` : 1 test tombe, l'égalité au kilo affiché ;
+ *   - l'arrondi retiré (valeurs brutes comparées) : le même, et lui seul ;
+ *   - l'engagement ignoré : 1, celui de l'action engagée ;
+ *   - les deux phrases à deux cartes interverties : 3, tous ceux qui attendent l'une d'elles.
+ */
+describe('phraseDesPistesSuffisantes', () => {
+  const phrase = (capKg: number | null, gainsEnAvant: (number | null)[], actionEngagee = false) =>
+    phraseDesPistesSuffisantes({ capKg, gainsEnAvant, actionEngagee });
+
+  // Le profil de la recette : cap 384 kg, les deux premières pistes à 619 et 1 601 kg par an.
+  it('dit que chacune des deux suffit quand les deux atteignent le cap', () => {
+    expect(phrase(384, [619, 1601])).toBe('Chacune des deux pistes proposées suffit à le franchir.');
+  });
+
+  it('dit que l’une des deux suffit quand une seule l’atteint, où qu’elle soit', () => {
+    expect(phrase(384, [619, 200])).toBe('L’une des deux pistes proposées suffit à le franchir.');
+    expect(phrase(384, [200, 619])).toBe('L’une des deux pistes proposées suffit à le franchir.');
+  });
+
+  it('parle de « la piste » quand le plan n’en porte qu’une', () => {
+    expect(phrase(384, [400])).toBe('La piste proposée suffit à le franchir.');
+  });
+
+  it('se tait quand aucune piste n’atteint le cap', () => {
+    expect(phrase(384, [300, 200])).toBeNull();
+    expect(phrase(384, [300])).toBeNull();
+  });
+
+  // **Atteindre, c'est « au moins égal », comparé sur ce que l'écran montre** : 383,6 kg s'affiche
+  // « − 384 kg » comme le cap. Ce n'est pas un cas d'école — sur cinq jours de trajet, le
+  // télétravail d'un jour vaut exactement le cap du poste domicile-travail.
+  it('compte l’égalité au kilo affiché comme atteinte', () => {
+    expect(phrase(384, [383.6])).toBe('La piste proposée suffit à le franchir.');
+    expect(phrase(384, [384])).toBe('La piste proposée suffit à le franchir.');
+    expect(phrase(384, [383.4])).toBeNull();
+  });
+
+  // La phrase aide à choisir. Une fois l'action engagée, la personne a choisi : la répéter au-dessus
+  // de son engagement serait commenter son choix.
+  it('se tait dès qu’une action est engagée', () => {
+    expect(phrase(384, [619, 1601], true)).toBeNull();
+  });
+
+  it('se tait quand le cap n’est pas chiffré', () => {
+    expect(phrase(null, [619, 1601])).toBeNull();
+    expect(phrase(0, [619])).toBeNull();
+  });
+
+  it('ne compte pas une piste sans gain', () => {
+    expect(phrase(384, [null, 200])).toBeNull();
+    expect(phrase(384, [null, 619])).toBe('L’une des deux pistes proposées suffit à le franchir.');
+  });
+
+  it('se tait sans piste en avant', () => {
+    expect(phrase(384, [])).toBeNull();
+  });
+});
+
+/**
+ * **Le plan à zéro action nomme son poste** (24/09/2026, `v1-29`) : « sur ce poste » ne disait
+ * lequel à personne, sur un écran où rien d'autre ne le nomme.
+ *
+ * Éprouvé en cassant ce qu'il garde, le 24/09/2026 : `formeInserable` à la place de la table (son
+ * repli devine « tes sorties du week-end ») fait tomber le test du poste inconnu, et lui seul ;
+ * `POSTE_EN_PHRASE` à la place de `FORME_INSERABLE` fait tomber celui du registre.
+ */
+describe('felicitationDuPlanSansAction', () => {
+  it('nomme le poste du cycle', () => {
+    expect(felicitationDuPlanSansAction('commute')).toBe(
+      'Tu fais déjà l’essentiel sur ton trajet domicile-travail.'
+    );
+  });
+
+  // Le registre qu'on insère après une préposition : « tes sorties du week-end », jamais « tes
+  // loisirs du week-end » — et c'est le poste du cycliste aux sorties rares du parcours réel.
+  it('parle le registre inséré', () => {
+    expect(felicitationDuPlanSansAction('leisure')).toBe(
+      'Tu fais déjà l’essentiel sur tes sorties du week-end.'
+    );
+    expect(felicitationDuPlanSansAction('travel')).toBe('Tu fais déjà l’essentiel sur tes voyages.');
+  });
+
+  it('ne devine pas un poste qu’elle ne connaît pas', () => {
+    expect(felicitationDuPlanSansAction(null)).toBe('Tu fais déjà l’essentiel sur ce poste.');
+    expect(felicitationDuPlanSansAction('teletravail')).toBe('Tu fais déjà l’essentiel sur ce poste.');
   });
 });
 

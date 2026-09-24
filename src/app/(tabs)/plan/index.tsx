@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,9 +25,11 @@ import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
 import {
   cadreDuPlan,
+  felicitationDuPlanSansAction,
   formeInserable,
   motsDuContexte,
   phraseDeLOrphelin,
+  phraseDesPistesSuffisantes,
   pistesDuPlan,
   RAISONS_ANNONCABLES,
   type ReponsesDeContexte,
@@ -954,6 +956,7 @@ export default function Plan() {
               <TextLink
                 label="Commencer un bilan sur cet appareil"
                 onPress={() => router.push('/bilan')}
+                role="link"
               />
             </View>
           </SafeAreaView>
@@ -985,6 +988,7 @@ export default function Plan() {
               onPress={() =>
                 router.push({ pathname: '/connexion/retrouver', params: { source: 'plan_vide' } })
               }
+              role="link"
             />
           </View>
         </SafeAreaView>
@@ -1036,6 +1040,7 @@ export default function Plan() {
             <TextLink
               label="Revoir mon bilan"
               onPress={() => router.push({ pathname: '/suivi/bilan', params: { id: state.assessmentId } })}
+              role="link"
             />
           </View>
         </SafeAreaView>
@@ -1172,6 +1177,133 @@ export default function Plan() {
       onChanged={() => setRefreshKey((key) => key + 1)}
       onRefus={(message) => setRefusDeRemplacement(message)}
     />
+  );
+
+  // **Ce que le cap dit des pistes, quand c'est vrai** (24/09/2026, `v1-29`) : la même unité des
+  // deux côtés, le kilo par an. Dérivé dans `src/types/plan.ts` — la phrase ne se dit que tant que
+  // rien n'est engagé, et seulement sur un cap chiffré.
+  const phraseDuCap = phraseDesPistesSuffisantes({
+    capKg: cadre.chiffreLeCap ? capKg : null,
+    gainsEnAvant: pistes.enAvant.map((action) => action.saving_kg_year),
+    actionEngagee: committedActionId !== null,
+  });
+
+  // Le cap de la saison (T10). Affiché en kg parce que c'est l'unité des actions à côté : la
+  // personne doit pouvoir voir d'un coup d'œil qu'une action l'atteint — ou ne l'atteint pas, ce qui
+  // est une information tout aussi utile et jamais présentée comme un échec.
+  //
+  // **Elle porte la période et sa fin depuis C2.8**, et c'est ce qui lui manquait : le cap était
+  // annoncé puis abandonné, `period_end` étant écrit à chaque génération et lu par aucun écran
+  // (constat A8-8). Une échéance sans date n'en est pas une.
+  //
+  // La carte se rend **même sans cap** — `baseline_co2_kg_year` peut valoir zéro, ce qui est le cas
+  // d'un profil sans émission sur son poste dominant — parce qu'elle est devenue l'endroit où la
+  // période se nomme. La puce « Cadence : Automne 2026 » a donc disparu de l'intro : elle disait la
+  // même chose dans un vocabulaire de réglage, et la répéter à deux endroits de l'écran était le plus
+  // sûr moyen de les voir un jour se contredire.
+  //
+  // Le trait de temps **mesure la saison, pas la personne** : `accentMuted` et jamais `accent`, et
+  // la légende le dit en mots. Confondre les deux ferait de chaque semaine écoulée un retard.
+  const laCarteDuCap = (
+    <ThemedView key="cap" type="backgroundSelected" style={styles.capCard}>
+      {capKg !== null && cadre.chiffreLeCap && (
+        <>
+          <ThemedText type="small" weight={600} themeColor="accentText">
+            Ton cap pour cette {cadenceDeSaison ? 'saison' : 'période'}
+          </ThemedText>
+          <ThemedText type="salient" style={styles.chiffre}>
+            − {formatKg(capKg)} kg
+          </ThemedText>
+          {/* **« par an » d'abord** (24/09/2026, `v1-29`). Le chiffre est annuel — 20 % du poste
+              dominant, sur un an — alors que l'étiquette dit « cette saison » : « − 384 kg » y
+              passait pour l'effort d'un trimestre, juste au-dessus de pistes à « − 619 kg par an ».
+              La saison est le temps qu'on se donne ; la quantité, elle, se compte à l'année. */}
+          <ThemedText type="small" themeColor="textSecondary">
+            par an, soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
+            {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
+          </ThemedText>
+          {/* Le lien entre le cap et les pistes, dit seulement quand il est vrai et tant que rien
+              n'est engagé (`phraseDesPistesSuffisantes`). */}
+          {phraseDuCap !== null && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {phraseDuCap}
+            </ThemedText>
+          )}
+          {/* **La note qui suivait ici a été retirée** (C5.3, écart 7) — « Le cap porte sur tes
+              voyages ; cette action porte ailleurs. » Elle énonçait une règle que rien n'applique :
+              le cap est une quantité à atteindre, et aucun endroit du produit ne vérifie d'où vient
+              la réduction. Elle était rare tant que le poste dominant remplissait les deux
+              premières cartes ; le classement de C5.1 l'aurait réveillée sur la plupart des plans,
+              les meilleurs leviers venant souvent d'ailleurs. */}
+        </>
+      )}
+      <View style={styles.capPeriode}>
+        <ThemedText type="small" themeColor="textSecondary">
+          {cycle.period_label}
+        </ThemedText>
+        {finDeLaPeriode && (
+          <ThemedText type="small" weight={600} themeColor="accentText">
+            {finDeLaPeriode}
+          </ThemedText>
+        )}
+      </View>
+      {/* **Le trait attend qu'il y ait quelque chose à mesurer** (C5.6). Au tout premier plan il
+          annoncerait un temps qui s'écoule sur une action qu'on n'a pas encore choisie —
+          c'est-à-dire un compte à rebours, exactement ce que sa légende jure qu'il n'est pas. La
+          période et sa fin, elles, restent : elles disent le cadre, pas une avance.
+
+          Le canvas écrit la condition `progression !== null && (engagement || !premierPlan)`. La
+          moitié `engagement ||` est **impliquée par la seconde** — un engagement rend
+          `estPremierPlan` faux par sa deuxième condition, et un test le dit — donc on garde la forme
+          courte plutôt qu'une clause qu'aucun cas ne peut exercer. La légende disparaît **avec** le
+          trait : seule, elle commenterait quelque chose qui n'est pas là. */}
+      {progression !== null && !premierPlan && (
+        <>
+          <TraitDeTemps progression={progression} />
+          <ThemedText themeColor="textTertiary" style={styles.capLegende}>
+            {cadenceDeSaison ? 'La saison avance' : 'La période avance'} ; le trait mesure le temps,
+            pas toi.
+          </ThemedText>
+        </>
+      )}
+    </ThemedView>
+  );
+
+  // Les cartes mises en avant, puis la porte vers « Toutes les pistes ». Un fragment à clé et non
+  // une vue : les deux restent des enfants directs de la liste défilante, donc son `gap` les sépare
+  // comme avant.
+  const lesPistes = (
+    <Fragment key="pistes">
+      {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce
+          moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte
+          déjà le bon ordre — poste dominant d'abord, puis gain décroissant. */}
+      <View style={styles.actions}>{pistes.enAvant.map((action) => carteDaction(action))}</View>
+
+      {/* **Toutes les pistes, sur un écran à elles** (C5.2, écarts 2 à 5). Le plan en montrait
+          deux, puis dépliait jusqu'à onze cartes sous un « Replier » sorti de l'écran :
+          l'insistance et l'exhaustivité tenaient sur la même surface, et l'exhaustivité gagnait.
+          Elles se séparent — deux cartes ici, tout là-bas, groupé par poste.
+
+          Le compte reste **dans** le libellé, et c'est le total : un lien qui ne dit pas combien il
+          mène à voir n'aide pas à décider de l'ouvrir. Il ne se rend que s'il y a plus à voir que
+          les deux cartes — sinon il promettrait un écran qui répète celui-ci.
+
+          **Un lien, et il s'annonce comme tel** (24/09/2026, `v1-29`) : il mène à un autre écran,
+          donc `link` et non `button`, qui promettrait une action sur place. */}
+      {pistes.masquees > 0 && (
+        <View style={styles.pistes}>
+          <TextLink
+            label={`Voir toutes les pistes · ${actionsCount}`}
+            onPress={() => router.push('/plan/pistes')}
+            role="link"
+            type="small"
+            weight={600}
+            themeColor="accentText"
+            style={styles.lienPistes}
+          />
+        </View>
+      )}
+    </Fragment>
   );
 
   return (
@@ -1429,105 +1561,17 @@ export default function Plan() {
             </ThemedView>
           )}
 
-          {/* Le cap de la saison (T10). Affiché en kg parce que c'est l'unité des actions
-              juste en dessous : la personne doit pouvoir voir d'un coup d'œil qu'en cumulant
-              deux actions elle l'atteint — ou ne l'atteint pas, ce qui est une information
-              tout aussi utile et jamais présentée comme un échec.
+          {/* **Au tout premier plan, le choix passe avant le cap** (24/09/2026, `v1-29`). Sur un
+              téléphone, la carte « Ton premier plan », Ramille, le titre et le cap remplissaient
+              l'écran, et la première action arrivait coupée en bas : on expliquait qu'il fallait en
+              choisir une sans la montrer. Tant que dure le premier plan (`premierPlan`, C5.6 — il ne
+              se referme que sur un engagement), les cartes et le lien vers les pistes passent devant
+              le cap ; ensuite l'ordre redevient celui de toujours, le cap d'abord.
 
-              **Elle porte la période et sa fin depuis C2.8**, et c'est ce qui lui manquait : le cap
-              était annoncé puis abandonné, `period_end` étant écrit à chaque génération et lu par
-              aucun écran (constat A8-8). Une échéance sans date n'en est pas une.
-
-              La carte se rend **même sans cap** — `baseline_co2_kg_year` peut valoir zéro, ce qui est
-              le cas d'un profil sans émission sur son poste dominant — parce qu'elle est devenue
-              l'endroit où la période se nomme. La puce « Cadence : Automne 2026 » a donc disparu de
-              l'intro : elle disait la même chose dans un vocabulaire de réglage, et la répéter à deux
-              endroits de l'écran était le plus sûr moyen de les voir un jour se contredire.
-
-              Le trait de temps **mesure la saison, pas la personne** : `accentMuted` et jamais
-              `accent`, et la légende le dit en mots. Confondre les deux ferait de chaque semaine
-              écoulée un retard. */}
-          <ThemedView type="backgroundSelected" style={styles.capCard}>
-            {capKg !== null && cadre.chiffreLeCap && (
-              <>
-                <ThemedText type="small" weight={600} themeColor="accentText">
-                  Ton cap pour cette {cadenceDeSaison ? 'saison' : 'période'}
-                </ThemedText>
-                <ThemedText type="salient">
-                  − {formatKg(capKg)} kg
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
-                  {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
-                </ThemedText>
-                {/* **La note qui suivait ici a été retirée** (C5.3, écart 7) — « Le cap porte sur
-                    tes voyages ; cette action porte ailleurs. » Elle énonçait une règle que rien
-                    n'applique : le cap est une quantité à atteindre, et aucun endroit du produit ne
-                    vérifie d'où vient la réduction. Elle était rare tant que le poste dominant
-                    remplissait les deux premières cartes ; le classement de C5.1 l'aurait réveillée
-                    sur la plupart des plans, les meilleurs leviers venant souvent d'ailleurs. */}
-              </>
-            )}
-            <View style={styles.capPeriode}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {cycle.period_label}
-              </ThemedText>
-              {finDeLaPeriode && (
-                <ThemedText type="small" weight={600} themeColor="accentText">
-                  {finDeLaPeriode}
-                </ThemedText>
-              )}
-            </View>
-            {/* **Le trait attend qu'il y ait quelque chose à mesurer** (C5.6). Au tout premier
-                plan il annoncerait un temps qui s'écoule sur une action qu'on n'a pas encore
-                choisie — c'est-à-dire un compte à rebours, exactement ce que sa légende jure qu'il
-                n'est pas. La période et sa fin, elles, restent : elles disent le cadre, pas une
-                avance.
-
-                Le canvas écrit la condition `progression !== null && (engagement || !premierPlan)`.
-                La moitié `engagement ||` est **impliquée par la seconde** — un engagement rend
-                `estPremierPlan` faux par sa deuxième condition, et un test le dit — donc on garde
-                la forme courte plutôt qu'une clause qu'aucun cas ne peut exercer. La légende
-                disparaît **avec** le trait : seule, elle commenterait quelque chose qui n'est pas
-                là. */}
-            {progression !== null && !premierPlan && (
-              <>
-                <TraitDeTemps progression={progression} />
-                <ThemedText themeColor="textTertiary" style={styles.capLegende}>
-                  {cadenceDeSaison ? 'La saison avance' : 'La période avance'} ; le trait mesure le
-                  temps, pas toi.
-                </ThemedText>
-              </>
-            )}
-          </ThemedView>
-
-          {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce
-              moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte
-              déjà le bon ordre — poste dominant d'abord, puis gain décroissant. */}
-          <View style={styles.actions}>
-            {pistes.enAvant.map((action) => carteDaction(action))}
-          </View>
-
-          {/* **Toutes les pistes, sur un écran à elles** (C5.2, écarts 2 à 5). Le plan en
-              montrait deux, puis dépliait jusqu'à onze cartes sous un « Replier » sorti de l'écran :
-              l'insistance et l'exhaustivité tenaient sur la même surface, et l'exhaustivité gagnait.
-              Elles se séparent — deux cartes ici, tout là-bas, groupé par poste.
-
-              Le compte reste **dans** le libellé, et c'est le total : un lien qui ne dit pas combien
-              il mène à voir n'aide pas à décider de l'ouvrir. Il ne se rend que s'il y a plus à voir
-              que les deux cartes — sinon il promettrait un écran qui répète celui-ci. */}
-          {pistes.masquees > 0 && (
-            <View style={styles.pistes}>
-              <TextLink
-                label={`Voir toutes les pistes · ${actionsCount}`}
-                onPress={() => router.push('/plan/pistes')}
-                type="small"
-                weight={600}
-                themeColor="accentText"
-                style={styles.lienPistes}
-              />
-            </View>
-          )}
+              Deux éléments à clé plutôt que deux rendus écrits deux fois : React les réordonne sans
+              remonter les cartes, qui portent l'engagement, et le cap comme les pistes ne s'écrivent
+              qu'à un endroit. */}
+          {premierPlan ? [lesPistes, laCarteDuCap] : [laCarteDuCap, lesPistes]}
 
           {/* **L'encart de contexte, et sa porte** (C5.5, écarts 9 et 10). C'est la moitié « plan »
               du constat 13.1 : « Parfois » au télétravail coûtait une action, et rien ne le disait.
@@ -1556,6 +1600,8 @@ export default function Plan() {
               <TextLink
                 label="Modifier ces réponses"
                 onPress={() => router.push('/contexte')}
+                // Elle ouvre `/contexte` : une navigation, donc un lien (24/09/2026, `v1-29`).
+                role="link"
                 type="small"
                 weight={600}
                 themeColor="accentText"
@@ -1566,27 +1612,36 @@ export default function Plan() {
 
           {/* Profil qui n'a plus rien à céder sur son poste dominant. Le pire accueil
               possible serait une liste vide : c'est la personne qui fait déjà le plus
-              d'efforts. Même principe que le T8 de l'audit sur la restitution. */}
+              d'efforts. Même principe que le T8 de l'audit sur la restitution.
+
+              **Le titre nomme le poste** (24/09/2026, `v1-29`) : « sur ce poste » ne disait lequel
+              à personne, sur un écran où rien d'autre ne le nomme — un plan sans action ne chiffre
+              pas son cap. Et « le check-in » est devenu « le point », le mot que le produit emploie
+              partout ailleurs pour la même chose. */}
           {actionsCount === 0 && (
             <ThemedView type="backgroundElement" style={styles.emptyActionsCard}>
               <View style={styles.praiseRow}>
                 <Mascot mood="happy" size={36} />
                 <ThemedText type="cardTitle" style={styles.praiseText}>
-                  Tu fais déjà l’essentiel sur ce poste.
+                  {felicitationDuPlanSansAction(cycle.poste)}
                 </ThemedText>
               </View>
               <ThemedText type="body" themeColor="textSecondary">
                 Aucun changement de mode ne te ferait gagner assez pour valoir la peine d’être
-                proposé. Le check-in reste là si tu veux garder un œil dessus.
+                proposé. Le point reste là si tu veux garder un œil dessus.
               </ThemedText>
             </ThemedView>
           )}
 
           {/* La provenance du chiffre, à l'endroit où il engage le plus. Le produit vise un
               registre institutionnel : une estimation présentée comme une mesure serait le
-              premier endroit où la crédibilité se casse. */}
+              premier endroit où la crédibilité se casse.
+
+              **En Spline Sans et non plus en chasse fixe** (24/09/2026, `v1-29`, décision n° 10) :
+              la chasse fixe est réservée aux sources et aux codes techniques, et ceci est une
+              phrase adressée à la personne — « tes réponses ». */}
           {actionsCount > 0 && (
-            <ThemedText type="code" themeColor="textTertiary" style={styles.disclaimer}>
+            <ThemedText type="small" themeColor="textTertiary">
               Estimations sur la base des facteurs ADEME et de tes réponses. Un ordre de
               grandeur pour choisir, pas une mesure.
             </ThemedText>
@@ -1713,6 +1768,9 @@ const styles = StyleSheet.create({
   // 12/16 : la seule occurrence de cette taille dans l'écran, donc elle reste en dur — la nommer
   // dans `theme.ts` encoderait une équivalence avec les autres légendes qui n'existe pas encore.
   capLegende: { fontSize: 12, lineHeight: 16 },
+  // **Chiffres à chasse fixe** (24/09/2026, `v1-29`) : le cap change d'une saison à l'autre, et des
+  // chiffres de largeur égale ne font pas bouger la ligne. Spline Sans porte la fonction `tnum`.
+  chiffre: { fontVariant: ['tabular-nums'] },
   actions: { gap: Spacing.two + 2 },
   pistes: { gap: Spacing.two + 2 },
   lienPistes: { textAlign: 'center' },
@@ -1726,7 +1784,6 @@ const styles = StyleSheet.create({
   emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
   praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   praiseText: { flex: 1, minWidth: 0 },
-  disclaimer: { lineHeight: 18 },
   checkins: { gap: Spacing.two + 2 },
   calmeCard: { borderRadius: Radius.card, padding: 20 },
   rebilanCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
