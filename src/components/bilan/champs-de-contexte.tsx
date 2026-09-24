@@ -13,6 +13,16 @@ import {
 } from '@/types/contexte';
 
 /**
+ * Les trois questions qui se posent à tout le monde, écrites **une fois** pour leurs deux usages :
+ * le texte au-dessus de la série et le nom de son `radiogroup` (`GroupeDeChoix`). Sans le nom, une
+ * puce « 1 » s'annonçait seule, sans rien qui dise qu'elle compte des véhicules — et `/contexte`, qui
+ * reprend ces séries, n'a pas l'étape du questionnaire autour pour le rappeler.
+ */
+const QUESTION_ZONE = 'Type de zone';
+const QUESTION_TC = 'Accès aux transports en commun';
+const QUESTION_VEHICULES = 'Véhicules motorisés dans le foyer';
+
+/**
  * Les quatre questions B4, rendues **une seule fois pour deux écrans** (C6.4, `v1-19` D5).
  *
  * Elles étaient écrites dans `ContextStep`, la dernière étape du questionnaire. Depuis que le
@@ -27,16 +37,6 @@ import {
  * Trois endroits décident ensemble de l'affichage, de l'effacement et de la réclamation de B4.4
  * (`v1-17` §7.2) ; en ajouter un quatrième serait la façon la plus sûre de les désaccorder.
  */
-/**
- * Les trois questions qui se posent à tout le monde, écrites **une fois** pour leurs deux usages :
- * le texte au-dessus de la série et le nom de son `radiogroup` (`GroupeDeChoix`). Sans le nom, une
- * puce « 1 » s'annonçait seule, sans rien qui dise qu'elle compte des véhicules — et `/contexte`, qui
- * reprend ces séries, n'a pas l'étape du questionnaire autour pour le rappeler.
- */
-const QUESTION_ZONE = 'Type de zone';
-const QUESTION_TC = 'Accès aux transports en commun';
-const QUESTION_VEHICULES = 'Véhicules motorisés dans le foyer';
-
 export function ChampsDeContexte({
   choix,
   trajet,

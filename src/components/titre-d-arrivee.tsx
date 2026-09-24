@@ -20,9 +20,10 @@ import { porterLeFocus } from '@/lib/focus';
  * s'ouvrir sans geste — une route qu'on charge, un onglet qu'on retrouve.
  *
  * Sur natif, l'enveloppe est un nœud d'accessibilité (`accessible`), avec le rôle d'en-tête du titre
- * qu'elle porte : un conteneur nu ne se focalise pas sous TalkBack. Sur web, elle ne porte que
- * `tabIndex={-1}` — le titre à l'intérieur garde son propre rôle d'en-tête, et un second en-tête
- * autour de lui ferait lire le titre deux fois.
+ * qu'elle porte, pour que TalkBack ait à coup sûr un nœud à focaliser (`porterLeFocus` dit
+ * pourquoi un conteneur nu n'en garantit pas). Sur web, elle ne porte que `tabIndex={-1}` — le
+ * titre à l'intérieur garde son propre rôle d'en-tête, et un second en-tête autour de lui ferait
+ * lire le titre deux fois.
  */
 export function TitreDArrivee({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const cible = useRef<View>(null);

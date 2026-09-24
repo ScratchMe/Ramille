@@ -138,6 +138,8 @@ const styles = StyleSheet.create({
   // de la place au texte. À 18 de chaque côté, les sept puces de « jours par semaine » ne
   // laissaient que 3 dp au chiffre sur un écran de 390 dp, pour ~9 nécessaires : Android
   // rognait le glyphe au lieu de le laisser déborder, et les chiffres apparaissaient coupés.
+  // (Ces sept-là ne sont plus équiréparties depuis le 24/09/2026 : elles se rangent sur quatre
+  // colonnes, `GroupeDeChoix`. La règle vaut pour toutes celles qui le restent.)
   // Même famille que le `minWidth: 0` des champs de saisie (cf. CLAUDE.md) : un enfant flex
   // qui ne peut pas contenir son contenu ne le signale pas, il le tronque.
   baseFlex: { paddingHorizontal: 4 },

@@ -11,6 +11,9 @@ import type { ReminderPrefs } from '@/lib/notification-prefs';
 import { enregistrerLeJeton, lirePermission } from '@/lib/rappels';
 import { lignesDeReglage, type CanalPrefere, type Permission } from '@/types/rappels';
 
+/** Le titre du bloc, écrit une fois : l'en-tête affiché et le nom du groupe de lignes. */
+const TITRE = 'Les rappels';
+
 /**
  * Le réglage du canal de rappel sur « Toi » (canvas `docs/design/v1-12-rappels/Toi.dc.html`).
  *
@@ -42,9 +45,6 @@ import { lignesDeReglage, type CanalPrefere, type Permission } from '@/types/rap
  * démarrage à froid. C'est la « petite trahison » d'A4-8, réintroduite par la porte qu'on
  * vient d'ouvrir.
  */
-/** Le titre du bloc, écrit une fois : l'en-tête affiché et le nom du groupe de lignes. */
-const TITRE = 'Les rappels';
-
 export function ChoixDeRappel({
   prefs,
   onChoisir,

@@ -11,9 +11,12 @@ import { AccessibilityInfo, findNodeHandle, Platform, type View } from 'react-na
  * disait rien de ce qui venait d'arriver, et reprenait sa lecture on ne sait où.
  *
  * Sur web, la cible porte `tabIndex={-1}` : focalisable par programme, absente de l'ordre de
- * tabulation. Sur natif, elle doit être un nœud d'accessibilité (`accessible`) : un conteneur nu
- * n'en est pas un pour TalkBack, et React Native peut même l'aplatir hors de l'arbre natif — le
- * focus demandé n'aurait alors aucun effet, sans erreur.
+ * tabulation. Sur natif, le chemin sûr est d'en faire un nœud d'accessibilité (`accessible`) — ce
+ * que fait `TitreDArrivee` : un conteneur sans aucune propriété d'accessibilité peut être aplati
+ * par React Native hors de l'arbre natif, et le focus demandé ne trouverait alors rien, sans erreur.
+ * Le conteneur de `StepShell` n'en porte pas ; le passage TalkBack du 14/09/2026, qui cherchait ce
+ * déplacement d'étape en étape, n'a rien relevé (`v1-13` §11.1), mais rien n'a démêlé ici s'il y
+ * réussit ou si c'est l'écran qui change qui se fait entendre — à rejouer au prochain passage.
  */
 export function porterLeFocus(cible: View | null): void {
   if (!cible) return;

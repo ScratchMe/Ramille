@@ -126,8 +126,8 @@ export default function ConnexionEmail() {
     setMessage(null);
     // **Le bouton ne reste plus inactif sans dire pourquoi** (24/09/2026, audit d'accessibilité
     // 3.3.1) : grisé tant que l'adresse ne semblait pas plausible, il n'expliquait rien — et, inactif,
-    // il n'était même pas atteignable au clavier ni par un lecteur d'écran. Il agit donc toujours,
-    // et une adresse incomplète le dit, dans la même phrase et sur la même règle que
+    // il sortait de l'ordre de tabulation, donc on ne l'atteignait même pas au clavier. Il agit donc
+    // toujours, et une adresse incomplète le dit, dans la même phrase et sur la même règle que
     // `/connexion/retrouver` et `/compte/suppression`.
     if (!adresseSemblePlausible(email)) {
       setMessage('Cette adresse semble incomplète.');

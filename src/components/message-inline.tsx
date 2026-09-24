@@ -26,7 +26,8 @@ import { ThemedText } from '@/components/themed-text';
 //     `role="alert"` tel quel.
 //   - Sur Android, non. Une région vivante (`accessibilityLiveRegion`) annonce les changements d'un
 //     nœud **déjà présent**, pas son apparition : un message qui se monte avec son texte n'était
-//     donc pas annoncé à coup sûr, et la recette TalkBack du 14/09/2026 ne l'avait pas éprouvé.
+//     donc pas annoncé à coup sûr — et le passage TalkBack du 14/09/2026 ne cherchait pas les
+//     messages d'échec (`v1-13` §11.1 dit ce qu'il cherchait).
 //     L'annonce y est donc **demandée** (`announceForAccessibility`) au montage et à chaque
 //     changement de texte — et la région vivante est retirée sur natif, sans quoi un texte qui
 //     change sous un message déjà affiché serait dit deux fois.
