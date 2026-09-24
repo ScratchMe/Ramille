@@ -1,9 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
-import { CompteBouton } from '@/components/compte-bouton';
+import { CompteBouton, ICONE_DU_COMPTE } from '@/components/compte-bouton';
 import { ThemedText } from '@/components/themed-text';
 import { APP_NAME } from '@/constants/produit';
-import { ControlHeight } from '@/constants/theme';
+import { ControlHeight, Spacing, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Bande haute des deux onglets — retour d'appareil du 07/09/2026.
@@ -39,12 +39,15 @@ const styles = StyleSheet.create({
   bande: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
-    // 13 et non Spacing.four : l'icône du compte mesure 22 dans une cible de 44, son bord
-    // visible tombe donc à 13 + 11 = 24 — la marge du contenu défilant juste en dessous.
-    paddingHorizontal: 13,
+    height: ControlHeight.topBand,
+    // **Le bord visible de l'icône du compte tombe sur la marge du contenu** (`Spacing.four`),
+    // celle du contenu défilant juste en dessous : la marge de la bande s'en déduit, l'icône
+    // étant centrée dans sa cible. Elle valait 13 écrit en dur, juste pour une cible de 44 ; la
+    // cible passant à 48 le 24/09/2026 (`v1-29`), le même 13 aurait décalé l'icône de 2 px vers
+    // l'intérieur — d'où le calcul plutôt qu'un 11 recopié.
+    paddingHorizontal: Spacing.four - (ControlHeight.target - ICONE_DU_COMPTE) / 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   creneau: { width: ControlHeight.target, alignItems: 'center', justifyContent: 'center' },
-  nom: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 24, letterSpacing: -0.1 },
+  nom: { ...TypeScale.card, flex: 1, textAlign: 'center', letterSpacing: -0.1 },
 });

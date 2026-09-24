@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { decrireProbleme, type ProblemeConfiguration } from '@/types/configuration';
 
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   contenu: { padding: Spacing.four, gap: Spacing.four },
-  bloc: { borderWidth: 1, borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
+  bloc: { borderWidth: Stroke.hairline, borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
   ligne: { fontSize: 12, lineHeight: 18 },
   section: { gap: Spacing.two },
 });
