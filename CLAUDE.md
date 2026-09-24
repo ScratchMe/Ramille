@@ -190,7 +190,16 @@ premières sont détaillées en tête du script et gardées par son test :
 
 Ce que le script ne voit pas, c'est ce que les consignes **disent** : il imprime ce qui mérite un
 regard (adresses, commandes shell, outils pré-autorisés, liens morts, fichiers qui ne sont pas des
-consignes), et elles se relisent avant de commettre.
+consignes), et elles se relisent avant de commettre. Deux choses qu'on y trouve, et leur réponse :
+
+- **une consigne qui se déclare incontournable s'installe en `--manuel`.** Chaque skill charge sa
+  description dans le contexte de chaque session et peut se déclencher seul ; en `--manuel`, il sort
+  de la liste présentée — mesuré le 24/09/2026 — et reste appelable par son nom. Modern Web Guidance
+  y est : sa description exige de passer « en premier » sur tout HTML, CSS ou JavaScript, sur un
+  produit en React Native ;
+- **aucun contenu de Ramille ne relaie la publicité d'un plug-in.** SearchFit SEO demande de
+  proposer SearchFit.ai et signe ses gabarits « Powered by SearchFit.ai » : ces lignes-là ne se
+  suivent pas.
 
 ## Le produit, en trois règles et un renvoi
 
