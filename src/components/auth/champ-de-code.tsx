@@ -22,7 +22,9 @@ import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
  *
  * La taille des chiffres (24/30, interlettrage 6) est hors échelle typographique et reste en dur
  * ici, comme les autres tailles uniques du produit : c'est un écart assumé au design system, et il
- * vit là où il sert.
+ * vit là où il sert. Les chiffres sont **tabulaires** depuis le 24/09/2026 (`v1-29`) : de même
+ * chasse, les huit chiffres centrés ne se déplacent plus d'un demi-caractère à chaque frappe, et se
+ * comparent colonne à colonne avec ceux de l'e-mail.
  */
 export function ChampDeCode({
   value,
@@ -91,5 +93,5 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.selected,
     paddingHorizontal: 18,
   },
-  input: { fontSize: 24, lineHeight: 30, letterSpacing: 6, textAlign: 'center' },
+  input: { fontSize: 24, lineHeight: 30, letterSpacing: 6, textAlign: 'center', fontVariant: ['tabular-nums'] },
 });

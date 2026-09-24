@@ -86,6 +86,17 @@ const styles = StyleSheet.create({
   // `minWidth: 0` est nécessaire sur web : un <input> a une largeur intrinsèque que
   // flexbox ne réduit pas automatiquement (contrairement à RN natif), donc sans ça le
   // champ refuse de rétrécir et pousse "km" à cheval sur son bord droit.
-  input: { flex: 1, minWidth: 0, fontSize: 28, fontFamily: FontFamily.semibold, padding: 0 },
+  //
+  // `tabular-nums` (24/09/2026, `v1-29`) : Spline Sans porte des chiffres de largeurs inégales — un
+  // « 1 » plus étroit qu'un « 8 » —, donc le nombre se tassait et s'élargissait à chaque frappe, en
+  // 28 px. Des chiffres de même chasse le laissent en place. La police les porte (`tnum`).
+  input: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 28,
+    fontFamily: FontFamily.semibold,
+    fontVariant: ['tabular-nums'],
+    padding: 0,
+  },
   unit: { ...TypeScale.card, flexShrink: 0 },
 });
