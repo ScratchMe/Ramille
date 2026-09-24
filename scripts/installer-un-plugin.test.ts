@@ -5,20 +5,34 @@
  *
  * Ce qui est éprouvé, c'est chacune des trois règles de l'en-tête du script — le préfixe avec ses
  * renvois et ses liens, ce qui ne s'installe jamais, et « rien n'est écrit avant que tout soit
- * vérifié » —, plus la mise à jour, qui est la seule façon d'installer deux fois le même plug-in
- * sans que ce soit une collision.
+ * vérifié » —, plus ce qui dure d'une installation à la suivante : la mise à jour, qui est la seule
+ * façon d'installer deux fois le même plug-in sans que ce soit une collision, et le préfixe et le
+ * mode `--manuel` choisis la première fois.
  *
- * Non-vacuité, mesurée le 24/09/2026 en cassant le script quatorze fois (chaque mutation remise en
- * place depuis une copie avant la suivante) : ne plus réécrire le champ `name` fait tomber 1 test
- * (le nominal) ; ne plus réécrire les renvois, 1 (les renvois) ; ne plus marquer un fichier modifié,
- * 2 (le nominal et les renvois) ; ne plus signaler un nom d'amont resté tel quel, 1 (les renvois) ;
- * ne plus recalculer les liens, 1 (les liens) ; ne plus signaler un lien mort, 1 (les liens) ;
- * recalculer un lien vers un fichier absent en amont, 1 (les liens) ; ne plus chercher les
- * collisions, 1 (la collision) ; les chercher au fil de l'écriture plutôt qu'avant, 1 (la collision,
- * par le skill posé avant le refus) ; ne plus retirer ce que la version précédente avait posé, 1 (la
- * mise à jour) ; compter ce qu'elle avait posé comme une collision, 1 (la mise à jour) ; accepter
- * des hooks dans un en-tête, 2 (le skill et la commande) ; accepter un lien symbolique, 1 ; extraire
- * sans lire d'abord la liste des entrées, 1 (l'évasion). Aucune mutation ne passe.
+ * Non-vacuité, mesurée le 24/09/2026 en cassant le script vingt-cinq fois (chaque mutation remise en
+ * place depuis une copie avant la suivante), les tests tombés entre parenthèses :
+ *   - le préfixe : ne plus réécrire le champ `name`, 1 (le nominal) ; le redoubler sur un nom qui le
+ *     porte déjà, 2 (le préfixe porté, le préfixe court) ; oublier celui de la dernière
+ *     installation, 1 (le préfixe court) ; ignorer les chemins que le manifeste déclare, 1 ; en
+ *     accepter un qui sort du plug-in, 1 (les deux : les chemins déclarés) ;
+ *   - les renvois et les liens : ne plus réécrire les renvois, 2 (les renvois, le préfixe porté) ;
+ *     ne plus marquer un fichier modifié, 2 (le nominal, les renvois) ; ne plus signaler un nom
+ *     d'amont resté tel quel, 1 ; lire l'avis ajouté comme une consigne, 1 (le préfixe court) ; ne
+ *     plus recalculer les liens, 1 ; ne plus signaler un lien mort, 1 ; recalculer un lien vers un
+ *     fichier absent en amont, 1 (ces trois : les liens) ;
+ *   - ce qui ne s'installe pas : accepter des hooks dans un en-tête, 2 (le skill, la commande) ;
+ *     nommer `AGENT` un agent rangé dans son dossier, 1 ; signaler les fichiers d'un dépôt d'amont,
+ *     1 (les deux : les hooks) ;
+ *   - avant d'écrire : ne plus chercher les collisions, 1 ; les chercher au fil de l'écriture, 1 (les
+ *     deux : la collision, la seconde par le skill posé avant le refus) ; accepter un lien
+ *     symbolique, 1 ; extraire sans lire d'abord la liste des entrées, 1 (l'évasion) ; exiger un
+ *     en-tête d'une commande, 1 (le préfixe porté) ;
+ *   - d'une installation à l'autre : ne plus retirer ce que la version précédente avait posé, 1 (la
+ *     mise à jour) ; compter ce qu'elle avait posé comme une collision, 3 (la mise à jour, le préfixe
+ *     court, le mode manuel) ; ne plus poser l'appel manuel, 1 ; oublier le mode de la dernière
+ *     installation, 1 (les deux : le mode manuel) ;
+ *   - le compte rendu : lister chaque donnée comme un script à lire, 1 (les données).
+ * Aucune mutation ne passe.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -50,8 +64,8 @@ const manifeste = (version = '1.0.0') => JSON.stringify({ name: 'outil', version
 const skill = (nom: string, enTeteEnPlus = '') =>
   `---\nname: ${nom}\ndescription: Le skill ${nom}.\n${enTeteEnPlus}---\n\nConsignes de ${nom}.\n`;
 
-function installer(source: string, depot: string) {
-  const r = spawnSync(process.execPath, [script, source, '--racine', depot], { encoding: 'utf8' });
+function installer(source: string, depot: string, ...options: string[]) {
+  const r = spawnSync(process.execPath, [script, source, '--racine', depot, ...options], { encoding: 'utf8' });
   return { code: r.status, sortie: `${r.stdout}${r.stderr}` };
 }
 
@@ -166,6 +180,12 @@ describe('installer un plug-in', () => {
         'hooks/hooks.json': '{"hooks":{}}',
         '.mcp.json': JSON.stringify({ mcpServers: { slack: {}, linear: {} } }),
         'agents/relecteur.md': '---\nname: relecteur\n---\n',
+        // La seconde forme d'un agent : un dossier à son nom, et `AGENT.md` dedans.
+        'agents/auditeur/AGENT.md': '---\nname: auditeur\n---\n',
+        // Ce qu'un dépôt d'amont et les autres agents posent à la racine : ni installé, ni signalé.
+        '.github/workflows/ci.yml': 'on: push\n',
+        'CONTRIBUTING.md': 'Contribuer.\n',
+        '.cursor-plugin/plugin.json': '{}',
       }),
       depot,
     );
@@ -177,11 +197,124 @@ describe('installer un plug-in', () => {
     expect(installation(depot).non_installe).toEqual({
       hooks: ['hooks/hooks.json'],
       connecteurs: ['linear', 'slack'],
-      agents: ['relecteur'],
+      agents: ['auditeur', 'relecteur'],
       autres: [],
     });
     expect(r.sortie).toContain('linear, slack');
-    expect(r.sortie).toContain('relecteur');
+    expect(r.sortie).toContain('auditeur, relecteur');
+  });
+
+  test('ne redouble pas un préfixe déjà porté, et ne prend pas l’avis ajouté pour un renvoi', () => {
+    const depot = temporaire('ramille-depot-');
+    const r = installer(
+      plugin({
+        '.claude-plugin/plugin.json': manifeste(),
+        // Un skill au nom du plug-in, qui renvoie à une commande : il est modifié, donc marqué — et
+        // l'avis nomme `.claude/plugins-importes/outil/`, où l'on lit « /outil ».
+        'skills/outil/SKILL.md': skill('outil') + 'Ensuite, /idee.\n',
+        'skills/outil-lire/SKILL.md': skill('outil-lire'),
+        'commands/idee.md': 'Une commande sans en-tête : son nom est celui du fichier.\n',
+      }),
+      depot,
+    );
+
+    expect(r.code).toBe(0);
+    expect(existe(depot, '.claude/skills/outil/SKILL.md')).toBe(true);
+    expect(existe(depot, '.claude/skills/outil-lire/SKILL.md')).toBe(true);
+    expect(existe(depot, '.claude/skills/outil-outil-lire')).toBe(false);
+    expect(lire(depot, '.claude/skills/outil/SKILL.md')).toContain('Ensuite, /outil-idee.');
+    expect(r.sortie).not.toContain('nom d’amont resté tel quel');
+  });
+
+  test('prend un préfixe plus court, et une mise à jour le reprend sans qu’on le redise', () => {
+    const depot = temporaire('ramille-depot-');
+    const source = () =>
+      plugin({
+        '.claude-plugin/plugin.json': JSON.stringify({ name: 'outil-au-nom-bien-trop-long', version: '1.0.0' }),
+        'skills/court-ecrire/SKILL.md': skill('court-ecrire'),
+        'skills/lire/SKILL.md': skill('lire'),
+        // Un skill au nom du plug-in, renommé par le préfixe : l'avis ajouté à son en-tête nomme
+        // `.claude/plugins-importes/outil-au-nom-bien-trop-long/`, où l'on lit son nom d'amont.
+        'skills/outil-au-nom-bien-trop-long/SKILL.md': skill('outil-au-nom-bien-trop-long'),
+      });
+
+    expect(installer(source(), depot, '--prefixe', 'court').code).toBe(0);
+    const r = installer(source(), depot);
+
+    expect(r.code).toBe(0);
+    expect(existe(depot, '.claude/skills/court-ecrire/SKILL.md')).toBe(true);
+    expect(existe(depot, '.claude/skills/court-lire/SKILL.md')).toBe(true);
+    expect(existe(depot, '.claude/skills/court-outil-au-nom-bien-trop-long/SKILL.md')).toBe(true);
+    expect(existe(depot, '.claude/skills/outil-au-nom-bien-trop-long-lire')).toBe(false);
+    expect(r.sortie).not.toContain('nom d’amont resté tel quel');
+    // La provenance reste rangée sous le nom du plug-in, pas sous le préfixe.
+    const suivi = JSON.parse(lire(depot, '.claude/plugins-importes/outil-au-nom-bien-trop-long/installation.json'));
+    expect(suivi).toMatchObject({ plugin: 'outil-au-nom-bien-trop-long', prefixe: 'court' });
+  });
+
+  test('lit les skills qu’un manifeste range ailleurs, et refuse un chemin qui sort du plug-in', () => {
+    const depot = temporaire('ramille-depot-');
+    const r = installer(
+      plugin({
+        '.claude-plugin/plugin.json': JSON.stringify({ name: 'outil', skills: './.claude/skills/' }),
+        '.claude/skills/ecrire/SKILL.md': skill('ecrire'),
+      }),
+      depot,
+    );
+    expect(r.code).toBe(0);
+    expect(existe(depot, '.claude/skills/outil-ecrire/SKILL.md')).toBe(true);
+    expect(installation(depot).non_installe.autres).toEqual([]);
+
+    const dehors = installer(
+      plugin({
+        '.claude-plugin/plugin.json': JSON.stringify({ name: 'outil', skills: '../ailleurs' }),
+        'skills/ecrire/SKILL.md': skill('ecrire'),
+      }),
+      temporaire('ramille-depot-'),
+    );
+    expect(dehors.code).toBe(1);
+    expect(dehors.sortie).toContain('sort du plug-in');
+  });
+
+  test('en --manuel, rien ne se déclenche seul, et une mise à jour garde ce mode', () => {
+    const depot = temporaire('ramille-depot-');
+    const source = () =>
+      plugin({
+        '.claude-plugin/plugin.json': manifeste(),
+        'skills/ecrire/SKILL.md': skill('ecrire'),
+        'commands/idee.md': '---\ndescription: Une idée.\n---\nTrouve une idée.\n',
+      });
+
+    expect(installer(source(), depot, '--manuel').code).toBe(0);
+    expect(installer(source(), depot).code).toBe(0);
+
+    expect(lire(depot, '.claude/skills/outil-ecrire/SKILL.md')).toMatch(/\ndisable-model-invocation: true\n---\n/);
+    expect(lire(depot, '.claude/commands/outil-idee.md')).toMatch(/\ndisable-model-invocation: true\n---\n/);
+    expect(installation(depot).manuel).toBe(true);
+
+    expect(installer(source(), depot, '--auto').code).toBe(0);
+    expect(lire(depot, '.claude/skills/outil-ecrire/SKILL.md')).not.toContain('disable-model-invocation');
+    expect(installation(depot).manuel).toBe(false);
+  });
+
+  test('liste un par un les scripts à lire, et compte les données', () => {
+    const depot = temporaire('ramille-depot-');
+    const r = installer(
+      plugin({
+        '.claude-plugin/plugin.json': manifeste(),
+        'skills/ecrire/SKILL.md': skill('ecrire'),
+        'skills/ecrire/scripts/cherche.py': 'print("cherche")\n',
+        'skills/ecrire/data/styles.csv': 'nom\n',
+        'skills/ecrire/data/couleurs.csv': 'nom\n',
+        'skills/ecrire/polices/sans.ttf': 'police',
+      }),
+      depot,
+    );
+
+    expect(r.code).toBe(0);
+    expect(r.sortie).toContain('.claude/skills/outil-ecrire/scripts/cherche.py — script ou binaire : lire ce qu’il fait');
+    expect(r.sortie).toContain('données, copiées telles quelles : 2 × .csv, 1 × .ttf');
+    expect(r.sortie).not.toContain('styles.csv');
   });
 
   test.each([

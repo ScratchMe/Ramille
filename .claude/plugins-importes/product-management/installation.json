@@ -1,5 +1,7 @@
 {
   "plugin": "product-management",
+  "prefixe": "product-management",
+  "manuel": false,
   "version": "1.2.0",
   "source": "ac0b81ed-Product_Management-1.2.0-v40.zip",
   "sha256": "6a242524a348a0733c4b22f039ea10e32e8794a2df41b970ea1b3cc1b52fa0a1",
