@@ -1,0 +1,65 @@
+{
+  "plugin": "marketing",
+  "prefixe": "marketing",
+  "manuel": true,
+  "version": "1.2.0",
+  "source": "03432080-Marketing-1.2.0-v40.zip",
+  "sha256": "45bfafc7bacf3319cabbdf3acd6f87bb84500442e41bdaeb87bc38d88d7e923b",
+  "installe_le": "2026-09-24",
+  "installe_par": "scripts/installer-un-plugin.mjs",
+  "skills": [
+    {
+      "amont": "brand-review",
+      "installe": "marketing-brand-review"
+    },
+    {
+      "amont": "campaign-plan",
+      "installe": "marketing-campaign-plan"
+    },
+    {
+      "amont": "competitive-brief",
+      "installe": "marketing-competitive-brief"
+    },
+    {
+      "amont": "content-creation",
+      "installe": "marketing-content-creation"
+    },
+    {
+      "amont": "draft-content",
+      "installe": "marketing-draft-content"
+    },
+    {
+      "amont": "email-sequence",
+      "installe": "marketing-email-sequence"
+    },
+    {
+      "amont": "performance-report",
+      "installe": "marketing-performance-report"
+    },
+    {
+      "amont": "seo-audit",
+      "installe": "marketing-seo-audit"
+    }
+  ],
+  "commandes": [],
+  "non_installe": {
+    "hooks": [],
+    "connecteurs": [
+      "ahrefs",
+      "amplitude",
+      "amplitude-eu",
+      "canva",
+      "figma",
+      "gmail",
+      "google calendar",
+      "hubspot",
+      "klaviyo",
+      "notion",
+      "similarweb",
+      "slack",
+      "supermetrics"
+    ],
+    "agents": [],
+    "autres": []
+  }
+}

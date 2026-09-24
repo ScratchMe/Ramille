@@ -174,6 +174,9 @@ sûre d'emporter : un plug-in arrive donc en `.zip` et s'installe par
 archive plus récente, et le retire par `--retirer <plug-in>` — exactement ce qu'il avait posé, jamais
 tout ce qui porte son préfixe. Ce qui est installé, et ce qui ne l'est pas, se lit dans
 l'`installation.json` de chaque plug-in, sous `.claude/plugins-importes/`, à côté de sa licence.
+**Le dépôt est public, donc installer un plug-in, c'est le redistribuer** : sa licence voyage avec
+la provenance, et quand l'archive n'en porte pas, `--licence <fichier>` la joint — c'est le cas de
+Design, dont la licence (Apache 2.0) est à la racine du dépôt d'amont et non dans son dossier.
 Trois règles, dont les deux premières sont détaillées en tête du script et gardées par son test :
 
 - **tout nom est préfixé par celui du plug-in** — `/product-management-write-spec` et non

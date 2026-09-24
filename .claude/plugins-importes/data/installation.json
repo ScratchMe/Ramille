@@ -1,0 +1,68 @@
+{
+  "plugin": "data",
+  "prefixe": "data",
+  "manuel": true,
+  "version": "1.1.0",
+  "source": "567a0bcf-Data-1.1.0-v40.zip",
+  "sha256": "32ecfa86a084b6a25fd9d54338b25b0a7725c1d7f2277f990f722d9450040683",
+  "installe_le": "2026-09-24",
+  "installe_par": "scripts/installer-un-plugin.mjs",
+  "skills": [
+    {
+      "amont": "analyze",
+      "installe": "data-analyze"
+    },
+    {
+      "amont": "build-dashboard",
+      "installe": "data-build-dashboard"
+    },
+    {
+      "amont": "data-context-extractor",
+      "installe": "data-context-extractor"
+    },
+    {
+      "amont": "create-viz",
+      "installe": "data-create-viz"
+    },
+    {
+      "amont": "explore-data",
+      "installe": "data-explore-data"
+    },
+    {
+      "amont": "sql-queries",
+      "installe": "data-sql-queries"
+    },
+    {
+      "amont": "statistical-analysis",
+      "installe": "data-statistical-analysis"
+    },
+    {
+      "amont": "validate-data",
+      "installe": "data-validate-data"
+    },
+    {
+      "amont": "data-visualization",
+      "installe": "data-visualization"
+    },
+    {
+      "amont": "write-query",
+      "installe": "data-write-query"
+    }
+  ],
+  "commandes": [],
+  "non_installe": {
+    "hooks": [],
+    "connecteurs": [
+      "amplitude",
+      "amplitude-eu",
+      "atlassian",
+      "bigquery",
+      "databricks",
+      "definite",
+      "hex",
+      "snowflake"
+    ],
+    "agents": [],
+    "autres": []
+  }
+}
