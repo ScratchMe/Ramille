@@ -182,6 +182,12 @@ export const TypeScale = {
    * d'accroche de l'onboarding. Six recopies à la main jusqu'au 24/09/2026 (`v1-29` §3).
    */
   display: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
+  /**
+   * Étiquette en capitales d'une carte (« TON PREMIER PLAN », « PREMIER PAS »). `v1-11` écrivait
+   * le 07/09/2026 qu'une échelle à 13 px « n'existe nulle part » : c'était vrai ce jour-là, et
+   * trois recopies à la main sont arrivées depuis (`v1-29` §3).
+   */
+  label: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
 } as const;
 
 /**
@@ -224,6 +230,13 @@ export const ControlHeight = {
   /** Champ numérique du questionnaire, chiffre en grand. */
   numeric: 64,
 } as const;
+
+/**
+ * Rail d'une barre de progression : l'avancée du questionnaire et le trait de temps de la saison.
+ * Le commentaire du trait de temps disait ces deux valeurs uniques dans le produit, alors que la
+ * barre du questionnaire portait les mêmes (`v1-29` §3).
+ */
+export const Rail = { height: 6, radius: 3 } as const;
 
 /**
  * Épaisseurs de trait. `selected` est le contour d'une puce ou d'une ligne choisie, `engaged` celui
