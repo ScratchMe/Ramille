@@ -1070,6 +1070,9 @@ export default function Plan() {
     postesEnAvant: pistes.enAvant.map((action) => action.action_templates?.poste ?? null),
     nombreDActions: actionsCount,
   });
+  // Le titre de la carte d'un plan à zéro action, et s'il peut promettre le point : le cycle porte
+  // les deux réponses, le poste et le libellé figé par le serveur (`felicitationDuPlanSansAction`).
+  const felicitation = felicitationDuPlanSansAction(cycle.poste, cycle.trip_label);
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.
@@ -1630,12 +1633,12 @@ export default function Plan() {
               <View style={styles.praiseRow}>
                 <Mascot mood="happy" size={36} />
                 <ThemedText type="cardTitle" style={styles.praiseText}>
-                  {felicitationDuPlanSansAction(cycle.poste)}
+                  {felicitation.titre}
                 </ThemedText>
               </View>
               <ThemedText type="body" themeColor="textSecondary">
                 Aucun changement de mode ne te ferait gagner assez pour valoir la peine d’être
-                proposé. Le point reste là si tu veux garder un œil dessus.
+                proposé.{felicitation.promettreLePoint ? ' Le point reste là si tu veux garder un œil dessus.' : ''}
               </ThemedText>
             </ThemedView>
           )}

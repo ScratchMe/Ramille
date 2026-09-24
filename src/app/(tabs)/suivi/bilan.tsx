@@ -11,6 +11,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
 import {
@@ -169,6 +170,8 @@ async function copierDansLePressePapier(
 //
 // Elle ne se rend pas en relecture, et c'était déjà le cas : le suivi est l'histoire de la
 // personne, pas un endroit où relancer.
+const CHARGEMENT: LoadState = { status: 'loading' };
+
 export default function BilanResultat() {
   const theme = useTheme();
   // Deux entrées, un seul écran (cf. `src/types/resultat.ts`) : la fin du questionnaire pose
@@ -184,9 +187,18 @@ export default function BilanResultat() {
   // pile à chaque ouverture, le passer à `useTrackFocus` recompterait un retour de pile.
   useTrackView('resultat_view', { mode });
 
-  const [state, setState] = useState<LoadState>(
+  // **Avant l'hydratation, l'écran rend ce que contient le HTML statique** (24/09/2026, `v1-29`).
+  // L'export rend `/suivi/bilan` sans chaîne de requête, donc sans `id` : il servait l'écran
+  // d'erreur, pendant que le navigateur, qui lit l'URL, rendait le chargement — React le constatait
+  // à l'hydratation (erreur n° 418) et refaisait la page. Et quiconque ouvrait un bilan depuis un
+  // lien lisait « n'a pas pu être affiché » le temps que l'app démarre. Le chargement n'affirme
+  // rien, donc c'est lui que rendent le HTML et le rendu d'hydratation (`FRONT.md` §1.3,
+  // `EXPO.md` §2.2) ; l'état lu prend le relais au rendu suivant.
+  const apresHydratation = useApresHydratation();
+  const [stateLu, setState] = useState<LoadState>(
     id ? { status: 'loading' } : { status: 'error' }
   );
+  const state: LoadState = apresHydratation ? stateLu : CHARGEMENT;
   // **Le compteur est ce qui rend « Réessayer » autre chose qu'un bouton mort.** Repasser l'état à
   // `loading` ne relance rien : l'effet de chargement ne dépend que de `id`, qui n'a pas changé.
   // L'écran basculait alors sur la branche « Calcul de ton bilan… », sans bouton ni lien, pour

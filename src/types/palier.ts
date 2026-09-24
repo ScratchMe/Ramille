@@ -74,8 +74,8 @@ export type Palier = {
  *
  * Un seul cas rend `null` : **aucun cap disponible** (pas de cycle de plan, ou cap nul). Sans
  * cap il n'existe pas de marche atteignable à proposer, et on préfère ne rien dire qu'en
- * inventer une. C'est notamment le cas du profil que `/plan` accueille par « Tu fais déjà
- * l'essentiel sur ce poste » : aucune action ne gagne assez pour valoir la peine.
+ * inventer une. C'est notamment le cas du profil que `/plan` accueille par sa félicitation
+ * (`felicitationDuPlanSansAction`) : aucune action ne gagne assez pour valoir la peine.
  *
  * Être déjà sous le repère 2050 ne rend **pas** `null` — décision produit du 05/09/2026. Ce
  * qu'on n'émet pas laisse de la marge ailleurs, et le proposer à quelqu'un qui est déjà sobre

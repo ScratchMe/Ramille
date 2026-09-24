@@ -25,7 +25,11 @@ export function BandeHaute() {
   return (
     <View style={[styles.bande, { borderBottomColor: theme.border }]}>
       <View style={styles.creneau} />
-      <ThemedText weight={600} style={styles.nom} accessibilityRole="header">
+      {/* **Un repère, pas un titre** (24/09/2026, `v1-29`). Annoncé en en-tête, le nom passait
+          avant le titre de chaque écran : sur web un `<h2>` devant le `<h1>`, et sur Android la
+          première étape de la navigation par titres sur chaque onglet, toujours la même. Le titre
+          de l'écran est le premier titre ; le nom situe, il ne commence rien. */}
+      <ThemedText weight={600} style={styles.nom}>
         {APP_NAME}
       </ThemedText>
       <View style={styles.creneau}>

@@ -49,7 +49,8 @@
 //
 // ── Sections C, D et E, éprouvées en cassant le 24/09/2026 ─────────────────────────────────────
 //
-// Dix mutations, un export chacune, plus un témoin sans mutation qui sort vert. Chacune fait
+// Dix mutations, un export chacune, plus un témoin sans mutation qui sort vert — et une onzième le
+// même soir, quand `/suivi/bilan` a rejoint la section D à l'intégration. Chacune fait
 // tomber ce qu'elle devait faire tomber, et rien d'autre :
 //
 //   | Ce qu'on casse | Ce qui tombe |
@@ -64,6 +65,7 @@
 //   | l'onboarding ne déplace plus le focus | le focus, avec **et** sans « réduire » (E) |
 //   | le pager anime toujours | les positions intermédiaires sous « réduire » (E) |
 //   | le titre n'a plus de `tabIndex` sur web | le focus, avec **et** sans « réduire » (E) |
+//   | `/suivi/bilan` lit son état sans attendre l'hydratation | l'hydratation de `?id=` **et** le HTML statique « pas pu » (D) |
 //
 // La dernière dit ce que l'avant-dernière ne dit pas : un focus demandé sur un titre que le
 // navigateur ne sait pas focaliser **échoue sans bruit**, et c'est `FOCALISABLE_PAR_PROGRAMME`
@@ -418,8 +420,8 @@ const CONTRASTE_MINIMAL = 3;
 
 // ── D. Un paramètre d'URL ne défait pas l'hydratation ─────────────────────────────────────────
 //
-// L'export rend chaque page **sans chaîne de requête** : un texte qui dépend de `?source=` ou de
-// `?jeton=` différait donc entre le HTML servi et le premier rendu du navigateur, et React jetait
+// L'export rend chaque page **sans chaîne de requête** : un texte qui dépend de `?source=`, de
+// `?jeton=` ou de `?id=` différait donc entre le HTML servi et le premier rendu du navigateur, et React jetait
 // la page (erreur n° 418). `verifier-rendu-export.mjs` classe ces erreurs en avertissements, par
 // conception ; ici elles sont **bloquantes pour les routes qu'on a corrigées**, parce qu'un retour
 // de l'écart ne se verrait nulle part ailleurs — la page s'affiche juste, une fois refaite.
@@ -444,6 +446,16 @@ const PARAMETRES = [
     // ci-dessous, dans le fichier.
     chemin: `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`,
     attendu: 'Ne plus recevoir de rappels',
+    interdit: null,
+  },
+  {
+    // Ouvert depuis le suivi, le bilan porte `?id=` ; le HTML statique, sans identifiant, rendait
+    // l'écran d'erreur et le navigateur le chargement (relevé le 24/09/2026). Un identifiant
+    // inconnu finit sur l'écran d'erreur une fois la lecture faite, en local comme avec la
+    // configuration factice de la CI : seule l'hydratation est l'objet de cette ligne, et le texte
+    // attendu est celui des deux issues possibles.
+    chemin: `/suivi/bilan?id=${JETON_DE_FORME_VALIDE}`,
+    attendu: 'bilan',
     interdit: null,
   },
   {
@@ -493,6 +505,19 @@ for (const { chemin, attendu, interdit } of PARAMETRES) {
     );
   } else if (!html.includes('Un instant')) {
     echecs.push('/rappels/stop : le HTML statique ne porte plus « Un instant, on coupe tes rappels. ».');
+  }
+}
+
+// Même chose pour le bilan ouvert par un lien : le HTML statique annonçait un échec à tout le monde.
+{
+  const html = readFileSync(join(DIST, 'suivi', 'bilan.html'), 'utf8');
+  if (html.includes('pas pu')) {
+    echecs.push(
+      '/suivi/bilan : le HTML statique annonce que le bilan « n’a pas pu être affiché » — c’est ce' +
+        ' que lit quiconque ouvre un bilan par un lien, le temps que l’app démarre (FRONT.md §1.3).'
+    );
+  } else if (!html.includes('Chargement de ton bilan')) {
+    echecs.push('/suivi/bilan : le HTML statique ne porte plus « Chargement de ton bilan… ».');
   }
 }
 

@@ -589,9 +589,10 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   action « faire une sortie sur trois à vélo » sur des sorties jamais déclarées. Les deux libellés
   partagent le mot parce que leur condition est **le même test** (`v_leisure_co2 >= v_travel_co2 ×
   0,95`), donc ils ne peuvent pas se contredire. Conséquence à connaître : **tout cycliste et tout
-  profil sédentaire a désormais un plan à zéro action** — l'écran le félicite (« Tu fais déjà
-  l'essentiel sur ce poste »), ce qui est juste, mais la carte du cap s'affiche encore au-dessus,
-  relevé pour C3.8. Et si `household_vehicles = '0'`, le résiduel passe en **train** et non en bus :
+  profil sédentaire a désormais un plan à zéro action** — l'écran le félicite, ce qui est juste,
+  en nommant le poste **sauf** quand c'est ce résiduel, que la personne n'a pas déclaré et sur
+  lequel aucune boucle ne porte (`felicitationDuPlanSansAction`, `v1-29`) ; la carte du cap
+  s'affichait encore au-dessus, relevé pour C3.8. Et si `household_vehicles = '0'`, le résiduel passe en **train** et non en bus :
   à 0,1224 kg/km le bus ne vaut que 14 % de moins qu'une thermique en ACV, la correction aurait été
   un non-événement (A7-13).
 - **La boucle mensuelle demande une base déclarée**, sinon elle n'est pas générée :

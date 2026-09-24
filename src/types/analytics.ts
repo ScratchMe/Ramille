@@ -129,7 +129,7 @@ export const SOURCES_RETROUVER = [
 export type SourceRetrouver = (typeof SOURCES_RETROUVER)[number];
 
 /**
- * Reconnaît la provenance passée en paramètre d'URL, ou retombe sur `resultat_transition`.
+ * Reconnaît la provenance passée en paramètre d'URL, ou retombe sur `inconnue`.
  *
  * **Le garde se dérive de la liste, il ne la recopie pas.** C'est la duplication qui avait
  * dérivé : l'écran de connexion filtrait sur trois valeurs écrites à la main, si bien qu'une

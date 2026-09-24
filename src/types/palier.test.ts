@@ -99,8 +99,8 @@ describe('nextPalier — déjà sous le repère', () => {
 
 describe('nextPalier — rien à proposer', () => {
   it('ne propose rien sans cap exploitable', () => {
-    // Pas de cycle de plan, ou un cap nul : c'est le profil que `/plan` accueille par « Tu fais
-    // déjà l'essentiel sur ce poste ». On ne dit rien plutôt que d'inventer une marche.
+    // Pas de cycle de plan, ou un cap nul : c'est le profil que `/plan` accueille par sa
+    // félicitation (`felicitationDuPlanSansAction`). On ne dit rien plutôt que d'inventer une marche.
     expect(nextPalier(4380, null, CIBLE)).toBeNull();
     expect(nextPalier(4380, undefined, CIBLE)).toBeNull();
     expect(nextPalier(4380, 0, CIBLE)).toBeNull();
@@ -186,7 +186,7 @@ describe('palierEstDerriere', () => {
   });
 
   // Un cap nul ne produit aucun palier (`nextPalier` rend `null`) : rien n'était visé, rien n'est
-  // franchi. C'est le profil que `/plan` accueille par « Tu fais déjà l'essentiel sur ce poste ».
+  // franchi. C'est le profil que `/plan` accueille par sa félicitation (`felicitationDuPlanSansAction`).
   it('ne prétend rien quand aucun palier n’était proposé', () => {
     expect(
       palierEstDerriere({ precedentKg: 500, courantKg: 100, capAlorsKg: 0, target2050Kg: CIBLE })

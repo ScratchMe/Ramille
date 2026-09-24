@@ -250,27 +250,55 @@ describe('phraseDesPistesSuffisantes', () => {
  *
  * Éprouvé en cassant ce qu'il garde, le 24/09/2026 : `formeInserable` à la place de la table (son
  * repli devine « tes sorties du week-end ») fait tomber le test du poste inconnu, et lui seul ;
- * `POSTE_EN_PHRASE` à la place de `FORME_INSERABLE` fait tomber celui du registre.
+ * `POSTE_EN_PHRASE` à la place de `FORME_INSERABLE` fait tomber celui du registre. Puis, pour le
+ * résiduel des sorties rares : la branche neutralisée fait tomber « ne nomme ni ne promet », et lui
+ * seul ; le marqueur lu sur tous les postes fait tomber « ne lit le marqueur que sur les sorties »,
+ * et lui seul.
  */
 describe('felicitationDuPlanSansAction', () => {
+  const titre = (poste: string | null, libelle: string | null = null) =>
+    felicitationDuPlanSansAction(poste, libelle).titre;
+
   it('nomme le poste du cycle', () => {
-    expect(felicitationDuPlanSansAction('commute')).toBe(
+    expect(titre('commute', 'Trajet domicile-travail (Vélo)')).toBe(
       'Tu fais déjà l’essentiel sur ton trajet domicile-travail.'
     );
   });
 
   // Le registre qu'on insère après une préposition : « tes sorties du week-end », jamais « tes
-  // loisirs du week-end » — et c'est le poste du cycliste aux sorties rares du parcours réel.
+  // loisirs du week-end ».
   it('parle le registre inséré', () => {
-    expect(felicitationDuPlanSansAction('leisure')).toBe(
+    expect(titre('leisure', 'Loisirs du week-end (Voiture thermique)')).toBe(
       'Tu fais déjà l’essentiel sur tes sorties du week-end.'
     );
-    expect(felicitationDuPlanSansAction('travel')).toBe('Tu fais déjà l’essentiel sur tes voyages.');
+    expect(titre('travel')).toBe('Tu fais déjà l’essentiel sur tes voyages.');
   });
 
   it('ne devine pas un poste qu’elle ne connaît pas', () => {
-    expect(felicitationDuPlanSansAction(null)).toBe('Tu fais déjà l’essentiel sur ce poste.');
-    expect(felicitationDuPlanSansAction('teletravail')).toBe('Tu fais déjà l’essentiel sur ce poste.');
+    expect(titre(null)).toBe('Tu fais déjà l’essentiel sur ce poste.');
+    expect(titre('teletravail')).toBe('Tu fais déjà l’essentiel sur ce poste.');
+  });
+
+  // Le cycliste aux sorties rares du parcours réel : son poste est le résiduel du calcul, pas un
+  // comportement déclaré, et aucune boucle mensuelle ne porte dessus.
+  it('ne nomme ni ne promet le résiduel des sorties rares', () => {
+    expect(felicitationDuPlanSansAction('leisure', 'Loisirs du week-end (occasionnels)')).toEqual({
+      titre: 'Tu fais déjà l’essentiel.',
+      promettreLePoint: false,
+    });
+  });
+
+  it('promet le point partout ailleurs', () => {
+    expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)').promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('leisure', 'Loisirs du week-end (Voiture thermique)').promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('travel', 'Voyages longue distance (Avion)').promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction(null, null).promettreLePoint).toBe(true);
+  });
+
+  // Le marqueur ne vaut que pour les sorties : un libellé d'un autre poste qui le porterait ne
+  // ferait pas taire le poste.
+  it('ne lit le marqueur que sur les sorties', () => {
+    expect(titre('travel', 'Voyages (occasionnels)')).toBe('Tu fais déjà l’essentiel sur tes voyages.');
   });
 });
 

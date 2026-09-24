@@ -294,7 +294,8 @@ export function phraseDesPistesSuffisantes({
 }
 
 /**
- * Le titre de la carte d'un plan à zéro action, qui nomme le poste (24/09/2026, `v1-29`).
+ * Le titre de la carte d'un plan à zéro action, qui nomme le poste (24/09/2026, `v1-29`), et la
+ * promesse du point qui la suit.
  *
  * « Tu fais déjà l'essentiel sur ce poste. » ne disait pas lequel, sur un écran où rien d'autre ne
  * le nomme : un plan sans action ne chiffre pas son cap (`cadreDuPlan`), donc la ligne « soit − 20 %
@@ -304,10 +305,35 @@ export function phraseDesPistesSuffisantes({
  * **Un poste inconnu garde l'ancienne phrase**, et c'est délibéré : `formeInserable` retombe sur
  * « tes sorties du week-end » faute de mieux, repli pensé pour la boucle mensuelle — sur une
  * félicitation, un poste deviné serait une fausseté lisible, alors que « ce poste » ne ment pas.
+ *
+ * **Et le résiduel des sorties rares n'est ni nommé ni promis** (relevé en intégrant le chantier,
+ * le 24/09/2026). C'est le plan à zéro action le plus courant — tout cycliste qui sort « rarement »
+ * y tombe, depuis C2.5 — et son poste n'est pas un comportement déclaré : c'est le calcul qui
+ * suppose quinze kilomètres une semaine sur quatre. « Tu fais déjà l'essentiel sur tes sorties du
+ * week-end » y félicitait la personne sur des sorties qu'elle a dit ne presque pas faire, et « Le
+ * point reste là » lui promettait une boucle mensuelle que `generate_extras_checkins` ne génère
+ * pas sans base déclarée : son seul point porte sur le trajet domicile-travail. Le serveur marque
+ * ce cas dans le libellé qu'il fige sur le cycle — « Loisirs du week-end (occasionnels) », épinglé
+ * par `01` et `20` —, et c'est ce marqueur qu'on lit, faute d'une colonne qui le dise.
  */
-export function felicitationDuPlanSansAction(poste: string | null): string {
+export type FelicitationDuPlanSansAction = {
+  titre: string;
+  /** Vrai quand une boucle de points porte sur le poste que le titre nomme. */
+  promettreLePoint: boolean;
+};
+
+export function felicitationDuPlanSansAction(
+  poste: string | null,
+  libelleDuCycle: string | null
+): FelicitationDuPlanSansAction {
+  if (poste === 'leisure' && (libelleDuCycle ?? '').includes('(occasionnels)')) {
+    return { titre: 'Tu fais déjà l’essentiel.', promettreLePoint: false };
+  }
   const forme = poste ? FORME_INSERABLE[poste] : undefined;
-  return forme ? `Tu fais déjà l’essentiel sur ${forme}.` : 'Tu fais déjà l’essentiel sur ce poste.';
+  return {
+    titre: forme ? `Tu fais déjà l’essentiel sur ${forme}.` : 'Tu fais déjà l’essentiel sur ce poste.',
+    promettreLePoint: true,
+  };
 }
 
 

@@ -636,11 +636,13 @@ try {
   const cyclesSobres = await lire('plan_cycles?select=id', sobre.jeton);
   assurer(cyclesSobres.length === 1, `${cyclesSobres.length} cycle(s) de plan, attendu 1`);
 
-  // La félicitation, et non un écran vide : le plan à zéro action dit pourquoi il est vide — et, depuis
-  // le 24/09/2026 (`v1-29`), sur quel poste. Celui du cycle est le dominant du bilan : pour ce profil,
-  // le résiduel des sorties rares (11 kg, contre moins d'un kilo de vélo), d'où « tes sorties du
-  // week-end » et non le trajet.
-  await attendreTexte('Tu fais déjà l’essentiel sur tes sorties du week-end.');
+  // La félicitation, et non un écran vide : le plan à zéro action dit pourquoi il est vide. Elle nomme
+  // le poste depuis le 24/09/2026 (`v1-29`) — **sauf ici**, et ce profil est exactement le cas : le
+  // poste de son cycle est le résiduel des sorties rares (11 kg, contre moins d'un kilo de vélo), que
+  // le calcul suppose et que la personne n'a pas déclaré. D'où le titre sans poste, et aucune promesse
+  // de point : la boucle mensuelle n'est pas générée sans base déclarée
+  // (`felicitationDuPlanSansAction`).
+  await attendreTexte('Tu fais déjà l’essentiel.');
   // Le cap se rend quand même — c'est lui qui nomme la période depuis C2.8 — mais sans chiffrer.
   await attendreTexte(/Automne 2026/);
 
@@ -656,6 +658,10 @@ try {
   assurer(
     !/Voir toutes les pistes/.test(texteDuPlan),
     'le plan à zéro action propose encore « Voir toutes les pistes »'
+  );
+  assurer(
+    !/sur tes sorties du week-end/.test(texteDuPlan) && !/Le point reste là/.test(texteDuPlan),
+    'la félicitation nomme ou promet le résiduel des sorties rares (felicitationDuPlanSansAction)'
   );
   assurer(
     !/Ton plan tient compte de ton contexte/.test(texteDuPlan),
