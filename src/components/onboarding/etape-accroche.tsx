@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
+import { type TitreFocalisable } from '@/lib/focus';
 
 // Étape 1/4 de l'onboarding, rendue par le pager de `src/app/onboarding/index.tsx`.
 //
@@ -40,9 +41,12 @@ export function EtapeAccroche({
   /** Hauteur de la page, mesurée par le pager. Vaut 0 tant qu'elle ne l'est pas — l'illustration
    *  n'est alors pas plafonnée, ce qui est l'état du rendu serveur dont dépend l'hydratation. */
   hauteurDePage = 0,
+  /** De quoi recevoir le focus quand le pager revient à cette page (`src/lib/focus.ts`). */
+  titre,
 }: {
   onSuivant: () => void;
   hauteurDePage?: number;
+  titre?: TitreFocalisable;
 }) {
   return (
     <ThemedView style={styles.container}>
@@ -68,7 +72,7 @@ export function EtapeAccroche({
           <ThemedText type="small" themeColor="textTertiary" style={styles.presentation}>
             {RAMILLE.presentation}
           </ThemedText>
-          <ThemedText type="title" weight={600} style={styles.title}>
+          <ThemedText type="title" weight={600} style={styles.title} {...titre}>
             Comprendre tes trajets, sans te juger.
           </ThemedText>
           <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>

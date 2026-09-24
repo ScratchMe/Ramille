@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
+import { type TitreFocalisable } from '@/lib/focus';
 
 // Les mêmes libellés qu'en tête du questionnaire et que dans la restitution (C2.6) : l'annonce
 // et ce qu'on trouve ensuite doivent porter le même nom, sans quoi la personne croit avoir
@@ -27,12 +28,17 @@ const SECTIONS = [
 //
 // Onboarding — Transition bilan. La durée est annoncée avant l'entrée dans le
 // bilan : la friction est assumée, pas dissimulée (handoff design).
-export function EtapeTransition() {
+export function EtapeTransition({
+  titre,
+}: {
+  /** De quoi recevoir le focus quand le pager arrive sur cette page (`src/lib/focus.ts`). */
+  titre?: TitreFocalisable;
+}) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
-          <ThemedText type="title" weight={600} style={styles.title}>
+          <ThemedText type="display" {...titre}>
             On passe à ton bilan
           </ThemedText>
           <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
@@ -110,7 +116,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
   content: { flex: 1, justifyContent: 'center', gap: Spacing.three },
-  title: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   body: { fontSize: 16, lineHeight: 24 },
   durationBlock: { borderRadius: 20, padding: Spacing.four, gap: 2 },
   duration: { fontSize: 24, lineHeight: 30 },

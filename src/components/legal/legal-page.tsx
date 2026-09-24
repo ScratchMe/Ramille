@@ -6,7 +6,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { EDITOR_CV_URL, EDITOR_NAME } from '@/constants/editeur';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 
 // Coquille commune aux pages légales (/confidentialite, /conditions). Ces pages ne sont pas
 // des écrans du parcours : elles existent parce que l'écran de consentement Google OAuth et
@@ -145,15 +145,29 @@ function LegalBlockView({ block }: { block: LegalBlock }) {
   );
 }
 
+/**
+ * **La largeur de la colonne, fixée par la longueur des lignes et non par l'écran** (24/09/2026,
+ * `v1-29`). Au-delà d'environ 70 caractères par ligne, l'œil perd le début de la ligne suivante —
+ * le commentaire de cette coquille le disait déjà, pendant que la colonne s'arrêtait à
+ * `MaxContentWidth` (800), la largeur des écrans d'application. Mesuré sur l'export à 1 280 px
+ * de large : 111 à 120 caractères par ligne dans le corps de `/confidentialite`, sur les deux
+ * pages les plus longues du produit.
+ *
+ * À 480 px, le corps (15 px, Spline Sans) tient de 64 à 72 caractères en moyenne par ligne, 74 au
+ * plus — relevé sur l'export des deux pages, pas estimé. Sur téléphone la colonne est plus étroite
+ * que ça de toute façon (342 px à 390 de large), donc rien n'y bouge : c'est un plafond, pas une
+ * largeur. Propre à ces deux pages, les seules qu'on lit d'un bout à l'autre — d'où une constante
+ * ici plutôt qu'un jeton.
+ */
+const MESURE_DE_LECTURE = 480;
+
 const styles = StyleSheet.create({
   footer: { marginTop: Spacing.five },
   cvLink: { textDecorationLine: 'underline' },
   container: { flex: 1 },
   safeArea: { flex: 1 },
   scrollContent: { padding: Spacing.four, paddingBottom: Spacing.six },
-  // Une page de texte long doit rester lisible sur un écran large : au-delà d'environ
-  // 70 caractères par ligne, l'œil perd la ligne suivante.
-  content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.four },
+  content: { width: '100%', maxWidth: MESURE_DE_LECTURE, alignSelf: 'center', gap: Spacing.four },
   header: { gap: Spacing.two },
   title: { fontSize: 30, lineHeight: 36, letterSpacing: -0.3 },
   intro: { fontSize: 16, lineHeight: 24 },

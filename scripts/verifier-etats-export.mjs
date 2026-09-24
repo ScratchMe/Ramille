@@ -22,7 +22,9 @@
 // quoi que ce soit reviendrait à épingler une copie d'erreur.
 //
 // Ce qui reste, et qui est exactement ce qui a cassé : les états qui se décident **sur l'appareil**,
-// donc sans réseau — une marque locale, un paramètre d'URL. Ce sont aussi les seuls qu'un
+// donc sans réseau — une marque locale, un paramètre d'URL, et depuis le 24/09/2026 une préférence
+// du système (« réduire les animations ») et la mesure de ce qui est rendu (hauteur d'une cible,
+// contraste d'un indicateur, place du focus après un geste). Ce sont aussi les seuls qu'un
 // utilisateur peut atteindre sans que rien ne se soit encore chargé, donc les plus silencieux.
 //
 // ── Éprouvé en cassant ce qu'il garde, le 17/09/2026 ───────────────────────────────────────────
@@ -45,7 +47,40 @@
 // seconde tenir. Ce que ce script-ci éprouve est donc la **dérivation** telle qu'elle est rendue,
 // et c'est la quatrième mutation qui le montre.
 //
+// ── Sections C, D et E, éprouvées en cassant le 24/09/2026 ─────────────────────────────────────
+//
+// Dix mutations, un export chacune, plus un témoin sans mutation qui sort vert. Chacune fait
+// tomber ce qu'elle devait faire tomber, et rien d'autre :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | marges de la barre remises à 8 et 12 | « Plan » **et** « Suivi » à 39 px (C) |
+//   | pastille remise en `backgroundSelected` | l'actif sans forme pleine, 1,18:1 (C) |
+//   | pastille pleine sur les deux couches | l'inactif porte une forme pleine, 6,12:1 (C) |
+//   | `/connexion` lit la provenance au premier rendu | l'hydratation de `?source=compte` (D) |
+//   | `/connexion` n'affiche jamais la provenance | « Retour » absent (D) |
+//   | `/rappels/stop` déduit l'état du jeton au premier rendu | l'hydratation de `?jeton=` **et** le HTML statique « plus valable » (D) |
+//   | `/rappels/stop` sans jeton reste « en cours » | « plus valable » absent une fois montée (D) |
+//   | l'onboarding ne déplace plus le focus | le focus, avec **et** sans « réduire » (E) |
+//   | le pager anime toujours | les positions intermédiaires sous « réduire » (E) |
+//   | le titre n'a plus de `tabIndex` sur web | le focus, avec **et** sans « réduire » (E) |
+//
+// La dernière dit ce que l'avant-dernière ne dit pas : un focus demandé sur un titre que le
+// navigateur ne sait pas focaliser **échoue sans bruit**, et c'est `FOCALISABLE_PAR_PROGRAMME`
+// (`src/lib/focus.ts`) qui le rend possible. Et l'hydratation de `/connexion` a ses deux moitiés :
+// sans la seconde, une correction qui ignorerait le paramètre passerait pour juste.
+//
+// **Chaque export muté a été fait avec son propre cache Metro (`TMPDIR`) et `--clear`**, et ce
+// n'est pas un détail : la première série de mesures, faite sans `--clear` pendant que d'autres
+// worktrees exportaient, a produit des bundles qui n'étaient pas ceux de l'arbre — l'ancien texte
+// d'une page, un module absent — et donc un tableau faux de bout en bout. Metro range son cache
+// dans le répertoire temporaire du système, partagé par tous ceux qui exportent. Qui rejoue ces
+// mutations vérifie d'abord qu'un marqueur du code courant est bien dans le bundle.
+//
 // Lancé en CI après `expo export`, à côté des quatre autres gardes, cf. .github/workflows/ci.yml.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { chromium } from 'playwright';
 
 import { servirExport } from './servir-export.mjs';
@@ -86,8 +121,14 @@ const navigateur = await chromium.launch(
  * layout ou dans le premier effet de l'écran, donc les poser après coup ne testerait que le
  * rechargement. AsyncStorage sur web est `window.localStorage`, clé pour clé, sans préfixe.
  */
-async function ouvrir(chemin, marques = {}) {
+async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null } = {}) {
   const page = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
+  // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
+  // au chargement du module (section E).
+  if (reduire) await page.emulateMedia({ reducedMotion: 'reduce' });
+  // Les exceptions sont écoutées dès avant la navigation : une erreur d'hydratation part pendant
+  // que le bundle monte l'app, avant que l'attente ci-dessous ne rende la main (section D).
+  if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
   await page.addInitScript((entrees) => {
     for (const [cle, valeur] of Object.entries(entrees)) window.localStorage.setItem(cle, valeur);
   }, marques);
@@ -261,6 +302,268 @@ for (const { chemin, marques, attendu, interdit, quoi } of ETAPES) {
   }
 }
 
+// ── C. La barre d'onglets : une cible de 48, et un actif qui se voit autrement qu'à sa teinte ─
+//
+// Deux décisions du 24/09/2026 (`v1-29`), et aucune ne se lit dans le code : la hauteur d'un
+// onglet est ce que la barre laisse une fois ôtés son filet et ses marges, et la couleur qu'on
+// perçoit est celle d'une couche parmi deux que react-navigation superpose. Toutes deux se
+// **mesurent** donc sur l'export.
+//
+// - **Chaque onglet mesure au moins `ControlHeight.target` de haut** — lu dans
+//   `src/constants/theme.ts` plutôt que recopié. Il en mesurait 39 : 60 moins un filet de 1 et des
+//   marges de 8 et 12 (l'audit disait 40, en oubliant le filet).
+// - **L'onglet actif porte une forme pleine qui tranche à 3:1 au moins sur la barre, et
+//   l'inactif n'en porte aucune** (WCAG 1.4.1 et 1.4.11). La seconde moitié n'est pas une
+//   précaution : une pastille sur les deux onglets remettrait toute la différence dans la teinte,
+//   c'est-à-dire exactement le défaut corrigé. La pastille d'avant, `backgroundSelected`, ne
+//   tranchait qu'à 1,18:1.
+const CIBLE_TACTILE = (() => {
+  const source = readFileSync('src/constants/theme.ts', 'utf8');
+  const valeur = Number(source.match(/ControlHeight\s*=\s*\{[^}]*?\btarget:\s*(\d+)/)?.[1]);
+  if (!Number.isFinite(valeur) || valeur <= 0) {
+    console.error(
+      '`ControlHeight.target` est introuvable dans src/constants/theme.ts — ce script le lit par' +
+        '\nmotif pour ne pas recopier la cible tactile du produit. Si la déclaration a changé de' +
+        '\nforme, adapter le motif.'
+    );
+    process.exit(1);
+  }
+  return valeur;
+})();
+const CONTRASTE_MINIMAL = 3;
+
+{
+  const page = await ouvrir('/plan');
+  try {
+    const vue = await page.evaluate(() => {
+      // Couleur CSS → [r, g, b, a].
+      const lire = (css) => {
+        const m = css.match(/rgba?\(([^)]+)\)/);
+        if (!m) return null;
+        const [r, g, b, a = '1'] = m[1].split(',').map((x) => x.trim());
+        return [Number(r), Number(g), Number(b), Number(a)];
+      };
+      const luminance = ([r, g, b]) => {
+        const canal = (c) => {
+          const s = c / 255;
+          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
+      };
+      const contraste = (a, b) => {
+        const [l1, l2] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return (l1 + 0.05) / (l2 + 0.05);
+      };
+      const tablist = document.querySelector('[role="tablist"]');
+      const fondDeLaBarre = tablist ? lire(getComputedStyle(tablist.parentElement).backgroundColor) : null;
+
+      return [...document.querySelectorAll('[role="tab"]')].map((onglet) => {
+        // Les formes pleines **réellement visibles** de l'onglet : react-navigation superpose une
+        // couche active et une couche inactive et règle leur opacité, donc une forme présente dans
+        // le DOM peut très bien être invisible. On compose l'opacité jusqu'à l'onglet.
+        let meilleur = 0;
+        for (const noeud of onglet.querySelectorAll('div')) {
+          const fond = lire(getComputedStyle(noeud).backgroundColor);
+          if (!fond || fond[3] === 0 || !fondDeLaBarre) continue;
+          let opacite = fond[3];
+          for (let n = noeud; n && n !== onglet; n = n.parentElement) {
+            opacite *= Number(getComputedStyle(n).opacity);
+          }
+          if (opacite < 0.99) continue;
+          meilleur = Math.max(meilleur, contraste(fond, fondDeLaBarre));
+        }
+        return {
+          nom: onglet.innerText.trim(),
+          actif: onglet.getAttribute('aria-selected') === 'true',
+          hauteur: onglet.getBoundingClientRect().height,
+          contraste: Math.round(meilleur * 100) / 100,
+        };
+      });
+    });
+
+    if (vue.length !== 2) {
+      echecs.push(`Barre d’onglets : ${vue.length} onglet(s) mesuré(s) sur /plan, deux attendus.`);
+    }
+    for (const onglet of vue) {
+      if (onglet.hauteur + 0.5 < CIBLE_TACTILE) {
+        echecs.push(
+          `L’onglet « ${onglet.nom} » mesure ${onglet.hauteur} px de haut, sous la cible de` +
+            ` ${CIBLE_TACTILE} (ControlHeight.target) : la barre lui laisse sa hauteur moins son` +
+            ' filet et ses deux marges.'
+        );
+      }
+      if (onglet.actif && onglet.contraste < CONTRASTE_MINIMAL) {
+        echecs.push(
+          `L’onglet actif « ${onglet.nom} » n’a aucune forme pleine à ${CONTRASTE_MINIMAL}:1 sur` +
+            ` la barre (la meilleure tranche à ${onglet.contraste}:1) : l’état actif ne se lit plus` +
+            ' qu’à la teinte (WCAG 1.4.1, 1.4.11).'
+        );
+      }
+      if (!onglet.actif && onglet.contraste >= CONTRASTE_MINIMAL) {
+        echecs.push(
+          `L’onglet inactif « ${onglet.nom} » porte une forme pleine à ${onglet.contraste}:1 :` +
+            ' si l’inactif a la même pastille que l’actif, seule la teinte les distingue.'
+        );
+      }
+    }
+    if (!vue.some((onglet) => onglet.actif)) {
+      echecs.push('Barre d’onglets : aucun onglet n’est annoncé actif (`aria-selected`) sur /plan.');
+    }
+  } catch (erreur) {
+    echecs.push(`Barre d’onglets, cible et indicateur : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// ── D. Un paramètre d'URL ne défait pas l'hydratation ─────────────────────────────────────────
+//
+// L'export rend chaque page **sans chaîne de requête** : un texte qui dépend de `?source=` ou de
+// `?jeton=` différait donc entre le HTML servi et le premier rendu du navigateur, et React jetait
+// la page (erreur n° 418). `verifier-rendu-export.mjs` classe ces erreurs en avertissements, par
+// conception ; ici elles sont **bloquantes pour les routes qu'on a corrigées**, parce qu'un retour
+// de l'écart ne se verrait nulle part ailleurs — la page s'affiche juste, une fois refaite.
+//
+// Chaque route porte aussi sa moitié positive : sans elle, une correction qui ignorerait le
+// paramètre passerait pour une correction qui l'attend.
+const HYDRATATION = /Minified React error #(418|421|422|423|425)\b|hydrat/i;
+const JETON_DE_FORME_VALIDE = '6f1f3a9e-2b7c-4d1e-9a3b-1c2d3e4f5a6b';
+
+const PARAMETRES = [
+  {
+    // Ouvert depuis « Toi », l'écran rend « Retour » ; le HTML statique, sans provenance, « Plus
+    // tard ». Les deux sont justes — à condition que le second ne serve qu'au rendu d'hydratation.
+    chemin: '/connexion?source=compte',
+    attendu: 'Retour',
+    interdit: 'Plus tard',
+  },
+  {
+    // Un jeton de forme valide mais inconnu : la page appelle le serveur, et ce qu'elle affiche
+    // ensuite dépend de la base (refus en local, panne avec la configuration factice de la CI).
+    // Seul le titre est donc attendu ici ; ce que le HTML dit **avant** l'app est vérifié
+    // ci-dessous, dans le fichier.
+    chemin: `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`,
+    attendu: 'Ne plus recevoir de rappels',
+    interdit: null,
+  },
+  {
+    // Sans jeton, rien n'est appelé : l'état ne dépend que de l'URL. Le HTML statique dit « un
+    // instant » à tout le monde, donc c'est ici que se vérifie que la page en sort une fois montée
+    // — sans quoi un lien tronqué resterait sur « Un instant, on coupe tes rappels. » pour toujours.
+    chemin: '/rappels/stop',
+    attendu: 'plus valable',
+    interdit: 'Un instant',
+  },
+];
+
+for (const { chemin, attendu, interdit } of PARAMETRES) {
+  const exceptions = [];
+  const page = await ouvrir(chemin, {}, { exceptions });
+  try {
+    const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ').trim();
+    const hydratation = exceptions.filter((e) => HYDRATATION.test(e));
+    if (hydratation.length > 0) {
+      echecs.push(
+        `${chemin} : l’hydratation échoue (${hydratation[0].slice(0, 90)}…). Le premier rendu du` +
+          ' navigateur lit la chaîne de requête que le HTML statique ne connaît pas : il doit' +
+          ' rendre la même chose que lui, puis changer (`useApresHydratation`, EXPO.md §2.2).'
+      );
+    }
+    if (!texte.includes(attendu)) {
+      echecs.push(`${chemin} : « ${attendu} » est absent une fois l’app montée. Rendu : « ${texte.slice(0, 160)}… »`);
+    } else if (interdit && texte.includes(interdit)) {
+      echecs.push(`${chemin} : « ${interdit} » s’affiche encore une fois l’app montée : le paramètre n’est pas lu.`);
+    }
+  } catch (erreur) {
+    echecs.push(`${chemin} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// Ce que lit la personne qui ouvre le lien d'un rappel **avant** que l'app ne démarre : le HTML
+// statique. Il disait « Ce lien n'est plus valable » à tout le monde, faute de connaître le jeton.
+{
+  const html = readFileSync(join(DIST, 'rappels', 'stop.html'), 'utf8');
+  if (html.includes('plus valable')) {
+    echecs.push(
+      '/rappels/stop : le HTML statique annonce « Ce lien n’est plus valable » — c’est ce que lit' +
+        ' quiconque ouvre le lien d’un rappel, le temps que l’app démarre. L’état de départ doit' +
+        ' être celui qui n’affirme rien (FRONT.md §1.3).'
+    );
+  } else if (!html.includes('Un instant')) {
+    echecs.push('/rappels/stop : le HTML statique ne porte plus « Un instant, on coupe tes rappels. ».');
+  }
+}
+
+// ── E. L'onboarding : le focus suit la page, et le défilement suit « réduire les animations » ─
+//
+// « Continuer » rend inerte la page qui porte le bouton : sans rien de plus, le focus retombe sur
+// le document (`<body>`, relevé sur l'export le 24/09/2026). Il doit aller au **titre** de la
+// page qui arrive, et hors de toute page inerte. Le geste est joué **au clavier**, comme le ferait
+// quelqu'un qui n'utilise pas la souris.
+//
+// Et sous « réduire les animations », la page change d'un coup : le défilement animé du pager ne
+// consultait pas la préférence (`behavior: 'smooth'` du navigateur). La preuve est l'absence de
+// **toute** position intermédiaire pendant le passage — avant le correctif, il en passait cinq.
+for (const reduire of [false, true]) {
+  const page = await ouvrir('/onboarding', {}, { reduire });
+  try {
+    await page.getByRole('button', { name: 'Découvrir mon impact' }).focus();
+    await page.keyboard.press('Enter');
+    const positions = [];
+    for (let i = 0; i < 8; i++) {
+      positions.push(
+        await page.evaluate(() => {
+          const pager = [...document.querySelectorAll('div')].find((d) =>
+            ['auto', 'scroll'].includes(getComputedStyle(d).overflowX)
+          );
+          return pager ? { gauche: Math.round(pager.scrollLeft), page: Math.round(pager.clientWidth) } : null;
+        })
+      );
+      await page.waitForTimeout(40);
+    }
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(() => {
+      const actif = document.activeElement;
+      let inerte = false;
+      for (let n = actif; n; n = n.parentElement) if (n.hasAttribute?.('inert')) inerte = true;
+      return {
+        corps: actif === document.body || actif === null,
+        titre: actif?.tagName === 'H1' || actif?.getAttribute?.('role') === 'heading',
+        texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+        inerte,
+      };
+    });
+
+    if (focus.corps || !focus.titre || focus.inerte) {
+      echecs.push(
+        `/onboarding : après « Découvrir mon impact » au clavier, le focus est sur` +
+          ` ${focus.corps ? 'le document' : `« ${focus.texte} »`}${focus.inerte ? ', dans une page inerte' : ''}` +
+          ' — il doit être sur le titre de la page qui arrive (`donnerLeFocus`, src/lib/focus.ts).'
+      );
+    }
+    if (reduire) {
+      if (positions.some((p) => p === null)) {
+        echecs.push('/onboarding : le défileur du pager est introuvable, le défilement n’a pas pu être mesuré.');
+      } else {
+        const intermediaires = positions.filter((p) => p.gauche !== 0 && p.gauche !== p.page);
+        if (intermediaires.length > 0) {
+          echecs.push(
+            '/onboarding : sous « réduire les animations », la page glisse encore (positions' +
+              ` relevées : ${intermediaires.map((p) => p.gauche).join(', ')} px) — le défilement` +
+              ' du pager doit sauter d’une page à l’autre.'
+          );
+        }
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`/onboarding (réduire les animations : ${reduire ? 'oui' : 'non'}) : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -268,15 +571,19 @@ if (echecs.length > 0) {
   console.error('L’export s’affiche mais pas dans l’état attendu :\n');
   for (const echec of echecs) console.error(`  - ${echec}`);
   console.error(
-    '\nCes états se décident **sur l’appareil** — une marque locale, un paramètre d’URL — donc' +
-      '\nsans réseau et sans rien qui lève. Aucune autre garde du dépôt ne les voit : les tests' +
-      '\nJest ne montent pas d’écran, et `verifier-rendu-export.mjs` vérifie que la page s’affiche,' +
-      '\npas ce qu’elle affiche. Rejouer en local : expo export --platform web, puis ce script.'
+    '\nCes états se décident **sur l’appareil** — une marque locale, un paramètre d’URL, une' +
+      '\npréférence du système, un geste — donc sans réseau et sans rien qui lève. Aucune autre' +
+      '\ngarde du dépôt ne les voit : les tests Jest ne montent pas d’écran, et' +
+      '\n`verifier-rendu-export.mjs` vérifie que la page s’affiche, pas ce qu’elle affiche.' +
+      '\nRejouer en local : expo export --platform web --clear, puis ce script (sans --clear, un' +
+      '\ncache Metro partagé peut servir un autre arbre — voir l’en-tête).'
   );
   process.exit(1);
 }
 
 console.log(
   `${ETATS_DE_BARRE.length} états de barre d’onglets et ${ETAPES.length} ouvertures du` +
-    ' questionnaire conformes.'
+    ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte ;` +
+    ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; focus et animations réduites` +
+    ' de l’onboarding conformes.'
 );

@@ -10,6 +10,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { useTrackView } from '@/hooks/use-track-view';
 import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
@@ -41,8 +42,11 @@ export default function ConnexionProposition() {
   // quelqu'un qui vient chercher le rattachement hors de tout interstitiel, la provenance la
   // plus intéressante à mesurer — était enregistrée comme l'interstitiel post-bilan, et gonflait
   // exactement le chiffre auquel on voulait la comparer. Un paramètre absent ou inconnu retombe
-  // sur `resultat_transition`, le chemin historique : mieux compté là que perdu.
-  useTrackView('connexion_view', { source: sourceConnexion(source) });
+  // sur `inconnue` : ce commentaire annonçait encore `resultat_transition` le 24/09/2026, repli
+  // que `sourceConnexion` a quitté avec le retrait de l'interstitiel (PR #252, 21/09/2026) — son
+  // en-tête dit pourquoi.
+  const provenanceLue = sourceConnexion(source);
+  useTrackView('connexion_view', { source: provenanceLue });
 
   // **Empilé depuis « Toi », cet écran n'est plus un interstitiel.** Sa seule sortie était
   // « Continuer sans compte », qui pose la marque « proposition vue », émet `connexion_dismiss` et
@@ -50,7 +54,18 @@ export default function ConnexionProposition() {
   // d'avis était donc déposé sur le plan, sans retour, la proposition plein écran consommée au
   // passage et un refus d'interstitiel compté qui n'en était pas un (A6-21). La provenance se lit
   // par le même garde que la mesure — une seule dérivation, pas deux lectures du paramètre.
-  const provenance = sourceConnexion(source);
+  //
+  // **Mais l'écran ne l'affiche qu'une fois hydraté** (24/09/2026, `v1-29`). L'export statique ne
+  // connaît pas la chaîne de requête : il rend l'écran d'une arrivée sans provenance (« Plus
+  // tard », l'introduction générale). Ouvert directement sur `/connexion?source=compte`, le
+  // navigateur rendait « Retour » dès son premier passage, React constatait l'écart et jetait la
+  // page (erreur n° 418, relevée sur l'export ; `?source=rappels` le faisait sur l'introduction).
+  // Le premier rendu reprend donc celui du HTML, et le suivant la vraie provenance — sans rendu
+  // de transition partout où il n'y a pas d'hydratation, c'est-à-dire en arrivant depuis l'app
+  // (`useApresHydratation`). La mesure, elle, n'attend pas : elle part après le montage et lit
+  // l'URL.
+  const apresHydratation = useApresHydratation();
+  const provenance = apresHydratation ? provenanceLue : sourceConnexion(undefined);
   const vientDeCompte = provenance === 'compte';
   const [googleLoading, setGoogleLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -199,23 +214,27 @@ export default function ConnexionProposition() {
 
           {/* Les deux pages légales sont accessibles là où quelqu'un s'apprête à créer un
               compte — c'est le moment où elles l'engagent. Leurs URL publiques sont aussi
-              exigées par l'écran de consentement Google OAuth et par la fiche Play Store. */}
+              exigées par l'écran de consentement Google OAuth et par la fiche Play Store.
+
+              En Spline Sans et plus en chasse fixe (24/09/2026, `v1-29`) : la chasse fixe est
+              réservée aux sources et aux codes techniques, et ce sont deux liens que la personne
+              lit. */}
           <View style={styles.legal}>
             <TextLink
               label="Confidentialité"
               onPress={() => router.push('/confidentialite')}
               role="link"
-              type="code"
+              type="small"
               themeColor="textTertiary"
             />
-            <ThemedText type="code" themeColor="textTertiary">
+            <ThemedText type="small" themeColor="textTertiary">
               ·
             </ThemedText>
             <TextLink
               label="Conditions d’utilisation"
               onPress={() => router.push('/conditions')}
               role="link"
-              type="code"
+              type="small"
               themeColor="textTertiary"
             />
           </View>

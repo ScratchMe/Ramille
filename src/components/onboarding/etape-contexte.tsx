@@ -15,6 +15,7 @@ import {
 } from '@/constants/carbon-reference';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { type TitreFocalisable } from '@/lib/focus';
 
 // Étape 2/4 de l'onboarding, rendue par le pager de `src/app/onboarding/index.tsx`.
 //
@@ -31,7 +32,14 @@ import { useTheme } from '@/hooks/use-theme';
 // dessous — le contenu factuel obligatoire de la spec reste respecté (moyenne, cible 2050,
 // transport premier poste). Les données du SDES sont celles de 2017 : d'où « en moyenne »
 // et non « aujourd'hui » dans le titre, et l'étiquette de source sous les barres.
-export function EtapeContexte({ onSuivant }: { onSuivant: () => void }) {
+export function EtapeContexte({
+  onSuivant,
+  titre,
+}: {
+  onSuivant: () => void;
+  /** De quoi recevoir le focus quand le pager arrive sur cette page (`src/lib/focus.ts`). */
+  titre?: TitreFocalisable;
+}) {
   const theme = useTheme();
 
   return (
@@ -39,7 +47,7 @@ export function EtapeContexte({ onSuivant }: { onSuivant: () => void }) {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.textBlock}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="title" weight={600} style={styles.title} {...titre}>
               {/* Les deux valeurs par le même formateur (A1-12). Elles s'écrivaient de deux
                   façons à deux lignes d'écart — un `.replace` sur la forme courte d'un côté, la
                   constante interpolée brute de l'autre, donc un point décimal le jour où la cible
@@ -90,6 +98,9 @@ export function EtapeContexte({ onSuivant }: { onSuivant: () => void }) {
                 />
               ))}
             </View>
+            {/* La chasse fixe reste, et c'est la règle et non une exception (24/09/2026, `v1-29`) :
+                elle est réservée aux sources et aux codes techniques, et cette ligne est la source
+                des chiffres de l'écran. */}
             <ThemedText type="code" themeColor="textTertiary">
               {CARBON_SOURCE_LABEL}
             </ThemedText>
