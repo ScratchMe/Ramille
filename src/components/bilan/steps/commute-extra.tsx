@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
@@ -16,6 +17,9 @@ import {
   type TransportModeId,
 } from '@/constants/transport-modes';
 import { PARTS_DU_SECOND_MODE, type BilanAnswers } from '@/types/bilan';
+
+/** Écrite une fois : le titre de l'étape et le nom du « Oui / Non » (`GroupeDeChoix`). */
+const QUESTION_SECOND_MODE = 'Utilises-tu un second mode en complément ?';
 
 // B1.6 / B1.7 — second mode Oui/Non, puis « Lequel ? » imbriqué si Oui.
 //
@@ -39,15 +43,14 @@ export function CommuteExtraStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">
-          Utilises-tu un second mode en complément ?
-        </ThemedText>
+        <ThemedText type="screenTitle">{QUESTION_SECOND_MODE}</ThemedText>
         <ThemedText type="small" themeColor="textTertiary">
           Par exemple vélo puis train.
         </ThemedText>
-        <View style={styles.row}>
+        <GroupeDeChoix question={QUESTION_SECOND_MODE} style={styles.row}>
           <Chip
             label="Oui"
+            role="radio"
             selected={answers.commute_second_mode_used === true}
             onPress={() => update({ commute_second_mode_used: true })}
             flex
@@ -56,13 +59,14 @@ export function CommuteExtraStep({
           />
           <Chip
             label="Non"
+            role="radio"
             selected={answers.commute_second_mode_used === false}
             onPress={() => update({ commute_second_mode_used: false, commute_second_mode: null })}
             flex
             radius={16}
             selectedStyle="outline"
           />
-        </View>
+        </GroupeDeChoix>
 
         {answers.commute_second_mode_used === true && (
           <ThemedView type="backgroundElement" style={styles.nestedBox}>

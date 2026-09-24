@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { REPONSES_TELETRAVAIL, teletravailSePose, type BilanAnswers } from '@/types/bilan';
@@ -26,6 +27,16 @@ import {
  * Trois endroits décident ensemble de l'affichage, de l'effacement et de la réclamation de B4.4
  * (`v1-17` §7.2) ; en ajouter un quatrième serait la façon la plus sûre de les désaccorder.
  */
+/**
+ * Les trois questions qui se posent à tout le monde, écrites **une fois** pour leurs deux usages :
+ * le texte au-dessus de la série et le nom de son `radiogroup` (`GroupeDeChoix`). Sans le nom, une
+ * puce « 1 » s'annonçait seule, sans rien qui dise qu'elle compte des véhicules — et `/contexte`, qui
+ * reprend ces séries, n'a pas l'étape du questionnaire autour pour le rappeler.
+ */
+const QUESTION_ZONE = 'Type de zone';
+const QUESTION_TC = 'Accès aux transports en commun';
+const QUESTION_VEHICULES = 'Véhicules motorisés dans le foyer';
+
 export function ChampsDeContexte({
   choix,
   trajet,
@@ -36,60 +47,67 @@ export function ChampsDeContexte({
   trajet: Pick<BilanAnswers, 'commute_has_regular_trip' | 'commute_days_per_week'>;
   update: (patch: Partial<ChoixDeContexte>) => void;
 }) {
+  // La question du télétravail nomme le nombre de jours déclaré : elle se compose ici, une fois, pour
+  // le texte affiché comme pour le nom du groupe.
+  const questionTeletravail = `Sur tes ${trajet.commute_days_per_week} jours de trajet, combien pourrais-tu travailler depuis chez toi ?`;
+
   return (
     <>
       <View style={styles.field}>
         <ThemedText type="small" themeColor="textTertiary">
-          Type de zone
+          {QUESTION_ZONE}
         </ThemedText>
-        <View style={styles.row}>
+        <GroupeDeChoix question={QUESTION_ZONE} style={styles.row}>
           {CHOIX_DE_ZONE.map((option) => (
             <Chip
               key={option.value}
               label={option.label}
+              role="radio"
               selected={choix.zone_type === option.value}
               onPress={() => update({ zone_type: option.value })}
               flex
               radius={Radius.chip}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       </View>
 
       <View style={styles.field}>
         <ThemedText type="small" themeColor="textTertiary">
-          Accès aux transports en commun
+          {QUESTION_TC}
         </ThemedText>
-        <View style={styles.row}>
+        <GroupeDeChoix question={QUESTION_TC} style={styles.row}>
           {CHOIX_DE_TC.map((option) => (
             <Chip
               key={option.value}
               label={option.label}
+              role="radio"
               selected={choix.tc_access === option.value}
               onPress={() => update({ tc_access: option.value })}
               flex
               radius={Radius.chip}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       </View>
 
       <View style={styles.field}>
         <ThemedText type="small" themeColor="textTertiary">
-          Véhicules motorisés dans le foyer
+          {QUESTION_VEHICULES}
         </ThemedText>
-        <View style={styles.row}>
+        <GroupeDeChoix question={QUESTION_VEHICULES} style={styles.row}>
           {CHOIX_DE_VEHICULES.map((option) => (
             <Chip
               key={option.value}
               label={option.label}
+              role="radio"
               selected={choix.household_vehicles === option.value}
               onPress={() => update({ household_vehicles: option.value })}
               flex
               radius={Radius.chip}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       </View>
 
       {/* B4.4 (C3.8, reformulée par C5.4) — la seule question de cette étape qui ne se pose pas à
@@ -107,22 +125,22 @@ export function ChampsDeContexte({
       {teletravailSePose(trajet) && (
         <View style={styles.field}>
           <ThemedText type="small" themeColor="textTertiary">
-            Sur tes {trajet.commute_days_per_week} jours de trajet, combien pourrais-tu travailler
-            depuis chez toi ?
+            {questionTeletravail}
           </ThemedText>
-          <View style={styles.row}>
+          <GroupeDeChoix question={questionTeletravail} style={styles.row}>
             {REPONSES_TELETRAVAIL.map((option) => (
               <Chip
                 key={option.value}
                 label={option.label}
                 accessibilityLabel={option.accessibilityLabel}
+                role="radio"
                 selected={choix.teletravail === option.value}
                 onPress={() => update({ teletravail: option.value })}
                 flex
                 radius={Radius.chip}
               />
             ))}
-          </View>
+          </GroupeDeChoix>
         </View>
       )}
     </>

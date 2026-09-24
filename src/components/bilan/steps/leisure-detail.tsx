@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { NumericField } from '@/components/bilan/numeric-field';
@@ -31,6 +32,9 @@ const BRACKETS: { value: LeisureDistanceBracket; label: string }[] = [
   { value: '15_30', label: '15 à 30 km' },
   { value: '30_plus', label: 'Plus de 30 km' },
 ];
+
+/** Écrite une fois : le titre de la seconde moitié de l'étape et le nom de la série de tranches. */
+const QUESTION_DISTANCE = 'Quelle distance aller, en général ?';
 
 // B2.2 / B2.3 — les deux options voiture écrivent toujours le même `leisure_mode: 'voiture'`,
 // mais **le covoiturage compte désormais** (C3.5) : `leisure_is_carpool` le porte en base,
@@ -173,18 +177,19 @@ export function LeisureDetailStep({
 
       <View style={styles.block}>
         <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
-          Quelle distance aller, en général ?
+          {QUESTION_DISTANCE}
         </ThemedText>
-        <View style={styles.chipsWrap}>
+        <GroupeDeChoix question={QUESTION_DISTANCE} style={styles.chipsWrap}>
           {BRACKETS.map((bracket) => (
             <Chip
               key={bracket.value}
               label={bracket.label}
+              role="radio"
               selected={answers.leisure_distance_bracket === bracket.value}
               onPress={() => update({ leisure_distance_bracket: bracket.value })}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
 
         {/* C3.6 — la seule tranche sans borne haute est aussi la seule qui demandait quelque
             chose de plus : « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait

@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { NumericField } from '@/components/bilan/numeric-field';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
@@ -17,6 +18,10 @@ import {
 } from '@/types/bilan';
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7];
+
+/** Écrites une fois : le titre de chaque question et le nom de sa série (`GroupeDeChoix`). */
+const QUESTION_JOURS = 'Ce trajet, tu le fais combien de jours par semaine ?';
+const QUESTION_TRANCHE = 'Environ, ça représente quelle distance ?';
 
 const BRACKETS: { value: DistanceBracket; label: string }[] = [
   { value: 'lt_5', label: 'Moins de 5 km' },
@@ -46,21 +51,20 @@ export function CommuteDaysDistanceStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">
-          Ce trajet, tu le fais combien de jours par semaine ?
-        </ThemedText>
-        <View style={styles.daysRow}>
+        <ThemedText type="screenTitle">{QUESTION_JOURS}</ThemedText>
+        <GroupeDeChoix question={QUESTION_JOURS} style={styles.daysRow}>
           {DAYS.map((day) => (
             <Chip
               key={day}
               label={String(day)}
+              role="radio"
               selected={answers.commute_days_per_week === day}
               onPress={() => update({ commute_days_per_week: day })}
               flex
               radius={Radius.chip}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       </View>
 
       <View style={[styles.separator, { backgroundColor: theme.border }]} />
@@ -68,7 +72,7 @@ export function CommuteDaysDistanceStep({
       {unknown ? (
         <View style={styles.block}>
           <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
-            Environ, ça représente quelle distance ?
+            {QUESTION_TRANCHE}
           </ThemedText>
           {/* **« On ajustera la précision plus tard » promettait un mécanisme qui n'existe pas**
               (C3.7, constat A12-22). Rien dans le produit ne revient demander une distance, et la
@@ -78,7 +82,7 @@ export function CommuteDaysDistanceStep({
             Une estimation suffit. Tu pourras donner un chiffre plus précis en refaisant ton
             bilan : tes réponses seront préremplies.
           </ThemedText>
-          <View style={styles.bracketList}>
+          <GroupeDeChoix question={QUESTION_TRANCHE} style={styles.bracketList}>
             {BRACKETS.map((bracket) => (
               <ChoiceRow
                 key={bracket.value}
@@ -87,7 +91,7 @@ export function CommuteDaysDistanceStep({
                 onPress={() => update({ commute_distance_bracket: bracket.value })}
               />
             ))}
-          </View>
+          </GroupeDeChoix>
           {/* La règle du calcul, dite à l'écran : une tranche est comptée par son milieu, et
               ce milieu était écrit en deux endroits sans être montré nulle part (audit
               A2-22). Ramille ne porte jamais de chiffre : ce texte n'est donc pas dans sa
@@ -158,8 +162,8 @@ export function CommuteDaysDistanceStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   daysRow: { flexDirection: 'row', gap: Spacing.two },
+  subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   separator: { height: 1 },
   bracketList: { gap: Spacing.two + 2 },
 });

@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
@@ -11,6 +12,16 @@ import type { BilanAnswers } from '@/types/bilan';
 // "N+" stocke N — simplification assumée (pas de borne haute en base pour ces champs,
 // cf. v1-05), cohérente avec le traitement déjà appliqué à la taille de covoiturage.
 const TOTAL_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+/** La dernière puce vaut « ce nombre ou plus » : dérivée de la liste, comme dans `long-trips.tsx`. */
+const MAX_VOLS = TOTAL_CHOICES[TOTAL_CHOICES.length - 1];
+
+/**
+ * La question écrite une fois pour ses deux usages : le titre de l'étape et le nom de la série de
+ * puces (`GroupeDeChoix`), qui s'annoncerait sinon comme onze chiffres sans rien qui dise ce qu'ils
+ * comptent.
+ */
+const QUESTION_TOTAL = 'Combien de vols prends-tu dans une année type ?';
 
 // B3.1 / B3.2
 export function FlightsStep({
@@ -24,6 +35,7 @@ export function FlightsStep({
   const total = answers.flights_total_per_year;
   const shortChoices = Array.from({ length: total + 1 }, (_, i) => i);
   const longCount = Math.max(total - (answers.flights_short_per_year ?? 0), 0);
+  const questionCourts = `Sur ces ${total}, combien sont courts ?`;
 
   return (
     <View style={styles.container}>
@@ -38,15 +50,18 @@ export function FlightsStep({
             **et** obligerait à relever à nouveau les facteurs avion, dont la valeur dépend du `km`
             demandé à l'API Impact CO2. Le calcul ne bouge pas ; c'est la question qui devient
             sans ambiguïté. */}
-        <ThemedText type="screenTitle">Combien de vols prends-tu dans une année type ?</ThemedText>
+        <ThemedText type="screenTitle">{QUESTION_TOTAL}</ThemedText>
         <ThemedText type="small" themeColor="textTertiary">
           Un aller-retour compte pour deux vols.
         </ThemedText>
-        <View style={styles.chipsWrap}>
+        <GroupeDeChoix question={QUESTION_TOTAL} style={styles.chipsWrap}>
           {TOTAL_CHOICES.map((n) => (
             <Chip
               key={n}
-              label={n === 10 ? '10+' : String(n)}
+              label={n === MAX_VOLS ? `${MAX_VOLS}+` : String(n)}
+              // Ce qu'un lecteur d'écran entend là où l'œil lit « 10+ » (A2-9).
+              accessibilityLabel={n === MAX_VOLS ? `${MAX_VOLS} vols ou plus` : undefined}
+              role="radio"
               selected={total === n}
               onPress={() =>
                 update({
@@ -61,7 +76,7 @@ export function FlightsStep({
               }
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       </View>
 
       {total > 0 && (
@@ -69,22 +84,23 @@ export function FlightsStep({
           <View style={[styles.separator, { backgroundColor: theme.border }]} />
           <View style={styles.block}>
             <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
-              Sur ces {total}, combien sont courts ?
+              {questionCourts}
             </ThemedText>
             <ThemedText type="small" themeColor="textTertiary">
               Europe, moins de 3 h. Le reste est compté comme long-courrier.
             </ThemedText>
-            <View style={styles.row}>
+            <GroupeDeChoix question={questionCourts} style={styles.row}>
               {shortChoices.map((n) => (
                 <Chip
                   key={n}
                   label={String(n)}
+                  role="radio"
                   selected={answers.flights_short_per_year === n}
                   onPress={() => update({ flights_short_per_year: n })}
                   radius={Radius.chip}
                 />
               ))}
-            </View>
+            </GroupeDeChoix>
             {answers.flights_short_per_year !== null && (
               <ThemedText type="small">
                 {longCount} vol{longCount > 1 ? 's' : ''} long-courrier {longCount > 1 ? 'seront' : 'sera'} compté

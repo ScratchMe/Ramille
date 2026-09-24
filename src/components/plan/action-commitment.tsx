@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -76,6 +77,10 @@ export function ActionCommitment({
   const [timing, setTiming] = useState<IntentionTiming | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // La question écrite une fois pour ses deux usages : le texte au-dessus des puces et le nom de
+  // leur groupe (`GroupeDeChoix`).
+  const question = kind === 'days' ? 'Quels jours ?' : 'Quand ?';
 
   const toggleDay = (day: IntentionDay) =>
     setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
@@ -169,11 +174,13 @@ export function ActionCommitment({
   return (
     <ThemedView type="backgroundElement" style={styles.picker}>
       <ThemedText type="small" themeColor="textTertiary">
-        {kind === 'days' ? 'Quels jours ?' : 'Quand ?'}
+        {question}
       </ThemedText>
 
       {kind === 'days' ? (
-        <View style={styles.dayRow}>
+        // Les jours se **cumulent** : des `checkbox` dans un groupe nommé, jamais des `radio` — qui
+        // annonceraient qu'en cocher un décoche les autres.
+        <GroupeDeChoix question={question} cumulable style={styles.dayRow}>
           {INTENTION_DAYS.map((day) => (
             <Chip
               // Deux jours portent l'initiale « M » : l'accessibilité passe par le libellé
@@ -181,15 +188,16 @@ export function ActionCommitment({
               key={day.value}
               label={day.short}
               accessibilityLabel={day.long}
+              role="checkbox"
               selected={days.includes(day.value)}
               onPress={() => toggleDay(day.value)}
               flex
               radius={Radius.chip}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       ) : (
-        <View style={styles.timingColumn}>
+        <GroupeDeChoix question={question} style={styles.timingColumn}>
           {/* C3.8 §4 : les échéances dépendent du poste — un voyage ne se décide pas au calendrier
               du mois. La liste se dérive ici plutôt que dans le rendu d'un ternaire, pour que
               `src/types/plan.ts` reste le seul endroit qui sache lesquelles vont avec quoi. */}
@@ -197,13 +205,14 @@ export function ActionCommitment({
             <Chip
               key={option.value}
               label={option.label}
+              role="radio"
               selected={timing === option.value}
               onPress={() => setTiming(option.value)}
               radius={16}
               selectedStyle="outline"
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       )}
 
       {error && (

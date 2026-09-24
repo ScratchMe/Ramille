@@ -20,23 +20,18 @@ export type ChipProps = {
   accessibilityLabel?: string;
   /** Rôle annoncé (A2-8) : `radio` pour une puce d'un groupe à choix unique — la majorité du
    *  questionnaire —, `checkbox` pour une puce qui se cumule avec ses voisines (les jours de
-   *  l'engagement, où `radio` serait faux), `button` pour une vraie action. `radio` et
-   *  `checkbox` sont les seuls rôles à annoncer « non sélectionné » et la place dans le
-   *  groupe.
+   *  l'engagement, où `radio` serait faux). Ce sont les seuls rôles à annoncer « non
+   *  sélectionné » et la place dans le groupe, et la puce se range toujours dans un
+   *  `GroupeDeChoix` nommé par sa question.
    *
-   *  **Le défaut `button` est provisoire, et il laisse le défaut d'A2-8 en place partout où il
-   *  s'applique encore** : un `button` qui porte `selected` est la combinaison qu'A2-8 désigne.
-   *  Les séries qui le gardent se nomment une par une, et non par fichier — `commute-extra.tsx`
-   *  porte désormais les deux, sa taille de covoiturage étant relue et son « Oui / Non » non :
-   *  les quatre séries de `steps/context.tsx`, les deux de `steps/flights.tsx`, les jours de
-   *  `steps/commute-days-distance.tsx`, le « Oui / Non » de `steps/commute-extra.tsx` et les
-   *  tranches de distance de `steps/leisure-detail.tsx` (tous des choix uniques, donc `radio`
-   *  dans une `View accessibilityRole="radiogroup"`), plus les deux de
-   *  `plan/action-commitment.tsx` (jours cumulables, donc `checkbox` dans un groupe nommé ;
-   *  l'échéance, elle, est un choix unique). Rendre la prop obligatoire est ce qui les
-   *  énumérera au typecheck, et c'est le geste à faire en même temps qu'eux — pas avant, un
-   *  défaut ne se remplace pas par un build cassé. */
-  role?: 'button' | 'radio' | 'checkbox';
+   *  **La prop est obligatoire, et `button` n'en est plus une valeur** (24/09/2026, `v1-29`).
+   *  Le défaut `button` était provisoire : il laissait le défaut d'A2-8 en place dans onze
+   *  séries — les quatre du contexte, les deux des vols, les jours du trajet, le « Oui / Non »
+   *  du second mode, les tranches des sorties, les jours et l'échéance de l'engagement —, et
+   *  ce commentaire prévoyait qu'on la rende obligatoire « en même temps qu'eux ». C'est fait :
+   *  une puce qui s'ajouterait sans rôle ne compile pas. Une puce n'est jamais une action — une
+   *  action est un `Button` ou un `TextLink`. */
+  role: 'radio' | 'checkbox';
 };
 
 // Chip générique — couvre les pickers numériques/tranches (B1.3, B2.2, B3.*) et les
@@ -50,7 +45,7 @@ export function Chip({
   selectedStyle = 'solid',
   radius = 22,
   accessibilityLabel,
-  role = 'button',
+  role,
 }: ChipProps) {
   const theme = useTheme();
 
@@ -71,9 +66,8 @@ export function Chip({
       // du produit (`mode-list-item`, `choice-row`, `choix-de-rappel`, `feuille-rappels`) :
       // `checked` est ce que TalkBack attend d'un `radio` ou d'une `checkbox`, et `selected` est
       // ce que VoiceOver sait rendre — iOS n'a pas de trait `radio` et ne lit `checked` que sur
-      // un interrupteur ou une case, donc n'annoncerait aucun état sans lui. Un `button`, lui,
-      // ne prend que `selected` : `aria-checked` sur `role="button"` n'existe pas.
-      accessibilityState={role === 'button' ? { selected } : { selected, checked: selected }}
+      // un interrupteur ou une case, donc n'annoncerait aucun état sans lui.
+      accessibilityState={{ selected, checked: selected }}
       style={[
         styles.base,
         flex ? styles.baseFlex : styles.basePilule,

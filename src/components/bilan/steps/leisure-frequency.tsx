@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/bilan/choice-row';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { HYPOTHESES } from '@/constants/methodologie';
@@ -12,6 +13,9 @@ const OPTIONS: { value: LeisureFrequency; label: string }[] = [
   { value: 'weekly', label: 'Une fois par semaine' },
   { value: 'multiple_weekly', label: 'Plusieurs fois par semaine' },
 ];
+
+/** Écrite une fois : le titre de l'étape et le nom de la série (`GroupeDeChoix`). */
+const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le weekend ?';
 
 // B2.1 — variante "Progression adaptative" quand la section 1 a été sautée (B1.1 =
 // Non) : le paragraphe d'exemples est remplacé par un rappel du nombre d'étapes total,
@@ -29,15 +33,13 @@ export function LeisureFrequencyStep({
 
   return (
     <View style={styles.container}>
-      <ThemedText type="screenTitle">
-        À quelle fréquence fais-tu des trajets loisirs le weekend ?
-      </ThemedText>
+      <ThemedText type="screenTitle">{QUESTION_FREQUENCE}</ThemedText>
       {!commuteSkipped && (
         <ThemedText type="small" themeColor="textTertiary">
           Sport, sorties, visites à la famille.
         </ThemedText>
       )}
-      <View style={styles.choices}>
+      <GroupeDeChoix question={QUESTION_FREQUENCE} style={styles.choices}>
         {OPTIONS.map((option) => (
           <View key={option.value} style={styles.choix}>
             <ChoiceRow
@@ -70,7 +72,7 @@ export function LeisureFrequencyStep({
             )}
           </View>
         ))}
-      </View>
+      </GroupeDeChoix>
       {commuteSkipped && (
         <ThemedView type="backgroundElement" style={styles.notice}>
           <ThemedText type="small" style={styles.noticeText}>
