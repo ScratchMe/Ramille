@@ -3,6 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { paraitChoisie } from '@/types/ligne-de-canal';
 import type { CanalPrefere, LigneDeReglage } from '@/types/rappels';
 
 /**
@@ -31,6 +32,10 @@ export function LigneDeCanal({
   occupe?: boolean;
 }) {
   const theme = useTheme();
+  // **Ce que la ligne montre choisi n'est pas `ligne.choisi`** : une ligne désactivée ne se rend
+  // jamais comme choisie (`paraitChoisie`, qui dit pourquoi). Fond, bordure, graisse et état annoncé
+  // lisent tous cette valeur-là, pour qu'ils ne puissent pas se contredire.
+  const coche = paraitChoisie(ligne);
 
   return (
     <Pressable
@@ -42,17 +47,17 @@ export function LigneDeCanal({
       accessibilityRole="radio"
       accessibilityLabel={`${ligne.titre}. ${ligne.detail}`}
       // `aria-checked`, le seul état que le web reçoive (cf. `chip.tsx`).
-      aria-checked={ligne.choisi}
+      aria-checked={coche}
       style={[
         styles.ligne,
         {
-          backgroundColor: ligne.choisi ? theme.backgroundSelected : theme.backgroundElement,
-          borderColor: ligne.choisi ? theme.accent : 'transparent',
+          backgroundColor: coche ? theme.backgroundSelected : theme.backgroundElement,
+          borderColor: coche ? theme.accent : 'transparent',
           opacity: ligne.choisissable ? 1 : 0.6,
         },
       ]}
     >
-      <ThemedText weight={ligne.choisi ? 600 : 400} style={styles.titre}>
+      <ThemedText weight={coche ? 600 : 400} style={styles.titre}>
         {ligne.titre}
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
