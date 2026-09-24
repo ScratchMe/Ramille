@@ -201,10 +201,14 @@ export function SaisieDuCode({
           onPress={() => void verifier(code)}
           disabled={occupe || !codeSemblePlausible(code)}
         />
+        {/* **Un bouton, pas un lien** (24/09/2026, audit d'accessibilité 4.1.2) : il agit dans l'écran
+            — un nouvel envoi, un message — et ne mène nulle part. Annoncé `link`, il promettait une
+            navigation. « Utiliser une autre adresse », juste dessous, reste un lien : il ramène à la
+            saisie de l'adresse. */}
         <TextLink
           label="Renvoyer un code"
           onPress={() => void surRenvoi()}
-          role="link"
+          role="button"
           type="small"
           themeColor="textTertiary"
           style={styles.centre}
