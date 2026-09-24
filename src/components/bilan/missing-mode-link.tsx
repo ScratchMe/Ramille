@@ -11,7 +11,10 @@ import { TextLink } from '@/components/text-link';
 // une réponse fausse ou abandonner. Les deux sont silencieuses, donc invisibles pour nous.
 //
 // Volontairement discret : c'est une porte de sortie pour les rares cas non couverts, pas une
-// invitation à quitter le questionnaire. D'où le `type="code"` et la couleur tertiaire.
+// invitation à quitter le questionnaire. D'où le petit corps et la couleur tertiaire — et en Spline
+// Sans depuis le 24/09/2026 : elle était en chasse fixe (`type="code"`), que la décision n° 10 du
+// challenge du design system réserve aux sources et aux codes techniques. C'est une phrase adressée à
+// la personne.
 //
 // Il passe par `TextLink` et pas par un `Pressable` nu, pour les deux raisons qui ont fait
 // exister ce composant : la cible tactile montait à 44 px (elle valait ici 18 px de hauteur de
@@ -23,7 +26,7 @@ export function MissingModeLink({ context }: { context: string }) {
     <TextLink
       label="Ton mode n’est pas dans la liste ? Dis-le-nous."
       role="link"
-      type="code"
+      type="small"
       themeColor="textTertiary"
       onPress={() => router.push({ pathname: '/feedback', params: { kind: 'mode_manquant', context } })}
       containerStyle={styles.cible}
@@ -34,5 +37,5 @@ export function MissingModeLink({ context }: { context: string }) {
 
 const styles = StyleSheet.create({
   cible: { alignItems: 'center' },
-  link: { textAlign: 'center', lineHeight: 18 },
+  link: { textAlign: 'center' },
 });

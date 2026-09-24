@@ -115,9 +115,13 @@ export function FlightsStep({
           étaient depuis le début (« 800 km train, 700 km voiture ») et nulle part pour les vols,
           alors que ce sont les deux plus grandes distances du bilan. Interpolées depuis
           `HYPOTHESES` plutôt que réécrites : un script de CI compare cette table aux constantes de
-          `recompute_assessment_results`, donc ce qui s'affiche ici suit le calcul. */}
-      <ThemedText type="code" themeColor="textTertiary">
-        distances moyennes par défaut · {formatKm(HYPOTHESES.volCourtKm)} court et moyen-courrier,{' '}
+          `recompute_assessment_results`, donc ce qui s'affiche ici suit le calcul.
+
+          **En Spline Sans et non plus en chasse fixe** (24/09/2026, décision n° 10) : la chasse fixe
+          est réservée aux sources et aux codes techniques, et cette ligne est une phrase adressée à la
+          personne — d'où aussi sa majuscule, que le registre `code` faisait tomber. */}
+      <ThemedText type="small" themeColor="textTertiary">
+        Distances moyennes par défaut · {formatKm(HYPOTHESES.volCourtKm)} court et moyen-courrier,{' '}
         {formatKm(HYPOTHESES.volLongKm)} long-courrier
       </ThemedText>
     </View>

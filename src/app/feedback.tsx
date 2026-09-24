@@ -157,7 +157,10 @@ export default function Feedback() {
                 },
               ]}
             />
-            <ThemedText type="code" themeColor="textTertiary">
+            {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10, qui la réserve aux
+                sources et aux codes techniques) ; les chiffres, qui changent à chaque frappe, gardent
+                une chasse fixe par `tabular-nums` — le compteur ne tremble pas. */}
+            <ThemedText type="small" themeColor="textTertiary" style={styles.compteur}>
               {trimmed.length} / {FEEDBACK_MAX_LENGTH}
             </ThemedText>
             {tropCourt && (
@@ -174,8 +177,10 @@ export default function Feedback() {
           <Button title={sending ? 'Envoi…' : 'Envoyer'} onPress={onSend} disabled={!canSend} />
 
           {/* Ce qui part avec le message, dit avant l'envoi et non dans une politique que
-              personne n'ouvre. Le contexte est le nom de l'écran d'origine, rien de plus. */}
-          <ThemedText type="code" themeColor="textTertiary" style={styles.privacy}>
+              personne n'ouvre. Le contexte est le nom de l'écran d'origine, rien de plus. Une
+              phrase adressée à la personne, donc en Spline Sans depuis le 24/09/2026 (décision
+              n° 10) : la chasse fixe est réservée aux sources et aux codes techniques. */}
+          <ThemedText type="small" themeColor="textTertiary">
             On enregistre ton message, la catégorie choisie{context ? ' et l’écran d’où tu viens' : ''}, avec
             l’identifiant de ton compte pour rapprocher ton retour de ce que tu vois. Rien d’autre,
             et aucune réponse : il n’existe pas de canal pour t’en adresser une.
@@ -210,7 +215,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlignVertical: 'top',
   },
-  privacy: { lineHeight: 18 },
+  compteur: { fontVariant: ['tabular-nums'] },
   cancel: { textAlign: 'center' },
   sentSafeArea: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   sentTitle: { textAlign: 'center' },

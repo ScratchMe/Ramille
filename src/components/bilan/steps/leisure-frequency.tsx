@@ -60,12 +60,14 @@ export function LeisureFrequencyStep({
 
                 La ligne se rend **sous la réponse qui la provoque** et seulement quand elle est
                 choisie : posée sous le groupe, elle se lit comme une note sur les trois. Même
-                registre `code` que la ligne d'hypothèses des longs trajets et des vols, et mêmes
+                registre que la ligne d'hypothèses des longs trajets et des vols, et mêmes
                 valeurs interpolées depuis `HYPOTHESES` — un script de CI les compare aux
-                constantes du calcul. */}
+                constantes du calcul. Ce registre était la chasse fixe (`code`) jusqu'au
+                24/09/2026 ; elle est désormais réservée aux sources et aux codes techniques
+                (décision n° 10), et cette ligne est une phrase adressée à la personne. */}
             {option.value === 'rarely' && answers.leisure_frequency === 'rarely' && (
-              <ThemedText type="code" themeColor="textTertiary" style={styles.base}>
-                on comptera une petite base par défaut ·{' '}
+              <ThemedText type="small" themeColor="textTertiary" style={styles.base}>
+                On comptera une petite base par défaut ·{' '}
                 {virgule(HYPOTHESES.sortiesParSemaine.rarement)} sortie par semaine,{' '}
                 {HYPOTHESES.distanceSortieParDefautKm} km
               </ThemedText>

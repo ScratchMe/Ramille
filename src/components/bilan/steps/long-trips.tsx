@@ -192,8 +192,10 @@ export function LongTripsStep({
         )}
       </View>
 
-      <ThemedText type="code" themeColor="textTertiary">
-        distances moyennes par défaut · 800 km train, 700 km autocar et voiture
+      {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10) : une phrase adressée à
+          la personne, comme la ligne jumelle des vols — d'où sa majuscule. */}
+      <ThemedText type="small" themeColor="textTertiary">
+        Distances moyennes par défaut · 800 km train, 700 km autocar et voiture
       </ThemedText>
     </View>
   );
