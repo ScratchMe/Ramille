@@ -10,6 +10,7 @@ import {
   intentionKindForPoste,
   intentionTimingsForPoste,
   isIntentionComplete,
+  ligneDuGain,
   motsDuContexte,
   phraseDeLOrphelin,
   RAISONS_ANNONCABLES,
@@ -101,6 +102,33 @@ describe('formatIntention', () => {
     expect(formatIntention([2, 4], null)).toBe('le mardi et le jeudi');
     expect(formatIntention(null, 'ce_mois')).toBe('ce mois-ci');
     expect(formatIntention(null, null)).toBeNull();
+  });
+});
+
+/**
+ * **« par an » colle au chiffre qu'il qualifie** (24/09/2026, `v1-29`). La carte engagée disait
+ * « Le mardi et le jeudi · par an · 15 % » : « par an » s'y lisait comme le rythme des jours.
+ *
+ * Éprouvé en cassant ce qu'il garde, le 24/09/2026 : l'ordre d'avant remis (l'intention devant
+ * « par an ») fait tomber les deux tests qui portent une intention, et eux seuls ; la part
+ * d'empreinte oubliée fait tomber les deux qui en portent une.
+ */
+describe('ligneDuGain', () => {
+  it('commence par « par an », avant l’intention', () => {
+    expect(ligneDuGain('le mardi et le jeudi', 15.4)).toBe(
+      'par an · le mardi et le jeudi · 15 % de ton empreinte'
+    );
+  });
+
+  it('dit la même chose qu’une carte non engagée, sans intention', () => {
+    expect(ligneDuGain(null, 43)).toBe('par an · 43 % de ton empreinte');
+  });
+
+  it('se passe de la part d’empreinte quand elle manque', () => {
+    expect(ligneDuGain(null, null)).toBe('par an');
+    expect(ligneDuGain('à mon prochain projet de voyage', null)).toBe(
+      'par an · à mon prochain projet de voyage'
+    );
   });
 });
 

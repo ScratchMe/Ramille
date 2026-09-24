@@ -1160,12 +1160,14 @@ export default function Plan() {
   // seul à rendre ces cartes ; depuis que « Toutes les pistes » a le sien, elle est un composant —
   // recopier celui qui porte l'engagement serait garantir que les deux surfaces divergent sur le
   // geste le plus irréversible du produit.
-  const carteDaction = (action: PisteDuPlan, estompeeParLeRang = false) => (
+  //
+  // Elle prenait un second argument, `estompeeParLeRang`, que plus aucun appel ne passait depuis
+  // que C5.2 a sorti les rangs de cet écran : une branche morte, retirée le 24/09/2026 (`v1-29`).
+  const carteDaction = (action: PisteDuPlan) => (
     <CarteDePiste
       key={action.id}
       action={action}
       committedActionId={committedActionId}
-      estompeeParLeRang={estompeeParLeRang}
       onEngage={proposerLesRappels}
       onChanged={() => setRefreshKey((key) => key + 1)}
       onRefus={(message) => setRefusDeRemplacement(message)}

@@ -131,6 +131,30 @@ export function formatIntention(
 }
 
 /**
+ * La ligne posée sous le gain d'une carte d'action : « par an · le mardi et le jeudi · 15 % de ton
+ * empreinte » (24/09/2026, `v1-29`).
+ *
+ * **« par an » vient toujours en premier, collé au chiffre qu'il qualifie.** L'intention d'une
+ * action engagée s'intercalait devant lui — « Le mardi et le jeudi · par an · 15 % » —, si bien que
+ * « par an » se lisait comme le rythme des jours choisis et non comme l'unité du gain juste
+ * au-dessus. Les cartes non engagées disaient déjà « par an · 15 % de ton empreinte » ; celle qu'on
+ * suit dit désormais la même chose, l'intention ensuite.
+ *
+ * L'intention arrive en minuscules (`formatIntention`, écrite pour s'insérer dans une phrase) et le
+ * reste : elle n'est plus en tête de ligne. Le libellé accessible de la carte, lui, découpe en
+ * phrases et y remet sa majuscule.
+ */
+export function ligneDuGain(intention: string | null, partPercent: number | null): string {
+  return [
+    'par an',
+    intention,
+    partPercent !== null ? `${Math.round(partPercent)} % de ton empreinte` : null,
+  ]
+    .filter((morceau): morceau is string => morceau !== null && morceau !== '')
+    .join(' · ');
+}
+
+/**
  * Une intention est valide si elle porte exactement une des deux formes — miroir de la
  * contrainte `plan_actions_engagement_coherent`. Vérifié côté client pour ne pas envoyer un
  * appel que la base refusera, jamais à sa place.
