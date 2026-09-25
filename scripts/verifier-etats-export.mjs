@@ -755,16 +755,19 @@ for (const reduire of [false, true]) {
 // ── F. Le questionnaire : le focus suit l'étape ────────────────────────────────────────────────
 //
 // « Suivant » laisse le bouton en place et change la question au-dessus de lui : sans rien de plus,
-// le focus reste sur le bouton qu'on vient d'actionner, et rien de la question qui arrive n'est
-// annoncé (C1.9). `StepShell` le déplace, et **la cible n'est pas la même selon la plateforme**
-// depuis le 25/09/2026 : le conteneur de l'étape sur web, son titre sur natif, où le conteneur est
-// aplati et ne reçoit rien (le commentaire de `src/components/bilan/step-shell.tsx` dit pourquoi).
+// le focus reste sur le bouton qu'on vient d'actionner — ou, ici, tombe sur le document, le
+// « Suivant » de l'étape qui arrive étant inactif tant qu'on n'a pas répondu —, et rien de la
+// question qui arrive n'est annoncé (C1.9). `StepShell` le déplace, et **la cible n'est pas la
+// même selon la plateforme** depuis le 25/09/2026 : le conteneur de l'étape sur web, son titre sur
+// natif, où le conteneur est aplati et ne reçoit rien (le commentaire de
+// `src/components/bilan/step-shell.tsx` dit pourquoi).
 // Rien ne vérifiait la moitié web, alors qu'elle était la seule observable : cette section la tient.
 //
 // L'assertion porte sur ce que la personne obtient, pas sur l'élément choisi : le focus est sur la
 // question qui arrive, ou sur un conteneur dont elle est le premier titre — la forme d'aujourd'hui.
 // Une cible qui ne sait pas recevoir le focus (un titre sans `tabIndex` sur web) échoue sans bruit
-// et laisse le focus sur « Suivant » : c'est ce que la seconde condition attrape.
+// et laisse le focus là où il était : le document ici, « Suivant » sur une étape déjà remplie. Les
+// deux conditions ensemble couvrent les deux.
 const QUESTION_SUIVANTE = 'Ce trajet, tu le fais combien de jours par semaine ?';
 {
   const page = await ouvrir('/bilan');

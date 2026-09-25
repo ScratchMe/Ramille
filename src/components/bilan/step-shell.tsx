@@ -86,8 +86,10 @@ export function StepShell({
 }) {
   // **Le focus suit l'étape, sinon la question suivante n'est jamais annoncée.** Passer à l'étape
   // d'après laisse le focus sur « Suivant » : à TalkBack comme au clavier sur web, on entend le
-  // bouton qu'on vient d'actionner et rien de la question qui vient de s'afficher. C'est le seul
-  // point de C1.9 qui porte sur le parcours que son « Fait quand » demande de traverser.
+  // bouton qu'on vient d'actionner et rien de la question qui vient de s'afficher. Sur web, c'est
+  // pire quand le « Suivant » de l'étape qui arrive est inactif — le cas d'un premier questionnaire :
+  // un bouton désactivé perd le focus, qui tombe sur le document (relevé le 25/09/2026). C'est le
+  // seul point de C1.9 qui porte sur le parcours que son « Fait quand » demande de traverser.
   //
   // **La cible n'est pas la même sur web et sur natif, et c'est la source de React Native qui l'a
   // décidé** (25/09/2026). Sur web, c'est le **conteneur du contenu** : `tabIndex={-1}` le rend
@@ -95,17 +97,18 @@ export function StepShell({
   // l'export, et inchangé. Sur natif, ce même conteneur ne reçoit **rien**, et ne recevait rien
   // avant le 24/09 non plus — l'ancienne voie (`setAccessibilityFocus`) aboutit au même appel,
   // `BridgelessUIManager` retrouvant le nœud par son numéro :
-  //   - il n'y porte aucune propriété (ni style, ni `accessible`, ni `collapsable={false}`), donc
+  //   - il ne porte aucune propriété (ni style, ni `accessible`, ni `collapsable={false}`), donc
   //     Fabric l'aplatit — aucune vue native n'est créée pour lui (`ViewShadowNode::initialize`, où
   //     rien ne lui donne le trait `FormsView`). RN 0.86 n'a plus que cette architecture ;
   //   - l'événement part pourtant avec son numéro (`FabricMountingManager::sendAccessibilityEvent`
   //     transmet `shadowView.tag`, sans chercher d'ancêtre monté), `SurfaceMountingManager` ne trouve
   //     aucune vue et lève `RetryableMountingLayerException`, que `SendAccessibilityEventMountItem`
   //     avale en exception douce : ni plantage, ni focus, ni trace à l'écran.
-  // `collapsable={false}` monterait une vue, mais pas un nœud d'accessibilité : sans rôle ni
-  // `accessible`, RN ne lui pose aucun délégué (`ReactAccessibilityDelegate.setDelegate`) et Android
-  // ne la présente pas au lecteur d'écran — ce que TalkBack ferait d'un focus demandé sur elle ne se
-  // lit dans aucune source du dépôt. Et `accessible` fusionnerait l'étape entière en un seul nœud.
+  // `collapsable={false}` monterait une vue, mais pas un nœud d'accessibilité : sans `accessible`
+  // elle n'est pas focalisable (`ReactViewManager.setAccessible` ne fait que poser `isFocusable`), et
+  // sans rôle RN ne lui pose aucun délégué (`ReactAccessibilityDelegate.setDelegate`). Ce que TalkBack
+  // ferait d'un focus demandé sur elle ne se lit dans aucune source du dépôt. Et `accessible`
+  // fusionnerait l'étape entière en un seul nœud.
   // Reste le **titre** : un `Text` forme toujours une vue (`ParagraphShadowNode` hérite de
   // `FormsView`), un `TextView` que TalkBack lit, avec le rôle d'en-tête que `ThemedText` lui donne —
   // la cible que l'onboarding vise déjà. Il vit dans `children`, d'où `TitreDEtape`.

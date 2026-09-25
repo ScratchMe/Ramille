@@ -738,12 +738,12 @@ props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
   (« Chargement de ton bilan… ») : elle passait avant comme après la correction. Elle attend
   désormais que l'écran **quitte** « Chargement » — sans nommer l'issue, qui est une copie d'erreur
   sans serveur — et qu'il ait **demandé** le bilan que l'adresse désigne. `/rappels/stop?jeton=`
-  avait le même trou, son titre étant lui aussi dans le HTML : même réponse. La section E ne lisait le
-  focus qu'au repos, et restait verte pendant qu'il revenait sur la page qu'on quitte : un journal
-  posé avant le chargement relève désormais chaque `focusin` et chaque bascule d'`inert` **pendant**
-  la transition. Et **F** tient le focus d'étape du questionnaire sur web, qu'aucune garde ne
-  vérifiait. La leçon est celle de §1.1, sous une forme de plus : **une moitié positive doit porter
-  sur ce que le HTML statique ne dit pas**, sans quoi elle garde le statique.
+  avait le même trou, son titre étant lui aussi dans le HTML : même réponse. La section E ne lisait
+  le focus qu'au repos, et restait verte pendant qu'il revenait sur la page qu'on quitte : un
+  journal posé avant le chargement relève désormais chaque `focusin` et chaque bascule d'`inert`
+  **pendant** la transition. Et **F** tient le focus d'étape du questionnaire sur web, qu'aucune
+  garde ne vérifiait. La leçon est celle de §1.1, sous une forme de plus : **une moitié positive
+  doit porter sur ce que le HTML statique ne dit pas**, sans quoi elle garde le statique.
 
 Les mutations qui les éprouvent sont datées en tête de chaque script, une par ligne, **chacune avec
 son propre export** : le code est dans le bundle, donc une mutation sans export ne mute rien. Et un
