@@ -4,9 +4,27 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { ControlHeight, Spacing } from '@/constants/theme';
 
 /**
- * Le conteneur d'une série de puces : un `radiogroup` quand on n'en choisit qu'une, un `group`
- * quand elles se cumulent — **toujours nommé par la question à laquelle il répond** (24/09/2026,
- * `v1-29`, audit d'accessibilité 4.1.2).
+ * Le conteneur d'une série de choix — puces, rangées, items de mode, lignes de canal : un
+ * `radiogroup` quand on n'en choisit qu'un, un `group` quand ils se cumulent — **toujours nommé par
+ * la question à laquelle il répond** (24/09/2026, `v1-29`, audit d'accessibilité 4.1.2).
+ *
+ * **C'est le seul endroit du dépôt qui écrive un de ces deux rôles** (25/09/2026). Trois listes de
+ * modes du questionnaire n'avaient pas de groupe du tout — « Voiture (seul) » ne disait pas à quelle
+ * question il répond —, et trois fichiers posaient le rôle eux-mêmes (`PrecisionChiffres`, les trois
+ * séries des longs trajets, la catégorie du retour) : ce qu'on ajoutera un jour à un groupe, comme
+ * les flèches pour passer d'une option à l'autre que `v1-29` §6.4 nomme, ne les aurait pas
+ * atteints. Le parcours réel vérifie, étape par étape, que toute case d'option a un `radiogroup`
+ * nommé et toute case à cocher un `group` nommé.
+ *
+ * **Une précision qui s'ouvre sous l'option choisie est son propre groupe, posé DANS celui de la
+ * question qui l'ouvre** — « Quelle motorisation ? » sous « Voiture (seul) », dans le groupe du
+ * mode. C'est la forme des révélations conditionnelles de GOV.UK (un `fieldset` dans un `fieldset`),
+ * et c'est la seule qui garde ce que `precision-mode.tsx` a gagné : la précision juste sous l'option
+ * qu'elle décrit, dans l'ordre de lecture comme à l'œil. Chaque case d'option y répond au groupe
+ * **le plus proche**, donc à sa propre question — « Hybride » à « Quelle motorisation ? », jamais au
+ * mode. La sortir du groupe du mode l'aurait détachée de l'option qu'elle précise, ou coupé la liste
+ * des modes en deux groupes homonymes. Relevé dans l'arbre d'accessibilité de Chromium le 25/09/2026 ;
+ * ce que TalkBack en annonce reste à écouter sur appareil (`v1-29` §6.5).
  *
  * Onze séries du questionnaire et du plan s'annonçaient encore en `button` (A2-8, `v1-13` §11.4) :
  * rien ne disait « sélectionné », ni la place dans le groupe, ni surtout **à quelle question** la
@@ -46,7 +64,13 @@ export function GroupeDeChoix({
   style,
   children,
 }: {
-  /** La question telle qu'elle est affichée au-dessus de la série. */
+  /**
+   * Le nom du groupe : la question **telle qu'elle est affichée** au-dessus de la série. Deux
+   * exceptions, chacune dite chez son appelant, et le nom y reste une chaîne écrite une fois :
+   * un intitulé qui ne se comprend qu'avec le titre de l'écran reçoit sa forme complète, qui le
+   * contient (« En train » → « Trajets longue distance en train », `long-trips.tsx`) ; une série
+   * sans question affichée reçoit le nom de ce qu'elle choisit (« Catégorie », `feedback.tsx`).
+   */
   question: string;
   /** Vrai quand les puces se cumulent (des `checkbox`) : le groupe n'est alors pas un `radiogroup`. */
   cumulable?: boolean;

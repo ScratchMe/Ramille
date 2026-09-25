@@ -21,6 +21,13 @@ import { PARTS_DU_SECOND_MODE, type BilanAnswers } from '@/types/bilan';
 /** Écrite une fois : le titre de l'étape et le nom du « Oui / Non » (`GroupeDeChoix`). */
 const QUESTION_SECOND_MODE = 'Utilises-tu un second mode en complément ?';
 
+/**
+ * Écrite une fois : l'intitulé de la liste imbriquée et le nom de son groupe. La liste n'en avait pas
+ * jusqu'au 25/09/2026 — des `radio` isolés sous le « Oui ». « Lequel ? » seul est court, et il
+ * suffit : le groupe s'ouvre juste après la question du second mode, dont il est la suite.
+ */
+const QUESTION_LEQUEL = 'Lequel ?';
+
 // B1.6 / B1.7 — second mode Oui/Non, puis « Lequel ? » imbriqué si Oui.
 //
 // **B1.5 est parti sur l'écran précédent** (recette du 14/09/2026, `v1-16` §3) : la taille du
@@ -71,9 +78,11 @@ export function CommuteExtraStep({
         {answers.commute_second_mode_used === true && (
           <ThemedView type="backgroundElement" style={styles.nestedBox}>
             <ThemedText type="small" themeColor="textTertiary">
-              Lequel ?
+              {QUESTION_LEQUEL}
             </ThemedText>
-            <View style={styles.nestedList}>
+            {/* Chaque précision — motorisation, type, part du trajet — est son propre groupe, posé
+                dans celui-ci sous le mode qu'elle décrit (`GroupeDeChoix` dit pourquoi). */}
+            <GroupeDeChoix question={QUESTION_LEQUEL} style={styles.nestedList}>
               {secondModeChoices.map((modeId) => (
                 <View key={modeId}>
                 <ModeListItem
@@ -153,7 +162,7 @@ export function CommuteExtraStep({
                 )}
                 </View>
               ))}
-            </View>
+            </GroupeDeChoix>
 
           </ThemedView>
         )}

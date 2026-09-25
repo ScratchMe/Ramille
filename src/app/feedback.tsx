@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { Mascot } from '@/components/mascot';
 import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
@@ -114,8 +115,14 @@ export default function Feedback() {
 
           {/* Une catégorie et une seule : `radiogroup` + `radio`, comme `ChoixDeRappel`. En
               `button`, le rôle n'annonçait pas « non sélectionné » — sur cinq puces, c'est
-              l'information qui manque le plus. */}
-          <View style={styles.kinds} accessibilityRole="radiogroup" accessibilityLabel="Catégorie">
+              l'information qui manque le plus.
+
+              **Aucune question n'est affichée au-dessus des puces, et c'est l'une des deux
+              exceptions de `GroupeDeChoix`** : le groupe prend le nom de ce qu'il choisit. Il
+              passe par ce composant depuis le 25/09/2026 — il posait son rôle lui-même —, pour
+              que ce qu'on ajoutera aux groupes l'atteigne aussi. Afficher « Catégorie » serait
+              une phrase de plus à l'écran, donc une décision de produit, pas une correction. */}
+          <GroupeDeChoix question="Catégorie" style={styles.kinds}>
             {FEEDBACK_KINDS.map((option) => (
               <Chip
                 key={option.value}
@@ -127,7 +134,7 @@ export default function Feedback() {
                 selectedStyle="outline"
               />
             ))}
-          </View>
+          </GroupeDeChoix>
 
           <View style={styles.fieldBlock}>
             <ThemedText type="small" themeColor="textTertiary">
