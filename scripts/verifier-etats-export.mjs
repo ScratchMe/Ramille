@@ -159,8 +159,9 @@ async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null
   // Les exceptions sont écoutées dès avant la navigation : une erreur d'hydratation part pendant
   // que le bundle monte l'app, avant que l'attente ci-dessous ne rende la main (section D).
   if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
-  // Les requêtes aussi : la lecture d'un écran part dès son premier effet (section D).
-  if (requetes) page.on('request', (requete) => requetes.push(requete.url()));
+  // Les requêtes aussi, corps compris — un RPC porte son paramètre dans le corps : la lecture d'un
+  // écran part dès son premier effet (section D).
+  if (requetes) page.on('request', (requete) => requetes.push({ url: requete.url(), corps: requete.postData() ?? '' }));
   // Et le journal du focus, pour la même raison : il doit être posé avant le premier script de
   // la page pour ne rien manquer de ce qui bascule pendant une transition (section E).
   if (journal) await page.addInitScript(journaliserLeFocus);
@@ -475,11 +476,18 @@ const PARAMETRES = [
   {
     // Un jeton de forme valide mais inconnu : la page appelle le serveur, et ce qu'elle affiche
     // ensuite dépend de la base (refus en local, panne avec la configuration factice de la CI).
-    // Seul le titre est donc attendu ici ; ce que le HTML dit **avant** l'app est vérifié
+    // Aucune des deux issues n'est donc épinglée ; ce que le HTML dit **avant** l'app est vérifié
     // ci-dessous, dans le fichier.
+    //
+    // **Le titre seul ne prouvait rien, pour la raison de `/suivi/bilan`** (25/09/2026) : il est
+    // dans le HTML statique, que l'export sert à tout le monde. Ce qui distingue la page montée, c'est
+    // qu'elle quitte « Un instant » — vers l'une ou l'autre issue — et qu'elle a appelé le serveur
+    // avec **ce** jeton.
     chemin: `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`,
     attendu: 'Ne plus recevoir de rappels',
-    interdit: null,
+    interdit: 'Un instant',
+    lecture: ({ url, corps }) =>
+      url.includes('/rest/v1/rpc/desinscrire_des_rappels') && corps.includes(JETON_DE_FORME_VALIDE),
   },
   {
     // Ouvert depuis le suivi, le bilan porte `?id=` ; le HTML statique, sans identifiant, rendait
@@ -498,7 +506,7 @@ const PARAMETRES = [
     chemin: `/suivi/bilan?id=${JETON_DE_FORME_VALIDE}`,
     attendu: 'bilan',
     interdit: 'Chargement',
-    lecture: (url) =>
+    lecture: ({ url }) =>
       url.includes('/rest/v1/assessment_results?') && url.includes(`assessment_id=eq.${JETON_DE_FORME_VALIDE}`),
     // **La lecture qui échoue est relancée, et l'écran l'attend** : `@supabase/postgrest-js`
     // relance trois fois un GET que le réseau refuse, après 1, 2 puis 4 s. Mesuré sur l'export le
