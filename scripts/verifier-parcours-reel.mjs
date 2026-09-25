@@ -659,8 +659,11 @@ try {
     !/Voir toutes les pistes/.test(texteDuPlan),
     'le plan à zéro action propose encore « Voir toutes les pistes »'
   );
+  // Le titre et la promesse, et eux seuls : `innerText` lit aussi la restitution restée montée sous
+  // le plan dans la pile, où « tes sorties du week-end » est légitime — une première version qui
+  // cherchait ces trois mots dans toute la page tombait pour cette raison-là, et pas pour la bonne.
   assurer(
-    !/sur tes sorties du week-end/.test(texteDuPlan) && !/Le point reste là/.test(texteDuPlan),
+    !/Tu fais déjà l’essentiel sur/.test(texteDuPlan) && !/Le point reste là/.test(texteDuPlan),
     'la félicitation nomme ou promet le résiduel des sorties rares (felicitationDuPlanSansAction)'
   );
   assurer(
