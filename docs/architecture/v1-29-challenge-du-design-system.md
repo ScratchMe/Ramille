@@ -437,11 +437,19 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
   **quiconque est déjà sous le repère**, résiduel ou non. Deux phrases de produit, à poser ;
 - **la date de mise à jour de la page de confidentialité** vaut le 24/09/2026 ; la page dit que sa
   date est celle où le texte arrive devant les lecteurs, donc elle suit la date de fusion ;
-- **les deux variantes de la phrase du cap, et son silence** : la décision n° 4 dit « quand elle est
-  vraie » et en donne une forme, « Chacune des deux… ». « L'une des deux pistes proposées… » et « La
-  piste proposée suffit à le franchir. » en sont les deux autres formes vraies, et rien n'est dit
-  quand aucune piste n'atteint le cap ou quand l'écran en montrerait plus de deux. Elles se
-  dérivent de la règle décidée ; elles n'ont pas été relues une à une ;
+- **tranché le 25/09/2026 — les deux variantes de la phrase du cap, et son silence, validés tels
+  quels.** La décision n° 4 dit « quand elle est vraie » et en donne une forme, « Chacune des
+  deux… » ; « L'une des deux pistes proposées suffit à le franchir. » et « La piste proposée suffit à
+  le franchir. » en sont les deux autres formes vraies, et rien n'est dit quand aucune piste
+  n'atteint le cap. Deux raisons, posées avec la recommandation : « l'une des deux » ne dit pas
+  laquelle, mais les deux gains sont affichés à côté du cap — et nommer la carte (« la première »)
+  serait fragile, la carte du cap passant au-dessus ou au-dessous des pistes selon qu'on est au
+  premier plan ; et le silence vaut mieux qu'une phrase quand aucune ne suffit seule, qui
+  contredirait « une action par saison » et se lirait comme un échec annoncé — le cap n'étant
+  vérifié nulle part, personne n'est piégé. Le cas « plus de deux cartes » n'était pas une question :
+  l'écran n'en met jamais plus que `ACTIONS_EN_AVANT`. En production ce jour-là, les quatre plans qui
+  portent des actions étaient tous dans le cas « Chacune des deux ». Aucune ligne de code n'a changé,
+  les tests épinglant déjà chaque forme mot pour mot ;
 - **« Le plus régulier » au-dessus de « Loisirs du week-end (occasionnels) »** : c'est ce que
   l'étiquette de la décision n° 1 écrirait si le résiduel des sorties « rarement » gagnait le
   départage face à des voyages plus lourds de moins de 5 % — deux mots qui se contredisent. Le cas
