@@ -422,6 +422,17 @@ exactement ce qui avait laissé passer le mauvais caractère.
   par appui, laisse Entrée à la bibliothèque, ne fait rien sur un contrôle désactivé ni sur natif.
   Un choix neuf qui l'oublierait retrouverait le défaut : `verifier-etats-export.mjs` (section F) et
   le parcours réel le verraient.
+- **Un groupe de cases d'option n'est qu'un arrêt de tabulation, et se parcourt aux flèches, sur
+  web** (25/09/2026, `v1-29` §6.4). Ce sont des `div` à `role="radio"` et non des cases natives :
+  react-native-web donnait `tabindex="0"` à chacune et ne faisait rien des flèches — dix modes, dix
+  tabulations. `GroupeDeChoix` branche le motif de WAI-ARIA (`src/lib/groupe-au-clavier.ts`) :
+  l'arrêt est l'option cochée, ou la première ; les flèches passent à la voisine **en la cochant**,
+  bouclent aux deux bouts et sautent les options désactivées ; une flèche accompagnée d'un
+  modificateur est laissée au navigateur. Les options d'un groupe sont celles dont il est le
+  groupe **le plus proche** : une précision imbriquée garde ses flèches et son arrêt. Un `group` de
+  cases à cocher n'y passe pas — chacune reste un arrêt, comme le veut le même motif. Rien à écrire
+  dans un composant de choix : c'est le groupe qui le fait, et la section I de
+  `verifier-etats-export.mjs` le vérifie sur une précision imbriquée et sur une grille.
 - **Une option désactivée ne paraît jamais choisie** (`paraitChoisie`, `src/types/ligne-de-canal.ts`) :
   « Par email » grisé mais cerné d'accent disait à la fois « indisponible » et « c'est ton réglage ».
   Ce qui paraît coché est ce que la table de vérité des rappels rend effectif, pas la préférence
@@ -433,8 +444,11 @@ exactement ce qui avait laissé passer le mauvais caractère.
   (`TitreDArrivee`, `donnerLeFocus` dans `src/lib/focus.ts`) — « C'est envoyé, merci. », le calcul
   du bilan, la réplique d'un point, la page suivante de l'onboarding —, et **jamais au montage d'un
   écran qu'on retrouve** : une carte déjà répondue qu'on revoit en revenant sur le plan n'a volé le
-  focus à personne. `MessageInline` s'annonce lui-même sur natif (`announceForAccessibility`), une
-  région vivante n'annonçant pas son apparition sur Android.
+  focus à personne. Même règle pour **un contrôle qui disparaît sous le geste qui l'active** :
+  « Voir les autres modes » donne le focus au premier mode révélé, là où il se trouvait — sans quoi
+  il retombe sur le document et la tabulation repart du haut de la page (25/09/2026).
+  `MessageInline` s'annonce lui-même sur natif (`announceForAccessibility`), une région vivante
+  n'annonçant pas son apparition sur Android.
 - **Un bouton secondaire posé sur une carte grise ou teintée prend `onPanel`** : fond de l'écran et
   filet, au lieu du gris des panneaux. Gris sur gris, « Oui » et « Non » de la carte du point se
   lisaient comme du texte.

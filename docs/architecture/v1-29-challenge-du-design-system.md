@@ -483,19 +483,31 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
 
 - **`accessibilityHint` n'existe pas sur web** : react-native-web l'ignore. Le rappel de la question
   sur « Oui » et « Non » du point, et la longueur maximale du retour, n'y sont pas annoncés ;
-- **un groupe de choix ne se parcourt pas aux flèches** : chaque option est un arrêt de tabulation.
-  La barre d'espace, elle, coche depuis le 25/09/2026 (§3.2) ;
 - **sur web, la fin d'un défilement ne s'annonce pas** : `onMomentumScrollEnd` n'y part jamais.
   L'onboarding lit donc l'arrivée d'un défilement programmé à sa position. Ce qu'il ne lève pas : un
   geste qui franchit la moitié de la page puis revient — l'index suit le doigt, et le focus passe par
   le titre de la page abandonnée. C'est le geste de la personne ; le lever demanderait une minuterie ;
-- **« Voir les autres modes », activé au clavier, disparaît et laisse le focus sur le document** —
-  mesuré, pas corrigé : la liste qui le remplace n'a pas de cible désignée ;
 - **un même message remis deux fois n'est pas réannoncé** : React ne rend pas de nouveau pour un état
   identique, donc un second échec identique se tait ;
 - **après un échec, le focus n'est rendu nulle part** : pendant l'envoi, le bouton désactivé le perd,
   et quand l'écran revient avec son message, rien ne le repose ;
 - la préférence « réduire les animations » n'est lue qu'au démarrage (reanimated le documente).
+
+**Deux lignes de cette liste en sont sorties le 25/09/2026, parce qu'un code du dépôt pouvait les
+lever** — le titre de la section les avait rangées trop vite :
+
+- **« Voir les autres modes » donne le focus au premier mode révélé** (`leisure-detail.tsx`), à la
+  place du lien qui vient de disparaître, et seulement après le geste : une liste déjà dépliée par un
+  brouillon ne vole le focus à personne ;
+- **un groupe de cases d'option n'est plus qu'un arrêt de tabulation, et se parcourt aux flèches**
+  en cochant, selon le motif de WAI-ARIA pour un `radiogroup` (`src/lib/groupe-au-clavier.ts`,
+  branché par `GroupeDeChoix`) ; une précision imbriquée garde ses propres flèches et son propre
+  arrêt, et les cases à cocher restent un arrêt chacune, comme ce motif le veut. La barre d'espace,
+  elle, coche depuis le matin (§3.2).
+
+Gardes : sections H et I de `verifier-etats-export.mjs`, et `src/types/groupe-au-clavier.test.ts`,
+chacune éprouvée en la cassant. Ce qu'un clavier physique en fait sous Android reste à la recette
+sur appareil — le branchement ne tourne que sur web.
 
 ### 6.5 Ce que la prochaine recette sur appareil doit regarder
 
