@@ -1,7 +1,6 @@
-/** Bouton Google — placeholder neutre ; l’implémentation utilise le composant officiel. */
+/** Bouton Google — libellé fixe « Se connecter avec Google », le libellé annoncé est le texte affiché. */
 export interface GoogleButtonProps {
   onPress?: () => void;
   loading?: boolean;
-  label?: string;
 }
 export declare function GoogleButton(props: GoogleButtonProps): JSX.Element;
