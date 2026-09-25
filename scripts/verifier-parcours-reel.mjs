@@ -126,6 +126,21 @@
 // pas dire : la répétition d'une touche maintenue arrive bien jusqu'au gestionnaire, à travers
 // Chromium, React et react-native-web — sans quoi le garde de `repeat` ne garderait rien.
 //
+// **Et quatre de plus le même jour, sur les assertions que la livraison de `v1-29` avait ajoutées
+// sans les éprouver** — l'étiquette du départage, la phrase du cap, la félicitation du résiduel —,
+// relevées par la contre-lecture (`TESTING.md` §1.1). Un export chacune, avec `--clear` :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | Q1 — `etiquetteDuPosteDominant` rend toujours l'étiquette générale | « restitution » : « Le plus régulier, presque à égalité avec tes voyages » n'apparaît jamais |
+//   | Q2 — `phraseDesPistesSuffisantes` se tait toujours | « plan » : « Chacune des deux pistes proposées suffit à le franchir. » n'apparaît jamais |
+//   | Q3 — la félicitation du résiduel promet le point | le cycliste, au plan : « la félicitation nomme ou promet le résiduel des sorties rares » |
+//   | Q4 — le résiduel n'est plus reconnu (le poste est nommé) | le cycliste, au plan : « Tu fais déjà l’essentiel. » n'apparaît jamais |
+//
+// Q4 ne fait pas parler l'assertion négative, et c'est attendu : l'attente positive vient avant elle
+// et tombe la première, le titre nommant le poste ne contenant pas « l’essentiel. ». La négative
+// garde l'autre moitié, la promesse du point, et c'est Q3 qui le montre.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
