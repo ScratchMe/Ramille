@@ -3,7 +3,7 @@ export interface ActionCommitmentProps {
   /** days = domicile-travail (jours) ; timing = autres postes (échéance fermée). */
   kind?: 'days' | 'timing';
   state?: 'idle' | 'picking' | 'committed';
-  /** Indices 0 (lundi) … 6. */
+  /** Indices 0 (lundi) … 6 — le dépôt compte de 1 (lundi) à 7 (`INTENTION_DAYS`, src/types/plan.ts). */
   days?: number[];
   timing?: 'ce_mois' | 'mois_prochain' | 'occasion' | null;
   otherActionCommitted?: boolean;

@@ -7,13 +7,13 @@ export interface ActionCardProps {
   gainKg?: number | null;
   partPercent?: number | null;
   detail?: string | null;
-  /** « le mardi et le jeudi » — affichée seulement si engagée. */
+  /** « le mardi et le jeudi » — affichée seulement si engagée, après « par an ». */
   intention?: string | null;
   engagee?: boolean;
-  /** Une autre action porte l'engagement. */
+  /** L'engagement vient du cycle précédent : l'étiquette devient « TON ENGAGEMENT · RECONDUIT ». */
+  reconduite?: boolean;
+  /** Une autre action porte l'engagement : celle-ci recule par son cadre, sans perdre son bouton. */
   estompee?: boolean;
-  /** Étiquette d'en-tête quand engagée (lot 3 : « TON ENGAGEMENT »). */
-  etiquette?: string;
   children?: React.ReactNode;
 }
 export declare function ActionCard(props: ActionCardProps): JSX.Element;

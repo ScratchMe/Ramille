@@ -3,10 +3,11 @@ export interface TextFieldProps {
   label: string;
   value: string;
   onChangeText?: (text: string) => void;
-  /** Pas de `'password'` : le produit n’en a pas, et l’offrir ici ferait construire un écran
-   *  qui n’existe pas. Le seul accès à un compte est un lien à usage unique par email. */
-  type?: 'text' | 'email';
-  /** Action à droite dans le champ (« Afficher »). */
+  /** `email-address` pour une adresse : le champ l'annonce, et le remplissage automatique s'en déduit. */
+  keyboardType?: 'default' | 'email-address';
+  /** Ce que le navigateur ou le système peut proposer de remplir ; déduit du clavier quand rien n'est dit. */
+  autoComplete?: string;
+  /** Action à droite dans le champ. */
   rightActionLabel?: string;
   onRightAction?: () => void;
   placeholder?: string;

@@ -27,6 +27,10 @@
 
   --stroke-hairline: 1px;
   --stroke-selected: 1.5px;
+  /* Le contour d'un champ de saisie, au repos (--color-field-border) comme au focus (accent), à la
+     même épaisseur pour que le focus ne décale rien (Stroke.field, 25/09/2026). Il vaut
+     --stroke-selected et ce n'est pas le même jeton : changer la puce choisie ne touche pas les champs. */
+  --stroke-field: 1.5px;
   --stroke-engaged: 2px;
   --progress-height: 6px;
   --progress-radius: 3px;
