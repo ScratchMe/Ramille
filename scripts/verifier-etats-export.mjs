@@ -72,6 +72,34 @@
 // (`src/lib/focus.ts`) qui le rend possible. Et l'hydratation de `/connexion` a ses deux moitiés :
 // sans la seconde, une correction qui ignorerait le paramètre passerait pour juste.
 //
+// ── Sections D, E et F, éprouvées en cassant le 25/09/2026 ─────────────────────────────────────
+//
+// Six mutations, un export chacune, sur un arbre dont le témoin sort vert. Chacune fait tomber ce
+// qu'elle devait faire tomber, et rien d'autre :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | le pager n'ouvre plus de vol (`enVol` toujours nul) | le retour du focus sur la page qu'on quitte **et** l'inertie, trois bascules par page (E, moitié animée) |
+//   | `StepShell` ne déplace plus le focus | le focus d'étape, tombé sur le document (F) |
+//   | `StepShell` vise le titre sur web, sans `tabIndex` | le focus d'étape, tombé sur le document (F) |
+//   | `/suivi/bilan` lit son état sans attendre l'hydratation | l'hydratation de `?id=` **et** le HTML statique « pas pu » (D) |
+//   | `/suivi/bilan` ne quitte jamais le chargement | « Chargement » encore affiché (D) |
+//   | `/suivi/bilan` lit son identifiant sous un autre nom | aucune lecture portant l'identifiant (D) |
+//
+// La première a été jouée contre l'**ancienne** section E aussi, par construction : son assertion
+// au repos est restée verte, le focus finissant bien sur la page 1 après son aller-retour. La
+// quatrième est celle du 24/09 rejouée : les deux gardes nouvelles de `/suivi/bilan` y restent
+// vertes — l'écran sort du chargement, vers l'erreur, et lit bien le bilan —, ce qui est juste :
+// elles gardent autre chose, et ce sont les deux suivantes qui le montrent. Sous la deuxième, le
+// focus ne reste même pas sur « Suivant » : le bouton de l'étape qui arrive est désactivé tant
+// qu'on n'a pas répondu, et un bouton désactivé perd le focus.
+//
+// Et une expérience, qui n'est pas une mutation : viser le titre sur web **avec** `tabIndex={-1}`
+// pose le focus sur la question de l'étape qui arrive (relevé sur deux étapes différentes) et F
+// reste verte. La référence que `TitreDEtape` relie à `StepShell` atteint donc le titre de la
+// nouvelle étape à l'instant de l'effet — ce que la voie native suppose, et que rien d'autre ici
+// ne peut montrer.
+//
 // **Chaque export muté a été fait avec son propre cache Metro (`TMPDIR`) et `--clear`**, et ce
 // n'est pas un détail : la première série de mesures, faite sans `--clear` pendant que d'autres
 // worktrees exportaient, a produit des bundles qui n'étaient pas ceux de l'arbre — l'ancien texte
@@ -518,7 +546,10 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
     if (!texte.includes(attendu)) {
       echecs.push(`${chemin} : « ${attendu} » est absent une fois l’app montée. Rendu : « ${texte.slice(0, 160)}… »`);
     } else if (interdit && texte.includes(interdit)) {
-      echecs.push(`${chemin} : « ${interdit} » s’affiche encore une fois l’app montée : le paramètre n’est pas lu.`);
+      echecs.push(
+        `${chemin} : « ${interdit} » s’affiche encore une fois l’app montée : l’écran en est resté à ce` +
+          ' que dit le HTML statique, sans tirer son état du paramètre.'
+      );
     }
     if (lecture && !requetes.some(lecture)) {
       echecs.push(
