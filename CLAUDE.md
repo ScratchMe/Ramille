@@ -58,17 +58,14 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
   quoi il s'agit. Personne ne garde en tête ce que désigne `C3.8`.
 - **Au plus un build EAS tous les deux jours** (15/09/2026), et la raison est au registre
   d'exploitation §3.3 : le quota du plan gratuit ne se lit qu'en le heurtant.
-- **Pas plus de 150 Mo de Functions Storage ajoutés chez Vercel entre le 15 et le 25/09/2026**
-  (15/09/2026) — c'est tout ce qui reste au **compte** Vercel, relevé à 9,85 Go sur 10 dont
-  437 Mo pour Ramille ce jour-là, **puis 9,88 Go dont 472,8 Mo le 21/09/2026** (35,3 Mo consommés,
-  ≈ 115 à 125 Mo de marge : `VERCEL.md` §2.1, qui dit aussi pourquoi cette marge est *prêtée* et
-  pourquoi la part de Ramille doit **chuter** début octobre) —, et à demeure : **chaque fusion sur `main` est un déploiement qui se paie trente
-  jours** (≈ 1,8 Mo — 1,76 mesuré deux fois le 16/09/2026, et c'est un plancher : `VERCEL.md`
-  §1.1 dit pourquoi un écart d'une journée divisé par le nombre de fusions ment), l'agent ne peut
-  pas lire le compteur, donc il se demande avant de fusionner,
-  **et il demande le total du compte et la part du projet**, parce qu'une heure a été perdue à
-  chercher dans un projet un facteur cinq qui était l'autre. `VERCEL.md` §2.1 et §2.3.
-  Le jour même, j'avais fusionné cinq fois, dont trois fois pour de la documentation seule.
+- **Vercel : on fusionne quand on veut, mais on mesure chaque déploiement** (25/09/2026 : « Plus
+  besoin de s'inquiéter pour Vercel, ça a été reset plus tôt que prévu, tu peux merger quand tu
+  veux. Continue simplement de regarder combien ça doit déployer pour vérifier qu'il n'y ait pas
+  une hausse soudaine, il faudrait alors l'expliquer »). Le budget des 150 Mo du 15 au 25/09/2026
+  et le relevé à demander avant chaque fusion sont levés ; **la mesure hors ligne avant chaque
+  fusion de code reste**, comparée au relevé précédent (4,16 Mio le 25/09/2026), et **un écart
+  s'explique dans la PR avant de fusionner** — un saut veut dire qu'une dépendance est entrée dans
+  `api/`. La méthode, et ce que la fenêtre des dix jours a appris : `VERCEL.md` §1.2 et §2.3.
 
 ### La branche de travail
 
