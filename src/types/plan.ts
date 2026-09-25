@@ -14,7 +14,9 @@
  * ici parce que c'est le module que l'écran du plan et la carte de point importent déjà ;
  * **la définition et son commentaire sont là-bas.**
  */
-import { FORME_INSERABLE, formeInserable } from '@/constants/postes';
+import { TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
+import { FORME_INSERABLE, estLeResiduelDesSortiesRares, formeInserable } from '@/constants/postes';
+import { sousLeRepere2050 } from '@/types/palier';
 
 export { formeInserable };
 
@@ -312,9 +314,20 @@ export function phraseDesPistesSuffisantes({
  * suppose quinze kilomètres une semaine sur quatre. « Tu fais déjà l'essentiel sur tes sorties du
  * week-end » y félicitait la personne sur des sorties qu'elle a dit ne presque pas faire, et « Le
  * point reste là » lui promettait une boucle mensuelle que `generate_extras_checkins` ne génère
- * pas sans base déclarée : son seul point porte sur le trajet domicile-travail. Le serveur marque
- * ce cas dans le libellé qu'il fige sur le cycle — « Loisirs du week-end (occasionnels) », épinglé
- * par `01` et `20` —, et c'est ce marqueur qu'on lit, faute d'une colonne qui le dise.
+ * pas sans base déclarée : son seul point porte sur le trajet domicile-travail. Le marqueur est
+ * lu par `estLeResiduelDesSortiesRares`, la même lecture que la marche de la restitution.
+ *
+ * **Son titre dit pourquoi le plan est vide : « Tu es déjà sous le repère 2050. »** (arbitrage du
+ * 25/09/2026, `v1-29` §6.3). « Tu fais déjà l'essentiel. » était la réduction prudente posée la
+ * veille faute de décision : vraie, mais elle ne disait ni quoi ni pourquoi. La nouvelle phrase est
+ * celle que la restitution vient de dire une page plus tôt, et elle est **vraie par construction**
+ * pour ce profil : pour que le résiduel l'emporte, le trajet et les voyages doivent peser moins que
+ * lui, qui ne dépasse pas une soixantaine de kilos — le total reste sous 200 kg, loin des 600 du
+ * repère. **Mais « par construction » est un raisonnement, et il se périme** : un poste neuf (les
+ * déplacements professionnels de C4.3) pourrait faire passer un tel profil au-dessus sans rien
+ * changer ici. Le titre est donc **conditionné au total** par la comparaison même de la
+ * restitution (`sousLeRepere2050`), et retombe sur la phrase prudente quand le total est au-dessus
+ * ou inconnu — une lecture en échec ne doit pas affirmer un repère.
  */
 export type FelicitationDuPlanSansAction = {
   titre: string;
@@ -324,10 +337,16 @@ export type FelicitationDuPlanSansAction = {
 
 export function felicitationDuPlanSansAction(
   poste: string | null,
-  libelleDuCycle: string | null
+  libelleDuCycle: string | null,
+  totalDuBilanKg: number | null
 ): FelicitationDuPlanSansAction {
-  if (poste === 'leisure' && (libelleDuCycle ?? '').includes('(occasionnels)')) {
-    return { titre: 'Tu fais déjà l’essentiel.', promettreLePoint: false };
+  if (estLeResiduelDesSortiesRares(poste, libelleDuCycle)) {
+    const sousLeRepere =
+      totalDuBilanKg !== null && sousLeRepere2050(totalDuBilanKg, TARGET_2050_TRANSPORT_T * 1000);
+    return {
+      titre: sousLeRepere ? 'Tu es déjà sous le repère 2050.' : 'Tu fais déjà l’essentiel.',
+      promettreLePoint: false,
+    };
   }
   const forme = poste ? FORME_INSERABLE[poste] : undefined;
   return {

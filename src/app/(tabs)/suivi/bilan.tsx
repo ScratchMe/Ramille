@@ -31,7 +31,7 @@ import {
 } from '@/types/resultat';
 import { BarreContour } from '@/components/suivi/barre-contour';
 import { BlocMethode } from '@/components/suivi/bloc-methode';
-import { FORME_INSERABLE } from '@/constants/postes';
+import { FORME_INSERABLE, estLeResiduelDesSortiesRares } from '@/constants/postes';
 import { formatDate, variationDepuisLeBilanPrecedent, moisLocalDe } from '@/types/suivi';
 import {
   loadBilanPrecedent,
@@ -514,6 +514,10 @@ export default function BilanResultat() {
   // le poste dominant et non le total : sans le nommer, la phrase se lit comme une marche sur
   // l'empreinte entière. Repli sur le libellé snapshoté si le poste sortait un jour de la liste.
   const posteDeLaMarche = FORME_INSERABLE[results.dominant_poste] ?? results.dominant_poste_label;
+  // Le résiduel des sorties rares : un poste que le calcul suppose et que la personne n'a pas
+  // déclaré. La marche s'y tait (`palierNote`, arbitrage du 25/09/2026) — même lecture que la
+  // félicitation du plan qui suit, pour que les deux écrans le reconnaissent d'un seul critère.
+  const posteSuppose = estLeResiduelDesSortiesRares(results.dominant_poste, results.dominant_poste_label);
   const equivalenceDeLaMarche = palier ? equivalenceNote(palier) : null;
   // Le repère 2050 revient dès qu'on passe sous la moyenne : au-dessus il est un gouffre, en
   // dessous un horizon crédible. Cf. `showsTarget2050`.
@@ -809,7 +813,7 @@ export default function BilanResultat() {
                 parle — et elle ne promet aucun plan. */}
             <ThemedText type="small" themeColor="textSecondary">
               {palier
-                ? palierNote(palier, montreRepere2050, posteDeLaMarche)
+                ? palierNote(palier, montreRepere2050, posteDeLaMarche, posteSuppose)
                 : comparisonNote(results)}
             </ThemedText>
             {/* L'ordre de grandeur de la marche, sur sa propre ligne (C3.2). Il disparaît sous un

@@ -139,7 +139,23 @@
 //
 // Q4 ne fait pas parler l'assertion négative, et c'est attendu : l'attente positive vient avant elle
 // et tombe la première, le titre nommant le poste ne contenant pas « l’essentiel. ». La négative
-// garde l'autre moitié, la promesse du point, et c'est Q3 qui le montre.
+// garde l'autre moitié, la promesse du point, et c'est Q3 qui le montre. (Q3 et Q4 ont été jouées
+// sur le titre d'alors ; celui du 25/09/2026 a les siennes, ci-dessous.)
+//
+// **Et deux le 25/09/2026, sur l'arbitrage du résiduel des sorties rares** (`v1-29` §6.3) — le titre
+// « Tu es déjà sous le repère 2050. » et la marche tue sur la restitution. Ce sont deux **appels**,
+// que Jest ne voit pas : chaque dérivation a ses tests, mais un écran qui passerait le mauvais
+// argument les laisserait tous verts. Un export chacune, `--clear`, le marqueur retrouvé dans le
+// bundle, après un témoin passé de bout en bout :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | R1 — la restitution passe `posteSuppose` à faux | « cycliste — restitution » : « la restitution propose encore une marche sur le résiduel des sorties rares » |
+//   | R2 — le plan ne passe pas le total à la félicitation | « cycliste — … le plan sans action » : « Tu es déjà sous le repère 2050. » n'apparaît jamais |
+//
+// R2 a d'abord été jouée **avec R1 encore en place** — la sauvegarde du fichier avait échoué — et
+// s'arrêtait donc à la restitution, sur le message de R1 : un résultat qui avait l'air d'une
+// mutation attrapée et qui n'éprouvait rien du plan. Rejouée seule, elle tombe où elle doit.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -849,6 +865,17 @@ try {
   // en base aurait tenu si l'écran s'était mis à dire « 0,0 t ».
   await attendreTexte(`${ATTENDU_SOBRE.totalKg} kg CO₂e`);
   assurer(!(await barreVisible()), 'la barre d’onglets est visible sur la restitution du cycliste (C5.7)');
+  // **La marche se tait sur le résiduel des sorties rares** (arbitrage du 25/09/2026, `v1-29` §6.3).
+  // Ce profil recevait « S’il te reste de l’envie : 2 kg CO₂e de moins sur l’année sur tes sorties du
+  // week-end » — des sorties qu'il n'a pas déclarées, et un plan vide pour les franchir. Le début de
+  // la phrase reste, et il s'attend d'abord : sans lui, l'absence qui suit passerait sur un palier
+  // qui ne se rend plus du tout.
+  await attendreTexte('Tu es déjà sous le repère transport 2050.');
+  const texteDeLaRestitution = await page.evaluate(() => document.body.innerText);
+  assurer(
+    !/S’il te reste de l’envie/.test(texteDeLaRestitution),
+    'la restitution propose encore une marche sur le résiduel des sorties rares (palierNote)'
+  );
   const sobre = await session();
   const [resultatSobre] = await lire('assessment_results?select=total_co2_kg_year,dominant_poste_co2_kg_year', sobre.jeton);
   assurer(resultatSobre, 'aucun assessment_results lisible pour le cycliste');
@@ -911,7 +938,13 @@ try {
   // le calcul suppose et que la personne n'a pas déclaré. D'où le titre sans poste, et aucune promesse
   // de point : la boucle mensuelle n'est pas générée sans base déclarée
   // (`felicitationDuPlanSansAction`).
-  await attendreTexte('Tu fais déjà l’essentiel.');
+  //
+  // **Et depuis l'arbitrage du 25/09/2026, le titre dit pourquoi le plan est vide** : « Tu es déjà
+  // sous le repère 2050. », ce que la restitution vient de dire — à « transport » près, et c'est ce
+  // qui empêche l'attente ci-dessous de se satisfaire de la restitution restée montée sous le plan.
+  // Le titre est conditionné au total que l'écran relit : une lecture qui ne le ramènerait plus le
+  // ferait retomber sur « Tu fais déjà l’essentiel. », et c'est ici que ça se verrait.
+  await attendreTexte('Tu es déjà sous le repère 2050.');
   // Le cap se rend quand même — c'est lui qui nomme la période depuis C2.8 — mais sans chiffrer.
   await attendreTexte(/Automne 2026/);
 

@@ -23,6 +23,7 @@ import {
   type IntentionDay,
   type ReponsesDeContexte,
 } from './plan';
+import { TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
 
 describe('intentionKindForPoste', () => {
   it('ne propose des jours de la semaine que pour le domicile-travail', () => {
@@ -262,10 +263,17 @@ describe('phraseDesPistesSuffisantes', () => {
  * résiduel des sorties rares : la branche neutralisée fait tomber « ne nomme ni ne promet », et lui
  * seul ; le marqueur lu sur tous les postes fait tomber « ne lit le marqueur que sur les sorties »,
  * et lui seul.
+ *
+ * Et le 25/09/2026, pour le titre du résiduel (« Tu es déjà sous le repère 2050. ») : le titre
+ * rendu sans condition de total fait tomber « ne dit … que si le total l'est », et lui seul ; la
+ * borne rendue stricte (`<` dans `sousLeRepere2050`) le fait tomber avec « vaut aussi pile sur le
+ * repère » de `palier.test.ts` — les deux tests de la même égalité, et eux seuls ; le marqueur lu sur
+ * tous les postes (dans `estLeResiduelDesSortiesRares`) fait tomber « ne lit le marqueur que sur les
+ * sorties » ici et dans `postes.test.ts`, et eux seuls.
  */
 describe('felicitationDuPlanSansAction', () => {
   const titre = (poste: string | null, libelle: string | null = null) =>
-    felicitationDuPlanSansAction(poste, libelle).titre;
+    felicitationDuPlanSansAction(poste, libelle, null).titre;
 
   it('nomme le poste du cycle', () => {
     expect(titre('commute', 'Trajet domicile-travail (Vélo)')).toBe(
@@ -288,19 +296,40 @@ describe('felicitationDuPlanSansAction', () => {
   });
 
   // Le cycliste aux sorties rares du parcours réel : son poste est le résiduel du calcul, pas un
-  // comportement déclaré, et aucune boucle mensuelle ne porte dessus.
-  it('ne nomme ni ne promet le résiduel des sorties rares', () => {
-    expect(felicitationDuPlanSansAction('leisure', 'Loisirs du week-end (occasionnels)')).toEqual({
-      titre: 'Tu fais déjà l’essentiel.',
+  // comportement déclaré, et aucune boucle mensuelle ne porte dessus. Son total (11 kg) est celui
+  // que le parcours réel mesure.
+  const RESIDUEL = 'Loisirs du week-end (occasionnels)';
+  it('ne nomme ni ne promet le résiduel des sorties rares, et dit pourquoi le plan est vide', () => {
+    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, 11)).toEqual({
+      titre: 'Tu es déjà sous le repère 2050.',
       promettreLePoint: false,
     });
   });
 
+  // **Le titre affirme un repère, donc il se conditionne au total** (arbitrage du 25/09/2026). Vrai
+  // par construction aujourd'hui, pas garanti demain : un poste neuf pourrait faire passer ce
+  // profil au-dessus. La borne est celle de la restitution — le repère, égalité comprise —, et un total
+  // inconnu (lecture en échec) n'affirme rien.
+  it('ne dit « sous le repère 2050 » que si le total l’est, égalité comprise', () => {
+    expect(titre('leisure', RESIDUEL)).toBe('Tu fais déjà l’essentiel.');
+    const repereKg = TARGET_2050_TRANSPORT_T * 1000;
+    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg).titre).toBe('Tu es déjà sous le repère 2050.');
+    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg + 0.01).titre).toBe('Tu fais déjà l’essentiel.');
+    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg + 1).promettreLePoint).toBe(false);
+  });
+
+  // Le repère ne vaut que pour le résiduel : ailleurs le titre nomme le poste, quel que soit le total.
+  it('ne parle du repère que pour le résiduel', () => {
+    expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)', 11).titre).toBe(
+      'Tu fais déjà l’essentiel sur ton trajet domicile-travail.'
+    );
+  });
+
   it('promet le point partout ailleurs', () => {
-    expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)').promettreLePoint).toBe(true);
-    expect(felicitationDuPlanSansAction('leisure', 'Loisirs du week-end (Voiture thermique)').promettreLePoint).toBe(true);
-    expect(felicitationDuPlanSansAction('travel', 'Voyages longue distance (Avion)').promettreLePoint).toBe(true);
-    expect(felicitationDuPlanSansAction(null, null).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)', 11).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('leisure', 'Loisirs du week-end (Voiture thermique)', 11).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('travel', 'Voyages longue distance (Avion)', 11).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction(null, null, null).promettreLePoint).toBe(true);
   });
 
   // Le marqueur ne vaut que pour les sorties : un libellé d'un autre poste qui le porterait ne

@@ -70,12 +70,30 @@ export type Palier = {
 };
 
 /**
+ * Le total est-il déjà sous le repère transport 2050 ?
+ *
+ * Sorti de `nextPalier` le 25/09/2026 parce qu'un second écran l'affirme : le plan d'un profil au
+ * résiduel des sorties rares titre « Tu es déjà sous le repère 2050. » (`felicitationDuPlanSansAction`),
+ * juste après la restitution qui dit « Tu es déjà sous le repère transport 2050. ». Les deux phrases
+ * doivent tomber du même côté de la même borne — égalité comprise —, donc la comparaison n'est
+ * écrite qu'ici.
+ */
+export function sousLeRepere2050(totalKg: number, target2050Kg: number): boolean {
+  return totalKg <= target2050Kg;
+}
+
+/**
  * Le prochain palier, ou `null` quand il n'y a rien à proposer.
  *
  * Un seul cas rend `null` : **aucun cap disponible** (pas de cycle de plan, ou cap nul). Sans
  * cap il n'existe pas de marche atteignable à proposer, et on préfère ne rien dire qu'en
- * inventer une. C'est notamment le cas du profil que `/plan` accueille par sa félicitation
- * (`felicitationDuPlanSansAction`) : aucune action ne gagne assez pour valoir la peine.
+ * inventer une.
+ *
+ * **Ce n'est PAS le cas d'un plan à zéro action**, contrairement à ce que ce commentaire a écrit
+ * jusqu'au 25/09/2026 : le cap y vaut encore 20 % du poste dominant, donc il n'est nul que sous
+ * 2,5 kg. Le cycliste du parcours réel, dont le plan est vide, recevait ainsi « 2 kg CO₂e de moins
+ * sur l'année sur tes sorties du week-end ». C'est `palierNote` qui tait la marche quand le poste
+ * est le résiduel des sorties rares, pas cette fonction.
  *
  * Être déjà sous le repère 2050 ne rend **pas** `null` — décision produit du 05/09/2026. Ce
  * qu'on n'émet pas laisse de la marge ailleurs, et le proposer à quelqu'un qui est déjà sobre
@@ -91,7 +109,7 @@ export function nextPalier(
 
   // Déjà sous le repère : la marche continue, bornée à zéro — on ne propose pas une empreinte
   // négative, qui n'aurait aucun sens pour un total de déplacements.
-  if (totalKg <= target2050Kg) {
+  if (sousLeRepere2050(totalKg, target2050Kg)) {
     const targetKg = Math.max(totalKg - capKg, 0);
     if (targetKg >= totalKg) return null;
     return {

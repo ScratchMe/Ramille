@@ -419,8 +419,28 @@ export function comparisonNote(results: ResultatBilan): string {
  * bilan qu'on relit, et « le plan qui suit » ne suit rien quand on consulte son historique —
  * l'écran n'y propose plus que « Revenir à mon suivi ». La relecture affiche `comparisonNote`,
  * qui ne promet rien.
+ *
+ * **`posteSuppose` tait la marche quand le poste est le résiduel des sorties rares** (arbitrage du
+ * 25/09/2026, `v1-29` §6.3, lu par `estLeResiduelDesSortiesRares`). Le cycliste qui sort
+ * « rarement » recevait « S'il te reste de l'envie : 2 kg CO₂e de moins sur l'année sur tes
+ * sorties du week-end » : une marche sur des sorties qu'il a dit ne presque pas faire, que le plan
+ * suivant — vide — n'avait aucun moyen de lui faire franchir. Les deux premières phrases restent :
+ * elles sont vraies, et ce sont elles qui comptent. L'argument est **requis** plutôt qu'à valeur
+ * par défaut : l'oublier à l'appel rendrait la marche en silence, et c'est l'appel que la
+ * contre-lecture a appris à soupçonner, pas la fonction.
+ *
+ * Seule la branche « déjà sous le repère » le lit, et c'est la seule que ce profil atteint : pour
+ * que le résiduel l'emporte, le trajet et les voyages pèsent moins que lui, qui ne dépasse pas une
+ * soixantaine de kilos — le total reste loin des 600 kg du repère. Un poste neuf qui romprait cette
+ * borne (C4.3) rendrait les deux autres branches atteignables avec une marche nommée : c'est là
+ * qu'il faudrait revenir.
  */
-export function palierNote(palier: Palier, repereVisible: boolean, poste: string): string {
+export function palierNote(
+  palier: Palier,
+  repereVisible: boolean,
+  poste: string,
+  posteSuppose: boolean
+): string {
   const reduction = formatTonnes(palier.reductionKg);
   // **La marche se dit sur le poste dominant, et c'est la moitié de C3.11.** Le cap de la saison
   // vaut 20 % de `baseline_co2_kg_year`, qui est le poste **dominant** (décision `v1-07` §3.3,
@@ -435,11 +455,11 @@ export function palierNote(palier: Palier, repereVisible: boolean, poste: string
   // marge qui profite ailleurs. Rien n'est demandé, rien n'est attendu — et surtout aucune
   // formulation qui ferait d'un profil déjà sobre quelqu'un qui n'en fait pas encore assez.
   if (palier.beyondTarget2050) {
-    return (
+    const dejaSous =
       `Tu es déjà sous le repère transport 2050. Ce que tu n’émets pas laisse de la marge ` +
-      `ailleurs — pour tes autres postes, ou pour ceux dont les déplacements sont contraints. ` +
-      `S’il te reste de l’envie : ${reduction} de moins sur l’année${surLePoste}.`
-    );
+      `ailleurs — pour tes autres postes, ou pour ceux dont les déplacements sont contraints.`;
+    if (posteSuppose) return dejaSous;
+    return `${dejaSous} S’il te reste de l’envie : ${reduction} de moins sur l’année${surLePoste}.`;
   }
 
   // Le palier tombe pile sur le repère : la barre porte alors son vrai nom, et la phrase dit

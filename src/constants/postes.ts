@@ -114,6 +114,29 @@ export function formeInserable(
 }
 
 /**
+ * Le poste est-il le **résiduel des sorties rares** — un poste que le calcul suppose, et que la
+ * personne n'a pas déclaré ?
+ *
+ * Quelqu'un qui sort « rarement » le week-end se voit compter quinze kilomètres une semaine sur
+ * quatre (D5, spec §5). Chez un cycliste sans voyage, ce résiduel devient le poste dominant, donc
+ * celui du plan — et tout ce qui le nomme félicite ou sollicite la personne sur des sorties qu'elle
+ * a dit ne presque pas faire. Le serveur le marque dans les deux libellés qu'il fige
+ * (`dominant_poste_label` et `extras_poste_label` : « Loisirs du week-end (occasionnels) », épinglé
+ * par les tests `01` et `20`) ; c'est ce marqueur qu'on lit, faute d'une colonne qui le dise.
+ *
+ * **Une seule lecture pour deux écrans** (25/09/2026, `v1-29` §6.3) : la félicitation du plan et la
+ * marche de la restitution. Écrit deux fois, le test du marqueur aurait pu diverger entre l'écran
+ * qui tait le poste et celui qui le proposait encore. Le marqueur n'est lu que sur les sorties : un
+ * autre poste qui le porterait resterait nommé.
+ */
+export function estLeResiduelDesSortiesRares(
+  poste: string | null | undefined,
+  libelle: string | null | undefined
+): boolean {
+  return poste === 'leisure' && (libelle ?? '').includes('(occasionnels)');
+}
+
+/**
  * L'étiquette nue d'un poste, avec un repli explicite sur le libellé snapshoté.
  *
  * Le repli est le second argument et non une chaîne vide : `dominant_poste` peut porter une

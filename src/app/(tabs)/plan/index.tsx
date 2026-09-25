@@ -355,6 +355,11 @@ export default function Plan() {
   // `null` tant qu'on ne sait pas : le jour que Ramille nomme vient du libellé du poste
   // domicile-travail, et une valeur par défaut nommerait le mauvais rythme (cf. le chargement).
   const [boucle, setBoucle] = useState<Boucle | null>(null);
+  // Le total du bilan courant, pour la seule phrase du plan qui l'affirme : la félicitation du
+  // résiduel des sorties rares dit « sous le repère 2050 » (`felicitationDuPlanSansAction`). Lu dans
+  // la requête qui ramenait déjà le libellé du trajet ; `null` tant qu'on ne sait pas, et sur un
+  // échec de lecture — la phrase retombe alors sur celle qui n'affirme rien.
+  const [totalDuBilan, setTotalDuBilan] = useState<number | null>(null);
   const [permission, setPermission] = useState<Permission>('fermee');
   /**
    * L'engagement qu'un re-bilan a emporté, tant qu'il n'a pas été annoncé sur cet appareil (C2.2).
@@ -684,7 +689,7 @@ export default function Plan() {
         ] = await Promise.all([
             supabase
               .from('assessment_results')
-              .select('commute_poste_label')
+              .select('commute_poste_label, total_co2_kg_year')
               .eq('assessment_id', assessment.id)
               .maybeSingle(),
             // **Dans le lot existant, jamais en plus** (C5.5, `v1-17` §7.4) : l'écran se recharge à
@@ -719,6 +724,7 @@ export default function Plan() {
         // tout le plan par un écran d'erreur pour une lecture secondaire. La ligne de relecture
         // dit que l'écran n'est pas tout à fait à jour.
         if (!erreurResultat) setBoucle(resultat?.commute_poste_label ? 'hebdo' : 'mensuel');
+        setTotalDuBilan(erreurResultat ? null : (resultat?.total_co2_kg_year ?? null));
         setRappels(prefs);
         setPermission(etatPermission);
 
@@ -1071,8 +1077,9 @@ export default function Plan() {
     nombreDActions: actionsCount,
   });
   // Le titre de la carte d'un plan à zéro action, et s'il peut promettre le point : le cycle porte
-  // les deux réponses, le poste et le libellé figé par le serveur (`felicitationDuPlanSansAction`).
-  const felicitation = felicitationDuPlanSansAction(cycle.poste, cycle.trip_label);
+  // le poste et le libellé figé par le serveur, le bilan son total — seul le résiduel des sorties
+  // rares le lit, pour dire qu'il est sous le repère 2050 (`felicitationDuPlanSansAction`).
+  const felicitation = felicitationDuPlanSansAction(cycle.poste, cycle.trip_label, totalDuBilan);
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.

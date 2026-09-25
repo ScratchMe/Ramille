@@ -259,9 +259,9 @@ plan, avec la carte « Plan et Suivi ». C'est le chemin le moins évident du ch
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
-| 09.1 | Refaire un bilan en déclarant un trajet **à vélo**, des sorties **« rarement »**, et aucun vol ni long trajet — le profil que le parcours réel joue à chaque PR | — | |
+| 09.1 | Refaire un bilan en déclarant un trajet **à vélo**, des sorties **« rarement »**, et aucun vol ni long trajet — le profil que le parcours réel joue à chaque PR | Sur la restitution, sous les barres : **« Tu es déjà sous le repère transport 2050. Ce que tu n'émets pas laisse de la marge ailleurs — pour tes autres postes, ou pour ceux dont les déplacements sont contraints. »**, et **rien après**. La phrase « S'il te reste de l'envie : … sur tes sorties du week-end » a été retirée pour ce profil le 25/09/2026 (`v1-29` §6.3) : elle lui proposait une marche sur des sorties qu'il n'a pas déclarées. La revoir est un écart | |
 | 09.2 | Arriver sur le plan | **Pas** de carte « Ton premier plan ». À la place : la barre d'onglets **et** la carte « Plan et Suivi » | |
-| 09.3 | Le contenu du plan | La félicitation **« Tu fais déjà l'essentiel. »**, **sans poste nommé** et **sans** « Le point reste là… » : pour ce profil, le poste du plan est le résiduel des sorties rares, que le calcul suppose et qu'il n'a pas déclaré (`v1-29` §4). Puis la carte du cap **sans chiffre** (mais avec la période et sa fin), et **ni** encart de contexte **ni** lien vers les pistes | |
+| 09.3 | Le contenu du plan | La félicitation **« Tu es déjà sous le repère 2050. »** (arbitrage du 25/09/2026, `v1-29` §6.3 — elle disait « Tu fais déjà l'essentiel. » la veille), **sans poste nommé** et **sans** « Le point reste là… » : pour ce profil, le poste du plan est le résiduel des sorties rares, que le calcul suppose et qu'il n'a pas déclaré (`v1-29` §4). Puis la carte du cap **sans chiffre** (mais avec la période et sa fin), et **ni** encart de contexte **ni** lien vers les pistes | |
 
 ---
 
