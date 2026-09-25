@@ -101,6 +101,31 @@
 // échouer le parcours pour une raison étrangère ; et un `push` suivi d'un `replace` **dans le même
 // tick** ne produit aucune navigation — expo-router les fusionne, donc `framenavigated` ne voit rien.
 //
+// **Et neuf de plus le 25/09/2026**, sur les trois gardes de ce jour-là — les groupes nommés à chaque
+// étape, les jours de l'engagement au clavier, la ligne de canal sur « Toi » —, un export chacune
+// (cache Metro isolé, `--clear`, un marqueur de la mutation retrouvé dans le bundle), après un témoin
+// qui passe de bout en bout. Chacune s'arrête à l'étape attendue, sur le message attendu :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | P1 — la liste des modes (B1.4) sans `GroupeDeChoix` | « questionnaire — mode » : les neuf modes, « aucun groupe » ; la motorisation, qui garde le sien, n'est pas citée |
+//   | P9 — la liste « Lequel ? » sans groupe | « questionnaire — second mode », au détour par « Oui » : les sept modes |
+//   | P2 — `PrecisionMode` sans son propre groupe | « questionnaire — mode » : le groupe du mode coche deux cases, « Voiture (seul) » et « Thermique » |
+//   | P3 — `Chip` sans `activableALaBarreDEspace` | « engagement » : Espace ne coche pas « mardi » |
+//   | P4 — la répétition active | « engagement » : la barre maintenue n'a pas laissé « mardi » coché |
+//   | P5 — Entrée prise aussi par le gestionnaire | « engagement » : Entrée n'a pas décoché « mardi » |
+//   | P6 — `opacity` remise sur la ligne hors d'atteinte | « « Toi » » : « Par email » porte une opacité |
+//   | P7 — son titre remis en texte | « « Toi » » : le titre n'est pas le texte tertiaire |
+//   | P8 — `LigneDeCanal` sans `activableALaBarreDEspace` | « « Toi » » : Espace ne choisit pas « Sans rappel » |
+//
+// **P2 a d'abord PASSÉ l'étape du mode, et c'est elle qui a changé la garde.** Sa première version ne
+// vérifiait que le groupe le plus proche, et son commentaire affirmait que cela suffisait : privée de
+// son groupe, la motorisation tombe dans celui du mode, qui est bien le plus proche et bien nommé —
+// elle n'était vue qu'aux longs trajets, où la précision n'est pas imbriquée. La règle qui la voit est
+// sémantique : un `radiogroup` ne coche jamais deux cases. P4 dit aussi une chose que Jest ne pouvait
+// pas dire : la répétition d'une touche maintenue arrive bien jusqu'au gestionnaire, à travers
+// Chromium, React et react-native-web — sans quoi le garde de `repeat` ne garderait rien.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -285,30 +310,52 @@ async function attendreTexte(motif) {
 }
 
 /**
- * **Toute case d'option répond à un `radiogroup` nommé, toute case à cocher à un `group` nommé** — et
- * c'est le groupe **le plus proche** qui compte (25/09/2026, `v1-29`).
+ * **Toute case d'option répond à un `radiogroup` nommé, toute case à cocher à un `group` nommé, et
+ * aucun `radiogroup` ne coche deux cases** (25/09/2026, `v1-29`).
  *
  * Trois listes de modes du questionnaire n'avaient aucun groupe : « Voiture (seul) », atteint au
- * clavier ou au doigt, ne disait pas à quelle question il répond. Chercher « un ancêtre » nommé ne
- * suffirait pas, et c'est la raison du « plus proche » : une précision qui s'ouvre sous un mode vit
- * **dans** le groupe de ce mode (`GroupeDeChoix` dit pourquoi), donc « Thermique » privé de son
- * propre groupe en trouverait quand même un, celui du mode — et s'annoncerait comme une réponse à
- * la mauvaise question. Appelée à chaque étape du questionnaire, sur la feuille d'engagement et sur
- * « Toi » ; une page sans aucun choix n'est pas un succès, c'est une mesure qui n'a pas eu lieu.
+ * clavier ou au doigt, ne disait pas à quelle question il répond. Une précision qui s'ouvre sous un
+ * mode vit **dans** le groupe de ce mode (`GroupeDeChoix` dit pourquoi), et c'est ce qui impose les
+ * deux autres règles :
+ * - **c'est le groupe le plus proche qui doit être nommé**, pas « un ancêtre » : une précision dont le
+ *   groupe aurait perdu son nom trouverait sinon celui du mode ;
+ * - **un `radiogroup` ne coche jamais plus d'une case.** Une précision privée de son propre groupe
+ *   tombe dans celui du mode, qui devient son groupe le plus proche et qui est bien nommé : les deux
+ *   premières règles passent, et seule celle-ci la voit — le mode et la motorisation cochés ensemble,
+ *   comme deux réponses à la même question. **La première version de cette garde n'avait pas cette
+ *   règle, et elle croyait n'en avoir pas besoin** : son commentaire affirmait que « le plus proche »
+ *   suffisait. La mutation l'a démentie (en-tête, P2) — la motorisation n'était vue qu'aux longs
+ *   trajets, là où elle n'est pas imbriquée.
+ *
+ * Appelée à chaque étape du questionnaire, sur la feuille d'engagement et sur « Toi » ; une page sans
+ * aucun choix n'est pas un succès, c'est une mesure qui n'a pas eu lieu.
  */
 async function verifierLesGroupes(ou) {
   const releve = await page.evaluate(() => {
     const choix = [...document.querySelectorAll('[role="radio"], [role="checkbox"]')];
     const fautifs = [];
+    const cochesParGroupe = new Map();
     for (const element of choix) {
       const role = element.getAttribute('role');
       const attendu = role === 'radio' ? 'radiogroup' : 'group';
       const groupe = element.parentElement?.closest('[role="radiogroup"], [role="group"]') ?? null;
       const nom = groupe?.getAttribute('aria-label')?.trim() ?? '';
+      const libelle = (element.getAttribute('aria-label') ?? element.textContent ?? '').trim();
       if (groupe === null || groupe.getAttribute('role') !== attendu || nom === '') {
         fautifs.push(
-          `${role} « ${(element.getAttribute('aria-label') ?? element.textContent ?? '').trim()} » — ` +
+          `${role} « ${libelle} » — ` +
             (groupe === null ? 'aucun groupe' : `plus proche groupe : ${groupe.getAttribute('role')} « ${nom} »`)
+        );
+      } else if (role === 'radio' && element.getAttribute('aria-checked') === 'true') {
+        cochesParGroupe.set(groupe, [...(cochesParGroupe.get(groupe) ?? []), libelle]);
+      }
+    }
+    for (const [groupe, coches] of cochesParGroupe) {
+      if (coches.length > 1) {
+        fautifs.push(
+          `radiogroup « ${groupe.getAttribute('aria-label')} » — ${coches.length} cases cochées à la fois` +
+            ` (${coches.map((c) => `« ${c} »`).join(', ')}) : une précision privée de son propre groupe est` +
+            ' tombée dans celui de l’option qu’elle précise'
         );
       }
     }
@@ -317,8 +364,9 @@ async function verifierLesGroupes(ou) {
   assurer(releve.total > 0, `${ou} : aucun choix à l'écran, les groupes n'ont pas pu être vérifiés`);
   assurer(
     releve.fautifs.length === 0,
-    `${ou} : ${releve.fautifs.length} choix sans le groupe nommé qui leur revient (une case d'option` +
-      ` dans un radiogroup, une case à cocher dans un group, par GroupeDeChoix) :\n  ${releve.fautifs.join('\n  ')}`
+    `${ou} : ${releve.fautifs.length} défaut(s) de groupe — une case d'option doit répondre à un` +
+      ' radiogroup nommé qui n’en coche qu’une, une case à cocher à un group nommé, par GroupeDeChoix :' +
+      `\n  ${releve.fautifs.join('\n  ')}`
   );
 }
 
@@ -642,8 +690,8 @@ try {
 
   // ── 8 bis. « Toi » : la ligne de canal, hors d'atteinte et au clavier ────────────────────────
   //
-  // **Le seul endroit où une ligne de canal se rend sur web avec une vraie session** (25/09/2026) :
-  // la feuille des rappels ne s'ouvre sur web qu'avec une adresse rattachée, et ce profil n'en a pas.
+  // **Le seul endroit de ce parcours où une ligne de canal se rend** (25/09/2026) : la feuille des
+  // rappels ne s'ouvre sur web qu'avec une adresse rattachée, et ce profil n'en a pas.
   // Deux choses s'y vérifient, qu'aucune autre garde ne voyait :
   //   - **la ligne hors d'atteinte le dit par son texte, jamais par une opacité** (kit, `readme.md`,
   //     puce « États ») : sans compte, « Par email » est désactivée, jamais cochée — la préférence en

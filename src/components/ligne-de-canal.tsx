@@ -27,7 +27,7 @@ import type { CanalPrefere, LigneDeReglage } from '@/types/rappels';
  * portait `opacity: 0.6`, ce que le kit interdit en toutes lettres (`readme.md`, puce « États » :
  * désactivé = fond élément + texte tertiaire, jamais une opacité) — et l'opacité s'appliquait à la
  * ligne entière, donc au **détail**, la seule phrase qui dit *pourquoi* le canal est hors d'atteinte
- * (« Rattache un compte pour l'activer. ») : 3,23 à 3,30:1 selon le fond de la page, sous le seuil
+ * (« Rattache un compte pour l’activer. ») : 3,23 à 3,30:1 selon le fond de la page, sous le seuil
  * de 4,5. Désormais le titre passe en `textTertiary` (5,28:1 sur le fond des éléments), le détail
  * garde `textSecondary` (9,39:1), et le fond est celui d'un choix libre au repos. `occupe` ne change
  * rien à l'aspect : c'est un état de quelques centaines de millisecondes, le temps d'enregistrer, et

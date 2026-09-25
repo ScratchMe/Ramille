@@ -26,7 +26,8 @@ import { ControlHeight, Spacing } from '@/constants/theme';
  * séries des longs trajets, la catégorie du retour) : ce qu'on ajoutera un jour à un groupe, comme
  * les flèches pour passer d'une option à l'autre que `v1-29` §6.4 nomme, ne les aurait pas
  * atteints. Le parcours réel vérifie, étape par étape, que toute case d'option a un `radiogroup`
- * nommé et toute case à cocher un `group` nommé.
+ * nommé et toute case à cocher un `group` nommé — et qu'aucun `radiogroup` n'en coche deux, seule
+ * règle qui voie une précision privée de son propre groupe (le paragraphe suivant dit pourquoi).
  *
  * **Une précision qui s'ouvre sous l'option choisie est son propre groupe, posé DANS celui de la
  * question qui l'ouvre** — « Quelle motorisation ? » sous « Voiture (seul) », dans le groupe du
@@ -36,7 +37,10 @@ import { ControlHeight, Spacing } from '@/constants/theme';
  * **le plus proche**, donc à sa propre question — « Hybride » à « Quelle motorisation ? », jamais au
  * mode. La sortir du groupe du mode l'aurait détachée de l'option qu'elle précise, ou coupé la liste
  * des modes en deux groupes homonymes. Relevé dans l'arbre d'accessibilité de Chromium le 25/09/2026 ;
- * ce que TalkBack en annonce reste à écouter sur appareil (`v1-29` §6.5).
+ * ce que TalkBack en annonce reste à écouter sur appareil (`v1-29` §6.5). **Le revers de cette
+ * forme** : une précision qui perdrait son groupe tomberait dans celui du mode sans que rien ne le
+ * dise — il est nommé, il est le plus proche —, et le mode et la motorisation y seraient cochés
+ * ensemble. C'est à cela, et à cela seulement, que le parcours réel la reconnaît.
  *
  * `role` et `aria-label` plutôt que `accessibilityRole` : le rôle d'un groupe de cases, `group`,
  * n'existe que dans le vocabulaire ARIA que React Native accepte depuis la 0.71.

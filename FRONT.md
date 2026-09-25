@@ -408,7 +408,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   qu'elle choisit (« Catégorie »). **Une précision qui s'ouvre sous une option est son propre
   groupe, posé dans celui de l'option** — la forme des révélations conditionnelles de GOV.UK, et la
   seule qui la garde juste sous ce qu'elle précise : chaque case d'option répond au groupe **le plus
-  proche**, et c'est ce que le parcours réel vérifie à chaque étape. `Chip.role` est
+  proche**, et le parcours réel le vérifie à chaque étape — avec une règle de plus, qu'aucun
+  `radiogroup` ne coche deux cases : c'est la seule qui voie une précision privée de son propre
+  groupe, tombée dans celui du mode, qui est bien nommé. `Chip.role` est
   **obligatoire** (`radio` ou `checkbox`) : une puce ajoutée sans rôle ne compile plus, là où onze
   séries s'annonçaient comme des boutons. Une puce posée dans un encart teinté prend
   `nestedBackground`, sans quoi elle s'y fond.

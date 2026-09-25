@@ -744,3 +744,42 @@ d'où `--clear`, et un marqueur du code courant à retrouver dans le bundle avan
 `aria-checked` est mappé par React Native vers TalkBack, `announceForAccessibility` et
 `sendAccessibilityEvent` n'ont d'effet que sur un appareil, et aucune de ces suites ne tourne sous
 TalkBack. C'est la recette sur appareil qui les éprouve (`v1-29` §6.5).
+
+**Et le lendemain, trois gardes de plus, parce qu'une contre-lecture de la livraison a trouvé ce que
+les deux premières ne pouvaient pas voir** (25/09/2026) : un rôle juste qui ne répondait plus au geste
+qu'il annonce, et des cases d'option sans groupe.
+
+- **`verifier-etats-export.mjs`, section F — Espace coche une case d'option.** react-native-web n'active
+  par Espace qu'un bouton ; depuis que les puces sont des `radio`, Espace ne cochait plus rien et
+  faisait défiler la page (`src/lib/barre-d-espace.ts`). La section presse Espace sur une rangée, une
+  puce et un item de mode du questionnaire, rempli hors ligne depuis un brouillon posé dans le
+  stockage, et mesure **deux** choses : la case est cochée, **et rien n'a défilé**. Une mesure
+  impossible — la page ne peut pas défiler sous le choix, le focus n'est pas pris — est un échec : sans
+  défilement possible, « rien n'a défilé » ne prouverait rien. La mesure elle-même vit dans
+  `scripts/mesurer-un-choix.mjs`, partagée avec le parcours réel.
+- **Le parcours réel vérifie les groupes à chaque étape** — du questionnaire des deux profils, de la
+  feuille d'engagement et de « Toi » : toute case d'option a pour groupe **le plus proche** un
+  `radiogroup` nommé, toute case à cocher un `group` nommé, et **aucun `radiogroup` ne coche deux
+  cases**. Les deux dernières règles viennent de ce qu'une précision vit **dans** le groupe de l'option
+  qu'elle précise (`GroupeDeChoix`) : « le plus proche » attrape un groupe imbriqué qui aurait perdu son
+  nom, que « un ancêtre » laisserait passer sur celui du mode ; et une précision privée de son propre
+  groupe tombe dans celui du mode, **qui est bien nommé** — seule l'exclusivité la voit, le mode et la
+  motorisation y étant cochés ensemble. **La première version de la garde n'avait pas cette règle, et
+  son commentaire affirmait que « le plus proche » suffisait** : la mutation l'a démenti, la
+  motorisation privée de son groupe n'étant vue qu'aux longs trajets, où elle n'est pas imbriquée.
+  C'est une exclusion affirmée et vérifiée sur une paire de moins (`CLAUDE.md`, « Avant de lancer une
+  vague »), trouvée par la seule mutation qui visait la paire manquante. Le premier profil touche
+  « Oui » au second mode pour ouvrir « Lequel ? » — sans quoi aucun profil ne rend cette liste —, puis
+  répond « Non » comme avant : les chiffres attendus ne bougent pas.
+- **Le parcours réel joue le clavier là où il faut une session** : les jours de l'engagement, seule case
+  à cocher du produit — Espace coche sans faire défiler, Entrée décoche (une seule activation), une
+  barre maintenue coche une fois (la répétition) — et « Toi », seul écran de ce parcours où une ligne
+  de canal se rend (la feuille des rappels ne s'ouvre sur web qu'avec une adresse rattachée) : la
+  ligne « Par email » hors d'atteinte est désactivée, jamais cochée, **sans opacité**, son titre en
+  texte tertiaire (lu dans `theme.ts`) et son détail à 4,5:1 au moins ; Espace choisit « Sans rappel »,
+  et la base relue le confirme.
+
+Les mutations sont datées en tête de chaque script. Deux choses restent hors de portée : **ce que
+TalkBack annonce d'un groupe imbriqué**, et la position dans la série (« 2 sur 9 ») que Chromium
+calcule mais que son protocole de débogage n'expose pas — la garde lit le groupe le plus proche dans
+le DOM, et l'arbre d'accessibilité l'a confirmé une fois à la main, pas plus.
