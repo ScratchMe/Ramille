@@ -8,6 +8,18 @@ import { ControlHeight, Spacing } from '@/constants/theme';
  * `radiogroup` quand on n'en choisit qu'un, un `group` quand ils se cumulent — **toujours nommé par
  * la question à laquelle il répond** (24/09/2026, `v1-29`, audit d'accessibilité 4.1.2).
  *
+ * Onze séries du questionnaire et du plan s'annonçaient encore en `button` (A2-8, `v1-13` §11.4) :
+ * rien ne disait « sélectionné », ni la place dans le groupe, ni surtout **à quelle question** la
+ * puce répond. La question est un frère dans l'arbre, pas un libellé rattaché : en lecture
+ * séquentielle elle précède bien la série, mais en navigation de contrôle en contrôle — ou en
+ * explorant l'écran au doigt — une puce « 1 » arrive seule, et il y a trois séries de chiffres sur
+ * l'étape du contexte. Nommer le groupe le dit une fois ; le répéter sur chaque puce le dirait
+ * autant de fois qu'il y a de puces (A2-9, même raisonnement que `PrecisionChiffres`).
+ *
+ * **La question se passe en chaîne, et l'appelant l'écrit une fois** pour ses deux usages — le texte
+ * affiché et le nom du groupe. Deux copies d'un même libellé finissent par ne plus se
+ * correspondre ; c'est la dérive que `TextLink` existe pour empêcher ailleurs.
+ *
  * **C'est le seul endroit du dépôt qui écrive un de ces deux rôles** (25/09/2026). Trois listes de
  * modes du questionnaire n'avaient pas de groupe du tout — « Voiture (seul) » ne disait pas à quelle
  * question il répond —, et trois fichiers posaient le rôle eux-mêmes (`PrecisionChiffres`, les trois
@@ -25,18 +37,6 @@ import { ControlHeight, Spacing } from '@/constants/theme';
  * mode. La sortir du groupe du mode l'aurait détachée de l'option qu'elle précise, ou coupé la liste
  * des modes en deux groupes homonymes. Relevé dans l'arbre d'accessibilité de Chromium le 25/09/2026 ;
  * ce que TalkBack en annonce reste à écouter sur appareil (`v1-29` §6.5).
- *
- * Onze séries du questionnaire et du plan s'annonçaient encore en `button` (A2-8, `v1-13` §11.4) :
- * rien ne disait « sélectionné », ni la place dans le groupe, ni surtout **à quelle question** la
- * puce répond. La question est un frère dans l'arbre, pas un libellé rattaché : en lecture
- * séquentielle elle précède bien la série, mais en navigation de contrôle en contrôle — ou en
- * explorant l'écran au doigt — une puce « 1 » arrive seule, et il y a trois séries de chiffres sur
- * l'étape du contexte. Nommer le groupe le dit une fois ; le répéter sur chaque puce le dirait
- * autant de fois qu'il y a de puces (A2-9, même raisonnement que `PrecisionChiffres`).
- *
- * **La question se passe en chaîne, et l'appelant l'écrit une fois** pour ses deux usages — le texte
- * affiché et le nom du groupe. Deux copies d'un même libellé finissent par ne plus se
- * correspondre ; c'est la dérive que `TextLink` existe pour empêcher ailleurs.
  *
  * `role` et `aria-label` plutôt que `accessibilityRole` : le rôle d'un groupe de cases, `group`,
  * n'existe que dans le vocabulaire ARIA que React Native accepte depuis la 0.71.

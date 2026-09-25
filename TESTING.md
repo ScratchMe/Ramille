@@ -371,9 +371,10 @@ que l'écran montre après une écriture — rien. Un `.eq('status', 'complete')
 **`scripts/verifier-parcours-reel.mjs` joue le chemin nominal, et lui seul**, sur **deux profils**
 — décrits plus bas ; celui-ci est le premier, tiré de
 `docs/recette/premier-parcours-web.md` : onboarding → questionnaire → soumission → restitution →
-proposition de compte refusée → plan → engagement → un point généré comme le cron le ferait
-(`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi → suppression du
-compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
+plan, sans écran de compte interposé (arbitrage du 20/09/2026 : la proposition de compte que ce
+paragraphe disait « refusée » n'existe plus sur ce chemin) → engagement → un point généré comme le
+cron le ferait (`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi →
+« Toi » et sa ligne de canal (25/09/2026, §2.12) → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
 (PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, huit
 pistes dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
 la base construite depuis `supabase/migrations/`, ces chiffres ne dépendent d'aucune

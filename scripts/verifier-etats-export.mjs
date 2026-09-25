@@ -79,12 +79,30 @@
 // dans le répertoire temporaire du système, partagé par tous ceux qui exportent. Qui rejoue ces
 // mutations vérifie d'abord qu'un marqueur du code courant est bien dans le bundle.
 //
+// ── Section F, éprouvée en cassant le 25/09/2026 ───────────────────────────────────────────────
+//
+// Un témoin d'abord : l'export d'**avant** le correctif fait tomber les trois choix, et deux fois
+// chacun — Espace ne coche pas, et la page défile (de 230 à 325 px). Puis quatre mutations, un export
+// chacune (cache Metro isolé, `--clear`, un marqueur de la mutation retrouvé dans le bundle avant de
+// conclure), chacune ne faisant tomber que ce qu'elle devait :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | `ChoiceRow` sans `activableALaBarreDEspace` | la rangée, sur l'état **et** le défilement — seulement |
+//   | `Chip` sans elle | la puce, sur l'état et le défilement — seulement |
+//   | `ModeListItem` sans elle | l'item de mode, sur l'état et le défilement — seulement |
+//   | `preventDefault()` retiré de l'utilitaire | les trois, sur le **seul** défilement : ils cochent |
+//
+// La dernière est celle qui justifie la seconde mesure : l'état est juste, et la page saute d'un écran
+// sous le choix qu'on vient de cocher.
+//
 // Lancé en CI après `expo export`, à côté des quatre autres gardes, cf. .github/workflows/ci.yml.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { chromium } from 'playwright';
 
+import { mesurerUnChoix } from './mesurer-un-choix.mjs';
 import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
@@ -123,8 +141,8 @@ const navigateur = await chromium.launch(
  * layout ou dans le premier effet de l'écran, donc les poser après coup ne testerait que le
  * rechargement. AsyncStorage sur web est `window.localStorage`, clé pour clé, sans préfixe.
  */
-async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null } = {}) {
-  const page = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
+async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null, hauteur = 844 } = {}) {
+  const page = await navigateur.newPage({ viewport: { width: 390, height: hauteur } });
   // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
   // au chargement du module (section E).
   if (reduire) await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -589,6 +607,87 @@ for (const reduire of [false, true]) {
   }
 }
 
+// ── F. La barre d'espace coche une case d'option (25/09/2026) ──────────────────────────────────
+//
+// react-native-web n'active par Espace qu'un `<button>` ou un `role="button"` (`PressResponder`,
+// `isValidKeyPress`) : depuis que les puces et les rangées sont des `radio` (24/09/2026, `v1-29`),
+// Espace n'y cochait plus rien et faisait défiler la page — seule Entrée marchait, là où WAI-ARIA
+// attend Espace. `activableALaBarreDEspace` (`src/lib/barre-d-espace.ts`) le rend, et les trois
+// composants de choix que le questionnaire rend **sans réseau** sont éprouvés ici : une rangée, une
+// puce, un item de mode, chacun depuis un brouillon posé dans le stockage. La ligne de canal et les
+// cases à cocher des jours demandent une session : c'est le parcours réel qui les joue.
+//
+// Deux mesures par choix, et la seconde n'est pas du zèle : la case passe à `aria-checked="true"`,
+// **et rien n'a défilé** — une correction qui oublierait `preventDefault()` cocherait bien, sous une
+// page qui saute d'un écran. Et une mesure qu'on ne peut pas prendre est un échec, pas un succès : si
+// rien ne pouvait défiler sous le choix, l'absence de défilement ne prouverait rien, et le script le
+// dit plutôt que de conclure. D'où une fenêtre basse, que l'étape dépasse.
+const brouillonDe = (step, answers) => JSON.stringify({ step, answers, savedAt: new Date().toISOString() });
+const JOURS_ET_TRANCHE = brouillonDe('commute_days_distance', {
+  commute_has_regular_trip: true,
+  commute_distance_bracket: '5_15',
+});
+
+const CASES_A_L_ESPACE = [
+  { quoi: 'une rangée (`ChoiceRow`)', marques: { [BROUILLON]: JOURS_ET_TRANCHE }, nom: 'Moins de 5 km' },
+  { quoi: 'une puce (`Chip`)', marques: { [BROUILLON]: JOURS_ET_TRANCHE }, nom: '3' },
+  {
+    quoi: 'un item de mode (`ModeListItem`)',
+    marques: {
+      [BROUILLON]: brouillonDe('commute_mode', {
+        commute_has_regular_trip: true,
+        commute_days_per_week: 5,
+        commute_distance_km: 30,
+      }),
+    },
+    nom: 'Bus',
+  },
+];
+
+for (const { quoi, marques, nom } of CASES_A_L_ESPACE) {
+  const page = await ouvrir('/bilan', marques, { hauteur: 560 });
+  try {
+    const choix = page.getByRole('radio', { name: nom, exact: true });
+    await choix.waitFor({ state: 'visible', timeout: ATTENTE });
+    await choix.focus();
+    // La mesure est partagée avec le parcours réel (`mesurer-un-choix.mjs`), qui joue le même geste
+    // sur les cases à cocher de l'engagement.
+    const avant = await choix.evaluate(mesurerUnChoix);
+    if (avant.etat !== 'false' || !avant.focus || !avant.peutDefiler) {
+      echecs.push(
+        `/bilan, ${quoi} « ${nom} » : la mesure ne peut pas se prendre — ` +
+          (avant.etat !== 'false'
+            ? `le choix est déjà annoncé « ${avant.etat} » avant l’appui.`
+            : !avant.focus
+              ? 'il ne prend pas le focus.'
+              : 'rien ne peut défiler sous lui, donc l’absence de défilement ne prouverait rien.')
+      );
+      continue;
+    }
+    await page.keyboard.press('Space');
+    // Le défilement du navigateur est animé : on laisse passer l'animation avant de relire.
+    await page.waitForTimeout(600);
+    const apres = await choix.evaluate(mesurerUnChoix);
+    if (apres.etat !== 'true') {
+      echecs.push(
+        `/bilan, ${quoi} « ${nom} » : Espace ne coche pas le choix (aria-checked="${apres.etat}"). ` +
+          'react-native-web ne gère Espace que sur un bouton : le composant doit décomposer' +
+          ' `activableALaBarreDEspace` (src/lib/barre-d-espace.ts).'
+      );
+    }
+    if (apres.positions !== avant.positions) {
+      echecs.push(
+        `/bilan, ${quoi} « ${nom} » : Espace fait défiler la page (${avant.positions} →` +
+          ` ${apres.positions} px) — l’appui doit être retenu par preventDefault().`
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`/bilan, ${quoi} « ${nom} » : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -610,5 +709,6 @@ console.log(
   `${ETATS_DE_BARRE.length} états de barre d’onglets et ${ETAPES.length} ouvertures du` +
     ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte ;` +
     ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; focus et animations réduites` +
-    ' de l’onboarding conformes.'
+    ` de l’onboarding conformes ; ${CASES_A_L_ESPACE.length} choix cochés à la barre d’espace sans` +
+    ' que la page défile.'
 );

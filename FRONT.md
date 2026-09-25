@@ -75,6 +75,12 @@ démarrer à « visible » ne coûte qu'un transitoire à ceux qui doivent la vo
   texte : un libellé recopié à côté du texte visible finit toujours par ne plus lui correspondre ;
 - **les choix exclusifs sont des `radio`**, seul rôle qui annonce « sélectionné » et la place dans
   le groupe. Un `button` qui porte `selected` est un défaut, pas un raccourci ;
+- **un choix se coche à la barre d'espace**, comme WAI-ARIA l'attend d'une case d'option et d'une
+  case à cocher — pas seulement à Entrée. Un rôle juste qui ne répond plus au geste qu'il annonce a
+  échangé un défaut contre un autre, et c'est ce qui s'est passé ici le 24/09/2026. Un gestionnaire
+  d'Espace fait trois choses : retenir la page (`preventDefault`), agir **une fois par appui** — une
+  touche maintenue répète —, et laisser Entrée à qui la gère déjà : deux activations ramènent une
+  case à cocher exactement où elle était ;
 - **une puce annoncée seule doit se suffire** : détachée de la question posée trois lignes plus
   haut, « Aucun » ne dit rien. C'est ce qu'un libellé accessible ajoute, et c'est la chose qu'on
   oublie en écrivant les libellés visibles ;
@@ -91,6 +97,10 @@ démarrer à « visible » ne coûte qu'un transitoire à ceux qui doivent la vo
 - **l'état d'un contrôle ne tient jamais à la seule couleur** (WCAG 1.4.1). L'onglet actif et
   l'inactif avaient la même luminance, à 1,02:1 : pour qui distingue mal les couleurs, ils étaient
   identiques. Un état se dit par une forme, un fond plein ou un texte, et se mesure à 3:1 au moins ;
+- **un contrôle désactivé le dit par son texte, jamais par une opacité.** L'opacité s'applique à
+  tout ce que le contrôle porte, y compris la phrase qui dit *pourquoi* il est désactivé : WCAG
+  exempte de contraste un composant inactif, mais cette phrase-là est précisément celle qu'on doit
+  pouvoir lire ;
 - **un champ se voit au repos** (WCAG 1.4.11) : un fond gris clair sur blanc ne ressort qu'à 1,14:1,
   donc un champ vide sans contour n'existe pas pour une vue faible. Le contour au repos tient 3:1 ;
 - **sur web, l'état d'un contrôle passe par les props `aria-*`**, jamais par l'objet
@@ -381,18 +391,42 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `backgroundPressed` sur une surface neutre, `backgroundSelectedPressed` sur une surface choisie,
   par le `style` fonction de `Pressable`. Un lien texte se souligne. Pas d'`android_ripple`, qui n'existe
   pas sur web — le même geste doit répondre pareil des deux côtés —, et pas d'opacité, qui fait
-  baisser le contraste du texte au moment même où on le lit.
+  baisser le contraste du texte au moment même où on le lit. **Le fond d'un choix, au repos comme
+  sous le doigt, sort d'une seule dérivation** (`fondDuChoix`, `src/types/fond-du-choix.ts`,
+  25/09/2026) : `Chip`, `ChoiceRow`, `ModeListItem` et `LigneDeCanal` écrivaient chacun le même
+  ternaire à deux étages.
 - **L'onglet actif est une pastille `accent` pleine, icône en `onAccent`** (6,12:1) : la teinte de
   l'icône seule ne le distinguait pas (voir §1.4).
-- **Une série de puces passe par `GroupeDeChoix`** (`src/components/bilan/groupe-de-choix.tsx`),
-  qui pose le rôle du groupe et le **nomme par sa question**, écrite une seule fois ; et `Chip.role`
-  est **obligatoire** (`radio` ou `checkbox`) : une puce ajoutée sans rôle ne compile plus, là où
-  onze séries s'annonçaient comme des boutons. Une puce posée dans un encart teinté prend
+- **Toute série de choix passe par `GroupeDeChoix`** (`src/components/bilan/groupe-de-choix.tsx`) —
+  puces, rangées, items de mode, lignes de canal —, qui pose le rôle du groupe et le **nomme par sa
+  question**, écrite une seule fois ; c'est le seul endroit du dépôt qui écrive `radiogroup` ou
+  `group`. Le 25/09/2026, trois listes de modes du questionnaire n'avaient pas de groupe du tout —
+  « Voiture (seul) » ne disait pas à quelle question il répond — et trois fichiers posaient le rôle
+  eux-mêmes. Deux exceptions au nom affiché, écrites dans son contrat : un intitulé qui ne se
+  comprend qu'avec le titre de l'écran reçoit sa forme complète, qui le contient (« Trajets longue
+  distance en train » pour « En train »), et une série sans question affichée reçoit le nom de ce
+  qu'elle choisit (« Catégorie »). **Une précision qui s'ouvre sous une option est son propre
+  groupe, posé dans celui de l'option** — la forme des révélations conditionnelles de GOV.UK, et la
+  seule qui la garde juste sous ce qu'elle précise : chaque case d'option répond au groupe **le plus
+  proche**, et c'est ce que le parcours réel vérifie à chaque étape. `Chip.role` est
+  **obligatoire** (`radio` ou `checkbox`) : une puce ajoutée sans rôle ne compile plus, là où onze
+  séries s'annonçaient comme des boutons. Une puce posée dans un encart teinté prend
   `nestedBackground`, sans quoi elle s'y fond.
+- **Espace coche un choix, sur web aussi** (25/09/2026). react-native-web ne gère Espace que sur un
+  bouton (`PressResponder`, `isValidKeyPress`) : depuis que les puces sont des `radio` et des
+  `checkbox`, Espace ne cochait plus rien et faisait défiler la page. Tout `Pressable` de rôle
+  `radio` ou `checkbox` décompose donc `activableALaBarreDEspace` (`src/lib/barre-d-espace.ts`) —
+  `Chip`, `ChoiceRow`, `ModeListItem` et `LigneDeCanal` le font —, qui retient la page, agit une fois
+  par appui, laisse Entrée à la bibliothèque, ne fait rien sur un contrôle désactivé ni sur natif.
+  Un choix neuf qui l'oublierait retrouverait le défaut : `verifier-etats-export.mjs` (section F) et
+  le parcours réel le verraient.
 - **Une option désactivée ne paraît jamais choisie** (`paraitChoisie`, `src/types/ligne-de-canal.ts`) :
   « Par email » grisé mais cerné d'accent disait à la fois « indisponible » et « c'est ton réglage ».
   Ce qui paraît coché est ce que la table de vérité des rappels rend effectif, pas la préférence
-  enregistrée.
+  enregistrée. **Et elle le dit par son texte, jamais par une opacité** (25/09/2026, kit `readme.md`,
+  puce « États ») : fond des éléments, titre en `textTertiary`, détail en `textSecondary`. La ligne
+  de canal portait `opacity: 0.6`, qui faisait tomber à 3,2:1 le détail — la phrase qui dit pourquoi
+  le canal est hors d'atteinte.
 - **Un écran qui en remplace un autre sous le doigt porte le focus sur ce qui arrive**
   (`TitreDArrivee`, `donnerLeFocus` dans `src/lib/focus.ts`) — « C'est envoyé, merci. », le calcul
   du bilan, la réplique d'un point, la page suivante de l'onboarding —, et **jamais au montage d'un
