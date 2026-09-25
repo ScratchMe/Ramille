@@ -4,7 +4,7 @@ import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
-import { ThemedText } from '@/components/themed-text';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import {
   CAR_ENGINE_OPTIONS,
   COMMUTE_MODE_CHOICES,
@@ -28,9 +28,9 @@ export function CommuteModeStep({
 }) {
   return (
     <View style={styles.container}>
-      <ThemedText type="screenTitle">
+      <TitreDEtape>
         Quel est ton mode de transport principal pour ce trajet ?
-      </ThemedText>
+      </TitreDEtape>
       <View style={styles.list}>
         {COMMUTE_MODE_CHOICES.map((choice) => {
           const selected = answers.commute_mode === choice.modeId && answers.commute_is_carpool === choice.carpool;

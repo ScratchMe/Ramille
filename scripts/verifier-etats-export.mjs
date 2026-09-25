@@ -674,6 +674,58 @@ for (const reduire of [false, true]) {
   }
 }
 
+// ── F. Le questionnaire : le focus suit l'étape ────────────────────────────────────────────────
+//
+// « Suivant » laisse le bouton en place et change la question au-dessus de lui : sans rien de plus,
+// le focus reste sur le bouton qu'on vient d'actionner, et rien de la question qui arrive n'est
+// annoncé (C1.9). `StepShell` le déplace, et **la cible n'est pas la même selon la plateforme**
+// depuis le 25/09/2026 : le conteneur de l'étape sur web, son titre sur natif, où le conteneur est
+// aplati et ne reçoit rien (le commentaire de `src/components/bilan/step-shell.tsx` dit pourquoi).
+// Rien ne vérifiait la moitié web, alors qu'elle était la seule observable : cette section la tient.
+//
+// L'assertion porte sur ce que la personne obtient, pas sur l'élément choisi : le focus est sur la
+// question qui arrive, ou sur un conteneur dont elle est le premier titre — la forme d'aujourd'hui.
+// Une cible qui ne sait pas recevoir le focus (un titre sans `tabIndex` sur web) échoue sans bruit
+// et laisse le focus sur « Suivant » : c'est ce que la seconde condition attrape.
+const QUESTION_SUIVANTE = 'Ce trajet, tu le fais combien de jours par semaine ?';
+{
+  const page = await ouvrir('/bilan');
+  try {
+    await page.getByRole('radio', { name: 'Oui', exact: true }).click();
+    const suivant = page.getByRole('button', { name: 'Suivant', exact: true });
+    await suivant.focus();
+    await page.keyboard.press('Enter');
+    await page
+      .waitForFunction((t) => document.body.innerText.replace(/\s+/g, ' ').includes(t), QUESTION_SUIVANTE, {
+        timeout: ATTENTE,
+      })
+      .catch(() => {});
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(() => {
+      const actif = document.activeElement;
+      const normaliser = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+      const estUnTitre = (n) => n?.tagName === 'H1' || n?.getAttribute?.('role') === 'heading';
+      const titre = estUnTitre(actif) ? actif : actif?.querySelector?.('h1, [role="heading"]');
+      return {
+        corps: actif === document.body || actif === null,
+        texte: normaliser(actif?.innerText).slice(0, 80),
+        titre: titre ? normaliser(titre.innerText) : null,
+      };
+    });
+    if (focus.corps || focus.titre !== QUESTION_SUIVANTE) {
+      echecs.push(
+        `/bilan : après « Suivant » au clavier, le focus est sur` +
+          ` ${focus.corps ? 'le document' : `« ${focus.texte} »`} — il doit être sur la question qui` +
+          ` arrive (« ${QUESTION_SUIVANTE} ») ou sur le conteneur qu’elle ouvre (\`StepShell\`).`
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`/bilan, focus d’étape : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -695,5 +747,5 @@ console.log(
   `${ETATS_DE_BARRE.length} états de barre d’onglets et ${ETAPES.length} ouvertures du` +
     ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte ;` +
     ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; focus et animations réduites` +
-    ' de l’onboarding conformes.'
+    ' de l’onboarding conformes ; le focus du questionnaire suit l’étape.'
 );

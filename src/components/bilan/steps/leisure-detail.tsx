@@ -8,6 +8,7 @@ import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { NumericField } from '@/components/bilan/numeric-field';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -79,9 +80,9 @@ export function LeisureDetailStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">
+        <TitreDEtape>
           Avec quel mode, principalement ?
-        </ThemedText>
+        </TitreDEtape>
         <View style={styles.list}>
           {modeChoices.map((choice) => {
             const selected = selectedKey === choice.key;

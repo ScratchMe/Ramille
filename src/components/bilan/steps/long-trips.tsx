@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Chip } from '@/components/bilan/chip';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
@@ -64,9 +65,9 @@ export function LongTripsStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">
+        <TitreDEtape>
           Et les trajets de plus de 300 km ?
-        </ThemedText>
+        </TitreDEtape>
         <ThemedText type="small" themeColor="textTertiary">
           Sur une année type, hors avion.
         </ThemedText>

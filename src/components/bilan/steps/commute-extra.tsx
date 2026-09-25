@@ -5,6 +5,7 @@ import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
@@ -43,7 +44,7 @@ export function CommuteExtraStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">{QUESTION_SECOND_MODE}</ThemedText>
+        <TitreDEtape>{QUESTION_SECOND_MODE}</TitreDEtape>
         <ThemedText type="small" themeColor="textTertiary">
           Par exemple vélo puis train.
         </ThemedText>

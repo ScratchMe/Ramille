@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,6 +16,28 @@ import { donnerLeFocus } from '@/lib/focus';
 // bouton était toujours rendu, y compris au premier lancement où l'onboarding entre par
 // `dismissAll()` + `replace('/bilan')` pour ne rien laisser derrière. Le bouton ne faisait
 // alors rien, et c'était le premier signal que l'app donnait (audit A2-21).
+
+// La référence du titre de l'étape affichée, que `StepShell` possède et que l'étape remplit par
+// `TitreDEtape` : le titre vit dans `children`, que la coquille ne rend pas elle-même.
+const TitreDeLEtape = createContext<RefObject<unknown> | null>(null);
+
+/**
+ * Le titre d'une étape du questionnaire — la question elle-même. C'est lui que `StepShell` rend au
+ * lecteur d'écran quand on passe d'une étape à l'autre sur natif (voir son commentaire), donc **toute
+ * étape pose sa question par ce composant** et non par un `ThemedText` : une étape qui l'oublierait ne
+ * casserait rien de visible, et TalkBack resterait muet sur sa question.
+ */
+export function TitreDEtape({ children }: { children: ReactNode }) {
+  const titre = useContext(TitreDeLEtape);
+  return (
+    // `ThemedText` ne déclare pas `ref` et le transmet tel quel à son `Text` : même recours que
+    // `TitreFocalisable` (`src/lib/focus.ts`).
+    <ThemedText type="screenTitle" {...{ ref: titre }}>
+      {children}
+    </ThemedText>
+  );
+}
+
 export function StepShell({
   section,
   step,
@@ -67,10 +89,28 @@ export function StepShell({
   // bouton qu'on vient d'actionner et rien de la question qui vient de s'afficher. C'est le seul
   // point de C1.9 qui porte sur le parcours que son « Fait quand » demande de traverser.
   //
-  // La cible est le **conteneur du contenu**, pas le titre : celui-ci vit dans `children`, que
-  // cette coquille ne possède pas. Déplacer le focus sur le conteneur fait reprendre la lecture à
-  // son premier descendant, c'est-à-dire au titre de l'étape.
+  // **La cible n'est pas la même sur web et sur natif, et c'est la source de React Native qui l'a
+  // décidé** (25/09/2026). Sur web, c'est le **conteneur du contenu** : `tabIndex={-1}` le rend
+  // focalisable, et la lecture reprend à son premier descendant, le titre de l'étape — vérifié sur
+  // l'export, et inchangé. Sur natif, ce même conteneur ne reçoit **rien**, et ne recevait rien
+  // avant le 24/09 non plus — l'ancienne voie (`setAccessibilityFocus`) aboutit au même appel,
+  // `BridgelessUIManager` retrouvant le nœud par son numéro :
+  //   - il n'y porte aucune propriété (ni style, ni `accessible`, ni `collapsable={false}`), donc
+  //     Fabric l'aplatit — aucune vue native n'est créée pour lui (`ViewShadowNode::initialize`, où
+  //     rien ne lui donne le trait `FormsView`). RN 0.86 n'a plus que cette architecture ;
+  //   - l'événement part pourtant avec son numéro (`FabricMountingManager::sendAccessibilityEvent`
+  //     transmet `shadowView.tag`, sans chercher d'ancêtre monté), `SurfaceMountingManager` ne trouve
+  //     aucune vue et lève `RetryableMountingLayerException`, que `SendAccessibilityEventMountItem`
+  //     avale en exception douce : ni plantage, ni focus, ni trace à l'écran.
+  // `collapsable={false}` monterait une vue, mais pas un nœud d'accessibilité : sans rôle ni
+  // `accessible`, RN ne lui pose aucun délégué (`ReactAccessibilityDelegate.setDelegate`) et Android
+  // ne la présente pas au lecteur d'écran — ce que TalkBack ferait d'un focus demandé sur elle ne se
+  // lit dans aucune source du dépôt. Et `accessible` fusionnerait l'étape entière en un seul nœud.
+  // Reste le **titre** : un `Text` forme toujours une vue (`ParagraphShadowNode` hérite de
+  // `FormsView`), un `TextView` que TalkBack lit, avec le rôle d'en-tête que `ThemedText` lui donne —
+  // la cible que l'onboarding vise déjà. Il vit dans `children`, d'où `TitreDEtape`.
   const contenu = useRef<View>(null);
+  const titre = useRef<unknown>(null);
   const defilement = useRef<ScrollView>(null);
   const premierRendu = useRef(true);
 
@@ -90,10 +130,11 @@ export function StepShell({
     // inchangé, titre invisible), et il se pose maintenant sans défiler du tout. Sans animation : on
     // change de question, on ne la parcourt pas.
     defilement.current?.scrollTo({ y: 0, animated: false });
-    // `tabIndex={-1}` ci-dessous rend le nœud focalisable sans l'ajouter à l'ordre de tabulation :
-    // on peut lui donner le focus par programme, on ne l'atteint pas à la touche. Le mécanisme vit
-    // dans `donnerLeFocus` depuis que deux écrans de plus s'en servent (24/09/2026).
-    donnerLeFocus(contenu.current);
+    // `tabIndex={-1}` ci-dessous rend le conteneur focalisable sur web sans l'ajouter à l'ordre de
+    // tabulation : on peut lui donner le focus par programme, on ne l'atteint pas à la touche. Le
+    // mécanisme vit dans `donnerLeFocus` depuis que deux écrans de plus s'en servent (24/09/2026).
+    // L'effet part après le rendu de la nouvelle étape : son titre a déjà pris la référence.
+    donnerLeFocus(Platform.OS === 'web' ? contenu.current : titre.current);
   }, [step]);
 
   return (
@@ -116,7 +157,7 @@ export function StepShell({
         </View>
         <ScrollView ref={defilement} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View ref={contenu} {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
-            {children}
+            <TitreDeLEtape.Provider value={titre}>{children}</TitreDeLEtape.Provider>
           </View>
         </ScrollView>
         <View style={styles.footerBlock}>
