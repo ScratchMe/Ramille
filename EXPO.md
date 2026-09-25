@@ -97,6 +97,14 @@ relais au rendu suivant.
 - **La barre d'espace n'active pas un `radio`** — react-native-web ne la gère que sur un `button`,
   Entrée seule le fait. `Pressable` transmet `onKeyDown`, donc ce n'est pas impossible, mais ce
   n'est fait nulle part.
+- **La fin d'un défilement ne s'annonce pas sur web** : `onMomentumScrollEnd` n'y part jamais,
+  défilement programmé compris, et react-native-web émet seulement un dernier `onScroll` 100 ms
+  après le dernier défilement. Piège voisin, qui vaut sur les deux plateformes : un index de page
+  **dérivé de la position** se trompe pendant un `scrollTo` animé — le premier `onScroll` part à
+  quelques pixels de la page qu'on quitte, et l'arrondi la redésigne. Mesuré chez Ramille le
+  25/09/2026 : le focus revenait sur la page quittée, l'inertie des pages basculait trois fois. Le
+  défilement programmé se tient donc jusqu'à son arrivée, lue à sa position (`enVol`, dans
+  `src/app/onboarding/index.tsx`).
 - **`userInterfaceStyle` d'`app.json` ne s'applique qu'au natif** : sur web, `useColorScheme` lit
   `prefers-color-scheme`. Si le thème sombre n'est pas validé, la décision se prend dans le hook
   de thème **et** dans le `ThemeProvider` de navigation — corriger l'un sans l'autre laisse la
