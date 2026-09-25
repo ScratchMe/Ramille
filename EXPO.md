@@ -32,6 +32,12 @@ déploiements) est dans `VERCEL.md`.
 - **Une page dont le rendu dépend de l'exécution ne se vérifie qu'en l'ouvrant** : un garde
   d'export qui charge chaque route dans un navigateur et échoue sur une page vide ou une
   exception non rattrapée attrape ce que ni le typecheck, ni les tests, ni l'export ne voient.
+- **Deux exports lancés en parallèle partagent le cache de Metro**, rangé dans le répertoire
+  temporaire du système et non dans le projet : deux worktrees qui exportent en même temps peuvent
+  produire un bundle qui n'est pas celui de leur arbre — un ancien texte, un module absent. Mesuré le
+  24/09/2026, avec trois sous-agents dans trois worktrees : un tableau de mutations entier était faux
+  pour cette raison. Exporter avec `--clear`, et vérifier qu'un marqueur du code courant est bien
+  dans le bundle avant de conclure quoi que ce soit.
 
 ### 1.2 `EXPO_PUBLIC_*` : deux pièges d'inlining
 
@@ -64,6 +70,14 @@ HTML dit `0px`, et rien ne le corrige jamais — ni `onLayout`, ni `key`, ni le 
 `useSyncExternalStore` avec un instantané serveur distinct fait voir le passage à React ;
 `useWindowDimensions` ne le fait pas.
 
+**La chaîne de requête est l'autre moitié du même piège.** L'export rend chaque page une fois,
+**sans** chaîne de requête : un texte qui dépend de `?source=`, de `?jeton=` ou de `?id=` diffère
+entre le HTML servi et le premier rendu du navigateur, qui lit l'URL. React le constate cette fois
+(erreur n° 418, sur le texte), jette le HTML et refait la page — et le HTML servi, lui, reste ce
+que lit la personne le temps que le JavaScript arrive. Le même `useSyncExternalStore` s'en charge :
+le premier rendu est celui du HTML statique, qui ne doit rien affirmer, et la valeur lue prend le
+relais au rendu suivant.
+
 ### 1.5 `react-native-web` : ce qui ne se comporte pas comme sur natif
 
 - **Un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0` explicite** pour pouvoir
@@ -73,6 +87,16 @@ HTML dit `0px`, et rien ne le corrige jamais — ni `onLayout`, ni `key`, ni le 
   le `onPress` n'est pas invoqué de façon fiable : un état de composant à la place, et une règle
   ESLint sur l'**import** pour que l'erreur tombe à l'endroit où l'on s'apprête à réintroduire le
   motif.
+- **L'état d'un contrôle passe par les props `aria-*`, jamais par l'objet `accessibilityState`**,
+  que react-native-web ne traduit plus (relevé sur la 0.21.2) : un choix visiblement coché y
+  sortait en `role="radio"` **sans** `aria-checked`, donc annoncé « non coché ». React Native type
+  `aria-checked`, `aria-expanded`, `aria-busy`, `aria-disabled` et les mappe aussi sur natif. Trois
+  voisins du même relevé : un `aria-disabled` posé à la main sur un `Pressable` est **écrasé** par
+  `disabled`, qui est le seul levier ; `accessibilityHint` n'existe pas sur web ; et un en-tête sans
+  `aria-level` sort en `<h1>`, quel que soit son rang.
+- **La barre d'espace n'active pas un `radio`** — react-native-web ne la gère que sur un `button`,
+  Entrée seule le fait. `Pressable` transmet `onKeyDown`, donc ce n'est pas impossible, mais ce
+  n'est fait nulle part.
 - **`userInterfaceStyle` d'`app.json` ne s'applique qu'au natif** : sur web, `useColorScheme` lit
   `prefers-color-scheme`. Si le thème sombre n'est pas validé, la décision se prend dans le hook
   de thème **et** dans le `ThemeProvider` de navigation — corriger l'un sans l'autre laisse la
@@ -239,15 +263,19 @@ exception dans le layout racine fait tomber l'arbre React entier — page blanch
 **toutes** les routes, pages légales comprises, pendant que le HTML statique est servi en
 200 avec son titre. Un hook ne peut pas être appelé conditionnellement ; un composant, si :
 c'est le motif de `RetourDeNotification`, monté sous `{estNatif && …}`. La CI l'a laissé
-passer en production le 08/09/2026 — `scripts/verifier-rendu-export.mjs` ouvre désormais
-cinq routes dans un navigateur après l'export et échoue sur une page vide ou une exception
-non rattrapée (les erreurs d'hydratation restent des avertissements). Troisième garde de la
+passer en production le 08/09/2026 — `scripts/verifier-rendu-export.mjs` ouvre désormais les
+routes de l'export dans un navigateur et échoue sur une page vide ou une exception non rattrapée
+(les erreurs d'hydratation y restent des avertissements ; `verifier-etats-export.mjs` les rend
+bloquantes pour les routes à paramètre qu'on a corrigées). **Depuis le 24/09/2026, il vérifie aussi
+que chaque choix rendu annonce son état** — tout `radio`, `checkbox` ou `switch` porte
+`aria-checked`, et `/feedback` rend un choix coché —, parce que c'est là, et nulle part ailleurs,
+que se voit ce que react-native-web transmet réellement au lecteur d'écran. Troisième garde de la
 même famille que `cleanUrls` et l'inlining des `EXPO_PUBLIC_*` : ce qui se construit n'est
 pas ce qui s'affiche.
 
 **La barre d'onglets est épinglée en `tabBarLabelPosition: 'below-icon'`, et c'est le web qui
 l'imposait** (13.7, recette web du 16/09/2026). `OngletIcone` dessine une pastille de 56 × 30 dans
-le slot de l'icône : sur un téléphone, le libellé est dessous et la pastille se lit comme
+le slot de l'icône — pleine, en `accent`, depuis le 24/09/2026 (`v1-29`) : sur un téléphone, le libellé est dessous et la pastille se lit comme
 appartenant au couple — c'est le motif Material 3 et c'est le canvas `v1-11-navigation`. Dans un
 navigateur de bureau, react-navigation basculait seul en libellés horizontaux et la pastille se
 retrouvait **à côté** du libellé. Mesuré sur l'export servi en local : sans la ligne, à 1280 px de

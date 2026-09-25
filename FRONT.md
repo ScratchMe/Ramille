@@ -384,6 +384,24 @@ exactement ce qui avait laissé passer le mauvais caractère.
   baisser le contraste du texte au moment même où on le lit.
 - **L'onglet actif est une pastille `accent` pleine, icône en `onAccent`** (6,12:1) : la teinte de
   l'icône seule ne le distinguait pas (voir §1.4).
+- **Une série de puces passe par `GroupeDeChoix`** (`src/components/bilan/groupe-de-choix.tsx`),
+  qui pose le rôle du groupe et le **nomme par sa question**, écrite une seule fois ; et `Chip.role`
+  est **obligatoire** (`radio` ou `checkbox`) : une puce ajoutée sans rôle ne compile plus, là où
+  onze séries s'annonçaient comme des boutons. Une puce posée dans un encart teinté prend
+  `nestedBackground`, sans quoi elle s'y fond.
+- **Une option désactivée ne paraît jamais choisie** (`paraitChoisie`, `src/types/ligne-de-canal.ts`) :
+  « Par email » grisé mais cerné d'accent disait à la fois « indisponible » et « c'est ton réglage ».
+  Ce qui paraît coché est ce que la table de vérité des rappels rend effectif, pas la préférence
+  enregistrée.
+- **Un écran qui en remplace un autre sous le doigt porte le focus sur ce qui arrive**
+  (`TitreDArrivee`, `donnerLeFocus` dans `src/lib/focus.ts`) — « C'est envoyé, merci. », le calcul
+  du bilan, la réplique d'un point, la page suivante de l'onboarding —, et **jamais au montage d'un
+  écran qu'on retrouve** : une carte déjà répondue qu'on revoit en revenant sur le plan n'a volé le
+  focus à personne. `MessageInline` s'annonce lui-même sur natif (`announceForAccessibility`), une
+  région vivante n'annonçant pas son apparition sur Android.
+- **Un bouton secondaire posé sur une carte grise ou teintée prend `onPanel`** : fond de l'écran et
+  filet, au lieu du gris des panneaux. Gris sur gris, « Oui » et « Non » de la carte du point se
+  lisaient comme du texte.
 - **La chasse fixe (`type="code"`) est réservée aux sources et aux codes techniques** — une
   référence ADEME, un code d'erreur, une clé de configuration —, jamais à une phrase adressée à la
   personne : « Ton mode n’est pas dans la liste ? Dis-le-nous. » en 12 px gris à chasse fixe se

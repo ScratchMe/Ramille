@@ -109,14 +109,131 @@ Les deux attentes de texte des contrôles d'export (`verifier-etats-export.mjs`,
 `verifier-rendu-export.mjs`) normalisent désormais les blancs, comme leur comparaison finale le
 faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aurait attendue en vain.
 
-### 3.2 à 3.4
+### 3.2 Les contrôles, les formulaires et les feuilles
 
-*(Complétés à l'intégration des trois chantiers : contrôles et formulaires, plan et suivi,
-navigation et pages.)*
+- **L'état des choix atteint le web.** `aria-checked`, `aria-expanded` et `aria-busy` remplacent
+  `accessibilityState` dans `Chip`, `ChoiceRow`, `ModeListItem`, la ligne de canal, `TextLink` et
+  `GoogleButton` ; il n'en reste plus un seul dans `src/`. La garde est dans
+  `scripts/verifier-rendu-export.mjs` (`TESTING.md` §2.12).
+- **Les onze séries de puces sont des choix** : `GroupeDeChoix` (`src/components/bilan/groupe-de-choix.tsx`)
+  pose le rôle et **nomme le groupe par sa question**, écrite une fois ; les jours d'une intention
+  sont des `checkbox`, puisqu'ils se cumulent. `Chip.role` est devenu obligatoire.
+- **Chaque contrôle répond au toucher**, teinte immédiate et sans animation ; un lien texte se
+  souligne.
+- **Cibles de 48** : la puce fait 48 × 48 au moins ; les jours se rangent en grille, sur quatre
+  colonnes, et sur trois sous 320 dp, où ils se chevauchaient d'un demi-pixel.
+- **Les champs se voient au repos** (`fieldBorder`), et le texte qu'on y tape est en Spline Sans — il
+  était dans la police du système, Arial sur web. `NumericField` ne porte plus sa bordure d'accent
+  qu'une fois un nombre saisi.
+- **Un champ d'adresse annonce qu'il attend une adresse** : `autoComplete` se déduit du clavier.
+- **Les échecs de l'engagement passent par `MessageInline`**, qui s'annonce désormais sur natif
+  (`announceForAccessibility`) : une région vivante n'annonce pas son apparition sur Android. Aucun
+  de ses dix-sept appelants n'a été touché.
+- **Les écrans remplacés portent le focus** sur ce qui arrive (`TitreDArrivee`, `src/lib/focus.ts`) :
+  « C'est envoyé, merci. » et le calcul du bilan. Et une étape du questionnaire s'ouvre désormais par
+  le haut : elle gardait le défilement de la précédente, titre caché (221 px mesurés à 360 × 440).
+- **« Recevoir un code » dit pourquoi il attend** — la même phrase qu'à `/connexion/retrouver`,
+  « Cette adresse semble incomplète. », et le bouton agit toujours ; le retour annonce son minimum,
+  « Trois caractères au moins pour pouvoir l’envoyer. », dès la première frappe.
+- **« Par email » désactivé ne paraît plus choisi** : ce qui paraît coché est le canal **effectif** de
+  la table de vérité des rappels (`paraitChoisie`, `src/types/ligne-de-canal.ts`), et une préférence
+  `email` sans adresse n'en a aucun.
+- **Un seul cadre de feuille** (`FeuilleDuBas`) et **une seule ligne de canal** (`LigneDeCanal`) ; les
+  deux feuilles sont des dialogues **nommés par leur titre** — dont un titre visible nouveau, « Les
+  rappels », que le cadre partagé exige.
+- **La chasse fixe ne sert plus qu'aux sources** : « Ton mode n’est pas dans la liste ? », les lignes
+  d'hypothèse des vols et des longs trajets, le compteur du retour passent en Spline Sans ; le
+  détail technique d'un échec, sous le message du questionnaire, reste en chasse fixe : c'est une
+  cause à recopier, pas une phrase.
+
+### 3.3 Le plan, le suivi et la restitution
+
+- **L'étiquette du poste dominant dit le départage quand il joue** (`etiquetteDuPosteDominant`,
+  `src/types/resultat.ts`) : « Le plus régulier, presque à égalité avec tes voyages » quand un poste
+  moins régulier pèse strictement plus, « Le déplacement qui pèse le plus » sinon. Le profil de la
+  recette est exactement ce cas, et le parcours réel l'attend.
+- **« Oui » et « Non » ont le même poids** : deux secondaires, posés sur la carte par `onPanel` — gris
+  sur la carte grise, leur forme disparaissait (§4). La réplique prend le focus après une réponse
+  donnée **sur la carte**, jamais au montage d'une carte déjà répondue.
+- **Au premier plan, le choix passe avant le cap** ; hors premier plan, l'ordre n'a pas bougé.
+- **Le cap dit « par an »** — « par an, soit − 20 % sur ton trajet domicile-travail (1,9 t CO₂e
+  aujourd’hui) » — et, tant que rien n'est engagé, la phrase qui le relie aux pistes
+  (`phraseDesPistesSuffisantes`, `src/types/plan.ts`) : « Chacune des deux pistes proposées suffit à
+  le franchir. », « L’une des deux… », « La piste proposée… », ou rien. Elle compare au kilo arrondi,
+  comme l'affichage.
+- **La félicitation du plan à zéro action nomme le poste** (`felicitationDuPlanSansAction`) — **sauf
+  le résiduel des sorties rares**, pour la raison de §4 — et dit « le point » au lieu du
+  « check-in ».
+- **La carte engagée dit « par an » sous le chiffre** : « par an · le mardi et le jeudi · 15 % de ton
+  empreinte » (`ligneDuGain`). Lu comme « la ligne juste sous le gain » ; si la décision voulait
+  « − 619 kg CO₂e par an » sur la même ligne, c'est une ligne à changer.
+- **La carte estompée l'est par son cadre** (filet `backgroundElement`) et non par l'opacité de son
+  texte ; la branche morte `estompeeParLeRang` est partie.
+- **Le suivi ne dessine plus de barre pour un seul bilan** (`barresDeLHistorique`) ; « Voir tout »
+  annonce qu'il déplie.
+- **Les liens qui naviguent s'annoncent en liens** — « Voir toutes les pistes », « Modifier ces
+  réponses », et tous ceux des écrans du plan et du suivi.
+- **La légende de l'écart par poste dit en mots ce que l'accent désignait seul** (`legendeDeLEcart`) :
+  « … accent : {poste}, le poste sur lequel ton plan travaille ».
+- **Chiffres tabulaires** sur le total, le cap, les gains, le suivi et les écarts.
+- **Jetons** : `TypeScale.display` pour la décision dominante (en-tête de niveau 1 de l'écran),
+  `TypeScale.label`, `Rail`, `Stroke`.
+
+### 3.4 La navigation, les pages et le compte
+
+- **L'onglet actif est une pastille `accent` pleine, icône blanche** (6,12:1 contre 1,18:1), et
+  **chaque onglet fait 51 px de haut** contre 39 : la barre vaut `ControlHeight.tabBar` plus
+  l'encoche, marges `Spacing.one`.
+- **Les pages légales se lisent sur une colonne de 480 px** : 64 à 72 caractères par ligne en
+  moyenne à 1 280 px de large, contre 111 à 120. Rien ne bouge sur téléphone.
+- **La page de confidentialité connaît la troisième réponse** : « Ta réponse à la question périodique
+  (oui, non, ou pas concerné cette fois-là), et sa date. » Sa date de mise à jour a suivi (§6.3).
+- **L'erreur d'hydratation de `/connexion?source=compte` est fermée, et elle n'était pas seule** :
+  `/rappels/stop?jeton=…` servait « Ce lien n'est plus valable » à tous ceux qui ouvrent le lien d'un
+  rappel, le temps que l'app démarre, et `/suivi/bilan?id=` l'écran d'erreur à quiconque ouvre un
+  bilan par un lien. La cause est commune : l'export rend chaque page sans chaîne de requête
+  (`EXPO.md` §1.4). `useApresHydratation` fait rendre au premier passage ce que dit le HTML
+  statique, qui n'affirme plus rien.
+- **Le focus de l'onboarding suit la page**, et le défilement suit « réduire les animations ».
+- **« Télécharger mes données » se voit** : la carte « Mes données » passe au registre blanc cerné du
+  kit, sur lequel le bouton secondaire est dessiné partout ailleurs.
+- **Le grand titre passe par `type="display"`** sur cinq écrans ; les trois titres à 30 px restent en
+  dur, et `FRONT.md` dit enfin pourquoi sans se contredire avec `theme.ts`.
+- **La chasse fixe** : les liens légaux de `/connexion` et la ligne de contact de « Toi » passent en
+  Spline Sans ; la source du repère et les noms de variables d'environnement restent en chasse fixe.
+- **`ThemedView` n'accepte plus `lightColor`/`darkColor`**, qu'il ignorait et qu'aucun appelant ne
+  passait.
+- **Le nom « Ramille » de la bande haute n'est plus un titre** : il passait avant celui de chaque
+  écran — un `<h2>` devant le `<h1>` sur web, la première étape de la navigation par titres sur
+  Android.
 
 ## 4. Ce que la mesure a corrigé en chemin
 
-*(Complété à l'intégration.)*
+- **« Oui » et « Non » au même poids les rendait invisibles.** Deux secondaires gris sur la carte
+  grise du point : la décision n° 2 appliquée à la lettre faisait disparaître la forme des deux
+  boutons. D'où `onPanel` sur `Button` — fond de l'écran et filet quand le bouton est posé sur une
+  surface teintée. Les trois sous-agents l'ont relevé chacun de leur côté.
+- **Nommer le poste de la félicitation la rendait fausse pour le profil le plus courant qui la
+  reçoit.** Tout cycliste qui sort « rarement » a un plan à zéro action, et le poste de son cycle est
+  le **résiduel** que le calcul suppose, pas un comportement déclaré : « Tu fais déjà l’essentiel sur
+  tes sorties du week-end » le félicitait sur des sorties qu'il a dit ne presque pas faire, et « Le
+  point reste là » lui promettait une boucle mensuelle qui n'est pas générée sans base déclarée. Ce
+  cas n'est plus ni nommé ni promis — « Tu fais déjà l’essentiel. » —, le serveur le marquant dans le
+  libellé qu'il fige sur le cycle. C'est une réduction prudente et non une décision : §6.3.
+- **L'erreur d'hydratation n'était pas propre à `/connexion`** : trois routes à paramètre, dont deux
+  qui servaient une phrase fausse avant le démarrage de l'app (§3.4).
+- **`/connexion/retrouver` n'écrivait jamais « Cette adresse semble incomplète. »** : le bouton y
+  était inactif, donc la branche était inatteignable. La phrase qu'on voulait recopier n'existait
+  qu'en code.
+- **Un `aria-disabled` posé à la main sur un `Pressable` est écrasé par `disabled`**, sur web comme
+  sur natif (`EXPO.md` §1.5).
+- **La cible des onglets faisait 39 px, pas 40**, et l'icône du compte tombait à 26 px du bord au lieu
+  de 24.
+- **Deux sous-agents ont écrit `src/lib/focus.ts` en même temps**, au même corps près : le relevé de
+  fichiers disjoints ne voit pas les fichiers qui n'existent pas encore (`CLAUDE.md`, « Avant de
+  lancer une vague »).
+- **Metro partage son cache entre worktrees** : un tableau de mutations entier a d'abord été faux,
+  mesuré sur des bundles qui n'étaient pas ceux de l'arbre (`EXPO.md` §1.1).
 
 ## 5. Le kit : synchronisé, et ce que ça engage
 
@@ -130,26 +247,35 @@ règles, à partir du 24/09/2026 :
   les six couleurs d'état, `display`, `label`, les rayons, les hauteurs et les traits ;
 - **les phrases du `readme.md` du kit que cette livraison rend fausses sont corrigées ici** — l'état
   pressé, la cible de 44, le total en 48/52 (il est en `salient` 30/36 depuis A3-22, le 11/09/2026),
-  et le dépôt `ScratchMe/TraceVerte`.
+  le dépôt `ScratchMe/TraceVerte` et l'ancien nom du produit, comme le renvoi de `SKILL.md` à un
+  `README.md` qui s'appelle `readme.md`.
 
 **Ce qui reste est un chantier, pas une correction**, et il demande une session de design : c'est
 elle qui sait redessiner un composant dans le kit. Son inventaire, relevé le 24/09/2026 :
 
-- **les composants absents** : un fichier de `src/components/` est compté représenté si l'une de ses
-  fonctions exportées porte le nom d'un composant du kit. À cette définition, **36 fichiers sur 63**
-  n'y sont pas — la séance en comptait 31 sur une autre définition, et c'est la définition qui se
-  vérifie, pas le nombre. Tout le questionnaire étape par étape, les quatre étapes de l'onboarding,
-  la saisie du code, les cartes de piste et d'ouverture, le trait de temps, les trois composants du
-  suivi, les pages légales et les écrans d'erreur. Le relevé se refait par la commande de §7 ;
+- **les composants absents** : un fichier de `src/components/` (hors tests) est compté représenté si
+  l'une de ses fonctions exportées porte le nom d'un composant du kit. À cette définition, **36
+  fichiers sur 63** n'y étaient pas avant cette livraison, et **40 sur 67** après — elle en ajoute
+  quatre : `GroupeDeChoix`, `FeuilleDuBas`, `LigneDeCanal` et `TitreDArrivee`. La séance en comptait
+  31 sur une autre définition, et c'est la définition qui se vérifie, pas le nombre. Tout le
+  questionnaire étape par étape, les quatre étapes de l'onboarding, la saisie du code, les cartes de
+  piste et d'ouverture, le trait de temps, les trois composants du suivi, les pages légales et les
+  écrans d'erreur. Le relevé se refait par la commande de §7 ;
+- **les fiches des composants que cette livraison a changés** (`components/**/*.prompt.md` et leurs
+  `.d.ts`) : `Chip` (rôle obligatoire, `nestedBackground`, jours en grille, `Radius.chip`),
+  `TextField` et `NumericField` (contour au repos, Spline Sans dans le champ), `Button` (`onPanel`,
+  état appuyé), `ChoiceRow` et `ChoixDeRappel` (la ligne de canal est `LigneDeCanal`), `OngletIcone`
+  et `BarreOnglets` (pastille pleine, onglets de 48), `BandeHaute` (cible de 48, nom qui n'est plus
+  un titre), `MonCompte` (registre blanc cerné), `CheckinCard` (« Oui » et « Non » au même poids),
+  `ActionCard` (estompée par le cadre, « par an » sous le gain) ;
 - **`BarreOnglets`** existe dans le kit et pas comme composant du code : la barre est le layout
   `src/app/(tabs)/_layout.tsx` ;
 - **le catalogue des 38 écrans** (`ui_kits/ramille/`) reprend le handoff V1, dont des écrans à mot de
   passe qui n'existent plus depuis `v1-10` §2.D, et cite l'ancien nom du produit ;
-- **`SKILL.md` du kit** renvoie à un `README.md` qui s'appelle `readme.md` ;
-- **l'état désactivé** : le kit écrit « jamais une opacité », et deux lignes de canal de rappel en
-  portaient une (0,6) — ce que la livraison en a fait est en §3 ;
-- les composants que cette livraison crée ou fusionne (la feuille du bas partagée, la ligne de canal
-  partagée) sont à ajouter.
+- **l'état désactivé** : le kit écrit « jamais une opacité », et la ligne de canal de rappel en porte
+  une (0,6), désormais en un seul endroit (`LigneDeCanal`). Un composant inactif est exempté de
+  contraste (WCAG 1.4.3), donc rien n'est faux pour la personne ; c'est la règle et le code qui se
+  contredisent, et la synchronisation tranchera lequel des deux suit l'autre.
 
 **Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
 partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.
@@ -200,13 +326,26 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
 - **les points de pagination de l'onboarding** ne ressortent qu'à 1,37:1 sur leur fond (WCAG 1.4.11) ;
 - ce que la base de référence apportait et que le produit n'a pas retenu : des graphiques à quatre
   points au moins, un réglage de la recette à 200 % de taille de police et en mouvement réduit —
-  ce dernier est repris en §6.5.
+  ce dernier est repris en §6.5 ;
+- **le titre de la félicitation, pour le résiduel des sorties rares** (§4) : « Tu fais déjà
+  l’essentiel. », sans poste et sans promesse de point, est la réduction la plus prudente, pas une
+  phrase décidée. Et **la même fausseté vit ailleurs pour ce profil** : le palier de la restitution
+  lui propose « 2 kg CO₂e de moins sur l’année sur tes sorties du week-end », des sorties qu'il a dit
+  ne presque pas faire. Relevé en jouant le parcours réel, hors du périmètre de ce chantier ;
+- **la date de mise à jour de la page de confidentialité** vaut le 24/09/2026 ; la page dit que sa
+  date est celle où le texte arrive devant les lecteurs, donc elle suit la date de fusion.
 
 ### 6.4 Les limites du web, qu'aucun code du dépôt ne lève
 
 - **`accessibilityHint` n'existe pas sur web** : react-native-web l'ignore. Le rappel de la question
   sur « Oui » et « Non » du point, et la longueur maximale du retour, n'y sont pas annoncés ;
-- **la barre d'espace n'active pas un `radio`** : react-native-web ne la gère que sur un `button` ;
+- **la barre d'espace n'active pas un `radio`** : react-native-web ne la gère que sur un `button`.
+  Ce n'est pas impossible — `Pressable` transmet `onKeyDown` —, c'est non fait ; et un groupe de
+  choix ne se parcourt pas aux flèches, chaque option est un arrêt de tabulation ;
+- **un même message remis deux fois n'est pas réannoncé** : React ne rend pas de nouveau pour un état
+  identique, donc un second échec identique se tait ;
+- **après un échec, le focus n'est rendu nulle part** : pendant l'envoi, le bouton désactivé le perd,
+  et quand l'écran revient avec son message, rien ne le repose ;
 - la préférence « réduire les animations » n'est lue qu'au démarrage (reanimated le documente).
 
 ### 6.5 Ce que la prochaine recette sur appareil doit regarder
@@ -222,7 +361,13 @@ Rien de ce qui suit ne se voit en CI :
   questionnaire ;
 - **la taille de police à 200 %** : la barre d'onglets, les champs (56) et le champ numérique (64) ont
   des hauteurs fixes ;
-- **le mouvement réduit** : le défilement du pager de l'onboarding et l'arrivée des feuilles.
+- **le mouvement réduit** : le défilement du pager de l'onboarding et l'arrivée des feuilles ;
+- **le focus de `StepShell`** vise un conteneur que React Native peut aplatir hors de l'arbre natif
+  (`src/lib/focus.ts` dit pourquoi) : le passage TalkBack du 14/09/2026 n'a rien relevé, sans qu'on
+  sache si c'est le focus qui y réussit ou le changement d'écran qui se fait entendre ;
+- **l'étape du questionnaire qui s'ouvre par le haut**, et les jours de l'engagement sur trois
+  colonnes aux petites largeurs ; « C’est noté » passe sur deux lignes à 320 dp, ce qui était déjà
+  le cas avant.
 
 ## 7. Refaire les relevés
 
@@ -236,7 +381,7 @@ grep -rhoE "borderRadius: *[0-9.]+" src | sort | uniq -c | sort -rn
 python3 - <<'EOF'
 import pathlib, re
 kit = {p.stem for p in pathlib.Path('docs/design/design-system/components').rglob('*.jsx')}
-fichiers = sorted(pathlib.Path('src/components').rglob('*.tsx'))
+fichiers = sorted(f for f in pathlib.Path('src/components').rglob('*.tsx') if not f.name.endswith('.test.tsx'))
 absents = [f for f in fichiers
            if not set(re.findall(r'^export (?:default )?function (\w+)', f.read_text(), re.M)) & kit]
 print(len(absents), 'sur', len(fichiers))

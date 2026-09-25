@@ -711,3 +711,35 @@ hors de portée de toute garde du dépôt, c'est le rôle de `docs/exploitation/
 Mutations jouées le 21/09/2026 : une espace ajoutée dans le document → famille 1 tombe en nommant la
 ligne ; `content_path` retiré → famille 2 ; `{{ .Token }}` remplacé par `{{ .ConfirmationURL }}` dans
 le fichier → famille 3, et la 1 avec elle, le document n'ayant pas bougé.
+
+### 2.12 Ce que le lecteur d'écran reçoit vraiment, vérifié dans l'export
+
+Deux gardes d'export ont grandi le 24/09/2026 (`docs/architecture/v1-29-challenge-du-design-system.md`),
+et pour la même raison : **ce que react-native-web transmet au lecteur d'écran ne se voit que dans
+le DOM rendu** — ni le typecheck, ni Jest, ni un test d'écran ne le voient, puisqu'ils lisent les
+props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
+
+- **`scripts/verifier-rendu-export.mjs` vérifie que chaque choix annonce son état** : tout élément
+  de rôle `radio`, `checkbox` ou `switch` rendu porte `aria-checked`, et `/feedback` — où « Une
+  idée » est choisie d'emblée — rend un `radio` **coché**. La seconde moitié n'est pas du zèle : sans
+  elle, la garde passerait sur une page qui ne rend aucun choix, ou qui les rend tous
+  `aria-checked="false"` écrit en dur. Le défaut qu'elle garde était le seul **critique** de l'audit :
+  react-native-web 0.21 ignore l'objet `accessibilityState`, et chaque choix coché s'annonçait
+  « non coché ».
+- **`scripts/verifier-etats-export.mjs` gagne trois sections** : **C**, la barre d'onglets —
+  chaque onglet fait au moins `ControlHeight.target`, **lu dans `theme.ts`** plutôt que recopié, et
+  l'actif porte une forme pleine à 3:1 au moins quand l'inactif n'en porte aucune ; **D**, les routes
+  à paramètre hydratent sans écart — une erreur d'hydratation y est **bloquante**, là où le contrôle
+  de rendu la classe en avertissement par conception, et le HTML statique ne doit rien affirmer
+  (`/rappels/stop` ne dit plus « plus valable », `/suivi/bilan` plus « pas pu être affiché ») ;
+  **E**, le focus de l'onboarding suit la page, avec et sans « réduire les animations ».
+
+Les mutations qui les éprouvent sont datées en tête de chaque script, une par ligne, **chacune avec
+son propre export** : le code est dans le bundle, donc une mutation sans export ne mute rien. Et un
+export fait pendant qu'un autre tourne peut produire le bundle d'un autre arbre (`EXPO.md` §1.1) —
+d'où `--clear`, et un marqueur du code courant à retrouver dans le bundle avant de conclure.
+
+**Ce qui leur échappe, et qu'il ne faut pas prétendre gardé** : tout ce qui se passe sur natif.
+`aria-checked` est mappé par React Native vers TalkBack, `announceForAccessibility` et
+`sendAccessibilityEvent` n'ont d'effet que sur un appareil, et aucune de ces suites ne tourne sous
+TalkBack. C'est la recette sur appareil qui les éprouve (`v1-29` §6.5).

@@ -116,6 +116,19 @@ pourtant testée, deux cartes qu'on croyait s'exclure, quatre écritures d'état
 d'annulation, un commentaire orphelin décrivant un mécanisme supprimé. Ni la CI, ni le linter, ni
 aucun test ne pouvait en voir un seul.
 
+**Et une vague confiée à des sous-agents en worktrees coûte quatre préparations et une surprise**
+(24/09/2026, trois chantiers de `v1-29` en parallèle). Les worktrees vivent sous `.claude/worktrees/`,
+**dans** l'arbre du dépôt : git, Jest, TypeScript et ESLint les ignorent depuis ce jour-là — sans
+quoi `npm test` à la racine exécutait 170 suites au lieu de 42, et un `git add -A` les embarquait
+comme sous-modules. Un worktree n'a ni `node_modules` (un lien symbolique suffit) ni
+`expo-env.d.ts` (à copier, sans quoi `tsc` échoue sur `@/global.css`) ; et deux exports en
+parallèle partagent le cache de Metro (`EXPO.md` §1.1). **La surprise : le relevé de fichiers ne
+voit pas les fichiers qui n'existent pas encore** — deux chantiers ont écrit `src/lib/focus.ts` en
+même temps, au même corps près. La consigne de chaque sous-agent doit donc nommer les modules
+partagés qu'il a le droit de **créer**, pas seulement ceux qu'il a le droit de toucher. Et chaque
+rapport revient avec des corrections hors de sa liste : c'est du travail d'intégration, pas du bruit
+— une vingtaine ce soir-là, dont une erreur d'hydratation et une phrase fausse du plan.
+
 La relecture se fait **sur le diff entier de la vague**, adversairement — « qu'est-ce qui, là-dedans,
 est faux, périmé, ou marche par accident ? » — et elle cherche trois familles en particulier, parce
 que ce sont celles qui sont sorties : **une dérivation appelée avec le mauvais argument** (le test
