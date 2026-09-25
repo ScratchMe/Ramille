@@ -910,6 +910,91 @@ const QUESTION_SUIVANTE = 'Ce trajet, tu le fais combien de jours par semaine ?'
   }
 }
 
+// ── H. « Voir les autres modes » : le focus va au premier mode révélé ────────────────────────────
+//
+// Le lien disparaît sous le geste qui l'active : au clavier, le focus partait avec lui et retombait
+// sur le document — la tabulation repartait du haut de la page, et rien des cinq modes qui venaient
+// d'arriver n'était annoncé (`v1-29` §6.4, mesuré le 24/09/2026 et corrigé le 25). Le focus va
+// désormais au premier mode révélé (`leisure-detail.tsx`). L'étape s'ouvre depuis un brouillon,
+// sans réseau, comme en section F.
+//
+// Deux moitiés, et la seconde n'est pas du zèle : le focus arrive sur « Bus » **après** le geste, et
+// il n'y est **pas** quand la liste s'ouvre déjà dépliée — un brouillon dont le mode est dans la
+// seconde liste —, où il n'y a aucun geste à suivre. Sans elle, une correction qui donnerait le focus
+// à chaque montage passerait, en volant le focus de qui arrive sur l'étape.
+//
+// Mutations du 25/09/2026, chacune sur un export reconstruit (`--clear`) :
+//   H1 — l'appel à `donnerLeFocus` retiré (le défaut d'origine) : la première moitié tombe, « le
+//        focus est sur le document », et elle seule. Le marqueur de la mutation n'était pas dans le
+//        bundle — le minifieur retire une expression sans effet —, c'est l'échec qui prouve que
+//        l'export était bien le muté.
+//   H2 — la garde du geste retirée (`vientDeDeplier`), donc le focus donné à chaque montage : la
+//        seconde moitié **restait verte** sous sa première forme, qui lisait `activeElement` à la
+//        fin — `StepShell` reprend le focus pour le titre de l'étape juste après, et le vol passait
+//        inaperçu. Elle lit désormais le journal du focus (`journaliserLeFocus`), et tombe, seule.
+const ETAPE_DES_SORTIES = (mode) =>
+  brouillonDe('leisure_detail', {
+    commute_has_regular_trip: false,
+    leisure_frequency: 'weekly',
+    leisure_mode: mode,
+  });
+{
+  const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DES_SORTIES(null) });
+  try {
+    const lien = page.getByRole('button', { name: 'Voir les autres modes', exact: true });
+    await lien.waitFor({ state: 'visible', timeout: ATTENTE });
+    await lien.focus();
+    await page.keyboard.press('Enter');
+    await page
+      .getByRole('radio', { name: 'Bus', exact: true })
+      .waitFor({ state: 'visible', timeout: ATTENTE })
+      .catch(() => {});
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(() => {
+      const actif = document.activeElement;
+      return {
+        corps: actif === document.body || actif === null,
+        role: actif?.getAttribute?.('role') ?? null,
+        texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 60),
+      };
+    });
+    if (focus.corps || focus.role !== 'radio' || focus.texte !== 'Bus') {
+      echecs.push(
+        `/bilan, étape des sorties : après « Voir les autres modes » au clavier, le focus est sur` +
+          ` ${focus.corps ? 'le document' : `« ${focus.texte} » (rôle ${focus.role})`} — il doit être` +
+          ' sur le premier mode révélé, « Bus » (`donnerLeFocus`, leisure-detail.tsx).'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`/bilan, « Voir les autres modes » : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+{
+  const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DES_SORTIES('marche') }, { journal: true });
+  try {
+    const bus = page.getByRole('radio', { name: 'Bus', exact: true });
+    await bus.waitFor({ state: 'visible', timeout: ATTENTE });
+    await page.waitForTimeout(REPOS);
+    // Le **journal**, et non le focus final : `StepShell` donne le focus au titre de l'étape dans
+    // son propre effet, qui part **après** celui de la liste — un parent après ses enfants. Un vol
+    // de focus au montage passait donc par « Bus » puis en repartait, et lire `activeElement` à la
+    // fin ne le voyait pas (mutation H2 du 25/09/2026, restée verte sous cette première forme).
+    const surBus = await page.evaluate(() => window.__focus.some((entree) => entree.texte === 'Bus'));
+    if (surBus) {
+      echecs.push(
+        '/bilan, étape des sorties ouverte déjà dépliée : le focus est sur « Bus » sans qu’aucun geste' +
+          ' ne l’y ait envoyé — il ne doit suivre que « Voir les autres modes », jamais le montage.'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`/bilan, liste des sorties déjà dépliée : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -932,5 +1017,6 @@ console.log(
     ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte ;` +
     ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; focus et animations réduites` +
     ` de l’onboarding conformes ; ${CASES_A_L_ESPACE.length} choix cochés à la barre d’espace sans` +
-    ' que la page défile ; le focus du questionnaire suit l’étape.'
+    ' que la page défile ; le focus du questionnaire suit l’étape, et « Voir les autres modes » le' +
+    ' pose sur le premier mode révélé.'
 );

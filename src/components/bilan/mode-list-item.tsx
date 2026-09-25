@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet } from 'react-native';
+import type { Ref } from 'react';
+import { Pressable, StyleSheet, type View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing, Stroke } from '@/constants/theme';
@@ -15,10 +16,16 @@ export function ModeListItem({
   selected,
   onPress,
   nestedBackground,
+  ref,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  /**
+   * La référence du nœud, pour qui doit lui donner le focus — « Voir les autres modes » le pose sur
+   * le premier mode qu'il révèle (`leisure-detail.tsx`). Une prop comme une autre depuis React 19.
+   */
+  ref?: Ref<View>;
   /** Item affiché dans un encart déjà teinté (B1.7 « Lequel ? », `PrecisionMode`) — le fond
    *  non sélectionné doit rester blanc plutôt que reprendre le gris standard, sinon il se fond
    *  dans l'encart parent. */
@@ -28,6 +35,7 @@ export function ModeListItem({
 
   return (
     <Pressable
+      ref={ref}
       onPress={onPress}
       // Espace coche l'item sur web, ce que react-native-web ne fait que pour un bouton
       // (`src/lib/barre-d-espace.ts`).

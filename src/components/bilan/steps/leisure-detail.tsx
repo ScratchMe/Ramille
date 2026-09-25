@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
@@ -21,6 +21,7 @@ import {
   VELO_TYPE_OPTIONS,
 } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
+import { donnerLeFocus } from '@/lib/focus';
 import {
   TAILLES_DE_COVOITURAGE,
   type BilanAnswers,
@@ -70,6 +71,20 @@ export function LeisureDetailStep({
   const [showMore, setShowMore] = useState(() =>
     LEISURE_MODE_CHOICES_MORE.some((choice) => choice.modeId === answers.leisure_mode)
   );
+  // **« Voir les autres modes » disparaît sous le geste qui l'active, et le focus partait avec lui**
+  // (`v1-29` §6.4, corrigé le 25/09/2026). Au clavier, le lien sortait de l'arbre, le focus
+  // retombait sur le document, et la tabulation repartait du haut de la page — au lecteur d'écran,
+  // rien des cinq modes qui venaient d'arriver n'était annoncé. Il va désormais au **premier mode
+  // révélé** : c'est à sa place que le lien se trouvait, et c'est lui qu'on venait chercher.
+  // Seulement après le geste — jamais au montage d'une liste déjà ouverte par un brouillon, où le
+  // focus n'a rien à suivre (la même règle que la réplique de la carte du point).
+  const premierDesAutres = useRef<View>(null);
+  const vientDeDeplier = useRef(false);
+  useEffect(() => {
+    if (!showMore || !vientDeDeplier.current) return;
+    vientDeDeplier.current = false;
+    donnerLeFocus(premierDesAutres.current);
+  }, [showMore]);
   // Voiture seul/covoiturage partagent le même `leisure_mode` ('voiture') : la clé
   // choisie, pas la valeur, distingue laquelle des deux rangées est cochée à l'écran —
   // et donc sous laquelle des deux la précision s'ouvre.
@@ -100,6 +115,7 @@ export function LeisureDetailStep({
               return (
                 <View key={choice.key}>
                   <ModeListItem
+                    ref={choice.key === LEISURE_MODE_CHOICES_MORE[0].key ? premierDesAutres : undefined}
                     label={choice.label}
                     selected={selected}
                     onPress={() => {
@@ -179,7 +195,10 @@ export function LeisureDetailStep({
           {!showMore && (
             <TextLink
               label="Voir les autres modes"
-              onPress={() => setShowMore(true)}
+              onPress={() => {
+                vientDeDeplier.current = true;
+                setShowMore(true);
+              }}
               type="linkPrimary"
             />
           )}
