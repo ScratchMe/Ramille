@@ -733,11 +733,12 @@ props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
   de rendu la classe en avertissement par conception, et le HTML statique ne doit rien affirmer
   (`/rappels/stop` ne dit plus « plus valable », `/suivi/bilan` plus « pas pu être affiché ») ;
   **E**, le focus de l'onboarding suit la page, avec et sans « réduire les animations ».
-- **Le 25/09/2026, deux de ces gardes ne prouvaient rien, et une troisième manquait.** La moitié
+- **Le 25/09/2026, trois de ces gardes ne prouvaient rien, et une quatrième manquait.** La moitié
   positive de `/suivi/bilan?id=` attendait « bilan », un mot que porte aussi le HTML statique
   (« Chargement de ton bilan… ») : elle passait avant comme après la correction. Elle attend
   désormais que l'écran **quitte** « Chargement » — sans nommer l'issue, qui est une copie d'erreur
-  sans serveur — et qu'il ait **demandé** le bilan que l'adresse désigne. La section E ne lisait le
+  sans serveur — et qu'il ait **demandé** le bilan que l'adresse désigne. `/rappels/stop?jeton=`
+  avait le même trou, son titre étant lui aussi dans le HTML : même réponse. La section E ne lisait le
   focus qu'au repos, et restait verte pendant qu'il revenait sur la page qu'on quitte : un journal
   posé avant le chargement relève désormais chaque `focusin` et chaque bascule d'`inert` **pendant**
   la transition. Et **F** tient le focus d'étape du questionnaire sur web, qu'aucune garde ne

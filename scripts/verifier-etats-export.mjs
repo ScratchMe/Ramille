@@ -74,7 +74,7 @@
 //
 // ── Sections D, E et F, éprouvées en cassant le 25/09/2026 ─────────────────────────────────────
 //
-// Six mutations, un export chacune, sur un arbre dont le témoin sort vert. Chacune fait tomber ce
+// Huit mutations, un export chacune, sur un arbre dont le témoin sort vert. Chacune fait tomber ce
 // qu'elle devait faire tomber, et rien d'autre :
 //
 //   | Ce qu'on casse | Ce qui tombe |
@@ -85,6 +85,8 @@
 //   | `/suivi/bilan` lit son état sans attendre l'hydratation | l'hydratation de `?id=` **et** le HTML statique « pas pu » (D) |
 //   | `/suivi/bilan` ne quitte jamais le chargement | « Chargement » encore affiché (D) |
 //   | `/suivi/bilan` lit son identifiant sous un autre nom | aucune lecture portant l'identifiant (D) |
+//   | `/rappels/stop` reste sur « Un instant » après la réponse | « Un instant » encore affiché (D) |
+//   | `/rappels/stop` lit son jeton sous un autre nom | aucun appel portant le jeton (D) |
 //
 // La première a été jouée contre l'**ancienne** section E aussi, par construction : son assertion
 // au repos est restée verte, le focus finissant bien sur la page 1 après son aller-retour. La
