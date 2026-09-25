@@ -1,7 +1,8 @@
-import { Children, type ReactNode } from 'react';
+import { Children, useEffect, useRef, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ControlHeight, Spacing } from '@/constants/theme';
+import { brancherLeClavierDuGroupe } from '@/lib/groupe-au-clavier';
 
 /**
  * Le conteneur d'une série de choix — puces, rangées, items de mode, lignes de canal : un
@@ -45,6 +46,13 @@ import { ControlHeight, Spacing } from '@/constants/theme';
  * `role` et `aria-label` plutôt que `accessibilityRole` : le rôle d'un groupe de cases, `group`,
  * n'existe que dans le vocabulaire ARIA que React Native accepte depuis la 0.71.
  *
+ * **Au clavier, sur web, un `radiogroup` se comporte comme des cases d'option natives** (25/09/2026,
+ * `v1-29` §6.4) : un seul arrêt de tabulation — l'option cochée, ou la première —, et les flèches
+ * qui passent d'une option à l'autre en la cochant. C'est ce que ce composant a gagné à être le seul
+ * à poser le rôle : le branchement (`brancherLeClavierDuGroupe`, `src/lib/groupe-au-clavier.ts`)
+ * atteint d'un coup toutes les séries du produit, précisions imbriquées comprises. Un `group` de
+ * cases à cocher n'y passe pas : chacune reste un arrêt, et les flèches n'y font rien.
+ *
  * **`colonnes` range la série en grille, pour les jours** (décision n° 7 du 24/09/2026 : une cible
  * de 48 × 48). Sur une ligne, les sept jours ne laissaient que 38 à 42 px à chacun dans le
  * questionnaire, et 27 à 31 dans la carte d'une action, sur un téléphone de 360 à 390 dp ; ils n'y
@@ -87,10 +95,18 @@ export function GroupeDeChoix({
   children: ReactNode;
 }) {
   const role = cumulable ? 'group' : 'radiogroup';
+  const groupe = useRef<View>(null);
+  // Les deux rendus ci-dessous posent la référence : c'est un autre nœud quand `colonnes` bascule,
+  // d'où sa présence dans les dépendances.
+  const enGrille = colonnes !== undefined;
+  useEffect(() => {
+    if (cumulable) return;
+    return brancherLeClavierDuGroupe(groupe.current);
+  }, [cumulable, enGrille]);
 
   if (colonnes === undefined) {
     return (
-      <View role={role} aria-label={question} style={style}>
+      <View ref={groupe} role={role} aria-label={question} style={style}>
         {children}
       </View>
     );
@@ -98,7 +114,7 @@ export function GroupeDeChoix({
 
   const largeur = `${100 / colonnes}%` as const;
   return (
-    <View role={role} aria-label={question} style={[styles.grille, style]}>
+    <View ref={groupe} role={role} aria-label={question} style={[styles.grille, style]}>
       {Children.map(children, (puce) => (
         <View style={[styles.cellule, { width: largeur }]}>{puce}</View>
       ))}

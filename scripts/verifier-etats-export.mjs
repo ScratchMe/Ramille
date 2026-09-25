@@ -126,6 +126,10 @@
 // La dernière est celle qui justifie la seconde mesure : l'état est juste, et la page saute d'un écran
 // sous le choix qu'on vient de cocher.
 //
+// ── Sections H et I, éprouvées en cassant le 25/09/2026 ────────────────────────────────────────
+//
+// Leurs mutations sont écrites en tête de chaque section, à côté de ce qu'elles gardent.
+//
 // Lancé en CI après `expo export`, à côté des quatre autres gardes, cf. .github/workflows/ci.yml.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -995,6 +999,175 @@ const ETAPE_DES_SORTIES = (mode) =>
   }
 }
 
+// ── I. Un groupe de cases d'option au clavier : un arrêt, et les flèches ────────────────────────
+//
+// Les options sont des `div` à `role="radio"`, pas des `<input type="radio">` : react-native-web
+// leur donnait à chacune `tabindex="0"` et ne faisait rien des flèches — dix modes, dix tabulations,
+// aucune flèche (`v1-29` §6.4). `GroupeDeChoix` branche désormais le motif de WAI-ARIA sur web
+// (`src/lib/groupe-au-clavier.ts`) : un seul arrêt de tabulation par groupe, l'option cochée ou la
+// première, et les flèches qui passent d'une option à l'autre en la cochant. Les décisions pures
+// (boucle, options désactivées, modificateurs) sont gardées par Jest ; ici, ce que seul un navigateur
+// montre, sur deux étapes qui couvrent les deux rendus du groupe :
+//
+//  - **l'étape du mode, avec la motorisation ouverte sous « Voiture (seul) »** — la précision
+//    imbriquée, qui est le piège : ses options sont aussi des descendants du groupe du mode. Chaque
+//    groupe doit avoir son propre arrêt, la flèche de la motorisation ne doit pas décocher le mode,
+//    et celle du mode doit sauter la motorisation ;
+//  - **les jours de trajet**, rendus en grille (`colonnes`) — l'autre branche du composant, où les
+//    options sont enveloppées chacune dans une cellule.
+//
+// Le défilement que la flèche ferait sinon se lit sur l'événement (`defaultPrevented`, relevé par un
+// écouteur posé sur la fenêtre, qui passe après celui du groupe) plutôt qu'à la position de la page :
+// le focus donné à l'option voisine peut légitimement la faire défiler pour la montrer.
+//
+// Mutations du 25/09/2026, un export chacune (`--clear`, marqueur de la mutation retrouvé dans le
+// bundle), plus un témoin sans mutation qui sort vert :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | `GroupeDeChoix` n'appelle plus le branchement (l'état d'avant) | tout : chaque option est un arrêt, dans les trois groupes ; aucune flèche ne déplace ni n'est retenue |
+//   | le filtre du groupe le plus proche retiré | la page ne répond plus, et l'attente de « Thermique » expire |
+//   | la flèche déplace le focus sans cocher | les trois flèches, sur `aria-checked` seulement, et l'arrêt du mode resté sur « Voiture (seul) » |
+//   | `preventDefault()` retiré | les quatre flèches, sur `defaultPrevented` seulement |
+//   | l'arrêt de tabulation jamais rangé | les trois relevés d'arrêts, et eux seuls |
+//   | la grille sans référence (`colonnes`) | les jours, et eux seuls — la motorisation et le mode passent |
+//
+// La deuxième ne dit pas pourquoi, et la cause n'a pas été mesurée plus avant : la plus probable est
+// que les deux groupes revendiquent alors la motorisation et se renvoient son arrêt de tabulation,
+// chaque écriture réveillant l'observateur de l'autre. Le filtre n'est donc pas une finesse.
+//
+// Une septième mutation n'a rien fait tomber, et c'est elle qui a simplifié le code : retirer le
+// contrôle du rôle et du groupe de la cible. La liste des options faisait déjà ce travail — une
+// option d'un autre groupe n'y a pas d'indice —, et les deux gardes n'en font plus qu'une,
+// `effetDeLaFleche` (`src/types/groupe-au-clavier.ts`), éprouvée par Jest. Les trois mutations du
+// milieu ont été rejouées sur cette forme finale, avec le même résultat.
+const QUESTION_DU_MODE = 'Quel est ton mode de transport principal pour ce trajet ?';
+const ETAPE_DU_MODE_EN_VOITURE = brouillonDe('commute_mode', {
+  commute_has_regular_trip: true,
+  commute_days_per_week: 5,
+  commute_distance_km: 30,
+  commute_mode: 'voiture',
+  commute_is_carpool: false,
+  commute_car_engine: 'thermique',
+});
+
+/** Pour chaque groupe nommé, ses options qui sont un arrêt de tabulation — évaluée dans la page. */
+function arretsDesGroupes() {
+  const nom = (n) => n.getAttribute('aria-label') ?? (n.innerText ?? '').trim();
+  return Object.fromEntries(
+    [...document.querySelectorAll('[role="radiogroup"]')].map((groupe) => [
+      groupe.getAttribute('aria-label'),
+      [...groupe.querySelectorAll('[role="radio"]')]
+        .filter((o) => o.closest('[role="radiogroup"]') === groupe && o.getAttribute('tabindex') === '0')
+        .map(nom),
+    ])
+  );
+}
+
+/** L'option qui a le focus, son état, et si la dernière flèche a été retenue — évaluée dans la page. */
+function lireApresLaFleche() {
+  const actif = document.activeElement;
+  return {
+    role: actif?.getAttribute?.('role') ?? null,
+    nom: actif?.getAttribute?.('aria-label') ?? null,
+    coche: actif?.getAttribute?.('aria-checked') ?? null,
+    retenue: window.__flecheRetenue ?? null,
+  };
+}
+
+async function fleche(page, touche) {
+  await page.evaluate(() => {
+    window.__flecheRetenue = null;
+    if (!window.__ecouteDesFleches) {
+      window.__ecouteDesFleches = true;
+      window.addEventListener('keydown', (e) => {
+        if (e.key.startsWith('Arrow')) window.__flecheRetenue = e.defaultPrevented;
+      });
+    }
+  });
+  await page.keyboard.press(touche);
+  await page.waitForTimeout(400);
+  return page.evaluate(lireApresLaFleche);
+}
+
+function verifierLaFleche(ou, touche, lu, attendu) {
+  if (lu.role !== 'radio' || lu.nom !== attendu || lu.coche !== 'true') {
+    echecs.push(
+      `${ou} : ${touche} doit porter le focus sur « ${attendu} » et la cocher — le focus est sur` +
+        ` « ${lu.nom ?? '(rien)'} » (rôle ${lu.role}, aria-checked="${lu.coche}")` +
+        ' (`brancherLeClavierDuGroupe`, src/lib/groupe-au-clavier.ts).'
+    );
+  }
+  if (lu.retenue !== true) {
+    echecs.push(`${ou} : ${touche} n’est pas retenue (defaultPrevented = ${lu.retenue}) — la page défilerait sous le choix.`);
+  }
+}
+
+function verifierLesArrets(ou, arrets, attendus) {
+  for (const [groupe, attendu] of Object.entries(attendus)) {
+    const lus = arrets[groupe];
+    if (!lus || lus.length !== 1 || lus[0] !== attendu) {
+      echecs.push(
+        `${ou}, groupe « ${groupe} » : un seul arrêt de tabulation attendu, « ${attendu} » — relevé` +
+          ` ${lus ? `[${lus.map((n) => `« ${n} »`).join(', ')}]` : 'aucun groupe de ce nom'}.`
+      );
+    }
+  }
+}
+
+{
+  const ou = '/bilan, étape du mode avec la motorisation ouverte';
+  const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DU_MODE_EN_VOITURE });
+  try {
+    const thermique = page.getByRole('radio', { name: 'Thermique', exact: true });
+    await thermique.waitFor({ state: 'visible', timeout: ATTENTE });
+    await page.waitForTimeout(REPOS);
+    verifierLesArrets(ou, await page.evaluate(arretsDesGroupes), {
+      [QUESTION_DU_MODE]: 'Voiture (seul)',
+      'Quelle motorisation ?': 'Thermique',
+    });
+
+    await thermique.focus();
+    verifierLaFleche(`${ou}, dans la motorisation`, 'ArrowDown', await fleche(page, 'ArrowDown'), 'Hybride');
+    const modeToujoursCoche = await page
+      .getByRole('radio', { name: 'Voiture (seul)', exact: true })
+      .evaluate((n) => n.getAttribute('aria-checked'));
+    if (modeToujoursCoche !== 'true') {
+      echecs.push(`${ou} : la flèche de la motorisation a décoché « Voiture (seul) » — elle doit rester dans son groupe.`);
+    }
+    verifierLaFleche(`${ou}, dans la motorisation`, 'ArrowUp', await fleche(page, 'ArrowUp'), 'Thermique');
+
+    await page.getByRole('radio', { name: 'Voiture (seul)', exact: true }).focus();
+    verifierLaFleche(`${ou}, dans le mode`, 'ArrowDown', await fleche(page, 'ArrowDown'), 'Voiture (covoiturage)');
+    verifierLesArrets(`${ou}, après la flèche`, await page.evaluate(arretsDesGroupes), {
+      [QUESTION_DU_MODE]: 'Voiture (covoiturage)',
+    });
+  } catch (erreur) {
+    echecs.push(`${ou} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+{
+  const ou = '/bilan, jours de trajet en grille';
+  const page = await ouvrir('/bilan', { [BROUILLON]: JOURS_ET_TRANCHE });
+  try {
+    const trois = page.getByRole('radio', { name: '3', exact: true });
+    await trois.waitFor({ state: 'visible', timeout: ATTENTE });
+    await page.waitForTimeout(REPOS);
+    // Aucun jour n'est coché dans ce brouillon : l'arrêt est le premier.
+    verifierLesArrets(ou, await page.evaluate(arretsDesGroupes), {
+      'Ce trajet, tu le fais combien de jours par semaine ?': '1',
+    });
+    await trois.focus();
+    verifierLaFleche(ou, 'ArrowRight', await fleche(page, 'ArrowRight'), '4');
+  } catch (erreur) {
+    echecs.push(`${ou} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -1018,5 +1191,6 @@ console.log(
     ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; focus et animations réduites` +
     ` de l’onboarding conformes ; ${CASES_A_L_ESPACE.length} choix cochés à la barre d’espace sans` +
     ' que la page défile ; le focus du questionnaire suit l’étape, et « Voir les autres modes » le' +
-    ' pose sur le premier mode révélé.'
+    ' pose sur le premier mode révélé ; un arrêt de tabulation par groupe d’options, et les flèches' +
+    ' y cochent sans en sortir.'
 );
