@@ -268,8 +268,23 @@ règles, à partir du 24/09/2026 :
   le dépôt et le produit sous leur ancien nom (`CLAUDE.md`, « le produit s'appelle Ramille »), comme
   le renvoi de `SKILL.md` à un `README.md` qui s'appelle `readme.md`.
 
+**Ce que cette PR a synchronisé, le 25/09/2026** — la règle ci-dessus appliquée à ses propres
+composants : les fiches (`.jsx`, `.prompt.md`, `.d.ts`) de `Chip`, `TextField`, `NumericField`,
+`Button`, `TextLink`, `ThemedText`, `ChoiceRow`, `ChoixDeRappel`, `FeuilleRappels`, `OngletIcone`,
+`BarreOnglets`, `BandeHaute`, `CompteBouton`, `MonCompte`, `CheckinCard` et `ActionCard`, et par
+ricochet `ActionCommitment`, `ModeListItem`, `PrecisionMode`, `GoogleButton` et `CalculEnCours` ;
+leurs cartes de démonstration ; les cartes de guidelines (hauteurs, rayons, corps, titres, chasse
+fixe, marques) ; `tokens/spacing.css` (`--stroke-field`) ; `base.css` (l'état appuyé, qu'un style
+en ligne ne sait pas écrire) ; et le `readme.md`. Chaque fiche a été relue contre `src/`, et là où
+elle décrivait une API que le code n'a pas, c'est elle qui s'est alignée — `ThemedText.as` et
+`TextLink.align` restent lisibles pour le catalogue, marqués hérités. Les cartes ont été rendues
+avec le vrai React puis mesurées dans Chromium (cibles, grille des jours, teintes appuyées,
+contours, niveaux d'en-tête), et deux mutations — les marges 8/12 de la barre, la règle d'appui —
+font tomber les mesures attendues, et elles seules.
+
 **Ce qui reste est un chantier, pas une correction**, et il demande une session de design : c'est
-elle qui sait redessiner un composant dans le kit. Son inventaire, relevé le 24/09/2026 :
+elle qui sait redessiner un composant dans le kit. Son inventaire, relevé le 24/09/2026 et complété
+le 25 :
 
 - **les composants absents** : un fichier de `src/components/` (hors tests) est compté représenté si
   l'une de ses fonctions exportées porte le nom d'un composant du kit. À cette définition, **36
@@ -279,13 +294,20 @@ elle qui sait redessiner un composant dans le kit. Son inventaire, relevé le 24
   questionnaire étape par étape, les quatre étapes de l'onboarding, la saisie du code, les cartes de
   piste et d'ouverture, le trait de temps, les trois composants du suivi, les pages légales et les
   écrans d'erreur. Le relevé se refait par la commande de §7 ;
-- **les fiches des composants que cette livraison a changés** (`components/**/*.prompt.md` et leurs
-  `.d.ts`) : `Chip` (rôle obligatoire, `nestedBackground`, jours en grille, `Radius.chip`),
-  `TextField` et `NumericField` (contour au repos, Spline Sans dans le champ), `Button` (`onPanel`,
-  état appuyé), `ChoiceRow` et `ChoixDeRappel` (la ligne de canal est `LigneDeCanal`), `OngletIcone`
-  et `BarreOnglets` (pastille pleine, onglets de 48), `BandeHaute` (cible de 48, nom qui n'est plus
-  un titre), `MonCompte` (registre blanc cerné), `CheckinCard` (« Oui » et « Non » au même poids),
-  `ActionCard` (estompée par le cadre, « par an » sous le gain) ;
+- **les quatre composants que cette livraison a créés** n'ont pas de fiche : en attendant,
+  `ChoixDeRappel` et `FeuilleRappels` rendent la ligne de canal à l'identique, et `ActionCommitment`
+  et `PrecisionMode` posent eux-mêmes leur groupe nommé ;
+- **des écarts antérieurs à la livraison**, relevés en relisant le code pour elle : le bouton Google
+  (le code dessine le « G » officiel, sans ombre, avec un indicateur d'attente — le kit garde une
+  pastille, une ombre et « Connexion… ») ; `google-oauth-logo.png`, que le `readme.md` présente
+  comme une référence Google alors que c'est le logo de Ramille pour l'écran de consentement ; les
+  props que les fiches n'ont pas (`StepShell.detail` et `motDeRamille`, `ActionCard.premierPas`, le
+  second renforcement et l'action quittée de `CheckinCard`, l'état final de `MonCompte`, le
+  `progressbar` d'`OnboardingDots`) ; les jours d'`ActionCommitment` comptés de 0 là où le dépôt
+  compte de 1 ; et trois fichiers que l'index du `readme.md` cite sans qu'ils existent ;
+- **aucun contrôle ne voit les chemins du kit** : `scripts/verifier-renvois-des-documents.mjs` ne
+  balaie pas `docs/design/design-system/`. Les 39 chemins cités ont été vérifiés à la main le
+  25/09/2026 ;
 - **`BarreOnglets`** existe dans le kit et pas comme composant du code : la barre est le layout
   `src/app/(tabs)/_layout.tsx` ;
 - **le catalogue des 38 écrans** (`ui_kits/ramille/`) reprend le handoff V1, dont des écrans à mot de

@@ -353,13 +353,15 @@ premier plan, les actions passent avant le cap, qui dit « par an » ; l'onglet 
 et les contrôles sous le doigt se voient ; les cibles passent à 48 ; et, sur web, un choix coché
 s'annonce enfin coché — c'était le seul défaut critique de l'audit.
 
-**Trois chantiers en sortent, et aucun n'est dans cette livraison** :
+**Trois chantiers en sortent, et aucun n'est fini dans cette livraison** :
 
-- **synchroniser le kit** (décision n° 11) — la personne qui pilote a refusé de le réduire, et a
-  préféré qu'il reste un miroir du code. Son inventaire est daté et chiffré en `v1-29` §5, avec la
-  commande qui le refait : des composants absents (36 fichiers sur 63 à la définition qui y est
-  écrite), un catalogue d'écrans du handoff V1, et une session de design pour le faire. **À faire
-  avant la prochaine session de design**, qui partirait sinon d'un kit faux ;
+- **finir de synchroniser le kit** (décision n° 11) — la personne qui pilote a refusé de le réduire,
+  et a préféré qu'il reste un miroir du code. La livraison a synchronisé les fiches des composants
+  qu'elle a changés ; le reste est daté et chiffré en `v1-29` §5, avec la commande qui le refait :
+  des composants absents (40 fichiers sur 67 à la définition qui y est écrite, dont les quatre que
+  la livraison a créés), un catalogue d'écrans du handoff V1, des écarts antérieurs relevés en
+  chemin, et une session de design pour le faire. **À faire avant la prochaine session de design**,
+  qui partirait sinon d'un kit faux ;
 - **le thème sombre, après le lancement** (n° 8) : sa liste de reprise est en `v1-29` §6.1, build EAS
   compris ;
 - **le paysage**, écart WCAG 1.3.4 **assumé pour la V1** (n° 9), et ce que le lever coûte : `v1-29`
