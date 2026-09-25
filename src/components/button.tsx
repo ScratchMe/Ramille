@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Radius } from '@/constants/theme';
+import { ControlHeight, Radius, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ButtonProps = {
@@ -14,6 +14,14 @@ export type ButtonProps = {
   /** Précision annoncée après le titre, quand celui-ci ne suffit pas hors contexte
    *  (« Oui » / « Non » d'un check-in, par exemple). */
   accessibilityHint?: string;
+  /**
+   * Le bouton est posé sur une surface grise ou teintée — la carte du point — et non sur le fond de
+   * l'écran. Un secondaire y prend le fond de l'écran et un filet, au lieu du gris des panneaux
+   * (24/09/2026, `v1-29`) : « Oui » et « Non » passés au même poids se sont retrouvés gris sur une
+   * carte grise, leur forme disparaissait et ils se lisaient comme du texte. Sans effet sur le
+   * principal, dont l'accent se voit partout.
+   */
+  onPanel?: boolean;
 };
 
 // Bouton pleine largeur, rayon 27px — cf. design tokens du handoff.
@@ -39,14 +47,18 @@ export function Button({
   flex,
   style,
   accessibilityHint,
+  onPanel,
 }: ButtonProps) {
   const theme = useTheme();
 
+  const surPanneau = onPanel && variant === 'secondary';
   const backgroundColor = disabled
     ? theme.backgroundElement
     : variant === 'primary'
       ? theme.accent
-      : theme.backgroundElement;
+      : surPanneau
+        ? theme.background
+        : theme.backgroundElement;
   const backgroundAppuye = variant === 'primary' ? theme.accentPressed : theme.backgroundPressed;
   const textColor = disabled ? theme.textTertiary : variant === 'primary' ? theme.onAccent : theme.text;
 
@@ -63,6 +75,7 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         { backgroundColor: pressed && !disabled ? backgroundAppuye : backgroundColor, flex: flex ? 1 : undefined },
+        surPanneau && { borderWidth: Stroke.hairline, borderColor: theme.border },
         style,
       ]}
     >

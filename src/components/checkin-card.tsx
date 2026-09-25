@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { formeInserable, type LoopType } from '@/constants/postes';
 import { Radius, Spacing } from '@/constants/theme';
+import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
 import { supabase } from '@/lib/supabase';
 import {
   estDeuxiemeFoisDeSuite,
@@ -79,24 +80,6 @@ const REFUS_DU_RPC: Record<string, string | undefined> = {
     'Ce point de suivi n’est plus rattaché à ton compte. Il disparaîtra de ton plan à la prochaine relecture.',
 };
 
-/**
- * Porte le focus sur ce qui vient de remplacer le bouton touché — celui du clavier sur web, celui
- * du lecteur d'écran sur natif (24/09/2026, `v1-29`).
- *
- * Même idiome que `StepShell` : sur web, un nœud rendu avec `tabIndex={-1}` et un `focus()` ; sur
- * natif, un événement d'accessibilité. `sendAccessibilityEvent` et non `setAccessibilityFocus`,
- * que React Native marque obsolète et qui passe par l'ancien gestionnaire d'interface. Sur web,
- * react-native-web laisse les deux vides : seul le DOM peut déplacer le focus.
- */
-function porterLeFocusSur(cible: View | null) {
-  if (!cible) return;
-  if (Platform.OS === 'web') {
-    (cible as unknown as { focus?: () => void }).focus?.();
-    return;
-  }
-  AccessibilityInfo.sendAccessibilityEvent(cible, 'focus');
-}
-
 // Contenu et comportement adaptatif minimal cf. spec-fonctionnelle §7 : une question
 // fermée ancrée sur un fait précis (pas d'auto-évaluation globale floue), réponse positive
 // = renforcement bref, réponse négative = relance factuelle non culpabilisante — jamais de
@@ -145,7 +128,7 @@ export function CheckinCard({
    */
   const replique = useRef<View>(null);
   useEffect(() => {
-    if (reponseLocale !== null) porterLeFocusSur(replique.current);
+    if (reponseLocale !== null) donnerLeFocus(replique.current);
   }, [reponseLocale]);
 
   // Comparaison de libellés et non d'identifiants : la carte ne porte pas l'identifiant du gabarit,
@@ -268,6 +251,7 @@ export function CheckinCard({
                 <Button
                   title="Non"
                   variant="secondary"
+                  onPanel
                   onPress={() => answer('non')}
                   disabled={saving}
                   flex
@@ -276,6 +260,7 @@ export function CheckinCard({
                 <Button
                   title="Oui"
                   variant="secondary"
+                  onPanel
                   onPress={() => answer('oui')}
                   disabled={saving}
                   flex
@@ -315,10 +300,11 @@ export function CheckinCard({
               un. Même raison pour `sans_objet`, qui reçoit une attente et non une relance (C2.4).
               Le choix se fait dans `repliqueDuPoint`, avec son test, plutôt qu'en ternaire ici.
 
-              **Le conteneur reçoit le focus après une réponse donnée ici** (cf. `replique`) :
-              `tabIndex={-1}` le rend focalisable sur web sans l'ajouter à l'ordre de tabulation, et
-              `accessible` en fait un seul nœud sur natif — le visage est masqué, la phrase est lue. */}
-          <View ref={replique} accessible {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
+              **Le conteneur reçoit le focus après une réponse donnée ici** (cf. `replique`,
+              `donnerLeFocus`) : `FOCALISABLE_PAR_PROGRAMME` le rend focalisable sur web sans l'ajouter
+              à l'ordre de tabulation, et `accessible` en fait un seul nœud sur natif — le visage est
+              masqué, la phrase est lue, et le focus natif trouve un nœud à viser. */}
+          <View ref={replique} accessible {...FOCALISABLE_PAR_PROGRAMME}>
             <RamilleDit {...repliqueDuPoint(checkin, reponse)} />
           </View>
           {/* **La phrase du handoff, enfin affichée** (C2.10) : elle est dans la spec §7 comme signal
