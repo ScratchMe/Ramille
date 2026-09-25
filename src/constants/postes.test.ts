@@ -4,6 +4,7 @@ import {
   POSTE_EN_PHRASE,
   POSTE_LABEL,
   POSTE_SUBJECT,
+  estLeResiduelDesSortiesRares,
   formeInserable,
   posteLabel,
 } from '@/constants/postes';
@@ -107,5 +108,27 @@ describe('posteLabel', () => {
       'Trajet domicile-travail (Voiture thermique)'
     );
     expect(posteLabel(null, 'repli')).toBe('repli');
+  });
+});
+
+/**
+ * **Le résiduel des sorties rares se reconnaît d'un seul critère, pour deux écrans** (25/09/2026,
+ * `v1-29` §6.3) : la félicitation du plan et la marche de la restitution. Le libellé est celui que
+ * le serveur fige, épinglé côté base par `01` et `20`.
+ */
+describe('estLeResiduelDesSortiesRares', () => {
+  it('reconnaît le libellé que le serveur fige sur le résiduel', () => {
+    expect(estLeResiduelDesSortiesRares('leisure', 'Loisirs du week-end (occasionnels)')).toBe(true);
+  });
+
+  it('ne prend pas des sorties déclarées pour le résiduel', () => {
+    expect(estLeResiduelDesSortiesRares('leisure', 'Loisirs du week-end (Voiture thermique)')).toBe(false);
+    expect(estLeResiduelDesSortiesRares('leisure', null)).toBe(false);
+  });
+
+  // Le marqueur ne vaut que sur les sorties : un autre poste qui le porterait resterait nommé.
+  it('ne lit le marqueur que sur les sorties', () => {
+    expect(estLeResiduelDesSortiesRares('travel', 'Voyages (occasionnels)')).toBe(false);
+    expect(estLeResiduelDesSortiesRares(null, 'Loisirs du week-end (occasionnels)')).toBe(false);
   });
 });

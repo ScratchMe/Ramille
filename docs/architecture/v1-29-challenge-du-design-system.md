@@ -183,7 +183,8 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
   comme l'affichage.
 - **La félicitation du plan à zéro action nomme le poste** (`felicitationDuPlanSansAction`) — **sauf
   le résiduel des sorties rares**, pour la raison de §4 — et dit « le point » au lieu du
-  « check-in ».
+  « check-in ». Pour ce résiduel, le titre est **« Tu es déjà sous le repère 2050. »** depuis
+  l'arbitrage du 25/09/2026 (§6.3).
 - **La carte engagée dit « par an » sous le chiffre** : « par an · le mardi et le jeudi · 15 % de ton
   empreinte » (`ligneDuGain`). Lu comme « la ligne juste sous le gain » ; si la décision voulait
   « − 619 kg CO₂e par an » sur la même ligne, c'est une ligne à changer.
@@ -239,7 +240,8 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
   tes sorties du week-end » le félicitait sur des sorties qu'il a dit ne presque pas faire, et « Le
   point reste là » lui promettait une boucle mensuelle qui n'est pas générée sans base déclarée. Ce
   cas n'est plus ni nommé ni promis — « Tu fais déjà l’essentiel. » —, le serveur le marquant dans le
-  libellé qu'il fige sur le cycle. C'est une réduction prudente et non une décision : §6.3.
+  libellé qu'il fige sur le cycle. C'était une réduction prudente et non une décision ; elle est
+  tranchée depuis le 25/09/2026 (§6.3).
 - **L'erreur d'hydratation n'était pas propre à `/connexion`** : trois routes à paramètre, dont deux
   qui servaient une phrase fausse avant le démarrage de l'app (§3.4).
 - **« Recevoir un code » pouvait annoncer un envoi qui n'avait pas eu lieu** — défaut antérieur à
@@ -405,11 +407,34 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
 - ce que la base de référence apportait et que le produit n'a pas retenu : des graphiques à quatre
   points au moins, un réglage de la recette à 200 % de taille de police et en mouvement réduit —
   ce dernier est repris en §6.5 ;
-- **le titre de la félicitation, pour le résiduel des sorties rares** (§4) : « Tu fais déjà
-  l’essentiel. », sans poste et sans promesse de point, est la réduction la plus prudente, pas une
-  phrase décidée. Et **la même fausseté vit ailleurs pour ce profil** : le palier de la restitution
-  lui propose « 2 kg CO₂e de moins sur l’année sur tes sorties du week-end », des sorties qu'il a dit
-  ne presque pas faire. Relevé en jouant le parcours réel, hors du périmètre de ce chantier ;
+- **tranché le 25/09/2026 — le titre de la félicitation et la marche de la restitution, pour le
+  résiduel des sorties rares** (§4). Le profil : un trajet à vélo, à pied ou absent, des sorties
+  « rarement », aucun voyage — un des cinq bilans courants en production ce jour-là, et le cas typique du
+  cycliste. Deux décisions, sur la recommandation posée :
+  - **le titre dit pourquoi le plan est vide : « Tu es déjà sous le repère 2050. »** — ce que la
+    restitution vient de lui dire une page plus tôt, donc les deux écrans parlent d'une seule voix.
+    C'est vrai par construction (pour que le résiduel l'emporte, le trajet et les voyages pèsent
+    moins que lui, qui ne dépasse pas une soixantaine de kilos : le total reste sous 200 kg, loin
+    des 600 du repère), mais « par construction » se périme : un poste neuf — les déplacements
+    professionnels de C4.3 — pourrait faire passer ce profil au-dessus. Le titre est donc
+    **conditionné au total** par la comparaison même de la restitution (`sousLeRepere2050`,
+    `src/types/palier.ts`), relu dans la requête que le plan faisait déjà, et retombe sur « Tu fais
+    déjà l’essentiel. » au-dessus du repère ou sur une lecture en échec. L'alternative écartée,
+    « Tes déplacements pèsent déjà très peu. », était vraie aussi, mais c'est un jugement là où
+    l'autre est un fait vérifiable ;
+  - **la marche de la restitution se tait** : « S’il te reste de l’envie : 2 kg CO₂e de moins sur
+    l’année sur tes sorties du week-end » proposait un effort sur des sorties non déclarées, que le
+    plan suivant — vide — n'avait aucun moyen de faire franchir. Les deux premières phrases restent
+    mot pour mot (`palierNote`, argument `posteSuppose`, requis et sans valeur par défaut). Seule la
+    branche « déjà sous le repère » le lit, la seule que ce profil atteint ; c'est la même borne qui
+    rendrait les autres atteignables, donc C4.3 est aussi l'endroit où y revenir.
+  Les deux écrans reconnaissent le résiduel d'un seul critère (`estLeResiduelDesSortiesRares`,
+  `src/constants/postes.ts`), et le parcours réel attend les deux phrases sur le cycliste ;
+- **ce que ce même profil voit encore ailleurs, relevé en le tranchant et pas arbitré** : sur le
+  suivi, « Poste principal : Loisirs du week-end » nomme le résiduel comme un comportement (le
+  libellé nu perd « (occasionnels) ») ; et la ligne d'horizon du suivi, « Tu es sous la moyenne
+  française : à partir de là, le repère 2050 se joue palier après palier. », se lit mal pour
+  **quiconque est déjà sous le repère**, résiduel ou non. Deux phrases de produit, à poser ;
 - **la date de mise à jour de la page de confidentialité** vaut le 24/09/2026 ; la page dit que sa
   date est celle où le texte arrive devant les lecteurs, donc elle suit la date de fusion ;
 - **les deux variantes de la phrase du cap, et son silence** : la décision n° 4 dit « quand elle est

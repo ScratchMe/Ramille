@@ -378,19 +378,19 @@ describe('palierNote', () => {
   // Le défaut le plus visible de tous : la marche qui sépare du repère vaut quelques dizaines
   // de kilos, et la phrase promettait littéralement zéro effort (A10-3).
   it('ne promet plus « 0,0 t CO₂e de moins » quand le repère est à portée', () => {
-    const note = palierNote(palier({ reductionKg: 40, isTarget2050: true }), true, POSTE);
+    const note = palierNote(palier({ reductionKg: 40, isTarget2050: true }), true, POSTE, false);
     expect(note).toBe('Le repère 2050 est à ta portée : 40 kg CO₂e de moins sur l’année, et tu y es.');
   });
 
   it('nomme la marche, le poste qui la porte, et le plan qui suit', () => {
-    expect(palierNote(palier(), true, POSTE)).toBe(
+    expect(palierNote(palier(), true, POSTE, false)).toBe(
       'Une marche à 800 kg CO₂e de moins sur l’année sur ton trajet domicile-travail. ' +
         'Le plan qui suit propose de quoi la franchir.'
     );
   });
 
   it('situe 2050 quand le repère n’est pas à l’écran', () => {
-    expect(palierNote(palier({ reductionKg: 1200 }), false, POSTE)).toMatch(
+    expect(palierNote(palier({ reductionKg: 1200 }), false, POSTE, false)).toMatch(
       /2050 se joue palier après palier\.$/
     );
   });
@@ -402,27 +402,45 @@ describe('palierNote', () => {
   // plus le cap mais ce qui sépare du repère 2050, donc une distance sur le **total**.
   it('ne nomme aucun poste quand la marche s’arrête au repère 2050', () => {
     for (const repereVisible of [true, false]) {
-      expect(palierNote(palier({ isTarget2050: true }), repereVisible, POSTE)).not.toContain(POSTE);
+      expect(palierNote(palier({ isTarget2050: true }), repereVisible, POSTE, false)).not.toContain(POSTE);
     }
     for (const variante of [palier(), palier({ beyondTarget2050: true })]) {
       for (const repereVisible of [true, false]) {
-        expect(palierNote(variante, repereVisible, POSTE)).toContain(POSTE);
+        expect(palierNote(variante, repereVisible, POSTE, false)).toContain(POSTE);
       }
     }
   });
 
   // Déjà sous le repère : registre de contribution, jamais d'exigence.
   it('change de registre pour un profil déjà sous le repère', () => {
-    const note = palierNote(palier({ reductionKg: 12, beyondTarget2050: true }), true, POSTE);
+    const note = palierNote(palier({ reductionKg: 12, beyondTarget2050: true }), true, POSTE, false);
     expect(note).toMatch(/laisse de la marge ailleurs/);
     expect(note).toMatch(/S’il te reste de l’envie : 12 kg CO₂e de moins sur l’année sur ton trajet domicile-travail\.$/);
+  });
+
+  // **Le résiduel des sorties rares tait la marche** (arbitrage du 25/09/2026, `v1-29` §6.3). Le
+  // cycliste qui sort « rarement » recevait une marche sur des sorties qu'il n'a pas déclarées, que
+  // son plan — vide — ne pouvait pas lui faire franchir. Les deux premières phrases restent, mot
+  // pour mot : c'est la moitié qui compte, et un test qui ne vérifierait que l'absence passerait sur
+  // une note vide. Éprouvé le 25/09/2026 : `posteSuppose` ignoré fait tomber ce test, et lui seul ;
+  // `posteSuppose` qui rend une note vide aussi, et lui seul.
+  it('tait la marche quand le poste est supposé, et garde le reste mot pour mot', () => {
+    const sorties = 'tes sorties du week-end';
+    const note = palierNote(palier({ reductionKg: 2, beyondTarget2050: true }), true, sorties, true);
+    expect(note).toBe(
+      'Tu es déjà sous le repère transport 2050. Ce que tu n’émets pas laisse de la marge ailleurs — ' +
+        'pour tes autres postes, ou pour ceux dont les déplacements sont contraints.'
+    );
+    expect(palierNote(palier({ reductionKg: 2, beyondTarget2050: true }), true, sorties, false)).toBe(
+      `${note} S’il te reste de l’envie : 2 kg CO₂e de moins sur l’année sur tes sorties du week-end.`
+    );
   });
 
   // Aucune formulation d'échec : on ne dit jamais combien de paliers restent.
   it('ne compte jamais les paliers restants', () => {
     for (const variante of [palier(), palier({ isTarget2050: true }), palier({ beyondTarget2050: true })]) {
       for (const repereVisible of [true, false]) {
-        expect(palierNote(variante, repereVisible, POSTE)).not.toMatch(
+        expect(palierNote(variante, repereVisible, POSTE, false)).not.toMatch(
           /palier(s)? restant|il t’en reste/i
         );
       }
