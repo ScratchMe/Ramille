@@ -471,8 +471,13 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
   la carte qu'à 1,07:1 ; ce qui se voit est le **changement** (du blanc au gris, 1,26:1). Porter les
   secondaires à 3:1 serait une décision de design sur tout le registre, pas une correction de ces
   deux-là ;
-- **un en-tête visible sur la feuille des rappels** : retiré le 25/09/2026 parce qu'il n'avait pas
-  été décidé (§3.2). Le remettre est une ligne (`enTete`), si la personne qui pilote le veut.
+- **tranché le 25/09/2026 — la feuille des rappels reste sans en-tête visible.** Il avait été
+  retiré le matin même parce qu'il n'avait pas été décidé (§3.2) ; la décision le confirme, sur la
+  recommandation posée : le canvas n'en dessine pas, la feuille s'ouvre sur un geste qui vient d'être
+  fait (« C'est noté »), et c'est la ligne de Ramille qui l'ouvre — un titre au-dessus la reléguerait
+  au second plan pour une ligne sans information. Le nom « Les rappels » reste celui du dialogue pour
+  les lecteurs d'écran, et la question « Comment tu préfères que je te fasse signe ? » dit l'objet
+  en toutes lettres. Aucune ligne de code n'a changé.
 
 ### 6.4 Les limites du web, qu'aucun code du dépôt ne lève
 
