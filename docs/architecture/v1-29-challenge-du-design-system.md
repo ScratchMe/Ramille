@@ -86,7 +86,9 @@ leur donnait déjà** quand il en avait un :
 - **`Radius.notice`** (12) et **`Radius.chip`** (14, douze recopies). `Radius.chip` **a changé de
   sens** : il valait 8 pour la puce « Cadence » du plan, disparue avec C2.8, et plus rien ne le lisait ;
 - **`ControlHeight.target` à 48**, et `topBand` (52), `tabBar` (60), `numeric` (64) ;
-- **`Rail`** (6 px, rayon 3) et **`Stroke`** (`hairline` 1, `selected` 1,5, `engaged` 2).
+- **`Rail`** (6 px, rayon 3) et **`Stroke`** (`hairline` 1, `selected` 1,5, `engaged` 2, et `field` 1,5
+  — le contour d'un champ, au repos comme au focus : quatre champs lisaient `selected`, le contour
+  d'une puce choisie, relevé par la contre-lecture du 25/09/2026).
 
 Et ce qui n'était lu nulle part est parti : `Fonts.sans`, `Fonts.serif` et `Fonts.rounded` — Spline
 Sans passe par `FontFamily` —, avec les trois variables CSS qui les portaient.
@@ -119,7 +121,9 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
   pose le rôle et **nomme le groupe par sa question**, écrite une fois ; les jours d'une intention
   sont des `checkbox`, puisqu'ils se cumulent. `Chip.role` est devenu obligatoire.
 - **Chaque contrôle répond au toucher**, teinte immédiate et sans animation ; un lien texte se
-  souligne.
+  souligne — et un lien **déjà souligné au repos** (« Supprimer mon compte », « Changer d'avis » et
+  leurs « Annuler ») prend la teinte appuyée à la place, puisque le soulignement n'y changeait rien
+  (contre-lecture du 25/09/2026).
 - **Cibles de 48** : la puce fait 48 × 48 au moins ; les jours se rangent en grille, sur quatre
   colonnes, et sur trois sous 320 dp, où ils se chevauchaient d'un demi-pixel.
 - **Les champs se voient au repos** (`fieldBorder`), et le texte qu'on y tape est en Spline Sans — il
@@ -139,8 +143,10 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
   la table de vérité des rappels (`paraitChoisie`, `src/types/ligne-de-canal.ts`), et une préférence
   `email` sans adresse n'en a aucun.
 - **Un seul cadre de feuille** (`FeuilleDuBas`) et **une seule ligne de canal** (`LigneDeCanal`) ; les
-  deux feuilles sont des dialogues **nommés par leur titre** — dont un titre visible nouveau, « Les
-  rappels », que le cadre partagé exige.
+  deux feuilles sont des dialogues **nommés par leur titre**. La feuille des rappels avait aussi reçu
+  un en-tête **visible**, « Les rappels », que ni son canvas ni aucune décision ne portaient : il est
+  retiré (`enTete={false}`), le titre ne sert plus qu'à nommer le dialogue — ce qu'une feuille montre
+  est une question de produit (§6.3).
 - **La chasse fixe ne sert plus qu'aux sources** : « Ton mode n’est pas dans la liste ? », les lignes
   d'hypothèse des vols et des longs trajets, le compteur du retour passent en Spline Sans ; le
   détail technique d'un échec, sous le message du questionnaire, reste en chasse fixe : c'est une
@@ -155,7 +161,10 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
 - **« Oui » et « Non » ont le même poids** : deux secondaires, posés sur la carte par `onPanel` — gris
   sur la carte grise, leur forme disparaissait (§4). La réplique prend le focus après une réponse
   donnée **sur la carte**, jamais au montage d'une carte déjà répondue.
-- **Au premier plan, le choix passe avant le cap** ; hors premier plan, l'ordre n'a pas bougé.
+- **Au premier plan, le choix passe avant le cap** ; hors premier plan, l'ordre n'a pas bougé. La
+  carte d'ouverture qui le coiffe est une **section** (en-tête de niveau 2, sous « Ton plan » de
+  niveau 1), et ses boutons secondaires passent par `onPanel` : « Choisir une autre » se fondait dans
+  la carte teintée à 1,06:1 — le défaut du point, sur une autre carte.
 - **Le cap dit « par an »** — « par an, soit − 20 % sur ton trajet domicile-travail (1,9 t CO₂e
   aujourd’hui) » — et, tant que rien n'est engagé, la phrase qui le relie aux pistes
   (`phraseDesPistesSuffisantes`, `src/types/plan.ts`) : « Chacune des deux pistes proposées suffit à
@@ -256,8 +265,8 @@ règles, à partir du 24/09/2026 :
   les six couleurs d'état, `display`, `label`, les rayons, les hauteurs et les traits ;
 - **les phrases du `readme.md` du kit que cette livraison rend fausses sont corrigées ici** — l'état
   pressé, la cible de 44, le total en 48/52 (il est en `salient` 30/36 depuis A3-22, le 11/09/2026),
-  le dépôt `ScratchMe/TraceVerte` et l'ancien nom du produit, comme le renvoi de `SKILL.md` à un
-  `README.md` qui s'appelle `readme.md`.
+  le dépôt et le produit sous leur ancien nom (`CLAUDE.md`, « le produit s'appelle Ramille »), comme
+  le renvoi de `SKILL.md` à un `README.md` qui s'appelle `readme.md`.
 
 **Ce qui reste est un chantier, pas une correction**, et il demande une session de design : c'est
 elle qui sait redessiner un composant dans le kit. Son inventaire, relevé le 24/09/2026 :
@@ -342,7 +351,28 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
   lui propose « 2 kg CO₂e de moins sur l’année sur tes sorties du week-end », des sorties qu'il a dit
   ne presque pas faire. Relevé en jouant le parcours réel, hors du périmètre de ce chantier ;
 - **la date de mise à jour de la page de confidentialité** vaut le 24/09/2026 ; la page dit que sa
-  date est celle où le texte arrive devant les lecteurs, donc elle suit la date de fusion.
+  date est celle où le texte arrive devant les lecteurs, donc elle suit la date de fusion ;
+- **les deux variantes de la phrase du cap, et son silence** : la décision n° 4 dit « quand elle est
+  vraie » et en donne une forme, « Chacune des deux… ». « L'une des deux pistes proposées… » et « La
+  piste proposée suffit à le franchir. » en sont les deux autres formes vraies, et rien n'est dit
+  quand aucune piste n'atteint le cap ou quand l'écran en montrerait plus de deux. Elles se
+  dérivent de la règle décidée ; elles n'ont pas été relues une à une ;
+- **« Le plus régulier » au-dessus de « Loisirs du week-end (occasionnels) »** : c'est ce que
+  l'étiquette de la décision n° 1 écrirait si le résiduel des sorties « rarement » gagnait le
+  départage face à des voyages plus lourds de moins de 5 % — deux mots qui se contredisent. Le cas
+  est rare (le résiduel pèse une trentaine de kilos) et n'a été vu nulle part ; la forme la plus
+  sûre serait « Presque à égalité avec tes voyages », sans le superlatif. Relevé par la
+  contre-lecture du 25/09/2026, à arbitrer ;
+- **le contour de « Oui » et « Non »** : posés sur la carte par `onPanel`, ils se détachent à
+  1,14:1 (carte grise) et 1,18:1 (carte teintée), filet compris entre 1,13 et 1,18:1 — exactement le
+  contraste de **tout** bouton secondaire du produit sur le fond de l'écran (1,14:1). WCAG 1.4.11
+  n'exige pas 3:1 du contour d'un bouton que son libellé identifie, et c'est ce registre-là que la
+  décision n° 2 a appliqué. Sous le doigt, sur la carte teintée, le bouton appuyé ne se distingue de
+  la carte qu'à 1,07:1 ; ce qui se voit est le **changement** (du blanc au gris, 1,26:1). Porter les
+  secondaires à 3:1 serait une décision de design sur tout le registre, pas une correction de ces
+  deux-là ;
+- **un en-tête visible sur la feuille des rappels** : retiré le 25/09/2026 parce qu'il n'avait pas
+  été décidé (§3.2). Le remettre est une ligne (`enTete`), si la personne qui pilote le veut.
 
 ### 6.4 Les limites du web, qu'aucun code du dépôt ne lève
 
