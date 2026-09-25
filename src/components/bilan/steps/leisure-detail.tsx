@@ -8,6 +8,7 @@ import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { NumericField } from '@/components/bilan/numeric-field';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -86,7 +87,7 @@ export function LeisureDetailStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">{QUESTION_MODE}</ThemedText>
+        <TitreDEtape>{QUESTION_MODE}</TitreDEtape>
         {/* Le groupe ne porte que les modes et leurs précisions — chacune son propre groupe, posé
             dedans sous le mode qu'elle décrit (`GroupeDeChoix`). « Voir les autres modes » le suit
             sans y entrer : c'est une commande, pas une option, et il ne se rattache à aucune

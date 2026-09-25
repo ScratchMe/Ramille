@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { HYPOTHESES } from '@/constants/methodologie';
@@ -33,7 +34,7 @@ export function LeisureFrequencyStep({
 
   return (
     <View style={styles.container}>
-      <ThemedText type="screenTitle">{QUESTION_FREQUENCE}</ThemedText>
+      <TitreDEtape>{QUESTION_FREQUENCE}</TitreDEtape>
       {!commuteSkipped && (
         <ThemedText type="small" themeColor="textTertiary">
           Sport, sorties, visites à la famille.

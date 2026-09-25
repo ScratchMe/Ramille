@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ChampsDeContexte } from '@/components/bilan/champs-de-contexte';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import type { BilanAnswers } from '@/types/bilan';
@@ -24,7 +25,7 @@ export function ContextStep({
   return (
     <View style={styles.container}>
       <View style={styles.intro}>
-        <ThemedText type="screenTitle">Quel est ton contexte de mobilité ?</ThemedText>
+        <TitreDEtape>Quel est ton contexte de mobilité ?</TitreDEtape>
         {/* Écart 12 (C5.4) — l'intro dit la **règle**, pas l'usage. « Ça nous sert à te proposer
             des actions réalistes » décrivait une intention ; « ne propose que ce qui tient »
             dit ce qui se passe, et c'est ce qui rend l'encart du plan lisible plus tard comme

@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
@@ -50,7 +51,7 @@ export function FlightsStep({
             **et** obligerait à relever à nouveau les facteurs avion, dont la valeur dépend du `km`
             demandé à l'API Impact CO2. Le calcul ne bouge pas ; c'est la question qui devient
             sans ambiguïté. */}
-        <ThemedText type="screenTitle">{QUESTION_TOTAL}</ThemedText>
+        <TitreDEtape>{QUESTION_TOTAL}</TitreDEtape>
         <ThemedText type="small" themeColor="textTertiary">
           Un aller-retour compte pour deux vols.
         </ThemedText>

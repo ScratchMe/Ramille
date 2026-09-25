@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import type { BilanAnswers } from '@/types/bilan';
@@ -19,7 +20,7 @@ export function CommuteHasTripStep({
 }) {
   return (
     <View style={styles.container}>
-      <ThemedText type="screenTitle">{QUESTION_TRAJET}</ThemedText>
+      <TitreDEtape>{QUESTION_TRAJET}</TitreDEtape>
       <GroupeDeChoix question={QUESTION_TRAJET} style={styles.choices}>
         <ChoiceRow
           label="Oui"

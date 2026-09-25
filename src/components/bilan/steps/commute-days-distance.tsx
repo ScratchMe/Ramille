@@ -5,6 +5,7 @@ import { ChoiceRow } from '@/components/bilan/choice-row';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { NumericField } from '@/components/bilan/numeric-field';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -51,7 +52,7 @@ export function CommuteDaysDistanceStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">{QUESTION_JOURS}</ThemedText>
+        <TitreDEtape>{QUESTION_JOURS}</TitreDEtape>
         {/* **Quatre colonnes, donc deux lignes** (24/09/2026, décision n° 7 : une cible de 48). Sur une
             ligne, les sept puces ne mesuraient que 38 à 42 px de large sur un téléphone de 360 à
             390 dp — cf. `GroupeDeChoix`. */}

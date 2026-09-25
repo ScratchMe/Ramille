@@ -72,6 +72,36 @@
 // (`src/lib/focus.ts`) qui le rend possible. Et l'hydratation de `/connexion` a ses deux moitiés :
 // sans la seconde, une correction qui ignorerait le paramètre passerait pour juste.
 //
+// ── Sections D, E et G, éprouvées en cassant le 25/09/2026 ─────────────────────────────────────
+//
+// Huit mutations, un export chacune, sur un arbre dont le témoin sort vert. Chacune fait tomber ce
+// qu'elle devait faire tomber, et rien d'autre :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | le pager n'ouvre plus de vol (`enVol` toujours nul) | le retour du focus sur la page qu'on quitte **et** l'inertie, trois bascules par page (E, moitié animée) |
+//   | `StepShell` ne déplace plus le focus | le focus d'étape, tombé sur le document (G) |
+//   | `StepShell` vise le titre sur web, sans `tabIndex` | le focus d'étape, tombé sur le document (G) |
+//   | `/suivi/bilan` lit son état sans attendre l'hydratation | l'hydratation de `?id=` **et** le HTML statique « pas pu » (D) |
+//   | `/suivi/bilan` ne quitte jamais le chargement | « Chargement » encore affiché (D) |
+//   | `/suivi/bilan` lit son identifiant sous un autre nom | aucune lecture portant l'identifiant (D) |
+//   | `/rappels/stop` reste sur « Un instant » après la réponse | « Un instant » encore affiché (D) |
+//   | `/rappels/stop` lit son jeton sous un autre nom | aucun appel portant le jeton (D) |
+//
+// La première a été jouée contre l'**ancienne** section E aussi, par construction : son assertion
+// au repos est restée verte, le focus finissant bien sur la page 1 après son aller-retour. La
+// quatrième est celle du 24/09 rejouée : les deux gardes nouvelles de `/suivi/bilan` y restent
+// vertes — l'écran sort du chargement, vers l'erreur, et lit bien le bilan —, ce qui est juste :
+// elles gardent autre chose, et ce sont les deux suivantes qui le montrent. Sous la deuxième, le
+// focus ne reste même pas sur « Suivant » : le bouton de l'étape qui arrive est désactivé tant
+// qu'on n'a pas répondu, et un bouton désactivé perd le focus.
+//
+// Et une expérience, qui n'est pas une mutation : viser le titre sur web **avec** `tabIndex={-1}`
+// pose le focus sur la question de l'étape qui arrive (relevé sur deux étapes différentes) et G
+// reste verte. La référence que `TitreDEtape` relie à `StepShell` atteint donc le titre de la
+// nouvelle étape à l'instant de l'effet — ce que la voie native suppose, et que rien d'autre ici
+// ne peut montrer.
+//
 // **Chaque export muté a été fait avec son propre cache Metro (`TMPDIR`) et `--clear`**, et ce
 // n'est pas un détail : la première série de mesures, faite sans `--clear` pendant que d'autres
 // worktrees exportaient, a produit des bundles qui n'étaient pas ceux de l'arbre — l'ancien texte
@@ -141,7 +171,11 @@ const navigateur = await chromium.launch(
  * layout ou dans le premier effet de l'écran, donc les poser après coup ne testerait que le
  * rechargement. AsyncStorage sur web est `window.localStorage`, clé pour clé, sans préfixe.
  */
-async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null, hauteur = 844 } = {}) {
+async function ouvrir(
+  chemin,
+  marques = {},
+  { reduire = false, exceptions = null, requetes = null, journal = false, hauteur = 844 } = {}
+) {
   const page = await navigateur.newPage({ viewport: { width: 390, height: hauteur } });
   // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
   // au chargement du module (section E).
@@ -149,6 +183,12 @@ async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null
   // Les exceptions sont écoutées dès avant la navigation : une erreur d'hydratation part pendant
   // que le bundle monte l'app, avant que l'attente ci-dessous ne rende la main (section D).
   if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
+  // Les requêtes aussi, corps compris — un RPC porte son paramètre dans le corps : la lecture d'un
+  // écran part dès son premier effet (section D).
+  if (requetes) page.on('request', (requete) => requetes.push({ url: requete.url(), corps: requete.postData() ?? '' }));
+  // Et le journal du focus, pour la même raison : il doit être posé avant le premier script de
+  // la page pour ne rien manquer de ce qui bascule pendant une transition (section E).
+  if (journal) await page.addInitScript(journaliserLeFocus);
   await page.addInitScript((entrees) => {
     for (const [cle, valeur] of Object.entries(entrees)) window.localStorage.setItem(cle, valeur);
   }, marques);
@@ -460,21 +500,43 @@ const PARAMETRES = [
   {
     // Un jeton de forme valide mais inconnu : la page appelle le serveur, et ce qu'elle affiche
     // ensuite dépend de la base (refus en local, panne avec la configuration factice de la CI).
-    // Seul le titre est donc attendu ici ; ce que le HTML dit **avant** l'app est vérifié
+    // Aucune des deux issues n'est donc épinglée ; ce que le HTML dit **avant** l'app est vérifié
     // ci-dessous, dans le fichier.
+    //
+    // **Le titre seul ne prouvait rien, pour la raison de `/suivi/bilan`** (25/09/2026) : il est
+    // dans le HTML statique, que l'export sert à tout le monde. Ce qui distingue la page montée, c'est
+    // qu'elle quitte « Un instant » — vers l'une ou l'autre issue — et qu'elle a appelé le serveur
+    // avec **ce** jeton.
     chemin: `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`,
     attendu: 'Ne plus recevoir de rappels',
-    interdit: null,
+    interdit: 'Un instant',
+    lecture: ({ url, corps }) =>
+      url.includes('/rest/v1/rpc/desinscrire_des_rappels') && corps.includes(JETON_DE_FORME_VALIDE),
   },
   {
     // Ouvert depuis le suivi, le bilan porte `?id=` ; le HTML statique, sans identifiant, rendait
     // l'écran d'erreur et le navigateur le chargement (relevé le 24/09/2026). Un identifiant
     // inconnu finit sur l'écran d'erreur une fois la lecture faite, en local comme avec la
-    // configuration factice de la CI : seule l'hydratation est l'objet de cette ligne, et le texte
-    // attendu est celui des deux issues possibles.
+    // configuration factice de la CI — une copie d'erreur, qu'on n'épingle pas (voir l'en-tête).
+    //
+    // **`bilan` seul ne prouvait rien, et c'est le HTML statique qui le montrait** (25/09/2026) : le
+    // mot est aussi dans « Chargement de ton bilan… », que l'export sert à tout le monde. L'assertion
+    // passait donc avant comme après la correction, et passerait sur un écran figé pour toujours au
+    // chargement. Ce qui distingue l'écran monté du HTML, c'est qu'il **en sort** : « Chargement »
+    // est interdit une fois la lecture faite — sans dire vers quelle issue, pour la raison ci-dessus.
+    // Et la moitié positive est la lecture elle-même : l'écran doit avoir demandé **ce** bilan, celui
+    // que désigne l'adresse. Sans elle, un écran qui perdrait `?id=` passerait : il afficherait
+    // l'erreur sans rien lire, et l'erreur ne dit pas « Chargement ».
     chemin: `/suivi/bilan?id=${JETON_DE_FORME_VALIDE}`,
     attendu: 'bilan',
-    interdit: null,
+    interdit: 'Chargement',
+    lecture: ({ url }) =>
+      url.includes('/rest/v1/assessment_results?') && url.includes(`assessment_id=eq.${JETON_DE_FORME_VALIDE}`),
+    // **La lecture qui échoue est relancée, et l'écran l'attend** : `@supabase/postgrest-js`
+    // relance trois fois un GET que le réseau refuse, après 1, 2 puis 4 s. Mesuré sur l'export le
+    // 25/09/2026, configuration factice : « Chargement de ton bilan… » pendant 8,5 s, puis l'écran
+    // d'erreur. L'attente s'arrête dès que la condition tient ; la marge ne coûte qu'en cas d'échec.
+    attente: 30_000,
   },
   {
     // Sans jeton, rien n'est appelé : l'état ne dépend que de l'URL. Le HTML statique dit « un
@@ -486,10 +548,24 @@ const PARAMETRES = [
   },
 ];
 
-for (const { chemin, attendu, interdit } of PARAMETRES) {
+for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of PARAMETRES) {
   const exceptions = [];
-  const page = await ouvrir(chemin, {}, { exceptions });
+  const requetes = [];
+  const page = await ouvrir(chemin, {}, { exceptions, requetes });
   try {
+    // On attend l'état que l'écran monté doit atteindre — le texte attendu présent, l'interdit
+    // parti —, puis on juge sur ce qu'on lit : une attente échouée ne lève pas, elle laisse
+    // l'assertion dire ce qui manque.
+    await page
+      .waitForFunction(
+        ([a, i]) => {
+          const t = document.body.innerText.replace(/\s+/g, ' ');
+          return t.includes(a) && (i === null || !t.includes(i));
+        },
+        [attendu, interdit],
+        { timeout: attente }
+      )
+      .catch(() => {});
     const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ').trim();
     const hydratation = exceptions.filter((e) => HYDRATATION.test(e));
     if (hydratation.length > 0) {
@@ -502,7 +578,16 @@ for (const { chemin, attendu, interdit } of PARAMETRES) {
     if (!texte.includes(attendu)) {
       echecs.push(`${chemin} : « ${attendu} » est absent une fois l’app montée. Rendu : « ${texte.slice(0, 160)}… »`);
     } else if (interdit && texte.includes(interdit)) {
-      echecs.push(`${chemin} : « ${interdit} » s’affiche encore une fois l’app montée : le paramètre n’est pas lu.`);
+      echecs.push(
+        `${chemin} : « ${interdit} » s’affiche encore une fois l’app montée : l’écran en est resté à ce` +
+          ' que dit le HTML statique, sans tirer son état du paramètre.'
+      );
+    }
+    if (lecture && !requetes.some(lecture)) {
+      echecs.push(
+        `${chemin} : l’écran n’a jamais demandé ce que l’adresse désigne — aucune lecture portant le` +
+          ' paramètre. Il s’affiche sans le lire, ou le lit sous un autre nom.'
+      );
     }
   } catch (erreur) {
     echecs.push(`${chemin} : ${String(erreur).slice(0, 180)}`);
@@ -549,10 +634,59 @@ for (const { chemin, attendu, interdit } of PARAMETRES) {
 // Et sous « réduire les animations », la page change d'un coup : le défilement animé du pager ne
 // consultait pas la préférence (`behavior: 'smooth'` du navigateur). La preuve est l'absence de
 // **toute** position intermédiaire pendant le passage — avant le correctif, il en passait cinq.
+//
+// **Le focus se lit aussi PENDANT le passage, et pas seulement au repos** (25/09/2026). La première
+// version de cette section ne regardait qu'où le focus finissait : elle restait verte pendant qu'il
+// faisait l'aller-retour — titre de la page 1, titre de la page 0, titre de la page 1 —, parce que
+// le premier événement du défilement animé, à 2 px de la page qu'on quitte, la faisait redésigner
+// par l'arrondi de l'index. Au lecteur d'écran, le titre qu'on vient de quitter était annoncé une
+// seconde fois, et la page qui arrive redevenait inerte le temps d'un demi-défilement. D'où le
+// journal (`journaliserLeFocus`) : aucun `focusin` ne doit entrer dans la page qu'on quitte, et
+// chacune des deux pages ne bascule d'inertie **qu'une fois**. Sous « réduire les animations », il
+// n'y a qu'une position, donc rien à voir basculer : la moitié animée est celle qui garde.
+
+/**
+ * Posé avant le premier script de la page (`addInitScript`) : chaque `focusin`, et chaque bascule
+ * de l'attribut `inert`, avec l'indice de la page du pager qui les porte — par **appartenance**
+ * (`contains`), pas par position à l'écran, qui change à chaque image du défilement. L'attribut est
+ * posé sur un descendant de l'enveloppe de chaque page, d'où la même recherche pour les deux.
+ */
+function journaliserLeFocus() {
+  const pages = () => {
+    const pager = [...document.querySelectorAll('div')].find((d) =>
+      ['auto', 'scroll'].includes(getComputedStyle(d).overflowX)
+    );
+    return pager?.firstElementChild ? [...pager.firstElementChild.children] : [];
+  };
+  const pageDe = (noeud) => pages().findIndex((p) => p.contains(noeud));
+  window.__focus = [];
+  window.__inertie = [];
+  document.addEventListener(
+    'focusin',
+    (e) =>
+      window.__focus.push({
+        page: pageDe(e.target),
+        texte: (e.target.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 60),
+      }),
+    true
+  );
+  document.addEventListener('DOMContentLoaded', () =>
+    new MutationObserver((mutations) => {
+      for (const m of mutations) if (m.attributeName === 'inert') window.__inertie.push(pageDe(m.target));
+    }).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['inert'] })
+  );
+}
+
 for (const reduire of [false, true]) {
-  const page = await ouvrir('/onboarding', {}, { reduire });
+  const page = await ouvrir('/onboarding', {}, { reduire, journal: true });
   try {
     await page.getByRole('button', { name: 'Découvrir mon impact' }).focus();
+    // Le `focus()` ci-dessus entre dans la page 0 : c'est le geste, pas la transition. Le journal
+    // repart donc de zéro à l'instant de la touche.
+    await page.evaluate(() => {
+      window.__focus.length = 0;
+      window.__inertie.length = 0;
+    });
     await page.keyboard.press('Enter');
     const positions = [];
     for (let i = 0; i < 8; i++) {
@@ -584,6 +718,39 @@ for (const reduire of [false, true]) {
         `/onboarding : après « Découvrir mon impact » au clavier, le focus est sur` +
           ` ${focus.corps ? 'le document' : `« ${focus.texte} »`}${focus.inerte ? ', dans une page inerte' : ''}` +
           ' — il doit être sur le titre de la page qui arrive (`donnerLeFocus`, src/lib/focus.ts).'
+      );
+    }
+
+    // Le passage lui-même, tel que le journal l'a vu.
+    const { passages, inertie } = await page.evaluate(() => ({
+      passages: window.__focus,
+      inertie: window.__inertie,
+    }));
+    const quand = reduire ? ' sous « réduire les animations »' : '';
+    const retours = passages.filter((p) => p.page === 0);
+    if (!passages.some((p) => p.page === 1)) {
+      // **Une assertion qu'on ne peut pas jouer est un échec** (même règle que la section A) : sans
+      // aucun `focusin` situé dans la page qui arrive, le journal ne sait pas situer les pages, et
+      // « aucun retour sur la page 0 » ne prouverait rien.
+      echecs.push(
+        `/onboarding${quand} : le journal n’a vu aucun focus entrer dans la page qui arrive` +
+          ` (relevé : ${JSON.stringify(passages).slice(0, 160)}) — les pages du pager sont` +
+          ' introuvables, ou le focus ne les suit plus. Le garde-fou ne peut pas conclure.'
+      );
+    } else if (retours.length > 0) {
+      echecs.push(
+        `/onboarding${quand} : pendant le passage à la page 1, le focus est revenu dans la page qu’on` +
+          ` quitte (« ${retours[0].texte} ») avant de repartir — un lecteur d’écran réannonce le titre` +
+          ' qu’on vient de quitter. Un défilement programmé ne doit pas faire redésigner la page par' +
+          ' ses positions intermédiaires (`enVol`, src/app/onboarding/index.tsx).'
+      );
+    }
+    const bascules = [0, 1].map((i) => inertie.filter((p) => p === i).length);
+    if (bascules[0] !== 1 || bascules[1] !== 1) {
+      echecs.push(
+        `/onboarding${quand} : pendant le passage, la page qu’on quitte a basculé d’inertie` +
+          ` ${bascules[0]} fois et celle qui arrive ${bascules[1]} fois, là où chacune doit basculer` +
+          ' une seule fois — la page qui arrive redevenait inerte le temps d’un demi-défilement.'
       );
     }
     if (reduire) {
@@ -688,6 +855,61 @@ for (const { quoi, marques, nom } of CASES_A_L_ESPACE) {
   }
 }
 
+// ── G. Le questionnaire : le focus suit l'étape ────────────────────────────────────────────────
+//
+// « Suivant » laisse le bouton en place et change la question au-dessus de lui : sans rien de plus,
+// le focus reste sur le bouton qu'on vient d'actionner — ou, ici, tombe sur le document, le
+// « Suivant » de l'étape qui arrive étant inactif tant qu'on n'a pas répondu —, et rien de la
+// question qui arrive n'est annoncé (C1.9). `StepShell` le déplace, et **la cible n'est pas la
+// même selon la plateforme** depuis le 25/09/2026 : le conteneur de l'étape sur web, son titre sur
+// natif, où le conteneur est aplati et ne reçoit rien (le commentaire de
+// `src/components/bilan/step-shell.tsx` dit pourquoi).
+// Rien ne vérifiait la moitié web, alors qu'elle était la seule observable : cette section la tient.
+//
+// L'assertion porte sur ce que la personne obtient, pas sur l'élément choisi : le focus est sur la
+// question qui arrive, ou sur un conteneur dont elle est le premier titre — la forme d'aujourd'hui.
+// Une cible qui ne sait pas recevoir le focus (un titre sans `tabIndex` sur web) échoue sans bruit
+// et laisse le focus là où il était : le document ici, « Suivant » sur une étape déjà remplie. Les
+// deux conditions ensemble couvrent les deux.
+const QUESTION_SUIVANTE = 'Ce trajet, tu le fais combien de jours par semaine ?';
+{
+  const page = await ouvrir('/bilan');
+  try {
+    await page.getByRole('radio', { name: 'Oui', exact: true }).click();
+    const suivant = page.getByRole('button', { name: 'Suivant', exact: true });
+    await suivant.focus();
+    await page.keyboard.press('Enter');
+    await page
+      .waitForFunction((t) => document.body.innerText.replace(/\s+/g, ' ').includes(t), QUESTION_SUIVANTE, {
+        timeout: ATTENTE,
+      })
+      .catch(() => {});
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(() => {
+      const actif = document.activeElement;
+      const normaliser = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+      const estUnTitre = (n) => n?.tagName === 'H1' || n?.getAttribute?.('role') === 'heading';
+      const titre = estUnTitre(actif) ? actif : actif?.querySelector?.('h1, [role="heading"]');
+      return {
+        corps: actif === document.body || actif === null,
+        texte: normaliser(actif?.innerText).slice(0, 80),
+        titre: titre ? normaliser(titre.innerText) : null,
+      };
+    });
+    if (focus.corps || focus.titre !== QUESTION_SUIVANTE) {
+      echecs.push(
+        `/bilan : après « Suivant » au clavier, le focus est sur` +
+          ` ${focus.corps ? 'le document' : `« ${focus.texte} »`} — il doit être sur la question qui` +
+          ` arrive (« ${QUESTION_SUIVANTE} ») ou sur le conteneur qu’elle ouvre (\`StepShell\`).`
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`/bilan, focus d’étape : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -710,5 +932,5 @@ console.log(
     ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte ;` +
     ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; focus et animations réduites` +
     ` de l’onboarding conformes ; ${CASES_A_L_ESPACE.length} choix cochés à la barre d’espace sans` +
-    ' que la page défile.'
+    ' que la page défile ; le focus du questionnaire suit l’étape.'
 );

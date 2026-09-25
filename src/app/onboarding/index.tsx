@@ -123,11 +123,35 @@ export default function Onboarding() {
   // c'est le doigt de la personne qui fait le mouvement.
   const animationsReduites = useReducedMotion();
 
+  // **Un défilement programmé ne dit rien de la page tant qu'il est en vol** (25/09/2026). L'état
+  // n'attend pas la fin de l'animation — le bouton doit se sentir aussi immédiat que le doigt —, et
+  // ce fichier supposait que `onScroll` confirmerait la même valeur en chemin. C'est l'inverse qui
+  // arrivait : le premier événement du défilement animé part à 2 px de la page qu'on quitte, que
+  // l'arrondi de `surDefilement` redésignait. Relevé sur l'export, « Découvrir mon impact » pressé :
+  // le focus allait au titre de la page 1, **revenait** au titre de la page 0 dès ce premier
+  // événement, puis repartait sur la page 1 passé la moitié — et l'inertie des deux pages basculait
+  // trois fois en 200 ms, la page qui arrive redevenant inerte le temps d'un demi-défilement. Au
+  // lecteur d'écran, c'est le titre qu'on vient de quitter annoncé une seconde fois.
+  //
+  // Le vol est donc tenu ici : pendant qu'il dure, `surDefilement` ignore les positions qui se
+  // rapprochent de la cible. Il se termine de deux façons, et les deux se lisent dans `onScroll`,
+  // seul signal commun aux deux plateformes — sur web, `onMomentumScrollEnd` ne part jamais, et
+  // `react-native-web` émet toujours un dernier `onScroll` à l'arrêt, 100 ms après le dernier
+  // défilement :
+  //   - **l'arrivée** : la position est sur la page visée (à un pixel près, l'arrondi d'un écran
+  //     dont la densité n'est pas entière) ;
+  //   - **la reprise en main** : la position s'éloigne de la cible — un doigt ou une molette qui
+  //     repart pendant l'animation. L'index suit alors le geste, comme sans vol.
+  // Pas de minuterie : une animation qui avance ne s'éloigne jamais de sa cible, et un défilement
+  // aimanté (`pagingEnabled`) finit toujours sur une page, donc le vol se termine toujours par
+  // l'une des deux. Sans animation (« réduire les animations »), le saut n'émet qu'une position,
+  // déjà sur la cible : aucun vol à tenir.
+  const enVol = useRef<{ cible: number; auPlusPres: number } | null>(null);
+
   const allerA = (cible: number) => {
     const borne = Math.max(0, Math.min(ETAPES.length - 1, cible));
+    enVol.current = animationsReduites ? null : { cible: borne, auPlusPres: Infinity };
     defilement.current?.scrollTo({ x: borne * width, animated: !animationsReduites });
-    // L'état n'attend pas la fin de l'animation : le bouton doit se sentir aussi immédiat
-    // que le doigt, et `onScroll` confirmera la même valeur en chemin.
     setIndex(borne);
   };
 
@@ -149,14 +173,27 @@ export default function Onboarding() {
 
   // `onScroll` et non `onMomentumScrollEnd` : ce dernier n'existe pas sur web, où le geste
   // s'appuie sur le scroll-snap du navigateur. On arrondit à la page la plus proche ; React
-  // ignore une valeur identique, donc pas de rendu superflu pendant le geste.
+  // ignore une valeur identique, donc pas de rendu superflu pendant le geste — **sauf pendant un
+  // défilement programmé**, que `enVol` tient jusqu'à son arrivée (voir plus haut).
   const surMesure = (evenement: LayoutChangeEvent) => {
     setHauteur(Math.round(evenement.nativeEvent.layout.height));
   };
 
   const surDefilement = (evenement: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (width <= 0) return;
-    setIndex(Math.round(evenement.nativeEvent.contentOffset.x / width));
+    const x = evenement.nativeEvent.contentOffset.x;
+    const vol = enVol.current;
+    if (vol !== null) {
+      const distance = Math.abs(x - vol.cible * width);
+      if (distance > 1 && distance <= vol.auPlusPres + 1) {
+        // En chemin vers la page visée : l'index y est déjà, et cette position n'en dit rien.
+        vol.auPlusPres = Math.min(vol.auPlusPres, distance);
+        return;
+      }
+      // Arrivé, ou repris en main : le vol se termine, et l'index suit de nouveau la position.
+      enVol.current = null;
+    }
+    setIndex(Math.round(x / width));
   };
 
   const page = { width, height: hauteur > 0 ? hauteur : undefined };

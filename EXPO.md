@@ -103,6 +103,14 @@ relais au rendu suivant.
   **ignorer Entrée**, que la bibliothèque active déjà : deux activations ramènent une case à cocher
   où elle était. `Pressable` ne déclare pas `onKeyDown` dans ses types, donc les props se
   décomposent. Ramille : §2.2.
+- **La fin d'un défilement ne s'annonce pas sur web** : `onMomentumScrollEnd` n'y part jamais,
+  défilement programmé compris, et react-native-web émet seulement un dernier `onScroll` 100 ms
+  après le dernier défilement. Piège voisin, qui vaut sur les deux plateformes : un index de page
+  **dérivé de la position** se trompe pendant un `scrollTo` animé — le premier `onScroll` part à
+  quelques pixels de la page qu'on quitte, et l'arrondi la redésigne. Mesuré chez Ramille le
+  25/09/2026 : le focus revenait sur la page quittée, l'inertie des pages basculait trois fois. Le
+  défilement programmé se tient donc jusqu'à son arrivée, lue à sa position (`enVol`, dans
+  `src/app/onboarding/index.tsx`).
 - **`userInterfaceStyle` d'`app.json` ne s'applique qu'au natif** : sur web, `useColorScheme` lit
   `prefers-color-scheme`. Si le thème sombre n'est pas validé, la décision se prend dans le hook
   de thème **et** dans le `ThemeProvider` de navigation — corriger l'un sans l'autre laisse la
