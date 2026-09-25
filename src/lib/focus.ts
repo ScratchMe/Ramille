@@ -2,27 +2,36 @@ import { AccessibilityInfo, Platform, type HostInstance } from 'react-native';
 
 /**
  * Déplacer le focus sur ce qui vient d'arriver à l'écran — celui du clavier sur web, celui du
- * lecteur d'écran sur natif (24/09/2026, `v1-29`).
+ * lecteur d'écran sur natif (24/09/2026, `v1-29`, audit d'accessibilité 4.1.3).
  *
  * **Ce qui se passe sans lui.** Un geste qui remplace ce qu'on voit laisse le focus sur le bouton
  * qu'on vient d'actionner ; si ce bouton sort de l'arbre ou devient inerte, le focus retombe sur
  * le document. Au clavier, la tabulation repart du haut de la page ; au lecteur d'écran, rien de ce
  * qui vient d'apparaître n'est annoncé. Mesuré sur l'export le 24/09/2026 : dans l'onboarding,
- * après « Découvrir mon impact » pressé au clavier, `document.activeElement` était `<body>`.
+ * après « Découvrir mon impact » pressé au clavier, `document.activeElement` était `<body>`. Même
+ * chose pour un écran qui en **remplace** un autre sous le doigt — « C'est envoyé, merci. » après
+ * « Envoyer », le calcul du bilan après « Voir mon bilan ».
  *
  * **Deux mécanismes, un par plateforme :**
  * - sur web, `focus()` du nœud DOM, qui doit être focalisable — c'est ce que
  *   `FOCALISABLE_PAR_PROGRAMME` lui donne. `preventScroll` laisse le défilement à qui l'a lancé :
  *   sans lui, le navigateur ramène le nœud à l'écran d'un saut, au milieu d'un défilement animé qui
- *   fait déjà ce travail ;
+ *   fait déjà ce travail — ou ne défile que si la cible est entièrement hors de l'écran, d'où une
+ *   étape du questionnaire ouverte au décalage de la précédente, que `StepShell` règle désormais
+ *   lui-même en remontant sa `ScrollView` (mesuré le 24/09/2026 à 360 × 440) ;
  * - sur natif, `sendAccessibilityEvent(…, 'focus')`, la voie que React Native désigne depuis qu'il
  *   a déprécié `setAccessibilityFocus` (commentaire de `AccessibilityInfo.js`) : elle prend le
  *   nœud lui-même et passe par le moteur de rendu, là où l'ancienne prend un numéro de nœud.
  *
- * Le modèle est `StepShell`, qui fait suivre le focus d'étape en étape dans le questionnaire depuis
- * C1.9 — avec l'ancienne voie, qu'il n'appartenait pas à ce chantier de reprendre. **Ce qui n'est
- * vérifié nulle part ici, c'est la moitié native** : aucune suite ne tourne sous TalkBack, elle
- * reste à éprouver sur appareil.
+ * **Le chemin sûr, sur natif, est que la cible soit un nœud d'accessibilité** (`accessible`), ce que
+ * fait `TitreDArrivee` : un conteneur sans aucune propriété d'accessibilité peut être aplati par
+ * React Native hors de l'arbre natif, et le focus demandé ne trouverait alors rien, sans erreur.
+ *
+ * Trois chantiers du même soir en ont eu besoin — l'onboarding, les écrans remplacés, et
+ * `StepShell`, qui faisait suivre le focus d'étape en étape depuis C1.9 par l'ancienne voie et passe
+ * désormais par celle-ci : la fonction a été écrite deux fois en parallèle, au même corps près, et
+ * n'en fait plus qu'une. **Ce qui n'est vérifié nulle part ici, c'est la moitié native** : aucune
+ * suite ne tourne sous TalkBack, elle reste à éprouver sur appareil (`v1-29` §6.5).
  */
 export function donnerLeFocus(cible: unknown): void {
   if (cible === null || cible === undefined) return;

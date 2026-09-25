@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { ControlHeight, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ChipProps = {
@@ -14,28 +15,30 @@ export type ChipProps = {
    *  teinté + bordure accent (Oui/Non, mode sélectionné dans une liste). */
   selectedStyle?: 'solid' | 'outline';
   radius?: number;
+  /**
+   * La puce est posée dans un encart déjà teinté (`backgroundElement`) : son fond non choisi
+   * reprend celui de la page (`background` — blanc en clair, noir en sombre), sinon il se confond
+   * avec l'encart et la puce se lit comme du texte. C'est la réponse que `ModeListItem` apporte au
+   * même problème, sous le même nom.
+   */
+  nestedBackground?: boolean;
   /** Quand le libellé visible est une abréviation ambiguë — deux jours de la semaine portent
    *  l'initiale « M » — le lecteur d'écran doit entendre le mot entier. */
   accessibilityLabel?: string;
   /** Rôle annoncé (A2-8) : `radio` pour une puce d'un groupe à choix unique — la majorité du
    *  questionnaire —, `checkbox` pour une puce qui se cumule avec ses voisines (les jours de
-   *  l'engagement, où `radio` serait faux), `button` pour une vraie action. `radio` et
-   *  `checkbox` sont les seuls rôles à annoncer « non sélectionné » et la place dans le
-   *  groupe.
+   *  l'engagement, où `radio` serait faux). Ce sont les seuls rôles à annoncer « non
+   *  sélectionné » et la place dans le groupe, et la puce se range toujours dans un
+   *  `GroupeDeChoix` nommé par sa question.
    *
-   *  **Le défaut `button` est provisoire, et il laisse le défaut d'A2-8 en place partout où il
-   *  s'applique encore** : un `button` qui porte `selected` est la combinaison qu'A2-8 désigne.
-   *  Les séries qui le gardent se nomment une par une, et non par fichier — `commute-extra.tsx`
-   *  porte désormais les deux, sa taille de covoiturage étant relue et son « Oui / Non » non :
-   *  les quatre séries de `steps/context.tsx`, les deux de `steps/flights.tsx`, les jours de
-   *  `steps/commute-days-distance.tsx`, le « Oui / Non » de `steps/commute-extra.tsx` et les
-   *  tranches de distance de `steps/leisure-detail.tsx` (tous des choix uniques, donc `radio`
-   *  dans une `View accessibilityRole="radiogroup"`), plus les deux de
-   *  `plan/action-commitment.tsx` (jours cumulables, donc `checkbox` dans un groupe nommé ;
-   *  l'échéance, elle, est un choix unique). Rendre la prop obligatoire est ce qui les
-   *  énumérera au typecheck, et c'est le geste à faire en même temps qu'eux — pas avant, un
-   *  défaut ne se remplace pas par un build cassé. */
-  role?: 'button' | 'radio' | 'checkbox';
+   *  **La prop est obligatoire, et `button` n'en est plus une valeur** (24/09/2026, `v1-29`).
+   *  Le défaut `button` était provisoire : il laissait le défaut d'A2-8 en place dans onze
+   *  séries — les quatre du contexte, les deux des vols, les jours du trajet, le « Oui / Non »
+   *  du second mode, les tranches des sorties, les jours et l'échéance de l'engagement —, et
+   *  ce commentaire prévoyait qu'on la rende obligatoire « en même temps qu'eux ». C'est fait :
+   *  une puce qui s'ajouterait sans rôle ne compile pas. Une puce n'est jamais une action — une
+   *  action est un `Button` ou un `TextLink`. */
+  role: 'radio' | 'checkbox';
 };
 
 // Chip générique — couvre les pickers numériques/tranches (B1.3, B2.2, B3.*) et les
@@ -48,35 +51,63 @@ export function Chip({
   flex,
   selectedStyle = 'solid',
   radius = 22,
+  nestedBackground,
   accessibilityLabel,
-  role = 'button',
+  role,
 }: ChipProps) {
   const theme = useTheme();
 
+  // Posée dans un encart teinté, la puce non choisie prend le fond de la page (`nestedBackground`) :
+  // sur le même `backgroundElement` que l'encart, elle n'avait plus de bord visible. La grille des jours
+  // de l'engagement (24/09/2026) l'a montré — sept lettres flottant dans des cellules de 48 — et
+  // les puces de `PrecisionChiffres` avaient le même défaut, que `precision-mode.tsx` décrivait déjà
+  // pour les rangées.
   const backgroundColor = selected
     ? selectedStyle === 'solid'
       ? theme.accent
       : theme.backgroundSelected
-    : theme.backgroundElement;
+    : nestedBackground
+      ? theme.background
+      : theme.backgroundElement;
+  // La teinte sous le doigt (24/09/2026, décision n° 6) : chaque surface a la sienne, pour que le
+  // texte garde son contraste — `accentPressed` sous le blanc d'une puce pleine,
+  // `backgroundSelectedPressed` sous l'accent d'une puce choisie, `backgroundPressed` ailleurs.
+  const backgroundAppuye = selected
+    ? selectedStyle === 'solid'
+      ? theme.accentPressed
+      : theme.backgroundSelectedPressed
+    : theme.backgroundPressed;
   const borderColor = selected && selectedStyle === 'outline' ? theme.accent : 'transparent';
-  const textColor = selected && selectedStyle === 'solid' ? '#FFFFFF' : theme.text;
+  const textColor = selected && selectedStyle === 'solid' ? theme.onAccent : theme.text;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole={role}
       accessibilityLabel={accessibilityLabel ?? label}
-      // Un rôle de choix porte **les deux** états, comme les quatre autres contrôles exclusifs
-      // du produit (`mode-list-item`, `choice-row`, `choix-de-rappel`, `feuille-rappels`) :
-      // `checked` est ce que TalkBack attend d'un `radio` ou d'une `checkbox`, et `selected` est
-      // ce que VoiceOver sait rendre — iOS n'a pas de trait `radio` et ne lit `checked` que sur
-      // un interrupteur ou une case, donc n'annoncerait aucun état sans lui. Un `button`, lui,
-      // ne prend que `selected` : `aria-checked` sur `role="button"` n'existe pas.
-      accessibilityState={role === 'button' ? { selected } : { selected, checked: selected }}
-      style={[
+      // **L'état passe par `aria-checked`, jamais par l'objet `accessibilityState`** (24/09/2026,
+      // audit d'accessibilité 4.1.2). Ce commentaire répartissait `checked` et `selected` entre
+      // TalkBack et VoiceOver, sans voir que le web ne recevait **ni l'un ni l'autre** :
+      // react-native-web 0.21 ignore cet objet et ne traduit que les props `aria-*`. Dans
+      // l'export, « Une idée », visiblement choisie, sortait en `role="radio"` sans `aria-checked`
+      // — donc « non coché » pour tout lecteur d'écran web, réponse préremplie d'un re-bilan
+      // comprise. `aria-checked` est lu par les deux moteurs : react-native-web l'écrit dans le
+      // DOM, React Native le range dans l'état natif que TalkBack annonce.
+      //
+      // `selected` n'est plus posé : `aria-selected` est invalide sur un `radio`, et la raison qui
+      // le justifiait — VoiceOver, faute de trait `radio` sur iOS — ne vaut pas pour une V1 publiée
+      // sur Google Play seulement. `scripts/verifier-rendu-export.mjs` garde la règle : tout
+      // `radio`, `checkbox` ou `switch` rendu doit porter `aria-checked`.
+      aria-checked={selected}
+      style={({ pressed }) => [
         styles.base,
         flex ? styles.baseFlex : styles.basePilule,
-        { borderRadius: radius, backgroundColor, borderColor, flex: flex ? 1 : undefined },
+        {
+          borderRadius: radius,
+          backgroundColor: pressed ? backgroundAppuye : backgroundColor,
+          borderColor,
+          flex: flex ? 1 : undefined,
+        },
       ]}
     >
       <ThemedText weight={selected ? 600 : 400} style={[styles.label, { color: textColor }]}>
@@ -87,9 +118,16 @@ export function Chip({
 }
 
 const styles = StyleSheet.create({
+  // **48 au moins, en hauteur comme en largeur** (24/09/2026, décision n° 7) : la puce mesurait 47
+  // de haut (12 + 20 + 12, plus ses deux traits), et une puce « 1 » à largeur naturelle tombait sous
+  // 48 de large. Des minimums, pas des mesures : le libellé grandit avec la taille de police du
+  // système, la puce doit suivre (A10-21, la même règle que `Button`). Par la taille et jamais par
+  // `hitSlop`, qui ferait se recouvrir les cibles de deux puces voisines.
   base: {
+    minHeight: ControlHeight.target,
+    minWidth: ControlHeight.target,
     paddingVertical: 12,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -100,6 +138,8 @@ const styles = StyleSheet.create({
   // de la place au texte. À 18 de chaque côté, les sept puces de « jours par semaine » ne
   // laissaient que 3 dp au chiffre sur un écran de 390 dp, pour ~9 nécessaires : Android
   // rognait le glyphe au lieu de le laisser déborder, et les chiffres apparaissaient coupés.
+  // (Ces sept-là ne sont plus équiréparties depuis le 24/09/2026 : elles se rangent sur quatre
+  // colonnes, `GroupeDeChoix`. La règle vaut pour toutes celles qui le restent.)
   // Même famille que le `minWidth: 0` des champs de saisie (cf. CLAUDE.md) : un enfant flex
   // qui ne peut pas contenir son contenu ne le signale pas, il le tronque.
   baseFlex: { paddingHorizontal: 4 },

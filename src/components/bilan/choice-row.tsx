@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Rangée de choix pleine largeur — B1.1, B1.3 (tranches), B2.1 (fréquence).
@@ -21,11 +21,19 @@ export function ChoiceRow({
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityLabel={label}
-      accessibilityState={{ selected, checked: selected }}
-      style={[
+      // `aria-checked` et non `accessibilityState`, que react-native-web ignore (cf. `chip.tsx`).
+      aria-checked={selected}
+      // Sous le doigt, la surface prend sa teinte appuyée, sans animation (décision n° 6, `v1-29`).
+      style={({ pressed }) => [
         styles.row,
         {
-          backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement,
+          backgroundColor: selected
+            ? pressed
+              ? theme.backgroundSelectedPressed
+              : theme.backgroundSelected
+            : pressed
+              ? theme.backgroundPressed
+              : theme.backgroundElement,
           borderColor: selected ? theme.accent : 'transparent',
         },
       ]}
@@ -42,7 +50,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
   },
   label: { fontSize: 16, lineHeight: 22 },
 });

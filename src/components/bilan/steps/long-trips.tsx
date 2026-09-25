@@ -4,7 +4,7 @@ import { Chip } from '@/components/bilan/chip';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
 import { OCCUPATIONS_LONG_TRAJET, type BilanAnswers } from '@/types/bilan';
 
@@ -98,7 +98,7 @@ export function LongTripsStep({
               role="radio"
               selected={answers.train_long_trips_per_year === n}
               onPress={() => update({ train_long_trips_per_year: n })}
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
         </View>
@@ -132,7 +132,7 @@ export function LongTripsStep({
               role="radio"
               selected={answers.coach_long_trips_per_year === n}
               onPress={() => update({ coach_long_trips_per_year: n })}
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
         </View>
@@ -157,7 +157,7 @@ export function LongTripsStep({
               onPress={() =>
                 update({ car_long_trips_per_year: n, car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null })
               }
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
         </View>
@@ -192,8 +192,10 @@ export function LongTripsStep({
         )}
       </View>
 
-      <ThemedText type="code" themeColor="textTertiary">
-        distances moyennes par défaut · 800 km train, 700 km autocar et voiture
+      {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10) : une phrase adressée à
+          la personne, comme la ligne jumelle des vols — d'où sa majuscule. */}
+      <ThemedText type="small" themeColor="textTertiary">
+        Distances moyennes par défaut · 800 km train, 700 km autocar et voiture
       </ThemedText>
     </View>
   );

@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, FontFamily } from '@/constants/theme';
+import { ControlHeight, FontFamily, Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { afficherNombreSaisi, nettoyerSaisieNumerique, saisieVersNombre } from '@/types/bilan';
 
-// Champ numérique encadré (B1.2/B1.3 "Quelle distance pour un aller ?") — bordure
-// accent permanente dans la maquette, pas seulement au focus.
+// Champ numérique encadré (B1.2/B1.3 "Quelle distance pour un aller ?").
+//
+// **La maquette lui donnait une bordure accent permanente, et il suit désormais la règle des deux
+// autres champs** (24/09/2026, `v1-29`) : `fieldBorder` au repos, l'accent une fois un nombre saisi.
+// L'accent marque ce qui est choisi ou rempli ; sur un champ vide, il disait « rempli » d'un champ
+// qui ne l'était pas, et c'était le seul champ du produit à le faire. Le contour au repos reste
+// visible — 3,45:1 sur le blanc —, ce qui est tout ce que l'accent permanent achetait.
 export function NumericField({
   value,
   onChange,
@@ -38,7 +43,12 @@ export function NumericField({
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundElement, borderColor: theme.accent }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.backgroundElement, borderColor: saisie.length > 0 ? theme.accent : theme.fieldBorder },
+      ]}
+    >
       <TextInput
         value={saisie}
         onChangeText={(texte) => {
@@ -67,15 +77,26 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    height: 64,
+    gap: Spacing.two,
+    height: ControlHeight.numeric,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     paddingHorizontal: 20,
   },
   // `minWidth: 0` est nécessaire sur web : un <input> a une largeur intrinsèque que
   // flexbox ne réduit pas automatiquement (contrairement à RN natif), donc sans ça le
   // champ refuse de rétrécir et pousse "km" à cheval sur son bord droit.
-  input: { flex: 1, minWidth: 0, fontSize: 28, fontFamily: FontFamily.semibold, padding: 0 },
-  unit: { fontSize: 17, flexShrink: 0 },
+  //
+  // `tabular-nums` (24/09/2026, `v1-29`) : Spline Sans porte des chiffres de largeurs inégales — un
+  // « 1 » plus étroit qu'un « 8 » —, donc le nombre se tassait et s'élargissait à chaque frappe, en
+  // 28 px. Des chiffres de même chasse le laissent en place. La police les porte (`tnum`).
+  input: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 28,
+    fontFamily: FontFamily.semibold,
+    fontVariant: ['tabular-nums'],
+    padding: 0,
+  },
+  unit: { ...TypeScale.card, flexShrink: 0 },
 });

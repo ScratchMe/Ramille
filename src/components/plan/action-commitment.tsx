@@ -3,6 +3,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -28,7 +30,10 @@ import {
 //     score. On peut changer d'action ou retirer son engagement sans que rien ne le compte
 //     contre soi — même registre que l'écran /suivi.
 //   - il ne passe pas par `Alert.alert` : sur web, l'alerte retombe sur `window.alert()`, qui
-//     n'invoque pas fiablement `onPress` (cf. CLAUDE.md). L'erreur est un état du composant.
+//     n'invoque pas fiablement `onPress` (cf. CLAUDE.md). L'erreur est un état du composant, et
+//     elle se dit par `MessageInline`, la seule façon du produit de dire qu'une action n'a pas
+//     abouti — elle était un `ThemedText` nu jusqu'au 24/09/2026, donc annoncée à personne
+//     (audit d'accessibilité, 4.1.3).
 export function ActionCommitment({
   actionId,
   poste,
@@ -76,6 +81,10 @@ export function ActionCommitment({
   const [timing, setTiming] = useState<IntentionTiming | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // La question écrite une fois pour ses deux usages : le texte au-dessus des puces et le nom de
+  // leur groupe (`GroupeDeChoix`).
+  const question = kind === 'days' ? 'Quels jours ?' : 'Quand ?';
 
   const toggleDay = (day: IntentionDay) =>
     setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
@@ -145,11 +154,7 @@ export function ActionCommitment({
           themeColor="textTertiary"
           style={styles.link}
         />
-        {error && (
-          <ThemedText type="small" themeColor="textSecondary">
-            {error}
-          </ThemedText>
-        )}
+        <MessageInline message={error} />
       </View>
     );
   }
@@ -169,11 +174,15 @@ export function ActionCommitment({
   return (
     <ThemedView type="backgroundElement" style={styles.picker}>
       <ThemedText type="small" themeColor="textTertiary">
-        {kind === 'days' ? 'Quels jours ?' : 'Quand ?'}
+        {question}
       </ThemedText>
 
       {kind === 'days' ? (
-        <View style={styles.dayRow}>
+        // Les jours se **cumulent** : des `checkbox` dans un groupe nommé, jamais des `radio` — qui
+        // annonceraient qu'en cocher un décoche les autres. Et ils vont sur **quatre colonnes** : sur
+        // une ligne, entre les marges de la carte et celles du sélecteur, chacun ne mesurait que 27 à
+        // 31 px de large à 360-390 dp, sous la cible de 48 (décision n° 7, `GroupeDeChoix`).
+        <GroupeDeChoix question={question} cumulable colonnes={4}>
           {INTENTION_DAYS.map((day) => (
             <Chip
               // Deux jours portent l'initiale « M » : l'accessibilité passe par le libellé
@@ -181,15 +190,17 @@ export function ActionCommitment({
               key={day.value}
               label={day.short}
               accessibilityLabel={day.long}
+              role="checkbox"
               selected={days.includes(day.value)}
               onPress={() => toggleDay(day.value)}
-              flex
-              radius={14}
+              radius={Radius.chip}
+              // Le sélecteur est un encart teinté : sans le fond de la page, la puce n'a pas de bord.
+              nestedBackground
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       ) : (
-        <View style={styles.timingColumn}>
+        <GroupeDeChoix question={question} style={styles.timingColumn}>
           {/* C3.8 §4 : les échéances dépendent du poste — un voyage ne se décide pas au calendrier
               du mois. La liste se dérive ici plutôt que dans le rendu d'un ternaire, pour que
               `src/types/plan.ts` reste le seul endroit qui sache lesquelles vont avec quoi. */}
@@ -197,20 +208,18 @@ export function ActionCommitment({
             <Chip
               key={option.value}
               label={option.label}
+              role="radio"
               selected={timing === option.value}
               onPress={() => setTiming(option.value)}
               radius={16}
               selectedStyle="outline"
+              nestedBackground
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       )}
 
-      {error && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-      )}
+      <MessageInline message={error} />
 
       <View style={styles.pickerActions}>
         <TextLink
@@ -235,7 +244,6 @@ export function ActionCommitment({
 const styles = StyleSheet.create({
   footer: { marginTop: Spacing.three },
   picker: { marginTop: Spacing.three, borderRadius: Radius.field, padding: Spacing.four, gap: Spacing.three },
-  dayRow: { flexDirection: 'row', gap: 6 },
   timingColumn: { gap: Spacing.two },
   pickerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
   link: { textDecorationLine: 'underline' },

@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { AccessibilityInfo, findNodeHandle, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProgressHeader } from '@/components/bilan/progress-header';
@@ -7,7 +7,8 @@ import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { donnerLeFocus } from '@/lib/focus';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
 // scrollable, footer Retour/Suivant. `onBack` absent = rien derrière, donc pas de bouton
@@ -70,26 +71,29 @@ export function StepShell({
   // cette coquille ne possède pas. Déplacer le focus sur le conteneur fait reprendre la lecture à
   // son premier descendant, c'est-à-dire au titre de l'étape.
   const contenu = useRef<View>(null);
+  const defilement = useRef<ScrollView>(null);
   const premierRendu = useRef(true);
 
   useEffect(() => {
-    // Pas au montage : personne n'a encore agi, et sur web un `focus()` au chargement provoque un
-    // saut de défilement pour tout le monde, y compris qui n'utilise pas de lecteur d'écran.
+    // Pas au montage : personne n'a encore agi. (Sur web, un `focus()` au chargement faisait aussi
+    // sauter le défilement pour tout le monde ; `donnerLeFocus` le pose désormais sans défiler, mais
+    // la règle tient pour la première raison.)
     if (premierRendu.current) {
       premierRendu.current = false;
       return;
     }
-    const cible = contenu.current;
-    if (!cible) return;
-
-    if (Platform.OS === 'web') {
-      // `tabIndex={-1}` ci-dessous rend le nœud focalisable sans l'ajouter à l'ordre de
-      // tabulation : on peut lui donner le focus par programme, on ne l'atteint pas à la touche.
-      (cible as unknown as { focus?: () => void }).focus?.();
-      return;
-    }
-    const handle = findNodeHandle(cible);
-    if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+    // **La nouvelle étape s'ouvre par le haut** (24/09/2026, relevé en mesurant le focus). Cette
+    // coquille reste montée d'une étape à l'autre, donc sa `ScrollView` gardait le défilement de la
+    // précédente : qui était descendu jusqu'au bas d'une étape arrivait sur la suivante au même
+    // décalage, le titre de la question hors de l'écran. Le focus ne rattrapait rien — le conteneur
+    // étant en partie visible, le navigateur ne défilait pas pour lui (mesuré à 360 × 440 : décalage
+    // inchangé, titre invisible), et il se pose maintenant sans défiler du tout. Sans animation : on
+    // change de question, on ne la parcourt pas.
+    defilement.current?.scrollTo({ y: 0, animated: false });
+    // `tabIndex={-1}` ci-dessous rend le nœud focalisable sans l'ajouter à l'ordre de tabulation :
+    // on peut lui donner le focus par programme, on ne l'atteint pas à la touche. Le mécanisme vit
+    // dans `donnerLeFocus` depuis que deux écrans de plus s'en servent (24/09/2026).
+    donnerLeFocus(contenu.current);
   }, [step]);
 
   return (
@@ -110,7 +114,7 @@ export function StepShell({
             </ThemedText>
           )}
         </View>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={defilement} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View ref={contenu} {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
             {children}
           </View>
@@ -151,7 +155,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   headerBlock: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
-  notice: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: Spacing.three },
+  notice: { borderRadius: Radius.notice, paddingVertical: 10, paddingHorizontal: Spacing.three },
   motDeRamille: { lineHeight: 20 },
   scrollContent: { padding: Spacing.four, gap: Spacing.five, flexGrow: 1 },
   // Le padding vit sur le bloc, pas sur la rangée : le message doit être aligné sur les

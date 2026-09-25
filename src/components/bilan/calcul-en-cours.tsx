@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { RAMILLE } from '@/constants/mascotte';
 import { Spacing } from '@/constants/theme';
 
@@ -20,15 +21,21 @@ import { Spacing } from '@/constants/theme';
 //     le référentiel en compte quinze depuis l'ajout des motorisations hybrides, et le nombre
 //     d'étapes visibles dépend des réponses. Un chiffre en dur dans une phrase dérive sans que
 //     personne ne le voie — même raison que pour les repères de `carbon-reference.ts`.
+//
+// **Son titre prend le focus en arrivant** (24/09/2026, audit d'accessibilité 4.1.3) : l'écran
+// remplace la dernière étape du questionnaire sous le doigt, et « Voir mon bilan » disparaît avec
+// elle. Sans ce déplacement, un lecteur d'écran ne disait rien du calcul en cours.
 export function CalculEnCours() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <Mascot mood="thinking" size={72} />
-          <ThemedText type="subtitle" weight={600} style={styles.title}>
-            {RAMILLE.calcul}
-          </ThemedText>
+          <TitreDArrivee>
+            <ThemedText type="subtitle" weight={600} style={styles.title}>
+              {RAMILLE.calcul}
+            </ThemedText>
+          </TitreDArrivee>
           <ThemedText type="body" themeColor="textTertiary" style={styles.body}>
             Tes réponses, croisées avec les facteurs d’émission de l’ADEME. Quelques secondes.
           </ThemedText>

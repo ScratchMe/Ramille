@@ -149,6 +149,10 @@ export default function RetrouverMonCompte() {
 
   const envoyerLeLien = async () => {
     setMessage(null);
+    // **Cette phrase n'était jamais dite** (relevé le 24/09/2026) : le bouton était désactivé tant que
+    // l'adresse ne semblait pas plausible, donc cette branche était inatteignable — l'écran restait
+    // inactif sans dire pourquoi, exactement comme `/connexion/email`. Le bouton agit désormais
+    // toujours, comme sur `/compte/suppression`, et c'est ici que l'adresse incomplète se dit.
     if (!adresseSemblePlausible(email)) {
       setMessage('Cette adresse semble incomplète.');
       return;
@@ -281,7 +285,7 @@ export default function RetrouverMonCompte() {
             <Button
               title={busy ? 'Envoi…' : 'Recevoir un code'}
               onPress={envoyerLeLien}
-              disabled={busy || !adresseSemblePlausible(email)}
+              disabled={busy}
             />
           </View>
           {/* Pas décorative : le mécanisme marche pour un compte Google, mais quelqu'un qui

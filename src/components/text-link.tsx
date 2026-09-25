@@ -12,9 +12,14 @@ import { ControlHeight } from '@/constants/theme';
 // libellé accessible recopié à côté du texte visible finit toujours par ne plus lui
 // correspondre. Ici il n'y a rien à recopier : **le libellé accessible EST le texte affiché.**
 //
-// La cible tactile est portée à 44 px de haut (recommandation WCAG 2.5.8 / Material) sans
-// changer la position du texte : le padding est vertical et le composant reste aligné comme
-// avant dans les colonnes où il vit.
+// La cible tactile est portée à `ControlHeight.target` de haut — 48 depuis le 24/09/2026, la cible
+// de Material ; ce commentaire disait 44 et l'attribuait à WCAG 2.5.8, qui ne demande que 24 — sans
+// changer la position du texte : la hauteur est un minimum centré, et le composant reste aligné
+// comme avant dans les colonnes où il vit.
+//
+// **Sous le doigt, le texte se souligne** (24/09/2026, décision n° 6, `v1-29`) : c'est le retour au
+// toucher d'un lien, instantané et sans animation, qui ne change ni sa couleur — elle porte déjà un
+// sens (accent, tertiaire) — ni sa place.
 export function TextLink({
   label,
   onPress,
@@ -53,16 +58,23 @@ export function TextLink({
       accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityHint={hint}
-      accessibilityState={{ disabled: !!disabled, ...(expanded === undefined ? {} : { expanded }) }}
+      // `aria-expanded` et non `accessibilityState.expanded`, que react-native-web ignore : sur web,
+      // « Comment ce chiffre est calculé » (`BlocMethode`) ne disait ni « développé » ni « réduit ».
+      // `undefined` ne rend aucun attribut, ce qui est la règle de la prop. L'inactivité passe par
+      // `disabled`, dont `Pressable` tire `aria-disabled` des deux côtés.
+      aria-expanded={expanded}
       style={[styles.cible, containerStyle]}
     >
-      <ThemedText {...textProps} style={style}>
-        {label}
-      </ThemedText>
+      {({ pressed }) => (
+        <ThemedText {...textProps} style={[style, pressed && !disabled && styles.appuye]}>
+          {label}
+        </ThemedText>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   cible: { minHeight: ControlHeight.target, justifyContent: 'center' },
+  appuye: { textDecorationLine: 'underline' },
 });

@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Radius } from '@/constants/theme';
+import { ControlHeight, FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
 
@@ -12,7 +12,9 @@ import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
  * focus à la frappe et au collé, et n'apporteraient rien qu'un champ centré ne rende. Le kit
  * écrit d'ailleurs de `TextField` qu'il est « en pratique le seul champ texte du produit » : il y
  * en a deux à partir d'aujourd'hui, et celui-ci reprend sa boîte — hauteur, rayon, fond, bordure
- * d'accent dès qu'un chiffre est là — pour que ce soit visiblement la même famille.
+ * d'accent dès qu'un chiffre est là — pour que ce soit visiblement la même famille. Le contour au
+ * repos aussi : `fieldBorder` depuis le 24/09/2026, là où le champ vide ne tranchait qu'à 1,14:1
+ * (cf. `TextField`).
  *
  * **La normalisation n'est pas ici mais dans `chiffresDuCode`** (module pur, testé) : une espace
  * collée avec le code est retirée et non refusée, et un collé trop long garde ses chiffres utiles.
@@ -20,7 +22,9 @@ import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
  *
  * La taille des chiffres (24/30, interlettrage 6) est hors échelle typographique et reste en dur
  * ici, comme les autres tailles uniques du produit : c'est un écart assumé au design system, et il
- * vit là où il sert.
+ * vit là où il sert. Les chiffres sont **tabulaires** depuis le 24/09/2026 (`v1-29`) : de même
+ * chasse, les huit chiffres centrés ne se déplacent plus d'un demi-caractère à chaque frappe, et se
+ * comparent colonne à colonne avec ceux de l'e-mail.
  */
 export function ChampDeCode({
   value,
@@ -45,7 +49,7 @@ export function ChampDeCode({
           styles.box,
           {
             backgroundColor: theme.backgroundElement,
-            borderColor: value.length > 0 ? theme.accent : 'transparent',
+            borderColor: value.length > 0 ? theme.accent : theme.fieldBorder,
           },
         ]}
       >
@@ -81,13 +85,22 @@ export function ChampDeCode({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 8 },
+  container: { gap: Spacing.two },
   box: {
     justifyContent: 'center',
     height: ControlHeight.field,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     paddingHorizontal: 18,
   },
-  input: { fontSize: 24, lineHeight: 30, letterSpacing: 6, textAlign: 'center' },
+  // En Spline Sans, comme `TextField` (24/09/2026) : sans `fontFamily`, les huit chiffres sortaient dans
+  // la police du système, et `tabular-nums` s'appliquait à elle plutôt qu'à la nôtre.
+  input: {
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: 6,
+    textAlign: 'center',
+    fontFamily: FontFamily.regular,
+    fontVariant: ['tabular-nums'],
+  },
 });

@@ -22,6 +22,29 @@
 //      de panne (le nôtre, et celui d'Expo Router qui reste en anglais) rend au contrôle la
 //      rigueur qu'il avait avant, sans renoncer au filet.
 //   3. **Aucune exception non rattrapée**, hors erreurs d'hydratation (voir plus bas).
+//   4. **Chaque choix rendu annonce son état** (24/09/2026, audit d'accessibilité, 4.1.2) : tout
+//      élément de rôle `radio`, `checkbox` ou `switch` porte `aria-checked`. react-native-web 0.21
+//      ignore l'objet `accessibilityState` et ne traduit que les props `aria-*` : « Une idée »,
+//      visiblement choisie sur `/feedback`, sortait en `role="radio"` **sans** `aria-checked`, donc
+//      « non coché » pour un lecteur d'écran web — et il en allait de même de toutes les réponses
+//      du questionnaire. Rien ne pouvait le voir : le typecheck accepte les deux formes, Jest ne
+//      monte pas d'écran, et le passage TalkBack du 14/09/2026 portait sur Android, où l'objet est
+//      lu. S'y ajoute, sur les routes qui le déclarent (`unChoixCoche`), l'exigence qu'au moins un
+//      `radio` soit **coché** : sans elle, la vérification passerait sur une page qui ne rend aucun
+//      choix, ou sur des choix tous annoncés « non coché » quel que soit l'écran.
+//
+//      **Éprouvée en la cassant le 24/09/2026** : trois mutations, trois exports, et chacune ne fait
+//      tomber que ce qu'elle devait :
+//
+//      | Ce qu'on casse | Ce qui tombe |
+//      |---|---|
+//      | `aria-checked` retiré de `Chip` | `/feedback` : cinq choix sans état **et** aucun coché |
+//      | `aria-checked={false}` écrit en dur dans `Chip` | `/feedback` : aucun coché — seulement |
+//      | `aria-checked` retiré de `ChoiceRow` | `/bilan` : le « Oui / Non » de l'étape 1, seulement |
+//
+//      La deuxième est celle qui justifie la seconde exigence : l'attribut est présent, donc la
+//      première vérification reste verte, et un lecteur d'écran entend « non coché » sur la réponse
+//      que l'œil voit choisie.
 //
 // S'y ajoutent deux contrôles sur `vercel.json`, parce que ce script **reproduit** la façon dont
 // Vercel sert l'export (cf. `resoudre()` plus bas) et qu'un garde-fou qui ne sert pas comme la
@@ -81,7 +104,9 @@ const ROUTES = [
   { chemin: '/suivi/bilan', marqueur: null },
   { chemin: '/bilan', marqueur: null },
   { chemin: '/compte', marqueur: null },
-  { chemin: '/feedback', marqueur: null },
+  // `unChoixCoche` : la catégorie « Une idée » y est choisie d'emblée, sans réseau ni session — c'est
+  // la seule route de l'export qui rende à coup sûr un `radio` coché (vérification 4, en tête).
+  { chemin: '/feedback', marqueur: null, unChoixCoche: true },
 ];
 
 // Les deux écrans de panne, qu'aucune route ne doit afficher.
@@ -124,7 +149,14 @@ const REPOS = 6_000;
 const { base, fermer } = await servirExport(DIST);
 
 const echecs = [];
+// Les échecs de la vérification 4, tenus à part : l'explication qui suit la liste des échecs de
+// rendu (« une exception pendant le rendu du layout racine… ») serait fausse pour eux, et un
+// message qui oriente vers la mauvaise cause coûte plus qu'il ne dit.
+const choixSansEtat = [];
 const avertissements = [];
+// Le nombre de choix inspectés sur toutes les routes, pour que le message de succès dise sur quoi
+// la vérification 4 a porté — un « aucun choix sans état » sur zéro choix ne prouverait rien.
+let choixInspectes = 0;
 
 // ── Ce que ce script reproduit de la production ────────────────────────────────────────────
 // `cleanUrls` d'abord : sans lui, Vercel sert les routes en répertoire (`plan/index.html`) et
@@ -167,7 +199,7 @@ const navigateur = await chromium.launch(
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}
 );
 
-for (const { chemin, marqueur } of ROUTES) {
+for (const { chemin, marqueur, unChoixCoche } of ROUTES) {
   const page = await navigateur.newPage({ viewport: { width: 420, height: 900 } });
   const exceptions = [];
   page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
@@ -263,6 +295,33 @@ for (const { chemin, marqueur } of ROUTES) {
     if (bloquantes.length > 0) {
       echecs.push(`${chemin} : exception non rattrapée — ${bloquantes[0].slice(0, 260)}`);
     }
+
+    // Vérification 4 — sur le DOM **vivant**, après le repos : c'est l'état que l'app a rendu, pas
+    // celui du pré-rendu. Le nom relevé est celui qu'un lecteur d'écran annoncerait (`aria-label`,
+    // sinon le texte), pour que l'échec désigne le choix sans avoir à rouvrir la page.
+    const choix = await page.evaluate(() =>
+      [...document.querySelectorAll('[role="radio"], [role="checkbox"], [role="switch"]')].map((element) => ({
+        role: element.getAttribute('role'),
+        nom: (element.getAttribute('aria-label') ?? element.textContent ?? '').trim().slice(0, 60),
+        etat: element.getAttribute('aria-checked'),
+      }))
+    );
+    choixInspectes += choix.length;
+    const muets = choix.filter((c) => c.etat === null);
+    if (muets.length > 0) {
+      const pluriel = muets.length > 1;
+      choixSansEtat.push(
+        `${chemin} : ${muets.length} choix n’annonce${pluriel ? 'nt' : ''} pas ${pluriel ? 'leur' : 'son'}` +
+          ` état (aucun aria-checked) — ${muets.map((c) => `${c.role} « ${c.nom} »`).join(', ')}.`
+      );
+    }
+    if (unChoixCoche && !choix.some((c) => c.role === 'radio' && c.etat === 'true')) {
+      choixSansEtat.push(
+        `${chemin} : aucun radio n’est annoncé coché (aria-checked="true"), alors que la route en` +
+          ` déclare un. ${choix.length} choix rendu${choix.length > 1 ? 's' : ''} : ` +
+          `${choix.map((c) => `${c.role} « ${c.nom} » = ${c.etat}`).join(', ') || 'aucun'}.`
+      );
+    }
   } catch (erreur) {
     echecs.push(`${chemin} : ${String(erreur).slice(0, 200)}`);
   } finally {
@@ -277,6 +336,18 @@ for (const avertissement of avertissements) {
   console.warn(`Avertissement (hydratation, non bloquant) — ${avertissement}`);
 }
 
+if (choixSansEtat.length > 0) {
+  console.error('Des choix rendus n’annoncent pas leur état à un lecteur d’écran :\n');
+  for (const echec of choixSansEtat) console.error(`  - ${echec}`);
+  console.error(
+    '\nreact-native-web 0.21 ignore l’objet accessibilityState : sur web, l’état d’un radio, d’une' +
+      '\ncheckbox ou d’un switch passe par la prop aria-checked, que React Native lit aussi sur' +
+      '\nAndroid. Un choix sans elle s’annonce « non coché », même quand l’œil le voit choisi.' +
+      '\nUne route qui déclare un choix coché et n’en rend aucun porte l’attribut, mais pas la' +
+      '\nbonne valeur : c’est la prop qui ne suit plus la sélection.\n'
+  );
+}
+
 if (echecs.length > 0) {
   console.error('L’export se construit mais ne s’affiche pas :\n');
   for (const echec of echecs) console.error(`  - ${echec}`);
@@ -289,10 +360,12 @@ if (echecs.length > 0) {
       '\ndans la liste ci-dessus. Elle est dans la console du navigateur — rejouer l’export en' +
       '\nlocal (expo export --platform web) et ouvrir la route en cause la fait apparaître.'
   );
-  process.exit(1);
 }
 
+if (echecs.length > 0 || choixSansEtat.length > 0) process.exit(1);
+
 console.log(
-  `${ROUTES.length} routes rendues, aucun écran de panne, aucune exception bloquante.` +
+  `${ROUTES.length} routes rendues, aucun écran de panne, aucune exception bloquante,` +
+    ` ${choixInspectes} choix annonçant leur état.` +
     ' vercel.json : cleanUrls en place, assets des Functions présents.'
 );

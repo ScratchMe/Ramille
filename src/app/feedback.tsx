@@ -10,7 +10,8 @@ import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
+import { FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   FEEDBACK_KINDS,
@@ -55,6 +56,12 @@ export default function Feedback() {
 
   const trimmed = message.trim();
   const canSend = trimmed.length >= 3 && !sending;
+  // **Le minimum se dit dès qu'il manque quelque chose** (24/09/2026, audit d'accessibilité 3.3.2) :
+  // « Envoyer » restait grisé sur un texte d'un ou deux caractères sans que rien ne dise pourquoi.
+  // Pas avant la première frappe — un champ vide n'a encore rien de trop court — et en texte calme,
+  // sans `role="alert"` : ce n'est pas un échec, c'est ce qui manque, et l'annoncer à chaque frappe
+  // rendrait le lecteur d'écran inutilisable (la règle du `manque` de `StepShell`).
+  const tropCourt = trimmed.length > 0 && trimmed.length < 3;
 
   const onSend = async () => {
     setSending(true);
@@ -73,9 +80,14 @@ export default function Feedback() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.sentSafeArea}>
           <Mascot mood="happy" size={56} />
-          <ThemedText type="screenTitle" style={styles.sentTitle}>
-            C’est envoyé, merci.
-          </ThemedText>
+          {/* **Le focus vient ici** (24/09/2026, audit d'accessibilité 4.1.3) : cet écran remplace
+              le formulaire sous le doigt, et « Envoyer » disparaît avec lui. Sans ce déplacement,
+              un lecteur d'écran ne disait rien de l'envoi réussi. */}
+          <TitreDArrivee>
+            <ThemedText type="screenTitle" style={styles.sentTitle}>
+              C’est envoyé, merci.
+            </ThemedText>
+          </TitreDArrivee>
           <ThemedText type="body" themeColor="textSecondary">
             Ton retour est lu à la main. Il n’y aura pas de réponse automatique — on préfère te
             le dire plutôt que de te laisser l’attendre.
@@ -133,14 +145,29 @@ export default function Feedback() {
               // caractères affiché dessous n'est rattaché à rien.
               accessibilityLabel={LIBELLE_MESSAGE}
               accessibilityHint={`${FEEDBACK_MAX_LENGTH} caractères au maximum.`}
+              // Le contour au repos est `fieldBorder` (24/09/2026, `v1-29`) : `border` n'y tenait que
+              // 1,33:1, on ne voyait pas le seul champ de texte libre du produit. L'accent une fois
+              // qu'il y a un texte, comme `TextField`.
               style={[
                 styles.input,
-                { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.border },
+                {
+                  backgroundColor: theme.backgroundElement,
+                  color: theme.text,
+                  borderColor: message.length > 0 ? theme.accent : theme.fieldBorder,
+                },
               ]}
             />
-            <ThemedText type="code" themeColor="textTertiary">
+            {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10, qui la réserve aux
+                sources et aux codes techniques) ; les chiffres, qui changent à chaque frappe, gardent
+                une chasse fixe par `tabular-nums` — le compteur ne tremble pas. */}
+            <ThemedText type="small" themeColor="textTertiary" style={styles.compteur}>
               {trimmed.length} / {FEEDBACK_MAX_LENGTH}
             </ThemedText>
+            {tropCourt && (
+              <ThemedText type="small" themeColor="textTertiary">
+                Trois caractères au moins pour pouvoir l’envoyer.
+              </ThemedText>
+            )}
           </View>
 
           {/* L'échec passe par `MessageInline` comme partout ailleurs : une carte maison dit la
@@ -150,8 +177,10 @@ export default function Feedback() {
           <Button title={sending ? 'Envoi…' : 'Envoyer'} onPress={onSend} disabled={!canSend} />
 
           {/* Ce qui part avec le message, dit avant l'envoi et non dans une politique que
-              personne n'ouvre. Le contexte est le nom de l'écran d'origine, rien de plus. */}
-          <ThemedText type="code" themeColor="textTertiary" style={styles.privacy}>
+              personne n'ouvre. Le contexte est le nom de l'écran d'origine, rien de plus. Une
+              phrase adressée à la personne, donc en Spline Sans depuis le 24/09/2026 (décision
+              n° 10) : la chasse fixe est réservée aux sources et aux codes techniques. */}
+          <ThemedText type="small" themeColor="textTertiary">
             On enregistre ton message, la catégorie choisie{context ? ' et l’écran d’où tu viens' : ''}, avec
             l’identifiant de ton compte pour rapprocher ton retour de ce que tu vois. Rien d’autre,
             et aucune réponse : il n’existe pas de canal pour t’en adresser une.
@@ -176,17 +205,20 @@ const styles = StyleSheet.create({
   scrollContent: { padding: Spacing.four, gap: Spacing.three },
   intro: { gap: Spacing.two },
   kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  fieldBlock: { gap: 8 },
+  fieldBlock: { gap: Spacing.two },
   input: {
     minHeight: 140,
     borderRadius: Radius.field,
-    borderWidth: 1.5,
+    borderWidth: Stroke.selected,
     padding: 16,
     fontSize: 16,
     lineHeight: 22,
+    // En Spline Sans, comme `TextField` (24/09/2026) : sans elle, le texte libre s'écrivait dans la
+    // police du système.
+    fontFamily: FontFamily.regular,
     textAlignVertical: 'top',
   },
-  privacy: { lineHeight: 18 },
+  compteur: { fontVariant: ['tabular-nums'] },
   cancel: { textAlign: 'center' },
   sentSafeArea: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   sentTitle: { textAlign: 'center' },

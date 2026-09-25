@@ -1,11 +1,11 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Item de liste des pickers de mode (B1.4 mode principal, B2.2 mode loisirs, B1.6
-// "Lequel ?" imbriqué) — rayon 14px, sélection = fond teinté + bordure accent.
+// "Lequel ?" imbriqué) — rayon `Radius.chip`, sélection = fond teinté + bordure accent.
 export function ModeListItem({
   label,
   selected,
@@ -30,15 +30,22 @@ export function ModeListItem({
       // ne dit pas — et c'est justement l'information dont on a besoin ici.
       accessibilityRole="radio"
       accessibilityLabel={label}
-      accessibilityState={{ selected, checked: selected }}
-      style={[
+      // L'état par `aria-checked`, le seul que le web reçoive (cf. `chip.tsx`).
+      aria-checked={selected}
+      // Sous le doigt, la surface prend sa teinte appuyée, sans animation (décision n° 6, `v1-29`) —
+      // la même pour un item posé sur blanc dans un encart : elle tranche sur les deux fonds.
+      style={({ pressed }) => [
         styles.item,
         {
           backgroundColor: selected
-            ? theme.backgroundSelected
-            : nestedBackground
-              ? theme.background
-              : theme.backgroundElement,
+            ? pressed
+              ? theme.backgroundSelectedPressed
+              : theme.backgroundSelected
+            : pressed
+              ? theme.backgroundPressed
+              : nestedBackground
+                ? theme.background
+                : theme.backgroundElement,
           borderColor: selected ? theme.accent : 'transparent',
         },
       ]}
@@ -54,8 +61,8 @@ const styles = StyleSheet.create({
   item: {
     paddingVertical: 14,
     paddingHorizontal: Spacing.three,
-    borderRadius: 14,
-    borderWidth: 1.5,
+    borderRadius: Radius.chip,
+    borderWidth: Stroke.selected,
   },
   label: { fontSize: 16, lineHeight: 22 },
 });
