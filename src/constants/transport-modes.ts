@@ -23,7 +23,8 @@ export const TRANSPORT_MODE_LABELS: Record<TransportModeId, string> = {
   trottinette: 'Trottinette ou mobilité douce',
 };
 
-// Liste complète pour les pickers "mode principal" (B1.4) / "second mode" (B1.6) —
+// Liste complète pour les pickers "mode principal" (B1.4) / "second mode" (B1.7, le « Lequel ? »
+// ouvert par le Oui de B1.6) —
 // voiture seul et covoiturage sont deux entrées distinctes dans la maquette (elles ne
 // partagent qu'un même `transport_mode_id`, le covoiturage se distingue par
 // `commute_is_carpool`).
