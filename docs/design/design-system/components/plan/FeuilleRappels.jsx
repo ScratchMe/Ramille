@@ -17,11 +17,12 @@ export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', li
   };
   // La ligne de canal est `LigneDeCanal` dans le dépôt (src/components/ligne-de-canal.tsx), absente du kit : elle est
   // rendue ici comme dans `ChoixDeRappel.jsx`, à l'identique. Une ligne hors d'atteinte ne paraît jamais choisie
-  // (`paraitChoisie`) ; son opacité de 0,6 contredit la règle du readme — contradiction ouverte, `v1-29` §5.
+  // (`paraitChoisie`) ; inactive, elle garde son fond, passe son titre en tertiaire et laisse son détail lisible —
+  // jamais une opacité (readme, « États »), que le dépôt a retirée le 25/09/2026.
   const ligneDeCanal = (l, coche, onChoisir) => (
     <button type="button" role="radio" aria-checked={coche} aria-label={l.titre + '. ' + l.detail} disabled={l.choisissable === false} onClick={() => l.choisissable !== false && onChoisir && onChoisir(l.canal)} data-appui="fond"
-      style={{ '--teinte-appuyee': coche ? 'var(--color-background-selected-pressed)' : 'var(--color-background-pressed)', width: '100%', textAlign: 'left', padding: '16px 24px', borderRadius: 16, border: '1.5px solid ' + (coche ? 'var(--color-accent)' : 'transparent'), background: coche ? 'var(--color-background-selected)' : 'var(--color-background-element)', opacity: l.choisissable === false ? 0.6 : 1, color: 'var(--color-text)', fontFamily: 'var(--font-sans)', cursor: l.choisissable === false ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <ThemedText weight={coche ? 600 : 400} style={{ fontSize: 16, lineHeight: '22px' }}>{l.titre}</ThemedText>
+      style={{ '--teinte-appuyee': coche ? 'var(--color-background-selected-pressed)' : 'var(--color-background-pressed)', width: '100%', textAlign: 'left', padding: '16px 24px', borderRadius: 16, border: '1.5px solid ' + (coche ? 'var(--color-accent)' : 'transparent'), background: coche ? 'var(--color-background-selected)' : 'var(--color-background-element)', color: 'var(--color-text)', fontFamily: 'var(--font-sans)', cursor: l.choisissable === false ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <ThemedText weight={coche ? 600 : 400} themeColor={l.choisissable === false ? 'textTertiary' : 'text'} style={{ fontSize: 16, lineHeight: '22px' }}>{l.titre}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{l.detail}</ThemedText>
     </button>
   );

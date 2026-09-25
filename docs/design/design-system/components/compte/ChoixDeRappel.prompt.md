@@ -10,4 +10,4 @@ Les indisponibilités disent pourquoi (dans le détail), et sur web la ligne not
 
 Le `radiogroup` ne porte que les lignes, nommé par l'en-tête « Les rappels » ; le lien « Ouvrir les réglages du téléphone » se rend juste sous la ligne qui le porte, et seulement quand les notifications sont coupées côté système. Sur « Toi », la porte « Rattacher un compte » n'est pas rendue : le bouton du compte est juste au-dessus.
 
-Une ligne hors d'atteinte est à l'opacité 0,6 dans le dépôt, ce que la règle du readme (« jamais une opacité ») interdit. La contradiction est ouverte (`v1-29` §5) : elle ne se tranche pas ici.
+Une ligne hors d'atteinte garde son fond, passe son titre en texte tertiaire et laisse son détail — la phrase qui dit pourquoi — en texte secondaire : jamais une opacité, qui faisait tomber ce détail vers 3,2:1. Le dépôt portait une opacité de 0,6 jusqu'au 25/09/2026, contre la règle du readme ; c'est le code qui a suivi la règle (`v1-29` §5).

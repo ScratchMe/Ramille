@@ -94,9 +94,15 @@ relais au rendu suivant.
   voisins du même relevé : un `aria-disabled` posé à la main sur un `Pressable` est **écrasé** par
   `disabled`, qui est le seul levier ; `accessibilityHint` n'existe pas sur web ; et un en-tête sans
   `aria-level` sort en `<h1>`, quel que soit son rang.
-- **La barre d'espace n'active pas un `radio`** — react-native-web ne la gère que sur un `button`,
-  Entrée seule le fait. `Pressable` transmet `onKeyDown`, donc ce n'est pas impossible, mais ce
-  n'est fait nulle part.
+- **La barre d'espace n'active ni un `radio` ni une `checkbox`** — le `PressResponder` de
+  react-native-web (0.21, `isValidKeyPress`) n'accepte Espace que sur un `<button>` ou un
+  `role="button"`, Entrée partout. Sur un choix, Espace fait donc défiler la page et ne coche rien,
+  là où WAI-ARIA l'attend. **La porte : `Pressable` appelle le `onKeyDown` qu'on lui passe, après le
+  sien.** Le gestionnaire doit retenir la page (`preventDefault`), agir **une fois par appui** — une
+  touche maintenue répète `keydown`, et une case à cocher basculerait à chaque répétition —, et
+  **ignorer Entrée**, que la bibliothèque active déjà : deux activations ramènent une case à cocher
+  où elle était. `Pressable` ne déclare pas `onKeyDown` dans ses types, donc les props se
+  décomposent. Ramille : §2.2.
 - **`userInterfaceStyle` d'`app.json` ne s'applique qu'au natif** : sur web, `useColorScheme` lit
   `prefers-color-scheme`. Si le thème sombre n'est pas validé, la décision se prend dans le hook
   de thème **et** dans le `ThemeProvider` de navigation — corriger l'un sans l'autre laisse la
@@ -272,6 +278,18 @@ que chaque choix rendu annonce son état** — tout `radio`, `checkbox` ou `swit
 que se voit ce que react-native-web transmet réellement au lecteur d'écran. Troisième garde de la
 même famille que `cleanUrls` et l'inlining des `EXPO_PUBLIC_*` : ce qui se construit n'est
 pas ce qui s'affiche.
+
+**Espace coche les choix depuis le 25/09/2026, et c'est la livraison de la veille qui l'avait
+cassé** : tant que les puces s'annonçaient en boutons, react-native-web les activait à la barre
+d'espace ; devenues des `radio` et des `checkbox`, elles ne répondaient plus qu'à Entrée (§1.5).
+`activableALaBarreDEspace` (`src/lib/barre-d-espace.ts`) est décomposé par les quatre composants de
+choix — `Chip`, `ChoiceRow`, `ModeListItem`, `LigneDeCanal` — et rend des props vides sur natif.
+Deux gardes le voient, parce qu'il ne se voit que dans un navigateur : la section F de
+`verifier-etats-export.mjs` presse Espace sur une rangée, une puce et un item de mode du
+questionnaire et mesure que la case est cochée **et que rien n'a défilé** ; le parcours réel joue
+Espace, Entrée et une touche maintenue sur les jours de l'engagement, la seule case à cocher du
+produit, puis Espace sur la ligne de canal de « Toi ». Ce qui reste hors de portée : les flèches
+pour passer d'une option à l'autre d'un groupe, que rien ne gère (`v1-29` §6.4).
 
 **La barre d'onglets est épinglée en `tabBarLabelPosition: 'below-icon'`, et c'est le web qui
 l'imposait** (13.7, recette web du 16/09/2026). `OngletIcone` dessine une pastille de 56 × 30 dans

@@ -3,6 +3,8 @@ import { Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { activableALaBarreDEspace } from '@/lib/barre-d-espace';
+import { fondDuChoix } from '@/types/fond-du-choix';
 
 export type ChipProps = {
   label: string;
@@ -57,32 +59,21 @@ export function Chip({
 }: ChipProps) {
   const theme = useTheme();
 
-  // Posée dans un encart teinté, la puce non choisie prend le fond de la page (`nestedBackground`) :
-  // sur le même `backgroundElement` que l'encart, elle n'avait plus de bord visible. La grille des jours
-  // de l'engagement (24/09/2026) l'a montré — sept lettres flottant dans des cellules de 48 — et
-  // les puces de `PrecisionChiffres` avaient le même défaut, que `precision-mode.tsx` décrivait déjà
-  // pour les rangées.
-  const backgroundColor = selected
-    ? selectedStyle === 'solid'
-      ? theme.accent
-      : theme.backgroundSelected
-    : nestedBackground
-      ? theme.background
-      : theme.backgroundElement;
-  // La teinte sous le doigt (24/09/2026, décision n° 6) : chaque surface a la sienne, pour que le
-  // texte garde son contraste — `accentPressed` sous le blanc d'une puce pleine,
-  // `backgroundSelectedPressed` sous l'accent d'une puce choisie, `backgroundPressed` ailleurs.
-  const backgroundAppuye = selected
-    ? selectedStyle === 'solid'
-      ? theme.accentPressed
-      : theme.backgroundSelectedPressed
-    : theme.backgroundPressed;
+  // Le fond, au repos et sous le doigt, sort de `fondDuChoix` — la même dérivation que les rangées,
+  // les items de mode et la ligne de canal (25/09/2026). Deux cas y passent qui sont nés ici :
+  // posée dans un encart teinté, la puce non choisie prend le fond de la page (`nestedBackground`),
+  // sans quoi elle n'a plus de bord visible — la grille des jours de l'engagement l'a montré le
+  // 24/09/2026, sept lettres flottant dans des cellules de 48 ; et sous le doigt, chaque surface a sa
+  // teinte, pour que le texte garde son contraste (décision n° 6).
   const borderColor = selected && selectedStyle === 'outline' ? theme.accent : 'transparent';
   const textColor = selected && selectedStyle === 'solid' ? theme.onAccent : theme.text;
 
   return (
     <Pressable
       onPress={onPress}
+      // Espace coche la puce sur web, ce que react-native-web ne fait que pour un bouton
+      // (`src/lib/barre-d-espace.ts`) ; Entrée reste la sienne.
+      {...activableALaBarreDEspace(onPress)}
       accessibilityRole={role}
       accessibilityLabel={accessibilityLabel ?? label}
       // **L'état passe par `aria-checked`, jamais par l'objet `accessibilityState`** (24/09/2026,
@@ -104,7 +95,15 @@ export function Chip({
         flex ? styles.baseFlex : styles.basePilule,
         {
           borderRadius: radius,
-          backgroundColor: pressed ? backgroundAppuye : backgroundColor,
+          backgroundColor:
+            theme[
+              fondDuChoix({
+                choisi: selected,
+                appuye: pressed,
+                plein: selectedStyle === 'solid',
+                imbrique: nestedBackground,
+              })
+            ],
           borderColor,
           flex: flex ? 1 : undefined,
         },
@@ -138,8 +137,10 @@ const styles = StyleSheet.create({
   // de la place au texte. À 18 de chaque côté, les sept puces de « jours par semaine » ne
   // laissaient que 3 dp au chiffre sur un écran de 390 dp, pour ~9 nécessaires : Android
   // rognait le glyphe au lieu de le laisser déborder, et les chiffres apparaissaient coupés.
-  // (Ces sept-là ne sont plus équiréparties depuis le 24/09/2026 : elles se rangent sur quatre
-  // colonnes, `GroupeDeChoix`. La règle vaut pour toutes celles qui le restent.)
+  // (Ces sept-là ne sont plus équiréparties depuis le 24/09/2026 : elles se rangent en grille,
+  // `GroupeDeChoix`, sur quatre colonnes **au plus** — trois quand une cible de 48 n'y tiendrait
+  // plus, `colonnes` étant un maximum depuis le même soir. La règle vaut pour toutes celles qui
+  // restent équiréparties.)
   // Même famille que le `minWidth: 0` des champs de saisie (cf. CLAUDE.md) : un enfant flex
   // qui ne peut pas contenir son contenu ne le signale pas, il le tronque.
   baseFlex: { paddingHorizontal: 4 },

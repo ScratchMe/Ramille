@@ -12,7 +12,8 @@
 // plan montre les bonnes pistes. Un `.eq('status', 'complete')` serait passé vert.
 //
 // Ce script prend le chemin nominal, et lui seul : onboarding → questionnaire → soumission →
-// restitution → plan → engagement → un point généré et répondu → suivi → suppression du compte.
+// restitution → plan → engagement → un point généré et répondu → suivi → « Toi » → suppression du
+// compte.
 // Il joue le **profil de `docs/recette/premier-parcours-web.md`**, dont les chiffres ont été mesurés
 // (4 231 kg, huit pistes dans un ordre précis, un cap de 384 kg) — sur la base construite depuis
 // `supabase/migrations/`, ces chiffres ne dépendent d'aucune synchronisation de facteurs. Après
@@ -100,14 +101,41 @@
 // échouer le parcours pour une raison étrangère ; et un `push` suivi d'un `replace` **dans le même
 // tick** ne produit aucune navigation — expo-router les fusionne, donc `framenavigated` ne voit rien.
 //
+// **Et neuf de plus le 25/09/2026**, sur les trois gardes de ce jour-là — les groupes nommés à chaque
+// étape, les jours de l'engagement au clavier, la ligne de canal sur « Toi » —, un export chacune
+// (cache Metro isolé, `--clear`, un marqueur de la mutation retrouvé dans le bundle), après un témoin
+// qui passe de bout en bout. Chacune s'arrête à l'étape attendue, sur le message attendu :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | P1 — la liste des modes (B1.4) sans `GroupeDeChoix` | « questionnaire — mode » : les neuf modes, « aucun groupe » ; la motorisation, qui garde le sien, n'est pas citée |
+//   | P9 — la liste « Lequel ? » sans groupe | « questionnaire — second mode », au détour par « Oui » : les sept modes |
+//   | P2 — `PrecisionMode` sans son propre groupe | « questionnaire — mode » : le groupe du mode coche deux cases, « Voiture (seul) » et « Thermique » |
+//   | P3 — `Chip` sans `activableALaBarreDEspace` | « engagement » : Espace ne coche pas « mardi » |
+//   | P4 — la répétition active | « engagement » : la barre maintenue n'a pas laissé « mardi » coché |
+//   | P5 — Entrée prise aussi par le gestionnaire | « engagement » : Entrée n'a pas décoché « mardi » |
+//   | P6 — `opacity` remise sur la ligne hors d'atteinte | « « Toi » » : « Par email » porte une opacité |
+//   | P7 — son titre remis en texte | « « Toi » » : le titre n'est pas le texte tertiaire |
+//   | P8 — `LigneDeCanal` sans `activableALaBarreDEspace` | « « Toi » » : Espace ne choisit pas « Sans rappel » |
+//
+// **P2 a d'abord PASSÉ l'étape du mode, et c'est elle qui a changé la garde.** Sa première version ne
+// vérifiait que le groupe le plus proche, et son commentaire affirmait que cela suffisait : privée de
+// son groupe, la motorisation tombe dans celui du mode, qui est bien le plus proche et bien nommé —
+// elle n'était vue qu'aux longs trajets, où la précision n'est pas imbriquée. La règle qui la voit est
+// sémantique : un `radiogroup` ne coche jamais deux cases. P4 dit aussi une chose que Jest ne pouvait
+// pas dire : la répétition d'une touche maintenue arrive bien jusqu'au gestionnaire, à travers
+// Chromium, React et react-native-web — sans quoi le garde de `repeat` ne garderait rien.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
+import { readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
 import { chromium } from 'playwright';
 
+import { mesurerUnChoix } from './mesurer-un-choix.mjs';
 import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
@@ -281,6 +309,103 @@ async function attendreTexte(motif) {
   }
 }
 
+/**
+ * **Toute case d'option répond à un `radiogroup` nommé, toute case à cocher à un `group` nommé, et
+ * aucun `radiogroup` ne coche deux cases** (25/09/2026, `v1-29`).
+ *
+ * Trois listes de modes du questionnaire n'avaient aucun groupe : « Voiture (seul) », atteint au
+ * clavier ou au doigt, ne disait pas à quelle question il répond. Une précision qui s'ouvre sous un
+ * mode vit **dans** le groupe de ce mode (`GroupeDeChoix` dit pourquoi), et c'est ce qui impose les
+ * deux autres règles :
+ * - **c'est le groupe le plus proche qui doit être nommé**, pas « un ancêtre » : une précision dont le
+ *   groupe aurait perdu son nom trouverait sinon celui du mode ;
+ * - **un `radiogroup` ne coche jamais plus d'une case.** Une précision privée de son propre groupe
+ *   tombe dans celui du mode, qui devient son groupe le plus proche et qui est bien nommé : les deux
+ *   premières règles passent, et seule celle-ci la voit — le mode et la motorisation cochés ensemble,
+ *   comme deux réponses à la même question. **La première version de cette garde n'avait pas cette
+ *   règle, et elle croyait n'en avoir pas besoin** : son commentaire affirmait que « le plus proche »
+ *   suffisait. La mutation l'a démentie (en-tête, P2) — la motorisation n'était vue qu'aux longs
+ *   trajets, là où elle n'est pas imbriquée.
+ *
+ * Appelée à chaque étape du questionnaire, sur la feuille d'engagement et sur « Toi » ; une page sans
+ * aucun choix n'est pas un succès, c'est une mesure qui n'a pas eu lieu.
+ */
+async function verifierLesGroupes(ou) {
+  const releve = await page.evaluate(() => {
+    const choix = [...document.querySelectorAll('[role="radio"], [role="checkbox"]')];
+    const fautifs = [];
+    const cochesParGroupe = new Map();
+    for (const element of choix) {
+      const role = element.getAttribute('role');
+      const attendu = role === 'radio' ? 'radiogroup' : 'group';
+      const groupe = element.parentElement?.closest('[role="radiogroup"], [role="group"]') ?? null;
+      const nom = groupe?.getAttribute('aria-label')?.trim() ?? '';
+      const libelle = (element.getAttribute('aria-label') ?? element.textContent ?? '').trim();
+      if (groupe === null || groupe.getAttribute('role') !== attendu || nom === '') {
+        fautifs.push(
+          `${role} « ${libelle} » — ` +
+            (groupe === null ? 'aucun groupe' : `plus proche groupe : ${groupe.getAttribute('role')} « ${nom} »`)
+        );
+      } else if (role === 'radio' && element.getAttribute('aria-checked') === 'true') {
+        cochesParGroupe.set(groupe, [...(cochesParGroupe.get(groupe) ?? []), libelle]);
+      }
+    }
+    for (const [groupe, coches] of cochesParGroupe) {
+      if (coches.length > 1) {
+        fautifs.push(
+          `radiogroup « ${groupe.getAttribute('aria-label')} » — ${coches.length} cases cochées à la fois` +
+            ` (${coches.map((c) => `« ${c} »`).join(', ')}) : une précision privée de son propre groupe est` +
+            ' tombée dans celui de l’option qu’elle précise'
+        );
+      }
+    }
+    return { total: choix.length, fautifs };
+  });
+  assurer(releve.total > 0, `${ou} : aucun choix à l'écran, les groupes n'ont pas pu être vérifiés`);
+  assurer(
+    releve.fautifs.length === 0,
+    `${ou} : ${releve.fautifs.length} défaut(s) de groupe — une case d'option doit répondre à un` +
+      ' radiogroup nommé qui n’en coche qu’une, une case à cocher à un group nommé, par GroupeDeChoix :' +
+      `\n  ${releve.fautifs.join('\n  ')}`
+  );
+}
+
+/** Le bouton qui quitte une étape du questionnaire — après avoir vérifié les groupes qu'elle rend. */
+async function suivant(libelle = 'Suivant') {
+  await verifierLesGroupes(`l'étape du questionnaire en cours (${etapeCourante})`);
+  await bouton(libelle);
+}
+
+/**
+ * Le texte tertiaire du thème clair, **lu dans `theme.ts`** plutôt que recopié — comme
+ * `ControlHeight.target` dans `verifier-etats-export.mjs` : une ligne de canal hors d'atteinte porte
+ * son titre dans cette couleur (25/09/2026).
+ */
+const TEXTE_TERTIAIRE = (() => {
+  const source = readFileSync('src/constants/theme.ts', 'utf8');
+  const hex = source.match(/light:\s*\{[^}]*?\btextTertiary:\s*'#([0-9A-Fa-f]{6})'/)?.[1];
+  if (!hex) {
+    console.error('`Colors.light.textTertiary` est introuvable dans src/constants/theme.ts : adapter le motif.');
+    process.exit(2);
+  }
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgb(${r}, ${g}, ${b})`;
+})();
+
+/** Le rapport de contraste WCAG entre deux couleurs CSS opaques (`rgb(…)`). */
+function contraste(a, b) {
+  const luminance = (css) => {
+    const [r, g, bleu] = css.match(/\d+(\.\d+)?/g).map(Number);
+    const canal = (c) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(bleu);
+  };
+  const [clair, sombre] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (clair + 0.05) / (sombre + 0.05);
+}
+
 /** La session que l'app a ouverte, lue là où le SDK la range (`sb-<ref>-auth-token`). */
 async function session() {
   const brut = await page.evaluate(() => {
@@ -324,37 +449,44 @@ try {
   // ── 2. Le questionnaire, réponse par réponse ────────────────────────────────────────────────
   etape('questionnaire — trajet régulier');
   await choisir('Oui');
-  await bouton('Suivant');
+  await suivant();
 
   etape('questionnaire — jours et distance');
   await choisir('5');
   const distance = page.getByRole('textbox', { name: 'Distance pour un aller, en km' });
   await distance.waitFor({ state: 'visible', timeout: ATTENTE });
   await distance.fill('30');
-  await bouton('Suivant');
+  await suivant();
 
   etape('questionnaire — mode');
   await choisir('Voiture (seul)');
   await choisir('Thermique');
-  await bouton('Suivant');
+  await suivant();
 
   etape('questionnaire — second mode');
+  // « Oui » d'abord, et seulement pour ouvrir la liste « Lequel ? » : c'est l'une des trois listes de
+  // modes qui n'avaient pas de groupe (25/09/2026), et sans ce détour aucun des deux profils ne la
+  // rendrait jamais. « Non » ensuite, la réponse du profil — il efface ce que « Oui » avait ouvert
+  // (`normaliserReponses`), donc les chiffres attendus ne bougent pas.
+  await choisir('Oui');
+  await attendreTexte('Lequel ?');
+  await verifierLesGroupes('la liste « Lequel ? » du second mode');
   await choisir('Non');
-  await bouton('Suivant');
+  await suivant();
 
   etape('questionnaire — sorties');
   await choisir('Une fois par semaine');
-  await bouton('Suivant');
+  await suivant();
   await choisir('Voiture (seul)');
   await choisir('Thermique');
   await choisir('15 à 30 km');
-  await bouton('Suivant');
+  await suivant();
 
   etape('questionnaire — vols');
   await choisir('2'); // le total : 2 vols dans l'année
   await choisir('1', { dernier: true }); // dont 1 court — la seconde série, rendue après le total
   await attendreTexte('1 vol long-courrier sera compté.');
-  await bouton('Suivant');
+  await suivant();
 
   etape('questionnaire — longs trajets');
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
@@ -364,14 +496,14 @@ try {
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '2', exact: true }).click();
   await choisir('Thermique');
   await choisir('2 personnes');
-  await bouton('Suivant');
+  await suivant();
 
   etape('questionnaire — contexte');
   await choisir('Périurbain');
   await choisir('Limité');
   await choisir('1');
   await choisir(/^Un jour/, { exact: false });
-  await bouton('Voir mon bilan');
+  await suivant('Voir mon bilan');
 
   // ── 3. La restitution, et la base derrière ───────────────────────────────────────────────────
   etape('restitution');
@@ -469,7 +601,49 @@ try {
   // ── 6. L'engagement sur la première piste ───────────────────────────────────────────────────
   etape('engagement');
   await bouton('Je m’y engage');
-  await choisir('mardi');
+  await verifierLesGroupes('la feuille d’engagement');
+
+  // **« mardi » se coche au clavier, et c'est la seule case à cocher du produit** (25/09/2026).
+  // react-native-web n'active par Espace qu'un bouton : depuis que les jours sont des `checkbox`, Espace
+  // n'y cochait plus rien et faisait défiler le plan (`src/lib/barre-d-espace.ts`). Trois gestes, et
+  // chacun garde une moitié différente de la règle — c'est une case à cocher qui les rend visibles, là
+  // où une case d'option cochée deux fois reste cochée :
+  //   - Espace coche, et **rien ne défile** — la page retenue par `preventDefault()` ;
+  //   - Entrée décoche : react-native-web l'active déjà, et si notre gestionnaire la prenait aussi, la
+  //     case basculerait deux fois et resterait cochée ;
+  //   - une barre d'espace **maintenue** coche une fois : le navigateur répète `keydown`, et chaque
+  //     répétition la ferait basculer.
+  // La case finit cochée : c'est la réponse du profil, que la base relit juste après.
+  const mardi = page.getByRole('checkbox', { name: 'mardi', exact: true });
+  await mardi.focus();
+  const avantEspace = await mardi.evaluate(mesurerUnChoix);
+  assurer(
+    avantEspace.etat === 'false' && avantEspace.focus && avantEspace.peutDefiler,
+    `la mesure de « mardi » ne peut pas se prendre (${JSON.stringify(avantEspace)}) : il faut une case` +
+      ' décochée, qui a le focus, sous une page qui peut encore défiler'
+  );
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(600); // le défilement du navigateur est animé
+  const apresEspace = await mardi.evaluate(mesurerUnChoix);
+  assurer(apresEspace.etat === 'true', 'Espace ne coche pas « mardi » : react-native-web ne gère Espace que sur un bouton');
+  assurer(
+    apresEspace.positions === avantEspace.positions,
+    `Espace sur « mardi » fait défiler le plan (${avantEspace.positions} → ${apresEspace.positions} px)`
+  );
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  assurer(
+    (await mardi.getAttribute('aria-checked')) === 'false',
+    'Entrée n’a pas décoché « mardi » : la case a basculé deux fois, Entrée est prise deux fois'
+  );
+  await page.keyboard.down('Space');
+  await page.keyboard.down('Space'); // la répétition d'une touche maintenue (`repeat`)
+  await page.keyboard.up('Space');
+  await page.waitForTimeout(300);
+  assurer(
+    (await mardi.getAttribute('aria-checked')) === 'true',
+    'une barre d’espace maintenue n’a pas laissé « mardi » coché : la répétition a basculé la case'
+  );
   await choisir('jeudi');
   await bouton('C’est noté');
   await page.waitForFunction(
@@ -514,6 +688,83 @@ try {
   await page.waitForURL(/\/suivi$/, { timeout: ATTENTE });
   await page.getByLabel(/^Bilan du .*4,2 t CO₂e$/).first().waitFor({ state: 'visible', timeout: ATTENTE });
 
+  // ── 8 bis. « Toi » : la ligne de canal, hors d'atteinte et au clavier ────────────────────────
+  //
+  // **Le seul endroit de ce parcours où une ligne de canal se rend** (25/09/2026) : la feuille des
+  // rappels ne s'ouvre sur web qu'avec une adresse rattachée, et ce profil n'en a pas.
+  // Deux choses s'y vérifient, qu'aucune autre garde ne voyait :
+  //   - **la ligne hors d'atteinte le dit par son texte, jamais par une opacité** (kit, `readme.md`,
+  //     puce « États ») : sans compte, « Par email » est désactivée, jamais cochée — la préférence en
+  //     base vaut pourtant `email` —, sans opacité, son titre en texte tertiaire et son détail, la
+  //     phrase qui dit pourquoi, lisible. Sous l'opacité de 0,6 qu'elle portait, il tombait à 3,2:1 ;
+  //   - **Espace choisit une ligne**, comme les autres choix, et le choix atteint la base.
+  etape('« Toi » — la ligne de canal');
+  for (const icone of await page.getByRole('button', { name: 'Ton compte', exact: true }).all()) {
+    if (await icone.isVisible()) {
+      await icone.click();
+      break;
+    }
+  }
+  await page.waitForURL(/\/compte/, { timeout: ATTENTE });
+  const lesRappels = page.getByRole('radiogroup', { name: 'Les rappels', exact: true });
+  await lesRappels.waitFor({ state: 'visible', timeout: ATTENTE });
+  await verifierLesGroupes('« Toi »');
+
+  const horsDAtteinte = await lesRappels.getByRole('radio', { name: /^Par email\./ }).evaluate((ligne) => {
+    let opacite = 1;
+    for (let n = ligne; n; n = n.parentElement) opacite *= Number(getComputedStyle(n).opacity);
+    const [titre, detail] = [...ligne.querySelectorAll('div')].filter((e) => e.childElementCount === 0 && e.textContent.trim());
+    return {
+      desactivee: ligne.getAttribute('aria-disabled'),
+      cochee: ligne.getAttribute('aria-checked'),
+      opacite,
+      fond: getComputedStyle(ligne).backgroundColor,
+      titre: titre ? getComputedStyle(titre).color : null,
+      detail: detail ? getComputedStyle(detail).color : null,
+    };
+  });
+  assurer(
+    horsDAtteinte.desactivee === 'true' && horsDAtteinte.cochee === 'false',
+    `« Par email », sans compte, doit être désactivée et jamais cochée : ${JSON.stringify(horsDAtteinte)}`
+  );
+  assurer(
+    horsDAtteinte.opacite === 1,
+    `« Par email » hors d’atteinte porte une opacité de ${horsDAtteinte.opacite} : le kit l’interdit, et sous 0,6` +
+      ' le détail qui dit pourquoi tombait à 3,2:1'
+  );
+  assurer(
+    horsDAtteinte.titre === TEXTE_TERTIAIRE,
+    `le titre de « Par email » hors d’atteinte est en ${horsDAtteinte.titre}, attendu le texte tertiaire ${TEXTE_TERTIAIRE}`
+  );
+  const lisibilite = contraste(horsDAtteinte.detail, horsDAtteinte.fond);
+  assurer(
+    lisibilite >= 4.5,
+    `le détail de « Par email » hors d’atteinte ne tient que ${lisibilite.toFixed(2)}:1 sur son fond, sous 4,5:1`
+  );
+
+  const sansRappel = lesRappels.getByRole('radio', { name: /^Sans rappel\./ });
+  await sansRappel.focus();
+  assurer((await sansRappel.getAttribute('aria-checked')) === 'false', '« Sans rappel » est déjà cochée avant l’appui');
+  await page.keyboard.press('Space');
+  await page.waitForFunction(
+    () => document.querySelector('[role="radio"][aria-label^="Sans rappel"]')?.getAttribute('aria-checked') === 'true',
+    undefined,
+    { timeout: ATTENTE }
+  ).catch(() => {});
+  assurer(
+    (await sansRappel.getAttribute('aria-checked')) === 'true',
+    'Espace ne choisit pas « Sans rappel » : la ligne de canal doit décomposer activableALaBarreDEspace'
+  );
+  // L'écriture part après la coche (optimiste, `choisirLeCanal`) : on relit la base jusqu'à la voir.
+  let canalEnBase = null;
+  const limiteDuCanal = Date.now() + ATTENTE;
+  while (canalEnBase !== 'none' && Date.now() < limiteDuCanal) {
+    const [profil] = await lire(`profiles?select=reminder_channel&id=eq.${userId}`, jeton);
+    canalEnBase = profil?.reminder_channel ?? null;
+    if (canalEnBase !== 'none') await page.waitForTimeout(200);
+  }
+  assurer(canalEnBase === 'none', `la préférence choisie à la barre d’espace n’a pas atteint la base : ${canalEnBase}`);
+
   // ── 9. La suppression du compte, et rien derrière ──────────────────────────────────────────
   etape('suppression du compte');
   await rpc('delete_my_account', jeton);
@@ -541,36 +792,36 @@ try {
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
 
   await choisir('Oui');
-  await bouton('Suivant');
+  await suivant();
   await choisir('3');
   const distanceVelo = page.getByRole('textbox', { name: 'Distance pour un aller, en km' });
   await distanceVelo.waitFor({ state: 'visible', timeout: ATTENTE });
   await distanceVelo.fill('5');
-  await bouton('Suivant');
+  await suivant();
   // **Le vélo ouvre sa propre révélation depuis C4.4** — ce commentaire disait l'inverse jusqu'au
   // 21/09/2026, et c'est le genre de phrase qui survit à ce qu'elle décrit. « Mécanique » garde
   // le facteur d'avant le chantier (0,000170), donc les chiffres de ce profil ne bougent pas :
   // c'est la réponse qui isole la nouveauté de l'écran de celle du calcul.
   await choisir('Vélo');
   await choisir('Mécanique');
-  await bouton('Suivant');
+  await suivant();
   await choisir('Non');
-  await bouton('Suivant');
+  await suivant();
   // « Rarement » fait disparaître les questions de détail des sorties : l'étape suivante est celle
   // des vols, et non le mode ni la tranche de distance.
   await choisir(/^Rarement/, { exact: false });
-  await bouton('Suivant');
+  await suivant();
   await choisir('0'); // aucun vol — et à zéro, la question « combien sont courts ? » ne se pose pas
-  await bouton('Suivant');
+  await suivant();
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '0', exact: true }).click();
-  await bouton('Suivant');
+  await suivant();
   await choisir('Urbain dense');
   await choisir('Bon');
   await choisir('0');
   await choisir(/^Aucun/, { exact: false });
-  await bouton('Voir mon bilan');
+  await suivant('Voir mon bilan');
 
   etape('cycliste — restitution, puis le plan sans action');
   await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
@@ -689,8 +940,9 @@ try {
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
   console.log(
     `Parcours réel joué de bout en bout : bilan ${ATTENDU.totalKg} kg, ${ATTENDU.pistes.length} pistes dans ` +
-      `l'ordre attendu, engagement, point répondu, suivi, compte supprimé — puis le cycliste, ` +
-      `${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, barre d'onglets venue sans « Compris ».`
+      `l'ordre attendu, engagement (les jours au clavier), point répondu, suivi, « Toi » et sa ligne de ` +
+      `canal, compte supprimé — puis le cycliste, ${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, ` +
+      `barre d'onglets venue sans « Compris ». Chaque choix rendu répond à son groupe nommé.`
   );
 } catch (erreur) {
   try {

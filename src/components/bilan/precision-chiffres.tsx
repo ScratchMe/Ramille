@@ -1,6 +1,7 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
@@ -18,10 +19,11 @@ import { Radius, Spacing } from '@/constants/theme';
  * prend déjà partout ailleurs — jours par semaine, nombre de vols, taille du covoiturage.
  *
  * Le groupe est un `radiogroup` **nommé**, et c'est ce qui le distingue de ses voisins : une
- * étape peut porter deux séries de puces rigoureusement identiques (les longs trajets en
- * portent déjà deux), et en navigation de contrôle en contrôle plus rien ne dirait dans
- * laquelle on se trouve. Nommer le groupe le dit une fois ; le répéter sur chaque puce le
- * dirait cinq (A2-9).
+ * étape peut porter plusieurs séries de puces rigoureusement identiques — c'est le cas des longs
+ * trajets —, et en navigation de contrôle en contrôle plus rien ne dirait dans laquelle on se
+ * trouve. Nommer le groupe le dit une fois ; le répéter sur chaque puce le dirait autant de
+ * fois qu'il y a de puces (A2-9). Il passe par `GroupeDeChoix` depuis le 25/09/2026 — il posait
+ * son rôle lui-même —, comme sa jumelle `PrecisionMode` le faisait déjà.
  */
 export function PrecisionChiffres({
   question,
@@ -39,7 +41,7 @@ export function PrecisionChiffres({
       <ThemedText type="small" themeColor="textSecondary">
         {question}
       </ThemedText>
-      <View style={styles.reponses} accessibilityRole="radiogroup" accessibilityLabel={question}>
+      <GroupeDeChoix question={question} style={styles.reponses}>
         {options.map((option) => (
           <Chip
             key={option.value}
@@ -55,7 +57,7 @@ export function PrecisionChiffres({
             nestedBackground
           />
         ))}
-      </View>
+      </GroupeDeChoix>
     </ThemedView>
   );
 }

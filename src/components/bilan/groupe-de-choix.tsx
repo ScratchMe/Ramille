@@ -4,9 +4,9 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { ControlHeight, Spacing } from '@/constants/theme';
 
 /**
- * Le conteneur d'une série de puces : un `radiogroup` quand on n'en choisit qu'une, un `group`
- * quand elles se cumulent — **toujours nommé par la question à laquelle il répond** (24/09/2026,
- * `v1-29`, audit d'accessibilité 4.1.2).
+ * Le conteneur d'une série de choix — puces, rangées, items de mode, lignes de canal : un
+ * `radiogroup` quand on n'en choisit qu'un, un `group` quand ils se cumulent — **toujours nommé par
+ * la question à laquelle il répond** (24/09/2026, `v1-29`, audit d'accessibilité 4.1.2).
  *
  * Onze séries du questionnaire et du plan s'annonçaient encore en `button` (A2-8, `v1-13` §11.4) :
  * rien ne disait « sélectionné », ni la place dans le groupe, ni surtout **à quelle question** la
@@ -19,6 +19,28 @@ import { ControlHeight, Spacing } from '@/constants/theme';
  * **La question se passe en chaîne, et l'appelant l'écrit une fois** pour ses deux usages — le texte
  * affiché et le nom du groupe. Deux copies d'un même libellé finissent par ne plus se
  * correspondre ; c'est la dérive que `TextLink` existe pour empêcher ailleurs.
+ *
+ * **C'est le seul endroit du dépôt qui écrive un de ces deux rôles** (25/09/2026). Trois listes de
+ * modes du questionnaire n'avaient pas de groupe du tout — « Voiture (seul) » ne disait pas à quelle
+ * question il répond —, et trois fichiers posaient le rôle eux-mêmes (`PrecisionChiffres`, les trois
+ * séries des longs trajets, la catégorie du retour) : ce qu'on ajoutera un jour à un groupe, comme
+ * les flèches pour passer d'une option à l'autre que `v1-29` §6.4 nomme, ne les aurait pas
+ * atteints. Le parcours réel vérifie, étape par étape, que toute case d'option a un `radiogroup`
+ * nommé et toute case à cocher un `group` nommé — et qu'aucun `radiogroup` n'en coche deux, seule
+ * règle qui voie une précision privée de son propre groupe (le paragraphe suivant dit pourquoi).
+ *
+ * **Une précision qui s'ouvre sous l'option choisie est son propre groupe, posé DANS celui de la
+ * question qui l'ouvre** — « Quelle motorisation ? » sous « Voiture (seul) », dans le groupe du
+ * mode. C'est la forme des révélations conditionnelles de GOV.UK (un `fieldset` dans un `fieldset`),
+ * et c'est la seule qui garde ce que `precision-mode.tsx` a gagné : la précision juste sous l'option
+ * qu'elle décrit, dans l'ordre de lecture comme à l'œil. Chaque case d'option y répond au groupe
+ * **le plus proche**, donc à sa propre question — « Hybride » à « Quelle motorisation ? », jamais au
+ * mode. La sortir du groupe du mode l'aurait détachée de l'option qu'elle précise, ou coupé la liste
+ * des modes en deux groupes homonymes. Relevé dans l'arbre d'accessibilité de Chromium le 25/09/2026 ;
+ * ce que TalkBack en annonce reste à écouter sur appareil (`v1-29` §6.5). **Le revers de cette
+ * forme** : une précision qui perdrait son groupe tomberait dans celui du mode sans que rien ne le
+ * dise — il est nommé, il est le plus proche —, et le mode et la motorisation y seraient cochés
+ * ensemble. C'est à cela, et à cela seulement, que le parcours réel la reconnaît.
  *
  * `role` et `aria-label` plutôt que `accessibilityRole` : le rôle d'un groupe de cases, `group`,
  * n'existe que dans le vocabulaire ARIA que React Native accepte depuis la 0.71.
@@ -46,7 +68,13 @@ export function GroupeDeChoix({
   style,
   children,
 }: {
-  /** La question telle qu'elle est affichée au-dessus de la série. */
+  /**
+   * Le nom du groupe : la question **telle qu'elle est affichée** au-dessus de la série. Deux
+   * exceptions, chacune dite chez son appelant, et le nom y reste une chaîne écrite une fois :
+   * un intitulé qui ne se comprend qu'avec le titre de l'écran reçoit sa forme complète, qui le
+   * contient (« En train » → « Trajets longue distance en train », `long-trips.tsx`) ; une série
+   * sans question affichée reçoit le nom de ce qu'elle choisit (« Catégorie », `feedback.tsx`).
+   */
   question: string;
   /** Vrai quand les puces se cumulent (des `checkbox`) : le groupe n'est alors pas un `radiogroup`. */
   cumulable?: boolean;
