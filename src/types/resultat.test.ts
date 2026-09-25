@@ -184,9 +184,11 @@ describe('etiquetteDuPosteDominant', () => {
     dominant_poste: string,
     commute: number,
     leisure: number,
-    travel: number
+    travel: number,
+    dominant_poste_label: string | null = null
   ): PoidsDesPostes => ({
     dominant_poste,
+    dominant_poste_label,
     commute_co2_kg_year: commute,
     leisure_co2_kg_year: leisure,
     travel_co2_kg_year: travel,
@@ -211,6 +213,22 @@ describe('etiquetteDuPosteDominant', () => {
     expect(etiquetteDuPosteDominant(poids('leisure', 0, 1000, 1040))).toBe(
       'Le plus régulier, presque à égalité avec tes voyages'
     );
+  });
+
+  // **Le résiduel des sorties rares ne se dit pas « le plus régulier »** (arbitrage du 25/09/2026,
+  // `v1-29` §6.3) : « occasionnels » dessous, « régulier » dessus, deux mots qui se contredisent.
+  // L'égalité reste dite ; la raison du départage ne l'est plus. Et seul le résiduel perd le
+  // superlatif — des sorties déclarées le gardent, puisqu'il y est vrai. Éprouvé le 25/09/2026 : la
+  // branche du résiduel neutralisée fait tomber ce test, et lui seul ; le critère lu sans le libellé
+  // (tout loisir dominant pris pour le résiduel) fait tomber « vaut aussi entre les loisirs et les
+  // voyages », et lui seul.
+  it('dit « presque à égalité » sans superlatif quand le dominant est le résiduel des sorties rares', () => {
+    const residuel = 'Loisirs du week-end (occasionnels)';
+    expect(etiquetteDuPosteDominant(poids('leisure', 1, 11, 11.3, residuel))).toBe(
+      'Presque à égalité avec tes voyages'
+    );
+    // Sans départage à dire, l'étiquette générale reste vraie, résiduel ou non.
+    expect(etiquetteDuPosteDominant(poids('leisure', 1, 11, 3, residuel))).toBe(ETIQUETTE_DU_PLUS_LOURD);
   });
 
   // « Strictement » : à égalité exacte le dominant est aussi le plus lourd, et l'étiquette générale

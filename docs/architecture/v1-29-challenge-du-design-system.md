@@ -450,12 +450,19 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
   l'écran n'en met jamais plus que `ACTIONS_EN_AVANT`. En production ce jour-là, les quatre plans qui
   portent des actions étaient tous dans le cas « Chacune des deux ». Aucune ligne de code n'a changé,
   les tests épinglant déjà chaque forme mot pour mot ;
-- **« Le plus régulier » au-dessus de « Loisirs du week-end (occasionnels) »** : c'est ce que
-  l'étiquette de la décision n° 1 écrirait si le résiduel des sorties « rarement » gagnait le
-  départage face à des voyages plus lourds de moins de 5 % — deux mots qui se contredisent. Le cas
-  est rare (le résiduel pèse une trentaine de kilos) et n'a été vu nulle part ; la forme la plus
-  sûre serait « Presque à égalité avec tes voyages », sans le superlatif. Relevé par la
-  contre-lecture du 25/09/2026, à arbitrer ;
+- **tranché le 25/09/2026 — « Le plus régulier » au-dessus de « Loisirs du week-end
+  (occasionnels) »** : c'est ce que l'étiquette de la décision n° 1 écrivait quand le résiduel des
+  sorties « rarement » gagnait le départage face à des voyages plus lourds de moins de 5 % — deux mots
+  qui se contredisent. L'étiquette dit désormais **« Presque à égalité avec tes voyages »**, sans le
+  superlatif, pour ce seul cas : l'égalité reste vraie, la raison du départage n'est plus affirmée
+  (`etiquetteDuPosteDominant`, reconnu par `estLeResiduelDesSortiesRares`). Des sorties déclarées
+  gardent « Le plus régulier ». Le cas est rare — des voyages entre 100 et 105 % d'un résiduel qui
+  ne dépasse pas une soixantaine de kilos — et aucun des sept bilans de la production ne le portait ;
+- **relevé en le tranchant, et pas arbitré** : le cas symétrique est atteignable. Quand le **domicile-travail**
+  gagne le départage face au résiduel un peu plus lourd — un trajet en trottinette, par exemple —,
+  l'étiquette dit « Le plus régulier, presque à égalité avec **tes sorties du week-end** » : elle
+  nomme comme un comportement des sorties que la personne a dit ne presque pas faire. Même famille
+  que le « Poste principal » du suivi ci-dessus ; une phrase de produit, à poser ;
 - **le contour de « Oui » et « Non »** : posés sur la carte par `onPanel`, ils se détachent à
   1,14:1 (carte grise) et 1,18:1 (carte teintée), filet compris entre 1,13 et 1,18:1 — exactement le
   contraste de **tout** bouton secondaire du produit sur le fond de l'écran (1,14:1). WCAG 1.4.11
