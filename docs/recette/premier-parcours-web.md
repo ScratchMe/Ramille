@@ -156,7 +156,7 @@ restitution s'affiche.
 |---|---|---|---|
 | 02.1 | Regarder le **bas** de l'écran de restitution | **Aucune barre d'onglets.** Pas de « Plan » ni « Suivi » en bas | |
 | 02.2 | Regarder s'il reste une bande vide là où elle serait | Le contenu descend jusqu'en bas de la fenêtre. Une bande grise ou blanche de la hauteur d'une barre absente serait un écart | |
-| 02.3 | Le reste de l'écran | Inchangé : le total (**4,2 t** pour ce profil), la répartition, « Où tu te situes », le partage. L'icône de compte en haut à droite est toujours là | |
+| 02.3 | Le reste de l'écran | Inchangé : le total (**4,2 t** pour ce profil), la répartition, « Où tu te situes », le partage. L'icône de compte en haut à droite est toujours là. **Une étiquette a changé le 24/09/2026** (`v1-29`, décision n° 1) : au-dessus du poste dominant, **« Le plus régulier, presque à égalité avec tes voyages »** et non « Le déplacement qui pèse le plus » — les voyages (2,0 t) pèsent plus que le trajet (1,9 t), et c'est le départage à 5 % qui retient le trajet | |
 | 02.4 | Descendre jusqu'au bouton | « Voir ce que je peux faire » | |
 
 ---
@@ -167,7 +167,7 @@ Le deuxième moment neuf, et celui qui porte le plus de décisions.
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
-| 03.1 | Toucher « Voir ce que je peux faire » | **L'écran de création de compte s'intercale d'abord** — la transition imposée de `/connexion` (`resultat_transition`), un choix daté que la feuille avait oublié. Le passer, puis : on arrive sur le plan, **toujours sans barre d'onglets**. *Que ce soit le bon moment pour cet écran est une question ouverte depuis le 18/09/2026, pas un écart* | |
+| 03.1 | Toucher « Voir ce que je peux faire » | On arrive **directement** sur le plan, **toujours sans barre d'onglets**. Aucun écran de compte ne s'intercale : la transition imposée de `/connexion` a été retirée le 20/09/2026 — la question que la séance du 18/09 avait ouverte —, et la proposition de compte est devenue une ligne en tête de la restitution. La voir revenir serait un écart | |
 | 03.2 | La carte en haut de l'écran | Étiquette **« TON PREMIER PLAN »**, titre **« Une action pour l'automne. »**, puis « Choisis-en une, et dis quand. Ensuite, un point régulier te demandera si tu l'as faite — rien d'autre à suivre. » La saison nommée est celle du **cycle**, pas celle du jour : automne jusqu'au 30 novembre inclus, hiver ensuite | |
 | 03.3 | **Ramille, sous la carte et hors du cadre** | Le visage vert, penché, et la phrase **« Prends celle qui te ressemble. »** Elle doit être **dessous**, pas dans le cadre | |
 | 03.4 | La sortie de la carte | Un seul lien, **« Compris »**. Pas de bouton plein, pas de second choix | |
@@ -200,7 +200,7 @@ Le troisième moment neuf. **Irréversible dans cette fenêtre.**
 |---|---|---|---|
 | 05.1 | Les **deux** cartes d'action | Deux, pas plus. La première : « Passer deux trajets sur cinq en train », **− 619 kg CO₂e**, « Sur tes 5 trajets par semaine. » La seconde : « Renoncer à un vol long-courrier cette année », **− 1 601 kg CO₂e**, « Sur 1 vol long-courrier déclaré. » Sous chaque gain, la ligne commence par **« par an »** — collé au chiffre depuis le 24/09/2026 (`v1-29`) | |
 | 05.2 | **Le classement** (C5.1) | La **seconde** carte annonce un gain **plus élevé** que la première, et c'est juste : le rang 1 est la meilleure piste du poste dominant, le reste suit le gain décroissant. Voir l'inverse — le vol en tête, ou le vol relégué en ligne simple — est un écart | |
-| 05.3 | **Les milliers** (C5.8) | Le gain de la seconde carte s'écrit **« 1 601 »** avec une espace fine, jamais « 1601 ». C'est le seul endroit de cet écran qui dépasse le millier : le cap (384) et les autres gains sont à trois chiffres | |
+| 05.3 | **Les milliers** (C5.8) | Le gain de la seconde carte s'écrit **« 1 601 »**, avec une espace — insécable, pas fine : C5.8 a mesuré que la fine collait les chiffres (`src/lib/format.ts`) —, jamais « 1601 ». C'est le seul endroit de cet écran qui dépasse le millier : le cap (384) et les autres gains sont à trois chiffres | |
 | 05.4 | Sous le cap | **Aucune note** du genre « le cap porte sur tes voyages ; cette action porte ailleurs » — elle a été retirée par C5.3, et ce profil est précisément celui qui la réveillait. La phrase « Chacune des deux pistes proposées suffit à le franchir. » est, elle, **voulue** (`v1-29`) : elle dit le lien entre le cap et les pistes, pas d'où doit venir la réduction | |
 
 ---
@@ -232,7 +232,7 @@ plus la même chose — c'est la porte elle-même qui est en recette.
 | 07.3 | Toucher **« Modifier ces réponses »** | L'écran **« Ton contexte de mobilité »** s'ouvre, avec les quatre mêmes questions que la dernière étape du questionnaire et les réponses déjà sélectionnées. **Retomber dans le questionnaire serait l'écart que ce chantier ferme** | |
 | 07.4 | Lire le pied de l'écran, sans rien toucher | « Enregistrer met ton plan à jour ; ton bilan n'est pas refait. Si l'action que tu suis n'y tient plus, tu en choisiras une autre. » Et **« Enregistrer » est inactif** tant qu'aucune réponse n'a bougé | |
 | 07.5 | Toucher **« Retour »** | On retrouve le plan, inchangé | |
-| 07.6 | Rouvrir l'écran, passer l'accès aux transports en commun sur **Inexistant**, puis **« Enregistrer »** | Retour au plan, et **le plan s'est réduit** : les actions qui supposaient un métro ou un tram ont disparu | |
+| 07.6 | Rouvrir l'écran, passer l'accès aux transports en commun sur **Inexistant**, puis **« Enregistrer »** | Retour au plan, et **le plan s'est réduit** : « Passer deux trajets sur cinq en train » a disparu — c'était la seule piste de ce profil qui supposait des transports en commun (le métro et le tram ne lui sont jamais proposés en périurbain). La première carte devient **« Faire ce trajet à deux au moins un jour sur deux »**, **− 480 kg CO₂e**, et le lien dit **« Voir toutes les pistes · 9 »** (mesuré le 25/09/2026 en régénérant le plan de ce profil dans une transaction annulée) | |
 | 07.7 | Ouvrir l'onglet **Suivi** | **Aucune entrée nouvelle.** Un second bilan dans l'historique serait le défaut que C6.4 ferme — corriger son contexte n'est pas refaire un bilan | |
 | 07.8 | Revenir au contexte et remettre **Limité**, puis enregistrer | Le plan retrouve ses actions. Le suivi n'a toujours qu'une entrée | |
 | 07.9 | Ouvrir **« Toi »** | La ligne **« Mon contexte de mobilité »** y mène aussi. C'est la seule porte pour un plan à zéro action, où l'encart du plan ne se rend pas | |
@@ -246,7 +246,7 @@ plus la même chose — c'est la porte elle-même qui est en recette.
 | 08.1 | Sur la **première** carte (le trajet domicile-travail), choisir l'action et son intention | Des **jours de la semaine**. Sur la carte du vol, à l'inverse, ce sont des **échéances** (« à mon prochain projet de voyage ») et jamais « ce mois-ci » : les deux valent d'être ouvertes pour comparer | |
 | 08.2 | Toucher « C'est noté » | L'action passe en tête, marquée comme engagée | |
 | 08.3 | **Le premier pas** | Une ligne pratique apparaît **sous** l'action engagée, et seulement maintenant — pas avant le choix. Pour cette action : « Vérifie l'horaire qui te convient, puis essaie-le une fois. » Elle ne contient aucun chiffre | |
-| 08.4 | **La carte du cap** | Le **trait de temps** est apparu, avec « La saison avance ; le trait mesure le temps, pas toi. » C'est ce que 03.5 attendait. Il est **court** — il mesure le temps écoulé depuis le 1er septembre sur les 91 jours de la saison, et non ce qu'on vient de faire : s'engager ne le fait pas avancer d'un pixel | |
+| 08.4 | **La carte du cap** | Le **trait de temps** est apparu, avec « La saison avance ; le trait mesure le temps, pas toi. » C'est ce que 03.5 attendait. Il est **court** — il mesure le temps écoulé depuis le 1er septembre sur les 91 jours de la saison, et non ce qu'on vient de faire : s'engager ne le fait pas avancer d'un pixel. Et la phrase « Chacune des deux pistes proposées suffit à le franchir. » **a disparu** : elle aide à choisir, et le choix est fait (`v1-29`) | |
 | 08.5 | La feuille des rappels | Sur le web et sans compte rattaché, **elle ne s'ouvre pas** : c'est normal, et non un écart. Elle demande une adresse confirmée ou un appareil | |
 
 ---
