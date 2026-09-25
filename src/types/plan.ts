@@ -251,7 +251,8 @@ export function cadreDuPlan({
  * personne se pose devant la carte du cap. « Ton cap pour cette saison − 384 kg » au-dessus de
  * « − 619 kg par an » laissait croire qu'il fallait les additionner, ou qu'une saison valait un an.
  *
- * Trois phrases, et le silence partout ailleurs :
+ * Trois phrases, et le silence partout ailleurs — **les trois et le silence validés tels quels le
+ * 25/09/2026** (`v1-29` §6.3), après avoir été dérivées de la règle sans être relues une à une :
  *  - une seule carte en avant, qui atteint le cap → « La piste proposée suffit à le franchir. » ;
  *  - deux cartes qui l'atteignent toutes les deux → « Chacune des deux pistes proposées… » ;
  *  - deux cartes dont une seule l'atteint → « L'une des deux pistes proposées… ».

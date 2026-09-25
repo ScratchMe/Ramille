@@ -30,6 +30,7 @@ import {
   POSTE_EN_PHRASE,
   POSTE_LABEL,
   POSTE_SUBJECT,
+  estLeResiduelDesSortiesRares,
   formeInserable,
   type Poste,
 } from '@/constants/postes';
@@ -245,6 +246,8 @@ export function dominantShareLabel(results: ResultatBilan): string {
  */
 export type PoidsDesPostes = {
   dominant_poste: string;
+  /** Le libellé figé par le serveur : c'est lui qui marque le résiduel des sorties rares. */
+  dominant_poste_label: string | null;
   commute_co2_kg_year: number;
   leisure_co2_kg_year: number;
   travel_co2_kg_year: number;
@@ -290,6 +293,15 @@ function poidsDuPoste(poids: PoidsDesPostes, poste: Poste): number {
  *
  * **Strictement plus**, et s'il y en a deux, le plus lourd : à égalité exacte le dominant est aussi
  * le plus lourd, et l'étiquette générale redevient vraie.
+ *
+ * **Et « le plus régulier » se tait devant le résiduel des sorties rares** (arbitrage du 25/09/2026,
+ * `v1-29` §6.3). Quand ce résiduel gagne le départage face à des voyages un peu plus lourds,
+ * l'étiquette aurait coiffé « Loisirs du week-end (occasionnels) » d'un superlatif de régularité :
+ * deux mots qui se contredisent, sur des sorties que la personne a dit ne presque pas faire. Elle dit
+ * alors « Presque à égalité avec tes voyages » — l'égalité reste vraie, la raison du départage n'est
+ * plus affirmée. Le cas est rare (des voyages entre 100 et 105 % d'un résiduel qui ne dépasse pas
+ * une soixantaine de kilos ; aucun en production ce jour-là) et reconnu par le même critère que la
+ * félicitation du plan.
  */
 export function etiquetteDuPosteDominant(poids: PoidsDesPostes): string {
   const rang = ORDRE_DU_DEPARTAGE.indexOf(poids.dominant_poste as Poste);
@@ -304,8 +316,9 @@ export function etiquetteDuPosteDominant(poids: PoidsDesPostes): string {
     }
   }
 
-  return plusLourd === null
-    ? ETIQUETTE_DU_PLUS_LOURD
+  if (plusLourd === null) return ETIQUETTE_DU_PLUS_LOURD;
+  return estLeResiduelDesSortiesRares(poids.dominant_poste, poids.dominant_poste_label)
+    ? `Presque à égalité avec ${formeInserable(plusLourd)}`
     : `Le plus régulier, presque à égalité avec ${formeInserable(plusLourd)}`;
 }
 

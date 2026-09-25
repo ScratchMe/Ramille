@@ -43,7 +43,9 @@ import {
  * d'accessibilité, 1.3.1) ; le cadre partagé (`FeuilleDuBas`) nomme le dialogue par son titre, et
  * celui-ci ne pouvait pas être la ligne de Ramille, qui change avec la boucle. Le 24/09/2026, ce
  * titre s'était aussi **affiché** en tête de la feuille : son canvas n'en dessine pas, et aucune
- * décision ne l'avait demandé. Il ne sert plus qu'à nommer (`enTete={false}`, 25/09/2026).
+ * décision ne l'avait demandé. Il ne sert plus qu'à nommer (`enTete={false}`, 25/09/2026), et cette
+ * absence est **décidée** depuis le même jour (`v1-29` §6.3) : ne pas le remettre par symétrie avec
+ * la feuille du nouveau bilan, qui affiche le sien.
  */
 export function FeuilleRappels({
   prefs,
