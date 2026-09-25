@@ -75,14 +75,43 @@ démarrer à « visible » ne coûte qu'un transitoire à ceux qui doivent la vo
   texte : un libellé recopié à côté du texte visible finit toujours par ne plus lui correspondre ;
 - **les choix exclusifs sont des `radio`**, seul rôle qui annonce « sélectionné » et la place dans
   le groupe. Un `button` qui porte `selected` est un défaut, pas un raccourci ;
+- **un choix se coche à la barre d'espace**, comme WAI-ARIA l'attend d'une case d'option et d'une
+  case à cocher — pas seulement à Entrée. Un rôle juste qui ne répond plus au geste qu'il annonce a
+  échangé un défaut contre un autre, et c'est ce qui s'est passé ici le 24/09/2026. Un gestionnaire
+  d'Espace fait trois choses : retenir la page (`preventDefault`), agir **une fois par appui** — une
+  touche maintenue répète —, et laisser Entrée à qui la gère déjà : deux activations ramènent une
+  case à cocher exactement où elle était ;
 - **une puce annoncée seule doit se suffire** : détachée de la question posée trois lignes plus
   haut, « Aucun » ne dit rien. C'est ce qu'un libellé accessible ajoute, et c'est la chose qu'on
   oublie en écrivant les libellés visibles ;
 - **les illustrations et les mascottes sont masquées** : elles accompagnent un texte qui dit déjà
   tout ;
-- **les titres s'annoncent en en-tête par leur type**, pas écran par écran ;
-- une cible tactile fait 44 px **par sa hauteur** quand les rangées se touchent — du `hitSlop` y
-  ferait se recouvrir deux zones.
+- **les titres s'annoncent en en-tête par leur type**, pas écran par écran — **et avec leur
+  niveau** : sans lui, react-native-web rend chaque en-tête en `<h1>`, et une page parcourue titre
+  par titre ne distingue plus l'écran de ses sections ;
+- une cible tactile fait **48 px** **par sa hauteur** quand les rangées se touchent — du `hitSlop` y
+  ferait se recouvrir deux zones. 48 et non 44 : c'est la cible de Material, que les outils
+  d'accessibilité d'Android signalent ; 44 est le seuil de WCAG 2.5.5 (AAA), et 2.5.8 (AA) n'en
+  demande que 24. Ce fichier et `theme.ts` ont attribué 44 à « 2.5.8 / Material » jusqu'au
+  24/09/2026 (`docs/architecture/v1-29-challenge-du-design-system.md`) ;
+- **l'état d'un contrôle ne tient jamais à la seule couleur** (WCAG 1.4.1). L'onglet actif et
+  l'inactif avaient la même luminance, à 1,02:1 : pour qui distingue mal les couleurs, ils étaient
+  identiques. Un état se dit par une forme, un fond plein ou un texte, et se mesure à 3:1 au moins ;
+- **un contrôle désactivé le dit par son texte, jamais par une opacité.** L'opacité s'applique à
+  tout ce que le contrôle porte, y compris la phrase qui dit *pourquoi* il est désactivé : WCAG
+  exempte de contraste un composant inactif, mais cette phrase-là est précisément celle qu'on doit
+  pouvoir lire ;
+- **un champ se voit au repos** (WCAG 1.4.11) : un fond gris clair sur blanc ne ressort qu'à 1,14:1,
+  donc un champ vide sans contour n'existe pas pour une vue faible. Le contour au repos tient 3:1 ;
+- **sur web, l'état d'un contrôle passe par les props `aria-*`**, jamais par l'objet
+  `accessibilityState` : react-native-web 0.21 ne le traduit plus, et un choix visiblement coché
+  s'annonçait « non coché » à un lecteur d'écran. `aria-checked`, `aria-expanded`, `aria-busy`,
+  `aria-disabled` sont typées par React Native, qui les mappe aussi sur Android ; pas
+  d'`aria-selected` sur un `radio`, où il est invalide. Et `accessibilityHint` n'existe pas sur web :
+  une information qui ne vit que dans un hint n'y est dite à personne ;
+- **un contrôle répond au toucher** : une teinte **immédiate**, sans animation. Rien ne changeait
+  sous le doigt, et sur Android on ne savait pas si l'appui avait été pris — ce qui se paie en
+  doubles appuis.
 
 ### 1.5 Une phrase qui dit quoi faire donne le moyen de le faire
 
@@ -113,6 +142,13 @@ demande. « 1 601 » se lisait donc « 1601 », et il a fallu une recette pour l
 La règle : **relever la chasse dans la police qu'on utilise**, pas dans la norme. Elle se refait le
 jour où la police change, et ça se mesure en une commande — charger le `.ttf` et lire l'`advanceWidth`
 du point de code.
+
+**Et la ponctuation double ne se coupe pas de son mot.** Une question finissait par un « ? » seul en
+début de ligne dès que la phrase remplissait la largeur — sur la carte du point, la plus lue du
+produit. L'espace qui précède `?`, `!`, `:` et `;`, et celles qui bordent l'intérieur des guillemets,
+sont insécables, **posées au rendu en un seul endroit** et jamais à la main dans chaque texte : une
+règle que chaque texte doit se rappeler finit oubliée par le suivant. Même mesure que ci-dessus :
+U+00A0 et non l'espace fine, trop étroite dans cette police.
 
 **Corollaire pour les tests** : un séparateur s'écrit par son **point de code** (`\u00a0`) et jamais
 collé en littéral. Trois assertions le portaient en clair, et leur échec affichait
@@ -337,15 +373,80 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `ThemedText`.** L'audit T11 avait relevé **zéro attribut d'accessibilité dans tout `src/`**, et
   ce motif y comptait pour une vingtaine d'occurrences. Le composant existe pour que le libellé
   annoncé **soit** le texte affiché — un `accessibilityLabel` recopié à côté du texte visible
-  finit toujours par ne plus lui correspondre — et pour porter la cible tactile de 44 px sans
-  déplacer le texte. Trois règles qui vont avec : les titres sont annoncés comme en-têtes
-  **par leur `type`** (`title`/`subtitle` dans `ThemedText`), pas écran par écran ; les listes
-  de choix exclusifs (`ModeListItem`, `ChoiceRow`) sont des `radio` et non des `button`, seul
-  rôle qui annonce « sélectionné » ; et la mascotte comme les illustrations sont masquées
+  finit toujours par ne plus lui correspondre — et pour porter la cible tactile de 48 px
+  (`ControlHeight.target`) sans déplacer le texte. Trois règles qui vont avec : les titres sont
+  annoncés comme en-têtes **par leur `type`** (`title`, `screenTitle` et `display` au niveau 1,
+  `subtitle` et tout autre en-tête au niveau 2, `headingLevel` pour l'exception), pas écran par
+  écran ; les listes de choix exclusifs (`ModeListItem`, `ChoiceRow`, **et toute série de `Chip`**)
+  sont des `radio` et non des `button`, seul rôle qui annonce « sélectionné », dans un conteneur
+  `radiogroup` **nommé par sa question** — une puce « 1 » annoncée seule ne dit pas à quoi elle
+  répond —, et un choix multiple (les jours d'une intention) est une série de `checkbox` ; et la
+  mascotte comme les illustrations sont masquées
   (`aria-hidden`, `accessibilityElementsHidden`) — elles accompagnent un texte qui dit déjà
   tout. Un `Pressable` nu reste légitime quand la cible porte plusieurs textes (la bannière de
   `src/app/(tabs)/suivi/bilan.tsx`), à condition de lui donner un `accessibilityLabel` qui les
   recompose.
+- **Sous le doigt, une surface prend sa teinte appuyée, tout de suite et sans animation** (décision
+  du 24/09/2026, `v1-29`) : `accentPressed` sur l'accent (bouton principal, puce pleine),
+  `backgroundPressed` sur une surface neutre, `backgroundSelectedPressed` sur une surface choisie,
+  par le `style` fonction de `Pressable`. Un lien texte se souligne. Pas d'`android_ripple`, qui n'existe
+  pas sur web — le même geste doit répondre pareil des deux côtés —, et pas d'opacité, qui fait
+  baisser le contraste du texte au moment même où on le lit. **Le fond d'un choix, au repos comme
+  sous le doigt, sort d'une seule dérivation** (`fondDuChoix`, `src/types/fond-du-choix.ts`,
+  25/09/2026) : `Chip`, `ChoiceRow`, `ModeListItem` et `LigneDeCanal` écrivaient chacun le même
+  ternaire à deux étages.
+- **L'onglet actif est une pastille `accent` pleine, icône en `onAccent`** (6,12:1) : la teinte de
+  l'icône seule ne le distinguait pas (voir §1.4).
+- **Toute série de choix passe par `GroupeDeChoix`** (`src/components/bilan/groupe-de-choix.tsx`) —
+  puces, rangées, items de mode, lignes de canal —, qui pose le rôle du groupe et le **nomme par sa
+  question**, écrite une seule fois ; c'est le seul endroit du dépôt qui écrive `radiogroup` ou
+  `group`. Le 25/09/2026, trois listes de modes du questionnaire n'avaient pas de groupe du tout —
+  « Voiture (seul) » ne disait pas à quelle question il répond — et trois fichiers posaient le rôle
+  eux-mêmes. Deux exceptions au nom affiché, écrites dans son contrat : un intitulé qui ne se
+  comprend qu'avec le titre de l'écran reçoit sa forme complète, qui le contient (« Trajets longue
+  distance en train » pour « En train »), et une série sans question affichée reçoit le nom de ce
+  qu'elle choisit (« Catégorie »). **Une précision qui s'ouvre sous une option est son propre
+  groupe, posé dans celui de l'option** — la forme des révélations conditionnelles de GOV.UK, et la
+  seule qui la garde juste sous ce qu'elle précise : chaque case d'option répond au groupe **le plus
+  proche**, et le parcours réel le vérifie à chaque étape — avec une règle de plus, qu'aucun
+  `radiogroup` ne coche deux cases : c'est la seule qui voie une précision privée de son propre
+  groupe, tombée dans celui du mode, qui est bien nommé. `Chip.role` est
+  **obligatoire** (`radio` ou `checkbox`) : une puce ajoutée sans rôle ne compile plus, là où onze
+  séries s'annonçaient comme des boutons. Une puce posée dans un encart teinté prend
+  `nestedBackground`, sans quoi elle s'y fond.
+- **Espace coche un choix, sur web aussi** (25/09/2026). react-native-web ne gère Espace que sur un
+  bouton (`PressResponder`, `isValidKeyPress`) : depuis que les puces sont des `radio` et des
+  `checkbox`, Espace ne cochait plus rien et faisait défiler la page. Tout `Pressable` de rôle
+  `radio` ou `checkbox` décompose donc `activableALaBarreDEspace` (`src/lib/barre-d-espace.ts`) —
+  `Chip`, `ChoiceRow`, `ModeListItem` et `LigneDeCanal` le font —, qui retient la page, agit une fois
+  par appui, laisse Entrée à la bibliothèque, ne fait rien sur un contrôle désactivé ni sur natif.
+  Un choix neuf qui l'oublierait retrouverait le défaut : `verifier-etats-export.mjs` (section F) et
+  le parcours réel le verraient.
+- **Une option désactivée ne paraît jamais choisie** (`paraitChoisie`, `src/types/ligne-de-canal.ts`) :
+  « Par email » grisé mais cerné d'accent disait à la fois « indisponible » et « c'est ton réglage ».
+  Ce qui paraît coché est ce que la table de vérité des rappels rend effectif, pas la préférence
+  enregistrée. **Et elle le dit par son texte, jamais par une opacité** (25/09/2026, kit `readme.md`,
+  puce « États ») : fond des éléments, titre en `textTertiary`, détail en `textSecondary`. La ligne
+  de canal portait `opacity: 0.6`, qui faisait tomber à 3,2:1 le détail — la phrase qui dit pourquoi
+  le canal est hors d'atteinte.
+- **Un écran qui en remplace un autre sous le doigt porte le focus sur ce qui arrive**
+  (`TitreDArrivee`, `donnerLeFocus` dans `src/lib/focus.ts`) — « C'est envoyé, merci. », le calcul
+  du bilan, la réplique d'un point, la page suivante de l'onboarding —, et **jamais au montage d'un
+  écran qu'on retrouve** : une carte déjà répondue qu'on revoit en revenant sur le plan n'a volé le
+  focus à personne. `MessageInline` s'annonce lui-même sur natif (`announceForAccessibility`), une
+  région vivante n'annonçant pas son apparition sur Android.
+- **Un bouton secondaire posé sur une carte grise ou teintée prend `onPanel`** : fond de l'écran et
+  filet, au lieu du gris des panneaux. Gris sur gris, « Oui » et « Non » de la carte du point se
+  lisaient comme du texte.
+- **La chasse fixe (`type="code"`) est réservée aux sources et aux codes techniques** — une
+  référence ADEME, un code d'erreur, une clé de configuration —, jamais à une phrase adressée à la
+  personne : « Ton mode n’est pas dans la liste ? Dis-le-nous. » en 12 px gris à chasse fixe se
+  lisait comme une ligne de débogage (décision du 24/09/2026).
+- **Les espaces insécables de la ponctuation double sont posées par `ThemedText`, au rendu**
+  (`src/types/typographie.ts`) : un texte les écrit avec une espace ordinaire, et un texte rendu
+  hors de `ThemedText` (un `Text` nu, une carte de `api/`) ne les reçoit pas. Les dérivations de
+  `src/types/` rendent des espaces ordinaires, et un contrôle d'export qui cherche du texte dans
+  `innerText` doit normaliser les blancs (`\s+` couvre U+00A0).
 - **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
   par un `onPress`** (rendu en `<div>` par `react-native-web`), et se vérifie dans le HTML statique
   de `dist/` : `EXPO.md` §2.1.
@@ -741,12 +842,17 @@ périmerait en silence au prochain passage :
   par défaut posée sur un échec de lecture est du même mensonge : le rythme de la boucle (`boucle`)
   vaut `null` tant qu'on ne l'a pas lu, et la carte d'attente ne s'affiche pas plutôt que de nommer
   le mauvais jour.
-- **Les tailles et rayons qui se répètent vivent dans `TypeScale`/`Radius`/`ControlHeight`**
-  (`src/constants/theme.ts`), consommés par les types `screenTitle`/`salient`/`cardTitle`/`body`
-  de `ThemedText`. Une taille unique reste en dur là où elle vit — la nommer serait du bruit.
-  Deux titres valent 30 px, la même valeur que `salient` qui nomme un **chiffre** : ils restent
-  en dur, ce type sur un titre encoderait une fausse équivalence. `title`/`subtitle` (48/32)
-  sont les tailles du handoff initial, qu'aucun écran n'affiche sans les surcharger.
+- **Les tailles, rayons, hauteurs et traits qui se répètent vivent dans `TypeScale`, `Radius`,
+  `ControlHeight`, `Rail` et `Stroke`** (`src/constants/theme.ts`), consommés par les types
+  `screenTitle`/`salient`/`cardTitle`/`body`/`display` de `ThemedText` ou étalés dans un style
+  (`TypeScale.label`). Une taille unique reste en dur là où elle vit — la nommer serait du bruit.
+  **Trois** titres valent 30 px — `/connexion`, l'étape de contexte de l'onboarding et les pages
+  légales —, la même valeur que `salient` qui nomme un **chiffre** : ils restent en dur, ce type sur
+  un titre encoderait une fausse équivalence. Ce paragraphe en comptait deux et `theme.ts` les
+  appelait des « recopies de `salient` » à migrer, jusqu'au 24/09/2026 : les deux disaient faux, en
+  sens contraire. `title`/`subtitle` (48/32) sont les tailles du handoff initial, qu'aucun écran
+  n'affiche sans les surcharger. **Le kit recopie ces jetons** (`docs/design/design-system/tokens/`) :
+  toucher une valeur ici impose de la recopier là-bas, dans la même PR (`v1-29` §5).
 - Le wizard du bilan (`src/app/bilan/index.tsx` + `src/components/bilan/steps/*`) dérive
   entièrement sa navigation ("Étape N sur M", saut conditionnel d'étapes) de l'état courant
   des réponses via `isStepVisible`/`nextStep`/`previousStep`/`isStepComplete` dans

@@ -1,6 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/bilan/choice-row';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { HYPOTHESES } from '@/constants/methodologie';
@@ -12,6 +14,9 @@ const OPTIONS: { value: LeisureFrequency; label: string }[] = [
   { value: 'weekly', label: 'Une fois par semaine' },
   { value: 'multiple_weekly', label: 'Plusieurs fois par semaine' },
 ];
+
+/** Écrite une fois : le titre de l'étape et le nom de la série (`GroupeDeChoix`). */
+const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le weekend ?';
 
 // B2.1 — variante "Progression adaptative" quand la section 1 a été sautée (B1.1 =
 // Non) : le paragraphe d'exemples est remplacé par un rappel du nombre d'étapes total,
@@ -29,15 +34,13 @@ export function LeisureFrequencyStep({
 
   return (
     <View style={styles.container}>
-      <ThemedText type="screenTitle">
-        À quelle fréquence fais-tu des trajets loisirs le weekend ?
-      </ThemedText>
+      <TitreDEtape>{QUESTION_FREQUENCE}</TitreDEtape>
       {!commuteSkipped && (
         <ThemedText type="small" themeColor="textTertiary">
           Sport, sorties, visites à la famille.
         </ThemedText>
       )}
-      <View style={styles.choices}>
+      <GroupeDeChoix question={QUESTION_FREQUENCE} style={styles.choices}>
         {OPTIONS.map((option) => (
           <View key={option.value} style={styles.choix}>
             <ChoiceRow
@@ -58,19 +61,21 @@ export function LeisureFrequencyStep({
 
                 La ligne se rend **sous la réponse qui la provoque** et seulement quand elle est
                 choisie : posée sous le groupe, elle se lit comme une note sur les trois. Même
-                registre `code` que la ligne d'hypothèses des longs trajets et des vols, et mêmes
+                registre que la ligne d'hypothèses des longs trajets et des vols, et mêmes
                 valeurs interpolées depuis `HYPOTHESES` — un script de CI les compare aux
-                constantes du calcul. */}
+                constantes du calcul. Ce registre était la chasse fixe (`code`) jusqu'au
+                24/09/2026 ; elle est désormais réservée aux sources et aux codes techniques
+                (décision n° 10), et cette ligne est une phrase adressée à la personne. */}
             {option.value === 'rarely' && answers.leisure_frequency === 'rarely' && (
-              <ThemedText type="code" themeColor="textTertiary" style={styles.base}>
-                on comptera une petite base par défaut ·{' '}
+              <ThemedText type="small" themeColor="textTertiary" style={styles.base}>
+                On comptera une petite base par défaut ·{' '}
                 {virgule(HYPOTHESES.sortiesParSemaine.rarement)} sortie par semaine,{' '}
                 {HYPOTHESES.distanceSortieParDefautKm} km
               </ThemedText>
             )}
           </View>
         ))}
-      </View>
+      </GroupeDeChoix>
       {commuteSkipped && (
         <ThemedView type="backgroundElement" style={styles.notice}>
           <ThemedText type="small" style={styles.noticeText}>

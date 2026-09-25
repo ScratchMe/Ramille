@@ -12,7 +12,7 @@ import { Button } from '@/components/button';
 import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ContenuDOuverture, SortieDouverture } from '@/types/saison';
 
@@ -100,7 +100,11 @@ export function CarteDOuverture({
         <ThemedText themeColor="accentText" weight={700} style={styles.etiquette}>
           {ouverture.etiquette}
         </ThemedText>
-        <ThemedText type="screenTitle">{ouverture.titre}</ThemedText>
+        {/* Niveau 2 : la carte est une section de l'écran du plan, dont « Ton plan » est le titre de
+            niveau 1 — même si elle se rend au-dessus. Deux `<h1>` diraient deux écrans. */}
+        <ThemedText type="screenTitle" headingLevel={2}>
+          {ouverture.titre}
+        </ThemedText>
         {ouverture.corps && (
           <ThemedText type="body" themeColor="textSecondary">
             {ouverture.corps}
@@ -118,10 +122,13 @@ export function CarteDOuverture({
                 themeColor="accentText"
               />
             ) : (
+              // `onPanel` : la carte est teintée, et un secondaire gris s'y confondait (1,06:1) —
+              // « Choisir une autre », le défaut que `Button` décrit sur la carte du point.
               <Button
                 key={sortie.cle}
                 title={sortie.label}
                 variant={sortie.forme === 'primaire' ? 'primary' : 'secondary'}
+                onPanel
                 onPress={() => onSortie(sortie.cle)}
               />
             )
@@ -143,9 +150,10 @@ export function CarteDOuverture({
 
 const styles = StyleSheet.create({
   bloc: { gap: Spacing.three },
-  carte: { borderWidth: 1, borderRadius: Radius.card, padding: 20, gap: 12 },
-  // Même étiquette que celle de `ActionCard` : 13/18/700, interlettrage +0,3.
-  etiquette: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
+  carte: { borderWidth: Stroke.hairline, borderRadius: Radius.card, padding: 20, gap: 12 },
+  // Même étiquette que celle de `ActionCard` — 13/18, interlettrage +0,3, en 700 par la prop
+  // `weight` —, nommée `TypeScale.label` depuis le 24/09/2026 (`v1-29`).
+  etiquette: TypeScale.label,
   // 4 px de plus que le `gap` de la carte : les boutons forment un groupe, pas deux lignes de
   // texte de plus.
   sorties: { gap: Spacing.two, marginTop: 4 },

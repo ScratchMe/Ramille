@@ -25,9 +25,7 @@ export default function NotFound() {
       <TitreDePage titre={NOT_FOUND_PAGE_TITLE} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
-          <ThemedText type="title" weight={600} style={styles.title}>
-            Cette page n’existe pas
-          </ThemedText>
+          <ThemedText type="display">Cette page n’existe pas</ThemedText>
           <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
             Le lien est peut-être incomplet, ou la page a changé d’adresse.
           </ThemedText>
@@ -45,7 +43,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
   content: { flex: 1, justifyContent: 'center', gap: Spacing.three },
-  title: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   body: { fontSize: 16, lineHeight: 24 },
   footer: { gap: Spacing.five },
 });

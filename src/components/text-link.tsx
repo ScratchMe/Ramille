@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ThemedText, type ThemedTextProps } from '@/components/themed-text';
-import { ControlHeight } from '@/constants/theme';
+import { ControlHeight, Radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 // Texte cliquable — le motif le plus répandu du produit (retours, liens de pied d'écran,
 // « Je ne sais pas », « Voir les autres modes »…), présent une vingtaine de fois.
@@ -12,9 +13,20 @@ import { ControlHeight } from '@/constants/theme';
 // libellé accessible recopié à côté du texte visible finit toujours par ne plus lui
 // correspondre. Ici il n'y a rien à recopier : **le libellé accessible EST le texte affiché.**
 //
-// La cible tactile est portée à 44 px de haut (recommandation WCAG 2.5.8 / Material) sans
-// changer la position du texte : le padding est vertical et le composant reste aligné comme
-// avant dans les colonnes où il vit.
+// La cible tactile est portée à `ControlHeight.target` de haut — 48 depuis le 24/09/2026, la cible
+// de Material ; ce commentaire disait 44 et l'attribuait à WCAG 2.5.8, qui ne demande que 24 — sans
+// changer la position du texte : la hauteur est un minimum centré, et le composant reste aligné
+// comme avant dans les colonnes où il vit.
+//
+// **Sous le doigt, le texte se souligne** (24/09/2026, décision n° 6, `v1-29`) : c'est le retour au
+// toucher d'un lien, instantané et sans animation, qui ne change ni sa couleur — elle porte déjà un
+// sens (accent, tertiaire) — ni sa place.
+//
+// **Un lien déjà souligné au repos prend la teinte appuyée à la place** (contre-lecture du
+// 25/09/2026) : « Supprimer mon compte », « Changer d'avis » et leurs deux « Annuler » portent leur
+// soulignement en permanence, donc le souligner sous le doigt ne changeait rien — exactement le
+// « l'app n'a pas pris mon geste » que la décision n° 6 ferme. La cible prend `backgroundPressed`,
+// la teinte des surfaces neutres sous le doigt ; le texte ne bouge pas.
 export function TextLink({
   label,
   onPress,
@@ -46,6 +58,9 @@ export function TextLink({
   containerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<TextStyle>;
 } & Omit<ThemedTextProps, 'children' | 'style' | 'onPress'>) {
+  const theme = useTheme();
+  const dejaSouligne = StyleSheet.flatten(style)?.textDecorationLine === 'underline';
+
   return (
     <Pressable
       onPress={onPress}
@@ -53,16 +68,29 @@ export function TextLink({
       accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityHint={hint}
-      accessibilityState={{ disabled: !!disabled, ...(expanded === undefined ? {} : { expanded }) }}
-      style={[styles.cible, containerStyle]}
+      // `aria-expanded` et non `accessibilityState.expanded`, que react-native-web ignore : sur web,
+      // « Comment ce chiffre est calculé » (`BlocMethode`) ne disait ni « développé » ni « réduit ».
+      // `undefined` ne rend aucun attribut, ce qui est la règle de la prop. L'inactivité passe par
+      // `disabled`, dont `Pressable` tire `aria-disabled` des deux côtés.
+      aria-expanded={expanded}
+      style={({ pressed }) => [
+        styles.cible,
+        containerStyle,
+        pressed && !disabled && dejaSouligne && [styles.cibleAppuyee, { backgroundColor: theme.backgroundPressed }],
+      ]}
     >
-      <ThemedText {...textProps} style={style}>
-        {label}
-      </ThemedText>
+      {({ pressed }) => (
+        <ThemedText {...textProps} style={[style, pressed && !disabled && !dejaSouligne && styles.appuye]}>
+          {label}
+        </ThemedText>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   cible: { minHeight: ControlHeight.target, justifyContent: 'center' },
+  appuye: { textDecorationLine: 'underline' },
+  // Le rayon de l'encadré, pour que la teinte ne soit pas un rectangle à angles vifs autour d'un mot.
+  cibleAppuyee: { borderRadius: Radius.notice },
 });

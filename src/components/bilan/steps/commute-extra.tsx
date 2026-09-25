@@ -1,9 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
@@ -16,6 +18,16 @@ import {
   type TransportModeId,
 } from '@/constants/transport-modes';
 import { PARTS_DU_SECOND_MODE, type BilanAnswers } from '@/types/bilan';
+
+/** Écrite une fois : le titre de l'étape et le nom du « Oui / Non » (`GroupeDeChoix`). */
+const QUESTION_SECOND_MODE = 'Utilises-tu un second mode en complément ?';
+
+/**
+ * Écrite une fois : l'intitulé de la liste imbriquée et le nom de son groupe. La liste n'en avait pas
+ * jusqu'au 25/09/2026 — des `radio` isolés sous le « Oui ». « Lequel ? » seul est court, et il
+ * suffit : le groupe s'ouvre juste après la question du second mode, dont il est la suite.
+ */
+const QUESTION_LEQUEL = 'Lequel ?';
 
 // B1.6 / B1.7 — second mode Oui/Non, puis « Lequel ? » imbriqué si Oui.
 //
@@ -39,15 +51,14 @@ export function CommuteExtraStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">
-          Utilises-tu un second mode en complément ?
-        </ThemedText>
+        <TitreDEtape>{QUESTION_SECOND_MODE}</TitreDEtape>
         <ThemedText type="small" themeColor="textTertiary">
           Par exemple vélo puis train.
         </ThemedText>
-        <View style={styles.row}>
+        <GroupeDeChoix question={QUESTION_SECOND_MODE} style={styles.row}>
           <Chip
             label="Oui"
+            role="radio"
             selected={answers.commute_second_mode_used === true}
             onPress={() => update({ commute_second_mode_used: true })}
             flex
@@ -56,20 +67,23 @@ export function CommuteExtraStep({
           />
           <Chip
             label="Non"
+            role="radio"
             selected={answers.commute_second_mode_used === false}
             onPress={() => update({ commute_second_mode_used: false, commute_second_mode: null })}
             flex
             radius={16}
             selectedStyle="outline"
           />
-        </View>
+        </GroupeDeChoix>
 
         {answers.commute_second_mode_used === true && (
           <ThemedView type="backgroundElement" style={styles.nestedBox}>
             <ThemedText type="small" themeColor="textTertiary">
-              Lequel ?
+              {QUESTION_LEQUEL}
             </ThemedText>
-            <View style={styles.nestedList}>
+            {/* Chaque précision — motorisation, type, part du trajet — est son propre groupe, posé
+                dans celui-ci sous le mode qu'elle décrit (`GroupeDeChoix` dit pourquoi). */}
+            <GroupeDeChoix question={QUESTION_LEQUEL} style={styles.nestedList}>
               {secondModeChoices.map((modeId) => (
                 <View key={modeId}>
                 <ModeListItem
@@ -149,7 +163,7 @@ export function CommuteExtraStep({
                 )}
                 </View>
               ))}
-            </View>
+            </GroupeDeChoix>
 
           </ThemedView>
         )}

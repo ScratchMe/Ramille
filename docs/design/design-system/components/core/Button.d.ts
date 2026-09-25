@@ -9,6 +9,13 @@ export interface ButtonProps {
   disabled?: boolean;
   /** Prend la largeur restante d'une rangée (Retour + Suivant). */
   flex?: boolean;
+  /**
+   * Le bouton est posé sur une surface grise ou teintée (la carte du point) : un secondaire y prend
+   * le fond de l'écran et un filet `border`, au lieu du gris des panneaux. Sans effet sur le principal.
+   */
+  onPanel?: boolean;
+  /** Précision annoncée après le titre sur Android (« Répondre oui pour ton trajet domicile-travail »). Sans effet sur web. */
+  accessibilityHint?: string;
   style?: React.CSSProperties;
 }
 export declare function Button(props: ButtonProps): JSX.Element;

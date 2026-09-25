@@ -244,6 +244,16 @@ la page se rend entière avant que la base ne réponde. Deux règles de §1.7 so
 commentaire, parce qu'elles se réintroduisent toutes seules : l'état se **copie** depuis l'instantané, et
 une coche s'écrit tout de suite là où seule la frappe se regroupe.
 
+**Et il avait décroché de son document sans que rien ne le dise** (relevé le 25/09/2026, en le
+mettant à jour pour les textes de `v1-29`) : régénéré le 20/09, il n'avait suivi ni les dix pistes de
+C4.4, ni la porte du contexte de C6.4 (cinq lignes, 07.5 à 07.9), ni les corrections tirées de la
+séance du 18/09 — alors que le `.md`, lui, les portait. La comparaison qui l'a montré se refait en
+dix lignes : extraire chaque `{ ref, faire, attendre }` de l'artefact et chaque ligne de tableau du
+`.md`, normaliser (balises, guillemets, ponctuation) et comparer par référence. **À refaire à chaque
+retouche du `.md`**, puisque c'est lui la source. Sa base garde la séance du 18/09/2026 — ses
+constats vivent en `v1-13` §14 — tant qu'on n'a pas touché « Tout effacer » : l'en-tête de la page
+le dit.
+
 **La seconde feuille, écrite le 21/09/2026, change de principe** : elle ne rejoue pas un parcours,
 elle ne joue que **ce qui est neuf depuis la séance précédente**, en posant qu'il n'y a pas de
 régression sur le reste. Le pari est que les gardes automatiques couvrent le chemin nominal — le

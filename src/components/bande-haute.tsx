@@ -1,9 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
-import { CompteBouton } from '@/components/compte-bouton';
+import { CompteBouton, ICONE_DU_COMPTE } from '@/components/compte-bouton';
 import { ThemedText } from '@/components/themed-text';
 import { APP_NAME } from '@/constants/produit';
-import { ControlHeight } from '@/constants/theme';
+import { ControlHeight, Spacing, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Bande haute des deux onglets — retour d'appareil du 07/09/2026.
@@ -25,7 +25,11 @@ export function BandeHaute() {
   return (
     <View style={[styles.bande, { borderBottomColor: theme.border }]}>
       <View style={styles.creneau} />
-      <ThemedText weight={600} style={styles.nom} accessibilityRole="header">
+      {/* **Un repère, pas un titre** (24/09/2026, `v1-29`). Annoncé en en-tête, le nom passait
+          avant le titre de chaque écran : sur web un `<h2>` devant le `<h1>`, et sur Android la
+          première étape de la navigation par titres sur chaque onglet, toujours la même. Le titre
+          de l'écran est le premier titre ; le nom situe, il ne commence rien. */}
+      <ThemedText weight={600} style={styles.nom}>
         {APP_NAME}
       </ThemedText>
       <View style={styles.creneau}>
@@ -39,12 +43,15 @@ const styles = StyleSheet.create({
   bande: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
-    // 13 et non Spacing.four : l'icône du compte mesure 22 dans une cible de 44, son bord
-    // visible tombe donc à 13 + 11 = 24 — la marge du contenu défilant juste en dessous.
-    paddingHorizontal: 13,
+    height: ControlHeight.topBand,
+    // **Le bord visible de l'icône du compte tombe sur la marge du contenu** (`Spacing.four`),
+    // celle du contenu défilant juste en dessous : la marge de la bande s'en déduit, l'icône
+    // étant centrée dans sa cible. Elle valait 13 écrit en dur, juste pour une cible de 44 ; la
+    // cible passant à 48 le 24/09/2026 (`v1-29`), le même 13 aurait décalé l'icône de 2 px vers
+    // l'intérieur — d'où le calcul plutôt qu'un 11 recopié.
+    paddingHorizontal: Spacing.four - (ControlHeight.target - ICONE_DU_COMPTE) / 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   creneau: { width: ControlHeight.target, alignItems: 'center', justifyContent: 'center' },
-  nom: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 24, letterSpacing: -0.1 },
+  nom: { ...TypeScale.card, flex: 1, textAlign: 'center', letterSpacing: -0.1 },
 });

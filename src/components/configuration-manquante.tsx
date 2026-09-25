@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { decrireProbleme, type ProblemeConfiguration } from '@/types/configuration';
 
@@ -31,6 +31,9 @@ export function ConfigurationManquante({ problemes }: { problemes: ProblemeConfi
             L’app ne peut pas démarrer sans sa connexion à Supabase.
           </ThemedText>
 
+          {/* La chasse fixe reste (24/09/2026, `v1-29`, où elle est réservée aux sources et aux codes
+              techniques) : chaque ligne nomme une variable d'environnement et, s'il y a lieu, sa
+              valeur fautive — des clés à recopier au caractère près. */}
           <View style={[styles.bloc, { borderColor: theme.border }]}>
             {problemes.map((probleme, index) => (
               <ThemedText
@@ -78,7 +81,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   contenu: { padding: Spacing.four, gap: Spacing.four },
-  bloc: { borderWidth: 1, borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
+  bloc: { borderWidth: Stroke.hairline, borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
   ligne: { fontSize: 12, lineHeight: 18 },
   section: { gap: Spacing.two },
 });

@@ -1,4 +1,4 @@
-/** Champ numérique du questionnaire (distance) — 64 px, bordure accent. */
+/** Champ numérique du questionnaire (distance) — 64 px, contour au repos, accent une fois un nombre saisi. */
 export interface NumericFieldProps {
   value: number | null;
   onChange?: (value: number | null) => void;

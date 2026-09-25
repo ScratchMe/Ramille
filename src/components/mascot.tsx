@@ -81,7 +81,10 @@ const LEAF_PATH = 'M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z';
 // voici la correspondance, et c'est le seul endroit du composant qui connaisse une couleur.
 // `rosee` n'est pas un jeton de `Colors` — la goutte est blanche dans les deux thèmes, parce que
 // la feuille reste verte dans les deux et qu'une goutte ne se lit comme de l'eau qu'en étant plus
-// claire que ce sur quoi elle repose.
+// claire que ce sur quoi elle repose. **Et ce n'est pas `onAccent`**, bien qu'il vaille le même
+// blanc depuis le 24/09/2026 (`v1-29`) : `onAccent` est le texte posé sur l'accent, qui foncerait
+// le jour où un accent plus clair l'exigerait — la goutte, elle, doit rester plus claire que la
+// feuille quoi qu'il arrive.
 const COULEUR: Record<MascotColorToken, string> = {
   accentMuted: Colors.light.accentMuted,
   mascotAccessory: Colors.light.mascotAccessory,

@@ -1,10 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
 import { OCCUPATIONS_LONG_TRAJET, type BilanAnswers } from '@/types/bilan';
 
@@ -42,6 +44,21 @@ const LIBELLE_PLAFOND = `${MAX_TRAJETS} trajets ou plus`;
  */
 const PLAFOND_OCCUPATION = OCCUPATIONS_LONG_TRAJET[OCCUPATIONS_LONG_TRAJET.length - 1];
 
+/**
+ * L'intitulé affiché au-dessus de chaque série, et le nom de son groupe qui s'en dérive — les deux
+ * écrits une fois (25/09/2026).
+ *
+ * **Le nom n'est pas l'intitulé, et c'est l'une des deux exceptions de `GroupeDeChoix`** : « En
+ * train » ne se comprend qu'avec le titre de l'écran, or en navigation de contrôle en contrôle ou en
+ * exploration tactile le groupe arrive seul. Il porte donc la forme complète, qui **contient**
+ * l'intitulé : ce qu'on entend est ce qu'on lit, plus son contexte. Dérivé plutôt que recopié, pour
+ * qu'un intitulé retouché ne laisse pas derrière lui un nom qui dit autre chose.
+ */
+const EN_TRAIN = 'En train';
+const EN_AUTOCAR = 'En autocar';
+const EN_VOITURE = 'En voiture';
+const nomDeLaSerie = (intitule: string) => `Trajets longue distance ${intitule.toLowerCase()}`;
+
 const OPTIONS_OCCUPATION = OCCUPATIONS_LONG_TRAJET.map((n) => ({
   value: n,
   label: n === PLAFOND_OCCUPATION ? `${n}+` : String(n),
@@ -64,9 +81,9 @@ export function LongTripsStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">
+        <TitreDEtape>
           Et les trajets de plus de 300 km ?
-        </ThemedText>
+        </TitreDEtape>
         <ThemedText type="small" themeColor="textTertiary">
           Sur une année type, hors avion.
         </ThemedText>
@@ -74,22 +91,18 @@ export function LongTripsStep({
 
       <View style={styles.field}>
         <ThemedText type="small" themeColor="textTertiary">
-          En train
+          {EN_TRAIN}
         </ThemedText>
-        {/* `radiogroup` ferme la série, et **c'est son libellé qui la distingue, pas son rôle**
-            (A2-9) : les séries de l'étape sont rigoureusement identiques — la même rangée, de
-            « 0 » au plafond, rendue depuis la même liste, trois fois depuis C4.4 — et l'intitulé
-            qui les qualifie est un frère dans l'arbre, pas un libellé rattaché. En lecture séquentielle
-            il précède bien le groupe, mais en navigation de contrôle en contrôle ou en
-            exploration tactile plus rien ne disait dans lequel on se trouve. Nommer le groupe le
-            dit une fois ; le répéter sur chaque puce le dirait autant de fois qu'il y en a — un
-            nombre qu'on ne recopie pas ici, la plage étant déjà passée de 6 à 10 sans que cette
-            phrase le suive. Même motif que `ChoixDeRappel`. */}
-        <View
-          style={styles.chipsWrap}
-          accessibilityRole="radiogroup"
-          accessibilityLabel="Trajets longue distance en train"
-        >
+        {/* Le groupe ferme la série, et **c'est son nom qui la distingue, pas son rôle** (A2-9) : les
+            séries de l'étape sont rigoureusement identiques — la même rangée, de « 0 » au plafond,
+            rendue depuis la même liste — et l'intitulé qui les qualifie est un frère dans l'arbre,
+            pas un libellé rattaché. En lecture séquentielle il précède bien le groupe, mais en
+            navigation de contrôle en contrôle ou en exploration tactile plus rien ne disait dans
+            lequel on se trouve. Nommer le groupe le dit une fois ; le répéter sur chaque puce le
+            dirait autant de fois qu'il y en a — un nombre qu'on ne recopie pas ici, la plage étant
+            déjà passée de 6 à 10 sans que cette phrase le suive. Même motif que `ChoixDeRappel`, et
+            même composant depuis le 25/09/2026 : les trois séries posaient leur rôle elles-mêmes. */}
+        <GroupeDeChoix question={nomDeLaSerie(EN_TRAIN)} style={styles.chipsWrap}>
           {COUNT_CHOICES.map((n) => (
             <Chip
               key={n}
@@ -98,10 +111,10 @@ export function LongTripsStep({
               role="radio"
               selected={answers.train_long_trips_per_year === n}
               onPress={() => update({ train_long_trips_per_year: n })}
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       </View>
 
       {/* C4.4 — le troisième compteur, entre les deux modes collectifs et la voiture. B3.4 ne
@@ -117,13 +130,9 @@ export function LongTripsStep({
           qu'il fallait le poser. */}
       <View style={styles.field}>
         <ThemedText type="small" themeColor="textTertiary">
-          En autocar
+          {EN_AUTOCAR}
         </ThemedText>
-        <View
-          style={styles.chipsWrap}
-          accessibilityRole="radiogroup"
-          accessibilityLabel="Trajets longue distance en autocar"
-        >
+        <GroupeDeChoix question={nomDeLaSerie(EN_AUTOCAR)} style={styles.chipsWrap}>
           {COUNT_CHOICES.map((n) => (
             <Chip
               key={n}
@@ -132,21 +141,20 @@ export function LongTripsStep({
               role="radio"
               selected={answers.coach_long_trips_per_year === n}
               onPress={() => update({ coach_long_trips_per_year: n })}
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
       </View>
 
       <View style={styles.field}>
         <ThemedText type="small" themeColor="textTertiary">
-          En voiture
+          {EN_VOITURE}
         </ThemedText>
-        <View
-          style={styles.chipsWrap}
-          accessibilityRole="radiogroup"
-          accessibilityLabel="Trajets longue distance en voiture"
-        >
+        {/* Les deux précisions de la voiture suivent le groupe sans y entrer, à la différence de
+            celles d'un mode : elles dépendent d'un **compte** non nul, pas d'une option — il n'y
+            a pas de puce sous laquelle les ranger. */}
+        <GroupeDeChoix question={nomDeLaSerie(EN_VOITURE)} style={styles.chipsWrap}>
           {COUNT_CHOICES.map((n) => (
             <Chip
               key={n}
@@ -157,10 +165,10 @@ export function LongTripsStep({
               onPress={() =>
                 update({ car_long_trips_per_year: n, car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null })
               }
-              radius={14}
+              radius={Radius.chip}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
 
         {/* La précision s'ouvre sous les puces qui la déclenchent — cf.
             `precision-mode.tsx`. */}
@@ -192,8 +200,10 @@ export function LongTripsStep({
         )}
       </View>
 
-      <ThemedText type="code" themeColor="textTertiary">
-        distances moyennes par défaut · 800 km train, 700 km autocar et voiture
+      {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10) : une phrase adressée à
+          la personne, comme la ligne jumelle des vols — d'où sa majuscule. */}
+      <ThemedText type="small" themeColor="textTertiary">
+        Distances moyennes par défaut · 800 km train, 700 km autocar et voiture
       </ThemedText>
     </View>
   );

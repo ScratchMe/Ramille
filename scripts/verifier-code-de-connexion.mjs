@@ -304,7 +304,13 @@ if (!fs.existsSync(dist)) {
 }
 
 const serveur = await servirExport(dist, PORT);
-const navigateur = await chromium.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+// `CHROMIUM_PATH` comme ses voisins (`verifier-parcours-reel.mjs`, les contrôles d'export) : hors CI,
+// l'environnement fournit son Chromium et non celui que Playwright télécharge. En CI la variable
+// n'est pas posée, et rien ne change.
+const navigateur = await chromium.launch({
+  args: ['--no-sandbox', '--disable-dev-shm-usage'],
+  ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),
+});
 const marque = Date.now().toString(36);
 
 try {

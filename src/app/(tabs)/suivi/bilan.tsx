@@ -11,6 +11,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
 import {
@@ -18,6 +19,7 @@ import {
   bilanSansEmissions,
   comparisonNote,
   dominantHeadline,
+  etiquetteDuPosteDominant,
   modeResultat,
   montreMoyenneFrancaise,
   NOTE_MOBILITE_CONTRAINTE,
@@ -168,6 +170,8 @@ async function copierDansLePressePapier(
 //
 // Elle ne se rend pas en relecture, et c'était déjà le cas : le suivi est l'histoire de la
 // personne, pas un endroit où relancer.
+const CHARGEMENT: LoadState = { status: 'loading' };
+
 export default function BilanResultat() {
   const theme = useTheme();
   // Deux entrées, un seul écran (cf. `src/types/resultat.ts`) : la fin du questionnaire pose
@@ -183,9 +187,18 @@ export default function BilanResultat() {
   // pile à chaque ouverture, le passer à `useTrackFocus` recompterait un retour de pile.
   useTrackView('resultat_view', { mode });
 
-  const [state, setState] = useState<LoadState>(
+  // **Avant l'hydratation, l'écran rend ce que contient le HTML statique** (24/09/2026, `v1-29`).
+  // L'export rend `/suivi/bilan` sans chaîne de requête, donc sans `id` : il servait l'écran
+  // d'erreur, pendant que le navigateur, qui lit l'URL, rendait le chargement — React le constatait
+  // à l'hydratation (erreur n° 418) et refaisait la page. Et quiconque ouvrait un bilan depuis un
+  // lien lisait « n'a pas pu être affiché » le temps que l'app démarre. Le chargement n'affirme
+  // rien, donc c'est lui que rendent le HTML et le rendu d'hydratation (`FRONT.md` §1.3,
+  // `EXPO.md` §2.2) ; l'état lu prend le relais au rendu suivant.
+  const apresHydratation = useApresHydratation();
+  const [stateLu, setState] = useState<LoadState>(
     id ? { status: 'loading' } : { status: 'error' }
   );
+  const state: LoadState = apresHydratation ? stateLu : CHARGEMENT;
   // **Le compteur est ce qui rend « Réessayer » autre chose qu'un bouton mort.** Repasser l'état à
   // `loading` ne relance rien : l'effet de chargement ne dépend que de `id`, qui n'a pas changé.
   // L'écran basculait alors sur la branche « Calcul de ton bilan… », sans bouton ni lien, pour
@@ -479,7 +492,11 @@ export default function BilanResultat() {
             Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
           </ThemedText>
           <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
-          <TextLink label="Revenir à mon suivi" onPress={() => router.replace('/suivi')} />
+          <TextLink
+            label="Revenir à mon suivi"
+            onPress={() => router.replace('/suivi')}
+            role="link"
+          />
         </SafeAreaView>
       </ThemedView>
     );
@@ -562,7 +579,12 @@ export default function BilanResultat() {
               // « enregistré » disait la mauvaise chose : ce qui est vrai, c'est qu'il n'est
               // accessible que d'ici. Un fait, pas une menace — et l'action dit ce qu'elle fait.
               accessibilityLabel="Ce bilan n’est accessible que depuis cet appareil. Le retrouver ailleurs, en rattachant un compte."
-              style={[styles.banner, { backgroundColor: theme.backgroundElement }]}
+              // La surface répond au doigt (24/09/2026, `v1-29`) : la teinte `backgroundPressed`,
+              // tout de suite et sans animation — rien ne disait que le geste avait été pris.
+              style={({ pressed }) => [
+                styles.banner,
+                { backgroundColor: pressed ? theme.backgroundPressed : theme.backgroundElement },
+              ]}
             >
               <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
                 Ce bilan n’est accessible que depuis cet appareil.
@@ -591,12 +613,20 @@ export default function BilanResultat() {
           <ThemedView type="backgroundSelected" style={styles.dominantCard}>
             {hasEmissions ? (
               <>
-                <ThemedText weight={600} themeColor="accentText" style={styles.dominantLabel}>
-                  Le déplacement qui pèse le plus
+                {/* **« Le déplacement qui pèse le plus » était faux quand le départage joue**
+                    (24/09/2026, `v1-29`) : à 5 % près le serveur retient le poste le plus régulier,
+                    et le profil de la recette voyait le domicile-travail (1,9 t) coiffé de cette
+                    étiquette au-dessus d'une barre de voyages à 2,0 t. L'étiquette se dérive des
+                    mêmes kilos que les barres ci-dessous — rien n'est recalculé ici. */}
+                <ThemedText type="small" weight={600} themeColor="accentText">
+                  {etiquetteDuPosteDominant(results)}
                 </ThemedText>
-                <ThemedText type="subtitle" weight={600} style={styles.dominantHeadline}>
-                  {dominantHeadline(results)}
-                </ThemedText>
+                {/* **Le type `display`, et plus un `subtitle` surchargé** (24/09/2026, `v1-29`) :
+                    32/38/−0,64 y était recopié à la main. Il s'annonce en en-tête de **niveau 1**, le
+                    défaut du type, et c'est juste ici : l'écran n'en a pas d'autre — « Ramille », dans
+                    la bande haute, n'est plus un en-tête depuis le 24/09/2026, et les intitulés des
+                    cartes n'en sont pas. C'est le titre de ce qu'on vient lire. */}
+                <ThemedText type="display">{dominantHeadline(results)}</ThemedText>
                 <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
                   {`${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`}
                 </ThemedText>
@@ -613,7 +643,7 @@ export default function BilanResultat() {
               // hors du test qui garde sa voix. Aucun chiffre n'est affiché dans cette branche,
               // donc la mascotte n'est jamais à côté d'un chiffre lourd.
               <>
-                <ThemedText weight={600} themeColor="accentText" style={styles.dominantLabel}>
+                <ThemedText type="small" weight={600} themeColor="accentText">
                   Ton bilan
                 </ThemedText>
                 <RamilleDit ligne={RAMILLE.bilanQuasiNul} mood="happy" size={36} />
@@ -655,7 +685,9 @@ export default function BilanResultat() {
                 jeton des *titres d'écran*. `salient` est celui des chiffres saillants (le cap de
                 la saison, l'écart entre deux bilans) : il vaut 30, et la hiérarchie tient
                 puisque la décision dominante reste au-dessus, à 32. */}
-            <ThemedText type="salient">{formatTonnes(results.total_co2_kg_year)}</ThemedText>
+            <ThemedText type="salient" style={styles.chiffres}>
+              {formatTonnes(results.total_co2_kg_year)}
+            </ThemedText>
             {/* **La question « d'où vient ce chiffre ? » se pose ici et nulle part ailleurs**
                 (C3.2). Sous le total, replié, parce que c'est le moment où elle naît — et parce
                 que ce total ne se compare à aucun autre simulateur sans savoir qu'il compte la
@@ -787,6 +819,8 @@ export default function BilanResultat() {
                 {equivalenceDeLaMarche}
               </ThemedText>
             )}
+            {/* **La chasse fixe reste, et c'est la seule place qui lui revient ici** (24/09/2026,
+                `v1-29`, décision n° 10) : c'est une source, pas une phrase adressée à la personne. */}
             <ThemedText type="code" themeColor="textTertiary">
               {CARBON_SOURCE_LABEL}
             </ThemedText>
@@ -819,6 +853,9 @@ export default function BilanResultat() {
               }
               style={styles.editLink}
             />
+            {/* En chasse fixe, et c'est voulu (24/09/2026, `v1-29`) : ce n'est pas une phrase mais une
+                adresse à recopier à la main, où la chasse fixe départage « l » de « 1 » et « O » de
+                « 0 ». La phrase qui l'introduit, juste au-dessus, est en Spline Sans. */}
             {partage.statut === 'indisponible' && (
               <ThemedText
                 type="code"
@@ -937,10 +974,20 @@ function CompareRow({
   return (
     <View style={styles.compareRow}>
       <View style={styles.compareHeader}>
-        <ThemedText weight={bold ? 600 : 400} type="small" themeColor={bold ? 'text' : 'textSecondary'}>
+        <ThemedText
+          weight={bold ? 600 : 400}
+          type="small"
+          themeColor={bold ? 'text' : 'textSecondary'}
+          style={styles.compareLabel}
+        >
           {label}
         </ThemedText>
-        <ThemedText weight={bold ? 600 : 400} type="small" themeColor={bold ? 'text' : 'textSecondary'}>
+        <ThemedText
+          weight={bold ? 600 : 400}
+          type="small"
+          themeColor={bold ? 'text' : 'textSecondary'}
+          style={styles.chiffres}
+        >
           {value}
         </ThemedText>
       </View>
@@ -993,14 +1040,21 @@ const styles = StyleSheet.create({
   bannerText: { flex: 1 },
   enTete: { gap: Spacing.half },
   dominantCard: { borderRadius: 24, padding: 22, gap: 10 },
-  dominantLabel: { fontSize: 14, lineHeight: 20 },
-  dominantHeadline: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   dominantBody: { fontSize: 16, lineHeight: 24 },
   totalBlock: { gap: 4 },
+  // **Chiffres tabulaires** (24/09/2026, `v1-29`) : le total, et la colonne de valeurs des barres
+  // qui s'alignent à droite d'une ligne à l'autre. Spline Sans porte la fonction `tnum`.
+  chiffres: { fontVariant: ['tabular-nums'] },
   compareCard: { borderRadius: 20, padding: 20, gap: 14 },
   bars: { gap: 8 },
   compareRow: { gap: 8 },
-  compareHeader: { flexDirection: 'row', justifyContent: 'space-between' },
+  compareHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
+  // **Le libellé cède, la valeur jamais** (24/09/2026, audit d'accessibilité de `v1-29`, 1.4.4) :
+  // sans `flexShrink`, rien ne dit au libellé de laisser la place, et à 200 % de taille de texte un
+  // libellé long peut tasser la valeur ou la pousser hors de la ligne — relevé par l'audit, pas
+  // mesuré sur appareil. C'est la règle d'`EcartParPoste` : la valeur porte l'information, le
+  // libellé se comprend sur deux lignes.
+  compareLabel: { flexShrink: 1, minWidth: 0 },
   barRail: { height: 14, borderRadius: 7, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 7 },
   // Un seul bouton, une bordure fine plutôt qu'une rupture nette : le pied ne pèse plus que

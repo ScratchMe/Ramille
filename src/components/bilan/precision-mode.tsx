@@ -1,5 +1,6 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -35,9 +36,12 @@ import { Radius, Spacing } from '@/constants/theme';
 //     escalier : deux puces, puis une, puis une. Une par rangée, l'alignement est régulier,
 //     et un libellé long ne risque plus d'être rogné — le piège de `baseFlex` dans `chip.tsx`.
 //
-// Le rôle d'accessibilité suit gratuitement : `ModeListItem` s'annonce en `radio`, seul rôle
-// qui dit « sélectionné », alors qu'une puce s'annonce en `button`. Ces réponses sont bien
-// des choix exclusifs.
+// Le rôle d'accessibilité suivait gratuitement : `ModeListItem` s'annonce en `radio`, seul rôle
+// qui dit « sélectionné », alors qu'une puce s'annonçait en `button` — ce n'est plus vrai depuis
+// le 24/09/2026, où toutes les puces ont reçu un rôle de choix (`chip.tsx`). Ces réponses sont
+// bien des choix exclusifs — et depuis le 24/09/2026 elles se rangent dans un `radiogroup` nommé
+// par la question, comme celles de `PrecisionChiffres` : « Électrique » annoncé seul ne dit pas
+// qu'il répond à « Quelle motorisation ? ».
 //
 // Le paramètre accepte un nombre autant qu'une chaîne : la part du second mode (C3.4) est une
 // fraction, parce que c'est ce que le calcul multiplie — traduire une énumération en fraction
@@ -58,7 +62,7 @@ export function PrecisionMode<T extends string | number>({
       <ThemedText type="small" themeColor="textSecondary">
         {question}
       </ThemedText>
-      <View style={styles.reponses}>
+      <GroupeDeChoix question={question} style={styles.reponses}>
         {options.map((option) => (
           <ModeListItem
             key={option.value}
@@ -68,7 +72,7 @@ export function PrecisionMode<T extends string | number>({
             nestedBackground
           />
         ))}
-      </View>
+      </GroupeDeChoix>
     </ThemedView>
   );
 }

@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/bilan/chip';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { NumericField } from '@/components/bilan/numeric-field';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -31,6 +33,16 @@ const BRACKETS: { value: LeisureDistanceBracket; label: string }[] = [
   { value: '15_30', label: '15 à 30 km' },
   { value: '30_plus', label: 'Plus de 30 km' },
 ];
+
+/** Écrite une fois : le titre de la seconde moitié de l'étape et le nom de la série de tranches. */
+const QUESTION_DISTANCE = 'Quelle distance aller, en général ?';
+
+/**
+ * Écrite une fois : le titre de la première moitié et le nom de la liste des modes. La liste n'avait
+ * pas de groupe jusqu'au 25/09/2026 — « Voiture (seul) » ne disait pas à quelle question il répond,
+ * et l'étape pose deux questions.
+ */
+const QUESTION_MODE = 'Avec quel mode, principalement ?';
 
 // B2.2 / B2.3 — les deux options voiture écrivent toujours le même `leisure_mode: 'voiture'`,
 // mais **le covoiturage compte désormais** (C3.5) : `leisure_is_carpool` le porte en base,
@@ -75,90 +87,95 @@ export function LeisureDetailStep({
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <ThemedText type="screenTitle">
-          Avec quel mode, principalement ?
-        </ThemedText>
+        <TitreDEtape>{QUESTION_MODE}</TitreDEtape>
+        {/* Le groupe ne porte que les modes et leurs précisions — chacune son propre groupe, posé
+            dedans sous le mode qu'elle décrit (`GroupeDeChoix`). « Voir les autres modes » le suit
+            sans y entrer : c'est une commande, pas une option, et il ne se rattache à aucune
+            ligne. Il garde sa place au pixel près, l'écart de la liste étant aussi celui qui les
+            sépare. */}
         <View style={styles.list}>
-          {modeChoices.map((choice) => {
-            const selected = selectedKey === choice.key;
-            return (
-              <View key={choice.key}>
-                <ModeListItem
-                  label={choice.label}
-                  selected={selected}
-                  onPress={() => {
-                    setSelectedKey(choice.key);
-                    // La motorisation, le type de deux-roues et la taille du covoiturage
-                    // rattachés au mode précédent sont effacés par `normaliserReponses`, pas
-                    // ici (audit A2-17).
-                    update({ leisure_mode: choice.modeId, leisure_is_carpool: choice.carpool });
-                  }}
-                />
+          <GroupeDeChoix question={QUESTION_MODE} style={styles.list}>
+            {modeChoices.map((choice) => {
+              const selected = selectedKey === choice.key;
+              return (
+                <View key={choice.key}>
+                  <ModeListItem
+                    label={choice.label}
+                    selected={selected}
+                    onPress={() => {
+                      setSelectedKey(choice.key);
+                      // La motorisation, le type de deux-roues et la taille du covoiturage
+                      // rattachés au mode précédent sont effacés par `normaliserReponses`, pas
+                      // ici (audit A2-17).
+                      update({ leisure_mode: choice.modeId, leisure_is_carpool: choice.carpool });
+                    }}
+                  />
 
-                {/* La précision s'ouvre sous l'élément qui la déclenche — cf.
-                    `precision-mode.tsx` pour la raison, qui n'est pas cosmétique. */}
-                {selected && choice.modeId === 'voiture' && (
-                  <View style={styles.precision}>
-                    <PrecisionMode
-                      question="Quelle motorisation ?"
-                      options={CAR_ENGINE_OPTIONS}
-                      valeur={answers.leisure_car_engine}
-                      onChange={(value) => update({ leisure_car_engine: value })}
-                    />
-                  </View>
-                )}
+                  {/* La précision s'ouvre sous l'élément qui la déclenche — cf.
+                      `precision-mode.tsx` pour la raison, qui n'est pas cosmétique. */}
+                  {selected && choice.modeId === 'voiture' && (
+                    <View style={styles.precision}>
+                      <PrecisionMode
+                        question="Quelle motorisation ?"
+                        options={CAR_ENGINE_OPTIONS}
+                        valeur={answers.leisure_car_engine}
+                        onChange={(value) => update({ leisure_car_engine: value })}
+                      />
+                    </View>
+                  )}
 
-                {selected && choice.modeId === 'deux_roues_motorise' && (
-                  <View style={styles.precision}>
-                    <PrecisionMode
-                      question="Quel type de deux-roues ?"
-                      options={TWO_WHEELER_TYPE_OPTIONS}
-                      valeur={answers.leisure_two_wheeler_type}
-                      onChange={(value) => update({ leisure_two_wheeler_type: value })}
-                    />
-                  </View>
-                )}
+                  {selected && choice.modeId === 'deux_roues_motorise' && (
+                    <View style={styles.precision}>
+                      <PrecisionMode
+                        question="Quel type de deux-roues ?"
+                        options={TWO_WHEELER_TYPE_OPTIONS}
+                        valeur={answers.leisure_two_wheeler_type}
+                        onChange={(value) => update({ leisure_two_wheeler_type: value })}
+                      />
+                    </View>
+                  )}
 
-                {/* C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont
-                    posées ici plutôt que déduites de B1 parce qu'on ne fait pas ses sorties
-                    comme son trajet : on peut aller au travail en RER et en week-end en TER. */}
-                {selected && choice.modeId === 'train' && (
-                  <View style={styles.precision}>
-                    <PrecisionMode
-                      question="Quel type de train ?"
-                      options={TRAIN_TYPE_OPTIONS}
-                      valeur={answers.leisure_train_type}
-                      onChange={(value) => update({ leisure_train_type: value })}
-                    />
-                  </View>
-                )}
+                  {/* C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont
+                      posées ici plutôt que déduites de B1 parce qu'on ne fait pas ses sorties
+                      comme son trajet : on peut aller au travail en RER et en week-end en TER. */}
+                  {selected && choice.modeId === 'train' && (
+                    <View style={styles.precision}>
+                      <PrecisionMode
+                        question="Quel type de train ?"
+                        options={TRAIN_TYPE_OPTIONS}
+                        valeur={answers.leisure_train_type}
+                        onChange={(value) => update({ leisure_train_type: value })}
+                      />
+                    </View>
+                  )}
 
-                {selected && choice.modeId === 'velo' && (
-                  <View style={styles.precision}>
-                    <PrecisionMode
-                      question="Quel type de vélo ?"
-                      options={VELO_TYPE_OPTIONS}
-                      valeur={answers.leisure_velo_type}
-                      onChange={(value) => update({ leisure_velo_type: value })}
-                    />
-                  </View>
-                )}
+                  {selected && choice.modeId === 'velo' && (
+                    <View style={styles.precision}>
+                      <PrecisionMode
+                        question="Quel type de vélo ?"
+                        options={VELO_TYPE_OPTIONS}
+                        valeur={answers.leisure_velo_type}
+                        onChange={(value) => update({ leisure_velo_type: value })}
+                      />
+                    </View>
+                  )}
 
-                {/* C3.5 — après la motorisation, sous la même option : les deux précisions
-                    décrivent la même voiture. */}
-                {selected && choice.carpool && (
-                  <View style={styles.precision}>
-                    <PrecisionChiffres
-                      question="Vous êtes combien dans la voiture ?"
-                      options={TAILLES_DE_COVOITURAGE}
-                      valeur={answers.leisure_carpool_size}
-                      onChange={(value) => update({ leisure_carpool_size: value })}
-                    />
-                  </View>
-                )}
-              </View>
-            );
-          })}
+                  {/* C3.5 — après la motorisation, sous la même option : les deux précisions
+                      décrivent la même voiture. */}
+                  {selected && choice.carpool && (
+                    <View style={styles.precision}>
+                      <PrecisionChiffres
+                        question="Vous êtes combien dans la voiture ?"
+                        options={TAILLES_DE_COVOITURAGE}
+                        valeur={answers.leisure_carpool_size}
+                        onChange={(value) => update({ leisure_carpool_size: value })}
+                      />
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </GroupeDeChoix>
           {!showMore && (
             <TextLink
               label="Voir les autres modes"
@@ -173,18 +190,19 @@ export function LeisureDetailStep({
 
       <View style={styles.block}>
         <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
-          Quelle distance aller, en général ?
+          {QUESTION_DISTANCE}
         </ThemedText>
-        <View style={styles.chipsWrap}>
+        <GroupeDeChoix question={QUESTION_DISTANCE} style={styles.chipsWrap}>
           {BRACKETS.map((bracket) => (
             <Chip
               key={bracket.value}
               label={bracket.label}
+              role="radio"
               selected={answers.leisure_distance_bracket === bracket.value}
               onPress={() => update({ leisure_distance_bracket: bracket.value })}
             />
           ))}
-        </View>
+        </GroupeDeChoix>
 
         {/* C3.6 — la seule tranche sans borne haute est aussi la seule qui demandait quelque
             chose de plus : « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait

@@ -201,10 +201,16 @@ export function SaisieDuCode({
           onPress={() => void verifier(code)}
           disabled={occupe || !codeSemblePlausible(code)}
         />
+        {/* **Deux boutons, pas des liens** (24/09/2026, audit d'accessibilité 4.1.2) : « Renvoyer un
+            code » agit dans l'écran — un nouvel envoi, un message — et ne mène nulle part ; annoncé
+            `link`, il promettait une navigation. « Utiliser une autre adresse » non plus : ce
+            commentaire le disait lien parce qu'il « ramène à la saisie de l'adresse », mais ses trois
+            appelants ne font que changer de phase dans le même écran (`setPhase('saisie')`), sans
+            quitter la route — une action sur place (contre-lecture du 25/09/2026). */}
         <TextLink
           label="Renvoyer un code"
           onPress={() => void surRenvoi()}
-          role="link"
+          role="button"
           type="small"
           themeColor="textTertiary"
           style={styles.centre}
@@ -212,7 +218,7 @@ export function SaisieDuCode({
         <TextLink
           label="Utiliser une autre adresse"
           onPress={onAutreAdresse}
-          role="link"
+          role="button"
           type="small"
           themeColor="textTertiary"
           style={styles.centre}

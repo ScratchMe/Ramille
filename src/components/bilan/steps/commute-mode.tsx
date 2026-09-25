@@ -1,10 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
-import { ThemedText } from '@/components/themed-text';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import {
   CAR_ENGINE_OPTIONS,
   COMMUTE_MODE_CHOICES,
@@ -15,10 +16,20 @@ import {
 import { Spacing } from '@/constants/theme';
 import { TAILLES_DE_COVOITURAGE, type BilanAnswers } from '@/types/bilan';
 
+/**
+ * Écrite une fois : le titre de l'étape et le nom de la liste des modes (`GroupeDeChoix`). La liste
+ * n'avait pas de groupe jusqu'au 25/09/2026 : neuf `radio` isolés, et « Voiture (seul) », atteint au
+ * clavier ou au doigt, ne disait pas à quelle question il répond.
+ */
+const QUESTION_MODE = 'Quel est ton mode de transport principal pour ce trajet ?';
+
 // B1.4. Le moteur (B1.4bis, hors spec d'origine — cf. migration
 // 20260904*_car_engine.sql) n'ajoute jamais d'entrée à la liste ci-dessus : question de
 // suivi affichée uniquement quand "voiture" est choisi, sur ce même écran plutôt qu'un
 // pas séparé, même logique que le "Lequel ?" imbriqué de commute-extra.tsx.
+//
+// Chaque précision est son propre groupe, posé **dans** celui des modes, juste sous l'option
+// qu'elle décrit — `GroupeDeChoix` dit pourquoi c'est la forme juste.
 export function CommuteModeStep({
   answers,
   update,
@@ -28,10 +39,8 @@ export function CommuteModeStep({
 }) {
   return (
     <View style={styles.container}>
-      <ThemedText type="screenTitle">
-        Quel est ton mode de transport principal pour ce trajet ?
-      </ThemedText>
-      <View style={styles.list}>
+      <TitreDEtape>{QUESTION_MODE}</TitreDEtape>
+      <GroupeDeChoix question={QUESTION_MODE} style={styles.list}>
         {COMMUTE_MODE_CHOICES.map((choice) => {
           const selected = answers.commute_mode === choice.modeId && answers.commute_is_carpool === choice.carpool;
           return (
@@ -125,7 +134,7 @@ export function CommuteModeStep({
             </View>
           );
         })}
-      </View>
+      </GroupeDeChoix>
 
       <MissingModeLink context="B1.4 mode domicile-travail" />
     </View>

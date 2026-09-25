@@ -1,9 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ChoiceRow } from '@/components/bilan/choice-row';
+import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import type { BilanAnswers } from '@/types/bilan';
+
+/** Écrite une fois : le titre de l'étape et le nom du « Oui / Non » (`GroupeDeChoix`). */
+const QUESTION_TRAJET = 'As-tu un trajet régulier pour le travail ou les études ?';
 
 // B1.1
 export function CommuteHasTripStep({
@@ -15,10 +20,8 @@ export function CommuteHasTripStep({
 }) {
   return (
     <View style={styles.container}>
-      <ThemedText type="screenTitle">
-        As-tu un trajet régulier pour le travail ou les études ?
-      </ThemedText>
-      <View style={styles.choices}>
+      <TitreDEtape>{QUESTION_TRAJET}</TitreDEtape>
+      <GroupeDeChoix question={QUESTION_TRAJET} style={styles.choices}>
         <ChoiceRow
           label="Oui"
           selected={answers.commute_has_regular_trip === true}
@@ -33,7 +36,7 @@ export function CommuteHasTripStep({
           // C'était la dernière des quatre listes tenues à la main.
           onPress={() => update({ commute_has_regular_trip: false })}
         />
-      </View>
+      </GroupeDeChoix>
       {/* **La seconde phrase est la limite du produit, et elle a mis neuf jours à arriver** (D7,
           décidé le 10/09/2026, livré le 19/09 par la contre-lecture qui a constaté son absence en
           écrivant `v1-24`). Elle est explicitement « une ligne, sans arbitrage » — ce qui l'a fait

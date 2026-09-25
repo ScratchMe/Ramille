@@ -2,12 +2,12 @@ import { StyleSheet, View } from 'react-native';
 
 import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Rail, Spacing } from '@/constants/theme';
 import { MASCOT_MIN_FACE_SIZE } from '@/types/mascot';
 import { useTheme } from '@/hooks/use-theme';
 
 // En-tête commun à tous les écrans du questionnaire (B1.1→B4) : mascotte, libellé de section,
-// "Étape N sur M", barre 6px — cf. maquette, largeur recalculée dynamiquement selon les
+// "Étape N sur M", rail `Rail` (6 px) — cf. maquette, largeur recalculée dynamiquement selon les
 // pas réellement visibles (branchements), pas un pourcentage fixe par écran.
 //
 // La mascotte est ici pour une raison précise : le questionnaire est le passage le plus long
@@ -47,7 +47,7 @@ export function ProgressHeader({ section, step, total }: { section: string; step
 const styles = StyleSheet.create({
   container: { gap: Spacing.two, paddingBottom: Spacing.two },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  track: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 3 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  track: { height: Rail.height, borderRadius: Rail.radius, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: Rail.radius },
 });

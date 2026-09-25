@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OngletIcone } from '@/components/onglet-icone';
 import { ThemedText } from '@/components/themed-text';
-import { FontFamily, Spacing } from '@/constants/theme';
+import { ControlHeight, FontFamily, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-parcours';
 import { etatDuPremierParcours, type EtapeDuPremierParcours } from '@/types/premier-parcours';
@@ -126,13 +126,26 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: theme.background,
           borderTopColor: theme.border,
-          borderTopWidth: 1,
+          borderTopWidth: Stroke.hairline,
           // La hauteur inclut l'encoche du bas : le navigateur réserve la place, la barre
           // n'est jamais en surimpression du contenu (c'est pourquoi `BottomTabInset`, qui
           // servait à compenser à la main, a été retiré au lot 0).
-          height: 60 + insets.bottom,
-          paddingTop: Spacing.two,
-          paddingBottom: insets.bottom + 12,
+          //
+          // **Chaque onglet est une cible d'au moins `ControlHeight.target`** (48, décision du
+          // 24/09/2026, `v1-29`), et c'est la barre qui la lui donne : l'onglet reçoit sa hauteur
+          // moins le filet du haut et les deux marges. Avec 8 et 12, il ne lui restait que
+          // **39 px** — mesuré sur l'export le 24/09/2026, et non les 40 de l'audit, qui oubliait
+          // le filet : la boîte se compte bordure comprise, sur web (`border-box`) comme en Yoga.
+          // Deux marges de `Spacing.one` lui en laissent 51 à hauteur de barre inchangée.
+          //
+          // Ce que ça déplace à l'écran : l'onglet empile la pastille et le libellé **depuis son
+          // haut** (`justifyContent: 'flex-start'` de react-navigation), donc le couple remonte de
+          // 4 px, et le libellé, qui débordait de l'onglet jusqu'à 2 px du bas de la barre, en
+          // garde 6. `scripts/verifier-etats-export.mjs` mesure la hauteur de chaque onglet sur
+          // l'export — c'est elle, et non ce calcul, qui dit que la cible tient.
+          height: ControlHeight.tabBar + insets.bottom,
+          paddingTop: Spacing.one,
+          paddingBottom: insets.bottom + Spacing.one,
           // **Un lieu n'apparaît que quand il a quelque chose à montrer** (C5.7). La barre est
           // masquée de la soumission du premier questionnaire à la fermeture de la carte « Ton
           // premier plan » : jusque-là, chaque écran n'a qu'un geste, et proposer deux lieux avant

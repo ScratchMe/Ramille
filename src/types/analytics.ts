@@ -129,7 +129,7 @@ export const SOURCES_RETROUVER = [
 export type SourceRetrouver = (typeof SOURCES_RETROUVER)[number];
 
 /**
- * Reconnaît la provenance passée en paramètre d'URL, ou retombe sur `resultat_transition`.
+ * Reconnaît la provenance passée en paramètre d'URL, ou retombe sur `inconnue`.
  *
  * **Le garde se dérive de la liste, il ne la recopie pas.** C'est la duplication qui avait
  * dérivé : l'écran de connexion filtrait sur trois valeurs écrites à la main, si bien qu'une
@@ -137,7 +137,8 @@ export type SourceRetrouver = (typeof SOURCES_RETROUVER)[number];
  * chercher le rattachement hors de tout interstitiel — était enregistrée comme l'interstitiel
  * lui-même, et gonflait exactement le chiffre qu'on voulait lui comparer.
  *
- * **Le repli est `inconnue`, et ce commentaire disait le contraire du corps** jusqu'au 21/09/2026 :
+ * **Le repli est `inconnue`, et ce commentaire disait le contraire du corps** jusqu'au 21/09/2026 —
+ * sa première ligne jusqu'au 24/09, la correction du 21 l'ayant laissée :
  * il annonçait `resultat_transition`, « parce que c'est le chemin historique ». C'était vrai la
  * veille et faux le jour d'après — l'interstitiel retiré, cette provenance est devenue la **mesure
  * de l'avant**, donc y verser chaque arrivée sans paramètre polluait le seul chiffre qui sert à

@@ -341,6 +341,32 @@ fait passer un échec de production pour un succès. Le critère que la session 
 — est l'apport le plus durable du chantier : il est opposable, là où « après la restitution » ne
 l'était pas.
 
+**Et le design system a été mis à l'épreuve le 24/09/2026**
+([`v1-29-challenge-du-design-system.md`](v1-29-challenge-du-design-system.md)), à la demande de la
+personne qui pilote : *« un rechallenge sincère, et qu'il puisse nous aider dans nos choix d'UX à
+venir »*. Quatre relevés — jetons, accessibilité, une base de référence externe, 76 captures du
+parcours réel — et onze arbitrages rendus le soir même. **Ce qui tient** est écrit en premier, pour
+qu'on ne le « corrige » pas : la palette claire passe partout, l'accent unique et l'absence de
+gamification sont confirmés. **Ce qui change pour la personne** : l'étiquette du poste dominant ne dit
+plus « pèse le plus » quand le départage à 5 % a joué ; « Oui » et « Non » ont le même poids ; au
+premier plan, les actions passent avant le cap, qui dit « par an » ; l'onglet actif, les champs vides
+et les contrôles sous le doigt se voient ; les cibles passent à 48 ; et, sur web, un choix coché
+s'annonce enfin coché — c'était le seul défaut critique de l'audit.
+
+**Trois chantiers en sortent, et aucun n'est fini dans cette livraison** :
+
+- **finir de synchroniser le kit** (décision n° 11) — la personne qui pilote a refusé de le réduire,
+  et a préféré qu'il reste un miroir du code. La livraison a synchronisé les fiches des composants
+  qu'elle a changés ; le reste est daté et chiffré en `v1-29` §5, avec la commande qui le refait :
+  des composants absents (40 fichiers sur 67 à la définition qui y est écrite, dont les quatre que
+  la livraison a créés), un catalogue d'écrans du handoff V1, des écarts antérieurs relevés en
+  chemin, et une session de design pour le faire. **À faire avant la prochaine session de design**,
+  qui partirait sinon d'un kit faux ;
+- **le thème sombre, après le lancement** (n° 8) : sa liste de reprise est en `v1-29` §6.1, build EAS
+  compris ;
+- **le paysage**, écart WCAG 1.3.4 **assumé pour la V1** (n° 9), et ce que le lever coûte : `v1-29`
+  §6.2.
+
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 
 **Le lot 2 a son canvas Claude Design, livré le 10/09/2026** : `docs/design/v1-14-boucle-engagement/`
@@ -350,9 +376,11 @@ des nouvelles répliques de Ramille et des textes produit), la base (§4), les c
 propriétaire (§5), les quatre jetons de couleur (§6), les accessoires de saison de la mascotte (§7), les
 écarts assumés par rapport au canvas (§10). Un chantier du lot 2 lit v1-14 avant v1-13 pour sa partie
 écran. Le **design system** formalisé à cette occasion vit dans `docs/design/design-system/` et
-s'invoque comme skill (`ramille-design`, `.claude/skills/ramille-design/SKILL.md`) ; c'est une
-photographie du dépôt, pas une source de vérité — en cas d'écart, le code et `CLAUDE.md` gagnent, et son
-catalogue reprend des écrans du handoff V1 qui n'existent plus (mot de passe). Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
+s'invoque comme skill (`ramille-design`, `.claude/skills/ramille-design/SKILL.md`). Ce n'est pas une
+source de vérité — en cas d'écart, le code et `CLAUDE.md` gagnent —, mais **ce n'est plus une
+photographie non plus : depuis le 24/09/2026, il se synchronise** (`v1-29` §5). Une PR qui change un
+jeton ou une règle le met à jour ; ce qui reste à rattraper, dont son catalogue qui reprend des
+écrans du handoff V1 qui n'existent plus (mot de passe), est le chantier décrit au §3. Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
 §4 — audit du 04/09/2026, 7 étapes (facteurs d'émission faux → boucle d'engagement cassée → suivi
 dans la durée qui manque) — est entièrement livré. Son §1 corrige deux erreurs de chiffre documentées ailleurs
 comme des choix assumés : l'API Impact CO2 **distingue bien** court/moyen/long-courrier (la

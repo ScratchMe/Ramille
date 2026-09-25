@@ -19,6 +19,8 @@ import {
   comparisonNote,
   dominantHeadline,
   dominantShareLabel,
+  ETIQUETTE_DU_PLUS_LOURD,
+  etiquetteDuPosteDominant,
   modeResultat,
   palierNote,
   partDuTotal,
@@ -27,6 +29,7 @@ import {
   urlDePartage,
   montreMoyenneFrancaise,
   NOTE_MOBILITE_CONTRAINTE,
+  type PoidsDesPostes,
   type ResultatBilan,
 } from '@/types/resultat';
 
@@ -157,6 +160,97 @@ describe('dominantShareLabel', () => {
     expect(dominantShareLabel(resultat({ dominant_poste_mode: 'deux_roues_scooter_electrique' }))).toBe(
       'Trajet domicile-travail en scooter électrique'
     );
+  });
+});
+
+/**
+ * **L'étiquette du poste dominant ne dit « pèse le plus » que quand c'est vrai** (24/09/2026,
+ * `v1-29`). Le serveur départage à 5 % près en faveur du poste le plus régulier ; le profil de la
+ * recette (voyages 2,0 t, domicile-travail 1,9 t) coiffait le domicile-travail de « Le déplacement
+ * qui pèse le plus » au-dessus de barres qui disent l'inverse.
+ *
+ * Éprouvé en cassant ce qu'il garde, le 24/09/2026 — cinq mutations, chacune suivie de `npm test`,
+ * le fichier réécrit depuis sa copie entre deux :
+ *   - `kg > dominantKg` → `kg >= dominantKg` : 1 test tombe, l'égalité exacte ;
+ *   - les candidats pris parmi **tous** les autres postes, sans l'ordre du départage : 1, le
+ *     domicile-travail jamais nommé ;
+ *   - le premier candidat gardé au lieu du plus lourd : 1, les deux postes plus lourds ;
+ *   - `POSTE_EN_PHRASE` à la place de `formeInserable` : 4, tous ceux qui attendent « le plus
+ *     régulier » — les deux registres diffèrent justement sur les loisirs et les voyages ;
+ *   - l'étiquette générale rendue en toutes circonstances : les 4 mêmes.
+ */
+describe('etiquetteDuPosteDominant', () => {
+  const poids = (
+    dominant_poste: string,
+    commute: number,
+    leisure: number,
+    travel: number
+  ): PoidsDesPostes => ({
+    dominant_poste,
+    commute_co2_kg_year: commute,
+    leisure_co2_kg_year: leisure,
+    travel_co2_kg_year: travel,
+  });
+
+  it('garde l’étiquette générale quand le dominant est aussi le plus lourd', () => {
+    expect(etiquetteDuPosteDominant(poids('travel', 900, 300, 2400))).toBe(ETIQUETTE_DU_PLUS_LOURD);
+    expect(etiquetteDuPosteDominant(poids('commute', 1920, 333, 900))).toBe(
+      'Le déplacement qui pèse le plus'
+    );
+  });
+
+  // Le profil de `docs/recette/premier-parcours-web.md`, aux kilos près : c'est lui qui a montré le
+  // défaut, et c'est le premier profil du parcours réel.
+  it('dit « le plus régulier » sur le profil de la recette', () => {
+    expect(etiquetteDuPosteDominant(poids('commute', 1920, 333, 1978))).toBe(
+      'Le plus régulier, presque à égalité avec tes voyages'
+    );
+  });
+
+  it('vaut aussi entre les loisirs et les voyages', () => {
+    expect(etiquetteDuPosteDominant(poids('leisure', 0, 1000, 1040))).toBe(
+      'Le plus régulier, presque à égalité avec tes voyages'
+    );
+  });
+
+  // « Strictement » : à égalité exacte le dominant est aussi le plus lourd, et l'étiquette générale
+  // redevient vraie.
+  it('ne parle pas d’égalité quand les deux pèsent exactement autant', () => {
+    expect(etiquetteDuPosteDominant(poids('commute', 1000, 0, 1000))).toBe(ETIQUETTE_DU_PLUS_LOURD);
+  });
+
+  it('nomme le plus lourd quand deux postes pèsent plus que le dominant', () => {
+    expect(etiquetteDuPosteDominant(poids('commute', 1000, 1030, 1040))).toBe(
+      'Le plus régulier, presque à égalité avec tes voyages'
+    );
+    expect(etiquetteDuPosteDominant(poids('commute', 1000, 1045, 1040))).toBe(
+      'Le plus régulier, presque à égalité avec tes sorties du week-end'
+    );
+  });
+
+  // Le registre qu'on insère après une préposition (`FORME_INSERABLE`), pas le sujet de phrase :
+  // « tes sorties du week-end », jamais « tes loisirs du week-end ».
+  it('nomme l’autre poste dans le registre inséré', () => {
+    const etiquette = etiquetteDuPosteDominant(poids('commute', 500, 520, 0));
+    expect(etiquette).toBe('Le plus régulier, presque à égalité avec tes sorties du week-end');
+    expect(etiquette).not.toContain(POSTE_EN_PHRASE.leisure);
+  });
+
+  /**
+   * **Le domicile-travail gagne tout départage, donc il ne peut jamais être le plus lourd sans être
+   * dominant** — relevé dans `recompute_assessment_results` : il l'emporte dès qu'il atteint 95 %
+   * du plus lourd des deux autres. Une ligne qui le prétendrait ne peut venir que d'une règle serveur
+   * changée sans passer ici, et l'étiquette ne doit pas alors faire des loisirs un poste « plus
+   * régulier » que le trajet de chaque semaine.
+   */
+  it('ne nomme jamais le domicile-travail comme l’autre poste', () => {
+    const etiquette = etiquetteDuPosteDominant(poids('leisure', 2000, 1950, 0));
+    expect(etiquette).toBe(ETIQUETTE_DU_PLUS_LOURD);
+    expect(etiquette).not.toContain('trajet domicile-travail');
+  });
+
+  it('retombe sur l’étiquette générale pour un poste qu’elle ne connaît pas', () => {
+    expect(etiquetteDuPosteDominant(poids('teletravail', 0, 100, 200))).toBe(ETIQUETTE_DU_PLUS_LOURD);
   });
 });
 

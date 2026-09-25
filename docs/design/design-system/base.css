@@ -34,6 +34,19 @@ body {
   outline-offset: 2px;
 }
 
+/* Sous le doigt, un contrôle répond tout de suite et sans animation (24/09/2026, v1-29, décision
+   n° 6) — le `pressed` de `Pressable` dans le dépôt. Un style en ligne ne sait pas écrire `:active`,
+   même raison que `:focus-visible` ci-dessus ; le composant nomme donc sa teinte dans
+   `--teinte-appuyee` (accentPressed sur l'accent, backgroundPressed sur une surface neutre,
+   backgroundSelectedPressed sur une surface choisie), et la règle est ici. `!important` parce que le
+   fond au repos est un style en ligne. Un lien texte ne change pas de couleur : il se souligne. */
+[data-appui='fond']:active:not(:disabled) {
+  background: var(--teinte-appuyee) !important;
+}
+[data-appui='lien']:active:not(:disabled) > * {
+  text-decoration: underline !important;
+}
+
 /* Les illustrations non produites sont des placeholders rayés 135°, légende mono — la forme
    décrite par le readme, pour qu'un écran en construction n'invente pas la sienne. */
 .ramille-placeholder {

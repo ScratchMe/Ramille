@@ -1,7 +1,9 @@
-import { Text, type TextProps } from 'react-native';
+import { Children, type ReactNode } from 'react';
+import { Platform, Text, type TextProps } from 'react-native';
 
 import { Fonts, FontFamily, ThemeColor, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { espacesInsecables } from '@/types/typographie';
 
 const weightToFamily: Record<400 | 500 | 600 | 700, string> = {
   400: FontFamily.regular,
@@ -23,22 +25,54 @@ const defaultWeightByType = {
   link: 500,
   linkPrimary: 600,
   code: 500,
-  // Quatre types adossés à `TypeScale` (cf. theme.ts) : ils portent les tailles que les
+  // Cinq types adossés à `TypeScale` (cf. theme.ts) : ils portent les tailles que les
   // écrans redéclaraient un par un. `title`/`subtitle` restent tels quels — les migrer est
-  // le lot 4 de `v1-11`, pas celui-ci.
+  // le lot 4 de `v1-11`, pas celui-ci. `display` est arrivé le 24/09/2026 (`v1-29` §3).
   screenTitle: 600,
   salient: 600,
   cardTitle: 600,
   body: 500,
+  display: 600,
 } as const;
 
+type TypeDeTexte = keyof typeof defaultWeightByType;
+
+// Les types qui portent le titre d'un écran : ils sont annoncés en-têtes de niveau 1. Tout autre
+// en-tête — `subtitle`, ou un texte qui déclare lui-même `accessibilityRole="header"` — est une
+// section, donc de niveau 2 : sans niveau, react-native-web rend chaque en-tête en `<h1>`, et un
+// lecteur d'écran qui parcourt la page par titres ne distingue plus l'écran de ses sections.
+const TITRES_DECRAN: readonly TypeDeTexte[] = ['title', 'screenTitle', 'display'];
+
 export type ThemedTextProps = TextProps & {
-  type?: keyof typeof defaultWeightByType;
+  type?: TypeDeTexte;
   themeColor?: ThemeColor;
   weight?: 400 | 500 | 600 | 700;
+  /**
+   * Niveau d'en-tête sur web (`aria-level`), quand le niveau déduit du type ne convient pas —
+   * un `subtitle` qui est le seul titre de son écran, par exemple. Sans effet sur natif, où
+   * TalkBack n'annonce pas de niveau.
+   */
+  headingLevel?: 1 | 2 | 3;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, weight, ...rest }: ThemedTextProps) {
+// Les chaînes d'un texte reçoivent leurs espaces insécables ici, au rendu, et nulle part ailleurs
+// (`src/types/typographie.ts` dit pourquoi). Un enfant qui n'est pas une chaîne — un nombre, un
+// `ThemedText` imbriqué, qui fera de même pour ses propres chaînes — passe tel quel.
+function avecEspacesInsecables(enfants: ReactNode): ReactNode {
+  if (typeof enfants === 'string') return espacesInsecables(enfants);
+  if (!Array.isArray(enfants)) return enfants;
+  return Children.map(enfants, (enfant) => (typeof enfant === 'string' ? espacesInsecables(enfant) : enfant));
+}
+
+export function ThemedText({
+  style,
+  type = 'default',
+  themeColor,
+  weight,
+  headingLevel,
+  children,
+  ...rest
+}: ThemedTextProps) {
   const theme = useTheme();
   const resolvedWeight = weight ?? defaultWeightByType[type];
 
@@ -51,8 +85,14 @@ export function ThemedText({ style, type = 'default', themeColor, weight, ...res
   // `screenTitle` rejoint la liste : sans lui, migrer un écran vers ce type ferait perdre au
   // lecteur d'écran la navigation de titre en titre — ce que l'audit T11 avait mis du temps à
   // obtenir. Le rôle suit la taille, il ne se redéclare pas écran par écran.
+  // `display` suit la même règle : c'est un titre d'écran à une autre taille.
   const roleParDefaut =
-    type === 'title' || type === 'subtitle' || type === 'screenTitle' ? ('header' as const) : undefined;
+    type === 'title' || type === 'subtitle' || type === 'screenTitle' || type === 'display'
+      ? ('header' as const)
+      : undefined;
+  const role = rest.accessibilityRole ?? roleParDefaut;
+  const niveau = headingLevel ?? (TITRES_DECRAN.includes(type) ? 1 : 2);
+  const niveauSurWeb = role === 'header' && Platform.OS === 'web' ? { 'aria-level': niveau } : null;
 
   return (
     <Text
@@ -70,11 +110,14 @@ export function ThemedText({ style, type = 'default', themeColor, weight, ...res
         type === 'salient' && baseSizes.salient,
         type === 'cardTitle' && baseSizes.cardTitle,
         type === 'body' && baseSizes.body,
+        type === 'display' && baseSizes.display,
         style,
       ]}
-      accessibilityRole={rest.accessibilityRole ?? roleParDefaut}
-      {...rest}
-    />
+      accessibilityRole={role}
+      {...niveauSurWeb}
+      {...rest}>
+      {avecEspacesInsecables(children)}
+    </Text>
   );
 }
 
@@ -91,4 +134,5 @@ const baseSizes = {
   salient: TypeScale.salient,
   cardTitle: TypeScale.card,
   body: TypeScale.body,
+  display: TypeScale.display,
 } as const;

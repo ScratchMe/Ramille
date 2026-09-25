@@ -8,7 +8,8 @@ import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { deleteMyAccount, exportMyData } from '@/lib/compte';
 import { APP_NAME } from '@/constants/produit';
 import { RAMILLE } from '@/constants/mascotte';
@@ -38,7 +39,19 @@ import { RAMILLE } from '@/constants/mascotte';
 //     refermée sans rien choisir, affirmait deux fois un résultat qu'on n'a pas (A5-18, A6-18).
 //     Le message de succès vient donc de `exportMyData`, seul endroit qui sait ce qui s'est
 //     vraiment passé.
+//
+// **La carte est blanche et cernée, et c'est pour son bouton** (24/09/2026, `v1-29`). Elle était
+// un panneau gris (`backgroundElement`), la couleur exacte du bouton secondaire : posé dessus,
+// « Télécharger mes données » n'avait plus de contour et se lisait comme une ligne de texte — sur
+// la section qui porte le droit d'accès et la portabilité. Plutôt que d'habiller le bouton d'une
+// couleur venue d'ici, la carte passe à l'autre registre neutre du kit — fond blanc, filet
+// `border`, celui des cartes d'action —, et le bouton retrouve le fond sur lequel il est dessiné
+// partout ailleurs. Une couleur imposée au bouton depuis l'extérieur aurait aussi écrasé celle
+// qu'il prend sous le doigt : `Button` porte seul ses états.
 export function MonCompte() {
+  const theme = useTheme();
+  const carte = [styles.card, { borderColor: theme.border }];
+
   const [confirmation, setConfirmation] = useState(false);
   const [busy, setBusy] = useState<'export' | 'suppression' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -82,7 +95,7 @@ export function MonCompte() {
   // plus d'objet, et le laisser affiché sous un « C'est fait » inviterait à recommencer.
   if (supprime) {
     return (
-      <ThemedView type="backgroundElement" style={styles.card}>
+      <ThemedView style={carte}>
         <ThemedText weight={600} type="small">
           C’est fait.
         </ThemedText>
@@ -97,8 +110,11 @@ export function MonCompte() {
   }
 
   return (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText weight={600} type="small">
+    <ThemedView style={carte}>
+      {/* Un en-tête de section, parce que c'en est une : les pages légales et `/compte/suppression`
+          y envoient en la nommant, et un lecteur d'écran qui parcourt la page par titres doit
+          pouvoir s'y rendre (24/09/2026, `v1-29`). */}
+      <ThemedText weight={600} type="small" accessibilityRole="header">
         Mes données
       </ThemedText>
 
@@ -174,7 +190,7 @@ export function MonCompte() {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.two },
+  card: { borderRadius: Radius.card, borderWidth: Stroke.hairline, padding: Spacing.four, gap: Spacing.two },
   actions: { gap: Spacing.three, marginTop: Spacing.two },
   confirmation: { gap: Spacing.three },
   confirmationActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },

@@ -6,7 +6,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
-import { supabase } from '@/lib/supabase';
+import { ensureSession, supabase } from '@/lib/supabase';
 import {
   codeDuRetourDeLien,
   issueDuNavigateurDAuth,
@@ -168,10 +168,37 @@ export async function createSessionFromUrl(url: string): Promise<AuthResult> {
  *
  * Une adresse déjà rattachée à un autre compte rend `422 email_exists` — ce n'est pas une erreur
  * à afficher mais le signe que la personne cherchait « retrouver » (`suiteDeLaDemandeDeCode`).
+ *
+ * **La session d'abord, et ce n'est pas une précaution** (relevé le 25/09/2026, `v1-29` §4). La
+ * session anonyme s'ouvre en parallèle du premier affichage ; un « Recevoir un code » touché avant
+ * qu'elle existe faisait répondre `updateUser` par `AuthSessionMissingError`, **sans aucune
+ * requête** — et comme tout échec non reconnu mène à l'écran du code (la règle de non-divulgation
+ * de `suiteDeLaDemandeDeCode`), l'écran annonçait « Un code à 8 chiffres vient de partir » pour un
+ * envoi qui n'avait pas eu lieu. Reproduit à coup sûr en retardant la création de session, et
+ * deux fois sur cinq sans rien retarder, par `scripts/verifier-code-de-connexion.mjs` sur une stack
+ * qui venait de démarrer. `ensureSession()` partage l'appel en vol : si la racine l'a déjà lancé,
+ * on attend le même. Et une session qui ne s'ouvre pas se dit comme une **panne** — elle ne parle
+ * pas de l'adresse, et réessayer est le bon geste.
  */
 export async function demanderLeRattachement(email: string): Promise<AuthResult> {
+  try {
+    if (!(await ensureSession())) return { error: sessionIntrouvable() };
+  } catch (erreur) {
+    return { error: sessionIntrouvable(erreur) };
+  }
   const { error } = await supabase.auth.updateUser({ email: email.trim() });
   return { error };
+}
+
+/**
+ * L'erreur d'une demande qui n'a pas pu partir faute de session : sans `code` et au statut 0, donc
+ * une panne de transport pour `estPanneDeTransport` — le message dit de vérifier sa connexion et de
+ * réessayer, jamais qu'un code est parti.
+ */
+function sessionIntrouvable(cause?: unknown): Error {
+  return Object.assign(new Error('La session n’a pas pu s’ouvrir : rien n’a été envoyé.', { cause }), {
+    status: 0,
+  });
 }
 
 /**

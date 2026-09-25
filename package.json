@@ -75,7 +75,11 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/dist/"
+      "/dist/",
+      "<rootDir>/.claude/worktrees/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.claude/worktrees/"
     ],
     "collectCoverageFrom": [
       "src/types/**/*.ts",

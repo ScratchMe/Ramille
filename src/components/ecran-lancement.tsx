@@ -134,11 +134,15 @@ export function EcranLancement() {
     // Le rôle `progressbar` et l'état occupé annoncent l'attente ; `accessible` regroupe l'écran
     // en un seul élément, pour que « Chargement » soit tout ce qu'on entende d'un écran qui ne
     // demande rien.
+    //
+    // **L'état occupé passe par `aria-busy` seul** (24/09/2026, `v1-29`). L'objet
+    // `accessibilityState` qui le doublait n'atteint pas le web — react-native-web 0.21 ne le
+    // traduit plus, seuls les props `aria-*` y passent — et React Native lit `aria-busy` sur natif
+    // aussi : les deux disaient la même chose, et un seul des deux parlait partout.
     <View
       accessible
       accessibilityRole="progressbar"
       accessibilityLabel="Chargement"
-      accessibilityState={{ busy: true }}
       aria-busy
       style={[styles.ecran, { backgroundColor: theme.backgroundSelected }]}
     >

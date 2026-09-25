@@ -59,8 +59,8 @@ export function BlocMethode({ dateDuBilan }: { dateDuBilan: string | null }) {
 
 const styles = StyleSheet.create({
   bloc: { gap: Spacing.two },
-  // La cible tactile de 44 px reste, mais sans son centrage vertical par défaut : le lien
-  // s'aligne à gauche sous le total, pas au milieu d'une ligne vide.
+  // La cible tactile de `TextLink` (`ControlHeight.target`) reste, mais sans son centrage vertical
+  // par défaut : le lien s'aligne à gauche sous le total, pas au milieu d'une ligne vide.
   cible: { alignItems: 'flex-start' },
   contenu: { gap: Spacing.three },
   section: { gap: Spacing.one },

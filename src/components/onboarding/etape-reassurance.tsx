@@ -9,6 +9,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { type TitreFocalisable } from '@/lib/focus';
 
 // Étape 3/4 de l'onboarding, rendue par le pager de `src/app/onboarding/index.tsx`.
 //
@@ -18,14 +19,21 @@ import { Spacing } from '@/constants/theme';
 // Onboarding — Réassurance. Seul écran à fond teinté de l'onboarding, corps de
 // texte plus généreux (17/26 au lieu de 16/24) — le seul écran « chaleureux »,
 // cf. handoff design.
-export function EtapeReassurance({ onSuivant }: { onSuivant: () => void }) {
+export function EtapeReassurance({
+  onSuivant,
+  titre,
+}: {
+  onSuivant: () => void;
+  /** De quoi recevoir le focus quand le pager arrive sur cette page (`src/lib/focus.ts`). */
+  titre?: TitreFocalisable;
+}) {
   return (
     <ThemedView type="backgroundTinted" style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <ReassuranceIllustration style={styles.illustration} />
           <View style={styles.textBlock}>
-            <ThemedText type="title" weight={600} style={styles.title}>
+            <ThemedText type="display" {...titre}>
               Pas de jugement. Un état des lieux honnête.
             </ThemedText>
             <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
@@ -43,7 +51,8 @@ export function EtapeReassurance({ onSuivant }: { onSuivant: () => void }) {
                 voir avec un `noindex`, `/confidentialite` étant au contraire l'une des pages offertes
                 à l'indexation (elle est dans `sitemap.xml`). La règle du lien indexable ne vise que
                 les liens **sortants** du pied des pages légales (`EDITOR_CV_URL`) ; ce qui s'applique
-                ici est la cible de 44 px et le rôle annoncé (relevé le 14/09/2026). */}
+                ici est la cible tactile — 44 px au relevé du 14/09/2026, 48 depuis le 24/09
+                (`v1-29`) — et le rôle annoncé. */}
             <TextLink
               label="Ce qu’on enregistre, et pourquoi"
               onPress={() => router.push('/confidentialite')}
@@ -69,7 +78,6 @@ const styles = StyleSheet.create({
   content: { gap: Spacing.five },
   illustration: { height: 180 },
   textBlock: { gap: Spacing.four },
-  title: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   body: { fontSize: 17, lineHeight: 26 },
   footer: { gap: Spacing.five },
 });

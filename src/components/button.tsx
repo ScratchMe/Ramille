@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Radius } from '@/constants/theme';
+import { ControlHeight, Radius, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ButtonProps = {
@@ -14,6 +14,14 @@ export type ButtonProps = {
   /** Précision annoncée après le titre, quand celui-ci ne suffit pas hors contexte
    *  (« Oui » / « Non » d'un check-in, par exemple). */
   accessibilityHint?: string;
+  /**
+   * Le bouton est posé sur une surface grise ou teintée — la carte du point — et non sur le fond de
+   * l'écran. Un secondaire y prend le fond de l'écran et un filet, au lieu du gris des panneaux
+   * (24/09/2026, `v1-29`) : « Oui » et « Non » passés au même poids se sont retrouvés gris sur une
+   * carte grise, leur forme disparaissait et ils se lisaient comme du texte. Sans effet sur le
+   * principal, dont l'accent se voit partout.
+   */
+  onPanel?: boolean;
 };
 
 // Bouton pleine largeur, rayon 27px — cf. design tokens du handoff.
@@ -24,6 +32,13 @@ export type ButtonProps = {
 // boîte figée à 54 px ne grandissait pas avec lui. À 150 ou 200 %, le libellé débordait de son
 // bouton. `minHeight` + `paddingVertical` donnent exactement la même allure à taille normale
 // (24 px d'interligne + 2 × 15 = 54) et laissent le bouton grandir au lieu de déborder.
+//
+// **Il répond au toucher depuis le 24/09/2026** (décision n° 6 du challenge du design system,
+// `v1-29`) : aucun contrôle du produit ne changeait sous le doigt, ce qui se lit « l'app n'a pas pris
+// mon geste ». La surface prend sa teinte appuyée — `accentPressed` pour le principal,
+// `backgroundPressed` pour le secondaire — **instantanément et sans animation**, par le `style`
+// fonction de `Pressable`. Ni ondulation Android ni opacité : la première ne se voit pas sur web, la
+// seconde ferait baisser le contraste du libellé au moment même où on le touche.
 export function Button({
   title,
   onPress,
@@ -32,15 +47,20 @@ export function Button({
   flex,
   style,
   accessibilityHint,
+  onPanel,
 }: ButtonProps) {
   const theme = useTheme();
 
+  const surPanneau = onPanel && variant === 'secondary';
   const backgroundColor = disabled
     ? theme.backgroundElement
     : variant === 'primary'
       ? theme.accent
-      : theme.backgroundElement;
-  const textColor = disabled ? theme.textTertiary : variant === 'primary' ? '#FFFFFF' : theme.text;
+      : surPanneau
+        ? theme.background
+        : theme.backgroundElement;
+  const backgroundAppuye = variant === 'primary' ? theme.accentPressed : theme.backgroundPressed;
+  const textColor = disabled ? theme.textTertiary : variant === 'primary' ? theme.onAccent : theme.text;
 
   return (
     <Pressable
@@ -49,8 +69,15 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: !!disabled }}
-      style={[styles.base, { backgroundColor, flex: flex ? 1 : undefined }, style]}
+      // Pas d'`accessibilityState` : `disabled` suffit, et il est le seul à atteindre le web.
+      // `Pressable` de react-native-web en tire `aria-disabled` (et l'attribut `disabled` du
+      // `<button>` qu'il rend), React Native le range dans l'état que TalkBack annonce.
+      style={({ pressed }) => [
+        styles.base,
+        { backgroundColor: pressed && !disabled ? backgroundAppuye : backgroundColor, flex: flex ? 1 : undefined },
+        surPanneau && { borderWidth: Stroke.hairline, borderColor: theme.border },
+        style,
+      ]}
     >
       <ThemedText weight={variant === 'secondary' ? 500 : 600} style={{ color: textColor, fontSize: 16 }}>
         {title}

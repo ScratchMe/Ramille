@@ -5,6 +5,7 @@ import { formatTonnes } from '@/lib/format';
 import { saisonDe } from './saison';
 import {
   ancienneteEnMots,
+  barresDeLHistorique,
   daysSince,
   decisionsParSaison,
   ecartParPoste,
@@ -14,6 +15,7 @@ import {
   variationDepuisLeBilanPrecedent,
   formatDate,
   keepLatestPerDay,
+  legendeDeLEcart,
   libelleDeReponse,
   libellePeriodeAffiche,
   phraseDuRegimeDeRebilan,
@@ -367,6 +369,73 @@ describe('ecartParPoste', () => {
   it('rend une liste vide entre deux bilans entièrement nuls', () => {
     const nul = snapshot('2026-03-01T12:00:00Z', 0, { commute: 0, leisure: 0, travel: 0 });
     expect(ecartParPoste(nul, nul)).toEqual([]);
+  });
+});
+
+/**
+ * **La légende dit en mots le poste que l'accent désigne** (24/09/2026, `v1-29`) : elle disait la
+ * règle de la couleur sans jamais dire à quel poste elle s'appliquait, et les barres sont masquées
+ * aux lecteurs d'écran.
+ *
+ * Éprouvé en cassant ce qu'il garde, le 24/09/2026 : la légende d'avant remise telle quelle fait
+ * tomber les trois tests — elle ne nommait aucun poste et parlait d'accent en toutes
+ * circonstances ; la partie « accent » gardée sans poste accentué fait tomber le troisième, et lui
+ * seul.
+ */
+describe('legendeDeLEcart', () => {
+  const avant = snapshot('2026-03-01T12:00:00Z', 3000, { commute: 2100, leisure: 500, travel: 400 });
+
+  it('nomme le poste du plan, avec les mots de son étiquette', () => {
+    const apres = snapshot('2026-09-01T12:00:00Z', 2200, { commute: 1700, leisure: 500, travel: 0 });
+    expect(legendeDeLEcart(ecartParPoste(avant, apres))).toBe(
+      'Contour : bilan précédent · plein : ce bilan · accent : ton trajet domicile-travail, le poste sur lequel ton plan travaille'
+    );
+  });
+
+  // Le poste du **bilan courant**, tel que le serveur l'a désigné — le même que celui de l'accent.
+  it('suit le poste dominant du bilan courant', () => {
+    const voyages = snapshot(
+      '2026-09-01T12:00:00Z',
+      2200,
+      { commute: 400, leisure: 300, travel: 1500 },
+      'travel'
+    );
+    expect(legendeDeLEcart(ecartParPoste(avant, voyages))).toContain(
+      'accent : tes voyages longue distance, le poste sur lequel ton plan travaille'
+    );
+  });
+
+  // Aucune barre en accent à l'écran : la légende ne décrit pas ce qui n'y est pas.
+  it('ne parle pas d’accent quand aucun poste n’est accentué', () => {
+    const sansDominant = [
+      { poste: 'leisure' as const, precedentKg: 200, courantKg: 150, dominant: false },
+    ];
+    expect(legendeDeLEcart(sansDominant)).toBe('Contour : bilan précédent · plein : ce bilan');
+  });
+});
+
+/**
+ * **Un seul bilan ne se compare à rien, et sa barre se remplissait jusqu'au bout** (24/09/2026,
+ * `v1-29`) : l'échelle est celle du plus lourd, et le seul bilan est le plus lourd.
+ *
+ * Éprouvé en cassant ce qu'il garde, le 24/09/2026 : la garde du bilan unique retirée fait tomber
+ * le premier test, et lui seul ; le plancher de 3 % retiré, le troisième.
+ */
+describe('barresDeLHistorique', () => {
+  it('ne rend pas de barre pour un seul bilan, ni pour aucun', () => {
+    expect(barresDeLHistorique([4231])).toBeNull();
+    expect(barresDeLHistorique([])).toBeNull();
+  });
+
+  it('met les bilans sur une échelle commune, le plus lourd à 100', () => {
+    expect(barresDeLHistorique([2000, 4000])).toEqual([50, 100]);
+    expect(barresDeLHistorique([4000, 1000, 2000])).toEqual([100, 25, 50]);
+  });
+
+  // Un bilan à zéro garde un trait visible — le profil marche uniquement, que le produit félicite.
+  it('garde un trait de 3 % pour un bilan très bas ou nul', () => {
+    expect(barresDeLHistorique([0, 4000])).toEqual([3, 100]);
+    expect(barresDeLHistorique([0, 0])).toEqual([3, 3]);
   });
 });
 

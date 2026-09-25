@@ -1,6 +1,8 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Les jetons du produit : couleurs (clair et sombre), polices, espacements, échelle
+ * typographique, rayons, hauteurs de contrôle et épaisseurs de trait. Le kit de
+ * `docs/design/design-system/tokens/` les recopie — toucher une valeur ici impose de la
+ * recopier là-bas (`v1-29` §5).
  */
 
 import '@/global.css';
@@ -32,6 +34,20 @@ import { Platform } from 'react-native';
 // gel de `Colors.light` au niveau module (le `COULEUR` de `mascot.tsx`), donc il y a deux endroits à
 // reprendre — soit en faire une fonction de la palette courante, soit les corriger ensemble
 // (relevé le 14/09/2026).
+//
+// Six jetons d'état (24/09/2026, `v1-29` §3), tous lus par les deux thèmes :
+// - `onAccent` : texte et icône posés sur `accent` — bouton principal, puce pleine, onglet actif
+//   (6,12:1 en clair). Le blanc était écrit en dur à trois endroits ;
+// - `accentPressed`, `backgroundPressed`, `backgroundSelectedPressed` : la surface **sous le
+//   doigt**, teinte immédiate et sans animation. Aucun contrôle ne répondait au toucher, ce qui se
+//   lit « l'app n'a pas pris mon geste ». Blanc sur `accentPressed` : 8,67:1 ; `textTertiary` sur
+//   `backgroundPressed` : 4,76:1 ; `accent` sur `backgroundSelectedPressed` : 4,76:1 ;
+// - `fieldBorder` : le contour d'un champ **au repos**. Le fond `backgroundElement` d'un champ vide
+//   ne tranche qu'à 1,14:1 sur le blanc, donc le champ ne se voyait pas (WCAG 1.4.11 demande 3:1) :
+//   3,45:1 sur blanc, 3,04:1 sur `backgroundElement` ;
+// - `scrim` : le voile sous une feuille du bas, écrit en dur à deux endroits.
+// Les valeurs sombres sont provisoires, comme tout le thème sombre (`v1-29` §6.1) — et `onAccent`
+// n'y tient que 3,43:1 sur l'accent sombre, ce que la liste de reprise du thème sombre nomme.
 export const Colors = {
   light: {
     text: '#131612',
@@ -47,6 +63,12 @@ export const Colors = {
     accentMuted: '#A9C8B6',
     border: '#DDE0D9',
     paginationInactive: '#CDD7CF',
+    onAccent: '#FFFFFF',
+    accentPressed: '#14563A',
+    backgroundPressed: '#E4E6DF',
+    backgroundSelectedPressed: '#D6E7DC',
+    fieldBorder: '#858C86',
+    scrim: 'rgba(19, 22, 18, 0.42)',
     mascotInk: '#131612',
     mascotVein: '#E4EFE8',
     mascotAccessory: '#E4EFE8',
@@ -66,6 +88,12 @@ export const Colors = {
     accentMuted: '#3A5245',
     border: '#2E3135',
     paginationInactive: '#3A3D3A',
+    onAccent: '#FFFFFF',
+    accentPressed: '#2F7F59',
+    backgroundPressed: '#2A2C2F',
+    backgroundSelectedPressed: '#24392B',
+    fieldBorder: '#767D77',
+    scrim: 'rgba(0, 0, 0, 0.6)',
     mascotInk: '#131612',
     mascotVein: '#E4EFE8',
     mascotAccessory: '#E4EFE8',
@@ -86,29 +114,16 @@ export const FontFamily = {
   bold: 'SplineSans_700Bold',
 } as const;
 
+/**
+ * Police à chasse fixe du type `code` de `ThemedText` — **réservée aux sources et aux codes
+ * techniques** (référence ADEME, identifiant), jamais à une phrase adressée à la personne
+ * (`v1-29` §3, `FRONT.md` §1). Les trois autres familles du gabarit Expo (`sans`, `serif`,
+ * `rounded`) n'étaient lues par aucun écran : Spline Sans passe par `FontFamily`.
+ */
 export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
+  ios: { mono: 'ui-monospace' },
+  default: { mono: 'monospace' },
+  web: { mono: 'var(--font-mono)' },
 });
 
 export const Spacing = {
@@ -142,11 +157,13 @@ export const Spacing = {
  * de taille hors échelle sur la restitution. Ne pas rouvrir d'exemption sans relever la valeur
  * dans le code.
  *
- * **Ailleurs, la migration du lot 4 n'est pas finie** : quatre recopies de jeton subsistent au
- * 11/09/2026 — `salient` dans `connexion/index.tsx` et `onboarding/etape-contexte.tsx`, `card`
- * dans `bande-haute.tsx` et `bilan/numeric-field.tsx`. La commande de contrôle du lot 4 rend
- * donc sept lignes, pas zéro : le relevé complet, avec les trois tailles propres à un écran qui
- * restent à arbitrer, est dans `v1-11` §« Lot 4 ».
+ * **La migration du lot 4 est finie depuis le 24/09/2026** (`v1-29` §3.1) : `bande-haute.tsx` et
+ * `bilan/numeric-field.tsx` lisent `TypeScale.card`. Ce commentaire appelait aussi « recopies de
+ * `salient` » les titres à 30 px de `connexion/index.tsx`, de `onboarding/etape-contexte.tsx` et des
+ * pages légales : ce n'en sont pas. `salient` nomme un **chiffre**, et ces trois titres restent en
+ * dur à la même valeur — les y ranger encoderait une fausse équivalence (`FRONT.md` §2, « Les
+ * tailles, rayons… »). Le relevé d'origine, avec les tailles propres à un écran, est dans `v1-11`
+ * §« Lot 4 ».
  */
 export const TypeScale = {
   /** Titre d'écran. */
@@ -161,16 +178,34 @@ export const TypeScale = {
   card: { fontSize: 17, lineHeight: 24 },
   /** Corps d'écran, sous un titre. Plus resserré que le `default` de ThemedText (16/24). */
   body: { fontSize: 15, lineHeight: 22 },
+  /**
+   * Grand titre : la décision dominante de la restitution, et le titre d'une surface qui se lit
+   * seule — page introuvable, suppression de compte, désinscription des rappels, étapes
+   * d'accroche de l'onboarding. Six recopies à la main jusqu'au 24/09/2026 (`v1-29` §3).
+   */
+  display: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
+  /**
+   * Étiquette en capitales d'une carte (« TON PREMIER PLAN », « PREMIER PAS »). `v1-11` écrivait
+   * le 07/09/2026 qu'une échelle à 13 px « n'existe nulle part » : c'était vrai ce jour-là, et
+   * trois recopies à la main sont arrivées depuis (`v1-29` §3).
+   */
+  label: { fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
 } as const;
 
 /**
  * Rayons. `field` vaut **16 et non 14** — la valeur du canvas était fausse, le relevé du code
  * la corrige : c'est le rayon le plus fréquent du produit (douze usages), partagé par les
  * champs de saisie et les blocs internes d'une carte.
+ *
+ * **`chip` a changé de sens le 24/09/2026** (`v1-29` §3) : il valait 8, pour la puce « Cadence »
+ * du plan, disparue avec C2.8 — plus aucun écran ne le lisait. Il porte désormais le 14 des puces
+ * de choix, écrit en dur douze fois.
  */
 export const Radius = {
-  /** Petite puce d'information (cadence du plan). */
-  chip: 8,
+  /** Encadré d'information d'une étape du questionnaire. */
+  notice: 12,
+  /** Puce de choix (`Chip`) et ligne de mode (`ModeListItem`). */
+  chip: 14,
   /** Champ de saisie, bloc interne d'une carte. */
   field: 16,
   /** Carte. */
@@ -180,13 +215,46 @@ export const Radius = {
 } as const;
 
 /**
- * Hauteurs de contrôle. `target` est le minimum tactile (WCAG 2.5.8 / Material), porté par
- * `TextLink` sans déplacer le texte.
+ * Hauteurs de contrôle. **`target` vaut 48 depuis le 24/09/2026** (`v1-29` §3) : c'est la cible
+ * tactile de Material (48 dp), que le produit, sur Android d'abord, se donne pour minimum. Ce
+ * commentaire attribuait 44 à « WCAG 2.5.8 / Material », ce qui était faux deux fois : 2.5.8
+ * (niveau AA) ne demande que 24 px, 44 est le seuil de 2.5.5 (AAA), et Material dit 48. Portée
+ * par `TextLink` sans déplacer le texte, et par tout contrôle qui n'a pas de hauteur à lui.
  */
 export const ControlHeight = {
-  target: 44,
+  target: 48,
+  /** Bande haute d'un écran (`BandeHaute`). */
+  topBand: 52,
   button: 54,
   field: 56,
+  /** Barre d'onglets, avant l'encoche basse du téléphone. */
+  tabBar: 60,
+  /** Champ numérique du questionnaire, chiffre en grand. */
+  numeric: 64,
+} as const;
+
+/**
+ * Rail d'une barre de progression : l'avancée du questionnaire et le trait de temps de la saison.
+ * Le commentaire du trait de temps disait ces deux valeurs uniques dans le produit, alors que la
+ * barre du questionnaire portait les mêmes (`v1-29` §3).
+ */
+export const Rail = { height: 6, radius: 3 } as const;
+
+/**
+ * Épaisseurs de trait. `selected` est le contour d'une puce ou d'une ligne choisie, `engaged` celui
+ * de la carte de l'action engagée ; `hairline` le contour neutre d'une carte ou d'un bouton
+ * secondaire.
+ *
+ * `field` est le contour d'un champ de saisie, **au repos comme au focus** : `fieldBorder` puis
+ * l'accent, à la même épaisseur pour que le focus ne décale rien. Il vaut `selected` et ce n'est
+ * pas la même chose — quatre champs lisaient `selected` pour leur contour au repos (contre-lecture
+ * du 25/09/2026), et changer l'épaisseur d'une puce choisie aurait changé celle des champs.
+ */
+export const Stroke = {
+  hairline: 1,
+  selected: 1.5,
+  engaged: 2,
+  field: 1.5,
 } as const;
 
 export const MaxContentWidth = 800;

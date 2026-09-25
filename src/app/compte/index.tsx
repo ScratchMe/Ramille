@@ -292,7 +292,9 @@ export default function Compte() {
                 type="small"
                 themeColor="textTertiary"
               />
-              <ThemedText type="code" themeColor="textTertiary" style={styles.contact}>
+              {/* Une phrase adressée à la personne, donc en Spline Sans : la chasse fixe est
+                  réservée aux sources et aux codes techniques (24/09/2026, `v1-29`). */}
+              <ThemedText type="small" themeColor="textTertiary" style={styles.contact}>
                 Une question ? Écris à {CONTACT_EMAIL}.
               </ThemedText>
             </View>

@@ -371,9 +371,10 @@ que l'écran montre après une écriture — rien. Un `.eq('status', 'complete')
 **`scripts/verifier-parcours-reel.mjs` joue le chemin nominal, et lui seul**, sur **deux profils**
 — décrits plus bas ; celui-ci est le premier, tiré de
 `docs/recette/premier-parcours-web.md` : onboarding → questionnaire → soumission → restitution →
-proposition de compte refusée → plan → engagement → un point généré comme le cron le ferait
-(`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi → suppression du
-compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
+plan, sans écran de compte interposé (arbitrage du 20/09/2026 : la proposition de compte que ce
+paragraphe disait « refusée » n'existe plus sur ce chemin) → engagement → un point généré comme le
+cron le ferait (`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi →
+« Toi » et sa ligne de canal (25/09/2026, §2.12) → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
 (PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, huit
 pistes dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
 la base construite depuis `supabase/migrations/`, ces chiffres ne dépendent d'aucune
@@ -711,3 +712,85 @@ hors de portée de toute garde du dépôt, c'est le rôle de `docs/exploitation/
 Mutations jouées le 21/09/2026 : une espace ajoutée dans le document → famille 1 tombe en nommant la
 ligne ; `content_path` retiré → famille 2 ; `{{ .Token }}` remplacé par `{{ .ConfirmationURL }}` dans
 le fichier → famille 3, et la 1 avec elle, le document n'ayant pas bougé.
+
+### 2.12 Ce que le lecteur d'écran reçoit vraiment, vérifié dans l'export
+
+Deux gardes d'export ont grandi le 24/09/2026 (`docs/architecture/v1-29-challenge-du-design-system.md`),
+et pour la même raison : **ce que react-native-web transmet au lecteur d'écran ne se voit que dans
+le DOM rendu** — ni le typecheck, ni Jest, ni un test d'écran ne le voient, puisqu'ils lisent les
+props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
+
+- **`scripts/verifier-rendu-export.mjs` vérifie que chaque choix annonce son état** : tout élément
+  de rôle `radio`, `checkbox` ou `switch` rendu porte `aria-checked`, et `/feedback` — où « Une
+  idée » est choisie d'emblée — rend un `radio` **coché**. La seconde moitié n'est pas du zèle : sans
+  elle, la garde passerait sur une page qui ne rend aucun choix, ou qui les rend tous
+  `aria-checked="false"` écrit en dur. Le défaut qu'elle garde était le seul **critique** de l'audit :
+  react-native-web 0.21 ignore l'objet `accessibilityState`, et chaque choix coché s'annonçait
+  « non coché ».
+- **`scripts/verifier-etats-export.mjs` gagne trois sections** : **C**, la barre d'onglets —
+  chaque onglet fait au moins `ControlHeight.target`, **lu dans `theme.ts`** plutôt que recopié, et
+  l'actif porte une forme pleine à 3:1 au moins quand l'inactif n'en porte aucune ; **D**, les routes
+  à paramètre hydratent sans écart — une erreur d'hydratation y est **bloquante**, là où le contrôle
+  de rendu la classe en avertissement par conception, et le HTML statique ne doit rien affirmer
+  (`/rappels/stop` ne dit plus « plus valable », `/suivi/bilan` plus « pas pu être affiché ») ;
+  **E**, le focus de l'onboarding suit la page, avec et sans « réduire les animations ».
+- **Le 25/09/2026, trois de ces gardes ne prouvaient rien, et une quatrième manquait.** La moitié
+  positive de `/suivi/bilan?id=` attendait « bilan », un mot que porte aussi le HTML statique
+  (« Chargement de ton bilan… ») : elle passait avant comme après la correction. Elle attend
+  désormais que l'écran **quitte** « Chargement » — sans nommer l'issue, qui est une copie d'erreur
+  sans serveur — et qu'il ait **demandé** le bilan que l'adresse désigne. `/rappels/stop?jeton=`
+  avait le même trou, son titre étant lui aussi dans le HTML : même réponse. La section E ne lisait
+  le focus qu'au repos, et restait verte pendant qu'il revenait sur la page qu'on quitte : un
+  journal posé avant le chargement relève désormais chaque `focusin` et chaque bascule d'`inert`
+  **pendant** la transition. Et **G** tient le focus d'étape du questionnaire sur web, qu'aucune
+  garde ne vérifiait. La leçon est celle de §1.1, sous une forme de plus : **une moitié positive
+  doit porter sur ce que le HTML statique ne dit pas**, sans quoi elle garde le statique.
+
+Les mutations qui les éprouvent sont datées en tête de chaque script, une par ligne, **chacune avec
+son propre export** : le code est dans le bundle, donc une mutation sans export ne mute rien. Et un
+export fait pendant qu'un autre tourne peut produire le bundle d'un autre arbre (`EXPO.md` §1.1) —
+d'où `--clear`, et un marqueur du code courant à retrouver dans le bundle avant de conclure.
+
+**Ce qui leur échappe, et qu'il ne faut pas prétendre gardé** : tout ce qui se passe sur natif.
+`aria-checked` est mappé par React Native vers TalkBack, `announceForAccessibility` et
+`sendAccessibilityEvent` n'ont d'effet que sur un appareil, et aucune de ces suites ne tourne sous
+TalkBack. C'est la recette sur appareil qui les éprouve (`v1-29` §6.5).
+
+**Et le lendemain, trois gardes de plus, parce qu'une contre-lecture de la livraison a trouvé ce que
+les deux premières ne pouvaient pas voir** (25/09/2026) : un rôle juste qui ne répondait plus au geste
+qu'il annonce, et des cases d'option sans groupe.
+
+- **`verifier-etats-export.mjs`, section F — Espace coche une case d'option.** react-native-web n'active
+  par Espace qu'un bouton ; depuis que les puces sont des `radio`, Espace ne cochait plus rien et
+  faisait défiler la page (`src/lib/barre-d-espace.ts`). La section presse Espace sur une rangée, une
+  puce et un item de mode du questionnaire, rempli hors ligne depuis un brouillon posé dans le
+  stockage, et mesure **deux** choses : la case est cochée, **et rien n'a défilé**. Une mesure
+  impossible — la page ne peut pas défiler sous le choix, le focus n'est pas pris — est un échec : sans
+  défilement possible, « rien n'a défilé » ne prouverait rien. La mesure elle-même vit dans
+  `scripts/mesurer-un-choix.mjs`, partagée avec le parcours réel.
+- **Le parcours réel vérifie les groupes à chaque étape** — du questionnaire des deux profils, de la
+  feuille d'engagement et de « Toi » : toute case d'option a pour groupe **le plus proche** un
+  `radiogroup` nommé, toute case à cocher un `group` nommé, et **aucun `radiogroup` ne coche deux
+  cases**. Les deux dernières règles viennent de ce qu'une précision vit **dans** le groupe de l'option
+  qu'elle précise (`GroupeDeChoix`) : « le plus proche » attrape un groupe imbriqué qui aurait perdu son
+  nom, que « un ancêtre » laisserait passer sur celui du mode ; et une précision privée de son propre
+  groupe tombe dans celui du mode, **qui est bien nommé** — seule l'exclusivité la voit, le mode et la
+  motorisation y étant cochés ensemble. **La première version de la garde n'avait pas cette règle, et
+  son commentaire affirmait que « le plus proche » suffisait** : la mutation l'a démenti, la
+  motorisation privée de son groupe n'étant vue qu'aux longs trajets, où elle n'est pas imbriquée.
+  C'est une exclusion affirmée et vérifiée sur une paire de moins (`CLAUDE.md`, « Avant de lancer une
+  vague »), trouvée par la seule mutation qui visait la paire manquante. Le premier profil touche
+  « Oui » au second mode pour ouvrir « Lequel ? » — sans quoi aucun profil ne rend cette liste —, puis
+  répond « Non » comme avant : les chiffres attendus ne bougent pas.
+- **Le parcours réel joue le clavier là où il faut une session** : les jours de l'engagement, seule case
+  à cocher du produit — Espace coche sans faire défiler, Entrée décoche (une seule activation), une
+  barre maintenue coche une fois (la répétition) — et « Toi », seul écran de ce parcours où une ligne
+  de canal se rend (la feuille des rappels ne s'ouvre sur web qu'avec une adresse rattachée) : la
+  ligne « Par email » hors d'atteinte est désactivée, jamais cochée, **sans opacité**, son titre en
+  texte tertiaire (lu dans `theme.ts`) et son détail à 4,5:1 au moins ; Espace choisit « Sans rappel »,
+  et la base relue le confirme.
+
+Les mutations sont datées en tête de chaque script. Deux choses restent hors de portée : **ce que
+TalkBack annonce d'un groupe imbriqué**, et la position dans la série (« 2 sur 9 ») que Chromium
+calcule mais que son protocole de débogage n'expose pas — la garde lit le groupe le plus proche dans
+le DOM, et l'arbre d'accessibilité l'a confirmé une fois à la main, pas plus.

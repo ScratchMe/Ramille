@@ -3,7 +3,7 @@
 // alimentent vivent dans `src/lib/bilan-history.ts`.
 
 import { MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
-import { POSTES, type LoopType, type Poste } from '@/constants/postes';
+import { POSTE_EN_PHRASE, POSTES, type LoopType, type Poste } from '@/constants/postes';
 import { formatTonnesNu } from '@/lib/format';
 import { saisonDuJour, saisonsEcouleesDepuis } from '@/types/saison';
 
@@ -88,6 +88,24 @@ function jourLocalDe(iso: string): string {
   const mois = String(d.getMonth() + 1).padStart(2, '0');
   const jour = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mois}-${jour}`;
+}
+
+/**
+ * La longueur de chaque barre de l'historique, en pourcentage de la plus longue — ou `null` quand
+ * il n'y a rien à comparer (24/09/2026, `v1-29`).
+ *
+ * **Un seul bilan ne se compare à rien**, et sa barre se remplissait jusqu'au bout : l'échelle est
+ * celle du plus lourd, et le seul bilan est le plus lourd. Une barre pleine se lit comme un maximum
+ * atteint — une jauge — alors qu'elle ne mesure rien. Le chiffre, lui, reste à l'écran.
+ *
+ * À partir de deux, l'échelle est commune (le plus lourd vaut 100) avec un plancher de 3 % pour
+ * qu'un bilan à zéro garde un trait visible, et un dénominateur au moins égal à 1 kg pour qu'un
+ * historique de bilans nuls ne divise pas par zéro — les deux règles que l'écran appliquait déjà.
+ */
+export function barresDeLHistorique(totauxKg: number[]): number[] | null {
+  if (totauxKg.length < 2) return null;
+  const plusLourd = Math.max(...totauxKg, 1);
+  return totauxKg.map((kg) => Math.max((kg / plusLourd) * 100, 3));
 }
 
 /**
@@ -346,7 +364,11 @@ export type EcartDePoste = {
   poste: Poste;
   precedentKg: number;
   courantKg: number;
-  /** Le poste le plus lourd du bilan courant : celui dont la barre est en `accent`. */
+  /**
+   * Le poste **dominant** du bilan courant, celui sur lequel le plan travaille et dont la barre est
+   * en `accent` — pas forcément le plus lourd : à 5 % près, le serveur retient le plus régulier
+   * (`etiquetteDuPosteDominant`, 24/09/2026).
+   */
   dominant: boolean;
 };
 
@@ -364,6 +386,28 @@ export function ecartParPoste(
     // Le plus lourd d'abord, sur le bilan courant : l'ordre dit où l'effort compte le plus
     // aujourd'hui. Il peut donc changer d'un bilan à l'autre, ce qui est le fait qu'on montre.
     .sort((a, b) => b.courantKg - a.courantKg);
+}
+
+/**
+ * La légende de l'écart par poste, qui dit **en mots** le poste du plan (24/09/2026, `v1-29`).
+ *
+ * « accent : le poste sur lequel ton plan travaille » n'existait qu'en couleur : la légende disait
+ * ce que l'accent signifie, jamais **quel** poste le portait, et les barres sont masquées aux
+ * lecteurs d'écran — qui entendaient donc la règle sans jamais entendre à quoi elle s'appliquait. La
+ * légende nomme désormais le poste, dans le registre du sujet de phrase (`POSTE_EN_PHRASE`), qui
+ * reprend les mots de l'étiquette de la ligne (« Voyages longue distance » → « tes voyages longue
+ * distance ») : c'est ce qui permet de rapprocher la légende de la barre.
+ *
+ * **Sans poste accentué, la légende ne parle pas d'accent** : un bilan dont le poste dominant est nul
+ * des deux côtés voit cette ligne retirée de la liste (`ecartParPoste`), et « accent : … » décrirait
+ * une barre qui n'est pas à l'écran.
+ */
+export function legendeDeLEcart(ecarts: EcartDePoste[]): string {
+  const formes = 'Contour : bilan précédent · plein : ce bilan';
+  const dominant = ecarts.find((ecart) => ecart.dominant);
+  return dominant
+    ? `${formes} · accent : ${POSTE_EN_PHRASE[dominant.poste]}, le poste sur lequel ton plan travaille`
+    : formes;
 }
 
 /**
