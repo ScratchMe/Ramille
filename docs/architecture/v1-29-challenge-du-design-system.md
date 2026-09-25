@@ -222,6 +222,15 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
   libellé qu'il fige sur le cycle. C'est une réduction prudente et non une décision : §6.3.
 - **L'erreur d'hydratation n'était pas propre à `/connexion`** : trois routes à paramètre, dont deux
   qui servaient une phrase fausse avant le démarrage de l'app (§3.4).
+- **« Recevoir un code » pouvait annoncer un envoi qui n'avait pas eu lieu** — défaut antérieur à
+  cette livraison, trouvé en rejouant `scripts/verifier-code-de-connexion.mjs` sur une stack qui
+  venait de démarrer (deux échecs sur cinq). La session anonyme s'ouvre en parallèle du premier
+  affichage ; touché avant qu'elle existe, le bouton faisait répondre `updateUser` par
+  `AuthSessionMissingError` sans aucune requête, et la règle de non-divulgation, qui mène tout
+  échec non reconnu à l'écran du code, le transformait en « Un code à 8 chiffres vient de partir ».
+  `demanderLeRattachement` attend désormais la session, et une session qui ne s'ouvre pas se dit
+  comme une panne (`src/lib/auth.test.ts`). Reproduit à coup sûr en retardant la création de
+  session de deux secondes, avant comme après : avant, rien ne partait ; après, la demande attend.
 - **`/connexion/retrouver` n'écrivait jamais « Cette adresse semble incomplète. »** : le bouton y
   était inactif, donc la branche était inatteignable. La phrase qu'on voulait recopier n'existait
   qu'en code.

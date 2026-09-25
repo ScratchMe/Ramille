@@ -171,7 +171,7 @@ Le deuxième moment neuf, et celui qui porte le plus de décisions.
 | 03.2 | La carte en haut de l'écran | Étiquette **« TON PREMIER PLAN »**, titre **« Une action pour l'automne. »**, puis « Choisis-en une, et dis quand. Ensuite, un point régulier te demandera si tu l'as faite — rien d'autre à suivre. » La saison nommée est celle du **cycle**, pas celle du jour : automne jusqu'au 30 novembre inclus, hiver ensuite | |
 | 03.3 | **Ramille, sous la carte et hors du cadre** | Le visage vert, penché, et la phrase **« Prends celle qui te ressemble. »** Elle doit être **dessous**, pas dans le cadre | |
 | 03.4 | La sortie de la carte | Un seul lien, **« Compris »**. Pas de bouton plein, pas de second choix | |
-| 03.5 | **La carte du cap** (plus bas) | « Ton cap pour cette saison », **« − 384 kg »**, « soit − 20 % sur ton trajet domicile-travail (1,9 t aujourd'hui) », puis **« Automne 2026 »** et **« jusqu'au 30 novembre »**. **Mais pas de trait de temps**, et pas la phrase « La saison avance ; le trait mesure le temps, pas toi. » — les deux n'arrivent qu'une fois une action engagée | |
+| 03.5 | **La carte du cap** (plus bas — **sous** les deux cartes d'action et le lien « Voir toutes les pistes » : au tout premier plan, le choix passe avant le cap depuis le 24/09/2026, `v1-29`) | « Ton cap pour cette saison », **« − 384 kg »**, « **par an**, soit − 20 % sur ton trajet domicile-travail (1,9 t CO₂e aujourd'hui) », puis la phrase **« Chacune des deux pistes proposées suffit à le franchir. »**, puis **« Automne 2026 »** et **« jusqu'au 30 novembre »**. **Mais pas de trait de temps**, et pas la phrase « La saison avance ; le trait mesure le temps, pas toi. » — les deux n'arrivent qu'une fois une action engagée, et la phrase des pistes s'en va à ce moment-là | |
 | 03.6 | L'intro du plan | « Ton plan », puis **« Une action par saison, une seule. C'est pas à pas qu'on tient un cap. »** — et surtout pas une phrase qui nomme un poste ou un nombre d'actions | |
 
 **Ne pas encore toucher « Compris ».** Les blocs 05 à 08 se jouent aussi bien avant qu'après, mais
@@ -198,10 +198,10 @@ Le troisième moment neuf. **Irréversible dans cette fenêtre.**
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
-| 05.1 | Les **deux** cartes d'action | Deux, pas plus. La première : « Passer deux trajets sur cinq en train ou en RER », **− 619 kg CO₂e**, « Sur tes 5 trajets par semaine. » La seconde : « Renoncer à un vol long-courrier cette année », **− 1 601 kg CO₂e**, « Sur 1 vol long-courrier déclaré. » | |
+| 05.1 | Les **deux** cartes d'action | Deux, pas plus. La première : « Passer deux trajets sur cinq en train », **− 619 kg CO₂e**, « Sur tes 5 trajets par semaine. » La seconde : « Renoncer à un vol long-courrier cette année », **− 1 601 kg CO₂e**, « Sur 1 vol long-courrier déclaré. » Sous chaque gain, la ligne commence par **« par an »** — collé au chiffre depuis le 24/09/2026 (`v1-29`) | |
 | 05.2 | **Le classement** (C5.1) | La **seconde** carte annonce un gain **plus élevé** que la première, et c'est juste : le rang 1 est la meilleure piste du poste dominant, le reste suit le gain décroissant. Voir l'inverse — le vol en tête, ou le vol relégué en ligne simple — est un écart | |
 | 05.3 | **Les milliers** (C5.8) | Le gain de la seconde carte s'écrit **« 1 601 »** avec une espace fine, jamais « 1601 ». C'est le seul endroit de cet écran qui dépasse le millier : le cap (384) et les autres gains sont à trois chiffres | |
-| 05.4 | Sous le cap | **Aucune note** du genre « le cap porte sur tes voyages ; cette action porte ailleurs » — elle a été retirée par C5.3, et ce profil est précisément celui qui la réveillait | |
+| 05.4 | Sous le cap | **Aucune note** du genre « le cap porte sur tes voyages ; cette action porte ailleurs » — elle a été retirée par C5.3, et ce profil est précisément celui qui la réveillait. La phrase « Chacune des deux pistes proposées suffit à le franchir. » est, elle, **voulue** (`v1-29`) : elle dit le lien entre le cap et les pistes, pas d'où doit venir la réduction | |
 
 ---
 
@@ -209,9 +209,9 @@ Le troisième moment neuf. **Irréversible dans cette fenêtre.**
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
-| 06.1 | Sous les deux cartes | Un lien **« Voir toutes les pistes · 8 »** — le compte est le **total** des pistes, pas celles qui restent à voir | |
+| 06.1 | Sous les deux cartes | Un lien **« Voir toutes les pistes · 10 »** — le compte est le **total** des pistes, pas celles qui restent à voir. (Dix et non huit depuis les modes ajoutés le 21/09/2026 : les sorties à vélo à assistance et les longs trajets en autocar) | |
 | 06.2 | L'ouvrir | Titre « Toutes les pistes », la phrase « Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan. », **la barre d'onglets reste visible**, et un lien « Retour au plan » en haut. (Si le bloc 08 a déjà été joué, la phrase commence par « Ton action en cours d'abord » : c'est voulu, pas un écart) | |
-| 06.3 | L'ordre des groupes | **Trajet domicile-travail** (3 pistes), puis **Voyages longue distance** (4), puis **Loisirs du week-end** (1). Les groupes sortent dans l'ordre où leur poste apparaît, donc la toute première piste de l'écran est la même action que la première carte du plan | |
+| 06.3 | L'ordre des groupes | **Trajet domicile-travail** (3 pistes), puis **Voyages longue distance** (5), puis **Loisirs du week-end** (2). Les groupes sortent dans l'ordre où leur poste apparaît, donc la toute première piste de l'écran est la même action que la première carte du plan | |
 | 06.4 | Toucher une ligne | Elle s'**ouvre en carte**, avec son gain et son bouton pour s'engager | |
 | 06.5 | En ouvrir **plusieurs** | Elles restent toutes ouvertes — ce n'est pas un accordéon —, et deux cartes voisines **ne se touchent pas** : il y a un écart entre elles | |
 | 06.6 | Revenir au plan | Le plan est tel qu'on l'a laissé | |
@@ -259,9 +259,9 @@ plan, avec la carte « Plan et Suivi ». C'est le chemin le moins évident du ch
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
-| 09.1 | Refaire un bilan en déclarant un trajet **à vélo** et aucun voyage | — | |
+| 09.1 | Refaire un bilan en déclarant un trajet **à vélo**, des sorties **« rarement »**, et aucun vol ni long trajet — le profil que le parcours réel joue à chaque PR | — | |
 | 09.2 | Arriver sur le plan | **Pas** de carte « Ton premier plan ». À la place : la barre d'onglets **et** la carte « Plan et Suivi » | |
-| 09.3 | Le contenu du plan | La félicitation « Tu fais déjà l'essentiel sur ce poste. », la carte du cap **sans chiffre** (mais avec la période et sa fin), et **ni** encart de contexte **ni** lien vers les pistes | |
+| 09.3 | Le contenu du plan | La félicitation **« Tu fais déjà l'essentiel. »**, **sans poste nommé** et **sans** « Le point reste là… » : pour ce profil, le poste du plan est le résiduel des sorties rares, que le calcul suppose et qu'il n'a pas déclaré (`v1-29` §4). Puis la carte du cap **sans chiffre** (mais avec la période et sa fin), et **ni** encart de contexte **ni** lien vers les pistes | |
 
 ---
 
