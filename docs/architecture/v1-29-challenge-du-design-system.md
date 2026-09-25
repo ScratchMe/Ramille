@@ -119,7 +119,18 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
   `scripts/verifier-rendu-export.mjs` (`TESTING.md` §2.12).
 - **Les onze séries de puces sont des choix** : `GroupeDeChoix` (`src/components/bilan/groupe-de-choix.tsx`)
   pose le rôle et **nomme le groupe par sa question**, écrite une fois ; les jours d'une intention
-  sont des `checkbox`, puisqu'ils se cumulent. `Chip.role` est devenu obligatoire.
+  sont des `checkbox`, puisqu'ils se cumulent. `Chip.role` est devenu obligatoire. **Et depuis la
+  contre-lecture du 25/09/2026, il est le seul endroit du dépôt qui écrive `radiogroup` ou `group`** :
+  trois listes de modes (B1.4, le « Lequel ? » de B1.7, B2.2) n'avaient aucun groupe, et cinq séries
+  l'écrivaient à la main. Une précision qui se déplie sous un mode (motorisation, type de vélo…) est
+  **son propre groupe, posé dans celui du mode** ; la garde du parcours réel vérifie qu'aucun
+  `radiogroup` ne coche deux cases, la seule règle qui voie une précision privée du sien.
+- **Espace coche un choix sur web** (`activableALaBarreDEspace`, `src/lib/barre-d-espace.ts`) : une
+  fois par appui, jamais sur un contrôle inactif, Entrée laissée à react-native-web. Rendre les puces
+  `radio` avait retiré ce geste (§4).
+- **Le fond d'un choix est une seule dérivation** (`fondDuChoix`, `src/types/fond-du-choix.ts`), là
+  où quatre composants l'écrivaient chacun en ternaire — sans qu'une seule couleur rendue change :
+  143 choix relevés sur l'export avant et après, zéro écart.
 - **Chaque contrôle répond au toucher**, teinte immédiate et sans animation ; un lien texte se
   souligne — et un lien **déjà souligné au repos** (« Supprimer mon compte », « Changer d'avis » et
   leurs « Annuler ») prend la teinte appuyée à la place, puisque le soulignement n'y changeait rien
@@ -253,6 +264,33 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
 - **Metro partage son cache entre worktrees** : un tableau de mutations entier a d'abord été faux,
   mesuré sur des bundles qui n'étaient pas ceux de l'arbre (`EXPO.md` §1.1).
 
+### 4.1 Ce que la contre-lecture a trouvé, le 25/09/2026
+
+Le diff entier de la livraison, relu adversairement avant de l'ouvrir à la fusion (`CLAUDE.md`,
+« Avant de lancer une vague ») : vingt constats. Ce qu'il fallait trouver, et qu'aucun contrôle ne
+voyait :
+
+- **une régression** : rendre les puces `radio` et `checkbox` avait retiré la barre d'espace —
+  react-native-web ne la gère que sur un bouton. Espace faisait défiler la page et ne cochait rien ;
+- **un focus qui repassait par la page qu'on quitte**, à chaque « Suivant » de l'onboarding : l'index
+  se déduisait de la position pendant le défilement animé, et l'arrondi redésignait l'ancienne page
+  dès les premiers pixels. Mesuré, puis tenu (`enVol`) ;
+- **un focus qui n'a jamais rien fait sur Android** : `StepShell` visait un conteneur que Fabric
+  aplatit, donc l'événement partait vers un numéro sans vue et se perdait sans bruit — avant comme
+  après le 24/09, selon la source de React Native 0.86. Il vise désormais le titre de l'étape ;
+- **des gardes qui ne prouvaient rien** : le test des espaces insécables recopiait la constante qu'il
+  vérifiait (sept tests verts sous la mutation « espace ordinaire ») ; les moitiés positives de
+  `/suivi/bilan?id=` et de `/rappels/stop?jeton=` attendaient un texte que porte aussi le HTML
+  statique ; et quatre assertions du parcours réel n'avaient jamais été cassées ;
+- **des phrases fausses** : des commentaires qui décrivaient l'état d'avant, et deux pages légales
+  qui parlaient encore du lien de connexion que le code a remplacé le 20/09/2026 ;
+- **des choix de produit pris sans la personne qui pilote** — l'en-tête visible de la feuille des
+  rappels, retiré ; les variantes de la phrase du cap et le titre de la félicitation du résiduel,
+  posés en §6.3.
+
+Tout ce qui était technique est corrigé et éprouvé en le cassant, mutations consignées en tête de
+chaque garde ; ce qui relève du produit attend en §6.3.
+
 ## 5. Le kit : synchronisé, et ce que ça engage
 
 **La décision n° 11 change le statut du kit.** Il était une photographie datée du 10/09/2026, dont
@@ -312,10 +350,10 @@ le 25 :
   `src/app/(tabs)/_layout.tsx` ;
 - **le catalogue des 38 écrans** (`ui_kits/ramille/`) reprend le handoff V1, dont des écrans à mot de
   passe qui n'existent plus depuis `v1-10` §2.D, et cite l'ancien nom du produit ;
-- **l'état désactivé** : le kit écrit « jamais une opacité », et la ligne de canal de rappel en porte
-  une (0,6), désormais en un seul endroit (`LigneDeCanal`). Un composant inactif est exempté de
-  contraste (WCAG 1.4.3), donc rien n'est faux pour la personne ; c'est la règle et le code qui se
-  contredisent, et la synchronisation tranchera lequel des deux suit l'autre.
+- **l'état désactivé est tranché, et c'est le code qui a suivi la règle** (25/09/2026) : la ligne de
+  canal inactive portait une opacité de 0,6, qui faisait tomber son détail — la phrase qui dit
+  pourquoi le canal est hors d'atteinte — vers 3,2:1. Elle garde son fond, passe son titre en
+  tertiaire (5,28:1) et son détail reste en secondaire (9,39:1), dans le code comme dans le kit.
 
 **Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
 partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.
@@ -400,9 +438,14 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
 
 - **`accessibilityHint` n'existe pas sur web** : react-native-web l'ignore. Le rappel de la question
   sur « Oui » et « Non » du point, et la longueur maximale du retour, n'y sont pas annoncés ;
-- **la barre d'espace n'active pas un `radio`** : react-native-web ne la gère que sur un `button`.
-  Ce n'est pas impossible — `Pressable` transmet `onKeyDown` —, c'est non fait ; et un groupe de
-  choix ne se parcourt pas aux flèches, chaque option est un arrêt de tabulation ;
+- **un groupe de choix ne se parcourt pas aux flèches** : chaque option est un arrêt de tabulation.
+  La barre d'espace, elle, coche depuis le 25/09/2026 (§3.2) ;
+- **sur web, la fin d'un défilement ne s'annonce pas** : `onMomentumScrollEnd` n'y part jamais.
+  L'onboarding lit donc l'arrivée d'un défilement programmé à sa position. Ce qu'il ne lève pas : un
+  geste qui franchit la moitié de la page puis revient — l'index suit le doigt, et le focus passe par
+  le titre de la page abandonnée. C'est le geste de la personne ; le lever demanderait une minuterie ;
+- **« Voir les autres modes », activé au clavier, disparaît et laisse le focus sur le document** —
+  mesuré, pas corrigé : la liste qui le remplace n'a pas de cible désignée ;
 - **un même message remis deux fois n'est pas réannoncé** : React ne rend pas de nouveau pour un état
   identique, donc un second échec identique se tait ;
 - **après un échec, le focus n'est rendu nulle part** : pendant l'envoi, le bouton désactivé le perd,
@@ -423,9 +466,14 @@ Rien de ce qui suit ne se voit en CI :
 - **la taille de police à 200 %** : la barre d'onglets, les champs (56) et le champ numérique (64) ont
   des hauteurs fixes ;
 - **le mouvement réduit** : le défilement du pager de l'onboarding et l'arrivée des feuilles ;
-- **le focus de `StepShell`** vise un conteneur que React Native peut aplatir hors de l'arbre natif
-  (`src/lib/focus.ts` dit pourquoi) : le passage TalkBack du 14/09/2026 n'a rien relevé, sans qu'on
-  sache si c'est le focus qui y réussit ou le changement d'écran qui se fait entendre ;
+- **le focus de `StepShell`, désormais sur le titre de l'étape** : après « Suivant », TalkBack doit
+  annoncer la question qui arrive, une fois, comme un en-tête. Jusqu'au 25/09/2026 il visait un
+  conteneur que Fabric aplatit, donc ce que le passage TalkBack du 14/09/2026 a entendu n'était pas
+  ce focus. Sur web, la référence atteint bien le titre de la nouvelle étape (section G de
+  `verifier-etats-export.mjs`) ; `sendAccessibilityEvent`, lui, ne s'éprouve que sur l'appareil ;
+- **le passage d'une page à l'autre de l'onboarding** : le titre de la page qui arrive est annoncé
+  une fois, et jamais celui qu'on quitte. Le vol suppose qu'Android émet la dernière position du
+  défilement, ce que dit sa source et que personne n'a vu sur un appareil ;
 - **l'étape du questionnaire qui s'ouvre par le haut**, et les jours de l'engagement sur trois
   colonnes aux petites largeurs ; « C’est noté » passe sur deux lignes à 320 dp, ce qui était déjà
   le cas avant.
