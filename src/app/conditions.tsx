@@ -29,9 +29,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 
 // Cette page bouge moins que /confidentialite, et sa date ne suit donc pas la sienne : elle
 // n'avance que quand une clause change. Le 11/09/2026, c'est la durée de conservation d'un
-// bilan non rattaché — la purge porte sur l'inactivité et non sur l'âge du bilan. La date est
-// celle de la mise en ligne, pour la raison écrite dans `/confidentialite`.
-const UPDATED_AT = '11 septembre 2026';
+// bilan non rattaché — la purge porte sur l'inactivité et non sur l'âge du bilan. Le 25/09/2026,
+// c'est la connexion : la clause « Accès et compte » disait encore « un lien envoyé à ton
+// adresse », alors qu'un code a remplacé le lien le 20/09/2026 (`CLAUDE.md`, « le lien a disparu
+// des deux e-mails »). Relevé en contre-lisant `v1-29`. La date est celle de la mise en ligne,
+// pour la raison écrite dans `/confidentialite`.
+const UPDATED_AT = '25 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -89,7 +92,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'bullets',
         items: [
-          'Tu peux créer un compte avec ton adresse email, ou en passant par ton compte Google. Il n’y a pas de mot de passe : la connexion se fait par un lien envoyé à ton adresse.',
+          'Tu peux créer un compte avec ton adresse email, ou en passant par ton compte Google. Il n’y a pas de mot de passe : avec une adresse email, la connexion se fait par un code à usage unique envoyé à cette adresse.',
           'Tu es responsable de l’accès à ta boîte email et des actions effectuées depuis ton compte.',
           'Sans rattachement à un compte, ton bilan reste lié à l’appareil et au navigateur utilisés, et il est supprimé automatiquement après 90 jours sans utilisation de l’application. Tant que tu reviens, rien n’est effacé.',
         ],

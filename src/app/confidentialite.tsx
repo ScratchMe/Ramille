@@ -80,7 +80,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // Cette date est le seul repère qu'a le lecteur pour voir que la page a changé, et la page
 // s'engage elle-même à l'afficher (« Évolutions de ce document »). Elle avance à chaque
 // modification de fond : le 11/09/2026 pour les sous-traitants, les durées de conservation et
-// les renvois d'écran ; le 24/09/2026 pour les réponses aux points de suivi, qui ne se disaient
+// les renvois d'écran ; le 25/09/2026 pour les réponses aux points de suivi, qui ne se disaient
 // que par oui ou par non alors qu'un point se répond aussi « pas concerné » depuis C2.4 (la
 // troisième réponse du point, 12/09/2026) — la page décrivait une donnée de moins que ce que le
 // produit enregistre (`engagement_checkins.response_kind`).
@@ -88,7 +88,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // **Elle porte la date à laquelle le texte atteint le lecteur, pas celle où il a été rédigé.**
 // Le lecteur ne peut pas voir autre chose que la page servie : une date antérieure à la mise en
 // ligne se lit comme « rien n'a bougé depuis » le jour même où tout a bougé.
-const UPDATED_AT = '24 septembre 2026';
+//
+// Rédigé le 24/09/2026, mis en ligne le 25 : la date est celle du second jour, pour cette raison-là
+// (contre-lecture de `v1-29`). Le même passage a retiré deux « liens » que le code a remplacés le
+// 20/09/2026 : l'adresse gardée sur l'appareil sert à reprendre la saisie d'un code, et
+// `/compte/suppression` envoie un code, plus un lien.
+const UPDATED_AT = '25 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -344,8 +349,8 @@ const SECTIONS: LegalSection[] = [
         text:
           `${APP_NAME} n’utilise aucun cookie publicitaire ni aucun outil de mesure d’audience tierce. Le stockage utilisé ` +
           'sur ton appareil est strictement nécessaire au fonctionnement : il conserve ta session, le brouillon du ' +
-          'questionnaire en cours, l’adresse email de ta dernière demande de lien — pour ne pas te la faire retaper ' +
-          'quand un lien expire — et quelques préférences d’affichage. Tout cela reste sur cet appareil, et part avec ' +
+          'questionnaire en cours, l’adresse email de ta dernière demande de code — pour ne pas te la faire retaper ' +
+          'si tu reviens saisir ce code plus tard — et quelques préférences d’affichage. Tout cela reste sur cet appareil, et part avec ' +
           'la suppression de ton compte. Les repères de parcours décrits plus haut ' +
           'n’écrivent rien de plus sur ton appareil : ils sont enregistrés côté serveur, rattachés à la session que le ' +
           'produit a déjà besoin de conserver. C’est la raison pour laquelle aucune bannière de consentement ne t’est ' +
@@ -376,7 +381,7 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Si tu n’as plus l’application installée, la suppression reste possible depuis un navigateur, ' +
-          `sur ${ORIGINE_CANONIQUE}/compte/suppression : on t’y envoie un lien à l’adresse de ton compte, et la ` +
+          `sur ${ORIGINE_CANONIQUE}/compte/suppression : on t’y envoie un code à l’adresse de ton compte, et la ` +
           'suppression se confirme sur place. Cette page ne peut jamais créer de compte.',
       },
       {

@@ -1,4 +1,4 @@
-/** Feuille après « C’est noté » — titre « Les rappels », Ramille explique, puis le choix du canal de rappel. */
+/** Feuille après « C’est noté » — dialogue nommé « Les rappels », sans en-tête visible ; Ramille explique, puis le choix du canal de rappel. */
 export interface FeuilleRappelsProps {
   boucle?: 'hebdo' | 'mensuel';
   /** La permission système de l'appareil : elle écrit le détail de la ligne « notification » et le libellé du bouton. */

@@ -5,7 +5,7 @@ import { ThemedText } from '../core/ThemedText.jsx';
 import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 import { MessageInline } from '../core/MessageInline.jsx';
 // Source : src/components/plan/feuille-rappels.tsx, dans le cadre de src/components/feuille-du-bas.tsx — poignée 40×4,
-// titre « Les rappels » qui nomme le dialogue, Ramille 44, choix du canal, bouton, sortie.
+// « Les rappels » nomme le dialogue sans s'afficher (`enTete={false}`), Ramille 44, choix du canal, bouton, sortie.
 // `libelleBouton` (src/types/rappels.ts) : le bouton n'annonce un dialogue système que s'il va s'en ouvrir un.
 const libelleBouton = (canal, permission) =>
   canal === 'none' ? 'Continuer sans rappel' : canal === 'email' ? 'C’est bon' : permission === 'demandable' ? 'Autoriser les notifications' : 'C’est bon';
@@ -39,7 +39,6 @@ export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', li
   return (
     <div role="dialog" aria-label="Les rappels" style={{ background: 'var(--color-background)', borderTop: '1px solid var(--color-border)', borderRadius: '18px 18px 0 0', padding: '8px 24px 64px', display: 'flex', flexDirection: 'column', gap: 16, ...style }}>
       <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--color-border)', alignSelf: 'center', marginBottom: 8 }} />
-      <ThemedText type="cardTitle" accessibilityRole="header">Les rappels</ThemedText>
       <RamilleDit ligne={ligneRamille} mood="calm" size={44} themeColor="text" style={{ alignItems: 'flex-start' }} />
       <ThemedText type="body" themeColor="textSecondary">{question}</ThemedText>
       <div role="radiogroup" aria-label={question} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

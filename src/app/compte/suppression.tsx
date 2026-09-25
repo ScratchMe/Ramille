@@ -39,7 +39,8 @@ import {
 //   - `rattache` : on sait à qui appartient le compte, on le nomme et on le supprime ;
 //   - `anonyme-avec-donnees` : pas de compte, mais un bilan bien réel attaché à ce
 //     navigateur — c'est la personne, et ses données méritent le même bouton ;
-//   - `inconnu` : rien d'identifiable, on envoie un lien à l'adresse du compte.
+//   - `inconnu` : rien d'identifiable, on envoie un code à l'adresse du compte (un lien jusqu'au
+//     20/09/2026).
 //
 // La confirmation est un état de composant et jamais un `Alert` : sur web, `Alert.alert`
 // retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` — la suppression ne
