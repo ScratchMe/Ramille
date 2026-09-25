@@ -273,7 +273,7 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
 | Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
 | **Compteur Functions Storage du compte** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*), tous projets confondus — pas de baisse avant au moins dix jours. **Relevé suivant : 9,88 Go le 21/09/2026**, voir le bloc daté plus bas |
 | **Part de Ramille** | **437,53 Mo** le 15/09/2026, soit ≈ 273 déploiements à 1,6 Mo en dix jours de vie du projet (82 fusions de production et ~190 prévisualisations, une par push jusqu'au 15/09 à midi). **472,8 Mo le 21/09/2026** |
-| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — c'est tout ce qui reste avant la limite. **35,3 Mo consommés au 21/09**, dont ≈ 115 à 125 Mo de marge réelle sur le compte |
+| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — c'est tout ce qui reste avant la limite. **35,3 Mo consommés au 21/09**, dont ≈ 115 à 125 Mo de marge réelle sur le compte. **Levé le 25/09/2026** : compteur remis à zéro plus tôt que prévu (§2.3) |
 
 > **Réconcilié le 15/09/2026, en deux temps.** Le premier relevé — « 9,85 Go sur 10 » — ne se
 > déduisait ni de 1,6 Mo × 82 fusions (131 Mo) ni de 4,4 Mo × (fusions + prévisualisations) : il
@@ -370,6 +370,19 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
   `npm run vercel-build` et la sortie `dist/`.
 
 ### 2.3 Convention de cadence, et le budget des dix jours
+
+> **Le budget est levé depuis le 25/09/2026 — la mesure hors ligne reste.** Le compteur a été
+> remis à zéro plus tôt que prévu, et la consigne d'Antoine est mot pour mot : *« Plus besoin de
+> s'inquiéter pour Vercel, ça a été reset plus tôt que prévu, tu peux merger quand tu veux.
+> Continue simplement de regarder combien ça doit déployer pour vérifier qu'il n'y ait pas une
+> hausse soudaine, il faudrait alors l'expliquer. »* Ce qui en découle pour les règles ci-dessous :
+> la **1** (demander le relevé avant la première fusion) et la **3** (deux fusions de code par
+> jour) tombent ; la **2** devient une bonne pratique et non plus une contrainte ; la **4** reste,
+> parce qu'elle est gratuite ; et la **5 reste entière, et c'est désormais la seule garde** :
+> mesurer avant chaque fusion de code, comparer au relevé précédent, et **expliquer tout écart**
+> dans la PR avant de fusionner — un saut veut toujours dire qu'une dépendance est entrée dans
+> `api/`. Le reste de cette section décrit la fenêtre du 15 au 25/09/2026 ; il est gardé pour
+> ce qu'il a appris (le facteur cinq, la marge prêtée), pas comme une règle en vigueur.
 
 Chaque fusion sur `main` coûte **≈ 1,8 Mo** pendant trente jours (1,76 mesuré, §2.1). Entre le 15 et le 25/09/2026,
 **150 Mo sont tout ce qui reste au compte entier**, partagés avec un projet dont une fusion en
