@@ -123,7 +123,7 @@ const navigateur = await chromium.launch(
  * layout ou dans le premier effet de l'écran, donc les poser après coup ne testerait que le
  * rechargement. AsyncStorage sur web est `window.localStorage`, clé pour clé, sans préfixe.
  */
-async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null, journal = false } = {}) {
+async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null, requetes = null, journal = false } = {}) {
   const page = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
   // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
   // au chargement du module (section E).
@@ -131,6 +131,8 @@ async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null
   // Les exceptions sont écoutées dès avant la navigation : une erreur d'hydratation part pendant
   // que le bundle monte l'app, avant que l'attente ci-dessous ne rende la main (section D).
   if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
+  // Les requêtes aussi : la lecture d'un écran part dès son premier effet (section D).
+  if (requetes) page.on('request', (requete) => requetes.push(requete.url()));
   // Et le journal du focus, pour la même raison : il doit être posé avant le premier script de
   // la page pour ne rien manquer de ce qui bascule pendant une transition (section E).
   if (journal) await page.addInitScript(journaliserLeFocus);
@@ -455,11 +457,26 @@ const PARAMETRES = [
     // Ouvert depuis le suivi, le bilan porte `?id=` ; le HTML statique, sans identifiant, rendait
     // l'écran d'erreur et le navigateur le chargement (relevé le 24/09/2026). Un identifiant
     // inconnu finit sur l'écran d'erreur une fois la lecture faite, en local comme avec la
-    // configuration factice de la CI : seule l'hydratation est l'objet de cette ligne, et le texte
-    // attendu est celui des deux issues possibles.
+    // configuration factice de la CI — une copie d'erreur, qu'on n'épingle pas (voir l'en-tête).
+    //
+    // **`bilan` seul ne prouvait rien, et c'est le HTML statique qui le montrait** (25/09/2026) : le
+    // mot est aussi dans « Chargement de ton bilan… », que l'export sert à tout le monde. L'assertion
+    // passait donc avant comme après la correction, et passerait sur un écran figé pour toujours au
+    // chargement. Ce qui distingue l'écran monté du HTML, c'est qu'il **en sort** : « Chargement »
+    // est interdit une fois la lecture faite — sans dire vers quelle issue, pour la raison ci-dessus.
+    // Et la moitié positive est la lecture elle-même : l'écran doit avoir demandé **ce** bilan, celui
+    // que désigne l'adresse. Sans elle, un écran qui perdrait `?id=` passerait : il afficherait
+    // l'erreur sans rien lire, et l'erreur ne dit pas « Chargement ».
     chemin: `/suivi/bilan?id=${JETON_DE_FORME_VALIDE}`,
     attendu: 'bilan',
-    interdit: null,
+    interdit: 'Chargement',
+    lecture: (url) =>
+      url.includes('/rest/v1/assessment_results?') && url.includes(`assessment_id=eq.${JETON_DE_FORME_VALIDE}`),
+    // **La lecture qui échoue est relancée, et l'écran l'attend** : `@supabase/postgrest-js`
+    // relance trois fois un GET que le réseau refuse, après 1, 2 puis 4 s. Mesuré sur l'export le
+    // 25/09/2026, configuration factice : « Chargement de ton bilan… » pendant 8,5 s, puis l'écran
+    // d'erreur. L'attente s'arrête dès que la condition tient ; la marge ne coûte qu'en cas d'échec.
+    attente: 30_000,
   },
   {
     // Sans jeton, rien n'est appelé : l'état ne dépend que de l'URL. Le HTML statique dit « un
@@ -471,10 +488,24 @@ const PARAMETRES = [
   },
 ];
 
-for (const { chemin, attendu, interdit } of PARAMETRES) {
+for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of PARAMETRES) {
   const exceptions = [];
-  const page = await ouvrir(chemin, {}, { exceptions });
+  const requetes = [];
+  const page = await ouvrir(chemin, {}, { exceptions, requetes });
   try {
+    // On attend l'état que l'écran monté doit atteindre — le texte attendu présent, l'interdit
+    // parti —, puis on juge sur ce qu'on lit : une attente échouée ne lève pas, elle laisse
+    // l'assertion dire ce qui manque.
+    await page
+      .waitForFunction(
+        ([a, i]) => {
+          const t = document.body.innerText.replace(/\s+/g, ' ');
+          return t.includes(a) && (i === null || !t.includes(i));
+        },
+        [attendu, interdit],
+        { timeout: attente }
+      )
+      .catch(() => {});
     const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ').trim();
     const hydratation = exceptions.filter((e) => HYDRATATION.test(e));
     if (hydratation.length > 0) {
@@ -488,6 +519,12 @@ for (const { chemin, attendu, interdit } of PARAMETRES) {
       echecs.push(`${chemin} : « ${attendu} » est absent une fois l’app montée. Rendu : « ${texte.slice(0, 160)}… »`);
     } else if (interdit && texte.includes(interdit)) {
       echecs.push(`${chemin} : « ${interdit} » s’affiche encore une fois l’app montée : le paramètre n’est pas lu.`);
+    }
+    if (lecture && !requetes.some(lecture)) {
+      echecs.push(
+        `${chemin} : l’écran n’a jamais demandé ce que l’adresse désigne — aucune lecture portant le` +
+          ' paramètre. Il s’affiche sans le lire, ou le lit sous un autre nom.'
+      );
     }
   } catch (erreur) {
     echecs.push(`${chemin} : ${String(erreur).slice(0, 180)}`);
