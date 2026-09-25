@@ -134,9 +134,12 @@ export default function Contexte() {
                 router.push('/bilan');
               }}
             />
+            {/* `link` : il quitte l'écran, comme les « Retour » de « Toi », des pages légales et
+                des pistes (contre-lecture du 25/09/2026). */}
             <TextLink
               label="Retour"
               onPress={() => router.back()}
+              role="link"
               type="small"
               weight={600}
               themeColor="accentText"
@@ -209,6 +212,7 @@ export default function Contexte() {
           <TextLink
             label="Retour"
             onPress={() => router.back()}
+            role="link"
             type="small"
             weight={600}
             themeColor="accentText"

@@ -157,11 +157,13 @@ export const Spacing = {
  * de taille hors échelle sur la restitution. Ne pas rouvrir d'exemption sans relever la valeur
  * dans le code.
  *
- * **Ailleurs, la migration du lot 4 n'est pas finie** : quatre recopies de jeton subsistent au
- * 11/09/2026 — `salient` dans `connexion/index.tsx` et `onboarding/etape-contexte.tsx`, `card`
- * dans `bande-haute.tsx` et `bilan/numeric-field.tsx`. La commande de contrôle du lot 4 rend
- * donc sept lignes, pas zéro : le relevé complet, avec les trois tailles propres à un écran qui
- * restent à arbitrer, est dans `v1-11` §« Lot 4 ».
+ * **La migration du lot 4 est finie depuis le 24/09/2026** (`v1-29` §3.1) : `bande-haute.tsx` et
+ * `bilan/numeric-field.tsx` lisent `TypeScale.card`. Ce commentaire appelait aussi « recopies de
+ * `salient` » les titres à 30 px de `connexion/index.tsx`, de `onboarding/etape-contexte.tsx` et des
+ * pages légales : ce n'en sont pas. `salient` nomme un **chiffre**, et ces trois titres restent en
+ * dur à la même valeur — les y ranger encoderait une fausse équivalence (`FRONT.md` §2, « Les
+ * tailles, rayons… »). Le relevé d'origine, avec les tailles propres à un écran, est dans `v1-11`
+ * §« Lot 4 ».
  */
 export const TypeScale = {
   /** Titre d'écran. */
@@ -242,11 +244,17 @@ export const Rail = { height: 6, radius: 3 } as const;
  * Épaisseurs de trait. `selected` est le contour d'une puce ou d'une ligne choisie, `engaged` celui
  * de la carte de l'action engagée ; `hairline` le contour neutre d'une carte ou d'un bouton
  * secondaire.
+ *
+ * `field` est le contour d'un champ de saisie, **au repos comme au focus** : `fieldBorder` puis
+ * l'accent, à la même épaisseur pour que le focus ne décale rien. Il vaut `selected` et ce n'est
+ * pas la même chose — quatre champs lisaient `selected` pour leur contour au repos (contre-lecture
+ * du 25/09/2026), et changer l'épaisseur d'une puce choisie aurait changé celle des champs.
  */
 export const Stroke = {
   hairline: 1,
   selected: 1.5,
   engaged: 2,
+  field: 1.5,
 } as const;
 
 export const MaxContentWidth = 800;

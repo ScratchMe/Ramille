@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 140,
     borderRadius: Radius.field,
-    borderWidth: Stroke.selected,
+    borderWidth: Stroke.field,
     padding: 16,
     fontSize: 16,
     lineHeight: 22,

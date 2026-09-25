@@ -51,7 +51,8 @@ export function EtapeReassurance({
                 voir avec un `noindex`, `/confidentialite` étant au contraire l'une des pages offertes
                 à l'indexation (elle est dans `sitemap.xml`). La règle du lien indexable ne vise que
                 les liens **sortants** du pied des pages légales (`EDITOR_CV_URL`) ; ce qui s'applique
-                ici est la cible de 44 px et le rôle annoncé (relevé le 14/09/2026). */}
+                ici est la cible tactile — 44 px au relevé du 14/09/2026, 48 depuis le 24/09
+                (`v1-29`) — et le rôle annoncé. */}
             <TextLink
               label="Ce qu’on enregistre, et pourquoi"
               onPress={() => router.push('/confidentialite')}

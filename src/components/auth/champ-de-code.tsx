@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: ControlHeight.field,
     borderRadius: Radius.field,
-    borderWidth: Stroke.selected,
+    borderWidth: Stroke.field,
     paddingHorizontal: 18,
   },
   // En Spline Sans, comme `TextField` (24/09/2026) : sans `fontFamily`, les huit chiffres sortaient dans

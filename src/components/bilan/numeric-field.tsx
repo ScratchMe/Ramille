@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     height: ControlHeight.numeric,
     borderRadius: Radius.field,
-    borderWidth: Stroke.selected,
+    borderWidth: Stroke.field,
     paddingHorizontal: 20,
   },
   // `minWidth: 0` est nécessaire sur web : un <input> a une largeur intrinsèque que

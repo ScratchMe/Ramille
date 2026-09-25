@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ThemedText, type ThemedTextProps } from '@/components/themed-text';
-import { ControlHeight } from '@/constants/theme';
+import { ControlHeight, Radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 // Texte cliquable — le motif le plus répandu du produit (retours, liens de pied d'écran,
 // « Je ne sais pas », « Voir les autres modes »…), présent une vingtaine de fois.
@@ -20,6 +21,12 @@ import { ControlHeight } from '@/constants/theme';
 // **Sous le doigt, le texte se souligne** (24/09/2026, décision n° 6, `v1-29`) : c'est le retour au
 // toucher d'un lien, instantané et sans animation, qui ne change ni sa couleur — elle porte déjà un
 // sens (accent, tertiaire) — ni sa place.
+//
+// **Un lien déjà souligné au repos prend la teinte appuyée à la place** (contre-lecture du
+// 25/09/2026) : « Supprimer mon compte », « Changer d'avis » et leurs deux « Annuler » portent leur
+// soulignement en permanence, donc le souligner sous le doigt ne changeait rien — exactement le
+// « l'app n'a pas pris mon geste » que la décision n° 6 ferme. La cible prend `backgroundPressed`,
+// la teinte des surfaces neutres sous le doigt ; le texte ne bouge pas.
 export function TextLink({
   label,
   onPress,
@@ -51,6 +58,9 @@ export function TextLink({
   containerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<TextStyle>;
 } & Omit<ThemedTextProps, 'children' | 'style' | 'onPress'>) {
+  const theme = useTheme();
+  const dejaSouligne = StyleSheet.flatten(style)?.textDecorationLine === 'underline';
+
   return (
     <Pressable
       onPress={onPress}
@@ -63,10 +73,14 @@ export function TextLink({
       // `undefined` ne rend aucun attribut, ce qui est la règle de la prop. L'inactivité passe par
       // `disabled`, dont `Pressable` tire `aria-disabled` des deux côtés.
       aria-expanded={expanded}
-      style={[styles.cible, containerStyle]}
+      style={({ pressed }) => [
+        styles.cible,
+        containerStyle,
+        pressed && !disabled && dejaSouligne && [styles.cibleAppuyee, { backgroundColor: theme.backgroundPressed }],
+      ]}
     >
       {({ pressed }) => (
-        <ThemedText {...textProps} style={[style, pressed && !disabled && styles.appuye]}>
+        <ThemedText {...textProps} style={[style, pressed && !disabled && !dejaSouligne && styles.appuye]}>
           {label}
         </ThemedText>
       )}
@@ -77,4 +91,6 @@ export function TextLink({
 const styles = StyleSheet.create({
   cible: { minHeight: ControlHeight.target, justifyContent: 'center' },
   appuye: { textDecorationLine: 'underline' },
+  // Le rayon de l'encadré, pour que la teinte ne soit pas un rectangle à angles vifs autour d'un mot.
+  cibleAppuyee: { borderRadius: Radius.notice },
 });

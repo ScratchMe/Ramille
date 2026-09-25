@@ -32,7 +32,9 @@ export function CalculEnCours() {
         <View style={styles.content}>
           <Mascot mood="thinking" size={72} />
           <TitreDArrivee>
-            <ThemedText type="subtitle" weight={600} style={styles.title}>
+            {/* Niveau 1 : c'est le seul titre de l'écran, et `subtitle` en déduirait un `<h2>` sans
+                `<h1>` au-dessus. */}
+            <ThemedText type="subtitle" weight={600} headingLevel={1} style={styles.title}>
               {RAMILLE.calcul}
             </ThemedText>
           </TitreDArrivee>

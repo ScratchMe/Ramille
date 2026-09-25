@@ -24,7 +24,10 @@
 const AVANT_LA_PONCTUATION = / (?=[?!:;»])/g;
 const APRES_LE_GUILLEMET = /« /g;
 
-export const ESPACE_INSECABLE = ' ';
+// Écrite par son point de code, jamais collée en littéral (`FRONT.md` §1) : une U+00A0 collée ne
+// se distingue pas d'une espace ordinaire à la relecture, et un éditeur ou un copier-coller la
+// remplace sans que rien ne bronche.
+export const ESPACE_INSECABLE = '\u00A0';
 
 export function espacesInsecables(texte: string): string {
   return texte

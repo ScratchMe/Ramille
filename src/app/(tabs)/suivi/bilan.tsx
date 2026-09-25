@@ -624,8 +624,8 @@ export default function BilanResultat() {
                 {/* **Le type `display`, et plus un `subtitle` surchargé** (24/09/2026, `v1-29`) :
                     32/38/−0,64 y était recopié à la main. Il s'annonce en en-tête de **niveau 1**, le
                     défaut du type, et c'est juste ici : l'écran n'en a pas d'autre — « Ramille », dans
-                    la bande haute, est de niveau 2, et les intitulés des cartes ne sont pas des
-                    en-têtes. C'est le titre de ce qu'on vient lire. */}
+                    la bande haute, n'est plus un en-tête depuis le 24/09/2026, et les intitulés des
+                    cartes n'en sont pas. C'est le titre de ce qu'on vient lire. */}
                 <ThemedText type="display">{dominantHeadline(results)}</ThemedText>
                 <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
                   {`${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`}

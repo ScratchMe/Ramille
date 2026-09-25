@@ -432,9 +432,9 @@ export function pistesParPoste<T extends { committed_at: string | null; rank: nu
  * Où poser un écart dans la liste des lignes simples, quand certaines sont rendues en carte.
  *
  * **13.5 de la recette web du 16/09/2026** : deux lignes dépliées côte à côte se touchaient. Le
- * conteneur porte `gap: 0` — juste pour des lignes, qui se lisent serrées et portent chacune leurs
- * 44 px de cible tactile — mais `ActionCard` n'a aucune marge extérieure, donc une ligne devenue
- * carte héritait de ce zéro.
+ * conteneur porte `gap: 0` — juste pour des lignes, qui se lisent serrées et portent chacune leur
+ * cible tactile de 48 px au moins — mais `ActionCard` n'a aucune marge extérieure, donc une ligne
+ * devenue carte héritait de ce zéro.
  *
  * La règle : **un écart à chaque frontière dont au moins un des deux voisins est une carte**, et
  * l'écart est porté par le second des deux. Deux conséquences qu'il ne faut pas défaire :
@@ -442,8 +442,8 @@ export function pistesParPoste<T extends { committed_at: string | null; rank: nu
  *  - **une seule marge, en haut.** En Yoga les marges ne fusionnent pas, contrairement à CSS : une
  *    `marginVertical` sur chaque carte donnerait le double entre deux cartes voisines ;
  *  - **rien au conteneur.** Un `gap` y aurait séparé les lignes **fermées**, qu'on ne peut pas
- *    resserrer en retour sans passer sous les 44 px que leur `paddingVertical` tient depuis
- *    `v1-16` §5.
+ *    resserrer en retour sans passer sous la cible de 48 que leur `paddingVertical` tient
+ *    (`v1-16` §5 ; 44 jusqu'au 24/09/2026, `v1-29`).
  *
  * Sortie de l'écran pour être éprouvable : l'espacement est exactement le genre de règle qu'aucune
  * assertion ne portait, et c'est pour ça que la CI n'a rien vu.

@@ -181,7 +181,9 @@ export function ActionCard({
 
 // `formatIntention` rend « le mardi et le jeudi » — minuscule, parce qu'elle est écrite pour
 // s'insérer au milieu d'une phrase (« C'est ton choix pour cette période, le mardi et le
-// jeudi. »). En tête de ligne il lui faut sa majuscule, et on ne touche pas à la source.
+// jeudi. »). Dans l'annonce du lecteur d'écran elle ouvre sa propre phrase, donc il lui faut sa
+// majuscule ; à l'écran elle suit « par an · » et la garde minuscule (`ligneDuGain`, 24/09/2026).
+// On ne touche pas à la source.
 function majuscule(phrase: string): string {
   return phrase.charAt(0).toUpperCase() + phrase.slice(1);
 }

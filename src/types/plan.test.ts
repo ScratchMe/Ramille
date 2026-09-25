@@ -242,6 +242,14 @@ describe('phraseDesPistesSuffisantes', () => {
   it('se tait sans piste en avant', () => {
     expect(phrase(384, [])).toBeNull();
   });
+
+  // Aucune formulation pour trois cartes n'a été décidée : si `ACTIONS_EN_AVANT` grandit un jour,
+  // l'écran doit perdre la phrase plutôt que dire « deux » devant trois cartes (contre-lecture du
+  // 25/09/2026, qui relevait ce silence non éprouvé). Éprouvé en cassant : le `return null` final
+  // remplacé par la phrase « Chacune des deux… » fait tomber ce test, et lui seul.
+  it('se tait au-delà de deux cartes, même quand toutes atteignent le cap', () => {
+    expect(phrase(384, [619, 1601, 480])).toBeNull();
+  });
 });
 
 /**

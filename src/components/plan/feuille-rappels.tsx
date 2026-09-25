@@ -38,10 +38,12 @@ import {
  * un « non » au système ferme le canal pour de bon. D'où le libellé du bouton, qui n'annonce
  * un dialogue que s'il va vraiment s'en ouvrir un.
  *
- * **Elle porte un titre depuis le 24/09/2026, « Les rappels »** — le nom du réglage de « Toi », où la
+ * **Elle a un nom, « Les rappels », et pas d'en-tête visible** — le nom du réglage de « Toi », où la
  * dernière ligne renvoie. Sur web, la fenêtre s'annonçait en dialogue **sans nom** (audit
  * d'accessibilité, 1.3.1) ; le cadre partagé (`FeuilleDuBas`) nomme le dialogue par son titre, et
- * celui-ci ne pouvait pas être la ligne de Ramille, qui change avec la boucle.
+ * celui-ci ne pouvait pas être la ligne de Ramille, qui change avec la boucle. Le 24/09/2026, ce
+ * titre s'était aussi **affiché** en tête de la feuille : son canvas n'en dessine pas, et aucune
+ * décision ne l'avait demandé. Il ne sert plus qu'à nommer (`enTete={false}`, 25/09/2026).
  */
 export function FeuilleRappels({
   prefs,
@@ -100,6 +102,7 @@ export function FeuilleRappels({
   return (
     <FeuilleDuBas
       titre="Les rappels"
+      enTete={false}
       // Le geste de retour ferme la feuille sans rien choisir : refuser de la fermer serait
       // transformer une proposition en passage obligé.
       onFerme={() => {

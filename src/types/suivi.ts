@@ -364,7 +364,11 @@ export type EcartDePoste = {
   poste: Poste;
   precedentKg: number;
   courantKg: number;
-  /** Le poste le plus lourd du bilan courant : celui dont la barre est en `accent`. */
+  /**
+   * Le poste **dominant** du bilan courant, celui sur lequel le plan travaille et dont la barre est
+   * en `accent` — pas forcément le plus lourd : à 5 % près, le serveur retient le plus régulier
+   * (`etiquetteDuPosteDominant`, 24/09/2026).
+   */
   dominant: boolean;
 };
 

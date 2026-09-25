@@ -100,7 +100,11 @@ export function CarteDOuverture({
         <ThemedText themeColor="accentText" weight={700} style={styles.etiquette}>
           {ouverture.etiquette}
         </ThemedText>
-        <ThemedText type="screenTitle">{ouverture.titre}</ThemedText>
+        {/* Niveau 2 : la carte est une section de l'écran du plan, dont « Ton plan » est le titre de
+            niveau 1 — même si elle se rend au-dessus. Deux `<h1>` diraient deux écrans. */}
+        <ThemedText type="screenTitle" headingLevel={2}>
+          {ouverture.titre}
+        </ThemedText>
         {ouverture.corps && (
           <ThemedText type="body" themeColor="textSecondary">
             {ouverture.corps}
@@ -118,10 +122,13 @@ export function CarteDOuverture({
                 themeColor="accentText"
               />
             ) : (
+              // `onPanel` : la carte est teintée, et un secondaire gris s'y confondait (1,06:1) —
+              // « Choisir une autre », le défaut que `Button` décrit sur la carte du point.
               <Button
                 key={sortie.cle}
                 title={sortie.label}
                 variant={sortie.forme === 'primaire' ? 'primary' : 'secondary'}
+                onPanel
                 onPress={() => onSortie(sortie.cle)}
               />
             )

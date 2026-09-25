@@ -179,7 +179,8 @@ export function ActionCommitment({
 
       {kind === 'days' ? (
         // Les jours se **cumulent** : des `checkbox` dans un groupe nommé, jamais des `radio` — qui
-        // annonceraient qu'en cocher un décoche les autres. Et ils vont sur **quatre colonnes** : sur
+        // annonceraient qu'en cocher un décoche les autres. Et ils vont sur **quatre colonnes au
+        // plus** — trois quand une cible de 48 n'y tiendrait plus (`GroupeDeChoix`) : sur
         // une ligne, entre les marges de la carte et celles du sélecteur, chacun ne mesurait que 27 à
         // 31 px de large à 360-390 dp, sous la cible de 48 (décision n° 7, `GroupeDeChoix`).
         <GroupeDeChoix question={question} cumulable colonnes={4}>

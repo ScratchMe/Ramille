@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     height: ControlHeight.field,
     borderRadius: Radius.field,
-    borderWidth: Stroke.selected,
+    borderWidth: Stroke.field,
     paddingHorizontal: 18,
   },
   // **Le texte saisi est en Spline Sans** (24/09/2026, `v1-29`) : sans `fontFamily`, le champ prenait

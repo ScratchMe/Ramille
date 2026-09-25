@@ -22,16 +22,25 @@ import { useTheme } from '@/hooks/use-theme';
  * par l'appelant, pour qu'ils ne puissent pas se contredire. L'en-tête est de niveau 2 : la feuille
  * s'ouvre par-dessus un écran qui porte déjà son titre.
  *
+ * **Nommer n'oblige pas à afficher** (`enTete`, contre-lecture du 25/09/2026). La feuille des
+ * rappels avait reçu un en-tête visible, « Les rappels », que ni son canvas ni aucune décision ne
+ * portaient : ce que la feuille montre est une question de produit, et la correction d'accessibilité
+ * n'en demandait pas tant — le nom du dialogue suffit. Avec `enTete={false}`, le titre ne s'affiche
+ * pas et continue de nommer le dialogue.
+ *
  * **Le geste de retour referme toujours** (`onFerme`) : une feuille qu'on ne peut pas fermer n'est
  * plus une proposition. C'était le contrat des deux, il est ici une fois.
  */
 export function FeuilleDuBas({
   titre,
+  enTete = true,
   onFerme,
   children,
 }: {
-  /** Affiché en tête de la feuille, et nom du dialogue. */
+  /** Nom du dialogue, et en-tête affiché de la feuille sauf `enTete={false}`. */
   titre: string;
+  /** Afficher le titre en tête de la feuille. `false` quand le canvas n'en dessine pas. */
+  enTete?: boolean;
   /** Le geste de retour, la touche Échap sur web. */
   onFerme: () => void;
   children: ReactNode;
@@ -43,9 +52,11 @@ export function FeuilleDuBas({
       <View style={[styles.voile, { backgroundColor: theme.scrim }]}>
         <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
           <View style={[styles.poignee, { backgroundColor: theme.border }]} />
-          <ThemedText type="cardTitle" accessibilityRole="header">
-            {titre}
-          </ThemedText>
+          {enTete && (
+            <ThemedText type="cardTitle" accessibilityRole="header">
+              {titre}
+            </ThemedText>
+          )}
           {children}
         </ThemedView>
       </View>
