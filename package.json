@@ -76,7 +76,7 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/dist/",
-      "/.claude/worktrees/"
+      "<rootDir>/.claude/worktrees/"
     ],
     "modulePathIgnorePatterns": [
       "<rootDir>/.claude/worktrees/"
