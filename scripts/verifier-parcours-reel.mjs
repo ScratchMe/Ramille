@@ -227,11 +227,14 @@ async function bouton(nom) {
   await b.click();
 }
 /**
- * Le pager de l'onboarding : ses pages hors champ sont `inert` et `aria-hidden`, mais l'état qui
- * les cache suit l'animation de défilement, pas le clic. Deux « Continuer » cliqués trop vite
- * touchent deux fois la même page (mesuré le 20/09/2026 : la première passe a réussi, la seconde
- * a tourné en rond). On attend donc que le défilement soit posé sur la page attendue, puis on
- * cliqué le bouton qui est **dans la fenêtre**, pas le premier que l'arbre d'accessibilité rend.
+ * Le pager de l'onboarding : ses pages hors champ sont `inert` et `aria-hidden`. Jusqu'au
+ * 25/09/2026, l'état qui les cache suivait l'animation de défilement et non le clic — la page
+ * qu'on quittait redevenait active le temps d'un demi-défilement —, et deux « Continuer » cliqués
+ * trop vite touchaient deux fois la même page (mesuré le 20/09/2026 : la première passe a réussi,
+ * la seconde a tourné en rond). Il suit désormais le clic (`enVol`, src/app/onboarding/index.tsx),
+ * mais l'attente reste : le bouton de la page qui arrive glisse jusqu'à ce que le défilement soit
+ * posé. On attend donc que le défilement soit posé sur la page attendue, puis on clique le bouton
+ * qui est **dans la fenêtre**, pas le premier que l'arbre d'accessibilité rend.
  */
 async function boutonDuPager(nom, indexDePage) {
   await page.waitForFunction(

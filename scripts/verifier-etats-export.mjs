@@ -123,7 +123,7 @@ const navigateur = await chromium.launch(
  * layout ou dans le premier effet de l'écran, donc les poser après coup ne testerait que le
  * rechargement. AsyncStorage sur web est `window.localStorage`, clé pour clé, sans préfixe.
  */
-async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null } = {}) {
+async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null, journal = false } = {}) {
   const page = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
   // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
   // au chargement du module (section E).
@@ -131,6 +131,9 @@ async function ouvrir(chemin, marques = {}, { reduire = false, exceptions = null
   // Les exceptions sont écoutées dès avant la navigation : une erreur d'hydratation part pendant
   // que le bundle monte l'app, avant que l'attente ci-dessous ne rende la main (section D).
   if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
+  // Et le journal du focus, pour la même raison : il doit être posé avant le premier script de
+  // la page pour ne rien manquer de ce qui bascule pendant une transition (section E).
+  if (journal) await page.addInitScript(journaliserLeFocus);
   await page.addInitScript((entrees) => {
     for (const [cle, valeur] of Object.entries(entrees)) window.localStorage.setItem(cle, valeur);
   }, marques);
@@ -531,10 +534,59 @@ for (const { chemin, attendu, interdit } of PARAMETRES) {
 // Et sous « réduire les animations », la page change d'un coup : le défilement animé du pager ne
 // consultait pas la préférence (`behavior: 'smooth'` du navigateur). La preuve est l'absence de
 // **toute** position intermédiaire pendant le passage — avant le correctif, il en passait cinq.
+//
+// **Le focus se lit aussi PENDANT le passage, et pas seulement au repos** (25/09/2026). La première
+// version de cette section ne regardait qu'où le focus finissait : elle restait verte pendant qu'il
+// faisait l'aller-retour — titre de la page 1, titre de la page 0, titre de la page 1 —, parce que
+// le premier événement du défilement animé, à 2 px de la page qu'on quitte, la faisait redésigner
+// par l'arrondi de l'index. Au lecteur d'écran, le titre qu'on vient de quitter était annoncé une
+// seconde fois, et la page qui arrive redevenait inerte le temps d'un demi-défilement. D'où le
+// journal (`journaliserLeFocus`) : aucun `focusin` ne doit entrer dans la page qu'on quitte, et
+// chacune des deux pages ne bascule d'inertie **qu'une fois**. Sous « réduire les animations », il
+// n'y a qu'une position, donc rien à voir basculer : la moitié animée est celle qui garde.
+
+/**
+ * Posé avant le premier script de la page (`addInitScript`) : chaque `focusin`, et chaque bascule
+ * de l'attribut `inert`, avec l'indice de la page du pager qui les porte — par **appartenance**
+ * (`contains`), pas par position à l'écran, qui change à chaque image du défilement. L'attribut est
+ * posé sur un descendant de l'enveloppe de chaque page, d'où la même recherche pour les deux.
+ */
+function journaliserLeFocus() {
+  const pages = () => {
+    const pager = [...document.querySelectorAll('div')].find((d) =>
+      ['auto', 'scroll'].includes(getComputedStyle(d).overflowX)
+    );
+    return pager?.firstElementChild ? [...pager.firstElementChild.children] : [];
+  };
+  const pageDe = (noeud) => pages().findIndex((p) => p.contains(noeud));
+  window.__focus = [];
+  window.__inertie = [];
+  document.addEventListener(
+    'focusin',
+    (e) =>
+      window.__focus.push({
+        page: pageDe(e.target),
+        texte: (e.target.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 60),
+      }),
+    true
+  );
+  document.addEventListener('DOMContentLoaded', () =>
+    new MutationObserver((mutations) => {
+      for (const m of mutations) if (m.attributeName === 'inert') window.__inertie.push(pageDe(m.target));
+    }).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['inert'] })
+  );
+}
+
 for (const reduire of [false, true]) {
-  const page = await ouvrir('/onboarding', {}, { reduire });
+  const page = await ouvrir('/onboarding', {}, { reduire, journal: true });
   try {
     await page.getByRole('button', { name: 'Découvrir mon impact' }).focus();
+    // Le `focus()` ci-dessus entre dans la page 0 : c'est le geste, pas la transition. Le journal
+    // repart donc de zéro à l'instant de la touche.
+    await page.evaluate(() => {
+      window.__focus.length = 0;
+      window.__inertie.length = 0;
+    });
     await page.keyboard.press('Enter');
     const positions = [];
     for (let i = 0; i < 8; i++) {
@@ -566,6 +618,39 @@ for (const reduire of [false, true]) {
         `/onboarding : après « Découvrir mon impact » au clavier, le focus est sur` +
           ` ${focus.corps ? 'le document' : `« ${focus.texte} »`}${focus.inerte ? ', dans une page inerte' : ''}` +
           ' — il doit être sur le titre de la page qui arrive (`donnerLeFocus`, src/lib/focus.ts).'
+      );
+    }
+
+    // Le passage lui-même, tel que le journal l'a vu.
+    const { passages, inertie } = await page.evaluate(() => ({
+      passages: window.__focus,
+      inertie: window.__inertie,
+    }));
+    const quand = reduire ? ' sous « réduire les animations »' : '';
+    const retours = passages.filter((p) => p.page === 0);
+    if (!passages.some((p) => p.page === 1)) {
+      // **Une assertion qu'on ne peut pas jouer est un échec** (même règle que la section A) : sans
+      // aucun `focusin` situé dans la page qui arrive, le journal ne sait pas situer les pages, et
+      // « aucun retour sur la page 0 » ne prouverait rien.
+      echecs.push(
+        `/onboarding${quand} : le journal n’a vu aucun focus entrer dans la page qui arrive` +
+          ` (relevé : ${JSON.stringify(passages).slice(0, 160)}) — les pages du pager sont` +
+          ' introuvables, ou le focus ne les suit plus. Le garde-fou ne peut pas conclure.'
+      );
+    } else if (retours.length > 0) {
+      echecs.push(
+        `/onboarding${quand} : pendant le passage à la page 1, le focus est revenu dans la page qu’on` +
+          ` quitte (« ${retours[0].texte} ») avant de repartir — un lecteur d’écran réannonce le titre` +
+          ' qu’on vient de quitter. Un défilement programmé ne doit pas faire redésigner la page par' +
+          ' ses positions intermédiaires (`enVol`, src/app/onboarding/index.tsx).'
+      );
+    }
+    const bascules = [0, 1].map((i) => inertie.filter((p) => p === i).length);
+    if (bascules[0] !== 1 || bascules[1] !== 1) {
+      echecs.push(
+        `/onboarding${quand} : pendant le passage, la page qu’on quitte a basculé d’inertie` +
+          ` ${bascules[0]} fois et celle qui arrive ${bascules[1]} fois, là où chacune doit basculer` +
+          ' une seule fois — la page qui arrive redevenait inerte le temps d’un demi-défilement.'
       );
     }
     if (reduire) {
