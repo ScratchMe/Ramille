@@ -8,7 +8,7 @@ export const EtapeCourante = () => (
   <StepShell section="Domicile-travail" step={3} total={9} onBack={() => {}} onNext={() => {}}>
     <ThemedText type="screenTitle">Combien de jours par semaine ?</ThemedText>
     <div style={{ display: 'flex', gap: 6, marginTop: 20 }}>
-      {[1, 2, 3, 4, 5, 6, 7].map((n) => <Chip key={n} label={String(n)} selected={n === 4} flex />)}
+      {[1, 2, 3, 4, 5, 6, 7].map((n) => <Chip key={n} label={String(n)} role="radio" selected={n === 4} flex radius={14} />)}
     </div>
   </StepShell>
 );

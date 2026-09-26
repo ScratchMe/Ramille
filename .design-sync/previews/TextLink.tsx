@@ -11,23 +11,27 @@ const Colonne = ({ children }: { children?: React.ReactNode }) => (
  */
 export const Registres = () => (
   <Colonne>
-    <TextLink label="Modifier mes réponses" type="small" themeColor="textTertiary" align="center" />
-    <TextLink label="Utiliser un email à la place" type="linkPrimary" align="center" />
-    <TextLink label="J'ai déjà un compte" type="linkPrimary" align="center" />
-    <TextLink label="Changer d'avis" type="small" themeColor="textTertiary" underline align="center" />
+    <TextLink label="Modifier mes réponses" type="small" themeColor="textTertiary" style={{ textAlign: 'center' }} />
+    <TextLink label="Utiliser un email à la place" type="linkPrimary" style={{ textAlign: 'center' }} />
+    <TextLink label="J'ai déjà un compte" type="linkPrimary" style={{ textAlign: 'center' }} />
+    <TextLink label="Changer d'avis" type="small" themeColor="textTertiary" style={{ textDecoration: 'underline', textAlign: 'center' }} />
   </Colonne>
 );
 
 /** Aligné à gauche, dans le flux d'un texte : le pied des pages légales. */
 export const DansLeTexte = () => (
   <Colonne>
-    <TextLink label="Politique de confidentialité" type="small" themeColor="textSecondary" underline />
-    <TextLink label="Conditions d'utilisation" type="small" themeColor="textSecondary" underline />
+    <TextLink label="Politique de confidentialité" type="small" themeColor="textSecondary" style={{ textDecoration: 'underline' }} />
+    <TextLink label="Conditions d'utilisation" type="small" themeColor="textSecondary" style={{ textDecoration: 'underline' }} />
     <TextLink label="Ouvrir les réglages du téléphone" type="small" themeColor="accentText" />
   </Colonne>
 );
 
-/** Désactivé : le lien reste lisible, il ne disparaît pas. */
+/**
+ * Désactivé : le lien reste lisible, il ne disparaît pas. « Renvoyer un code » agit dans l'écran
+ * (un nouvel envoi) sans mener nulle part, donc `role="button"` — le produit envoie un code à
+ * huit chiffres depuis le 20/09/2026, plus de lien.
+ */
 export const Desactive = () => (
-  <TextLink label="Renvoyer le lien" type="small" themeColor="textTertiary" disabled align="center" />
+  <TextLink label="Renvoyer un code" role="button" type="small" themeColor="textTertiary" disabled style={{ textAlign: 'center' }} />
 );

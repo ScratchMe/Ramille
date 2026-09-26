@@ -1,39 +1,55 @@
 import React from 'react';
 import { Chip } from 'ramille-design-system';
 
-const JOURS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+/**
+ * Chaque puce annonce son rôle, et la prop est obligatoire : `radio` dans une série à choix
+ * unique, `checkbox` quand les puces se cumulent (les jours de l'engagement). Jamais `button`.
+ */
+const JOURS = [
+  ['L', 'lundi'],
+  ['M', 'mardi'],
+  ['M', 'mercredi'],
+  ['J', 'jeudi'],
+  ['V', 'vendredi'],
+  ['S', 'samedi'],
+  ['D', 'dimanche'],
+] as const;
 
-/** Les jours de la semaine : équirépartis, rayon 14, deux jours retenus. */
+/**
+ * Les jours de l'engagement : des cases à cocher, deux jours retenus, rayon 14. Deux jours portent
+ * l'initiale « M » : le lecteur d'écran entend le mot entier (`accessibilityLabel`).
+ */
 export const JoursDeLaSemaine = () => (
   <div style={{ display: 'flex', gap: 6 }}>
-    {JOURS.map((d, i) => <Chip key={i} label={d} selected={i === 1 || i === 3} flex radius={14} />)}
+    {JOURS.map(([initiale, jour], i) => (
+      <Chip key={jour} label={initiale} accessibilityLabel={jour} role="checkbox" selected={i === 1 || i === 3} flex radius={14} />
+    ))}
   </div>
 );
 
 /** Oui / Non : `outline` — teinte plus bordure accent, pour un choix qui n'est pas un nombre. */
 export const OuiNon = () => (
   <div style={{ display: 'flex', gap: 8 }}>
-    <Chip label="Oui" selected selectedStyle="outline" flex />
-    <Chip label="Non" selected={false} flex />
+    <Chip label="Oui" role="radio" selected selectedStyle="outline" radius={16} flex />
+    <Chip label="Non" role="radio" selected={false} radius={16} flex />
   </div>
 );
 
-/** Les tranches de distance : `solid` — accent plein et blanc, c'est la forme des nombres. */
+/** Les tranches de distance des sorties : `solid`, en pilule — libellés du questionnaire. */
 export const Tranches = () => (
   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-    <Chip label="< 5 km" selected={false} />
-    <Chip label="5–15" selected />
-    <Chip label="15–30" selected={false} />
-    <Chip label="30–60" selected={false} />
-    <Chip label="> 60" selected={false} />
+    <Chip label="Moins de 5 km" role="radio" selected={false} />
+    <Chip label="5 à 15 km" role="radio" selected />
+    <Chip label="15 à 30 km" role="radio" selected={false} />
+    <Chip label="Plus de 30 km" role="radio" selected={false} />
   </div>
 );
 
-/** Un picker de nombre de jours, rien de retenu encore. */
+/** Le nombre de jours de trajet par semaine : une série de chiffres, rayon 14. */
 export const NombreDeJours = () => (
   <div style={{ display: 'flex', gap: 6 }}>
     {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-      <Chip key={n} label={String(n)} selected={n === 4} flex ariaLabel={`${n} jours par semaine`} />
+      <Chip key={n} label={String(n)} role="radio" selected={n === 4} flex radius={14} accessibilityLabel={`${n} jours par semaine`} />
     ))}
   </div>
 );

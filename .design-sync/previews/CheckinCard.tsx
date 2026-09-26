@@ -2,18 +2,15 @@ import React from 'react';
 import { CheckinCard } from 'ramille-design-system';
 
 /**
- * La question posée, sur le poste dominant : teinte « selected », deux réponses fermées.
- * Non vient avant Oui — on ne met pas la réponse attendue sous le pouce.
+ * La question posée, sur le poste dominant : teinte « selected », trois réponses fixes — la
+ * carte les pose elle-même, Non avant Oui (on ne met pas la réponse attendue sous le pouce), puis
+ * le troisième choix nommé sur la période interrogée.
  */
 export const QuestionPosee = () => (
   <CheckinCard
     periodLabel="Point de la semaine · 8 sept."
     question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?"
     emphasize
-    reponses={[
-      { value: 'non', label: 'Non', variant: 'secondary' },
-      { value: 'oui', label: 'Oui', variant: 'primary' },
-    ]}
   />
 );
 
@@ -43,15 +40,16 @@ export const ReponduNon = () => (
   />
 );
 
-/** La boucle mensuelle du poste secondaire : même carte, sans la teinte. */
+/**
+ * La boucle mensuelle du poste secondaire : même carte, sans la teinte. La question nomme le mois
+ * **écoulé** — jamais « ce mois-ci », qui ne serait pas encore joué —, et le troisième choix le
+ * nomme aussi.
+ */
 export const PosteSecondaire = () => (
   <CheckinCard
     periodLabel="Point du mois · août"
-    question="Ce mois-ci, as-tu remplacé un trajet de loisir par le train ?"
+    question="En août, as-tu remplacé une sortie en voiture par le train ?"
+    sansObjet="Pas de sortie en août"
     emphasize={false}
-    reponses={[
-      { value: 'non', label: 'Non', variant: 'secondary' },
-      { value: 'oui', label: 'Oui', variant: 'primary' },
-    ]}
   />
 );

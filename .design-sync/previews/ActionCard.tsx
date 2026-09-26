@@ -2,8 +2,9 @@ import React from 'react';
 import { ActionCard, ActionCommitment, TextLink } from 'ramille-design-system';
 
 /**
- * L'action engagée : bordure accent 2 px, fond teinté, étiquette à pastille-coche,
- * et l'intention en jours de la semaine — la saillance dit laquelle porte l'engagement.
+ * L'action engagée : bordure accent 2 px, fond teinté, étiquette « TON ENGAGEMENT » à
+ * pastille-coche — posée par la carte elle-même, pas passée en prop —, et l'intention en jours
+ * de la semaine. La saillance dit laquelle porte l'engagement.
  */
 export const Engagee = () => (
   <ActionCard
@@ -11,7 +12,6 @@ export const Engagee = () => (
     gainKg={184}
     partPercent={7}
     intention="le mardi et le jeudi"
-    etiquette="TON ENGAGEMENT"
     engagee
   >
     <ActionCommitment state="committed" />
@@ -33,8 +33,9 @@ export const ChoixDesJours = () => (
 );
 
 /**
- * Estompée parce qu'une autre action porte l'engagement — opacité 0,72, et elle reste
- * cliquable. Une seule action engagée par saison, mais aucune n'est fermée.
+ * Estompée parce qu'une autre action porte l'engagement : elle recule par son cadre, jamais par
+ * une opacité, et elle reste cliquable. Une seule action engagée par saison, mais aucune n'est
+ * fermée.
  */
 export const Estompee = () => (
   <ActionCard titre="Prendre le train pour ce voyage" gainKg={412} partPercent={16} estompee>
@@ -50,9 +51,8 @@ export const AvecDetail = () => (
     partPercent={4}
     detail="sur 12 km aller, 4 jours par semaine"
     intention="le lundi et le vendredi"
-    etiquette="TON ENGAGEMENT"
     engagee
   >
-    <TextLink label="Changer d'avis" type="small" themeColor="textTertiary" underline />
+    <TextLink label="Changer d'avis" type="small" themeColor="textTertiary" style={{ textDecoration: 'underline' }} />
   </ActionCard>
 );
