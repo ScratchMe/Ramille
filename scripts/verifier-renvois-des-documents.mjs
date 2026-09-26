@@ -42,10 +42,19 @@
 //     le fichier supprimé qu'elle couvrait — TESTING.md §2.8, un nom révolu ne s'écrit pas comme un
 //     chemin — et la mutation a été rejouée.)
 //   - une tolérance qu'aucun document n'emprunte → la seconde branche, qui la nomme.
+// **Et une panne vue en CI le jour même** (26/09/2026, PR #269) : vert en local, rouge en CI, sur
+// `_ds_bundle.js` et `ds-bundle/guidelines/readme.md`. Le script parcourait le disque, donc le dossier
+// de build `ds-bundle/`, ignoré par git et absent en CI, faisait résoudre en local ce que la CI
+// refusait. Reproduit en retirant ce dossier : les trois écarts de la CI, à l'identique. Depuis, la
+// liste vient de `git ls-files`, et la mutation qui compte se rejoue **avec** le dossier présent :
+// la tolérance `_ds_bundle.js` retirée, les deux renvois du kit tombent — le build local ne résout
+// plus rien. Le passage a aussi rendu visible `expo-env.d.ts`, cité par CLAUDE.md et ignoré par git :
+// il ne résolvait que parce qu'Expo l'avait généré sur le disque.
 // Et un passage qui doit rester **vert** : les renvois tolérés ci-dessous, dont beaucoup
 // désignent des fichiers qui n'ont jamais eu à exister dans le dépôt. Leur nombre ne s'écrit
 // pas — il s'est périmé le 21/09/2026, à la tolérance suivante.
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -100,6 +109,9 @@ const TOLERES = new Map([
   ['setup.js', 'fichier interne de `jest-expo`, cité pour expliquer son doublage'],
   ['getRoutesCore.js', 'chemin interne d’`expo-router`, lu pour savoir ce qu’il ignore du routage'],
   ['suivi.html', 'page que produit `expo export` dans `dist/`, ignoré par git — citée pour dire la forme d’une route sans enfants'],
+  ['expo-env.d.ts', 'généré par Expo au premier lancement et ignoré par git — CLAUDE.md le cite parce qu’un worktree ne l’a pas'],
+  ['_ds_bundle.js', 'produit par la synchronisation du kit (`.ds-sync/package-build.mjs`) dans `ds-bundle/`, ignoré par git — le `readme.md` du kit le cite comme ce que le chargeur remplace'],
+  ['ds-bundle/guidelines/readme.md', 'artefact de la même synchronisation, cité par `depot-public.md` justement parce qu’il n’est pas suivi'],
   ['plan/index.html', 'idem — la forme d’une route avec enfants, dans `dist/`'],
   [
     'api/package-lock.json',
@@ -109,20 +121,24 @@ const TOLERES = new Map([
 
 /** Tous les fichiers du dépôt, chemins relatifs à la racine. La règle de comparaison est plus
  * bas, dans `estLeMeme` — elle a vécu ici un temps, et l'y laisser aurait été exactement le
- * défaut que ce script traque. */
+ * défaut que ce script traque.
+ *
+ * **Ce que git suit, plus ce qui n'est pas encore ajouté — jamais ce qu'il ignore** (26/09/2026).
+ * Le script parcourait le système de fichiers en écartant une liste de dossiers écrite à la main,
+ * donc un dossier de build ignoré par git mais présent sur le poste faisait « résoudre » un renvoi
+ * que la CI, qui n'a que le dépôt, refusait : `_ds_bundle.js` se trouvait dans `ds-bundle/` en
+ * local, et nulle part en CI. Vert chez soi, rouge en CI — le pire sens. `git ls-files` rend
+ * exactement ce que la CI voit, et les fichiers neufs pas encore ajoutés (`--others`) restent
+ * visibles, sans quoi le contrôle refuserait un document qui cite le fichier qu'on vient d'écrire. */
 function fichiersDuDepot() {
-  const ignores = new Set(['node_modules', '.git', 'dist', '.expo', '.next', 'coverage']);
-  const trouves = [];
-  const parcourir = (dossier) => {
-    for (const entree of fs.readdirSync(dossier, { withFileTypes: true })) {
-      if (ignores.has(entree.name)) continue;
-      const chemin = path.join(dossier, entree.name);
-      if (entree.isDirectory()) parcourir(chemin);
-      else trouves.push(path.relative(RACINE, chemin));
-    }
-  };
-  parcourir(RACINE);
-  return trouves;
+  const sortie = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
+    cwd: RACINE,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  // `--cached` garde un fichier supprimé du disque tant que sa suppression n'est pas indexée : on ne
+  // retient que ce qui existe, sans quoi un renvoi vers un fichier qu'on vient d'effacer passerait.
+  return [...new Set(sortie.split('\0').filter(Boolean))].filter((f) => fs.existsSync(path.join(RACINE, f)));
 }
 
 function documentsALire() {

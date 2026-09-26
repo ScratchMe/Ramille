@@ -571,6 +571,11 @@ vu en une seconde — mais personne ne le lance.
   Deux formes s'y ajoutent, chacune avec sa raison en tête du script : le chemin **servi**
   (`/.well-known/assetlinks.json`, dont le fichier vit sous `public/`) et le nom **lisible** d'une
   migration, sans son horodatage généré — cette dernière est bornée à `supabase/migrations/`.
+- **Il compare à ce que git suit, jamais au disque** (26/09/2026). Il parcourait le système de
+  fichiers, donc un dossier de build ignoré par git mais présent sur le poste (`ds-bundle/`) faisait
+  résoudre en local un renvoi que la CI refusait : vert chez soi, rouge en CI. La liste vient
+  désormais de `git ls-files` (suivis, plus les fichiers neufs pas encore ajoutés), et un fichier
+  généré qu'un document cite — `expo-env.d.ts` — se déclare en tolérance, avec sa raison.
 - **Une tolérance qui ne couvre plus rien fait rougir le contrôle**, et c'est la seconde moitié du
   script. Une liste d'exceptions est exactement ce qui pourrit : celle qui a perdu son objet
   attend qu'un vrai écart porte le même nom pour le couvrir à son tour. Chaque entrée porte donc
