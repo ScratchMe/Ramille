@@ -37,8 +37,9 @@ commenter, et le produit ne commente pas.
   a **un seul accent**, le vert forêt `--color-accent`, et il marque **ce qui est dominant ou
   actionnable** — jamais un verdict.
 - Pas de dégradé, pas d'image de fond, pas de texture, pas de glassmorphisme. Quasi aucune
-  ombre : seul le bouton Google en porte une. Les seules transparences sont le voile de
-  feuille (`--color-scrim`) et l'action estompée à 0,72 — qui reste cliquable.
+  ombre : seul le bouton Google en porte une. La seule transparence est le voile de feuille
+  (`--color-scrim`) : une action estompée recule **par son cadre**, jamais par une opacité, et
+  reste cliquable.
 - Pas d'emoji, pas de caractère unicode en guise d'icône. Pas de point d'exclamation en
   dehors d'une réplique de Ramille.
 - Pas de célébration, pas de confetti, pas de son. L'animation est rare et signifiante.
@@ -93,7 +94,7 @@ un constat de lecture.
 ## Accessibilité
 
 Un texte cliquable est un `TextLink`, jamais un `Pressable` autour d'un texte : le libellé
-annoncé **est** le texte affiché, et la cible fait 44 px sans déplacer le texte. Les listes de
+annoncé **est** le texte affiché, et la cible fait 48 px sans déplacer le texte. Les listes de
 choix exclusifs s'annoncent en `radio`, seul rôle qui dit « sélectionné ». La mascotte et les
 illustrations sont masquées aux lecteurs d'écran — elles accompagnent un texte qui dit déjà
 tout.

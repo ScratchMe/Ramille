@@ -3,7 +3,8 @@ import { GoogleButton, TextLink } from 'ramille-design-system';
 
 /**
  * Le bouton Google, seule ombre du produit (0 1px 2px). Le bouton officiel n'est jamais
- * redessiné : ce composant est un substitut neutre pour les maquettes.
+ * redessiné : ce composant est un substitut neutre pour les maquettes. Son libellé est fixe,
+ * « Se connecter avec Google » — il n'a pas de prop `label`.
  */
 export const Defaut = () => <GoogleButton />;
 
@@ -13,7 +14,7 @@ export const EnCours = () => <GoogleButton loading />;
 /** Dans l'écran de connexion, avec l'autre chemin juste en dessous. */
 export const DansLEcranDeConnexion = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-    <GoogleButton label="Continuer avec Google" />
-    <TextLink label="Utiliser un email à la place" type="linkPrimary" align="center" />
+    <GoogleButton />
+    <TextLink label="Utiliser un email à la place" type="linkPrimary" style={{ textAlign: 'center' }} />
   </div>
 );

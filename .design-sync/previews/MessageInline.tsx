@@ -8,7 +8,7 @@ import { Button, MessageInline } from 'ramille-design-system';
 export const SousLAction = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
     <MessageInline message="L’envoi n’a pas abouti. Vérifie l’adresse et réessaie." />
-    <Button title="Recevoir le lien" />
+    <Button title="Recevoir un code" />
   </div>
 );
 

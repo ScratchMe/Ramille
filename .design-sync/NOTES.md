@@ -150,6 +150,50 @@ Trois pièges rencontrés, dont deux qui coûtent du temps :
    synchro précédente) alors que `.design-sync/node_modules` avait disparu. Les refaire tous les deux
    sans regarder coûte une seconde ; en vérifier un seul laisse l'autre casser plus tard.
 
+## Relevé du 26/09/2026 — troisième synchronisation
+
+Re-synchro sur le chemin atomique, skill 2.1.283. Le kit avait bougé avec les arbitrages des
+24 et 25/09/2026 (`v1-29`) : 23 composants, le bundle et le style à téléverser. Le pilote les a
+pourtant tous classés `unchanged` côté **vérification** — c'est voulu : les notes suivent les
+aperçus, pas le code des composants.
+
+**C'est exactement ce qui a laissé dériver dix aperçus, et c'est la leçon de cette passe.** Un
+aperçu écrit contre l'ancienne API d'un composant ne casse pas : React ignore une prop inconnue,
+et la carte se rend « bien ». Mais l'agent de design lit l'aperçu comme un exemple d'usage. Relevé
+en auditant quatre composants (`--spot-check-components`), puis généralisé :
+
+- **des props qui n'existent plus** : `etiquette` (`ActionCard`), `underline` et `align`
+  (`TextLink` — `style` à la place), `reponses` (`CheckinCard`), `label` (`GoogleButton`),
+  `type="email"` (`TextField` → `keyboardType="email-address"`), `ariaLabel` (`Chip` →
+  `accessibilityLabel`), `detail` et `disabled` (`ChoiceRow`, qui ne porte qu'un libellé) ;
+- **une prop devenue obligatoire et absente** : `Chip.role` (`radio` | `checkbox`), dans `Chip`
+  et `StepShell` ;
+- **le vocabulaire d'avant le produit** : « Une notification / Un email / Rien », le canal `aucun`
+  (c'est `none`), « Renvoyer le lien », « Recevoir le lien » (c'est un code depuis le 20/09),
+  « Ce mois-ci » dans une question qui doit nommer le mois écoulé, et des tranches `< 5 km` que
+  le questionnaire n'écrit pas.
+
+**La garde, à rejouer à chaque resynchronisation** : `.design-sync/.cache/props-check.py`
+compare chaque prop passée à un composant du kit dans `previews/*.tsx` à son `<Nom>Props`, et
+signale aussi les obligatoires absentes. Il est dans `.cache/` (non versionné) : le recopier
+depuis ce paragraphe si le cache a disparu — trente lignes de regex, sans dépendance. Il ne voit
+pas le vocabulaire : pour lui, relire les feuilles, et chercher les mots retirés du produit
+(`grep -rn "aucun'\|lien à usage\|Recevoir le lien" .design-sync/previews`).
+
+Deux autres corrections :
+
+- **`cfg.overrides.Chip.cardMode = "column"`** : les puces font 48 px depuis le 24/09, et les
+  sept jours débordaient d'une cellule de grille (`[GRID_OVERFLOW]`).
+- **`conventions.md`, deux faits corrigés et rien d'autre** : « l'action estompée à 0,72 » (elle
+  recule par son cadre, jamais par une opacité) et « la cible fait 44 px » (48). Les noms qu'il
+  cite ont tous été revalidés contre le build : les onze composants dans l'arbre et le bundle,
+  `StepShell.manque`, `Button.flex`, `--color-accent` et `--color-scrim`, `guidelines/readme.md`.
+
+**Ce que cette passe n'a pas fait** : ajouter au kit les composants que le produit a gagnés depuis
+(`GroupeDeChoix`, `FeuilleDuBas`, `LigneDeCanal`, `TitreDArrivee`, `v1-29` §5). La
+synchronisation téléverse le kit tel qu'il est ; le compléter est un chantier du kit, pas de la
+synchronisation.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine
@@ -173,6 +217,10 @@ Trois pièges rencontrés, dont deux qui coûtent du temps :
   et `extraFonts`, eux, sont relatifs au **paquet** (le kit).
 - **`tokensGlob` seul ne copie rien** : `copyTokens` sort immédiatement si `tokensPkg` est absent.
   Les deux vont ensemble, et `tokensPkg` vaut ici le kit lui-même.
+- **Un changement d'API d'un composant du kit ne fait regrader personne.** Le pilote suit les
+  aperçus, pas le code : après toute vague qui touche le kit, rejouer `props-check.py` et relire
+  les feuilles des composants touchés (`--spot-check-components`), sans quoi les aperçus
+  enseignent l'ancienne API à l'agent de design (relevé du 26/09/2026 ci-dessus).
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
   Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
   bout, et un nouveau téléversement coûte peu.

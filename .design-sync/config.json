@@ -17,6 +17,9 @@
   "overrides": {
     "Mascot": {
       "cardMode": "column"
+    },
+    "Chip": {
+      "cardMode": "column"
     }
   },
   "libOverrides": {
