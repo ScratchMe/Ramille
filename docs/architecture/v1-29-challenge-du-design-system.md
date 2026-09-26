@@ -338,7 +338,8 @@ le 25 :
   `ChoixDeRappel` et `FeuilleRappels` rendent la ligne de canal à l'identique, et `ActionCommitment`
   et `PrecisionMode` posent eux-mêmes leur groupe nommé — **fermé le 26/09/2026 par le lot 1,
   ci-dessous** ;
-- **des écarts antérieurs à la livraison**, relevés en relisant le code pour elle : le bouton Google
+- **des écarts antérieurs à la livraison** (**fermés le 26/09/2026 par le lot 2, ci-dessous**),
+  relevés en relisant le code pour elle : le bouton Google
   (le code dessine le « G » officiel, sans ombre, avec un indicateur d'attente — le kit garde une
   pastille, une ombre et « Connexion… ») ; `google-oauth-logo.png`, que le `readme.md` présente
   comme une référence Google alors que c'est le logo de Ramille pour l'écran de consentement ; les
@@ -349,7 +350,7 @@ le 25 :
   cite sans qu'ils existent ;
 - **aucun contrôle ne voit les chemins du kit** : `scripts/verifier-renvois-des-documents.mjs` ne
   balaie pas `docs/design/design-system/`. Les 39 chemins cités ont été vérifiés à la main le
-  25/09/2026 ;
+  25/09/2026 — **fermé le 26/09/2026 par le lot 2** ;
 - **`BarreOnglets`** existe dans le kit et pas comme composant du code : la barre est le layout
   `src/app/(tabs)/_layout.tsx` ;
 - **le catalogue des 38 écrans** (`ui_kits/ramille/`) reprend le handoff V1, dont des écrans à mot de
@@ -373,6 +374,23 @@ datées en tête du script. Le nombre de fichiers restants ne s'écrit pas ici :
 `TitreDePage` et `RetourDeNotification` n'ont rien à dessiner et y sont nommés comme tels — ce que
 le `readme.md` du kit rangeait sous « infrastructure sans UI » comptait aussi `ThemedView`,
 `ConfigurationManquante` et `MissingModeLink`, qui en ont une.
+
+**Le lot 2 ferme les écarts des fiches existantes.** Le bouton Google dessine le « G » officiel,
+sans ombre, et attend avec un indicateur sans texte — son jeton d'ombre, `--shadow-tier`, est parti
+avec lui, faute d'équivalent dans `theme.ts`. Le `readme.md` dit ce qu'est
+`google-oauth-logo.png` (le logo de Ramille pour l'écran de consentement), et son index ne cite plus
+de fichier inexistant. Les props manquantes sont portées : `StepShell.motDeRamille` et `.detail`
+(et le focus au changement d'étape), `ActionCard.premierPas`, le second renforcement, l'action
+quittée, le refus et l'échec de `CheckinCard`, l'attente et l'état final de `MonCompte`, la
+`progressbar` d'`OnboardingDots`. **Les aperçus disaient des choses que le produit ne dit pas** — des
+titres d'action inventés (« Faire ce trajet à vélo » pour « Faire un trajet sur cinq à vélo »), des
+libellés de période (« Point de la semaine · 8 sept. » pour « Semaine du 14/09 »), un détail d'action,
+une question d'avant C2.3 dans le kit cliquable : ils reprennent le référentiel et les formats de la
+base. **Deux gardes s'étendent** : le contrôle des renvois lit le kit, sous-dossiers compris, et les
+extensions de documents, de feuilles et d'images — l'index citait deux `.md` inexistants qu'un
+contrôle limité au code ne pouvait pas voir ; et la garde du miroir exige de chaque fiche une ligne
+« Source » qui désigne un fichier existant portant le composant du même nom. Neuf mutations de plus,
+datées en tête des deux scripts.
 
 **Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
 partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.

@@ -17,13 +17,17 @@
 // un composant (la règle de `v1-29` §5 : ce qui change un composant met sa fiche à jour dans la même
 // PR), et pour les aperçus de la synchronisation, la comparaison de `.design-sync/NOTES.md`.
 //
-// Trois refus, et le troisième n'est pas du zèle :
+// Quatre refus, et les deux derniers ne sont pas du zèle :
 //   1. un composant du dépôt sans fiche, ni exception raisonnée ;
 //   2. une exception qui ne couvre plus rien — le fichier a été porté, déplacé ou supprimé. Une
 //      exception morte ne disparaît pas d'elle-même : elle attend qu'un vrai écart porte le même nom
 //      pour le couvrir à son tour (la leçon de `verifier-renvois-des-documents.mjs`) ;
 //   3. une fiche du kit que `components/loader.js` ne charge pas : sans bundle compilé, c'est ce
-//      chargeur qui expose le kit aux cartes, et une fiche qu'il ignore y est invisible.
+//      chargeur qui expose le kit aux cartes, et une fiche qu'il ignore y est invisible ;
+//   4. une fiche qui ne nomme pas sa source (`// Source : src/…` en tête, ou `Composition de src/…`
+//      pour un ajout du kit), ou dont la source n'existe plus, ou ne porte pas le composant du même
+//      nom (26/09/2026). La ligne « Source » est ce qu'on suit pour relire une fiche contre le dépôt :
+//      un fichier déplacé la rend muette, et le refus n° 1 ne le voit pas — il cherche le nom partout.
 //
 // **Éprouvé en le cassant, le 26/09/2026** (TESTING.md §1.1), une mutation à la fois, l'état d'avant
 // réécrit ensuite, et le témoin sans mutation sort vert :
@@ -37,6 +41,14 @@
 //   | `forms/LigneDeCanal` retiré de l'ORDER du chargeur | refus 3, sur cette fiche seulement |
 //   | une fiche du kit sans composant du même nom dans `src/` | le refus inverse **et** le refus 3 — une fiche neuve oubliée des deux côtés |
 //   | une entrée d'`AJOUTS_DU_KIT` que le kit ne porte pas | « que le kit ne porte plus » |
+//
+// Et le 26/09/2026, pour le refus n° 4, trois mutations de plus, même protocole :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | la ligne « Source » retirée de `ThemedView.jsx` | refus 4, « ne nomme pas sa source » |
+//   | la source de `StepShell.jsx` pointée sur `step-shel.tsx` | refus 4, « n'existe pas » |
+//   | la source de `StepShell.jsx` pointée sur `progress-header.tsx` | refus 4, « ne porte pas » |
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -158,6 +170,28 @@ const chargeur = fs.readFileSync(path.join(RACINE, KIT, 'loader.js'), 'utf8');
 for (const fiche of fiches) {
   const cle = path.posix.relative(KIT, fiche).replace(/\.jsx$/, '');
   if (!chargeur.includes(`'${cle}'`)) ecarts.push(`${fiche} n’est pas dans l’ORDER de components/loader.js : sans bundle compilé, les cartes ne la voient pas.`);
+}
+
+// Refus n° 4 : la fiche nomme sa source, la source existe, et elle porte le composant. Le chemin se lit
+// jusqu'au premier blanc ; la ponctuation qui le suit dans la phrase (« tsx — », « tsx, ») est retirée.
+for (const fiche of fiches) {
+  const nom = path.basename(fiche, '.jsx');
+  // Le premier commentaire « Source » du fichier, où qu'il soit : il suit les imports, qui sont plus ou
+  // moins nombreux.
+  const trouve = fs.readFileSync(path.join(RACINE, fiche), 'utf8').match(/\/\/ (?:Source :|Composition de) (src\/\S+)/);
+  if (!trouve) {
+    ecarts.push(`${fiche} ne nomme pas sa source : « // Source : src/… » en tête, pour qu'on sache contre quoi la relire.`);
+    continue;
+  }
+  const source = trouve[1].replace(/[.,;:—]+$/, '');
+  if (!fs.existsSync(path.join(RACINE, source))) {
+    ecarts.push(`${fiche} nomme ${source} comme source, qui n'existe pas : le composant a bougé, la fiche suit.`);
+    continue;
+  }
+  if (AJOUTS_DU_KIT.has(nom)) continue;
+  if (!exportees(source).includes(nom)) {
+    ecarts.push(`${fiche} nomme ${source} comme source, qui ne porte pas ${nom} : la ligne désigne le mauvais fichier.`);
+  }
 }
 
 if (ecarts.length > 0) {

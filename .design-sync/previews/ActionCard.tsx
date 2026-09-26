@@ -3,15 +3,17 @@ import { ActionCard, ActionCommitment, TextLink } from 'ramille-design-system';
 
 /**
  * L'action engagée : bordure accent 2 px, fond teinté, étiquette « TON ENGAGEMENT » à
- * pastille-coche — posée par la carte elle-même, pas passée en prop —, et l'intention en jours
- * de la semaine. La saillance dit laquelle porte l'engagement.
+ * pastille-coche — posée par la carte elle-même, pas passée en prop —, l'intention en jours
+ * de la semaine, et le premier pas, qui n'apparaît qu'une fois l'action engagée. Les libellés
+ * sont ceux du référentiel d'actions (`action_templates`).
  */
 export const Engagee = () => (
   <ActionCard
-    titre="Faire ce trajet à vélo"
+    titre="Faire un trajet sur cinq à vélo"
     gainKg={184}
     partPercent={7}
     intention="le mardi et le jeudi"
+    premierPas="Repère un itinéraire cyclable avant ton premier jour."
     engagee
   >
     <ActionCommitment state="committed" />
@@ -27,7 +29,7 @@ export const Proposee = () => (
 
 /** Le choix des jours, ouvert sous l'action — domicile-travail, jamais une saisie libre. */
 export const ChoixDesJours = () => (
-  <ActionCard titre="Faire ce trajet à vélo" gainKg={184} partPercent={7}>
+  <ActionCard titre="Faire un trajet sur cinq à vélo" gainKg={184} partPercent={7}>
     <ActionCommitment kind="days" state="picking" days={[2, 4]} />
   </ActionCard>
 );
@@ -38,21 +40,21 @@ export const ChoixDesJours = () => (
  * fermée.
  */
 export const Estompee = () => (
-  <ActionCard titre="Prendre le train pour ce voyage" gainKg={412} partPercent={16} estompee>
-    <ActionCommitment kind="timing" state="idle" otherActionCommitted />
+  <ActionCard titre="Remplacer un aller-retour en avion par le train" gainKg={412} partPercent={16} estompee>
+    <ActionCommitment kind="timing" poste="travel" state="idle" otherActionCommitted />
   </ActionCard>
 );
 
 /** Avec un détail de segment et le lien qui libère, sans rien compter. */
 export const AvecDetail = () => (
   <ActionCard
-    titre="Faire ce trajet en métro"
+    titre="Passer deux trajets sur cinq en métro ou en tram"
     gainKg={96}
     partPercent={4}
-    detail="sur 12 km aller, 4 jours par semaine"
+    detail="Sur tes 4 trajets par semaine."
     intention="le lundi et le vendredi"
     engagee
   >
-    <TextLink label="Changer d'avis" type="small" themeColor="textTertiary" style={{ textDecoration: 'underline' }} />
+    <TextLink label="Changer d’avis" type="small" themeColor="textTertiary" style={{ textDecoration: 'underline' }} />
   </ActionCard>
 );

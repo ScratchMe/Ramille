@@ -23,7 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </div>
     <div style={{gridColumn:'1 / -1',borderRadius:12,overflow:'hidden'}}>
       <FeuilleDuBas titre="Ton plan va être recalculé">
-        <ThemedText type="body" themeColor="textSecondary">L’action que tu suis — Faire ce trajet à vélo — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, tu en choisiras une autre.</ThemedText>
+        <ThemedText type="body" themeColor="textSecondary">L’action que tu suis — Faire un trajet sur cinq à vélo — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, tu en choisiras une autre.</ThemedText>
         <Button title="Soumettre mon bilan" />
         <TextLink label="Pas maintenant" type="small" weight={600} themeColor="accentText" style={{textAlign:'center'}} />
       </FeuilleDuBas>

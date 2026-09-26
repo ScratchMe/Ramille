@@ -4,9 +4,9 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 
 ## Sources
 - Dépôt : `ScratchMe/Ramille` (React Native / Expo, branche `main`) — jetons `src/constants/theme.ts`, composants `src/components/**`, voix `src/constants/mascotte.ts`, géométrie `src/types/mascot.ts`.
-- Canvas antérieurs : `docs/design/v1-07` … `v1-12` (dont `v1-11-navigation/Systeme.dc.html`, `v1-08-mascotte/Expressions.dc.html`).
-- Handoff V1 : `design_handoff_traceverte_v1/` (38 écrans, README détaillé).
-- Brief v1-14 : `uploads/BRIEF.md` (boucle d'engagement, d'une saison à l'autre).
+- Canvas et réponses des sessions de design : `docs/design/v1-NN-*/`, un dossier par brief — le plus récent est celui du plus grand numéro, et une réponse peut servir deux briefs, le README de chaque dossier le dit (dont `v1-11-navigation/Systeme.dc.html`, `v1-08-mascotte/Expressions.dc.html`).
+- Handoff V1 : `docs/design/README.md`, ses deux spécifications et `docs/design/traceverte-ecrans-v1.dc.html` (38 écrans) — figé tel quel, jamais réécrit ; les écarts assumés vivent dans `docs/architecture/v1-0N-*.md`.
+- Brief v1-14 : `docs/design/v1-14-boucle-engagement/BRIEF.md` (boucle d'engagement, d'une saison à l'autre).
 - Aucun fichier Figma. Spline Sans est versionnée en `assets/fonts/` (SIL OFL 1.1) — cf. Caveats.
 
 ## Contenu — fondamentaux
@@ -27,7 +27,7 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 - **Fonds** : blanc, aplats de neutres tièdes. Pas de dégradé, pas d'image de fond, pas de glassmorphisme, pas de texture. Les illustrations manquantes sont des placeholders rayés 135° (`#E4EFE8`/`#F3F8F4`) avec légende mono.
 - **Cartes** : deux registres. Neutre : fond `backgroundElement` sans bordure (panneau) ou bordure 1 px `border` sur blanc (action, et « Mes données » depuis le 24/09/2026). Un bouton secondaire, gris, perd sa forme sur un panneau gris : posé sur une carte grise ou teintée, il prend `onPanel` (fond de l'écran et filet). Saillante : bordure accent 2 px + fond `backgroundTinted` + étiquette majuscule 13/18/700 précédée d'une pastille-coche 20 px (action engagée). Teintée `backgroundSelected` uniquement pour la décision dominante et le point de suivi.
 - **Sélection** : fond `backgroundSelected` + bordure 1,5 px accent + poids 600. Non sélectionné : `backgroundElement`, bordure transparente, 400 — et le fond de la page (`nestedBackground`) quand le choix est posé dans un encart teinté. Un choix est un `radio` ou une `checkbox`, jamais un bouton, dans un groupe nommé par sa question.
-- **Ombres** : quasi aucune. Le bouton Google du kit porte `0 1px 2px rgba(19,22,18,0.06)` ; celui du dépôt n'en porte aucune, écart antérieur au 24/09/2026 laissé au chantier de synchronisation. Le cadre de présentation porte `0 24px 60px rgba(19,22,18,0.10)` (hors app).
+- **Ombres** : aucune dans l'app. Le bouton Google en portait une dans le kit et jamais dans le dépôt ; elle est partie le 26/09/2026 avec son jeton `--shadow-tier`, qui n'avait pas d'équivalent dans `theme.ts`. Le cadre de présentation porte `0 24px 60px rgba(19,22,18,0.10)` (hors app).
 - **Barres de progression / comparaison** : rail `border`, remplissage accent, contexte `accentMuted` ; hauteur 6 (progression), 12–22 (comparaison), rayon = moitié.
 - **Bande haute** : 52 px, nom centré 17/24/600 — un repère, pas un titre : il n'est pas annoncé en en-tête —, icône compte 22 dans une cible 48 à droite, bordure basse hairline. **Le nom, pas le visage.**
 - **Barre d'onglets** : deux entrées de 48 px au moins (51 : la barre de 60 moins son filet et deux marges de 4), icônes trait 1,9 sur grille 24, pastille 56×30 **`accent` pleine, icône `onAccent`** sur l'actif (6,12:1 ; la pastille `backgroundSelected` ne ressortait qu'à 1,18:1), libellé 12/16 (600 actif).
@@ -41,7 +41,7 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 - **Pas de bibliothèque d'icônes** : trois tracés seulement, dessinés dans le dépôt — onglet Plan (coche + ligne), onglet Suivi (courbe + point), compte (buste). Grille 24, trait 1,9, arrondi. La coche de l'action engagée (trait 3, blanc sur pastille accent 20 px) est le quatrième.
 - Aucun SVG d'illustration final : trois emplacements sont des placeholders à produire (onboarding 1 et 3, état vide). Le dépôt contient des illustrations vectorielles génériques (`src/components/illustrations/*`) non copiées ici.
 - Pas d'emoji, pas de caractères unicode utilisés comme icônes (sauf « − » typographique pour les kilos évités et « · » séparateur).
-- Marques copiées : `assets/images/logo-mark.svg`, `mascot-mark.svg`, `favicon-mark.svg`, `icon.png`, `splash-icon.png`, `google-oauth-logo.png` (référence du logo Google — le bouton officiel n'est jamais redessiné).
+- Marques copiées : `assets/images/logo-mark.svg`, `mascot-mark.svg`, `favicon-mark.svg`, `icon.png`, `splash-icon.png`, `google-oauth-logo.png` (le logo de **Ramille** téléversé sur l'écran de consentement de Google — pas une référence du « G », que `GoogleButton` dessine en SVG et qui ne se redessine jamais).
 
 ## Composants (une partie du dépôt)
 core/ ThemedText · ThemedView · Button · TextLink · MessageInline · OnboardingDots · FeuilleDuBas · TitreDArrivee
@@ -67,14 +67,13 @@ Sans interface, donc sans fiche : `TitreDePage` (les métadonnées du document) 
 - `components/<groupe>/` — .jsx + .d.ts + .prompt.md + une carte par groupe ; `components/loader.js` = repli quand `_ds_bundle.js` n'est pas compilé
 - `ui_kits/ramille/` — kit cliquable (6 écrans, thème sombre) + catalogue des 38 écrans V1
 - `assets/images/` — marques ; `assets/fonts/` — Spline Sans 400/500/600/700 (.ttf, SIL OFL 1.1)
-- `design_handoff_traceverte_v1/` — handoff V1 (référence)
 - `SKILL.md` — invocation Claude Code
-- `github.md` — dépôt source et carte des écrans
+- Hors du kit, dans le dépôt : le handoff V1 (`docs/design/README.md`) et la carte des écrans (`CLAUDE.md`, « Routing »)
 
 ## Caveats
 - Spline Sans : les quatre graisses sont désormais versionnées en `assets/fonts/` (224 Ko, SIL OFL 1.1,
   reprises de `@expo-google-fonts/spline-sans` que le dépôt utilise déjà) et déclarées en `@font-face`
-  local par `assets/fonts/fonts.css`. L'`@import` Google Fonts de `tokens/fonts.css` a disparu avec le
+  local par `assets/fonts/fonts.css`. L'`@import` Google Fonts de tokens/fonts.css a disparu avec le
   fichier : une police de marque servie par un tiers se dégrade en silence en police système partout
   où cet hôte n'est pas joignable, et rien en aval ne le signale. L'app, elle, continue de la charger
   via `@expo-google-fonts` — c'est le kit qui devient autonome, pas le dépôt qui change.
