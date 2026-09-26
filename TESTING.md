@@ -560,7 +560,12 @@ vu en une seconde — mais personne ne le lance.
   nous est arrivé.
 - **Les documents datés sont hors périmètre**, volontairement : `docs/audit/` et les `v1-0N` sont
   des instantanés d'un jour. Un renvoi périmé y est **exact** — il dit où la chose était alors.
-  Seuls `produit.md` et `v1-27` y entrent, parce que le dépôt les tient à jour.
+  Seuls `produit.md` et `v1-27` y entrent, parce que le dépôt les tient à jour. **Le kit de design
+  y entre depuis le 26/09/2026, sous-dossiers compris** (`docs/design/design-system/`, un miroir
+  tenu), et les extensions de documents, de feuilles et d'images avec lui : son index citait deux
+  fichiers `.md` qui n'existaient nulle part, qu'un contrôle limité au code ne pouvait pas voir.
+  Un répertoire cité seul lui échappe encore — sans extension, rien ne distingue un chemin d'un
+  mot.
 - **La comparaison se fait sur un suffixe de segment**, pas sur le nom de base : `plan/index.tsx`
   doit pouvoir se distinguer de `suivi/index.tsx`, sans quoi un déplacement de dossier passerait.
   Deux formes s'y ajoutent, chacune avec sa raison en tête du script : le chemin **servi**
@@ -572,7 +577,9 @@ vu en une seconde — mais personne ne le lance.
   sa raison, et le passage vert les compte.
 
 **Éprouvé en le cassant** (§1.1), une mutation par branche : un chemin déplacé dans `CLAUDE.md`,
-et une tolérance qu'aucun document n'emprunte.
+et une tolérance qu'aucun document n'emprunte — puis six de plus le 26/09/2026 pour le kit et les
+extensions, dont deux qui doivent rester **vertes** et le restent : sans l'extension `md`, ou sans
+le kit dans le périmètre, l'écart qu'on y a posé n'est plus vu. Le détail est en tête du script.
 
 ### 2.9 Le chemin du compte, joué de bout en bout
 

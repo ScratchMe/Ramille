@@ -89,9 +89,9 @@ function Plan({ go, dark }) {
     <Phone dark={dark}>
       <BandeHaute onCompte={() => go('toi')} />
       <Scroll gap={16}>
-        <CheckinCard periodLabel="Point de la semaine · 8 sept." question="As-tu changé de mode de transport au moins une fois cette semaine pour ton trajet domicile-travail ?" answered={answered} onAnswer={setAnswered} />
+        <CheckinCard periodLabel="Semaine du 14/09" question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?" answered={answered} onAnswer={setAnswered} />
         <ThemedText type="screenTitle" as="h1">Ton plan</ThemedText>
-        <ActionCard titre="Faire ce trajet à vélo" gainKg={184} partPercent={7} intention="le mardi et le jeudi" engagee={state === 'committed'}>
+        <ActionCard titre="Faire un trajet sur cinq à vélo" gainKg={184} partPercent={7} intention="le mardi et le jeudi" engagee={state === 'committed'}>
           <ActionCommitment kind="days" state={state} days={days} onPick={() => setState('picking')} onToggleDay={(i) => setDays((d) => d.includes(i) ? d.filter((x) => x !== i) : [...d, i])} onCancel={() => setState('idle')} onSubmit={() => setState('committed')} onRelease={() => setState('idle')} />
         </ActionCard>
         <ActionCard titre="Travailler depuis chez toi un jour par semaine" gainKg={240} partPercent={9} estompee={state === 'committed'}>

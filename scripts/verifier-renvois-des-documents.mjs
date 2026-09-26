@@ -28,6 +28,20 @@
 //   - une tolérance ajoutée à `TOLERES` qu'aucun document n'emprunte → 1 écart de l'autre
 //     espèce. Cette seconde branche existe parce qu'une exception qui ne couvre plus rien ne
 //     disparaît pas : elle attend qu'un vrai écart porte le même nom pour le couvrir à son tour.
+// **Et le 26/09/2026, quand le kit de design et les extensions de documents y sont entrés** — six
+// mutations, l'état d'avant réécrit après chacune, le témoin vert :
+//   - `uploads/BRIEF.md` remis dans l'index du kit → 1 écart, sur cette ligne ;
+//   - `github.md` remis → 1 écart, sur cette ligne ;
+//   - un chemin inexistant dans `components/forms/Chip.prompt.md` → 1 écart : les sous-dossiers
+//     du kit sont lus ;
+//   - `md` retiré des extensions, `uploads/BRIEF.md` en place → **vert**, 468 renvois au lieu de
+//     743 : c'est l'extension qui fait voir l'écart, pas le périmètre ;
+//   - le kit retiré du périmètre, le chemin inexistant en place → **vert**, 706 renvois dans 18
+//     documents : l'écart n'est plus vu. (Mesuré une première fois avec une tolérance du kit, qui
+//     tombait alors morte ; elle est partie, le `readme.md` du kit citant désormais sans accents graves
+//     le fichier supprimé qu'elle couvrait — TESTING.md §2.8, un nom révolu ne s'écrit pas comme un
+//     chemin — et la mutation a été rejouée.)
+//   - une tolérance qu'aucun document n'emprunte → la seconde branche, qui la nomme.
 // Et un passage qui doit rester **vert** : les renvois tolérés ci-dessous, dont beaucoup
 // désignent des fichiers qui n'ont jamais eu à exister dans le dépôt. Leur nombre ne s'écrit
 // pas — il s'est périmé le 21/09/2026, à la tolérance suivante.
@@ -61,6 +75,14 @@ const DOCUMENTS = [
 const DOSSIERS = ['docs/exploitation', 'docs/recette'];
 
 /**
+ * Les dossiers vivants dont on prend aussi les sous-dossiers. Le kit de design y est depuis le
+ * 26/09/2026 : il est un miroir tenu (`v1-29` §5), et son `readme.md` citait trois fichiers qui
+ * n'existaient nulle part — relevés à la main le 25/09/2026, faute d'un contrôle qui les voie. Ses
+ * `.md` sont le `readme.md`, `SKILL.md` et une fiche d'usage (`.prompt.md`) par composant.
+ */
+const DOSSIERS_RECURSIFS = ['docs/design/design-system'];
+
+/**
  * Ce qu'on ne cherche pas dans le dépôt, avec la raison — jamais « ça faisait du bruit ».
  *
  * La liste est courte et **chaque entrée dit pourquoi**, parce qu'une liste d'exceptions sans
@@ -77,6 +99,8 @@ const TOLERES = new Map([
   ['getRouteInfoFromState.js', 'idem — trace de pile d’`expo-router`'],
   ['setup.js', 'fichier interne de `jest-expo`, cité pour expliquer son doublage'],
   ['getRoutesCore.js', 'chemin interne d’`expo-router`, lu pour savoir ce qu’il ignore du routage'],
+  ['suivi.html', 'page que produit `expo export` dans `dist/`, ignoré par git — citée pour dire la forme d’une route sans enfants'],
+  ['plan/index.html', 'idem — la forme d’une route avec enfants, dans `dist/`'],
   [
     'api/package-lock.json',
     'écrit par `vercel build` et que le dépôt ne veut pas — son absence EST la règle, `VERCEL.md` §1.2 dit de le supprimer après chaque mesure',
@@ -110,13 +134,24 @@ function documentsALire() {
       if (nom.endsWith('.md')) liste.push(path.join(dossier, nom));
     }
   }
-  return liste;
+  for (const dossier of DOSSIERS_RECURSIFS) {
+    const complet = path.join(RACINE, dossier);
+    if (!fs.existsSync(complet)) continue;
+    for (const nom of fs.readdirSync(complet, { recursive: true })) {
+      if (nom.endsWith('.md')) liste.push(path.join(dossier, nom));
+    }
+  }
+  return liste.sort();
 }
 
-// Un chemin entre accents graves, reconnu à son extension. Les parenthèses sont exclues : elles
+// Un chemin entre accents graves, reconnu à son extension. **Les extensions de documents, de feuilles
+// et d'images en sont depuis le 26/09/2026** : l'index du kit de design citait `uploads/BRIEF.md` et
+// `github.md`, qui n'existaient nulle part, et un contrôle limité au code ne pouvait pas les voir.
+// Un répertoire cité seul (`design_handoff_traceverte_v1/`, le troisième) reste invisible : sans
+// extension, rien ne distingue un chemin d'un mot. Les parenthèses sont exclues : elles
 // signalent un appel de fonction (`resolve_mode()`), pas un fichier — et les groupes de route
 // d'Expo (`(tabs)`) n'apparaissent pas dans les renvois courts que les documents écrivent.
-const RENVOI = /`([A-Za-z0-9_/.-]+\.(?:ts|tsx|mjs|sql|js|json|yml|yaml|sh))`/g;
+const RENVOI = /`([A-Za-z0-9_/.-]+\.(?:ts|tsx|mjs|sql|js|json|yml|yaml|sh|md|css|jsx|html|png|svg|ttf))`/g;
 
 /**
  * Un renvoi désigne-t-il ce fichier ? Trois formes, et chacune a sa raison d'exister.

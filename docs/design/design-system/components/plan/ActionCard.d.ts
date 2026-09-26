@@ -9,6 +9,8 @@ export interface ActionCardProps {
   detail?: string | null;
   /** « le mardi et le jeudi » — affichée seulement si engagée, après « par an ». */
   intention?: string | null;
+  /** Une ligne sans chiffre qui décrit un essai — affichée seulement une fois l'action engagée, jamais reconduite. */
+  premierPas?: string | null;
   engagee?: boolean;
   /** L'engagement vient du cycle précédent : l'étiquette devient « TON ENGAGEMENT · RECONDUIT ». */
   reconduite?: boolean;
