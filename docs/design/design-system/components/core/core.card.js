@@ -1,5 +1,5 @@
 // Démonstration de la carte — exécutée par components/loader.js (RamilleRun) ; le namespace Ramille est en portée.
-const { ThemedText, Button, TextLink, MessageInline, OnboardingDots } = NS;
+const { ThemedText, Button, TextLink, MessageInline, OnboardingDots, FeuilleDuBas } = NS;
 ReactDOM.createRoot(document.getElementById('root')).render(
   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
     <div style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -20,6 +20,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <TextLink label="Utiliser un email à la place" role="link" type="linkPrimary" style={{textAlign:'center'}} />
       <MessageInline message="L’envoi n’a pas abouti. Vérifie l’adresse et réessaie." />
       <OnboardingDots total={4} activeIndex={1} />
+    </div>
+    <div style={{gridColumn:'1 / -1',borderRadius:12,overflow:'hidden'}}>
+      <FeuilleDuBas titre="Ton plan va être recalculé">
+        <ThemedText type="body" themeColor="textSecondary">L’action que tu suis — Faire ce trajet à vélo — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, tu en choisiras une autre.</ThemedText>
+        <Button title="Soumettre mon bilan" />
+        <TextLink label="Pas maintenant" type="small" weight={600} themeColor="accentText" style={{textAlign:'center'}} />
+      </FeuilleDuBas>
     </div>
   </div>
 );

@@ -11,7 +11,7 @@ Puce de sélection du questionnaire et du choix de l'intention. `solid` pour un 
 
 **Le rôle est obligatoire** : `radio` quand on n'en choisit qu'une, `checkbox` quand elles se cumulent (les jours de l'engagement). C'est le seul rôle qui annonce « sélectionné » et la place dans le groupe ; l'état passe par `aria-checked`. Une puce n'est jamais une action.
 
-**Une série de puces vit dans un groupe nommé par sa question** — `radiogroup`, ou `group` pour des `checkbox` —, la question écrite une fois pour le texte affiché et pour le nom du groupe. C'est `GroupeDeChoix` dans le dépôt (`src/components/bilan/groupe-de-choix.tsx`), absent du kit : une puce « 1 » annoncée seule ne dit pas à quoi elle répond.
+**Une série de puces vit dans un groupe nommé par sa question** — `radiogroup`, ou `group` pour des `checkbox` —, la question écrite une fois pour le texte affiché et pour le nom du groupe. C'est `GroupeDeChoix` : une puce « 1 » annoncée seule ne dit pas à quoi elle répond.
 
 **48 × 48 au moins**, par la taille et jamais par une zone de toucher élargie, qui ferait se recouvrir deux puces voisines. Des minimums : le libellé grandit avec la taille de police du système.
 

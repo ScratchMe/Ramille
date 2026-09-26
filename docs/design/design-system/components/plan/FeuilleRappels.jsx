@@ -4,28 +4,20 @@ import { TextLink } from '../core/TextLink.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 import { MessageInline } from '../core/MessageInline.jsx';
+import { FeuilleDuBas } from '../core/FeuilleDuBas.jsx';
+import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
+import { LigneDeCanal } from '../forms/LigneDeCanal.jsx';
 // Source : src/components/plan/feuille-rappels.tsx, dans le cadre de src/components/feuille-du-bas.tsx — poignée 40×4,
 // « Les rappels » nomme le dialogue sans s'afficher (`enTete={false}`), Ramille 44, choix du canal, bouton, sortie.
 // `libelleBouton` (src/types/rappels.ts) : le bouton n'annonce un dialogue système que s'il va s'en ouvrir un.
 const libelleBouton = (canal, permission) =>
   canal === 'none' ? 'Continuer sans rappel' : canal === 'email' ? 'C’est bon' : permission === 'demandable' ? 'Autoriser les notifications' : 'C’est bon';
-export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, erreur, style }) {
+export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, onFerme, erreur, voile = true, style }) {
   const DETAIL_NOTIFICATION = {
     accordee: 'Le matin où la question s’ouvre.',
     demandable: 'À activer en une fois.',
     fermee: 'Coupées dans les réglages du téléphone — c’est là que ça se rouvre.',
   };
-  // La ligne de canal est `LigneDeCanal` dans le dépôt (src/components/ligne-de-canal.tsx), absente du kit : elle est
-  // rendue ici comme dans `ChoixDeRappel.jsx`, à l'identique. Une ligne hors d'atteinte ne paraît jamais choisie
-  // (`paraitChoisie`) ; inactive, elle garde son fond, passe son titre en tertiaire et laisse son détail lisible —
-  // jamais une opacité (readme, « États »), que le dépôt a retirée le 25/09/2026.
-  const ligneDeCanal = (l, coche, onChoisir) => (
-    <button type="button" role="radio" aria-checked={coche} aria-label={l.titre + '. ' + l.detail} disabled={l.choisissable === false} onClick={() => l.choisissable !== false && onChoisir && onChoisir(l.canal)} data-appui="fond"
-      style={{ '--teinte-appuyee': coche ? 'var(--color-background-selected-pressed)' : 'var(--color-background-pressed)', width: '100%', textAlign: 'left', padding: '16px 24px', borderRadius: 16, border: '1.5px solid ' + (coche ? 'var(--color-accent)' : 'transparent'), background: coche ? 'var(--color-background-selected)' : 'var(--color-background-element)', color: 'var(--color-text)', fontFamily: 'var(--font-sans)', cursor: l.choisissable === false ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <ThemedText weight={coche ? 600 : 400} themeColor={l.choisissable === false ? 'textTertiary' : 'text'} style={{ fontSize: 16, lineHeight: '22px' }}>{l.titre}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{l.detail}</ThemedText>
-    </button>
-  );
   const ligneRamille = boucle === 'hebdo'
     ? 'Je te laisse mener ton action. Lundi, je reviens te demander si tu l’as faite.'
     : 'Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.';
@@ -37,23 +29,24 @@ export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', li
     { canal: 'none', titre: 'Sans rappel', detail: 'On se retrouve dans l’app, à chaque point.' },
   ];
   const lien = (label) => <TextLink label={label} role="link" type="small" weight={600} themeColor="accentText" containerStyle={{ alignSelf: 'flex-start', padding: '0 24px' }} />;
+  // Le cadre est `FeuilleDuBas` : « Les rappels » nomme le dialogue sans s'afficher (`enTete={false}`) — ni le
+  // canvas ni aucune décision ne portaient d'en-tête visible.
   return (
-    <div role="dialog" aria-label="Les rappels" style={{ background: 'var(--color-background)', borderTop: '1px solid var(--color-border)', borderRadius: '18px 18px 0 0', padding: '8px 24px 64px', display: 'flex', flexDirection: 'column', gap: 16, ...style }}>
-      <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--color-border)', alignSelf: 'center', marginBottom: 8 }} />
+    <FeuilleDuBas titre="Les rappels" enTete={false} onFerme={onFerme} voile={voile} style={style}>
       <RamilleDit ligne={ligneRamille} mood="calm" size={44} themeColor="text" style={{ alignItems: 'flex-start' }} />
       <ThemedText type="body" themeColor="textSecondary">{question}</ThemedText>
-      <div role="radiogroup" aria-label={question} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <GroupeDeChoix question={question} style={{ gap: 8 }}>
         {items.map((l) => (
           <React.Fragment key={l.canal}>
-            {ligneDeCanal(l, canal === l.canal && l.choisissable !== false, onCanal)}
+            <LigneDeCanal ligne={{ ...l, choisi: canal === l.canal }} onChoisir={onCanal} />
             {l.lienVersLesReglages && lien('Ouvrir les réglages du téléphone')}
             {l.porteVersLeCompte && lien('Rattacher un compte')}
           </React.Fragment>
         ))}
-      </div>
+      </GroupeDeChoix>
       <MessageInline message={erreur || null} />
       <Button title={boutonLabel || libelleBouton(canal, permission)} onPress={onValider} />
       <ThemedText type="small" themeColor="textTertiary" style={{ textAlign: 'center' }}>Tu pourras changer d’avis dans « Toi ».</ThemedText>
-    </div>
+    </FeuilleDuBas>
   );
 }

@@ -3,8 +3,8 @@
 // window.Ramille. Ne remplace pas le bundle ; le complète quand le projet n'est pas encore compilé.
 (function () {
   var ORDER = [
-    'core/ThemedText', 'core/Button', 'core/TextLink', 'core/MessageInline', 'core/OnboardingDots',
-    'forms/Chip', 'forms/ChoiceRow', 'forms/ModeListItem', 'forms/PrecisionMode', 'forms/NumericField', 'forms/TextField', 'forms/GoogleButton',
+    'core/ThemedText', 'core/ThemedView', 'core/Button', 'core/TextLink', 'core/MessageInline', 'core/OnboardingDots', 'core/FeuilleDuBas', 'core/TitreDArrivee',
+    'forms/GroupeDeChoix', 'forms/Chip', 'forms/ChoiceRow', 'forms/LigneDeCanal', 'forms/ModeListItem', 'forms/PrecisionMode', 'forms/NumericField', 'forms/TextField', 'forms/GoogleButton',
     'mascotte/Mascot', 'mascotte/RamilleDit', 'mascotte/CalculEnCours', 'mascotte/EcranLancement',
     'navigation/CompteBouton', 'navigation/BandeHaute', 'navigation/OngletIcone', 'navigation/BarreOnglets', 'navigation/ProgressHeader', 'navigation/StepShell',
     'plan/CheckinCard', 'plan/ActionCard', 'plan/ActionCommitment', 'plan/FeuilleRappels',

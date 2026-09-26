@@ -44,16 +44,16 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 - Marques copiées : `assets/images/logo-mark.svg`, `mascot-mark.svg`, `favicon-mark.svg`, `icon.png`, `splash-icon.png`, `google-oauth-logo.png` (référence du logo Google — le bouton officiel n'est jamais redessiné).
 
 ## Composants (une partie du dépôt)
-core/ ThemedText · Button · TextLink · MessageInline · OnboardingDots
-forms/ Chip · ChoiceRow · ModeListItem · PrecisionMode · NumericField · TextField · GoogleButton
+core/ ThemedText · ThemedView · Button · TextLink · MessageInline · OnboardingDots · FeuilleDuBas · TitreDArrivee
+forms/ GroupeDeChoix · Chip · ChoiceRow · LigneDeCanal · ModeListItem · PrecisionMode · NumericField · TextField · GoogleButton
 mascotte/ Mascot · RamilleDit · CalculEnCours · EcranLancement
 navigation/ CompteBouton · BandeHaute · OngletIcone · BarreOnglets · ProgressHeader · StepShell
 plan/ CheckinCard · ActionCard · ActionCommitment · FeuilleRappels
 compte/ ChoixDeRappel · MonCompte
 
-Non portés (infrastructure sans UI) : ThemedView, TitreDePage, RetourDeNotification, ConfigurationManquante, MissingModeLink (une phrase — « Ton mode n’est pas dans la liste ? » —, en Spline Sans depuis le 24/09/2026 : la chasse fixe ne sert plus qu'aux sources et aux codes techniques).
+Sans interface, donc sans fiche : `TitreDePage` (les métadonnées du document) et `RetourDeNotification` (rend `null`).
 
-**Le kit ne porte pas tout le dépôt.** Les composants absents — dont les quatre que la livraison du 24/09/2026 a créés, `GroupeDeChoix`, `FeuilleDuBas`, `LigneDeCanal` et `TitreDArrivee` — sont l'inventaire du chantier de synchronisation (`docs/architecture/v1-29-challenge-du-design-system.md` §5). En attendant, `ChoixDeRappel` et `FeuilleRappels` rendent la ligne de canal à l'identique, et `ActionCommitment` et `PrecisionMode` posent eux-mêmes le groupe nommé de leurs choix. L'état appuyé passe par `base.css` (`data-appui`), un style en ligne ne sachant pas écrire `:active`.
+**Une garde tient l'inventaire** (`scripts/verifier-miroir-du-kit.mjs`, en CI depuis le 26/09/2026) : un composant ajouté à `src/components/` sans fiche ici fait rougir la CI. Ce qui reste à porter du chantier de `docs/architecture/v1-29-challenge-du-design-system.md` §5 — plan et suivi, questionnaire, onboarding, saisie du code, pages légales, écrans d'erreur — y est une liste raisonnée qui ne fait que raccourcir. Chaque série de choix passe par `GroupeDeChoix`, chaque ligne de canal par `LigneDeCanal`, chaque feuille par `FeuilleDuBas` : une fiche ne recopie plus un composant qui a la sienne. L'état appuyé passe par `base.css` (`data-appui`), un style en ligne ne sachant pas écrire `:active`.
 
 **Ajouts intentionnels** : `BarreOnglets` (le dépôt la compose dans `(tabs)/_layout.tsx` via expo-router) ; prop `accessory` sur `Mascot` (préparation des accessoires de saison) — **le dépôt les a livrés depuis (C2.13, 13/09/2026) et la prop s'y appelle `saison`**, avec pour défaut la saison du jour, donc c'est le nom du kit qui est le delta ; jetons `--color-mascot-ink` / `--color-mascot-vein` / `--color-mascot-warm`, qui **existent désormais dans `Colors`** (avec `mascotAccessory` en quatrième), le composant les lisant encore sur la seule palette claire.
 

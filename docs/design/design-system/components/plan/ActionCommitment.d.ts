@@ -2,13 +2,16 @@
 export interface ActionCommitmentProps {
   /** days = domicile-travail (jours) ; timing = autres postes (échéance fermée). */
   kind?: 'days' | 'timing';
+  /** Le poste de l'action : il décide des échéances — `travel` a les siennes (« À mon prochain projet de voyage »). */
+  poste?: 'commute' | 'leisure' | 'travel';
   state?: 'idle' | 'picking' | 'committed';
-  /** Indices 0 (lundi) … 6 — le dépôt compte de 1 (lundi) à 7 (`INTENTION_DAYS`, src/types/plan.ts). */
+  /** De 1 (lundi) à 7 (dimanche), comme `INTENTION_DAYS` (src/types/plan.ts). */
   days?: number[];
-  timing?: 'ce_mois' | 'mois_prochain' | 'occasion' | null;
+  /** Les valeurs du dépôt, que la base enregistre. */
+  timing?: 'ce_mois' | 'le_mois_prochain' | 'prochaine_occasion' | 'au_prochain_voyage' | 'avant_le_prochain_bilan' | null;
   otherActionCommitted?: boolean;
   onPick?: () => void;
-  onToggleDay?: (i: number) => void;
+  onToggleDay?: (jour: number) => void;
   onTiming?: (t: string) => void;
   onCancel?: () => void;
   onSubmit?: () => void;
