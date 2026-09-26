@@ -28,7 +28,7 @@ export const Proposee = () => (
 /** Le choix des jours, ouvert sous l'action — domicile-travail, jamais une saisie libre. */
 export const ChoixDesJours = () => (
   <ActionCard titre="Faire ce trajet à vélo" gainKg={184} partPercent={7}>
-    <ActionCommitment kind="days" state="picking" days={[1, 3]} />
+    <ActionCommitment kind="days" state="picking" days={[2, 4]} />
   </ActionCard>
 );
 

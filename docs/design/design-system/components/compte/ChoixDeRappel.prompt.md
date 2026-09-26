@@ -4,7 +4,7 @@ Les indisponibilités disent pourquoi (dans le détail), et sur web la ligne not
 <ChoixDeRappel canal="push" />
 ```
 
-**La ligne est `LigneDeCanal`, plus une ChoiceRow avec un détail** (depuis le 24/09/2026) : une seule ligne dans le dépôt pour ses deux écrans, ce bloc et la feuille des rappels (`src/components/ligne-de-canal.tsx`). Elle est absente du kit ; ce composant et `FeuilleRappels` la rendent à l'identique en attendant. Un `radio`, annoncé avec son titre et son détail.
+**La ligne est `LigneDeCanal`, plus une ChoiceRow avec un détail** (depuis le 24/09/2026) : une seule ligne pour ses deux écrans, ce bloc et la feuille des rappels. Un `radio`, annoncé avec son titre et son détail.
 
 **Une ligne hors d'atteinte ne paraît jamais choisie** : « Par email » sans compte, grisé mais cerné d'accent, disait à la fois « indisponible » et « c'est ton réglage ». Ce qui paraît coché est ce qui partira vraiment ; si la préférence enregistrée ne peut rien envoyer, aucune ligne ne l'est.
 

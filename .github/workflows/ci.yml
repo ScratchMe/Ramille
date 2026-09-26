@@ -104,6 +104,12 @@ jobs:
       # un fichier que C5.2 avait remplacé par une pile, dans son paragraphe d'orientation.
       # Ni npm ci ni export requis — le script ne lit que le système de fichiers.
       - run: node scripts/verifier-renvois-des-documents.mjs
+      # **Le kit de design porte-t-il encore tous les composants du dépôt ?** Il est un miroir tenu
+      # depuis le 24/09/2026 (`v1-29` §5) — la référence d'où partent les sessions de design —, et
+      # le relevé à la main du 24/09 avait trouvé 36 composants absents sur 63, accumulés en
+      # silence. Un composant ajouté à `src/components/` sans fiche fait rougir ici ; ce qui reste
+      # à porter est une liste raisonnée qui ne doit que raccourcir. Système de fichiers seulement.
+      - run: node scripts/verifier-miroir-du-kit.mjs
       # **Les deux gabarits d'e-mail vivent à deux endroits du dépôt, et rien ne les comparait.**
       # `supabase/templates/` est la copie que GoTrue inline ; `docs/exploitation/gabarits-email.md`
       # est la référence qu'on ouvre pour savoir ce que la production envoie. Deux copies d'un texte

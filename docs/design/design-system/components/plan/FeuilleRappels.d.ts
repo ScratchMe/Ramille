@@ -9,7 +9,12 @@ export interface FeuilleRappelsProps {
   onCanal?: (canal: 'push' | 'email' | 'none') => void;
   boutonLabel?: string;
   onValider?: () => void;
+  /** Le geste de retour (Échap sur web) : la feuille se referme toujours. */
+  onFerme?: () => void;
   erreur?: string | null;
+  /** Rendre la feuille dans son voile, vrai par défaut (`FeuilleDuBas`). */
+  voile?: boolean;
+  /** Style du voile, ou de la feuille quand `voile={false}`. */
   style?: React.CSSProperties;
 }
 export declare function FeuilleRappels(props: FeuilleRappelsProps): JSX.Element;

@@ -1,4 +1,6 @@
 import React from 'react';
+import { LigneDeCanal } from '../forms/LigneDeCanal.jsx';
+import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { TextLink } from '../core/TextLink.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/compte/choix-de-rappel.tsx — bloc « Les rappels » sur « Toi » : l'en-tête, puis un
@@ -10,17 +12,6 @@ export function ChoixDeRappel({ lignes, canal, permission = 'demandable', onChoi
     demandable: 'À activer en une fois.',
     fermee: 'Coupées dans les réglages du téléphone — c’est là que ça se rouvre.',
   };
-  // La ligne de canal est `LigneDeCanal` dans le dépôt (src/components/ligne-de-canal.tsx), absente du kit : elle est
-  // rendue ici comme dans `FeuilleRappels.jsx`, à l'identique. Une ligne hors d'atteinte ne paraît jamais choisie
-  // (`paraitChoisie`) ; inactive, elle garde son fond, passe son titre en tertiaire et laisse son détail lisible —
-  // jamais une opacité (readme, « États »), que le dépôt a retirée le 25/09/2026.
-  const ligneDeCanal = (l, coche, onChoisir) => (
-    <button type="button" role="radio" aria-checked={coche} aria-label={l.titre + '. ' + l.detail} disabled={l.choisissable === false} onClick={() => l.choisissable !== false && onChoisir && onChoisir(l.canal)} data-appui="fond"
-      style={{ '--teinte-appuyee': coche ? 'var(--color-background-selected-pressed)' : 'var(--color-background-pressed)', width: '100%', textAlign: 'left', padding: '16px 24px', borderRadius: 16, border: '1.5px solid ' + (coche ? 'var(--color-accent)' : 'transparent'), background: coche ? 'var(--color-background-selected)' : 'var(--color-background-element)', color: 'var(--color-text)', fontFamily: 'var(--font-sans)', cursor: l.choisissable === false ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <ThemedText weight={coche ? 600 : 400} themeColor={l.choisissable === false ? 'textTertiary' : 'text'} style={{ fontSize: 16, lineHeight: '22px' }}>{l.titre}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{l.detail}</ThemedText>
-    </button>
-  );
   // `lignesDeReglage` (src/types/rappels.ts) sur un appareil sans compte. Sur web, la ligne « notification »
   // n'existe pas plutôt que d'être grisée.
   const items = lignes || [
@@ -34,14 +25,16 @@ export function ChoixDeRappel({ lignes, canal, permission = 'demandable', onChoi
         <ThemedText type="cardTitle">{TITRE}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">Un mot à chaque point de suivi, jamais plus.</ThemedText>
       </div>
-      <div role="radiogroup" aria-label={TITRE} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Le groupe ne porte que les lignes, nommé par l'en-tête ; la ligne est `LigneDeCanal`, la même que dans
+          la feuille des rappels. */}
+      <GroupeDeChoix question={TITRE} style={{ gap: 8 }}>
         {items.map((l) => (
           <React.Fragment key={l.canal}>
-            {ligneDeCanal(l, canal === l.canal && l.choisissable !== false, onChoisir)}
+            <LigneDeCanal ligne={{ ...l, choisi: canal === l.canal }} onChoisir={onChoisir} />
             {l.lienVersLesReglages && <TextLink label="Ouvrir les réglages du téléphone" role="link" type="small" weight={600} themeColor="accentText" containerStyle={{ alignSelf: 'flex-start', padding: '0 24px' }} />}
           </React.Fragment>
         ))}
-      </div>
+      </GroupeDeChoix>
     </div>
   );
 }

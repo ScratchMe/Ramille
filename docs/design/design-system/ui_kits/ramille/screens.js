@@ -84,7 +84,7 @@ function Restitution({ go }) {
 function Plan({ go, dark }) {
   const [answered, setAnswered] = useState(null);
   const [state, setState] = useState('committed');
-  const [days, setDays] = useState([1, 3]);
+  const [days, setDays] = useState([2, 4]);
   return (
     <Phone dark={dark}>
       <BandeHaute onCompte={() => go('toi')} />

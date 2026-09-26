@@ -336,7 +336,8 @@ le 25 :
   écrans d'erreur. Le relevé se refait par la commande de §7 ;
 - **les quatre composants que cette livraison a créés** n'ont pas de fiche : en attendant,
   `ChoixDeRappel` et `FeuilleRappels` rendent la ligne de canal à l'identique, et `ActionCommitment`
-  et `PrecisionMode` posent eux-mêmes leur groupe nommé ;
+  et `PrecisionMode` posent eux-mêmes leur groupe nommé — **fermé le 26/09/2026 par le lot 1,
+  ci-dessous** ;
 - **des écarts antérieurs à la livraison**, relevés en relisant le code pour elle : le bouton Google
   (le code dessine le « G » officiel, sans ombre, avec un indicateur d'attente — le kit garde une
   pastille, une ombre et « Connexion… ») ; `google-oauth-logo.png`, que le `readme.md` présente
@@ -344,7 +345,8 @@ le 25 :
   props que les fiches n'ont pas (`StepShell.detail` et `motDeRamille`, `ActionCard.premierPas`, le
   second renforcement et l'action quittée de `CheckinCard`, l'état final de `MonCompte`, le
   `progressbar` d'`OnboardingDots`) ; les jours d'`ActionCommitment` comptés de 0 là où le dépôt
-  compte de 1 ; et trois fichiers que l'index du `readme.md` cite sans qu'ils existent ;
+  compte de 1 (**fermé le 26/09/2026 par le lot 1**) ; et trois fichiers que l'index du `readme.md`
+  cite sans qu'ils existent ;
 - **aucun contrôle ne voit les chemins du kit** : `scripts/verifier-renvois-des-documents.mjs` ne
   balaie pas `docs/design/design-system/`. Les 39 chemins cités ont été vérifiés à la main le
   25/09/2026 ;
@@ -356,6 +358,21 @@ le 25 :
   canal inactive portait une opacité de 0,6, qui faisait tomber son détail — la phrase qui dit
   pourquoi le canal est hors d'atteinte — vers 3,2:1. Elle garde son fond, passe son titre en
   tertiaire (5,28:1) et son détail reste en secondaire (9,39:1), dans le code comme dans le kit.
+
+**Le rattrapage a commencé le 26/09/2026, en six lots, sans session de design** — la personne qui
+pilote l'a demandé (« complète le kit »), et une fiche qui recopie un composant existant se relit
+contre `src/` plutôt qu'elle ne se redessine. **Le lot 1** porte les cinq composants dont les autres
+fiches dépendent — `GroupeDeChoix` (rôles et clavier, recopiés de `src/lib/groupe-au-clavier.ts`),
+`LigneDeCanal`, `FeuilleDuBas`, `TitreDArrivee` et `ThemedView` — et fait passer par eux les quatre
+fiches qui les recopiaient ; il remet les jours d'`ActionCommitment` de 1 à 7 et ses échéances sur
+les valeurs du dépôt, poste compris (`le_mois_prochain` et non `mois_prochain` ; celles des voyages
+manquaient). **Et il pose la garde qui manquait** : `scripts/verifier-miroir-du-kit.mjs`, en CI,
+applique la définition ci-dessus à chaque PR — un composant ajouté sans fiche fait rougir, et ce qui
+reste à porter y est une liste raisonnée, lot par lot, qui ne doit que raccourcir. Sept mutations
+datées en tête du script. Le nombre de fichiers restants ne s'écrit pas ici : le script le dit.
+`TitreDePage` et `RetourDeNotification` n'ont rien à dessiner et y sont nommés comme tels — ce que
+le `readme.md` du kit rangeait sous « infrastructure sans UI » comptait aussi `ThemedView`,
+`ConfigurationManquante` et `MissingModeLink`, qui en ont une.
 
 **Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
 partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.

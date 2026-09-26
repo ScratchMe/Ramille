@@ -11,8 +11,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <ActionCard titre="Travailler depuis chez toi un jour par semaine" gainKg={240} partPercent={9} estompee><ActionCommitment state="idle" otherActionCommitted /></ActionCard>
     </div>
     <div style={{display:'flex',flexDirection:'column',gap:12}}>
-      <ActionCard titre="Faire ce trajet à vélo" gainKg={184} partPercent={7}><ActionCommitment kind="days" state="picking" days={[1,3]} /></ActionCard>
-      <div style={{background:'var(--color-scrim)',borderRadius:12,paddingTop:24}}><FeuilleRappels boucle="hebdo" canal="push" style={{paddingBottom:24}} /></div>
+      <ActionCard titre="Faire ce trajet à vélo" gainKg={184} partPercent={7}><ActionCommitment kind="days" state="picking" days={[2,4]} /></ActionCard>
+      <FeuilleRappels boucle="hebdo" canal="push" style={{borderRadius:12,overflow:'hidden'}} />
     </div>
   </div>
 );
