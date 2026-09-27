@@ -78,14 +78,18 @@ un constat de lecture.
   d'en-tête.
 - Un écran de questionnaire, c'est `StepShell` : en-tête `ProgressHeader`, contenu défilant,
   **pied collant** hors défilement pour le bouton principal. `manque` reçoit un fragment
-  (« la distance d'un aller »), le composant écrit « Il manque encore … ».
+  (« ton mode de transport »), le composant écrit « Il manque encore … ». **Les neuf étapes
+  existent en composants** (`CommuteHasTripStep` … `ContextStep`) : on les pose dans
+  `StepShell`, on ne les redessine pas.
 - Le bouton principal est pleine largeur (54 de haut, rayon 27). Dans une rangée
   Retour + Suivant, Retour garde sa largeur et Suivant porte `flex`.
 - **Désactivé = fond élément + texte tertiaire**, jamais une opacité — et le libellé ne change
   pas : ce qui manque se dit à côté.
-- Les listes de choix exclusifs sont des `ChoiceRow` ou des `ModeListItem`, jamais des boutons.
-  Une précision qui dépend d'un choix (`PrecisionMode`) s'ouvre **juste sous l'item choisi**,
-  à un seul niveau — la profondeur coûte plus cher en abandon qu'une puce de plus.
+- Les listes de choix exclusifs sont des `ChoiceRow` ou des `ModeListItem`, jamais des boutons,
+  et **chaque série de choix passe par `GroupeDeChoix`**, qui la nomme par sa question. Une
+  précision qui dépend d'un choix (`PrecisionMode`, ou `PrecisionChiffres` pour un nombre)
+  s'ouvre **juste sous l'item choisi**, à un seul niveau — la profondeur coûte plus cher en
+  abandon qu'une puce de plus.
 - Deux registres de carte : **neutre** (fond élément sans bordure, ou bordure 1 px sur blanc)
   et **saillante** (bordure accent 2 px + fond teinté + étiquette majuscule à pastille-coche)
   — la saillante dit quelle action porte l'engagement, et il n'y en a qu'une par saison.

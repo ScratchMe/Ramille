@@ -433,6 +433,13 @@ props avec le dépôt ont été repris avant la PR : `ErreurInattendue` prend `e
 levé), pas un texte déjà formaté ; et la phrase de présentation de Ramille est la sienne, recopiée
 de `RAMILLE.presentation`, pas une paraphrase.
 
+**Le lot 6 a renvoyé le kit complet vers Claude Design** le 27/09/2026 : les 66 fiches, toutes
+capturées et notées, dans le projet de design « Ramille », sans rien y supprimer. L'en-tête de
+conventions que lit l'agent de design a été relu contre le produit au passage — il citait un
+fragment « il manque » que le produit n'écrit pas, et ignorait `GroupeDeChoix` et les étapes du
+questionnaire (`.design-sync/NOTES.md`). **Le rattrapage est donc fini** ; ce qui reste de cette
+§5 est le catalogue des 38 écrans, qui est une question de produit.
+
 **Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
 partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.
 
