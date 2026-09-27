@@ -1478,11 +1478,18 @@ for (const reduire of [false, true]) {
     );
     const apres = await mesurer(page, 'option', 'Voiture (covoiturage)');
     const ouverte = await mesurer(page, 'option', 'Thermique');
-    if (!avant || !apres || !ouverte || apres.haut <= avant.haut + 1) {
+    if (avant && apres && ouverte && apres.haut <= avant.haut + 1) {
+      // La précision est là mais ne prend aucune place : elle ne s'est pas ouverte. C'est ce que
+      // rend `Depliage` quand on le laisse jouer sous la préférence (mutation J12) — et c'est pire
+      // qu'un mouvement de trop : la question est invisible.
+      echecs.push(
+        `${ou} : « Thermique » est là mais ne prend aucune place — « Voiture (covoiturage) » reste à` +
+          ` ${Math.round(avant.haut)} px. La précision ne s’est pas ouverte (\`Depliage\`, src/lib/mouvement.tsx).`
+      );
+    } else if (!avant || !apres || !ouverte) {
       echecs.push(
         `${ou} : la mesure ne peut pas se prendre — « Voiture (covoiturage) »` +
-          ` ${avant && apres ? `de ${Math.round(avant.haut)} à ${Math.round(apres.haut)} px` : 'introuvable'},` +
-          ` « Thermique » ${ouverte ? 'ouverte' : 'introuvable'}.`
+          ` ${avant && apres ? 'trouvée' : 'introuvable'}, « Thermique » ${ouverte ? 'ouverte' : 'introuvable'}.`
       );
     } else {
       const descend = releve.some((e) => e.dessous && entre(e.dessous.haut, avant.haut, apres.haut));

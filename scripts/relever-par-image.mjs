@@ -104,8 +104,14 @@ export function releverParImage(depuisLeDebut) {
     // Une feuille du bas (`src/components/feuille-du-bas.tsx`), par le nom de son dialogue : son
     // voile — le seul élément sans enfant qui couvre toute la fenêtre — et le haut de la feuille,
     // qui porte l'en-tête du même nom.
+    //
+    // **Par `aria-modal` et non par le rôle** : react-native-web ne pose `role="dialog"` qu'une fois
+    // le `Modal` « actif », c'est-à-dire à la fin de **son** animation (`onShow`, sur
+    // `animationEnd`). Cherchée par son rôle, une feuille remise en `slide` était invisible pendant
+    // tout son glissement, puis relevée déjà posée : la garde tombait, mais en disant « s'ouvre d'un
+    // coup » d'une feuille qui glissait, voile compris (mutation P1, 27/09/2026).
     feuille: (titre) => {
-      const dialogue = [...document.querySelectorAll('[role="dialog"]')].find(
+      const dialogue = [...document.querySelectorAll('[aria-modal="true"]')].find(
         (d) => d.getAttribute('aria-label') === titre
       );
       if (!dialogue) return null;

@@ -116,7 +116,12 @@ relais au rendu suivant.
   feuille du bas monte du bas avec elle au lieu d'assombrir l'écran sur place, la fermeture est
   instantanée, et tout glisse même sous la préférence. `animationType="none"` et ses propres
   animations dedans — voile en fondu, feuille qui monte — règlent les trois. Ramille :
-  `src/components/feuille-du-bas.tsx`.
+  `src/components/feuille-du-bas.tsx`. **Et le dialogue n'existe qu'à la fin de cette animation** :
+  react-native-web ne pose `role="dialog"` et n'arme son piège à focus qu'une fois le `Modal`
+  « actif », sur `animationEnd` — pendant les 250 ms d'un `slide`, ce n'est ni un dialogue pour un
+  lecteur d'écran, ni un piège pour le clavier. Avec `"none"`, il l'est dès la première image. Et un
+  outil qui cherche le dialogue par son rôle ne le voit pas glisser : `aria-modal`, lui, est posé
+  tout de suite (lu dans `Modal/index.js` et `ModalContent.js`, 0.21 ; mesuré le 27/09/2026).
 - **Les animations de disposition de reanimated (4.5) ne se comportent pas sur web comme sur
   natif**, mesuré sur un export le 27/09/2026 :
   - `entering` pose `visibility: hidden` sur l'élément jusqu'à `animationstart`, une image au moins
