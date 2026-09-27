@@ -222,7 +222,7 @@ import process from 'node:process';
 import { chromium } from 'playwright';
 
 import { mesurerUnChoix } from './mesurer-un-choix.mjs';
-import { echantillons, entre, mesurer, ouiNon, releverParImage, releverPendant } from './relever-par-image.mjs';
+import { echantillons, enChemin, entre, mesurer, ouiNon, releverParImage, releverPendant } from './relever-par-image.mjs';
 import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
@@ -706,8 +706,10 @@ try {
   const vuesDeLaBarre = arrivee.map((e) => e.barre).filter(Boolean);
   assurer(barrePosee && vuesDeLaBarre.length > 0, 'la barre d’onglets n’a pas pu être relevée pendant son arrivée');
   assurer(
-    vuesDeLaBarre.some((v) => v.opacite < 0.99 || v.haut > barrePosee.haut + 0.5),
-    'la barre d’onglets surgit au « Compris » au lieu d’arriver en glissant (`arrivee`, src/app/(tabs)/_layout.tsx)'
+    enChemin(vuesDeLaBarre.map((v) => v.haut), barrePosee.haut) ||
+      enChemin(vuesDeLaBarre.map((v) => v.opacite), 1, 0.02),
+    'la barre d’onglets surgit au « Compris » au lieu d’arriver en glissant — aucune image entre son départ et sa' +
+      ' place (`arrivee`, src/app/(tabs)/_layout.tsx)'
   );
   assurer(barrePosee.opacite >= 0.99, `la barre d’onglets reste translucide après son arrivée (${barrePosee.opacite})`);
 
@@ -944,8 +946,8 @@ try {
     `le voile de la feuille bouge (${Math.round(voileQuiBouge?.voile.haut)} px sous le haut de l’écran) : il doit` +
       ' assombrir l’écran sur place, et seule la feuille monte (`FeuilleDuBas`, `animationType="none"`)'
   );
-  const voileEnFondu = vuesALOuverture.some((f) => f.voile.opacite > 0.02 && f.voile.opacite < 0.98);
-  const feuilleEnChemin = vuesALOuverture.some((f) => f.haut > feuillePosee.haut + 1);
+  const voileEnFondu = enChemin(vuesALOuverture.map((f) => f.voile.opacite), 1, 0.02);
+  const feuilleEnChemin = enChemin(vuesALOuverture.map((f) => f.haut), feuillePosee.haut);
   assurer(
     voileEnFondu && feuilleEnChemin,
     `la feuille s’ouvre d’un coup — voile en fondu ${ouiNon(voileEnFondu)}, feuille en chemin ${ouiNon(feuilleEnChemin)}`
@@ -953,7 +955,7 @@ try {
   const fermeture = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => page.keyboard.press('Escape'));
   assurer((await mesurer(page, 'feuille', FEUILLE)) === null, 'Échap ne referme pas la feuille');
   assurer(
-    fermeture.some((e) => e.feuille?.haut != null && e.feuille.haut > feuillePosee.haut + 1),
+    enChemin(fermeture.map((e) => e.feuille?.haut).filter((h) => h != null), feuillePosee.haut),
     'la feuille disparaît d’un coup à Échap : elle doit redescendre avant de se démonter (`fermer`, `FeuilleDuBas`)'
   );
 

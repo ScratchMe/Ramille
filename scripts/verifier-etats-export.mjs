@@ -140,7 +140,7 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 
 import { mesurerUnChoix } from './mesurer-un-choix.mjs';
-import { echantillons, entre, mesurer, ouiNon, releverParImage, releverPendant } from './relever-par-image.mjs';
+import { echantillons, enChemin, entre, mesurer, ouiNon, plusLoin, releverParImage, releverPendant } from './relever-par-image.mjs';
 import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
@@ -1404,18 +1404,27 @@ for (const reduire of [false, true]) {
     } else {
       const titres = enAvant.map((e) => e.titre).filter(Boolean);
       const retours = enArriere.map((e) => e.titre).filter(Boolean);
-      const translucide = titres.some((v) => v.opacite < 0.95) || retours.some((v) => v.opacite < 0.95);
-      const depuisLaDroite = titres.some((v) => v.gauche > titreFinal.gauche + 0.5);
-      const depuisLaGauche = retours.some((v) => v.gauche < titreRevenu.gauche - 0.5);
+      // Animée, chaque moitié demande un **mouvement** (`enChemin`) : une image décalée puis une posée
+      // serait un saut. Le côté se lit sur le départ observé, le plus loin de la place d'arrivée.
+      const entreEnFondu =
+        enChemin(titres.map((v) => v.opacite), 1, 0.02) && enChemin(retours.map((v) => v.opacite), 1, 0.02);
+      const depuisLaDroite =
+        plusLoin(titres.map((v) => v.gauche), titreFinal.gauche) > titreFinal.gauche + 0.5 &&
+        enChemin(titres.map((v) => v.gauche), titreFinal.gauche);
+      const depuisLaGauche =
+        plusLoin(retours.map((v) => v.gauche), titreRevenu.gauche) < titreRevenu.gauche - 0.5 &&
+        enChemin(retours.map((v) => v.gauche), titreRevenu.gauche);
+      // Sous la préférence, la moindre image hors de sa place est de trop — une seule suffit à tomber.
+      const translucide = titres.some((v) => v.opacite < 0.99) || retours.some((v) => v.opacite < 0.99);
       const decales = [...titres, ...retours].some(
         (v) => Math.abs(v.gauche - (titres.includes(v) ? titreFinal : titreRevenu).gauche) > 0.5
       );
       const railEnChemin = enAvant.some((e) => e.rail && entre(e.rail.largeur, railAvant.largeur, railApres.largeur));
       if (!reduire) {
-        if (!translucide || !depuisLaDroite || !depuisLaGauche) {
+        if (!entreEnFondu || !depuisLaDroite || !depuisLaGauche) {
           echecs.push(
             `${ou} : l’étape doit entrer en fondu, de la droite en avançant et de la gauche en reculant —` +
-              ` relevé : translucide ${ouiNon(translucide)}, depuis la droite ${ouiNon(depuisLaDroite)},` +
+              ` relevé : en fondu ${ouiNon(entreEnFondu)}, depuis la droite ${ouiNon(depuisLaDroite)},` +
               ` depuis la gauche ${ouiNon(depuisLaGauche)} (\`styleDEntree\`, src/lib/mouvement.tsx ;` +
               ' `sensDuPassage`, src/app/bilan/index.tsx).'
           );
@@ -1477,7 +1486,9 @@ for (const reduire of [false, true]) {
       );
     } else {
       const descend = releve.some((e) => e.dessous && entre(e.dessous.haut, avant.haut, apres.haut));
-      const apparait = releve.some((e) => e.precision && e.precision.opacite < 0.95);
+      const opacites = releve.filter((e) => e.precision).map((e) => e.precision.opacite);
+      // Animée, un fondu (`enChemin`) ; sous la préférence, la moindre image translucide est de trop.
+      const apparait = reduire ? opacites.some((o) => o < 0.99) : enChemin(opacites, 1, 0.02);
       if (!reduire && (!descend || !apparait)) {
         echecs.push(
           `${ou} : la précision doit s’ouvrir, et ce qui est dessous descendre avec elle — relevé :` +

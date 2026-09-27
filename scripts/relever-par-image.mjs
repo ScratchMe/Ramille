@@ -156,7 +156,25 @@ export const echantillons = (page) => page.evaluate(() => window.__releve.echant
 export const mesurer = (page, nom, argument) =>
   page.evaluate(([n, a]) => window.__releve.mesurer(n, a), [nom, argument]);
 
-/** Strictement entre deux valeurs, à un demi-pixel près : ni au départ, ni à l'arrivée. */
-export const entre = (valeur, a, b) => valeur > Math.min(a, b) + 0.5 && valeur < Math.max(a, b) - 0.5;
+/** Strictement entre deux valeurs, à une marge près (un demi-pixel par défaut) : ni au départ, ni à l'arrivée. */
+export const entre = (valeur, a, b, marge = 0.5) => valeur > Math.min(a, b) + marge && valeur < Math.max(a, b) - marge;
+
+/** Parmi des valeurs relevées, celle qui est la plus éloignée d'un repère — le départ observé d'un mouvement. */
+export const plusLoin = (valeurs, repere) =>
+  valeurs.reduce((loin, v) => (Math.abs(v - repere) > Math.abs(loin - repere) ? v : loin), repere);
+
+/**
+ * **Un mouvement, pas un saut** : au moins une valeur strictement entre le repère (l'arrivée, ou le
+ * départ d'une sortie) et la valeur la plus éloignée qu'on a relevée.
+ *
+ * « Au moins une image ailleurs qu'à l'arrivée » ne suffit pas, et c'est une mutation qui l'a montré
+ * le 27/09/2026 (P4 du parcours réel) : une barre qui surgit sans glisser passait quand même, parce
+ * qu'elle attend masquée en bas et transparente, et qu'un effet — qui part après le rendu — ne la
+ * remet en place qu'une image plus tard. Une image au départ puis une à l'arrivée, c'est un saut.
+ */
+export const enChemin = (valeurs, repere, marge = 0.5) => {
+  const loin = plusLoin(valeurs, repere);
+  return valeurs.some((v) => entre(v, repere, loin, marge));
+};
 
 export const ouiNon = (vrai) => (vrai === true ? 'oui' : 'non');
