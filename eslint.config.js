@@ -64,7 +64,20 @@ module.exports = [
     // croire exhaustive : une chaîne de `.ts` hors JSX, et un littéral construit par concaténation
     // ou par gabarit. Là, `&apos;` ne serait jamais décodé — les six caractères s'afficheraient
     // tels quels, ce qui est un défaut visible, pas le défaut discret que cette règle attrape.
-    files: ['src/**/*.tsx'],
+    //
+    // **Et depuis le 27/09/2026, l'apostrophe droite écrite en toutes lettres dans une chaîne.**
+    // Ce que le paragraphe ci-dessus dit échapper à la règle — une chaîne de `.ts` hors JSX, un
+    // gabarit — valait aussi pour elle, et deux sont passées sans que rien ne les voie : la méthode
+    // du bilan (« c'était », « qu'on », `src/constants/methodologie.ts`) et la description de la
+    // page de partage (« de l'empreinte », `api/partage.ts`), relevées en recopiant les textes du
+    // produit dans le kit de design. Le
+    // motif est une lettre, l'apostrophe, une lettre : c'est ce qui sépare « l'empreinte » d'un
+    // délimiteur de chaîne, qui n'a jamais une lettre de chaque côté dans le `raw` d'un seul
+    // littéral. `\\?` couvre la forme échappée d'une chaîne entre apostrophes (`'l\'x'`). Les
+    // tests en sont exclus : ils écrivent du SQL et des messages d'API en anglais, pas du texte
+    // affiché.
+    files: ['src/**/*.{ts,tsx}', 'api/**/*.ts'],
+    ignores: ['**/*.test.ts', '**/*.test.tsx'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -77,6 +90,16 @@ module.exports = [
           selector: 'JSXAttribute Literal[raw=/&apos;/]',
           message:
             'Écris l’apostrophe typographique ’ (U+2019) directement : &apos; est décodé en apostrophe droite, que le reste du produit n’utilise jamais.',
+        },
+        {
+          selector: String.raw`Literal[raw=/[A-Za-zÀ-ÿ]\\?'[A-Za-zÀ-ÿ]/]`,
+          message:
+            'Apostrophe droite dans une chaîne : écris l’apostrophe typographique ’ (U+2019), la seule que le produit affiche.',
+        },
+        {
+          selector: String.raw`TemplateElement[value.raw=/[A-Za-zÀ-ÿ]'[A-Za-zÀ-ÿ]/]`,
+          message:
+            'Apostrophe droite dans un gabarit : écris l’apostrophe typographique ’ (U+2019), la seule que le produit affiche.',
         },
       ],
     },

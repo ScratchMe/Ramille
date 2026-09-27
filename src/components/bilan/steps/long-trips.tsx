@@ -6,8 +6,10 @@ import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
+import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
+import { formatKm } from '@/lib/format';
 import { OCCUPATIONS_LONG_TRAJET, type BilanAnswers } from '@/types/bilan';
 
 // Même plage que les vols (`flights.tsx`, `TOTAL_CHOICES`) : l'écart à la spec §5 était que
@@ -18,7 +20,7 @@ const COUNT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 /**
  * Dernière puce de la série, qui vaut « ce nombre ou plus » — dérivée de `COUNT_CHOICES` et
- * non écrite en dur, à deux endroits qui auraient divergé : le libellé visible (« 6+ ») et le
+ * non écrite en dur, à deux endroits qui auraient divergé : le libellé visible (« 10+ ») et le
  * libellé accessible (« 10 trajets ou plus »). C'est ce qui a permis de porter la plage de 6 à
  * 10 sans rien retoucher ailleurs : une valeur recopiée aurait fait annoncer « 6 trajets ou
  * plus » sur une puce qui n'est plus le plafond.
@@ -26,7 +28,7 @@ const COUNT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const MAX_TRAJETS = COUNT_CHOICES[COUNT_CHOICES.length - 1];
 
 /**
- * Ce qu'un lecteur d'écran entend sur la puce de plafond, là où l'œil lit « 6+ » (A2-9).
+ * Ce qu'un lecteur d'écran entend sur la puce de plafond, là où l'œil lit « 10+ » (A2-9).
  *
  * Les autres puces gardent leur chiffre pour libellé : c'est le `radiogroup` nommé qui dit de
  * quelle série il s'agit, une fois, au lieu de le répéter sur chacune de ses puces.
@@ -201,9 +203,15 @@ export function LongTripsStep({
       </View>
 
       {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10) : une phrase adressée à
-          la personne, comme la ligne jumelle des vols — d'où sa majuscule. */}
+          la personne, comme la ligne jumelle des vols — d'où sa majuscule.
+
+          **Interpolée depuis `HYPOTHESES` depuis le 27/09/2026** : elle était écrite à la main, donc
+          hors du contrôle qui compare ces valeurs au calcul, et la distance de l'autocar n'existait
+          nulle part côté client. L'autocar et la voiture partagent un nombre ; le contrôle tombe
+          s'ils divergent, pour que la phrase soit réécrite. */}
       <ThemedText type="small" themeColor="textTertiary">
-        Distances moyennes par défaut · 800 km train, 700 km autocar et voiture
+        Distances moyennes par défaut · {formatKm(HYPOTHESES.trainLongKm)} train,{' '}
+        {formatKm(HYPOTHESES.autocarLongKm)} autocar et voiture
       </ThemedText>
     </View>
   );

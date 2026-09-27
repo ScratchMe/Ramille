@@ -205,8 +205,11 @@ verifier(
   html.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
   'page : le titre ne porte pas « 2,4 t CO₂e par an »'
 );
+// L'apostrophe est typographique depuis le 27/09/2026 : cette assertion épinglait la forme droite,
+// échappée en `&#39;` — c'est-à-dire le défaut même, que la règle `no-restricted-syntax` d'eslint
+// interdit désormais dans les chaînes de `api/`.
 verifier(
-  html.includes('Poste principal (58 % de l&#39;empreinte) : Trajet domicile-travail (Voiture thermique).'),
+  html.includes('Poste principal (58 % de l’empreinte) : Trajet domicile-travail (Voiture thermique).'),
   'page : la description ne nomme pas le poste avec sa part'
 );
 const image = html.match(/property="og:image" content="([^"]+)"/);

@@ -30,6 +30,7 @@ import {
   previousStep,
   saisieVersNombre,
   visibleSteps,
+  volsCourtsApresTotal,
   type BilanAnswers,
 } from '@/types/bilan';
 
@@ -416,6 +417,22 @@ describe('isStepComplete', () => {
         answers({ ...base, leisure_distance_bracket: '30_plus', leisure_distance_km: 120 })
       )
     ).toBe(true);
+  });
+
+  it('volsCourtsApresTotal : le 0 posé sous un total nul ne passe jamais pour une réponse', () => {
+    // Le défaut du 27/09/2026 : 0 vol (courts posés à 0 d'office), puis 4 vols — la question des
+    // courts arrivait répondue « 0 » et l'étape se validait. Elle doit arriver vide.
+    // Éprouvé le même jour : retirer la condition sur le total nul (la règle d'avant) fait tomber
+    // ce test, et lui seul dans la suite.
+    expect(volsCourtsApresTotal({ flights_total_per_year: 0, flights_short_per_year: 0 }, 4)).toBeNull();
+    expect(volsCourtsApresTotal({ flights_total_per_year: 0, flights_short_per_year: null }, 4)).toBeNull();
+    // À zéro vol, la question n'existe pas : 0 est la seule valeur possible.
+    expect(volsCourtsApresTotal({ flights_total_per_year: 4, flights_short_per_year: 3 }, 0)).toBe(0);
+    expect(volsCourtsApresTotal({ flights_total_per_year: 0, flights_short_per_year: null }, 0)).toBe(0);
+    // Entre deux totaux non nuls, la réponse donnée reste, ramenée sous le nouveau total.
+    expect(volsCourtsApresTotal({ flights_total_per_year: 4, flights_short_per_year: 3 }, 6)).toBe(3);
+    expect(volsCourtsApresTotal({ flights_total_per_year: 4, flights_short_per_year: 3 }, 2)).toBe(2);
+    expect(volsCourtsApresTotal({ flights_total_per_year: 4, flights_short_per_year: null }, 2)).toBeNull();
   });
 
   it('flights : short_per_year requis seulement si au moins un vol déclaré', () => {

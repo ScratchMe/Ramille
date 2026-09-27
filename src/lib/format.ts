@@ -121,6 +121,15 @@ export function grouperLesMilliers(entier: string): string {
 }
 
 /**
+ * Une distance avec son unité : « 1 500 km ». Sortie de l'étape « Vols » le 27/09/2026, où elle
+ * vivait en fonction locale, quand l'étape des longs trajets a eu besoin de la même forme pour sa
+ * ligne d'hypothèses : deux lignes jumelles, une seule façon d'écrire leurs kilomètres.
+ */
+export function formatKm(km: number): string {
+  return `${grouperLesMilliers(String(km))} km`;
+}
+
+/**
  * Le nombre et son unité, une fois pour les deux formes.
  *
  * Extrait plutôt que recopié, ou pire, obtenu par un `.replace` sur la sortie de l'autre : c'est le

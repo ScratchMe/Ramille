@@ -43,8 +43,9 @@ export const COMMUTE_MODE_CHOICES: CommuteModeChoice[] = [
 ];
 
 // Loisirs (B2.2) : 4 modes en avant + "Voir les autres modes" pour le reste — même
-// choix voiture seul/covoiturage que B1.4 pour la cohérence de copy, mais sans effet de
-// calcul différencié (le schéma n'a pas de `leisure_carpool_size`, cf. v1-05 §2).
+// choix voiture seul/covoiturage que B1.4. Le covoiturage de loisirs demande combien on est
+// (`leisure_carpool_size`, C3.5) et divise l'empreinte d'autant, comme celui du quotidien :
+// ce commentaire disait l'inverse, d'après `v1-05` §2, écrit avant que la colonne n'existe.
 export const LEISURE_MODE_CHOICES_PRIMARY: CommuteModeChoice[] = [
   { key: 'voiture_solo', modeId: 'voiture', carpool: false, label: 'Voiture (seul)' },
   { key: 'voiture_covoiturage', modeId: 'voiture', carpool: true, label: 'Voiture (covoiturage)' },

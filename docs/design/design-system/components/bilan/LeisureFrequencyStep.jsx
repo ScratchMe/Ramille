@@ -17,7 +17,7 @@ const OPTIONS = [
   { value: 'weekly', label: 'Une fois par semaine' },
   { value: 'multiple_weekly', label: 'Plusieurs fois par semaine' },
 ];
-const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le weekend ?';
+const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le week-end ?';
 
 // Les deux valeurs de `HYPOTHESES` (src/constants/methodologie.ts) que la ligne interpole, recopiées — le dépôt
 // les compare en CI aux constantes du calcul.

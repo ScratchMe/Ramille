@@ -6,7 +6,9 @@ import { ThemedView } from '../core/ThemedView.jsx';
 // Source : src/components/bilan/precision-chiffres.tsx — la jumelle chiffrée de `PrecisionMode` : même encart
 // (fond élément, rayon 16, padding 16, gap 8), même retrait gauche de 16, mais des puces équiréparties au lieu de
 // rangées. Des chiffres ont tous la même largeur et tiennent à cinq sur une ligne : cinq rangées hautes pour cinq
-// chiffres feraient une liste plus longue que la question.
+// chiffres feraient une liste plus longue que la question. Sur la plupart des téléphones seulement : à 360 dp, cinq
+// puces de 48 et leurs écarts débordaient de l'encart de 8 px, d'où la grille de `GroupeDeChoix` (`colonnes` est un
+// maximum) — cinq colonnes quand elles tiennent, un retour à la ligne quand elles ne tiennent plus.
 //
 // Le groupe est un `radiogroup` nommé par la question, posé par `GroupeDeChoix` : une étape peut porter plusieurs
 // séries de puces identiques, et nommer le groupe dit une fois dans laquelle on se trouve. Les puces non choisies
@@ -15,7 +17,7 @@ export function PrecisionChiffres({ question, options, valeur, onChange }) {
   return (
     <ThemedView type="backgroundElement" style={{ borderRadius: 16, padding: 16, gap: 8, marginLeft: 16 }}>
       <ThemedText type="small" themeColor="textSecondary">{question}</ThemedText>
-      <GroupeDeChoix question={question} style={{ flexDirection: 'row', gap: 8 }}>
+      <GroupeDeChoix question={question} colonnes={options.length}>
         {options.map((option) => (
           <Chip
             key={option.value}

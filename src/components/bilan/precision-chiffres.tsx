@@ -14,9 +14,19 @@ import { Radius, Spacing } from '@/constants/theme';
  * pour deux raisons nommées : des libellés de largeurs très inégales (« Hybride » contre
  * « Hybride rechargeable ») donnaient un retour à la ligne en escalier, et un libellé long
  * risquait d'être rogné. Aucune des deux ne vaut pour des chiffres : ils ont tous la même
- * largeur, ils tiennent à cinq sur une ligne, et cinq rangées hautes pour cinq chiffres
- * feraient une liste plus longue que la question. C'est la même décision que le questionnaire
- * prend déjà partout ailleurs — jours par semaine, nombre de vols, taille du covoiturage.
+ * largeur, ils tiennent à cinq sur une ligne sur la plupart des téléphones, et cinq rangées
+ * hautes pour cinq chiffres feraient une liste plus longue que la question. C'est la même
+ * décision que le questionnaire prend déjà partout ailleurs — jours par semaine, nombre de vols,
+ * taille du covoiturage.
+ *
+ * **Sur la plupart, pas sur tous — d'où la grille** (27/09/2026). Cinq puces de 48 et leurs
+ * quatre écarts demandent 272 px ; l'encart, retiré de 16 et rembourré de 16 de chaque côté, n'en
+ * laisse que 264 sur un téléphone de 360 dp, une largeur courante sur Android. La cinquième puce
+ * mordait de 8 px sur la marge droite de l'encart (mesuré sur l'export web ; à 390 dp tout
+ * tient). Plutôt que de rogner la cible de 48 (décision n° 7), la série passe par la grille de
+ * `GroupeDeChoix`, dont `colonnes` est un maximum : cinq colonnes égales quand elles tiennent, et
+ * la rangée repasse d'elle-même à la ligne quand elles ne tiennent plus — comme les jours dans la
+ * carte d'une action.
  *
  * Le groupe est un `radiogroup` **nommé**, et c'est ce qui le distingue de ses voisins : une
  * étape peut porter plusieurs séries de puces rigoureusement identiques — c'est le cas des longs
@@ -41,7 +51,7 @@ export function PrecisionChiffres({
       <ThemedText type="small" themeColor="textSecondary">
         {question}
       </ThemedText>
-      <GroupeDeChoix question={question} style={styles.reponses}>
+      <GroupeDeChoix question={question} colonnes={options.length}>
         {options.map((option) => (
           <Chip
             key={option.value}
@@ -71,5 +81,4 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     marginLeft: Spacing.three,
   },
-  reponses: { flexDirection: 'row', gap: Spacing.two },
 });

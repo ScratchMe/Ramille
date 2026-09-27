@@ -738,6 +738,30 @@ export function distanceSortieKm(reponses: BilanAnswers): number | null {
  */
 export const COMMUTE_DISTANCE_A_RELIRE_KM = 200;
 
+/**
+ * La part de vols courts après un changement du nombre de vols (B3.1 → B3.2).
+ *
+ * **Sous un total nul, le 0 des vols courts n'est pas une réponse** (27/09/2026). La seconde
+ * question ne s'affiche qu'à partir d'un vol ; à zéro vol, l'étape pose d'elle-même
+ * `flights_short_per_year = 0`, et un re-bilan le relit tel quel de la base. La règle d'avant —
+ * « ramener les courts sous le nouveau total » — gardait ce 0 en passant à quatre vols : la
+ * question « Sur ces 4, combien sont courts ? » arrivait **déjà répondue**, le décompte des
+ * quatre long-courriers s'affichait, et l'étape se validait sans que la personne ait rien choisi —
+ * l'erreur la plus lourde possible sur le poste le plus lourd, puisqu'un long-courrier compte six
+ * fois la distance d'un vol court. C'est le « binaire qu'on n'a pas choisi » de `v1-16` §4.
+ *
+ * Un total qui change entre deux valeurs non nulles garde, lui, la réponse donnée, ramenée sous le
+ * nouveau total : c'en était une.
+ */
+export function volsCourtsApresTotal(
+  avant: Pick<BilanAnswers, 'flights_total_per_year' | 'flights_short_per_year'>,
+  nouveauTotal: number
+): number | null {
+  if (nouveauTotal === 0) return 0;
+  if (avant.flights_total_per_year === 0 || avant.flights_short_per_year === null) return null;
+  return Math.min(avant.flights_short_per_year, nouveauTotal);
+}
+
 export function distanceDomicileTravailARelire(reponses: BilanAnswers): boolean {
   const km = distanceDomicileTravailKm(reponses);
   return km !== null && km > COMMUTE_DISTANCE_A_RELIRE_KM;
