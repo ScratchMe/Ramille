@@ -103,6 +103,10 @@ describe('marque de bilan', () => {
    * **Le retrait du dernier bilan valide l'efface, et elle seule** (C4.7, D3 de `v1-22`). Sans ça,
    * une réouverture hors ligne enverrait au plan quelqu'un qui n'a plus de bilan. Le reste du stockage
    * n'est pas touché : le compte n'est pas quitté, et un brouillon commencé reste le sien.
+   *
+   * Éprouvé le 27/09/2026 : un effacement qui ne fait rien, puis un balayage par préfixe à la place
+   * de la seule clé, font tomber ce test et lui seul ; un effacement sans `try` fait tomber le
+   * suivant et lui seul.
    */
   it('s’efface seule, sans emporter le reste du stockage', async () => {
     await marquerQuIlYAUnBilan();

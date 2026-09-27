@@ -1,16 +1,17 @@
 // Retirer un bilan (C4.7, `v1-22`) — ce que la restitution dit et décide autour du geste.
 //
-// **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1), une mutation à la fois, remise en
-// place par l'opération inverse :
-//   - `placeDuBilan` compare au DERNIER de la liste au lieu du premier → 2 tests (« dernier » et
-//     « ancien » s'échangent, et l'ordre inversé ne change plus rien) ;
-//   - `placeDuBilan` rend `seul` sans vérifier l'appartenance → 1 test (un bilan absent de la liste) ;
-//   - le corps d'`ancien` remplacé par celui de `dernier` → 1 test (le plan « repartirait » alors
-//     qu'il ne bouge pas) ;
-//   - le corps de `seul` dit « ton plan » → 1 test ;
-//   - `lectureDuStatut` affiche par défaut → 1 test (un statut inconnu montrerait son chiffre) ;
-//   - `issueDuRetrait` lit `RM006` au message plutôt qu'au code → 1 test ;
-//   - `apresLeRetrait` reste sur place quand le nombre est inconnu → 1 test.
+// **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1) — sept mutations, une à la fois,
+// l'original réécrit après chacune ; sur 23 tests, ce que chacune fait tomber :
+//   - `placeDuBilan` compare au DERNIER de la liste au lieu du premier → 3 (« dernier », « ancien »,
+//     et l'ordre qui change la réponse) ;
+//   - `placeDuBilan` oublie de vérifier l'appartenance → 1 (un bilan absent, une liste vide) ;
+//   - le corps d'`ancien` remplacé par celui de `dernier` → 1 (le plan « repartirait » alors qu'il ne
+//     bouge pas) ;
+//   - le corps de `seul` parle du plan → 1 ;
+//   - `lectureDuStatut` affiche par défaut → 1 (un statut inconnu montrerait son chiffre) ;
+//   - `issueDuRetrait` lit `RM006` dans le message plutôt qu'au code → 2 (le code n'est plus reconnu,
+//     et un message qui le cite l'est à tort) ;
+//   - `apresLeRetrait` reste sur place quand le nombre est inconnu → 1.
 import {
   apresLeRetrait,
   BILAN_RETIRE,
