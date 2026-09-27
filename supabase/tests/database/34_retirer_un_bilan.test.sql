@@ -28,12 +28,14 @@
 --
 -- ## Éprouvé en le cassant, le 27/09/2026 (TESTING.md §1.1)
 --
--- Quinze mutations, chacune jouée seule dans une transaction annulée — la migration puis ce fichier,
--- **les contrôles de fin de migration coupés**, sans quoi trois d'entre elles s'arrêtaient avant le
--- premier test (M1, M2 et M11 : c'est une garde de plus, pas un défaut). Un témoin sans mutation passe
--- les 41. Ce que chacune fait tomber, et rien d'autre — **les numéros sont ceux du fichier à 41
--- assertions** : les deux du rappel annulé (27 et 28), ajoutées à l'intégration, ont décalé de deux
--- tout ce qui les suit, et la table a été renumérotée avec elles :
+-- Les quinze premières, chacune jouée seule dans une transaction annulée — la migration puis ce
+-- fichier, **les contrôles de fin de migration coupés**, sans quoi trois d'entre elles s'arrêtaient
+-- avant le premier test (M1, M2 et M11 : c'est une garde de plus, pas un défaut). Les suivantes, à
+-- l'intégration, par la méthode canonique : la migration mutée **sur le disque**, puis `rejouer-la-ci
+-- base` sur toute la suite. Un témoin sans mutation passe les 44. Ce que chacune fait tomber, et rien
+-- d'autre — **les numéros sont ceux du fichier** : les deux du rappel annulé (27 et 28), ajoutées à
+-- l'intégration, ont décalé de deux tout ce qui les suit, et la table a été renumérotée avec elles ;
+-- la section G (42 à 44) est en fin de fichier pour ne plus rien décaler :
 --
 --   | Ce qu'on casse | Ce qui tombe |
 --   |---|---|
@@ -53,6 +55,8 @@
 --   | M14 — l'export écarte les bilans retirés | 25 |
 --   | M15 — les deux générateurs de points lisent `status <> 'in_progress'` | 30 |
 --   | M16 — le RPC n'annule plus les rappels en attente quand il ne reste aucun bilan (27/09/2026, à l'intégration : la migration mutée sur le disque, puis `rejouer-la-ci base` sur les 35 fichiers) | 27, et rien d'autre dans la suite |
+--   | M17 — le retrait du seul bilan n'archive plus l'action engagée (27/09/2026, section G, même méthode que M16) | 44, et rien d'autre dans la suite |
+--   | M18 — les rappels annulés à **chaque** retrait, et non plus au seul dernier (idem) | 42, et rien d'autre dans la suite |
 --
 -- **M13 est d'abord passée**, et c'est elle qui a changé la fixture : la vue d'étape était celle de
 -- R, qui garde un bilan valide après son retrait — un entonnoir borné aux comptes pourvus d'un bilan

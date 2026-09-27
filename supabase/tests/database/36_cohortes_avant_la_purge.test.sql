@@ -81,7 +81,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(20);
+select plan(25);
 
 -- ── 1. Les pièces : tranches, boucles, signe de vie ─────────────────────────────────────────────
 
@@ -453,6 +453,81 @@ select is(
     where mois = date_trunc('month', now() at time zone 'UTC')::date),
   current_setting('c36.avant')::integer + 1,
   'un second appel qui ne supprime rien ne compte rien'
+);
+
+-- ── 8. Un compteur qui échoue n'empêche jamais une suppression (contre-lecture du 27/09/2026) ──
+--
+-- En fin de fichier pour ne pas décaler les numéros que la table des mutations cite : 21 à 25.
+--
+-- La première version annulait la purge entière quand le compte échouait, et la même liste de
+-- candidats le refaisait échouer chaque nuit : une suppression promise, suspendue pour toujours et
+-- sans alerte. Le déclencheur le plus probable est ce que la 21 garde — une valeur de
+-- `regime_de_rappel` que le `check` de `rappels_au_depart` ignorerait. Les 22 à 25 fabriquent
+-- l'échec (une contrainte `not valid` qui refuse toute nouvelle valeur, posée dans la transaction
+-- du test, donc annulée avec lui) et regardent la suppression passer quand même.
+
+select set_config('role', 'postgres', true);
+
+-- Les littéraux que `regime_de_rappel` peut rendre, lus dans son corps installé, contre ceux du
+-- `check`. Une inclusion et non une égalité : le `check` peut en admettre plus que le régime n'en
+-- rend aujourd'hui, jamais moins.
+select ok(
+  (
+    with rendus as (
+      select (regexp_matches(regexp_replace(prosrc, '--[^' || chr(10) || ']*', '', 'g'),
+                             'return\s+''([a-z_]+)''', 'g'))[1] as valeur
+      from pg_proc where oid = 'public.regime_de_rappel(uuid, text)'::regprocedure
+    ),
+    admis as (
+      select (regexp_matches(pg_get_constraintdef(oid), '''([a-z_]+)''', 'g'))[1] as valeur
+      from pg_constraint where conname = 'purges_par_cohorte_rappels_au_depart_check'
+    )
+    select (select count(*) from rendus) >= 3
+       and not exists (select valeur from rendus except select valeur from admis)
+  ),
+  'toute valeur que rend regime_de_rappel est admise par le check de rappels_au_depart'
+);
+
+-- La garde de volume a retenu les soixante de la section 6 : on les retire, pour que le passage
+-- suivant ait un seul candidat.
+delete from auth.users where id::text like 'c3600000-0000-0000-0001-%';
+
+insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at) values
+  ('c3600000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '3000 days', now());
+
+alter table public.purges_par_cohorte
+  add constraint c36_compteur_en_echec check (comptes < 0) not valid;
+
+select lives_ok(
+  $$ select public.purge_stale_anonymous_accounts() $$,
+  'la purge ne lève pas quand son compteur échoue'
+);
+
+select ok(
+  not exists (select 1 from auth.users where id = 'c3600000-0000-0000-0000-000000000009')
+  and exists (select 1 from public.purge_runs
+              where status = 'applied' and deleted = 1
+                and detail like 'Compteur des cohortes en échec, suppression faite quand même :%'),
+  'la session est supprimée malgré le compteur en échec, et le journal de la purge le dit'
+);
+
+alter table public.suppressions_de_compte_par_mois
+  add constraint c36_compteur_en_echec check (suppressions < 0) not valid;
+
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, is_anonymous, created_at, updated_at) values
+  ('c3600000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-c36-suppression-2@test.local', 'x', false, now(), now());
+
+select set_config('role', 'authenticated', true);
+select set_config('request.jwt.claims', json_build_object('sub', 'c3600000-0000-0000-0000-0000000000d2', 'role', 'authenticated')::text, true);
+select lives_ok(
+  $$ select public.delete_my_account() $$,
+  'la suppression de compte ne lève pas quand son compteur du mois échoue'
+);
+select set_config('role', 'postgres', true);
+
+select ok(
+  not exists (select 1 from auth.users where id = 'c3600000-0000-0000-0000-0000000000d2'),
+  'le compte est supprimé malgré le compteur du mois en échec : le chemin que Play exige ne dépend pas d''une mesure'
 );
 
 select * from finish();

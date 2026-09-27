@@ -72,11 +72,20 @@
 --
 -- Le compteur est écrit par la purge elle-même, juste avant son `delete` et sur la même liste
 -- d'identifiants. Un cron séparé ne ferait mieux sur rien et pourrait manquer un passage — un
--- passage manqué est une cohorte perdue pour de bon. Corollaire voulu : **si l'écriture du
--- compteur échoue, la purge n'a pas lieu** (même transaction), et l'absence de ligne dans
--- `purge_runs` le dit (`docs/exploitation/README.md` §8.5). Une purge retardée se rattrape ; une
--- cohorte effacée sans compte, non. Et un passage bloqué par la garde de volume ne compte rien,
--- puisqu'il ne supprime rien.
+-- passage manqué est une cohorte perdue pour de bon. Et un passage bloqué par la garde de volume ne
+-- compte rien, puisqu'il ne supprime rien.
+--
+-- **Mais un compteur qui échoue n'arrête jamais la suppression** (contre-lecture du 27/09/2026).
+-- La première version écrivait l'inverse — « si le compteur échoue, la purge n'a pas lieu » — et
+-- c'était suspendre une suppression que la page de confidentialité promet : les candidats ne
+-- changeant pas d'une nuit à l'autre, un compteur en échec échouait à chaque passage, pour toujours
+-- et sans alerte. Le déclencheur le plus probable était à portée : une valeur nouvelle de
+-- `regime_de_rappel` hors du `check` de `rappels_au_depart`. Le compte vit donc dans une
+-- sous-transaction : en temps normal il est écrit dans la même transaction que la suppression, et
+-- s'il échoue, seul lui est annulé — le `delete` passe, et `purge_runs.detail` dit l'échec et son
+-- message. Une cohorte perdue se lit alors à l'écart du rapprochement (§8.5 bis) ; une suppression
+-- promise et suspendue ne se lisait nulle part. Même règle pour `delete_my_account`, où l'enjeu est
+-- plus net encore : un compte qu'on ne peut plus supprimer depuis l'app est un bloqueur Play.
 --
 -- `delete_my_account` compte **après** son `delete`, dans la même transaction, et seulement si une
 -- ligne est partie : l'ordre ne change rien à l'atomicité, et c'est le seul qui ne compte pas deux
@@ -113,8 +122,9 @@ create table if not exists public.purges_par_cohorte (
 comment on table public.purges_par_cohorte is
   'Comptes agrégés des sessions anonymes supprimées par purge_stale_anonymous_accounts, écrits '
   'dans la même transaction, juste avant la suppression. Aucune clé étrangère (la table survit à '
-  'la cascade), aucun identifiant, aucun segment : une ligne est un compteur, jamais une personne. '
-  'Serveur seulement ; se lit par analytics.cohortes_purgees.';
+  'la cascade), aucun identifiant, aucun segment. À nos volumes, une ligne peut ne compter qu''une '
+  'personne : elle ne porte rien qui la désigne. Serveur seulement ; se lit par '
+  'analytics.cohortes_purgees.';
 comment on column public.purges_par_cohorte.semaine_d_arrivee is
   'Le lundi (UTC) de la semaine de création de la session — auth.users.created_at.';
 comment on column public.purges_par_cohorte.etape is
@@ -205,8 +215,9 @@ $function$;
 revoke execute on function public.tranche_de_semaines_tenues(integer) from public, anon, authenticated;
 
 comment on function public.tranche_de_semaines_tenues(integer) is
-  'Les tranches de semaines tenues des cohortes purgées : 0, 1, 2-3, 4-7 (seuil espace des '
-  'rappels), 8-12 (seuil silence), 13+ (au-delà d''une saison).';
+  'Les tranches de semaines tenues des cohortes purgées : 0, 1, 2-3, 4-7, 8-12, 13+. Les bornes 4, '
+  '8 et 13 reprennent les seuils des rappels (quatre et huit points) et la saison, mais elles '
+  'comptent des semaines d''activité, pas des points sans réponse.';
 
 -- Les deux boucles sont nommées, `commute` et `extras` : ce sont les deux seules valeurs du
 -- `check` de `engagement_checkins.loop_type`, et une assertion de `36` épingle ce `check` pour
@@ -287,7 +298,8 @@ security definer
 set search_path to 'public'
 as $function$
 declare
-  -- Plancher absolu : en dessous, la garde ne se mêle de rien (justification en en-tête).
+  -- Plancher absolu : en dessous, la garde ne se mêle de rien (justification en en-tête de
+  -- `20260910100000_garde_volume_purge_anonyme.sql`).
   c_plancher constant integer := 50;
   c_part_max constant numeric := 0.20;
 
@@ -296,6 +308,7 @@ declare
   v_total integer;
   v_seuil integer;
   v_supprimes integer := 0;
+  v_echec_du_compte text;
 begin
   select count(*) into v_total
   from auth.users u
@@ -337,15 +350,21 @@ begin
   end if;
 
   -- Les cohortes, AVANT la suppression : après, la cascade a emporté tout ce qui les décrit.
-  -- Même transaction, même liste d'identifiants que le `delete` qui suit — si ce compte échoue,
-  -- rien n'est supprimé, et l'absence de ligne dans `purge_runs` le dit (lot 6, 27/09/2026).
-  insert into public.purges_par_cohorte (semaine_d_arrivee, etape, semaines_tenues, rappels_au_depart, comptes)
-  select c.semaine_d_arrivee, c.etape, c.semaines_tenues, c.rappels_au_depart, count(*)::integer
-  from unnest(v_candidats) as candidat(id)
-  cross join lateral public.cohorte_de(candidat.id) c
-  group by c.semaine_d_arrivee, c.etape, c.semaines_tenues, c.rappels_au_depart
-  on conflict (semaine_d_arrivee, etape, semaines_tenues, rappels_au_depart)
-  do update set comptes = public.purges_par_cohorte.comptes + excluded.comptes;
+  -- Même liste d'identifiants que le `delete` qui suit. **Dans une sous-transaction** : si ce
+  -- compte échoue, lui seul est annulé, et la suppression promise a lieu quand même (en-tête).
+  begin
+    insert into public.purges_par_cohorte (semaine_d_arrivee, etape, semaines_tenues, rappels_au_depart, comptes)
+    select c.semaine_d_arrivee, c.etape, c.semaines_tenues, c.rappels_au_depart, count(*)::integer
+    from unnest(v_candidats) as candidat(id)
+    cross join lateral public.cohorte_de(candidat.id) c
+    group by c.semaine_d_arrivee, c.etape, c.semaines_tenues, c.rappels_au_depart
+    on conflict (semaine_d_arrivee, etape, semaines_tenues, rappels_au_depart)
+    do update set comptes = public.purges_par_cohorte.comptes + excluded.comptes;
+  exception when others then
+    v_echec_du_compte := format('Compteur des cohortes en échec, suppression faite quand même : %s (%s)',
+                                sqlerrm, sqlstate);
+    raise warning 'purge_stale_anonymous_accounts : %', v_echec_du_compte;
+  end;
 
   -- Suppression par identifiants relevés juste au-dessus : la liste et le compte journalisé
   -- décrivent forcément les mêmes lignes, ce qu'un second passage du prédicat ne garantirait
@@ -355,8 +374,8 @@ begin
 
   get diagnostics v_supprimes = row_count;
 
-  insert into public.purge_runs (status, candidates, deleted)
-  values ('applied', v_nb_candidats, v_supprimes);
+  insert into public.purge_runs (status, candidates, deleted, detail)
+  values ('applied', v_nb_candidats, v_supprimes, v_echec_du_compte);
 end;
 $function$;
 
@@ -385,12 +404,19 @@ begin
 
   -- Le compte du mois, hors de la cascade et sans identifiant (lot 6, 27/09/2026). Après le
   -- `delete` et seulement s'il a supprimé quelque chose : un second appel avec un jeton encore
-  -- valable ne supprime rien, et ne doit rien compter.
+  -- valable ne supprime rien, et ne doit rien compter. **Dans une sous-transaction** : son échec
+  -- ne doit jamais annuler la suppression (en-tête) — il part en avertissement, dans les journaux
+  -- de la base.
   if v_supprimes > 0 then
-    insert into public.suppressions_de_compte_par_mois (mois, suppressions)
-    values (date_trunc('month', now() at time zone 'UTC')::date, v_supprimes)
-    on conflict (mois)
-    do update set suppressions = public.suppressions_de_compte_par_mois.suppressions + excluded.suppressions;
+    begin
+      insert into public.suppressions_de_compte_par_mois (mois, suppressions)
+      values (date_trunc('month', now() at time zone 'UTC')::date, v_supprimes)
+      on conflict (mois)
+      do update set suppressions = public.suppressions_de_compte_par_mois.suppressions + excluded.suppressions;
+    exception when others then
+      raise warning 'delete_my_account : compteur du mois en échec, suppression faite quand même : % (%)',
+        sqlerrm, sqlstate;
+    end;
   end if;
 end;
 $function$;
@@ -463,6 +489,9 @@ begin
   end if;
   if position('suppressions_de_compte_par_mois' in v_suppression) = 0 then
     raise exception 'La suppression de compte ne compte pas son mois';
+  end if;
+  if position('exception when others' in v_purge) = 0 or position('exception when others' in v_suppression) = 0 then
+    raise exception 'Un compteur peut de nouveau empêcher une suppression : sa sous-transaction a disparu';
   end if;
 
   if exists (

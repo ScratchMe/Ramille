@@ -107,14 +107,14 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // lire « effacer », et ce n'en est pas un — la ligne reste, l'export la rend avec son statut
 // (`v1-22` D1). Sans cette phrase, la page laisserait croire à un effacement qui n'a pas lieu. Elle
 // nomme la session anonyme parce que la purge à 90 jours l'emporte aussi, comme le reste. Mise en
-// ligne le 28/09/2026 — la date suit.
+// ligne à la fusion de C4.7 — la date suit, et la feuille de recette la cite (11.1).
 //
 // **Et les compteurs qui survivent à une suppression** (lot 6, décidé le 27/09/2026 : « la page de
 // confidentialité le dit »). La page écrivait que la session « et toutes les données associées »
 // partent, et c'est toujours vrai de ses données ; ce qui reste est un +1 dans un compteur, sans
 // identifiant ni date plus fine que la semaine (`20260928110000`). Le taire aurait laissé croire à
 // une suppression sans aucune trace, sur la page même qui promet de dire ce qu'on garde.
-const UPDATED_AT = '28 septembre 2026';
+const UPDATED_AT = '27 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -363,7 +363,7 @@ const SECTIONS: LegalSection[] = [
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours et ' +
             'repères de parcours est supprimé.',
           'Après une suppression, il ne reste que des compteurs, sans aucun identifiant. Quand une session anonyme ' +
-            'est supprimée, nous ajoutons un à un compteur qui ne retient que sa semaine d’arrivée, jusqu’où elle ' +
+            'est supprimée automatiquement, nous ajoutons un à un compteur qui ne retient que sa semaine d’arrivée, jusqu’où elle ' +
             'était allée (bilan, action choisie, point répondu), combien de semaines elle avait duré et où en étaient ' +
             'ses rappels ; quand tu supprimes ton compte, un au compteur du mois. Ces compteurs ne portent ni ' +
             'adresse, ni identifiant, ni date plus précise que la semaine, et ils sont gardés sans limite de durée.',

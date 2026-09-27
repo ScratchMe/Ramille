@@ -442,8 +442,9 @@ select is(
 -- saison plus ancienne revenait. E s'engage au printemps (reculé de 200 jours), voit son action
 -- reconduite en été (reculé de 100 jours) puis « change d'avis » ; à l'automne, rien ne doit revenir.
 --
--- Éprouvé le 27/09/2026 : la requête d'avant remise dans `generate_plan_cycle_for_user` fait tomber
--- cette assertion, et elle seule.
+-- Éprouvé le 27/09/2026 (la migration de C4.7 mutée sur le disque, puis `rejouer-la-ci base` sur
+-- toute la suite) : la requête d'avant remise dans `generate_plan_cycle_for_user` fait tomber la 29,
+-- et rien d'autre dans la suite.
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
 values ('c2200000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000000', 'authenticated',

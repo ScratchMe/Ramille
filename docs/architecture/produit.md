@@ -306,12 +306,20 @@ toutes les données associées » sont supprimées, et elle gagne une phrase sur
 sans identifiant. C'est ce qui doit être en place **avant l'ouverture sur Play** : chaque jour sans
 agrégat est une cohorte perdue pour de bon.
 
-**Livré le 28/09/2026**, avec quatre choix techniques que ce paragraphe ne décidait pas : la semaine
+**Livré avec C4.7**, avec six choix techniques que ce paragraphe ne décidait pas : la semaine
 d'arrivée est le lundi de `auth.users.created_at` en UTC ; l'étape est la plus loin **dans l'ordre**
 et non le plus long préfixe (on peut répondre au point générique sans s'être engagé) ; les
-semaines tenues se rangent en tranches calées sur les seuils du produit — `0`, `1`, `2-3`, `4-7`,
-`8-12`, `13+` (quatre points, huit points, une saison) ; et l'état des rappels retient le plus
-avancé des deux boucles. **Et la livraison a appris une chose qui éclaire la question du churn** :
+semaines tenues se rangent en tranches dont les bornes reprennent des seuils du produit — `0`, `1`,
+`2-3`, `4-7`, `8-12`, `13+` (quatre points, huit points, une saison), mais comptées en semaines
+d'activité et non en points sans réponse ; l'état des rappels retient le plus avancé des deux
+boucles ; **`delete_my_account` compte après sa suppression et non avant**, sur le nombre de lignes
+supprimées — un second appel avec un jeton encore valable ne supprime rien, et ne compte donc rien ;
+et **un compteur qui échoue n'arrête jamais une suppression** (contre-lecture du 27/09/2026) : la
+purge supprime quand même et le dit dans `purge_runs.detail`, parce que la page de confidentialité
+promet l'effacement après 90 jours et qu'un compteur en échec à chaque passage l'aurait suspendu
+pour toujours, sans alerte. **À nos volumes, une ligne peut ne compter qu'une personne** : elle
+n'en porte aucun identifiant, mais « un compteur, jamais une personne » serait faux — c'est pour
+cela que les segments attendent. **Et la livraison a appris une chose qui éclaire la question du churn** :
 la purge attend 90 jours sans signe de vie, alors que le barreau `silence` tombe après huit points
 sans réponse, environ deux mois sur la boucle hebdomadaire — **le churn est donc franchi bien avant
 la purge**, et il se date sur les comptes vivants par `regime_de_rappel`, pas par ce que la purge

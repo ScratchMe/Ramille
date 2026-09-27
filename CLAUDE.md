@@ -906,7 +906,8 @@ qu'ils portent, ce qui tombe si l'un manque, la checklist à parcourir avant de 
 et la question de continuité (tout tient à une seule personne, elle n'est pas tranchée). Son §8
 est la porte d'entrée des journaux : `analytics.rappels_par_jour`, `analytics.rappels_bloques`,
 `analytics.synchronisations_facteurs`, `public.reminder_send_runs`, `public.purge_runs`, chacun
-avec sa requête et ce qui doit alerter. À côté : `redirect-urls.md` (la liste réelle des URL de
+avec sa requête et ce qui doit alerter — et, depuis le lot 6, `analytics.cohortes_purgees` et
+`public.suppressions_de_compte_par_mois` (§8.5 bis). À côté : `redirect-urls.md` (la liste réelle des URL de
 redirection Supabase, relevée entrée par entrée, avec ce qui doit en être retiré),
 `sauvegarde.md` (le régime de sauvegarde et la procédure de restauration) et
 `remontee-erreurs.md`. **Rien dans le code ni dans la CI ne voit ces réglages, et aucun de ces
@@ -1732,17 +1733,24 @@ pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
   qu'aucun code ne l'écrit.
 
 **Ce que la purge et la suppression laissent derrière elles : des compteurs, rien d'autre** (lot 6,
-28/09/2026, `20260928110000_les_cohortes_avant_la_purge.sql`). La cascade efface tout ce qu'une
+livré avec C4.7, `20260928110000_les_cohortes_avant_la_purge.sql`). La cascade efface tout ce qu'une
 personne a fait, donc toute mesure de forme cohorte doit être écrite **avant** : la purge incrémente
 `public.purges_par_cohorte` (semaine d'arrivée, étape la plus loin, tranche de semaines tenues, état
 des rappels au départ) **dans sa propre transaction, après sa garde de volume et avant son
-`delete`** — si le compteur échoue, rien n'est supprimé ; `delete_my_account` incrémente
-`suppressions_de_compte_par_mois` après son `delete`, seulement si une ligne est partie. Quatre
-choses à ne pas défaire :
+`delete`** ; `delete_my_account` incrémente `suppressions_de_compte_par_mois` après son `delete`,
+seulement si une ligne est partie. **Un compteur qui échoue n'arrête jamais une suppression** : il
+vit dans une sous-transaction, et son échec se consigne (`purge_runs.detail`, un avertissement pour
+`delete_my_account`) pendant que la suppression passe — la page de confidentialité promet
+l'effacement, et une écriture d'analyse ne doit pas pouvoir le suspendre. La première version
+faisait l'inverse (« si le compteur échoue, rien n'est supprimé »), et c'était la suspendre pour
+toujours, sans alerte, dès qu'une valeur nouvelle de `regime_de_rappel` sortait du `check` —
+contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
 
 - **aucun identifiant et aucun segment**, par décision (27/09/2026) : à nos volumes, une ligne
   découpée par zone ou par poste décrirait une personne que la page de confidentialité promet
-  d'effacer. Le fichier `36` balaie les colonnes par type — ni `uuid`, ni `timestamptz` ;
+  d'effacer. Le fichier `36` balaie les colonnes par type et n'admet que `date`, `integer` et un
+  `text` fermé par un `check`. À nos volumes, une ligne peut ne compter qu'une personne : elle n'en
+  porte rien qui la désigne, et c'est ce que la page promet — pas davantage ;
 - **ces tables n'ont aucune clé étrangère**, et c'est ce qui les fait survivre : c'est la
   contrepartie exacte de la règle « jamais rattacher une table à `profiles` autrement qu'en
   cascade », qui vaut pour les données d'une personne et jamais pour un agrégat ;
@@ -1750,11 +1758,17 @@ choses à ne pas défaire :
   (a ouvert < bilan soumis < engagée < a répondu), pas le plus long préfixe : on peut répondre au
   point générique sans s'être engagé. « A soumis un bilan » s'écrit `status <> 'in_progress'`, pour
   qu'un bilan retiré (C4.7) compte comme soumis ;
-- **le signe de vie a une définition extraite, `dernier_signe_de_vie`, que `regime_de_rappel`
-  n'appelle pas encore** : la brancher remplace une ligne de son corps, et le mutant qui la
-  factorise ne fait rien tomber. C'est à faire après C4.2, qui retouche la même fonction ; d'ici là,
-  les deux copies sont identiques et une assertion du `36` exige que le corps installé de
-  `regime_de_rappel` contienne l'expression ou l'appel.
+- **le signe de vie des rappels a une définition extraite, `dernier_signe_de_vie`, que
+  `regime_de_rappel` n'appelle pas encore** — celui de la purge reste le sien, plus large
+  (tous les événements, les bilans, les retours). La brancher remplace une ligne du corps de
+  `regime_de_rappel`, et le mutant qui la factorise ne fait rien tomber. C'est à faire après C4.2,
+  qui retouche la même fonction ; d'ici là, une assertion du `36` exige que le corps installé de
+  `regime_de_rappel` **contienne** l'expression ou l'appel — une inclusion, pas une identité : une
+  ligne ajoutée après, qui retoucherait la date, passerait ;
+- **les valeurs que rend `regime_de_rappel` doivent toutes figurer dans le `check` de
+  `rappels_au_depart`** : une valeur nouvelle ferait échouer chaque compte, donc perdre chaque
+  cohorte. Une assertion du `36` lit les littéraux `return` du corps installé et les compare au
+  `check`.
 
 **Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
 Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
