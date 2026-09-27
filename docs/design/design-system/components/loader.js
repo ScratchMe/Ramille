@@ -10,6 +10,10 @@
     'plan/PastilleEngagee', 'plan/TraitDeTemps', 'plan/CheckinCard', 'plan/ActionCard', 'plan/ActionCommitment', 'plan/CarteDePiste', 'plan/CarteDOuverture', 'plan/FeuilleRappels',
     'suivi/BarreContour', 'suivi/BlocMethode', 'suivi/EcartParPoste',
     'bilan/FeuilleNouveauBilan',
+    'illustrations/OnboardingHeroIllustration', 'illustrations/ReassuranceIllustration', 'illustrations/EmptyStateIllustration',
+    'onboarding/EtapeAccroche', 'onboarding/EtapeContexte', 'onboarding/EtapeReassurance', 'onboarding/EtapeTransition',
+    'connexion/ChampDeCode', 'connexion/SaisieDuCode',
+    'pages/LegalPage', 'pages/ConfigurationManquante', 'pages/ErreurInattendue', 'pages/SessionRefusee',
     'compte/ChoixDeRappel', 'compte/MonCompte',
   ];
   // Les .jsx servis peuvent arriver déjà transpilés (runtime automatique) : on fournit _jsx/_jsxs/_Fragment.

@@ -1,0 +1,12 @@
+L'écran « Regarde tes emails », où l'on tape le code à huit chiffres — **le même pour ses trois hôtes** : rattacher une adresse à son bilan, retrouver un compte depuis un nouvel appareil, et la page de suppression de compte.
+
+```jsx
+<SaisieDuCode voix="parti" adresse="camille@exemple.fr" libelleBouton="Valider mon code" />
+<SaisieDuCode voix="peut_etre" adresse="camille@exemple.fr" libelleBouton="Retrouver mon compte" />
+```
+
+**La voix décide de ce que l'écran affirme, et elle appartient à l'hôte** — jamais à l'état de l'adresse. En `parti`, l'envoi est certain, et une phrase conditionnelle dit, **avant** la saisie, ce que le code fera si un compte existait déjà à cette adresse : vraie dans les deux cas, elle laisse la sortie sans rien révéler. En `peut_etre`, tout est au conditionnel, et une carte dit que le code ne crée jamais de compte — ni ne dit si l'adresse en a un : ce serait dire qui utilise Ramille. **Ne jamais écrire une variante « cette adresse a déjà un compte »** : c'est l'oracle que ce parcours a fermé.
+
+**Le code se vérifie au huitième chiffre**, et le bouton reste là pour qui préfère appuyer. Un refus dit la même chose qu'un code expiré (on ne distingue pas ce qu'on ne sait pas) et **ne vide pas le champ** : on compare ses chiffres avec l'email. Seul « Renvoyer un code » le vide — le précédent ne vaut plus.
+
+« Renvoyer un code » et « Utiliser une autre adresse » sont des **boutons**, pas des liens : ils agissent dans l'écran, ils ne mènent nulle part.

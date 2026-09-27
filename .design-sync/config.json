@@ -20,6 +20,33 @@
     },
     "Chip": {
       "cardMode": "column"
+    },
+    "EtapeAccroche": {
+      "viewport": "390x844"
+    },
+    "EtapeContexte": {
+      "viewport": "390x844"
+    },
+    "EtapeReassurance": {
+      "viewport": "390x844"
+    },
+    "EtapeTransition": {
+      "viewport": "390x844"
+    },
+    "SaisieDuCode": {
+      "viewport": "390x844"
+    },
+    "SessionRefusee": {
+      "viewport": "390x844"
+    },
+    "ErreurInattendue": {
+      "viewport": "390x844"
+    },
+    "ConfigurationManquante": {
+      "viewport": "390x844"
+    },
+    "LegalPage": {
+      "viewport": "390x1100"
     }
   },
   "libOverrides": {

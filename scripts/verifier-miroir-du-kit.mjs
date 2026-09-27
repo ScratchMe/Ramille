@@ -84,19 +84,6 @@ const A_PORTER = new Map([
   ['src/components/bilan/steps/leisure-detail.tsx', 'lot 4 — le questionnaire'],
   ['src/components/bilan/steps/leisure-frequency.tsx', 'lot 4 — le questionnaire'],
   ['src/components/bilan/steps/long-trips.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/onboarding/etape-accroche.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/onboarding/etape-contexte.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/onboarding/etape-reassurance.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/onboarding/etape-transition.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/illustrations/empty-state-illustration.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/illustrations/onboarding-hero-illustration.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/illustrations/reassurance-illustration.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/auth/champ-de-code.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/auth/saisie-du-code.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/legal/legal-page.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/configuration-manquante.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/erreur-inattendue.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
-  ['src/components/session-refusee.tsx', 'lot 5 — onboarding, code, pages légales, erreurs'],
 ]);
 
 /**

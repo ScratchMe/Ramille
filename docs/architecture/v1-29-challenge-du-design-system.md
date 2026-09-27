@@ -403,6 +403,17 @@ avance ; le trait mesure le temps, pas toi. » — et non d'une invention. **En 
 méthode, une apostrophe droite est apparue dans le produit** (`src/constants/methodologie.ts`,
 « c'était », « qu'on ») : le kit porte la forme typographique, le produit se corrige à part.
 
+**Le lot 5 porte les écrans hors du plan** : les quatre étapes de l'onboarding (`onboarding/`), leurs
+trois illustrations (`illustrations/`, couleurs des jetons), la saisie du code de connexion
+(`connexion/` : `ChampDeCode`, `SaisieDuCode` et ses deux voix — ce que l'écran affirme suit l'hôte,
+jamais l'état de l'adresse), le gabarit des pages légales et les trois écrans d'erreur (`pages/`).
+**Les écrans pleins se capturent désormais à taille de téléphone** : la synchronisation les rendait
+dans une cellule de 900 × 700, où l'illustration de l'accueil se recadrait jusqu'à n'en montrer
+qu'une roue ; `.design-sync/config.json` leur donne un `viewport` de 390 × 844. Deux écarts de
+props avec le dépôt ont été repris avant la PR : `ErreurInattendue` prend `erreur` (ce qui a été
+levé), pas un texte déjà formaté ; et la phrase de présentation de Ramille est la sienne, recopiée
+de `RAMILLE.presentation`, pas une paraphrase.
+
 **Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
 partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.
 
