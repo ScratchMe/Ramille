@@ -65,6 +65,24 @@ body {
   }
 }
 
+/* L'entrée d'une carte qui arrive (la carte d'ouverture du plan) : elle glisse depuis le bas, 320 ms, en
+   sortie cubique — et pas du tout si l'on a demandé moins d'animations, comme `ReduceMotion.System` dans le
+   dépôt. */
+[data-entree='glisse'] {
+  animation: ramille-entree 320ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+@keyframes ramille-entree {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-entree='glisse'] {
+    animation: none;
+  }
+}
+
 /* Les illustrations non produites sont des placeholders rayés 135°, légende mono — la forme
    décrite par le readme, pour qu'un écran en construction n'invente pas la sienne. */
 .ramille-placeholder {

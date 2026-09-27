@@ -7,7 +7,9 @@
     'forms/GroupeDeChoix', 'forms/Chip', 'forms/ChoiceRow', 'forms/LigneDeCanal', 'forms/ModeListItem', 'forms/PrecisionMode', 'forms/NumericField', 'forms/TextField', 'forms/GoogleButton',
     'mascotte/Mascot', 'mascotte/RamilleDit', 'mascotte/CalculEnCours', 'mascotte/EcranLancement',
     'navigation/CompteBouton', 'navigation/BandeHaute', 'navigation/OngletIcone', 'navigation/BarreOnglets', 'navigation/ProgressHeader', 'navigation/StepShell',
-    'plan/CheckinCard', 'plan/ActionCard', 'plan/ActionCommitment', 'plan/FeuilleRappels',
+    'plan/PastilleEngagee', 'plan/TraitDeTemps', 'plan/CheckinCard', 'plan/ActionCard', 'plan/ActionCommitment', 'plan/CarteDePiste', 'plan/CarteDOuverture', 'plan/FeuilleRappels',
+    'suivi/BarreContour', 'suivi/BlocMethode', 'suivi/EcartParPoste',
+    'bilan/FeuilleNouveauBilan',
     'compte/ChoixDeRappel', 'compte/MonCompte',
   ];
   // Les .jsx servis peuvent arriver déjà transpilés (runtime automatique) : on fournit _jsx/_jsxs/_Fragment.

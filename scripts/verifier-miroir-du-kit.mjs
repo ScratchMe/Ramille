@@ -72,14 +72,6 @@ const SANS_INTERFACE = new Map([
  * refus n° 2 la signale.
  */
 const A_PORTER = new Map([
-  ['src/components/plan/carte-de-piste.tsx', 'lot 3 — plan et suivi'],
-  ['src/components/plan/carte-douverture.tsx', 'lot 3 — plan et suivi'],
-  ['src/components/plan/pastille-engagee.tsx', 'lot 3 — plan et suivi'],
-  ['src/components/plan/trait-de-temps.tsx', 'lot 3 — plan et suivi'],
-  ['src/components/suivi/barre-contour.tsx', 'lot 3 — plan et suivi'],
-  ['src/components/suivi/bloc-methode.tsx', 'lot 3 — plan et suivi'],
-  ['src/components/suivi/ecart-par-poste.tsx', 'lot 3 — plan et suivi'],
-  ['src/components/bilan/feuille-nouveau-bilan.tsx', 'lot 3 — plan et suivi'],
   ['src/components/bilan/champs-de-contexte.tsx', 'lot 4 — le questionnaire'],
   ['src/components/bilan/missing-mode-link.tsx', 'lot 4 — le questionnaire'],
   ['src/components/bilan/precision-chiffres.tsx', 'lot 4 — le questionnaire'],

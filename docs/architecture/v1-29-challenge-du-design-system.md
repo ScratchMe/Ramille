@@ -392,6 +392,17 @@ contrôle limité au code ne pouvait pas voir ; et la garde du miroir exige de c
 « Source » qui désigne un fichier existant portant le composant du même nom. Neuf mutations de plus,
 datées en tête des deux scripts.
 
+**Le lot 3 porte le plan et le suivi** : `CarteDePiste` (la carte et son engagement, lus d'une ligne
+`plan_actions`), `CarteDOuverture` (ses trois usages — nouvelle saison, premier plan, les deux lieux —,
+Ramille dessous et hors du cadre, l'entrée glissée respectant « réduire les animations »),
+`PastilleEngagee` (que `ActionCard` emploie désormais, comme le dépôt), `TraitDeTemps`, et dans deux
+groupes neufs `suivi/` (`EcartParPoste`, `BarreContour`, `BlocMethode`, texte du dépôt compris) et
+`bilan/` (`FeuilleNouveauBilan`). Les exemples viennent des dérivations du dépôt — « L’automne
+commence. », « Cet été : 11 points répondus, 4 fois où tu as changé quelque chose. », « La saison
+avance ; le trait mesure le temps, pas toi. » — et non d'une invention. **En recopiant le texte de la
+méthode, une apostrophe droite est apparue dans le produit** (`src/constants/methodologie.ts`,
+« c'était », « qu'on ») : le kit porte la forme typographique, le produit se corrige à part.
+
 **Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
 partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.
 

@@ -1,4 +1,4 @@
-Le cadre d'une feuille du bas : voile, feuille, poignée et titre. Ce que la feuille dit est son contenu, et lui seul — deux feuilles l'emploient dans le produit, celle des rappels et celle du nouveau bilan.
+Le cadre d'une feuille du bas : voile, feuille, poignée et titre. Ce que la feuille dit est son contenu, et lui seul — deux feuilles l'emploient dans le produit, celle des rappels (`FeuilleRappels`) et celle du nouveau bilan (`FeuilleNouveauBilan`, dont l'exemple ci-dessous est le contenu).
 
 ```jsx
 <FeuilleDuBas titre="Ton plan va être recalculé" onFerme={fermer}>
