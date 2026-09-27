@@ -55,9 +55,9 @@ export function animationDesOnglets(reduit: boolean): 'fade' | 'none' {
 }
 
 /**
- * La durée d'une animation que sa bibliothèque ne coupe pas d'elle-même sous « réduire les
- * animations » : `Animated` de React Native, les CSS transitions de reanimated. Zéro pose tout de
- * suite l'état final — c'est ce que `ReduceMotion.System` fait pour `withTiming`.
+ * La durée d'une CSS transition de reanimated sous « réduire les animations », qu'elle ignore : zéro
+ * pose tout de suite l'état final (le rail du questionnaire). Ce qui ne passe pas par une durée ne se
+ * lance simplement pas sous la préférence (`src/lib/mouvement.tsx`, la barre d'onglets).
  */
 export function dureeSelonLaPreference(duree: number, reduit: boolean): number {
   return reduit ? 0 : duree;

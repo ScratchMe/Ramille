@@ -1,19 +1,13 @@
-import { useCallback, useEffect, useImperativeHandle, useRef, type ReactNode, type Ref } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react';
 import { Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, {
-  Easing,
-  ReduceMotion,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Mouvement, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { reglage } from '@/lib/mouvement';
 
 /**
  * Le cadre d'une feuille du bas : la fenêtre, le voile, la feuille, sa poignée et son titre
@@ -57,7 +51,8 @@ import { useTheme } from '@/hooks/use-theme';
  * `fermer` (la poignée passée en `ref`) — « Pas maintenant », un choix validé. Un bouton qui
  * **navigue** appelle son rappel directement : sur natif, une route poussée sous un `Modal` encore
  * ouvert reste dessous, donc il ne doit pas attendre une sortie. Une seconde fermeture pendant la
- * sortie est ignorée.
+ * sortie ne relance rien — mais si elle porte un choix (`apres`), c'est lui que la fin rendra ; et
+ * pendant la sortie, la feuille ne prend plus de toucher.
  */
 export type PoigneeDeFeuille = {
   /** Referme en animant, puis appelle `apres` — ou `onFerme` sans argument. */
@@ -86,7 +81,15 @@ export function FeuilleDuBas({
   const animationsReduites = useReducedMotion();
   const voile = useSharedValue(animationsReduites ? 1 : 0);
   const feuille = useSharedValue(animationsReduites ? 1 : 0);
-  const enSortie = useRef(false);
+  const sortieLancee = useRef(false);
+  // Pendant la sortie, la feuille ne prend plus aucun toucher : « Pas maintenant » puis « Soumettre
+  // mon bilan » dans les 200 ms soumettait le bilan.
+  const [enSortie, setEnSortie] = useState(false);
+  // Ce que la fin de la sortie appelle. **Un `fermer(apres)` arrivé pendant la sortie le remplace**,
+  // au lieu d'être ignoré : le retour lance la sortie, puis le choix de la feuille des rappels finit
+  // de s'écrire — ignoré, ce choix partait en base sans que le plan le reçoive (contre-lecture du
+  // 27/09/2026). Un second retour, sans rien à rendre, ne remplace rien.
+  const finisseur = useRef<(() => void) | null>(null);
   // Le dernier `onFerme` reçu : la sortie le lit à sa fin, pas à son début.
   const onFermeCourant = useRef(onFerme);
   useEffect(() => {
@@ -94,36 +97,36 @@ export function FeuilleDuBas({
   }, [onFerme]);
 
   useEffect(() => {
-    const courbe = Easing.bezier(...Mouvement.courbe);
-    voile.value = withTiming(1, { duration: Mouvement.fondu, easing: courbe, reduceMotion: ReduceMotion.System });
-    feuille.value = withTiming(1, {
-      duration: Mouvement.entreeDeFeuille,
-      easing: courbe,
-      reduceMotion: ReduceMotion.System,
-    });
+    voile.value = withTiming(1, reglage(Mouvement.fondu));
+    feuille.value = withTiming(1, reglage(Mouvement.entreeDeFeuille));
   }, [voile, feuille]);
+
+  const terminer = useCallback(() => finisseur.current?.(), []);
 
   const fermer = useCallback(
     (apres?: () => void) => {
-      if (enSortie.current) return;
-      enSortie.current = true;
-      const finir = apres ?? (() => onFermeCourant.current());
-      if (animationsReduites) {
-        finir();
+      if (sortieLancee.current) {
+        if (apres) finisseur.current = apres;
         return;
       }
-      const courbe = Easing.bezier(...Mouvement.courbe);
+      sortieLancee.current = true;
+      finisseur.current = apres ?? (() => onFermeCourant.current());
+      if (animationsReduites) {
+        terminer();
+        return;
+      }
+      setEnSortie(true);
       // `set` et non `.value =` : le React Compiler refuse d'écrire une valeur hors d'un effet.
-      voile.set(withTiming(0, { duration: Mouvement.sortie, easing: courbe, reduceMotion: ReduceMotion.System }));
+      voile.set(withTiming(0, reglage(Mouvement.sortie)));
       // Le rappel part même si la sortie est interrompue : une feuille qui ne se démonte jamais
       // serait un écran bloqué, bien pire qu'une sortie coupée.
       feuille.set(
-        withTiming(0, { duration: Mouvement.sortie, easing: courbe, reduceMotion: ReduceMotion.System }, () => {
-          scheduleOnRN(finir);
+        withTiming(0, reglage(Mouvement.sortie), () => {
+          scheduleOnRN(terminer);
         })
       );
     },
-    [animationsReduites, voile, feuille]
+    [animationsReduites, voile, feuille, terminer]
   );
 
   useImperativeHandle(ref, () => ({ fermer }), [fermer]);
@@ -136,7 +139,7 @@ export function FeuilleDuBas({
   return (
     <Modal visible animationType="none" transparent onRequestClose={() => fermer()} aria-label={titre}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.scrim }, styleDuVoile]} />
-      <Animated.View style={[styles.place, styleDeLaFeuille]}>
+      <Animated.View style={[styles.place, styleDeLaFeuille, enSortie && styles.sansToucher]}>
         <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
           <View style={[styles.poignee, { backgroundColor: theme.border }]} />
           {enTete && (
@@ -153,6 +156,7 @@ export function FeuilleDuBas({
 
 const styles = StyleSheet.create({
   place: { flex: 1, justifyContent: 'flex-end' },
+  sansToucher: { pointerEvents: 'none' },
   feuille: {
     borderTopLeftRadius: Radius.card,
     borderTopRightRadius: Radius.card,

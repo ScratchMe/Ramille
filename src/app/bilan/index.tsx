@@ -343,7 +343,10 @@ export default function BilanQuestionnaire() {
     brouillonExistant.current = false;
     savedAtCharge.current = null;
     setAnswers(repriseDepuis);
-    passerA('commute_has_trip');
+    // L'étape arrive d'un autre écran, celui de la reprise : c'est un montage et non un passage, donc
+    // elle se pose (`v1-30` §5.6) — y calculer un sens la ferait entrer par la gauche au montage.
+    setSens(null);
+    setStep('commute_has_trip');
     setPrefilled(true);
     setMontrerLaReprise(false);
   };
@@ -402,6 +405,10 @@ export default function BilanQuestionnaire() {
     if (soumissionEnCours.current) return;
     soumissionEnCours.current = true;
 
+    // Le questionnaire cède la place au calcul ; s'il revient — un échec —, c'est un remontage, et
+    // l'étape se pose au lieu de rentrer par la droite au-dessus du message (contre-lecture du
+    // 27/09/2026).
+    setSens(null);
     setSubmitting(true);
     setMessage(null);
     setDetail(null);

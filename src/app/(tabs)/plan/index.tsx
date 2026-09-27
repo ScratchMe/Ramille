@@ -15,7 +15,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
 import { formatKg, formatTonnes } from '@/lib/format';
-import { DELAI_AVANT_CHARGEMENT, useApresUnDelai } from '@/hooks/use-apres-un-delai';
+import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { usePassageDEngagement } from './_layout';
 import { useTrackFocus } from '@/hooks/use-track-focus';
@@ -234,7 +234,8 @@ async function methodeDuRattachement(): Promise<'google' | 'email' | null> {
 }
 
 type LoadState =
-  | { status: 'loading' }
+  // `relance` : ce chargement est un « Réessayer » de la personne, et il se dit tout de suite.
+  | { status: 'loading'; relance?: true }
   // Aucun bilan complété — écran "État vide" de la maquette.
   | { status: 'no_assessment' }
   // **Rien n'a pu être lu, et c'est autre chose que « rien à afficher »** (A4-1). L'erreur des
@@ -878,14 +879,15 @@ export default function Plan() {
   // **Le seul retour visible du bouton de l'écran d'erreur.** `rafraichir` n'incrémente qu'une
   // clé : l'effet relit, échoue, et `echecDeLecture` laisse rigoureusement le même écran —
   // hors ligne, donc dans le seul cas où cet écran existe, le bouton a l'air mort. Repasser par
-  // « Chargement… » dit que le geste a été pris.
+  // « Chargement… » dit que le geste a été pris — et **tout de suite** (`relance`) : la relecture
+  // échoue bien sous le délai de la ligne, qui sinon ne se montrerait jamais.
   //
   // Et surtout pas dans `rafraichir` lui-même, qui est aussi le rappel de
   // `useRafraichirAuRetour` et celui de l'engagement : y remettre `loading` ferait clignoter
   // « Chargement de ton plan… » à chaque retour au premier plan, c'est-à-dire à chaque arrivée
   // par notification.
   const reessayerDepuisLErreur = () => {
-    setState({ status: 'loading' });
+    setState({ status: 'loading', relance: true });
     rafraichir();
   };
 
@@ -912,8 +914,12 @@ export default function Plan() {
     ) : null;
 
   // « Chargement… » attend `DELAI_AVANT_CHARGEMENT` avant de se dire (`v1-30` §5.8) : en dessous,
-  // il ne faisait que clignoter une image avant le plan.
-  const chargementVisible = useApresUnDelai(state.status === 'loading', DELAI_AVANT_CHARGEMENT);
+  // il ne faisait que clignoter une image avant le plan. Sauf après « Réessayer » : là, c'est la
+  // seule réponse au geste (`useChargementVisible`).
+  const chargementVisible = useChargementVisible(
+    state.status === 'loading',
+    state.status === 'loading' && state.relance === true
+  );
 
   if (state.status === 'loading') {
     return (

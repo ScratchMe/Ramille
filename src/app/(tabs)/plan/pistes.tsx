@@ -12,7 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { POSTE_LABEL } from '@/constants/postes';
 import { Spacing, Stroke } from '@/constants/theme';
-import { DELAI_AVANT_CHARGEMENT, useApresUnDelai } from '@/hooks/use-apres-un-delai';
+import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKg } from '@/lib/format';
@@ -37,7 +37,8 @@ import { usePassageDEngagement } from './_layout';
  * hiérarchie vit sur le plan, qui insiste ; cet écran présente.
  */
 type Etat =
-  | { genre: 'chargement' }
+  // `relance` : ce chargement est un « Réessayer » de la personne, et il se dit tout de suite.
+  | { genre: 'chargement'; relance?: true }
   | { genre: 'erreur' }
   | { genre: 'pistes'; pistes: PisteDuPlan[] };
 
@@ -124,8 +125,12 @@ export default function PistesScreen() {
   );
 
   // « Chargement… » attend `DELAI_AVANT_CHARGEMENT` avant de se dire (`v1-30` §5.8) : en arrivant sur
-  // l'écran, il clignotait une image avant les pistes. L'échec, lui, se dit tout de suite.
-  const chargementVisible = useApresUnDelai(etat.genre === 'chargement', DELAI_AVANT_CHARGEMENT);
+  // l'écran, il clignotait une image avant les pistes. L'échec, lui, se dit tout de suite, et le
+  // chargement d'un « Réessayer » aussi (`useChargementVisible`).
+  const chargementVisible = useChargementVisible(
+    etat.genre === 'chargement',
+    etat.genre === 'chargement' && etat.relance === true
+  );
 
   if (etat.genre !== 'pistes') {
     return (
@@ -150,7 +155,8 @@ export default function PistesScreen() {
                   // Repasser par « chargement » dans ce gestionnaire, et jamais dans `rafraichir` :
                   // sans ce passage, un second échec rend exactement le même écran et le bouton a
                   // l'air mort ; dedans, il ferait clignoter l'écran à chaque retour au premier plan.
-                  setEtat({ genre: 'chargement' });
+                  // `relance` le montre tout de suite, l'échec revenant bien sous le délai de la ligne.
+                  setEtat({ genre: 'chargement', relance: true });
                   rafraichir();
                 }}
                 type="small"

@@ -101,6 +101,20 @@ export function releverParImage(depuisLeDebut) {
       }
       return { rogne: null };
     },
+    // La hauteur de la découpe qui porte un contrôle — le premier ancêtre qui ne laisse rien
+    // dépasser, c'est-à-dire le cadre d'une `HauteurSuivie`. Une **hauteur** et non une position :
+    // une position se lit à travers le défilement, et l'ancrage du navigateur compense ce qui
+    // grandit au-dessus de la fenêtre — la carte du point regrandissait au retour sur le plan sans
+    // que rien de visible ne bouge dans la mesure (contre-lecture du 27/09/2026).
+    decoupe: ({ role, nom }) => {
+      const n = [...document.querySelectorAll(`[role="${role}"]`)].find(
+        (e) => visible(e) && (e.getAttribute('aria-label') ?? normaliser(e.innerText)) === nom
+      );
+      for (let a = n?.parentElement; a && a !== document.body; a = a.parentElement) {
+        if (getComputedStyle(a).overflowY === 'hidden') return { hauteur: a.getBoundingClientRect().height };
+      }
+      return null;
+    },
     // Une feuille du bas (`src/components/feuille-du-bas.tsx`), par le nom de son dialogue : son
     // voile — le seul élément sans enfant qui couvre toute la fenêtre — et le haut de la feuille,
     // qui porte l'en-tête du même nom.
@@ -189,3 +203,14 @@ export const enChemin = (valeurs, repere, marge = 0.5) => {
 };
 
 export const ouiNon = (vrai) => (vrai === true ? 'oui' : 'non');
+
+/**
+ * Vrai si une cible, une fois relevée, a disparu d'au moins une image ensuite : masquée
+ * (`visibility: hidden`, le mode d'échec d'`entering`), ou retirée. Sans ce contrôle, une moitié
+ * « rien ne bouge » ne regardait que les images où la cible était là, et concluait sur ce qu'elle
+ * ne voyait pas (contre-lecture du 27/09/2026).
+ */
+export const disparaitApresEtreApparue = (valeurs) => {
+  const premiere = valeurs.findIndex((v) => v != null);
+  return premiere >= 0 && valeurs.slice(premiere).some((v) => v == null);
+};

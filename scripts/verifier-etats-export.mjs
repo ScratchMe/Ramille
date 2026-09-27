@@ -140,7 +140,17 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 
 import { mesurerUnChoix } from './mesurer-un-choix.mjs';
-import { echantillons, enChemin, entre, mesurer, ouiNon, plusLoin, releverParImage, releverPendant } from './relever-par-image.mjs';
+import {
+  disparaitApresEtreApparue,
+  echantillons,
+  enChemin,
+  entre,
+  mesurer,
+  ouiNon,
+  plusLoin,
+  releverParImage,
+  releverPendant,
+} from './relever-par-image.mjs';
 import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
@@ -1353,7 +1363,7 @@ function verifierLesArrets(ou, arrets, attendus) {
 // J3 dit ce que J2 ne dit pas : l'assertion lit le **côté**, pas seulement qu'il se passe quelque
 // chose.
 
-// J1 — la barre ne glisse pas au démarrage, quelle que soit la marque qui la laisse visible.
+// La barre ne glisse pas au démarrage, quelle que soit la marque qui la laisse visible.
 for (const marque of [null, 'barre', 'fait']) {
   const ou = `/plan au démarrage, marque « ${marque ?? '(aucune)'} »`;
   const page = await ouvrir('/plan', marque === null ? {} : { [PARCOURS]: marque }, {
@@ -1379,7 +1389,7 @@ for (const marque of [null, 'barre', 'fait']) {
   }
 }
 
-// J2 — l'étape entre du côté du parcours, le rail avance ; sous la préférence, tout est posé.
+// L'étape entre du côté du parcours, le rail avance ; sous la préférence, tout est posé.
 for (const reduire of [false, true]) {
   const ou = `/bilan, changement d’étape${reduire ? ' sous « réduire les animations »' : ''}`;
   const page = await ouvrir('/bilan', {}, { reduire, releve: true });
@@ -1405,6 +1415,19 @@ for (const reduire of [false, true]) {
           ` titre du retour ${titreRevenu ? 'trouvé' : 'introuvable'}, rail` +
           ` ${railAvant && railApres ? `de ${railAvant.largeur} à ${railApres.largeur} px` : 'introuvable'}` +
           ' (`progress-header.tsx` : la piste suit la ligne « Étape N sur M »).'
+      );
+    } else if (
+      !enAvant.some((e) => e.titre) ||
+      !enArriere.some((e) => e.titre) ||
+      disparaitApresEtreApparue(enAvant.map((e) => e.titre)) ||
+      disparaitApresEtreApparue(enArriere.map((e) => e.titre))
+    ) {
+      // Une étape jamais relevée pendant son entrée, ou masquée une fois là — le mode d'échec
+      // d'`entering` —, ne laisse rien à juger ; et une moitié « rien ne bouge » qui ne regarderait
+      // que les images où le titre est là conclurait sur ce qu'elle ne voit pas.
+      echecs.push(
+        `${ou} : le titre de l’étape n’a pas été relevé pendant son entrée, ou a disparu une fois là —` +
+          ' une étape masquée ne reçoit pas le focus (`v1-30` §3.2, `entering`).'
       );
     } else {
       const titres = enAvant.map((e) => e.titre).filter(Boolean);
@@ -1462,7 +1485,7 @@ for (const reduire of [false, true]) {
   }
 }
 
-// J3 — une précision qui s'ouvre fait descendre ce qui est dessous ; pas au montage, pas sous la
+// Une précision qui s'ouvre fait descendre ce qui est dessous ; pas au montage, pas sous la
 // préférence.
 const ETAPE_DU_MODE = brouillonDe('commute_mode', {
   commute_has_regular_trip: true,
@@ -1497,6 +1520,9 @@ for (const reduire of [false, true]) {
           ` ${avant && apres ? 'trouvée' : 'introuvable'}, « Thermique » ${ouverte ? 'ouverte' : 'introuvable'}.`
       );
     } else {
+      if (!releve.some((e) => e.precision) || disparaitApresEtreApparue(releve.map((e) => e.precision))) {
+        echecs.push(`${ou} : « Thermique » n’a pas été relevée pendant l’ouverture, ou a disparu une fois là.`);
+      }
       const descend = releve.some((e) => e.dessous && entre(e.dessous.haut, avant.haut, apres.haut));
       const opacites = releve.filter((e) => e.precision).map((e) => e.precision.opacite);
       // Animée, un fondu (`enChemin`) ; sous la préférence, la moindre image translucide est de trop.
@@ -1543,7 +1569,7 @@ for (const reduire of [false, true]) {
   }
 }
 
-// J4 — les onglets passent l'un à l'autre en fondu ; sous la préférence, d'un coup.
+// Les onglets passent l'un à l'autre en fondu ; sous la préférence, d'un coup.
 for (const reduire of [false, true]) {
   const ou = `/plan ↔ /suivi${reduire ? ' sous « réduire les animations »' : ''}`;
   const page = await ouvrir('/plan', {}, { reduire, releve: true });

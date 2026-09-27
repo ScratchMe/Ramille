@@ -35,7 +35,8 @@ describe('sensDuPassage', () => {
   });
 
   test('un saut dit d’où il vient, quel que soit le nombre d’étapes franchies', () => {
-    // Le re-bilan qui repart du début, depuis la dernière étape.
+    // Un saut de plusieurs étapes, dans un sens puis dans l'autre. (« Repartir de mon dernier bilan »
+    // n'en est pas un : l'étape arrive d'un autre écran, et se pose — `src/app/bilan/index.tsx`.)
     expect(sensDuPassage('context', 'commute_has_trip', BILAN_STEP_ORDER)).toBe('arriere');
     expect(sensDuPassage('commute_has_trip', 'context', BILAN_STEP_ORDER)).toBe('avant');
   });

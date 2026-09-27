@@ -25,7 +25,7 @@ import { decalageDEntree, type Sens } from '@/types/mouvement';
 
 /**
  * Ce qui entre, ce qui s'ouvre et ce qui change de hauteur, écrit une fois (27/09/2026, `v1-30`
- * §5.6 et §5.7). Un réglage recopié dans huit écrans diverge au premier ajustement.
+ * §5.6 et §5.7). Un réglage recopié d'écran en écran diverge au premier ajustement.
  *
  * **Deux outils de reanimated ont été essayés et écartés, mesures à l'appui** :
  *
@@ -40,13 +40,16 @@ import { decalageDEntree, type Sens } from '@/types/mouvement';
  *   en page : ce qui s'ouvre grandit (`Depliage`), ce qui change de contenu passe d'une hauteur à
  *   l'autre (`HauteurSuivie`), et le reste de l'écran se déplace de lui-même, à chaque image.
  *
- * **« Réduire les animations »** : `withTiming` la suit (`ReduceMotion.System`), les animations CSS
- * non — elles ne sont pas posées sous la préférence, et les hauteurs y restent libres.
+ * **« Réduire les animations »** : aucun de ces outils ne démarre sous la préférence — ce qui entre
+ * est posé, les hauteurs restent libres. Les animations CSS l'ignoreraient ; `withTiming` la lit
+ * (`ReduceMotion.System`, gardé en second filet), mais laissé jouer, `Depliage` ne s'ouvre pas du
+ * tout (J12 de `scripts/verifier-etats-export.mjs`). Ne pas jouer est la seule défense qui compte.
  */
 
 const courbe = Easing.bezier(...Mouvement.courbe);
 const courbeCSS = cubicBezier(...Mouvement.courbe);
-const reglage = (duree: number) => ({ duration: duree, easing: courbe, reduceMotion: ReduceMotion.System });
+/** Le réglage d'un `withTiming` : une durée des jetons, la sortie douce, et la préférence lue. */
+export const reglage = (duree: number) => ({ duration: duree, easing: courbe, reduceMotion: ReduceMotion.System });
 
 const FONDU = css.keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 
@@ -91,8 +94,9 @@ function useJoueAuMontage(): boolean {
   const auMontage = useContext(AuMontage);
   const reduit = useReducedMotion();
   // Décidé une fois, au montage : l'animation ne doit ni rejouer à un nouveau rendu, ni s'ajouter à
-  // une vue déjà affichée. La référence du contexte se lit ici exprès — c'est son instant.
-  const [joue] = useState(() => !reduit && !(auMontage?.current ?? false));
+  // une vue déjà affichée. La référence du contexte se lit ici exprès — c'est son instant. Sans
+  // fournisseur, on ne sait pas si l'écran vient de monter : dans le doute, on pose.
+  const [joue] = useState(() => !reduit && !(auMontage?.current ?? true));
   return joue;
 }
 
@@ -182,13 +186,20 @@ export function HauteurSuivie({
   const mesurer = (evenement: LayoutChangeEvent) => {
     if (reduit) return;
     const nouvelle = evenement.nativeEvent.layout.height;
+    // **Une hauteur nulle n'est pas un contenu vide, c'est un écran masqué.** Sur web, la pile
+    // d'expo-router pose `display: none` sur l'écran recouvert, et `onLayout` y rend zéro : la
+    // hauteur tenue partait vers zéro, et le retour sur le plan faisait regrandir la carte du point
+    // sous les yeux, tout le plan glissant dessous (contre-lecture du 27/09/2026). Aucun contenu
+    // tenu ici ne vaut zéro pour de vrai.
+    if (nouvelle === 0) return;
     const avant = connue.current;
     connue.current = nouvelle;
     if (avant === null || avant === nouvelle) {
       hauteur.set(nouvelle);
       return;
     }
-    hauteur.set(withTiming(nouvelle, reglage(Mouvement.entree)));
+    // Ce qui rétrécit s'efface plus vite que ce qui grandit ne s'installe (règle 1 du skill).
+    hauteur.set(withTiming(nouvelle, reglage(nouvelle < avant ? Mouvement.sortie : Mouvement.entree)));
   };
 
   // La hauteur tenue compte la découpe des deux côtés : la mesure est celle du contenu.

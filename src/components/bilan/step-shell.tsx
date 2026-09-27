@@ -90,10 +90,9 @@ export function StepShell({
   /**
    * L'étape qui s'affiche, et le côté d'où elle arrive (27/09/2026, `v1-30` §5.6). À chaque
    * nouvelle `cle`, le contenu entre en fondu depuis `Mouvement.deplacement` pixels de ce côté ;
-   * sans `sens` (le montage, la reprise d'un brouillon), il est posé. Sans `entree`, rien ne bouge :
-   * le cadre sert aussi à d'autres écrans.
+   * sans `sens` (le montage, la reprise d'un brouillon, le retour après un échec), il est posé.
    */
-  entree?: { cle: string; sens: Sens | null };
+  entree: { cle: string; sens: Sens | null };
 }) {
   // **L'étape entre dans le sens du parcours** (27/09/2026, `v1-30` §5.6) : de la droite en
   // avançant, de la gauche en revenant — l'« axe partagé » d'un parcours par étapes. Une animation
@@ -105,7 +104,7 @@ export function StepShell({
   // La clé fait aussi remonter le contenu d'une étape à l'autre, là où React gardait l'état d'un
   // composant que deux étapes rendaient à la même place.
   const animationsReduites = useReducedMotion();
-  const styleDeLEtape = styleDEntree(entree?.sens ?? null, animationsReduites);
+  const styleDeLEtape = styleDEntree(entree.sens, animationsReduites);
 
   // **Le focus suit l'étape, sinon la question suivante n'est jamais annoncée.** Passer à l'étape
   // d'après laisse le focus sur « Suivant » : à TalkBack comme au clavier sur web, on entend le
@@ -183,7 +182,7 @@ export function StepShell({
         </View>
         <ScrollView ref={defilement} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View ref={contenu} {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
-            <Animated.View key={entree?.cle} style={styleDeLEtape}>
+            <Animated.View key={entree.cle} style={styleDeLEtape}>
               {/* Ce que l'étape montre en arrivant n'a pas d'apparition à soi — une précision déjà
                   ouverte entre avec l'étape ; ce qui s'ouvre ensuite apparaît (`src/lib/mouvement.tsx`). */}
               <SansApparitionAuMontage>

@@ -195,11 +195,13 @@
 //
 // ── Le mouvement, là où il demande des données (27/09/2026, `v1-30`) ──────────────────────────
 //
-// Quatre transitions ne s'atteignent qu'avec un vrai plan, donc ne se gardent qu'ici ; ce qui se
-// voit sans réseau est en section J de `verifier-etats-export.mjs`, et les deux relèvent image par
-// image avec le même outil (`relever-par-image.mjs`) :
+// Ces transitions ne s'atteignent qu'avec un vrai plan, donc ne se gardent qu'ici ; ce qui se voit
+// sans réseau est en section J de `verifier-etats-export.mjs`, et les deux relèvent image par image
+// avec le même outil (`relever-par-image.mjs`) :
 //
 //   - **la barre qui arrive au « Compris »** du premier plan glisse depuis le bas ;
+//   - **le retour sur le plan** depuis les pistes ne fait rien bouger : la carte du point garde sa
+//     hauteur, que la pile web a masquée pendant le détour ;
 //   - **la réponse au point** : la carte change de hauteur, et ce qui est dessous suit au lieu de
 //     sauter (`HauteurSuivie`) ;
 //   - **la feuille « Ton plan va être recalculé »**, la seule qui s'ouvre sur web sans adresse
@@ -210,7 +212,7 @@
 //     le second profil sous la préférence**, où la barre arrive posée. Le second profil y gagne une
 //     chose de plus : le parcours entier est joué une fois sans animation, nouveau bilan compris.
 //
-// **Éprouvé en le cassant le 27/09/2026** : sept mutations, un export chacune (cache Metro isolé,
+// **Éprouvé en le cassant le 27/09/2026** : huit mutations, un export chacune (cache Metro isolé,
 // `--clear`), après deux témoins passés de bout en bout, et **jouées une à une sur un fichier égal
 // au commit** — un lot interrompu avait laissé une mutation dans la copie, et deux résultats ont été
 // rejoués pour ça. Chacune s'arrête à l'étape attendue, sur le message attendu :
@@ -224,8 +226,9 @@
 //   | P5 — la barre glisse aussi sous la préférence | « cycliste — … le plan sans action » : elle arrive en glissant |
 //   | P6 — `HauteurSuivie` ne s'anime jamais | « point » : le cap saute de 769 à 664 px |
 //   | P7 — la découpe au ras (`MARGE_DE_DECOUPE = 0`) | « point » : l'anneau de focus de « Oui » est rogné |
+//   | P8 — la hauteur nulle tenue (l'état d'avant la contre-lecture) | « point » : au retour sur le plan, la carte passe par 8 px au lieu de 153 |
 //
-// **Trois de ces mutations ont d'abord corrigé la garde, et c'est ce qu'elles valaient le plus** :
+// **Quatre de ces mutations ont d'abord corrigé la garde, et c'est ce qu'elles valaient le plus** :
 //   - **P4 est d'abord PASSÉE** : la barre attend masquée, en bas et transparente, et la mutation ne
 //     la remettait en place que dans un effet, une image plus tard — cette image au départ suffisait
 //     à « au moins une image ailleurs qu'à sa place ». « En chemin » veut dire depuis **strictement
@@ -236,10 +239,15 @@
 //   - **et ce changement a fait rougir la CI**, sous la préférence, sur une image que
 //     react-native-web rend à opacité nulle au montage : mesurée image par image, puis écartée —
 //     un `Modal` pas encore montré ne rend rien. L'hypothèse d'abord écrite (`display: none`) était
-//     fausse, et c'est l'impression des échantillons qui l'a dit.
+//     fausse, et c'est l'impression des échantillons qui l'a dit ;
+//   - **P8 est d'abord PASSÉE**, sur une garde qui lisait la position du cap : la page a défilé
+//     jusqu'au lien des pistes, et l'ancrage du défilement de Chrome compense ce qui grandit
+//     au-dessus de la fenêtre — le cap ne bougeait pas pendant que la carte regrandissait. La garde
+//     mesure désormais une **hauteur**, celle de la découpe de la carte.
 //
 // P4, P6 et P7 ont été jouées juste avant ce dernier changement de la mesure de la feuille, qu'elles
-// n'atteignent pas ; les quatre autres, et les deux témoins, sur l'état final.
+// n'atteignent pas ; P8 sur l'export d'avant la correction, puis deux passages verts sur l'export
+// corrigé ; les quatre autres, et les deux témoins, sur l'état final.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -251,7 +259,16 @@ import process from 'node:process';
 import { chromium } from 'playwright';
 
 import { mesurerUnChoix } from './mesurer-un-choix.mjs';
-import { echantillons, enChemin, entre, mesurer, ouiNon, releverParImage, releverPendant } from './relever-par-image.mjs';
+import {
+  disparaitApresEtreApparue,
+  echantillons,
+  enChemin,
+  entre,
+  mesurer,
+  ouiNon,
+  releverParImage,
+  releverPendant,
+} from './relever-par-image.mjs';
 import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
@@ -816,6 +833,38 @@ try {
   // d'une hauteur à l'autre au lieu de faire sauter le reste de l'écran. Le bouton est amené dans la
   // fenêtre **avant** le relevé : un défilement pendant le geste déplacerait tout, et se lirait
   // comme un mouvement.
+  // **Revenir sur le plan ne rouvre rien** (contre-lecture du 27/09/2026). Sur web, la pile masque
+  // l'écran recouvert (`display: none`), où `onLayout` rend une hauteur nulle : `HauteurSuivie` la
+  // tenait, et la carte du point regrandissait sous les yeux au retour, tout le plan glissant
+  // dessous. Joué **avant** la réponse, pour qu'aucune donnée ne change pendant le détour : ce qui
+  // bouge au retour ne peut être que ce défaut.
+  // La mesure est la **hauteur** de la découpe de la carte, pas la position de ce qui est dessous :
+  // la page a défilé jusqu'au lien des pistes, et l'ancrage du navigateur compense ce qui grandit
+  // au-dessus de la fenêtre — une première version de cette garde, sur la position du cap, passait
+  // avec le défaut en place.
+  const CAP = 'Ton cap pour cette saison'; // la cadence de tous les profils (`season`)
+  const LA_CARTE = { role: 'button', nom: 'Oui' };
+  const carteAvantLeDetour = await mesurer(page, 'decoupe', LA_CARTE);
+  const versLesPistes = page.getByText(/^Voir toutes les pistes/).first();
+  await versLesPistes.scrollIntoViewIfNeeded();
+  await versLesPistes.click();
+  await page.waitForURL(/\/plan\/pistes/, { timeout: ATTENTE });
+  await page.waitForTimeout(800);
+  const retourSurLePlan = await releverPendant(page, { carte: ['decoupe', LA_CARTE] }, () => page.goBack(), 1_200);
+  await page.waitForURL(/\/plan$/, { timeout: ATTENTE });
+  const hauteursDuRetour = retourSurLePlan.map((e) => e.carte).filter(Boolean);
+  assurer(
+    carteAvantLeDetour && hauteursDuRetour.length > 0,
+    'la carte du point est introuvable avant ou après le détour : la mesure ne peut pas conclure'
+  );
+  const hauteurQuiBouge = hauteursDuRetour.find((c) => Math.abs(c.hauteur - carteAvantLeDetour.hauteur) > 0.5);
+  assurer(
+    !hauteurQuiBouge,
+    `au retour sur le plan, la carte du point passe par ${Math.round(hauteurQuiBouge?.hauteur ?? 0)} px au lieu de` +
+      ` ${Math.round(carteAvantLeDetour.hauteur)} : elle regrandit sous les yeux — une hauteur nulle, celle d’un` +
+      ' écran masqué, ne se tient pas (`HauteurSuivie`, src/lib/mouvement.tsx)'
+  );
+
   const oui = page.getByRole('button', { name: 'Oui', exact: true }).first();
   await oui.scrollIntoViewIfNeeded();
   await page.waitForTimeout(400);
@@ -828,7 +877,6 @@ try {
     `l’anneau de focus de « Oui » est rogné par un ${anneau.rogne} — la découpe de \`HauteurSuivie\`` +
       ' doit laisser de la place autour du contenu (`MARGE_DE_DECOUPE`, src/lib/mouvement.tsx)'
   );
-  const CAP = 'Ton cap pour cette saison'; // la cadence de tous les profils (`season`)
   const avantLaReponse = await mesurer(page, 'texte', CAP);
   const reponse = await releverPendant(page, { cap: ['texte', CAP] }, () => oui.click());
   const apresLaReponse = await mesurer(page, 'texte', CAP);
@@ -995,6 +1043,13 @@ try {
   const posee = await mesurer(page, 'feuille', FEUILLE);
   assurer(posee?.voile && posee.haut !== null, `la feuille « ${FEUILLE} » est introuvable une fois ouverte, sous la préférence`);
   const bouge = (f) => f?.haut != null && (Math.abs(f.haut - posee.haut) > 0.5 || (f.voile && f.voile.opacite < 0.99));
+  // « Rien ne bouge » ne vaut que sur ce qu'on a vu : la feuille doit avoir été relevée, et ne pas
+  // disparaître une fois là (contre-lecture du 27/09/2026).
+  const feuillesReduites = ouvertureReduite.map((e) => e.feuille);
+  assurer(
+    feuillesReduites.some(Boolean) && !disparaitApresEtreApparue(feuillesReduites),
+    'sous « réduire les animations », la feuille n’a pas été relevée pendant son ouverture, ou a disparu une fois là'
+  );
   assurer(
     !ouvertureReduite.some((e) => bouge(e.feuille)),
     'sous « réduire les animations », la feuille s’ouvre en bougeant : elle doit être posée dès la première image'
