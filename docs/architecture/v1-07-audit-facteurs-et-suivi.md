@@ -659,6 +659,14 @@ de recalculer une empreinte **vivante** entre deux bilans — sans GPS, sans tra
 du tracking passif (spec §2), et sans auto-évaluation floue (spec §7 exige un fait précis :
 un décompte en est un). À instruire au moment de l'étape 4.
 
+> **Instruite puis refermée pour la V1, le 27/09/2026** (chantier C4.1, page de décision
+> [`v1-23`](v1-23-point-quantitatif.md)). Une « empreinte vivante entre deux bilans » serait une
+> seconde source de vérité pour le chiffre, ce que le dépôt refuse partout ailleurs, et la boucle
+> n'avait tourné sur personne — deux points répondus en production ce jour-là. **Condition de
+> réouverture** : la boucle a tourné sur de vrais comptes, et `analytics.engagement_by_segment`
+> montre soit un taux de « oui » proche de 100 %, soit des abandons concentrés après le premier
+> « oui ». Ce paragraphe reste tel qu'il a été écrit le 04/09/2026.
+
 ---
 
 ## 4. Plan d'exécution ordonné

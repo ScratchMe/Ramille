@@ -6,6 +6,13 @@
 > La fiche du chantier se termine par une phrase inhabituelle : « **soit instruire, soit fermer par
 > écrit** ». Cette page est là pour que l'une des deux ait lieu, et que la seconde ne soit pas un
 > abandon silencieux.
+>
+> **Décision du 27/09/2026 : fermé pour la V1**, sur la recommandation de D1, avec sa condition de
+> réouverture. D2 et D3 ne se tranchent donc pas ; ils restent écrits pour le jour où D1 se rouvre.
+> Le fait qui a achevé de trancher, mesuré ce jour-là en production : **deux points répondus en
+> tout**, sur un seul compte, tous deux « non » — la question « une réponse binaire perd-elle
+> quelque chose ? » n'a toujours aucune réponse observée. §6 est exécuté : `v1-07` §3.6 porte la
+> ligne, et l'issue #143 est fermée en renvoyant ici.
 
 ## 1. D'où ça vient
 
