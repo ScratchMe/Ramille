@@ -1,9 +1,17 @@
 // Régénère assets/images/favicon.png depuis assets/images/favicon-mark.svg.
 //
-// Sans ce script, le SVG serait « source de vérité » en commentaire seulement : le PNG est
-// ce qu'Expo lit, et rien ne garantirait qu'il descend encore du dessin d'à côté.
-//
 //   node scripts/rendre-favicon.mjs
+//
+// **Un générateur qu'on relance à la main, et rien ne vérifie qu'on l'a fait** — décision du
+// 27/09/2026 (`docs/architecture/v1-27-dette-technique.md` §3). Cet en-tête promettait que le
+// script garantissait la filiation du PNG ; aucune CI ne le lançait, donc la promesse ne tenait à
+// rien. Un contrôle qui re-rendrait le SVG à chaque PR rougirait à la première montée de
+// `@resvg/resvg-wasm` (sa sortie n'est pas garantie stable d'une version à l'autre) pour un
+// dessin qui change une fois par an : il coûterait plus que ce qu'il garde.
+//
+// Donc : **qui touche au SVG relance ce script dans la même PR**, et c'est la relecture qui le
+// voit. Le PNG versionné était identique octet pour octet au rendu du SVG le 27/09/2026 (resvg
+// 2.6.2) ; pour le revérifier, rendre dans un fichier temporaire et comparer les octets.
 //
 // Expo tire ensuite favicon.ico (16, 32 et 48 px) de ce PNG au moment de `expo export` —
 // c'est ce .ico qu'il faut regarder pour juger, pas le SVG rendu directement : le

@@ -42,12 +42,14 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // **Deux sorties de données qu'il ne faut pas reperdre de vue, parce qu'aucune n'est visible
 // depuis cette page** — les deux ont été écrites comme inexistantes ici avant d'être
 // contre-vérifiées en base et dans le code :
-//   - le **texte du rappel** contient `engagement_checkins.trip_label`, snapshot de
-//     `assessment_results.commute_poste_label` / `.extras_poste_label` — donc un résultat du
-//     calcul, qui nomme le poste dominant *et* son mode (« Trajet domicile-travail (Voiture
-//     seul) », composé dans `20260903120000_precise_poste_labels.sql`). Il part dans le `text`
-//     de `api.resend.com` et dans le `title`/`body` de `exp.host`
-//     (`20260907230000_rappels_canal.sql`). Aucun chiffre, en revanche.
+//   - le **texte du rappel** contient la question du point, figée à la génération
+//     (`engagement_checkins.committed_question`), et, en notification, le poste en étiquette
+//     (`poste_inserable`) — donc des faits tirés du bilan : le poste (« ton trajet
+//     domicile-travail », « tes voyages »), parfois le mode (« ton trajet s’est-il fait à
+//     vélo ? ») ou l'action engagée. Ce commentaire disait `trip_label`, le libellé figé avec son
+//     mode entre parenthèses : `enqueue_checkin_reminders` ne le lit plus (relu le 27/09/2026).
+//     Il part dans le `text` de `api.resend.com` et dans le `body` de `exp.host`. Aucun chiffre,
+//     en revanche.
 //   - « Partager mon bilan » (`src/app/(tabs)/suivi/bilan.tsx`) construit
 //     `/api/partage?total=&poste=&percent=` : le total annuel en tonnes, le libellé du poste
 //     dominant et sa part partent en clair dans l'URL d'une Vercel Function, à l'émission du

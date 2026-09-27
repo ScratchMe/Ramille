@@ -110,6 +110,12 @@ exactement la situation actuelle** : le script existe, personne ne le lance, et 
 **Recommandation : la 2**, et c'est une décision à prendre plutôt qu'un travail à faire. Un favicon
 change une fois par an ; un contrôle fragile coûterait plus cher que ce qu'il garde.
 
+**Fait le 27/09/2026, par la 2.** Mesuré avant d'écrire : le `favicon.png` versionné est
+**identique octet pour octet** au rendu actuel de `favicon-mark.svg` (resvg 2.6.2), donc rien
+n'avait dérivé. L'en-tête du script ne promet plus une filiation que rien n'exerçait : il dit que
+le script se relance à la main dans la PR qui touche au SVG, que c'est la relecture qui le voit,
+et comment revérifier.
+
 ## 4. L'écran du plan concentre une dizaine de cartes dont les exclusions ne sont vérifiées que par relecture
 
 **Mesuré.** `src/app/(tabs)/plan/index.tsx` a gagné **544 lignes en six jours** et a été touché par
@@ -133,6 +139,29 @@ a déjà, avec sa garde de partition.
 **Effort : moyen. Risque : réel** — c'est l'écran le plus lu du produit, et le refactor ne doit rien
 changer à ce qui s'affiche. Il demande donc sa propre recette, et **il n'est pas à faire seul dans
 un coin de vague.**
+
+**Fait le 27/09/2026, sous une forme plus étroite que celle proposée ici.** Pas de liste ordonnée :
+l'ordre de l'écran est fixe, sauf un couple (les pistes et le cap) qui était déjà dérivé. Ce qui
+restait à sortir était la **décision**, donc `cartesDuPlan` (`src/types/plan.ts`) rend un objet —
+la carte d'ouverture, la carte d'attente, l'ordre pistes/cap, l'encart de contexte, la félicitation,
+l'estimation — et l'écran ne fait plus que lire. Trois choses à savoir :
+
+- **« Au plus une carte d'ouverture » est devenu un type** : `carteDOuverture` est une valeur
+  unique, donc l'empilement est inexprimable — plus sûr qu'une assertion, qui aurait pu tomber en
+  désuétude.
+- **Les exclusions sont épinglées sur toutes les combinaisons d'états** (384, dont un plan à une
+  seule action : sans lui, une borne écrite `<= 1` passait, mesuré), et cinq mutations disent
+  laquelle garde quoi. Le parcours réel garde l'**appel** — que l'écran passe les bons arguments —
+  par une étape neuve du cycliste, éprouvée par une sixième mutation.
+- **Et il a trouvé un défaut, le cas exact que ce paragraphe annonçait.** « Ton premier plan » et
+  « Deux endroits, pas plus. » s'empilaient : la contre-lecture du lot 5 avait jugé la paire
+  impossible, « parce que le premier plan exige qu'aucun cycle ne précède » — mais la seconde carte
+  ne dépend d'aucun cycle. Un premier plan à zéro action, puis un nouveau bilan dans la même saison
+  qui donne des actions, suffisaient. Tranché par la personne qui pilote : le premier plan passe
+  devant, l'autre attend son « Compris ».
+
+La « recette dédiée » que ce paragraphe demandait a été faite **au navigateur**, par les contrôles
+de l'export et le parcours réel sur ses deux profils ; rien de natif n'a changé.
 
 ## 5. Les migrations recopient des fonctions entières
 
@@ -270,8 +299,8 @@ place de la personne qui les a écrites.
 |---|---|---|---|
 | 1 | §1 — les deux entorses au point de résolution | ~nul | **fait le 21/09/2026**, dans la migration de C4.4 |
 | 2 | §2 — les signatures dans le contrôle de types | petit | **fait le 20/09/2026** (§12.2) |
-| 3 | §3 — la promesse du favicon | une décision | quand on y touche |
-| 4 | §4 — la décision d'affichage du plan | moyen, risque réel | page de décision d'abord, recette dédiée ensuite |
+| 3 | §3 — la promesse du favicon | une décision | **fait le 27/09/2026** : la promesse retirée, la filiation mesurée intacte |
+| 4 | §4 — la décision d'affichage du plan | moyen, risque réel | **fait le 27/09/2026** : `cartesDuPlan`, 384 états, et un empilement de cartes trouvé en chemin |
 | 5 | §5 — le découpage des fonctions de calcul | grand | à instruire, jamais en marge d'une vague |
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | page de décision |
 | 7 | §9 — renommer le fichier sous l'horodatage **enregistré**, une fois la migration appliquée | une habitude | **commencé le 21/09/2026** (C4.4) : une migration appariée, et la consigne d'avant était inapplicable |

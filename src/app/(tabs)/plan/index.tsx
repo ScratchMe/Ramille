@@ -25,6 +25,7 @@ import { FeuilleRappels } from '@/components/plan/feuille-rappels';
 import { TraitDeTemps } from '@/components/plan/trait-de-temps';
 import {
   cadreDuPlan,
+  cartesDuPlan,
   felicitationDuPlanSansAction,
   formeInserable,
   motsDuContexte,
@@ -1068,6 +1069,21 @@ export default function Plan() {
   // s'entasser ici, jusqu'à onze cartes sous un « Replier » hors écran. Elle vit désormais sur
   // `plan/pistes`. La dérivation copie avant de trier : `sort` mute, et `cycle` vient du state.
   const pistes = pistesDuPlan(cycle.plan_actions);
+  // **Ce que l'écran affiche, décidé hors du rendu** (`v1-27` §4, 27/09/2026). Les règles qui
+  // séparent les cartes vivaient en prose dans les commentaires ci-dessous, et deux fois une paire
+  // leur avait échappé ; `cartesDuPlan` les épingle sur toutes les combinaisons d'états. Le rendu
+  // ne décide plus rien : il lit ce qui est décidé ici.
+  const motsDeContexte = motsDuContexte(state.contexte ?? VIDE_DE_CONTEXTE);
+  const affichage = cartesDuPlan({
+    ouvertureDeSaison: ouverture !== null,
+    carteDuPremierPlan: cartePremierPlan !== null,
+    carteDesDeuxLieux,
+    pointsAffiches: checkins.length,
+    attenteDisponible: attente !== null,
+    premierPlan,
+    nombreDActions: actionsCount,
+    motsDuContexte: motsDeContexte.length,
+  });
   // Ce que l'écran annonce de lui-même, et ce que son cap a le droit de chiffrer (C3.8 §3). Dérivé
   // dans `src/types/plan.ts` plutôt qu'écrit en ternaires ici — une seule chose en dépend depuis que
   // C5.3 a retiré `intro` et `noteDuCap`, et ce commentaire a longtemps dit « trois phrases » ; c'est
@@ -1425,7 +1441,7 @@ export default function Plan() {
               rompue à l'endroit même où elle se tient. Ce qu'elle remplace est la **carte
               d'attente** : Ramille parle déjà sous la carte d'ouverture, et deux fois dans le même
               écran ferait du bruit. */}
-          {ouverture !== null && (
+          {affichage.carteDOuverture === 'saison' && ouverture !== null && (
             <CarteDOuverture
               ouverture={ouverture}
               sorties={sortiesDeSaison}
@@ -1444,9 +1460,10 @@ export default function Plan() {
               cadres de la même façon au pixel près : ce qui change est le contenu, dérivé dans
               `src/types/saison.ts`. Et la même règle qu'elle — **elle ne prend jamais la place d'un
               point en attente**, seulement celle de la carte d'attente, sous laquelle Ramille parle
-              déjà. Les deux ne peuvent pas coexister : l'une exige un cycle précédent, l'autre
-              exige qu'il n'y en ait pas. */}
-          {cartePremierPlan !== null && (
+              déjà. Avec la carte de saison, l'exclusion est structurelle : l'une exige un cycle
+              précédent, l'autre exige qu'il n'y en ait pas. Avec celle des deux lieux, elle ne
+              l'est pas — c'est `cartesDuPlan` qui la fait passer devant (voir plus bas). */}
+          {affichage.carteDOuverture === 'premierPlan' && cartePremierPlan !== null && (
             <CarteDOuverture
               ouverture={cartePremierPlan}
               sorties={SORTIE_COMPRIS}
@@ -1468,14 +1485,20 @@ export default function Plan() {
               les deux autres, elle prend la place de la carte d'attente et jamais celle d'un point
               en attente.
 
-              **Elle cède à la carte de saison, et cette garde n'est pas décorative** (contre-lecture
-              du lot 5). Je la croyais impossible à croiser : elle l'est avec celle du premier plan,
-              qui exige qu'aucun cycle ne précède, mais **pas** avec l'ouverture de saison — il
-              suffit d'avoir refermé le premier plan puis de n'être pas revenu avant la bascule
-              suivante pour que les deux soient dues le même jour. Deux cadres empilés au-dessus du
-              plan, c'est une carte qui explique par-dessus une carte qui annonce ; la nouvelle
-              passe devant, celle-ci attendra le prochain passage — sa marque, elle, ne bouge pas. */}
-          {ouverture === null && carteDesDeuxLieux && (
+              **Elle cède aux deux autres, et ce n'est décidé qu'à un endroit** : `cartesDuPlan`
+              (`src/types/plan.ts`). Deux cadres empilés au-dessus du plan, c'est une carte qui
+              explique par-dessus une carte qui annonce ; la plus récente passe devant, celle-ci
+              attend — sa marque ne bouge pas, et elle se rend dès que l'autre est refermée.
+
+              **Cette exclusion s'est trompée deux fois de paire.** La contre-lecture du lot 5 a
+              trouvé qu'elle croisait la saison (avoir refermé le premier plan puis n'être pas
+              revenu avant la bascule suffit), et jugé la paire avec le premier plan impossible
+              « parce qu'il exige qu'aucun cycle ne précède » — mais cette carte-ci ne dépend
+              d'aucun cycle, seulement de la marque locale. Un premier plan à zéro action (la barre
+              arrive, et cette carte avec), puis un nouveau bilan dans la même saison qui donne des
+              actions : les deux étaient dues le même jour. Relevé le 27/09/2026 en sortant la
+              décision du rendu ; le premier plan passe devant, décidé par la personne qui pilote. */}
+          {affichage.carteDOuverture === 'deuxLieux' && (
             <CarteDOuverture
               ouverture={OUVERTURE_DES_DEUX_LIEUX}
               sorties={SORTIE_DES_DEUX_LIEUX}
@@ -1538,11 +1561,7 @@ export default function Plan() {
               Posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte près
               d'un chiffre lourd » vise l'empreinte, mais un cap en kilos juste sous son
               visage donnerait l'impression qu'elle le commente. */}
-          {checkins.length === 0 &&
-            attente &&
-            ouverture === null &&
-            cartePremierPlan === null &&
-            !carteDesDeuxLieux && (
+          {affichage.carteDAttente && attente && (
             <ThemedView type="backgroundElement" style={styles.calmeCard}>
               <View style={styles.calmeRow}>
                 <Mascot mood="resting" size={40} />
@@ -1594,7 +1613,7 @@ export default function Plan() {
               Deux éléments à clé plutôt que deux rendus écrits deux fois : React les réordonne sans
               remonter les cartes, qui portent l'engagement, et le cap comme les pistes ne s'écrivent
               qu'à un endroit. */}
-          {premierPlan ? [lesPistes, laCarteDuCap] : [laCarteDuCap, lesPistes]}
+          {affichage.pistesAvantLeCap ? [lesPistes, laCarteDuCap] : [laCarteDuCap, lesPistes]}
 
           {/* **L'encart de contexte, et sa porte** (C5.5, écarts 9 et 10). C'est la moitié « plan »
               du constat 13.1 : « Parfois » au télétravail coûtait une action, et rien ne le disait.
@@ -1610,11 +1629,11 @@ export default function Plan() {
               félicitation juste en dessous serait la dernière chose à nuancer. Et jamais non plus
               quand il n'y a rien à énumérer — une lecture qui a échoué ne devient pas une phrase
               vide (C1.4). */}
-          {actionsCount > 0 && motsDuContexte(state.contexte ?? VIDE_DE_CONTEXTE).length > 0 && (
+          {affichage.encartDeContexte && (
             <ThemedView type="backgroundElement" style={styles.contexteCard}>
               <ThemedText type="small" themeColor="textSecondary">
                 Ton plan tient compte de ton contexte :{' '}
-                {motsDuContexte(state.contexte ?? VIDE_DE_CONTEXTE).join(', ')}. Ce qui ne tient pas
+                {motsDeContexte.join(', ')}. Ce qui ne tient pas
                 avec ces réponses n’est pas proposé.
               </ThemedText>
               {/* La porte se rend **sous** la phrase qui la porte, comme le lien des réglages du
@@ -1641,7 +1660,7 @@ export default function Plan() {
               à personne, sur un écran où rien d'autre ne le nomme — un plan sans action ne chiffre
               pas son cap. Et « le check-in » est devenu « le point », le mot que le produit emploie
               partout ailleurs pour la même chose. */}
-          {actionsCount === 0 && (
+          {affichage.felicitation && (
             <ThemedView type="backgroundElement" style={styles.emptyActionsCard}>
               <View style={styles.praiseRow}>
                 <Mascot mood="happy" size={36} />
@@ -1663,7 +1682,7 @@ export default function Plan() {
               **En Spline Sans et non plus en chasse fixe** (24/09/2026, `v1-29`, décision n° 10) :
               la chasse fixe est réservée aux sources et aux codes techniques, et ceci est une
               phrase adressée à la personne — « tes réponses ». */}
-          {actionsCount > 0 && (
+          {affichage.estimation && (
             <ThemedText type="small" themeColor="textTertiary">
               Estimations sur la base des facteurs ADEME et de tes réponses. Un ordre de
               grandeur pour choisir, pas une mesure.

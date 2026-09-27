@@ -4,6 +4,7 @@ import {
   INTENTION_TIMINGS_LOISIRS,
   INTENTION_TIMINGS_VOYAGES,
   cadreDuPlan,
+  cartesDuPlan,
   felicitationDuPlanSansAction,
   formatIntention,
   formatIntentionDays,
@@ -652,6 +653,134 @@ describe('l’encart orphelin', () => {
       const phrase = phraseDeLOrphelin(raison, 'Faire un trajet sur cinq à vélo.');
       expect(phrase).toContain('« Faire un trajet sur cinq à vélo. »');
       expect(phrase).toContain('elle reste dans ton suivi');
+    }
+  });
+});
+
+/**
+ * **Les exclusions de l'écran du plan, sur toutes les combinaisons d'états** (`v1-27` §4,
+ * 27/09/2026). Cinq booléens, et trois quantités prises de part et d'autre de leur seuil — dont
+ * **un** plan à une seule action, sans quoi une borne écrite `<= 1` passerait : 384 états. Les
+ * énumérer coûte moins qu'oublier une paire — c'est exactement ce qui s'est produit deux fois sur ces
+ * cartes, la dernière fois dans la contre-lecture même qui corrigeait la première.
+ *
+ * **« Au plus une carte d'ouverture » n'est plus une assertion : c'est le type.** `carteDOuverture`
+ * est une valeur unique, donc empiler deux cartes est devenu inexprimable — c'est ce que la
+ * dérivation apporte de plus sûr, et un test qui « vérifierait » qu'il n'y en a jamais deux ne
+ * pourrait pas tomber. Ce qui reste à épingler est qu'une carte due est bien rendue, et laquelle.
+ *
+ * **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1) — cinq mutations de `cartesDuPlan`, et
+ * ce que chacune fait tomber :
+ *   - la carte des deux lieux passée devant le premier plan → la préséance, et la paire épinglée
+ *     nommément ;
+ *   - la carte d'attente sans condition sur les cartes d'ouverture → son exclusion, et le seul cas
+ *     où elle se rend ;
+ *   - la carte d'attente sans condition sur les points → les deux mêmes ;
+ *   - l'encart de contexte sans la condition sur les actions → « jamais sur un plan à zéro action »,
+ *     et la partition, qui interdit l'encart sous la félicitation ;
+ *   - la félicitation écrite `nombreDActions <= 1` → la partition félicitation / estimation — **elle
+ *     ne tombait pas** tant que l'énumération ne prenait que zéro et trois actions.
+ */
+describe('cartesDuPlan', () => {
+  type Etat = Parameters<typeof cartesDuPlan>[0];
+
+  const tousLesEtats: Etat[] = [];
+  for (let bits = 0; bits < 32; bits += 1) {
+    const bit = (n: number) => (bits & (1 << n)) !== 0;
+    for (const pointsAffiches of [0, 1]) {
+      for (const nombreDActions of [0, 1, 4]) {
+        for (const motsDuContexte of [0, 1]) {
+          tousLesEtats.push({
+            ouvertureDeSaison: bit(0),
+            carteDuPremierPlan: bit(1),
+            carteDesDeuxLieux: bit(2),
+            attenteDisponible: bit(3),
+            premierPlan: bit(4),
+            pointsAffiches,
+            nombreDActions,
+            motsDuContexte,
+          });
+        }
+      }
+    }
+  }
+
+  it('énumère bien les 384 états, sans doublon', () => {
+    expect(new Set(tousLesEtats.map((etat) => JSON.stringify(etat))).size).toBe(384);
+  });
+
+  it('rend une carte d’ouverture dès qu’une est due, et aucune sinon', () => {
+    for (const etat of tousLesEtats) {
+      const dues = [etat.ouvertureDeSaison, etat.carteDuPremierPlan, etat.carteDesDeuxLieux].filter(Boolean);
+      const { carteDOuverture } = cartesDuPlan(etat);
+      expect(carteDOuverture === null).toBe(dues.length === 0);
+    }
+  });
+
+  it('fait passer la saison, puis le premier plan, puis les deux lieux (décidé le 27/09/2026)', () => {
+    for (const etat of tousLesEtats) {
+      const attendue = etat.ouvertureDeSaison
+        ? 'saison'
+        : etat.carteDuPremierPlan
+          ? 'premierPlan'
+          : etat.carteDesDeuxLieux
+            ? 'deuxLieux'
+            : null;
+      expect(cartesDuPlan(etat).carteDOuverture).toBe(attendue);
+    }
+  });
+
+  it('épingle nommément la paire que l’écran empilait : le premier plan passe devant les deux lieux', () => {
+    // Un premier plan à zéro action (la barre arrive, et sa carte avec), puis un nouveau bilan dans
+    // la même saison qui donne des actions : les deux cartes sont dues le même jour.
+    const cartes = cartesDuPlan({
+      ouvertureDeSaison: false,
+      carteDuPremierPlan: true,
+      carteDesDeuxLieux: true,
+      pointsAffiches: 0,
+      attenteDisponible: true,
+      premierPlan: true,
+      nombreDActions: 3,
+      motsDuContexte: 2,
+    });
+    expect(cartes.carteDOuverture).toBe('premierPlan');
+  });
+
+  it('ne rend la carte d’attente ni avec une carte d’ouverture, ni sous un point', () => {
+    for (const etat of tousLesEtats) {
+      const cartes = cartesDuPlan(etat);
+      if (cartes.carteDOuverture !== null) expect(cartes.carteDAttente).toBe(false);
+      if (etat.pointsAffiches > 0) expect(cartes.carteDAttente).toBe(false);
+      if (!etat.attenteDisponible) expect(cartes.carteDAttente).toBe(false);
+    }
+  });
+
+  it('rend la carte d’attente dans le seul cas qui reste : rien d’autre à dire, et de quoi la dire', () => {
+    for (const etat of tousLesEtats) {
+      const rienDAutre =
+        !etat.ouvertureDeSaison && !etat.carteDuPremierPlan && !etat.carteDesDeuxLieux && etat.pointsAffiches === 0;
+      expect(cartesDuPlan(etat).carteDAttente).toBe(rienDAutre && etat.attenteDisponible);
+    }
+  });
+
+  it('ne met jamais l’encart de contexte sur un plan à zéro action, ni sans rien à énumérer', () => {
+    for (const etat of tousLesEtats) {
+      expect(cartesDuPlan(etat).encartDeContexte).toBe(etat.nombreDActions > 0 && etat.motsDuContexte > 0);
+    }
+  });
+
+  it('partage l’écran entre la félicitation et l’estimation : exactement une des deux', () => {
+    for (const etat of tousLesEtats) {
+      const { felicitation, estimation, encartDeContexte } = cartesDuPlan(etat);
+      expect(felicitation).not.toBe(estimation);
+      expect(felicitation).toBe(etat.nombreDActions === 0);
+      if (felicitation) expect(encartDeContexte).toBe(false);
+    }
+  });
+
+  it('fait passer les pistes avant le cap tant que dure le premier plan, et seulement alors', () => {
+    for (const etat of tousLesEtats) {
+      expect(cartesDuPlan(etat).pistesAvantLeCap).toBe(etat.premierPlan);
     }
   });
 });
