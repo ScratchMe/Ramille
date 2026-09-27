@@ -50,6 +50,17 @@
 // la tolérance `_ds_bundle.js` retirée, les deux renvois du kit tombent — le build local ne résout
 // plus rien. Le passage a aussi rendu visible `expo-env.d.ts`, cité par CLAUDE.md et ignoré par git :
 // il ne résolvait que parce qu'Expo l'avait généré sur le disque.
+// **Et le 27/09/2026, quand les consignes Claude de Ramille y sont entrées** (le sous-agent
+// `contre-lecture`, les skills que le dépôt a écrits lui-même) — cinq mutations, l'état d'avant
+// réécrit après chacune :
+//   - un chemin inexistant dans `.claude/agents/contre-lecture.md` → 1 écart, sur cette ligne ;
+//   - le même dans le skill `ramille-design` → 1 écart ;
+//   - le même dans un skill importé (`product-management-write-spec`) → **vert** : un plug-in cite
+//     ses propres chemins, et il n'est pas lu ;
+//   - l'exclusion des plug-ins retirée → 5 écarts, tous dans des skills importés : c'est ce que
+//     l'exclusion écarte, et pourquoi elle se déduit de leur `installation.json` ;
+//   - les sous-agents retirés du périmètre, le chemin faux en place → **vert** : c'est le
+//     périmètre qui fait voir l'écart.
 // Et un passage qui doit rester **vert** : les renvois tolérés ci-dessous, dont beaucoup
 // désignent des fichiers qui n'ont jamais eu à exister dans le dépôt. Leur nombre ne s'écrit
 // pas — il s'est périmé le 21/09/2026, à la tolérance suivante.
@@ -90,6 +101,42 @@ const DOSSIERS = ['docs/exploitation', 'docs/recette'];
  * `.md` sont le `readme.md`, `SKILL.md` et une fiche d'usage (`.prompt.md`) par composant.
  */
 const DOSSIERS_RECURSIFS = ['docs/design/design-system'];
+
+/**
+ * Les consignes de Claude Code que le dépôt a écrites lui-même : les sous-agents de
+ * `.claude/agents/`, et les skills qu'aucun plug-in importé ne revendique (27/09/2026). Elles
+ * citent des scripts et des documents, et un renommage les casse en silence — un skill qui lance
+ * un script disparu échoue au moment où l'on s'en sert. Ceux des plug-ins restent dehors : ils
+ * citent leurs propres chemins, dans leur langue. Ce qu'un plug-in a posé est listé dans son
+ * `installation.json` (`skills[].installe`), donc la règle se tient seule : un skill neuf de
+ * Ramille est lu sans qu'on l'ajoute ici, un plug-in neuf est écarté sans qu'on l'y retire.
+ */
+function consignesDeRamille() {
+  const liste = [];
+  const agents = path.join('.claude', 'agents');
+  if (fs.existsSync(path.join(RACINE, agents))) {
+    for (const nom of fs.readdirSync(path.join(RACINE, agents))) {
+      if (nom.endsWith('.md')) liste.push(path.join(agents, nom));
+    }
+  }
+  const importes = new Set();
+  const provenance = path.join(RACINE, '.claude', 'plugins-importes');
+  if (fs.existsSync(provenance)) {
+    for (const plugin of fs.readdirSync(provenance)) {
+      const installation = path.join(provenance, plugin, 'installation.json');
+      if (!fs.existsSync(installation)) continue;
+      for (const skill of JSON.parse(fs.readFileSync(installation, 'utf8')).skills ?? []) importes.add(skill.installe);
+    }
+  }
+  const skills = path.join('.claude', 'skills');
+  if (fs.existsSync(path.join(RACINE, skills))) {
+    for (const nom of fs.readdirSync(path.join(RACINE, skills))) {
+      const fichier = path.join(skills, nom, 'SKILL.md');
+      if (!importes.has(nom) && fs.existsSync(path.join(RACINE, fichier))) liste.push(fichier);
+    }
+  }
+  return liste;
+}
 
 /**
  * Ce qu'on ne cherche pas dans le dépôt, avec la raison — jamais « ça faisait du bruit ».
@@ -157,6 +204,7 @@ function documentsALire() {
       if (nom.endsWith('.md')) liste.push(path.join(dossier, nom));
     }
   }
+  liste.push(...consignesDeRamille());
   return liste.sort();
 }
 

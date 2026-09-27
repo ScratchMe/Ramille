@@ -319,6 +319,20 @@ depuis les fichiers, jamais depuis le distant — mais un `db push` ultérieur t
 migration déjà appliquée. Relevé le 17/09/2026 : fichier `20260917230000`, distant `20260917231133`.
 La parade tient en un geste : appliquer, **relire `max(version)`**, et renommer le fichier dessus.
 
+**Une migration livrée ne se modifie pas, et un hook le rappelle depuis le 27/09/2026**
+(`scripts/proteger-les-migrations-livrees.mjs`, déclaré dans `.claude/settings.json`). Il refuse à
+Edit et à Write un fichier de `supabase/migrations/` **présent dans `origin/main`**, et non un
+fichier présent sur le disque : une migration en cours s'écrit en plusieurs retouches, et tant
+qu'elle n'est que sur la branche elle se retouche — à charge de rejouer la retouche sur le distant
+si elle y a déjà été appliquée, et de renommer le fichier comme au paragraphe précédent, ce que le
+hook ne voit pas. Son message dit quoi faire à la place : une migration neuve, et pour une fonction,
+partir de `pg_get_functiondef` (plus bas). Ce qu'il ne voit pas, et qu'il ne faut pas lui prêter :
+le shell (`sed -i`, `git mv`), un humain, une session qui ne l'a pas chargé. **La seule retouche
+d'une migration livrée de toute l'histoire du dépôt** (`20260917094500_classement_du_plan.sql`, le
+17/09/2026, pour qu'elle rejoue juste sur une base restaurée) était délibérée, et elle donne la
+forme de l'exception : elle se décide avec la personne qui pilote, elle ne passe pas par Edit — le
+hook la refuse exprès —, et la PR la nomme.
+
 
 **Aucune migration de données ne désigne une ligne par un identifiant généré, et celle qui l'a fait
 n'a été rattrapée que par son propre contrôle.** `action_templates.id` vaut `gen_random_uuid()` : les
