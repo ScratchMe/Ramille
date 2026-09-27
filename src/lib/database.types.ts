@@ -1053,6 +1053,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      a_des_voyages_declares: {
+        Args: {
+          p_reponses: Database["public"]["Tables"]["assessment_answers"]["Row"]
+        }
+        Returns: boolean
+      }
       archiver_engagement: {
         Args: {
           p_action_template_id: string

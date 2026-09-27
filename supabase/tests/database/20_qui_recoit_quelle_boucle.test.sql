@@ -53,6 +53,12 @@
 --     déclarés ⇒ `extras_poste = 'travel'`) → l'assertion du résultat inchangé, et celle du poste
 --     de H pour son libellé. La boucle, elle, aurait posé la bonne question : seule la garde du
 --     résultat voit que l'étiquette de la restitution aurait perdu « tes loisirs occasionnels ».
+--
+-- **Et le même jour, après l'extraction de `a_des_voyages_declares`** (`v1-27` §5,
+-- `20260927230000`) : l'autocar retiré de la fonction fait tomber ici les deux assertions du
+-- profil G et celle du profil I ; les vols retirés n'en font tomber **aucune** — aucun profil de ce
+-- fichier ne sort rarement avec des vols pour seuls voyages — et c'est le balayage du fichier 33 qui
+-- les voit. Le détail des mutations de l'extraction est en tête de ce fichier-là.
 begin;
 create extension if not exists pgtap with schema extensions;
 
@@ -286,13 +292,16 @@ select is(
 );
 
 -- **Le quatrième compteur compte comme les trois autres** (C4.4, relevé en contre-lisant la PR :
--- le filtre les énumère à la main et l'autocar y manquait). Cette assertion est ce qui tombera le
--- jour où un cinquième compteur s'ajoutera sans sa ligne — et le libellé dit où aller.
+-- le filtre les énumérait à la main et l'autocar y manquait). Depuis le 27/09/2026 (`v1-27` §5),
+-- l'énumération n'a plus qu'**un** endroit, `public.a_des_voyages_declares` : c'est là que va un
+-- cinquième compteur, et le libellé ci-dessous dit d'y aller. Ce qui tombera s'il y manque est le
+-- balayage du fichier 33, qui prend chaque compteur `_per_year` sans le nommer ; cette assertion-ci
+-- garde le chemin entier de l'autocar, du bilan au point mensuel.
 select is(
   (select count(*)::int from public.engagement_checkins
    where user_id = 'e2500000-0000-0000-0000-000000000007' and loop_type = 'extras'),
   1,
-  'l''autocar est une base déclarée : quatre longs trajets en car donnent un point mensuel (filtre de generate_extras_checkins)'
+  'l''autocar est une base déclarée : quatre longs trajets en car donnent un point mensuel (compteurs énumérés dans a_des_voyages_declares, et nulle part ailleurs)'
 );
 
 select is(
