@@ -34,9 +34,12 @@ import { type TitreFocalisable } from '@/lib/focus';
 // et non « aujourd'hui » dans le titre, et l'étiquette de source sous les barres.
 export function EtapeContexte({
   onSuivant,
+  onPrecedent,
   titre,
 }: {
   onSuivant: () => void;
+  /** Revenir à la page d'avant — le « Retour » du pied, à côté de « Continuer ». */
+  onPrecedent: () => void;
   /** De quoi recevoir le focus quand le pager arrive sur cette page (`src/lib/focus.ts`). */
   titre?: TitreFocalisable;
 }) {
@@ -108,7 +111,10 @@ export function EtapeContexte({
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button title="Continuer" onPress={() => onSuivant()} />
+          <View style={styles.boutons}>
+            <Button title="Retour" variant="secondary" onPress={() => onPrecedent()} />
+            <Button title="Continuer" onPress={() => onSuivant()} flex />
+          </View>
           <OnboardingDots total={4} activeIndex={1} />
         </View>
       </SafeAreaView>
@@ -209,4 +215,5 @@ const styles = StyleSheet.create({
   posteLabel: { fontSize: 14, lineHeight: 20 },
   posteRail: { height: 12, borderRadius: 6, overflow: 'hidden' },
   footer: { gap: Spacing.three, paddingTop: Spacing.two },
+  boutons: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
 });

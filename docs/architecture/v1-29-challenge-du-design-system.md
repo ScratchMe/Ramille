@@ -493,9 +493,32 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
 
 ### 6.3 Ce qui n'a pas été arbitré, et ne se fait donc pas
 
-- **Un « Précédent » (ou un « Passer ») dans l'onboarding** : l'audit relève qu'aucun contrôle ne
-  permet d'y revenir en arrière, sinon le balayage ou le retour Android. C'est une question de
-  produit — ce qu'on demande à la personne, et dans quel ordre —, pas une correction ;
+- **tranché le 27/09/2026 — un « Retour » dans l'onboarding, et pas de « Passer »** : l'audit relevait
+  qu'aucun contrôle n'y permettait de revenir en arrière, sinon le balayage ou le retour Android. La
+  décision a été prise en trois temps, sur la recommandation posée à chaque fois :
+  - **un retour, et pas de « Passer »** : le retour ferme l'écart WCAG 2.5.1 (un balayage doit avoir
+    une alternative à un seul pointeur) et le cas du web à la souris, où l'on ne pouvait pas revenir
+    relire les repères — le retour du navigateur fait sortir de l'onboarding. Un « Passer » aurait
+    fait sauter la réassurance et les repères, et c'est la réassurance qui fait commencer le bilan ;
+  - **sa forme est celle du questionnaire** : « Retour » en secondaire à gauche de « Continuer », le
+    même mot que `StepShell`, sur les pages 2 à 4 — la page 1 n'a rien derrière elle. La forme
+    d'abord approuvée, un lien près des points, ajoutait une quarantaine de pixels à des pages qui
+    débordaient déjà à 360 × 640 ; la rangée n'en ajoute aucun. Sur la page teintée, « Retour » est
+    filé (`onPanel`), et ce filet se dessine désormais **dans** la boîte : posé en plus du
+    rembourrage, il faisait 56 px à côté d'un « Continuer » de 54, mesuré sur l'export ;
+  - **et le bouton de la page 4 dit « Commencer »** (troisième temps, même jour) : à côté de
+    « Retour », « Commencer mon bilan » (168 px) passait sur deux lignes sous 390 px de large — il en
+    restait 151 à 360. Le titre juste au-dessus dit déjà « On passe à ton bilan ». Écart au handoff
+    (écran 1.4), qui reste tel qu'il a été livré.
+  Mesuré sur l'export de 320 à 390 px : les deux boutons sur une ligne et à 54 px sur les trois
+  pages, et le focus posé sur le titre de la page d'arrivée. La garde d'export (section E) joue
+  « Retour » au clavier ;
+- **tranché le 27/09/2026 — le décompte des long-courriers dit zéro en mots** : sous la répartition
+  des vols, l'étape confirme ce que le calcul comptera en long-courrier, et à zéro elle écrivait
+  « 0 vol long-courrier sera compté. » — juste, et le seul zéro chiffré de ce genre dans le
+  questionnaire. Elle dit maintenant « Aucun vol long-courrier ne sera compté. » plutôt que de se
+  taire : la personne qui vient de dire qu'elle n'en prend aucun garde la confirmation que toutes
+  les autres reçoivent (`decompteDesLongsCourriers`, `src/types/bilan.ts`) ;
 - **l'avertissement de la vérification automatique** : le code part seul au huitième chiffre
   (`FRONT.md` §2.7 bis) sans que l'écran le dise (WCAG 3.2.2). La décision est documentée ; seule la
   phrase manque, et c'est une phrase à arbitrer ;

@@ -8,7 +8,7 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // temps. Une ligne et non un cinquième écran, et sans rythme chiffré : « de temps en temps » est vrai pour les deux
 // boucles. Le lien vers ce qu'on enregistre revient ici, juste avant la première écriture.
 const SECTIONS = ['1 — Trajet domicile-travail', '2 — Loisirs du week-end', '3 — Voyages longue distance', '4 — Ton contexte de mobilité'];
-export function EtapeTransition({ onCommencer, onConfidentialite, style }) {
+export function EtapeTransition({ onCommencer, onPrecedent, onConfidentialite, style }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 24, background: 'var(--color-background)', minHeight: 760, boxSizing: 'border-box', ...style }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
@@ -24,7 +24,10 @@ export function EtapeTransition({ onCommencer, onConfidentialite, style }) {
         <ThemedText type="small" themeColor="textTertiary" style={{ lineHeight: '20px' }}>Ensuite : une action à ton rythme, et un point de temps en temps pour voir ce qui a changé.</ThemedText>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-        <Button title="Commencer mon bilan" onPress={onCommencer} />
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <Button title="Retour" variant="secondary" onPress={onPrecedent} style={{ width: 'auto' }} />
+          <Button title="Commencer" onPress={onCommencer} flex />
+        </div>
         <OnboardingDots total={4} activeIndex={3} />
         <TextLink label="Ce qu’on enregistre, et pourquoi" onPress={onConfidentialite} role="link" type="small" weight={600} themeColor="textTertiary" style={{ textAlign: 'center' }} containerStyle={{ marginTop: -24, alignItems: 'center' }} />
       </div>

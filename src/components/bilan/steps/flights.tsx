@@ -8,7 +8,7 @@ import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKm } from '@/lib/format';
-import { volsCourtsApresTotal, type BilanAnswers } from '@/types/bilan';
+import { decompteDesLongsCourriers, volsCourtsApresTotal, type BilanAnswers } from '@/types/bilan';
 
 // "N+" stocke N — simplification assumée (pas de borne haute en base pour ces champs,
 // cf. v1-05), cohérente avec le traitement déjà appliqué à la taille de covoiturage.
@@ -98,11 +98,7 @@ export function FlightsStep({
               ))}
             </GroupeDeChoix>
             {answers.flights_short_per_year !== null && (
-              <ThemedText type="small">
-                {longCount} vol{longCount > 1 ? 's' : ''} long-courrier{longCount > 1 ? 's' : ''}{' '}
-                {longCount > 1 ? 'seront' : 'sera'} compté
-                {longCount > 1 ? 's' : ''}.
-              </ThemedText>
+              <ThemedText type="small">{decompteDesLongsCourriers(longCount)}</ThemedText>
             )}
           </View>
         </>

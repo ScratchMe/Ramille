@@ -739,6 +739,21 @@ export function distanceSortieKm(reponses: BilanAnswers): number | null {
 export const COMMUTE_DISTANCE_A_RELIRE_KM = 200;
 
 /**
+ * La phrase qui confirme, sous la répartition des vols, ce que le calcul comptera en long-courrier.
+ *
+ * **À zéro, elle le dit en mots** (27/09/2026, décision de la personne qui pilote). « 0 vol
+ * long-courrier sera compté. » était juste et maladroit — le seul zéro de ce genre dans le
+ * questionnaire —, et se taire aurait ôté la confirmation à la seule personne qui vient de dire
+ * qu'elle n'en prend aucun, alors que l'écran répond à toutes les autres. La confirmation compte :
+ * un long-courrier vaut six fois la distance d'un vol court.
+ */
+export function decompteDesLongsCourriers(longsCourriers: number): string {
+  if (longsCourriers <= 0) return 'Aucun vol long-courrier ne sera compté.';
+  if (longsCourriers === 1) return '1 vol long-courrier sera compté.';
+  return `${longsCourriers} vols long-courriers seront comptés.`;
+}
+
+/**
  * La part de vols courts après un changement du nombre de vols (B3.1 → B3.2).
  *
  * **Sous un total nul, le 0 des vols courts n'est pas une réponse** (27/09/2026). La seconde

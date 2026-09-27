@@ -23,6 +23,10 @@ const formatKm = (km) => grouperLesMilliers(String(km)) + ' km';
 const COLONNE = { display: 'flex', flexDirection: 'column' };
 const PUCES = { flexDirection: 'row', flexWrap: 'wrap', gap: 8 };
 
+// `decompteDesLongsCourriers` (src/types/bilan.ts), recopiée : à zéro, la confirmation se dit en mots.
+const decompteDesLongsCourriers = (n) =>
+  n <= 0 ? 'Aucun vol long-courrier ne sera compté.' : n === 1 ? '1 vol long-courrier sera compté.' : n + ' vols long-courriers seront comptés.';
+
 // `volsCourtsApresTotal` (src/types/bilan.ts), recopiée : sous un total nul, le 0 des vols courts est posé d'office
 // et n'est pas une réponse — passer de 0 à 4 vols pose la seconde question à vide, au lieu de la montrer répondue.
 const volsCourtsApresTotal = (avant, nouveauTotal) => {
@@ -37,7 +41,6 @@ export function FlightsStep({ answers, update }) {
   const shortChoices = Array.from({ length: total + 1 }, (_, i) => i);
   const longCount = Math.max(total - (courts === null ? 0 : courts), 0);
   const questionCourts = 'Sur ces ' + total + ', combien sont courts ?';
-  const pluriel = longCount > 1;
 
   return (
     <div style={{ ...COLONNE, gap: 32 }}>
@@ -69,7 +72,7 @@ export function FlightsStep({ answers, update }) {
             </GroupeDeChoix>
             {courts !== null && (
               <ThemedText type="small">
-                {longCount} vol{pluriel ? 's' : ''} long-courrier{pluriel ? 's' : ''} {pluriel ? 'seront' : 'sera'} compté{pluriel ? 's' : ''}.
+                {decompteDesLongsCourriers(longCount)}
               </ThemedText>
             )}
           </div>

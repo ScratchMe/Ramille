@@ -2,6 +2,8 @@
 export interface EtapeReassuranceProps {
   /** « Continuer ». */
   onSuivant?: () => void;
+  /** « Retour », à gauche de « Continuer » — la page d'avant. Filé (`onPanel`) sur ce fond teinté. */
+  onPrecedent?: () => void;
   /** « Ce qu’on enregistre, et pourquoi » — vers la page de confidentialité. */
   onConfidentialite?: () => void;
   style?: React.CSSProperties;
