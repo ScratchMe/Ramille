@@ -427,6 +427,15 @@ elles-mêmes sont épinglées dans Jest sur toutes les combinaisons d'états (`c
 `carteDuPremierPlan` et `carteDesDeuxLieux`. L'en-tête du script nomme les six autres, que rien ici ne
 garde.
 
+**Et il finit par retirer ses deux bilans** (27/09/2026, C4.7, `v1-22`). Le bilan en voiture
+d'abord : c'est lui qui porte le plan, donc la confirmation dit que le plan repart du précédent, la
+base relit le statut `withdrawn` et un plan revenu à zéro action, et l'adresse dit « Ce bilan a été
+retiré. » **après un rechargement** — c'est là que parle la lecture par identifiant, et plus l'état
+posé par le geste. Puis le seul qui reste : la confirmation ne parle plus de plan, l'écran rejoint
+l'onboarding, et la marque `traceverte.a_un_bilan.v1` est **lue posée avant**, effacée après — sans la
+première moitié, une clé mal nommée rendrait la seconde vraie par accident. Le troisième cas (retirer
+un bilan qui ne porte pas le plan) n'est pas joué ici : `34_retirer_un_bilan.test.sql` le tient.
+
 Le second profil tourne dans un **contexte de navigateur neuf**, et c'est structurel : « premier »
 veut dire premier **sur cet appareil** (C5.7), et les marques vivent dans le stockage. Le rejouer
 dans le même contexte éprouverait un appareil qui a déjà tout vu.

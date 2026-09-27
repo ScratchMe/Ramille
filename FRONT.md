@@ -807,6 +807,22 @@ périmerait en silence au prochain passage :
   cycle courant à chaque soumission. Avec le cap d'aujourd'hui — plus petit, la baseline du poste
   dominant ayant baissé — le palier recalculé serait plus proche et la phrase s'afficherait plus
   souvent qu'elle ne le devrait. On passe `null` et on ne dit rien.
+- **Un bilan se retire depuis sa restitution, et son adresse dit ensuite qu'il l'a été** (C4.7,
+  `v1-22`, `src/types/retrait-du-bilan.ts`). Trois points à ne pas défaire :
+  - **la restitution est la seule lecture du produit qui ne filtre pas sur `completed`** — elle lit
+    un bilan par son identifiant, c'est-à-dire par l'adresse qui circule. Toutes les autres
+    deviennent justes sans qu'on y touche ; celle-ci embarque le statut dans sa lecture
+    (`assessments(status, submitted_at)`) et ne montre jamais le chiffre d'un bilan retiré.
+    Embarqué et non lu à côté : une seconde lecture pourrait échouer seule, et l'écran ne saurait
+    plus s'il a le droit de montrer le chiffre ;
+  - **la confirmation dépend de la place du bilan** (`seul`, `dernier`, `ancien` — `placeDuBilan`),
+    parce que le retrait ne fait pas la même chose au plan dans les trois cas : « ton plan repartira
+    de ton bilan précédent » serait faux d'un bilan qui ne porte pas le plan, et parler de plan à qui
+    retire son seul bilan le serait aussi. Quand la place n'a pas pu être lue, **le lien ne se rend
+    pas** : une confirmation dont on ne sait pas quelle phrase est vraie ne se propose pas ;
+  - **retirer son seul bilan efface la marque locale `traceverte.a_un_bilan.v1`, et elle seule**
+    (`effacerLaMarqueDeBilan`) — sans quoi une réouverture hors ligne enverrait au plan (C4.5). Le
+    balayage par préfixe de `src/lib/compte.ts` serait de trop : le compte n'est pas quitté.
 - **`EcartParPoste` compare poste à poste, et l'accent suit le dominant du serveur** (C2.7). Le
   poste dominant peut changer d'un bilan à l'autre, et c'est le plus souvent une réussite :
   comparer « dominant d'avant » à « dominant d'aujourd'hui » ferait passer ce succès pour une

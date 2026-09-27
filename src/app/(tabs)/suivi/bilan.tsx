@@ -261,8 +261,9 @@ export default function BilanResultat() {
   // **La fréquence des loisirs, pour nommer le résiduel des sorties rares** (arbitrage du 27/09/2026,
   // `v1-29` §6.3). Les libellés figés ne le marquent que quand il domine ou porte la boucle
   // mensuelle ; la barre de répartition le montre aussi quand les voyages pèsent plus — « rarement »
-  // et un vol, le cas courant. Une lecture à part et tolérante, comme la date en relecture : `null`
-  // (pas encore lue, ou pas pu) fait retomber `loisirsSontLeResiduel` sur les libellés.
+  // et un vol, le cas courant. Une lecture à part et tolérante, comme les bilans valides que lit le
+  // chargement pour la confirmation du retrait : `null` (pas encore lue, ou pas pu) fait retomber
+  // `loisirsSontLeResiduel` sur les libellés.
   const [frequenceDesLoisirs, setFrequenceDesLoisirs] = useState<string | null>(null);
   // **Retirer ce bilan** (C4.7, D4 de `v1-22`) : une confirmation dans la page, jamais un `Alert` —
   // sur web il retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` (la forme de

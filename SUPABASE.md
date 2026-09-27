@@ -105,6 +105,17 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   Premier emploi dans ce dépôt : `assessments`, dont le client n'écrit que `status` à la
   soumission alors qu'il portait l'`update` sur les cinq colonnes, `submitted_at` et `user_id`
   comprises (`20260920160000`).
+- **Et quand le client doit garder une colonne mais pas l'une de ses valeurs**, le privilège de
+  colonne ne suffit plus : c'est un trigger qui refuse la **transition**, et il distingue le RPC du
+  client en lisant `current_user`. Dans une fonction `security definer`, `current_user` vaut son
+  propriétaire, y compris dans les triggers que ses ordres déclenchent ; depuis PostgREST, il vaut
+  le rôle de la requête (`anon`, `authenticated`). Premier emploi : `assessments.status`, que la
+  soumission écrit et que seul `retirer_le_bilan` peut passer à `withdrawn`
+  (`20260928090000_retirer_un_bilan.sql`). Deux choses à savoir : la garde laisse passer **tous**
+  les rôles serveur (`postgres`, `service_role`, les fixtures), ce qui est voulu — c'est le client
+  qu'on borne ; et une garde d'**état** (« seul un bilan complété se retire ») doit s'écrire à côté,
+  pas à la place, parce que sous un rôle serveur celle de rôle ne dit rien — le fichier 34 les
+  éprouve séparément.
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
   `security definer`** — sinon, depuis le rôle applicatif, le comptage ne voit rien et le quota
   ne se déclenche jamais. Corollaire pour les tests : remplir un quota sous `postgres` par
