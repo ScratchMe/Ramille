@@ -78,6 +78,29 @@ export function releverParImage(depuisLeDebut) {
         return o > 0.02 && o < 0.98 && d.getBoundingClientRect().height > 400;
       }).length,
     }),
+    // L'anneau de focus d'un contrôle, que le navigateur dessine **hors** de l'élément : le premier
+    // ancêtre qui le découperait — `overflow` autre que `visible`, dont la boîte ne contient pas le
+    // contrôle élargi de deux pixels —, ou `null`. Une découpe au ras l'effaçait
+    // (`HauteurSuivie`, 27/09/2026).
+    anneau: ({ role, nom }) => {
+      const n = [...document.querySelectorAll(`[role="${role}"]`)].find(
+        (e) => visible(e) && (e.getAttribute('aria-label') ?? normaliser(e.innerText)) === nom
+      );
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      for (let a = n.parentElement; a && a !== document.body; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+        const b = a.getBoundingClientRect();
+        const dedans =
+          r.left - 2 >= b.left + a.clientLeft - 0.5 &&
+          r.top - 2 >= b.top + a.clientTop - 0.5 &&
+          r.right + 2 <= b.left + a.clientLeft + a.clientWidth + 0.5 &&
+          r.bottom + 2 <= b.top + a.clientTop + a.clientHeight + 0.5;
+        if (!dedans) return { rogne: `${a.tagName.toLowerCase()} (overflow ${cs.overflowX}/${cs.overflowY})` };
+      }
+      return { rogne: null };
+    },
     // Une feuille du bas (`src/components/feuille-du-bas.tsx`), par le nom de son dialogue : son
     // voile — le seul élément sans enfant qui couvre toute la fenêtre — et le haut de la feuille,
     // qui porte l'en-tête du même nom.

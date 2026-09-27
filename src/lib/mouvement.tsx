@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   css,
   cubicBezier,
@@ -149,6 +149,15 @@ export function Depliage({ style, children }: { style?: StyleProp<ViewStyle>; ch
 }
 
 /**
+ * Ce que la découpe d'une `HauteurSuivie` laisse autour de son contenu. Le navigateur dessine l'anneau
+ * de focus **hors** de l'élément (`outline: auto 1px`, mesuré sur l'export le 27/09/2026) : découpé
+ * au ras, il disparaissait — entièrement sur une ligne de piste, qui remplit son cadre, donc une
+ * piste focalisée au clavier ne se voyait plus. Quatre pixels de part et d'autre, rendus à la mise en
+ * page par une marge négative, pour que rien d'autre ne bouge.
+ */
+const MARGE_DE_DECOUPE = 4;
+
+/**
  * Un bloc dont le contenu change de hauteur — la réplique qui remplace la question d'un point, une
  * piste qui passe de ligne à carte : il va de l'ancienne hauteur à la nouvelle (`Mouvement.entree`)
  * au lieu de sauter, et ce qui est dessous suit. Sa hauteur reste tenue entre deux changements —
@@ -156,14 +165,13 @@ export function Depliage({ style, children }: { style?: StyleProp<ViewStyle>; ch
  * préférence, elle est libre et tout se pose.
  *
  * `styleDuContenu` s'applique à ce qui se mesure : un `gap` que le parent donnait à ses enfants doit
- * y être repris, puisqu'ils sont désormais les enfants de ce bloc.
+ * y être repris, puisqu'ils sont désormais les enfants de ce bloc. Il n'y a pas de `style` pour le
+ * cadre lui-même : une marge qu'on y poserait écraserait celle qui rend la découpe.
  */
 export function HauteurSuivie({
-  style,
   styleDuContenu,
   children,
 }: {
-  style?: StyleProp<ViewStyle>;
   styleDuContenu?: StyleProp<ViewStyle>;
   children: ReactNode;
 }) {
@@ -183,13 +191,22 @@ export function HauteurSuivie({
     hauteur.set(withTiming(nouvelle, reglage(Mouvement.entree)));
   };
 
-  const styleAnime = useAnimatedStyle(() => (hauteur.value < 0 ? {} : { height: hauteur.value, overflow: 'hidden' }));
+  // La hauteur tenue compte la découpe des deux côtés : la mesure est celle du contenu.
+  const styleAnime = useAnimatedStyle(() =>
+    hauteur.value < 0 ? {} : { height: hauteur.value + 2 * MARGE_DE_DECOUPE, overflow: 'hidden' }
+  );
 
   return (
-    <Animated.View style={[style, styleAnime]}>
+    <Animated.View style={[styles.decoupe, styleAnime]}>
       <View onLayout={mesurer} style={styleDuContenu}>
         {children}
       </View>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  // La marge négative rend à la mise en page ce que le rembourrage prend ; et la bande qu'elle ajoute
+  // ne capte aucun toucher (`box-none`), sans quoi elle mordrait de quatre pixels sur la piste voisine.
+  decoupe: { margin: -MARGE_DE_DECOUPE, padding: MARGE_DE_DECOUPE, pointerEvents: 'box-none' },
+});

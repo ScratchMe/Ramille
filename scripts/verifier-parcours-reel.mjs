@@ -767,6 +767,15 @@ try {
   const oui = page.getByRole('button', { name: 'Oui', exact: true }).first();
   await oui.scrollIntoViewIfNeeded();
   await page.waitForTimeout(400);
+  // Et la carte tient sa hauteur en découpant ce qui dépasse : l'anneau de focus de « Oui », collé
+  // au bord gauche du contenu, ne doit pas y passer — une découpe au ras l'effaçait.
+  const anneau = await mesurer(page, 'anneau', { role: 'button', nom: 'Oui' });
+  assurer(anneau !== null, '« Oui » est introuvable : l’anneau de focus ne peut pas être mesuré');
+  assurer(
+    anneau.rogne === null,
+    `l’anneau de focus de « Oui » est rogné par un ${anneau.rogne} — la découpe de \`HauteurSuivie\`` +
+      ' doit laisser de la place autour du contenu (`MARGE_DE_DECOUPE`, src/lib/mouvement.tsx)'
+  );
   const CAP = 'Ton cap pour cette saison'; // la cadence de tous les profils (`season`)
   const avantLaReponse = await mesurer(page, 'texte', CAP);
   const reponse = await releverPendant(page, { cap: ['texte', CAP] }, () => oui.click());
