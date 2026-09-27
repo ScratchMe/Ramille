@@ -7,17 +7,22 @@
 // répertoire courant, pas sur celle où il est rangé. On l'appelle donc depuis la copie principale,
 // qui l'a toujours, même quand la copie du sous-agent est partie d'un `main` qui ne l'a pas encore.
 //
-// Quatre préparations, payées la semaine du 21 au 25/09/2026 (CLAUDE.md, « une vague confiée à des
-// sous-agents en worktrees coûte quatre préparations et une surprise ») :
+// Ce qu'il règle : ce que CLAUDE.md décrit d'une copie de travail (« Et une vague confiée à des
+// sous-agents en worktrees… »), plus le commit de départ, relevé le 27/09/2026.
 //
-// 1. **Le commit de départ.** Les quatre copies de cette semaine-là partaient d'`origin/main` et non
-//    de la branche de travail, et chaque sous-agent a dû s'en apercevoir seul. Depuis le 27/09/2026,
-//    `.claude/settings.json` porte `worktree.baseRef: "head"` et la copie part du HEAD local. Le
-//    script le vérifie quand même, parce qu'un réglage ne se voit pas : si la copie n'a pas le
-//    commit attendu, il l'y avance (`git merge --ff-only`) quand c'est une simple avance sur un arbre
-//    propre, et refuse sinon, en disant pourquoi — il ne réécrit jamais le travail d'un sous-agent.
+// 1. **Le commit de départ.** Sans réglage, une copie part d'`origin/main` (`worktree.baseRef`
+//    vaut `fresh` par défaut), et non de la branche de travail : c'était le cas des six copies des
+//    24 et 25/09/2026, et un sous-agent a dû se recaler seul sur le commit que sa consigne nommait.
+//    Depuis le 27/09/2026, `.claude/settings.json` porte `worktree.baseRef: "head"` et la copie part
+//    du HEAD local. Le script le vérifie quand même, parce qu'un réglage ne se voit pas : si la copie
+//    n'a pas le commit attendu, il l'y avance (`git merge --ff-only`) quand c'est une simple avance
+//    et qu'aucun fichier suivi n'est modifié, et refuse sinon, en disant pourquoi — il ne réécrit
+//    jamais le travail d'un sous-agent. Un fichier **non suivi** ne l'arrête pas : il ne gêne une
+//    avance que s'il serait écrasé, et git le refuse alors lui-même.
 // 2. **`node_modules`.** Une copie n'en a pas. `worktree.symlinkDirectories` le lie depuis la copie
-//    principale ; à défaut, le script pose le lien lui-même.
+//    principale ; à défaut, le script pose le lien lui-même. Ce lien est ignoré par git parce que
+//    `.gitignore` écrit `node_modules` sans barre finale : avec elle, il ne désignait qu'un dossier,
+//    et le lien se lisait comme un fichier non suivi.
 //
 // Les deux réglages ont été mesurés le 27/09/2026 sur un vrai sous-agent en copie de travail : sa
 // copie était partie du HEAD local, et `node_modules` y était déjà lié. `baseRef` est documenté ;
@@ -25,8 +30,9 @@
 // ligne sur les worktrees — raison de plus pour garder le repli.
 // 3. **`expo-env.d.ts`**, ignoré par git : sans lui, `tsc` échoue sur l'import de `global.css`.
 // 4. Ce qu'un script ne peut pas faire à la place de l'agent, il le rappelle en sortant : exporter
-//    avec `--clear` (le cache de Metro est partagé entre copies, EXPO.md §1.1), et ne toucher à la
-//    stack Supabase qu'à travers `scripts/rejouer-la-ci.mjs`, qui la réserve.
+//    par `scripts/rejouer-la-ci.mjs export`, qui donne à l'export son propre cache de Metro — à la
+//    main, `--clear` ne protège pas d'une autre copie qui exporte en même temps (EXPO.md §1.1) —, et
+//    ne toucher à la stack Supabase qu'à travers ce même script, qui la réserve.
 //
 // Sortie 0 quand la copie est prête ; 1 sur un refus, qui dit quoi faire ; 64 sur un usage fautif.
 // Éprouvé par `scripts/preparer-un-worktree.test.ts`, mutations datées en tête.
@@ -76,9 +82,9 @@ const tete = git(racine, 'rev-parse', 'HEAD').sortie;
 if (git(racine, 'merge-base', '--is-ancestor', cible.sortie, 'HEAD').ok) {
   console.log(`✓ la copie contient ${court(cible.sortie)} (HEAD ${court(tete)})`);
 } else if (git(racine, 'merge-base', '--is-ancestor', 'HEAD', cible.sortie).ok) {
-  if (git(racine, 'status', '--porcelain').sortie !== '') {
+  if (git(racine, 'status', '--porcelain', '--untracked-files=no').sortie !== '') {
     refuser(
-      `la copie est en retard sur ${court(cible.sortie)} et porte des modifications non commises : ` +
+      `la copie est en retard sur ${court(cible.sortie)} et des fichiers suivis y sont modifiés : ` +
         'je ne l’avance pas par-dessus. Commite-les ou mets-les de côté, puis relance.',
     );
   }
@@ -126,7 +132,8 @@ console.log(
   [
     '',
     `Copie prête : ${racine}`,
-    '- Un export se fait toujours avec --clear : le cache de Metro est partagé entre copies.',
+    '- Un export se fait par `node scripts/rejouer-la-ci.mjs export`, qui lui donne son propre cache de',
+    '  Metro : à la main, `--clear` ne protège pas d’une autre copie qui exporte en même temps.',
     '- La stack Supabase se touche par `node scripts/rejouer-la-ci.mjs base parcours`, qui la réserve —',
     '  jamais `supabase start`, `stop` ni `db reset` à la main.',
     '- `npm test`, jamais `npx jest` : le script force le fuseau.',

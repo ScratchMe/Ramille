@@ -1,7 +1,11 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
-node_modules/
+# Sans barre finale, et c'est exprès : `node_modules/` ne désigne qu'un dossier, or la copie de
+# travail d'un sous-agent en porte un **lien symbolique** (`worktree.symlinkDirectories` de
+# `.claude/settings.json`, ou `scripts/preparer-un-worktree.mjs`). Avec la barre, git le voyait
+# comme un fichier non suivi, qu'un `git add -A` aurait commis avec son chemin absolu (27/09/2026).
+node_modules
 
 # Expo
 .expo/

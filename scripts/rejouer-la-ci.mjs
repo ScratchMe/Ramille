@@ -1,39 +1,52 @@
 #!/usr/bin/env node
 // Rejoue en local ce que la CI (`.github/workflows/ci.yml`) joue à chaque PR, pas à pas.
 //
-//   node scripts/rejouer-la-ci.mjs                     # les cinq étapes, dans l'ordre
+//   node scripts/rejouer-la-ci.mjs                     # toutes les étapes, dans l'ordre
 //   node scripts/rejouer-la-ci.mjs verifications jest  # celles qu'on nomme
 //   node scripts/rejouer-la-ci.mjs --a-blanc           # le plan en JSON, sans rien lancer
 //
-// Les cinq étapes suivent les cinq travaux de la CI : `verifications` (« Typecheck & lint »),
-// `jest`, `export` (l'export à configuration factice et ses cinq contrôles), `base` (pgTAP et les
-// deux comparaisons à la base) et `parcours` (les deux gardes de bout en bout contre la stack).
+// Une étape par travail de la CI : `verifications` (« Typecheck & lint »), `jest`, `export`
+// (l'export à configuration factice et ses contrôles), `base` (pgTAP et les deux comparaisons à la
+// base) et `parcours` (les deux gardes de bout en bout contre la stack).
 //
 // **Pourquoi un script, et pas la liste de commandes.** La CI a été rejouée cinq fois à la main la
 // semaine du 21 au 25/09/2026, et deux pièges s'y sont présentés chaque fois : `npx jest` sans le
-// fuseau (quatre tests tombent — `npm test` force `TZ=Europe/Paris`), et un export sans `--clear`,
-// qui rend le bundle d'un autre arbre. Une boucle écrite au shell avec un tube pour garder la
-// sortie lisible lit en plus le code du tube, pas celui de la commande (CLAUDE.md, « Un tube masque
-// le code de sortie ») : ici chaque commande écrit dans son propre journal, et son code se lit
-// directement.
+// fuseau, où des tests de dates tombent (`npm test` force `TZ=Europe/Paris`, TESTING.md §1.4), et un
+// export qui rend le bundle d'un autre arbre ou d'une autre configuration (EXPO.md §1.1, TESTING.md
+// §2.6). Une boucle écrite au shell avec un tube pour garder la sortie lisible lit en plus le code du
+// tube, pas celui de la commande (CLAUDE.md, « Un tube masque le code de sortie ») : ici chaque
+// commande écrit dans son propre journal, et son code se lit sur le processus lui-même.
 //
-// **Ce qui diffère de la CI, et pourquoi** — le reste suit `ci.yml` à la lettre :
+// **Ce qui diffère de la CI, et pourquoi.** Chaque commande est celle de `ci.yml` à quatre
+// transformations près, que la garde vérifie (`npx --yes`, le CLI Supabase épinglé, `--clear`, le
+// fichier de sortie) ; le reste des écarts est ici, un par ligne :
 // - `npm ci` n'est pas rejoué : les dépendances sont celles de l'arbre. Un `package-lock.json`
 //   changé sans `npm install` se voit donc en CI, pas ici.
 // - Chromium n'est pas installé : `CHROMIUM_PATH` le désigne, et à défaut `/opt/pw-browsers/chromium`
 //   quand il existe (l'environnement d'agent).
-// - Chaque export porte `--clear` et `EXPO_NO_DOTENV=1`. Le cache de Metro est partagé entre copies
-//   de travail et n'a pas les `EXPO_PUBLIC_*` dans sa clé (TESTING.md §2.6) ; un `.env` local porte
-//   la configuration de production. La CI n'a ni l'un ni l'autre.
-// - **La base est reconstruite** (`supabase db reset`) avant pgTAP et le parcours. La CI part d'une
-//   base neuve, bâtie sur les migrations de la PR ; une stack locale déjà démarrée porte celles de
-//   l'arbre qui l'a démarrée — un autre, ou le même avant une retouche. Ce n'est pas la parade que
-//   TESTING.md §2.3 écarte (une base « sale » ne doit pas faire rougir pgTAP) : c'est que la base
-//   vérifiée doit être celle des migrations de l'arbre.
+// - **Chaque export a son propre cache de Metro** (un `TMPDIR` dans le dossier des journaux), plus
+//   `--clear` et `EXPO_NO_DOTENV=1`. Le cache est rangé par défaut dans le répertoire temporaire du
+//   système, donc partagé entre copies de travail : deux exports simultanés y produisent le bundle
+//   d'un autre arbre, et `--clear` ne protège pas d'un voisin qui écrit pendant qu'on lit (EXPO.md
+//   §1.1). Un cache privé rend inutile le marqueur que §1.1 prescrit pour un export fait à la main.
+//   `EXPO_NO_DOTENV` : un `.env` local porte la configuration de production.
+// - **La stack est redémarrée à neuf** (`supabase stop --no-backup`, puis `supabase start`) avant
+//   pgTAP et le parcours, comme la CI qui en démarre une neuve à chaque travail. Deux raisons, et la
+//   seconde ne se voit pas : une stack déjà démarrée porte les migrations de l'arbre qui l'a
+//   démarrée, et GoTrue ne relit ses gabarits et `supabase/config.toml` qu'à son démarrage — une
+//   stack qui tourne vérifierait le code de connexion d'une autre copie (CLAUDE.md, TESTING.md
+//   §2.11). Ce n'est pas la parade que TESTING.md §2.3 écarte : une base qui a servi ne doit toujours
+//   pas faire rougir une assertion. **Et l'étape `base` démarre la stack entière**, là où la CI n'y
+//   démarre que Postgres (`db start`) : c'est un sur-ensemble, qui laisse le parcours la suivre.
 // - **La stack est réservée** le temps des étapes `base` et `parcours`, par un verrou rangé dans le
 //   répertoire git commun — donc partagé par toutes les copies de travail du dépôt. Deux agents qui
-//   rejouent en même temps ne se reconstruisent pas la base l'un sous l'autre : le second est
-//   refusé, et le premier est nommé (`scripts/verrou-de-la-stack.mjs`).
+//   rejouent en même temps ne se redémarrent pas la stack l'un sous l'autre : le second est refusé,
+//   et le premier est nommé (`scripts/verrou-de-la-stack.mjs`).
+// - **L'environnement hérité est filtré** : les variables qui feraient viser une autre cible à un
+//   contrôle sont retirées — un `DATABASE_URL` du shell ferait comparer les miroirs de `check` à une
+//   autre base que celle qu'on vient de construire. La CI n'en a aucune ; chaque pas remet celles que
+//   la CI lui donne. La garde relève toute variable que lit un script de `scripts/` et exige qu'elle
+//   soit ici, écartée ou déclarée inoffensive.
 // - Dans une étape, un pas qui échoue n'arrête que ceux qui dépendent de lui, là où la CI s'arrête
 //   au premier rouge de chaque travail : un passage local doit montrer tous ses rouges d'un coup.
 //
@@ -60,10 +73,27 @@ const FACTICE = {
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'cle-factice-pour-le-build',
 };
 const EXPORT = ['npx', 'expo', 'export', '--platform', 'web', '--clear'];
-const SANS_DOTENV = { EXPO_NO_DOTENV: '1' };
 /** Le plafond d'un pas. Le pire cas modélisé en tête de `ci.yml` est de quatorze minutes. */
 const DELAI_MS = 20 * 60 * 1000;
 const LIGNES_DE_JOURNAL = 40;
+
+/**
+ * L'environnement hérité du shell. Sont retirées les variables qui désignent une cible — une base,
+ * une boîte aux lettres, un projet Supabase —, parce qu'un contrôle les préfère à sa cible locale
+ * et que la CI n'en pose aucune par défaut. Chaque pas remet explicitement celles que la CI lui donne.
+ */
+const VARIABLES_ECARTEES = {
+  prefixes: ['EXPO_PUBLIC_'],
+  noms: ['DATABASE_URL', 'SUPABASE_INBUCKET_URL', 'SUPABASE_SERVICE_ROLE_KEY'],
+};
+/** Celles qu'un script lit et qu'on laisse passer, chacune avec sa raison — la garde les lit. */
+const VARIABLES_INOFFENSIVES = {
+  CHROMIUM_PATH: 'désigne un navigateur, pas une cible ; le rejeu la pose lui-même quand elle manque',
+  VERIFIER_API_PNG: 'demande d’écrire la carte rendue pour la regarder, sans rien changer au contrôle',
+  TRACE_LIEN: 'imprime des identifiants de diagnostic, sans rien changer au contrôle',
+};
+const estEcartee = (nom) =>
+  VARIABLES_ECARTEES.noms.includes(nom) || VARIABLES_ECARTEES.prefixes.some((p) => nom.startsWith(p));
 
 // Le bloc que le travail « Parcours réel » écrit pour passer les clés de la stack aux pas suivants.
 const CI_ENVIRONNEMENT_DE_LA_STACK = `supabase status -o env > /tmp/stack.env
@@ -89,14 +119,10 @@ const NON_REJOUEES = [
 // ─── Les pas qui ne sont pas une commande ────────────────────────────────────────────────────
 
 function creerExpoEnv(ctx, journal) {
-  const fichier = path.join(racine, 'expo-env.d.ts');
-  if (fs.existsSync(fichier)) {
-    fs.writeFileSync(journal, 'expo-env.d.ts est déjà là.\n');
-  } else {
-    // Même contenu que le `postinstall` de package.json et que l'étape de la CI.
-    fs.writeFileSync(fichier, '/// <reference types="expo/types" />\n');
-    fs.writeFileSync(journal, 'expo-env.d.ts créé.\n');
-  }
+  // Écrit comme la CI l'écrit, même quand le fichier existe : c'est un fichier généré, et un contenu
+  // local différent ferait typer autre chose qu'en CI.
+  fs.writeFileSync(path.join(racine, 'expo-env.d.ts'), '/// <reference types="expo/types" />\n');
+  fs.writeFileSync(journal, 'expo-env.d.ts écrit.\n');
   return { code: 0 };
 }
 
@@ -106,10 +132,10 @@ function reserverLaStack(ctx, journal) {
   return { code: pris ? 0 : 1 };
 }
 
-function demarrerLaStack(ctx, journal) {
-  const etat = executer([...SUPABASE, 'status'], {}, journal);
-  if (etat.code === 0) return etat;
-  fs.appendFileSync(journal, '\n— la stack ne répond pas : supabase start —\n');
+function demarrerLaStackANeuf(ctx, journal) {
+  // L'arrêt peut échouer sans conséquence — une stack déjà arrêtée — : seul le démarrage décide.
+  executer([...SUPABASE, 'stop', '--no-backup'], {}, journal);
+  fs.appendFileSync(journal, '\n— supabase start —\n');
   return executer([...SUPABASE, 'start'], {}, journal, { ajout: true });
 }
 
@@ -155,25 +181,20 @@ const VERROU = {
   raison: 'une machine de CI n’a qu’un travail ; ici plusieurs copies de travail partagent une stack',
   lancer: reserverLaStack,
 };
+const STACK_NEUVE = 'stack démarrée à neuf';
 const stack = (ci) => ({
-  nom: 'stack démarrée',
+  nom: STACK_NEUVE,
   cle: 'stack',
   ci,
-  lancer: demarrerLaStack,
+  lancer: demarrerLaStackANeuf,
   dependDe: ['Docker répond', 'stack réservée'],
 });
-const RECONSTRUIRE = {
-  nom: 'base reconstruite',
-  cle: 'reconstruire',
-  ci: null,
-  raison: 'la CI part d’une base neuve ; une stack locale porte les migrations de l’arbre qui l’a démarrée',
-  commande: [...SUPABASE, 'db', 'reset'],
-  dependDe: ['stack démarrée'],
-};
 
 /** Les pas de chaque étape, dans l'ordre de `ci.yml`. `ctx` porte le journal et la stack lue. */
 function plan(ctx) {
   const typesGeneres = path.join(ctx.journal, 'database.types.generated.ts');
+  // Un cache de Metro par export, dans le dossier des journaux : voir l'en-tête.
+  const cacheDeMetro = (nom) => ({ TMPDIR: path.join(ctx.journal, nom), EXPO_NO_DOTENV: '1' });
   return [
     {
       nom: 'verifications',
@@ -221,7 +242,7 @@ function plan(ctx) {
           nom: 'export factice',
           ci: 'npx expo export --platform web',
           commande: EXPORT,
-          env: { ...FACTICE, ...SANS_DOTENV },
+          env: { ...FACTICE, ...cacheDeMetro('metro-factice') },
         },
         ...[
           ['verifier-titres-export', {}],
@@ -245,19 +266,18 @@ function plan(ctx) {
         DOCKER,
         VERROU,
         stack('supabase db start'),
-        RECONSTRUIRE,
         {
           nom: 'pgTAP',
           ci: 'supabase test db',
           commande: [...SUPABASE, 'test', 'db'],
-          dependDe: ['base reconstruite'],
+          dependDe: [STACK_NEUVE],
         },
         {
           nom: 'types générés',
           ci: 'supabase gen types typescript --local > /tmp/database.types.generated.ts',
           commande: [...SUPABASE, 'gen', 'types', 'typescript', '--local'],
           sortie: typesGeneres,
-          dependDe: ['base reconstruite'],
+          dependDe: [STACK_NEUVE],
         },
         {
           nom: 'verifier-types-base',
@@ -269,7 +289,7 @@ function plan(ctx) {
           nom: 'verifier-miroirs-de-check',
           ci: 'node scripts/verifier-miroirs-de-check.mjs',
           commande: ['node', 'scripts/verifier-miroirs-de-check.mjs'],
-          dependDe: ['base reconstruite'],
+          dependDe: [STACK_NEUVE],
         },
       ],
     },
@@ -280,18 +300,17 @@ function plan(ctx) {
         DOCKER,
         VERROU,
         stack('supabase start'),
-        RECONSTRUIRE,
         {
           nom: 'clés de la stack',
           ci: CI_ENVIRONNEMENT_DE_LA_STACK,
           lancer: lireLaStack,
-          dependDe: ['base reconstruite'],
+          dependDe: [STACK_NEUVE],
         },
         {
           nom: 'export branché sur la stack',
           ci: 'npx expo export --platform web --clear',
           commande: EXPORT,
-          env: () => ({ ...ctx.stack, ...SANS_DOTENV }),
+          env: () => ({ ...ctx.stack, ...cacheDeMetro('metro-stack') }),
           dependDe: ['clés de la stack'],
         },
         ...['verifier-parcours-reel', 'verifier-code-de-connexion'].map((s) => ({
@@ -308,16 +327,19 @@ function plan(ctx) {
 
 // ─── L'exécution ─────────────────────────────────────────────────────────────────────────────
 
+const HERITE = Object.fromEntries(Object.entries(process.env).filter(([nom]) => !estEcartee(nom)));
+
 /**
  * Lance une commande sans shell ni tube : la sortie va dans le journal (ou, pour la sortie
  * standard, dans `sortie`), et le code se lit sur le processus lui-même.
  */
 function executer(commande, env, journal, { sortie = null, ajout = false } = {}) {
+  if (env.TMPDIR) fs.mkdirSync(env.TMPDIR, { recursive: true });
   const fd = fs.openSync(journal, ajout ? 'a' : 'w');
   const fdSortie = sortie ? fs.openSync(sortie, 'w') : fd;
   const r = spawnSync(commande[0], commande.slice(1), {
     cwd: racine,
-    env: { ...process.env, ...env },
+    env: { ...HERITE, ...env },
     stdio: ['ignore', fdSortie, fd],
     timeout: DELAI_MS,
   });
@@ -400,6 +422,8 @@ function repertoireDuVerrou() {
 
 function etatDeLArbre() {
   const git = (...args) => spawnSync('git', args, { cwd: racine, encoding: 'utf8' }).stdout?.trim() ?? '';
+  // Les fichiers non suivis comptent : un fichier neuf qu'on a oublié d'ajouter est vérifié ici et
+  // absent en CI. Ceux que `.gitignore` écarte ne comptent pas.
   const modifie = git('status', '--porcelain') !== '';
   return `${git('rev-parse', '--abbrev-ref', 'HEAD')} @ ${git('rev-parse', '--short', 'HEAD')}${modifie ? ', avec des modifications non commises — que la CI ne verra pas' : ''}`;
 }
@@ -436,12 +460,14 @@ if (aBlanc) {
     ci: pas.ci,
     ...(pas.raison ? { raison: pas.raison } : {}),
     commande: pas.commande ? pas.commande.join(' ') : `(${pas.lancer.name})`,
+    ...(pas.sortie ? { sortie: pas.sortie } : {}),
     env: typeof pas.env === 'function' ? '(clés de la stack)' : (pas.env ?? {}),
     dependDe: pas.dependDe ?? [],
   });
   const description = {
     versionSupabase: VERSION_SUPABASE,
     nonRejouees: NON_REJOUEES,
+    variables: { ecartees: VARIABLES_ECARTEES, inoffensives: VARIABLES_INOFFENSIVES },
     etapes: etapes.map((e) => ({ nom: e.nom, travail: e.travail, pas: e.pas.map(decrire) })),
   };
   console.log(JSON.stringify(description, null, 2));

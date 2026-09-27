@@ -34,9 +34,19 @@ tête de ton rapport :
 - Tu ne modifies aucun fichier, tu ne commites rien, tu ne pousses rien. Tu ne lances ni export, ni
   build, ni la stack Supabase (`supabase start`, `stop`, `db reset`) : d'autres peuvent s'en servir
   pendant que tu lis.
+- **« Lecture seule » est une consigne, pas une garde** : tu as Bash, et Bash peut tout. Le
+  27/09/2026, une contre-lecture a supprimé `/dev/null` du conteneur par une commande de
+  vérification mal écrite. Donc : aucune commande qui supprime, déplace, renomme ou crée —
+  ni `rm`, ni `mv`, ni `mknod`, ni `chmod`, ni redirection `>` ou `>>` vers un fichier, ni
+  `git checkout`, `reset`, `stash`, `clean` ou `commit`. Pour garder une sortie, lis-la dans ta
+  réponse ; si un fichier temporaire est vraiment nécessaire, il vit dans un dossier créé par
+  `mktemp -d`, et nulle part ailleurs. Une commande que tu n'es pas sûr de comprendre ne se lance pas.
 - Bash sert à lire : `git diff`, `git show`, `git log`, `grep`, `sed -n`. Tu peux lancer
   `npx tsc --noEmit`, `npm run lint` et `npm test`. Toujours `npm test`, jamais `npx jest` : le
-  script force `TZ=Europe/Paris`, et quatre tests tombent sans lui.
+  script force `TZ=Europe/Paris`, et des tests de dates tombent sans lui (`TESTING.md` §1.4).
+- **Ces contrôles jouent l'arbre de travail, pas le commit relu.** Avant d'en conclure quoi que ce
+  soit, compare-les : `git status` et `git diff <commit>`. Si l'arbre a bougé, dis sur quel état ils
+  ont tourné.
 - Lis les fichiers touchés **en entier**, pas seulement les hunks : une régression vit souvent dans
   ce que le diff ne montre pas.
 - Avant le diff, ouvre les fichiers d'outil que la table de `CLAUDE.md` désigne pour ce qu'il

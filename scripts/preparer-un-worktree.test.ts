@@ -8,17 +8,22 @@
  * travail au commit B, un `node_modules` dans la copie principale — puis une copie de travail partie
  * de A, ce que faisait `origin/main` avant le réglage.
  *
- * Éprouvé en le cassant, le 27/09/2026 (sept mutations, chacune remise en place avant la suivante,
- * 9 tests) :
+ * Éprouvé en le cassant, le 27/09/2026 (neuf mutations, chacune remise en place avant la suivante,
+ * 10 tests) :
  * - l'avance remplacée par un `reset --hard`, sans condition d'ancêtre → 1 tombe : la copie qui a
  *   divergé perdait le travail de son agent ;
- * - l'arbre sale ignoré → 1 tombe ;
+ * - un fichier suivi modifié ignoré → 1 tombe ;
+ * - les fichiers **non suivis** comptés comme une modification → 1 tombe, le brouillon qui
+ *   n'empêche pas l'avance ;
  * - la copie principale acceptée → 1 tombe ;
  * - `node_modules` jamais lié → 1 tombe ;
- * - le commit attendu toujours tenu pour acquis → 3 tombent ;
+ * - le commit attendu toujours tenu pour acquis → 5 tombent ;
  * - `expo-env.d.ts` jamais créé → 1 tombe ;
- * - un commit inconnu non reconnu comme tel → 1 tombe : il se lisait « a divergé ».
- * Et la garde des réglages a été vue rouge avant que `worktree` n'entre dans `.claude/settings.json`.
+ * - un commit inconnu non reconnu comme tel → 1 tombe : il se lisait « a divergé » ;
+ * - le `.gitignore` du dépôt remis à `node_modules/` → 1 tombe : git revoit le lien.
+ * La première version posait un **dossier** là où Claude Code pose un lien, et affirmait que c'était
+ * la même chose : le défaut du `.gitignore` lui échappait (contre-lecture du 27/09/2026). Et la garde
+ * des réglages a été vue rouge avant que `worktree` n'entre dans `.claude/settings.json`.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -52,14 +57,18 @@ function commettre(dossier: string, fichier: string) {
   return git(dossier, 'rev-parse', 'HEAD');
 }
 
-/** La copie principale : A sur `main`, B sur `travail`, et un `node_modules` que git ignore. */
+/**
+ * La copie principale : A sur `main`, B sur `travail`, et un `node_modules`. Son `.gitignore` est
+ * **celui du dépôt** : c'est lui qui doit ignorer le lien qu'une copie de travail porte, et une règle
+ * recopiée ici ne garderait qu'elle-même.
+ */
 function depot() {
   const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ramille-worktree-')));
   temporaires.push(dir);
   const principale = path.join(dir, 'principale');
   fs.mkdirSync(principale);
   git(principale, 'init', '-q', '-b', 'main');
-  fs.writeFileSync(path.join(principale, '.gitignore'), 'node_modules/\nexpo-env.d.ts\n');
+  fs.copyFileSync(path.join(racine, '.gitignore'), path.join(principale, '.gitignore'));
   const a = commettre(principale, 'a.txt');
   git(principale, 'checkout', '-q', '-b', 'travail');
   const b = commettre(principale, 'b.txt');
@@ -101,14 +110,28 @@ describe('preparer-un-worktree', () => {
     expect(git(c, 'rev-parse', 'HEAD')).toBe(propre);
   });
 
-  test('garde un node_modules déjà là', () => {
-    // C'est ce que `worktree.symlinkDirectories` pose : le script n'a rien à y refaire.
+  test('garde le lien que worktree.symlinkDirectories a posé, avance quand même, et git ne le voit pas', () => {
+    // Le cas réel : Claude Code pose le lien à la création de la copie, avant le script. Avec la
+    // règle `node_modules/` du `.gitignore`, git le voyait comme un fichier non suivi.
     const d = depot();
-    const c = copie(d, d.b);
-    fs.mkdirSync(path.join(c, 'node_modules'));
+    const c = copie(d, d.a);
+    fs.symlinkSync(path.join(d.principale, 'node_modules'), path.join(c, 'node_modules'), 'dir');
     const r = preparer(c, d.b);
     expect(r.code).toBe(0);
-    expect(fs.lstatSync(path.join(c, 'node_modules')).isSymbolicLink()).toBe(false);
+    expect(git(c, 'rev-parse', 'HEAD')).toBe(d.b);
+    expect(fs.lstatSync(path.join(c, 'node_modules')).isSymbolicLink()).toBe(true);
+    expect(git(c, 'status', '--porcelain')).toBe('');
+  });
+
+  test('un fichier non suivi n’empêche pas l’avance', () => {
+    // Il ne gênerait l'avance que s'il devait être écrasé, et git le refuserait alors lui-même.
+    const d = depot();
+    const c = copie(d, d.a);
+    fs.writeFileSync(path.join(c, 'brouillon.txt'), 'des notes\n');
+    const r = preparer(c, d.b);
+    expect(r.code).toBe(0);
+    expect(git(c, 'rev-parse', 'HEAD')).toBe(d.b);
+    expect(fs.readFileSync(path.join(c, 'brouillon.txt'), 'utf8')).toBe('des notes\n');
   });
 
   test('refuse une copie qui a divergé, sans la toucher', () => {
@@ -121,13 +144,13 @@ describe('preparer-un-worktree', () => {
     expect(git(c, 'rev-parse', 'HEAD')).toBe(propre);
   });
 
-  test('refuse d’avancer par-dessus des modifications non commises', () => {
+  test('refuse d’avancer par-dessus un fichier suivi modifié', () => {
     const d = depot();
     const c = copie(d, d.a);
     fs.writeFileSync(path.join(c, 'a.txt'), 'modifié\n');
     const r = preparer(c, d.b);
     expect(r.code).toBe(1);
-    expect(r.erreur).toContain('non commises');
+    expect(r.erreur).toContain('fichiers suivis y sont modifiés');
     expect(git(c, 'rev-parse', 'HEAD')).toBe(d.a);
     expect(fs.readFileSync(path.join(c, 'a.txt'), 'utf8')).toBe('modifié\n');
   });
@@ -158,8 +181,8 @@ describe('.claude/settings.json', () => {
   const reglages = JSON.parse(fs.readFileSync(path.join(racine, '.claude', 'settings.json'), 'utf8'));
 
   test('une copie de travail part du HEAD local et y trouve node_modules', () => {
-    // `fresh`, la valeur par défaut, part d'`origin/main` : les quatre copies du 24/09/2026 sont
-    // parties de là, sans la branche de travail, et chaque sous-agent a dû s'en apercevoir seul.
+    // `fresh`, la valeur par défaut, part d'`origin/main` : les six copies des 24 et 25/09/2026 sont
+    // parties de là, sans la branche de travail.
     expect(reglages.worktree?.baseRef).toBe('head');
     expect(reglages.worktree?.symlinkDirectories).toContain('node_modules');
   });

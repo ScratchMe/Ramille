@@ -1,14 +1,16 @@
 ---
 name: preparer-un-worktree
-description: Prépare une vague de chantiers confiés à des sous-agents en copies de travail (isolation « worktree ») — commit de départ, node_modules, expo-env.d.ts, --clear, stack réservée — et donne le modèle de consigne de chaque sous-agent.
+description: Prépare une vague de chantiers confiés à des sous-agents en copies de travail (isolation « worktree ») — commit de départ, node_modules, expo-env.d.ts, cache de Metro, stack réservée — et donne le modèle de consigne de chaque sous-agent.
 argument-hint: "[chantiers à confier]"
 disable-model-invocation: true
 ---
 
 # Préparer une vague de sous-agents en copies de travail
 
-`CLAUDE.md` le dit : une vague confiée à des sous-agents en worktrees coûte quatre préparations et
-une surprise. Voici l'ordre dans lequel les faire, puis la consigne à donner à chaque sous-agent.
+`CLAUDE.md` raconte ce qu'a coûté la première vague de ce genre (« Avant de lancer une vague »). Une
+partie est désormais réglée d'office : la copie part du HEAD local et y trouve `node_modules`, et
+`scripts/preparer-un-worktree.mjs` vérifie le commit de départ et crée `expo-env.d.ts`. Voici ce qui
+reste à faire à la main, dans l'ordre, puis la consigne à donner à chaque sous-agent.
 
 ## Avant de lancer les sous-agents
 
@@ -51,9 +53,11 @@ Aujourd'hui : <date>.
   besoin, dis-le dans ton rapport.
 - Tu ne touches pas à : <les fichiers réservés à l'intégration — CLAUDE.md, produit.md, le document
   de chantier>.
-- Contrôles : `npx tsc --noEmit`, `npm run lint`, `npm test` (jamais `npx jest`). Un export se fait
-  toujours avec `--clear`. Pour la stack : `node scripts/rejouer-la-ci.mjs base parcours`, qui la
-  réserve. Jamais `supabase start`, `stop` ni `db reset` à la main.
+- Contrôles : `npx tsc --noEmit`, `npm run lint`, `npm test` (jamais `npx jest`). Un export et ses
+  contrôles : `node scripts/rejouer-la-ci.mjs export`, qui donne à l'export son propre cache de
+  Metro — à la main, `--clear` ne protège pas d'une autre copie qui exporte en même temps. Pour la
+  stack : `node scripts/rejouer-la-ci.mjs base parcours`, qui la réserve. Jamais `supabase start`,
+  `stop` ni `db reset` à la main.
 - Toute garde neuve s'éprouve en la cassant, et la mutation se consigne, datée, dans l'en-tête du
   test ou du script (`TESTING.md` §1.1).
 

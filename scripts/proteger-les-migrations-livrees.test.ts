@@ -10,20 +10,27 @@
  * `origin/main`) et une migration de branche (commise, pas livrée) : c'est la paire qui sépare
  * « livrée » de « existe sur le disque », la distinction qui rend le hook vivable.
  *
- * Éprouvé en cassant le script, le 27/09/2026 (sept mutations, chacune remise en place avant la
- * suivante, 18 tests) :
- * - « livrée » lu comme « existe sur le disque » (le fichier existe, au lieu de `cat-file` sur la
- *   référence) → 4 tombent : les deux retouches pas encore livrées, celle de la copie de travail,
- *   et la migration livrée recréée après suppression ;
+ * Éprouvé en cassant le script et les réglages, le 27/09/2026 (onze mutations, chacune remise en
+ * place avant la suivante, 20 tests) :
+ * - « livrée » lu comme « existe sur le disque » (le fichier existe, au lieu de la référence) →
+ *   4 tombent : les deux retouches pas encore livrées, celle de la copie de travail, et la
+ *   migration livrée recréée après suppression ;
  * - `HEAD` à la place d'`origin/main` → 7 tombent. Celui qui compte est la migration commise sur
  *   la branche, refusée ; les autres tombent parce que le message nomme la mauvaise référence, ou
  *   parce qu'une référence se lit désormais toujours ;
  * - le contrôle depuis la racine du dépôt retiré (le filtre sur le chemin absolu seul) → 1 tombe,
  *   le dossier homonyme de `docs/` ;
  * - `cwd` ignoré (le chemin relatif résolu depuis le répertoire du processus) → 1 tombe ;
- * - la sortie 1 à la place de 2 → 8 tombent, tous ceux qui attendent un refus ;
+ * - la sortie 1 à la place de 2 → 10 tombent, tous ceux qui attendent un refus ;
  * - le repli sur `main` retiré → 1 tombe ;
- * - une création refusée quand aucune référence ne se lit → 1 tombe.
+ * - une création refusée quand aucune référence ne se lit → 1 tombe ;
+ * - `~` non développé → 1 tombe ; le lien symbolique résolu après le filtre seulement → 1 tombe ;
+ * - dans `.claude/settings.json`, `MultiEdit` retiré du matcher → 1 tombe, et le joker
+ *   `mcp__Supabase__*` remis → 1 tombe. Ces deux gardes n'avaient été éprouvées par rien, et la
+ *   règle vaut pour elles comme pour le script (contre-lecture du 27/09/2026).
+ * Ce que rien n'éprouve ici : la lecture par `rev-parse` dans un clone partiel — montrer la
+ * différence demanderait un dépôt d'origine hors d'atteinte, `cat-file` y allant chercher le contenu
+ * manquant — ; et la casse, sur un système de fichiers qui l'ignore.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -132,6 +139,24 @@ describe('le hook refuse une migration livrée', () => {
   test('résout un chemin relatif depuis le cwd de l’appel, pas depuis celui du hook', () => {
     const d = depotType();
     expect(jouer(appel('Edit', LIVREE, d.dir)).code).toBe(2);
+  });
+
+  test('développe ~ avant de comparer', () => {
+    const d = depotType();
+    const r = spawnSync('node', [script], {
+      input: JSON.stringify(appel('Edit', `~/${LIVREE}`)),
+      encoding: 'utf8',
+      env: { ...process.env, HOME: d.dir },
+    });
+    expect(r.status).toBe(2);
+  });
+
+  test('reconnaît un lien symbolique vers le dossier des migrations, avant de filtrer', () => {
+    // Le filtre lisait le chemin tel qu'écrit : `…/lien/<migration>` n'y ressemblait pas.
+    const d = depotType();
+    const lien = path.join(d.dir, 'lien');
+    fs.symlinkSync(path.join(d.dir, 'supabase', 'migrations'), lien, 'dir');
+    expect(jouer(appel('Edit', path.join(lien, path.basename(LIVREE)), d.dir)).code).toBe(2);
   });
 
   test('couvre la copie de travail d’un sous-agent (worktree), qui partage les références', () => {

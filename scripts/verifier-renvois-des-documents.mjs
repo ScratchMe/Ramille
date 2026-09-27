@@ -61,6 +61,14 @@
 //     l'exclusion écarte, et pourquoi elle se déduit de leur `installation.json` ;
 //   - les sous-agents retirés du périmètre, le chemin faux en place → **vert** : c'est le
 //     périmètre qui fait voir l'écart.
+// **Et le soir même, les chemins commençant par un point** : ils étaient tous sautés, donc aucun
+// renvoi vers `.claude/` ni `.github/` n'était vérifié — y compris vers ces consignes (contre-lecture
+// du 27/09/2026). Seuls `./` et `../` le sont encore, et quatre tolérances sont entrées avec la
+// règle. Deux mutations :
+//   - un renvoi faussé vers `.claude/agents/` dans CLAUDE.md → 1 écart, sur cette ligne ;
+//   - le même, avec l'ancienne règle → l'écart n'est **pas** vu, mais le contrôle rougit quand
+//     même : ses quatre tolérances neuves n'ont plus d'emprunteur. Revenir à l'ancienne règle ne
+//     passerait donc pas inaperçu.
 // Et un passage qui doit rester **vert** : les renvois tolérés ci-dessous, dont beaucoup
 // désignent des fichiers qui n'ont jamais eu à exister dans le dépôt. Leur nombre ne s'écrit
 // pas — il s'est périmé le 21/09/2026, à la tolérance suivante.
@@ -109,7 +117,9 @@ const DOSSIERS_RECURSIFS = ['docs/design/design-system'];
  * un script disparu échoue au moment où l'on s'en sert. Ceux des plug-ins restent dehors : ils
  * citent leurs propres chemins, dans leur langue. Ce qu'un plug-in a posé est listé dans son
  * `installation.json` (`skills[].installe`), donc la règle se tient seule : un skill neuf de
- * Ramille est lu sans qu'on l'ajoute ici, un plug-in neuf est écarté sans qu'on l'y retire.
+ * Ramille est lu sans qu'on l'ajoute ici, un plug-in neuf est écarté sans qu'on l'y retire. Le
+ * dossier des sous-agents, lui, est lu en entier : `scripts/installer-un-plugin.mjs` n'y pose jamais
+ * rien, un agent ne s'installant pas d'office — tout ce qui s'y trouve est donc à Ramille.
  */
 function consignesDeRamille() {
   const liste = [];
@@ -164,6 +174,12 @@ const TOLERES = new Map([
     'api/package-lock.json',
     'écrit par `vercel build` et que le dépôt ne veut pas — son absence EST la règle, `VERCEL.md` §1.2 dit de le supprimer après chaque mesure',
   ],
+  // Les quatre qui suivent sont entrés le 27/09/2026, quand les chemins commençant par un point ont
+  // cessé d'être sautés d'office : ils l'étaient tous, justes ou faux.
+  ['.claude/settings.local.json', 'réglages personnels de Claude Code, ignorés par git depuis le 27/09/2026 — CLAUDE.md le cite pour dire qu’il ne doit pas revenir'],
+  ['.vc-config.json', 'écrit par `vercel build` dans chaque `.func` de `.vercel/output/`, ignoré par git — `VERCEL.md` §1.2 dit ce qu’il contient'],
+  ['.github/dependabot.yml', 'le registre d’exploitation le cite pour dire qu’il n’existe pas, et ce que son absence coûte'],
+  ['.vercel/project.json', 'fabriqué pour la mesure hors ligne (`VERCEL.md` §1.2) dans `.vercel/`, ignoré par git — `depot-public.md` le cite pour dire qu’il n’a jamais été commité'],
 ]);
 
 /** Tous les fichiers du dépôt, chemins relatifs à la racine. La règle de comparaison est plus
@@ -248,7 +264,11 @@ for (const document of documentsALire()) {
   lignes.forEach((ligne, index) => {
     for (const trouve of ligne.matchAll(RENVOI)) {
       const renvoi = trouve[1];
-      if (renvoi.startsWith('.')) continue;
+      // Seul un chemin relatif au document est sauté : il ne désigne rien depuis la racine. Jusqu'au
+      // 27/09/2026 tout chemin commençant par un point l'était — donc chaque renvoi vers `.claude/`
+      // ou `.github/`, y compris vers les consignes que ce même script venait de faire entrer dans
+      // son périmètre (contre-lecture du 27/09/2026).
+      if (renvoi.startsWith('./') || renvoi.startsWith('../')) continue;
       comptes += 1;
       if (TOLERES.has(renvoi)) {
         toleresVus.add(renvoi);
