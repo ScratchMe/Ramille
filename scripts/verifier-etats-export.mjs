@@ -140,6 +140,7 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 
 import { mesurerUnChoix } from './mesurer-un-choix.mjs';
+import { echantillons, entre, mesurer, ouiNon, releverParImage, releverPendant } from './relever-par-image.mjs';
 import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
@@ -181,7 +182,7 @@ const navigateur = await chromium.launch(
 async function ouvrir(
   chemin,
   marques = {},
-  { reduire = false, exceptions = null, requetes = null, journal = false, hauteur = 844 } = {}
+  { reduire = false, exceptions = null, requetes = null, journal = false, releve = null, hauteur = 844 } = {}
 ) {
   const page = await navigateur.newPage({ viewport: { width: 390, height: hauteur } });
   // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
@@ -196,6 +197,9 @@ async function ouvrir(
   // Et le journal du focus, pour la même raison : il doit être posé avant le premier script de
   // la page pour ne rien manquer de ce qui bascule pendant une transition (section E).
   if (journal) await page.addInitScript(journaliserLeFocus);
+  // Le relevé image par image, pour la même raison : `releve` vaut `true` pour l'installer, ou le
+  // relevé à lancer avant que React ne monte (section J).
+  if (releve) await page.addInitScript(releverParImage, releve === true ? null : releve);
   await page.addInitScript((entrees) => {
     for (const [cle, valeur] of Object.entries(entrees)) window.localStorage.setItem(cle, valeur);
   }, marques);
@@ -1289,6 +1293,238 @@ function verifierLesArrets(ou, arrets, attendus) {
     });
     await trois.focus();
     verifierLaFleche(ou, 'ArrowRight', await fleche(page, 'ArrowRight'), '4');
+  } catch (erreur) {
+    echecs.push(`${ou} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// ── J. Le mouvement, relevé image par image, avec et sans « réduire les animations » (v1-30) ────
+//
+// Une animation ne se juge pas au repos : une étape qui entre et une étape posée d'emblée finissent
+// au même endroit, donc tout ce qu'on voudrait savoir se lit **pendant** — à chaque image, par
+// `requestAnimationFrame` (`scripts/relever-par-image.mjs`, partagé avec le parcours réel). Et la préférence n'est pas un réglage de plus : sous
+// elle, tout doit être posé dès la première image, et deux des trois mécanismes employés ici ne la
+// lisent pas d'eux-mêmes (`v1-30` §4.2). Chaque garde a donc deux moitiés, et la seconde n'est pas
+// la première à l'envers : l'une prouve que ça bouge, l'autre que rien ne bouge quand on l'a demandé.
+//
+// Quatre moments, tous atteignables sans réseau :
+//
+//  - **la barre d'onglets au démarrage** ne glisse pas — une barre qui arriverait à chaque ouverture
+//    de l'app serait le pire effet du chantier, et elle n'a le droit de glisser qu'en arrivant, au
+//    « Compris » du premier plan (`barreArrive`) : ce moment-là demande des données, et c'est le
+//    parcours réel qui le garde ;
+//  - **l'étape du questionnaire** entre du côté du parcours — de la droite en avançant, de la gauche
+//    en reculant —, et le rail de progression avance au lieu de sauter ;
+//  - **une précision qui s'ouvre** (« Quelle motorisation ? ») fait descendre ce qui est dessous
+//    au lieu de le pousser d'un coup, et ne s'ouvre pas sous les yeux quand l'étape arrive déjà
+//    ouverte, depuis un brouillon ;
+//  - **les onglets** passent l'un à l'autre en fondu. Relevé au **retour** sur un onglet déjà
+//    visité : le premier passage monte l'écran, et un runner lent pourrait avaler le fondu dans ce
+//    montage.
+//
+// MUTATIONS-J
+
+// J1 — la barre ne glisse pas au démarrage, quelle que soit la marque qui la laisse visible.
+for (const marque of [null, 'barre', 'fait']) {
+  const ou = `/plan au démarrage, marque « ${marque ?? '(aucune)'} »`;
+  const page = await ouvrir('/plan', marque === null ? {} : { [PARCOURS]: marque }, {
+    releve: { mesures: { barre: ['barre'] }, duree: 4_000 },
+  });
+  try {
+    const finale = await mesurer(page, 'barre');
+    const vues = (await echantillons(page)).map((e) => e.barre).filter(Boolean);
+    const enChemin = vues.find((v) => v.opacite < 0.99 || Math.abs(v.haut - (finale?.haut ?? v.haut)) > 0.5);
+    if (finale === null || vues.length === 0) {
+      echecs.push(`${ou} : la barre d’onglets n’a pas pu être relevée — la garde ne peut pas conclure.`);
+    } else if (enChemin) {
+      echecs.push(
+        `${ou} : la barre d’onglets bouge à l’ouverture de l’app (opacité ${enChemin.opacite.toFixed(2)},` +
+          ` ${Math.round(enChemin.haut - finale.haut)} px sous sa place) — elle ne doit glisser qu’en` +
+          ' arrivant, au « Compris » du premier plan (`barreArrive`, src/types/mouvement.ts).'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`${ou} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// J2 — l'étape entre du côté du parcours, le rail avance ; sous la préférence, tout est posé.
+for (const reduire of [false, true]) {
+  const ou = `/bilan, changement d’étape${reduire ? ' sous « réduire les animations »' : ''}`;
+  const page = await ouvrir('/bilan', {}, { reduire, releve: true });
+  try {
+    await page.getByRole('radio', { name: 'Oui', exact: true }).click();
+    const railAvant = await mesurer(page, 'rail');
+    const enAvant = await releverPendant(
+      page,
+      { titre: ['titre', QUESTION_SUIVANTE], rail: ['rail'] },
+      () => page.getByRole('button', { name: 'Suivant', exact: true }).click()
+    );
+    const titreFinal = await mesurer(page, 'titre', QUESTION_SUIVANTE);
+    const railApres = await mesurer(page, 'rail');
+    await page.waitForTimeout(REPOS);
+    const enArriere = await releverPendant(page, { titre: ['titre', TITRE_PREMIERE] }, () =>
+      page.getByRole('button', { name: 'Retour', exact: true }).click()
+    );
+    const titreRevenu = await mesurer(page, 'titre', TITRE_PREMIERE);
+
+    if (!titreFinal || !titreRevenu || !railAvant || !railApres || railApres.largeur <= railAvant.largeur + 1) {
+      echecs.push(
+        `${ou} : la mesure ne peut pas se prendre — titre d’arrivée ${titreFinal ? 'trouvé' : 'introuvable'},` +
+          ` titre du retour ${titreRevenu ? 'trouvé' : 'introuvable'}, rail` +
+          ` ${railAvant && railApres ? `de ${railAvant.largeur} à ${railApres.largeur} px` : 'introuvable'}` +
+          ' (`progress-header.tsx` : la piste suit la ligne « Étape N sur M »).'
+      );
+    } else {
+      const titres = enAvant.map((e) => e.titre).filter(Boolean);
+      const retours = enArriere.map((e) => e.titre).filter(Boolean);
+      const translucide = titres.some((v) => v.opacite < 0.95) || retours.some((v) => v.opacite < 0.95);
+      const depuisLaDroite = titres.some((v) => v.gauche > titreFinal.gauche + 0.5);
+      const depuisLaGauche = retours.some((v) => v.gauche < titreRevenu.gauche - 0.5);
+      const decales = [...titres, ...retours].some(
+        (v) => Math.abs(v.gauche - (titres.includes(v) ? titreFinal : titreRevenu).gauche) > 0.5
+      );
+      const railEnChemin = enAvant.some((e) => e.rail && entre(e.rail.largeur, railAvant.largeur, railApres.largeur));
+      if (!reduire) {
+        if (!translucide || !depuisLaDroite || !depuisLaGauche) {
+          echecs.push(
+            `${ou} : l’étape doit entrer en fondu, de la droite en avançant et de la gauche en reculant —` +
+              ` relevé : translucide ${ouiNon(translucide)}, depuis la droite ${ouiNon(depuisLaDroite)},` +
+              ` depuis la gauche ${ouiNon(depuisLaGauche)} (\`styleDEntree\`, src/lib/mouvement.tsx ;` +
+              ' `sensDuPassage`, src/app/bilan/index.tsx).'
+          );
+        }
+        if (!railEnChemin) {
+          echecs.push(
+            `${ou} : le rail de progression saute de ${railAvant.largeur} à ${railApres.largeur} px sans` +
+              ' largeur intermédiaire — il doit avancer (`progress-header.tsx`).'
+          );
+        }
+      } else {
+        if (translucide || decales) {
+          echecs.push(
+            `${ou} : l’étape bouge encore (translucide ${ouiNon(translucide)}, décalée ${ouiNon(decales)})` +
+              ' — sous la préférence, elle est posée dès la première image.'
+          );
+        }
+        if (railEnChemin) {
+          echecs.push(
+            `${ou} : le rail passe par une largeur intermédiaire — une CSS transition de reanimated ne lit` +
+              ' pas la préférence, sa durée doit passer par `dureeSelonLaPreference`.'
+          );
+        }
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`${ou} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// J3 — une précision qui s'ouvre fait descendre ce qui est dessous ; pas au montage, pas sous la
+// préférence.
+const ETAPE_DU_MODE = brouillonDe('commute_mode', {
+  commute_has_regular_trip: true,
+  commute_days_per_week: 5,
+  commute_distance_km: 30,
+});
+for (const reduire of [false, true]) {
+  const ou = `/bilan, la motorisation qui s’ouvre sous « Voiture (seul) »${reduire ? ' sous « réduire les animations »' : ''}`;
+  const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DU_MODE }, { reduire, releve: true });
+  try {
+    const voiture = page.getByRole('radio', { name: 'Voiture (seul)', exact: true });
+    await voiture.waitFor({ state: 'visible', timeout: ATTENTE });
+    const avant = await mesurer(page, 'option', 'Voiture (covoiturage)');
+    const releve = await releverPendant(
+      page,
+      { dessous: ['option', 'Voiture (covoiturage)'], precision: ['option', 'Thermique'] },
+      () => voiture.click()
+    );
+    const apres = await mesurer(page, 'option', 'Voiture (covoiturage)');
+    const ouverte = await mesurer(page, 'option', 'Thermique');
+    if (!avant || !apres || !ouverte || apres.haut <= avant.haut + 1) {
+      echecs.push(
+        `${ou} : la mesure ne peut pas se prendre — « Voiture (covoiturage) »` +
+          ` ${avant && apres ? `de ${Math.round(avant.haut)} à ${Math.round(apres.haut)} px` : 'introuvable'},` +
+          ` « Thermique » ${ouverte ? 'ouverte' : 'introuvable'}.`
+      );
+    } else {
+      const descend = releve.some((e) => e.dessous && entre(e.dessous.haut, avant.haut, apres.haut));
+      const apparait = releve.some((e) => e.precision && e.precision.opacite < 0.95);
+      if (!reduire && (!descend || !apparait)) {
+        echecs.push(
+          `${ou} : la précision doit s’ouvrir, et ce qui est dessous descendre avec elle — relevé :` +
+            ` « Voiture (covoiturage) » en chemin ${ouiNon(descend)}, « Thermique » en fondu` +
+            ` ${ouiNon(apparait)} (\`Depliage\`, src/lib/mouvement.tsx).`
+        );
+      }
+      if (reduire && (descend || apparait)) {
+        echecs.push(
+          `${ou} : la précision s’ouvre encore sous les yeux (en chemin ${ouiNon(descend)}, en fondu` +
+            ` ${ouiNon(apparait)}) — sous la préférence, elle est posée dès la première image.`
+        );
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`${ou} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+{
+  const ou = '/bilan, étape du mode ouverte depuis un brouillon, motorisation déjà ouverte';
+  const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DU_MODE_EN_VOITURE }, {
+    releve: { mesures: { precision: ['option', 'Thermique'] }, duree: 4_000 },
+  });
+  try {
+    const vues = (await echantillons(page)).map((e) => e.precision).filter(Boolean);
+    if (vues.length === 0) {
+      echecs.push(`${ou} : « Thermique » n’a pas pu être relevée — la garde ne peut pas conclure.`);
+    } else if (vues.some((v) => v.opacite < 0.99)) {
+      echecs.push(
+        `${ou} : la précision s’ouvre sous les yeux alors qu’elle était déjà là à l’arrivée — seul ce qui` +
+          ' monte après son écran s’anime (`SansApparitionAuMontage`, src/components/bilan/step-shell.tsx).'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`${ou} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// J4 — les onglets passent l'un à l'autre en fondu ; sous la préférence, d'un coup.
+for (const reduire of [false, true]) {
+  const ou = `/plan ↔ /suivi${reduire ? ' sous « réduire les animations »' : ''}`;
+  const page = await ouvrir('/plan', {}, { reduire, releve: true });
+  try {
+    await page.getByRole('tab', { name: /^Suivi/ }).click();
+    await page.waitForTimeout(REPOS);
+    const releve = await releverPendant(page, { scenes: ['scenes'] }, () =>
+      page.getByRole('tab', { name: /^Plan/ }).click()
+    );
+    const actif = await page.evaluate(() =>
+      (document.querySelector('[role="tab"][aria-selected="true"]')?.innerText ?? '').replace(/\s+/g, ' ').trim()
+    );
+    const enFondu = releve.filter((e) => e.scenes.enFondu > 0).length;
+    if (!actif.startsWith('Plan')) {
+      echecs.push(`${ou} : le retour sur « Plan » n’a pas eu lieu (onglet actif « ${actif} ») — la garde ne peut pas conclure.`);
+    } else if (!reduire && enFondu === 0) {
+      echecs.push(
+        `${ou} : aucune image de fondu entre les deux onglets — ils doivent passer l’un à l’autre en` +
+          ' fondu (`animationDesOnglets`, src/app/(tabs)/_layout.tsx).'
+      );
+    } else if (reduire && enFondu > 0) {
+      echecs.push(
+        `${ou} : ${enFondu} image(s) de fondu entre les deux onglets — la barre embarquée ne lit pas la` +
+          ' préférence, `animationDesOnglets` doit rendre « none ».'
+      );
+    }
   } catch (erreur) {
     echecs.push(`${ou} : ${String(erreur).slice(0, 180)}`);
   } finally {

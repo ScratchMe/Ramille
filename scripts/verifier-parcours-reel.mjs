@@ -172,6 +172,25 @@
 // donc son libellé figé le marque déjà, et la barre le nommerait sans la fréquence. C'est
 // `loisirsSontLeResiduel` et ses tests qui gardent le cas où il ne domine pas.
 //
+// ── Le mouvement, là où il demande des données (27/09/2026, `v1-30`) ──────────────────────────
+//
+// Quatre transitions ne s'atteignent qu'avec un vrai plan, donc ne se gardent qu'ici ; ce qui se
+// voit sans réseau est en section J de `verifier-etats-export.mjs`, et les deux relèvent image par
+// image avec le même outil (`relever-par-image.mjs`) :
+//
+//   - **la barre qui arrive au « Compris »** du premier plan glisse depuis le bas ;
+//   - **la réponse au point** : la carte change de hauteur, et ce qui est dessous suit au lieu de
+//     sauter (`HauteurSuivie`) ;
+//   - **la feuille « Ton plan va être recalculé »**, la seule qui s'ouvre sur web sans adresse
+//     rattachée — par un re-bilan, puisqu'elle demande une action engagée : le voile se fond sans
+//     bouger pendant que la feuille monte, et Échap la fait redescendre au lieu de l'effacer ;
+//   - puis **les deux mêmes feuilles sous « réduire les animations »** (préférence émulée, page
+//     rechargée : elle n'est lue qu'au démarrage), posées dès la première image et parties d'un
+//     coup — et **tout le second profil sous la préférence**, où la barre arrive posée. Le second
+//     profil y gagne une chose de plus : le parcours entier est joué une fois sans animation.
+//
+// MUTATIONS-PARCOURS
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -182,6 +201,7 @@ import process from 'node:process';
 import { chromium } from 'playwright';
 
 import { mesurerUnChoix } from './mesurer-un-choix.mjs';
+import { echantillons, entre, mesurer, ouiNon, releverParImage, releverPendant } from './relever-par-image.mjs';
 import { servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
@@ -259,8 +279,14 @@ const journal = [];
  * stockage, et « premier » veut dire **premier sur cet appareil** (C5.7). Rejouer dans le même
  * contexte éprouverait un appareil qui a déjà tout vu, c'est-à-dire pas ce qu'on vient voir.
  */
-async function nouvelOnglet() {
-  const contexte = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+async function nouvelOnglet({ reduire = false } = {}) {
+  const contexte = await navigateur.newContext({
+    viewport: { width: 420, height: 900 },
+    locale: 'fr-FR',
+    reducedMotion: reduire ? 'reduce' : 'no-preference',
+  });
+  // Le relevé image par image, posé dans chaque document avant son premier script.
+  await contexte.addInitScript(releverParImage, null);
   const onglet = await contexte.newPage();
   onglet.on('pageerror', (erreur) => exceptions.push(String(erreur)));
   onglet.on('console', (message) => {
@@ -640,12 +666,29 @@ try {
 
   etape('plan — « Compris » fait venir la barre');
   assurer(!(await barreVisible()), 'la barre d’onglets est là avant « Compris » (C5.7)');
-  await page.getByText('Compris', { exact: true }).click();
+  // **Et elle arrive en glissant** (27/09/2026, `v1-30` §5.5) : c'était l'écart n° 3 de `v1-17` §9,
+  // levé. Au moins une image la montre en chemin — translucide ou sous sa place —, et elle finit
+  // posée. Le contraire, une barre qui glisserait à chaque ouverture, est gardé par la section J de
+  // `verifier-etats-export.mjs`.
+  const arrivee = await releverPendant(
+    page,
+    { barre: ['barre'] },
+    () => page.getByText('Compris', { exact: true }).click(),
+    1_200
+  );
   await page.waitForFunction(
     () => [...document.querySelectorAll('*')].some((e) => e.textContent === 'Suivi' && e.getClientRects().length > 0),
     undefined,
     { timeout: ATTENTE }
   );
+  const barrePosee = await mesurer(page, 'barre');
+  const vuesDeLaBarre = arrivee.map((e) => e.barre).filter(Boolean);
+  assurer(barrePosee && vuesDeLaBarre.length > 0, 'la barre d’onglets n’a pas pu être relevée pendant son arrivée');
+  assurer(
+    vuesDeLaBarre.some((v) => v.opacite < 0.99 || v.haut > barrePosee.haut + 0.5),
+    'la barre d’onglets surgit au « Compris » au lieu d’arriver en glissant (`arrivee`, src/app/(tabs)/_layout.tsx)'
+  );
+  assurer(barrePosee.opacite >= 0.99, `la barre d’onglets reste translucide après son arrivée (${barrePosee.opacite})`);
 
   // ── 6. L'engagement sur la première piste ───────────────────────────────────────────────────
   etape('engagement');
@@ -716,7 +759,28 @@ try {
   );
   await page.reload({ waitUntil: 'domcontentloaded' });
   await attendreTexte(point.committed_question);
-  await bouton('Oui');
+  // **La carte change de hauteur, et le cap qui est dessous suit** (27/09/2026, `v1-30` §5.7) : la
+  // question et ses boutons laissent place à la réplique, et `HauteurSuivie` fait passer la carte
+  // d'une hauteur à l'autre au lieu de faire sauter le reste de l'écran. Le bouton est amené dans la
+  // fenêtre **avant** le relevé : un défilement pendant le geste déplacerait tout, et se lirait
+  // comme un mouvement.
+  const oui = page.getByRole('button', { name: 'Oui', exact: true }).first();
+  await oui.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400);
+  const CAP = 'Ton cap pour cette saison'; // la cadence de tous les profils (`season`)
+  const avantLaReponse = await mesurer(page, 'texte', CAP);
+  const reponse = await releverPendant(page, { cap: ['texte', CAP] }, () => oui.click());
+  const apresLaReponse = await mesurer(page, 'texte', CAP);
+  assurer(
+    avantLaReponse && apresLaReponse && Math.abs(apresLaReponse.haut - avantLaReponse.haut) > 1,
+    `« ${CAP} » introuvable ou immobile quand le point est répondu (${avantLaReponse?.haut} →` +
+      ` ${apresLaReponse?.haut}) : la mesure ne peut pas conclure`
+  );
+  assurer(
+    reponse.some((e) => e.cap && entre(e.cap.haut, avantLaReponse.haut, apresLaReponse.haut)),
+    `le cap saute de ${Math.round(avantLaReponse.haut)} à ${Math.round(apresLaReponse.haut)} px quand le point est` +
+      ' répondu, sans position intermédiaire — la carte doit changer de hauteur en glissant (`HauteurSuivie`)'
+  );
   // Répondu, la carte range ses deux boutons ; le pied daté vient avec le rafraîchissement suivant,
   // et ce qui compte se lit en base.
   await page.getByRole('button', { name: 'Oui', exact: true }).waitFor({ state: 'hidden', timeout: ATTENTE });
@@ -814,6 +878,74 @@ try {
   }
   assurer(canalEnBase === 'none', `la préférence choisie à la barre d’espace n’a pas atteint la base : ${canalEnBase}`);
 
+  // ── 8 ter. La feuille du re-bilan, avec et sans « réduire les animations » ───────────────────
+  //
+  // **Le voile se fond sur place, la feuille monte, Échap la fait redescendre** (27/09/2026, `v1-30`
+  // §5.4). Le `Modal` animait tout d'un bloc : le voile gris montait du bas avec la feuille, la
+  // fermeture était instantanée sur web, et la feuille glissait même sous la préférence. C'est la
+  // seule feuille qui s'ouvre sur web sans adresse rattachée, et elle demande une action engagée :
+  // on y arrive par un re-bilan, sans le soumettre — Échap la referme, et rien n'est écrit.
+  etape('re-bilan — la feuille « Ton plan va être recalculé »');
+  const FEUILLE = 'Ton plan va être recalculé';
+  const jusquAVoirMonBilan = async () => {
+    await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    const fin = page.getByRole('button', { name: 'Voir mon bilan', exact: true });
+    for (let i = 0; i < 12 && !(await fin.isVisible().catch(() => false)); i++) {
+      const avant = await page.getByText(/^Étape \d+ sur \d+$/).first().innerText();
+      await bouton('Suivant');
+      await page.waitForFunction(
+        (a) => ![...document.querySelectorAll('div')].some((d) => d.children.length === 0 && d.innerText.trim() === a),
+        avant,
+        { timeout: ATTENTE }
+      );
+    }
+    assurer(await fin.isVisible(), '« Voir mon bilan » n’est jamais apparu au bout du re-bilan');
+    return fin;
+  };
+
+  let voirMonBilan = await jusquAVoirMonBilan();
+  const ouverture = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => voirMonBilan.click());
+  const feuillePosee = await mesurer(page, 'feuille', FEUILLE);
+  assurer(feuillePosee?.voile && feuillePosee.haut !== null, `la feuille « ${FEUILLE} » est introuvable une fois ouverte`);
+  const vuesALOuverture = ouverture.map((e) => e.feuille).filter((f) => f?.voile && f.haut !== null);
+  const voileQuiBouge = vuesALOuverture.find((f) => Math.abs(f.voile.haut) > 0.5);
+  assurer(
+    !voileQuiBouge,
+    `le voile de la feuille bouge (${Math.round(voileQuiBouge?.voile.haut)} px sous le haut de l’écran) : il doit` +
+      ' assombrir l’écran sur place, et seule la feuille monte (`FeuilleDuBas`, `animationType="none"`)'
+  );
+  const voileEnFondu = vuesALOuverture.some((f) => f.voile.opacite > 0.02 && f.voile.opacite < 0.98);
+  const feuilleEnChemin = vuesALOuverture.some((f) => f.haut > feuillePosee.haut + 1);
+  assurer(
+    voileEnFondu && feuilleEnChemin,
+    `la feuille s’ouvre d’un coup — voile en fondu ${ouiNon(voileEnFondu)}, feuille en chemin ${ouiNon(feuilleEnChemin)}`
+  );
+  const fermeture = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => page.keyboard.press('Escape'));
+  assurer((await mesurer(page, 'feuille', FEUILLE)) === null, 'Échap ne referme pas la feuille');
+  assurer(
+    fermeture.some((e) => e.feuille?.haut != null && e.feuille.haut > feuillePosee.haut + 1),
+    'la feuille disparaît d’un coup à Échap : elle doit redescendre avant de se démonter (`fermer`, `FeuilleDuBas`)'
+  );
+
+  etape('re-bilan — la même feuille sous « réduire les animations »');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  voirMonBilan = await jusquAVoirMonBilan();
+  const ouvertureReduite = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => voirMonBilan.click());
+  const posee = await mesurer(page, 'feuille', FEUILLE);
+  assurer(posee?.voile && posee.haut !== null, `la feuille « ${FEUILLE} » est introuvable une fois ouverte, sous la préférence`);
+  const bouge = (f) => f?.haut != null && (Math.abs(f.haut - posee.haut) > 0.5 || (f.voile && f.voile.opacite < 0.99));
+  assurer(
+    !ouvertureReduite.some((e) => bouge(e.feuille)),
+    'sous « réduire les animations », la feuille s’ouvre en bougeant : elle doit être posée dès la première image'
+  );
+  const fermetureReduite = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => page.keyboard.press('Escape'));
+  assurer((await mesurer(page, 'feuille', FEUILLE)) === null, 'Échap ne referme pas la feuille, sous la préférence');
+  assurer(
+    !fermetureReduite.some((e) => bouge(e.feuille)),
+    'sous « réduire les animations », la feuille redescend à Échap : elle doit partir d’un coup'
+  );
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
   // ── 9. La suppression du compte, et rien derrière ──────────────────────────────────────────
   etape('suppression du compte');
   await rpc('delete_my_account', jeton);
@@ -829,9 +961,13 @@ try {
   // plan à au moins une action —, donc le seul où la barre d'onglets doit arriver autrement : au
   // premier affichage du plan, avec la carte « Plan et Suivi ». Le premier profil ne l'exerce pas,
   // et rien d'autre ne le faisait.
+  //
+  // **Et il tourne sous « réduire les animations »** (27/09/2026, `v1-30`) : sa barre arrive sans
+  // « Compris », donc c'est ici qu'on voit si elle arrive posée. Le parcours entier y gagne un
+  // passage sans animation.
   etape('cycliste — onboarding et questionnaire');
   await page.context().close();
-  page = await nouvelOnglet();
+  page = await nouvelOnglet({ reduire: true });
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
   await boutonDuPager('Découvrir mon impact', 0);
@@ -937,6 +1073,9 @@ try {
     if (frame === page.mainFrame()) visiteesCycliste.push(frame.url());
   };
   page.on('framenavigated', noterCycliste);
+  // Le relevé de la barre part avant le geste : elle arrive quand le plan a chargé, et c'est son
+  // arrivée qu'on veut voir, posée dès la première image.
+  await page.evaluate(() => window.__releve.demarrer({ barre: ['barre'] }, 30_000));
   await bouton('Voir ce que je peux faire');
   await page.waitForURL(/\/plan/, { timeout: ATTENTE }).catch(() => {});
   page.off('framenavigated', noterCycliste);
@@ -1005,6 +1144,18 @@ try {
     { timeout: ATTENTE }
   );
   await attendreTexte('Deux endroits, pas plus.');
+  await page.waitForTimeout(600);
+  const barreDuCycliste = await mesurer(page, 'barre');
+  const arriveeDuCycliste = (await echantillons(page)).map((e) => e.barre);
+  assurer(
+    barreDuCycliste && arriveeDuCycliste.length > 0 && arriveeDuCycliste[0] === null,
+    'l’arrivée de la barre du cycliste n’a pas pu être relevée (elle doit être masquée au départ du relevé)'
+  );
+  assurer(
+    !arriveeDuCycliste.some((v) => v && (v.opacite < 0.99 || Math.abs(v.haut - barreDuCycliste.haut) > 0.5)),
+    'sous « réduire les animations », la barre d’onglets arrive en glissant : elle doit être posée dès la' +
+      ' première image (`arrivee`, src/app/(tabs)/_layout.tsx)'
+  );
 
   // **Le suivi du cycliste nomme le résiduel comme la restitution, et dit qu'il est sous le
   // repère** (arbitrages du 27/09/2026, `v1-29` §6.3). Les dérivations sont testées par Jest ; ce

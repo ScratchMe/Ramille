@@ -109,21 +109,25 @@ export default function TabsLayout() {
   // d'avant est inconnu et la barre se pose, sans quoi elle glisserait à chaque ouverture. Masquée,
   // elle attend en bas et transparente, pour que sa première image visible soit le début du
   // mouvement et non la fin.
+  //
+  // **Sous « réduire les animations », la barre ne lit pas cette valeur du tout** (voir
+  // `tabBarStyle`). La première forme la remettait à 1 dans cet effet, qui part après le rendu, donc
+  // parfois après la première image : la barre y était transparente et sous sa place. Relevé par le
+  // parcours réel le 27/09/2026, sur le cycliste, dont la barre arrive sous la préférence — au
+  // premier de deux passages, le second passant. Une image, mais une image où l'écran a rétréci sur
+  // une bande vide.
   const animationsReduites = useReducedMotion();
   const [arrivee] = useState(() => new Animated.Value(1));
   const barrePrecedente = useRef<boolean | null>(null);
   useEffect(() => {
     const avant = barrePrecedente.current;
     barrePrecedente.current = barreVisible;
+    if (animationsReduites) return;
     if (!barreVisible) {
       arrivee.setValue(0);
       return;
     }
     if (!barreArrive(avant, barreVisible)) return;
-    if (animationsReduites) {
-      arrivee.setValue(1);
-      return;
-    }
     // Une arrivée part toujours d'en bas, quelle que soit la valeur laissée par l'état d'avant.
     arrivee.setValue(0);
     Animated.timing(arrivee, {
@@ -211,15 +215,17 @@ export default function TabsLayout() {
           // `BottomTabBar`, donc dépendre de `@react-navigation/bottom-tabs` (`v1-17` §9) ; la barre
           // accepte une valeur animée dans ce style même, et c'est ici qu'elle la reçoit.
           display: barreVisible ? 'flex' : 'none',
-          opacity: arrivee,
-          transform: [
-            {
-              translateY: arrivee.interpolate({
-                inputRange: [0, 1],
-                outputRange: [ControlHeight.tabBar + insets.bottom, 0],
-              }),
-            },
-          ],
+          ...(!animationsReduites && {
+            opacity: arrivee,
+            transform: [
+              {
+                translateY: arrivee.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [ControlHeight.tabBar + insets.bottom, 0],
+                }),
+              },
+            ],
+          }),
         },
       }}
     >

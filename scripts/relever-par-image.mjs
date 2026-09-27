@@ -1,0 +1,139 @@
+// Relever une animation image par image — pour les deux gardes qui ouvrent vraiment les pages :
+// `verifier-etats-export.mjs` (section J, ce qui se voit sans réseau) et `verifier-parcours-reel.mjs`
+// (la feuille, l'arrivée de la barre, le point répondu, qui demandent des données). Écrit le
+// 27/09/2026 avec les transitions (`docs/architecture/v1-30-les-transitions.md`), et écrit une fois
+// pour les deux, comme `mesurer-un-choix.mjs` : deux copies d'une mesure divergent, et on ne sait
+// plus laquelle a raison.
+//
+// **Une animation ne se juge pas au repos.** Une étape qui entre et une étape posée d'emblée
+// finissent au même endroit ; tout ce qu'on voudrait savoir se lit pendant, à chaque image
+// (`requestAnimationFrame`). Et « en chemin » se lit sur une valeur **strictement intermédiaire**,
+// jamais sur une durée : un runner lent perd des images, il n'en invente pas.
+
+/**
+ * Posé avant le premier script de la page (`page.addInitScript(releverParImage, depuisLeDebut)`),
+ * donc **autonome** : Playwright en transmet le texte, pas les modules qu'il importerait.
+ *
+ * - `window.__releve.demarrer(mesures, duree)` relève chaque mesure nommée à chaque image, jusqu'à
+ *   la fin de la durée — `mesures` associe une clé à `[nom, argument]` ;
+ * - `window.__releve.mesurer(nom, argument)` en prend une seule, au repos ;
+ * - `depuisLeDebut` (`{ mesures, duree }`) lance le relevé avant que React ne monte : la seule façon
+ *   de voir la première image d'un écran.
+ *
+ * Une cible introuvable rend `null`, et c'est à l'assertion de dire qu'elle ne peut pas conclure.
+ */
+export function releverParImage(depuisLeDebut) {
+  const normaliser = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+  // L'opacité qu'on voit est le produit de celles des ancêtres : l'animation vit sur une enveloppe,
+  // jamais sur le texte qu'on vise.
+  const opacite = (n) => {
+    let o = 1;
+    for (let e = n; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity);
+    return o;
+  };
+  const visible = (e) => e.getClientRects().length > 0 && (e.checkVisibility?.({ visibilityProperty: true }) ?? true);
+  const MESURES = {
+    barre: () => {
+      const n = document.querySelector('[role="tablist"]');
+      const r = n?.getBoundingClientRect();
+      return r && r.height > 0 ? { opacite: opacite(n), haut: r.top } : null;
+    },
+    titre: (texte) => {
+      const n = [...document.querySelectorAll('h1, [role="heading"]')].find(
+        (t) => visible(t) && normaliser(t.innerText) === texte
+      );
+      return n ? { opacite: opacite(n), gauche: n.getBoundingClientRect().left } : null;
+    },
+    // Le plus profond des éléments visibles dont c'est tout le texte : ni un ancêtre, qui porterait
+    // aussi ses voisins, ni un écran resté monté sous l'écran courant, dans la pile.
+    texte: (texte) => {
+      const n = [...document.querySelectorAll('body *')].find(
+        (e) =>
+          visible(e) &&
+          normaliser(e.innerText) === texte &&
+          ![...e.children].some((c) => normaliser(c.innerText) === texte)
+      );
+      return n ? { opacite: opacite(n), haut: n.getBoundingClientRect().top } : null;
+    },
+    option: (nom) => {
+      const n = [...document.querySelectorAll('[role="radio"]')].find(
+        (o) => (o.getAttribute('aria-label') ?? normaliser(o.innerText)) === nom
+      );
+      return n ? { opacite: opacite(n), haut: n.getBoundingClientRect().top } : null;
+    },
+    // Le rail n'a ni rôle ni nom : c'est l'enfant de la piste qui suit la ligne « Étape N sur M »
+    // (`src/components/bilan/progress-header.tsx`).
+    rail: () => {
+      const etape = [...document.querySelectorAll('div')].find(
+        (d) => d.children.length === 0 && /^Étape \d+ sur \d+$/.test(normaliser(d.innerText))
+      );
+      const rail = etape?.parentElement?.nextElementSibling?.firstElementChild;
+      return rail ? { largeur: rail.getBoundingClientRect().width } : null;
+    },
+    // Une scène d'onglet se reconnaît à sa taille ; on compte celles qui sont en plein fondu, ni
+    // transparentes ni opaques.
+    scenes: () => ({
+      enFondu: [...document.querySelectorAll('div')].filter((d) => {
+        const o = Number(getComputedStyle(d).opacity);
+        return o > 0.02 && o < 0.98 && d.getBoundingClientRect().height > 400;
+      }).length,
+    }),
+    // Une feuille du bas (`src/components/feuille-du-bas.tsx`), par le nom de son dialogue : son
+    // voile — le seul élément sans enfant qui couvre toute la fenêtre — et le haut de la feuille,
+    // qui porte l'en-tête du même nom.
+    feuille: (titre) => {
+      const dialogue = [...document.querySelectorAll('[role="dialog"]')].find(
+        (d) => d.getAttribute('aria-label') === titre
+      );
+      if (!dialogue) return null;
+      const voile = [...dialogue.querySelectorAll('div')].find((d) => {
+        const r = d.getBoundingClientRect();
+        return d.children.length === 0 && r.width >= innerWidth - 1 && r.height >= innerHeight - 1;
+      });
+      const entete = [...dialogue.querySelectorAll('h1, h2, h3, [role="heading"]')].find(
+        (h) => normaliser(h.innerText) === titre
+      );
+      return {
+        voile: voile ? { opacite: opacite(voile), haut: voile.getBoundingClientRect().top } : null,
+        haut: entete?.parentElement ? entete.parentElement.getBoundingClientRect().top : null,
+      };
+    },
+  };
+  const releve = (mesures) =>
+    Object.fromEntries(Object.entries(mesures).map(([cle, [nom, argument]]) => [cle, MESURES[nom](argument)]));
+  window.__releve = {
+    echantillons: [],
+    mesurer: (nom, argument) => MESURES[nom](argument),
+    demarrer(mesures, duree) {
+      const echantillons = [];
+      window.__releve.echantillons = echantillons;
+      const debut = performance.now();
+      const image = () => {
+        echantillons.push({ t: Math.round(performance.now() - debut), ...releve(mesures) });
+        if (performance.now() - debut < duree) requestAnimationFrame(image);
+      };
+      requestAnimationFrame(image);
+    },
+  };
+  if (depuisLeDebut) window.__releve.demarrer(depuisLeDebut.mesures, depuisLeDebut.duree);
+}
+
+/** Lance un relevé, joue le geste, attend la fin, et rend les échantillons. */
+export async function releverPendant(page, mesures, geste, duree = 800) {
+  await page.evaluate(({ mesures, duree }) => window.__releve.demarrer(mesures, duree), { mesures, duree });
+  await geste();
+  await page.waitForTimeout(duree + 200);
+  return page.evaluate(() => window.__releve.echantillons);
+}
+
+/** Les échantillons d'un relevé lancé plus tôt — par `depuisLeDebut`, ou avant une navigation. */
+export const echantillons = (page) => page.evaluate(() => window.__releve.echantillons);
+
+/** Une mesure au repos. */
+export const mesurer = (page, nom, argument) =>
+  page.evaluate(([n, a]) => window.__releve.mesurer(n, a), [nom, argument]);
+
+/** Strictement entre deux valeurs, à un demi-pixel près : ni au départ, ni à l'arrivée. */
+export const entre = (valeur, a, b) => valeur > Math.min(a, b) + 0.5 && valeur < Math.max(a, b) - 0.5;
+
+export const ouiNon = (vrai) => (vrai === true ? 'oui' : 'non');
