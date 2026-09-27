@@ -13,7 +13,7 @@
 //
 // Ce script prend le chemin nominal, et lui seul : onboarding → questionnaire → soumission →
 // restitution → plan → engagement → un point généré et répondu → suivi → « Toi » → suppression du
-// compte.
+// compte. Le second profil finit, depuis le 27/09/2026, par le retrait de ses deux bilans (C4.7).
 // Il joue le **profil de `docs/recette/premier-parcours-web.md`**, dont les chiffres ont été mesurés
 // (4 231 kg, huit pistes dans un ordre précis, un cap de 384 kg) — sur la base construite depuis
 // `supabase/migrations/`, ces chiffres ne dépendent d'aucune synchronisation de facteurs. Après
@@ -1100,6 +1100,72 @@ try {
   await page.getByText('Compris', { exact: true }).first().click();
   await attendreTexte('Deux endroits, pas plus.');
 
+  // ── 11. Retirer un bilan, puis le seul qui reste (C4.7, `v1-22`) ─────────────────────────
+  //
+  // **Ce profil a exactement ce qu'il faut** : deux bilans, dont le plus récent — en voiture — porte
+  // un plan à actions, et le plus ancien — à vélo — un plan à zéro. Retirer le premier éprouve la
+  // reconstruction du plan sur le précédent (D2) ; retirer le second, le seul qui reste, éprouve le
+  // retour à la racine et l'effacement de la marque locale (D3). Les deux textes de confirmation
+  // attendus ne sont pas les mêmes, et c'est l'appel de `confirmationDuRetrait` qui est gardé ici — la
+  // dérivation a ses tests dans Jest. **Ce que l'étape ne joue pas** : le troisième cas (retirer un
+  // bilan qui ne porte pas le plan), tenu par `34_retirer_un_bilan.test.sql` et par Jest.
+  etape('cycliste — retirer le bilan en voiture : le plan repart du précédent');
+  const bilansDuCycliste = await lire('assessments?select=id,status&order=submitted_at.desc', sobre.jeton);
+  assurer(
+    bilansDuCycliste.length === 2 && bilansDuCycliste.every((b) => b.status === 'completed'),
+    `deux bilans complétés attendus avant le retrait : ${JSON.stringify(bilansDuCycliste)}`
+  );
+  const [bilanVoiture, bilanVelo] = bilansDuCycliste;
+  assurer(
+    (await lire('plan_actions?select=rank', sobre.jeton)).length > 0,
+    'le plan du bilan en voiture ne porte aucune action : le retrait ne prouverait rien'
+  );
+  await page.goto(`${base}/suivi/bilan?id=${bilanVoiture.id}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await attendreTexte('Estimation annuelle, tous déplacements');
+  await bouton('Ce bilan ne me ressemble pas');
+  // Sans la ponctuation double : `ThemedText` y pose une espace insécable au rendu.
+  await attendreTexte('ton plan repartira de ton bilan précédent.');
+  await bouton('Retirer ce bilan');
+  await attendreTexte('Ce bilan a été retiré.');
+  assurer(
+    !(await page.getByText('Estimation annuelle, tous déplacements').first().isVisible().catch(() => false)),
+    'la restitution d’un bilan retiré montre encore son chiffre'
+  );
+  const [voitureRelue] = await lire(`assessments?select=status&id=eq.${bilanVoiture.id}`, sobre.jeton);
+  assurer(voitureRelue?.status === 'withdrawn', `le bilan retiré se lit « ${voitureRelue?.status} » en base`);
+  const pistesApresRetrait = await lire('plan_actions?select=rank', sobre.jeton);
+  assurer(
+    pistesApresRetrait.length === 0,
+    `${pistesApresRetrait.length} piste(s) après le retrait : le plan n’est pas reparti du bilan à vélo, à zéro action`
+  );
+  // **L'adresse le dit encore après un rechargement** : c'est la lecture par identifiant qui parle
+  // là, et plus l'état posé par le geste — la seule des deux que l'adresse partagée ou un favori
+  // atteignent.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await attendreTexte('Ce bilan a été retiré.');
+
+  etape('cycliste — retirer son seul bilan : la racine, et la marque locale effacée');
+  const MARQUE_DE_BILAN = 'traceverte.a_un_bilan.v1';
+  assurer(
+    (await page.evaluate((cle) => localStorage.getItem(cle), MARQUE_DE_BILAN)) === '1',
+    'la marque « cet appareil a vu un bilan » n’est pas posée avant le retrait : son effacement ne prouverait rien'
+  );
+  await page.goto(`${base}/suivi/bilan?id=${bilanVelo.id}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await attendreTexte('Estimation annuelle, tous déplacements');
+  await bouton('Ce bilan ne me ressemble pas');
+  await attendreTexte('tu repartiras d’un nouveau bilan.');
+  await bouton('Retirer ce bilan');
+  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  assurer(
+    (await page.evaluate((cle) => localStorage.getItem(cle), MARQUE_DE_BILAN)) === null,
+    'la marque locale survit au retrait du seul bilan : une réouverture hors ligne enverrait au plan (C4.5)'
+  );
+  const bilansRetires = await lire('assessments?select=status', sobre.jeton);
+  assurer(
+    bilansRetires.length === 2 && bilansRetires.every((b) => b.status === 'withdrawn'),
+    `les deux bilans devraient être retirés, et rester en base : ${JSON.stringify(bilansRetires)}`
+  );
+
   await rpc('delete_my_account', sobre.jeton);
 
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
@@ -1108,7 +1174,8 @@ try {
       `l'ordre attendu, engagement (les jours au clavier), point répondu, suivi, « Toi » et sa ligne de ` +
       `canal, compte supprimé — puis le cycliste, ${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, ` +
       `barre d'onglets venue sans « Compris », puis son nouveau bilan en voiture où « Ton premier plan » ` +
-      `passe devant la carte des deux lieux. Chaque choix rendu répond à son groupe nommé.`
+      `passe devant la carte des deux lieux, puis ses deux bilans retirés — le plan reparti du précédent, ` +
+      `puis la racine et la marque locale effacée. Chaque choix rendu répond à son groupe nommé.`
   );
 } catch (erreur) {
   try {
