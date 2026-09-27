@@ -188,7 +188,7 @@ n'était dans aucune fiche :
 | [`v1-23`](v1-23-point-quantitatif.md) | C4.1, le point quantitatif | **Fermé pour la V1 le 27/09/2026**, avec sa condition de réouverture : la boucle n'a tourné sur personne, et le gain principal annoncé est celui qu'il ne faut pas prendre |
 | [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **La phrase décidée le 10/09 est livrée le 19/09 ; le poste est sorti du lot 4 le 27/09/2026** : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions, donc il devient un increment à part (§5) |
 | [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | À instruire, avec cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
-| [`v1-26`](v1-26-meme-saison-un-an-apres.md) | C4.8, la même saison un an après | **Moitié livrée par C6.3**. Le reste recouvre le moment anniversaire : une dérivation pour deux surfaces, ou deux chiffres qui se contrediront |
+| [`v1-26`](v1-26-meme-saison-un-an-apres.md) | C4.8, la même saison un an après | **Moitié livrée par C6.3 ; le reste décidé le 27/09/2026** — une seule dérivation pour le suivi et la page d'année, la même saison sinon le bilan précédent, toujours nommé — et construit avec C6.5. Le reste recouvre le moment anniversaire : une dérivation pour deux surfaces, ou deux chiffres qui se contrediront |
 
 **Et la dette technique a son relevé depuis le 19/09/2026** :
 [`v1-27-dette-technique.md`](v1-27-dette-technique.md), écrit après la relecture des six jours du
