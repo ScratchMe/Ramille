@@ -1160,7 +1160,8 @@ Six points à connaître :
   cause `retrait` (qui saute la garde d'idempotence — sans quoi le cron ne rebâtirait jamais) ;
   l'engagement est reposé si le nouveau plan le propose encore, archivé en `retrait` sinon, **et rien
   ne l'annonce après coup** (D2). C'est la confirmation qui le dit **avant**, au conditionnel, avec la
-  phrase du re-bilan (`phraseDeLEngagementRecalcule`, lue par `lireLEngagementEnCours`).
+  phrase du re-bilan (`phraseDeLEngagementRecalcule`, lue par `lireLEngagementEnCours`) — et, pour le
+  seul bilan, sans conditionnel, puisque l'action y est archivée à coup sûr (`phraseDeLActionQuiPart`).
 - **La confirmation dépend de la place du bilan** (`placeDuBilan` : `seul`, `dernier`, `ancien`,
   `src/types/retrait-du-bilan.ts`) : « ton plan repartira de ton bilan précédent » serait faux d'un
   bilan qui ne porte pas le plan. Quand la place n'a pas pu être lue, le lien ne se rend pas.

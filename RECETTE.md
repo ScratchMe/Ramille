@@ -254,6 +254,13 @@ retouche du `.md`**, puisque c'est lui la source. Sa base garde la séance du 18
 constats vivent en `v1-13` §14 — tant qu'on n'a pas touché « Tout effacer » : l'en-tête de la page
 le dit.
 
+**Et « Tout effacer » n'efface rien** (relevé le 27/09/2026 en régénérant les deux artefacts) : il
+passe par `window.confirm()`, que la visionneuse des artefacts refuse toujours. C'est ce qui protège
+aujourd'hui la séance du 18/09 dans sa base — mais l'en-tête dit « Effacer avant de rejouer », ce
+qui est impossible en l'état. Le réparer est un changement de conception (une confirmation dans la
+page, la forme de « Supprimer mon compte »), à faire le jour où l'on rejoue cette feuille ; d'ici là,
+ne pas compter dessus.
+
 **La seconde feuille, écrite le 21/09/2026, change de principe** : elle ne rejoue pas un parcours,
 elle ne joue que **ce qui est neuf depuis la séance précédente**, en posant qu'il n'y a pas de
 régression sur le reste. Le pari est que les gardes automatiques couvrent le chemin nominal — le

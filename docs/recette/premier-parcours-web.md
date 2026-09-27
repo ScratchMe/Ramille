@@ -230,7 +230,7 @@ plus la même chose — c'est la porte elle-même qui est en recette.
 | 07.1 | Descendre en bas du plan | **« Ton plan tient compte de ton contexte : zone périurbaine, accès limité aux transports en commun, un véhicule dans le foyer, un jour de télétravail possible. Ce qui ne tient pas avec ces réponses n'est pas proposé. »** — les quatre réponses, dans cet ordre | |
 | 07.2 | La relire | Elle ne contient **aucun chiffre** et ne nomme **aucune action écartée**. Un « tu perds telle action » serait un écart grave | |
 | 07.3 | Toucher **« Modifier ces réponses »** | L'écran **« Ton contexte de mobilité »** s'ouvre, avec les quatre mêmes questions que la dernière étape du questionnaire et les réponses déjà sélectionnées. **Retomber dans le questionnaire serait l'écart que ce chantier ferme** | |
-| 07.4 | Lire le pied de l'écran, sans rien toucher | « Enregistrer met ton plan à jour ; ton bilan n'est pas refait. Si l'action que tu suis n'y tient plus, tu en choisiras une autre. » Et **« Enregistrer » est inactif** tant qu'aucune réponse n'a bougé | |
+| 07.4 | Lire le pied de l'écran, sans rien toucher | « Enregistrer met ton plan à jour ; ton bilan n'est pas refait. Si ton nouveau plan ne propose plus l'action que tu suis, elle ne sera plus engagée. » (depuis le 27/09/2026 ; avant, « … tu en choisiras une autre », faux quand le plan se vide) Et **« Enregistrer » est inactif** tant qu'aucune réponse n'a bougé | |
 | 07.5 | Toucher **« Retour »** | On retrouve le plan, inchangé | |
 | 07.6 | Rouvrir l'écran, passer l'accès aux transports en commun sur **Inexistant**, puis **« Enregistrer »** | Retour au plan, et **le plan s'est réduit** : « Passer deux trajets sur cinq en train » a disparu — c'était la seule piste de ce profil qui supposait des transports en commun (le métro et le tram ne lui sont jamais proposés en périurbain). La première carte devient **« Faire ce trajet à deux au moins un jour sur deux »**, **− 480 kg CO₂e**, et le lien dit **« Voir toutes les pistes · 9 »** (mesuré le 25/09/2026 en régénérant le plan de ce profil dans une transaction annulée) | |
 | 07.7 | Ouvrir l'onglet **Suivi** | **Aucune entrée nouvelle.** Un second bilan dans l'historique serait le défaut que C6.4 ferme — corriger son contexte n'est pas refaire un bilan | |
@@ -291,7 +291,8 @@ plan, avec la carte « Plan et Suivi ». C'est le chemin le moins évident du ch
 
 ## Où atterrissent les constats
 
-Dans la **§13 bis** de [`v1-13`](../architecture/v1-13-audit-et-chantiers.md), sur le modèle des
+Dans la **§14** de [`v1-13`](../architecture/v1-13-audit-et-chantiers.md) — où la séance du
+18/09/2026 a atterri ; la feuille disait « §13 bis » avant qu'elle ne soit jouée —, sur le modèle des
 §12 et §13 : ce que la séance a trouvé, une issue par constat, et l'accrochage à une vague. Les
 lignes de la §11.W qui auront été jouées le diront en tête de leur case, comme celles de la §11 le
 font pour la séance du 14/09/2026.

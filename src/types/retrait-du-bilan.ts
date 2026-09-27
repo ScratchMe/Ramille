@@ -76,17 +76,22 @@ export type ConfirmationDuRetrait = {
  *     commencé — « tu repartiras d'un nouveau bilan » est vrai des deux, là où « tu reviendras à
  *     l'accueil » serait faux du second.
  *
- * **Et, dans le cas `dernier` seulement, le sort de l'action engagée** (décidé le 27/09/2026 par la
+ * **Et, dans le cas `dernier`, le sort de l'action engagée** (décidé le 27/09/2026 par la
  * personne qui pilote) : le serveur la repose si le plan reconstruit la propose encore et l'archive
  * sinon. La phrase est **celle du re-bilan**, au conditionnel (`phraseDeLEngagementRecalcule`,
  * `src/types/rebilan.ts`), parce que c'est la même mécanique — `generate_plan_cycle_for_user` — et
  * la seule forme vraie des deux côtés. Ce n'est pas l'annonce écartée par D2, qui venait *après* le
  * geste : c'est dire *avant* un geste irréversible ce qu'il emporte. Rien pour `ancien`, dont le plan
- * ne bouge pas. Rien non plus pour `seul`, **et ce n'est plus parce que le retrait n'en décide
- * rien** : depuis la décision du 27/09/2026 (question 12a), retirer son seul bilan archive l'action
- * engagée (raison `retrait`). Le corps le dit sans la nommer — « tu repartiras d'un nouveau bilan » —
- * et la nommer en plus est une question de produit ouverte, pas un oubli. `engagement` est requis et
- * sans valeur par défaut : un appelant qui l'oublierait taierait la phrase en silence.
+ * ne bouge pas.
+ *
+ * **Et pour `seul`, la phrase est certaine, pas conditionnelle** (décidé le 27/09/2026) : retirer son
+ * seul bilan archive l'action engagée (raison `retrait`, question 12a), donc elle part à coup sûr, et
+ * la dire au conditionnel serait laisser espérer ce qui n'arrivera pas (`phraseDeLActionQuiPart`).
+ * C'est la mitigation du risque accepté en 12a : qui retire par erreur apprend **avant** qu'il perd
+ * son engagement.
+ *
+ * `engagement` est requis et sans valeur par défaut : un appelant qui l'oublierait taierait la phrase
+ * en silence.
  *
  * Voix produit, jamais celle de Ramille : c'est la mécanique d'un geste qu'on explique, comme la
  * feuille du nouveau bilan (`FeuilleNouveauBilan`).
@@ -105,11 +110,28 @@ export function confirmationDuRetrait(
   return {
     titre: 'Retirer ce bilan ?',
     corps,
-    engagement: place === 'dernier' && engagement !== null ? phraseDeLEngagementRecalcule(engagement) : null,
+    engagement:
+      engagement === null
+        ? null
+        : place === 'dernier'
+          ? phraseDeLEngagementRecalcule(engagement)
+          : place === 'seul'
+            ? phraseDeLActionQuiPart(engagement)
+            : null,
     confirmer: 'Retirer ce bilan',
     enCours: 'Retrait…',
     annuler: 'Annuler',
   };
+}
+
+/**
+ * Ce que le retrait du **seul** bilan fait à l'action engagée : elle ne sera plus engagée, et c'est
+ * certain (voir `confirmationDuRetrait`). Le moment choisi n'est pas nommé : il part avec l'action.
+ * Le point final du libellé part avant la composition, comme dans la phrase du re-bilan.
+ */
+export function phraseDeLActionQuiPart(engagement: EngagementEnCours): string {
+  const action = engagement.action.replace(/\.$/, '');
+  return `L’action que tu suis — ${action} — ne sera plus engagée.`;
 }
 
 /**

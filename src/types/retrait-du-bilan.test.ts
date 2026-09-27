@@ -17,6 +17,10 @@
 //   - la phrase rendue quelle que soit la place → 1 (« ne dit rien … le plan ne bouge pas … le seul
 //     bilan ») ;
 //   - la phrase jamais rendue → 1 (« dit le sort de l'action engagée … »).
+//
+// Et deux le soir même, sur l'action nommée au retrait du seul bilan (28 tests) :
+//   - `seul` rend `null` → 1 (« nomme l'action qui part … ») ;
+//   - `seul` rend la phrase du re-bilan, au conditionnel → 1 (le même).
 import {
   apresLeRetrait,
   BILAN_RETIRE,
@@ -26,6 +30,7 @@ import {
   issueDuRetrait,
   lectureDuStatut,
   LIEN_DU_RETRAIT,
+  phraseDeLActionQuiPart,
   placeDuBilan,
   RETRAIT_ECHOUE,
   type PlaceDuBilan,
@@ -106,13 +111,28 @@ describe('la confirmation', () => {
     );
   });
 
-  it('ne dit rien de l’engagement quand le plan ne bouge pas, ni quand c’est le seul bilan', () => {
+  it('ne dit rien de l’engagement quand le plan ne bouge pas', () => {
     expect(confirmationDuRetrait('ancien', ENGAGEMENT).engagement).toBeNull();
-    expect(confirmationDuRetrait('seul', ENGAGEMENT).engagement).toBeNull();
+  });
+
+  // Décidé le 27/09/2026 : retirer son seul bilan archive l'action (12a), et la confirmation le dit
+  // avant — sans conditionnel, puisque c'est certain.
+  it('nomme l’action qui part quand c’est le seul bilan, et sans conditionnel', () => {
+    const phrase = confirmationDuRetrait('seul', ENGAGEMENT).engagement;
+    expect(phrase).toBe('L’action que tu suis — Faire un trajet sur cinq à vélo — ne sera plus engagée.');
+    expect(phrase).not.toMatch(/ si /);
+    expect(phrase).toBe(phraseDeLActionQuiPart(ENGAGEMENT));
+  });
+
+  it('retire le point final du libellé de l’action qui part', () => {
+    expect(phraseDeLActionQuiPart({ action: 'Action à préciser.', intention: null })).toBe(
+      'L’action que tu suis — Action à préciser — ne sera plus engagée.'
+    );
   });
 
   it('ne dit rien de l’engagement quand aucune action n’est engagée', () => {
     expect(confirmationDuRetrait('dernier', null).engagement).toBeNull();
+    expect(confirmationDuRetrait('seul', null).engagement).toBeNull();
   });
 
   it('garde les mêmes boutons et le même titre dans les trois cas', () => {

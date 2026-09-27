@@ -113,7 +113,11 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // confidentialité le dit »). La page écrivait que la session « et toutes les données associées »
 // partent, et c'est toujours vrai de ses données ; ce qui reste est un +1 dans un compteur, sans
 // identifiant ni date plus fine que la semaine (`20260927230611`). Le taire aurait laissé croire à
-// une suppression sans aucune trace, sur la page même qui promet de dire ce qu'on garde.
+// une suppression sans aucune trace, sur la page même qui promet de dire ce qu'on garde. **Et les
+// sauvegardes** (décision du 27/09/2026) : l'archive hebdomadaire chiffrée garde une copie de la base
+// jusqu'à ce que la règle de cycle de vie du bucket l'efface (`docs/exploitation/sauvegarde.md`
+// §3 bis) ; les taire rendait « il ne reste que des compteurs » faux pendant 90 jours. Le chiffre de
+// la page est celui de cette règle, et il se vérifie au tableau de bord Cloudflare, pas d'ici.
 const UPDATED_AT = '27 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -362,7 +366,8 @@ const SECTIONS: LegalSection[] = [
             'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours et ' +
             'repères de parcours est supprimé.',
-          'Après une suppression, il ne reste que des compteurs, sans aucun identifiant. Quand une session anonyme ' +
+          'Après une suppression, il ne reste que des compteurs, sans aucun identifiant — et, le temps qu’elles ' +
+            'expirent, nos sauvegardes chiffrées, effacées d’elles-mêmes au bout de 90 jours. Quand une session anonyme ' +
             'est supprimée automatiquement, nous ajoutons un à un compteur qui ne retient que sa semaine d’arrivée, jusqu’où elle ' +
             'était allée (bilan, action choisie, point répondu), combien de semaines elle avait duré et où en étaient ' +
             'ses rappels ; quand tu supprimes ton compte, un au compteur du mois. Ces compteurs ne portent ni ' +
