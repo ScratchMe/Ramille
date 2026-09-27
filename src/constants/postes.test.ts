@@ -6,6 +6,9 @@ import {
   POSTE_SUBJECT,
   estLeResiduelDesSortiesRares,
   formeInserable,
+  loisirsSontLeResiduel,
+  nomDuPoste,
+  posteDeLHistorique,
   posteLabel,
 } from '@/constants/postes';
 
@@ -130,5 +133,101 @@ describe('estLeResiduelDesSortiesRares', () => {
   it('ne lit le marqueur que sur les sorties', () => {
     expect(estLeResiduelDesSortiesRares('travel', 'Voyages (occasionnels)')).toBe(false);
     expect(estLeResiduelDesSortiesRares(null, 'Loisirs du week-end (occasionnels)')).toBe(false);
+  });
+});
+
+/**
+ * **Le résiduel des sorties rares s'appelle « loisirs occasionnels », partout où il est nommé**
+ * (arbitrage du 27/09/2026, `v1-29` §6.3), dans chacun des quatre registres — et seulement lui.
+ */
+describe('nomDuPoste', () => {
+  it.each([
+    ['label', 'Loisirs occasionnels', 'Loisirs du week-end'],
+    ['sujet', 'Tes loisirs occasionnels', 'Tes loisirs du week-end'],
+    ['enPhrase', 'tes loisirs occasionnels', 'tes loisirs du week-end'],
+    ['insere', 'tes loisirs occasionnels', 'tes sorties du week-end'],
+  ] as const)('%s : « %s » pour le résiduel, « %s » sinon', (registre, residuel, declare) => {
+    expect(nomDuPoste('leisure', registre, true)).toBe(residuel);
+    expect(nomDuPoste('leisure', registre, false)).toBe(declare);
+  });
+
+  it('ne touche jamais aux deux autres postes', () => {
+    expect(nomDuPoste('commute', 'label', true)).toBe('Trajet domicile-travail');
+    expect(nomDuPoste('travel', 'insere', true)).toBe('tes voyages');
+  });
+
+  it('laisse son repli à l’appelant pour un poste inconnu', () => {
+    expect(nomDuPoste('inconnu', 'label', true)).toBeUndefined();
+    expect(nomDuPoste(null, 'label', true)).toBeUndefined();
+  });
+});
+
+/**
+ * **La fréquence déclarée dit toujours si les loisirs sont le résiduel ; les libellés, pas
+ * toujours** : ils ne le marquent que quand il domine ou porte la boucle mensuelle.
+ */
+describe('loisirsSontLeResiduel', () => {
+  const RESIDUEL = 'Loisirs du week-end (occasionnels)';
+
+  it('lit la fréquence quand elle est là, même quand aucun libellé ne marque le résiduel', () => {
+    // « Rarement » et un vol : les voyages dominent et portent la boucle mensuelle.
+    expect(
+      loisirsSontLeResiduel({
+        leisure_frequency: 'rarely',
+        dominant_poste: 'travel',
+        dominant_poste_label: 'Voyages longue distance (Avion moyen-courrier)',
+        extras_poste_label: 'Voyages longue distance (Avion moyen-courrier)',
+      })
+    ).toBe(true);
+    expect(
+      loisirsSontLeResiduel({
+        leisure_frequency: 'weekly',
+        dominant_poste: 'leisure',
+        dominant_poste_label: RESIDUEL,
+      })
+    ).toBe(false);
+  });
+
+  it('retombe sur les libellés quand la fréquence n’a pas été lue', () => {
+    expect(loisirsSontLeResiduel({ dominant_poste: 'leisure', dominant_poste_label: RESIDUEL })).toBe(true);
+    expect(
+      loisirsSontLeResiduel({
+        leisure_frequency: null,
+        dominant_poste: 'commute',
+        dominant_poste_label: 'Trajet domicile-travail (Trottinette)',
+        extras_poste_label: RESIDUEL,
+      })
+    ).toBe(true);
+    expect(
+      loisirsSontLeResiduel({
+        dominant_poste: 'commute',
+        dominant_poste_label: 'Trajet domicile-travail (Voiture thermique)',
+        extras_poste_label: 'Loisirs du week-end (Voiture thermique)',
+      })
+    ).toBe(false);
+  });
+});
+
+/**
+ * **Sous une entrée du suivi, le résiduel s'appelle « Loisirs occasionnels »** : le poste principal
+ * porte toujours le marqueur sur son libellé figé. Les autres postes gardent leur étiquette nue,
+ * sans le mode que porte le libellé.
+ */
+describe('posteDeLHistorique', () => {
+  it('nomme le résiduel « Loisirs occasionnels »', () => {
+    expect(posteDeLHistorique('leisure', 'Loisirs du week-end (occasionnels)')).toBe('Loisirs occasionnels');
+  });
+
+  it('garde l’étiquette nue des postes déclarés', () => {
+    expect(posteDeLHistorique('leisure', 'Loisirs du week-end (Voiture thermique)')).toBe(
+      'Loisirs du week-end'
+    );
+    expect(posteDeLHistorique('commute', 'Trajet domicile-travail (Vélo)')).toBe(
+      'Trajet domicile-travail'
+    );
+  });
+
+  it('retombe sur le libellé figé pour un poste inconnu', () => {
+    expect(posteDeLHistorique('inconnu', 'Autre chose')).toBe('Autre chose');
   });
 });

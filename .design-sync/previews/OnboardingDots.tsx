@@ -8,9 +8,9 @@ export const Progression = () => (
   </div>
 );
 
-/** Sur le fond teinté du troisième écran, les points inactifs changent de neutre. */
+/** Sur le fond teinté du troisième écran : le même neutre, qui y tient encore 3:1. */
 export const SurTeinte = () => (
   <div style={{ background: 'var(--color-background-tinted)', padding: 20, borderRadius: 18 }}>
-    <OnboardingDots total={4} activeIndex={2} onTint />
+    <OnboardingDots total={4} activeIndex={2} />
   </div>
 );

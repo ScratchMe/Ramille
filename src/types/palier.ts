@@ -83,6 +83,13 @@ export function sousLeRepere2050(totalKg: number, target2050Kg: number): boolean
 }
 
 /**
+ * La première phrase de la restitution sous le repère, et la ligne d'horizon du suivi au même
+ * endroit : les deux écrans le disent **mot pour mot** (arbitrage du 27/09/2026, `v1-29` §6.3),
+ * donc la phrase n'est écrite qu'ici.
+ */
+export const DEJA_SOUS_LE_REPERE_2050 = 'Tu es déjà sous le repère transport 2050.';
+
+/**
  * Le prochain palier, ou `null` quand il n'y a rien à proposer.
  *
  * Un seul cas rend `null` : **aucun cap disponible** (pas de cycle de plan, ou cap nul). Sans
@@ -151,6 +158,25 @@ export function nextPalier(
  */
 export function showsTarget2050(totalKg: number, franceAverageKg: number): boolean {
   return totalKg <= franceAverageKg;
+}
+
+/**
+ * La ligne d'horizon 2050 du suivi, ou `null` au-dessus de la moyenne (C2.7, point 7).
+ *
+ * **Sous le repère, elle dit qu'on y est** (arbitrage du 27/09/2026, `v1-29` §6.3). La phrase
+ * unique, « à partir de là, le repère 2050 se joue palier après palier », se lisait comme si le
+ * repère était encore devant pour quelqu'un que la restitution du même bilan venait de dire
+ * « déjà sous le repère ». Même comparaison que la restitution (`sousLeRepere2050`, égalité
+ * comprise), donc les deux écrans tombent du même côté de la même borne.
+ */
+export function ligneDHorizon2050(
+  totalKg: number,
+  franceAverageKg: number,
+  target2050Kg: number
+): string | null {
+  if (!showsTarget2050(totalKg, franceAverageKg)) return null;
+  if (sousLeRepere2050(totalKg, target2050Kg)) return DEJA_SOUS_LE_REPERE_2050;
+  return 'Tu es sous la moyenne française : à partir de là, le repère 2050 se joue palier après palier.';
 }
 
 /**

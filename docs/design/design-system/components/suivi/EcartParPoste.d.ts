@@ -9,5 +9,7 @@ export interface EcartDePoste {
 /** L'écart entre deux bilans, poste par poste : contour = avant, plein = maintenant, échelle commune. */
 export interface EcartParPosteProps {
   ecarts: EcartDePoste[];
+  /** Les loisirs du bilan courant sont le résiduel des sorties rares (« rarement ») : ils s'appellent « Loisirs occasionnels ». Faux par défaut. */
+  loisirsOccasionnels?: boolean;
 }
 export declare function EcartParPoste(props: EcartParPosteProps): JSX.Element;

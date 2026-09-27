@@ -1,4 +1,10 @@
-import { nextPalier, palierEstDerriere, showsTarget2050 } from './palier';
+import {
+  DEJA_SOUS_LE_REPERE_2050,
+  ligneDHorizon2050,
+  nextPalier,
+  palierEstDerriere,
+  showsTarget2050,
+} from './palier';
 
 // 0,6 t — le repère transport 2050, cf. `carbon-reference.ts`. Écrit en dur ici pour que le
 // test dise ce qu'il éprouve plutôt que de recopier la dérivation.
@@ -129,6 +135,28 @@ describe('showsTarget2050', () => {
 
   it('range la moyenne elle-même du côté visible', () => {
     expect(showsTarget2050(MOYENNE, MOYENNE)).toBe(true);
+  });
+});
+
+/**
+ * **Sous le repère, la ligne d'horizon du suivi dit qu'on y est** (arbitrage du 27/09/2026,
+ * `v1-29` §6.3) — mot pour mot la première phrase de la restitution, et du même côté de la même
+ * borne, égalité comprise.
+ */
+describe('ligneDHorizon2050', () => {
+  it('se tait au-dessus de la moyenne', () => {
+    expect(ligneDHorizon2050(4380, MOYENNE, CIBLE)).toBeNull();
+  });
+
+  it('situe le repère entre la moyenne et lui', () => {
+    expect(ligneDHorizon2050(1330, MOYENNE, CIBLE)).toBe(
+      'Tu es sous la moyenne française : à partir de là, le repère 2050 se joue palier après palier.'
+    );
+  });
+
+  it('dit « déjà sous le repère » en dessous, égalité comprise', () => {
+    expect(ligneDHorizon2050(260, MOYENNE, CIBLE)).toBe('Tu es déjà sous le repère transport 2050.');
+    expect(ligneDHorizon2050(CIBLE, MOYENNE, CIBLE)).toBe(DEJA_SOUS_LE_REPERE_2050);
   });
 });
 

@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { BarreContour } from '@/components/suivi/barre-contour';
 import { ThemedText } from '@/components/themed-text';
-import { POSTE_LABEL } from '@/constants/postes';
+import { POSTE_LABEL, nomDuPoste } from '@/constants/postes';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatTonnesNu } from '@/lib/format';
@@ -29,7 +29,15 @@ const HAUTEUR = 10;
  * Les barres sont masquées au lecteur d'écran : la ligne au-dessus porte déjà les deux valeurs, et
  * la légende dit ce que chaque forme veut dire — et, depuis le 24/09/2026, quel poste porte l'accent.
  */
-export function EcartParPoste({ ecarts }: { ecarts: EcartDePoste[] }) {
+export function EcartParPoste({
+  ecarts,
+  loisirsOccasionnels,
+}: {
+  ecarts: EcartDePoste[];
+  /** Les loisirs du bilan courant sont le résiduel des sorties rares : ils s'appellent alors
+   *  « loisirs occasionnels » (`nomDuPoste`, arbitrage du 27/09/2026). */
+  loisirsOccasionnels: boolean;
+}) {
   const theme = useTheme();
 
   // Échelle commune : le plus grand des six nombres. Le plancher à 1 évite la division par zéro d'un
@@ -43,7 +51,7 @@ export function EcartParPoste({ ecarts }: { ecarts: EcartDePoste[] }) {
         <View key={ecart.poste} style={styles.poste}>
           <View style={styles.entete}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.libelle}>
-              {POSTE_LABEL[ecart.poste]}
+              {nomDuPoste(ecart.poste, 'label', loisirsOccasionnels) ?? POSTE_LABEL[ecart.poste]}
             </ThemedText>
             <ThemedText type="small" weight={600} style={styles.chiffres}>
               {formatTonnesNu(ecart.precedentKg)} → {formatTonnesNu(ecart.courantKg)}
@@ -79,7 +87,7 @@ export function EcartParPoste({ ecarts }: { ecarts: EcartDePoste[] }) {
           sans dire quel poste le portait — une information qui n'existait qu'en couleur, sous des
           barres masquées aux lecteurs d'écran. `legendeDeLEcart` la compose, avec ses tests. */}
       <ThemedText themeColor="textTertiary" style={styles.legende}>
-        {legendeDeLEcart(ecarts)}
+        {legendeDeLEcart(ecarts, loisirsOccasionnels)}
       </ThemedText>
     </View>
   );

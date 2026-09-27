@@ -12,6 +12,7 @@
 //
 // Les calculs purs qui exploitent ces données (écart entre deux bilans, dédoublonnage par
 // jour, ancienneté) vivent dans `src/types/suivi.ts`, sans dépendance au client Supabase.
+import { loisirsSontLeResiduel } from '@/constants/postes';
 import { supabase } from '@/lib/supabase';
 import { type BilanAnswers, STATUT_DE_BILAN } from '@/types/bilan';
 import { genreDeReponse, STATUT_DU_POINT } from '@/types/checkin';
@@ -42,8 +43,10 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
     .from('assessments')
     // Les trois postes viennent avec le total depuis C2.7 : le suivi ne montrait que le total, où un
     // effort tenu sur le trajet quotidien disparaît derrière un vol. Non nullables en base.
+    // La fréquence des loisirs depuis le 27/09/2026, pour nommer le résiduel des sorties rares : les
+    // libellés figés ne le marquent pas quand les voyages pèsent plus (`loisirsSontLeResiduel`).
     .select(
-      'id, submitted_at, assessment_results(total_co2_kg_year, dominant_poste, dominant_poste_label, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year)'
+      'id, submitted_at, assessment_results(total_co2_kg_year, dominant_poste, dominant_poste_label, extras_poste_label, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year), assessment_answers(leisure_frequency)'
     )
     .eq('status', STATUT_DE_BILAN.complete)
     .order('submitted_at', { ascending: true });
@@ -58,6 +61,9 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
       ? assessment.assessment_results[0]
       : assessment.assessment_results;
     if (!results || !assessment.submitted_at) return [];
+    const reponses = Array.isArray(assessment.assessment_answers)
+      ? assessment.assessment_answers[0]
+      : assessment.assessment_answers;
     return [
       {
         assessmentId: assessment.id,
@@ -70,6 +76,10 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
           leisure: results.leisure_co2_kg_year,
           travel: results.travel_co2_kg_year,
         },
+        loisirsOccasionnels: loisirsSontLeResiduel({
+          ...results,
+          leisure_frequency: reponses?.leisure_frequency ?? null,
+        }),
       },
     ];
   });
