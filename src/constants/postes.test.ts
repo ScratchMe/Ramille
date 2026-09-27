@@ -164,7 +164,9 @@ describe('nomDuPoste', () => {
 
 /**
  * **La fréquence déclarée dit toujours si les loisirs sont le résiduel ; les libellés, pas
- * toujours** : ils ne le marquent que quand il domine ou porte la boucle mensuelle.
+ * toujours** : ils ne le marquent que quand il domine ou pèse le plus des deux postes hors trajet
+ * (`extras_poste_label`) — et ce dernier ne dit plus quelle boucle mensuelle la personne reçoit :
+ * qui sort rarement est interrogé sur ses voyages depuis le 27/09/2026.
  */
 describe('loisirsSontLeResiduel', () => {
   const RESIDUEL = 'Loisirs du week-end (occasionnels)';
