@@ -696,14 +696,16 @@ describe('les tables de réponses chiffrées', () => {
   // valeur hors bornes ne serait refusée qu'à la soumission, neuf étapes trop tard et en
   // anglais. Les bornes sont recopiées ici parce que rien ne peut les lire depuis le SQL — même
   // limite que `distanceBracketMidpointKm`, et même raison de l'épingler.
-  // Les deux valeurs sont celles du `check` de `assessments.status` (20260823094800), recopiées
-  // ici à la main comme les bornes du dessous : une constante qui dérive de son `check` ne se voit
-  // ni au typecheck (la colonne est un `text`) ni en CI — elle se lit « Ton bilan n'est pas encore
-  // fait », en production. Éprouvé le 20/09/2026 : `'completed'` → `'complete'` fait tomber ce
-  // test — et, depuis le même jour, le comparateur des miroirs (`TESTING.md` §2.7), qui lui rend
-  // deux écarts parce qu'il voit aussi la valeur que la base accepte et que plus personne n'écrit.
+  // Les trois valeurs sont celles du `check` de `assessments.status` (20260823094800, puis
+  // `withdrawn` depuis 20260927230411, C4.7), recopiées ici à la main comme les bornes du dessous :
+  // une constante qui dérive de son `check` ne se voit ni au typecheck (la colonne est un `text`) ni
+  // en CI — elle se lit « Ton bilan n'est pas encore fait », en production. Éprouvé le 20/09/2026 :
+  // `'completed'` → `'complete'` fait tomber ce test — et, depuis le même jour, le comparateur des
+  // miroirs (`TESTING.md` §2.7), qui lui rend deux écarts parce qu'il voit aussi la valeur que la base
+  // accepte et que plus personne n'écrit. C'est ce comparateur-là qui a exigé `retire` le jour où la
+  // base a accepté `withdrawn` : ce test-ci, lui, aurait continué de dire vrai sur deux valeurs.
   it('les statuts de bilan sont ceux du check du schéma', () => {
-    expect(Object.values(STATUT_DE_BILAN)).toEqual(['in_progress', 'completed']);
+    expect(Object.values(STATUT_DE_BILAN)).toEqual(['in_progress', 'completed', 'withdrawn']);
   });
 
   it('la part du second mode tient dans ses bornes strictes', () => {

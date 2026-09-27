@@ -6,7 +6,7 @@
 // n'as rien ». Avec elle, « ton plan t'attend » devient honnête, et le mur du démarrage hors ligne
 // tombe (`v1-13` §12.5).
 //
-// Deux propriétés la rendent sûre, et elles vivent ailleurs qu'ici :
+// Trois propriétés la rendent sûre, et elles se décident ailleurs qu'ici :
 //
 //   * **elle n'est consultée qu'en repli**, jamais quand le serveur a répondu. C'est
 //     `destinationDuDemarrage` (`src/types/demarrage.ts`) qui le garantit, et un test l'épingle ;
@@ -14,8 +14,13 @@
 //     que `src/lib/compte.ts` balaie par le préfixe historique `traceverte.` depuis ses **deux**
 //     sorties — d'où le nom de la clé ci-dessous, qui n'est pas négociable. Une marque qui
 //     survivrait promettrait un plan à quelqu'un qui vient de tout effacer.
+//   * **ni au retrait du dernier bilan valide** (C4.7, D3 de `v1-22`) : là, elle s'efface **seule**,
+//     par `effacerLaMarqueDeBilan`, que la restitution appelle quand le serveur répond qu'il ne
+//     reste aucun bilan valide (`apresLeRetrait`, `src/types/retrait-du-bilan.ts`) — le compte
+//     reste, et avec lui le brouillon et les marques d'interface, qu'un balayage par préfixe
+//     emporterait pour rien.
 //
-// Ce second point resserre le risque que `v1-15` §9 décrit : les deux gestes qui changent le
+// Le deuxième point resserre le risque que `v1-15` §9 décrit : les deux gestes qui changent le
 // propriétaire de l'appareil effacent la marque, donc il ne reste qu'un appareil **restauré depuis
 // une sauvegarde** pour la rendre fausse — `allowBackup` étant absent d'`app.json`, donc vrai par
 // défaut. Et son coût y est chiffré : un visiteur réellement neuf, hors ligne, verrait l'écran
@@ -54,6 +59,32 @@ export async function aDejaVuUnBilan(): Promise<boolean> {
 export async function marquerQuIlYAUnBilan(): Promise<void> {
   try {
     await AsyncStorage.setItem(MARQUE_KEY, '1');
+  } catch {
+    // best-effort, cf. ci-dessus.
+  }
+}
+
+/**
+ * Efface la marque — quand il ne reste plus aucun bilan valide sur le compte (C4.7, D3 de `v1-22`).
+ *
+ * **Sans elle, retirer son seul bilan laissait une promesse fausse sur l'appareil** : la racine route
+ * en ligne sur le serveur, qui ne trouve plus de bilan complété, mais une réouverture **hors ligne**
+ * lit la marque et envoie au plan (`destinationDuDemarrage`, C4.5) — un plan qui n'a plus de bilan.
+ *
+ * **Elle seule, et pas le balayage de `src/lib/compte.ts`** : le compte n'est pas quitté, donc le
+ * brouillon d'un questionnaire commencé, la préférence de rappel ou l'étape du premier parcours
+ * restent vrais. **Et l'étape du premier parcours, qui reste, est ce qui empêche le prochain
+ * questionnaire soumis ici de passer pour un « premier »** (décision du 27/09/2026 sur le retrait du
+ * seul bilan) : la barre d'onglets (C5.7) interroge les deux marques (`ouvreUnPremierParcours`), et
+ * quelqu'un qui connaît déjà les deux lieux ne les revoit pas présentés.
+ *
+ * Best-effort, comme la pose : le retrait a déjà eu lieu côté serveur, et un stockage indisponible ne
+ * doit pas le faire passer pour un échec. Au pire, une réouverture hors ligne montre l'écran d'erreur
+ * réseau du plan, qui n'affirme rien.
+ */
+export async function effacerLaMarqueDeBilan(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(MARQUE_KEY);
   } catch {
     // best-effort, cf. ci-dessus.
   }

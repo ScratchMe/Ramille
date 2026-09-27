@@ -9,7 +9,8 @@
 > `changement` ; **D3** on peut retirer son seul bilan, et l'on retombe sur `/onboarding`, la marque
 > locale s'effaçant au même geste ; **D4** un lien « Ce bilan ne me ressemble pas » sur la
 > restitution du bilan concerné, avec une confirmation, et l'adresse d'un bilan retiré dit qu'il l'a
-> été. Le chantier (§6) peut commencer.
+> été. Le chantier (§6) peut commencer. **Livré le même jour** : ce que la livraison a appris est
+> en §7.
 
 ## 1. D'où ça vient
 
@@ -148,3 +149,68 @@ la garde sur la lecture par identifiant.
 **Effort : moyen.** Aucune décision produit n'y est bloquante au sens où elle empêcherait de
 commencer — D2 et D4 peuvent se trancher en cours de route —, mais D1 et D3 changent le schéma et
 doivent être prises avant la migration.
+
+## 7. Ce que la livraison a appris (27/09/2026)
+
+Livré le jour des décisions, dans `20260927230411_retirer_un_bilan.sql` et
+`34_retirer_un_bilan.test.sql`, avec l'écran et le parcours réel. Ce que cette page ne savait pas :
+
+- **Les lectures de `completed` étaient sept côté serveur, pas six** —
+  `refuser_le_retour_en_arriere_du_bilan` s'était ajoutée le 20/09 — et le client en porte une de
+  plus (`lireLesBilansValides`). **Et deux lectures ne devenaient pas justes toutes seules**, pas une :
+  la restitution par identifiant (§2, dont la ligne a bougé et qui embarque désormais le statut) et
+  `analytics.user_segments`, qui prenait le dernier bilan par `submitted_at is not null` — un bilan
+  retiré garde sa date, donc la personne aurait été segmentée sur le bilan qu'elle venait de désavouer.
+- **D2 : la raison d'archivage est `retrait`, neuve, et non `rebilan`**, que §4 proposait de
+  réutiliser : `rebilan` est annoncée par l'encart orphelin, ce que D2 exclut. La cause `retrait`
+  saute la garde d'idempotence ; sans elle, le plan resterait bâti sur un bilan que plus rien ne lit.
+- **La garde des transitions devait être étendue, sinon elle aurait refusé le retrait lui-même**
+  (`RM005`, `20260920190000`). Un retrait direct par le client est refusé (`RM007`), un bilan retiré
+  ne revient pas (`RM005`), et le RPC refuse un bilan en cours ou déjà retiré (`RM006`).
+- **Retirer son seul bilan laisse le cycle en place, et archive son action engagée** (décision du
+  27/09/2026, raison `retrait`). La première version laissait l'action engagée sur un cycle qu'elle
+  disait « inerte », et il ne l'était pas : `lireLEngagementEnCours` le lit, donc la feuille
+  « Nouveau bilan » nommait l'action, et la reconduction de saison la faisait revenir, étiquetée
+  « · RECONDUIT », devant quelqu'un qui repartait d'un nouveau bilan (contre-lecture du 27/09). Le
+  retrait **annule aussi les rappels en attente** : un e-mail étalé sur quatre jours serait parti vers
+  `/plan?rappel=1`, qui, sans bilan ni marque locale, propose de retrouver un compte. Relevé par le
+  chantier, fermé à l'intégration ; gardé des deux côtés depuis — annulé pour le seul bilan, laissé
+  en attente pour qui en garde un.
+- **Et la reconduction avait un défaut à elle, que C4.7 a rendu visible** : elle prenait la dernière
+  action engagée de **n'importe quel** cycle antérieur, donc une saison passée sans engagement
+  faisait revenir l'action d'avant. Elle ne lit plus que le cycle immédiatement précédent (scénario E
+  de `21_engagement_qui_survit.test.sql`). Aucun compte de production n'était concerné : tous les
+  cycles sont de l'automne 2026.
+- **Deux ajouts décidés le même jour par la personne qui pilote** : dans le cas `dernier`, la
+  confirmation dit le sort de l'action engagée avec la phrase du re-bilan, au conditionnel — ce n'est
+  pas l'annonce écartée par D2, qui venait *après* ; et la page de confidentialité dit qu'un bilan
+  retiré reste conservé, et exporté. **Puis un troisième le soir** : dans le cas `seul`, la
+  confirmation nomme l'action qui part, sans conditionnel (« L'action que tu suis — … — ne sera plus
+  engagée. »), parce que la décision d'archiver l'action du seul bilan la fait partir à coup sûr ; c'est ce qui
+  rend acceptable le risque accepté avec cette décision, qu'un retrait par erreur emporte
+  l'engagement.
+- **Le premier parcours ne recommence pas** (décision du 27/09/2026). La marque de bilan effacée
+  faisait traiter le questionnaire suivant comme un premier : la barre d'onglets disparaissait, puis
+  la carte « Deux endroits, pas plus. » revenait, sans « Ton premier plan », dont la marque était
+  restée — un demi-redémarrage. L'étape n'est désormais notée que sur un appareil qui n'a vu ni bilan
+  ni parcours (`ouvreUnPremierParcours`). À regarder sur appareil (`v1-13` §11.20).
+- **Ce que la confirmation dit se relit au toucher du lien** (contre-lecture du 27/09) : la
+  restitution reste montée dans la pile du suivi, donc une place ou un engagement lus au chargement
+  seraient périmés par un nouveau bilan ou un changement d'action faits entre-temps.
+- **La seconde moitié de la phrase de l'engagement a changé** (décision du 27/09/2026) : « Sinon,
+  elle ne sera plus engagée. » au lieu de « Sinon, tu en choisiras une autre. », fausse quand le
+  plan reconstruit n'a aucune action. La feuille « Nouveau bilan », qui la partage, a changé avec.
+- **Ce qui reste hors de portée** :
+  - un lien de partage déjà envoyé garde ses chiffres, qui voyagent dans l'adresse ;
+  - la marque locale d'un **autre** appareil du compte reste posée — et celle de cet appareil aussi,
+    quand le bilan a été retiré ailleurs (le chemin `etat_change` ne l'efface pas). Le repli ne la
+    lit qu'hors ligne : c'est le risque connu de C4.5 ;
+  - **la date du retrait n'est enregistrée nulle part**, ni colonne ni événement : on sait compter
+    les retraits, jamais les dater ;
+  - en cadence `rolling_quarter` — dormante, aucun écran ne l'écrit —, les bornes du cycle
+    reconstruit se calculent sur la date du bilan **précédent**, donc le cycle du bilan retiré
+    garderait la date de début la plus récente. Non rejoué ; à reprendre le jour où cette cadence
+    reçoit un écran ;
+  - sous un rôle serveur, un `update` de statut ne fait rien de ce que fait le RPC (`SUPABASE.md`
+    §1.4).
+
