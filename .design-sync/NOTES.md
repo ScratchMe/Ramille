@@ -200,6 +200,28 @@ Deux autres corrections :
 synchronisation téléverse le kit tel qu'il est ; le compléter est un chantier du kit, pas de la
 synchronisation.
 
+## Relevé du 27/09/2026 — quatrième synchronisation, le kit complet
+
+Chemin atomique, skill 2.1.283 (`.ds-sync/` identique à ses scripts, vérifié par `diff -rq`). Le
+pilote a trouvé **20 composants vérifiés par l'envoi précédent, 8 changés, 38 nouveaux, aucun
+retiré** — la complétion du kit (`v1-29` §5, lots 1 à 5). Toutes les notes étaient déjà posées par
+les lots : `pendingGrade` vide, aucun `[SPOT_CHECK]`, aucune suppression (`deletePaths` vide, et le
+projet ne portait rien que le build ne produise, hors `_adherence.oxlintrc.json` et
+`_ds_manifest.json` que l'app régénère). Seuls avertissements : les deux `[RENDER_THIN]` connus.
+
+- **L'en-tête de conventions avait dérivé sans qu'aucun nom ne manque au build** : il citait un
+  fragment de `manque` que le produit n'écrit pas (« la distance d'un aller »), et ignorait
+  `GroupeDeChoix`, `PrecisionChiffres` et les neuf étapes devenues composants. Valider l'en-tête,
+  ce n'est donc pas seulement vérifier que ses noms existent : c'est relire ce qu'il affirme contre
+  le produit, comme une fiche. Même écart dans l'exemple de `StepShell` (« ta réponse » pour « une
+  réponse »), corrigé du même geste.
+- **L'ancre distante se récupère par `get_file`, qui la rend dans le contexte** : il faut la
+  recopier telle quelle dans `.design-sync/.cache/remote-sync.json` avant le pilote. Elle ne porte
+  que les composants de l'envoi précédent, donc sa taille donne une idée du nombre de nouveaux.
+- **346 fichiers de contenu, en cinq appels** : deux lots de 132 fichiers de composants, un de 75
+  (aperçus, bundle, jetons, guide), `_vendor/` seul (1,1 Mo) et `fonts/` seul — la sentinelle
+  avant, puis de nouveau après, `_ds_sync.json` en tout dernier.
+
 ## Complétion du kit, 27/09/2026 — ce que les captures ont appris
 
 Les lots 1 à 5 de `v1-29` §5 ont donné au kit une fiche par composant du dépôt. Deux règles de capture en sont
