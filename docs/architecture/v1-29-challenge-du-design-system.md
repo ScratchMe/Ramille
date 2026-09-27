@@ -619,7 +619,12 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
   domicile-travail gagne le départage face au résiduel un peu plus lourd, l'étiquette dit « … presque
   à égalité avec tes loisirs occasionnels ». Le marqueur se lit sur `extras_poste_label` — quand les
   loisirs sont le poste le plus lourd, c'est forcément eux que la boucle mensuelle porte ;
-- **le contour de « Oui » et « Non »** : posés sur la carte par `onPanel`, ils se détachent à
+- **tranché le 27/09/2026 — le contour de « Oui » et « Non » reste tel quel, et avec lui celui de
+  tous les boutons secondaires.** Ce qui suit est le relevé qui a été posé, et la raison tient
+  toujours : le libellé identifie le bouton, et c'est le registre de la décision n° 2. Porter le
+  registre entier à 3:1 reste possible ; ce serait une décision de design à part entière, à rouvrir
+  par une session de design et non par une retouche. Le relevé : posés sur la carte par `onPanel`,
+  ils se détachent à
   1,14:1 (carte grise) et 1,18:1 (carte teintée), filet compris entre 1,13 et 1,18:1 — exactement le
   contraste de **tout** bouton secondaire du produit sur le fond de l'écran (1,14:1). WCAG 1.4.11
   n'exige pas 3:1 du contour d'un bouton que son libellé identifie, et c'est ce registre-là que la

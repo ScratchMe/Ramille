@@ -1,0 +1,27 @@
+# Mises à jour des actions GitHub de la CI — arbitrage du 27/09/2026
+# (docs/exploitation/README.md §8.9, docs/architecture/v1-27-dette-technique.md §12.3).
+#
+# Seul l'écosystème `github-actions` est déclaré, et c'est voulu : les alertes de sécurité npm
+# sont actives au niveau du dépôt et se trient à la main (§8.8 — une alerte dit qu'un paquet a une
+# faille, pas que le produit l'expose). Déclarer `npm` ici ouvrirait des PR de montée de version
+# sur tout l'arbre, ce que personne n'a demandé.
+#
+# Les actions sont épinglées à leur majeure (`@v7`), donc Dependabot ne propose qu'une majeure
+# neuve — et une majeure se lit avant de s'appliquer. D'où une PR par action et non une seule pour
+# toutes : §8.9 dit « monter une action à la fois, avec un passage de CI par action : c'est la
+# seule façon que la CI dise laquelle casse ». Le groupe ne réunit que les mineures et les
+# correctifs, qui n'arrivent que si une action est un jour épinglée plus finement.
+#
+# Une PR de Dependabot ne déploie rien : `.github/` est dans la liste blanche de
+# `scripts/vercel-ignorer-le-build.sh`, et la CI n'utilise aucun secret, donc elle y tourne entière.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      mineures-et-correctifs:
+        update-types:
+          - minor
+          - patch

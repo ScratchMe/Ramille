@@ -380,7 +380,13 @@ plus coûteux à changer à certains endroits qu'à d'autres.
 
 ### 12.3 Ce qui revient à la personne qui pilote
 
-Deux points, et aucun n'est un défaut :
+Deux points, et aucun n'est un défaut. **Tous deux tranchés le 27/09/2026, selon la
+recommandation** : Dependabot déclaré sur `github-actions` en passage mensuel
+(`.github/dependabot.yml` — une PR par majeure et non une pour toutes, ce que la recommandation
+ci-dessous ne disait pas et que `docs/exploitation/README.md` §8.9 impose : une action à la fois),
+et la CSP laissée en rapport seul, sa réouverture inscrite comme une ligne de la checklist de
+publication (§4 du même registre) plutôt que laissée dans ce paragraphe, où personne ne la relirait
+le jour venu.
 
 1. **Dependabot sur l'écosystème `github-actions`.** `docs/exploitation/README.md` §8.9 l'a déjà
    posé comme un arbitrage de rythme (« une PR de plus à traiter à chaque publication d'une
