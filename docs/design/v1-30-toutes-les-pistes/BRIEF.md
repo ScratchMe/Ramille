@@ -1,6 +1,6 @@
 # Brief pour Claude Design — « Toutes les pistes » : ce qu'on lit, et ce qu'on touche
 
-Écrit le 27/09/2026, à partir du constat 14.7 de la recette du 18/09/2026
+Écrit le 28/09/2026, à partir du constat 14.7 de la recette du 18/09/2026
 ([`v1-13`](../../architecture/v1-13-audit-et-chantiers.md) §14.7) et de l'issue
 [#235](https://github.com/ScratchMe/Ramille/issues/235). Ses quatre écarts à la planche A2 ont été
 réparés à part (#234, livré par [#238](https://github.com/ScratchMe/Ramille/pull/238)) : **l'écran

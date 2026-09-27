@@ -107,7 +107,8 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // lire « effacer », et ce n'en est pas un — la ligne reste, l'export la rend avec son statut
 // (`v1-22` D1). Sans cette phrase, la page laisserait croire à un effacement qui n'a pas lieu. Elle
 // nomme la session anonyme parce que la purge à 90 jours l'emporte aussi, comme le reste. Mise en
-// ligne à la fusion de C4.7 — la date suit, et la feuille de recette la cite (11.1).
+// ligne à la fusion de C4.7 — la date suit, **heure de Paris** (la fusion a lieu dans la nuit du 27 au
+// 28 : le 27 en UTC, déjà le 28 pour qui lit la page), et la feuille de recette la cite (11.1).
 //
 // **Et les compteurs qui survivent à une suppression** (lot 6, décidé le 27/09/2026 : « la page de
 // confidentialité le dit »). La page écrivait que la session « et toutes les données associées »
@@ -118,7 +119,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // jusqu'à ce que la règle de cycle de vie du bucket l'efface (`docs/exploitation/sauvegarde.md`
 // §3 bis) ; les taire rendait « il ne reste que des compteurs » faux pendant 90 jours. Le chiffre de
 // la page est celui de cette règle, et il se vérifie au tableau de bord Cloudflare, pas d'ici.
-const UPDATED_AT = '27 septembre 2026';
+const UPDATED_AT = '28 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
