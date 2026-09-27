@@ -238,6 +238,18 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `engagement_checkins.poste` (`loop_type` ne le nomme pas : « extras » couvre les deux) et
   `plan_cycles.poste`. Se rabattre sur `loop_type` aurait remplacé une vérité laide par une
   **fausseté lisible** — « tes sorties du week-end » à quelqu'un dont le poste est les voyages.
+- **Le résiduel des sorties rares a son propre nom dans les quatre registres : « loisirs
+  occasionnels »** (arbitrage du 27/09/2026, `v1-29` §6.3). Pour qui sort « rarement », les loisirs
+  comptés sont une hypothèse du calcul, et « Tes loisirs du week-end » les présentait comme un
+  comportement. **Un écran qui peut nommer le résiduel ne lit donc pas une table de `postes.ts`
+  directement** : il passe par `nomDuPoste(poste, registre, occasionnels)` — le cap du plan compris,
+  qui se chiffre dès que le plan porte une action, fût-elle sur un autre poste que celui du
+  cycle —, et
+  `occasionnels` vient de `loisirsSontLeResiduel`, qui lit **la fréquence déclarée** d'abord. Les
+  libellés figés ne suffisent pas : le serveur ne marque le résiduel que sur le poste dominant et
+  sur celui de la boucle mensuelle, donc pas dans le cas courant de « rarement » avec un vol, où la
+  barre des loisirs de la restitution le montre pourtant. La restitution lit cette fréquence à part,
+  en tolérant l'échec ; le suivi l'embarque dans sa lecture de l'historique.
 - **La saison côté client vit dans `src/types/saison.ts`** (`saisonDe`, `recapDeSaison`), miroir
   exact de `public.season_bounds` : saisons **météorologiques**, décembre appartenant à l'hiver
   **qui commence**. Ne jamais la dériver de `plan_cycles` ni de la cadence — `rolling_quarter`
@@ -634,7 +646,10 @@ périmerait en silence au prochain passage :
   un collé qui contient le bon code ferait chercher une faute qui n'existe pas. Un collé trop long
   garde ses chiffres utiles.
 - **Au dernier chiffre, la vérification part d'elle-même**, et le bouton reste — pour qui colle,
-  corrige, ou lit l'écran avec un lecteur d'écran. Le verrou vit dans une `ref` et pas dans l'état
+  corrige, ou lit l'écran avec un lecteur d'écran. **Et l'écran le dit avant** (arbitrage du
+  27/09/2026, WCAG 3.2.2) : le texte d'aide du champ ajoute « Il est vérifié dès le dernier
+  chiffre. », et comme il est aussi l'`accessibilityHint`, le lecteur d'écran l'annonce en entrant
+  dans le champ. Le verrou vit dans une `ref` et pas dans l'état
   d'affichage, qui ne vaut `true` qu'au rendu suivant : sans lui, un collé suivi d'un toucher enverrait
   deux appels, dont le second sur un code déjà consommé — c'est-à-dire « ce code ne marche pas » juste
   après qu'il a marché. Même raison que le verrou de soumission du questionnaire.

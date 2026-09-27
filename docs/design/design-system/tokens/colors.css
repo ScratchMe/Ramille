@@ -12,7 +12,6 @@
   --color-accent-text: #14563A;
   --color-accent-muted: #A9C8B6;
   --color-border: #DDE0D9;
-  --color-pagination-inactive: #CDD7CF;
   --color-on-accent: #FFFFFF;
   --color-scrim: rgba(19, 22, 18, 0.42);
   /* États (24/09/2026, v1-29 §3.1) : sous le doigt, et le contour d'un champ au repos */
@@ -55,7 +54,6 @@
   --color-accent-text: #8FCBA9;
   --color-accent-muted: #3A5245;
   --color-border: #2E3135;
-  --color-pagination-inactive: #3A3D3A;
   --color-on-accent: #FFFFFF;
   --color-scrim: rgba(0, 0, 0, 0.6);
   /* Provisoires, comme tout le thème sombre (v1-29 §6.1) */

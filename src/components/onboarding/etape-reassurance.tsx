@@ -71,7 +71,7 @@ export function EtapeReassurance({
             <Button title="Retour" variant="secondary" onPanel onPress={() => onPrecedent()} />
             <Button title="Continuer" onPress={() => onSuivant()} flex />
           </View>
-          <OnboardingDots total={4} activeIndex={2} onTint />
+          <OnboardingDots total={4} activeIndex={2} />
         </View>
       </SafeAreaView>
     </ThemedView>

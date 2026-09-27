@@ -25,13 +25,14 @@ import {
   volsEquivalents,
 } from '@/constants/carbon-reference';
 import { formatTonnes, grouperLesMilliers } from '@/lib/format';
-import type { Palier } from '@/types/palier';
+import { DEJA_SOUS_LE_REPERE_2050, type Palier } from '@/types/palier';
 import {
   POSTE_EN_PHRASE,
   POSTE_LABEL,
   POSTE_SUBJECT,
   estLeResiduelDesSortiesRares,
   formeInserable,
+  nomDuPoste,
   type Poste,
 } from '@/constants/postes';
 
@@ -221,7 +222,14 @@ export function pourcentageDominant(results: ResultatBilan): number {
 
 /** Le titre du poste dominant, adressé à la personne : « Tes voyages longue distance en TGV ». */
 export function dominantHeadline(results: ResultatBilan): string {
-  const subject = POSTE_SUBJECT[results.dominant_poste] ?? results.dominant_poste_label;
+  // Le résiduel des sorties rares s'y appelle « Tes loisirs occasionnels » (`nomDuPoste`) : c'est
+  // le titre de la restitution, le premier endroit où il était nommé comme un comportement.
+  const subject =
+    nomDuPoste(
+      results.dominant_poste,
+      'sujet',
+      estLeResiduelDesSortiesRares(results.dominant_poste, results.dominant_poste_label)
+    ) ?? results.dominant_poste_label;
   const preposition = prepositionDuMode(results.dominant_poste_mode);
   return preposition ? `${subject} ${preposition}` : subject;
 }
@@ -234,7 +242,12 @@ export function dominantHeadline(results: ResultatBilan): string {
  * sur la carte, il prend son sens (retour utilisateur du 04/09/2026).
  */
 export function dominantShareLabel(results: ResultatBilan): string {
-  const posteLabel = POSTE_LABEL[results.dominant_poste] ?? results.dominant_poste_label;
+  const posteLabel =
+    nomDuPoste(
+      results.dominant_poste,
+      'label',
+      estLeResiduelDesSortiesRares(results.dominant_poste, results.dominant_poste_label)
+    ) ?? results.dominant_poste_label;
   const preposition = prepositionDuMode(results.dominant_poste_mode);
   return preposition ? `${posteLabel} ${preposition}` : posteLabel;
 }
@@ -248,6 +261,13 @@ export type PoidsDesPostes = {
   dominant_poste: string;
   /** Le libellé figé par le serveur : c'est lui qui marque le résiduel des sorties rares. */
   dominant_poste_label: string | null;
+  /**
+   * Le libellé de la boucle mensuelle, qui porte le même marqueur quand le résiduel **n'est pas**
+   * dominant. Quand les loisirs sont le poste le plus lourd, c'est forcément eux que cette boucle
+   * porte : ils l'emportent sur les voyages dès 95 % de leur poids (`v_extras_is_leisure`, dans
+   * `recompute_assessment_results`).
+   */
+  extras_poste_label: string | null;
   commute_co2_kg_year: number;
   leisure_co2_kg_year: number;
   travel_co2_kg_year: number;
@@ -317,9 +337,17 @@ export function etiquetteDuPosteDominant(poids: PoidsDesPostes): string {
   }
 
   if (plusLourd === null) return ETIQUETTE_DU_PLUS_LOURD;
-  return estLeResiduelDesSortiesRares(poids.dominant_poste, poids.dominant_poste_label)
-    ? `Presque à égalité avec ${formeInserable(plusLourd)}`
-    : `Le plus régulier, presque à égalité avec ${formeInserable(plusLourd)}`;
+  if (estLeResiduelDesSortiesRares(poids.dominant_poste, poids.dominant_poste_label)) {
+    return `Presque à égalité avec ${formeInserable(plusLourd)}`;
+  }
+  // **Le cas symétrique** (arbitrage du 27/09/2026, `v1-29` §6.3) : le domicile-travail l'emporte
+  // sur le résiduel, un peu plus lourd. « tes sorties du week-end » nommait comme un comportement
+  // des sorties que la personne a dit ne presque pas faire ; le résiduel s'appelle partout « loisirs
+  // occasionnels » (`nomDuPoste`), la barre juste en dessous comprise.
+  const autre =
+    nomDuPoste(plusLourd, 'insere', estLeResiduelDesSortiesRares('leisure', poids.extras_poste_label)) ??
+    formeInserable(plusLourd);
+  return `Le plus régulier, presque à égalité avec ${autre}`;
 }
 
 /**
@@ -469,7 +497,7 @@ export function palierNote(
   // formulation qui ferait d'un profil déjà sobre quelqu'un qui n'en fait pas encore assez.
   if (palier.beyondTarget2050) {
     const dejaSous =
-      `Tu es déjà sous le repère transport 2050. Ce que tu n’émets pas laisse de la marge ` +
+      `${DEJA_SOUS_LE_REPERE_2050} Ce que tu n’émets pas laisse de la marge ` +
       `ailleurs — pour tes autres postes, ou pour ceux dont les déplacements sont contraints.`;
     if (posteSuppose) return dejaSous;
     return `${dejaSous} S’il te reste de l’envie : ${reduction} de moins sur l’année${surLePoste}.`;

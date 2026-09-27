@@ -40,6 +40,7 @@ function snapshot(
     dominantPoste,
     dominantLabel: 'Trajet domicile-travail (Voiture)',
     parPoste: { commute: totalKg, leisure: 0, travel: 0, ...parPoste },
+    loisirsOccasionnels: false,
   };
 }
 
@@ -403,6 +404,13 @@ describe('legendeDeLEcart', () => {
     expect(legendeDeLEcart(ecartParPoste(avant, voyages))).toContain(
       'accent : tes voyages longue distance, le poste sur lequel ton plan travaille'
     );
+  });
+
+  // Arbitrage du 27/09/2026 (`v1-29` §6.3) : le résiduel des sorties rares porte son nom partout.
+  it('nomme le résiduel « tes loisirs occasionnels »', () => {
+    const residuel = [{ poste: 'leisure' as const, precedentKg: 12, courantKg: 11, dominant: true }];
+    expect(legendeDeLEcart(residuel, true)).toContain('accent : tes loisirs occasionnels,');
+    expect(legendeDeLEcart(residuel, false)).toContain('accent : tes loisirs du week-end,');
   });
 
   // Aucune barre en accent à l'écran : la légende ne décrit pas ce qui n'y est pas.

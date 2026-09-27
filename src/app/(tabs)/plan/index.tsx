@@ -35,6 +35,7 @@ import {
   type ReponsesDeContexte,
 } from '@/types/plan';
 import { daysSince, regimeDeRebilan, titreDuRebilan } from '@/types/suivi';
+import { estLeResiduelDesSortiesRares, nomDuPoste } from '@/constants/postes';
 import {
   aVuLouvertureDeSaison,
   marquerLouvertureDeSaisonVue,
@@ -1229,7 +1230,12 @@ export default function Plan() {
               passait pour l'effort d'un trimestre, juste au-dessus de pistes à « − 619 kg par an ».
               La saison est le temps qu'on se donne ; la quantité, elle, se compte à l'année. */}
           <ThemedText type="small" themeColor="textSecondary">
-            par an, soit − {Math.round(cycle.target_reduction_pct)} % sur {formeInserable(cycle.poste)}
+            {/* Le résiduel des sorties rares y est « tes loisirs occasionnels » (`nomDuPoste`) : ce cap
+                se chiffre dès que le plan porte une action, et depuis C5.1 rien n'oblige cette action
+                à porter sur le poste du cycle — qui peut être ce résiduel. */}
+            par an, soit − {Math.round(cycle.target_reduction_pct)} % sur{' '}
+            {nomDuPoste(cycle.poste, 'insere', estLeResiduelDesSortiesRares(cycle.poste, cycle.trip_label)) ??
+              formeInserable(cycle.poste)}
             {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
           </ThemedText>
           {/* Le lien entre le cap et les pistes, dit seulement quand il est vrai et tant que rien

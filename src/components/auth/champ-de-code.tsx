@@ -30,7 +30,11 @@ export function ChampDeCode({
   value,
   onChangeText,
   label = 'Code reçu par email',
-  helperText = `${LONGUEUR_DU_CODE} chiffres, sans espace.`,
+  // **La seconde phrase prévient que le code part seul** (arbitrage du 27/09/2026, `v1-29` §6.3) :
+  // au dernier chiffre, la vérification change l'écran sans geste de plus, ce que WCAG 3.2.2 demande
+  // d'annoncer avant la saisie. Elle est ici parce que ce texte est aussi l'`accessibilityHint` —
+  // lu en entrant dans le champ, donc avant, et pas seulement vu.
+  helperText = `${LONGUEUR_DU_CODE} chiffres, sans espace. Il est vérifié dès le dernier chiffre.`,
 }: {
   value: string;
   onChangeText: (code: string) => void;

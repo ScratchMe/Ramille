@@ -137,6 +137,26 @@ describe('dominantHeadline', () => {
     expect(dominantHeadline(resultat({ dominant_poste_mode: null }))).toBe('Ton trajet domicile-travail');
   });
 
+  // Arbitrage du 27/09/2026 (`v1-29` §6.3) : le résiduel des sorties rares s'appelle « loisirs
+  // occasionnels », à commencer par le titre de la restitution — et par la carte de partage.
+  it('appelle le résiduel des sorties rares « Tes loisirs occasionnels »', () => {
+    const residuel = resultat({
+      dominant_poste: 'leisure',
+      dominant_poste_mode: null,
+      dominant_poste_label: 'Loisirs du week-end (occasionnels)',
+    });
+    expect(dominantHeadline(residuel)).toBe('Tes loisirs occasionnels');
+    expect(dominantShareLabel(residuel)).toBe('Loisirs occasionnels');
+    // Des sorties déclarées gardent le nom de la section du questionnaire.
+    const declarees = resultat({
+      dominant_poste: 'leisure',
+      dominant_poste_mode: null,
+      dominant_poste_label: 'Loisirs du week-end (Voiture thermique)',
+    });
+    expect(dominantHeadline(declarees)).toBe('Tes loisirs du week-end');
+    expect(dominantShareLabel(declarees)).toBe('Loisirs du week-end');
+  });
+
   // Un poste que ce module ne connaît pas retombe sur le libellé figé côté serveur, jamais sur
   // une chaîne vide.
   it('retombe sur le libellé du serveur quand le poste est inconnu', () => {
@@ -185,10 +205,12 @@ describe('etiquetteDuPosteDominant', () => {
     commute: number,
     leisure: number,
     travel: number,
-    dominant_poste_label: string | null = null
+    dominant_poste_label: string | null = null,
+    extras_poste_label: string | null = null
   ): PoidsDesPostes => ({
     dominant_poste,
     dominant_poste_label,
+    extras_poste_label,
     commute_co2_kg_year: commute,
     leisure_co2_kg_year: leisure,
     travel_co2_kg_year: travel,
@@ -229,6 +251,21 @@ describe('etiquetteDuPosteDominant', () => {
     );
     // Sans départage à dire, l'étiquette générale reste vraie, résiduel ou non.
     expect(etiquetteDuPosteDominant(poids('leisure', 1, 11, 3, residuel))).toBe(ETIQUETTE_DU_PLUS_LOURD);
+  });
+
+  // Le cas symétrique (arbitrage du 27/09/2026, `v1-29` §6.3) : le domicile-travail l'emporte sur
+  // le résiduel, un peu plus lourd. Le marqueur est alors sur le libellé de la boucle mensuelle.
+  it('nomme le résiduel « tes loisirs occasionnels » quand le domicile-travail l’emporte sur lui', () => {
+    const residuel = 'Loisirs du week-end (occasionnels)';
+    expect(
+      etiquetteDuPosteDominant(poids('commute', 50, 52, 0, 'Trajet domicile-travail (Trottinette)', residuel))
+    ).toBe('Le plus régulier, presque à égalité avec tes loisirs occasionnels');
+    // Des sorties déclarées gardent leur forme insérée.
+    expect(
+      etiquetteDuPosteDominant(
+        poids('commute', 500, 520, 0, 'Trajet domicile-travail (Voiture thermique)', 'Loisirs du week-end (Voiture thermique)')
+      )
+    ).toBe('Le plus régulier, presque à égalité avec tes sorties du week-end');
   });
 
   // « Strictement » : à égalité exacte le dominant est aussi le plus lourd, et l'étiquette générale

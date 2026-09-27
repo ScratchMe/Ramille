@@ -22,7 +22,7 @@ import {
   loadAssessmentHistory,
   loadDecisionsEngagees,
 } from '@/lib/bilan-history';
-import { POSTE_LABEL } from '@/types/resultat';
+import { posteDeLHistorique } from '@/constants/postes';
 import { formatIntention } from '@/types/plan';
 import {
   barresDeLHistorique,
@@ -42,8 +42,8 @@ import {
   type DecisionDeSaison,
 } from '@/types/suivi';
 import { formatTonnes } from '@/lib/format';
-import { FRANCE_AVERAGE_TRANSPORT_T } from '@/constants/carbon-reference';
-import { showsTarget2050 } from '@/types/palier';
+import { FRANCE_AVERAGE_TRANSPORT_T, TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
+import { ligneDHorizon2050 } from '@/types/palier';
 import { RAMILLE } from '@/constants/mascotte';
 
 // Écran « Mon suivi » — la brique qui manquait pour que le produit accompagne réellement
@@ -360,7 +360,11 @@ export default function Suivi() {
   // la moyenne, donc uniquement du bon côté : elle informe au lieu de classer. Faire remonter
   // `mobility_constrained` jusqu'ici pour la taire reviendrait à cacher à ce profil la seule
   // comparaison qui lui soit favorable.
-  const horizon2050 = showsTarget2050(latest.totalKg, FRANCE_AVERAGE_TRANSPORT_T * 1000);
+  const horizon2050 = ligneDHorizon2050(
+    latest.totalKg,
+    FRANCE_AVERAGE_TRANSPORT_T * 1000,
+    TARGET_2050_TRANSPORT_T * 1000
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -446,7 +450,7 @@ export default function Suivi() {
                     </View>
                   )}
                   <ThemedText type="small" themeColor="textTertiary">
-                    Poste principal : {POSTE_LABEL[snapshot.dominantPoste] ?? snapshot.dominantLabel}
+                    Poste principal : {posteDeLHistorique(snapshot.dominantPoste, snapshot.dominantLabel)}
                   </ThemedText>
                 </Pressable>
               ))}
@@ -461,11 +465,11 @@ export default function Suivi() {
                 Au-dessus de la moyenne, l'écart est un gouffre que rien ne rattrape et le nommer
                 découragerait (`showsTarget2050`) ; en dessous, il tombe à un facteur deux à quatre et
                 redevient crédible. En mots, sans barre et **sans compter les paliers restants** — la
-                clause de fin est celle de `palierNote`, pour que les deux écrans parlent d'une voix. */}
-            {horizon2050 && (
+                clause de fin est celle de `palierNote`, pour que les deux écrans parlent d'une voix.
+                Et sous le repère, la ligne dit qu'on y est, comme la restitution (`ligneDHorizon2050`). */}
+            {horizon2050 !== null && (
               <ThemedText type="small" themeColor="textTertiary">
-                Tu es sous la moyenne française : à partir de là, le repère 2050 se joue palier après
-                palier.
+                {horizon2050}
               </ThemedText>
             )}
           </ThemedView>
@@ -479,7 +483,7 @@ export default function Suivi() {
               <ThemedText weight={600} type="small">
                 Par poste
               </ThemedText>
-              <EcartParPoste ecarts={ecarts} />
+              <EcartParPoste ecarts={ecarts} loisirsOccasionnels={latest.loisirsOccasionnels} />
             </ThemedView>
           )}
 
