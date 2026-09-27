@@ -180,6 +180,42 @@ capture d'engagement, l'insertion des actions), pour qu'une migration touche vin
 cent trente. **À instruire**, pas à improviser : chaque extraction est une migration sur le cœur du
 calcul.
 
+**Instruit le 27/09/2026, et la mesure déplace la cible.** Nombre de définitions de chaque fonction
+dans `supabase/migrations/` (création comprise, relevé par `grep -ilE "create( or replace)? function"`), et longueur du corps installé (`pg_get_functiondef`, stack locale) :
+
+| Fonction | Définitions | Lignes installées |
+|---|---|---|
+| `enqueue_checkin_reminders` | 11 | 79 |
+| `generate_extras_checkins` | 10 | 76 |
+| `generate_commute_checkins` | 8 | 55 |
+| `generate_plan_cycle_for_user` | 5 | 165 |
+| `recompute_assessment_results` | 4 | 359 |
+| `estimate_action_savings` | 4 | 232 |
+
+Ce ne sont donc pas les fonctions **longues** qui se recopient le plus, ce sont celles de la
+**boucle d'engagement** — chaque chantier du lot 2 en a réécrit une. Et la relecture de leurs corps
+installés trouve deux duplications réelles, qui sont les deux extractions à faire, dans cet ordre :
+
+1. **L'énumération des voyages déclarés**, écrite deux fois : dans le filtre de base déclarée de
+   `generate_extras_checkins`, et dans le cas du bilan à zéro de `recompute_assessment_results`
+   (`coalesce(flights_total_per_year, 0) + … + coalesce(coach_long_trips_per_year, 0) > 0`). C'est
+   **la liste qui a déjà coûté un défaut** : C4.4 a livré l'autocar sans sa ligne dans le filtre, et
+   seul le fait de jouer les deux crons l'a trouvé. Une fonction `a_des_voyages_declares` (pure,
+   révoquée du client) la tiendrait en un seul endroit, et l'assertion du test `20` qui tombera au
+   cinquième compteur n'aurait plus qu'un endroit à désigner.
+2. **La recherche de l'action engagée sur la période interrogée**, identique dans les deux
+   générateurs à son poste près (jointure latérale sur `plan_actions`, `plan_cycles`,
+   `action_templates`, bornée par la période, triée par `committed_at`). La correction du jour même
+   (la boucle mensuelle de qui sort rarement, #281) a dû la retoucher dans l'un en sachant que
+   l'autre la répète. Une fonction `action_engagee_de_la_periode(user_id, poste, period_start)`.
+
+**Ce qui n'est pas recommandé à ce jour** : découper `recompute_assessment_results` et
+`estimate_action_savings`. Ce sont les plus longues, mais les moins recopiées, et leur découpage
+toucherait le chiffre de chaque bilan pour un gain que la règle « partir de `pg_get_functiondef` »
+(`SUPABASE.md` §1.5) rend déjà. **Chaque extraction est une migration neutre** : réécrire ses
+appelants depuis leur corps installé, et prouver la neutralité par la suite pgTAP entière — dont
+les valeurs attendues ne doivent pas bouger d'une décimale — avant de l'appliquer au distant.
+
 ## 6. Les comptes écrits dans les documents se périment, et deux l'avaient fait
 
 **Mesuré, et corrigé le 19/09/2026.** `CLAUDE.md` affirmait que les fonctions de résolution sont
@@ -225,6 +261,28 @@ et rien ne les sépare. Une règle ajoutée au mauvais endroit changerait le tot
 **Chantier possible** : découper en règles nommées, chacune avec son test, et faire de
 `normaliserReponses` leur application en séquence. **Risque produit réel** — cette fonction décide de
 ce qui part à la soumission — donc elle relève d'une page de décision, pas d'un nettoyage.
+
+**Instruit le 27/09/2026, et la réponse n'est pas le découpage.** Relu règle par règle, le risque
+nommé ici — une règle au mauvais endroit — tient à **l'ordre** : une règle qui en réveille une autre
+déjà passée ne se voit qu'au second passage. Or la fonction affirmait dans son en-tête deux choses
+qui y répondent, et **aucun test ne les éprouvait** : qu'elle est idempotente, et que rien n'y
+invente une réponse. Ses quarante-quatre tests en éprouvaient une règle chacun.
+
+Ce qui a été fait est donc de les **épingler**, sans rien changer à la fonction : trois propriétés
+sur 6 000 jeux de réponses tirés d'un générateur à graine fixe, dans le domaine de chaque champ et
+hors des combinaisons que l'écran produit — un second passage ne change plus rien, chaque champ
+reste tel quel ou s'efface, et aucune déclaration de voyage ni de contexte hors télétravail n'est
+touchée. Un premier test vérifie que le domaine couvre tous les champs de `BilanAnswers`, sans quoi
+un champ ajouté resterait hors de portée. Trois mutations consignées dans `bilan.test.ts`, dont
+celle qui remonte la motorisation avant les règles du second mode : **l'idempotence tombe**, ce
+que les quarante-quatre tests laissaient passer.
+
+**Le découpage en règles nommées n'est pas recommandé à ce jour.** Les règles sont déjà commentées
+une par une, avec leur raison et leur chantier ; les séparer déplacerait cent cinquante lignes de
+commentaires porteurs pour un gain que les propriétés rendent déjà — et il n'y a aucune décision de
+produit à prendre, puisque rien ne change à ce qui part à la soumission. Il se rouvre le jour où
+une règle devra s'appliquer **ailleurs** que dans la fonction entière (une règle réutilisée seule par
+un écran, comme `teletravailSePose` l'est déjà).
 
 ## 9. Le dépôt et le distant ne s'apparient plus migration par migration
 
@@ -301,8 +359,8 @@ place de la personne qui les a écrites.
 | 2 | §2 — les signatures dans le contrôle de types | petit | **fait le 20/09/2026** (§12.2) |
 | 3 | §3 — la promesse du favicon | une décision | **fait le 27/09/2026** : la promesse retirée, la filiation mesurée intacte |
 | 4 | §4 — la décision d'affichage du plan | moyen, risque réel | **fait le 27/09/2026** : `cartesDuPlan`, 384 états, et un empilement de cartes trouvé en chemin |
-| 5 | §5 — le découpage des fonctions de calcul | grand | à instruire, jamais en marge d'une vague |
-| 6 | §8 — `normaliserReponses` | moyen, risque produit | page de décision |
+| 5 | §5 — le découpage des fonctions de calcul | grand | **instruit le 27/09/2026** : deux extractions désignées (les voyages déclarés, l'action engagée), le découpage du calcul lui-même déconseillé |
+| 6 | §8 — `normaliserReponses` | moyen, risque produit | **instruit le 27/09/2026** : les deux affirmations de son en-tête épinglées sur 6 000 tirages ; le découpage n'est pas recommandé |
 | 7 | §9 — renommer le fichier sous l'horodatage **enregistré**, une fois la migration appliquée | une habitude | **commencé le 21/09/2026** (C4.4) : une migration appariée, et la consigne d'avant était inapplicable |
 | 8 | §12.5 — un comparateur mécanique des miroirs de `check` | petit | **fait le 20/09/2026** (§12.2) |
 | 9 | §12.5 — l'artefact de la recette du premier parcours à régénérer depuis son `.md` | une manipulation | **fait le 20/09/2026** (§12.2) |

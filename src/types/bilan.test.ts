@@ -32,8 +32,16 @@ import {
   saisieVersNombre,
   visibleSteps,
   volsCourtsApresTotal,
+  REPONSES_TELETRAVAIL,
   type BilanAnswers,
 } from '@/types/bilan';
+import {
+  CAR_ENGINE_OPTIONS,
+  TRAIN_TYPE_OPTIONS,
+  TRANSPORT_MODE_LABELS,
+  TWO_WHEELER_TYPE_OPTIONS,
+  VELO_TYPE_OPTIONS,
+} from '@/constants/transport-modes';
 
 function answers(overrides: Partial<BilanAnswers>): BilanAnswers {
   return { ...EMPTY_BILAN_ANSWERS, ...overrides };
@@ -1362,5 +1370,141 @@ describe('avancementDeLaReprise', () => {
     expect(avancementDeLaReprise('leisure_detail', rares)).toBe(
       'Il en reste huit, en comptant celui-ci.'
     );
+  });
+});
+
+/**
+ * **Ce que `normaliserReponses` affirme d'elle-même, éprouvé sur des milliers de réponses**
+ * (`v1-27` §8, 27/09/2026). Son en-tête dit qu'elle est **idempotente** et que **rien n'y invente
+ * une réponse** ; ses tests nommés, eux, en éprouvent une règle chacun — aucun ne vérifiait ces deux
+ * phrases, qui sont pourtant ce dont le reste dépend : elle s'applique à chaque frappe, à la relecture
+ * d'un brouillon et au préremplissage d'un re-bilan, donc une réponse qu'elle transformerait au
+ * second passage changerait le total d'un bilan resoumis à l'identique. C'est le risque que `v1-27`
+ * §8 nommait (« une règle ajoutée au mauvais endroit »), et c'est l'**ordre** des règles qui le
+ * porte : une règle qui en réveille une autre déjà passée ne se voit qu'au second passage.
+ *
+ * Les réponses sont tirées d'un générateur à graine fixe, dans le domaine de chaque champ **et**
+ * hors des combinaisons que l'écran produit (un brouillon ou un bilan relu peuvent porter n'importe
+ * quoi) : 6 000 tirages, reproductibles à l'identique.
+ *
+ * **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1) — trois mutations de
+ * `normaliserReponses`, et ce que chacune fait tomber :
+ *   - la règle de la motorisation remontée **avant** celles du second mode → l'idempotence : un
+ *     second mode sans « oui » garde la motorisation au premier passage et la perd au second ;
+ *   - une motorisation « thermique » posée d'office sous une voiture sans réponse → « n'invente
+ *     jamais une réponse » ;
+ *   - le nombre de longs trajets en voiture remis à zéro sans motorisation → « ne touche jamais une
+ *     déclaration de voyage ni de contexte ».
+ */
+describe('normaliserReponses — ce qu’elle affirme d’elle-même', () => {
+  // mulberry32 : un générateur à graine, pour que 6 000 tirages soient les mêmes à chaque passage.
+  function generateur(graine: number) {
+    let t = graine >>> 0;
+    return () => {
+      t = (t + 0x6d2b79f5) >>> 0;
+      let x = Math.imul(t ^ (t >>> 15), t | 1);
+      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const MODES = Object.keys(TRANSPORT_MODE_LABELS) as BilanAnswers['commute_mode'][];
+  const DOMAINES: { [K in keyof BilanAnswers]: readonly BilanAnswers[K][] } = {
+    commute_has_regular_trip: [true, false, null],
+    commute_days_per_week: [null, 1, 2, 3, 5, 7],
+    commute_distance_km: [null, 0.5, 8, 120],
+    commute_distance_bracket: [null, 'lt_5', '5_15', '15_30', '30_50', '50_plus'],
+    commute_mode: [null, ...MODES],
+    commute_is_carpool: [true, false],
+    commute_carpool_size: [null, ...TAILLES_DE_COVOITURAGE.map((t) => t.value)],
+    commute_second_mode_used: [true, false, null],
+    commute_second_mode: [null, ...MODES],
+    commute_second_mode_share: [null, ...PARTS_DU_SECOND_MODE.map((p) => p.value)],
+    commute_car_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
+    commute_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
+    commute_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
+    commute_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
+    leisure_frequency: [null, 'rarely', 'weekly', 'multiple_weekly'],
+    leisure_mode: [null, ...MODES],
+    leisure_distance_bracket: [null, 'lt_5', '5_15', '15_30', '30_plus'],
+    leisure_distance_km: [null, 12, 120],
+    leisure_is_carpool: [true, false],
+    leisure_carpool_size: [null, ...TAILLES_DE_COVOITURAGE.map((t) => t.value)],
+    leisure_car_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
+    leisure_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
+    leisure_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
+    leisure_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
+    flights_total_per_year: [0, 1, 4],
+    flights_short_per_year: [null, 0, 1, 3],
+    train_long_trips_per_year: [0, 2],
+    car_long_trips_per_year: [0, 3],
+    car_long_trips_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
+    car_long_trips_occupancy: [null, ...OCCUPATIONS_LONG_TRAJET],
+    coach_long_trips_per_year: [0, 2],
+    zone_type: [null, 'urbain_dense', 'periurbain', 'rural'],
+    tc_access: [null, 'bon', 'limite', 'inexistant'],
+    household_vehicles: [null, '0', '1', '2_plus'],
+    teletravail: [null, ...REPONSES_TELETRAVAIL.map((r) => r.value)],
+  };
+
+  // Le domaine couvre tous les champs : un champ ajouté à `BilanAnswers` sans sa ligne ici
+  // resterait à sa valeur vide dans tous les tirages, donc hors de portée de ces propriétés.
+  it('tire chaque champ de BilanAnswers, et aucun autre', () => {
+    expect(Object.keys(DOMAINES).sort()).toEqual(Object.keys(EMPTY_BILAN_ANSWERS).sort());
+  });
+
+  const tirer = generateur(20260927);
+  const TIRAGES: BilanAnswers[] = Array.from({ length: 6000 }, () => {
+    const reponses = {} as Record<string, unknown>;
+    for (const [champ, valeurs] of Object.entries(DOMAINES)) {
+      reponses[champ] = valeurs[Math.floor(tirer() * valeurs.length)];
+    }
+    return reponses as BilanAnswers;
+  });
+
+  // Les booléens non nuls s'effacent à `false` — c'est leur valeur vide, pas une réponse inventée.
+  const BOOLEENS = new Set<keyof BilanAnswers>([
+    'commute_is_carpool',
+    'commute_second_mode_used',
+    'leisure_is_carpool',
+  ]);
+
+  it('est idempotente : un second passage ne change plus rien', () => {
+    for (const reponses of TIRAGES) {
+      const une = normaliserReponses(reponses);
+      expect(normaliserReponses(une)).toEqual(une);
+    }
+  });
+
+  it('n’invente jamais une réponse : chaque champ reste tel quel, ou s’efface', () => {
+    for (const reponses of TIRAGES) {
+      const apres = normaliserReponses(reponses);
+      for (const champ of Object.keys(reponses) as (keyof BilanAnswers)[]) {
+        const avant = reponses[champ];
+        const garde = apres[champ] === avant;
+        const efface = apres[champ] === null || (BOOLEENS.has(champ) && apres[champ] === false);
+        if (!garde && !efface) {
+          throw new Error(`${champ} : ${JSON.stringify(avant)} → ${JSON.stringify(apres[champ])}`);
+        }
+      }
+    }
+  });
+
+  it('ne touche jamais une déclaration de voyage ni de contexte hors télétravail', () => {
+    // Ce sont des réponses qu'aucune autre ne peut rendre impossibles : un nombre de vols ne dépend
+    // pas du mode du trajet. Les effacer changerait le total sans que la personne ait rien corrigé.
+    const INTOUCHABLES: (keyof BilanAnswers)[] = [
+      'flights_total_per_year',
+      'train_long_trips_per_year',
+      'car_long_trips_per_year',
+      'coach_long_trips_per_year',
+      'zone_type',
+      'tc_access',
+      'household_vehicles',
+    ];
+    for (const reponses of TIRAGES) {
+      const apres = normaliserReponses(reponses);
+      for (const champ of INTOUCHABLES) expect(apres[champ]).toBe(reponses[champ]);
+    }
   });
 });
