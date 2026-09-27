@@ -21,7 +21,7 @@ const HAUTEUR = 10;
  * — **L'échelle est commune aux six barres.** Une échelle par poste rendrait un poste de 40 kg aussi
  *   long qu'un poste de 2 t, et la carte dirait alors l'inverse de ce qu'elle existe pour dire.
  * — **Le contour est le bilan précédent, le plein est celui-ci.** L'accent suit le poste dominant du
- *   bilan **courant** : c'est celui sur lequel le plan travaille, et il peut avoir changé depuis le
+ *   bilan **courant** : c'est celui que le cap de la saison vise, et il peut avoir changé depuis le
  *   bilan précédent — le plus souvent parce que la personne a fait baisser l'ancien.
  * — **Aucune hiérarchie morale.** Pas de flèche verte ni rouge, pas de « bien » ni de « à
  *   améliorer » : deux nombres et deux barres, le lecteur voit le sens tout seul.
@@ -76,16 +76,18 @@ export function EcartParPoste({
           </View>
         </View>
       ))}
-      {/* **L'accent dit le poste du plan, pas le plus lourd** (corrigé le 14/09/2026). Le départage
+      {/* **L'accent dit le poste principal, pas le plus lourd** (corrigé le 14/09/2026). Le départage
           du serveur n'en est pas un — les loisirs l'emportent sur les voyages à 5 % près — donc
           `dominant_poste` peut désigner un poste visiblement plus court que celui du dessus, et la
           légende devenait fausse à l'écran. C'est bien ce poste qu'il faut accentuer : c'est celui
-          sur lequel le cap et les actions travaillent. Le classement par poids, lui, se lit déjà
-          dans l'ordre des barres.
+          que le cap de la saison vise. Le classement par poids, lui, se lit déjà dans l'ordre des
+          barres.
 
           **Et la légende le nomme** (24/09/2026, `v1-29`) : elle disait ce que l'accent signifie
           sans dire quel poste le portait — une information qui n'existait qu'en couleur, sous des
-          barres masquées aux lecteurs d'écran. `legendeDeLEcart` la compose, avec ses tests. */}
+          barres masquées aux lecteurs d'écran. `legendeDeLEcart` la compose, avec ses tests —
+          « ton poste principal » et jamais « le poste sur lequel ton plan travaille », qu'elle ne
+          peut pas savoir : un plan à zéro action ne travaille sur rien (27/09/2026). */}
       <ThemedText themeColor="textTertiary" style={styles.legende}>
         {legendeDeLEcart(ecarts, loisirsOccasionnels)}
       </ThemedText>

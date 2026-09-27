@@ -341,8 +341,8 @@ describe('ecartParPoste', () => {
 
   // **Le poste dominant peut changer d'un bilan à l'autre, et c'est le plus souvent une réussite.**
   // L'accent suit celui du bilan **courant**, et il vient du serveur : son départage n'est pas un
-  // simple maximum, donc un maximum recalculé ici désignerait parfois un autre poste que celui sur
-  // lequel le plan travaille.
+  // simple maximum, donc un maximum recalculé ici désignerait parfois un autre poste que celui que
+  // le cap de la saison vise.
   it('suit le poste dominant du bilan courant, tel que le serveur l’a désigné', () => {
     const voyages = snapshot(
       '2026-09-01T12:00:00Z',
@@ -378,18 +378,23 @@ describe('ecartParPoste', () => {
  * règle de la couleur sans jamais dire à quel poste elle s'appliquait, et les barres sont masquées
  * aux lecteurs d'écran.
  *
- * Éprouvé en cassant ce qu'il garde, le 24/09/2026 : la légende d'avant remise telle quelle fait
- * tomber les trois tests — elle ne nommait aucun poste et parlait d'accent en toutes
- * circonstances ; la partie « accent » gardée sans poste accentué fait tomber le troisième, et lui
- * seul.
+ * Éprouvé en cassant ce qu'il garde, le 24/09/2026, quand le bloc comptait trois tests : la
+ * légende d'avant remise telle quelle les faisait tous tomber — elle ne nommait aucun poste et
+ * parlait d'accent en toutes circonstances ; la partie « accent » gardée sans poste accentué fait
+ * tomber celui qui « ne parle pas d'accent », et lui seul.
+ *
+ * **Elle ne parle jamais du plan** (arbitrage du 27/09/2026, `v1-29` §6.3) : elle ne le lit pas, et
+ * « le poste sur lequel ton plan travaille » était faux pour tout plan à zéro action. Éprouvé le
+ * 27/09/2026 : cette fin remise telle quelle fait tomber « nomme le poste principal », « suit le
+ * poste dominant » et l'invariant, et eux seuls — le test du résiduel ne garde que le nom du poste.
  */
 describe('legendeDeLEcart', () => {
   const avant = snapshot('2026-03-01T12:00:00Z', 3000, { commute: 2100, leisure: 500, travel: 400 });
 
-  it('nomme le poste du plan, avec les mots de son étiquette', () => {
+  it('nomme le poste principal, avec les mots de son étiquette', () => {
     const apres = snapshot('2026-09-01T12:00:00Z', 2200, { commute: 1700, leisure: 500, travel: 0 });
     expect(legendeDeLEcart(ecartParPoste(avant, apres))).toBe(
-      'Contour : bilan précédent · plein : ce bilan · accent : ton trajet domicile-travail, le poste sur lequel ton plan travaille'
+      'Contour : bilan précédent · plein : ce bilan · accent : ton trajet domicile-travail, ton poste principal'
     );
   });
 
@@ -402,7 +407,7 @@ describe('legendeDeLEcart', () => {
       'travel'
     );
     expect(legendeDeLEcart(ecartParPoste(avant, voyages))).toContain(
-      'accent : tes voyages longue distance, le poste sur lequel ton plan travaille'
+      'accent : tes voyages longue distance, ton poste principal'
     );
   });
 
@@ -411,6 +416,17 @@ describe('legendeDeLEcart', () => {
     const residuel = [{ poste: 'leisure' as const, precedentKg: 12, courantKg: 11, dominant: true }];
     expect(legendeDeLEcart(residuel, true)).toContain('accent : tes loisirs occasionnels,');
     expect(legendeDeLEcart(residuel, false)).toContain('accent : tes loisirs du week-end,');
+  });
+
+  // L'invariant plutôt que la phrase : quel que soit le poste accentué, la légende n'affirme rien du
+  // plan — un plan à zéro action ne « travaille » sur rien, et la légende n'a aucun moyen de le savoir.
+  it('n’affirme rien du plan, quel que soit le poste accentué', () => {
+    for (const poste of ['commute', 'leisure', 'travel'] as const) {
+      for (const occasionnels of [false, true]) {
+        const ecarts = [{ poste, precedentKg: 12, courantKg: 11, dominant: true }];
+        expect(legendeDeLEcart(ecarts, occasionnels)).not.toMatch(/plan/);
+      }
+    }
   });
 
   // Aucune barre en accent à l'écran : la légende ne décrit pas ce qui n'y est pas.

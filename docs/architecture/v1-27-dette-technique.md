@@ -233,6 +233,40 @@ toucherait le chiffre de chaque bilan pour un gain que la règle « partir de `p
 appelants depuis leur corps installé, et prouver la neutralité par la suite pgTAP entière — dont
 les valeurs attendues ne doivent pas bouger d'une décimale — avant de l'appliquer au distant.
 
+**Fait et appliqué au distant le 27/09/2026, et neutre** — deux migrations,
+`20260927210200_les_voyages_declares_en_un_seul_endroit.sql` puis
+`20260927210247_l_action_engagee_en_un_seul_endroit.sql`, avec leur fichier de test
+`33_deux_extractions_neutres.test.sql`. La suite pgTAP entière passe sans qu'une valeur attendue
+ait bougé (seul le **libellé** d'une assertion de `20` change, pour désigner la fonction), le
+parcours réel aussi, et les corps installés des trois fonctions réécrites étaient identiques
+octet pour octet entre la stack locale et le distant avant d'écrire. Chaque fonction a été cassée
+d'une dizaine de façons, consignées en tête du `33` ; aucune mutation n'est restée debout. Ce que
+l'exécution a appris, et que l'instruction ne savait pas :
+
+- **l'appariement par poste n'était gardé par aucun test de comportement** : ignorer le poste dans
+  la recherche de l'action ne faisait tomber aucune assertion de `20` ni de `23`, faute d'un profil
+  engagé sur un poste et interrogé sur un autre. Le `33` le garde désormais ;
+- **les vols et la voiture n'étaient gardés par aucun test du filtre de base déclarée** — seul
+  l'autocar l'était, par le profil qui a trouvé son oubli. Le balayage du `33` prend chaque colonne
+  `_per_year` sans la nommer, donc un cinquième compteur oublié le fera tomber s'il suit ce suffixe
+  (un compteur nommé autrement lui échapperait) ; l'assertion de `20`
+  qu'on croyait garder ce cinquième compteur ne garde que le chemin de l'autocar ;
+- **la branche `'travel'` du bilan à zéro de `recompute_assessment_results` est inatteignable** —
+  tous les facteurs de voyage sont positifs et le résiduel de « rarement » n'est jamais nul —, d'où
+  une garde de structure et non de comportement ;
+- **rejouer seule `20260927191009` ou `20260927210200` après la seconde défait l'extraction**,
+  puisque chacune réécrit `generate_extras_checkins` en entier — et rejouer `20260927210200` seule
+  passe même tous ses contrôles en silence. C'est la règle de `SUPABASE.md` §2.3 (« rejouer un
+  fichier ancien peut défaire une migration plus récente »), écrite dans l'en-tête de la seconde.
+
+Le tableau ci-dessus est un instantané d'avant. Remesuré par la même méthode après :
+`generate_extras_checkins` 12 définitions et 66 lignes installées, `generate_commute_checkins` 9 et
+46, `recompute_assessment_results` inchangé à 4 définitions (touché par substitution et non par
+recopie) et 358 lignes. `generate_extras_checkins` a gagné deux définitions (une par migration)
+et perdu dix lignes, `generate_commute_checkins` une définition et neuf lignes : la prochaine
+migration de la boucle en recopiera moins, et ne pourra plus oublier un poste ni un compteur dans
+l'une des deux copies.
+
 ## 6. Les comptes écrits dans les documents se périment, et deux l'avaient fait
 
 **Mesuré, et corrigé le 19/09/2026.** `CLAUDE.md` affirmait que les fonctions de résolution sont
@@ -376,7 +410,7 @@ place de la personne qui les a écrites.
 | 2 | §2 — les signatures dans le contrôle de types | petit | **fait le 20/09/2026** (§12.2) |
 | 3 | §3 — la promesse du favicon | une décision | **fait le 27/09/2026** : la promesse retirée, la filiation mesurée intacte |
 | 4 | §4 — la décision d'affichage du plan | moyen, risque réel | **fait le 27/09/2026** : `cartesDuPlan` sur toutes les combinaisons d'états, et un empilement de cartes trouvé en chemin |
-| 5 | §5 — le découpage des fonctions de calcul | grand | **instruit le 27/09/2026** : deux extractions désignées (les voyages déclarés, l'action engagée), le découpage du calcul lui-même déconseillé |
+| 5 | §5 — le découpage des fonctions de calcul | grand | **instruit puis fait le 27/09/2026** : les deux extractions désignées (les voyages déclarés, l'action engagée), neutres ; le découpage du calcul lui-même déconseillé |
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | **instruit le 27/09/2026** : les deux affirmations de son en-tête épinglées sur 6 000 tirages ; le découpage n'est pas recommandé |
 | 7 | §9 — renommer le fichier sous l'horodatage **enregistré**, une fois la migration appliquée | une habitude | **commencé le 21/09/2026** (C4.4) : une migration appariée, et la consigne d'avant était inapplicable |
 | 8 | §12.5 — un comparateur mécanique des miroirs de `check` | petit | **fait le 20/09/2026** (§12.2) |

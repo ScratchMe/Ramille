@@ -2,6 +2,18 @@
 
 > **Page de décision du chantier C4.8** ([#150](https://github.com/ScratchMe/Ramille/issues/150)),
 > sixième et dernière des six du lot 4. Écrite le 19/09/2026.
+>
+> **Décidé le 27/09/2026, sur la recommandation de la page** : **D4** une seule dérivation, que le
+> suivi et la page « Ton année » (C6.5) lisent toutes deux ; **D1** la même saison l'an dernier
+> passe devant le bilan précédent, et la phrase nomme ce qu'elle compare ; **D2** l'appariement se
+> fait sur le rang de saison, au bilan le plus récent de la saison homologue ; **D3** sans bilan dans
+> la saison homologue, on retombe sur le bilan précédent, en le nommant — jamais « le plus proche ».
+> **Ce qui a achevé de trancher D4**, relevé en rapprochant cette page du canvas de C6.5 : la page
+> d'année compare le **premier** bilan au **dernier** (« 600 kg de moins que ton bilan de mars »),
+> c'est-à-dire, dès que le dernier n'est pas de la saison du premier, exactement la comparaison que
+> ce chantier existe pour éviter — sur le seul chiffre en kilos qu'elle affiche. Elle lira donc
+> cette dérivation. **La construction attend** : personne ne peut en profiter avant septembre 2027,
+> et elle se fera avec C6.5.
 
 ## 1. D'où ça vient
 

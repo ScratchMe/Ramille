@@ -259,6 +259,26 @@ Chaque ligne dit le fait, l'enjeu, la recommandation et ce qu'on casse en se tro
    ENSEMBLE », page de la deuxième année). Si non, la marque devient booléenne et le paramètre `n`
    tombe. Recommandation : oui — la matière est la même chaque année et rien n'est à redessiner.
 
+### Tranché le 27/09/2026, par la personne qui pilote
+
+Les cinq points, sur la recommandation posée à chaque fois :
+
+1. **La ligne « {k} changements ont tenu deux fois de suite. » est retirée** — elle comptait des
+   démarrages de série (point 4 de la section suivante), et la plus longue série, qui dirait vrai,
+   est un record, le seul chiffre de la page qui inviterait à se battre contre soi. La page nomme
+   ce que la personne a changé, pas l'habitude en tant que telle ;
+2. **la fenêtre de la carte est de vingt-huit jours** ;
+3. **l'entrée décalée des blocs reste** (80 ms, une fois, `ReduceMotion.System`) ;
+4. **`annee_view` est mesuré**, avec `origine: 'plan' | 'suivi'`, déclaré et émis dans la même
+   livraison ;
+5. **la page revient chaque année** — « DEUX ANS ENSEMBLE », et la marque porte le rang de
+   l'année.
+
+**Et un sixième, qui n'était pas dans la liste** : l'écart de la page ne compare pas le premier
+bilan au dernier, il lit la dérivation de C4.8 — la même saison l'an dernier, sinon le bilan
+précédent, et la phrase nomme toujours ce qu'elle compare (`v1-26`, décidé le même jour). Point 5
+de la section suivante.
+
 ## Ce que l'implémentation corrigera par rapport au canvas
 
 À consigner ici au fil du chantier C6.5, comme `v1-14-boucle-engagement/README.md` et
@@ -302,4 +322,9 @@ les deux familles vaut d'être notée : les premiers se voyaient à la lecture, 
    et ça ne se voit qu'en l'exécutant. Deux issues, à trancher avec le point 1 de la section
    précédente : retirer la ligne, ou la remplacer par la **plus longue série**, qui se dérive des
    mêmes données et dit vraiment l'habitude — au prix d'un record, c'est-à-dire du seul chiffre de
-   la page qui invite à se comparer à soi.
+   la page qui invite à se comparer à soi. **Tranché le 27/09/2026 : retirée.**
+5. **L'écart de la page comparait le premier bilan au dernier** (« 600 kg de moins que ton bilan de
+   mars »). Relevé le 27/09/2026 en rapprochant le canvas de `v1-26` : dès que le dernier bilan de
+   l'année n'est pas de la saison du premier, c'est la comparaison que C4.8 existe pour éviter — un
+   hiver contre un été —, sur le seul chiffre en kilos de la page. Elle lit la dérivation de C4.8
+   (même saison, sinon le précédent, toujours nommé), la même que le suivi.

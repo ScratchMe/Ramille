@@ -2,6 +2,23 @@
 
 > **Page de décision du chantier C4.2** ([#144](https://github.com/ScratchMe/Ramille/issues/144)),
 > cinquième des six du lot 4. Écrite le 19/09/2026. Elle porte l'arbitrage **D10**.
+>
+> **Décidé le 27/09/2026, et à construire avant l'ouverture sur Play** (la recommandation était
+> d'attendre des engagements réels ; la personne qui pilote a choisi de le livrer avant). **D1** et
+> **D2** suivent la page sans arbitrage — une ligne de `notification_outbox` sans `checkin_id`, sous
+> le plafond de `regime_de_rappel`, avec sa propre clé d'idempotence ; un opt-in à trois états, que
+> `reminder_channel = 'none'` éteint aussi. **D3** notification seule, jamais proposé à qui a choisi
+> l'e-mail, et la feuille des rappels dit qu'il cesse quand le jeton se perd. **D4** dix semaines
+> depuis le **premier engagement choisi de la saison** — « Choisir une autre action » ne rouvre
+> rien, et **une reconduction au changement de saison n'ouvre pas de fenêtre** (décidé le même
+> jour : sinon le mot deviendrait quasi permanent pour qui tient son action) ; une action nouvelle
+> choisie dans une saison nouvelle en rouvre une. **D5 revient sur la recommandation de la page** :
+> le mot **nomme ce que la personne a prévu, avec les mots de sa question** — « Demain, tu as prévu
+> de faire ton trajet à vélo. », « Demain, tu as prévu de travailler depuis chez toi. » —, une phrase
+> par gabarit de trajet, parce qu'une intention d'implémentation est justement « quand X, je fais
+> Y » et que le signal utile rappelle le Y. « Demain, c'est un de tes jours. » a été écarté comme
+> trop vague (« un de tes jours de quoi ? »). Le mot ne concerne que le trajet domicile-travail :
+> c'est le seul poste dont l'intention se donne en jours.
 
 ## 1. D'où ça vient
 
