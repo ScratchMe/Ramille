@@ -31,7 +31,9 @@
 -- Quinze mutations, chacune jouée seule dans une transaction annulée — la migration puis ce fichier,
 -- **les contrôles de fin de migration coupés**, sans quoi trois d'entre elles s'arrêtaient avant le
 -- premier test (M1, M2 et M11 : c'est une garde de plus, pas un défaut). Un témoin sans mutation passe
--- les 39. Ce que chacune fait tomber, et rien d'autre :
+-- les 41. Ce que chacune fait tomber, et rien d'autre — **les numéros sont ceux du fichier à 41
+-- assertions** : les deux du rappel annulé (27 et 28), ajoutées à l'intégration, ont décalé de deux
+-- tout ce qui les suit, et la table a été renumérotée avec elles :
 --
 --   | Ce qu'on casse | Ce qui tombe |
 --   |---|---|
@@ -40,16 +42,17 @@
 --   | M3 — le RPC ne régénère plus le plan | 12, 13, 14, 18 |
 --   | M4 — le RPC régénère même quand le bilan retiré ne portait pas le plan | 21 |
 --   | M5 — la garde de rôle du trigger retirée | 6, puis le fichier s'arrête sur 7 : l'`update` direct a déjà retiré le bilan, et le RPC lève `RM006` hors de tout `throws_ok` |
---   | M6 — la garde d'état du trigger retirée | 34 |
---   | M7 — un bilan retiré peut revenir | 23, puis 25, 26, 28 et 37 : le bilan d'U est redevenu complété. La 24 reste verte, et c'est juste — `completed` → `in_progress` est refusé par l'autre branche |
---   | M8 — un bilan peut naître retiré | 32 |
---   | M9 — le refus du RPC levé sous un autre code | 8, 31 |
---   | M10 — le RPC ne vérifie plus la propriété | 30, 33, et 38 : le tiers a retiré le bilan de V |
---   | M11 — la segmentation reprend `submitted_at is not null` | 36, 37 |
---   | M12 — la segmentation écrit `'complete'` de mémoire | 36, 38 |
---   | M13 — l'entonnoir ne compte que les comptes pourvus d'un bilan complété | 35 |
+--   | M6 — la garde d'état du trigger retirée | 36 |
+--   | M7 — un bilan retiré peut revenir | 23, puis 25, 26, 30 et 39 : le bilan d'U est redevenu complété. La 24 reste verte, et c'est juste — `completed` → `in_progress` est refusé par l'autre branche |
+--   | M8 — un bilan peut naître retiré | 34 |
+--   | M9 — le refus du RPC levé sous un autre code | 8, 33 |
+--   | M10 — le RPC ne vérifie plus la propriété | 32, 35, et 40 : le tiers a retiré le bilan de V |
+--   | M11 — la segmentation reprend `submitted_at is not null` | 38, 39 |
+--   | M12 — la segmentation écrit `'complete'` de mémoire | 38, 40 |
+--   | M13 — l'entonnoir ne compte que les comptes pourvus d'un bilan complété | 37 |
 --   | M14 — l'export écarte les bilans retirés | 25 |
---   | M15 — les deux générateurs de points lisent `status <> 'in_progress'` | 28 |
+--   | M15 — les deux générateurs de points lisent `status <> 'in_progress'` | 30 |
+--   | M16 — le RPC n'annule plus les rappels en attente quand il ne reste aucun bilan (27/09/2026, à l'intégration : la migration mutée sur le disque, puis `rejouer-la-ci base` sur les 35 fichiers) | 27, et rien d'autre dans la suite |
 --
 -- **M13 est d'abord passée**, et c'est elle qui a changé la fixture : la vue d'étape était celle de
 -- R, qui garde un bilan valide après son retrait — un entonnoir borné aux comptes pourvus d'un bilan
