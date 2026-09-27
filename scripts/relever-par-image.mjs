@@ -114,7 +114,12 @@ export function releverParImage(depuisLeDebut) {
       const dialogue = [...document.querySelectorAll('[aria-modal="true"]')].find(
         (d) => d.getAttribute('aria-label') === titre
       );
-      if (!dialogue) return null;
+      // Et **montré** : au premier rendu, react-native-web pose `opacity: 0` sur tout le `Modal`
+      // (`styles.hidden` de `ModalAnimation`), le temps que son effet le rende. Relevée là, la feuille
+      // est à sa place mais son voile vaut zéro, ce qui se lisait « elle bouge » sous la préférence —
+      // une fausse alerte, au premier passage en CI, mesurée ensuite image par image. Ce n'est pas un
+      // mouvement : le `Modal` n'est pas encore montré, feuille et voile ensemble.
+      if (!dialogue || opacite(dialogue) < 0.01) return null;
       const voile = [...dialogue.querySelectorAll('div')].find((d) => {
         const r = d.getBoundingClientRect();
         return d.children.length === 0 && r.width >= innerWidth - 1 && r.height >= innerHeight - 1;
