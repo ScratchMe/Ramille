@@ -31,7 +31,7 @@ const Comparaison = ({ label, valeur, percent }) => (
     </div>
   </div>
 );
-export function EtapeContexte({ onSuivant, style }) {
+export function EtapeContexte({ onSuivant, onPrecedent, style }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', padding: 24, background: 'var(--color-background)', minHeight: 760, boxSizing: 'border-box', ...style }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 24 }}>
@@ -66,7 +66,10 @@ export function EtapeContexte({ onSuivant, style }) {
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>
-        <Button title="Continuer" onPress={onSuivant} />
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <Button title="Retour" variant="secondary" onPress={onPrecedent} style={{ width: 'auto' }} />
+          <Button title="Continuer" onPress={onSuivant} flex />
+        </div>
         <OnboardingDots total={4} activeIndex={1} />
       </div>
     </div>

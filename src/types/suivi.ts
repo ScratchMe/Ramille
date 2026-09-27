@@ -3,7 +3,7 @@
 // alimentent vivent dans `src/lib/bilan-history.ts`.
 
 import { MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
-import { POSTE_EN_PHRASE, POSTES, type LoopType, type Poste } from '@/constants/postes';
+import { POSTE_EN_PHRASE, POSTES, nomDuPoste, type LoopType, type Poste } from '@/constants/postes';
 import { formatTonnesNu } from '@/lib/format';
 import { saisonDuJour, saisonsEcouleesDepuis } from '@/types/saison';
 
@@ -22,6 +22,12 @@ export type AssessmentSnapshot = {
    * donc la comparaison se fait poste à poste et jamais « dominant contre dominant ».
    */
   parPoste: Record<Poste, number>;
+  /**
+   * Les loisirs de ce bilan sont-ils le résiduel des sorties rares (`loisirsSontLeResiduel`) ? Ils
+   * s'appellent alors « loisirs occasionnels » partout où le suivi les nomme (arbitrage du
+   * 27/09/2026, `v1-29` §6.3).
+   */
+  loisirsOccasionnels: boolean;
 };
 
 export type CheckinRecord = {
@@ -402,11 +408,11 @@ export function ecartParPoste(
  * des deux côtés voit cette ligne retirée de la liste (`ecartParPoste`), et « accent : … » décrirait
  * une barre qui n'est pas à l'écran.
  */
-export function legendeDeLEcart(ecarts: EcartDePoste[]): string {
+export function legendeDeLEcart(ecarts: EcartDePoste[], loisirsOccasionnels = false): string {
   const formes = 'Contour : bilan précédent · plein : ce bilan';
   const dominant = ecarts.find((ecart) => ecart.dominant);
   return dominant
-    ? `${formes} · accent : ${POSTE_EN_PHRASE[dominant.poste]}, le poste sur lequel ton plan travaille`
+    ? `${formes} · accent : ${nomDuPoste(dominant.poste, 'enPhrase', loisirsOccasionnels) ?? POSTE_EN_PHRASE[dominant.poste]}, le poste sur lequel ton plan travaille`
     : formes;
 }
 

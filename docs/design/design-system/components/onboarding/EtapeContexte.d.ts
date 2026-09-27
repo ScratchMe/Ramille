@@ -2,6 +2,8 @@
 export interface EtapeContexteProps {
   /** « Continuer ». */
   onSuivant?: () => void;
+  /** « Retour », à gauche de « Continuer » — la page d'avant. */
+  onPrecedent?: () => void;
   style?: React.CSSProperties;
 }
 export declare function EtapeContexte(props: EtapeContexteProps): JSX.Element;

@@ -6,8 +6,8 @@ import { ThemedText } from '../core/ThemedText.jsx';
 import { ReassuranceIllustration } from '../illustrations/ReassuranceIllustration.jsx';
 // Source : src/components/onboarding/etape-reassurance.tsx — « Pas de jugement. » sur le fond teinté (`backgroundTinted`) :
 // les contraintes ne sont pas des fautes, les réponses restent privées, aucune comparaison. Le lien vers ce qu'on
-// enregistre rend vérifiable la phrase qui le précède. Les points de progression passent en `onTint` sur ce fond.
-export function EtapeReassurance({ onSuivant, onConfidentialite, style }) {
+// enregistre rend vérifiable la phrase qui le précède.
+export function EtapeReassurance({ onSuivant, onPrecedent, onConfidentialite, style }) {
   const corps = { fontSize: 17, lineHeight: '26px' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 32, padding: 24, background: 'var(--color-background-tinted)', minHeight: 760, boxSizing: 'border-box', ...style }}>
@@ -21,8 +21,11 @@ export function EtapeReassurance({ onSuivant, onConfidentialite, style }) {
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-        <Button title="Continuer" onPress={onSuivant} />
-        <OnboardingDots total={4} activeIndex={2} onTint />
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <Button title="Retour" variant="secondary" onPanel onPress={onPrecedent} style={{ width: 'auto' }} />
+          <Button title="Continuer" onPress={onSuivant} flex />
+        </div>
+        <OnboardingDots total={4} activeIndex={2} />
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // collé avec ses espaces ou son tiret entre tel quel. Clavier numérique et remplissage « code à usage unique ».
 const LONGUEUR_DU_CODE = 8;
 const chiffresDuCode = (saisie) => saisie.replace(/\D/g, '').slice(0, LONGUEUR_DU_CODE);
-export function ChampDeCode({ value = '', onChangeText, label = 'Code reçu par email', helperText = LONGUEUR_DU_CODE + ' chiffres, sans espace.' }) {
+export function ChampDeCode({ value = '', onChangeText, label = 'Code reçu par email', helperText = LONGUEUR_DU_CODE + ' chiffres, sans espace. Il est vérifié dès le dernier chiffre.' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <ThemedText type="small" themeColor="textTertiary">{label}</ThemedText>

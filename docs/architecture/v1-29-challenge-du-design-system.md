@@ -493,13 +493,47 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
 
 ### 6.3 Ce qui n'a pas été arbitré, et ne se fait donc pas
 
-- **Un « Précédent » (ou un « Passer ») dans l'onboarding** : l'audit relève qu'aucun contrôle ne
-  permet d'y revenir en arrière, sinon le balayage ou le retour Android. C'est une question de
-  produit — ce qu'on demande à la personne, et dans quel ordre —, pas une correction ;
-- **l'avertissement de la vérification automatique** : le code part seul au huitième chiffre
-  (`FRONT.md` §2.7 bis) sans que l'écran le dise (WCAG 3.2.2). La décision est documentée ; seule la
-  phrase manque, et c'est une phrase à arbitrer ;
-- **les points de pagination de l'onboarding** ne ressortent qu'à 1,37:1 sur leur fond (WCAG 1.4.11) ;
+- **tranché le 27/09/2026 — un « Retour » dans l'onboarding, et pas de « Passer »** : l'audit relevait
+  qu'aucun contrôle n'y permettait de revenir en arrière, sinon le balayage ou le retour Android. La
+  décision a été prise en trois temps, sur la recommandation posée à chaque fois :
+  - **un retour, et pas de « Passer »** : le retour ferme l'écart WCAG 2.5.1 (un balayage doit avoir
+    une alternative à un seul pointeur) et le cas du web à la souris, où l'on ne pouvait pas revenir
+    relire les repères — le retour du navigateur fait sortir de l'onboarding. Un « Passer » aurait
+    fait sauter la réassurance et les repères, et c'est la réassurance qui fait commencer le bilan ;
+  - **sa forme est celle du questionnaire** : « Retour » en secondaire à gauche de « Continuer », le
+    même mot que `StepShell`, sur les pages 2 à 4 — la page 1 n'a rien derrière elle. La forme
+    d'abord approuvée, un lien près des points, ajoutait une quarantaine de pixels à des pages qui
+    débordaient déjà à 360 × 640 ; la rangée n'en ajoute aucun. Sur la page teintée, « Retour » est
+    filé (`onPanel`), et ce filet se dessine désormais **dans** la boîte : posé en plus du
+    rembourrage, il faisait 56 px à côté d'un « Continuer » de 54, mesuré sur l'export ;
+  - **et le bouton de la page 4 dit « Commencer »** (troisième temps, même jour) : à côté de
+    « Retour », « Commencer mon bilan » (168 px) passait sur deux lignes sous 390 px de large — il en
+    restait 151 à 360. Le titre juste au-dessus dit déjà « On passe à ton bilan ». Écart au handoff
+    (écran 1.4), qui reste tel qu'il a été livré.
+  Mesuré sur l'export de 320 à 390 px : les deux boutons sur une ligne et à 54 px sur les trois
+  pages, et le focus posé sur le titre de la page d'arrivée. La garde d'export (section E) joue
+  « Retour » au clavier ;
+- **tranché le 27/09/2026 — le décompte des long-courriers dit zéro en mots** : sous la répartition
+  des vols, l'étape confirme ce que le calcul comptera en long-courrier, et à zéro elle écrivait
+  « 0 vol long-courrier sera compté. » — juste, et le seul zéro chiffré de ce genre dans le
+  questionnaire. Elle dit maintenant « Aucun vol long-courrier ne sera compté. » plutôt que de se
+  taire : la personne qui vient de dire qu'elle n'en prend aucun garde la confirmation que toutes
+  les autres reçoivent (`decompteDesLongsCourriers`, `src/types/bilan.ts`) ;
+- **tranché le 27/09/2026 — la vérification automatique du code est annoncée sous le champ** : le
+  code part seul au huitième chiffre (`FRONT.md` §2.7 bis) sans que l'écran le dise (WCAG 3.2.2). Le
+  texte d'aide de `ChampDeCode` devient « 8 chiffres, sans espace. Il est vérifié dès le dernier
+  chiffre. » — là où l'œil est, et annoncé par le lecteur d'écran en entrant dans le champ, puisqu'il
+  est aussi son `accessibilityHint`. Une phrase pour les trois écrans, qui partagent le composant.
+  Écartés : retirer l'automatisme (un geste de plus sur le cas le plus courant, coller le code) et
+  laisser l'écart ;
+- **tranché le 27/09/2026 — les points de pagination de l'onboarding foncent, et l'actif s'allonge** :
+  les inactifs ne ressortaient qu'à 1,33:1 sur blanc et 1,37:1 sur la page teintée (WCAG 1.4.11), et
+  ce sont la seule progression visible. Ils passent en `fieldBorder` — 3,45:1 sur blanc, 3,21:1 sur
+  la teinte, 4,97 et 4,41 en sombre —, un seul neutre pour les deux fonds, donc `paginationInactive`
+  et la prop `onTint` sont retirés. Foncés, ils ne se distinguaient plus de l'actif que par la
+  teinte (1,78:1 en clair, 1,23:1 en sombre) : l'actif devient une pilule de 20 × 8, lue par sa
+  forme (WCAG 1.4.1). Même hauteur, rien ne bouge dans la page. Écart au handoff. La garde d'export
+  (section E) mesure le contraste et la forme sur la page blanche et sur la teintée ;
 - ce que la base de référence apportait et que le produit n'a pas retenu : des graphiques à quatre
   points au moins, un réglage de la recette à 200 % de taille de police et en mouvement réduit —
   ce dernier est repris en §6.5 ;
@@ -526,11 +560,38 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
     rendrait les autres atteignables, donc C4.3 est aussi l'endroit où y revenir.
   Les deux écrans reconnaissent le résiduel d'un seul critère (`estLeResiduelDesSortiesRares`,
   `src/constants/postes.ts`), et le parcours réel attend les deux phrases sur le cycliste ;
-- **ce que ce même profil voit encore ailleurs, relevé en le tranchant et pas arbitré** : sur le
-  suivi, « Poste principal : Loisirs du week-end » nomme le résiduel comme un comportement (le
-  libellé nu perd « (occasionnels) ») ; et la ligne d'horizon du suivi, « Tu es sous la moyenne
-  française : à partir de là, le repère 2050 se joue palier après palier. », se lit mal pour
-  **quiconque est déjà sous le repère**, résiduel ou non. Deux phrases de produit, à poser ;
+- **tranché le 27/09/2026 — sous le repère, la ligne d'horizon du suivi dit qu'on y est** :
+  « Tu es déjà sous le repère transport 2050. », la première phrase de la restitution mot pour mot,
+  décidée par la même comparaison, égalité comprise (`ligneDHorizon2050`, `src/types/palier.ts`).
+  Entre le repère et la moyenne, la phrase « palier après palier » reste. Le parcours réel la lit
+  sur le suivi du cycliste ; il ne garde pas l'ordre des deux bornes, ce profil étant sous les deux ;
+- **tranché le 27/09/2026 — le résiduel des sorties rares s'appelle « loisirs occasionnels »,
+  partout où il est nommé.** Deux relevés du 25/09 le posaient par morceaux — « Poste principal :
+  Loisirs du week-end » sur le suivi, et « … presque à égalité avec tes sorties du week-end » quand
+  le domicile-travail l'emporte sur lui —, et **la question posée ce jour-là portait un fait faux** :
+  elle affirmait que la restitution nommait déjà le résiduel « Loisirs du week-end (occasionnels) ».
+  Aucun écran ne le faisait ; le mot n'existait que dans le libellé figé en base, et la restitution
+  titrait « Tes loisirs du week-end ». Relevé en contre-lisant l'implémentation, avant toute PR, et
+  reposé avec le bon fait : le défaut était d'abord sur la restitution. La décision, sur la
+  recommandation posée : un seul vocabulaire —
+  - titre de la restitution « Tes loisirs occasionnels », sa barre de répartition « Loisirs
+    occasionnels », la carte de partage aussi ;
+  - sur le suivi, « Poste principal : Loisirs occasionnels » et la ligne de l'écart par poste ;
+  - le cap du plan, « … soit − 20 % sur tes loisirs occasionnels », qui se chiffre dès que le plan
+    porte une action, fût-elle sur un autre poste que celui du cycle ;
+  - l'étiquette du départage « Le plus régulier, presque à égalité avec tes loisirs occasionnels ».
+  Des sorties déclarées gardent « loisirs du week-end », le nom de la section du questionnaire.
+  Le choix se fait en un seul endroit (`nomDuPoste`, `src/constants/postes.ts`), et la
+  reconnaissance du résiduel en un autre (`loisirsSontLeResiduel`) : **la fréquence déclarée**, que
+  la restitution et le suivi lisent désormais, parce que les libellés figés ne marquent le résiduel
+  que quand il domine ou porte la boucle mensuelle — pas dans le cas courant de « rarement » avec un
+  vol. Les libellés restent le repli d'une fréquence qu'on n'a pas pu lire. Le parcours réel lit le
+  titre, la barre et le suivi sur le cycliste.
+  **Relevé en l'implémentant, et pas tranché** : la légende de l'écart par poste dit « accent : tes
+  loisirs occasionnels, le poste sur lequel ton plan travaille », alors qu'un plan dont le poste est
+  ce résiduel ne porte aucune action. Et à vérifier en base : un profil « rarement » dont les
+  voyages déclarés pèsent moins que le résiduel reçoit peut-être une boucle mensuelle sur ses
+  « sorties du week-end » — une phrase composée côté serveur, que ce chantier ne touche pas ;
 - **la date de mise à jour de la page de confidentialité** vaut le 24/09/2026 ; la page dit que sa
   date est celle où le texte arrive devant les lecteurs, donc elle suit la date de fusion ;
 - **tranché le 25/09/2026 — les deux variantes de la phrase du cap, et son silence, validés tels
@@ -554,11 +615,10 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
   (`etiquetteDuPosteDominant`, reconnu par `estLeResiduelDesSortiesRares`). Des sorties déclarées
   gardent « Le plus régulier ». Le cas est rare — des voyages entre 100 et 105 % d'un résiduel qui
   ne dépasse pas une soixantaine de kilos — et aucun des sept bilans de la production ne le portait ;
-- **relevé en le tranchant, et pas arbitré** : le cas symétrique est atteignable. Quand le **domicile-travail**
-  gagne le départage face au résiduel un peu plus lourd — un trajet en trottinette, par exemple —,
-  l'étiquette dit « Le plus régulier, presque à égalité avec **tes sorties du week-end** » : elle
-  nomme comme un comportement des sorties que la personne a dit ne presque pas faire. Même famille
-  que le « Poste principal » du suivi ci-dessus ; une phrase de produit, à poser ;
+- **le cas symétrique de l'étiquette est tranché avec le nom du résiduel, ci-dessus** : quand le
+  domicile-travail gagne le départage face au résiduel un peu plus lourd, l'étiquette dit « … presque
+  à égalité avec tes loisirs occasionnels ». Le marqueur se lit sur `extras_poste_label` — quand les
+  loisirs sont le poste le plus lourd, c'est forcément eux que la boucle mensuelle porte ;
 - **le contour de « Oui » et « Non »** : posés sur la carte par `onPanel`, ils se détachent à
   1,14:1 (carte grise) et 1,18:1 (carte teintée), filet compris entre 1,13 et 1,18:1 — exactement le
   contraste de **tout** bouton secondaire du produit sur le fond de l'écran (1,14:1). WCAG 1.4.11

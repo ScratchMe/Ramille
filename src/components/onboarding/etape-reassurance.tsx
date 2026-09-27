@@ -21,9 +21,12 @@ import { type TitreFocalisable } from '@/lib/focus';
 // cf. handoff design.
 export function EtapeReassurance({
   onSuivant,
+  onPrecedent,
   titre,
 }: {
   onSuivant: () => void;
+  /** Revenir à la page d'avant — le « Retour » du pied, à côté de « Continuer ». */
+  onPrecedent: () => void;
   /** De quoi recevoir le focus quand le pager arrive sur cette page (`src/lib/focus.ts`). */
   titre?: TitreFocalisable;
 }) {
@@ -64,8 +67,11 @@ export function EtapeReassurance({
           </View>
         </View>
         <View style={styles.footer}>
-          <Button title="Continuer" onPress={() => onSuivant()} />
-          <OnboardingDots total={4} activeIndex={2} onTint />
+          <View style={styles.boutons}>
+            <Button title="Retour" variant="secondary" onPanel onPress={() => onPrecedent()} />
+            <Button title="Continuer" onPress={() => onSuivant()} flex />
+          </View>
+          <OnboardingDots total={4} activeIndex={2} />
         </View>
       </SafeAreaView>
     </ThemedView>
@@ -80,4 +86,5 @@ const styles = StyleSheet.create({
   textBlock: { gap: Spacing.four },
   body: { fontSize: 17, lineHeight: 26 },
   footer: { gap: Spacing.five },
+  boutons: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
 });

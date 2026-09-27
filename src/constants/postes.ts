@@ -146,3 +146,70 @@ export function estLeResiduelDesSortiesRares(
 export function posteLabel(poste: string | null | undefined, repli: string): string {
   return (poste ? POSTE_LABEL[poste] : undefined) ?? repli;
 }
+
+/**
+ * **Le résiduel des sorties rares s'appelle « loisirs occasionnels », partout où il est nommé**
+ * (arbitrage du 27/09/2026, `v1-29` §6.3). « Loisirs du week-end » décrivait un comportement que la
+ * personne a dit ne presque pas avoir ; le mot est celui du libellé que le serveur fige,
+ * « (occasionnels) », qu'aucun écran n'affichait. Un nom par registre, comme les quatre tables
+ * ci-dessus — et seulement pour ce résiduel : des sorties déclarées restent les « loisirs du
+ * week-end » de la section du questionnaire.
+ */
+export const LOISIRS_OCCASIONNELS = {
+  label: 'Loisirs occasionnels',
+  sujet: 'Tes loisirs occasionnels',
+  enPhrase: 'tes loisirs occasionnels',
+  insere: 'tes loisirs occasionnels',
+} as const;
+
+const REGISTRES = {
+  label: POSTE_LABEL,
+  sujet: POSTE_SUBJECT,
+  enPhrase: POSTE_EN_PHRASE,
+  insere: FORME_INSERABLE,
+} as const;
+
+/**
+ * Le nom d'un poste dans un registre, ou `undefined` pour un poste inconnu — l'appelant garde son
+ * repli, comme avec les tables. Les loisirs prennent le nom du résiduel quand `occasionnels` le dit,
+ * et c'est le seul endroit où ce choix se fait : les écrans ne le tranchent pas en ternaire.
+ */
+export function nomDuPoste(
+  poste: string | null | undefined,
+  registre: keyof typeof REGISTRES,
+  occasionnels: boolean
+): string | undefined {
+  if (!poste) return undefined;
+  if (poste === 'leisure' && occasionnels) return LOISIRS_OCCASIONNELS[registre];
+  return REGISTRES[registre][poste];
+}
+
+/**
+ * Les loisirs d'un bilan sont-ils le résiduel des sorties rares ?
+ *
+ * **La fréquence déclarée le dit toujours ; les libellés figés, pas toujours.** Le serveur ne marque
+ * le résiduel que sur les deux libellés qu'il fige — le poste dominant et celui de la boucle
+ * mensuelle —, donc quand les voyages pèsent plus que lui sans que les loisirs dominent, rien ne le
+ * marque : c'est le cas courant de « rarement » avec un vol. Les libellés ne sont que le repli d'une
+ * fréquence qu'on n'a pas lue (`undefined`) ou pas pu lire.
+ */
+export function loisirsSontLeResiduel(bilan: {
+  leisure_frequency?: string | null;
+  dominant_poste: string | null | undefined;
+  dominant_poste_label: string | null | undefined;
+  extras_poste_label?: string | null;
+}): boolean {
+  if (bilan.leisure_frequency != null) return bilan.leisure_frequency === 'rarely';
+  return (
+    estLeResiduelDesSortiesRares(bilan.dominant_poste, bilan.dominant_poste_label) ||
+    estLeResiduelDesSortiesRares('leisure', bilan.extras_poste_label)
+  );
+}
+
+/**
+ * Le poste principal nommé sous une entrée de l'historique du suivi. Le poste principal porte
+ * toujours le marqueur du résiduel sur son libellé figé, donc la fréquence n'est pas nécessaire ici.
+ */
+export function posteDeLHistorique(poste: string | null | undefined, libelle: string): string {
+  return nomDuPoste(poste, 'label', estLeResiduelDesSortiesRares(poste, libelle)) ?? libelle;
+}

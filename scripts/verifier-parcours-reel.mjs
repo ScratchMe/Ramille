@@ -157,6 +157,21 @@
 // s'arrêtait donc à la restitution, sur le message de R1 : un résultat qui avait l'air d'une
 // mutation attrapée et qui n'éprouvait rien du plan. Rejouée seule, elle tombe où elle doit.
 //
+// **Et trois le 27/09/2026, sur le résiduel des sorties rares — les « loisirs occasionnels » — et la
+// ligne d'horizon du suivi** (`v1-29` §6.3), après un témoin passé de bout en bout — et un premier
+// passage tombé à tort, `ThemedText` posant une espace insécable devant le deux-points, d'où la
+// normalisation des blancs dans l'étape du suivi :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | O1 — la barre de la restitution passe `false` à `nomDuPoste` | « cycliste — restitution » : « /^Loisirs occasionnels$/ » n'apparaît jamais |
+//   | S1 — le suivi repasse par `posteLabel` | « cycliste — le suivi » : « le suivi ne nomme pas le résiduel comme la restitution » |
+//   | S2 — le repère passé à `ligneDHorizon2050` vaut 0 | « cycliste — le suivi » : « la ligne d'horizon du suivi ne dit pas « déjà sous le repère » » |
+//
+// O1 ne dit rien de la **fréquence** que la restitution lit : chez ce cycliste le résiduel domine,
+// donc son libellé figé le marque déjà, et la barre le nommerait sans la fréquence. C'est
+// `loisirsSontLeResiduel` et ses tests qui gardent le cas où il ne domine pas.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -477,7 +492,7 @@ try {
   await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
-  await boutonDuPager('Commencer mon bilan', 3);
+  await boutonDuPager('Commencer', 3);
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
 
   // ── 2. Le questionnaire, réponse par réponse ────────────────────────────────────────────────
@@ -822,7 +837,7 @@ try {
   await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
-  await boutonDuPager('Commencer mon bilan', 3);
+  await boutonDuPager('Commencer', 3);
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
 
   await choisir('Oui');
@@ -871,6 +886,11 @@ try {
   // la phrase reste, et il s'attend d'abord : sans lui, l'absence qui suit passerait sur un palier
   // qui ne se rend plus du tout.
   await attendreTexte('Tu es déjà sous le repère transport 2050.');
+  // **Le résiduel s'appelle « loisirs occasionnels »** (arbitrage du 27/09/2026, `v1-29` §6.3) :
+  // le titre et la barre de répartition. La barre s'attend **exacte** : « Loisirs occasionnels »
+  // est aussi une sous-chaîne du titre, qui la satisferait sans rien éprouver de la barre.
+  await attendreTexte('Tes loisirs occasionnels');
+  await attendreTexte(/^Loisirs occasionnels$/);
   const texteDeLaRestitution = await page.evaluate(() => document.body.innerText);
   assurer(
     !/S’il te reste de l’envie/.test(texteDeLaRestitution),
@@ -985,6 +1005,43 @@ try {
     { timeout: ATTENTE }
   );
   await attendreTexte('Deux endroits, pas plus.');
+
+  // **Le suivi du cycliste nomme le résiduel comme la restitution, et dit qu'il est sous le
+  // repère** (arbitrages du 27/09/2026, `v1-29` §6.3). Les dérivations sont testées par Jest ; ce
+  // qui ne l'est que d'ici, c'est que l'écran les **appelle** — et avec le libellé figé pour
+  // `posteDeLHistorique`. **L'ordre des deux bornes de `ligneDHorizon2050` n'est pas gardé** : à
+  // 11 kg, ce profil est sous la moyenne comme sous le repère, donc les intervertir rend la même
+  // phrase, et le premier profil (4,2 t) est au-dessus des deux. Il faudrait un profil entre 0,6 et
+  // 2,8 t. Les deux textes se lisent dans la **carte de l'historique**, remontée depuis sa ligne, et
+  // jamais dans la page : la restitution, restée montée dans la pile, dit elle aussi « Tu es déjà
+  // sous le repère transport 2050. », et une attente sur la page entière passerait sans rien éprouver.
+  etape('cycliste — le suivi');
+  for (const libelle of await page.getByText('Suivi', { exact: true }).all()) {
+    if (await libelle.isVisible()) {
+      await libelle.click();
+      break;
+    }
+  }
+  await page.waitForURL(/\/suivi$/, { timeout: ATTENTE });
+  const ligneSobre = page.getByLabel(/^Bilan du .* kg CO₂e$/).first();
+  await ligneSobre.waitFor({ state: 'visible', timeout: ATTENTE });
+  // Les blancs se normalisent, insécables compris : `ThemedText` pose une espace insécable devant
+  // le deux-points au rendu (`espacesInsecables`), et `\s` de JavaScript les couvre.
+  const { ligne: texteDeLaLigne, carte: texteDeLaCarte } = await ligneSobre.evaluate((el) => {
+    const blancs = (t) => (t ?? '').replace(/\s+/g, ' ');
+    let carte = el.parentElement;
+    for (let i = 0; i < 4 && carte && !/Tu es /.test(carte.innerText); i++) carte = carte.parentElement;
+    return { ligne: blancs(el.innerText), carte: blancs(carte?.innerText) };
+  });
+  assurer(
+    texteDeLaLigne.includes('Poste principal : Loisirs occasionnels'),
+    `le suivi ne nomme pas le résiduel comme la restitution (posteDeLHistorique) : ${texteDeLaLigne}`
+  );
+  assurer(
+    texteDeLaCarte.includes('Tu es déjà sous le repère transport 2050.') &&
+      !texteDeLaCarte.includes('palier après palier'),
+    `la ligne d'horizon du suivi ne dit pas « déjà sous le repère » (ligneDHorizon2050) : ${texteDeLaCarte.slice(0, 300)}`
+  );
 
   await rpc('delete_my_account', sobre.jeton);
 

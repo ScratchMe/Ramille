@@ -31,7 +31,12 @@ import {
 } from '@/types/resultat';
 import { BarreContour } from '@/components/suivi/barre-contour';
 import { BlocMethode } from '@/components/suivi/bloc-methode';
-import { FORME_INSERABLE, estLeResiduelDesSortiesRares } from '@/constants/postes';
+import {
+  FORME_INSERABLE,
+  estLeResiduelDesSortiesRares,
+  loisirsSontLeResiduel,
+  nomDuPoste,
+} from '@/constants/postes';
 import { formatDate, variationDepuisLeBilanPrecedent, moisLocalDe } from '@/types/suivi';
 import {
   loadBilanPrecedent,
@@ -63,8 +68,8 @@ type AssessmentResults = Database['public']['Tables']['assessment_results']['Row
 // chacun à une assertion près. Ne rien redéclarer ici.
 //
 // Seul reste ce qui est propre au rendu : quelle colonne de `assessment_results` alimente
-// quelle barre. Le libellé, lui, vient de `POSTE_LABEL` — il est aussi celui de la liste du
-// suivi et celui de la carte de partage.
+// quelle barre. Le libellé, lui, vient de `nomDuPoste` — le même que la liste du suivi et la
+// carte de partage, résiduel des sorties rares compris.
 const POSTE_BREAKDOWN: {
   key: 'commute' | 'leisure' | 'travel';
   co2Key: 'commute_co2_kg_year' | 'leisure_co2_kg_year' | 'travel_co2_kg_year';
@@ -228,6 +233,12 @@ export default function BilanResultat() {
   // React Compiler refuse (`react-hooks/set-state-in-effect`).
   const banniere: EtatDeLaBanniere = mode === 'relecture' ? 'autre' : banniereLue;
   const [partage, setPartage] = useState<EtatPartage>({ statut: 'inactif' });
+  // **La fréquence des loisirs, pour nommer le résiduel des sorties rares** (arbitrage du 27/09/2026,
+  // `v1-29` §6.3). Les libellés figés ne le marquent que quand il domine ou porte la boucle
+  // mensuelle ; la barre de répartition le montre aussi quand les voyages pèsent plus — « rarement »
+  // et un vol, le cas courant. Une lecture à part et tolérante, comme la date en relecture : `null`
+  // (pas encore lue, ou pas pu) fait retomber `loisirsSontLeResiduel` sur les libellés.
+  const [frequenceDesLoisirs, setFrequenceDesLoisirs] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -358,6 +369,24 @@ export default function BilanResultat() {
       cancelled = true;
     };
   }, [id, mode, tentative]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('assessment_answers')
+        .select('leisure_frequency')
+        .eq('assessment_id', id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) console.error('La fréquence des loisirs n’a pas pu être lue :', error);
+      setFrequenceDesLoisirs(data?.leisure_frequency ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, tentative]);
 
   useEffect(() => {
     // En relecture, aucune proposition de compte : redemander à chaque consultation de son
@@ -518,6 +547,7 @@ export default function BilanResultat() {
   // déclaré. La marche s'y tait (`palierNote`, arbitrage du 25/09/2026) — même lecture que la
   // félicitation du plan qui suit, pour que les deux écrans le reconnaissent d'un seul critère.
   const posteSuppose = estLeResiduelDesSortiesRares(results.dominant_poste, results.dominant_poste_label);
+  const loisirsOccasionnels = loisirsSontLeResiduel({ ...results, leisure_frequency: frequenceDesLoisirs });
   const equivalenceDeLaMarche = palier ? equivalenceNote(palier) : null;
   // Le repère 2050 revient dès qu'on passe sous la moyenne : au-dessus il est un gouffre, en
   // dessous un horizon crédible. Cf. `showsTarget2050`.
@@ -669,7 +699,7 @@ export default function BilanResultat() {
                 return (
                   <CompareRow
                     key={poste.key}
-                    label={POSTE_LABEL[poste.key]}
+                    label={nomDuPoste(poste.key, 'label', loisirsOccasionnels) ?? POSTE_LABEL[poste.key]}
                     value={formatTonnes(results[poste.co2Key])}
                     percent={Math.max(shareOfTotal(results[poste.co2Key]), 3)}
                     bold={dominant}

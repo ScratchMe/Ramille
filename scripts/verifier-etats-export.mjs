@@ -65,6 +65,9 @@
 //   | l'onboarding ne déplace plus le focus | le focus, avec **et** sans « réduire » (E) |
 //   | le pager anime toujours | les positions intermédiaires sous « réduire » (E) |
 //   | le titre n'a plus de `tabIndex` sur web | le focus, avec **et** sans « réduire » (E) |
+//   | « Retour » de l'onboarding branché sur la page suivante | la page d'arrivée (E) |
+//   | points inactifs remis en `border` | le contraste des points, pages 1 **et** 3 (E) |
+//   | point actif remis à 8 px | la forme de l'actif, pages 1 **et** 3 (E) |
 //   | `/suivi/bilan` lit son état sans attendre l'hydratation | l'hydratation de `?id=` **et** le HTML statique « pas pu » (D) |
 //
 // La dernière dit ce que l'avant-dernière ne dit pas : un focus demandé sur un titre que le
@@ -773,6 +776,131 @@ for (const reduire of [false, true]) {
     }
   } catch (erreur) {
     echecs.push(`/onboarding (réduire les animations : ${reduire ? 'oui' : 'non'}) : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// « Retour », sur les pages 2 à 4 depuis le 27/09/2026 (`v1-29` §6.3), passe par le même `allerA`
+// que « Continuer » : il doit ramener la page d'avant **et** y poser le focus sur le titre, hors de
+// toute page inerte. Joué au clavier depuis la page 2, une seule fois — la moitié « réduire les
+// animations » ne dit rien de plus ici, le passage étant celui qu'éprouve la boucle ci-dessus.
+//
+// Deux mutations le 27/09/2026. « Retour » branché sur `allerA(2)` : cette assertion tombe, seule.
+// « Retour » réduit à un `scrollTo` nu, sans `allerA` : **rien ne tombe, et c'est juste** — le focus
+// suit l'index quel que soit ce qui le déplace (l'effet sur `index`, src/app/onboarding/index.tsx),
+// balayage compris. La moitié « focus » garde donc cet effet, pas le bouton.
+{
+  const page = await ouvrir('/onboarding');
+  try {
+    await page.getByRole('button', { name: 'Découvrir mon impact' }).focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(REPOS);
+    await page.getByRole('button', { name: 'Retour', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(REPOS);
+    const apres = await page.evaluate(() => {
+      const pager = [...document.querySelectorAll('div')].find((d) =>
+        ['auto', 'scroll'].includes(getComputedStyle(d).overflowX)
+      );
+      const actif = document.activeElement;
+      let inerte = false;
+      for (let n = actif; n; n = n.parentElement) if (n.hasAttribute?.('inert')) inerte = true;
+      return {
+        indice: pager ? Math.round(pager.scrollLeft / pager.clientWidth) : null,
+        titre: actif?.tagName === 'H1' || actif?.getAttribute?.('role') === 'heading',
+        texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+        inerte,
+      };
+    });
+    if (apres.indice !== 0) {
+      echecs.push(
+        `/onboarding : « Retour » depuis la page 2 mène à la page ${apres.indice === null ? '(pager introuvable)' : apres.indice + 1}` +
+          ' — il doit ramener la page 1 (`onPrecedent`, src/app/onboarding/index.tsx).'
+      );
+    } else if (!apres.titre || apres.inerte) {
+      echecs.push(
+        `/onboarding : après « Retour » au clavier, le focus est sur « ${apres.texte} »` +
+          `${apres.inerte ? ', dans une page inerte' : ''} — il doit être sur le titre de la page 1.`
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`/onboarding (« Retour ») : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// **Les points de pagination se voient, et l'actif se lit par sa forme** (27/09/2026, `v1-29` §6.3).
+// Les inactifs ne ressortaient qu'à 1,33:1 sur blanc et 1,37:1 sur la page teintée ; WCAG 1.4.11
+// demande 3:1, et ce sont la seule progression visible de l'onboarding. Foncés, ils ne se
+// distinguaient plus de l'actif que par la teinte, d'où l'actif allongé. Le fond se lit sur le
+// premier ancêtre opaque — c'est ce qui rend la page 3, teintée, différente des autres. Mesuré sur
+// les pages 1 et 3 : un fond de chaque sorte.
+//
+// Deux mutations le 27/09/2026 : inactifs remis en `border` — les deux pages tombent sur le
+// contraste ; actif remis à 8 px — les deux pages tombent sur la forme.
+{
+  const page = await ouvrir('/onboarding');
+  try {
+    for (const [numero, avant] of [[1, []], [3, ['Découvrir mon impact', 'Continuer']]]) {
+      for (const nom of avant) {
+        await page.getByRole('button', { name: nom, exact: true }).click();
+        await page.waitForTimeout(REPOS);
+      }
+      const points = await page.evaluate(() => {
+        const lire = (css) => {
+          const m = css.match(/rgba?\(([^)]+)\)/);
+          if (!m) return null;
+          const [r, g, b, a = '1'] = m[1].split(',').map((x) => x.trim());
+          return [Number(r), Number(g), Number(b), Number(a)];
+        };
+        const luminance = ([r, g, b]) => {
+          const canal = (c) => {
+            const v = c / 255;
+            return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+          };
+          return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
+        };
+        const contraste = (a, b) => {
+          const [l1, l2] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+          return (l1 + 0.05) / (l2 + 0.05);
+        };
+        const barre = [...document.querySelectorAll('[role="progressbar"]')].find((e) => !e.closest('[inert]'));
+        if (!barre) return null;
+        let fond = null;
+        for (let n = barre.parentElement; n && !fond; n = n.parentElement) {
+          const c = lire(getComputedStyle(n).backgroundColor);
+          if (c && c[3] === 1) fond = c;
+        }
+        if (!fond) return null;
+        return [...barre.children].map((p) => ({
+          largeur: Math.round(p.getBoundingClientRect().width),
+          contraste: Math.round(contraste(lire(getComputedStyle(p).backgroundColor), fond) * 100) / 100,
+        }));
+      });
+      if (points === null || points.length !== 4) {
+        echecs.push(`/onboarding, page ${numero} : les points de progression sont introuvables — la garde ne peut pas conclure.`);
+        continue;
+      }
+      const actif = points[numero - 1];
+      const inactifs = points.filter((_, i) => i !== numero - 1);
+      const pale = inactifs.find((p) => p.contraste < 3);
+      if (pale) {
+        echecs.push(
+          `/onboarding, page ${numero} : un point inactif ne ressort qu’à ${pale.contraste}:1 sur son fond — 3:1 au moins` +
+            ' (WCAG 1.4.11, `fieldBorder`, src/components/onboarding-dots.tsx).'
+        );
+      }
+      if (!inactifs.every((p) => actif.largeur > p.largeur)) {
+        echecs.push(
+          `/onboarding, page ${numero} : le point actif mesure ${actif.largeur} px comme les autres — il doit se lire` +
+            ' par sa forme, pas seulement par sa teinte (WCAG 1.4.1).'
+        );
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`/onboarding (les points) : ${String(erreur).slice(0, 180)}`);
   } finally {
     await page.close();
   }
