@@ -286,6 +286,27 @@ d'`auth.users`. Deux conséquences utilisables :
   `delete_my_account` avant qu'elle ne supprime, et sans identifiant de personne : ce qu'on veut
   savoir est combien, jamais qui.
 
+**Et la question des cohortes est tranchée le 27/09/2026 : on garde le chemin, sans segment ni
+identifiant**, sur la recommandation posée. Juste avant de supprimer, la purge incrémente des
+compteurs dans une table **hors de la cascade**, dans la même transaction qu'elle — un cron séparé
+ferait mieux sur rien et pourrait manquer un passage. Chaque compteur porte :
+
+- la **semaine d'arrivée** (création de la session) ;
+- l'**étape la plus loin** atteinte : a ouvert, a soumis un bilan, s'est engagée, a répondu à au
+  moins un point ;
+- les **semaines tenues**, par tranches, jusqu'au dernier signe de vie ;
+- l'**état des rappels au départ** (`normal` / `espace` / `silence`, `regime_de_rappel`).
+
+S'y ajoute le **compte des suppressions de compte, par mois**, écrit par `delete_my_account` avant
+qu'elle ne supprime. **Aucun segment** (zone, poste dominant) : à nos volumes, une ligne découpée
+aussi finement décrirait une seule personne, c'est-à-dire garderait la trace de quelqu'un que la
+page de confidentialité promet d'effacer. Les segments attendront un volume où une ligne n'est pas
+une personne. **La page de confidentialité le dit** : elle écrit aujourd'hui que la session « et
+toutes les données associées » sont supprimées, et elle gagne une phrase sur les comptes agrégés,
+sans identifiant. C'est ce qui doit être en place **avant l'ouverture sur Play** : chaque jour sans
+agrégat est une cohorte perdue pour de bon. Restent ouverts : où vit la surface, et à quel barreau
+de `regime_de_rappel` on donne le nom de churn.
+
 **Le vocabulaire de ce lot s'appuiera sur le glossaire de `tourdegrowth.com`** (demande du
 20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
 surtout pour que les chiffres qui sortiront d'ici se comparent à ceux d'ailleurs.
