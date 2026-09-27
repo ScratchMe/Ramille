@@ -33,9 +33,9 @@
 // **Ce qu'il ne fait pas, et ce n'est pas un oubli** : il ne couvre ni les états d'erreur — c'est le
 // travail de `verifier-etats-export.mjs` — ni les exclusions de cartes en général, qui vivent depuis
 // le 27/09/2026 dans `cartesDuPlan` (`src/types/plan.ts`, `v1-27` §4) et y sont épinglées sur
-// toutes les combinaisons d'états. Ce que le second profil en éprouve, c'est que l'écran **appelle**
-// la dérivation : son nouveau bilan en voiture rend dues le même jour « Ton premier plan » et la
-// carte des deux lieux, la seule paire que l'écran empilait. Un parcours qui voudrait tout voir
+// toutes les combinaisons d'états. Ce que le second profil en éprouve, c'est une partie de l'appel :
+// son nouveau bilan en voiture rend dues le même jour « Ton premier plan » et la carte des deux
+// lieux, la seule paire que l'écran empilait — deux arguments sur huit, nommés en tête (D1, D2). Un parcours qui voudrait tout voir
 // serait fragile, et un garde-fou fragile finit ignoré.
 //
 // ── Comment il tourne ────────────────────────────────────────────────────────────────────────────
@@ -174,16 +174,24 @@
 // donc son libellé figé le marque déjà, et la barre le nommerait sans la fréquence. C'est
 // `loisirsSontLeResiduel` et ses tests qui gardent le cas où il ne domine pas.
 //
-// **Et une le même soir, sur `cartesDuPlan`** (`v1-27` §4) — l'appel, puisque la dérivation a ses
-// 384 états dans Jest. Témoin passé de bout en bout, puis un export `--clear` avec le marqueur de la
-// mutation dans le source :
+// **Et deux le même soir, sur `cartesDuPlan`** (`v1-27` §4) — l'écran, puisque la dérivation a
+// toutes ses combinaisons d'états dans Jest. Témoin passé de bout en bout, puis un export `--clear`
+// par mutation :
 //
 //   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
 //   |---|---|
 //   | D1 — l'écran remet l'ancienne condition des deux lieux (`ouverture === null && carteDesDeuxLieux`) | « cycliste — un nouveau bilan en voiture » : « la carte des deux lieux s’empile sur « Ton premier plan » » |
+//   | D2 — l'écran passe `carteDuPremierPlan` fausse quand les deux lieux sont dus (la croyance du lot 5, en argument) | la même étape : « « TON PREMIER PLAN » n'est jamais apparu à l'écran » |
 //
-// Sa capture est l'état d'avant la décision : deux cadres empilés, deux lignes de Ramille, et
-// « Ton plan » repoussé sous le pli d'un écran de 420 px.
+// D1 a été jouée quand l'écran rendait encore les trois cartes en trois blocs ; sa capture est
+// l'état d'avant la décision — deux cadres empilés, deux lignes de Ramille, « Ton plan » repoussé
+// sous le pli d'un écran de 420 px. **Depuis, les trois cartes sont une seule expression**, et D1
+// ne peut plus s'écrire : l'empilement est devenu inexprimable à l'écran comme dans la dérivation.
+// Ce que l'étape garde encore, c'est **deux** des arguments — `carteDuPremierPlan` et
+// `carteDesDeuxLieux` —, d'où D2. Les autres (`pointsAffiches`, `attenteDisponible`,
+// `motsDuContexte`, `premierPlan`, `nombreDActions`, et `ouvertureDeSaison` au-delà d'un vrai à
+// tort) ne sont gardés par aucune étape de ce parcours : ce sont les tests de `cartesDuPlan` et la
+// relecture qui les tiennent.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1060,12 +1068,16 @@ try {
   // (27/09/2026, `v1-27` §4). La carte « Deux endroits, pas plus. » est encore due — ce profil ne
   // l'a pas refermée — et le nouveau bilan, en voiture, donne au même cycle ses premières actions :
   // « Ton premier plan » l'est aussi. Les deux s'empilaient ; `cartesDuPlan` fait passer la seconde
-  // devant, et c'est l'**appel** que cette étape garde — la dérivation a ses 384 états dans Jest, mais
-  // un écran qui lui passerait le mauvais argument les laisserait tous verts.
+  // devant. Cette étape garde **deux arguments de l'appel** — la dérivation a toutes ses combinaisons
+  // d'états dans Jest, mais un écran qui lui passerait le mauvais argument les laisserait tous verts ;
+  // l'en-tête nomme ceux que rien ici ne garde.
   etape('cycliste — un nouveau bilan en voiture : le premier plan passe devant');
   await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
-  // Le questionnaire est prérempli par le bilan précédent : seul le mode change.
+  // Le questionnaire est prérempli par le bilan précédent : seul le mode change. On attend le
+  // bandeau qui le dit — sans lui, un préremplissage qui n'arriverait pas laisserait « Suivant »
+  // inactif, et l'échec se lirait en délai dépassé plutôt qu'en cause nommée.
+  await attendreTexte('Tes réponses précédentes sont pré-remplies.');
   await suivant();
   await suivant();
   await choisir('Voiture (seul)');

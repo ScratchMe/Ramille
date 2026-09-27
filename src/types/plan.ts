@@ -643,7 +643,8 @@ export type CartesDuPlan = {
 };
 
 /**
- * **Ce que l'écran du plan affiche, décidé en un seul endroit** (`v1-27` §4, 27/09/2026).
+ * **Ce que l'écran du plan affiche parmi les cartes qui s'excluent, décidé en un seul endroit**
+ * (`v1-27` §4, 27/09/2026).
  *
  * L'écran portait une dizaine de rendus conditionnels, et les règles qui les séparent vivaient en
  * prose dans ses commentaires — « les deux cartes ne peuvent pas coexister », « elle remplace la
@@ -657,20 +658,23 @@ export type CartesDuPlan = {
  *    de la marque locale du premier parcours. Un premier plan à zéro action (la barre arrive, sa
  *    carte avec), puis un nouveau bilan dans la même saison qui donne des actions : les deux cadres
  *    s'empilaient. Relevé en extrayant cette dérivation, tranché le 27/09/2026 par la personne qui
- *    pilote — la règle de la saison s'étend : **une seule carte d'ouverture, la plus récente
- *    passe devant, l'autre attend** ; sa marque ne bouge pas, et elle se rend dès que la première
- *    est refermée.
+ *    pilote : **une seule carte d'ouverture, dans un ordre fixe — la saison, puis le premier plan,
+ *    puis les deux lieux** ; celle qui attend garde sa marque, et se rend dès que la précédente est
+ *    refermée. (Ce n'est pas « la plus récente » : la saison et les deux lieux peuvent devenir dues
+ *    au même chargement — un premier bilan fin novembre, le plan ouvert en décembre.)
  *
  * Les exclusions sont désormais épinglées **sur toutes les combinaisons d'états**, pas sur des
  * exemples (`plan.test.ts`) : l'espace est petit et fini, donc l'énumérer coûte moins qu'oublier
  * une paire.
  *
  * **Ce que la dérivation ne décide pas, et pourquoi** : le contenu de chaque carte (dérivé
- * ailleurs), l'encart orphelin, la période révolue et le rattachement — trois faits qui ne
- * s'excluent avec rien et ne se remplacent pas — et le point lui-même, qui se rend **toujours**
- * quand il y en a un : aucune carte ne prend sa place, c'est la règle de C2.8 (le lien du rappel
- * pointe `/plan`, masquer la question y ouvrirait une notification sur un écran qui ne la porte
- * pas).
+ * ailleurs) ; l'encart orphelin, la période révolue et le rattachement — trois faits qui ne
+ * s'excluent avec rien et ne se remplacent pas ; le trait de temps (`progression !== null &&
+ * !premierPlan`), la carte de re-bilan (`titreDuRebilan`), ce que le cap chiffre (`cadreDuPlan`) et
+ * dit (`phraseDesPistesSuffisantes`), et le lien vers les pistes — chacun a sa propre dérivation et
+ * n'exclut aucune carte ; et le point lui-même, qui se rend **toujours** quand il y en a un : aucune
+ * carte ne prend sa place, c'est la règle de C2.8 (le lien du rappel pointe `/plan`, masquer la
+ * question y ouvrirait une notification sur un écran qui ne la porte pas).
  */
 export function cartesDuPlan({
   ouvertureDeSaison,

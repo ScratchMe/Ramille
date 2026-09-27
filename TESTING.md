@@ -423,7 +423,9 @@ contexte comme du lien vers les pistes.
 pas refermée, et le nouveau bilan donne au même cycle ses premières actions : « Ton premier plan »
 est due le même jour — la seule paire de cartes d'ouverture que l'écran empilait. Les exclusions
 elles-mêmes sont épinglées dans Jest sur toutes les combinaisons d'états (`cartesDuPlan`) ; cette
-étape garde ce que Jest ne voit pas, que l'écran **appelle** la dérivation avec les bons arguments.
+étape garde une partie de ce que Jest ne voit pas — **deux** des huit arguments que l'écran lui passe,
+`carteDuPremierPlan` et `carteDesDeuxLieux`. L'en-tête du script nomme les six autres, que rien ici ne
+garde.
 
 Le second profil tourne dans un **contexte de navigateur neuf**, et c'est structurel : « premier »
 veut dire premier **sur cet appareil** (C5.7), et les marques vivent dans le stockage. Le rejouer

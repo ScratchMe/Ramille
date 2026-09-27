@@ -11,7 +11,8 @@
 //
 // Donc : **qui touche au SVG relance ce script dans la même PR**, et c'est la relecture qui le
 // voit. Le PNG versionné était identique octet pour octet au rendu du SVG le 27/09/2026 (resvg
-// 2.6.2) ; pour le revérifier, rendre dans un fichier temporaire et comparer les octets.
+// 2.6.2). Pour le revérifier : relancer ce script, puis `git status` — un PNG qui descend encore
+// du SVG ne laisse aucune modification derrière lui.
 //
 // Expo tire ensuite favicon.ico (16, 32 et 48 px) de ce PNG au moment de `expo export` —
 // c'est ce .ico qu'il faut regarder pour juger, pas le SVG rendu directement : le

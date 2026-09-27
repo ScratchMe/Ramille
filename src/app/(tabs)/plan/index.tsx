@@ -298,8 +298,10 @@ type LoadState =
 // lui présenter une liste vide.
 /**
  * Le repli quand la lecture du contexte n'a rien rendu : quatre `null`, donc zéro segment, donc
- * pas d'encart. Nommé plutôt qu'écrit en littéral dans le rendu — il y est lu deux fois, et deux
- * littéraux finiraient par différer.
+ * pas d'encart. Nommé plutôt qu'écrit en littéral : il a été lu à deux endroits du rendu, et deux
+ * littéraux finissent par différer. Il n'est plus lu qu'une fois depuis `cartesDuPlan` (les mots du
+ * contexte sont calculés avant le rendu), et le nom reste — un littéral de quatre `null` au milieu
+ * du composant dirait moins bien ce qu'il est.
  */
 const VIDE_DE_CONTEXTE: ReponsesDeContexte = {
   zone_type: null,
@@ -1069,10 +1071,11 @@ export default function Plan() {
   // s'entasser ici, jusqu'à onze cartes sous un « Replier » hors écran. Elle vit désormais sur
   // `plan/pistes`. La dérivation copie avant de trier : `sort` mute, et `cycle` vient du state.
   const pistes = pistesDuPlan(cycle.plan_actions);
-  // **Ce que l'écran affiche, décidé hors du rendu** (`v1-27` §4, 27/09/2026). Les règles qui
-  // séparent les cartes vivaient en prose dans les commentaires ci-dessous, et deux fois une paire
-  // leur avait échappé ; `cartesDuPlan` les épingle sur toutes les combinaisons d'états. Le rendu
-  // ne décide plus rien : il lit ce qui est décidé ici.
+  // **Les cartes qui s'excluent, décidées hors du rendu** (`v1-27` §4, 27/09/2026). Les règles qui
+  // les séparaient vivaient en prose dans les commentaires ci-dessous, et deux fois une paire leur
+  // avait échappé ; `cartesDuPlan` les épingle sur toutes les combinaisons d'états, et le rendu les
+  // lit. Le reste de l'écran — trait de temps, cap, re-bilan, encarts de faits — garde ses propres
+  // dérivations, que `cartesDuPlan` nomme.
   const motsDeContexte = motsDuContexte(state.contexte ?? VIDE_DE_CONTEXTE);
   const affichage = cartesDuPlan({
     ouvertureDeSaison: ouverture !== null,
@@ -1441,7 +1444,7 @@ export default function Plan() {
               rompue à l'endroit même où elle se tient. Ce qu'elle remplace est la **carte
               d'attente** : Ramille parle déjà sous la carte d'ouverture, et deux fois dans le même
               écran ferait du bruit. */}
-          {affichage.carteDOuverture === 'saison' && ouverture !== null && (
+          {affichage.carteDOuverture === 'saison' && ouverture !== null ? (
             <CarteDOuverture
               ouverture={ouverture}
               sorties={sortiesDeSaison}
@@ -1449,9 +1452,7 @@ export default function Plan() {
               visage="happy"
               onSortie={(cle) => refermerLouverture(cle)}
             />
-          )}
-
-          {/* **La carte du tout premier plan** (C5.6, écart 8, planche B1). Le plan disait la règle
+          ) : /* **La carte du tout premier plan** (C5.6, écart 8, planche B1). Le plan disait la règle
               du jeu nulle part : on arrivait de la restitution devant deux cartes chiffrées, un cap
               et un trait de temps, sans qu'un mot explique qu'on en choisit **une** et que le reste
               du produit tient en un point régulier.
@@ -1462,8 +1463,8 @@ export default function Plan() {
               point en attente**, seulement celle de la carte d'attente, sous laquelle Ramille parle
               déjà. Avec la carte de saison, l'exclusion est structurelle : l'une exige un cycle
               précédent, l'autre exige qu'il n'y en ait pas. Avec celle des deux lieux, elle ne
-              l'est pas — c'est `cartesDuPlan` qui la fait passer devant (voir plus bas). */}
-          {affichage.carteDOuverture === 'premierPlan' && cartePremierPlan !== null && (
+              l'est pas — c'est `cartesDuPlan` qui la fait passer devant (voir plus bas). */
+          affichage.carteDOuverture === 'premierPlan' && cartePremierPlan !== null ? (
             <CarteDOuverture
               ouverture={cartePremierPlan}
               sorties={SORTIE_COMPRIS}
@@ -1471,9 +1472,7 @@ export default function Plan() {
               visage="happy"
               onSortie={refermerLePremierPlan}
             />
-          )}
-
-          {/* **La barre vient d'arriver, et elle se nomme** (C5.7, planche F3). Elle n'apparaît
+          ) : /* **La barre vient d'arriver, et elle se nomme** (C5.7, planche F3). Elle n'apparaît
               qu'une fois, au moment exact où le premier parcours se referme : la personne voit
               apparaître deux lieux en bas de son écran, et la carte dit ce qu'on trouve dans
               chacun. Sans elle, la barre pousserait sans un mot, ce qui est la façon la plus sûre
@@ -1486,9 +1485,13 @@ export default function Plan() {
               en attente.
 
               **Elle cède aux deux autres, et ce n'est décidé qu'à un endroit** : `cartesDuPlan`
-              (`src/types/plan.ts`). Deux cadres empilés au-dessus du plan, c'est une carte qui
-              explique par-dessus une carte qui annonce ; la plus récente passe devant, celle-ci
-              attend — sa marque ne bouge pas, et elle se rend dès que l'autre est refermée.
+              (`src/types/plan.ts`), dans un ordre fixe — la saison, puis le premier plan, puis
+              celle-ci. Deux cadres empilés au-dessus du plan, c'est une carte qui explique
+              par-dessus une carte qui annonce ; celle-ci attend — sa marque ne bouge pas, et elle
+              se rend dès que l'autre est refermée. **Et les trois cartes sont une seule expression**,
+              dont chaque branche exclut les autres : l'écran ne peut pas plus en rendre deux que la
+              dérivation ne peut en choisir deux. Trois blocs indépendants, eux, le pouvaient — il
+              suffisait qu'une condition soit réécrite pour que l'empilement revienne.
 
               **Cette exclusion s'est trompée deux fois de paire.** La contre-lecture du lot 5 a
               trouvé qu'elle croisait la saison (avoir refermé le premier plan puis n'être pas
@@ -1497,8 +1500,8 @@ export default function Plan() {
               d'aucun cycle, seulement de la marque locale. Un premier plan à zéro action (la barre
               arrive, et cette carte avec), puis un nouveau bilan dans la même saison qui donne des
               actions : les deux étaient dues le même jour. Relevé le 27/09/2026 en sortant la
-              décision du rendu ; le premier plan passe devant, décidé par la personne qui pilote. */}
-          {affichage.carteDOuverture === 'deuxLieux' && (
+              décision du rendu ; le premier plan passe devant, décidé par la personne qui pilote. */
+          affichage.carteDOuverture === 'deuxLieux' ? (
             <CarteDOuverture
               ouverture={OUVERTURE_DES_DEUX_LIEUX}
               sorties={SORTIE_DES_DEUX_LIEUX}
@@ -1506,7 +1509,7 @@ export default function Plan() {
               visage="calm"
               onSortie={premierParcours.lesDeuxLieuxSontVus}
             />
-          )}
+          ) : null}
 
           <View style={styles.intro}>
             <ThemedText type="screenTitle">

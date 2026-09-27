@@ -134,7 +134,9 @@ c'est précisément la deuxième des trois familles de défauts que le dépôt s
 `cartesDuPlan(état)` rendant une liste ordonnée — et laisser à l'écran le seul rendu. Les exclusions
 deviennent alors des assertions : « pour tout état, jamais `ouverture` et `premierPlan` ensemble »,
 « jamais une carte d'ouverture au-dessus d'un point en attente ». C'est la forme que `pistesDuPlan`
-a déjà, avec sa garde de partition.
+a déjà, avec sa garde de partition. *(27/09/2026 : la seconde assertion est fausse et ne s'écrit
+pas — une carte d'ouverture se rend **au-dessus** du point par conception ; elle remplace la carte
+d'attente, jamais le point, C2.8. Ce qui s'épingle est l'inverse : le point se rend toujours.)*
 
 **Effort : moyen. Risque : réel** — c'est l'écran le plus lu du produit, et le refactor ne doit rien
 changer à ce qui s'affiche. Il demande donc sa propre recette, et **il n'est pas à faire seul dans
@@ -144,15 +146,23 @@ un coin de vague.**
 l'ordre de l'écran est fixe, sauf un couple (les pistes et le cap) qui était déjà dérivé. Ce qui
 restait à sortir était la **décision**, donc `cartesDuPlan` (`src/types/plan.ts`) rend un objet —
 la carte d'ouverture, la carte d'attente, l'ordre pistes/cap, l'encart de contexte, la félicitation,
-l'estimation — et l'écran ne fait plus que lire. Trois choses à savoir :
+l'estimation — et l'écran lit ces six décisions. **Il en garde d'autres**, qui n'excluent aucune
+carte et ont chacune leur dérivation : le trait de temps, la carte de re-bilan, ce que le cap
+chiffre et dit, le lien vers les pistes, et les trois encarts de faits (orphelin, période révolue,
+rattachement) — le JSDoc de `cartesDuPlan` les nomme. Trois choses à savoir :
 
-- **« Au plus une carte d'ouverture » est devenu un type** : `carteDOuverture` est une valeur
-  unique, donc l'empilement est inexprimable — plus sûr qu'une assertion, qui aurait pu tomber en
-  désuétude.
-- **Les exclusions sont épinglées sur toutes les combinaisons d'états** (384, dont un plan à une
-  seule action : sans lui, une borne écrite `<= 1` passait, mesuré), et cinq mutations disent
-  laquelle garde quoi. Le parcours réel garde l'**appel** — que l'écran passe les bons arguments —
-  par une étape neuve du cycliste, éprouvée par une sixième mutation.
+- **« Au plus une carte d'ouverture » est devenu un type, et l'écran une seule expression** :
+  `carteDOuverture` est une valeur unique, et les trois cartes se rendent dans un seul ternaire dont
+  chaque branche exclut les autres. L'empilement est inexprimable des deux côtés. La contre-lecture
+  a relevé que la première version ne le rendait inexprimable que dans la dérivation : l'écran
+  gardait trois blocs indépendants, et remettre l'ancienne condition d'un seul suffisait à
+  rempiler.
+- **Les exclusions sont épinglées sur toutes les combinaisons d'états** (dont un plan à une seule
+  action : sans lui, une borne écrite `<= 1` passait, mesuré), et cinq mutations disent laquelle
+  garde quoi. Le parcours réel garde **deux des huit arguments** de l'appel — `carteDuPremierPlan`
+  et `carteDesDeuxLieux` — par une étape neuve du cycliste, éprouvée par deux mutations (en-tête de
+  `verifier-parcours-reel.mjs`). Les six autres ne sont tenus que par les tests de la dérivation et
+  la relecture de l'appel.
 - **Et il a trouvé un défaut, le cas exact que ce paragraphe annonçait.** « Ton premier plan » et
   « Deux endroits, pas plus. » s'empilaient : la contre-lecture du lot 5 avait jugé la paire
   impossible, « parce que le premier plan exige qu'aucun cycle ne précède » — mais la seconde carte
@@ -160,8 +170,15 @@ l'estimation — et l'écran ne fait plus que lire. Trois choses à savoir :
   qui donne des actions, suffisaient. Tranché par la personne qui pilote : le premier plan passe
   devant, l'autre attend son « Compris ».
 
-La « recette dédiée » que ce paragraphe demandait a été faite **au navigateur**, par les contrôles
-de l'export et le parcours réel sur ses deux profils ; rien de natif n'a changé.
+**La « recette dédiée » que ce paragraphe demandait n'a pas été faite à la main, et il faut le dire
+ainsi.** Ce qui établit que rien d'autre n'a changé à l'écran est une **relecture condition par
+condition** de l'ancien rendu contre le nouveau (la contre-lecture du 27/09/2026 : identique dans
+tous les états atteignables, sauf la paire décidée), les tests de la dérivation, et le parcours
+réel sur ses deux profils. Les contrôles de l'export ne voient pas ces cartes —
+`verifier-etats-export.mjs` le dit en tête —, et le parcours ne visite ni la carte de saison ni la
+carte d'attente. La ligne qui manque à la recette web du premier parcours (un premier plan à zéro
+action, puis un nouveau bilan : « Ton premier plan » d'abord, « Deux endroits, pas plus. » après
+« Compris ») est à ajouter à la prochaine feuille.
 
 ## 5. Les migrations recopient des fonctions entières
 
@@ -358,7 +375,7 @@ place de la personne qui les a écrites.
 | 1 | §1 — les deux entorses au point de résolution | ~nul | **fait le 21/09/2026**, dans la migration de C4.4 |
 | 2 | §2 — les signatures dans le contrôle de types | petit | **fait le 20/09/2026** (§12.2) |
 | 3 | §3 — la promesse du favicon | une décision | **fait le 27/09/2026** : la promesse retirée, la filiation mesurée intacte |
-| 4 | §4 — la décision d'affichage du plan | moyen, risque réel | **fait le 27/09/2026** : `cartesDuPlan`, 384 états, et un empilement de cartes trouvé en chemin |
+| 4 | §4 — la décision d'affichage du plan | moyen, risque réel | **fait le 27/09/2026** : `cartesDuPlan` sur toutes les combinaisons d'états, et un empilement de cartes trouvé en chemin |
 | 5 | §5 — le découpage des fonctions de calcul | grand | **instruit le 27/09/2026** : deux extractions désignées (les voyages déclarés, l'action engagée), le découpage du calcul lui-même déconseillé |
 | 6 | §8 — `normaliserReponses` | moyen, risque produit | **instruit le 27/09/2026** : les deux affirmations de son en-tête épinglées sur 6 000 tirages ; le découpage n'est pas recommandé |
 | 7 | §9 — renommer le fichier sous l'horodatage **enregistré**, une fois la migration appliquée | une habitude | **commencé le 21/09/2026** (C4.4) : une migration appariée, et la consigne d'avant était inapplicable |
@@ -536,6 +553,12 @@ le jour venu.
   plan à zéro action, bloc 09 de la recette. Il coûtait bien moins que le premier — la mécanique
   était là —, et il a rendu trois branches d'écran qu'aucun des deux filets ne touchait. Ce qui
   reste au-dessus est inchangé.
+
+  *Note du 27/09/2026* : deux lignes de cette liste ont bougé. Les exclusions de cartes ne sont
+  plus « à instruire » : `cartesDuPlan` les tient sur toutes les combinaisons d'états (§4), et le
+  parcours n'en garde que deux arguments. Et le parcours joue désormais **un** second bilan — le
+  cycliste refait le sien en voiture —, mais ni la reconduction d'une saison, ni l'encart orphelin
+  (le cycliste n'a rien engagé), ni le contexte corrigé depuis `/contexte`.
 
 ### 12.6 La contre-lecture de la contre-lecture (20/09/2026, le soir)
 
