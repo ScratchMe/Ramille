@@ -1716,6 +1716,31 @@ pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
   toutes nulles en base et parfaitement vivantes. Ce qui qualifie une colonne morte, c'est
   qu'aucun code ne l'écrit.
 
+**Ce que la purge et la suppression laissent derrière elles : des compteurs, rien d'autre** (lot 6,
+28/09/2026, `20260928110000_les_cohortes_avant_la_purge.sql`). La cascade efface tout ce qu'une
+personne a fait, donc toute mesure de forme cohorte doit être écrite **avant** : la purge incrémente
+`public.purges_par_cohorte` (semaine d'arrivée, étape la plus loin, tranche de semaines tenues, état
+des rappels au départ) **dans sa propre transaction, après sa garde de volume et avant son
+`delete`** — si le compteur échoue, rien n'est supprimé ; `delete_my_account` incrémente
+`suppressions_de_compte_par_mois` après son `delete`, seulement si une ligne est partie. Quatre
+choses à ne pas défaire :
+
+- **aucun identifiant et aucun segment**, par décision (27/09/2026) : à nos volumes, une ligne
+  découpée par zone ou par poste décrirait une personne que la page de confidentialité promet
+  d'effacer. Le fichier `36` balaie les colonnes par type — ni `uuid`, ni `timestamptz` ;
+- **ces tables n'ont aucune clé étrangère**, et c'est ce qui les fait survivre : c'est la
+  contrepartie exacte de la règle « jamais rattacher une table à `profiles` autrement qu'en
+  cascade », qui vaut pour les données d'une personne et jamais pour un agrégat ;
+- **`cohorte_de(uuid)` est la seule dérivation**, et l'étape est « la plus loin **dans l'ordre** »
+  (a ouvert < bilan soumis < engagée < a répondu), pas le plus long préfixe : on peut répondre au
+  point générique sans s'être engagé. « A soumis un bilan » s'écrit `status <> 'in_progress'`, pour
+  qu'un bilan retiré (C4.7) compte comme soumis ;
+- **le signe de vie a une définition extraite, `dernier_signe_de_vie`, que `regime_de_rappel`
+  n'appelle pas encore** : la brancher remplace une ligne de son corps, et le mutant qui la
+  factorise ne fait rien tomber. C'est à faire après C4.2, qui retouche la même fonction ; d'ici là,
+  les deux copies sont identiques et une assertion du `36` exige que le corps installé de
+  `regime_de_rappel` contienne l'expression ou l'appel.
+
 **Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
 Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
 l'app, et Ramille en crée un dès l'ouverture, session anonyme comprise. Play exige **en plus**

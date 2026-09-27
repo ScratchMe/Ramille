@@ -306,6 +306,18 @@ toutes les données associées » sont supprimées, et elle gagne une phrase sur
 sans identifiant. C'est ce qui doit être en place **avant l'ouverture sur Play** : chaque jour sans
 agrégat est une cohorte perdue pour de bon.
 
+**Livré le 28/09/2026**, avec quatre choix techniques que ce paragraphe ne décidait pas : la semaine
+d'arrivée est le lundi de `auth.users.created_at` en UTC ; l'étape est la plus loin **dans l'ordre**
+et non le plus long préfixe (on peut répondre au point générique sans s'être engagé) ; les
+semaines tenues se rangent en tranches calées sur les seuils du produit — `0`, `1`, `2-3`, `4-7`,
+`8-12`, `13+` (quatre points, huit points, une saison) ; et l'état des rappels retient le plus
+avancé des deux boucles. **Et la livraison a appris une chose qui éclaire la question du churn** :
+la purge attend 90 jours sans signe de vie, alors que le barreau `silence` tombe après huit points
+sans réponse, environ deux mois sur la boucle hebdomadaire — **le churn est donc franchi bien avant
+la purge**, et il se date sur les comptes vivants par `regime_de_rappel`, pas par ce que la purge
+compte. La colonne de l'état des rappels dit surtout « avait une boucle hebdomadaire ». Où se lit le
+tout : `docs/exploitation/README.md` §8.5 bis.
+
 **Et les deux autres questions sont tranchées le même jour**, sur la recommandation posée :
 
 - **la surface vit hors de l'app, dans le tableau de bord Supabase** : des vues `analytics.*`
