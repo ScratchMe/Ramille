@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, TextLink } from 'ramille-design-system';
+import { Button, ThemedText } from 'ramille-design-system';
 
 /** Le bouton principal d'un flux : pleine largeur, accent, pied collant. */
 export const Principal = () => <Button title="Continuer" />;
@@ -9,12 +9,13 @@ export const Secondaire = () => <Button title="Revoir mon plan" variant="seconda
 
 /**
  * Désactivé = fond élément + texte tertiaire, jamais une opacité. Le libellé reste
- * le même : c'est ce qui manque qu'on dit à côté, pas le bouton qu'on renomme.
+ * le même : c'est ce qui manque qu'on dit juste au-dessus, en texte simple — la ligne
+ * « Il manque encore … » de `StepShell` —, pas le bouton qu'on renomme.
  */
 export const Desactive = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <ThemedText type="small" themeColor="textTertiary">Il manque encore la distance.</ThemedText>
     <Button title="Suivant" disabled />
-    <TextLink label="Renseigne la distance d'un aller" type="small" themeColor="textTertiary" align="center" />
   </div>
 );
 

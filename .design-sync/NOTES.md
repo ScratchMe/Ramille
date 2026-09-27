@@ -241,6 +241,34 @@ sorties, et elles valent pour toute fiche future :
   donc `maxWidth: 342` sans padding. Les histoires qui rendent `StepShell` lui-même gardent la marge
   doublée : c'est un artefact de cadrage accepté, qui ne coupe rien.
 
+## Relevé du 27/09/2026 — cinquième synchronisation, après les questions de produit
+
+Chemin atomique, même skill. Elle porte #274 (défauts de l'app trouvés en complétant le kit),
+#276 (« Retour » dans l'onboarding, le zéro des long-courriers en mots) et #278 (le code annoncé,
+les points visibles, le résiduel nommé). Le pilote a trouvé **62 composants inchangés côté
+vérification, 4 changés** (`Button`, `EcartParPoste`, `FlightsStep`, `OnboardingDots`), et
+**10 à téléverser** : les six autres (`ChampDeCode`, `EtapeContexte`, `EtapeReassurance`,
+`EtapeTransition`, `LeisureFrequencyStep`, `PrecisionChiffres`) ont changé de source, de
+signature ou de fiche sans que leur aperçu bouge — c'est le risque noté plus bas, et leurs
+feuilles ont été relues une à une. `props-check.py` propre, aucune suppression, les deux
+`[RENDER_THIN]` connus.
+
+- **L'aperçu de `Button` enseignait trois choses que le produit ne fait pas** : l'indication de
+  l'état désactivé posée dans un `TextLink` (un lien qui n'en est pas un), une phrase que rien
+  n'écrit (« Renseigne la distance d'un aller »), et une apostrophe droite. Il rend désormais la
+  ligne de `StepShell` au-dessus du bouton, mot pour mot celle du produit : « Il manque encore la
+  distance. » — `manqueDeLEtape` rend `'la distance'`. `EcartParPoste` gagne l'histoire
+  `LoisirsOccasionnels`, la seule qui exerce sa prop neuve.
+- **L'ancre de `ds-bundle/_ds_sync.json` n'est pas celle du projet.** Chaque build local la
+  réécrit, et les lots du kit ont reconstruit après le quatrième envoi : elle décrivait un état
+  jamais téléversé. Seul `get_file` sur le projet donne l'ancre, recopiée telle quelle dans
+  `.design-sync/.cache/remote-sync.json`.
+- **Un passage du pilote efface `_screenshots/`**, feuilles de contrôle comprises : les capturer
+  **après** le dernier passage, sans quoi on relit des feuilles qui n'existent plus.
+- **La sentinelle et l'ancre s'écrivent en deux appels successifs, jamais en parallèle** : envoyés
+  ensemble, rien ne garantit que `_ds_sync.json` arrive en dernier. Ça a été le cas ici, et l'ancre
+  a été réécrite seule ensuite — l'écriture est idempotente, donc c'est le rattrapage.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine
