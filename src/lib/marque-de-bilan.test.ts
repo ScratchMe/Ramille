@@ -9,7 +9,7 @@
 // de tout effacer.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
+import { aDejaVuUnBilan, effacerLaMarqueDeBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
 
 const mockStock = new Map<string, string>();
 let mockLectureLeve = false;
@@ -25,6 +25,10 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     setItem: async (cle: string, valeur: string) => {
       if (mockEcritureLeve) throw new Error('stockage indisponible');
       mockStock.set(cle, valeur);
+    },
+    removeItem: async (cle: string) => {
+      if (mockEcritureLeve) throw new Error('stockage indisponible');
+      mockStock.delete(cle);
     },
     getAllKeys: async () => [...mockStock.keys()],
     multiRemove: async (cles: string[]) => {
@@ -93,5 +97,28 @@ describe('marque de bilan', () => {
   it('une écriture en échec ne lève pas', async () => {
     mockEcritureLeve = true;
     await expect(marquerQuIlYAUnBilan()).resolves.toBeUndefined();
+  });
+
+  /**
+   * **Le retrait du dernier bilan valide l'efface, et elle seule** (C4.7, D3 de `v1-22`). Sans ça,
+   * une réouverture hors ligne enverrait au plan quelqu'un qui n'a plus de bilan. Le reste du stockage
+   * n'est pas touché : le compte n'est pas quitté, et un brouillon commencé reste le sien.
+   */
+  it('s’efface seule, sans emporter le reste du stockage', async () => {
+    await marquerQuIlYAUnBilan();
+    mockStock.set('traceverte.bilan_draft.v1', '{}');
+
+    await effacerLaMarqueDeBilan();
+
+    await expect(aDejaVuUnBilan()).resolves.toBe(false);
+    expect(mockStock.get('traceverte.bilan_draft.v1')).toBe('{}');
+  });
+
+  // Le retrait a déjà eu lieu côté serveur : un stockage indisponible ne doit pas le faire passer
+  // pour un échec.
+  it('un effacement en échec ne lève pas', async () => {
+    await marquerQuIlYAUnBilan();
+    mockEcritureLeve = true;
+    await expect(effacerLaMarqueDeBilan()).resolves.toBeUndefined();
   });
 });

@@ -520,6 +520,11 @@ export function filetsDesLignes(ids: string[], enCarte: ReadonlySet<string>): bo
  * l'engagement n'était **pas** le but — on refait un bilan pour corriger une réponse, on corrige
  * son contexte parce qu'on a déménagé.
  *
+ * **`retrait` (C4.7) reste dehors, et c'est la décision D2 de `v1-22`** : retirer un bilan est un
+ * geste choisi, du côté de `changement`. Le serveur l'archive sous son propre nom précisément pour
+ * que ce filtre le taise sans une ligne de code — réutiliser `rebilan` aurait fait dire « Ton plan a
+ * changé avec ton nouveau bilan » à quelqu'un qui vient d'en retirer un.
+ *
  * Elle est exportée parce que la **requête** du plan doit filtrer exactement sur ces deux valeurs :
  * une liste écrite deux fois se désaccorderait au premier ajout, et la moitié fautive serait celle
  * qui ne dit rien — un encart muet ne se remarque pas.
