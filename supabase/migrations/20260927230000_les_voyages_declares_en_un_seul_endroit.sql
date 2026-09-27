@@ -86,8 +86,9 @@ language sql
 immutable
 set search_path to 'public'
 as $function$
-  -- Un compteur de voyages ajouté au questionnaire (B3.x) s'ajoute ICI, et seulement ici. Le
-  -- balayage du fichier 33 le rappellera s'il porte le suffixe `_per_year` des quatre autres.
+  -- Un compteur de voyages ajouté au questionnaire (B3.x) s'ajoute ICI pour la question « a-t-il
+  -- déclaré un voyage ? », et seulement ici pour celle-là — son CO₂ reste à écrire dans le calcul.
+  -- Le balayage du fichier 33 le rappellera s'il porte le suffixe `_per_year` des quatre autres.
   select coalesce(p_reponses.flights_total_per_year, 0) > 0
       or coalesce(p_reponses.train_long_trips_per_year, 0) > 0
       or coalesce(p_reponses.car_long_trips_per_year, 0) > 0

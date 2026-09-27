@@ -75,10 +75,11 @@
 -- change. La priorité du genre (le maintien gagne, C2.5), la période écoulée (C2.3), le poste de la
 -- boucle de qui sort rarement, la base déclarée et le `nulls last` de C2.2 sont repris tels quels.
 --
--- **Ne pas rejouer seule la migration précédente après celle-ci** : elle réécrit
--- `generate_extras_checkins` en entier, avec la recherche encore en ligne. Le comportement resterait
--- juste, mais l'extraction serait défaite en silence (`SUPABASE.md` §2.3, « rejouer un fichier
--- ancien ») — rejouer alors aussi celle-ci.
+-- **Ne rejouer seule ni la migration précédente (`20260927230000`) ni `20260927191009` après
+-- celle-ci** : chacune réécrit `generate_extras_checkins` en entier, avec la recherche encore en
+-- ligne. Le comportement resterait juste, mais l'extraction serait défaite en silence — et
+-- `20260927230000` rejouée seule passe même tous ses contrôles (`SUPABASE.md` §2.3, « rejouer un
+-- fichier ancien ») — rejouer alors aussi celle-ci.
 
 create or replace function public.action_engagee_de_la_periode(
   p_user_id uuid,

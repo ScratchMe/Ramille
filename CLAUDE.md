@@ -652,9 +652,11 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   passaient. Et un bilan à zéro nomme le poste où quelque chose est déclaré : plus de
   « Trajet domicile-travail () ».
   **Ce filtre énumère les compteurs de voyages, et depuis le 27/09/2026 il ne les énumère plus
-  qu'à un endroit : `public.a_des_voyages_declares(assessment_answers)`**, que lisent aussi le cas
+  qu'à un endroit : `public.a_des_voyages_declares(assessment_answers)`**, que lit aussi le cas
   du bilan à zéro de `recompute_assessment_results` (`v1-27` §5). Ajouter une réponse de voyage au
-  questionnaire impose donc d'y ajouter sa ligne, et nulle part ailleurs. La liste avait déjà coûté
+  questionnaire impose donc d'y ajouter sa ligne — pour la question « a-t-il déclaré un voyage ? »,
+  et nulle part ailleurs pour celle-là ; son terme de CO₂, lui, reste à écrire dans le calcul, comme
+  la colonne et l'écran. La liste avait déjà coûté
   un défaut — relevé en contre-lisant C4.4, qui avait livré l'autocar sans : un profil dont les
   seuls longs trajets sont en car avait un poste réel, un plan portant « Remplacer un de tes longs
   trajets en autocar par le train », et **aucun point mensuel**, donc jamais la question que cette

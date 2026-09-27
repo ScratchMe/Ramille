@@ -2,6 +2,12 @@
 
 > **Page de décision du chantier C4.3** ([#145](https://github.com/ScratchMe/Ramille/issues/145)),
 > quatrième des six du lot 4. Écrite le 19/09/2026. Elle porte l'arbitrage **D7**.
+>
+> **Décision du 27/09/2026 sur D2 : le poste sort du lot 4 et devient un increment à part, non
+> planifié**, sur la recommandation de la page. Il vit au backlog de `produit.md` §5 avec sa
+> précondition — lire la source du repère national (§4) avant d'en écrire la moindre ligne — et
+> l'issue #145 est fermée en renvoyant ici. D1 était déjà livrée ; **D3 n'est pas tranché** : il se
+> pose à l'ouverture de l'increment, après la lecture du §4, et sa recommandation reste écrite.
 
 ## 1. D'où ça vient
 

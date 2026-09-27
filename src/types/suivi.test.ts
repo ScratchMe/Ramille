@@ -378,15 +378,15 @@ describe('ecartParPoste', () => {
  * règle de la couleur sans jamais dire à quel poste elle s'appliquait, et les barres sont masquées
  * aux lecteurs d'écran.
  *
- * Éprouvé en cassant ce qu'il garde, le 24/09/2026 : la légende d'avant remise telle quelle fait
- * tomber les trois tests — elle ne nommait aucun poste et parlait d'accent en toutes
- * circonstances ; la partie « accent » gardée sans poste accentué fait tomber le troisième, et lui
- * seul.
+ * Éprouvé en cassant ce qu'il garde, le 24/09/2026, quand le bloc comptait trois tests : la
+ * légende d'avant remise telle quelle les faisait tous tomber — elle ne nommait aucun poste et
+ * parlait d'accent en toutes circonstances ; la partie « accent » gardée sans poste accentué fait
+ * tomber celui qui « ne parle pas d'accent », et lui seul.
  *
  * **Elle ne parle jamais du plan** (arbitrage du 27/09/2026, `v1-29` §6.3) : elle ne le lit pas, et
  * « le poste sur lequel ton plan travaille » était faux pour tout plan à zéro action. Éprouvé le
- * 27/09/2026 : cette fin remise telle quelle fait tomber les deux premiers tests et celui de
- * l'invariant, et eux seuls — le test du résiduel ne garde que le nom du poste.
+ * 27/09/2026 : cette fin remise telle quelle fait tomber « nomme le poste principal », « suit le
+ * poste dominant » et l'invariant, et eux seuls — le test du résiduel ne garde que le nom du poste.
  */
 describe('legendeDeLEcart', () => {
   const avant = snapshot('2026-03-01T12:00:00Z', 3000, { commute: 2100, leisure: 500, travel: 400 });

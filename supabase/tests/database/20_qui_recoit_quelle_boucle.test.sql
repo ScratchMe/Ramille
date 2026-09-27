@@ -180,8 +180,8 @@ values ('e2510000-0000-0000-0000-000000000006', true, 5, 20, 'voiture', 'thermiq
         'voiture', '15_30', 'thermique', '1', 'periurbain', 'bon');
 
 -- G : **aucune sortie, aucun vol, aucun train, aucune voiture — quatre longs trajets en autocar**
--- (C4.4). Le filtre de base déclarée énumère les compteurs un par un, et ce profil est celui
--- qu'il oubliait : un poste réel (« Voyages longue distance (Autocar) », 105 kg/an), un plan
+-- (C4.4). Le filtre de base déclarée énumérait les compteurs un par un (depuis le 27/09/2026 dans
+-- `a_des_voyages_declares`, un seul endroit), et ce profil est celui qu'il oubliait : un poste réel (« Voyages longue distance (Autocar) », 105 kg/an), un plan
 -- portant « Remplacer un de tes longs trajets en autocar par le train », et aucun point mensuel —
 -- donc jamais la question que cette action existe pour refermer.
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip,

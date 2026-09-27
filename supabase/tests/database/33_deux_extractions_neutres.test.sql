@@ -38,8 +38,11 @@
 --   - le `revoke` sans `public`                       → 1 (les privilèges) ;
 --   - les `coalesce` retirés                          → 2 (l'équivalence, sur ses cas nuls, et la
 --     ligne absente, qui rend alors nul) ;
---   - `generate_extras_checkins` remise dans son corps d'avant l'extraction → 3 (l'appel, le
---     balayage des copies, les compteurs nommés), et **aucun** test de comportement — c'est la
+--   - `generate_extras_checkins` remise dans son corps d'avant l'extraction (celui de
+--     `20260927191009`) → 5, rejoué le 27/09/2026 sur le fichier final : l'appel, le balayage des
+--     copies et les compteurs nommés, plus les deux assertions de la section 9 (l'appel de
+--     `action_engagee_de_la_periode`, le balayage de ses copies), ce corps portant aussi la
+--     recherche en ligne — et **aucun** test de comportement, dans aucun fichier : c'est la
 --     définition même d'une extraction neutre ;
 --   - `recompute_assessment_results` remise dans son corps d'avant → 2 (l'appel du bilan à zéro, le
 --     balayage des copies). Aucun comportement ne tombe, et aucun ne le pourrait : la branche est

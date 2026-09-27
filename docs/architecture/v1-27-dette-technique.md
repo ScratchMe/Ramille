@@ -238,7 +238,7 @@ les valeurs attendues ne doivent pas bouger d'une décimale — avant de l'appli
 `20260927231000_l_action_engagee_en_un_seul_endroit.sql`, avec leur fichier de test
 `33_deux_extractions_neutres.test.sql`. La suite pgTAP entière passe sans qu'une valeur attendue
 ait bougé (seul le **libellé** d'une assertion de `20` change, pour désigner la fonction), le
-parcours réel aussi, et les corps installés des quatre fonctions touchées étaient identiques
+parcours réel aussi, et les corps installés des trois fonctions réécrites étaient identiques
 octet pour octet entre la stack locale et le distant avant d'écrire. Chaque fonction a été cassée
 d'une dizaine de façons, consignées en tête du `33` ; aucune mutation n'est restée debout. Ce que
 l'exécution a appris, et que l'instruction ne savait pas :
@@ -254,16 +254,18 @@ l'exécution a appris, et que l'instruction ne savait pas :
 - **la branche `'travel'` du bilan à zéro de `recompute_assessment_results` est inatteignable** —
   tous les facteurs de voyage sont positifs et le résiduel de « rarement » n'est jamais nul —, d'où
   une garde de structure et non de comportement ;
-- **rejouer seule `20260927191009` après ces deux migrations défait l'extraction**, puisqu'elle
-  réécrit `generate_extras_checkins` en entier. C'est la règle de `SUPABASE.md` §2.3 (« rejouer un
+- **rejouer seule `20260927191009` ou `20260927230000` après la seconde défait l'extraction**,
+  puisque chacune réécrit `generate_extras_checkins` en entier — et rejouer `20260927230000` seule
+  passe même tous ses contrôles en silence. C'est la règle de `SUPABASE.md` §2.3 (« rejouer un
   fichier ancien peut défaire une migration plus récente »), écrite dans l'en-tête de la seconde.
 
 Le tableau ci-dessus est un instantané d'avant. Remesuré par la même méthode après :
 `generate_extras_checkins` 12 définitions et 66 lignes installées, `generate_commute_checkins` 9 et
 46, `recompute_assessment_results` inchangé à 4 définitions (touché par substitution et non par
-recopie) et 358 lignes. Les deux générateurs ont gagné une définition chacun et perdu dix lignes :
-la prochaine migration de la boucle en recopiera moins, et ne pourra plus oublier un poste ni un
-compteur dans l'une des deux copies.
+recopie) et 358 lignes. `generate_extras_checkins` a gagné deux définitions (une par migration)
+et perdu dix lignes, `generate_commute_checkins` une définition et neuf lignes : la prochaine
+migration de la boucle en recopiera moins, et ne pourra plus oublier un poste ni un compteur dans
+l'une des deux copies.
 
 ## 6. Les comptes écrits dans les documents se périment, et deux l'avaient fait
 

@@ -186,7 +186,7 @@ n'était dans aucune fiche :
 | [`v1-21`](v1-21-modes-manquants.md) | C4.4, les modes manquants | **Livré le 21/09/2026.** Le « Train ou RER » était compté au tarif du TER : 249,2 kg/an là où 88,0 étaient justes, rapport 2,83 mesuré. Le vélo à assistance et l'autocar existent désormais, et l'autocar émet **plus qu'un TER** — un test pgTAP l'épingle pour qu'on ne le « corrige » pas par réflexe. Une moitié reste ouverte (`v1-27` §12.16) : le **gain** de l'action « en train » reste au tarif du TER, faute de pouvoir cibler le RER sans savoir où l'on habite |
 | [`v1-22`](v1-22-retirer-un-bilan.md) | C4.7, retirer un bilan | À faire. `status = 'withdrawn'` rend justes **douze** lectures d'un coup — la fiche en annonçait trois |
 | [`v1-23`](v1-23-point-quantitatif.md) | C4.1, le point quantitatif | **Fermé pour la V1 le 27/09/2026**, avec sa condition de réouverture : la boucle n'a tourné sur personne, et le gain principal annoncé est celui qu'il ne faut pas prendre |
-| [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **Livrer la phrase décidée le 10/09 et jamais livrée**, puis sortir le poste du lot 4 : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions |
+| [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **La phrase décidée le 10/09 est livrée le 19/09 ; le poste est sorti du lot 4 le 27/09/2026** : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions, donc il devient un increment à part (§5) |
 | [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | À instruire, avec cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
 | [`v1-26`](v1-26-meme-saison-un-an-apres.md) | C4.8, la même saison un an après | **Moitié livrée par C6.3**. Le reste recouvre le moment anniversaire : une dérivation pour deux surfaces, ou deux chiffres qui se contrediront |
 
@@ -395,3 +395,12 @@ les GitHub Issues de ce repo (ex. #27-30 : synchronisation automatique des facte
 trajectoire 2050 sur l'écran de restitution, canal de feedback utilisateur, tracking
 d'usage/segmentation). Le jeu "pas = monnaie" évoqué le 04/09/2026 est explicitement hors
 roadmap de ce repo (projet à part, voir `v1-06-partage-social.md` §1).
+
+**Un increment identifié et non planifié : les déplacements professionnels** (sorti du lot 4 le
+27/09/2026, [`v1-24`](v1-24-deplacements-professionnels.md)). Un quatrième poste traverse le calcul,
+les colonnes figées, la restitution, les deux boucles et le référentiel d'actions, et ses kilomètres
+ne sont presque jamais le choix de la personne. **Sa précondition est écrite et elle passe avant
+toute spécification** : lire dans la source du repère national (`carbon-reference.ts`) si les
+déplacements professionnels entrent dans son périmètre — c'est une question de méthode, pas de
+goût. Ce que la V1 en dit : une phrase sur l'étape du trajet régulier, « On ne compte pas ici les
+déplacements faits pendant ton travail. »
