@@ -243,9 +243,9 @@ joué sans être installé, et chacun décidé avec la personne qui pilote, comm
   par git.** Le second a porté jusqu'à ce jour, dans un dépôt public, les jokers `mcp__Supabase` et
   `mcp__Supabase__*` : tout outil du serveur passait sans confirmation sur la production,
   `pause_project` et `restore_project` compris. **Un outil accordé se nomme**, et un test refuse le
-  joker. La liste nommée garde pourtant `apply_migration` et `execute_sql`, qui écrivent sur la
-  production sans confirmation : c'était la liste d'avant, et les retirer ferait confirmer chaque
-  migration — un choix de rythme, qui revient à la personne qui pilote.
+  joker. La liste nommée garde `apply_migration` et `execute_sql`, qui écrivent sur la production
+  sans confirmation, et c'est décidé (27/09/2026, la personne qui pilote : « On peut les garder sans
+  confirmation ») : les retirer ferait confirmer chaque migration, qui passe déjà par une PR relue.
 - **Un hook refuse de modifier une migration livrée** (`scripts/proteger-les-migrations-livrees.mjs`) :
   « livrée » veut dire présente dans `origin/main`, pas sur le disque, parce qu'une migration en
   cours s'écrit en plusieurs retouches. Il ne voit ni le shell ni une autre session :
