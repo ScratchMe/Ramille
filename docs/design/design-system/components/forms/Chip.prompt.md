@@ -1,11 +1,11 @@
 Puce de sélection du questionnaire et du choix de l'intention. `solid` pour un nombre, une tranche ou un jour, `outline` pour un choix binaire ou une échéance.
 
 ```jsx
-<div role="radiogroup" aria-label="Combien de vols prends-tu dans une année type ?" style={{display:'flex',flexWrap:'wrap',gap:8}}>
+<GroupeDeChoix question="Combien de vols prends-tu dans une année type ?" style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
   <Chip label="0" role="radio" selected={false} />
   <Chip label="1" role="radio" selected />
   <Chip label="10+" accessibilityLabel="10 vols ou plus" role="radio" selected={false} />
-</div>
+</GroupeDeChoix>
 <Chip label="Oui" role="radio" selected selectedStyle="outline" flex radius={16} />
 ```
 

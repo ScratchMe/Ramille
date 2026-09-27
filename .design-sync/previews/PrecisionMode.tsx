@@ -29,13 +29,13 @@ export const TypeDeDeuxRoues = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
     <ModeListItem label="Deux-roues motorisé" selected />
     <PrecisionMode
-      question="Lequel ?"
+      question="Quel type de deux-roues ?"
       valeur={null}
       options={[
         { value: 'scooter_thermique', label: 'Scooter thermique' },
         { value: 'scooter_electrique', label: 'Scooter électrique' },
-        { value: 'moto_petite', label: 'Moto petite cylindrée' },
-        { value: 'moto_grosse', label: 'Moto grosse cylindrée' },
+        { value: 'moto_petite', label: 'Moto, petite cylindrée' },
+        { value: 'moto_grosse', label: 'Moto, grosse cylindrée' },
       ]}
     />
   </div>

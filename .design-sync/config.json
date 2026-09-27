@@ -47,6 +47,48 @@
     },
     "LegalPage": {
       "viewport": "390x1100"
+    },
+    "LeisureDetailStep": {
+      "viewport": "390x1130"
+    },
+    "LongTripsStep": {
+      "viewport": "390x1150"
+    },
+    "CommuteHasTripStep": {
+      "viewport": "390x700"
+    },
+    "CommuteDaysDistanceStep": {
+      "viewport": "390x870"
+    },
+    "CommuteModeStep": {
+      "viewport": "390x1190"
+    },
+    "CommuteExtraStep": {
+      "viewport": "390x1320"
+    },
+    "LeisureFrequencyStep": {
+      "viewport": "390x490"
+    },
+    "FlightsStep": {
+      "viewport": "390x660"
+    },
+    "ContextStep": {
+      "viewport": "390x650"
+    },
+    "ChampsDeContexte": {
+      "viewport": "390x470"
+    },
+    "PrecisionChiffres": {
+      "viewport": "390x540"
+    },
+    "MissingModeLink": {
+      "viewport": "390x780"
+    },
+    "OnboardingHeroIllustration": {
+      "viewport": "390x290"
+    },
+    "EmptyStateIllustration": {
+      "viewport": "390x210"
     }
   },
   "libOverrides": {

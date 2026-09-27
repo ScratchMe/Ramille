@@ -67,23 +67,13 @@ const SANS_INTERFACE = new Map([
 ]);
 
 /**
- * Le chantier en cours (`v1-29` §5, lots du 26/09/2026) : ce qui reste à porter, lot par lot. Cette
- * liste ne doit que raccourcir ; une entrée qu'un lot porte en sort dans la même PR, sans quoi le
+ * Ce qui reste à porter, lot par lot. **Vide depuis le 27/09/2026** : le chantier de `v1-29` §5 a
+ * donné sa fiche à chaque composant du dépôt. La liste reste pour un prochain rattrapage raisonné —
+ * jamais pour y ranger un composant neuf qu'une PR n'a pas porté, ce qui rouvrirait en silence
+ * l'écart que la garde ferme. Une entrée qu'un lot porte en sort dans la même PR, sans quoi le
  * refus n° 2 la signale.
  */
 const A_PORTER = new Map([
-  ['src/components/bilan/champs-de-contexte.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/missing-mode-link.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/precision-chiffres.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/commute-days-distance.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/commute-extra.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/commute-has-trip.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/commute-mode.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/context.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/flights.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/leisure-detail.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/leisure-frequency.tsx', 'lot 4 — le questionnaire'],
-  ['src/components/bilan/steps/long-trips.tsx', 'lot 4 — le questionnaire'],
 ]);
 
 /**
@@ -182,6 +172,6 @@ if (ecarts.length > 0) {
 
 console.log(
   `${representes} composants du dépôt ont leur fiche dans le kit ; ${SANS_INTERFACE.size} sans interface, ` +
-    `${A_PORTER.size} encore à porter (chantier de \`v1-29\` §5) ; ${fiches.length} fiches, toutes chargées.`
+    `${A_PORTER.size} encore à porter ; ${fiches.length} fiches, toutes chargées.`
 );
 for (const [fichier, lot] of A_PORTER) console.log(`  à porter · ${fichier} — ${lot}`);

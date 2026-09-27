@@ -403,6 +403,25 @@ avance ; le trait mesure le temps, pas toi. » — et non d'une invention. **En 
 méthode, une apostrophe droite est apparue dans le produit** (`src/constants/methodologie.ts`,
 « c'était », « qu'on ») : le kit porte la forme typographique, le produit se corrige à part.
 
+**Le lot 4 porte le questionnaire** : ses neuf étapes (`bilan/`, de `CommuteHasTripStep` à
+`ContextStep`), les quatre questions de contexte qu'elles partagent avec `/contexte`
+(`ChampsDeContexte`), la précision chiffrée (`PrecisionChiffres`, jumelle de `PrecisionMode`) et le
+lien du mode manquant (`MissingModeLink`). Chaque étape reçoit la part de `BilanAnswers` qu'elle lit
+ou écrit, et **ce qui efface une réponse devenue impossible reste hors d'elle**, comme dans le dépôt :
+les aperçus recopient la part de `normaliserReponses` et de `manqueDeLEtape` qu'ils déclenchent, et
+la carte du groupe montre les quatre entrées de section dans leur coquille, avec le mot de Ramille
+que `RAMILLE.entreeDeSection` leur donne. **Avec lui, la liste de ce qui reste à porter est vide** :
+la garde du miroir compte chaque composant du dépôt avec sa fiche, et elle ne peut plus que rougir sur
+un ajout. Trois fiches existantes suivent : l'exemple de `Chip` passe par `GroupeDeChoix`, le type de
+`PrecisionMode` accepte une valeur numérique, et l'aperçu des jours en grille ne prête plus aux puces
+ce que le dépôt ne leur donne pas (l'équirépartition, une étiquette d'accessibilité). **La règle de capture du lot 5 s'étend à tout ce qui dessine un morceau d'écran** : les étapes
+étaient coupées sous le pli à 900 × 700, et l'illustration d'accueil elle-même, capturée hors de son
+étape, y montrait encore la scène rognée qu'on croyait réglée — chacune a désormais sa hauteur,
+mesurée sur la capture (`.design-sync/NOTES.md`). **En capturant à la vraie largeur, un défaut
+possible du produit est apparu**, à vérifier sur l'export avant de le corriger : cinq puces de 48 px
+et leurs intervalles demandent 272 px dans l'encart de la précision chiffrée, qui n'en offre que 264
+sur un téléphone de 360 px de large — « Vous êtes combien à partager ce trajet ? » y déborderait.
+
 **Le lot 5 porte les écrans hors du plan** : les quatre étapes de l'onboarding (`onboarding/`), leurs
 trois illustrations (`illustrations/`, couleurs des jetons), la saisie du code de connexion
 (`connexion/` : `ChampDeCode`, `SaisieDuCode` et ses deux voix — ce que l'écran affirme suit l'hôte,
