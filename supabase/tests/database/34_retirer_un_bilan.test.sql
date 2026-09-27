@@ -58,7 +58,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(39);
+select plan(41);
 
 -- ── Ce que le schéma garantit, avant toute fixture ──────────────────────────────────────
 
@@ -358,6 +358,24 @@ select is(
 
 -- ── U — le seul bilan, retiré ───────────────────────────────────────────────────────────
 
+-- **Un rappel déjà en file pour U, et un pour son jumeau V** (27/09/2026, intégration). Retirer son
+-- seul bilan envoie à l'onboarding ; un e-mail encore en attente — jusqu'à quatre jours d'étalement —
+-- partirait pourtant vers `/plan?rappel=1`, qui sans bilan ni marque locale propose de retrouver un
+-- compte. Le RPC annule donc les rappels en attente quand il ne reste aucun bilan valide, avec le
+-- `cancelled` que `desinscrire_des_rappels` pose déjà. Les deux points sont retirés juste après les
+-- assertions : les générateurs, plus bas, comptent les points d'U et de V.
+select set_config('role', 'postgres', true);
+insert into public.engagement_checkins (id, user_id, loop_type, period_start, period_label, trip_label)
+values
+  ('c4720000-0000-0000-0000-0000000000d1', 'c4700000-0000-0000-0000-000000000004', 'commute',
+   date '2026-01-05', 'Semaine du 05/01', 'Trajet domicile-travail'),
+  ('c4720000-0000-0000-0000-0000000000d2', 'c4700000-0000-0000-0000-000000000005', 'commute',
+   date '2026-01-05', 'Semaine du 05/01', 'Trajet domicile-travail');
+insert into public.notification_outbox (user_id, checkin_id, subject, body)
+values
+  ('c4700000-0000-0000-0000-000000000004', 'c4720000-0000-0000-0000-0000000000d1', 'Rappel', 'Rappel'),
+  ('c4700000-0000-0000-0000-000000000005', 'c4720000-0000-0000-0000-0000000000d2', 'Rappel', 'Rappel');
+
 select set_config('role', 'authenticated', true);
 select set_config('request.jwt.claims',
   json_build_object('sub', 'c4700000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
@@ -399,6 +417,21 @@ select is(
   0,
   'U n’a plus aucun bilan complété : la racine l’enverra à l’onboarding'
 );
+
+select is(
+  (select status from public.notification_outbox where checkin_id = 'c4720000-0000-0000-0000-0000000000d1'),
+  'cancelled',
+  'le rappel en attente d’U est annulé : il ne partira pas vers un plan qui n’a plus de bilan'
+);
+
+select is(
+  (select status from public.notification_outbox where checkin_id = 'c4720000-0000-0000-0000-0000000000d2'),
+  'pending',
+  'celui de V, qui garde son bilan, reste en attente — l’annulation ne vise que le compte qui retire'
+);
+
+delete from public.engagement_checkins
+where id in ('c4720000-0000-0000-0000-0000000000d1', 'c4720000-0000-0000-0000-0000000000d2');
 
 -- **Le cycle reste**, et c'est un choix écrit en tête de la migration : il n'y a rien sur quoi le
 -- reconstruire, et le supprimer emporterait un éventuel engagement sans trace (C2.2).

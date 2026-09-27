@@ -12,6 +12,11 @@
 //   - `issueDuRetrait` lit `RM006` dans le message plutôt qu'au code → 2 (le code n'est plus reconnu,
 //     et un message qui le cite l'est à tort) ;
 //   - `apresLeRetrait` reste sur place quand le nombre est inconnu → 1.
+//
+// Et deux de plus le 27/09/2026, sur la phrase de l'engagement ajoutée à la confirmation (26 tests) :
+//   - la phrase rendue quelle que soit la place → 1 (« ne dit rien … le plan ne bouge pas … le seul
+//     bilan ») ;
+//   - la phrase jamais rendue → 1 (« dit le sort de l'action engagée … »).
 import {
   apresLeRetrait,
   BILAN_RETIRE,
@@ -25,8 +30,15 @@ import {
   RETRAIT_ECHOUE,
   type PlaceDuBilan,
 } from '@/types/retrait-du-bilan';
+import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/rebilan';
 
 const PLACES: PlaceDuBilan[] = ['seul', 'dernier', 'ancien'];
+
+// Une action engagée de la période courante, telle que `engagementDeLaPeriodeCourante` la rend.
+const ENGAGEMENT: EngagementEnCours = {
+  action: 'Faire un trajet sur cinq à vélo',
+  intention: 'le mardi et le jeudi',
+};
 
 describe('la place du bilan parmi les bilans valides', () => {
   it('le seul bilan valide', () => {
@@ -60,7 +72,7 @@ describe('la place du bilan parmi les bilans valides', () => {
 
 describe('la confirmation', () => {
   it('ne parle pas de plan quand c’est le seul bilan — il n’y en aura plus', () => {
-    const { corps } = confirmationDuRetrait('seul');
+    const { corps } = confirmationDuRetrait('seul', null);
     expect(corps).not.toMatch(/plan/i);
     expect(corps).toContain('seul bilan');
     // « tu repartiras d'un nouveau bilan » et non « de l'accueil » : la racine peut aussi mener à la
@@ -70,25 +82,42 @@ describe('la confirmation', () => {
   });
 
   it('dit que le plan repart du bilan précédent quand le bilan retiré le portait', () => {
-    const { corps } = confirmationDuRetrait('dernier');
+    const { corps } = confirmationDuRetrait('dernier', null);
     expect(corps).toContain('ton plan repartira de ton bilan précédent');
   });
 
   it('ne promet aucun changement de plan quand un bilan plus récent le porte', () => {
-    const { corps } = confirmationDuRetrait('ancien');
+    const { corps } = confirmationDuRetrait('ancien', null);
     expect(corps).toContain('Ton plan ne change pas');
     expect(corps).not.toMatch(/repartira/);
   });
 
   it('dit dans les trois cas que le bilan quitte le suivi — c’est vrai des trois', () => {
     for (const place of PLACES) {
-      expect(confirmationDuRetrait(place).corps).toContain('n’apparaîtra plus dans ton suivi');
+      expect(confirmationDuRetrait(place, null).corps).toContain('n’apparaîtra plus dans ton suivi');
     }
+  });
+
+  // Décidé le 27/09/2026 : le sort de l'action engagée se dit avant le geste, avec la phrase du
+  // re-bilan — et seulement quand le plan est reconstruit.
+  it('dit le sort de l’action engagée quand le plan est reconstruit, avec la phrase du re-bilan', () => {
+    expect(confirmationDuRetrait('dernier', ENGAGEMENT).engagement).toBe(
+      phraseDeLEngagementRecalcule(ENGAGEMENT)
+    );
+  });
+
+  it('ne dit rien de l’engagement quand le plan ne bouge pas, ni quand c’est le seul bilan', () => {
+    expect(confirmationDuRetrait('ancien', ENGAGEMENT).engagement).toBeNull();
+    expect(confirmationDuRetrait('seul', ENGAGEMENT).engagement).toBeNull();
+  });
+
+  it('ne dit rien de l’engagement quand aucune action n’est engagée', () => {
+    expect(confirmationDuRetrait('dernier', null).engagement).toBeNull();
   });
 
   it('garde les mêmes boutons et le même titre dans les trois cas', () => {
     for (const place of PLACES) {
-      const { titre, confirmer, enCours, annuler } = confirmationDuRetrait(place);
+      const { titre, confirmer, enCours, annuler } = confirmationDuRetrait(place, ENGAGEMENT);
       expect({ titre, confirmer, enCours, annuler }).toEqual({
         titre: 'Retirer ce bilan ?',
         confirmer: 'Retirer ce bilan',
@@ -170,7 +199,11 @@ describe('les phrases', () => {
     BILAN_RETIRE.titre,
     BILAN_RETIRE.corps,
     BILAN_RETIRE.sortie,
-    ...PLACES.flatMap((place) => Object.values(confirmationDuRetrait(place))),
+    ...PLACES.flatMap((place) =>
+      Object.values(confirmationDuRetrait(place, ENGAGEMENT)).filter(
+        (valeur): valeur is string => valeur !== null
+      )
+    ),
   ];
 
   it('le lien porte le libellé décidé (D4) : ce que la personne pense, pas une destruction', () => {

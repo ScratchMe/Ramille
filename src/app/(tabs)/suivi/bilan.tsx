@@ -46,7 +46,9 @@ import {
 } from '@/lib/bilan-history';
 import { track } from '@/lib/analytics';
 import { effacerLaMarqueDeBilan } from '@/lib/marque-de-bilan';
+import { lireLEngagementEnCours } from '@/lib/engagement-en-cours';
 import { lireLesBilansValides, retirerLeBilan } from '@/lib/retrait-du-bilan';
+import type { EngagementEnCours } from '@/types/rebilan';
 import { supabase } from '@/lib/supabase';
 import { APP_URL } from '@/lib/app-url';
 import {
@@ -144,6 +146,13 @@ type LoadState =
        * plutôt que de proposer une confirmation dont on ne sait pas quelle phrase est vraie.
        */
       place: PlaceDuBilan | null;
+      /**
+       * L'action engagée de la période courante, que la confirmation du retrait annonce quand le
+       * bilan retiré porte le plan (27/09/2026). `null` quand il n'y en a pas **ou** quand la lecture
+       * a échoué : la confirmation se tait alors sur l'engagement plutôt que de retenir le geste — la
+       * tolérance de la feuille « Nouveau bilan », qui lit la même chose (`lireLEngagementEnCours`).
+       */
+      engagement: EngagementEnCours | null;
     };
 
 // Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
@@ -289,13 +298,14 @@ export default function BilanResultat() {
       //
       // Les bilans valides partent **en parallèle**, jamais en plus : ils ne servent qu'à la phrase de
       // la confirmation du retrait, et leur échec se tolère — le lien ne se rend pas, c'est tout.
-      const [{ data: lu, error }, bilansValides] = await Promise.all([
+      const [{ data: lu, error }, bilansValides, lectureDeLEngagement] = await Promise.all([
         supabase
           .from('assessment_results')
           .select('*, assessments(status, submitted_at)')
           .eq('assessment_id', id)
           .single(),
         lireLesBilansValides(),
+        lireLEngagementEnCours(),
       ]);
 
       if (cancelled) return;
@@ -317,6 +327,7 @@ export default function BilanResultat() {
         return;
       }
       const place = bilansValides.ok ? placeDuBilan(id, bilansValides.data) : null;
+      const engagement = lectureDeLEngagement.ok ? lectureDeLEngagement.data : null;
 
       // **Pas de palier en relecture** (A3-3, A13-14). Le cap appartient au cycle de plan
       // **courant** : le retrancher d'un bilan de l'an dernier donne une marche qui n'est pas la
@@ -344,6 +355,7 @@ export default function BilanResultat() {
           precedent: null,
           palierFranchi: false,
           place,
+          engagement,
         });
         return;
       }
@@ -376,6 +388,7 @@ export default function BilanResultat() {
         precedent: null,
         palierFranchi: false,
         place,
+        engagement,
       });
 
       // **La comparaison arrive en second temps, et l'écran ne l'attend pas** (C2.7, point 2). Même
@@ -659,8 +672,8 @@ export default function BilanResultat() {
     );
   }
 
-  const { results, capKg, submittedAt, precedent, palierFranchi, place } = state;
-  const confirmation = place === null ? null : confirmationDuRetrait(place);
+  const { results, capKg, submittedAt, precedent, palierFranchi, place, engagement } = state;
+  const confirmation = place === null ? null : confirmationDuRetrait(place, engagement);
   const totalT = results.total_co2_kg_year / 1000;
 
   // Le palier remplace la barre « Repère 2050 » : mettre 15,8 t à côté de 0,6 t affichait un
@@ -1093,6 +1106,11 @@ export default function BilanResultat() {
                   <ThemedText type="small" themeColor="textSecondary">
                     {confirmation.corps}
                   </ThemedText>
+                  {confirmation.engagement !== null && (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {confirmation.engagement}
+                    </ThemedText>
+                  )}
                   <View style={styles.confirmationActions}>
                     <TextLink
                       label={confirmation.annuler}

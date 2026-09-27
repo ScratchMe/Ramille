@@ -9,7 +9,8 @@
 > `changement` ; **D3** on peut retirer son seul bilan, et l'on retombe sur `/onboarding`, la marque
 > locale s'effaçant au même geste ; **D4** un lien « Ce bilan ne me ressemble pas » sur la
 > restitution du bilan concerné, avec une confirmation, et l'adresse d'un bilan retiré dit qu'il l'a
-> été. Le chantier (§6) peut commencer.
+> été. Le chantier (§6) peut commencer. **Livré le même jour** : ce que la livraison a appris est
+> en §7.
 
 ## 1. D'où ça vient
 
@@ -148,3 +149,33 @@ la garde sur la lecture par identifiant.
 **Effort : moyen.** Aucune décision produit n'y est bloquante au sens où elle empêcherait de
 commencer — D2 et D4 peuvent se trancher en cours de route —, mais D1 et D3 changent le schéma et
 doivent être prises avant la migration.
+
+## 7. Ce que la livraison a appris (27/09/2026)
+
+Livré le jour des décisions, dans `20260928090000_retirer_un_bilan.sql` et
+`34_retirer_un_bilan.test.sql`, avec l'écran et le parcours réel. Ce que cette page ne savait pas :
+
+- **Les lectures de `completed` étaient sept côté serveur, pas six** —
+  `refuser_le_retour_en_arriere_du_bilan` s'était ajoutée le 20/09 — et le client en porte une de
+  plus (`lireLesBilansValides`). **Et deux lectures ne devenaient pas justes toutes seules**, pas une :
+  la restitution par identifiant (§2, dont la ligne a bougé et qui embarque désormais le statut) et
+  `analytics.user_segments`, qui prenait le dernier bilan par `submitted_at is not null` — un bilan
+  retiré garde sa date, donc la personne aurait été segmentée sur le bilan qu'elle venait de désavouer.
+- **D2 : la raison d'archivage est `retrait`, neuve, et non `rebilan`**, que §4 proposait de
+  réutiliser : `rebilan` est annoncée par l'encart orphelin, ce que D2 exclut. La cause `retrait`
+  saute la garde d'idempotence ; sans elle, le plan resterait bâti sur un bilan que plus rien ne lit.
+- **La garde des transitions devait être étendue, sinon elle aurait refusé le retrait lui-même**
+  (`RM005`, `20260920190000`). Un retrait direct par le client est refusé (`RM007`), un bilan retiré
+  ne revient pas (`RM005`), et le RPC refuse un bilan en cours ou déjà retiré (`RM006`).
+- **Retirer son seul bilan laisse le cycle en place**, inerte, et **annule les rappels en attente** :
+  un e-mail étalé sur quatre jours serait parti vers `/plan?rappel=1`, qui, sans bilan ni marque
+  locale, propose de retrouver un compte. Relevé par le chantier, fermé à l'intégration.
+- **Deux ajouts décidés le même jour par la personne qui pilote** : dans le cas `dernier`, la
+  confirmation dit le sort de l'action engagée avec la phrase du re-bilan, au conditionnel — ce n'est
+  pas l'annonce écartée par D2, qui venait *après* ; et la page de confidentialité dit qu'un bilan
+  retiré reste conservé, et exporté.
+- **Ce qui reste hors de portée** : un lien de partage déjà envoyé garde ses chiffres, qui voyagent
+  dans l'adresse ; et sur un appareil, la marque effacée fait traiter le questionnaire suivant comme
+  un premier, donc la barre d'onglets se retire jusqu'à « Ton premier plan » — cohérent avec un
+  nouveau départ, et à regarder sur appareil (`v1-13` §11).
+

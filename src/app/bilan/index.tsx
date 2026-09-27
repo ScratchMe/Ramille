@@ -24,14 +24,11 @@ import { RAMILLE } from '@/constants/mascotte';
 import { track } from '@/lib/analytics';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
 import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
+import { lireLEngagementEnCours } from '@/lib/engagement-en-cours';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
 import { noterLePremierParcours } from '@/lib/premier-parcours';
 import { ensureSession, supabase } from '@/lib/supabase';
-import {
-  dateCalendaire,
-  engagementDeLaPeriodeCourante,
-  type EngagementEnCours,
-} from '@/types/rebilan';
+import { type EngagementEnCours } from '@/types/rebilan';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
   BILAN_SECTION_LABEL,
@@ -277,29 +274,10 @@ export default function BilanQuestionnaire() {
     lectureDeLEngagement.current = (async () => {
       try {
         await ensureSession();
-        const { data, error } = await supabase
-          .from('plan_cycles')
-          // Même chaîne d'un seul tenant que les deux écrans du plan, et **le nom de la clé
-          // étrangère est obligatoire** : `carried_over_from` en est une seconde vers
-          // `plan_cycles`, donc sans lui PostgREST refuse la requête entière (C2.2).
-          .select(
-            'period_start, period_end, plan_actions!plan_actions_plan_cycle_id_fkey(committed_at, intention_days, intention_timing, action_templates(action_text))'
-          )
-          .order('period_start', { ascending: false })
-          .limit(1);
-        if (error) return;
-
-        const cycle = data?.[0];
-        if (!cycle) return;
-
-        engagementExpose.current = engagementDeLaPeriodeCourante(
-          {
-            period_start: cycle.period_start,
-            period_end: cycle.period_end,
-            actions: cycle.plan_actions,
-          },
-          dateCalendaire(new Date())
-        );
+        // La même lecture que la confirmation du retrait d'un bilan (C4.7), écrite une fois.
+        const lecture = await lireLEngagementEnCours();
+        if (!lecture.ok) return;
+        engagementExpose.current = lecture.data;
       } catch {
         // Voir le commentaire ci-dessus : on laisse passer.
       }

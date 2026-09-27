@@ -102,6 +102,11 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // C2.6 (`poste_inserable`), et la question figée du point y est entrée avec C2.1 : elle peut nommer
 // le mode, l'action choisie et les jours fixés (relevé dans les migrations le 27/09/2026). Corrigé sur décision de la personne qui pilote
 // (relevé par la contre-lecture de `v1-27` §4) ; la date suit la mise en ligne.
+//
+// **Et le même jour, un bilan retiré** (C4.7, décision de la personne qui pilote) : « retirer » peut se
+// lire « effacer », et ce n'en est pas un — la ligne reste, l'export la rend avec son statut
+// (`v1-22` D1). Sans cette phrase, la page laisserait croire à un effacement qui n'a pas lieu. Elle
+// nomme la session anonyme parce que la purge à 90 jours l'emporte aussi, comme le reste.
 const UPDATED_AT = '27 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -336,6 +341,9 @@ const SECTIONS: LegalSection[] = [
             'de l’application. Tant que tu reviens, rien n’est effacé — ouvrir l’application, commencer un bilan, ' +
             'répondre à un point de suivi ou nous envoyer un retour remet le compteur à zéro.',
           'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
+          'Bilan retiré : un bilan que tu retires n’apparaît plus dans ton suivi, mais il reste conservé — et ' +
+            'dans l’export de tes données — jusqu’à la suppression de ton compte, ou de ta session anonyme si ' +
+            'tu n’as pas créé de compte.',
           'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
             'produit tel qu’il est.',
           'Identifiant de notification de ton téléphone : désactivé dès que ton téléphone cesse d’accepter les ' +

@@ -305,7 +305,8 @@ numérotés, un fichier par sujet, `supabase test db`) et, depuis le 20/09/2026,
 Supabase locale, la base relue après chaque écriture — `TESTING.md` §2.6, qui dit aussi ce qu'il
 laisse volontairement aux deux autres). **Deux profils**, et le second n'est pas un doublon : le
 cycliste au **plan à zéro action** est le seul chemin où la carte « Ton premier plan » ne se rend
-jamais, donc le seul où la barre d'onglets arrive autrement. **Docker tourne dans cet environnement** — `sudo dockerd &`,
+jamais, donc le seul où la barre d'onglets arrive autrement — et depuis C4.7 il finit par **retirer
+ses deux bilans**, le seul chemin qui efface la marque locale de bilan sans quitter le compte. **Docker tourne dans cet environnement** — `sudo dockerd &`,
 mesuré le 20/09/2026 —, donc pgTAP et le parcours s'exécutent ici, et le `BEGIN`/`ROLLBACK` sur le
 projet distant n'est plus la seule validation d'un fichier pgTAP. Les trois tournent en CI sur
 chaque pull request. La
@@ -869,6 +870,9 @@ dit à quelles conditions le rouvrir. Sept points à connaître :
   `src/lib/compte.ts` balaie les marques locales depuis ses **deux** sorties, suppression de compte
   **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse au seul appareil
   restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut).
+  **Une troisième sortie depuis C4.7** : retirer son seul bilan efface **cette marque-là et elle
+  seule** (`effacerLaMarqueDeBilan`) — le compte n'est pas quitté, donc le balayage par préfixe
+  serait de trop.
 - **Elle n'est consultée qu'en repli, jamais quand le serveur a répondu**, et c'est ce qui la rend
   sûre : une marque fausse ne peut pas contredire une vérité. Un test l'épingle, et le jour où il
   tombe, c'est que quelqu'un en a fait une seconde source de vérité.
@@ -1129,6 +1133,40 @@ l'état d'affichage, qui ne vaut `true` qu'au rendu suivant. Côté SQL, la gén
 enveloppée dans un `begin … exception … end` : les deux fonctions partagent la transaction du RPC,
 donc sans cette sous-transaction un plan qui échoue emportait le résultat que le calcul venait
 d'écrire.
+
+**Un bilan se retire, et ne se supprime pas** (C4.7, `v1-22`,
+`20260928090000_retirer_un_bilan.sql`). Une distance saisie en mètres ou un questionnaire rempli
+« pour voir » restaient pour toujours dans le suivi et devenaient la base de comparaison du suivant.
+Six points à connaître :
+
+- **`status = 'withdrawn'`, et la ligne reste.** Toutes les lectures de `completed` deviennent justes
+  sans qu'on y touche — c'est ce qui a écarté une colonne `withdrawn_at`, qui aurait demandé un
+  `and withdrawn_at is null` partout, donc un oubli silencieux quelque part. **Deux lectures ne le
+  devenaient pas seules** : la restitution, qui lit un bilan **par son identifiant** — l'adresse qui
+  circule — et embarque désormais le statut pour ne jamais montrer le chiffre d'un bilan retiré ; et
+  `analytics.user_segments`, qui prenait le dernier bilan par `submitted_at is not null` (un bilan
+  retiré garde sa date) et filtre maintenant sur le statut.
+- **`retirer_le_bilan(uuid)` est le seul chemin**, et jamais une policy `DELETE` : il vérifie la
+  propriété, refuse un bilan en cours ou déjà retiré (`RM006`, que l'écran reconnaît au code), et
+  rend le nombre de bilans valides restants. **Un client qui écrirait `withdrawn` par un `update`
+  direct est refusé par un trigger (`RM007`)**, parce que le privilège de colonne sur `status` doit
+  rester à la soumission : le trigger distingue le RPC du client par `current_user` (`SUPABASE.md`
+  §2.2), et un bilan retiré ne revient jamais (`RM005` étendu).
+- **Le plan n'est reconstruit que si le bilan retiré le portait**, sur le bilan valide précédent,
+  cause `retrait` (qui saute la garde d'idempotence — sans quoi le cron ne rebâtirait jamais) ;
+  l'engagement est reposé si le nouveau plan le propose encore, archivé en `retrait` sinon, **et rien
+  ne l'annonce après coup** (D2). C'est la confirmation qui le dit **avant**, au conditionnel, avec la
+  phrase du re-bilan (`phraseDeLEngagementRecalcule`, lue par `lireLEngagementEnCours`).
+- **La confirmation dépend de la place du bilan** (`placeDuBilan` : `seul`, `dernier`, `ancien`,
+  `src/types/retrait-du-bilan.ts`) : « ton plan repartira de ton bilan précédent » serait faux d'un
+  bilan qui ne porte pas le plan. Quand la place n'a pas pu être lue, le lien ne se rend pas.
+- **Retirer son seul bilan laisse le cycle en place** — inerte, rien ne le lit sans bilan complété, et
+  le supprimer emporterait un engagement sans trace —, **annule les rappels en attente** (sans quoi
+  un e-mail étalé partirait vers `/plan?rappel=1`, qui proposerait de retrouver un compte) et efface
+  la marque locale ; la racine route alors vers l'onboarding.
+- **L'export rend le bilan retiré avec son statut, et l'entonnoir ne décrémente pas** : ce qui est
+  soumis a été soumis. La page de confidentialité dit qu'un bilan retiré reste conservé, pour que
+  « retirer » ne se lise pas « effacer ».
 
 Le bilan (`assessment_answers`) est modélisé à plat, un champ par question B1.1→B4.3 — pas
 une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par poste
@@ -1563,7 +1601,7 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
 - **Un seul paramètre porte la cause, et les deux conséquences s'en dérivent.** La première forme
   écrite était `p_forcer boolean`, qui obligeait à poser ailleurs la raison d'archivage — donc à
   tenir d'accord deux paramètres disant la même chose. `p_cause` (`'bilan'` par défaut,
-  `'contexte'`) fait sauter la garde d'idempotence **et** nomme la raison de libération : il n'y a
+  `'contexte'`, et depuis C4.7 `'retrait'`) fait sauter la garde d'idempotence **et** nomme la raison de libération : il n'y a
   pas de façon de forcer sans dire pourquoi. Une valeur inconnue lève `RM004` — un code à elle,
   parce que c'est un invariant de serveur qu'aucun client ne peut atteindre, là où les
   préconditions de `mettre_a_jour_le_contexte` (`RM003`) remontent jusqu'à un écran.
@@ -1581,7 +1619,9 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   l'encart orphelin du plan filtre désormais sur `RAISONS_ANNONCABLES` — les **deux** libérations
   que la personne n'a pas choisies. Sa phrase se dérive de la raison (`phraseDeLOrphelin`) : elle
   disait « Ton plan a changé avec ton nouveau bilan », ce qui est faux quand il n'y a pas eu de
-  bilan. `saison` et `changement` restent tues, pour les raisons de C2.2.
+  bilan. `saison` et `changement` restent tues, pour les raisons de C2.2. **Et une cinquième depuis
+  C4.7, `retrait`, tue elle aussi** : retirer un bilan est un geste choisi, et la confirmation a dit
+  *avant* ce qu'il emportait — réutiliser `rebilan` aurait rallumé l'encart.
 - **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
   du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
   n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle
@@ -1669,7 +1709,8 @@ pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
   Elles ont été supprimées (`20260905180000`), avec `profiles.onboarding_completed_at` qu'aucun
   code n'écrivait. Vérifier qu'une colonne est *alimentée* avant de s'y fier — et se méfier des
   valeurs de statut écrites de mémoire (`assessments.status` vaut `completed`, jamais
-  `submitted` ; c'est aussi ce que teste la racine de l'app pour router vers le plan).
+  `submitted` ; c'est aussi ce que teste la racine de l'app pour router vers le plan — et, depuis
+  C4.7, `withdrawn` pour un bilan retiré).
   **Une colonne vide n'est pas une colonne morte** : `emission_factor_sync_runs.detail`,
   `notification_outbox.last_error`, `commute_carpool_size` et `commute_distance_bracket` sont
   toutes nulles en base et parfaitement vivantes. Ce qui qualifie une colonne morte, c'est

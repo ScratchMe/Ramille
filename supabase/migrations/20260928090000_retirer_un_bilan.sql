@@ -462,6 +462,18 @@ begin
     perform public.generate_plan_cycle_for_user(v_uid, 'retrait');
   end if;
 
+  -- **Plus aucun bilan valide : les rappels en attente n'ont plus rien à rappeler** (27/09/2026).
+  -- La personne repart de l'onboarding, et un e-mail encore en file — l'étalement du lundi le retient
+  -- jusqu'à quatre jours — partirait vers `/plan?rappel=1`, qui, sans bilan ni marque locale, propose
+  -- de retrouver un compte. `cancelled` est l'état que `desinscrire_des_rappels` et
+  -- `send_pending_reminders` posent déjà pour un rappel devenu caduc. Les points eux-mêmes restent :
+  -- ils expireront au passage suivant du générateur, comme tout point sans réponse.
+  if v_restants = 0 then
+    update public.notification_outbox
+    set status = 'cancelled'
+    where user_id = v_uid and status = 'pending';
+  end if;
+
   return v_restants;
 end;
 $function$;

@@ -1,4 +1,5 @@
 import { STATUT_DE_BILAN } from '@/types/bilan';
+import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/rebilan';
 
 /**
  * Retirer un bilan qui ne ressemble à personne (C4.7, `docs/architecture/v1-22-retirer-un-bilan.md`).
@@ -53,6 +54,11 @@ export type ConfirmationDuRetrait = {
   titre: string;
   corps: string;
   confirmer: string;
+  /**
+   * Ce que le retrait fait à l'action engagée, ou `null` quand il n'y a rien à en dire — voir
+   * `confirmationDuRetrait`.
+   */
+  engagement: string | null;
   /** Le libellé du bouton pendant l'appel — la forme de « Suppression… ». */
   enCours: string;
   annuler: string;
@@ -70,15 +76,23 @@ export type ConfirmationDuRetrait = {
  *     commencé — « tu repartiras d'un nouveau bilan » est vrai des deux, là où « tu reviendras à
  *     l'accueil » serait faux du second.
  *
- * **Ce qu'elle ne dit pas, et c'est une décision de produit à confirmer** : le sort d'une action
- * engagée dans le cas `dernier`. Le serveur la repose si le plan reconstruit la propose encore et
- * l'archive sinon, sans l'annoncer après coup (D2). La phrase au conditionnel existe pour le
- * re-bilan (`phraseDeLEngagementRecalcule`, `src/types/rebilan.ts`) si l'on veut la dire ici aussi.
+ * **Et, dans le cas `dernier` seulement, le sort de l'action engagée** (décidé le 27/09/2026 par la
+ * personne qui pilote) : le serveur la repose si le plan reconstruit la propose encore et l'archive
+ * sinon. La phrase est **celle du re-bilan**, au conditionnel (`phraseDeLEngagementRecalcule`,
+ * `src/types/rebilan.ts`), parce que c'est la même mécanique — `generate_plan_cycle_for_user` — et
+ * la seule forme vraie des deux côtés. Ce n'est pas l'annonce écartée par D2, qui venait *après* le
+ * geste : c'est dire *avant* un geste irréversible ce qu'il emporte. Rien pour `ancien`, dont le plan
+ * ne bouge pas, ni pour `seul`, dont le cycle reste en l'état jusqu'au bilan suivant — le dire
+ * affirmerait un sort que le retrait ne décide pas. `engagement` est requis et sans valeur par
+ * défaut : un appelant qui l'oublierait taierait la phrase en silence.
  *
  * Voix produit, jamais celle de Ramille : c'est la mécanique d'un geste qu'on explique, comme la
  * feuille du nouveau bilan (`FeuilleNouveauBilan`).
  */
-export function confirmationDuRetrait(place: PlaceDuBilan): ConfirmationDuRetrait {
+export function confirmationDuRetrait(
+  place: PlaceDuBilan,
+  engagement: EngagementEnCours | null
+): ConfirmationDuRetrait {
   const corps =
     place === 'seul'
       ? 'C’est ton seul bilan : il n’apparaîtra plus dans ton suivi, et tu repartiras d’un nouveau bilan.'
@@ -89,6 +103,7 @@ export function confirmationDuRetrait(place: PlaceDuBilan): ConfirmationDuRetrai
   return {
     titre: 'Retirer ce bilan ?',
     corps,
+    engagement: place === 'dernier' && engagement !== null ? phraseDeLEngagementRecalcule(engagement) : null,
     confirmer: 'Retirer ce bilan',
     enCours: 'Retrait…',
     annuler: 'Annuler',
