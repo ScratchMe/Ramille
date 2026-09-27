@@ -35,11 +35,28 @@
 --     `question_kind` qui la décide, et il est posé ici ;
 --   * **le résiduel de 15 km reste** (D5, spec §5) : seules ses *conséquences* sont retirées. Les
 --     totaux ne bougent pas, et l'assertion du résiduel en train le vérifie par le facteur plutôt
---     que par une valeur figée.
+--     que par une valeur figée ;
+--   * **qui sort rarement est interrogé sur ses voyages, et le résultat du bilan ne le sait pas**
+--     (arbitrage du 27/09/2026, migration `20260927191009`) : la bascule vit dans la boucle, jamais
+--     dans `assessment_results`, dont l'app lit le marqueur « (occasionnels) ».
+--
+-- **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1) — quatre mutations de la boucle
+-- mensuelle, appliquées à la stack locale puis retirées, et ce que chacune fait tomber :
+--   - le poste de la boucle ramené à `extras_poste` → les deux assertions du profil H (poste et
+--     question) **et** celle du profil I, dont l'action n'est plus cherchée au bon poste ;
+--   - l'action engagée cherchée sur `extras_poste` et le poste laissé juste → **seulement** celle du
+--     profil I. C'est la mutation qui justifie ce profil : sans lui, la moitié du correctif qui
+--     rattache une action de voyage à sa question n'était gardée par rien ;
+--   - le libellé figé repris d'`extras_poste_label` → l'assertion du poste de H, qui lit le libellé
+--     avec lui ;
+--   - la bascule faite **au mauvais endroit**, dans `recompute_assessment_results` (voyages
+--     déclarés ⇒ `extras_poste = 'travel'`) → l'assertion du résultat inchangé, et celle du poste
+--     de H pour son libellé. La boucle, elle, aurait posé la bonne question : seule la garde du
+--     résultat voit que l'étiquette de la restitution aurait perdu « tes loisirs occasionnels ».
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(31);
+select plan(35);
 
 -- ── La forme de la question de maintien ─────────────────────────────────────────────────
 
@@ -73,7 +90,7 @@ select ok(not has_function_privilege('authenticated', 'public.complement_de_main
 select ok(not has_function_privilege('anon', 'public.complement_de_maintien(text)', 'execute'),
   'complement_de_maintien: anon ne peut pas l''appeler');
 
--- ── Fixtures : cinq profils, un par situation ───────────────────────────────────────────
+-- ── Fixtures : un profil par situation ──────────────────────────────────────────────────
 -- Les adresses sont confirmées et le canal forcé sur `email` : c'est ce qui fait écrire la
 -- question dans `notification_outbox`, donc ce qui rend le texte vérifiable ici. La branche push
 -- est couverte par le fichier 17.
@@ -89,7 +106,9 @@ from unnest(array[
   'e2500000-0000-0000-0000-000000000004',        -- D : bilan à zéro, sans trajet régulier
   'e2500000-0000-0000-0000-000000000005',        -- E : loisirs rares, aucun véhicule au foyer
   'e2500000-0000-0000-0000-000000000006',        -- F : témoin, loisirs déclarés
-  'e2500000-0000-0000-0000-000000000007'         -- G : l'autocar pour seule base déclarée (C4.4)
+  'e2500000-0000-0000-0000-000000000007',        -- G : l'autocar pour seule base déclarée (C4.4)
+  'e2500000-0000-0000-0000-000000000008',        -- H : sorties rares, un long trajet en train
+  'e2500000-0000-0000-0000-000000000009'         -- I : sorties rares, un autocar, action engagée
 ]) u;
 
 update public.profiles set reminder_channel = 'email' where id::text like 'e2500000%';
@@ -100,11 +119,13 @@ from unnest(
   array['e2510000-0000-0000-0000-000000000001'::uuid, 'e2510000-0000-0000-0000-000000000002',
         'e2510000-0000-0000-0000-000000000003', 'e2510000-0000-0000-0000-000000000004',
         'e2510000-0000-0000-0000-000000000005', 'e2510000-0000-0000-0000-000000000006',
-        'e2510000-0000-0000-0000-000000000007'],
+        'e2510000-0000-0000-0000-000000000007', 'e2510000-0000-0000-0000-000000000008',
+        'e2510000-0000-0000-0000-000000000009'],
   array['e2500000-0000-0000-0000-000000000001'::uuid, 'e2500000-0000-0000-0000-000000000002',
         'e2500000-0000-0000-0000-000000000003', 'e2500000-0000-0000-0000-000000000004',
         'e2500000-0000-0000-0000-000000000005', 'e2500000-0000-0000-0000-000000000006',
-        'e2500000-0000-0000-0000-000000000007']
+        'e2500000-0000-0000-0000-000000000007', 'e2500000-0000-0000-0000-000000000008',
+        'e2500000-0000-0000-0000-000000000009']
 ) as t(a, u);
 
 -- A : va au travail à vélo, sort rarement, aucun voyage. Le profil du constat A13-3.
@@ -157,6 +178,25 @@ insert into public.assessment_answers (assessment_id, commute_has_regular_trip,
   leisure_frequency, coach_long_trips_per_year, household_vehicles, zone_type, tc_access)
 values ('e2510000-0000-0000-0000-000000000007', false, 'rarely', 4, '0', 'rural', 'limite');
 
+-- H : le cycliste de A, **plus un trajet en train de plus de 300 km par an** (27/09/2026). Il pèse
+-- 2,3 kg, le résiduel de ses sorties 55,5 : `extras_poste` vaut donc `leisure`, et la boucle
+-- mensuelle lui demandait chaque mois s'il avait changé de mode « pour tes sorties du week-end » —
+-- des sorties qu'il a dit ne presque jamais faire, pendant que son voyage n'était jamais
+-- interrogé.
+insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
+  commute_distance_km, commute_mode, leisure_frequency, train_long_trips_per_year,
+  household_vehicles, zone_type, tc_access)
+values ('e2510000-0000-0000-0000-000000000008', true, 5, 8, 'velo', 'rarely', 1, '1',
+        'urbain_dense', 'bon');
+
+-- I : sorties rares et **un** long trajet en autocar (26 kg, sous le résiduel de 55,5). Son plan
+-- porte « Remplacer un de tes longs trajets en autocar par le train » ; engagée plus bas, cette
+-- action doit nommer la question du mois. Cherchée sur `extras_poste`, elle ne l'aurait jamais
+-- fait : c'était une action de loisirs qu'on cherchait, et ce profil n'en reçoit aucune.
+insert into public.assessment_answers (assessment_id, commute_has_regular_trip,
+  leisure_frequency, coach_long_trips_per_year, household_vehicles, zone_type, tc_access)
+values ('e2510000-0000-0000-0000-000000000009', false, 'rarely', 1, '1', 'rural', 'limite');
+
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000001');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000002');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000003');
@@ -164,6 +204,8 @@ select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000004
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000005');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000006');
 select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000007');
+select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000008');
+select public.recompute_assessment_results('e2510000-0000-0000-0000-000000000009');
 
 -- ── 1. Le cycliste reçoit une question de maintien ──────────────────────────────────────
 
@@ -214,6 +256,19 @@ select is(
 
 -- ── 2. La boucle mensuelle demande une base déclarée ────────────────────────────────────
 
+-- I engage son action de voyage, et son cycle couvre le mois interrogé : la boucle mensuelle
+-- cherche l'action du cycle qui couvre la période **écoulée**, et le mois dernier peut tomber dans
+-- la saison précédente selon le jour où la suite tourne.
+update public.plan_actions pa
+   set committed_at = now(), intention_timing = 'au_prochain_voyage'
+  from public.plan_cycles pc, public.action_templates t
+ where pc.id = pa.plan_cycle_id and t.id = pa.action_template_id
+   and pc.user_id = 'e2500000-0000-0000-0000-000000000009'
+   and t.action_text = 'Remplacer un de tes longs trajets en autocar par le train';
+update public.plan_cycles
+   set period_start = (date_trunc('month', now()) - interval '1 month')::date
+ where user_id = 'e2500000-0000-0000-0000-000000000009';
+
 select public.generate_extras_checkins();
 
 select is(
@@ -245,6 +300,45 @@ select is(
    where user_id = 'e2500000-0000-0000-0000-000000000007' and loop_type = 'extras'),
   'Voyages longue distance (Autocar)',
   'et le point nomme le poste par le mode réel, pas par un résiduel'
+);
+
+-- **Qui sort rarement est interrogé sur ses voyages, jamais sur le résiduel** (arbitrage du
+-- 27/09/2026). Le poste du point décide aussi, côté client, du troisième choix (« Pas de voyage
+-- en … ») et de la réplique de Ramille ; le libellé figé ne porte pas de mode, que la boucle ne
+-- recalcule pas.
+select results_eq(
+  $$ select poste, trip_label from public.engagement_checkins
+     where user_id = 'e2500000-0000-0000-0000-000000000008' and loop_type = 'extras' $$,
+  $$ values ('travel'::text, 'Voyages longue distance'::text) $$,
+  'sorties rares et un voyage déclaré : la boucle mensuelle porte sur les voyages, pas sur le résiduel'
+);
+
+select is(
+  (select committed_question from public.engagement_checkins
+   where user_id = 'e2500000-0000-0000-0000-000000000008' and loop_type = 'extras'),
+  (select public.checkin_question('extras', 'generique', 'travel', null, period_start)
+   from public.engagement_checkins
+   where user_id = 'e2500000-0000-0000-0000-000000000008' and loop_type = 'extras'),
+  'et la question le dit : « … pour tes voyages ? », jamais « … pour tes sorties du week-end ? »'
+);
+
+-- **Le bilan, lui, ne bouge pas** : l'app lit le marqueur « (occasionnels) » d'`extras_poste_label`
+-- pour reconnaître le résiduel (`etiquetteDuPosteDominant`). Le déplacer dans le résultat plutôt
+-- que dans la boucle aurait fait dire « tes loisirs du week-end » à l'étiquette de la restitution.
+select results_eq(
+  $$ select extras_poste, extras_poste_label from public.assessment_results
+     where assessment_id = 'e2510000-0000-0000-0000-000000000008' $$,
+  $$ values ('leisure'::text, 'Loisirs du week-end (occasionnels)'::text) $$,
+  'le résultat du bilan garde le résiduel comme poste le plus lourd — seule la boucle change de poste'
+);
+
+-- L'action engagée est cherchée sur le poste **de la boucle** : une action de voyage nomme la
+-- question du mois, même quand le résiduel pèse plus lourd que le voyage.
+select results_eq(
+  $$ select question_kind, committed_action_text from public.engagement_checkins
+     where user_id = 'e2500000-0000-0000-0000-000000000009' and loop_type = 'extras' $$,
+  $$ values ('occasion'::text, 'Remplacer un de tes longs trajets en autocar par le train'::text) $$,
+  'sorties rares et un autocar engagé : la question du mois referme l''action de voyage'
 );
 
 -- La question de maintien n'existe **que** sur la boucle hebdomadaire : aller au travail à vélo

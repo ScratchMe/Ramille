@@ -584,14 +584,17 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
   Le choix se fait en un seul endroit (`nomDuPoste`, `src/constants/postes.ts`), et la
   reconnaissance du résiduel en un autre (`loisirsSontLeResiduel`) : **la fréquence déclarée**, que
   la restitution et le suivi lisent désormais, parce que les libellés figés ne marquent le résiduel
-  que quand il domine ou porte la boucle mensuelle — pas dans le cas courant de « rarement » avec un
+  que quand il domine ou pèse le plus des deux postes hors trajet — pas dans le cas courant de « rarement » avec un
   vol. Les libellés restent le repli d'une fréquence qu'on n'a pas pu lire. Le parcours réel lit le
   titre, la barre et le suivi sur le cycliste.
   **Relevé en l'implémentant, et pas tranché** : la légende de l'écart par poste dit « accent : tes
   loisirs occasionnels, le poste sur lequel ton plan travaille », alors qu'un plan dont le poste est
-  ce résiduel ne porte aucune action. Et à vérifier en base : un profil « rarement » dont les
-  voyages déclarés pèsent moins que le résiduel reçoit peut-être une boucle mensuelle sur ses
-  « sorties du week-end » — une phrase composée côté serveur, que ce chantier ne touche pas ;
+  ce résiduel ne porte aucune action. **Et le second relevé est mesuré et tranché le 27/09/2026** :
+  un profil « rarement » dont les voyages déclarés pèsent moins que le résiduel recevait bien, chaque
+  mois, « … pour tes sorties du week-end ? » (le cron mensuel joué sur la stack locale ; aucun
+  compte de production dans ce cas). Décision : **il est interrogé sur ses voyages**
+  (`20260927191009_la_boucle_mensuelle_de_qui_sort_rarement.sql`, paragraphe de C2.5 dans
+  `CLAUDE.md`) ;
 - **la date de mise à jour de la page de confidentialité** vaut le 24/09/2026 ; la page dit que sa
   date est celle où le texte arrive devant les lecteurs, donc elle suit la date de fusion ;
 - **tranché le 25/09/2026 — les deux variantes de la phrase du cap, et son silence, validés tels
@@ -618,7 +621,10 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
 - **le cas symétrique de l'étiquette est tranché avec le nom du résiduel, ci-dessus** : quand le
   domicile-travail gagne le départage face au résiduel un peu plus lourd, l'étiquette dit « … presque
   à égalité avec tes loisirs occasionnels ». Le marqueur se lit sur `extras_poste_label` — quand les
-  loisirs sont le poste le plus lourd, c'est forcément eux que la boucle mensuelle porte ;
+  loisirs sont le plus lourd des deux postes hors trajet, c'est forcément eux qu'il nomme. (Ce
+  paragraphe ajoutait « donc eux que la boucle mensuelle porte » : c'est faux depuis le 27/09/2026
+  pour qui sort rarement, interrogé sur ses voyages — et c'est précisément pour garder ce marqueur
+  que la bascule a été faite dans la boucle et non dans le résultat du bilan) ;
 - **tranché le 27/09/2026 — le contour de « Oui » et « Non » reste tel quel, et avec lui celui de
   tous les boutons secondaires.** Ce qui suit est le relevé qui a été posé, et la raison tient
   toujours : le libellé identifie le bouton, et c'est le registre de la décision n° 2. Porter le
