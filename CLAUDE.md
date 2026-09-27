@@ -1137,7 +1137,7 @@ donc sans cette sous-transaction un plan qui échoue emportait le résultat que 
 d'écrire.
 
 **Un bilan se retire, et ne se supprime pas** (C4.7, `v1-22`,
-`20260928090000_retirer_un_bilan.sql`). Une distance saisie en mètres ou un questionnaire rempli
+`20260927230411_retirer_un_bilan.sql`). Une distance saisie en mètres ou un questionnaire rempli
 « pour voir » restaient pour toujours dans le suivi et devenaient la base de comparaison du suivant.
 Six points à connaître :
 
@@ -1733,7 +1733,7 @@ pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
   qu'aucun code ne l'écrit.
 
 **Ce que la purge et la suppression laissent derrière elles : des compteurs, rien d'autre** (lot 6,
-livré avec C4.7, `20260928110000_les_cohortes_avant_la_purge.sql`). La cascade efface tout ce qu'une
+livré avec C4.7, `20260927230611_les_cohortes_avant_la_purge.sql`). La cascade efface tout ce qu'une
 personne a fait, donc toute mesure de forme cohorte doit être écrite **avant** : la purge incrémente
 `public.purges_par_cohorte` (semaine d'arrivée, étape la plus loin, tranche de semaines tenues, état
 des rappels au départ) **dans sa propre transaction, après sa garde de volume et avant son

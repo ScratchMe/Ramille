@@ -697,7 +697,7 @@ describe('les tables de réponses chiffrées', () => {
   // anglais. Les bornes sont recopiées ici parce que rien ne peut les lire depuis le SQL — même
   // limite que `distanceBracketMidpointKm`, et même raison de l'épingler.
   // Les trois valeurs sont celles du `check` de `assessments.status` (20260823094800, puis
-  // `withdrawn` depuis 20260928090000, C4.7), recopiées ici à la main comme les bornes du dessous :
+  // `withdrawn` depuis 20260927230411, C4.7), recopiées ici à la main comme les bornes du dessous :
   // une constante qui dérive de son `check` ne se voit ni au typecheck (la colonne est un `text`) ni
   // en CI — elle se lit « Ton bilan n'est pas encore fait », en production. Éprouvé le 20/09/2026 :
   // `'completed'` → `'complete'` fait tomber ce test — et, depuis le même jour, le comparateur des

@@ -201,7 +201,7 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 |---|---|---|---|
 | 00.1 | Ouvrir `https://www.ramille.fr/status` dans une fenêtre **normale** | Sous « Connexion Supabase », **« OK — N modes de transport en base »**. Autre chose qu'un « OK » : **arrêter là**, le défaut est côté configuration et la suite ne prouverait rien | |
 | 00.2 | Relever **N**, le nombre de modes | **24** — relevé sur le distant le 21/09/2026 puis le 27/09/2026. Un nombre plus bas veut dire que la production ne porte pas les migrations de C4.4, et **les blocs 02 et 03 tomberaient** pour cette seule raison. C'est aussi le seul chiffre de cette feuille qui peut **monter** légitimement, si un mode est ajouté après cette date | |
-| 00.3 | Noter le commit servi, et le comparer à `main` | Le site suit `main`. **Le bloc 09 demande que le retrait d'un bilan y soit** (C4.7, fusionné le 28/09/2026 au plus tôt) : s'il n'y est pas encore, le jouer à une séance suivante. **Ne pas figer de valeur ici** : la feuille s'en figeait une le 18/09 et la séance l'a trouvée périmée alors que le site était simplement en avance | |
+| 00.3 | Noter le commit servi, et le comparer à `main` | Le site suit `main`. **Le bloc 09 demande que le retrait d'un bilan y soit** (C4.7, [#285](https://github.com/ScratchMe/Ramille/pull/285)) : s'il n'y est pas encore, le jouer à une séance suivante. **Ne pas figer de valeur ici** : la feuille s'en figeait une le 18/09 et la séance l'a trouvée périmée alors que le site était simplement en avance | |
 | 00.4 | Dans le **navigateur A**, fermer toutes les fenêtres privées, puis en ouvrir une pour le profil 1 | — | |
 
 ## Bloc 01 — L'onboarding : « Retour », les points, « Commencer »
@@ -317,7 +317,7 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 
 ## Bloc 09 — Retirer un bilan
 
-> C4.7, décidé et livré le 27–28/09/2026 (`v1-22`). Un bilan faux — une distance saisie en mètres,
+> C4.7, décidé et livré le 27/09/2026 (`v1-22`). Un bilan faux — une distance saisie en mètres,
 > un questionnaire rempli « pour voir » — restait pour toujours dans le suivi et devenait la base de
 > comparaison du suivant. **Retirer n'efface rien** : le bilan disparaît du suivi et son chiffre ne
 > s'affiche plus, mais il reste dans l'export des données. **Irréversible à l'écran** : on joue ce

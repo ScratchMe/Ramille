@@ -1,5 +1,5 @@
 -- Tests pgTAP de C4.7 — retirer un bilan qui ne ressemble à personne.
--- Migration `20260928090000_retirer_un_bilan.sql`, décisions D1 à D4 de `v1-22` (27/09/2026).
+-- Migration `20260927230411_retirer_un_bilan.sql`, décisions D1 à D4 de `v1-22` (27/09/2026).
 --
 -- Ce que ce fichier défend, dans l'ordre où ça se casse :
 --
@@ -57,6 +57,7 @@
 --   | M16 — le RPC n'annule plus les rappels en attente quand il ne reste aucun bilan (27/09/2026, à l'intégration : la migration mutée sur le disque, puis `rejouer-la-ci base` sur les 35 fichiers) | 27, et rien d'autre dans la suite |
 --   | M17 — le retrait du seul bilan n'archive plus l'action engagée (27/09/2026, section G, même méthode que M16) | 44, et rien d'autre dans la suite |
 --   | M18 — les rappels annulés à **chaque** retrait, et non plus au seul dernier (idem) | 42, et rien d'autre dans la suite |
+--   | M19 — l'action du seul bilan archivée, mais plus désengagée (idem) | 43, et rien d'autre dans la suite |
 --
 -- **M13 est d'abord passée**, et c'est elle qui a changé la fixture : la vue d'étape était celle de
 -- R, qui garde un bilan valide après son retrait — un entonnoir borné aux comptes pourvus d'un bilan

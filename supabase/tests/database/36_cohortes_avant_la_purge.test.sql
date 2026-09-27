@@ -1,5 +1,5 @@
 -- Tests pgTAP des cohortes gardées avant la purge, et du compte des suppressions de compte —
--- lot 6, migration `20260928110000_les_cohortes_avant_la_purge.sql` (décision du 27/09/2026).
+-- lot 6, migration `20260927230611_les_cohortes_avant_la_purge.sql` (décision du 27/09/2026).
 --
 -- Ce que ce fichier défend : **la purge laisse derrière elle des compteurs justes, et rien qui
 -- puisse désigner quelqu'un.** Les deux moitiés comptent autant. Des compteurs faux feraient
@@ -32,7 +32,10 @@
 -- été réécrit pour l'appeler (un chantier parallèle touche au plafond des rappels — en-tête de la
 -- migration). L'assertion accepte donc les deux formes : le corps du régime contient l'expression
 -- mot pour mot, ou il appelle la fonction. Le jour de la factorisation, elle reste vraie sans
--- retouche ; le jour où l'un des deux textes bouge seul, elle tombe.
+-- retouche ; le jour où l'un des deux textes bouge seul, elle tombe — **sauf s'il ne fait
+-- qu'ajouter** : c'est une inclusion, pas une identité. Une ligne ajoutée au régime après sa
+-- lecture du signe de vie, qui retoucherait la date, passerait sans bruit (contre-lecture du
+-- 27/09/2026) ; c'est l'angle mort de la 3, et la factorisation prévue le ferme.
 --
 -- **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1). Chaque mutation a été posée juste
 -- après le `begin` de **chaque** fichier de la suite — donc annulée avec lui, la stack n'en gardant
@@ -74,10 +77,22 @@
 --   - `cohorte_de` rendue exécutable à `public`                → 1 : la 12 ;
 --   - la RLS retirée                                           → 1 : la 4 ;
 --   - le `check` du lundi retiré                               → 1 : la 9 ;
---   - la semaine d'arrivée devenue un jour                     → la purge **lève** (le `check` du
---     lundi refuse le compteur) et emporte la transaction, dans `16` comme ici : c'est le
---     comportement voulu — une purge qui ne sait pas compter ne supprime rien ;
+--   - la semaine d'arrivée devenue un jour                     → 4 : 15 à 18. Le `check` du lundi
+--     refuse le compteur ; la purge **levait** alors et emportait la transaction, dans `16` comme
+--     ici. **Rejouée le soir même, après la sous-transaction de la section 8** : le compte échoue
+--     seul, les sessions partent quand même, `16` reste vert, et ce sont les quatre lectures de
+--     compteurs qui tombent — le prix d'une cohorte perdue, là où l'ancien comportement suspendait
+--     une suppression promise ;
 --   - une troisième boucle ajoutée au `check`                  → 1 : la 2.
+--
+-- **Et quatre de plus le même soir, pour la section 8**, par la méthode canonique cette fois — la
+-- migration mutée sur le disque, puis `rejouer-la-ci base` sur toute la suite :
+--
+--   - la purge qui relève l'échec de son compteur (`raise;`)   → 2 : 22 et 23 ;
+--   - `delete_my_account` qui relève l'échec du sien           → 2 : 24 et 25 ;
+--   - `silence` retiré du `check` de `rappels_au_depart`       → 5 : la 21, et les quatre lectures
+--     de compteurs (15 à 18) — U6 part en `silence`, son compte échoue, et depuis la sous-transaction
+--     c'est **toute** la cohorte du passage qui manque, pas la suppression ;
 begin;
 create extension if not exists pgtap with schema extensions;
 

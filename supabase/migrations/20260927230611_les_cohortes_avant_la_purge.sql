@@ -44,9 +44,10 @@
 --     connaître en lisant la vue : `a_repondu` compte aussi des gens qui ne se sont jamais
 --     engagés, et les étapes s'y lisent exclusives, jamais cumulées ;
 --   * **les semaines tenues, par tranches** — de la création au dernier signe de vie, défini par
---     `public.dernier_signe_de_vie` (plus bas). Six tranches, bornées sur les seuils que le produit
---     s'est déjà donnés : `0`, `1`, `2-3`, `4-7` (quatre points sans réponse font s'espacer les
---     rappels), `8-12` (huit les font taire), `13+` (treize semaines font une saison de 91 jours) ;
+--     `public.dernier_signe_de_vie` (plus bas). Six tranches, dont les bornes reprennent des seuils
+--     que le produit s'est déjà donnés — `0`, `1`, `2-3`, `4-7` (quatre points sans réponse font
+--     s'espacer les rappels), `8-12` (huit les font taire), `13+` (treize semaines font une saison
+--     de 91 jours) —, mais comptées en **semaines d'activité**, pas en points sans réponse ;
 --   * **l'état des rappels au départ** — `public.regime_de_rappel` sur chacune des deux boucles, et
 --     **le plus avancé des deux** (`silence` > `espace` > `normal`) : c'est ce que le produit
 --     faisait déjà à cette personne — s'être tu sur une boucle suffit à le dire.
@@ -60,9 +61,11 @@
 -- parallèle (C4.2, le mot de la veille) passe sous le plafond de ce régime et peut le réécrire, et
 -- deux réécritures concurrentes de la même fonction font gagner la dernière appliquée, en silence
 -- (`SUPABASE.md` §2.3). La factorisation se fait à l'intégration, une fois C4.2 fusionné — une
--- ligne, déjà jouée comme témoin des mutations de `36` : elle ne fait rien tomber. D'ici là, **les deux textes ne peuvent pas diverger sans bruit** : une assertion de `36`
--- exige que le corps installé de `regime_de_rappel`, commentaires et blancs retirés, contienne
--- l'expression de `dernier_signe_de_vie`, ou l'appelle.
+-- ligne, déjà jouée comme témoin des mutations de `36` : elle ne fait rien tomber. D'ici là, une
+-- assertion de `36` exige que le corps installé de `regime_de_rappel`, commentaires et blancs
+-- retirés, **contienne** l'expression de `dernier_signe_de_vie`, ou l'appelle. Une inclusion et
+-- non une identité : les deux textes ne peuvent pas diverger sans bruit **sauf par ajout** — une
+-- ligne ajoutée au régime après sa lecture du signe de vie passerait (contre-lecture du 27/09/2026).
 --
 -- Une conséquence de cette définition, à connaître avant de lire une tranche : une **réponse**
 -- compte pour le début de la période qu'elle interroge, pas pour sa date — donc une semaine plus
@@ -190,11 +193,11 @@ revoke execute on function public.dernier_signe_de_vie(uuid, text) from public, 
 comment on function public.dernier_signe_de_vie(uuid, text) is
   'Le dernier signe de vie d''un compte pour une boucle : le plus récent du début de période d''un '
   'point répondu de cette boucle et d''un app_open. Extraction de regime_de_rappel (C2.9), qui '
-  'doit l''appeler à l''intégration du lot 6 ; 36_cohortes_avant_la_purge tient les deux textes '
-  'à l''identique d''ici là.';
+  'doit l''appeler à l''intégration du lot 6 ; d''ici là, 36_cohortes_avant_la_purge exige que '
+  'le corps du régime contienne cette expression.';
 
--- `strict` : une durée nulle n'a pas de tranche, et la colonne `not null` fera échouer la purge
--- plutôt que de ranger quelqu'un dans « 0 » faute de savoir.
+-- `strict` : une durée nulle n'a pas de tranche, et la colonne `not null` fera échouer le compte
+-- — jamais la suppression, §3 — plutôt que de ranger quelqu'un dans « 0 » faute de savoir.
 create or replace function public.tranche_de_semaines_tenues(p_semaines integer)
 returns text
 language sql
@@ -225,7 +228,9 @@ comment on function public.tranche_de_semaines_tenues(integer) is
 --
 -- L'état des rappels se trie par `array_position` avec `nulls first` : une valeur que
 -- `regime_de_rappel` rendrait demain sans qu'on l'ait prévue passe DEVANT, et le `check` de la
--- table la refuse — la purge échoue et le dit, au lieu de ranger quelqu'un dans le mauvais régime.
+-- table la refuse — le compte échoue et le dit (`purge_runs.detail`), au lieu de ranger quelqu'un
+-- dans le mauvais régime, et la suppression a lieu quand même (§3). L'assertion 21 de `36` garde
+-- que cela n'arrive pas en silence : les valeurs du régime y sont comparées au `check`.
 create or replace function public.cohorte_de(p_user_id uuid)
 returns table (
   semaine_d_arrivee date,

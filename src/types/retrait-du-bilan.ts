@@ -8,7 +8,7 @@ import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/re
  * la raison de `FRONT.md` §1.1 : une phrase qui dépend d'un cas est une phrase qui peut être fausse
  * dans un autre, et elle ne s'éprouve que si elle a un nom. Trois situations, et la confirmation
  * n'a pas le droit de dire la même chose aux trois — ce que le retrait fait au plan dépend de la
- * place du bilan parmi ceux qui restent valides (`retirer_le_bilan`, migration `20260928090000`) :
+ * place du bilan parmi ceux qui restent valides (`retirer_le_bilan`, migration `20260927230411`) :
  *
  *   - **`seul`** : c'est le seul bilan valide. Rien ne reste sur quoi bâtir un plan, et la personne
  *     repart d'un nouveau bilan (D3) — la confirmation ne parle donc **pas** de plan ;

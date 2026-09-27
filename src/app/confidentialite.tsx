@@ -112,7 +112,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // **Et les compteurs qui survivent à une suppression** (lot 6, décidé le 27/09/2026 : « la page de
 // confidentialité le dit »). La page écrivait que la session « et toutes les données associées »
 // partent, et c'est toujours vrai de ses données ; ce qui reste est un +1 dans un compteur, sans
-// identifiant ni date plus fine que la semaine (`20260928110000`). Le taire aurait laissé croire à
+// identifiant ni date plus fine que la semaine (`20260927230611`). Le taire aurait laissé croire à
 // une suppression sans aucune trace, sur la page même qui promet de dire ce qu'on garde.
 const UPDATED_AT = '27 septembre 2026';
 

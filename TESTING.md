@@ -320,6 +320,11 @@ et le nombre ne s'écrit plus en titre pour qu'il ne se périme pas une seconde 
   un rebond qui coûte de la délivrabilité au domaine. Ce fichier ne se rejoue pas en entier sur le
   distant ; ce qui s'y valide se valide en sautant ces appels (ils ne touchent pas au corps du
   message, seulement au statut).
+- `16_purge_anonyme_inactivite` et `36_cohortes_avant_la_purge` (son assertion 18) fabriquent soixante sessions
+  muettes pour déclencher la garde de volume de la purge, dont le seuil vaut `max(50, 20 %)` des
+  comptes anonymes. **Au-delà de 240 comptes anonymes en base, soixante ne suffisent plus**, et le
+  passage supprime au lieu de bloquer. Le compte qui décide est celui de la base, pas du fichier
+  (relevé par la contre-lecture du lot 6, 27/09/2026).
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.

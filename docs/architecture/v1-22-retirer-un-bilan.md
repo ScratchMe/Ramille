@@ -152,7 +152,7 @@ doivent être prises avant la migration.
 
 ## 7. Ce que la livraison a appris (27/09/2026)
 
-Livré le jour des décisions, dans `20260928090000_retirer_un_bilan.sql` et
+Livré le jour des décisions, dans `20260927230411_retirer_un_bilan.sql` et
 `34_retirer_un_bilan.test.sql`, avec l'écran et le parcours réel. Ce que cette page ne savait pas :
 
 - **Les lectures de `completed` étaient sept côté serveur, pas six** —

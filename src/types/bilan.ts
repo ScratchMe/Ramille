@@ -193,7 +193,7 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
 /**
  * Les trois statuts d'un bilan, **miroir du `check` de `assessments.status`**
  * (`20260823094800_core_schema.sql` : `in ('in_progress', 'completed')`, puis `withdrawn` depuis
- * `20260928090000_retirer_un_bilan.sql`, C4.7).
+ * `20260927230411_retirer_un_bilan.sql`, C4.7).
  *
  * La colonne est un `text` sans enum, donc `database.types.ts` la type `string` et rien, au
  * typecheck, ne distingue `'completed'` de `'complete'`. **Chaque requête qui filtre sur ce statut

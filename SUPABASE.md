@@ -111,7 +111,7 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   propriétaire, y compris dans les triggers que ses ordres déclenchent ; depuis PostgREST, il vaut
   le rôle de la requête (`anon`, `authenticated`). Premier emploi : `assessments.status`, que la
   soumission écrit et que seul `retirer_le_bilan` peut passer à `withdrawn`
-  (`20260928090000_retirer_un_bilan.sql`). Deux choses à savoir : la garde laisse passer **tous**
+  (`20260927230411_retirer_un_bilan.sql`). Deux choses à savoir : la garde laisse passer **tous**
   les rôles serveur (`postgres`, `service_role`, les fixtures), ce qui est voulu — c'est le client
   qu'on borne ; et une garde d'**état** (« seul un bilan complété se retire ») doit s'écrire à côté,
   pas à la place, parce que sous un rôle serveur celle de rôle ne dit rien — le fichier 34 les
