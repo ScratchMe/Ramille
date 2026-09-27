@@ -48,7 +48,9 @@ core/ ThemedText · ThemedView · Button · TextLink · MessageInline · Onboard
 forms/ GroupeDeChoix · Chip · ChoiceRow · LigneDeCanal · ModeListItem · PrecisionMode · NumericField · TextField · GoogleButton
 mascotte/ Mascot · RamilleDit · CalculEnCours · EcranLancement
 navigation/ CompteBouton · BandeHaute · OngletIcone · BarreOnglets · ProgressHeader · StepShell
-plan/ CheckinCard · ActionCard · ActionCommitment · FeuilleRappels
+plan/ CheckinCard · ActionCard · ActionCommitment · CarteDePiste · CarteDOuverture · PastilleEngagee · TraitDeTemps · FeuilleRappels
+suivi/ EcartParPoste · BarreContour · BlocMethode
+bilan/ FeuilleNouveauBilan
 compte/ ChoixDeRappel · MonCompte
 
 Sans interface, donc sans fiche : `TitreDePage` (les métadonnées du document) et `RetourDeNotification` (rend `null`).

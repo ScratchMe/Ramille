@@ -1,5 +1,6 @@
 import React from 'react';
 import { ThemedText } from '../core/ThemedText.jsx';
+import { PastilleEngagee } from './PastilleEngagee.jsx';
 // Source : src/components/plan/action-card.tsx — rayon 18 padding 20 gap 8 ; engagée = bordure accent 2 + fond tinted +
 // étiquette ; estompée = son filet passe de `border` à `backgroundElement`, sans opacité : le texte garde ses contrastes.
 // Jumelle de `ligneDuGain` (src/types/plan.ts) : « par an » toujours en tête, collé au chiffre qu'il qualifie.
@@ -12,9 +13,7 @@ export function ActionCard({ titre, gainKg, partPercent, detail, intention, prem
     <div style={{ borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 8, border: cadre, background: engagee ? 'var(--color-background-tinted)' : 'transparent' }}>
       {engagee && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 20, height: 20, borderRadius: 10, background: 'var(--color-accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="12" height="12" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="var(--color-on-accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-          </span>
+          <PastilleEngagee />
           <ThemedText themeColor="accentText" weight={700} style={{ fontSize: 13, lineHeight: '18px', letterSpacing: '0.3px' }}>{etiquette}</ThemedText>
         </div>
       )}
