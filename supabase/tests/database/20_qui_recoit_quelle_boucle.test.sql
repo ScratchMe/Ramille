@@ -55,10 +55,10 @@
 --     résultat voit que l'étiquette de la restitution aurait perdu « tes loisirs occasionnels ».
 --
 -- **Et le même jour, après l'extraction de `a_des_voyages_declares`** (`v1-27` §5,
--- `20260927230000`) : l'autocar retiré de la fonction fait tomber ici les deux assertions du
+-- `20260927210200`) : l'autocar retiré de la fonction fait tomber ici les deux assertions du
 -- profil G et celle du profil I ; les vols retirés n'en font tomber **aucune** — aucun profil de ce
 -- fichier ne sort rarement avec des vols pour seuls voyages — et c'est le balayage du fichier 33 qui
--- les voit. Puis après celle d'`action_engagee_de_la_periode` (`20260927231000`) : la boucle
+-- les voit. Puis après celle d'`action_engagee_de_la_periode` (`20260927210247`) : la boucle
 -- mensuelle qui lui repasse `ar.extras_poste` au lieu du poste de la boucle fait tomber le profil I,
 -- comme les bornes du cycle exclues ou le poste inversé ; le filtre par compte retiré fait tomber la
 -- question de H, et le filtre d'engagement retiré les deux assertions de l'automobiliste C. Le

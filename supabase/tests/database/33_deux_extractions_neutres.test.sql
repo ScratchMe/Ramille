@@ -1,6 +1,6 @@
 -- Tests pgTAP des deux extractions de la boucle d'engagement — dette `v1-27` §5, migrations
--- `20260927230000_les_voyages_declares_en_un_seul_endroit.sql` et
--- `20260927231000_l_action_engagee_en_un_seul_endroit.sql` (27/09/2026).
+-- `20260927210200_les_voyages_declares_en_un_seul_endroit.sql` et
+-- `20260927210247_l_action_engagee_en_un_seul_endroit.sql` (27/09/2026).
 --
 -- Ce que ce fichier défend : **deux morceaux de logique écrits en deux exemplaires n'en ont plus
 -- qu'un, et le comportement n'a pas bougé d'un point.** Il le défend de trois façons, parce

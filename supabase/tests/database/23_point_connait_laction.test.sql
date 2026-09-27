@@ -27,7 +27,7 @@
 -- insérés littéralement par `20260905130000` : ils en sont la clé naturelle.
 --
 -- **Depuis le 27/09/2026, la recherche de l'action engagée vit dans
--- `public.action_engagee_de_la_periode`** (`v1-27` §5, `20260927231000`). Mutations jouées ce
+-- `public.action_engagee_de_la_periode`** (`v1-27` §5, `20260927210247`). Mutations jouées ce
 -- jour-là, et ce qu'elles font tomber ici : le poste inversé dans la fonction, ou la boucle
 -- hebdomadaire qui lui passe `leisure` au lieu de `commute` → six assertions de la §4 (le genre, la
 -- question, le libellé figé, la notification, et les deux qui disent que changer d'action ne réécrit

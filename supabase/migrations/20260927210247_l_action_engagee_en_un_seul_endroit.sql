@@ -1,7 +1,7 @@
 -- L'action engagée sur la période interrogée, en un seul endroit : `public.action_engagee_de_la_periode`
 --
 -- Dette `v1-27` §5, seconde des deux extractions qu'elle désigne (27/09/2026), après
--- `20260927230000_les_voyages_declares_en_un_seul_endroit.sql`. **Migration neutre** : chaque
+-- `20260927210200_les_voyages_declares_en_un_seul_endroit.sql`. **Migration neutre** : chaque
 -- point généré porte la même action, les mêmes jours, la même échéance et la même question
 -- qu'avant. La suite pgTAP entière passe sans qu'une valeur attendue ait bougé, et
 -- `33_deux_extractions_neutres.test.sql` compare la fonction à la requête qu'elle remplace sur une
@@ -75,10 +75,10 @@
 -- change. La priorité du genre (le maintien gagne, C2.5), la période écoulée (C2.3), le poste de la
 -- boucle de qui sort rarement, la base déclarée et le `nulls last` de C2.2 sont repris tels quels.
 --
--- **Ne rejouer seule ni la migration précédente (`20260927230000`) ni `20260927191009` après
+-- **Ne rejouer seule ni la migration précédente (`20260927210200`) ni `20260927191009` après
 -- celle-ci** : chacune réécrit `generate_extras_checkins` en entier, avec la recherche encore en
 -- ligne. Le comportement resterait juste, mais l'extraction serait défaite en silence — et
--- `20260927230000` rejouée seule passe même tous ses contrôles (`SUPABASE.md` §2.3, « rejouer un
+-- `20260927210200` rejouée seule passe même tous ses contrôles (`SUPABASE.md` §2.3, « rejouer un
 -- fichier ancien ») — rejouer alors aussi celle-ci.
 
 create or replace function public.action_engagee_de_la_periode(

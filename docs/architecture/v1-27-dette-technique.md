@@ -233,9 +233,9 @@ toucherait le chiffre de chaque bilan pour un gain que la règle « partir de `p
 appelants depuis leur corps installé, et prouver la neutralité par la suite pgTAP entière — dont
 les valeurs attendues ne doivent pas bouger d'une décimale — avant de l'appliquer au distant.
 
-**Fait le 27/09/2026, et neutre** — deux migrations,
-`20260927230000_les_voyages_declares_en_un_seul_endroit.sql` puis
-`20260927231000_l_action_engagee_en_un_seul_endroit.sql`, avec leur fichier de test
+**Fait et appliqué au distant le 27/09/2026, et neutre** — deux migrations,
+`20260927210200_les_voyages_declares_en_un_seul_endroit.sql` puis
+`20260927210247_l_action_engagee_en_un_seul_endroit.sql`, avec leur fichier de test
 `33_deux_extractions_neutres.test.sql`. La suite pgTAP entière passe sans qu'une valeur attendue
 ait bougé (seul le **libellé** d'une assertion de `20` change, pour désigner la fonction), le
 parcours réel aussi, et les corps installés des trois fonctions réécrites étaient identiques
@@ -254,8 +254,8 @@ l'exécution a appris, et que l'instruction ne savait pas :
 - **la branche `'travel'` du bilan à zéro de `recompute_assessment_results` est inatteignable** —
   tous les facteurs de voyage sont positifs et le résiduel de « rarement » n'est jamais nul —, d'où
   une garde de structure et non de comportement ;
-- **rejouer seule `20260927191009` ou `20260927230000` après la seconde défait l'extraction**,
-  puisque chacune réécrit `generate_extras_checkins` en entier — et rejouer `20260927230000` seule
+- **rejouer seule `20260927191009` ou `20260927210200` après la seconde défait l'extraction**,
+  puisque chacune réécrit `generate_extras_checkins` en entier — et rejouer `20260927210200` seule
   passe même tous ses contrôles en silence. C'est la règle de `SUPABASE.md` §2.3 (« rejouer un
   fichier ancien peut défaire une migration plus récente »), écrite dans l'en-tête de la seconde.
 
