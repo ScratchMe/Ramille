@@ -14,6 +14,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing, Stroke } from '@/constants/theme';
+import { DELAI_AVANT_CHARGEMENT, useApresUnDelai } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackFocus } from '@/hooks/use-track-focus';
@@ -253,13 +254,17 @@ export default function Suivi() {
       </View>
     ) : null;
 
+  // « Chargement… » attend `DELAI_AVANT_CHARGEMENT` avant de se dire (`v1-30` §5.8) : au premier
+  // passage sur l'onglet, il clignotait une image avant le suivi.
+  const chargementVisible = useApresUnDelai(state.status === 'loading', DELAI_AVANT_CHARGEMENT);
+
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <BandeHaute />
           <View style={styles.centered}>
-            <ThemedText themeColor="textSecondary">Chargement de ton suivi…</ThemedText>
+            {chargementVisible && <ThemedText themeColor="textSecondary">Chargement de ton suivi…</ThemedText>}
           </View>
         </SafeAreaView>
       </ThemedView>

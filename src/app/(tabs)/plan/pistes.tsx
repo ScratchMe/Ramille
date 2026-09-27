@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { LayoutAnimationConfig } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
@@ -12,9 +13,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { POSTE_LABEL } from '@/constants/postes';
 import { Spacing, Stroke } from '@/constants/theme';
+import { DELAI_AVANT_CHARGEMENT, useApresUnDelai } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKg } from '@/lib/format';
+import { APPARITION, GLISSEMENT } from '@/lib/mouvement';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { filetsDesLignes, pistesParPoste, separationsDesLignes } from '@/types/plan';
 import { usePassageDEngagement } from './_layout';
@@ -121,6 +124,10 @@ export default function PistesScreen() {
     />
   );
 
+  // « Chargement… » attend `DELAI_AVANT_CHARGEMENT` avant de se dire (`v1-30` §5.8) : en arrivant sur
+  // l'écran, il clignotait une image avant les pistes. L'échec, lui, se dit tout de suite.
+  const chargementVisible = useApresUnDelai(etat.genre === 'chargement', DELAI_AVANT_CHARGEMENT);
+
   if (etat.genre !== 'pistes') {
     return (
       <ThemedView style={styles.container}>
@@ -130,11 +137,13 @@ export default function PistesScreen() {
             {/* L'écran ne dit jamais « tu n'as rien » sur un échec de lecture : il dit qu'il n'a pas
                 pu lire, et propose de réessayer (règle de C1.4). Les pistes existent, c'est la
                 lecture qui a manqué. */}
-            <ThemedText type="body" themeColor="textSecondary">
-              {etat.genre === 'chargement'
-                ? 'Chargement de tes pistes…'
-                : 'Tes pistes n’ont pas pu être chargées.'}
-            </ThemedText>
+            {(etat.genre !== 'chargement' || chargementVisible) && (
+              <ThemedText type="body" themeColor="textSecondary">
+                {etat.genre === 'chargement'
+                  ? 'Chargement de tes pistes…'
+                  : 'Tes pistes n’ont pas pu être chargées.'}
+              </ThemedText>
+            )}
             {etat.genre === 'erreur' && (
               <TextLink
                 label="Réessayer"
@@ -198,7 +207,7 @@ export default function PistesScreen() {
           )}
 
           {groupes.map((groupe) => (
-            <View key={groupe.poste ?? 'sans-poste'} style={styles.groupe}>
+            <Animated.View key={groupe.poste ?? 'sans-poste'} layout={GLISSEMENT} style={styles.groupe}>
               {/* **Une étiquette de section, et non un titre de carte** (planche A2, #234). Elle
                   était rendue en `cardTitle` — 17 px, couleur pleine —, c'est-à-dire dans le
                   registre d'un **titre d'action**, à trois pixels du contenu qu'elle annonce. La
@@ -251,7 +260,7 @@ export default function PistesScreen() {
                   rafraichir();
                 }}
               />
-            </View>
+            </Animated.View>
           ))}
         </ScrollView>
       </SafeAreaView>
@@ -299,8 +308,13 @@ function Lignes({
   const separations = separationsDesLignes(ids, enCarte);
   const filets = filetsDesLignes(ids, enCarte);
 
+  // **Une ligne qui s'ouvre en carte n'est plus un saut** (27/09/2026, `v1-30` §5.7) : la carte
+  // apparaît en fondu à la place de la ligne — même clé, autre élément, donc React la monte à neuf —
+  // et ce qui est dessous glisse. Ce qui est là à l'arrivée sur l'écran n'a pas d'entrée à soi
+  // (`skipEntering`), et « Réduire » rend la ligne d'un coup : une sortie ne se met pas en scène.
   return (
     <View style={styles.lignesPistes}>
+      <LayoutAnimationConfig skipEntering>
       {pistes.map((action, rang) => {
         const separee = separations[rang];
         const filetee = filets[rang];
@@ -310,7 +324,12 @@ function Lignes({
 
         if (enCarte.has(action.id)) {
           return (
-            <View key={action.id} style={separee ? styles.pisteSeparee : undefined}>
+            <Animated.View
+              key={action.id}
+              layout={GLISSEMENT}
+              entering={APPARITION}
+              style={separee ? styles.pisteSeparee : undefined}
+            >
               <CarteDePiste
                 action={action}
                 committedActionId={engageeId}
@@ -330,7 +349,7 @@ function Lignes({
                 themeColor="textTertiary"
                 style={styles.reduire}
               />
-            </View>
+            </Animated.View>
           );
         }
 
@@ -340,8 +359,9 @@ function Lignes({
         // s'ouvre pas — il n'y a rien à y choisir.
         if (action.committed_at !== null) {
           return (
-            <View
+            <Animated.View
               key={action.id}
+              layout={GLISSEMENT}
               style={[
                 styles.lignePiste,
                 separee && styles.pisteSeparee,
@@ -364,13 +384,13 @@ function Lignes({
                   Engagée
                 </ThemedText>
               </View>
-            </View>
+            </Animated.View>
           );
         }
 
         return (
+          <Animated.View key={action.id} layout={GLISSEMENT}>
           <Pressable
-            key={action.id}
             style={({ pressed }) => [
               styles.lignePiste,
               separee && styles.pisteSeparee,
@@ -419,8 +439,10 @@ function Lignes({
               </ThemedText>
             </View>
           </Pressable>
+          </Animated.View>
         );
       })}
+      </LayoutAnimationConfig>
     </View>
   );
 }

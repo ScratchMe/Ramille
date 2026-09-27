@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useRef, type ReactNode, type RefObject } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { Easing, Keyframe, LayoutAnimationConfig, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProgressHeader } from '@/components/bilan/progress-header';
@@ -7,8 +8,9 @@ import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Mouvement, Radius, Spacing } from '@/constants/theme';
 import { donnerLeFocus } from '@/lib/focus';
+import { decalageDEntree, type Sens } from '@/types/mouvement';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
 // scrollable, footer Retour/Suivant. `onBack` absent = rien derrière, donc pas de bouton
@@ -52,6 +54,7 @@ export function StepShell({
   message,
   detail,
   manque,
+  entree,
 }: {
   section: string;
   step: number;
@@ -83,7 +86,34 @@ export function StepShell({
   /** Ce qu'il reste à renseigner sur l'étape, quand « Suivant » est inactif. Texte calme et
    *  non annoncé comme une alerte : ce n'est pas un échec, juste ce qui manque. */
   manque?: string | null;
+  /**
+   * L'étape qui s'affiche, et le côté d'où elle arrive (27/09/2026, `v1-30` §5.6). À chaque
+   * nouvelle `cle`, le contenu entre en fondu depuis `Mouvement.deplacement` pixels de ce côté ;
+   * sans `sens` (le montage, la reprise d'un brouillon), il est posé. Sans `entree`, rien ne bouge :
+   * le cadre sert aussi à d'autres écrans.
+   */
+  entree?: { cle: string; sens: Sens | null };
 }) {
+  // **L'étape entre dans le sens du parcours** (27/09/2026, `v1-30` §5.6) : de la droite en
+  // avançant, de la gauche en revenant — l'« axe partagé » d'un parcours par étapes. Une animation
+  // d'entrée (`entering`) sur une vue qui prend l'étape pour clé, et pas une valeur partagée remise
+  // à zéro dans un effet : l'effet part après l'affichage, donc la nouvelle étape se montrait posée
+  // une image avant de repartir de son décalage. L'ancienne étape s'en va d'un coup — une sortie
+  // s'efface, elle ne se met pas en scène. Sous « réduire les animations », reanimated pose
+  // l'entrée d'emblée. La clé fait aussi remonter le contenu d'une étape à l'autre, là où React
+  // gardait l'état d'un composant que deux étapes rendaient à la même place.
+  const sens = entree?.sens ?? null;
+  const entreeDeLEtape = useMemo(() => {
+    if (sens === null) return undefined;
+    const courbe = Easing.bezier(...Mouvement.courbe);
+    return new Keyframe({
+      0: { opacity: 0, transform: [{ translateX: decalageDEntree(sens, Mouvement.deplacement) }] },
+      100: { opacity: 1, transform: [{ translateX: 0 }], easing: courbe },
+    })
+      .duration(Mouvement.entree)
+      .reduceMotion(ReduceMotion.System);
+  }, [sens]);
+
   // **Le focus suit l'étape, sinon la question suivante n'est jamais annoncée.** Passer à l'étape
   // d'après laisse le focus sur « Suivant » : à TalkBack comme au clavier sur web, on entend le
   // bouton qu'on vient d'actionner et rien de la question qui vient de s'afficher. Sur web, c'est
@@ -160,7 +190,13 @@ export function StepShell({
         </View>
         <ScrollView ref={defilement} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View ref={contenu} {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
-            <TitreDeLEtape.Provider value={titre}>{children}</TitreDeLEtape.Provider>
+            <Animated.View key={entree?.cle} entering={entreeDeLEtape}>
+              {/* Ce que l'étape montre en arrivant n'a pas d'entrée à soi — une précision déjà
+                  ouverte entre avec l'étape ; ce qui s'ouvre ensuite apparaît (`src/lib/mouvement.ts`). */}
+              <LayoutAnimationConfig skipEntering>
+                <TitreDeLEtape.Provider value={titre}>{children}</TitreDeLEtape.Provider>
+              </LayoutAnimationConfig>
+            </Animated.View>
           </View>
         </ScrollView>
         <View style={styles.footerBlock}>

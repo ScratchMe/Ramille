@@ -276,15 +276,21 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
 
 ### 5.5 « Compris » et l'arrivée de la barre (décision n° 4)
 
-- **Fichiers** : `src/app/(tabs)/_layout.tsx` (la barre), `src/components/plan/carte-douverture.tsx`
-  (la sortie de la carte), `src/app/(tabs)/plan/index.tsx` (rien à changer si la sortie vit dans la
-  carte — à vérifier).
+- **Fichiers** : `src/app/(tabs)/_layout.tsx` (la barre), `src/app/(tabs)/plan/index.tsx` (le bloc
+  qui glisse), `src/components/plan/carte-douverture.tsx` (son commentaire, qui dit pourquoi elle
+  part sans fondu).
 - **Avant** : la carte disparaît, le contenu remonte d'un bloc, la barre surgit.
 - **Après** :
-  - **la carte sort** : opacité à 0 en `Mouvement.sortieBreve` **et** hauteur repliée à 0 en
-    `Mouvement.sortie`, en parallèle, puis `onSortie` — le contenu remonte en suivant la hauteur au
-    lieu de sauter. Cela vaut pour les trois usages de `CarteDOuverture` (nouvelle saison, premier
-    plan, les deux lieux) : un seul composant, une seule sortie ;
+  - **tout ce qui suit les cartes d'ouverture glisse d'un bloc** vers sa nouvelle place
+    (`LinearTransition` sur un conteneur, `Mouvement.entree`), au lieu de sauter. La première idée
+    — replier la carte qui part, puis appeler `onSortie` — ne tenait pas : « Compris » au premier plan
+    **remplace**, dans le même rendu, la carte du premier plan par celle des deux lieux, d'une autre
+    hauteur, et le contenu serait monté puis redescendu. La transition de disposition couvre le
+    retrait seul comme le remplacement ;
+  - **la carte qui part s'en va d'un coup**, et celle qui arrive fait son entrée (320 ms, déjà là). Un
+    fondu de sortie (`exiting`) a été essayé et retiré : sur web, reanimated déplace le contenu de
+    la carte qui part dans un clone accroché au premier parent positionné, hors du défilement, et ce
+    mécanisme n'a été éprouvé ni là ni sur Android ;
   - **la barre glisse depuis le bas** : translateY 60 → 0 et opacité 0 → 1 en
     `Mouvement.entreeDeBarre`, par un `Animated.Value` posé dans `tabBarStyle` (§3.2), `useNativeDriver`
     comme la barre elle-même (vrai sur natif, faux sur web). Seulement quand `barreArrive` le dit ;
@@ -295,6 +301,11 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
   une ligne datée sous le tableau de `v1-17` §9 (le document est daté, on ne réécrit pas la ligne),
   le commentaire de `src/app/(tabs)/_layout.tsx`, le paragraphe de C5.7 dans `CLAUDE.md` (« l'entrée
   glissée de 320 ms du canvas n'est pas rendue »), et `EXPO.md` §1.7.
+- **Un piège de mesure, payé le 27/09/2026** : cliquer « Compris » avec `locator.click()` pendant
+  que la carte fait encore son entrée fait défiler le plan de la hauteur de la carte — Playwright
+  cherche à viser un lien qui bouge. Ce n'est pas le produit : un clic aux coordonnées
+  (`page.mouse.click`), comme un doigt, ne défile pas, avant comme après ce chantier. Une garde qui
+  regarde ce moment clique donc aux coordonnées, ou attend la fin de l'entrée.
 - **À mesurer avant d'y croire** : l'écran reprend sa hauteur d'un coup quand la barre passe de
   `none` à `flex`, donc la bande de 60 px est vide pendant 320 ms. Elle doit avoir la couleur du fond
   de l'écran — sinon la barre doit glisser **dans** une bande déjà peinte, et c'est ce qu'on montre à
@@ -304,10 +315,10 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
     sa place et opaque dès la première image — une barre qui glisserait à chaque ouverture serait le
     pire effet de ce chantier ;
   - `scripts/verifier-parcours-reel.mjs`, à « Compris » : la barre est en chemin à la première image
-    où elle apparaît (translateY > 0), à sa place à la fin ; la carte est encore là, en train de sortir,
-    juste après l'appui.
+    où elle apparaît (translateY > 0), à sa place à la fin ; le titre « Ton plan » ne bouge pas quand
+    une carte en remplace une autre.
   - **Mutations** : `barreArrive` rendu toujours vrai → la garde du démarrage tombe ; la valeur animée
-    figée à 1 → celle du parcours tombe ; la sortie de la carte retirée → la seconde moitié tombe.
+    figée à 1 → celle du parcours tombe.
 
 ### 5.6 Le changement d'étape du questionnaire (décision n° 5)
 
@@ -440,11 +451,11 @@ Accessibilité), **en relançant l'app après chaque changement** :
 | 5.1 | Le skill `mouvement` | fait — cité dans `CLAUDE.md` |
 | 5.2 | L'installateur corrigé, `hzblj-skills` en manuel sans `/polish` | fait — 39 skills et 7 commandes, huit mutations consignées en tête du test |
 | 5.3 | Les jetons, les dérivations, le kit | fait — sept mutations consignées dans `src/types/mouvement.test.ts` |
-| 5.4 | Les feuilles | à faire |
-| 5.5 | « Compris » et la barre | à faire |
-| 5.6 | Le questionnaire | à faire |
-| 5.7 | Le contenu qui glisse | à faire |
-| 5.8 | Les onglets et le chargement | à faire |
+| 5.4 | Les feuilles | codé et regardé sur l'export ; garde à écrire |
+| 5.5 | « Compris » et la barre | codé et regardé sur l'export ; gardes à écrire |
+| 5.6 | Le questionnaire | codé ; à regarder, garde à écrire |
+| 5.7 | Le contenu qui glisse | codé ; à regarder, garde à écrire |
+| 5.8 | Les onglets et le chargement | codé, délai éprouvé par trois mutations ; fondu à regarder, garde à écrire |
 | 7 | Les documents | à faire |
 | 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | à faire |
 | 8.2 | Build EAS (à demander) | à faire |

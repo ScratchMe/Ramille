@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
@@ -14,6 +15,7 @@ import {
   VELO_TYPE_OPTIONS,
 } from '@/constants/transport-modes';
 import { Spacing } from '@/constants/theme';
+import { APPARITION, GLISSEMENT } from '@/lib/mouvement';
 import { TAILLES_DE_COVOITURAGE, type BilanAnswers } from '@/types/bilan';
 
 /**
@@ -44,7 +46,7 @@ export function CommuteModeStep({
         {COMMUTE_MODE_CHOICES.map((choice) => {
           const selected = answers.commute_mode === choice.modeId && answers.commute_is_carpool === choice.carpool;
           return (
-            <View key={choice.key}>
+            <Animated.View key={choice.key} layout={GLISSEMENT}>
               <ModeListItem
                 label={choice.label}
                 selected={selected}
@@ -60,25 +62,25 @@ export function CommuteModeStep({
               {/* La précision s'ouvre sous l'élément qui la déclenche — cf. `precision-mode.tsx`
                   pour la raison, qui n'est pas cosmétique. */}
               {selected && choice.modeId === 'voiture' && (
-                <View style={styles.precision}>
+                <Animated.View style={styles.precision} entering={APPARITION}>
                   <PrecisionMode
                     question="Quelle motorisation ?"
                     options={CAR_ENGINE_OPTIONS}
                     valeur={answers.commute_car_engine}
                     onChange={(value) => update({ commute_car_engine: value })}
                   />
-                </View>
+                </Animated.View>
               )}
 
               {selected && choice.modeId === 'deux_roues_motorise' && (
-                <View style={styles.precision}>
+                <Animated.View style={styles.precision} entering={APPARITION}>
                   <PrecisionMode
                     question="Quel type de deux-roues ?"
                     options={TWO_WHEELER_TYPE_OPTIONS}
                     valeur={answers.commute_two_wheeler_type}
                     onChange={(value) => update({ commute_two_wheeler_type: value })}
                   />
-                </View>
+                </Animated.View>
               )}
 
               {/* C4.4 — deux révélations de plus, sur le patron exact de la motorisation. Le mode
@@ -90,25 +92,25 @@ export function CommuteModeStep({
                   fait abandonner un questionnaire, une question de suivi ne coûte qu'à ceux
                   qu'elle concerne. */}
               {selected && choice.modeId === 'train' && (
-                <View style={styles.precision}>
+                <Animated.View style={styles.precision} entering={APPARITION}>
                   <PrecisionMode
                     question="Quel type de train ?"
                     options={TRAIN_TYPE_OPTIONS}
                     valeur={answers.commute_train_type}
                     onChange={(value) => update({ commute_train_type: value })}
                   />
-                </View>
+                </Animated.View>
               )}
 
               {selected && choice.modeId === 'velo' && (
-                <View style={styles.precision}>
+                <Animated.View style={styles.precision} entering={APPARITION}>
                   <PrecisionMode
                     question="Quel type de vélo ?"
                     options={VELO_TYPE_OPTIONS}
                     valeur={answers.commute_velo_type}
                     onChange={(value) => update({ commute_velo_type: value })}
                   />
-                </View>
+                </Animated.View>
               )}
 
               {/* **Elle vient de l'écran suivant** (recette du 14/09/2026, `v1-16` §3). Le produit
@@ -122,21 +124,23 @@ export function CommuteModeStep({
                   Après la motorisation et sous la même option, comme `leisure-detail.tsx` : les
                   deux précisions décrivent la même voiture. */}
               {selected && choice.carpool && (
-                <View style={styles.precision}>
+                <Animated.View style={styles.precision} entering={APPARITION}>
                   <PrecisionChiffres
                     question="Vous êtes combien à partager ce trajet ?"
                     options={TAILLES_DE_COVOITURAGE}
                     valeur={answers.commute_carpool_size}
                     onChange={(value) => update({ commute_carpool_size: value })}
                   />
-                </View>
+                </Animated.View>
               )}
-            </View>
+            </Animated.View>
           );
         })}
       </GroupeDeChoix>
 
-      <MissingModeLink context="B1.4 mode domicile-travail" />
+      <Animated.View layout={GLISSEMENT}>
+        <MissingModeLink context="B1.4 mode domicile-travail" />
+      </Animated.View>
     </View>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, { LayoutAnimationConfig } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
@@ -10,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { formeInserable, type LoopType } from '@/constants/postes';
 import { Radius, Spacing } from '@/constants/theme';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
+import { APPARITION } from '@/lib/mouvement';
 import { supabase } from '@/lib/supabase';
 import {
   estDeuxiemeFoisDeSuite,
@@ -206,6 +208,11 @@ export function CheckinCard({
       >
         {checkin.period_label}
       </ThemedText>
+      {/* **La réplique apparaît au lieu de remplacer la question d'un coup** (27/09/2026, `v1-30`
+          §5.7). Un point déjà répondu à l'arrivée sur le plan n'a pas d'entrée à soi
+          (`skipEntering`) : seule une réponse donnée ici fait apparaître la réplique. Le focus y
+          part au geste, sans attendre le fondu. */}
+      <LayoutAnimationConfig skipEntering>
       {reponse === null ? (
         <>
           {/* **La question vient de `src/types/checkin.ts`, et c'est la même qu'au rappel.**
@@ -294,7 +301,7 @@ export function CheckinCard({
           )}
         </>
       ) : (
-        <>
+        <Animated.View entering={APPARITION} style={styles.repondu}>
           {/* **Un point de maintien ne reçoit jamais `checkinNon`** (C2.5) : cette réplique console
               d'un échec, et répondre « non » à « ton trajet s'est-il fait à vélo ? » n'en est pas
               un. Même raison pour `sans_objet`, qui reçoit une attente et non une relance (C2.4).
@@ -319,14 +326,17 @@ export function CheckinCard({
               {pied}
             </ThemedText>
           )}
-        </>
+        </Animated.View>
       )}
+      </LayoutAnimationConfig>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   card: { borderRadius: Radius.card, padding: 18, gap: 10 },
+  // Le même écart que la carte : la réplique et son pied en étaient des enfants directs.
+  repondu: { gap: 10 },
   question: { fontSize: 16, lineHeight: 23 },
   actions: { flexDirection: 'row', gap: Spacing.two },
   // Centré sous les deux boutons : le lien doit se lire comme une sortie commune aux deux, pas
