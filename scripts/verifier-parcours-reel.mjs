@@ -193,7 +193,7 @@
 // tort) ne sont gardés par aucune étape de ce parcours : ce sont les tests de `cartesDuPlan` et la
 // relecture qui les tiennent.
 //
-// **Et quatre le 27/09/2026, sur le retrait d'un bilan** (C4.7, `v1-22`) — quatre **appels** de
+// **Et six le 27/09/2026, sur le retrait d'un bilan** (C4.7, `v1-22`) — six **appels** de
 // l'écran, que Jest ne voit pas : chaque dérivation de `src/types/retrait-du-bilan.ts` a ses tests,
 // mais un écran qui leur passerait le mauvais argument les laisserait tous verts. Témoin passé de bout
 // en bout, puis un rejeu `parcours` par mutation (export neuf, stack neuve) :
@@ -204,6 +204,8 @@
 //   | T2 — le gestionnaire du retrait n'efface plus la marque locale | « cycliste — retirer son seul bilan » : « la marque locale survit au retrait du seul bilan » |
 //   | T3 — la confirmation reçoit toujours la place `ancien` | « cycliste — retirer le bilan en voiture » : « ton plan repartira de ton bilan précédent. » n'apparaît jamais |
 //   | T4 — l'écran passe `null` à `confirmationDuRetrait` au lieu de l'engagement relu (27/09/2026, contre-lecture) | « cycliste — retirer le bilan en voiture » : « L’action que tu suis — » n'apparaît jamais |
+//   | T5 — la confirmation reprend la place lue au chargement au lieu de la relire au toucher (27/09/2026, seconde contre-lecture) | « cycliste — retirer son seul bilan » : « tu repartiras d’un nouveau bilan. » n'apparaît jamais dans l'onglet resté ouvert |
+//   | T6 — la soumission remet l'ancienne règle, `!aDejaVuUnBilan()` seule (idem) | « cycliste — un bilan après le retrait » : « la barre d’onglets a disparu … » |
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -292,8 +294,10 @@ const journal = [];
  * stockage, et « premier » veut dire **premier sur cet appareil** (C5.7). Rejouer dans le même
  * contexte éprouverait un appareil qui a déjà tout vu, c'est-à-dire pas ce qu'on vient voir.
  */
-async function nouvelOnglet() {
-  const contexte = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+/** Un onglet neuf — dans un contexte neuf par défaut (un appareil de plus), ou dans `contexte` pour
+ *  un second onglet du **même** appareil, qui partage sa session et son stockage. */
+async function nouvelOnglet(contexte = null) {
+  contexte ??= await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
   const onglet = await contexte.newPage();
   onglet.on('pageerror', (erreur) => exceptions.push(String(erreur)));
   onglet.on('console', (message) => {
@@ -368,6 +372,45 @@ async function boutonDuPager(nom, indexDePage) {
   }
   throw new Ecart(`« ${nom} » n'est jamais entré dans la fenêtre du pager (page ${indexDePage})`);
 }
+/**
+ * Le questionnaire du cycliste, du premier « Oui » à « Voir mon bilan ». Joué deux fois : au premier
+ * bilan de ce profil, et après le retrait de son seul bilan — où il éprouve que le premier parcours
+ * ne recommence pas (`ouvreUnPremierParcours`, décision du 27/09/2026).
+ */
+async function saisirLeCycliste() {
+  await choisir('Oui');
+  await suivant();
+  await choisir('3');
+  const distanceVelo = page.getByRole('textbox', { name: 'Distance pour un aller, en km' });
+  await distanceVelo.waitFor({ state: 'visible', timeout: ATTENTE });
+  await distanceVelo.fill('5');
+  await suivant();
+  // **Le vélo ouvre sa propre révélation depuis C4.4** — ce commentaire disait l'inverse jusqu'au
+  // 21/09/2026, et c'est le genre de phrase qui survit à ce qu'elle décrit. « Mécanique » garde
+  // le facteur d'avant le chantier (0,000170), donc les chiffres de ce profil ne bougent pas :
+  // c'est la réponse qui isole la nouveauté de l'écran de celle du calcul.
+  await choisir('Vélo');
+  await choisir('Mécanique');
+  await suivant();
+  await choisir('Non');
+  await suivant();
+  // « Rarement » fait disparaître les questions de détail des sorties : l'étape suivante est celle
+  // des vols, et non le mode ni la tranche de distance.
+  await choisir(/^Rarement/, { exact: false });
+  await suivant();
+  await choisir('0'); // aucun vol — et à zéro, la question « combien sont courts ? » ne se pose pas
+  await suivant();
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '0', exact: true }).click();
+  await suivant();
+  await choisir('Urbain dense');
+  await choisir('Bon');
+  await choisir('0');
+  await choisir(/^Aucun/, { exact: false });
+  await suivant('Voir mon bilan');
+}
+
 /** La barre d'onglets est-elle **visible** ? Masquée, elle reste dans le DOM (`display: 'none'`),
  *  donc compter ses libellés ne dit rien : c'est la visibilité de « Suivi » qui répond. */
 async function barreVisible() {
@@ -873,37 +916,7 @@ try {
   await boutonDuPager('Commencer', 3);
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
 
-  await choisir('Oui');
-  await suivant();
-  await choisir('3');
-  const distanceVelo = page.getByRole('textbox', { name: 'Distance pour un aller, en km' });
-  await distanceVelo.waitFor({ state: 'visible', timeout: ATTENTE });
-  await distanceVelo.fill('5');
-  await suivant();
-  // **Le vélo ouvre sa propre révélation depuis C4.4** — ce commentaire disait l'inverse jusqu'au
-  // 21/09/2026, et c'est le genre de phrase qui survit à ce qu'elle décrit. « Mécanique » garde
-  // le facteur d'avant le chantier (0,000170), donc les chiffres de ce profil ne bougent pas :
-  // c'est la réponse qui isole la nouveauté de l'écran de celle du calcul.
-  await choisir('Vélo');
-  await choisir('Mécanique');
-  await suivant();
-  await choisir('Non');
-  await suivant();
-  // « Rarement » fait disparaître les questions de détail des sorties : l'étape suivante est celle
-  // des vols, et non le mode ni la tranche de distance.
-  await choisir(/^Rarement/, { exact: false });
-  await suivant();
-  await choisir('0'); // aucun vol — et à zéro, la question « combien sont courts ? » ne se pose pas
-  await suivant();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '0', exact: true }).click();
-  await suivant();
-  await choisir('Urbain dense');
-  await choisir('Bon');
-  await choisir('0');
-  await choisir(/^Aucun/, { exact: false });
-  await suivant('Voir mon bilan');
+  await saisirLeCycliste();
 
   etape('cycliste — restitution, puis le plan sans action');
   await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
@@ -1147,6 +1160,15 @@ try {
   await choisir('jeudi');
   await bouton('C’est noté');
   await attendreTexte('Changer d’avis');
+  // **Un second onglet du même appareil, ouvert sur le bilan à vélo pendant qu'il est encore
+  // `ancien`** (contre-lecture du 27/09/2026) : la confirmation relit la place au toucher du lien, et
+  // rien ne le gardait — chaque retrait de ce parcours partait d'une page fraîchement chargée, où une
+  // lecture au chargement aurait dit juste aussi. Cet onglet reste ouvert, sans être rechargé, pendant
+  // que le premier retire le bilan en voiture ; quand on y touchera le lien, le bilan à vélo sera
+  // devenu le seul, et une place lue au chargement dirait encore « Ton plan ne change pas ».
+  const ongletDuBilanAVelo = await nouvelOnglet(page.context());
+  await ongletDuBilanAVelo.goto(`${base}/suivi/bilan?id=${bilanVelo.id}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await ongletDuBilanAVelo.getByText('Estimation annuelle, tous déplacements').first().waitFor({ state: 'visible', timeout: ATTENTE });
   await page.goto(`${base}/suivi/bilan?id=${bilanVoiture.id}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await attendreTexte('Estimation annuelle, tous déplacements');
   await bouton('Ce bilan ne me ressemble pas');
@@ -1187,10 +1209,16 @@ try {
     (await page.evaluate((cle) => localStorage.getItem(cle), MARQUE_DE_BILAN)) === '1',
     'la marque « cet appareil a vu un bilan » n’est pas posée avant le retrait : son effacement ne prouverait rien'
   );
-  await page.goto(`${base}/suivi/bilan?id=${bilanVelo.id}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  await attendreTexte('Estimation annuelle, tous déplacements');
+  // L'onglet ouvert avant le premier retrait, **sans le recharger** : la place relue au toucher dit
+  // « seul », là où celle du chargement disait « ancien ».
+  await page.close();
+  page = ongletDuBilanAVelo;
   await bouton('Ce bilan ne me ressemble pas');
   await attendreTexte('tu repartiras d’un nouveau bilan.');
+  assurer(
+    !(await page.getByText('Ton plan ne change pas').first().isVisible().catch(() => false)),
+    'la confirmation dit la place lue au chargement (« ancien ») et non celle du toucher (« seul »)'
+  );
   await bouton('Retirer ce bilan');
   await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
   assurer(
@@ -1201,6 +1229,25 @@ try {
   assurer(
     bilansRetires.length === 2 && bilansRetires.every((b) => b.status === 'withdrawn'),
     `les deux bilans devraient être retirés, et rester en base : ${JSON.stringify(bilansRetires)}`
+  );
+
+  // **Le bilan qui suit ne fait pas recommencer le premier parcours** (décision du 27/09/2026). La
+  // marque de bilan vient d'être effacée : sans `ouvreUnPremierParcours`, la soumission noterait
+  // l'étape `questionnaire` et la barre d'onglets disparaîtrait de la restitution, devant quelqu'un
+  // qui connaît déjà les deux lieux. Rien d'autre ne gardait cet appel : la fonction a ses tests, la
+  // ligne qui l'appelle n'en avait aucun.
+  etape('cycliste — un bilan après le retrait : le premier parcours ne recommence pas');
+  await boutonDuPager('Découvrir mon impact', 0);
+  await boutonDuPager('Continuer', 1);
+  await boutonDuPager('Continuer', 2);
+  await boutonDuPager('Commencer', 3);
+  await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
+  await saisirLeCycliste();
+  await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
+  await attendreTexte(`${ATTENDU_SOBRE.totalKg} kg CO₂e`);
+  assurer(
+    await barreVisible(),
+    'la barre d’onglets a disparu au bilan qui suit le retrait du seul bilan : le premier parcours a recommencé'
   );
 
   await rpc('delete_my_account', sobre.jeton);

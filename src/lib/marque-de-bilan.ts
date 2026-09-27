@@ -73,9 +73,10 @@ export async function marquerQuIlYAUnBilan(): Promise<void> {
  *
  * **Elle seule, et pas le balayage de `src/lib/compte.ts`** : le compte n'est pas quitté, donc le
  * brouillon d'un questionnaire commencé, la préférence de rappel ou l'étape du premier parcours
- * restent vrais. Et c'est exactement ce qui fait du prochain questionnaire soumis ici un « premier »
- * pour la barre d'onglets (C5.7), qui pose sa question sur cette marque : la personne repart d'un
- * nouveau bilan, et l'appareil le traite comme tel.
+ * restent vrais. **Et l'étape du premier parcours, qui reste, est ce qui empêche le prochain
+ * questionnaire soumis ici de passer pour un « premier »** (décision du 27/09/2026 sur le retrait du
+ * seul bilan) : la barre d'onglets (C5.7) interroge les deux marques (`ouvreUnPremierParcours`), et
+ * quelqu'un qui connaît déjà les deux lieux ne les revoit pas présentés.
  *
  * Best-effort, comme la pose : le retrait a déjà eu lieu côté serveur, et un stockage indisponible ne
  * doit pas le faire passer pour un échec. Au pire, une réouverture hors ligne montre l'écran d'erreur

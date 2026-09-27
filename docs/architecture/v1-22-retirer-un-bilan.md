@@ -186,8 +186,9 @@ Livré le jour des décisions, dans `20260927230411_retirer_un_bilan.sql` et
   pas l'annonce écartée par D2, qui venait *après* ; et la page de confidentialité dit qu'un bilan
   retiré reste conservé, et exporté. **Puis un troisième le soir** : dans le cas `seul`, la
   confirmation nomme l'action qui part, sans conditionnel (« L'action que tu suis — … — ne sera plus
-  engagée. »), parce que la décision 12a l'archive à coup sûr ; c'est ce qui rend acceptable le risque
-  accepté en 12a, qu'un retrait par erreur emporte l'engagement.
+  engagée. »), parce que la décision d'archiver l'action du seul bilan la fait partir à coup sûr ; c'est ce qui
+  rend acceptable le risque accepté avec cette décision, qu'un retrait par erreur emporte
+  l'engagement.
 - **Le premier parcours ne recommence pas** (décision du 27/09/2026). La marque de bilan effacée
   faisait traiter le questionnaire suivant comme un premier : la barre d'onglets disparaissait, puis
   la carte « Deux endroits, pas plus. » revenait, sans « Ton premier plan », dont la marque était

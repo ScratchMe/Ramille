@@ -306,8 +306,9 @@ manipulation à l'appelant est le mauvais ; on borne l'assertion.
 
 **Et le piège a un symétrique, relevé le 11/09/2026 : des assertions de la suite échouent sur le
 projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les connaître évite de
-« corriger » un test qui n'a rien. Elles étaient trois ; **il en reste deux depuis le 21/09/2026**,
-et le nombre ne s'écrit plus en titre pour qu'il ne se périme pas une seconde fois.
+« corriger » un test qui n'a rien. La liste ci-dessous en garde une fermée, pour mémoire ; **le
+nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux fois, la seconde le
+27/09/2026 quand les fichiers de la purge l'ont rejointe.
 - ~~`12_usage_events` assertion 9~~ — **fermée le 21/09/2026**, elle est bornée au fixture et passe
   désormais des deux côtés (mesuré : zéro ligne pour cet uuid sur le distant, contre 254 réelles).
   Elle reste listée parce qu'une exception retirée d'une liste se réinvente : la prochaine

@@ -395,7 +395,7 @@ values
   ('c4700000-0000-0000-0000-000000000004', 'c4720000-0000-0000-0000-0000000000d1', 'Rappel', 'Rappel'),
   ('c4700000-0000-0000-0000-000000000005', 'c4720000-0000-0000-0000-0000000000d2', 'Rappel', 'Rappel');
 
--- **Et U s'engage avant de retirer** (décision du 27/09/2026, question 12a) : son seul bilan retiré,
+-- **Et U s'engage avant de retirer** (décision du 27/09/2026 : retirer son seul bilan archive l'action engagée) : son seul bilan retiré,
 -- l'action doit être archivée en `retrait` et désengagée, sans quoi elle reviendrait — reposée au
 -- bilan suivant de la même saison, ou reconduite à la suivante. Vérifié en fin de fichier, section G.
 select set_config('test.action_u',
@@ -464,11 +464,12 @@ delete from public.engagement_checkins
 where id in ('c4720000-0000-0000-0000-0000000000d1', 'c4720000-0000-0000-0000-0000000000d2');
 
 -- **Le cycle reste**, et c'est un choix écrit en tête de la migration : il n'y a rien sur quoi le
--- reconstruire, et le supprimer emporterait un éventuel engagement sans trace (C2.2).
+-- reconstruire, et le supprimer effacerait l'historique de la saison. Son action engagée, elle, est
+-- archivée puis désengagée (section G, 43 et 44).
 select is(
   (select count(*)::int from public.plan_cycles where user_id = 'c4700000-0000-0000-0000-000000000004'),
   1,
-  'le cycle du seul bilan retiré reste en place — inerte, rien ne le lit sans bilan complété'
+  'le cycle du seul bilan retiré reste en place, comme historique de la saison'
 );
 
 -- Les deux générateurs de points ignorent U, et c'est son jumeau V qui prouve qu'ils ont tourné :
@@ -594,7 +595,7 @@ select is(
   (select count(*)::int from public.plan_actions pa join public.plan_cycles pc on pc.id = pa.plan_cycle_id
    where pc.user_id = 'c4700000-0000-0000-0000-000000000004' and pa.committed_at is not null),
   0,
-  'U a retiré son seul bilan : plus aucune action engagée — rien ne reviendra au bilan suivant (12a)'
+  'U a retiré son seul bilan : plus aucune action engagée — rien ne reviendra au bilan suivant'
 );
 
 select results_eq(

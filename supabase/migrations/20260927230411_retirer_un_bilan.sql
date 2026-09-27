@@ -185,8 +185,9 @@ alter table public.plan_action_commitments_archive
 -- ---------------------------------------------------------------------------------------------
 --
 -- **Réécrite depuis `pg_get_functiondef`** : l'empreinte normalisée du corps installé sur le distant
--- (commentaires retirés, blancs réduits) est celle de `20260919230000`, relevé le 27/09/2026. Trois
--- lignes changent, et seulement elles :
+-- (commentaires retirés, blancs réduits) est celle de `20260919230000`, relevé le 27/09/2026. Quatre
+-- choses changent, et seulement elles — la quatrième, la reconduction, étant le défaut trouvé en
+-- contre-lisant ce chantier (plus bas, dans le corps) :
 --
 --   - la cause `retrait` est admise ;
 --   - **la garde d'idempotence ne tient plus que pour `bilan`.** Elle compare `created_at` du cycle

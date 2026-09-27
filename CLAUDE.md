@@ -830,9 +830,11 @@ arrive et se nomme, une fois. Cinq points :
   §2.2 : sur web, le rendu statique ne connaît aucun stockage). Une **valeur inconnue** se lit de
   même : c'est le seul moyen, depuis ce stockage, de retirer à quelqu'un la moitié du produit.
 - **« Premier » veut dire premier sur cet appareil**, et la question se pose à la soumission, **avant**
-  de poser la marque de bilan de C4.5 — c'est elle qui répond. Trois situations retombent alors du
-  bon côté sans garde à écrire : un re-bilan, un appareil neuf d'un compte existant, et une
-  installation d'avant le chantier.
+  de poser la marque de bilan de C4.5 — c'est elle qui répond, **avec l'étape déjà notée** depuis
+  C4.7 (`ouvreUnPremierParcours`) : retirer son seul bilan efface la marque de bilan, et sans l'étape
+  le bilan suivant ferait recommencer le parcours. Quatre situations retombent alors du bon côté sans
+  garde à écrire : un re-bilan, un appareil neuf d'un compte existant, une installation d'avant le
+  chantier, et un bilan soumis après le retrait du seul.
 - **L'étape vit dans le layout des onglets**, qui la partage par contexte (`usePremierParcours`) :
   c'est lui qui rend la barre, donc un écran qui réécrirait la marque dans son coin la ferait
   arriver au prochain montage et non au geste. Le questionnaire, lui, est **hors** du groupe et
@@ -1155,7 +1157,8 @@ Six points à connaître :
   rester à la soumission : le trigger distingue le RPC du client par `current_user` (`SUPABASE.md`
   §1.4), et un bilan retiré ne revient jamais (`RM005` étendu). **« Seul chemin » vaut pour le
   client** : sous `postgres` — `execute_sql` sur la production — un `update` traverse le trigger sans
-  rien reconstruire, et le corps du RPC est alors la liste de ce qu'il faut faire à la main.
+  rien reconstruire. Côté serveur, on appelle donc le RPC sous le rôle de la personne (`SUPABASE.md`
+  §1.4), jamais une recopie de son corps.
 - **Le plan n'est reconstruit que si le bilan retiré le portait**, sur le bilan valide précédent,
   cause `retrait` (qui saute la garde d'idempotence — sans quoi le cron ne rebâtirait jamais) ;
   l'engagement est reposé si le nouveau plan le propose encore, archivé en `retrait` sinon, **et rien

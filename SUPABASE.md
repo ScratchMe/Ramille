@@ -118,10 +118,12 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   éprouve séparément. **Et ce que la garde laisse passer, rien ne le complète** : un
   `update … set status = 'withdrawn'` sous `postgres` — par `execute_sql`, accordé sans confirmation
   sur la production — ne reconstruit pas le plan, et la garde d'idempotence du cron laisse ensuite
-  le cycle bâti pour toujours sur un bilan retiré. Le RPC exige `auth.uid()`, donc un opérateur ne
-  peut pas l'appeler : côté serveur, le corps de `retirer_le_bilan` est la liste de ce qu'il faut
-  faire à la main — l'`update`, puis `generate_plan_cycle_for_user(u, 'retrait')` si le bilan
-  portait le plan, ou l'archive et l'annulation des rappels s'il était le seul.
+  le cycle bâti pour toujours sur un bilan retiré. **Côté serveur, on appelle donc le RPC, jamais on
+  ne le réécrit à la main** : `auth.uid()` lit `request.jwt.claims`, donc dans une transaction
+  `set local role authenticated` puis `set_config('request.jwt.claims', json_build_object('sub',
+  '<uuid>', 'role', 'authenticated')::text, true)` suffisent — c'est ce que fait
+  `34_retirer_un_bilan.test.sql`. Une liste recopiée du corps oublierait tôt ou tard une ligne (le
+  désengagement du seul bilan, par exemple, qu'aucun `update` de statut ne fait).
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
   `security definer`** — sinon, depuis le rôle applicatif, le comptage ne voit rien et le quota
   ne se déclenche jamais. Corollaire pour les tests : remplir un quota sous `postgres` par

@@ -29,7 +29,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(30);
 
 -- ── Les gardes de la table, avant toute fixture ─────────────────────────────────────────
 
@@ -444,7 +444,8 @@ select is(
 --
 -- Éprouvé le 27/09/2026 (la migration de C4.7 mutée sur le disque, puis `rejouer-la-ci base` sur
 -- toute la suite) : la requête d'avant remise dans `generate_plan_cycle_for_user` fait tomber la 29,
--- et rien d'autre dans la suite.
+-- et rien d'autre dans la suite. La 30 garde sa prémisse (contre-lecture du même soir) : sans le
+-- dernier appel de génération, la 30 tombe et la 29 reste verte — elle passait à vide.
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
 values ('c2200000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000000', 'authenticated',
@@ -498,6 +499,18 @@ select is(
      and pa.committed_at is not null),
   0,
   'E : l’automne ne reconduit pas l’action du printemps par-dessus l’été où E a changé d’avis'
+);
+
+-- La prémisse de la 29, sans laquelle elle passerait à vide : l'automne existe, et il propose encore
+-- l'action du printemps — l'ancienne requête aurait donc eu de quoi la reconduire.
+select is(
+  (select count(*)::int from public.plan_actions pa join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+   where pc.user_id = 'c2200000-0000-0000-0000-000000000005'
+     and pc.id not in (current_setting('test.cycle_e1')::uuid, current_setting('test.cycle_e2')::uuid)
+     and pa.action_template_id = (select action_template_id from public.plan_actions
+                                  where id = current_setting('test.action_e1')::uuid)),
+  1,
+  'E : l’automne existe et propose l’action du printemps — la 29 a donc quelque chose à refuser'
 );
 
 select * from finish();

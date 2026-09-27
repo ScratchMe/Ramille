@@ -115,7 +115,7 @@ describe('la confirmation', () => {
     expect(confirmationDuRetrait('ancien', ENGAGEMENT).engagement).toBeNull();
   });
 
-  // Décidé le 27/09/2026 : retirer son seul bilan archive l'action (12a), et la confirmation le dit
+  // Décidé le 27/09/2026 : retirer son seul bilan archive l'action engagée, et la confirmation le dit
   // avant — sans conditionnel, puisque c'est certain.
   it('nomme l’action qui part quand c’est le seul bilan, et sans conditionnel', () => {
     const phrase = confirmationDuRetrait('seul', ENGAGEMENT).engagement;

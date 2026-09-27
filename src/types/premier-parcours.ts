@@ -56,7 +56,7 @@ export function etatDuPremierParcours(etape: EtapeDuPremierParcours | null): Eta
  * Le questionnaire qui vient d'être soumis ouvre-t-il un premier parcours sur cet appareil ?
  *
  * **Deux conditions, et la seconde est venue avec le retrait d'un bilan** (C4.7, décision du
- * 27/09/2026, question 12b). La première — aucun bilan déjà vu ici — suffisait tant que la marque de
+ * 27/09/2026 : le premier parcours ne recommence pas après le retrait du seul bilan). La première — aucun bilan déjà vu ici — suffisait tant que la marque de
  * bilan ne pouvait que se poser. Retirer son seul bilan l'efface (`effacerLaMarqueDeBilan`, pour
  * qu'une réouverture hors ligne n'envoie pas au plan), et le bilan suivant passait alors pour un
  * premier : la barre disparaissait jusqu'au plan, puis « Deux endroits, pas plus. » revenait expliquer

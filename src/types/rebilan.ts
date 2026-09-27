@@ -111,7 +111,7 @@ export function engagementDeLaPeriodeCourante(
  * elle ne l'est plus sinon. C'est la seule formulation qui soit vraie dans les deux cas, et elle
  * ne fait peur ni à tort ni par omission.
  *
- * **Sa seconde moitié ne promet pas de choix** (décision du 27/09/2026, question 12c). Elle disait
+ * **Sa seconde moitié ne promet pas de choix** (décision du 27/09/2026). Elle disait
  * « Sinon, tu en choisiras une autre » : faux quand le plan recalculé n'a aucune action — un
  * cycliste, un profil sédentaire —, et c'est justement le cas où l'action disparaît. Elle dit
  * désormais ce qui arrive à l'action, et rien de ce que la personne fera ensuite. Elle est partagée

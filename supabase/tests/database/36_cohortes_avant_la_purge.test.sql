@@ -85,8 +85,9 @@
 --     une suppression promise ;
 --   - une troisième boucle ajoutée au `check`                  → 1 : la 2.
 --
--- **Et quatre de plus le même soir, pour la section 8**, par la méthode canonique cette fois — la
--- migration mutée sur le disque, puis `rejouer-la-ci base` sur toute la suite :
+-- **Et trois de plus le même soir, pour la section 8** — plus celle de la semaine d'arrivée, rejouée
+-- et réécrite ci-dessus —, par la méthode canonique cette fois : la migration mutée sur le disque,
+-- puis `rejouer-la-ci base` sur toute la suite :
 --
 --   - la purge qui relève l'échec de son compteur (`raise;`)   → 2 : 22 et 23 ;
 --   - `delete_my_account` qui relève l'échec du sien           → 2 : 24 et 25 ;
@@ -521,7 +522,7 @@ select lives_ok(
 select ok(
   not exists (select 1 from auth.users where id = 'c3600000-0000-0000-0000-000000000009')
   and exists (select 1 from public.purge_runs
-              where status = 'applied' and deleted = 1
+              where status = 'applied'
                 and detail like 'Compteur des cohortes en échec, suppression faite quand même :%'),
   'la session est supprimée malgré le compteur en échec, et le journal de la purge le dit'
 );

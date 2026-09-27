@@ -265,7 +265,7 @@ export default function BilanResultat() {
   // `v1-29` §6.3). Les libellés figés ne le marquent que quand il domine ou porte la boucle
   // mensuelle ; la barre de répartition le montre aussi quand les voyages pèsent plus — « rarement »
   // et un vol, le cas courant. Une lecture à part et tolérante, comme les bilans valides que lit le
-  // chargement pour la confirmation du retrait : `null` (pas encore lue, ou pas pu) fait retomber
+  // chargement pour décider du lien du retrait : `null` (pas encore lue, ou pas pu) fait retomber
   // `loisirsSontLeResiduel` sur les libellés.
   const [frequenceDesLoisirs, setFrequenceDesLoisirs] = useState<string | null>(null);
   // **Retirer ce bilan** (C4.7, D4 de `v1-22`) : une confirmation dans la page, jamais un `Alert` —
@@ -567,11 +567,18 @@ export default function BilanResultat() {
 
     verrouDuRetrait.current = false;
     setLectureDeLaConfirmation(false);
-    // **La place relue gagne ; celle du chargement n'est qu'un repli**, si la relecture échoue — la
-    // confirmation d'avant ce correctif, pas une phrase inventée. Et si le bilan n'est plus parmi
-    // les valides (retiré depuis un autre appareil), on relit l'écran, qui montre l'état « retiré » :
-    // le chemin `etat_change` de `retirer`, atteint plus tôt.
-    const place = bilansValides.ok ? placeDuBilan(id, bilansValides.data) : state.place;
+    // **Sans place relue, pas de confirmation** (seconde contre-lecture du 27/09/2026) : retomber sur
+    // celle du chargement rendait la phrase périmée que cette relecture existe pour éviter — « ton
+    // plan repartira de ton bilan précédent » à un bilan devenu `ancien`. La règle est celle du
+    // chargement : une confirmation dont on ne sait pas quelle phrase est vraie ne se propose pas.
+    // Le lien reste, et le message dit de réessayer.
+    if (!bilansValides.ok) {
+      setMessageDuRetrait(RETRAIT_ECHOUE);
+      return;
+    }
+    // Et si le bilan n'est plus parmi les valides (retiré depuis un autre appareil), on relit
+    // l'écran, qui montre l'état « retiré » : le chemin `etat_change` de `retirer`, atteint plus tôt.
+    const place = placeDuBilan(id, bilansValides.data);
     if (place === null) {
       reessayer();
       return;
@@ -1167,15 +1174,20 @@ export default function BilanResultat() {
                   <MessageInline message={messageDuRetrait} />
                 </ThemedView>
               ) : (
-                <TextLink
-                  label={LIEN_DU_RETRAIT}
-                  hint={INDICE_DU_RETRAIT}
-                  onPress={() => void ouvrirLaConfirmation()}
-                  disabled={lectureDeLaConfirmation}
-                  type="small"
-                  themeColor="textTertiary"
-                  style={styles.editLink}
-                />
+                <>
+                  <TextLink
+                    label={LIEN_DU_RETRAIT}
+                    hint={INDICE_DU_RETRAIT}
+                    onPress={() => void ouvrirLaConfirmation()}
+                    disabled={lectureDeLaConfirmation}
+                    type="small"
+                    themeColor="textTertiary"
+                    style={styles.editLink}
+                  />
+                  {/* La relecture au toucher a échoué : la confirmation ne s'ouvre pas, et on le dit
+                      ici, sous le lien, puisque l'encart qui porte d'ordinaire ce message n'existe pas. */}
+                  <MessageInline message={messageDuRetrait} />
+                </>
               ))}
             {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
                 plan à un onglet de là — donc rien de collé en bas non plus. */}

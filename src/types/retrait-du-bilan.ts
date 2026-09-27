@@ -85,9 +85,9 @@ export type ConfirmationDuRetrait = {
  * ne bouge pas.
  *
  * **Et pour `seul`, la phrase est certaine, pas conditionnelle** (décidé le 27/09/2026) : retirer son
- * seul bilan archive l'action engagée (raison `retrait`, question 12a), donc elle part à coup sûr, et
+ * seul bilan archive l'action engagée (raison `retrait`, décision du même jour), donc elle part à coup sûr, et
  * la dire au conditionnel serait laisser espérer ce qui n'arrivera pas (`phraseDeLActionQuiPart`).
- * C'est la mitigation du risque accepté en 12a : qui retire par erreur apprend **avant** qu'il perd
+ * C'est ce qui atténue le risque accepté avec cette décision : qui retire par erreur apprend **avant** qu'il perd
  * son engagement.
  *
  * `engagement` est requis et sans valeur par défaut : un appelant qui l'oublierait taierait la phrase

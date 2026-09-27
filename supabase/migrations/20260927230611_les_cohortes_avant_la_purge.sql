@@ -90,17 +90,17 @@
 -- promise et suspendue ne se lisait nulle part. Même règle pour `delete_my_account`, où l'enjeu est
 -- plus net encore : un compte qu'on ne peut plus supprimer depuis l'app est un bloqueur Play.
 --
--- `delete_my_account` compte **après** son `delete`, dans la même transaction, et seulement si une
--- ligne est partie : l'ordre ne change rien à l'atomicité, et c'est le seul qui ne compte pas deux
--- fois une réponse perdue suivie d'un nouvel essai — le jeton reste valable une heure après la
+-- `delete_my_account` compte **après** son `delete`, et seulement si une ligne est partie : c'est
+-- le seul ordre qui ne compte pas deux fois une réponse perdue suivie d'un nouvel essai — le jeton reste valable une heure après la
 -- suppression, et le second appel ne supprime rien.
 --
 -- ## Les deux fonctions réécrites, depuis leur corps installé
 --
 -- `purge_stale_anonymous_accounts` et `delete_my_account` partent de `pg_get_functiondef` sur le
 -- distant, le 27/09/2026 — identiques au dépôt (`20260910100000`, `20260905210000`). Seul
--- l'ajout du compteur change ; le prédicat d'inactivité, la garde de volume et le journal sont
--- repris tels quels.
+-- l'ajout du compteur change, avec ce qui le rend inoffensif : sa sous-transaction et, pour la
+-- purge, l'échec qu'elle consigne dans `purge_runs.detail`. Le prédicat d'inactivité et la garde de
+-- volume sont repris tels quels.
 
 -- ── 1. Les tables ─────────────────────────────────────────────────────────────────────────────
 
@@ -170,8 +170,8 @@ revoke all privileges on table public.suppressions_de_compte_par_mois from publi
 -- schéma `auth` et sur la RLS, au lieu d'ouvrir le parcours de n'importe quel compte désigné par
 -- son identifiant. Même raisonnement que `action_engagee_de_la_periode` (`20260927210247`).
 
--- L'expression est celle de `regime_de_rappel`, recopiée du corps installé et tenue à l'identique
--- par l'assertion de `36` décrite en en-tête. Ne pas la « corriger » ici seule.
+-- L'expression est celle de `regime_de_rappel`, recopiée du corps installé ; l'assertion de `36`
+-- décrite en en-tête exige que le régime la contienne. Ne pas la « corriger » ici seule.
 create or replace function public.dernier_signe_de_vie(p_user_id uuid, p_loop_type text)
 returns timestamptz
 language sql

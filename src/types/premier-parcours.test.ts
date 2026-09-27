@@ -66,7 +66,7 @@ describe('la carte des deux lieux', () => {
   });
 });
 
-// Décision du 27/09/2026 (question 12b) : retirer son seul bilan efface la marque de bilan, et le
+// Décision du 27/09/2026 : retirer son seul bilan efface la marque de bilan, et le
 // bilan suivant ne doit pas faire recommencer un parcours que l'appareil a déjà vu.
 //
 // Éprouvé le 27/09/2026 : la règle d'avant (`!aDejaVuUnBilan` seul) fait tomber le second test, et
