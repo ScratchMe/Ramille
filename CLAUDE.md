@@ -622,6 +622,20 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   garde est une assertion de `20_qui_recoit_quelle_boucle.test.sql`, qui tombera au cinquième
   compteur. C'est la même forme que le défaut de la soumission du bilan trouvé le même jour : une
   liste de réponses écrite à la main, qui se périme en silence.
+- **Et une fois ce filtre passé, qui sort rarement est interrogé sur ses VOYAGES, jamais sur le
+  résiduel** (arbitrage du 27/09/2026, `20260927191009_la_boucle_mensuelle_de_qui_sort_rarement.sql`).
+  Le filtre laissait passer dès qu'un voyage était déclaré, et le poste retenu était
+  `extras_poste`, le plus lourd des deux : un long trajet en train par an (2,3 kg) contre un résiduel de
+  55,5 kg, donc chaque mois « … pour tes sorties du week-end ? » à quelqu'un qui a dit ne presque
+  jamais sortir, et jamais une question sur le voyage qu'il a déclaré. Le poste de la boucle vaut
+  donc `travel` pour « rarement », et **trois choses le suivent ensemble** : la question, la
+  colonne `poste` du point (d'où le troisième choix « Pas de voyage en … ») et l'action engagée
+  qu'on cherche — une action de voyage engagée referme désormais sa question même quand le
+  résiduel pèse plus. **La bascule vit dans la boucle et non dans `assessment_results`**, et c'est
+  la moitié à ne pas « simplifier » : `extras_poste_label` reste le plus lourd des deux, parce que
+  l'app y lit le marqueur « (occasionnels) » pour reconnaître le résiduel ; déplacer la règle dans
+  le calcul ferait dire « tes loisirs du week-end » à l'étiquette de la restitution. Quatre
+  mutations en tête de `20` disent laquelle de ces moitiés chaque assertion garde.
 
 **Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
 (C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement
@@ -1771,7 +1785,8 @@ proposées à tout utilisateur concerné (l'UI recommande de se concentrer sur l
 dominant sans jamais fermer l'autre) : une hebdomadaire ancrée sur le trajet domicile-travail
 (`loop_type = 'commute'`, générée par `generate_commute_checkins()`) et une mensuelle ancrée
 sur le poste "extras" — loisirs ou voyages, quel que soit celui qui pèse le plus, même
-départage que la décision dominante du bilan (`loop_type = 'extras'`, générée par
+départage que la décision dominante du bilan, **sauf pour qui sort rarement, interrogé sur ses
+voyages** (27/09/2026, paragraphe de C2.5 plus haut) (`loop_type = 'extras'`, générée par
 `generate_extras_checkins()`). Les deux écrivent dans la même table `engagement_checkins`
 (contrainte `unique(user_id, loop_type, period_start)`), lisent les libellés snapshotés par
 `compute_assessment_results` sur `assessment_results.commute_poste_label` /
