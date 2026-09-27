@@ -16,7 +16,7 @@ const OPTIONS: { value: LeisureFrequency; label: string }[] = [
 ];
 
 /** Écrite une fois : le titre de l'étape et le nom de la série (`GroupeDeChoix`). */
-const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le weekend ?';
+const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le week-end ?';
 
 // B2.1 — variante "Progression adaptative" quand la section 1 a été sautée (B1.1 =
 // Non) : le paragraphe d'exemples est remplacé par un rappel du nombre d'étapes total,

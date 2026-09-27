@@ -17,10 +17,11 @@ import { TextLink } from '@/components/text-link';
 // la personne.
 //
 // Il passe par `TextLink` et pas par un `Pressable` nu, pour les deux raisons qui ont fait
-// exister ce composant : la cible tactile montait à 44 px (elle valait ici 18 px de hauteur de
-// ligne, sans marge), et le libellé annoncé **est** le texte affiché — les deux formulations
-// avaient déjà divergé (audit A2-20). `textAlign` reste sur le texte, le centrage sur le
-// conteneur : sur web, l'un sans l'autre ne centre pas.
+// exister ce composant : la cible tactile montait à 44 px — 48 depuis le 24/09/2026 (décision
+// n° 7) — alors qu'elle valait ici 18 px de hauteur de ligne, sans marge, et le libellé annoncé
+// **est** le texte affiché — les deux formulations avaient déjà divergé (audit A2-20).
+// `textAlign` reste sur le texte, le centrage sur le conteneur : sur web, l'un sans l'autre ne
+// centre pas.
 export function MissingModeLink({ context }: { context: string }) {
   return (
     <TextLink

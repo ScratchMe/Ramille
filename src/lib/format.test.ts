@@ -2,7 +2,7 @@
 // dépôt vise en premier — et `src/lib/format.ts` n'avait aucun test, alors que c'est un module
 // pur de six lignes lu par cinq écrans (A10-3, A10-7).
 import { formatTonnesShort } from '@/constants/carbon-reference';
-import { formatKg, formatTonnes, formatTonnesNu } from '@/lib/format';
+import { formatKg, formatKm, formatTonnes, formatTonnesNu } from '@/lib/format';
 
 describe('formatTonnes', () => {
   // Les valeurs du chantier C1.8, dans l'ordre : le zéro, les trois cas qui tombaient à
@@ -111,5 +111,14 @@ describe('formatKg', () => {
   it('arrondit avant de grouper', () => {
     expect(formatKg(1599.7)).toBe('1\u00a0600');
     expect(formatKg(999.6)).toBe('1\u00a0000');
+  });
+});
+
+describe('formatKm', () => {
+  // Les deux lignes d'hypothèses du questionnaire (vols, longs trajets) l'appellent : le groupement
+  // des milliers et l'unité ne se recopient plus dans chacune.
+  it('groupe les milliers d’une espace insécable et ajoute l’unité', () => {
+    expect(formatKm(1500)).toBe('1 500 km');
+    expect(formatKm(700)).toBe('700 km');
   });
 });

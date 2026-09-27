@@ -37,7 +37,7 @@ const sectionsDeMethode = (dateDuBilan) => [
       '« Rarement » vaut 0,25 sortie par semaine, « une fois par semaine » 1, « plusieurs fois » 3 — sur 52 semaines.',
       'Sans distance déclarée, une sortie compte 15 km.',
       'Un vol compte 1 500 km s’il est court ou moyen-courrier, 9 000 km s’il est long-courrier — un aller, pas un aller-retour.',
-      'Un trajet en train de plus de 300 km compte 800 km, un long trajet en voiture 700 km.',
+      'Un trajet en train de plus de 300 km compte 800 km, un long trajet en autocar 700 km, en voiture 700 km.',
       'Aucune de ces valeurs n’est publiée par une source : ce sont des ordres de grandeur choisis pour ce bilan, pas des mesures.',
     ],
   },

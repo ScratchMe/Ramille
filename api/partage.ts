@@ -129,7 +129,7 @@ function pageDePartage(request: Request): Response {
   const description = totalLabel
     ? poste
       ? percent !== null
-        ? `Poste principal (${percent} % de l'empreinte) : ${poste}. Calcule la tienne en 5 minutes sur Ramille.`
+        ? `Poste principal (${percent} % de l’empreinte) : ${poste}. Calcule la tienne en 5 minutes sur Ramille.`
         : `Poste principal : ${poste}. Calcule la tienne en 5 minutes sur Ramille.`
       : 'Calcule la tienne en 5 minutes sur Ramille.'
     : DESCRIPTION_SANS_CHIFFRE;

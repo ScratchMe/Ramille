@@ -418,9 +418,11 @@ ce que le dépôt ne leur donne pas (l'équirépartition, une étiquette d'acces
 étaient coupées sous le pli à 900 × 700, et l'illustration d'accueil elle-même, capturée hors de son
 étape, y montrait encore la scène rognée qu'on croyait réglée — chacune a désormais sa hauteur,
 mesurée sur la capture (`.design-sync/NOTES.md`). **En capturant à la vraie largeur, un défaut
-possible du produit est apparu**, à vérifier sur l'export avant de le corriger : cinq puces de 48 px
-et leurs intervalles demandent 272 px dans l'encart de la précision chiffrée, qui n'en offre que 264
-sur un téléphone de 360 px de large — « Vous êtes combien à partager ce trajet ? » y déborderait.
+du produit est apparu** : cinq puces de 48 px et leurs intervalles demandent 272 px dans l'encart de
+la précision chiffrée, qui n'en offre que 264 sur un téléphone de 360 px de large. Mesuré ensuite sur
+l'export web, la cinquième puce de « Vous êtes combien à partager ce trajet ? » mordait de 8 px sur
+la marge droite de l'encart ; la série passe depuis par la grille de `GroupeDeChoix`, qui la remet à
+la ligne quand une cible de 48 n'y tient plus, comme les jours.
 
 **Le lot 5 porte les écrans hors du plan** : les quatre étapes de l'onboarding (`onboarding/`), leurs
 trois illustrations (`illustrations/`, couleurs des jetons), la saisie du code de connexion

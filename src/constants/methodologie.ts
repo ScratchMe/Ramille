@@ -62,6 +62,13 @@ export const HYPOTHESES = {
   /** Distance retenue pour un long trajet en voiture. */
   voitureLongKm: 700,
   /**
+   * Distance retenue pour un long trajet en autocar (C4.4). Elle vaut celle de la voiture, et
+   * l'écran des longs trajets les nomme ensemble (« 700 km autocar et voiture ») : si les deux
+   * divergent, `verifier-hypotheses-calcul.mjs` tombe, pour que la phrase soit réécrite plutôt
+   * que d'afficher un seul nombre pour deux distances.
+   */
+  autocarLongKm: 700,
+  /**
    * Part du trajet domicile-travail attribuée au second mode **quand elle n'a pas été
    * demandée** — c'est-à-dire à tout bilan antérieur à C3.4, qui a fait de cette moitié une
    * question à trois puces au lieu d'une hypothèse appliquée à tout le monde.
@@ -70,7 +77,7 @@ export const HYPOTHESES = {
 } as const;
 
 /**
- * Écrit un nombre à la française : virgule décimale, espace insécable fine pour les milliers
+ * Écrit un nombre à la française : virgule décimale, espace insécable pour les milliers
  * (« 0,25 », « 45 », « 1 500 »).
  *
  * Écrit à la main plutôt que par `toLocaleString('fr-FR')`, pour la raison qui vaut déjà pour
@@ -119,11 +126,11 @@ export function sectionsDeMethode(dateDuBilan: string | null): SectionDeMethode[
       titre: 'Ce qu’on suppose, faute de te le demander',
       lignes: [
         `Ton trajet domicile-travail compte ${nombre(h.semainesDomicileTravail)} semaines par an — 52 moins les congés, les jours fériés et les absences.`,
-        `Un second mode déclaré sans sa part du trajet en prend la moitié (${nombre(h.partDuSecondMode * 100)} %) : c'était le cas de tous les bilans faits avant qu'on pose la question.`,
+        `Un second mode déclaré sans sa part du trajet en prend la moitié (${nombre(h.partDuSecondMode * 100)} %) : c’était le cas de tous les bilans faits avant qu’on pose la question.`,
         `« Rarement » vaut ${nombre(h.sortiesParSemaine.rarement)} sortie par semaine, « une fois par semaine » ${nombre(h.sortiesParSemaine.hebdomadaire)}, « plusieurs fois » ${nombre(h.sortiesParSemaine.plusieurs)} — sur ${nombre(h.semainesLoisirs)} semaines.`,
         `Sans distance déclarée, une sortie compte ${nombre(h.distanceSortieParDefautKm)} km.`,
         `Un vol compte ${nombre(h.volCourtKm)} km s’il est court ou moyen-courrier, ${nombre(h.volLongKm)} km s’il est long-courrier — un aller, pas un aller-retour.`,
-        `Un trajet en train de plus de 300 km compte ${nombre(h.trainLongKm)} km, un long trajet en voiture ${nombre(h.voitureLongKm)} km.`,
+        `Un trajet en train de plus de 300 km compte ${nombre(h.trainLongKm)} km, un long trajet en autocar ${nombre(h.autocarLongKm)} km, en voiture ${nombre(h.voitureLongKm)} km.`,
         'Aucune de ces valeurs n’est publiée par une source : ce sont des ordres de grandeur choisis pour ce bilan, pas des mesures.',
       ],
     },

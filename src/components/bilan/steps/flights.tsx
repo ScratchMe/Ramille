@@ -7,8 +7,8 @@ import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { grouperLesMilliers } from '@/lib/format';
-import type { BilanAnswers } from '@/types/bilan';
+import { formatKm } from '@/lib/format';
+import { volsCourtsApresTotal, type BilanAnswers } from '@/types/bilan';
 
 // "N+" stocke N — simplification assumée (pas de borne haute en base pour ces champs,
 // cf. v1-05), cohérente avec le traitement déjà appliqué à la taille de covoiturage.
@@ -67,12 +67,7 @@ export function FlightsStep({
               onPress={() =>
                 update({
                   flights_total_per_year: n,
-                  flights_short_per_year:
-                    answers.flights_short_per_year !== null
-                      ? Math.min(answers.flights_short_per_year, n)
-                      : n > 0
-                        ? null
-                        : 0,
+                  flights_short_per_year: volsCourtsApresTotal(answers, n),
                 })
               }
             />
@@ -104,7 +99,8 @@ export function FlightsStep({
             </GroupeDeChoix>
             {answers.flights_short_per_year !== null && (
               <ThemedText type="small">
-                {longCount} vol{longCount > 1 ? 's' : ''} long-courrier {longCount > 1 ? 'seront' : 'sera'} compté
+                {longCount} vol{longCount > 1 ? 's' : ''} long-courrier{longCount > 1 ? 's' : ''}{' '}
+                {longCount > 1 ? 'seront' : 'sera'} compté
                 {longCount > 1 ? 's' : ''}.
               </ThemedText>
             )}
@@ -127,10 +123,6 @@ export function FlightsStep({
       </ThemedText>
     </View>
   );
-}
-
-function formatKm(km: number): string {
-  return `${grouperLesMilliers(String(km))} km`;
 }
 
 const styles = StyleSheet.create({

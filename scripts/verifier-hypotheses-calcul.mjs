@@ -36,6 +36,9 @@ const PAIRES = [
   ['volLongKm', 'dist_flight_long'],
   ['trainLongKm', 'dist_train_long'],
   ['voitureLongKm', 'dist_car_long'],
+  // Ajoutée le 27/09/2026 : l'autocar est entré au calcul avec C4.4 (`dist_coach_long`), et
+  // l'écran des longs trajets affichait sa distance écrite à la main, hors de toute comparaison.
+  ['autocarLongKm', 'dist_coach_long'],
   // Ajoutée par C3.4, qui a fait de la moitié du trajet une constante nommée
   // (`second_leg_share_default`) au lieu d'un `/ 2` écrit en clair dans les deux branches du
   // trajet domicile-travail. Elle n'est plus l'hypothèse de tout le monde — la question est
@@ -91,6 +94,21 @@ for (const [cleTs, cleSql] of PAIRES) {
   } else if (affichee !== attendue) {
     ecarts.push(`${cleTs} affiche ${affichee}, le calcul utilise ${attendue} (${cleSql}).`);
   }
+}
+
+// L'écran des longs trajets dit « 700 km autocar et voiture » : un seul nombre pour deux
+// distances. Ce regroupement n'est vrai que tant qu'elles sont égales — le jour où l'une bouge,
+// la phrase doit être réécrite, et c'est ici qu'on l'apprend (src/components/bilan/steps/long-trips.tsx).
+//
+// Éprouvé le 27/09/2026, trois mutations : `autocarLongKm` seul à 650 fait tomber la paire et ce
+// contrôle ; `voitureLongKm` seul à 650, les deux aussi ; `autocarLongKm` **et** `dist_coach_long`
+// passés ensemble à 650 — le calcul et l'affichage d'accord, la phrase fausse — ne font tomber que
+// celui-ci, qui est donc le seul à voir ce cas.
+if (affichees.get('autocarLongKm') !== affichees.get('voitureLongKm')) {
+  ecarts.push(
+    `autocarLongKm (${affichees.get('autocarLongKm')}) et voitureLongKm (${affichees.get('voitureLongKm')}) ` +
+      `diffèrent : l'écran des longs trajets les annonce ensemble, sa phrase est à réécrire.`
+  );
 }
 
 if (ecarts.length > 0) {

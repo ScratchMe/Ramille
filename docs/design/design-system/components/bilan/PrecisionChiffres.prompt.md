@@ -16,7 +16,7 @@ La jumelle chiffrée de `PrecisionMode` : une question de précision dont les r�
 />
 ```
 
-**Des puces, pas des rangées — et c’est l’inverse de sa jumelle pour une raison précise.** `PrecisionMode` prend des rangées parce que des libellés inégaux (« Hybride », « Hybride rechargeable ») faisaient un retour à la ligne en escalier. Des chiffres ont tous la même largeur et tiennent à cinq sur une ligne ; cinq rangées hautes pour cinq chiffres feraient une liste plus longue que la question. Les puces sont équiréparties (`flex`), pleines une fois choisies, au rayon `Radius.chip` (14).
+**Des puces, pas des rangées — et c’est l’inverse de sa jumelle pour une raison précise.** `PrecisionMode` prend des rangées parce que des libellés inégaux (« Hybride », « Hybride rechargeable ») faisaient un retour à la ligne en escalier. Des chiffres ont tous la même largeur et tiennent à cinq sur une ligne ; cinq rangées hautes pour cinq chiffres feraient une liste plus longue que la question. Les puces sont rangées par la grille de `GroupeDeChoix` (`colonnes={options.length}`), pleines une fois choisies, au rayon `Radius.chip` (14) : cinq colonnes égales quand elles tiennent, et un retour à la ligne quand une cible de 48 n’y tiendrait plus — c’est le cas à 360 dp, où l’encart ne laisse que 264 px pour les 272 que demandent cinq puces.
 
 **Même encart, même retrait** : fond `backgroundElement`, rayon 16, padding 16, retrait gauche de 16 — l’encart se lit rattaché à l’option du dessus, pas comme un bloc de plus. Les puces non choisies prennent le fond de la page (`nestedBackground`) : sur le gris de l’encart, elles n’auraient plus de bord.
 

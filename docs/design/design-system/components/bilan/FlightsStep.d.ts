@@ -8,7 +8,7 @@ export interface FlightsStepAnswers {
 /** Étape du questionnaire — le nombre de vols d'une année type, puis la part des courts. */
 export interface FlightsStepProps {
   answers: FlightsStepAnswers;
-  /** Écrit les réponses touchées ; changer le total ramène les courts sous lui, dans le même appel. */
+  /** Écrit les réponses touchées ; changer le total ramène les courts sous lui, dans le même appel — et passer de zéro vol à plusieurs repose la question à vide. */
   update: (patch: Partial<FlightsStepAnswers>) => void;
 }
 export declare function FlightsStep(props: FlightsStepProps): JSX.Element;

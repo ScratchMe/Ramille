@@ -23,6 +23,14 @@ const formatKm = (km) => grouperLesMilliers(String(km)) + ' km';
 const COLONNE = { display: 'flex', flexDirection: 'column' };
 const PUCES = { flexDirection: 'row', flexWrap: 'wrap', gap: 8 };
 
+// `volsCourtsApresTotal` (src/types/bilan.ts), recopiée : sous un total nul, le 0 des vols courts est posé d'office
+// et n'est pas une réponse — passer de 0 à 4 vols pose la seconde question à vide, au lieu de la montrer répondue.
+const volsCourtsApresTotal = (avant, nouveauTotal) => {
+  if (nouveauTotal === 0) return 0;
+  if (avant.flights_total_per_year === 0 || avant.flights_short_per_year === null) return null;
+  return Math.min(avant.flights_short_per_year, nouveauTotal);
+};
+
 export function FlightsStep({ answers, update }) {
   const total = answers.flights_total_per_year;
   const courts = answers.flights_short_per_year;
@@ -42,7 +50,7 @@ export function FlightsStep({ answers, update }) {
               role="radio" selected={total === n}
               onPress={() => update({
                 flights_total_per_year: n,
-                flights_short_per_year: courts !== null ? Math.min(courts, n) : n > 0 ? null : 0,
+                flights_short_per_year: volsCourtsApresTotal(answers, n),
               })} />
           ))}
         </GroupeDeChoix>
@@ -61,7 +69,7 @@ export function FlightsStep({ answers, update }) {
             </GroupeDeChoix>
             {courts !== null && (
               <ThemedText type="small">
-                {longCount} vol{pluriel ? 's' : ''} long-courrier {pluriel ? 'seront' : 'sera'} compté{pluriel ? 's' : ''}.
+                {longCount} vol{pluriel ? 's' : ''} long-courrier{pluriel ? 's' : ''} {pluriel ? 'seront' : 'sera'} compté{pluriel ? 's' : ''}.
               </ThemedText>
             )}
           </div>
