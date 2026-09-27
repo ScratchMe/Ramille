@@ -304,8 +304,23 @@ page de confidentialité promet d'effacer. Les segments attendront un volume où
 une personne. **La page de confidentialité le dit** : elle écrit aujourd'hui que la session « et
 toutes les données associées » sont supprimées, et elle gagne une phrase sur les comptes agrégés,
 sans identifiant. C'est ce qui doit être en place **avant l'ouverture sur Play** : chaque jour sans
-agrégat est une cohorte perdue pour de bon. Restent ouverts : où vit la surface, et à quel barreau
-de `regime_de_rappel` on donne le nom de churn.
+agrégat est une cohorte perdue pour de bon.
+
+**Et les deux autres questions sont tranchées le même jour**, sur la recommandation posée :
+
+- **la surface vit hors de l'app, dans le tableau de bord Supabase** : des vues `analytics.*`
+  prêtes à lire, une par indicateur (entonnoir, rétention par cohorte, régimes de rappel,
+  départs), et des requêtes enregistrées. La personne qui pilote y entre déjà avec son propre
+  compte : aucune authentification à construire, rien à justifier devant Play, et rien qui puisse
+  passer pour un écran de Ramille. Le prix accepté : c'est moins joli, et c'est lié à Supabase ;
+- **le churn est le barreau `silence` de `regime_de_rappel`** — actif = `normal`, en décrochage =
+  `espace`, churn = `silence`, c'est-à-dire le moment où le produit lui-même renonce à écrire
+  (huit périodes sans signe de vie, environ deux mois sur la boucle hebdomadaire). Par personne,
+  la boucle hebdomadaire quand elle existe, puisque c'est le rythme de l'app. Qui n'a jamais fait
+  de bilan n'a pas de boucle : son seul départ lisible est la purge, qui reste le départ **certain**
+  des sessions anonymes. **Aucune définition n'est écrite à côté de cette échelle** — « trente
+  jours sans ouverture » en ferait une seconde, qui divergerait de celle qui décide déjà des
+  rappels.
 
 **Le vocabulaire de ce lot s'appuiera sur le glossaire de `tourdegrowth.com`** (demande du
 20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
