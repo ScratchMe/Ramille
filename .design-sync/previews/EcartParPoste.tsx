@@ -27,3 +27,17 @@ export const PetitesValeurs = () => (
     ]}
   />
 );
+
+/**
+ * Qui sort « rarement » : les loisirs comptés sont une hypothèse du calcul, et s'appellent
+ * « Loisirs occasionnels » (`loisirsOccasionnels`). Ici, les voyages portent l'accent.
+ */
+export const LoisirsOccasionnels = () => (
+  <EcartParPoste
+    loisirsOccasionnels
+    ecarts={[
+      { poste: 'travel', precedentKg: 620, courantKg: 600, dominant: true },
+      { poste: 'leisure', precedentKg: 11, courantKg: 11, dominant: false },
+    ]}
+  />
+);
