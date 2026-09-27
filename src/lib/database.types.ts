@@ -886,6 +886,30 @@ export type Database = {
         }
         Relationships: []
       }
+      purges_par_cohorte: {
+        Row: {
+          comptes: number
+          etape: string
+          rappels_au_depart: string
+          semaine_d_arrivee: string
+          semaines_tenues: string
+        }
+        Insert: {
+          comptes: number
+          etape: string
+          rappels_au_depart: string
+          semaine_d_arrivee: string
+          semaines_tenues: string
+        }
+        Update: {
+          comptes?: number
+          etape?: string
+          rappels_au_depart?: string
+          semaine_d_arrivee?: string
+          semaines_tenues?: string
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string
@@ -970,6 +994,21 @@ export type Database = {
           ran_at?: string
           status?: string
           traites?: number
+        }
+        Relationships: []
+      }
+      suppressions_de_compte_par_mois: {
+        Row: {
+          mois: string
+          suppressions: number
+        }
+        Insert: {
+          mois: string
+          suppressions: number
+        }
+        Update: {
+          mois?: string
+          suppressions?: number
         }
         Relationships: []
       }
@@ -1102,6 +1141,15 @@ export type Database = {
         Args: { p_plan_action_id: string }
         Returns: undefined
       }
+      cohorte_de: {
+        Args: { p_user_id: string }
+        Returns: {
+          etape: string
+          rappels_au_depart: string
+          semaine_d_arrivee: string
+          semaines_tenues: string
+        }[]
+      }
       collect_push_receipts: { Args: never; Returns: undefined }
       commit_plan_action: {
         Args: {
@@ -1118,6 +1166,10 @@ export type Database = {
         Returns: undefined
       }
       delete_my_account: { Args: never; Returns: undefined }
+      dernier_signe_de_vie: {
+        Args: { p_loop_type: string; p_user_id: string }
+        Returns: string
+      }
       desinscrire_des_rappels: { Args: { p_jeton: string }; Returns: boolean }
       emission_factor: {
         Args: { p_mode_id: string; p_on_date: string }
@@ -1239,6 +1291,10 @@ export type Database = {
       }
       send_pending_reminders: { Args: never; Returns: number }
       sync_emission_factors: { Args: never; Returns: undefined }
+      tranche_de_semaines_tenues: {
+        Args: { p_semaines: number }
+        Returns: string
+      }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
     }
     Enums: {
