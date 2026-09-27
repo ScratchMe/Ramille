@@ -24,3 +24,6 @@ export const UnLongCourrier = () => <Etape depart={{ flights_total_per_year: 4, 
 
 /** La même phrase au pluriel. */
 export const PlusieursLongsCourriers = () => <Etape depart={{ flights_total_per_year: 6, flights_short_per_year: 2 }} />;
+
+/** Tous les vols sont courts : la confirmation reste, et le zéro se dit en mots. */
+export const AucunLongCourrier = () => <Etape depart={{ flights_total_per_year: 2, flights_short_per_year: 2 }} />;

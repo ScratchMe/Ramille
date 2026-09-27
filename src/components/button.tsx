@@ -75,7 +75,8 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         { backgroundColor: pressed && !disabled ? backgroundAppuye : backgroundColor, flex: flex ? 1 : undefined },
-        surPanneau && { borderWidth: Stroke.hairline, borderColor: theme.border },
+        surPanneau && styles.filet,
+        surPanneau && { borderColor: theme.border },
         style,
       ]}
     >
@@ -94,5 +95,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+  },
+  // **Le filet se dessine dans la boîte, il ne l'agrandit pas** (27/09/2026). Posé en plus du
+  // rembourrage, il donnait 56 px au lieu de 54 : invisible tant que les deux boutons d'une rangée
+  // le portent (« Oui » / « Non » du point), un décalage d'un pixel en haut et en bas dès qu'un
+  // bouton filé côtoie un principal — « Retour » à côté de « Continuer » sur la page teintée de
+  // l'onboarding, où il a été mesuré. Le rembourrage cède donc l'épaisseur du trait.
+  filet: {
+    borderWidth: Stroke.hairline,
+    paddingVertical: 15 - Stroke.hairline,
+    paddingHorizontal: 24 - Stroke.hairline,
   },
 });

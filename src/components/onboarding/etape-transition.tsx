@@ -29,8 +29,11 @@ const SECTIONS = [
 // Onboarding — Transition bilan. La durée est annoncée avant l'entrée dans le
 // bilan : la friction est assumée, pas dissimulée (handoff design).
 export function EtapeTransition({
+  onPrecedent,
   titre,
 }: {
+  /** Revenir à la page d'avant — le « Retour » du pied, à côté de « Commencer ». */
+  onPrecedent: () => void;
   /** De quoi recevoir le focus quand le pager arrive sur cette page (`src/lib/focus.ts`). */
   titre?: TitreFocalisable;
 }) {
@@ -72,26 +75,34 @@ export function EtapeTransition({
           </ThemedText>
         </View>
         <View style={styles.footer}>
-          <Button
-            title="Commencer mon bilan"
-            onPress={() => {
-              // Fin de l'onboarding : la colonne `profiles.onboarding_completed_at` a été
-              // supprimée le 05/09/2026 (20260905180000_supprimer_colonnes_mortes_profiles.sql),
-              // parce qu'aucun code ne l'écrivait. Le franchissement ne se lit donc que dans cet
-              // événement — il n'y a pas de repli en base sur lequel se rabattre.
-              track('onboarding_complete');
-              // **On vide la pile en quittant l'onboarding, on n'empile pas le questionnaire
-              // par-dessus.** Sans cela, au tout premier lancement, le retour matériel Android
-              // depuis `/plan` remontait les quatre écrans d'onboarding un par un au lieu de
-              // quitter l'app (retour d'appareil du 07/09/2026) — et seulement au premier
-              // lancement, puisque ensuite la racine route directement vers `/plan`. La règle
-              // de `v1-11` §8 (le retour depuis le plan quitte l'app) ne se tient pas en
-              // interceptant le bouton retour, mais en n'accumulant pas d'historique derrière
-              // un flux terminé : l'onboarding ne se rejoue pas.
-              if (router.canDismiss()) router.dismissAll();
-              router.replace('/bilan');
-            }}
-          />
+          <View style={styles.boutons}>
+            <Button title="Retour" variant="secondary" onPress={() => onPrecedent()} />
+            {/* **« Commencer » et non plus « Commencer mon bilan »** (27/09/2026, `v1-29` §6.3) : à côté
+                de « Retour », le libellé du handoff (168 px) passait sur deux lignes sous 390 px de
+                large — 151 px de place à 360. Le titre juste au-dessus dit déjà « On passe à ton
+                bilan ». */}
+            <Button
+              title="Commencer"
+              flex
+              onPress={() => {
+                // Fin de l'onboarding : la colonne `profiles.onboarding_completed_at` a été
+                // supprimée le 05/09/2026 (20260905180000_supprimer_colonnes_mortes_profiles.sql),
+                // parce qu'aucun code ne l'écrivait. Le franchissement ne se lit donc que dans cet
+                // événement — il n'y a pas de repli en base sur lequel se rabattre.
+                track('onboarding_complete');
+                // **On vide la pile en quittant l'onboarding, on n'empile pas le questionnaire
+                // par-dessus.** Sans cela, au tout premier lancement, le retour matériel Android
+                // depuis `/plan` remontait les quatre écrans d'onboarding un par un au lieu de
+                // quitter l'app (retour d'appareil du 07/09/2026) — et seulement au premier
+                // lancement, puisque ensuite la racine route directement vers `/plan`. La règle
+                // de `v1-11` §8 (le retour depuis le plan quitte l'app) ne se tient pas en
+                // interceptant le bouton retour, mais en n'accumulant pas d'historique derrière
+                // un flux terminé : l'onboarding ne se rejoue pas.
+                if (router.canDismiss()) router.dismissAll();
+                router.replace('/bilan');
+              }}
+            />
+          </View>
           <OnboardingDots total={4} activeIndex={3} />
           {/* Le second accès aux pages légales, au dernier écran avant la première écriture
               serveur : c'est le moment où « tes réponses sont conservées » cesse d'être une
@@ -124,4 +135,5 @@ const styles = StyleSheet.create({
   legal: { textAlign: 'center' },
   legalCible: { marginTop: -Spacing.four },
   footer: { gap: Spacing.five },
+  boutons: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
 });

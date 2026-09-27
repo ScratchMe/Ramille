@@ -65,6 +65,7 @@
 //   | l'onboarding ne déplace plus le focus | le focus, avec **et** sans « réduire » (E) |
 //   | le pager anime toujours | les positions intermédiaires sous « réduire » (E) |
 //   | le titre n'a plus de `tabIndex` sur web | le focus, avec **et** sans « réduire » (E) |
+//   | « Retour » de l'onboarding branché sur la page suivante | la page d'arrivée (E) |
 //   | `/suivi/bilan` lit son état sans attendre l'hydratation | l'hydratation de `?id=` **et** le HTML statique « pas pu » (D) |
 //
 // La dernière dit ce que l'avant-dernière ne dit pas : un focus demandé sur un titre que le
@@ -773,6 +774,56 @@ for (const reduire of [false, true]) {
     }
   } catch (erreur) {
     echecs.push(`/onboarding (réduire les animations : ${reduire ? 'oui' : 'non'}) : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// « Retour », sur les pages 2 à 4 depuis le 27/09/2026 (`v1-29` §6.3), passe par le même `allerA`
+// que « Continuer » : il doit ramener la page d'avant **et** y poser le focus sur le titre, hors de
+// toute page inerte. Joué au clavier depuis la page 2, une seule fois — la moitié « réduire les
+// animations » ne dit rien de plus ici, le passage étant celui qu'éprouve la boucle ci-dessus.
+//
+// Deux mutations le 27/09/2026. « Retour » branché sur `allerA(2)` : cette assertion tombe, seule.
+// « Retour » réduit à un `scrollTo` nu, sans `allerA` : **rien ne tombe, et c'est juste** — le focus
+// suit l'index quel que soit ce qui le déplace (l'effet sur `index`, src/app/onboarding/index.tsx),
+// balayage compris. La moitié « focus » garde donc cet effet, pas le bouton.
+{
+  const page = await ouvrir('/onboarding');
+  try {
+    await page.getByRole('button', { name: 'Découvrir mon impact' }).focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(REPOS);
+    await page.getByRole('button', { name: 'Retour', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(REPOS);
+    const apres = await page.evaluate(() => {
+      const pager = [...document.querySelectorAll('div')].find((d) =>
+        ['auto', 'scroll'].includes(getComputedStyle(d).overflowX)
+      );
+      const actif = document.activeElement;
+      let inerte = false;
+      for (let n = actif; n; n = n.parentElement) if (n.hasAttribute?.('inert')) inerte = true;
+      return {
+        indice: pager ? Math.round(pager.scrollLeft / pager.clientWidth) : null,
+        titre: actif?.tagName === 'H1' || actif?.getAttribute?.('role') === 'heading',
+        texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+        inerte,
+      };
+    });
+    if (apres.indice !== 0) {
+      echecs.push(
+        `/onboarding : « Retour » depuis la page 2 mène à la page ${apres.indice === null ? '(pager introuvable)' : apres.indice + 1}` +
+          ' — il doit ramener la page 1 (`onPrecedent`, src/app/onboarding/index.tsx).'
+      );
+    } else if (!apres.titre || apres.inerte) {
+      echecs.push(
+        `/onboarding : après « Retour » au clavier, le focus est sur « ${apres.texte} »` +
+          `${apres.inerte ? ', dans une page inerte' : ''} — il doit être sur le titre de la page 1.`
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`/onboarding (« Retour ») : ${String(erreur).slice(0, 180)}`);
   } finally {
     await page.close();
   }

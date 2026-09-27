@@ -290,8 +290,14 @@ export default function Onboarding() {
           contentContainerStyle={contenuDePageFixe}
           showsVerticalScrollIndicator={false}
         >
+          {/* « Retour » sur les pages 2 à 4 (27/09/2026, `v1-29` §6.3) : le balayage et le retour
+              Android existaient, mais rien à l'écran ne disait qu'on pouvait revenir. Il passe par
+              `allerA`, comme « Continuer », donc il suit « réduire les animations » et ne fait pas
+              redésigner la page en vol (`enVol`). Le focus, lui, suit l'index quoi qu'il le
+              déplace — l'effet plus haut. */}
           <EtapeContexte
             onSuivant={() => allerA(2)}
+            onPrecedent={() => allerA(0)}
             titre={{ ref: titreContexte, ...FOCALISABLE_PAR_PROGRAMME }}
           />
         </ScrollView>
@@ -302,6 +308,7 @@ export default function Onboarding() {
         >
           <EtapeReassurance
             onSuivant={() => allerA(3)}
+            onPrecedent={() => allerA(1)}
             titre={{ ref: titreReassurance, ...FOCALISABLE_PAR_PROGRAMME }}
           />
         </ScrollView>
@@ -310,7 +317,10 @@ export default function Onboarding() {
           contentContainerStyle={contenuDePage}
           showsVerticalScrollIndicator={false}
         >
-          <EtapeTransition titre={{ ref: titreTransition, ...FOCALISABLE_PAR_PROGRAMME }} />
+          <EtapeTransition
+            onPrecedent={() => allerA(2)}
+            titre={{ ref: titreTransition, ...FOCALISABLE_PAR_PROGRAMME }}
+          />
         </ScrollView>
       </ScrollView>
     </ThemedView>

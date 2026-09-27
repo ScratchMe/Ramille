@@ -10,6 +10,7 @@ import {
   afficherNombreSaisi,
   avancementDeLaReprise,
   brouillonEstAncien,
+  decompteDesLongsCourriers,
   distanceBracketMidpointKm,
   OCCUPATIONS_LONG_TRAJET,
   PARTS_DU_SECOND_MODE,
@@ -417,6 +418,14 @@ describe('isStepComplete', () => {
         answers({ ...base, leisure_distance_bracket: '30_plus', leisure_distance_km: 120 })
       )
     ).toBe(true);
+  });
+
+  it('decompteDesLongsCourriers : zéro se dit en mots, un au singulier, plusieurs au pluriel', () => {
+    // Décision du 27/09/2026 : « 0 vol long-courrier sera compté. » devient une phrase — et la
+    // confirmation reste, puisqu'elle répond à tous les autres cas.
+    expect(decompteDesLongsCourriers(0)).toBe('Aucun vol long-courrier ne sera compté.');
+    expect(decompteDesLongsCourriers(1)).toBe('1 vol long-courrier sera compté.');
+    expect(decompteDesLongsCourriers(4)).toBe('4 vols long-courriers seront comptés.');
   });
 
   it('volsCourtsApresTotal : le 0 posé sous un total nul ne passe jamais pour une réponse', () => {

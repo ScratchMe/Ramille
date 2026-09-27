@@ -477,7 +477,7 @@ try {
   await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
-  await boutonDuPager('Commencer mon bilan', 3);
+  await boutonDuPager('Commencer', 3);
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
 
   // ── 2. Le questionnaire, réponse par réponse ────────────────────────────────────────────────
@@ -822,7 +822,7 @@ try {
   await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
-  await boutonDuPager('Commencer mon bilan', 3);
+  await boutonDuPager('Commencer', 3);
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
 
   await choisir('Oui');
