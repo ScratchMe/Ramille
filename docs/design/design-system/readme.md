@@ -5,7 +5,7 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 ## Sources
 - Dépôt : `ScratchMe/Ramille` (React Native / Expo, branche `main`) — jetons `src/constants/theme.ts`, composants `src/components/**`, voix `src/constants/mascotte.ts`, géométrie `src/types/mascot.ts`.
 - Canvas et réponses des sessions de design : `docs/design/v1-NN-*/`, un dossier par brief — le plus récent est celui du plus grand numéro, et une réponse peut servir deux briefs, le README de chaque dossier le dit (dont `v1-11-navigation/Systeme.dc.html`, `v1-08-mascotte/Expressions.dc.html`).
-- Handoff V1 : `docs/design/README.md`, ses deux spécifications et `docs/design/traceverte-ecrans-v1.dc.html` (38 écrans) — figé tel quel, jamais réécrit ; les écarts assumés vivent dans `docs/architecture/v1-0N-*.md`.
+- Handoff V1 : `docs/design/README.md`, ses deux spécifications et `docs/design/traceverte-ecrans-v1.dc.html` (28 écrans) — figé tel quel, jamais réécrit ; les écarts assumés vivent dans `docs/architecture/v1-0N-*.md`.
 - Brief v1-14 : `docs/design/v1-14-boucle-engagement/BRIEF.md` (boucle d'engagement, d'une saison à l'autre).
 - Aucun fichier Figma. Spline Sans est versionnée en `assets/fonts/` (SIL OFL 1.1) — cf. Caveats.
 
@@ -71,7 +71,7 @@ Sans interface, donc sans fiche : `TitreDePage` (les métadonnées du document) 
   chaque carte réécrivait ces déclarations à la main dans un `<style>` local.
 - `guidelines/*.html` — 14 cartes de fondations (Colors, Type, Spacing, Brand)
 - `components/<groupe>/` — .jsx + .d.ts + .prompt.md + une carte par groupe ; `components/loader.js` = repli quand `_ds_bundle.js` n'est pas compilé
-- `ui_kits/ramille/` — kit cliquable (6 écrans, thème sombre) + catalogue des 38 écrans V1
+- `ui_kits/ramille/` — kit cliquable (6 écrans, thème sombre)
 - `assets/images/` — marques ; `assets/fonts/` — Spline Sans 400/500/600/700 (.ttf, SIL OFL 1.1)
 - `SKILL.md` — invocation Claude Code
 - Hors du kit, dans le dépôt : le handoff V1 (`docs/design/README.md`) et la carte des écrans (`CLAUDE.md`, « Routing »)

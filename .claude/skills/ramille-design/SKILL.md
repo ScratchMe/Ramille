@@ -16,9 +16,9 @@ code, le code gagne.
 
 **Le kit se synchronise depuis le 24/09/2026** (décision de la personne qui pilote,
 `docs/architecture/v1-29-challenge-du-design-system.md` §5) : il était une photographie datée, il
-devient un miroir tenu. Une PR qui change un jeton ou une règle du kit le met à jour elle-même ; ce
-qui reste à rattraper — le catalogue des 38 écrans qui reprend le handoff V1
-et ses écrans à mot de passe (v1-10 §2.D) — est inventorié dans cette §5. **Les composants absents ont
+devient un miroir tenu. Une PR qui change un jeton ou une règle du kit le met à jour elle-même. Le
+rattrapage inventorié dans cette §5 est fini depuis le 27/09/2026, et le catalogue des 38 écrans,
+périmé, a été retiré du kit le même jour. **Les composants absents ont
 une garde depuis le 26/09/2026** : `scripts/verifier-miroir-du-kit.mjs`, en CI, refuse un composant
 de `src/components/` sans fiche. Sa liste `A_PORTER` est vide depuis le 27/09/2026 : chaque
 composant du dépôt a sa fiche, donc un composant ajouté porte la sienne dans la même PR.

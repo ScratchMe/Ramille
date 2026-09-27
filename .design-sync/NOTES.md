@@ -101,9 +101,9 @@ Trois écarts, tous du même genre : **un kit qui montre un comportement disparu
 3. **`FeuilleRappels` figeait « lundi » dans ses détails de canal** quelle que soit la boucle : sur
    `boucle="mensuel"`, le choix disait l'inverse de ce que Ramille venait d'annoncer.
 
-`ui_kits/ramille/Catalogue - 38 ecrans.dc.html` garde ses huit mentions du mot de passe, et c'est
-volontaire : artboard de canvas, relevé figé du handoff V1, et `ui_kits/` ne fait pas partie de ce
-que le téléversement emporte.
+Le catalogue des 38 écrans de `ui_kits/ramille/` gardait ses huit mentions du mot de passe ; il a
+été retiré du kit le 27/09/2026 (`v1-29` §5). `ui_kits/` ne fait de toute façon pas partie de ce que
+le téléversement emporte.
 
 ## Aperçus
 

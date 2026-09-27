@@ -353,8 +353,9 @@ le 25 :
   25/09/2026 — **fermé le 26/09/2026 par le lot 2** ;
 - **`BarreOnglets`** existe dans le kit et pas comme composant du code : la barre est le layout
   `src/app/(tabs)/_layout.tsx` ;
-- **le catalogue des 38 écrans** (`ui_kits/ramille/`) reprend le handoff V1, dont des écrans à mot de
-  passe qui n'existent plus depuis `v1-10` §2.D, et cite l'ancien nom du produit ;
+- **le catalogue des 38 écrans** (`ui_kits/ramille/`) reprenait le handoff V1, dont des écrans à mot
+  de passe qui n'existent plus depuis `v1-10` §2.D, et citait l'ancien nom du produit — **retiré du
+  kit le 27/09/2026** (fin de cette §5) ;
 - **l'état désactivé est tranché, et c'est le code qui a suivi la règle** (25/09/2026) : la ligne de
   canal inactive portait une opacité de 0,6, qui faisait tomber son détail — la phrase qui dit
   pourquoi le canal est hors d'atteinte — vers 3,2:1. Elle garde son fond, passe son titre en
@@ -439,8 +440,18 @@ de `RAMILLE.presentation`, pas une paraphrase.
 capturées et notées, dans le projet de design « Ramille », sans rien y supprimer. L'en-tête de
 conventions que lit l'agent de design a été relu contre le produit au passage — il citait un
 fragment « il manque » que le produit n'écrit pas, et ignorait `GroupeDeChoix` et les étapes du
-questionnaire (`.design-sync/NOTES.md`). **Le rattrapage est donc fini** ; ce qui reste de cette
-§5 est le catalogue des 38 écrans, qui est une question de produit.
+questionnaire (`.design-sync/NOTES.md`). **Le rattrapage est donc fini.**
+
+**Tranché le 27/09/2026 — le catalogue des 38 écrans est retiré du kit.** Arrivé le 11/09/2026 avec
+le canvas `v1-14`, il n'avait jamais été mis à jour et disait des choses fausses sur le produit : un
+en-tête « Ramille (ex-TraceVerte) », deux écrans à mot de passe, un écran « Check-in manqué » qui
+écrit qu'un point n'a pas été rempli — alors qu'une période sans réponse n'apparaît jamais —, et
+des questions d'avant C2.3. Trois voies étaient posées : le retirer, le garder marqué périmé, ou le
+reconstruire depuis les fiches. La personne qui pilote a retenu la première, sur la recommandation :
+la vérité des écrans est dans les fiches du kit et dans le produit, le handoff d'origine reste daté
+dans `docs/design/`, et une maquette fausse laissée à côté du kit enseigne ce qu'il ne faut pas faire
+à la prochaine personne qui dessine. Ce qu'on perd — la vue « tous les écrans d'un coup » — se refait
+depuis les fiches le jour où une session de design la demande.
 
 **Quand le faire** : avant la prochaine session de design, parce que c'est d'elle que ces sessions
 partent — un kit faux y fabrique des maquettes fausses, qui fabriquent des écarts à consigner.
