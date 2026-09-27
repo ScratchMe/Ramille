@@ -870,7 +870,9 @@ La première version lisait les seules étapes écrites `- run:`, ne comparait p
 consignait une mutation qui ne faisait pas ce qu'elle disait ; la contre-lecture du 27/09/2026 a
 relevé les trois. Ce que la garde ne voit toujours pas : ce qu'un pas qui n'est pas une commande (la
 stack, le verrou) fait de plus ou de moins que son pendant — c'est l'en-tête du script qui en répond.
-Premier passage complet le 27/09/2026 : 33 pas, tous réussis, stack comprise.
+Premier passage complet le 27/09/2026 : 33 pas, tous réussis, stack comprise ; et le soir, après la
+contre-lecture, 31 pas réussis — la stack arrêtée puis redémarrée en une demi-minute, chaque export
+dans son propre cache, effacé à la sortie.
 
 **Le verrou a sa propre garde** (`scripts/verrou-de-la-stack.test.ts`), jouée sans Docker ni stack :
 il se prend libre et se rend à la sortie, il refuse un rejeu vivant en le nommant, il reprend celui

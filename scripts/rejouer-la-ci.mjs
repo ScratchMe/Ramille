@@ -474,6 +474,14 @@ if (aBlanc) {
   process.exit(0);
 }
 
+// Les caches de Metro pèsent une trentaine de mégaoctets chacun (mesuré le 27/09/2026) et ne servent
+// plus une fois l'export fait : ils partent à la sortie, les journaux restent.
+process.on('exit', () => {
+  for (const nom of fs.readdirSync(ctx.journal)) {
+    if (nom.startsWith('metro-')) fs.rmSync(path.join(ctx.journal, nom), { recursive: true, force: true });
+  }
+});
+
 console.log(`rejouer-la-ci — ${etatDeLArbre()}`);
 console.log(`Journaux : ${ctx.journal}`);
 const resultats = jouer(etapes, ctx);
