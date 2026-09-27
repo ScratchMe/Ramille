@@ -18,6 +18,11 @@
 //    propre, et refuse sinon, en disant pourquoi — il ne réécrit jamais le travail d'un sous-agent.
 // 2. **`node_modules`.** Une copie n'en a pas. `worktree.symlinkDirectories` le lie depuis la copie
 //    principale ; à défaut, le script pose le lien lui-même.
+//
+// Les deux réglages ont été mesurés le 27/09/2026 sur un vrai sous-agent en copie de travail : sa
+// copie était partie du HEAD local, et `node_modules` y était déjà lié. `baseRef` est documenté ;
+// `symlinkDirectories` figure au schéma des réglages de cette version, mais pas dans la page en
+// ligne sur les worktrees — raison de plus pour garder le repli.
 // 3. **`expo-env.d.ts`**, ignoré par git : sans lui, `tsc` échoue sur l'import de `global.css`.
 // 4. Ce qu'un script ne peut pas faire à la place de l'agent, il le rappelle en sortant : exporter
 //    avec `--clear` (le cache de Metro est partagé entre copies, EXPO.md §1.1), et ne toucher à la

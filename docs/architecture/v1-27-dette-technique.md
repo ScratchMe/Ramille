@@ -1172,3 +1172,24 @@ ce qui permettrait de la diagnostiquer la prochaine fois, au lieu de remesurer d
 
 **Ce qu'il ne faut pas faire** : allonger le délai de 30 s en espérant que ça passe. Ça ne
 supprimerait pas la cause, ça la rendrait plus rare — donc plus chère à attraper.
+
+### 12.18 Le hook des migrations livrées ne voit qu'Edit et Write (27/09/2026)
+
+**Relevé en l'écrivant.** `scripts/proteger-les-migrations-livrees.mjs` refuse à Edit et à Write une
+migration présente dans `origin/main`. Une modification par le shell (`sed -i`, une redirection,
+`git mv`), par un humain ou dans une session qui n'a pas chargé `.claude/settings.json` passe sans
+rien déclencher. La CI ne regarde pas non plus : elle reconstruit la base depuis les fichiers, donc
+un fichier livré réécrit y passe au vert (`SUPABASE.md` §2.3).
+
+**La direction, si on y revient** : une étape de CI qui compare la PR à sa base
+(`git diff --name-status --diff-filter=DMR <base>...HEAD -- supabase/migrations/`) et refuse toute
+migration de la base modifiée, supprimée ou renommée. Elle verrait tous les chemins d'écriture à la
+fois, là où le hook n'en voit que deux.
+
+**Pourquoi ce n'est pas fait dans la PR qui a posé le hook** : elle s'en tenait aux quatre points
+décidés, et cette garde-là demande d'abord une forme d'exception. Sans exception, elle aurait refusé
+la seule retouche d'une migration livrée de l'histoire du dépôt
+(`20260917094500_classement_du_plan.sql`, le 17/09/2026), qui était voulue — et une garde sans issue
+pour la décision rare apprend à la contourner. La forme la plus simple est un fichier qui nomme les
+retouches acceptées, chacune avec sa date et sa raison, sur le modèle des tolérances de
+`scripts/verifier-renvois-des-documents.mjs`.
