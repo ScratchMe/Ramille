@@ -9,3 +9,5 @@ La confirmation est un état du composant, jamais une boîte système. Aucune te
 « Mes données » est un en-tête de section (niveau 2) : les pages légales et `/compte/suppression` y envoient en la nommant. Le message d'un export ou d'une suppression passe par `MessageInline`, le succès compris.
 
 Le bouton de suppression est le primaire ordinaire : pas de variante destructive dans le produit.
+
+**Pendant un export ou une suppression, tout se désactive** (`occupe`) et le bouton qui travaille le dit : « Génération… », « Suppression… ». **Une fois la suppression faite** (`supprime`), la carte dit « C’est fait. » et ce qui est parti, Ramille dit au revoir sans retenir personne (« Merci du temps passé ici. Si tu reviens, on repart de zéro, tranquillement. »), et le seul geste est « Revenir au début ».

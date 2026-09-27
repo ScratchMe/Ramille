@@ -14,3 +14,9 @@ export const Confirmation = () => <MonCompte confirmation />;
 export const AvecEchec = () => (
   <MonCompte message="Ta demande n’a pas abouti. Réessaie dans un instant." />
 );
+
+/** Pendant la suppression : tout se désactive, et le bouton qui travaille le dit. */
+export const SuppressionEnCours = () => <MonCompte confirmation occupe="suppression" />;
+
+/** Après : ce qui est parti, l'au revoir de Ramille, et le chemin vers le début — rien pour retenir. */
+export const Supprime = () => <MonCompte supprime />;

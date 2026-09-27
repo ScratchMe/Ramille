@@ -8,7 +8,7 @@ import { ThemedView, ThemedText } from 'ramille-design-system';
 export const Surfaces = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
     <ThemedView type="background" style={{ border: '1px solid var(--color-border)', borderRadius: 18, padding: 20, gap: 4 }}>
-      <ThemedText type="cardTitle">Faire ce trajet à vélo</ThemedText>
+      <ThemedText type="cardTitle">Faire un trajet sur cinq à vélo</ThemedText>
       <ThemedText type="small" themeColor="textTertiary">background — carte bordée sur la page</ThemedText>
     </ThemedView>
     <ThemedView type="backgroundElement" style={{ borderRadius: 16, padding: 16, gap: 4 }}>
@@ -16,7 +16,7 @@ export const Surfaces = () => (
       <ThemedText type="small" themeColor="textTertiary">backgroundElement — le panneau neutre</ThemedText>
     </ThemedView>
     <ThemedView type="backgroundSelected" style={{ borderRadius: 18, padding: 18, gap: 4 }}>
-      <ThemedText type="small" themeColor="accentText">Point de la semaine · 8 sept.</ThemedText>
+      <ThemedText type="small" themeColor="accentText">Semaine du 14/09</ThemedText>
       <ThemedText type="small" themeColor="textTertiary">backgroundSelected — le point de suivi</ThemedText>
     </ThemedView>
   </div>

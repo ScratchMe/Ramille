@@ -2,13 +2,12 @@ import React from 'react';
 import { GoogleButton, TextLink } from 'ramille-design-system';
 
 /**
- * Le bouton Google, seule ombre du produit (0 1px 2px). Le bouton officiel n'est jamais
- * redessiné : ce composant est un substitut neutre pour les maquettes. Son libellé est fixe,
+ * Le bouton Google : le « G » officiel, jamais redessiné, sans ombre. Son libellé est fixe,
  * « Se connecter avec Google » — il n'a pas de prop `label`.
  */
 export const Defaut = () => <GoogleButton />;
 
-/** En cours : l'appel OAuth est parti, on ne propose pas de recommencer. */
+/** En cours : la fenêtre Google s'ouvre ; un indicateur remplace logo et libellé, rien à recommencer. */
 export const EnCours = () => <GoogleButton loading />;
 
 /** Dans l'écran de connexion, avec l'autre chemin juste en dessous. */

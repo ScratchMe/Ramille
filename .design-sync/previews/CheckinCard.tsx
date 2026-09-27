@@ -4,23 +4,40 @@ import { CheckinCard } from 'ramille-design-system';
 /**
  * La question posée, sur le poste dominant : teinte « selected », trois réponses fixes — la
  * carte les pose elle-même, Non avant Oui (on ne met pas la réponse attendue sous le pouce), puis
- * le troisième choix nommé sur la période interrogée.
+ * le troisième choix nommé sur la période interrogée. Le libellé de période est celui que la base
+ * fige à la génération (« Semaine du 14/09 »), et la question celle du gabarit de l'action engagée.
  */
 export const QuestionPosee = () => (
   <CheckinCard
-    periodLabel="Point de la semaine · 8 sept."
+    periodLabel="Semaine du 14/09"
     question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?"
     emphasize
   />
 );
 
-/** Répondu oui : Ramille répond, sans jamais citer un nombre. */
+/** Répondu oui : Ramille répond, sans jamais citer un nombre ; le pied, du produit, porte les dates. */
 export const ReponduOui = () => (
   <CheckinCard
-    periodLabel="Point de la semaine · 8 sept."
+    periodLabel="Semaine du 07/09"
     question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?"
     answered="oui"
     retour={{ mood: 'happy', ligne: 'Bien joué — chaque changement compte.' }}
+    pied="Répondu lundi. Prochain point : lundi 21 septembre."
+  />
+);
+
+/**
+ * Le deuxième « oui » de suite : sous la réplique, une phrase du produit — pas de Ramille, qui ne
+ * compte jamais. Elle ne vient qu'une fois : à la cinquième semaine, elle serait fausse.
+ */
+export const SecondRenforcement = () => (
+  <CheckinCard
+    periodLabel="Semaine du 07/09"
+    question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?"
+    answered="oui"
+    retour={{ mood: 'happy', ligne: 'Bien joué — chaque changement compte.' }}
+    renforcement="Deuxième semaine de suite que tu fais ce trajet autrement."
+    pied="Répondu lundi. Prochain point : lundi 21 septembre."
   />
 );
 
@@ -30,7 +47,7 @@ export const ReponduOui = () => (
  */
 export const ReponduNon = () => (
   <CheckinCard
-    periodLabel="Point de la semaine · 1 sept."
+    periodLabel="Semaine du 07/09"
     question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?"
     answered="non"
     retour={{
@@ -41,14 +58,37 @@ export const ReponduNon = () => (
 );
 
 /**
+ * La question a été figée sur une action qu'on a quittée depuis : elle ne se réécrit pas — elle
+ * doit rester celle de la notification — et la carte dit sur quoi elle porte.
+ */
+export const ActionQuittee = () => (
+  <CheckinCard
+    periodLabel="Semaine du 14/09"
+    question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?"
+    actionQuittee="Faire un trajet sur cinq à vélo"
+    emphasize
+  />
+);
+
+/** Le point n'attend plus de réponse : la question reste lisible, la phrase remplace les boutons. */
+export const PointClos = () => (
+  <CheckinCard
+    periodLabel="Semaine du 14/09"
+    question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?"
+    refus="Ce point de suivi n’attend plus de réponse. La question revient à la prochaine période."
+    emphasize
+  />
+);
+
+/**
  * La boucle mensuelle du poste secondaire : même carte, sans la teinte. La question nomme le mois
  * **écoulé** — jamais « ce mois-ci », qui ne serait pas encore joué —, et le troisième choix le
  * nomme aussi.
  */
 export const PosteSecondaire = () => (
   <CheckinCard
-    periodLabel="Point du mois · août"
-    question="En août, as-tu remplacé une sortie en voiture par le train ?"
+    periodLabel="août 2026"
+    question="En août, as-tu fait une sortie à vélo ?"
     sansObjet="Pas de sortie en août"
     emphasize={false}
   />

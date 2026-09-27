@@ -47,6 +47,24 @@ body {
   text-decoration: underline !important;
 }
 
+/* L'indicateur d'attente — l'`ActivityIndicator` du dépôt, à sa taille « small » (20) et dans la couleur du texte
+   qui l'entoure. Une rotation ne s'écrit pas en style en ligne, d'où cette règle ; un composant l'emploie par
+   `<span data-attente aria-hidden="true" />`, l'attente s'annonçant par `aria-busy` sur ce qui attend. */
+[data-attente] {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: ramille-attente 0.8s linear infinite;
+}
+@keyframes ramille-attente {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Les illustrations non produites sont des placeholders rayés 135°, légende mono — la forme
    décrite par le readme, pour qu'un écran en construction n'invente pas la sienne. */
 .ramille-placeholder {
