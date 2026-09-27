@@ -267,13 +267,16 @@ export const MaxContentWidth = 800;
  * (`cubic-bezier`) la lisent chacun à sa façon, et ce fichier n'importe pas reanimated. C'est la
  * « sortie douce » : un départ franc, une arrivée qui se pose.
  *
- * Toute animation qui s'en sert suit « réduire les animations », et **pas toujours gratuitement** :
- * `withTiming` et les animations de disposition de reanimated le font d'eux-mêmes, `Animated`, les
- * CSS transitions de reanimated et le `Modal` de react-native-web l'ignorent — leur durée passe par
- * `dureeSelonLaPreference` (`src/types/mouvement.ts`). Le skill `mouvement` dit le reste.
+ * Toute animation qui s'en sert suit « réduire les animations », et **en ne démarrant pas** : sous
+ * la préférence, l'état final est posé d'emblée. Aucune bibliothèque ne s'en charge de façon sûre —
+ * `Animated` et les CSS de reanimated l'ignorent, et `withTiming`, qui la lit
+ * (`ReduceMotion.System`), n'est qu'un second filet : laissé jouer sous la préférence, `Depliage` ne
+ * s'ouvre pas du tout (`v1-30` §9). Chaque outil lit donc `useReducedMotion` lui-même, et une CSS
+ * transition passe sa durée par `dureeSelonLaPreference` (`src/types/mouvement.ts`). Le skill
+ * `mouvement` dit le reste.
  */
 export const Mouvement = {
-  /** Un contenu qui arrive : l'étape du questionnaire, ce qui glisse sous une précision. */
+  /** Un contenu qui arrive ou grandit : l'étape et son rail, une précision, un bloc qui s'allonge. */
   entree: 250,
   /** La feuille du bas qui monte. */
   entreeDeFeuille: 280,
@@ -281,10 +284,8 @@ export const Mouvement = {
   entreeDeBarre: 320,
   /** Ce qui apparaît en place : le voile d'une feuille, une précision, une réplique. */
   fondu: 200,
-  /** La feuille qui redescend, la carte qui se replie. */
+  /** La feuille et son voile qui redescendent, un bloc qui rétrécit (`HauteurSuivie`). */
   sortie: 200,
-  /** Le fondu d'une sortie. */
-  sortieBreve: 150,
   /** Ce qu'un contenu parcourt en entrant. */
   deplacement: 8,
   /** La « sortie douce », pour tout ce qui entre, sort, glisse ou se replie. */

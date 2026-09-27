@@ -669,7 +669,7 @@ identifiants et l'URL finale, et c'est ce qui l'a montré.
 Un test d'écran est possible depuis le 20/09/2026 (`@testing-library/react-native`, et un
 `moduleNameMapper` qui neutralise l'import CSS de `src/constants/theme.ts` — sans lui **tout**
 test d'écran échoue au chargement). Le relevé de coût complet est en `v1-27` §12.11 ; ce qu'il
-faut retenir ici tient en un critère et trois frottements.
+faut retenir ici tient en un critère et quelques frottements.
 
 **Le critère : on peut nommer la mutation qu'il fait tomber, et elle n'est visible ni par
 `src/types` ni par le parcours réel.** Ça vise une famille étroite — les **branches d'état**
@@ -691,7 +691,7 @@ sur la CI : l'export l'a bien rendue, et c'est `verifier-titres-export.mjs` qui 
 n'avait pas de ligne dans `PAGE_TITLES`. Les tests d'écran vivent donc dans `src/tests/ecrans/`,
 et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
 
-**Trois frottements qui ne se voient pas quand on ne teste que de la logique pure** :
+**Les frottements qui ne se voient pas quand on ne teste que de la logique pure** :
 
 1. une variable citée dans une fabrique `jest.mock()` doit être préfixée `mock` — jest hisse les
    appels au-dessus des déclarations du fichier et refuse toute autre variable hors portée ;
@@ -703,7 +703,11 @@ et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
    (`setupFiles` de `package.json`), qui pose les doubles officiels de `react-native-worklets` et de
    reanimated et leur ajoute ce que le second ne porte pas — `css`, `cubicBezier`,
    `useReducedMotion`. Un test d'écran n'éprouve donc **aucune** animation : elles se jugent image
-   par image dans un navigateur (§2.14).
+   par image dans un navigateur (§2.14). **Sauf ce qui se passe à leur fin** : un test qui doit
+   placer un geste pendant une sortie retient les fins de `withTiming` dans son propre double — un
+   `jest.mock` de fichier **remplace** celui du `setupFiles` au lieu de s'y ajouter, donc il recopie
+   le reste —, et les joue dans un `await act(async …)`, parce que `scheduleOnRN` repasse côté React
+   par un microtask (`src/tests/ecrans/feuille-du-bas.test.tsx`).
 
 **Et le piège de fond, trouvé en mutant** : un test d'écran écrit spontanément n'affirme que des
 **présences**. Il laisse alors passer tout ce qui est en trop — une phrase d'état vide rendue
@@ -905,10 +909,10 @@ même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFr
 - `scripts/verifier-etats-export.mjs`, **section J**, sans réseau : la barre d'onglets au démarrage,
   l'étape du questionnaire et son rail, une précision qui s'ouvre, le fondu des onglets ;
 - `scripts/verifier-parcours-reel.mjs`, ce qui demande des données : la barre au « Compris », la
-  carte du point qui change de hauteur, la feuille du re-bilan — et **le second profil entier sous
-  « réduire les animations »**.
+  carte du point qui change de hauteur et qui garde la sienne au retour sur le plan, la feuille du
+  re-bilan — et **le second profil entier sous « réduire les animations »**.
 
-Quatre règles, chacune payée pendant l'écriture :
+Les règles, chacune payée pendant l'écriture :
 
 1. **« En chemin » se lit sur une valeur strictement intermédiaire, jamais sur une durée.** Un runner
    lent perd des images, il n'en invente pas : « au moins une image entre le départ et l'arrivée »
@@ -925,14 +929,20 @@ Quatre règles, chacune payée pendant l'écriture :
    corrigé à la source, puis trois passages verts d'affilée. Relancer jusqu'au vert l'aurait
    enterré.
 
-5. **Une garde d'animation se corrige aussi par ses mutations — trois fois le premier soir.** Une
+5. **Une garde d'animation se corrige aussi par ses mutations — quatre fois le premier soir.** Une
    barre qui surgissait sans glisser passait (« en chemin » voulait dire « ailleurs qu'à
    l'arrivée », et une seule image au point de départ suffisait : c'est un saut) ; une feuille qui
    glissait tombait en disant « s'ouvre d'un coup » (react-native-web ne pose `role="dialog"` qu'à
    la fin de son animation, et la mesure cherchait le rôle) ; et la mesure corrigée a rougi la CI
-   sur une image que le `Modal` rend à opacité nulle au montage. Chaque fois, **imprimer les
+   sur une image que le `Modal` rend à opacité nulle au montage ; la quatrième est au point 6.
+   Chaque fois, **imprimer les
    échantillons** a tranché — une fois contre l'hypothèse qu'on venait d'écrire. Et une mutation
    se joue **sur un fichier égal au commit** : un lot interrompu en avait laissé une dans la copie,
    sous deux résultats qu'il a fallu rejouer.
+6. **Une position se lit à travers l'ancrage du défilement : mesurer une hauteur.** Chrome compense
+   ce qui grandit **au-dessus** de la fenêtre en défilant d'autant, donc un bloc qui regrandit
+   au-dessus de ce qu'on regarde ne déplace rien à l'écran. La garde du retour sur le plan lisait la
+   position du cap et passait avec le défaut en place ; elle lit maintenant la hauteur de la carte
+   (`decoupe`), et la mutation tombe (8 px au lieu de 153).
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.

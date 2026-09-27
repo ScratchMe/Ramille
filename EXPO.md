@@ -119,7 +119,8 @@ relais au rendu suivant.
   `src/components/feuille-du-bas.tsx`. **Et le dialogue n'existe qu'à la fin de cette animation** :
   react-native-web ne pose `role="dialog"` et n'arme son piège à focus qu'une fois le `Modal`
   « actif », sur `animationEnd` — pendant les 250 ms d'un `slide`, ce n'est ni un dialogue pour un
-  lecteur d'écran, ni un piège pour le clavier. Avec `"none"`, il l'est dès la première image. Et un
+  lecteur d'écran, ni un piège pour le clavier. Avec `"none"`, il l'est dès qu'il est montré — sa
+  toute première image est encore à opacité nulle (`styles.hidden`), et ne rend rien. Et un
   outil qui cherche le dialogue par son rôle ne le voit pas glisser : `aria-modal`, lui, est posé
   tout de suite (lu dans la source du `Modal` de react-native-web 0.21 ; mesuré le 27/09/2026).
 - **Les animations de disposition de reanimated (4.5) ne se comportent pas sur web comme sur

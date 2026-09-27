@@ -407,11 +407,13 @@ s'annonce enfin coché — c'était le seul défaut critique de l'audit.
 ([`v1-30-les-transitions.md`](v1-30-les-transitions.md)), à la demande de la personne qui pilote :
 *« qu'on finisse par obtenir un rendu professionnel et smooth »*. L'étude de transitions.dev a conclu
 qu'il ne s'installe pas — sa licence interdit de republier sa collection, et ses extraits ne valent
-que pour le web — ; ses principes deviennent un skill de Ramille, `mouvement`. Neuf décisions, toutes
-suivies : les feuilles dont le voile ne monte plus avec elles, la barre d'onglets qui arrive en
-glissant (un écart de C5.7 levé), l'étape du questionnaire qui entre dans le sens du parcours, le
-contenu qui glisse au lieu de sauter, les onglets en fondu sans image de « Chargement… » — puis, dans
-un second temps, la sortie de l'écran de lancement. **Tout y respecte « réduire les animations »**,
+que pour le web — ; ses principes deviennent un skill de Ramille, `mouvement`. Neuf décisions : les
+feuilles dont le voile ne monte plus avec elles, la barre d'onglets qui arrive en glissant (un écart
+de C5.7 levé), l'étape du questionnaire qui entre dans le sens du parcours, le contenu qui glisse au
+lieu de sauter, les onglets en fondu sans image de « Chargement… » — puis, dans un second temps, la
+sortie de l'écran de lancement. **Deux écarts y sont écrits** : le plug-in `hzblj-skills`, installé
+en mode manuel là où la recommandation était de ne pas l'installer, et le plan qui remonte encore
+d'un coup quand une carte de saison est refermée. **Tout y respecte « réduire les animations »**,
 et le document tient l'état d'avancement de chaque chantier, pour qu'un autre agent puisse le
 reprendre.
 

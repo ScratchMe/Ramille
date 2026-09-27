@@ -41,8 +41,7 @@ republier sa collection, et ils ne valent que pour le web.
 | `entreeDeFeuille` | 280 ms | une feuille qui monte |
 | `entreeDeBarre` | 320 ms | la barre d'onglets qui arrive (canevas de C5.7) |
 | `fondu` | 200 ms | ce qui apparaît en place |
-| `sortie` | 200 ms | ce qui redescend ou se replie |
-| `sortieBreve` | 150 ms | le fondu d'une sortie |
+| `sortie` | 200 ms | ce qui redescend ou rétrécit |
 | `deplacement` | 8 px | ce qu'un contenu parcourt |
 | `courbe` | `[0.22, 1, 0.36, 1]` | la « sortie douce », partout |
 
@@ -58,7 +57,7 @@ La courbe est quatre nombres : `Easing.bezier(...Mouvement.courbe)` pour reanima
 | `styleDEntree(sens, reduit)` | une étape qui entre du côté du parcours (CSS animation, vue à clé) |
 | `Apparition` | ce qui apparaît en place, en fondu |
 | `Depliage` | ce qui s'ouvre sous un choix : grandit de zéro à sa hauteur, ce qui est dessous suit |
-| `HauteurSuivie` | un bloc dont le contenu change : passe d'une hauteur à l'autre ; `styleDuContenu` reprend le `gap` du parent ; sa découpe laisse de la place à l'anneau de focus |
+| `HauteurSuivie` | un bloc dont le contenu change : passe d'une hauteur à l'autre ; `styleDuContenu` reprend le `gap` du parent ; sa découpe laisse de la place à l'anneau de focus ; une hauteur nulle (l'écran masqué par la pile web) ne se tient pas |
 | `SansApparitionAuMontage` | ce qui est déjà là quand l'écran arrive est posé ; seul ce qui monte ensuite s'anime |
 
 Ce qui **décide** d'une animation (un sens, une arrivée, une durée sous la préférence) est une
@@ -73,7 +72,7 @@ ne fait rien sur web. Pas de shared element transitions non plus : expérimental
 ## « Réduire les animations » — la règle qui ne se négocie pas
 
 Toute animation dit ce qu'elle devient sous la préférence, et **sous la préférence, tout se pose** :
-l'état final, dès la première image. Trois cas, et seul le premier est gratuit :
+l'état final, dès la première image, **en ne lançant rien**. Trois cas, et aucun n'est gratuit :
 
 1. **`withTiming`** la suit de lui-même (`ReduceMotion.System`). On l'écrit quand même,
    `reduceMotion: ReduceMotion.System`, comme `src/components/mascot.tsx` — **mais on ne compte pas

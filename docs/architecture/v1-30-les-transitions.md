@@ -23,8 +23,11 @@ puis découpé image par image autour de chaque transition — la méthode pour 
 
 ## 2. Les décisions (27/09/2026)
 
-Posées une par une sous la forme de `CLAUDE.md` ; **toutes les recommandations sont suivies**, avec
-une précision sur la n° 2 et une sur la n° 9.
+Posées une par une sous la forme de `CLAUDE.md`. **Huit recommandations sur neuf sont suivies** : la
+n° 2 ne l'est pas — la recommandation était de ne pas installer le plug-in, et la décision l'installe,
+dans la forme que la recommandation posait pour ce cas —, et la n° 9 porte une précision. **La n° 6
+n'est tenue qu'en partie** : une carte de saison refermée laisse encore le plan remonter d'un coup
+(§5.5).
 
 | N° | La question | Décision |
 |---|---|---|
@@ -38,9 +41,10 @@ une précision sur la n° 2 et une sur la n° 9.
 | 8 | Les onglets en fondu, et le « Chargement… » différé | **Oui** (§5.8) |
 | 9 | L'ordre de livraison | **Une vague pour 1, 2, 3, 4, 6 et 8, puis le lancement à part** — *« mais commence par documenter tous les travaux à faire, comme ça un autre agent pourrait reprendre ton travail au besoin »* : c'est ce document |
 
-**Le « sans `/polish` » de la n° 2 est appliqué** : c'était la condition de l'option retenue, et elle
-se défait en relançant l'installation sans l'exclusion. La commande applique d'office un
-rétrécissement à 0,96 sous le doigt, qui défait la décision n° 6 de `v1-29` (§3.3).
+**Le « sans `/polish` » de la n° 2 est appliqué** : c'était la condition de l'option retenue. Il ne se
+défait pas en relançant l'installation sans l'exclusion — `installation.json` la garde et chaque mise à
+jour la reprend — mais par `--retirer hzblj-skills` puis une installation neuve. La commande applique
+d'office un rétrécissement à 0,96 sous le doigt, qui défait la décision n° 6 de `v1-29` (§3.3).
 
 ## 3. Ce qui a été établi, et qui ne se re-raisonne pas
 
@@ -166,12 +170,11 @@ Ils entrent dans `src/constants/theme.ts`, sous un objet `Mouvement`, **et dans 
 
 | Jeton | Valeur | Usage |
 |---|---|---|
-| `Mouvement.entree` | 250 ms | un contenu qui arrive : étape du questionnaire, contenu qui glisse |
+| `Mouvement.entree` | 250 ms | un contenu qui arrive ou grandit : étape du questionnaire et son rail, précision qui se déplie, bloc qui s'allonge |
 | `Mouvement.entreeDeFeuille` | 280 ms | la feuille qui monte |
 | `Mouvement.entreeDeBarre` | 320 ms | la barre d'onglets, valeur du canevas (planche F3 de C5.7) |
 | `Mouvement.fondu` | 200 ms | le voile, ce qui apparaît en place |
-| `Mouvement.sortie` | 200 ms | la feuille qui redescend, la carte qui se replie |
-| `Mouvement.sortieBreve` | 150 ms | un fondu de sortie |
+| `Mouvement.sortie` | 200 ms | la feuille et son voile qui redescendent, un bloc qui rétrécit (`HauteurSuivie`) |
 | `Mouvement.deplacement` | 8 px | ce qu'un contenu parcourt en entrant |
 | `Mouvement.courbe` | `Easing.bezier(0.22, 1, 0.36, 1)` | la « sortie douce », pour tout ce qui entre, sort, glisse ou se replie |
 
@@ -180,7 +183,7 @@ valeurs existantes de la mascotte, du lancement et de la carte d'ouverture ne bo
 
 ### 4.2 La règle de la préférence
 
-Trois cas, et le premier est le seul qui soit gratuit :
+Trois cas, et aucun n'est gratuit — la règle commune est de **ne rien lancer** sous la préférence :
 
 1. **`withTiming` de reanimated** : suivi par défaut ; on écrit quand même
    `reduceMotion: ReduceMotion.System`, comme les fichiers existants. **Mais ce n'est pas une
@@ -210,10 +213,12 @@ décide d'une animation sort de l'écran et se teste :
 - `barreArrive(avant, apres)` → vrai **seulement** sur un passage de masquée à visible — jamais au
   démarrage, où l'état précédent est inconnu (`null`) ;
 - `animationDesOnglets(reduit)` → `'fade' | 'none'` ;
-- `dureeSelonLaPreference(duree, reduit)` → `0` sous la préférence : le seul chemin des cas 2 de §4.2.
+- `dureeSelonLaPreference(duree, reduit)` → `0` sous la préférence : le chemin d'une CSS transition
+  (le rail du questionnaire), l'un des trois du cas 2 de §4.2 avec « ne pas poser l'animation » et
+  « ne pas lire la valeur animée ».
 
-Et ce qui **anime** est écrit une fois, dans `src/lib/mouvement.tsx` — huit écrans l'emploient, et un
-réglage recopié diverge au premier ajustement :
+Et ce qui **anime** est écrit une fois, dans `src/lib/mouvement.tsx`, parce qu'un réglage recopié
+d'écran en écran diverge au premier ajustement :
 
 - `styleDEntree(sens, reduit)` : la CSS animation d'une étape qui entre, du côté que
   `decalageDEntree` lui donne ; rien sans sens ou sous la préférence ;
@@ -224,12 +229,16 @@ réglage recopié diverge au premier ajustement :
   tenue entre deux changements, ce qui évite une image à la nouvelle hauteur avant le départ. Tenir
   une hauteur, c'est découper ce qui dépasse : la découpe laisse quatre pixels autour du contenu
   (`MARGE_DE_DECOUPE`), sans quoi l'anneau de focus du navigateur, dessiné hors de l'élément, était
-  effacé — entièrement sur une ligne de piste, trouvé en relisant la vague ;
+  effacé — entièrement sur une ligne de piste, trouvé en relisant la vague. Et **une hauteur nulle
+  ne se tient pas** : c'est l'écran recouvert que la pile web masque (`display: none`), pas un
+  contenu vide — tenue, elle faisait regrandir la carte du point sous les yeux à chaque retour sur
+  le plan (contre-lecture) ;
 - `SansApparitionAuMontage` : ce qui est déjà là quand l'écran arrive ne s'ouvre pas sous les yeux —
   une précision rouverte par un brouillon, un point déjà répondu.
 
-**Ce qui se teste où** : Jest pour les dérivations (§4.3, douze tests) et pour le délai du chargement
-(`src/hooks/use-apres-un-delai.test.ts`) ; reanimated y est doublé par `scripts/doublage-reanimated.js`
+**Ce qui se teste où** : Jest pour les dérivations (§4.3), pour le délai du chargement
+(`src/hooks/use-apres-un-delai.test.ts`) et pour la seconde fermeture d'une feuille
+(`src/tests/ecrans/feuille-du-bas.test.tsx`, que rien d'autre ne peut voir) ; reanimated y est doublé par `scripts/doublage-reanimated.js`
 (`TESTING.md` §2.1). Les composants, eux, ne se jugent qu'image par image dans un vrai navigateur :
 deux gardes, `scripts/verifier-etats-export.mjs` (section J, sans réseau) et
 `scripts/verifier-parcours-reel.mjs` (ce qui demande des données), relèvent chaque image avec le même
@@ -299,7 +308,14 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
   poignée `PoigneeDeFeuille` (`fermer(apres?)`, passée en `ref`) — « Pas maintenant » de la feuille du
   re-bilan, le choix validé de la feuille des rappels. Un bouton qui **navigue** (« Soumettre mon
   bilan », « Rattacher un compte ») appelle son rappel directement : sur natif, une route poussée sous
-  un `Modal` encore ouvert reste dessous. Une seconde fermeture pendant la sortie est ignorée.
+  un `Modal` encore ouvert reste dessous.
+- **Une seconde fermeture pendant la sortie** ne relance rien, et la feuille ne prend plus le toucher
+  pendant qu'elle redescend. Mais **un choix qu'elle apporte remplace le rappel en attente** : la
+  feuille des rappels valide son choix après un `await`, et le geste de retour a pu lancer la sortie
+  entre-temps. Ignoré — la première forme —, le choix partait en base sans que le plan le reçoive, qui
+  affichait l'ancien canal jusqu'à la relecture suivante. Un second geste **sans** choix ne remplace
+  pas celui qui est en route (contre-lecture ; `src/tests/ecrans/feuille-du-bas.test.tsx`, deux
+  mutations).
 - **Sous la préférence** : voile et feuille posés dès la première image (valeurs initiales à 1), et la
   fermeture démonte tout de suite, sans attendre de rappel — **ce qui corrige aussi le défaut web** de
   §3.4, technique et non décidé ici.
@@ -367,7 +383,10 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
   rail de progression), `src/lib/mouvement.tsx` (`styleDEntree`).
 - **Après** : la nouvelle étape entre en opacité 0 → 1 et en `Mouvement.deplacement` depuis le côté du
   parcours (de la droite en avançant, de la gauche en reculant), en `Mouvement.entree`. L'ancienne
-  sort sans animation. Pas d'animation au montage (première étape, reprise d'un brouillon). Le rail
+  sort sans animation. Pas d'animation au montage (première étape, reprise d'un brouillon), ni quand
+  l'étape arrive d'un autre écran : « Repartir de mon dernier bilan », et le retour après une
+  soumission échouée, qui la faisaient entrer par le côté au-dessus de ce qui venait de se passer
+  (contre-lecture). Le sens ne se calcule que d'une étape à l'autre, et `StepShell` exige `entree`. Le rail
   avance jusqu'à sa largeur en `Mouvement.entree`, par une CSS transition de reanimated sur `width`.
 - **Mécanisme** : une **CSS animation** de reanimated (`css.keyframes`, une par sens) sur une vue qui
   prend l'étape pour clé, donc qui repart de son début à chaque étape. Ni valeur partagée ni
@@ -400,7 +419,9 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
   - ce qui disparaît (un autre mode choisi) part sans animation.
 - **Mécanisme** : jamais `LinearTransition` ni `entering` (§3.2). `SansApparitionAuMontage` entoure le
   contenu de l'étape, la liste des pistes et la carte du point : ce qui est déjà là à l'arrivée est
-  posé.
+  posé. **Sans ce fournisseur, rien ne s'anime** : on ne sait pas si l'écran vient de monter, et
+  dans le doute on pose — la première forme animait, donc un `Depliage` employé ailleurs se serait
+  ouvert au montage de son écran. `HauteurSuivie` ignore une hauteur nulle (§4.3).
 - **Sous la préférence** : `Depliage` et `Apparition` ne jouent pas, `HauteurSuivie` laisse la hauteur
   libre.
 - **Focus** : les déplacements existants (premier mode révélé par « Voir les autres modes »,
@@ -415,8 +436,12 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
     opacité intermédiaire ; sous la préférence, ni l'un ni l'autre ; et l'étape rouverte depuis un
     brouillon, motorisation déjà ouverte, ne l'ouvre pas sous les yeux ;
   - `scripts/verifier-parcours-reel.mjs`, étape « point » : quand le point est répondu, le cap, sous
-    la carte, passe par une position intermédiaire ; et avant, l'anneau de focus de « Oui », collé au
-    bord gauche du contenu, n'est rogné par aucun ancêtre.
+    la carte, passe par une position intermédiaire ; avant, l'anneau de focus de « Oui », collé au
+    bord gauche du contenu, n'est rogné par aucun ancêtre ; et plus tôt encore, un aller-retour vers
+    les pistes laisse la carte à sa hauteur à chaque image du retour (P8 : 8 px au lieu de 153). Cette
+    dernière mesure une **hauteur** et non une position : l'ancrage du défilement compense ce qui
+    grandit au-dessus de la fenêtre, et une première version sur la position du cap passait avec le
+    défaut en place.
   - **Ce qui n'est pas gardé** : `HauteurSuivie` sous la préférence (le seul profil qui répond à un
     point joue animé), et l'ouverture d'une piste en carte — même composant que la carte du point,
     regardée sur planche.
@@ -429,7 +454,10 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
 - **Après** : un fondu de 150 ms entre onglets (celui de la barre embarquée) ; la ligne « Chargement
   de ton … » n'apparaît qu'après **300 ms** de chargement continu (`DELAI_AVANT_CHARGEMENT`) — en
   dessous, l'écran reste vide et le contenu arrive seul. Sur les pistes, l'échec s'affiche tout de
-  suite : seul le chargement attend.
+  suite : seul le chargement attend. **Sauf quand la personne l'a demandé** : après « Réessayer », la
+  ligne s'affiche aussitôt (`useChargementVisible`, état `relance`) — hors ligne, la relecture échoue
+  bien sous les 300 ms, et l'écran d'erreur disparaissait puis revenait sans un mot, son bouton ayant
+  l'air mort (contre-lecture).
 - **Hors périmètre, exprès** : `/suivi/bilan` garde son « Chargement de ton bilan… » immédiat, dont
   le HTML statique est épinglé par la section D de `scripts/verifier-etats-export.mjs`.
 - **Sous la préférence** : `animation: 'none'` ; le délai du chargement reste (ce n'est pas du
@@ -440,7 +468,8 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
 - **Gardes** : `scripts/verifier-etats-export.mjs`, section J, sans réseau : au retour sur « Plan »
   depuis « Suivi », au moins une image montre une scène en plein fondu ; sous la préférence, aucune.
   Le délai : `src/hooks/use-apres-un-delai.test.ts`, horloge simulée — rien avant 300 ms, la ligne
-  après, faux dès l'arrêt, et un chargement qui se relance repart de zéro (trois mutations).
+  après, faux dès l'arrêt, un chargement qui se relance repart de zéro, et un chargement demandé se
+  montre tout de suite (mutations consignées en tête du test).
 
 ## 6. La vague 2 : la sortie de l'écran de lancement (décision n° 7)
 
@@ -497,6 +526,9 @@ Accessibilité), **en relançant l'app après chaque changement** :
 - une barre qui ne glisse **pas** à une ouverture ordinaire de l'app ;
 - le questionnaire : le sens de l'entrée en avançant et en reculant ; TalkBack annonce la nouvelle
   question une fois ;
+- **TalkBack sur une cible qui entre en fondu** : « Voir les autres modes » et la réponse au point
+  posent le focus au geste, sur une vue encore à opacité nulle. Le web l'accepte (section H) ; rien
+  ne dit encore que TalkBack l'annonce — s'il la saute, la cible se pose sans fondu ;
 - une précision qui s'ouvre, une piste qui s'ouvre, un point répondu : rien ne saute ;
 - les onglets en fondu, et plus d'image de « Chargement… » ;
 - sur un Android d'entrée de gamme si possible : les listes du questionnaire ne saccadent pas.
@@ -509,14 +541,14 @@ Accessibilité), **en relançant l'app après chaque changement** :
 | 5.1 | Le skill `mouvement` | fait — cité dans `CLAUDE.md` |
 | 5.2 | L'installateur corrigé, `hzblj-skills` en manuel sans `/polish` | fait — 39 skills et 7 commandes, huit mutations consignées en tête du test |
 | 5.3 | Les jetons, les dérivations, le kit | fait — sept mutations consignées dans `src/types/mouvement.test.ts` |
-| 5.4 | Les feuilles | fait — gardées par le parcours réel, avec et sans la préférence |
+| 5.4 | Les feuilles | fait — gardées par le parcours réel, avec et sans la préférence ; une seconde fermeture qui perdait le choix des rappels, trouvée par la contre-lecture, corrigée et gardée par Jest |
 | 5.5 | « Compris » et la barre | fait, avec un écart : le reste du plan ne glisse pas quand une carte de saison part (§5.5) ; barre gardée au démarrage (section J) et à l'arrivée (parcours réel, les deux moitiés) ; un défaut d'une image sous la préférence trouvé par la garde et corrigé |
-| 5.6 | Le questionnaire | fait — section J, les deux sens et le rail, avec et sans la préférence |
-| 5.7 | Le contenu qui s'ouvre | fait — section J pour les précisions, parcours réel pour la carte du point ; `HauteurSuivie` sous la préférence et la piste qui s'ouvre ne sont pas gardées (§5.7) ; une découpe qui effaçait l'anneau de focus, trouvée en relisant, corrigée et gardée |
-| 5.8 | Les onglets et le chargement | fait — section J pour le fondu, Jest pour le délai |
-| — | Les mutations des gardes | fait — douze sur la section J, sept sur le parcours réel, jouées une à une sur un fichier égal au commit ; tables en tête de chaque garde. Trois ont d’abord corrigé la garde (`TESTING.md` §2.14, point 5) |
+| 5.6 | Le questionnaire | fait — section J, les deux sens et le rail, avec et sans la préférence ; « Repartir » et le retour après un échec se posent (contre-lecture) |
+| 5.7 | Le contenu qui s'ouvre | fait — section J pour les précisions, parcours réel pour la carte du point ; `HauteurSuivie` sous la préférence et la piste qui s'ouvre ne sont pas gardées (§5.7) ; une découpe qui effaçait l'anneau de focus, trouvée en relisant, corrigée et gardée ; une carte qui regrandissait à chaque retour sur le plan, trouvée par la contre-lecture, corrigée et gardée (P8) |
+| 5.8 | Les onglets et le chargement | fait — section J pour le fondu, Jest pour le délai ; un « Réessayer » muet hors ligne, trouvé par la contre-lecture, corrigé et gardé par Jest |
+| — | Les mutations des gardes | fait — tables en tête de chaque garde, mutations jouées une à une sur un fichier égal au commit. Quatre ont d’abord corrigé la garde (`TESTING.md` §2.14, point 5) |
 | 7 | Les documents | fait — kit, `FRONT.md` §2.12, `EXPO.md` §1.5 et §1.7, `TESTING.md` §2.10 et §2.14, `CLAUDE.md`, `v1-17` §9, skill `mouvement` |
-| 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | à faire |
+| 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | contre-lecture faite et corrigée ; poids Vercel mesuré (4,16 Mio, inchangé) ; `/rejouer-la-ci` à lancer par la personne qui pilote — il ne se déclenche pas seul |
 | 8.2 | Build EAS (à demander) | à faire |
 | 8.3 | Recette sur appareil | à faire |
 | 6 | Vague 2 : la sortie du lancement | après 8.3 |

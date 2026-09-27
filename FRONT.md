@@ -54,7 +54,10 @@ Quatre règles qui en découlent, et qui se sont toutes payées :
   « rien n'a jamais pu être lu ». Une relecture en échec se dit à côté, sans rien effacer ;
 - **le « Réessayer » repasse par l'état de chargement dans son propre gestionnaire**, jamais dans
   la fonction de rafraîchissement : sans ce passage, un second échec rend le même écran et le
-  bouton a l'air mort ; dedans, il fait clignoter l'écran à chaque retour au premier plan ;
+  bouton a l'air mort ; dedans, il fait clignoter l'écran à chaque retour au premier plan. **Et il
+  marque ce chargement comme demandé** (`relance`) depuis que la ligne « Chargement… » attend
+  300 ms (§2.12) : hors ligne, l'échec revient bien avant, et l'écran d'erreur disparaissait puis
+  revenait sans un mot — le même bouton mort, par une autre porte (`useChargementVisible`) ;
 - **une valeur par défaut posée sur un échec est du même mensonge.** Ce qu'on ne sait pas vaut
   `null`, et l'élément ne s'affiche pas — plutôt que de nommer le mauvais jour, le mauvais canal
   ou le mauvais rythme.
@@ -865,8 +868,9 @@ périmerait en silence au prochain passage :
   défaut : le repli détruisait alors `pending`, `no_assessment` et `empty`, c'est-à-dire « Revoir
   mon bilan » et « Faire mon bilan » — la seule entrée du questionnaire, qui se remplit pourtant
   très bien hors ligne (brouillon AsyncStorage). Deux corollaires : le « Réessayer » d'un écran
-  d'erreur repasse par `loading` **dans son propre gestionnaire**, jamais dans `rafraichir` — sans
-  ce passage, un second échec rend exactement le même écran et le bouton a l'air mort ; dedans, il
+  d'erreur repasse par `loading` **dans son propre gestionnaire**, marqué `relance` pour que sa
+  ligne se montre sans attendre le délai de §2.12, jamais dans `rafraichir` — sans ce passage, un
+  second échec rend exactement le même écran et le bouton a l'air mort ; dedans, il
   ferait clignoter « Chargement… » à chaque retour au premier plan, donc à chaque arrivée par
   notification, puisque `rafraichir` est aussi le rappel de `useRafraichirAuRetour`. Et une valeur
   par défaut posée sur un échec de lecture est du même mensonge : le rythme de la boucle (`boucle`)
@@ -930,14 +934,29 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   troisième étire un bloc qui change de taille au lieu de le déplacer (`EXPO.md` §1.5, mesures en
   `v1-30` §3.2). Ce qui entre passe par une CSS animation de reanimated ; ce qui change de taille,
   par `Depliage` ou `HauteurSuivie`, qui suivent la vraie mise en page.
-- **« Réduire les animations » pose tout, dès la première image.** Seul `withTiming` la lit de
-  lui-même ; `Animated`, les CSS animations et transitions de reanimated et le `Modal` de
-  react-native-web l'ignorent, donc chaque usage dit ce qu'il devient sous elle — et le décide **au
-  rendu** : un état posé remis en place dans un effet arrive parfois après la première image (la
-  barre d'onglets, relevée par le parcours réel). La préférence n'est lue qu'au démarrage.
+- **« Réduire les animations » pose tout, dès la première image — en ne lançant rien.**
+  `Animated`, les CSS animations et transitions de reanimated et le `Modal` de react-native-web
+  l'ignorent ; `withTiming` la lit, mais ce n'est pas une défense : laissé jouer sous la préférence,
+  `Depliage` ne s'ouvre pas du tout (`v1-30` §4.2). Chaque usage dit donc ce qu'il devient sous
+  elle, et le décide **au rendu** : un état posé remis en place dans un effet arrive parfois après
+  la première image (la barre d'onglets, relevée par le parcours réel). La préférence n'est lue
+  qu'au démarrage.
 - **Ce qui est déjà là quand l'écran arrive ne s'ouvre pas sous les yeux** : un contenu enveloppé
   dans `SansApparitionAuMontage` est posé au montage, et seul ce qui monte ensuite s'anime — une
-  précision rouverte par un brouillon, un point déjà répondu.
+  précision rouverte par un brouillon, un point déjà répondu. **Hors de ce fournisseur, rien ne
+  s'anime** : on ne sait pas si l'écran vient de monter. De même, une étape du questionnaire qui
+  arrive d'un autre écran (« Repartir de mon dernier bilan », le retour après un échec) se pose :
+  le sens ne se calcule que d'une étape à l'autre.
+- **Une hauteur nulle n'est pas un contenu vide** : sur web, la pile masque l'écran recouvert
+  (`display: none`), où `onLayout` rend zéro. `HauteurSuivie` l'ignore ; tenue, elle faisait
+  regrandir la carte du point sous les yeux à chaque retour sur le plan. Toute mesure prise dans
+  `onLayout` pour animer pose la même question.
+- **Une feuille qui redescend peut encore recevoir un choix** : la fermeture part au geste de
+  retour, et un choix validé après un `await` arrive pendant la sortie. `fermer(apres)` remplace
+  alors le rappel en attente — ignoré, le choix partait en base sans que l'écran le reçoive.
+- **« Chargement… » attend 300 ms avant de se dire** (`useChargementVisible`), pour ne plus
+  clignoter une image avant un contenu rapide — **sauf** après « Réessayer », où c'est la seule
+  preuve que le geste a été pris (§1.2).
 - **Un `gap` que le parent donnait à ses enfants se reprend** quand `HauteurSuivie` les enveloppe
   (`styleDuContenu`) : ils sont désormais les enfants de ce bloc, et l'écart disparaissait sans bruit
   sur la carte du point.

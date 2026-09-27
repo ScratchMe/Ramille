@@ -253,9 +253,9 @@ joué sans être installé, et chacun décidé avec la personne qui pilote, comm
 - **Le sous-agent `contre-lecture`** porte la grille de la relecture adversariale (plus haut). Sa
   « lecture seule » est une consigne et non une garde : il a Bash, et la première contre-lecture a
   supprimé `/dev/null` du conteneur par une commande de vérification mal écrite.
-- **Deux skills ne se déclenchent jamais seuls** et s'appellent par leur nom : `/rejouer-la-ci`
-  (`scripts/rejouer-la-ci.mjs`, `TESTING.md` §2.13) et `/preparer-un-worktree` (plus haut).
-  **Un troisième s'y est ajouté le même jour, `/mouvement`** (`.claude/skills/mouvement/SKILL.md`) :
+- **Des skills ne se déclenchent jamais seuls** et s'appellent par leur nom : `/rejouer-la-ci`
+  (`scripts/rejouer-la-ci.mjs`, `TESTING.md` §2.13), `/preparer-un-worktree` (plus haut) et, écrit
+  le même soir, **`/mouvement`** (`.claude/skills/mouvement/SKILL.md`) :
   les jetons, la règle de « réduire les animations » et ce qui ne bouge jamais, **à appeler avant
   d'ajouter ou de retoucher une transition**. Il reprend dans nos mots les principes de
   transitions.dev, qui ne s'installe pas — sa licence interdit de republier sa collection

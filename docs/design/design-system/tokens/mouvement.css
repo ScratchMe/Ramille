@@ -8,7 +8,6 @@
   --motion-entree-barre: 320ms;
   --motion-fondu: 200ms;
   --motion-sortie: 200ms;
-  --motion-sortie-breve: 150ms;
   --motion-deplacement: 8px;
   --motion-courbe: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -20,6 +19,5 @@
     --motion-entree-barre: 0ms;
     --motion-fondu: 0ms;
     --motion-sortie: 0ms;
-    --motion-sortie-breve: 0ms;
   }
 }
