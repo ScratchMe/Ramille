@@ -1389,12 +1389,16 @@ describe('avancementDeLaReprise', () => {
  *
  * **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1) — trois mutations de
  * `normaliserReponses`, et ce que chacune fait tomber :
- *   - la règle de la motorisation remontée **avant** celles du second mode → l'idempotence : un
- *     second mode sans « oui » garde la motorisation au premier passage et la perd au second ;
+ *   - la règle de la motorisation **déplacée** avant celles du second mode → l'idempotence, et
+ *     **rien d'autre** : les quarante-quatre tests par l'exemple passent tous. Un second mode sans
+ *     « oui » garde la motorisation au premier passage et la perd au second. La première tentative
+ *     avait **dupliqué** la règle au lieu de la déplacer : la copie restée en place rattrapait tout
+ *     dans le même passage, et la mutation passait — une mutation qui ne casse rien n'éprouve rien ;
  *   - une motorisation « thermique » posée d'office sous une voiture sans réponse → « n'invente
  *     jamais une réponse » ;
  *   - le nombre de longs trajets en voiture remis à zéro sans motorisation → « ne touche jamais une
- *     déclaration de voyage ni de contexte ».
+ *     déclaration de voyage ni de contexte », et « n'invente jamais », un compte n'ayant pas de
+ *     valeur d'effacement.
  */
 describe('normaliserReponses — ce qu’elle affirme d’elle-même', () => {
   // mulberry32 : un générateur à graine, pour que 6 000 tirages soient les mêmes à chaque passage.
