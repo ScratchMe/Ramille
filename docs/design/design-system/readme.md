@@ -51,6 +51,10 @@ navigation/ CompteBouton · BandeHaute · OngletIcone · BarreOnglets · Progres
 plan/ CheckinCard · ActionCard · ActionCommitment · CarteDePiste · CarteDOuverture · PastilleEngagee · TraitDeTemps · FeuilleRappels
 suivi/ EcartParPoste · BarreContour · BlocMethode
 bilan/ FeuilleNouveauBilan
+onboarding/ EtapeAccroche · EtapeContexte · EtapeReassurance · EtapeTransition
+illustrations/ OnboardingHeroIllustration · ReassuranceIllustration · EmptyStateIllustration
+connexion/ ChampDeCode · SaisieDuCode
+pages/ LegalPage · ConfigurationManquante · ErreurInattendue · SessionRefusee
 compte/ ChoixDeRappel · MonCompte
 
 Sans interface, donc sans fiche : `TitreDePage` (les métadonnées du document) et `RetourDeNotification` (rend `null`).
