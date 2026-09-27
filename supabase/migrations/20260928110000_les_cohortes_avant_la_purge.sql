@@ -18,15 +18,16 @@
 -- Deux tables de compteurs, **sans aucune clé étrangère** vers `auth.users` ni `profiles` — c'est
 -- ce qui les fait survivre à la cascade —, et **sans identifiant** : ni `user_id`, ni adresse, ni
 -- horodatage à la seconde. Des lundis, des premiers du mois, des valeurs énumérées et des compteurs.
--- Le type de chaque colonne est épinglé par `36_cohortes_avant_la_purge.test.sql`, pour qu'une
--- colonne ajoutée plus tard ait à passer par le test avant de pouvoir porter quelqu'un.
+-- `36_cohortes_avant_la_purge.test.sql` n'y admet que trois types — `date`, `integer`, et `text`
+-- fermé par un `check` qui l'énumère —, pour qu'une colonne ajoutée plus tard ait à passer par le
+-- test avant de pouvoir porter quelqu'un.
 --
 -- **Aucun segment** (zone, poste dominant, cadence), et c'est une décision, pas un oubli : à nos
 -- volumes, une ligne découpée aussi finement décrirait une personne, c'est-à-dire garderait la
 -- trace de quelqu'un que la page de confidentialité promet d'effacer.
 --
 -- Chaque compteur de purge porte quatre dimensions, dérivées en un seul endroit
--- (`public.cohorte_de`), que le test appelle directement :
+-- (`public.cohorte_de`) :
 --
 --   * **la semaine d'arrivée** — le lundi de `auth.users.created_at`. Pas `profiles.created_at` :
 --     c'est une copie posée par trigger (écart maximal relevé sur le distant le 27/09/2026 :
@@ -55,11 +56,11 @@
 -- `regime_de_rappel` définit le signe de vie en ligne : le plus récent du début de période d'un
 -- point répondu **de la boucle** et d'un `app_open`. `public.dernier_signe_de_vie(user, boucle)`
 -- en est l'**extraction verbatim**, relue sur le corps installé du distant le 27/09/2026 (identique
--- au dépôt). **`regime_de_rappel` n'est pas réécrit ici pour l'appeler** : un autre chantier mené
--- en parallèle (C4.2, le mot de la veille) touche au plafond des rappels, et deux réécritures
--- concurrentes de la même fonction font gagner la dernière appliquée, en silence
+-- au dépôt). **`regime_de_rappel` n'est pas réécrit ici pour l'appeler** : un chantier mené en
+-- parallèle (C4.2, le mot de la veille) passe sous le plafond de ce régime et peut le réécrire, et
+-- deux réécritures concurrentes de la même fonction font gagner la dernière appliquée, en silence
 -- (`SUPABASE.md` §2.3). La factorisation se fait à l'intégration, une fois C4.2 fusionné — une
--- ligne. D'ici là, **les deux textes ne peuvent pas diverger sans bruit** : une assertion de `36`
+-- ligne, déjà jouée comme témoin des mutations de `36` : elle ne fait rien tomber. D'ici là, **les deux textes ne peuvent pas diverger sans bruit** : une assertion de `36`
 -- exige que le corps installé de `regime_de_rappel`, commentaires et blancs retirés, contienne
 -- l'expression de `dernier_signe_de_vie`, ou l'appelle.
 --
