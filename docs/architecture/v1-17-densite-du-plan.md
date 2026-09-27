@@ -528,6 +528,14 @@ autrement que dessiné, avec la raison. Un écart non consigné est un écart qu
 | 3 | La barre glisse depuis le bas : translateY 60 → 0 et opacité, 320 ms ease-out (C5.7, planche F3) | Pas d'animation d'entrée | L'animer demande de rendre la barre soi-même en enveloppant `BottomTabBar` dans un `Animated.View`, donc de dépendre de `@react-navigation/bottom-tabs` — un paquet qu'`expo-router` embarque **sans l'exposer**, et qui n'est pas une dépendance de ce dépôt. Ajouter une dépendance pour une animation d'entrée n'est pas un échange que ce projet fait. Se rouvre le jour où `expo-router` réexporte le composant, ou si le paquet devient une dépendance pour une autre raison |
 | 4 | C5.7 touche `(tabs)/suivi/bilan.tsx` (§3, « Où ») | Ce fichier n'est pas modifié | La planche F1 dit que la restitution est celle d'aujourd'hui **mot pour mot**, et que ce qui change est que la barre n'est pas rendue. Or la barre est rendue par le layout des onglets, pas par l'écran : masquer la barre depuis le layout suffit, et l'écran n'a **rien** à lire. Une lecture de la marque y aurait été un second endroit à tenir en phase pour zéro effet |
 
+**L'écart n° 3 est levé le 27/09/2026** (`v1-30` §5.5), et sa raison ne tenait pas : la barre
+embarquée par `expo-router` accepte une valeur `Animated` dans `tabBarStyle` et l'applique en
+dernier, donc elle glisse sans qu'on enveloppe `BottomTabBar` ni qu'on ajoute une dépendance. Elle
+arrive en 320 ms, translateY de sa hauteur à 0 et opacité, avec la sortie douce du chantier plutôt
+que le `ease-out` générique de la planche — seulement en arrivant, jamais à l'ouverture de l'app, et
+posée sous « réduire les animations ». La ligne du tableau reste telle qu'elle a été écrite : ce
+document est daté.
+
 **Le relevé de fichiers de la vague 11 confirmait la colonne d'intention de `v1-13` §2.3** — C5.6 et
 C5.7 partagent `(tabs)/plan/index.tsx` et le module des marques, et la barre attend la carte : non
 parallèles, enchaînés. C'est la deuxième fois que cette colonne dit vrai, ce qui ne change rien à la

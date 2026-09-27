@@ -3,7 +3,8 @@
 > **Quand ouvrir ce fichier.** Toucher un écran, un composant ou une dérivation lue par un écran ·
 > écrire une phrase que quelqu'un lira · afficher un chiffre, un repère, un poste, une saison ·
 > faire parler Ramille · rendre quelque chose cliquable · toucher un état de chargement, un état
-> vide ou un écran d'erreur · ajouter une route · toucher au questionnaire, au plan ou au suivi.
+> vide ou un écran d'erreur · ajouter une route · toucher au questionnaire, au plan ou au suivi ·
+> faire bouger quelque chose — une transition, une animation, une hauteur qui change (§2.12).
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
 > quand venir ici ; une règle sortie sans dire *quand* aller la chercher est une règle enterrée.
@@ -904,3 +905,48 @@ périmerait en silence au prochain passage :
   nomme ce fichier. C'est un **fil-piège**, pas une comparaison — il ne dit pas que
   `MODE_PREPOSITION` est juste, il dit qu'il faut venir la relire, ce qui est exactement ce qui
   manquait. C4.4 y a ajouté cinq modes du même geste que dans sa migration.
+
+### 2.12 Le mouvement
+
+Décidé le 27/09/2026 (`docs/architecture/v1-30-les-transitions.md`, qui dit aussi ce qui reste à
+faire) ; le skill `/mouvement` en porte les règles de travail, et c'est lui qu'on appelle avant de
+toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
+
+- **Ce qui bouge** : les feuilles du bas (le voile se fond sur place, la feuille monte et redescend),
+  la barre d'onglets qui arrive au sortir du premier parcours, l'étape du questionnaire et son rail,
+  ce qui s'ouvre sous un choix, ce qui change de hauteur, le passage d'un onglet à l'autre. Et ce
+  qui bougeait déjà : la mascotte, l'écran de lancement, l'entrée d'une carte d'ouverture.
+- **Ce qui ne bouge jamais** : l'état pressé (une teinte immédiate, `v1-29` décision n° 6), un
+  chiffre (jamais un compteur qui défile — il afficherait des valeurs fausses en chemin), une
+  navigation de pile (« standard plateforme »), et le focus, qui part au geste et jamais à la fin
+  d'une animation.
+- **Tout passe par `src/lib/mouvement.tsx`** — `styleDEntree`, `Apparition`, `Depliage`,
+  `HauteurSuivie`, `SansApparitionAuMontage` — et par les jetons `Mouvement` de
+  `src/constants/theme.ts`. Une durée écrite en dur dans un écran est un réglage de plus à tenir
+  d'accord ; ce qui décide d'une animation (un sens, une arrivée) est une dérivation de
+  `src/types/mouvement.ts`, testée.
+- **Jamais `entering`, `exiting` ni `LinearTransition` de reanimated** : sur web, le premier masque
+  l'élément une image et lui fait perdre le focus, le deuxième le recopie hors du défilement, le
+  troisième étire un bloc qui change de taille au lieu de le déplacer (`EXPO.md` §1.5, mesures en
+  `v1-30` §3.2). Ce qui entre passe par une CSS animation de reanimated ; ce qui change de taille,
+  par `Depliage` ou `HauteurSuivie`, qui suivent la vraie mise en page.
+- **« Réduire les animations » pose tout, dès la première image.** Seul `withTiming` la lit de
+  lui-même ; `Animated`, les CSS animations et transitions de reanimated et le `Modal` de
+  react-native-web l'ignorent, donc chaque usage dit ce qu'il devient sous elle — et le décide **au
+  rendu** : un état posé remis en place dans un effet arrive parfois après la première image (la
+  barre d'onglets, relevée par le parcours réel). La préférence n'est lue qu'au démarrage.
+- **Ce qui est déjà là quand l'écran arrive ne s'ouvre pas sous les yeux** : un contenu enveloppé
+  dans `SansApparitionAuMontage` est posé au montage, et seul ce qui monte ensuite s'anime — une
+  précision rouverte par un brouillon, un point déjà répondu.
+- **Un `gap` que le parent donnait à ses enfants se reprend** quand `HauteurSuivie` les enveloppe
+  (`styleDuContenu`) : ils sont désormais les enfants de ce bloc, et l'écart disparaissait sans bruit
+  sur la carte du point.
+- **Tenir une hauteur, c'est découper ce qui dépasse — et l'anneau de focus dépasse.** Le navigateur
+  le dessine hors de l'élément ; `HauteurSuivie` découpe donc quatre pixels plus large que son
+  contenu (`MARGE_DE_DECOUPE`, rendus à la mise en page par une marge négative). Toute nouvelle
+  découpe permanente (`overflow: hidden` qui ne s'en va pas à la fin d'une animation) pose la même
+  question : un contrôle au bord de la zone découpée perd son anneau, en silence.
+- **Une animation se juge image par image** — les deux gardes (`verifier-etats-export.mjs`, section
+  J, et `verifier-parcours-reel.mjs`) relèvent chaque image par `scripts/relever-par-image.mjs`,
+  avec et sans la préférence (`TESTING.md` §2.14) — **et sur l'appareil** : sur Android, seul lui
+  dit si c'est fluide.

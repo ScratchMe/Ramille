@@ -689,7 +689,13 @@ et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
    appels au-dessus des déclarations du fichier et refuse toute autre variable hors portée ;
 2. `react-test-renderer` doit correspondre **exactement** à la version de React installée, sinon
    la bibliothèque refuse de se charger ;
-3. le CSS, ci-dessus.
+3. le CSS, ci-dessus ;
+4. **reanimated ne sait pas s'initialiser sous Jest** (`loadUnpackers`, relevé le 27/09/2026 en
+   testant la carte du point) : il est doublé pour toute la suite par `scripts/doublage-reanimated.js`
+   (`setupFiles` de `package.json`), qui pose les doubles officiels de `react-native-worklets` et de
+   reanimated et leur ajoute ce que le second ne porte pas — `css`, `cubicBezier`,
+   `useReducedMotion`. Un test d'écran n'éprouve donc **aucune** animation : elles se jugent image
+   par image dans un navigateur (§2.14).
 
 **Et le piège de fond, trouvé en mutant** : un test d'écran écrit spontanément n'affirme que des
 **présences**. Il laisse alors passer tout ce qui est en trop — une phrase d'état vide rendue
@@ -880,3 +886,35 @@ d'un rejeu tué, et un seul de deux rejeux lancés ensemble l'obtient. **La cour
 gardée** : un `mkdir` suivi de l'écriture du propriétaire, à la place du renommage, passe trois fois
 sur trois, la fenêtre qu'il ouvre étant trop courte pour qu'un test y tombe. C'est dit en tête du
 module, pour que le renommage ne soit pas « simplifié ».
+
+### 2.14 Une animation se garde image par image, avec et sans la préférence
+
+Écrit le 27/09/2026 avec les transitions (`docs/architecture/v1-30-les-transitions.md`). Une
+animation ne se juge pas au repos : une étape qui entre et une étape posée d'emblée finissent au
+même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFrame`), avec un outil
+écrit une fois pour les deux, `scripts/relever-par-image.mjs` :
+
+- `scripts/verifier-etats-export.mjs`, **section J**, sans réseau : la barre d'onglets au démarrage,
+  l'étape du questionnaire et son rail, une précision qui s'ouvre, le fondu des onglets ;
+- `scripts/verifier-parcours-reel.mjs`, ce qui demande des données : la barre au « Compris », la
+  carte du point qui change de hauteur, la feuille du re-bilan — et **le second profil entier sous
+  « réduire les animations »**.
+
+Quatre règles, chacune payée pendant l'écriture :
+
+1. **« En chemin » se lit sur une valeur strictement intermédiaire, jamais sur une durée.** Un runner
+   lent perd des images, il n'en invente pas : « au moins une image entre le départ et l'arrivée »
+   tient sur une machine chargée, « à 100 ms elle est à mi-chemin » non.
+2. **Chaque garde a deux moitiés**, et la seconde n'est pas la première à l'envers : l'une prouve que
+   ça bouge, l'autre que rien ne bouge sous la préférence. Celle-ci s'émule **avant** le chargement
+   (`page.emulateMedia` puis rechargement, ou `reducedMotion` du contexte) : l'app ne la lit qu'au
+   démarrage.
+3. **Une mesure qui ne trouve pas sa cible est un échec, pas un succès** — la règle de la section A,
+   reprise : « aucune image translucide » est vrai d'un titre introuvable.
+4. **Une garde d'animation peut trouver un défaut intermittent, et il faut la croire.** La barre du
+   cycliste, sous la préférence, a été vue transparente pendant une image au premier passage et pas
+   au second : c'était un vrai défaut (`EXPO.md` §1.7, « un effet n'est pas la première image »),
+   corrigé à la source, puis trois passages verts d'affilée. Relancer jusqu'au vert l'aurait
+   enterré.
+
+Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.

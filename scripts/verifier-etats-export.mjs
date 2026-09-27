@@ -1556,5 +1556,6 @@ console.log(
     ` de l’onboarding conformes ; ${CASES_A_L_ESPACE.length} choix cochés à la barre d’espace sans` +
     ' que la page défile ; le focus du questionnaire suit l’étape, et « Voir les autres modes » le' +
     ' pose sur le premier mode révélé ; un arrêt de tabulation par groupe d’options, et les flèches' +
-    ' y cochent sans en sortir.'
+    ' y cochent sans en sortir ; la barre posée au démarrage, l’étape, son rail, une précision et les' +
+    ' onglets en mouvement — et posés sous « réduire les animations ».'
 );

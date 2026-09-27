@@ -75,10 +75,25 @@ Chaque fait ci-dessous a été lu dans la source installée, pas dans une docume
   `LinearTransition`) suivent la préférence par défaut (`ReduceMotion.System` : l'animation arrive
   directement à sa valeur finale). Le dépôt l'écrit quand même explicitement, pour le lecteur
   (`mascot.tsx`, `ecran-lancement.tsx`, `carte-douverture.tsx`).
-- **reanimated 4.5.1, les CSS transitions** (`transitionProperty`, `transitionDuration`…) marchent sur
-  Android comme sur web, avec `cubicBezier`, mais **ignorent la préférence** : aucune trace de
-  réduction du mouvement dans `src/css` ni dans le moteur natif `Common/cpp/reanimated/CSS`. Tout
-  usage passe sa durée à zéro sous `useReducedMotion()`.
+- **reanimated 4.5.1, les CSS transitions et les CSS animations** (`transitionProperty`,
+  `animationName` avec `css.keyframes`…) marchent sur Android comme sur web, avec `cubicBezier`, mais
+  **ignorent la préférence** : aucune trace de réduction du mouvement dans `src/css` ni dans le moteur
+  natif `Common/cpp/reanimated/CSS`. Tout usage passe sa durée à zéro sous `useReducedMotion()`, ou
+  n'est pas posé du tout.
+- **Les animations de disposition de reanimated ne sont pas utilisables telles quelles sur web** —
+  trois essayées pendant la livraison, trois retirées, chacune sur une mesure de l'export :
+  - **`entering`** pose `visibility: hidden` sur l'élément jusqu'à l'événement `animationstart`, une
+    image au moins plus tard, et un élément masqué ne reçoit pas le focus : « Voir les autres
+    modes », qui le donne au premier mode révélé, le laissait retomber sur le document (section H de
+    `scripts/verifier-etats-export.mjs`), et le parcours réel ne trouvait plus « Voiture (seul) » ;
+  - **`LinearTransition`** ne déplace pas un bloc qui change de taille : il l'**étire** par une
+    échelle (`Linear.web.ts`), contenu compris — la liste des modes était écrasée pendant deux
+    images quand une précision s'y ouvrait ;
+  - **`exiting`** recopie l'élément qui part dans un clone accroché à son `offsetParent`, hors du
+    défilement : la carte d'ouverture refermée faisait défiler le plan de 521 px.
+
+  Ce qui les remplace est en §4.3 : les CSS animations de reanimated, qui jouent dès la première
+  image sans rien masquer, et deux composants qui suivent la vraie mise en page.
 - **`Animated` de React Native ignore la préférence** lui aussi. Même règle.
 - **`useReducedMotion()` n'est lu qu'au démarrage** (`v1-29` §6.4) : changer la préférence demande de
   relancer l'app, sur l'appareil comme dans un test.
@@ -167,12 +182,19 @@ valeurs existantes de la mascotte, du lancement et de la carte d'ouverture ne bo
 
 Trois cas, et le premier est le seul qui soit gratuit :
 
-1. **`withTiming` et les animations de disposition de reanimated** : suivies par défaut ; on écrit
-   quand même `reduceMotion: ReduceMotion.System`, comme les fichiers existants.
-2. **`Animated` de React Native, les CSS transitions de reanimated, le `Modal` de react-native-web** :
-   ignorent la préférence ; la durée passe à zéro (ou l'animation à `'none'`) sous `useReducedMotion()`.
+1. **`withTiming` de reanimated** : suivi par défaut ; on écrit quand même
+   `reduceMotion: ReduceMotion.System`, comme les fichiers existants.
+2. **`Animated` de React Native, les CSS transitions et animations de reanimated, le `Modal` de
+   react-native-web** : ignorent la préférence. Sous `useReducedMotion()`, la durée passe à zéro
+   (`dureeSelonLaPreference`), l'animation n'est pas posée (`styleDEntree`, `Apparition`), ou le style
+   ne lit pas la valeur animée (la barre d'onglets, §5.5).
 3. **Un rappel de fin d'animation** (la feuille qui se démonte après sa sortie) doit partir aussi sous
    la préférence, **immédiatement** : à vérifier par la garde, pas à supposer.
+
+**Et un effet n'est pas la première image.** La barre d'onglets remettait sa valeur à 1 dans un
+`useEffect`, qui part après le rendu, donc parfois après la première image : une image transparente
+sous la préférence, vue par le parcours réel au premier de deux passages (§5.5). Sous la préférence,
+l'état posé se décide **au rendu**.
 
 ### 4.3 Les dérivations, et leurs tests
 
@@ -186,10 +208,31 @@ décide d'une animation sort de l'écran et se teste :
 - `animationDesOnglets(reduit)` → `'fade' | 'none'` ;
 - `dureeSelonLaPreference(duree, reduit)` → `0` sous la préférence : le seul chemin des cas 2 de §4.2.
 
-Les tests de composant (`@testing-library/react-native`, comme `checkin-card.test.tsx`) ne servent
-qu'aux deux mécanismes à rappel : la feuille qui appelle `onFerme` après sa sortie, et l'état de
-chargement différé. Chaque garde est éprouvée en la cassant, le compte des mutations écrit dans son
-fichier et daté (`TESTING.md` §1.1).
+Et ce qui **anime** est écrit une fois, dans `src/lib/mouvement.tsx` — huit écrans l'emploient, et un
+réglage recopié diverge au premier ajustement :
+
+- `styleDEntree(sens, reduit)` : la CSS animation d'une étape qui entre, du côté que
+  `decalageDEntree` lui donne ; rien sans sens ou sous la préférence ;
+- `Apparition` : un fondu (`Mouvement.fondu`) pour ce qui monte après son écran ;
+- `Depliage` : ce qui s'ouvre sous un choix grandit de zéro à sa hauteur mesurée pendant qu'il
+  apparaît, puis redevient une vue ordinaire ;
+- `HauteurSuivie` : un bloc dont le contenu change va d'une hauteur à l'autre ; sa hauteur reste
+  tenue entre deux changements, ce qui évite une image à la nouvelle hauteur avant le départ. Tenir
+  une hauteur, c'est découper ce qui dépasse : la découpe laisse quatre pixels autour du contenu
+  (`MARGE_DE_DECOUPE`), sans quoi l'anneau de focus du navigateur, dessiné hors de l'élément, était
+  effacé — entièrement sur une ligne de piste, trouvé en relisant la vague ;
+- `SansApparitionAuMontage` : ce qui est déjà là quand l'écran arrive ne s'ouvre pas sous les yeux —
+  une précision rouverte par un brouillon, un point déjà répondu.
+
+**Ce qui se teste où** : Jest pour les dérivations (§4.3, douze tests) et pour le délai du chargement
+(`src/hooks/use-apres-un-delai.test.ts`) ; reanimated y est doublé par `scripts/doublage-reanimated.js`
+(`TESTING.md` §2.1). Les composants, eux, ne se jugent qu'image par image dans un vrai navigateur :
+deux gardes, `scripts/verifier-etats-export.mjs` (section J, sans réseau) et
+`scripts/verifier-parcours-reel.mjs` (ce qui demande des données), relèvent chaque image avec le même
+outil, `scripts/relever-par-image.mjs`. **« En chemin » s'y lit sur une valeur strictement
+intermédiaire, jamais sur une durée** : un runner lent perd des images, il n'en invente pas. Chaque
+garde a deux moitiés, avec et sans la préférence, et chacune est éprouvée en la cassant — les
+mutations sont consignées dans l'en-tête de la garde, datées (`TESTING.md` §1.1).
 
 ## 5. La vague 1
 
@@ -246,133 +289,143 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
   instantanée, préférence ignorée.
 - **Après** : `Modal animationType="none"` ; le voile passe de 0 à 1 d'opacité en `Mouvement.fondu` ;
   la feuille monte de la hauteur de la fenêtre à 0 en `Mouvement.entreeDeFeuille`, courbe
-  `Mouvement.courbe`. À la fermeture, la feuille redescend et le voile s'efface en
-  `Mouvement.sortie`, **puis** la feuille se démonte (`onFerme`).
-- **Qui ferme** : le geste de retour et Échap (`onRequestClose`), et les boutons qui referment sans
-  naviguer (« Pas maintenant » de la feuille du re-bilan, et leurs équivalents), par un
-  `useFermerLaFeuille()` que le cadre fournit. Un bouton qui navigue (« Soumettre mon bilan ») n'a
-  pas besoin d'attendre. Une seconde fermeture pendant la sortie est ignorée.
-- **Sous la préférence** : le voile et la feuille sont posés dès la première image, et la fermeture
-  démonte tout de suite — **ce qui corrige aussi le défaut web** de §3.4, technique et non décidé ici.
-- **Natif / web** : le même code (reanimated, valeurs partagées et `withTiming`, comme
-  `carte-douverture.tsx`) ; pas d'animation de disposition dans un `Modal`, dont le comportement sur
-  Android n'a pas été éprouvé.
-- **Décision touchée** : le kit dit « Feuilles : glissement natif ». La feuille glisse toujours ; le
-  voile ne glisse plus. La ligne du kit est réécrite.
-- **Accessibilité** : le dialogue garde son nom (`aria-label`, le titre) ; le piège à focus de
-  react-native-web ne change pas ; « le geste de retour referme toujours » reste le contrat.
-- **Garde** : dans le parcours réel (`scripts/verifier-parcours-reel.mjs`), un détour par un re-bilan
-  qui ouvre la feuille « Ton plan va être recalculé » — la seule qui s'ouvre sur web sans adresse
-  rattachée — mesurée deux fois :
-  - animations actives : le haut du voile est à 0 **dès la première image**, pendant que la feuille
-    est encore en chemin (son haut plus bas qu'à l'arrivée) ; après Échap, la feuille est encore là
-    à la première image et partie à la fin ;
-  - sous la préférence (`page.emulateMedia({ reducedMotion: 'reduce' })` puis rechargement, puisque
-    la préférence n'est lue qu'au démarrage) : la feuille est à sa place dès la première image, et
-    partie dès la première image après Échap.
-  - **Mutations à consigner** : `animationType="slide"` remis → la première tombe (le voile monte) ;
-    la durée non ramenée à zéro sous la préférence, si le chemin passe par le cas 2 de §4.2 → la
-    seconde tombe.
+  `Mouvement.courbe` (valeurs partagées et `withTiming`). À la fermeture, la feuille redescend et le
+  voile s'efface en `Mouvement.sortie`, **puis** la feuille se démonte (`onFerme`).
+- **Qui ferme en animant** : le geste de retour et Échap (`onRequestClose`), et l'appelant par la
+  poignée `PoigneeDeFeuille` (`fermer(apres?)`, passée en `ref`) — « Pas maintenant » de la feuille du
+  re-bilan, le choix validé de la feuille des rappels. Un bouton qui **navigue** (« Soumettre mon
+  bilan », « Rattacher un compte ») appelle son rappel directement : sur natif, une route poussée sous
+  un `Modal` encore ouvert reste dessous. Une seconde fermeture pendant la sortie est ignorée.
+- **Sous la préférence** : voile et feuille posés dès la première image (valeurs initiales à 1), et la
+  fermeture démonte tout de suite, sans attendre de rappel — **ce qui corrige aussi le défaut web** de
+  §3.4, technique et non décidé ici.
+- **Décision touchée** : le kit disait « Feuilles : glissement natif ». La feuille glisse toujours ; le
+  voile ne glisse plus (`components/core/FeuilleDuBas.prompt.md`, ligne « Animation » du `readme.md`).
+- **Accessibilité** : le dialogue garde son nom (le titre) ; le piège à focus de react-native-web ne
+  change pas ; « le geste de retour referme toujours » reste le contrat.
+- **Garde** : le parcours réel (`scripts/verifier-parcours-reel.mjs`, étape « re-bilan ») ouvre la
+  feuille « Ton plan va être recalculé » — la seule qui s'ouvre sur web sans adresse rattachée, et
+  elle demande une action engagée, d'où le re-bilan, jamais soumis :
+  - animations actives : le voile ne bouge d'aucune image (son haut reste à 0), il passe par une
+    opacité intermédiaire, la feuille est en chemin au moins une image ; à Échap, elle redescend au
+    moins une image avant de se démonter ;
+  - sous la préférence (émulée, page rechargée) : aucune image où la feuille bouge ou le voile est
+    translucide, à l'ouverture comme à Échap.
 
 ### 5.5 « Compris » et l'arrivée de la barre (décision n° 4)
 
-- **Fichiers** : `src/app/(tabs)/_layout.tsx` (la barre), `src/app/(tabs)/plan/index.tsx` (le bloc
-  qui glisse), `src/components/plan/carte-douverture.tsx` (son commentaire, qui dit pourquoi elle
-  part sans fondu).
+- **Fichiers** : `src/app/(tabs)/_layout.tsx` (la barre), `src/components/plan/carte-douverture.tsx`
+  (son commentaire, qui dit pourquoi elle part d'un coup).
 - **Avant** : la carte disparaît, le contenu remonte d'un bloc, la barre surgit.
 - **Après** :
-  - **tout ce qui suit les cartes d'ouverture glisse d'un bloc** vers sa nouvelle place
-    (`LinearTransition` sur un conteneur, `Mouvement.entree`), au lieu de sauter. La première idée
-    — replier la carte qui part, puis appeler `onSortie` — ne tenait pas : « Compris » au premier plan
-    **remplace**, dans le même rendu, la carte du premier plan par celle des deux lieux, d'une autre
-    hauteur, et le contenu serait monté puis redescendu. La transition de disposition couvre le
-    retrait seul comme le remplacement ;
-  - **la carte qui part s'en va d'un coup**, et celle qui arrive fait son entrée (320 ms, déjà là). Un
-    fondu de sortie (`exiting`) a été essayé et retiré : sur web, reanimated déplace le contenu de
-    la carte qui part dans un clone accroché au premier parent positionné, hors du défilement, et ce
-    mécanisme n'a été éprouvé ni là ni sur Android ;
-  - **la barre glisse depuis le bas** : translateY 60 → 0 et opacité 0 → 1 en
-    `Mouvement.entreeDeBarre`, par un `Animated.Value` posé dans `tabBarStyle` (§3.2), `useNativeDriver`
-    comme la barre elle-même (vrai sur natif, faux sur web). Seulement quand `barreArrive` le dit ;
-  - la carte « Plan et Suivi » garde son entrée actuelle (320 ms).
-- **Sous la préférence** : tout est posé ; la barre (cas 2 de §4.2) ne s'anime pas.
+  - **la barre glisse depuis le bas** : translateY de sa hauteur à 0 et opacité de 0 à 1 en
+    `Mouvement.entreeDeBarre`, par un `Animated.Value` posé dans `tabBarStyle` (§3.2), avec le pilote
+    de la barre elle-même (natif hors du web). Seulement quand `barreArrive` le dit ; masquée, elle
+    attend en bas et transparente, pour que sa première image visible soit le début du mouvement ;
+  - **la carte qui part s'en va d'un coup**, et celle qui arrive fait son entrée (320 ms, déjà là).
+    Au premier plan, « Compris » remplace une carte par une autre de même hauteur à quelques pixels
+    près : c'est l'entrée de la seconde qui fait le passage ;
+  - **le reste du plan ne glisse pas, et c'est un écart à la recommandation** : `exiting` et
+    `LinearTransition`, les deux outils prévus, ont été retirés sur mesure (§3.2). Une carte de
+    saison refermée laisse donc le plan remonter d'un coup — quatre fois par an. Le rouvrir demande
+    un conteneur à hauteur suivie autour des cartes d'ouverture, et le `gap` de la liste défilante
+    ne s'y prête pas sans réécrire l'espacement de l'écran : non fait dans cette vague.
+- **Sous la préférence** : la barre ne lit pas la valeur animée du tout — `tabBarStyle` ne porte ni
+  opacité ni transformation. La première forme la remettait à 1 dans un effet, donc parfois après la
+  première image : le parcours réel l'a vue au premier de deux passages, une image transparente sur
+  une bande vide (§4.2).
 - **Décision touchée** : **l'écart n° 3 de `v1-17` §9 est levé**. Sa raison — il fallait envelopper
-  `BottomTabBar`, donc dépendre de `@react-navigation/bottom-tabs` — ne tient pas (§3.2). À reporter :
-  une ligne datée sous le tableau de `v1-17` §9 (le document est daté, on ne réécrit pas la ligne),
-  le commentaire de `src/app/(tabs)/_layout.tsx`, le paragraphe de C5.7 dans `CLAUDE.md` (« l'entrée
-  glissée de 320 ms du canvas n'est pas rendue »), et `EXPO.md` §1.7.
+  `BottomTabBar`, donc dépendre de `@react-navigation/bottom-tabs` — ne tenait pas (§3.2). Reporté
+  dans une ligne datée sous le tableau de `v1-17` §9, le commentaire de `src/app/(tabs)/_layout.tsx`,
+  le paragraphe de C5.7 dans `CLAUDE.md` et `EXPO.md` §1.7.
+- **La bande pendant l'arrivée** : l'écran reprend sa hauteur d'un coup quand la barre passe de `none`
+  à `flex`, donc la bande de la barre est vide pendant son entrée. Regardée image par image sur
+  l'export (planches à 80 ms) : elle ne se voit que sur une image, d'un gris à peine plus sombre que
+  le fond, la barre y entrant déjà à demi opaque — la courbe de sortie douce fait l'essentiel du
+  trajet dans le premier tiers. **L'appareil le confirme ou non** (§8.3).
 - **Un piège de mesure, payé le 27/09/2026** : cliquer « Compris » avec `locator.click()` pendant
   que la carte fait encore son entrée fait défiler le plan de la hauteur de la carte — Playwright
   cherche à viser un lien qui bouge. Ce n'est pas le produit : un clic aux coordonnées
-  (`page.mouse.click`), comme un doigt, ne défile pas, avant comme après ce chantier. Une garde qui
-  regarde ce moment clique donc aux coordonnées, ou attend la fin de l'entrée.
-- **À mesurer avant d'y croire** : l'écran reprend sa hauteur d'un coup quand la barre passe de
-  `none` à `flex`, donc la bande de 60 px est vide pendant 320 ms. Elle doit avoir la couleur du fond
-  de l'écran — sinon la barre doit glisser **dans** une bande déjà peinte, et c'est ce qu'on montre à
-  la personne qui pilote avant de conclure.
-- **Garde** :
-  - `scripts/verifier-etats-export.mjs`, sans réseau : **au démarrage**, marque `fait`, la barre est à
-    sa place et opaque dès la première image — une barre qui glisserait à chaque ouverture serait le
-    pire effet de ce chantier ;
-  - `scripts/verifier-parcours-reel.mjs`, à « Compris » : la barre est en chemin à la première image
-    où elle apparaît (translateY > 0), à sa place à la fin ; le titre « Ton plan » ne bouge pas quand
-    une carte en remplace une autre.
-  - **Mutations** : `barreArrive` rendu toujours vrai → la garde du démarrage tombe ; la valeur animée
-    figée à 1 → celle du parcours tombe.
+  (`page.mouse.click`), comme un doigt, ne défile pas, avant comme après ce chantier. Le parcours
+  réel clique « Compris » bien après l'entrée de la carte.
+- **Gardes** :
+  - `scripts/verifier-etats-export.mjs`, section J, sans réseau : **au démarrage**, sans marque, avec
+    `barre` et avec `fait`, la barre est à sa place et opaque à chaque image — une barre qui
+    glisserait à chaque ouverture serait le pire effet de ce chantier ;
+  - `scripts/verifier-parcours-reel.mjs` : à « Compris », au moins une image montre la barre en
+    chemin, et elle finit opaque ; le second profil, joué **sous la préférence**, voit sa barre
+    arriver posée à chaque image.
 
 ### 5.6 Le changement d'étape du questionnaire (décision n° 5)
 
 - **Fichiers** : `src/app/bilan/index.tsx` (le sens, par `sensDuPassage`),
-  `src/components/bilan/step-shell.tsx` (l'entrée), `src/components/bilan/progress-header.tsx` (la
-  barre de progression).
+  `src/components/bilan/step-shell.tsx` (l'entrée), `src/components/bilan/progress-header.tsx` (le
+  rail de progression), `src/lib/mouvement.tsx` (`styleDEntree`).
 - **Après** : la nouvelle étape entre en opacité 0 → 1 et en `Mouvement.deplacement` depuis le côté du
   parcours (de la droite en avançant, de la gauche en reculant), en `Mouvement.entree`. L'ancienne
-  sort sans animation. Pas d'animation au montage (première étape, reprise d'un brouillon). La
-  barre de progression glisse jusqu'à sa largeur en `Mouvement.entree`, par une CSS transition de
-  reanimated sur `width` — donc gardée par la préférence (cas 2 de §4.2).
-- **Mécanisme** : `StepShell` reste monté d'une étape à l'autre ; une valeur partagée repart de 0 à
-  chaque changement d'étape (comme l'entrée de `CarteDOuverture`), plutôt qu'une animation de
-  disposition à clé.
-- **Sous la préférence** : l'étape est posée, la barre saute.
+  sort sans animation. Pas d'animation au montage (première étape, reprise d'un brouillon). Le rail
+  avance jusqu'à sa largeur en `Mouvement.entree`, par une CSS transition de reanimated sur `width`.
+- **Mécanisme** : une **CSS animation** de reanimated (`css.keyframes`, une par sens) sur une vue qui
+  prend l'étape pour clé, donc qui repart de son début à chaque étape. Ni valeur partagée ni
+  `entering` : ce dernier masquait l'étape une image, et le titre avec elle (§3.2).
+- **Sous la préférence** : l'animation n'est pas posée, le rail a une durée nulle — les CSS animations
+  et transitions ne lisent pas la préférence (§4.2, cas 2).
 - **Focus** : il va au titre de l'étape **au montage**, sans attendre la fin de l'animation. Les
-  sections E et G de `scripts/verifier-etats-export.mjs` le gardent déjà ; elles doivent rester vertes.
+  sections E et G de `scripts/verifier-etats-export.mjs` le gardent, et restent vertes.
 - **Décision touchée** : « Animation : rare et signifiante » — le kit en fait une exception écrite :
   le motif « axe partagé » est le standard Material d'un parcours par étapes, et le sens dit
   « j'avance » ou « je reviens ».
-- **Garde** (`scripts/verifier-etats-export.mjs`, sans réseau — le questionnaire se remplit hors
-  ligne) : après « Suivant », le contenu de l'étape est translucide et décalé à la première image,
-  posé à la fin ; la barre de progression a une largeur intermédiaire en chemin. Sous la préférence
-  (contexte Playwright `reducedMotion: 'reduce'`) : tout est posé dès la première image. **Mutations**
-  : l'entrée retirée → la première tombe ; la durée de la barre non gardée → la seconde tombe.
+- **Garde** (`scripts/verifier-etats-export.mjs`, section J) : après « Suivant », le titre de l'étape
+  qui arrive est translucide et à droite de sa place au moins une image ; après « Retour », à gauche ;
+  le rail passe par une largeur intermédiaire. Sous la préférence : aucune image translucide ni
+  décalée, aucune largeur intermédiaire.
 
-### 5.7 Le contenu qui glisse au lieu de sauter (décision n° 6)
+### 5.7 Le contenu qui s'ouvre au lieu de sauter (décision n° 6)
 
-- **Où** : les précisions du questionnaire (`src/components/bilan/precision-mode.tsx`,
-  `src/components/bilan/mode-list-item.tsx`, `src/components/bilan/steps/commute-extra.tsx` pour
-  « Lequel ? », `src/components/bilan/steps/leisure-detail.tsx` pour « Voir les autres modes »,
-  `src/components/bilan/steps/long-trips.tsx`) ; la ligne de piste qui s'ouvre en carte
-  (`src/app/(tabs)/plan/pistes.tsx`) ; la carte du point qui passe à la réplique
-  (`src/components/checkin-card.tsx`).
-- **Après** : ce qui apparaît entre en fondu (`Mouvement.fondu`, `entering`) ; ce qui est dessous
-  descend en `Mouvement.entree` (`layout={LinearTransition…}`) au lieu de sauter. Ce qui disparaît
-  (un autre mode choisi) sort sans animation ; ce qui est dessous remonte en glissant.
-- **Sous la préférence** : tout est posé (cas 1 de §4.2).
+- **Où** : les précisions du questionnaire (`src/components/bilan/steps/commute-mode.tsx`,
+  `commute-extra.tsx` pour « Lequel ? », `leisure-detail.tsx` pour « Voir les autres modes »,
+  `long-trips.tsx`) ; la ligne de piste qui s'ouvre en carte (`src/app/(tabs)/plan/pistes.tsx`) ; la
+  carte du point qui passe à la réplique (`src/components/checkin-card.tsx`).
+- **Après** :
+  - **ce qui s'ouvre sous un choix se déplie** (`Depliage`) : sa hauteur part de zéro et rejoint sa
+    mesure en `Mouvement.entree` pendant qu'il apparaît en `Mouvement.fondu` — ce qui est dessous
+    descend avec lui, image par image, parce que c'est la vraie mise en page qui bouge ;
+  - **ce qui change de contenu change de hauteur en glissant** (`HauteurSuivie`) : la carte du point
+    quand la réplique remplace la question, une piste qui passe de ligne à carte. La réplique et la
+    carte ouverte apparaissent en fondu (`Apparition`) ;
+  - ce qui disparaît (un autre mode choisi) part sans animation.
+- **Mécanisme** : jamais `LinearTransition` ni `entering` (§3.2). `SansApparitionAuMontage` entoure le
+  contenu de l'étape, la liste des pistes et la carte du point : ce qui est déjà là à l'arrivée est
+  posé.
+- **Sous la préférence** : `Depliage` et `Apparition` ne jouent pas, `HauteurSuivie` laisse la hauteur
+  libre.
 - **Focus** : les déplacements existants (premier mode révélé par « Voir les autres modes »,
-  réplique du point) partent toujours au geste, sans attendre.
-- **Risque technique** : une liste longue sur un Android d'entrée de gamme. Si la recette le voit, on
-  retire le `layout` des listes longues et on garde le fondu.
-- **Garde** (`scripts/verifier-etats-export.mjs`) : après « Voiture (seul) », la précision est
-  translucide à la première image et l'élément suivant n'est pas encore à sa place ; sous la
-  préférence, tout est posé. **Mutation** : `layout` retiré → l'élément suivant saute, la garde tombe.
+  réplique du point) partent toujours au geste, sans attendre — c'est ce que la section H garde, et ce
+  qu'`entering` avait cassé.
+- **Risque technique** : animer une hauteur relance la mise en page à chaque image. Si la recette voit
+  saccader une liste sur un Android d'entrée de gamme, on garde le fondu et on retire le dépliage de
+  cette liste-là.
+- **Gardes** :
+  - `scripts/verifier-etats-export.mjs`, section J : après « Voiture (seul) », « Voiture
+    (covoiturage) », juste dessous, passe par une position intermédiaire et « Thermique » par une
+    opacité intermédiaire ; sous la préférence, ni l'un ni l'autre ; et l'étape rouverte depuis un
+    brouillon, motorisation déjà ouverte, ne l'ouvre pas sous les yeux ;
+  - `scripts/verifier-parcours-reel.mjs`, étape « point » : quand le point est répondu, le cap, sous
+    la carte, passe par une position intermédiaire ; et avant, l'anneau de focus de « Oui », collé au
+    bord gauche du contenu, n'est rogné par aucun ancêtre.
+  - **Ce qui n'est pas gardé** : `HauteurSuivie` sous la préférence (le seul profil qui répond à un
+    point joue animé), et l'ouverture d'une piste en carte — même composant que la carte du point,
+    regardée sur planche.
 
 ### 5.8 Les onglets en fondu, et le « Chargement… » différé (décision n° 8)
 
 - **Fichiers** : `src/app/(tabs)/_layout.tsx` (`animation: animationDesOnglets(reduit)` dans
   `screenOptions`) ; `src/app/(tabs)/plan/index.tsx`, `src/app/(tabs)/plan/pistes.tsx`,
-  `src/app/(tabs)/suivi/index.tsx` (la ligne de chargement).
+  `src/app/(tabs)/suivi/index.tsx` (la ligne de chargement) ; `src/hooks/use-apres-un-delai.ts`.
 - **Après** : un fondu de 150 ms entre onglets (celui de la barre embarquée) ; la ligne « Chargement
-  de ton … » n'apparaît qu'après **300 ms** de chargement continu — en dessous, l'écran reste vide et
-  le contenu arrive seul.
+  de ton … » n'apparaît qu'après **300 ms** de chargement continu (`DELAI_AVANT_CHARGEMENT`) — en
+  dessous, l'écran reste vide et le contenu arrive seul. Sur les pistes, l'échec s'affiche tout de
+  suite : seul le chargement attend.
 - **Hors périmètre, exprès** : `/suivi/bilan` garde son « Chargement de ton bilan… » immédiat, dont
   le HTML statique est épinglé par la section D de `scripts/verifier-etats-export.mjs`.
 - **Sous la préférence** : `animation: 'none'` ; le délai du chargement reste (ce n'est pas du
@@ -380,11 +433,10 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
 - **Décision touchée** : « Navigations : standard plateforme », lue comme le fondu de Material entre
   destinations d'une barre de navigation ; le délai touche un état de chargement (`FRONT.md` §1.3 :
   l'état de départ n'affirme rien, et un écran vide n'affirme rien non plus).
-- **Garde** : `scripts/verifier-etats-export.mjs`, sans réseau, barre visible : après l'appui sur
-  « Suivi », la scène est translucide à la première image ; sous la préférence, opaque. Le délai du
-  chargement : un test de composant (horloge simulée) — rien avant 300 ms, la ligne après.
-  **Mutations** : `'fade'` figé → la garde sous la préférence tombe ; `'none'` figé → l'autre tombe ;
-  le délai à 0 → le test de composant tombe.
+- **Gardes** : `scripts/verifier-etats-export.mjs`, section J, sans réseau : au retour sur « Plan »
+  depuis « Suivi », au moins une image montre une scène en plein fondu ; sous la préférence, aucune.
+  Le délai : `src/hooks/use-apres-un-delai.test.ts`, horloge simulée — rien avant 300 ms, la ligne
+  après, faux dès l'arrêt, et un chargement qui se relance repart de zéro (trois mutations).
 
 ## 6. La vague 2 : la sortie de l'écran de lancement (décision n° 7)
 
@@ -435,7 +487,9 @@ Il se **demande** avant d'être lancé (au plus un tous les deux jours, registre
 Accessibilité), **en relançant l'app après chaque changement** :
 
 - les deux feuilles : le voile ne monte pas, la feuille monte, le retour matériel la fait redescendre ;
-- « Compris » : la carte se replie, la barre glisse, **aucune bande de couleur** sous l'écran ;
+- « Compris » : la carte des deux lieux entre, la barre glisse, **aucune bande de couleur** sous
+  l'écran ; et une carte de saison refermée laisse le plan remonter d'un coup — c'est l'écart de §5.5,
+  à juger sur l'appareil ;
 - une barre qui ne glisse **pas** à une ouverture ordinaire de l'app ;
 - le questionnaire : le sens de l'entrée en avançant et en reculant ; TalkBack annonce la nouvelle
   question une fois ;
@@ -451,12 +505,13 @@ Accessibilité), **en relançant l'app après chaque changement** :
 | 5.1 | Le skill `mouvement` | fait — cité dans `CLAUDE.md` |
 | 5.2 | L'installateur corrigé, `hzblj-skills` en manuel sans `/polish` | fait — 39 skills et 7 commandes, huit mutations consignées en tête du test |
 | 5.3 | Les jetons, les dérivations, le kit | fait — sept mutations consignées dans `src/types/mouvement.test.ts` |
-| 5.4 | Les feuilles | codé et regardé sur l'export ; garde à écrire |
-| 5.5 | « Compris » et la barre | codé et regardé sur l'export ; gardes à écrire |
-| 5.6 | Le questionnaire | codé ; à regarder, garde à écrire |
-| 5.7 | Le contenu qui glisse | codé ; à regarder, garde à écrire |
-| 5.8 | Les onglets et le chargement | codé, délai éprouvé par trois mutations ; fondu à regarder, garde à écrire |
-| 7 | Les documents | à faire |
+| 5.4 | Les feuilles | fait — gardées par le parcours réel, avec et sans la préférence |
+| 5.5 | « Compris » et la barre | fait, avec un écart : le reste du plan ne glisse pas quand une carte de saison part (§5.5) ; barre gardée au démarrage (section J) et à l'arrivée (parcours réel, les deux moitiés) ; un défaut d'une image sous la préférence trouvé par la garde et corrigé |
+| 5.6 | Le questionnaire | fait — section J, les deux sens et le rail, avec et sans la préférence |
+| 5.7 | Le contenu qui s'ouvre | fait — section J pour les précisions, parcours réel pour la carte du point ; `HauteurSuivie` sous la préférence et la piste qui s'ouvre ne sont pas gardées (§5.7) ; une découpe qui effaçait l'anneau de focus, trouvée en relisant, corrigée et gardée |
+| 5.8 | Les onglets et le chargement | fait — section J pour le fondu, Jest pour le délai |
+| — | Les mutations des gardes | MUTATIONS-ETAT |
+| 7 | Les documents | fait — kit, `FRONT.md` §2.12, `EXPO.md` §1.5 et §1.7, `TESTING.md` §2.10 et §2.14, `CLAUDE.md`, `v1-17` §9, skill `mouvement` |
 | 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | à faire |
 | 8.2 | Build EAS (à demander) | à faire |
 | 8.3 | Recette sur appareil | à faire |
@@ -465,21 +520,25 @@ Accessibilité), **en relançant l'app après chaque changement** :
 ## 10. Comment reprendre
 
 - **La branche** `claude/inspiring-fermi-nlmdhl` porte ce document en premier commit, et la PR
-  ScratchMe/Ramille#283 le cite dans sa description. Chaque chantier de §5 est un commit à lui, et
-  §9 se met à jour dans le même commit.
+  ScratchMe/Ramille#283 le cite dans sa description. Le socle (§5.1 à §5.3) a un commit par
+  chantier ; les écrans (§5.4 à §5.8) sont partis ensemble, parce qu'ils partagent
+  `src/app/(tabs)/_layout.tsx` et `src/lib/mouvement.tsx`, puis la bascule vers les CSS animations
+  et les hauteurs suivies, puis les gardes. §9 dit où on en est.
 - **Le skill `mouvement` (§5.1) s'écrit après le socle (§5.3)** et non avant : il cite ses fichiers,
   et le contrôle des renvois refuse un chemin qui n'existe pas encore.
 - **Refaire le relevé filmé** : il n'est pas dans le dépôt, parce qu'il modifie le parcours réel.
   1. Démarrer Docker et la stack (`TESTING.md` §2.6), puis construire l'export avec les variables de
      la stack locale (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`).
-  2. Copier `scripts/verifier-parcours-reel.mjs`, `scripts/servir-export.mjs` et
-     `scripts/mesurer-un-choix.mjs` hors du dépôt, lier `node_modules` à côté.
-  3. Dans la copie, ajouter au `newContext` : `recordVideo: { dir, size: { width: 420, height: 900 } }`
-     et `reducedMotion: process.env.MOUVEMENT_REDUIT ? 'reduce' : 'no-preference'` ; journaliser un
-     repère horodaté (`Date.now()` moins l'instant de création de la page) dans `etape`, `bouton`,
-     `boutonDuPager` et avant « Compris » ; ajouter, avant la suppression du compte, un détour : le
-     plan, l'onglet Suivi puis Plan, « Voir toutes les pistes » et retour, puis `/bilan` et « Suivant »
-     jusqu'à « Voir mon bilan », la feuille, Échap.
+  2. Copier `scripts/verifier-parcours-reel.mjs`, `scripts/servir-export.mjs`,
+     `scripts/mesurer-un-choix.mjs` et `scripts/relever-par-image.mjs` hors du dépôt, lier
+     `node_modules` à côté.
+  3. Dans la copie, ajouter au `newContext` de `nouvelOnglet` :
+     `recordVideo: { dir, size: { width: 420, height: 900 } }`, et faire dépendre `reduire` d'une
+     variable (`MOUVEMENT_REDUIT`) pour le premier profil ; journaliser un repère horodaté
+     (`Date.now()` moins l'instant de création de la page) dans `etape`, `bouton`, `boutonDuPager` et
+     avant « Compris » ; ajouter, avant le re-bilan (étape 8 ter, qui ouvre déjà la feuille), un
+     détour : l'onglet Suivi puis Plan, « Voir toutes les pistes », une ligne ouverte en carte (clic
+     aux coordonnées, §5.5), et retour.
   4. Lancer la copie **depuis la racine du dépôt** (elle lit des fichiers du dépôt par chemin
      relatif), une fois par valeur de `MOUVEMENT_REDUIT`.
   5. Découper la vidéo la plus longue autour des repères avec le ffmpeg de Playwright

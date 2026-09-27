@@ -47,21 +47,46 @@ republier sa collection, et ils ne valent que pour le web.
 | `courbe` | `[0.22, 1, 0.36, 1]` | la « sortie douce », partout |
 
 La courbe est quatre nombres : `Easing.bezier(...Mouvement.courbe)` pour reanimated comme pour
-`Animated`, `cubicBezier(...)` pour une CSS transition de reanimated.
+`Animated`, `cubicBezier(...)` pour une CSS animation ou transition de reanimated.
+
+## Les outils, écrits une fois
+
+`src/lib/mouvement.tsx` — un réglage recopié dans un écran diverge au premier ajustement :
+
+| Outil | Pour |
+|---|---|
+| `styleDEntree(sens, reduit)` | une étape qui entre du côté du parcours (CSS animation, vue à clé) |
+| `Apparition` | ce qui apparaît en place, en fondu |
+| `Depliage` | ce qui s'ouvre sous un choix : grandit de zéro à sa hauteur, ce qui est dessous suit |
+| `HauteurSuivie` | un bloc dont le contenu change : passe d'une hauteur à l'autre ; `styleDuContenu` reprend le `gap` du parent ; sa découpe laisse de la place à l'anneau de focus |
+| `SansApparitionAuMontage` | ce qui est déjà là quand l'écran arrive est posé ; seul ce qui monte ensuite s'anime |
+
+Ce qui **décide** d'une animation (un sens, une arrivée, une durée sous la préférence) est une
+dérivation de `src/types/mouvement.ts`, testée.
+
+**Jamais `entering`, `exiting` ni `LinearTransition`** — mesuré sur l'export web, 27/09/2026
+(`v1-30` §3.2) : `entering` masque l'élément une image (`visibility: hidden`), et un élément masqué
+ne reçoit pas le focus ; `exiting` recopie l'élément hors du défilement, et la page saute ;
+`LinearTransition` **étire** un bloc qui change de taille au lieu de le déplacer. `LayoutAnimation`
+ne fait rien sur web. Pas de shared element transitions non plus : expérimentales, natif seul.
 
 ## « Réduire les animations » — la règle qui ne se négocie pas
 
 Toute animation dit ce qu'elle devient sous la préférence, et **sous la préférence, tout se pose** :
 l'état final, dès la première image. Trois cas, et seul le premier est gratuit :
 
-1. **`withTiming` et les animations de disposition de reanimated** (`entering`, `exiting`,
-   `LinearTransition`) la suivent d'eux-mêmes (`ReduceMotion.System`). On l'écrit quand même,
+1. **`withTiming`** la suit de lui-même (`ReduceMotion.System`). On l'écrit quand même,
    `reduceMotion: ReduceMotion.System`, comme `src/components/mascot.tsx`.
-2. **`Animated` de React Native, les CSS transitions de reanimated, le `Modal` de react-native-web**
-   l'ignorent — vérifié dans leur source. Leur durée passe par `dureeSelonLaPreference`
-   (`src/types/mouvement.ts`) avec `useReducedMotion()`.
+2. **`Animated` de React Native, les CSS animations et transitions de reanimated, le `Modal` de
+   react-native-web** l'ignorent — vérifié dans leur source. Sous `useReducedMotion()`, leur durée
+   passe par `dureeSelonLaPreference` (`src/types/mouvement.ts`), l'animation n'est pas posée, ou le
+   style ne lit pas la valeur animée.
 3. **Un rappel de fin d'animation** (démonter après une sortie) doit partir aussi sous la
    préférence, immédiatement : ça se vérifie par une garde, pas au raisonnement.
+
+**Et l'état posé se décide au rendu, jamais dans un effet** : un effet part après le rendu, donc
+parfois après la première image. La barre d'onglets, remise à « posée » dans un `useEffect`, a été
+vue transparente une image sous la préférence (`EXPO.md` §1.7).
 
 `useReducedMotion()` n'est lu **qu'au démarrage** de l'app : pour éprouver la préférence, on relance
 (sur l'appareil) ou on recharge après `page.emulateMedia({ reducedMotion: 'reduce' })` (Playwright).
@@ -86,8 +111,11 @@ l'état final, dès la première image. Trois cas, et seul le premier est gratui
 - **Elle est regardée image par image**, avec et sans la préférence : `v1-30` §10 dit comment filmer
   le parcours réel et le découper. Un test vert ne dit pas qu'une animation est belle, ni qu'elle
   n'en coupe pas une autre.
-- Sur web, une garde la mesure : `scripts/verifier-etats-export.mjs` pour ce qui se voit sans réseau,
-  `scripts/verifier-parcours-reel.mjs` pour le reste.
+- Sur web, une garde la relève **image par image**, par `scripts/relever-par-image.mjs` :
+  `scripts/verifier-etats-export.mjs` (section J) pour ce qui se voit sans réseau,
+  `scripts/verifier-parcours-reel.mjs` pour le reste. Deux moitiés, avec et sans la préférence ;
+  « en chemin » se lit sur une valeur strictement intermédiaire, jamais sur une durée
+  (`TESTING.md` §2.14).
 - **Sur Android, seul l'appareil le dit** : dans les deux états de « Supprimer les animations », app
   relancée à chaque fois (`RECETTE.md`).
 
