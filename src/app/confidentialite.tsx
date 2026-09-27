@@ -106,8 +106,9 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // **Et le même jour, un bilan retiré** (C4.7, décision de la personne qui pilote) : « retirer » peut se
 // lire « effacer », et ce n'en est pas un — la ligne reste, l'export la rend avec son statut
 // (`v1-22` D1). Sans cette phrase, la page laisserait croire à un effacement qui n'a pas lieu. Elle
-// nomme la session anonyme parce que la purge à 90 jours l'emporte aussi, comme le reste.
-const UPDATED_AT = '27 septembre 2026';
+// nomme la session anonyme parce que la purge à 90 jours l'emporte aussi, comme le reste. Mise en
+// ligne le 28/09/2026 — la date suit.
+const UPDATED_AT = '28 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
