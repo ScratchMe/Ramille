@@ -1,3 +1,4 @@
+/* global jest */
 // reanimated ne s'initialise pas sous Jest : il charge le module natif de `react-native-worklets`,
 // qui n'existe pas hors d'une app (« Cannot read properties of undefined (reading 'loadUnpackers') »).
 //
@@ -8,10 +9,14 @@
 //
 // Les deux doubles viennent des bibliothèques elles-mêmes : une animation y est une vue ordinaire,
 // donc un test garde ce qu'un écran dit et fait, jamais comment il bouge — ce sont les gardes de
-// l'export et du parcours réel qui regardent le mouvement. Le double de reanimated laisse
-// `LayoutAnimationConfig` vide (« ADD ME IF NEEDED ») : on le rend transparent.
+// l'export et du parcours réel qui regardent le mouvement. Le double de reanimated ignore ses
+// animations CSS (`css.keyframes`, `cubicBezier`), que `src/lib/mouvement.tsx` appelle au
+// chargement : on les rend inertes, une animation CSS n'étant qu'une clé de style de plus. Et il
+// n'a pas `useReducedMotion` : il rend « faux », l'appareil d'un test n'ayant pas la préférence.
 jest.mock('react-native-worklets', () => jest.requireActual('react-native-worklets/src/mock'));
 jest.mock('react-native-reanimated', () => ({
   ...jest.requireActual('react-native-reanimated/mock'),
-  LayoutAnimationConfig: ({ children }) => children,
+  css: { keyframes: (definition) => definition, create: (styles) => styles },
+  cubicBezier: () => 'ease',
+  useReducedMotion: () => false,
 }));

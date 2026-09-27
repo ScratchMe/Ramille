@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { LayoutAnimationConfig } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
@@ -17,7 +16,7 @@ import { DELAI_AVANT_CHARGEMENT, useApresUnDelai } from '@/hooks/use-apres-un-de
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKg } from '@/lib/format';
-import { APPARITION, GLISSEMENT } from '@/lib/mouvement';
+import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { filetsDesLignes, pistesParPoste, separationsDesLignes } from '@/types/plan';
 import { usePassageDEngagement } from './_layout';
@@ -207,7 +206,7 @@ export default function PistesScreen() {
           )}
 
           {groupes.map((groupe) => (
-            <Animated.View key={groupe.poste ?? 'sans-poste'} layout={GLISSEMENT} style={styles.groupe}>
+            <View key={groupe.poste ?? 'sans-poste'} style={styles.groupe}>
               {/* **Une étiquette de section, et non un titre de carte** (planche A2, #234). Elle
                   était rendue en `cardTitle` — 17 px, couleur pleine —, c'est-à-dire dans le
                   registre d'un **titre d'action**, à trois pixels du contenu qu'elle annonce. La
@@ -260,7 +259,7 @@ export default function PistesScreen() {
                   rafraichir();
                 }}
               />
-            </Animated.View>
+            </View>
           ))}
         </ScrollView>
       </SafeAreaView>
@@ -308,13 +307,15 @@ function Lignes({
   const separations = separationsDesLignes(ids, enCarte);
   const filets = filetsDesLignes(ids, enCarte);
 
-  // **Une ligne qui s'ouvre en carte n'est plus un saut** (27/09/2026, `v1-30` §5.7) : la carte
-  // apparaît en fondu à la place de la ligne — même clé, autre élément, donc React la monte à neuf —
-  // et ce qui est dessous glisse. Ce qui est là à l'arrivée sur l'écran n'a pas d'entrée à soi
-  // (`skipEntering`), et « Réduire » rend la ligne d'un coup : une sortie ne se met pas en scène.
+  // **Une ligne qui s'ouvre en carte n'est plus un saut** (27/09/2026, `v1-30` §5.7). Chaque piste est
+  // tenue par un `HauteurSuivie` sous la même clé, qu'elle soit ligne ou carte : quand l'une devient
+  // l'autre, il passe d'une hauteur à la suivante, et les pistes de dessous suivent. La carte apparaît
+  // en fondu — autre élément sous le même cadre, donc React la monte à neuf ; ce qui est là à
+  // l'arrivée sur l'écran n'a pas d'apparition à soi (`SansApparitionAuMontage`). « Réduire » passe
+  // par le même chemin, dans l'autre sens.
   return (
     <View style={styles.lignesPistes}>
-      <LayoutAnimationConfig skipEntering>
+      <SansApparitionAuMontage>
       {pistes.map((action, rang) => {
         const separee = separations[rang];
         const filetee = filets[rang];
@@ -324,12 +325,8 @@ function Lignes({
 
         if (enCarte.has(action.id)) {
           return (
-            <Animated.View
-              key={action.id}
-              layout={GLISSEMENT}
-              entering={APPARITION}
-              style={separee ? styles.pisteSeparee : undefined}
-            >
+            <HauteurSuivie key={action.id}>
+            <Apparition style={separee ? styles.pisteSeparee : undefined}>
               <CarteDePiste
                 action={action}
                 committedActionId={engageeId}
@@ -349,7 +346,8 @@ function Lignes({
                 themeColor="textTertiary"
                 style={styles.reduire}
               />
-            </Animated.View>
+            </Apparition>
+            </HauteurSuivie>
           );
         }
 
@@ -359,9 +357,8 @@ function Lignes({
         // s'ouvre pas — il n'y a rien à y choisir.
         if (action.committed_at !== null) {
           return (
-            <Animated.View
-              key={action.id}
-              layout={GLISSEMENT}
+            <HauteurSuivie key={action.id}>
+            <View
               style={[
                 styles.lignePiste,
                 separee && styles.pisteSeparee,
@@ -384,12 +381,13 @@ function Lignes({
                   Engagée
                 </ThemedText>
               </View>
-            </Animated.View>
+            </View>
+            </HauteurSuivie>
           );
         }
 
         return (
-          <Animated.View key={action.id} layout={GLISSEMENT}>
+          <HauteurSuivie key={action.id}>
           <Pressable
             style={({ pressed }) => [
               styles.lignePiste,
@@ -439,10 +437,10 @@ function Lignes({
               </ThemedText>
             </View>
           </Pressable>
-          </Animated.View>
+          </HauteurSuivie>
         );
       })}
-      </LayoutAnimationConfig>
+      </SansApparitionAuMontage>
     </View>
   );
 }

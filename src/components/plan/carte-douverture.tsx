@@ -63,12 +63,14 @@ const ENTREE = 320;
  * L'animation d'entrée respecte « réduire les animations » par le défaut de reanimated
  * (`ReduceMotion.System`), rappelé explicitement comme dans `ecran-lancement.tsx`.
  *
- * **Elle part d'un coup, et c'est le plan qui fait glisser ce qui la suit** (27/09/2026, `v1-30`
- * §5.5) : sa sortie ne retarde rien, pas même un bouton qui mène aux pistes. Un fondu de sortie
- * (`exiting` de reanimated) a été essayé et retiré : sur web, reanimated déplace le contenu de la
- * carte qui part — le lien focalisé compris — dans un clone accroché au premier parent positionné,
- * hors du défilement, et ce mécanisme n'a été éprouvé ni là ni sur Android. Quand une autre carte la
- * remplace (« Compris » au premier plan), c'est l'entrée de celle-ci qui fait le passage.
+ * **Elle part d'un coup** (27/09/2026, `v1-30` §5.5) : sa sortie ne retarde rien, pas même un
+ * bouton qui mène aux pistes. Quand une autre carte la remplace (« Compris » au premier plan, la même
+ * hauteur à quelques pixels près), c'est l'entrée de celle-ci qui fait le passage. Deux outils de
+ * reanimated ont été essayés et retirés : un fondu de sortie (`exiting`), qui sur web déplace la carte
+ * qui part — lien focalisé compris — dans un clone accroché hors du défilement ; et un glissement du
+ * reste du plan (`LinearTransition`), qui sur web étire par une échelle tout bloc dont la taille
+ * change (`src/lib/mouvement.tsx`). Une carte de saison refermée laisse donc le plan remonter d'un
+ * coup, quatre fois par an.
  */
 export function CarteDOuverture({
   ouverture,

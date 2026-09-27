@@ -1,5 +1,4 @@
 import { StyleSheet, View } from 'react-native';
-import Animated from 'react-native-reanimated';
 
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
@@ -11,7 +10,7 @@ import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
 import { formatKm } from '@/lib/format';
-import { APPARITION, GLISSEMENT } from '@/lib/mouvement';
+import { Depliage } from '@/lib/mouvement';
 import { OCCUPATIONS_LONG_TRAJET, type BilanAnswers } from '@/types/bilan';
 
 // Même plage que les vols (`flights.tsx`, `TOTAL_CHOICES`) : l'écart à la spec §5 était que
@@ -177,14 +176,14 @@ export function LongTripsStep({
         {/* La précision s'ouvre sous les puces qui la déclenchent — cf.
             `precision-mode.tsx`. */}
         {answers.car_long_trips_per_year > 0 && (
-          <Animated.View style={styles.precision} entering={APPARITION}>
+          <Depliage style={styles.precision}>
             <PrecisionMode
               question="Quelle motorisation ?"
               options={CAR_ENGINE_OPTIONS}
               valeur={answers.car_long_trips_engine}
               onChange={(value) => update({ car_long_trips_engine: value })}
             />
-          </Animated.View>
+          </Depliage>
         )}
 
         {/* C3.5 — le calcul supposait « seul » sur 700 km, sans jamais le demander, alors que
@@ -193,14 +192,14 @@ export function LongTripsStep({
             elle apparaît sous la même condition — déclarer des longs trajets en voiture, c'est
             en déclarer deux choses. */}
         {answers.car_long_trips_per_year > 0 && (
-          <Animated.View style={styles.precision} entering={APPARITION}>
+          <Depliage style={styles.precision}>
             <PrecisionChiffres
               question="Vous êtes combien dans la voiture ?"
               options={OPTIONS_OCCUPATION}
               valeur={answers.car_long_trips_occupancy}
               onChange={(value) => update({ car_long_trips_occupancy: value })}
             />
-          </Animated.View>
+          </Depliage>
         )}
       </View>
 
@@ -211,12 +210,10 @@ export function LongTripsStep({
           hors du contrôle qui compare ces valeurs au calcul, et la distance de l'autocar n'existait
           nulle part côté client. L'autocar et la voiture partagent un nombre ; le contrôle tombe
           s'ils divergent, pour que la phrase soit réécrite. */}
-      <Animated.View layout={GLISSEMENT}>
-        <ThemedText type="small" themeColor="textTertiary">
-          Distances moyennes par défaut · {formatKm(HYPOTHESES.trainLongKm)} train,{' '}
-          {formatKm(HYPOTHESES.autocarLongKm)} autocar et voiture
-        </ThemedText>
-      </Animated.View>
+      <ThemedText type="small" themeColor="textTertiary">
+        Distances moyennes par défaut · {formatKm(HYPOTHESES.trainLongKm)} train,{' '}
+        {formatKm(HYPOTHESES.autocarLongKm)} autocar et voiture
+      </ThemedText>
     </View>
   );
 }
