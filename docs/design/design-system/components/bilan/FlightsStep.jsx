@@ -5,8 +5,8 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/bilan/steps/flights.tsx — le nombre de vols d'une année type, puis combien sont courts.
 // La question dit qu'un aller-retour compte pour deux vols : sans elle, le facteur 2 était laissé au hasard, sur le
 // poste le plus lourd de la plupart des bilans. La seconde question n'apparaît qu'à partir d'un vol et propose de 0
-// au total choisi ; changer le total ramène les courts sous lui. La dernière puce vaut « 10 ou plus », et le lecteur
-// d'écran l'entend. Les distances supposées s'affichent en bas, interpolées depuis les hypothèses du calcul.
+// au total choisi ; changer le total ramène les courts sous lui. La dernière puce affiche « 10+ », et le lecteur
+// d'écran l'entend « 10 vols ou plus ». Les distances supposées s'affichent en bas, interpolées depuis les hypothèses du calcul.
 
 // `TOTAL_CHOICES` de la source, recopiée : « N+ » stocke N.
 const TOTAL_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];

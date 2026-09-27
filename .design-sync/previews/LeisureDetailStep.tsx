@@ -15,12 +15,27 @@ const VIERGE: Reponses = {
   leisure_distance_km: null,
 };
 
+// `normaliserReponses` (src/types/bilan.ts), la part que cette étape déclenche, recopiée — celle des
+// sorties déclarées, l'étape n'existant pas sous « Rarement ». L'écran du questionnaire l'applique après
+// chaque `update` : c'est elle, et non l'étape, qui efface une précision devenue sans objet.
+const normaliser = (r: Reponses): Reponses => {
+  const a = { ...r };
+  if (a.leisure_mode !== 'voiture') a.leisure_car_engine = null;
+  if (a.leisure_mode !== 'deux_roues_motorise') a.leisure_two_wheeler_type = null;
+  if (a.leisure_mode !== 'train') a.leisure_train_type = null;
+  if (a.leisure_mode !== 'velo') a.leisure_velo_type = null;
+  if (a.leisure_mode !== 'voiture') a.leisure_is_carpool = false;
+  if (a.leisure_distance_bracket !== '30_plus') a.leisure_distance_km = null;
+  if (!a.leisure_is_carpool) a.leisure_carpool_size = null;
+  return a;
+};
+
 // Le contenu défilant de `StepShell`, à la largeur d'un téléphone : 390 moins ses deux marges de 24.
 const Etape = ({ depart }: { depart: Partial<Reponses> }) => {
   const [answers, setAnswers] = React.useState<Reponses>({ ...VIERGE, ...depart });
   return (
     <div style={{ maxWidth: 342 }}>
-      <LeisureDetailStep answers={answers} update={(patch) => setAnswers((a) => ({ ...a, ...patch }))} />
+      <LeisureDetailStep answers={answers} update={(patch) => setAnswers((a) => normaliser({ ...a, ...patch }))} />
     </div>
   );
 };

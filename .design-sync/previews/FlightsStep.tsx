@@ -14,7 +14,7 @@ const Etape = ({ depart }: { depart: Reponses }) => {
 };
 
 /** Aucun vol : la question seule, onze puces jusqu'à « 10+ », et les distances supposées en bas. */
-export const AucunVol = () => <Etape depart={{ flights_total_per_year: 0, flights_short_per_year: 0 }} />;
+export const AucunVol = () => <Etape depart={{ flights_total_per_year: 0, flights_short_per_year: null }} />;
 
 /** Quatre vols, pas encore répartis : la seconde question s'ouvre sous un filet, de 0 au total. */
 export const CourtsARepartir = () => <Etape depart={{ flights_total_per_year: 4, flights_short_per_year: null }} />;

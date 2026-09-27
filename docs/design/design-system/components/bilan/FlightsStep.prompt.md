@@ -12,4 +12,4 @@ L'étape qui ouvre la section « Voyages longue distance » : « Combien de vols
 
 **La répartition n'apparaît qu'à partir d'un vol**, sous un filet `border` : « Sur ces 4, combien sont courts ? » en sous-titre 22/28, « Europe, moins de 3 h. Le reste est compté comme long-courrier. », puis des puces de 0 au total, rayon 14. Changer le total ramène les courts sous lui. Une fois répondu, le produit dit ce qu'il comptera : « 1 vol long-courrier sera compté. »
 
-**Les distances supposées s'affichent en bas**, comme sur l'étape des longs trajets : « Distances moyennes par défaut · 1 500 km court et moyen-courrier, 9 000 km long-courrier ». Elles sont interpolées depuis les hypothèses du calcul, jamais réécrites, en Spline Sans `small` tertiaire — une phrase adressée à la personne, pas un code.
+**Les distances supposées s'affichent en bas**, comme sur l'étape des longs trajets : « Distances moyennes par défaut · 1 500 km court et moyen-courrier, 9 000 km long-courrier ». Elles sont interpolées depuis les hypothèses du calcul, jamais réécrites, en Spline Sans `small` tertiaire — une phrase adressée à la personne, pas un code.

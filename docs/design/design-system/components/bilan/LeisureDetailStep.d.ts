@@ -4,7 +4,7 @@ export interface LeisureDetailStepAnswers {
   leisure_mode: 'voiture' | 'bus' | 'train' | 'metro_tram' | 'velo' | 'marche' | 'deux_roues_motorise' | 'trottinette' | null;
   /** Vrai pour « Voiture (covoiturage) » : c'est lui qui distingue les deux voitures, et ouvre la taille du covoiturage. */
   leisure_is_carpool: boolean;
-  /** « Vous êtes combien dans la voiture ? » : 2 à 6, la dernière puce valant « 6 ou plus ». */
+  /** « Vous êtes combien dans la voiture ? » : 2 à 6, la dernière puce affichant « 6+ », que le lecteur d’écran dit « 6 personnes ou plus ». */
   leisure_carpool_size: number | null;
   /** « Quelle motorisation ? », sous l'une des deux voitures. */
   leisure_car_engine: 'thermique' | 'hybride' | 'hybride_rechargeable' | 'electrique' | null;

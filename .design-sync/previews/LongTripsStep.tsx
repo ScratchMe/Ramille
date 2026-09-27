@@ -11,12 +11,18 @@ const VIERGE: Reponses = {
   car_long_trips_occupancy: null,
 };
 
+// `normaliserReponses` (src/types/bilan.ts), la part que cette étape déclenche, recopiée : la motorisation
+// et l'occupation ne tiennent qu'à la présence d'un trajet en voiture, et c'est l'écran du questionnaire,
+// après chaque `update`, qui les efface — pas l'étape.
+const normaliser = (r: Reponses): Reponses =>
+  r.car_long_trips_per_year === 0 ? { ...r, car_long_trips_engine: null, car_long_trips_occupancy: null } : r;
+
 // Le contenu défilant de `StepShell`, à la largeur d'un téléphone : 390 moins ses deux marges de 24.
 const Etape = ({ depart }: { depart: Partial<Reponses> }) => {
   const [answers, setAnswers] = React.useState<Reponses>({ ...VIERGE, ...depart });
   return (
     <div style={{ maxWidth: 342 }}>
-      <LongTripsStep answers={answers} update={(patch) => setAnswers((a) => ({ ...a, ...patch }))} />
+      <LongTripsStep answers={answers} update={(patch) => setAnswers((a) => normaliser({ ...a, ...patch }))} />
     </div>
   );
 };
