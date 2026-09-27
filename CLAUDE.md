@@ -111,7 +111,9 @@ défauts**, et ils n'ont été trouvés que parce que la personne qui pilote a d
 soir même. Quatre d'entre eux n'étaient trouvables que comme ça : un appel fautif d'une fonction
 pourtant testée, deux cartes qu'on croyait s'exclure, quatre écritures d'état après une garde
 d'annulation, un commentaire orphelin décrivant un mécanisme supprimé. Ni la CI, ni le linter, ni
-aucun test ne pouvait en voir un seul.
+aucun test ne pouvait en voir un seul. **Depuis le 27/09/2026, elle a son sous-agent,
+`contre-lecture`** (`.claude/agents/contre-lecture.md`), qui porte la grille : on le lance sur le
+diff entier, en lui donnant la base, le commit et ce que la vague prétend faire.
 
 **Et une vague confiée à des sous-agents en worktrees coûte quatre préparations et une surprise**
 (24/09/2026, trois chantiers de `v1-29` en parallèle). Les worktrees vivent sous `.claude/worktrees/`,
@@ -125,6 +127,14 @@ même temps, au même corps près. La consigne de chaque sous-agent doit donc no
 partagés qu'il a le droit de **créer**, pas seulement ceux qu'il a le droit de toucher. Et chaque
 rapport revient avec des corrections hors de sa liste : c'est du travail d'intégration, pas du bruit
 — une vingtaine ce soir-là, dont une erreur d'hydratation et une phrase fausse du plan.
+**Et ces copies partaient d'`origin/main`**, pas de la branche de travail — les six des 24 et
+25/09/2026 : sans réglage, c'est la valeur par défaut, et un sous-agent a dû se recaler seul sur le
+commit que sa consigne nommait. Depuis le 27/09/2026, `.claude/settings.json` fait partir une copie
+du HEAD local et y lie `node_modules` (`worktree`), le skill `/preparer-un-worktree` dit ce qui reste
+à faire à la main et donne le modèle de consigne, et `scripts/preparer-un-worktree.mjs`, que le
+sous-agent lance en premier, vérifie le commit de départ — un réglage ne se voit pas — et crée
+`expo-env.d.ts`. Pour un export fait en parallèle, `--clear` ne suffit pas : c'est le cache de Metro
+qui est partagé, et le rejeu (`TESTING.md` §2.13) en donne un à chaque export.
 
 La relecture se fait **sur le diff entier de la vague**, adversairement — « qu'est-ce qui, là-dedans,
 est faux, périmé, ou marche par accident ? » — et elle cherche trois familles en particulier, parce
@@ -224,6 +234,28 @@ est reparti dès qu'on en a parlé. La forme est celle d'une question de produit
 fait, ce qui est en jeu, la recommandation, ce qu'on casse si on se trompe — et rien ne s'installe
 avant la réponse.
 
+### Ce que Claude Code fait seul ici, et ce qui s'appelle par son nom
+
+Quatre automatismes écrits pour Ramille le 27/09/2026, sur l'audit du plug-in claude-code-setup —
+joué sans être installé, et chacun décidé avec la personne qui pilote, comme un plug-in :
+
+- **`.claude/settings.json` est versionné ; `.claude/settings.local.json` est personnel, et ignoré
+  par git.** Le second a porté jusqu'à ce jour, dans un dépôt public, les jokers `mcp__Supabase` et
+  `mcp__Supabase__*` : tout outil du serveur passait sans confirmation sur la production,
+  `pause_project` et `restore_project` compris. **Un outil accordé se nomme**, et un test refuse le
+  joker. La liste nommée garde `apply_migration` et `execute_sql`, qui écrivent sur la production
+  sans confirmation, et c'est décidé (27/09/2026, la personne qui pilote : « On peut les garder sans
+  confirmation ») : les retirer ferait confirmer chaque migration, qui passe déjà par une PR relue.
+- **Un hook refuse de modifier une migration livrée** (`scripts/proteger-les-migrations-livrees.mjs`) :
+  « livrée » veut dire présente dans `origin/main`, pas sur le disque, parce qu'une migration en
+  cours s'écrit en plusieurs retouches. Il ne voit ni le shell ni une autre session :
+  `SUPABASE.md` §2.3.
+- **Le sous-agent `contre-lecture`** porte la grille de la relecture adversariale (plus haut). Sa
+  « lecture seule » est une consigne et non une garde : il a Bash, et la première contre-lecture a
+  supprimé `/dev/null` du conteneur par une commande de vérification mal écrite.
+- **Deux skills ne se déclenchent jamais seuls** et s'appellent par leur nom : `/rejouer-la-ci`
+  (`scripts/rejouer-la-ci.mjs`, `TESTING.md` §2.13) et `/preparer-un-worktree` (plus haut).
+
 ## Le produit, en trois règles et un renvoi
 
 **Ramille** est une app de sensibilisation à l'empreinte carbone des transports, pour la France.
@@ -260,6 +292,8 @@ npm run lint                # eslint (config Expo)
 npm test                   # tests unitaires Jest (logique pure, cf. Tests ci-dessous)
 expo export --platform web # build statique web (= script vercel-build), utile pour
                             # vérification visuelle via Playwright sans device
+node scripts/rejouer-la-ci.mjs  # les travaux de la CI, en local — Docker pour `base` et
+                                # `parcours` (TESTING.md §2.13)
 ```
 
 ### Tests
@@ -312,9 +346,10 @@ y compris celles qui ne nomment pas le facteur touché — et « toucher » incl
 Trois CI rouges pour l'apprendre (PR #34, #41, #48) ; la méthode qui marche, recalculer chaque
 assertion par une requête et jamais à la main : `TESTING.md` §2.2.
 
-**Trois assertions de la suite échouent sur le projet distant et passent en CI, parce qu'elles
-supposent une base vierge** — et une quatrième y ferait partir de vrais emails : `TESTING.md` §2.3,
-à lire avant de « corriger » un test qui n'a rien.
+**Des assertions de la suite échouent sur le projet distant et passent en CI, parce qu'elles
+supposent une base vierge** — et un fichier y ferait partir de vrais emails : `TESTING.md` §2.3,
+qui les nomme, à lire avant de « corriger » un test qui n'a rien. (Ce paragraphe les comptait ;
+le compte s'est périmé le 21/09/2026, quand l'une d'elles a été fermée.)
 
 **Dans une transaction pgTAP, `created_at` ne désigne aucune ligne, et la place d'une assertion
 fait partie de l'assertion** : `TESTING.md` §2.4.

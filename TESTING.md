@@ -322,7 +322,7 @@ et le nombre ne s'écrit plus en titre pour qu'il ne se périme pas une seconde 
   message, seulement au statut).
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
-`request.jwt.claims` comprises, et de savoir que ces quatre-là ne prouvent rien là-bas.
+`request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.
 
 ### 2.4 Deux pièges de rédaction pgTAP
 
@@ -400,10 +400,13 @@ EXPO_PUBLIC_SUPABASE_URL=… EXPO_PUBLIC_SUPABASE_ANON_KEY=… SUPABASE_SERVICE_
   CHROMIUM_PATH=/opt/pw-browsers/chromium node scripts/verifier-parcours-reel.mjs
 ```
 
-Et c'est aussi ce qui rend **pgTAP exécutable ici** (`npx supabase@2.117.0 test db`, après un
-`db reset` si des parcours ont laissé des comptes) : le `BEGIN`/`ROLLBACK` sur le projet distant
-n'est plus la seule validation d'un fichier pgTAP, et ce n'est pas la meilleure — le distant porte
-des données que trois assertions ne supportent pas (§2.3).
+Et c'est aussi ce qui rend **pgTAP exécutable ici** (`npx supabase@2.117.0 test db`, ou
+`node scripts/rejouer-la-ci.mjs base`, §2.13) : le `BEGIN`/`ROLLBACK` sur le projet distant n'est
+plus la seule validation d'un fichier pgTAP, et ce n'est pas la meilleure — le distant porte des
+données que certaines assertions ne supportent pas (§2.3). Cette phrase prescrivait un `db reset`
+« si des parcours ont laissé des comptes » : c'est la parade que la §2.3 a écartée le 21/09/2026,
+une base qui a servi ne devant pas faire rougir pgTAP. Le rejeu reconstruit bien la base, mais pour
+une autre raison — qu'elle soit celle des migrations de l'arbre.
 
 **Deux profils, et le second n'est pas un doublon** (20/09/2026). Le premier est celui de la
 recette — voiture, vols, dix pistes depuis C4.4 (le compte est dans le script, pas ici : il a déjà
@@ -458,7 +461,8 @@ tête du script.
 tout `4xx`/`5xx` avec le corps — un `PGRST303` « JWT issued at future » sur la première requête
 d'une session est **attendu**, l'app le rejoue, cf. `src/types/postgrest.ts`), le texte visible,
 puis la capture, dont le chemin est imprimé (dossier temporaire). Un parcours local qui s'arrête laisse son compte anonyme
-dans la stack ; `supabase db reset` remet la base à neuf.
+dans la stack ; `supabase db reset` remet la base à neuf — seulement si personne d'autre ne s'en
+sert, d'autres copies de travail pouvant la partager. Le rejeu (§2.13), lui, la redémarre sous verrou.
 
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
@@ -565,7 +569,13 @@ vu en une seconde — mais personne ne le lance.
   tenu), et les extensions de documents, de feuilles et d'images avec lui : son index citait deux
   fichiers `.md` qui n'existaient nulle part, qu'un contrôle limité au code ne pouvait pas voir.
   Un répertoire cité seul lui échappe encore — sans extension, rien ne distingue un chemin d'un
-  mot.
+  mot. **Les consignes Claude écrites pour Ramille y entrent le 27/09/2026** : les sous-agents de
+  `.claude/agents/`, et les skills qu'aucun plug-in importé ne revendique. Le partage se lit dans
+  l'`installation.json` de chaque plug-in, donc un skill neuf de Ramille est lu sans qu'on l'ajoute,
+  et un plug-in neuf est écarté sans qu'on l'y retire — ses skills citent leurs propres chemins. Et
+  **le soir même, les chemins commençant par un point ont cessé d'être sautés** : aucun renvoi vers
+  `.claude/` ni `.github/` n'était vérifié, y compris vers ces consignes-là. Seul un chemin relatif
+  au document (`./`, `../`) l'est encore.
 - **La comparaison se fait sur un suffixe de segment**, pas sur le nom de base : `plan/index.tsx`
   doit pouvoir se distinguer de `suivi/index.tsx`, sans quoi un déplacement de dossier passerait.
   Deux formes s'y ajoutent, chacune avec sa raison en tête du script : le chemin **servi**
@@ -806,3 +816,67 @@ Les mutations sont datées en tête de chaque script. Deux choses restent hors d
 TalkBack annonce d'un groupe imbriqué**, et la position dans la série (« 2 sur 9 ») que Chromium
 calcule mais que son protocole de débogage n'expose pas — la garde lit le groupe le plus proche dans
 le DOM, et l'arbre d'accessibilité l'a confirmé une fois à la main, pas plus.
+
+### 2.13 Rejouer la CI en local, et ce que le rejeu garde de lui-même
+
+`node scripts/rejouer-la-ci.mjs` rejoue les travaux de `ci.yml` dans l'ordre — `verifications`,
+`jest`, `export`, `base`, `parcours` —, ou ceux qu'on nomme (27/09/2026). On l'appelle aussi par le
+skill `/rejouer-la-ci`. La CI avait été rejouée cinq fois à la main la semaine du 21 au 25/09/2026,
+et deux pièges y revenaient à chaque fois : `npx jest` sans le fuseau (§1.4), et un export qui rend
+le bundle d'un autre arbre (`EXPO.md` §1.1) ou d'une autre configuration (§2.6). Le script les
+porte, et il lit chaque code de sortie sur le processus lui-même, jamais à travers un tube.
+
+**Sa sortie vaut 0 si, et seulement si, chaque pas choisi a été joué ET a réussi.** Un pas « non
+joué » — Docker éteint, export raté, stack prise — n'a rien vérifié, et c'est la règle de ce
+fichier : on n'annonce pas « vérifié » pour ce qui n'a pas tourné. La première ligne nomme le commit
+rejoué et prévient quand l'arbre porte des modifications ou des fichiers non suivis que la CI ne
+verra pas.
+
+Ce qui diffère de la CI est écrit en tête du script, une ligne par écart, avec sa raison. Quatre de
+ces écarts méritent d'être connus avant de lire un résultat :
+
+- **La stack est redémarrée à neuf** (`supabase stop --no-backup`, puis `supabase start`) avant
+  pgTAP et le parcours, comme la CI en démarre une neuve. Deux raisons, dont la seconde ne se voit
+  pas : une stack déjà démarrée porte les migrations de l'arbre qui l'a démarrée, et GoTrue ne relit
+  ses gabarits et `supabase/config.toml` qu'à son démarrage (§2.11) — une stack qui tourne vérifierait
+  le code de connexion d'une autre copie. La première version se contentait d'un `db reset`, qui
+  refait la base et laisse GoTrue tel quel (contre-lecture du 27/09/2026). Ce n'est pas la parade
+  écartée en §2.3 : une base qui a servi ne doit toujours pas faire rougir une assertion.
+- **Chaque export a son propre cache de Metro**, un `TMPDIR` dans le dossier des journaux. Le cache
+  vit par défaut dans le répertoire temporaire du système, donc partagé entre copies de travail, et
+  `--clear` ne protège pas d'un voisin qui écrit pendant qu'on lit (`EXPO.md` §1.1). Un cache privé
+  rend inutile le marqueur que §1.1 prescrit pour un export fait à la main.
+- **La stack est réservée** pendant `base` et `parcours`, par un verrou rangé dans le répertoire git
+  commun (`scripts/verrou-de-la-stack.mjs`). Toutes les copies de travail du dépôt voient donc le
+  même, et un second rejeu est refusé en nommant le premier. Le verrou ne voit pas ce qui touche la
+  stack à la main.
+- **L'environnement hérité est filtré** : `DATABASE_URL`, les `EXPO_PUBLIC_*`, la boîte aux lettres
+  de la stack et la clé de service sont retirés, puisque la CI n'en a aucun — un `DATABASE_URL` du
+  shell ferait comparer les miroirs de `check` à une autre base que celle qu'on vient de construire.
+  Chaque pas remet ce que la CI lui donne.
+
+**Le rejeu ne peut pas se périmer en silence**, et c'est sa garde : `scripts/rejouer-la-ci.test.ts`
+lit `ci.yml` **par blocs d'étapes**, quelle que soit la clé qui ouvre une étape, et exige :
+- que chaque `run:` soit rejoué par un pas du même travail, ou figure dans `nonRejouees` avec sa
+  raison, et qu'aucun pas ne rejoue une étape disparue ;
+- que chaque commande locale soit celle de la CI **à quatre transformations déclarées près** —
+  `npx --yes`, le CLI Supabase épinglé, `--clear`, le fichier de sortie ;
+- que la version du CLI et la configuration factice soient celles de la CI, et que chaque export
+  porte `--clear` et son propre cache ;
+- que toute variable lue par un script de `scripts/` soit écartée par le rejeu, ou déclarée
+  inoffensive avec sa raison.
+
+La première version lisait les seules étapes écrites `- run:`, ne comparait pas les commandes et
+consignait une mutation qui ne faisait pas ce qu'elle disait ; la contre-lecture du 27/09/2026 a
+relevé les trois. Ce que la garde ne voit toujours pas : ce qu'un pas qui n'est pas une commande (la
+stack, le verrou) fait de plus ou de moins que son pendant — c'est l'en-tête du script qui en répond.
+Premier passage complet le 27/09/2026 : 33 pas, tous réussis, stack comprise ; et le soir, après la
+contre-lecture, 31 pas réussis — la stack arrêtée puis redémarrée en une demi-minute, chaque export
+dans son propre cache, effacé à la sortie.
+
+**Le verrou a sa propre garde** (`scripts/verrou-de-la-stack.test.ts`), jouée sans Docker ni stack :
+il se prend libre et se rend à la sortie, il refuse un rejeu vivant en le nommant, il reprend celui
+d'un rejeu tué, et un seul de deux rejeux lancés ensemble l'obtient. **La course elle-même n'est pas
+gardée** : un `mkdir` suivi de l'écriture du propriétaire, à la place du renommage, passe trois fois
+sur trois, la fenêtre qu'il ouvre étant trop courte pour qu'un test y tombe. C'est dit en tête du
+module, pour que le renommage ne soit pas « simplifié ».

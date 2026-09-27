@@ -1,7 +1,11 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
-node_modules/
+# Sans barre finale, et c'est exprès : `node_modules/` ne désigne qu'un dossier, or la copie de
+# travail d'un sous-agent en porte un **lien symbolique** (`worktree.symlinkDirectories` de
+# `.claude/settings.json`, ou `scripts/preparer-un-worktree.mjs`). Avec la barre, git le voyait
+# comme un fichier non suivi, qu'un `git add -A` aurait commis avec son chemin absolu (27/09/2026).
+node_modules
 
 # Expo
 .expo/
@@ -81,3 +85,8 @@ ds-bundle/
 # Worktrees des sous-agents de Claude Code (Agent, isolation « worktree ») : des dépôts
 # git à part entière, qu’un `git add -A` embarquerait comme sous-modules.
 .claude/worktrees/
+
+# Réglages personnels de Claude Code. Ceux du dépôt vivent dans `.claude/settings.json`, qui est
+# versionné ; ce fichier-ci est par nature propre à une machine, et un dépôt public n’a pas à le
+# porter — il l’a porté jusqu’au 27/09/2026, avec les deux jokers `mcp__Supabase*`.
+.claude/settings.local.json
