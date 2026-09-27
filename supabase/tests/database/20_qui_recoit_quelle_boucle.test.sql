@@ -58,7 +58,11 @@
 -- `20260927230000`) : l'autocar retiré de la fonction fait tomber ici les deux assertions du
 -- profil G et celle du profil I ; les vols retirés n'en font tomber **aucune** — aucun profil de ce
 -- fichier ne sort rarement avec des vols pour seuls voyages — et c'est le balayage du fichier 33 qui
--- les voit. Le détail des mutations de l'extraction est en tête de ce fichier-là.
+-- les voit. Puis après celle d'`action_engagee_de_la_periode` (`20260927231000`) : la boucle
+-- mensuelle qui lui repasse `ar.extras_poste` au lieu du poste de la boucle fait tomber le profil I,
+-- comme les bornes du cycle exclues ou le poste inversé ; le filtre par compte retiré fait tomber la
+-- question de H, et le filtre d'engagement retiré les deux assertions de l'automobiliste C. Le
+-- détail des mutations des deux extractions est en tête du fichier 33.
 begin;
 create extension if not exists pgtap with schema extensions;
 

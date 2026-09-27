@@ -1059,6 +1059,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      action_engagee_de_la_periode: {
+        Args: { p_period_start: string; p_poste: string; p_user_id: string }
+        Returns: {
+          action_text: string
+          intention_days: number[]
+          intention_timing: string
+          question_template: string
+        }[]
+      }
       archiver_engagement: {
         Args: {
           p_action_template_id: string
