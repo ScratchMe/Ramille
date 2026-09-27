@@ -3,7 +3,7 @@ export interface EcartDePoste {
   poste: 'commute' | 'leisure' | 'travel';
   precedentKg: number;
   courantKg: number;
-  /** Le poste dominant du bilan courant, celui du plan — sa barre est en accent. Un seul. */
+  /** Le poste dominant du bilan courant, ton poste principal — sa barre est en accent. Un seul. */
   dominant: boolean;
 }
 /** L'écart entre deux bilans, poste par poste : contour = avant, plein = maintenant, échelle commune. */

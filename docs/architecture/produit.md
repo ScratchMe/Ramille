@@ -184,11 +184,11 @@ n'était dans aucune fiche :
 | Page | Chantier | Ce qu'elle conclut |
 |---|---|---|
 | [`v1-21`](v1-21-modes-manquants.md) | C4.4, les modes manquants | **Livré le 21/09/2026.** Le « Train ou RER » était compté au tarif du TER : 249,2 kg/an là où 88,0 étaient justes, rapport 2,83 mesuré. Le vélo à assistance et l'autocar existent désormais, et l'autocar émet **plus qu'un TER** — un test pgTAP l'épingle pour qu'on ne le « corrige » pas par réflexe. Une moitié reste ouverte (`v1-27` §12.16) : le **gain** de l'action « en train » reste au tarif du TER, faute de pouvoir cibler le RER sans savoir où l'on habite |
-| [`v1-22`](v1-22-retirer-un-bilan.md) | C4.7, retirer un bilan | À faire. `status = 'withdrawn'` rend justes **douze** lectures d'un coup — la fiche en annonçait trois |
-| [`v1-23`](v1-23-point-quantitatif.md) | C4.1, le point quantitatif | **Fermer par écrit pour la V1**, avec sa condition de réouverture : la boucle n'a tourné sur personne, et le gain principal annoncé est celui qu'il ne faut pas prendre |
-| [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **Livrer la phrase décidée le 10/09 et jamais livrée**, puis sortir le poste du lot 4 : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions |
-| [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | À instruire, avec cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
-| [`v1-26`](v1-26-meme-saison-un-an-apres.md) | C4.8, la même saison un an après | **Moitié livrée par C6.3**. Le reste recouvre le moment anniversaire : une dérivation pour deux surfaces, ou deux chiffres qui se contrediront |
+| [`v1-22`](v1-22-retirer-un-bilan.md) | C4.7, retirer un bilan | **Décidé le 27/09/2026, à faire** : retirer et non supprimer, plan reconstruit sans annonce, le geste sur la restitution. `status = 'withdrawn'` rend justes **douze** lectures d'un coup — la fiche en annonçait trois |
+| [`v1-23`](v1-23-point-quantitatif.md) | C4.1, le point quantitatif | **Fermé pour la V1 le 27/09/2026**, avec sa condition de réouverture : la boucle n'a tourné sur personne, et le gain principal annoncé est celui qu'il ne faut pas prendre |
+| [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **La phrase décidée le 10/09 est livrée le 19/09 ; le poste est sorti du lot 4 le 27/09/2026** : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions, donc il devient un increment à part (§5) |
+| [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | **Décidé le 27/09/2026, à construire avant Play** : notification seule, dix semaines depuis le premier engagement choisi de la saison, et un mot qui nomme ce que la personne a prévu (« Demain, tu as prévu de faire ton trajet à vélo. »). La page posait cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
+| [`v1-26`](v1-26-meme-saison-un-an-apres.md) | C4.8, la même saison un an après | **Moitié livrée par C6.3 ; le reste décidé le 27/09/2026** — une seule dérivation pour le suivi et la page d'année, la même saison sinon le bilan précédent, toujours nommé — et construit avec C6.5. Le reste recouvre le moment anniversaire : une dérivation pour deux surfaces, ou deux chiffres qui se contrediront |
 
 **Et la dette technique a son relevé depuis le 19/09/2026** :
 [`v1-27-dette-technique.md`](v1-27-dette-technique.md), écrit après la relecture des six jours du
@@ -285,6 +285,42 @@ d'`auth.users`. Deux conséquences utilisables :
 - le compte des suppressions **faites** doit vivre dans une table **hors de la cascade**, écrite par
   `delete_my_account` avant qu'elle ne supprime, et sans identifiant de personne : ce qu'on veut
   savoir est combien, jamais qui.
+
+**Et la question des cohortes est tranchée le 27/09/2026 : on garde le chemin, sans segment ni
+identifiant**, sur la recommandation posée. Juste avant de supprimer, la purge incrémente des
+compteurs dans une table **hors de la cascade**, dans la même transaction qu'elle — un cron séparé
+ferait mieux sur rien et pourrait manquer un passage. Chaque compteur porte :
+
+- la **semaine d'arrivée** (création de la session) ;
+- l'**étape la plus loin** atteinte : a ouvert, a soumis un bilan, s'est engagée, a répondu à au
+  moins un point ;
+- les **semaines tenues**, par tranches, jusqu'au dernier signe de vie ;
+- l'**état des rappels au départ** (`normal` / `espace` / `silence`, `regime_de_rappel`).
+
+S'y ajoute le **compte des suppressions de compte, par mois**, écrit par `delete_my_account` avant
+qu'elle ne supprime. **Aucun segment** (zone, poste dominant) : à nos volumes, une ligne découpée
+aussi finement décrirait une seule personne, c'est-à-dire garderait la trace de quelqu'un que la
+page de confidentialité promet d'effacer. Les segments attendront un volume où une ligne n'est pas
+une personne. **La page de confidentialité le dit** : elle écrit aujourd'hui que la session « et
+toutes les données associées » sont supprimées, et elle gagne une phrase sur les comptes agrégés,
+sans identifiant. C'est ce qui doit être en place **avant l'ouverture sur Play** : chaque jour sans
+agrégat est une cohorte perdue pour de bon.
+
+**Et les deux autres questions sont tranchées le même jour**, sur la recommandation posée :
+
+- **la surface vit hors de l'app, dans le tableau de bord Supabase** : des vues `analytics.*`
+  prêtes à lire, une par indicateur (entonnoir, rétention par cohorte, régimes de rappel,
+  départs), et des requêtes enregistrées. La personne qui pilote y entre déjà avec son propre
+  compte : aucune authentification à construire, rien à justifier devant Play, et rien qui puisse
+  passer pour un écran de Ramille. Le prix accepté : c'est moins joli, et c'est lié à Supabase ;
+- **le churn est le barreau `silence` de `regime_de_rappel`** — actif = `normal`, en décrochage =
+  `espace`, churn = `silence`, c'est-à-dire le moment où le produit lui-même renonce à écrire
+  (huit périodes sans signe de vie, environ deux mois sur la boucle hebdomadaire). Par personne,
+  la boucle hebdomadaire quand elle existe, puisque c'est le rythme de l'app. Qui n'a jamais fait
+  de bilan n'a pas de boucle : son seul départ lisible est la purge, qui reste le départ **certain**
+  des sessions anonymes. **Aucune définition n'est écrite à côté de cette échelle** — « trente
+  jours sans ouverture » en ferait une seconde, qui divergerait de celle qui décide déjà des
+  rappels.
 
 **Le vocabulaire de ce lot s'appuiera sur le glossaire de `tourdegrowth.com`** (demande du
 20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
@@ -395,3 +431,12 @@ les GitHub Issues de ce repo (ex. #27-30 : synchronisation automatique des facte
 trajectoire 2050 sur l'écran de restitution, canal de feedback utilisateur, tracking
 d'usage/segmentation). Le jeu "pas = monnaie" évoqué le 04/09/2026 est explicitement hors
 roadmap de ce repo (projet à part, voir `v1-06-partage-social.md` §1).
+
+**Un increment identifié et non planifié : les déplacements professionnels** (sorti du lot 4 le
+27/09/2026, [`v1-24`](v1-24-deplacements-professionnels.md)). Un quatrième poste traverse le calcul,
+les colonnes figées, la restitution, les deux boucles et le référentiel d'actions, et ses kilomètres
+ne sont presque jamais le choix de la personne. **Sa précondition est écrite et elle passe avant
+toute spécification** : lire dans la source du repère national (`carbon-reference.ts`) si les
+déplacements professionnels entrent dans son périmètre — c'est une question de méthode, pas de
+goût. Ce que la V1 en dit : une phrase sur l'étape du trajet régulier, « On ne compte pas ici les
+déplacements faits pendant ton travail. »

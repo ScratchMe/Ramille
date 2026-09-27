@@ -2,6 +2,14 @@
 
 > **Page de décision du chantier C4.7** ([#149](https://github.com/ScratchMe/Ramille/issues/149)),
 > deuxième des six du lot 4. Écrite le 19/09/2026.
+>
+> **Les quatre décisions sont rendues le 27/09/2026, toutes sur la recommandation de la page** :
+> **D1** retirer (`status = 'withdrawn'`, la ligne reste) ; **D2** le plan est reconstruit sur le
+> bilan valide précédent, **sans rien annoncer** — retirer est un geste choisi, du côté de
+> `changement` ; **D3** on peut retirer son seul bilan, et l'on retombe sur `/onboarding`, la marque
+> locale s'effaçant au même geste ; **D4** un lien « Ce bilan ne me ressemble pas » sur la
+> restitution du bilan concerné, avec une confirmation, et l'adresse d'un bilan retiré dit qu'il l'a
+> été. Le chantier (§6) peut commencer.
 
 ## 1. D'où ça vient
 

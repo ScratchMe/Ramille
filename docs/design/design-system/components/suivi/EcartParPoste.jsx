@@ -5,7 +5,7 @@ import { BarreContour } from './BarreContour.jsx';
 // poste : le libellé, le couple « avant → maintenant » en chiffres tabulaires, la barre en contour (le bilan précédent)
 // puis la barre pleine (celui-ci). Trois règles :
 // — l'échelle est COMMUNE aux six barres : une échelle par poste rendrait 40 kg aussi long que 2 t ;
-// — l'accent suit le poste DOMINANT du bilan courant, celui sur lequel le plan travaille — pas forcément le plus lourd ;
+// — l'accent suit le poste DOMINANT du bilan courant, celui que le cap de la saison vise — pas forcément le plus lourd ;
 // — aucune hiérarchie morale : ni flèche, ni couleur de réussite ou d'échec. Deux nombres, deux barres.
 const HAUTEUR = 10;
 const LIBELLES = { commute: 'Trajet domicile-travail', leisure: 'Loisirs du week-end', travel: 'Voyages longue distance' };
@@ -16,11 +16,12 @@ const enPhrase = (poste, occasionnels) => (poste === 'leisure' && occasionnels ?
 // `formatTonnesNu` (src/lib/format.ts) : en kilos sous la tonne, en tonnes à une décimale au-delà.
 const tonnes = (kg) => (Math.round(kg) < 1000 ? Math.round(kg) + ' kg' : (kg / 1000).toFixed(1).replace('.', ',') + ' t');
 // `legendeDeLEcart` (src/types/suivi.ts) : la légende nomme le poste qui porte l'accent — sans quoi l'information
-// n'existerait qu'en couleur, sous des barres masquées au lecteur d'écran.
+// n'existerait qu'en couleur, sous des barres masquées au lecteur d'écran. Elle dit « ton poste principal » et jamais
+// ce que le plan en fait : elle ne le lit pas, et un plan à zéro action ne travaille sur rien (27/09/2026).
 const legende = (ecarts, occasionnels) => {
   const formes = 'Contour : bilan précédent · plein : ce bilan';
   const dominant = ecarts.find((e) => e.dominant);
-  return dominant ? formes + ' · accent : ' + enPhrase(dominant.poste, occasionnels) + ', le poste sur lequel ton plan travaille' : formes;
+  return dominant ? formes + ' · accent : ' + enPhrase(dominant.poste, occasionnels) + ', ton poste principal' : formes;
 };
 export function EcartParPoste({ ecarts = [], loisirsOccasionnels = false }) {
   const maxKg = Math.max(...ecarts.flatMap((e) => [e.precedentKg, e.courantKg]), 1);

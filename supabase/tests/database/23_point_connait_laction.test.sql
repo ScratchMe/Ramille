@@ -25,6 +25,15 @@
 -- un uuid relevé sur le projet distant ne s'apparie à rien en CI — c'est ce qui a fait tomber la CI de
 -- la vague 5, sur le contrôle de la migration. Les libellés du référentiel sont distincts et
 -- insérés littéralement par `20260905130000` : ils en sont la clé naturelle.
+--
+-- **Depuis le 27/09/2026, la recherche de l'action engagée vit dans
+-- `public.action_engagee_de_la_periode`** (`v1-27` §5, `20260927210247`). Mutations jouées ce
+-- jour-là, et ce qu'elles font tomber ici : le poste inversé dans la fonction, ou la boucle
+-- hebdomadaire qui lui passe `leisure` au lieu de `commute` → six assertions de la §4 (le genre, la
+-- question, le libellé figé, la notification, et les deux qui disent que changer d'action ne réécrit
+-- rien) ; le filtre par compte retiré → « Sans action engagée, le genre reste générique ». **Le poste
+-- simplement ignoré ne fait rien tomber ici** : aucun compte de ce fichier n'est engagé sur un poste
+-- et interrogé sur un autre, et c'est le fichier 33 qui garde cet appariement.
 begin;
 create extension if not exists pgtap with schema extensions;
 
