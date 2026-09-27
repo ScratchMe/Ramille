@@ -438,7 +438,7 @@ Accessibilité), **en relançant l'app après chaque changement** :
 |---|---|---|
 | — | Ce document | fait |
 | 5.1 | Le skill `mouvement` | à faire |
-| 5.2 | L'installateur corrigé, `hzblj-skills` en manuel sans `/polish` | à faire |
+| 5.2 | L'installateur corrigé, `hzblj-skills` en manuel sans `/polish` | fait — 39 skills et 7 commandes, huit mutations consignées en tête du test |
 | 5.3 | Les jetons, les dérivations, le kit | à faire |
 | 5.4 | Les feuilles | à faire |
 | 5.5 | « Compris » et la barre | à faire |
@@ -453,8 +453,11 @@ Accessibilité), **en relançant l'app après chaque changement** :
 
 ## 10. Comment reprendre
 
-- **La branche** porte ce document en premier commit ; la PR le cite dans sa description. Chaque
-  chantier de §5 est un commit à lui, et §9 se met à jour dans le même commit.
+- **La branche** `claude/inspiring-fermi-nlmdhl` porte ce document en premier commit, et la PR
+  ScratchMe/Ramille#283 le cite dans sa description. Chaque chantier de §5 est un commit à lui, et
+  §9 se met à jour dans le même commit.
+- **Le skill `mouvement` (§5.1) s'écrit après le socle (§5.3)** et non avant : il cite ses fichiers,
+  et le contrôle des renvois refuse un chemin qui n'existe pas encore.
 - **Refaire le relevé filmé** : il n'est pas dans le dépôt, parce qu'il modifie le parcours réel.
   1. Démarrer Docker et la stack (`TESTING.md` §2.6), puis construire l'export avec les variables de
      la stack locale (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`).
