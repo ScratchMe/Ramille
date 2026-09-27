@@ -183,7 +183,11 @@ valeurs existantes de la mascotte, du lancement et de la carte d'ouverture ne bo
 Trois cas, et le premier est le seul qui soit gratuit :
 
 1. **`withTiming` de reanimated** : suivi par défaut ; on écrit quand même
-   `reduceMotion: ReduceMotion.System`, comme les fichiers existants.
+   `reduceMotion: ReduceMotion.System`, comme les fichiers existants. **Mais ce n'est pas une
+   défense sur laquelle compter** : la carte d'ouverture, qui en dépend, est bien posée dès la
+   première image ; `Depliage`, laissé jouer sous la préférence (mutation J12), **ne s'ouvre pas du
+   tout** — la précision reste à hauteur nulle. Mécanisme non élucidé ; la règle qui en sort est de
+   ne pas lancer d'animation sous la préférence plutôt que de compter qu'elle se pose seule.
 2. **`Animated` de React Native, les CSS transitions et animations de reanimated, le `Modal` de
    react-native-web** : ignorent la préférence. Sous `useReducedMotion()`, la durée passe à zéro
    (`dureeSelonLaPreference`), l'animation n'est pas posée (`styleDEntree`, `Apparition`), ou le style
@@ -510,7 +514,7 @@ Accessibilité), **en relançant l'app après chaque changement** :
 | 5.6 | Le questionnaire | fait — section J, les deux sens et le rail, avec et sans la préférence |
 | 5.7 | Le contenu qui s'ouvre | fait — section J pour les précisions, parcours réel pour la carte du point ; `HauteurSuivie` sous la préférence et la piste qui s'ouvre ne sont pas gardées (§5.7) ; une découpe qui effaçait l'anneau de focus, trouvée en relisant, corrigée et gardée |
 | 5.8 | Les onglets et le chargement | fait — section J pour le fondu, Jest pour le délai |
-| — | Les mutations des gardes | en cours — dix-sept, un export chacune |
+| — | Les mutations des gardes | fait — douze sur la section J, sept sur le parcours réel, jouées une à une sur un fichier égal au commit ; tables en tête de chaque garde. Trois ont d’abord corrigé la garde (`TESTING.md` §2.14, point 5) |
 | 7 | Les documents | fait — kit, `FRONT.md` §2.12, `EXPO.md` §1.5 et §1.7, `TESTING.md` §2.10 et §2.14, `CLAUDE.md`, `v1-17` §9, skill `mouvement` |
 | 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | à faire |
 | 8.2 | Build EAS (à demander) | à faire |

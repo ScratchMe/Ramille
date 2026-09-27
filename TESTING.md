@@ -925,4 +925,14 @@ Quatre règles, chacune payée pendant l'écriture :
    corrigé à la source, puis trois passages verts d'affilée. Relancer jusqu'au vert l'aurait
    enterré.
 
+5. **Une garde d'animation se corrige aussi par ses mutations — trois fois le premier soir.** Une
+   barre qui surgissait sans glisser passait (« en chemin » voulait dire « ailleurs qu'à
+   l'arrivée », et une seule image au point de départ suffisait : c'est un saut) ; une feuille qui
+   glissait tombait en disant « s'ouvre d'un coup » (react-native-web ne pose `role="dialog"` qu'à
+   la fin de son animation, et la mesure cherchait le rôle) ; et la mesure corrigée a rougi la CI
+   sur une image que le `Modal` rend à opacité nulle au montage. Chaque fois, **imprimer les
+   échantillons** a tranché — une fois contre l'hypothèse qu'on venait d'écrire. Et une mutation
+   se joue **sur un fichier égal au commit** : un lot interrompu en avait laissé une dans la copie,
+   sous deux résultats qu'il a fallu rejouer.
+
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.

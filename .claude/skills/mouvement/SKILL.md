@@ -76,7 +76,9 @@ Toute animation dit ce qu'elle devient sous la préférence, et **sous la préf�
 l'état final, dès la première image. Trois cas, et seul le premier est gratuit :
 
 1. **`withTiming`** la suit de lui-même (`ReduceMotion.System`). On l'écrit quand même,
-   `reduceMotion: ReduceMotion.System`, comme `src/components/mascot.tsx`.
+   `reduceMotion: ReduceMotion.System`, comme `src/components/mascot.tsx` — **mais on ne compte pas
+   dessus** : `Depliage`, laissé jouer sous la préférence, ne s'ouvre pas du tout (mutation J12 de
+   `scripts/verifier-etats-export.mjs`). Sous la préférence, on ne lance pas d'animation.
 2. **`Animated` de React Native, les CSS animations et transitions de reanimated, le `Modal` de
    react-native-web** l'ignorent — vérifié dans leur source. Sous `useReducedMotion()`, leur durée
    passe par `dureeSelonLaPreference` (`src/types/mouvement.ts`), l'animation n'est pas posée, ou le

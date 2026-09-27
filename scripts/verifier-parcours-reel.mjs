@@ -210,7 +210,36 @@
 //     le second profil sous la préférence**, où la barre arrive posée. Le second profil y gagne une
 //     chose de plus : le parcours entier est joué une fois sans animation, nouveau bilan compris.
 //
-// Mutations du 27/09/2026 : en cours, un export chacune — la table s'écrit ici une fois jouées.
+// **Éprouvé en le cassant le 27/09/2026** : sept mutations, un export chacune (cache Metro isolé,
+// `--clear`), après deux témoins passés de bout en bout, et **jouées une à une sur un fichier égal
+// au commit** — un lot interrompu avait laissé une mutation dans la copie, et deux résultats ont été
+// rejoués pour ça. Chacune s'arrête à l'étape attendue, sur le message attendu :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | P1 — le `Modal` de la feuille remis en `slide` | « re-bilan — la feuille » : le voile bouge, 900 px sous le haut de l'écran |
+//   | P2 — la feuille se démonte sans sortie | la même étape, à Échap : elle « disparaît d'un coup » |
+//   | P3 — la feuille ignore la préférence (valeurs de départ, `ReduceMotion.Never`) | « la même feuille sous réduire » : elle s'ouvre en bougeant ; la moitié animée reste verte |
+//   | P4 — la barre remise en place sans glisser | « plan — Compris » : aucune image entre son départ et sa place |
+//   | P5 — la barre glisse aussi sous la préférence | « cycliste — … le plan sans action » : elle arrive en glissant |
+//   | P6 — `HauteurSuivie` ne s'anime jamais | « point » : le cap saute de 769 à 664 px |
+//   | P7 — la découpe au ras (`MARGE_DE_DECOUPE = 0`) | « point » : l'anneau de focus de « Oui » est rogné |
+//
+// **Trois de ces mutations ont d'abord corrigé la garde, et c'est ce qu'elles valaient le plus** :
+//   - **P4 est d'abord PASSÉE** : la barre attend masquée, en bas et transparente, et la mutation ne
+//     la remettait en place que dans un effet, une image plus tard — cette image au départ suffisait
+//     à « au moins une image ailleurs qu'à sa place ». « En chemin » veut dire depuis **strictement
+//     entre le départ et l'arrivée** (`enChemin`, `relever-par-image.mjs`), partout où il servait ;
+//   - **P1 tombait, mais en disant « s'ouvre d'un coup »** d'une feuille qui glissait : cherchée par
+//     son rôle, elle était invisible pendant tout le glissement, react-native-web ne posant
+//     `role="dialog"` qu'à la fin de son animation. La mesure passe par `aria-modal` ;
+//   - **et ce changement a fait rougir la CI**, sous la préférence, sur une image que
+//     react-native-web rend à opacité nulle au montage : mesurée image par image, puis écartée —
+//     un `Modal` pas encore montré ne rend rien. L'hypothèse d'abord écrite (`display: none`) était
+//     fausse, et c'est l'impression des échantillons qui l'a dit.
+//
+// P4, P6 et P7 ont été jouées juste avant ce dernier changement de la mesure de la feuille, qu'elles
+// n'atteignent pas ; les quatre autres, et les deux témoins, sur l'état final.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
