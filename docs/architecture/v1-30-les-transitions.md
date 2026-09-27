@@ -437,9 +437,9 @@ Accessibilité), **en relançant l'app après chaque changement** :
 | § | Travail | État |
 |---|---|---|
 | — | Ce document | fait |
-| 5.1 | Le skill `mouvement` | à faire |
+| 5.1 | Le skill `mouvement` | fait — cité dans `CLAUDE.md` |
 | 5.2 | L'installateur corrigé, `hzblj-skills` en manuel sans `/polish` | fait — 39 skills et 7 commandes, huit mutations consignées en tête du test |
-| 5.3 | Les jetons, les dérivations, le kit | à faire |
+| 5.3 | Les jetons, les dérivations, le kit | fait — sept mutations consignées dans `src/types/mouvement.test.ts` |
 | 5.4 | Les feuilles | à faire |
 | 5.5 | « Compris » et la barre | à faire |
 | 5.6 | Le questionnaire | à faire |

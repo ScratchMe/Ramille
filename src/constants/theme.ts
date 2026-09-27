@@ -256,3 +256,37 @@ export const Stroke = {
 } as const;
 
 export const MaxContentWidth = 800;
+
+/**
+ * Le mouvement : durées en millisecondes, déplacement en pixels, et la courbe (27/09/2026,
+ * `v1-30` §4). Une entrée prend son temps, une sortie s'efface plus vite, et rien ne rebondit hors
+ * de l'écran de lancement, qui garde ses propres valeurs.
+ *
+ * **La courbe est quatre nombres, pas une fonction** : reanimated (`Easing.bezier`), `Animated` de
+ * React Native (`Easing.bezier`), les CSS transitions de reanimated (`cubicBezier`) et la CSS du kit
+ * (`cubic-bezier`) la lisent chacun à sa façon, et ce fichier n'importe pas reanimated. C'est la
+ * « sortie douce » : un départ franc, une arrivée qui se pose.
+ *
+ * Toute animation qui s'en sert suit « réduire les animations », et **pas toujours gratuitement** :
+ * `withTiming` et les animations de disposition de reanimated le font d'eux-mêmes, `Animated`, les
+ * CSS transitions de reanimated et le `Modal` de react-native-web l'ignorent — leur durée passe par
+ * `dureeSelonLaPreference` (`src/types/mouvement.ts`). Le skill `mouvement` dit le reste.
+ */
+export const Mouvement = {
+  /** Un contenu qui arrive : l'étape du questionnaire, ce qui glisse sous une précision. */
+  entree: 250,
+  /** La feuille du bas qui monte. */
+  entreeDeFeuille: 280,
+  /** La barre d'onglets qui arrive, valeur du canevas de C5.7 (planche F3). */
+  entreeDeBarre: 320,
+  /** Ce qui apparaît en place : le voile d'une feuille, une précision, une réplique. */
+  fondu: 200,
+  /** La feuille qui redescend, la carte qui se replie. */
+  sortie: 200,
+  /** Le fondu d'une sortie. */
+  sortieBreve: 150,
+  /** Ce qu'un contenu parcourt en entrant. */
+  deplacement: 8,
+  /** La « sortie douce », pour tout ce qui entre, sort, glisse ou se replie. */
+  courbe: [0.22, 1, 0.36, 1],
+} as const;

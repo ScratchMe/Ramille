@@ -255,6 +255,11 @@ joué sans être installé, et chacun décidé avec la personne qui pilote, comm
   supprimé `/dev/null` du conteneur par une commande de vérification mal écrite.
 - **Deux skills ne se déclenchent jamais seuls** et s'appellent par leur nom : `/rejouer-la-ci`
   (`scripts/rejouer-la-ci.mjs`, `TESTING.md` §2.13) et `/preparer-un-worktree` (plus haut).
+  **Un troisième s'y est ajouté le même jour, `/mouvement`** (`.claude/skills/mouvement/SKILL.md`) :
+  les jetons, la règle de « réduire les animations » et ce qui ne bouge jamais, **à appeler avant
+  d'ajouter ou de retoucher une transition**. Il reprend dans nos mots les principes de
+  transitions.dev, qui ne s'installe pas — sa licence interdit de republier sa collection
+  (`docs/architecture/v1-30-les-transitions.md` §3.1).
 
 ## Le produit, en trois règles et un renvoi
 

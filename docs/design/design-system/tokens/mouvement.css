@@ -1,0 +1,25 @@
+/* Ramille — mouvement : durées, déplacement, courbe. Source : theme.ts (Mouvement), v1-30 §4.
+   Une entrée prend son temps, une sortie s'efface plus vite, rien ne rebondit hors de l'écran de
+   lancement (dont les valeurs sont dans readme.md). Sous « réduire les animations », tout se pose :
+   les durées passent à zéro, comme dureeSelonLaPreference le fait dans le dépôt. */
+:root {
+  --motion-entree: 250ms;
+  --motion-entree-feuille: 280ms;
+  --motion-entree-barre: 320ms;
+  --motion-fondu: 200ms;
+  --motion-sortie: 200ms;
+  --motion-sortie-breve: 150ms;
+  --motion-deplacement: 8px;
+  --motion-courbe: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-entree: 0ms;
+    --motion-entree-feuille: 0ms;
+    --motion-entree-barre: 0ms;
+    --motion-fondu: 0ms;
+    --motion-sortie: 0ms;
+    --motion-sortie-breve: 0ms;
+  }
+}
