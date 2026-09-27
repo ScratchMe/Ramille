@@ -121,7 +121,7 @@ relais au rendu suivant.
   « actif », sur `animationEnd` — pendant les 250 ms d'un `slide`, ce n'est ni un dialogue pour un
   lecteur d'écran, ni un piège pour le clavier. Avec `"none"`, il l'est dès la première image. Et un
   outil qui cherche le dialogue par son rôle ne le voit pas glisser : `aria-modal`, lui, est posé
-  tout de suite (lu dans `Modal/index.js` et `ModalContent.js`, 0.21 ; mesuré le 27/09/2026).
+  tout de suite (lu dans la source du `Modal` de react-native-web 0.21 ; mesuré le 27/09/2026).
 - **Les animations de disposition de reanimated (4.5) ne se comportent pas sur web comme sur
   natif**, mesuré sur un export le 27/09/2026 :
   - `entering` pose `visibility: hidden` sur l'élément jusqu'à `animationstart`, une image au moins
