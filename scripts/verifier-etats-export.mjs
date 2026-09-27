@@ -1324,7 +1324,29 @@ function verifierLesArrets(ou, arrets, attendus) {
 //    visité : le premier passage monte l'écran, et un runner lent pourrait avaler le fondu dans ce
 //    montage.
 //
-// Mutations du 27/09/2026 : en cours, un export chacune — la table s'écrit ici une fois jouées.
+// **Éprouvée en la cassant le 27/09/2026** : onze mutations, un export chacune (cache Metro isolé,
+// `--clear`), sur un arbre dont le témoin sort vert deux fois de suite. Chacune fait tomber ce
+// qu'elle devait faire tomber, et rien d'autre dans tout le script :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | J1 — `barreArrive` ignore l'état d'avant | la barre au démarrage, sous les **trois** marques (opacité 0, 60 px sous sa place) |
+//   | J2 — `StepShell` sans entrée | l'étape, moitié animée : ni translucide, ni à droite, ni à gauche |
+//   | J3 — les deux sens intervertis | l'étape, moitié animée, sur le **sens** seul : translucide oui, droite et gauche non |
+//   | J4 — `styleDEntree` ignore la préférence | l'étape sous la préférence : translucide et décalée |
+//   | J5 — la durée du rail sans `dureeSelonLaPreference` | le rail sous la préférence, et lui seul |
+//   | J6 — le rail sans transition | le rail animé : de 37,6 à 75,2 px d'un coup |
+//   | J7 — `Depliage` ne s'anime jamais | la précision, moitié animée : ni le dessous en chemin, ni le fondu |
+//   | J8 — `StepShell` sans `SansApparitionAuMontage` | la précision rouverte depuis un brouillon, qui s'ouvre sous les yeux |
+//   | J9 — `Depliage` ignore la préférence, deux fois | la précision sous la préférence : en chemin et en fondu |
+//   | J10 — `animationDesOnglets` rend toujours « fade » | les onglets sous la préférence : dix images de fondu |
+//   | J11 — `animationDesOnglets` rend toujours « none » | les onglets animés : aucune image de fondu |
+//
+// **J9 casse deux défenses à la fois, et c'est voulu** : `Depliage` ne joue pas sous la préférence
+// (`useJoueAuMontage`), et `withTiming` la lirait de toute façon (`ReduceMotion.System`).
+// Casser la première seule est joué à part (J12), pour savoir si la garde le voit.
+// J3 dit ce que J2 ne dit pas : l'assertion lit le **côté**, pas seulement qu'il se passe quelque
+// chose.
 
 // J1 — la barre ne glisse pas au démarrage, quelle que soit la marque qui la laisse visible.
 for (const marque of [null, 'barre', 'fait']) {
