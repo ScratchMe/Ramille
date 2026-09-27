@@ -361,7 +361,7 @@ export function estUneBaisse(previousKg: number, currentKg: number): boolean {
  * du bilan **courant**, et il vient du serveur (`assessment_results.dominant_poste`) plutôt que d'un
  * maximum recalculé ici : le départage du serveur n'est pas un simple max (les loisirs l'emportent
  * sur les voyages à 5 % près), donc un maximum local désignerait parfois un autre poste que celui
- * sur lequel le plan travaille.
+ * que le cap de la saison vise.
  *
  * Les postes nuls **des deux côtés** sont retirés : « Voyages · 0 kg → 0 kg » n'apprend rien à
  * quelqu'un qui n'a jamais déclaré de voyage, et allonge la carte d'une ligne vide.
@@ -371,7 +371,7 @@ export type EcartDePoste = {
   precedentKg: number;
   courantKg: number;
   /**
-   * Le poste **dominant** du bilan courant, celui sur lequel le plan travaille et dont la barre est
+   * Le poste **dominant** du bilan courant, celui que le cap de la saison vise et dont la barre est
    * en `accent` — pas forcément le plus lourd : à 5 % près, le serveur retient le plus régulier
    * (`etiquetteDuPosteDominant`, 24/09/2026).
    */
@@ -395,9 +395,9 @@ export function ecartParPoste(
 }
 
 /**
- * La légende de l'écart par poste, qui dit **en mots** le poste du plan (24/09/2026, `v1-29`).
+ * La légende de l'écart par poste, qui dit **en mots** le poste accentué (24/09/2026, `v1-29`).
  *
- * « accent : le poste sur lequel ton plan travaille » n'existait qu'en couleur : la légende disait
+ * Ce poste n'existait qu'en couleur : la légende disait
  * ce que l'accent signifie, jamais **quel** poste le portait, et les barres sont masquées aux
  * lecteurs d'écran — qui entendaient donc la règle sans jamais entendre à quoi elle s'appliquait. La
  * légende nomme désormais le poste, dans le registre du sujet de phrase (`POSTE_EN_PHRASE`), qui
@@ -407,12 +407,20 @@ export function ecartParPoste(
  * **Sans poste accentué, la légende ne parle pas d'accent** : un bilan dont le poste dominant est nul
  * des deux côtés voit cette ligne retirée de la liste (`ecartParPoste`), et « accent : … » décrirait
  * une barre qui n'est pas à l'écran.
+ *
+ * **Et elle dit ce que l'accent marque, jamais ce que le plan en fait** (arbitrage du 27/09/2026,
+ * `v1-29` §6.3). Elle finissait par « le poste sur lequel ton plan travaille », sans lire le plan :
+ * la phrase était donc fausse pour **tout** plan à zéro action — tout cycliste, tout profil
+ * sédentaire, et le résiduel des sorties rares où le relevé l'avait vue. « ton poste principal » est
+ * le mot que le suivi imprime déjà sous chaque bilan de l'historique, et il est vrai par
+ * construction, départage à 5 % compris. Conditionner la phrase au plan aurait fait lire au suivi un
+ * état qui change après le bilan — une seconde source pour une légende.
  */
 export function legendeDeLEcart(ecarts: EcartDePoste[], loisirsOccasionnels = false): string {
   const formes = 'Contour : bilan précédent · plein : ce bilan';
   const dominant = ecarts.find((ecart) => ecart.dominant);
   return dominant
-    ? `${formes} · accent : ${nomDuPoste(dominant.poste, 'enPhrase', loisirsOccasionnels) ?? POSTE_EN_PHRASE[dominant.poste]}, le poste sur lequel ton plan travaille`
+    ? `${formes} · accent : ${nomDuPoste(dominant.poste, 'enPhrase', loisirsOccasionnels) ?? POSTE_EN_PHRASE[dominant.poste]}, ton poste principal`
     : formes;
 }
 

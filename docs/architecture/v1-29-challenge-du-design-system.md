@@ -195,7 +195,8 @@ faisait déjà : `innerText` garde l'insécable, et un `includes('… ?')` l'aur
 - **Les liens qui naviguent s'annoncent en liens** — « Voir toutes les pistes », « Modifier ces
   réponses », et tous ceux des écrans du plan et du suivi.
 - **La légende de l'écart par poste dit en mots ce que l'accent désignait seul** (`legendeDeLEcart`) :
-  « … accent : {poste}, le poste sur lequel ton plan travaille ».
+  « … accent : {poste}, le poste sur lequel ton plan travaille » — devenu « ton poste principal » le
+  27/09/2026, la phrase étant fausse pour un plan à zéro action (§6.3).
 - **Chiffres tabulaires** sur le total, le cap, les gains, le suivi et les écarts.
 - **Jetons** : `TypeScale.display` pour la décision dominante (en-tête de niveau 1 de l'écran),
   `TypeScale.label`, `Rail`, `Stroke`.
@@ -587,9 +588,16 @@ feuilles du bas, la barre d'onglets et le questionnaire sont les plus exposés.
   que quand il domine ou pèse le plus des deux postes hors trajet — pas dans le cas courant de « rarement » avec un
   vol. Les libellés restent le repli d'une fréquence qu'on n'a pas pu lire. Le parcours réel lit le
   titre, la barre et le suivi sur le cycliste.
-  **Relevé en l'implémentant, et pas tranché** : la légende de l'écart par poste dit « accent : tes
-  loisirs occasionnels, le poste sur lequel ton plan travaille », alors qu'un plan dont le poste est
-  ce résiduel ne porte aucune action. **Et le second relevé est mesuré et tranché le 27/09/2026** :
+  **Relevé en l'implémentant, et tranché le 27/09/2026** : la légende de l'écart par poste disait
+  « accent : tes loisirs occasionnels, le poste sur lequel ton plan travaille », alors qu'un plan
+  dont le poste est ce résiduel ne porte aucune action. Le défaut était plus large que le relevé :
+  `legendeDeLEcart` ne lit pas le plan, donc la phrase était fausse pour **tout** plan à zéro action,
+  quel que soit son poste. Décision, sur la recommandation posée : **« … accent : {poste}, ton poste
+  principal »**, partout — le mot que le suivi imprime sous chaque bilan de l'historique, vrai par
+  construction, départage à 5 % compris. Écartés : conditionner la phrase au plan (le suivi lirait
+  un état qui change après le bilan) et ne corriger que le résiduel (les autres plans à zéro action
+  gardaient la phrase fausse). En production ce jour-là, personne ne la lisait : le seul plan à zéro
+  action appartenait à un compte d'un seul bilan, qui ne voit pas l'écart. **Et le second relevé est mesuré et tranché le 27/09/2026** :
   un profil « rarement » dont les voyages déclarés pèsent moins que le résiduel recevait bien, chaque
   mois, « … pour tes sorties du week-end ? » (le cron mensuel joué sur la stack locale ; aucun
   compte de production dans ce cas). Décision : **il est interrogé sur ses voyages**
