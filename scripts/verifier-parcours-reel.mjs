@@ -193,7 +193,7 @@
 // tort) ne sont gardés par aucune étape de ce parcours : ce sont les tests de `cartesDuPlan` et la
 // relecture qui les tiennent.
 //
-// **Et trois le 27/09/2026, sur le retrait d'un bilan** (C4.7, `v1-22`) — trois **appels** de
+// **Et quatre le 27/09/2026, sur le retrait d'un bilan** (C4.7, `v1-22`) — quatre **appels** de
 // l'écran, que Jest ne voit pas : chaque dérivation de `src/types/retrait-du-bilan.ts` a ses tests,
 // mais un écran qui leur passerait le mauvais argument les laisserait tous verts. Témoin passé de bout
 // en bout, puis un rejeu `parcours` par mutation (export neuf, stack neuve) :
@@ -203,6 +203,7 @@
 //   | T1 — la restitution passe `'completed'` à `lectureDuStatut` au lieu du statut lu | « cycliste — retirer le bilan en voiture » : « Ce bilan a été retiré. » n'apparaît jamais **après le rechargement** — sans lui, l'état posé par le geste aurait suffi à passer |
 //   | T2 — le gestionnaire du retrait n'efface plus la marque locale | « cycliste — retirer son seul bilan » : « la marque locale survit au retrait du seul bilan » |
 //   | T3 — la confirmation reçoit toujours la place `ancien` | « cycliste — retirer le bilan en voiture » : « ton plan repartira de ton bilan précédent. » n'apparaît jamais |
+//   | T4 — l'écran passe `null` à `confirmationDuRetrait` au lieu de l'engagement relu (27/09/2026, contre-lecture) | « cycliste — retirer le bilan en voiture » : « L’action que tu suis — » n'apparaît jamais |
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1131,11 +1132,29 @@ try {
     (await lire('plan_actions?select=rank', sobre.jeton)).length > 0,
     'le plan du bilan en voiture ne porte aucune action : le retrait ne prouverait rien'
   );
+  // **Une action engagée avant le retrait** (contre-lecture du 27/09/2026) : sans elle, l'écran
+  // pouvait passer `null` à `confirmationDuRetrait` à la place de l'engagement relu, et Jest comme ce
+  // parcours restaient verts — la dérivation a ses tests, son appel n'en avait aucun. La première
+  // piste de ce bilan porte sur le trajet domicile-travail, donc l'intention se dit en jours.
+  const [premierePiste] = await lire('plan_actions?select=rank,action_templates(poste)&rank=eq.1', sobre.jeton);
+  assurer(
+    premierePiste?.action_templates?.poste === 'commute',
+    `la première piste du bilan en voiture porte sur « ${premierePiste?.action_templates?.poste} », attendu ` +
+      'le trajet domicile-travail : la feuille demanderait une échéance et non des jours'
+  );
+  await bouton('Je m’y engage');
+  await choisir('mardi');
+  await choisir('jeudi');
+  await bouton('C’est noté');
+  await attendreTexte('Changer d’avis');
   await page.goto(`${base}/suivi/bilan?id=${bilanVoiture.id}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await attendreTexte('Estimation annuelle, tous déplacements');
   await bouton('Ce bilan ne me ressemble pas');
   // Sans la ponctuation double : `ThemedText` y pose une espace insécable au rendu.
   await attendreTexte('ton plan repartira de ton bilan précédent.');
+  // La phrase du re-bilan, relue au toucher du lien, avec la fin décidée le 27/09/2026.
+  await attendreTexte('L’action que tu suis —');
+  await attendreTexte('Sinon, elle ne sera plus engagée.');
   await bouton('Retirer ce bilan');
   await attendreTexte('Ce bilan a été retiré.');
   assurer(
@@ -1148,6 +1167,13 @@ try {
   assurer(
     pistesApresRetrait.length === 0,
     `${pistesApresRetrait.length} piste(s) après le retrait : le plan n’est pas reparti du bilan à vélo, à zéro action`
+  );
+  // Le plan reconstruit n'a plus l'action : elle part, et elle laisse sa trace (C2.2), sous la raison
+  // `retrait` — que l'encart orphelin tait, là où `rebilan` l'aurait rallumé.
+  const archives = await lire('plan_action_commitments_archive?select=released_reason', sobre.jeton);
+  assurer(
+    archives.length === 1 && archives[0].released_reason === 'retrait',
+    `l'action engagée devait être archivée une fois, en « retrait » : ${JSON.stringify(archives)}`
   );
   // **L'adresse le dit encore après un rechargement** : c'est la lecture par identifiant qui parle
   // là, et plus l'état posé par le geste — la seule des deux que l'adresse partagée ou un favori

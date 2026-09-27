@@ -53,6 +53,27 @@ export function etatDuPremierParcours(etape: EtapeDuPremierParcours | null): Eta
 }
 
 /**
+ * Le questionnaire qui vient d'être soumis ouvre-t-il un premier parcours sur cet appareil ?
+ *
+ * **Deux conditions, et la seconde est venue avec le retrait d'un bilan** (C4.7, décision du
+ * 27/09/2026, question 12b). La première — aucun bilan déjà vu ici — suffisait tant que la marque de
+ * bilan ne pouvait que se poser. Retirer son seul bilan l'efface (`effacerLaMarqueDeBilan`, pour
+ * qu'une réouverture hors ligne n'envoie pas au plan), et le bilan suivant passait alors pour un
+ * premier : la barre disparaissait jusqu'au plan, puis « Deux endroits, pas plus. » revenait expliquer
+ * les deux lieux à quelqu'un qui les connaît. **Un parcours déjà commencé ici ne recommence pas** :
+ * l'étape notée, quelle qu'elle soit, dit que cet appareil l'a vu.
+ *
+ * `null` pour l'étape recouvre « jamais commencé » et « pas pu lire » ; les deux ouvrent un premier
+ * parcours si aucun bilan n'a été vu, ce qui est le comportement d'avant cette règle.
+ */
+export function ouvreUnPremierParcours(
+  aDejaVuUnBilan: boolean,
+  etapeLue: EtapeDuPremierParcours | null
+): boolean {
+  return !aDejaVuUnBilan && etapeLue === null;
+}
+
+/**
  * « Deux endroits, pas plus. » — la carte qui nomme la barre au moment où elle arrive.
  *
  * Elle ne se rend qu'une fois, à la place de la carte d'attente, et elle dit **ce qu'on trouve où**

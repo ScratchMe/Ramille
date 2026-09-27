@@ -167,15 +167,46 @@ Livré le jour des décisions, dans `20260928090000_retirer_un_bilan.sql` et
 - **La garde des transitions devait être étendue, sinon elle aurait refusé le retrait lui-même**
   (`RM005`, `20260920190000`). Un retrait direct par le client est refusé (`RM007`), un bilan retiré
   ne revient pas (`RM005`), et le RPC refuse un bilan en cours ou déjà retiré (`RM006`).
-- **Retirer son seul bilan laisse le cycle en place**, inerte, et **annule les rappels en attente** :
-  un e-mail étalé sur quatre jours serait parti vers `/plan?rappel=1`, qui, sans bilan ni marque
-  locale, propose de retrouver un compte. Relevé par le chantier, fermé à l'intégration.
+- **Retirer son seul bilan laisse le cycle en place, et archive son action engagée** (décision du
+  27/09/2026, raison `retrait`). La première version laissait l'action engagée sur un cycle qu'elle
+  disait « inerte », et il ne l'était pas : `lireLEngagementEnCours` le lit, donc la feuille
+  « Nouveau bilan » nommait l'action, et la reconduction de saison la faisait revenir, étiquetée
+  « · RECONDUIT », devant quelqu'un qui repartait d'un nouveau bilan (contre-lecture du 27/09). Le
+  retrait **annule aussi les rappels en attente** : un e-mail étalé sur quatre jours serait parti vers
+  `/plan?rappel=1`, qui, sans bilan ni marque locale, propose de retrouver un compte. Relevé par le
+  chantier, fermé à l'intégration ; gardé des deux côtés depuis — annulé pour le seul bilan, laissé
+  en attente pour qui en garde un.
+- **Et la reconduction avait un défaut à elle, que C4.7 a rendu visible** : elle prenait la dernière
+  action engagée de **n'importe quel** cycle antérieur, donc une saison passée sans engagement
+  faisait revenir l'action d'avant. Elle ne lit plus que le cycle immédiatement précédent (scénario E
+  de `21_engagement_qui_survit.test.sql`). Aucun compte de production n'était concerné : tous les
+  cycles sont de l'automne 2026.
 - **Deux ajouts décidés le même jour par la personne qui pilote** : dans le cas `dernier`, la
   confirmation dit le sort de l'action engagée avec la phrase du re-bilan, au conditionnel — ce n'est
   pas l'annonce écartée par D2, qui venait *après* ; et la page de confidentialité dit qu'un bilan
   retiré reste conservé, et exporté.
-- **Ce qui reste hors de portée** : un lien de partage déjà envoyé garde ses chiffres, qui voyagent
-  dans l'adresse ; et sur un appareil, la marque effacée fait traiter le questionnaire suivant comme
-  un premier, donc la barre d'onglets se retire jusqu'à « Ton premier plan » — cohérent avec un
-  nouveau départ, et à regarder sur appareil (`v1-13` §11).
+- **Le premier parcours ne recommence pas** (décision du 27/09/2026). La marque de bilan effacée
+  faisait traiter le questionnaire suivant comme un premier : la barre d'onglets disparaissait, puis
+  la carte « Deux endroits, pas plus. » revenait, sans « Ton premier plan », dont la marque était
+  restée — un demi-redémarrage. L'étape n'est désormais notée que sur un appareil qui n'a vu ni bilan
+  ni parcours (`ouvreUnPremierParcours`). À regarder sur appareil (`v1-13` §11.20).
+- **Ce que la confirmation dit se relit au toucher du lien** (contre-lecture du 27/09) : la
+  restitution reste montée dans la pile du suivi, donc une place ou un engagement lus au chargement
+  seraient périmés par un nouveau bilan ou un changement d'action faits entre-temps.
+- **La seconde moitié de la phrase de l'engagement a changé** (décision du 27/09/2026) : « Sinon,
+  elle ne sera plus engagée. » au lieu de « Sinon, tu en choisiras une autre. », fausse quand le
+  plan reconstruit n'a aucune action. La feuille « Nouveau bilan », qui la partage, a changé avec.
+- **Ce qui reste hors de portée** :
+  - un lien de partage déjà envoyé garde ses chiffres, qui voyagent dans l'adresse ;
+  - la marque locale d'un **autre** appareil du compte reste posée — et celle de cet appareil aussi,
+    quand le bilan a été retiré ailleurs (le chemin `etat_change` ne l'efface pas). Le repli ne la
+    lit qu'hors ligne : c'est le risque connu de C4.5 ;
+  - **la date du retrait n'est enregistrée nulle part**, ni colonne ni événement : on sait compter
+    les retraits, jamais les dater ;
+  - en cadence `rolling_quarter` — dormante, aucun écran ne l'écrit —, les bornes du cycle
+    reconstruit se calculent sur la date du bilan **précédent**, donc le cycle du bilan retiré
+    garderait la date de début la plus récente. Non rejoué ; à reprendre le jour où cette cadence
+    reçoit un écran ;
+  - sous un rôle serveur, un `update` de statut ne fait rien de ce que fait le RPC (`SUPABASE.md`
+    §1.4).
 

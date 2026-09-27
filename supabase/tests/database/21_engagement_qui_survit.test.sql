@@ -29,7 +29,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(29);
 
 -- ── Les gardes de la table, avant toute fixture ─────────────────────────────────────────
 
@@ -434,6 +434,69 @@ select is(
    order by a.submitted_at desc nulls last limit 1),
   'c2210000-0000-0000-0000-000000000011'::uuid,
   'nulls last : un bilan complété sans horodatage ne passe pas devant un bilan daté (A4-20)'
+);
+
+-- ── Scénario E : la reconduction ne lit que la saison qui précède (27/09/2026) ───────────
+-- Relevé par la contre-lecture de C4.7 (`v1-22` §7) : la requête prenait le plus récent des cycles
+-- **qui avaient un engagement**, donc une saison sans engagement était sautée et l'action d'une
+-- saison plus ancienne revenait. E s'engage au printemps (reculé de 200 jours), voit son action
+-- reconduite en été (reculé de 100 jours) puis « change d'avis » ; à l'automne, rien ne doit revenir.
+--
+-- Éprouvé le 27/09/2026 : la requête d'avant remise dans `generate_plan_cycle_for_user` fait tomber
+-- cette assertion, et elle seule.
+
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
+values ('c2200000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000000', 'authenticated',
+        'authenticated', 'pgtap-engagement-5@test.local', 'x', now(), now());
+insert into public.assessments (id, user_id, status)
+values ('c2210000-0000-0000-0000-000000000041', 'c2200000-0000-0000-0000-000000000005', 'completed');
+insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
+  commute_distance_km, commute_mode, commute_car_engine, leisure_frequency, leisure_mode,
+  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, household_vehicles)
+values ('c2210000-0000-0000-0000-000000000041', true, 5, 20, 'voiture', 'thermique', 'weekly', 'voiture',
+        '15_30', 'thermique', 'urbain_dense', 'bon', '1');
+select public.recompute_assessment_results('c2210000-0000-0000-0000-000000000041');
+
+select set_config('test.cycle_e1',
+  (select id::text from public.plan_cycles where user_id = 'c2200000-0000-0000-0000-000000000005'), true);
+select set_config('test.action_e1',
+  (select pa.id::text from public.plan_actions pa
+   where pa.plan_cycle_id = current_setting('test.cycle_e1')::uuid order by pa.rank limit 1), true);
+
+select set_config('role', 'authenticated', true);
+select set_config('request.jwt.claims',
+  json_build_object('sub', 'c2200000-0000-0000-0000-000000000005', 'role', 'authenticated')::text, true);
+select public.commit_plan_action(current_setting('test.action_e1')::uuid, array[1,3,5]::smallint[], null);
+select set_config('role', 'postgres', true);
+
+-- Le printemps : le cycle engagé part deux saisons en arrière, et l'été naît, engagement reconduit.
+update public.plan_cycles set period_start = period_start - 200, period_end = period_end - 200
+where id = current_setting('test.cycle_e1')::uuid;
+select public.generate_plan_cycle_for_user('c2200000-0000-0000-0000-000000000005');
+
+select set_config('test.cycle_e2',
+  (select id::text from public.plan_cycles
+   where user_id = 'c2200000-0000-0000-0000-000000000005' and id <> current_setting('test.cycle_e1')::uuid), true);
+select set_config('test.action_e2',
+  (select pa.id::text from public.plan_actions pa
+   where pa.plan_cycle_id = current_setting('test.cycle_e2')::uuid and pa.committed_at is not null), true);
+
+-- L'été : « Changer d'avis ». La saison se termine sans engagement.
+select set_config('role', 'authenticated', true);
+select public.clear_plan_action_commitment(current_setting('test.action_e2')::uuid);
+select set_config('role', 'postgres', true);
+
+update public.plan_cycles set period_start = period_start - 100, period_end = period_end - 100
+where id = current_setting('test.cycle_e2')::uuid;
+select public.generate_plan_cycle_for_user('c2200000-0000-0000-0000-000000000005');
+
+select is(
+  (select count(*)::int from public.plan_actions pa join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+   where pc.user_id = 'c2200000-0000-0000-0000-000000000005'
+     and pc.id not in (current_setting('test.cycle_e1')::uuid, current_setting('test.cycle_e2')::uuid)
+     and pa.committed_at is not null),
+  0,
+  'E : l’automne ne reconduit pas l’action du printemps par-dessus l’été où E a changé d’avis'
 );
 
 select * from finish();

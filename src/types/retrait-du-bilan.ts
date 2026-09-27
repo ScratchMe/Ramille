@@ -82,9 +82,11 @@ export type ConfirmationDuRetrait = {
  * `src/types/rebilan.ts`), parce que c'est la même mécanique — `generate_plan_cycle_for_user` — et
  * la seule forme vraie des deux côtés. Ce n'est pas l'annonce écartée par D2, qui venait *après* le
  * geste : c'est dire *avant* un geste irréversible ce qu'il emporte. Rien pour `ancien`, dont le plan
- * ne bouge pas, ni pour `seul`, dont le cycle reste en l'état jusqu'au bilan suivant — le dire
- * affirmerait un sort que le retrait ne décide pas. `engagement` est requis et sans valeur par
- * défaut : un appelant qui l'oublierait taierait la phrase en silence.
+ * ne bouge pas. Rien non plus pour `seul`, **et ce n'est plus parce que le retrait n'en décide
+ * rien** : depuis la décision du 27/09/2026 (question 12a), retirer son seul bilan archive l'action
+ * engagée (raison `retrait`). Le corps le dit sans la nommer — « tu repartiras d'un nouveau bilan » —
+ * et la nommer en plus est une question de produit ouverte, pas un oubli. `engagement` est requis et
+ * sans valeur par défaut : un appelant qui l'oublierait taierait la phrase en silence.
  *
  * Voix produit, jamais celle de Ramille : c'est la mécanique d'un geste qu'on explique, comme la
  * feuille du nouveau bilan (`FeuilleNouveauBilan`).
@@ -113,10 +115,15 @@ export function confirmationDuRetrait(
 /**
  * Ce que la restitution fait du statut qu'elle lit avec le résultat.
  *
- * **La restitution est la seule lecture du produit qui ne filtre pas sur le statut** : elle lit un
+ * **La restitution est la seule lecture d'affichage qui ne filtre pas sur le statut** : elle lit un
  * bilan par son identifiant, c'est-à-dire par l'adresse qui circule — favori, lien du suivi, redirection
- * de `/bilan/resultat`. Toutes les autres lisent `completed` et deviennent justes sans qu'on y touche ;
- * celle-ci doit reconnaître un bilan retiré et **ne pas afficher son chiffre** (D4).
+ * de `/bilan/resultat`. Les autres lectures d'affichage lisent `completed` et deviennent justes sans
+ * qu'on y touche ; celle-ci doit reconnaître un bilan retiré et **ne pas afficher son chiffre** (D4).
+ *
+ * **« D'affichage », et le mot porte une exception à ne pas « corriger »** : `lireEtatDuCompte`
+ * (`src/lib/compte.ts`) lit elle aussi les bilans sans filtre, et elle le doit — un bilan retiré reste
+ * une donnée à supprimer, comme la page de confidentialité le promet. La filtrer ferait dire « rien à
+ * supprimer » à une session anonyme qui ne porte qu'un bilan retiré.
  *
  * `illisible` pour tout le reste, statut absent compris : un bilan en cours n'a pas de résultat, donc
  * la branche n'est pas atteignable aujourd'hui, et une quatrième valeur de statut ne doit pas

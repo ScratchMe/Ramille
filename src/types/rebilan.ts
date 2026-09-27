@@ -107,9 +107,15 @@ export function engagementDeLaPeriodeCourante(
  * Ce que l'avertissement dit qu'il va se passer.
  *
  * **La phrase est au conditionnel parce que le serveur l'est.** Elle affirmait une perte ; elle dit
- * désormais la règle exacte — l'action reste engagée si le plan recalculé la propose encore, et on
- * en choisit une autre sinon. C'est la seule formulation qui soit vraie dans les deux cas, et elle
+ * désormais la règle exacte — l'action reste engagée si le plan recalculé la propose encore, et
+ * elle ne l'est plus sinon. C'est la seule formulation qui soit vraie dans les deux cas, et elle
  * ne fait peur ni à tort ni par omission.
+ *
+ * **Sa seconde moitié ne promet pas de choix** (décision du 27/09/2026, question 12c). Elle disait
+ * « Sinon, tu en choisiras une autre » : faux quand le plan recalculé n'a aucune action — un
+ * cycliste, un profil sédentaire —, et c'est justement le cas où l'action disparaît. Elle dit
+ * désormais ce qui arrive à l'action, et rien de ce que la personne fera ensuite. Elle est partagée
+ * par la feuille « Nouveau bilan » et par la confirmation du retrait d'un bilan (C4.7).
  *
  * **Deux formes et non une seule à trous, et la seconde est défensive** — il faut le dire, sinon un
  * prochain passage la prendra pour du code mort et la retirera. La base garantit qu'une action
@@ -126,7 +132,7 @@ export function phraseDeLEngagementRecalcule(engagement: EngagementEnCours): str
   const action = engagement.action.replace(/\.$/, '');
 
   if (engagement.intention === null) {
-    return `L’action que tu suis — ${action} — reste engagée si ton nouveau plan la propose encore. Sinon, tu en choisiras une autre.`;
+    return `L’action que tu suis — ${action} — reste engagée si ton nouveau plan la propose encore. Sinon, elle ne sera plus engagée.`;
   }
-  return `L’action que tu suis — ${action} — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, tu en choisiras une autre.`;
+  return `L’action que tu suis — ${action} — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.`;
 }

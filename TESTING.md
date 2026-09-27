@@ -428,8 +428,10 @@ elles-mêmes sont épinglées dans Jest sur toutes les combinaisons d'états (`c
 garde.
 
 **Et il finit par retirer ses deux bilans** (27/09/2026, C4.7, `v1-22`). Le bilan en voiture
-d'abord : c'est lui qui porte le plan, donc la confirmation dit que le plan repart du précédent, la
-base relit le statut `withdrawn` et un plan revenu à zéro action, et l'adresse dit « Ce bilan a été
+d'abord : c'est lui qui porte le plan, et le profil **s'y engage avant** — sans quoi rien ne gardait
+l'argument `engagement` de l'appel, et la confirmation pouvait taire l'action sans qu'un test rougisse.
+La confirmation dit donc que le plan repart du précédent **et** nomme l'action suivie ; la base relit
+le statut `withdrawn`, un plan revenu à zéro action et l'action archivée en `retrait` ; et l'adresse dit « Ce bilan a été
 retiré. » **après un rechargement** — c'est là que parle la lecture par identifiant, et plus l'état
 posé par le geste. Puis le seul qui reste : la confirmation ne parle plus de plan, l'écran rejoint
 l'onboarding, et la marque `traceverte.a_un_bilan.v1` est **lue posée avant**, effacée après — sans la

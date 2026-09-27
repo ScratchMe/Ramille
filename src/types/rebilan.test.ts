@@ -128,6 +128,10 @@ describe('phraseDeLEngagementRecalcule', () => {
   // même gabarit, et ne l'archive que `if not found`. Ces assertions gardent donc le
   // **conditionnel** : c'est la seule forme vraie dans les deux cas, et la reperdre ferait mentir
   // l'écran à quelqu'un qui, le plus souvent, garde son action.
+  //
+  // **Et sa seconde moitié ne promet pas de choix** (décision du 27/09/2026) : « Sinon, tu en
+  // choisiras une autre » était faux quand le plan recalculé n'a aucune action. D'où l'assertion
+  // négative sur « choisiras » — la perte, elle, est désormais dite, mais sous la condition.
   it('dit la condition, et jamais une perte certaine', () => {
     const phrase = phraseDeLEngagementRecalcule({
       action: 'Faire un trajet sur cinq à vélo.',
@@ -135,9 +139,10 @@ describe('phraseDeLEngagementRecalcule', () => {
     });
 
     expect(phrase).toBe(
-      'L’action que tu suis — Faire un trajet sur cinq à vélo — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, tu en choisiras une autre.'
+      'L’action que tu suis — Faire un trajet sur cinq à vélo — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.'
     );
-    expect(phrase).not.toContain('ne seront plus');
+    expect(phrase).toContain(' si ton nouveau plan ');
+    expect(phrase).not.toContain('choisiras');
   });
 
   it('dit la même condition sans intention', () => {
@@ -147,9 +152,10 @@ describe('phraseDeLEngagementRecalcule', () => {
     });
 
     expect(phrase).toBe(
-      'L’action que tu suis — Faire un trajet sur cinq à vélo — reste engagée si ton nouveau plan la propose encore. Sinon, tu en choisiras une autre.'
+      'L’action que tu suis — Faire un trajet sur cinq à vélo — reste engagée si ton nouveau plan la propose encore. Sinon, elle ne sera plus engagée.'
     );
-    expect(phrase).not.toContain('ne sera plus');
+    expect(phrase).toContain(' si ton nouveau plan ');
+    expect(phrase).not.toContain('choisiras');
   });
 
   it('retire le point final du libellé plutôt que d’enchaîner deux ponctuations', () => {

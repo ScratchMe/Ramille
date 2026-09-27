@@ -276,13 +276,25 @@ begin
       else 'rebilan'
     end;
   else
+    -- **La reconduction ne lit que le cycle qui précède** (27/09/2026, contre-lecture de C4.7).
+    -- La requête d'avant joignait d'abord les actions engagées, puis prenait le plus récent des
+    -- cycles qui **en avaient une** : une saison sans engagement était sautée, et l'action d'une
+    -- saison plus ancienne revenait. « Changer d'avis » en été ramenait donc en automne l'action
+    -- lâchée au printemps — et le retrait du seul bilan, qui désengage le cycle courant, aurait
+    -- ressuscité celle d'une saison révolue. Reconduire, c'est prolonger la saison précédente,
+    -- et rien d'autre.
     select pa.action_template_id, pa.committed_at, pa.intention_days, pa.intention_timing,
            pc.id as carried_over_from, pc.id as cycle_pour_archive
       into v_eng
-    from public.plan_cycles pc
+    from (
+      select precedent.id
+      from public.plan_cycles precedent
+      where precedent.user_id = p_user_id and precedent.period_start < bounds.period_start
+      order by precedent.period_start desc
+      limit 1
+    ) dernier
+    join public.plan_cycles pc on pc.id = dernier.id
     join public.plan_actions pa on pa.plan_cycle_id = pc.id and pa.committed_at is not null
-    where pc.user_id = p_user_id and pc.period_start < bounds.period_start
-    order by pc.period_start desc
     limit 1;
     -- **Et `saison` ne se surcharge pas**, sous aucune cause : ici le cycle n'existe pas encore,
     -- donc ce qu'on tente est une **reconduction** d'une saison à l'autre, et c'est elle qui a
@@ -387,13 +399,14 @@ comment on function public.generate_plan_cycle_for_user(uuid, text) is
 --     ne l'appelle pas — une régénération forcée referait les rangs et rejouerait la reprise
 --     d'engagement pour rien ;
 --   - **il était le seul** : il n'y a rien sur quoi reconstruire, `generate_plan_cycle_for_user`
---     sortirait sur « aucun bilan valide ». **Le cycle reste tel quel**, et c'est un choix : le
---     supprimer effacerait l'historique de la saison et emporterait l'action engagée sans trace, ce
---     que C2.2 interdit à tous les chemins du produit. Il est inerte — le plan lit d'abord le
---     dernier bilan `completed` et rend l'état « pas de bilan » sans le regarder, les deux
---     générateurs de points et le cron du plan ne sélectionnent que des bilans `completed` — et il
---     se reprend au prochain bilan de la même saison comme un re-bilan : l'engagement y est reposé
---     s'il est encore proposé, archivé en `rebilan` sinon.
+--     sortirait sur « aucun bilan valide ». **Le cycle reste**, et c'est un choix : le supprimer
+--     effacerait l'historique de la saison. **Mais son action engagée est archivée en `retrait` puis
+--     désengagée** (décision du 27/09/2026, relevée par la contre-lecture) : la confirmation promet
+--     « tu repartiras d'un nouveau bilan », et sans ça l'action revenait — reposée au bilan suivant
+--     de la même saison, ou reconduite à la suivante. Le cycle n'est pas inerte pour autant : la
+--     feuille « Nouveau bilan » lit le dernier cycle (`lireLEngagementEnCours`), et le prochain bilan
+--     de la même saison le reprend comme un re-bilan ; désengagé, il n'a plus rien à leur donner. Les
+--     rappels en attente sont annulés du même geste.
 --
 -- **Les bilans de la personne sont verrouillés d'abord, tous**, et pas seulement celui qu'on retire :
 -- deux retraits lancés ensemble depuis deux onglets liraient chacun « il en reste un » avant que
@@ -472,6 +485,32 @@ begin
     update public.notification_outbox
     set status = 'cancelled'
     where user_id = v_uid and status = 'pending';
+
+    -- **Et l'action engagée est archivée, puis désengagée** (décision du 27/09/2026, question 12a) :
+    -- la confirmation promet « tu repartiras d'un nouveau bilan », donc rien de l'ancien plan ne doit
+    -- revenir — ni reposé au bilan suivant de la même saison, ni reconduit à la suivante. Le cycle
+    -- courant seulement : les saisons révolues gardent leur engagement, c'est leur historique, et la
+    -- reconduction ne lit plus que le cycle qui précède (plus haut). L'archive garde la trace (C2.2),
+    -- sous la raison `retrait`, que l'encart orphelin tait.
+    perform public.archiver_engagement_de_laction(pa.id, 'retrait')
+    from public.plan_actions pa
+    where pa.committed_at is not null
+      and pa.plan_cycle_id = (
+        select pc.id from public.plan_cycles pc
+        where pc.user_id = v_uid
+        order by pc.period_start desc
+        limit 1
+      );
+
+    update public.plan_actions pa
+    set committed_at = null, intention_days = null, intention_timing = null, carried_over_from = null
+    where pa.committed_at is not null
+      and pa.plan_cycle_id = (
+        select pc.id from public.plan_cycles pc
+        where pc.user_id = v_uid
+        order by pc.period_start desc
+        limit 1
+      );
   end if;
 
   return v_restants;

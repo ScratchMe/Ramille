@@ -115,7 +115,13 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   les rôles serveur (`postgres`, `service_role`, les fixtures), ce qui est voulu — c'est le client
   qu'on borne ; et une garde d'**état** (« seul un bilan complété se retire ») doit s'écrire à côté,
   pas à la place, parce que sous un rôle serveur celle de rôle ne dit rien — le fichier 34 les
-  éprouve séparément.
+  éprouve séparément. **Et ce que la garde laisse passer, rien ne le complète** : un
+  `update … set status = 'withdrawn'` sous `postgres` — par `execute_sql`, accordé sans confirmation
+  sur la production — ne reconstruit pas le plan, et la garde d'idempotence du cron laisse ensuite
+  le cycle bâti pour toujours sur un bilan retiré. Le RPC exige `auth.uid()`, donc un opérateur ne
+  peut pas l'appeler : côté serveur, le corps de `retirer_le_bilan` est la liste de ce qu'il faut
+  faire à la main — l'`update`, puis `generate_plan_cycle_for_user(u, 'retrait')` si le bilan
+  portait le plan, ou l'archive et l'annulation des rappels s'il était le seul.
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
   `security definer`** — sinon, depuis le rôle applicatif, le comptage ne voit rien et le quota
   ne se déclenche jamais. Corollaire pour les tests : remplir un quota sous `postgres` par

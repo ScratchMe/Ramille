@@ -141,18 +141,12 @@ type LoadState =
        */
       palierFranchi: boolean;
       /**
-       * La place de ce bilan parmi les bilans valides (C4.7), qui décide de ce que la confirmation du
-       * retrait a le droit de dire. `null` quand elle n'a pas pu être lue — le lien ne se rend pas,
-       * plutôt que de proposer une confirmation dont on ne sait pas quelle phrase est vraie.
+       * La place de ce bilan parmi les bilans valides (C4.7), lue au chargement **pour décider si le
+       * lien se rend**, et pour rien d'autre. `null` quand elle n'a pas pu être lue — le lien ne se
+       * rend pas, plutôt que de proposer une confirmation dont on ne sait pas quelle phrase est vraie.
+       * Ce que la confirmation dit se relit au toucher (`ouvrirLaConfirmation`).
        */
       place: PlaceDuBilan | null;
-      /**
-       * L'action engagée de la période courante, que la confirmation du retrait annonce quand le
-       * bilan retiré porte le plan (27/09/2026). `null` quand il n'y en a pas **ou** quand la lecture
-       * a échoué : la confirmation se tait alors sur l'engagement plutôt que de retenir le geste — la
-       * tolérance de la feuille « Nouveau bilan », qui lit la même chose (`lireLEngagementEnCours`).
-       */
-      engagement: EngagementEnCours | null;
     };
 
 // Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
@@ -280,7 +274,17 @@ export default function BilanResultat() {
   // vaut `true` qu'au rendu suivant : sans lui, deux appuis rapprochés enverraient deux appels, et le
   // second rendrait « déjà retiré » juste après que le premier a réussi — la raison du verrou de la
   // soumission du questionnaire.
-  const [confirmationDuRetraitOuverte, setConfirmationDuRetraitOuverte] = useState(false);
+  //
+  // **Ce que la confirmation dit se lit au toucher du lien, pas au chargement** (contre-lecture du
+  // 27/09/2026). La restitution reste montée dans la pile du suivi : on change d'action depuis
+  // l'onglet Plan, on soumet un nouveau bilan, on revient — et une place ou un engagement lus au
+  // chargement feraient dire « ton plan repartira de ton bilan précédent » à un bilan devenu
+  // `ancien`, ou nommer une action quittée. `null` : la confirmation est fermée.
+  const [confirmationOuverte, setConfirmationOuverte] = useState<{
+    place: PlaceDuBilan;
+    engagement: EngagementEnCours | null;
+  } | null>(null);
+  const [lectureDeLaConfirmation, setLectureDeLaConfirmation] = useState(false);
   const [retraitEnCours, setRetraitEnCours] = useState(false);
   const [messageDuRetrait, setMessageDuRetrait] = useState<string | null>(null);
   const verrouDuRetrait = useRef(false);
@@ -290,22 +294,22 @@ export default function BilanResultat() {
     let cancelled = false;
 
     (async () => {
-      // **Le statut arrive avec le résultat, dans la même lecture** (C4.7). C'est la seule lecture du
-      // produit qui ne filtre pas sur `completed` — elle lit un bilan par son identifiant, c'est-à-dire
-      // par l'adresse qui circule — donc la seule qui ne devient pas juste toute seule quand un bilan
-      // est retiré. Embarqué plutôt que lu à côté : une lecture de plus pourrait échouer seule, et
+      // **Le statut arrive avec le résultat, dans la même lecture** (C4.7). C'est la seule lecture
+      // **d'affichage** qui ne filtre pas sur `completed` — elle lit un bilan par son identifiant,
+      // c'est-à-dire par l'adresse qui circule — donc la seule à l'écran qui ne devient pas juste
+      // toute seule quand un bilan est retiré. (`lireEtatDuCompte` lit aussi tous les statuts, et il
+      // le doit : un bilan retiré reste une donnée à supprimer.) Embarqué plutôt que lu à côté : une lecture de plus pourrait échouer seule, et
       // l'écran ne saurait plus s'il a le droit de montrer le chiffre.
       //
-      // Les bilans valides partent **en parallèle**, jamais en plus : ils ne servent qu'à la phrase de
-      // la confirmation du retrait, et leur échec se tolère — le lien ne se rend pas, c'est tout.
-      const [{ data: lu, error }, bilansValides, lectureDeLEngagement] = await Promise.all([
+      // Les bilans valides partent **en parallèle**, jamais en plus : ils ne servent qu'à décider si
+      // le lien du retrait se rend, et leur échec se tolère — le lien ne se rend pas, c'est tout.
+      const [{ data: lu, error }, bilansValides] = await Promise.all([
         supabase
           .from('assessment_results')
           .select('*, assessments(status, submitted_at)')
           .eq('assessment_id', id)
           .single(),
         lireLesBilansValides(),
-        lireLEngagementEnCours(),
       ]);
 
       if (cancelled) return;
@@ -327,7 +331,6 @@ export default function BilanResultat() {
         return;
       }
       const place = bilansValides.ok ? placeDuBilan(id, bilansValides.data) : null;
-      const engagement = lectureDeLEngagement.ok ? lectureDeLEngagement.data : null;
 
       // **Pas de palier en relecture** (A3-3, A13-14). Le cap appartient au cycle de plan
       // **courant** : le retrancher d'un bilan de l'an dernier donne une marche qui n'est pas la
@@ -355,7 +358,6 @@ export default function BilanResultat() {
           precedent: null,
           palierFranchi: false,
           place,
-          engagement,
         });
         return;
       }
@@ -388,7 +390,6 @@ export default function BilanResultat() {
         precedent: null,
         palierFranchi: false,
         place,
-        engagement,
       });
 
       // **La comparaison arrive en second temps, et l'écran ne l'attend pas** (C2.7, point 2). Même
@@ -553,6 +554,36 @@ export default function BilanResultat() {
     );
   };
 
+  const ouvrirLaConfirmation = async () => {
+    if (!id || state.status !== 'ok' || verrouDuRetrait.current) return;
+    verrouDuRetrait.current = true;
+    setLectureDeLaConfirmation(true);
+    setMessageDuRetrait(null);
+
+    const [bilansValides, lectureDeLEngagement] = await Promise.all([
+      lireLesBilansValides(),
+      lireLEngagementEnCours(),
+    ]);
+
+    verrouDuRetrait.current = false;
+    setLectureDeLaConfirmation(false);
+    // **La place relue gagne ; celle du chargement n'est qu'un repli**, si la relecture échoue — la
+    // confirmation d'avant ce correctif, pas une phrase inventée. Et si le bilan n'est plus parmi
+    // les valides (retiré depuis un autre appareil), on relit l'écran, qui montre l'état « retiré » :
+    // le chemin `etat_change` de `retirer`, atteint plus tôt.
+    const place = bilansValides.ok ? placeDuBilan(id, bilansValides.data) : state.place;
+    if (place === null) {
+      reessayer();
+      return;
+    }
+    // L'engagement, lui, n'a pas de repli : un échec le tait, la tolérance de la feuille « Nouveau
+    // bilan », qui lit la même chose. Retenir le geste pour une phrase serait pire que la taire.
+    setConfirmationOuverte({
+      place,
+      engagement: lectureDeLEngagement.ok ? lectureDeLEngagement.data : null,
+    });
+  };
+
   const retirer = async () => {
     if (!id || state.status !== 'ok' || verrouDuRetrait.current) return;
     // La date que l'état « retiré » affichera : celle que l'écran porte déjà, donc nulle juste après
@@ -570,7 +601,7 @@ export default function BilanResultat() {
       setMessageDuRetrait(RETRAIT_ECHOUE);
       return;
     }
-    setConfirmationDuRetraitOuverte(false);
+    setConfirmationOuverte(null);
     // **Le serveur a refusé parce que le bilan n'est plus complété** — un second appareil, un double
     // appui. On relit plutôt que de parler de réseau : la relecture montre l'état « retiré », qui est
     // la vérité, et la personne n'a pas à deviner ce qui s'est passé.
@@ -672,8 +703,11 @@ export default function BilanResultat() {
     );
   }
 
-  const { results, capKg, submittedAt, precedent, palierFranchi, place, engagement } = state;
-  const confirmation = place === null ? null : confirmationDuRetrait(place, engagement);
+  const { results, capKg, submittedAt, precedent, palierFranchi, place } = state;
+  const confirmation =
+    confirmationOuverte === null
+      ? null
+      : confirmationDuRetrait(confirmationOuverte.place, confirmationOuverte.engagement);
   const totalT = results.total_co2_kg_year / 1000;
 
   // Le palier remplace la barre « Repère 2050 » : mettre 15,8 t à côté de 0,6 t affichait un
@@ -1091,10 +1125,10 @@ export default function BilanResultat() {
 
                 La confirmation reprend la forme de « Supprimer mon compte » (`MonCompte`) : le lien
                 s'efface, un encart dit ce qui va se passer, « Annuler » et le bouton plein. Ce qu'il
-                dit dépend de la place du bilan (`confirmationDuRetrait`) ; quand elle n'a pas pu être
-                lue, le lien ne se rend pas du tout. */}
-            {confirmation !== null &&
-              (confirmationDuRetraitOuverte ? (
+                dit dépend de la place du bilan (`confirmationDuRetrait`), relue au toucher ; quand
+                elle n'a pas pu être lue au chargement, le lien ne se rend pas du tout. */}
+            {place !== null &&
+              (confirmation !== null ? (
                 <ThemedView type="backgroundElement" style={styles.confirmation}>
                   {/* Le lien pressé vient de disparaître : le focus va à ce qui le remplace (`FRONT.md`
                       §2.4), et le lecteur d'écran lit la question avant ses deux réponses. */}
@@ -1115,7 +1149,7 @@ export default function BilanResultat() {
                     <TextLink
                       label={confirmation.annuler}
                       onPress={() => {
-                        setConfirmationDuRetraitOuverte(false);
+                        setConfirmationOuverte(null);
                         setMessageDuRetrait(null);
                       }}
                       disabled={retraitEnCours}
@@ -1136,7 +1170,8 @@ export default function BilanResultat() {
                 <TextLink
                   label={LIEN_DU_RETRAIT}
                   hint={INDICE_DU_RETRAIT}
-                  onPress={() => setConfirmationDuRetraitOuverte(true)}
+                  onPress={() => void ouvrirLaConfirmation()}
+                  disabled={lectureDeLaConfirmation}
                   type="small"
                   themeColor="textTertiary"
                   style={styles.editLink}

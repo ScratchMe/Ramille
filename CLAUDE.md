@@ -870,9 +870,10 @@ dit à quelles conditions le rouvrir. Sept points à connaître :
   `src/lib/compte.ts` balaie les marques locales depuis ses **deux** sorties, suppression de compte
   **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse au seul appareil
   restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut).
-  **Une troisième sortie depuis C4.7** : retirer son seul bilan efface **cette marque-là et elle
-  seule** (`effacerLaMarqueDeBilan`) — le compte n'est pas quitté, donc le balayage par préfixe
-  serait de trop.
+  **Et un troisième effacement depuis C4.7, qui n'est pas une sortie** : retirer son seul bilan
+  efface **cette marque-là et elle seule** (`effacerLaMarqueDeBilan`) — le compte n'est pas quitté,
+  donc le balayage par préfixe serait de trop. Il ne vaut que pour l'appareil du geste : un autre
+  appareil du compte garde sa marque, que le repli ne lit qu'hors ligne — le risque connu de C4.5.
 - **Elle n'est consultée qu'en repli, jamais quand le serveur a répondu**, et c'est ce qui la rend
   sûre : une marque fausse ne peut pas contredire une vérité. Un test l'épingle, et le jour où il
   tombe, c'est que quelqu'un en a fait une seconde source de vérité.
@@ -1151,7 +1152,9 @@ Six points à connaître :
   rend le nombre de bilans valides restants. **Un client qui écrirait `withdrawn` par un `update`
   direct est refusé par un trigger (`RM007`)**, parce que le privilège de colonne sur `status` doit
   rester à la soumission : le trigger distingue le RPC du client par `current_user` (`SUPABASE.md`
-  §2.2), et un bilan retiré ne revient jamais (`RM005` étendu).
+  §1.4), et un bilan retiré ne revient jamais (`RM005` étendu). **« Seul chemin » vaut pour le
+  client** : sous `postgres` — `execute_sql` sur la production — un `update` traverse le trigger sans
+  rien reconstruire, et le corps du RPC est alors la liste de ce qu'il faut faire à la main.
 - **Le plan n'est reconstruit que si le bilan retiré le portait**, sur le bilan valide précédent,
   cause `retrait` (qui saute la garde d'idempotence — sans quoi le cron ne rebâtirait jamais) ;
   l'engagement est reposé si le nouveau plan le propose encore, archivé en `retrait` sinon, **et rien
@@ -1160,10 +1163,15 @@ Six points à connaître :
 - **La confirmation dépend de la place du bilan** (`placeDuBilan` : `seul`, `dernier`, `ancien`,
   `src/types/retrait-du-bilan.ts`) : « ton plan repartira de ton bilan précédent » serait faux d'un
   bilan qui ne porte pas le plan. Quand la place n'a pas pu être lue, le lien ne se rend pas.
-- **Retirer son seul bilan laisse le cycle en place** — inerte, rien ne le lit sans bilan complété, et
-  le supprimer emporterait un engagement sans trace —, **annule les rappels en attente** (sans quoi
-  un e-mail étalé partirait vers `/plan?rappel=1`, qui proposerait de retrouver un compte) et efface
-  la marque locale ; la racine route alors vers l'onboarding.
+- **Retirer son seul bilan laisse le cycle en place comme historique, mais pas son engagement**
+  (décision du 27/09/2026) : l'action engagée est archivée en `retrait` et désengagée. Le cycle n'est
+  pas inerte — `lireLEngagementEnCours` et la reconduction de saison le lisent sans regarder s'il
+  reste un bilan —, et c'est pourquoi l'action devait partir : sinon la feuille « Nouveau bilan » la
+  nommait, et la saison suivante la reconduisait devant quelqu'un qui repartait de zéro. Le retrait
+  **annule aussi les rappels en attente** (sans quoi un e-mail étalé partirait vers `/plan?rappel=1`,
+  qui proposerait de retrouver un compte) et efface la marque locale ; la racine route alors vers
+  l'onboarding. **Le premier parcours, lui, ne recommence pas** (`ouvreUnPremierParcours`, même
+  décision) : la personne connaît déjà les deux lieux.
 - **L'export rend le bilan retiré avec son statut, et l'entonnoir ne décrémente pas** : ce qui est
   soumis a été soumis. La page de confidentialité dit qu'un bilan retiré reste conservé, pour que
   « retirer » ne se lise pas « effacer ».
@@ -1423,7 +1431,11 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   `plan_actions.carried_over_from` sur le cycle d'**origine** — jamais sur la ligne `plan_actions`
   précédente, qui est supprimée à chaque reconstruction et emporterait l'étiquette
   « · RECONDUIT » avec elle. La ligne de l'ancien cycle garde son propre engagement : c'est de
-  l'historique, et l'index unique est **par cycle**.
+  l'historique, et l'index unique est **par cycle**. **Seul le cycle immédiatement précédent se
+  reconduit** (corrigé le 27/09/2026, trouvé en écrivant C4.7) : la requête prenait la dernière
+  action engagée de **n'importe quel** cycle antérieur, donc une saison passée sans engagement —
+  « Changer d'avis », un retrait — faisait revenir l'action d'il y a deux saisons. Le scénario E de
+  `21_engagement_qui_survit.test.sql` l'épingle.
 - **`plan_actions` a désormais deux clés étrangères vers `plan_cycles`**, donc toute lecture
   imbriquée doit nommer la sienne : `plan_actions!plan_actions_plan_cycle_id_fkey(…)`. Sans le nom,
   PostgREST refuse la requête (« more than one relationship was found ») et l'écran du plan ne
@@ -1615,12 +1627,12 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   `recompute_assessment_results` est idempotent : mêmes réponses de trajet, facteurs bornés à la
   date du bilan, mêmes totaux. **Recalculer n'est pas resoumettre** — aucune ligne n'est ajoutée à
   `assessments`, et un test pgTAP l'épingle.
-- **`plan_action_commitments_archive.released_reason` a une quatrième valeur, `contexte`**, et
+- **`plan_action_commitments_archive.released_reason` gagne `contexte`**, et
   l'encart orphelin du plan filtre désormais sur `RAISONS_ANNONCABLES` — les **deux** libérations
   que la personne n'a pas choisies. Sa phrase se dérive de la raison (`phraseDeLOrphelin`) : elle
   disait « Ton plan a changé avec ton nouveau bilan », ce qui est faux quand il n'y a pas eu de
-  bilan. `saison` et `changement` restent tues, pour les raisons de C2.2. **Et une cinquième depuis
-  C4.7, `retrait`, tue elle aussi** : retirer un bilan est un geste choisi, et la confirmation a dit
+  bilan. `saison` et `changement` restent tues, pour les raisons de C2.2. **Et `retrait` depuis
+  C4.7, tue elle aussi** : retirer un bilan est un geste choisi, et la confirmation a dit
   *avant* ce qu'il emportait — réutiliser `rebilan` aurait rallumé l'encart.
 - **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
   du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
@@ -1641,6 +1653,9 @@ le réglage n'a jamais été ouvert. La réponse est qu'il ne l'a pas encore ét
 écarté : le handoff design le prévoit (`docs/design/README.md`, puce « Cadence : saison — été »),
 donc l'ouvrir dans « Toi » serait une décision produit et non une invention. La dormance est
 consignée en base sur le commentaire de la colonne (`20260912110000_detail_kind_et_cadence.sql`).
+**L'ouvrir impose de relire le retrait d'un bilan (C4.7)** : les bornes du cycle reconstruit s'y
+calculent sur la date du bilan **précédent**, donc le cycle du bilan retiré garderait la date de
+début la plus récente, et c'est lui que le plan lirait. Raisonné, pas rejoué (`v1-22` §7).
 
 Même famille, côté plan : `action_templates.detail_kind` ne vaut plus que pour les postes
 domicile-travail et loisirs. La branche `travel` d'`estimate_action_savings` construit son détail

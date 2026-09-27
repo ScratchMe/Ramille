@@ -61,7 +61,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(41);
+select plan(44);
 
 -- ── Ce que le schéma garantit, avant toute fixture ──────────────────────────────────────
 
@@ -293,6 +293,17 @@ select results_eq(
 
 -- ── P — le retrait du bilan qui porte le plan, l'engagement reposé ──────────────────────
 
+-- **Un rappel en attente pour P aussi** (27/09/2026, contre-lecture) : P garde un bilan, donc le sien
+-- doit rester en file — c'est ce qui garde la condition « plus aucun bilan valide » de l'annulation.
+-- Sans lui, un RPC qui annulerait à chaque retrait couperait le rappel de la semaine à quelqu'un qui
+-- garde un plan, et aucune assertion ne tomberait. Vérifié en fin de fichier, section G.
+select set_config('role', 'postgres', true);
+insert into public.engagement_checkins (id, user_id, loop_type, period_start, period_label, trip_label)
+values ('c4720000-0000-0000-0000-0000000000b1', 'c4700000-0000-0000-0000-000000000002', 'commute',
+        date '2026-01-05', 'Semaine du 05/01', 'Trajet domicile-travail');
+insert into public.notification_outbox (user_id, checkin_id, subject, body)
+values ('c4700000-0000-0000-0000-000000000002', 'c4720000-0000-0000-0000-0000000000b1', 'Rappel', 'Rappel');
+
 select set_config('role', 'authenticated', true);
 select set_config('request.jwt.claims',
   json_build_object('sub', 'c4700000-0000-0000-0000-000000000002', 'role', 'authenticated')::text, true);
@@ -379,9 +390,20 @@ values
   ('c4700000-0000-0000-0000-000000000004', 'c4720000-0000-0000-0000-0000000000d1', 'Rappel', 'Rappel'),
   ('c4700000-0000-0000-0000-000000000005', 'c4720000-0000-0000-0000-0000000000d2', 'Rappel', 'Rappel');
 
+-- **Et U s'engage avant de retirer** (décision du 27/09/2026, question 12a) : son seul bilan retiré,
+-- l'action doit être archivée en `retrait` et désengagée, sans quoi elle reviendrait — reposée au
+-- bilan suivant de la même saison, ou reconduite à la suivante. Vérifié en fin de fichier, section G.
+select set_config('test.action_u',
+  (select pa.id::text from public.plan_actions pa join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+   where pc.user_id = 'c4700000-0000-0000-0000-000000000004' order by pa.rank limit 1), true);
+select set_config('test.gabarit_u',
+  (select action_template_id::text from public.plan_actions where id = current_setting('test.action_u')::uuid), true);
+
 select set_config('role', 'authenticated', true);
 select set_config('request.jwt.claims',
   json_build_object('sub', 'c4700000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
+
+select public.commit_plan_action(current_setting('test.action_u')::uuid, array[2,4]::smallint[], null);
 
 select is(
   public.retirer_le_bilan('c4710000-0000-0000-0000-0000000000d1'),
@@ -550,6 +572,32 @@ select throws_ok(
              'Contrôle du refus.', 'nimporte_quoi', now()) $$,
   '23514', null,
   'released_reason refuse toujours une raison inconnue — la contrainte a été étendue, pas desserrée'
+);
+
+-- ── G — ce que la contre-lecture du 27/09/2026 a demandé de garder ──────────────────────
+-- En fin de fichier pour ne pas décaler les numéros que la table des mutations cite : 42 à 44.
+
+select set_config('role', 'postgres', true);
+
+select is(
+  (select status from public.notification_outbox where checkin_id = 'c4720000-0000-0000-0000-0000000000b1'),
+  'pending',
+  'le rappel de P reste en attente : P garde un bilan, l’annulation ne vise que le compte qui n’en a plus'
+);
+
+select is(
+  (select count(*)::int from public.plan_actions pa join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+   where pc.user_id = 'c4700000-0000-0000-0000-000000000004' and pa.committed_at is not null),
+  0,
+  'U a retiré son seul bilan : plus aucune action engagée — rien ne reviendra au bilan suivant (12a)'
+);
+
+select results_eq(
+  $$ select released_reason, action_template_id::text, intention_days::text
+     from public.plan_action_commitments_archive
+     where user_id = 'c4700000-0000-0000-0000-000000000004' $$,
+  $$ values ('retrait'::text, current_setting('test.gabarit_u'), '{2,4}'::text) $$,
+  'et son engagement est archivé en « retrait », jours compris : la trace de C2.2 demeure'
 );
 
 select * from finish();
