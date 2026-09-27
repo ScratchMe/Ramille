@@ -193,6 +193,17 @@
 // tort) ne sont gardés par aucune étape de ce parcours : ce sont les tests de `cartesDuPlan` et la
 // relecture qui les tiennent.
 //
+// **Et trois le 27/09/2026, sur le retrait d'un bilan** (C4.7, `v1-22`) — trois **appels** de
+// l'écran, que Jest ne voit pas : chaque dérivation de `src/types/retrait-du-bilan.ts` a ses tests,
+// mais un écran qui leur passerait le mauvais argument les laisserait tous verts. Témoin passé de bout
+// en bout, puis un rejeu `parcours` par mutation (export neuf, stack neuve) :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | T1 — la restitution passe `'completed'` à `lectureDuStatut` au lieu du statut lu | « cycliste — retirer le bilan en voiture » : « Ce bilan a été retiré. » n'apparaît jamais **après le rechargement** — sans lui, l'état posé par le geste aurait suffi à passer |
+//   | T2 — le gestionnaire du retrait n'efface plus la marque locale | « cycliste — retirer son seul bilan » : « la marque locale survit au retrait du seul bilan » |
+//   | T3 — la confirmation reçoit toujours la place `ancien` | « cycliste — retirer le bilan en voiture » : « ton plan repartira de ton bilan précédent. » n'apparaît jamais |
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
