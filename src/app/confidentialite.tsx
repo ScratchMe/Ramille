@@ -95,7 +95,14 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // (contre-lecture de `v1-29`). Le même passage a retiré deux « liens » que le code a remplacés le
 // 20/09/2026 : l'adresse gardée sur l'appareil sert à reprendre la saisie d'un code, et
 // `/compte/suppression` envoie un code, plus un lien.
-const UPDATED_AT = '25 septembre 2026';
+//
+// **27/09/2026 : ce que le rappel fait sortir était décrit à l'état d'avant le lot 2.** La page disait
+// que seul le nom du poste partait vers Resend et Expo, « Trajet domicile-travail (Voiture seul) » en
+// exemple, et que c'était « la seule chose issue de ton bilan ». Ce libellé a quitté le rappel avec
+// C2.6 (`poste_inserable`), et la question figée du point y est entrée avec C2.1 : elle peut nommer
+// le mode, l'action choisie et les jours fixés (relevé dans les migrations le 27/09/2026). Corrigé sur décision de la personne qui pilote
+// (relevé par la contre-lecture de `v1-27` §4) ; la date suit la mise en ligne.
+const UPDATED_AT = '27 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -265,14 +272,14 @@ const SECTIONS: LegalSection[] = [
             term: 'Resend',
             text:
               'Envoi des emails de rappel, uniquement si tu as choisi ce canal : reçoit alors ton adresse email et le ' +
-              'texte du rappel, qui nomme le poste concerné.',
+              'texte du rappel, c’est-à-dire la question de ton point (le détail plus bas).',
           },
           {
             term: 'Expo',
             text:
               'Acheminement des notifications de rappel vers ton téléphone, uniquement si tu as choisi ce canal : ' +
-              'reçoit alors l’identifiant de notification de ton appareil et le texte du rappel, qui nomme le poste ' +
-              'concerné. Société américaine, serveurs situés aux États-Unis.',
+              'reçoit alors l’identifiant de notification de ton appareil et le texte du rappel, c’est-à-dire la ' +
+              'question de ton point (le détail plus bas). Société américaine, serveurs situés aux États-Unis.',
           },
           {
             term: 'Google (Firebase Cloud Messaging)',
@@ -301,10 +308,11 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Ce qui parvient à chacun se limite à sa fonction. Pour le rappel : ce qui permet de te le remettre — ton ' +
-          'adresse email, ou l’identifiant de notification de ton appareil — et le texte du rappel. Ce texte nomme le ' +
-          'poste sur lequel porte ta question, par exemple « Trajet domicile-travail (Voiture seul) », tel que ton ' +
-          'bilan l’a désigné : c’est la seule chose issue de ton bilan qui sorte par ce canal, et il n’y figure aucun ' +
-          'chiffre, aucune de tes réponses détaillées, aucun de tes totaux. Pour la connexion Google : l’adresse du ' +
+          'adresse email, ou l’identifiant de notification de ton appareil — et le texte du rappel. Ce texte est la ' +
+          'question de ton point, par exemple « Mardi ou jeudi, as-tu fait ce trajet à vélo ? » : selon le cas, elle ' +
+          'nomme le poste sur lequel elle porte, ton mode de transport, l’action que tu as choisie et les jours que tu ' +
+          't’es fixés. C’est tout ce qui sort de ton bilan et de ton plan par ce canal : il n’y figure aucun chiffre, ' +
+          'aucun de tes totaux, aucune autre de tes réponses. Pour la connexion Google : l’adresse du ' +
           'compte avec lequel tu choisis de te connecter. Pour la carte de partage : le lien que tu génères toi-même, ' +
           'avec ton total annuel, ton poste principal et sa part — tant que tu ne partages rien, rien ne part. Le canal ' +
           'de rappel se choisit — et s’éteint complètement — depuis l’écran « Toi », ou par le lien de désinscription de ' +
