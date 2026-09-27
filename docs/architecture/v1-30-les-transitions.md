@@ -510,7 +510,7 @@ Accessibilité), **en relançant l'app après chaque changement** :
 | 5.6 | Le questionnaire | fait — section J, les deux sens et le rail, avec et sans la préférence |
 | 5.7 | Le contenu qui s'ouvre | fait — section J pour les précisions, parcours réel pour la carte du point ; `HauteurSuivie` sous la préférence et la piste qui s'ouvre ne sont pas gardées (§5.7) ; une découpe qui effaçait l'anneau de focus, trouvée en relisant, corrigée et gardée |
 | 5.8 | Les onglets et le chargement | fait — section J pour le fondu, Jest pour le délai |
-| — | Les mutations des gardes | MUTATIONS-ETAT |
+| — | Les mutations des gardes | en cours — dix-sept, un export chacune |
 | 7 | Les documents | fait — kit, `FRONT.md` §2.12, `EXPO.md` §1.5 et §1.7, `TESTING.md` §2.10 et §2.14, `CLAUDE.md`, `v1-17` §9, skill `mouvement` |
 | 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | à faire |
 | 8.2 | Build EAS (à demander) | à faire |

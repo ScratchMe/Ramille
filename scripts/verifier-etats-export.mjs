@@ -1324,7 +1324,7 @@ function verifierLesArrets(ou, arrets, attendus) {
 //    visité : le premier passage monte l'écran, et un runner lent pourrait avaler le fondu dans ce
 //    montage.
 //
-// MUTATIONS-J
+// Mutations du 27/09/2026 : en cours, un export chacune — la table s'écrit ici une fois jouées.
 
 // J1 — la barre ne glisse pas au démarrage, quelle que soit la marque qui la laisse visible.
 for (const marque of [null, 'barre', 'fait']) {

@@ -794,7 +794,12 @@ connaître :
   défaut : un repli sur « On repart pour une saison. » dirait au premier plan la seule phrase qui ne
   peut pas y être vraie. Les deux cartes ne peuvent pas coexister (l'une exige un cycle précédent,
   l'autre exige qu'il n'y en ait pas) et **remplacent toutes deux la carte d'attente, jamais un point
-  en attente** — C2.8 dit pourquoi. La marque locale (`traceverte.premier_plan_vu.v1`,
+  en attente** — C2.8 dit pourquoi. **La troisième carte d'ouverture, celle des deux lieux (C5.7),
+  ne dépend d'aucun cycle et croisait les deux autres** : la saison (relevé au lot 5) puis le premier
+  plan (27/09/2026, un premier plan à zéro action suivi d'un nouveau bilan qui en donne). Qui passe
+  devant se décide en un seul endroit, `cartesDuPlan` (`src/types/plan.ts`) — saison, premier plan,
+  deux lieux —, dont le type rend l'empilement inexprimable, et que l'écran rend en une seule
+  expression pour la même raison. La marque locale (`traceverte.premier_plan_vu.v1`,
   `src/lib/premier-parcours.ts`) est **booléenne** là où celle de la saison porte un identifiant de
   cycle : le premier plan n'arrive qu'une fois, et elle est nécessaire parce que le signal, lui, ne
   se referme que sur un engagement.

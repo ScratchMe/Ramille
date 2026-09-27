@@ -19,4 +19,4 @@ La carte qui ouvre le plan à un moment qui compte — **trois usages, un seul c
 
 **Le récapitulatif ne dit jamais zéro et ne nomme aucun poste** : sans point répondu, pas de corps ; sans changement, la seconde moitié de la phrase tombe. **Les sorties dépendent du plan** : « Reprendre la même action » et « Choisir une autre » supposent un engagement reconduit ; rien d'engagé → « Choisir une action » ; plan sans action → « Compris ». Le premier plan et les deux lieux n'ont qu'à se refermer : « Compris », en lien.
 
-**Elle ne prend jamais la place d'un point en attente** — seulement celle de la carte d'attente. Elle entre en glissant depuis le bas (320 ms), sauf si l'on a demandé moins d'animations.
+**Une seule à la fois, dans un ordre fixe** : la saison, puis le premier plan, puis les deux lieux ; celle qui attend se rend dès que la précédente est refermée — jamais deux cadres empilés. **Elle ne prend jamais la place d'un point en attente** — seulement celle de la carte d'attente. Elle entre en glissant depuis le bas (320 ms), sauf si l'on a demandé moins d'animations.

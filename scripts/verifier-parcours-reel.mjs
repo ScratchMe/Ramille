@@ -31,10 +31,12 @@
 // dire premier **sur cet appareil** (C5.7) et que les marques vivent dans le stockage.
 //
 // **Ce qu'il ne fait pas, et ce n'est pas un oubli** : il ne couvre ni les états d'erreur — c'est le
-// travail de `verifier-etats-export.mjs` — ni les exclusions de cartes en général, qui restent aux
-// dérivations de `src/types` et au chantier D (`v1-27` §4). Ce que le second profil en éprouve est
-// la seule combinaison que le produit rend aujourd'hui sans qu'on la choisisse. Un parcours qui
-// voudrait tout voir serait fragile, et un garde-fou fragile finit ignoré.
+// travail de `verifier-etats-export.mjs` — ni les exclusions de cartes en général, qui vivent depuis
+// le 27/09/2026 dans `cartesDuPlan` (`src/types/plan.ts`, `v1-27` §4) et y sont épinglées sur
+// toutes les combinaisons d'états. Ce que le second profil en éprouve, c'est une partie de l'appel :
+// son nouveau bilan en voiture rend dues le même jour « Ton premier plan » et la carte des deux
+// lieux, la seule paire que l'écran empilait — deux arguments sur huit, nommés en tête (D1, D2). Un parcours qui voudrait tout voir
+// serait fragile, et un garde-fou fragile finit ignoré.
 //
 // ── Comment il tourne ────────────────────────────────────────────────────────────────────────────
 //
@@ -172,6 +174,25 @@
 // donc son libellé figé le marque déjà, et la barre le nommerait sans la fréquence. C'est
 // `loisirsSontLeResiduel` et ses tests qui gardent le cas où il ne domine pas.
 //
+// **Et deux le même soir, sur `cartesDuPlan`** (`v1-27` §4) — l'écran, puisque la dérivation a
+// toutes ses combinaisons d'états dans Jest. Témoin passé de bout en bout, puis un export `--clear`
+// par mutation :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | D1 — l'écran remet l'ancienne condition des deux lieux (`ouverture === null && carteDesDeuxLieux`) | « cycliste — un nouveau bilan en voiture » : « la carte des deux lieux s’empile sur « Ton premier plan » » |
+//   | D2 — l'écran passe `carteDuPremierPlan` fausse quand les deux lieux sont dus (la croyance du lot 5, en argument) | la même étape : « « TON PREMIER PLAN » n'est jamais apparu à l'écran » |
+//
+// D1 a été jouée quand l'écran rendait encore les trois cartes en trois blocs ; sa capture est
+// l'état d'avant la décision — deux cadres empilés, deux lignes de Ramille, « Ton plan » repoussé
+// sous le pli d'un écran de 420 px. **Depuis, les trois cartes sont une seule expression**, et D1
+// ne peut plus s'écrire : l'empilement est devenu inexprimable à l'écran comme dans la dérivation.
+// Ce que l'étape garde encore, c'est **deux** des arguments — `carteDuPremierPlan` et
+// `carteDesDeuxLieux` —, d'où D2. Les autres (`pointsAffiches`, `attenteDisponible`,
+// `motsDuContexte`, `premierPlan`, `nombreDActions`, et `ouvertureDeSaison` au-delà d'un vrai à
+// tort) ne sont gardés par aucune étape de ce parcours : ce sont les tests de `cartesDuPlan` et la
+// relecture qui les tiennent.
+//
 // ── Le mouvement, là où il demande des données (27/09/2026, `v1-30`) ──────────────────────────
 //
 // Quatre transitions ne s'atteignent qu'avec un vrai plan, donc ne se gardent qu'ici ; ce qui se
@@ -184,12 +205,12 @@
 //   - **la feuille « Ton plan va être recalculé »**, la seule qui s'ouvre sur web sans adresse
 //     rattachée — par un re-bilan, puisqu'elle demande une action engagée : le voile se fond sans
 //     bouger pendant que la feuille monte, et Échap la fait redescendre au lieu de l'effacer ;
-//   - puis **les deux mêmes feuilles sous « réduire les animations »** (préférence émulée, page
-//     rechargée : elle n'est lue qu'au démarrage), posées dès la première image et parties d'un
-//     coup — et **tout le second profil sous la préférence**, où la barre arrive posée. Le second
-//     profil y gagne une chose de plus : le parcours entier est joué une fois sans animation.
+//   - puis **la même feuille sous « réduire les animations »** (préférence émulée, page rechargée :
+//     elle n'est lue qu'au démarrage), posée dès la première image et partie d'un coup — et **tout
+//     le second profil sous la préférence**, où la barre arrive posée. Le second profil y gagne une
+//     chose de plus : le parcours entier est joué une fois sans animation, nouveau bilan compris.
 //
-// MUTATIONS-PARCOURS
+// Mutations du 27/09/2026 : en cours, un export chacune — la table s'écrit ici une fois jouées.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1203,6 +1224,42 @@ try {
     `la ligne d'horizon du suivi ne dit pas « déjà sous le repère » (ligneDHorizon2050) : ${texteDeLaCarte.slice(0, 300)}`
   );
 
+  // **Un nouveau bilan qui donne des actions : le premier plan passe devant les deux lieux**
+  // (27/09/2026, `v1-27` §4). La carte « Deux endroits, pas plus. » est encore due — ce profil ne
+  // l'a pas refermée — et le nouveau bilan, en voiture, donne au même cycle ses premières actions :
+  // « Ton premier plan » l'est aussi. Les deux s'empilaient ; `cartesDuPlan` fait passer la seconde
+  // devant. Cette étape garde **deux arguments de l'appel** — la dérivation a toutes ses combinaisons
+  // d'états dans Jest, mais un écran qui lui passerait le mauvais argument les laisserait tous verts ;
+  // l'en-tête nomme ceux que rien ici ne garde.
+  etape('cycliste — un nouveau bilan en voiture : le premier plan passe devant');
+  await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
+  // Le questionnaire est prérempli par le bilan précédent : seul le mode change. On attend le
+  // bandeau qui le dit — sans lui, un préremplissage qui n'arriverait pas laisserait « Suivant »
+  // inactif, et l'échec se lirait en délai dépassé plutôt qu'en cause nommée.
+  await attendreTexte('Tes réponses précédentes sont pré-remplies.');
+  await suivant();
+  await suivant();
+  await choisir('Voiture (seul)');
+  await choisir('Thermique');
+  await suivant();
+  await suivant();
+  await suivant();
+  await suivant();
+  await suivant();
+  await suivant('Voir mon bilan');
+  await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
+  await bouton('Voir ce que je peux faire');
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  await attendreTexte('TON PREMIER PLAN');
+  assurer(
+    !(await page.getByText('Deux endroits, pas plus.').first().isVisible()),
+    'la carte des deux lieux s’empile sur « Ton premier plan » (cartesDuPlan, décidé le 27/09/2026)'
+  );
+  // Refermée, la carte du premier plan laisse passer celle qui attendait : sa marque n'a pas bougé.
+  await page.getByText('Compris', { exact: true }).first().click();
+  await attendreTexte('Deux endroits, pas plus.');
+
   await rpc('delete_my_account', sobre.jeton);
 
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
@@ -1210,7 +1267,8 @@ try {
     `Parcours réel joué de bout en bout : bilan ${ATTENDU.totalKg} kg, ${ATTENDU.pistes.length} pistes dans ` +
       `l'ordre attendu, engagement (les jours au clavier), point répondu, suivi, « Toi » et sa ligne de ` +
       `canal, compte supprimé — puis le cycliste, ${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, ` +
-      `barre d'onglets venue sans « Compris ». Chaque choix rendu répond à son groupe nommé.`
+      `barre d'onglets venue sans « Compris », puis son nouveau bilan en voiture où « Ton premier plan » ` +
+      `passe devant la carte des deux lieux. Chaque choix rendu répond à son groupe nommé.`
   );
 } catch (erreur) {
   try {

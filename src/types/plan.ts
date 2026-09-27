@@ -622,3 +622,111 @@ export function motsDuContexte(reponses: ReponsesDeContexte): string[] {
     })
     .filter((mot): mot is string => mot !== null);
 }
+
+/** Les trois cartes d'ouverture de l'écran du plan, dans l'ordre où elles passent devant. */
+export type OuvertureDuPlan = 'saison' | 'premierPlan' | 'deuxLieux';
+
+/** Ce que l'écran du plan affiche, une fois ses lectures faites (`v1-27` §4, 27/09/2026). */
+export type CartesDuPlan = {
+  /** La seule carte d'ouverture rendue, ou aucune. */
+  carteDOuverture: OuvertureDuPlan | null;
+  /** La carte d'attente, où Ramille dit quand le point revient. */
+  carteDAttente: boolean;
+  /** Au tout premier plan, le choix passe avant le cap (`v1-29`). */
+  pistesAvantLeCap: boolean;
+  /** « Ton plan tient compte de ton contexte… » et sa porte (C5.5). */
+  encartDeContexte: boolean;
+  /** La carte du plan à zéro action (C2.5). */
+  felicitation: boolean;
+  /** « Estimations sur la base des facteurs ADEME… », sous les actions. */
+  estimation: boolean;
+};
+
+/**
+ * **Ce que l'écran du plan affiche parmi les cartes qui s'excluent, décidé en un seul endroit**
+ * (`v1-27` §4, 27/09/2026).
+ *
+ * L'écran portait une dizaine de rendus conditionnels, et les règles qui les séparent vivaient en
+ * prose dans ses commentaires — « les deux cartes ne peuvent pas coexister », « elle remplace la
+ * carte d'attente, jamais un point en attente ». Des affirmations, pas des assertions, et c'est la
+ * famille de défauts que ce dépôt a appris à chercher : **une exclusion affirmée mais vérifiée sur
+ * une paire de moins**. Elle est sortie deux fois sur ces mêmes cartes :
+ *  - la contre-lecture du lot 5 a trouvé que la carte des deux lieux croisait celle de la saison,
+ *    et l'écran a tranché pour cette paire-là ;
+ *  - la même phrase jugeait la paire avec « Ton premier plan » **impossible**, « parce qu'elle exige
+ *    qu'aucun cycle ne précède » — mais la carte des deux lieux ne dépend d'aucun cycle, seulement
+ *    de la marque locale du premier parcours. Un premier plan à zéro action (la barre arrive, sa
+ *    carte avec), puis un nouveau bilan dans la même saison qui donne des actions : les deux cadres
+ *    s'empilaient. Relevé en extrayant cette dérivation, tranché le 27/09/2026 par la personne qui
+ *    pilote : **une seule carte d'ouverture, dans un ordre fixe — la saison, puis le premier plan,
+ *    puis les deux lieux** ; celle qui attend garde sa marque, et se rend dès que la précédente est
+ *    refermée. (Ce n'est pas « la plus récente » : la saison et les deux lieux peuvent devenir dues
+ *    au même chargement — un premier bilan fin novembre, le plan ouvert en décembre.)
+ *
+ * Les exclusions sont désormais épinglées **sur toutes les combinaisons d'états**, pas sur des
+ * exemples (`plan.test.ts`) : l'espace est petit et fini, donc l'énumérer coûte moins qu'oublier
+ * une paire.
+ *
+ * **Ce que la dérivation ne décide pas, et pourquoi** : le contenu de chaque carte (dérivé
+ * ailleurs) ; l'encart orphelin, la période révolue et le rattachement — trois faits qui ne
+ * s'excluent avec rien et ne se remplacent pas ; le trait de temps (`progression !== null &&
+ * !premierPlan`), la carte de re-bilan (`titreDuRebilan`), ce que le cap chiffre (`cadreDuPlan`) et
+ * dit (`phraseDesPistesSuffisantes`), et le lien vers les pistes — chacun a sa propre dérivation et
+ * n'exclut aucune carte ; et le point lui-même, qui se rend **toujours** quand il y en a un : aucune
+ * carte ne prend sa place, c'est la règle de C2.8 (le lien du rappel pointe `/plan`, masquer la
+ * question y ouvrirait une notification sur un écran qui ne la porte pas).
+ */
+export function cartesDuPlan({
+  ouvertureDeSaison,
+  carteDuPremierPlan,
+  carteDesDeuxLieux,
+  pointsAffiches,
+  attenteDisponible,
+  premierPlan,
+  nombreDActions,
+  motsDuContexte: nombreDeMotsDuContexte,
+}: {
+  /** La carte d'ouverture de saison est due (C2.8) et n'a pas été refermée sur cet appareil. */
+  ouvertureDeSaison: boolean;
+  /** La carte « Ton premier plan » est due (C5.6) et n'a pas été refermée sur cet appareil. */
+  carteDuPremierPlan: boolean;
+  /** La barre vient d'arriver sur cet appareil et sa carte n'a pas été lue (C5.7). */
+  carteDesDeuxLieux: boolean;
+  /** Le nombre de points affichés en tête du plan. */
+  pointsAffiches: number;
+  /** La carte d'attente a de quoi se dire : préférences de rappel et boucle lues. */
+  attenteDisponible: boolean;
+  /** Le signal du tout premier plan (`estPremierPlan`), qui survit à la carte refermée. */
+  premierPlan: boolean;
+  /** Le nombre total d'actions du plan. */
+  nombreDActions: number;
+  /** Le nombre de réponses de contexte que l'encart saurait nommer (`motsDuContexte`). */
+  motsDuContexte: number;
+}): CartesDuPlan {
+  // La saison d'abord : c'est la nouvelle, et elle ne vit que deux semaines. Puis le premier plan,
+  // qui dit quoi faire des actions posées dessous. La carte des deux lieux, qui décrit le produit,
+  // attend son tour — elle se rend dès que celle qui la précède est refermée.
+  const carteDOuverture: OuvertureDuPlan | null = ouvertureDeSaison
+    ? 'saison'
+    : carteDuPremierPlan
+      ? 'premierPlan'
+      : carteDesDeuxLieux
+        ? 'deuxLieux'
+        : null;
+
+  const avecActions = nombreDActions > 0;
+
+  return {
+    carteDOuverture,
+    // Ramille parle déjà sous une carte d'ouverture, et le point, quand il y en a un, dit
+    // lui-même que la boucle tourne : la carte d'attente ne s'ajoute à aucun des deux.
+    carteDAttente: pointsAffiches === 0 && attenteDisponible && carteDOuverture === null,
+    pistesAvantLeCap: premierPlan,
+    // Jamais sur un plan à zéro action (il n'a rien à expliquer, et la félicitation serait la
+    // dernière chose à nuancer), jamais sans rien à énumérer (une lecture échouée ne devient pas
+    // une phrase vide, C1.4).
+    encartDeContexte: avecActions && nombreDeMotsDuContexte > 0,
+    felicitation: !avecActions,
+    estimation: avecActions,
+  };
+}

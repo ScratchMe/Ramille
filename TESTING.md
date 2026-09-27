@@ -419,6 +419,14 @@ Trois branches d'écran basculent d'un profil à l'autre, et aucune n'était jou
 la place des cartes, le cap qui **ne chiffre pas** (`cadreDuPlan`, C5.3), et l'absence de l'encart de
 contexte comme du lien vers les pistes.
 
+**Puis il refait un bilan en voiture** (27/09/2026, `v1-27` §4). Sa carte « Plan et Suivi » n'est
+pas refermée, et le nouveau bilan donne au même cycle ses premières actions : « Ton premier plan »
+est due le même jour — la seule paire de cartes d'ouverture que l'écran empilait. Les exclusions
+elles-mêmes sont épinglées dans Jest sur toutes les combinaisons d'états (`cartesDuPlan`) ; cette
+étape garde une partie de ce que Jest ne voit pas — **deux** des huit arguments que l'écran lui passe,
+`carteDuPremierPlan` et `carteDesDeuxLieux`. L'en-tête du script nomme les six autres, que rien ici ne
+garde.
+
 Le second profil tourne dans un **contexte de navigateur neuf**, et c'est structurel : « premier »
 veut dire premier **sur cet appareil** (C5.7), et les marques vivent dans le stockage. Le rejouer
 dans le même contexte éprouverait un appareil qui a déjà tout vu.
