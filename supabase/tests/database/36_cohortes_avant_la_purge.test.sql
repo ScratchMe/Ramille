@@ -34,8 +34,50 @@
 -- mot pour mot, ou il appelle la fonction. Le jour de la factorisation, elle reste vraie sans
 -- retouche ; le jour où l'un des deux textes bouge seul, elle tombe.
 --
--- **Éprouvé en le cassant, le 28/09/2026** (TESTING.md §1.1) : voir la liste des mutations en fin
--- d'en-tête.
+-- **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1). Chaque mutation a été posée juste
+-- après le `begin` de **chaque** fichier de la suite — donc annulée avec lui, la stack n'en gardant
+-- rien —, et le compte dit ce qu'elle a fait tomber sur la suite entière. Les numéros sont ceux
+-- des assertions de ce fichier.
+--
+--   - **témoin : `regime_de_rappel` factorisé** pour appeler `dernier_signe_de_vie` → 0, dans
+--     aucun fichier. La factorisation laissée à l'intégration est neutre, et l'assertion 3
+--     l'accepte déjà ;
+--   - `regime_de_rappel` réécrit seul, sans `app_open`        → 2 : ici la 3 (la structure), dans
+--     `22` celle de l'`app_open` qui remet le compteur à zéro. **Seule la 3 garde que les deux
+--     textes ne divergent pas** : aucune assertion de comportement de ce fichier ne tombe ;
+--   - `dernier_signe_de_vie` sans `app_open`                   → 4 : la 3, et les trois lectures des
+--     compteurs (15, 16, 17), U2, U3 et U4 retombant à « 0 » ;
+--   - la borne 8 des tranches déplacée à 9                     → 4 : la 1 et les trois lectures
+--     (U4 tient exactement huit semaines) ;
+--   - l'engagement testé avant la réponse (U6)                 → 3 : 15, 16, 17 ;
+--   - le plus long préfixe au lieu de la plus loin (U5, U8)    → 3 : 15, 16, 17 ;
+--   - l'archive oubliée (U3) / `plan_actions` oubliée (U4)     → 3 chacune : 15, 16, 17 ;
+--   - un brouillon compté comme bilan (U7)                     → 2 : 16, 17 — la 15 est lue avant
+--     que U7 n'existe ;
+--   - le moins avancé des deux régimes (U4, U5, U6)            → 3 : 15, 16, 17 ;
+--   - le régime de la seule boucle hebdomadaire (U4)           → 3 : 15, 16, 17 ;
+--   - le signe de vie de la seule boucle hebdomadaire (U8)     → 3 : 15, 16, 17 ;
+--   - la purge qui compte APRÈS son `delete`                   → 4 : 15, 16, 17 et 18 — rien n'est
+--     compté, la cascade ayant tout emporté ;
+--   - la purge qui compte AVANT sa garde de volume             → 1 : la 18 ;
+--   - le prédicat de la purge sans `is_anonymous`              → 5 : 14 à 18 — le compte rattaché
+--     part, et il est compté ;
+--   - `delete_my_account` qui compte sans condition            → 1 : la 20 ;
+--   - `delete_my_account` qui ne compte plus                   → 2 : 19 et 20 ;
+--   - une colonne `uuid` ajoutée                               → 1 : la 6 ;
+--   - une colonne texte libre ajoutée                          → 1 : la 7 ;
+--   - une clé étrangère vers `profiles`                        → 3 : 5 et 6, et dans `15` la garde
+--     des index de clés en cascade ;
+--   - `select` accordé à `authenticated` sur les compteurs     → 2 : la 11, et la matrice de `18` ;
+--   - `select` accordé à `anon` sur la vue                     → 2 : la 11, et la garde du schéma
+--     `analytics` de `18` ;
+--   - `cohorte_de` rendue exécutable à `public`                → 1 : la 12 ;
+--   - la RLS retirée                                           → 1 : la 4 ;
+--   - le `check` du lundi retiré                               → 1 : la 9 ;
+--   - la semaine d'arrivée devenue un jour                     → la purge **lève** (le `check` du
+--     lundi refuse le compteur) et emporte la transaction, dans `16` comme ici : c'est le
+--     comportement voulu — une purge qui ne sait pas compter ne supprime rien ;
+--   - une troisième boucle ajoutée au `check`                  → 1 : la 2.
 begin;
 create extension if not exists pgtap with schema extensions;
 
