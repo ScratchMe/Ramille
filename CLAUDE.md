@@ -534,9 +534,12 @@ vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à conna�
   `engagement`** : en pratique un cycliste a un plan à zéro action (effet de bord de C2.5), mais la
   priorité est explicite et testée plutôt que dépendante de ce hasard.
 - **L'action retenue est celle du cycle qui couvre la période interrogée, appariée par poste** —
-  `t.poste = 'commute'` pour la boucle hebdomadaire, `t.poste = ar.extras_poste` pour la mensuelle.
-  Sans l'appariement, une action engagée sur les loisirs aurait nommé la question du trajet
-  domicile-travail.
+  `'commute'` pour la boucle hebdomadaire, le poste de la boucle pour la mensuelle (`travel` pour qui
+  sort rarement depuis le 27/09/2026, plus bas). Sans l'appariement, une action engagée sur les
+  loisirs aurait nommé la question du trajet domicile-travail. **La recherche vit en un seul endroit
+  depuis le 27/09/2026**, `public.action_engagee_de_la_periode(user_id, poste, period_start)`, que
+  les deux générateurs appellent : elle **reçoit** le poste, elle ne le choisit pas — c'est la boucle
+  qui décide sur quoi elle interroge (`v1-27` §5, test `33`).
 - **`public.jours_francais(smallint[])` est la jumelle SQL de `JOURS_FRANCAIS` / `joursDeLaQuestion`**
   (`src/types/checkin.ts`), **donc à toucher ensemble**, exactement pour la raison de `mois_francais`
   au paragraphe précédent. Elle joint par « ou » et non par « et » (l'intention est un choix de
@@ -648,15 +651,20 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   (`recompute_assessment_results` lève sans elles), ce sont les **fixtures de test** qui s'en
   passaient. Et un bilan à zéro nomme le poste où quelque chose est déclaré : plus de
   « Trajet domicile-travail () ».
-  **Ce filtre énumère les compteurs de voyages un par un, donc ajouter une réponse au questionnaire
-  impose d'ajouter sa ligne ici** — relevé en contre-lisant C4.4, qui avait livré l'autocar sans :
-  un profil dont les seuls longs trajets sont en car avait un poste réel, un plan portant
-  « Remplacer un de tes longs trajets en autocar par le train », et **aucun point mensuel**, donc
-  jamais la question que cette action existe pour refermer. Ce qui l'a trouvé n'est pas une
-  relecture du diff mais le fait de **jouer les deux crons de 6 h** sur un profil neuf ; ce qui le
-  garde est une assertion de `20_qui_recoit_quelle_boucle.test.sql`, qui tombera au cinquième
-  compteur. C'est la même forme que le défaut de la soumission du bilan trouvé le même jour : une
-  liste de réponses écrite à la main, qui se périme en silence.
+  **Ce filtre énumère les compteurs de voyages, et depuis le 27/09/2026 il ne les énumère plus
+  qu'à un endroit : `public.a_des_voyages_declares(assessment_answers)`**, que lisent aussi le cas
+  du bilan à zéro de `recompute_assessment_results` (`v1-27` §5). Ajouter une réponse de voyage au
+  questionnaire impose donc d'y ajouter sa ligne, et nulle part ailleurs. La liste avait déjà coûté
+  un défaut — relevé en contre-lisant C4.4, qui avait livré l'autocar sans : un profil dont les
+  seuls longs trajets sont en car avait un poste réel, un plan portant « Remplacer un de tes longs
+  trajets en autocar par le train », et **aucun point mensuel**, donc jamais la question que cette
+  action existe pour refermer. Ce qui l'a trouvé n'est pas une relecture du diff mais le fait de
+  **jouer les deux crons de 6 h** sur un profil neuf. Ce qui garde un cinquième compteur oublié est
+  le balayage de `33_deux_extractions_neutres.test.sql`, qui prend chaque colonne `_per_year` sans
+  la nommer — un compteur nommé autrement lui échapperait ; l'assertion de `20` ne garde que le
+  chemin de l'autocar. C'est la même forme que le
+  défaut de la soumission du bilan trouvé le même jour : une liste de réponses écrite à la main, qui
+  se périme en silence.
 - **Et une fois ce filtre passé, qui sort rarement est interrogé sur ses VOYAGES, jamais sur le
   résiduel** (arbitrage du 27/09/2026, `20260927191009_la_boucle_mensuelle_de_qui_sort_rarement.sql`).
   Le filtre laissait passer dès qu'un voyage était déclaré, et le poste retenu était
