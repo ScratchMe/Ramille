@@ -1220,6 +1220,7 @@ export type Database = {
         Args: { p_mode_id: string; p_type: string }
         Returns: string
       }
+      retirer_le_bilan: { Args: { p_assessment_id: string }; Returns: number }
       rolling_quarter_bounds: {
         Args: { anchor: string; d: string }
         Returns: {

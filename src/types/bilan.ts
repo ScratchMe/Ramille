@@ -191,8 +191,9 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
 };
 
 /**
- * Les deux statuts d'un bilan, **miroir du `check` de `assessments.status`**
- * (`20260823094800_core_schema.sql` : `in ('in_progress', 'completed')`).
+ * Les trois statuts d'un bilan, **miroir du `check` de `assessments.status`**
+ * (`20260823094800_core_schema.sql` : `in ('in_progress', 'completed')`, puis `withdrawn` depuis
+ * `20260928090000_retirer_un_bilan.sql`, C4.7).
  *
  * La colonne est un `text` sans enum, donc `database.types.ts` la type `string` et rien, au
  * typecheck, ne distingue `'completed'` de `'complete'`. **Chaque requête qui filtre sur ce statut
@@ -209,9 +210,14 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
  *
  * `enCours` est l'état que rien ne lit (la soumission l'écrit d'abord, pour qu'une panne entre
  * deux écritures ne laisse pas un bilan fantôme — CLAUDE.md) ; `complete` est celui sur lequel la
- * racine route et que le cron sélectionne.
+ * racine route et que le cron sélectionne ; `retire` est un bilan que la personne a déclaré ne pas
+ * lui ressembler (C4.7, `v1-22`) — la ligne reste, l'export la rend, et **aucune requête ne le
+ * sélectionne** : c'est ce qui rend justes, sans y toucher, toutes les lectures de `complete`. Seule
+ * la restitution par identifiant le reconnaît, pour dire qu'il a été retiré (`src/types/retrait-du-bilan.ts`).
+ * Aucun client ne l'écrit : le retrait passe par `retirer_le_bilan`, et un `update` direct est refusé
+ * par la base (`RM007`).
  */
-export const STATUT_DE_BILAN = { enCours: 'in_progress', complete: 'completed' } as const;
+export const STATUT_DE_BILAN = { enCours: 'in_progress', complete: 'completed', retire: 'withdrawn' } as const;
 export type StatutDeBilan = (typeof STATUT_DE_BILAN)[keyof typeof STATUT_DE_BILAN];
 
 /**
