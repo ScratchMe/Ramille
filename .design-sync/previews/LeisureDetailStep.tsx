@@ -1,0 +1,56 @@
+import React from 'react';
+import { LeisureDetailStep } from 'ramille-design-system';
+
+type Reponses = React.ComponentProps<typeof LeisureDetailStep>['answers'];
+
+const VIERGE: Reponses = {
+  leisure_mode: null,
+  leisure_is_carpool: false,
+  leisure_carpool_size: null,
+  leisure_car_engine: null,
+  leisure_two_wheeler_type: null,
+  leisure_train_type: null,
+  leisure_velo_type: null,
+  leisure_distance_bracket: null,
+  leisure_distance_km: null,
+};
+
+// Le contenu défilant de `StepShell`, à la largeur d'un téléphone : 390 moins ses deux marges de 24.
+const Etape = ({ depart }: { depart: Partial<Reponses> }) => {
+  const [answers, setAnswers] = React.useState<Reponses>({ ...VIERGE, ...depart });
+  return (
+    <div style={{ maxWidth: 342 }}>
+      <LeisureDetailStep answers={answers} update={(patch) => setAnswers((a) => ({ ...a, ...patch }))} />
+    </div>
+  );
+};
+
+/**
+ * Rien de choisi : quatre modes en avant, « Voir les autres modes » sous le groupe — l'activer
+ * envoie le focus au premier mode révélé.
+ */
+export const ListeCourte = () => <Etape depart={{}} />;
+
+/**
+ * Le covoiturage : la motorisation, puis le nombre de personnes, s'ouvrent sous la rangée choisie —
+ * les deux décrivent la même voiture.
+ */
+export const VoitureEnCovoiturage = () => (
+  <Etape
+    depart={{ leisure_mode: 'voiture', leisure_is_carpool: true, leisure_car_engine: 'hybride', leisure_carpool_size: 3, leisure_distance_bracket: '15_30' }}
+  />
+);
+
+/** Le train : trois réponses, parce que le TER et le RER ne comptent pas la même chose. */
+export const TypeDeTrain = () => <Etape depart={{ leisure_mode: 'train', leisure_distance_bracket: '5_15' }} />;
+
+/**
+ * Une réponse déjà donnée dans la seconde liste — un re-bilan pré-rempli en bus : la liste s'ouvre
+ * d'emblée, sinon la question paraîtrait vide alors qu'elle est remplie.
+ */
+export const ModeDeLaSecondeListe = () => <Etape depart={{ leisure_mode: 'bus', leisure_distance_bracket: 'lt_5' }} />;
+
+/** « Plus de 30 km », la seule tranche sans borne haute : elle demande la distance d'un aller, après les puces. */
+export const PlusDe30Km = () => (
+  <Etape depart={{ leisure_mode: 'velo', leisure_velo_type: 'electrique', leisure_distance_bracket: '30_plus', leisure_distance_km: 45 }} />
+);

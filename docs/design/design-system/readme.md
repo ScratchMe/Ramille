@@ -50,7 +50,7 @@ mascotte/ Mascot · RamilleDit · CalculEnCours · EcranLancement
 navigation/ CompteBouton · BandeHaute · OngletIcone · BarreOnglets · ProgressHeader · StepShell
 plan/ CheckinCard · ActionCard · ActionCommitment · CarteDePiste · CarteDOuverture · PastilleEngagee · TraitDeTemps · FeuilleRappels
 suivi/ EcartParPoste · BarreContour · BlocMethode
-bilan/ FeuilleNouveauBilan
+bilan/ CommuteHasTripStep · CommuteDaysDistanceStep · CommuteModeStep · CommuteExtraStep · LeisureFrequencyStep · LeisureDetailStep · FlightsStep · LongTripsStep · ContextStep · ChampsDeContexte · PrecisionChiffres · MissingModeLink · FeuilleNouveauBilan
 onboarding/ EtapeAccroche · EtapeContexte · EtapeReassurance · EtapeTransition
 illustrations/ OnboardingHeroIllustration · ReassuranceIllustration · EmptyStateIllustration
 connexion/ ChampDeCode · SaisieDuCode
@@ -59,7 +59,7 @@ compte/ ChoixDeRappel · MonCompte
 
 Sans interface, donc sans fiche : `TitreDePage` (les métadonnées du document) et `RetourDeNotification` (rend `null`).
 
-**Une garde tient l'inventaire** (`scripts/verifier-miroir-du-kit.mjs`, en CI depuis le 26/09/2026) : un composant ajouté à `src/components/` sans fiche ici fait rougir la CI. Ce qui reste à porter du chantier de `docs/architecture/v1-29-challenge-du-design-system.md` §5 — plan et suivi, questionnaire, onboarding, saisie du code, pages légales, écrans d'erreur — y est une liste raisonnée qui ne fait que raccourcir. Chaque série de choix passe par `GroupeDeChoix`, chaque ligne de canal par `LigneDeCanal`, chaque feuille par `FeuilleDuBas` : une fiche ne recopie plus un composant qui a la sienne. L'état appuyé passe par `base.css` (`data-appui`), un style en ligne ne sachant pas écrire `:active`.
+**Une garde tient l'inventaire** (`scripts/verifier-miroir-du-kit.mjs`, en CI depuis le 26/09/2026) : un composant ajouté à `src/components/` sans fiche ici fait rougir la CI. Le chantier de `docs/architecture/v1-29-challenge-du-design-system.md` §5 a porté ce qui manquait — plan et suivi, questionnaire, onboarding, saisie du code, pages légales, écrans d'erreur — et sa liste de ce qui reste à porter est vide depuis le 27/09/2026 : un composant ajouté au dépôt arrive ici avec sa fiche, dans la même PR. Chaque série de choix passe par `GroupeDeChoix`, chaque ligne de canal par `LigneDeCanal`, chaque feuille par `FeuilleDuBas` : une fiche ne recopie plus un composant qui a la sienne. L'état appuyé passe par `base.css` (`data-appui`), un style en ligne ne sachant pas écrire `:active`.
 
 **Ajouts intentionnels** : `BarreOnglets` (le dépôt la compose dans `(tabs)/_layout.tsx` via expo-router) ; prop `accessory` sur `Mascot` (préparation des accessoires de saison) — **le dépôt les a livrés depuis (C2.13, 13/09/2026) et la prop s'y appelle `saison`**, avec pour défaut la saison du jour, donc c'est le nom du kit qui est le delta ; jetons `--color-mascot-ink` / `--color-mascot-vein` / `--color-mascot-warm`, qui **existent désormais dans `Colors`** (avec `mascotAccessory` en quatrième), le composant les lisant encore sur la seule palette claire.
 

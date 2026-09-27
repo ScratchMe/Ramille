@@ -17,7 +17,7 @@ export const JoursEnGrille = () => {
       <Question>{question}</Question>
       <GroupeDeChoix question={question} colonnes={4}>
         {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-          <Chip key={n} label={String(n)} role="radio" selected={n === jours} onPress={() => setJours(n)} flex radius={14} accessibilityLabel={`${n} jours par semaine`} />
+          <Chip key={n} label={String(n)} role="radio" selected={n === jours} onPress={() => setJours(n)} radius={14} />
         ))}
       </GroupeDeChoix>
     </div>

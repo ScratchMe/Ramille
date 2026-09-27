@@ -107,13 +107,19 @@ que le téléversement emporte.
 
 ## Aperçus
 
-Les 28 sont écrits à la main (`.design-sync/previews/`), aucun n'est sur la carte plancher.
-Le matériau vient d'abord des **six cartes de groupe du kit** (`components/<groupe>/<groupe>.card.js`),
+Tous sont écrits à la main (`.design-sync/previews/`), aucun n'est sur la carte plancher. Le
+compte ne s'écrit pas ici : il était de 28 à la première synchronisation, le kit en compte le double
+depuis sa complétion (`v1-29` §5), et `package-build.mjs` l'imprime à chaque passage. Pour les 28
+premiers, le matériau vient d'abord des **six cartes de groupe du kit** (`components/<groupe>/<groupe>.card.js`),
 qui portaient déjà des compositions écrites à la main avec du vrai contenu produit : 24 des 28
 composants y figuraient. Les quatre restants (`CalculEnCours`, `EcranLancement`, `CompteBouton`,
 `StepShell`) ont été composés depuis leur `.d.ts` et les écrans réels.
 
-**Known render warns** — aucun à ce jour. Un avertissement non listé ici est donc nouveau :
+**Known render warns** — deux, tous deux bénins. Un avertissement non listé ici est donc nouveau :
+- `[RENDER_THIN]` sur `EmptyStateIllustration` et `OnboardingHeroIllustration` : leur aperçu ne
+  porte aucun texte, et l'heuristique ne compte pas un SVG comme de la peinture. Vérifié sur la
+  capture le 27/09/2026 — le fond rayé et la scène d'accueil se rendent entiers. Le toléré est ce
+  message-là sur ces deux-là ; le même sur un composant qui porte du texte serait un vrai rendu vide.
 - `[GRID_OVERFLOW]` sur `Mascot` a été **corrigé**, pas toléré : `cfg.overrides.Mascot.cardMode =
   "column"`. Les expressions sont rendues à 96 px (80 pour l'inclinaison) : à 64 px le visage
   n'était pas lisible à l'échelle de la carte, ce qui vide de sens la planche des expressions.
@@ -193,6 +199,25 @@ Deux autres corrections :
 (`GroupeDeChoix`, `FeuilleDuBas`, `LigneDeCanal`, `TitreDArrivee`, `v1-29` §5). La
 synchronisation téléverse le kit tel qu'il est ; le compléter est un chantier du kit, pas de la
 synchronisation.
+
+## Complétion du kit, 27/09/2026 — ce que les captures ont appris
+
+Les lots 1 à 5 de `v1-29` §5 ont donné au kit une fiche par composant du dépôt. Deux règles de capture en sont
+sorties, et elles valent pour toute fiche future :
+
+- **Une fiche qui dessine un écran ou un morceau d'écran se capture à la largeur d'un téléphone.**
+  La capture se fait par défaut en 900 × 700 : une étape du questionnaire y était coupée sous le
+  pli (le lien « Je connais la distance exacte », la moitié des modes), et l'illustration d'accueil,
+  dont le cadre carré se recadre en `slice`, y perdait sa voiture et son vélo — ce qui avait été
+  noté bon au lot 5, sur la foi de la miniature. D'où `cfg.overrides.<Nom>.viewport` en `390 × H`,
+  la hauteur **mesurée** sur la capture et non devinée : la plus basse ligne peinte de l'histoire la
+  plus longue, plus une marge. Mesurer se fait sur les captures brutes (`_screenshots/review/raw/`)
+  avec `pngjs`, déjà dans `node_modules` — le conteneur n'a pas PIL.
+- **La page d'aperçu ajoute déjà 24 px de chaque côté** (`body{padding:24px}`) : un aperçu qui
+  s'enveloppe lui-même d'un `padding: 24` rend son contenu 48 px plus étroit que sur un téléphone de
+  390, et une rangée de cinq puces de 48 y débordait. Le contenu défilant de `StepShell` s'écrit
+  donc `maxWidth: 342` sans padding. Les histoires qui rendent `StepShell` lui-même gardent la marge
+  doublée : c'est un artefact de cadrage accepté, qui ne coupe rien.
 
 ## Risques de resynchronisation
 
