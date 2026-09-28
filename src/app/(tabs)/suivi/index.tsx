@@ -14,6 +14,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing, Stroke } from '@/constants/theme';
+import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackFocus } from '@/hooks/use-track-focus';
@@ -86,7 +87,8 @@ const LOOP_LABEL: Record<CheckinRecord['loopType'], string> = {
 const POINTS_VISIBLES = 5;
 
 type LoadState =
-  | { status: 'loading' }
+  // `relance` : ce chargement est un « Réessayer » de la personne, et il se dit tout de suite.
+  | { status: 'loading'; relance?: true }
   | { status: 'empty' }
   /**
    * Rien n'a pu être lu : on le dit, on ne prétend pas que la personne n'a rien.
@@ -228,11 +230,12 @@ export default function Suivi() {
   // **Le seul retour visible du bouton de l'écran d'erreur.** `rafraichir` n'incrémente qu'une
   // clé : l'effet relit, échoue, et le repli laisse rigoureusement le même écran — hors ligne,
   // donc dans le seul cas où cet écran existe, le bouton a l'air mort. Repasser par
-  // « Chargement… » dit que le geste a été pris. Surtout pas dans `rafraichir` lui-même, qui
+  // « Chargement… » dit que le geste a été pris — tout de suite (`relance`), la relecture échouant
+  // bien sous le délai de la ligne. Surtout pas dans `rafraichir` lui-même, qui
   // est aussi le rappel de `useRafraichirAuRetour` : il ferait clignoter « Chargement de ton
   // suivi… » à chaque retour au premier plan.
   const reessayerDepuisLErreur = () => {
-    setState({ status: 'loading' });
+    setState({ status: 'loading', relance: true });
     rafraichir();
   };
 
@@ -253,13 +256,20 @@ export default function Suivi() {
       </View>
     ) : null;
 
+  // « Chargement… » attend `DELAI_AVANT_CHARGEMENT` avant de se dire (`v1-30` §5.8) : au premier
+  // passage sur l'onglet, il clignotait une image avant le suivi.
+  const chargementVisible = useChargementVisible(
+    state.status === 'loading',
+    state.status === 'loading' && state.relance === true
+  );
+
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <BandeHaute />
           <View style={styles.centered}>
-            <ThemedText themeColor="textSecondary">Chargement de ton suivi…</ThemedText>
+            {chargementVisible && <ThemedText themeColor="textSecondary">Chargement de ton suivi…</ThemedText>}
           </View>
         </SafeAreaView>
       </ThemedView>

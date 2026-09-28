@@ -32,6 +32,7 @@ import { type EngagementEnCours } from '@/types/rebilan';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
   BILAN_SECTION_LABEL,
+  BILAN_STEP_ORDER,
   EMPTY_BILAN_ANSWERS,
   avancementDeLaReprise,
   brouillonEstAncien,
@@ -49,6 +50,7 @@ import {
   STATUT_DE_BILAN,
 } from '@/types/bilan';
 import { decrireErreur } from '@/types/erreur';
+import { sensDuPassage, type Sens } from '@/types/mouvement';
 import { ouvreUnPremierParcours } from '@/types/premier-parcours';
 
 // Questionnaire du bilan (9 pas maximum, branchements B1.1/B2.1) — état local pour
@@ -65,6 +67,13 @@ export default function BilanQuestionnaire() {
   const { reprise, etape } = useLocalSearchParams<{ reprise?: string; etape?: string }>();
   const [answers, setAnswers] = useState<BilanAnswers>(EMPTY_BILAN_ANSWERS);
   const [step, setStep] = useState<BilanStepId>('commute_has_trip');
+  // Le côté d'où arrive l'étape affichée (`v1-30` §5.6), posé par les seuls gestes de la personne :
+  // la reprise d'un brouillon et la porte `?etape=` changent d'étape sans mouvement.
+  const [sens, setSens] = useState<Sens | null>(null);
+  const passerA = (vers: BilanStepId) => {
+    setSens(sensDuPassage(step, vers, BILAN_STEP_ORDER));
+    setStep(vers);
+  };
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -313,6 +322,9 @@ export default function BilanQuestionnaire() {
     brouillonExistant.current = false;
     savedAtCharge.current = null;
     setAnswers(repriseDepuis);
+    // L'étape arrive d'un autre écran, celui de la reprise : c'est un montage et non un passage, donc
+    // elle se pose (`v1-30` §5.6) — y calculer un sens la ferait entrer par la gauche au montage.
+    setSens(null);
     setStep('commute_has_trip');
     setPrefilled(true);
     setMontrerLaReprise(false);
@@ -327,7 +339,7 @@ export default function BilanQuestionnaire() {
   const handleBack = () => {
     const prev = previousStep(step, answers);
     if (prev) {
-      setStep(prev);
+      passerA(prev);
     } else {
       router.back();
     }
@@ -336,7 +348,7 @@ export default function BilanQuestionnaire() {
   const handleNext = async () => {
     if (!isLastStep) {
       const next = nextStep(step, answers);
-      if (next) setStep(next);
+      if (next) passerA(next);
       return;
     }
 
@@ -372,6 +384,10 @@ export default function BilanQuestionnaire() {
     if (soumissionEnCours.current) return;
     soumissionEnCours.current = true;
 
+    // Le questionnaire cède la place au calcul ; s'il revient — un échec —, c'est un remontage, et
+    // l'étape se pose au lieu de rentrer par la droite au-dessus du message (contre-lecture du
+    // 27/09/2026).
+    setSens(null);
     setSubmitting(true);
     setMessage(null);
     setDetail(null);
@@ -624,6 +640,7 @@ export default function BilanQuestionnaire() {
       section={section}
       step={stepNumber}
       total={total}
+      entree={{ cle: step, sens }}
       motDeRamille={motDeRamille}
       // Rendu à chaque passage, jamais mémoïsé : `router.canGoBack()` n'est pas réactif. Sans
       // `onBack`, `StepShell` n'affiche pas de bouton — c'est ce qu'il faut au premier pas du

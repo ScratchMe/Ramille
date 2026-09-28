@@ -1,10 +1,13 @@
-import type { ReactNode } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react';
+import { Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing, Stroke } from '@/constants/theme';
+import { Mouvement, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { reglage } from '@/lib/mouvement';
 
 /**
  * Le cadre d'une feuille du bas : la fenêtre, le voile, la feuille, sa poignée et son titre
@@ -30,26 +33,124 @@ import { useTheme } from '@/hooks/use-theme';
  *
  * **Le geste de retour referme toujours** (`onFerme`) : une feuille qu'on ne peut pas fermer n'est
  * plus une proposition. C'était le contrat des deux, il est ici une fois.
+ *
+ * **Le voile se fond, la feuille glisse** (27/09/2026, `v1-30` §5.4). Le `Modal` animait tout son
+ * contenu d'un bloc (`animationType="slide"`), donc le voile gris montait du bas avec la feuille au
+ * lieu d'assombrir l'écran sur place — relevé image par image sur l'export. Le `Modal` n'anime plus
+ * rien ; le voile passe de transparent à posé (`Mouvement.fondu`), la feuille monte de la hauteur de
+ * la fenêtre (`Mouvement.entreeDeFeuille`), et **la fermeture s'anime aussi** : feuille et voile
+ * repartent (`Mouvement.sortie`), puis seulement la feuille se démonte. Sur web, elle disparaissait
+ * d'un coup.
+ *
+ * **Sous « réduire les animations », rien ne se lance : tout est posé, et la fermeture démonte tout de
+ * suite** — sans attendre le rappel de fin d'une animation, qui est le seul endroit où la préférence
+ * pourrait laisser une feuille ouverte. Le `Modal` de react-native-web ne lisant pas la préférence, sa
+ * feuille glissait même sous elle : ce défaut part avec son animation.
+ *
+ * **Qui ferme en animant** : le geste de retour et Échap (`onRequestClose`), et l'appelant par
+ * `fermer` (la poignée passée en `ref`) — « Pas maintenant », un choix validé. Un bouton qui
+ * **navigue** appelle son rappel directement : sur natif, une route poussée sous un `Modal` encore
+ * ouvert reste dessous, donc il ne doit pas attendre une sortie. Une seconde fermeture pendant la
+ * sortie ne relance rien — mais si elle porte un choix (`apres`), c'est lui que la fin rendra, ou
+ * aussitôt si la fin est déjà passée. Pendant la sortie, la feuille ne prend plus de toucher ; le
+ * clavier, lui, n'est pas bloqué — il faudrait changer de bouton et valider en moins de 200 ms.
  */
+export type PoigneeDeFeuille = {
+  /** Referme en animant, puis appelle `apres` — ou `onFerme` sans argument. */
+  fermer: (apres?: () => void) => void;
+};
+
 export function FeuilleDuBas({
   titre,
   enTete = true,
   onFerme,
+  ref,
   children,
 }: {
   /** Nom du dialogue, et en-tête affiché de la feuille sauf `enTete={false}`. */
   titre: string;
   /** Afficher le titre en tête de la feuille. `false` quand le canvas n'en dessine pas. */
   enTete?: boolean;
-  /** Le geste de retour, la touche Échap sur web. */
+  /** Le geste de retour, la touche Échap sur web — appelé une fois la sortie jouée. */
   onFerme: () => void;
+  /** Pour refermer en animant depuis un bouton de la feuille. */
+  ref?: Ref<PoigneeDeFeuille>;
   children: ReactNode;
 }) {
   const theme = useTheme();
+  const { height } = useWindowDimensions();
+  const animationsReduites = useReducedMotion();
+  const voile = useSharedValue(animationsReduites ? 1 : 0);
+  const feuille = useSharedValue(animationsReduites ? 1 : 0);
+  const sortieLancee = useRef(false);
+  // Pendant la sortie, la feuille ne prend plus aucun toucher : « Pas maintenant » puis « Soumettre
+  // mon bilan » dans les 200 ms soumettait le bilan.
+  const [enSortie, setEnSortie] = useState(false);
+  // Ce que la fin de la sortie appelle. **Un `fermer(apres)` arrivé pendant la sortie le remplace**,
+  // au lieu d'être ignoré : le retour lance la sortie, puis le choix de la feuille des rappels finit
+  // de s'écrire — ignoré, ce choix partait en base sans que le plan le reçoive (contre-lecture du
+  // 27/09/2026). Un second retour, sans rien à rendre, ne remplace rien. Et un choix qui arrive
+  // **après** la fin de la sortie, avant que l'appelant ait démonté la feuille, est rendu tout de
+  // suite : il n'y a plus de fin à attendre (seconde contre-lecture du 28/09/2026).
+  const finisseur = useRef<(() => void) | null>(null);
+  const sortieTerminee = useRef(false);
+  // Le dernier `onFerme` reçu : la sortie le lit à sa fin, pas à son début.
+  const onFermeCourant = useRef(onFerme);
+  useEffect(() => {
+    onFermeCourant.current = onFerme;
+  }, [onFerme]);
+
+  useEffect(() => {
+    // Sous la préférence, rien ne se lance : les valeurs de départ sont déjà posées.
+    if (animationsReduites) return;
+    voile.value = withTiming(1, reglage(Mouvement.fondu));
+    feuille.value = withTiming(1, reglage(Mouvement.entreeDeFeuille));
+  }, [animationsReduites, voile, feuille]);
+
+  const terminer = useCallback(() => {
+    sortieTerminee.current = true;
+    finisseur.current?.();
+  }, []);
+
+  const fermer = useCallback(
+    (apres?: () => void) => {
+      if (sortieLancee.current) {
+        if (!apres) return;
+        if (sortieTerminee.current) apres();
+        else finisseur.current = apres;
+        return;
+      }
+      sortieLancee.current = true;
+      finisseur.current = apres ?? (() => onFermeCourant.current());
+      if (animationsReduites) {
+        terminer();
+        return;
+      }
+      setEnSortie(true);
+      // `set` et non `.value =` : le React Compiler refuse d'écrire une valeur hors d'un effet.
+      voile.set(withTiming(0, reglage(Mouvement.sortie)));
+      // Le rappel part même si la sortie est interrompue : une feuille qui ne se démonte jamais
+      // serait un écran bloqué, bien pire qu'une sortie coupée.
+      feuille.set(
+        withTiming(0, reglage(Mouvement.sortie), () => {
+          scheduleOnRN(terminer);
+        })
+      );
+    },
+    [animationsReduites, voile, feuille, terminer]
+  );
+
+  useImperativeHandle(ref, () => ({ fermer }), [fermer]);
+
+  const styleDuVoile = useAnimatedStyle(() => ({ opacity: voile.value }));
+  const styleDeLaFeuille = useAnimatedStyle(() => ({
+    transform: [{ translateY: (1 - feuille.value) * height }],
+  }));
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onFerme} aria-label={titre}>
-      <View style={[styles.voile, { backgroundColor: theme.scrim }]}>
+    <Modal visible animationType="none" transparent onRequestClose={() => fermer()} aria-label={titre}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.scrim }, styleDuVoile]} />
+      <Animated.View style={[styles.place, styleDeLaFeuille, enSortie && styles.sansToucher]}>
         <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
           <View style={[styles.poignee, { backgroundColor: theme.border }]} />
           {enTete && (
@@ -59,13 +160,14 @@ export function FeuilleDuBas({
           )}
           {children}
         </ThemedView>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  voile: { flex: 1, justifyContent: 'flex-end' },
+  place: { flex: 1, justifyContent: 'flex-end' },
+  sansToucher: { pointerEvents: 'none' },
   feuille: {
     borderTopLeftRadius: Radius.card,
     borderTopRightRadius: Radius.card,

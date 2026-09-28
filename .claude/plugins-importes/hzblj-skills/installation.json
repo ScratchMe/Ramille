@@ -1,0 +1,223 @@
+{
+  "plugin": "hzblj-skills",
+  "prefixe": "hzblj-skills",
+  "manuel": true,
+  "version": "1.7.1",
+  "source": "633bd3e1-Skills_For_Real_ReactReact_Native_Engineers-1.7.1-v1.zip",
+  "sha256": "bc48b3ec359573a43c3a8d5618a670ae3a2fdc6ed6b6ce163e83693b515f9b7b",
+  "installe_le": "2026-09-27",
+  "installe_par": "scripts/installer-un-plugin.mjs",
+  "skills": [
+    {
+      "amont": "atomic-design",
+      "installe": "hzblj-skills-atomic-design"
+    },
+    {
+      "amont": "comments",
+      "installe": "hzblj-skills-comments"
+    },
+    {
+      "amont": "component-architecture",
+      "installe": "hzblj-skills-component-architecture"
+    },
+    {
+      "amont": "compound-components",
+      "installe": "hzblj-skills-compound-components"
+    },
+    {
+      "amont": "css-animations",
+      "installe": "hzblj-skills-css-animations"
+    },
+    {
+      "amont": "error-handling",
+      "installe": "hzblj-skills-error-handling"
+    },
+    {
+      "amont": "formatting",
+      "installe": "hzblj-skills-formatting"
+    },
+    {
+      "amont": "functions",
+      "installe": "hzblj-skills-functions"
+    },
+    {
+      "amont": "gsap-performance",
+      "installe": "hzblj-skills-gsap-performance"
+    },
+    {
+      "amont": "gsap-react",
+      "installe": "hzblj-skills-gsap-react"
+    },
+    {
+      "amont": "gsap-scroll-trigger",
+      "installe": "hzblj-skills-gsap-scroll-trigger"
+    },
+    {
+      "amont": "gsap-text",
+      "installe": "hzblj-skills-gsap-text"
+    },
+    {
+      "amont": "gsap-timelines",
+      "installe": "hzblj-skills-gsap-timelines"
+    },
+    {
+      "amont": "hooks",
+      "installe": "hzblj-skills-hooks"
+    },
+    {
+      "amont": "how",
+      "installe": "hzblj-skills-how"
+    },
+    {
+      "amont": "lists",
+      "installe": "hzblj-skills-lists"
+    },
+    {
+      "amont": "meaningful-names",
+      "installe": "hzblj-skills-meaningful-names"
+    },
+    {
+      "amont": "native-feel",
+      "installe": "hzblj-skills-native-feel"
+    },
+    {
+      "amont": "nextjs-routing",
+      "installe": "hzblj-skills-nextjs-routing"
+    },
+    {
+      "amont": "objects-and-data",
+      "installe": "hzblj-skills-objects-and-data"
+    },
+    {
+      "amont": "orchestration",
+      "installe": "hzblj-skills-orchestration"
+    },
+    {
+      "amont": "performance",
+      "installe": "hzblj-skills-performance"
+    },
+    {
+      "amont": "project",
+      "installe": "hzblj-skills-project"
+    },
+    {
+      "amont": "react-navigation",
+      "installe": "hzblj-skills-react-navigation"
+    },
+    {
+      "amont": "reanimated-core",
+      "installe": "hzblj-skills-reanimated-core"
+    },
+    {
+      "amont": "reanimated-gestures",
+      "installe": "hzblj-skills-reanimated-gestures"
+    },
+    {
+      "amont": "reanimated-layout-animations",
+      "installe": "hzblj-skills-reanimated-layout-animations"
+    },
+    {
+      "amont": "reanimated-text-and-numbers",
+      "installe": "hzblj-skills-reanimated-text-and-numbers"
+    },
+    {
+      "amont": "reanimated-timing",
+      "installe": "hzblj-skills-reanimated-timing"
+    },
+    {
+      "amont": "skia",
+      "installe": "hzblj-skills-skia"
+    },
+    {
+      "amont": "tailwind",
+      "installe": "hzblj-skills-tailwind"
+    },
+    {
+      "amont": "teach",
+      "installe": "hzblj-skills-teach"
+    },
+    {
+      "amont": "type-safety",
+      "installe": "hzblj-skills-type-safety"
+    },
+    {
+      "amont": "ui-interactions",
+      "installe": "hzblj-skills-ui-interactions"
+    },
+    {
+      "amont": "ui-motion",
+      "installe": "hzblj-skills-ui-motion"
+    },
+    {
+      "amont": "ui-surfaces",
+      "installe": "hzblj-skills-ui-surfaces"
+    },
+    {
+      "amont": "ui-typography",
+      "installe": "hzblj-skills-ui-typography"
+    },
+    {
+      "amont": "unslop",
+      "installe": "hzblj-skills-unslop"
+    },
+    {
+      "amont": "why",
+      "installe": "hzblj-skills-why"
+    }
+  ],
+  "commandes": [
+    {
+      "amont": "audit-imports",
+      "installe": "hzblj-skills-audit-imports"
+    },
+    {
+      "amont": "clean-review",
+      "installe": "hzblj-skills-clean-review"
+    },
+    {
+      "amont": "make-composer",
+      "installe": "hzblj-skills-make-composer"
+    },
+    {
+      "amont": "new-component",
+      "installe": "hzblj-skills-new-component"
+    },
+    {
+      "amont": "new-feature",
+      "installe": "hzblj-skills-new-feature"
+    },
+    {
+      "amont": "orchestrate",
+      "installe": "hzblj-skills-orchestrate"
+    },
+    {
+      "amont": "refactor",
+      "installe": "hzblj-skills-refactor"
+    }
+  ],
+  "exclus": [
+    "polish"
+  ],
+  "non_installe": {
+    "hooks": [],
+    "connecteurs": [],
+    "agents": [
+      "agent-animation-specialist",
+      "agent-clean-code-reviewer",
+      "agent-code-refactorer",
+      "agent-deep-reasoner",
+      "agent-fast-worker",
+      "agent-mobile-developer",
+      "agent-monorepo-architect",
+      "agent-web-developer"
+    ],
+    "autres": [
+      ".changeset",
+      ".yarnrc.yml",
+      "CLAUDE.md",
+      "package.json",
+      "scripts",
+      "yarn.lock"
+    ]
+  }
+}

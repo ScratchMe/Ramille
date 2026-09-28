@@ -12,9 +12,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { POSTE_LABEL } from '@/constants/postes';
 import { Spacing, Stroke } from '@/constants/theme';
+import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKg } from '@/lib/format';
+import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { filetsDesLignes, pistesParPoste, separationsDesLignes } from '@/types/plan';
 import { usePassageDEngagement } from './_layout';
@@ -35,7 +37,8 @@ import { usePassageDEngagement } from './_layout';
  * hiérarchie vit sur le plan, qui insiste ; cet écran présente.
  */
 type Etat =
-  | { genre: 'chargement' }
+  // `relance` : ce chargement est un « Réessayer » de la personne, et il se dit tout de suite.
+  | { genre: 'chargement'; relance?: true }
   | { genre: 'erreur' }
   | { genre: 'pistes'; pistes: PisteDuPlan[] };
 
@@ -121,6 +124,14 @@ export default function PistesScreen() {
     />
   );
 
+  // « Chargement… » attend `DELAI_AVANT_CHARGEMENT` avant de se dire (`v1-30` §5.8) : en arrivant sur
+  // l'écran, il clignotait une image avant les pistes. L'échec, lui, se dit tout de suite, et le
+  // chargement d'un « Réessayer » aussi (`useChargementVisible`).
+  const chargementVisible = useChargementVisible(
+    etat.genre === 'chargement',
+    etat.genre === 'chargement' && etat.relance === true
+  );
+
   if (etat.genre !== 'pistes') {
     return (
       <ThemedView style={styles.container}>
@@ -130,11 +141,13 @@ export default function PistesScreen() {
             {/* L'écran ne dit jamais « tu n'as rien » sur un échec de lecture : il dit qu'il n'a pas
                 pu lire, et propose de réessayer (règle de C1.4). Les pistes existent, c'est la
                 lecture qui a manqué. */}
-            <ThemedText type="body" themeColor="textSecondary">
-              {etat.genre === 'chargement'
-                ? 'Chargement de tes pistes…'
-                : 'Tes pistes n’ont pas pu être chargées.'}
-            </ThemedText>
+            {(etat.genre !== 'chargement' || chargementVisible) && (
+              <ThemedText type="body" themeColor="textSecondary">
+                {etat.genre === 'chargement'
+                  ? 'Chargement de tes pistes…'
+                  : 'Tes pistes n’ont pas pu être chargées.'}
+              </ThemedText>
+            )}
             {etat.genre === 'erreur' && (
               <TextLink
                 label="Réessayer"
@@ -142,7 +155,8 @@ export default function PistesScreen() {
                   // Repasser par « chargement » dans ce gestionnaire, et jamais dans `rafraichir` :
                   // sans ce passage, un second échec rend exactement le même écran et le bouton a
                   // l'air mort ; dedans, il ferait clignoter l'écran à chaque retour au premier plan.
-                  setEtat({ genre: 'chargement' });
+                  // `relance` le montre tout de suite, l'échec revenant bien sous le délai de la ligne.
+                  setEtat({ genre: 'chargement', relance: true });
                   rafraichir();
                 }}
                 type="small"
@@ -299,8 +313,15 @@ function Lignes({
   const separations = separationsDesLignes(ids, enCarte);
   const filets = filetsDesLignes(ids, enCarte);
 
+  // **Une ligne qui s'ouvre en carte n'est plus un saut** (27/09/2026, `v1-30` §5.7). Chaque piste est
+  // tenue par un `HauteurSuivie` sous la même clé, qu'elle soit ligne ou carte : quand l'une devient
+  // l'autre, il passe d'une hauteur à la suivante, et les pistes de dessous suivent. La carte apparaît
+  // en fondu — autre élément sous le même cadre, donc React la monte à neuf ; ce qui est là à
+  // l'arrivée sur l'écran n'a pas d'apparition à soi (`SansApparitionAuMontage`). « Réduire » passe
+  // par le même chemin, dans l'autre sens.
   return (
     <View style={styles.lignesPistes}>
+      <SansApparitionAuMontage>
       {pistes.map((action, rang) => {
         const separee = separations[rang];
         const filetee = filets[rang];
@@ -310,7 +331,8 @@ function Lignes({
 
         if (enCarte.has(action.id)) {
           return (
-            <View key={action.id} style={separee ? styles.pisteSeparee : undefined}>
+            <HauteurSuivie key={action.id}>
+            <Apparition style={separee ? styles.pisteSeparee : undefined}>
               <CarteDePiste
                 action={action}
                 committedActionId={engageeId}
@@ -330,7 +352,8 @@ function Lignes({
                 themeColor="textTertiary"
                 style={styles.reduire}
               />
-            </View>
+            </Apparition>
+            </HauteurSuivie>
           );
         }
 
@@ -340,8 +363,8 @@ function Lignes({
         // s'ouvre pas — il n'y a rien à y choisir.
         if (action.committed_at !== null) {
           return (
+            <HauteurSuivie key={action.id}>
             <View
-              key={action.id}
               style={[
                 styles.lignePiste,
                 separee && styles.pisteSeparee,
@@ -365,12 +388,13 @@ function Lignes({
                 </ThemedText>
               </View>
             </View>
+            </HauteurSuivie>
           );
         }
 
         return (
+          <HauteurSuivie key={action.id}>
           <Pressable
-            key={action.id}
             style={({ pressed }) => [
               styles.lignePiste,
               separee && styles.pisteSeparee,
@@ -419,8 +443,10 @@ function Lignes({
               </ThemedText>
             </View>
           </Pressable>
+          </HauteurSuivie>
         );
       })}
+      </SansApparitionAuMontage>
     </View>
   );
 }

@@ -9,6 +9,7 @@ import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
+import { Depliage } from '@/lib/mouvement';
 import {
   CAR_ENGINE_OPTIONS,
   TRAIN_TYPE_OPTIONS,
@@ -77,6 +78,7 @@ export function CommuteExtraStep({
         </GroupeDeChoix>
 
         {answers.commute_second_mode_used === true && (
+          <Depliage>
           <ThemedView type="backgroundElement" style={styles.nestedBox}>
             <ThemedText type="small" themeColor="textTertiary">
               {QUESTION_LEQUEL}
@@ -99,50 +101,50 @@ export function CommuteExtraStep({
                 {/* La précision sous l'élément choisi, jamais après la liste (cf.
                     `precision-mode.tsx`). */}
                 {answers.commute_second_mode === modeId && modeId === 'voiture' && (
-                  <View style={styles.precision}>
+                  <Depliage style={styles.precision}>
                     <PrecisionMode
                       question="Quelle motorisation ?"
                       options={CAR_ENGINE_OPTIONS}
                       valeur={answers.commute_car_engine}
                       onChange={(value) => update({ commute_car_engine: value })}
                     />
-                  </View>
+                  </Depliage>
                 )}
 
                 {answers.commute_second_mode === modeId && modeId === 'deux_roues_motorise' && (
-                  <View style={styles.precision}>
+                  <Depliage style={styles.precision}>
                     <PrecisionMode
                       question="Quel type de deux-roues ?"
                       options={TWO_WHEELER_TYPE_OPTIONS}
                       valeur={answers.commute_two_wheeler_type}
                       onChange={(value) => update({ commute_two_wheeler_type: value })}
                     />
-                  </View>
+                  </Depliage>
                 )}
 
                 {/* C4.4 — un seul champ pour les deux jambes, comme la motorisation juste
                     au-dessus : B1.7 exclut le mode déjà choisi en B1.4, donc au plus une jambe
                     porte le train (ou le vélo) à un instant donné. */}
                 {answers.commute_second_mode === modeId && modeId === 'train' && (
-                  <View style={styles.precision}>
+                  <Depliage style={styles.precision}>
                     <PrecisionMode
                       question="Quel type de train ?"
                       options={TRAIN_TYPE_OPTIONS}
                       valeur={answers.commute_train_type}
                       onChange={(value) => update({ commute_train_type: value })}
                     />
-                  </View>
+                  </Depliage>
                 )}
 
                 {answers.commute_second_mode === modeId && modeId === 'velo' && (
-                  <View style={styles.precision}>
+                  <Depliage style={styles.precision}>
                     <PrecisionMode
                       question="Quel type de vélo ?"
                       options={VELO_TYPE_OPTIONS}
                       valeur={answers.commute_velo_type}
                       onChange={(value) => update({ commute_velo_type: value })}
                     />
-                  </View>
+                  </Depliage>
                 )}
 
                 {/* C3.4 — sous le mode choisi, jamais après la liste : c'est la question que
@@ -152,20 +154,21 @@ export function CommuteExtraStep({
                     parc-relais (on ne conduit pas jusqu'à mi-chemin) — sur le poste qui décide
                     du poste dominant, donc du plan. */}
                 {answers.commute_second_mode === modeId && (
-                  <View style={styles.precision}>
+                  <Depliage style={styles.precision}>
                     <PrecisionMode
                       question="Quelle part du trajet fais-tu ainsi ?"
                       options={PARTS_DU_SECOND_MODE}
                       valeur={answers.commute_second_mode_share}
                       onChange={(value) => update({ commute_second_mode_share: value })}
                     />
-                  </View>
+                  </Depliage>
                 )}
                 </View>
               ))}
             </GroupeDeChoix>
 
           </ThemedView>
+          </Depliage>
         )}
       </View>
       <MissingModeLink context="B1.7 second mode domicile-travail" />

@@ -1,7 +1,7 @@
 // Installe un plug-in Claude Code dans le dépôt, depuis son archive `.zip` ou son dossier.
 //
 //   node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto]
-//                                        [--licence <fichier>] [--racine <dépôt>]
+//                                        [--exclure <nom>]… [--licence <fichier>] [--racine <dépôt>]
 //   node scripts/installer-un-plugin.mjs --retirer <plug-in> [--racine <dépôt>]
 //
 // **Pourquoi à la main : claude.ai ne livre pas les plug-ins aux sessions cloud.** Constaté le
@@ -13,6 +13,12 @@
 // Relancer le script sur une archive plus récente du même plug-in le met à jour : ce qu'il avait
 // posé est retiré d'abord, donc un skill disparu en amont disparaît aussi d'ici. Le préfixe et le
 // mode choisis la première fois sont gardés dans `installation.json` : une mise à jour les reprend.
+//
+// **`--exclure <nom>` n'installe pas un skill ou une commande**, désigné par son nom d'AMONT ; il se
+// répète, se garde dans `installation.json` comme le préfixe, et une mise à jour le reprend. Il est
+// entré le 27/09/2026 avec `hzblj-skills`, installé sans son `/polish` (`v1-30` §5.2) : une consigne
+// qui défait une décision du dépôt n'a rien à faire ici, même appelable par son nom seulement. Un nom
+// qui ne désigne rien est refusé ; pour tout réinstaller, `--retirer` puis installer à nouveau.
 //
 // **`--retirer <plug-in>` défait une installation** : exactement ce que son `installation.json` dit
 // avoir posé, puis sa provenance — jamais tout ce qui commence par le préfixe, qui emporterait un
@@ -53,7 +59,9 @@
 //      lieu d'un `.claude/CONNECTORS.md` qui n'existe pas.
 //      Un manifeste peut ranger ses skills ailleurs que sous `skills/` (UI UX Pro Max : sous
 //      `.claude/skills/`) : ces chemins s'ajoutent au défaut, et un chemin qui sortirait du
-//      plug-in est refusé.
+//      plug-in est refusé. **Un chemin déclaré peut aussi être un skill lui-même** (`hzblj-skills`
+//      déclare les siens un par un) : il est alors nommé par le `name` de son en-tête, parce que
+//      ses dossiers ne sont pas uniques et que ses en-têtes le sont — `inventorier` dit pourquoi.
 //   2. **Hooks, connecteurs et agents ne sont jamais installés par ce script.** Un hook exécute du
 //      code à chaque événement de la session, un connecteur ouvre l'accès à un compte tiers, un
 //      agent choisit ses outils : chacun est une décision, prise à la main après lecture. Ils sont
@@ -88,7 +96,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 const USAGE =
-  'Usage : node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto] [--licence <fichier>] [--racine <dépôt>]\n' +
+  'Usage : node scripts/installer-un-plugin.mjs <archive.zip | dossier> [--prefixe <court>] [--manuel | --auto] [--exclure <nom>]… [--licence <fichier>] [--racine <dépôt>]\n' +
   '        node scripts/installer-un-plugin.mjs --retirer <plug-in> [--racine <dépôt>]';
 
 /** Ce que Claude Code accepte comme nom de skill : minuscules et chiffres, des tirets entre eux
@@ -138,6 +146,7 @@ function lireArguments(argv) {
   let licence = null;
   let prefixe;
   let manuel;
+  let exclus;
   const args = [...argv];
   while (args.length > 0) {
     const arg = args.shift();
@@ -158,6 +167,10 @@ function lireArguments(argv) {
     } else if (arg === '--prefixe') {
       prefixe = args.shift();
       if (!prefixe) refuser('--prefixe attend un préfixe.');
+    } else if (arg === '--exclure') {
+      const valeur = args.shift();
+      if (!valeur) refuser('--exclure attend le nom d’amont d’un skill ou d’une commande.');
+      exclus = [...(exclus ?? []), valeur];
     } else if (arg.startsWith('-')) {
       refuser(`option inconnue : ${arg}\n${USAGE}`);
     } else if (source === null) {
@@ -169,14 +182,14 @@ function lireArguments(argv) {
   if (retirer !== null) {
     // Une archive, un préfixe ou un mode à côté disent qu'on s'est trompé de commande : deviner
     // laquelle était voulue serait pire que refuser, puisque l'une des deux efface.
-    if (source !== null || prefixe !== undefined || manuel !== undefined || licence !== null) {
+    if (source !== null || prefixe !== undefined || manuel !== undefined || licence !== null || exclus !== undefined) {
       refuser(`--retirer ne prend que le nom du plug-in (et --racine).\n${USAGE}`);
     }
     return { retirer, racine };
   }
   if (source === null) refuser(USAGE);
   if (!fs.existsSync(source)) refuser(`introuvable : ${source}`);
-  return { source, racine, prefixe, manuel, licence };
+  return { source, racine, prefixe, manuel, licence, exclus };
 }
 
 /** Un dossier se lit tel quel ; une archive s'ouvre dans un dossier temporaire, et son empreinte
@@ -269,6 +282,15 @@ function reserveALAgent(texte) {
   return index !== -1 && /^user-invocable:\s*['"]?false['"]?\s*$/i.test(entete.lignes[index].replace(/\r$/, ''));
 }
 
+/** La valeur du champ `name` de l'en-tête, sans guillemets — ou `null`. */
+function nomDeLEnTete(texte) {
+  const entete = enTete(texte);
+  const index = entete === null ? -1 : ligneDuChamp(entete, 'name');
+  if (index === -1) return null;
+  const valeur = entete.lignes[index].replace(/\r$/, '').slice('name:'.length).trim().replace(/^(['"])(.*)\1$/, '$2');
+  return valeur === '' ? null : valeur;
+}
+
 /** Lit l'en-tête d'un fichier de consignes et refuse ce que la règle 2 interdit. */
 /** Un skill sans en-tête n'a ni nom ni description, et Claude Code ne le présenterait pas ; une
  * commande, elle, peut s'en passer — son nom est celui du fichier. */
@@ -351,12 +373,29 @@ function inventorier(racinePlugin, manifeste, prefixe) {
 
   const sous = (nom) => path.join(racinePlugin, nom);
 
-  for (const dossierDeSkills of dossiersDeSkills.filter((d) => fs.existsSync(sous(d)))) {
+  // **Un chemin déclaré peut être un skill lui-même, et non le dossier qui en range** (27/09/2026,
+  // `hzblj-skills`, qui déclare ses trente-neuf skills un par un, à trois ou quatre niveaux de
+  // profondeur). Lu comme un dossier parent, chacun passait en « autres » : l'installation posait les
+  // commandes et aucun skill, sans refuser. Et son nom d'amont est alors celui de l'EN-TÊTE, pas celui
+  // du dossier : les dossiers ne sont pas uniques (`shared/ui/performance` et
+  // `web/animations/gsap/performance`), les en-têtes le sont (`performance`, `gsap-performance`), et
+  // ce sont eux que ses commandes citent. La règle 1 — c'est le dossier qui nomme — reste celle des
+  // skills rangés sous un dossier parent, où le dossier est unique par construction.
+  const existants = dossiersDeSkills.filter((d) => fs.existsSync(sous(d)));
+  const skillsDeclares = existants.filter((d) => fs.existsSync(path.join(sous(d), 'SKILL.md')));
+  const parents = existants.filter((d) => !skillsDeclares.includes(d));
+  // Un dossier qui ne fait que contenir des skills déclarés (`skills/mobile`) n'est pas « non
+  // installé » : ce qu'il range l'est.
+  const contientUnDeclare = (chemin) => skillsDeclares.some((d) => d === chemin || d.startsWith(`${chemin}/`));
+
+  for (const dossierDeSkills of parents) {
     for (const entree of fs.readdirSync(sous(dossierDeSkills), { withFileTypes: true })) {
       const dossier = path.join(sous(dossierDeSkills), entree.name);
       const fichier = path.join(dossier, 'SKILL.md');
+      if (contientUnDeclare(relatif(dossier))) continue;
       if (!entree.isDirectory() || !fs.existsSync(fichier)) {
-        nonInstalle.autres.push(`${dossierDeSkills}/${entree.name}`);
+        // La documentation d'un dossier de skills se lit sans s'installer, comme à la racine.
+        if (!(entree.isFile() && A_IGNORER.test(entree.name))) nonInstalle.autres.push(`${dossierDeSkills}/${entree.name}`);
         continue;
       }
       // Le nom d'amont est celui du dossier, pas celui de l'en-tête : c'est lui que Claude Code
@@ -366,6 +405,15 @@ function inventorier(racinePlugin, manifeste, prefixe) {
       const installe = nomInstalle(prefixe, nom, relatif(dossier));
       skills.push({ amont: nom, installe, dossier, relatif: relatif(dossier), reserveALAgent: lu.reserveALAgent });
     }
+  }
+
+  for (const declare of skillsDeclares) {
+    const dossier = sous(declare);
+    const fichier = path.join(dossier, 'SKILL.md');
+    const lu = lireConsignes(fichier, racinePlugin, { enTeteObligatoire: true });
+    const nom = nomDeLEnTete(fs.readFileSync(fichier, 'utf8')) ?? path.posix.basename(declare);
+    const installe = nomInstalle(prefixe, nom, relatif(dossier));
+    skills.push({ amont: nom, installe, dossier, relatif: relatif(dossier), reserveALAgent: lu.reserveALAgent });
   }
 
   // Un chemin de commandes est un dossier de `.md`, ou un `.md` à lui seul.
@@ -724,6 +772,7 @@ function ecrire(ecritures, inventaire, plan, racine, racinePlugin, ouverture, so
     installe_par: 'scripts/installer-un-plugin.mjs',
     skills: inventaire.skills.map(({ amont, installe }) => ({ amont, installe })),
     commandes: inventaire.commandes.map(({ amont, installe }) => ({ amont, installe })),
+    exclus: inventaire.exclus,
     non_installe: inventaire.nonInstalle,
   };
   fs.writeFileSync(path.join(plan.provenance, 'installation.json'), `${JSON.stringify(installation, null, 2)}\n`);
@@ -759,6 +808,12 @@ function rendreCompte(inventaire, plan, remarques, ecritures) {
   };
   liste(`${inventaire.skills.length} skill(s)`, inventaire.skills);
   liste(`${inventaire.commandes.length} commande(s)`, inventaire.commandes);
+  if (inventaire.exclusPoses.length > 0) {
+    lignes.push(`  Exclus à la demande (gardé pour les mises à jour) : ${inventaire.exclusPoses.map(({ amont }) => `« ${amont} »`).join(', ')}.`, '');
+  }
+  if (inventaire.exclusSansObjet.length > 0) {
+    lignes.push(`  Exclusion sans objet, le plug-in n’ayant plus cet élément : ${inventaire.exclusSansObjet.map((n) => `« ${n} »`).join(', ')}.`, '');
+  }
 
   const raisons = {
     hooks: 'exécutent du code à chaque événement',
@@ -813,9 +868,33 @@ function retirerLePlugin(racine, nom) {
   );
 }
 
+/** Retire de l'inventaire ce qu'on a demandé de ne pas installer (`--exclure`, 27/09/2026 :
+ * `/polish` de `hzblj-skills`, qui applique d'office un rétrécissement sous le doigt que la décision
+ * n° 6 de `v1-29` refuse). Le nom est celui d'AMONT, celui qu'on lit dans l'archive. Un nom demandé
+ * qui ne désigne rien est refusé — une faute de frappe installerait en silence ce qu'on voulait
+ * écarter ; un nom repris de la dernière installation et disparu en amont est seulement signalé,
+ * pour ne pas bloquer une mise à jour sur une exclusion devenue sans objet. */
+function exclure(inventaire, exclus, demandes) {
+  const tous = [...inventaire.skills, ...inventaire.commandes].map(({ amont }) => amont);
+  const inconnus = exclus.filter((nom) => !tous.includes(nom));
+  if (demandes && inconnus.length > 0) {
+    refuser(`--exclure : ni skill ni commande de ce plug-in : ${inconnus.map((n) => `« ${n} »`).join(', ')}. Rien n’a été écrit.`);
+  }
+  const garde = ({ amont }) => !exclus.includes(amont);
+  const exclusPoses = [...inventaire.skills, ...inventaire.commandes].filter((element) => !garde(element));
+  return {
+    ...inventaire,
+    skills: inventaire.skills.filter(garde),
+    commandes: inventaire.commandes.filter(garde),
+    exclus: exclus.filter((nom) => tous.includes(nom)).sort(),
+    exclusPoses,
+    exclusSansObjet: inconnus,
+  };
+}
+
 let ouverture = null;
 
-function installer({ source, racine, prefixe: prefixeDemande, manuel: manuelDemande, licence: licenceDemandee }) {
+function installer({ source, racine, prefixe: prefixeDemande, manuel: manuelDemande, licence: licenceDemandee, exclus: exclusDemandes }) {
   ouverture = ouvrir(source);
   const racinePlugin = racineDuPlugin(ouverture.dossier);
   refuserLesLiens(racinePlugin);
@@ -826,7 +905,9 @@ function installer({ source, racine, prefixe: prefixeDemande, manuel: manuelDema
   const prefixe = prefixeDemande ?? precedente?.prefixe ?? manifeste.name;
   if (!NOM.test(prefixe)) refuser(`--prefixe : « ${prefixe} » n’est pas un préfixe valide (minuscules, chiffres, tirets).`);
   const manuel = manuelDemande ?? precedente?.manuel ?? false;
-  const inventaire = { ...inventorier(racinePlugin, manifeste, prefixe), manuel };
+  // Comme le préfixe et le mode : une demande l'emporte, sinon la dernière installation.
+  const exclus = exclusDemandes ?? precedente?.exclus ?? [];
+  const inventaire = exclure({ ...inventorier(racinePlugin, manifeste, prefixe), manuel }, exclus, exclusDemandes !== undefined);
   const plan = planifier(inventaire, racine, precedente, licenceDemandee);
   const ecritures = preparer(inventaire, racinePlugin);
   const remarques = aRelire(ecritures, inventaire);

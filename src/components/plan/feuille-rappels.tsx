@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
-import { Fragment, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
-import { FeuilleDuBas } from '@/components/feuille-du-bas';
+import { FeuilleDuBas, type PoigneeDeFeuille } from '@/components/feuille-du-bas';
 import { LigneDeCanal } from '@/components/ligne-de-canal';
 import { MessageInline } from '@/components/message-inline';
 import { RamilleDit } from '@/components/ramille-dit';
@@ -70,6 +70,7 @@ export function FeuilleRappels({
   );
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const feuille = useRef<PoigneeDeFeuille>(null);
 
   const lignes = lignesDeReglage({ ...prefs, prefere: canal, plateforme, permission });
 
@@ -98,11 +99,15 @@ export function FeuilleRappels({
 
     await marquerFeuilleDeRappelVue();
     setOccupe(false);
-    onFerme(canal, jetonActif);
+    // La feuille redescend avant de rendre le choix (`v1-30` §5.4) ; sans poignée, elle se démonte.
+    const rendre = () => onFerme(canal, jetonActif);
+    if (feuille.current) feuille.current.fermer(rendre);
+    else rendre();
   };
 
   return (
     <FeuilleDuBas
+      ref={feuille}
       titre="Les rappels"
       enTete={false}
       // Le geste de retour ferme la feuille sans rien choisir : refuser de la fermer serait

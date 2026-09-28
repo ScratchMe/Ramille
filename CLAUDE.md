@@ -27,9 +27,9 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 |---|---|
 | **`VERCEL.md`** | Toute fusion sur `main` · toucher `vercel.json`, `api/`, `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · ajouter une route · affirmer quoi que ce soit sur un compteur ou une facture Vercel · mesurer le poids d'un déploiement |
 | **`SUPABASE.md`** | Écrire, rejouer ou réécrire une migration · toucher à un privilège, une policy, un trigger ou un RPC · toucher à l'auth (session, lien de connexion, Redirect URLs) · un `401`, `403` ou `42501` inexpliqué · retoucher `database.types.ts` · rejouer un test pgTAP sur le distant |
-| **`EXPO.md`** | Ajouter une route ou un fichier dans `public/` · toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · **toucher à une mise en page — marge, hauteur, barre d'onglets** · un écran blanc sur web · une dépendance native, un build EAS, un `expo-doctor` rouge |
+| **`EXPO.md`** | Ajouter une route ou un fichier dans `public/` · toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · **toucher à une mise en page — marge, hauteur, barre d'onglets** · **faire bouger quelque chose sur web** · un écran blanc sur web · une dépendance native, un build EAS, un `expo-doctor` rouge |
 | **`TESTING.md`** | Écrire un test censé protéger une correction · **annoncer que quelque chose est vérifié** · une suite qui rougit ou verdit de façon inattendue · rejouer un fichier pgTAP sur le distant · toucher au référentiel des facteurs |
-| **`FRONT.md`** | Toucher un écran, un composant ou une dérivation lue par un écran · **écrire une phrase que quelqu'un lira** · afficher un chiffre, un repère, un poste, une saison · faire parler Ramille · rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur · toucher au questionnaire, au plan ou au suivi |
+| **`FRONT.md`** | Toucher un écran, un composant ou une dérivation lue par un écran · **écrire une phrase que quelqu'un lira** · faire bouger quelque chose — une transition, une animation (§2.12, et le skill `/mouvement`) · afficher un chiffre, un repère, un poste, une saison · faire parler Ramille · rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur · toucher au questionnaire, au plan ou au suivi |
 | **`RECETTE.md`** | **Préparer une séance de recette, sur appareil ou au navigateur** · écrire ou retoucher un document de `docs/recette/` · fabriquer ou mettre à jour l'artefact web d'une recette · consigner ce qu'une séance a trouvé · prescrire un profil de test |
 
 ### Ce que la personne qui pilote a demandé
@@ -253,8 +253,13 @@ joué sans être installé, et chacun décidé avec la personne qui pilote, comm
 - **Le sous-agent `contre-lecture`** porte la grille de la relecture adversariale (plus haut). Sa
   « lecture seule » est une consigne et non une garde : il a Bash, et la première contre-lecture a
   supprimé `/dev/null` du conteneur par une commande de vérification mal écrite.
-- **Deux skills ne se déclenchent jamais seuls** et s'appellent par leur nom : `/rejouer-la-ci`
-  (`scripts/rejouer-la-ci.mjs`, `TESTING.md` §2.13) et `/preparer-un-worktree` (plus haut).
+- **Des skills ne se déclenchent jamais seuls** et s'appellent par leur nom : `/rejouer-la-ci`
+  (`scripts/rejouer-la-ci.mjs`, `TESTING.md` §2.13), `/preparer-un-worktree` (plus haut) et, écrit
+  le même soir, **`/mouvement`** (`.claude/skills/mouvement/SKILL.md`) :
+  les jetons, la règle de « réduire les animations » et ce qui ne bouge jamais, **à appeler avant
+  d'ajouter ou de retoucher une transition**. Il reprend dans nos mots les principes de
+  transitions.dev, qui ne s'installe pas — sa licence interdit de republier sa collection
+  (`docs/architecture/v1-30-les-transitions.md` §3.1).
 
 ## Le produit, en trois règles et un renvoi
 
@@ -843,9 +848,13 @@ arrive et se nomme, une fois. Cinq points :
   le premier engagement, un plan à zéro action, et une carte déjà refermée ici — les trois derniers
   passent par le chargement de l'écran, qui les ramène au même appel.
 - **`tabBarStyle: { display: 'none' }` ne laisse pas de bande vide**, mesuré et non raisonné
-  (`EXPO.md` §1.7) ; **l'entrée glissée de 320 ms du canvas n'est pas rendue**, faute de pouvoir
-  envelopper `BottomTabBar` sans ajouter `@react-navigation/bottom-tabs` aux dépendances —
-  `expo-router` l'embarque sans l'exposer. Écart consigné en `v1-17` §9.
+  (`EXPO.md` §1.7) ; **et l'entrée glissée de 320 ms du canvas est rendue depuis le 27/09/2026**
+  (`v1-30` §5.5) : ce fichier a écrit jusque-là qu'elle ne l'était pas, faute de pouvoir envelopper
+  `BottomTabBar` sans dépendre de `@react-navigation/bottom-tabs`, et la raison ne tenait pas —
+  `tabBarStyle` accepte une valeur `Animated`. Elle ne glisse **qu'en arrivant** (`barreArrive`),
+  jamais à l'ouverture de l'app, et sous « réduire les animations » la barre ne lit pas la valeur
+  animée du tout : remise en place dans un effet, elle passait parfois une image transparente
+  (`EXPO.md` §1.7). L'écart de `v1-17` §9 est levé, par une ligne datée sous son tableau.
 
 **Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
 décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
