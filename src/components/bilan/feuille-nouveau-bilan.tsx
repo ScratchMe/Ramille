@@ -1,7 +1,8 @@
+import { useRef } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
-import { FeuilleDuBas } from '@/components/feuille-du-bas';
+import { FeuilleDuBas, type PoigneeDeFeuille } from '@/components/feuille-du-bas';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/rebilan';
@@ -42,10 +43,12 @@ export function FeuilleNouveauBilan({
   /** Refermer sans rien soumettre : on reste sur la dernière étape du questionnaire. */
   onFerme: () => void;
 }) {
+  const feuille = useRef<PoigneeDeFeuille>(null);
+
   return (
     // Le geste de retour referme sans soumettre — le contrat du cadre (`FeuilleDuBas`), qui porte
     // aussi le titre : il nomme le dialogue, qui s'annonçait sans nom sur web.
-    <FeuilleDuBas titre="Ton plan va être recalculé" onFerme={onFerme}>
+    <FeuilleDuBas ref={feuille} titre="Ton plan va être recalculé" onFerme={onFerme}>
       <ThemedText type="body" themeColor="textSecondary">
         {phraseDeLEngagementRecalcule(engagement)}
       </ThemedText>
@@ -60,9 +63,11 @@ export function FeuilleNouveauBilan({
 
       <Button title="Soumettre mon bilan" onPress={onSoumettre} />
 
+      {/* « Pas maintenant » redescend comme le geste de retour ; « Soumettre » n'attend pas, il
+          part vers la restitution (`v1-30` §5.4). */}
       <TextLink
         label="Pas maintenant"
-        onPress={onFerme}
+        onPress={() => (feuille.current ? feuille.current.fermer() : onFerme())}
         type="small"
         weight={600}
         themeColor="accentText"

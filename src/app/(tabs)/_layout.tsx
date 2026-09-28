@@ -1,13 +1,15 @@
 import { Tabs } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { type ColorValue } from 'react-native';
+import { Animated, Easing, type ColorValue } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OngletIcone } from '@/components/onglet-icone';
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, FontFamily, Spacing, Stroke } from '@/constants/theme';
+import { ControlHeight, FontFamily, Mouvement, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-parcours';
+import { animationDesOnglets, barreArrive } from '@/types/mouvement';
 import { etatDuPremierParcours, type EtapeDuPremierParcours } from '@/types/premier-parcours';
 
 /**
@@ -96,11 +98,56 @@ export default function TabsLayout() {
 
   const { barreVisible } = etatDuPremierParcours(etape);
 
+  // **La barre arrive en glissant depuis le bas** (27/09/2026, `v1-30` §5.5 — l'écart n° 3 de `v1-17`
+  // §9 levé). La valeur vit dans `tabBarStyle`, que la barre embarquée par expo-router accepte animée
+  // et applique en dernier : pas besoin d'envelopper `BottomTabBar`, donc pas de dépendance à
+  // ajouter — c'était la seule raison de l'écart. `Animated` de React Native, parce que c'est ce que
+  // la barre anime déjà, et avec son pilote (natif hors du web) : deux pilotes sur une même vue font
+  // lever React Native. Il ignore « réduire les animations », d'où la garde explicite.
+  //
+  // **Elle ne glisse qu'en arrivant** (`barreArrive`) : masquée puis visible. Au démarrage, l'état
+  // d'avant est inconnu et la barre se pose, sans quoi elle glisserait à chaque ouverture. Masquée,
+  // elle attend en bas et transparente, pour que sa première image visible soit le début du
+  // mouvement et non la fin.
+  //
+  // **Sous « réduire les animations », la barre ne lit pas cette valeur du tout** (voir
+  // `tabBarStyle`). La première forme la remettait à 1 dans cet effet, qui part après le rendu, donc
+  // parfois après la première image : la barre y était transparente et sous sa place. Relevé par le
+  // parcours réel le 27/09/2026, sur le cycliste, dont la barre arrive sous la préférence — au
+  // premier de deux passages, le second passant. Une image, mais une image où l'écran a rétréci sur
+  // une bande vide.
+  const animationsReduites = useReducedMotion();
+  const [arrivee] = useState(() => new Animated.Value(1));
+  const barrePrecedente = useRef<boolean | null>(null);
+  useEffect(() => {
+    const avant = barrePrecedente.current;
+    barrePrecedente.current = barreVisible;
+    if (animationsReduites) return;
+    if (!barreVisible) {
+      arrivee.setValue(0);
+      return;
+    }
+    if (!barreArrive(avant, barreVisible)) return;
+    // Une arrivée part toujours d'en bas, quelle que soit la valeur laissée par l'état d'avant.
+    arrivee.setValue(0);
+    Animated.timing(arrivee, {
+      toValue: 1,
+      duration: Mouvement.entreeDeBarre,
+      easing: Easing.bezier(...Mouvement.courbe),
+      useNativeDriver: process.env.EXPO_OS !== 'web',
+    }).start();
+  }, [barreVisible, animationsReduites, arrivee]);
+
   return (
     <ContexteDuPremierParcours.Provider value={{ etape, laBarreArrive, lesDeuxLieuxSontVus }}>
     <Tabs
       screenOptions={{
         headerShown: false,
+        // **Un onglet passe à l'autre en fondu** (27/09/2026, `v1-30` §5.8) — 150 ms, le fondu de la
+        // barre embarquée par expo-router, et celui que Material fait entre les destinations d'une
+        // barre de navigation. La barre ne lit pas « réduire les animations » : c'est
+        // `animationDesOnglets` qui l'éteint.
+        animation: animationDesOnglets(animationsReduites),
         // **La barre garde la disposition du kit à toutes les largeurs** (13.7, recette web du
         // 16/09/2026). Sans cette ligne, react-navigation bascule seul en disposition
         // horizontale au-delà de 768 px de large (`shouldUseHorizontalLabels`) : le libellé
@@ -163,13 +210,22 @@ export default function TabsLayout() {
           // (`useBottomTabBarHeight` n'est lu nulle part), ce qui est la seule chose qui aurait pu
           // laisser la bande. `EXPO.md` §1.7.
           //
-          // **L'entrée glissée du canvas (320 ms depuis le bas) n'est pas rendue**, et c'est un
-          // écart assumé : elle demanderait de rendre la barre soi-même en enveloppant
-          // `BottomTabBar` dans un `Animated.View`, donc de dépendre de `@react-navigation/bottom-tabs`
-          // — un paquet qu'`expo-router` embarque sans l'exposer, et qui n'est pas une dépendance de
-          // ce dépôt. Ajouter une dépendance pour une animation d'entrée n'est pas un échange que ce
-          // projet fait. Écart consigné en `v1-17` §9.
+          // **L'entrée glissée du canvas (320 ms depuis le bas) est rendue depuis le 27/09/2026** :
+          // voir `arrivee` plus haut. Elle avait été écartée en croyant qu'il fallait envelopper
+          // `BottomTabBar`, donc dépendre de `@react-navigation/bottom-tabs` (`v1-17` §9) ; la barre
+          // accepte une valeur animée dans ce style même, et c'est ici qu'elle la reçoit.
           display: barreVisible ? 'flex' : 'none',
+          ...(!animationsReduites && {
+            opacity: arrivee,
+            transform: [
+              {
+                translateY: arrivee.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [ControlHeight.tabBar + insets.bottom, 0],
+                }),
+              },
+            ],
+          }),
         },
       }}
     >

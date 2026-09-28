@@ -187,7 +187,7 @@ n'était dans aucune fiche :
 | [`v1-22`](v1-22-retirer-un-bilan.md) | C4.7, retirer un bilan | **Décidé et livré le 27/09/2026** : retirer et non supprimer, plan reconstruit sans annonce, le geste sur la restitution (« Ce bilan ne me ressemble pas »). `status = 'withdrawn'` rend justes d'un coup toutes les lectures qui filtrent sur `completed` — la fiche en annonçait trois —, sauf deux, corrigées à la main : la restitution par identifiant et `analytics.user_segments` |
 | [`v1-23`](v1-23-point-quantitatif.md) | C4.1, le point quantitatif | **Fermé pour la V1 le 27/09/2026**, avec sa condition de réouverture : la boucle n'a tourné sur personne, et le gain principal annoncé est celui qu'il ne faut pas prendre |
 | [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **La phrase décidée le 10/09 est livrée le 19/09 ; le poste est sorti du lot 4 le 27/09/2026** : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions, donc il devient un increment à part (§5) |
-| [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | **Décidé le 27/09/2026 et livré le 28/09/2026**, avec quatre précisions arbitrées au vu de la construction (jamais en régime espacé, fenêtre ouverte par une action de **trajet**, feuille rouverte une fois, deux canaux Android) ; l'appareil le vérifie en `v1-13` §11.21. Décidé : notification seule, dix semaines depuis le premier engagement choisi de la saison, et un mot qui nomme ce que la personne a prévu (« Demain, tu as prévu de faire ton trajet à vélo. »). La page posait cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
+| [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | **Décidé le 27/09/2026 et livré le 28/09/2026**, avec quatre précisions arbitrées au vu de la construction (jamais en régime espacé, fenêtre ouverte par une action de **trajet**, feuille rouverte une fois, deux canaux Android) ; l'appareil le vérifie en `v1-13` §11.22. Décidé : notification seule, dix semaines depuis le premier engagement choisi de la saison, et un mot qui nomme ce que la personne a prévu (« Demain, tu as prévu de faire ton trajet à vélo. »). La page posait cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
 | [`v1-26`](v1-26-meme-saison-un-an-apres.md) | C4.8, la même saison un an après | **Moitié livrée par C6.3 ; le reste décidé le 27/09/2026** — une seule dérivation pour le suivi et la page d'année, la même saison sinon le bilan précédent, toujours nommé — et construit avec C6.5. Le reste recouvre le moment anniversaire : une dérivation pour deux surfaces, ou deux chiffres qui se contrediront |
 
 **Et la dette technique a son relevé depuis le 19/09/2026** :
@@ -422,6 +422,22 @@ s'annonce enfin coché — c'était le seul défaut critique de l'audit.
   compris ;
 - **le paysage**, écart WCAG 1.3.4 **assumé pour la V1** (n° 9), et ce que le lever coûte : `v1-29`
   §6.2.
+
+**Et les transitions de l'interface sont en chantier depuis le 27/09/2026**
+([`v1-30-les-transitions.md`](v1-30-les-transitions.md)), à la demande de la personne qui pilote :
+*« qu'on finisse par obtenir un rendu professionnel et smooth »*. L'étude de transitions.dev a conclu
+qu'il ne s'installe pas — sa licence interdit de republier sa collection, et ses extraits ne valent
+que pour le web — ; ses principes deviennent un skill de Ramille, `mouvement`. Neuf décisions : les
+feuilles dont le voile ne monte plus avec elles, la barre d'onglets qui arrive en glissant (un écart
+de C5.7 levé), l'étape du questionnaire qui entre dans le sens du parcours, le contenu qui glisse au
+lieu de sauter, les onglets en fondu sans image de « Chargement… » — puis, dans un second temps, la
+sortie de l'écran de lancement. **Deux écarts y sont écrits** : le plug-in `hzblj-skills`, installé
+en mode manuel là où la recommandation était de ne pas l'installer, et le plan qui remonte encore
+d'un coup quand une carte de saison est refermée — celui-là se juge sur pièce au premier build, **pas
+avant le 1er octobre 2026**. **Tout y respecte « réduire les animations »**, et le document tient
+l'état d'avancement de chaque chantier, pour qu'un autre agent puisse le reprendre. La première vague
+est fusionnée le 28/09/2026 ; la recette sur appareil (`v1-13` §11, ligne 11.21) et la vague 2 — la
+sortie de l'écran de lancement — viennent après.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 

@@ -63,6 +63,9 @@
   "license": "AGPL-3.0-or-later",
   "jest": {
     "preset": "jest-expo",
+    "setupFiles": [
+      "<rootDir>/scripts/doublage-reanimated.js"
+    ],
     "moduleFileExtensions": [
       "ts",
       "tsx",

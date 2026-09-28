@@ -415,7 +415,7 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
   existe) : la feuille ne le joue pas, `34_retirer_un_bilan.test.sql` le tient.
 - **Le mot de la veille** (C4.2), livré le 28/09/2026 : il n'existe qu'en notification, donc un
   navigateur n'en voit que la page de confidentialité (11.5) — le reste attend l'appareil,
-  `v1-13` §11.21.
+  `v1-13` §11.22.
 - **Les agrégats de cohortes** du lot 6, livrés avec C4.7 : la séance lit la phrase de la page
   (11.4), mais rien ne se compte avant qu'une purge ne supprime quelqu'un — début décembre 2026 au
   plus tôt (`docs/exploitation/README.md` §8.5 bis).

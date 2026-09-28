@@ -47,6 +47,16 @@
  *     silence un plug-in absent, 1 (le plug-in absent) ; accepter `--retirer` à côté d'une archive
  *     ou d'un mode, puis d'une licence, 1 chacune (les commandes mêlées).
  * Aucune mutation ne passe.
+ *
+ * **Et le 27/09/2026, quand `hzblj-skills` a montré deux formes que le script ne savait pas lire**
+ * — huit mutations, l'état d'avant réécrit depuis une copie après chacune, une seule chute à chaque
+ * fois :
+ *   - le skill déclaré : le relire comme un dossier parent ; le nommer par son dossier au lieu de
+ *     son en-tête ; signaler en « autres » les dossiers qui ne font que le ranger ; y signaler la
+ *     documentation d'un dossier de skills, 1 chacune (le chemin déclaré qui est un skill) ;
+ *   - `--exclure` : l'ignorer ; ne plus le reprendre à la mise à jour ; accepter un nom qui ne
+ *     désigne rien, 1 chacune (l'exclusion) ; l'accepter à côté de `--retirer`, 1 (les commandes
+ *     mêlées).
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -297,6 +307,72 @@ describe('installer un plug-in', () => {
     );
     expect(dehors.code).toBe(1);
     expect(dehors.sortie).toContain('sort du plug-in');
+  });
+
+  test('lit un chemin déclaré qui est un skill lui-même, nommé par son en-tête', () => {
+    // La forme de `hzblj-skills` : des skills déclarés un par un, à plusieurs niveaux, dont deux
+    // dossiers homonymes que seul l'en-tête distingue.
+    const depot = temporaire('ramille-depot-');
+    const r = installer(
+      plugin({
+        '.claude-plugin/plugin.json': JSON.stringify({
+          name: 'outil',
+          skills: ['./skills/commun/ui/performance', './skills/web/gsap/performance', './skills/mobile/sans-nom'],
+        }),
+        'skills/commun/ui/performance/SKILL.md': skill('performance'),
+        'skills/web/gsap/performance/SKILL.md': skill('gsap-performance'),
+        'skills/web/gsap/performance/references/regles.md': 'Des règles.\n',
+        'skills/mobile/sans-nom/SKILL.md': '---\ndescription: Sans nom.\n---\nConsignes.\n',
+        'skills/README.md': 'Le sommaire des skills.\n',
+        'skills/mobile/README.md': 'Le sommaire mobile.\n',
+      }),
+      depot,
+    );
+
+    expect(r.code).toBe(0);
+    expect(installation(depot).skills).toEqual([
+      { amont: 'gsap-performance', installe: 'outil-gsap-performance' },
+      { amont: 'performance', installe: 'outil-performance' },
+      { amont: 'sans-nom', installe: 'outil-sans-nom' },
+    ]);
+    expect(lire(depot, '.claude/skills/outil-gsap-performance/references/regles.md')).toBe('Des règles.\n');
+    // Les dossiers qui ne font que ranger des skills déclarés ne sont pas « non installés », et la
+    // documentation d'un dossier de skills se lit sans s'installer.
+    expect(installation(depot).non_installe.autres).toEqual([]);
+  });
+
+  test('--exclure écarte un élément, se garde pour les mises à jour, et refuse un nom inconnu', () => {
+    const depot = temporaire('ramille-depot-');
+    const source = () =>
+      plugin({
+        '.claude-plugin/plugin.json': manifeste(),
+        'skills/ecrire/SKILL.md': skill('ecrire'),
+        'commands/idee.md': '---\ndescription: Une idée.\n---\nTrouve une idée.\n',
+        'commands/polir.md': '---\ndescription: Polit.\n---\nPolit tout.\n',
+      });
+
+    const r = installer(source(), depot, '--exclure', 'polir');
+    expect(r.code).toBe(0);
+    expect(existe(depot, '.claude/commands/outil-polir.md')).toBe(false);
+    expect(existe(depot, '.claude/commands/outil-idee.md')).toBe(true);
+    expect(r.sortie).toContain('Exclus à la demande (gardé pour les mises à jour) : « polir »');
+    expect(installation(depot).exclus).toEqual(['polir']);
+
+    // La mise à jour reprend l'exclusion sans qu'on la redise.
+    expect(installer(source(), depot).code).toBe(0);
+    expect(existe(depot, '.claude/commands/outil-polir.md')).toBe(false);
+    expect(installation(depot).exclus).toEqual(['polir']);
+
+    // Une faute de frappe installerait en silence ce qu'on voulait écarter.
+    const faute = installer(source(), temporaire('ramille-depot-'), '--exclure', 'polire');
+    expect(faute.code).toBe(1);
+    expect(faute.sortie).toContain('ni skill ni commande de ce plug-in : « polire »');
+
+    // Exclure plus tard retire ce qu'une installation précédente avait posé.
+    const autre = temporaire('ramille-depot-');
+    expect(installer(source(), autre).code).toBe(0);
+    expect(installer(source(), autre, '--exclure', 'ecrire').code).toBe(0);
+    expect(existe(autre, '.claude/skills/outil-ecrire')).toBe(false);
   });
 
   test('en --manuel, rien ne se déclenche seul, et une mise à jour garde ce mode', () => {
@@ -599,7 +675,7 @@ describe('retirer un plug-in', () => {
     expect(existe(depot, '.claude/skills/outil-ecrire/SKILL.md')).toBe(true);
   });
 
-  test('refuse --retirer à côté d’une archive, d’un mode ou d’une licence : l’une des deux commandes efface', () => {
+  test('refuse --retirer à côté d’une archive, d’un mode, d’une licence ou d’une exclusion : l’une des deux commandes efface', () => {
     const depot = temporaire('ramille-depot-');
     expect(installer(source(), depot).code).toBe(0);
     const texte = path.join(temporaire('ramille-licence-'), 'LICENSE');
@@ -609,6 +685,7 @@ describe('retirer un plug-in', () => {
       installer(source(), depot, '--retirer', 'outil'),
       retirer('outil', depot, '--manuel'),
       retirer('outil', depot, '--licence', texte),
+      retirer('outil', depot, '--exclure', 'ecrire'),
     ]) {
       expect(r.code).toBe(1);
       expect(r.sortie).toContain('--retirer ne prend que le nom du plug-in');

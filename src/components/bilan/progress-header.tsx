@@ -1,9 +1,11 @@
 import { StyleSheet, View } from 'react-native';
+import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 
 import { Mascot } from '@/components/mascot';
 import { ThemedText } from '@/components/themed-text';
-import { Rail, Spacing } from '@/constants/theme';
+import { Mouvement, Rail, Spacing } from '@/constants/theme';
 import { MASCOT_MIN_FACE_SIZE } from '@/types/mascot';
+import { dureeSelonLaPreference } from '@/types/mouvement';
 import { useTheme } from '@/hooks/use-theme';
 
 // En-tête commun à tous les écrans du questionnaire (B1.1→B4) : mascotte, libellé de section,
@@ -23,6 +25,10 @@ import { useTheme } from '@/hooks/use-theme';
 export function ProgressHeader({ section, step, total }: { section: string; step: number; total: number }) {
   const theme = useTheme();
   const percent = total > 0 ? Math.round((step / total) * 100) : 0;
+  // **Le rail avance au lieu de sauter** (27/09/2026, `v1-30` §5.6), au rythme de l'étape qui entre.
+  // Une CSS transition de reanimated, qui ne lit pas « réduire les animations » : sa durée passe
+  // par `dureeSelonLaPreference`, et sous la préférence le rail saute comme avant.
+  const animationsReduites = useReducedMotion();
 
   return (
     <View style={styles.container}>
@@ -38,7 +44,18 @@ export function ProgressHeader({ section, step, total }: { section: string; step
         </ThemedText>
       </View>
       <View style={[styles.track, { backgroundColor: theme.border }]}>
-        <View style={[styles.fill, { width: `${percent}%`, backgroundColor: theme.accent }]} />
+        <Animated.View
+          style={[
+            styles.fill,
+            {
+              width: `${percent}%`,
+              backgroundColor: theme.accent,
+              transitionProperty: 'width',
+              transitionDuration: dureeSelonLaPreference(Mouvement.entree, animationsReduites),
+              transitionTimingFunction: cubicBezier(...Mouvement.courbe),
+            },
+          ]}
+        />
       </View>
     </View>
   );

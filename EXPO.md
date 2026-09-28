@@ -111,6 +111,35 @@ relais au rendu suivant.
   25/09/2026 : le focus revenait sur la page quittée, l'inertie des pages basculait trois fois. Le
   défilement programmé se tient donc jusqu'à son arrivée, lue à sa position (`enVol`, dans
   `src/app/onboarding/index.tsx`).
+- **Le `Modal` de react-native-web anime tout son contenu d'un bloc, et ignore « réduire les
+  animations »** (0.21, keyframes CSS de 250 ms) : avec `animationType="slide"`, le voile d'une
+  feuille du bas monte du bas avec elle au lieu d'assombrir l'écran sur place, la fermeture est
+  instantanée, et tout glisse même sous la préférence. `animationType="none"` et ses propres
+  animations dedans — voile en fondu, feuille qui monte — règlent les trois. Ramille :
+  `src/components/feuille-du-bas.tsx`. **Et le dialogue n'existe qu'à la fin de cette animation** :
+  react-native-web ne pose `role="dialog"` et n'arme son piège à focus qu'une fois le `Modal`
+  « actif », sur `animationEnd` — pendant les 250 ms d'un `slide`, ce n'est ni un dialogue pour un
+  lecteur d'écran, ni un piège pour le clavier. Avec `"none"`, il l'est dès qu'il est montré — sa
+  toute première image est encore à opacité nulle (`styles.hidden`), et ne rend rien. Et un
+  outil qui cherche le dialogue par son rôle ne le voit pas glisser : `aria-modal`, lui, est posé
+  tout de suite (lu dans la source du `Modal` de react-native-web 0.21 ; mesuré le 27/09/2026).
+- **Les animations de disposition de reanimated (4.5) ne se comportent pas sur web comme sur
+  natif**, mesuré sur un export le 27/09/2026 :
+  - `entering` pose `visibility: hidden` sur l'élément jusqu'à `animationstart`, une image au moins
+    plus tard — et un élément masqué **ne reçoit pas le focus** : un focus donné au geste à ce qui
+    vient d'apparaître retombe sur le document, en silence ;
+  - `LinearTransition` ne déplace pas un bloc qui change de taille, il l'**étire** par une échelle,
+    contenu compris ;
+  - `exiting` recopie l'élément qui part dans un clone accroché à son `offsetParent`, hors du
+    défilement — la page peut défiler de la hauteur du clone.
+  Ce qui marche sur les deux : une **CSS animation** de reanimated (`animationName` et
+  `css.keyframes`), qui joue dès la première image sans rien masquer, et une hauteur animée par
+  `withTiming` sur la mise en page réelle, ce qui est dessous suivant de lui-même. **Les CSS
+  animations et transitions de reanimated ignorent la préférence** — `withTiming` seul la lit
+  (`ReduceMotion.System`), **et sans qu'on puisse s'y fier** : une hauteur animée ainsi, laissée
+  jouer sous la préférence, est restée à zéro au lieu de se poser (mesuré le 27/09/2026, mécanisme
+  non élucidé). Sous la préférence, on ne lance donc rien, `withTiming` compris. Et `LayoutAnimation`
+  de React Native ne fait rien du tout sur web.
 - **`userInterfaceStyle` d'`app.json` ne s'applique qu'au natif** : sur web, `useColorScheme` lit
   `prefers-color-scheme`. Si le thème sombre n'est pas validé, la décision se prend dans le hook
   de thème **et** dans le `ThemeProvider` de navigation — corriger l'un sans l'autre laisse la
@@ -163,6 +192,18 @@ marge, et une frontière ne la compte qu'une fois.
   écran qui compense à la main avec `useBottomTabBarHeight()` : le vérifier avant de conclure.
   Corollaire d'accessibilité gratuit — `display: none` retire aussi la barre de l'arbre
   d'accessibilité, donc rien n'y reste focalisable.
+- **La barre s'anime sans l'envelopper : `tabBarStyle` accepte une valeur `Animated`** (typé
+  `Animated.WithAnimatedValue`, appliqué **en dernier** dans le style de sa vue — une
+  transformation qu'on y met remplace la sienne). Une opacité et un `translateY` interpolés
+  suffisent à la faire arriver depuis le bas, sans dépendre de `@react-navigation/bottom-tabs` pour
+  réécrire `BottomTabBar`. Avec le pilote de la barre elle-même — natif hors du web —, deux pilotes
+  sur une même vue faisant lever React Native. `animation: 'fade'` fait passer d'un onglet à l'autre
+  en 150 ms, par `Animated` lui aussi, et **aucun des deux ne lit « réduire les animations »**.
+- **Un effet n'est pas la première image.** Une valeur remise en place dans un `useEffect` l'est
+  après le rendu, donc **parfois** après la première image : une barre remise à « posée » par un
+  effet a été vue transparente pendant une image, au premier de deux passages (Ramille, 27/09/2026). Ce qui doit être
+  juste dès la première image — l'état posé sous « réduire les animations », notamment — se décide
+  au rendu.
 
 ### 1.8 Hermes peut être construit sans ICU complet
 

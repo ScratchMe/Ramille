@@ -256,3 +256,38 @@ export const Stroke = {
 } as const;
 
 export const MaxContentWidth = 800;
+
+/**
+ * Le mouvement : durées en millisecondes, déplacement en pixels, et la courbe (27/09/2026,
+ * `v1-30` §4). Une entrée prend son temps, une sortie s'efface plus vite, et rien ne rebondit hors
+ * de l'écran de lancement, qui garde ses propres valeurs.
+ *
+ * **La courbe est quatre nombres, pas une fonction** : reanimated (`Easing.bezier`), `Animated` de
+ * React Native (`Easing.bezier`), les CSS transitions de reanimated (`cubicBezier`) et la CSS du kit
+ * (`cubic-bezier`) la lisent chacun à sa façon, et ce fichier n'importe pas reanimated. C'est la
+ * « sortie douce » : un départ franc, une arrivée qui se pose.
+ *
+ * Toute animation qui s'en sert suit « réduire les animations », et **en ne démarrant pas** : sous
+ * la préférence, l'état final est posé d'emblée. Aucune bibliothèque ne s'en charge de façon sûre —
+ * `Animated` et les CSS de reanimated l'ignorent, et `withTiming`, qui la lit
+ * (`ReduceMotion.System`), n'est qu'un second filet : laissé jouer sous la préférence, `Depliage` ne
+ * s'ouvre pas du tout (`v1-30` §4.2). Chaque outil lit donc `useReducedMotion` lui-même, et une CSS
+ * transition passe sa durée par `dureeSelonLaPreference` (`src/types/mouvement.ts`). Le skill
+ * `mouvement` dit le reste.
+ */
+export const Mouvement = {
+  /** Un contenu qui arrive ou grandit : l'étape et son rail, une précision, un bloc qui s'allonge. */
+  entree: 250,
+  /** La feuille du bas qui monte. */
+  entreeDeFeuille: 280,
+  /** La barre d'onglets qui arrive, valeur du canevas de C5.7 (planche F3). */
+  entreeDeBarre: 320,
+  /** Ce qui apparaît en place : le voile d'une feuille, une précision, une réplique. */
+  fondu: 200,
+  /** La feuille et son voile qui redescendent, un bloc qui rétrécit (`HauteurSuivie`). */
+  sortie: 200,
+  /** Ce qu'un contenu parcourt en entrant. */
+  deplacement: 8,
+  /** La « sortie douce », pour tout ce qui entre, sort, glisse ou se replie. */
+  courbe: [0.22, 1, 0.36, 1],
+} as const;

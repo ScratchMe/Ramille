@@ -22,6 +22,7 @@ import {
 } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
 import { donnerLeFocus } from '@/lib/focus';
+import { Depliage } from '@/lib/mouvement';
 import {
   TAILLES_DE_COVOITURAGE,
   type BilanAnswers,
@@ -113,7 +114,9 @@ export function LeisureDetailStep({
             {modeChoices.map((choice) => {
               const selected = selectedKey === choice.key;
               return (
-                <View key={choice.key}>
+                // Les modes que « Voir les autres modes » ajoute s'ouvrent ; ceux qui sont là à
+                // l'arrivée de l'étape, non (`SansApparitionAuMontage`, posé par `StepShell`).
+                <Depliage key={choice.key}>
                   <ModeListItem
                     ref={choice.key === LEISURE_MODE_CHOICES_MORE[0].key ? premierDesAutres : undefined}
                     label={choice.label}
@@ -130,65 +133,65 @@ export function LeisureDetailStep({
                   {/* La précision s'ouvre sous l'élément qui la déclenche — cf.
                       `precision-mode.tsx` pour la raison, qui n'est pas cosmétique. */}
                   {selected && choice.modeId === 'voiture' && (
-                    <View style={styles.precision}>
+                    <Depliage style={styles.precision}>
                       <PrecisionMode
                         question="Quelle motorisation ?"
                         options={CAR_ENGINE_OPTIONS}
                         valeur={answers.leisure_car_engine}
                         onChange={(value) => update({ leisure_car_engine: value })}
                       />
-                    </View>
+                    </Depliage>
                   )}
 
                   {selected && choice.modeId === 'deux_roues_motorise' && (
-                    <View style={styles.precision}>
+                    <Depliage style={styles.precision}>
                       <PrecisionMode
                         question="Quel type de deux-roues ?"
                         options={TWO_WHEELER_TYPE_OPTIONS}
                         valeur={answers.leisure_two_wheeler_type}
                         onChange={(value) => update({ leisure_two_wheeler_type: value })}
                       />
-                    </View>
+                    </Depliage>
                   )}
 
                   {/* C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont
                       posées ici plutôt que déduites de B1 parce qu'on ne fait pas ses sorties
                       comme son trajet : on peut aller au travail en RER et en week-end en TER. */}
                   {selected && choice.modeId === 'train' && (
-                    <View style={styles.precision}>
+                    <Depliage style={styles.precision}>
                       <PrecisionMode
                         question="Quel type de train ?"
                         options={TRAIN_TYPE_OPTIONS}
                         valeur={answers.leisure_train_type}
                         onChange={(value) => update({ leisure_train_type: value })}
                       />
-                    </View>
+                    </Depliage>
                   )}
 
                   {selected && choice.modeId === 'velo' && (
-                    <View style={styles.precision}>
+                    <Depliage style={styles.precision}>
                       <PrecisionMode
                         question="Quel type de vélo ?"
                         options={VELO_TYPE_OPTIONS}
                         valeur={answers.leisure_velo_type}
                         onChange={(value) => update({ leisure_velo_type: value })}
                       />
-                    </View>
+                    </Depliage>
                   )}
 
                   {/* C3.5 — après la motorisation, sous la même option : les deux précisions
                       décrivent la même voiture. */}
                   {selected && choice.carpool && (
-                    <View style={styles.precision}>
+                    <Depliage style={styles.precision}>
                       <PrecisionChiffres
                         question="Vous êtes combien dans la voiture ?"
                         options={TAILLES_DE_COVOITURAGE}
                         valeur={answers.leisure_carpool_size}
                         onChange={(value) => update({ leisure_carpool_size: value })}
                       />
-                    </View>
+                    </Depliage>
                   )}
-                </View>
+                </Depliage>
               );
             })}
           </GroupeDeChoix>
@@ -232,7 +235,7 @@ export function LeisureDetailStep({
             ligne, pas une liste d'éléments, donc il n'y a pas d'élément sous lequel se glisser
             — et à quatre puces, le champ reste juste sous l'œil. */}
         {answers.leisure_distance_bracket === '30_plus' && (
-          <View style={styles.distanceLibre}>
+          <Depliage style={styles.distanceLibre}>
             <ThemedText type="small" themeColor="textTertiary">
               Environ combien, pour un aller ?
             </ThemedText>
@@ -242,7 +245,7 @@ export function LeisureDetailStep({
               unit="km"
               label="Distance d’un aller"
             />
-          </View>
+          </Depliage>
         )}
       </View>
       <MissingModeLink context="B2.2 mode loisirs" />

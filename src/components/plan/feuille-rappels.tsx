@@ -4,7 +4,7 @@ import { Linking, Platform, StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
-import { FeuilleDuBas } from '@/components/feuille-du-bas';
+import { FeuilleDuBas, type PoigneeDeFeuille } from '@/components/feuille-du-bas';
 import { LigneDeCanal } from '@/components/ligne-de-canal';
 import { MessageInline } from '@/components/message-inline';
 import { RamilleDit } from '@/components/ramille-dit';
@@ -117,6 +117,10 @@ export function FeuilleRappels({
   );
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // La poignée du cadre (`v1-30` §5.4) : un choix validé fait redescendre la feuille avant de rendre
+  // la main. Les deux étapes partagent le même cadre, donc la même poignée — passer de l'une à
+  // l'autre change le contenu sous le doigt sans refermer.
+  const feuille = useRef<PoigneeDeFeuille>(null);
   // La seconde étape : `null` tant qu'on est sur le choix du canal, puis ce qui a été enregistré et
   // la ligne à dire sous la question de Ramille. Ouverte directement sur elle, la feuille n'a rien
   // enregistré : le canal et le jeton sont ceux qu'elle a reçus.
@@ -152,6 +156,11 @@ export function FeuilleRappels({
 
   const lignes = lignesDeReglage({ ...prefs, prefere: canal, plateforme, permission });
 
+  const refermerPuis = (rendre: () => void) => {
+    if (feuille.current) feuille.current.fermer(rendre);
+    else rendre();
+  };
+
   const valider = async () => {
     setOccupe(true);
     setErreur(null);
@@ -180,7 +189,8 @@ export function FeuilleRappels({
     setOccupe(false);
 
     // La seconde étape, si et seulement si la dérivation la propose — avec le canal **enregistré**
-    // et le jeton **obtenu**, pas ceux d'avant la feuille.
+    // et le jeton **obtenu**, pas ceux d'avant la feuille. Elle remplace le contenu : la feuille ne
+    // redescend pas entre les deux.
     const affichage = affichageDeLaVeille({
       plateforme,
       prefere: canal,
@@ -194,7 +204,8 @@ export function FeuilleRappels({
       return;
     }
 
-    onFerme(canal, jetonActif, prefs.reponseALaVeille);
+    // La feuille redescend avant de rendre le choix (`v1-30` §5.4) ; sans poignée, elle se démonte.
+    refermerPuis(() => onFerme(canal, jetonActif, prefs.reponseALaVeille));
   };
 
   const repondreALaVeille = async (retenu: Retenu, reponse: 'oui' | 'refuse') => {
@@ -206,12 +217,13 @@ export function FeuilleRappels({
       setErreur(MESSAGE_D_ECHEC);
       return;
     }
-    onFerme(retenu.canal, retenu.jetonActif, reponse);
+    refermerPuis(() => onFerme(retenu.canal, retenu.jetonActif, reponse));
   };
 
   if (veille !== null) {
     return (
       <FeuilleDuBas
+        ref={feuille}
         titre="Les rappels"
         enTete={false}
         // Refermer sans répondre ne répond rien : le canal est déjà enregistré, la question reste
@@ -252,6 +264,7 @@ export function FeuilleRappels({
 
   return (
     <FeuilleDuBas
+      ref={feuille}
       titre="Les rappels"
       enTete={false}
       // Le geste de retour ferme la feuille sans rien choisir : refuser de la fermer serait
