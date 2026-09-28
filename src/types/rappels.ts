@@ -597,9 +597,12 @@ export function sousTitreDesRappels({
  * étape demande une action de trajet. Quelqu'un qui choisit d'abord un vol voit donc la feuille sans
  * la question de la veille ; et quand il choisit ensuite une action de trajet, la feuille est déjà
  * vue. **D'où la réouverture, une fois, sur la seule question de la veille** (arbitrage du
- * 27/09/2026) : au premier engagement sur une action de trajet, si la question n'a jamais reçu de
- * réponse et que la proposition tiendrait (`affichageDeLaVeille` : natif, notification reçue sur ce
- * téléphone, fenêtre ouverte). Elle s'ouvre directement sur « Et la veille de tes jours de trajet, je
+ * 27/09/2026) : à un engagement sur une action de trajet, si la question n'a jamais été posée sur
+ * cet appareil ni reçu de réponse, et que la proposition tiendrait (`affichageDeLaVeille` : natif,
+ * notification reçue sur ce téléphone, fenêtre ouverte). Ce n'est donc pas forcément le **premier**
+ * engagement de trajet, mais le premier **où la question peut être posée** : qui a vu la feuille sur
+ * un trajet sans recevoir de notification (permission refusée) la voit venir au suivant, une fois
+ * les notifications rouvertes. Elle s'ouvre directement sur « Et la veille de tes jours de trajet, je
  * te fais signe aussi ? », sans repasser par le canal.
  *
  * **« Une fois » est une marque d'appareil** (`veilleDejaProposee`), posée dès que la question

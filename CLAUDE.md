@@ -348,8 +348,9 @@ Trois CI rouges pour l'apprendre (PR #34, #41, #48) ; la méthode qui marche, re
 assertion par une requête et jamais à la main : `TESTING.md` §2.2.
 
 **Des assertions de la suite échouent sur le projet distant et passent en CI, parce qu'elles
-supposent une base vierge** — et un fichier y ferait partir de vrais emails : `TESTING.md` §2.3,
-qui les nomme, à lire avant de « corriger » un test qui n'a rien. (Ce paragraphe les comptait ;
+supposent une base vierge** — et des fichiers y feraient partir de vrais messages, emails comme
+notifications (`09`, et depuis C4.2 la section 8 de `35`) : `TESTING.md` §2.3, qui les nomme, à
+lire avant de « corriger » un test qui n'a rien, et avant de rejouer un fichier sur le distant. (Ce paragraphe les comptait ;
 le compte s'est périmé le 21/09/2026, quand l'une d'elles a été fermée.)
 
 **Dans une transaction pgTAP, `created_at` ne désigne aucune ligne, et la place d'une assertion
@@ -1768,8 +1769,9 @@ contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
 - **le signe de vie des rappels a une seule définition, `dernier_signe_de_vie`**, que
   `regime_de_rappel` appelle depuis C4.2 et que les cohortes lisent — celui de la purge reste le
   sien, plus large (tous les événements, les bilans, les retours). Une assertion du `36` exige que
-  le corps installé du régime appelle la fonction ou en porte l'expression ; tant que c'était la
-  seconde, elle ne gardait qu'une inclusion, et l'appel a fermé cet angle mort ;
+  le corps installé du régime **appelle** la fonction — elle acceptait aussi l'expression recopiée
+  tant que la factorisation n'était pas faite. Ce qu'elle ne voit toujours pas, et qu'il ne faut pas
+  croire gardé : une retouche de `v_depuis` **après** l'appel. C'est une inclusion, pas une égalité ;
 - **les valeurs que rend `regime_de_rappel` doivent toutes figurer dans le `check` de
   `rappels_au_depart`** : une valeur nouvelle ferait échouer chaque compte, donc perdre chaque
   cohorte. Une assertion du `36` lit les littéraux `return` du corps installé et les compare au
@@ -1832,8 +1834,12 @@ est `notification_outbox_une_veille_par_jour`, un mot par personne et par jour v
 vit dans `envoyer_les_notifications(genre)`, partagée par le passage de 7 h (les points) et celui du
 soir (cron `mot-de-la-veille`, 16 h 30 **et** 17 h 30 UTC, pour que l'un des deux tombe à 18 h 30 à
 Paris en toute saison) ; le journal porte le genre du passage. **Toute lecture de la boîte d'envoi
-qui joint `engagement_checkins` perd le mot en silence** — trois le faisaient (`rappels_bloques`,
-l'export, la caducité) — : jointure externe, toujours. Le canal effectif se résout en un seul endroit,
+qui joint `engagement_checkins` perd le mot en silence** — trois le faisaient : `rappels_bloques`
+et l'export sont passés en jointure externe, et la caducité, qui ne voyait que les points (à raison,
+elle lit leur période), a gagné une instruction à part pour le mot. **Et le cron du soir ne met en
+file qu'à partir de 18 h 30 à Paris** (`le_soir_du_mot_est_venu`) : la caducité du mot ne relit pas
+l'engagement, donc un mot écrit une heure trop tôt partait sur une action abandonnée entre-temps. Le
+canal effectif se résout en un seul endroit,
 `reminder_channel_for()` (v1-12 §3), dont la table de vérité est **écrite deux fois** — SQL
 pour ce qui part, `src/types/rappels.ts` pour ce que l'app affiche — et épinglée des deux côtés
 (`17_rappels_canal.test.sql`, `rappels.test.ts`) : toucher à l'une sans l'autre est le défaut
@@ -1874,7 +1880,10 @@ calendaire**, tous canaux et toutes boucles confondus ; huit font taire. Ce qu'i
   `regime_de_rappel` lui-même — le mot de la veille (C4.2) ne part qu'en régime `normal`, jamais en
   espacé (arbitrage du 27/09/2026 : le seul message du mois doit rester la question). Et l'inverse
   est automatique : le `not exists` du plafond ne filtre pas sur `checkin_id`, donc un mot parti
-  compte dans le plafond des points ;
+  compte dans le plafond des points. **Cas connu et laissé tel quel** (contre-lecture du 28/09/2026) :
+  un mot parti en début de mois, puis une bascule en régime espacé dans le même mois, et la question
+  de ce mois ne part pas — la même chose arrivait déjà avant C4.2 avec les rappels hebdomadaires du
+  début de mois ;
 - `regime_de_rappel` est `security definer` pour une raison non décorative : `usage_events` n'a
   aucune policy de lecture, donc le comptage des `app_open` ne verrait rien depuis `authenticated`
   — même piège que le garde-fou de volume de cette table, et un compteur qui ne compte rien ne

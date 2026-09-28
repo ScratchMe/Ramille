@@ -1264,6 +1264,10 @@ export type Database = {
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
       jours_francais: { Args: { p_days: number[] }; Returns: string }
+      le_soir_du_mot_est_venu: {
+        Args: { p_maintenant: string }
+        Returns: boolean
+      }
       mettre_a_jour_le_contexte: {
         Args: {
           p_household_vehicles: string

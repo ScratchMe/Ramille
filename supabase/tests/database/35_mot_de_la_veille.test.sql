@@ -23,15 +23,15 @@
 -- **3. La section 8 ne se rejoue pas sur le distant** : une passe d'envoi y prendrait les vrais
 -- mots et les vrais points en attente, et `send_pending_reminders` y enverrait de vrais emails
 -- (`TESTING.md` §2.3). Le reste est borné à ses propres comptes ; la seule assertion qui compte sur
--- toute la base (15 : la seconde mise en file rend zéro) y reste vraie, la première ayant tout pris.
+-- toute la base (17 : la seconde mise en file rend zéro) y reste vraie, la première ayant tout pris.
 --
 -- ## Éprouvé en le cassant (TESTING.md §1.1), le 27/09/2026 puis le 28/09/2026
 --
--- Vingt mutations de la migration `20260928100000`, une à la fois, chacune rejouée par
+-- Vingt-deux mutations de la migration `20260928100000`, une à la fois, chacune rejouée par
 -- `node scripts/rejouer-la-ci.mjs base` (stack reconstruite, suite pgTAP entière) puis le fichier
 -- remis à l'identique — par git pour les dix-neuf premières, par une copie comparée octet à octet
--- pour la vingtième, jouée sur la branche d'intégration avec C4.7 avant son premier commit. Aucune
--- n'a fait tomber un autre fichier que celui-ci.
+-- pour les trois dernières, jouées sur la branche d'intégration avec C4.7. Aucune n'a fait tomber un
+-- autre fichier que celui-ci.
 -- Les seize premières ont été jouées le 27, puis **toutes rejouées le 28** après les arbitrages du
 -- 27/09/2026 (fenêtre ouverte par un trajet, deux canaux Android), qui ont ajouté quatre assertions et
 -- décalé les numéros : les numéros ci-dessous sont ceux du second passage, relevés et non recalculés.
@@ -59,6 +59,8 @@
 --   | `canal_android('veille')` rend `rappels` (28/09)                     | 63                                      |
 --   | `retirer_le_bilan` sans la remise à vide de `premier_engagement_le`  | 65 (seule, sur les 762 de la suite)     |
 --   |   (28/09, intégration avec C4.7)                                     |                                         |
+--   | la mise en file du cron sans l'attente de 18 h 30 (28/09)            | 68 (seule)                              |
+--   | `le_soir_du_mot_est_venu` à 17 h 30 au lieu de 18 h 30 (28/09)        | 66, 67                                  |
 --
 -- Ce qui n'est pas éprouvé par mutation : que `generate_plan_cycle_for_user` ne pose pas la date
 -- (assertion 15) — la fonction n'appartient pas à ce chantier, et la muter aurait demandé de la
@@ -68,7 +70,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(65);
+select plan(69);
 
 -- ── 1. La structure ─────────────────────────────────────────────────────────────────────
 
@@ -826,6 +828,36 @@ select set_config('role', 'postgres', true);
 select ok(
   (select premier_engagement_le is null from public.plan_cycles where user_id = 'c4200000-0000-0000-0000-000000000015'),
   'retirer son seul bilan remet la fenêtre à vide : le bilan suivant repart avec la sienne'
+);
+
+-- ── 13. Le cron attend l'heure du mot (contre-lecture du 28/09/2026) ─────────────────────
+-- L'hiver, le premier passage (16 h 30 UTC) tombe à 17 h 30 à Paris : ce qu'il mettait en file
+-- attendait une heure, et partait sur un engagement abandonné entre-temps. Une transaction pgTAP ne
+-- choisit pas son heure : c'est la fonction extraite qu'on éprouve, sur des instants fixés, et
+-- l'appel que la mise en file en fait.
+
+select results_eq(
+  $$ select public.le_soir_du_mot_est_venu(((current_date + time '18:29') at time zone 'Europe/Paris')),
+            public.le_soir_du_mot_est_venu(((current_date + time '18:30') at time zone 'Europe/Paris')) $$,
+  $$ values (false, true) $$,
+  'le soir du mot commence à 18 h 30 à Paris, l''heure même du send_after (assertion 16)'
+);
+select results_eq(
+  $$ select public.le_soir_du_mot_est_venu('2026-12-15 16:30:00+00'),
+            public.le_soir_du_mot_est_venu('2026-12-15 17:30:00+00'),
+            public.le_soir_du_mot_est_venu('2026-07-15 16:30:00+00') $$,
+  $$ values (false, true, true) $$,
+  'des deux passages du cron, l''hiver ne met en file qu''au second, l''été dès le premier'
+);
+select ok(
+  position('le_soir_du_mot_est_venu(now())' in
+    (select prosrc from pg_proc where oid = 'public.mettre_en_file_les_mots_de_la_veille(date)'::regprocedure)) > 0,
+  'sans jour imposé, la mise en file attend l''heure du mot : il part dans la seconde où il est écrit'
+);
+-- Sa valeur dépend de l'heure du test : ce qu'on garde ici, c'est que la branche du cron s'exécute.
+select lives_ok(
+  $$ select public.mettre_en_file_les_mots_de_la_veille() $$,
+  'appelée comme le cron, sans jour imposé, la mise en file s''exécute'
 );
 
 select * from finish();

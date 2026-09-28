@@ -143,8 +143,9 @@ export async function marquerFeuilleDeRappelVue(): Promise<void> {
 }
 
 // La question du mot de la veille ne se pose qu'une fois par appareil, qu'elle vienne dans la
-// feuille entière ou seule, au premier engagement sur une action de trajet (C4.2, arbitrage du
-// 27/09/2026 — `ouvertureDeLaFeuille`). Même préfixe historique, donc balayée avec les autres.
+// feuille entière ou seule, au premier engagement de trajet où elle peut être posée (C4.2,
+// arbitrage du 27/09/2026 — `ouvertureDeLaFeuille`). Même préfixe historique, donc balayée avec
+// les autres.
 //
 // **Une lecture en échec se lit « déjà posée »**, à l'inverse de la marque de la feuille juste
 // au-dessus, et c'est voulu : la feuille est ce qui ouvre les rappels, la perdre coûterait le canal ;

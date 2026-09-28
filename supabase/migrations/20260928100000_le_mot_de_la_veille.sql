@@ -72,8 +72,13 @@
 -- Le rappel du lundi tolère que son heure glisse d'une heure avec la saison (7 h UTC : 8 h ou 9 h)
 -- ; ici on ne la laisse pas glisser, parce qu'une heure de décalage fait passer le mot de « après le
 -- travail » à « pendant ». `pg_cron` ne connaît que l'UTC : le `send_after` porte l'heure de Paris,
--- et le cron passe **deux fois**, à 16 h 30 et 17 h 30 UTC — un seul des deux passages trouve le
--- mot dû, selon la saison. « Demain » est un jour de Paris, et ce qui le calcule lit
+-- et le cron passe **deux fois**, à 16 h 30 et 17 h 30 UTC. **La mise en file attend 18 h 30 à
+-- Paris** (`le_soir_du_mot_est_venu`, §7) : l'hiver, le premier passage (17 h 30 à Paris) ne fait
+-- rien et le second met en file puis envoie dans la même seconde ; l'été, le premier le fait, et le
+-- second ne prend que les engagements de trajet choisis entre 18 h 30 et 19 h 30. Sans cette attente,
+-- un mot mis en file à 17 h 30 l'hiver partait une heure plus tard sur un engagement que la
+-- personne avait pu abandonner entre-temps — la caducité ne relit pas l'engagement (contre-lecture
+-- du 28/09/2026). « Demain » est un jour de Paris, et ce qui le calcule lit
 -- `now() at time zone 'Europe/Paris'`, comme la saison d'un humain (`saisonDe`) et non comme la
 -- période des générateurs, qui reste en UTC.
 --
@@ -205,7 +210,10 @@ comment on column public.plan_cycles.premier_engagement_le is
 -- une action de trajet, qu'il soit encore engagé ou archivé. Le filtre sur `period_start` écarte les
 -- dates reconduites — une reconduction garde le `committed_at` de la saison d'avant —, celui sur le
 -- poste les engagements que le mot ne suit pas. Idempotent : il ne touche que les cycles encore sans
--- date.
+-- date. Il prend aussi les engagements archivés par un retrait de bilan (C4.7), et c'est juste pour
+-- le retrait d'un bilan qui n'était pas le seul ; pour le retrait du SEUL bilan, que la section 12
+-- remet à vide, il serait faux — mais aucune ligne `retrait` n'existait sur le distant au moment de
+-- l'appliquer (relevé le 28/09/2026, C4.7 ayant été livré la veille au soir), donc le cas est vide.
 update public.plan_cycles pc
 set premier_engagement_le = d.premier
 from (
@@ -313,6 +321,12 @@ begin
   end if;
 end;
 $function$;
+
+-- Les privilèges, rejoués comme ceux de `20260913110000` : `create or replace` les garde, mais une
+-- réécriture qui ne les redit pas oblige à remonter trois migrations pour savoir qui l'appelle.
+revoke all on function public.commit_plan_action(uuid, smallint[], text, boolean)
+  from public, anon, authenticated;
+grant execute on function public.commit_plan_action(uuid, smallint[], text, boolean) to authenticated;
 
 -- Le rattrapage ci-dessus, vérifié dans les deux sens : un cycle qui porte un engagement de trajet
 -- choisi dans sa saison a sa date, et aucun cycle n'a de date sans engagement de trajet pour la
@@ -544,6 +558,27 @@ comment on function public.fenetre_du_mot_de_la_veille() is
 -- `p_aujourdhui` n'existe que pour les tests : le soir se lit en heure de Paris, et une transaction
 -- pgTAP ne peut pas choisir son `now()`.
 
+-- **L'heure du mot, en un seul endroit** (contre-lecture du 28/09/2026). La mise en file du cron
+-- attend 18 h 30 à Paris, l'heure même où le mot doit partir : mis en file plus tôt — à 17 h 30,
+-- le premier passage de l'hiver —, il attendait une heure dans la boîte d'envoi, et partait sur un
+-- engagement abandonné entre-temps (« Changer d'avis », une autre action), la caducité ne relisant
+-- pas l'engagement. Extraite pour être éprouvable : une transaction pgTAP ne choisit pas son heure.
+-- Le `send_after` de la mise en file porte la même heure, et les deux sont épinglées par `35`.
+create or replace function public.le_soir_du_mot_est_venu(p_maintenant timestamptz)
+returns boolean
+language sql
+stable
+set search_path to 'public'
+as $function$
+  select (p_maintenant at time zone 'Europe/Paris')::time >= time '18:30';
+$function$;
+
+revoke execute on function public.le_soir_du_mot_est_venu(timestamptz) from public, anon, authenticated;
+
+comment on function public.le_soir_du_mot_est_venu(timestamptz) is
+  'Le mot de la veille (C4.2) : vrai à partir de 18 h 30 à Paris. La mise en file du cron ne fait '
+  'rien avant, pour que le mot parte dans la seconde où il est écrit.';
+
 create or replace function public.mettre_en_file_les_mots_de_la_veille(p_aujourdhui date default null)
 returns integer
 language plpgsql
@@ -556,6 +591,12 @@ declare
   v_demain date := coalesce(p_aujourdhui, (now() at time zone 'Europe/Paris')::date) + 1;
   v_inseres integer;
 begin
+  -- Le cron passe avant 18 h 30 l'hiver : il ne met rien en file, le passage suivant le fera et
+  -- enverra aussitôt. Un jour imposé (les tests) passe outre.
+  if p_aujourdhui is null and not public.le_soir_du_mot_est_venu(now()) then
+    return 0;
+  end if;
+
   insert into public.notification_outbox (
     user_id, checkin_id, genre, jour_vise, channel, recipient_email, subject, body, push_body,
     send_after, unsubscribe_token
@@ -971,10 +1012,10 @@ begin
                 -- « One-Click », qui annonce un POST, est délibérément absent : la page est un
                 -- export statique, elle ne répond pas au POST, et l'annoncer sans le servir
                 -- ferait échouer le geste en silence. Le nom de cet en-tête ne s'écrit donc
-                -- nulle part ici suivi de -Post, et le contrôle ci-dessous l'exige.
-                -- Le secret est relu par message plutôt que gardé dans une variable : la
-                -- déclaration est hors de cette substitution, et un lot vaut au plus
-                -- vingt-cinq emails.
+                -- nulle part ici suivi de -Post (C2.9 l'a épinglé par un contrôle de sa migration).
+                -- Le secret est relu par message plutôt que gardé dans une variable, comme dans le
+                -- corps repris (C2.9 l'écrivait par substitution) ; un lot vaut au plus vingt-cinq
+                -- emails.
                 'headers', jsonb_build_object(
                   'List-Unsubscribe',
                   '<' || coalesce(
@@ -1274,6 +1315,10 @@ begin
   return v_export;
 end;
 $function$;
+
+-- Les privilèges, rejoués comme ceux de `20260910140000` (même raison que `commit_plan_action`).
+revoke execute on function public.export_my_data() from public, anon;
+grant execute on function public.export_my_data() to authenticated;
 
 -- ---------------------------------------------------------------------------------------------
 -- 12. Retirer son seul bilan referme aussi la fenêtre du mot de la veille

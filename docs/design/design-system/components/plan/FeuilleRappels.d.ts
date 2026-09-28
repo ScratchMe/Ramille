@@ -18,7 +18,8 @@ export interface FeuilleRappelsProps {
   style?: React.CSSProperties;
   /**
    * L'étape rendue : le choix du canal, ou le mot de la veille (C4.2) — la seconde étape après la notification
-   * choisie et reçue, ou la seule quand la feuille se rouvre une fois au premier engagement de trajet.
+   * choisie et reçue, ou la seule quand la feuille se rouvre une fois au premier engagement de trajet où
+   * elle peut être posée.
    */
   etape?: 'canal' | 'veille';
   /** La ligne du produit sous la question de la veille, avec sa date (`affichageDeLaVeille`). */

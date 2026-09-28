@@ -15,8 +15,9 @@ const libelleBouton = (canal, permission) =>
   canal === 'none' ? 'Continuer sans rappel' : canal === 'email' ? 'C’est bon' : permission === 'demandable' ? 'Autoriser les notifications' : 'C’est bon';
 export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, onFerme, erreur, voile = true, style, etape = 'canal', detailVeille = 'Par notification, jusqu’au 15 novembre.', onRepondreALaVeille }) {
   // La seconde étape (C4.2) : le mot de la veille, posé une fois la notification choisie et reçue — ou seule,
-  // quand la feuille se rouvre une fois au premier engagement de trajet (`ouvertureDeLaFeuille`). Le contenu
-  // change sous le doigt, d'où `TitreDArrivee` ; la ligne du produit porte la date, Ramille ne dit pas de nombre.
+  // quand la feuille se rouvre une fois au premier engagement de trajet où elle peut être posée
+  // (`ouvertureDeLaFeuille`). Le contenu change sous le doigt, d'où `TitreDArrivee` ; la ligne du produit
+  // porte la date, Ramille ne dit pas de nombre.
   if (etape === 'veille') {
     return (
       <FeuilleDuBas titre="Les rappels" enTete={false} onFerme={onFerme} voile={voile} style={style}>

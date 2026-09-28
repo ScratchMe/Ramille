@@ -784,6 +784,7 @@ describe('sousTitreDesRappels', () => {
 //   | la question seule rendue sans `affichageDeLaVeille`           | 2 : « les conditions tiennent », l'invariant    |
 //   | la feuille jamais vue court-circuitée (`if (false)`)          | 1 : « feuille jamais vue : le canal »           |
 //   | `CANAUX_ANDROID.veille.id` ramené à `rappels`                 | 2 : la jumelle SQL, « deux canaux distincts »   |
+//   | le `defaultChannel` d'app.json passé à `mot_de_la_veille`     | 1 : « le canal des points est le defaultChannel » |
 // ─────────────────────────────────────────────────────────────────────────────────────────
 
 describe('ouvertureDeLaFeuille', () => {

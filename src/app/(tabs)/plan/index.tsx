@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -428,12 +428,25 @@ export default function Plan() {
   // Appelée quand un engagement vient d'être pris — y compris « Choisir celle-ci à la place », qui
   // en prend un —, jamais quand on le libère. La feuille entière ne s'ouvre qu'une fois par appareil :
   // c'est une cérémonie pour la première fois, pas un péage à chaque action. Et depuis C4.2 elle peut
-  // rouvrir sur la seule question de la veille, une fois aussi, au premier engagement sur une action
-  // de trajet — c'est le cas de qui a choisi un vol d'abord (`ouvertureDeLaFeuille`).
+  // rouvrir sur la seule question de la veille, une fois aussi, au premier engagement de trajet où
+  // elle peut être posée — le cas de qui a choisi un vol d'abord (`ouvertureDeLaFeuille`).
+  // **Elle ne s'ouvre que sur un plan au premier plan** : la réouverture attend une lecture réseau
+  // (la fenêtre), et une feuille — un `Modal` — ouverte après que la personne a changé d'onglet
+  // apparaîtrait ailleurs (contre-lecture de C4.2). Rien n'est marqué vu tant qu'elle ne s'affiche
+  // pas, donc un engagement suivant la reproposera.
   // **Stable, et ce n'est pas du confort** : l'effet de focus qui reprend l'engagement des pistes
   // la porte en dépendance, donc une fonction recréée à chaque rendu ferait se réabonner cet effet
   // à chaque rendu. C'est la règle déjà écrite pour `useRafraichirAuRetour` — un rappel instable
   // fait tourner chargement et rendu l'un dans l'autre.
+  const auPremierPlan = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      auPremierPlan.current = true;
+      return () => {
+        auPremierPlan.current = false;
+      };
+    }, [])
+  );
   const proposerLesRappels = useCallback(async (poste: string | null) => {
     if (!rappels) return;
     setPosteEngage(poste);
@@ -453,7 +466,7 @@ export default function Plan() {
     // plus — la dérivation repose toutes les conditions.
     const fenetre = laVeilleSeRepropose(etat) ? await lireLaFenetreDuMotDeLaVeille() : null;
     const ouverture = ouvertureDeLaFeuille({ ...etat, fenetre });
-    if (ouverture === null) return;
+    if (ouverture === null || !auPremierPlan.current) return;
     // `rappels_view` compte les vues du choix du canal : la seule question de la veille n'en est pas
     // une, et la compter gonflerait l'entonnoir qu'il mesure. Sa réponse, elle, est en base
     // (`profiles.mot_de_la_veille`).

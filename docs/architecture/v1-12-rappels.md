@@ -31,7 +31,9 @@ les PR ; ce qui reste ouvert est en §9.
 3. **Ramille dit l'attente, pas le vide.** « Rien à rattraper » disparaît (§6.3).
 4. **La direction B, la feuille** (`Main.dc.html`) : un espace sans chiffre, le visage
    possible, l'explication avant la question, un bouton qui annonce le dialogue quand il va
-   s'ouvrir. Une fois par appareil ; ensuite, « Toi ».
+   s'ouvrir. Une fois par appareil ; ensuite, « Toi ». **Une exception depuis C4.2** : la feuille
+   se rouvre une fois, sur la seule question du mot de la veille, quand elle n'a pas encore pu être
+   posée sur cet appareil (`v1-25`, en-tête).
 5. **Le push n'a pas besoin de compte.** Le réglage s'ouvre aux sessions anonymes ; seul
    l'email exige un compte rattaché et confirmé, et la ligne le dit (« Rattache un compte pour
    l'activer »).
@@ -203,6 +205,12 @@ testable sans HTTP. C'est elle que le test `17` confronte à la table du §3.
 > secret Vault existe.
 
 ### 4.4 L'envoi
+
+> **Depuis C4.2 (28/09/2026), la branche push n'est plus dans `send_pending_reminders()`** : elle vit
+> dans `envoyer_les_notifications(genre)`, que le passage de 7 h appelle pour les points et le
+> passage du soir pour le mot de la veille, et le `channelId` n'est plus écrit en dur — il vient de
+> `public.canal_android(genre)` (`rappels` pour un point, `mot_de_la_veille` pour le mot). Le reste
+> de cette section décrit toujours ce que fait la branche, telle qu'elle a été déplacée.
 
 `send_pending_reminders()` branche sur `channel` :
 

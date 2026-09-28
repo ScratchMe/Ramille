@@ -68,8 +68,12 @@ const MESSAGE_D_ECHEC = 'Ton choix n’a pas été enregistré. Vérifie ta conn
  * **Et une seconde étape depuis C4.2 : le mot de la veille** (`v1-25`). Une fois la notification
  * choisie **et reçue** sur ce téléphone, et seulement si l'action qu'on vient d'engager porte sur le
  * trajet et que sa fenêtre de dix semaines est ouverte, Ramille demande si elle fait signe aussi la
- * veille. La condition entière vit dans `affichageDeLaVeille` (module pur, testé) : l'écran ne fait
- * que la lire. Les deux boutons enregistrent chacun une réponse — « Non merci » est un refus, qui ne
+ * veille. La condition vit en deux endroits, et l'écran ne fait que les lire : le **poste de l'action
+ * engagée**, que la feuille reçoit par `boucle` (hebdomadaire ⟺ trajet, `boucleDeLAction`) — sans
+ * lui, rien ne se demande ; et `affichageDeLaVeille` (module pur, testé), qui dit si la proposition
+ * tiendrait. La seconde ne connaît pas l'action qu'on vient d'engager : elle lit la fenêtre du
+ * serveur, qui ne s'ouvre que sur une action de trajet, et c'est ce qui suffisait — la première
+ * condition rend la chose explicite, comme dans la réouverture (`laVeilleSeRepropose`). Les deux boutons enregistrent chacun une réponse — « Non merci » est un refus, qui ne
  * sera jamais reproposé (D2) —, et refermer la feuille sans répondre ne répond rien : la question
  * reste alors posée dans « Toi ». La fenêtre est demandée dès l'ouverture, pour que la seconde étape
  * n'attende pas le réseau après « Autoriser », et attendue au moment d'y passer ; si sa lecture
@@ -77,8 +81,9 @@ const MESSAGE_D_ECHEC = 'Ton choix n’a pas été enregistré. Vérifie ta conn
  * partirait.
  *
  * **Et elle peut s'ouvrir directement sur cette seconde étape**, une fois (arbitrage du 27/09/2026) :
- * au premier engagement sur une action de trajet quand la feuille entière a déjà été vue — par
- * exemple parce que le premier choix était un vol, qui n'appelle pas la question. Ce qui s'ouvre se
+ * au premier engagement sur une action de trajet **où la question peut être posée**, quand la
+ * feuille entière a déjà été vue sans elle — parce que le premier choix était un vol, qui n'appelle
+ * pas la question, ou parce que le téléphone ne recevait pas encore les notifications. Ce qui s'ouvre se
  * décide avant, dans `ouvertureDeLaFeuille` ; la feuille ne fait que partir de l'étape qu'on lui
  * donne. La question posée, par l'un ou l'autre chemin, est marquée sur l'appareil dès qu'elle
  * s'affiche (`marquerLaVeilleProposee`) : elle ne revient pas.
@@ -135,7 +140,10 @@ export function FeuilleRappels({
   // et un état lu depuis sa fermeture serait celui du rendu où l'on a appuyé — `null` si la lecture
   // n'était pas encore revenue, donc pas de seconde étape pour qui appuie vite.
   const aProposer =
-    ouverture.etape === 'canal' && plateforme === 'natif' && prefs.reponseALaVeille === 'jamais_propose';
+    ouverture.etape === 'canal' &&
+    boucle === 'hebdo' &&
+    plateforme === 'natif' &&
+    prefs.reponseALaVeille === 'jamais_propose';
   const fenetreEnVol = useRef<Promise<FenetreDeLaVeille | null> | null>(null);
   useEffect(() => {
     if (!aProposer || fenetreEnVol.current) return;

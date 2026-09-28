@@ -16,4 +16,4 @@ Le bouton n’annonce un dialogue système que s’il va vraiment s’en ouvrir 
 <FeuilleRappels etape="veille" detailVeille="Par notification, jusqu’au 15 novembre." />
 ```
 
-**La même étape s'ouvre seule, une fois**, au premier engagement de trajet de qui a vu la feuille sans cette question (son premier engagement portait sur un vol ou une sortie) : la feuille ne repasse pas par le canal. Le focus va à la question (`TitreDArrivee`), le contenu ayant changé sous le doigt.
+**La même étape s'ouvre seule, une fois**, au premier engagement de trajet où la question peut être posée, chez qui a vu la feuille sans elle (son premier engagement portait sur un vol ou une sortie, ou son téléphone ne recevait pas encore de notification) : la feuille ne repasse pas par le canal. Le focus va à la question (`TitreDArrivee`), le contenu ayant changé sous le doigt.

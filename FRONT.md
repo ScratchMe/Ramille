@@ -627,7 +627,10 @@ exactement ce qui avait laissé passer le mauvais caractère.
   fenêtre close — et la règle seule, sans « en pause », quand la lecture a échoué, parce qu'on ne
   sait pas. Trois choses à ne pas défaire :
   - **la feuille se rouvre une fois, sur la seule question de la veille** (`ouvertureDeLaFeuille`,
-    arbitrage du 27/09/2026), au premier engagement de trajet de qui l'a vue sans cette question ;
+    arbitrage du 27/09/2026), au premier engagement de trajet **où elle peut être posée**, chez qui
+    l'a vue sans cette question — pas forcément le premier engagement de trajet : qui a vu la feuille
+    sur un trajet sans recevoir de notification la voit venir au suivant, une fois les notifications
+    rouvertes ;
     « une fois » est une marque d'appareil (`veilleDejaProposee`) posée **dès que la question
     s'affiche**, parce que refermer sans répondre ne répond rien — la question reste dans « Toi »,
     mais ne revient pas en travers du plan ;

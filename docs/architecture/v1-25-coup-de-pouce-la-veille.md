@@ -27,11 +27,18 @@
 > d'une action de TRAJET** — un vol choisi en semaine 1 puis un trajet à vélo en semaine 8 auraient
 > laissé deux semaines de mot, pour une fenêtre ouverte par une action que le mot ne suit pas.
 > **La feuille des rappels se rouvre une fois, sur la seule question de la veille**, au premier
-> engagement de trajet de qui l'a déjà vue sans cette question (elle ne s'ouvre qu'une fois par
-> appareil, et sa seconde étape demande une action de trajet). **Deux canaux Android** : « Points
+> engagement de trajet où elle peut être posée, chez qui l'a déjà vue sans cette question (elle ne
+> s'ouvre qu'une fois par appareil, et sa seconde étape demande une action de trajet **et** une
+> notification reçue — ce n'est donc pas toujours le premier engagement de trajet). **Deux canaux Android** : « Points
 > de suivi » garde la question, « Mot de la veille » porte le mot, pour que chacun se coupe à part.
-> Le 28/09/2026 : la page de confidentialité le dit (deux ajouts, validés tels quels), et la
-> phrase de « Toi » ne dit « action de trajet » qu'une fois.
+> Le 28/09/2026 : la page de confidentialité le dit (deux ajouts, validés tels quels, où « Aucun »
+> est devenu « Sans rappel », le nom de la ligne à l'écran), et la phrase de « Toi » ne dit
+> « action de trajet » qu'une fois. **Ce que D3 fait dire « quand le jeton se perd » se dit dans
+> « Toi »** (« En pause sur ce téléphone : il ne part qu'en notification. ») et non dans la feuille :
+> la feuille ne propose le mot qu'à un téléphone qui reçoit les notifications, elle n'a donc jamais
+> de jeton perdu à annoncer. **Et le cron ne met en file qu'à partir de 18 h 30 à Paris**
+> (contre-lecture du 28/09/2026) : mis en file une heure plus tôt l'hiver, le mot partait sur un
+> engagement que la personne avait pu abandonner entre-temps.
 >
 > **Livré le 28/09/2026** (`20260928100000_le_mot_de_la_veille.sql`, test `35`). **§3.2 était
 > faux là où ça coûte**, relu sur les corps installés : le plafond de C2.9 est une clause de la mise

@@ -30,12 +30,13 @@
 -- **4. La section 1 est une garde de structure, pas de comportement.** `dernier_signe_de_vie` est
 -- l'extraction de l'expression que `regime_de_rappel` écrivait en ligne. Le régime ne l'appelait pas
 -- à la livraison du lot 6 (un chantier parallèle touchait au plafond des rappels) ; **il l'appelle
--- depuis C4.2** (`20260928100000_le_mot_de_la_veille.sql`, section 13). L'assertion accepte les deux
--- formes — le corps du régime contient l'expression mot pour mot, ou il appelle la fonction —, et
--- c'est désormais la seconde qui la rend vraie. Tant que c'était la première, elle ne gardait qu'une
--- inclusion : une ligne ajoutée au régime après sa lecture du signe de vie, qui retoucherait la
--- date, serait passée sans bruit (contre-lecture du 27/09/2026). Avec l'appel, il n'y a plus deux
--- textes à tenir d'accord.
+-- depuis C4.2** (`20260928100000_le_mot_de_la_veille.sql`, section 13). L'assertion acceptait les
+-- deux formes tant que la factorisation n'était pas faite ; elle n'accepte plus que l'appel, et elle
+-- exige que `v_depuis` ne soit écrit qu'**une** fois, par cet appel (contre-lecture de C4.2,
+-- 28/09/2026). Sans cette seconde condition, elle ne gardait qu'une inclusion : une ligne ajoutée
+-- après l'appel, qui retoucherait la date, serait passée sans bruit — et c'est ce que ce paragraphe
+-- affirmait fermé alors que ça ne l'était pas. Ce qu'elle ne voit toujours pas : un régime qui
+-- ignorerait `v_depuis` et compterait autrement.
 --
 -- **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1). Chaque mutation a été posée juste
 -- après le `begin` de **chaque** fichier de la suite — donc annulée avec lui, la stack n'en gardant
@@ -85,6 +86,12 @@
 --     une suppression promise ;
 --   - une troisième boucle ajoutée au `check`                  → 1 : la 2.
 --
+-- **Et deux le 28/09/2026, pour l'assertion 3 resserrée** (contre-lecture de C4.2), par la méthode
+-- canonique — la section 13 de `20260928100000` mutée sur le disque, puis `rejouer-la-ci base` :
+--
+--   - `v_depuis` retouché après l'appel                        → 1 : la 3, seule sur les 766 de la suite ;
+--   - le régime revenu à l'expression recopiée en ligne        → 1 : la 3, seule — la copie en ligne n'est plus acceptée.
+--
 -- **Et trois de plus le même soir, pour la section 8** — plus celle de la semaine d'arrivée, rejouée
 -- et réécrite ci-dessus —, par la méthode canonique cette fois : la migration mutée sur le disque,
 -- puis `rejouer-la-ci base` sur toute la suite :
@@ -128,11 +135,13 @@ select ok(
       where r.oid = 'public.regime_de_rappel(uuid, text)'::regprocedure
         and d.oid = 'public.dernier_signe_de_vie(uuid, text)'::regprocedure
     )
-    select position('public.dernier_signe_de_vie(p_user_id,p_loop_type)' in regime) > 0
-        or (length(signe) > 100 and position(signe in regime) > 0)
+    select position('v_depuis:=public.dernier_signe_de_vie(p_user_id,p_loop_type);' in regime) > 0
+       and (length(regime) - length(replace(regime, 'v_depuis:=', ''))) = length('v_depuis:=')
+       and position('intov_depuis' in regime) = 0
+       and length(signe) > 100 and position(signe in regime) = 0
     from corps
   ),
-  'un seul signe de vie : regime_de_rappel appelle dernier_signe_de_vie, ou en porte l''expression mot pour mot'
+  'un seul signe de vie : regime_de_rappel le lit de dernier_signe_de_vie, n''écrit v_depuis nulle part ailleurs, et n''en porte plus de copie'
 );
 
 -- ── 2. Rien qui désigne quelqu'un ───────────────────────────────────────────────────────────────
