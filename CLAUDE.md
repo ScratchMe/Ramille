@@ -539,8 +539,11 @@ vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à conna�
   sort rarement depuis le 27/09/2026, plus bas). Sans l'appariement, une action engagée sur les
   loisirs aurait nommé la question du trajet domicile-travail. **La recherche vit en un seul endroit
   depuis le 27/09/2026**, `public.action_engagee_de_la_periode(user_id, poste, period_start)`, que
-  les deux générateurs appellent : elle **reçoit** le poste, elle ne le choisit pas — c'est la boucle
-  qui décide sur quoi elle interroge (`v1-27` §5, test `33`).
+  les deux générateurs et, depuis C4.2, `engagement_de_la_veille` appellent : elle **reçoit** le
+  poste, elle ne le choisit pas — c'est la boucle qui décide sur quoi elle interroge (`v1-27` §5,
+  test `33`). Elle rend aussi `plan_action_id` depuis C4.2, en dernière colonne : le mot de la veille
+  a besoin de la ligne retenue (son cycle, sa reconduction), et la première version qui recopiait la
+  jointure pour l'obtenir est tombée au balayage de `33`.
 - **`public.jours_francais(smallint[])` est la jumelle SQL de `JOURS_FRANCAIS` / `joursDeLaQuestion`**
   (`src/types/checkin.ts`), **donc à toucher ensemble**, exactement pour la raison de `mois_francais`
   au paragraphe précédent. Elle joint par « ou » et non par « et » (l'intention est un choix de
@@ -1762,13 +1765,11 @@ contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
   (a ouvert < bilan soumis < engagée < a répondu), pas le plus long préfixe : on peut répondre au
   point générique sans s'être engagé. « A soumis un bilan » s'écrit `status <> 'in_progress'`, pour
   qu'un bilan retiré (C4.7) compte comme soumis ;
-- **le signe de vie des rappels a une définition extraite, `dernier_signe_de_vie`, que
-  `regime_de_rappel` n'appelle pas encore** — celui de la purge reste le sien, plus large
-  (tous les événements, les bilans, les retours). La brancher remplace une ligne du corps de
-  `regime_de_rappel`, et le mutant qui la factorise ne fait rien tomber. C'est à faire après C4.2,
-  qui retouche la même fonction ; d'ici là, une assertion du `36` exige que le corps installé de
-  `regime_de_rappel` **contienne** l'expression ou l'appel — une inclusion, pas une identité : une
-  ligne ajoutée après, qui retoucherait la date, passerait ;
+- **le signe de vie des rappels a une seule définition, `dernier_signe_de_vie`**, que
+  `regime_de_rappel` appelle depuis C4.2 et que les cohortes lisent — celui de la purge reste le
+  sien, plus large (tous les événements, les bilans, les retours). Une assertion du `36` exige que
+  le corps installé du régime appelle la fonction ou en porte l'expression ; tant que c'était la
+  seconde, elle ne gardait qu'une inclusion, et l'appel a fermé cet angle mort ;
 - **les valeurs que rend `regime_de_rappel` doivent toutes figurer dans le `check` de
   `rappels_au_depart`** : une valeur nouvelle ferait échouer chaque compte, donc perdre chaque
   cohorte. Une assertion du `36` lit les littéraux `return` du corps installé et les compare au
@@ -1825,7 +1826,14 @@ génération de check-in, `send_pending_reminders()` (cron quotidien 7h UTC) l'e
 l'extension `http`. **La garantie anti-relance de la spec §7 est structurelle** :
 `unique(checkin_id)` sur la boîte d'envoi — un check-in, un message, jamais deux, quel que
 soit le canal et le nombre de passages du cron ; le repli push → email est une **mise à jour de
-la même ligne**, jamais une seconde. Le canal effectif se résout en un seul endroit,
+la même ligne**, jamais une seconde. **Le mot de la veille (C4.2, `v1-25`) passe à côté** : une
+ligne à `checkin_id` nul et `genre = 'veille'`, que `unique(checkin_id)` ne voit pas — sa garantie
+est `notification_outbox_une_veille_par_jour`, un mot par personne et par jour visé. La branche push
+vit dans `envoyer_les_notifications(genre)`, partagée par le passage de 7 h (les points) et celui du
+soir (cron `mot-de-la-veille`, 16 h 30 **et** 17 h 30 UTC, pour que l'un des deux tombe à 18 h 30 à
+Paris en toute saison) ; le journal porte le genre du passage. **Toute lecture de la boîte d'envoi
+qui joint `engagement_checkins` perd le mot en silence** — trois le faisaient (`rappels_bloques`,
+l'export, la caducité) — : jointure externe, toujours. Le canal effectif se résout en un seul endroit,
 `reminder_channel_for()` (v1-12 §3), dont la table de vérité est **écrite deux fois** — SQL
 pour ce qui part, `src/types/rappels.ts` pour ce que l'app affiche — et épinglée des deux côtés
 (`17_rappels_canal.test.sql`, `rappels.test.ts`) : toucher à l'une sans l'autre est le défaut
@@ -1852,7 +1860,7 @@ service.
 rend `normal` / `espace` / `silence` en comptant les points clos `expired` **depuis le dernier signe
 de vie** — le plus récent d'une réponse et d'un `app_open` —, et `enqueue_checkin_reminders()` s'en
 sert dans sa clause `where`. Quatre points sans réponse font passer à **au plus un message par mois
-calendaire**, tous canaux et toutes boucles confondus ; huit font taire. Cinq choses à ne pas
+calendaire**, tous canaux et toutes boucles confondus ; huit font taire. Ce qu'il ne faut pas
 « corriger » :
 - **le point continue d'être généré** — l'app doit pouvoir montrer la question à qui revient après
   six mois, et supprimer la génération effacerait l'historique de la boucle ;
@@ -1861,6 +1869,12 @@ calendaire**, tous canaux et toutes boucles confondus ; huit font taire. Cinq ch
 - le plafond du régime espacé compte sur `created_at` de la boîte d'envoi et non sur `sent_at`,
   sinon la décroissance ne s'appliquerait **pas du tout** tant que l'expéditeur n'est pas
   configuré ;
+- **le plafond est une clause de la mise en file, pas de la table** : il ne s'applique qu'aux lignes
+  qu'`enqueue_checkin_reminders` insère. Un message qui n'y passe pas doit appeler
+  `regime_de_rappel` lui-même — le mot de la veille (C4.2) ne part qu'en régime `normal`, jamais en
+  espacé (arbitrage du 27/09/2026 : le seul message du mois doit rester la question). Et l'inverse
+  est automatique : le `not exists` du plafond ne filtre pas sur `checkin_id`, donc un mot parti
+  compte dans le plafond des points ;
 - `regime_de_rappel` est `security definer` pour une raison non décorative : `usage_events` n'a
   aucune policy de lecture, donc le comptage des `app_open` ne verrait rien depuis `authenticated`
   — même piège que le garde-fou de volume de cette table, et un compteur qui ne compte rien ne

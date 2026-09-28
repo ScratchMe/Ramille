@@ -28,14 +28,14 @@
 -- tranche.
 --
 -- **4. La section 1 est une garde de structure, pas de comportement.** `dernier_signe_de_vie` est
--- l'extraction de l'expression que `regime_de_rappel` écrit en ligne, et `regime_de_rappel` n'a pas
--- été réécrit pour l'appeler (un chantier parallèle touche au plafond des rappels — en-tête de la
--- migration). L'assertion accepte donc les deux formes : le corps du régime contient l'expression
--- mot pour mot, ou il appelle la fonction. Le jour de la factorisation, elle reste vraie sans
--- retouche ; le jour où l'un des deux textes bouge seul, elle tombe — **sauf s'il ne fait
--- qu'ajouter** : c'est une inclusion, pas une identité. Une ligne ajoutée au régime après sa
--- lecture du signe de vie, qui retoucherait la date, passerait sans bruit (contre-lecture du
--- 27/09/2026) ; c'est l'angle mort de la 3, et la factorisation prévue le ferme.
+-- l'extraction de l'expression que `regime_de_rappel` écrivait en ligne. Le régime ne l'appelait pas
+-- à la livraison du lot 6 (un chantier parallèle touchait au plafond des rappels) ; **il l'appelle
+-- depuis C4.2** (`20260928100000_le_mot_de_la_veille.sql`, section 13). L'assertion accepte les deux
+-- formes — le corps du régime contient l'expression mot pour mot, ou il appelle la fonction —, et
+-- c'est désormais la seconde qui la rend vraie. Tant que c'était la première, elle ne gardait qu'une
+-- inclusion : une ligne ajoutée au régime après sa lecture du signe de vie, qui retoucherait la
+-- date, serait passée sans bruit (contre-lecture du 27/09/2026). Avec l'appel, il n'y a plus deux
+-- textes à tenir d'accord.
 --
 -- **Éprouvé en le cassant, le 27/09/2026** (TESTING.md §1.1). Chaque mutation a été posée juste
 -- après le `begin` de **chaque** fichier de la suite — donc annulée avec lui, la stack n'en gardant

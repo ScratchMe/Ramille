@@ -617,6 +617,28 @@ exactement ce qui avait laissé passer le mauvais caractère.
   réparer à la main. La destination est **« Toi » et jamais `/connexion`**, qui imposerait une
   provenance neuve à `SOURCES_CONNEXION`. Et pas la carte entière rendue `Pressable` : trois des
   six variantes n'ont rien à offrir, elles deviendraient une cible morte.
+- **Le mot de la veille ne se propose qu'à qui peut le recevoir, et le réglage dit la pause plutôt
+  que de se taire** (C4.2, `v1-25`, `affichageDeLaVeille` dans `src/types/rappels.ts`). La
+  proposition exige tout ce qui le fait partir : natif, `canalEffectif` push **sur ce téléphone**,
+  une action de trajet engagée et une fenêtre ouverte **lue sur le RPC**
+  (`fenetre_du_mot_de_la_veille`), jamais recalculée — l'écran ne peut pas annoncer une date que
+  l'envoi ne tiendrait pas. Une fois répondue, la ligne de réglage suit ce qui se passe vraiment :
+  la date quand la fenêtre court, « En pause sur ce téléphone » sans jeton (D3), « En pause : … »
+  fenêtre close — et la règle seule, sans « en pause », quand la lecture a échoué, parce qu'on ne
+  sait pas. Trois choses à ne pas défaire :
+  - **la feuille se rouvre une fois, sur la seule question de la veille** (`ouvertureDeLaFeuille`,
+    arbitrage du 27/09/2026), au premier engagement de trajet de qui l'a vue sans cette question ;
+    « une fois » est une marque d'appareil (`veilleDejaProposee`) posée **dès que la question
+    s'affiche**, parce que refermer sans répondre ne répond rien — la question reste dans « Toi »,
+    mais ne revient pas en travers du plan ;
+  - **le sous-titre de « Toi » est un plafond dérivé** (`sousTitreDesRappels`) : il promet ce que la
+    personne a demandé, pas ce qui part ce soir, donc il reste vrai les soirs sans mot — et il ne
+    dépend pas de la plateforme, le téléphone recevant le mot même quand « Toi » se lit au
+    navigateur ;
+  - **les deux canaux Android sont une paire SQL/TypeScript** (`CANAUX_ANDROID` et
+    `public.canal_android`) : un `channelId` que l'appareil n'a pas créé ne fait pas échouer
+    l'envoi, il fait tomber la notification ailleurs, sans bruit. D'où leur création **à chaque
+    lancement** (`preparerLesCanauxAndroid`) et non au moment du oui.
 - **Le jeton de cet appareil est mémorisé en AsyncStorage** (`traceverte.jeton_appareil.v1`),
   parce que rien en base ne permet de le reconnaître : `push_tokens` est owner-scoped et une
   lecture rend les jetons de tous les appareils de la personne. C'est ce qui rend vraies les deux

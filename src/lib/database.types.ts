@@ -20,6 +20,8 @@ export type Database = {
           max_distance_km: number | null
           min_distance_km: number | null
           operation: string | null
+          // C4.2 — le mot de la veille (20260928100000)
+          phrase_de_la_veille: string | null
           poste: string | null
           question_template: string | null
           requires_car: boolean
@@ -39,6 +41,8 @@ export type Database = {
           max_distance_km?: number | null
           min_distance_km?: number | null
           operation?: string | null
+          // C4.2 — le mot de la veille (20260928100000)
+          phrase_de_la_veille?: string | null
           poste?: string | null
           question_template?: string | null
           requires_car?: boolean
@@ -58,6 +62,8 @@ export type Database = {
           max_distance_km?: number | null
           min_distance_km?: number | null
           operation?: string | null
+          // C4.2 — le mot de la veille (20260928100000)
+          phrase_de_la_veille?: string | null
           poste?: string | null
           question_template?: string | null
           requires_car?: boolean
@@ -584,9 +590,14 @@ export type Database = {
           attempts: number
           body: string
           channel: string
-          checkin_id: string
+          // C4.2 : nul pour un mot de la veille (genre = 'veille')
+          checkin_id: string | null
           created_at: string
+          // C4.2 — le mot de la veille (20260928100000)
+          genre: string
           id: string
+          // C4.2 — le mot de la veille (20260928100000)
+          jour_vise: string | null
           last_error: string | null
           provider_ticket: Json | null
           push_body: string | null
@@ -604,9 +615,13 @@ export type Database = {
           attempts?: number
           body: string
           channel?: string
-          checkin_id: string
+          checkin_id?: string | null
           created_at?: string
+          // C4.2 — le mot de la veille (20260928100000)
+          genre?: string
           id?: string
+          // C4.2 — le mot de la veille (20260928100000)
+          jour_vise?: string | null
           last_error?: string | null
           provider_ticket?: Json | null
           push_body?: string | null
@@ -624,9 +639,13 @@ export type Database = {
           attempts?: number
           body?: string
           channel?: string
-          checkin_id?: string
+          checkin_id?: string | null
           created_at?: string
+          // C4.2 — le mot de la veille (20260928100000)
+          genre?: string
           id?: string
+          // C4.2 — le mot de la veille (20260928100000)
+          jour_vise?: string | null
           last_error?: string | null
           provider_ticket?: Json | null
           push_body?: string | null
@@ -798,6 +817,8 @@ export type Database = {
           period_label: string
           period_start: string
           poste: string | null
+          // C4.2 — le mot de la veille (20260928100000)
+          premier_engagement_le: string | null
           target_reduction_pct: number
           trip_label: string
           user_id: string
@@ -811,6 +832,8 @@ export type Database = {
           period_label: string
           period_start: string
           poste?: string | null
+          // C4.2 — le mot de la veille (20260928100000)
+          premier_engagement_le?: string | null
           target_reduction_pct: number
           trip_label: string
           user_id: string
@@ -824,6 +847,8 @@ export type Database = {
           period_label?: string
           period_start?: string
           poste?: string | null
+          // C4.2 — le mot de la veille (20260928100000)
+          premier_engagement_le?: string | null
           target_reduction_pct?: number
           trip_label?: string
           user_id?: string
@@ -843,18 +868,24 @@ export type Database = {
           cadence_type: string
           created_at: string
           id: string
+          // C4.2 — le mot de la veille (20260928100000)
+          mot_de_la_veille: string
           reminder_channel: string
         }
         Insert: {
           cadence_type?: string
           created_at?: string
           id: string
+          // C4.2 — le mot de la veille (20260928100000)
+          mot_de_la_veille?: string
           reminder_channel?: string
         }
         Update: {
           cadence_type?: string
           created_at?: string
           id?: string
+          // C4.2 — le mot de la veille (20260928100000)
+          mot_de_la_veille?: string
           reminder_channel?: string
         }
         Relationships: []
@@ -970,6 +1001,8 @@ export type Database = {
           detail: string | null
           echecs: number
           envoyes: number
+          // C4.2 — le mot de la veille (20260928100000)
+          genre: string
           id: string
           ran_at: string
           status: string
@@ -980,6 +1013,8 @@ export type Database = {
           detail?: string | null
           echecs?: number
           envoyes?: number
+          // C4.2 — le mot de la veille (20260928100000)
+          genre?: string
           id?: string
           ran_at?: string
           status: string
@@ -990,6 +1025,8 @@ export type Database = {
           detail?: string | null
           echecs?: number
           envoyes?: number
+          // C4.2 — le mot de la veille (20260928100000)
+          genre?: string
           id?: string
           ran_at?: string
           status?: string
@@ -1104,6 +1141,8 @@ export type Database = {
           action_text: string
           intention_days: number[]
           intention_timing: string
+          // C4.2 — le mot de la veille (20260928100000)
+          plan_action_id: string
           question_template: string
         }[]
       }
@@ -1123,6 +1162,8 @@ export type Database = {
         Args: { p_plan_action_id: string; p_raison: string }
         Returns: undefined
       }
+      // C4.2 — le mot de la veille (20260928100000)
+      canal_android: { Args: { p_genre: string }; Returns: string }
       check_intention_days: { Args: { p_days: number[] }; Returns: boolean }
       check_usage_event_props: { Args: { p_props: Json }; Returns: boolean }
       checkin_question: {
@@ -1175,7 +1216,18 @@ export type Database = {
         Args: { p_mode_id: string; p_on_date: string }
         Returns: number
       }
+      // C4.2 — le mot de la veille (20260928100000)
+      engagement_de_la_veille: {
+        Args: { p_aujourdhui: string; p_user_id: string }
+        Returns: {
+          dernier_soir: string
+          intention_days: number[]
+          phrase: string
+        }[]
+      }
       enqueue_checkin_reminders: { Args: never; Returns: undefined }
+      // C4.2 — le mot de la veille (20260928100000)
+      envoyer_les_notifications: { Args: { p_genre: string }; Returns: number }
       envoyer_lot_push: {
         Args: {
           p_expo_token: string
@@ -1196,6 +1248,14 @@ export type Database = {
         }
       }
       export_my_data: { Args: never; Returns: Json }
+      // C4.2 — le mot de la veille (20260928100000)
+      fenetre_du_mot_de_la_veille: {
+        Args: never
+        Returns: {
+          action_de_trajet: boolean
+          dernier_soir: string
+        }[]
+      }
       generate_commute_checkins: { Args: never; Returns: undefined }
       generate_extras_checkins: { Args: never; Returns: undefined }
       generate_plan_cycle_for_user: {
@@ -1212,6 +1272,11 @@ export type Database = {
           p_zone_type: string
         }
         Returns: undefined
+      }
+      // C4.2 — le mot de la veille (20260928100000)
+      mettre_en_file_les_mots_de_la_veille: {
+        Args: { p_aujourdhui?: string }
+        Returns: number
       }
       mois_francais: { Args: { d: string }; Returns: string }
       periode_precedente: {

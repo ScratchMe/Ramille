@@ -10,11 +10,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from '@/lib/supabase';
-import type { CanalPrefere, EtatDesRappels } from '@/types/rappels';
+import {
+  reponseALaVeilleDe,
+  type CanalPrefere,
+  type EtatDesRappels,
+  type FenetreDeLaVeille,
+  type ReponseALaVeille,
+} from '@/types/rappels';
 
 export type ReminderPrefs = EtatDesRappels & {
   /** L'adresse à afficher sur la ligne « Par email », quand elle est utilisable. */
   email: string | null;
+  /**
+   * La réponse au mot de la veille (C4.2), `null` quand on ne sait pas — lecture en échec ou valeur
+   * inconnue. L'écran se tait alors : ne pas savoir n'est ni « jamais proposé » ni « oui ».
+   */
+  reponseALaVeille: ReponseALaVeille | null;
 };
 
 export async function loadReminderPrefs(): Promise<ReminderPrefs> {
@@ -22,14 +33,16 @@ export async function loadReminderPrefs(): Promise<ReminderPrefs> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return { prefere: 'none', jetonActif: false, emailPossible: false, email: null };
+  if (!user) {
+    return { prefere: 'none', jetonActif: false, emailPossible: false, email: null, reponseALaVeille: null };
+  }
 
   // Un compte rattaché **et** confirmé : les deux, jamais l'un sans l'autre — on n'écrit
   // jamais à une adresse seulement déclarée (v1-07 §3.1).
   const emailPossible = !user.is_anonymous && !!user.email && !!user.email_confirmed_at;
 
   const [profil, jetonActif] = await Promise.all([
-    supabase.from('profiles').select('reminder_channel').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('reminder_channel, mot_de_la_veille').eq('id', user.id).maybeSingle(),
     leJetonDeCetAppareilEstActif(),
   ]);
 
@@ -38,7 +51,35 @@ export async function loadReminderPrefs(): Promise<ReminderPrefs> {
     jetonActif,
     emailPossible,
     email: emailPossible ? (user.email ?? null) : null,
+    reponseALaVeille: reponseALaVeilleDe(profil.data?.mot_de_la_veille),
   };
+}
+
+/**
+ * La réponse à l'opt-in du mot de la veille (C4.2). Jamais `jamais_propose` : une réponse ne se
+ * retire pas, la base le refuse (`garder_la_reponse_au_mot_de_la_veille`) — c'est ce qui garantit
+ * qu'un refus n'est pas reproposé. Rend `true` si l'écriture a abouti.
+ */
+export async function setMotDeLaVeille(reponse: Exclude<ReponseALaVeille, 'jamais_propose'>): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase.from('profiles').update({ mot_de_la_veille: reponse }).eq('id', user.id);
+
+  return !error;
+}
+
+/**
+ * La fenêtre des dix semaines, telle que l'envoi la calcule (RPC `fenetre_du_mot_de_la_veille`).
+ * `null` sur un échec : l'écran ne propose alors rien, et le réglage ne dit que la règle.
+ */
+export async function lireLaFenetreDuMotDeLaVeille(): Promise<FenetreDeLaVeille | null> {
+  const { data, error } = await supabase.rpc('fenetre_du_mot_de_la_veille');
+  if (error || !data || data.length === 0) return null;
+  const [ligne] = data;
+  return { actionDeTrajet: ligne.action_de_trajet === true, dernierSoir: ligne.dernier_soir ?? null };
 }
 
 /**
@@ -98,6 +139,31 @@ export async function marquerFeuilleDeRappelVue(): Promise<void> {
     await AsyncStorage.setItem(FEUILLE_KEY, '1');
   } catch {
     // best-effort : au pire la feuille réapparaît au prochain engagement.
+  }
+}
+
+// La question du mot de la veille ne se pose qu'une fois par appareil, qu'elle vienne dans la
+// feuille entière ou seule, au premier engagement sur une action de trajet (C4.2, arbitrage du
+// 27/09/2026 — `ouvertureDeLaFeuille`). Même préfixe historique, donc balayée avec les autres.
+//
+// **Une lecture en échec se lit « déjà posée »**, à l'inverse de la marque de la feuille juste
+// au-dessus, et c'est voulu : la feuille est ce qui ouvre les rappels, la perdre coûterait le canal ;
+// la question de la veille reste dans « Toi », et « une fois, jamais plus » est la décision.
+const VEILLE_KEY = 'traceverte.veille_proposee.v1';
+
+export async function aDejaProposeLaVeille(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(VEILLE_KEY)) === '1';
+  } catch {
+    return true;
+  }
+}
+
+export async function marquerLaVeilleProposee(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(VEILLE_KEY, '1');
+  } catch {
+    // best-effort : au pire la question revient une fois de plus, au prochain engagement de trajet.
   }
 }
 

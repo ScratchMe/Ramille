@@ -19,6 +19,27 @@
 > Y » et que le signal utile rappelle le Y. « Demain, c'est un de tes jours. » a été écarté comme
 > trop vague (« un de tes jours de quoi ? »). Le mot ne concerne que le trajet domicile-travail :
 > c'est le seul poste dont l'intention se donne en jours.
+>
+> **Quatre précisions, arbitrées le 27/09/2026 au vu de la construction.** **D1 : jamais en régime
+> espacé**, plutôt que sous son plafond mensuel — le seul message du mois doit rester la question,
+> qui peut ramener quelqu'un dans la boucle, et un mot qui part deux fois par semaine prendrait
+> presque toujours sa place. **D4 : le premier choix qui ouvre les dix semaines est le premier choix
+> d'une action de TRAJET** — un vol choisi en semaine 1 puis un trajet à vélo en semaine 8 auraient
+> laissé deux semaines de mot, pour une fenêtre ouverte par une action que le mot ne suit pas.
+> **La feuille des rappels se rouvre une fois, sur la seule question de la veille**, au premier
+> engagement de trajet de qui l'a déjà vue sans cette question (elle ne s'ouvre qu'une fois par
+> appareil, et sa seconde étape demande une action de trajet). **Deux canaux Android** : « Points
+> de suivi » garde la question, « Mot de la veille » porte le mot, pour que chacun se coupe à part.
+> Le 28/09/2026 : la page de confidentialité le dit (deux ajouts, validés tels quels), et la
+> phrase de « Toi » ne dit « action de trajet » qu'une fois.
+>
+> **Livré le 28/09/2026** (`20260928100000_le_mot_de_la_veille.sql`, test `35`). **§3.2 était
+> faux là où ça coûte**, relu sur les corps installés : le plafond de C2.9 est une clause de la mise
+> en file et non de la table, donc le mot appelle `regime_de_rappel` lui-même ; le passage de 7 h
+> l'aurait envoyé le matin du jour visé ; et trois lectures qui joignaient `engagement_checkins` le
+> perdaient sans rien dire (`rappels_bloques`, l'export, la caducité). La migration en-tête dit les
+> quatre mécanismes un par un. **Intégré avec C4.7** : retirer son seul bilan remet la fenêtre à
+> vide, sans quoi le bilan suivant de la même saison repartait sur dix semaines à moitié consommées.
 
 ## 1. D'où ça vient
 

@@ -40,6 +40,12 @@ les PR ; ce qui reste ouvert est en §9.
    d'attente suffit.
 7. **Un point, un message, quel que soit le canal.** `unique(checkin_id)` reste la garantie ;
    le repli push → email est une **mise à jour de la même ligne**, jamais une seconde ligne.
+   **Contournée depuis C4.2 par le mot de la veille** (`v1-25`, 28/09/2026) : une notification
+   sans point, la veille des jours choisis, sur opt-in et dix semaines au plus. `unique(checkin_id)`
+   ne la voit pas — il accepte plusieurs `NULL` — ; sa garantie est
+   `notification_outbox_une_veille_par_jour`, un mot par personne et par jour visé. « Un point, un
+   message » tient toujours pour les points ; ce qui a cessé d'être vrai, c'est que le point soit le
+   seul message.
 8. **Le push arrive le matin où la question s'ouvre**, sans l'étalement sur cinq jours de
    l'email. Ramille dit « lundi » et tient parole.
 9. **Une décision de permission se prend une fois.** Après un refus au système, on ne
@@ -281,8 +287,12 @@ jetons, et **rien n'arrive sur le téléphone** — sans autre message qu'un tic
   `getPermissionsAsync` répond `denied` → RPC `unregister_push_token`, pour que le serveur
   retombe sur l'email au prochain point au lieu d'envoyer dans le vide.
 - Canal Android **`rappels`** (« Points de suivi »), importance par défaut, pas de son
-  personnalisé, créé au démarrage par `setNotificationChannelAsync`. Un seul canal : le
-  produit n'envoie qu'une sorte de message.
+  personnalisé, créé au démarrage par `setNotificationChannelAsync`. ~~Un seul canal : le
+  produit n'envoie qu'une sorte de message.~~ **Deux canaux depuis C4.2** (arbitrage du
+  27/09/2026) : le produit envoie désormais deux sortes de messages, et le mot de la veille a le
+  sien, `mot_de_la_veille` (« Mot de la veille »), pour se couper à part dans les réglages du
+  téléphone. Les deux sont créés à chaque lancement (`preparerLesCanauxAndroid`), et le message
+  envoyé nomme le sien par `public.canal_android(genre)`, jumelle de `CANAUX_ANDROID`.
 - Au premier plan, le rappel s'affiche comme bannière (`setNotificationHandler`) — sinon un
   push reçu app ouverte disparaît sans trace.
 

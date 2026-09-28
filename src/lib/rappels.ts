@@ -20,10 +20,7 @@ import {
   memoriserLeJetonDeCetAppareil,
 } from '@/lib/notification-prefs';
 import { supabase } from '@/lib/supabase';
-import type { Permission } from '@/types/rappels';
-
-/** Un seul canal Android : le produit n'envoie qu'une sorte de message. */
-const CANAL_ANDROID = 'rappels';
+import { CANAUX_ANDROID, type Permission } from '@/types/rappels';
 
 export const estNatif = Platform.OS !== 'web';
 
@@ -42,13 +39,30 @@ export function afficherLesNotificationsAuPremierPlan(): void {
   });
 }
 
-export async function preparerLeCanalAndroid(): Promise<void> {
+/**
+ * Les canaux Android, créés à chaque lancement — l'appel est idempotent, et c'est ce qui les fait
+ * exister sur l'appareil avant qu'un message ne les nomme.
+ *
+ * **Deux canaux depuis C4.2, un par genre de message** (arbitrage du 27/09/2026) : « Points de suivi »
+ * garde la question du point, « Mot de la veille » porte le mot du soir, pour que chacun se coupe à
+ * part dans les réglages du téléphone. Les identifiants viennent de `CANAUX_ANDROID`, jumelle de
+ * `public.canal_android` qui les nomme dans le message envoyé. Un message qui nomme un canal absent
+ * ne s'affiche pas là où il faut — d'où la création ici, au lancement, et non au moment où la
+ * personne dit oui. Le seul appareil qui recevrait le mot sans son canal est un second téléphone du
+ * même compte resté sur une version d'avant C4.2 : le oui se donne dans l'app, donc sur un appareil
+ * déjà lancé avec cette version.
+ */
+export async function preparerLesCanauxAndroid(): Promise<void> {
   if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync(CANAL_ANDROID, {
-    name: 'Points de suivi',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    sound: null,
-  }).catch(() => undefined);
+  await Promise.all(
+    Object.values(CANAUX_ANDROID).map((canal) =>
+      Notifications.setNotificationChannelAsync(canal.id, {
+        name: canal.nom,
+        importance: Notifications.AndroidImportance.DEFAULT,
+        sound: null,
+      }).catch(() => undefined)
+    )
+  );
 }
 
 /**

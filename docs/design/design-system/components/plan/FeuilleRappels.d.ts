@@ -16,5 +16,14 @@ export interface FeuilleRappelsProps {
   voile?: boolean;
   /** Style du voile, ou de la feuille quand `voile={false}`. */
   style?: React.CSSProperties;
+  /**
+   * L'étape rendue : le choix du canal, ou le mot de la veille (C4.2) — la seconde étape après la notification
+   * choisie et reçue, ou la seule quand la feuille se rouvre une fois au premier engagement de trajet.
+   */
+  etape?: 'canal' | 'veille';
+  /** La ligne du produit sous la question de la veille, avec sa date (`affichageDeLaVeille`). */
+  detailVeille?: string;
+  /** « Oui, la veille aussi » ou « Non merci » : chacun enregistre une réponse. */
+  onRepondreALaVeille?: (reponse: 'oui' | 'refuse') => void;
 }
 export declare function FeuilleRappels(props: FeuilleRappelsProps): JSX.Element;

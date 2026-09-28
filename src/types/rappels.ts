@@ -16,7 +16,11 @@
  *
  * Ce module porte aussi ce que l'écran **présélectionne** : une ligne non choisissable ne doit
  * jamais l'être, sans quoi la feuille se referme sur un canal qui ne partira pas.
+ *
+ * Et depuis C4.2 (`v1-25`), ce que l'écran dit du **mot de la veille** — en fin de module.
  */
+import { finDePeriodeEnMots } from '@/types/saison';
+
 
 /** Ce que la personne a choisi — `profiles.reminder_channel`. */
 export type CanalPrefere = 'push' | 'email' | 'none';
@@ -414,3 +418,252 @@ export function carteAttente({
     action: coupees ? PORTE_VERS_LE_COMPTE : null,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// Le mot de la veille (C4.2, `v1-25`, décisions D1 à D5 du 27/09/2026).
+// ─────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * La réponse à l'opt-in — `profiles.mot_de_la_veille`, **à trois états et jamais un booléen**
+ * (D2) : « n'a pas encore été proposé » et « a dit non » ne se confondent pas, sans quoi on
+ * reproposerait à qui a refusé. La base interdit en plus le retour à `jamais_propose` (trigger
+ * `garder_la_reponse_au_mot_de_la_veille`).
+ *
+ * Miroir du `check` de la colonne, déclaré dans `MIROIRS` (`scripts/verifier-miroirs-de-check.mjs`)
+ * sous ses deux formes : la liste et l'union.
+ */
+export type ReponseALaVeille = 'jamais_propose' | 'oui' | 'refuse';
+
+export const REPONSES_A_LA_VEILLE: readonly ReponseALaVeille[] = ['jamais_propose', 'oui', 'refuse'];
+
+/**
+ * La valeur lue en base, ou `null` quand elle n'est pas l'une des trois.
+ *
+ * `null` veut dire « on ne sait pas », et l'écran se tait alors (`affichageDeLaVeille`) : une valeur
+ * inconnue lue comme `jamais_propose` reproposerait peut-être à quelqu'un qui a refusé, et lue comme
+ * `oui` afficherait coché un mot qui ne part pas.
+ */
+export function reponseALaVeilleDe(valeur: unknown): ReponseALaVeille | null {
+  return REPONSES_A_LA_VEILLE.find((reponse) => reponse === valeur) ?? null;
+}
+
+/**
+ * Ce que le serveur dit de la fenêtre des dix semaines (RPC `fenetre_du_mot_de_la_veille`).
+ *
+ * **L'écran ne recalcule pas la borne**, et c'est pour ça qu'elle vient d'un RPC : elle se dérive
+ * du premier engagement choisi de la saison **sur une action de trajet** (D4, précisé le 27/09/2026),
+ * ou de celui du cycle d'origine après une reconduction. La recopier ici ferait une jumelle de plus,
+ * qui pourrait annoncer une date que l'envoi ne tiendrait pas. Une seule fonction SQL
+ * (`engagement_de_la_veille`) sert l'envoi et l'écran.
+ */
+export type FenetreDeLaVeille = {
+  /** Une action du trajet domicile-travail est engagée dans la saison en cours. */
+  actionDeTrajet: boolean;
+  /**
+   * Le dernier soir où un mot peut partir, `AAAA-MM-JJ` — `null` si la fenêtre est close ou n'a
+   * jamais été ouverte.
+   */
+  dernierSoir: string | null;
+};
+
+/** Le nom du réglage, affiché et annoncé : la case à cocher de « Toi ». */
+export const TITRE_DE_LA_VEILLE = 'Un mot la veille de tes jours de trajet';
+
+/**
+ * Le nom du groupe qui porte la case : une précision de « Par notification », posée sous elle et
+ * dans son groupe (la forme des révélations imbriquées, `GroupeDeChoix`). Sans question affichée,
+ * le groupe prend le nom de ce qu'il règle.
+ */
+export const GROUPE_DE_LA_VEILLE = 'Le mot de la veille';
+
+/** Les deux réponses de la feuille, qui enregistrent chacune un état — « Non merci » est un refus. */
+export const REPONSES_DE_LA_PROPOSITION = { oui: 'Oui, la veille aussi', non: 'Non merci' } as const;
+
+/**
+ * La règle, dite telle qu'elle est — la phrase qui reste vraie quand on ne sait pas si la fenêtre
+ * est ouverte (lecture en échec) ou qu'elle ne l'est pas. « La première que tu choisis dans la
+ * saison » et non « ton action » : un second choix de trajet ne rouvre rien (D4), donc quelqu'un qui a
+ * changé d'action à la huitième semaine n'a plus que deux semaines, et « dix semaines après ton
+ * action » lui mentirait. « De trajet » depuis l'arbitrage du 27/09/2026 : un vol choisi d'abord
+ * n'ouvre rien, et la phrase qui ne le disait pas laissait croire qu'il avait entamé les dix semaines.
+ * Le mot n'est dit qu'une fois, « la première » le reprenant (arbitrage du 28/09/2026).
+ */
+const REGLE_DE_LA_VEILLE =
+  'Il accompagne une action de trajet, les dix semaines qui suivent la première que tu choisis dans la saison.';
+
+/**
+ * Ce que l'écran montre du mot de la veille — **rien**, une **proposition**, ou le **réglage**.
+ *
+ * Quatre règles, et chacune ferme une façon de dire faux :
+ *
+ * - **Rien sur web, rien hors de la notification.** Le mot n'existe qu'en push (D3) : on ne le
+ *   propose pas à qui a choisi l'email, et « Sans rappel » l'éteint aussi (D2). La préférence
+ *   `push` suffit à rendre le réglage, jeton ou pas — c'est ce qui permet de dire qu'il s'est
+ *   arrêté ;
+ * - **La proposition se montre à qui peut la recevoir**, et seulement : préférence `push` avec un
+ *   jeton actif sur ce téléphone (`canalEffectif`, la même table que le rappel du lundi), une action
+ *   de trajet engagée, une fenêtre ouverte, et aucune réponse encore. Proposer un mot qui ne
+ *   partirait pas — fenêtre close, pas de jours — serait promettre à vide ;
+ * - **Le réglage suit la réponse et dit ce qui se passe vraiment**, sans jamais affirmer ce qu'on ne
+ *   sait pas : la date quand la fenêtre est ouverte, la pause quand le téléphone ne reçoit plus
+ *   (D3 : « la feuille des rappels le dit »), la règle quand la fenêtre est close — et la règle
+ *   seule, sans « en pause », quand la lecture de la fenêtre a échoué ;
+ * - **Une réponse illisible se tait** (`reponse === null`), comme une préférence qui n'est pas
+ *   `push`.
+ *
+ * « Jusqu'au 15 novembre » est le dernier **soir** d'envoi, tel que le serveur le calcule : c'est
+ * une borne, pas la promesse d'un mot chaque soir — il ne part que la veille des jours choisis.
+ */
+export type AffichageDeLaVeille =
+  | { kind: 'rien' }
+  | { kind: 'proposition'; detail: string }
+  | { kind: 'reglage'; coche: boolean; detail: string };
+
+export function affichageDeLaVeille({
+  plateforme,
+  reponse,
+  fenetre,
+  ...etat
+}: EtatDesRappels & {
+  plateforme: Plateforme;
+  reponse: ReponseALaVeille | null;
+  fenetre: FenetreDeLaVeille | null;
+}): AffichageDeLaVeille {
+  if (plateforme === 'web' || reponse === null || etat.prefere !== 'push') return { kind: 'rien' };
+
+  const jusquA =
+    fenetre?.actionDeTrajet && fenetre.dernierSoir ? finDePeriodeEnMots(fenetre.dernierSoir) : null;
+
+  if (reponse === 'jamais_propose') {
+    return canalEffectif(etat) === 'push' && jusquA
+      ? { kind: 'proposition', detail: `Par notification, ${jusquA}.` }
+      : { kind: 'rien' };
+  }
+
+  const coche = reponse === 'oui';
+
+  // D3 : le mot ne part qu'en notification. Sans jeton sur ce téléphone, il n'y arrive plus — la
+  // ligne « Par notification » juste au-dessus dit pourquoi, celle-ci dit ce que ça coûte.
+  if (!etat.jetonActif) {
+    return {
+      kind: 'reglage',
+      coche,
+      detail: coche
+        ? 'En pause sur ce téléphone : il ne part qu’en notification.'
+        : 'Il ne part qu’en notification.',
+    };
+  }
+
+  if (jusquA) return { kind: 'reglage', coche, detail: `Par notification, ${jusquA}.` };
+
+  // La fenêtre est close, ou la personne n'a pas d'action de trajet : « en pause » n'est vrai que si
+  // on le sait. Une lecture en échec (`fenetre === null`) ne dit que la règle.
+  return {
+    kind: 'reglage',
+    coche,
+    detail:
+      coche && fenetre !== null ? `En pause : ${minusculeInitiale(REGLE_DE_LA_VEILLE)}` : REGLE_DE_LA_VEILLE,
+  };
+}
+
+function minusculeInitiale(phrase: string): string {
+  return phrase.charAt(0).toLowerCase() + phrase.slice(1);
+}
+
+/**
+ * Le sous-titre du réglage des rappels dans « Toi ». Il disait « Un mot à chaque point de suivi,
+ * jamais plus. » — faux pour qui a accepté le mot de la veille. Ce qu'il promet est un **plafond**,
+ * donc il reste vrai les soirs où le mot ne part pas : il se dérive de ce que la personne a demandé,
+ * pas de ce qui part ce soir. Et il ne dépend pas de la plateforme : sur web, la personne lit
+ * « Toi » depuis un navigateur, mais son téléphone reçoit bien le mot.
+ */
+export function sousTitreDesRappels({
+  prefere,
+  reponse,
+}: {
+  prefere: CanalPrefere;
+  reponse: ReponseALaVeille | null;
+}): string {
+  return prefere === 'push' && reponse === 'oui'
+    ? 'Un mot à chaque point de suivi, et la veille de tes jours de trajet — jamais plus.'
+    : 'Un mot à chaque point de suivi, jamais plus.';
+}
+
+/**
+ * Ce que la feuille des rappels ouvre après un engagement — **le choix du canal**, **la seule
+ * question de la veille**, ou rien (`null`).
+ *
+ * La feuille entière ne s'ouvre qu'une fois par appareil (`doitProposerLaFeuille`), et sa seconde
+ * étape demande une action de trajet. Quelqu'un qui choisit d'abord un vol voit donc la feuille sans
+ * la question de la veille ; et quand il choisit ensuite une action de trajet, la feuille est déjà
+ * vue. **D'où la réouverture, une fois, sur la seule question de la veille** (arbitrage du
+ * 27/09/2026) : au premier engagement sur une action de trajet, si la question n'a jamais reçu de
+ * réponse et que la proposition tiendrait (`affichageDeLaVeille` : natif, notification reçue sur ce
+ * téléphone, fenêtre ouverte). Elle s'ouvre directement sur « Et la veille de tes jours de trajet, je
+ * te fais signe aussi ? », sans repasser par le canal.
+ *
+ * **« Une fois » est une marque d'appareil** (`veilleDejaProposee`), posée dès que la question
+ * s'affiche, dans la feuille entière comme dans la réouverture : refermer sans répondre ne répond
+ * rien — la question reste dans « Toi » —, mais elle ne revient pas en travers du plan.
+ */
+export type OuvertureDeLaFeuille = { etape: 'canal' } | { etape: 'veille'; detail: string };
+
+export type EtatALEngagement = EtatDesRappels & {
+  plateforme: Plateforme;
+  /** Le poste de l'action qu'on vient d'engager (`commute` pour le trajet domicile-travail). */
+  poste: string | null;
+  /** La feuille entière a déjà été proposée sur cet appareil. */
+  feuilleDejaVue: boolean;
+  /** La question de la veille a déjà été posée sur cet appareil, répondue ou non. */
+  veilleDejaProposee: boolean;
+  reponse: ReponseALaVeille | null;
+};
+
+/**
+ * La réouverture est-elle possible, **fenêtre mise à part** ? L'écran ne lit la fenêtre (un appel au
+ * serveur) que si oui — c'est une économie, pas une décision : `ouvertureDeLaFeuille` repose toutes
+ * ces conditions, donc lire la fenêtre à chaque engagement ne changerait rien à ce qui s'ouvre.
+ */
+export function laVeilleSeRepropose(etat: EtatALEngagement): boolean {
+  return (
+    etat.feuilleDejaVue &&
+    !etat.veilleDejaProposee &&
+    etat.poste === 'commute' &&
+    etat.plateforme === 'natif' &&
+    etat.reponse === 'jamais_propose'
+  );
+}
+
+export function ouvertureDeLaFeuille({
+  fenetre,
+  ...etat
+}: EtatALEngagement & { fenetre: FenetreDeLaVeille | null }): OuvertureDeLaFeuille | null {
+  if (!etat.feuilleDejaVue) {
+    const proposer = doitProposerLaFeuille({
+      plateforme: etat.plateforme,
+      emailPossible: etat.emailPossible,
+      dejaProposee: false,
+    });
+    return proposer ? { etape: 'canal' } : null;
+  }
+  if (!laVeilleSeRepropose(etat)) return null;
+  const affichage = affichageDeLaVeille({ ...etat, fenetre });
+  return affichage.kind === 'proposition' ? { etape: 'veille', detail: affichage.detail } : null;
+}
+
+/**
+ * Les canaux Android, un par genre de message (arbitrage du 27/09/2026) : « Points de suivi » garde
+ * la question du point, « Mot de la veille » porte le mot du soir — chacun se coupe à part dans les
+ * réglages du téléphone, et couper le mot ne coupe pas la question.
+ *
+ * **Jumelle de `public.canal_android(genre)`**, qui nomme le canal dans le message envoyé
+ * (`channelId`) : l'app crée les canaux sous ces identifiants (`preparerLesCanauxAndroid`), le serveur
+ * les nomme. Les deux moitiés sont épinglées sur les mêmes valeurs (`rappels.test.ts`,
+ * `35_mot_de_la_veille.test.sql`) : un identifiant que l'appareil n'a pas créé ne fait pas échouer
+ * l'envoi, il fait tomber la notification ailleurs, sans bruit. Et le canal des points est aussi le
+ * `defaultChannel` d'`app.json`, le repli de Firebase — un test le vérifie dans le fichier.
+ */
+export const CANAUX_ANDROID = {
+  point: { id: 'rappels', nom: 'Points de suivi' },
+  veille: { id: 'mot_de_la_veille', nom: 'Mot de la veille' },
+} as const;

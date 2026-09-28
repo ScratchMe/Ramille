@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -14,10 +14,16 @@ import { CONTACT_EMAIL } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
-import { loadReminderPrefs, setReminderChannel, type ReminderPrefs } from '@/lib/notification-prefs';
+import {
+  lireLaFenetreDuMotDeLaVeille,
+  loadReminderPrefs,
+  setMotDeLaVeille,
+  setReminderChannel,
+  type ReminderPrefs,
+} from '@/lib/notification-prefs';
 import { supabase } from '@/lib/supabase';
 import { PHRASE_SANS_COMPTE_SUR_TOI, type EtatRattachement } from '@/types/compte';
-import { type CanalPrefere } from '@/types/rappels';
+import { type CanalPrefere, type FenetreDeLaVeille } from '@/types/rappels';
 
 // « Toi » — tout ce qui touche au compte, sorti de /suivi (v1-11 §2.5).
 //
@@ -33,6 +39,9 @@ export default function Compte() {
 
   const [etat, setEtat] = useState<EtatRattachement | null>(null);
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
+  // La fenêtre du mot de la veille (C4.2) : `null` tant qu'on ne l'a pas lue, ou sur un échec — le
+  // réglage ne dit alors que la règle, et ne propose rien.
+  const [fenetre, setFenetre] = useState<FenetreDeLaVeille | null>(null);
   const [messageCanal, setMessageCanal] = useState<string | null>(null);
   const [cle, setCle] = useState(0);
   const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
@@ -49,6 +58,12 @@ export default function Compte() {
     loadReminderPrefs()
       .then((p) => !annule && setRappels(p))
       .catch(() => undefined);
+    // Sur web, le mot de la veille n'existe pas : rien à lire.
+    if (Platform.OS !== 'web') {
+      lireLaFenetreDuMotDeLaVeille()
+        .then((f) => !annule && setFenetre(f))
+        .catch(() => undefined);
+    }
     return () => {
       annule = true;
     };
@@ -112,6 +127,19 @@ export default function Compte() {
     setMessageCanal(null);
     setRappels((p) => (p ? { ...p, prefere: canal } : p));
     const ok = await setReminderChannel(canal);
+    if (ok) return;
+    setRappels(avant);
+    setMessageCanal('Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.');
+  };
+
+  // Le mot de la veille, sur le même modèle : optimiste, remis en place et dit sur un échec. Il ne
+  // passe jamais par `jamais_propose` — la base le refuse, et c'est ce qui garantit qu'un refus
+  // n'est pas reproposé.
+  const choisirLaVeille = async (reponse: 'oui' | 'refuse') => {
+    const avant = rappels;
+    setMessageCanal(null);
+    setRappels((p) => (p ? { ...p, reponseALaVeille: reponse } : p));
+    const ok = await setMotDeLaVeille(reponse);
     if (ok) return;
     setRappels(avant);
     setMessageCanal('Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.');
@@ -248,7 +276,12 @@ export default function Compte() {
                 quelque chose à l'arrivée, échec compris. */}
             {rappels && etat !== null && etat.kind !== 'indisponible' && (
               <>
-                <ChoixDeRappel prefs={rappels} onChoisir={choisirLeCanal} />
+                <ChoixDeRappel
+                  prefs={rappels}
+                  fenetre={fenetre}
+                  onChoisir={choisirLeCanal}
+                  onChoisirLaVeille={choisirLaVeille}
+                />
                 <MessageInline message={messageCanal} />
               </>
             )}

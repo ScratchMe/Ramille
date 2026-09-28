@@ -4,7 +4,8 @@
 > donc la feuille couvre désormais les deux périodes : ce que le 21/09 livrait (le compte, le
 > contexte, les modes manquants) et ce que les six jours suivants ont ajouté (le design system à
 > l'écran, l'onboarding, le résiduel des sorties rares, le retrait d'un bilan, la page de
-> confidentialité). **Jouée le : ………**
+> confidentialité). **Retouchée le 28/09/2026** pour ce que le mot de la veille (C4.2) ajoute à la
+> page de confidentialité — le seul morceau de C4.2 qu'un navigateur peut voir. **Jouée le : ………**
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`. Aucun build EAS n'est disponible
 > avant le 1er octobre (quota du plan gratuit, registre d'exploitation §3.3), et rien de ce qui est
@@ -37,7 +38,7 @@ Douze sujets, dans l'ordre où ils se jouent :
 | 8 | Le re-bilan, « Toi », et le séparateur des milliers | [#237](https://github.com/ScratchMe/Ramille/pull/237), [#238](https://github.com/ScratchMe/Ramille/pull/238), [#256](https://github.com/ScratchMe/Ramille/pull/256) |
 | 9 | **Retirer un bilan** | C4.7 ([#285](https://github.com/ScratchMe/Ramille/pull/285)) |
 | 10 | Qui sort « rarement » : les loisirs occasionnels, le plan vide, le premier plan avant les deux lieux, la légende du suivi | [#263](https://github.com/ScratchMe/Ramille/pull/263), [#278](https://github.com/ScratchMe/Ramille/pull/278), [#282](https://github.com/ScratchMe/Ramille/pull/282), [#284](https://github.com/ScratchMe/Ramille/pull/284) |
-| 11 | La page de confidentialité | [#282](https://github.com/ScratchMe/Ramille/pull/282), C4.7 et les agrégats de cohortes ([#285](https://github.com/ScratchMe/Ramille/pull/285)) |
+| 11 | La page de confidentialité | [#282](https://github.com/ScratchMe/Ramille/pull/282), C4.7 et les agrégats de cohortes ([#285](https://github.com/ScratchMe/Ramille/pull/285)), le mot de la veille (C4.2) |
 | 12 | À partir du 1er octobre : la question mensuelle de qui sort rarement | [#281](https://github.com/ScratchMe/Ramille/pull/281) |
 
 **Le sujet 4 est le plus important**, et c'est celui par lequel il ne faut pas finir si le temps
@@ -355,16 +356,17 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 | 10.7 | Le plan | **Une seule** carte d'ouverture : **« TON PREMIER PLAN » — « Une action pour l'automne. »**, et **pas** « Deux endroits, pas plus. » par-dessus ou dessous. Jusqu'au 27/09, les deux s'empilaient sur ce chemin précis. Puis **les deux cartes** (métro ou tram, train), « **Voir toutes les pistes · 4** », et le cap **« − 102 kg »** avec « **Chacune des deux pistes proposées suffit à le franchir.** » (199 et 165 kg, tous deux au-dessus de 102) | |
 | 10.8 | « Compris » sur « Ton premier plan » | **Alors seulement** la carte « Deux endroits, pas plus. » apparaît : celle qui attend son tour se rend dès que la précédente est refermée | |
 | 10.9 | Le suivi : l'écart par poste, sous les deux bilans | Sous les barres, la légende : « Contour : bilan précédent · plein : ce bilan · accent : **ton trajet domicile-travail, ton poste principal** ». **Jamais « le poste sur lequel ton plan travaille »** — la légende ne lit pas le plan, et un plan à zéro action ne travaille sur rien (corrigé le 27/09/2026). L'entrée du premier bilan dit toujours « Poste principal : Loisirs occasionnels » | |
-| 10.10 | **Garder ce profil pour le bloc 12** : depuis « Toi », rattacher un compte avec **une seconde adresse** (le code, comme au bloc 04). **Puis, toujours sur « Toi », régler les rappels sur « Aucun »** | Le compte est rattaché. Sans ça, fermer la fenêtre privée perdrait la session, et le bloc 12 n'aurait personne à interroger. Les rappels sur « Aucun » : sans ça, un **vrai** rappel partirait vers cette adresse dans les quatre jours qui suivent le 1er octobre (`RECETTE.md` §2.3) — le point, lui, se génère quel que soit le canal | |
+| 10.10 | **Garder ce profil pour le bloc 12** : depuis « Toi », rattacher un compte avec **une seconde adresse** (le code, comme au bloc 04). **Puis, toujours sur « Toi », régler les rappels sur « Sans rappel »** | Le compte est rattaché. Sans ça, fermer la fenêtre privée perdrait la session, et le bloc 12 n'aurait personne à interroger. Les rappels sur « Sans rappel » : sans ça, un **vrai** rappel partirait vers cette adresse dans les quatre jours qui suivent le 1er octobre (`RECETTE.md` §2.3) — le point, lui, se génère quel que soit le canal | |
 
 ## Bloc 11 — La page de confidentialité
 
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
-| 11.1 | Ouvrir `https://www.ramille.fr/confidentialite` | « **Dernière mise à jour : 28 septembre 2026** » — la date de la fusion de C4.7, **heure de Paris**, écrite en dur dans la page. Si la fusion a eu lieu un autre jour et que la page ne l'a pas suivi, c'est un écart à consigner tel quel | |
+| 11.1 | Ouvrir `https://www.ramille.fr/confidentialite` | « **Dernière mise à jour : 28 septembre 2026** » — la date de la fusion de C4.2, la dernière à avoir retouché la page, **heure de Paris**, écrite en dur dans la page. Si la fusion a eu lieu un autre jour et que la page ne l'a pas suivi, c'est un écart à consigner tel quel | |
 | 11.2 | Chercher ce que le rappel fait sortir vers les prestataires d'envoi | La page dit que le rappel envoie **la question du point** — qui peut nommer le mode, l'action choisie et les jours fixés. **Et non plus** qu'il n'envoie que le nom du poste, « la seule chose issue de ton bilan » : c'était l'état d'avant le lot 2, corrigé le 27/09/2026 | |
 | 11.3 | Dans « Combien de temps nous les gardons » | Une puce **« Bilan retiré »** : « un bilan que tu retires n'apparaît plus dans ton suivi, mais il reste conservé — et dans l'export de tes données — jusqu'à la suppression de ton compte, ou de ta session anonyme si tu n'as pas créé de compte. » Sans elle, « retirer » se lirait « effacer » | |
 | 11.4 | Juste en dessous | Une puce qui dit ce qui reste **après** une suppression : « **Après une suppression, il ne reste que des compteurs, sans aucun identifiant — et, le temps qu'elles expirent, nos sauvegardes chiffrées, effacées d'elles-mêmes au bout de 90 jours.** », puis ce qu'ils retiennent — pour une session anonyme supprimée automatiquement, sa semaine d'arrivée, jusqu'où elle était allée, combien de semaines elle avait duré, où en étaient ses rappels ; pour une suppression de compte, un au compteur du mois — et « **gardés sans limite de durée** » (lot 6, décidé le 27/09/2026) | |
+| 11.5 | Chercher le **mot de la veille** (C4.2) | **Deux phrases.** Dans « Ce qui parvient à chacun », juste avant « C'est tout ce qui sort de ton bilan et de ton plan par ce canal » : « **Si tu as demandé le mot de la veille, la notification du soir nomme aussi ce que tu as prévu pour ton trajet, par exemple « Demain, tu as prévu de faire ton trajet à vélo. »** » Et juste après le paragraphe sur l'espacement des rappels : « **Le mot de la veille ne part que si tu l'as demandé : par notification, pendant les dix semaines qui suivent la première action de trajet que tu choisis dans la saison, et jamais une fois les rappels espacés. Tu l'arrêtes depuis l'écran « Toi », et choisir « Sans rappel » l'arrête aussi.** » Sans elles, la page dirait que le rappel n'envoie que la question du point — faux dès le premier mot parti | |
 
 ## Bloc 12 — À partir du 1er octobre : la question mensuelle de qui sort rarement
 
@@ -411,7 +413,9 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 - **Les écrans anciens** que ni la CI ni cette feuille ne regardent : le pari est écrit en tête.
 - **Le retrait d'un bilan qui ne porte pas le plan** (un bilan plus ancien quand un plus récent
   existe) : la feuille ne le joue pas, `34_retirer_un_bilan.test.sql` le tient.
-- **Le mot de la veille** (C4.2) : décidé le 27/09/2026, pas encore livré au moment d'écrire.
+- **Le mot de la veille** (C4.2), livré le 28/09/2026 : il n'existe qu'en notification, donc un
+  navigateur n'en voit que la page de confidentialité (11.5) — le reste attend l'appareil,
+  `v1-13` §11.21.
 - **Les agrégats de cohortes** du lot 6, livrés avec C4.7 : la séance lit la phrase de la page
   (11.4), mais rien ne se compte avant qu'une purge ne supprime quelqu'un — début décembre 2026 au
   plus tôt (`docs/exploitation/README.md` §8.5 bis).

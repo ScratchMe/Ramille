@@ -250,6 +250,13 @@ export const RAMILLE = {
   /** La question de la feuille — le choix du canal vient après, et il est du produit. */
   choixCanal: 'Comment tu préfères que je te fasse signe ?',
 
+  /**
+   * Le mot de la veille (C4.2) : la seconde question de la feuille, posée une fois la notification
+   * choisie et reçue — d'où « aussi ». Elle ne nomme ni la durée ni le canal, que la ligne du produit
+   * juste en dessous porte avec sa date : Ramille ne dit jamais un nombre.
+   */
+  proposerLaVeille: 'Et la veille de tes jours de trajet, je te fais signe aussi ?',
+
   /** Carte d'attente du plan, quand un rappel partira : elle s'engage, et elle tient. */
   attenteSigneHebdo: 'Je te fais signe lundi.',
   attenteSigneMensuel: 'Je te fais signe au début du mois prochain.',

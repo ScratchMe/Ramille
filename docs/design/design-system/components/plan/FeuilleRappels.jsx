@@ -5,6 +5,7 @@ import { ThemedText } from '../core/ThemedText.jsx';
 import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 import { MessageInline } from '../core/MessageInline.jsx';
 import { FeuilleDuBas } from '../core/FeuilleDuBas.jsx';
+import { TitreDArrivee } from '../core/TitreDArrivee.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { LigneDeCanal } from '../forms/LigneDeCanal.jsx';
 // Source : src/components/plan/feuille-rappels.tsx, dans le cadre de src/components/feuille-du-bas.tsx — poignée 40×4,
@@ -12,7 +13,24 @@ import { LigneDeCanal } from '../forms/LigneDeCanal.jsx';
 // `libelleBouton` (src/types/rappels.ts) : le bouton n'annonce un dialogue système que s'il va s'en ouvrir un.
 const libelleBouton = (canal, permission) =>
   canal === 'none' ? 'Continuer sans rappel' : canal === 'email' ? 'C’est bon' : permission === 'demandable' ? 'Autoriser les notifications' : 'C’est bon';
-export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, onFerme, erreur, voile = true, style }) {
+export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, onFerme, erreur, voile = true, style, etape = 'canal', detailVeille = 'Par notification, jusqu’au 15 novembre.', onRepondreALaVeille }) {
+  // La seconde étape (C4.2) : le mot de la veille, posé une fois la notification choisie et reçue — ou seule,
+  // quand la feuille se rouvre une fois au premier engagement de trajet (`ouvertureDeLaFeuille`). Le contenu
+  // change sous le doigt, d'où `TitreDArrivee` ; la ligne du produit porte la date, Ramille ne dit pas de nombre.
+  if (etape === 'veille') {
+    return (
+      <FeuilleDuBas titre="Les rappels" enTete={false} onFerme={onFerme} voile={voile} style={style}>
+        <TitreDArrivee>
+          <RamilleDit ligne="Et la veille de tes jours de trajet, je te fais signe aussi ?" mood="calm" size={44} themeColor="text" style={{ alignItems: 'flex-start' }} />
+        </TitreDArrivee>
+        <ThemedText type="body" themeColor="textSecondary">{detailVeille}</ThemedText>
+        <MessageInline message={erreur || null} />
+        <Button title="Oui, la veille aussi" onPress={() => onRepondreALaVeille && onRepondreALaVeille('oui')} />
+        <Button title="Non merci" variant="secondary" onPress={() => onRepondreALaVeille && onRepondreALaVeille('refuse')} />
+        <ThemedText type="small" themeColor="textTertiary" style={{ textAlign: 'center' }}>Tu pourras changer d’avis dans « Toi ».</ThemedText>
+      </FeuilleDuBas>
+    );
+  }
   const DETAIL_NOTIFICATION = {
     accordee: 'Le matin où la question s’ouvre.',
     demandable: 'À activer en une fois.',
