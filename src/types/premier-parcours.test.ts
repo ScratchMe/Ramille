@@ -1,5 +1,6 @@
 import {
   etatDuPremierParcours,
+  ouvreUnPremierParcours,
   OUVERTURE_DES_DEUX_LIEUX,
   SORTIE_DES_DEUX_LIEUX,
   type EtapeDuPremierParcours,
@@ -62,5 +63,27 @@ describe('la carte des deux lieux', () => {
 
   it('n’a qu’une sortie, et c’est « Compris »', () => {
     expect(SORTIE_DES_DEUX_LIEUX).toEqual([{ cle: 'compris', label: 'Compris', forme: 'lien' }]);
+  });
+});
+
+// Décision du 27/09/2026 : retirer son seul bilan efface la marque de bilan, et le
+// bilan suivant ne doit pas faire recommencer un parcours que l'appareil a déjà vu.
+//
+// Éprouvé le 27/09/2026 : la règle d'avant (`!aDejaVuUnBilan` seul) fait tomber le second test, et
+// lui seul.
+describe('ouvreUnPremierParcours', () => {
+  it('ouvre un premier parcours sur un appareil qui n’a vu ni bilan ni parcours', () => {
+    expect(ouvreUnPremierParcours(false, null)).toBe(true);
+  });
+
+  it('ne le rouvre pas après le retrait du seul bilan : le parcours a déjà été vu ici', () => {
+    expect(ouvreUnPremierParcours(false, 'fait')).toBe(false);
+    expect(ouvreUnPremierParcours(false, 'barre')).toBe(false);
+    expect(ouvreUnPremierParcours(false, 'questionnaire')).toBe(false);
+  });
+
+  it('ne l’ouvre jamais quand un bilan a déjà été vu ici — le re-bilan', () => {
+    expect(ouvreUnPremierParcours(true, null)).toBe(false);
+    expect(ouvreUnPremierParcours(true, 'fait')).toBe(false);
   });
 });

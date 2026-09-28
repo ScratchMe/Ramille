@@ -195,10 +195,13 @@ export default function Contexte() {
               l'action suivie peut disparaître du plan recalculé. La formulation est au
               conditionnel pour la même raison que la feuille de re-bilan (C6.2) : le serveur
               **repose** l'engagement sur le gabarit s'il est encore proposé, donc annoncer une
-              perte certaine serait faux dans le cas courant. */}
+              perte certaine serait faux dans le cas courant. **Et sa fin ne promet pas de choix**
+              (décision du 27/09/2026, alignée sur `phraseDeLEngagementRecalcule`) : « tu en
+              choisiras une autre » était faux quand le contexte vide le plan — passer à « rural » ou
+              à « pas de transports en commun » peut ne laisser aucune action. */}
           <ThemedText type="small" themeColor="textTertiary">
-            Enregistrer met ton plan à jour ; ton bilan n’est pas refait. Si l’action que tu suis
-            n’y tient plus, tu en choisiras une autre.
+            Enregistrer met ton plan à jour ; ton bilan n’est pas refait. Si ton nouveau plan ne
+            propose plus l’action que tu suis, elle ne sera plus engagée.
           </ThemedText>
 
           <MessageInline message={message} />

@@ -627,10 +627,12 @@ describe('l’encart orphelin', () => {
   // personne. Les lui apprendre serait inutile ou condescendant.
   it('n’annonce que les deux libérations que la personne n’a pas choisies', () => {
     expect([...RAISONS_ANNONCABLES]).toEqual(['rebilan', 'contexte']);
-    // Les deux tues, nommées : `saison` est une reconduction qui a échoué à la frontière d'une
-    // saison, `changement` est la décision de la personne. La liste des quatre raisons vit dans le
-    // `check` de `plan_action_commitments_archive`, qu'un test pgTAP éprouve de son côté.
-    for (const tue of ['saison', 'changement']) {
+    // Les trois tues, nommées : `saison` est une reconduction qui a échoué à la frontière d'une
+    // saison, `changement` est la décision de la personne, et `retrait` (C4.7) aussi — retirer un
+    // bilan est un geste choisi, et la décision D2 de `v1-22` est de ne rien en annoncer. La liste des
+    // cinq raisons vit dans le `check` de `plan_action_commitments_archive`, que les tests pgTAP
+    // éprouvent de leur côté (`29`, `34`).
+    for (const tue of ['saison', 'changement', 'retrait']) {
       expect(RAISONS_ANNONCABLES).not.toContain(tue);
     }
   });

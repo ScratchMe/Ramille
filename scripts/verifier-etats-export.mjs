@@ -1341,17 +1341,22 @@ function verifierLesArrets(ou, arrets, attendus) {
 //   | Ce qu'on casse | Ce qui tombe |
 //   |---|---|
 //   | J1 — `barreArrive` ignore l'état d'avant | la barre au démarrage, sous les **trois** marques (opacité 0, 60 px sous sa place) |
-//   | J2 — `StepShell` sans entrée | l'étape, moitié animée : ni en fondu, ni à droite, ni à gauche |
+//   | J2 — `styleDEntree` ne rend jamais d'animation (réécrite le 28/09) | l'étape, moitié animée : ni en fondu, ni à droite, ni à gauche |
 //   | J3 — les deux sens intervertis | l'étape, moitié animée, sur le **sens** seul : en fondu oui, droite et gauche non |
 //   | J4 — `styleDEntree` ignore la préférence | l'étape sous la préférence : translucide et décalée |
 //   | J5 — la durée du rail sans `dureeSelonLaPreference` | le rail sous la préférence, et lui seul |
 //   | J6 — le rail sans transition | le rail animé : de 37,6 à 75,2 px d'un coup |
 //   | J7 — `Depliage` ne s'anime jamais | la précision, moitié animée : ni le dessous en chemin, ni le fondu |
-//   | J8 — `StepShell` sans `SansApparitionAuMontage` | la précision rouverte depuis un brouillon, qui s'ouvre sous les yeux |
+//   | J8 — `SansApparitionAuMontage` démarre à faux (réécrite le 28/09) | la précision rouverte depuis un brouillon, qui s'ouvre sous les yeux |
 //   | J9 — `Depliage` ignore la préférence, deux fois | la précision sous la préférence : en chemin et en fondu |
 //   | J10 — `animationDesOnglets` rend toujours « fade » | les onglets sous la préférence : dix images de fondu |
 //   | J11 — `animationDesOnglets` rend toujours « none » | les onglets animés : aucune image de fondu |
 //   | J12 — `Depliage` ignore la préférence, une seule fois (`useJoueAuMontage`) | la précision sous la préférence : présente, mais sans aucune place |
+//   | J13 — `entering` remis sur l'étape, l'ancien défaut (28/09) | l'étape animée sur le sens seul (en fondu oui, droite et gauche non), l'étape sous la préférence (« Suivant » ne se clique plus), et la précision rouverte, qui entre en fondu avec son étape |
+//   | J14 — `entering` remis sur `Depliage` (28/09) | le focus de « Voir les autres modes » (section H) et la précision rouverte ; la moitié animée de la précision reste verte : masquée avant d'apparaître, elle entre en fondu |
+//   | J15 — la marque « fait » lue comme « questionnaire » (28/09) | la barre absente sous « fait » (section des états de barre), et J1 sous « fait » : « n'a pas pu être relevée » |
+//   | J16 — l'étape disparaît 110 ms une fois là (28/09) | l'étape, dans ses deux moitiés, et la précision rouverte : « a disparu une fois là » |
+//   | J17 — la barre disparaît 110 ms une fois là (28/09) | la barre au démarrage, sous les trois marques : « disparaît après être apparue » |
 //
 // **J9 casse deux défenses supposées ; J12 n'en casse qu'une, et c'est elle qui a appris quelque
 // chose.** On attendait de `withTiming` (`ReduceMotion.System`) qu'il pose la hauteur en une image,
@@ -1360,6 +1365,15 @@ function verifierLesArrets(ou, arrets, attendus) {
 // pas une ici, et la garde nomme ce cas à part (« présente, mais sans aucune place »). J2, J3 et J7
 // ont été rejouées après le passage à `enChemin`, avec les mêmes chutes ; les huit autres portent
 // sur des assertions que ce passage n'a pas touchées, ou a resserrées.
+//
+// **Le 28/09/2026, après la seconde contre-lecture**, sur b4f25c1 et un témoin vert : J2 et J8
+// réécrites — l'ancienne J2 (`StepShell` sans entrée) ne compile plus depuis qu'`entree` est
+// obligatoire, et l'ancienne J8 (sans fournisseur) ne tombe plus où elle doit — sans fournisseur
+// rien ne s'anime, donc c'est la moitié animée de la précision qui tombe, la chute de J7 —, puis J13
+// à J17 pour les contrôles de présence et de disparition. **J13 et
+// J14 ont appris quelque chose** : `entering` masque sa cible **avant** de la montrer, donc ce n'est
+// pas le contrôle de disparition qui le voit, mais le sens, le fondu et le focus. Ce contrôle-là
+// voit un **clignotement**, et il a fallu en fabriquer un (J16, J17) pour le prouver.
 // J3 dit ce que J2 ne dit pas : l'assertion lit le **côté**, pas seulement qu'il se passe quelque
 // chose.
 
@@ -1432,7 +1446,7 @@ for (const reduire of [false, true]) {
       // sont le sens et le fondu qui le voient, J13.)
       echecs.push(
         `${ou} : le titre de l’étape n’a pas été relevé pendant son entrée, ou a disparu une fois là —` +
-          ' une étape masquée ne reçoit pas le focus (`v1-30` §3.2, `entering`).'
+          ' une étape masquée ne reçoit pas le focus (`v1-30` §3.2).'
       );
     } else {
       const titres = enAvant.map((e) => e.titre).filter(Boolean);

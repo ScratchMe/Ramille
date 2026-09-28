@@ -184,7 +184,7 @@ n'était dans aucune fiche :
 | Page | Chantier | Ce qu'elle conclut |
 |---|---|---|
 | [`v1-21`](v1-21-modes-manquants.md) | C4.4, les modes manquants | **Livré le 21/09/2026.** Le « Train ou RER » était compté au tarif du TER : 249,2 kg/an là où 88,0 étaient justes, rapport 2,83 mesuré. Le vélo à assistance et l'autocar existent désormais, et l'autocar émet **plus qu'un TER** — un test pgTAP l'épingle pour qu'on ne le « corrige » pas par réflexe. Une moitié reste ouverte (`v1-27` §12.16) : le **gain** de l'action « en train » reste au tarif du TER, faute de pouvoir cibler le RER sans savoir où l'on habite |
-| [`v1-22`](v1-22-retirer-un-bilan.md) | C4.7, retirer un bilan | **Décidé le 27/09/2026, à faire** : retirer et non supprimer, plan reconstruit sans annonce, le geste sur la restitution. `status = 'withdrawn'` rend justes **douze** lectures d'un coup — la fiche en annonçait trois |
+| [`v1-22`](v1-22-retirer-un-bilan.md) | C4.7, retirer un bilan | **Décidé et livré le 27/09/2026** : retirer et non supprimer, plan reconstruit sans annonce, le geste sur la restitution (« Ce bilan ne me ressemble pas »). `status = 'withdrawn'` rend justes d'un coup toutes les lectures qui filtrent sur `completed` — la fiche en annonçait trois —, sauf deux, corrigées à la main : la restitution par identifiant et `analytics.user_segments` |
 | [`v1-23`](v1-23-point-quantitatif.md) | C4.1, le point quantitatif | **Fermé pour la V1 le 27/09/2026**, avec sa condition de réouverture : la boucle n'a tourné sur personne, et le gain principal annoncé est celui qu'il ne faut pas prendre |
 | [`v1-24`](v1-24-deplacements-professionnels.md) | C4.3, déplacements professionnels | **La phrase décidée le 10/09 est livrée le 19/09 ; le poste est sorti du lot 4 le 27/09/2026** : il rouvre le modèle à trois postes, la restitution, les deux boucles et le référentiel d'actions, donc il devient un increment à part (§5) |
 | [`v1-25`](v1-25-coup-de-pouce-la-veille.md) | C4.2, le mot de la veille | **Décidé le 27/09/2026, à construire avant Play** : notification seule, dix semaines depuis le premier engagement choisi de la saison, et un mot qui nomme ce que la personne a prévu (« Demain, tu as prévu de faire ton trajet à vélo. »). La page posait cinq arbitrages. Le piège est silencieux : une table à part passerait à côté du plafond qui fait taire le produit devant quelqu'un qui ne répond plus |
@@ -305,6 +305,26 @@ une personne. **La page de confidentialité le dit** : elle écrit aujourd'hui q
 toutes les données associées » sont supprimées, et elle gagne une phrase sur les comptes agrégés,
 sans identifiant. C'est ce qui doit être en place **avant l'ouverture sur Play** : chaque jour sans
 agrégat est une cohorte perdue pour de bon.
+
+**Livré avec C4.7**, avec six choix techniques que ce paragraphe ne décidait pas : la semaine
+d'arrivée est le lundi de `auth.users.created_at` en UTC ; l'étape est la plus loin **dans l'ordre**
+et non le plus long préfixe (on peut répondre au point générique sans s'être engagé) ; les
+semaines tenues se rangent en tranches dont les bornes reprennent des seuils du produit — `0`, `1`,
+`2-3`, `4-7`, `8-12`, `13+` (quatre points, huit points, une saison), mais comptées en semaines
+d'activité et non en points sans réponse ; l'état des rappels retient le plus avancé des deux
+boucles ; **`delete_my_account` compte après sa suppression et non avant**, sur le nombre de lignes
+supprimées — un second appel avec un jeton encore valable ne supprime rien, et ne compte donc rien ;
+et **un compteur qui échoue n'arrête jamais une suppression** (contre-lecture du 27/09/2026) : la
+purge supprime quand même et le dit dans `purge_runs.detail`, parce que la page de confidentialité
+promet l'effacement après 90 jours et qu'un compteur en échec à chaque passage l'aurait suspendu
+pour toujours, sans alerte. **À nos volumes, une ligne peut ne compter qu'une personne** : elle
+n'en porte aucun identifiant, mais « un compteur, jamais une personne » serait faux — c'est pour
+cela que les segments attendent. **Et la livraison a appris une chose qui éclaire la question du churn** :
+la purge attend 90 jours sans signe de vie, alors que le barreau `silence` tombe après huit points
+sans réponse, environ deux mois sur la boucle hebdomadaire — **le churn est donc franchi bien avant
+la purge**, et il se date sur les comptes vivants par `regime_de_rappel`, pas par ce que la purge
+compte. La colonne de l'état des rappels dit surtout « avait une boucle hebdomadaire ». Où se lit le
+tout : `docs/exploitation/README.md` §8.5 bis.
 
 **Et les deux autres questions sont tranchées le même jour**, sur la recommandation posée :
 

@@ -306,8 +306,9 @@ manipulation à l'appelant est le mauvais ; on borne l'assertion.
 
 **Et le piège a un symétrique, relevé le 11/09/2026 : des assertions de la suite échouent sur le
 projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les connaître évite de
-« corriger » un test qui n'a rien. Elles étaient trois ; **il en reste deux depuis le 21/09/2026**,
-et le nombre ne s'écrit plus en titre pour qu'il ne se périme pas une seconde fois.
+« corriger » un test qui n'a rien. La liste ci-dessous en garde une fermée, pour mémoire ; **le
+nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux fois, la seconde le
+27/09/2026 quand les fichiers de la purge l'ont rejointe.
 - ~~`12_usage_events` assertion 9~~ — **fermée le 21/09/2026**, elle est bornée au fixture et passe
   désormais des deux côtés (mesuré : zéro ligne pour cet uuid sur le distant, contre 254 réelles).
   Elle reste listée parce qu'une exception retirée d'une liste se réinvente : la prochaine
@@ -320,6 +321,11 @@ et le nombre ne s'écrit plus en titre pour qu'il ne se périme pas une seconde 
   un rebond qui coûte de la délivrabilité au domaine. Ce fichier ne se rejoue pas en entier sur le
   distant ; ce qui s'y valide se valide en sautant ces appels (ils ne touchent pas au corps du
   message, seulement au statut).
+- `16_purge_anonyme_inactivite` et `36_cohortes_avant_la_purge` (son assertion 18) fabriquent soixante sessions
+  muettes pour déclencher la garde de volume de la purge, dont le seuil vaut `max(50, 20 %)` des
+  comptes anonymes. **Au-delà de 240 comptes anonymes en base, soixante ne suffisent plus**, et le
+  passage supprime au lieu de bloquer. Le compte qui décide est celui de la base, pas du fichier
+  (relevé par la contre-lecture du lot 6, 27/09/2026).
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.
@@ -426,6 +432,17 @@ elles-mêmes sont épinglées dans Jest sur toutes les combinaisons d'états (`c
 étape garde une partie de ce que Jest ne voit pas — **deux** des huit arguments que l'écran lui passe,
 `carteDuPremierPlan` et `carteDesDeuxLieux`. L'en-tête du script nomme les six autres, que rien ici ne
 garde.
+
+**Et il finit par retirer ses deux bilans** (27/09/2026, C4.7, `v1-22`). Le bilan en voiture
+d'abord : c'est lui qui porte le plan, et le profil **s'y engage avant** — sans quoi rien ne gardait
+l'argument `engagement` de l'appel, et la confirmation pouvait taire l'action sans qu'un test rougisse.
+La confirmation dit donc que le plan repart du précédent **et** nomme l'action suivie ; la base relit
+le statut `withdrawn`, un plan revenu à zéro action et l'action archivée en `retrait` ; et l'adresse dit « Ce bilan a été
+retiré. » **après un rechargement** — c'est là que parle la lecture par identifiant, et plus l'état
+posé par le geste. Puis le seul qui reste : la confirmation ne parle plus de plan, l'écran rejoint
+l'onboarding, et la marque `traceverte.a_un_bilan.v1` est **lue posée avant**, effacée après — sans la
+première moitié, une clé mal nommée rendrait la seconde vraie par accident. Le troisième cas (retirer
+un bilan qui ne porte pas le plan) n'est pas joué ici : `34_retirer_un_bilan.test.sql` le tient.
 
 Le second profil tourne dans un **contexte de navigateur neuf**, et c'est structurel : « premier »
 veut dire premier **sur cet appareil** (C5.7), et les marques vivent dans le stockage. Le rejouer

@@ -310,7 +310,8 @@ numérotés, un fichier par sujet, `supabase test db`) et, depuis le 20/09/2026,
 Supabase locale, la base relue après chaque écriture — `TESTING.md` §2.6, qui dit aussi ce qu'il
 laisse volontairement aux deux autres). **Deux profils**, et le second n'est pas un doublon : le
 cycliste au **plan à zéro action** est le seul chemin où la carte « Ton premier plan » ne se rend
-jamais, donc le seul où la barre d'onglets arrive autrement. **Docker tourne dans cet environnement** — `sudo dockerd &`,
+jamais, donc le seul où la barre d'onglets arrive autrement — et depuis C4.7 il finit par **retirer
+ses deux bilans**, le seul chemin qui efface la marque locale de bilan sans quitter le compte. **Docker tourne dans cet environnement** — `sudo dockerd &`,
 mesuré le 20/09/2026 —, donc pgTAP et le parcours s'exécutent ici, et le `BEGIN`/`ROLLBACK` sur le
 projet distant n'est plus la seule validation d'un fichier pgTAP. Les trois tournent en CI sur
 chaque pull request. La
@@ -834,9 +835,11 @@ arrive et se nomme, une fois. Cinq points :
   §2.2 : sur web, le rendu statique ne connaît aucun stockage). Une **valeur inconnue** se lit de
   même : c'est le seul moyen, depuis ce stockage, de retirer à quelqu'un la moitié du produit.
 - **« Premier » veut dire premier sur cet appareil**, et la question se pose à la soumission, **avant**
-  de poser la marque de bilan de C4.5 — c'est elle qui répond. Trois situations retombent alors du
-  bon côté sans garde à écrire : un re-bilan, un appareil neuf d'un compte existant, et une
-  installation d'avant le chantier.
+  de poser la marque de bilan de C4.5 — c'est elle qui répond, **avec l'étape déjà notée** depuis
+  C4.7 (`ouvreUnPremierParcours`) : retirer son seul bilan efface la marque de bilan, et sans l'étape
+  le bilan suivant ferait recommencer le parcours. Quatre situations retombent alors du bon côté sans
+  garde à écrire : un re-bilan, un appareil neuf d'un compte existant, une installation d'avant le
+  chantier, et un bilan soumis après le retrait du seul.
 - **L'étape vit dans le layout des onglets**, qui la partage par contexte (`usePremierParcours`) :
   c'est lui qui rend la barre, donc un écran qui réécrirait la marque dans son coin la ferait
   arriver au prochain montage et non au geste. Le questionnaire, lui, est **hors** du groupe et
@@ -878,6 +881,10 @@ dit à quelles conditions le rouvrir. Sept points à connaître :
   `src/lib/compte.ts` balaie les marques locales depuis ses **deux** sorties, suppression de compte
   **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse au seul appareil
   restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut).
+  **Et un troisième effacement depuis C4.7, qui n'est pas une sortie** : retirer son seul bilan
+  efface **cette marque-là et elle seule** (`effacerLaMarqueDeBilan`) — le compte n'est pas quitté,
+  donc le balayage par préfixe serait de trop. Il ne vaut que pour l'appareil du geste : un autre
+  appareil du compte garde sa marque, que le repli ne lit qu'hors ligne — le risque connu de C4.5.
 - **Elle n'est consultée qu'en repli, jamais quand le serveur a répondu**, et c'est ce qui la rend
   sûre : une marque fausse ne peut pas contredire une vérité. Un test l'épingle, et le jour où il
   tombe, c'est que quelqu'un en a fait une seconde source de vérité.
@@ -910,7 +917,8 @@ qu'ils portent, ce qui tombe si l'un manque, la checklist à parcourir avant de 
 et la question de continuité (tout tient à une seule personne, elle n'est pas tranchée). Son §8
 est la porte d'entrée des journaux : `analytics.rappels_par_jour`, `analytics.rappels_bloques`,
 `analytics.synchronisations_facteurs`, `public.reminder_send_runs`, `public.purge_runs`, chacun
-avec sa requête et ce qui doit alerter. À côté : `redirect-urls.md` (la liste réelle des URL de
+avec sa requête et ce qui doit alerter — et, depuis le lot 6, `analytics.cohortes_purgees` et
+`public.suppressions_de_compte_par_mois` (§8.5 bis). À côté : `redirect-urls.md` (la liste réelle des URL de
 redirection Supabase, relevée entrée par entrée, avec ce qui doit en être retiré),
 `sauvegarde.md` (le régime de sauvegarde et la procédure de restauration) et
 `remontee-erreurs.md`. **Rien dans le code ni dans la CI ne voit ces réglages, et aucun de ces
@@ -1138,6 +1146,49 @@ l'état d'affichage, qui ne vaut `true` qu'au rendu suivant. Côté SQL, la gén
 enveloppée dans un `begin … exception … end` : les deux fonctions partagent la transaction du RPC,
 donc sans cette sous-transaction un plan qui échoue emportait le résultat que le calcul venait
 d'écrire.
+
+**Un bilan se retire, et ne se supprime pas** (C4.7, `v1-22`,
+`20260927230411_retirer_un_bilan.sql`). Une distance saisie en mètres ou un questionnaire rempli
+« pour voir » restaient pour toujours dans le suivi et devenaient la base de comparaison du suivant.
+Six points à connaître :
+
+- **`status = 'withdrawn'`, et la ligne reste.** Toutes les lectures de `completed` deviennent justes
+  sans qu'on y touche — c'est ce qui a écarté une colonne `withdrawn_at`, qui aurait demandé un
+  `and withdrawn_at is null` partout, donc un oubli silencieux quelque part. **Deux lectures ne le
+  devenaient pas seules** : la restitution, qui lit un bilan **par son identifiant** — l'adresse qui
+  circule — et embarque désormais le statut pour ne jamais montrer le chiffre d'un bilan retiré ; et
+  `analytics.user_segments`, qui prenait le dernier bilan par `submitted_at is not null` (un bilan
+  retiré garde sa date) et filtre maintenant sur le statut.
+- **`retirer_le_bilan(uuid)` est le seul chemin**, et jamais une policy `DELETE` : il vérifie la
+  propriété, refuse un bilan en cours ou déjà retiré (`RM006`, que l'écran reconnaît au code), et
+  rend le nombre de bilans valides restants. **Un client qui écrirait `withdrawn` par un `update`
+  direct est refusé par un trigger (`RM007`)**, parce que le privilège de colonne sur `status` doit
+  rester à la soumission : le trigger distingue le RPC du client par `current_user` (`SUPABASE.md`
+  §1.4), et un bilan retiré ne revient jamais (`RM005` étendu). **« Seul chemin » vaut pour le
+  client** : sous `postgres` — `execute_sql` sur la production — un `update` traverse le trigger sans
+  rien reconstruire. Côté serveur, on appelle donc le RPC sous le rôle de la personne (`SUPABASE.md`
+  §1.4), jamais une recopie de son corps.
+- **Le plan n'est reconstruit que si le bilan retiré le portait**, sur le bilan valide précédent,
+  cause `retrait` (qui saute la garde d'idempotence — sans quoi le cron ne rebâtirait jamais) ;
+  l'engagement est reposé si le nouveau plan le propose encore, archivé en `retrait` sinon, **et rien
+  ne l'annonce après coup** (D2). C'est la confirmation qui le dit **avant**, au conditionnel, avec la
+  phrase du re-bilan (`phraseDeLEngagementRecalcule`, lue par `lireLEngagementEnCours`) — et, pour le
+  seul bilan, sans conditionnel, puisque l'action y est archivée à coup sûr (`phraseDeLActionQuiPart`).
+- **La confirmation dépend de la place du bilan** (`placeDuBilan` : `seul`, `dernier`, `ancien`,
+  `src/types/retrait-du-bilan.ts`) : « ton plan repartira de ton bilan précédent » serait faux d'un
+  bilan qui ne porte pas le plan. Quand la place n'a pas pu être lue, le lien ne se rend pas.
+- **Retirer son seul bilan laisse le cycle en place comme historique, mais pas son engagement**
+  (décision du 27/09/2026) : l'action engagée est archivée en `retrait` et désengagée. Le cycle n'est
+  pas inerte — `lireLEngagementEnCours` et la reconduction de saison le lisent sans regarder s'il
+  reste un bilan —, et c'est pourquoi l'action devait partir : sinon la feuille « Nouveau bilan » la
+  nommait, et la saison suivante la reconduisait devant quelqu'un qui repartait de zéro. Le retrait
+  **annule aussi les rappels en attente** (sans quoi un e-mail étalé partirait vers `/plan?rappel=1`,
+  qui proposerait de retrouver un compte) et efface la marque locale ; la racine route alors vers
+  l'onboarding. **Le premier parcours, lui, ne recommence pas** (`ouvreUnPremierParcours`, même
+  décision) : la personne connaît déjà les deux lieux.
+- **L'export rend le bilan retiré avec son statut, et l'entonnoir ne décrémente pas** : ce qui est
+  soumis a été soumis. La page de confidentialité dit qu'un bilan retiré reste conservé, pour que
+  « retirer » ne se lise pas « effacer ».
 
 Le bilan (`assessment_answers`) est modélisé à plat, un champ par question B1.1→B4.3 — pas
 une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par poste
@@ -1394,7 +1445,11 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   `plan_actions.carried_over_from` sur le cycle d'**origine** — jamais sur la ligne `plan_actions`
   précédente, qui est supprimée à chaque reconstruction et emporterait l'étiquette
   « · RECONDUIT » avec elle. La ligne de l'ancien cycle garde son propre engagement : c'est de
-  l'historique, et l'index unique est **par cycle**.
+  l'historique, et l'index unique est **par cycle**. **Seul le cycle immédiatement précédent se
+  reconduit** (corrigé le 27/09/2026, trouvé en écrivant C4.7) : la requête prenait la dernière
+  action engagée de **n'importe quel** cycle antérieur, donc une saison passée sans engagement —
+  « Changer d'avis », un retrait — faisait revenir l'action d'il y a deux saisons. Le scénario E de
+  `21_engagement_qui_survit.test.sql` l'épingle.
 - **`plan_actions` a désormais deux clés étrangères vers `plan_cycles`**, donc toute lecture
   imbriquée doit nommer la sienne : `plan_actions!plan_actions_plan_cycle_id_fkey(…)`. Sans le nom,
   PostgREST refuse la requête (« more than one relationship was found ») et l'écran du plan ne
@@ -1572,7 +1627,7 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
 - **Un seul paramètre porte la cause, et les deux conséquences s'en dérivent.** La première forme
   écrite était `p_forcer boolean`, qui obligeait à poser ailleurs la raison d'archivage — donc à
   tenir d'accord deux paramètres disant la même chose. `p_cause` (`'bilan'` par défaut,
-  `'contexte'`) fait sauter la garde d'idempotence **et** nomme la raison de libération : il n'y a
+  `'contexte'`, et depuis C4.7 `'retrait'`) fait sauter la garde d'idempotence **et** nomme la raison de libération : il n'y a
   pas de façon de forcer sans dire pourquoi. Une valeur inconnue lève `RM004` — un code à elle,
   parce que c'est un invariant de serveur qu'aucun client ne peut atteindre, là où les
   préconditions de `mettre_a_jour_le_contexte` (`RM003`) remontent jusqu'à un écran.
@@ -1586,11 +1641,13 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   `recompute_assessment_results` est idempotent : mêmes réponses de trajet, facteurs bornés à la
   date du bilan, mêmes totaux. **Recalculer n'est pas resoumettre** — aucune ligne n'est ajoutée à
   `assessments`, et un test pgTAP l'épingle.
-- **`plan_action_commitments_archive.released_reason` a une quatrième valeur, `contexte`**, et
+- **`plan_action_commitments_archive.released_reason` gagne `contexte`**, et
   l'encart orphelin du plan filtre désormais sur `RAISONS_ANNONCABLES` — les **deux** libérations
   que la personne n'a pas choisies. Sa phrase se dérive de la raison (`phraseDeLOrphelin`) : elle
   disait « Ton plan a changé avec ton nouveau bilan », ce qui est faux quand il n'y a pas eu de
-  bilan. `saison` et `changement` restent tues, pour les raisons de C2.2.
+  bilan. `saison` et `changement` restent tues, pour les raisons de C2.2. **Et `retrait` depuis
+  C4.7, tue elle aussi** : retirer un bilan est un geste choisi, et la confirmation a dit
+  *avant* ce qu'il emportait — réutiliser `rebilan` aurait rallumé l'encart.
 - **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
   du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
   n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle
@@ -1610,6 +1667,9 @@ le réglage n'a jamais été ouvert. La réponse est qu'il ne l'a pas encore ét
 écarté : le handoff design le prévoit (`docs/design/README.md`, puce « Cadence : saison — été »),
 donc l'ouvrir dans « Toi » serait une décision produit et non une invention. La dormance est
 consignée en base sur le commentaire de la colonne (`20260912110000_detail_kind_et_cadence.sql`).
+**L'ouvrir impose de relire le retrait d'un bilan (C4.7)** : les bornes du cycle reconstruit s'y
+calculent sur la date du bilan **précédent**, donc le cycle du bilan retiré garderait la date de
+début la plus récente, et c'est lui que le plan lirait. Raisonné, pas rejoué (`v1-22` §7).
 
 Même famille, côté plan : `action_templates.detail_kind` ne vaut plus que pour les postes
 domicile-travail et loisirs. La branche `travel` d'`estimate_action_savings` construit son détail
@@ -1678,11 +1738,50 @@ pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
   Elles ont été supprimées (`20260905180000`), avec `profiles.onboarding_completed_at` qu'aucun
   code n'écrivait. Vérifier qu'une colonne est *alimentée* avant de s'y fier — et se méfier des
   valeurs de statut écrites de mémoire (`assessments.status` vaut `completed`, jamais
-  `submitted` ; c'est aussi ce que teste la racine de l'app pour router vers le plan).
+  `submitted` ; c'est aussi ce que teste la racine de l'app pour router vers le plan — et, depuis
+  C4.7, `withdrawn` pour un bilan retiré).
   **Une colonne vide n'est pas une colonne morte** : `emission_factor_sync_runs.detail`,
   `notification_outbox.last_error`, `commute_carpool_size` et `commute_distance_bracket` sont
   toutes nulles en base et parfaitement vivantes. Ce qui qualifie une colonne morte, c'est
   qu'aucun code ne l'écrit.
+
+**Ce que la purge et la suppression laissent derrière elles : des compteurs, rien d'autre** (lot 6,
+livré avec C4.7, `20260927230611_les_cohortes_avant_la_purge.sql`). La cascade efface tout ce qu'une
+personne a fait, donc toute mesure de forme cohorte doit être écrite **avant** : la purge incrémente
+`public.purges_par_cohorte` (semaine d'arrivée, étape la plus loin, tranche de semaines tenues, état
+des rappels au départ) **dans sa propre transaction, après sa garde de volume et avant son
+`delete`** ; `delete_my_account` incrémente `suppressions_de_compte_par_mois` après son `delete`,
+seulement si une ligne est partie. **Un compteur qui échoue n'arrête jamais une suppression** : il
+vit dans une sous-transaction, et son échec se consigne (`purge_runs.detail`, un avertissement pour
+`delete_my_account`) pendant que la suppression passe — la page de confidentialité promet
+l'effacement, et une écriture d'analyse ne doit pas pouvoir le suspendre. La première version
+faisait l'inverse (« si le compteur échoue, rien n'est supprimé »), et c'était la suspendre pour
+toujours, sans alerte, dès qu'une valeur nouvelle de `regime_de_rappel` sortait du `check` —
+contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
+
+- **aucun identifiant et aucun segment**, par décision (27/09/2026) : à nos volumes, une ligne
+  découpée par zone ou par poste décrirait une personne que la page de confidentialité promet
+  d'effacer. Le fichier `36` balaie les colonnes par type et n'admet que `date`, `integer` et un
+  `text` fermé par un `check`. À nos volumes, une ligne peut ne compter qu'une personne : elle n'en
+  porte rien qui la désigne, et c'est ce que la page promet — pas davantage ;
+- **ces tables n'ont aucune clé étrangère**, et c'est ce qui les fait survivre : c'est la
+  contrepartie exacte de la règle « jamais rattacher une table à `profiles` autrement qu'en
+  cascade », qui vaut pour les données d'une personne et jamais pour un agrégat ;
+- **`cohorte_de(uuid)` est la seule dérivation**, et l'étape est « la plus loin **dans l'ordre** »
+  (a ouvert < bilan soumis < engagée < a répondu), pas le plus long préfixe : on peut répondre au
+  point générique sans s'être engagé. « A soumis un bilan » s'écrit `status <> 'in_progress'`, pour
+  qu'un bilan retiré (C4.7) compte comme soumis ;
+- **le signe de vie des rappels a une définition extraite, `dernier_signe_de_vie`, que
+  `regime_de_rappel` n'appelle pas encore** — celui de la purge reste le sien, plus large
+  (tous les événements, les bilans, les retours). La brancher remplace une ligne du corps de
+  `regime_de_rappel`, et le mutant qui la factorise ne fait rien tomber. C'est à faire après C4.2,
+  qui retouche la même fonction ; d'ici là, une assertion du `36` exige que le corps installé de
+  `regime_de_rappel` **contienne** l'expression ou l'appel — une inclusion, pas une identité : une
+  ligne ajoutée après, qui retoucherait la date, passerait ;
+- **les valeurs que rend `regime_de_rappel` doivent toutes figurer dans le `check` de
+  `rappels_au_depart`** : une valeur nouvelle ferait échouer chaque compte, donc perdre chaque
+  cohorte. Une assertion du `36` lit les littéraux `return` du corps installé et les compare au
+  `check`.
 
 **Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
 Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**

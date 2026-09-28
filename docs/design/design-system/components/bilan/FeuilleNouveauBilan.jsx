@@ -14,8 +14,8 @@ import { ThemedText } from '../core/ThemedText.jsx';
 const phrase = ({ action, intention }) => {
   const a = action.replace(/\.$/, '');
   return intention === null || intention === undefined
-    ? 'L’action que tu suis — ' + a + ' — reste engagée si ton nouveau plan la propose encore. Sinon, tu en choisiras une autre.'
-    : 'L’action que tu suis — ' + a + ' — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, tu en choisiras une autre.';
+    ? 'L’action que tu suis — ' + a + ' — reste engagée si ton nouveau plan la propose encore. Sinon, elle ne sera plus engagée.'
+    : 'L’action que tu suis — ' + a + ' — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.';
 };
 export function FeuilleNouveauBilan({ engagement, onSoumettre, onFerme, voile, style }) {
   return (

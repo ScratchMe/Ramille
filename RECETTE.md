@@ -233,7 +233,7 @@ destination légitime, et elle se note comme telle.
 | Séance | Document (la mémoire) | Artefact (l'outil) |
 |---|---|---|
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
-| Le compte, le contexte et les modes — ce qui est neuf depuis le 18/09/2026 | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
+| Ce qui est neuf depuis le 18/09/2026 — le compte, les modes, le design system, le retrait d'un bilan (écrite le 21/09, étendue le 27/09 sans avoir été jouée) | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
 
 **L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
 règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
@@ -253,6 +253,13 @@ dix lignes : extraire chaque `{ ref, faire, attendre }` de l'artefact et chaque 
 retouche du `.md`**, puisque c'est lui la source. Sa base garde la séance du 18/09/2026 — ses
 constats vivent en `v1-13` §14 — tant qu'on n'a pas touché « Tout effacer » : l'en-tête de la page
 le dit.
+
+**Et « Tout effacer » n'efface rien** (relevé le 27/09/2026 en régénérant les deux artefacts) : il
+passe par `window.confirm()`, que la visionneuse des artefacts refuse toujours. C'est ce qui protège
+aujourd'hui la séance du 18/09 dans sa base — mais l'en-tête dit « Effacer avant de rejouer », ce
+qui est impossible en l'état. Le réparer est un changement de conception (une confirmation dans la
+page, la forme de « Supprimer mon compte »), à faire le jour où l'on rejoue cette feuille ; d'ici là,
+ne pas compter dessus.
 
 **La seconde feuille, écrite le 21/09/2026, change de principe** : elle ne rejoue pas un parcours,
 elle ne joue que **ce qui est neuf depuis la séance précédente**, en posant qu'il n'y a pas de

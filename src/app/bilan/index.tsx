@@ -24,14 +24,11 @@ import { RAMILLE } from '@/constants/mascotte';
 import { track } from '@/lib/analytics';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
 import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
+import { lireLEngagementEnCours } from '@/lib/engagement-en-cours';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
-import { noterLePremierParcours } from '@/lib/premier-parcours';
+import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-parcours';
 import { ensureSession, supabase } from '@/lib/supabase';
-import {
-  dateCalendaire,
-  engagementDeLaPeriodeCourante,
-  type EngagementEnCours,
-} from '@/types/rebilan';
+import { type EngagementEnCours } from '@/types/rebilan';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
   BILAN_SECTION_LABEL,
@@ -54,6 +51,7 @@ import {
 } from '@/types/bilan';
 import { decrireErreur } from '@/types/erreur';
 import { sensDuPassage, type Sens } from '@/types/mouvement';
+import { ouvreUnPremierParcours } from '@/types/premier-parcours';
 
 // Questionnaire du bilan (9 pas maximum, branchements B1.1/B2.1) — état local pour
 // toute la traversée, un seul aller-retour serveur à la soumission (cf. commentaire
@@ -286,29 +284,10 @@ export default function BilanQuestionnaire() {
     lectureDeLEngagement.current = (async () => {
       try {
         await ensureSession();
-        const { data, error } = await supabase
-          .from('plan_cycles')
-          // Même chaîne d'un seul tenant que les deux écrans du plan, et **le nom de la clé
-          // étrangère est obligatoire** : `carried_over_from` en est une seconde vers
-          // `plan_cycles`, donc sans lui PostgREST refuse la requête entière (C2.2).
-          .select(
-            'period_start, period_end, plan_actions!plan_actions_plan_cycle_id_fkey(committed_at, intention_days, intention_timing, action_templates(action_text))'
-          )
-          .order('period_start', { ascending: false })
-          .limit(1);
-        if (error) return;
-
-        const cycle = data?.[0];
-        if (!cycle) return;
-
-        engagementExpose.current = engagementDeLaPeriodeCourante(
-          {
-            period_start: cycle.period_start,
-            period_end: cycle.period_end,
-            actions: cycle.plan_actions,
-          },
-          dateCalendaire(new Date())
-        );
+        // La même lecture que la confirmation du retrait d'un bilan (C4.7), écrite une fois.
+        const lecture = await lireLEngagementEnCours();
+        if (!lecture.ok) return;
+        engagementExpose.current = lecture.data;
       } catch {
         // Voir le commentaire ci-dessus : on laisse passer.
       }
@@ -533,8 +512,12 @@ export default function BilanQuestionnaire() {
       // Trois situations retombent donc naturellement du bon côté, sans garde à écrire : un
       // re-bilan (la marque est là), un appareil neuf d'un compte existant (la racine a posé la
       // marque en lisant le bilan), et une installation d'avant ce chantier (idem, au premier
-      // lancement en ligne). Dans les trois cas, la barre reste.
-      if (!(await aDejaVuUnBilan())) await noterLePremierParcours('questionnaire');
+      // lancement en ligne). Dans les trois cas, la barre reste. **Et une quatrième depuis C4.7** :
+      // retirer son seul bilan efface la marque, mais l'étape notée dit que le parcours a déjà été
+      // vu ici — il ne recommence pas (`ouvreUnPremierParcours`, décision du 27/09/2026).
+      if (ouvreUnPremierParcours(await aDejaVuUnBilan(), await lireLePremierParcours())) {
+        await noterLePremierParcours('questionnaire');
+      }
       // **La marque locale se pose ici aussi, et pas seulement à la racine** (C4.5). Le
       // questionnaire mène à la restitution puis au plan, sans repasser par la racine : sans cette
       // ligne, la marque n'existerait qu'au **prochain** lancement en ligne, et quelqu'un qui

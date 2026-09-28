@@ -102,7 +102,24 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // C2.6 (`poste_inserable`), et la question figée du point y est entrée avec C2.1 : elle peut nommer
 // le mode, l'action choisie et les jours fixés (relevé dans les migrations le 27/09/2026). Corrigé sur décision de la personne qui pilote
 // (relevé par la contre-lecture de `v1-27` §4) ; la date suit la mise en ligne.
-const UPDATED_AT = '27 septembre 2026';
+//
+// **Et le même jour, un bilan retiré** (C4.7, décision de la personne qui pilote) : « retirer » peut se
+// lire « effacer », et ce n'en est pas un — la ligne reste, l'export la rend avec son statut
+// (`v1-22` D1). Sans cette phrase, la page laisserait croire à un effacement qui n'a pas lieu. Elle
+// nomme la session anonyme parce que la purge à 90 jours l'emporte aussi, comme le reste. Mise en
+// ligne à la fusion de C4.7 — la date suit, **heure de Paris** (la fusion a lieu dans la nuit du 27 au
+// 28 : le 27 en UTC, déjà le 28 pour qui lit la page), et la feuille de recette la cite (11.1).
+//
+// **Et les compteurs qui survivent à une suppression** (lot 6, décidé le 27/09/2026 : « la page de
+// confidentialité le dit »). La page écrivait que la session « et toutes les données associées »
+// partent, et c'est toujours vrai de ses données ; ce qui reste est un +1 dans un compteur, sans
+// identifiant ni date plus fine que la semaine (`20260927230611`). Le taire aurait laissé croire à
+// une suppression sans aucune trace, sur la page même qui promet de dire ce qu'on garde. **Et les
+// sauvegardes** (décision du 27/09/2026) : l'archive hebdomadaire chiffrée garde une copie de la base
+// jusqu'à ce que la règle de cycle de vie du bucket l'efface (`docs/exploitation/sauvegarde.md`
+// §3 bis) ; les taire rendait « il ne reste que des compteurs » faux pendant 90 jours. Le chiffre de
+// la page est celui de cette règle, et il se vérifie au tableau de bord Cloudflare, pas d'ici.
+const UPDATED_AT = '28 septembre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -336,6 +353,9 @@ const SECTIONS: LegalSection[] = [
             'de l’application. Tant que tu reviens, rien n’est effacé — ouvrir l’application, commencer un bilan, ' +
             'répondre à un point de suivi ou nous envoyer un retour remet le compteur à zéro.',
           'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
+          'Bilan retiré : un bilan que tu retires n’apparaît plus dans ton suivi, mais il reste conservé — et ' +
+            'dans l’export de tes données — jusqu’à la suppression de ton compte, ou de ta session anonyme si ' +
+            'tu n’as pas créé de compte.',
           'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
             'produit tel qu’il est.',
           'Identifiant de notification de ton téléphone : désactivé dès que ton téléphone cesse d’accepter les ' +
@@ -347,6 +367,12 @@ const SECTIONS: LegalSection[] = [
             'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours et ' +
             'repères de parcours est supprimé.',
+          'Après une suppression, il ne reste que des compteurs, sans aucun identifiant — et, le temps qu’elles ' +
+            'expirent, nos sauvegardes chiffrées, effacées d’elles-mêmes au bout de 90 jours. Quand une session anonyme ' +
+            'est supprimée automatiquement, nous ajoutons un à un compteur qui ne retient que sa semaine d’arrivée, jusqu’où elle ' +
+            'était allée (bilan, action choisie, point répondu), combien de semaines elle avait duré et où en étaient ' +
+            'ses rappels ; quand tu supprimes ton compte, un au compteur du mois. Ces compteurs ne portent ni ' +
+            'adresse, ni identifiant, ni date plus précise que la semaine, et ils sont gardés sans limite de durée.',
         ],
       },
     ],
