@@ -1426,9 +1426,10 @@ for (const reduire of [false, true]) {
       disparaitApresEtreApparue(enAvant.map((e) => e.titre)) ||
       disparaitApresEtreApparue(enArriere.map((e) => e.titre))
     ) {
-      // Une étape jamais relevée pendant son entrée, ou masquée une fois là — le mode d'échec
-      // d'`entering` —, ne laisse rien à juger ; et une moitié « rien ne bouge » qui ne regarderait
-      // que les images où le titre est là conclurait sur ce qu'elle ne voit pas.
+      // Une étape jamais relevée pendant son entrée, ou masquée une fois là, ne laisse rien à
+      // juger ; et une moitié « rien ne bouge » qui ne regarderait que les images où le titre est là
+      // conclurait sur ce qu'elle ne voit pas. (`entering`, lui, masque **avant** de montrer : ce
+      // sont le sens et le fondu qui le voient, J13.)
       echecs.push(
         `${ou} : le titre de l’étape n’a pas été relevé pendant son entrée, ou a disparu une fois là —` +
           ' une étape masquée ne reçoit pas le focus (`v1-30` §3.2, `entering`).'

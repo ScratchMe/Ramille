@@ -56,7 +56,7 @@ export function releverParImage(depuisLeDebut) {
       return n ? { opacite: opacite(n), haut: n.getBoundingClientRect().top } : null;
     },
     // Visible, comme les autres : une option se trouve par son `aria-label`, qui survit à un
-    // `visibility: hidden` — sans ce filtre, une précision masquée par `entering` passait pour là.
+    // `visibility: hidden` — sans ce filtre, une précision masquée passait pour là.
     option: (nom) => {
       const n = [...document.querySelectorAll('[role="radio"]')].find(
         (o) => visible(o) && (o.getAttribute('aria-label') ?? normaliser(o.innerText)) === nom
@@ -207,10 +207,14 @@ export const enChemin = (valeurs, repere, marge = 0.5) => {
 export const ouiNon = (vrai) => (vrai === true ? 'oui' : 'non');
 
 /**
- * Vrai si une cible, une fois relevée, a disparu d'au moins une image ensuite : masquée
- * (`visibility: hidden`, le mode d'échec d'`entering`), ou retirée. Sans ce contrôle, une moitié
- * « rien ne bouge » ne regardait que les images où la cible était là, et concluait sur ce qu'elle
- * ne voyait pas (contre-lecture du 27/09/2026).
+ * Vrai si une cible, une fois relevée, a disparu d'au moins une image ensuite : masquée, retirée,
+ * remontée. Sans ce contrôle, une moitié « rien ne bouge » ne regardait que les images où la cible
+ * était là, et concluait sur ce qu'elle ne voyait pas (contre-lecture du 27/09/2026).
+ *
+ * **Ce n'est pas le mode d'échec d'`entering`**, mesuré le 28/09/2026 : `entering` masque la cible
+ * **avant** de la montrer — une apparition tardive, que ce contrôle laisse passer et que voient les
+ * branches du sens, du fondu et du focus. Ce qu'il voit, c'est un clignotement (mutations J16, J17
+ * et P9).
  */
 export const disparaitApresEtreApparue = (valeurs) => {
   const premiere = valeurs.findIndex((v) => v != null);

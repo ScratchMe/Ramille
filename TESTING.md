@@ -925,9 +925,10 @@ Les règles, chacune payée pendant l'écriture :
    reprise : « aucune image translucide » est vrai d'un titre introuvable. **Et une cible trouvée
    une fois ne suffit pas** : une moitié « rien ne bouge » ne regarde que les images où la cible
    est là, donc elle exige aussi qu'elle ne disparaisse plus une fois apparue
-   (`disparaitApresEtreApparue`) — le mode d'échec d'`entering` est précisément une cible masquée.
-   Une mesure qui trouve sa cible par un nom accessible doit filtrer la visibilité : un
-   `aria-label` survit à `visibility: hidden`.
+   (`disparaitApresEtreApparue`) : un clignotement passerait sinon pour « rien ne bouge ». Ce
+   contrôle ne voit **pas** `entering`, qui masque la cible avant de la montrer — mesuré : ce
+   sont le sens, le fondu et le focus qui l'attrapent. Et une mesure qui trouve sa cible par un
+   nom accessible filtre la visibilité : un `aria-label` survit à `visibility: hidden`.
 4. **Une garde d'animation peut trouver un défaut intermittent, et il faut la croire.** La barre du
    cycliste, sous la préférence, a été vue transparente pendant une image au premier passage et pas
    au second : c'était un vrai défaut (`EXPO.md` §1.7, « un effet n'est pas la première image »),
