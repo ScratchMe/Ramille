@@ -11,8 +11,10 @@ export type Sens = 'avant' | 'arriere';
 
 /**
  * Le sens d'un passage d'une étape à une autre, lu dans l'ordre des étapes — et non dans le bouton
- * qui l'a provoqué, pour qu'un saut (la reprise d'un bilan à une étape donnée, un retour au début)
- * dise aussi d'où il vient.
+ * qui l'a provoqué, pour qu'un saut (« Suivant » qui enjambe une étape que les réponses rendent
+ * invisible) dise aussi d'où il vient. Une étape qui arrive d'un autre écran — une reprise,
+ * « Repartir de mon dernier bilan », le retour après un échec — n'est pas un passage : l'écran y
+ * pose `null` lui-même.
  *
  * `null` quand il n'y a pas de passage à montrer : au montage (aucune étape d'où l'on vient), sur
  * place, ou quand l'une des deux étapes n'est pas dans l'ordre — une étape qu'on ne sait pas placer

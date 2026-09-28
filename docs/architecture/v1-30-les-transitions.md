@@ -25,9 +25,10 @@ puis découpé image par image autour de chaque transition — la méthode pour 
 
 Posées une par une sous la forme de `CLAUDE.md`. **Huit recommandations sur neuf sont suivies** : la
 n° 2 ne l'est pas — la recommandation était de ne pas installer le plug-in, et la décision l'installe,
-dans la forme que la recommandation posait pour ce cas —, et la n° 9 porte une précision. **La n° 6
-n'est tenue qu'en partie** : une carte de saison refermée laisse encore le plan remonter d'un coup
-(§5.5).
+dans la forme que la recommandation posait pour ce cas —, et la n° 9 porte une précision. **La n° 4
+n'est tenue qu'en partie** : son chantier (§5.5) prévoyait que le reste du plan suive une carte
+d'ouverture qui part, et une carte de saison refermée le laisse encore remonter d'un coup — c'est le
+« contenu qui glisse » de la n° 6 qui n'y est pas tenu.
 
 | N° | La question | Décision |
 |---|---|---|
@@ -78,7 +79,9 @@ Chaque fait ci-dessous a été lu dans la source installée, pas dans une docume
 - **reanimated 4.5.1, `withTiming` et les animations de disposition** (`entering`, `exiting`,
   `LinearTransition`) suivent la préférence par défaut (`ReduceMotion.System` : l'animation arrive
   directement à sa valeur finale). Le dépôt l'écrit quand même explicitement, pour le lecteur
-  (`mascot.tsx`, `ecran-lancement.tsx`, `carte-douverture.tsx`).
+  (`mascot.tsx`, `ecran-lancement.tsx`, `carte-douverture.tsx`). **Corrigé par la mesure le
+  27/09/2026** : ce n'est pas toujours vrai — `Depliage`, laissé jouer sous la préférence, ne s'ouvre
+  pas du tout (J12). La règle qui en sort est au §4.2 : sous la préférence, on ne lance rien.
 - **reanimated 4.5.1, les CSS transitions et les CSS animations** (`transitionProperty`,
   `animationName` avec `css.keyframes`…) marchent sur Android comme sur web, avec `cubicBezier`, mais
   **ignorent la préférence** : aucune trace de réduction du mouvement dans `src/css` ni dans le moteur
@@ -314,10 +317,12 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
   feuille des rappels valide son choix après un `await`, et le geste de retour a pu lancer la sortie
   entre-temps. Ignoré — la première forme —, le choix partait en base sans que le plan le reçoive, qui
   affichait l'ancien canal jusqu'à la relecture suivante. Un second geste **sans** choix ne remplace
-  pas celui qui est en route (contre-lecture ; `src/tests/ecrans/feuille-du-bas.test.tsx`, deux
-  mutations).
-- **Sous la préférence** : voile et feuille posés dès la première image (valeurs initiales à 1), et la
-  fermeture démonte tout de suite, sans attendre de rappel — **ce qui corrige aussi le défaut web** de
+  pas celui qui est en route, et un choix qui arrive **après** la fin de la sortie, avant que
+  l'appelant ait démonté la feuille, est rendu aussitôt (seconde contre-lecture). Le clavier n'est
+  pas bloqué pendant la sortie : il faudrait changer de bouton et valider en moins de 200 ms. Gardé
+  par `src/tests/ecrans/feuille-du-bas.test.tsx`, mutations en tête.
+- **Sous la préférence** : voile et feuille posés dès la première image (valeurs initiales à 1, aucun
+  `withTiming` lancé), et la fermeture démonte tout de suite, sans attendre de rappel — **ce qui corrige aussi le défaut web** de
   §3.4, technique et non décidé ici.
 - **Décision touchée** : le kit disait « Feuilles : glissement natif ». La feuille glisse toujours ; le
   voile ne glisse plus (`components/core/FeuilleDuBas.prompt.md`, ligne « Animation » du `readme.md`).
@@ -545,10 +550,10 @@ Accessibilité), **en relançant l'app après chaque changement** :
 | 5.5 | « Compris » et la barre | fait, avec un écart : le reste du plan ne glisse pas quand une carte de saison part (§5.5) ; barre gardée au démarrage (section J) et à l'arrivée (parcours réel, les deux moitiés) ; un défaut d'une image sous la préférence trouvé par la garde et corrigé |
 | 5.6 | Le questionnaire | fait — section J, les deux sens et le rail, avec et sans la préférence ; « Repartir » et le retour après un échec se posent (contre-lecture) |
 | 5.7 | Le contenu qui s'ouvre | fait — section J pour les précisions, parcours réel pour la carte du point ; `HauteurSuivie` sous la préférence et la piste qui s'ouvre ne sont pas gardées (§5.7) ; une découpe qui effaçait l'anneau de focus, trouvée en relisant, corrigée et gardée ; une carte qui regrandissait à chaque retour sur le plan, trouvée par la contre-lecture, corrigée et gardée (P8) |
-| 5.8 | Les onglets et le chargement | fait — section J pour le fondu, Jest pour le délai ; un « Réessayer » muet hors ligne, trouvé par la contre-lecture, corrigé et gardé par Jest |
-| — | Les mutations des gardes | fait — tables en tête de chaque garde, mutations jouées une à une sur un fichier égal au commit. Quatre ont d’abord corrigé la garde (`TESTING.md` §2.14, point 5) |
+| 5.8 | Les onglets et le chargement | fait — section J pour le fondu, Jest pour le délai ; un « Réessayer » muet hors ligne, trouvé par la contre-lecture et corrigé sur les trois écrans. Le délai est gardé par Jest, et son câblage sur les pistes par un test d'écran (`plan-pistes.test.tsx`) ; sur le plan et le suivi, même câblage, **aucun test** : leurs écrans n'ont pas de test d'écran, et en écrire deux pour une ligne chacun coûterait plus que ce qu'ils gardent |
+| — | Les mutations des gardes | fait — tables en tête de chaque garde, mutations jouées une à une sur un fichier égal au commit. Trois ont d’abord corrigé la garde, et une CI rouge une quatrième fois (`TESTING.md` §2.14, point 5) |
 | 7 | Les documents | fait — kit, `FRONT.md` §2.12, `EXPO.md` §1.5 et §1.7, `TESTING.md` §2.10 et §2.14, `CLAUDE.md`, `v1-17` §9, skill `mouvement` |
-| 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | contre-lecture faite et corrigée ; poids Vercel mesuré (4,16 Mio, inchangé) ; `/rejouer-la-ci` à lancer par la personne qui pilote — il ne se déclenche pas seul |
+| 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | deux contre-lectures faites et corrigées ; poids Vercel mesuré (4,16 Mio, inchangé) ; `/rejouer-la-ci` : le skill porte `disable-model-invocation`, et l'appel de l'agent a été refusé — il se lance par la personne qui pilote. La CI de la PR, qui joue les mêmes travaux, est verte |
 | 8.2 | Build EAS (à demander) | à faire |
 | 8.3 | Recette sur appareil | à faire |
 | 6 | Vague 2 : la sortie du lancement | après 8.3 |

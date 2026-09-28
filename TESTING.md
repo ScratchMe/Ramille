@@ -922,21 +922,27 @@ Les règles, chacune payée pendant l'écriture :
    (`page.emulateMedia` puis rechargement, ou `reducedMotion` du contexte) : l'app ne la lit qu'au
    démarrage.
 3. **Une mesure qui ne trouve pas sa cible est un échec, pas un succès** — la règle de la section A,
-   reprise : « aucune image translucide » est vrai d'un titre introuvable.
+   reprise : « aucune image translucide » est vrai d'un titre introuvable. **Et une cible trouvée
+   une fois ne suffit pas** : une moitié « rien ne bouge » ne regarde que les images où la cible
+   est là, donc elle exige aussi qu'elle ne disparaisse plus une fois apparue
+   (`disparaitApresEtreApparue`) — le mode d'échec d'`entering` est précisément une cible masquée.
+   Une mesure qui trouve sa cible par un nom accessible doit filtrer la visibilité : un
+   `aria-label` survit à `visibility: hidden`.
 4. **Une garde d'animation peut trouver un défaut intermittent, et il faut la croire.** La barre du
    cycliste, sous la préférence, a été vue transparente pendant une image au premier passage et pas
    au second : c'était un vrai défaut (`EXPO.md` §1.7, « un effet n'est pas la première image »),
    corrigé à la source, puis trois passages verts d'affilée. Relancer jusqu'au vert l'aurait
    enterré.
 
-5. **Une garde d'animation se corrige aussi par ses mutations — quatre fois le premier soir.** Une
-   barre qui surgissait sans glisser passait (« en chemin » voulait dire « ailleurs qu'à
+5. **Une garde d'animation se corrige aussi par ses mutations, et par sa CI.** Le premier soir :
+   une barre qui surgissait sans glisser passait (« en chemin » voulait dire « ailleurs qu'à
    l'arrivée », et une seule image au point de départ suffisait : c'est un saut) ; une feuille qui
    glissait tombait en disant « s'ouvre d'un coup » (react-native-web ne pose `role="dialog"` qu'à
-   la fin de son animation, et la mesure cherchait le rôle) ; et la mesure corrigée a rougi la CI
-   sur une image que le `Modal` rend à opacité nulle au montage ; la quatrième est au point 6.
-   Chaque fois, **imprimer les
-   échantillons** a tranché — une fois contre l'hypothèse qu'on venait d'écrire. Et une mutation
+   la fin de son animation, et la mesure cherchait le rôle) ; une précision laissée jouer sous la
+   préférence restait à hauteur nulle, un cas que la garde ne savait pas nommer (J12) ; une garde
+   de position passait à travers l'ancrage du défilement (point 6) ; et la mesure corrigée de la
+   feuille a rougi la CI, sur une image que le `Modal` rend à opacité nulle au montage. Chaque fois,
+   **imprimer les échantillons** a tranché — une fois contre l'hypothèse qu'on venait d'écrire. Et une mutation
    se joue **sur un fichier égal au commit** : un lot interrompu en avait laissé une dans la copie,
    sous deux résultats qu'il a fallu rejouer.
 6. **Une position se lit à travers l'ancrage du défilement : mesurer une hauteur.** Chrome compense

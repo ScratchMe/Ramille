@@ -163,10 +163,14 @@ const MARGE_DE_DECOUPE = 4;
 
 /**
  * Un bloc dont le contenu change de hauteur — la réplique qui remplace la question d'un point, une
- * piste qui passe de ligne à carte : il va de l'ancienne hauteur à la nouvelle (`Mouvement.entree`)
- * au lieu de sauter, et ce qui est dessous suit. Sa hauteur reste tenue entre deux changements —
- * c'est ce qui évite une image à la nouvelle hauteur avant le départ de l'animation. Sous la
- * préférence, elle est libre et tout se pose.
+ * piste qui passe de ligne à carte : il va de l'ancienne hauteur à la nouvelle au lieu de sauter —
+ * `Mouvement.entree` s'il grandit, `Mouvement.sortie` s'il rétrécit —, et ce qui est dessous suit.
+ * Sa hauteur reste tenue entre deux changements — c'est ce qui évite une image à la nouvelle hauteur
+ * avant le départ de l'animation. Sous la préférence, elle est libre et tout se pose.
+ *
+ * **Son contenu ne vaut jamais zéro pour de vrai** : une hauteur nulle est ignorée, parce que c'est
+ * celle d'un écran que la pile web masque (`display: none`). Un contenu qui peut devenir vide ne va
+ * donc pas là-dedans — sa hauteur d'avant resterait tenue, un blanc à sa place.
  *
  * `styleDuContenu` s'applique à ce qui se mesure : un `gap` que le parent donnait à ses enfants doit
  * y être repris, puisqu'ils sont désormais les enfants de ce bloc. Il n'y a pas de `style` pour le

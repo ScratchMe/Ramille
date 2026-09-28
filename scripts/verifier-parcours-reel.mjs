@@ -228,7 +228,8 @@
 //   | P7 — la découpe au ras (`MARGE_DE_DECOUPE = 0`) | « point » : l'anneau de focus de « Oui » est rogné |
 //   | P8 — la hauteur nulle tenue (l'état d'avant la contre-lecture) | « point » : au retour sur le plan, la carte passe par 8 px au lieu de 153 |
 //
-// **Quatre de ces mutations ont d'abord corrigé la garde, et c'est ce qu'elles valaient le plus** :
+// **Des mutations ont d'abord corrigé la garde, une CI rouge aussi, et c'est ce qu'elles valaient le
+// plus** :
 //   - **P4 est d'abord PASSÉE** : la barre attend masquée, en bas et transparente, et la mutation ne
 //     la remettait en place que dans un effet, une image plus tard — cette image au départ suffisait
 //     à « au moins une image ailleurs qu'à sa place ». « En chemin » veut dire depuis **strictement
@@ -1263,9 +1264,16 @@ try {
   await page.waitForTimeout(600);
   const barreDuCycliste = await mesurer(page, 'barre');
   const arriveeDuCycliste = (await echantillons(page)).map((e) => e.barre);
+  // Relevée masquée au départ, puis **là, et plus jamais absente** : « rien ne bouge » ne vaut que
+  // sur les images où l'on a vu la barre (seconde contre-lecture du 28/09/2026).
   assurer(
-    barreDuCycliste && arriveeDuCycliste.length > 0 && arriveeDuCycliste[0] === null,
-    'l’arrivée de la barre du cycliste n’a pas pu être relevée (elle doit être masquée au départ du relevé)'
+    barreDuCycliste &&
+      arriveeDuCycliste.length > 0 &&
+      arriveeDuCycliste[0] === null &&
+      arriveeDuCycliste.some(Boolean) &&
+      !disparaitApresEtreApparue(arriveeDuCycliste),
+    'l’arrivée de la barre du cycliste n’a pas pu être relevée : elle doit être masquée au départ du' +
+      ' relevé, puis là à chaque image une fois arrivée'
   );
   assurer(
     !arriveeDuCycliste.some((v) => v && (v.opacite < 0.99 || Math.abs(v.haut - barreDuCycliste.haut) > 0.5)),

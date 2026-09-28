@@ -1371,10 +1371,14 @@ for (const marque of [null, 'barre', 'fait']) {
   });
   try {
     const finale = await mesurer(page, 'barre');
-    const vues = (await echantillons(page)).map((e) => e.barre).filter(Boolean);
+    const images = (await echantillons(page)).map((e) => e.barre);
+    const vues = images.filter(Boolean);
     const enChemin = vues.find((v) => v.opacite < 0.99 || Math.abs(v.haut - (finale?.haut ?? v.haut)) > 0.5);
     if (finale === null || vues.length === 0) {
       echecs.push(`${ou} : la barre d’onglets n’a pas pu être relevée — la garde ne peut pas conclure.`);
+    } else if (disparaitApresEtreApparue(images)) {
+      // « Rien ne bouge » ne vaut que sur les images où la barre était là.
+      echecs.push(`${ou} : la barre d’onglets disparaît après être apparue, à l’ouverture de l’app.`);
     } else if (enChemin) {
       echecs.push(
         `${ou} : la barre d’onglets bouge à l’ouverture de l’app (opacité ${enChemin.opacite.toFixed(2)},` +
@@ -1553,9 +1557,12 @@ for (const reduire of [false, true]) {
     releve: { mesures: { precision: ['option', 'Thermique'] }, duree: 4_000 },
   });
   try {
-    const vues = (await echantillons(page)).map((e) => e.precision).filter(Boolean);
+    const images = (await echantillons(page)).map((e) => e.precision);
+    const vues = images.filter(Boolean);
     if (vues.length === 0) {
       echecs.push(`${ou} : « Thermique » n’a pas pu être relevée — la garde ne peut pas conclure.`);
+    } else if (disparaitApresEtreApparue(images)) {
+      echecs.push(`${ou} : « Thermique » disparaît après être apparue — masquée, elle ne reçoit pas le focus.`);
     } else if (vues.some((v) => v.opacite < 0.99)) {
       echecs.push(
         `${ou} : la précision s’ouvre sous les yeux alors qu’elle était déjà là à l’arrivée — seul ce qui` +

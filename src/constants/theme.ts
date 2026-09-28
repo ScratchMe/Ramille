@@ -271,7 +271,7 @@ export const MaxContentWidth = 800;
  * la préférence, l'état final est posé d'emblée. Aucune bibliothèque ne s'en charge de façon sûre —
  * `Animated` et les CSS de reanimated l'ignorent, et `withTiming`, qui la lit
  * (`ReduceMotion.System`), n'est qu'un second filet : laissé jouer sous la préférence, `Depliage` ne
- * s'ouvre pas du tout (`v1-30` §9). Chaque outil lit donc `useReducedMotion` lui-même, et une CSS
+ * s'ouvre pas du tout (`v1-30` §4.2). Chaque outil lit donc `useReducedMotion` lui-même, et une CSS
  * transition passe sa durée par `dureeSelonLaPreference` (`src/types/mouvement.ts`). Le skill
  * `mouvement` dit le reste.
  */

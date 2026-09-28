@@ -55,9 +55,11 @@ export function releverParImage(depuisLeDebut) {
       );
       return n ? { opacite: opacite(n), haut: n.getBoundingClientRect().top } : null;
     },
+    // Visible, comme les autres : une option se trouve par son `aria-label`, qui survit à un
+    // `visibility: hidden` — sans ce filtre, une précision masquée par `entering` passait pour là.
     option: (nom) => {
       const n = [...document.querySelectorAll('[role="radio"]')].find(
-        (o) => (o.getAttribute('aria-label') ?? normaliser(o.innerText)) === nom
+        (o) => visible(o) && (o.getAttribute('aria-label') ?? normaliser(o.innerText)) === nom
       );
       return n ? { opacite: opacite(n), haut: n.getBoundingClientRect().top } : null;
     },

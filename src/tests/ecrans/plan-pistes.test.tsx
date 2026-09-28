@@ -35,6 +35,13 @@
  *   - le libellé d'erreur remplacé par celui de l'état vide → 1 ;
  *   - le ternaire de l'intro figé sur sa branche « sans engagement » → 2 ;
  *   - `onRefus` ramené à `rafraichir()` seul, c'est-à-dire l'état d'avant le correctif → 3.
+ *
+ * **Et un quatrième contrat le 28/09/2026, le câblage du délai de chargement** (`v1-30` §5.8), lui
+ * aussi invisible des deux autres suites. Deux mutations :
+ *   - `relance: true` retiré du « Réessayer » (l'état d'avant la contre-lecture) → « dit
+ *     « Chargement… » tout de suite après « Réessayer » » ;
+ *   - `true` passé en second argument de `useChargementVisible` (la ligne toujours montrée) →
+ *     « ne dit pas « Chargement… » avant le délai quand personne ne l'a demandé ».
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
@@ -178,5 +185,28 @@ describe('PistesScreen', () => {
     // La phrase d'avant annonçait un tri que l'engagement défait : l'action en cours passe en tête
     // de son poste quel que soit son gain.
     await waitFor(() => expect(screen.getByText(/Ton action en cours d’abord/)).toBeTruthy());
+  });
+
+  /**
+   * **Le câblage du délai de chargement** (`v1-30` §5.8, seconde contre-lecture du 28/09/2026).
+   * `useChargementVisible` a ses tests, pas ses appels : retirer `relance` du « Réessayer » laissait
+   * la suite verte, et l'écran d'erreur redevenait muet hors ligne — l'échec revient bien sous les
+   * 300 ms du délai. Les deux moitiés se lisent **sans attendre** : ce qui compte est ce qui est là à
+   * l'image du geste.
+   */
+  it('ne dit pas « Chargement… » avant le délai quand personne ne l’a demandé', () => {
+    mockLignes.mockReturnValue(new Promise(() => {}));
+    render(<PistesScreen />);
+    expect(screen.queryByText('Chargement de tes pistes…')).toBeNull();
+  });
+
+  it('dit « Chargement… » tout de suite après « Réessayer »', async () => {
+    mockLignes.mockResolvedValueOnce({ data: null, error: { message: 'réseau' } });
+    render(<PistesScreen />);
+    await waitFor(() => expect(screen.getByText('Réessayer')).toBeTruthy());
+
+    mockLignes.mockReturnValue(new Promise(() => {}));
+    fireEvent.press(screen.getByText('Réessayer'));
+    expect(screen.getByText('Chargement de tes pistes…')).toBeTruthy();
   });
 });

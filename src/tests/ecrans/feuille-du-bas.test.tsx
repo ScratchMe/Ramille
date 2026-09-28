@@ -23,10 +23,15 @@
  *     pendant la sortie est celui que la fin rend » ;
  *   - un second `fermer()` sans choix qui remplace quand même le finisseur → « un second retour,
  *     sans rien à rendre, ne remplace pas le choix déjà en route ».
+ * **Et le 28/09/2026**, après la seconde contre-lecture :
+ *   - `sortieTerminee` jamais posée (l'état du 27/09) → « un choix arrivé après la fin de la sortie,
+ *     avant le démontage, est rendu tout de suite » ;
+ *   - `enSortie && styles.sansToucher` retiré → « pendant la sortie, la feuille ne prend plus de
+ *     toucher ».
  */
-import { act, render } from '@testing-library/react-native';
+import { act, render, screen } from '@testing-library/react-native';
 import React, { createRef } from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import { FeuilleDuBas, type PoigneeDeFeuille } from '@/components/feuille-du-bas';
 
@@ -93,5 +98,31 @@ describe('FeuilleDuBas, une seconde fermeture pendant la sortie', () => {
     act(() => poignee.current?.fermer());
     await finirLaSortie();
     expect(onFerme).toHaveBeenCalledTimes(1);
+  });
+
+  test('un choix arrivé après la fin de la sortie, avant le démontage, est rendu tout de suite', async () => {
+    const onFerme = jest.fn();
+    const choix = jest.fn();
+    const poignee = monter(onFerme);
+    act(() => poignee.current?.fermer());
+    await finirLaSortie();
+    // L'appelant n'a pas encore démonté la feuille : `onFerme` est un double qui ne démonte rien.
+    act(() => poignee.current?.fermer(choix));
+    expect(choix).toHaveBeenCalledTimes(1);
+  });
+
+  test('pendant la sortie, la feuille ne prend plus de toucher', () => {
+    const poignee = monter(jest.fn());
+    const neTouchePlus = () => {
+      // Le premier ancêtre du contenu qui porte `pointerEvents` dans son style est la feuille.
+      for (let noeud = screen.getByText('contenu').parent; noeud; noeud = noeud.parent) {
+        const style = StyleSheet.flatten(noeud.props.style);
+        if (style?.pointerEvents) return style.pointerEvents === 'none';
+      }
+      return false;
+    };
+    expect(neTouchePlus()).toBe(false);
+    act(() => poignee.current?.fermer());
+    expect(neTouchePlus()).toBe(true);
   });
 });

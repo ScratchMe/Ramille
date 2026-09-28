@@ -952,8 +952,9 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   regrandir la carte du point sous les yeux à chaque retour sur le plan. Toute mesure prise dans
   `onLayout` pour animer pose la même question.
 - **Une feuille qui redescend peut encore recevoir un choix** : la fermeture part au geste de
-  retour, et un choix validé après un `await` arrive pendant la sortie. `fermer(apres)` remplace
-  alors le rappel en attente — ignoré, le choix partait en base sans que l'écran le reçoive.
+  retour, et un choix validé après un `await` arrive pendant la sortie — ou juste après. `fermer(apres)`
+  remplace alors le rappel en attente, ou l'appelle aussitôt si la sortie est finie — ignoré, le
+  choix partait en base sans que l'écran le reçoive.
 - **« Chargement… » attend 300 ms avant de se dire** (`useChargementVisible`), pour ne plus
   clignoter une image avant un contenu rapide — **sauf** après « Réessayer », où c'est la seule
   preuve que le geste a été pris (§1.2).

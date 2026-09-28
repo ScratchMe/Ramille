@@ -136,7 +136,10 @@ relais au rendu suivant.
   `css.keyframes`), qui joue dès la première image sans rien masquer, et une hauteur animée par
   `withTiming` sur la mise en page réelle, ce qui est dessous suivant de lui-même. **Les CSS
   animations et transitions de reanimated ignorent la préférence** — `withTiming` seul la lit
-  (`ReduceMotion.System`) —, et `LayoutAnimation` de React Native ne fait rien du tout sur web.
+  (`ReduceMotion.System`), **et sans qu'on puisse s'y fier** : une hauteur animée ainsi, laissée
+  jouer sous la préférence, est restée à zéro au lieu de se poser (mesuré le 27/09/2026, mécanisme
+  non élucidé). Sous la préférence, on ne lance donc rien, `withTiming` compris. Et `LayoutAnimation`
+  de React Native ne fait rien du tout sur web.
 - **`userInterfaceStyle` d'`app.json` ne s'applique qu'au natif** : sur web, `useColorScheme` lit
   `prefers-color-scheme`. Si le thème sombre n'est pas validé, la décision se prend dans le hook
   de thème **et** dans le `ThemeProvider` de navigation — corriger l'un sans l'autre laisse la

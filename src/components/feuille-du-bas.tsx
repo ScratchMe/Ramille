@@ -42,17 +42,18 @@ import { reglage } from '@/lib/mouvement';
  * repartent (`Mouvement.sortie`), puis seulement la feuille se démonte. Sur web, elle disparaissait
  * d'un coup.
  *
- * **Sous « réduire les animations », tout est posé, et la fermeture démonte tout de suite** — sans
- * attendre le rappel de fin d'une animation, qui est le seul endroit où la préférence pourrait
- * laisser une feuille ouverte. Le `Modal` de react-native-web ne lisant pas la préférence, sa
+ * **Sous « réduire les animations », rien ne se lance : tout est posé, et la fermeture démonte tout de
+ * suite** — sans attendre le rappel de fin d'une animation, qui est le seul endroit où la préférence
+ * pourrait laisser une feuille ouverte. Le `Modal` de react-native-web ne lisant pas la préférence, sa
  * feuille glissait même sous elle : ce défaut part avec son animation.
  *
  * **Qui ferme en animant** : le geste de retour et Échap (`onRequestClose`), et l'appelant par
  * `fermer` (la poignée passée en `ref`) — « Pas maintenant », un choix validé. Un bouton qui
  * **navigue** appelle son rappel directement : sur natif, une route poussée sous un `Modal` encore
  * ouvert reste dessous, donc il ne doit pas attendre une sortie. Une seconde fermeture pendant la
- * sortie ne relance rien — mais si elle porte un choix (`apres`), c'est lui que la fin rendra ; et
- * pendant la sortie, la feuille ne prend plus de toucher.
+ * sortie ne relance rien — mais si elle porte un choix (`apres`), c'est lui que la fin rendra, ou
+ * aussitôt si la fin est déjà passée. Pendant la sortie, la feuille ne prend plus de toucher ; le
+ * clavier, lui, n'est pas bloqué — il faudrait changer de bouton et valider en moins de 200 ms.
  */
 export type PoigneeDeFeuille = {
   /** Referme en animant, puis appelle `apres` — ou `onFerme` sans argument. */
@@ -88,8 +89,11 @@ export function FeuilleDuBas({
   // Ce que la fin de la sortie appelle. **Un `fermer(apres)` arrivé pendant la sortie le remplace**,
   // au lieu d'être ignoré : le retour lance la sortie, puis le choix de la feuille des rappels finit
   // de s'écrire — ignoré, ce choix partait en base sans que le plan le reçoive (contre-lecture du
-  // 27/09/2026). Un second retour, sans rien à rendre, ne remplace rien.
+  // 27/09/2026). Un second retour, sans rien à rendre, ne remplace rien. Et un choix qui arrive
+  // **après** la fin de la sortie, avant que l'appelant ait démonté la feuille, est rendu tout de
+  // suite : il n'y a plus de fin à attendre (seconde contre-lecture du 28/09/2026).
   const finisseur = useRef<(() => void) | null>(null);
+  const sortieTerminee = useRef(false);
   // Le dernier `onFerme` reçu : la sortie le lit à sa fin, pas à son début.
   const onFermeCourant = useRef(onFerme);
   useEffect(() => {
@@ -97,16 +101,23 @@ export function FeuilleDuBas({
   }, [onFerme]);
 
   useEffect(() => {
+    // Sous la préférence, rien ne se lance : les valeurs de départ sont déjà posées.
+    if (animationsReduites) return;
     voile.value = withTiming(1, reglage(Mouvement.fondu));
     feuille.value = withTiming(1, reglage(Mouvement.entreeDeFeuille));
-  }, [voile, feuille]);
+  }, [animationsReduites, voile, feuille]);
 
-  const terminer = useCallback(() => finisseur.current?.(), []);
+  const terminer = useCallback(() => {
+    sortieTerminee.current = true;
+    finisseur.current?.();
+  }, []);
 
   const fermer = useCallback(
     (apres?: () => void) => {
       if (sortieLancee.current) {
-        if (apres) finisseur.current = apres;
+        if (!apres) return;
+        if (sortieTerminee.current) apres();
+        else finisseur.current = apres;
         return;
       }
       sortieLancee.current = true;

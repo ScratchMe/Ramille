@@ -37,7 +37,7 @@ republier sa collection, et ils ne valent que pour le web.
 
 | Jeton | Valeur | Pour |
 |---|---|---|
-| `entree` | 250 ms | un contenu qui arrive |
+| `entree` | 250 ms | un contenu qui arrive ou grandit |
 | `entreeDeFeuille` | 280 ms | une feuille qui monte |
 | `entreeDeBarre` | 320 ms | la barre d'onglets qui arrive (canevas de C5.7) |
 | `fondu` | 200 ms | ce qui apparaît en place |
