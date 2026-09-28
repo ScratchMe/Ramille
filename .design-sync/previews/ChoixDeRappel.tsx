@@ -34,3 +34,32 @@ export const SansRappel = () => <ChoixDeRappel canal="none" lignes={[...AVEC_COM
  * lien vers les réglages et c'est « Sans rappel » qui reste.
  */
 export const NotificationsFermees = () => <ChoixDeRappel canal="none" permission="fermee" />;
+
+/**
+ * Le mot de la veille (C4.2), accepté, fenêtre ouverte : la case se rend sous « Par
+ * notification », en retrait, et sa ligne porte le dernier soir d'envoi. Le sous-titre du bloc
+ * s'élargit — c'est un plafond, et il reste vrai les soirs où rien ne part.
+ */
+export const AvecLeMotDeLaVeille = () => (
+  <ChoixDeRappel
+    canal="push"
+    permission="accordee"
+    veille={{ coche: true, detail: 'Par notification, jusqu’au 15 novembre.' }}
+  />
+);
+
+/**
+ * Accepté, mais la fenêtre de dix semaines est close : la case reste cochée et dit la pause
+ * plutôt que de se taire.
+ */
+export const MotDeLaVeilleEnPause = () => (
+  <ChoixDeRappel
+    canal="push"
+    permission="accordee"
+    veille={{
+      coche: true,
+      detail:
+        'En pause : il accompagne une action de trajet, les dix semaines qui suivent la première que tu choisis dans la saison.',
+    }}
+  />
+);

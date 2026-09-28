@@ -54,14 +54,13 @@ export function ActionCommitment({
   otherActionCommitted: boolean;
   onChanged: () => void;
   /**
-   * Appelé **seulement** quand un engagement vient d'être pris — pas quand on en change ni
-   * quand on le libère. C'est ce qui déclenche la feuille des rappels (v1-12 §6.1), et elle
-   * n'a de sens qu'à cet instant précis : la personne vient de dire quand elle va agir.
-   */
-  /**
-   * Appelé quand un engagement vient d'être pris. Le **poste** part avec, parce que la feuille
-   * qui s'ouvre derrière promet un contact *sur cette action* : c'est lui qui dit quelle boucle
-   * l'interrogera (relevé en recette le 14/09/2026, cf. `boucleDeLAction`).
+   * Appelé **seulement** quand un engagement vient d'être pris — y compris quand on en change par
+   * « Choisir celle-ci à la place », qui en prend un, mais jamais quand on le libère. C'est ce qui
+   * déclenche la feuille des rappels (v1-12 §6.1), et elle n'a de sens qu'à cet instant précis : la
+   * personne vient de dire quand elle va agir. Le **poste** part avec, parce que la feuille qui
+   * s'ouvre derrière promet un contact *sur cette action* : c'est lui qui dit quelle boucle
+   * l'interrogera (relevé en recette le 14/09/2026, cf. `boucleDeLAction`), et depuis C4.2 si la
+   * question du mot de la veille peut se poser (`ouvertureDeLaFeuille`).
    */
   onEngage?: (poste: string | null) => void;
   /**

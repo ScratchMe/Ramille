@@ -215,6 +215,21 @@ const MIROIRS = [
     module: 'src/types/rappels.ts',
     colonne: 'profiles.reminder_channel',
   },
+  // C4.2 — le mot de la veille (20260928075453). L'opt-in à trois états : un état ajouté en base et
+  // pas ici se lirait `null` à l'écran (`reponseALaVeilleDe`), donc le réglage disparaîtrait sans rien
+  // dire ; un état retiré laisserait l'écran proposer une réponse que la base refuse.
+  {
+    genre: 'valeurs',
+    constante: 'REPONSES_A_LA_VEILLE',
+    module: 'src/types/rappels.ts',
+    colonne: 'profiles.mot_de_la_veille',
+  },
+  {
+    genre: 'type',
+    constante: 'ReponseALaVeille',
+    module: 'src/types/rappels.ts',
+    colonne: 'profiles.mot_de_la_veille',
+  },
   {
     genre: 'type',
     constante: 'IntentionTiming',

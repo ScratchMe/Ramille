@@ -38,3 +38,14 @@ export const AvecEchec = () => (
     erreur="Ton choix n’a pas pu être enregistré. Réessaie dans un instant."
   />
 );
+
+/**
+ * La seconde étape (C4.2), une fois la notification choisie et reçue sur une action de trajet :
+ * Ramille demande pour la veille, la ligne du produit porte la date. Deux réponses, et chacune
+ * s'enregistre — « Non merci » est un refus qui ne se repropose pas. C'est aussi l'étape qui
+ * s'ouvre seule, une fois, au premier engagement de trajet où elle peut être posée, chez qui a vu
+ * la feuille sans elle.
+ */
+export const MotDeLaVeille = () => (
+  <FeuilleRappels etape="veille" detailVeille="Par notification, jusqu’au 15 novembre." />
+);

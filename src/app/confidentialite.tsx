@@ -218,6 +218,17 @@ const SECTIONS: LegalSection[] = [
           'd’ouvrir l’application, ou de répondre à une question, pour que le rythme normal reprenne. La question, elle, ' +
           'continue de t’attendre dans l’application : c’est seulement le message qui s’espace.',
       },
+      {
+        kind: 'paragraph',
+        // **Le mot de la veille (C4.2) se dit ici, à côté de l'espacement qui le coupe** : c'est un
+        // second message, qui part la veille d'un jour choisi. Sa règle d'envoi vit dans
+        // `mettre_en_file_les_mots_de_la_veille` — notification seule, dix semaines, régime normal —,
+        // et la retoucher là-bas impose de relire cette phrase.
+        text:
+          'Le mot de la veille ne part que si tu l’as demandé : par notification, pendant les dix semaines qui ' +
+          'suivent la première action de trajet que tu choisis dans la saison, et jamais une fois les rappels ' +
+          'espacés. Tu l’arrêtes depuis l’écran « Toi », et choisir « Sans rappel » l’arrête aussi.',
+      },
     ],
   },
   {
@@ -296,7 +307,8 @@ const SECTIONS: LegalSection[] = [
             text:
               'Acheminement des notifications de rappel vers ton téléphone, uniquement si tu as choisi ce canal : ' +
               'reçoit alors l’identifiant de notification de ton appareil et le texte du rappel, c’est-à-dire la ' +
-              'question de ton point (le détail plus bas). Société américaine, serveurs situés aux États-Unis.',
+              'question de ton point — et le mot de la veille si tu l’as demandé (le détail plus bas). Société ' +
+              'américaine, serveurs situés aux États-Unis.',
           },
           {
             term: 'Google (Firebase Cloud Messaging)',
@@ -328,7 +340,9 @@ const SECTIONS: LegalSection[] = [
           'adresse email, ou l’identifiant de notification de ton appareil — et le texte du rappel. Ce texte est la ' +
           'question de ton point, par exemple « Mardi ou jeudi, as-tu fait ce trajet à vélo ? » : selon le cas, elle ' +
           'nomme le poste sur lequel elle porte, ton mode de transport, l’action que tu as choisie et les jours que tu ' +
-          't’es fixés. C’est tout ce qui sort de ton bilan et de ton plan par ce canal : il n’y figure aucun chiffre, ' +
+          't’es fixés. Si tu as demandé le mot de la veille, la notification du soir nomme aussi ce que tu as prévu ' +
+          'pour ton trajet, par exemple « Demain, tu as prévu de faire ton trajet à vélo. » C’est tout ce qui sort de ' +
+          'ton bilan et de ton plan par ce canal : il n’y figure aucun chiffre, ' +
           'aucun de tes totaux, aucune autre de tes réponses. Pour la connexion Google : l’adresse du ' +
           'compte avec lequel tu choisis de te connecter. Pour la carte de partage : le lien que tu génères toi-même, ' +
           'avec ton total annuel, ton poste principal et sa part — tant que tu ne partages rien, rien ne part. Le canal ' +

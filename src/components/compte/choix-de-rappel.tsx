@@ -1,15 +1,27 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { Linking, Platform, StyleSheet, View } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { LigneDeCanal } from '@/components/ligne-de-canal';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
+import { useTheme } from '@/hooks/use-theme';
+import { activableALaBarreDEspace } from '@/lib/barre-d-espace';
 import type { ReminderPrefs } from '@/lib/notification-prefs';
 import { enregistrerLeJeton, lirePermission } from '@/lib/rappels';
-import { lignesDeReglage, type CanalPrefere, type Permission } from '@/types/rappels';
+import { fondDuChoix } from '@/types/fond-du-choix';
+import {
+  affichageDeLaVeille,
+  GROUPE_DE_LA_VEILLE,
+  lignesDeReglage,
+  sousTitreDesRappels,
+  TITRE_DE_LA_VEILLE,
+  type CanalPrefere,
+  type FenetreDeLaVeille,
+  type Permission,
+} from '@/types/rappels';
 
 /** Le titre du bloc, écrit une fois : l'en-tête affiché et le nom du groupe de lignes. */
 const TITRE = 'Les rappels';
@@ -47,10 +59,16 @@ const TITRE = 'Les rappels';
  */
 export function ChoixDeRappel({
   prefs,
+  fenetre,
   onChoisir,
+  onChoisirLaVeille,
 }: {
   prefs: ReminderPrefs;
+  /** La fenêtre du mot de la veille (C4.2), `null` quand on ne l'a pas lue. */
+  fenetre: FenetreDeLaVeille | null;
   onChoisir: (canal: CanalPrefere) => void;
+  /** Cocher ou décocher le mot de la veille : jamais `jamais_propose`, une réponse ne se retire pas. */
+  onChoisirLaVeille: (reponse: 'oui' | 'refuse') => void;
 }) {
   // Point de départ `demandable` : c'est l'état neutre, le seul qui ne promette pas une
   // notification qui marche ni n'accuse un réglage que personne n'a touché, le temps que la
@@ -69,11 +87,13 @@ export function ChoixDeRappel({
   useEffect(relireLaPermission, [relireLaPermission]);
   useRafraichirAuRetour(relireLaPermission);
 
-  const lignes = lignesDeReglage({
-    ...prefs,
-    plateforme: Platform.OS === 'web' ? 'web' : 'natif',
-    permission,
-  });
+  const plateforme = Platform.OS === 'web' ? 'web' : 'natif';
+  const lignes = lignesDeReglage({ ...prefs, plateforme, permission });
+
+  // Le mot de la veille (C4.2) : rien, une proposition ou le réglage — la dérivation décide, l'écran
+  // rend. Les deux formes se rendent ici de la même façon, une case à cocher : dans « Toi », la
+  // proposition n'est que le réglage d'une personne qui n'a pas encore répondu.
+  const veille = affichageDeLaVeille({ ...prefs, plateforme, reponse: prefs.reponseALaVeille, fenetre });
 
   return (
     <View style={styles.bloc}>
@@ -81,8 +101,10 @@ export function ChoixDeRappel({
         <ThemedText weight={600} type="cardTitle">
           {TITRE}
         </ThemedText>
+        {/* Un plafond, dérivé de ce que la personne a demandé : « jamais plus » serait faux pour qui
+            reçoit aussi le mot de la veille (`sousTitreDesRappels`). */}
         <ThemedText type="small" themeColor="textSecondary">
-          Un mot à chaque point de suivi, jamais plus.
+          {sousTitreDesRappels({ prefere: prefs.prefere, reponse: prefs.reponseALaVeille })}
         </ThemedText>
       </View>
 
@@ -125,10 +147,71 @@ export function ChoixDeRappel({
                 containerStyle={styles.reglages}
               />
             )}
+
+            {/* **Le mot de la veille précise « Par notification »**, et se rend donc sous elle,
+                dans son propre groupe posé dans celui des canaux — la forme des révélations
+                imbriquées (`GroupeDeChoix`) : la case répond au groupe le plus proche, le sien. Il
+                n'existe qu'en notification (D3), donc pas ailleurs. */}
+            {ligne.canal === 'push' && veille.kind !== 'rien' && (
+              <GroupeDeChoix question={GROUPE_DE_LA_VEILLE} cumulable style={styles.veille}>
+                <CaseDeLaVeille
+                  coche={veille.kind === 'reglage' && veille.coche}
+                  detail={veille.detail}
+                  onBasculer={(coche) => onChoisirLaVeille(coche ? 'refuse' : 'oui')}
+                />
+              </GroupeDeChoix>
+            )}
           </Fragment>
         ))}
       </GroupeDeChoix>
     </View>
+  );
+}
+
+/**
+ * La case du mot de la veille — une `checkbox`, seul rôle qui annonce coché ou non, avec la forme
+ * d'une ligne de canal (fond et bordure de `fondDuChoix`, pas d'opacité) : elle précise la ligne
+ * juste au-dessus et doit se lire comme de la même famille. Espace la coche sur web
+ * (`activableALaBarreDEspace`), et le libellé annoncé recompose le titre et le détail — le détail
+ * porte la date, ou la raison d'une pause.
+ *
+ * Non exportée : elle n'a qu'un rendeur, et un composant de plus dans `src/components/` demanderait
+ * sa fiche au kit de design.
+ */
+function CaseDeLaVeille({
+  coche,
+  detail,
+  onBasculer,
+}: {
+  coche: boolean;
+  detail: string;
+  onBasculer: (coche: boolean) => void;
+}) {
+  const theme = useTheme();
+  const basculer = () => onBasculer(coche);
+
+  return (
+    <Pressable
+      onPress={basculer}
+      {...activableALaBarreDEspace(basculer)}
+      accessibilityRole="checkbox"
+      accessibilityLabel={`${TITRE_DE_LA_VEILLE}. ${detail}`}
+      aria-checked={coche}
+      style={({ pressed }) => [
+        styles.case,
+        {
+          backgroundColor: theme[fondDuChoix({ choisi: coche, appuye: pressed })],
+          borderColor: coche ? theme.accent : 'transparent',
+        },
+      ]}
+    >
+      <ThemedText weight={coche ? 600 : 400} style={styles.titreDeLaCase}>
+        {TITRE_DE_LA_VEILLE}
+      </ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        {detail}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -137,4 +220,15 @@ const styles = StyleSheet.create({
   entete: { gap: 2 },
   lignes: { gap: Spacing.two },
   reglages: { alignSelf: 'flex-start', paddingHorizontal: Spacing.four },
+  // En retrait de la ligne qu'elle précise, du même pas que `PrecisionMode` sous un mode du
+  // questionnaire.
+  veille: { marginLeft: Spacing.three },
+  case: {
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    borderRadius: Radius.field,
+    borderWidth: Stroke.selected,
+    gap: 2,
+  },
+  titreDeLaCase: { fontSize: 16, lineHeight: 22 },
 });

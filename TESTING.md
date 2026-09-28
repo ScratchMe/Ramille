@@ -326,6 +326,16 @@ nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux
   comptes anonymes. **Au-delà de 240 comptes anonymes en base, soixante ne suffisent plus**, et le
   passage supprime au lieu de bloquer. Le compte qui décide est celui de la base, pas du fichier
   (relevé par la contre-lecture du lot 6, 27/09/2026).
+- `35_mot_de_la_veille`, **sa section 8, et c'est le plus dangereux de la liste** : ses passes
+  d'envoi (`send_pending_reminders()`, `envoyer_les_notifications('veille')`) prennent **toute la
+  file réelle** due, pas seulement ses fixtures. Sur le distant, de vrais emails partiraient par
+  Resend et de vraies notifications par Expo — et le `rollback` remettant ces lignes en attente, le
+  cron suivant les renverrait : des doublons chez de vraies personnes. Et après 18 h 30 à Paris, elle
+  enverrait aussi les mots de vrais comptes que la section 6 vient de mettre en file, puisqu'elle ne
+  repousse que ceux de ses fixtures. **Ce fichier ne se rejoue jamais en entier sur le distant** ;
+  ses sections 1 à 7 et 9 à 13 ne font que mettre en file, dans la transaction annulée, et se
+  valident seules (relevé par la contre-lecture de C4.2, 28/09/2026 — l'en-tête du fichier
+  renvoyait ici avant que cette ligne n'existe).
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.

@@ -31,7 +31,9 @@ les PR ; ce qui reste ouvert est en §9.
 3. **Ramille dit l'attente, pas le vide.** « Rien à rattraper » disparaît (§6.3).
 4. **La direction B, la feuille** (`Main.dc.html`) : un espace sans chiffre, le visage
    possible, l'explication avant la question, un bouton qui annonce le dialogue quand il va
-   s'ouvrir. Une fois par appareil ; ensuite, « Toi ».
+   s'ouvrir. Une fois par appareil ; ensuite, « Toi ». **Une exception depuis C4.2** : la feuille
+   se rouvre une fois, sur la seule question du mot de la veille, quand elle n'a pas encore pu être
+   posée sur cet appareil (`v1-25`, en-tête).
 5. **Le push n'a pas besoin de compte.** Le réglage s'ouvre aux sessions anonymes ; seul
    l'email exige un compte rattaché et confirmé, et la ligne le dit (« Rattache un compte pour
    l'activer »).
@@ -40,6 +42,12 @@ les PR ; ce qui reste ouvert est en §9.
    d'attente suffit.
 7. **Un point, un message, quel que soit le canal.** `unique(checkin_id)` reste la garantie ;
    le repli push → email est une **mise à jour de la même ligne**, jamais une seconde ligne.
+   **Contournée depuis C4.2 par le mot de la veille** (`v1-25`, 28/09/2026) : une notification
+   sans point, la veille des jours choisis, sur opt-in et dix semaines au plus. `unique(checkin_id)`
+   ne la voit pas — il accepte plusieurs `NULL` — ; sa garantie est
+   `notification_outbox_une_veille_par_jour`, un mot par personne et par jour visé. « Un point, un
+   message » tient toujours pour les points ; ce qui a cessé d'être vrai, c'est que le point soit le
+   seul message.
 8. **Le push arrive le matin où la question s'ouvre**, sans l'étalement sur cinq jours de
    l'email. Ramille dit « lundi » et tient parole.
 9. **Une décision de permission se prend une fois.** Après un refus au système, on ne
@@ -198,6 +206,12 @@ testable sans HTTP. C'est elle que le test `17` confronte à la table du §3.
 
 ### 4.4 L'envoi
 
+> **Depuis C4.2 (28/09/2026), la branche push n'est plus dans `send_pending_reminders()`** : elle vit
+> dans `envoyer_les_notifications(genre)`, que le passage de 7 h appelle pour les points et le
+> passage du soir pour le mot de la veille, et le `channelId` n'est plus écrit en dur — il vient de
+> `public.canal_android(genre)` (`rappels` pour un point, `mot_de_la_veille` pour le mot). Le reste
+> de cette section décrit toujours ce que fait la branche, telle qu'elle a été déplacée.
+
 `send_pending_reminders()` branche sur `channel` :
 
 - `email` : Resend, comme aujourd'hui, rien ne bouge.
@@ -281,8 +295,12 @@ jetons, et **rien n'arrive sur le téléphone** — sans autre message qu'un tic
   `getPermissionsAsync` répond `denied` → RPC `unregister_push_token`, pour que le serveur
   retombe sur l'email au prochain point au lieu d'envoyer dans le vide.
 - Canal Android **`rappels`** (« Points de suivi »), importance par défaut, pas de son
-  personnalisé, créé au démarrage par `setNotificationChannelAsync`. Un seul canal : le
-  produit n'envoie qu'une sorte de message.
+  personnalisé, créé au démarrage par `setNotificationChannelAsync`. ~~Un seul canal : le
+  produit n'envoie qu'une sorte de message.~~ **Deux canaux depuis C4.2** (arbitrage du
+  27/09/2026) : le produit envoie désormais deux sortes de messages, et le mot de la veille a le
+  sien, `mot_de_la_veille` (« Mot de la veille »), pour se couper à part dans les réglages du
+  téléphone. Les deux sont créés à chaque lancement (`preparerLesCanauxAndroid`), et le message
+  envoyé nomme le sien par `public.canal_android(genre)`, jumelle de `CANAUX_ANDROID`.
 - Au premier plan, le rappel s'affiche comme bannière (`setNotificationHandler`) — sinon un
   push reçu app ouverte disparaît sans trace.
 

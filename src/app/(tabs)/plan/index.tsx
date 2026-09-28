@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -71,7 +71,9 @@ import {
 } from '@/lib/connexion-prefs';
 import { lireEtatDuRattachement } from '@/lib/compte';
 import {
+  aDejaProposeLaVeille,
   aDejaVuLaFeuilleDeRappel,
+  lireLaFenetreDuMotDeLaVeille,
   loadReminderPrefs,
   type ReminderPrefs,
 } from '@/lib/notification-prefs';
@@ -89,10 +91,13 @@ import {
 import {
   boucleDeLAction,
   carteAttente,
-  doitProposerLaFeuille,
+  laVeilleSeRepropose,
+  ouvertureDeLaFeuille,
   type Boucle,
   type CanalPrefere,
+  type OuvertureDeLaFeuille,
   type Permission,
+  type ReponseALaVeille,
 } from '@/types/rappels';
 
 
@@ -406,7 +411,11 @@ export default function Plan() {
    */
   const { rappel } = useLocalSearchParams<{ rappel?: string }>();
   const vientDUnRappel = rappel === '1';
-  const [feuilleOuverte, setFeuilleOuverte] = useState(false);
+  /**
+   * L'étape où s'ouvre la feuille des rappels — le choix du canal, ou la seule question de la veille
+   * (C4.2) —, `null` quand elle est fermée. Décidée par `ouvertureDeLaFeuille`, jamais ici.
+   */
+  const [ouvertureDeFeuille, setOuvertureDeFeuille] = useState<OuvertureDeLaFeuille | null>(null);
   /**
    * Le poste de l'action qu'on vient d'engager, pour la feuille et pour elle seule.
    *
@@ -418,28 +427,53 @@ export default function Plan() {
    */
   const [posteEngage, setPosteEngage] = useState<string | null>(null);
 
-  // Appelée quand un engagement vient d'être pris — jamais quand on en change ni quand on
-  // le libère. La feuille ne s'ouvre qu'une fois par appareil : c'est une cérémonie pour la
-  // première fois, pas un péage à chaque action.
+  // Appelée quand un engagement vient d'être pris — y compris « Choisir celle-ci à la place », qui
+  // en prend un —, jamais quand on le libère. La feuille entière ne s'ouvre qu'une fois par appareil :
+  // c'est une cérémonie pour la première fois, pas un péage à chaque action. Et depuis C4.2 elle peut
+  // rouvrir sur la seule question de la veille, une fois aussi, au premier engagement de trajet où
+  // elle peut être posée — le cas de qui a choisi un vol d'abord (`ouvertureDeLaFeuille`).
+  // **Elle ne s'ouvre que sur un plan au premier plan** : la réouverture attend une lecture réseau
+  // (la fenêtre), et une feuille — un `Modal` — ouverte après que la personne a changé d'onglet
+  // apparaîtrait ailleurs (contre-lecture de C4.2). Rien n'est marqué vu tant qu'elle ne s'affiche
+  // pas, donc un engagement suivant la reproposera.
   // **Stable, et ce n'est pas du confort** : l'effet de focus qui reprend l'engagement des pistes
   // la porte en dépendance, donc une fonction recréée à chaque rendu ferait se réabonner cet effet
   // à chaque rendu. C'est la règle déjà écrite pour `useRafraichirAuRetour` — un rappel instable
   // fait tourner chargement et rendu l'un dans l'autre.
+  const auPremierPlan = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      auPremierPlan.current = true;
+      return () => {
+        auPremierPlan.current = false;
+      };
+    }, [])
+  );
   const proposerLesRappels = useCallback(async (poste: string | null) => {
     if (!rappels) return;
     setPosteEngage(poste);
-    const dejaProposee = await aDejaVuLaFeuilleDeRappel();
-    if (
-      !doitProposerLaFeuille({
-        plateforme: Platform.OS === 'web' ? 'web' : 'natif',
-        emailPossible: rappels.emailPossible,
-        dejaProposee,
-      })
-    ) {
-      return;
-    }
-    track('rappels_view');
-    setFeuilleOuverte(true);
+    const [feuilleDejaVue, veilleDejaProposee] = await Promise.all([
+      aDejaVuLaFeuilleDeRappel(),
+      aDejaProposeLaVeille(),
+    ]);
+    const etat = {
+      ...rappels,
+      plateforme: Platform.OS === 'web' ? ('web' as const) : ('natif' as const),
+      poste,
+      feuilleDejaVue,
+      veilleDejaProposee,
+      reponse: rappels.reponseALaVeille,
+    };
+    // La fenêtre n'est lue que si elle peut changer quelque chose : une économie d'appel, et rien de
+    // plus — la dérivation repose toutes les conditions.
+    const fenetre = laVeilleSeRepropose(etat) ? await lireLaFenetreDuMotDeLaVeille() : null;
+    const ouverture = ouvertureDeLaFeuille({ ...etat, fenetre });
+    if (ouverture === null || !auPremierPlan.current) return;
+    // `rappels_view` compte les vues du choix du canal : la seule question de la veille n'en est pas
+    // une, et la compter gonflerait l'entonnoir qu'il mesure. Sa réponse, elle, est en base
+    // (`profiles.mot_de_la_veille`).
+    if (ouverture.etape === 'canal') track('rappels_view');
+    setOuvertureDeFeuille(ouverture);
   }, [rappels]);
   /**
    * Reprendre l'engagement pris sur l'écran des pistes (C5.2, `v1-17` §7.3).
@@ -870,9 +904,13 @@ export default function Plan() {
   // c'est-à-dire promettre à la main ce que le compilateur sait déjà.
   const porteDeLAttente = attente?.action ?? null;
 
-  const fermerLaFeuille = (canal: CanalPrefere, jetonActif: boolean) => {
-    setFeuilleOuverte(false);
-    setRappels((p) => (p ? { ...p, prefere: canal, jetonActif } : p));
+  const fermerLaFeuille = (
+    canal: CanalPrefere,
+    jetonActif: boolean,
+    reponseALaVeille: ReponseALaVeille | null
+  ) => {
+    setOuvertureDeFeuille(null);
+    setRappels((p) => (p ? { ...p, prefere: canal, jetonActif, reponseALaVeille } : p));
     void lirePermission().then(setPermission);
   };
 
@@ -1371,11 +1409,12 @@ export default function Plan() {
             qu'elle annonce se dérive du poste de l'action. La garde d'avant faisait qu'un échec
             de lecture secondaire empêchait la cérémonie de s'ouvrir — et comme elle ne s'ouvre
             qu'une fois par appareil, elle était alors perdue pour de bon. */}
-        {feuilleOuverte && rappels && (
+        {ouvertureDeFeuille && rappels && (
           <FeuilleRappels
             prefs={rappels}
             boucle={boucleDeLAction(posteEngage)}
             permission={permission}
+            ouverture={ouvertureDeFeuille}
             onFerme={fermerLaFeuille}
           />
         )}

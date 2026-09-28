@@ -31,7 +31,7 @@ import {
   afficherLesNotificationsAuPremierPlan,
   enregistrerLeJeton,
   estNatif,
-  preparerLeCanalAndroid,
+  preparerLesCanauxAndroid,
 } from '@/lib/rappels';
 import { configurationSupabase, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
 import { appErrorCategory, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
@@ -152,7 +152,7 @@ export default function RootLayout() {
           ouvertureDejaComptee = true;
           track('app_open', { origine: 'demarrage' });
         }
-        void preparerLeCanalAndroid();
+        void preparerLesCanauxAndroid();
         return enregistrerLeJetonPour(session?.user.id ?? null);
       })
       .catch((error) => {

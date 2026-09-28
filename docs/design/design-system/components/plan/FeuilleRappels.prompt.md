@@ -9,3 +9,11 @@ Son cadre est `FeuilleDuBas`, voile compris : elle se pose seule en bas d'un éc
 Les lignes du canal sont celles de « Toi » (`ChoixDeRappel`) : la même `LigneDeCanal`, dans un `GroupeDeChoix`. Une ligne hors d'atteinte dit pourquoi et ne paraît jamais choisie ; la porte qui la débloque (« Rattacher un compte », « Ouvrir les réglages du téléphone ») se rend juste sous elle. Le groupe est nommé par la question de Ramille.
 
 Le bouton n’annonce un dialogue système que s’il va vraiment s’en ouvrir un : « Autoriser les notifications » seulement quand la permission est encore demandable.
+
+**Une seconde étape depuis C4.2 : le mot de la veille** (`etape="veille"`). Une fois la notification choisie **et reçue sur ce téléphone**, sur une action de trajet dont la fenêtre de dix semaines est ouverte, Ramille demande « Et la veille de tes jours de trajet, je te fais signe aussi ? » ; la ligne du produit dessous porte la date (« Par notification, jusqu’au 15 novembre. »), parce que Ramille ne dit jamais un nombre. Deux boutons, et **chacun enregistre une réponse** : « Oui, la veille aussi », puis « Non merci » en secondaire — un refus, qui ne sera jamais reproposé. Refermer sans répondre ne répond rien : la question reste dans « Toi ».
+
+```jsx
+<FeuilleRappels etape="veille" detailVeille="Par notification, jusqu’au 15 novembre." />
+```
+
+**La même étape s'ouvre seule, une fois**, au premier engagement de trajet où la question peut être posée, chez qui a vu la feuille sans elle (son premier engagement portait sur un vol ou une sortie, ou son téléphone ne recevait pas encore de notification) : la feuille ne repasse pas par le canal. Le focus va à la question (`TitreDArrivee`), le contenu ayant changé sous le doigt.

@@ -397,7 +397,9 @@ select is_empty(
      where (select row(e.*)::text from public.action_engagee_de_la_periode(u, p, d) e)
            is distinct from
            (select row(o.*)::text from (
-              select pa.intention_days, pa.intention_timing, t.action_text, t.question_template
+              -- `pa.id` depuis C4.2 (20260928075453) : la fonction rend l'action qu'elle a retenue,
+              -- pour que le mot de la veille lise son cycle sans recopier la recherche.
+              select pa.intention_days, pa.intention_timing, t.action_text, t.question_template, pa.id
               from public.plan_actions pa
               join public.plan_cycles pc on pc.id = pa.plan_cycle_id
               join public.action_templates t on t.id = pa.action_template_id
