@@ -115,6 +115,10 @@ const serveur = http
       reponse.end();
       return;
     }
+    // Du JSON, dit comme tel : sans type déclaré, une réponse qui porte le texte d'une exception se lit
+    // comme du HTML (CodeQL, 28/09/2026). Et d'une exception on ne rend que son message, jamais sa pile.
+    reponse.setHeader('Content-Type', 'application/json; charset=utf-8');
+    reponse.setHeader('X-Content-Type-Options', 'nosniff');
     let corps = '';
     requete.on('data', (morceau) => (corps += morceau));
     requete.on('end', async () => {
@@ -123,7 +127,8 @@ const serveur = http
         const resultat = await new FonctionAsynchrone('S', corps)(S);
         reponse.end(JSON.stringify({ ok: true, resultat, journal: S.journal }, null, 1));
       } catch (erreur) {
-        reponse.end(JSON.stringify({ ok: false, erreur: String(erreur).slice(0, 2000), journal: S.journal }, null, 1));
+        const message = erreur instanceof Error ? erreur.message : 'une valeur qui n’est pas une Error a été levée';
+        reponse.end(JSON.stringify({ ok: false, erreur: message.slice(0, 2000), journal: S.journal }, null, 1));
       }
     });
   })
