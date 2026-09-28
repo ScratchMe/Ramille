@@ -4,6 +4,9 @@ import { PastilleEngagee } from './PastilleEngagee.jsx';
 // Source : src/components/plan/action-card.tsx — rayon 18 padding 20 gap 8 ; engagée = bordure accent 2 + fond tinted +
 // étiquette ; estompée = son filet passe de `border` à `backgroundElement`, sans opacité : le texte garde ses contrastes.
 // Jumelle de `ligneDuGain` (src/types/plan.ts) : « par an » toujours en tête, collé au chiffre qu'il qualifie.
+// Jumelle de `formatKg` (src/lib/format.ts) : les milliers groupés par une espace insécable U+00A0 — « − 1 601 »,
+// jamais « − 1601 » (relevé le 28/09/2026 en préparant le canvas v1-30 : le kit écrivait `Math.round` seul).
+const formatKg = (kg) => String(Math.round(kg)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 const ligneDuGain = (intention, partPercent) =>
   ['par an', intention, partPercent != null ? Math.round(partPercent) + ' % de ton empreinte' : null].filter((m) => m).join(' · ');
 export function ActionCard({ titre, gainKg, partPercent, detail, intention, premierPas, engagee, reconduite, estompee, children }) {
@@ -20,7 +23,7 @@ export function ActionCard({ titre, gainKg, partPercent, detail, intention, prem
       <ThemedText type="cardTitle">{titre}</ThemedText>
       {gainKg != null && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <ThemedText weight={600} themeColor="accentText" style={{ fontSize: 20, lineHeight: '26px', fontVariantNumeric: 'tabular-nums' }}>− {Math.round(gainKg)} kg CO₂e</ThemedText>
+          <ThemedText weight={600} themeColor="accentText" style={{ fontSize: 20, lineHeight: '26px', fontVariantNumeric: 'tabular-nums' }}>− {formatKg(gainKg)} kg CO₂e</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{ligneDuGain(engagee ? intention : null, partPercent)}</ThemedText>
         </div>
       )}
