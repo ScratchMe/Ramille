@@ -1,4 +1,4 @@
--- Tests pgTAP du mot de la veille — C4.2 (issue #144), migration 20260928100000_le_mot_de_la_veille.sql.
+-- Tests pgTAP du mot de la veille — C4.2 (issue #144), migration 20260928075453_le_mot_de_la_veille.sql.
 -- Décisions D1 à D5 du 27/09/2026 (`v1-25`, en-tête).
 --
 -- Ce que ce fichier défend : **un message de plus, qui ne passe à côté d'aucune des protections du
@@ -27,7 +27,7 @@
 --
 -- ## Éprouvé en le cassant (TESTING.md §1.1), le 27/09/2026 puis le 28/09/2026
 --
--- Vingt-deux mutations de la migration `20260928100000`, une à la fois, chacune rejouée par
+-- Vingt-deux mutations de la migration `20260928075453`, une à la fois, chacune rejouée par
 -- `node scripts/rejouer-la-ci.mjs base` (stack reconstruite, suite pgTAP entière) puis le fichier
 -- remis à l'identique — par git pour les dix-neuf premières, par une copie comparée octet à octet
 -- pour les trois dernières, jouées sur la branche d'intégration avec C4.7. Aucune n'a fait tomber un

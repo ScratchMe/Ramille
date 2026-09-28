@@ -40,7 +40,7 @@
 > (contre-lecture du 28/09/2026) : mis en file une heure plus tôt l'hiver, le mot partait sur un
 > engagement que la personne avait pu abandonner entre-temps.
 >
-> **Livré le 28/09/2026** (`20260928100000_le_mot_de_la_veille.sql`, test `35`). **§3.2 était
+> **Livré le 28/09/2026** (`20260928075453_le_mot_de_la_veille.sql`, test `35`). **§3.2 était
 > faux là où ça coûte**, relu sur les corps installés : le plafond de C2.9 est une clause de la mise
 > en file et non de la table, donc le mot appelle `regime_de_rappel` lui-même ; le passage de 7 h
 > l'aurait envoyé le matin du jour visé ; et trois lectures qui joignaient `engagement_checkins` le

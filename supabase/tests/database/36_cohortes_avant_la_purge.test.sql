@@ -30,7 +30,7 @@
 -- **4. La section 1 est une garde de structure, pas de comportement.** `dernier_signe_de_vie` est
 -- l'extraction de l'expression que `regime_de_rappel` écrivait en ligne. Le régime ne l'appelait pas
 -- à la livraison du lot 6 (un chantier parallèle touchait au plafond des rappels) ; **il l'appelle
--- depuis C4.2** (`20260928100000_le_mot_de_la_veille.sql`, section 13). L'assertion acceptait les
+-- depuis C4.2** (`20260928075453_le_mot_de_la_veille.sql`, section 13). L'assertion acceptait les
 -- deux formes tant que la factorisation n'était pas faite ; elle n'accepte plus que l'appel, et elle
 -- exige que `v_depuis` ne soit écrit qu'**une** fois, par cet appel (contre-lecture de C4.2,
 -- 28/09/2026). Sans cette seconde condition, elle ne gardait qu'une inclusion : une ligne ajoutée
@@ -87,7 +87,7 @@
 --   - une troisième boucle ajoutée au `check`                  → 1 : la 2.
 --
 -- **Et deux le 28/09/2026, pour l'assertion 3 resserrée** (contre-lecture de C4.2), par la méthode
--- canonique — la section 13 de `20260928100000` mutée sur le disque, puis `rejouer-la-ci base` :
+-- canonique — la section 13 de `20260928075453` mutée sur le disque, puis `rejouer-la-ci base` :
 --
 --   - `v_depuis` retouché après l'appel                        → 1 : la 3, seule sur les 766 de la suite ;
 --   - le régime revenu à l'expression recopiée en ligne        → 1 : la 3, seule — la copie en ligne n'est plus acceptée.
