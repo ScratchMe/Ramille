@@ -146,18 +146,20 @@ export function SaisieDuCode({
     setMessage(null);
     const { error } = await renvoyer(adresse);
     setOccupe(false);
-    // Le champ se vide ici, et seulement ici : l'ancien code vient d'être invalidé par l'envoi du
-    // nouveau (mesuré le 20/09/2026), donc garder ses chiffres ferait réessayer un code mort.
-    setCode('');
     // **Le tri passe par `suiteDuRenvoi`, jamais par l'erreur nue.** Elle était donnée telle quelle
     // à `messageDeLaDemande`, et une adresse sans compte (`otp_disabled`) y recevait donc un message
     // distinct de celui d'une adresse connue : un oracle sur qui utilise Ramille, au renvoi, alors
     // que le premier envoi le taisait (relevé en revue le 21/09/2026).
-    setMessage(
-      suiteDuRenvoi(contexte, error) === 'message'
-        ? messageDeLaDemande(error)
-        : messageDuRenvoi(voix)
-    );
+    const suite = suiteDuRenvoi(contexte, error);
+    // Le champ se vide ici, et seulement quand un code est reparti : l'ancien vient alors d'être
+    // invalidé par le nouveau (mesuré le 20/09/2026), donc garder ses chiffres ferait réessayer un
+    // code mort. **Un renvoi refusé, lui, ne vide rien** (recette du 28/09/2026) : « Trop de
+    // demandes coup sur coup » ne fait partir aucun code, celui du champ vaut peut-être encore, et
+    // le vider faisait perdre les chiffres qu'on comparait à l'e-mail. Et c'est `suite` qui décide,
+    // pas `error` : une adresse sans compte rend une erreur que `suiteDuRenvoi` lit « renvoyé », et
+    // un champ qui se viderait pour l'une et pas pour l'autre rouvrirait l'oracle par l'écran.
+    if (suite === 'renvoye') setCode('');
+    setMessage(suite === 'message' ? messageDeLaDemande(error) : messageDuRenvoi(voix));
   };
 
   return (

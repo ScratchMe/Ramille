@@ -176,6 +176,31 @@ dans la conversation, et c'est de là que partent les issues. Sa forme :
 L'ordre n'est pas cosmétique : ce qu'on lit en premier est ce sur quoi on agit. Et le pavé complet
 reste dessous, parce que c'est lui qui dit ce qui **n'a pas** été regardé.
 
+### 1.9 Quand l'agent joue la séance
+
+Écrit le 28/09/2026, après la première séance jouée par l'agent seul, dans un navigateur sans
+interface, sur la production, avec l'accord explicite de la personne qui pilote. Elle a rendu 86
+lignes en une soirée, et trois choses à savoir avant de recommencer :
+
+- **L'agent ne rend pas les lignes de jugement : il les laisse muettes, et donne son avis à côté.**
+  « Est-ce pénible ? », « même poids visuel », le ton d'une réplique : la feuille existe pour qu'un
+  humain regarde ce que personne n'a encore regardé, et une ligne de jugement cochée par celui qui a
+  construit l'écran reviendrait conforme par construction. Elle part avec sa capture et l'avis de
+  l'agent, et la personne qui pilote tranche. Le 28/09, elle a tranché **à l'inverse** de l'avis
+  (l'écran du mode : « pénible », là où l'agent disait « pas pénible ») — c'est exactement ce que
+  la règle protège.
+- **Chaque note dit qu'elle vient de l'agent** (préfixe « [agent] »), et l'en-tête le dit aussi :
+  c'est la règle « qui a coché ? » de §1.7, appliquée à une séance entière.
+- **Une feuille écrite pour une séance d'une heure ne peut pas demander ce qui se compte par
+  jour.** La séance du 28/09 a buté trois fois sur la même cause : le suivi ne garde qu'un bilan par
+  jour, et la feuille enchaînait deux bilans en attendant de les voir tous les deux. Une ligne qui a
+  besoin de deux jours se joue sur deux jours, et la feuille le dit.
+
+Ce que l'agent apporte en plus d'une personne : il **relit la base** après une écriture, il lit le
+**réseau** (c'est ainsi qu'il a vu que l'oracle d'adresse restait ouvert côté serveur, `v1-28`
+§7.1), et il mesure au lieu de juger à l'œil (une hauteur de bouton, un caractère de séparation).
+Ce qu'il n'apporte pas : un doigt, un vrai téléphone, un lecteur d'écran.
+
 ---
 
 ## 2. Propre à Ramille
@@ -233,7 +258,8 @@ destination légitime, et elle se note comme telle.
 | Séance | Document (la mémoire) | Artefact (l'outil) |
 |---|---|---|
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
-| Ce qui est neuf depuis le 18/09/2026 — le compte, les modes, le design system, le retrait d'un bilan (écrite le 21/09, étendue le 27/09 sans avoir été jouée) | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
+| Ce qui est neuf depuis le 18/09/2026 — le compte, les modes, le design system, le retrait d'un bilan (écrite le 21/09, étendue le 27/09, **jouée le 28/09 par l'agent** — constats en `v1-13` §15 ; blocs 12 et 14.3 le 1er octobre) | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
+| Ce qui reste après la séance du 28/09/2026 — les correctifs de la soirée revus sur la production, le suivi sur deux jours, les jugements qui reviennent à la personne qui pilote | `docs/recette/ce-qui-reste-apres-le-28-septembre.md` | https://claude.ai/artifact/39KtxfEBam38o9HB4rcn53 |
 
 **L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
 règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
@@ -268,6 +294,42 @@ parcours réel le rejoue à chaque PR sur deux profils — et que le temps humai
 n'a **jamais** été parcouru à la main. Son prix est écrit dans son en-tête : une régression sur un
 écran ancien que ni la CI ni la feuille ne regardent lui échappera.
 
+**La troisième, écrite le 28/09/2026, ne porte que le reste d'une séance** : elle ne rejoue aucune
+ligne revenue conforme, seulement ce que la séance a corrigé le soir même sans le voir sur la
+production, ce qu'elle n'a pas pu jouer en une soirée (deux bilans de **dates différentes**), et les
+jugements qui reviennent à la personne qui pilote. C'est la forme à reprendre après chaque séance qui
+laisse quelque chose : une feuille courte, datée, qui dit dans son en-tête **à partir de quand** elle
+a un sens — ici, une fois la PR des correctifs déployée, et sa ligne 00.2 vérifie que c'est le cas
+avant qu'on joue quoi que ce soit.
+
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est
 exactement ce que ce format existe pour ne plus reproduire.
+
+### 2.6 Jouer une séance au navigateur sans interface
+
+La mécanique de §1.9, telle qu'elle a tourné le 28/09/2026. Tout ce qui suit a coûté un essai.
+
+- **Le pilote** : `scripts/pilote-de-recette.mjs`, lancé en arrière-plan. Deux navigateurs (A et B)
+  dont les contextes ne partagent jamais leur stockage, ce qui rend la précaution des fenêtres
+  privées gratuite. Son en-tête dit comment lui envoyer une étape et comment l'arrêter.
+- **Le magasin de certificats du Chromium était vide.** Chaque page rendait
+  `ERR_CERT_AUTHORITY_INVALID` alors que `curl` passait : le proxy de sortie réécrit le TLS, et son
+  autorité n'était pas dans `sql:$HOME/.pki/nssdb`. La parade, qui ne coupe aucune vérification :
+  installer `libnss3-tools`, puis ajouter en `C,,` chaque certificat « Anthropic » de
+  `/root/.ccr/ca-bundle.crt` avec `certutil -A`. Le proxy peut aussi changer de port en cours de
+  session : on lit toujours `$HTTPS_PROXY`, jamais un port recopié.
+- **Les adresses** : des alias de la boîte de la personne qui pilote (`…+ramille-p1@gmail.com`,
+  `…+ramille-p2@…`), avec son accord, et les codes lus par le connecteur Gmail. C'est ce qui a permis
+  de jouer le bloc du code « avec une vraie messagerie » — l'objet, le corps, l'absence de lien, le
+  dossier de réception. **La limite d'une minute par adresse** se paie : un renvoi à 54 secondes a
+  été refusé (et a trouvé un défaut, H2).
+- **La version servie ne se lit pas chez Vercel** : lister les déploiements est refusé (403) au
+  connecteur. On la lit dans ce qui est servi — la date de la page de confidentialité, un texte que
+  la dernière fusion a changé.
+- **Deux lignes ne se jouent pas au web, et la feuille doit le savoir** : recharger une page réseau
+  coupé rend la page d'erreur du navigateur (rien ne sert l'app hors ligne), et un jugement « au
+  doigt » ne se rend pas à la souris.
+- **Supprimer ce qu'on a créé** : le compte du profil 1 en fin de séance, par l'écran, puis vérifié
+  en base (`auth.users`). Et régler les rappels sur « Sans rappel » pour tout profil gardé, sans quoi
+  un vrai message partirait (§2.3).

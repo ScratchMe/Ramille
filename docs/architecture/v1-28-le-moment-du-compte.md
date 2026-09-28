@@ -242,6 +242,27 @@ et le verbe « rattacher » était déjà celui de trois surfaces. **Il n'en att
    justifiait cette branche par « le produit le dit déjà au premier envoi » est devenu faux le jour
    même et a été corrigé : il ne le dit plus nulle part.
 
+   **Et surtout, ça ne ferme pas l'oracle du serveur — relevé à la recette web du 28/09/2026,
+   documenté comme une limite le même jour sur décision de la personne qui pilote.** Ce qui est
+   fermé, c'est ce qu'on **lit à l'écran**. La réponse du service d'authentification, elle, n'a pas
+   changé : `updateUser({ email })` rend toujours `422 email_exists` sur une adresse prise et `200`
+   sur une adresse libre, **avant** que l'écran ne bascule sur un code de connexion. La console du
+   navigateur l'affiche (« Failed to load resource: … 422 ») pour qui l'ouvre, et n'importe quelle
+   session anonyme — tout visiteur en reçoit une — peut appeler `PUT /auth/v1/user` sans passer par
+   l'app, sans plafond, exactement comme la mesure de vingt sondages l'avait fait. Même chose sur
+   `/connexion/retrouver` : `signInWithOtp` sans création rend `422 otp_disabled` sur une adresse
+   inconnue et `200` sur une adresse connue — l'écran se tait, le réseau non.
+
+   **Pourquoi on ne le ferme pas.** La réponse vient de GoTrue, le service d'authentification de
+   Supabase, et aucun de ses réglages ne la masque. Faire passer le rattachement par une fonction
+   serveur ne changerait rien : l'appel direct à `PUT /auth/v1/user` resterait ouvert à toute session
+   anonyme. La décision du 28/09/2026 est donc de le **dire** : l'arbitrage du 21/09 protège contre
+   la lecture ordinaire d'un écran, pas contre un sondage automatisé, et la phrase qui ouvrait ce
+   point (« l'oracle qu'on ferme ») promettait plus que ce qui a été fait. **Condition de
+   réouverture** : un réglage de GoTrue qui uniformise ces réponses, ou le jour où le rattachement ne
+   passerait plus par une session que le visiteur tient lui-même — alors seulement la question de le
+   fermer côté serveur a un objet. `SUPABASE.md` §2.4 le porte pour tout ce qui touche à l'auth.
+
 2. **Où vit la phrase des trois mois : tranché le 21/09/2026 — aussi sur « Toi », le délai
    dérivé.**
 

@@ -76,7 +76,9 @@ jest.mock('@/app/(tabs)/plan/_layout', () => ({
   usePassageDEngagement: () => ({ deposer: jest.fn(), retirer: jest.fn(), prendre: jest.fn() }),
 }));
 
-jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn() } }));
+jest.mock('expo-router', () => ({
+  router: { back: jest.fn(), push: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
+}));
 
 /**
  * La carte est doublée pour une raison précise : le contrat qu'on éprouve est **le câblage**

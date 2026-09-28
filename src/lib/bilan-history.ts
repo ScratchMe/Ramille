@@ -19,6 +19,7 @@ import { genreDeReponse, STATUT_DU_POINT } from '@/types/checkin';
 import {
   decisionsParSaison,
   keepLatestPerDay,
+  precedentDUnAutreJour,
   type AssessmentSnapshot,
   type CheckinRecord,
   type DecisionBrute,
@@ -201,16 +202,19 @@ function unique<T>(valeur: T | T[] | null): T | null {
 export type BilanPrecedent = { submittedAt: string; totalKg: number };
 
 /**
- * Le bilan **strictement antérieur** à celui-ci (C2.7, point 2).
+ * Le bilan auquel on compare celui-ci : le plus récent d'un **autre jour** (C2.7, point 2 ;
+ * arbitrage du 28/09/2026). Le choix vit dans `precedentDUnAutreJour` (`src/types/suivi.ts`).
  *
- * **Choisi sur `submitted_at`, jamais dans l'historique dédoublonné.** `keepLatestPerDay` ne garde
- * que le dernier bilan de chaque jour — c'est ce qu'il faut pour une courbe, pas pour désigner un
- * prédécesseur : réutiliser cette liste ferait dépendre la comparaison d'un regroupement qui existe
- * pour une tout autre raison.
+ * **Ce commentaire disait l'inverse jusqu'au 28/09/2026** : le prédécesseur était « choisi sur
+ * `submitted_at`, jamais dans l'historique dédoublonné », pour ne pas faire dépendre la comparaison
+ * du regroupement par jour de `keepLatestPerDay`. La recette web de ce jour-là a montré ce que ça
+ * coûtait : un bilan refait le même jour était une correction pour le suivi, qui cachait le premier,
+ * et un progrès pour la restitution, qui s'y comparait. La décision prise est que la correction
+ * gagne. On ne réutilise toujours pas la liste dédoublonnée — on applique la même règle du jour.
  *
- * Deux lignes lues et non une : la seule façon de vérifier que le bilan courant est bien le plus
- * récent. S'il ne l'est pas — une horloge serveur qui recule, une ouverture en mode `nouveau` sur un
- * bilan qui ne l'est pas — on ne compare rien plutôt que de comparer à un bilan postérieur.
+ * Dix lignes lues : assez pour franchir les corrections d'une même journée. Au-delà, on ne compare
+ * rien plutôt que de chercher plus loin, et c'est sans risque — l'écran se passe très bien de la
+ * comparaison, qui arrive en second temps.
  */
 export async function loadBilanPrecedent(
   assessmentId: string
@@ -220,19 +224,25 @@ export async function loadBilanPrecedent(
     .select('id, submitted_at, assessment_results(total_co2_kg_year)')
     .eq('status', STATUT_DE_BILAN.complete)
     .order('submitted_at', { ascending: false })
-    .limit(2);
+    .limit(10);
 
   if (error || !data) return { ok: false };
-  if (data[0]?.id !== assessmentId) return { ok: true, data: null };
 
-  const precedent = data[1];
-  const results = precedent ? unique(precedent.assessment_results) : null;
-  if (!precedent?.submitted_at || !results) return { ok: true, data: null };
+  const bilans = data.flatMap((ligne) =>
+    ligne.submitted_at
+      ? [
+          {
+            id: ligne.id,
+            submittedAt: ligne.submitted_at,
+            totalKg: unique(ligne.assessment_results)?.total_co2_kg_year ?? null,
+          },
+        ]
+      : []
+  );
+  const precedent = precedentDUnAutreJour(bilans, assessmentId);
+  if (!precedent || precedent.totalKg === null) return { ok: true, data: null };
 
-  return {
-    ok: true,
-    data: { submittedAt: precedent.submitted_at, totalKg: results.total_co2_kg_year },
-  };
+  return { ok: true, data: { submittedAt: precedent.submittedAt, totalKg: precedent.totalKg } };
 }
 
 /** Le cycle de plan qui couvrait un jour donné, avec le cap qu'il portait. */

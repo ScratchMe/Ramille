@@ -961,7 +961,11 @@ export default function BilanResultat() {
               {/* Quand le palier tombe pile sur le repère, la barre porte son vrai nom :
                   l'appeler « ton prochain palier » sous-vendrait ce que c'est — l'objectif
                   final, pas une étape de plus. */}
-              {palier && (
+              {/* **Et elle se tait sur le résiduel des sorties rares**, comme la phrase (recette du
+                  28/09/2026, constat 10.2, décidé le même jour). La phrase ne proposait plus rien
+                  depuis le 25/09, et la barre montrait encore « Ton prochain palier — 47 kg » : 20 %
+                  d'un poste que le calcul suppose et que la personne n'a pas déclaré. */}
+              {palier && !posteSuppose && (
                 <CompareRow
                   label={palier.isTarget2050 ? 'Repère transport 2050' : 'Ton prochain palier'}
                   value={

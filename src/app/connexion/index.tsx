@@ -15,6 +15,7 @@ import { useTrackView } from '@/hooks/use-track-view';
 import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
+import { revenirOu } from '@/lib/navigation';
 import { sourceConnexion } from '@/types/analytics';
 import { PHRASE_SANS_COMPTE_SOUS_LA_SORTIE } from '@/types/compte';
 import { identiteDejaRattachee, introDeLaConnexion } from '@/types/connexion';
@@ -186,11 +187,7 @@ export default function ConnexionProposition() {
               // derrière elle (favori, lien collé, démarrage à froid), et un `router.back()` nu ne
               // fait alors **rien** — la personne reste enfermée sur l'écran. Le repli est une
               // destination, pas un dépilement, et il diffère selon d'où l'on prétend revenir.
-              onPress={() =>
-                router.canGoBack()
-                  ? router.back()
-                  : router.replace(vientDeCompte ? '/compte' : '/plan')
-              }
+              onPress={() => revenirOu(vientDeCompte ? '/compte' : '/plan')}
               role="link"
               type="small"
               themeColor="textTertiary"

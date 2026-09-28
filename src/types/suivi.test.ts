@@ -12,6 +12,7 @@ import {
   estStable,
   estUneBaisse,
   pointsParSaison,
+  precedentDUnAutreJour,
   variationDepuisLeBilanPrecedent,
   formatDate,
   keepLatestPerDay,
@@ -129,6 +130,63 @@ describe('keepLatestPerDay', () => {
       snapshot('2026-03-11T00:30:00Z', 2800),
     ]);
     expect(result.map((s) => s.totalKg)).toEqual([2800]);
+  });
+});
+
+/**
+ * Le bilan auquel la restitution compare : le plus récent d'un autre jour (arbitrage du 28/09/2026,
+ * constat H4 de la recette web). La règle du jour est celle de `keepLatestPerDay`, et le quatrième
+ * cas l'épingle hors d'UTC pour la même raison que le sien.
+ *
+ * **Éprouvé en le cassant, le 28/09/2026** (TESTING.md §1.1) :
+ *   - `avant[0] ?? null` (le prédécesseur immédiat, l'état d'avant) → les trois cas d'un même jour
+ *     (« refait le même jour », « plusieurs corrections », « le jour est celui de la personne »),
+ *     eux seuls ;
+ *   - la garde `courant.id !== assessmentId` retirée → « si le bilan affiché n'est pas le plus
+ *     récent… », seul ;
+ *   - le jour lu en UTC (`submittedAt.slice(0, 10)`) → « le jour est celui de la personne… », seul.
+ */
+describe('precedentDUnAutreJour', () => {
+  const b = (id: string, submittedAt: string) => ({ id, submittedAt });
+
+  it('compare au bilan d’un autre jour quand il n’y a pas de correction', () => {
+    const bilans = [b('b2', '2026-10-05T09:00:00Z'), b('b1', '2026-09-28T19:51:00Z')];
+    expect(precedentDUnAutreJour(bilans, 'b2')?.id).toBe('b1');
+  });
+
+  it('un bilan refait le même jour ne se compare pas à celui qu’il corrige', () => {
+    const bilans = [
+      b('correction', '2026-09-28T20:03:00Z'),
+      b('corrige', '2026-09-28T19:51:00Z'),
+      b('saison-passee', '2026-06-02T08:00:00Z'),
+    ];
+    expect(precedentDUnAutreJour(bilans, 'correction')?.id).toBe('saison-passee');
+  });
+
+  it('plusieurs corrections du même jour, et rien avant : aucune comparaison', () => {
+    const bilans = [
+      b('c3', '2026-09-28T21:00:00Z'),
+      b('c2', '2026-09-28T20:03:00Z'),
+      b('c1', '2026-09-28T19:51:00Z'),
+    ];
+    expect(precedentDUnAutreJour(bilans, 'c3')).toBeNull();
+  });
+
+  it('le jour est celui de la personne : 23 h UTC et 0 h 30 UTC font le même 11 mars à Paris', () => {
+    const bilans = [
+      b('correction', '2026-03-11T00:30:00Z'),
+      b('corrige', '2026-03-10T23:00:00Z'),
+    ];
+    expect(precedentDUnAutreJour(bilans, 'correction')).toBeNull();
+  });
+
+  it('si le bilan affiché n’est pas le plus récent, on ne compare rien', () => {
+    const bilans = [b('plus-recent', '2026-10-05T09:00:00Z'), b('affiche', '2026-09-28T19:51:00Z')];
+    expect(precedentDUnAutreJour(bilans, 'affiche')).toBeNull();
+  });
+
+  it('une liste vide ne compare rien', () => {
+    expect(precedentDUnAutreJour([], 'x')).toBeNull();
   });
 });
 

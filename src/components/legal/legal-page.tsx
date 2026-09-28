@@ -1,4 +1,4 @@
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { EDITOR_CV_URL, EDITOR_NAME } from '@/constants/editeur';
 import { Spacing } from '@/constants/theme';
+import { revenirOu } from '@/lib/navigation';
 
 // Coquille commune aux pages légales (/confidentialite, /conditions). Ces pages ne sont pas
 // des écrans du parcours : elles existent parce que l'écran de consentement Google OAuth et
@@ -72,7 +73,7 @@ export function LegalPage({
 
             <TextLink
               label="Retour"
-              onPress={() => router.back()}
+              onPress={() => revenirOu('/')}
               role="link"
               type="small"
               weight={600}

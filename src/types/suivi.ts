@@ -79,6 +79,31 @@ export function keepLatestPerDay(snapshots: AssessmentSnapshot[]): AssessmentSna
 }
 
 /**
+ * Le bilan auquel la restitution compare celui-ci : le plus récent d'un **autre jour** (arbitrage du
+ * 28/09/2026, constat H4 de la recette web).
+ *
+ * `keepLatestPerDay` fait d'un bilan refait le même jour une **correction** : le suivi n'en garde que
+ * le dernier. La restitution, elle, comparait au bilan immédiatement antérieur, même de la même
+ * journée : quelqu'un qui corrige une distance saisie en mètres lisait « 1,3 t de moins que ton bilan
+ * de septembre », puis ne retrouvait ce « bilan de septembre » nulle part dans son suivi. Les deux
+ * écrans disaient deux choses du même geste ; c'est la correction qui gagne, et la règle du jour est
+ * celle du suivi, au caractère près (`jourLocalDe`).
+ *
+ * Attend une liste du plus récent au plus ancien. **Le premier doit être le bilan affiché** : sinon
+ * on ne compare rien plutôt que de comparer à un bilan postérieur (une horloge qui recule, une
+ * ouverture en mode `nouveau` sur un bilan qui ne l'est pas).
+ */
+export function precedentDUnAutreJour<T extends { id: string; submittedAt: string }>(
+  bilans: T[],
+  assessmentId: string
+): T | null {
+  const [courant, ...avant] = bilans;
+  if (!courant || courant.id !== assessmentId) return null;
+  const jour = jourLocalDe(courant.submittedAt);
+  return avant.find((bilan) => jourLocalDe(bilan.submittedAt) !== jour) ?? null;
+}
+
+/**
  * Le jour **local** d'un horodatage — et c'est ce que `keepLatestPerDay` regroupe (C2.7, point 7).
  *
  * Les dix premiers caractères d'un `timestamptz` sont son jour **UTC**, ce qui n'est pas le jour de

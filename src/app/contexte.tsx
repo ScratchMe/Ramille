@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { revenirOu } from '@/lib/navigation';
 import {
   enregistrerLeContexte,
   lireLeContexteCourant,
@@ -138,7 +139,7 @@ export default function Contexte() {
                 des pistes (contre-lecture du 25/09/2026). */}
             <TextLink
               label="Retour"
-              onPress={() => router.back()}
+              onPress={() => revenirOu('/plan')}
               role="link"
               type="small"
               weight={600}
@@ -167,7 +168,7 @@ export default function Contexte() {
     setEnregistrement(false);
 
     if (resultat.ok) {
-      router.back();
+      revenirOu('/plan');
       return;
     }
     setMessage(resultat.message);
@@ -214,7 +215,7 @@ export default function Contexte() {
 
           <TextLink
             label="Retour"
-            onPress={() => router.back()}
+            onPress={() => revenirOu('/plan')}
             role="link"
             type="small"
             weight={600}

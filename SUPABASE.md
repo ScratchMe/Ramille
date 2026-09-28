@@ -473,6 +473,18 @@ Le modèle lui-même — session anonyme dès l'ouverture, conversion qui garde 
 mot de passe, `/connexion/retrouver` comme seul chemin vers un compte existant — est dans
 `CLAUDE.md`, « Modèle d'authentification ». Ici, ce qui s'est cassé autour.
 
+**La non-divulgation se tient à l'écran, jamais au réseau — et c'est une limite de GoTrue, pas un
+oubli** (relevé à la recette web du 28/09/2026, documenté le même jour par décision). Deux appels
+répondent différemment selon qu'une adresse a un compte : `updateUser({ email })` (`422
+email_exists` ou `200`) et `signInWithOtp` sans création (`422 otp_disabled` ou `200`). Les écrans
+de Ramille rendent la même chose dans les deux cas ; la console du navigateur, elle, affiche le 422,
+et toute session anonyme peut appeler ces deux routes sans l'app et sans plafond. Aucun réglage du
+service ne masque ces réponses, et une fonction serveur ne fermerait pas l'appel direct. Ce qu'il
+faut en retenir avant d'écrire une ligne d'auth : **« aucune réponse différenciée » veut dire
+« aucune à l'écran »**, et ne s'écrit jamais sans cette précision — le 21/09/2026, l'arbitrage a été
+annoncé comme la fermeture d'un oracle qui ne l'était qu'à moitié (`v1-28` §7.1, où vit la condition
+de réouverture).
+
 **`estPanneDeTransport` couvre les 5xx, et c'est assumé** (même module) : `auth-js` ne réserve
 pas `AuthRetryableFetchError` à l'échec de `fetch` — son `lib/fetch.js` porte
 `NETWORK_ERROR_CODES = [500…504, 520…530]` et lève ce même nom pour chacun, code du corps jeté au

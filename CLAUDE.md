@@ -167,7 +167,10 @@ boucle `until [ "$(pgrep -f 'x.sh' | wc -l)" = 0 ]` écrite dans un shell dont l
 `x.sh` n'en sort **jamais** : elle compte le shell qui l'exécute. Relevé le 20/09/2026 — deux
 guetteurs et un pgTAP « en cours » pendant une heure, qui n'avait pas démarré. Filtrer par le nom
 exact du processus (`pgrep -x`), ou exclure son propre PID (`pgrep -f motif | grep -v "^$$"`), ou
-mieux : attendre le processus lui-même (`wait`), pas son nom.
+mieux : attendre le processus lui-même (`wait`), pas son nom. **Et `pkill -f` a le même défaut, en
+pire** : relevé le 28/09/2026, `pkill -f "node ./.pilote.mjs"` a tué le shell qui le lançait
+(code 144) avant les commandes suivantes de la même ligne. Arrêter un processus lancé en arrière-plan
+se fait par son identifiant de tâche, ou par `pkill -x` sur le nom exact.
 
 **Un marqueur accentué absent d'un bundle minifié ne prouve rien** : `é` y est échappé en
 `\u00e9`. Cherché le 15/09/2026 pour vérifier qu'un déploiement était bien passé — il l'était, et
@@ -971,7 +974,10 @@ répondait « cette adresse a-t-elle un compte ? » à qui n'avait rien demandé
 (arbitrage du 21/09/2026, `v1-28` §7.1). Une adresse libre reçoit un code de **rattachement**, une
 adresse prise un code de **connexion** — et les deux atterrissent sur le **même** écran de code.
 L'oracle qu'on ferme là était mesuré, pas supposé : une seule session anonyme a sondé vingt fois de
-suite la même adresse prise, vingt refus, aucun plafond. Trois choses à ne pas reconfondre :
+suite la même adresse prise, vingt refus, aucun plafond. **Et il n'est fermé qu'à l'écran** (recette
+web du 28/09/2026, documenté par décision le même jour) : la réponse du serveur reste `422` ou `200`,
+lisible dans la console et par un appel direct, et rien dans GoTrue ne la masque — `SUPABASE.md`
+§2.4, et la condition de réouverture en `v1-28` §7.1. Trois choses à ne pas reconfondre :
 
 - **Le contexte suit la branche, la voix suit l'écran hôte.** `ContexteDuCode` décide le `type`
   envoyé à l'API (`email_change` / `email`) et **doit** suivre la branche, les deux flux ne se
@@ -1798,9 +1804,10 @@ d'en rattacher un (`sendAccountAccessLink`, lien à usage unique par email). Tou
 quelqu'un qui a désinstallé l'app et arrive dans un navigateur neuf, où `ensureSession` vient
 de lui créer une session anonyme **vide qui n'est pas son compte**. Deux garde-fous non
 négociables : `shouldCreateUser: false` (une page de suppression qui fabrique des comptes
-serait le contraire de ce qu'elle affiche), et **aucune réponse différenciée** selon que
+serait le contraire de ce qu'elle affiche), et **aucune réponse différenciée à l'écran** selon que
 l'adresse a un compte ou non — une adresse inconnue renvoie un 422 `otp_disabled` qu'il faut
-traiter comme un succès, sinon la page devient un moyen de savoir qui utilise Ramille. La
+traiter comme un succès, sinon la page devient un moyen de savoir qui utilise Ramille. (Le 422
+lui-même reste lisible au réseau, et c'est une limite assumée : `SUPABASE.md` §2.4.) La
 limite d'envoi, elle, se reconnaît au **code** `over_email_send_rate_limit` : le message de
 Supabase ne contient pas le mot « rate ».
 
