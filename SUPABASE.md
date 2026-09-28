@@ -82,6 +82,20 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   migration qui ne contient que des `grant`/`revoke` est rejouable telle quelle, et un test
   épingle la matrice. **Ajouter une table impose un geste explicite**, et un privilège se justifie
   par un appel réel depuis l'app, jamais par « un test en a besoin ».
+- **Le 30/10/2026, la plateforme cesse d'accorder d'office l'accès aux tables neuves de `public`
+  sur les projets existants** (annonce reçue le 28/09/2026 ; le CLI avait basculé le
+  30/05/2026, §2.2). Un dépôt qui écrit déjà ses privilèges n'a rien à changer, et deux
+  choses que l'annonce ne dit pas valent d'être sues :
+    * **son modèle de `grant` est un plafond, pas un point de départ** : `select` à `anon`, les
+      quatre ordres à `authenticated` et à `service_role`, sur chaque table. Le recopier défait ce
+      que la RLS ne sait pas faire — un `grant update` de table rend sans effet un privilège de
+      colonne, et la RLS filtre des lignes, jamais des colonnes (plus bas) ;
+    * **la parade que sa documentation donne ne vise que `for role postgres`**. Les privilèges par
+      défaut du second créateur, `supabase_admin`, ne se lisent que dans `pg_default_acl`,
+      `postgres` ne peut pas les modifier, et le seul levier connu est un réglage du tableau de
+      bord (Integrations → Data API → Settings, « Default privileges for new entities ») dont on
+      n'a pas vérifié ce qu'il touche. Relever le catalogue avant et après l'échéance plutôt que
+      de supposer qu'elle a tout fermé.
 - **`revoke execute … from anon, authenticated` ne révoque rien** : PostgreSQL accorde `EXECUTE`
   à **PUBLIC** à la création, et les deux rôles en héritent. Il faut `from public, anon,
   authenticated`. Un `create or replace` ne préserve pas non plus l'ACL qu'on croit.
@@ -278,7 +292,12 @@ Trois choses à retenir, portables :
    `postgres`, c'est bien la moitié qui décide du sort de nos tables.
 2. **`postgres` ne peut pas toucher celle de `supabase_admin`** (`permission denied to change
    default privileges`, constaté) : cette moitié-là se désactive au tableau de bord (« Default
-   privileges for new entities »), et se consigne dans `docs/exploitation/`.
+   privileges for new entities », sous **Integrations → Data API → Settings** selon la
+   documentation de Supabase — le registre le plaçait sous Database, où il n'a pas été trouvé le
+   28/09/2026), et se consigne dans `docs/exploitation/`.
+   **Elle est encore ouverte au 28/09/2026**, relevé du catalogue à l'appui, et l'échéance
+   Supabase du 30/10/2026 ne la fermera pas forcément (§1.4) : le registre porte le relevé et la
+   vérification du 31/10 (`docs/exploitation/README.md` §3.1 et §5).
 3. **Ni la CI ni pgTAP n'auraient vu l'oubli**, parce que la stack locale porte exactement les
    mêmes entrées que le distant. La garde qui manque est donc une **assertion**, pas une
    relecture : `31_gardes_sous_les_gardes.test.sql` en porte trois, dont une lue sur
