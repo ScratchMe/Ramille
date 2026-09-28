@@ -2631,4 +2631,4 @@ archivé en `retrait`.
 **Ce qui reste à regarder** est rassemblé dans une feuille neuve,
 [`docs/recette/ce-qui-reste-apres-le-28-septembre.md`](../recette/ce-qui-reste-apres-le-28-septembre.md) :
 revoir chaque correctif sur la production, le bloc 12 s'il n'a pas pu se jouer le 1er octobre,
-10.9 sur deux jours, et les deux jugements qui reviennent à la personne qui pilote.
+10.9 sur deux jours, et les trois jugements qui reviennent à la personne qui pilote.

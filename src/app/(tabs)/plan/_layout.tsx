@@ -30,7 +30,8 @@ import { createContext, useContext, useMemo, useRef } from 'react';
 type EngagementPris = { poste: string | null };
 
 type Passage = {
-  /** Déposé par l'écran des pistes **avant** `router.back()`, jamais après ni sous condition. */
+  /** Déposé par l'écran des pistes **avant** d'en revenir (`revenirOu`), jamais après ni sous
+   * condition. */
   deposer: (engagement: EngagementPris) => void;
   /** Lu-et-effacé par le plan, au focus. Rend `null` s'il n'y a rien à reprendre. */
   reprendre: () => EngagementPris | null;
