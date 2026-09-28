@@ -354,7 +354,10 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
     `LinearTransition`, les deux outils prévus, ont été retirés sur mesure (§3.2). Une carte de
     saison refermée laisse donc le plan remonter d'un coup — quatre fois par an. Le rouvrir demande
     un conteneur à hauteur suivie autour des cartes d'ouverture, et le `gap` de la liste défilante
-    ne s'y prête pas sans réécrire l'espacement de l'écran : non fait dans cette vague.
+    ne s'y prête pas sans réécrire l'espacement de l'écran : non fait dans cette vague. **La
+    décision se prend sur pièce, le 1er octobre 2026** (la personne qui pilote, 28/09/2026), avec le
+    premier build qui porte la vague : on garde l'écart, ou l'espacement du plan devient un
+    chantier. La recommandation posée était de le garder pour cette vague.
 - **Sous la préférence** : la barre ne lit pas la valeur animée du tout — `tabBarStyle` ne porte ni
   opacité ni transformation. La première forme la remettait à 1 dans un effet, donc parfois après la
   première image : le parcours réel l'a vue au premier de deux passages, une image transparente sur
@@ -518,6 +521,8 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
 ### 8.2 Le build EAS
 
 Il se **demande** avant d'être lancé (au plus un tous les deux jours, registre d'exploitation §3.3).
+**Pas avant le 1er octobre 2026** (la personne qui pilote, 28/09/2026) : la vague est fusionnée sur
+`main` sans attendre, et le build de ce jour-là porte ce qui aura été fusionné d'ici là.
 
 ### 8.3 La recette sur appareil (`RECETTE.md`)
 
@@ -527,7 +532,9 @@ Accessibilité), **en relançant l'app après chaque changement** :
 - les deux feuilles : le voile ne monte pas, la feuille monte, le retour matériel la fait redescendre ;
 - « Compris » : la carte des deux lieux entre, la barre glisse, **aucune bande de couleur** sous
   l'écran ; et une carte de saison refermée laisse le plan remonter d'un coup — c'est l'écart de §5.5,
-  à juger sur l'appareil ;
+  **et c'est une décision à prendre ce jour-là, sur pièce** : on le garde, ou l'espacement du plan
+  devient un chantier. Pour le voir, il faut une carte de saison à refermer — un compte dont le
+  cycle précédent existe, donc un bilan d'une saison passée ;
 - une barre qui ne glisse **pas** à une ouverture ordinaire de l'app ;
 - le questionnaire : le sens de l'entrée en avançant et en reculant ; TalkBack annonce la nouvelle
   question une fois ;
@@ -554,8 +561,8 @@ Accessibilité), **en relançant l'app après chaque changement** :
 | — | Les mutations des gardes | fait — tables en tête de chaque garde, mutations jouées une à une sur un fichier égal au commit. Des mutations ont d’abord corrigé la garde (P1, P4, P8, J12), une CI rouge aussi (`TESTING.md` §2.14, point 5). Rejouées le 28/09/2026 après la seconde contre-lecture : J2 et J8 réécrites, J13 à J17 et P9 ajoutées, P1 à P3 et P8 rejouées sur la feuille réécrite ; J13 et J14 ont montré que le contrôle de disparition ne voit pas `entering`, qui masque avant de montrer |
 | 7 | Les documents | fait — kit, `FRONT.md` §2.12, `EXPO.md` §1.5 et §1.7, `TESTING.md` §2.10 et §2.14, `CLAUDE.md`, `v1-17` §9, skill `mouvement` |
 | 8.1 | Contre-lecture, rejeu de la CI, poids Vercel | fait — deux contre-lectures faites et corrigées ; poids Vercel mesuré (4,16 Mio, inchangé) ; `/rejouer-la-ci` lancé par la personne qui pilote le 28/09/2026 sur e431733, arbre propre : 31 pas réussis, aucun échec, aucun non joué |
-| 8.2 | Build EAS (à demander) | à faire |
-| 8.3 | Recette sur appareil | à faire |
+| 8.2 | Build EAS (à demander) | pas avant le 1er octobre 2026 (décision du 28/09) |
+| 8.3 | Recette sur appareil | le 1er octobre 2026 au plus tôt, avec la décision sur la carte de saison (§5.5) ; ligne 11.21 de `v1-13` |
 | 6 | Vague 2 : la sortie du lancement | après 8.3 |
 
 ## 10. Comment reprendre

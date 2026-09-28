@@ -433,9 +433,11 @@ de C5.7 levé), l'étape du questionnaire qui entre dans le sens du parcours, le
 lieu de sauter, les onglets en fondu sans image de « Chargement… » — puis, dans un second temps, la
 sortie de l'écran de lancement. **Deux écarts y sont écrits** : le plug-in `hzblj-skills`, installé
 en mode manuel là où la recommandation était de ne pas l'installer, et le plan qui remonte encore
-d'un coup quand une carte de saison est refermée. **Tout y respecte « réduire les animations »**,
-et le document tient l'état d'avancement de chaque chantier, pour qu'un autre agent puisse le
-reprendre.
+d'un coup quand une carte de saison est refermée — celui-là se juge sur pièce au premier build, **pas
+avant le 1er octobre 2026**. **Tout y respecte « réduire les animations »**, et le document tient
+l'état d'avancement de chaque chantier, pour qu'un autre agent puisse le reprendre. La première vague
+est fusionnée le 28/09/2026 ; la recette sur appareil (`v1-13` §11, ligne 11.21) et la vague 2 — la
+sortie de l'écran de lancement — viennent après.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 
