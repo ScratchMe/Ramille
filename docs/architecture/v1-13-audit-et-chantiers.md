@@ -2628,6 +2628,9 @@ archivé en `retrait`.
 | 09.10 | Recharger hors ligne après le retrait du seul bilan | **Pas jouable au web** : rien ne sert l'app hors ligne | Ligne 11.23 |
 | 10.9 | La légende de l'écart par poste | **Pas jouable le même jour**, pour la raison de 08.5 | Rejouée en partie le 1er octobre, et dans la feuille suivante |
 
+Les correctifs, les gardes et cette documentation sont livrés par
+[#290](https://github.com/ScratchMe/Ramille/pull/290), contre-lue avant son ouverture.
+
 **Ce qui reste à regarder** est rassemblé dans une feuille neuve,
 [`docs/recette/ce-qui-reste-apres-le-28-septembre.md`](../recette/ce-qui-reste-apres-le-28-septembre.md) :
 revoir chaque correctif sur la production, le bloc 12 s'il n'a pas pu se jouer le 1er octobre,
