@@ -91,6 +91,8 @@ const VARIABLES_INOFFENSIVES = {
   CHROMIUM_PATH: 'désigne un navigateur, pas une cible ; le rejeu la pose lui-même quand elle manque',
   VERIFIER_API_PNG: 'demande d’écrire la carte rendue pour la regarder, sans rien changer au contrôle',
   TRACE_LIEN: 'imprime des identifiants de diagnostic, sans rien changer au contrôle',
+  HTTPS_PROXY:
+    'lue par le pilote de recette (RECETTE.md §2.6), que le rejeu ne lance pas ; elle désigne une sortie réseau, pas une cible',
 };
 const estEcartee = (nom) =>
   VARIABLES_ECARTEES.noms.includes(nom) || VARIABLES_ECARTEES.prefixes.some((p) => nom.startsWith(p));

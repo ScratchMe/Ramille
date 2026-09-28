@@ -14,6 +14,7 @@ import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
 import { demanderLaConnexion, demanderLeRattachement } from '@/lib/auth';
 import { effacerLesMarquesLocales } from '@/lib/compte';
+import { revenirOu } from '@/lib/navigation';
 import {
   lireAdresseDuLien,
   lireFluxDuCode,
@@ -35,10 +36,7 @@ import {
  * périmé, et la pile peut alors n'avoir aucune entrée derrière. Un `router.back()` nu n'y fait
  * rien.
  */
-function revenirOuRacine() {
-  if (router.canGoBack()) router.back();
-  else router.replace('/');
-}
+const revenirOuRacine = () => revenirOu('/');
 
 /**
  * « Rattacher mon adresse » — une adresse, puis un code.

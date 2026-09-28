@@ -5,7 +5,13 @@
 > contexte, les modes manquants) et ce que les six jours suivants ont ajouté (le design system à
 > l'écran, l'onboarding, le résiduel des sorties rares, le retrait d'un bilan, la page de
 > confidentialité). **Retouchée le 28/09/2026** pour ce que le mot de la veille (C4.2) ajoute à la
-> page de confidentialité — le seul morceau de C4.2 qu'un navigateur peut voir. **Jouée le : ………**
+> page de confidentialité — le seul morceau de C4.2 qu'un navigateur peut voir. **Jouée le
+> 28/09/2026 par l'agent**, au navigateur sans interface, avec l'accord de la personne qui pilote
+> (`RECETTE.md` §1.9) : blocs 00 à 11, 14.1 et 14.2 ; le bloc 12 et le 14.3 le 1er octobre. Ce
+> qu'elle a trouvé est en `v1-13` §15, et ce qui reste à regarder dans
+> [`ce-qui-reste-apres-le-28-septembre.md`](ce-qui-reste-apres-le-28-septembre.md). Trois de ses
+> lignes étaient fautives et sont corrigées ici (08.5, et 09.3 qui en dépendait ; 09.10 ; 10.9), et
+> 10.2 suit la décision du soir.
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`. Aucun build EAS n'est disponible
 > avant le 1er octobre (quota du plan gratuit, registre d'exploitation §3.3), et rien de ce qui est
@@ -314,7 +320,7 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 | 08.2 | Le plan et le suivi, en cherchant une proposition de re-bilan | **Aucune carte de re-bilan**, ni sur le plan ni sur le suivi : le bilan a moins d'une saison, et la proposition ne vient qu'à la bascule (C6.3). Une carte qui dirait « Ton dernier bilan a moins d'un mois » est un écart | |
 | 08.3 | « Pas maintenant ». Puis, dans le **navigateur B** (fermer la fenêtre du bloc 06 d'abord), une fenêtre privée sur `https://www.ramille.fr/compte` — une session anonyme, sans bilan, suffit | La page dit ce qu'un compte apporte **et ce que son absence coûte** : « Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs — si tu changes de téléphone ou si tu ne reviens pas pendant **trois mois**, ce bilan ne te suivra pas. » | |
 | 08.4 | Le gain de la piste de rang 1, sur le plan du profil 1 | **« 1 601 kg »** avec un vrai espace entre le 1 et le 6 — jamais « 1601 kg ». **C'est le seul gain à quatre chiffres du parcours** | |
-| 08.5 | Revenir sur le compte du profil 1 (**navigateur A**, la fenêtre du bloc 04) et **soumettre pour de bon un second bilan**, identique au premier sauf **2 vols courts sur 2** (donc aucun long-courrier) | La feuille du 08.1 s'ouvre de nouveau, avec la même phrase de l'engagement ; « Soumettre mon bilan ». Le suivi porte maintenant **deux** bilans — c'est ce qu'il faut au bloc 09 | |
+| 08.5 | Revenir sur le compte du profil 1 (**navigateur A**, la fenêtre du bloc 04) et **soumettre pour de bon un second bilan**, identique au premier sauf **2 vols courts sur 2** (donc aucun long-courrier) | La feuille du 08.1 s'ouvre de nouveau, avec la même phrase de l'engagement ; « Soumettre mon bilan ». **Le suivi n'en montre qu'un** : il ne garde que le dernier bilan de chaque jour, un bilan refait le même jour étant une correction (`keepLatestPerDay`) — et depuis le 28/09/2026 la restitution ne le compare plus au premier. La base en porte bien deux, c'est ce qu'il faut au bloc 09. *(Cette ligne attendait deux bilans au suivi : faux joué dans la journée, relevé à la séance du 28/09.)* | |
 
 ## Bloc 09 — Retirer un bilan
 
@@ -328,14 +334,14 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 |---|---|---|---|
 | 09.1 | Ouvrir la restitution du **second** bilan (le plus récent) depuis le suivi | En bas, le lien **« Ce bilan ne me ressemble pas »** — un lien discret, jamais un bouton | |
 | 09.2 | Le toucher | Il laisse place à un encart : **« Retirer ce bilan ? »**, puis « **Il n'apparaîtra plus dans ton suivi, et ton plan repartira de ton bilan précédent.** », puis — parce qu'une action est engagée, avec l'échéance du 03.12 — « **L'action que tu suis — Faire une sortie sur trois à vélo à assistance électrique — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.** » (la forme sans moment, « … reste engagée si ton nouveau plan la propose encore … », ne s'affiche que pour une action sans intention lisible). Deux sorties : « **Annuler** » et « **Retirer ce bilan** » | |
-| 09.3 | « Annuler » | L'encart se referme, le lien revient. **Rien n'a été retiré** : le suivi porte toujours deux bilans | |
+| 09.3 | « Annuler » | L'encart se referme, le lien revient. **Rien n'a été retiré** : le suivi montre toujours le même bilan (un par jour, cf. 08.5) | |
 | 09.4 | Rouvrir, puis « **Retirer ce bilan** » | Le bouton dit « **Retrait…** » le temps de l'appel. Puis la page dit **« Ce bilan a été retiré. »** et « **Il n'apparaît plus dans ton suivi, et son chiffre ne s'affiche plus ici.** », avec « **Revenir à mon suivi** ». **Aucun chiffre** du bilan à l'écran | |
 | 09.5 | Recharger la page (F5) | **Le même état « retiré »** — c'est l'adresse qui le dit, et plus le geste : c'est elle qui circule par les favoris et les partages | |
 | 09.6 | « Revenir à mon suivi » | **Un seul** bilan dans l'historique, le premier | |
 | 09.7 | Le plan | Il repart du premier bilan, dans cet ordre : **d'abord l'action engagée** (le vélo à assistance, « TON ENGAGEMENT » — elle est encore proposée, donc reposée), **puis** le vol long-courrier à « − 1 601 kg CO₂e », puis « **Voir toutes les pistes · 10** ». **Aucun encart** qui annonce que le plan a changé — c'est un geste choisi, qu'on ne raconte pas après coup (D2) | |
 | 09.8 | Ouvrir la restitution du **premier** bilan, puis « Ce bilan ne me ressemble pas » | Le corps a changé : « **C'est ton seul bilan : il n'apparaîtra plus dans ton suivi, et tu repartiras d'un nouveau bilan.** » — **aucune phrase sur le plan**, il n'y a plus de plan à reconstruire. **Mais l'action est nommée**, sans conditionnel, parce que le retrait du seul bilan l'archive à coup sûr (décision du 27/09/2026) : « **L'action que tu suis — Faire une sortie sur trois à vélo à assistance électrique — ne sera plus engagée.** » | |
 | 09.9 | « Retirer ce bilan » | On rejoint **l'onboarding** (ou la reprise d'un questionnaire commencé, s'il y en avait un) | |
-| 09.10 | Couper le réseau (outils de développement → « Offline »), recharger `https://www.ramille.fr/` | **L'onboarding**, et non « ton plan t'attend » ni un plan : la marque locale qui autorisait cette phrase hors ligne a été effacée avec le dernier bilan. Remettre le réseau | |
+| 09.10 | **Sur appareil seulement** (relevé le 28/09/2026 : au web, recharger réseau coupé rend la page d’erreur du navigateur, rien ne sert l’app hors ligne — `v1-13` §11). Couper le réseau (outils de développement → « Offline »), recharger `https://www.ramille.fr/` | **L'onboarding**, et non « ton plan t'attend » ni un plan : la marque locale qui autorisait cette phrase hors ligne a été effacée avec le dernier bilan. Remettre le réseau | |
 
 ## Bloc 10 — Qui sort « rarement »
 
@@ -348,14 +354,14 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
 | 10.1 | **Navigateur B**, toutes ses fenêtres privées fermées, puis une neuve. Onboarding, puis saisir le **profil 2** | Après « Rarement — une fois par mois ou moins », les questions du détail des sorties **ne s'affichent pas** | |
-| 10.2 | La restitution | Le poste dominant s'appelle **« Tes loisirs occasionnels »**, et sa barre de répartition **« Loisirs occasionnels »** — jamais « loisirs du week-end ». Le texte commence par **« Tu es déjà sous le repère transport 2050. »**, et **ne propose aucune marche** : pas de « S'il te reste de l'envie… » sur des sorties qu'on n'a pas déclarées | |
+| 10.2 | La restitution | Le poste dominant s'appelle **« Tes loisirs occasionnels »**, et sa barre de répartition **« Loisirs occasionnels »** — jamais « loisirs du week-end ». Le texte commence par **« Tu es déjà sous le repère transport 2050. »**, et **ne propose aucune marche** : pas de « S'il te reste de l'envie… » sur des sorties qu'on n'a pas déclarées, **ni de barre « Ton prochain palier »** dans « Où tu te situes » (décidé le 28/09/2026, après que la séance l'a trouvée à 47 kg) | |
 | 10.3 | Rejoindre le plan | **Aucune action.** La carte de félicitation dit **« Tu es déjà sous le repère 2050. »** Et **pas** de carte « Ton premier plan » : il n'y a rien à choisir | |
 | 10.4 | La barre d'onglets | **Elle est là**, avec la carte **« Deux endroits, pas plus. »** — un plan à zéro action referme le premier parcours. **Ne pas toucher « Compris »** : la ligne 10.7 en a besoin | |
 | 10.5 | Le suivi | L'entrée du bilan dit **« Poste principal : Loisirs occasionnels »**, et la ligne d'horizon **« Tu es déjà sous le repère transport 2050. »** | |
 | 10.6 | « **Revoir mon bilan** » en bas du plan, puis « **Faire un nouveau bilan** » : tout pareil, sauf le mode du trajet → **Voiture (seul)** → **Thermique** | La restitution dit **570 kg** environ (569,9 mesuré), et le poste dominant devient le trajet domicile-travail | |
 | 10.7 | Le plan | **Une seule** carte d'ouverture : **« TON PREMIER PLAN » — « Une action pour l'automne. »**, et **pas** « Deux endroits, pas plus. » par-dessus ou dessous. Jusqu'au 27/09, les deux s'empilaient sur ce chemin précis. Puis **les deux cartes** (métro ou tram, train), « **Voir toutes les pistes · 4** », et le cap **« − 102 kg »** avec « **Chacune des deux pistes proposées suffit à le franchir.** » (199 et 165 kg, tous deux au-dessus de 102) | |
 | 10.8 | « Compris » sur « Ton premier plan » | **Alors seulement** la carte « Deux endroits, pas plus. » apparaît : celle qui attend son tour se rend dès que la précédente est refermée | |
-| 10.9 | Le suivi : l'écart par poste, sous les deux bilans | Sous les barres, la légende : « Contour : bilan précédent · plein : ce bilan · accent : **ton trajet domicile-travail, ton poste principal** ». **Jamais « le poste sur lequel ton plan travaille »** — la légende ne lit pas le plan, et un plan à zéro action ne travaille sur rien (corrigé le 27/09/2026). L'entrée du premier bilan dit toujours « Poste principal : Loisirs occasionnels » | |
+| 10.9 | Le suivi : l'écart par poste, sous les deux bilans — **qui doivent être de deux jours différents** : le même jour, le suivi n'en montre qu'un (cf. 08.5), et il n'y a ni écart ni légende à regarder (relevé le 28/09/2026) | Sous les barres, la légende : « Contour : bilan précédent · plein : ce bilan · accent : **ton trajet domicile-travail, ton poste principal** ». **Jamais « le poste sur lequel ton plan travaille »** — la légende ne lit pas le plan, et un plan à zéro action ne travaille sur rien (corrigé le 27/09/2026). L'entrée du premier bilan dit toujours « Poste principal : Loisirs occasionnels » | |
 | 10.10 | **Garder ce profil pour le bloc 12** : depuis « Toi », rattacher un compte avec **une seconde adresse** (le code, comme au bloc 04). **Puis, toujours sur « Toi », régler les rappels sur « Sans rappel »** | Le compte est rattaché. Sans ça, fermer la fenêtre privée perdrait la session, et le bloc 12 n'aurait personne à interroger. Les rappels sur « Sans rappel » : sans ça, un **vrai** rappel partirait vers cette adresse dans les quatre jours qui suivent le 1er octobre (`RECETTE.md` §2.3) — le point, lui, se génère quel que soit le canal | |
 
 ## Bloc 11 — La page de confidentialité

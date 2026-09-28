@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { revenirOu } from '@/lib/navigation';
 import {
   FEEDBACK_KINDS,
   FEEDBACK_MAX_LENGTH,
@@ -93,7 +94,7 @@ export default function Feedback() {
             Ton retour est lu à la main. Il n’y aura pas de réponse automatique — on préfère te
             le dire plutôt que de te laisser l’attendre.
           </ThemedText>
-          <Button title="Revenir" onPress={() => router.back()} style={styles.sentButton} />
+          <Button title="Revenir" onPress={() => revenirOu('/')} style={styles.sentButton} />
         </SafeAreaView>
       </ThemedView>
     );
@@ -195,7 +196,7 @@ export default function Feedback() {
 
           <TextLink
             label="Annuler"
-            onPress={() => router.back()}
+            onPress={() => revenirOu('/')}
             type="small"
             themeColor="textTertiary"
             style={styles.cancel}

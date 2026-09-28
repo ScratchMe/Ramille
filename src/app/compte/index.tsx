@@ -14,6 +14,7 @@ import { CONTACT_EMAIL } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
+import { revenirOu } from '@/lib/navigation';
 import {
   lireLaFenetreDuMotDeLaVeille,
   loadReminderPrefs,
@@ -46,6 +47,13 @@ export default function Compte() {
   const [cle, setCle] = useState(0);
   const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
   const [erreurDeconnexion, setErreurDeconnexion] = useState<string | null>(null);
+  // **Après la suppression, l'écran ne montre plus que sa confirmation** (recette du 28/09/2026,
+  // constat H5). La carte « Mes données » se remplaçait seule par « C'est fait. », et tout le reste
+  // de l'écran continuait de décrire le compte supprimé : son adresse, « Me déconnecter de cet
+  // appareil », le rappel par email coché — trois gestes proposés sur un compte qui n'existe plus.
+  // Le « Retour » part aussi : la sortie est « Revenir au début », qui repasse par la racine. Les
+  // pages légales et l'adresse de contact, elles, restent en bas de l'écran.
+  const [supprime, setSupprime] = useState(false);
 
   useEffect(() => {
     let annule = false;
@@ -151,166 +159,179 @@ export default function Compte() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.contenu} showsVerticalScrollIndicator={false}>
           <View style={styles.page}>
-            <TextLink
-              label="Retour"
-              onPress={() => router.back()}
-              role="link"
-              type="small"
-              themeColor="textTertiary"
-              containerStyle={styles.retour}
-            />
+            {!supprime && (
+              <TextLink
+                label="Retour"
+                onPress={() => revenirOu('/')}
+                role="link"
+                type="small"
+                themeColor="textTertiary"
+                containerStyle={styles.retour}
+              />
+            )}
             <ThemedText type="screenTitle">Toi</ThemedText>
 
-            {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et la saisie du
-                code, la ligne porte déjà l'adresse alors que le compte n'est pas rattaché : cet
-                écran proposait alors de « rattacher un compte », comme si la demande n'avait jamais
-                eu lieu — et la boucle ouverte par l'écran des e-mails ne se refermait nulle part.
-                (C'était un clic de confirmation jusqu'au 20/09/2026 ; c'est un code depuis, et cet
-                état porte désormais la porte qui ramène à la saisie.) `etatDuRattachement` nomme cet
-                entre-deux, là où `etatDuCompte` a raison de le confondre avec l'anonymat.
-
-                Registre : un fait, jamais une relance. Pas de « pense à confirmer », pas de
-                bouton pour renvoyer l'email — la personne a déjà ce qu'il lui faut dans sa
-                messagerie, et rien ici ne doit se lire comme un reproche. */}
-            {etat?.kind === 'rattache' && (
-              <ThemedText type="body" themeColor="textSecondary">
-                {etat.email
-                  ? `Ton compte est rattaché à ${etat.email}. Ton bilan te suit d’un appareil à l’autre.`
-                  : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
-              </ThemedText>
-            )}
-
-            {/* **Une sortie, et elle n'existait pas** (C2.11, arbitrage D17). Le seul `signOut` du
-                produit était celui de la suppression de compte : quelqu'un qui prête son téléphone
-                n'avait le choix qu'entre laisser sa session ouverte et supprimer son compte. La
-                phrase est là pour dire ce qui ne part pas — sans elle, « me déconnecter » se lit
-                comme une perte.
-
-                Proposé au seul compte **rattaché** : déconnecter une session anonyme la rendrait
-                inatteignable pour toujours, puisque rien ne permet d'y revenir. */}
-            {etat?.kind === 'rattache' && (
+            {!supprime && (
               <>
-                <Button
-                  title={deconnexionEnCours ? 'Déconnexion…' : 'Me déconnecter de cet appareil'}
-                  variant="secondary"
-                  disabled={deconnexionEnCours}
-                  onPress={seDeconnecter}
-                  style={styles.bouton}
-                />
-                <ThemedText type="small" themeColor="textTertiary">
-                  Tes données restent sur ton compte.
-                </ThemedText>
-                <MessageInline message={erreurDeconnexion} />
+                {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et la saisie du
+                    code, la ligne porte déjà l'adresse alors que le compte n'est pas rattaché : cet
+                    écran proposait alors de « rattacher un compte », comme si la demande n'avait jamais
+                    eu lieu — et la boucle ouverte par l'écran des e-mails ne se refermait nulle part.
+                    (C'était un clic de confirmation jusqu'au 20/09/2026 ; c'est un code depuis, et cet
+                    état porte désormais la porte qui ramène à la saisie.) `etatDuRattachement` nomme cet
+                    entre-deux, là où `etatDuCompte` a raison de le confondre avec l'anonymat.
+
+                    Registre : un fait, jamais une relance. Pas de « pense à confirmer », pas de
+                    bouton pour renvoyer l'email — la personne a déjà ce qu'il lui faut dans sa
+                    messagerie, et rien ici ne doit se lire comme un reproche. */}
+                {etat?.kind === 'rattache' && (
+                  <ThemedText type="body" themeColor="textSecondary">
+                    {etat.email
+                      ? `Ton compte est rattaché à ${etat.email}. Ton bilan te suit d’un appareil à l’autre.`
+                      : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
+                  </ThemedText>
+                )}
+
+                {/* **Une sortie, et elle n'existait pas** (C2.11, arbitrage D17). Le seul `signOut` du
+                    produit était celui de la suppression de compte : quelqu'un qui prête son téléphone
+                    n'avait le choix qu'entre laisser sa session ouverte et supprimer son compte. La
+                    phrase est là pour dire ce qui ne part pas — sans elle, « me déconnecter » se lit
+                    comme une perte.
+
+                    Proposé au seul compte **rattaché** : déconnecter une session anonyme la rendrait
+                    inatteignable pour toujours, puisque rien ne permet d'y revenir. */}
+                {etat?.kind === 'rattache' && (
+                  <>
+                    <Button
+                      title={deconnexionEnCours ? 'Déconnexion…' : 'Me déconnecter de cet appareil'}
+                      variant="secondary"
+                      disabled={deconnexionEnCours}
+                      onPress={seDeconnecter}
+                      style={styles.bouton}
+                    />
+                    <ThemedText type="small" themeColor="textTertiary">
+                      Tes données restent sur ton compte.
+                    </ThemedText>
+                    <MessageInline message={erreurDeconnexion} />
+                  </>
+                )}
+
+                {etat?.kind === 'a_confirmer' && (
+                  <>
+                    <ThemedText type="body" themeColor="textSecondary">
+                      Adresse à confirmer : {etat.email}. Un code est parti par email ; une fois tapé,
+                      ton bilan te suivra d’un appareil à l’autre.
+                    </ThemedText>
+                    {/* **Cette porte rend vraie une phrase écrite ailleurs.** L'écran de code dit « si tu
+                        quittes cet écran, tu retrouves la saisie du code depuis “Toi” » — c'était faux
+                        tant que cet écran ne portait qu'un constat, et le cas n'est pas rare : sur web,
+                        aller chercher le code dans sa messagerie peut emporter l'onglet. L'écran de
+                        rattachement relit l'adresse en local et s'ouvre directement sur la saisie, sans
+                        renvoyer de code — celui qui est déjà dans la boîte vaut encore, et « Renvoyer un
+                        code » est là pour l'autre cas.
+
+                        Un fait et une porte, pas une relance : ni « pense à », ni bouton de renvoi ici. */}
+                    <TextLink
+                      label="Saisir le code"
+                      onPress={() => router.push({ pathname: '/connexion/email', params: { reprise: '1' } })}
+                      role="link"
+                      type="small"
+                      weight={600}
+                      themeColor="accentText"
+                    />
+                  </>
+                )}
+
+                {etat?.kind === 'local' && (
+                  <>
+                    {/* **L'échéance, et pas seulement l'avantage** (arbitré le 21/09/2026,
+                        `v1-28` §7.2). Cet écran disait ce qu'un compte apporte et jamais ce que son
+                        absence coûte, donc le délai de la purge n'était lu que par ceux qui avaient
+                        déjà ouvert `/connexion` — c'est-à-dire pas par la personne que la purge
+                        efface. La clause et le délai sont partagés avec cet écran-là, à un seul
+                        endroit. */}
+                    <ThemedText type="body" themeColor="textSecondary">
+                      {PHRASE_SANS_COMPTE_SUR_TOI}
+                    </ThemedText>
+                    <Button
+                      title="Rattacher un compte"
+                      onPress={() => router.push({ pathname: '/connexion', params: { source: 'compte' } })}
+                      style={styles.bouton}
+                    />
+                  </>
+                )}
+
+                {/* **Le quatrième état, et le seul qui n'affirme rien** (A6-8). `getUser()` est un
+                    aller-retour réseau : hors ligne, cet écran disait à une personne rattachée
+                    depuis des mois qu'elle n'a pas de compte, et lui proposait d'en créer un. Pas
+                    de bouton de rattachement ici — proposer un compte à quelqu'un qui en a
+                    peut-être un est exactement le mensonge qu'on corrige. */}
+                {etat?.kind === 'indisponible' && (
+                  <>
+                    <ThemedText type="body" themeColor="textSecondary">
+                      On n’a pas pu vérifier ton compte à l’instant, ni relire tes réglages de
+                      rappel. Rien n’a changé de ton côté.
+                    </ThemedText>
+                    <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
+                  </>
+                )}
+
+                {/* Le réglage s'affiche pour tout le monde, y compris une session anonyme : le
+                    push n'a besoin que d'un jeton d'appareil (v1-12 §2.5). C'était l'inverse
+                    avant, l'interrupteur email n'apparaissant qu'avec un compte rattaché.
+
+                    **Sauf quand la lecture du compte a échoué** : `loadReminderPrefs` ne distingue
+                    pas un échec de « pas de session » et rend alors ses valeurs par défaut — canal
+                    « aucun », pas de jeton, pas d'email. La liste afficherait donc un choix que
+                    personne n'a fait, à côté d'un message qui dit qu'on n'a rien pu lire. On attend
+                    donc de savoir : les deux lectures partent ensemble, et `etat` vaut toujours
+                    quelque chose à l'arrivée, échec compris. */}
+                {rappels && etat !== null && etat.kind !== 'indisponible' && (
+                  <>
+                    <ChoixDeRappel
+                      prefs={rappels}
+                      fenetre={fenetre}
+                      onChoisir={choisirLeCanal}
+                      onChoisirLaVeille={choisirLaVeille}
+                    />
+                    <MessageInline message={messageCanal} />
+                  </>
+                )}
               </>
             )}
 
-            {etat?.kind === 'a_confirmer' && (
-              <>
-                <ThemedText type="body" themeColor="textSecondary">
-                  Adresse à confirmer : {etat.email}. Un code est parti par email ; une fois tapé,
-                  ton bilan te suivra d’un appareil à l’autre.
-                </ThemedText>
-                {/* **Cette porte rend vraie une phrase écrite ailleurs.** L'écran de code dit « si tu
-                    quittes cet écran, tu retrouves la saisie du code depuis “Toi” » — c'était faux
-                    tant que cet écran ne portait qu'un constat, et le cas n'est pas rare : sur web,
-                    aller chercher le code dans sa messagerie peut emporter l'onglet. L'écran de
-                    rattachement relit l'adresse en local et s'ouvre directement sur la saisie, sans
-                    renvoyer de code — celui qui est déjà dans la boîte vaut encore, et « Renvoyer un
-                    code » est là pour l'autre cas.
-
-                    Un fait et une porte, pas une relance : ni « pense à », ni bouton de renvoi ici. */}
-                <TextLink
-                  label="Saisir le code"
-                  onPress={() => router.push({ pathname: '/connexion/email', params: { reprise: '1' } })}
-                  role="link"
-                  type="small"
-                  weight={600}
-                  themeColor="accentText"
-                />
-              </>
-            )}
-
-            {etat?.kind === 'local' && (
-              <>
-                {/* **L'échéance, et pas seulement l'avantage** (arbitré le 21/09/2026,
-                    `v1-28` §7.2). Cet écran disait ce qu'un compte apporte et jamais ce que son
-                    absence coûte, donc le délai de la purge n'était lu que par ceux qui avaient
-                    déjà ouvert `/connexion` — c'est-à-dire pas par la personne que la purge
-                    efface. La clause et le délai sont partagés avec cet écran-là, à un seul
-                    endroit. */}
-                <ThemedText type="body" themeColor="textSecondary">
-                  {PHRASE_SANS_COMPTE_SUR_TOI}
-                </ThemedText>
-                <Button
-                  title="Rattacher un compte"
-                  onPress={() => router.push({ pathname: '/connexion', params: { source: 'compte' } })}
-                  style={styles.bouton}
-                />
-              </>
-            )}
-
-            {/* **Le quatrième état, et le seul qui n'affirme rien** (A6-8). `getUser()` est un
-                aller-retour réseau : hors ligne, cet écran disait à une personne rattachée
-                depuis des mois qu'elle n'a pas de compte, et lui proposait d'en créer un. Pas
-                de bouton de rattachement ici — proposer un compte à quelqu'un qui en a
-                peut-être un est exactement le mensonge qu'on corrige. */}
-            {etat?.kind === 'indisponible' && (
-              <>
-                <ThemedText type="body" themeColor="textSecondary">
-                  On n’a pas pu vérifier ton compte à l’instant, ni relire tes réglages de
-                  rappel. Rien n’a changé de ton côté.
-                </ThemedText>
-                <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
-              </>
-            )}
-
-            {/* Le réglage s'affiche pour tout le monde, y compris une session anonyme : le
-                push n'a besoin que d'un jeton d'appareil (v1-12 §2.5). C'était l'inverse
-                avant, l'interrupteur email n'apparaissant qu'avec un compte rattaché.
-
-                **Sauf quand la lecture du compte a échoué** : `loadReminderPrefs` ne distingue
-                pas un échec de « pas de session » et rend alors ses valeurs par défaut — canal
-                « aucun », pas de jeton, pas d'email. La liste afficherait donc un choix que
-                personne n'a fait, à côté d'un message qui dit qu'on n'a rien pu lire. On attend
-                donc de savoir : les deux lectures partent ensemble, et `etat` vaut toujours
-                quelque chose à l'arrivée, échec compris. */}
-            {rappels && etat !== null && etat.kind !== 'indisponible' && (
-              <>
-                <ChoixDeRappel
-                  prefs={rappels}
-                  fenetre={fenetre}
-                  onChoisir={choisirLeCanal}
-                  onChoisirLaVeille={choisirLaVeille}
-                />
-                <MessageInline message={messageCanal} />
-              </>
-            )}
-
-            <MonCompte />
+            <MonCompte onSupprime={() => setSupprime(true)} />
 
             <View style={styles.liens}>
-              {/* **La seconde porte du contexte, et elle n'est pas un confort** (C6.4). La
-                  première est l'encart du plan, qui ne se rend que s'il y a au moins une action à
-                  expliquer : tout cycliste et tout profil sédentaire a un plan à zéro action depuis
-                  C2.5, donc sans celle-ci l'écran serait **inatteignable** pour exactement les
-                  personnes dont le contexte explique le plus le plan. L'écran gère lui-même le cas
-                  d'un compte sans bilan, qui est le seul où ce lien ne mène à rien à corriger. */}
-              <TextLink
-                label="Mon contexte de mobilité"
-                onPress={() => router.push('/contexte')}
-                role="link"
-                type="small"
-                weight={600}
-                themeColor="accentText"
-              />
-              <TextLink
-                label="Un retour à nous faire ?"
-                onPress={() => router.push('/feedback')}
-                role="link"
-                type="small"
-                weight={600}
-                themeColor="accentText"
-              />
+              {/* Après la suppression, les deux liens qui supposent un compte partent avec lui ;
+                  les pages légales et l'adresse de contact restent — la confidentialité dit
+                  justement ce qui vient d'être effacé (recette du 28/09/2026, constat H5). */}
+              {!supprime && (
+                <>
+                  {/* **La seconde porte du contexte, et elle n'est pas un confort** (C6.4). La
+                      première est l'encart du plan, qui ne se rend que s'il y a au moins une action à
+                      expliquer : tout cycliste et tout profil sédentaire a un plan à zéro action depuis
+                      C2.5, donc sans celle-ci l'écran serait **inatteignable** pour exactement les
+                      personnes dont le contexte explique le plus le plan. L'écran gère lui-même le cas
+                      d'un compte sans bilan, qui est le seul où ce lien ne mène à rien à corriger. */}
+                  <TextLink
+                    label="Mon contexte de mobilité"
+                    onPress={() => router.push('/contexte')}
+                    role="link"
+                    type="small"
+                    weight={600}
+                    themeColor="accentText"
+                  />
+                  <TextLink
+                    label="Un retour à nous faire ?"
+                    onPress={() => router.push('/feedback')}
+                    role="link"
+                    type="small"
+                    weight={600}
+                    themeColor="accentText"
+                  />
+                </>
+              )}
               <TextLink
                 label="Confidentialité"
                 onPress={() => router.push('/confidentialite')}

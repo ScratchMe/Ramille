@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +15,7 @@ import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKg } from '@/lib/format';
+import { revenirOu } from '@/lib/navigation';
 import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { filetsDesLignes, pistesParPoste, separationsDesLignes } from '@/types/plan';
@@ -115,7 +115,9 @@ export default function PistesScreen() {
   const retour = (
     <TextLink
       label="Retour au plan"
-      onPress={() => router.back()}
+      // **Jamais un `router.back()` nu** : rechargé, ou ouvert par son adresse, cet écran n'a rien
+      // derrière lui dans la pile, et le lien ne faisait alors rien (recette du 28/09/2026).
+      onPress={() => revenirOu('/plan')}
       // Une navigation, donc un lien (24/09/2026, `v1-29`).
       role="link"
       type="small"
@@ -250,11 +252,14 @@ export default function PistesScreen() {
                   })
                 }
                 onEngage={(poste) => {
-                  // **Le drapeau se pose avant `router.back()`**, jamais après ni sous condition :
-                  // la feuille des rappels ne s'ouvre qu'une fois par appareil, donc la manquer la
-                  // seule fois où elle compte la perd pour de bon (`v1-17` §7.3).
+                  // **Le drapeau se pose avant de partir**, jamais après ni sous condition : la
+                  // feuille des rappels ne s'ouvre qu'une fois par appareil, donc la manquer la
+                  // seule fois où elle compte la perd pour de bon (`v1-17` §7.3). Le repli vers le
+                  // plan garde le drapeau : `replace` reste dans cette pile, dont le layout le porte,
+                  // et le plan monté à neuf l'attend jusqu'à sa première lecture
+                  // (`useReprendreLEngagement`).
                   passage.deposer({ poste });
-                  router.back();
+                  revenirOu('/plan');
                 }}
                 onChanged={rafraichir}
                 onRefus={(message) => {

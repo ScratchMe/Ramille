@@ -17,6 +17,7 @@ import { RAMILLE } from '@/constants/mascotte';
 import { formatKg, formatTonnes } from '@/lib/format';
 import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
+import { useReprendreLEngagement } from '@/hooks/use-reprendre-l-engagement';
 import { usePassageDEngagement } from './_layout';
 import { useTrackFocus } from '@/hooks/use-track-focus';
 import { track } from '@/lib/analytics';
@@ -484,15 +485,12 @@ export default function Plan() {
    * C'est le défaut corrigé le 14/09/2026, atteint par un autre chemin. Les données et la
    * cérémonie sont deux choses indépendantes.
    *
-   * Le drapeau se consomme au passage : `useRafraichirAuRetour` écoute aussi le retour de l'app au
-   * premier plan, donc un drapeau qui resterait posé rouvrirait la feuille à chaque aller-retour.
+   * **Mais pas avant la première lecture des préférences** : sur une pile neuve — les pistes
+   * rechargées, puis `revenirOu('/plan')` —, le plan se monte à neuf et son premier focus précède
+   * toute lecture. Le drapeau y attend donc `rappels`, sans être consommé (contre-lecture du
+   * 28/09/2026) ; le détail, et le fait qu'il ne se consomme qu'une fois, dans le hook.
    */
-  useFocusEffect(
-    useCallback(() => {
-      const engagement = passage.reprendre();
-      if (engagement !== null) void proposerLesRappels(engagement.poste);
-    }, [passage, proposerLesRappels])
-  );
+  useReprendreLEngagement(passage.reprendre, rappels !== null, proposerLesRappels);
 
   // **La confirmation passe par la boîte de réception** : la personne y lit son code, le tape, et
   // arrive ici avec `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la boucle

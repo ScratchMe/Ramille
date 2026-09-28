@@ -14,6 +14,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { demanderLaConnexion } from '@/lib/auth';
 import { effacerLesMarquesLocales, lireEtatDuCompte } from '@/lib/compte';
 import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
+import { revenirOu } from '@/lib/navigation';
 import {
   adresseSemblePlausible,
   messageDeLaDemande,
@@ -72,12 +73,10 @@ type Phase = 'chargement' | 'collision' | 'saisie' | 'code';
  * est faux et un `router.back()` nu **ne fait rien du tout**. Les deux sorties de l'écran étaient
  * exactement ça : quelqu'un qui clique un lien expiré restait enfermé sur l'écran où on venait de
  * le déposer, la phase « envoyé » ne menant nulle part non plus. La racine sait toujours où
- * envoyer la personne (plan si un bilan est complété, onboarding sinon).
+ * envoyer la personne (plan si un bilan est complété, onboarding sinon). Le repli vit depuis le
+ * 28/09/2026 dans `revenirOu` (`src/lib/navigation.ts`), partagé par tous les « Retour ».
  */
-function revenirOuRacine() {
-  if (router.canGoBack()) router.back();
-  else router.replace('/');
-}
+const revenirOuRacine = () => revenirOu('/');
 
 export default function RetrouverMonCompte() {
   // `email` prérempli quand on arrive de /connexion/email après un `email_exists`. `source`

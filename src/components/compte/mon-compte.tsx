@@ -48,7 +48,7 @@ import { RAMILLE } from '@/constants/mascotte';
 // `border`, celui des cartes d'action —, et le bouton retrouve le fond sur lequel il est dessiné
 // partout ailleurs. Une couleur imposée au bouton depuis l'extérieur aurait aussi écrasé celle
 // qu'il prend sous le doigt : `Button` porte seul ses états.
-export function MonCompte() {
+export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
   const theme = useTheme();
   const carte = [styles.card, { borderColor: theme.border }];
 
@@ -89,6 +89,10 @@ export function MonCompte() {
     // La racine recréera alors une session anonyme et renverra vers l'onboarding.
     setBusy(null);
     setSupprime(true);
+    // **L'écran hôte doit le savoir** (recette du 28/09/2026, constat H5) : cet état ne remplaçait
+    // que cette carte, et « Toi » continuait d'afficher au-dessus le compte qu'on venait de
+    // supprimer — son adresse, « Me déconnecter », le rappel par email coché.
+    onSupprime?.();
   };
 
   // L'état terminal remplace la carte entière : ce qu'elle proposait — exporter, supprimer — n'a
