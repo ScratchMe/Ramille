@@ -737,6 +737,18 @@ périmerait en silence au prochain passage :
   s'**ajoute** à la publication : `EXPO.md` §2.3.
 - **Une dépendance native nouvelle impose un build**, et rien dans le code ne le dit :
   `EXPO.md` §2.3.
+- **Un « Retour » ne s'écrit jamais en `router.back()` nu : il passe par `revenirOu(repli)`**
+  (`src/lib/navigation.ts`, recette web du 28/09/2026, constat H1). Sur le web chaque écran est une
+  adresse — tapée, rechargée, partagée, ouverte depuis Google Play —, et la pile derrière lui est
+  alors **vide** : un `back()` nu n'y fait rien, sans erreur, et la personne reste enfermée. C'est
+  arrivé sur l'écran des pistes, les pages légales, « Toi », `/contexte` et `/feedback`, trouvés
+  ensemble le même soir. **Le repli se choisit comme la destination qu'aurait le lien s'il n'était
+  pas un retour** : le plan pour ce qui s'ouvre depuis le plan (les pistes, `/contexte`), la racine
+  `/` quand l'écran s'ouvre de plusieurs endroits — elle route elle-même vers le plan ou
+  l'onboarding. Le seul `router.back()` qui reste (`bilan/index.tsx`) n'est rendu que si
+  `canGoBack()` est vrai. Et un écran qui dépose quelque chose pour l'écran d'arrivée doit supposer
+  que celui-ci se monte **à neuf** : c'est ce qu'a oublié le premier correctif, et le plan perdait la
+  feuille des rappels (`useReprendreLEngagement`).
 ### 2.9 Le démarrage : marques locales, brouillon, reprise, et ce qu'on promet sans compte
 
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
@@ -821,15 +833,19 @@ périmerait en silence au prochain passage :
   `timestamptz` sont son jour **UTC** : un bilan soumis le 10 mars à 23 h 00 UTC et sa correction le
   11 à 00 h 30 UTC sont le même 11 mars à Paris, et l'ancien regroupement en faisait deux barres
   avec deux valeurs différentes — le doublon exact que cette fonction existe pour empêcher.
-- **Le prédécesseur d'un bilan se choisit sur `submitted_at`, jamais dans l'historique
-  — et ce point n'est couvert par aucun test** : `loadBilanPrecedent` vit dans `src/lib/`, qui tire
-  AsyncStorage, donc il n'est pas éprouvable par la suite de logique pure (le rendre testable
-  demanderait d'extraire la décision dans `src/types/suivi.ts`, ce qui n'est pas fait). Deux documents
-  l'annonçaient comme testé ; ils ne le font plus.
-  dédoublonné** (C2.7, `loadBilanPrecedent`). `keepLatestPerDay` ne garde que le dernier bilan de
-  chaque jour : c'est ce qu'il faut pour une courbe, pas pour désigner celui d'avant. Deux lignes
-  sont lues et non une, pour vérifier que le bilan courant est bien le plus récent — sinon on ne
-  compare rien plutôt que de comparer à un bilan postérieur.
+- **La restitution se compare au dernier bilan d'un AUTRE JOUR, avec la règle du jour du suivi**
+  (recette web du 28/09/2026, constat H4, arbitrage du même jour : « la correction gagne »).
+  `keepLatestPerDay` garde un bilan par jour local, donc un bilan refait le même jour **remplace**
+  le précédent dans le suivi — c'est une correction. La restitution, elle, le comparait au bilan
+  qu'elle venait de remplacer (« 1,3 t de moins que ton bilan de septembre »), c'est-à-dire à une
+  entrée que le suivi ne montre plus : le même geste se lisait correction sur un écran et progrès
+  sur l'autre. `precedentDUnAutreJour` (`src/types/suivi.ts`) applique donc à la comparaison le
+  `jourLocalDe` du suivi, et **il est testé** là où ce paragraphe disait le contraire — minuit à
+  Paris compris. Deux règles d'avant C2.7 tiennent toujours : le prédécesseur se choisit sur
+  `submitted_at` et jamais dans l'historique dédoublonné, et si le bilan affiché n'est pas le plus
+  récent (une restitution rouverte depuis le suivi) on ne compare rien plutôt que de comparer à un
+  bilan postérieur. `loadBilanPrecedent` lit **dix** lignes, pour trouver un autre jour derrière
+  quelques corrections du jour ; au-delà, on ne compare rien, ce qui est le repli sûr.
 - **« Le palier que tu visais est derrière toi. » n'est dit que s'il est prouvable** (C2.7,
   `palierEstDerriere`). Le palier visé se recalcule depuis le cap **d'alors**, et ce cap est perdu
   quand les deux bilans tombent dans la même période : `generate_plan_cycle_for_user` réécrit le

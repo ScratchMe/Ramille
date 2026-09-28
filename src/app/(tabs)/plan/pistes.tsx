@@ -255,7 +255,9 @@ export default function PistesScreen() {
                   // **Le drapeau se pose avant de partir**, jamais après ni sous condition : la
                   // feuille des rappels ne s'ouvre qu'une fois par appareil, donc la manquer la
                   // seule fois où elle compte la perd pour de bon (`v1-17` §7.3). Le repli vers le
-                  // plan garde le drapeau : `replace` reste dans cette pile, dont le layout le porte.
+                  // plan garde le drapeau : `replace` reste dans cette pile, dont le layout le porte,
+                  // et le plan monté à neuf l'attend jusqu'à sa première lecture
+                  // (`useReprendreLEngagement`).
                   passage.deposer({ poste });
                   revenirOu('/plan');
                 }}

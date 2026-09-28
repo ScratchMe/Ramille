@@ -60,8 +60,9 @@ l'étape 3 sur 9 :
 
 ## 3. Ce qui ne se discute pas
 
-- **Les neuf modes restent** : chacun correspond à un facteur d'émission
-  différent, et en retirer un fausse le calcul. **La voiture ne se découpe pas par motorisation dans
+- **Les neuf modes restent** : chacun change le calcul — un facteur d'émission à lui, ou, pour
+  « Voiture (covoiturage) », le même facteur partagé entre les passagers —, et en retirer un le
+  fausse. **La voiture ne se découpe pas par motorisation dans
   la liste** : « Voiture (seul) » et « Voiture (covoiturage) », puis la motorisation, **quatre
   réponses au même niveau** — jamais un second niveau « rechargeable ou non ? », la profondeur
   coûtant plus en abandon qu'une puce de plus (`CLAUDE.md`, « Base de données », le paragraphe du mode « voiture »).

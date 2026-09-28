@@ -46,7 +46,8 @@ const PassageDEngagement = createContext<Passage | null>(null);
  * manquer la seule fois où elle compte — le tout premier engagement — la perd pour de bon. C'est
  * mot pour mot le défaut corrigé le 14/09/2026, où une garde sur `boucle` l'empêchait sur un échec
  * de lecture secondaire. D'où les deux règles écrites dans les commentaires de `deposer` et de
- * `reprendre`, et le fait que le plan lise ce passage **sans attendre son rechargement**.
+ * `reprendre`, et le fait que le plan lise ce passage **sans attendre son rechargement** — mais
+ * jamais avant d'avoir lu ses préférences une première fois (`useReprendreLEngagement`).
  */
 export function usePassageDEngagement(): Passage {
   const passage = useContext(PassageDEngagement);

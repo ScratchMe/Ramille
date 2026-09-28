@@ -19,7 +19,7 @@ par le parcours réel, contre une stack locale. Cette séance les regarde là o�
 
 | | Sujet | D'où ça vient |
 |---|---|---|
-| 1 | « Retour » sans rien derrière — dix écrans | H1 (`v1-13` §15) |
+| 1 | « Retour » sans rien derrière — les pistes, les pages légales, « Toi », `/contexte`, `/feedback` | H1 (`v1-13` §15) |
 | 2 | Un renvoi de code refusé garde les chiffres | H2 |
 | 3 | Pas de barre « Ton prochain palier » pour qui sort rarement | 10.2, décidé le 28/09 |
 | 4 | Un bilan refait le même jour ne se compare à rien | H4, décidé le 28/09 |
@@ -27,8 +27,9 @@ par le parcours réel, contre une stack locale. Cette séance les regarde là o�
 | 6 | Le suivi et la restitution sur deux jours, et la légende de l'écart par poste | 10.9 et 11.W.7, pas jouables en une soirée |
 | 7 | Les jugements qui reviennent à la personne qui pilote | 12.2, 11.W.9 |
 
-**Elle ne rejoue pas le reste** : les 82 lignes conformes du 28/09 sont écrites en `v1-13` §15, et le
-parcours réel rejoue le chemin nominal à chaque PR.
+**Elle ne rejoue pas le reste** : les 82 lignes conformes du 28/09 sont comptées en `v1-13` §15 et
+consignées une à une dans la base de l'artefact de la feuille précédente, et le parcours réel rejoue
+le chemin nominal à chaque PR.
 
 ## Qui la joue
 
@@ -95,10 +96,10 @@ unités, pas doubler, et les rangs ne bougent pas.
 | 01.10 | Taper le code reçu | « Ton compte est rattaché à … » | |
 | 01.11 | **Navigateur B**, fenêtre neuve : saisir le **profil 2** | La restitution : 58 kg, « Tes loisirs occasionnels », « Tu es déjà sous le repère transport 2050. » | |
 | 01.12 | Dans « Où tu te situes » | **Trois barres seulement** : « Toi », « Moyenne en France », « Repère transport 2050 ». **Pas de « Ton prochain palier »** (décision du 28/09 : il chiffrait une marche sur des sorties non déclarées) | |
-| 01.13 | « Voir ce que je peux faire », « Compris » sur « Deux endroits, pas plus. », puis **« Revoir mon bilan » → « Faire un nouveau bilan »**, et soumettre **à l'identique** | La restitution du second bilan **ne compare rien** : ni « Ton bilan précédent · septembre », ni « … de moins que ton bilan de septembre ». Un bilan refait le même jour est une correction (décision du 28/09) | |
+| 01.13 | « Voir ce que je peux faire », « Compris » sur « Deux endroits, pas plus. », puis **« Revoir mon bilan » → « Faire un nouveau bilan »**, et soumettre **à l'identique** | La restitution du second bilan **ne compare rien** : ni « Ton bilan précédent · septembre », ni « Stable par rapport à ton bilan de septembre. » — la phrase qu'un bilan identique ferait sortir si la comparaison revenait. Un bilan refait le même jour est une correction (décision du 28/09) | |
 | 01.14 | Le suivi | **Un seul bilan**, celui du jour | |
 | 01.15 | « Toi » : rattacher le profil 2 à `…+ramille-p4@gmail.com` (le code), puis régler les rappels sur **« Sans rappel »** | Le compte est rattaché. **On le garde pour le bloc 02** | |
-| 01.16 | **Navigateur A** (profil 1) : « Toi » → « Supprimer mon compte » → « Supprimer définitivement » | Sous le titre « Toi », **seulement** la carte « C'est fait. » et « Revenir au début ». **Ni l'adresse, ni « Me déconnecter de cet appareil », ni les rappels, ni les liens** du bas. Le 28/09, tout restait affiché au-dessus du compte supprimé | |
+| 01.16 | **Navigateur A** (profil 1) : « Toi » → « Supprimer mon compte » → « Supprimer définitivement » | Sous le titre « Toi », la carte « C'est fait. » et « Revenir au début ». **Ni l'adresse, ni « Me déconnecter de cet appareil », ni les rappels, ni « Mon contexte de mobilité », ni « Un retour à nous faire ? »**, ni « Retour » en haut. Restent en bas « Confidentialité », « Conditions d’utilisation » et l'adresse de contact. Le 28/09, tout restait affiché au-dessus du compte supprimé | |
 | 01.17 | « Revenir au début » | L'accueil de l'onboarding | |
 
 ## Bloc 02 — Deux jours (jour 2, ou n'importe quel jour suivant)
@@ -128,7 +129,7 @@ unités, pas doubler, et les rangs ne bougent pas.
 
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
-| 04.1 | Supprimer le compte du profil 2 depuis « Toi » | Comme au 01.16 : seulement « C'est fait. » sous le titre | |
+| 04.1 | Supprimer le compte du profil 2 depuis « Toi » | Comme au 01.16 | |
 | 04.2 | `/connexion/retrouver` avec `…+ramille-p3` puis `…+ramille-p4` (une minute d'écart) | L'écran ne dit rien, et c'est voulu. **Aucun e-mail n'arrive** : les deux comptes n'existent plus | |
 
 ## Ce qui ne se joue pas ici
@@ -145,8 +146,9 @@ unités, pas doubler, et les rangs ne bougent pas.
 
 ## Ce que cette séance ne prouve pas
 
-- **Qu'aucun autre « Retour » ne dépile une pile vide** : le balayage du 28/09 en a corrigé dix, et
-  les écrans suivants devront passer par `revenirOu` (`src/lib/navigation.ts`) pour que ça reste vrai.
+- **Qu'aucun autre « Retour » ne dépile une pile vide** : le balayage du 28/09 a corrigé tous ceux
+  qu'il a trouvés, et les écrans suivants devront passer par `revenirOu` (`src/lib/navigation.ts`,
+  règle en `FRONT.md` §2.8) pour que ça reste vrai.
 - **Le bloc 12 de la feuille précédente**, programmé le 1er octobre après 8 h : s'il n'a pas pu se
   jouer ce jour-là, il se rejoue tel qu'il est écrit là-bas, **avec le mois qui aura été interrogé**.
 

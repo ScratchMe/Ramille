@@ -312,7 +312,10 @@ La mécanique de §1.9, telle qu'elle a tourné le 28/09/2026. Tout ce qui suit 
 
 - **Le pilote** : `scripts/pilote-de-recette.mjs`, lancé en arrière-plan. Deux navigateurs (A et B)
   dont les contextes ne partagent jamais leur stockage, ce qui rend la précaution des fenêtres
-  privées gratuite. Son en-tête dit comment lui envoyer une étape et comment l'arrêter.
+  privées gratuite. Son en-tête dit comment lui envoyer une étape (avec le jeton qu'il écrit au
+  démarrage) et comment l'arrêter. **Ses captures vont dans le répertoire temporaire, jamais dans le
+  dépôt** : elles montrent la production et l'alias e-mail de la personne qui pilote, et le dépôt est
+  public.
 - **Le magasin de certificats du Chromium était vide.** Chaque page rendait
   `ERR_CERT_AUTHORITY_INVALID` alors que `curl` passait : le proxy de sortie réécrit le TLS, et son
   autorité n'était pas dans `sql:$HOME/.pki/nssdb`. La parade, qui ne coupe aucune vérification :

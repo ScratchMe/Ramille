@@ -8,8 +8,9 @@ import { router, type Href } from 'expo-router';
  * rechargement ou un démarrage à froid. La personne touche alors « Retour » et reste enfermée sur
  * l'écran, sans un mot. Relevé trois fois : sur `/connexion/retrouver` et `/connexion/email` quand
  * le layout racine les ouvre en `replace`, puis à la recette du 28/09/2026 sur `/plan/pistes`
- * rechargé — et le balayage qui a suivi en a trouvé sept autres (`/contexte`, `/feedback`, « Toi »,
- * les pages légales).
+ * rechargé — et le balayage qui a suivi a trouvé le même défaut sur `/contexte`, `/feedback`,
+ * « Toi » et les pages légales. Tous passent désormais par ici ; le nombre ne s'écrit pas, il se
+ * relirait faux au prochain écran.
  *
  * Le repli est une **destination** et non un dépilement, et il se choisit à l'appel : chaque écran
  * sait où l'on prétend revenir (le plan pour les pistes, la racine pour ce qui n'a pas de parent).

@@ -3,7 +3,8 @@
  *
  * **Éprouvé en le cassant, le 28/09/2026** (TESTING.md §1.1), chaque mutation faisant tomber le sien
  * et lui seul :
- *   - `router.back()` sans condition (l'état d'avant, sur dix écrans) → « sans pile derrière… » ;
+ *   - `router.back()` sans condition (l'état d'avant, sur chaque « Retour » d'un écran ouvrable
+ *     par son adresse) → « sans pile derrière… » ;
  *   - `router.replace(repli)` sans condition → « avec une pile derrière… ».
  */
 import { router } from 'expo-router';

@@ -136,10 +136,12 @@ export default function Contexte() {
               }}
             />
             {/* `link` : il quitte l'écran, comme les « Retour » de « Toi », des pages légales et
-                des pistes (contre-lecture du 25/09/2026). */}
+                des pistes (contre-lecture du 25/09/2026). Sans pile, le repli est la racine et
+                non le plan : sans bilan, elle mène à l'onboarding, là où le plan n'aurait qu'un
+                état vide à montrer (contre-lecture du 28/09/2026). */}
             <TextLink
               label="Retour"
-              onPress={() => revenirOu('/plan')}
+              onPress={() => revenirOu('/')}
               role="link"
               type="small"
               weight={600}

@@ -51,7 +51,8 @@ export default function Compte() {
   // constat H5). La carte « Mes données » se remplaçait seule par « C'est fait. », et tout le reste
   // de l'écran continuait de décrire le compte supprimé : son adresse, « Me déconnecter de cet
   // appareil », le rappel par email coché — trois gestes proposés sur un compte qui n'existe plus.
-  // Le « Retour » part aussi : la sortie est « Revenir au début », qui repasse par la racine.
+  // Le « Retour » part aussi : la sortie est « Revenir au début », qui repasse par la racine. Les
+  // pages légales et l'adresse de contact, elles, restent en bas de l'écran.
   const [supprime, setSupprime] = useState(false);
 
   useEffect(() => {
@@ -301,51 +302,56 @@ export default function Compte() {
 
             <MonCompte onSupprime={() => setSupprime(true)} />
 
-            {!supprime && (
-              <View style={styles.liens}>
-                {/* **La seconde porte du contexte, et elle n'est pas un confort** (C6.4). La
-                    première est l'encart du plan, qui ne se rend que s'il y a au moins une action à
-                    expliquer : tout cycliste et tout profil sédentaire a un plan à zéro action depuis
-                    C2.5, donc sans celle-ci l'écran serait **inatteignable** pour exactement les
-                    personnes dont le contexte explique le plus le plan. L'écran gère lui-même le cas
-                    d'un compte sans bilan, qui est le seul où ce lien ne mène à rien à corriger. */}
-                <TextLink
-                  label="Mon contexte de mobilité"
-                  onPress={() => router.push('/contexte')}
-                  role="link"
-                  type="small"
-                  weight={600}
-                  themeColor="accentText"
-                />
-                <TextLink
-                  label="Un retour à nous faire ?"
-                  onPress={() => router.push('/feedback')}
-                  role="link"
-                  type="small"
-                  weight={600}
-                  themeColor="accentText"
-                />
-                <TextLink
-                  label="Confidentialité"
-                  onPress={() => router.push('/confidentialite')}
-                  role="link"
-                  type="small"
-                  themeColor="textTertiary"
-                />
-                <TextLink
-                  label="Conditions d’utilisation"
-                  onPress={() => router.push('/conditions')}
-                  role="link"
-                  type="small"
-                  themeColor="textTertiary"
-                />
-                {/* Une phrase adressée à la personne, donc en Spline Sans : la chasse fixe est
-                    réservée aux sources et aux codes techniques (24/09/2026, `v1-29`). */}
-                <ThemedText type="small" themeColor="textTertiary" style={styles.contact}>
-                  Une question ? Écris à {CONTACT_EMAIL}.
-                </ThemedText>
-              </View>
-            )}
+            <View style={styles.liens}>
+              {/* Après la suppression, les deux liens qui supposent un compte partent avec lui ;
+                  les pages légales et l'adresse de contact restent — la confidentialité dit
+                  justement ce qui vient d'être effacé (recette du 28/09/2026, constat H5). */}
+              {!supprime && (
+                <>
+                  {/* **La seconde porte du contexte, et elle n'est pas un confort** (C6.4). La
+                      première est l'encart du plan, qui ne se rend que s'il y a au moins une action à
+                      expliquer : tout cycliste et tout profil sédentaire a un plan à zéro action depuis
+                      C2.5, donc sans celle-ci l'écran serait **inatteignable** pour exactement les
+                      personnes dont le contexte explique le plus le plan. L'écran gère lui-même le cas
+                      d'un compte sans bilan, qui est le seul où ce lien ne mène à rien à corriger. */}
+                  <TextLink
+                    label="Mon contexte de mobilité"
+                    onPress={() => router.push('/contexte')}
+                    role="link"
+                    type="small"
+                    weight={600}
+                    themeColor="accentText"
+                  />
+                  <TextLink
+                    label="Un retour à nous faire ?"
+                    onPress={() => router.push('/feedback')}
+                    role="link"
+                    type="small"
+                    weight={600}
+                    themeColor="accentText"
+                  />
+                </>
+              )}
+              <TextLink
+                label="Confidentialité"
+                onPress={() => router.push('/confidentialite')}
+                role="link"
+                type="small"
+                themeColor="textTertiary"
+              />
+              <TextLink
+                label="Conditions d’utilisation"
+                onPress={() => router.push('/conditions')}
+                role="link"
+                type="small"
+                themeColor="textTertiary"
+              />
+              {/* Une phrase adressée à la personne, donc en Spline Sans : la chasse fixe est
+                  réservée aux sources et aux codes techniques (24/09/2026, `v1-29`). */}
+              <ThemedText type="small" themeColor="textTertiary" style={styles.contact}>
+                Une question ? Écris à {CONTACT_EMAIL}.
+              </ThemedText>
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>

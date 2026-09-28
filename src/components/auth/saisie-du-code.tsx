@@ -157,7 +157,9 @@ export function SaisieDuCode({
     // demandes coup sur coup » ne fait partir aucun code, celui du champ vaut peut-être encore, et
     // le vider faisait perdre les chiffres qu'on comparait à l'e-mail. Et c'est `suite` qui décide,
     // pas `error` : une adresse sans compte rend une erreur que `suiteDuRenvoi` lit « renvoyé », et
-    // un champ qui se viderait pour l'une et pas pour l'autre rouvrirait l'oracle par l'écran.
+    // un champ qui se viderait pour l'une et pas pour l'autre rouvrirait l'oracle par l'écran. **Ce
+    // qui reste distinct, et c'est su** : la limite d'envoi ne frappe qu'une adresse connue, à qui un
+    // code vient de partir — le message diffère donc déjà, et le champ avec lui (`SUPABASE.md` §2.4).
     if (suite === 'renvoye') setCode('');
     setMessage(suite === 'message' ? messageDeLaDemande(error) : messageDuRenvoi(voix));
   };

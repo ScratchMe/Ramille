@@ -10,7 +10,8 @@
 > (`RECETTE.md` §1.9) : blocs 00 à 11, 14.1 et 14.2 ; le bloc 12 et le 14.3 le 1er octobre. Ce
 > qu'elle a trouvé est en `v1-13` §15, et ce qui reste à regarder dans
 > [`ce-qui-reste-apres-le-28-septembre.md`](ce-qui-reste-apres-le-28-septembre.md). Trois de ses
-> lignes étaient fautives et sont corrigées ici (08.5, 09.10, 10.9).
+> lignes étaient fautives et sont corrigées ici (08.5, et 09.3 qui en dépendait ; 09.10 ; 10.9), et
+> 10.2 suit la décision du soir.
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`. Aucun build EAS n'est disponible
 > avant le 1er octobre (quota du plan gratuit, registre d'exploitation §3.3), et rien de ce qui est

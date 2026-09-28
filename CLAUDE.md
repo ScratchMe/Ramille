@@ -170,7 +170,9 @@ exact du processus (`pgrep -x`), ou exclure son propre PID (`pgrep -f motif | gr
 mieux : attendre le processus lui-même (`wait`), pas son nom. **Et `pkill -f` a le même défaut, en
 pire** : relevé le 28/09/2026, `pkill -f "node ./.pilote.mjs"` a tué le shell qui le lançait
 (code 144) avant les commandes suivantes de la même ligne. Arrêter un processus lancé en arrière-plan
-se fait par son identifiant de tâche, ou par `pkill -x` sur le nom exact.
+se fait par son identifiant de tâche, ou par `kill` sur son PID (`$!` au lancement) — **jamais par
+`pkill -x node`**, dont le « nom exact » est celui de tous les processus Node de la machine, Metro et
+un parcours compris.
 
 **Un marqueur accentué absent d'un bundle minifié ne prouve rien** : `é` y est échappé en
 `\u00e9`. Cherché le 15/09/2026 pour vérifier qu'un déploiement était bien passé — il l'était, et
@@ -1807,7 +1809,8 @@ négociables : `shouldCreateUser: false` (une page de suppression qui fabrique d
 serait le contraire de ce qu'elle affiche), et **aucune réponse différenciée à l'écran** selon que
 l'adresse a un compte ou non — une adresse inconnue renvoie un 422 `otp_disabled` qu'il faut
 traiter comme un succès, sinon la page devient un moyen de savoir qui utilise Ramille. (Le 422
-lui-même reste lisible au réseau, et c'est une limite assumée : `SUPABASE.md` §2.4.) La
+lui-même reste lisible au réseau, et la limite d'envoi ne frappe qu'une adresse connue : deux limites
+assumées, `SUPABASE.md` §2.4.) La
 limite d'envoi, elle, se reconnaît au **code** `over_email_send_rate_limit` : le message de
 Supabase ne contient pas le mot « rate ».
 

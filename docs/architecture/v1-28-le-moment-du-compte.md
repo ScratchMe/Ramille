@@ -251,7 +251,12 @@ et le verbe « rattacher » était déjà celui de trois surfaces. **Il n'en att
    session anonyme — tout visiteur en reçoit une — peut appeler `PUT /auth/v1/user` sans passer par
    l'app, sans plafond, exactement comme la mesure de vingt sondages l'avait fait. Même chose sur
    `/connexion/retrouver` : `signInWithOtp` sans création rend `422 otp_disabled` sur une adresse
-   inconnue et `200` sur une adresse connue — l'écran se tait, le réseau non.
+   inconnue et `200` sur une adresse connue — l'écran se tait, le réseau non. **L'écran ne se tait
+   pas tout à fait, d'ailleurs** (contre-lecture du 28/09/2026) : la limite d'envoi ne frappe qu'une
+   adresse à laquelle un code vient de partir, donc deux demandes en moins d'une minute rendent
+   « Trop de demandes coup sur coup » pour une adresse connue, et jamais pour une inconnue. Ce cas
+   n'est pas masqué : le masquer ferait annoncer un code qui n'est pas parti à quelqu'un qui en
+   attend un, et ce sondage-là envoie un vrai e-mail au titulaire de l'adresse.
 
    **Pourquoi on ne le ferme pas.** La réponse vient de GoTrue, le service d'authentification de
    Supabase, et aucun de ses réglages ne la masque. Faire passer le rattachement par une fonction

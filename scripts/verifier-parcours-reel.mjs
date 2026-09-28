@@ -274,8 +274,8 @@
 //
 // Trois gardes neuves, pour trois constats qu'aucune suite ne voyait : un « Retour » ouvert sans pile
 // derrière (H1), « Toi » après la suppression du compte (H5), et la barre du palier sur le résiduel des
-// sorties rares (10.2). Jest garde `revenirOu` et `MonCompte` isolément ; ce qui ne se voit qu'ici,
-// c'est l'écran qui les **appelle**. **Éprouvé en le cassant le 28/09/2026** : un témoin vert (23/23),
+// sorties rares (10.2). Jest garde la décision de `revenirOu` ; ce qui ne se voit qu'ici, c'est
+// l'écran qui l'**appelle**, et l'écran « Toi » qui écoute `MonCompte`, qu'aucun test ne rend. **Éprouvé en le cassant le 28/09/2026** : un témoin vert (23/23),
 // puis un rejeu `parcours` par mutation (export neuf, stack neuve), l'arbre remis après chacune :
 //
 //   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
@@ -284,9 +284,11 @@
 //   | M2 — `MonCompte` ne prévient plus l'écran (`onSupprime` jamais appelé) | « suppression du compte » : « « Toi » montre encore « Les rappels » après la suppression du compte » |
 //   | M3 — la barre du palier revient sur le résiduel (`!posteSuppose` retiré) | « cycliste — restitution, puis le plan sans action » : « la restitution montre encore la barre « Ton prochain palier » … » |
 //   | M4 — la barre du palier ne se rend plus pour personne | « restitution » (profil 1) : « « Ton prochain palier » n'est jamais apparu à l'écran » |
+//   | M5 — le lien « Confidentialité » change de nom après la suppression (contre-lecture, le soir même) | « suppression du compte » : « « Toi » ne montre plus le lien « Confidentialité » … » |
 //
 // M4 est la moitié qui rend M3 concluante : sans elle, une absence vérifiée chez le cycliste passerait
-// aussi bien si la barre avait disparu pour tout le monde.
+// aussi bien si la barre avait disparu pour tout le monde. M5 fait de même pour M2 : l'écran « Toi »
+// masque ce qui décrit le compte supprimé, et garde les pages légales.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1148,16 +1150,9 @@ try {
   );
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
-  // ── 9. La suppression du compte, par l'écran, et rien derrière ─────────────────────────────
-  //
-  // **Par « Toi », et plus par le RPC** (28/09/2026). C'est le chemin que Google Play exige, et aucun
-  // test ne le jouait : la suppression partait d'un `rpc('delete_my_account')`, donc un bouton qui
-  // n'appellerait plus rien serait passé vert. Et c'est la garde du constat H5 de la recette du même
-  // jour : la carte « C'est fait. » se rendait seule, sous un écran qui décrivait encore le compte
-  // supprimé — son adresse, « Me déconnecter », le rappel par email coché.
   // **Un « Retour » sans pile derrière** (recette du 28/09/2026, constat H1). Ouvert par son adresse
   // — un rechargement, un favori —, l'écran des pistes n'a rien derrière lui, et « Retour au plan »,
-  // un `router.back()` nu, ne faisait rien. Neuf autres « Retour » avaient le même défaut ; ils passent
+  // un `router.back()` nu, ne faisait rien. Les autres « Retour » qui avaient le même défaut passent
   // tous par `revenirOu`, dont Jest garde la décision. Ici, on garde qu'un écran l'appelle vraiment.
   etape('« Retour au plan » sans pile');
   await page.goto(`${base}/plan/pistes`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -1169,6 +1164,14 @@ try {
     throw new Ecart('« Retour au plan », ouvert sans pile derrière, n’a pas ramené au plan');
   }
 
+  // ── 9. La suppression du compte, par l'écran, et rien derrière ─────────────────────────────
+  //
+  // **Par « Toi », et plus par le RPC** (28/09/2026). C'est le chemin que Google Play exige, et aucun
+  // test ne le jouait : la suppression partait d'un `rpc('delete_my_account')`, donc un bouton qui
+  // n'appellerait plus rien serait passé vert. Et c'est la garde du constat H5 de la recette du même
+  // jour : la carte « C'est fait. » se rendait seule, sous un écran qui décrivait encore le compte
+  // supprimé — son adresse, « Me déconnecter », le rappel par email coché. Les pages légales, elles,
+  // restent : la moitié positive est vérifiée aussi, pour qu'un masquage trop large ne passe pas vert.
   etape('suppression du compte');
   await page.goto(`${base}/compte`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await bouton('Supprimer mon compte');
@@ -1180,6 +1183,10 @@ try {
       `« Toi » montre encore « ${reste} » après la suppression du compte`
     );
   }
+  assurer(
+    (await page.getByRole('link', { name: 'Confidentialité', exact: true }).count()) === 1,
+    '« Toi » ne montre plus le lien « Confidentialité » après la suppression du compte'
+  );
   for (const table of ['profiles?select=id&id=eq.', 'assessments?select=id&user_id=eq.', 'engagement_checkins?select=id&user_id=eq.']) {
     const restes = await lire(`${table}${userId}`, SERVICE);
     assurer(restes.length === 0, `${table.split('?')[0]} garde ${restes.length} ligne(s) après la suppression`);
