@@ -181,8 +181,10 @@ en auditant quatre composants (`--spot-check-components`), puis généralisé :
 
 **La garde, à rejouer à chaque resynchronisation** : `.design-sync/.cache/props-check.py`
 compare chaque prop passée à un composant du kit dans `previews/*.tsx` à son `<Nom>Props`, et
-signale aussi les obligatoires absentes. Il est dans `.cache/` (non versionné) : le recopier
-depuis ce paragraphe si le cache a disparu — trente lignes de regex, sans dépendance. Il ne voit
+signale aussi les obligatoires absentes. Il était dans `.cache/` (non versionné), et cette phrase
+disait de le recopier depuis ce paragraphe, qui ne l'a jamais contenu : le cache perdu, il a fallu
+le réécrire. **Il est versionné depuis le 28/09/2026 : `.design-sync/props-check.py`**, à lancer
+depuis la racine du dépôt — trente lignes de regex, sans dépendance. Il ne voit
 pas le vocabulaire : pour lui, relire les feuilles, et chercher les mots retirés du produit
 (`grep -rn "aucun'\|lien à usage\|Recevoir le lien" .design-sync/previews`).
 
@@ -269,6 +271,35 @@ feuilles ont été relues une à une. `props-check.py` propre, aucune suppressio
   ensemble, rien ne garantit que `_ds_sync.json` arrive en dernier. Ça a été le cas ici, et l'ancre
   a été réécrite seule ensuite — l'écriture est idempotente, donc c'est le rattrapage.
 
+## Relevé du 28/09/2026 — sixième synchronisation, le mot de la veille et le mouvement
+
+Chemin atomique, même skill. Elle porte C4.2 (#286, la seconde étape de la feuille des rappels
+et la case de « Toi ») et les transitions (#283, `tokens/mouvement.css` et la feuille qui se
+referme en glissant). Le pilote a trouvé **63 composants inchangés côté vérification, 3 changés**
+(`ChoixDeRappel`, `FeuilleDuBas`, `FeuilleRappels`), notés bons cellule par cellule, et **3 à
+téléverser sans regrader** (`CarteDOuverture`, `EcartParPoste`, `FeuilleNouveauBilan`), relus par
+`--spot-check-components` et conformes. Aucune suppression ; 66 rendus, aucun mauvais, les deux
+`[RENDER_THIN]` connus. 349 fichiers : la sentinelle, deux lots de 132, un de 76, `_vendor/` seul,
+`fonts/` seul, la sentinelle de nouveau, puis `_ds_sync.json` dans un appel à lui.
+
+- **Le pilote a rendu `RENDER_SKIPPED` partout, et ce n'était pas le kit.** Le Playwright du dépôt
+  (1.63) réclame le chromium 1243 ; `/opt/pw-browsers` porte le 1194, et le téléchargement est
+  coupé (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`). Le correctif ne touche pas le dépôt : installer
+  dans `.ds-sync/` la version dont c'est le chromium,
+  `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i playwright@1.56.1`. À refaire tant que l'image du
+  conteneur et le dépôt ne s'accordent pas — vérifier d'abord `ls /opt/pw-browsers`.
+- **`props-check.py` avait disparu avec le cache**, et le paragraphe qui disait de le recopier ne
+  le contenait pas. Réécrit, puis versionné (`.design-sync/props-check.py`). La réécriture a
+  d'abord eu un défaut : un booléen passé sans valeur (`<ChoiceRow selected />`) comptait pour une
+  prop obligatoire absente. Éprouvé dans les deux sens — une prop inventée et une obligatoire
+  retirée tombent chacune seule.
+- **Le contour vert sur le titre de la seconde étape de `FeuilleRappels` n'est pas un défaut** :
+  c'est l'anneau de focus de `TitreDArrivee`, qui prend le focus à l'arrivée d'une étape, et sa
+  propre fiche le montre pareil. Noté ici pour qu'une prochaine relecture ne le « corrige » pas.
+- **`tokens/mouvement.css` manquait au projet** : il est arrivé avec #283 et `tokensGlob` le prend
+  sans réglage. L'en-tête de conventions ne le nomme pas encore — une ligne à proposer, pas à
+  écrire seul, puisque c'est ce que lit l'agent de design.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine
@@ -293,7 +324,8 @@ feuilles ont été relues une à une. `props-check.py` propre, aucune suppressio
 - **`tokensGlob` seul ne copie rien** : `copyTokens` sort immédiatement si `tokensPkg` est absent.
   Les deux vont ensemble, et `tokensPkg` vaut ici le kit lui-même.
 - **Un changement d'API d'un composant du kit ne fait regrader personne.** Le pilote suit les
-  aperçus, pas le code : après toute vague qui touche le kit, rejouer `props-check.py` et relire
+  aperçus, pas le code : après toute vague qui touche le kit, rejouer
+  `python3 .design-sync/props-check.py` et relire
   les feuilles des composants touchés (`--spot-check-components`), sans quoi les aperçus
   enseignent l'ancienne API à l'agent de design (relevé du 26/09/2026 ci-dessus).
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
