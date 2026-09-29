@@ -1926,21 +1926,22 @@ if (Object.values(COULEUR).some((c) => c === null)) {
     }
   }
 
-  // La même règle, là où l'étape d'avant est **incomplète** : `?etape=context` sur un questionnaire vierge,
-  // « Voir mon bilan » touché sur un contexte vide, puis « Retour ». Au retour sur une étape complète, la
+  // La même règle, là où l'étape d'avant est **incomplète** : un brouillon rouvert sur l'étape du mode
+  // sans jours ni distance, « Suivant » touché, puis « Retour ». Au retour sur une étape complète, la
   // demande retombe déjà à la complétude — le cas d'au-dessus ne peut donc pas dire si elle retombe
-  // aussi en changeant d'étape ; celui-ci le peut.
+  // aussi en changeant d'étape ; celui-ci le peut. (`?etape=context` ne le pouvait pas : sur un
+  // questionnaire vierge, l'étape d'avant, les longs trajets, est complète.)
   {
-    const ou = '/bilan?etape=context sur un questionnaire vierge, la demande puis « Retour »';
-    const page = await ouvrir('/bilan?etape=context');
+    const ou = '/bilan, étape du mode sans jours ni distance, la demande puis « Retour »';
+    const page = await ouvrir('/bilan', { [BROUILLON]: brouillonDe('commute_mode', { commute_has_regular_trip: true }) });
     try {
-      await page.getByRole('button', { name: 'Voir mon bilan', exact: true }).click();
+      await suivantK(page).click();
       await page.waitForTimeout(REPOS);
       const demande = await lireK(page);
       await page.getByRole('button', { name: 'Retour', exact: true }).click();
       await page.waitForTimeout(REPOS);
       const avant = await lireK(page);
-      if (demande.ligne === null) kEchec(ou, 'la demande n’a pas eu lieu sur le contexte vide — la garde ne peut pas conclure.');
+      if (demande.ligne === null) kEchec(ou, 'la demande n’a pas eu lieu sur l’étape du mode — la garde ne peut pas conclure.');
       else if (avant.etape === demande.etape) kEchec(ou, `« Retour » n'a pas changé d'étape (${avant.etape}) — la garde ne peut pas conclure.`);
       else if (avant.ligne !== null) {
         kEchec(ou, `une ligne est là à l'arrivée sur l'étape d'avant (« ${avant.ligne} ») — la demande retombe en changeant d'étape.`);

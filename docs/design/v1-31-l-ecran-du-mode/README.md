@@ -126,3 +126,16 @@ gagne, le canvas ne se réécrit pas. Trois points connus au moment de livrer :
    marges à suivre sont celles du handoff.
 3. **Les cadres n'ont pas de barre d'état** : les marges annoncées (60 px à 390, 16 à 360) sont
    celles du web, et l'appareil en retire.
+
+Et ce que l'implémentation a corrigé ou précisé en chemin (29/09/2026 — le détail et les raisons
+sont en `docs/architecture/v1-31-l-ecran-du-mode.md` §9, lignes 12 à 14) :
+
+4. **Une ouverture ne fait défiler qu'après une réponse donnée sur l'étape**, comptée par le
+   questionnaire et non au toucher : un toucher sur une rangée déjà cochée n'ouvre rien, et le
+   préremplissage d'un re-bilan ou un brouillon relu ne font jamais défiler.
+5. **Un brouillon relu ne vole plus le focus** : l'étape qu'il rouvre après le montage était prise
+   pour une entrée, et le focus quittait le document.
+6. **Un Entrée maintenu sur le « Suivant » gris ne coche rien**, et c'était moins évident que le
+   handoff ne le supposait : sur web, le bouton s'active à l'appui et non au relâchement, et la
+   répétition de la touche arrivait sur l'option qui venait de recevoir le focus. Un second appui,
+   lui, coche : c'est un vrai choix.

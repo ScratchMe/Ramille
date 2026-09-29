@@ -457,8 +457,8 @@ choisir**. Cinq décisions de produit y sont prises une à une avec la personne 
 fois, et la liste garde l'ordre du rang, l'action engagée marquée à sa place. Ce qui reste à juger au
 doigt est la ligne 11.24 de `v1-13` ; les écarts au canvas sont au README de son dossier.
 
-**Et l'écran du mode du questionnaire est planifié depuis le 29/09/2026**
-([`v1-31-l-ecran-du-mode.md`](v1-31-l-ecran-du-mode.md)). La recette web du 28/09/2026 l'avait jugé
+**Et l'écran du mode du questionnaire est implémenté depuis le 29/09/2026**
+([`v1-31-l-ecran-du-mode.md`](v1-31-l-ecran-du-mode.md), planifié et livré le même jour). La recette web du 28/09/2026 l'avait jugé
 pénible (`v1-13`, ligne 11.19) : la liste ne tient pas, et « ce qui manque » se lit mal. Une session de
 design y a répondu le jour même, avec trois décisions de produit :
 
@@ -466,8 +466,10 @@ design y a répondu le jour même, avec trois décisions de produit :
 - les modes se rangent en trois familles ;
 - un filet en haut du pied dit qu'il y a une suite.
 
-Le plan est une seule PR, qui touche la coquille commune des neuf étapes. Le jugement au doigt se
-rendra sur le build qui la portera.
+Le plan est une seule PR, qui touche la coquille commune des neuf étapes. Ce qu'elle a trouvé en
+chemin, et rendu autrement que le handoff, est au §9 du plan — dont un Entrée maintenu qui cochait
+l'option où la demande venait de poser le focus. Le jugement au doigt se rendra sur le build qui la
+portera : c'est la ligne 11.19 de `v1-13`.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 

@@ -437,7 +437,22 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `Chip`, `ChoiceRow`, `ModeListItem` et `LigneDeCanal` le font —, qui retient la page, agit une fois
   par appui, laisse Entrée à la bibliothèque, ne fait rien sur un contrôle désactivé ni sur natif.
   Un choix neuf qui l'oublierait retrouverait le défaut : `verifier-etats-export.mjs` (section F) et
-  le parcours réel le verraient.
+  le parcours réel le verraient. **Depuis le 29/09/2026, elle arrête aussi une répétition d'Entrée**
+  (`onKeyDownCapture`) : quand un geste pose le focus sur un choix pendant qu'Entrée est tenue — la
+  demande du « Suivant », « Voir les autres modes » —, la répétition arrivait sur lui, et la
+  bibliothèque, qui ne lit pas `repeat`, le cochait au relâchement. Un appui neuf passe : c'est un
+  vrai choix. La section K le vérifie.
+- **Le « Suivant » d'une étape incomplète n'est pas désactivé : il est en attente**
+  (`Button.enAttente`, `v1-31`). Il a l'apparence du désactivé — fond `backgroundElement`, texte
+  `textTertiary`, et `backgroundPressed` sous le doigt plutôt que `accentPressed` — et rien d'autre :
+  **ni `disabled`, ni `aria-disabled`**. Il agit (§2.6, il demande ce qui manque), donc il ne
+  s'annonce pas indisponible ; et sur web, `aria-disabled` réécrit depuis `disabled` pose l'attribut
+  natif, qui le rendrait inerte au clic comme au clavier (`EXPO.md` §1.5). `disabled` reste pour ce
+  qui n'agit vraiment pas — le « C'est noté » d'une feuille incomplète, l'« Enregistrer » de
+  `/contexte`. Deux gardes derrière lui, et la seconde est voulue : `StepShell` n'appelle pas
+  `onNext` sur une étape incomplète, et `handleNext` le refuse encore (`issueDuSuivant`) — à la
+  dernière étape, il vérifie **toutes** les étapes visibles, `?etape=` permettant d'y arriver avec
+  un questionnaire vierge.
 - **Un groupe de cases d'option n'est qu'un arrêt de tabulation, et se parcourt aux flèches, sur
   web** (25/09/2026, `v1-29` §6.4). Ce sont des `div` à `role="radio"` et non des cases natives :
   react-native-web donnait `tabindex="0"` à chacune et ne faisait rien des flèches — dix modes, dix
@@ -542,6 +557,59 @@ exactement ce qui avait laissé passer le mauvais caractère.
   B1.4, par `PrecisionChiffres`, après la motorisation — les deux précisions décrivent la même
   voiture. Le seul écart qui reste est la distance ouverte des loisirs, et sa raison est écrite sur
   place : une rangée de puces n'a pas d'élément sous lequel se glisser.
+- **Ce qui manque se dit au toucher du « Suivant », jamais d'office** (29/09/2026, `v1-31`,
+  décision 1). Rien ne s'écrit à l'arrivée : la question est déjà en titre, et rien ne change sous le
+  doigt pendant qu'on répond. Le « Suivant » d'une étape incomplète est gris et **demande** (§2.4) :
+  la ligne « Il manque encore … » apparaît au-dessus de lui — un lien, `accentText` 600, jamais une
+  alerte —, l'intitulé de ce qui manque passe en `accentText` 600, le focus s'y pose (l'option cochée
+  du groupe, ou sa première : `optionCible`) et l'écran y défile s'il le faut. La demande tient
+  jusqu'à ce que l'étape soit complète, retombe alors et en changeant d'étape ; tant qu'elle court,
+  la ligne et la marque **suivent ce qui manque maintenant** (`v1-31` §2.9). Quatre choses à ne pas
+  défaire :
+  - **`manqueDeLEtape` rend un champ et sa phrase** (`{ champ, phrase }`), et le champ est ce qui
+    mène : chaque étape enregistre une ancre par champ qu'elle pose (`useAncreDuChamp`,
+    `src/components/bilan/ancre-du-champ.tsx`). Ajouter un champ à une étape en demande donc
+    **trois** : sa ligne dans `CHAMPS_DE_L_ETAPE`, sa branche et sa phrase dans `manqueDeLEtape`, son
+    ancre à l'écran. Les deux premières sont gardées par `bilan.test.ts` ; la troisième ne l'est que
+    par un avertissement de développement — un champ réclamé sans ancre ne se tait pas, la ligne
+    s'affiche et le focus retombe sur l'étape, et c'est la forme neuve du défaut de C5.4 (une
+    question absente, mais réclamée) ;
+  - **la question principale ne se marque jamais** (`seMarque`) : elle est en titre, et le titre qui
+    changerait de couleur ne dirait rien de plus. Le titre lit pourtant la marque comme tout
+    intitulé, pour qu'une `seMarque` fautive se voie ;
+  - **une étape à deux champs de saisie en même place** (la distance du trajet, en kilomètres ou en
+    tranche) n'a qu'**un** champ logique, `distance_du_trajet` : la phrase ne peut pas dire lequel
+    des deux, et l'ancre suit celui qui est à l'écran ;
+  - **la demande ne coche rien, même à Entrée maintenue** : §2.4.
+- **Les modes se rangent en trois familles**, motorisés, collectifs, actifs (`MODES_PAR_FAMILLE`,
+  `enFamilles`, `src/constants/transport-modes.ts`), séparées de 16, des rangées de 48 à 4 d'écart.
+  L'ordre vit dans cette liste, **jamais dans les clés de `TRANSPORT_MODE_LABELS`**, dont l'ordre est
+  un accident d'écriture ; « Lequel ? » en dérive comme les deux listes de B1.4 et B2.2. Le premier
+  mode que « Voir les autres modes » révèle est lu dans la source par la section H de
+  `verifier-etats-export.mjs` : le changer ne demande rien à la garde.
+- **Une précision vit dans une boîte, et la boîte dans le groupe de son mode**
+  (`BoiteDePrecision`, `v1-31` §2.2) : une boîte par choix, qui porte toutes ses précisions — la
+  motorisation **et** le nombre de personnes d'une même voiture, « Lequel ? » **et** sa part —, et
+  chaque précision y reste **un `radiogroup` nommé à elle**, à l'intérieur de celui des modes.
+  `PrecisionMode` et `PrecisionChiffres` ne dessinent plus de boîte : deux façons d'en dessiner une
+  divergent, et le défilement doit savoir qui annonce l'ouverture.
+- **Deux défilements, et aucun autre** (`decalagePourMontrer`, `src/types/demande.ts`) :
+  - **vers ce qui manque**, au toucher : le minimum pour que la question soit entière, 16 au-dessus
+    du pied ; une question sortie par le haut redescend jusqu'à 24 sous l'en-tête. La ligne qui
+    apparaît rétrécit la zone : le défilement attend la mise en page suivante, où la hauteur du pied
+    est **mesurée** — une police agrandie la change ;
+  - **à l'ouverture** de ce qui s'ouvre sous un choix — une précision, « Lequel ? », la distance
+    d'une sortie —, le minimum pour qu'elle finisse 16 au-dessus du pied, **jamais au point de faire
+    passer le choix qui l'a ouverte à moins de 8 du bord** (`ChoixOuvrant` porte cette borne), et
+    jamais vers le haut. Seulement après une **réponse donnée sur l'étape** : `update` les compte, et
+    ni le préremplissage d'un re-bilan ni un brouillon relu n'y passent — une précision qu'ils font
+    apparaître ne fait rien défiler. « Voir les autres modes » ne défile pas : ce qu'il révèle est
+    sous le doigt.
+- **Un filet en haut du pied dit qu'il y a une suite** (`suiteSousLePied`, `v1-31`, décision 3) :
+  le trait de la bande haute (`border`, un filet), quand le contenu continue dessous au-delà de sa
+  marge basse de 24. Il ne dit pas ce qui manque. Relu au défilement, à la taille du contenu et à
+  celle de la zone ; sans animation. La marge basse du contenu et `MARGE_BASSE_DU_CONTENU` se
+  retouchent ensemble.
 - **Deux précisions de plus depuis C4.4, et une asymétrie d'effacement qui n'est pas évidente.**
   « Train » ouvre TER / RER ou Transilien / Intercités, « Vélo » ouvre mécanique / à assistance,
   sur les trois écrans qui posent un mode — on ne prend pas le même train pour aller travailler et
@@ -987,6 +1055,11 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   la barre d'onglets qui arrive au sortir du premier parcours, l'étape du questionnaire et son rail,
   ce qui s'ouvre sous un choix, ce qui change de hauteur, le passage d'un onglet à l'autre. Et ce
   qui bougeait déjà : la mascotte, l'écran de lancement, l'entrée d'une carte d'ouverture.
+- **Un défilement est celui de la plateforme** (`scrollTo({ animated })`, `v1-31`) : ni durée ni
+  courbe à régler, et **posé sous la préférence** (`animated: !animationsReduites`) — le défilement
+  compte parmi ce qui s'anime. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5),
+  et le focus part avant lui, au geste. Les deux défilements du questionnaire et leurs règles :
+  §2.6.
 - **Ce qui ne bouge jamais** : l'état pressé (une teinte immédiate, `v1-29` décision n° 6), un
   chiffre (jamais un compteur qui défile — il afficherait des valeurs fausses en chemin), une
   navigation de pile (« standard plateforme »), et le focus, qui part au geste et jamais à la fin

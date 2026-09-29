@@ -1560,8 +1560,9 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
     `teletravailSePose` (`src/types/bilan.ts`) est lue par l'écran, par `manqueDeLEtape` et par
     `normaliserReponses`, parce que B4.4 n'est pas une étape mais un **champ** de l'étape
     « Contexte », donc `isStepVisible` ne la gouverne pas. En oublier un ne coûte pas la même chose
-    (`v1-17` §7.2) : ne toucher que l'écran laisse « Suivant » inactif **pour toujours** sous un
-    message qui nomme une question absente ; oublier `normaliserReponses` laisse partir à la
+    (`v1-17` §7.2) : ne toucher que l'écran laisse l'étape incomplète **pour toujours** — depuis
+    `v1-31`, le « Suivant » en attente y mène à une question absente, sous une ligne qui la nomme,
+    et le focus retombe sur l'étape (`FRONT.md` §2.6) ; oublier `normaliserReponses` laisse partir à la
     soumission une réponse que la personne ne voit plus et ne peut plus corriger — le défaut de
     `v1-16` §4 par une autre porte.
 - **Les échéances dépendent du poste** (`intentionTimingsForPoste`, `src/types/plan.ts`) : « Ce
