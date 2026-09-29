@@ -192,9 +192,10 @@ const navigateur = await chromium.launch(
 async function ouvrir(
   chemin,
   marques = {},
-  { reduire = false, exceptions = null, requetes = null, journal = false, releve = null, hauteur = 844 } = {}
+  { reduire = false, exceptions = null, requetes = null, journal = false, releve = null, hauteur = 844, largeur = 390 } = {}
 ) {
-  const page = await navigateur.newPage({ viewport: { width: 390, height: hauteur } });
+  // 390 de large par défaut ; 360 pour les cas que les planches mettent à 360 × 800 (section K).
+  const page = await navigateur.newPage({ viewport: { width: largeur, height: hauteur } });
   // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
   // au chargement du module (section E).
   if (reduire) await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -203,7 +204,11 @@ async function ouvrir(
   if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
   // Les requêtes aussi, corps compris — un RPC porte son paramètre dans le corps : la lecture d'un
   // écran part dès son premier effet (section D).
-  if (requetes) page.on('request', (requete) => requetes.push({ url: requete.url(), corps: requete.postData() ?? '' }));
+  if (requetes) {
+    page.on('request', (requete) =>
+      requetes.push({ url: requete.url(), methode: requete.method(), corps: requete.postData() ?? '' })
+    );
+  }
   // Et le journal du focus, pour la même raison : il doit être posé avant le premier script de
   // la page pour ne rien manquer de ce qui bascule pendant une transition (section E).
   if (journal) await page.addInitScript(journaliserLeFocus);
@@ -1660,6 +1665,455 @@ for (const reduire of [false, true]) {
   }
 }
 
+// ── K. L'écran du mode : ce qui manque se dit au toucher, et mène à la question (v1-31) ─────────
+//
+// Le « Suivant » d'une étape incomplète n'est plus désactivé : il est « en attente », il agit, et il
+// **demande** (29/09/2026, `docs/architecture/v1-31-l-ecran-du-mode.md`). Rien ne s'écrit à l'arrivée ;
+// au toucher, le focus va à ce qui manque, l'écran y défile s'il le faut, l'intitulé passe en vert et
+// « Il manque encore … » apparaît au-dessus des boutons, lien vers la même question — jusqu'à ce que
+// l'étape soit complète. Une précision qui s'ouvrirait sous le pied fait remonter l'écran, et un filet
+// en haut du pied dit qu'il y a une suite. Tout se voit sans réseau, depuis un brouillon, comme en F, H
+// et J.
+//
+// **Chaque moitié positive porte sur ce que le HTML statique ne dit pas** (`TESTING.md` §2.12) : une
+// ligne, une couleur, un focus, une position de défilement n'existent qu'une fois l'app montée et le
+// geste joué. Les couleurs se lisent dans `theme.ts`, jamais recopiées. Les défilements se lisent au
+// pixel près sur la règle du handoff — 16 au-dessus du pied, 24 sous l'en-tête —, et image par image
+// (`relever-par-image.mjs`, mesure `defilement`) : en chemin quand on anime, posés d'emblée sous la
+// préférence. Un cas n'est à 360 × 800 que quand la planche l'y met ; celui du défilement à la main est
+// à 390 × 600, la seule hauteur où la question des personnes peut sortir de la zone par le haut.
+//
+// Mutations du 29/09/2026 : voir la table en tête de ce fichier, section K.
+const LARGEUR_ETROITE = { largeur: 360, hauteur: 800 };
+const COULEUR = (() => {
+  const source = readFileSync('src/constants/theme.ts', 'utf8');
+  const clair = source.match(/light:\s*\{([^}]*)\}/)?.[1] ?? '';
+  const lire = (nom) => {
+    const hex = clair.match(new RegExp(`\\b${nom}:\\s*'#([0-9A-Fa-f]{6})'`))?.[1];
+    if (!hex) return null;
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+  return { text: lire('text'), textSecondary: lire('textSecondary'), accentText: lire('accentText'), border: lire('border') };
+})();
+const QUESTION_DES_PERSONNES = 'Vous êtes combien à partager ce trajet ?';
+const QUESTION_DES_TRANCHES = 'Quelle distance aller, en général ?';
+const LIGNE_DES_PERSONNES = 'Il manque encore le nombre de personnes dans la voiture.';
+const TRAJET_DECLARE = { commute_has_regular_trip: true, commute_days_per_week: 5, commute_distance_km: 30 };
+const COVOITURAGE_HYBRIDE = brouillonDe('commute_mode', {
+  ...TRAJET_DECLARE,
+  commute_mode: 'voiture',
+  commute_is_carpool: true,
+  commute_car_engine: 'hybride',
+});
+const SORTIES_EN_VOITURE = brouillonDe('leisure_detail', {
+  commute_has_regular_trip: false,
+  leisure_frequency: 'weekly',
+  leisure_mode: 'voiture',
+  leisure_is_carpool: false,
+  leisure_car_engine: 'thermique',
+});
+
+/**
+ * L'état de l'écran du questionnaire, lu dans la page : la ligne, les couleurs d'un intitulé et du
+ * titre, le focus, le « Suivant », le filet, la zone qui défile, et un groupe nommé. Évaluée dans la
+ * page, donc autonome.
+ */
+function lireLEtape(groupe) {
+  const n = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+  const boutons = [...document.querySelectorAll('[role="button"]')];
+  const suivant = boutons.find((b) => /^(Suivant|Voir mon bilan)$/.test(n(b.innerText)));
+  const ligne = boutons.find((b) => /^Il manque encore /.test(n(b.innerText)));
+  const pied = suivant?.parentElement?.parentElement ?? null;
+  const filet = pied
+    ? [...pied.children].find((c) => {
+        const r = c.getBoundingClientRect();
+        return getComputedStyle(c).position === 'absolute' && r.height > 0 && r.height <= 1.01;
+      })
+    : null;
+  const titre = [...document.querySelectorAll('h1')].find((h) => h.getClientRects().length > 0);
+  const zone = titre?.closest('div') && (() => {
+    for (let e = titre.parentElement; e; e = e.parentElement) {
+      if (/(auto|scroll)/.test(getComputedStyle(e).overflowY)) return e;
+    }
+    return null;
+  })();
+  const g = groupe ? [...document.querySelectorAll('[role="radiogroup"]')].find((x) => x.getAttribute('aria-label') === groupe) : null;
+  const bloc = g?.parentElement ?? null;
+  const intitule = bloc ? [...bloc.children].find((c) => c !== g && n(c.innerText) === groupe) : null;
+  const actif = document.activeElement;
+  const cadre = zone?.getBoundingClientRect();
+  return {
+    etape: n([...document.querySelectorAll('div')].find((d) => d.children.length === 0 && /^Étape \d+ sur \d+$/.test(n(d.innerText)))?.innerText),
+    titre: titre ? n(titre.innerText) : null,
+    couleurDuTitre: titre ? getComputedStyle(titre).color : null,
+    ligne: ligne ? n(ligne.innerText) : null,
+    ligneAlerte: ligne ? ligne.closest('[role="alert"]') !== null || ligne.getAttribute('role') === 'alert' : null,
+    suivant: suivant ? { disabled: suivant.hasAttribute('disabled'), ariaDisabled: suivant.getAttribute('aria-disabled') } : null,
+    focus: actif === document.body || !actif ? 'le document' : actif.getAttribute('aria-label') ?? n(actif.innerText).slice(0, 60),
+    filet: filet ? getComputedStyle(filet).backgroundColor : null,
+    zone: cadre ? { decalage: zone.scrollTop, haut: cadre.top, bas: cadre.bottom } : null,
+    groupe: g
+      ? {
+          haut: bloc.getBoundingClientRect().top,
+          bas: g.getBoundingClientRect().bottom,
+          couleur: intitule ? getComputedStyle(intitule).color : null,
+          coches: [...g.querySelectorAll('[role="radio"]')].filter((o) => o.closest('[role="radiogroup"]') === g && o.getAttribute('aria-checked') === 'true').length,
+          parent: g.parentElement?.closest('[role="radiogroup"]')?.getAttribute('aria-label') ?? null,
+          boite: bloc.parentElement,
+        }
+      : null,
+  };
+}
+const lireK = (page, groupe) => page.evaluate(lireLEtape, groupe).then((e) => (e.groupe ? { ...e, groupe: { ...e.groupe, boite: undefined } } : e));
+const suivantK = (page) => page.getByRole('button', { name: 'Suivant', exact: true });
+const auPixel = (a, b) => Math.abs(a - b) <= 1;
+const kEchec = (ou, quoi) => echecs.push(`${ou} : ${quoi}`);
+
+if (Object.values(COULEUR).some((c) => c === null)) {
+  echecs.push('Section K : une couleur de `Colors.light` est introuvable dans src/constants/theme.ts — adapter le motif.');
+} else {
+  // A3 puis A4 : rien à l'arrivée ; au toucher, la ligne, la marque et le focus ; la complétude les retire.
+  {
+    const ou = '/bilan, étape du mode, covoiturage « Hybride », personnes vides (A3 → A4)';
+    const page = await ouvrir('/bilan', { [BROUILLON]: COVOITURAGE_HYBRIDE });
+    try {
+      await page.getByRole('radio', { name: '2 personnes', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+      const a3 = await lireK(page, QUESTION_DES_PERSONNES);
+      if (a3.ligne !== null) kEchec(ou, `une ligne s'écrit à l'arrivée (« ${a3.ligne} ») — ce qui manque ne se dit qu'au toucher.`);
+      if (a3.groupe?.couleur !== COULEUR.textSecondary) {
+        kEchec(ou, `à l'arrivée, l'intitulé des personnes est en ${a3.groupe?.couleur} — attendu textSecondary (${COULEUR.textSecondary}).`);
+      }
+      if (!a3.suivant || a3.suivant.disabled || a3.suivant.ariaDisabled !== null) {
+        kEchec(ou, `le « Suivant » en attente porte disabled=${a3.suivant?.disabled} aria-disabled=${a3.suivant?.ariaDisabled} — un bouton qui agit n'est pas indisponible.`);
+      }
+      const boite = await page.evaluate(() => {
+        const g = (nom) => [...document.querySelectorAll('[role="radiogroup"]')].find((x) => x.getAttribute('aria-label') === nom);
+        const moteur = g('Quelle motorisation ?');
+        const personnes = g('Vous êtes combien à partager ce trajet ?');
+        return {
+          deux: !!moteur && !!personnes,
+          memeBoite: !!moteur && moteur.parentElement?.parentElement === personnes?.parentElement?.parentElement,
+          parents: [moteur, personnes].map((x) => x?.parentElement?.closest('[role="radiogroup"]')?.getAttribute('aria-label') ?? null),
+        };
+      });
+      if (!boite.deux || !boite.memeBoite || boite.parents.some((p) => p !== QUESTION_DU_MODE)) {
+        kEchec(ou, `la boîte du covoiturage doit porter deux radiogroup nommés, dans le groupe des modes — relevé ${JSON.stringify(boite)}.`);
+      }
+
+      await suivantK(page).click();
+      await page.waitForTimeout(REPOS);
+      const a4 = await lireK(page, QUESTION_DES_PERSONNES);
+      if (a4.etape !== a3.etape) kEchec(ou, `« Suivant » a avancé sur une étape incomplète (${a3.etape} → ${a4.etape}).`);
+      if (a4.ligne !== LIGNE_DES_PERSONNES) kEchec(ou, `au toucher, la ligne dit « ${a4.ligne} » — attendu « ${LIGNE_DES_PERSONNES} ».`);
+      if (a4.ligneAlerte) kEchec(ou, 'la ligne est une alerte — ce n’est pas un échec.');
+      if (a4.groupe?.couleur !== COULEUR.accentText) {
+        kEchec(ou, `au toucher, l'intitulé des personnes est en ${a4.groupe?.couleur} — attendu accentText (${COULEUR.accentText}).`);
+      }
+      if (a4.focus !== '2 personnes') kEchec(ou, `au toucher, le focus est sur « ${a4.focus} » — attendu « 2 personnes ».`);
+
+      // « 2 » : la demande retombe, l'intitulé reprend sa couleur, et « Suivant » avance.
+      await page.getByRole('radio', { name: '2 personnes', exact: true }).click();
+      await page.waitForTimeout(REPOS);
+      const complet = await lireK(page, QUESTION_DES_PERSONNES);
+      if (complet.ligne !== null) kEchec(ou, `« 2 » choisi, la ligne reste (« ${complet.ligne} ») — la demande retombe à la complétude.`);
+      if (complet.groupe?.couleur !== COULEUR.textSecondary) {
+        kEchec(ou, `« 2 » choisi, l'intitulé reste en ${complet.groupe?.couleur} — il reprend textSecondary.`);
+      }
+      // Un nouveau manque — « Train », dont le type n'est pas dit — ne se dit qu'au prochain toucher : la
+      // demande est retombée à la complétude, elle ne s'est pas seulement tue le temps d'une image.
+      await page.getByRole('radio', { name: 'Train', exact: true }).click();
+      await page.waitForTimeout(REPOS);
+      const autre = await lireK(page);
+      if (autre.ligne !== null) kEchec(ou, `« Train » choisi après la complétude, la ligne revient d'elle-même (« ${autre.ligne} »).`);
+      // Changer de mode efface les précisions de la voiture (`normaliserReponses`) : on les redonne.
+      await page.getByRole('radio', { name: 'Voiture (covoiturage)', exact: true }).click();
+      await page.getByRole('radio', { name: 'Hybride', exact: true }).click();
+      await page.getByRole('radio', { name: '2 personnes', exact: true }).click();
+      await page.waitForTimeout(REPOS);
+      await suivantK(page).click();
+      await page.waitForTimeout(REPOS);
+      const apres = await lireK(page);
+      if (apres.etape === complet.etape) kEchec(ou, `l'étape complète n'avance pas (${apres.etape}).`);
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // Entrée **maintenu** sur le « Suivant » en attente : la demande part au relâchement, et la
+  // répétition de la touche ne coche pas l'option qui vient de recevoir le focus (`v1-31` §2.10).
+  {
+    const ou = '/bilan, étape du mode, « Suivant » activé par un Entrée maintenu';
+    const page = await ouvrir('/bilan', { [BROUILLON]: COVOITURAGE_HYBRIDE });
+    try {
+      await suivantK(page).waitFor({ state: 'visible', timeout: ATTENTE });
+      await suivantK(page).focus();
+      await page.keyboard.down('Enter');
+      await page.keyboard.down('Enter');
+      await page.keyboard.up('Enter');
+      await page.waitForTimeout(REPOS);
+      const lu = await lireK(page, QUESTION_DES_PERSONNES);
+      if (lu.ligne !== LIGNE_DES_PERSONNES || lu.focus !== '2 personnes') {
+        kEchec(ou, `la demande n'a pas eu lieu comme au toucher — ligne « ${lu.ligne} », focus « ${lu.focus} ».`);
+      }
+      if (lu.groupe?.coches !== 0) {
+        kEchec(ou, `${lu.groupe?.coches} option(s) des personnes cochée(s) — la demande ne coche rien ; la répétition est tombée sur l'option.`);
+      }
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // Le geste suivant : la ligne est déjà là, la zone ne change pas de hauteur, et le défilement part
+  // aussitôt (`v1-31` §2.6) — ici vers le haut, jusqu'à 24 sous l'en-tête.
+  {
+    const ou = '/bilan, étape du mode à 390 × 600, la question sortie par le haut, la ligne touchée';
+    const page = await ouvrir('/bilan', { [BROUILLON]: COVOITURAGE_HYBRIDE }, { hauteur: 600 });
+    try {
+      await suivantK(page).click();
+      await page.waitForTimeout(REPOS);
+      await page.evaluate(() => {
+        const titre = [...document.querySelectorAll('h1')].find((h) => h.getClientRects().length > 0);
+        for (let e = titre.parentElement; e; e = e.parentElement) {
+          if (/(auto|scroll)/.test(getComputedStyle(e).overflowY)) {
+            e.scrollTop = e.scrollHeight;
+            return;
+          }
+        }
+      });
+      await page.waitForTimeout(REPOS);
+      const sortie = await lireK(page, QUESTION_DES_PERSONNES);
+      if (!sortie.groupe || !sortie.zone || sortie.groupe.bas > sortie.zone.haut) {
+        kEchec(ou, `la mesure ne peut pas se prendre — la question des personnes n'est pas sortie par le haut (${JSON.stringify(sortie.groupe && { bas: sortie.groupe.bas, zone: sortie.zone })}).`);
+      } else {
+        await page.getByRole('button', { name: LIGNE_DES_PERSONNES, exact: true }).click();
+        await page.waitForTimeout(REPOS);
+        const revenue = await lireK(page, QUESTION_DES_PERSONNES);
+        if (!auPixel(revenue.groupe.haut, revenue.zone.haut + 24)) {
+          kEchec(ou, `la question revient à ${Math.round(revenue.groupe.haut - revenue.zone.haut)} px sous l'en-tête — attendu 24.`);
+        }
+        if (revenue.focus !== '2 personnes') kEchec(ou, `le focus est sur « ${revenue.focus} » — attendu « 2 personnes ».`);
+      }
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // A4, « Retour », « Suivant » : on revient sur l'étape du mode, toujours incomplète — aucune ligne.
+  {
+    const ou = '/bilan, étape du mode, A4 puis « Retour » puis « Suivant »';
+    const page = await ouvrir('/bilan', { [BROUILLON]: COVOITURAGE_HYBRIDE });
+    try {
+      await suivantK(page).click();
+      await page.waitForTimeout(REPOS);
+      await page.getByRole('button', { name: 'Retour', exact: true }).click();
+      await page.waitForTimeout(REPOS);
+      await suivantK(page).click();
+      await page.waitForTimeout(REPOS);
+      const lu = await lireK(page, QUESTION_DES_PERSONNES);
+      if (!lu.groupe) kEchec(ou, `l'étape du mode n'est pas revenue (${lu.etape}) — la garde ne peut pas conclure.`);
+      else if (lu.ligne !== null) kEchec(ou, `une ligne est là à l'arrivée (« ${lu.ligne} ») — la demande retombe en changeant d'étape.`);
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // La même règle, là où l'étape d'avant est **incomplète** : `?etape=context` sur un questionnaire vierge,
+  // « Voir mon bilan » touché sur un contexte vide, puis « Retour ». Au retour sur une étape complète, la
+  // demande retombe déjà à la complétude — le cas d'au-dessus ne peut donc pas dire si elle retombe
+  // aussi en changeant d'étape ; celui-ci le peut.
+  {
+    const ou = '/bilan?etape=context sur un questionnaire vierge, la demande puis « Retour »';
+    const page = await ouvrir('/bilan?etape=context');
+    try {
+      await page.getByRole('button', { name: 'Voir mon bilan', exact: true }).click();
+      await page.waitForTimeout(REPOS);
+      const demande = await lireK(page);
+      await page.getByRole('button', { name: 'Retour', exact: true }).click();
+      await page.waitForTimeout(REPOS);
+      const avant = await lireK(page);
+      if (demande.ligne === null) kEchec(ou, 'la demande n’a pas eu lieu sur le contexte vide — la garde ne peut pas conclure.');
+      else if (avant.etape === demande.etape) kEchec(ou, `« Retour » n'a pas changé d'étape (${avant.etape}) — la garde ne peut pas conclure.`);
+      else if (avant.ligne !== null) {
+        kEchec(ou, `une ligne est là à l'arrivée sur l'étape d'avant (« ${avant.ligne} ») — la demande retombe en changeant d'étape.`);
+      }
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // A6 : rien de choisi — la ligne, le focus sur « Voiture (seul) », et le titre qui ne se recolore pas.
+  {
+    const ou = '/bilan, étape du mode, rien de choisi, « Suivant » touché (A6)';
+    const page = await ouvrir('/bilan', { [BROUILLON]: brouillonDe('commute_mode', TRAJET_DECLARE) });
+    try {
+      await suivantK(page).click();
+      await page.waitForTimeout(REPOS);
+      const lu = await lireK(page);
+      if (lu.ligne !== 'Il manque encore ton mode de transport.') kEchec(ou, `la ligne dit « ${lu.ligne} ».`);
+      if (lu.focus !== 'Voiture (seul)') kEchec(ou, `le focus est sur « ${lu.focus} » — attendu « Voiture (seul) ».`);
+      if (lu.couleurDuTitre !== COULEUR.text) {
+        kEchec(ou, `le titre de l'étape est en ${lu.couleurDuTitre} — la question principale ne se marque jamais (\`seMarque\`).`);
+      }
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // D1, D2 : le filet à l'arrivée ; au toucher, la zone descend jusqu'à ce que les tranches finissent 16
+  // au-dessus du pied, en chemin — et sous la préférence, d'un coup.
+  for (const reduire of [false, true]) {
+    const ou = `/bilan, étape des sorties, la distance sous le pied (D1, D2)${reduire ? ' sous « réduire les animations »' : ''}`;
+    const page = await ouvrir('/bilan', { [BROUILLON]: SORTIES_EN_VOITURE }, { reduire, releve: true });
+    try {
+      await suivantK(page).waitFor({ state: 'visible', timeout: ATTENTE });
+      const d1 = await lireK(page, QUESTION_DES_TRANCHES);
+      if (d1.filet !== COULEUR.border) kEchec(ou, `à l'arrivée, pas de filet en haut du pied (${d1.filet}) — la question est dessous.`);
+      if (!d1.groupe || d1.groupe.bas <= d1.zone.bas) {
+        kEchec(ou, 'la mesure ne peut pas se prendre — les tranches ne sont pas sous le pied à l’arrivée.');
+      } else {
+        const releve = await releverPendant(
+          page,
+          { zone: ['defilement', { titre: QUESTION_DES_TRANCHES, bouton: 'Moins de 5 km' }] },
+          () => suivantK(page).click(),
+          1_200
+        );
+        const d2 = await lireK(page, QUESTION_DES_TRANCHES);
+        if (!auPixel(d2.groupe.bas, d2.zone.bas - 16)) {
+          kEchec(ou, `au toucher, les tranches finissent à ${Math.round(d2.zone.bas - d2.groupe.bas)} px au-dessus du pied — attendu 16.`);
+        }
+        if (d2.focus !== 'Moins de 5 km') kEchec(ou, `au toucher, le focus est sur « ${d2.focus} » — attendu « Moins de 5 km ».`);
+        const positions = releve.map((e) => e.zone?.position).filter((p) => p != null);
+        const bouge = enChemin(positions, d2.zone.decalage);
+        if (!reduire && !bouge) kEchec(ou, `le défilement saute (${positions.join(', ')}) — la plateforme l'anime.`);
+        if (reduire && bouge) kEchec(ou, 'le défilement passe par des positions intermédiaires — sous la préférence, il se pose.');
+      }
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // L'étape courte : pas de filet — la moitié négative.
+  {
+    const ou = '/bilan, étape courte (« As-tu un trajet régulier… »)';
+    const page = await ouvrir('/bilan');
+    try {
+      await page.getByRole('radio', { name: 'Oui', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+      const lu = await lireK(page);
+      if (lu.filet !== null) kEchec(ou, 'un filet en haut du pied — rien n’est dessous.');
+      if (lu.zone === null) kEchec(ou, 'la zone qui défile est introuvable — la garde ne peut pas conclure.');
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // B6 : à 360 × 800, « Vélo » touché — la zone remonte jusqu'à ce que la boîte finisse 16 au-dessus du
+  // pied, le focus reste sur « Vélo » ; sous la préférence, posé dès la première image.
+  for (const reduire of [false, true]) {
+    const ou = `/bilan, étape du mode à 360 × 800, « Vélo » touché (B6)${reduire ? ' sous « réduire les animations »' : ''}`;
+    const page = await ouvrir('/bilan', { [BROUILLON]: brouillonDe('commute_mode', TRAJET_DECLARE) }, {
+      ...LARGEUR_ETROITE,
+      reduire,
+      releve: true,
+    });
+    try {
+      const velo = page.getByRole('radio', { name: 'Vélo', exact: true });
+      await velo.waitFor({ state: 'visible', timeout: ATTENTE });
+      const releve = await releverPendant(
+        page,
+        { zone: ['defilement', { titre: QUESTION_DU_MODE, bouton: 'Suivant' }] },
+        () => velo.click(),
+        1_200
+      );
+      const lu = await lireK(page, 'Quel type de vélo ?');
+      const boite = await page.evaluate(() => {
+        const g = [...document.querySelectorAll('[role="radiogroup"]')].find((x) => x.getAttribute('aria-label') === 'Quel type de vélo ?');
+        return g ? g.parentElement.parentElement.getBoundingClientRect().bottom : null;
+      });
+      if (boite === null || !lu.zone) kEchec(ou, 'la boîte du vélo est introuvable — la garde ne peut pas conclure.');
+      else if (!auPixel(boite, lu.zone.bas - 16)) {
+        kEchec(ou, `la boîte finit à ${Math.round(lu.zone.bas - boite)} px au-dessus du pied — attendu 16 (défilement ${Math.round(lu.zone.decalage)}).`);
+      }
+      if (lu.focus !== 'Vélo') kEchec(ou, `le focus est sur « ${lu.focus} » — il reste sur « Vélo ».`);
+      const positions = releve.map((e) => e.zone?.position).filter((p) => p != null);
+      const bouge = enChemin(positions, lu.zone?.decalage ?? 0);
+      if (!reduire && !bouge) kEchec(ou, `le défilement saute (${positions.join(', ')}) — la plateforme l'anime.`);
+      if (reduire && bouge) kEchec(ou, 'le défilement passe par des positions intermédiaires — sous la préférence, il se pose.');
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // La même étape, rouverte depuis un brouillon où « Vélo » est déjà choisi : rien ne défile au montage.
+  // À 360, la boîte passe sous le pied (738 contre 698) : c'est là que la moitié peut tomber.
+  {
+    const ou = '/bilan, étape du mode à 360 × 800, rouverte avec « Vélo » déjà choisi';
+    const page = await ouvrir('/bilan', { [BROUILLON]: brouillonDe('commute_mode', { ...TRAJET_DECLARE, commute_mode: 'velo' }) }, LARGEUR_ETROITE);
+    try {
+      await page.getByRole('radio', { name: 'Mécanique', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+      await page.waitForTimeout(REPOS);
+      const lu = await lireK(page, 'Quel type de vélo ?');
+      if (!lu.zone || !lu.groupe) kEchec(ou, 'la mesure ne peut pas se prendre.');
+      else if (lu.groupe.bas <= lu.zone.bas) kEchec(ou, 'la mesure ne prouve rien — la boîte du vélo n’est pas sous le pied à l’arrivée.');
+      else if (lu.zone.decalage !== 0) kEchec(ou, `l'écran a défilé de ${Math.round(lu.zone.decalage)} px au montage — une ouverture ne se suit qu'après un geste.`);
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+
+  // `/bilan?etape=context` sur un questionnaire vierge, les trois réponses données, « Voir mon bilan » :
+  // rien n'est soumis, l'écran revient à la première étape incomplète (`issueDuSuivant`, v1-31 §2.4).
+  {
+    const ou = '/bilan?etape=context sur un questionnaire vierge, « Voir mon bilan »';
+    const requetes = [];
+    const page = await ouvrir('/bilan?etape=context', {}, { requetes });
+    try {
+      await page.getByRole('radio', { name: 'Urbain dense', exact: true }).click();
+      await page.getByRole('radio', { name: 'Bon', exact: true }).click();
+      await page
+        .getByRole('radiogroup', { name: 'Véhicules motorisés dans le foyer' })
+        .getByRole('radio', { name: '0', exact: true })
+        .click();
+      await page.getByRole('button', { name: 'Voir mon bilan', exact: true }).click();
+      await page.waitForTimeout(REPOS);
+      const lu = await lireK(page);
+      // Une **écriture** : l'écran lit au montage le dernier bilan complété (un `GET`), et cette lecture
+      // n'est pas une soumission.
+      const ecritures = requetes.filter(
+        (r) => r.methode !== 'GET' && /\/rest\/v1\/(assessments|assessment_answers|rpc\/compute)/.test(r.url)
+      );
+      if (ecritures.length > 0) {
+        kEchec(ou, `une soumission est partie (${ecritures.map((r) => `${r.methode} ${r.url}`).join(', ')}).`);
+      }
+      if (lu.titre !== TITRE_PREMIERE) kEchec(ou, `l'écran est sur « ${lu.titre} » — il revient à la première étape incomplète.`);
+    } catch (erreur) {
+      kEchec(ou, String(erreur).slice(0, 180));
+    } finally {
+      await page.close();
+    }
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -1685,5 +2139,6 @@ console.log(
     ' que la page défile ; le focus du questionnaire suit l’étape, et « Voir les autres modes » le' +
     ' pose sur le premier mode révélé ; un arrêt de tabulation par groupe d’options, et les flèches' +
     ' y cochent sans en sortir ; la barre posée au démarrage, l’étape, son rail, une précision et les' +
-    ' onglets en mouvement — et posés sous « réduire les animations ».'
+    ' onglets en mouvement — et posés sous « réduire les animations » ; au « Suivant » en attente, ce' +
+    ' qui manque se dit, y mène et y fait défiler, une ouverture remonte l’écran, et le filet dit la suite.'
 );
