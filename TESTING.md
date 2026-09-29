@@ -1003,9 +1003,10 @@ Les règles, chacune payée pendant l'écriture :
 8. **Une demande qui retombe pour deux raisons ne se garde pas par un seul cas.** La demande du
    « Suivant » retombe à la complétude **et** en changeant d'étape ; « Retour » depuis l'étape du
    mode arrive sur une étape déjà complète, donc la demande y retombe par la première raison, et
-   une mutation de la seconde passerait. La section K porte donc deux cas : un nouveau manque après
-   la complétude, et « Retour » depuis l'étape du mode vers des jours et une distance vides eux
-   aussi. Le premier essai partait de `?etape=context` sur un questionnaire vierge, et ne prouvait
+   une mutation de la seconde passait — mesuré : « A4, Retour, Suivant » reste vert sous elle. La
+   section K porte donc deux cas de plus : un nouveau manque après la complétude, qui est le seul à
+   faire tomber la mutation de la première raison, et « Retour » depuis l'étape du mode vers des
+   jours et une distance vides eux aussi, le seul à faire tomber celle de la seconde. Le premier essai partait de `?etape=context` sur un questionnaire vierge, et ne prouvait
    rien : l'étape d'avant, les longs trajets, y est complète — c'est la première mutation qui l'a
    montré, en ne le faisant pas tomber (29/09/2026).
 
