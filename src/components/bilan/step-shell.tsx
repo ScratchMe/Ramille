@@ -160,11 +160,12 @@ export function StepShell({
   //     (`ViewShadowNode::initialize`, où rien ne lui donne le trait `FormsView`). RN 0.86 n'a plus
   //     que cette architecture. **Il porte désormais `collapsable={false}` et un `onLayout`**
   //     (`v1-31` §4.7 : les mesures du défilement se prennent relativement à lui), donc une vue est
-  //     montée — et le point suivant dit pourquoi ça ne change rien au focus ;
-  //   - l'événement part pourtant avec son numéro (`FabricMountingManager::sendAccessibilityEvent`
-  //     transmet `shadowView.tag`, sans chercher d'ancêtre monté), `SurfaceMountingManager` ne trouve
-  //     aucune vue et lève `RetryableMountingLayerException`, que `SendAccessibilityEventMountItem`
-  //     avale en exception douce : ni plantage, ni focus, ni trace à l'écran.
+  //     montée — et le paragraphe qui suit cette liste dit pourquoi ça ne change rien au focus ;
+  //   - tant qu'il était aplati, l'événement partait pourtant avec son numéro
+  //     (`FabricMountingManager::sendAccessibilityEvent` transmet `shadowView.tag`, sans chercher
+  //     d'ancêtre monté), `SurfaceMountingManager` ne trouvait aucune vue et levait
+  //     `RetryableMountingLayerException`, que `SendAccessibilityEventMountItem` avalait en exception
+  //     douce : ni plantage, ni focus, ni trace à l'écran.
   // `collapsable={false}` monte une vue, mais pas un nœud d'accessibilité : sans `accessible`
   // elle n'est pas focalisable (`ReactViewManager.setAccessible` ne fait que poser `isFocusable`), et
   // sans rôle RN ne lui pose aucun délégué (`ReactAccessibilityDelegate.setDelegate`). Ce que TalkBack

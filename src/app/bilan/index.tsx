@@ -355,12 +355,27 @@ export default function BilanQuestionnaire() {
   // `StepShell` n'appelle déjà pas `onNext` sur une étape incomplète, mais son « Suivant » n'est plus
   // `disabled`, et la dernière étape soumet — d'où cette seconde garde, et à la dernière étape la
   // vérification de **toutes** les étapes visibles, que `?etape=context` permettait de contourner.
+  //
+  // **Un aiguillage exhaustif, et la soumission nommée** (contre-lecture du 29/09/2026) : le test garde
+  // la fonction, pas son appel. Écrit en `if` successifs, tout genre non aiguillé tombait sur la
+  // soumission — retirer la ligne d'`attendre` ne faisait rien tomber, et soumettait un bilan
+  // incomplet depuis n'importe quelle étape. Ici, un cas oublié ne compile pas (éprouvé : le cas
+  // `attendre` retiré, `tsc` refuse `{ genre: "attendre" }` sur le `never`).
   const handleNext = async () => {
     const issue = issueDuSuivant(step, answers);
-    if (issue.genre === 'attendre') return;
-    if (issue.genre === 'passer' || issue.genre === 'revenir') {
-      passerA(issue.vers);
-      return;
+    switch (issue.genre) {
+      case 'attendre':
+        return;
+      case 'passer':
+      case 'revenir':
+        passerA(issue.vers);
+        return;
+      case 'soumettre':
+        break;
+      default: {
+        const genreInconnu: never = issue;
+        return genreInconnu;
+      }
     }
 
     // La lecture du cycle a démarré au montage ; l'attendre ici est ce qui empêche une soumission

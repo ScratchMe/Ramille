@@ -8,7 +8,9 @@ import { decalagePourMontrer, optionCible, suiteSousLePied } from '@/types/deman
 // copie :
 //   - `optionCible` qui rend toujours la première → « la cochée, quand il y en a une », et lui seul ;
 //   - la cible au-dessus de la zone ignorée (la branche `hautVisible < 0` retirée) → « au-dessus de la
-//     zone, elle redescend » et « plus haute que la zone… », et eux seuls ;
+//     zone, elle redescend » et « plus haute que la zone… », et eux seuls — **rejouée le soir même**
+//     après la clause ci-dessous, qui rattrape les cas plus hauts que la zone : « au-dessus de la
+//     zone » seul ;
 //   - l'ouverture sans sa borne (`margeHaut` de la demande) → « une ouverture ne fait jamais passer le
 //     choix au-dessus du bord », et lui seul ;
 //   - le filet sans la marge basse (`MARGE_BASSE_DU_CONTENU` retirée) → « seule la marge basse est
@@ -21,7 +23,8 @@ import { decalagePourMontrer, optionCible, suiteSousLePied } from '@/types/deman
 //     qu'elle était redondante avec celle-ci. Elle est partie.
 //
 // Les tests de `defilementPourMontrer` (`mouvement.test.ts`), dont la moitié « vers le bas » est
-// réutilisée ici, restent verts sous les quatre : ils n'emploient pas `margeHaut`.
+// réutilisée ici, restent verts sous chacune : elles ne touchent que ce module, et ces tests
+// n'emploient pas `margeHaut`.
 //
 // **Et après la contre-lecture du soir**, la cible plus haute que la zone dont le haut est à moins de
 // 24 du bord : la clause `hautVisible < MARGE_SOUS_L_EN_TETE && basVisible > hauteurZone` retirée →

@@ -632,7 +632,10 @@ Tout est sous `docs/design/design-system/components/`.
   - `MissingModeLink.tsx`, pour l'ordre ;
   - `StepShell.tsx`, `CommuteModeStep.tsx`, `CommuteHasTripStep.tsx`,
     `CommuteDaysDistanceStep.tsx`, `CommuteExtraStep.tsx` et `Button.tsx`, qui passent
-    `nextDisabled` ou `manque` en chaîne, ou décrivent l'ancienne ligne.
+    `nextDisabled` ou `manque` en chaîne, ou décrivent l'ancienne ligne ;
+  - *(relevés par la seconde contre-lecture, le 29/09/2026 : dix et non sept)* `PrecisionMode.tsx`,
+    `PrecisionChiffres.tsx` et `GroupeDeChoix.tsx`, qui rendent une précision hors de
+    `BoiteDePrecision` — elle ne dessine plus de boîte — et sans `champ`, que sa fiche exige.
 
   Les nommer dans la description de la PR suffit à ce que la synchronisation suivante les reprenne.
 
@@ -674,7 +677,10 @@ positive porte sur ce que le HTML statique ne dit pas** (`TESTING.md` §2.12).
 | Le même, « Suivant » activé par un Entrée **maintenu** : deux `keydown` (le second répété), puis `keyup` | La demande, comme au toucher, et **aucune option cochée** (§2.10). Un appui simple ne prouverait rien : même avec la demande partie à l'appui, le relâchement tomberait sur une option qui n'a pas reçu l'appui, et react-native-web ne l'activerait pas. *(La demande part bel et bien à l'appui — §2.10, dernier paragraphe : ce cas garde la capture de la répétition.)* |
 | Le même, après un défilement à la main qui remonte la question hors de la zone, la ligne touchée | La zone redescend jusqu'à la question, le focus y revient (§2.6, le geste suivant) |
 | Le même, « 2 » choisi | La ligne est partie, l'intitulé a repris sa couleur ; « Suivant » mène à l'étape suivante |
+| *(Ajouté à l'implémentation.)* Le même, « 2 » choisi puis « Train » : un nouveau manque | **Aucune ligne** : la demande est retombée à la complétude, et un nouveau manque ne se dit qu'au prochain toucher. C'est ce cas, et non celui du dessus, qui fait tomber la demande qui ne retombe pas à la complétude — la ligne se dit de ce qui manque maintenant (§2.9) |
 | A4, puis « Retour », puis « Suivant » : on revient sur l'étape du mode, encore incomplète | **Aucune ligne** : la demande est retombée en changeant d'étape |
+| *(Ajouté à l'implémentation.)* Étape du mode sans jours ni distance, « Suivant » touché, puis « Retour » | **Aucune ligne** sur l'étape d'avant, vide elle aussi. Le cas du dessus revient sur une étape **complète**, où la demande retombe déjà à la complétude : il ne peut pas dire si elle retombe en changeant d'étape ; celui-ci le peut |
+| *(Ajouté à l'implémentation.)* A3, lu à l'arrivée du brouillon | **Le focus est resté sur le document** : un brouillon relu après le montage n'est pas une entrée (§9, écart 13) |
 | Rien de choisi, « Suivant » touché (A6) | La ligne dit « Il manque encore ton mode de transport. » ; le focus est sur « Voiture (seul) » ; **le titre n'a pas changé de couleur** |
 | Sorties, « Voiture (seul) » et « Thermique », distance vide, 390 × 844 (D1, D2) | **Le filet** est là à l'arrivée ; au toucher, la zone descend jusqu'à ce que le groupe des tranches finisse 16 au-dessus du pied (au pixel près), et le focus est sur « Moins de 5 km ». Image par image : des positions intermédiaires ; sous la préférence, aucune |
 | Étape courte (« As-tu un trajet régulier… ») | **Pas de filet** : la moitié négative |
@@ -718,12 +724,29 @@ point 5). Elles se consignent datées en tête de la garde qui tombe.
 | « Bus » remis en dur dans H | H, sur le premier révélé |
 
 **Jouées le 29/09/2026**, et ce qui est tombé est consigné en tête de la section K de
-`scripts/verifier-etats-export.mjs`. Trois lignes ci-dessus ne sont pas tombées comme elles étaient
-écrites, et ce n'est pas un défaut des gardes : la demande part **déjà** à l'appui (§9, ligne 14), et
-c'est la capture de la répétition que l'Entrée maintenu garde ; le brouillon rouvert au vélo est tenu
-par **deux** défenses, et le compte des réponses n'est seul que contre un préremplissage arrivé après
-le montage, que le parcours réel garde désormais ; et sans réseau, `ensureSession()` échoue avant
-toute écriture, donc c'est le retour à la première étape incomplète qui tombe, pas la soumission.
+`scripts/verifier-etats-export.mjs` — c'est elle qui fait foi, pas cette table, qui disait ce qu'on
+attendait. **Cinq lignes ne sont pas tombées comme elles étaient écrites** :
+
+- **la demande qui ne retombe pas à la complétude** ne se voit pas sur « 2 » choisi : la ligne se dit
+  de ce qui manque maintenant (§2.9), et il ne manque plus rien. Elle tombe sur un cas ajouté, un
+  nouveau manque après la complétude (§6.2) ;
+- **la demande qui ne retombe pas en changeant d'étape** ne se voit pas sur « A4, Retour, Suivant » :
+  on revient sur une étape complète, où elle retombe déjà à la complétude. Elle tombe sur un cas
+  ajouté, « Retour » vers une étape vide elle aussi ;
+- **la demande partie à l'appui** ne fait pas tomber l'Entrée maintenu : elle part **déjà** à l'appui
+  (§9, ligne 14), et c'est la capture de la répétition que ce cas garde — sa mutation, elle, le fait
+  tomber ;
+- **le défilement à l'ouverture joué au montage** ne fait pas tomber le brouillon au vélo : il est tenu
+  par **deux** défenses, et il faut retirer les deux. Le compte des réponses n'est seul que contre un
+  préremplissage arrivé après le montage, que le parcours réel garde désormais ;
+- **la garde de la dernière étape** ne fait pas partir de soumission : sans réseau, `ensureSession()`
+  échoue avant toute écriture, donc c'est le retour à la première étape incomplète qui tombe.
+
+**La garde de l'étape courante dans `handleNext`** n'a pas de test d'écran, et n'en a plus besoin :
+l'aiguillage est un `switch` exhaustif sur le genre que rend `issueDuSuivant`, donc un cas retiré ne
+compile pas (éprouvé : le cas `attendre` retiré, `tsc` le refuse), et un genre inconnu ne soumet
+jamais. La contre-lecture l'avait trouvé écrit en `if` successifs, où tout genre non aiguillé tombait
+sur la soumission.
 
 ### 6.5 Ce qui n'est pas gardé, et qu'il ne faut pas prétendre gardé
 
@@ -796,7 +819,7 @@ dément.
 
 | # | Le handoff ou le canvas | Ce qui est livré | Pourquoi |
 |---|---|---|---|
-| 1 | L'ordre de « Lequel ? » vit dans les clés de `TRANSPORT_MODE_LABELS` | Une liste ordonnée par famille, d'où les trois listes dérivent | §2.1 : l'ordre des clés d'un objet est un accident |
+| 1 | L'ordre de « Lequel ? » vit dans les clés de `TRANSPORT_MODE_LABELS` | Une liste ordonnée par famille, que « Lequel ? » itère ; les deux listes de B1.4 et B2.2 restent littérales, tenues d'accord avec elle par un test *(corrigé le 29/09/2026 : cette ligne disait « d'où les trois listes dérivent », et la section H exige que la seconde liste des sorties reste littérale)* | §2.1 : l'ordre des clés d'un objet est un accident |
 | 2 | Une « variante sans boîte » de `PrecisionMode` et `PrecisionChiffres` | Ils ne dessinent jamais de boîte ; `BoiteDePrecision` la porte toujours, avec son dépli | §2.2 : deux façons de dessiner une boîte divergent, et le défilement doit savoir qui l'annonce |
 | 3 | Le défilement à l'ouverture « d'une précision » | Aussi « Lequel ? » et la distance libre des sorties ; jamais les modes que « Voir les autres modes » révèle | §2.2 : la règle du handoff, appliquée à tout ce qui s'ouvre sous le doigt, et une liste fermée |
 | 4 | Ce qui manque est une phrase | Un champ logique et sa phrase ; la distance du trajet est un seul champ pour deux colonnes | §2.3 |
@@ -822,7 +845,7 @@ suivre sont celles du handoff.
 |---|---|---|
 | — | Ce document | fait, 29/09/2026, et contre-lu le jour même (§13) |
 | — | Relevé de §3 et tables de §2.3, refaits contre `main` (7dce4ae) | fait, 29/09/2026 : inchangés. `v1-32`, fusionné entre-temps, n'a touché aucun fichier du questionnaire ; il a donné à `button.tsx` sa prop `ref` (déjà noté en §3) et à `src/types/mouvement.ts` `defilementPourMontrer`, réutilisée en §4.7 |
-| 4.4 | Ce qui manque, nommé par son champ | fait, 29/09/2026 : `ChampDuBilan`, `CHAMPS_DE_L_ETAPE`, `QUESTION_PRINCIPALE`, `seMarque` ; quatre mutations consignées dans `bilan.test.ts` |
+| 4.4 | Ce qui manque, nommé par son champ | fait, 29/09/2026 : `ChampDuBilan`, `CHAMPS_DE_L_ETAPE`, `QUESTION_PRINCIPALE`, `seMarque` ; quatre mutations consignées dans `bilan.test.ts`, et une cinquième après la contre-lecture (une faute dans `QUESTION_PRINCIPALE`, que le test ne voyait pas tant qu'il relisait la table) |
 | 4.1 | L'ordre et les familles, section H | fait, 29/09/2026 : `MODES_PAR_FAMILLE`, `FAMILLE_DU_MODE`, `enFamilles` et leur test ; section H lit le premier révélé dans la source, H2 rejouée |
 | 4.2 | Les rangées de 48 et les écarts | fait, 29/09/2026 : mesuré sur l'export à 390 × 844 et 360 × 800, titre 82 → 178, liste 194 → 682, rangées de 48, écarts 4 et 16, lien 690 → 738 — les valeurs du handoff (A1, B1) au pixel |
 | 4.3 | La boîte de précision | fait, 29/09/2026 : `BoiteDePrecision` porte le dépli et la boîte ; quatre familles de boîtes à deux groupes. Mesuré : covoiturage 302 → 650 à 390 comme à 360, les cinq puces sur une rangée à 360 ; train 470 → 674 (A2, B2, A5) |
@@ -831,9 +854,9 @@ suivre sont celles du handoff.
 | 4.7 | Les deux défilements, `Depliage` | fait, 29/09/2026 : `decalagePourMontrer` (`src/types/demande.ts`), qui réutilise `defilementPourMontrer` gagné d'une `margeHaut` ; `useApresLeMontage` et `useJoue` à la place de `useJoueAuMontage` ; `suivieALOuverture` et `ChoixOuvrant` ; le geste compté par `update` (§9). Mesuré sur l'export : B6 défile de 56, la boîte finit à 682 ; D2 de 261, les tranches finissent à 670 ; A4 et le brouillon rouvert au vélo ne défilent pas — avec et sans animations |
 | 4.8 | Le filet du pied | fait, 29/09/2026 : `suiteSousLePied` (`src/types/demande.ts`), relu au défilement, à la taille du contenu et à celle de la zone. Relevé sur l'export : absent en A1 à 390 et sur une étape courte, présent en B1 à 360 (698) et en D1 (742), absent au bas de D1 |
 | 6 | Section K, mutations de §6.4, H2 rejouée | fait, 29/09/2026 : la section K, et dix-sept mutations en dix-neuf passages (deux rejouées sur la garde finale), un export chacun, consignées en tête de la section. Trois lignes de §6.4 ne sont pas tombées comme écrites — `onPressIn` (écart 14), le défilement à l'ouverture joué au montage (deux défenses), la soumission (hors réseau) — et deux cas ont dû être ajoutés pour que la demande qui ne retombe pas se voie. La section K a trouvé l'écart 14 à son premier passage ; la contre-lecture, une course du parcours réel et deux mécanismes sans garde, désormais gardés (A3 lit le focus, un cas neuf du parcours réel pour l'écart 12). H2 rejouée en §4.1 |
-| 4.9 | Le kit | fait, 29/09/2026 : les fiches touchées, deux neuves (`BoiteDePrecision`, `IntituleDuChamp` — les ancres, que le plan n'avait pas prévues), `ChoixOuvrant` dans `SANS_INTERFACE` (il ne dessine rien), `bilan.card.js`, les exemples des `.prompt.md`, et l'écran B1.4 du kit d'écrans (`ui_kits/ramille/screens.js`), qui passait encore `nextDisabled` et affichait la motorisation hors de sa boîte. Miroir vert. Les sept aperçus de `.design-sync/previews/` suivent à la prochaine synchronisation |
+| 4.9 | Le kit | fait, 29/09/2026 : les fiches touchées, deux neuves (`BoiteDePrecision`, `IntituleDuChamp` — les ancres, que le plan n'avait pas prévues), `ChoixOuvrant` dans `SANS_INTERFACE` (il ne dessine rien), `bilan.card.js`, les exemples des `.prompt.md`, et l'écran B1.4 du kit d'écrans (`ui_kits/ramille/screens.js`), qui passait encore `nextDisabled` et affichait la motorisation hors de sa boîte. Miroir vert. Les dix aperçus de `.design-sync/previews/` (§4.9) suivent à la prochaine synchronisation |
 | 7 | Les documents | fait, 29/09/2026 : `FRONT.md` §2.4, §2.6, §2.12 ; `EXPO.md` §1.5 ; `TESTING.md` §2.14 (la section K, et deux règles payées en l'écrivant) ; `CLAUDE.md` (télétravail) ; la recette 02.2, 02.6 et 02.10 ; le README du dossier de design ; `v1-13` ligne 11.19 et `produit.md` ; §9 lignes 12 à 14 |
-| 8.1 à 8.6 | Vérifications, contre-lecture, rejeu de la CI, poids Vercel | à faire |
+| 8.1 à 8.6 | Vérifications, contre-lecture, rejeu de la CI, poids Vercel | fait, 29/09/2026 : `tsc`, lint, Jest ; la vue à 390 × 844 et 360 × 800, clair et sombre, aux valeurs du handoff ; deux contre-lectures, onze et douze constats, tous repris ; `rejouer-la-ci` 31 pas sur 31 ; le poids hors ligne à 4,164 Mio, sans écart. La PR est ScratchMe/Ramille#296 |
 | 8.7 | Build EAS | à demander |
 | 8.8 | Recette sur appareil (`v1-13` §11.19) | après le build |
 

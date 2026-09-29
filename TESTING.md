@@ -1007,7 +1007,7 @@ Les règles, chacune payée pendant l'écriture :
    section K porte donc deux cas de plus : un nouveau manque après la complétude, qui est le seul à
    faire tomber la mutation de la première raison, et « Retour » depuis l'étape du mode vers des
    jours et une distance vides eux aussi, le seul à faire tomber celle de la seconde. Le premier essai partait de `?etape=context` sur un questionnaire vierge, et ne prouvait
-   rien : l'étape d'avant, les longs trajets, y est complète — c'est la première mutation qui l'a
-   montré, en ne le faisant pas tomber (29/09/2026).
+   rien : l'étape d'avant, les longs trajets, y est complète — c'est la mutation « la demande ne
+   retombe pas en changeant d'étape » qui l'a montré, en ne le faisant pas tomber (29/09/2026).
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.

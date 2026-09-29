@@ -441,7 +441,11 @@ exactement ce qui avait laissé passer le mauvais caractère.
   (`onKeyDownCapture`) : quand un geste pose le focus sur un choix pendant qu'Entrée est tenue — la
   demande du « Suivant », « Voir les autres modes » —, la répétition arrivait sur lui, et la
   bibliothèque, qui ne lit pas `repeat`, le cochait au relâchement. Un appui neuf passe : c'est un
-  vrai choix. La section K le vérifie.
+  vrai choix. La section K le vérifie sur le « Suivant » ; pour « Voir les autres modes », ce sont
+  deux gardes ensemble — la section F, qui exige qu'un item de mode décompose ce gestionnaire, et la
+  section K, qui exige que le gestionnaire arrête la répétition. Aucune ne joue un Entrée maintenu sur
+  le lien lui-même : le défaut y a été relevé une fois, sur l'export d'avant la correction (`v1-31`
+  §9, écart 14).
 - **Le « Suivant » d'une étape incomplète n'est pas désactivé : il est en attente**
   (`Button.enAttente`, `v1-31`). Il a l'apparence du désactivé — fond `backgroundElement`, texte
   `textTertiary`, et `backgroundPressed` sous le doigt plutôt que `accentPressed` — et rien d'autre :
@@ -584,9 +588,11 @@ exactement ce qui avait laissé passer le mauvais caractère.
 - **Les modes se rangent en trois familles**, motorisés, collectifs, actifs (`MODES_PAR_FAMILLE`,
   `enFamilles`, `src/constants/transport-modes.ts`), séparées de 16, des rangées de 48 à 4 d'écart.
   L'ordre vit dans cette liste, **jamais dans les clés de `TRANSPORT_MODE_LABELS`**, dont l'ordre est
-  un accident d'écriture ; « Lequel ? » en dérive comme les deux listes de B1.4 et B2.2. Le premier
-  mode que « Voir les autres modes » révèle est lu dans la source par la section H de
-  `verifier-etats-export.mjs` : le changer ne demande rien à la garde.
+  un accident d'écriture. « Lequel ? » l'itère ; les listes de B1.4 et B2.2 restent **littérales**,
+  tenues d'accord avec elle par `transport-modes.test.ts` — et elles doivent le rester : la section H
+  de `verifier-etats-export.mjs` lit dans la source le premier libellé de `LEISURE_MODE_CHOICES_MORE`,
+  le premier mode que « Voir les autres modes » révèle. Le changer ne demande donc rien à la garde ; en
+  faire une liste dérivée la ferait tomber sur « motif introuvable ».
 - **Une précision vit dans une boîte, et la boîte dans le groupe de son mode**
   (`BoiteDePrecision`, `v1-31` §2.2) : une boîte par choix, qui porte toutes ses précisions — la
   motorisation **et** le nombre de personnes d'une même voiture, « Lequel ? » **et** sa part —, et

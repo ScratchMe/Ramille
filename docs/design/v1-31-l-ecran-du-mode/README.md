@@ -128,7 +128,8 @@ gagne, le canvas ne se réécrit pas. Trois points connus au moment de livrer :
    celles du web, et l'appareil en retire.
 
 Et ce que l'implémentation a corrigé ou précisé en chemin (29/09/2026 — le détail et les raisons
-sont en `docs/architecture/v1-31-l-ecran-du-mode.md` §9, lignes 12 à 14) :
+sont en `docs/architecture/v1-31-l-ecran-du-mode.md` §9 : les lignes 3, 6 et 8 pour ce qui se voit à
+l'écran et que le plan avait posé, les lignes 12 à 14 pour ce que l'implémentation a trouvé) :
 
 4. **Une ouverture ne fait défiler qu'après une réponse donnée sur l'étape**, comptée par le
    questionnaire et non au toucher : un toucher sur une rangée déjà cochée n'ouvre rien, et le
@@ -139,3 +140,10 @@ sont en `docs/architecture/v1-31-l-ecran-du-mode.md` §9, lignes 12 à 14) :
    handoff ne le supposait : sur web, le bouton s'active à l'appui et non au relâchement, et la
    répétition de la touche arrivait sur l'option qui venait de recevoir le focus. Un second appui,
    lui, coche : c'est un vrai choix.
+7. **« Lequel ? » et sa part tiennent dans une seule boîte** (§9, ligne 8) : le handoff ne comptait que
+   les voitures parmi les boîtes à deux groupes, et deux dépliés séparés sous un même mode auraient
+   fait partir deux annonces à la fois.
+8. **L'écran remonte aussi pour « Lequel ? » et pour la distance d'une sortie** (§9, ligne 3), pas
+   seulement pour une précision — et jamais pour les modes que « Voir les autres modes » révèle.
+9. **Sous le doigt, le « Suivant » en attente prend `backgroundPressed`** (§9, ligne 6), et non
+   l'`accentPressed` d'un bouton principal, qui l'aurait fait paraître prêt.

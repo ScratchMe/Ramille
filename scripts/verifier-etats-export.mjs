@@ -1710,8 +1710,9 @@ for (const reduire of [false, true]) {
 //   | le focus volé par un brouillon relu (`entree.sens === null` retiré de l'effet) | A3 : à l'arrivée du brouillon, le focus est sur l'étape — seulement (`v1-31` §9, écart 13) |
 //
 // La garde de l'étape courante retirée de `handleNext` n'a pas de cas ici : `StepShell` n'appelle
-// déjà pas `onNext` sur une étape incomplète, donc c'est par construction une seconde garde, et c'est
-// `issueDuSuivant` qui la porte, testée dans `bilan.test.ts` (deux mutations consignées). « Bus » en
+// déjà pas `onNext` sur une étape incomplète, donc c'est par construction une seconde garde. Elle est
+// portée par `issueDuSuivant`, testée dans `bilan.test.ts` (deux mutations consignées), et son
+// aiguillage dans `handleNext` est exhaustif : un cas retiré ne compile pas. « Bus » en
 // dur dans H : section H, mutation H2 rejouée le même jour.
 const LARGEUR_ETROITE = { largeur: 360, hauteur: 800 };
 const COULEUR = (() => {
@@ -1874,8 +1875,10 @@ if (Object.values(COULEUR).some((c) => c === null)) {
     }
   }
 
-  // Entrée **maintenu** sur le « Suivant » en attente : la demande part au relâchement, et la
-  // répétition de la touche ne coche pas l'option qui vient de recevoir le focus (`v1-31` §2.10).
+  // Entrée **maintenu** sur le « Suivant » en attente : la demande part dès l'appui — c'est un
+  // `<button>` natif (`v1-31` §9, écart 14) —, et la répétition de la touche, qui arrive sur l'option
+  // où le focus vient de se poser, est arrêtée en capture (`activableALaBarreDEspace`) : elle ne la
+  // coche pas (§2.10).
   {
     const ou = '/bilan, étape du mode, « Suivant » activé par un Entrée maintenu';
     const page = await ouvrir('/bilan', { [BROUILLON]: COVOITURAGE_HYBRIDE });
