@@ -42,7 +42,10 @@ commenter, et le produit ne commente pas.
   reste cliquable.
 - Pas d'emoji, pas de caractère unicode en guise d'icône. Pas de point d'exclamation en
   dehors d'une réplique de Ramille.
-- Pas de célébration, pas de confetti, pas de son. L'animation est rare et signifiante.
+- Pas de célébration, pas de confetti, pas de son. L'animation est rare et signifiante, et ses
+  durées et sa courbe sont des jetons (`--motion-entree`, `--motion-fondu`, `--motion-courbe`…,
+  `tokens/mouvement.css`) : sous « réduire les animations », les durées valent zéro et tout se
+  pose.
 - **Pas de bibliothèque d'icônes** : trois tracés dessinés dans le dépôt (onglet Plan, onglet
   Suivi, compte), plus la coche de l'action engagée. N'en invente pas un quatrième.
 
@@ -77,19 +80,24 @@ un constat de lecture.
   droite) et `BarreOnglets` en bas. **Le nom, pas le visage** : la mascotte n'est pas un logo
   d'en-tête.
 - Un écran de questionnaire, c'est `StepShell` : en-tête `ProgressHeader`, contenu défilant,
-  **pied collant** hors défilement pour le bouton principal. `manque` reçoit un fragment
-  (« ton mode de transport »), le composant écrit « Il manque encore … ». **Les neuf étapes
-  existent en composants** (`CommuteHasTripStep` … `ContextStep`) : on les pose dans
+  **pied collant** hors défilement pour le bouton principal. `entree` et `reponsesDonnees` sont
+  obligatoires, et `manque` vaut `{ champ, phrase }` tant que l'étape est incomplète. **Rien ne
+  s'écrit d'office** : au toucher de « Suivant », la coquille mène au champ, marque son intitulé
+  (`IntituleDuChamp`) et écrit « Il manque encore {phrase}. » au-dessus des boutons. **Les neuf
+  étapes existent en composants** (`CommuteHasTripStep` … `ContextStep`) : on les pose dans
   `StepShell`, on ne les redessine pas.
 - Le bouton principal est pleine largeur (54 de haut, rayon 27). Dans une rangée
   Retour + Suivant, Retour garde sa largeur et Suivant porte `flex`.
-- **Désactivé = fond élément + texte tertiaire**, jamais une opacité — et le libellé ne change
-  pas : ce qui manque se dit à côté.
+- Le « Suivant » d'une étape incomplète est **en attente** (`enAttente`) : l'apparence du
+  désactivé — fond élément + texte tertiaire, jamais une opacité —, mais un bouton qui agit.
+  `disabled` reste à ce qui n'agit vraiment pas (le « C'est noté » d'une intention incomplète).
+  Dans les deux cas, le libellé ne change pas.
 - Les listes de choix exclusifs sont des `ChoiceRow` ou des `ModeListItem`, jamais des boutons,
   et **chaque série de choix passe par `GroupeDeChoix`**, qui la nomme par sa question. Une
   précision qui dépend d'un choix (`PrecisionMode`, ou `PrecisionChiffres` pour un nombre)
-  s'ouvre **juste sous l'item choisi**, à un seul niveau — la profondeur coûte plus cher en
-  abandon qu'une puce de plus.
+  s'ouvre **juste sous l'item choisi, dans une `BoiteDePrecision`**, à un seul niveau — la
+  profondeur coûte plus cher en abandon qu'une puce de plus. Chaque précision porte `champ`, le
+  champ qu'elle renseigne : c'est là que « Il manque encore … » mène.
 - Deux registres de carte : **neutre** (fond élément sans bordure, ou bordure 1 px sur blanc)
   et **saillante** (bordure accent 2 px + fond teinté + étiquette majuscule à pastille-coche)
   — la saillante dit quelle action porte l'engagement, et il n'y en a qu'une par saison.
