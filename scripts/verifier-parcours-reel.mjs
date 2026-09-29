@@ -290,6 +290,49 @@
 // aussi bien si la barre avait disparu pour tout le monde. M5 fait de même pour M2 : l'écran « Toi »
 // masque ce qui décrit le compte supprimé, et garde les pages légales.
 //
+// ── « Toutes les pistes » : on compare sur la liste, on touche pour choisir (29/09/2026, `v1-32`) ──
+//
+// Trois étapes, après « Retour au plan » sans pile : **le défilement jusqu'à « C'est noté »**, une
+// carte déjà ouverte au-dessus (le titre jamais sous la bande, le bouton dans la fenêtre et près de son
+// bas, en glissant) ; **le même sous « réduire les animations »** (posé d'un coup) ; et **choisir « à la
+// place » depuis la liste** — le seul chemin qui passe `p_replace` depuis cet écran, jamais joué contre
+// une vraie stack : la carte s'ouvre sur la question, focus compris, rien de coché, « C'est noté »
+// inactif, puis la base relue dit que l'engagement a changé de ligne et que l'ancien est archivé en
+// `changement`. **Éprouvé en le cassant le 29/09/2026** : un témoin vert, puis un export par mutation
+// (cache Metro privé, `--clear`), la source restaurée après chaque export :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PR1 — `p_replace` passé à faux depuis la liste (`surLeChoix ? false : otherActionCommitted`) | « pistes — choisir depuis la liste, à la place » : « « C'est noté », depuis la liste, n'a pas ramené au plan », et le journal montre le refus `RM001` du RPC |
+//   | PR2 — le défilement mesuré à l'ouverture, sans attendre que la carte ait grandi | « pistes — le défilement… » : « l'écran défile trop : « C'est noté » finit 203 px au-dessus du bas de la fenêtre » |
+//   | PR3 — `animated: true` en dur | « pistes — le même défilement sous « réduire les animations » » : « l'écran défile en glissant (positions 483 → 485 → … → 894) » ; la moitié animée reste verte |
+//
+// **Et cinq de plus le même soir, après la contre-lecture**, qui avait trouvé ce qu'aucune suite
+// n'exerçait : l'ordre de la liste une fois l'engagement déplacé (tant que le rang 1 est engagé, les
+// deux ordres coïncident), « Annuler » par la vraie carte, la carte jamais estompée sur le choix, et le
+// focus du plan dans les deux sens. Même méthode, un témoin vert d'abord :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PR4 — la liste reprend l'ordre du plan (`ordonnerLesPistes` dans `pistesParPoste`) | « pistes — l'ordre ne bouge pas… » : « la liste a mis l'action engagée en tête » |
+//   | PR5 — la carte de la liste ne reçoit pas `onAnnuler` | « pistes — choisir depuis la liste, à la place » : « « Annuler », sur la liste, n'a pas rendu la carte à sa rangée » |
+//   | PR6 — la carte estompée aussi sur le choix (`estompee={uneAutreEstEngagee}`) | la même étape : « la carte ouverte sur le choix est estompée (rgb(240, 241, 236) au lieu de rgb(221, 224, 217)) » |
+//   | PR7 — pas de focus à la question sur le plan | « engagement » : « après « Je m'y engage », sur le plan, le focus est sur « Ramille… » » — le document, en pratique |
+//   | PR8 — `Button` ne transmet pas sa `ref` | la même étape : « après « Annuler », sur le plan, le focus est sur « Ramille… » » |
+//
+// Ce qu'aucune ne voit : le délai du focus sur la liste (`Mouvement.entree`, `ActionCommitment`). Le
+// navigateur accepte le focus sur une question découpée, donc un focus posé au montage passerait
+// vert ici ; c'est pour TalkBack qu'il attend, et TalkBack se juge au doigt (`v1-13` §11.24).
+//
+// **PR2 est d'abord PASSÉE**, et c'est elle qui a changé la garde. La première version vérifiait que
+// le titre ne passe jamais sous la bande et que « C'est noté » finit dans la fenêtre — pas que l'écran
+// défile **juste assez**. Imprimés image par image, les échantillons ont dit pourquoi : dans cette
+// géométrie la carte du dessus est encore visible, son repli fait donc déjà monter la nouvelle, et la
+// mesure prise trop tôt ajoute tout ce repli par-dessus — l'écran défile de 180 px au lieu de 38, borné
+// par le contenu avant que le titre n'atteigne la bande. D'où l'assertion « près du bas de la fenêtre ».
+// Le piège que le plan (`v1-32` §4.4) prévoyait — le titre sous la bande — n'est qu'une des deux façons
+// de se tromper ; l'autre, défiler trop sans rien cacher, ne se voyait pas.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -528,6 +571,22 @@ async function barreVisible() {
  * qui ne nomme rien : il faut alors retrouver dans le script la ligne où l'on en était. Mesuré en
  * cassant une phrase de l'écran (mutation 3 du second profil, 20/09/2026).
  */
+/**
+ * **Le focus a atteint l'élément dont le texte est `attendu`** — attendu, et non lu tout de suite :
+ * sur la liste, il ne part qu'une fois la carte grandie (`Mouvement.entree`, `ActionCommitment`).
+ */
+async function focusSur(attendu, ou) {
+  try {
+    await page.waitForFunction(
+      (t) => (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim() === t,
+      attendu,
+      { timeout: 2_000 }
+    );
+  } catch {
+    const vu = await page.evaluate(() => (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80));
+    throw new Ecart(`${ou}, le focus est sur « ${vu} » et non sur « ${attendu} »`);
+  }
+}
 async function attendreTexte(motif) {
   try {
     await page.getByText(motif).first().waitFor({ state: 'visible', timeout: ATTENTE });
@@ -849,6 +908,14 @@ try {
 
   // ── 6. L'engagement sur la première piste ───────────────────────────────────────────────────
   etape('engagement');
+  // **Le focus suit le geste, sur le plan aussi** (29/09/2026, `v1-32` §4.2) : « Je m'y engage » le
+  // donne à la question, « Annuler » le rend au bouton revenu. Les deux disparaissent sous le doigt ;
+  // sans ça, le focus tombait sur le document et la tabulation repartait du haut du plan. C'est la
+  // moitié web de `donnerLeFocus` — la moitié native, TalkBack, reste au doigt (`v1-13` §11.24).
+  await bouton('Je m’y engage');
+  await focusSur('Quels jours ?', 'après « Je m’y engage », sur le plan');
+  await bouton('Annuler');
+  await focusSur('Je m’y engage', 'après « Annuler », sur le plan');
   await bouton('Je m’y engage');
   await verifierLesGroupes('la feuille d’engagement');
 
@@ -1163,6 +1230,232 @@ try {
   } catch {
     throw new Ecart('« Retour au plan », ouvert sans pile derrière, n’a pas ramené au plan');
   }
+
+  // ── 8 quater. « Toutes les pistes » : on compare sur la liste, on touche pour choisir (`v1-32`) ──
+  //
+  // **Le défilement jusqu'à « C'est noté »** (planche B2 du canvas `v1-30`, 29/09/2026) : la carte
+  // qu'on ouvre grandit vers le bas, et quand son bouton sort de la fenêtre, l'écran défile juste
+  // assez pour le montrer — **sans que son titre passe jamais sous la bande**. Le cas qui mérite la
+  // garde est celui d'une carte **déjà ouverte au-dessus**, qui se replie pendant que l'autre s'ouvre :
+  // mesurée trop tôt, la nouvelle serait trop basse de ce que le repli rend, et l'écran défilerait
+  // trop. L'ancrage du défilement de Chrome s'en mêle (TESTING.md §2.14), d'où des positions lues
+  // **dans la fenêtre**. Deux moitiés, comme toute garde d'animation : ça défile en glissant ; sous
+  // « réduire les animations », ça se pose d'un coup.
+  const TITRE_OUVERT_AU_DESSUS = 'Renoncer à un vol long-courrier cette année';
+  const TITRE_DU_CHOIX = 'Faire une sortie sur trois à vélo à assistance électrique';
+  const ouvrirLesPistes = async () => {
+    await page.goto(`${base}/plan/pistes`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await attendreTexte('Toutes les pistes');
+  };
+  const rangee = (titre) => page.getByRole('button', { name: new RegExp(`^${titre}\\.`) }).first();
+  /** La rangée amenée tout en bas de la fenêtre de défilement : la carte qu'elle ouvrira en sortira. */
+  const rangeeEnBasDeLaFenetre = async (titre) => {
+    const ok = await page.evaluate((t) => {
+      const normaliser = (x) => (x ?? '').replace(/\s+/g, ' ').trim();
+      const n = [...document.querySelectorAll('[role="button"]')].find((e) => normaliser(e.getAttribute('aria-label')).startsWith(`${t}.`));
+      let fenetre = n?.parentElement;
+      while (fenetre && !/(auto|scroll)/.test(getComputedStyle(fenetre).overflowY)) fenetre = fenetre.parentElement;
+      if (!n || !fenetre) return false;
+      fenetre.scrollTop += n.getBoundingClientRect().bottom - fenetre.getBoundingClientRect().bottom;
+      return true;
+    }, titre);
+    assurer(ok, `la rangée « ${titre} » ou sa fenêtre de défilement est introuvable : la mesure ne peut pas se prendre`);
+    await page.waitForTimeout(400);
+  };
+  const LA_CARTE_DU_CHOIX = { titre: TITRE_DU_CHOIX, bouton: 'C’est noté' };
+
+  etape('pistes — le défilement jusqu’à « C’est noté », une carte ouverte au-dessus');
+  await ouvrirLesPistes();
+  await rangee(TITRE_OUVERT_AU_DESSUS).click();
+  await attendreTexte('Quand ?');
+  // Le temps que cette première carte ait fini de grandir et de faire, elle aussi, son défilement :
+  // sans quoi il partirait après qu'on a placé la rangée, et la déplacerait.
+  await page.waitForTimeout(1_200);
+  await rangeeEnBasDeLaFenetre(TITRE_DU_CHOIX);
+  const ouvertureDuChoix = await releverPendant(
+    page,
+    { carte: ['defilement', LA_CARTE_DU_CHOIX] },
+    () => rangee(TITRE_DU_CHOIX).click(),
+    1_500
+  );
+  const vues = ouvertureDuChoix.map((e) => e.carte).filter(Boolean);
+  assurer(vues.length > 0, `« ${TITRE_DU_CHOIX} » n’a pas été relevée pendant son ouverture : la mesure ne peut pas conclure`);
+  const carteDuChoix = vues[vues.length - 1];
+  const positions = vues.map((v) => v.position);
+  assurer(
+    carteDuChoix.basDuBouton !== null && carteDuChoix.basDuBouton <= carteDuChoix.hauteur + 0.5,
+    `« C’est noté » finit hors de l’écran (${Math.round(carteDuChoix.basDuBouton ?? -1)} px pour une fenêtre de ${carteDuChoix.hauteur}) :` +
+      ' l’écran devait défiler juste assez pour le montrer (`defilementPourMontrer`, src/app/(tabs)/plan/pistes.tsx)'
+  );
+  // **Juste assez, et pas plus** : le bas de la carte s'arrête à la marge du bas, donc « C'est noté »
+  // finit près du bas de la fenêtre — 61 px au-dessus, mesuré le 29/09/2026 (la marge de 16 et le pied
+  // de la carte). Un écran qui défile trop le laisse au milieu : 203 px sous la mutation PR2, où la
+  // carte du dessus, encore visible, avait déjà fait monter la nouvelle en se repliant, et où la
+  // mesure prise trop tôt ajoutait tout ce repli par-dessus.
+  assurer(
+    carteDuChoix.hauteur - carteDuChoix.basDuBouton < 100,
+    `l’écran défile trop : « C’est noté » finit ${Math.round(carteDuChoix.hauteur - carteDuChoix.basDuBouton)} px au-dessus du bas de la` +
+      ' fenêtre — il devait défiler juste assez pour le montrer, une fois la carte du dessus repliée'
+  );
+  const sousLaBande = vues.find((v) => v.haut < -0.5);
+  assurer(
+    !sousLaBande,
+    `le titre de la carte passe sous la bande (${Math.round(sousLaBande?.haut ?? 0)} px) : l’écran a défilé trop loin —` +
+      ' la carte ouverte au-dessus doit avoir fini de se replier avant qu’on mesure'
+  );
+  assurer(
+    carteDuChoix.position > Math.min(...positions) + 1 && enChemin(positions, carteDuChoix.position),
+    `l’écran ne défile pas en glissant jusqu’à « C’est noté » (positions ${[...new Set(positions.map(Math.round))].join(' → ')})`
+  );
+  // La première carte s'est refermée : une seule à la fois (décision n° 1).
+  assurer(
+    (await page.getByText('Quand ?', { exact: true }).count()) === 1,
+    'deux cartes sont ouvertes à la fois : toucher une autre rangée doit refermer la première'
+  );
+
+  etape('pistes — le même défilement sous « réduire les animations »');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await ouvrirLesPistes();
+  await rangeeEnBasDeLaFenetre(TITRE_DU_CHOIX);
+  const ouvertureDuChoixReduite = await releverPendant(
+    page,
+    { carte: ['defilement', LA_CARTE_DU_CHOIX] },
+    () => rangee(TITRE_DU_CHOIX).click(),
+    1_000
+  );
+  const vuesDuChoixReduites = ouvertureDuChoixReduite.map((e) => e.carte);
+  assurer(
+    vuesDuChoixReduites.some(Boolean) && !disparaitApresEtreApparue(vuesDuChoixReduites),
+    'sous « réduire les animations », la carte n’a pas été relevée pendant son ouverture, ou a disparu une fois là'
+  );
+  const carteDuChoixReduite = vuesDuChoixReduites.filter(Boolean).at(-1);
+  const positionsDuChoixReduites = vuesDuChoixReduites.filter(Boolean).map((v) => v.position);
+  assurer(
+    carteDuChoixReduite.position > Math.min(...positionsDuChoixReduites) + 1 &&
+      carteDuChoixReduite.basDuBouton !== null &&
+      carteDuChoixReduite.basDuBouton <= carteDuChoixReduite.hauteur + 0.5,
+    'sous « réduire les animations », l’écran ne défile pas jusqu’à « C’est noté »'
+  );
+  assurer(
+    !enChemin(positionsDuChoixReduites, carteDuChoixReduite.position),
+    `sous « réduire les animations », l’écran défile en glissant (positions ${[...new Set(positionsDuChoixReduites.map(Math.round))].join(' → ')}) :` +
+      ' il doit se poser d’un coup (`animated: !animationsReduites`)'
+  );
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+  // **Choisir depuis la liste, à la place** (29/09/2026). L'engagement se jouait sur le plan, et aucun
+  // chemin ne choisissait depuis la liste contre une vraie stack — c'est pourtant le seul qui passe
+  // `p_replace` à vrai depuis cet écran : sa pastille dit « Choisir à la place », et le RPC refuse un
+  // remplacement qu'on ne lui a pas demandé (`RM001`). La carte s'ouvre **sur la question**, rien de
+  // coché ; la base relue dit que l'engagement a changé de ligne, et que l'ancien est archivé.
+  etape('pistes — choisir depuis la liste, à la place');
+  await ouvrirLesPistes();
+  const aLaPlace = rangee(TITRE_OUVERT_AU_DESSUS);
+  assurer(
+    /\. Choisir à la place\.$/.test((await aLaPlace.getAttribute('aria-label')) ?? ''),
+    `la rangée « ${TITRE_OUVERT_AU_DESSUS} » ne dit pas « Choisir à la place » alors qu’une autre action est engagée`
+  );
+  await aLaPlace.click();
+  await attendreTexte('Quand ?');
+  await focusSur('Quand ?', 'après « Choisir à la place »');
+  assurer((await page.getByRole('button', { name: 'Je m’y engage', exact: true }).count()) === 0, '« Je m’y engage » est encore sur le chemin de la liste');
+  // **Jamais estompée sur la liste** (planche B3) : une autre action est engagée, mais la carte ouverte
+  // est celle qu'on est en train de choisir. Son cadre garde le filet `border` — celui des rangées —
+  // et ne passe pas à `backgroundElement`, le filet d'une proposition qui recule sur le plan.
+  const filets = await page.evaluate(() => {
+    // L'espace avant « ? » est insécable : on compare le texte normalisé, comme `focusSur`.
+    const quand = [...document.querySelectorAll('*')].find(
+      (e) => e.childElementCount === 0 && (e.textContent ?? '').replace(/\s+/g, ' ').trim() === 'Quand ?'
+    );
+    let carte = quand?.parentElement;
+    while (carte && parseFloat(getComputedStyle(carte).borderTopWidth) === 0) carte = carte.parentElement;
+    const rangee = [...document.querySelectorAll('[role="button"]')].find((e) => parseFloat(getComputedStyle(e).borderBottomWidth) > 0);
+    return { carte: carte && getComputedStyle(carte).borderTopColor, rangee: rangee && getComputedStyle(rangee).borderBottomColor };
+  });
+  assurer(filets.carte && filets.rangee, `le cadre de la carte ou le filet d’une rangée est introuvable (${JSON.stringify(filets)})`);
+  assurer(
+    filets.carte === filets.rangee,
+    `la carte ouverte sur le choix est estompée (${filets.carte} au lieu de ${filets.rangee}) : sur la liste, elle ne l’est jamais`
+  );
+  // **« Annuler » la rend à sa ligne** (décision n° 1), et le focus à la rangée revenue : la carte
+  // disparaît sous le doigt avec son bouton, c'est l'écran qui rend la main.
+  await bouton('Annuler');
+  try {
+    await aLaPlace.waitFor({ state: 'visible', timeout: ATTENTE });
+  } catch {
+    throw new Ecart('« Annuler », sur la liste, n’a pas rendu la carte à sa rangée');
+  }
+  assurer((await page.getByText('Quand ?', { exact: true }).count()) === 0, '« Annuler », sur la liste, laisse la question à l’écran');
+  assurer(
+    (await page.getByRole('button', { name: /^Choisir celle-ci/ }).count()) === 0,
+    '« Annuler », sur la liste, a replié le sélecteur dans la carte au lieu de la refermer'
+  );
+  const focusSurLaRangee = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? '');
+  assurer(
+    focusSurLaRangee.startsWith(`${TITRE_OUVERT_AU_DESSUS}.`),
+    `après « Annuler », sur la liste, le focus est sur « ${focusSurLaRangee.slice(0, 60)} » et non sur la rangée revenue`
+  );
+  await aLaPlace.click();
+  await attendreTexte('Quand ?');
+  for (const echeance of ['À mon prochain projet de voyage', 'Avant mon prochain bilan']) {
+    assurer(
+      (await page.getByRole('radio', { name: echeance, exact: true }).getAttribute('aria-checked')) === 'false',
+      `« ${echeance} » est déjà cochée à l’ouverture : aucune échéance par défaut`
+    );
+  }
+  const cEstNote = page.getByRole('button', { name: 'C’est noté', exact: true });
+  assurer((await cEstNote.getAttribute('aria-disabled')) === 'true', '« C’est noté » est actif avant qu’une échéance soit choisie');
+  await choisir('Avant mon prochain bilan');
+  await cEstNote.click();
+  try {
+    await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
+  } catch {
+    throw new Ecart('« C’est noté », depuis la liste, n’a pas ramené au plan');
+  }
+  await attendreTexte('TON ENGAGEMENT');
+  const texteDuPlanApresLeChoix = await page.evaluate(() => document.body.innerText);
+  assurer(
+    texteDuPlanApresLeChoix.indexOf(TITRE_OUVERT_AU_DESSUS) !== -1 &&
+      texteDuPlanApresLeChoix.indexOf(TITRE_OUVERT_AU_DESSUS) < texteDuPlanApresLeChoix.indexOf(ATTENDU.pistes[0][0]),
+    `l’action choisie depuis la liste n’est pas en tête du plan`
+  );
+  const apresLeChoix = await lire('plan_actions?select=rank,committed_at,intention_timing&order=rank', jeton);
+  assurer(
+    apresLeChoix[1].committed_at !== null && apresLeChoix[1].intention_timing === 'avant_le_prochain_bilan',
+    `l’engagement n’a pas changé de ligne en base : ${JSON.stringify(apresLeChoix.slice(0, 2))}`
+  );
+  assurer(apresLeChoix[0].committed_at === null, 'l’ancienne action est toujours engagée en base : le remplacement n’a pas eu lieu');
+  const archive = await lire('plan_action_commitments_archive?select=action_text,released_reason', jeton);
+  assurer(
+    archive.some((a) => a.action_text === ATTENDU.pistes[0][0] && a.released_reason === 'changement'),
+    `l’engagement remplacé n’est pas archivé en « changement » : ${JSON.stringify(archive)}`
+  );
+
+  // **L'ordre de la liste ne bouge pas** (décision n° 2) — et c'est le seul moment du parcours où ça se
+  // voit : tant que le rang 1 est engagé, « par rang » et « l'engagée d'abord » donnent le même ordre.
+  // Le rang 2 engagé, le plan le met en tête (vérifié juste au-dessus) ; la liste, elle, garde le
+  // trajet domicile-travail en premier, et le vol à sa place dans les voyages, marqué et inerte.
+  etape('pistes — l’ordre ne bouge pas, une action engagée au rang 2');
+  await ouvrirLesPistes();
+  await attendreTexte('Engagée');
+  const texteDesPistes = await page.evaluate(() => document.body.innerText);
+  const ou = (t) => texteDesPistes.indexOf(t);
+  assurer(
+    ou(ATTENDU.pistes[0][0]) !== -1 && ou(ATTENDU.pistes[0][0]) < ou(TITRE_OUVERT_AU_DESSUS),
+    `la liste a mis l’action engagée en tête : « ${ATTENDU.pistes[0][0]} », au rang 1, doit rester devant — l’ordre du rang ne bouge pas`
+  );
+  assurer(
+    ou('TRAJET DOMICILE-TRAVAIL') !== -1 && ou('TRAJET DOMICILE-TRAVAIL') < ou('VOYAGES LONGUE DISTANCE'),
+    'le groupe des voyages est passé devant celui du trajet : le groupe de l’action engagée a pris la tête'
+  );
+  assurer(
+    /\. Choisir à la place\.$/.test((await rangee(ATTENDU.pistes[0][0]).getAttribute('aria-label')) ?? ''),
+    `« ${ATTENDU.pistes[0][0]} », désengagée, ne dit pas « Choisir à la place »`
+  );
+  assurer(
+    (await page.getByRole('button', { name: new RegExp(`^${TITRE_OUVERT_AU_DESSUS}\\.`) }).count()) === 0,
+    `« ${TITRE_OUVERT_AU_DESSUS} », engagée, se touche encore : sa rangée ne doit pas être un bouton`
+  );
 
   // ── 9. La suppression du compte, par l'écran, et rien derrière ─────────────────────────────
   //

@@ -340,13 +340,24 @@ chantiers sont parallélisables, mais ils partagent des fichiers :
 - **`src/components/button.tsx`** : `v1-32` le lit sans l'écrire. Le « C'est noté » de sa feuille
   d'engagement est un `Button` **désactivé**, et un changement de `Button` changerait son apparence
   sans que rien dans `v1-32` ne le dise. D'où la règle de §4.5 : `enAttente` est une prop à part, et
-  **l'apparence de `disabled` ne bouge pas**.
+  **l'apparence de `disabled` ne bouge pas**. **Corrigé à la livraison de `v1-32`, le 29/09/2026** :
+  `v1-32` **écrit** `button.tsx`, d'une prop — `ref`, passée au `Pressable`, pour rendre le focus à
+  « Je m'y engage » quand « Annuler » le fait réapparaître sur le plan (`v1-32` §3). Rien ne change sur
+  le fond — `ref` et `enAttente` ne se touchent pas, et l'apparence de `disabled` n'a pas bougé —, mais
+  la signature et la décomposition de `Button` ont une prop de plus : un conflit textuel à attendre.
 - **`src/lib/mouvement.tsx`** : `v1-32` lit `HauteurSuivie` et `Apparition`. Or `Apparition` décide
   de jouer par `useJoueAuMontage`, que §2.7 scinde. Son comportement ne change pas : elle joue quand
   ce n'est pas le montage de son écran **et** que les animations ne sont pas réduites, comme
   aujourd'hui.
 - **`scripts/verifier-parcours-reel.mjs`**, **`docs/recette/le-compte-et-les-modes.md`**,
   **`v1-13`** et **`produit.md`** : les deux chantiers y écrivent, à des endroits différents.
+- **`src/types/mouvement.ts`**, **`scripts/relever-par-image.mjs`** et **`TESTING.md` §2.14**
+  (ajouté à la livraison de `v1-32`, le 29/09/2026) : `v1-32` y a posé `defilementPourMontrer` — la
+  distance à défiler pour qu'une boîte finisse à une marge du bord, sans que son haut passe au-dessus
+  — et la mesure `defilement`, qui lit une boîte dans sa fenêtre de défilement image par image. La
+  zone de §2.6, qui descend « jusqu'à ce que le groupe finisse 16 au-dessus du pied », est la même
+  règle : **la réutiliser**, plutôt qu'en écrire une jumelle qui divergerait à la première retouche.
+  Et la section K s'ajoute à la liste de §2.14 que `v1-32` vient d'allonger.
 
 Le second à passer rebalaie ces fichiers sur `main` avant de pousser (`CLAUDE.md`, « Avant de lancer
 une vague »).

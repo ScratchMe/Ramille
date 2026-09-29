@@ -86,7 +86,7 @@ unités, pas doubler, et les rangs ne bougent pas.
 |---|---|---|---|
 | 01.1 | **Navigateur A**, fenêtre neuve : saisir le **profil 1** jusqu'au plan, puis « Compris » | Le plan, « Voir toutes les pistes · 10 » | |
 | 01.2 | Ouvrir **par son adresse** `https://www.ramille.fr/plan/pistes`, puis **« Retour au plan »** | On arrive sur **le plan**. Le 28/09, le lien ne faisait rien | |
-| 01.3 | De nouveau `/plan/pistes` par son adresse, **recharger** (F5), puis toucher une ligne, **« Je m'y engage »**, une échéance, **« C'est noté »** | On arrive sur **le plan**, l'action en tête sous « TON ENGAGEMENT ». Le 28/09, on restait sur les pistes | |
+| 01.3 | De nouveau `/plan/pistes` par son adresse, **recharger** (F5), puis toucher **« Choisir »** sur une ligne, une échéance, **« C'est noté »** *(« Je m'y engage » a disparu de ce chemin le 29/09/2026 : la carte s'ouvre sur la question, `v1-32`)* | On arrive sur **le plan**, l'action en tête sous « TON ENGAGEMENT ». Le 28/09, on restait sur les pistes | |
 | 01.4 | Ouvrir par leur adresse, chacune dans l'onglet courant : `/contexte`, puis « Retour » ; `/feedback`, puis « Annuler » ; `/compte`, puis « Retour » | À chaque fois **on quitte l'écran** : le plan pour `/contexte`, l'accueil ou le plan (la racine décide) pour les deux autres | |
 | 01.5 | `/confidentialite` et `/conditions` par leur adresse, puis « Retour » | On quitte la page | |
 | 01.6 | « Toi » → « Rattacher un compte » → « Utiliser un email à la place » → `…+ramille-p3@gmail.com` → « Recevoir un code » | L'écran « Regarde tes emails », champ « Code reçu par email » | |

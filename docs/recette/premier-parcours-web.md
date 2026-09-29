@@ -205,15 +205,19 @@ Le troisième moment neuf. **Irréversible dans cette fenêtre.**
 
 ---
 
-## Bloc 06 — L'écran « Toutes les pistes » (C5.2)
+## Bloc 06 — L'écran « Toutes les pistes » (C5.2, redessiné par `v1-32`)
+
+**Ce bloc a été réécrit le 29/09/2026**, avec l'écran : on compare sur la liste, on touche
+« Choisir » pour choisir (`docs/architecture/v1-32-toutes-les-pistes.md`). Il se joue **avant** le
+bloc 08, donc sans action engagée ; ce que l'écran fait une fois une action engagée est la ligne 08.6.
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
 | 06.1 | Sous les deux cartes | Un lien **« Voir toutes les pistes · 10 »** — le compte est le **total** des pistes, pas celles qui restent à voir. (Dix et non huit depuis les modes ajoutés le 21/09/2026 : les sorties à vélo à assistance et les longs trajets en autocar) | |
-| 06.2 | L'ouvrir | Titre « Toutes les pistes », la phrase « Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan. », **la barre d'onglets reste visible**, et un lien « Retour au plan » en haut. (Si le bloc 08 a déjà été joué, la phrase commence par « Ton action en cours d'abord » : c'est voulu, pas un écart) | |
-| 06.3 | L'ordre des groupes | **Trajet domicile-travail** (3 pistes), puis **Voyages longue distance** (5), puis **Loisirs du week-end** (2). Les groupes sortent dans l'ordre où leur poste apparaît, donc la toute première piste de l'écran est la même action que la première carte du plan | |
-| 06.4 | Toucher une ligne | Elle s'**ouvre en carte**, avec son gain et son bouton pour s'engager | |
-| 06.5 | En ouvrir **plusieurs** | Elles restent toutes ouvertes — ce n'est pas un accordéon —, et deux cartes voisines **ne se touchent pas** : il y a un écart entre elles | |
+| 06.2 | L'ouvrir | Titre « Toutes les pistes », la phrase « Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan. », **la barre d'onglets reste visible**, et un lien « Retour au plan » en haut | |
+| 06.3 | L'ordre des groupes, et une ligne | **TRAJET DOMICILE-TRAVAIL** (3 pistes), puis **VOYAGES LONGUE DISTANCE** (5), puis **LOISIRS DU WEEK-END** (2) — des têtes en capitales grises, plus petites que les titres des pistes. Les groupes sortent dans l'ordre où leur poste apparaît au classement, et chaque groupe va du plus gros gain au plus petit. **Chaque ligne** porte son titre en noir, à la taille du texte courant, puis dessous son gain en gras — « **− 619 kg** par an » — et à droite une **pastille bordée « Choisir »**. Les gains se lisent en colonne, d'une ligne à l'autre, sans rien ouvrir | |
+| 06.4 | Toucher **« Choisir »** sur « Renoncer à un vol long-courrier cette année » | La ligne devient une carte **ouverte directement sur « Quand ? »** — « À mon prochain projet de voyage », « Avant mon prochain bilan » —, **rien de coché**, et **« C'est noté » inactif** tant qu'on n'a pas choisi. **Pas de bouton « Je m'y engage »** à toucher d'abord : « Choisir » l'a dit. Ne rien valider ici — l'engagement est le bloc 08 | |
+| 06.5 | Toucher **« Choisir »** sur une autre ligne, plus bas, puis **« Annuler »** | La première carte **se referme** et redevient sa ligne ; l'autre s'ouvre à sa place, sur sa propre question — une seule carte à la fois, et **aucun lien « Réduire »**. Si son « C'est noté » sortait de l'écran, l'écran défile juste assez pour le montrer, sans cacher le titre de la carte. « Annuler » la rend à sa ligne | |
 | 06.6 | Revenir au plan | Le plan est tel qu'on l'a laissé | |
 
 ---
@@ -248,6 +252,7 @@ plus la même chose — c'est la porte elle-même qui est en recette.
 | 08.3 | **Le premier pas** | Une ligne pratique apparaît **sous** l'action engagée, et seulement maintenant — pas avant le choix. Pour cette action : « Vérifie l'horaire qui te convient, puis essaie-le une fois. » Elle ne contient aucun chiffre | |
 | 08.4 | **La carte du cap** | Le **trait de temps** est apparu, avec « La saison avance ; le trait mesure le temps, pas toi. » C'est ce que 03.5 attendait. Il est **court** — il mesure le temps écoulé depuis le 1er septembre sur les 91 jours de la saison, et non ce qu'on vient de faire : s'engager ne le fait pas avancer d'un pixel. Et la phrase « Chacune des deux pistes proposées suffit à le franchir. » **a disparu** : elle aide à choisir, et le choix est fait (`v1-29`) | |
 | 08.5 | La feuille des rappels | Sur le web et sans compte rattaché, **elle ne s'ouvre pas** : c'est normal, et non un écart. Elle demande une adresse confirmée ou un appareil | |
+| 08.6 | Rouvrir **« Voir toutes les pistes · 10 »**, puis revenir **sans rien choisir** | La phrase finit désormais par « … en choisir une ici **remplace la tienne**. » La ligne de l'action engagée garde sa place — ici la toute première, puisque ce profil s'engage sur le rang 1 — avec une **coche verte** et « **Engagée** » à la place de la pastille, et elle ne s'ouvre pas au toucher. **Toutes les autres pastilles disent « Choisir à la place »**. (L'ordre qui ne bouge plus, lui, ne se voit pas avec ce profil : une action engagée au rang 1 est en tête dans les deux ordres. Ce sont le parcours réel et les tests de `pistesParPoste` qui le gardent) | |
 
 ---
 

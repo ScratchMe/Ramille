@@ -101,3 +101,26 @@ neuve » ; et « Choisir à la place », un texte montré, tranché sans avoir �
 
 À consigner ici au fil du chantier, comme les dossiers précédents le font : le dépôt gagne, le canvas
 ne se réécrit pas.
+
+**Livré le 29/09/2026** ([`v1-32`](../../architecture/v1-32-toutes-les-pistes.md) §8). Les planches A1,
+A2, B1, B2, B3 et C1 ont été retrouvées à l'écran au navigateur, sur les données du canvas (le profil 1
+et le petit rouleur, fabriqués sur la stack locale), à 390 et 360. **Les planches `-sombre` ne se
+voient pas au navigateur** : le web reste en clair par décision (`src/hooks/use-theme.ts`), et
+l'émulation du thème sombre y rend donc le clair, comme voulu. Elles ont été regardées sur un export
+de brouillon forcé en sombre, jamais commis : la pastille, la ligne engagée et la carte ouverte y
+rendent ce que dessine le canvas. Les écarts :
+
+| Quoi | Le canvas | Le dépôt | Pourquoi |
+|---|---|---|---|
+| Le focus sur le plan | Le HANDOFF dit que rien n'y change | « Je m'y engage » donne le focus à la question, « Annuler » le rend au bouton revenu | Les deux disparaissent sous le doigt, le même trou que sur la liste ; le combler au passage est la règle du dépôt (`v1-32` §4.2). Rien ne change de ce qui se voit. `Button` a gagné une prop `ref` pour ça |
+| La rangée | Un composant ou non, question laissée ouverte | Reste dans l'écran (`Lignes`, `pistes.tsx`) | Un seul écran la rend ; un composant arriverait avec une fiche de kit pour zéro réutilisation (`v1-32` §3) |
+| La cible du focus à l'ouverture | « le groupe de la question » | Le **texte** de la question, « Quand ? » ou « Quels jours ? », rendu focalisable par programme | C'est le nom même du groupe qui suit : le lecteur d'écran lit la question puis les choix, et la tabulation reprend à la première puce. Rendre le groupe focalisable demandait d'ouvrir `GroupeDeChoix`, partagé par tout le questionnaire. Sur la liste, il part une fois la carte grandie (250 ms, tout de suite sous « réduire les animations ») : au montage, la question est encore découpée et transparente. Vérifié au navigateur (`document.activeElement`) ; TalkBack reste au doigt (`v1-13` §11.24) |
+| Le défilement jusqu'à « C'est noté » | « l'écran défile juste assez », sans dire quand | Il part une fois la carte grandie, 250 ms après le toucher, et garde 16 px en haut comme en bas | Mesuré au navigateur : parti pendant que la carte grandit, le défilement est borné par le contenu de l'instant, et s'arrêtait avec « C'est noté » sous la barre d'onglets. La carte s'ouvre, puis l'écran monte ; sous « réduire les animations », tout est posé d'un coup |
+| La hauteur de la pastille | 32 | 32 **au moins** (`minHeight`) | Le libellé suit l'agrandissement des polices du système, comme le bouton (A10-21) : une boîte figée à 32 le ferait déborder |
+| « C'est noté » après un envoi réussi, sur la liste | — | Reste inactif jusqu'à ce que l'écran parte vers le plan | Sur natif, le retour de la pile s'anime : le bouton redevenu actif pendant ce temps se retouchait. Invisible sur web, où le retour est immédiat |
+
+**Relevé en passant, hors mandat** : le libellé d'une échéance qui passe sur deux lignes (« À mon
+prochain projet de voyage », à 390) est **centré** dans le canvas (B1) et **aligné à gauche** dans le
+dépôt — `Chip` centre sa boîte, pas son texte. C'est le contenu du sélecteur, inchangé par ce
+chantier (brief §5), et le même composant sert tout le questionnaire : à trancher sur un canvas ou à
+la recette, et consigné en attendant au relevé de dette (`v1-27` §12.19).

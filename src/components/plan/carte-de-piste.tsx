@@ -1,6 +1,6 @@
 import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
-import { formatIntention } from '@/types/plan';
+import { etatDeLaPiste, formatIntention } from '@/types/plan';
 
 /**
  * Ce qu'une carte de piste lit d'une ligne `plan_actions`.
@@ -28,10 +28,12 @@ export type PisteDuPlan = {
 type Props = {
   action: PisteDuPlan;
   /**
-   * L'action engagée du cycle, s'il y en a une : elle décide de l'estompage des autres — et elle
-   * seule depuis le 24/09/2026 (`v1-29`). Une prop `estompeeParLeRang` estompait « malgré tout, le
-   * rang le demande sur certains écrans » ; aucun écran ne la passait plus depuis que C5.2 a sorti
-   * les rangs du plan, et une branche que rien n'exerce se lit comme une règle en vigueur.
+   * L'action engagée du cycle, s'il y en a une : elle décide si une **autre** l'est
+   * (`etatDeLaPiste`), donc du remplacement demandé au serveur et, sur le plan, de l'estompage —
+   * jamais sur la liste, ouverte sur le choix (`surLeChoix`, `v1-32`). Une prop `estompeeParLeRang`
+   * estompait « malgré tout, le rang le demande sur certains écrans » ; aucun écran ne la passait
+   * plus depuis que C5.2 a sorti les rangs du plan, et une branche que rien n'exerce se lit comme
+   * une règle en vigueur (24/09/2026, `v1-29`).
    */
   committedActionId: string | null;
   /** Appelée quand un engagement vient d'être pris, avec le poste de l'action (C2.1). */
@@ -40,6 +42,13 @@ type Props = {
   onChanged: () => void;
   /** Le refus `RM001` de `commit_plan_action` — l'état a changé depuis l'affichage (C4.6). */
   onRefus: (message: string | null) => void;
+  /**
+   * Ouverte **sur le choix** : le sélecteur d'intention d'emblée, sans « Je m'y engage » — l'écran
+   * des pistes, où la pastille « Choisir » vient de le dire (`v1-32` §4.3). Le plan ne le passe pas.
+   */
+  surLeChoix?: boolean;
+  /** « Annuler » rend la carte à sa ligne — l'écran des pistes. Sans lui, le plan. */
+  onAnnuler?: () => void;
 };
 
 /**
@@ -50,8 +59,20 @@ type Props = {
  * écran, la recopier serait garantir qu'elles divergent — et la divergence porterait sur le geste le
  * plus irréversible du produit, l'engagement.
  */
-export function CarteDePiste({ action, committedActionId, onEngage, onChanged, onRefus }: Props) {
-  const uneAutreEstEngagee = committedActionId !== null && committedActionId !== action.id;
+export function CarteDePiste({
+  action,
+  committedActionId,
+  onEngage,
+  onChanged,
+  onRefus,
+  surLeChoix = false,
+  onAnnuler,
+}: Props) {
+  // **Une seule source pour « une autre est engagée »** (`etatDeLaPiste`, `v1-32` §4.1) : c'est ce
+  // que la pastille de la liste dit (« Choisir à la place ») et ce qu'on demande au serveur
+  // (`p_replace`). Lus à deux endroits, ils pouvaient se contredire — un libellé qui annonce un
+  // remplacement sur un appel parti sans lui est refusé en `RM001`.
+  const uneAutreEstEngagee = etatDeLaPiste(action, committedActionId) === 'aLaPlace';
 
   return (
     <ActionCard
@@ -63,7 +84,10 @@ export function CarteDePiste({ action, committedActionId, onEngage, onChanged, o
       premierPas={action.first_step}
       engagee={action.committed_at !== null}
       reconduite={action.carried_over_from !== null}
-      estompee={uneAutreEstEngagee}
+      // **L'estompage est un fait du plan** : la seconde carte recule derrière l'engagée. Sur la
+      // liste, ouverte sur le choix, il ferait reculer la carte au moment même où on la regarde —
+      // donc jamais là (HANDOFF du canvas `v1-30`, planche B3).
+      estompee={uneAutreEstEngagee && !surLeChoix}
     >
       {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la fois par
           cycle — s'engager sur les deux revient à ne s'engager sur aucune, et la base le
@@ -78,6 +102,8 @@ export function CarteDePiste({ action, committedActionId, onEngage, onChanged, o
         otherActionCommitted={uneAutreEstEngagee}
         onChanged={onChanged}
         onRefus={onRefus}
+        surLeChoix={surLeChoix}
+        onAnnuler={onAnnuler}
       />
     </ActionCard>
   );

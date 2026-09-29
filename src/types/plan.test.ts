@@ -3,7 +3,11 @@ import {
   INTENTION_TIMINGS,
   INTENTION_TIMINGS_LOISIRS,
   INTENTION_TIMINGS_VOYAGES,
+  annonceDeLaPiste,
   cadreDuPlan,
+  etatDeLaPiste,
+  introDesPistes,
+  libelleDuChoix,
   cartesDuPlan,
   felicitationDuPlanSansAction,
   formatIntention,
@@ -356,6 +360,12 @@ describe('pistesDuPlan', () => {
 
   // **L'action engagée passe toujours devant** : c'est la réponse à « qu'est-ce que je fais en ce
   // moment ? », elle n'a pas à être cherchée — même quand son rang la mettrait en cinquième.
+  //
+  // **La moitié « plan » de la décision n° 2** (28/09/2026, `v1-32` §2) : le plan garde l'engagée en
+  // tête, la liste des pistes ne la déplace pas. Sa jumelle est « garde l'action engagée à son rang,
+  // et son poste à sa place », dans `pistesParPoste` ci-dessous, qui dit l'inverse **exprès**. Un
+  // passage qui « factoriserait » les deux ordres en un fait tomber l'une ou l'autre selon le sens :
+  // si celle-ci tombe, ce n'est pas l'autre qu'il faut « corriger ».
   it('met l’action engagée en tête, quel que soit son rang', () => {
     const p = pistesDuPlan([action(1), action(2), action(3), action(4, true)]);
     expect(p.enAvant.map((a) => a.id)).toEqual(['a4', 'a1']);
@@ -400,9 +410,9 @@ describe('pistesParPoste', () => {
   const grouper = (actions: ReturnType<typeof action>[]) =>
     pistesParPoste(actions, (a) => a.poste);
 
-  // Les groupes sortent dans l'ordre où leur poste **apparaît**, jamais dans un ordre à eux : la
-  // tête de cet écran doit être la première carte du plan, sinon les deux surfaces se contredisent
-  // sur ce qui compte le plus.
+  // Les groupes sortent dans l'ordre où leur poste **apparaît** au classement, jamais dans un ordre
+  // à eux : le plan et la liste s'accordent sur le classement (décision n° 2, `v1-32` §2), et un tri
+  // des groupes par poids ou par nom ferait dire à la liste un autre ordre que celui du plan.
   it('sort les groupes dans l’ordre d’apparition, et garde le rang à l’intérieur', () => {
     const groupes = grouper([
       action(3, 'commute'),
@@ -415,12 +425,26 @@ describe('pistesParPoste', () => {
     expect(groupes[1].pistes.map((a) => a.id)).toEqual(['a3', 'a4']);
   });
 
-  // L'action engagée passe devant ici aussi — et elle entraîne son poste en tête du même coup,
-  // parce que l'ordre des groupes se dérive de l'ordre des actions et de rien d'autre.
-  it('met l’action engagée en tête, et son poste avec elle', () => {
-    const groupes = grouper([action(1, 'travel'), action(2, 'travel'), action(5, 'commute', true)]);
-    expect(groupes.map((g) => g.poste)).toEqual(['commute', 'travel']);
-    expect(groupes[0].pistes.map((a) => a.id)).toEqual(['a5']);
+  // **La moitié « liste » de la décision n° 2** (28/09/2026, `v1-32` §2) : l'ordre du rang toute la
+  // saison, la ligne engagée à sa place. Ce test disait l'inverse jusqu'au 29/09/2026 — « met
+  // l'action engagée en tête, et son poste avec elle » —, et c'est ce qui réordonnait la liste sous
+  // le doigt : s'engager sur la cinquième piste la faisait passer première, son groupe avec elle.
+  // C'est la planche A2 du canvas : « Regrouper deux sorties », cinquième, reste deuxième des
+  // loisirs, et la liste ouvre toujours sur les voyages.
+  //
+  // Sa jumelle est « met l'action engagée en tête, quel que soit son rang », dans `pistesDuPlan`
+  // ci-dessus, qui dit l'inverse **exprès** : le plan garde l'engagée en tête. Si l'une des deux
+  // tombe, ce n'est pas l'autre qu'il faut « corriger ».
+  it('garde l’action engagée à son rang, et son poste à sa place', () => {
+    const groupes = grouper([
+      action(1, 'travel'),
+      action(2, 'travel'),
+      action(4, 'leisure'),
+      action(5, 'leisure', true),
+      action(7, 'commute'),
+    ]);
+    expect(groupes.map((g) => g.poste)).toEqual(['travel', 'leisure', 'commute']);
+    expect(groupes[1].pistes.map((a) => a.id)).toEqual(['a4', 'a5']);
   });
 
   /**
@@ -440,6 +464,14 @@ describe('pistesParPoste', () => {
     expect(new Set(aplati.map((a) => a.id)).size).toBe(actions.length);
   });
 
+  // Le même `nulls last` que le plan : les deux lisent un comparateur écrit une fois (`parRang`), et
+  // ce test garde que la liste n'en reprend pas une copie qui ferait remonter un rang absent.
+  it('range un rang absent en dernier, comme le plan', () => {
+    const groupes = grouper([action(null, 'travel'), action(2, 'commute'), action(1, 'travel')]);
+    expect(groupes.map((g) => g.poste)).toEqual(['travel', 'commute']);
+    expect(groupes[0].pistes.map((a) => a.id)).toEqual(['a1', 'anull']);
+  });
+
   // Un poste nul est un groupe comme un autre : la jointure sur `action_templates` peut ne rien
   // rendre, et perdre l'action serait pire que l'afficher sans en-tête.
   it('garde les actions dont le poste est inconnu', () => {
@@ -449,6 +481,109 @@ describe('pistesParPoste', () => {
 
   it('rend une liste vide sans action', () => {
     expect(grouper([])).toEqual([]);
+  });
+});
+
+/**
+ * **Une ligne de l'écran des pistes** (`v1-32` §4.1, 29/09/2026) : quatre dérivations sorties de
+ * l'écran, où l'annonce était composée deux fois et l'intro écrite en ternaire.
+ *
+ * **Éprouvé en le cassant, le 29/09/2026** (TESTING.md §1.1) — dix mutations de `plan.ts`, chacune
+ * jouée seule sur un fichier égal au commit et restaurée depuis sa copie, et ce que chacune fait
+ * tomber (sur 87 tests) :
+ *   - M1, `pistesParPoste` reprend l'ordre du plan (l'ancien défaut) → « garde l'action engagée à
+ *     son rang, et son poste à sa place », seul ;
+ *   - M2, le plan perd l'engagée en tête (un seul ordre pour les deux) → « met l'action engagée en
+ *     tête, quel que soit son rang », seul. M1 et M2 sont les deux moitiés de la décision n° 2 ;
+ *   - M3, `engagee` décidée sur `engageeId === action.id` et non sur la ligne → trois cas : les deux
+ *     lignes engagées dont l'identifiant relu n'est pas le leur (aucun, une autre), et la ligne libre
+ *     que l'écran croit engagée. (La table disait « deux » ; rejouée à la contre-lecture du même
+ *     soir, elle en fait tomber trois — la troisième est aussi celle de M4.) ;
+ *   - M4, `aLaPlace` sans exclure la ligne elle-même → la ligne libre que l'écran croit engagée ;
+ *   - M5, les deux libellés de la pastille intervertis → `libelleDuChoix` **et** les trois tests
+ *     d'annonce, qui disent ce libellé : quatre, attendu ;
+ *   - M6, le point final du titre gardé → « n'enchaîne pas deux points », seul ;
+ *   - M7, le gain nul non filtré → « tait la partie chiffrée », seul ;
+ *   - M8, l'intro engagée reprend l'ancienne variante → `introDesPistes`, seul ;
+ *   - M9, les rangs nuls en tête dans `parRang` → les deux « rang absent en dernier », plan et liste ;
+ *   - M10, la liste recopie le tri sans le `nulls last` → celui de la liste, seul.
+ */
+describe('etatDeLaPiste', () => {
+  const piste = (id: string, engagee: boolean) => ({
+    id,
+    committed_at: engagee ? '2026-09-28T10:00:00Z' : null,
+  });
+
+  // La table entière : l'engagement de la ligne (deux valeurs) croisé avec l'identifiant engagé que
+  // l'écran a relu (aucun, elle-même, une autre). Six cas, pas un de moins — une exclusion vérifiée
+  // sur une paire de moins est la famille de défaut que ce dépôt a appris à chercher.
+  it.each([
+    [false, null, 'libre'],
+    [false, 'a', 'libre'],
+    [false, 'b', 'aLaPlace'],
+    [true, null, 'engagee'],
+    [true, 'a', 'engagee'],
+    // **L'état relu gagne** : une ligne engagée entre-temps, alors que l'écran croit une autre
+    // engagée, se rend engagée — la règle `committed_at === null` que l'écran tenait déjà.
+    [true, 'b', 'engagee'],
+  ] as const)('ligne engagée : %s, identifiant engagé : %s → %s', (engagee, engageeId, attendu) => {
+    expect(etatDeLaPiste(piste('a', engagee), engageeId)).toBe(attendu);
+  });
+});
+
+describe('libelleDuChoix', () => {
+  // La décision n° 5 : le remplacement se dit sur ce qu'on touche, dans les mots du plan.
+  it('dit « Choisir », ou « Choisir à la place » quand une autre est engagée, et rien sur l’engagée', () => {
+    expect(libelleDuChoix('libre')).toBe('Choisir');
+    expect(libelleDuChoix('aLaPlace')).toBe('Choisir à la place');
+    expect(libelleDuChoix('engagee')).toBeNull();
+  });
+});
+
+describe('annonceDeLaPiste', () => {
+  const titre = 'Renoncer à un vol long-courrier cette année';
+
+  // Les trois formes du HANDOFF, mot pour mot. Le séparateur des milliers s'écrit par son point de
+  // code (`FRONT.md` §1.6) : collé en littéral, un échec afficherait deux chaînes identiques à l'œil.
+  it('rend les trois formes du HANDOFF', () => {
+    expect(annonceDeLaPiste({ titre, gainKg: 1601, etat: 'libre' })).toBe(
+      'Renoncer à un vol long-courrier cette année. − 1\u00a0601 kg par an. Choisir.'
+    );
+    expect(annonceDeLaPiste({ titre, gainKg: 1601, etat: 'aLaPlace' })).toBe(
+      'Renoncer à un vol long-courrier cette année. − 1\u00a0601 kg par an. Choisir à la place.'
+    );
+    expect(annonceDeLaPiste({ titre: 'Regrouper deux sorties en une seule, une fois sur cinq', gainKg: 67.4, etat: 'engagee' })).toBe(
+      'Regrouper deux sorties en une seule, une fois sur cinq. − 67 kg par an. Action engagée.'
+    );
+  });
+
+  // Le premier piège : le repli de l'écran finit par un point, et l'annonce en ajoute un.
+  it('n’enchaîne pas deux points quand le titre en porte un', () => {
+    expect(annonceDeLaPiste({ titre: 'Action à préciser.', gainKg: 36, etat: 'libre' })).toBe(
+      'Action à préciser. − 36 kg par an. Choisir.'
+    );
+  });
+
+  // Le second : sans gain, la partie chiffrée part en entier — jamais « null kg », ni « 0 kg ».
+  it('tait la partie chiffrée quand le gain manque', () => {
+    expect(annonceDeLaPiste({ titre, gainKg: null, etat: 'libre' })).toBe(
+      'Renoncer à un vol long-courrier cette année. Choisir.'
+    );
+    expect(annonceDeLaPiste({ titre, gainKg: null, etat: 'engagee' })).toBe(
+      'Renoncer à un vol long-courrier cette année. Action engagée.'
+    );
+  });
+});
+
+describe('introDesPistes', () => {
+  // Les deux phrases des planches A1 et A2, mot pour mot.
+  it('dit ce que le choix fait, selon qu’une action est engagée', () => {
+    expect(introDesPistes(false)).toBe(
+      'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan.'
+    );
+    expect(introDesPistes(true)).toBe(
+      'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici remplace la tienne.'
+    );
   });
 });
 

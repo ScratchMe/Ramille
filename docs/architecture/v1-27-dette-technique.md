@@ -1343,3 +1343,19 @@ la seule retouche d'une migration livrée de l'histoire du dépôt
 pour la décision rare apprend à la contourner. La forme la plus simple est un fichier qui nomme les
 retouches acceptées, chacune avec sa date et sa raison, sur le modèle des tolérances de
 `scripts/verifier-renvois-des-documents.mjs`.
+
+### 12.19 Le libellé d'une puce sur deux lignes est aligné à gauche (29/09/2026)
+
+**Relevé en livrant « Toutes les pistes »** (`v1-32`, hors de son mandat). Le canvas `v1-30` dessine
+le libellé d'une échéance qui passe sur deux lignes — « À mon prochain projet de voyage », à 390 —
+**centré** dans sa puce (planche B1) ; le dépôt l'aligne **à gauche**. `Chip`
+(`src/components/bilan/chip.tsx`) centre sa boîte (`alignItems`, `justifyContent`), pas son texte.
+
+**Pourquoi ce n'est pas fait dans ce chantier** : `Chip` sert tout le questionnaire, et le brief de
+`v1-30` laissait le contenu du sélecteur inchangé (§5). Centrer le texte changerait toutes les puces
+du produit qui passent sur deux lignes, sur la foi d'une seule planche.
+
+**La direction, si on y revient** : c'est une question d'apparence, donc elle se tranche sur un
+canvas ou à la recette, pas ici — le prochain dessin qui montre une puce du questionnaire sur deux
+lignes dira si le centre vaut pour toutes. Le correctif, lui, tient en une ligne : `textAlign:
+'center'` sur le libellé.

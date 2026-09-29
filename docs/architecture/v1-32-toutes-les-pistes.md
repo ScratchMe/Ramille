@@ -56,16 +56,23 @@ partage avec ce qui tourne à côté.
 | `src/types/plan.test.ts` | Un test s'inverse ; les quatre dérivations sont testées |
 | `src/components/plan/carte-de-piste.tsx` | Deux props transmises ; `p_replace` et l'estompage lus sur `etatDeLaPiste` |
 | `src/components/plan/action-commitment.tsx` | Deux props (ouvert d'emblée, « Annuler » rendu à l'appelant) ; le focus dans les deux sens |
+| `src/components/button.tsx` | **Ajouté à l'implémentation (29/09/2026)** : une prop `ref`, la surface du bouton, pour rendre le focus à « Je m'y engage » quand « Annuler » le fait réapparaître sur le plan (§4.2). Le bouton n'exposait aucune référence, et un conteneur autour ne donne pas de nœud à viser sur natif (`donnerLeFocus`) |
 | `docs/design/design-system/components/plan/CarteDePiste.*`, `ActionCommitment.*` | Les fiches du kit décrivent les props neuves |
 | `docs/design/design-system/readme.md` | La ligne « Traits » connaît la pastille bordée (`fieldBorder` en trait fin) |
 | `docs/recette/premier-parcours-web.md` | Bloc 06, lignes 06.2 à 06.5 ; une ligne neuve après 08.5 (§4.8) |
 | `docs/recette/ce-qui-reste-apres-le-28-septembre.md` | Ligne 01.3 : « toucher une ligne, « Je m'y engage » » |
 | `docs/recette/le-compte-et-les-modes.md` | Ligne 03.11 : « Elle s'ouvre en carte, avec son bouton » |
 | `scripts/verifier-parcours-reel.mjs` | Une étape qui choisit depuis la liste, et la garde du défilement (§4.8) |
+| `src/types/mouvement.ts`, `mouvement.test.ts` | **Créés à l'implémentation (29/09/2026)** : `defilementPourMontrer`, la distance à défiler pour montrer une carte ouverte — une dérivation, donc testée (§4.4) |
+| `scripts/relever-par-image.mjs` | **Ajouté à l'implémentation** : la mesure `defilement`, qui lit une carte dans sa fenêtre de défilement, image par image |
+| `src/tests/ecrans/plan-pistes.test.tsx` | **Manqué par ce relevé** (§8) : le test d'écran attendait l'ancienne intro ; réécrit, avec quatre câblages neufs |
+| `TESTING.md` | §2.6 et §2.14 : les étapes neuves du parcours réel |
 | `docs/architecture/v1-13-audit-et-chantiers.md` | §11 : les lignes 11.18 et 11.W.2 ; une ligne neuve pour le doigt. §14.7 : la phrase « le code reste à faire » (§7) |
 | `docs/architecture/produit.md`, `v1-16-trois-decisions-decran.md` | Les phrases « pas encore codé » (§7) |
 
-**Ce que le chantier ne crée pas** : aucun fichier sous `src/`. La rangée **reste dans l'écran**,
+**Ce que le chantier ne crée pas** : aucun composant. (Le plan disait « aucun fichier sous `src/` » ;
+l'implémentation a créé `src/types/mouvement.ts`, une dérivation et non un composant — la ligne du
+tableau.) La rangée **reste dans l'écran**,
 comme `Lignes` aujourd'hui : un seul écran la rend, et un composant sous `src/components/plan/`
 arriverait avec une fiche de kit (`verifier-miroir-du-kit.mjs` refuse un composant sans fiche) pour
 zéro réutilisation. Si l'implémentation trouve une raison de l'en sortir, elle la consigne et écrit
@@ -78,6 +85,19 @@ la fiche.
 rebalayer ces deux fichiers sur `main` (règle de CLAUDE.md, « Avant de lancer une vague ») : un
 changement de `Button` entre-temps changerait l'apparence de « C'est noté » inactif sans que rien
 dans ce chantier ne le dise.
+
+**Corrigé à l'implémentation, le 29/09/2026 : ce chantier écrit `button.tsx`**, d'une prop — `ref`,
+passée au `Pressable` (§4.2 et la ligne du tableau). La phrase ci-dessus était vraie du plan et
+fausse du code. Rien ne change pour `v1-31` sur le fond (`enAttente` et `ref` ne se touchent pas),
+mais le chantier qui ajoutera `enAttente` partira d'un `Button` qui a une prop de plus dans sa
+signature et dans sa décomposition : c'est un conflit textuel, à relever plutôt qu'à découvrir.
+
+**Et trois fichiers de plus que `v1-31` croisera** (contre-lecture du 29/09/2026) : `TESTING.md`
+§2.14, où il ajoute sa section K à la liste que ce chantier vient d'allonger ; et surtout
+`src/types/mouvement.ts` et `scripts/relever-par-image.mjs`. `v1-31` prévoit une zone qui défile
+« jusqu'à ce que le groupe finisse 16 au-dessus du pied », gardée image par image : c'est
+`defilementPourMontrer` et la mesure `defilement`, à **réutiliser** plutôt qu'à réécrire à côté —
+deux jumelles d'une même règle divergeraient à la première retouche.
 
 ## 4. Le chantier, dans l'ordre
 
@@ -371,13 +391,13 @@ Et l'état d'avancement de §8 se tient à jour pendant le travail, pas après c
 
 | Étape | État |
 |---|---|
-| 4.1 — `plan.ts`, l'ordre et les quatre dérivations, tests cassés d'abord | à faire |
-| 4.2 et 4.3 — `ActionCommitment`, `CarteDePiste` | à faire |
-| 4.4 — l'écran | à faire |
-| 4.7 — le kit | à faire |
-| 4.8 — la recette, `v1-13` §11, le parcours réel | à faire |
-| 6 — vérifications, contre-lecture, mesure Vercel | à faire |
-| 7 — les trois phrases | à faire |
+| 4.1 — `plan.ts`, l'ordre et les quatre dérivations, tests cassés d'abord | fait (29/09/2026) : dix mutations, comptées en tête des tests |
+| 4.2 et 4.3 — `ActionCommitment`, `CarteDePiste` | fait (29/09/2026) ; `Button` gagne une prop `ref` (§3) |
+| 4.4 — l'écran | fait (29/09/2026) ; le défilement attend que la carte ait grandi (mesuré : sinon le navigateur le borne) |
+| 4.7 — le kit | fait (29/09/2026) |
+| 4.8 — la recette, `v1-13` §11, le parcours réel | fait (29/09/2026) : bloc 06, 08.6, 01.3, 03.11 ; 11.18 datée, 11.W.2 réécrite, 11.24 ouverte ; trois étapes au parcours réel, éprouvées par trois mutations (en tête du script — la deuxième est d'abord passée, et a fait ajouter « juste assez » à la garde). **Le relevé avait manqué un fichier** : `src/tests/ecrans/plan-pistes.test.tsx`, le test d'écran, qui attendait l'ancienne intro — réécrit, avec quatre câblages neufs |
+| 6 — vérifications, contre-lecture, mesure Vercel | fait (29/09/2026) : `tsc`, lint, Jest (1 224 tests) ; la CI rejouée en local, 31 pas sur 31 ; les planches et le focus au navigateur, à 390 et 360 ; la contre-lecture du diff entier, douze constats traités (§10), dont cinq gardes neuves au parcours réel, chacune cassée ; la mesure hors ligne du déploiement, **4,16 Mio**, identique au relevé du 25/09/2026 |
+| 7 — les trois phrases | fait (29/09/2026) : `produit.md` §3, `v1-13` §14.7, le bandeau de `v1-16` §5 |
 
 ## 9. Écarts au canvas déjà connus
 
@@ -388,6 +408,11 @@ que le chantier trouvera :
   vrai de tout ce qui se voit ;
 - **la rangée reste dans l'écran** au lieu de devenir un composant (§3) — le HANDOFF laissait la
   question ouverte.
+
+**Reportés le 29/09/2026 au README du dossier**, avec les quatre que l'implémentation a trouvés : la
+cible du focus (le texte de la question plutôt que le groupe), le défilement qui part une fois la
+carte grandie, la pastille à 32 **au moins**, et « C'est noté » qui reste inactif après un envoi
+réussi sur la liste.
 
 ## 10. Hors périmètre, et la contre-lecture du 29/09/2026
 
@@ -408,3 +433,26 @@ garde, avec un piège de mesure quand une carte se replie au-dessus ; un bouton 
 pendant le retour vers le plan ; un test de divergence présenté comme la seule garde de la décision
 n° 2, alors que la paire de tests la garde déjà ; et le risque partagé avec `v1-31` attribué à
 `HauteurSuivie` au lieu de `Button`.
+
+**Et le diff entier de l'implémentation a été relu à son tour, avant la PR** (29/09/2026, le même
+sous-agent, sur la branche fusionnée avec `main`) : douze constats, tous traités. Les trois qui
+pesaient :
+
+- **une phrase de la recette prétendait une garde qui n'existait pas** — 08.6 disait l'ordre de la
+  liste gardé par le parcours réel, qui ne rouvrait jamais la liste une fois l'engagement déplacé :
+  tant que le rang 1 est engagé, « par rang » et « l'engagée d'abord » donnent le même ordre. Le
+  parcours a gagné l'étape qui le voit ;
+- **trois câblages n'étaient exercés par aucune suite** : « Annuler » sur la liste par la vraie
+  carte, la carte jamais estompée sur le choix, et le focus du plan dans les deux sens (donc la prop
+  `ref` de `Button`). Le parcours les voit désormais, chacun éprouvé par sa mutation (en tête du
+  script) ;
+- **le focus était demandé au montage, sur une question encore découpée et transparente** : le
+  navigateur l'accepte, Android peut le refuser. Il attend désormais que la carte ait grandi
+  (`ActionCommitment`) ; TalkBack le confirmera au doigt (`v1-13` §11.24).
+
+Le reste : un décompte de mutation faux (M3 fait tomber trois cas, pas deux), un séparateur des
+milliers collé en littéral dans un test, trois phrases périmées dans l'en-tête du test d'écran, la
+garde du défilement décrite par sa moitié qui ne tombe pas, deux comptes écrits au lieu de
+l'invariant, un relevé de fichiers qui manquait `mouvement.ts`, `relever-par-image.mjs` et
+`TESTING.md` — que `v1-31` croisera —, une ligne de recette désignée par un rang que l'écran
+n'affiche pas, et un relevé hors mandat sans destination (`v1-27` §12.19).

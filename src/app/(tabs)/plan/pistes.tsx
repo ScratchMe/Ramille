@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
@@ -10,30 +18,49 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { POSTE_LABEL } from '@/constants/postes';
-import { Spacing, Stroke } from '@/constants/theme';
+import { Mouvement, Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
+import { donnerLeFocus } from '@/lib/focus';
 import { formatKg } from '@/lib/format';
 import { revenirOu } from '@/lib/navigation';
 import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { ensureSession, supabase } from '@/lib/supabase';
-import { filetsDesLignes, pistesParPoste, separationsDesLignes } from '@/types/plan';
+import { defilementPourMontrer } from '@/types/mouvement';
+import {
+  annonceDeLaPiste,
+  etatDeLaPiste,
+  filetsDesLignes,
+  introDesPistes,
+  libelleDuChoix,
+  pistesParPoste,
+  separationsDesLignes,
+} from '@/types/plan';
 import { usePassageDEngagement } from './_layout';
 
 /**
- * « Toutes les pistes » — l'exhaustivité, sortie du plan (C5.2, écarts 2 à 5).
+ * « Toutes les pistes » — l'exhaustivité, sortie du plan (C5.2, écarts 2 à 5), puis redessinée par
+ * le canvas `v1-30` et son plan d'implémentation `v1-32` (29/09/2026) : **on compare sur la liste,
+ * on touche pour choisir.**
  *
  * Le plan montrait deux cartes puis dépliait jusqu'à onze cartes pleines sous un « Replier » sorti
  * de l'écran : l'insistance et l'exhaustivité tenaient sur la même surface, et l'exhaustivité
  * gagnait. Elles se séparent — deux cartes là-bas, **tout** ici, groupé par poste.
  *
- * **Ce qui ne change pas, et c'est délibéré** : le classement. Les groupes sortent dans l'ordre où
- * leur poste apparaît, donc la tête de cet écran est la première carte du plan. Deux surfaces qui
- * se contrediraient sur ce qui compte le plus seraient pires qu'une seule trop dense.
+ * **Chaque ligne porte ce qu'on compare** : son titre à la taille du contenu, son gain dessous, « par
+ * an ». Deux cartes ouvertes à trois lignes d'écart ne tenaient pas ensemble dans l'écran (planche
+ * A0b), donc la comparaison se fait sur la liste, d'un coup d'œil, et la carte ne s'ouvre que pour
+ * **choisir** — directement sur la question (« Quand ? », « Quels jours ? »), une seule à la fois
+ * (décision n° 1 du 28/09/2026, qui remplace `v1-16` §5 sur l'ouverture de plusieurs cartes).
  *
- * **Et il n'y a pas de rang ici.** Toutes les pistes sont au même niveau, chacune ouvrable : c'est
- * la promesse de `v1-16` §5 — toute action affichée est engageable — tenue jusqu'au bout. La
+ * **Le classement est celui du plan, pas sa tête** (décision n° 2). Les groupes sortent dans l'ordre
+ * où leur poste apparaît au rang, et l'ordre ne bouge pas de la saison : l'action engagée reste à sa
+ * place, marquée, là où le plan la met en tête. Le plan répond à « qu'est-ce que je fais en ce
+ * moment ? », cet écran à « qu'est-ce qui existe, et combien ça pèse ? » (`pistesParPoste`).
+ *
+ * **Et il n'y a pas de rang affiché.** Toutes les pistes sont au même niveau, chacune se choisit :
+ * c'est la promesse de `v1-16` §5 — toute action affichée est engageable — tenue jusqu'au bout. La
  * hiérarchie vit sur le plan, qui insiste ; cet écran présente.
  */
 type Etat =
@@ -41,6 +68,9 @@ type Etat =
   | { genre: 'chargement'; relance?: true }
   | { genre: 'erreur' }
   | { genre: 'pistes'; pistes: PisteDuPlan[] };
+
+/** Ce qu'on garde des deux côtés de la carte qu'on fait entrer dans la fenêtre (`defilementPourMontrer`). */
+const MARGE_DE_DEFILEMENT = Spacing.three;
 
 export default function PistesScreen() {
   const [etat, setEtat] = useState<Etat>({ genre: 'chargement' });
@@ -50,27 +80,147 @@ export default function PistesScreen() {
    * La phrase d'un remplacement refusé (`RM001`), portée par l'écran et non par la carte.
    *
    * C'est le contrat explicite d'`ActionCommitment` : le même chemin appelle `onChanged()`, donc
-   * la liste est relue et la carte remontée — une phrase gardée dans son état local disparaîtrait
-   * au rendu suivant. L'écran du plan le fait depuis le 14/09/2026 ; **cet écran-ci, ajouté par
-   * C5.2 après ce correctif, jetait le paramètre** et ne rendait rien : la liste se réordonnait
-   * sous les yeux de la personne sans qu'un mot dise pourquoi son choix n'avait pas été pris.
-   * Relevé le 20/09/2026.
+   * la liste est relue — une phrase gardée dans l'état local de la carte ne survivrait pas à un
+   * remontage. L'écran du plan le fait depuis le 14/09/2026 ; **cet écran-ci, ajouté par C5.2 après
+   * ce correctif, jetait le paramètre** et ne rendait rien : la liste changeait sous les yeux de la
+   * personne sans qu'un mot dise pourquoi son choix n'avait pas été pris. Relevé le 20/09/2026.
    */
   const [refusDeRemplacement, setRefusDeRemplacement] = useState<string | null>(null);
   const passage = usePassageDEngagement();
 
   /**
-   * Les lignes ouvertes en carte.
+   * La piste ouverte sur le choix, ou aucune.
    *
-   * **Plusieurs à la fois, et c'est le point** (recette du 14/09/2026, `v1-16` §5). Un accordéon qui
-   * referme la précédente reprendrait d'une main ce que cet écran donne : comparer deux leviers est
-   * exactement ce qu'il rend possible. Local et non persisté — un geste de lecture, pas une
-   * préférence — et un `Set` réécrit plutôt que muté, React comparant par référence.
+   * **Une seule à la fois** (décision n° 1 du 28/09/2026, `v1-32`). Plusieurs lignes s'ouvraient
+   * ensemble depuis la recette du 14/09/2026 (`v1-16` §5), pour comparer deux leviers — mais deux
+   * cartes ouvertes ne tenaient pas dans l'écran, et le gain d'une carte quittait la colonne des
+   * autres (planche A0b) : la comparaison se fait désormais sur la liste, et la carte sert à
+   * choisir. Toucher une autre pastille referme celle-ci — sa sélection est perdue, c'est voulu —,
+   * « Annuler » la rend à sa ligne. Local et non persisté : un geste de lecture, pas une préférence ;
+   * quitter l'écran ferme le choix avec lui.
    */
-  const [ouvertes, setOuvertes] = useState<ReadonlySet<string>>(new Set());
+  const [enChoix, setEnChoix] = useState<string | null>(null);
 
   const rafraichir = useCallback(() => setCle((k) => k + 1), []);
   useRafraichirAuRetour(rafraichir);
+
+  /**
+   * **Le focus revient à la rangée quand « Annuler » rend la carte à sa ligne** (`v1-32` §4.4,
+   * `FRONT.md` §2.4). La carte disparaît sous le doigt qui touche « Annuler » : sans ceci, le focus
+   * tombait sur le document. **Le piège** : la rangée est un **autre élément** que la carte, monté à
+   * neuf sous la même clé de `HauteurSuivie` — elle n'existe pas encore dans le gestionnaire
+   * d'« Annuler ». L'identifiant à refocaliser est donc gardé le temps d'un rendu, et le focus se
+   * pose une fois la rangée montée, par la référence qu'elle a inscrite.
+   */
+  const rangees = useRef(new Map<string, View>());
+  const aRefocaliser = useRef<string | null>(null);
+  useEffect(() => {
+    const id = aRefocaliser.current;
+    if (id === null) return;
+    aRefocaliser.current = null;
+    donnerLeFocus(rangees.current.get(id));
+  }, [enChoix]);
+  const inscrireRangee = useCallback((id: string, noeud: View | null) => {
+    if (noeud) rangees.current.set(id, noeud);
+    else rangees.current.delete(id);
+  }, []);
+
+  /**
+   * **L'écran défile jusqu'à « C'est noté » quand la carte ouverte le fait sortir de la fenêtre**
+   * (HANDOFF du canvas `v1-30`, planche B2 ; `v1-32` §4.4). La carte grandit vers le bas ; sur un
+   * trajet domicile-travail à 360, son bouton passe sous la barre d'onglets. On défile **juste
+   * assez** pour le montrer, sans faire passer le titre de la carte sous la bande
+   * (`defilementPourMontrer`, testé) — le défilement de la plateforme, comme la page suivante de
+   * l'onboarding, **instantané sous « réduire les animations »** : `scrollTo` animé ne la consulte
+   * pas sur web, où react-native-web le traduit en `behavior: 'smooth'`.
+   *
+   * **On défile une fois la carte grandie, pas pendant** (`Mouvement.entree` après l'ouverture ;
+   * tout de suite sous la préférence, où rien ne grandit). Tant que `HauteurSuivie` n'a que la
+   * hauteur de la rangée, le contenu de l'écran est trop court pour qu'on défile jusqu'au bas de la
+   * carte : le navigateur borne `scrollTo` au maximum de l'instant, et l'écran s'arrêtait là, « C'est
+   * noté » sous la barre d'onglets. Mesuré au navigateur le 29/09/2026 sur la planche B2 : la
+   * position restait à 883 px pendant que la hauteur défilable passait de 1 571 à 1 920. Le
+   * défilement suit donc la carte au lieu de l'accompagner — ce qu'elle découvre en grandissant
+   * reste sous le doigt, puis l'écran monte juste assez.
+   *
+   * Trois pièges de plus, chacun payé ailleurs avant d'être écrit ici :
+   *  - **on mesure la carte, pas son `HauteurSuivie`** : celui-ci anime sa hauteur, donc sa mesure à
+   *    l'ouverture vaut encore celle de la rangée. La carte, elle, a sa hauteur pleine dès la
+   *    première mise en page ;
+   *  - **une carte déjà ouverte au-dessus se replie pendant que la nouvelle s'ouvre** : mesurée à
+   *    l'ouverture, la nouvelle serait trop basse de ce que le repli va rendre, et l'écran défilerait
+   *    trop — le titre sous la bande. L'attente couvre aussi le repli (`Mouvement.sortie`, plus
+   *    court), et la mesure se prend en coordonnées de la fenêtre : l'ancrage du défilement de
+   *    Chrome, qui compense ce qui se replie au-dessus (`TESTING.md` §2.14), déplace la position mais
+   *    pas ce qu'on voit, et `position` suit ses événements ;
+   *  - **le focus posé sur la question ne défile pas à sa place** : `donnerLeFocus` passe
+   *    `preventScroll` sur web, ce qui laisse le défilement à qui l'a lancé.
+   */
+  const animationsReduites = useReducedMotion();
+  const defilement = useRef<ScrollView>(null);
+  const position = useRef(0);
+  const cartes = useRef(new Map<string, View>());
+  const aMontrer = useRef<string | null>(null);
+  const minuterie = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (minuterie.current !== null) clearTimeout(minuterie.current);
+    },
+    []
+  );
+  const inscrireCarte = useCallback((id: string, noeud: View | null) => {
+    if (noeud) cartes.current.set(id, noeud);
+    else cartes.current.delete(id);
+  }, []);
+  const surDefilement = useCallback((evenement: NativeSyntheticEvent<NativeScrollEvent>) => {
+    position.current = evenement.nativeEvent.contentOffset.y;
+  }, []);
+  const carteMesuree = useCallback(
+    (id: string) => {
+      if (aMontrer.current !== id) return;
+      aMontrer.current = null;
+      const montrer = () => {
+        minuterie.current = null;
+        const carte = cartes.current.get(id);
+        // La fenêtre de défilement elle-même — le nœud qui défile, et non l'instance du composant,
+        // qui ne se mesure pas (sur web, react-native-web rend le nœud du DOM).
+        const ecran = defilement.current?.getNativeScrollRef();
+        if (!carte || !ecran) return;
+        ecran.measureInWindow((_x, hautDeLaFenetre, _largeur, hauteurFenetre) => {
+          carte.measureInWindow((_cx, hautDeLaCarte, _cLargeur, hauteurDeLaCarte) => {
+            const haut = hautDeLaCarte - hautDeLaFenetre;
+            const aDefiler = defilementPourMontrer({
+              haut,
+              bas: haut + hauteurDeLaCarte,
+              hauteurFenetre,
+              marge: MARGE_DE_DEFILEMENT,
+            });
+            if (aDefiler > 0) {
+              defilement.current?.scrollTo({ y: position.current + aDefiler, animated: !animationsReduites });
+            }
+          });
+        });
+      };
+      // Sous la préférence, rien ne grandit ni ne se replie : les hauteurs sont posées d'emblée.
+      if (animationsReduites) montrer();
+      else minuterie.current = setTimeout(montrer, Mouvement.entree);
+    },
+    [animationsReduites]
+  );
+
+  const choisir = useCallback((id: string) => {
+    if (minuterie.current !== null) clearTimeout(minuterie.current);
+    minuterie.current = null;
+    aMontrer.current = id;
+    setEnChoix(id);
+  }, []);
+  const annuler = useCallback((id: string) => {
+    if (minuterie.current !== null) clearTimeout(minuterie.current);
+    minuterie.current = null;
+    aMontrer.current = null;
+    aRefocaliser.current = id;
+    setEnChoix(null);
+  }, []);
 
   useEffect(() => {
     let annule = false;
@@ -179,23 +329,26 @@ export default function PistesScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <BandeHaute />
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={defilement}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          onScroll={surDefilement}
+          scrollEventThrottle={16}
+        >
           {retour}
 
           <ThemedText type="screenTitle">Toutes les pistes</ThemedText>
           <ThemedText type="body" themeColor="textSecondary">
-            {/* **La phrase disait un ordre que l'engagement défait** (contre-lecture du lot 5) :
-                l'action engagée passe en tête de son poste quel que soit son gain, comme sur le
-                plan — donc « du plus gros gain au plus petit » était faux pour ce groupe-là. On
-                nomme l'exception plutôt que de retirer le tri de la phrase : c'est lui qui dit
-                pourquoi la liste est dans cet ordre. */}
-            {engageeId !== null
-              ? 'Ton action en cours d’abord, puis par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici remplace la tienne.'
-              : 'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan.'}
+            {/* **La phrase dit l'ordre, et l'ordre ne bouge plus** (décision n° 2) : « du plus gros
+                gain au plus petit » est vrai de chaque groupe, engagement ou non. Seul ce que le
+                choix fait change — mettre l'action en tête du plan, ou remplacer la tienne
+                (`introDesPistes`). */}
+            {introDesPistes(engageeId !== null)}
           </ThemedText>
 
           {/* **Le refus se dit ici, juste au-dessus de la liste**, et non en tête d'écran : les
-              cartes commencent quelques lignes plus bas, donc la phrase reste dans le champ de
+              lignes commencent quelques lignes plus bas, donc la phrase reste dans le champ de
               vision de la personne qui vient de toucher « C'est noté ». La ligne se relit à chaque
               refus — `onRefus(null)` est appelé avant le RPC —, donc elle ne survit pas à une
               tentative réussie. */}
@@ -215,18 +368,20 @@ export default function PistesScreen() {
 
           {groupes.map((groupe) => (
             <View key={groupe.poste ?? 'sans-poste'} style={styles.groupe}>
-              {/* **Une étiquette de section, et non un titre de carte** (planche A2, #234). Elle
-                  était rendue en `cardTitle` — 17 px, couleur pleine —, c'est-à-dire dans le
-                  registre d'un **titre d'action**, à trois pixels du contenu qu'elle annonce. La
-                  planche demande l'inverse : une étiquette discrète, qui suffit à découper *parce
-                  que* les lignes portent un filet. On avait pris la moitié qui compense et laissé
-                  celle qui structure.
+              {/* **Une étiquette de section, et non un titre de carte** (planche A2 du canvas
+                  `v1-17`, #234 ; puis canvas `v1-30`). Rendue en `cardTitle` à l'origine, elle
+                  concurrençait les titres d'action ; en `small` tertiaire ensuite, elle s'effaçait
+                  face à des titres passés en 16 `text` (plainte du 18/09/2026). D'où l'étiquette
+                  capitale de `TypeScale.label`, 600, tertiaire : discrète par la taille, nette par
+                  la forme — et elle suffit à découper parce que les lignes portent un filet.
 
-                  **Le rôle d'en-tête s'écrit ici**, et c'est un correctif dans le correctif : le
-                  commentaire d'origine affirmait que « `ThemedText` le fait par son `type` », ce
-                  qui est vrai de `title`, `subtitle` et `screenTitle` — et faux de `cardTitle`
-                  comme de `small`. La tête de groupe n'a donc jamais été annoncée comme un
-                  en-tête. `ThemedText` laisse la surcharge passer devant son défaut. */}
+                  **Les capitales sont un style, pas le texte** (`textTransform`) : la chaîne reste
+                  en casse normale, et le lecteur d'écran lit « Voyages longue distance » au lieu de
+                  l'épeler.
+
+                  **Le rôle d'en-tête s'écrit ici** : `ThemedText` ne le déduit que de `title`,
+                  `subtitle`, `screenTitle` et `display`. Il le pose au niveau 2, sous le titre de
+                  l'écran. */}
               <ThemedText
                 type="small"
                 weight={600}
@@ -240,17 +395,13 @@ export default function PistesScreen() {
               </ThemedText>
               <Lignes
                 pistes={groupe.pistes}
-                ouvertes={ouvertes}
+                enChoix={enChoix}
                 engageeId={engageeId}
-                onOuvrir={(id) => setOuvertes((set) => new Set(set).add(id))}
-                onFermer={(id) =>
-                  setOuvertes((set) => {
-                    // Réécrit plutôt que muté, comme à l'ouverture : React compare par référence.
-                    const suivant = new Set(set);
-                    suivant.delete(id);
-                    return suivant;
-                  })
-                }
+                onChoisir={choisir}
+                onAnnuler={annuler}
+                inscrireRangee={inscrireRangee}
+                inscrireCarte={inscrireCarte}
+                carteMesuree={carteMesuree}
                 onEngage={(poste) => {
                   // **Le drapeau se pose avant de partir**, jamais après ni sous condition : la
                   // feuille des rappels ne s'ouvre qu'une fois par appareil, donc la manquer la
@@ -264,8 +415,10 @@ export default function PistesScreen() {
                 onChanged={rafraichir}
                 onRefus={(message) => {
                   // Le refus `RM001` veut presque toujours dire que l'état a changé depuis
-                  // l'affichage : on relit plutôt que de parler de réseau, et la ligne reste
-                  // ouverte pour que le message porte sur une action qu'on voit encore.
+                  // l'affichage : on relit plutôt que de parler de réseau, et la carte reste
+                  // ouverte (`enChoix` ne bouge pas) pour que le message porte sur une action qu'on
+                  // voit encore. Relue, elle lit « une autre est engagée », et un nouvel essai part
+                  // avec le remplacement.
                   setRefusDeRemplacement(message);
                   rafraichir();
                 }}
@@ -280,19 +433,25 @@ export default function PistesScreen() {
 
 function Lignes({
   pistes,
-  ouvertes,
+  enChoix,
   engageeId,
-  onOuvrir,
-  onFermer,
+  onChoisir,
+  onAnnuler,
+  inscrireRangee,
+  inscrireCarte,
+  carteMesuree,
   onEngage,
   onChanged,
   onRefus,
 }: {
   pistes: PisteDuPlan[];
-  ouvertes: ReadonlySet<string>;
+  enChoix: string | null;
   engageeId: string | null;
-  onOuvrir: (id: string) => void;
-  onFermer: (id: string) => void;
+  onChoisir: (id: string) => void;
+  onAnnuler: (id: string) => void;
+  inscrireRangee: (id: string, noeud: View | null) => void;
+  inscrireCarte: (id: string, noeud: View | null) => void;
+  carteMesuree: (id: string) => void;
   onEngage: (poste: string | null) => void;
   onChanged: () => void;
   onRefus: (message: string | null) => void;
@@ -303,16 +462,15 @@ function Lignes({
   // 16/09/2026). La règle et ses deux pièges — Yoga ne fusionne pas les marges, et un `gap` au
   // conteneur séparerait les lignes fermées — vivent dans `separationsDesLignes`, avec leur test.
   //
-  // **L'ensemble est désormais exactement celui des lignes ouvertes** (#234). Il contenait aussi
-  // l'action engagée, qui était rendue en carte sans avoir été dépliée ; la planche A2 la veut en
-  // **ligne**, donc cette raison-là tombe. Le contrat de la fonction, lui, ne bouge pas : elle parle
-  // de cartes rendues, quelle qu'en soit la cause.
+  // **L'ensemble est celui des lignes rendues en carte**, c'est-à-dire, depuis `v1-32`, la seule
+  // ligne ouverte sur le choix. Le contrat des deux fonctions ne bouge pas : elles parlent de cartes
+  // rendues, quelle qu'en soit la cause.
   // **`committed_at === null` n'est pas une ceinture de plus** : on peut ouvrir une ligne, s'y
-  // engager depuis la carte, et revenir sur cet écran encore monté — la ligne serait alors dans
-  // `ouvertes` alors que la planche A2 dit qu'une ligne engagée ne s'ouvre pas. La règle se tient
-  // donc à l'état réel de la ligne, pas à l'historique des touchers.
+  // engager, et retrouver cet écran encore monté — ou une relecture au retour peut rendre engagée
+  // l'action qu'on regardait. La ligne serait alors `enChoix` alors qu'une ligne engagée ne s'ouvre
+  // pas. La règle se tient donc à l'état réel de la ligne, pas à l'historique des touchers.
   const enCarte = new Set(
-    pistes.filter((p) => ouvertes.has(p.id) && p.committed_at === null).map((p) => p.id)
+    pistes.filter((p) => p.id === enChoix && p.committed_at === null).map((p) => p.id)
   );
   const ids = pistes.map((p) => p.id);
   const separations = separationsDesLignes(ids, enCarte);
@@ -322,7 +480,7 @@ function Lignes({
   // tenue par un `HauteurSuivie` sous la même clé, qu'elle soit ligne ou carte : quand l'une devient
   // l'autre, il passe d'une hauteur à la suivante, et les pistes de dessous suivent. La carte apparaît
   // en fondu — autre élément sous le même cadre, donc React la monte à neuf ; ce qui est là à
-  // l'arrivée sur l'écran n'a pas d'apparition à soi (`SansApparitionAuMontage`). « Réduire » passe
+  // l'arrivée sur l'écran n'a pas d'apparition à soi (`SansApparitionAuMontage`). « Annuler » passe
   // par le même chemin, dans l'autre sens.
   return (
     <View style={styles.lignesPistes}>
@@ -333,64 +491,87 @@ function Lignes({
         const titre = action.action_templates?.action_text ?? 'Action à préciser.';
         const gain =
           action.saving_kg_year !== null ? `− ${formatKg(action.saving_kg_year)} kg` : null;
+        const etat = etatDeLaPiste(action, engageeId);
 
         if (enCarte.has(action.id)) {
           return (
             <HauteurSuivie key={action.id}>
             <Apparition style={separee ? styles.pisteSeparee : undefined}>
-              <CarteDePiste
-                action={action}
-                committedActionId={engageeId}
-                onEngage={onEngage}
-                onChanged={onChanged}
-                onRefus={onRefus}
-              />
-              {/* **La sortie manquait, et ce n'était pas cosmétique** (planche A2, #234). Cet écran
-                  existe pour **comparer** deux leviers — c'est la raison écrite pour laquelle
-                  plusieurs lignes s'ouvrent à la fois (`v1-16` §5) — et sans « Réduire », trois
-                  lignes ouvertes faisaient un mur de cartes dont on ne revenait à la liste qu'en
-                  quittant l'écran. Refermer n'est pas un accordéon : les autres restent ouvertes. */}
-              <TextLink
-                label="Réduire"
-                onPress={() => onFermer(action.id)}
-                type="small"
-                themeColor="textTertiary"
-                style={styles.reduire}
-              />
+              {/* La carte elle-même, mesurée pour le défilement : pas son `HauteurSuivie`, qui
+                  n'a encore que la hauteur de la rangée quand elle s'ouvre. */}
+              <View
+                ref={(noeud) => inscrireCarte(action.id, noeud)}
+                onLayout={() => carteMesuree(action.id)}
+              >
+                <CarteDePiste
+                  action={action}
+                  committedActionId={engageeId}
+                  onEngage={onEngage}
+                  onChanged={onChanged}
+                  onRefus={onRefus}
+                  surLeChoix
+                  onAnnuler={() => onAnnuler(action.id)}
+                />
+              </View>
             </Apparition>
             </HauteurSuivie>
           );
         }
 
-        // **L'action engagée reste une ligne** (planche A2, #234) : elle était rendue en carte
-        // pleine au milieu d'une liste qu'on est venu parcourir, donc elle occupait l'écran au lieu
-        // d'y être repérable. La pastille et le mot prennent la place de « Choisir », et la ligne ne
-        // s'ouvre pas — il n'y a rien à y choisir.
-        if (action.committed_at !== null) {
+        // **La ligne à deux étages** (canvas `v1-30`, « La ligne de piste ») : le titre à la taille
+        // du contenu — un cran sous le titre d'une carte —, puis la ligne du gain, que l'œil descend
+        // en colonne d'une piste à l'autre. C'était un titre en `small` secondaire, le gain en petit
+        // tertiaire à sa droite : la couleur et la taille d'un texte secondaire, sur le contenu même
+        // de l'écran (constat 14.7 de la recette du 18/09/2026).
+        const titreDeLaLigne = (
+          <ThemedText type="default">{titre}</ThemedText>
+        );
+        // **Le gain et son unité, un seul texte** : « − 1 601 kg » en `body` 600, tabulaire — les
+        // gains se lisent en colonne —, puis « par an » en petit tertiaire, imbriqué, comme le cap
+        // depuis le 24/09/2026. Pas de part de l'empreinte ici : elle classe comme le gain, un
+        // second chiffre qui dit la même chose serait du bruit — elle attend dans la carte.
+        const gainDeLaLigne = (
+          <View style={styles.gain}>
+            {gain !== null && (
+              <ThemedText type="body" weight={600} style={styles.chiffres}>
+                {gain}{' '}
+                <ThemedText type="small" themeColor="textTertiary">
+                  par an
+                </ThemedText>
+              </ThemedText>
+            )}
+          </View>
+        );
+        const cadre = [
+          styles.lignePiste,
+          separee && styles.pisteSeparee,
+          // **Le filet** : sans lui, onze lignes forment un pavé continu. Quelles lignes le portent
+          // se décide dans `filetsDesLignes`, avec ses deux exclusions et leurs tests.
+          filetee && { borderBottomWidth: Stroke.hairline, borderBottomColor: theme.border },
+        ];
+
+        // **L'action engagée reste une ligne, à sa place** (planche A2 des canvas `v1-17` puis
+        // `v1-30`) : même titre, même gain ; la pastille-coche et « Engagée » prennent la place de
+        // la pastille « Choisir », sur la ligne du gain. Elle ne s'ouvre pas — il n'y a rien à y
+        // choisir —, donc ce n'est pas une cible : un `View` accessible, dont l'annonce dit qu'elle
+        // est engagée.
+        if (etat === 'engagee') {
           return (
             <HauteurSuivie key={action.id}>
             <View
-              style={[
-                styles.lignePiste,
-                separee && styles.pisteSeparee,
-                filetee && { borderBottomWidth: Stroke.hairline, borderBottomColor: theme.border },
-              ]}
+              style={cadre}
               accessible
-              accessibilityLabel={`${titre.replace(/\.$/, '')}${gain !== null ? `. ${gain} par an` : ''}. Action engagée.`}
+              accessibilityLabel={annonceDeLaPiste({ titre, gainKg: action.saving_kg_year, etat })}
             >
-              <ThemedText type="small" themeColor="text" style={styles.lignePisteTitre}>
-                {titre}
-              </ThemedText>
-              <View style={styles.lignePisteFin}>
-                {gain !== null && (
-                  <ThemedText type="small" themeColor="textTertiary" style={styles.chiffres}>
-                    {gain}
+              {titreDeLaLigne}
+              <View style={styles.ligneDuGain}>
+                {gainDeLaLigne}
+                <View style={styles.marque}>
+                  <PastilleEngagee />
+                  <ThemedText type="small" weight={600} themeColor="accentText">
+                    Engagée
                   </ThemedText>
-                )}
-                <PastilleEngagee />
-                <ThemedText type="small" weight={600} themeColor="accentText">
-                  Engagée
-                </ThemedText>
+                </View>
               </View>
             </View>
             </HauteurSuivie>
@@ -400,52 +581,43 @@ function Lignes({
         return (
           <HauteurSuivie key={action.id}>
           <Pressable
+            ref={(noeud) => inscrireRangee(action.id, noeud)}
             style={({ pressed }) => [
-              styles.lignePiste,
-              separee && styles.pisteSeparee,
-              // **Le filet, oublié à la livraison de C5.2** : sans lui, onze lignes de 14 px
-              // forment un pavé continu. Quelles lignes le portent se décide dans
-              // `filetsDesLignes`, avec ses deux exclusions et leurs tests.
-              filetee && { borderBottomWidth: Stroke.hairline, borderBottomColor: theme.border },
-              // **La ligne répond au doigt** (24/09/2026, `v1-29`) : la teinte `backgroundPressed`,
-              // tout de suite et sans animation. Pas de marge négative ici, à la différence des
-              // lignes du suivi : elle élargirait aussi le filet, qui s'aligne sur les têtes de
-              // groupe.
+              ...cadre,
+              // **La rangée répond au doigt** (24/09/2026, `v1-29`) : la teinte `backgroundPressed`,
+              // tout de suite et sans animation ; la pastille, transparente, la prend avec elle. Pas
+              // de marge négative ici, à la différence des lignes du suivi : elle élargirait aussi
+              // le filet, qui s'aligne sur les têtes de groupe.
               pressed && { backgroundColor: theme.backgroundPressed },
             ]}
-            onPress={() => onOuvrir(action.id)}
+            onPress={() => onChoisir(action.id)}
             accessibilityRole="button"
-            // Une cible qui porte plusieurs textes : on les recompose plutôt que de laisser
-            // annoncer trois fragments sans lien. Le gain se dit « par an », que l'œil déduit de la
-            // colonne ; le point final du libellé part avant la composition, sinon le repli
-            // « Action à préciser. » enchaîne deux points ; et l'annonce finit par « Choisir », qui
-            // dit ce que le toucher fait.
-            accessibilityLabel={[
-              titre.replace(/\.$/, ''),
-              gain !== null ? `${gain} par an` : null,
-              'Choisir',
-            ]
-              .filter((part) => part !== null)
-              .join('. ')
-              .concat('.')}
+            // **La rangée entière est la cible**, et son libellé recompose ce qu'elle porte : titre,
+            // gain « par an », puis ce que le toucher fait — « Choisir », ou « Choisir à la place »
+            // quand une autre est engagée (`annonceDeLaPiste`, testée).
+            accessibilityLabel={annonceDeLaPiste({ titre, gainKg: action.saving_kg_year, etat })}
           >
-            <ThemedText type="small" themeColor="textSecondary" style={styles.lignePisteTitre}>
-              {titre}
-            </ThemedText>
-            {/* Le gain et l'affordance groupés à droite : sous le `space-between` de la rangée,
-                trois enfants feraient flotter le chiffre au milieu. */}
-            <View style={styles.lignePisteFin}>
-              {gain !== null && (
-                <ThemedText type="small" themeColor="textTertiary" style={styles.chiffres}>
-                  {gain}
+            {titreDeLaLigne}
+            <View style={styles.ligneDuGain}>
+              {gainDeLaLigne}
+              {/* **« Choisir » a une forme : une pastille bordée** (décision de la session de design,
+                  canvas `v1-30`). Un mot 14/600 sans forme ne se donnait pas pour un bouton — deux
+                  séances de recette l'ont trouvé muet —, et un fond gris seul ne tranche qu'à
+                  1,14:1. Le contour est `fieldBorder`, le contour d'un champ au repos, seul gris du
+                  système à tenir 3:1 sur le fond ; pas de bouton plein par ligne (brief §6), et
+                  aucune icône (ce dépôt n'en a pas). **Décorative** : masquée aux lecteurs d'écran,
+                  la rangée l'annonce. Et c'est le seul endroit de la ligne que le choix change
+                  (`libelleDuChoix`, décision n° 5). */}
+              <View
+                style={[styles.pastille, { borderColor: theme.fieldBorder }]}
+                aria-hidden
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                <ThemedText type="small" weight={600} themeColor="accentText">
+                  {libelleDuChoix(etat)}
                 </ThemedText>
-              )}
-              {/* **L'affordance est un mot, parce que ce dépôt n'a pas d'icônes** — et c'est celui
-                  que le produit emploie déjà pour ce geste. Une ligne qui ne porte qu'un nombre ne
-                  donne aucune raison d'être touchée. */}
-              <ThemedText type="small" weight={600} themeColor="accentText">
-                Choisir
-              </ThemedText>
+              </View>
             </View>
           </Pressable>
           </HauteurSuivie>
@@ -461,36 +633,54 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scroll: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   etatSimple: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
-  // **Le rayon qui n'arrondissait rien est parti** (#234) : `borderRadius` sans fond ni bordure,
-  // reste d'une version où le groupe était une carte. Le `gap` tombe à zéro parce que la tête porte
-  // désormais ses propres marges — 16 dessus, 4 dessous, comme la planche A2 le demande —, et qu'un
-  // `gap` par-dessus les rajouterait aux deux.
+  // Le `gap` du groupe est nul parce que la tête porte ses propres marges, et qu'un `gap` par-dessus
+  // les rajouterait.
   groupe: { gap: 0 },
-  // La planche demande 16 dessus et 4 dessous. Les 16 sont déjà là — `scroll` porte un `gap` de
-  // `three` entre ses enfants, dont chaque groupe — donc les écrire ici les doublerait.
-  teteDeGroupe: { paddingBottom: Spacing.one },
-  // Aligné à gauche sous la carte, en tertiaire : c'est une sortie, pas une proposition.
-  reduire: { alignSelf: 'flex-start', paddingTop: Spacing.one },
+  // **24 au-dessus, 4 dessous** (canvas `v1-30`). Le `gap` de `three` que `scroll` pose entre ses
+  // enfants en donne déjà 16 — chaque groupe en est un —, donc la tête n'ajoute que les 8 qui
+  // manquent : les écrire en entier les doublerait.
+  teteDeGroupe: {
+    ...TypeScale.label,
+    textTransform: 'uppercase',
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.one,
+  },
   lignesPistes: { gap: 0 },
-  // La même valeur que les cartes du plan : une ligne dépliée devient une carte, elle doit donc
+  // La même valeur que les cartes du plan : une ligne ouverte devient une carte, elle doit donc
   // respirer au rythme des cartes et non à un rythme à elle.
   pisteSeparee: { marginTop: Spacing.two + 2 },
+  // **La hauteur tient la cible par elle-même** : 16 + 24 + 4 + 32 + 16 = 92 px pour un titre sur
+  // une ligne, 116 sur deux — la cible de 48 largement, par la hauteur et non par `hitSlop`, parce
+  // que les rangées se touchent (`gap: 0`) et que leurs zones se recouvriraient (`v1-16` §5).
   lignePiste: {
+    paddingVertical: Spacing.three,
+    gap: Spacing.one,
+  },
+  // La ligne du gain : le chiffre à gauche, la pastille à droite, centrés sur la hauteur de la
+  // pastille — 84 px de fin de ligne pour la ligne engagée à 360, 143 pour « Choisir à la place ».
+  ligneDuGain: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: Spacing.two,
-    // `three` et non `two` depuis que la ligne se touche (`v1-16` §5) : à 8 px la rangée mesurait
-    // 34 px, sous la cible de 44 que `ControlHeight.target` nommait alors. Du `hitSlop` aurait
-    // marché sans déplacer le texte, mais les rangées se touchent (`gap: 0`) et leurs zones se
-    // seraient recouvertes — c'est la hauteur qu'il faut, pas une marge invisible. À 16 px, la
-    // rangée monte à 52 au moins (16 + 20 + 16) : elle tient aussi la cible de 48 que ce jeton
-    // porte depuis le 24/09/2026 (`v1-29`).
-    paddingVertical: Spacing.three,
+    minHeight: 32,
   },
-  lignePisteTitre: { flex: 1, minWidth: 0 },
-  lignePisteFin: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
+  // Le gain ne se coupe pas : c'est ce qu'on compare.
+  gain: { flexShrink: 0 },
   // **Chiffres tabulaires** (24/09/2026, `v1-29`) : les gains se lisent en colonne, d'une ligne à
   // l'autre. Spline Sans porte la fonction `tnum`.
   chiffres: { fontVariant: ['tabular-nums'] },
+  // **32 est la seule valeur en dur de l'écran** : aucune `ControlHeight` ne la nomme (48, 54 et 56
+  // sont des cibles et des contrôles pleins), et la pastille n'est pas une cible — la rangée l'est.
+  // Un minimum et non une hauteur, comme le bouton : le libellé suit l'agrandissement des polices
+  // du système. Son rayon est la moitié de sa hauteur, comme le bouton (27 = 54 / 2).
+  pastille: {
+    minHeight: 32,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.field,
+    borderWidth: Stroke.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  marque: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
 });
