@@ -300,6 +300,50 @@ téléverser sans regrader** (`CarteDOuverture`, `EcartParPoste`, `FeuilleNouvea
   sans réglage. L'en-tête de conventions ne le nomme pas encore — une ligne à proposer, pas à
   écrire seul, puisque c'est ce que lit l'agent de design.
 
+## Relevé du 29/09/2026 — septième synchronisation, l'écran du mode
+
+Chemin atomique. Elle porte v1-31 (ScratchMe/Ramille#296 : le « Suivant » en attente, la demande
+nommée par son champ, `BoiteDePrecision`, `IntituleDuChamp`, les familles de modes). Le pilote a
+trouvé **53 composants inchangés, 13 changés et 2 ajoutés**, tous notés bons cellule par cellule,
+et **12 à téléverser sans regrader** parce qu'ils importent `Button` ou `GroupeDeChoix` ; six
+d'entre eux (`ActionCommitment`, `ChampsDeContexte`, `ContextStep`, `FlightsStep`,
+`LeisureFrequencyStep`, `SaisieDuCode`) relus par `--spot-check-components`, conformes. Aucune
+suppression ; 68 rendus, aucun mauvais, les deux `[RENDER_THIN]` connus. 359 fichiers : la
+sentinelle, dix fichiers de racine, `_vendor/` seul, `fonts/` seul, deux lots de 136 composants,
+les 68 aperçus, la sentinelle de nouveau, puis `_ds_sync.json` seul.
+
+- **Le chromium a demandé le même geste qu'au 28/09** (`playwright@1.56.1` dans `.ds-sync/`) :
+  l'image porte toujours le 1194.
+- **`props-check.py` a vu toute la dette de v1-31, et elle était large** : `StepShell` exige
+  désormais `entree` et `reponsesDonnees`, `manque` est un objet `{ champ, phrase }` et non plus
+  une phrase, `Button` gagne `enAttente`, et les groupes (`GroupeDeChoix`, `PrecisionMode`,
+  `PrecisionChiffres`) portent `champ`. Treize aperçus réécrits, deux créés, 0 écart à la fin.
+- **L'état « demande » ne se rend qu'au toucher, donc un aperçu doit toucher.** La ligne « Il
+  manque encore … » et l'intitulé marqué n'existent jamais d'office (c'est la règle de v1-31) :
+  `StepShell.tsx` et `CommuteModeStep.tsx` portent un petit `ApresLeToucher` qui clique
+  `button[aria-label="Suivant"]` dans un `useEffect` après le montage. Sans lui, les deux cellules
+  « …SuivantTouche » montreraient l'état d'attente, identique à une autre cellule.
+- **Deux artefacts de cadre, pas des défauts** : dans `CommuteModeStep` / `CovoiturageSuivantTouche`,
+  « 6+ » passe à la ligne parce que le cadre d'aperçu ajoute sa marge à celle de la coquille ; dans
+  `CommuteExtraStep` / `DansLeQuestionnaire`, « Dis-le-nous » se coupe à son trait d'union à cette
+  largeur, comme dans l'app.
+- **L'en-tête de conventions a dérivé, et n'a pas été réécrit** (règle du skill : il appartient à
+  ses auteurs). Tous ses noms existent dans le build ; ce sont trois phrases que v1-31 a rendues
+  fausses. Proposition, à appliquer puis à reconstruire par le pilote :
+  - « `manque` reçoit un fragment (« ton mode de transport »), le composant écrit « Il manque
+    encore … ». » → « `manque` reçoit `{ champ, phrase }` (`manqueDeLEtape`), `entree` et
+    `reponsesDonnees` sont obligatoires. Rien ne s'écrit d'office : au toucher de « Suivant », la
+    coquille mène au champ, marque son intitulé et écrit « Il manque encore {phrase}. ». »
+  - « **Désactivé = fond élément + texte tertiaire**, jamais une opacité — et le libellé ne change
+    pas : ce qui manque se dit à côté. » → « Le « Suivant » d'une étape incomplète est **en
+    attente** (`enAttente`) : l'apparence du désactivé (fond élément, texte tertiaire, jamais une
+    opacité), mais un bouton qui agit. `disabled` reste à ce qui n'agit vraiment pas (le « C'est
+    noté » d'une intention incomplète). Le libellé ne change jamais. »
+  - « … s'ouvre **juste sous l'item choisi**, à un seul niveau » → « … s'ouvre juste sous l'item
+    choisi, **dans une `BoiteDePrecision`**, à un seul niveau ».
+  - Et la ligne du 28/09, toujours en attente : le mouvement a ses jetons (`tokens/mouvement.css`),
+    et sous « réduire les animations » rien ne bouge.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine

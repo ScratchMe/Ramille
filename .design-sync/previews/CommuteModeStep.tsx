@@ -36,21 +36,30 @@ const normaliser = (a: Reponses): Reponses => {
   return r;
 };
 
+// Chaque `update` compte une réponse donnée (`reponsesDonnees` de `StepShell`) : une précision qui s'ouvre ne fait
+// défiler l'écran que si elle en suit une, jamais au préremplissage.
 const useReponses = (depart: Reponses) => {
   const [answers, setAnswers] = React.useState<Reponses>(depart);
-  const update = (patch: Partial<Reponses>) => setAnswers((a) => normaliser({ ...a, ...patch }));
-  return [answers, update] as const;
+  const [reponses, setReponses] = React.useState(0);
+  const update = (patch: Partial<Reponses>) => {
+    setReponses((n) => n + 1);
+    setAnswers((a) => normaliser({ ...a, ...patch }));
+  };
+  return [answers, update, reponses] as const;
 };
 
-/** Au premier passage : neuf modes, rien de choisi, et le lien du mode manquant sous la liste. */
+/**
+ * Au premier passage : neuf modes en trois familles — motorisés, collectifs, actifs, 16 px entre elles —, rien de
+ * choisi, et le lien du mode manquant sous la liste.
+ */
 export const SansReponse = () => {
   const [answers, update] = useReponses(VIDE);
   return <CommuteModeStep answers={answers} update={update} />;
 };
 
 /**
- * « Voiture (covoiturage) » : sous l'option, la motorisation puis combien vous êtes à partager le
- * trajet — deux précisions pour la même voiture, dans la liste et non après elle.
+ * « Voiture (covoiturage) » : sous l'option, une seule boîte, la motorisation puis combien vous êtes à partager
+ * le trajet — deux précisions pour la même voiture, dans la liste et non après elle, chacune son propre groupe.
  */
 export const VoitureEnCovoiturage = () => {
   const [answers, update] = useReponses({
@@ -75,35 +84,87 @@ export const DeuxRouesMotorise = () => {
   return <CommuteModeStep answers={answers} update={update} />;
 };
 
-/** Dans le questionnaire : troisième étape ; tant qu'une précision ouverte attend, « Il manque encore » la nomme. */
+// `manqueDeLEtape` (src/types/bilan.ts) pour cette étape, recopiée : le champ, pour y mener, et sa phrase.
+const manqueDuMode = (a: Reponses) =>
+  a.commute_mode === null
+    ? { champ: 'commute_mode', phrase: 'ton mode de transport' }
+    : a.commute_mode === 'voiture' && a.commute_car_engine === null
+      ? { champ: 'commute_car_engine', phrase: 'la motorisation' }
+      : a.commute_mode === 'deux_roues_motorise' && a.commute_two_wheeler_type === null
+        ? { champ: 'commute_two_wheeler_type', phrase: 'le type de deux-roues' }
+        : a.commute_mode === 'train' && a.commute_train_type === null
+          ? { champ: 'commute_train_type', phrase: 'le type de train' }
+          : a.commute_mode === 'velo' && a.commute_velo_type === null
+            ? { champ: 'commute_velo_type', phrase: 'le type de vélo' }
+            : a.commute_is_carpool && a.commute_carpool_size === null
+              ? { champ: 'commute_carpool_size', phrase: 'le nombre de personnes dans la voiture' }
+              : null;
+
+/**
+ * Le toucher du « Suivant », rejoué une fois après le montage — une carte ne se touche pas, et c'est
+ * au toucher, jamais d'office, que ce qui manque se dit (`v1-31`, décision 1).
+ */
+const ApresLeToucher = ({ children }: { children: React.ReactNode }) => {
+  const cadre = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const suivant = cadre.current?.querySelector<HTMLButtonElement>('button[aria-label="Suivant"]');
+    suivant?.click();
+  }, []);
+  return (
+    <div ref={cadre} style={{ display: 'flex', flexDirection: 'column', height: 844 }}>
+      {children}
+    </div>
+  );
+};
+
+/**
+ * Dans le questionnaire : troisième étape. Tant qu'il manque quelque chose, « Suivant » est gris mais agit : au
+ * toucher, « Il manque encore … » au-dessus de lui, et l'écran mène à la question.
+ */
 export const DansLeQuestionnaire = () => {
-  const [answers, update] = useReponses(VIDE);
-  // `manqueDeLEtape` (src/types/bilan.ts) pour cette étape, recopiée.
-  const manque =
-    answers.commute_mode === null
-      ? 'ton mode de transport'
-      : answers.commute_mode === 'voiture' && answers.commute_car_engine === null
-        ? 'la motorisation'
-        : answers.commute_mode === 'deux_roues_motorise' && answers.commute_two_wheeler_type === null
-          ? 'le type de deux-roues'
-          : answers.commute_mode === 'train' && answers.commute_train_type === null
-            ? 'le type de train'
-            : answers.commute_mode === 'velo' && answers.commute_velo_type === null
-              ? 'le type de vélo'
-              : answers.commute_is_carpool && answers.commute_carpool_size === null
-                ? 'le nombre de personnes dans la voiture'
-                : null;
+  const [answers, update, reponses] = useReponses(VIDE);
   return (
     <StepShell
       section="Domicile-travail"
       step={3}
       total={9}
+      entree={{ cle: 'commute_mode', sens: null }}
+      reponsesDonnees={reponses}
       onBack={() => {}}
       onNext={() => {}}
-      nextDisabled={manque !== null}
-      manque={manque}
+      manque={manqueDuMode(answers)}
     >
       <CommuteModeStep answers={answers} update={update} />
     </StepShell>
+  );
+};
+
+/**
+ * Le covoiturage, « Hybride » choisi, le nombre de personnes vide, « Suivant » touché : la ligne nomme ce qui
+ * manque, la question des personnes passe en `accentText`, le focus est sur « 2 ». Le titre ne se recolore
+ * jamais — il est la question de l'étape.
+ */
+export const CovoiturageSuivantTouche = () => {
+  const [answers, update, reponses] = useReponses({
+    ...VIDE,
+    commute_mode: 'voiture',
+    commute_is_carpool: true,
+    commute_car_engine: 'hybride',
+  });
+  return (
+    <ApresLeToucher>
+      <StepShell
+        section="Domicile-travail"
+        step={3}
+        total={9}
+        entree={{ cle: 'commute_mode', sens: null }}
+        reponsesDonnees={reponses}
+        onBack={() => {}}
+        onNext={() => {}}
+        manque={manqueDuMode(answers)}
+      >
+        <CommuteModeStep answers={answers} update={update} />
+      </StepShell>
+    </ApresLeToucher>
   );
 };
