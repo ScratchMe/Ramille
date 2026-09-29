@@ -18,9 +18,9 @@
   body { margin:0; font-family:'Spline Sans', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
   button { font-family:'Spline Sans', ui-sans-serif, system-ui, sans-serif; }
   /* Jetons : src/constants/theme.ts (Colors.light / Colors.dark), recopiés, jamais arrondis. --k-* : le canvas lui-même. */
-  [data-theme] { --c-text:#131612; --c-text2:#39403B; --c-text3:#5E655F; --c-bg:#FFFFFF; --c-tinted:#F3F8F4; --c-el:#F0F1EC; --c-el2:#F6F8F3; --c-sel:#E4EFE8; --c-accent:#1F6F4A; --c-accent-text:#14563A; --c-muted:#A9C8B6; --c-border:#DDE0D9; --c-on-accent:#FFFFFF; --c-pressed:#E4E6DF; --c-scrim:rgba(19,22,18,0.42); --m-leaf:#1F6F4A; --m-ink:#131612; --m-vein:#E4EFE8; --m-warm:#C99A6B;
+  [data-theme] { --c-text:#131612; --c-text2:#39403B; --c-text3:#5E655F; --c-bg:#FFFFFF; --c-tinted:#F3F8F4; --c-el:#F0F1EC; --c-el2:#F6F8F3; --c-sel:#E4EFE8; --c-accent:#1F6F4A; --c-accent-text:#14563A; --c-muted:#A9C8B6; --c-border:#DDE0D9; --c-on-accent:#FFFFFF; --c-pressed:#E4E6DF; --c-field:#858C86; --c-scrim:rgba(19,22,18,0.42); --m-leaf:#1F6F4A; --m-ink:#131612; --m-vein:#E4EFE8; --m-warm:#C99A6B;
     --k-canvas:#EAECE6; --k-ink:#131612; --k-ink2:#39403B; --k-ink3:#5E655F; --k-rule:#D3D7CF; --k-page:#FFFFFF; --k-frame:transparent; --k-pli:#9AA39B; }
-  [data-theme="dark"] { --c-text:#FFFFFF; --c-text2:#B0B4BA; --c-text3:#8A9088; --c-bg:#000000; --c-tinted:#0F1410; --c-el:#212225; --c-el2:#1A1C1A; --c-sel:#1C2E22; --c-accent:#3D9B6F; --c-accent-text:#8FCBA9; --c-muted:#3A5245; --c-border:#2E3135; --c-on-accent:#FFFFFF; --c-pressed:#2A2C2F; --c-scrim:rgba(0,0,0,0.6); --m-leaf:#3D9B6F; --m-warm:#B98A5E;
+  [data-theme="dark"] { --c-text:#FFFFFF; --c-text2:#B0B4BA; --c-text3:#8A9088; --c-bg:#000000; --c-tinted:#0F1410; --c-el:#212225; --c-el2:#1A1C1A; --c-sel:#1C2E22; --c-accent:#3D9B6F; --c-accent-text:#8FCBA9; --c-muted:#3A5245; --c-border:#2E3135; --c-on-accent:#FFFFFF; --c-pressed:#2A2C2F; --c-field:#767D77; --c-scrim:rgba(0,0,0,0.6); --m-leaf:#3D9B6F; --m-warm:#B98A5E;
     --k-canvas:#0A0B0A; --k-ink:#FFFFFF; --k-ink2:#B0B4BA; --k-ink3:#8A9088; --k-rule:#2E3135; --k-page:#121412; --k-frame:#2E3135; --k-pli:#5E655F; }
   .racine { background:var(--k-canvas); color:var(--k-ink); }
   .racine a { color:var(--c-accent-text); text-decoration:none; }
@@ -45,8 +45,8 @@
   <div style="display:flex;flex-direction:column;gap:14px;max-width:860px">
     <span class="etiq">Ramille · v1-30 · canvas du 28/09/2026 · issue #235</span>
     <h1 style="margin:0;font-size:48px;line-height:52px;font-weight:600;letter-spacing:-0.02em;text-wrap:balance">Toutes les pistes : ce qu’on lit, et ce qu’on touche</h1>
-    <p style="margin:0;font-size:16px;line-height:24px;color:var(--k-ink2);text-wrap:pretty">Une seule idée, et le reste en découle : <b style="color:var(--k-ink)">on compare sur la liste, on touche pour choisir.</b> La ligne porte ce qu’on compare — un titre à la taille du contenu, le gain aligné dessous. « Choisir » devient une pastille, et il choisit vraiment : la ligne s’ouvre en carte directement sur « Quand ? » ou « Quels jours ? ». La liste ne se réordonne plus quand on s’engage, reste groupée par poste, et garde sa raison d’être dès trois pistes.</p>
-    <p style="margin:0;font-size:14px;line-height:21px;color:var(--k-ink3);text-wrap:pretty">Quatre décisions prises avec la personne qui pilote le 28/09/2026 : comparer sur la liste (A) · l’ordre ne bouge pas (A) · groupées par poste (A) · l’écran dès trois pistes (A). Chiffres relevés en production ce jour-là sur le profil 1 de <code>docs/recette/le-compte-et-les-modes.md</code> et sur un petit rouleur ; les quatre comptes de test ont été supprimés, et c’est vérifié en base.</p>
+    <p style="margin:0;font-size:16px;line-height:24px;color:var(--k-ink2);text-wrap:pretty">Une seule idée, et le reste en découle : <b style="color:var(--k-ink)">on compare sur la liste, on touche pour choisir.</b> La ligne porte ce qu’on compare — un titre à la taille du contenu, le gain aligné dessous. « Choisir » devient une pastille bordée, et il choisit vraiment : la ligne s’ouvre en carte directement sur « Quand ? » ou « Quels jours ? ». La liste ne se réordonne plus quand on s’engage, reste groupée par poste, et garde sa raison d’être dès trois pistes.</p>
+    <p style="margin:0;font-size:14px;line-height:21px;color:var(--k-ink3);text-wrap:pretty">Cinq décisions prises avec la personne qui pilote le 28/09/2026 : comparer sur la liste (A, confirmée après correction : elle remplace <code>v1-16</code> §5 sur l’ouverture de plusieurs cartes) · l’ordre ne bouge pas (A) · groupées par poste (A) · l’écran dès trois pistes (A) · « Choisir à la place » sur la pastille (A). Chiffres relevés en production ce jour-là sur le profil 1 de <code>docs/recette/le-compte-et-les-modes.md</code> et sur un petit rouleur ; les quatre comptes de test ont été supprimés, et c’est vérifié en base.</p>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
       <button onClick="{{ toggleTheme }}" style="height:48px;padding:0 20px;border-radius:24px;border:1.5px solid var(--c-accent);background:var(--k-page);color:var(--c-accent-text);font:600 14px/20px 'Spline Sans',sans-serif;cursor:pointer">{{ themeLabel }}</button>
       <span style="font-size:14px;line-height:20px;color:var(--k-ink3)">Toutes les planches basculent · <a href="#a">A la liste</a> · <a href="#b">B le choix</a> · <a href="#c">C la courte liste</a> · <a href="#ecarts">Écarts</a> · <a href="#reponses">Réponses</a> · <a href="#systeme">Système</a></span>
@@ -61,40 +61,40 @@
       <div style="display:flex;flex-direction:column;gap:14px;width:390px">
         <div data-screen-label="A0 — Aujourd’hui · la liste livrée" style="width:390px">{{ a0 }}</div>
         <span class="etiq">A0 · aujourd’hui · 390 · référence</span>
-        <p class="note"><b>L’écran livré (#238), redessiné pour comparer.</b> Le titre, contenu principal de l’écran, est en <code>small</code> 14/20 <code>textSecondary</code> ; le gain en 14 tertiaire ; « Choisir » est un mot 14/600 en <code>accentText</code>, sans forme. Toucher la ligne n’y choisit rien : elle s’ouvre en carte, puis « Je m’y engage », puis le jour ou l’échéance, puis « C’est noté ». Relevé en production : rangées de 68 px (titres sur deux lignes à 390).</p>
+        <p class="note"><b>L’écran livré par #238 (la réparation des quatre écarts à la planche A2), redessiné pour comparer.</b> Le titre, contenu principal de l’écran, est en <code>small</code> 14/20 <code>textSecondary</code> ; le gain en 14 tertiaire ; « Choisir » est un mot 14/600 en <code>accentText</code>, sans forme. Toucher la ligne n’y choisit rien : elle s’ouvre en carte, puis « Je m’y engage », puis le jour ou l’échéance, puis « C’est noté ». Relevé en production : rangées de 72 px, 73 avec le filet (titres sur deux lignes à 390) ; le premier écran montre six pistes.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:390px">
         <div data-screen-label="A0b — Aujourd’hui · deux cartes ouvertes" style="width:390px">{{ a0b }}</div>
         <span class="etiq">A0b · aujourd’hui · 390 × 844 · référence</span>
-        <p class="note"><b>Deux cartes ouvertes ne se comparent pas.</b> Avec une seule ligne entre elles, la seconde sort déjà de l’écran : une carte ouverte mesure environ 250 px, « Réduire » compris, dans une fenêtre d’environ 690 px. Et en s’ouvrant, le gain passe de la colonne de droite (14 px) à la gauche (20 px) : il ne s’aligne plus sur les autres. Ce que la carte ajoute à la ligne — la part de l’empreinte, qui classe comme le gain, et la base — ne départage rien.</p>
+        <p class="note"><b>Deux cartes ouvertes ne se comparent pas.</b> Avec une seule ligne entre elles, la seconde sort déjà de l’écran : une carte ouverte mesure 252 px, 304 avec « Réduire », dans une fenêtre de 688 px entre la bande et la barre d’onglets (mesuré dans le rendu). Et en s’ouvrant, le gain passe de la colonne de droite (14 px) à la gauche (20 px) : il ne s’aligne plus sur les autres. Ce que la carte ajoute à la ligne — la part de l’empreinte, qui classe comme le gain, et la base — ne départage rien.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:390px">
         <div data-screen-label="A1 — La liste · dix pistes, rien d’engagé" style="width:390px">{{ a1 }}</div>
         <span class="etiq">A1 · la liste · 390 · cliquable</span>
-        <p class="note"><b>La ligne porte ce qu’on compare, à deux étages.</b> Le titre en <code>default</code> 16/24, 500, couleur <code>text</code> : la taille du contenu, un cran sous le titre de carte (17/600). Dessous, le gain en 15/22 600 <code>text</code> à chiffres tabulaires, suivi de « par an » en 14 tertiaire — la même unité que le cap depuis le 24/09. Les gains s’alignent à gauche, sous leurs titres : l’œil descend la colonne. À droite, la pastille « Choisir ».</p>
-        <p class="note"><b>La pastille dit « bouton » par sa forme, pas par sa couleur.</b> 32 de haut, rayon 16 (<code>Radius.field</code>, la moitié de sa hauteur, comme le bouton à 27 = 54 / 2), fond <code>backgroundElement</code>, libellé 14/20 600 <code>accentText</code> : un bouton secondaire en réduction, jamais un bouton plein. La cible reste la rangée entière (92 px sur une ligne de titre, 116 sur deux), qui prend <code>backgroundPressed</code> sous le doigt ; la pastille est décorative, le libellé accessible la dit.</p>
+        <p class="note"><b>La ligne porte ce qu’on compare, à deux étages.</b> Le titre en <code>default</code> 16/24, 500, couleur <code>text</code> : la taille du contenu, un cran sous le titre de carte (17/600). Dessous, le gain en 15/22 600 <code>text</code> à chiffres tabulaires, suivi de « par an » en 14 tertiaire — la même unité que le cap depuis le 24/09. Les gains s’alignent à gauche, sous leurs titres : l’œil descend la colonne. À droite, la pastille « Choisir ». Le premier écran montre quatre pistes au lieu de six.</p>
+        <p class="note"><b>La pastille dit « bouton » par un cadre qui se voit, pas par sa couleur.</b> 32 de haut, rayon 16 (<code>Radius.field</code>, la moitié de sa hauteur, comme le bouton à 27 = 54 / 2), un filet 1 <code>fieldBorder</code> sur le fond de l’écran, libellé 14/20 600 <code>accentText</code>. C’est la « pastille bordée » du brief : <code>fieldBorder</code> est le seul gris qui tienne 3:1 sur le fond (3,45:1 ; 4,97:1 en sombre) — un fond gris seul n’y tranche qu’à 1,14:1, c’est-à-dire qu’il n’existe pas pour une vue faible (<code>FRONT.md</code> §1.4). Jamais un bouton plein. La cible reste la rangée entière (92 px sur une ligne de titre, 116 sur deux), qui prend <code>backgroundPressed</code> sous le doigt ; la pastille est décorative, le libellé accessible la dit.</p>
         <p class="note"><b>Les têtes de groupe passent en étiquette capitale</b> (13/18 600 tertiaire, +0,3 : le motif de « PREMIER PAS »), 24 au-dessus, 4 dessous. En 14 tertiaire elles tenaient face à des lignes en 14 secondaire ; face à des titres en 16 <code>text</code>, elles se seraient effacées — c’est la plainte du 18/09 qui reviendrait. Pointillé « 844 » : ce que montre le premier écran, au-dessus de la barre d’onglets.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:360px">
         <div data-screen-label="A1·360 — La liste à 360" style="width:360px">{{ a1_360 }}</div>
         <span class="etiq">A1 · 360 · ce qui passe sur deux lignes</span>
-        <p class="note"><b>À 360, aucun titre ne dépasse deux lignes</b> sur les dix du profil 1, et la ligne du gain tient toujours en une : « − 1 601 kg par an » (114 px) et la pastille « Choisir à la place » (141 px) font 263 px sur 312, écart compris. Le titre prend toute la largeur parce que la pastille est descendue sur la ligne du gain : à côté du titre, elle lui retirait 87 à 153 px et en aurait mis plusieurs sur trois lignes.</p>
+        <p class="note"><b>À 360, aucun titre ne dépasse deux lignes</b> sur les dix du profil 1, et la ligne du gain tient toujours en une : « − 1 601 kg par an » (112 px) et la pastille « Choisir à la place » (143 px) font 263 px sur 312, écart compris. Le titre prend toute la largeur parce que la pastille est descendue sur la ligne du gain : à côté du titre, elle lui retirait 89 à 151 px et en aurait mis plusieurs sur trois lignes.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:390px">
         <div data-screen-label="A2 — Une ligne engagée · au milieu de la liste" style="width:390px">{{ a2 }}</div>
         <span class="etiq">A2 · une ligne engagée · 390</span>
         <p class="note"><b>L’ordre ne bouge pas</b> (décision du 28/09) : « Regrouper deux sorties » reste cinquième, à sa place dans les loisirs, et la liste ouvre toujours sur le meilleur levier du poste dominant. La ligne engagée garde sa forme — pastille-coche 20 px et « Engagée » 14/600 <code>accentText</code> à la place de la pastille « Choisir » — et ne se touche pas. L’intro perd « Ton action en cours d’abord ».</p>
-        <p class="note"><b>Les autres pastilles disent « Choisir à la place ».</b> Le bouton de la carte qui le disait (« Choisir celle-ci à la place ») n’est plus sur le chemin, puisqu’on ouvre la carte directement sur le choix : le remplacement se dit donc avant le geste, sur la seule chose qu’on touche.</p>
+        <p class="note"><b>Les autres pastilles disent « Choisir à la place »</b> (décidé le 28/09, question 5). Le bouton de la carte qui le disait (« Choisir celle-ci à la place ») n’est plus sur le chemin, puisqu’on ouvre la carte directement sur le choix : le remplacement se dit donc avant le geste, sur la seule chose qu’on touche.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:360px">
         <div data-screen-label="A2·360 — Une ligne engagée à 360" style="width:360px">{{ a2_360 }}</div>
         <span class="etiq">A2 · 360</span>
-        <p class="note"><b>La ligne engagée à 360</b> : « − 67 kg par an », la pastille-coche et « Engagée » tiennent sur la ligne du gain. C’est le seul endroit de l’écran où l’accent est plein, et il y est une fois.</p>
+        <p class="note"><b>La ligne engagée à 360</b> : « − 67 kg par an », la pastille-coche et « Engagée » tiennent sur la ligne du gain. C’est le seul endroit de la liste où l’accent est plein — hors barre d’onglets —, et il y est une fois.</p>
       </div>
 
     </div>
@@ -106,34 +106,34 @@
     <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
 
       <div style="display:flex;flex-direction:column;gap:14px;width:390px">
-        <div data-screen-label="B1 — Après « Choisir » · un voyage : l’échéance" style="width:390px">{{ b1 }}</div>
+        <div data-screen-label="B1 — Juste après « Choisir » · un voyage : l’échéance" style="width:390px">{{ b1 }}</div>
         <span class="etiq">B1 · juste après « Choisir » · 390 × 844</span>
-        <p class="note"><b>La ligne devient la carte, ouverte sur la question.</b> C’est la même <code>ActionCard</code> que sur le plan — titre 17/24, gain 20/26 <code>accentText</code>, « par an · 65 % de ton empreinte », la base — et son sélecteur d’intention, <b>au contenu inchangé</b> : « Quand ? », les échéances du poste en puces à contour, « Annuler » souligné, « C’est noté ». Seul son déclenchement change : « Je m’y engage » est sauté, puisque « Choisir » l’a déjà dit.</p>
-        <p class="note"><b>Un seul choix en cours.</b> Toucher « Choisir » sur une autre ligne referme celle-ci ; « Annuler » la rend à sa ligne, et « Réduire » disparaît avec la possibilité d’ouvrir plusieurs cartes. Le passage de ligne à carte reste celui de la v1-30 (<code>HauteurSuivie</code> 250 ms en grandissant, 200 en rétrécissant ; la carte en fondu). Le focus va au groupe « Quand ? » ; à « Annuler », il revient à la ligne.</p>
+        <p class="note"><b>La ligne devient la carte, ouverte sur la question.</b> C’est la même <code>ActionCard</code> que sur le plan — titre 17/24, gain 20/26 <code>accentText</code>, « par an · 65 % de ton empreinte », la base — et son sélecteur d’intention, <b>au contenu inchangé</b> : « Quand ? », les échéances du poste en puces à contour, « Annuler » souligné, « C’est noté », <b>rien de coché</b> : « C’est noté » reste inactif tant qu’on n’a pas choisi. Seul son déclenchement change : « Je m’y engage » est sauté, puisque « Choisir » l’a déjà dit. (Inactif, ce bouton prend le fond de son encart et n’y a plus de forme : relevé, hors mandat.)</p>
+        <p class="note"><b>Un seul choix en cours.</b> Toucher « Choisir » sur une autre ligne referme celle-ci ; « Annuler » la rend à sa ligne. « Réduire » (ajouté par #238, la réparation de la planche A2) disparaît avec la possibilité d’ouvrir plusieurs cartes, décidée en <code>v1-16</code> §5 après la recette du 14/09 : cette planche la remplace, parce que deux cartes ouvertes ne se comparent pas (A0b). Le passage de ligne à carte reste celui de <code>v1-30-les-transitions.md</code> (<code>HauteurSuivie</code> 250 ms en grandissant, 200 en rétrécissant ; la carte en fondu). Le focus va au groupe « Quand ? » ; à « Annuler », il revient à la ligne.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:360px">
-        <div data-screen-label="B2 — Après « Choisir » · un trajet : les jours, à 360" style="width:360px">{{ b2 }}</div>
-        <span class="etiq">B2 · un trajet · 360 × 800</span>
-        <p class="note"><b>Les jours, à 360, tiennent sur quatre colonnes</b> : 224 px dans le sélecteur, 56 par colonne, soit la cible de 48 et ses 8 de marge — la limite exacte de <code>GroupeDeChoix</code>, qui passerait seul à trois en dessous. La ligne choisie est la dernière de la liste : <b>l’écran défile juste assez pour montrer « C’est noté »</b>, sans faire passer le titre de la carte sous la bande (instantané sous « réduire les animations »).</p>
+        <div data-screen-label="B2 — Un trajet · les jours, à 360" style="width:360px">{{ b2 }}</div>
+        <span class="etiq">B2 · un trajet, deux jours cochés · 360 × 800</span>
+        <p class="note"><b>Les jours, à 360, tiennent sur quatre colonnes</b> : 222 px dans le sélecteur, une grille qui déborde de 4 de chaque côté (230 px), soit 57,5 par cellule — au-dessus du minimum de <code>GroupeDeChoix</code> (56 : la cible de 48 et ses 8), qui passerait seul à trois en dessous. Mardi et jeudi sont cochés : c’est l’état juste avant « C’est noté ». La ligne choisie est la dernière de la liste : <b>l’écran défile juste assez pour montrer « C’est noté »</b>, sans faire passer le titre de la carte sous la bande. C’est le défilement de la plateforme, comme la page suivante de l’onboarding (<code>scrollTo</code> animé, <b>instantané sous « réduire les animations »</b>) : à relire avec le skill <code>/mouvement</code> avant de l’écrire.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:390px">
         <div data-screen-label="B3 — « Choisir à la place » · une autre est engagée" style="width:390px">{{ b3 }}</div>
         <span class="etiq">B3 · choisir à la place · 390 × 844</span>
-        <p class="note"><b>Remplacer se voit avant de valider.</b> La ligne engagée est juste dessous, marquée ; la pastille touchée disait « Choisir à la place » ; « C’est noté » appelle <code>commit_plan_action</code> avec <code>p_replace</code>, comme aujourd’hui, et un refus <code>RM001</code> se dit en tête de liste, carte ouverte. <b>La carte qu’on choisit n’est jamais estompée ici</b> : l’estompage est un fait du plan, où la seconde carte recule derrière l’engagée ; sur la liste, estomper la carte qu’on est en train de choisir la ferait reculer au moment même où on la regarde.</p>
+        <p class="note"><b>Remplacer se voit avant de valider.</b> La ligne engagée est juste dessous, marquée ; la pastille touchée disait « Choisir à la place » (décidé le 28/09) ; « C’est noté » appelle <code>commit_plan_action</code> avec <code>p_replace</code>, comme aujourd’hui, et un refus <code>RM001</code> se dit en tête de liste, carte ouverte. <b>La carte qu’on choisit n’est jamais estompée ici</b> : l’estompage est un fait du plan, où la seconde carte recule derrière l’engagée ; sur la liste, estomper la carte qu’on est en train de choisir la ferait reculer au moment même où on la regarde.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:390px">
         <div data-screen-label="B4 — Après « C’est noté » · le plan" style="width:390px">{{ b4 }}</div>
         <span class="etiq">B4 · après « C’est noté » · le plan · 390</span>
-        <p class="note"><b>« C’est noté » ramène au plan, comme aujourd’hui</b> (<code>v1-17</code> §7.3) : le drapeau de passage est déposé avant de partir, et le plan montre l’action en tête — « TON ENGAGEMENT », l’intention dans la ligne du gain, le premier pas, « Changer d’avis » — puis la meilleure autre piste, estompée par son cadre. C’est la confirmation : on voit ce qu’on vient de choisir, à l’endroit où on le retrouvera.</p>
+        <p class="note"><b>« C’est noté » ramène au plan, comme aujourd’hui</b> (<code>v1-17</code> §7.3) : le drapeau de passage est déposé avant de partir, et le plan montre l’action en tête — « TON ENGAGEMENT », l’intention dans la ligne du gain, le premier pas, « Changer d’avis » — puis la meilleure autre piste, estompée par son cadre. C’est la confirmation : on voit ce qu’on vient de choisir, à l’endroit où on le retrouvera. La carte d’attente est celle d’après la feuille, la notification choisie ; elle vient sous le titre, dans l’ordre du plan.</p>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:14px;width:390px">
         <div data-screen-label="B5 — Après « C’est noté » · la première fois, la feuille des rappels" style="width:390px">{{ b5 }}</div>
         <span class="etiq">B5 · la première fois sur l’appareil · 390 × 844</span>
-        <p class="note"><b>La première fois, la feuille des rappels s’ouvre par-dessus</b> — inchangée, une fois par appareil, sur Android. Elle promet le contact sur l’action qu’on vient de prendre : pour un vol, la boucle mensuelle (« Au début du mois prochain… »). Sur web, sans adresse rattachée, elle ne s’ouvre pas (<code>doitProposerLaFeuille</code>) : c’est ce qu’on voit en navigation privée.</p>
+        <p class="note"><b>La première fois, la feuille des rappels s’ouvre par-dessus</b> — inchangée, une fois par appareil, sur Android. Elle promet le contact sur l’action qu’on vient de prendre : pour un vol, la boucle mensuelle (« Au début du mois prochain… »). Derrière elle, le plan d’avant tout choix — sa carte d’attente, cachée ici par la feuille, est celle d’un appareil anonyme dont la préférence par défaut est l’email, sans adresse pour le recevoir : « On se retrouve ici lundi. » Sur web, sans adresse rattachée, la feuille ne s’ouvre pas (<code>doitProposerLaFeuille</code>) : c’est ce qu’on voit en navigation privée.</p>
       </div>
 
     </div>
@@ -180,17 +180,17 @@
 
   <!-- ══════════════════════════════ Système ══════════════════════════════ -->
   <section id="systeme" data-screen-label="Système" style="display:flex;flex-direction:column;gap:20px;max-width:1240px;background:var(--k-page);border-radius:24px;padding:40px">
-    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Système</h2><span style="font-size:14px;line-height:20px;color:var(--k-ink3)">aucun jeton ajouté · aucune icône · aucun composant du kit redessiné en double</span></div>
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Système</h2><span style="font-size:14px;line-height:20px;color:var(--k-ink3)">aucun jeton ajouté · aucune icône · aucun composant du kit redessiné en double · une valeur en dur</span></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:32px;align-items:start">
       <div style="display:flex;flex-direction:column;gap:16px">
         <span class="etiq">La ligne de piste, cotée</span>
         <div style="width:342px;border:1px dashed var(--k-rule);border-radius:12px;padding:0 0;background:var(--c-bg)">{{ ligneCotee }}</div>
-        <p class="note">Rangée : 16 dessus, 16 dessous (<code>Spacing.three</code>) ; titre 16/24 500 <code>text</code> ; 4 (<code>Spacing.one</code>) ; ligne du gain de 32 de haut, gain 15/22 600 <code>text</code> tabulaire, 6 d’écart, « par an » 14/20 tertiaire ; pastille 32, rayon 16, 0 16 de rembourrage, <code>backgroundElement</code>, 14/20 600 <code>accentText</code>. Filet 1 <code>border</code> sous chaque ligne sauf la dernière du groupe (<code>filetsDesLignes</code>, inchangé).</p>
+        <p class="note">Rangée : 16 dessus, 16 dessous (<code>Spacing.three</code>) ; titre 16/24 500 <code>text</code> ; 4 (<code>Spacing.one</code>) ; ligne du gain de 32 de haut, gain 15/22 600 <code>text</code> tabulaire, une espace, « par an » 14/20 tertiaire (texte imbriqué) ; pastille 32 de haut (la seule valeur en dur), rayon 16, 0 16 de rembourrage, filet 1 <code>fieldBorder</code> (<code>Stroke.hairline</code>), fond de l’écran, 14/20 600 <code>accentText</code>. Filet 1 <code>border</code> sous chaque ligne sauf la dernière du groupe (<code>filetsDesLignes</code>, inchangé).</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px">
         <span class="etiq">Les trois états d’une ligne</span>
         <div style="width:342px;display:flex;flex-direction:column;border:1px dashed var(--k-rule);border-radius:12px;padding:0 16px;background:var(--c-bg)">{{ troisEtats }}</div>
-        <p class="note">Libre : « Choisir ». Une autre engagée : « Choisir à la place ». Engagée : pastille-coche et « Engagée », pas de cible. Sous le doigt : la rangée prend <code>backgroundPressed</code>, tout de suite, sans animation. Désactivée : n’existe pas — toute piste listée se choisit (brief §3).</p>
+        <p class="note">Libre : « Choisir ». Une autre engagée : « Choisir à la place ». Engagée : pastille-coche et « Engagée », pas de cible. Sous le doigt : la rangée prend <code>backgroundPressed</code>, tout de suite, sans animation ; la pastille, transparente, le prend avec elle. Désactivée : n’existe pas — toute piste listée se choisit (brief §3).</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <span class="etiq">Jetons lus</span>
@@ -363,12 +363,12 @@ function pastilleEngagee() {
 // ── La ligne proposée : deux étages, la pastille « Choisir » sur la ligne du gain.
 function ligne(p, { etat = 'libre', filet = false, separee = false, onChoisir } = {}) {
   const libelle = etat === 'aLaPlace' ? 'Choisir à la place' : 'Choisir';
-  const gain = h('span', { style: { display: 'inline-flex', alignItems: 'baseline', gap: 6, whiteSpace: 'nowrap' } },
+  const gain = h('span', { style: { display: 'inline-flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' } },
     h('span', { style: T(15, 22, 600, 'var(--c-text)', { fontVariantNumeric: 'tabular-nums' }) }, `−${NB}${kg(p.kg)}${NB}kg`),
     h('span', { style: T(14, 20, 500, 'var(--c-text3)') }, 'par an'));
   const fin = etat === 'engagee'
     ? h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' } }, pastilleEngagee(), h('span', { style: T(14, 20, 600, 'var(--c-accent-text)') }, 'Engagée'))
-    : h('span', { 'aria-hidden': true, style: T(14, 20, 600, 'var(--c-accent-text)', { height: 32, padding: '0 16px', borderRadius: 16, background: 'var(--c-el)', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0, boxSizing: 'border-box' }) }, libelle);
+    : h('span', { 'aria-hidden': true, style: T(14, 20, 600, 'var(--c-accent-text)', { height: 32, padding: '0 16px', borderRadius: 16, border: '1px solid var(--c-field)', background: 'transparent', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0, boxSizing: 'border-box' }) }, libelle);
   const style = { display: 'flex', flexDirection: 'column', gap: 4, padding: '16px 0', margin: 0, marginTop: separee ? 10 : 0, border: 0, borderBottom: filet ? '1px solid var(--c-border)' : '0', background: 'none', textAlign: 'left', width: '100%', boxSizing: 'border-box', cursor: etat === 'engagee' ? 'default' : 'pointer', color: 'inherit', font: 'inherit' };
   const annonce = `${p.titre.replace(/\.$/, '')}. −${NB}${kg(p.kg)} kg par an. ${etat === 'engagee' ? 'Action engagée' : libelle}.`;
   const enfants = [
@@ -470,12 +470,15 @@ function contenuAujourdhui(ouvertes, cible) {
 }
 
 // ── Le plan après « C'est noté » (B4, B5) : le vol long-courrier engagé à mon prochain projet de voyage.
-function carteAttente() {
+// La carte d'attente (carteAttente, src/types/rappels.ts) : B4 après avoir choisi la notification, B5 avant
+// tout choix — un appareil anonyme dont la préférence par défaut est l'email, sans adresse pour le recevoir.
+function carteAttente(avantLeChoix) {
   return h('div', { style: { background: 'var(--c-el)', borderRadius: 18, padding: 20, display: 'flex', alignItems: 'center', gap: 16 } },
     ramille('resting', 40, 0),
     h('div', { style: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 } },
-      h('span', { style: T(16, 24, 600, 'var(--c-text)') }, 'Je te fais signe lundi.'),
-      h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, 'Par notification sur ce téléphone.')));
+      h('span', { style: T(16, 24, 600, 'var(--c-text)') }, avantLeChoix ? 'On se retrouve ici lundi.' : 'Je te fais signe lundi.'),
+      h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, avantLeChoix ? 'Rattache un compte pour recevoir le mot par email.' : 'Par notification sur ce téléphone.'),
+      avantLeChoix ? h('span', { style: T(14, 20, 600, 'var(--c-accent-text)', { minHeight: 48, display: 'flex', alignItems: 'center' }) }, 'Rattacher un compte') : null));
 }
 function carteCap() {
   return h('div', { style: { background: 'var(--c-sel)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 6 } },
@@ -510,10 +513,11 @@ function carteEstompee(p) {
     h('span', { style: T(14, 20, 500, 'var(--c-text3)') }, p.base),
     h('span', { style: T(16, 24, 500, 'var(--c-text)', { marginTop: 16, minHeight: 54, borderRadius: 27, background: 'var(--c-el)', display: 'flex', alignItems: 'center', justifyContent: 'center' }) }, 'Choisir celle-ci à la place'));
 }
-function contenuPlan() {
+function contenuPlan(avantLeChoix) {
+  // L'ordre de src/app/(tabs)/plan/index.tsx : le titre et son intro, le point s'il attend, la carte d'attente, le cap, les pistes.
   return h('div', { style: { padding: '24px 24px 64px', display: 'flex', flexDirection: 'column', gap: 24 } },
-    carteAttente(),
     h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } }, titreEcran('Ton plan'), corps('Une action par saison, une seule. C’est pas à pas qu’on tient un cap.')),
+    carteAttente(avantLeChoix),
     carteCap(),
     h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } }, carteEngagee(PISTES[0], 'à mon prochain projet de voyage'), carteEstompee(PISTES[1])),
     h('span', { style: T(14, 20, 600, 'var(--c-accent-text)', { minHeight: 48, display: 'flex', alignItems: 'center', marginTop: -14 }) }, `Voir toutes les pistes · 10`));
@@ -541,27 +545,28 @@ function feuilleRappels() {
 
 // ── Écarts, réponses, système
 const ECARTS = [
-  { quoi: 'Le titre de la ligne', avant: 'small 14/20, textSecondary : le contenu principal dans la plus petite taille, atténué.', apres: 'default 16/24, 500, text.', pourquoi: 'C’est le contenu de l’écran ; un cran sous le titre de carte (17/600) pour que la carte ouverte reste au-dessus.', prix: 'Des rangées de 92 à 116 px au lieu de 52 à 68 : l’écran allongé du profil 1 passe de 1\u00a0269 à 1\u00a0655 px (+ 30\u00a0%), et le premier écran montre quatre pistes au lieu de six.', ou: 'A1 · pistes.tsx' },
+  { quoi: 'Le titre de la ligne', avant: 'small 14/20, textSecondary : le contenu principal dans la plus petite taille, atténué.', apres: 'default 16/24, 500, text.', pourquoi: 'C’est le contenu de l’écran ; un cran sous le titre de carte (17/600) pour que la carte ouverte reste au-dessus.', prix: 'Des rangées de 92 à 116 px au lieu de 52 à 72 : l’écran allongé du profil 1 passe de 1\u00a0269 à 1\u00a0655 px (+ 30\u00a0%), et le premier écran montre quatre pistes au lieu de six.', ou: 'A1 · pistes.tsx' },
   { quoi: 'Le gain de la ligne', avant: '14/20 tertiaire, à droite du titre, entre le titre et « Choisir ».', apres: 'Sous le titre : 15/22 600 text, tabulaire, puis « par an » 14/20 tertiaire.', pourquoi: 'C’est ce qu’on compare : plus gras que le titre, aligné à gauche d’une ligne à l’autre. « par an », parce qu’un gain sans unité se lit comme un effort de saison — la correction faite au cap le 24/09.', prix: 'Une ligne de plus par piste.', ou: 'A1 · pistes.tsx' },
-  { quoi: '« Choisir » a une forme', avant: 'Un mot 14/600 accentText, sans cadre ni fond. Trouvé deux séances de suite.', apres: 'Une pastille : 32 de haut, rayon 16 (Radius.field), fond backgroundElement, 14/20 600 accentText, 0 16 de rembourrage.', pourquoi: 'Un mot ne fait pas une affordance ; un cadre, si. Un bouton secondaire en réduction, jamais un bouton plein (brief §6).', prix: 'Aucun jeton : des valeurs existantes. Décorative dans la cible de la rangée.', ou: 'A1 · pistes.tsx' },
-  { quoi: '« Choisir » choisit', avant: 'Ligne → carte en lecture → « Je m’y engage » → échéance → « C’est noté » : quatre gestes, et un mot qui promettait le premier.', apres: 'Ligne → carte ouverte sur « Quand ? » ou « Quels jours ? » → « C’est noté » : trois gestes.', pourquoi: 'Décision du 28/09 (comparer sur la liste). Le mot dit vrai, et qui veut regarder n’a plus à toucher un mot qui dit « choisir » : tout ce qui se compare est sur la ligne.', prix: 'ActionCommitment s’ouvre sur son sélecteur et rend la main par « Annuler » ; CarteDePiste passe les deux.', ou: 'B1 · action-commitment.tsx, carte-de-piste.tsx' },
-  { quoi: 'Un seul choix en cours', avant: 'Plusieurs cartes ouvertes à la fois, chacune avec « Réduire » (#238).', apres: 'Une carte à la fois ; « Annuler » du sélecteur la rend à sa ligne ; « Réduire » disparaît.', pourquoi: 'Deux cartes ouvertes ne tiennent pas dans un écran (A0b) : la comparaison se fait sur les lignes, et on ne choisit qu’une action.', prix: 'Défait une partie de #238 : l’ensemble ouvertes devient un identifiant.', ou: 'B1 · pistes.tsx' },
-  { quoi: '« Choisir à la place »', avant: 'Le bouton de la carte le disait (« Choisir celle-ci à la place »).', apres: 'La pastille le dit, quand une autre action est engagée.', pourquoi: 'Le bouton de la carte n’est plus sur le chemin ; le remplacement, le geste le plus irréversible, se dit sur ce qu’on touche.', prix: 'Un libellé dérivé de l’engagement.', ou: 'A2, B3 · pistes.tsx, plan.ts' },
+  { quoi: '« Choisir » a une forme', avant: 'Un mot 14/600 accentText, sans cadre ni fond. Trouvé deux séances de suite.', apres: 'Une pastille bordée : 32 de haut, rayon 16 (Radius.field), filet 1 fieldBorder, fond de l’écran, 14/20 600 accentText, 0 16 de rembourrage.', pourquoi: 'Un mot ne fait pas une affordance ; un cadre, si — à condition qu’il se voie : fieldBorder tient 3,45:1 sur le fond, un fond gris seul 1,14:1 (FRONT.md §1.4). Jamais un bouton plein (brief §6).', prix: 'Aucun jeton neuf. fieldBorder, le contour d’un champ au repos, sert au contour d’un contrôle au repos : le même rôle. Une valeur en dur, la hauteur 32. Sous le doigt, le filet tombe à 2,74:1 sur backgroundPressed, le temps de l’appui.', ou: 'A1 · pistes.tsx' },
+  { quoi: '« Choisir » choisit', avant: 'Ligne → carte en lecture → « Je m’y engage » → échéance → « C’est noté » : quatre gestes, et un mot qui promettait le premier.', apres: 'Ligne → carte ouverte sur « Quand ? » ou « Quels jours ? » → « C’est noté » : trois gestes.', pourquoi: 'Décision du 28/09 (comparer sur la liste), confirmée après correction de son cadrage. Le mot dit vrai, et qui veut regarder n’a plus à toucher un mot qui dit « choisir » : tout ce qui se compare est sur la ligne.', prix: 'ActionCommitment s’ouvre sur son sélecteur et rend la main par « Annuler » ; CarteDePiste passe les deux.', ou: 'B1 · action-commitment.tsx, carte-de-piste.tsx' },
+  { quoi: 'Un seul choix en cours', avant: 'Plusieurs cartes ouvertes à la fois — décidé en v1-16 §5 après la recette du 14/09, pour comparer —, chacune avec « Réduire », ajouté par #238 (la réparation de la planche A2).', apres: 'Une carte à la fois ; « Annuler » du sélecteur la rend à sa ligne ; « Réduire » disparaît.', pourquoi: 'Deux cartes ouvertes ne tiennent pas dans un écran (A0b) : la comparaison que v1-16 §5 voulait rendre possible se fait mieux sur les lignes, et on ne choisit qu’une action.', prix: 'Remplace v1-16 §5 sur ce point (confirmé le 28/09) ; l’ensemble ouvertes devient un identifiant.', ou: 'B1 · pistes.tsx' },
+  { quoi: '« Choisir à la place »', avant: 'Le bouton de la carte le disait (« Choisir celle-ci à la place »).', apres: 'La pastille le dit, quand une autre action est engagée.', pourquoi: 'Décidé le 28/09 (question 5). Le bouton de la carte n’est plus sur le chemin ; le remplacement, le geste le plus irréversible, se dit sur ce qu’on touche.', prix: 'Un libellé dérivé de l’engagement.', ou: 'A2, B3 · pistes.tsx, plan.ts' },
   { quoi: 'L’ordre ne bouge plus', avant: 'L’engagée en tête, son groupe avec elle : l’écran se réarrange à chaque changement d’action.', apres: 'L’ordre du rang toute la saison ; la ligne engagée reste à sa place.', pourquoi: 'Décision du 28/09. La liste ouvre toujours sur le meilleur levier du poste dominant ; le plan, lui, garde l’engagée en tête.', prix: 'pistesParPoste ne passe plus par l’engagée d’abord ; un test s’inverse ; l’intro perd « Ton action en cours d’abord ».', ou: 'A2 · plan.ts, plan.test.ts' },
   { quoi: 'La tête de groupe', avant: 'small 14/20 600 textTertiary, 16 au-dessus.', apres: 'label 13/18 600 textTertiary, capitales, +0,3 ; 24 au-dessus, 4 dessous.', pourquoi: 'Face à des titres en 16 text, une tête en 14 tertiaire s’effacerait : c’est la plainte du 18/09 qui reviendrait. Le motif est celui de « PREMIER PAS ».', prix: 'Un style.', ou: 'A1 · pistes.tsx' },
   { quoi: 'La carte qu’on choisit', avant: 'Estompée (filet backgroundElement) quand une autre est engagée, comme sur le plan.', apres: 'Jamais estompée sur la liste : filet border.', pourquoi: 'L’estompage fait reculer la seconde carte du plan derrière l’engagée ; sur la liste, il ferait reculer la carte au moment où on la choisit.', prix: 'Une condition dans CarteDePiste.', ou: 'B3 · carte-de-piste.tsx' },
-  { quoi: 'Le focus et le défilement', avant: 'Rien ne le dit : la ligne touchée disparaît sous le geste, et ni la planche A2 ni l’écran ne disent où va le focus.', apres: 'Ouverture : focus au groupe de la question, défilement juste assez pour montrer « C’est noté ». « Annuler » : focus rendu à la ligne.', pourquoi: 'FRONT.md §2.4 : un contrôle qui disparaît sous le geste donne le focus à ce qui arrive.', prix: 'donnerLeFocus et un scrollTo, instantané sous « réduire les animations ».', ou: 'B1, B2 · pistes.tsx' },
+  { quoi: 'Le focus et le défilement', avant: 'Rien ne le dit : la ligne touchée disparaît sous le geste, et ni la planche A2 ni l’écran ne disent où va le focus.', apres: 'Ouverture : focus au groupe de la question, défilement juste assez pour montrer « C’est noté ». « Annuler » : focus rendu à la ligne.', pourquoi: 'FRONT.md §2.4 : un contrôle qui disparaît sous le geste donne le focus à ce qui arrive.', prix: 'donnerLeFocus, et le défilement de la plateforme (scrollTo animé comme l’onboarding, instantané sous « réduire les animations ») : un mouvement neuf sur cet écran, à relire avec /mouvement.', ou: 'B1, B2 · pistes.tsx' },
+  { quoi: 'Le numéro de ce dossier', avant: 'v1-30 nomme déjà docs/architecture/v1-30-les-transitions.md.', apres: 'Ce dossier garde le nom que le brief lui a donné ; le document d’implémentation prendra un autre numéro.', pourquoi: 'Deux documents v1-30 ne se distingueraient que par leur dossier.', prix: '—', ou: '—' },
   { quoi: 'Brief §7 : « une ligne engagée au milieu »', avant: 'Impossible avec le code : l’engagée est toujours la première ligne.', apres: 'Possible, et dessiné (A2).', pourquoi: 'C’est la décision sur l’ordre qui le rend vrai.', prix: '—', ou: 'A2' },
   { quoi: 'Brief §5 : « la feuille d’intention »', avant: 'Le brief la nomme feuille ; dans le dépôt, c’est le sélecteur rendu dans la carte (ActionCommitment).', apres: 'Reste dans la carte, contenu inchangé ; seul son déclenchement change.', pourquoi: 'Une feuille par-dessus la liste, puis la feuille des rappels sur le plan, ferait deux feuilles pour un seul choix.', prix: '—', ou: 'B1' },
-  { quoi: 'Canvas v1-17, planche A2', avant: 'Cible 44, entrée translateY 16 et 260 ms, onglet actif en pastille backgroundSelected.', apres: 'Le dépôt : cible 48, HauteurSuivie 250/200 et fondu, onglet actif en accent plein.', pourquoi: 'Le code gagne ; ce canvas dessine le dépôt, pas la planche.', prix: '—', ou: 'toutes' },
+  { quoi: 'Canvas v1-17, planche A2', avant: 'Cible 44, entrée translateY 16 et 260 ms, onglet actif en pastille backgroundSelected.', apres: 'Le dépôt : cible 48, HauteurSuivie 250/200 et fondu (v1-30-les-transitions.md), onglet actif en accent plein.', pourquoi: 'Le code gagne ; ce canvas dessine le dépôt, pas la planche.', prix: '—', ou: 'toutes' },
   { quoi: 'Kit : ActionCard.jsx', avant: 'Écrit « − {Math.round(gainKg)} kg CO₂e » : « − 1601 » sans séparateur.', apres: 'Le dépôt écrit « − 1 601 » (formatKg, U+00A0).', pourquoi: 'Relevé en préparant ce canvas ; le code gagne, et le kit se corrige dans la même PR.', prix: 'Une ligne du kit.', ou: 'kit' },
-  { quoi: 'La hauteur des rangées (brief §1.1)', avant: 'Le brief dit 52 px.', apres: 'Relevé en production : 68 px à 390, la plupart des titres tenant sur deux lignes à 14.', pourquoi: '52 est la rangée d’une ligne de titre ; la cible est tenue dans les deux cas.', prix: '—', ou: 'A0' },
+  { quoi: 'La hauteur des rangées (brief §1.1)', avant: 'Le brief dit 52 px.', apres: 'Relevé en production : 72 px à 390 (73 avec le filet), la plupart des titres tenant sur deux lignes à 14.', pourquoi: '52 est la rangée d’un titre sur une ligne (16 + 20 + 16) ; 72 celle d’un titre sur deux. La cible est tenue dans les deux cas.', prix: '—', ou: 'A0' },
   { quoi: 'Thème sombre', avant: 'Colors.dark provisoire.', apres: 'Toutes les planches basculent ; aucun jeton ajouté.', pourquoi: 'Rien de nouveau à porter dans les deux thèmes.', prix: 'Aucun.', ou: 'toutes' },
 ];
 const REPONSES = [
   { ref: 'brief §1.1', question: 'La taille et le poids des lignes', reponse: 'Titre en 16/24 500 text, gain en 15/22 600 text dessous.', pourquoi: 'Le contenu principal à la taille du contenu, un cran sous la carte ouverte (17/600) ; le gain plus gras que le titre pour que l’œil descende la colonne des gains. La cible était bonne, elle le reste : 92 px au moins.' },
-  { ref: 'brief §1.2', question: '« Choisir » ne se donne pas pour un bouton', reponse: 'Une pastille, et un mot qui dit vrai.', pourquoi: 'La forme d’un bouton secondaire en réduction, sans accent plein. Et le mot tient sa promesse : toucher « Choisir » ouvre le choix, pas une carte à lire. Aucune icône : le système dit « bouton » par un cadre, et il n’en faut pas plus.' },
-  { ref: 'brief §1.3', question: 'Deux cartes ouvertes à trois lignes d’écart se comparent-elles ?', reponse: 'Non. On compare sur les lignes, on ouvre pour choisir.', pourquoi: 'Deux cartes ouvertes ne tiennent pas dans l’écran, et le gain d’une carte ouverte quitte la colonne des autres. Ce que la carte ajoute — la part, qui classe comme le gain, et la base — ne départage rien : tout ce qui se compare passe sur la ligne (décision du 28/09).' },
+  { ref: 'brief §1.2', question: '« Choisir » ne se donne pas pour un bouton', reponse: 'Une pastille bordée, et un mot qui dit vrai.', pourquoi: 'Un filet fieldBorder qui tient 3:1, comme le brief le demandait, sans accent plein. Et le mot tient sa promesse : toucher « Choisir » ouvre le choix, pas une carte à lire. Aucune icône : le système dit « bouton » par un cadre, et il n’en faut pas plus.' },
+  { ref: 'brief §1.3', question: 'Deux cartes ouvertes à trois lignes d’écart se comparent-elles ?', reponse: 'Non. On compare sur les lignes, on ouvre pour choisir.', pourquoi: 'Deux cartes ouvertes ne tiennent pas dans l’écran, et le gain d’une carte ouverte quitte la colonne des autres. Ce que la carte ajoute — la part, qui classe comme le gain, et la base — ne départage rien : tout ce qui se compare passe sur la ligne (décision du 28/09, qui remplace v1-16 §5 sur l’ouverture de plusieurs cartes).' },
   { ref: 'brief §8.1', question: 'Le gain doit-il se lire sans ouvrir, et à quelle taille ?', reponse: 'Oui, à 15/22 600, sur sa propre ligne sous le titre, suivi de « par an ».', pourquoi: 'C’est le critère de comparaison. La part de l’empreinte reste dans la carte : un second chiffre par ligne qui dit la même chose que le premier serait du bruit.' },
   { ref: 'brief §8.2', question: 'Grouper par poste, ou trier par gain ?', reponse: 'Grouper par poste (décision du 28/09).', pourquoi: 'Le faisable se décide par poste : qui ne peut pas renoncer à l’avion écarte un groupe d’un coup d’œil. Trié, l’écran se lirait comme un palmarès. Dans chaque groupe, du plus gros gain au plus petit ; les groupes dans l’ordre où leur poste apparaît au classement.' },
   { ref: 'brief §8.3', question: 'À trois pistes, l’écran a-t-il une raison d’être ?', reponse: 'Oui, dès trois (décision du 28/09).', pourquoi: 'Une seule règle : le plan montre toujours deux cartes et une porte vers tout. À trois, l’écran montre une piste nouvelle, et c’est là qu’on la choisit. Une troisième carte sur le plan affaiblirait « une action par saison, une seule ».' },
@@ -569,9 +574,10 @@ const REPONSES = [
 const JETONS = [
   { jeton: 'Colors.text', usage: 'Titre et gain de la ligne' },
   { jeton: 'Colors.textTertiary', usage: '« par an », tête de groupe' },
-  { jeton: 'Colors.backgroundElement', usage: 'Fond de la pastille « Choisir »' },
+  { jeton: 'Colors.fieldBorder', usage: 'Filet de la pastille « Choisir » (3,45:1 ; 4,97:1 en sombre)' },
+  { jeton: 'Stroke.hairline', usage: 'L’épaisseur de ce filet, et celle des filets entre les lignes' },
   { jeton: 'Colors.accentText', usage: 'Libellé de la pastille, « Engagée », « Retour au plan »' },
-  { jeton: 'Colors.accent', usage: 'Pastille-coche (ligne engagée), « C’est noté »' },
+  { jeton: 'Colors.accent', usage: 'Pastille-coche (ligne engagée), « C’est noté », onglet actif' },
   { jeton: 'Colors.border', usage: 'Filet entre les lignes, cadre de la carte' },
   { jeton: 'Colors.backgroundPressed', usage: 'La rangée sous le doigt' },
   { jeton: 'ThemedText default (16/24)', usage: 'Titre de la ligne, en 500' },
@@ -582,18 +588,18 @@ const JETONS = [
 ];
 const NE_PAS_FAIRE = [
   'Pas de balayage, de carrousel ni de paquet de cartes.',
-  'Pas de bouton plein par ligne : l’accent plein n’apparaît qu’une fois, sur la ligne engagée.',
+  'Pas de bouton plein par ligne : dans la liste, l’accent plein n’apparaît qu’une fois, sur la pastille-coche de la ligne engagée — hors barre d’onglets, et hors « C’est noté » quand un choix est ouvert.',
   'Pas de piste masquée, grisée ou reléguée : toute piste listée se choisit.',
   'Pas de rang affiché, de médaille ni de « meilleure piste ».',
   'Pas d’icône, donc pas de bibliothèque : une forme suffit à dire « bouton ».',
-  'Pas de jeton neuf, pas de route neuve, pas de seconde carte : la carte ouverte est celle du plan.',
+  'Pas de jeton neuf (une valeur en dur, la hauteur 32 de la pastille), pas de route neuve, pas de seconde carte : la carte ouverte est celle du plan.',
   'Pas de premier pas avant l’engagement : il n’apparaît que sur le plan, une fois l’action prise.',
   'Pas de Ramille sur cet écran : chaque ligne porte un chiffre, et elle ne se tient jamais près d’un chiffre.',
-  'Pas d’animation neuve : HauteurSuivie et Apparition, tels que v1-30 les a livrés.',
+  'Pas d’animation dessinée : HauteurSuivie et Apparition, tels que v1-30-les-transitions.md les a livrés, et le défilement de la plateforme pour montrer « C’est noté », instantané sous « réduire les animations ».',
 ];
 
 class Component extends DCLogic {
-  state = { themeOverride: null, choix: null, echeances: { p1: 'À mon prochain projet de voyage' }, jours: {}, engagee: null };
+  state = { themeOverride: null, choix: null, echeances: {}, jours: {}, engagee: null };
   renderVals() {
     const s = this.state;
     const theme = s.themeOverride || this.props.theme || 'light';
@@ -623,7 +629,7 @@ class Component extends DCLogic {
     const libre = () => 'libre';
     const engageeP5 = (p) => (p.id === 'p5' ? 'engagee' : 'aLaPlace');
 
-    const b1 = ecran({ hauteur: 844, contenu: contenuListe(groupes, { intro: INTRO_LIBRE, etatDe: libre, enChoix: 'p1', carte: (p, separee) => carteAuChoix(p, { separee, choix: 'À mon prochain projet de voyage', cible: true }) }) });
+    const b1 = ecran({ hauteur: 844, contenu: contenuListe(groupes, { intro: INTRO_LIBRE, etatDe: libre, enChoix: 'p1', carte: (p, separee) => carteAuChoix(p, { separee, cible: true }) }) });
     const b2 = ecran({ largeur: 360, hauteur: 800, cible: 120, contenu: contenuListe(groupes, { intro: INTRO_LIBRE, etatDe: libre, enChoix: 'p7', carte: (p, separee) => carteAuChoix(p, { separee, jours: [1, 3], cible: true }) }) });
     const b3 = ecran({ hauteur: 844, cible: 36, contenu: contenuListe(groupes, { intro: INTRO_ENGAGEE, etatDe: engageeP5, enChoix: 'p4', carte: (p, separee) => carteAuChoix(p, { separee, choix: 'À ma prochaine occasion', cible: true }) }) });
 
@@ -633,7 +639,7 @@ class Component extends DCLogic {
     return {
       theme, themeLabel: theme === 'dark' ? 'Voir en thème clair' : 'Voir en thème sombre',
       toggleTheme: () => this.setState({ themeOverride: theme === 'dark' ? 'light' : 'dark' }),
-      remettre: () => this.setState({ choix: null, engagee: null, echeances: { p1: 'À mon prochain projet de voyage' }, jours: {} }),
+      remettre: () => this.setState({ choix: null, engagee: null, echeances: {}, jours: {} }),
       a0: ecran({ contenu: contenuAujourdhui([], null), pli: 784 }),
       a0b: ecran({ hauteur: 844, cible: 150, contenu: contenuAujourdhui(['p1', 'p3'], 'p1') }),
       a1,
@@ -641,8 +647,8 @@ class Component extends DCLogic {
       a2: statique(390, engageeP5, INTRO_ENGAGEE, 784),
       a2_360: statique(360, engageeP5, INTRO_ENGAGEE, 740),
       b1, b2, b3,
-      b4: ecran({ contenu: contenuPlan() }),
-      b5: ecran({ hauteur: 844, contenu: contenuPlan(), feuille: feuilleRappels() }),
+      b4: ecran({ contenu: contenuPlan(false) }),
+      b5: ecran({ hauteur: 844, contenu: contenuPlan(true), feuille: feuilleRappels() }),
       c1,
       ligneCotee: h('div', { style: { padding: '0 16px' } }, ligne(PISTES[0], { etat: 'libre' })),
       troisEtats: [ligne(PISTES[1], { etat: 'libre', filet: true }), ligne(PISTES[2], { etat: 'aLaPlace', filet: true }), ligne(PISTES[4], { etat: 'engagee' })],
