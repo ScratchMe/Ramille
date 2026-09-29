@@ -129,7 +129,8 @@ Ce qui suit de ce choix :
 ## 5. Décision 3 (§12.4) — l'insistance reste, la permission devient totale
 
 > **Remplacée en partie le 28/09/2026, pour l'écran « Toutes les pistes »** : la puce « plusieurs
-> lignes peuvent être ouvertes à la fois » tombe. Le canvas
+> lignes peuvent être ouvertes à la fois » tombe, et celle qui fait de l'affordance « un mot » aussi —
+> c'est désormais une pastille bordée. Le canvas
 > [`docs/design/v1-30-toutes-les-pistes/`](../design/v1-30-toutes-les-pistes/README.md) (décision
 > n° 1, prise avec la personne qui pilote) fait comparer **sur la liste** : la ligne porte le titre
 > et le gain, « Choisir » devient une pastille bordée qui ouvre la carte directement sur
