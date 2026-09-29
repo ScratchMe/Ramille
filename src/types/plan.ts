@@ -16,6 +16,7 @@
  */
 import { TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
 import { FORME_INSERABLE, estLeResiduelDesSortiesRares, formeInserable } from '@/constants/postes';
+import { formatKg } from '@/lib/format';
 import { sousLeRepere2050 } from '@/types/palier';
 
 export { formeInserable };
@@ -378,22 +379,35 @@ export type PistesDuPlan<T> = {
 };
 
 /**
- * L'ordre commun aux deux surfaces — le plan et l'écran des pistes.
+ * **Le classement commun aux deux surfaces** — le plan et l'écran des pistes —, écrit une fois.
+ *
+ * C'est le `rank` du serveur, qui porte déjà le bon ordre — la meilleure piste du poste dominant en
+ * tête, puis gain décroissant (C5.1) — et qui est figé à la génération. Un `rank` nul (aucune
+ * migration n'en produit, mais la colonne l'autorise) passe en dernier plutôt que de remonter en tête
+ * par accident, comme le `nulls last` du serveur.
+ *
+ * **Le plan et la liste s'accordent sur ce classement, pas sur leur tête** (décision n° 2 du
+ * 28/09/2026, `v1-32` §2). Le plan répond à « qu'est-ce que je fais en ce moment ? » et met l'action
+ * engagée devant (`ordonnerLesPistes`) ; la liste répond à « qu'est-ce qui existe, et combien ça
+ * pèse ? » et suit le rang seul (`pistesParPoste`). Les deux lisent ce comparateur, pour ne pas
+ * diverger sur les rangs nuls.
+ */
+function parRang<T extends { rank: number | null }>(a: T, b: T): number {
+  // `Infinity` plutôt que 0 : un rang absent va au bout, il ne se glisse pas en tête.
+  return (a.rank ?? Infinity) - (b.rank ?? Infinity);
+}
+
+/**
+ * L'ordre du **plan** : l'action engagée devant, puis le classement (`parRang`).
  *
  * **L'action engagée passe toujours devant** : c'est la réponse à « qu'est-ce que je fais en ce
- * moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte déjà le
- * bon ordre — la meilleure piste du poste dominant en tête, puis gain décroissant (C5.1) — et qui
- * est figé à la génération. Un `rank` nul (aucune migration n'en produit, mais la colonne
- * l'autorise) passe en dernier plutôt que de remonter en tête par accident, comme le `nulls last`
- * du serveur.
+ * moment ? », elle n'a pas à être cherchée. **Cet ordre n'est plus celui de l'écran des pistes**
+ * depuis la décision n° 2 du 28/09/2026 (`v1-32`) : la liste garde l'ordre du rang toute la saison,
+ * et marque l'engagée à sa place. Deux fonctions nommées plutôt qu'un drapeau `engageeDabord` :
+ * deux appelants, deux ordres, et un booléen qui dit lequel se lit mal à l'appel.
  *
- * Écrit une fois parce que deux copies divergeraient : le jour où l'une des deux change, les deux
- * écrans ne s'accorderaient plus sur ce qui vient en premier, et rien ne le signalerait. La
- * fonction est générique parce que la forme d'une ligne `plan_actions` appartient à l'écran : elle
- * ne demande que les deux champs dont l'ordre dépend.
- *
- * Le bloc qui précédait celui-ci décrivait « les trois rangs » du plan, que C5.2 a retirés en
- * sortant l'exhaustivité sur son écran : il était resté, orphelin, au-dessus de cette fonction.
+ * La fonction est générique parce que la forme d'une ligne `plan_actions` appartient à l'écran :
+ * elle ne demande que les deux champs dont l'ordre dépend.
  */
 function ordonnerLesPistes<T extends { committed_at: string | null; rank: number | null }>(
   actions: T[]
@@ -401,8 +415,7 @@ function ordonnerLesPistes<T extends { committed_at: string | null; rank: number
   return [...actions].sort((a, b) => {
     const engagement = Number(b.committed_at !== null) - Number(a.committed_at !== null);
     if (engagement !== 0) return engagement;
-    // `Infinity` plutôt que 0 : un rang absent va au bout, il ne se glisse pas en tête.
-    return (a.rank ?? Infinity) - (b.rank ?? Infinity);
+    return parRang(a, b);
   });
 }
 
@@ -420,22 +433,29 @@ export function pistesDuPlan<T extends { committed_at: string | null; rank: numb
 /**
  * Les pistes de l'écran « Toutes les pistes », groupées par poste (C5.2, écart 3).
  *
- * **Le groupement est un fait d'écran, pas un classement de plus.** L'ordre des actions ne bouge
- * pas — c'est toujours le `rank` du serveur, qui porte déjà la meilleure piste du poste dominant en
- * tête depuis C5.1 — et les groupes sortent **dans l'ordre où leur poste apparaît pour la première
- * fois**. Trier les groupes autrement (par poids du poste, par nom) rendrait la tête de liste
- * différente de la première carte du plan, et les deux écrans se contrediraient sur ce qui compte
- * le plus.
+ * **Le groupement est un fait d'écran, pas un classement de plus.** L'ordre des actions est le
+ * `rank` du serveur (`parRang`), qui porte déjà la meilleure piste du poste dominant en tête depuis
+ * C5.1, et les groupes sortent **dans l'ordre où leur poste apparaît pour la première fois** — le
+ * poste du cycle d'abord. Trier les groupes autrement (par poids du poste, par nom) ferait dire à la
+ * liste un autre classement que celui du plan.
  *
- * Ici il n'y a **pas de rang** : toutes les pistes sont au même niveau, chacune ouvrable. C'est ce
- * que le lot 5 change — le plan insiste sur deux, cet écran-ci présente tout, et aucune des deux
- * surfaces ne cache un levier derrière une hiérarchie qu'on ne peut pas franchir (`v1-16` §5).
+ * **Et le rang seul, toute la saison : l'action engagée ne passe pas devant** (décision n° 2 du
+ * 28/09/2026, `v1-32` §2). Elle y passait jusque-là, comme sur le plan, et entraînait son poste en
+ * tête : s'engager réordonnait la liste qu'on venait de parcourir, et la ligne choisie changeait de
+ * place sous le doigt. Elle reste désormais à son rang, marquée « Engagée ». Le plan, lui, garde
+ * l'engagée en tête (`pistesDuPlan`) — les deux surfaces s'accordent sur le classement, plus sur
+ * leur tête. Une paire de tests tient les deux moitiés (`plan.test.ts`).
+ *
+ * Ici il n'y a **pas de rang affiché** : toutes les pistes sont au même niveau, chacune se choisit.
+ * C'est ce que le lot 5 a changé — le plan insiste sur deux, cet écran-ci présente tout, et aucune
+ * des deux surfaces ne cache un levier derrière une hiérarchie qu'on ne peut pas franchir (`v1-16`
+ * §5 : toute action affichée est engageable).
  */
 export function pistesParPoste<T extends { committed_at: string | null; rank: number | null }>(
   actions: T[],
   posteDe: (action: T) => string | null
 ): { poste: string | null; pistes: T[] }[] {
-  const ordonnees = ordonnerLesPistes(actions);
+  const ordonnees = [...actions].sort(parRang);
   const groupes: { poste: string | null; pistes: T[] }[] = [];
 
   for (const action of ordonnees) {
@@ -446,6 +466,93 @@ export function pistesParPoste<T extends { committed_at: string | null; rank: nu
   }
 
   return groupes;
+}
+
+// ── Une ligne de l'écran des pistes (`v1-32`, 29/09/2026) ────────────────────────────────────────
+
+/**
+ * Les trois états d'une piste, vus depuis ce qu'on peut en faire (HANDOFF du canvas `v1-30`, « La
+ * ligne de piste ») : **libre** — on la choisit ; **à la place** — une autre est engagée, la choisir
+ * la remplace ; **engagée** — c'est elle, il n'y a rien à y choisir. Pas d'état désactivé : toute
+ * piste listée se choisit (brief §3).
+ */
+export type EtatDeLaPiste = 'libre' | 'aLaPlace' | 'engagee';
+
+/**
+ * L'état d'une piste, **seule source** de ses trois lectures : la rangée de la liste (son libellé,
+ * son annonce, sa cible), et `CarteDePiste` (le remplacement demandé au serveur, `p_replace`, et
+ * l'estompage du plan). « Choisir à la place » et le remplacement qu'on demande disent le même fait,
+ * donc ils se lisent au même endroit : un libellé qui dirait « à la place » sur un appel parti sans
+ * `p_replace` serait refusé en `RM001`, et l'inverse remplacerait sans l'avoir dit.
+ *
+ * **`engagee` se décide sur la ligne elle-même** (`committed_at`), jamais sur `engageeId` — la règle
+ * que l'écran tenait déjà. Une ligne ouverte dont l'action est devenue engagée entre-temps (engagée
+ * depuis la carte, l'écran encore monté) se rend engagée, quel que soit l'identifiant qu'on croyait
+ * engagé : **l'état relu gagne**. `engageeId` ne sert qu'à savoir si une **autre** l'est.
+ */
+export function etatDeLaPiste(
+  action: { id: string; committed_at: string | null },
+  engageeId: string | null
+): EtatDeLaPiste {
+  if (action.committed_at !== null) return 'engagee';
+  return engageeId !== null && engageeId !== action.id ? 'aLaPlace' : 'libre';
+}
+
+/**
+ * Ce que dit la pastille d'une rangée : « Choisir », ou « Choisir à la place » quand une autre
+ * action est engagée (décision n° 5 du 28/09/2026 — l'expression que le plan emploie déjà, dite sur
+ * la chose qu'on touche). Rien pour la ligne engagée, qui porte la pastille-coche et « Engagée ».
+ */
+export function libelleDuChoix(etat: EtatDeLaPiste): string | null {
+  if (etat === 'engagee') return null;
+  return etat === 'aLaPlace' ? 'Choisir à la place' : 'Choisir';
+}
+
+/**
+ * Le libellé accessible d'une rangée : « {titre}. − 1 601 kg par an. Choisir. » — ou « … Choisir à
+ * la place. », ou « … Action engagée. » pour la ligne engagée (HANDOFF, « La ligne de piste »).
+ *
+ * Une cible qui porte plusieurs textes les recompose, plutôt que de laisser annoncer trois fragments
+ * sans lien (`FRONT.md` §2.4) ; la pastille, décorative, y est masquée — c'est cette phrase qui la
+ * dit. Deux pièges connus, que ses tests épinglent :
+ * - **le point final du titre part avant la composition**, sinon le repli « Action à préciser. »
+ *   enchaîne deux points ;
+ * - **sans gain, la partie chiffrée disparaît en entier**, jamais « null kg par an ».
+ *
+ * Le gain se dit « par an » **parce que la rangée le montre** : depuis `v1-32`, l'unité est affichée
+ * sous le titre, à côté du chiffre. L'annonce finit par ce que le toucher fait.
+ */
+export function annonceDeLaPiste({
+  titre,
+  gainKg,
+  etat,
+}: {
+  titre: string;
+  gainKg: number | null;
+  etat: EtatDeLaPiste;
+}): string {
+  return [
+    titre.replace(/\.$/, ''),
+    gainKg !== null ? `− ${formatKg(gainKg)} kg par an` : null,
+    libelleDuChoix(etat) ?? 'Action engagée',
+  ]
+    .filter((morceau): morceau is string => morceau !== null)
+    .join('. ')
+    .concat('.');
+}
+
+/**
+ * La phrase sous le titre de l'écran des pistes (HANDOFF, planches A1 et A2).
+ *
+ * **Elle dit l'ordre, et l'ordre ne bouge plus** : « du plus gros gain au plus petit » est vrai de
+ * chaque groupe, engagement ou non, depuis que la liste suit le rang seul (décision n° 2). La
+ * variante « Ton action en cours d'abord, puis… » part avec l'ordre qu'elle décrivait. Ce qui change
+ * avec l'engagement, c'est ce que le choix fait : mettre l'action en tête du plan, ou remplacer
+ * celle qu'on suit.
+ */
+export function introDesPistes(uneActionEstEngagee: boolean): string {
+  const debut = 'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici';
+  return uneActionEstEngagee ? `${debut} remplace la tienne.` : `${debut} la met en tête de ton plan.`;
 }
 
 /**
