@@ -464,6 +464,14 @@ describe('pistesParPoste', () => {
     expect(new Set(aplati.map((a) => a.id)).size).toBe(actions.length);
   });
 
+  // Le même `nulls last` que le plan : les deux lisent un comparateur écrit une fois (`parRang`), et
+  // ce test garde que la liste n'en reprend pas une copie qui ferait remonter un rang absent.
+  it('range un rang absent en dernier, comme le plan', () => {
+    const groupes = grouper([action(null, 'travel'), action(2, 'commute'), action(1, 'travel')]);
+    expect(groupes.map((g) => g.poste)).toEqual(['travel', 'commute']);
+    expect(groupes[0].pistes.map((a) => a.id)).toEqual(['a1', 'anull']);
+  });
+
   // Un poste nul est un groupe comme un autre : la jointure sur `action_templates` peut ne rien
   // rendre, et perdre l'action serait pire que l'afficher sans en-tête.
   it('garde les actions dont le poste est inconnu', () => {
@@ -480,7 +488,23 @@ describe('pistesParPoste', () => {
  * **Une ligne de l'écran des pistes** (`v1-32` §4.1, 29/09/2026) : quatre dérivations sorties de
  * l'écran, où l'annonce était composée deux fois et l'intro écrite en ternaire.
  *
- * MUTATIONS
+ * **Éprouvé en le cassant, le 29/09/2026** (TESTING.md §1.1) — dix mutations de `plan.ts`, chacune
+ * jouée seule sur un fichier égal au commit et restaurée depuis sa copie, et ce que chacune fait
+ * tomber (sur 87 tests) :
+ *   - M1, `pistesParPoste` reprend l'ordre du plan (l'ancien défaut) → « garde l'action engagée à
+ *     son rang, et son poste à sa place », seul ;
+ *   - M2, le plan perd l'engagée en tête (un seul ordre pour les deux) → « met l'action engagée en
+ *     tête, quel que soit son rang », seul. M1 et M2 sont les deux moitiés de la décision n° 2 ;
+ *   - M3, `engagee` décidée sur `engageeId` et non sur la ligne → les deux lignes engagées dont
+ *     l'identifiant relu n'est pas le leur (aucun, une autre) ;
+ *   - M4, `aLaPlace` sans exclure la ligne elle-même → la ligne libre que l'écran croit engagée ;
+ *   - M5, les deux libellés de la pastille intervertis → `libelleDuChoix` **et** les trois tests
+ *     d'annonce, qui disent ce libellé : quatre, attendu ;
+ *   - M6, le point final du titre gardé → « n'enchaîne pas deux points », seul ;
+ *   - M7, le gain nul non filtré → « tait la partie chiffrée », seul ;
+ *   - M8, l'intro engagée reprend l'ancienne variante → `introDesPistes`, seul ;
+ *   - M9, les rangs nuls en tête dans `parRang` → les deux « rang absent en dernier », plan et liste ;
+ *   - M10, la liste recopie le tri sans le `nulls last` → celui de la liste, seul.
  */
 describe('etatDeLaPiste', () => {
   const piste = (id: string, engagee: boolean) => ({

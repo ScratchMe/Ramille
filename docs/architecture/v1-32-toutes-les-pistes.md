@@ -371,7 +371,7 @@ Et l'état d'avancement de §8 se tient à jour pendant le travail, pas après c
 
 | Étape | État |
 |---|---|
-| 4.1 — `plan.ts`, l'ordre et les quatre dérivations, tests cassés d'abord | en cours (29/09/2026) |
+| 4.1 — `plan.ts`, l'ordre et les quatre dérivations, tests cassés d'abord | fait (29/09/2026) : dix mutations, comptées en tête des tests |
 | 4.2 et 4.3 — `ActionCommitment`, `CarteDePiste` | à faire |
 | 4.4 — l'écran | à faire |
 | 4.7 — le kit | à faire |
