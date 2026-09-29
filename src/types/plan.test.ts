@@ -495,8 +495,10 @@ describe('pistesParPoste', () => {
  *     son rang, et son poste à sa place », seul ;
  *   - M2, le plan perd l'engagée en tête (un seul ordre pour les deux) → « met l'action engagée en
  *     tête, quel que soit son rang », seul. M1 et M2 sont les deux moitiés de la décision n° 2 ;
- *   - M3, `engagee` décidée sur `engageeId` et non sur la ligne → les deux lignes engagées dont
- *     l'identifiant relu n'est pas le leur (aucun, une autre) ;
+ *   - M3, `engagee` décidée sur `engageeId === action.id` et non sur la ligne → trois cas : les deux
+ *     lignes engagées dont l'identifiant relu n'est pas le leur (aucun, une autre), et la ligne libre
+ *     que l'écran croit engagée. (La table disait « deux » ; rejouée à la contre-lecture du même
+ *     soir, elle en fait tomber trois — la troisième est aussi celle de M4.) ;
  *   - M4, `aLaPlace` sans exclure la ligne elle-même → la ligne libre que l'écran croit engagée ;
  *   - M5, les deux libellés de la pastille intervertis → `libelleDuChoix` **et** les trois tests
  *     d'annonce, qui disent ce libellé : quatre, attendu ;

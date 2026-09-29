@@ -433,3 +433,26 @@ garde, avec un piège de mesure quand une carte se replie au-dessus ; un bouton 
 pendant le retour vers le plan ; un test de divergence présenté comme la seule garde de la décision
 n° 2, alors que la paire de tests la garde déjà ; et le risque partagé avec `v1-31` attribué à
 `HauteurSuivie` au lieu de `Button`.
+
+**Et le diff entier de l'implémentation a été relu à son tour, avant la PR** (29/09/2026, le même
+sous-agent, sur la branche fusionnée avec `main`) : douze constats, tous traités. Les trois qui
+pesaient :
+
+- **une phrase de la recette prétendait une garde qui n'existait pas** — 08.6 disait l'ordre de la
+  liste gardé par le parcours réel, qui ne rouvrait jamais la liste une fois l'engagement déplacé :
+  tant que le rang 1 est engagé, « par rang » et « l'engagée d'abord » donnent le même ordre. Le
+  parcours a gagné l'étape qui le voit ;
+- **trois câblages n'étaient exercés par aucune suite** : « Annuler » sur la liste par la vraie
+  carte, la carte jamais estompée sur le choix, et le focus du plan dans les deux sens (donc la prop
+  `ref` de `Button`). Le parcours les voit désormais, chacun éprouvé par sa mutation (en tête du
+  script) ;
+- **le focus était demandé au montage, sur une question encore découpée et transparente** : le
+  navigateur l'accepte, Android peut le refuser. Il attend désormais que la carte ait grandi
+  (`ActionCommitment`) ; TalkBack le confirmera au doigt (`v1-13` §11.24).
+
+Le reste : un décompte de mutation faux (M3 fait tomber trois cas, pas deux), un séparateur des
+milliers collé en littéral dans un test, trois phrases périmées dans l'en-tête du test d'écran, la
+garde du défilement décrite par sa moitié qui ne tombe pas, deux comptes écrits au lieu de
+l'invariant, un relevé de fichiers qui manquait `mouvement.ts`, `relever-par-image.mjs` et
+`TESTING.md` — que `v1-31` croisera —, une ligne de recette désignée par un rang que l'écran
+n'affiche pas, et un relevé hors mandat sans destination (`v1-27` §12.19).
