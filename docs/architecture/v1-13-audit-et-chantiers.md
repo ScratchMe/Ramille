@@ -2604,9 +2604,9 @@ l'ouverture de plusieurs cartes de `v1-16` §5 et retire « Réduire ». **L'ord
 pas** quand on s'engage. **Les pistes restent groupées par poste.** **L'écran reste dès trois
 pistes.** **La pastille dit « Choisir à la place »** quand une action est engagée. Les deux questions
 de design ci-dessus y sont répondues : la taille du titre, et le cadre qui fait de « Choisir » un
-bouton. **Ce qui reste** : le document d'implémentation, à écrire sous un autre numéro que `v1-30`,
-que porte déjà `v1-30-les-transitions.md`. D'ici là, l'écran en production reste celui de la
-réparation ([#238](https://github.com/ScratchMe/Ramille/pull/238)), dessiné en planche A0 du canvas.
+bouton. **Le plan d'implémentation est [`v1-32`](v1-32-toutes-les-pistes.md)** (29/09/2026) — pas
+`v1-30`, que porte déjà `v1-30-les-transitions.md` ; le code reste à faire. D'ici là, l'écran en
+production reste celui de la réparation ([#238](https://github.com/ScratchMe/Ramille/pull/238)), dessiné en planche A0 du canvas.
 
 ## 15. Ce que la recette web du 28/09/2026 a trouvé
 

@@ -135,7 +135,8 @@ Ce qui suit de ce choix :
 > et le gain, « Choisir » devient une pastille bordée qui ouvre la carte directement sur
 > l'intention, et un seul choix est en cours à la fois. Deux cartes ouvertes ne tiennent pas dans
 > l'écran (planche A0b), donc elles ne se comparaient pas. **Le code suit encore cette section tant
-> que le chantier n'est pas livré.** Le reste de la décision tient : toute action affichée est
+> que le chantier n'est pas livré** ; son plan d'implémentation est
+> [`v1-32`](v1-32-toutes-les-pistes.md). Le reste de la décision tient : toute action affichée est
 > engageable.
 
 **Décidé : les trois rangs restent, et toute action affichée devient engageable.** C4.6 a posé deux

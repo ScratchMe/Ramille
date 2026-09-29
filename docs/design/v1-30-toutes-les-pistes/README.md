@@ -2,10 +2,10 @@
 
 Sources du canvas livré le 28/09/2026 par la session de design, en réponse à [`BRIEF.md`](BRIEF.md)
 (constat 14.7 de la recette du 18/09/2026, issue [#235](https://github.com/ScratchMe/Ramille/issues/235)
-— le brief de design de l'écran des pistes). Le document d'implémentation qui en découlera est à
-écrire dans `docs/architecture/`, **sous un autre numéro que `v1-30`**, que
-[`v1-30-les-transitions.md`](../../architecture/v1-30-les-transitions.md) porte déjà ; ce README dit ce
-qu'il y a dans le dossier et ce qui a été retenu.
+— le brief de design de l'écran des pistes). Son document d'implémentation est
+[`v1-32-toutes-les-pistes.md`](../../architecture/v1-32-toutes-les-pistes.md), écrit le 29/09/2026 —
+**pas `v1-30`**, que [`v1-30-les-transitions.md`](../../architecture/v1-30-les-transitions.md) porte
+déjà ; ce README dit ce qu'il y a dans le dossier et ce qui a été retenu.
 
 Artifact : https://claude.ai/artifact/9BonUxxdvRzJvnKp6H7ZVW — une copie autonome de `Canvas.dc.html`,
 publiée le 29/09/2026 : les polices y sont embarquées, et si le moteur du canvas ne démarre pas chez
