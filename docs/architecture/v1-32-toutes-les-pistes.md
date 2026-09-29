@@ -6,7 +6,7 @@ de design [`docs/design/v1-30-toutes-les-pistes/`](../design/v1-30-toutes-les-pi
 dossier**, et c'est voulu : `v1-30` est déjà porté par [`v1-30-les-transitions.md`](v1-30-les-transitions.md),
 et `v1-31` revient au canvas de l'écran du mode du questionnaire
 ([`docs/design/v1-31-l-ecran-du-mode/`](../design/v1-31-l-ecran-du-mode/README.md)), dont le document
-d'implémentation reste à écrire.
+d'implémentation est [`v1-31-l-ecran-du-mode.md`](v1-31-l-ecran-du-mode.md) (écrit le même jour).
 
 C'est un plan : aucun code, aucune migration. **Les valeurs, la copy et la géométrie sont dans le
 [`HANDOFF.md`](../design/v1-30-toutes-les-pistes/HANDOFF.md)**, qui en est la seule source ; ce

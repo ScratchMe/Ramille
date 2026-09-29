@@ -2,8 +2,9 @@
 
 Sources du canvas livré le 28/09/2026 en réponse à [`BRIEF.md`](BRIEF.md) (v1-31, l'écran du mode
 du questionnaire ; issue [#289](https://github.com/ScratchMe/Ramille/issues/289), ligne 02.10 de la
-recette web et `v1-13` §11.19). Le document d'implémentation qui en découlera est à écrire dans
-`docs/architecture/` ; ce README dit ce qu'il y a dans le dossier et ce que la session a tranché.
+recette web et `v1-13` §11.19). Le document d'implémentation qui en découle est
+[`v1-31-l-ecran-du-mode.md`](../../architecture/v1-31-l-ecran-du-mode.md) (29/09/2026) ; ce README
+dit ce qu'il y a dans le dossier et ce que la session a tranché.
 
 Le livrable est conservé tel quel :
 
