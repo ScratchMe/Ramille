@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  /* Spline Sans, depuis le kit (SIL OFL 1.1) : une police de marque servie par un tiers se dégrade en silence. */
+  @font-face { font-family:'Spline Sans'; font-weight:400; font-display:swap; src:url('../design-system/assets/fonts/SplineSans_400Regular.ttf') format('truetype'); }
+  @font-face { font-family:'Spline Sans'; font-weight:500; font-display:swap; src:url('../design-system/assets/fonts/SplineSans_500Medium.ttf') format('truetype'); }
+  @font-face { font-family:'Spline Sans'; font-weight:600; font-display:swap; src:url('../design-system/assets/fonts/SplineSans_600SemiBold.ttf') format('truetype'); }
+  @font-face { font-family:'Spline Sans'; font-weight:700; font-display:swap; src:url('../design-system/assets/fonts/SplineSans_700Bold.ttf') format('truetype'); }
+  body { margin:0; font-family:'Spline Sans', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  button { font-family:'Spline Sans', ui-sans-serif, system-ui, sans-serif; }
+  /* Jetons : src/constants/theme.ts (Colors.light / Colors.dark), recopiés, jamais arrondis. --k-* : le canvas lui-même. */
+  [data-theme] { --c-text:#131612; --c-text2:#39403B; --c-text3:#5E655F; --c-bg:#FFFFFF; --c-tinted:#F3F8F4; --c-el:#F0F1EC; --c-el2:#F6F8F3; --c-sel:#E4EFE8; --c-accent:#1F6F4A; --c-accent-text:#14563A; --c-muted:#A9C8B6; --c-border:#DDE0D9; --c-on-accent:#FFFFFF; --c-pressed:#E4E6DF; --c-field:#858C86; --c-scrim:rgba(19,22,18,0.42); --m-leaf:#1F6F4A; --m-ink:#131612; --m-vein:#E4EFE8; --m-warm:#C99A6B;
+    --k-canvas:#EAECE6; --k-ink:#131612; --k-ink2:#39403B; --k-ink3:#5E655F; --k-rule:#D3D7CF; --k-page:#FFFFFF; --k-frame:transparent; --k-pli:#9AA39B; }
+  [data-theme="dark"] { --c-text:#FFFFFF; --c-text2:#B0B4BA; --c-text3:#8A9088; --c-bg:#000000; --c-tinted:#0F1410; --c-el:#212225; --c-el2:#1A1C1A; --c-sel:#1C2E22; --c-accent:#3D9B6F; --c-accent-text:#8FCBA9; --c-muted:#3A5245; --c-border:#2E3135; --c-on-accent:#FFFFFF; --c-pressed:#2A2C2F; --c-field:#767D77; --c-scrim:rgba(0,0,0,0.6); --m-leaf:#3D9B6F; --m-warm:#B98A5E;
+    --k-canvas:#0A0B0A; --k-ink:#FFFFFF; --k-ink2:#B0B4BA; --k-ink3:#8A9088; --k-rule:#2E3135; --k-page:#121412; --k-frame:#2E3135; --k-pli:#5E655F; }
+  .racine { background:var(--k-canvas); color:var(--k-ink); }
+  .racine a { color:var(--c-accent-text); text-decoration:none; }
+  .note { margin:0; font-size:14px; line-height:21px; color:var(--k-ink2); text-wrap:pretty; }
+  .note b { color:var(--k-ink); font-weight:600; }
+  .etiq { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; line-height:16px; letter-spacing:0.06em; text-transform:uppercase; color:var(--k-ink3); }
+  .ligne:active { background:var(--c-pressed); }
+  .puce:active { background:var(--c-pressed); }
+  .defile { scrollbar-width:none; }
+  .defile::-webkit-scrollbar { display:none; }
+  .grille-ecarts { display:grid; grid-template-columns:15% 19% 21% 19% 16% 10%; font-size:14px; line-height:20px; color:var(--k-ink2); border-bottom:1px solid var(--k-rule); }
+  .grille-ecarts > span { padding:12px; text-wrap:pretty; }
+  .grille-ecarts.tete > span { font-weight:600; color:var(--k-ink3); font-size:12px; letter-spacing:0.04em; text-transform:uppercase; padding:10px 12px; }
+  .grille-ecarts .quoi, .ligne-jeton .quoi { color:var(--k-ink); font-weight:600; }
+  .grille-ecarts .ou { font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--k-ink3); }
+  .ligne-jeton { display:grid; grid-template-columns:44% 56%; gap:12px; font-size:14px; line-height:20px; color:var(--k-ink2); padding:10px 0; border-bottom:1px solid var(--k-rule); }
+</style>
+</helmet>
+<div class="racine" data-theme="{{ theme }}" style="padding:64px 72px 140px;display:flex;flex-direction:column;gap:96px;min-height:100vh">
+
+  <!-- En-tête du canvas -->
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:860px">
+    <span class="etiq">Ramille · v1-30 · canvas du 28/09/2026 · issue #235</span>
+    <h1 style="margin:0;font-size:48px;line-height:52px;font-weight:600;letter-spacing:-0.02em;text-wrap:balance">Toutes les pistes : ce qu’on lit, et ce qu’on touche</h1>
+    <p style="margin:0;font-size:16px;line-height:24px;color:var(--k-ink2);text-wrap:pretty">Une seule idée, et le reste en découle : <b style="color:var(--k-ink)">on compare sur la liste, on touche pour choisir.</b> La ligne porte ce qu’on compare — un titre à la taille du contenu, le gain aligné dessous. « Choisir » devient une pastille bordée, et il choisit vraiment : la ligne s’ouvre en carte directement sur « Quand ? » ou « Quels jours ? ». La liste ne se réordonne plus quand on s’engage, reste groupée par poste, et garde sa raison d’être dès trois pistes.</p>
+    <p style="margin:0;font-size:14px;line-height:21px;color:var(--k-ink3);text-wrap:pretty">Cinq décisions prises avec la personne qui pilote le 28/09/2026 : comparer sur la liste (A, confirmée après correction : elle remplace <code>v1-16</code> §5 sur l’ouverture de plusieurs cartes) · l’ordre ne bouge pas (A) · groupées par poste (A) · l’écran dès trois pistes (A) · « Choisir à la place » sur la pastille (A). Chiffres relevés en production ce jour-là sur le profil 1 de <code>docs/recette/le-compte-et-les-modes.md</code> et sur un petit rouleur ; les quatre comptes de test ont été supprimés, et c’est vérifié en base.</p>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
+      <button onClick="{{ toggleTheme }}" style="height:48px;padding:0 20px;border-radius:24px;border:1.5px solid var(--c-accent);background:var(--k-page);color:var(--c-accent-text);font:600 14px/20px 'Spline Sans',sans-serif;cursor:pointer">{{ themeLabel }}</button>
+      <span style="font-size:14px;line-height:20px;color:var(--k-ink3)">Toutes les planches basculent · <a href="#a">A la liste</a> · <a href="#b">B le choix</a> · <a href="#c">C la courte liste</a> · <a href="#ecarts">Écarts</a> · <a href="#reponses">Réponses</a> · <a href="#systeme">Système</a></span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ A ══════════════════════════════ -->
+  <section id="a" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">A · La liste : ce qu’on lit</h2><span style="font-size:14px;line-height:20px;color:var(--k-ink3)">brief §1.1, §1.2, §7 · A1 est cliquable : touche une ligne, choisis, « Annuler » ou « C’est noté » · <a href="#a" onClick="{{ remettre }}">remettre à zéro</a></span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A0 — Aujourd’hui · la liste livrée" style="width:390px">{{ a0 }}</div>
+        <span class="etiq">A0 · aujourd’hui · 390 · référence</span>
+        <p class="note"><b>L’écran livré par #238 (la réparation des quatre écarts à la planche A2), redessiné pour comparer.</b> Le titre, contenu principal de l’écran, est en <code>small</code> 14/20 <code>textSecondary</code> ; le gain en 14 tertiaire ; « Choisir » est un mot 14/600 en <code>accentText</code>, sans forme. Toucher la ligne n’y choisit rien : elle s’ouvre en carte, puis « Je m’y engage », puis le jour ou l’échéance, puis « C’est noté ». Relevé en production : rangées de 72 px, 73 avec le filet (titres sur deux lignes à 390) ; le premier écran montre six pistes.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A0b — Aujourd’hui · deux cartes ouvertes" style="width:390px">{{ a0b }}</div>
+        <span class="etiq">A0b · aujourd’hui · 390 × 844 · référence</span>
+        <p class="note"><b>Deux cartes ouvertes ne se comparent pas.</b> Avec une seule ligne entre elles, la seconde sort déjà de l’écran : une carte ouverte mesure 252 px, 304 avec « Réduire », dans une fenêtre de 688 px entre la bande et la barre d’onglets (mesuré dans le rendu). Et en s’ouvrant, le gain passe de la colonne de droite (14 px) à la gauche (20 px) : il ne s’aligne plus sur les autres. Ce que la carte ajoute à la ligne — la part de l’empreinte, qui classe comme le gain, et la base — ne départage rien.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A1 — La liste · dix pistes, rien d’engagé" style="width:390px">{{ a1 }}</div>
+        <span class="etiq">A1 · la liste · 390 · cliquable</span>
+        <p class="note"><b>La ligne porte ce qu’on compare, à deux étages.</b> Le titre en <code>default</code> 16/24, 500, couleur <code>text</code> : la taille du contenu, un cran sous le titre de carte (17/600). Dessous, le gain en 15/22 600 <code>text</code> à chiffres tabulaires, suivi de « par an » en 14 tertiaire — la même unité que le cap depuis le 24/09. Les gains s’alignent à gauche, sous leurs titres : l’œil descend la colonne. À droite, la pastille « Choisir ». Le premier écran montre quatre pistes au lieu de six.</p>
+        <p class="note"><b>La pastille dit « bouton » par un cadre qui se voit, pas par sa couleur.</b> 32 de haut, rayon 16 (<code>Radius.field</code>, la moitié de sa hauteur, comme le bouton à 27 = 54 / 2), un filet 1 <code>fieldBorder</code> sur le fond de l’écran, libellé 14/20 600 <code>accentText</code>. C’est la « pastille bordée » du brief : <code>fieldBorder</code> est le seul gris qui tienne 3:1 sur le fond (3,45:1 ; 4,97:1 en sombre) — un fond gris seul n’y tranche qu’à 1,14:1, c’est-à-dire qu’il n’existe pas pour une vue faible (<code>FRONT.md</code> §1.4). Jamais un bouton plein. La cible reste la rangée entière (92 px sur une ligne de titre, 116 sur deux), qui prend <code>backgroundPressed</code> sous le doigt ; la pastille est décorative, le libellé accessible la dit.</p>
+        <p class="note"><b>Les têtes de groupe passent en étiquette capitale</b> (13/18 600 tertiaire, +0,3 : le motif de « PREMIER PAS »), 24 au-dessus, 4 dessous. En 14 tertiaire elles tenaient face à des lignes en 14 secondaire ; face à des titres en 16 <code>text</code>, elles se seraient effacées — c’est la plainte du 18/09 qui reviendrait. Pointillé « 844 » : ce que montre le premier écran, au-dessus de la barre d’onglets.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:360px">
+        <div data-screen-label="A1·360 — La liste à 360" style="width:360px">{{ a1_360 }}</div>
+        <span class="etiq">A1 · 360 · ce qui passe sur deux lignes</span>
+        <p class="note"><b>À 360, aucun titre ne dépasse deux lignes</b> sur les dix du profil 1, et la ligne du gain tient toujours en une : « − 1 601 kg par an » (112 px) et la pastille « Choisir à la place » (143 px) font 263 px sur 312, écart compris. Le titre prend toute la largeur parce que la pastille est descendue sur la ligne du gain : à côté du titre, elle lui retirait 89 à 151 px et en aurait mis plusieurs sur trois lignes.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="A2 — Une ligne engagée · au milieu de la liste" style="width:390px">{{ a2 }}</div>
+        <span class="etiq">A2 · une ligne engagée · 390</span>
+        <p class="note"><b>L’ordre ne bouge pas</b> (décision du 28/09) : « Regrouper deux sorties » reste cinquième, à sa place dans les loisirs, et la liste ouvre toujours sur le meilleur levier du poste dominant. La ligne engagée garde sa forme — pastille-coche 20 px et « Engagée » 14/600 <code>accentText</code> à la place de la pastille « Choisir » — et ne se touche pas. L’intro perd « Ton action en cours d’abord ».</p>
+        <p class="note"><b>Les autres pastilles disent « Choisir à la place »</b> (décidé le 28/09, question 5). Le bouton de la carte qui le disait (« Choisir celle-ci à la place ») n’est plus sur le chemin, puisqu’on ouvre la carte directement sur le choix : le remplacement se dit donc avant le geste, sur la seule chose qu’on touche.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:360px">
+        <div data-screen-label="A2·360 — Une ligne engagée à 360" style="width:360px">{{ a2_360 }}</div>
+        <span class="etiq">A2 · 360</span>
+        <p class="note"><b>La ligne engagée à 360</b> : « − 67 kg par an », la pastille-coche et « Engagée » tiennent sur la ligne du gain. C’est le seul endroit de la liste où l’accent est plein — hors barre d’onglets —, et il y est une fois.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ B ══════════════════════════════ -->
+  <section id="b" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">B · Le choix : ce qu’on touche</h2><span style="font-size:14px;line-height:20px;color:var(--k-ink3)">brief §1.3, §5, §7 · la carte est celle du plan, ouverte directement sur sa question</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B1 — Juste après « Choisir » · un voyage : l’échéance" style="width:390px">{{ b1 }}</div>
+        <span class="etiq">B1 · juste après « Choisir » · 390 × 844</span>
+        <p class="note"><b>La ligne devient la carte, ouverte sur la question.</b> C’est la même <code>ActionCard</code> que sur le plan — titre 17/24, gain 20/26 <code>accentText</code>, « par an · 65 % de ton empreinte », la base — et son sélecteur d’intention, <b>au contenu inchangé</b> : « Quand ? », les échéances du poste en puces à contour, « Annuler » souligné, « C’est noté », <b>rien de coché</b> : « C’est noté » reste inactif tant qu’on n’a pas choisi. Seul son déclenchement change : « Je m’y engage » est sauté, puisque « Choisir » l’a déjà dit. (Inactif, ce bouton prend le fond de son encart et n’y a plus de forme : relevé, hors mandat.)</p>
+        <p class="note"><b>Un seul choix en cours.</b> Toucher « Choisir » sur une autre ligne referme celle-ci ; « Annuler » la rend à sa ligne. « Réduire » (ajouté par #238, la réparation de la planche A2) disparaît avec la possibilité d’ouvrir plusieurs cartes, décidée en <code>v1-16</code> §5 après la recette du 14/09 : cette planche la remplace, parce que deux cartes ouvertes ne se comparent pas (A0b). Le passage de ligne à carte reste celui de <code>v1-30-les-transitions.md</code> (<code>HauteurSuivie</code> 250 ms en grandissant, 200 en rétrécissant ; la carte en fondu). Le focus va au groupe « Quand ? » ; à « Annuler », il revient à la ligne.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:360px">
+        <div data-screen-label="B2 — Un trajet · les jours, à 360" style="width:360px">{{ b2 }}</div>
+        <span class="etiq">B2 · un trajet, deux jours cochés · 360 × 800</span>
+        <p class="note"><b>Les jours, à 360, tiennent sur quatre colonnes</b> : 222 px dans le sélecteur, une grille qui déborde de 4 de chaque côté (230 px), soit 57,5 par cellule — au-dessus du minimum de <code>GroupeDeChoix</code> (56 : la cible de 48 et ses 8), qui passerait seul à trois en dessous. Mardi et jeudi sont cochés : c’est l’état juste avant « C’est noté ». La ligne choisie est la dernière de la liste : <b>l’écran défile juste assez pour montrer « C’est noté »</b>, sans faire passer le titre de la carte sous la bande. C’est le défilement de la plateforme, comme la page suivante de l’onboarding (<code>scrollTo</code> animé, <b>instantané sous « réduire les animations »</b>) : à relire avec le skill <code>/mouvement</code> avant de l’écrire.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B3 — « Choisir à la place » · une autre est engagée" style="width:390px">{{ b3 }}</div>
+        <span class="etiq">B3 · choisir à la place · 390 × 844</span>
+        <p class="note"><b>Remplacer se voit avant de valider.</b> La ligne engagée est juste dessous, marquée ; la pastille touchée disait « Choisir à la place » (décidé le 28/09) ; « C’est noté » appelle <code>commit_plan_action</code> avec <code>p_replace</code>, comme aujourd’hui, et un refus <code>RM001</code> se dit en tête de liste, carte ouverte. <b>La carte qu’on choisit n’est jamais estompée ici</b> : l’estompage est un fait du plan, où la seconde carte recule derrière l’engagée ; sur la liste, estomper la carte qu’on est en train de choisir la ferait reculer au moment même où on la regarde.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B4 — Après « C’est noté » · le plan" style="width:390px">{{ b4 }}</div>
+        <span class="etiq">B4 · après « C’est noté » · le plan · 390</span>
+        <p class="note"><b>« C’est noté » ramène au plan, comme aujourd’hui</b> (<code>v1-17</code> §7.3) : le drapeau de passage est déposé avant de partir, et le plan montre l’action en tête — « TON ENGAGEMENT », l’intention dans la ligne du gain, le premier pas, « Changer d’avis » — puis la meilleure autre piste, estompée par son cadre. C’est la confirmation : on voit ce qu’on vient de choisir, à l’endroit où on le retrouvera. La carte d’attente est celle d’après la feuille, la notification choisie ; elle vient sous le titre, dans l’ordre du plan.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="B5 — Après « C’est noté » · la première fois, la feuille des rappels" style="width:390px">{{ b5 }}</div>
+        <span class="etiq">B5 · la première fois sur l’appareil · 390 × 844</span>
+        <p class="note"><b>La première fois, la feuille des rappels s’ouvre par-dessus</b> — inchangée, une fois par appareil, sur Android. Elle promet le contact sur l’action qu’on vient de prendre : pour un vol, la boucle mensuelle (« Au début du mois prochain… »). Derrière elle, le plan d’avant tout choix — sa carte d’attente, cachée ici par la feuille, est celle d’un appareil anonyme dont la préférence par défaut est l’email, sans adresse pour le recevoir : « On se retrouve ici lundi. » Sur web, sans adresse rattachée, la feuille ne s’ouvre pas (<code>doitProposerLaFeuille</code>) : c’est ce qu’on voit en navigation privée.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ C ══════════════════════════════ -->
+  <section id="c" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">C · La courte liste</h2><span style="font-size:14px;line-height:20px;color:var(--k-ink3)">brief §8.3 · décision du 28/09 : l’écran reste dès trois pistes</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+        <div data-screen-label="C1 — Trois pistes · un petit rouleur" style="width:390px">{{ c1 }}</div>
+        <span class="etiq">C1 · trois pistes · 390 × 844</span>
+        <p class="note"><b>Un petit rouleur</b> (trois jours, 12 km en voiture, rural, un jour de télétravail possible ; relevé en production) : trois pistes, un seul poste. Le plan en montre deux et la porte dit « Voir toutes les pistes · 3 ». L’écran ne change pas de forme : une tête, trois lignes, et c’est ici qu’on choisit la troisième. Un seul groupe garde sa tête — elle dit sur quoi porte tout l’écran.</p>
+        <p class="note"><b>Ce qui aurait pu changer, et ne change pas</b> : pas de troisième carte sur le plan (le plan en montre toujours deux, sous « Une action par saison, une seule ») ; pas de porte qui disparaît selon le profil. Une règle que personne ne voit est une règle qu’on ne peut pas apprendre.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ Écarts ══════════════════════════════ -->
+  <section id="ecarts" data-screen-label="Écarts" style="display:flex;flex-direction:column;gap:20px;max-width:1240px;background:var(--k-page);border-radius:24px;padding:40px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Écarts</h2><span style="font-size:14px;line-height:20px;color:var(--k-ink3)">ce qui s’écarte de l’écran livré, du brief, du canvas v1-17 ou du kit — et pourquoi</span></div>
+    <div class="grille-ecarts tete"><span>Quoi</span><span>Avant</span><span>Après</span><span>Pourquoi</span><span>Ce que ça coûte</span><span>Où</span></div>
+    <sc-for list="{{ ecarts }}" as="e" hint-placeholder-count="16">
+      <div class="grille-ecarts"><span class="quoi">{{ e.quoi }}</span><span>{{ e.avant }}</span><span>{{ e.apres }}</span><span>{{ e.pourquoi }}</span><span>{{ e.prix }}</span><span class="ou">{{ e.ou }}</span></div>
+    </sc-for>
+  </section>
+
+  <!-- ══════════════════════════════ Réponses ══════════════════════════════ -->
+  <section id="reponses" data-screen-label="Réponses" style="display:flex;flex-direction:column;gap:20px;max-width:1240px;background:var(--k-page);border-radius:24px;padding:40px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Réponses</h2><span style="font-size:14px;line-height:20px;color:var(--k-ink3)">aux trois demandes du §1 et aux trois questions ouvertes du §8 du brief</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px">
+      <sc-for list="{{ reponses }}" as="r" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--k-rule);padding-top:16px">
+          <span class="etiq">{{ r.ref }}</span>
+          <span style="font-size:17px;line-height:24px;font-weight:600">{{ r.question }}</span>
+          <span style="font-size:15px;line-height:22px;font-weight:600;color:var(--c-accent-text)">{{ r.reponse }}</span>
+          <span class="note">{{ r.pourquoi }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ Système ══════════════════════════════ -->
+  <section id="systeme" data-screen-label="Système" style="display:flex;flex-direction:column;gap:20px;max-width:1240px;background:var(--k-page);border-radius:24px;padding:40px">
+    <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><h2 style="margin:0;font-size:32px;line-height:40px;font-weight:600;letter-spacing:-0.01em">Système</h2><span style="font-size:14px;line-height:20px;color:var(--k-ink3)">aucun jeton ajouté · aucune icône · aucun composant du kit redessiné en double · une valeur en dur</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:32px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <span class="etiq">La ligne de piste, cotée</span>
+        <div style="width:342px;border:1px dashed var(--k-rule);border-radius:12px;padding:0 0;background:var(--c-bg)">{{ ligneCotee }}</div>
+        <p class="note">Rangée : 16 dessus, 16 dessous (<code>Spacing.three</code>) ; titre 16/24 500 <code>text</code> ; 4 (<code>Spacing.one</code>) ; ligne du gain de 32 de haut, gain 15/22 600 <code>text</code> tabulaire, une espace, « par an » 14/20 tertiaire (texte imbriqué) ; pastille 32 de haut (la seule valeur en dur), rayon 16, 0 16 de rembourrage, filet 1 <code>fieldBorder</code> (<code>Stroke.hairline</code>), fond de l’écran, 14/20 600 <code>accentText</code>. Filet 1 <code>border</code> sous chaque ligne sauf la dernière du groupe (<code>filetsDesLignes</code>, inchangé).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <span class="etiq">Les trois états d’une ligne</span>
+        <div style="width:342px;display:flex;flex-direction:column;border:1px dashed var(--k-rule);border-radius:12px;padding:0 16px;background:var(--c-bg)">{{ troisEtats }}</div>
+        <p class="note">Libre : « Choisir ». Une autre engagée : « Choisir à la place ». Engagée : pastille-coche et « Engagée », pas de cible. Sous le doigt : la rangée prend <code>backgroundPressed</code>, tout de suite, sans animation ; la pastille, transparente, le prend avec elle. Désactivée : n’existe pas — toute piste listée se choisit (brief §3).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span class="etiq">Jetons lus</span>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ jetons }}" as="j" hint-placeholder-count="12">
+            <div class="ligne-jeton"><span class="quoi">{{ j.jeton }}</span><span>{{ j.usage }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span class="etiq">Ce que le canvas ne fait pas</span>
+        <sc-for list="{{ nePasFaire }}" as="n" hint-placeholder-count="9">
+          <p class="note">— {{ n }}</p>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light","tsType":"&#39;light&#39;|&#39;dark&#39;","section":"Thème"}}'>
+// ── Ramille : port de src/types/mascot.ts (géométrie), repris du canvas v1-17. La saison est celle du
+// jour — l'automne météorologique le 28/09/2026 — donc les joues chaudes (C2.13).
+const LEAF = 'M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z';
+const FACE = {
+  calm: { eyes: 'dots', eyeSpread: 11, eyeShiftX: 0, eyeY: 50, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 0, mouthHalfWidth: 8, mouthY: 62, mouthDepth: 3, blushSpread: 17, blushY: 60, blushRadius: 5, blushOpacity: 0.55 },
+  resting: { eyes: 'soft', eyeSpread: 11, eyeShiftX: 0, eyeY: 50, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 2.5, mouthHalfWidth: 6, mouthY: 63, mouthDepth: 1.5, blushSpread: 17, blushY: 60, blushRadius: 5, blushOpacity: 0.5 },
+};
+const r2 = (v) => Math.round(v * 100) / 100;
+const quad = (cx, hw, y, d) => `M${r2(cx - hw)},${r2(y)} Q${r2(cx)},${r2(y + d * 2)} ${r2(cx + hw)},${r2(y)}`;
+function geometry(mood, size) {
+  const f = FACE[mood] || FACE.calm;
+  const k = size >= 42 ? 1 : Math.min(42 / Math.max(size, 1), 1.5);
+  const kp = 1 + (k - 1) * 0.2;
+  const eyeY = 58 + (f.eyeY - 58) * kp, mouthY = 58 + (f.mouthY - 58) * kp, blushY = 58 + (f.blushY - 58) * kp;
+  const spread = r2(f.eyeSpread * kp), shift = f.eyeShiftX * kp;
+  const sides = [-1, 1];
+  return {
+    visible: size >= 28, eyes: f.eyes,
+    eyeCircles: sides.map((s) => ({ cx: r2(50 + s * spread + shift), cy: r2(eyeY), r: r2(f.eyeRadius * k) })),
+    eyeArcs: sides.map((s) => quad(50 + s * spread + shift, f.eyeArcHalfWidth * k, eyeY, f.eyeArcDepth * k)),
+    eyeStroke: r2(3.4 * k), mouth: quad(50, f.mouthHalfWidth * k, mouthY, f.mouthDepth * k), mouthStroke: r2(3.2 * k),
+    blush: sides.map((s) => ({ cx: 50 + s * f.blushSpread, cy: r2(blushY), r: r2(f.blushRadius * kp) })),
+    blushOpacity: f.blushOpacity, vein: r2(4 * k),
+  };
+}
+let mascotteId = 0;
+function ramille(mood, size, tilt) {
+  const g = geometry(mood, size);
+  const h = React.createElement;
+  const id = 'feuille-' + mood + '-' + size + '-' + (mascotteId++);
+  const ink = 'var(--m-ink, #131612)';
+  return h('svg', { width: size, height: size, viewBox: '0 0 100 100', 'aria-hidden': true, style: { transform: `rotate(${tilt || 0}deg)`, display: 'block', flexShrink: 0 } },
+    h('defs', null, h('clipPath', { id }, h('path', { d: LEAF }))),
+    h('path', { d: LEAF, fill: 'var(--m-leaf, #1F6F4A)' }),
+    h('path', { d: 'M50,18 C46,26 46,32 50,38', stroke: 'var(--m-vein, #E4EFE8)', strokeWidth: g.vein, strokeLinecap: 'round', fill: 'none', opacity: 0.55 }),
+    g.visible ? h('g', { clipPath: `url(#${id})` },
+      g.blush.map((b, i) => h('circle', { key: 'b' + i, cx: b.cx, cy: b.cy, r: r2(b.r * 1.18), fill: 'var(--m-warm, #C99A6B)', opacity: Math.min(0.9, g.blushOpacity + 0.25) })),
+      g.eyes === 'dots'
+        ? g.eyeCircles.map((e, i) => h('circle', { key: 'e' + i, cx: e.cx, cy: e.cy, r: e.r, fill: ink }))
+        : g.eyeArcs.map((d, i) => h('path', { key: 'e' + i, d, stroke: ink, strokeWidth: g.eyeStroke, strokeLinecap: 'round', fill: 'none' })),
+      h('path', { d: g.mouth, stroke: ink, strokeWidth: g.mouthStroke, strokeLinecap: 'round', fill: 'none' })) : null);
+}
+
+// ── Typographie : ThemedText pose les insécables de la ponctuation double au rendu ; le canvas aussi.
+const NB = ' ';
+const fr = (s) => String(s).replace(/ ([?!:;»])/g, NB + '$1').replace(/« /g, '«' + NB);
+const kg = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, NB); // grouperLesMilliers : U+00A0
+const T = (size, lh, weight, color, extra) => Object.assign({ fontSize: size, lineHeight: lh + 'px', fontWeight: weight, color }, extra || {});
+
+// ── Les dix pistes du profil 1, relevées en production le 28/09/2026 (plan_actions, lues sous la session
+// de la personne) : gain, part, base et premier pas figés à la génération. Rang = celui du plan.
+const PISTES = [
+  { id: 'p1', rang: 1, poste: 'travel', kg: 1601, part: 65, titre: 'Renoncer à un vol long-courrier cette année', base: 'Sur 1 vol long-courrier déclaré.', premierPas: 'Regarde lequel de tes projets de voyage peut attendre, ou se passer plus près.' },
+  { id: 'p2', rang: 2, poste: 'travel', kg: 277, part: 11, titre: 'Renoncer à un vol court ou moyen-courrier cette année', base: 'Sur 1 vol court ou moyen-courrier déclaré.' },
+  { id: 'p3', rang: 3, poste: 'travel', kg: 273, part: 11, titre: 'Remplacer un aller-retour en avion par le train', base: 'Sur 1 vol court ou moyen-courrier déclaré.' },
+  { id: 'p4', rang: 4, poste: 'leisure', kg: 101, part: 4, titre: 'Faire une sortie sur trois à vélo à assistance électrique', base: 'Sur tes déplacements de loisir.' },
+  { id: 'p5', rang: 5, poste: 'leisure', kg: 67, part: 3, titre: 'Regrouper deux sorties en une seule, une fois sur cinq', base: 'Sur tes déplacements de loisir.' },
+  { id: 'p6', rang: 6, poste: 'travel', kg: 48, part: 2, titre: 'Faire un de tes longs trajets en train plutôt qu’en voiture', base: 'Sur 2 longs trajets en voiture déclarés.' },
+  { id: 'p7', rang: 7, poste: 'commute', kg: 36, part: 1, titre: 'Travailler depuis chez toi deux jours par semaine', base: 'Sur tes 5 trajets par semaine.' },
+  { id: 'p8', rang: 8, poste: 'travel', kg: 24, part: 1, titre: 'Remplacer un de tes longs trajets en autocar par le train', base: 'Sur 2 longs trajets en autocar déclarés.' },
+  { id: 'p9', rang: 9, poste: 'travel', kg: 23, part: 1, titre: 'Faire un de tes longs trajets en autocar plutôt qu’en voiture', base: 'Sur 2 longs trajets en voiture déclarés.' },
+  { id: 'p10', rang: 10, poste: 'commute', kg: 18, part: 1, titre: 'Travailler depuis chez toi un jour par semaine', base: 'Sur tes 5 trajets par semaine.' },
+];
+// Le petit rouleur : trois jours, 12 km en voiture thermique, rural, sans transports en commun, un jour de
+// télétravail possible, sorties rares, ni vol ni long trajet. Relevé en production le 28/09/2026.
+const PISTES_COURTES = [
+  { id: 'q1', rang: 1, poste: 'commute', kg: 154, part: 30, titre: 'Travailler depuis chez toi un jour par semaine', base: 'Sur tes 3 trajets par semaine.' },
+  { id: 'q2', rang: 2, poste: 'commute', kg: 115, part: 22, titre: 'Faire ce trajet à deux au moins un jour sur deux', base: 'Sur tes 3 trajets par semaine.' },
+  { id: 'q3', rang: 3, poste: 'commute', kg: 85, part: 16, titre: 'Faire un trajet sur cinq à vélo à assistance électrique', base: 'Sur un trajet de 12 km.' },
+];
+const POSTE_LABEL = { commute: 'Trajet domicile-travail', leisure: 'Loisirs du week-end', travel: 'Voyages longue distance' };
+const ECHEANCES = {
+  travel: ['À mon prochain projet de voyage', 'Avant mon prochain bilan'],
+  leisure: ['Ce mois-ci', 'Le mois prochain', 'À ma prochaine occasion'],
+};
+const JOURS = [['L', 'lundi'], ['M', 'mardi'], ['M', 'mercredi'], ['J', 'jeudi'], ['V', 'vendredi'], ['S', 'samedi'], ['D', 'dimanche']];
+
+// Décision du 28/09 (question 2) : l'ordre du rang, jamais « l'engagée d'abord » ; les groupes dans l'ordre
+// où leur poste apparaît pour la première fois (pistesParPoste, sans ordonnerLesPistes).
+function parPoste(pistes) {
+  const groupes = [];
+  [...pistes].sort((a, b) => a.rang - b.rang).forEach((p) => {
+    const g = groupes.find((x) => x.poste === p.poste);
+    if (g) g.pistes.push(p); else groupes.push({ poste: p.poste, pistes: [p] });
+  });
+  return groupes;
+}
+// L'ordre livré aujourd'hui (A0) : l'engagée d'abord, et son poste avec elle.
+function parPosteAujourdhui(pistes, engagee) {
+  const tri = [...pistes].sort((a, b) => (Number(b.id === engagee) - Number(a.id === engagee)) || a.rang - b.rang);
+  const groupes = [];
+  tri.forEach((p) => { const g = groupes.find((x) => x.poste === p.poste); if (g) g.pistes.push(p); else groupes.push({ poste: p.poste, pistes: [p] }); });
+  return groupes;
+}
+
+const h = React.createElement;
+
+// ── Gabarit d'écran
+function iconeCompte() {
+  return h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', 'aria-hidden': true },
+    h('circle', { cx: 12, cy: 8.5, r: 3.6, stroke: 'var(--c-text3)', strokeWidth: 1.9, fill: 'none' }),
+    h('path', { d: 'M4.8 19.5c1.4-3.3 4-4.9 7.2-4.9s5.8 1.6 7.2 4.9', stroke: 'var(--c-text3)', strokeWidth: 1.9, strokeLinecap: 'round', fill: 'none' }));
+}
+function bande() {
+  return h('div', { style: { height: 52, display: 'flex', alignItems: 'center', padding: '0 11px', borderBottom: '1px solid var(--c-border)', flexShrink: 0, boxSizing: 'border-box' } },
+    h('span', { style: { width: 48 } }),
+    h('span', { style: T(17, 24, 600, 'var(--c-text)', { flex: 1, textAlign: 'center' }) }, 'Ramille'),
+    h('span', { style: { width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' } }, iconeCompte()));
+}
+function onglet(nom, actif) {
+  const c = actif ? 'var(--c-on-accent)' : 'var(--c-text3)';
+  const icone = nom === 'plan'
+    ? [h('path', { key: 1, d: 'M5 12l4.5 4.5L19 7', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' }), h('path', { key: 2, d: 'M4 20h16', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', fill: 'none' })]
+    : [h('path', { key: 1, d: 'M4 15.5l5-5 3.5 3.5L20 7', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' }), h('circle', { key: 2, cx: 20, cy: 7, r: 1.6, fill: c })];
+  return h('div', { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
+    h('span', { style: { width: 56, height: 30, borderRadius: 15, background: actif ? 'var(--c-accent)' : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } }, h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', 'aria-hidden': true }, icone)),
+    h('span', { style: T(12, 16, actif ? 600 : 500, actif ? 'var(--c-accent)' : 'var(--c-text3)') }, nom === 'plan' ? 'Plan' : 'Suivi'));
+}
+function barre() {
+  return h('div', { style: { height: 60, borderTop: '1px solid var(--c-border)', display: 'flex', padding: '4px 0', boxSizing: 'border-box', flexShrink: 0, background: 'var(--c-bg)' } }, onglet('plan', true), onglet('suivi', false));
+}
+// Un écran : allongé (hauteur nulle, pour tout montrer) ou à la taille d'un appareil, défilé jusqu'à `cible`.
+function ecran({ largeur = 390, hauteur = null, contenu, feuille = null, cible = null, pli = null }) {
+  const defiler = cible !== null ? (el) => {
+    if (!el) return;
+    const t = el.querySelector('[data-cible]');
+    if (t) el.scrollTop = Math.max(0, t.offsetTop - cible);
+  } : undefined;
+  return h('div', { style: { width: largeur, height: hauteur || undefined, background: 'var(--c-bg)', borderRadius: 40, boxShadow: '0 24px 60px rgba(19,22,18,0.10)', outline: '1px solid var(--k-frame)', overflow: 'hidden', display: 'flex', flexDirection: 'column', color: 'var(--c-text)', position: 'relative' } },
+    h('div', { style: { height: 44, flexShrink: 0 } }),
+    bande(),
+    h('div', { ref: defiler, className: 'defile', style: { flex: hauteur ? 1 : 'none', minHeight: 0, overflowY: hauteur ? 'auto' : 'visible', position: 'relative' } }, contenu),
+    barre(),
+    pli !== null ? h('div', { 'aria-hidden': true, style: { position: 'absolute', left: 0, right: 0, top: pli, borderTop: '1.5px dashed var(--k-pli)', pointerEvents: 'none' } },
+      h('span', { style: { position: 'absolute', right: 14, top: -22, fontFamily: 'ui-monospace,Menlo,monospace', fontSize: 11, lineHeight: '16px', padding: '2px 6px', borderRadius: 6, background: 'var(--c-bg)', color: 'var(--k-pli)', border: '1px solid var(--k-pli)' } }, '844')) : null,
+    feuille);
+}
+const retour = () => h('span', { style: T(14, 20, 600, 'var(--c-accent-text)', { minHeight: 48, display: 'flex', alignItems: 'center', alignSelf: 'flex-start' }) }, 'Retour au plan');
+const titreEcran = (t) => h('span', { role: 'heading', style: T(26, 32, 600, 'var(--c-text)', { letterSpacing: -0.26 }) }, fr(t));
+const corps = (t) => h('span', { style: T(15, 22, 500, 'var(--c-text2)') }, fr(t));
+const INTRO_LIBRE = 'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan.';
+const INTRO_ENGAGEE = 'Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici remplace la tienne.';
+
+function pastilleEngagee() {
+  return h('span', { 'aria-hidden': true, style: { width: 20, height: 20, borderRadius: 10, background: 'var(--c-accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } },
+    h('svg', { width: 12, height: 12, viewBox: '0 0 24 24' }, h('path', { d: 'M5 13l4 4L19 7', stroke: 'var(--c-on-accent)', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' })));
+}
+
+// ── La ligne proposée : deux étages, la pastille « Choisir » sur la ligne du gain.
+function ligne(p, { etat = 'libre', filet = false, separee = false, onChoisir } = {}) {
+  const libelle = etat === 'aLaPlace' ? 'Choisir à la place' : 'Choisir';
+  const gain = h('span', { style: { display: 'inline-flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' } },
+    h('span', { style: T(15, 22, 600, 'var(--c-text)', { fontVariantNumeric: 'tabular-nums' }) }, `−${NB}${kg(p.kg)}${NB}kg`),
+    h('span', { style: T(14, 20, 500, 'var(--c-text3)') }, 'par an'));
+  const fin = etat === 'engagee'
+    ? h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' } }, pastilleEngagee(), h('span', { style: T(14, 20, 600, 'var(--c-accent-text)') }, 'Engagée'))
+    : h('span', { 'aria-hidden': true, style: T(14, 20, 600, 'var(--c-accent-text)', { height: 32, padding: '0 16px', borderRadius: 16, border: '1px solid var(--c-field)', background: 'transparent', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0, boxSizing: 'border-box' }) }, libelle);
+  const style = { display: 'flex', flexDirection: 'column', gap: 4, padding: '16px 0', margin: 0, marginTop: separee ? 10 : 0, border: 0, borderBottom: filet ? '1px solid var(--c-border)' : '0', background: 'none', textAlign: 'left', width: '100%', boxSizing: 'border-box', cursor: etat === 'engagee' ? 'default' : 'pointer', color: 'inherit', font: 'inherit' };
+  const annonce = `${p.titre.replace(/\.$/, '')}. −${NB}${kg(p.kg)} kg par an. ${etat === 'engagee' ? 'Action engagée' : libelle}.`;
+  const enfants = [
+    h('span', { key: 't', style: T(16, 24, 500, 'var(--c-text)') }, fr(p.titre)),
+    h('span', { key: 'g', style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 32 } }, gain, fin),
+  ];
+  return etat === 'engagee'
+    ? h('div', { key: p.id, 'aria-label': annonce, style }, enfants)
+    : h('button', { key: p.id, type: 'button', className: 'ligne', 'aria-label': annonce, onClick: onChoisir, style }, enfants);
+}
+
+// ── Les puces du sélecteur (Chip) : échéance en contour rayon 16, jours pleins rayon 14, fond de la page.
+function puceEcheance(label, choisie, onPick) {
+  return h('button', { key: label, type: 'button', role: 'radio', 'aria-checked': choisie, className: 'puce', onClick: onPick, style: T(15, 20, choisie ? 600 : 400, 'var(--c-text)', { minHeight: 48, padding: '12px 18px', border: '1.5px solid ' + (choisie ? 'var(--c-accent)' : 'transparent'), borderRadius: 16, background: choisie ? 'var(--c-sel)' : 'var(--c-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxSizing: 'border-box', width: '100%' }) }, label);
+}
+function puceJour([court, long], choisie, onPick) {
+  return h('div', { key: long, style: { width: '25%', padding: '0 4px', boxSizing: 'border-box', minWidth: 56 } },
+    h('button', { type: 'button', role: 'checkbox', 'aria-checked': choisie, 'aria-label': long, className: choisie ? '' : 'puce', onClick: onPick, style: T(15, 20, choisie ? 600 : 400, choisie ? 'var(--c-on-accent)' : 'var(--c-text)', { minHeight: 48, minWidth: 48, width: '100%', padding: '12px 4px', border: '1.5px solid transparent', borderRadius: 14, background: choisie ? 'var(--c-accent)' : 'var(--c-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxSizing: 'border-box' }) }, court));
+}
+
+// ── La carte ouverte sur le choix : ActionCard + ActionCommitment, le sélecteur déjà ouvert.
+function carteAuChoix(p, { choix = null, jours = [], onPick, onJour, onAnnuler, onNote, separee = false, cible = false } = {}) {
+  const parJours = p.poste === 'commute';
+  const pret = parJours ? jours.length > 0 : choix !== null;
+  const question = parJours ? 'Quels jours ?' : 'Quand ?';
+  const selecteur = h('div', { style: { marginTop: 16, background: 'var(--c-el)', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 } },
+    h('span', { style: T(14, 20, 500, 'var(--c-text3)') }, fr(question)),
+    parJours
+      ? h('div', { role: 'group', 'aria-label': fr(question), style: { display: 'flex', flexWrap: 'wrap', rowGap: 8, margin: '0 -4px' } }, JOURS.map((j, i) => puceJour(j, jours.includes(i), onJour ? () => onJour(i) : undefined)))
+      : h('div', { role: 'radiogroup', 'aria-label': fr(question), style: { display: 'flex', flexDirection: 'column', gap: 8 } }, (ECHEANCES[p.poste] || ECHEANCES.leisure).map((e) => puceEcheance(e, choix === e, onPick ? () => onPick(e) : undefined))),
+    h('div', { style: { display: 'flex', alignItems: 'center', gap: 24 } },
+      h('button', { type: 'button', onClick: onAnnuler, style: T(14, 20, 500, 'var(--c-text3)', { minHeight: 48, background: 'none', border: 0, padding: 0, textDecoration: 'underline', cursor: 'pointer' }) }, 'Annuler'),
+      h('button', { type: 'button', onClick: pret ? onNote : undefined, disabled: !pret, style: T(16, 24, 600, pret ? 'var(--c-on-accent)' : 'var(--c-text3)', { flex: 1, minHeight: 54, borderRadius: 27, border: 0, background: pret ? 'var(--c-accent)' : 'var(--c-el)', cursor: pret ? 'pointer' : 'default' }) }, 'C’est noté')));
+  return h('div', { key: p.id, 'data-cible': cible ? '' : undefined, style: { marginTop: separee ? 10 : 0, border: '1px solid var(--c-border)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 } },
+    h('span', { style: T(17, 24, 600, 'var(--c-text)') }, fr(p.titre)),
+    h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+      h('span', { style: T(20, 26, 600, 'var(--c-accent-text)', { fontVariantNumeric: 'tabular-nums' }) }, `−${NB}${kg(p.kg)} kg CO₂e`),
+      h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, `par an · ${p.part}${NB}% de ton empreinte`)),
+    h('span', { style: T(14, 20, 500, 'var(--c-text3)') }, p.base),
+    selecteur);
+}
+
+// ── Une liste d'aujourd'hui ou de demain.
+// o.etatDe(p) : 'libre' | 'aLaPlace' | 'engagee' ; o.enChoix : l'id ouvert sur le choix.
+function liste(groupes, o) {
+  return groupes.map((g) => {
+    const ids = g.pistes.map((p) => p.id);
+    const enCarte = new Set(ids.filter((id) => id === o.enChoix));
+    return h('div', { key: g.poste, style: { display: 'flex', flexDirection: 'column' } },
+      h('span', { role: 'heading', 'aria-level': 2, style: T(13, 18, 600, 'var(--c-text3)', { letterSpacing: 0.3, textTransform: 'uppercase', paddingTop: 8, paddingBottom: 4 }) }, POSTE_LABEL[g.poste]),
+      g.pistes.map((p, i) => {
+        const separee = i > 0 && (enCarte.has(p.id) || enCarte.has(ids[i - 1]));
+        const filet = !enCarte.has(p.id) && i < ids.length - 1;
+        if (enCarte.has(p.id)) return o.carte(p, separee);
+        return ligne(p, { etat: o.etatDe(p), filet, separee, onChoisir: o.onChoisir ? () => o.onChoisir(p.id) : undefined });
+      }));
+  });
+}
+function contenuListe(groupes, o) {
+  return h('div', { style: { padding: '24px 24px 64px', display: 'flex', flexDirection: 'column', gap: 16 } },
+    o.message ? o.message : null,
+    retour(), titreEcran('Toutes les pistes'), corps(o.intro), liste(groupes, o));
+}
+
+// ── L'écran livré (A0), pour comparer.
+function ligneAujourdhui(p, filet) {
+  return h('div', { key: p.id, style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, padding: '16px 0', borderBottom: filet ? '1px solid var(--c-border)' : '0' } },
+    h('span', { style: T(14, 20, 500, 'var(--c-text2)', { flex: 1, minWidth: 0 }) }, fr(p.titre)),
+    h('span', { style: { display: 'flex', alignItems: 'baseline', gap: 8, flexShrink: 0 } },
+      h('span', { style: T(14, 20, 500, 'var(--c-text3)', { fontVariantNumeric: 'tabular-nums' }) }, `−${NB}${kg(p.kg)}${NB}kg`),
+      h('span', { style: T(14, 20, 600, 'var(--c-accent-text)') }, 'Choisir')));
+}
+function carteAujourdhui(p, separee, cible) {
+  return h('div', { key: p.id, 'data-cible': cible ? '' : undefined, style: { marginTop: separee ? 10 : 0 } },
+    h('div', { style: { border: '1px solid var(--c-border)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 } },
+      h('span', { style: T(17, 24, 600, 'var(--c-text)') }, fr(p.titre)),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+        h('span', { style: T(20, 26, 600, 'var(--c-accent-text)', { fontVariantNumeric: 'tabular-nums' }) }, `−${NB}${kg(p.kg)} kg CO₂e`),
+        h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, `par an · ${p.part}${NB}% de ton empreinte`)),
+      h('span', { style: T(14, 20, 500, 'var(--c-text3)') }, p.base),
+      h('span', { style: T(16, 24, 500, 'var(--c-text)', { marginTop: 16, minHeight: 54, borderRadius: 27, background: 'var(--c-el)', display: 'flex', alignItems: 'center', justifyContent: 'center' }) }, 'Je m’y engage')),
+    h('span', { style: T(14, 20, 500, 'var(--c-text3)', { minHeight: 48, display: 'flex', alignItems: 'center', paddingTop: 4 }) }, 'Réduire'));
+}
+function contenuAujourdhui(ouvertes, cible) {
+  const groupes = parPosteAujourdhui(PISTES, null);
+  return h('div', { style: { padding: '24px 24px 64px', display: 'flex', flexDirection: 'column', gap: 16 } },
+    retour(), titreEcran('Toutes les pistes'), corps(INTRO_LIBRE),
+    groupes.map((g) => {
+      const ids = g.pistes.map((p) => p.id);
+      return h('div', { key: g.poste, style: { display: 'flex', flexDirection: 'column' } },
+        h('span', { style: T(14, 20, 600, 'var(--c-text3)', { paddingBottom: 4 }) }, POSTE_LABEL[g.poste]),
+        g.pistes.map((p, i) => {
+          const ouverte = ouvertes.includes(p.id);
+          const separee = i > 0 && (ouverte || ouvertes.includes(ids[i - 1]));
+          if (ouverte) return carteAujourdhui(p, separee, p.id === cible);
+          return h('div', { key: p.id, style: { marginTop: separee ? 10 : 0 } }, ligneAujourdhui(p, i < ids.length - 1 && !ouvertes.includes(p.id)));
+        }));
+    }));
+}
+
+// ── Le plan après « C'est noté » (B4, B5) : le vol long-courrier engagé à mon prochain projet de voyage.
+// La carte d'attente (carteAttente, src/types/rappels.ts) : B4 après avoir choisi la notification, B5 avant
+// tout choix — un appareil anonyme dont la préférence par défaut est l'email, sans adresse pour le recevoir.
+function carteAttente(avantLeChoix) {
+  return h('div', { style: { background: 'var(--c-el)', borderRadius: 18, padding: 20, display: 'flex', alignItems: 'center', gap: 16 } },
+    ramille('resting', 40, 0),
+    h('div', { style: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 } },
+      h('span', { style: T(16, 24, 600, 'var(--c-text)') }, avantLeChoix ? 'On se retrouve ici lundi.' : 'Je te fais signe lundi.'),
+      h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, avantLeChoix ? 'Rattache un compte pour recevoir le mot par email.' : 'Par notification sur ce téléphone.'),
+      avantLeChoix ? h('span', { style: T(14, 20, 600, 'var(--c-accent-text)', { minHeight: 48, display: 'flex', alignItems: 'center' }) }, 'Rattacher un compte') : null));
+}
+function carteCap() {
+  return h('div', { style: { background: 'var(--c-sel)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 6 } },
+    h('span', { style: T(14, 20, 600, 'var(--c-accent-text)') }, 'Ton cap pour cette saison'),
+    h('span', { style: T(30, 36, 600, 'var(--c-text)', { letterSpacing: -0.6, fontVariantNumeric: 'tabular-nums' }) }, `−${NB}406 kg`),
+    h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, `par an, soit −${NB}20${NB}% sur tes voyages (2,0${NB}t CO₂e aujourd’hui)`),
+    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' } },
+      h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, 'Automne 2026'),
+      h('span', { style: T(14, 20, 600, 'var(--c-accent-text)') }, 'jusqu’au 30 novembre')),
+    h('div', { style: { height: 6, borderRadius: 3, background: 'var(--c-border)', overflow: 'hidden', marginTop: 6 } }, h('div', { style: { width: '31%', height: '100%', borderRadius: 3, background: 'var(--c-muted)' } })),
+    h('span', { style: T(12, 16, 500, 'var(--c-text3)') }, fr('La saison avance ; le trait mesure le temps, pas toi.')));
+}
+function carteEngagee(p, intention) {
+  return h('div', { style: { border: '2px solid var(--c-accent)', background: 'var(--c-tinted)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 } },
+    h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, pastilleEngagee(), h('span', { style: T(13, 18, 700, 'var(--c-accent-text)', { letterSpacing: 0.3 }) }, 'TON ENGAGEMENT')),
+    h('span', { style: T(17, 24, 600, 'var(--c-text)') }, fr(p.titre)),
+    h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+      h('span', { style: T(20, 26, 600, 'var(--c-accent-text)', { fontVariantNumeric: 'tabular-nums' }) }, `−${NB}${kg(p.kg)} kg CO₂e`),
+      h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, `par an · ${intention} · ${p.part}${NB}% de ton empreinte`)),
+    h('span', { style: T(14, 20, 500, 'var(--c-text3)') }, p.base),
+    h('div', { style: { background: 'var(--c-bg)', borderRadius: 16, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 2 } },
+      h('span', { style: T(13, 18, 600, 'var(--c-text3)', { letterSpacing: 0.3 }) }, 'PREMIER PAS'),
+      h('span', { style: T(14, 20, 500, 'var(--c-text)') }, p.premierPas)),
+    h('span', { style: T(14, 20, 500, 'var(--c-text3)', { marginTop: 16, minHeight: 48, display: 'flex', alignItems: 'center', textDecoration: 'underline' }) }, 'Changer d’avis'));
+}
+function carteEstompee(p) {
+  return h('div', { style: { border: '1px solid var(--c-el)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 } },
+    h('span', { style: T(17, 24, 600, 'var(--c-text)') }, fr(p.titre)),
+    h('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+      h('span', { style: T(20, 26, 600, 'var(--c-accent-text)', { fontVariantNumeric: 'tabular-nums' }) }, `−${NB}${kg(p.kg)} kg CO₂e`),
+      h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, `par an · ${p.part}${NB}% de ton empreinte`)),
+    h('span', { style: T(14, 20, 500, 'var(--c-text3)') }, p.base),
+    h('span', { style: T(16, 24, 500, 'var(--c-text)', { marginTop: 16, minHeight: 54, borderRadius: 27, background: 'var(--c-el)', display: 'flex', alignItems: 'center', justifyContent: 'center' }) }, 'Choisir celle-ci à la place'));
+}
+function contenuPlan(avantLeChoix) {
+  // L'ordre de src/app/(tabs)/plan/index.tsx : le titre et son intro, le point s'il attend, la carte d'attente, le cap, les pistes.
+  return h('div', { style: { padding: '24px 24px 64px', display: 'flex', flexDirection: 'column', gap: 24 } },
+    h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } }, titreEcran('Ton plan'), corps('Une action par saison, une seule. C’est pas à pas qu’on tient un cap.')),
+    carteAttente(avantLeChoix),
+    carteCap(),
+    h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } }, carteEngagee(PISTES[0], 'à mon prochain projet de voyage'), carteEstompee(PISTES[1])),
+    h('span', { style: T(14, 20, 600, 'var(--c-accent-text)', { minHeight: 48, display: 'flex', alignItems: 'center', marginTop: -14 }) }, `Voir toutes les pistes · 10`));
+}
+// La feuille des rappels (FeuilleRappels, inchangée) : Android, session anonyme, permission demandable.
+function ligneDeCanal(titre, detail, { choisie = false, horsDAtteinte = false } = {}) {
+  return h('div', { key: titre, role: 'radio', 'aria-checked': choisie, style: { padding: '16px 24px', borderRadius: 16, border: '1.5px solid ' + (choisie ? 'var(--c-accent)' : 'transparent'), background: choisie ? 'var(--c-sel)' : 'var(--c-el)', display: 'flex', flexDirection: 'column', gap: 2 } },
+    h('span', { style: T(16, 22, choisie ? 600 : 400, horsDAtteinte ? 'var(--c-text3)' : 'var(--c-text)') }, titre),
+    h('span', { style: T(14, 20, 500, 'var(--c-text2)') }, detail));
+}
+function feuilleRappels() {
+  return h('div', { style: { position: 'absolute', inset: 0, background: 'var(--c-scrim)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' } },
+    h('div', { role: 'dialog', 'aria-label': 'Les rappels', style: { background: 'var(--c-bg)', borderTop: '1px solid var(--c-border)', borderRadius: '18px 18px 0 0', padding: '8px 24px 64px', display: 'flex', flexDirection: 'column', gap: 16 } },
+      h('div', { 'aria-hidden': true, style: { width: 40, height: 4, borderRadius: 2, background: 'var(--c-border)', alignSelf: 'center', marginBottom: 8 } }),
+      h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 8 } }, ramille('calm', 44, 0), h('span', { style: T(15, 22, 500, 'var(--c-text)', { flex: 1 }) }, 'Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.')),
+      h('span', { style: T(15, 22, 500, 'var(--c-text2)') }, fr('Comment tu préfères que je te fasse signe ?')),
+      h('div', { role: 'radiogroup', style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        ligneDeCanal('Par notification sur ce téléphone', 'À activer en une fois.', { choisie: true }),
+        ligneDeCanal('Par email', 'Rattache un compte pour l’activer.', { horsDAtteinte: true }),
+        h('span', { key: 'rc', style: T(14, 20, 600, 'var(--c-accent-text)', { minHeight: 48, display: 'flex', alignItems: 'center', padding: '0 24px' }) }, 'Rattacher un compte'),
+        ligneDeCanal('Sans rappel', 'On se retrouve dans l’app, à chaque point.')),
+      h('span', { style: T(16, 24, 600, 'var(--c-on-accent)', { minHeight: 54, borderRadius: 27, background: 'var(--c-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }) }, 'Autoriser les notifications'),
+      h('span', { style: T(14, 20, 500, 'var(--c-text3)', { textAlign: 'center' }) }, fr('Tu pourras changer d’avis dans « Toi ».'))));
+}
+
+// ── Écarts, réponses, système
+const ECARTS = [
+  { quoi: 'Le titre de la ligne', avant: 'small 14/20, textSecondary : le contenu principal dans la plus petite taille, atténué.', apres: 'default 16/24, 500, text.', pourquoi: 'C’est le contenu de l’écran ; un cran sous le titre de carte (17/600) pour que la carte ouverte reste au-dessus.', prix: 'Des rangées de 92 à 116 px au lieu de 52 à 72 : l’écran allongé du profil 1 passe de 1\u00a0269 à 1\u00a0655 px (+ 30\u00a0%), et le premier écran montre quatre pistes au lieu de six.', ou: 'A1 · pistes.tsx' },
+  { quoi: 'Le gain de la ligne', avant: '14/20 tertiaire, à droite du titre, entre le titre et « Choisir ».', apres: 'Sous le titre : 15/22 600 text, tabulaire, puis « par an » 14/20 tertiaire.', pourquoi: 'C’est ce qu’on compare : plus gras que le titre, aligné à gauche d’une ligne à l’autre. « par an », parce qu’un gain sans unité se lit comme un effort de saison — la correction faite au cap le 24/09.', prix: 'Une ligne de plus par piste.', ou: 'A1 · pistes.tsx' },
+  { quoi: '« Choisir » a une forme', avant: 'Un mot 14/600 accentText, sans cadre ni fond. Trouvé deux séances de suite.', apres: 'Une pastille bordée : 32 de haut, rayon 16 (Radius.field), filet 1 fieldBorder, fond de l’écran, 14/20 600 accentText, 0 16 de rembourrage.', pourquoi: 'Un mot ne fait pas une affordance ; un cadre, si — à condition qu’il se voie : fieldBorder tient 3,45:1 sur le fond, un fond gris seul 1,14:1 (FRONT.md §1.4). Jamais un bouton plein (brief §6).', prix: 'Aucun jeton neuf. fieldBorder, le contour d’un champ au repos, sert au contour d’un contrôle au repos : le même rôle. Une valeur en dur, la hauteur 32. Sous le doigt, le filet tombe à 2,74:1 sur backgroundPressed, le temps de l’appui.', ou: 'A1 · pistes.tsx' },
+  { quoi: '« Choisir » choisit', avant: 'Ligne → carte en lecture → « Je m’y engage » → échéance → « C’est noté » : quatre gestes, et un mot qui promettait le premier.', apres: 'Ligne → carte ouverte sur « Quand ? » ou « Quels jours ? » → « C’est noté » : trois gestes.', pourquoi: 'Décision du 28/09 (comparer sur la liste), confirmée après correction de son cadrage. Le mot dit vrai, et qui veut regarder n’a plus à toucher un mot qui dit « choisir » : tout ce qui se compare est sur la ligne.', prix: 'ActionCommitment s’ouvre sur son sélecteur et rend la main par « Annuler » ; CarteDePiste passe les deux.', ou: 'B1 · action-commitment.tsx, carte-de-piste.tsx' },
+  { quoi: 'Un seul choix en cours', avant: 'Plusieurs cartes ouvertes à la fois — décidé en v1-16 §5 après la recette du 14/09, pour comparer —, chacune avec « Réduire », ajouté par #238 (la réparation de la planche A2).', apres: 'Une carte à la fois ; « Annuler » du sélecteur la rend à sa ligne ; « Réduire » disparaît.', pourquoi: 'Deux cartes ouvertes ne tiennent pas dans un écran (A0b) : la comparaison que v1-16 §5 voulait rendre possible se fait mieux sur les lignes, et on ne choisit qu’une action.', prix: 'Remplace v1-16 §5 sur ce point (confirmé le 28/09) ; l’ensemble ouvertes devient un identifiant.', ou: 'B1 · pistes.tsx' },
+  { quoi: '« Choisir à la place »', avant: 'Le bouton de la carte le disait (« Choisir celle-ci à la place »).', apres: 'La pastille le dit, quand une autre action est engagée.', pourquoi: 'Décidé le 28/09 (question 5). Le bouton de la carte n’est plus sur le chemin ; le remplacement, le geste le plus irréversible, se dit sur ce qu’on touche.', prix: 'Un libellé dérivé de l’engagement.', ou: 'A2, B3 · pistes.tsx, plan.ts' },
+  { quoi: 'L’ordre ne bouge plus', avant: 'L’engagée en tête, son groupe avec elle : l’écran se réarrange à chaque changement d’action.', apres: 'L’ordre du rang toute la saison ; la ligne engagée reste à sa place.', pourquoi: 'Décision du 28/09. La liste ouvre toujours sur le meilleur levier du poste dominant ; le plan, lui, garde l’engagée en tête.', prix: 'pistesParPoste ne passe plus par l’engagée d’abord ; un test s’inverse ; l’intro perd « Ton action en cours d’abord ».', ou: 'A2 · plan.ts, plan.test.ts' },
+  { quoi: 'La tête de groupe', avant: 'small 14/20 600 textTertiary, 16 au-dessus.', apres: 'label 13/18 600 textTertiary, capitales, +0,3 ; 24 au-dessus, 4 dessous.', pourquoi: 'Face à des titres en 16 text, une tête en 14 tertiaire s’effacerait : c’est la plainte du 18/09 qui reviendrait. Le motif est celui de « PREMIER PAS ».', prix: 'Un style.', ou: 'A1 · pistes.tsx' },
+  { quoi: 'La carte qu’on choisit', avant: 'Estompée (filet backgroundElement) quand une autre est engagée, comme sur le plan.', apres: 'Jamais estompée sur la liste : filet border.', pourquoi: 'L’estompage fait reculer la seconde carte du plan derrière l’engagée ; sur la liste, il ferait reculer la carte au moment où on la choisit.', prix: 'Une condition dans CarteDePiste.', ou: 'B3 · carte-de-piste.tsx' },
+  { quoi: 'Le focus et le défilement', avant: 'Rien ne le dit : la ligne touchée disparaît sous le geste, et ni la planche A2 ni l’écran ne disent où va le focus.', apres: 'Ouverture : focus au groupe de la question, défilement juste assez pour montrer « C’est noté ». « Annuler » : focus rendu à la ligne.', pourquoi: 'FRONT.md §2.4 : un contrôle qui disparaît sous le geste donne le focus à ce qui arrive.', prix: 'donnerLeFocus, et le défilement de la plateforme (scrollTo animé comme l’onboarding, instantané sous « réduire les animations ») : un mouvement neuf sur cet écran, à relire avec /mouvement.', ou: 'B1, B2 · pistes.tsx' },
+  { quoi: 'Le numéro de ce dossier', avant: 'v1-30 nomme déjà docs/architecture/v1-30-les-transitions.md.', apres: 'Ce dossier garde le nom que le brief lui a donné ; le document d’implémentation prendra un autre numéro.', pourquoi: 'Deux documents v1-30 ne se distingueraient que par leur dossier.', prix: '—', ou: '—' },
+  { quoi: 'Brief §7 : « une ligne engagée au milieu »', avant: 'Impossible avec le code : l’engagée est toujours la première ligne.', apres: 'Possible, et dessiné (A2).', pourquoi: 'C’est la décision sur l’ordre qui le rend vrai.', prix: '—', ou: 'A2' },
+  { quoi: 'Brief §5 : « la feuille d’intention »', avant: 'Le brief la nomme feuille ; dans le dépôt, c’est le sélecteur rendu dans la carte (ActionCommitment).', apres: 'Reste dans la carte, contenu inchangé ; seul son déclenchement change.', pourquoi: 'Une feuille par-dessus la liste, puis la feuille des rappels sur le plan, ferait deux feuilles pour un seul choix.', prix: '—', ou: 'B1' },
+  { quoi: 'Canvas v1-17, planche A2', avant: 'Cible 44, entrée translateY 16 et 260 ms, onglet actif en pastille backgroundSelected.', apres: 'Le dépôt : cible 48, HauteurSuivie 250/200 et fondu (v1-30-les-transitions.md), onglet actif en accent plein.', pourquoi: 'Le code gagne ; ce canvas dessine le dépôt, pas la planche.', prix: '—', ou: 'toutes' },
+  { quoi: 'Kit : ActionCard.jsx', avant: 'Écrit « − {Math.round(gainKg)} kg CO₂e » : « − 1601 » sans séparateur.', apres: 'Le dépôt écrit « − 1 601 » (formatKg, U+00A0).', pourquoi: 'Relevé en préparant ce canvas ; le code gagne, et le kit se corrige dans la même PR.', prix: 'Une ligne du kit.', ou: 'kit' },
+  { quoi: 'La hauteur des rangées (brief §1.1)', avant: 'Le brief dit 52 px.', apres: 'Relevé en production : 72 px à 390 (73 avec le filet), la plupart des titres tenant sur deux lignes à 14.', pourquoi: '52 est la rangée d’un titre sur une ligne (16 + 20 + 16) ; 72 celle d’un titre sur deux. La cible est tenue dans les deux cas.', prix: '—', ou: 'A0' },
+  { quoi: 'Thème sombre', avant: 'Colors.dark provisoire.', apres: 'Toutes les planches basculent ; aucun jeton ajouté.', pourquoi: 'Rien de nouveau à porter dans les deux thèmes.', prix: 'Aucun.', ou: 'toutes' },
+];
+const REPONSES = [
+  { ref: 'brief §1.1', question: 'La taille et le poids des lignes', reponse: 'Titre en 16/24 500 text, gain en 15/22 600 text dessous.', pourquoi: 'Le contenu principal à la taille du contenu, un cran sous la carte ouverte (17/600) ; le gain plus gras que le titre pour que l’œil descende la colonne des gains. La cible était bonne, elle le reste : 92 px au moins.' },
+  { ref: 'brief §1.2', question: '« Choisir » ne se donne pas pour un bouton', reponse: 'Une pastille bordée, et un mot qui dit vrai.', pourquoi: 'Un filet fieldBorder qui tient 3:1, comme le brief le demandait, sans accent plein. Et le mot tient sa promesse : toucher « Choisir » ouvre le choix, pas une carte à lire. Aucune icône : le système dit « bouton » par un cadre, et il n’en faut pas plus.' },
+  { ref: 'brief §1.3', question: 'Deux cartes ouvertes à trois lignes d’écart se comparent-elles ?', reponse: 'Non. On compare sur les lignes, on ouvre pour choisir.', pourquoi: 'Deux cartes ouvertes ne tiennent pas dans l’écran, et le gain d’une carte ouverte quitte la colonne des autres. Ce que la carte ajoute — la part, qui classe comme le gain, et la base — ne départage rien : tout ce qui se compare passe sur la ligne (décision du 28/09, qui remplace v1-16 §5 sur l’ouverture de plusieurs cartes).' },
+  { ref: 'brief §8.1', question: 'Le gain doit-il se lire sans ouvrir, et à quelle taille ?', reponse: 'Oui, à 15/22 600, sur sa propre ligne sous le titre, suivi de « par an ».', pourquoi: 'C’est le critère de comparaison. La part de l’empreinte reste dans la carte : un second chiffre par ligne qui dit la même chose que le premier serait du bruit.' },
+  { ref: 'brief §8.2', question: 'Grouper par poste, ou trier par gain ?', reponse: 'Grouper par poste (décision du 28/09).', pourquoi: 'Le faisable se décide par poste : qui ne peut pas renoncer à l’avion écarte un groupe d’un coup d’œil. Trié, l’écran se lirait comme un palmarès. Dans chaque groupe, du plus gros gain au plus petit ; les groupes dans l’ordre où leur poste apparaît au classement.' },
+  { ref: 'brief §8.3', question: 'À trois pistes, l’écran a-t-il une raison d’être ?', reponse: 'Oui, dès trois (décision du 28/09).', pourquoi: 'Une seule règle : le plan montre toujours deux cartes et une porte vers tout. À trois, l’écran montre une piste nouvelle, et c’est là qu’on la choisit. Une troisième carte sur le plan affaiblirait « une action par saison, une seule ».' },
+];
+const JETONS = [
+  { jeton: 'Colors.text', usage: 'Titre et gain de la ligne' },
+  { jeton: 'Colors.textTertiary', usage: '« par an », tête de groupe' },
+  { jeton: 'Colors.fieldBorder', usage: 'Filet de la pastille « Choisir » (3,45:1 ; 4,97:1 en sombre)' },
+  { jeton: 'Stroke.hairline', usage: 'L’épaisseur de ce filet, et celle des filets entre les lignes' },
+  { jeton: 'Colors.accentText', usage: 'Libellé de la pastille, « Engagée », « Retour au plan »' },
+  { jeton: 'Colors.accent', usage: 'Pastille-coche (ligne engagée), « C’est noté », onglet actif' },
+  { jeton: 'Colors.border', usage: 'Filet entre les lignes, cadre de la carte' },
+  { jeton: 'Colors.backgroundPressed', usage: 'La rangée sous le doigt' },
+  { jeton: 'ThemedText default (16/24)', usage: 'Titre de la ligne, en 500' },
+  { jeton: 'TypeScale.body (15/22)', usage: 'Gain de la ligne, en 600 tabulaire ; intro' },
+  { jeton: 'TypeScale.label (13/18)', usage: 'Tête de groupe, en capitales' },
+  { jeton: 'Radius.field (16)', usage: 'La pastille, dont c’est la moitié de la hauteur' },
+  { jeton: 'Spacing.one / two / three / four', usage: '4 titre–gain · 8 gain–pastille · 16 rembourrage · 24 au-dessus d’une tête' },
+];
+const NE_PAS_FAIRE = [
+  'Pas de balayage, de carrousel ni de paquet de cartes.',
+  'Pas de bouton plein par ligne : dans la liste, l’accent plein n’apparaît qu’une fois, sur la pastille-coche de la ligne engagée — hors barre d’onglets, et hors « C’est noté » quand un choix est ouvert.',
+  'Pas de piste masquée, grisée ou reléguée : toute piste listée se choisit.',
+  'Pas de rang affiché, de médaille ni de « meilleure piste ».',
+  'Pas d’icône, donc pas de bibliothèque : une forme suffit à dire « bouton ».',
+  'Pas de jeton neuf (une valeur en dur, la hauteur 32 de la pastille), pas de route neuve, pas de seconde carte : la carte ouverte est celle du plan.',
+  'Pas de premier pas avant l’engagement : il n’apparaît que sur le plan, une fois l’action prise.',
+  'Pas de Ramille sur cet écran : chaque ligne porte un chiffre, et elle ne se tient jamais près d’un chiffre.',
+  'Pas d’animation dessinée : HauteurSuivie et Apparition, tels que v1-30-les-transitions.md les a livrés, et le défilement de la plateforme pour montrer « C’est noté », instantané sous « réduire les animations ».',
+];
+
+class Component extends DCLogic {
+  state = { themeOverride: null, choix: null, echeances: {}, jours: {}, engagee: null };
+  renderVals() {
+    const s = this.state;
+    const theme = s.themeOverride || this.props.theme || 'light';
+    const groupes = parPoste(PISTES);
+
+    // A1 — le prototype : un seul choix en cours, « C'est noté » engage (dans l'app : retour au plan).
+    const etatProto = (p) => (s.engagee === p.id ? 'engagee' : s.engagee ? 'aLaPlace' : 'libre');
+    const a1 = ecran({
+      contenu: contenuListe(groupes, {
+        intro: s.engagee ? INTRO_ENGAGEE : INTRO_LIBRE,
+        etatDe: etatProto,
+        enChoix: s.choix,
+        onChoisir: (id) => this.setState({ choix: id }),
+        carte: (p, separee) => carteAuChoix(p, {
+          separee,
+          choix: s.echeances[p.id] || null,
+          jours: s.jours[p.id] || [],
+          onPick: (e) => this.setState({ echeances: { ...s.echeances, [p.id]: e } }),
+          onJour: (i) => { const j = s.jours[p.id] || []; this.setState({ jours: { ...s.jours, [p.id]: j.includes(i) ? j.filter((x) => x !== i) : [...j, i] } }); },
+          onAnnuler: () => this.setState({ choix: null }),
+          onNote: () => this.setState({ engagee: p.id, choix: null }),
+        }),
+      }),
+      pli: 784,
+    });
+    const statique = (largeur, etatDe, intro, pli) => ecran({ largeur, pli, contenu: contenuListe(groupes, { intro, etatDe, enChoix: null, carte: () => null }) });
+    const libre = () => 'libre';
+    const engageeP5 = (p) => (p.id === 'p5' ? 'engagee' : 'aLaPlace');
+
+    const b1 = ecran({ hauteur: 844, contenu: contenuListe(groupes, { intro: INTRO_LIBRE, etatDe: libre, enChoix: 'p1', carte: (p, separee) => carteAuChoix(p, { separee, cible: true }) }) });
+    const b2 = ecran({ largeur: 360, hauteur: 800, cible: 120, contenu: contenuListe(groupes, { intro: INTRO_LIBRE, etatDe: libre, enChoix: 'p7', carte: (p, separee) => carteAuChoix(p, { separee, jours: [1, 3], cible: true }) }) });
+    const b3 = ecran({ hauteur: 844, cible: 36, contenu: contenuListe(groupes, { intro: INTRO_ENGAGEE, etatDe: engageeP5, enChoix: 'p4', carte: (p, separee) => carteAuChoix(p, { separee, choix: 'À ma prochaine occasion', cible: true }) }) });
+
+    const courtes = parPoste(PISTES_COURTES);
+    const c1 = ecran({ hauteur: 844, contenu: contenuListe(courtes, { intro: INTRO_LIBRE, etatDe: libre, enChoix: null, carte: () => null }) });
+
+    return {
+      theme, themeLabel: theme === 'dark' ? 'Voir en thème clair' : 'Voir en thème sombre',
+      toggleTheme: () => this.setState({ themeOverride: theme === 'dark' ? 'light' : 'dark' }),
+      remettre: () => this.setState({ choix: null, engagee: null, echeances: {}, jours: {} }),
+      a0: ecran({ contenu: contenuAujourdhui([], null), pli: 784 }),
+      a0b: ecran({ hauteur: 844, cible: 150, contenu: contenuAujourdhui(['p1', 'p3'], 'p1') }),
+      a1,
+      a1_360: statique(360, libre, INTRO_LIBRE, 740),
+      a2: statique(390, engageeP5, INTRO_ENGAGEE, 784),
+      a2_360: statique(360, engageeP5, INTRO_ENGAGEE, 740),
+      b1, b2, b3,
+      b4: ecran({ contenu: contenuPlan(false) }),
+      b5: ecran({ hauteur: 844, contenu: contenuPlan(true), feuille: feuilleRappels() }),
+      c1,
+      ligneCotee: h('div', { style: { padding: '0 16px' } }, ligne(PISTES[0], { etat: 'libre' })),
+      troisEtats: [ligne(PISTES[1], { etat: 'libre', filet: true }), ligne(PISTES[2], { etat: 'aLaPlace', filet: true }), ligne(PISTES[4], { etat: 'engagee' })],
+      ecarts: ECARTS.map((e) => ({ quoi: fr(e.quoi), avant: fr(e.avant), apres: fr(e.apres), pourquoi: fr(e.pourquoi), prix: fr(e.prix), ou: e.ou })),
+      reponses: REPONSES.map((r) => ({ ref: r.ref, question: fr(r.question), reponse: fr(r.reponse), pourquoi: fr(r.pourquoi) })),
+      jetons: JETONS.map((j) => ({ jeton: j.jeton, usage: fr(j.usage) })),
+      nePasFaire: NE_PAS_FAIRE.map(fr),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -128,6 +128,16 @@ Ce qui suit de ce choix :
 
 ## 5. Décision 3 (§12.4) — l'insistance reste, la permission devient totale
 
+> **Remplacée en partie le 28/09/2026, pour l'écran « Toutes les pistes »** : la puce « plusieurs
+> lignes peuvent être ouvertes à la fois » tombe. Le canvas
+> [`docs/design/v1-30-toutes-les-pistes/`](../design/v1-30-toutes-les-pistes/README.md) (décision
+> n° 1, prise avec la personne qui pilote) fait comparer **sur la liste** : la ligne porte le titre
+> et le gain, « Choisir » devient une pastille bordée qui ouvre la carte directement sur
+> l'intention, et un seul choix est en cours à la fois. Deux cartes ouvertes ne tiennent pas dans
+> l'écran (planche A0b), donc elles ne se comparaient pas. **Le code suit encore cette section tant
+> que le chantier n'est pas livré.** Le reste de la décision tient : toute action affichée est
+> engageable.
+
 **Décidé : les trois rangs restent, et toute action affichée devient engageable.** C4.6 a posé deux
 cartes pleines, deux cartes estompées derrière « Voir d'autres pistes · N », puis des lignes simples.
 Les lignes n'ont pas de bouton : sur un plan à six actions, deux leviers réels sont affichés,

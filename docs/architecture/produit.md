@@ -439,6 +439,21 @@ l'état d'avancement de chaque chantier, pour qu'un autre agent puisse le repren
 est fusionnée le 28/09/2026 ; la recette sur appareil (`v1-13` §11, ligne 11.21) et la vague 2 — la
 sortie de l'écran de lancement — viennent après.
 
+**L'écran « Toutes les pistes » a son canvas depuis le 28/09/2026**
+([`docs/design/v1-30-toutes-les-pistes/`](../design/v1-30-toutes-les-pistes/README.md)), en réponse au
+brief de l'issue [#235](https://github.com/ScratchMe/Ramille/issues/235), la seconde moitié de
+« Toutes les pistes » nommée plus haut. Une idée le porte : **on compare sur la liste, on touche pour
+choisir**. Cinq décisions de produit y sont prises une à une avec la personne qui pilote :
+- comparer sur la liste, un seul choix à la fois — ce qui remplace `v1-16` §5 sur l'ouverture de
+  plusieurs cartes ;
+- l'ordre de la liste ne bouge pas quand on s'engage ;
+- les pistes restent groupées par poste ;
+- l'écran reste dès trois pistes ;
+- « Choisir à la place » sur la pastille quand une action est engagée.
+
+**Rien n'est encore codé** : le document d'implémentation reste à écrire, sous un autre numéro que
+`v1-30`, et l'écran en production reste celui de la réparation (la première moitié, livrée).
+
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 
 **Le lot 2 a son canvas Claude Design, livré le 10/09/2026** : `docs/design/v1-14-boucle-engagement/`
