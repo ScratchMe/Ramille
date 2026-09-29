@@ -717,6 +717,14 @@ point 5). Elles se consignent datées en tête de la garde qui tombe.
 | La garde de l'étape courante retirée de `handleNext` | aucune garde d'export : `StepShell` n'appelle déjà pas `onNext` sur une étape incomplète, donc c'est **par construction** une seconde garde. Un test d'écran (`TESTING.md` §2.10) ne vaut que si l'on nomme une mutation qu'il fait tomber et que rien d'autre ne voit, et celle-ci en est une : écrire le test, ou consigner pourquoi on ne l'écrit pas |
 | « Bus » remis en dur dans H | H, sur le premier révélé |
 
+**Jouées le 29/09/2026**, et ce qui est tombé est consigné en tête de la section K de
+`scripts/verifier-etats-export.mjs`. Trois lignes ci-dessus ne sont pas tombées comme elles étaient
+écrites, et ce n'est pas un défaut des gardes : la demande part **déjà** à l'appui (§9, ligne 14), et
+c'est la capture de la répétition que l'Entrée maintenu garde ; le brouillon rouvert au vélo est tenu
+par **deux** défenses, et le compte des réponses n'est seul que contre un préremplissage arrivé après
+le montage, que le parcours réel garde désormais ; et sans réseau, `ensureSession()` échoue avant
+toute écriture, donc c'est le retour à la première étape incomplète qui tombe, pas la soumission.
+
 ### 6.5 Ce qui n'est pas gardé, et qu'il ne faut pas prétendre gardé
 
 - **Tout ce qui se passe sur natif** : TalkBack, le défilement d'Android, le clavier qui s'ouvre sur
@@ -822,7 +830,7 @@ suivre sont celles du handoff.
 | 4.6 | La demande : ligne, marque, focus, ancres | fait, 29/09/2026 : `useAncreDuChamp` et `IntituleDuChamp` (`src/components/bilan/ancre-du-champ.tsx`), la demande dans `StepShell`, `optionCible` (`src/types/demande.ts`) ; la prop `ref` de `Chip`, `ChoiceRow`, `NumericField` ; les neuf étapes et `ChampsDeContexte` s'enregistrent. Relevé sur l'export : A3 sans ligne, A4 ligne, marque et focus sur « 2 personnes », A6 titre inchangé, la ligne qui suit un changement de mode. Et un défaut antérieur fermé en passant : le focus sautait sur l'étape quand un brouillon la relisait après le montage (§9) |
 | 4.7 | Les deux défilements, `Depliage` | fait, 29/09/2026 : `decalagePourMontrer` (`src/types/demande.ts`), qui réutilise `defilementPourMontrer` gagné d'une `margeHaut` ; `useApresLeMontage` et `useJoue` à la place de `useJoueAuMontage` ; `suivieALOuverture` et `ChoixOuvrant` ; le geste compté par `update` (§9). Mesuré sur l'export : B6 défile de 56, la boîte finit à 682 ; D2 de 261, les tranches finissent à 670 ; A4 et le brouillon rouvert au vélo ne défilent pas — avec et sans animations |
 | 4.8 | Le filet du pied | fait, 29/09/2026 : `suiteSousLePied` (`src/types/demande.ts`), relu au défilement, à la taille du contenu et à celle de la zone. Relevé sur l'export : absent en A1 à 390 et sur une étape courte, présent en B1 à 360 (698) et en D1 (742), absent au bas de D1 |
-| 6 | Section K, mutations de §6.4, H2 rejouée | à faire |
+| 6 | Section K, mutations de §6.4, H2 rejouée | fait, 29/09/2026 : la section K, et dix-sept mutations en dix-neuf passages (deux rejouées sur la garde finale), un export chacun, consignées en tête de la section. Trois lignes de §6.4 ne sont pas tombées comme écrites — `onPressIn` (écart 14), le défilement à l'ouverture joué au montage (deux défenses), la soumission (hors réseau) — et deux cas ont dû être ajoutés pour que la demande qui ne retombe pas se voie. La section K a trouvé l'écart 14 à son premier passage ; la contre-lecture, une course du parcours réel et deux mécanismes sans garde, désormais gardés (A3 lit le focus, un cas neuf du parcours réel pour l'écart 12). H2 rejouée en §4.1 |
 | 4.9 | Le kit | fait, 29/09/2026 : les fiches touchées, deux neuves (`BoiteDePrecision`, `IntituleDuChamp` — les ancres, que le plan n'avait pas prévues), `ChoixOuvrant` dans `SANS_INTERFACE` (il ne dessine rien), `bilan.card.js`, les exemples des `.prompt.md`, et l'écran B1.4 du kit d'écrans (`ui_kits/ramille/screens.js`), qui passait encore `nextDisabled` et affichait la motorisation hors de sa boîte. Miroir vert. Les sept aperçus de `.design-sync/previews/` suivent à la prochaine synchronisation |
 | 7 | Les documents | fait, 29/09/2026 : `FRONT.md` §2.4, §2.6, §2.12 ; `EXPO.md` §1.5 ; `TESTING.md` §2.14 (la section K, et deux règles payées en l'écrivant) ; `CLAUDE.md` (télétravail) ; la recette 02.2, 02.6 et 02.10 ; le README du dossier de design ; `v1-13` ligne 11.19 et `produit.md` ; §9 lignes 12 à 14 |
 | 8.1 à 8.6 | Vérifications, contre-lecture, rejeu de la CI, poids Vercel | à faire |

@@ -1685,7 +1685,34 @@ for (const reduire of [false, true]) {
 // préférence. Un cas n'est à 360 × 800 que quand la planche l'y met ; celui du défilement à la main est
 // à 390 × 600, la seule hauteur où la question des personnes peut sortir de la zone par le haut.
 //
-// Mutations du 29/09/2026 : voir la table en tête de ce fichier, section K.
+// **Éprouvée en la cassant le 29/09/2026** (`v1-31` §6.4) : une mutation à la fois, un export chacune
+// (cache Metro isolé, `--clear`, bundle différent de celui du commit à chaque fois), sur des fichiers
+// égaux au commit, et le script entier rejoué. Ce qui tombe, dans tout le script :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | la demande vraie au montage (« d'office ») | A3 (la ligne et la marque à l'arrivée), « Train » après la complétude, et les deux « Retour » — une ligne à chaque arrivée |
+//   | la demande qui ne retombe pas à la complétude | « Train » choisi après la complétude — seulement. Le « 2 » choisi que nommait le plan ne peut pas la montrer : la ligne se dit de ce qui manque **maintenant** (`v1-31` §2.9), et il ne manque plus rien |
+//   | la demande qui ne retombe pas en changeant d'étape (`demande === entree.cle` retiré) | « Retour » vers des jours et une distance vides — seulement. « A4, Retour, Suivant » reste vert : il revient sur une étape complète, où la demande retombe par la complétude (`TESTING.md` §2.14, règle 8) |
+//   | le focus qui ne part pas (`donnerLeFocus(cible)` retiré) | A4, A6, D2 avec et sans la préférence, la ligne touchée à 390 × 600, l'Entrée maintenu — le focus reste sur « Suivant » ou sur la ligne |
+//   | `seMarque` vraie pour la question principale | A6 : le titre recoloré — seulement. Et deux tests de `bilan.test.ts` |
+//   | la demande partie à l'appui (`onPressIn` sur le « Suivant » en attente) | **pas l'Entrée maintenu** : la demande part déjà à l'appui (`v1-31` §9, écart 14), et c'est la capture de la répétition qui le tient. Tombent les clics — A4, A6, D2 avec et sans la préférence, la ligne touchée, « Retour » vers une étape vide : sous cette mutation, un clic de Playwright ne fait pas partir la demande (non élucidé) |
+//   | le défilement vers ce qui manque retiré | la ligne touchée à 390 × 600 (la question reste à −180), D2 avec et sans la préférence — seulement |
+//   | `animated: true` sous la préférence | D2 et B6 sous la préférence — seulement |
+//   | le défilement à l'ouverture retiré | B6 avec et sans la préférence — seulement |
+//   | l'ouverture suivie sans le compte des réponses (le `return` de `suivreLOuverture`) | **rien ici** : le brouillon rouvert au vélo est retenu par une seconde défense, `Depliage`, qui n'annonce pas ce qui monte avec son écran. Le compte est seul contre un préremplissage arrivé après le montage, que ce script ne peut pas jouer sans réseau : c'est le parcours réel qui le garde (« un re-bilan ouvert sur l'étape du mode ») |
+//   | les deux défenses retirées (le compte **et** `apres` dans `Depliage`) | le brouillon rouvert au vélo, défilé de 56 px au montage — seulement. Sa condition se lit **avant** défilement : lue après, la première passe l'a fait tomber en « mesure sans objet », pour la mauvaise raison |
+//   | le filet toujours posé | l'étape courte — seulement |
+//   | le filet jamais posé | D1 avec et sans la préférence — seulement |
+//   | `disabled` remis sur le « Suivant » en attente | A3 (l'attribut), puis chaque cas qui touche le « Suivant » en attente, dont l'Entrée maintenu (ni ligne, ni focus) |
+//   | la garde de la dernière étape réduite à l'étape courante (`issueDuSuivant`) | `?etape=context` : l'écran n'est pas revenu à la première étape — seulement. La moitié « une écriture est partie » ne peut pas tomber ici : sans réseau, `ensureSession()` échoue avant tout `POST` ; elle garde un export branché sur une stack |
+//   | la capture de la répétition d'Entrée retirée (`barre-d-espace.ts`) | l'Entrée maintenu, sur ses deux constats — seulement |
+//   | le focus volé par un brouillon relu (`entree.sens === null` retiré de l'effet) | A3 : à l'arrivée du brouillon, le focus est sur l'étape — seulement (`v1-31` §9, écart 13) |
+//
+// La garde de l'étape courante retirée de `handleNext` n'a pas de cas ici : `StepShell` n'appelle
+// déjà pas `onNext` sur une étape incomplète, donc c'est par construction une seconde garde, et c'est
+// `issueDuSuivant` qui la porte, testée dans `bilan.test.ts` (deux mutations consignées). « Bus » en
+// dur dans H : section H, mutation H2 rejouée le même jour.
 const LARGEUR_ETROITE = { largeur: 360, hauteur: 800 };
 const COULEUR = (() => {
   const source = readFileSync('src/constants/theme.ts', 'utf8');
@@ -2078,7 +2105,12 @@ if (Object.values(COULEUR).some((c) => c === null)) {
       await page.waitForTimeout(REPOS);
       const lu = await lireK(page, 'Quel type de vélo ?');
       if (!lu.zone || !lu.groupe) kEchec(ou, 'la mesure ne peut pas se prendre.');
-      else if (lu.groupe.bas <= lu.zone.bas) kEchec(ou, 'la mesure ne prouve rien — la boîte du vélo n’est pas sous le pied à l’arrivée.');
+      // La position **avant** défilement : un défilement au montage, que ce cas existe pour voir, remonte
+      // la boîte au-dessus du pied, et lire la position d'après le ferait passer pour une mesure sans
+      // objet (mutation des deux défenses, 29/09/2026).
+      else if (lu.groupe.bas + lu.zone.decalage <= lu.zone.bas) {
+        kEchec(ou, 'la mesure ne prouve rien — la boîte du vélo n’est pas sous le pied à l’arrivée.');
+      }
       else if (lu.zone.decalage !== 0) kEchec(ou, `l'écran a défilé de ${Math.round(lu.zone.decalage)} px au montage — une ouverture ne se suit qu'après un geste.`);
     } catch (erreur) {
       kEchec(ou, String(erreur).slice(0, 180));
