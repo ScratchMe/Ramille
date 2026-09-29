@@ -806,7 +806,7 @@ suivre sont celles du handoff.
 | — | Relevé de §3 et tables de §2.3, refaits contre `main` (7dce4ae) | fait, 29/09/2026 : inchangés. `v1-32`, fusionné entre-temps, n'a touché aucun fichier du questionnaire ; il a donné à `button.tsx` sa prop `ref` (déjà noté en §3) et à `src/types/mouvement.ts` `defilementPourMontrer`, réutilisée en §4.7 |
 | 4.4 | Ce qui manque, nommé par son champ | fait, 29/09/2026 : `ChampDuBilan`, `CHAMPS_DE_L_ETAPE`, `QUESTION_PRINCIPALE`, `seMarque` ; quatre mutations consignées dans `bilan.test.ts` |
 | 4.1 | L'ordre et les familles, section H | fait, 29/09/2026 : `MODES_PAR_FAMILLE`, `FAMILLE_DU_MODE`, `enFamilles` et leur test ; section H lit le premier révélé dans la source, H2 rejouée |
-| 4.2 | Les rangées de 48 et les écarts | à faire |
+| 4.2 | Les rangées de 48 et les écarts | fait, 29/09/2026 : mesuré sur l'export à 390 × 844 et 360 × 800, titre 82 → 178, liste 194 → 682, rangées de 48, écarts 4 et 16, lien 690 → 738 — les valeurs du handoff (A1, B1) au pixel |
 | 4.3 | La boîte de précision | à faire |
 | 4.5 | Le « Suivant » en attente, `handleNext`, `suivant()` | à faire |
 | 4.6 | La demande : ligne, marque, focus, ancres | à faire |

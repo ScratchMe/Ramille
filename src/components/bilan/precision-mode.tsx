@@ -86,5 +86,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     marginLeft: Spacing.three,
   },
-  reponses: { gap: Spacing.two },
+  // 4 entre deux réponses, comme entre deux modes d'une famille (`v1-31` écart 2).
+  reponses: { gap: Spacing.one },
 });

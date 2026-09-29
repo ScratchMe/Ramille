@@ -47,7 +47,7 @@ export function CommuteModeStep({
           par famille, 4 px entre deux modes d'une famille, 16 entre deux familles. Les flèches du
           clavier ne les voient pas — `groupe-au-clavier.ts` prend les options dont le groupe est le
           plus proche. */}
-      <GroupeDeChoix question={QUESTION_MODE} style={styles.familles}>
+      <GroupeDeChoix question={QUESTION_MODE} style={[styles.familles, styles.liste]}>
         {enFamilles(COMMUTE_MODE_CHOICES, (choice) => choice.modeId).map((famille) => (
           <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
             {famille.map((choice) => {
@@ -154,7 +154,11 @@ export function CommuteModeStep({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: Spacing.four },
+  // **16 entre le titre et la liste, 8 entre la liste et le lien du mode manquant** (`v1-31` écart 5) —
+  // 24 et 24 auparavant. Deux écarts différents, et Yoga ne fusionne pas les marges (`EXPO.md` §1.6) :
+  // le conteneur porte le plus petit, et la liste, second voisin de sa frontière, ajoute le reste.
+  container: { gap: Spacing.two },
+  liste: { marginTop: Spacing.two },
   familles: { gap: Spacing.three },
   famille: { gap: Spacing.one },
   precision: { marginTop: Spacing.two },

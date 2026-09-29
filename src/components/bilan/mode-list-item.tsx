@@ -2,7 +2,7 @@ import type { Ref } from 'react';
 import { Pressable, StyleSheet, type View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing, Stroke } from '@/constants/theme';
+import { ControlHeight, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { activableALaBarreDEspace } from '@/lib/barre-d-espace';
 import { fondDuChoix } from '@/types/fond-du-choix';
@@ -67,9 +67,17 @@ export function ModeListItem({
 }
 
 const styles = StyleSheet.create({
+  // **48 de haut, la cible, et non plus 53** (29/09/2026, `v1-31` écart 1) : neuf rangées de 53 dp
+  // débordaient sous le pied dès qu'une précision s'ouvrait. À 48, neuf modes tiennent sous la question
+  // à 390 × 844 comme à 360 × 800. Un **minimum** et non une mesure, avec un rembourrage de 4 et le
+  // libellé centré : un libellé agrandi par la taille de police du système fait grandir la rangée au
+  // lieu de déborder (A10-21, la règle de `Button` et de `Chip`). Vaut pour tout ce qui passe par ce
+  // composant : les modes, « Lequel ? », et les réponses d'une précision.
   item: {
-    paddingVertical: 14,
+    minHeight: ControlHeight.target,
+    paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
+    justifyContent: 'center',
     borderRadius: Radius.chip,
     borderWidth: Stroke.selected,
   },
