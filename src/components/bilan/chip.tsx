@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet } from 'react-native';
+import type { Ref } from 'react';
+import { Pressable, StyleSheet, type View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, Stroke } from '@/constants/theme';
@@ -41,6 +42,12 @@ export type ChipProps = {
    *  une puce qui s'ajouterait sans rôle ne compile pas. Une puce n'est jamais une action — une
    *  action est un `Button` ou un `TextLink`. */
   role: 'radio' | 'checkbox';
+  /**
+   * La surface de la puce, pour qui doit lui donner le focus — « Il manque encore … » le pose sur
+   * l'option cochée d'un groupe, ou sa première (`v1-31` §2.5). Une prop comme une autre depuis
+   * React 19, comme celle de `ModeListItem`.
+   */
+  ref?: Ref<View>;
 };
 
 // Chip générique — couvre les pickers numériques/tranches (B1.3, B2.2, B3.*) et les
@@ -56,6 +63,7 @@ export function Chip({
   nestedBackground,
   accessibilityLabel,
   role,
+  ref,
 }: ChipProps) {
   const theme = useTheme();
 
@@ -70,6 +78,7 @@ export function Chip({
 
   return (
     <Pressable
+      ref={ref}
       onPress={onPress}
       // Espace coche la puce sur web, ce que react-native-web ne fait que pour un bouton
       // (`src/lib/barre-d-espace.ts`) ; Entrée reste la sienne.

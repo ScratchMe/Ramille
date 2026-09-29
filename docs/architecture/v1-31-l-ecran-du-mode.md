@@ -301,6 +301,13 @@ exception ici serait un autre chantier. La section K l'épingle par un cas (§6.
 demande partait à l'appui plutôt qu'au relâchement, un Entrée maintenu cocherait la première option
 sans décision.
 
+**Le mécanisme de ce paragraphe était faux, et la lecture tient quand même** (29/09/2026, §9 ligne
+14). Le « Suivant » est un `<button>` natif sous react-native-web, qui s'active à l'**appui** d'Entrée,
+pas au relâchement : la demande partait, le focus arrivait sur l'option pendant que la touche était
+tenue, et la répétition la cochait — la section K l'a vu à son premier passage. Ce qui tient la
+lecture n'est donc pas le moment où part la demande, mais une capture : une répétition d'Entrée ne
+commence rien sur un choix (`activableALaBarreDEspace`). Le second appui coche toujours.
+
 ## 3. Le relevé de fichiers
 
 Fait le 29/09/2026 en lisant le code, pas supposé. Les chantiers sont en §4.
@@ -625,7 +632,10 @@ Tout est sous `docs/design/design-system/components/`.
   - `MissingModeLink.tsx`, pour l'ordre ;
   - `StepShell.tsx`, `CommuteModeStep.tsx`, `CommuteHasTripStep.tsx`,
     `CommuteDaysDistanceStep.tsx`, `CommuteExtraStep.tsx` et `Button.tsx`, qui passent
-    `nextDisabled` ou `manque` en chaîne, ou décrivent l'ancienne ligne.
+    `nextDisabled` ou `manque` en chaîne, ou décrivent l'ancienne ligne ;
+  - *(relevés par la seconde contre-lecture, le 29/09/2026 : dix et non sept)* `PrecisionMode.tsx`,
+    `PrecisionChiffres.tsx` et `GroupeDeChoix.tsx`, qui rendent une précision hors de
+    `BoiteDePrecision` — elle ne dessine plus de boîte — et sans `champ`, que sa fiche exige.
 
   Les nommer dans la description de la PR suffit à ce que la synchronisation suivante les reprenne.
 
@@ -664,10 +674,13 @@ positive porte sur ce que le HTML statique ne dit pas** (`TESTING.md` §2.12).
 |---|---|
 | Étape du mode, covoiturage, « Hybride » coché, personnes vides, 390 × 844 (planche A3) | **À l'arrivée** : aucune ligne « Il manque encore », l'intitulé des personnes dans sa couleur d'aujourd'hui. **Le « Suivant » en attente** ne porte ni `disabled` ni `aria-disabled`. **La boîte** porte deux `radiogroup` nommés par leurs questions, dont le groupe le plus proche est celui des modes (§4.3) |
 | Le même, « Suivant » touché (A4) | L'étape n'a pas changé ; la ligne dit « Il manque encore le nombre de personnes dans la voiture. » ; l'intitulé est en `accentText`, **lu dans `theme.ts`**, pas recopié ; le focus est sur « 2 personnes » |
-| Le même, « Suivant » activé par un Entrée **maintenu** : deux `keydown` (le second répété), puis `keyup` | La demande, comme au toucher, et **aucune option cochée** (§2.10). Un appui simple ne prouverait rien : même avec la demande partie à l'appui, le relâchement tomberait sur une option qui n'a pas reçu l'appui, et react-native-web ne l'activerait pas |
+| Le même, « Suivant » activé par un Entrée **maintenu** : deux `keydown` (le second répété), puis `keyup` | La demande, comme au toucher, et **aucune option cochée** (§2.10). Un appui simple ne prouverait rien : même avec la demande partie à l'appui, le relâchement tomberait sur une option qui n'a pas reçu l'appui, et react-native-web ne l'activerait pas. *(La demande part bel et bien à l'appui — §2.10, dernier paragraphe : ce cas garde la capture de la répétition.)* |
 | Le même, après un défilement à la main qui remonte la question hors de la zone, la ligne touchée | La zone redescend jusqu'à la question, le focus y revient (§2.6, le geste suivant) |
 | Le même, « 2 » choisi | La ligne est partie, l'intitulé a repris sa couleur ; « Suivant » mène à l'étape suivante |
+| *(Ajouté à l'implémentation.)* Le même, « 2 » choisi puis « Train » : un nouveau manque | **Aucune ligne** : la demande est retombée à la complétude, et un nouveau manque ne se dit qu'au prochain toucher. C'est ce cas, et non celui du dessus, qui fait tomber la demande qui ne retombe pas à la complétude — la ligne se dit de ce qui manque maintenant (§2.9) |
 | A4, puis « Retour », puis « Suivant » : on revient sur l'étape du mode, encore incomplète | **Aucune ligne** : la demande est retombée en changeant d'étape |
+| *(Ajouté à l'implémentation.)* Étape du mode sans jours ni distance, « Suivant » touché, puis « Retour » | **Aucune ligne** sur l'étape d'avant, vide elle aussi. Le cas du dessus revient sur une étape **complète**, où la demande retombe déjà à la complétude : il ne peut pas dire si elle retombe en changeant d'étape ; celui-ci le peut |
+| *(Ajouté à l'implémentation.)* A3, lu à l'arrivée du brouillon | **Le focus est resté sur le document** : un brouillon relu après le montage n'est pas une entrée (§9, écart 13) |
 | Rien de choisi, « Suivant » touché (A6) | La ligne dit « Il manque encore ton mode de transport. » ; le focus est sur « Voiture (seul) » ; **le titre n'a pas changé de couleur** |
 | Sorties, « Voiture (seul) » et « Thermique », distance vide, 390 × 844 (D1, D2) | **Le filet** est là à l'arrivée ; au toucher, la zone descend jusqu'à ce que le groupe des tranches finisse 16 au-dessus du pied (au pixel près), et le focus est sur « Moins de 5 km ». Image par image : des positions intermédiaires ; sous la préférence, aucune |
 | Étape courte (« As-tu un trajet régulier… ») | **Pas de filet** : la moitié négative |
@@ -709,6 +722,31 @@ point 5). Elles se consignent datées en tête de la garde qui tombe.
 | La garde de la dernière étape réduite à l'étape courante | K, `?etape=context` : une soumission part |
 | La garde de l'étape courante retirée de `handleNext` | aucune garde d'export : `StepShell` n'appelle déjà pas `onNext` sur une étape incomplète, donc c'est **par construction** une seconde garde. Un test d'écran (`TESTING.md` §2.10) ne vaut que si l'on nomme une mutation qu'il fait tomber et que rien d'autre ne voit, et celle-ci en est une : écrire le test, ou consigner pourquoi on ne l'écrit pas |
 | « Bus » remis en dur dans H | H, sur le premier révélé |
+
+**Jouées le 29/09/2026**, et ce qui est tombé est consigné en tête de la section K de
+`scripts/verifier-etats-export.mjs` — c'est elle qui fait foi, pas cette table, qui disait ce qu'on
+attendait. **Cinq lignes ne sont pas tombées comme elles étaient écrites** :
+
+- **la demande qui ne retombe pas à la complétude** ne se voit pas sur « 2 » choisi : la ligne se dit
+  de ce qui manque maintenant (§2.9), et il ne manque plus rien. Elle tombe sur un cas ajouté, un
+  nouveau manque après la complétude (§6.2) ;
+- **la demande qui ne retombe pas en changeant d'étape** ne se voit pas sur « A4, Retour, Suivant » :
+  on revient sur une étape complète, où elle retombe déjà à la complétude. Elle tombe sur un cas
+  ajouté, « Retour » vers une étape vide elle aussi ;
+- **la demande partie à l'appui** ne fait pas tomber l'Entrée maintenu : elle part **déjà** à l'appui
+  (§9, ligne 14), et c'est la capture de la répétition que ce cas garde — sa mutation, elle, le fait
+  tomber ;
+- **le défilement à l'ouverture joué au montage** ne fait pas tomber le brouillon au vélo : il est tenu
+  par **deux** défenses, et il faut retirer les deux. Le compte des réponses n'est seul que contre un
+  préremplissage arrivé après le montage, que le parcours réel garde désormais ;
+- **la garde de la dernière étape** ne fait pas partir de soumission : sans réseau, `ensureSession()`
+  échoue avant toute écriture, donc c'est le retour à la première étape incomplète qui tombe.
+
+**La garde de l'étape courante dans `handleNext`** n'a pas de test d'écran, et n'en a plus besoin :
+l'aiguillage est un `switch` exhaustif sur le genre que rend `issueDuSuivant`, donc un cas retiré ne
+compile pas (éprouvé : le cas `attendre` retiré, `tsc` le refuse), et un genre inconnu ne soumet
+jamais. La contre-lecture l'avait trouvé écrit en `if` successifs, où tout genre non aiguillé tombait
+sur la soumission.
 
 ### 6.5 Ce qui n'est pas gardé, et qu'il ne faut pas prétendre gardé
 
@@ -781,7 +819,7 @@ dément.
 
 | # | Le handoff ou le canvas | Ce qui est livré | Pourquoi |
 |---|---|---|---|
-| 1 | L'ordre de « Lequel ? » vit dans les clés de `TRANSPORT_MODE_LABELS` | Une liste ordonnée par famille, d'où les trois listes dérivent | §2.1 : l'ordre des clés d'un objet est un accident |
+| 1 | L'ordre de « Lequel ? » vit dans les clés de `TRANSPORT_MODE_LABELS` | Une liste ordonnée par famille, que « Lequel ? » itère ; les deux listes de B1.4 et B2.2 restent littérales, tenues d'accord avec elle par un test *(corrigé le 29/09/2026 : cette ligne disait « d'où les trois listes dérivent », et la section H exige que la seconde liste des sorties reste littérale)* | §2.1 : l'ordre des clés d'un objet est un accident |
 | 2 | Une « variante sans boîte » de `PrecisionMode` et `PrecisionChiffres` | Ils ne dessinent jamais de boîte ; `BoiteDePrecision` la porte toujours, avec son dépli | §2.2 : deux façons de dessiner une boîte divergent, et le défilement doit savoir qui l'annonce |
 | 3 | Le défilement à l'ouverture « d'une précision » | Aussi « Lequel ? » et la distance libre des sorties ; jamais les modes que « Voir les autres modes » révèle | §2.2 : la règle du handoff, appliquée à tout ce qui s'ouvre sous le doigt, et une liste fermée |
 | 4 | Ce qui manque est une phrase | Un champ logique et sa phrase ; la distance du trajet est un seul champ pour deux colonnes | §2.3 |
@@ -792,6 +830,9 @@ dément.
 | 9 | `disabled` « reste pour l'envoi en cours (« Enregistrement… ») » (écart 10) | Le « Suivant » de `StepShell` n'a plus aucun `disabled` | §2.4 : `StepShell` n'est pas rendu pendant l'envoi, et c'est le verrou `soumissionEnCours` qui garde la double soumission |
 | 10 | La borne : « le mode choisi » | Le choix qui a déclenché l'ouverture | §2.2 : trois ouvertures n'ont pas de mode au-dessus d'elles |
 | 11 | « Vient d'un geste » lu comme « pas au montage » | Un drapeau armé par un toucher ou une touche sur l'étape | §2.7 : le préremplissage arrive après le montage |
+| 12 | Le drapeau de l'écart 11, « armé par un toucher ou une touche » | Un compte des réponses données (`update`), que l'étape compare à celui qu'elle a vu | §4.7, 29/09/2026 : un toucher n'est pas une réponse — celui qui tombe sur une rangée déjà cochée n'ouvre rien —, et une touche peut répondre sans toucher. Le préremplissage et le brouillon écrivent sans passer par `update`, donc ne comptent pas : c'est ce que l'écart 11 voulait, lu sur la réponse et non sur le doigt |
+| 13 | Rien | Le focus ne se pose plus sur l'étape quand un brouillon la relit après le montage | §4.6, 29/09/2026 : défaut antérieur, trouvé en jouant A3. Le brouillon passe l'étape après le premier rendu, donc l'effet du focus la prenait pour une entrée et volait le focus au document ; il ne suit plus qu'une entrée qui a un sens (`entree.sens`), c'est-à-dire un « Suivant » ou un « Retour » |
+| 14 | §2.10 : « react-native-web active un `Pressable` au relâchement », donc Entrée maintenu ne coche rien | Une répétition d'Entrée ne commence rien sur un choix (`activableALaBarreDEspace`, `onKeyDownCapture`) | §6, 29/09/2026 : la lecture du code était fausse, et la section K l'a vu au premier passage. Un `role="button"` est un `<button>` natif sous react-native-web, qui s'active à l'**appui** d'Entrée : la demande partait, le focus arrivait sur « 2 personnes » pendant que la touche était tenue, et sa répétition — que la bibliothèque ne distingue pas d'un appui — la cochait au relâchement. La lecture du handoff tient (la demande ne coche rien, le second appui est un vrai choix) ; c'est son mécanisme qui a changé. Le même défaut attendait « Voir les autres modes », qui pose aussi le focus sur un choix : relevé sur l'export d'avant la correction, un Entrée maintenu y cochait « Deux-roues motorisé », et plus rien après |
 
 **Trois écarts sont déjà connus du dossier de design** (son `README.md`, « Ce que l'implémentation
 corrigera ») : le dépli et le défilement du prototype sont approximés, le DOM du canvas n'est pas
@@ -803,18 +844,19 @@ suivre sont celles du handoff.
 | § | Travail | État |
 |---|---|---|
 | — | Ce document | fait, 29/09/2026, et contre-lu le jour même (§13) |
-| 4.4 | Ce qui manque, nommé par son champ | à faire |
-| 4.1 | L'ordre et les familles, section H | à faire |
-| 4.2 | Les rangées de 48 et les écarts | à faire |
-| 4.3 | La boîte de précision | à faire |
-| 4.5 | Le « Suivant » en attente, `handleNext`, `suivant()` | à faire |
-| 4.6 | La demande : ligne, marque, focus, ancres | à faire |
-| 4.7 | Les deux défilements, `Depliage` | à faire |
-| 4.8 | Le filet du pied | à faire |
-| 6 | Section K, mutations de §6.4, H2 rejouée | à faire |
-| 4.9 | Le kit | à faire |
-| 7 | Les documents | à faire |
-| 8.1 à 8.6 | Vérifications, contre-lecture, rejeu de la CI, poids Vercel | à faire |
+| — | Relevé de §3 et tables de §2.3, refaits contre `main` (7dce4ae) | fait, 29/09/2026 : inchangés. `v1-32`, fusionné entre-temps, n'a touché aucun fichier du questionnaire ; il a donné à `button.tsx` sa prop `ref` (déjà noté en §3) et à `src/types/mouvement.ts` `defilementPourMontrer`, réutilisée en §4.7 |
+| 4.4 | Ce qui manque, nommé par son champ | fait, 29/09/2026 : `ChampDuBilan`, `CHAMPS_DE_L_ETAPE`, `QUESTION_PRINCIPALE`, `seMarque` ; quatre mutations consignées dans `bilan.test.ts`, et une cinquième après la contre-lecture (une faute dans `QUESTION_PRINCIPALE`, que le test ne voyait pas tant qu'il relisait la table) |
+| 4.1 | L'ordre et les familles, section H | fait, 29/09/2026 : `MODES_PAR_FAMILLE`, `FAMILLE_DU_MODE`, `enFamilles` et leur test ; section H lit le premier révélé dans la source, H2 rejouée |
+| 4.2 | Les rangées de 48 et les écarts | fait, 29/09/2026 : mesuré sur l'export à 390 × 844 et 360 × 800, titre 82 → 178, liste 194 → 682, rangées de 48, écarts 4 et 16, lien 690 → 738 — les valeurs du handoff (A1, B1) au pixel |
+| 4.3 | La boîte de précision | fait, 29/09/2026 : `BoiteDePrecision` porte le dépli et la boîte ; quatre familles de boîtes à deux groupes. Mesuré : covoiturage 302 → 650 à 390 comme à 360, les cinq puces sur une rangée à 360 ; train 470 → 674 (A2, B2, A5) |
+| 4.5 | Le « Suivant » en attente, `handleNext`, `suivant()` | fait, 29/09/2026 : `Button.enAttente` ; `StepShell` sans `nextDisabled` ; la seconde garde sortie de `handleNext` dans `issueDuSuivant` (`src/types/bilan.ts`), testée — deux mutations consignées ; `avancer()` dans le parcours réel, pour `suivant()` et `jusquAVoirMonBilan` |
+| 4.6 | La demande : ligne, marque, focus, ancres | fait, 29/09/2026 : `useAncreDuChamp` et `IntituleDuChamp` (`src/components/bilan/ancre-du-champ.tsx`), la demande dans `StepShell`, `optionCible` (`src/types/demande.ts`) ; la prop `ref` de `Chip`, `ChoiceRow`, `NumericField` ; les neuf étapes et `ChampsDeContexte` s'enregistrent. Relevé sur l'export : A3 sans ligne, A4 ligne, marque et focus sur « 2 personnes », A6 titre inchangé, la ligne qui suit un changement de mode. Et un défaut antérieur fermé en passant : le focus sautait sur l'étape quand un brouillon la relisait après le montage (§9) |
+| 4.7 | Les deux défilements, `Depliage` | fait, 29/09/2026 : `decalagePourMontrer` (`src/types/demande.ts`), qui réutilise `defilementPourMontrer` gagné d'une `margeHaut` ; `useApresLeMontage` et `useJoue` à la place de `useJoueAuMontage` ; `suivieALOuverture` et `ChoixOuvrant` ; le geste compté par `update` (§9). Mesuré sur l'export : B6 défile de 56, la boîte finit à 682 ; D2 de 261, les tranches finissent à 670 ; A4 et le brouillon rouvert au vélo ne défilent pas — avec et sans animations |
+| 4.8 | Le filet du pied | fait, 29/09/2026 : `suiteSousLePied` (`src/types/demande.ts`), relu au défilement, à la taille du contenu et à celle de la zone. Relevé sur l'export : absent en A1 à 390 et sur une étape courte, présent en B1 à 360 (698) et en D1 (742), absent au bas de D1 |
+| 6 | Section K, mutations de §6.4, H2 rejouée | fait, 29/09/2026 : la section K, et dix-sept mutations en dix-neuf passages (deux rejouées sur la garde finale), un export chacun, consignées en tête de la section. Trois lignes de §6.4 ne sont pas tombées comme écrites — `onPressIn` (écart 14), le défilement à l'ouverture joué au montage (deux défenses), la soumission (hors réseau) — et deux cas ont dû être ajoutés pour que la demande qui ne retombe pas se voie. La section K a trouvé l'écart 14 à son premier passage ; la contre-lecture, une course du parcours réel et deux mécanismes sans garde, désormais gardés (A3 lit le focus, un cas neuf du parcours réel pour l'écart 12). H2 rejouée en §4.1 |
+| 4.9 | Le kit | fait, 29/09/2026 : les fiches touchées, deux neuves (`BoiteDePrecision`, `IntituleDuChamp` — les ancres, que le plan n'avait pas prévues), `ChoixOuvrant` dans `SANS_INTERFACE` (il ne dessine rien), `bilan.card.js`, les exemples des `.prompt.md`, et l'écran B1.4 du kit d'écrans (`ui_kits/ramille/screens.js`), qui passait encore `nextDisabled` et affichait la motorisation hors de sa boîte. Miroir vert. Les dix aperçus de `.design-sync/previews/` (§4.9) suivent à la prochaine synchronisation |
+| 7 | Les documents | fait, 29/09/2026 : `FRONT.md` §2.4, §2.6, §2.12 ; `EXPO.md` §1.5 ; `TESTING.md` §2.14 (la section K, et deux règles payées en l'écrivant) ; `CLAUDE.md` (télétravail) ; la recette 02.2, 02.6 et 02.10 ; le README du dossier de design ; `v1-13` ligne 11.19 et `produit.md` ; §9 lignes 12 à 14 |
+| 8.1 à 8.6 | Vérifications, contre-lecture, rejeu de la CI, poids Vercel | fait, 29/09/2026 : `tsc`, lint, Jest ; la vue à 390 × 844 et 360 × 800, clair et sombre, aux valeurs du handoff ; deux contre-lectures, onze et douze constats, tous repris ; `rejouer-la-ci` 31 pas sur 31 ; le poids hors ligne à 4,164 Mio, sans écart. La PR est ScratchMe/Ramille#296 |
 | 8.7 | Build EAS | à demander |
 | 8.8 | Recette sur appareil (`v1-13` §11.19) | après le build |
 

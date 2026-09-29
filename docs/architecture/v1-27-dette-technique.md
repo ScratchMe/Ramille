@@ -1359,3 +1359,25 @@ du produit qui passent sur deux lignes, sur la foi d'une seule planche.
 canvas ou à la recette, pas ici — le prochain dessin qui montre une puce du questionnaire sur deux
 lignes dira si le centre vaut pour toutes. Le correctif, lui, tient en une ligne : `textAlign:
 'center'` sur le libellé.
+
+### 12.20 L'étape des sorties ne relit pas un préremplissage arrivé après son montage (29/09/2026)
+
+**Relevé par la seconde contre-lecture de l'écran du mode** (`v1-31`, hors de son diff) — **raisonné
+sur le code, pas rejoué**. `src/components/bilan/steps/leisure-detail.tsx` tient deux états locaux,
+initialisés au montage seulement : `showMore` (la seconde liste de modes ouverte) et `selectedKey` (la
+rangée cochée, qui départage « Voiture (seul) » de « Voiture (covoiturage) », les deux valant
+`voiture`). Un préremplissage qui arrive **après** le montage de l'étape ne les met pas à jour : sur
+un re-bilan d'un profil qui sort en bus, aucun mode ne paraîtrait coché et « Bus » resterait caché
+sous « Voir les autres modes », pendant que la réponse est bien dans l'état et que « Suivant »
+avance.
+
+**Pourquoi ce n'est pas fait dans ce chantier** : aucun chemin du produit n'y mène. Le préremplissage
+arrive pendant qu'on traverse les étapes d'avant, et un brouillon rouvre l'étape **après** l'avoir lu,
+donc elle monte avec ses réponses. Seule l'adresse `/bilan?etape=leisure_detail`, **tapée** — plus
+aucun écran n'émet `?etape=` depuis C6.4 —, monte l'étape avant le préremplissage. C'est la famille
+de l'écart 12 de `v1-31` (une donnée arrivée après le montage), sur un autre écran.
+
+**La direction, si on y revient** : dériver l'affichage des réponses quand aucun geste n'a encore
+choisi — `selectedKey ?? cleDesReponses(answers)`, et la seconde liste ouverte aussi quand le mode
+répondu y vit —, plutôt que de recopier l'état. Le rejouer d'abord : le parcours réel sait ouvrir
+`/bilan?etape=…` sur un profil qui a un bilan (son étape « un re-bilan ouvert sur l'étape du mode »).

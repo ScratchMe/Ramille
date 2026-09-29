@@ -333,6 +333,15 @@
 // Le piège que le plan (`v1-32` §4.4) prévoyait — le titre sous la bande — n'est qu'une des deux façons
 // de se tromper ; l'autre, défiler trop sans rien cacher, ne se voyait pas.
 //
+// **Et deux le 29/09/2026, sur l'écran du mode** (`v1-31`). Le cas neuf de l'écart 12, rejoué avec le
+// `return` de `suivreLOuverture` retiré (`step-shell.tsx`, fichier égal au commit, `rejouer-la-ci.mjs
+// parcours`) : le parcours s'arrête à « cycliste — un re-bilan ouvert sur l'étape du mode ne défile pas
+// sous son préremplissage », sur « l'écran a défilé de 132 px sous le préremplissage » — 132 et non 56,
+// le bandeau du préremplissage poussant l'étape d'autant. Le témoin, sur le même commit, passe de bout en
+// bout. Et la course du re-bilan de 8 ter, que la contre-lecture a trouvée : elle ne se provoque pas à
+// coup sûr — elle dépend de l'aller-retour du préremplissage —, donc elle n'a pas de mutation ; ce qui la
+// ferme est l'attente d'une réponse cochée, écrite en tête de `jusquAVoirMonBilan`.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -656,10 +665,64 @@ async function verifierLesGroupes(ou) {
   );
 }
 
+/**
+ * « Suivant » (ou « Voir mon bilan ») sur une étape du questionnaire, et **l'une des deux issues**
+ * attendue après le clic (29/09/2026, `v1-31` §4.5) : l'étape a changé — la ligne « Étape N sur M » a
+ * bougé ou disparu, ou une feuille s'est ouverte —, ou « Il manque encore … » est là, et le parcours
+ * s'arrête en la citant.
+ *
+ * **Playwright n'attend plus rien d'autre** : le « Suivant » d'une étape incomplète n'est plus ni
+ * `disabled` ni `aria-disabled` — il mène à ce qui manque —, donc le clic part aussitôt. Un parcours
+ * qui cliquerait sur une étape incomplète ne resterait plus bloqué : il échouerait à l'étape d'après,
+ * sous un message qui nommerait la mauvaise cause. La ligne « Étape » est lue avant la ligne qui
+ * manque : l'une et l'autre changent dans le même rendu, donc une ligne vue sous l'ancienne étape est
+ * bien celle de l'étape qu'on quitte.
+ */
+async function avancer(libelle = 'Suivant') {
+  const lireEtape = () =>
+    page.evaluate(() => {
+      const normaliser = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+      const n = [...document.querySelectorAll('div')].find(
+        (d) => d.children.length === 0 && /^Étape \d+ sur \d+$/.test(normaliser(d.innerText))
+      );
+      return n ? normaliser(n.innerText) : null;
+    });
+  const avant = await lireEtape();
+  await bouton(libelle);
+  const issue = await page
+    .waitForFunction(
+      (etapeAvant) => {
+        const normaliser = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+        const etape = [...document.querySelectorAll('div')].find(
+          (d) => d.children.length === 0 && /^Étape \d+ sur \d+$/.test(normaliser(d.innerText))
+        );
+        if (!etape || normaliser(etape.innerText) !== etapeAvant) return 'avance';
+        if (document.querySelector('[aria-modal="true"]')) return 'avance';
+        const ligne = [...document.querySelectorAll('body *')].find(
+          (e) =>
+            e.getClientRects().length > 0 &&
+            /^Il manque encore /.test(normaliser(e.innerText)) &&
+            ![...e.children].some((c) => /^Il manque encore /.test(normaliser(c.innerText)))
+        );
+        return ligne ? `manque:${normaliser(ligne.innerText)}` : false;
+      },
+      avant,
+      { timeout: ATTENTE }
+    )
+    .then((h) => h.jsonValue())
+    .catch(() => null);
+  if (issue === null) {
+    throw new Ecart(`« ${libelle} » n'a mené ni à l'étape suivante ni à ce qui manque (${avant ?? 'sans étape'})`);
+  }
+  if (issue.startsWith('manque:')) {
+    throw new Ecart(`« ${libelle} » n'avance pas sur ${avant} : « ${issue.slice('manque:'.length)} »`);
+  }
+}
+
 /** Le bouton qui quitte une étape du questionnaire — après avoir vérifié les groupes qu'elle rend. */
 async function suivant(libelle = 'Suivant') {
   await verifierLesGroupes(`l'étape du questionnaire en cours (${etapeCourante})`);
-  await bouton(libelle);
+  await avancer(libelle);
 }
 
 /**
@@ -1153,16 +1216,17 @@ try {
   const FEUILLE = 'Ton plan va être recalculé';
   const jusquAVoirMonBilan = async () => {
     await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    // **Le questionnaire est prérempli après son montage**, par un aller-retour réseau. Tant que le
+    // « Suivant » d'une étape vide était désactivé, le clic l'attendait sans que rien ne l'écrive ;
+    // depuis `v1-31`, il est en attente et agit, donc il faut attendre la réponse cochée — sans quoi
+    // le premier « Suivant » demanderait « une réponse » à une étape que le bilan précédent remplit
+    // (contre-lecture du 29/09/2026). Une réponse cochée, et non le bandeau : un brouillon rouvert
+    // préremplit lui aussi, sans bandeau.
+    await page.locator('[role="radio"][aria-checked="true"]').first().waitFor({ state: 'visible', timeout: ATTENTE });
     const fin = page.getByRole('button', { name: 'Voir mon bilan', exact: true });
-    for (let i = 0; i < 12 && !(await fin.isVisible().catch(() => false)); i++) {
-      const avant = await page.getByText(/^Étape \d+ sur \d+$/).first().innerText();
-      await bouton('Suivant');
-      await page.waitForFunction(
-        (a) => ![...document.querySelectorAll('div')].some((d) => d.children.length === 0 && d.innerText.trim() === a),
-        avant,
-        { timeout: ATTENTE }
-      );
-    }
+    // Le même contrôle que `suivant()` (`v1-31` §4.5) : une étape du re-bilan qui n'avancerait pas
+    // arrête le parcours en citant ce qui manque, au lieu d'expirer sur une attente muette.
+    for (let i = 0; i < 12 && !(await fin.isVisible().catch(() => false)); i++) await avancer('Suivant');
     assurer(await fin.isVisible(), '« Voir mon bilan » n’est jamais apparu au bout du re-bilan');
     return fin;
   };
@@ -1717,12 +1781,54 @@ try {
   // devant. Cette étape garde **deux arguments de l'appel** — la dérivation a toutes ses combinaisons
   // d'états dans Jest, mais un écran qui lui passerait le mauvais argument les laisserait tous verts ;
   // l'en-tête nomme ceux que rien ici ne garde.
+  // **Le préremplissage qui ouvre une précision ne fait pas défiler l'écran** (`v1-31` §2.7, écart 12
+  // du §9). Une précision qui s'ouvre sous le pied fait remonter l'écran — après une réponse donnée,
+  // jamais sous une donnée arrivée plus tard. Ouvert par `?etape=commute_mode`, le re-bilan de ce
+  // profil monte l'étape du mode vide, puis le bilan précédent y coche « Vélo » : la boîte « Quel type
+  // de vélo ? » monte **après** l'écran, donc elle annonce son ouverture, et seul le compte des
+  // réponses de `StepShell` retient le défilement. À 360 × 800, elle finit sous le pied (738 pour
+  // 698) : c'est là qu'un défilement se verrait. Sans réseau, la section K ne peut pas le jouer — un
+  // brouillon, lui, rouvre l'étape déjà remplie, et `Depliage` le retient par une seconde défense.
+  etape('cycliste — un re-bilan ouvert sur l’étape du mode ne défile pas sous son préremplissage');
+  const tailleDuParcours = page.viewportSize();
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto(`${base}/bilan?etape=commute_mode`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await attendreTexte('Tes réponses précédentes sont pré-remplies.');
+  await page.getByRole('radio', { name: 'Mécanique', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+  // Le temps d'un défilement de la plateforme, s'il était parti.
+  await page.waitForTimeout(1_500);
+  const sousLePreremplissage = await page.evaluate(() => {
+    const titre = [...document.querySelectorAll('h1')].find((h) => h.getClientRects().length > 0);
+    let zone = null;
+    for (let e = titre?.parentElement; e && !zone; e = e.parentElement) {
+      if (/(auto|scroll)/.test(getComputedStyle(e).overflowY)) zone = e;
+    }
+    const groupe = [...document.querySelectorAll('[role="radiogroup"]')].find(
+      (g) => g.getAttribute('aria-label') === 'Quel type de vélo ?'
+    );
+    const boite = groupe?.parentElement?.parentElement;
+    return zone && boite
+      ? { decalage: zone.scrollTop, bas: zone.getBoundingClientRect().bottom, boite: boite.getBoundingClientRect().bottom + zone.scrollTop }
+      : null;
+  });
+  assurer(sousLePreremplissage !== null, 'la boîte « Quel type de vélo ? » est introuvable sous le préremplissage');
+  assurer(
+    sousLePreremplissage.boite > sousLePreremplissage.bas,
+    `la boîte du vélo finit à ${Math.round(sousLePreremplissage.boite)}, dans la zone (${Math.round(sousLePreremplissage.bas)}) : la garde ne peut pas conclure`
+  );
+  assurer(
+    sousLePreremplissage.decalage === 0,
+    `l’écran a défilé de ${Math.round(sousLePreremplissage.decalage)} px sous le préremplissage — une ouverture ne se suit qu’après une réponse donnée (\`reponsesDonnees\`, StepShell)`
+  );
+  await page.setViewportSize(tailleDuParcours);
+
   etape('cycliste — un nouveau bilan en voiture : le premier plan passe devant');
   await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
   // Le questionnaire est prérempli par le bilan précédent : seul le mode change. On attend le
-  // bandeau qui le dit — sans lui, un préremplissage qui n'arriverait pas laisserait « Suivant »
-  // inactif, et l'échec se lirait en délai dépassé plutôt qu'en cause nommée.
+  // bandeau qui le dit — sans lui, `suivant()` toucherait le « Suivant » de la première étape avant
+  // que le préremplissage n'arrive : il est en attente depuis `v1-31`, donc il agit, et le parcours
+  // s'arrêterait sur « Il manque encore une réponse. » au lieu de nommer la vraie cause.
   await attendreTexte('Tes réponses précédentes sont pré-remplies.');
   await suivant();
   await suivant();

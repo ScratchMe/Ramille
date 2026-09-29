@@ -938,6 +938,13 @@ même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFr
 
 - `scripts/verifier-etats-export.mjs`, **section J**, sans réseau : la barre d'onglets au démarrage,
   l'étape du questionnaire et son rail, une précision qui s'ouvre, le fondu des onglets ;
+- le même script, **section K** (29/09/2026, `v1-31`), sans réseau lui aussi : **les deux défilements
+  de l'écran du mode**, lus par la mesure `defilement` — vers ce qui manque au toucher du « Suivant »
+  en attente (les tranches des sorties finissent 16 au-dessus du pied) et à l'ouverture d'une
+  précision (la boîte du vélo, à 360 × 800), chacun en chemin puis posé sous la préférence ; et
+  autour d'eux ce qui ne s'anime pas mais ne se voit qu'une fois l'app montée : la ligne « Il manque
+  encore … », la couleur de l'intitulé lue dans `theme.ts`, le focus, le filet du pied, l'Entrée
+  maintenu qui ne coche rien, le brouillon rouvert qui ne défile pas ;
 - `scripts/verifier-parcours-reel.mjs`, ce qui demande des données : la barre au « Compris », la
   carte du point qui change de hauteur et qui garde la sienne au retour sur le plan, la feuille du
   re-bilan, **le défilement jusqu'à « C'est noté » sur l'écran des pistes** (depuis le 29/09/2026,
@@ -988,5 +995,19 @@ Les règles, chacune payée pendant l'écriture :
    au-dessus de ce qu'on regarde ne déplace rien à l'écran. La garde du retour sur le plan lisait la
    position du cap et passait avec le défaut en place ; elle lit maintenant la hauteur de la carte
    (`decoupe`), et la mutation tombe (8 px au lieu de 153).
+7. **Un défilement se provoque et se lit par `scrollTop`, jamais par la méthode `scrollTo` du nœud.**
+   react-native-web la remplace sur le nœud de sa `ScrollView` par la sienne, qui prend les arguments
+   de React Native : `el.scrollTo(0, 99999)` y demande `y = 0`, et ne fait rien. Relevé le
+   29/09/2026, en provoquant la question sortie par le haut de la section K — le diagnostic a
+   d'abord conclu que la zone ne défilait pas.
+8. **Une demande qui retombe pour deux raisons ne se garde pas par un seul cas.** La demande du
+   « Suivant » retombe à la complétude **et** en changeant d'étape ; « Retour » depuis l'étape du
+   mode arrive sur une étape déjà complète, donc la demande y retombe par la première raison, et
+   une mutation de la seconde passait — mesuré : « A4, Retour, Suivant » reste vert sous elle. La
+   section K porte donc deux cas de plus : un nouveau manque après la complétude, qui est le seul à
+   faire tomber la mutation de la première raison, et « Retour » depuis l'étape du mode vers des
+   jours et une distance vides eux aussi, le seul à faire tomber celle de la seconde. Le premier essai partait de `?etape=context` sur un questionnaire vierge, et ne prouvait
+   rien : l'étape d'avant, les longs trajets, y est complète — c'est la mutation « la demande ne
+   retombe pas en changeant d'étape » qui l'a montré, en ne le faisant pas tomber (29/09/2026).
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.

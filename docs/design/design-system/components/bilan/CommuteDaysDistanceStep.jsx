@@ -2,6 +2,7 @@ import React from 'react';
 import { Chip } from '../forms/Chip.jsx';
 import { ChoiceRow } from '../forms/ChoiceRow.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
+import { IntituleDuChamp, useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
 import { NumericField } from '../forms/NumericField.jsx';
 import { TextLink } from '../core/TextLink.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
@@ -13,6 +14,10 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // c'est ce qui rend vraie la phrase « On comptera environ … km pour un aller. », le calcul préférant le kilométrage
 // dès qu'il existe. Le choix d'affichage est un état local — il doit basculer avant qu'une tranche soit choisie —
 // qui repart de la présence d'une tranche. La relecture d'une longue distance se propose, jamais ne bloque.
+//
+// Ce qui manque : « le nombre de jours par semaine » mène aux jours (le titre ne se marque pas) ; « la distance » mène
+// à la forme affichée — le champ, qui reçoit le focus lui-même, ou les tranches —, dont le sous-titre se marque. Les
+// deux formes sont un seul champ (`distance_du_trajet`) : l'étape n'en montre qu'une.
 
 const JOURS = [1, 2, 3, 4, 5, 6, 7];
 
@@ -48,10 +53,12 @@ const SOUS_TITRE = { fontSize: 22, lineHeight: '28px', letterSpacing: '-0.22px' 
 
 export function CommuteDaysDistanceStep({ answers, update }) {
   const [inconnue, setInconnue] = React.useState(answers.commute_distance_bracket !== null);
+  const { bloc: blocDesJours } = useAncreDuChamp('commute_days_per_week');
+  const { bloc: blocDeLaDistance, marque: distanceMarquee } = useAncreDuChamp('distance_du_trajet', { saisie: !inconnue });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div ref={blocDesJours} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <ThemedText type="screenTitle">{QUESTION_JOURS}</ThemedText>
         <GroupeDeChoix question={QUESTION_JOURS} colonnes={4}>
           {JOURS.map((jour) => (
@@ -70,8 +77,8 @@ export function CommuteDaysDistanceStep({ answers, update }) {
       <div style={{ height: 1, background: 'var(--color-border)' }} />
 
       {inconnue ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ThemedText type="subtitle" weight={600} style={SOUS_TITRE}>{QUESTION_TRANCHE}</ThemedText>
+        <div ref={blocDeLaDistance} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <IntituleDuChamp type="subtitle" weight={600} style={SOUS_TITRE} marque={distanceMarquee}>{QUESTION_TRANCHE}</IntituleDuChamp>
           <ThemedText type="small" themeColor="textTertiary">
             Une estimation suffit. Tu pourras donner un chiffre plus précis en refaisant ton bilan : tes réponses seront
             préremplies.
@@ -102,8 +109,8 @@ export function CommuteDaysDistanceStep({ answers, update }) {
           />
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ThemedText type="subtitle" weight={600} style={SOUS_TITRE}>Quelle distance pour un aller ?</ThemedText>
+        <div ref={blocDeLaDistance} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <IntituleDuChamp type="subtitle" weight={600} style={SOUS_TITRE} marque={distanceMarquee}>Quelle distance pour un aller ?</IntituleDuChamp>
           <NumericField
             value={answers.commute_distance_km}
             onChange={(valeur) => update({ commute_distance_km: valeur })}

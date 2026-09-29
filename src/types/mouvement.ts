@@ -82,13 +82,20 @@ export function defilementPourMontrer({
   bas,
   hauteurFenetre,
   marge,
+  margeHaut = marge,
 }: {
   haut: number;
   bas: number;
   hauteurFenetre: number;
   marge: number;
+  /**
+   * La marge gardée sous le bord supérieur, quand elle n'est pas celle du bas (29/09/2026, `v1-31`) :
+   * l'écran du mode s'arrête 16 au-dessus du pied, mais garde le choix qui a ouvert une précision à 8
+   * du bord, et une question plus haute que la zone à 24. Par défaut, `marge` des deux côtés.
+   */
+  margeHaut?: number;
 }): number {
   // Ce qui dépasse en bas, borné par ce qu'on peut défiler avant que le haut passe sous le bord —
   // et jamais négatif : les deux bornes peuvent l'être, et aucune ne doit faire remonter la page.
-  return Math.max(0, Math.min(bas + marge - hauteurFenetre, haut - marge));
+  return Math.max(0, Math.min(bas + marge - hauteurFenetre, haut - margeHaut));
 }

@@ -1,6 +1,8 @@
-/** Encart de précision chiffrée (combien vous êtes dans la voiture) rendu juste sous l’option qui la déclenche — des puces, là où `PrecisionMode` a des rangées. */
+/** Une précision chiffrée (combien vous êtes dans la voiture), posée dans `BoiteDePrecision` sous l’option qui la déclenche — des puces, là où `PrecisionMode` a des rangées. */
 export interface PrecisionChiffresProps {
-  /** La question, écrite une fois : le texte en tête de l’encart et le nom du groupe. */
+  /** Le champ qu’elle renseigne (`commute_carpool_size`, `car_long_trips_occupancy`…) : « Il manque encore … » y mène et en marque l’intitulé. */
+  champ: string;
+  /** La question, écrite une fois : l’intitulé et le nom du groupe. */
   question: string;
   /**
    * Les réponses, dans l’ordre. `accessibilityLabel` quand le chiffre seul ne dit pas ce qu’il compte :

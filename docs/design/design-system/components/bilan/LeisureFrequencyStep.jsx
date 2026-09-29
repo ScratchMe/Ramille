@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChoiceRow } from '../forms/ChoiceRow.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
+import { useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 import { ThemedView } from '../core/ThemedView.jsx';
 // Source : src/components/bilan/steps/leisure-frequency.tsx — la fréquence des sorties du week-end, trois rangées
@@ -27,8 +28,10 @@ const virgule = (valeur) => String(valeur).replace('.', ',');
 
 export function LeisureFrequencyStep({ answers, update, total }) {
   const commuteSkipped = answers.commute_has_regular_trip === false;
+  // Où mène « Il manque encore ta fréquence » : la question, sans recolorer le titre.
+  const { bloc } = useAncreDuChamp('leisure_frequency');
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+    <div ref={bloc} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <ThemedText type="screenTitle">{QUESTION_FREQUENCE}</ThemedText>
       {!commuteSkipped && <ThemedText type="small" themeColor="textTertiary">Sport, sorties, visites à la famille.</ThemedText>}
       <GroupeDeChoix question={QUESTION_FREQUENCE} style={{ gap: 10 }}>

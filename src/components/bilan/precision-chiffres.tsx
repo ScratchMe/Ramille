@@ -1,14 +1,16 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
+import type { ChampDuBilan } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 /**
- * La jumelle chiffrée de `PrecisionMode` : même encart, même retrait, mêmes garanties
- * d'accessibilité — mais des puces au lieu de rangées.
+ * La jumelle chiffrée de `PrecisionMode` : mêmes garanties d'accessibilité, posée comme elle dans
+ * `BoiteDePrecision` — mais des puces au lieu de rangées. **Elle ne dessine plus de boîte** depuis le
+ * 29/09/2026 (`v1-31` §2.2) : sous « Voiture (covoiturage) », elle partage celle de la motorisation.
  *
  * **Pourquoi des puces ici et des rangées là-bas.** `precision-mode.tsx` a choisi les rangées
  * pour deux raisons nommées : des libellés de largeurs très inégales (« Hybride » contre
@@ -26,7 +28,10 @@ import { Radius, Spacing } from '@/constants/theme';
  * tient). Plutôt que de rogner la cible de 48 (décision n° 7), la série passe par la grille de
  * `GroupeDeChoix`, dont `colonnes` est un maximum : cinq colonnes égales quand elles tiennent, et
  * la rangée repasse d'elle-même à la ligne quand elles ne tiennent plus — comme les jours dans la
- * carte d'une action.
+ * carte d'une action. **Depuis le 29/09/2026, elles tiennent à 360** (`v1-31`) : la boîte n'a plus
+ * que 12 de marge intérieure (`BoiteDePrecision`), soit 272 px plus les 8 que la grille rend par sa
+ * marge négative, pour 5 × 56 = 280 — à 0 px près. Une taille d'affichage agrandie fait encore passer
+ * la cinquième à la ligne, et c'est la grille qui le permet.
  *
  * Le groupe est un `radiogroup` **nommé**, et c'est ce qui le distingue de ses voisins : une
  * étape peut porter plusieurs séries de puces rigoureusement identiques — c'est le cas des longs
@@ -36,25 +41,31 @@ import { Radius, Spacing } from '@/constants/theme';
  * son rôle lui-même —, comme sa jumelle `PrecisionMode` le faisait déjà.
  */
 export function PrecisionChiffres({
+  champ,
   question,
   options,
   valeur,
   onChange,
 }: {
+  /** Le champ qu'elle renseigne : « Il manque encore … » y mène, et en marque l'intitulé (`v1-31`). */
+  champ: ChampDuBilan;
   question: string;
   options: readonly { value: number; label: string; accessibilityLabel?: string }[];
   valeur: number | null;
   onChange: (valeur: number) => void;
 }) {
+  const { bloc, cible, marque } = useAncreDuChamp(champ);
+  const iCible = optionCible(options.map((option) => valeur === option.value));
   return (
-    <ThemedView type="backgroundElement" style={styles.boite}>
-      <ThemedText type="small" themeColor="textSecondary">
+    <View ref={bloc} style={styles.precision}>
+      <IntituleDuChamp type="small" themeColor="textSecondary" marque={marque}>
         {question}
-      </ThemedText>
+      </IntituleDuChamp>
       <GroupeDeChoix question={question} colonnes={options.length}>
-        {options.map((option) => (
+        {options.map((option, i) => (
           <Chip
             key={option.value}
+            ref={i === iCible ? cible : undefined}
             label={option.label}
             accessibilityLabel={option.accessibilityLabel}
             role="radio"
@@ -68,17 +79,10 @@ export function PrecisionChiffres({
           />
         ))}
       </GroupeDeChoix>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Retrait identique à `PrecisionMode` : l'encart se lit comme rattaché à l'élément du
-  // dessus, pas comme un bloc de plus dans la liste.
-  boite: {
-    borderRadius: Radius.field,
-    padding: Spacing.three,
-    gap: Spacing.two,
-    marginLeft: Spacing.three,
-  },
+  precision: { gap: Spacing.two },
 });

@@ -38,10 +38,9 @@ import {
   brouillonEstAncien,
   distanceDomicileTravailKm,
   distanceSortieKm,
-  isStepComplete,
+  issueDuSuivant,
   manqueDeLEtape,
   memesReponses,
-  nextStep,
   normaliserReponses,
   previousStep,
   type BilanAnswers,
@@ -309,8 +308,15 @@ export default function BilanQuestionnaire() {
   // personne vient de choisir, `normaliserReponses` efface ce que ce choix rend impossible.
   // Les écrans ne tiennent plus de liste de remises à zéro — ils en tenaient trois, qui
   // divergeaient déjà (audit A2-17).
+  //
+  // C'est aussi le seul chemin des gestes : le préremplissage et la relecture d'un brouillon passent
+  // par `setAnswers`, jamais par ici. D'où `reponsesDonnees`, que `StepShell` lit pour ne suivre une
+  // ouverture — une précision qui s'ouvre, que l'écran remonte pour montrer — que si elle suit une
+  // réponse de la personne (`v1-31` §2.7).
+  const [reponsesDonnees, setReponsesDonnees] = useState(0);
   const update = (patch: Partial<BilanAnswers>) => {
     reponseModifiee.current = true;
+    setReponsesDonnees((n) => n + 1);
     setAnswers((prev) => normaliserReponses({ ...prev, ...patch }));
   };
 
@@ -345,11 +351,31 @@ export default function BilanQuestionnaire() {
     }
   };
 
+  // **Ce que fait « Suivant » se décide dans `issueDuSuivant`, pas ici** (29/09/2026, `v1-31` §2.4) :
+  // `StepShell` n'appelle déjà pas `onNext` sur une étape incomplète, mais son « Suivant » n'est plus
+  // `disabled`, et la dernière étape soumet — d'où cette seconde garde, et à la dernière étape la
+  // vérification de **toutes** les étapes visibles, que `?etape=context` permettait de contourner.
+  //
+  // **Un aiguillage exhaustif, et la soumission nommée** (contre-lecture du 29/09/2026) : le test garde
+  // la fonction, pas son appel. Écrit en `if` successifs, tout genre non aiguillé tombait sur la
+  // soumission — retirer la ligne d'`attendre` ne faisait rien tomber, et soumettait un bilan
+  // incomplet depuis n'importe quelle étape. Ici, un cas oublié ne compile pas (éprouvé : le cas
+  // `attendre` retiré, `tsc` refuse `{ genre: "attendre" }` sur le `never`).
   const handleNext = async () => {
-    if (!isLastStep) {
-      const next = nextStep(step, answers);
-      if (next) passerA(next);
-      return;
+    const issue = issueDuSuivant(step, answers);
+    switch (issue.genre) {
+      case 'attendre':
+        return;
+      case 'passer':
+      case 'revenir':
+        passerA(issue.vers);
+        return;
+      case 'soumettre':
+        break;
+      default: {
+        const genreInconnu: never = issue;
+        return genreInconnu;
+      }
     }
 
     // La lecture du cycle a démarré au montage ; l'attendre ici est ce qui empêche une soumission
@@ -641,15 +667,18 @@ export default function BilanQuestionnaire() {
       step={stepNumber}
       total={total}
       entree={{ cle: step, sens }}
+      reponsesDonnees={reponsesDonnees}
       motDeRamille={motDeRamille}
       // Rendu à chaque passage, jamais mémoïsé : `router.canGoBack()` n'est pas réactif. Sans
       // `onBack`, `StepShell` n'affiche pas de bouton — c'est ce qu'il faut au premier pas du
       // premier lancement, où la pile est vide (cf. son commentaire d'en-tête).
       onBack={previousStep(step, answers) !== null || router.canGoBack() ? handleBack : undefined}
       onNext={handleNext}
-      nextLabel={isLastStep ? (submitting ? 'Enregistrement…' : 'Voir mon bilan') : 'Suivant'}
-      nextDisabled={submitting || !isStepComplete(step, answers)}
-      manque={submitting ? null : manqueDeLEtape(step, answers)}
+      // Pendant l'envoi, `StepShell` n'est pas rendu du tout (`CalculEnCours` le remplace, plus haut) :
+      // un libellé « Enregistrement… », un `disabled` ou un `manque` nul le temps de l'envoi étaient des
+      // branches mortes, et c'est le verrou `soumissionEnCours` qui garde la double soumission.
+      nextLabel={isLastStep ? 'Voir mon bilan' : 'Suivant'}
+      manque={manqueDeLEtape(step, answers)}
       notice={prefilled ? 'Tes réponses précédentes sont pré-remplies. Modifie ce qui a changé.' : undefined}
       message={message}
       detail={detail}

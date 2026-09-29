@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type TextInput } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
+import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
+import { ChoixOuvrant } from '@/components/bilan/choix-ouvrant';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
@@ -10,15 +13,17 @@ import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
-import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import {
   CAR_ENGINE_OPTIONS,
+  enFamilles,
+  FAMILLE_DU_MODE,
   TRAIN_TYPE_OPTIONS,
   LEISURE_MODE_CHOICES_MORE,
   LEISURE_MODE_CHOICES_PRIMARY,
   TWO_WHEELER_TYPE_OPTIONS,
   VELO_TYPE_OPTIONS,
+  type CommuteModeChoice,
 } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
 import { donnerLeFocus } from '@/lib/focus';
@@ -28,6 +33,7 @@ import {
   type BilanAnswers,
   type LeisureDistanceBracket,
 } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 const BRACKETS: { value: LeisureDistanceBracket; label: string }[] = [
   { value: 'lt_5', label: 'Moins de 5 km' },
@@ -96,104 +102,154 @@ export function LeisureDetailStep({
         : 'voiture_solo'
       : (answers.leisure_mode ?? null)
   );
-  const modeChoices = showMore
+  // Où mène « Il manque encore … » (`v1-31` §2.5), dans l'ordre de l'écran : le mode — le titre ne se
+  // marque pas —, puis ses précisions (`PrecisionMode`), puis la distance et, sous « Plus de 30 km »,
+  // le champ de saisie, qui reçoit le focus lui-même.
+  const { bloc: blocDuMode, cible: cibleDuMode } = useAncreDuChamp('leisure_mode');
+  const modesAffiches = showMore
     ? [...LEISURE_MODE_CHOICES_PRIMARY, ...LEISURE_MODE_CHOICES_MORE]
     : LEISURE_MODE_CHOICES_PRIMARY;
+  const cleCible = modesAffiches[optionCible(modesAffiches.map((choice) => selectedKey === choice.key))].key;
+  const {
+    bloc: blocDeLaTranche,
+    cible: cibleDeLaTranche,
+    marque: trancheMarquee,
+  } = useAncreDuChamp('leisure_distance_bracket');
+  const iCibleDeLaTranche = optionCible(BRACKETS.map((b) => answers.leisure_distance_bracket === b.value));
+  const {
+    bloc: blocDeLaDistance,
+    cible: cibleDeLaDistance,
+    marque: distanceMarquee,
+  } = useAncreDuChamp<TextInput>('leisure_distance_km', { saisie: true });
+
+  // Ce que le choix ouvre, dans l'ordre de l'écran — rien pour un mode qui n'a pas de précision.
+  const precisionsDuMode = (choice: CommuteModeChoice) =>
+    [
+      choice.modeId === 'voiture' && (
+        <PrecisionMode
+          key="motorisation"
+          champ="leisure_car_engine"
+          question="Quelle motorisation ?"
+          options={CAR_ENGINE_OPTIONS}
+          valeur={answers.leisure_car_engine}
+          onChange={(value) => update({ leisure_car_engine: value })}
+        />
+      ),
+      choice.modeId === 'deux_roues_motorise' && (
+        <PrecisionMode
+          key="deux-roues"
+          champ="leisure_two_wheeler_type"
+          question="Quel type de deux-roues ?"
+          options={TWO_WHEELER_TYPE_OPTIONS}
+          valeur={answers.leisure_two_wheeler_type}
+          onChange={(value) => update({ leisure_two_wheeler_type: value })}
+        />
+      ),
+      // C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont posées ici plutôt
+      // que déduites de B1 parce qu'on ne fait pas ses sorties comme son trajet : on peut aller au
+      // travail en RER et en week-end en TER.
+      choice.modeId === 'train' && (
+        <PrecisionMode
+          key="train"
+          champ="leisure_train_type"
+          question="Quel type de train ?"
+          options={TRAIN_TYPE_OPTIONS}
+          valeur={answers.leisure_train_type}
+          onChange={(value) => update({ leisure_train_type: value })}
+        />
+      ),
+      choice.modeId === 'velo' && (
+        <PrecisionMode
+          key="velo"
+          champ="leisure_velo_type"
+          question="Quel type de vélo ?"
+          options={VELO_TYPE_OPTIONS}
+          valeur={answers.leisure_velo_type}
+          onChange={(value) => update({ leisure_velo_type: value })}
+        />
+      ),
+      // C3.5 — après la motorisation, dans la même boîte : les deux précisions décrivent la même
+      // voiture.
+      choice.carpool && (
+        <PrecisionChiffres
+          key="personnes"
+          champ="leisure_carpool_size"
+          question="Vous êtes combien dans la voiture ?"
+          options={TAILLES_DE_COVOITURAGE}
+          valeur={answers.leisure_carpool_size}
+          onChange={(value) => update({ leisure_carpool_size: value })}
+        />
+      ),
+    ].filter(Boolean);
+
+  // Une rangée de mode et ce qui s'ouvre sous elle — écrite une fois pour les deux blocs de la liste.
+  const rendreLeMode = (choice: CommuteModeChoice) => {
+    const selected = selectedKey === choice.key;
+    const precisions = selected ? precisionsDuMode(choice) : [];
+    return (
+      <ChoixOuvrant key={choice.key}>
+        {/* Deux références ne se disputent jamais la même rangée : la cible du mode est la rangée cochée
+            ou la première, « Voiture (seul) », et quand la cochée est « Deux-roues motorisé », le mode
+            ne manque pas — rien n'y mènera. */}
+        <ModeListItem
+          ref={
+            choice.key === LEISURE_MODE_CHOICES_MORE[0].key
+              ? premierDesAutres
+              : choice.key === cleCible
+                ? cibleDuMode
+                : undefined
+          }
+          label={choice.label}
+          selected={selected}
+          onPress={() => {
+            setSelectedKey(choice.key);
+            // La motorisation, le type de deux-roues et la taille du covoiturage
+            // rattachés au mode précédent sont effacés par `normaliserReponses`, pas
+            // ici (audit A2-17).
+            update({ leisure_mode: choice.modeId, leisure_is_carpool: choice.carpool });
+          }}
+        />
+
+        {/* La précision s'ouvre sous l'élément qui la déclenche — cf. `precision-mode.tsx` pour la
+            raison, qui n'est pas cosmétique. Une seule boîte par choix (`v1-31` §2.2), qui porte une
+            question, ou deux pour le covoiturage. */}
+        {precisions.length > 0 && <BoiteDePrecision>{precisions}</BoiteDePrecision>}
+      </ChoixOuvrant>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.block}>
+      <View ref={blocDuMode} style={styles.block}>
         <TitreDEtape>{QUESTION_MODE}</TitreDEtape>
         {/* Le groupe ne porte que les modes et leurs précisions — chacune son propre groupe, posé
             dedans sous le mode qu'elle décrit (`GroupeDeChoix`). « Voir les autres modes » le suit
             sans y entrer : c'est une commande, pas une option, et il ne se rattache à aucune
-            ligne. Il garde sa place au pixel près, l'écart de la liste étant aussi celui qui les
-            sépare. */}
+            ligne. Le premier mode révélé arrive à sa place, **8 px plus bas** : le lien suit la liste à
+            8, le bloc révélé à 16, l'écart entre deux familles (handoff `v1-31`, D4 — mesuré sur
+            l'export, 398 pour le lien, 406 pour « Deux-roues motorisé »). */}
         <View style={styles.list}>
-          <GroupeDeChoix question={QUESTION_MODE} style={styles.list}>
-            {modeChoices.map((choice) => {
-              const selected = selectedKey === choice.key;
-              return (
-                // Les modes que « Voir les autres modes » ajoute s'ouvrent ; ceux qui sont là à
-                // l'arrivée de l'étape, non (`SansApparitionAuMontage`, posé par `StepShell`).
-                <Depliage key={choice.key}>
-                  <ModeListItem
-                    ref={choice.key === LEISURE_MODE_CHOICES_MORE[0].key ? premierDesAutres : undefined}
-                    label={choice.label}
-                    selected={selected}
-                    onPress={() => {
-                      setSelectedKey(choice.key);
-                      // La motorisation, le type de deux-roues et la taille du covoiturage
-                      // rattachés au mode précédent sont effacés par `normaliserReponses`, pas
-                      // ici (audit A2-17).
-                      update({ leisure_mode: choice.modeId, leisure_is_carpool: choice.carpool });
-                    }}
-                  />
-
-                  {/* La précision s'ouvre sous l'élément qui la déclenche — cf.
-                      `precision-mode.tsx` pour la raison, qui n'est pas cosmétique. */}
-                  {selected && choice.modeId === 'voiture' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quelle motorisation ?"
-                        options={CAR_ENGINE_OPTIONS}
-                        valeur={answers.leisure_car_engine}
-                        onChange={(value) => update({ leisure_car_engine: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {selected && choice.modeId === 'deux_roues_motorise' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de deux-roues ?"
-                        options={TWO_WHEELER_TYPE_OPTIONS}
-                        valeur={answers.leisure_two_wheeler_type}
-                        onChange={(value) => update({ leisure_two_wheeler_type: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {/* C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont
-                      posées ici plutôt que déduites de B1 parce qu'on ne fait pas ses sorties
-                      comme son trajet : on peut aller au travail en RER et en week-end en TER. */}
-                  {selected && choice.modeId === 'train' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de train ?"
-                        options={TRAIN_TYPE_OPTIONS}
-                        valeur={answers.leisure_train_type}
-                        onChange={(value) => update({ leisure_train_type: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {selected && choice.modeId === 'velo' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de vélo ?"
-                        options={VELO_TYPE_OPTIONS}
-                        valeur={answers.leisure_velo_type}
-                        onChange={(value) => update({ leisure_velo_type: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {/* C3.5 — après la motorisation, sous la même option : les deux précisions
-                      décrivent la même voiture. */}
-                  {selected && choice.carpool && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionChiffres
-                        question="Vous êtes combien dans la voiture ?"
-                        options={TAILLES_DE_COVOITURAGE}
-                        valeur={answers.leisure_carpool_size}
-                        onChange={(value) => update({ leisure_carpool_size: value })}
-                      />
-                    </Depliage>
-                  )}
-                </Depliage>
-              );
-            })}
+          {/* **Trois familles, sans intertitre** (29/09/2026, `v1-31`, décision 2), comme la liste du
+              trajet : 4 px dans une famille, 16 entre deux. */}
+          <GroupeDeChoix question={QUESTION_MODE} style={styles.familles}>
+            {enFamilles(LEISURE_MODE_CHOICES_PRIMARY, (choice) => choice.modeId).map((famille) => (
+              <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
+                {famille.map(rendreLeMode)}
+              </View>
+            ))}
+            {/* « Voir les autres modes » ajoute ses cinq modes **en un bloc sous les quatre premiers**,
+                rangé par famille lui aussi, et ne les intercale pas dans la première liste : le
+                premier révélé reste à la place du lien, et reçoit le focus. Le bloc s'ouvre ; ce qui est
+                là à l'arrivée de l'étape, non (`SansApparitionAuMontage`, posé par `StepShell`). */}
+            {showMore && (
+              <Depliage style={styles.familles}>
+                {enFamilles(LEISURE_MODE_CHOICES_MORE, (choice) => choice.modeId).map((famille) => (
+                  <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
+                    {famille.map(rendreLeMode)}
+                  </View>
+                ))}
+              </Depliage>
+            )}
           </GroupeDeChoix>
           {!showMore && (
             <TextLink
@@ -210,43 +266,52 @@ export function LeisureDetailStep({
 
       <View style={[styles.separator, { backgroundColor: theme.border }]} />
 
-      <View style={styles.block}>
-        <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
+      <View ref={blocDeLaTranche} style={styles.block}>
+        <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={trancheMarquee}>
           {QUESTION_DISTANCE}
-        </ThemedText>
-        <GroupeDeChoix question={QUESTION_DISTANCE} style={styles.chipsWrap}>
-          {BRACKETS.map((bracket) => (
-            <Chip
-              key={bracket.value}
-              label={bracket.label}
-              role="radio"
-              selected={answers.leisure_distance_bracket === bracket.value}
-              onPress={() => update({ leisure_distance_bracket: bracket.value })}
-            />
-          ))}
-        </GroupeDeChoix>
+        </IntituleDuChamp>
+        {/* Les tranches et la distance qu'ouvre « Plus de 30 km », enveloppées ensemble : le haut de
+            la rangée est la borne que l'écran ne fait pas passer au-dessus du bord en remontant pour
+            montrer le champ (`ChoixOuvrant`). */}
+        <ChoixOuvrant style={styles.block}>
+          <GroupeDeChoix question={QUESTION_DISTANCE} style={styles.chipsWrap}>
+            {BRACKETS.map((bracket, i) => (
+              <Chip
+                key={bracket.value}
+                ref={i === iCibleDeLaTranche ? cibleDeLaTranche : undefined}
+                label={bracket.label}
+                role="radio"
+                selected={answers.leisure_distance_bracket === bracket.value}
+                onPress={() => update({ leisure_distance_bracket: bracket.value })}
+              />
+            ))}
+          </GroupeDeChoix>
 
-        {/* C3.6 — la seule tranche sans borne haute est aussi la seule qui demandait quelque
-            chose de plus : « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait
-            pour un tiers d'elle-même, sur un poste qui peut être dominant.
+          {/* C3.6 — la seule tranche sans borne haute est aussi la seule qui demandait quelque
+              chose de plus : « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait
+              pour un tiers d'elle-même, sur un poste qui peut être dominant.
 
-            Le champ se rend **après** la rangée de puces et non sous celle qui l'ouvre, à
-            l'inverse des précisions de mode : les tranches sont un groupe qui revient à la
-            ligne, pas une liste d'éléments, donc il n'y a pas d'élément sous lequel se glisser
-            — et à quatre puces, le champ reste juste sous l'œil. */}
-        {answers.leisure_distance_bracket === '30_plus' && (
-          <Depliage style={styles.distanceLibre}>
-            <ThemedText type="small" themeColor="textTertiary">
-              Environ combien, pour un aller ?
-            </ThemedText>
-            <NumericField
-              value={answers.leisure_distance_km}
-              onChange={(value) => update({ leisure_distance_km: value })}
-              unit="km"
-              label="Distance d’un aller"
-            />
-          </Depliage>
-        )}
+              Le champ se rend **après** la rangée de puces et non sous celle qui l'ouvre, à
+              l'inverse des précisions de mode : les tranches sont un groupe qui revient à la
+              ligne, pas une liste d'éléments, donc il n'y a pas d'élément sous lequel se glisser
+              — et à quatre puces, le champ reste juste sous l'œil. */}
+          {answers.leisure_distance_bracket === '30_plus' && (
+            <Depliage suivieALOuverture>
+              <View ref={blocDeLaDistance} style={styles.distanceLibre}>
+                <IntituleDuChamp type="small" themeColor="textTertiary" marque={distanceMarquee}>
+                  Environ combien, pour un aller ?
+                </IntituleDuChamp>
+                <NumericField
+                  ref={cibleDeLaDistance}
+                  value={answers.leisure_distance_km}
+                  onChange={(value) => update({ leisure_distance_km: value })}
+                  unit="km"
+                  label="Distance d’un aller"
+                />
+              </View>
+            </Depliage>
+          )}
+        </ChoixOuvrant>
       </View>
       <MissingModeLink context="B2.2 mode loisirs" />
     </View>
@@ -258,7 +323,8 @@ const styles = StyleSheet.create({
   block: { gap: Spacing.three },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   list: { gap: Spacing.two },
-  precision: { marginTop: Spacing.two },
+  familles: { gap: Spacing.three },
+  famille: { gap: Spacing.one },
   separator: { height: 1 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   distanceLibre: { gap: Spacing.two },

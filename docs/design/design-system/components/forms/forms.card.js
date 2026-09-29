@@ -1,5 +1,5 @@
 // Démonstration de la carte — exécutée par components/loader.js (RamilleRun) ; le namespace Ramille est en portée.
-const { Chip, ChoiceRow, ModeListItem, PrecisionMode, NumericField, TextField, GoogleButton, ThemedText, GroupeDeChoix, LigneDeCanal } = NS;
+const { Chip, ChoiceRow, ModeListItem, BoiteDePrecision, PrecisionMode, NumericField, TextField, GoogleButton, ThemedText, GroupeDeChoix, LigneDeCanal } = NS;
 const JOURS = [[1,'L','lundi'],[2,'M','mardi'],[3,'M','mercredi'],[4,'J','jeudi'],[5,'V','vendredi'],[6,'S','samedi'],[7,'D','dimanche']];
 ReactDOM.createRoot(document.getElementById('root')).render(
   <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:24}}>
@@ -21,11 +21,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <ChoiceRow label="Moins de 5 km" selected={false} />
         <ChoiceRow label="5 à 15 km" selected />
       </GroupeDeChoix>
-      {/* La précision est son propre groupe, posé DANS celui du mode : chaque option répond au groupe le plus proche. */}
-      <GroupeDeChoix question="Quel est ton mode de transport principal pour ce trajet ?" style={{gap:8}}>
-        <ModeListItem label="Voiture (seul)" selected />
-        <PrecisionMode question="Quelle motorisation ?" options={[{value:'thermique',label:'Thermique'},{value:'hybride',label:'Hybride'}]} valeur="thermique" />
-        <ModeListItem label="Bus" selected={false} />
+      {/* La précision est son propre groupe, posé DANS celui du mode et dans sa boîte : chaque option répond au groupe le
+          plus proche. 4 entre deux modes d'une famille. */}
+      <GroupeDeChoix question="Quel est ton mode de transport principal pour ce trajet ?" style={{gap:4}}>
+        <div style={{display:'flex',flexDirection:'column'}}>
+          <ModeListItem label="Voiture (seul)" selected />
+          <BoiteDePrecision>
+            <PrecisionMode champ="commute_car_engine" question="Quelle motorisation ?" options={[{value:'thermique',label:'Thermique'},{value:'hybride',label:'Hybride'}]} valeur="thermique" />
+          </BoiteDePrecision>
+        </div>
+        <ModeListItem label="Voiture (covoiturage)" selected={false} />
       </GroupeDeChoix>
       <GroupeDeChoix question="Comment tu préfères que je te fasse signe ?" style={{gap:8}}>
         <LigneDeCanal ligne={{canal:'push',titre:'Par notification sur ce téléphone',detail:'À activer en une fois.',choisi:true}} />

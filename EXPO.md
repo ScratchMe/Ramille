@@ -93,7 +93,20 @@ relais au rendu suivant.
   `aria-checked`, `aria-expanded`, `aria-busy`, `aria-disabled` et les mappe aussi sur natif. Trois
   voisins du même relevé : un `aria-disabled` posé à la main sur un `Pressable` est **écrasé** par
   `disabled`, qui est le seul levier ; `accessibilityHint` n'existe pas sur web ; et un en-tête sans
-  `aria-level` sort en `<h1>`, quel que soit son rang.
+  `aria-level` sort en `<h1>`, quel que soit son rang. **Corollaire pour un bouton qui agit mais doit paraître indisponible** (un « Suivant » qui
+  demande ce qui manque, relevé le 29/09/2026) : `aria-disabled` étant réécrit depuis `disabled`, et
+  un `aria-disabled` vrai sur un bouton y posant l'attribut natif `disabled`, il n'y a pas de
+  demi-mesure — le bouton est inerte au clic **et** au clavier, et s'annonce indisponible. Un tel
+  bouton prend donc l'**apparence** du désactivé, et ni l'un ni l'autre. Ramille : `Button.enAttente`.
+- **Un `role="button"` sort en `<button>` natif, et s'active à l'appui d'Entrée**, pas au
+  relâchement : le `PressResponder` n'appelle `onPress` au `keyup` que pour ce qui n'est pas un
+  élément interactif natif, et laisse le `click` que le navigateur émet dès le `keydown`. Si ce
+  geste pose le focus sur un autre contrôle pendant que la touche est tenue, **la répétition arrive
+  sur lui** — et le `PressResponder` ne lit pas `event.repeat` : un choix y commence un appui, et se
+  coche au relâchement. Relevé le 29/09/2026 (le « Suivant » qui mène à ce qui manque, « Voir les
+  autres modes »). La parade : arrêter en capture (`onKeyDownCapture`, `stopPropagation`) une
+  répétition d'Entrée sur le choix, avant que le gestionnaire de la bibliothèque, en bouillonnement
+  sur le même élément, ne la voie. Ramille : `src/lib/barre-d-espace.ts`.
 - **La barre d'espace n'active ni un `radio` ni une `checkbox`** — le `PressResponder` de
   react-native-web (0.21, `isValidKeyPress`) n'accepte Espace que sur un `<button>` ou un
   `role="button"`, Entrée partout. Sur un choix, Espace fait donc défiler la page et ne coche rien,

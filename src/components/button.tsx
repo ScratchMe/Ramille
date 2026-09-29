@@ -31,6 +31,23 @@ export type ButtonProps = {
    * `FeuilleDuBas`.
    */
   ref?: Ref<View>;
+  /**
+   * **Le bouton agit, mais l'action qu'il porte attend encore quelque chose** (29/09/2026, `v1-31`
+   * §4.5) : le « Suivant » d'une étape incomplète du questionnaire, qui mène à ce qui manque au lieu
+   * d'avancer. Il prend l'apparence du désactivé — fond `backgroundElement`, texte `textTertiary` — et
+   * rien d'autre : ni `disabled`, ni `aria-disabled`.
+   *
+   * **Il ne peut pas se dire indisponible, et ce n'est pas un défaut à contourner.** Un bouton qui
+   * agit n'est pas indisponible au sens de WAI-ARIA ; et react-native-web ne saurait pas le dire
+   * autrement : son `Pressable` réécrit `aria-disabled` depuis `disabled`, et un `aria-disabled` vrai
+   * sur un bouton y pose l'attribut natif `disabled`, qui le rend inerte (`EXPO.md` §1.5).
+   *
+   * **Sous le doigt, la teinte d'une surface neutre** (`backgroundPressed`), pas l'`accentPressed` d'un
+   * principal : le bouton gris virerait au vert foncé au moment du toucher (`v1-31` §2.8). L'apparence
+   * de `disabled` ne bouge pas — d'autres écrans la lisent, dont le « C'est noté » de la feuille
+   * d'engagement.
+   */
+  enAttente?: boolean;
 };
 
 // Bouton pleine largeur, rayon 27px — cf. design tokens du handoff.
@@ -58,19 +75,22 @@ export function Button({
   accessibilityHint,
   onPanel,
   ref,
+  enAttente,
 }: ButtonProps) {
   const theme = useTheme();
 
   const surPanneau = onPanel && variant === 'secondary';
-  const backgroundColor = disabled
+  // L'apparence du désactivé vaut pour les deux : `disabled` (inerte) et `enAttente` (qui agit).
+  const gris = disabled || enAttente;
+  const backgroundColor = gris
     ? theme.backgroundElement
     : variant === 'primary'
       ? theme.accent
       : surPanneau
         ? theme.background
         : theme.backgroundElement;
-  const backgroundAppuye = variant === 'primary' ? theme.accentPressed : theme.backgroundPressed;
-  const textColor = disabled ? theme.textTertiary : variant === 'primary' ? theme.onAccent : theme.text;
+  const backgroundAppuye = variant === 'primary' && !enAttente ? theme.accentPressed : theme.backgroundPressed;
+  const textColor = gris ? theme.textTertiary : variant === 'primary' ? theme.onAccent : theme.text;
 
   return (
     <Pressable

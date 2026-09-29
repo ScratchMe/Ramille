@@ -1,12 +1,14 @@
 import React from 'react';
 import { Chip } from '../forms/Chip.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
+import { IntituleDuChamp, useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/bilan/steps/flights.tsx — le nombre de vols d'une année type, puis combien sont courts.
 // La question dit qu'un aller-retour compte pour deux vols : sans elle, le facteur 2 était laissé au hasard, sur le
 // poste le plus lourd de la plupart des bilans. La seconde question n'apparaît qu'à partir d'un vol et propose de 0
 // au total choisi ; changer le total ramène les courts sous lui. La dernière puce affiche « 10+ », et le lecteur
 // d'écran l'entend « 10 vols ou plus ». Les distances supposées s'affichent en bas, interpolées depuis les hypothèses du calcul.
+// « Il manque encore la part de vols courts » mène à la seconde question, dont le sous-titre passe en `accentText`.
 
 // `TOTAL_CHOICES` de la source, recopiée : « N+ » stocke N.
 const TOTAL_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -41,6 +43,7 @@ export function FlightsStep({ answers, update }) {
   const shortChoices = Array.from({ length: total + 1 }, (_, i) => i);
   const longCount = Math.max(total - (courts === null ? 0 : courts), 0);
   const questionCourts = 'Sur ces ' + total + ', combien sont courts ?';
+  const { bloc, marque } = useAncreDuChamp('flights_short_per_year');
 
   return (
     <div style={{ ...COLONNE, gap: 32 }}>
@@ -62,8 +65,8 @@ export function FlightsStep({ answers, update }) {
       {total > 0 && (
         <>
           <div style={{ height: 1, background: 'var(--color-border)' }} />
-          <div style={{ ...COLONNE, gap: 16 }}>
-            <ThemedText type="subtitle" weight={600} style={{ fontSize: 22, lineHeight: '28px', letterSpacing: '-0.22px' }}>{questionCourts}</ThemedText>
+          <div ref={bloc} style={{ ...COLONNE, gap: 16 }}>
+            <IntituleDuChamp type="subtitle" weight={600} style={{ fontSize: 22, lineHeight: '28px', letterSpacing: '-0.22px' }} marque={marque}>{questionCourts}</IntituleDuChamp>
             <ThemedText type="small" themeColor="textTertiary">Europe, moins de 3 h. Le reste est compté comme long-courrier.</ThemedText>
             <GroupeDeChoix question={questionCourts} style={PUCES}>
               {shortChoices.map((n) => (

@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { TitreDEtape } from '@/components/bilan/step-shell';
@@ -8,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
 import type { BilanAnswers, LeisureFrequency } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 const OPTIONS: { value: LeisureFrequency; label: string }[] = [
   { value: 'rarely', label: 'Rarement — une fois par mois ou moins' },
@@ -31,9 +33,12 @@ export function LeisureFrequencyStep({
   total: number;
 }) {
   const commuteSkipped = answers.commute_has_regular_trip === false;
+  // Où mène « Il manque encore ta fréquence » (`v1-31` §2.5).
+  const { bloc, cible } = useAncreDuChamp('leisure_frequency');
+  const iCible = optionCible(OPTIONS.map((option) => answers.leisure_frequency === option.value));
 
   return (
-    <View style={styles.container}>
+    <View ref={bloc} style={styles.container}>
       <TitreDEtape>{QUESTION_FREQUENCE}</TitreDEtape>
       {!commuteSkipped && (
         <ThemedText type="small" themeColor="textTertiary">
@@ -41,9 +46,10 @@ export function LeisureFrequencyStep({
         </ThemedText>
       )}
       <GroupeDeChoix question={QUESTION_FREQUENCE} style={styles.choices}>
-        {OPTIONS.map((option) => (
+        {OPTIONS.map((option, i) => (
           <View key={option.value} style={styles.choix}>
             <ChoiceRow
+              ref={i === iCible ? cible : undefined}
               label={option.label}
               selected={answers.leisure_frequency === option.value}
               // Aucune remise à zéro ici : `normaliserReponses` s'applique après chaque `update` et

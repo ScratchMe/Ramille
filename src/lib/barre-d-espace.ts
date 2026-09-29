@@ -31,6 +31,17 @@ import { Platform } from 'react-native';
  * Un choix qui s'ajouterait sans elle retrouverait le défaut, et deux gardes le verraient :
  * `verifier-etats-export.mjs` (section F) et le parcours réel.
  *
+ * **Et une seconde chose depuis le 29/09/2026 : une répétition d'Entrée n'y commence rien**
+ * (`v1-31` §2.10 et §9). Le « Suivant » d'une étape incomplète et la ligne « Il manque encore … »
+ * posent le focus sur un choix ; or un `role="button"` est un `<button>` natif sous react-native-web,
+ * qui s'active dès l'**appui** d'Entrée. Une touche tenue un instant de trop arrivait donc sur le choix
+ * par sa répétition, que la bibliothèque prend pour un appui (son `onKeyDown` ne lit pas `repeat`) —
+ * et le cochait au relâchement, sans que personne l'ait décidé. `onKeyDownCapture` arrête la
+ * répétition **avant** que la bibliothèque ne la voie (`stopPropagation` en capture : son gestionnaire
+ * est en bouillonnement, sur le même élément). Un appui neuf, lui, passe : c'est un vrai choix. Rien
+ * ne change pour qui garde Entrée enfoncée sur un choix qui avait déjà le focus : la bibliothèque ne
+ * commence qu'au premier appui et n'active qu'au relâchement, une fois.
+ *
  * **Sur natif, les props sont vides.** Le défaut est celui de react-native-web ; ce qu'un clavier
  * physique fait d'une puce sous Android relève de la recette sur appareil, pas de ce correctif.
  */
@@ -43,6 +54,11 @@ export function activableALaBarreDEspace(action: () => void, desactive = false):
       touche.preventDefault();
       if (effet === 'activer') action();
     },
+    onKeyDownCapture: (touche: ToucheDuNavigateur) => {
+      if (touche.key === 'Enter' && touche.repeat && touche.target === touche.currentTarget) {
+        touche.stopPropagation();
+      }
+    },
   };
 }
 
@@ -53,6 +69,7 @@ type ToucheDuNavigateur = {
   target: unknown;
   currentTarget: unknown;
   preventDefault: () => void;
+  stopPropagation: () => void;
 };
 
 function effetDeLaTouche(touche: ToucheDuNavigateur, desactive: boolean): 'rien' | 'retenir' | 'activer' {
