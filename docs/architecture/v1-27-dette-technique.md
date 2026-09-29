@@ -1370,6 +1370,16 @@ lignes dira si le centre vaut pour toutes. Le correctif, lui, tient en une ligne
 
 ### 12.20 L'étape des sorties ne relit pas un préremplissage arrivé après son montage (29/09/2026)
 
+> **Fait le 29/09/2026, le même jour**, dans la direction écrite plus bas, et **rejoué d'abord** —
+> mais par un test d'écran et non par le parcours réel (`src/tests/ecrans/etape-des-sorties.test.tsx`) :
+> une réponse arrivée après le montage y est un changement de `answers` qui ne passe pas par
+> `update`, ce que le parcours ne sait provoquer que sur une adresse tapée. Les deux tests du
+> préremplissage tardif tombaient sur le code d'avant. La rangée cochée se lit désormais sur la
+> réponse, mode et covoiturage, comme sur l'étape du trajet ; la seconde liste s'ouvre sur la
+> réponse **ou** sur un geste, et un choix fait pendant qu'elle est ouverte l'y épingle — sans quoi
+> choisir « Train » sous un « Bus » prérempli la refermerait sous le doigt. Quatre mutations en tête
+> du test.
+
 **Relevé par la seconde contre-lecture de l'écran du mode** (`v1-31`, hors de son diff) — **raisonné
 sur le code, pas rejoué**. `src/components/bilan/steps/leisure-detail.tsx` tient deux états locaux,
 initialisés au montage seulement : `showMore` (la seconde liste de modes ouverte) et `selectedKey` (la

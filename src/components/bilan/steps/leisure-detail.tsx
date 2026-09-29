@@ -60,8 +60,9 @@ const QUESTION_MODE = 'Avec quel mode, principalement ?';
 // Deux conséquences sur cet écran. La taille est demandée sous l'option choisie, parce que le
 // calcul ne divise que si elle est renseignée — un drapeau seul ne dit pas par combien. Et
 // l'écart consigné ici (« revenir en arrière oublie laquelle des deux était cochée ») a
-// disparu de lui-même : la clé sélectionnée se dérive maintenant d'une réponse persistée, pas
-// d'un état local qui repartait sur « seul ».
+// disparu : la rangée cochée se lit sur la réponse persistée, mode **et** covoiturage, comme sur
+// l'étape du trajet. Ce commentaire l'affirmait avant que ce soit vrai — la clé était encore
+// recopiée dans un état local au montage — jusqu'au 29/09/2026 (`v1-27` §12.20, plus bas).
 export function LeisureDetailStep({
   answers,
   update,
@@ -70,14 +71,20 @@ export function LeisureDetailStep({
   update: (patch: Partial<BilanAnswers>) => void;
 }) {
   const theme = useTheme();
-  // Ouvert d'emblée si le mode déjà répondu vit dans la seconde liste. Sinon la question
-  // paraît vide alors qu'elle est remplie : un re-bilan prérempli (la personne allait en bus
-  // le mois dernier) comme un simple aller-retour Retour/Suivant remontaient quatre modes
-  // parmi lesquels le bon n'était pas, « Suivant » restait actif, et la personne cochait une
-  // voiture pour avancer — son « bus » changeait de valeur sans qu'elle le sache (audit A2-5).
-  const [showMore, setShowMore] = useState(() =>
-    LEISURE_MODE_CHOICES_MORE.some((choice) => choice.modeId === answers.leisure_mode)
-  );
+  // Ouverte si le mode répondu vit dans la seconde liste. Sinon la question paraît vide alors
+  // qu'elle est remplie : un re-bilan prérempli (la personne allait en bus le mois dernier) comme
+  // un simple aller-retour Retour/Suivant remontaient quatre modes parmi lesquels le bon n'était
+  // pas, « Suivant » restait actif, et la personne cochait une voiture pour avancer — son « bus »
+  // changeait de valeur sans qu'elle le sache (audit A2-5).
+  //
+  // **Lue sur la réponse à chaque rendu, et non recopiée au montage** (`v1-27` §12.20, 29/09/2026) :
+  // un préremplissage arrivé après le montage laissait la liste repliée sur une réponse qu'elle
+  // cachait. L'état ne garde que le geste — « Voir les autres modes », ou un choix fait pendant
+  // qu'elle était ouverte —, sans quoi choisir « Train » sous un « Bus » prérempli la refermerait
+  // sous le doigt.
+  const [deplieeParUnGeste, setDeplieeParUnGeste] = useState(false);
+  const showMore =
+    deplieeParUnGeste || LEISURE_MODE_CHOICES_MORE.some((choice) => choice.modeId === answers.leisure_mode);
   // **« Voir les autres modes » disparaît sous le geste qui l'active, et le focus partait avec lui**
   // (`v1-29` §6.4, corrigé le 25/09/2026). Au clavier, le lien sortait de l'arbre, le focus
   // retombait sur le document, et la tabulation repartait du haut de la page — au lecteur d'écran,
@@ -92,16 +99,11 @@ export function LeisureDetailStep({
     vientDeDeplier.current = false;
     donnerLeFocus(premierDesAutres.current);
   }, [showMore]);
-  // Voiture seul/covoiturage partagent le même `leisure_mode` ('voiture') : la clé
-  // choisie, pas la valeur, distingue laquelle des deux rangées est cochée à l'écran —
-  // et donc sous laquelle des deux la précision s'ouvre.
-  const [selectedKey, setSelectedKey] = useState<string | null>(
-    answers.leisure_mode === 'voiture'
-      ? answers.leisure_is_carpool
-        ? 'voiture_covoiturage'
-        : 'voiture_solo'
-      : (answers.leisure_mode ?? null)
-  );
+  // Voiture seul/covoiturage partagent le même `leisure_mode` ('voiture') : c'est
+  // `leisure_is_carpool` qui distingue laquelle des deux rangées est cochée à l'écran — et donc
+  // sous laquelle des deux la précision s'ouvre. Lue sur la réponse, comme la liste ci-dessus.
+  const estChoisi = (choice: CommuteModeChoice) =>
+    answers.leisure_mode === choice.modeId && answers.leisure_is_carpool === choice.carpool;
   // Où mène « Il manque encore … » (`v1-31` §2.5), dans l'ordre de l'écran : le mode — le titre ne se
   // marque pas —, puis ses précisions (`PrecisionMode`), puis la distance et, sous « Plus de 30 km »,
   // le champ de saisie, qui reçoit le focus lui-même.
@@ -109,7 +111,7 @@ export function LeisureDetailStep({
   const modesAffiches = showMore
     ? [...LEISURE_MODE_CHOICES_PRIMARY, ...LEISURE_MODE_CHOICES_MORE]
     : LEISURE_MODE_CHOICES_PRIMARY;
-  const cleCible = modesAffiches[optionCible(modesAffiches.map((choice) => selectedKey === choice.key))].key;
+  const cleCible = modesAffiches[optionCible(modesAffiches.map(estChoisi))].key;
   const {
     bloc: blocDeLaTranche,
     cible: cibleDeLaTranche,
@@ -184,7 +186,7 @@ export function LeisureDetailStep({
 
   // Une rangée de mode et ce qui s'ouvre sous elle — écrite une fois pour les deux blocs de la liste.
   const rendreLeMode = (choice: CommuteModeChoice) => {
-    const selected = selectedKey === choice.key;
+    const selected = estChoisi(choice);
     const precisions = selected ? precisionsDuMode(choice) : [];
     return (
       <ChoixOuvrant key={choice.key}>
@@ -202,7 +204,9 @@ export function LeisureDetailStep({
           label={choice.label}
           selected={selected}
           onPress={() => {
-            setSelectedKey(choice.key);
+            // Ouverte par la réponse, la seconde liste le reste une fois qu'on y a choisi : c'est
+            // désormais un geste.
+            if (showMore) setDeplieeParUnGeste(true);
             // La motorisation, le type de deux-roues et la taille du covoiturage
             // rattachés au mode précédent sont effacés par `normaliserReponses`, pas
             // ici (audit A2-17).
@@ -256,7 +260,7 @@ export function LeisureDetailStep({
               label="Voir les autres modes"
               onPress={() => {
                 vientDeDeplier.current = true;
-                setShowMore(true);
+                setDeplieeParUnGeste(true);
               }}
               type="linkPrimary"
             />
