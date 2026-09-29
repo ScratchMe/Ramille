@@ -380,8 +380,8 @@ Et l'état d'avancement de §8 se tient à jour pendant le travail, pas après c
 |---|---|
 | 4.1 — `plan.ts`, l'ordre et les quatre dérivations, tests cassés d'abord | fait (29/09/2026) : dix mutations, comptées en tête des tests |
 | 4.2 et 4.3 — `ActionCommitment`, `CarteDePiste` | fait (29/09/2026) ; `Button` gagne une prop `ref` (§3) |
-| 4.4 — l'écran | à faire |
-| 4.7 — le kit | à faire |
+| 4.4 — l'écran | fait (29/09/2026) ; le défilement attend que la carte ait grandi (mesuré : sinon le navigateur le borne) |
+| 4.7 — le kit | fait (29/09/2026) |
 | 4.8 — la recette, `v1-13` §11, le parcours réel | à faire |
 | 6 — vérifications, contre-lecture, mesure Vercel | à faire |
 | 7 — les trois phrases | à faire |

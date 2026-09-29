@@ -134,16 +134,25 @@ export default function PistesScreen() {
    * l'onboarding, **instantané sous « réduire les animations »** : `scrollTo` animé ne la consulte
    * pas sur web, où react-native-web le traduit en `behavior: 'smooth'`.
    *
-   * Trois pièges, chacun payé ailleurs avant d'être écrit ici :
+   * **On défile une fois la carte grandie, pas pendant** (`Mouvement.entree` après l'ouverture ;
+   * tout de suite sous la préférence, où rien ne grandit). Tant que `HauteurSuivie` n'a que la
+   * hauteur de la rangée, le contenu de l'écran est trop court pour qu'on défile jusqu'au bas de la
+   * carte : le navigateur borne `scrollTo` au maximum de l'instant, et l'écran s'arrêtait là, « C'est
+   * noté » sous la barre d'onglets. Mesuré au navigateur le 29/09/2026 sur la planche B2 : la
+   * position restait à 883 px pendant que la hauteur défilable passait de 1 571 à 1 920. Le
+   * défilement suit donc la carte au lieu de l'accompagner — ce qu'elle découvre en grandissant
+   * reste sous le doigt, puis l'écran monte juste assez.
+   *
+   * Trois pièges de plus, chacun payé ailleurs avant d'être écrit ici :
    *  - **on mesure la carte, pas son `HauteurSuivie`** : celui-ci anime sa hauteur, donc sa mesure à
    *    l'ouverture vaut encore celle de la rangée. La carte, elle, a sa hauteur pleine dès la
    *    première mise en page ;
    *  - **une carte déjà ouverte au-dessus se replie pendant que la nouvelle s'ouvre** : mesurée à
-   *    l'ouverture, la nouvelle est trop basse de ce que le repli va rendre, et l'écran défilerait
-   *    trop — le titre sous la bande. On mesure donc une fois les deux hauteurs posées
-   *    (`Mouvement.entree`, qui couvre aussi le repli), en coordonnées de la fenêtre : l'ancrage du
-   *    défilement de Chrome, qui compense ce qui se replie au-dessus (`TESTING.md` §2.14), déplace
-   *    la position mais pas ce qu'on voit, et `position` suit ses événements ;
+   *    l'ouverture, la nouvelle serait trop basse de ce que le repli va rendre, et l'écran défilerait
+   *    trop — le titre sous la bande. L'attente couvre aussi le repli (`Mouvement.sortie`, plus
+   *    court), et la mesure se prend en coordonnées de la fenêtre : l'ancrage du défilement de
+   *    Chrome, qui compense ce qui se replie au-dessus (`TESTING.md` §2.14), déplace la position mais
+   *    pas ce qu'on voit, et `position` suit ses événements ;
    *  - **le focus posé sur la question ne défile pas à sa place** : `donnerLeFocus` passe
    *    `preventScroll` sur web, ce qui laisse le défilement à qui l'a lancé.
    */
@@ -151,7 +160,7 @@ export default function PistesScreen() {
   const defilement = useRef<ScrollView>(null);
   const position = useRef(0);
   const cartes = useRef(new Map<string, View>());
-  const aMontrer = useRef<{ id: string; apresUnRepli: boolean } | null>(null);
+  const aMontrer = useRef<string | null>(null);
   const minuterie = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -168,8 +177,7 @@ export default function PistesScreen() {
   }, []);
   const carteMesuree = useCallback(
     (id: string) => {
-      const demande = aMontrer.current;
-      if (demande === null || demande.id !== id) return;
+      if (aMontrer.current !== id) return;
       aMontrer.current = null;
       const montrer = () => {
         minuterie.current = null;
@@ -193,26 +201,23 @@ export default function PistesScreen() {
           });
         });
       };
-      // Sous la préférence, rien ne se replie en chemin : les hauteurs sont posées d'emblée.
-      if (demande.apresUnRepli && !animationsReduites) {
-        minuterie.current = setTimeout(montrer, Mouvement.entree);
-      } else {
-        montrer();
-      }
+      // Sous la préférence, rien ne grandit ni ne se replie : les hauteurs sont posées d'emblée.
+      if (animationsReduites) montrer();
+      else minuterie.current = setTimeout(montrer, Mouvement.entree);
     },
     [animationsReduites]
   );
 
-  const choisir = useCallback(
-    (id: string) => {
-      if (minuterie.current !== null) clearTimeout(minuterie.current);
-      minuterie.current = null;
-      aMontrer.current = { id, apresUnRepli: enChoix !== null };
-      setEnChoix(id);
-    },
-    [enChoix]
-  );
+  const choisir = useCallback((id: string) => {
+    if (minuterie.current !== null) clearTimeout(minuterie.current);
+    minuterie.current = null;
+    aMontrer.current = id;
+    setEnChoix(id);
+  }, []);
   const annuler = useCallback((id: string) => {
+    if (minuterie.current !== null) clearTimeout(minuterie.current);
+    minuterie.current = null;
+    aMontrer.current = null;
     aRefocaliser.current = id;
     setEnChoix(null);
   }, []);
