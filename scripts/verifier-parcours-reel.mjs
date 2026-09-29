@@ -333,6 +333,15 @@
 // Le piège que le plan (`v1-32` §4.4) prévoyait — le titre sous la bande — n'est qu'une des deux façons
 // de se tromper ; l'autre, défiler trop sans rien cacher, ne se voyait pas.
 //
+// **Et deux le 29/09/2026, sur l'écran du mode** (`v1-31`). Le cas neuf de l'écart 12, rejoué avec le
+// `return` de `suivreLOuverture` retiré (`step-shell.tsx`, fichier égal au commit, `rejouer-la-ci.mjs
+// parcours`) : le parcours s'arrête à « cycliste — un re-bilan ouvert sur l'étape du mode ne défile pas
+// sous son préremplissage », sur « l'écran a défilé de 132 px sous le préremplissage » — 132 et non 56,
+// le bandeau du préremplissage poussant l'étape d'autant. Le témoin, sur le même commit, passe de bout en
+// bout. Et la course du re-bilan de 8 ter, que la contre-lecture a trouvée : elle ne se provoque pas à
+// coup sûr — elle dépend de l'aller-retour du préremplissage —, donc elle n'a pas de mutation ; ce qui la
+// ferme est l'attente d'une réponse cochée, écrite en tête de `jusquAVoirMonBilan`.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
