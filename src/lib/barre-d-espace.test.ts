@@ -19,6 +19,19 @@
 //   | la comparaison `target` / `currentTarget` retirée | « rien pour une touche venue d'un descendant » — seulement |
 //   | le garde de plateforme retiré | « rien sur natif » — seulement |
 //   | « Spacebar » oublié | « reconnaît aussi “Spacebar” » — seulement |
+//
+// **Et le 29/09/2026, la capture de la répétition d'Entrée** (`v1-31` §9), même méthode :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | la capture sans `repeat` (tout Entrée arrêté) | « un appui neuf d'Entrée passe » — seulement |
+//   | la capture sans `key === 'Enter'` (toute répétition arrêtée) | « la capture ne touche ni à Espace… » — seulement |
+//   | la comparaison `target` / `currentTarget` retirée | « la capture ne touche ni à Espace… » — seulement |
+//   | `stopPropagation()` retiré | « une répétition d'Entrée est arrêtée… » — seulement |
+//
+// Que la répétition arrêtée en capture ne parvienne vraiment plus à react-native-web, c'est la section K
+// de `verifier-etats-export.mjs` qui le voit (Entrée maintenu sur le « Suivant » en attente) : jouée
+// sans cette capture, elle tombe sur ses deux constats.
 import { activableALaBarreDEspace } from '@/lib/barre-d-espace';
 
 const mockPlatform = { OS: 'web' };
@@ -44,6 +57,7 @@ function appui(key: string, { repeat = false, surUnDescendant = false } = {}) {
     currentTarget: choix,
     target: surUnDescendant ? {} : choix,
     preventDefault: jest.fn(),
+    stopPropagation: jest.fn(),
   };
 }
 
@@ -51,6 +65,12 @@ function gestionnaire(action: () => void, desactive?: boolean): Gestionnaire {
   const props = activableALaBarreDEspace(action, desactive);
   expect(typeof props.onKeyDown).toBe('function');
   return props.onKeyDown as Gestionnaire;
+}
+
+function capture(): Gestionnaire {
+  const props = activableALaBarreDEspace(jest.fn());
+  expect(typeof props.onKeyDownCapture).toBe('function');
+  return props.onKeyDownCapture as Gestionnaire;
 }
 
 describe('activableALaBarreDEspace', () => {
@@ -113,6 +133,25 @@ describe('activableALaBarreDEspace', () => {
     gestionnaire(action)(touche);
     expect(action).not.toHaveBeenCalled();
     expect(touche.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('une répétition d’Entrée est arrêtée avant react-native-web : le focus arrivé sous la touche ne coche rien', () => {
+    const touche = appui('Enter', { repeat: true });
+    capture()(touche);
+    expect(touche.stopPropagation).toHaveBeenCalledTimes(1);
+  });
+
+  it('un appui neuf d’Entrée passe : c’est un vrai choix, que la bibliothèque active', () => {
+    const touche = appui('Enter');
+    capture()(touche);
+    expect(touche.stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it('la capture ne touche ni à Espace ni à une touche venue d’un descendant', () => {
+    for (const touche of [appui(' ', { repeat: true }), appui('Enter', { repeat: true, surUnDescendant: true })]) {
+      capture()(touche);
+      expect(touche.stopPropagation).not.toHaveBeenCalled();
+    }
   });
 
   it('rien sur natif : aucune prop n’est ajoutée au Pressable', () => {
