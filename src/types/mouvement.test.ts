@@ -103,7 +103,15 @@ describe('ce que la bibliothèque ne coupe pas d’elle-même', () => {
  * qu'il attende le repli d'une carte ouverte au-dessus, et qu'il ne défile pas en chemin sous la
  * préférence, c'est le parcours réel qui le regarde, image par image.
  *
- * MUTATIONS
+ * **Éprouvé en le cassant le 29/09/2026**, une mutation à la fois sur un fichier égal au commit,
+ * restauré depuis sa copie :
+ *
+ *   | Ce qu'on casse | Ce qui tombe |
+ *   |---|---|
+ *   | le haut n'arrête plus rien | « arrête le haut sous le bord » et « ne remonte jamais » |
+ *   | la marge oubliée en bas | « défile juste assez » — seulement |
+ *   | la marge oubliée en haut | « arrête le haut sous le bord » et « ne remonte jamais » |
+ *   | plus de plancher à zéro | « ne défile pas quand le bas est déjà dans la fenêtre » et « ne remonte jamais » |
  */
 describe('defilementPourMontrer', () => {
   const fenetre = { hauteurFenetre: 700, marge: 16 };
