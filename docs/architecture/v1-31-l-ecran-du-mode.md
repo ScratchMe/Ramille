@@ -301,6 +301,13 @@ exception ici serait un autre chantier. La section K l'épingle par un cas (§6.
 demande partait à l'appui plutôt qu'au relâchement, un Entrée maintenu cocherait la première option
 sans décision.
 
+**Le mécanisme de ce paragraphe était faux, et la lecture tient quand même** (29/09/2026, §9 ligne
+14). Le « Suivant » est un `<button>` natif sous react-native-web, qui s'active à l'**appui** d'Entrée,
+pas au relâchement : la demande partait, le focus arrivait sur l'option pendant que la touche était
+tenue, et la répétition la cochait — la section K l'a vu à son premier passage. Ce qui tient la
+lecture n'est donc pas le moment où part la demande, mais une capture : une répétition d'Entrée ne
+commence rien sur un choix (`activableALaBarreDEspace`). Le second appui coche toujours.
+
 ## 3. Le relevé de fichiers
 
 Fait le 29/09/2026 en lisant le code, pas supposé. Les chantiers sont en §4.
@@ -664,7 +671,7 @@ positive porte sur ce que le HTML statique ne dit pas** (`TESTING.md` §2.12).
 |---|---|
 | Étape du mode, covoiturage, « Hybride » coché, personnes vides, 390 × 844 (planche A3) | **À l'arrivée** : aucune ligne « Il manque encore », l'intitulé des personnes dans sa couleur d'aujourd'hui. **Le « Suivant » en attente** ne porte ni `disabled` ni `aria-disabled`. **La boîte** porte deux `radiogroup` nommés par leurs questions, dont le groupe le plus proche est celui des modes (§4.3) |
 | Le même, « Suivant » touché (A4) | L'étape n'a pas changé ; la ligne dit « Il manque encore le nombre de personnes dans la voiture. » ; l'intitulé est en `accentText`, **lu dans `theme.ts`**, pas recopié ; le focus est sur « 2 personnes » |
-| Le même, « Suivant » activé par un Entrée **maintenu** : deux `keydown` (le second répété), puis `keyup` | La demande, comme au toucher, et **aucune option cochée** (§2.10). Un appui simple ne prouverait rien : même avec la demande partie à l'appui, le relâchement tomberait sur une option qui n'a pas reçu l'appui, et react-native-web ne l'activerait pas |
+| Le même, « Suivant » activé par un Entrée **maintenu** : deux `keydown` (le second répété), puis `keyup` | La demande, comme au toucher, et **aucune option cochée** (§2.10). Un appui simple ne prouverait rien : même avec la demande partie à l'appui, le relâchement tomberait sur une option qui n'a pas reçu l'appui, et react-native-web ne l'activerait pas. *(La demande part bel et bien à l'appui — §2.10, dernier paragraphe : ce cas garde la capture de la répétition.)* |
 | Le même, après un défilement à la main qui remonte la question hors de la zone, la ligne touchée | La zone redescend jusqu'à la question, le focus y revient (§2.6, le geste suivant) |
 | Le même, « 2 » choisi | La ligne est partie, l'intitulé a repris sa couleur ; « Suivant » mène à l'étape suivante |
 | A4, puis « Retour », puis « Suivant » : on revient sur l'étape du mode, encore incomplète | **Aucune ligne** : la demande est retombée en changeant d'étape |

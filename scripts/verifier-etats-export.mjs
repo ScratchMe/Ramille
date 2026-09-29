@@ -1020,8 +1020,9 @@ for (const { quoi, marques, nom } of CASES_A_L_ESPACE) {
 // L'assertion porte sur ce que la personne obtient, pas sur l'élément choisi : le focus est sur la
 // question qui arrive, ou sur un conteneur dont elle est le premier titre — la forme d'aujourd'hui.
 // Une cible qui ne sait pas recevoir le focus (un titre sans `tabIndex` sur web) échoue sans bruit
-// et laisse le focus là où il était : le document ici, « Suivant » sur une étape déjà remplie. Les
-// deux conditions ensemble couvrent les deux.
+// et laisse le focus là où il était : sur « Suivant », qu'on vient d'actionner — le document tant
+// que le « Suivant » de l'étape qui arrive était désactivé, avant `v1-31`. Les deux conditions
+// ensemble couvrent les deux.
 const QUESTION_SUIVANTE = 'Ce trajet, tu le fais combien de jours par semaine ?';
 {
   const page = await ouvrir('/bilan');
@@ -1158,11 +1159,12 @@ if (PREMIER_REVELE === null) {
       const premier = page.getByRole('radio', { name: PREMIER_REVELE, exact: true });
       await premier.waitFor({ state: 'visible', timeout: ATTENTE });
       await page.waitForTimeout(REPOS);
-      // Le **journal**, et non le focus final : `StepShell` donne le focus au titre de l'étape dans
-      // son propre effet, qui part **après** celui de la liste — un parent après ses enfants. Un vol
-      // de focus au montage passait donc par le premier révélé puis en repartait, et lire
-      // `activeElement` à la fin ne le voyait pas (mutation H2 du 25/09/2026, restée verte sous cette
-      // première forme).
+      // Le **journal**, et non le focus final : jusqu'au 29/09/2026, `StepShell` donnait le focus à
+      // l'étape qu'un brouillon rouvrait, dans son propre effet, **après** celui de la liste — un
+      // parent après ses enfants. Un vol de focus au montage passait donc par le premier révélé puis
+      // en repartait, et lire `activeElement` à la fin ne le voyait pas (mutation H2 du 25/09/2026,
+      // restée verte sous cette première forme). `StepShell` ne suit plus qu'une entrée qui a un sens
+      // (`v1-31` §9, écart 13), mais le journal reste la bonne lecture : il voit un passage.
       const vole = await page.evaluate(
         (nom) => window.__focus.some((entree) => entree.texte === nom),
         PREMIER_REVELE
@@ -1781,6 +1783,9 @@ if (Object.values(COULEUR).some((c) => c === null)) {
       await page.getByRole('radio', { name: '2 personnes', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
       const a3 = await lireK(page, QUESTION_DES_PERSONNES);
       if (a3.ligne !== null) kEchec(ou, `une ligne s'écrit à l'arrivée (« ${a3.ligne} ») — ce qui manque ne se dit qu'au toucher.`);
+      // Le brouillon rouvre l'étape **après** le montage : ce n'est pas une entrée, et le focus reste
+      // où il était (`v1-31` §9, écart 13 — il sautait sur l'étape, volé au document).
+      if (a3.focus !== 'le document') kEchec(ou, `à l'arrivée d'un brouillon, le focus est sur « ${a3.focus} » — personne n'a agi.`);
       if (a3.groupe?.couleur !== COULEUR.textSecondary) {
         kEchec(ou, `à l'arrivée, l'intitulé des personnes est en ${a3.groupe?.couleur} — attendu textSecondary (${COULEUR.textSecondary}).`);
       }

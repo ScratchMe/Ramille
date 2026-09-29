@@ -1207,6 +1207,13 @@ try {
   const FEUILLE = 'Ton plan va être recalculé';
   const jusquAVoirMonBilan = async () => {
     await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    // **Le questionnaire est prérempli après son montage**, par un aller-retour réseau. Tant que le
+    // « Suivant » d'une étape vide était désactivé, le clic l'attendait sans que rien ne l'écrive ;
+    // depuis `v1-31`, il est en attente et agit, donc il faut attendre la réponse cochée — sans quoi
+    // le premier « Suivant » demanderait « une réponse » à une étape que le bilan précédent remplit
+    // (contre-lecture du 29/09/2026). Une réponse cochée, et non le bandeau : un brouillon rouvert
+    // préremplit lui aussi, sans bandeau.
+    await page.locator('[role="radio"][aria-checked="true"]').first().waitFor({ state: 'visible', timeout: ATTENTE });
     const fin = page.getByRole('button', { name: 'Voir mon bilan', exact: true });
     // Le même contrôle que `suivant()` (`v1-31` §4.5) : une étape du re-bilan qui n'avancerait pas
     // arrête le parcours en citant ce qui manque, au lieu d'expirer sur une attente muette.
@@ -1765,12 +1772,54 @@ try {
   // devant. Cette étape garde **deux arguments de l'appel** — la dérivation a toutes ses combinaisons
   // d'états dans Jest, mais un écran qui lui passerait le mauvais argument les laisserait tous verts ;
   // l'en-tête nomme ceux que rien ici ne garde.
+  // **Le préremplissage qui ouvre une précision ne fait pas défiler l'écran** (`v1-31` §2.7, écart 12
+  // du §9). Une précision qui s'ouvre sous le pied fait remonter l'écran — après une réponse donnée,
+  // jamais sous une donnée arrivée plus tard. Ouvert par `?etape=commute_mode`, le re-bilan de ce
+  // profil monte l'étape du mode vide, puis le bilan précédent y coche « Vélo » : la boîte « Quel type
+  // de vélo ? » monte **après** l'écran, donc elle annonce son ouverture, et seul le compte des
+  // réponses de `StepShell` retient le défilement. À 360 × 800, elle finit sous le pied (738 pour
+  // 698) : c'est là qu'un défilement se verrait. Sans réseau, la section K ne peut pas le jouer — un
+  // brouillon, lui, rouvre l'étape déjà remplie, et `Depliage` le retient par une seconde défense.
+  etape('cycliste — un re-bilan ouvert sur l’étape du mode ne défile pas sous son préremplissage');
+  const tailleDuParcours = page.viewportSize();
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto(`${base}/bilan?etape=commute_mode`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await attendreTexte('Tes réponses précédentes sont pré-remplies.');
+  await page.getByRole('radio', { name: 'Mécanique', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+  // Le temps d'un défilement de la plateforme, s'il était parti.
+  await page.waitForTimeout(1_500);
+  const sousLePreremplissage = await page.evaluate(() => {
+    const titre = [...document.querySelectorAll('h1')].find((h) => h.getClientRects().length > 0);
+    let zone = null;
+    for (let e = titre?.parentElement; e && !zone; e = e.parentElement) {
+      if (/(auto|scroll)/.test(getComputedStyle(e).overflowY)) zone = e;
+    }
+    const groupe = [...document.querySelectorAll('[role="radiogroup"]')].find(
+      (g) => g.getAttribute('aria-label') === 'Quel type de vélo ?'
+    );
+    const boite = groupe?.parentElement?.parentElement;
+    return zone && boite
+      ? { decalage: zone.scrollTop, bas: zone.getBoundingClientRect().bottom, boite: boite.getBoundingClientRect().bottom + zone.scrollTop }
+      : null;
+  });
+  assurer(sousLePreremplissage !== null, 'la boîte « Quel type de vélo ? » est introuvable sous le préremplissage');
+  assurer(
+    sousLePreremplissage.boite > sousLePreremplissage.bas,
+    `la boîte du vélo finit à ${Math.round(sousLePreremplissage.boite)}, dans la zone (${Math.round(sousLePreremplissage.bas)}) : la garde ne peut pas conclure`
+  );
+  assurer(
+    sousLePreremplissage.decalage === 0,
+    `l’écran a défilé de ${Math.round(sousLePreremplissage.decalage)} px sous le préremplissage — une ouverture ne se suit qu’après une réponse donnée (\`reponsesDonnees\`, StepShell)`
+  );
+  await page.setViewportSize(tailleDuParcours);
+
   etape('cycliste — un nouveau bilan en voiture : le premier plan passe devant');
   await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
   // Le questionnaire est prérempli par le bilan précédent : seul le mode change. On attend le
-  // bandeau qui le dit — sans lui, un préremplissage qui n'arriverait pas laisserait « Suivant »
-  // inactif, et l'échec se lirait en délai dépassé plutôt qu'en cause nommée.
+  // bandeau qui le dit — sans lui, `suivant()` toucherait le « Suivant » de la première étape avant
+  // que le préremplissage n'arrive : il est en attente depuis `v1-31`, donc il agit, et le parcours
+  // s'arrêterait sur « Il manque encore une réponse. » au lieu de nommer la vraie cause.
   await attendreTexte('Tes réponses précédentes sont pré-remplies.');
   await suivant();
   await suivant();

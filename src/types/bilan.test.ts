@@ -1536,7 +1536,11 @@ describe('normaliserReponses — ce qu’elle affirme d’elle-même', () => {
  *   - `seMarque` qui rend vrai pour la question principale (le `champ !== QUESTION_PRINCIPALE[etape]`
  *     retiré) → deux : « jamais la question de l'étape » et « toute autre question se marque », qui
  *     exige aussi le faux de la principale ;
- *   - une phrase retouchée (« la part des vols courts ») → une : sa ligne dans la table des phrases.
+ *   - une phrase retouchée (« la part des vols courts ») → une : sa ligne dans la table des phrases ;
+ *   - et, après la contre-lecture du soir, une faute dans `QUESTION_PRINCIPALE` (`commute_mode` pointé
+ *     sur `commute_car_engine`) → trois, sur 138 : « la question principale de chaque étape est celle
+ *     de son titre », « jamais la question de l'étape » et « toute autre question se marque ». Avant
+ *     que la table ne soit recopiée dans le test, cette faute ne faisait rien tomber.
  */
 describe('manqueDeLEtape — le champ et sa phrase', () => {
   // **Les phrases ne changent pas** (handoff v1-31, écart 15) : chacune est écrite ici telle qu'elle
@@ -1679,9 +1683,31 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
 });
 
 describe('seMarque', () => {
+  // **La question de chaque titre, recopiée et non relue** (contre-lecture du 29/09/2026) : lire
+  // `QUESTION_PRINCIPALE` pour éprouver `seMarque`, c'était garder la table par elle-même. Une faute
+  // dedans — `commute_mode: 'commute_car_engine'` — passait ce test **et** A6 dans la section K :
+  // la marque se posait sur la liste des modes, qui n'a pas d'intitulé, et le titre ne changeait pas
+  // de couleur. Chaque ligne est la question qu'écrit le titre de l'étape ; les longs trajets et le
+  // contexte n'ont que des groupes sous un titre qui n'en porte aucun.
+  const TITRE_DE_L_ETAPE: Record<BilanStepId, ChampDuBilan | null> = {
+    commute_has_trip: 'commute_has_regular_trip',
+    commute_days_distance: 'commute_days_per_week',
+    commute_mode: 'commute_mode',
+    commute_extra: 'commute_second_mode_used',
+    leisure_frequency: 'leisure_frequency',
+    leisure_detail: 'leisure_mode',
+    flights: 'flights_total_per_year',
+    long_trips: null,
+    context: null,
+  };
+
+  it('la question principale de chaque étape est celle de son titre', () => {
+    expect(QUESTION_PRINCIPALE).toEqual(TITRE_DE_L_ETAPE);
+  });
+
   it('jamais la question de l’étape : son titre ne se recolore pas', () => {
     for (const etape of BILAN_STEP_ORDER) {
-      const principale = QUESTION_PRINCIPALE[etape];
+      const principale = TITRE_DE_L_ETAPE[etape];
       if (principale !== null) expect(seMarque(etape, principale)).toBe(false);
     }
   });
@@ -1689,7 +1715,7 @@ describe('seMarque', () => {
   it('toute autre question de l’étape se marque', () => {
     for (const etape of BILAN_STEP_ORDER) {
       for (const champ of CHAMPS_DE_L_ETAPE[etape]) {
-        expect(seMarque(etape, champ)).toBe(champ !== QUESTION_PRINCIPALE[etape]);
+        expect(seMarque(etape, champ)).toBe(champ !== TITRE_DE_L_ETAPE[etape]);
       }
     }
     // Les deux étapes dont le titre ne porte aucun groupe marquent tout ce qu'elles réclament.
