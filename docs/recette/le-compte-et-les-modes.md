@@ -1,5 +1,11 @@
 # Recette web — ce qui est neuf depuis le 18/09/2026
 
+> **Remplacée pour ses lignes restantes le 29/09/2026** par
+> [`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md), la seule feuille
+> ouverte : 12.1 à 12.3 et 14.3 — et 02.2, 02.6, 02.10 et 03.11, réécrites le 29/09 pour des écrans
+> livrés après la séance — s'y jouent, et ne se jouent plus ici. Cette feuille reste la mémoire de
+> ce qui a été joué ; son artefact garde sa base.
+
 > **Écrit le 21/09/2026, mis à jour le 27/09/2026** — la séance n'avait pas été jouée entre-temps,
 > donc la feuille couvre désormais les deux périodes : ce que le 21/09 livrait (le compte, le
 > contexte, les modes manquants) et ce que les six jours suivants ont ajouté (le design system à

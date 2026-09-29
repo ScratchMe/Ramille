@@ -44,6 +44,13 @@ fonctions et les incidents propres à Ramille, et ne voyage pas. L'histoire comp
 - **Un jeton d'appareil se réenregistre à chaque changement d'utilisateur**
   (`onAuthStateChange`), pas seulement au démarrage — un lien de connexion ouvre la session d'un
   utilisateur *différent* de la session anonyme qui venait de l'enregistrer.
+- **`signOut()` sans argument est global** (`options = { scope: 'global' }` dans `GoTrueClient`) :
+  le serveur ferme **toutes** les sessions du compte, et les autres appareils perdent la leur au
+  premier rafraîchissement de jeton. Une sortie « de cet appareil » s'écrit
+  `signOut({ scope: 'local' })`, qui n'appelle même pas le serveur. Et après la suppression de
+  l'utilisateur, le global n'a plus rien à fermer — `sessions` et `refresh_tokens` sont partis en
+  cascade avec `auth.users` — : le serveur répond 403, qu'`auth-js` avale en vidant tout de même le
+  stockage. Relevé à Ramille le 29/09/2026, sur les deux sorties du compte (`src/lib/compte.ts`).
 
 ### 1.2 La liste des Redirect URLs est une frontière de sécurité
 
