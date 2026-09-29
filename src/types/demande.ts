@@ -66,9 +66,13 @@ export function decalagePourMontrer({
 }): number | null {
   const hautVisible = haut - decalage;
   const basVisible = bas - decalage;
-  // Au-dessus de la zone, ou plus haute qu'elle et débordant des deux côtés : la demande redescend
-  // jusqu'à aligner le haut. Une ouverture, jamais.
-  if (!ouverture && hautVisible < 0) return Math.max(0, haut - MARGE_SOUS_L_EN_TETE);
+  // Au-dessus de la zone — ou débordant en bas pendant que son haut est à moins de 24 du bord, donc
+  // plus haute que ce que la zone peut montrer : la demande l'aligne 24 sous l'en-tête, quitte à
+  // remonter de quelques pixels (contre-lecture du 29/09/2026 : la moitié « vers le bas » ne remonte
+  // jamais, et la laissait collée au bord). Une ouverture, jamais.
+  if (!ouverture && (hautVisible < 0 || (hautVisible < MARGE_SOUS_L_EN_TETE && basVisible > hauteurZone))) {
+    return Math.max(0, haut - MARGE_SOUS_L_EN_TETE);
+  }
   // Le bas dans la zone — la cible y est entière, ou déborde en haut pour une ouverture : rien.
   if (basVisible <= hauteurZone) return null;
   const aDefiler = defilementPourMontrer({

@@ -90,8 +90,10 @@ export function SansApparitionAuMontage({ children }: { children: ReactNode }) {
 }
 
 /**
- * Vrai si ce qui monte maintenant monte **après** son écran — c'est-à-dire qu'un geste l'a fait
- * apparaître —, et non avec lui.
+ * Vrai si ce qui monte maintenant monte **après** son écran, et non avec lui : un geste l'a fait
+ * apparaître, **ou** une donnée arrivée plus tard — le préremplissage d'un re-bilan fait monter une
+ * précision après l'écran sans que personne ait touché à rien. Ce n'est donc pas « un geste » : c'est
+ * `StepShell` qui distingue, par le compte des réponses données (`v1-31` §2.7, §9 écart 12).
  *
  * **Deux lectures, et elles ne se confondent plus** (29/09/2026, `v1-31` §2.7). « Monte après son
  * écran » décide si un dépli s'annonce au défilement (`suivieALOuverture`) ; « joue » (`useJoue`) y

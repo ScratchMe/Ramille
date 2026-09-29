@@ -65,7 +65,9 @@ const defilementPourMontrer = ({ haut, bas, hauteurFenetre, marge, margeHaut = m
 const decalagePourMontrer = ({ decalage, hauteurZone, haut, bas, ouverture = false }) => {
   const hautVisible = haut - decalage;
   const basVisible = bas - decalage;
-  if (!ouverture && hautVisible < 0) return Math.max(0, haut - MARGE_SOUS_L_EN_TETE);
+  if (!ouverture && (hautVisible < 0 || (hautVisible < MARGE_SOUS_L_EN_TETE && basVisible > hauteurZone))) {
+    return Math.max(0, haut - MARGE_SOUS_L_EN_TETE);
+  }
   if (basVisible <= hauteurZone) return null;
   const aDefiler = defilementPourMontrer({
     haut: hautVisible,

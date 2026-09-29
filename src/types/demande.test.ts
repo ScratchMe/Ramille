@@ -22,6 +22,12 @@ import { decalagePourMontrer, optionCible, suiteSousLePied } from '@/types/deman
 //
 // Les tests de `defilementPourMontrer` (`mouvement.test.ts`), dont la moitié « vers le bas » est
 // réutilisée ici, restent verts sous les quatre : ils n'emploient pas `margeHaut`.
+//
+// **Et après la contre-lecture du soir**, la cible plus haute que la zone dont le haut est à moins de
+// 24 du bord : la clause `hautVisible < MARGE_SOUS_L_EN_TETE && basVisible > hauteurZone` retirée →
+// « plus haute que la zone… » seul, sur son cas neuf (null au lieu de 86) ; la même clause sans sa
+// moitié `basVisible > hauteurZone` → « une cible déjà entière… » et « plus haute que la zone… »,
+// sur leurs cas collés au bord, et eux seuls.
 
 describe('optionCible', () => {
   it('la cochée, quand il y en a une', () => {
@@ -62,6 +68,10 @@ describe('decalagePourMontrer', () => {
     expect(decalagePourMontrer({ ...zone, haut: 400, bas: 1400 })).toBe(376);
     // Débordant des deux côtés : même alignement.
     expect(decalagePourMontrer({ ...zone, haut: 50, bas: 1400 })).toBe(26);
+    // Le haut à 10 du bord, le bas sous le pied : elle remonte de 14 pour s'aligner à 24.
+    expect(decalagePourMontrer({ ...zone, haut: 110, bas: 1400 })).toBe(86);
+    // Le haut à 10 du bord, le bas dans la zone : entière, rien ne bouge.
+    expect(decalagePourMontrer({ ...zone, haut: 110, bas: 690 })).toBeNull();
   });
 
   it('une ouverture ne fait jamais passer le choix au-dessus du bord : la borne gagne', () => {

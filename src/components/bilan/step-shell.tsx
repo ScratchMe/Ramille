@@ -155,14 +155,17 @@ export function StepShell({
   // l'export, et inchangé. Sur natif, ce même conteneur ne reçoit **rien**, et ne recevait rien
   // avant le 24/09 non plus — l'ancienne voie (`setAccessibilityFocus`) aboutit au même appel,
   // `BridgelessUIManager` retrouvant le nœud par son numéro :
-  //   - il ne porte aucune propriété (ni style, ni `accessible`, ni `collapsable={false}`), donc
-  //     Fabric l'aplatit — aucune vue native n'est créée pour lui (`ViewShadowNode::initialize`, où
-  //     rien ne lui donne le trait `FormsView`). RN 0.86 n'a plus que cette architecture ;
+  //   - jusqu'au 29/09/2026, il ne portait aucune propriété (ni style, ni `accessible`, ni
+  //     `collapsable={false}`), donc Fabric l'aplatissait — aucune vue native n'était créée pour lui
+  //     (`ViewShadowNode::initialize`, où rien ne lui donne le trait `FormsView`). RN 0.86 n'a plus
+  //     que cette architecture. **Il porte désormais `collapsable={false}` et un `onLayout`**
+  //     (`v1-31` §4.7 : les mesures du défilement se prennent relativement à lui), donc une vue est
+  //     montée — et le point suivant dit pourquoi ça ne change rien au focus ;
   //   - l'événement part pourtant avec son numéro (`FabricMountingManager::sendAccessibilityEvent`
   //     transmet `shadowView.tag`, sans chercher d'ancêtre monté), `SurfaceMountingManager` ne trouve
   //     aucune vue et lève `RetryableMountingLayerException`, que `SendAccessibilityEventMountItem`
   //     avale en exception douce : ni plantage, ni focus, ni trace à l'écran.
-  // `collapsable={false}` monterait une vue, mais pas un nœud d'accessibilité : sans `accessible`
+  // `collapsable={false}` monte une vue, mais pas un nœud d'accessibilité : sans `accessible`
   // elle n'est pas focalisable (`ReactViewManager.setAccessible` ne fait que poser `isFocusable`), et
   // sans rôle RN ne lui pose aucun délégué (`ReactAccessibilityDelegate.setDelegate`). Ce que TalkBack
   // ferait d'un focus demandé sur elle ne se lit dans aucune source du dépôt. Et `accessible`

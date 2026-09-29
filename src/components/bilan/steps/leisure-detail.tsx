@@ -225,8 +225,9 @@ export function LeisureDetailStep({
         {/* Le groupe ne porte que les modes et leurs précisions — chacune son propre groupe, posé
             dedans sous le mode qu'elle décrit (`GroupeDeChoix`). « Voir les autres modes » le suit
             sans y entrer : c'est une commande, pas une option, et il ne se rattache à aucune
-            ligne. Il garde sa place au pixel près, l'écart de la liste étant aussi celui qui les
-            sépare. */}
+            ligne. Le premier mode révélé arrive à sa place, **8 px plus bas** : le lien suit la liste à
+            8, le bloc révélé à 16, l'écart entre deux familles (handoff `v1-31`, D4 — mesuré sur
+            l'export, 398 pour le lien, 406 pour « Deux-roues motorisé »). */}
         <View style={styles.list}>
           {/* **Trois familles, sans intertitre** (29/09/2026, `v1-31`, décision 2), comme la liste du
               trajet : 4 px dans une famille, 16 entre deux. */}
