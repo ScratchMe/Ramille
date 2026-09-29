@@ -816,8 +816,8 @@ suivre sont celles du handoff.
 | 4.7 | Les deux défilements, `Depliage` | fait, 29/09/2026 : `decalagePourMontrer` (`src/types/demande.ts`), qui réutilise `defilementPourMontrer` gagné d'une `margeHaut` ; `useApresLeMontage` et `useJoue` à la place de `useJoueAuMontage` ; `suivieALOuverture` et `ChoixOuvrant` ; le geste compté par `update` (§9). Mesuré sur l'export : B6 défile de 56, la boîte finit à 682 ; D2 de 261, les tranches finissent à 670 ; A4 et le brouillon rouvert au vélo ne défilent pas — avec et sans animations |
 | 4.8 | Le filet du pied | fait, 29/09/2026 : `suiteSousLePied` (`src/types/demande.ts`), relu au défilement, à la taille du contenu et à celle de la zone. Relevé sur l'export : absent en A1 à 390 et sur une étape courte, présent en B1 à 360 (698) et en D1 (742), absent au bas de D1 |
 | 6 | Section K, mutations de §6.4, H2 rejouée | à faire |
-| 4.9 | Le kit | à faire |
-| 7 | Les documents | à faire |
+| 4.9 | Le kit | fait, 29/09/2026 : les fiches touchées, deux neuves (`BoiteDePrecision`, `IntituleDuChamp` — les ancres, que le plan n'avait pas prévues), `ChoixOuvrant` dans `SANS_INTERFACE` (il ne dessine rien), `bilan.card.js`, les exemples des `.prompt.md`, et l'écran B1.4 du kit d'écrans (`ui_kits/ramille/screens.js`), qui passait encore `nextDisabled` et affichait la motorisation hors de sa boîte. Miroir vert. Les sept aperçus de `.design-sync/previews/` suivent à la prochaine synchronisation |
+| 7 | Les documents | fait, 29/09/2026 : `FRONT.md` §2.4, §2.6, §2.12 ; `EXPO.md` §1.5 ; `TESTING.md` §2.14 (la section K, et deux règles payées en l'écrivant) ; `CLAUDE.md` (télétravail) ; la recette 02.2, 02.6 et 02.10 ; le README du dossier de design ; `v1-13` ligne 11.19 et `produit.md` ; §9 lignes 12 à 14 |
 | 8.1 à 8.6 | Vérifications, contre-lecture, rejeu de la CI, poids Vercel | à faire |
 | 8.7 | Build EAS | à demander |
 | 8.8 | Recette sur appareil (`v1-13` §11.19) | après le build |
