@@ -56,6 +56,7 @@ partage avec ce qui tourne à côté.
 | `src/types/plan.test.ts` | Un test s'inverse ; les quatre dérivations sont testées |
 | `src/components/plan/carte-de-piste.tsx` | Deux props transmises ; `p_replace` et l'estompage lus sur `etatDeLaPiste` |
 | `src/components/plan/action-commitment.tsx` | Deux props (ouvert d'emblée, « Annuler » rendu à l'appelant) ; le focus dans les deux sens |
+| `src/components/button.tsx` | **Ajouté à l'implémentation (29/09/2026)** : une prop `ref`, la surface du bouton, pour rendre le focus à « Je m'y engage » quand « Annuler » le fait réapparaître sur le plan (§4.2). Le bouton n'exposait aucune référence, et un conteneur autour ne donne pas de nœud à viser sur natif (`donnerLeFocus`) |
 | `docs/design/design-system/components/plan/CarteDePiste.*`, `ActionCommitment.*` | Les fiches du kit décrivent les props neuves |
 | `docs/design/design-system/readme.md` | La ligne « Traits » connaît la pastille bordée (`fieldBorder` en trait fin) |
 | `docs/recette/premier-parcours-web.md` | Bloc 06, lignes 06.2 à 06.5 ; une ligne neuve après 08.5 (§4.8) |
@@ -78,6 +79,12 @@ la fiche.
 rebalayer ces deux fichiers sur `main` (règle de CLAUDE.md, « Avant de lancer une vague ») : un
 changement de `Button` entre-temps changerait l'apparence de « C'est noté » inactif sans que rien
 dans ce chantier ne le dise.
+
+**Corrigé à l'implémentation, le 29/09/2026 : ce chantier écrit `button.tsx`**, d'une prop — `ref`,
+passée au `Pressable` (§4.2 et la ligne du tableau). La phrase ci-dessus était vraie du plan et
+fausse du code. Rien ne change pour `v1-31` sur le fond (`enAttente` et `ref` ne se touchent pas),
+mais le chantier qui ajoutera `enAttente` partira d'un `Button` qui a une prop de plus dans sa
+signature et dans sa décomposition : c'est un conflit textuel, à relever plutôt qu'à découvrir.
 
 ## 4. Le chantier, dans l'ordre
 
@@ -372,7 +379,7 @@ Et l'état d'avancement de §8 se tient à jour pendant le travail, pas après c
 | Étape | État |
 |---|---|
 | 4.1 — `plan.ts`, l'ordre et les quatre dérivations, tests cassés d'abord | fait (29/09/2026) : dix mutations, comptées en tête des tests |
-| 4.2 et 4.3 — `ActionCommitment`, `CarteDePiste` | à faire |
+| 4.2 et 4.3 — `ActionCommitment`, `CarteDePiste` | fait (29/09/2026) ; `Button` gagne une prop `ref` (§3) |
 | 4.4 — l'écran | à faire |
 | 4.7 — le kit | à faire |
 | 4.8 — la recette, `v1-13` §11, le parcours réel | à faire |

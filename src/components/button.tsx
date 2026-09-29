@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { type Ref } from 'react';
+import { Pressable, StyleSheet, type View, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, Radius, Stroke } from '@/constants/theme';
@@ -22,6 +23,14 @@ export type ButtonProps = {
    * principal, dont l'accent se voit partout.
    */
   onPanel?: boolean;
+  /**
+   * La surface du bouton, pour lui **rendre le focus** (29/09/2026, `v1-32` §4.2) : sur le plan,
+   * « Annuler » referme le sélecteur d'intention et fait réapparaître « Je m'y engage » sous le
+   * doigt — sans cette référence, le focus retombait sur le document (`donnerLeFocus`,
+   * `FRONT.md` §2.4). Une prop et non `forwardRef` : React 19 la passe comme les autres, le motif de
+   * `FeuilleDuBas`.
+   */
+  ref?: Ref<View>;
 };
 
 // Bouton pleine largeur, rayon 27px — cf. design tokens du handoff.
@@ -48,6 +57,7 @@ export function Button({
   style,
   accessibilityHint,
   onPanel,
+  ref,
 }: ButtonProps) {
   const theme = useTheme();
 
@@ -64,6 +74,7 @@ export function Button({
 
   return (
     <Pressable
+      ref={ref}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"

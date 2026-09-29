@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -9,6 +9,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
+import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import {
   INTENTION_DAYS,
@@ -44,6 +45,8 @@ export function ActionCommitment({
   onChanged,
   onEngage,
   onRefus,
+  surLeChoix = false,
+  onAnnuler,
 }: {
   actionId: string;
   poste: string | null;
@@ -72,10 +75,23 @@ export function ActionCommitment({
    * la porte, au-dessus du plan, là où la ligne de relecture se dit déjà.
    */
   onRefus?: (message: string | null) => void;
+  /**
+   * S'ouvrir **directement sur la question** (« Quand ? », « Quels jours ? »), sans passer par « Je
+   * m'y engage » (décision n° 1 du 28/09/2026, `v1-32` §4.2) : sur l'écran des pistes, « Choisir »
+   * vient de le dire, et le redemander faisait quatre gestes là où trois suffisent. Le contenu du
+   * sélecteur ne change pas — rien de coché, « C'est noté » inactif tant que rien n'est choisi,
+   * **aucune valeur par défaut**. Le plan ne le passe pas.
+   */
+  surLeChoix?: boolean;
+  /**
+   * « Annuler » rend la main à l'appelant au lieu de revenir au bouton « Je m'y engage » — sur la
+   * liste, il n'y en a pas : la carte redevient sa ligne. Sans lui, le comportement du plan.
+   */
+  onAnnuler?: () => void;
 }) {
   const kind = intentionKindForPoste(poste);
 
-  const [picking, setPicking] = useState(false);
+  const [picking, setPicking] = useState(surLeChoix);
   const [days, setDays] = useState<IntentionDay[]>([]);
   const [timing, setTiming] = useState<IntentionTiming | null>(null);
   const [busy, setBusy] = useState(false);
@@ -84,6 +100,32 @@ export function ActionCommitment({
   // La question écrite une fois pour ses deux usages : le texte au-dessus des puces et le nom de
   // leur groupe (`GroupeDeChoix`).
   const question = kind === 'days' ? 'Quels jours ?' : 'Quand ?';
+
+  /**
+   * **Le focus suit le geste, dans les deux sens** (29/09/2026, `v1-32` §4.2, `FRONT.md` §2.4).
+   * « Je m'y engage » et « Annuler » disparaissent sous le doigt qui les touche : le focus tombait
+   * sur le document, la tabulation repartait du haut du plan, et le lecteur d'écran n'annonçait ni
+   * la question qui venait d'arriver, ni le bouton revenu. Il va donc :
+   *  - **à la question** quand le sélecteur s'ouvre — le texte « Quand ? » rendu focalisable par
+   *    programme, le nom même du groupe de puces qui suit ; la tabulation reprend à la première
+   *    puce, le lecteur d'écran lit la question puis les choix ;
+   *  - **au bouton qui réapparaît** quand « Annuler » le referme, sur le plan. Sur la liste, la
+   *    carte disparaît avec lui (`onAnnuler`) : c'est l'écran qui rend le focus à la rangée.
+   *
+   * **Seulement après un geste**, jamais au montage — sauf sur la liste, où le montage **est** le
+   * geste : la carte n'existe que parce que « Choisir » vient d'être touché (la règle de
+   * `TitreDArrivee`). `geste` retient lequel ; l'effet le lit et l'efface, pour qu'un effet rejoué
+   * sans que rien n'ait bougé ne reparte pas.
+   */
+  const laQuestion = useRef<unknown>(null);
+  const leBouton = useRef<View>(null);
+  const geste = useRef<'ouvrir' | 'annuler' | null>(surLeChoix ? 'ouvrir' : null);
+  useEffect(() => {
+    const vient = geste.current;
+    geste.current = null;
+    if (vient === 'ouvrir' && picking) donnerLeFocus(laQuestion.current);
+    if (vient === 'annuler' && !picking) donnerLeFocus(leBouton.current);
+  }, [picking]);
 
   const toggleDay = (day: IntentionDay) =>
     setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
@@ -98,14 +140,15 @@ export function ActionCommitment({
     const result = await commitPlanAction(
       actionId,
       kind === 'days' ? { days } : { timing: timing as IntentionTiming },
-      // **Remplacer se dit, il ne se déduit pas** (C4.6). Le bouton affiche « Choisir celle-ci à la
-      // place » quand une autre action est engagée : c'est exactement ce qu'on transmet, et le RPC
-      // refuse un remplacement qu'on ne lui a pas demandé plutôt que d'effacer en silence les jours
-      // et l'intention que la personne avait choisis.
+      // **Remplacer se dit, il ne se déduit pas** (C4.6). Quand une autre action est engagée, le
+      // bouton du plan dit « Choisir celle-ci à la place » et la pastille de la liste « Choisir à la
+      // place » — tous deux lus, comme ce drapeau, sur `etatDeLaPiste` (`CarteDePiste`) : c'est
+      // exactement ce qu'on transmet, et le RPC refuse un remplacement qu'on ne lui a pas demandé
+      // plutôt que d'effacer en silence les jours et l'intention que la personne avait choisis.
       otherActionCommitted
     );
-    setBusy(false);
     if (!result.ok) {
+      setBusy(false);
       // L'écran ne savait pas qu'une autre action était engagée : on relit plutôt que de laisser un
       // plan qui ne dit pas la vérité, et le message explique ce que la relecture va montrer — mais
       // il se dit **à l'écran**, parce que la relecture remonte cette carte et emporterait un état
@@ -118,9 +161,17 @@ export function ActionCommitment({
       setError(result.message);
       return;
     }
-    setPicking(false);
-    setDays([]);
-    setTiming(null);
+    // **Sur la liste, le sélecteur reste tel quel, « C'est noté » inactif**, jusqu'à ce que l'écran
+    // parte vers le plan (`onEngage`). Refermé ici, il montrait « Je m'y engage » ou « Choisir
+    // celle-ci à la place » pendant le retour de la pile, sur natif — un bouton que la liste n'a
+    // plus —, et un `busy` rendu faux laissait « C'est noté » se retoucher une seconde fois. La
+    // relecture qui suit rend de toute façon la ligne engagée, qui n'est plus une carte.
+    if (!surLeChoix) {
+      setBusy(false);
+      setPicking(false);
+      setDays([]);
+      setTiming(null);
+    }
     onChanged();
     onEngage?.(poste);
   };
@@ -162,9 +213,13 @@ export function ActionCommitment({
     return (
       <View style={styles.footer}>
         <Button
+          ref={leBouton}
           title={otherActionCommitted ? 'Choisir celle-ci à la place' : 'Je m’y engage'}
           variant="secondary"
-          onPress={() => setPicking(true)}
+          onPress={() => {
+            geste.current = 'ouvrir';
+            setPicking(true);
+          }}
         />
       </View>
     );
@@ -172,7 +227,11 @@ export function ActionCommitment({
 
   return (
     <ThemedView type="backgroundElement" style={styles.picker}>
-      <ThemedText type="small" themeColor="textTertiary">
+      <ThemedText
+        type="small"
+        themeColor="textTertiary"
+        {...({ ref: laQuestion, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+      >
         {question}
       </ThemedText>
 
@@ -224,7 +283,14 @@ export function ActionCommitment({
       <View style={styles.pickerActions}>
         <TextLink
           label="Annuler"
-          onPress={() => setPicking(false)}
+          onPress={() => {
+            if (onAnnuler) {
+              onAnnuler();
+              return;
+            }
+            geste.current = 'annuler';
+            setPicking(false);
+          }}
           disabled={busy}
           type="small"
           themeColor="textTertiary"
