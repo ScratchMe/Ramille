@@ -554,6 +554,22 @@ async function barreVisible() {
  * qui ne nomme rien : il faut alors retrouver dans le script la ligne où l'on en était. Mesuré en
  * cassant une phrase de l'écran (mutation 3 du second profil, 20/09/2026).
  */
+/**
+ * **Le focus a atteint l'élément dont le texte est `attendu`** — attendu, et non lu tout de suite :
+ * sur la liste, il ne part qu'une fois la carte grandie (`Mouvement.entree`, `ActionCommitment`).
+ */
+async function focusSur(attendu, ou) {
+  try {
+    await page.waitForFunction(
+      (t) => (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim() === t,
+      attendu,
+      { timeout: 2_000 }
+    );
+  } catch {
+    const vu = await page.evaluate(() => (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80));
+    throw new Ecart(`${ou}, le focus est sur « ${vu} » et non sur « ${attendu} »`);
+  }
+}
 async function attendreTexte(motif) {
   try {
     await page.getByText(motif).first().waitFor({ state: 'visible', timeout: ATTENTE });
@@ -875,6 +891,14 @@ try {
 
   // ── 6. L'engagement sur la première piste ───────────────────────────────────────────────────
   etape('engagement');
+  // **Le focus suit le geste, sur le plan aussi** (29/09/2026, `v1-32` §4.2) : « Je m'y engage » le
+  // donne à la question, « Annuler » le rend au bouton revenu. Les deux disparaissent sous le doigt ;
+  // sans ça, le focus tombait sur le document et la tabulation repartait du haut du plan. C'est la
+  // moitié web de `donnerLeFocus` — la moitié native, TalkBack, reste au doigt (`v1-13` §11.24).
+  await bouton('Je m’y engage');
+  await focusSur('Quels jours ?', 'après « Je m’y engage », sur le plan');
+  await bouton('Annuler');
+  await focusSur('Je m’y engage', 'après « Annuler », sur le plan');
   await bouton('Je m’y engage');
   await verifierLesGroupes('la feuille d’engagement');
 
@@ -1316,9 +1340,46 @@ try {
   );
   await aLaPlace.click();
   await attendreTexte('Quand ?');
-  const focusSurLaQuestion = await page.evaluate(() => (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim());
-  assurer(focusSurLaQuestion === 'Quand ?', `après « Choisir à la place », le focus est sur « ${focusSurLaQuestion} » et non sur la question`);
+  await focusSur('Quand ?', 'après « Choisir à la place »');
   assurer((await page.getByRole('button', { name: 'Je m’y engage', exact: true }).count()) === 0, '« Je m’y engage » est encore sur le chemin de la liste');
+  // **Jamais estompée sur la liste** (planche B3) : une autre action est engagée, mais la carte ouverte
+  // est celle qu'on est en train de choisir. Son cadre garde le filet `border` — celui des rangées —
+  // et ne passe pas à `backgroundElement`, le filet d'une proposition qui recule sur le plan.
+  const filets = await page.evaluate(() => {
+    // L'espace avant « ? » est insécable : on compare le texte normalisé, comme `focusSur`.
+    const quand = [...document.querySelectorAll('*')].find(
+      (e) => e.childElementCount === 0 && (e.textContent ?? '').replace(/\s+/g, ' ').trim() === 'Quand ?'
+    );
+    let carte = quand?.parentElement;
+    while (carte && parseFloat(getComputedStyle(carte).borderTopWidth) === 0) carte = carte.parentElement;
+    const rangee = [...document.querySelectorAll('[role="button"]')].find((e) => parseFloat(getComputedStyle(e).borderBottomWidth) > 0);
+    return { carte: carte && getComputedStyle(carte).borderTopColor, rangee: rangee && getComputedStyle(rangee).borderBottomColor };
+  });
+  assurer(filets.carte && filets.rangee, `le cadre de la carte ou le filet d’une rangée est introuvable (${JSON.stringify(filets)})`);
+  assurer(
+    filets.carte === filets.rangee,
+    `la carte ouverte sur le choix est estompée (${filets.carte} au lieu de ${filets.rangee}) : sur la liste, elle ne l’est jamais`
+  );
+  // **« Annuler » la rend à sa ligne** (décision n° 1), et le focus à la rangée revenue : la carte
+  // disparaît sous le doigt avec son bouton, c'est l'écran qui rend la main.
+  await bouton('Annuler');
+  try {
+    await aLaPlace.waitFor({ state: 'visible', timeout: ATTENTE });
+  } catch {
+    throw new Ecart('« Annuler », sur la liste, n’a pas rendu la carte à sa rangée');
+  }
+  assurer((await page.getByText('Quand ?', { exact: true }).count()) === 0, '« Annuler », sur la liste, laisse la question à l’écran');
+  assurer(
+    (await page.getByRole('button', { name: /^Choisir celle-ci/ }).count()) === 0,
+    '« Annuler », sur la liste, a replié le sélecteur dans la carte au lieu de la refermer'
+  );
+  const focusSurLaRangee = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? '');
+  assurer(
+    focusSurLaRangee.startsWith(`${TITRE_OUVERT_AU_DESSUS}.`),
+    `après « Annuler », sur la liste, le focus est sur « ${focusSurLaRangee.slice(0, 60)} » et non sur la rangée revenue`
+  );
+  await aLaPlace.click();
+  await attendreTexte('Quand ?');
   for (const echeance of ['À mon prochain projet de voyage', 'Avant mon prochain bilan']) {
     assurer(
       (await page.getByRole('radio', { name: echeance, exact: true }).getAttribute('aria-checked')) === 'false',
@@ -1351,6 +1412,32 @@ try {
   assurer(
     archive.some((a) => a.action_text === ATTENDU.pistes[0][0] && a.released_reason === 'changement'),
     `l’engagement remplacé n’est pas archivé en « changement » : ${JSON.stringify(archive)}`
+  );
+
+  // **L'ordre de la liste ne bouge pas** (décision n° 2) — et c'est le seul moment du parcours où ça se
+  // voit : tant que le rang 1 est engagé, « par rang » et « l'engagée d'abord » donnent le même ordre.
+  // Le rang 2 engagé, le plan le met en tête (vérifié juste au-dessus) ; la liste, elle, garde le
+  // trajet domicile-travail en premier, et le vol à sa place dans les voyages, marqué et inerte.
+  etape('pistes — l’ordre ne bouge pas, une action engagée au rang 2');
+  await ouvrirLesPistes();
+  await attendreTexte('Engagée');
+  const texteDesPistes = await page.evaluate(() => document.body.innerText);
+  const ou = (t) => texteDesPistes.indexOf(t);
+  assurer(
+    ou(ATTENDU.pistes[0][0]) !== -1 && ou(ATTENDU.pistes[0][0]) < ou(TITRE_OUVERT_AU_DESSUS),
+    `la liste a mis l’action engagée en tête : « ${ATTENDU.pistes[0][0]} », au rang 1, doit rester devant — l’ordre du rang ne bouge pas`
+  );
+  assurer(
+    ou('TRAJET DOMICILE-TRAVAIL') !== -1 && ou('TRAJET DOMICILE-TRAVAIL') < ou('VOYAGES LONGUE DISTANCE'),
+    'le groupe des voyages est passé devant celui du trajet : le groupe de l’action engagée a pris la tête'
+  );
+  assurer(
+    /\. Choisir à la place\.$/.test((await rangee(ATTENDU.pistes[0][0]).getAttribute('aria-label')) ?? ''),
+    `« ${ATTENDU.pistes[0][0]} », désengagée, ne dit pas « Choisir à la place »`
+  );
+  assurer(
+    (await page.getByRole('button', { name: new RegExp(`^${TITRE_OUVERT_AU_DESSUS}\\.`) }).count()) === 0,
+    `« ${TITRE_OUVERT_AU_DESSUS} », engagée, se touche encore : sa rangée ne doit pas être un bouton`
   );
 
   // ── 9. La suppression du compte, par l'écran, et rien derrière ─────────────────────────────

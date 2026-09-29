@@ -545,10 +545,10 @@ describe('annonceDeLaPiste', () => {
   // code (`FRONT.md` §1.6) : collé en littéral, un échec afficherait deux chaînes identiques à l'œil.
   it('rend les trois formes du HANDOFF', () => {
     expect(annonceDeLaPiste({ titre, gainKg: 1601, etat: 'libre' })).toBe(
-      'Renoncer à un vol long-courrier cette année. − 1 601 kg par an. Choisir.'
+      'Renoncer à un vol long-courrier cette année. − 1\u00a0601 kg par an. Choisir.'
     );
     expect(annonceDeLaPiste({ titre, gainKg: 1601, etat: 'aLaPlace' })).toBe(
-      'Renoncer à un vol long-courrier cette année. − 1 601 kg par an. Choisir à la place.'
+      'Renoncer à un vol long-courrier cette année. − 1\u00a0601 kg par an. Choisir à la place.'
     );
     expect(annonceDeLaPiste({ titre: 'Regrouper deux sorties en une seule, une fois sur cinq', gainKg: 67.4, etat: 'engagee' })).toBe(
       'Regrouper deux sorties en une seule, une fois sur cinq. − 67 kg par an. Action engagée.'

@@ -16,9 +16,10 @@
  * « qu'est-ce qu'un test d'écran attrape que les deux autres suites n'attrapent pas, et à quel
  * prix ? ». Le relevé est en `v1-27` §12.11 ; ce fichier en est la pièce à conviction.
  *
- * **Ce qu'on a choisi d'éprouver, et pourquoi ces trois-là.** Aucune n'est vérifiable ailleurs :
- * ce sont des **branches de rendu**, pas des dérivations — `src/types/plan.ts` ne sait pas ce
- * que l'écran fait de ce qu'il lui rend, et le parcours réel ne joue que le chemin heureux.
+ * **Ce qu'on a choisi d'éprouver le 20/09/2026, et pourquoi ces trois-là.** Aucune n'était
+ * vérifiable ailleurs : ce sont des **branches de rendu**, pas des dérivations — `src/types/plan.ts`
+ * ne sait pas ce que l'écran fait de ce qu'il lui rend, et le parcours réel ne joue que le chemin
+ * heureux.
  *
  *   1. **Un échec de lecture ne dit jamais « tu n'as rien »** (règle de C1.4, qui vaut pour tout
  *      le produit). Les pistes existent ; c'est la lecture qui a manqué. Confondre les deux, c'est
@@ -47,8 +48,9 @@
  *     « ne dit pas « Chargement… » avant le délai quand personne ne l'a demandé ».
  *
  * **Et quatre câblages le 29/09/2026, ceux de la liste où l'on choisit** (`v1-32`) — la famille
- * « une dérivation appelée avec le mauvais argument » : `etatDeLaPiste`, `annonceDeLaPiste` et
- * `defilementPourMontrer` ont leurs tests, pas leurs appels. Cinq mutations, chacune faisant tomber
+ * « une dérivation appelée avec le mauvais argument » : `etatDeLaPiste` et `annonceDeLaPiste` ont
+ * leurs tests, pas leurs appels. (`defilementPourMontrer` non plus, mais son appel ne se voit
+ * qu'avec une vraie mise en page : il est au parcours réel.) Cinq mutations, chacune faisant tomber
  * la sienne et aucune autre (sur un fichier égal au commit, restauré depuis sa copie) :
  *   - `surLeChoix` retiré de la carte → « ouvre la carte sur le choix » ;
  *   - `choisir` ignoré tant qu'une carte est ouverte → « une seule carte à la fois » ;
@@ -57,6 +59,13 @@
  *     même, sur le focus seul — la rangée revient, personne ne la désigne ;
  *   - `etatDeLaPiste(action, null)` au lieu de l'engagée relue → « la ligne engagée fait dire
  *     « Choisir à la place » aux autres ».
+ *
+ * **Ces quatre-là ne tiennent plus la seconde moitié du critère** (`TESTING.md` §2.10), et c'est su :
+ * la contre-lecture du même soir a donné au parcours réel les étapes qui les voient aussi — la carte
+ * sur la question, une seule à la fois, « Annuler » et son focus, « Choisir à la place ». Ils restent
+ * ici, entorse assumée pour ce seul fichier, dont les doublures sont déjà payées : Jest tourne à
+ * chaque `npm test`, sans Docker ni stack, et nomme le câblage fautif là où le parcours nomme une
+ * étape.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
@@ -66,9 +75,12 @@ import PistesScreen from '@/app/(tabs)/plan/pistes';
 
 // ── Les doublures, et c'est ici que se lit le coût réel d'un test d'écran ─────────────────────
 //
-// Trois modules à doubler pour monter 453 lignes : le transport (qui ne doit pas partir en
-// réseau), le contexte de la pile (le hook lève hors d'elle, à dessein), et la navigation. Aucun
-// n'est évitable, et c'est le chiffre à retenir : **le doublage pèse autant que les assertions**.
+// Cinq modules à doubler pour monter l'écran : le transport (qui ne doit pas partir en réseau), le
+// contexte de la pile (le hook lève hors d'elle, à dessein), la navigation, la carte (ci-dessous)
+// et le rafraîchissement au retour — plus reanimated, doublé pour toute la suite (`TESTING.md`
+// §2.10). Aucun n'est évitable, et c'est le chiffre à retenir : **le doublage pèse autant que les
+// assertions**. (Il disait « trois modules pour 453 lignes », deux comptes périmés en silence : la
+// liste se relit dans les `jest.mock` ci-dessous, pas ici.)
 
 // Le préfixe `mock` n'est pas cosmétique : jest hisse les `jest.mock()` au-dessus des
 // déclarations du fichier, et refuse toute variable hors portée dans leur fabrique — sauf

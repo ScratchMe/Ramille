@@ -63,10 +63,16 @@ partage avec ce qui tourne à côté.
 | `docs/recette/ce-qui-reste-apres-le-28-septembre.md` | Ligne 01.3 : « toucher une ligne, « Je m'y engage » » |
 | `docs/recette/le-compte-et-les-modes.md` | Ligne 03.11 : « Elle s'ouvre en carte, avec son bouton » |
 | `scripts/verifier-parcours-reel.mjs` | Une étape qui choisit depuis la liste, et la garde du défilement (§4.8) |
+| `src/types/mouvement.ts`, `mouvement.test.ts` | **Créés à l'implémentation (29/09/2026)** : `defilementPourMontrer`, la distance à défiler pour montrer une carte ouverte — une dérivation, donc testée (§4.4) |
+| `scripts/relever-par-image.mjs` | **Ajouté à l'implémentation** : la mesure `defilement`, qui lit une carte dans sa fenêtre de défilement, image par image |
+| `src/tests/ecrans/plan-pistes.test.tsx` | **Manqué par ce relevé** (§8) : le test d'écran attendait l'ancienne intro ; réécrit, avec quatre câblages neufs |
+| `TESTING.md` | §2.6 et §2.14 : les étapes neuves du parcours réel |
 | `docs/architecture/v1-13-audit-et-chantiers.md` | §11 : les lignes 11.18 et 11.W.2 ; une ligne neuve pour le doigt. §14.7 : la phrase « le code reste à faire » (§7) |
 | `docs/architecture/produit.md`, `v1-16-trois-decisions-decran.md` | Les phrases « pas encore codé » (§7) |
 
-**Ce que le chantier ne crée pas** : aucun fichier sous `src/`. La rangée **reste dans l'écran**,
+**Ce que le chantier ne crée pas** : aucun composant. (Le plan disait « aucun fichier sous `src/` » ;
+l'implémentation a créé `src/types/mouvement.ts`, une dérivation et non un composant — la ligne du
+tableau.) La rangée **reste dans l'écran**,
 comme `Lignes` aujourd'hui : un seul écran la rend, et un composant sous `src/components/plan/`
 arriverait avec une fiche de kit (`verifier-miroir-du-kit.mjs` refuse un composant sans fiche) pour
 zéro réutilisation. Si l'implémentation trouve une raison de l'en sortir, elle la consigne et écrit
@@ -85,6 +91,13 @@ passée au `Pressable` (§4.2 et la ligne du tableau). La phrase ci-dessus étai
 fausse du code. Rien ne change pour `v1-31` sur le fond (`enAttente` et `ref` ne se touchent pas),
 mais le chantier qui ajoutera `enAttente` partira d'un `Button` qui a une prop de plus dans sa
 signature et dans sa décomposition : c'est un conflit textuel, à relever plutôt qu'à découvrir.
+
+**Et trois fichiers de plus que `v1-31` croisera** (contre-lecture du 29/09/2026) : `TESTING.md`
+§2.14, où il ajoute sa section K à la liste que ce chantier vient d'allonger ; et surtout
+`src/types/mouvement.ts` et `scripts/relever-par-image.mjs`. `v1-31` prévoit une zone qui défile
+« jusqu'à ce que le groupe finisse 16 au-dessus du pied », gardée image par image : c'est
+`defilementPourMontrer` et la mesure `defilement`, à **réutiliser** plutôt qu'à réécrire à côté —
+deux jumelles d'une même règle divergeraient à la première retouche.
 
 ## 4. Le chantier, dans l'ordre
 

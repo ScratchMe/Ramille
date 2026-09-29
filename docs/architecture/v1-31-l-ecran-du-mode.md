@@ -351,6 +351,13 @@ chantiers sont parallélisables, mais ils partagent des fichiers :
   aujourd'hui.
 - **`scripts/verifier-parcours-reel.mjs`**, **`docs/recette/le-compte-et-les-modes.md`**,
   **`v1-13`** et **`produit.md`** : les deux chantiers y écrivent, à des endroits différents.
+- **`src/types/mouvement.ts`**, **`scripts/relever-par-image.mjs`** et **`TESTING.md` §2.14**
+  (ajouté à la livraison de `v1-32`, le 29/09/2026) : `v1-32` y a posé `defilementPourMontrer` — la
+  distance à défiler pour qu'une boîte finisse à une marge du bord, sans que son haut passe au-dessus
+  — et la mesure `defilement`, qui lit une boîte dans sa fenêtre de défilement image par image. La
+  zone de §2.6, qui descend « jusqu'à ce que le groupe finisse 16 au-dessus du pied », est la même
+  règle : **la réutiliser**, plutôt qu'en écrire une jumelle qui divergerait à la première retouche.
+  Et la section K s'ajoute à la liste de §2.14 que `v1-32` vient d'allonger.
 
 Le second à passer rebalaie ces fichiers sur `main` avant de pousser (`CLAUDE.md`, « Avant de lancer
 une vague »).

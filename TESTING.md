@@ -392,9 +392,10 @@ paragraphe disait « refusée » n'existe plus sur ce chemin) → engagement →
 cron le ferait (`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi →
 « Toi » et sa ligne de canal (25/09/2026, §2.12) → l'écran des pistes, où l'on choisit une action
 « à la place » depuis la liste (29/09/2026, `v1-32` : le seul chemin qui passe le remplacement depuis
-cet écran) → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
-(PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, huit
-pistes dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
+cet écran), puis où l'ordre n'a pas bougé — le seul moment où ça se voit, l'action engagée n'étant
+plus au rang 1 → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
+(PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, les
+pistes d'`ATTENDU`, toutes, dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
 la base construite depuis `supabase/migrations/`, ces chiffres ne dépendent d'aucune
 synchronisation de facteurs. Ce qu'il ne fait **pas**, et ce n'est pas un oubli : les exclusions
 de cartes et les états d'erreur restent aux dérivations de `src/types` et à
@@ -940,9 +941,13 @@ même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFr
 - `scripts/verifier-parcours-reel.mjs`, ce qui demande des données : la barre au « Compris », la
   carte du point qui change de hauteur et qui garde la sienne au retour sur le plan, la feuille du
   re-bilan, **le défilement jusqu'à « C'est noté » sur l'écran des pistes** (depuis le 29/09/2026,
-  `v1-32` : une carte déjà ouverte au-dessus, le titre jamais sous la bande, lu **dans la fenêtre**
-  de défilement par la mesure `defilement`) — et **le second profil entier sous « réduire les
-  animations »**.
+  `v1-32` : lu **dans la fenêtre** de défilement par la mesure `defilement`, avec une carte déjà
+  ouverte au-dessus ; il défile en glissant et **juste assez** — « C'est noté » finit à moins de
+  100 px du bas de la fenêtre, et c'est cette moitié qui a fait tomber la mutation du défilement
+  mesuré trop tôt, là où « le titre jamais sous la bande » ne la voyait pas ; sous la préférence, il
+  se pose d'un coup. Que le titre ne passe jamais sous la bande est d'abord gardé par les tests de
+  `defilementPourMontrer`, `src/types/mouvement.test.ts`) — et **le second profil entier sous
+  « réduire les animations »**.
 
 Les règles, chacune payée pendant l'écriture :
 
