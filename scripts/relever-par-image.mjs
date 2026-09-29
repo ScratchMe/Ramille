@@ -117,6 +117,33 @@ export function releverParImage(depuisLeDebut) {
       }
       return null;
     },
+    // **Une carte ouverte dans la fenêtre qui défile** (`v1-32`, 29/09/2026) : le haut de son titre et
+    // le bas de son bouton, comptés depuis le haut de la fenêtre de défilement — c'est-à-dire sous la
+    // bande haute —, la hauteur de cette fenêtre, et sa position de défilement. Le titre se trouve
+    // comme `texte` ; la fenêtre est son premier ancêtre qui défile, pas le document. Les positions
+    // se lisent **dans la fenêtre**, pas dans la page : l'ancrage du défilement de Chrome compense ce
+    // qui se replie au-dessus, et une position dans la page bougerait sans que rien ne bouge à l'œil.
+    defilement: ({ titre, bouton }) => {
+      const n = [...document.querySelectorAll('body *')].find(
+        (e) =>
+          visible(e) &&
+          normaliser(e.innerText) === titre &&
+          ![...e.children].some((c) => normaliser(c.innerText) === titre)
+      );
+      let fenetre = n?.parentElement;
+      while (fenetre && !/(auto|scroll)/.test(getComputedStyle(fenetre).overflowY)) fenetre = fenetre.parentElement;
+      if (!n || !fenetre) return null;
+      const cadre = fenetre.getBoundingClientRect();
+      const b = [...fenetre.querySelectorAll('[role="button"]')].find(
+        (e) => visible(e) && (e.getAttribute('aria-label') ?? normaliser(e.innerText)) === bouton
+      );
+      return {
+        position: fenetre.scrollTop,
+        haut: n.getBoundingClientRect().top - cadre.top,
+        basDuBouton: b ? b.getBoundingClientRect().bottom - cadre.top : null,
+        hauteur: fenetre.clientHeight,
+      };
+    },
     // Une feuille du bas (`src/components/feuille-du-bas.tsx`), par le nom de son dialogue : son
     // voile — le seul élément sans enfant qui couvre toute la fenêtre — et le haut de la feuille,
     // qui porte l'en-tête du même nom.

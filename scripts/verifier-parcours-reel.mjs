@@ -1164,6 +1164,159 @@ try {
     throw new Ecart('« Retour au plan », ouvert sans pile derrière, n’a pas ramené au plan');
   }
 
+  // ── 8 quater. « Toutes les pistes » : on compare sur la liste, on touche pour choisir (`v1-32`) ──
+  //
+  // **Le défilement jusqu'à « C'est noté »** (planche B2 du canvas `v1-30`, 29/09/2026) : la carte
+  // qu'on ouvre grandit vers le bas, et quand son bouton sort de la fenêtre, l'écran défile juste
+  // assez pour le montrer — **sans que son titre passe jamais sous la bande**. Le cas qui mérite la
+  // garde est celui d'une carte **déjà ouverte au-dessus**, qui se replie pendant que l'autre s'ouvre :
+  // mesurée trop tôt, la nouvelle serait trop basse de ce que le repli rend, et l'écran défilerait
+  // trop. L'ancrage du défilement de Chrome s'en mêle (TESTING.md §2.14), d'où des positions lues
+  // **dans la fenêtre**. Deux moitiés, comme toute garde d'animation : ça défile en glissant ; sous
+  // « réduire les animations », ça se pose d'un coup.
+  const TITRE_OUVERT_AU_DESSUS = 'Renoncer à un vol long-courrier cette année';
+  const TITRE_DU_CHOIX = 'Faire une sortie sur trois à vélo à assistance électrique';
+  const ouvrirLesPistes = async () => {
+    await page.goto(`${base}/plan/pistes`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await attendreTexte('Toutes les pistes');
+  };
+  const rangee = (titre) => page.getByRole('button', { name: new RegExp(`^${titre}\\.`) }).first();
+  /** La rangée amenée tout en bas de la fenêtre de défilement : la carte qu'elle ouvrira en sortira. */
+  const rangeeEnBasDeLaFenetre = async (titre) => {
+    const ok = await page.evaluate((t) => {
+      const normaliser = (x) => (x ?? '').replace(/\s+/g, ' ').trim();
+      const n = [...document.querySelectorAll('[role="button"]')].find((e) => normaliser(e.getAttribute('aria-label')).startsWith(`${t}.`));
+      let fenetre = n?.parentElement;
+      while (fenetre && !/(auto|scroll)/.test(getComputedStyle(fenetre).overflowY)) fenetre = fenetre.parentElement;
+      if (!n || !fenetre) return false;
+      fenetre.scrollTop += n.getBoundingClientRect().bottom - fenetre.getBoundingClientRect().bottom;
+      return true;
+    }, titre);
+    assurer(ok, `la rangée « ${titre} » ou sa fenêtre de défilement est introuvable : la mesure ne peut pas se prendre`);
+    await page.waitForTimeout(400);
+  };
+  const LA_CARTE_DU_CHOIX = { titre: TITRE_DU_CHOIX, bouton: 'C’est noté' };
+
+  etape('pistes — le défilement jusqu’à « C’est noté », une carte ouverte au-dessus');
+  await ouvrirLesPistes();
+  await rangee(TITRE_OUVERT_AU_DESSUS).click();
+  await attendreTexte('Quand ?');
+  // Le temps que cette première carte ait fini de grandir et de faire, elle aussi, son défilement :
+  // sans quoi il partirait après qu'on a placé la rangée, et la déplacerait.
+  await page.waitForTimeout(1_200);
+  await rangeeEnBasDeLaFenetre(TITRE_DU_CHOIX);
+  const ouvertureDuChoix = await releverPendant(
+    page,
+    { carte: ['defilement', LA_CARTE_DU_CHOIX] },
+    () => rangee(TITRE_DU_CHOIX).click(),
+    1_500
+  );
+  const vues = ouvertureDuChoix.map((e) => e.carte).filter(Boolean);
+  assurer(vues.length > 0, `« ${TITRE_DU_CHOIX} » n’a pas été relevée pendant son ouverture : la mesure ne peut pas conclure`);
+  const carteDuChoix = vues[vues.length - 1];
+  const positions = vues.map((v) => v.position);
+  assurer(
+    carteDuChoix.basDuBouton !== null && carteDuChoix.basDuBouton <= carteDuChoix.hauteur + 0.5,
+    `« C’est noté » finit hors de l’écran (${Math.round(carteDuChoix.basDuBouton ?? -1)} px pour une fenêtre de ${carteDuChoix.hauteur}) :` +
+      ' l’écran devait défiler juste assez pour le montrer (`defilementPourMontrer`, src/app/(tabs)/plan/pistes.tsx)'
+  );
+  const sousLaBande = vues.find((v) => v.haut < -0.5);
+  assurer(
+    !sousLaBande,
+    `le titre de la carte passe sous la bande (${Math.round(sousLaBande?.haut ?? 0)} px) : l’écran a défilé trop loin —` +
+      ' la carte ouverte au-dessus doit avoir fini de se replier avant qu’on mesure'
+  );
+  assurer(
+    carteDuChoix.position > Math.min(...positions) + 1 && enChemin(positions, carteDuChoix.position),
+    `l’écran ne défile pas en glissant jusqu’à « C’est noté » (positions ${[...new Set(positions.map(Math.round))].join(' → ')})`
+  );
+  // La première carte s'est refermée : une seule à la fois (décision n° 1).
+  assurer(
+    (await page.getByText('Quand ?', { exact: true }).count()) === 1,
+    'deux cartes sont ouvertes à la fois : toucher une autre rangée doit refermer la première'
+  );
+
+  etape('pistes — le même défilement sous « réduire les animations »');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await ouvrirLesPistes();
+  await rangeeEnBasDeLaFenetre(TITRE_DU_CHOIX);
+  const ouvertureDuChoixReduite = await releverPendant(
+    page,
+    { carte: ['defilement', LA_CARTE_DU_CHOIX] },
+    () => rangee(TITRE_DU_CHOIX).click(),
+    1_000
+  );
+  const vuesDuChoixReduites = ouvertureDuChoixReduite.map((e) => e.carte);
+  assurer(
+    vuesDuChoixReduites.some(Boolean) && !disparaitApresEtreApparue(vuesDuChoixReduites),
+    'sous « réduire les animations », la carte n’a pas été relevée pendant son ouverture, ou a disparu une fois là'
+  );
+  const carteDuChoixReduite = vuesDuChoixReduites.filter(Boolean).at(-1);
+  const positionsDuChoixReduites = vuesDuChoixReduites.filter(Boolean).map((v) => v.position);
+  assurer(
+    carteDuChoixReduite.position > Math.min(...positionsDuChoixReduites) + 1 &&
+      carteDuChoixReduite.basDuBouton !== null &&
+      carteDuChoixReduite.basDuBouton <= carteDuChoixReduite.hauteur + 0.5,
+    'sous « réduire les animations », l’écran ne défile pas jusqu’à « C’est noté »'
+  );
+  assurer(
+    !enChemin(positionsDuChoixReduites, carteDuChoixReduite.position),
+    `sous « réduire les animations », l’écran défile en glissant (positions ${[...new Set(positionsDuChoixReduites.map(Math.round))].join(' → ')}) :` +
+      ' il doit se poser d’un coup (`animated: !animationsReduites`)'
+  );
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+  // **Choisir depuis la liste, à la place** (29/09/2026). L'engagement se jouait sur le plan, et aucun
+  // chemin ne choisissait depuis la liste contre une vraie stack — c'est pourtant le seul qui passe
+  // `p_replace` à vrai depuis cet écran : sa pastille dit « Choisir à la place », et le RPC refuse un
+  // remplacement qu'on ne lui a pas demandé (`RM001`). La carte s'ouvre **sur la question**, rien de
+  // coché ; la base relue dit que l'engagement a changé de ligne, et que l'ancien est archivé.
+  etape('pistes — choisir depuis la liste, à la place');
+  await ouvrirLesPistes();
+  const aLaPlace = rangee(TITRE_OUVERT_AU_DESSUS);
+  assurer(
+    /\. Choisir à la place\.$/.test((await aLaPlace.getAttribute('aria-label')) ?? ''),
+    `la rangée « ${TITRE_OUVERT_AU_DESSUS} » ne dit pas « Choisir à la place » alors qu’une autre action est engagée`
+  );
+  await aLaPlace.click();
+  await attendreTexte('Quand ?');
+  const focusSurLaQuestion = await page.evaluate(() => (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim());
+  assurer(focusSurLaQuestion === 'Quand ?', `après « Choisir à la place », le focus est sur « ${focusSurLaQuestion} » et non sur la question`);
+  assurer((await page.getByRole('button', { name: 'Je m’y engage', exact: true }).count()) === 0, '« Je m’y engage » est encore sur le chemin de la liste');
+  for (const echeance of ['À mon prochain projet de voyage', 'Avant mon prochain bilan']) {
+    assurer(
+      (await page.getByRole('radio', { name: echeance, exact: true }).getAttribute('aria-checked')) === 'false',
+      `« ${echeance} » est déjà cochée à l’ouverture : aucune échéance par défaut`
+    );
+  }
+  const cEstNote = page.getByRole('button', { name: 'C’est noté', exact: true });
+  assurer((await cEstNote.getAttribute('aria-disabled')) === 'true', '« C’est noté » est actif avant qu’une échéance soit choisie');
+  await choisir('Avant mon prochain bilan');
+  await cEstNote.click();
+  try {
+    await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
+  } catch {
+    throw new Ecart('« C’est noté », depuis la liste, n’a pas ramené au plan');
+  }
+  await attendreTexte('TON ENGAGEMENT');
+  const texteDuPlanApresLeChoix = await page.evaluate(() => document.body.innerText);
+  assurer(
+    texteDuPlanApresLeChoix.indexOf(TITRE_OUVERT_AU_DESSUS) !== -1 &&
+      texteDuPlanApresLeChoix.indexOf(TITRE_OUVERT_AU_DESSUS) < texteDuPlanApresLeChoix.indexOf(ATTENDU.pistes[0][0]),
+    `l’action choisie depuis la liste n’est pas en tête du plan`
+  );
+  const apresLeChoix = await lire('plan_actions?select=rank,committed_at,intention_timing&order=rank', jeton);
+  assurer(
+    apresLeChoix[1].committed_at !== null && apresLeChoix[1].intention_timing === 'avant_le_prochain_bilan',
+    `l’engagement n’a pas changé de ligne en base : ${JSON.stringify(apresLeChoix.slice(0, 2))}`
+  );
+  assurer(apresLeChoix[0].committed_at === null, 'l’ancienne action est toujours engagée en base : le remplacement n’a pas eu lieu');
+  const archive = await lire('plan_action_commitments_archive?select=action_text,released_reason', jeton);
+  assurer(
+    archive.some((a) => a.action_text === ATTENDU.pistes[0][0] && a.released_reason === 'changement'),
+    `l’engagement remplacé n’est pas archivé en « changement » : ${JSON.stringify(archive)}`
+  );
+
   // ── 9. La suppression du compte, par l'écran, et rien derrière ─────────────────────────────
   //
   // **Par « Toi », et plus par le RPC** (28/09/2026). C'est le chemin que Google Play exige, et aucun
