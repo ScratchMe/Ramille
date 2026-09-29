@@ -451,8 +451,11 @@ choisir**. Cinq décisions de produit y sont prises une à une avec la personne 
 - l'écran reste dès trois pistes ;
 - « Choisir à la place » sur la pastille quand une action est engagée.
 
-**Rien n'est encore codé** : le plan d'implémentation est [`v1-32-toutes-les-pistes.md`](v1-32-toutes-les-pistes.md)
-(29/09/2026), et l'écran en production reste celui de la réparation (la première moitié, livrée).
+**Et l'écran est livré depuis le 29/09/2026**, selon son plan d'implémentation
+[`v1-32-toutes-les-pistes.md`](v1-32-toutes-les-pistes.md) : chaque ligne porte son titre et son gain
+« par an », « Choisir » est une pastille bordée qui ouvre la carte sur la question, une seule à la
+fois, et la liste garde l'ordre du rang, l'action engagée marquée à sa place. Ce qui reste à juger au
+doigt est la ligne 11.24 de `v1-13` ; les écarts au canvas sont au README de son dossier.
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 

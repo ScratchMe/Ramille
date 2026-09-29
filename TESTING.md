@@ -390,7 +390,9 @@ que l'écran montre après une écriture — rien. Un `.eq('status', 'complete')
 plan, sans écran de compte interposé (arbitrage du 20/09/2026 : la proposition de compte que ce
 paragraphe disait « refusée » n'existe plus sur ce chemin) → engagement → un point généré comme le
 cron le ferait (`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi →
-« Toi » et sa ligne de canal (25/09/2026, §2.12) → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
+« Toi » et sa ligne de canal (25/09/2026, §2.12) → l'écran des pistes, où l'on choisit une action
+« à la place » depuis la liste (29/09/2026, `v1-32` : le seul chemin qui passe le remplacement depuis
+cet écran) → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
 (PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, huit
 pistes dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
 la base construite depuis `supabase/migrations/`, ces chiffres ne dépendent d'aucune
@@ -937,7 +939,10 @@ même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFr
   l'étape du questionnaire et son rail, une précision qui s'ouvre, le fondu des onglets ;
 - `scripts/verifier-parcours-reel.mjs`, ce qui demande des données : la barre au « Compris », la
   carte du point qui change de hauteur et qui garde la sienne au retour sur le plan, la feuille du
-  re-bilan — et **le second profil entier sous « réduire les animations »**.
+  re-bilan, **le défilement jusqu'à « C'est noté » sur l'écran des pistes** (depuis le 29/09/2026,
+  `v1-32` : une carte déjà ouverte au-dessus, le titre jamais sous la bande, lu **dans la fenêtre**
+  de défilement par la mesure `defilement`) — et **le second profil entier sous « réduire les
+  animations »**.
 
 Les règles, chacune payée pendant l'écriture :
 

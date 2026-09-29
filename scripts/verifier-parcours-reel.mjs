@@ -290,6 +290,32 @@
 // aussi bien si la barre avait disparu pour tout le monde. M5 fait de même pour M2 : l'écran « Toi »
 // masque ce qui décrit le compte supprimé, et garde les pages légales.
 //
+// ── « Toutes les pistes » : on compare sur la liste, on touche pour choisir (29/09/2026, `v1-32`) ──
+//
+// Trois étapes, après « Retour au plan » sans pile : **le défilement jusqu'à « C'est noté »**, une
+// carte déjà ouverte au-dessus (le titre jamais sous la bande, le bouton dans la fenêtre et près de son
+// bas, en glissant) ; **le même sous « réduire les animations »** (posé d'un coup) ; et **choisir « à la
+// place » depuis la liste** — le seul chemin qui passe `p_replace` depuis cet écran, jamais joué contre
+// une vraie stack : la carte s'ouvre sur la question, focus compris, rien de coché, « C'est noté »
+// inactif, puis la base relue dit que l'engagement a changé de ligne et que l'ancien est archivé en
+// `changement`. **Éprouvé en le cassant le 29/09/2026** : un témoin vert, puis un export par mutation
+// (cache Metro privé, `--clear`), la source restaurée après chaque export :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PR1 — `p_replace` passé à faux depuis la liste (`surLeChoix ? false : otherActionCommitted`) | « pistes — choisir depuis la liste, à la place » : « « C'est noté », depuis la liste, n'a pas ramené au plan », et le journal montre le refus `RM001` du RPC |
+//   | PR2 — le défilement mesuré à l'ouverture, sans attendre que la carte ait grandi | « pistes — le défilement… » : « l'écran défile trop : « C'est noté » finit 203 px au-dessus du bas de la fenêtre » |
+//   | PR3 — `animated: true` en dur | « pistes — le même défilement sous « réduire les animations » » : « l'écran défile en glissant (positions 483 → 485 → … → 894) » ; la moitié animée reste verte |
+//
+// **PR2 est d'abord PASSÉE**, et c'est elle qui a changé la garde. La première version vérifiait que
+// le titre ne passe jamais sous la bande et que « C'est noté » finit dans la fenêtre — pas que l'écran
+// défile **juste assez**. Imprimés image par image, les échantillons ont dit pourquoi : dans cette
+// géométrie la carte du dessus est encore visible, son repli fait donc déjà monter la nouvelle, et la
+// mesure prise trop tôt ajoute tout ce repli par-dessus — l'écran défile de 180 px au lieu de 38, borné
+// par le contenu avant que le titre n'atteigne la bande. D'où l'assertion « près du bas de la fenêtre ».
+// Le piège que le plan (`v1-32` §4.4) prévoyait — le titre sous la bande — n'est qu'une des deux façons
+// de se tromper ; l'autre, défiler trop sans rien cacher, ne se voyait pas.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -1219,6 +1245,16 @@ try {
     carteDuChoix.basDuBouton !== null && carteDuChoix.basDuBouton <= carteDuChoix.hauteur + 0.5,
     `« C’est noté » finit hors de l’écran (${Math.round(carteDuChoix.basDuBouton ?? -1)} px pour une fenêtre de ${carteDuChoix.hauteur}) :` +
       ' l’écran devait défiler juste assez pour le montrer (`defilementPourMontrer`, src/app/(tabs)/plan/pistes.tsx)'
+  );
+  // **Juste assez, et pas plus** : le bas de la carte s'arrête à la marge du bas, donc « C'est noté »
+  // finit près du bas de la fenêtre — 61 px au-dessus, mesuré le 29/09/2026 (la marge de 16 et le pied
+  // de la carte). Un écran qui défile trop le laisse au milieu : 203 px sous la mutation PR2, où la
+  // carte du dessus, encore visible, avait déjà fait monter la nouvelle en se repliant, et où la
+  // mesure prise trop tôt ajoutait tout ce repli par-dessus.
+  assurer(
+    carteDuChoix.hauteur - carteDuChoix.basDuBouton < 100,
+    `l’écran défile trop : « C’est noté » finit ${Math.round(carteDuChoix.hauteur - carteDuChoix.basDuBouton)} px au-dessus du bas de la` +
+      ' fenêtre — il devait défiler juste assez pour le montrer, une fois la carte du dessus repliée'
   );
   const sousLaBande = vues.find((v) => v.haut < -0.5);
   assurer(

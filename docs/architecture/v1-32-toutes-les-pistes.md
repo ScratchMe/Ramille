@@ -382,9 +382,9 @@ Et l'état d'avancement de §8 se tient à jour pendant le travail, pas après c
 | 4.2 et 4.3 — `ActionCommitment`, `CarteDePiste` | fait (29/09/2026) ; `Button` gagne une prop `ref` (§3) |
 | 4.4 — l'écran | fait (29/09/2026) ; le défilement attend que la carte ait grandi (mesuré : sinon le navigateur le borne) |
 | 4.7 — le kit | fait (29/09/2026) |
-| 4.8 — la recette, `v1-13` §11, le parcours réel | à faire |
-| 6 — vérifications, contre-lecture, mesure Vercel | à faire |
-| 7 — les trois phrases | à faire |
+| 4.8 — la recette, `v1-13` §11, le parcours réel | fait (29/09/2026) : bloc 06, 08.6, 01.3, 03.11 ; 11.18 datée, 11.W.2 réécrite, 11.24 ouverte ; trois étapes au parcours réel, éprouvées par trois mutations (en tête du script — la deuxième est d'abord passée, et a fait ajouter « juste assez » à la garde). **Le relevé avait manqué un fichier** : `src/tests/ecrans/plan-pistes.test.tsx`, le test d'écran, qui attendait l'ancienne intro — réécrit, avec quatre câblages neufs |
+| 6 — vérifications, contre-lecture, mesure Vercel | en cours (29/09/2026) |
+| 7 — les trois phrases | fait (29/09/2026) : `produit.md` §3, `v1-13` §14.7, le bandeau de `v1-16` §5 |
 
 ## 9. Écarts au canvas déjà connus
 
@@ -395,6 +395,11 @@ que le chantier trouvera :
   vrai de tout ce qui se voit ;
 - **la rangée reste dans l'écran** au lieu de devenir un composant (§3) — le HANDOFF laissait la
   question ouverte.
+
+**Reportés le 29/09/2026 au README du dossier**, avec les quatre que l'implémentation a trouvés : la
+cible du focus (le texte de la question plutôt que le groupe), le défilement qui part une fois la
+carte grandie, la pastille à 32 **au moins**, et « C'est noté » qui reste inactif après un envoi
+réussi sur la liste.
 
 ## 10. Hors périmètre, et la contre-lecture du 29/09/2026
 
