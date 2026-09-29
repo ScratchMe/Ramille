@@ -18,8 +18,13 @@ export interface PisteDuPlan {
 /** Une piste du plan, carte et engagement — la même sur le plan et sur « Toutes les pistes ». */
 export interface CarteDePisteProps {
   action: PisteDuPlan;
-  /** L'action engagée du cycle : elle seule décide de l'estompage des autres. */
+  /** L'action engagée du cycle : elle dit si une **autre** l'est — le remplacement demandé, et l'estompage sur le plan. */
   committedActionId?: string | null;
+  /**
+   * Ouverte **sur le choix** (« Toutes les pistes », `v1-32`) : le sélecteur d'intention d'emblée, rien de coché, sans
+   * « Je m'y engage » — la pastille « Choisir » vient de le dire. Jamais estompée alors. Le plan ne le passe pas.
+   */
+  surLeChoix?: boolean;
   /** Le sélecteur d'intention est ouvert (le dépôt tient cet état dans `ActionCommitment`). */
   choixOuvert?: boolean;
   joursChoisis?: number[];
@@ -28,6 +33,7 @@ export interface CarteDePisteProps {
   onChoisir?: () => void;
   onToggleDay?: (jour: number) => void;
   onTiming?: (echeance: string) => void;
+  /** « Annuler ». Sur la liste (`surLeChoix`), il rend la carte à sa ligne ; sur le plan, il revient au bouton. */
   onAnnuler?: () => void;
   onValider?: () => void;
   onLiberer?: () => void;

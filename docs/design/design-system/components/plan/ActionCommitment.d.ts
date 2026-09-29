@@ -10,6 +10,13 @@ export interface ActionCommitmentProps {
   /** Les valeurs du dépôt, que la base enregistre. */
   timing?: 'ce_mois' | 'le_mois_prochain' | 'prochaine_occasion' | 'au_prochain_voyage' | 'avant_le_prochain_bilan' | null;
   otherActionCommitted?: boolean;
+  /**
+   * Ouvert **sur la question** d'emblée (« Toutes les pistes », `v1-32`) : `state` vaut alors `picking` même s'il est
+   * laissé à `idle` — rien de coché, aucune valeur par défaut. Le plan ne le passe pas.
+   */
+  surLeChoix?: boolean;
+  /** « Annuler » rend la main à l'appelant (la liste : la carte redevient sa ligne) — il passe devant `onCancel`. */
+  onAnnuler?: () => void;
   onPick?: () => void;
   onToggleDay?: (jour: number) => void;
   onTiming?: (t: string) => void;
