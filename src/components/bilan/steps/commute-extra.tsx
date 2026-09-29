@@ -12,11 +12,13 @@ import { Radius, Spacing } from '@/constants/theme';
 import { Depliage } from '@/lib/mouvement';
 import {
   CAR_ENGINE_OPTIONS,
+  enFamilles,
+  FAMILLE_DU_MODE,
+  MODES_PAR_FAMILLE,
   TRAIN_TYPE_OPTIONS,
   TRANSPORT_MODE_LABELS,
   TWO_WHEELER_TYPE_OPTIONS,
   VELO_TYPE_OPTIONS,
-  type TransportModeId,
 } from '@/constants/transport-modes';
 import { PARTS_DU_SECOND_MODE, type BilanAnswers } from '@/types/bilan';
 
@@ -45,7 +47,9 @@ export function CommuteExtraStep({
   answers: BilanAnswers;
   update: (patch: Partial<BilanAnswers>) => void;
 }) {
-  const secondModeChoices = (Object.keys(TRANSPORT_MODE_LABELS) as TransportModeId[]).filter(
+  // Dans l'ordre des familles, comme la liste du mode principal (`v1-31`, décision 2), moins le mode
+  // déjà choisi : c'est `MODES_PAR_FAMILLE` qui le décide, et non l'ordre des clés d'un objet.
+  const secondModeChoices = MODES_PAR_FAMILLE.map(({ modeId }) => modeId).filter(
     (id) => id !== answers.commute_mode
   );
 
@@ -79,95 +83,98 @@ export function CommuteExtraStep({
 
         {answers.commute_second_mode_used === true && (
           <Depliage>
-          <ThemedView type="backgroundElement" style={styles.nestedBox}>
-            <ThemedText type="small" themeColor="textTertiary">
-              {QUESTION_LEQUEL}
-            </ThemedText>
-            {/* Chaque précision — motorisation, type, part du trajet — est son propre groupe, posé
-                dans celui-ci sous le mode qu'elle décrit (`GroupeDeChoix` dit pourquoi). */}
-            <GroupeDeChoix question={QUESTION_LEQUEL} style={styles.nestedList}>
-              {secondModeChoices.map((modeId) => (
-                <View key={modeId}>
-                <ModeListItem
-                  label={TRANSPORT_MODE_LABELS[modeId]}
-                  selected={answers.commute_second_mode === modeId}
-                  // La motorisation et le type de deux-roues sont partagés par les deux
-                  // jambes (cf. types/bilan.ts) : ce qu'un changement de second mode rend
-                  // orphelin est effacé par `normaliserReponses`, pas ici.
-                  onPress={() => update({ commute_second_mode: modeId })}
-                  nestedBackground
-                />
+            <ThemedView type="backgroundElement" style={styles.nestedBox}>
+              <ThemedText type="small" themeColor="textTertiary">
+                {QUESTION_LEQUEL}
+              </ThemedText>
+              {/* Chaque précision — motorisation, type, part du trajet — est son propre groupe, posé
+                  dans celui-ci sous le mode qu'elle décrit (`GroupeDeChoix` dit pourquoi). */}
+              <GroupeDeChoix question={QUESTION_LEQUEL} style={styles.familles}>
+                {enFamilles(secondModeChoices, (modeId) => modeId).map((famille) => (
+                  <View key={FAMILLE_DU_MODE[famille[0]]} style={styles.famille}>
+                    {famille.map((modeId) => (
+                      <View key={modeId}>
+                        <ModeListItem
+                          label={TRANSPORT_MODE_LABELS[modeId]}
+                          selected={answers.commute_second_mode === modeId}
+                          // La motorisation et le type de deux-roues sont partagés par les deux
+                          // jambes (cf. types/bilan.ts) : ce qu'un changement de second mode rend
+                          // orphelin est effacé par `normaliserReponses`, pas ici.
+                          onPress={() => update({ commute_second_mode: modeId })}
+                          nestedBackground
+                        />
 
-                {/* La précision sous l'élément choisi, jamais après la liste (cf.
-                    `precision-mode.tsx`). */}
-                {answers.commute_second_mode === modeId && modeId === 'voiture' && (
-                  <Depliage style={styles.precision}>
-                    <PrecisionMode
-                      question="Quelle motorisation ?"
-                      options={CAR_ENGINE_OPTIONS}
-                      valeur={answers.commute_car_engine}
-                      onChange={(value) => update({ commute_car_engine: value })}
-                    />
-                  </Depliage>
-                )}
+                        {/* La précision sous l'élément choisi, jamais après la liste (cf.
+                            `precision-mode.tsx`). */}
+                        {answers.commute_second_mode === modeId && modeId === 'voiture' && (
+                          <Depliage style={styles.precision}>
+                            <PrecisionMode
+                              question="Quelle motorisation ?"
+                              options={CAR_ENGINE_OPTIONS}
+                              valeur={answers.commute_car_engine}
+                              onChange={(value) => update({ commute_car_engine: value })}
+                            />
+                          </Depliage>
+                        )}
 
-                {answers.commute_second_mode === modeId && modeId === 'deux_roues_motorise' && (
-                  <Depliage style={styles.precision}>
-                    <PrecisionMode
-                      question="Quel type de deux-roues ?"
-                      options={TWO_WHEELER_TYPE_OPTIONS}
-                      valeur={answers.commute_two_wheeler_type}
-                      onChange={(value) => update({ commute_two_wheeler_type: value })}
-                    />
-                  </Depliage>
-                )}
+                        {answers.commute_second_mode === modeId && modeId === 'deux_roues_motorise' && (
+                          <Depliage style={styles.precision}>
+                            <PrecisionMode
+                              question="Quel type de deux-roues ?"
+                              options={TWO_WHEELER_TYPE_OPTIONS}
+                              valeur={answers.commute_two_wheeler_type}
+                              onChange={(value) => update({ commute_two_wheeler_type: value })}
+                            />
+                          </Depliage>
+                        )}
 
-                {/* C4.4 — un seul champ pour les deux jambes, comme la motorisation juste
-                    au-dessus : B1.7 exclut le mode déjà choisi en B1.4, donc au plus une jambe
-                    porte le train (ou le vélo) à un instant donné. */}
-                {answers.commute_second_mode === modeId && modeId === 'train' && (
-                  <Depliage style={styles.precision}>
-                    <PrecisionMode
-                      question="Quel type de train ?"
-                      options={TRAIN_TYPE_OPTIONS}
-                      valeur={answers.commute_train_type}
-                      onChange={(value) => update({ commute_train_type: value })}
-                    />
-                  </Depliage>
-                )}
+                        {/* C4.4 — un seul champ pour les deux jambes, comme la motorisation juste
+                            au-dessus : B1.7 exclut le mode déjà choisi en B1.4, donc au plus une jambe
+                            porte le train (ou le vélo) à un instant donné. */}
+                        {answers.commute_second_mode === modeId && modeId === 'train' && (
+                          <Depliage style={styles.precision}>
+                            <PrecisionMode
+                              question="Quel type de train ?"
+                              options={TRAIN_TYPE_OPTIONS}
+                              valeur={answers.commute_train_type}
+                              onChange={(value) => update({ commute_train_type: value })}
+                            />
+                          </Depliage>
+                        )}
 
-                {answers.commute_second_mode === modeId && modeId === 'velo' && (
-                  <Depliage style={styles.precision}>
-                    <PrecisionMode
-                      question="Quel type de vélo ?"
-                      options={VELO_TYPE_OPTIONS}
-                      valeur={answers.commute_velo_type}
-                      onChange={(value) => update({ commute_velo_type: value })}
-                    />
-                  </Depliage>
-                )}
+                        {answers.commute_second_mode === modeId && modeId === 'velo' && (
+                          <Depliage style={styles.precision}>
+                            <PrecisionMode
+                              question="Quel type de vélo ?"
+                              options={VELO_TYPE_OPTIONS}
+                              valeur={answers.commute_velo_type}
+                              onChange={(value) => update({ commute_velo_type: value })}
+                            />
+                          </Depliage>
+                        )}
 
-                {/* C3.4 — sous le mode choisi, jamais après la liste : c'est la question que
-                    le calcul se posait tout seul. Il attribuait exactement la moitié des
-                    kilomètres à chaque jambe, ce qui sous-estime de 44 % un vélo + train (on
-                    fait rarement la moitié du trajet à vélo) et surestime de 51 % un
-                    parc-relais (on ne conduit pas jusqu'à mi-chemin) — sur le poste qui décide
-                    du poste dominant, donc du plan. */}
-                {answers.commute_second_mode === modeId && (
-                  <Depliage style={styles.precision}>
-                    <PrecisionMode
-                      question="Quelle part du trajet fais-tu ainsi ?"
-                      options={PARTS_DU_SECOND_MODE}
-                      valeur={answers.commute_second_mode_share}
-                      onChange={(value) => update({ commute_second_mode_share: value })}
-                    />
-                  </Depliage>
-                )}
-                </View>
-              ))}
-            </GroupeDeChoix>
-
-          </ThemedView>
+                        {/* C3.4 — sous le mode choisi, jamais après la liste : c'est la question que
+                            le calcul se posait tout seul. Il attribuait exactement la moitié des
+                            kilomètres à chaque jambe, ce qui sous-estime de 44 % un vélo + train (on
+                            fait rarement la moitié du trajet à vélo) et surestime de 51 % un
+                            parc-relais (on ne conduit pas jusqu'à mi-chemin) — sur le poste qui décide
+                            du poste dominant, donc du plan. */}
+                        {answers.commute_second_mode === modeId && (
+                          <Depliage style={styles.precision}>
+                            <PrecisionMode
+                              question="Quelle part du trajet fais-tu ainsi ?"
+                              options={PARTS_DU_SECOND_MODE}
+                              valeur={answers.commute_second_mode_share}
+                              onChange={(value) => update({ commute_second_mode_share: value })}
+                            />
+                          </Depliage>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </GroupeDeChoix>
+            </ThemedView>
           </Depliage>
         )}
       </View>
@@ -181,6 +188,7 @@ const styles = StyleSheet.create({
   block: { gap: Spacing.three },
   row: { flexDirection: 'row', gap: Spacing.two },
   nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
-  nestedList: { gap: Spacing.two },
+  familles: { gap: Spacing.three },
+  famille: { gap: Spacing.one },
   precision: { marginTop: Spacing.two },
 });

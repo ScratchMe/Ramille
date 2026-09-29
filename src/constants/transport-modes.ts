@@ -23,22 +23,82 @@ export const TRANSPORT_MODE_LABELS: Record<TransportModeId, string> = {
   trottinette: 'Trottinette ou mobilité douce',
 };
 
-// Liste complète pour les pickers "mode principal" (B1.4) / "second mode" (B1.7, le « Lequel ? »
-// ouvert par le Oui de B1.6) —
-// voiture seul et covoiturage sont deux entrées distinctes dans la maquette (elles ne
-// partagent qu'un même `transport_mode_id`, le covoiturage se distingue par
-// `commute_is_carpool`).
+/**
+ * Les trois familles de modes, dans l'ordre où les listes les montrent (29/09/2026, `v1-31`,
+ * décision 2) : les véhicules individuels à moteur, les transports en commun, et la mobilité active.
+ */
+export type FamilleDeMode = 'motorise' | 'collectif' | 'actif';
+
+/**
+ * **L'ordre des modes, déclaré une fois** (29/09/2026, `v1-31` §2.1) : par famille, puis dans
+ * l'ordre de la famille. Neuf modes sur une seule colonne se lisent mieux en trois blocs sans
+ * intertitre — 4 px dans une famille, 16 entre deux —, et le deux-roues motorisé passe de la
+ * huitième à la troisième place, à côté de la voiture. *Ce qu'on a accepté* : l'ordre ne suit plus
+ * l'usage, et un re-bilan ne retrouve plus le deux-roues à sa place, même si sa réponse arrive
+ * cochée.
+ *
+ * **Une liste et non l'ordre des clés de `TRANSPORT_MODE_LABELS`**, que le handoff désignait : l'ordre
+ * des clés d'un objet est un accident, et une clé ajoutée plus tard irait en queue sans que rien ne le
+ * dise. `TRANSPORT_MODE_LABELS` garde donc ses clés dans l'ordre d'avant — le test de propriétés de
+ * `normaliserReponses` y tire ses modes, et réordonner changerait ses 6 000 tirages.
+ *
+ * « Lequel ? » itère cette liste. Les trois tableaux de choix ci-dessous (`COMMUTE_MODE_CHOICES`,
+ * `LEISURE_MODE_CHOICES_PRIMARY`, `LEISURE_MODE_CHOICES_MORE`) restent **littéraux**, réordonnés à la
+ * main et vérifiés contre elle par `transport-modes.test.ts` : la section H de
+ * `scripts/verifier-etats-export.mjs` lit le premier mode de `LEISURE_MODE_CHOICES_MORE` dans ce
+ * fichier source, et un script `.mjs` ne peut pas importer du TypeScript.
+ */
+export const MODES_PAR_FAMILLE: readonly { modeId: TransportModeId; famille: FamilleDeMode }[] = [
+  { modeId: 'voiture', famille: 'motorise' },
+  { modeId: 'deux_roues_motorise', famille: 'motorise' },
+  { modeId: 'bus', famille: 'collectif' },
+  { modeId: 'train', famille: 'collectif' },
+  { modeId: 'metro_tram', famille: 'collectif' },
+  { modeId: 'velo', famille: 'actif' },
+  { modeId: 'marche', famille: 'actif' },
+  { modeId: 'trottinette', famille: 'actif' },
+];
+
+/** La famille de chaque mode, lue dans `MODES_PAR_FAMILLE`. */
+export const FAMILLE_DU_MODE = Object.fromEntries(
+  MODES_PAR_FAMILLE.map(({ modeId, famille }) => [modeId, famille])
+) as Record<TransportModeId, FamilleDeMode>;
+
+/**
+ * Une liste de choix déjà rangée, coupée en familles : un bloc par suite de choix de la même famille.
+ * C'est ce que l'écran rend en sous-vues **sans rôle** dans le `GroupeDeChoix` — les flèches du
+ * clavier ne les voient pas, `groupe-au-clavier.ts` prenant les options dont le groupe est le plus
+ * proche. Une liste que personne n'a rangée par famille rendrait plusieurs blocs de la même famille :
+ * c'est pourquoi `transport-modes.test.ts` vérifie l'ordre des listes, et pas seulement ce découpage.
+ */
+export function enFamilles<T>(choix: readonly T[], modeDe: (c: T) => TransportModeId): T[][] {
+  const blocs: T[][] = [];
+  let precedente: FamilleDeMode | null = null;
+  for (const c of choix) {
+    const famille = FAMILLE_DU_MODE[modeDe(c)];
+    if (famille !== precedente) blocs.push([]);
+    blocs[blocs.length - 1].push(c);
+    precedente = famille;
+  }
+  return blocs;
+}
+
+// Liste complète pour le picker du mode principal (B1.4) — voiture seul et covoiturage sont deux
+// entrées distinctes dans la maquette (elles ne partagent qu'un même `transport_mode_id`, le
+// covoiturage se distingue par `commute_is_carpool`). Le « Lequel ? » du second mode (B1.7) n'en a
+// pas besoin : il n'y a pas de covoiturage en second mode, et il itère `MODES_PAR_FAMILLE`.
 export type CommuteModeChoice = { key: string; modeId: TransportModeId; carpool: boolean; label: string };
 
+// Rangée dans l'ordre de `MODES_PAR_FAMILLE`, à la main (29/09/2026, `v1-31`).
 export const COMMUTE_MODE_CHOICES: CommuteModeChoice[] = [
   { key: 'voiture_solo', modeId: 'voiture', carpool: false, label: 'Voiture (seul)' },
   { key: 'voiture_covoiturage', modeId: 'voiture', carpool: true, label: 'Voiture (covoiturage)' },
+  { key: 'deux_roues_motorise', modeId: 'deux_roues_motorise', carpool: false, label: 'Deux-roues motorisé' },
   { key: 'bus', modeId: 'bus', carpool: false, label: 'Bus' },
   { key: 'train', modeId: 'train', carpool: false, label: 'Train' },
   { key: 'metro_tram', modeId: 'metro_tram', carpool: false, label: 'Métro ou tram' },
   { key: 'velo', modeId: 'velo', carpool: false, label: 'Vélo' },
   { key: 'marche', modeId: 'marche', carpool: false, label: 'Marche' },
-  { key: 'deux_roues_motorise', modeId: 'deux_roues_motorise', carpool: false, label: 'Deux-roues motorisé' },
   { key: 'trottinette', modeId: 'trottinette', carpool: false, label: 'Trottinette ou mobilité douce' },
 ];
 
@@ -53,11 +113,15 @@ export const LEISURE_MODE_CHOICES_PRIMARY: CommuteModeChoice[] = [
   { key: 'velo', modeId: 'velo', carpool: false, label: 'Vélo' },
 ];
 
+// Les cinq autres, en un bloc sous les quatre premiers et rangés par famille eux aussi (`v1-31`) :
+// « Voir les autres modes » ne les intercale pas dans la première liste, et le premier révélé reste
+// à la place du lien. **Le premier de ce tableau est lu dans ce fichier par la section H de
+// `scripts/verifier-etats-export.mjs`** : le tableau doit rester littéral.
 export const LEISURE_MODE_CHOICES_MORE: CommuteModeChoice[] = [
+  { key: 'deux_roues_motorise', modeId: 'deux_roues_motorise', carpool: false, label: 'Deux-roues motorisé' },
   { key: 'bus', modeId: 'bus', carpool: false, label: 'Bus' },
   { key: 'metro_tram', modeId: 'metro_tram', carpool: false, label: 'Métro ou tram' },
   { key: 'marche', modeId: 'marche', carpool: false, label: 'Marche' },
-  { key: 'deux_roues_motorise', modeId: 'deux_roues_motorise', carpool: false, label: 'Deux-roues motorisé' },
   { key: 'trottinette', modeId: 'trottinette', carpool: false, label: 'Trottinette ou mobilité douce' },
 ];
 

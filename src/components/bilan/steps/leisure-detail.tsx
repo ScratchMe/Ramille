@@ -14,11 +14,14 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import {
   CAR_ENGINE_OPTIONS,
+  enFamilles,
+  FAMILLE_DU_MODE,
   TRAIN_TYPE_OPTIONS,
   LEISURE_MODE_CHOICES_MORE,
   LEISURE_MODE_CHOICES_PRIMARY,
   TWO_WHEELER_TYPE_OPTIONS,
   VELO_TYPE_OPTIONS,
+  type CommuteModeChoice,
 } from '@/constants/transport-modes';
 import { useTheme } from '@/hooks/use-theme';
 import { donnerLeFocus } from '@/lib/focus';
@@ -96,9 +99,88 @@ export function LeisureDetailStep({
         : 'voiture_solo'
       : (answers.leisure_mode ?? null)
   );
-  const modeChoices = showMore
-    ? [...LEISURE_MODE_CHOICES_PRIMARY, ...LEISURE_MODE_CHOICES_MORE]
-    : LEISURE_MODE_CHOICES_PRIMARY;
+  // Une rangée de mode et ce qui s'ouvre sous elle — écrite une fois pour les deux blocs de la liste.
+  const rendreLeMode = (choice: CommuteModeChoice) => {
+    const selected = selectedKey === choice.key;
+    return (
+      <View key={choice.key}>
+        <ModeListItem
+          ref={choice.key === LEISURE_MODE_CHOICES_MORE[0].key ? premierDesAutres : undefined}
+          label={choice.label}
+          selected={selected}
+          onPress={() => {
+            setSelectedKey(choice.key);
+            // La motorisation, le type de deux-roues et la taille du covoiturage
+            // rattachés au mode précédent sont effacés par `normaliserReponses`, pas
+            // ici (audit A2-17).
+            update({ leisure_mode: choice.modeId, leisure_is_carpool: choice.carpool });
+          }}
+        />
+
+        {/* La précision s'ouvre sous l'élément qui la déclenche — cf.
+            `precision-mode.tsx` pour la raison, qui n'est pas cosmétique. */}
+        {selected && choice.modeId === 'voiture' && (
+          <Depliage style={styles.precision}>
+            <PrecisionMode
+              question="Quelle motorisation ?"
+              options={CAR_ENGINE_OPTIONS}
+              valeur={answers.leisure_car_engine}
+              onChange={(value) => update({ leisure_car_engine: value })}
+            />
+          </Depliage>
+        )}
+
+        {selected && choice.modeId === 'deux_roues_motorise' && (
+          <Depliage style={styles.precision}>
+            <PrecisionMode
+              question="Quel type de deux-roues ?"
+              options={TWO_WHEELER_TYPE_OPTIONS}
+              valeur={answers.leisure_two_wheeler_type}
+              onChange={(value) => update({ leisure_two_wheeler_type: value })}
+            />
+          </Depliage>
+        )}
+
+        {/* C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont
+            posées ici plutôt que déduites de B1 parce qu'on ne fait pas ses sorties
+            comme son trajet : on peut aller au travail en RER et en week-end en TER. */}
+        {selected && choice.modeId === 'train' && (
+          <Depliage style={styles.precision}>
+            <PrecisionMode
+              question="Quel type de train ?"
+              options={TRAIN_TYPE_OPTIONS}
+              valeur={answers.leisure_train_type}
+              onChange={(value) => update({ leisure_train_type: value })}
+            />
+          </Depliage>
+        )}
+
+        {selected && choice.modeId === 'velo' && (
+          <Depliage style={styles.precision}>
+            <PrecisionMode
+              question="Quel type de vélo ?"
+              options={VELO_TYPE_OPTIONS}
+              valeur={answers.leisure_velo_type}
+              onChange={(value) => update({ leisure_velo_type: value })}
+            />
+          </Depliage>
+        )}
+
+        {/* C3.5 — après la motorisation, sous la même option : les deux précisions
+            décrivent la même voiture. */}
+        {selected && choice.carpool && (
+          <Depliage style={styles.precision}>
+            <PrecisionChiffres
+              question="Vous êtes combien dans la voiture ?"
+              options={TAILLES_DE_COVOITURAGE}
+              valeur={answers.leisure_carpool_size}
+              onChange={(value) => update({ leisure_carpool_size: value })}
+            />
+          </Depliage>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -110,90 +192,27 @@ export function LeisureDetailStep({
             ligne. Il garde sa place au pixel près, l'écart de la liste étant aussi celui qui les
             sépare. */}
         <View style={styles.list}>
-          <GroupeDeChoix question={QUESTION_MODE} style={styles.list}>
-            {modeChoices.map((choice) => {
-              const selected = selectedKey === choice.key;
-              return (
-                // Les modes que « Voir les autres modes » ajoute s'ouvrent ; ceux qui sont là à
-                // l'arrivée de l'étape, non (`SansApparitionAuMontage`, posé par `StepShell`).
-                <Depliage key={choice.key}>
-                  <ModeListItem
-                    ref={choice.key === LEISURE_MODE_CHOICES_MORE[0].key ? premierDesAutres : undefined}
-                    label={choice.label}
-                    selected={selected}
-                    onPress={() => {
-                      setSelectedKey(choice.key);
-                      // La motorisation, le type de deux-roues et la taille du covoiturage
-                      // rattachés au mode précédent sont effacés par `normaliserReponses`, pas
-                      // ici (audit A2-17).
-                      update({ leisure_mode: choice.modeId, leisure_is_carpool: choice.carpool });
-                    }}
-                  />
-
-                  {/* La précision s'ouvre sous l'élément qui la déclenche — cf.
-                      `precision-mode.tsx` pour la raison, qui n'est pas cosmétique. */}
-                  {selected && choice.modeId === 'voiture' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quelle motorisation ?"
-                        options={CAR_ENGINE_OPTIONS}
-                        valeur={answers.leisure_car_engine}
-                        onChange={(value) => update({ leisure_car_engine: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {selected && choice.modeId === 'deux_roues_motorise' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de deux-roues ?"
-                        options={TWO_WHEELER_TYPE_OPTIONS}
-                        valeur={answers.leisure_two_wheeler_type}
-                        onChange={(value) => update({ leisure_two_wheeler_type: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {/* C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont
-                      posées ici plutôt que déduites de B1 parce qu'on ne fait pas ses sorties
-                      comme son trajet : on peut aller au travail en RER et en week-end en TER. */}
-                  {selected && choice.modeId === 'train' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de train ?"
-                        options={TRAIN_TYPE_OPTIONS}
-                        valeur={answers.leisure_train_type}
-                        onChange={(value) => update({ leisure_train_type: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {selected && choice.modeId === 'velo' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de vélo ?"
-                        options={VELO_TYPE_OPTIONS}
-                        valeur={answers.leisure_velo_type}
-                        onChange={(value) => update({ leisure_velo_type: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {/* C3.5 — après la motorisation, sous la même option : les deux précisions
-                      décrivent la même voiture. */}
-                  {selected && choice.carpool && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionChiffres
-                        question="Vous êtes combien dans la voiture ?"
-                        options={TAILLES_DE_COVOITURAGE}
-                        valeur={answers.leisure_carpool_size}
-                        onChange={(value) => update({ leisure_carpool_size: value })}
-                      />
-                    </Depliage>
-                  )}
-                </Depliage>
-              );
-            })}
+          {/* **Trois familles, sans intertitre** (29/09/2026, `v1-31`, décision 2), comme la liste du
+              trajet : 4 px dans une famille, 16 entre deux. */}
+          <GroupeDeChoix question={QUESTION_MODE} style={styles.familles}>
+            {enFamilles(LEISURE_MODE_CHOICES_PRIMARY, (choice) => choice.modeId).map((famille) => (
+              <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
+                {famille.map(rendreLeMode)}
+              </View>
+            ))}
+            {/* « Voir les autres modes » ajoute ses cinq modes **en un bloc sous les quatre premiers**,
+                rangé par famille lui aussi, et ne les intercale pas dans la première liste : le
+                premier révélé reste à la place du lien, et reçoit le focus. Le bloc s'ouvre ; ce qui est
+                là à l'arrivée de l'étape, non (`SansApparitionAuMontage`, posé par `StepShell`). */}
+            {showMore && (
+              <Depliage style={styles.familles}>
+                {enFamilles(LEISURE_MODE_CHOICES_MORE, (choice) => choice.modeId).map((famille) => (
+                  <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
+                    {famille.map(rendreLeMode)}
+                  </View>
+                ))}
+              </Depliage>
+            )}
           </GroupeDeChoix>
           {!showMore && (
             <TextLink
@@ -258,6 +277,8 @@ const styles = StyleSheet.create({
   block: { gap: Spacing.three },
   subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   list: { gap: Spacing.two },
+  familles: { gap: Spacing.three },
+  famille: { gap: Spacing.one },
   precision: { marginTop: Spacing.two },
   separator: { height: 1 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },

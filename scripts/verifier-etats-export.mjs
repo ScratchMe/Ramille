@@ -1064,10 +1064,19 @@ const QUESTION_SUIVANTE = 'Ce trajet, tu le fais combien de jours par semaine ?'
 // désormais au premier mode révélé (`leisure-detail.tsx`). L'étape s'ouvre depuis un brouillon,
 // sans réseau, comme en section F.
 //
-// Deux moitiés, et la seconde n'est pas du zèle : le focus arrive sur « Bus » **après** le geste, et
-// il n'y est **pas** quand la liste s'ouvre déjà dépliée — un brouillon dont le mode est dans la
-// seconde liste —, où il n'y a aucun geste à suivre. Sans elle, une correction qui donnerait le focus
-// à chaque montage passerait, en volant le focus de qui arrive sur l'étape.
+// Deux moitiés, et la seconde n'est pas du zèle : le focus arrive sur le premier mode révélé
+// **après** le geste, et il n'y est **pas** quand la liste s'ouvre déjà dépliée — un brouillon dont
+// le mode est dans la seconde liste —, où il n'y a aucun geste à suivre. Sans elle, une correction
+// qui donnerait le focus à chaque montage passerait, en volant le focus de qui arrive sur l'étape.
+//
+// **Le premier révélé se lit dans la source, jamais en dur** (29/09/2026, `v1-31` §4.1). Il était
+// écrit « Bus », et les modes se sont rangés par famille : c'est désormais « Deux-roues motorisé ».
+// Resté en dur, la première moitié tombait — et surtout **la seconde devenait muette** : elle cherche
+// « Bus » dans le journal du focus, et un focus volé au montage passerait par le deux-roues sans
+// qu'elle le voie (la mutation H2). Le nom se lit donc dans le tableau littéral
+// `LEISURE_MODE_CHOICES_MORE` de `src/constants/transport-modes.ts`, par une expression régulière —
+// comme `verifier-parcours-reel.mjs` lit `theme.ts` —, et une source qui ne le porte plus fait échouer
+// la section en le disant, plutôt que de retomber sur un nom écrit ici.
 //
 // Mutations du 25/09/2026, chacune sur un export reconstruit (`--clear`) :
 //   H1 — l'appel à `donnerLeFocus` retiré (le défaut d'origine) : la première moitié tombe, « le
@@ -1078,66 +1087,92 @@ const QUESTION_SUIVANTE = 'Ce trajet, tu le fais combien de jours par semaine ?'
 //        seconde moitié **restait verte** sous sa première forme, qui lisait `activeElement` à la
 //        fin — `StepShell` reprend le focus pour le titre de l'étape juste après, et le vol passait
 //        inaperçu. Elle lit désormais le journal du focus (`journaliserLeFocus`), et tombe, seule.
+//
+// Rejouées le 29/09/2026 sur le commit de `v1-31` §4.1 (le premier révélé devenu « Deux-roues motorisé »),
+// chacune avec son export (`--clear`, cache Metro privé) ; le témoin sort vert, toutes sections :
+//   H2 — la garde du geste retirée : la seconde moitié tombe, « le focus est sur « Deux-roues
+//        motorisé » sans qu'aucun geste ne l'y ait envoyé », et elle seule ;
+//   H3 — « Bus » remis en dur ici, à la place de la lecture de la source : la première moitié tombe
+//        (le focus est sur « Deux-roues motorisé »), et elle seule ;
+//   H4 — les deux ensemble : **seule la première moitié tombe**, le vol de focus de H2 passant sous
+//        une seconde moitié qui cherche « Bus » dans le journal. C'est la garde muette que la lecture
+//        de la source évite.
+const PREMIER_REVELE = (() => {
+  const source = readFileSync('src/constants/transport-modes.ts', 'utf8');
+  const tableau = source.match(/export const LEISURE_MODE_CHOICES_MORE[^=]*=\s*\[([\s\S]*?)\];/)?.[1];
+  return tableau?.match(/\blabel:\s*'([^']+)'/)?.[1] ?? null;
+})();
 const ETAPE_DES_SORTIES = (mode) =>
   brouillonDe('leisure_detail', {
     commute_has_regular_trip: false,
     leisure_frequency: 'weekly',
     leisure_mode: mode,
   });
-{
-  const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DES_SORTIES(null) });
-  try {
-    const lien = page.getByRole('button', { name: 'Voir les autres modes', exact: true });
-    await lien.waitFor({ state: 'visible', timeout: ATTENTE });
-    await lien.focus();
-    await page.keyboard.press('Enter');
-    await page
-      .getByRole('radio', { name: 'Bus', exact: true })
-      .waitFor({ state: 'visible', timeout: ATTENTE })
-      .catch(() => {});
-    await page.waitForTimeout(REPOS);
-    const focus = await page.evaluate(() => {
-      const actif = document.activeElement;
-      return {
-        corps: actif === document.body || actif === null,
-        role: actif?.getAttribute?.('role') ?? null,
-        texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 60),
-      };
-    });
-    if (focus.corps || focus.role !== 'radio' || focus.texte !== 'Bus') {
-      echecs.push(
-        `/bilan, étape des sorties : après « Voir les autres modes » au clavier, le focus est sur` +
-          ` ${focus.corps ? 'le document' : `« ${focus.texte} » (rôle ${focus.role})`} — il doit être` +
-          ' sur le premier mode révélé, « Bus » (`donnerLeFocus`, leisure-detail.tsx).'
-      );
+if (PREMIER_REVELE === null) {
+  echecs.push(
+    '/bilan, « Voir les autres modes » : le premier mode de `LEISURE_MODE_CHOICES_MORE` est introuvable dans' +
+      ' src/constants/transport-modes.ts — le tableau doit rester littéral (section H), ou ce motif s’adapter.'
+  );
+} else {
+  {
+    const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DES_SORTIES(null) });
+    try {
+      const lien = page.getByRole('button', { name: 'Voir les autres modes', exact: true });
+      await lien.waitFor({ state: 'visible', timeout: ATTENTE });
+      await lien.focus();
+      await page.keyboard.press('Enter');
+      await page
+        .getByRole('radio', { name: PREMIER_REVELE, exact: true })
+        .waitFor({ state: 'visible', timeout: ATTENTE })
+        .catch(() => {});
+      await page.waitForTimeout(REPOS);
+      const focus = await page.evaluate(() => {
+        const actif = document.activeElement;
+        return {
+          corps: actif === document.body || actif === null,
+          role: actif?.getAttribute?.('role') ?? null,
+          texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 60),
+        };
+      });
+      if (focus.corps || focus.role !== 'radio' || focus.texte !== PREMIER_REVELE) {
+        echecs.push(
+          `/bilan, étape des sorties : après « Voir les autres modes » au clavier, le focus est sur` +
+            ` ${focus.corps ? 'le document' : `« ${focus.texte} » (rôle ${focus.role})`} — il doit être` +
+            ` sur le premier mode révélé, « ${PREMIER_REVELE} » (\`donnerLeFocus\`, leisure-detail.tsx).`
+        );
+      }
+    } catch (erreur) {
+      echecs.push(`/bilan, « Voir les autres modes » : ${String(erreur).slice(0, 180)}`);
+    } finally {
+      await page.close();
     }
-  } catch (erreur) {
-    echecs.push(`/bilan, « Voir les autres modes » : ${String(erreur).slice(0, 180)}`);
-  } finally {
-    await page.close();
   }
-}
-{
-  const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DES_SORTIES('marche') }, { journal: true });
-  try {
-    const bus = page.getByRole('radio', { name: 'Bus', exact: true });
-    await bus.waitFor({ state: 'visible', timeout: ATTENTE });
-    await page.waitForTimeout(REPOS);
-    // Le **journal**, et non le focus final : `StepShell` donne le focus au titre de l'étape dans
-    // son propre effet, qui part **après** celui de la liste — un parent après ses enfants. Un vol
-    // de focus au montage passait donc par « Bus » puis en repartait, et lire `activeElement` à la
-    // fin ne le voyait pas (mutation H2 du 25/09/2026, restée verte sous cette première forme).
-    const surBus = await page.evaluate(() => window.__focus.some((entree) => entree.texte === 'Bus'));
-    if (surBus) {
-      echecs.push(
-        '/bilan, étape des sorties ouverte déjà dépliée : le focus est sur « Bus » sans qu’aucun geste' +
-          ' ne l’y ait envoyé — il ne doit suivre que « Voir les autres modes », jamais le montage.'
+  {
+    const page = await ouvrir('/bilan', { [BROUILLON]: ETAPE_DES_SORTIES('marche') }, { journal: true });
+    try {
+      const premier = page.getByRole('radio', { name: PREMIER_REVELE, exact: true });
+      await premier.waitFor({ state: 'visible', timeout: ATTENTE });
+      await page.waitForTimeout(REPOS);
+      // Le **journal**, et non le focus final : `StepShell` donne le focus au titre de l'étape dans
+      // son propre effet, qui part **après** celui de la liste — un parent après ses enfants. Un vol
+      // de focus au montage passait donc par le premier révélé puis en repartait, et lire
+      // `activeElement` à la fin ne le voyait pas (mutation H2 du 25/09/2026, restée verte sous cette
+      // première forme).
+      const vole = await page.evaluate(
+        (nom) => window.__focus.some((entree) => entree.texte === nom),
+        PREMIER_REVELE
       );
+      if (vole) {
+        echecs.push(
+          `/bilan, étape des sorties ouverte déjà dépliée : le focus est sur « ${PREMIER_REVELE} » sans` +
+            ' qu’aucun geste ne l’y ait envoyé — il ne doit suivre que « Voir les autres modes », jamais le montage.'
+        );
+      }
+    } catch (erreur) {
+      echecs.push(`/bilan, liste des sorties déjà dépliée : ${String(erreur).slice(0, 180)}`);
+    } finally {
+      await page.close();
     }
-  } catch (erreur) {
-    echecs.push(`/bilan, liste des sorties déjà dépliée : ${String(erreur).slice(0, 180)}`);
-  } finally {
-    await page.close();
   }
 }
 
