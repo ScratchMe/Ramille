@@ -2690,3 +2690,33 @@ donc rien ne survit hors de ces deux clés (`RECETTE.md` §2.6).
 **après** la séance (`v1-31`, l'écran du mode, et `v1-32`, « Toutes les pistes ») dont les lignes
 avaient été réécrites, ce que §11.W.7 et §11.W.8 disent encore ouvert, l'observation n° 2, et un
 bloc final qui attend le build natif. Sa forme est consignée en `RECETTE.md` §2.5.
+
+## 17. Ce que la recette web du 29/09/2026 au soir a trouvé
+
+Sixième séance, jouée par l'agent seul au navigateur sans interface, sur la production, de
+**20 h 50 à 21 h 05** (heure de Paris) : les blocs 00 à 02 de la feuille unique
+[`docs/recette/ce-qui-reste-apres-le-29-septembre.md`](../recette/ce-qui-reste-apres-le-29-septembre.md),
+qui ne dépendent d'aucune date. Version servie : [#296](https://github.com/ScratchMe/Ramille/pull/296),
+relevée à l'ordre des modes (00.2). **26 lignes consignées sur 26, toutes conformes** ; le jugement
+05.4 laissé muet avec l'avis de l'agent et douze captures envoyées.
+
+**Les deux écrans livrés le 29/09 tiennent sur la production, et au pixel des planches.** L'écran
+du mode (`v1-31`) : les neuf modes tiennent à 390 × 844 et à 360 × 800, rien ne se dit avant le
+toucher de « Suivant », et ce toucher mène à ce qui manque — la ligne, la question en vert, le
+focus, et sur l'étape des sorties un défilement de 261 px jusqu'à la distance cachée sous le pied
+(planche D2). « Toutes les pistes » (`v1-32`) : on compare sur la liste, « Choisir » ouvre une
+seule carte à la fois sur sa question, l'écran défile jusqu'à « C'est noté » quand il sort, et **la
+liste garde son ordre** — la piste engagée depuis la liste reste quatrième de son groupe, marquée
+« Engagée », pendant que le plan la met en tête. Le remplacement depuis la liste, le seul chemin qui
+passe `p_replace` à vrai depuis cet écran, a été joué pour la première fois sur la production et
+relu en base (archive `changement`). Les deux portes de `/contexte` et son pied (§11.W.8) aussi.
+
+### Ce que la séance a trouvé, et ce qui en a été fait
+
+| | Constat | Ce que c'est | Suite |
+|---|---|---|---|
+| H1 | `/bilan` ouvert par son adresse dans un navigateur neuf : `GET /rest/v1/assessments` rend 401 (`42501`, « permission denied for table assessments ») | **Défaut technique sans effet visible** : le préremplissage lit le dernier bilan avant que la session anonyme n'existe, avec la seule clé `anon`. Trouvé en jouant 05.4, hors feuille | **Corrigé** : `loadLastSubmittedAnswers` ne lit rien sans session (`src/lib/bilan-history.ts`), gardé par `src/lib/bilan-history.test.ts`, éprouvé en le cassant |
+| 02.13 | Le 403 sur `POST /auth/v1/logout?scope=global` après une suppression | **Reproduit** : l'observation n° 3 du 29/09 (§16), sur un compte anonyme cette fois | Sa correction est dans la même PR ; la cascade des sessions a été relue en base sur ce compte (zéro session restante) |
+| 05.4 | L'écran du mode, jugé sur captures | **Jugement**, muet, avec l'avis de l'agent (« plutôt pas pénible », trois réserves : rien ne dit qu'il reste quelque chose avant le toucher sinon le gris et un filet d'un pixel ; pas d'anneau de focus visible à la souris ; revenir à un mode après en avoir essayé un autre efface ses précisions) | À la personne qui pilote ; §11.19 reste au doigt |
+
+Rien d'autre : aucune ligne en écart. Le bloc 03 se joue le 30/09, le bloc 04 le 1er octobre.
