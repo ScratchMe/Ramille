@@ -333,6 +333,24 @@ Fait le 29/09/2026 en lisant le code, pas supposé. Les chantiers sont en §4.
 **Ce que le relevé dit** : rien n'est parallèle. `step-shell.tsx` porte quatre chantiers, et chaque
 étape en porte deux à cinq. Un agent, une branche, un commit par chantier, dans l'ordre de §5.
 
+**Ce qui tourne à côté : « Toutes les pistes »**
+([`v1-32-toutes-les-pistes.md`](v1-32-toutes-les-pistes.md), planifié le même jour). Les deux
+chantiers sont parallélisables, mais ils partagent des fichiers :
+
+- **`src/components/button.tsx`** : `v1-32` le lit sans l'écrire. Le « C'est noté » de sa feuille
+  d'engagement est un `Button` **désactivé**, et un changement de `Button` changerait son apparence
+  sans que rien dans `v1-32` ne le dise. D'où la règle de §4.5 : `enAttente` est une prop à part, et
+  **l'apparence de `disabled` ne bouge pas**.
+- **`src/lib/mouvement.tsx`** : `v1-32` lit `HauteurSuivie` et `Apparition`. Or `Apparition` décide
+  de jouer par `useJoueAuMontage`, que §2.7 scinde. Son comportement ne change pas : elle joue quand
+  ce n'est pas le montage de son écran **et** que les animations ne sont pas réduites, comme
+  aujourd'hui.
+- **`scripts/verifier-parcours-reel.mjs`**, **`docs/recette/le-compte-et-les-modes.md`**,
+  **`v1-13`** et **`produit.md`** : les deux chantiers y écrivent, à des endroits différents.
+
+Le second à passer rebalaie ces fichiers sur `main` avant de pousser (`CLAUDE.md`, « Avant de lancer
+une vague »).
+
 ## 4. Les chantiers
 
 Les numéros d'écart renvoient à la liste « Ce qui change » du handoff (seize écarts).
@@ -452,7 +470,9 @@ boîte et dans le champ ; à 360 px, les cinq puces du nombre de personnes tienn
 
 - **Où** :
   - `button.tsx` gagne une prop `enAttente` : fond `backgroundElement`, texte `textTertiary`, et
-    `backgroundPressed` sous le doigt (§2.8). Ni `disabled`, ni `aria-disabled`.
+    `backgroundPressed` sous le doigt (§2.8). Ni `disabled`, ni `aria-disabled`. **L'apparence de
+    `disabled` ne change pas** : d'autres écrans la lisent, dont le « C'est noté » de la feuille
+    d'engagement (§3, « Ce qui tourne à côté »).
   - `step-shell.tsx` : `nextDisabled` disparaît. Son « Suivant » n'a plus de `disabled` : les
     branches d'envoi sont mortes (§2.4).
   - `src/app/bilan/index.tsx` : les deux gardes de `handleNext` (§2.4).
