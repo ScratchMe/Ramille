@@ -43,21 +43,26 @@ Rien ne se dit avant qu'on l'ait demandé.
 
 Les trois décisions de produit sont au handoff (« Ce que le canvas tranche ») et ne se rediscutent
 pas ici. Ce qui suit est technique, donc de la responsabilité de l'agent (`CLAUDE.md`, « Ce que la
-personne qui pilote a demandé »). Chaque point précise le handoff ou s'en écarte, et §9 le reporte.
+personne qui pilote a demandé »). Les points 2.1 à 2.8 précisent le handoff ou s'en écartent, et §9
+les reporte. Les points 2.9 et 2.10 sont des lectures du handoff, écrites pour qu'on ne les tranche pas
+autrement.
 
 ### 2.1 L'ordre vit dans une liste ordonnée, jamais dans l'ordre des clés d'un objet
 
 Le handoff range l'ordre de « Lequel ? » dans « les clés de `TRANSPORT_MODE_LABELS` ». L'ordre des
 clés d'un `Record` est un accident : une clé ajoutée plus tard irait en queue sans que rien ne le
-dise. **L'ordre se déclare donc une fois**, dans une liste ordonnée de `src/constants/transport-modes.ts`
-qui porte la famille de chaque mode (`FAMILLE_DU_MODE`, et l'ordre des familles). Les trois listes
-en dérivent, ou sont vérifiées contre elle par un test (§6.1) :
+dise. **L'ordre se déclare donc une fois**, dans une liste littérale et ordonnée de
+`src/constants/transport-modes.ts` : les huit `TransportModeId`, chacun avec sa famille, dans l'ordre
+des familles puis dans l'ordre de la famille.
 
-- `COMMUTE_MODE_CHOICES` ;
-- « Lequel ? » (`commute-extra.tsx`, qui itère aujourd'hui `Object.keys(TRANSPORT_MODE_LABELS)`) ;
-- `LEISURE_MODE_CHOICES_PRIMARY` et `LEISURE_MODE_CHOICES_MORE`.
-
-`TRANSPORT_MODE_LABELS` garde ses clés dans l'ordre d'aujourd'hui.
+- **« Lequel ? »** (`commute-extra.tsx`, qui itère aujourd'hui `Object.keys(TRANSPORT_MODE_LABELS)`)
+  itère cette liste.
+- **`COMMUTE_MODE_CHOICES`, `LEISURE_MODE_CHOICES_PRIMARY` et `LEISURE_MODE_CHOICES_MORE` restent
+  des tableaux littéraux**, réordonnés à la main et **vérifiés** contre la liste par un test (§6.1).
+  Ils ne dérivent pas d'elle : la section H de `scripts/verifier-etats-export.mjs` lit le premier
+  mode révélé dans la source, par une expression régulière, et un `.mjs` ne peut pas importer le
+  TypeScript (§4.1).
+- **`TRANSPORT_MODE_LABELS` garde ses clés dans l'ordre d'aujourd'hui.**
 
 Un corollaire à connaître : le test de propriétés de `normaliserReponses` (`src/types/bilan.test.ts`)
 tire ses modes dans `Object.keys(TRANSPORT_MODE_LABELS)`. Réordonner ces clés changerait ses 6 000
@@ -80,16 +85,32 @@ Deux raisons :
 - **Le défilement à l'ouverture ne vaut que pour ce qui précise un choix, pas pour tout `Depliage`.**
   Les modes que « Voir les autres modes » révèle s'ouvrent aussi par un `Depliage`, et ils ne doivent
   pas faire défiler l'écran : le focus va au premier révélé, qui est à la place du lien, donc déjà
-  en vue. Porter l'annonce dans `BoiteDePrecision` rend la liste de ce qui défile **fermée** :
-  - les précisions sous un mode, sur les trois étapes qui posent un mode, et sous la voiture des
-    longs trajets ;
-  - la boîte « Lequel ? » sous le « Oui » du second mode ;
-  - le champ « Environ combien, pour un aller ? » sous la tranche « Plus de 30 km » des sorties.
+  en vue.
 
-  Les deux derniers ne sont pas des précisions de mode, mais ils s'ouvrent sous le doigt exactement
-  comme elles : la règle du handoff (« l'écran remonte si elle passerait sous le pied ») s'y
-  applique à la lettre. Ils emploient le même mécanisme sans prendre l'apparence de la boîte. La
-  boîte « Lequel ? » garde son fond et ses marges d'aujourd'hui.
+**Le mécanisme est une prop de `Depliage`**, disons `suivieALOuverture`, qui annonce sa hauteur finale
+et sa place à `StepShell` (§4.7). Un `Depliage` sans elle n'annonce rien. Elle a trois appelants, et
+la liste est **fermée** :
+
+- **`BoiteDePrecision`**, sous chaque choix qui ouvre une précision : un mode des trois étapes qui en
+  posent, un second mode dans « Lequel ? », la série « En voiture » des longs trajets ;
+- **la boîte « Lequel ? »**, sous le « Oui » du second mode. Elle garde son fond et ses marges
+  d'aujourd'hui ;
+- **le champ « Environ combien, pour un aller ? »**, sous la rangée des tranches des sorties.
+
+Les deux derniers ne sont pas des précisions de mode, mais ils s'ouvrent sous le doigt exactement
+comme elles : la règle du handoff (« l'écran remonte si elle passerait sous le pied ») s'y applique à
+la lettre.
+
+**La borne** qu'aucune ouverture ne franchit (§4.7) est le haut du choix qui l'a déclenchée, 8 px sous
+le bord : le mode choisi, le « Oui », la rangée des tranches, ou la série de puces « En voiture ».
+
+**Une boîte à deux groupes partout où un choix ouvre deux précisions.** Le handoff en nomme trois : le
+covoiturage du trajet, celui des sorties, et la voiture des longs trajets. **Il en oublie une
+famille** : dans « Lequel ? », un second mode en voiture, en deux-roues, en train ou à vélo ouvre son
+type **puis** « Quelle part du trajet fais-tu ainsi ? » (`commute-extra.tsx`, deux `Depliage` séparés
+aujourd'hui). Ce second mode reçoit une seule boîte à deux groupes, comme les trois autres. Deux
+boîtes feraient partir deux annonces dans la même image, sans règle pour dire laquelle gagne. Les
+autres seconds modes n'ouvrent que la part : une boîte, un groupe.
 
 ### 2.3 Ce qui manque est nommé par un champ logique
 
@@ -117,19 +138,41 @@ Deux tables fermées l'accompagnent. Relevées le 29/09/2026 dans `manqueDeLEtap
 « Le titre ne se marque jamais » devient une dérivation (`seMarque(etape, champ)`), testée pour les
 neuf étapes. L'écran ne la tranche jamais en ternaire.
 
+**Le titre reçoit la marque comme tout intitulé, et c'est `seMarque` seule qui l'en empêche.**
+`TitreDEtape` lit l'ancre de la question principale et applique sa `marque`, qui vaut toujours faux.
+Un titre « jamais marqué » qu'on ne brancherait pas rendrait la garde muette : l'assertion « le titre
+n'a pas changé de couleur » passerait aussi sur une `seMarque` fautive (§6.4).
+
 ### 2.4 C'est `StepShell` qui décide d'avancer, et `handleNext` le vérifie encore
 
 Aujourd'hui, `StepShell` reçoit `nextDisabled` et c'est le `disabled` du bouton qui empêche
 d'avancer : `handleNext` (`src/app/bilan/index.tsx`) ne vérifie rien. Le « Suivant » en attente
 n'étant plus `disabled`, les rôles changent :
 
-- **`StepShell`** reçoit `manque` (le champ et sa phrase) et `envoiEnCours`, le seul `disabled` qui
-  reste. Il n'appelle `onNext` que si `manque` est nul ; sinon, il demande (§4.6).
+- **`StepShell`** reçoit `manque` (le champ et sa phrase). Il n'appelle `onNext` que si `manque` est
+  nul ; sinon, il demande (§4.6). **Son « Suivant » n'a plus aucun `disabled`.**
+  - Pendant l'envoi, `StepShell` n'est pas rendu du tout : `if (submitting) return <CalculEnCours />`
+    le remplace. Le libellé « Enregistrement… », `nextDisabled={submitting || …}` et
+    `manque={submitting ? null : …}` sont donc des branches mortes aujourd'hui.
+  - Ce qui empêche une double soumission est le verrou `soumissionEnCours`, une `useRef`, et il ne
+    bouge pas.
+  - L'implémentation retire ces branches, ou les garde en les disant inatteignables, mais ne leur
+    confie rien.
 - **`handleNext`** sort tout de suite si l'étape est incomplète. C'est une seconde garde, et elle
   n'est pas du zèle : sur la dernière étape, `handleNext` soumet. Une régression de `StepShell`
   suffirait sinon à soumettre un bilan incomplet. La base n'en refuserait qu'une partie : une part
   du second mode absente passe (`commute_second_mode_share` est nullable, le calcul retombe sur la
   moitié), c'est-à-dire exactement le défaut que C3.4 a fermé.
+- **À la dernière étape, elle vérifie toutes les étapes visibles, pas seulement la courante.** Ce
+  défaut préexiste, relevé à la contre-lecture du 29/09/2026 :
+  - sur web, `/bilan?etape=context` se tape ;
+  - sur un questionnaire vierge, la validation du paramètre accepte l'étape du contexte ;
+  - trois réponses puis « Voir mon bilan » soumettent un bilan fait des replis de l'insert
+    (`?? false`, `?? 'rarely'`), dont le commentaire affirme « étape visible ⇒ complète ».
+
+  La garde exige donc que chaque étape de `visibleSteps` soit complète. Sinon, elle ramène à la
+  première qui ne l'est pas, par le même chemin que « Retour ». Le « Suivant » en attente y dira ce
+  qui manque. Refuser en silence laisserait un bouton qui ne fait rien.
 
 ### 2.5 Les ancres : chaque champ s'enregistre auprès de `StepShell`
 
@@ -143,15 +186,28 @@ n'étant plus `disabled`, les rôles changent :
 - **`marque`**, vrai quand ce champ est celui qui manque, que la demande est active et que
   `seMarque` l'autorise.
 
-Quatre conséquences :
+Cinq conséquences :
 
 - **`Chip`, `ChoiceRow` et `NumericField` reçoivent une prop `ref`**, comme `ModeListItem` (une prop
   ordinaire depuis React 19). Relevé le 29/09/2026 : aucun des trois ne transmet de référence
   aujourd'hui, et c'est le composant qui rend le groupe qui sait quelle option est cochée.
-- **Le bloc se mesure par `measureLayout`**, relativement au contenu de la `ScrollView` de
-  `StepShell` (la vue `contenu`). La méthode existe sur les deux plateformes. Vérifier sur l'export
-  web qu'elle y rend des coordonnées de contenu et non de fenêtre, avant d'écrire la dérivation qui
-  les lit.
+  **Celle de `NumericField` va au `TextInput`**, pas à la `View` qui l'encadre : sur web, `focus()`
+  sur une `div` sans `tabIndex` échoue sans bruit.
+- **Un champ de saisie reçoit le focus de saisie, pas seulement celui du lecteur d'écran.** Sur
+  natif, `donnerLeFocus` n'envoie qu'un événement d'accessibilité (`src/lib/focus.ts`) : sans
+  TalkBack, rien ne se passe, et le clavier ne s'ouvre pas. Pour un champ, le geste appelle donc
+  aussi `focus()` du `TextInput`.
+- **Le bloc se mesure par `measureLayout`**, relativement à la `ScrollView` de `StepShell`. La
+  méthode existe sur les deux plateformes, avec deux pièges :
+  - **le rembourrage** : la vue `contenu` est dans un conteneur rembourré de 24 (`scrollContent`),
+    donc une mesure relative à elle est décalée d'autant. La dérivation reçoit des coordonnées de
+    contenu, et c'est à la mesure de les rendre justes ;
+  - **l'aplatissement** : le commentaire de `StepShell` explique que `contenu` est aplati sur natif,
+    donc aucune vue native n'existe pour lui. Mesurer relativement à un nœud aplati ne rend rien.
+    Mesurer relativement à un nœud qui existe (`collapsable={false}`), et le vérifier sur appareil.
+
+  Vérifier aussi sur l'export web que la méthode y rend des coordonnées de contenu et non de
+  fenêtre, avant d'écrire la dérivation qui les lit.
 - **Hors de `StepShell`, le crochet ne fait rien** : ses références sont inertes, `marque` est faux.
   C'est le cas de l'écran `/contexte`, qui rend `ChampsDeContexte` sans le questionnaire autour.
   **Cet écran ne change pas** : son « Enregistrer » reste désactivé tant que le contexte est
@@ -165,11 +221,16 @@ Quatre conséquences :
 
 Le handoff donne au pied 102 px sans la ligne et 158 avec. **Ces valeurs sont celles de la taille de
 police normale** : une police agrandie fait passer la ligne à trois lignes. Le défilement vers ce qui
-manque se calcule donc sur la hauteur du pied relevée **après** l'apparition de la ligne (`onLayout`
-du pied), pas sur 158.
+manque se calcule donc sur la hauteur du pied **mesurée**, pas sur 158 :
 
-Le focus, lui, part au geste, avant tout défilement (handoff, « le geste », point 1). Le défilement
-suit une image plus tard.
+- **au premier geste**, la ligne apparaît et le pied grandit : le défilement attend le `onLayout` du
+  pied qui suit ;
+- **à un geste suivant** (la ligne touchée, ou « Suivant » touché une seconde fois après qu'on a
+  fait défiler à la main), la ligne est déjà là et le pied ne change pas de hauteur. Aucun
+  `onLayout` ne part, et un défilement qui l'attendrait ne se ferait jamais : il part aussitôt, sur
+  la hauteur déjà connue.
+
+Le focus, lui, part au geste, avant tout défilement (handoff, « le geste », point 1).
 
 ### 2.7 `Depliage` sépare « joue une animation » et « vient d'un geste »
 
@@ -182,12 +243,20 @@ Le `onLayout` de `Depliage` sort donc tout de suite quand il ne joue pas. Or le 
 l'ouverture doit connaître la hauteur finale **même sous la préférence**, où il se pose sans
 s'animer (handoff, commun, dernier point). Il faut donc deux lectures :
 
-- **« Vient d'un geste »** (pas au montage) décide si l'on annonce la hauteur au défilement ;
-- **« Joue »** (en plus, pas sous la préférence) décide si la hauteur s'anime.
+- **« Vient d'un geste »** décide si l'on annonce la hauteur au défilement ;
+- **« Joue »** (un geste, et pas sous la préférence) décide si la hauteur s'anime.
 
-Au montage d'une étape, une précision déjà ouverte par un brouillon ne fait **rien** défiler. La
-garde J12 de `scripts/verifier-etats-export.mjs` (une précision laissée jouer sous la préférence reste
-à hauteur nulle) doit rester verte.
+**« Vient d'un geste » ne veut pas dire « pas au montage ».** Le préremplissage d'un re-bilan arrive
+**après** le montage (`src/app/bilan/index.tsx`, la lecture de `loadLastSubmittedAnswers`). Sur une
+étape ouverte par `?etape=`, une précision qu'il fait apparaître s'annoncerait, et l'écran défilerait
+sans que personne ait touché à rien. L'annonce n'est donc suivie que si elle suit un geste sur
+l'étape : `StepShell` arme un drapeau au toucher ou à la touche sur son contenu, et le consomme à la
+première annonce ou au changement d'étape. Au montage d'une étape, une précision déjà ouverte par un
+brouillon ne fait **rien** défiler.
+
+`useJoueAuMontage` est nommé dans l'en-tête de la section J de `scripts/verifier-etats-export.mjs`, par
+la mutation J12 : une précision laissée jouer sous la préférence reste à hauteur nulle. L'en-tête
+suit le nouveau nom, et l'assertion que J12 fait tomber doit rester verte.
 
 ### 2.8 Sous le doigt, le « Suivant » en attente prend la teinte d'une surface neutre
 
@@ -198,6 +267,39 @@ virerait au vert foncé au moment du toucher.
 **Il prend `backgroundPressed`**, la teinte appuyée d'une surface neutre (`FRONT.md` §2.4). Un bouton
 qui agit répond au toucher (décision n° 6 de `v1-29`), et sa teinte est celle de sa surface, pas celle
 de l'accent qu'il n'a pas.
+
+### 2.9 Pendant la demande, la ligne et la marque suivent ce qui manque
+
+Une fois « Suivant » touché, la personne peut répondre à ce qu'on lui montre, mais aussi changer de
+mode, ce qui ferme la précision réclamée et en ouvre une autre. Le handoff dit deux choses qui
+tranchent ce cas :
+
+- **« Tout cela reste jusqu'à ce que l'étape soit complète »** (décision 1). La demande ne retombe
+  pas sur un changement de mode.
+- **Une ligne qui nommerait une précision fermée serait fausse.** Elle dit donc ce qui manque
+  maintenant, et la marque se pose sur ce champ. C'est aussi ce que joue le prototype du canvas
+  (planche P).
+
+Le focus et le défilement, eux, n'ont lieu qu'au geste. Le choix ne déplace ni l'un ni l'autre.
+
+La phrase « Rien ne change non plus sous le doigt au moment d'un choix » décrit l'écran **avant**
+toute demande, et ce document la lit ainsi. L'autre lecture, où la demande retombe dès que le champ
+réclamé change, serait une décision de produit. **Elle se pose à la personne qui pilote** si la recette
+au doigt trouve ce suivi gênant.
+
+### 2.10 Entrée au clavier : la demande ne coche rien, et le second appui est un vrai choix
+
+react-native-web active un `Pressable` au relâchement de la touche, et seulement si c'est l'élément
+qui a reçu l'appui (`usePressEvents/PressResponder.js`, `keyupHandler`). Un Entrée sur le « Suivant »
+en attente déclenche donc la demande au relâchement, et le focus part ensuite sur l'option : **le même
+appui ne peut pas la cocher**, même maintenu.
+
+Un second appui coche l'option qui a le focus. C'est une activation délibérée, sur une option qui
+vient d'être annoncée et entourée de son anneau de focus, comme un clic sur elle. Entrée coche les
+choix partout dans le produit (`FRONT.md` §2.4 : « laisse Entrée à la bibliothèque »), et en faire une
+exception ici serait un autre chantier. La section K l'épingle par un cas (§6.2) : si un jour la
+demande partait à l'appui plutôt qu'au relâchement, un Entrée maintenu cocherait la première option
+sans décision.
 
 ## 3. Le relevé de fichiers
 
@@ -218,13 +320,15 @@ Fait le 29/09/2026 en lisant le code, pas supposé. Les chantiers sont en §4.
 | `src/components/bilan/chip.tsx`, `choice-row.tsx`, `numeric-field.tsx` | §4.6 (la prop `ref`) |
 | `src/components/bilan/step-shell.tsx` | §4.5, §4.6, §4.7, §4.8 |
 | `src/components/button.tsx` | §4.5 |
-| `src/types/bilan.ts` (+ son test) | §4.4 |
+| `src/types/bilan.ts` (+ son test) | §4.4 ; et trois commentaires qui disent « Suivant » inactif : celui de `teletravailSePose`, celui d'`avancementDeLaReprise`, l'en-tête de `manqueDeLEtape` (§4.6) |
 | une dérivation neuve dans `src/types/` (+ son test) | §4.7, §4.8 |
 | `src/lib/mouvement.tsx` | §4.7 |
-| `src/app/bilan/index.tsx` | §4.4, §4.5 |
-| `scripts/verifier-etats-export.mjs` | §4.1 (section H), §6.2 (section K, à créer) |
-| `scripts/verifier-parcours-reel.mjs` | §4.5 (`suivant()`) |
-| `docs/design/design-system/components/` et `.design-sync/previews/MissingModeLink.tsx` | §4.1, §4.9 |
+| `src/app/bilan/index.tsx` | §4.4, §4.5 (et la garde de la dernière étape, §2.4) |
+| `scripts/verifier-etats-export.mjs` | §4.1 (section H), §2.7 (l'en-tête de J), §6.2 (section K, à créer ; `ouvrir()` gagne une largeur, pour les cas à 360) |
+| `scripts/verifier-parcours-reel.mjs` | §4.5 (`suivant()` et `jusquAVoirMonBilan`) |
+| `docs/design/design-system/components/` | §4.9 |
+| `docs/recette/le-compte-et-les-modes.md` | §7 (lignes 02.2, 02.6 et 02.10) |
+| `.design-sync/previews/` | à la prochaine synchronisation, pas dans cette PR (§4.9) |
 
 **Ce que le relevé dit** : rien n'est parallèle. `step-shell.tsx` porte quatre chantiers, et chaque
 étape en porte deux à cinq. Un agent, une branche, un commit par chantier, dans l'ordre de §5.
@@ -242,8 +346,8 @@ se lit en trois blocs sans intertitre. Même ordre sur « Lequel ? » et sur les
 sorties.
 
 - **Où** :
-  - `src/constants/transport-modes.ts` : la liste ordonnée par famille (§2.1) et l'ordre des listes
-    qui en dérivent ;
+  - `src/constants/transport-modes.ts` : la liste ordonnée par famille (§2.1), et les trois tableaux
+    de choix réordonnés à la main pour la suivre ;
   - les trois étapes : les familles sont des sous-vues **sans rôle** dans le `GroupeDeChoix`. Les
     flèches du clavier ne les voient pas : `src/lib/groupe-au-clavier.ts` prend les options dont le
     groupe est **le plus proche** (`closest`).
@@ -257,18 +361,21 @@ sorties.
     touché « Bus » au montage. Un focus volé au montage (mutation H2) passerait par le deux-roues,
     et la garde resterait verte.
 
-  H lit donc le premier révélé dans `LEISURE_MODE_CHOICES_MORE`, par le fichier source, comme
-  `verifier-parcours-reel.mjs` lit `theme.ts`. **H2 se rejoue.**
+  H lit donc le premier révélé dans le tableau littéral `LEISURE_MODE_CHOICES_MORE`, par le fichier
+  source et une expression régulière, comme `verifier-parcours-reel.mjs` lit `theme.ts` : c'est ce
+  qui oblige ce tableau à rester littéral (§2.1). Si le motif ne trouve rien, H échoue en le disant,
+  plutôt que de retomber sur un nom écrit en dur. **H2 se rejoue.**
 - **La section F** presse Espace sur « Bus » dans la liste du trajet, à 560 px de haut, et exige que
   la page puisse défiler sous lui. Le mode descend d'un rang et les rangées rétrécissent. Calculé et
   non mesuré : la zone reste plus courte que la liste, donc la page défile encore. La section se
   rejoue ; si sa mesure devient impossible, elle le dit elle-même (« la mesure ne peut pas se
   prendre ») et c'est sa hauteur qu'on ajuste, pas son assertion.
-- **Les copies de la liste** : `.design-sync/previews/MissingModeLink.tsx` et les `.jsx` du kit
-  (`CommuteModeStep`, `CommuteExtraStep`, `LeisureDetailStep`) recopient les libellés dans l'ordre.
-  Ils suivent (§4.9).
-- **À ne pas casser** : les neuf modes, la voiture non découpée par motorisation (brief §3), les
-  clés de `COMMUTE_MODE_CHOICES` (le brouillon et les gardes les lisent).
+- **Les copies de la liste** : les `.jsx` du kit (`CommuteModeStep`, `CommuteExtraStep`,
+  `LeisureDetailStep`) recopient les libellés dans l'ordre et suivent dans cette PR (§4.9). L'aperçu
+  `.design-sync/previews/MissingModeLink.tsx` suit à la prochaine synchronisation.
+- **À ne pas casser** : les neuf modes, la voiture non découpée par motorisation (brief §3), et les
+  clés `voiture_solo` / `voiture_covoiturage`, que `leisure-detail.tsx` écrit en dur pour retrouver
+  la rangée cochée.
 
 ### 4.2 Les rangées de 48 et les écarts
 
@@ -302,14 +409,20 @@ boîte et dans le champ ; à 360 px, les cinq puces du nombre de personnes tienn
   `Radius.field`, rembourrage 12, 16 entre deux groupes, 8 au-dessus (dans le `Depliage`) et 8
   au-dessous. `precision-mode.tsx` et `precision-chiffres.tsx` perdent leur boîte et gardent
   l'intitulé et le groupe.
-- **Les trois boîtes à deux groupes** : sous le covoiturage du trajet, sous le covoiturage des
-  sorties, et sous « En voiture » des longs trajets (motorisation, puis nombre de personnes).
+- **Les boîtes à deux groupes** :
+  - sous le covoiturage du trajet et sous celui des sorties (motorisation, puis nombre de
+    personnes) ;
+  - sous « En voiture » des longs trajets (les mêmes) ;
+  - sous un second mode qui a un type, dans « Lequel ? » (le type, puis la part du trajet : §2.2).
 - **La règle d'accessibilité ne bouge pas** (`v1-29`, 25/09/2026) : une boîte à deux précisions
   porte **deux** `radiogroup`, chacun nommé par sa question, posés dans le groupe du mode. Jamais un
   groupe fusionné.
 - **Ce qui l'éprouve** : le parcours réel vérifie à chaque étape que tout choix répond au
-  `radiogroup` nommé le plus proche et qu'aucun groupe n'en coche deux (`TESTING.md` §2.12). Il
-  garde la boîte unique sans changement : une boîte qui fusionnerait ses deux groupes y tomberait.
+  `radiogroup` nommé le plus proche et qu'aucun groupe n'en coche deux (`TESTING.md` §2.12). Une
+  boîte qui fusionnerait ses deux groupes y tomberait, **mais seulement là où il passe** : aucun des
+  deux profils ne choisit un covoiturage ni un second mode, et seule la boîte des longs trajets y
+  est rendue avec ses deux groupes cochés. Les boîtes du covoiturage se vérifient dans la section K
+  (§6.2).
 - **À ne pas casser** : la précision reste **sous** l'option qu'elle précise, à l'intérieur de la
   liste (`precision-mode.tsx` dit pourquoi : elle tombait à 242 px hors champ quand elle vivait
   après la liste).
@@ -340,9 +453,9 @@ boîte et dans le champ ; à 360 px, les cinq puces du nombre de personnes tienn
 - **Où** :
   - `button.tsx` gagne une prop `enAttente` : fond `backgroundElement`, texte `textTertiary`, et
     `backgroundPressed` sous le doigt (§2.8). Ni `disabled`, ni `aria-disabled`.
-  - `step-shell.tsx` : `nextDisabled` disparaît au profit de `manque` et `envoiEnCours` (§2.4).
-    « Enregistrement… » reste le seul `disabled`.
-  - `src/app/bilan/index.tsx` : la garde de `handleNext` (§2.4).
+  - `step-shell.tsx` : `nextDisabled` disparaît. Son « Suivant » n'a plus de `disabled` : les
+    branches d'envoi sont mortes (§2.4).
+  - `src/app/bilan/index.tsx` : les deux gardes de `handleNext` (§2.4).
 - **Ce qu'il faut ouvrir avant** : `EXPO.md` §1.5. Un `aria-disabled` posé à la main sur un
   `Pressable` de react-native-web est écrasé par `disabled`, et un `aria-disabled` vrai sur un bouton
   y pose l'attribut natif, qui rend le bouton inerte. **Un bouton qui agit ne peut donc pas s'y dire
@@ -353,8 +466,13 @@ boîte et dans le champ ; à 360 px, les cinq puces du nombre de personnes tienn
 - **Le parcours réel ne s'arrête plus au bon endroit.** Playwright attendait que le bouton soit
   actif avant de cliquer ; un « Suivant » en attente n'étant plus inactif, le clic part aussitôt.
   Un parcours qui avancerait sur une étape incomplète échouerait à l'étape d'après, sous un message
-  qui nommerait la mauvaise cause. `suivant()` (`scripts/verifier-parcours-reel.mjs`) vérifie donc,
-  après le clic, qu'aucune ligne « Il manque encore » n'est apparue, et la nomme si c'est le cas.
+  qui nommerait la mauvaise cause. Dans `scripts/verifier-parcours-reel.mjs`, `suivant()` attend
+  donc, après le clic, **l'une des deux issues** :
+  - l'étape a changé ;
+  - la ligne « Il manque encore » est apparue, en fondu. Le parcours s'arrête alors en la citant.
+
+  **`jusquAVoirMonBilan` clique « Suivant » par `bouton()` et non par `suivant()`** : il passe par le
+  même contrôle.
 
 ### 4.6 La demande : la ligne, la marque, le focus
 
@@ -374,8 +492,8 @@ Tout reste jusqu'à ce que l'étape soit complète.
   - Il passe à vrai au toucher du « Suivant » en attente, ou de la ligne.
   - Il retombe à faux dès que `manque` devient nul, et à chaque nouvelle étape (la clé d'`entree`).
   - Tant qu'il est vrai et l'étape incomplète, **la ligne et la marque suivent ce qui manque** : un
-    autre mode choisi pendant la demande fait réclamer sa précision. Le focus et le défilement, eux,
-    n'ont lieu qu'au geste.
+    autre mode choisi pendant la demande fait réclamer sa précision (§2.9). Le focus et le
+    défilement, eux, n'ont lieu qu'au geste.
   - Une fois retombée, un nouveau manque ne se dit qu'au prochain toucher : c'est la décision 1.
 - **La ligne** : `TextLink` (`type="small"`, `weight={600}`, `themeColor="accentText"`), cible de 48,
   alignée sur les boutons, 8 au-dessus d'eux, dans une `Apparition`.
@@ -388,17 +506,23 @@ Tout reste jusqu'à ce que l'étape soit complète.
   du contexte et « Environ combien, pour un aller ? », `text` pour un sous-titre d'étape (les vols, les
   sorties, la distance du trajet). **Jamais la question principale** (`seMarque`, §2.3).
 - **Le focus** : `donnerLeFocus` sur la cible de l'ancre (§2.5), **au geste**. Sur web, `preventScroll`
-  laisse le défilement à `StepShell`. Pour la distance du trajet ou d'une sortie, la cible est le
-  champ de saisie : le clavier s'ouvre, et c'est ce qu'on attend de lui.
+  laisse le défilement à `StepShell`. Quand ce qui manque se saisit au clavier, la cible est le
+  `TextInput`, et le geste appelle aussi son `focus()` sur natif (§2.5) : le clavier s'ouvre, et
+  c'est ce qu'on attend de lui. C'est le cas de la distance du trajet quand l'étape montre le champ
+  en kilomètres (en tranches, c'est le groupe), et de « la distance d'une sortie » sous « Plus de
+  30 km ».
 - **Les neuf étapes s'enregistrent** (§2.3, première table) : un champ qui peut manquer doit toujours
   avoir où mener. `ChampsDeContexte` s'enregistre aussi, et son crochet ne fait rien dans `/contexte`.
 - **Ce qu'il faut ouvrir avant** : `FRONT.md` §1.4 (le nom annoncé est le texte affiché) et §2.4
   (focus, `TextLink`, choix), et `src/lib/focus.ts` (la moitié native de `donnerLeFocus` n'est
   éprouvée par aucune suite).
-- **À relire en passant** : les commentaires qui décrivent l'ancien comportement. Celui de la ligne
-  dans `step-shell.tsx`, celui de son effet de focus (« un bouton désactivé perd le focus »), et
-  l'en-tête de la section G de `scripts/verifier-etats-export.mjs` (« le « Suivant » de l'étape qui
-  arrive étant inactif »). La section G elle-même reste valide : le focus suit toujours l'étape.
+- **À relire en passant** : les commentaires qui décrivent l'ancien comportement.
+  - Dans `step-shell.tsx` : celui de la ligne, et celui de son effet de focus (« un bouton désactivé
+    perd le focus »).
+  - Dans `src/types/bilan.ts` : celui de `teletravailSePose`, celui d'`avancementDeLaReprise`, et
+    l'en-tête de `manqueDeLEtape`, qui disent tous « Suivant » inactif ou grisé.
+  - L'en-tête de la section G de `scripts/verifier-etats-export.mjs` (« le « Suivant » de l'étape qui
+    arrive étant inactif »). La section G elle-même reste valide : le focus suit toujours l'étape.
 
 ### 4.7 Les deux défilements
 
@@ -409,17 +533,17 @@ Tout reste jusqu'à ce que l'étape soit complète.
   - le décalage courant et la hauteur visible de la zone ;
   - le haut et le bas de la cible ;
   - les marges : 16 au-dessus du pied, 24 sous l'en-tête ;
-  - pour l'ouverture d'une précision, une borne : le haut du mode choisi, 8 px sous le bord.
+  - pour une ouverture, une borne : le haut du choix qui l'a déclenchée, 8 px sous le bord (§2.2).
 
   Elle rend le nouveau décalage, ou rien.
   - Une cible déjà entière dans la zone ne fait rien défiler.
   - Une cible sous le pied remonte juste assez pour s'arrêter 16 au-dessus.
   - Une cible plus haute que la zone s'aligne en haut.
-  - Une ouverture ne fait jamais passer le mode choisi au-dessus du bord : la borne gagne sur la
-    marge du bas.
+  - Une ouverture ne fait jamais passer le choix qui l'a déclenchée au-dessus du bord : la borne
+    gagne sur la marge du bas.
 - **Vers ce qui manque** (écart 12) : au geste de la demande, après la mesure du pied (§2.6).
-- **À l'ouverture** (écart 13) : `BoiteDePrecision` et les deux autres ouvertures de §2.2 annoncent
-  leur hauteur finale et leur place au premier `onLayout` d'un dépli **qui vient d'un geste** (§2.7).
+- **À l'ouverture** (écart 13) : les trois appelants de `suivieALOuverture` (§2.2) annoncent leur
+  hauteur finale et leur place au premier `onLayout` d'un dépli **qui suit un geste** (§2.7).
   `StepShell` défile aussitôt, en même temps que le dépli. Le focus ne bouge pas.
 - **L'animation est celle de la plateforme** : `scrollTo({ animated: true })`, qui ne prend ni durée
   ni courbe. Sous la préférence, `animated: false`.
@@ -440,7 +564,7 @@ Tout reste jusqu'à ce que l'étape soit complète.
 - **Quand** : le contenu continue sous le pied au-delà de sa marge basse de 24. C'est une dérivation
   pure, à côté de celle de §4.7. Elle se relit à `onScroll` (avec un `scrollEventThrottle`) et à
   `onContentSizeChange`, et aussi quand la zone change de hauteur : la ligne qui apparaît rétrécit
-  la zone de 56 px.
+  la zone de 56 px à la taille de police normale, et davantage au-delà.
 - **Ce qui l'éprouve** : la section K, dans ses deux moitiés : présent sur les sorties à l'arrivée,
   absent sur une étape courte.
 
@@ -448,14 +572,31 @@ Tout reste jusqu'à ce que l'étape soit complète.
 
 **Écart 16** (le thème sombre, sans jeton neuf) · **Effort** moyen · **Dépend de** tout le reste.
 
-- **Les fiches** `StepShell`, `ModeListItem`, `PrecisionMode`, `PrecisionChiffres`, `CommuteModeStep`,
-  `Button`, et les `.jsx` de `LeisureDetailStep` et `CommuteExtraStep` qui recopient les listes.
+Tout est sous `docs/design/design-system/components/`.
+
+- **Les fiches des composants touchés** :
+  - `StepShell`, `ModeListItem`, `PrecisionMode`, `PrecisionChiffres`, `CommuteModeStep`, `Button` ;
+  - les `.jsx` de `LeisureDetailStep` et `CommuteExtraStep`, qui recopient les listes ;
+  - `LongTripsStep.jsx`, qui dessine deux boîtes sous la voiture ;
+  - les `.d.ts` de `Chip`, `ChoiceRow` et `NumericField` (la prop `ref`).
+- **`bilan/bilan.card.js`** : il recopie `manqueDeLEtape`, passe `nextDisabled`, et son en-tête dit
+  « Suivant » inactif.
+- **Les exemples d'usage des `.prompt.md`** qui passent `nextDisabled` : `CommuteHasTripStep`,
+  `CommuteDaysDistanceStep`, `CommuteExtraStep` et `LeisureDetailStep`.
 - **Une fiche pour `BoiteDePrecision`** (`.jsx`, `.d.ts`, `.prompt.md`), chargée par
-  `components/loader.js`. Sans elle, `scripts/verifier-miroir-du-kit.mjs` rougit.
+  `components/loader.js`, avec sa ligne `// Source : src/…` en tête. Sans elle,
+  `scripts/verifier-miroir-du-kit.mjs` rougit : le refus 1 sans fiche, le refus 4 sans source.
 - **Ce que le miroir ne voit pas** : la justesse d'une fiche. C'est la relecture qui la tient
   (`v1-29` §5), et la contre-lecture de §8 la regarde nommément.
-- **Les aperçus de `.design-sync/`** suivent à la prochaine synchronisation, selon
-  `.design-sync/NOTES.md` : aucune garde ne les tient.
+- **Les aperçus de `.design-sync/previews/` suivent à la prochaine synchronisation**, selon
+  `.design-sync/NOTES.md` ; aucune garde de la CI ne les tient. Sept seront faux après cette PR, et
+  `props-check.py` en signalera une partie :
+  - `MissingModeLink.tsx`, pour l'ordre ;
+  - `StepShell.tsx`, `CommuteModeStep.tsx`, `CommuteHasTripStep.tsx`,
+    `CommuteDaysDistanceStep.tsx`, `CommuteExtraStep.tsx` et `Button.tsx`, qui passent
+    `nextDisabled` ou `manque` en chaîne, ou décrivent l'ancienne ligne.
+
+  Les nommer dans la description de la PR suffit à ce que la synchronisation suivante les reprenne.
 
 ## 5. L'ordre, et pourquoi une seule PR
 
@@ -484,19 +625,24 @@ Tout reste jusqu'à ce que l'étape soit complète.
 
 ### 6.2 L'export : une section K dans `scripts/verifier-etats-export.mjs`
 
-Sans réseau, depuis un brouillon posé dans le stockage, comme les sections F, H et J. **Chaque
-moitié positive porte sur ce que le HTML statique ne dit pas** (`TESTING.md` §2.12).
+Sans réseau, depuis un brouillon posé dans le stockage, comme les sections F, H et J. `ouvrir()`
+fixe aujourd'hui la largeur à 390 : il gagne un paramètre pour les cas à 360. **Chaque moitié
+positive porte sur ce que le HTML statique ne dit pas** (`TESTING.md` §2.12).
 
 | Cas | Ce qui est relevé |
 |---|---|
-| Étape du mode, covoiturage, « Hybride » coché, personnes vides, 390 × 844 (planche A3) | **À l'arrivée** : aucune ligne « Il manque encore », l'intitulé des personnes dans sa couleur d'aujourd'hui. **Le « Suivant » en attente** ne porte ni `disabled` ni `aria-disabled` |
+| Étape du mode, covoiturage, « Hybride » coché, personnes vides, 390 × 844 (planche A3) | **À l'arrivée** : aucune ligne « Il manque encore », l'intitulé des personnes dans sa couleur d'aujourd'hui. **Le « Suivant » en attente** ne porte ni `disabled` ni `aria-disabled`. **La boîte** porte deux `radiogroup` nommés par leurs questions, dont le groupe le plus proche est celui des modes (§4.3) |
 | Le même, « Suivant » touché (A4) | L'étape n'a pas changé ; la ligne dit « Il manque encore le nombre de personnes dans la voiture. » ; l'intitulé est en `accentText`, **lu dans `theme.ts`**, pas recopié ; le focus est sur « 2 personnes » |
+| Le même, « Suivant » activé par un Entrée **maintenu** : deux `keydown` (le second répété), puis `keyup` | La demande, comme au toucher, et **aucune option cochée** (§2.10). Un appui simple ne prouverait rien : même avec la demande partie à l'appui, le relâchement tomberait sur une option qui n'a pas reçu l'appui, et react-native-web ne l'activerait pas |
+| Le même, après un défilement à la main qui remonte la question hors de la zone, la ligne touchée | La zone redescend jusqu'à la question, le focus y revient (§2.6, le geste suivant) |
 | Le même, « 2 » choisi | La ligne est partie, l'intitulé a repris sa couleur ; « Suivant » mène à l'étape suivante |
+| A4, puis « Retour », puis « Suivant » : on revient sur l'étape du mode, encore incomplète | **Aucune ligne** : la demande est retombée en changeant d'étape |
 | Rien de choisi, « Suivant » touché (A6) | La ligne dit « Il manque encore ton mode de transport. » ; le focus est sur « Voiture (seul) » ; **le titre n'a pas changé de couleur** |
 | Sorties, « Voiture (seul) » et « Thermique », distance vide, 390 × 844 (D1, D2) | **Le filet** est là à l'arrivée ; au toucher, la zone descend jusqu'à ce que le groupe des tranches finisse 16 au-dessus du pied (au pixel près), et le focus est sur « Moins de 5 km ». Image par image : des positions intermédiaires ; sous la préférence, aucune |
 | Étape courte (« As-tu un trajet régulier… ») | **Pas de filet** : la moitié négative |
 | Étape du mode à 360 × 800, « Vélo » touché (B6) | La zone remonte jusqu'à ce que la boîte finisse 16 au-dessus du pied, et le focus reste sur « Vélo ». Sous la préférence, posé dès la première image |
-| La même étape rouverte depuis un brouillon où « Vélo » est déjà choisi | **Rien ne défile au montage** |
+| La même étape, à 360 × 800, rouverte depuis un brouillon où « Vélo » est déjà choisi | **Rien ne défile au montage**. À 390, la boîte du vélo s'arrête au-dessus du pied (738 contre 742) : la moitié serait vraie par construction, et sa mutation ne ferait rien tomber |
+| `/bilan?etape=context` sur un questionnaire vierge, les trois réponses données (le télétravail ne se pose pas sans jours de trajet), « Voir mon bilan » touché | **Rien n'est soumis** : l'écran revient à la première étape incomplète (§2.4) |
 
 **La section H** lit son premier révélé dans la source (§4.1), et H2 se rejoue. **La section J** doit
 rester verte : à 390 × 844, la motorisation sous « Voiture (seul) » s'arrête au-dessus du pied (table
@@ -505,8 +651,9 @@ troublé par le défilement neuf.
 
 ### 6.3 Le parcours réel
 
-`suivant()` vérifie qu'aucune ligne « Il manque encore » n'est apparue (§4.5). La vérification des
-groupes, inchangée, garde la boîte unique (§4.3).
+`suivant()` et `jusquAVoirMonBilan` attendent l'une des deux issues d'un « Suivant » (§4.5). La
+vérification des groupes, inchangée, garde la boîte des longs trajets, la seule que le parcours rend
+avec ses deux groupes (§4.3).
 
 ### 6.4 Les mutations à jouer
 
@@ -518,15 +665,18 @@ point 5). Elles se consignent datées en tête de la garde qui tombe.
 |---|---|
 | La demande vraie au montage (« d'office ») | K, A3 : une ligne à l'arrivée |
 | La demande qui ne retombe pas à la complétude | K, « 2 » choisi : la ligne reste |
-| Le focus qui ne part pas | K, A4 : le focus n'est pas sur « 2 personnes » |
-| `seMarque` qui rend vrai pour la question principale | K, A6 **et** le test Jest de `seMarque` |
+| La demande qui ne retombe pas en changeant d'étape | K, A4 puis « Retour » puis « Suivant » : la ligne est là |
+| Le focus qui ne part pas | K, A4, A6, D2 et la ligne touchée : le focus n'est pas sur la question |
+| `seMarque` qui rend vrai pour la question principale | K, A6 (le titre a changé de couleur, parce que `TitreDEtape` lit sa marque : §2.3) **et** le test Jest de `seMarque` |
+| La demande partie à l'appui (`onPressIn`) et non au relâchement | K, l'Entrée maintenu : la répétition tombe sur l'option, qui se coche |
 | Le défilement vers ce qui manque retiré | K, D2 : le groupe reste sous le pied |
 | `animated: true` sous la préférence | K, D2 et B6 sous la préférence : une position intermédiaire |
 | Le défilement à l'ouverture retiré | K, B6 |
 | Le défilement à l'ouverture joué au montage | K, le brouillon au vélo |
 | Le filet toujours affiché, puis jamais | K, l'étape courte, puis K, D1 |
-| `disabled` remis sur le « Suivant » en attente | K, A3 (l'attribut) ; et le clic de A4 ne part plus |
-| La garde de `handleNext` retirée | aucune garde d'export : c'est **par construction** une seconde garde. Un test d'écran (`TESTING.md` §2.10) ne vaut que si l'on nomme une mutation qu'il fait tomber et que rien d'autre ne voit, et celle-ci en est une : écrire le test, ou consigner pourquoi on ne l'écrit pas |
+| `disabled` remis sur le « Suivant » en attente | K, A3 (l'attribut) ; et les clics de A4, A6 et D2 ne partent plus |
+| La garde de la dernière étape réduite à l'étape courante | K, `?etape=context` : une soumission part |
+| La garde de l'étape courante retirée de `handleNext` | aucune garde d'export : `StepShell` n'appelle déjà pas `onNext` sur une étape incomplète, donc c'est **par construction** une seconde garde. Un test d'écran (`TESTING.md` §2.10) ne vaut que si l'on nomme une mutation qu'il fait tomber et que rien d'autre ne voit, et celle-ci en est une : écrire le test, ou consigner pourquoi on ne l'écrit pas |
 | « Bus » remis en dur dans H | H, sur le premier révélé |
 
 ### 6.5 Ce qui n'est pas gardé, et qu'il ne faut pas prétendre gardé
@@ -551,6 +701,9 @@ La recette les prend (§8).
   inactif **pour toujours** sous un message qui nomme une question absente ». Le défaut change de
   forme : le « Suivant » en attente mènerait à une question absente (§2.5).
 - **Les commentaires** : ceux de §4.6, « À relire en passant ».
+- **La fiche de recette `docs/recette/le-compte-et-les-modes.md`** : ses lignes 02.2 et 02.6 attendent
+  un « Suivant » qui « reste inactif », et la 02.10 décrit l'écran d'avant. Un parcours changé sans sa
+  fiche se lit « non conforme » à la séance suivante (`RECETTE.md`).
 - **Le kit** : §4.9.
 - **Le dossier de design** : `README.md` de
   [`docs/design/v1-31-l-ecran-du-mode/`](../design/v1-31-l-ecran-du-mode/), section « Ce que
@@ -588,7 +741,12 @@ La recette les prend (§8).
 
 Même rôle que `v1-17` §9 : ce qui est **volontairement** rendu autrement que dessiné, avec la raison.
 Un écart non consigné est un écart qu'un prochain passage « corrigera » dans le mauvais sens. Les
-lignes 1 à 7 sont posées par ce document ; l'implémentation ajoute les siennes en dessous.
+lignes 1 à 11 sont posées par ce document, dont les quatre dernières après sa contre-lecture ;
+l'implémentation ajoute les siennes en dessous.
+
+§2.9 et §2.10 ne sont pas des écarts : ce sont des lectures du handoff, écrites pour qu'un
+implémenteur ne les tranche pas autrement. §2.9 se pose à la personne qui pilote si la recette la
+dément.
 
 | # | Le handoff ou le canvas | Ce qui est livré | Pourquoi |
 |---|---|---|---|
@@ -598,7 +756,11 @@ lignes 1 à 7 sont posées par ce document ; l'implémentation ajoute les sienne
 | 4 | Ce qui manque est une phrase | Un champ logique et sa phrase ; la distance du trajet est un seul champ pour deux colonnes | §2.3 |
 | 5 | Le pied mesure 102 ou 158 | La hauteur relevée après l'apparition de la ligne | §2.6 : une police agrandie |
 | 6 | `enAttente` : « l'apparence du désactivé, rien d'autre » | Et `backgroundPressed` sous le doigt | §2.8 : sinon `accentPressed` |
-| 7 | Rien sur `handleNext` | Il refuse une étape incomplète, en seconde garde | §2.4 : la dernière étape soumet |
+| 7 | Rien sur `handleNext` | Il refuse une étape incomplète, en seconde garde ; à la dernière étape, toutes les étapes visibles | §2.4 : la dernière étape soumet, et `?etape=` permettait déjà d'y arriver avec un questionnaire vierge |
+| 8 | « Une boîte pour deux précisions d'une même voiture » : trois boîtes | Quatre familles de boîtes à deux groupes, dont le second mode et sa part | §2.2 : le handoff oublie « Lequel ? », où deux dépliés séparés feraient partir deux annonces à la fois |
+| 9 | `disabled` « reste pour l'envoi en cours (« Enregistrement… ») » (écart 10) | Le « Suivant » de `StepShell` n'a plus aucun `disabled` | §2.4 : `StepShell` n'est pas rendu pendant l'envoi, et c'est le verrou `soumissionEnCours` qui garde la double soumission |
+| 10 | La borne : « le mode choisi » | Le choix qui a déclenché l'ouverture | §2.2 : trois ouvertures n'ont pas de mode au-dessus d'elles |
+| 11 | « Vient d'un geste » lu comme « pas au montage » | Un drapeau armé par un toucher ou une touche sur l'étape | §2.7 : le préremplissage arrive après le montage |
 
 **Trois écarts sont déjà connus du dossier de design** (son `README.md`, « Ce que l'implémentation
 corrigera ») : le dépli et le défilement du prototype sont approximés, le DOM du canvas n'est pas
@@ -609,7 +771,7 @@ suivre sont celles du handoff.
 
 | § | Travail | État |
 |---|---|---|
-| — | Ce document | fait, 29/09/2026 |
+| — | Ce document | fait, 29/09/2026, et contre-lu le jour même (§13) |
 | 4.4 | Ce qui manque, nommé par son champ | à faire |
 | 4.1 | L'ordre et les familles, section H | à faire |
 | 4.2 | Les rangées de 48 et les écarts | à faire |
@@ -659,3 +821,28 @@ suivre sont celles du handoff.
 - **Relever avant d'écrire** : les tables de §2.3 et de §3 datent du 29/09/2026. Un chantier fusionné
   entre-temps sur le questionnaire les invaliderait sans rien dire.
 - **§10 se tient à jour à chaque commit**, pas à la fin.
+
+## 13. La contre-lecture du 29/09/2026
+
+Le sous-agent `contre-lecture` a relu ce plan avant sa PR. Il a rendu dix-huit constats, et tous sont
+repris dans cette version. Ils sont consignés ici et non en §9 : un écart est un choix, ceux-ci sont
+des fautes du plan. Les plus lourds pour l'implémentation :
+
+- **Une famille de boîtes oubliée** : le second mode et sa part, dans « Lequel ? » (§2.2). Le
+  handoff l'oubliait aussi.
+- **Un clavier qui ne s'ouvrait pas** : sur natif, `donnerLeFocus` n'envoie qu'un événement
+  d'accessibilité (§2.5).
+- **Un défilement qui ne serait jamais parti au second geste**, parce qu'il attendait un `onLayout`
+  qui ne vient pas (§2.6).
+- **Une section H qui n'aurait pas pu lire une liste dérivée** (§2.1, §4.1).
+- **Un défaut antérieur au plan** : `/bilan?etape=context` soumettait un questionnaire vierge
+  complété de replis (§2.4).
+- **Un relevé incomplet** : la fiche de recette, `bilan.card.js`, les exemples des `.prompt.md`, les
+  aperçus et trois commentaires de `src/types/bilan.ts` (§3, §4.9, §7).
+- **Des attendus de mutation faux**, dont un qui rendait muette la garde du titre (§2.3, §6.4).
+
+**Un constat n'a pas été repris tel quel.** Il demandait de poser à la personne qui pilote la question
+du suivi de ce qui manque pendant la demande. Le handoff y répond (« Tout cela reste jusqu'à ce que
+l'étape soit complète »), et le prototype du canvas le joue : §2.9 l'écrit comme une lecture, et dit à
+quelle condition elle se pose.
+
