@@ -1386,7 +1386,7 @@ function verifierLesArrets(ou, arrets, attendus) {
 //   | J9 — `Depliage` ignore la préférence, deux fois | la précision sous la préférence : en chemin et en fondu |
 //   | J10 — `animationDesOnglets` rend toujours « fade » | les onglets sous la préférence : dix images de fondu |
 //   | J11 — `animationDesOnglets` rend toujours « none » | les onglets animés : aucune image de fondu |
-//   | J12 — `Depliage` ignore la préférence, une seule fois (`useJoueAuMontage`) | la précision sous la préférence : présente, mais sans aucune place |
+//   | J12 — `Depliage` ignore la préférence, une seule fois (`useJoue`, qui s'appelait `useJoueAuMontage` avant `v1-31` §2.7) | la précision sous la préférence : présente, mais sans aucune place |
 //   | J13 — `entering` remis sur l'étape, l'ancien défaut (28/09) | l'étape animée sur le sens seul (en fondu oui, droite et gauche non), l'étape sous la préférence (« Suivant » ne se clique plus), et la précision rouverte, qui entre en fondu avec son étape |
 //   | J14 — `entering` remis sur `Depliage` (28/09) | le focus de « Voir les autres modes » (section H) et la précision rouverte ; la moitié animée de la précision reste verte : masquée avant d'apparaître, elle entre en fondu |
 //   | J15 — la marque « fait » lue comme « questionnaire » (28/09) | la barre absente sous « fait » (section des états de barre), et J1 sous « fait » : « n'a pas pu être relevée » |

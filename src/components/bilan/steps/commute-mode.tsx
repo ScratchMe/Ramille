@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
+import { ChoixOuvrant } from '@/components/bilan/choix-ouvrant';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
@@ -124,7 +125,7 @@ export function CommuteModeStep({
                   answers.commute_mode === choice.modeId && answers.commute_is_carpool === choice.carpool;
                 const precisions = selected ? precisionsDuMode(choice) : [];
                 return (
-                  <View key={choice.key}>
+                  <ChoixOuvrant key={choice.key}>
                     <ModeListItem
                       ref={choice.key === cleCible ? cible : undefined}
                       label={choice.label}
@@ -160,7 +161,7 @@ export function CommuteModeStep({
                         de quelle voiture on parle. Elle suit donc la motorisation, dans la même boîte :
                         les deux précisions décrivent la même voiture. */}
                     {precisions.length > 0 && <BoiteDePrecision>{precisions}</BoiteDePrecision>}
-                  </View>
+                  </ChoixOuvrant>
                 );
               })}
             </View>

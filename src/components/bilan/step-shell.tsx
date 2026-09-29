@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,7 +17,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
 import { donnerLeFocus } from '@/lib/focus';
-import { Apparition, SansApparitionAuMontage, styleDEntree } from '@/lib/mouvement';
+import {
+  Apparition,
+  SansApparitionAuMontage,
+  styleDEntree,
+  SuiviDesOuvertures,
+  type Ouverture,
+} from '@/lib/mouvement';
 import {
   QUESTION_PRINCIPALE,
   seMarque,
@@ -25,6 +31,7 @@ import {
   type CeQuiManque,
   type ChampDuBilan,
 } from '@/types/bilan';
+import { decalagePourMontrer } from '@/types/demande';
 import type { Sens } from '@/types/mouvement';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
@@ -74,6 +81,7 @@ export function StepShell({
   detail,
   manque,
   entree,
+  reponsesDonnees,
 }: {
   section: string;
   step: number;
@@ -112,6 +120,11 @@ export function StepShell({
    * sans `sens` (le montage, la reprise d'un brouillon, le retour après un échec), il est posé.
    */
   entree: { cle: BilanStepId; sens: Sens | null };
+  /**
+   * Le nombre de réponses données au doigt ou au clavier depuis l'ouverture du questionnaire — une par
+   * `update`. Une ouverture ne fait défiler l'écran que si elle suit l'une d'elles (`v1-31` §2.7).
+   */
+  reponsesDonnees: number;
 }) {
   // **L'étape entre dans le sens du parcours** (27/09/2026, `v1-30` §5.6) : de la droite en
   // avançant, de la gauche en revenant — l'« axe partagé » d'un parcours par étapes. Une animation
@@ -123,64 +136,6 @@ export function StepShell({
   // La clé fait aussi remonter le contenu d'une étape à l'autre, là où React gardait l'état d'un
   // composant que deux étapes rendaient à la même place.
   const animationsReduites = useReducedMotion();
-
-  // **Ce qui manque se dit au toucher, jamais d'office** (29/09/2026, `v1-31`, décision 1). Rien ne
-  // s'écrit à l'arrivée — la question est déjà en titre —, rien ne change sous le doigt pendant qu'on
-  // répond. Le « Suivant » gris répond : il **demande**, et la demande tient jusqu'à ce que l'étape
-  // soit complète. Elle retombe alors, et un nouveau manque (un autre mode choisi) ne se dit qu'au
-  // prochain toucher ; elle retombe aussi en changeant d'étape. Tant qu'elle court, la ligne et la
-  // marque **suivent ce qui manque maintenant** (`v1-31` §2.9) : une ligne qui nommerait une précision
-  // qu'un changement de mode vient de fermer serait fausse. Le focus et le défilement, eux, ne partent
-  // qu'au geste.
-  //
-  // L'état retient l'étape où la demande a été faite ; il retombe au rendu — jamais dans un effet, qui
-  // laisserait une image de trop — dès qu'il ne décrit plus l'écran.
-  const [demande, setDemande] = useState<BilanStepId | null>(null);
-  const demandeActive = demande !== null && demande === entree.cle && manque != null;
-  if (demande !== null && !demandeActive) setDemande(null);
-
-  // Les ancres que les étapes enregistrent (`useAncreDuChamp`) : où mène ce qui manque.
-  const ancres = useRef(new Map<ChampDuBilan, AncreDuChamp>());
-  const enregistrer = useCallback((champ: ChampDuBilan, ancre: AncreDuChamp) => {
-    ancres.current.set(champ, ancre);
-    return () => {
-      if (ancres.current.get(champ) === ancre) ancres.current.delete(champ);
-    };
-  }, []);
-  const principale = QUESTION_PRINCIPALE[entree.cle];
-  const marque = demandeActive && manque && seMarque(entree.cle, manque.champ) ? manque.champ : null;
-  const contexteDesAncres: AncresDeLEtape = { enregistrer, marque, principale };
-
-  /**
-   * Mener à ce qui manque — au toucher du « Suivant » en attente, ou de la ligne qui le dit. Le focus
-   * part **au geste**, avant tout défilement (skill `/mouvement`) : sur l'option cochée du groupe, ou
-   * sa première ; sur un champ de saisie, qui reçoit aussi son `focus()` sur natif pour que le clavier
-   * s'ouvre. Rien n'est annoncé comme une alerte : ce n'est pas un échec, et le focus qui part vers la
-   * question fait déjà l'annonce — son groupe s'annonce par sa question.
-   */
-  const mener = () => {
-    if (manque == null) return;
-    setDemande(entree.cle);
-    const ancre = ancres.current.get(manque.champ);
-    const cible = ancre?.cible.current ?? null;
-    if (!ancre || cible === null) {
-      // **Un champ demandé sans ancre ne se tait pas** (`v1-31` §2.5) : la ligne s'affiche quand même,
-      // et le focus retombe sur la cible d'une nouvelle étape. C'est la forme neuve du défaut de C5.4 —
-      // une question absente de l'écran, mais réclamée —, et l'avertissement la nomme.
-      if (__DEV__) {
-        console.warn(`StepShell : « ${manque.champ} » manque, mais aucune ancre ne le porte sur ${entree.cle}.`);
-      }
-      donnerLeFocus(Platform.OS === 'web' ? contenu.current : titre.current);
-      return;
-    }
-    donnerLeFocus(cible);
-    if (Platform.OS !== 'web' && ancre.saisie) (cible as { focus?: () => void }).focus?.();
-  };
-
-  const suivant = () => {
-    if (manque == null) onNext();
-    else mener();
-  };
   const styleDeLEtape = styleDEntree(entree.sens, animationsReduites);
 
   // **Le focus suit l'étape, sinon la question suivante n'est jamais annoncée.** Passer à l'étape
@@ -249,6 +204,140 @@ export function StepShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
+  // **Ce qui manque se dit au toucher, jamais d'office** (29/09/2026, `v1-31`, décision 1). Rien ne
+  // s'écrit à l'arrivée — la question est déjà en titre —, rien ne change sous le doigt pendant qu'on
+  // répond. Le « Suivant » gris répond : il **demande**, et la demande tient jusqu'à ce que l'étape
+  // soit complète. Elle retombe alors, et un nouveau manque (un autre mode choisi) ne se dit qu'au
+  // prochain toucher ; elle retombe aussi en changeant d'étape. Tant qu'elle court, la ligne et la
+  // marque **suivent ce qui manque maintenant** (`v1-31` §2.9) : une ligne qui nommerait une précision
+  // qu'un changement de mode vient de fermer serait fausse. Le focus et le défilement, eux, ne partent
+  // qu'au geste.
+  //
+  // L'état retient l'étape où la demande a été faite ; il retombe au rendu — jamais dans un effet, qui
+  // laisserait une image de trop — dès qu'il ne décrit plus l'écran.
+  const [demande, setDemande] = useState<BilanStepId | null>(null);
+  const demandeActive = demande !== null && demande === entree.cle && manque != null;
+  if (demande !== null && !demandeActive) setDemande(null);
+
+  // Les ancres que les étapes enregistrent (`useAncreDuChamp`) : où mène ce qui manque.
+  const ancres = useRef(new Map<ChampDuBilan, AncreDuChamp>());
+  const enregistrer = useCallback((champ: ChampDuBilan, ancre: AncreDuChamp) => {
+    ancres.current.set(champ, ancre);
+    return () => {
+      if (ancres.current.get(champ) === ancre) ancres.current.delete(champ);
+    };
+  }, []);
+  const principale = QUESTION_PRINCIPALE[entree.cle];
+  const marque = demandeActive && manque && seMarque(entree.cle, manque.champ) ? manque.champ : null;
+  const contexteDesAncres: AncresDeLEtape = { enregistrer, marque, principale };
+
+  /**
+   * Mener à ce qui manque — au toucher du « Suivant » en attente, ou de la ligne qui le dit. Le focus
+   * part **au geste**, avant tout défilement (skill `/mouvement`) : sur l'option cochée du groupe, ou
+   * sa première ; sur un champ de saisie, qui reçoit aussi son `focus()` sur natif pour que le clavier
+   * s'ouvre. Rien n'est annoncé comme une alerte : ce n'est pas un échec, et le focus qui part vers la
+   * question fait déjà l'annonce — son groupe s'annonce par sa question.
+   */
+  const mener = () => {
+    if (manque == null) return;
+    setDemande(entree.cle);
+    const ancre = ancres.current.get(manque.champ);
+    const cible = ancre?.cible.current ?? null;
+    if (!ancre || cible === null) {
+      // **Un champ demandé sans ancre ne se tait pas** (`v1-31` §2.5) : la ligne s'affiche quand même,
+      // et le focus retombe sur la cible d'une nouvelle étape. C'est la forme neuve du défaut de C5.4 —
+      // une question absente de l'écran, mais réclamée —, et l'avertissement la nomme.
+      if (__DEV__) {
+        console.warn(`StepShell : « ${manque.champ} » manque, mais aucune ancre ne le porte sur ${entree.cle}.`);
+      }
+      donnerLeFocus(Platform.OS === 'web' ? contenu.current : titre.current);
+      return;
+    }
+    donnerLeFocus(cible);
+    if (Platform.OS !== 'web' && ancre.saisie) (cible as { focus?: () => void }).focus?.();
+    // Puis l'écran y défile s'il le faut — le minimum, 16 au-dessus du pied.
+    if (demandeActive) montrerLAncre(ancre);
+    else defilementEnAttente.current = { ancre, etape: entree.cle };
+  };
+
+  const suivant = () => {
+    if (manque == null) onNext();
+    else mener();
+  };
+
+  // La zone a changé de hauteur — la ligne vient d'apparaître : le défilement vers ce qui manque part.
+  const miseEnPageDeLaZone = (evenement: LayoutChangeEvent) => {
+    zone.current.hauteur = evenement.nativeEvent.layout.height;
+    const enAttente = defilementEnAttente.current;
+    defilementEnAttente.current = null;
+    // Une demande faite sur une autre étape n'a plus rien à montrer ici.
+    if (enAttente && enAttente.etape === entree.cle) montrerLAncre(enAttente.ancre);
+  };
+
+
+  // **La zone qui défile, suivie** (29/09/2026, `v1-31` §4.7) : son décalage et sa hauteur visible,
+  // et la place du contenu dans ce qui défile. `contenu` est dans un conteneur rembourré de 24
+  // (`scrollContent`), donc une mesure relative à lui se décale d'autant, et c'est à la mesure de rendre
+  // des coordonnées de contenu justes. Il porte `collapsable={false}` : sur natif, une vue sans aucune
+  // propriété est aplatie, et mesurer relativement à un nœud qui n'existe pas ne rend rien.
+  const zone = useRef({ decalage: 0, hauteur: 0, hautDuContenu: 0 });
+  /** Le défilement de la plateforme : `scrollTo` ne prend ni durée ni courbe, et sous « réduire les
+   *  animations » il se pose. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5). */
+  const defiler = (y: number) => defilement.current?.scrollTo({ y, animated: !animationsReduites });
+  const mesurer = (noeud: View | null | undefined, rappel: (haut: number, hauteur: number) => void) => {
+    const repere = contenu.current;
+    if (!noeud || !repere) return;
+    noeud.measureLayout(repere, (_x, y, _largeur, hauteur) => rappel(y + zone.current.hautDuContenu, hauteur));
+  };
+
+  /** Défiler le minimum pour que ce qui manque soit entier dans la zone (`decalagePourMontrer`). */
+  const montrerLAncre = (ancre: AncreDuChamp) =>
+    mesurer(ancre.bloc.current, (haut, hauteur) => {
+      const y = decalagePourMontrer({
+        decalage: zone.current.decalage,
+        hauteurZone: zone.current.hauteur,
+        haut,
+        bas: haut + hauteur,
+      });
+      if (y !== null) defiler(y);
+    });
+  // **La hauteur du pied se mesure, elle ne se suppose pas** (`v1-31` §2.6). Au premier geste, la ligne
+  // apparaît et la zone rétrécit — de 56 à la taille de police normale, davantage au-delà : le
+  // défilement attend la mise en page qui suit, où la zone a sa nouvelle hauteur. À un geste suivant,
+  // la ligne est déjà là et rien ne change de taille : il part aussitôt.
+  const defilementEnAttente = useRef<{ ancre: AncreDuChamp; etape: BilanStepId } | null>(null);
+
+  // **Une ouverture ne se suit que si elle suit une réponse donnée sur l'étape** (`v1-31` §2.7). « Monter
+  // après son écran » ne suffit pas : le préremplissage d'un re-bilan arrive après le montage, et sur
+  // une étape ouverte par `?etape=`, une précision qu'il fait apparaître ferait défiler l'écran sans
+  // que personne ait touché à rien. `reponsesDonnees` compte les réponses données au doigt ou au
+  // clavier — TalkBack compris, qui active un choix sans le toucher ; la première ouverture qui suit
+  // l'en consomme, et un changement d'étape aussi.
+  //
+  // Retenu dans l'état et non dans une référence, pour que le changement d'étape le remette à jour au
+  // rendu — le motif de la demande.
+  const [reponsesVues, setReponsesVues] = useState({ etape: entree.cle, reponses: reponsesDonnees });
+  if (reponsesVues.etape !== entree.cle) setReponsesVues({ etape: entree.cle, reponses: reponsesDonnees });
+  const suivreLOuverture = ({ depli, hauteur, borne }: Ouverture) => {
+    if (reponsesVues.etape !== entree.cle || reponsesDonnees === reponsesVues.reponses) return;
+    setReponsesVues({ etape: entree.cle, reponses: reponsesDonnees });
+    mesurer(depli, (hautDuDepli) => {
+      // Le haut du choix qui l'a ouverte (`ChoixOuvrant`) ne passe jamais au-dessus du bord.
+      const montrer = (hautDuChoix: number) => {
+        const y = decalagePourMontrer({
+          decalage: zone.current.decalage,
+          hauteurZone: zone.current.hauteur,
+          haut: hautDuChoix,
+          bas: hautDuDepli + hauteur,
+          ouverture: true,
+        });
+        if (y !== null) defiler(y);
+      };
+      if (borne) mesurer(borne, montrer);
+      else montrer(hautDuDepli);
+    });
+  };
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -267,14 +356,32 @@ export function StepShell({
             </ThemedText>
           )}
         </View>
-        <ScrollView ref={defilement} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View ref={contenu} {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}>
+        <ScrollView
+          ref={defilement}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(evenement) => {
+            zone.current.decalage = evenement.nativeEvent.contentOffset.y;
+          }}
+          onLayout={miseEnPageDeLaZone}
+        >
+          <View
+            ref={contenu}
+            collapsable={false}
+            onLayout={(evenement) => {
+              zone.current.hautDuContenu = evenement.nativeEvent.layout.y;
+            }}
+            {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}
+          >
             <Animated.View key={entree.cle} style={styleDeLEtape}>
               {/* Ce que l'étape montre en arrivant n'a pas d'apparition à soi — une précision déjà
                   ouverte entre avec l'étape ; ce qui s'ouvre ensuite apparaît (`src/lib/mouvement.tsx`). */}
               <SansApparitionAuMontage>
                 <ContexteDesAncres.Provider value={contexteDesAncres}>
-                  <TitreDeLEtape.Provider value={titre}>{children}</TitreDeLEtape.Provider>
+                  <SuiviDesOuvertures value={suivreLOuverture}>
+                    <TitreDeLEtape.Provider value={titre}>{children}</TitreDeLEtape.Provider>
+                  </SuiviDesOuvertures>
                 </ContexteDesAncres.Provider>
               </SansApparitionAuMontage>
             </Animated.View>

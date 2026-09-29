@@ -3,6 +3,7 @@ import { StyleSheet, View, type TextInput } from 'react-native';
 
 import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
+import { ChoixOuvrant } from '@/components/bilan/choix-ouvrant';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
@@ -186,7 +187,7 @@ export function LeisureDetailStep({
     const selected = selectedKey === choice.key;
     const precisions = selected ? precisionsDuMode(choice) : [];
     return (
-      <View key={choice.key}>
+      <ChoixOuvrant key={choice.key}>
         {/* Deux références ne se disputent jamais la même rangée : la cible du mode est la rangée cochée
             ou la première, « Voiture (seul) », et quand la cochée est « Deux-roues motorisé », le mode
             ne manque pas — rien n'y mènera. */}
@@ -213,7 +214,7 @@ export function LeisureDetailStep({
             raison, qui n'est pas cosmétique. Une seule boîte par choix (`v1-31` §2.2), qui porte une
             question, ou deux pour le covoiturage. */}
         {precisions.length > 0 && <BoiteDePrecision>{precisions}</BoiteDePrecision>}
-      </View>
+      </ChoixOuvrant>
     );
   };
 
@@ -268,43 +269,48 @@ export function LeisureDetailStep({
         <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={trancheMarquee}>
           {QUESTION_DISTANCE}
         </IntituleDuChamp>
-        <GroupeDeChoix question={QUESTION_DISTANCE} style={styles.chipsWrap}>
-          {BRACKETS.map((bracket, i) => (
-            <Chip
-              key={bracket.value}
-              ref={i === iCibleDeLaTranche ? cibleDeLaTranche : undefined}
-              label={bracket.label}
-              role="radio"
-              selected={answers.leisure_distance_bracket === bracket.value}
-              onPress={() => update({ leisure_distance_bracket: bracket.value })}
-            />
-          ))}
-        </GroupeDeChoix>
-
-        {/* C3.6 — la seule tranche sans borne haute est aussi la seule qui demandait quelque
-            chose de plus : « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait
-            pour un tiers d'elle-même, sur un poste qui peut être dominant.
-
-            Le champ se rend **après** la rangée de puces et non sous celle qui l'ouvre, à
-            l'inverse des précisions de mode : les tranches sont un groupe qui revient à la
-            ligne, pas une liste d'éléments, donc il n'y a pas d'élément sous lequel se glisser
-            — et à quatre puces, le champ reste juste sous l'œil. */}
-        {answers.leisure_distance_bracket === '30_plus' && (
-          <Depliage>
-            <View ref={blocDeLaDistance} style={styles.distanceLibre}>
-              <IntituleDuChamp type="small" themeColor="textTertiary" marque={distanceMarquee}>
-                Environ combien, pour un aller ?
-              </IntituleDuChamp>
-              <NumericField
-                ref={cibleDeLaDistance}
-                value={answers.leisure_distance_km}
-                onChange={(value) => update({ leisure_distance_km: value })}
-                unit="km"
-                label="Distance d’un aller"
+        {/* Les tranches et la distance qu'ouvre « Plus de 30 km », enveloppées ensemble : le haut de
+            la rangée est la borne que l'écran ne fait pas passer au-dessus du bord en remontant pour
+            montrer le champ (`ChoixOuvrant`). */}
+        <ChoixOuvrant style={styles.block}>
+          <GroupeDeChoix question={QUESTION_DISTANCE} style={styles.chipsWrap}>
+            {BRACKETS.map((bracket, i) => (
+              <Chip
+                key={bracket.value}
+                ref={i === iCibleDeLaTranche ? cibleDeLaTranche : undefined}
+                label={bracket.label}
+                role="radio"
+                selected={answers.leisure_distance_bracket === bracket.value}
+                onPress={() => update({ leisure_distance_bracket: bracket.value })}
               />
-            </View>
-          </Depliage>
-        )}
+            ))}
+          </GroupeDeChoix>
+
+          {/* C3.6 — la seule tranche sans borne haute est aussi la seule qui demandait quelque
+              chose de plus : « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait
+              pour un tiers d'elle-même, sur un poste qui peut être dominant.
+
+              Le champ se rend **après** la rangée de puces et non sous celle qui l'ouvre, à
+              l'inverse des précisions de mode : les tranches sont un groupe qui revient à la
+              ligne, pas une liste d'éléments, donc il n'y a pas d'élément sous lequel se glisser
+              — et à quatre puces, le champ reste juste sous l'œil. */}
+          {answers.leisure_distance_bracket === '30_plus' && (
+            <Depliage suivieALOuverture>
+              <View ref={blocDeLaDistance} style={styles.distanceLibre}>
+                <IntituleDuChamp type="small" themeColor="textTertiary" marque={distanceMarquee}>
+                  Environ combien, pour un aller ?
+                </IntituleDuChamp>
+                <NumericField
+                  ref={cibleDeLaDistance}
+                  value={answers.leisure_distance_km}
+                  onChange={(value) => update({ leisure_distance_km: value })}
+                  unit="km"
+                  label="Distance d’un aller"
+                />
+              </View>
+            </Depliage>
+          )}
+        </ChoixOuvrant>
       </View>
       <MissingModeLink context="B2.2 mode loisirs" />
     </View>

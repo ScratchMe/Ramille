@@ -89,20 +89,49 @@ export function SansApparitionAuMontage({ children }: { children: ReactNode }) {
   return <AuMontage value={auMontage}>{children}</AuMontage>;
 }
 
-/** Vrai si ce qui monte maintenant doit s'animer : pas au montage de son écran, pas sous la préférence. */
-function useJoueAuMontage(): boolean {
+/**
+ * Vrai si ce qui monte maintenant monte **après** son écran — c'est-à-dire qu'un geste l'a fait
+ * apparaître —, et non avec lui.
+ *
+ * **Deux lectures, et elles ne se confondent plus** (29/09/2026, `v1-31` §2.7). « Monte après son
+ * écran » décide si un dépli s'annonce au défilement (`suivieALOuverture`) ; « joue » (`useJoue`) y
+ * ajoute la préférence et décide si la hauteur s'anime. Elles étaient une seule, `useJoueAuMontage`,
+ * donc un dépli sous « réduire les animations » ne savait plus qu'il venait d'un geste : son
+ * `onLayout` sortait tout de suite, et l'écran n'aurait pas pu remonter pour le montrer.
+ *
+ * Décidé une fois, au montage : ni rejoué à un nouveau rendu, ni ajouté à une vue déjà affichée. La
+ * référence du contexte se lit ici exprès — c'est son instant. Sans fournisseur, on ne sait pas si
+ * l'écran vient de monter : dans le doute, c'est « avec lui », et on pose.
+ */
+function useApresLeMontage(): boolean {
   const auMontage = useContext(AuMontage);
+  const [apres] = useState(() => !(auMontage?.current ?? true));
+  return apres;
+}
+
+/** Vrai si ce qui monte maintenant doit s'animer : après son écran, et pas sous la préférence. */
+function useJoue(): boolean {
+  const apres = useApresLeMontage();
   const reduit = useReducedMotion();
-  // Décidé une fois, au montage : l'animation ne doit ni rejouer à un nouveau rendu, ni s'ajouter à
-  // une vue déjà affichée. La référence du contexte se lit ici exprès — c'est son instant. Sans
-  // fournisseur, on ne sait pas si l'écran vient de monter : dans le doute, on pose.
-  const [joue] = useState(() => !reduit && !(auMontage?.current ?? true));
+  const [joue] = useState(() => apres && !reduit);
   return joue;
 }
 
+/**
+ * Ce qu'un dépli suivi annonce en s'ouvrant (`Depliage`, `suivieALOuverture`) : **sa place et sa
+ * hauteur finale**, pour qu'un écran qui défile puisse le montrer pendant qu'il s'ouvre — la zone
+ * du questionnaire remonte quand une précision passerait sous le pied (`v1-31` §4.7). `depli` est la
+ * vue qui grandit, mesurée par qui écoute ; `borne`, ce qui ne doit pas passer au-dessus du bord — le
+ * choix qui a ouvert le dépli —, quand quelqu'un sur le chemin l'a donnée.
+ */
+export type Ouverture = { depli: View; hauteur: number; borne?: View };
+
+/** Qui écoute les ouvertures suivies. Sans fournisseur, un dépli suivi n'annonce rien. */
+export const SuiviDesOuvertures = createContext<((ouverture: Ouverture) => void) | null>(null);
+
 /** Une vue qui apparaît en fondu (`Mouvement.fondu`) quand elle monte après son écran. */
 export function Apparition({ style, ...props }: ComponentProps<typeof Animated.View>) {
-  const joue = useJoueAuMontage();
+  const joue = useJoue();
   return (
     <Animated.View
       style={[style, joue && { animationName: FONDU, animationDuration: Mouvement.fondu, animationTimingFunction: courbeCSS }]}
@@ -119,18 +148,43 @@ export function Apparition({ style, ...props }: ComponentProps<typeof Animated.V
  *
  * `style` s'applique au contenu, à l'intérieur de ce qui se mesure : une marge y compte dans la
  * hauteur dépliée, au lieu d'apparaître d'un coup au-dessus.
+ *
+ * **`suivieALOuverture`** (29/09/2026, `v1-31` §2.2) : au premier `onLayout` d'une ouverture qui
+ * monte après son écran, le dépli annonce sa place et sa hauteur finale à qui écoute
+ * (`SuiviDesOuvertures`) — **même sous la préférence**, où il ne s'anime pas mais doit encore être
+ * montré. Un dépli sans elle n'annonce rien : « Voir les autres modes » en ouvre un, et son premier
+ * mode révélé est à la place du lien, donc déjà en vue.
  */
-export function Depliage({ style, children }: { style?: StyleProp<ViewStyle>; children: ReactNode }) {
-  const joue = useJoueAuMontage();
+export function Depliage({
+  style,
+  children,
+  suivieALOuverture = false,
+}: {
+  style?: StyleProp<ViewStyle>;
+  children: ReactNode;
+  suivieALOuverture?: boolean;
+}) {
+  const apres = useApresLeMontage();
+  const joue = useJoue();
+  const annoncer = useContext(SuiviDesOuvertures);
   // −1 : hauteur libre. Au départ d'une ouverture, 0.
   const hauteur = useSharedValue(joue ? 0 : -1);
   const opacite = useSharedValue(joue ? 0 : 1);
   const lancee = useRef(false);
+  const annoncee = useRef(false);
+  const mesure = useRef<View>(null);
 
   const mesurer = (evenement: LayoutChangeEvent) => {
+    const cible = evenement.nativeEvent.layout.height;
+    if (suivieALOuverture && apres && !annoncee.current && mesure.current !== null) {
+      annoncee.current = true;
+      // Ce qui se montre est le contenu, pas la marge qui le sépare de ce qui suit : une boîte doit
+      // finir 16 au-dessus du pied, et sa marge basse est dans le dépli pour s'ouvrir avec lui.
+      const margeBasse = StyleSheet.flatten(style)?.marginBottom;
+      annoncer?.({ depli: mesure.current, hauteur: cible - (typeof margeBasse === 'number' ? margeBasse : 0) });
+    }
     if (!joue || lancee.current) return;
     lancee.current = true;
-    const cible = evenement.nativeEvent.layout.height;
     opacite.set(withTiming(1, reglage(Mouvement.fondu)));
     hauteur.set(
       withTiming(cible, reglage(Mouvement.entree), () => {
@@ -145,7 +199,7 @@ export function Depliage({ style, children }: { style?: StyleProp<ViewStyle>; ch
 
   return (
     <Animated.View style={styleAnime}>
-      <View onLayout={mesurer}>
+      <View ref={mesure} onLayout={mesurer}>
         <View style={style}>{children}</View>
       </View>
     </Animated.View>

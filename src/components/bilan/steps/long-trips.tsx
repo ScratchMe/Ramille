@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
+import { ChoixOuvrant } from '@/components/bilan/choix-ouvrant';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
@@ -158,8 +159,9 @@ export function LongTripsStep({
             celles d'un mode : elles dépendent d'un **compte** non nul, pas d'une option — il n'y
             a pas de puce sous laquelle les ranger. La série et sa boîte sont enveloppées ensemble,
             pour que la boîte s'ouvre à 8 sous les puces comme sous un mode, et non à l'écart de
-            l'intitulé. */}
-        <View>
+            l'intitulé — et le haut de la série est la borne que l'écran ne fait pas passer au-dessus du
+            bord quand il remonte pour montrer la boîte (`ChoixOuvrant`). */}
+        <ChoixOuvrant>
           <GroupeDeChoix question={nomDeLaSerie(EN_VOITURE)} style={styles.chipsWrap}>
             {COUNT_CHOICES.map((n) => (
               <Chip
@@ -205,7 +207,7 @@ export function LongTripsStep({
               />
             </BoiteDePrecision>
           )}
-        </View>
+        </ChoixOuvrant>
       </View>
 
       {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10) : une phrase adressée à

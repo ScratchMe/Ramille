@@ -21,6 +21,11 @@ import { Depliage } from '@/lib/mouvement';
  * `radiogroup`, nommé par sa question, et la boîte les pose dans le groupe du choix qu'elle précise —
  * jamais un groupe fusionné. Le parcours réel vérifie qu'aucun groupe n'en coche deux.
  *
+ * **Elle est suivie à l'ouverture** (`v1-31` §4.7) : posée dans un `ChoixOuvrant`, elle annonce sa
+ * hauteur finale, et si elle passerait sous le pied, l'écran remonte juste assez pour qu'elle finisse
+ * 16 au-dessus de lui — pendant qu'elle s'ouvre, sans jamais faire passer le choix au-dessus du bord.
+ * Le focus ne bouge pas : il reste sur le choix qu'on vient de toucher.
+ *
  * La géométrie est celle du handoff : 8 sous le choix, un retrait de 16, 12 de marge intérieure — pour
  * que cinq puces de 48 tiennent sur une rangée à 360, à 0 px près —, 16 entre deux groupes, et 8
  * sous la boîte. Les deux marges sont **dans** le dépli : elles comptent dans la hauteur qui s'ouvre,
@@ -28,7 +33,7 @@ import { Depliage } from '@/lib/mouvement';
  */
 export function BoiteDePrecision({ children }: { children: ReactNode }) {
   return (
-    <Depliage style={styles.depli}>
+    <Depliage style={styles.depli} suivieALOuverture>
       <ThemedView type="backgroundElement" style={styles.boite}>
         {children}
       </ThemedView>

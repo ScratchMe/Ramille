@@ -25,7 +25,9 @@ import { optionCible } from '@/types/demande';
 //
 // Le défilement automatique aurait été un pansement : il ne dit rien au retour sur l'étape,
 // quand la sélection est déjà faite. Sous l'élément, la question est là où l'œil vient de se
-// poser — et « Voiture (seul) » est le premier de la liste.
+// poser — et « Voiture (seul) » est le premier de la liste. **Depuis `v1-31`, l'écran remonte
+// aussi quand elle s'ouvrirait sous le pied** (`BoiteDePrecision`) : en plus de la placer ici,
+// jamais à la place.
 //
 // **Les réponses sont des rangées, pas des puces** (retour d'appareil du 07/09/2026). En
 // puces, deux défauts se cumulaient :

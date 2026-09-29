@@ -308,8 +308,15 @@ export default function BilanQuestionnaire() {
   // personne vient de choisir, `normaliserReponses` efface ce que ce choix rend impossible.
   // Les écrans ne tiennent plus de liste de remises à zéro — ils en tenaient trois, qui
   // divergeaient déjà (audit A2-17).
+  //
+  // C'est aussi le seul chemin des gestes : le préremplissage et la relecture d'un brouillon passent
+  // par `setAnswers`, jamais par ici. D'où `reponsesDonnees`, que `StepShell` lit pour ne suivre une
+  // ouverture — une précision qui s'ouvre, que l'écran remonte pour montrer — que si elle suit une
+  // réponse de la personne (`v1-31` §2.7).
+  const [reponsesDonnees, setReponsesDonnees] = useState(0);
   const update = (patch: Partial<BilanAnswers>) => {
     reponseModifiee.current = true;
+    setReponsesDonnees((n) => n + 1);
     setAnswers((prev) => normaliserReponses({ ...prev, ...patch }));
   };
 
@@ -645,6 +652,7 @@ export default function BilanQuestionnaire() {
       step={stepNumber}
       total={total}
       entree={{ cle: step, sens }}
+      reponsesDonnees={reponsesDonnees}
       motDeRamille={motDeRamille}
       // Rendu à chaque passage, jamais mémoïsé : `router.canGoBack()` n'est pas réactif. Sans
       // `onBack`, `StepShell` n'affiche pas de bouton — c'est ce qu'il faut au premier pas du
