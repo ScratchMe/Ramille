@@ -1025,3 +1025,27 @@ Les règles, chacune payée pendant l'écriture :
    retombe pas en changeant d'étape » qui l'a montré, en ne le faisant pas tomber (29/09/2026).
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.
+
+### 2.15 Les migrations livrées, comparées à `main` à chaque PR
+
+**Une migration livrée ne se modifie pas, et jusqu'au 29/09/2026 seul un hook de Claude Code le
+rappelait** — à Edit et à Write, et à eux seuls (`v1-27` §12.18). pgTAP ne pouvait rien y voir : il
+reconstruit la base depuis les fichiers, donc un fichier livré réécrit y passe au vert, et c'est le
+jour d'une restauration qu'on découvre que le fichier ne décrit plus ce que la base a vécu.
+
+`scripts/verifier-migrations-livrees.mjs`, dans le travail `checks`, compare la copie de travail à
+la **base de fusion** avec `origin/main` et refuse toute migration qui y existait et qui est
+modifiée, supprimée ou renommée. Trois choses à savoir avant d'y toucher :
+
+- **la base de fusion, pas la pointe** : une migration livrée sur `main` après le départ de la
+  branche se lirait sinon « supprimée » par elle. Sur une PR, `HEAD` est la fusion que GitHub
+  prépare, donc la base de fusion est la pointe de `main` qu'elle fusionne ; sur un push sur `main`,
+  il n'y a rien à comparer, et la sortie le dit ;
+- **`fetch-depth: 0` sur le `checkout` de `checks`**, sans quoi `origin/main` n'existe pas — et la
+  garde sort alors en 1, jamais en 0 : on ne sait plus ce qui est livré ;
+- **l'exception est une retouche, pas un fichier** : `supabase/retouches-de-migrations-livrees.json`
+  porte l'empreinte du contenu accepté, donc la retouche suivante rougit. Le chemin complet, et qui
+  la décide : `SUPABASE.md` §2.3.
+
+Le test (`scripts/verifier-migrations-livrees.test.ts`) joue le script dans de vrais dépôts git
+jetables, commit de fusion d'une PR compris ; neuf mutations datées en tête.

@@ -267,8 +267,9 @@ joué sans être installé, et chacun décidé avec la personne qui pilote, comm
   confirmation ») : les retirer ferait confirmer chaque migration, qui passe déjà par une PR relue.
 - **Un hook refuse de modifier une migration livrée** (`scripts/proteger-les-migrations-livrees.mjs`) :
   « livrée » veut dire présente dans `origin/main`, pas sur le disque, parce qu'une migration en
-  cours s'écrit en plusieurs retouches. Il ne voit ni le shell ni une autre session :
-  `SUPABASE.md` §2.3.
+  cours s'écrit en plusieurs retouches. Il ne voit ni le shell ni une autre session — **la CI, si,
+  depuis le 29/09/2026** (`scripts/verifier-migrations-livrees.mjs`), et une retouche voulue
+  s'inscrit dans un journal avec l'empreinte de son contenu : `SUPABASE.md` §2.3.
 - **Le sous-agent `contre-lecture`** porte la grille de la relecture adversariale (plus haut). Sa
   « lecture seule » est une consigne et non une garde : il a Bash, et la première contre-lecture a
   supprimé `/dev/null` du conteneur par une commande de vérification mal écrite.
