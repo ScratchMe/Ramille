@@ -316,8 +316,9 @@ les 68 aperçus, la sentinelle de nouveau, puis `_ds_sync.json` seul.
   l'image porte toujours le 1194.
 - **`props-check.py` a vu toute la dette de v1-31, et elle était large** : `StepShell` exige
   désormais `entree` et `reponsesDonnees`, `manque` est un objet `{ champ, phrase }` et non plus
-  une phrase, `Button` gagne `enAttente`, et les groupes (`GroupeDeChoix`, `PrecisionMode`,
-  `PrecisionChiffres`) portent `champ`. Treize aperçus réécrits, deux créés, 0 écart à la fin.
+  une phrase, `Button` gagne `enAttente`, et les précisions (`PrecisionMode`, `PrecisionChiffres`)
+  portent `champ` — **pas `GroupeDeChoix`**, que la première version de cette note nommait aussi,
+  à tort. Treize aperçus réécrits, deux créés, 0 écart à la fin.
 - **L'état « demande » ne se rend qu'au toucher, donc un aperçu doit toucher.** La ligne « Il
   manque encore … » et l'intitulé marqué n'existent jamais d'office (c'est la règle de v1-31) :
   `StepShell.tsx` et `CommuteModeStep.tsx` portent un petit `ApresLeToucher` qui clique
@@ -327,22 +328,28 @@ les 68 aperçus, la sentinelle de nouveau, puis `_ds_sync.json` seul.
   « 6+ » passe à la ligne parce que le cadre d'aperçu ajoute sa marge à celle de la coquille ; dans
   `CommuteExtraStep` / `DansLeQuestionnaire`, « Dis-le-nous » se coupe à son trait d'union à cette
   largeur, comme dans l'app.
-- **L'en-tête de conventions a dérivé, et n'a pas été réécrit** (règle du skill : il appartient à
-  ses auteurs). Tous ses noms existent dans le build ; ce sont trois phrases que v1-31 a rendues
-  fausses. Proposition, à appliquer puis à reconstruire par le pilote :
-  - « `manque` reçoit un fragment (« ton mode de transport »), le composant écrit « Il manque
-    encore … ». » → « `manque` reçoit `{ champ, phrase }` (`manqueDeLEtape`), `entree` et
-    `reponsesDonnees` sont obligatoires. Rien ne s'écrit d'office : au toucher de « Suivant », la
-    coquille mène au champ, marque son intitulé et écrit « Il manque encore {phrase}. ». »
-  - « **Désactivé = fond élément + texte tertiaire**, jamais une opacité — et le libellé ne change
-    pas : ce qui manque se dit à côté. » → « Le « Suivant » d'une étape incomplète est **en
-    attente** (`enAttente`) : l'apparence du désactivé (fond élément, texte tertiaire, jamais une
-    opacité), mais un bouton qui agit. `disabled` reste à ce qui n'agit vraiment pas (le « C'est
-    noté » d'une intention incomplète). Le libellé ne change jamais. »
-  - « … s'ouvre **juste sous l'item choisi**, à un seul niveau » → « … s'ouvre juste sous l'item
-    choisi, **dans une `BoiteDePrecision`**, à un seul niveau ».
-  - Et la ligne du 28/09, toujours en attente : le mouvement a ses jetons (`tokens/mouvement.css`),
-    et sous « réduire les animations » rien ne bouge.
+- **L'en-tête de conventions avait dérivé, et il est corrigé sur décision** (29/09/2026, la
+  personne qui pilote : « ok, ajoute-le à cette PR »). La synchro ne le réécrit jamais seule — il
+  appartient à ses auteurs, et c'est ce que l'agent de design lit en premier. Tous ses noms
+  existaient encore ; trois phrases étaient fausses depuis v1-31 : `manque` décrit comme une
+  phrase, le « Suivant » d'une étape incomplète décrit comme désactivé, la précision sans sa
+  boîte. S'y ajoute la ligne du mouvement, proposée le 28/09 (les jetons `--motion-*` de
+  `tokens/mouvement.css`, qui valent zéro sous « réduire les animations »).
+  **La validation contre le build a retiré deux noms de la proposition avant de l'écrire** :
+  `manqueDeLEtape` (une fonction de l'app, citée dans l'exemple de `StepShell.prompt.md`, absente
+  du bundle — l'agent ne pourrait pas l'appeler) et le `champ` de `GroupeDeChoix` (inexistant).
+  C'est exactement le cas que la règle du skill vise : un en-tête qui nomme ce qui n'existe pas
+  est pire que pas d'en-tête.
+- **Le second envoi n'a porté que deux fichiers, et c'est prouvé octet par octet.** Le pilote
+  rejoué après l'en-tête a rendu un bundle dont seuls `README.md` et `_ds_sync.json` différaient
+  (empreintes `sha256` de tout `ds-bundle/` avant et après) de ce qui venait d'être téléversé, et
+  l'ancre distante relue avant le plan était bien celle du premier envoi (même `bundleSha12`, même
+  `styleSha`, seul `auxSha` changeait). D'où sentinelle, `README.md`, sentinelle, `_ds_sync.json`
+  — sous un plan aux écritures complètes, comme le veut le skill. Le README distant relu ensuite
+  porte le nouvel en-tête. **Il a fallu deux passes** : la relecture du diff a trouvé que la ligne
+  du mouvement disait « ils valent zéro » des jetons, alors que seules les **durées** passent à
+  zéro sous « réduire les animations » (la courbe et le déplacement restent). Même geste une
+  seconde fois, même preuve octet par octet, README distant relu.
 
 ## Risques de resynchronisation
 
@@ -372,6 +379,11 @@ les 68 aperçus, la sentinelle de nouveau, puis `_ds_sync.json` seul.
   `python3 .design-sync/props-check.py` et relire
   les feuilles des composants touchés (`--spot-check-components`), sans quoi les aperçus
   enseignent l'ancienne API à l'agent de design (relevé du 26/09/2026 ci-dessus).
+- **Et l'en-tête de conventions se périme de la même façon, sans qu'aucun contrôle le voie** : la
+  validation du skill vérifie que ses **noms** existent, pas que ses **phrases** sont vraies. Après
+  une vague qui change le comportement d'un composant qu'il décrit (`StepShell`, `Button`, les
+  précisions), relire `conventions.md` contre les `.d.ts` et les `.prompt.md` du build — v1-31 en
+  avait rendu trois phrases fausses, tous noms intacts (relevé du 29/09/2026 ci-dessus).
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
   Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
   bout, et un nouveau téléversement coûte peu.
