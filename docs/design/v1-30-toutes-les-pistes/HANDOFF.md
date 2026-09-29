@@ -323,8 +323,9 @@ plus souvent.
 - **Le parcours réel** (`scripts/verifier-parcours-reel.mjs`) ne fait qu'aller sur l'écran des pistes
   et en revenir : il ne devrait pas bouger, mais une étape qui choisit depuis la liste y a sa place —
   c'est le seul chemin d'engagement que rien ne joue contre une vraie stack.
-- **Les renvois** — tant que le document d'implémentation n'est pas écrit, les cinq décisions ne
-  vivent qu'ici ; `v1-13` §14.7 et `docs/architecture/produit.md` y renverront quand il le sera.
+- **Les renvois** — `v1-13` §14.7, `docs/architecture/produit.md` et un bandeau en tête de `v1-16` §5
+  renvoient ici depuis la PR du canvas ; le document d'implémentation reprendra les cinq décisions et
+  ces trois renvois pointeront vers lui.
 
 ## Écarts
 

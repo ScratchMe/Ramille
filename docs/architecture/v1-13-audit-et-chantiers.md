@@ -2487,7 +2487,7 @@ fois que le premier parcours est vu tourner, et il tourne.
 
 | | Constat | Ce que c'est | Suite |
 |---|---|---|---|
-| 14.7 | « Toutes les pistes » — quatre écarts à la planche A2, et deux questions de design | **Trouvé à l'œil, pas par la feuille** : le bloc 06 est revenu conforme sur ses six lignes. §14.7 | [#234](https://github.com/ScratchMe/Ramille/issues/234) réparations, [#235](https://github.com/ScratchMe/Ramille/issues/235) brief de design |
+| 14.7 | « Toutes les pistes » — quatre écarts à la planche A2, et deux questions de design | **Trouvé à l'œil, pas par la feuille** : le bloc 06 est revenu conforme sur ses six lignes. §14.7 | [#234](https://github.com/ScratchMe/Ramille/issues/234) réparations, [#235](https://github.com/ScratchMe/Ramille/issues/235) brief de design — son canvas du 28/09/2026 : [ScratchMe/Ramille#292](https://github.com/ScratchMe/Ramille/pull/292) |
 | 14.1 | 00.2 — version attendue `79ca698`, vue `77f1663` | **Feuille périmée**, et la ligne le prévoyait. `79ca698` est bien un ancêtre de `77f1663` (vérifié) : le site est en avance sur la feuille, pas en retard | La ligne ne fige plus de valeur. Et c'est une **bonne nouvelle collatérale** : le site servi à `77f1663` est la preuve du déploiement Vercel qu'on cherchait à constater le matin même |
 | 14.2 | 01.1 — il est écrit qu'on peut commencer sans compte, pas ce qu'on y perd | **Feuille fautive** : elle attendait une phrase que le produit n'a jamais portée. Et le jugement de la séance est qu'elle n'a pas à y être — à cette étape, « ce qu'on perd » ne veut encore rien dire pour quelqu'un qui n'a pas vu son bilan | Corriger la feuille |
 | 14.3 | 03.1 — l'écran de création de compte s'intercale avant le plan | **Conforme au produit**, feuille fautive : c'est la transition imposée de `/connexion` (`resultat_transition`), un choix daté. Mais la question posée par la séance — *est-ce le bon moment ?* — est légitime et n'a jamais été rejouée depuis que le premier parcours existe | Corriger la feuille ; **question de produit** ouverte |
@@ -2593,6 +2593,20 @@ précisément pour **présenter pendant que le plan insiste** (`v1-17` §2), la 
 seul intérêt : le balayage la supprimerait. S'y ajoutent une décision prise une fois par saison et
 non un flux à trier, et une accessibilité qui demanderait de toute façon un chemin non gestuel en
 parallèle.
+
+**Le brief de design a sa réponse depuis le 28/09/2026** : le canvas
+[`docs/design/v1-30-toutes-les-pistes/`](../design/v1-30-toutes-les-pistes/README.md), apporté par
+[ScratchMe/Ramille#292](https://github.com/ScratchMe/Ramille/pull/292). La séance a tranché cinq
+questions de produit, une à une, avec la personne qui pilote. **On compare sur la liste** : la ligne
+porte le titre en 16 px et le gain dessous, « Choisir » devient une pastille bordée qui ouvre la
+carte directement sur l'intention, et un seul choix est en cours à la fois — ce qui remplace
+l'ouverture de plusieurs cartes de `v1-16` §5 et retire « Réduire ». **L'ordre de la liste ne bouge
+pas** quand on s'engage. **Les pistes restent groupées par poste.** **L'écran reste dès trois
+pistes.** **La pastille dit « Choisir à la place »** quand une action est engagée. Les deux questions
+de design ci-dessus y sont répondues : la taille du titre, et le cadre qui fait de « Choisir » un
+bouton. **Ce qui reste** : le document d'implémentation, à écrire sous un autre numéro que `v1-30`,
+que porte déjà `v1-30-les-transitions.md`. D'ici là, l'écran en production reste celui de la
+réparation ([#238](https://github.com/ScratchMe/Ramille/pull/238)), dessiné en planche A0 du canvas.
 
 ## 15. Ce que la recette web du 28/09/2026 a trouvé
 

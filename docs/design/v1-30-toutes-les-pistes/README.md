@@ -7,6 +7,12 @@ Sources du canvas livré le 28/09/2026 par la session de design, en réponse à 
 [`v1-30-les-transitions.md`](../../architecture/v1-30-les-transitions.md) porte déjà ; ce README dit ce
 qu'il y a dans le dossier et ce qui a été retenu.
 
+Artifact : https://claude.ai/artifact/9BonUxxdvRzJvnKp6H7ZVW — une copie autonome de `Canvas.dc.html`,
+publiée le 29/09/2026 : les polices y sont embarquées, et si le moteur du canvas ne démarre pas chez
+l'hébergeur, une version figée prend sa place (tout y est, les deux thèmes se basculent, seul le
+prototype de A1 ne réagit plus). Il est privé tant qu'il n'est pas partagé depuis son menu. **Le
+canvas du dossier reste la référence** : l'artefact se republie s'il change.
+
 Le livrable est conservé tel quel : `HANDOFF.md` (planche par planche, copy définitive, les écarts,
 les réponses aux questions du brief, où ça se touche, les données relevées), `Canvas.dc.html` (le
 canvas, qui référence `support.js` et les polices du kit), `support.js` (le runtime des `.dc.html`)
