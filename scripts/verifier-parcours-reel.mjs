@@ -320,9 +320,17 @@
 //   | PR7 — pas de focus à la question sur le plan | « engagement » : « après « Je m'y engage », sur le plan, le focus est sur « Ramille… » » — le document, en pratique |
 //   | PR8 — `Button` ne transmet pas sa `ref` | la même étape : « après « Annuler », sur le plan, le focus est sur « Ramille… » » |
 //
-// Ce qu'aucune ne voit : le délai du focus sur la liste (`Mouvement.entree`, `ActionCommitment`). Le
-// navigateur accepte le focus sur une question découpée, donc un focus posé au montage passerait
-// vert ici ; c'est pour TalkBack qu'il attend, et TalkBack se juge au doigt (`v1-13` §11.24).
+// **Et une sixième le lendemain de la contre-lecture**, qui avait fait attendre le focus de la liste
+// la fin de l'entrée de la carte — contre la règle du mouvement, « le focus part au geste, jamais à
+// la fin d'une animation » (`FRONT.md` §2.12). Le délai retiré, la lecture du focus se fait tout de
+// suite, et c'est elle qui le garde :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PR9 — le focus de la liste attend `Mouvement.entree` (le code du 29/09/2026 au soir) | « pistes — choisir depuis la liste, à la place » : « après « Choisir à la place », le focus est sur « Ramille… » et non sur la question — au geste, pas à la fin de l'entrée » |
+//
+// Ce qu'aucune ne voit : TalkBack. Au geste, la question est encore découpée et transparente ; le
+// navigateur accepte d'y poser le focus, et qu'Android l'accepte se juge au doigt (`v1-13` §11.24).
 //
 // **PR2 est d'abord PASSÉE**, et c'est elle qui a changé la garde. La première version vérifiait que
 // le titre ne passe jamais sous la bande et que « C'est noté » finit dans la fenêtre — pas que l'écran
@@ -582,7 +590,8 @@ async function barreVisible() {
  */
 /**
  * **Le focus a atteint l'élément dont le texte est `attendu`** — attendu, et non lu tout de suite :
- * sur la liste, il ne part qu'une fois la carte grandie (`Mouvement.entree`, `ActionCommitment`).
+ * l'effet qui le pose part après le rendu du geste. Là où c'est le délai lui-même qu'on garde (le
+ * focus au geste, jamais à la fin d'une animation), on lit tout de suite, sans cette aide.
  */
 async function focusSur(attendu, ou) {
   try {
@@ -1421,7 +1430,13 @@ try {
   );
   await aLaPlace.click();
   await attendreTexte('Quand ?');
-  await focusSur('Quand ?', 'après « Choisir à la place »');
+  // **Au geste, lu tout de suite** (`FRONT.md` §2.12) : la carte grandit encore, et le focus doit déjà
+  // être sur la question. Un focus qui attendrait la fin de l'entrée serait en retard sur l'annonce.
+  const focusSurLaQuestion = await page.evaluate(() => (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim());
+  assurer(
+    focusSurLaQuestion === 'Quand ?',
+    `après « Choisir à la place », le focus est sur « ${focusSurLaQuestion.slice(0, 60)} » et non sur la question — au geste, pas à la fin de l’entrée`
+  );
   assurer((await page.getByRole('button', { name: 'Je m’y engage', exact: true }).count()) === 0, '« Je m’y engage » est encore sur le chemin de la liste');
   // **Jamais estompée sur la liste** (planche B3) : une autre action est engagée, mais la carte ouverte
   // est celle qu'on est en train de choisir. Son cadre garde le filet `border` — celui des rangées —

@@ -452,7 +452,8 @@ choisir**. Cinq décisions de produit y sont prises une à une avec la personne 
 - « Choisir à la place » sur la pastille quand une action est engagée.
 
 **Et l'écran est livré depuis le 29/09/2026**, selon son plan d'implémentation
-[`v1-32-toutes-les-pistes.md`](v1-32-toutes-les-pistes.md) : chaque ligne porte son titre et son gain
+[`v1-32-toutes-les-pistes.md`](v1-32-toutes-les-pistes.md), PR
+[#295](https://github.com/ScratchMe/Ramille/pull/295) : chaque ligne porte son titre et son gain
 « par an », « Choisir » est une pastille bordée qui ouvre la carte sur la question, une seule à la
 fois, et la liste garde l'ordre du rang, l'action engagée marquée à sa place. Ce qui reste à juger au
 doigt est la ligne 11.24 de `v1-13` ; les écarts au canvas sont au README de son dossier.

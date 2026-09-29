@@ -280,6 +280,19 @@ retouche du `.md`**, puisque c'est lui la source. Sa base garde la séance du 18
 constats vivent en `v1-13` §14 — tant qu'on n'a pas touché « Tout effacer » : l'en-tête de la page
 le dit.
 
+**Refaite le 29/09/2026 sur les trois artefacts, après la livraison de `v1-32`**, et deux choses à
+savoir pour la prochaine fois :
+- **les deux formes de ligne coexistent** : `{ ref, faire, attendre }` dans l'artefact du premier
+  parcours, `["ref", "faire", "attendre"]` dans les deux autres — une comparaison qui n'en lit
+  qu'une compte l'autre artefact comme vide. Et une fois les blancs, les balises et les guillemets
+  normalisés, il reste des différences qui n'en sont pas : l'italique `*…*` du `.md` devant un `<em>`,
+  un lien Markdown devant un numéro nu. Relire chaque écart restant, ne pas viser zéro ;
+- **un artefact se republie depuis sa version en ligne**, lue en entier dans la session qui publie.
+  Le fichier sauvé par une session précédente ne compte pas : la publication est refusée, rend la
+  version en ligne, et ne passe qu'une fois les modifications posées dessus.
+- **Et on ne republie qu'une fois la fusion déployée** : l'artefact décrit la production, et
+  l'annoncer avant qu'elle ne le serve ferait chercher à la séance un écran qui n'est pas encore là.
+
 **Et « Tout effacer » n'efface rien** (relevé le 27/09/2026 en régénérant les deux artefacts) : il
 passe par `window.confirm()`, que la visionneuse des artefacts refuse toujours. C'est ce qui protège
 aujourd'hui la séance du 18/09 dans sa base — mais l'en-tête dit « Effacer avant de rejouer », ce
