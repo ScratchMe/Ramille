@@ -807,7 +807,7 @@ suivre sont celles du handoff.
 | 4.4 | Ce qui manque, nommé par son champ | fait, 29/09/2026 : `ChampDuBilan`, `CHAMPS_DE_L_ETAPE`, `QUESTION_PRINCIPALE`, `seMarque` ; quatre mutations consignées dans `bilan.test.ts` |
 | 4.1 | L'ordre et les familles, section H | fait, 29/09/2026 : `MODES_PAR_FAMILLE`, `FAMILLE_DU_MODE`, `enFamilles` et leur test ; section H lit le premier révélé dans la source, H2 rejouée |
 | 4.2 | Les rangées de 48 et les écarts | fait, 29/09/2026 : mesuré sur l'export à 390 × 844 et 360 × 800, titre 82 → 178, liste 194 → 682, rangées de 48, écarts 4 et 16, lien 690 → 738 — les valeurs du handoff (A1, B1) au pixel |
-| 4.3 | La boîte de précision | à faire |
+| 4.3 | La boîte de précision | fait, 29/09/2026 : `BoiteDePrecision` porte le dépli et la boîte ; quatre familles de boîtes à deux groupes. Mesuré : covoiturage 302 → 650 à 390 comme à 360, les cinq puces sur une rangée à 360 ; train 470 → 674 (A2, B2, A5) |
 | 4.5 | Le « Suivant » en attente, `handleNext`, `suivant()` | à faire |
 | 4.6 | La demande : ligne, marque, focus, ancres | à faire |
 | 4.7 | Les deux défilements, `Depliage` | à faire |

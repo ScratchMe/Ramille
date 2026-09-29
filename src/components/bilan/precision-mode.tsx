@@ -1,15 +1,18 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 
 // Question de précision attachée au mode qui la déclenche — motorisation d'une voiture, type de
 // deux-roues, et depuis C4.4 type de train et type de vélo. La liste ne s'écrit pas ici : ce
 // composant ne connaît qu'une question et des options, et c'est l'écran qui décide sous quel mode
 // il l'ouvre.
+//
+// **Il ne dessine plus de boîte** (29/09/2026, `v1-31` §2.2) : il est un intitulé et son groupe, et
+// c'est `BoiteDePrecision` qui porte la boîte et le dépli — une seule boîte quand un choix ouvre deux
+// précisions, et une seule façon de la dessiner.
 //
 // **Elle se rend juste sous l'élément sélectionné, à l'intérieur de la liste**, et c'est la
 // première raison d'être de ce composant. Elle vivait auparavant après la liste entière : sur
@@ -58,7 +61,7 @@ export function PrecisionMode<T extends string | number>({
   onChange: (valeur: T) => void;
 }) {
   return (
-    <ThemedView type="backgroundElement" style={styles.boite}>
+    <View style={styles.precision}>
       <ThemedText type="small" themeColor="textSecondary">
         {question}
       </ThemedText>
@@ -73,19 +76,12 @@ export function PrecisionMode<T extends string | number>({
           />
         ))}
       </GroupeDeChoix>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Léger retrait à gauche : la boîte se lit comme rattachée à l'élément du dessus, pas
-  // comme un bloc de plus dans la liste.
-  boite: {
-    borderRadius: Radius.field,
-    padding: Spacing.three,
-    gap: Spacing.two,
-    marginLeft: Spacing.three,
-  },
+  precision: { gap: Spacing.two },
   // 4 entre deux réponses, comme entre deux modes d'une famille (`v1-31` écart 2).
   reponses: { gap: Spacing.one },
 });

@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
@@ -10,7 +11,6 @@ import { HYPOTHESES } from '@/constants/methodologie';
 import { Radius, Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
 import { formatKm } from '@/lib/format';
-import { Depliage } from '@/lib/mouvement';
 import { OCCUPATIONS_LONG_TRAJET, type BilanAnswers } from '@/types/bilan';
 
 // Même plage que les vols (`flights.tsx`, `TOTAL_CHOICES`) : l'écart à la spec §5 était que
@@ -156,51 +156,54 @@ export function LongTripsStep({
         </ThemedText>
         {/* Les deux précisions de la voiture suivent le groupe sans y entrer, à la différence de
             celles d'un mode : elles dépendent d'un **compte** non nul, pas d'une option — il n'y
-            a pas de puce sous laquelle les ranger. */}
-        <GroupeDeChoix question={nomDeLaSerie(EN_VOITURE)} style={styles.chipsWrap}>
-          {COUNT_CHOICES.map((n) => (
-            <Chip
-              key={n}
-              label={n === MAX_TRAJETS ? `${MAX_TRAJETS}+` : String(n)}
-              accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
-              role="radio"
-              selected={answers.car_long_trips_per_year === n}
-              onPress={() =>
-                update({ car_long_trips_per_year: n, car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null })
-              }
-              radius={Radius.chip}
-            />
-          ))}
-        </GroupeDeChoix>
+            a pas de puce sous laquelle les ranger. La série et sa boîte sont enveloppées ensemble,
+            pour que la boîte s'ouvre à 8 sous les puces comme sous un mode, et non à l'écart de
+            l'intitulé. */}
+        <View>
+          <GroupeDeChoix question={nomDeLaSerie(EN_VOITURE)} style={styles.chipsWrap}>
+            {COUNT_CHOICES.map((n) => (
+              <Chip
+                key={n}
+                label={n === MAX_TRAJETS ? `${MAX_TRAJETS}+` : String(n)}
+                accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
+                role="radio"
+                selected={answers.car_long_trips_per_year === n}
+                onPress={() =>
+                  update({
+                    car_long_trips_per_year: n,
+                    car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null,
+                  })
+                }
+                radius={Radius.chip}
+              />
+            ))}
+          </GroupeDeChoix>
 
-        {/* La précision s'ouvre sous les puces qui la déclenchent — cf.
-            `precision-mode.tsx`. */}
-        {answers.car_long_trips_per_year > 0 && (
-          <Depliage style={styles.precision}>
-            <PrecisionMode
-              question="Quelle motorisation ?"
-              options={CAR_ENGINE_OPTIONS}
-              valeur={answers.car_long_trips_engine}
-              onChange={(value) => update({ car_long_trips_engine: value })}
-            />
-          </Depliage>
-        )}
+          {/* La précision s'ouvre sous les puces qui la déclenchent — cf. `precision-mode.tsx`.
+              **Une seule boîte pour les deux** (`v1-31` §2.2) : elles décrivent la même voiture.
 
-        {/* C3.5 — le calcul supposait « seul » sur 700 km, sans jamais le demander, alors que
-            c'est le trajet qu'on partage le plus : partir à trois divise l'empreinte par
-            trois. La question suit la motorisation parce qu'elle décrit la même voiture, et
-            elle apparaît sous la même condition — déclarer des longs trajets en voiture, c'est
-            en déclarer deux choses. */}
-        {answers.car_long_trips_per_year > 0 && (
-          <Depliage style={styles.precision}>
-            <PrecisionChiffres
-              question="Vous êtes combien dans la voiture ?"
-              options={OPTIONS_OCCUPATION}
-              valeur={answers.car_long_trips_occupancy}
-              onChange={(value) => update({ car_long_trips_occupancy: value })}
-            />
-          </Depliage>
-        )}
+              C3.5 — le calcul supposait « seul » sur 700 km, sans jamais le demander, alors que
+              c'est le trajet qu'on partage le plus : partir à trois divise l'empreinte par trois.
+              La question suit la motorisation parce qu'elle décrit la même voiture, et elle apparaît
+              sous la même condition — déclarer des longs trajets en voiture, c'est en déclarer deux
+              choses. */}
+          {answers.car_long_trips_per_year > 0 && (
+            <BoiteDePrecision>
+              <PrecisionMode
+                question="Quelle motorisation ?"
+                options={CAR_ENGINE_OPTIONS}
+                valeur={answers.car_long_trips_engine}
+                onChange={(value) => update({ car_long_trips_engine: value })}
+              />
+              <PrecisionChiffres
+                question="Vous êtes combien dans la voiture ?"
+                options={OPTIONS_OCCUPATION}
+                valeur={answers.car_long_trips_occupancy}
+                onChange={(value) => update({ car_long_trips_occupancy: value })}
+              />
+            </BoiteDePrecision>
+          )}
+        </View>
       </View>
 
       {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10) : une phrase adressée à
@@ -223,5 +226,4 @@ const styles = StyleSheet.create({
   block: { gap: Spacing.two },
   field: { gap: Spacing.two + 2 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  precision: { marginTop: 4 },
 });

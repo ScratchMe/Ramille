@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
@@ -99,9 +100,65 @@ export function LeisureDetailStep({
         : 'voiture_solo'
       : (answers.leisure_mode ?? null)
   );
+  // Ce que le choix ouvre, dans l'ordre de l'écran — rien pour un mode qui n'a pas de précision.
+  const precisionsDuMode = (choice: CommuteModeChoice) =>
+    [
+      choice.modeId === 'voiture' && (
+        <PrecisionMode
+          key="motorisation"
+          question="Quelle motorisation ?"
+          options={CAR_ENGINE_OPTIONS}
+          valeur={answers.leisure_car_engine}
+          onChange={(value) => update({ leisure_car_engine: value })}
+        />
+      ),
+      choice.modeId === 'deux_roues_motorise' && (
+        <PrecisionMode
+          key="deux-roues"
+          question="Quel type de deux-roues ?"
+          options={TWO_WHEELER_TYPE_OPTIONS}
+          valeur={answers.leisure_two_wheeler_type}
+          onChange={(value) => update({ leisure_two_wheeler_type: value })}
+        />
+      ),
+      // C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont posées ici plutôt
+      // que déduites de B1 parce qu'on ne fait pas ses sorties comme son trajet : on peut aller au
+      // travail en RER et en week-end en TER.
+      choice.modeId === 'train' && (
+        <PrecisionMode
+          key="train"
+          question="Quel type de train ?"
+          options={TRAIN_TYPE_OPTIONS}
+          valeur={answers.leisure_train_type}
+          onChange={(value) => update({ leisure_train_type: value })}
+        />
+      ),
+      choice.modeId === 'velo' && (
+        <PrecisionMode
+          key="velo"
+          question="Quel type de vélo ?"
+          options={VELO_TYPE_OPTIONS}
+          valeur={answers.leisure_velo_type}
+          onChange={(value) => update({ leisure_velo_type: value })}
+        />
+      ),
+      // C3.5 — après la motorisation, dans la même boîte : les deux précisions décrivent la même
+      // voiture.
+      choice.carpool && (
+        <PrecisionChiffres
+          key="personnes"
+          question="Vous êtes combien dans la voiture ?"
+          options={TAILLES_DE_COVOITURAGE}
+          valeur={answers.leisure_carpool_size}
+          onChange={(value) => update({ leisure_carpool_size: value })}
+        />
+      ),
+    ].filter(Boolean);
+
   // Une rangée de mode et ce qui s'ouvre sous elle — écrite une fois pour les deux blocs de la liste.
   const rendreLeMode = (choice: CommuteModeChoice) => {
     const selected = selectedKey === choice.key;
+    const precisions = selected ? precisionsDuMode(choice) : [];
     return (
       <View key={choice.key}>
         <ModeListItem
@@ -117,67 +174,10 @@ export function LeisureDetailStep({
           }}
         />
 
-        {/* La précision s'ouvre sous l'élément qui la déclenche — cf.
-            `precision-mode.tsx` pour la raison, qui n'est pas cosmétique. */}
-        {selected && choice.modeId === 'voiture' && (
-          <Depliage style={styles.precision}>
-            <PrecisionMode
-              question="Quelle motorisation ?"
-              options={CAR_ENGINE_OPTIONS}
-              valeur={answers.leisure_car_engine}
-              onChange={(value) => update({ leisure_car_engine: value })}
-            />
-          </Depliage>
-        )}
-
-        {selected && choice.modeId === 'deux_roues_motorise' && (
-          <Depliage style={styles.precision}>
-            <PrecisionMode
-              question="Quel type de deux-roues ?"
-              options={TWO_WHEELER_TYPE_OPTIONS}
-              valeur={answers.leisure_two_wheeler_type}
-              onChange={(value) => update({ leisure_two_wheeler_type: value })}
-            />
-          </Depliage>
-        )}
-
-        {/* C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont
-            posées ici plutôt que déduites de B1 parce qu'on ne fait pas ses sorties
-            comme son trajet : on peut aller au travail en RER et en week-end en TER. */}
-        {selected && choice.modeId === 'train' && (
-          <Depliage style={styles.precision}>
-            <PrecisionMode
-              question="Quel type de train ?"
-              options={TRAIN_TYPE_OPTIONS}
-              valeur={answers.leisure_train_type}
-              onChange={(value) => update({ leisure_train_type: value })}
-            />
-          </Depliage>
-        )}
-
-        {selected && choice.modeId === 'velo' && (
-          <Depliage style={styles.precision}>
-            <PrecisionMode
-              question="Quel type de vélo ?"
-              options={VELO_TYPE_OPTIONS}
-              valeur={answers.leisure_velo_type}
-              onChange={(value) => update({ leisure_velo_type: value })}
-            />
-          </Depliage>
-        )}
-
-        {/* C3.5 — après la motorisation, sous la même option : les deux précisions
-            décrivent la même voiture. */}
-        {selected && choice.carpool && (
-          <Depliage style={styles.precision}>
-            <PrecisionChiffres
-              question="Vous êtes combien dans la voiture ?"
-              options={TAILLES_DE_COVOITURAGE}
-              valeur={answers.leisure_carpool_size}
-              onChange={(value) => update({ leisure_carpool_size: value })}
-            />
-          </Depliage>
-        )}
+        {/* La précision s'ouvre sous l'élément qui la déclenche — cf. `precision-mode.tsx` pour la
+            raison, qui n'est pas cosmétique. Une seule boîte par choix (`v1-31` §2.2), qui porte une
+            question, ou deux pour le covoiturage. */}
+        {precisions.length > 0 && <BoiteDePrecision>{precisions}</BoiteDePrecision>}
       </View>
     );
   };
@@ -279,7 +279,6 @@ const styles = StyleSheet.create({
   list: { gap: Spacing.two },
   familles: { gap: Spacing.three },
   famille: { gap: Spacing.one },
-  precision: { marginTop: Spacing.two },
   separator: { height: 1 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   distanceLibre: { gap: Spacing.two },

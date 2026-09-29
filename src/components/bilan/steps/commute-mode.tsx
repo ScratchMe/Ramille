@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { MissingModeLink } from '@/components/bilan/missing-mode-link';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
@@ -14,9 +15,9 @@ import {
   TRAIN_TYPE_OPTIONS,
   TWO_WHEELER_TYPE_OPTIONS,
   VELO_TYPE_OPTIONS,
+  type CommuteModeChoice,
 } from '@/constants/transport-modes';
 import { Spacing } from '@/constants/theme';
-import { Depliage } from '@/lib/mouvement';
 import { TAILLES_DE_COVOITURAGE, type BilanAnswers } from '@/types/bilan';
 
 /**
@@ -40,6 +41,56 @@ export function CommuteModeStep({
   answers: BilanAnswers;
   update: (patch: Partial<BilanAnswers>) => void;
 }) {
+  // Ce que le choix ouvre, dans l'ordre de l'écran — rien pour un mode qui n'a pas de précision.
+  const precisionsDuMode = (choice: CommuteModeChoice) =>
+    [
+      choice.modeId === 'voiture' && (
+        <PrecisionMode
+          key="motorisation"
+          question="Quelle motorisation ?"
+          options={CAR_ENGINE_OPTIONS}
+          valeur={answers.commute_car_engine}
+          onChange={(value) => update({ commute_car_engine: value })}
+        />
+      ),
+      choice.modeId === 'deux_roues_motorise' && (
+        <PrecisionMode
+          key="deux-roues"
+          question="Quel type de deux-roues ?"
+          options={TWO_WHEELER_TYPE_OPTIONS}
+          valeur={answers.commute_two_wheeler_type}
+          onChange={(value) => update({ commute_two_wheeler_type: value })}
+        />
+      ),
+      choice.modeId === 'train' && (
+        <PrecisionMode
+          key="train"
+          question="Quel type de train ?"
+          options={TRAIN_TYPE_OPTIONS}
+          valeur={answers.commute_train_type}
+          onChange={(value) => update({ commute_train_type: value })}
+        />
+      ),
+      choice.modeId === 'velo' && (
+        <PrecisionMode
+          key="velo"
+          question="Quel type de vélo ?"
+          options={VELO_TYPE_OPTIONS}
+          valeur={answers.commute_velo_type}
+          onChange={(value) => update({ commute_velo_type: value })}
+        />
+      ),
+      choice.carpool && (
+        <PrecisionChiffres
+          key="personnes"
+          question="Vous êtes combien à partager ce trajet ?"
+          options={TAILLES_DE_COVOITURAGE}
+          valeur={answers.commute_carpool_size}
+          onChange={(value) => update({ commute_carpool_size: value })}
+        />
+      ),
+    ].filter(Boolean);
+
   return (
     <View style={styles.container}>
       <TitreDEtape>{QUESTION_MODE}</TitreDEtape>
@@ -53,6 +104,7 @@ export function CommuteModeStep({
             {famille.map((choice) => {
               const selected =
                 answers.commute_mode === choice.modeId && answers.commute_is_carpool === choice.carpool;
+              const precisions = selected ? precisionsDuMode(choice) : [];
               return (
                 <View key={choice.key}>
                   <ModeListItem
@@ -68,79 +120,27 @@ export function CommuteModeStep({
                   />
 
                   {/* La précision s'ouvre sous l'élément qui la déclenche — cf. `precision-mode.tsx`
-                      pour la raison, qui n'est pas cosmétique. */}
-                  {selected && choice.modeId === 'voiture' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quelle motorisation ?"
-                        options={CAR_ENGINE_OPTIONS}
-                        valeur={answers.commute_car_engine}
-                        onChange={(value) => update({ commute_car_engine: value })}
-                      />
-                    </Depliage>
-                  )}
+                      pour la raison, qui n'est pas cosmétique. **Une seule boîte par choix** (`v1-31`
+                      §2.2), qui porte une question, ou deux pour le covoiturage.
 
-                  {selected && choice.modeId === 'deux_roues_motorise' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de deux-roues ?"
-                        options={TWO_WHEELER_TYPE_OPTIONS}
-                        valeur={answers.commute_two_wheeler_type}
-                        onChange={(value) => update({ commute_two_wheeler_type: value })}
-                      />
-                    </Depliage>
-                  )}
+                      C4.4 a ajouté le type de train et de vélo, sur le patron exact de la
+                      motorisation. Le mode s'appelait « Train ou RER » et portait le facteur du TER,
+                      soit 2,83 fois celui du RER : le produit promettait une chose et en comptait une
+                      autre. Et « Vélo » ne distinguait pas l'assistance électrique, 64 fois plus
+                      émettrice — petit en valeur absolue, mais sur le profil dont le total est de
+                      l'ordre de la dizaine de kilos. Jamais des entrées de plus dans la liste : une
+                      liste qui gonfle est ce qui fait abandonner un questionnaire, une question de
+                      suivi ne coûte qu'à ceux qu'elle concerne.
 
-                  {/* C4.4 — deux révélations de plus, sur le patron exact de la motorisation. Le mode
-                      s'appelait « Train ou RER » et portait le facteur du TER, soit 2,83 fois celui du
-                      RER : le produit promettait une chose et en comptait une autre. Et « Vélo » ne
-                      distinguait pas l'assistance électrique, 64 fois plus émettrice — petit en
-                      valeur absolue, mais sur le profil dont le total est de l'ordre de la dizaine de
-                      kilos. Jamais des entrées de plus dans la liste : une liste qui gonfle est ce qui
-                      fait abandonner un questionnaire, une question de suivi ne coûte qu'à ceux
-                      qu'elle concerne. */}
-                  {selected && choice.modeId === 'train' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de train ?"
-                        options={TRAIN_TYPE_OPTIONS}
-                        valeur={answers.commute_train_type}
-                        onChange={(value) => update({ commute_train_type: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {selected && choice.modeId === 'velo' && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionMode
-                        question="Quel type de vélo ?"
-                        options={VELO_TYPE_OPTIONS}
-                        valeur={answers.commute_velo_type}
-                        onChange={(value) => update({ commute_velo_type: value })}
-                      />
-                    </Depliage>
-                  )}
-
-                  {/* **Elle vient de l'écran suivant** (recette du 14/09/2026, `v1-16` §3). Le produit
-                      pose trois fois combien de personnes partagent la voiture, et le présentait de
-                      deux façons : sous l'option choisie pour les sorties et les longs trajets depuis
-                      C3.5, en tête de l'écran suivant pour celui-ci. La question décrit la voiture
-                      qu'on vient de choisir, exactement comme la motorisation juste au-dessus — la
-                      séparer du choix demandait de se souvenir d'un écran à l'autre de quelle voiture
-                      on parle.
-
-                      Après la motorisation et sous la même option, comme `leisure-detail.tsx` : les
-                      deux précisions décrivent la même voiture. */}
-                  {selected && choice.carpool && (
-                    <Depliage style={styles.precision}>
-                      <PrecisionChiffres
-                        question="Vous êtes combien à partager ce trajet ?"
-                        options={TAILLES_DE_COVOITURAGE}
-                        valeur={answers.commute_carpool_size}
-                        onChange={(value) => update({ commute_carpool_size: value })}
-                      />
-                    </Depliage>
-                  )}
+                      **La taille du covoiturage vient de l'écran suivant** (recette du 14/09/2026,
+                      `v1-16` §3). Le produit pose trois fois combien de personnes partagent la
+                      voiture, et le présentait de deux façons : sous l'option choisie pour les sorties
+                      et les longs trajets depuis C3.5, en tête de l'écran suivant pour celui-ci. La
+                      question décrit la voiture qu'on vient de choisir, exactement comme la
+                      motorisation — la séparer du choix demandait de se souvenir d'un écran à l'autre
+                      de quelle voiture on parle. Elle suit donc la motorisation, dans la même boîte :
+                      les deux précisions décrivent la même voiture. */}
+                  {precisions.length > 0 && <BoiteDePrecision>{precisions}</BoiteDePrecision>}
                 </View>
               );
             })}
@@ -161,5 +161,4 @@ const styles = StyleSheet.create({
   liste: { marginTop: Spacing.two },
   familles: { gap: Spacing.three },
   famille: { gap: Spacing.one },
-  precision: { marginTop: Spacing.two },
 });
