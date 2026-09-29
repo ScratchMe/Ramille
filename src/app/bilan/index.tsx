@@ -38,10 +38,9 @@ import {
   brouillonEstAncien,
   distanceDomicileTravailKm,
   distanceSortieKm,
-  isStepComplete,
+  issueDuSuivant,
   manqueDeLEtape,
   memesReponses,
-  nextStep,
   normaliserReponses,
   previousStep,
   type BilanAnswers,
@@ -345,10 +344,15 @@ export default function BilanQuestionnaire() {
     }
   };
 
+  // **Ce que fait « Suivant » se décide dans `issueDuSuivant`, pas ici** (29/09/2026, `v1-31` §2.4) :
+  // `StepShell` n'appelle déjà pas `onNext` sur une étape incomplète, mais son « Suivant » n'est plus
+  // `disabled`, et la dernière étape soumet — d'où cette seconde garde, et à la dernière étape la
+  // vérification de **toutes** les étapes visibles, que `?etape=context` permettait de contourner.
   const handleNext = async () => {
-    if (!isLastStep) {
-      const next = nextStep(step, answers);
-      if (next) passerA(next);
+    const issue = issueDuSuivant(step, answers);
+    if (issue.genre === 'attendre') return;
+    if (issue.genre === 'passer' || issue.genre === 'revenir') {
+      passerA(issue.vers);
       return;
     }
 
@@ -647,9 +651,11 @@ export default function BilanQuestionnaire() {
       // premier lancement, où la pile est vide (cf. son commentaire d'en-tête).
       onBack={previousStep(step, answers) !== null || router.canGoBack() ? handleBack : undefined}
       onNext={handleNext}
-      nextLabel={isLastStep ? (submitting ? 'Enregistrement…' : 'Voir mon bilan') : 'Suivant'}
-      nextDisabled={submitting || !isStepComplete(step, answers)}
-      manque={submitting ? null : manqueDeLEtape(step, answers)}
+      // Pendant l'envoi, `StepShell` n'est pas rendu du tout (`CalculEnCours` le remplace, plus haut) :
+      // un libellé « Enregistrement… », un `disabled` ou un `manque` nul le temps de l'envoi étaient des
+      // branches mortes, et c'est le verrou `soumissionEnCours` qui garde la double soumission.
+      nextLabel={isLastStep ? 'Voir mon bilan' : 'Suivant'}
+      manque={manqueDeLEtape(step, answers)}
       notice={prefilled ? 'Tes réponses précédentes sont pré-remplies. Modifie ce qui a changé.' : undefined}
       message={message}
       detail={detail}

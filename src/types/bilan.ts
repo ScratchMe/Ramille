@@ -1063,6 +1063,39 @@ export function isStepComplete(step: BilanStepId, answers: BilanAnswers): boolea
   return manqueDeLEtape(step, answers) === null;
 }
 
+/** Ce que fait « Suivant » (ou « Voir mon bilan ») sur une étape, pour ces réponses. */
+export type IssueDuSuivant =
+  | { genre: 'attendre' }
+  | { genre: 'passer'; vers: BilanStepId }
+  | { genre: 'revenir'; vers: BilanStepId }
+  | { genre: 'soumettre' };
+
+/**
+ * Ce que fait « Suivant » sur une étape (29/09/2026, `v1-31` §2.4) — une dérivation qui décide d'une
+ * navigation, donc hors de l'écran et testée (`FRONT.md` §1.1).
+ *
+ * **Une étape incomplète n'avance pas, et c'est une seconde garde.** `StepShell` n'appelle déjà pas
+ * `onNext` sur une étape incomplète : son « Suivant » en attente mène à ce qui manque. Mais ce bouton
+ * n'est plus `disabled`, et c'est lui qui tenait la porte ; sur la dernière étape, « Voir mon bilan »
+ * soumet. Une régression de la coquille suffirait sinon à soumettre un bilan incomplet — et la base
+ * n'en refuserait qu'une partie : une part du second mode absente passe (la colonne est nullable, le
+ * calcul retombe sur la moitié), c'est-à-dire exactement le défaut que C3.4 a fermé.
+ *
+ * **À la dernière étape, toutes les étapes visibles, pas seulement la courante.** Sur web, l'adresse
+ * `/bilan?etape=context` se tape, et elle est acceptée sur un questionnaire vierge : trois réponses
+ * puis « Voir mon bilan » soumettaient un bilan fait des replis de l'insert (`?? false`,
+ * `?? 'rarely'`). Une étape visible incomplète **ramène** à elle — la première, par le même chemin que
+ * « Retour » — plutôt que de refuser en silence : le « Suivant » en attente y dira ce qui manque, là où
+ * un refus muet laisserait un bouton qui ne fait rien.
+ */
+export function issueDuSuivant(step: BilanStepId, answers: BilanAnswers): IssueDuSuivant {
+  if (!isStepComplete(step, answers)) return { genre: 'attendre' };
+  const suivante = nextStep(step, answers);
+  if (suivante !== null) return { genre: 'passer', vers: suivante };
+  const incomplete = visibleSteps(answers).find((etape) => !isStepComplete(etape, answers));
+  return incomplete === undefined ? { genre: 'soumettre' } : { genre: 'revenir', vers: incomplete };
+}
+
 /**
  * Distance que le calcul retient pour une tranche — la valeur affichée sous la tranche
  * choisie (« On comptera environ 10 km pour un aller. »).

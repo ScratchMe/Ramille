@@ -22,6 +22,7 @@ import {
   distanceSortieKm,
   isStepComplete,
   isStepVisible,
+  issueDuSuivant,
   lireBrouillonBilan,
   manqueDeLEtape,
   teletravailSePose,
@@ -1699,5 +1700,57 @@ describe('seMarque', () => {
   it('un champ d’une autre étape ne se marque pas', () => {
     expect(seMarque('commute_mode', 'zone_type')).toBe(false);
     expect(seMarque('leisure_detail', 'commute_car_engine')).toBe(false);
+  });
+});
+
+/**
+ * Ce que fait « Suivant » (29/09/2026, `v1-31` §2.4) — la seconde garde, sortie de `handleNext`.
+ *
+ * **Éprouvé en le cassant, le 29/09/2026**, une mutation à la fois, l'état d'avant réécrit depuis une
+ * copie :
+ *   - la garde de l'étape courante retirée (`attendre`) → « une étape incomplète n'avance pas », et
+ *     lui seul ;
+ *   - la dernière étape réduite à l'étape courante (le `find` sur les étapes visibles retiré) →
+ *     « la dernière étape ramène à la première étape visible incomplète », et lui seul.
+ */
+describe('issueDuSuivant', () => {
+  const COMPLET: BilanAnswers = answers({
+    commute_has_regular_trip: true,
+    commute_days_per_week: 5,
+    commute_distance_km: 20,
+    commute_mode: 'bus',
+    commute_second_mode_used: false,
+    leisure_frequency: 'rarely',
+    zone_type: 'rural',
+    tc_access: 'bon',
+    household_vehicles: '1',
+    teletravail: 'aucun',
+  });
+
+  it('une étape incomplète n’avance pas', () => {
+    expect(issueDuSuivant('commute_has_trip', EMPTY_BILAN_ANSWERS)).toEqual({ genre: 'attendre' });
+    expect(issueDuSuivant('commute_mode', answers({ commute_mode: 'voiture' }))).toEqual({ genre: 'attendre' });
+    expect(issueDuSuivant('context', { ...COMPLET, zone_type: null })).toEqual({ genre: 'attendre' });
+  });
+
+  it('une étape complète passe à la suivante visible', () => {
+    expect(issueDuSuivant('commute_has_trip', COMPLET)).toEqual({ genre: 'passer', vers: 'commute_days_distance' });
+    // « Rarement » saute le détail des sorties : on passe aux vols.
+    expect(issueDuSuivant('leisure_frequency', COMPLET)).toEqual({ genre: 'passer', vers: 'flights' });
+  });
+
+  it('la dernière étape soumet quand toutes les étapes visibles sont complètes', () => {
+    expect(issueDuSuivant('context', COMPLET)).toEqual({ genre: 'soumettre' });
+  });
+
+  // Le défaut préexistant : `/bilan?etape=context` sur un questionnaire vierge, trois réponses, et
+  // « Voir mon bilan » soumettait les replis de l'insert.
+  it('la dernière étape ramène à la première étape visible incomplète', () => {
+    const contexteSeul = answers({ zone_type: 'rural', tc_access: 'bon', household_vehicles: '1' });
+    expect(issueDuSuivant('context', contexteSeul)).toEqual({ genre: 'revenir', vers: 'commute_has_trip' });
+    expect(issueDuSuivant('context', { ...COMPLET, flights_total_per_year: 2 })).toEqual({
+      genre: 'revenir',
+      vers: 'flights',
+    });
   });
 });

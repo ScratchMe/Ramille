@@ -656,10 +656,64 @@ async function verifierLesGroupes(ou) {
   );
 }
 
+/**
+ * « Suivant » (ou « Voir mon bilan ») sur une étape du questionnaire, et **l'une des deux issues**
+ * attendue après le clic (29/09/2026, `v1-31` §4.5) : l'étape a changé — la ligne « Étape N sur M » a
+ * bougé ou disparu, ou une feuille s'est ouverte —, ou « Il manque encore … » est là, et le parcours
+ * s'arrête en la citant.
+ *
+ * **Playwright n'attend plus rien d'autre** : le « Suivant » d'une étape incomplète n'est plus ni
+ * `disabled` ni `aria-disabled` — il mène à ce qui manque —, donc le clic part aussitôt. Un parcours
+ * qui cliquerait sur une étape incomplète ne resterait plus bloqué : il échouerait à l'étape d'après,
+ * sous un message qui nommerait la mauvaise cause. La ligne « Étape » est lue avant la ligne qui
+ * manque : l'une et l'autre changent dans le même rendu, donc une ligne vue sous l'ancienne étape est
+ * bien celle de l'étape qu'on quitte.
+ */
+async function avancer(libelle = 'Suivant') {
+  const lireEtape = () =>
+    page.evaluate(() => {
+      const normaliser = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+      const n = [...document.querySelectorAll('div')].find(
+        (d) => d.children.length === 0 && /^Étape \d+ sur \d+$/.test(normaliser(d.innerText))
+      );
+      return n ? normaliser(n.innerText) : null;
+    });
+  const avant = await lireEtape();
+  await bouton(libelle);
+  const issue = await page
+    .waitForFunction(
+      (etapeAvant) => {
+        const normaliser = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+        const etape = [...document.querySelectorAll('div')].find(
+          (d) => d.children.length === 0 && /^Étape \d+ sur \d+$/.test(normaliser(d.innerText))
+        );
+        if (!etape || normaliser(etape.innerText) !== etapeAvant) return 'avance';
+        if (document.querySelector('[aria-modal="true"]')) return 'avance';
+        const ligne = [...document.querySelectorAll('body *')].find(
+          (e) =>
+            e.getClientRects().length > 0 &&
+            /^Il manque encore /.test(normaliser(e.innerText)) &&
+            ![...e.children].some((c) => /^Il manque encore /.test(normaliser(c.innerText)))
+        );
+        return ligne ? `manque:${normaliser(ligne.innerText)}` : false;
+      },
+      avant,
+      { timeout: ATTENTE }
+    )
+    .then((h) => h.jsonValue())
+    .catch(() => null);
+  if (issue === null) {
+    throw new Ecart(`« ${libelle} » n'a mené ni à l'étape suivante ni à ce qui manque (${avant ?? 'sans étape'})`);
+  }
+  if (issue.startsWith('manque:')) {
+    throw new Ecart(`« ${libelle} » n'avance pas sur ${avant} : « ${issue.slice('manque:'.length)} »`);
+  }
+}
+
 /** Le bouton qui quitte une étape du questionnaire — après avoir vérifié les groupes qu'elle rend. */
 async function suivant(libelle = 'Suivant') {
   await verifierLesGroupes(`l'étape du questionnaire en cours (${etapeCourante})`);
-  await bouton(libelle);
+  await avancer(libelle);
 }
 
 /**
@@ -1154,15 +1208,9 @@ try {
   const jusquAVoirMonBilan = async () => {
     await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const fin = page.getByRole('button', { name: 'Voir mon bilan', exact: true });
-    for (let i = 0; i < 12 && !(await fin.isVisible().catch(() => false)); i++) {
-      const avant = await page.getByText(/^Étape \d+ sur \d+$/).first().innerText();
-      await bouton('Suivant');
-      await page.waitForFunction(
-        (a) => ![...document.querySelectorAll('div')].some((d) => d.children.length === 0 && d.innerText.trim() === a),
-        avant,
-        { timeout: ATTENTE }
-      );
-    }
+    // Le même contrôle que `suivant()` (`v1-31` §4.5) : une étape du re-bilan qui n'avancerait pas
+    // arrête le parcours en citant ce qui manque, au lieu d'expirer sur une attente muette.
+    for (let i = 0; i < 12 && !(await fin.isVisible().catch(() => false)); i++) await avancer('Suivant');
     assurer(await fin.isVisible(), '« Voir mon bilan » n’est jamais apparu au bout du re-bilan');
     return fin;
   };

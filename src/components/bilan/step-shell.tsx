@@ -50,7 +50,6 @@ export function StepShell({
   onBack,
   onNext,
   nextLabel = 'Suivant',
-  nextDisabled,
   notice,
   motDeRamille,
   message,
@@ -64,8 +63,9 @@ export function StepShell({
   children: ReactNode;
   onBack?: () => void;
   onNext: () => void;
+  /** Le nom du bouton, qui ne change jamais selon ce qui manque : « Suivant », ou « Voir mon bilan » à
+   *  la dernière étape. Un nom qui suivrait les réponses ferait réannoncer le bouton à chaque choix. */
   nextLabel?: string;
-  nextDisabled?: boolean;
   /** Bandeau discret sous l'en-tête (ex. « réponses pré-remplies » lors d'un re-bilan). */
   notice?: string;
   /**
@@ -105,6 +105,10 @@ export function StepShell({
   // La clé fait aussi remonter le contenu d'une étape à l'autre, là où React gardait l'état d'un
   // composant que deux étapes rendaient à la même place.
   const animationsReduites = useReducedMotion();
+
+  const suivant = () => {
+    if (manque == null) onNext();
+  };
   const styleDeLEtape = styleDEntree(entree.sens, animationsReduites);
 
   // **Le focus suit l'étape, sinon la question suivante n'est jamais annoncée.** Passer à l'étape
@@ -216,7 +220,11 @@ export function StepShell({
           )}
           <View style={styles.footer}>
             {onBack && <Button title="Retour" variant="secondary" onPress={onBack} />}
-            <Button title={nextLabel} onPress={onNext} disabled={nextDisabled} flex />
+            {/* **Un bouton ordinaire, jamais `disabled`** (29/09/2026, `v1-31` §2.4) : sur une étape
+                incomplète, il garde l'apparence du désactivé (`enAttente`) et n'avance pas — c'est
+                ici, et non plus son `disabled`, qui tient la porte ; `handleNext` la tient une
+                seconde fois. */}
+            <Button title={nextLabel} onPress={suivant} enAttente={manque != null} flex />
           </View>
         </View>
       </SafeAreaView>
