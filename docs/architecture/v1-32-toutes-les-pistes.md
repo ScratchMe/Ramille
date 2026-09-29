@@ -396,7 +396,7 @@ Et l'état d'avancement de §8 se tient à jour pendant le travail, pas après c
 | 4.4 — l'écran | fait (29/09/2026) ; le défilement attend que la carte ait grandi (mesuré : sinon le navigateur le borne) |
 | 4.7 — le kit | fait (29/09/2026) |
 | 4.8 — la recette, `v1-13` §11, le parcours réel | fait (29/09/2026) : bloc 06, 08.6, 01.3, 03.11 ; 11.18 datée, 11.W.2 réécrite, 11.24 ouverte ; trois étapes au parcours réel, éprouvées par trois mutations (en tête du script — la deuxième est d'abord passée, et a fait ajouter « juste assez » à la garde). **Le relevé avait manqué un fichier** : `src/tests/ecrans/plan-pistes.test.tsx`, le test d'écran, qui attendait l'ancienne intro — réécrit, avec quatre câblages neufs |
-| 6 — vérifications, contre-lecture, mesure Vercel | en cours (29/09/2026) |
+| 6 — vérifications, contre-lecture, mesure Vercel | fait (29/09/2026) : `tsc`, lint, Jest (1 224 tests) ; la CI rejouée en local, 31 pas sur 31 ; les planches et le focus au navigateur, à 390 et 360 ; la contre-lecture du diff entier, douze constats traités (§10), dont cinq gardes neuves au parcours réel, chacune cassée ; la mesure hors ligne du déploiement, **4,16 Mio**, identique au relevé du 25/09/2026 |
 | 7 — les trois phrases | fait (29/09/2026) : `produit.md` §3, `v1-13` §14.7, le bandeau de `v1-16` §5 |
 
 ## 9. Écarts au canvas déjà connus

@@ -307,6 +307,23 @@
 //   | PR2 — le défilement mesuré à l'ouverture, sans attendre que la carte ait grandi | « pistes — le défilement… » : « l'écran défile trop : « C'est noté » finit 203 px au-dessus du bas de la fenêtre » |
 //   | PR3 — `animated: true` en dur | « pistes — le même défilement sous « réduire les animations » » : « l'écran défile en glissant (positions 483 → 485 → … → 894) » ; la moitié animée reste verte |
 //
+// **Et cinq de plus le même soir, après la contre-lecture**, qui avait trouvé ce qu'aucune suite
+// n'exerçait : l'ordre de la liste une fois l'engagement déplacé (tant que le rang 1 est engagé, les
+// deux ordres coïncident), « Annuler » par la vraie carte, la carte jamais estompée sur le choix, et le
+// focus du plan dans les deux sens. Même méthode, un témoin vert d'abord :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PR4 — la liste reprend l'ordre du plan (`ordonnerLesPistes` dans `pistesParPoste`) | « pistes — l'ordre ne bouge pas… » : « la liste a mis l'action engagée en tête » |
+//   | PR5 — la carte de la liste ne reçoit pas `onAnnuler` | « pistes — choisir depuis la liste, à la place » : « « Annuler », sur la liste, n'a pas rendu la carte à sa rangée » |
+//   | PR6 — la carte estompée aussi sur le choix (`estompee={uneAutreEstEngagee}`) | la même étape : « la carte ouverte sur le choix est estompée (rgb(240, 241, 236) au lieu de rgb(221, 224, 217)) » |
+//   | PR7 — pas de focus à la question sur le plan | « engagement » : « après « Je m'y engage », sur le plan, le focus est sur « Ramille… » » — le document, en pratique |
+//   | PR8 — `Button` ne transmet pas sa `ref` | la même étape : « après « Annuler », sur le plan, le focus est sur « Ramille… » » |
+//
+// Ce qu'aucune ne voit : le délai du focus sur la liste (`Mouvement.entree`, `ActionCommitment`). Le
+// navigateur accepte le focus sur une question découpée, donc un focus posé au montage passerait
+// vert ici ; c'est pour TalkBack qu'il attend, et TalkBack se juge au doigt (`v1-13` §11.24).
+//
 // **PR2 est d'abord PASSÉE**, et c'est elle qui a changé la garde. La première version vérifiait que
 // le titre ne passe jamais sous la bande et que « C'est noté » finit dans la fenêtre — pas que l'écran
 // défile **juste assez**. Imprimés image par image, les échantillons ont dit pourquoi : dans cette
