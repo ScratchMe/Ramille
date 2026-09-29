@@ -451,8 +451,8 @@ choisir**. Cinq décisions de produit y sont prises une à une avec la personne 
 - l'écran reste dès trois pistes ;
 - « Choisir à la place » sur la pastille quand une action est engagée.
 
-**Rien n'est encore codé** : le document d'implémentation reste à écrire, sous un autre numéro que
-`v1-30`, et l'écran en production reste celui de la réparation (la première moitié, livrée).
+**Rien n'est encore codé** : le plan d'implémentation est [`v1-32-toutes-les-pistes.md`](v1-32-toutes-les-pistes.md)
+(29/09/2026), et l'écran en production reste celui de la réparation (la première moitié, livrée).
 
 ## 4. Le canvas du lot 2, le design system, et le plan qui précède
 
