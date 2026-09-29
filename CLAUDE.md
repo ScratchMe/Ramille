@@ -1815,6 +1815,16 @@ contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
   cohorte. Une assertion du `36` lit les littéraux `return` du corps installé et les compare au
   `check`.
 
+**Et ce que le lot 6 lit, il le lit dans quatre vues, sans définition nouvelle** (29/09/2026,
+`20260929200000_les_vues_de_l_administration.sql`, `docs/exploitation/README.md` §8.5 ter) :
+l'entonnoir et la rétention par cohorte, les états des rappels, les départs par mois. Chaque notion y
+garde sa seule dérivation — `cohorte_de`, `dernier_signe_de_vie`, `regime_de_rappel` sur la boucle
+que rend `boucle_de_la_personne` —, et une vue qui en écrirait une seconde ferait deux échelles qui
+divergent. Deux choses à ne pas « simplifier » : la rétention divise par **toute** la cohorte
+d'arrivée, purgés compris (sans eux, la purge fait paraître une cohorte plus fidèle en vieillissant) ;
+et ni l'activation ni un taux de churn ne sont calculés — la première est une décision de produit,
+le second demanderait un effectif passé que le régime ne sait pas reconstruire.
+
 **Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
 Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
 l'app, et Ramille en crée un dès l'ouverture, session anonyme comprise. Play exige **en plus**

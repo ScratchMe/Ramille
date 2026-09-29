@@ -347,8 +347,29 @@ tout : `docs/exploitation/README.md` §8.5 bis.
 20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
 surtout pour que les chiffres qui sortiront d'ici se comparent à ceux d'ailleurs.
 
-Rien n'est chiffré ni ordonné ici : ce paragraphe existe pour que la demande ne se perde pas entre
-la fin du lot 5 et le lot 4.
+**Et la surface est livrée le 29/09/2026** (`20260929200000_les_vues_de_l_administration.sql`) :
+quatre vues `analytics.*`, une par indicateur décidé — l'entonnoir par cohorte, la rétention par
+cohorte, les états des rappels, les départs par mois —, et les quatre requêtes à enregistrer dans le
+SQL editor, qui ne peuvent pas l'être par une migration. Où les lire, ce qui doit alerter et ce
+qu'elles ne disent pas : `docs/exploitation/README.md` §8.5 ter. Trois choses que la construction a
+fixées, et qu'il faut connaître avant d'en lire un chiffre :
+
+- **chaque notion garde sa seule dérivation** — l'étape et les semaines tenues de `cohorte_de`, le
+  signe de vie de `dernier_signe_de_vie`, le régime de `regime_de_rappel` —, si bien qu'un compte
+  vivant et un compte purgé de la même semaine s'additionnent. La seule fonction neuve,
+  `boucle_de_la_personne`, écrit la règle « la boucle hebdomadaire quand elle existe », que deux
+  vues lisent. Elle diffère volontairement des compteurs de la purge, qui retiennent le plus avancé
+  des deux boucles : quelqu'un qui répond chaque semaine et se tait sur la boucle mensuelle est
+  actif pour le churn ;
+- **la rétention divise par toute la cohorte d'arrivée**, purgés compris, comme le glossaire le
+  demande — sans eux, une cohorte paraîtrait plus fidèle en vieillissant, à mesure que la purge en
+  retire les sessions muettes. Ce que la purge a effacé de l'activité est signalé semaine par
+  semaine (`borne_basse`) plutôt que deviné ;
+- **deux indicateurs du glossaire ne sont pas calculés, et c'est une limite et non un oubli.**
+  L'**activation** demande un moment « aha » et une fenêtre, qui se trouvent en regardant ce que les
+  personnes restées ont fait tôt : c'est une décision de produit, et à nos volumes une corrélation
+  sur quelques dizaines de comptes. Le **taux** de churn divise par l'effectif au début du mois, que
+  le régime ne sait pas reconstruire à une date passée — les départs sont donc des comptes.
 
 **Et un increment s'est ouvert le 18/09/2026, avant le lot 4 : le rythme des bilans**
 ([`v1-19-rythme-des-bilans.md`](v1-19-rythme-des-bilans.md)). Il naît de la première recette du

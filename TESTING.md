@@ -350,6 +350,13 @@ nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux
   ses sections 1 à 7 et 9 à 13 ne font que mettre en file, dans la transaction annulée, et se
   valident seules (relevé par la contre-lecture de C4.2, 28/09/2026 — l'en-tête du fichier
   renvoyait ici avant que cette ligne n'existe).
+- `37_vues_de_l_administration`, **mais seulement à partir de juillet 2027** : ses cohortes
+  fabriquées naissent il y a 300 et 420 jours, soit avant le premier compte de la production (le
+  09/09/2026) — jusqu'au jour où ces dates le rattrapent. Ses assertions sur les totaux (états des
+  rappels, départs) se lisent en écart à un relevé fait avant les fixtures et tiennent partout ;
+  celles par semaine d'arrivée croiseraient alors de vrais comptes. Reculer les dates ne suffit pas :
+  au-delà de douze mois, la purge des `app_open` rend toute la cohorte « borne basse », et
+  l'assertion 7 ne garde plus rien.
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.
