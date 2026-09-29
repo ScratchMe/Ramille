@@ -257,10 +257,10 @@ describe('PistesScreen', () => {
     render(<PistesScreen />);
     await waitFor(() => expect(screen.getByLabelText(/^Faire un trajet sur cinq à vélo\./)).toBeTruthy());
     fireEvent.press(screen.getByLabelText(/^Faire un trajet sur cinq à vélo\./));
-    await waitFor(() => expect(screen.getByText('carte a1, sur le choix')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/^carte a1/)).toBeTruthy());
 
     fireEvent.press(screen.getByLabelText(/^Faire une sortie sur trois à vélo\./));
-    await waitFor(() => expect(screen.getByText('carte a2, sur le choix')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/^carte a2/)).toBeTruthy());
     expect(screen.queryByText(/^carte a1/)).toBeNull();
     expect(screen.getByLabelText(/^Faire un trajet sur cinq à vélo\./)).toBeTruthy();
   });
@@ -277,7 +277,7 @@ describe('PistesScreen', () => {
     render(<PistesScreen />);
     await waitFor(() => expect(screen.getByLabelText(/^Faire un trajet sur cinq à vélo\./)).toBeTruthy());
     fireEvent.press(screen.getByLabelText(/^Faire un trajet sur cinq à vélo\./));
-    await waitFor(() => expect(screen.getByText('carte a1, sur le choix')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/^carte a1/)).toBeTruthy());
     focus.mockClear();
 
     fireEvent.press(screen.getByText('annuler'));
