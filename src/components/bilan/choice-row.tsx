@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet } from 'react-native';
+import type { Ref } from 'react';
+import { Pressable, StyleSheet, type View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing, Stroke } from '@/constants/theme';
@@ -11,15 +12,19 @@ export function ChoiceRow({
   label,
   selected,
   onPress,
+  ref,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  /** La surface de la rangée, pour qui doit lui donner le focus (`v1-31` §2.5, comme `Chip`). */
+  ref?: Ref<View>;
 }) {
   const theme = useTheme();
 
   return (
     <Pressable
+      ref={ref}
       onPress={onPress}
       // Espace coche la rangée sur web, ce que react-native-web ne fait que pour un bouton
       // (`src/lib/barre-d-espace.ts`).

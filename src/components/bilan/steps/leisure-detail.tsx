@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type TextInput } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
@@ -11,7 +12,6 @@ import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
-import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import {
   CAR_ENGINE_OPTIONS,
@@ -32,6 +32,7 @@ import {
   type BilanAnswers,
   type LeisureDistanceBracket,
 } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 const BRACKETS: { value: LeisureDistanceBracket; label: string }[] = [
   { value: 'lt_5', label: 'Moins de 5 km' },
@@ -100,12 +101,33 @@ export function LeisureDetailStep({
         : 'voiture_solo'
       : (answers.leisure_mode ?? null)
   );
+  // Où mène « Il manque encore … » (`v1-31` §2.5), dans l'ordre de l'écran : le mode — le titre ne se
+  // marque pas —, puis ses précisions (`PrecisionMode`), puis la distance et, sous « Plus de 30 km »,
+  // le champ de saisie, qui reçoit le focus lui-même.
+  const { bloc: blocDuMode, cible: cibleDuMode } = useAncreDuChamp('leisure_mode');
+  const modesAffiches = showMore
+    ? [...LEISURE_MODE_CHOICES_PRIMARY, ...LEISURE_MODE_CHOICES_MORE]
+    : LEISURE_MODE_CHOICES_PRIMARY;
+  const cleCible = modesAffiches[optionCible(modesAffiches.map((choice) => selectedKey === choice.key))].key;
+  const {
+    bloc: blocDeLaTranche,
+    cible: cibleDeLaTranche,
+    marque: trancheMarquee,
+  } = useAncreDuChamp('leisure_distance_bracket');
+  const iCibleDeLaTranche = optionCible(BRACKETS.map((b) => answers.leisure_distance_bracket === b.value));
+  const {
+    bloc: blocDeLaDistance,
+    cible: cibleDeLaDistance,
+    marque: distanceMarquee,
+  } = useAncreDuChamp<TextInput>('leisure_distance_km', { saisie: true });
+
   // Ce que le choix ouvre, dans l'ordre de l'écran — rien pour un mode qui n'a pas de précision.
   const precisionsDuMode = (choice: CommuteModeChoice) =>
     [
       choice.modeId === 'voiture' && (
         <PrecisionMode
           key="motorisation"
+          champ="leisure_car_engine"
           question="Quelle motorisation ?"
           options={CAR_ENGINE_OPTIONS}
           valeur={answers.leisure_car_engine}
@@ -115,6 +137,7 @@ export function LeisureDetailStep({
       choice.modeId === 'deux_roues_motorise' && (
         <PrecisionMode
           key="deux-roues"
+          champ="leisure_two_wheeler_type"
           question="Quel type de deux-roues ?"
           options={TWO_WHEELER_TYPE_OPTIONS}
           valeur={answers.leisure_two_wheeler_type}
@@ -127,6 +150,7 @@ export function LeisureDetailStep({
       choice.modeId === 'train' && (
         <PrecisionMode
           key="train"
+          champ="leisure_train_type"
           question="Quel type de train ?"
           options={TRAIN_TYPE_OPTIONS}
           valeur={answers.leisure_train_type}
@@ -136,6 +160,7 @@ export function LeisureDetailStep({
       choice.modeId === 'velo' && (
         <PrecisionMode
           key="velo"
+          champ="leisure_velo_type"
           question="Quel type de vélo ?"
           options={VELO_TYPE_OPTIONS}
           valeur={answers.leisure_velo_type}
@@ -147,6 +172,7 @@ export function LeisureDetailStep({
       choice.carpool && (
         <PrecisionChiffres
           key="personnes"
+          champ="leisure_carpool_size"
           question="Vous êtes combien dans la voiture ?"
           options={TAILLES_DE_COVOITURAGE}
           valeur={answers.leisure_carpool_size}
@@ -161,8 +187,17 @@ export function LeisureDetailStep({
     const precisions = selected ? precisionsDuMode(choice) : [];
     return (
       <View key={choice.key}>
+        {/* Deux références ne se disputent jamais la même rangée : la cible du mode est la rangée cochée
+            ou la première, « Voiture (seul) », et quand la cochée est « Deux-roues motorisé », le mode
+            ne manque pas — rien n'y mènera. */}
         <ModeListItem
-          ref={choice.key === LEISURE_MODE_CHOICES_MORE[0].key ? premierDesAutres : undefined}
+          ref={
+            choice.key === LEISURE_MODE_CHOICES_MORE[0].key
+              ? premierDesAutres
+              : choice.key === cleCible
+                ? cibleDuMode
+                : undefined
+          }
           label={choice.label}
           selected={selected}
           onPress={() => {
@@ -184,7 +219,7 @@ export function LeisureDetailStep({
 
   return (
     <View style={styles.container}>
-      <View style={styles.block}>
+      <View ref={blocDuMode} style={styles.block}>
         <TitreDEtape>{QUESTION_MODE}</TitreDEtape>
         {/* Le groupe ne porte que les modes et leurs précisions — chacune son propre groupe, posé
             dedans sous le mode qu'elle décrit (`GroupeDeChoix`). « Voir les autres modes » le suit
@@ -229,14 +264,15 @@ export function LeisureDetailStep({
 
       <View style={[styles.separator, { backgroundColor: theme.border }]} />
 
-      <View style={styles.block}>
-        <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
+      <View ref={blocDeLaTranche} style={styles.block}>
+        <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={trancheMarquee}>
           {QUESTION_DISTANCE}
-        </ThemedText>
+        </IntituleDuChamp>
         <GroupeDeChoix question={QUESTION_DISTANCE} style={styles.chipsWrap}>
-          {BRACKETS.map((bracket) => (
+          {BRACKETS.map((bracket, i) => (
             <Chip
               key={bracket.value}
+              ref={i === iCibleDeLaTranche ? cibleDeLaTranche : undefined}
               label={bracket.label}
               role="radio"
               selected={answers.leisure_distance_bracket === bracket.value}
@@ -254,16 +290,19 @@ export function LeisureDetailStep({
             ligne, pas une liste d'éléments, donc il n'y a pas d'élément sous lequel se glisser
             — et à quatre puces, le champ reste juste sous l'œil. */}
         {answers.leisure_distance_bracket === '30_plus' && (
-          <Depliage style={styles.distanceLibre}>
-            <ThemedText type="small" themeColor="textTertiary">
-              Environ combien, pour un aller ?
-            </ThemedText>
-            <NumericField
-              value={answers.leisure_distance_km}
-              onChange={(value) => update({ leisure_distance_km: value })}
-              unit="km"
-              label="Distance d’un aller"
-            />
+          <Depliage>
+            <View ref={blocDeLaDistance} style={styles.distanceLibre}>
+              <IntituleDuChamp type="small" themeColor="textTertiary" marque={distanceMarquee}>
+                Environ combien, pour un aller ?
+              </IntituleDuChamp>
+              <NumericField
+                ref={cibleDeLaDistance}
+                value={answers.leisure_distance_km}
+                onChange={(value) => update({ leisure_distance_km: value })}
+                unit="km"
+                label="Distance d’un aller"
+              />
+            </View>
           </Depliage>
         )}
       </View>

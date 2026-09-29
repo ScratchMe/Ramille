@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type Ref } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -18,6 +18,7 @@ export function NumericField({
   onChange,
   unit,
   label,
+  ref,
 }: {
   value: number | null;
   onChange: (value: number | null) => void;
@@ -25,6 +26,12 @@ export function NumericField({
   /** Ce que le champ demande. L'unité affichée à droite n'est pas un label : « km » seul ne
    *  dit pas ce qu'on saisit, et un lecteur d'écran n'a que ça à annoncer sans elle. */
   label: string;
+  /**
+   * **Le champ de saisie lui-même, pas son cadre** (`v1-31` §2.5) : c'est à lui qu'« Il manque encore
+   * la distance » donne le focus, et sur web un `focus()` sur une `div` sans `tabIndex` échoue sans
+   * bruit. Sur natif, c'est son `focus()` qui ouvre le clavier.
+   */
+  ref?: Ref<TextInput>;
 }) {
   const theme = useTheme();
 
@@ -50,6 +57,7 @@ export function NumericField({
       ]}
     >
       <TextInput
+        ref={ref}
         value={saisie}
         onChangeText={(texte) => {
           const nettoye = nettoyerSaisieNumerique(texte);

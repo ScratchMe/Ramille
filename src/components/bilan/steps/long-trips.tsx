@@ -190,12 +190,14 @@ export function LongTripsStep({
           {answers.car_long_trips_per_year > 0 && (
             <BoiteDePrecision>
               <PrecisionMode
+                champ="car_long_trips_engine"
                 question="Quelle motorisation ?"
                 options={CAR_ENGINE_OPTIONS}
                 valeur={answers.car_long_trips_engine}
                 onChange={(value) => update({ car_long_trips_engine: value })}
               />
               <PrecisionChiffres
+                champ="car_long_trips_occupancy"
                 question="Vous êtes combien dans la voiture ?"
                 options={OPTIONS_OCCUPATION}
                 valeur={answers.car_long_trips_occupancy}

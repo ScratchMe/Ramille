@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
@@ -23,6 +24,7 @@ import {
   type TransportModeId,
 } from '@/constants/transport-modes';
 import { PARTS_DU_SECOND_MODE, type BilanAnswers } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 /** Écrite une fois : le titre de l'étape et le nom du « Oui / Non » (`GroupeDeChoix`). */
 const QUESTION_SECOND_MODE = 'Utilises-tu un second mode en complément ?';
@@ -65,6 +67,7 @@ export function CommuteExtraStep({
       modeId === 'voiture' && (
         <PrecisionMode
           key="motorisation"
+          champ="commute_car_engine"
           question="Quelle motorisation ?"
           options={CAR_ENGINE_OPTIONS}
           valeur={answers.commute_car_engine}
@@ -74,6 +77,7 @@ export function CommuteExtraStep({
       modeId === 'deux_roues_motorise' && (
         <PrecisionMode
           key="deux-roues"
+          champ="commute_two_wheeler_type"
           question="Quel type de deux-roues ?"
           options={TWO_WHEELER_TYPE_OPTIONS}
           valeur={answers.commute_two_wheeler_type}
@@ -83,6 +87,7 @@ export function CommuteExtraStep({
       modeId === 'train' && (
         <PrecisionMode
           key="train"
+          champ="commute_train_type"
           question="Quel type de train ?"
           options={TRAIN_TYPE_OPTIONS}
           valeur={answers.commute_train_type}
@@ -92,6 +97,7 @@ export function CommuteExtraStep({
       modeId === 'velo' && (
         <PrecisionMode
           key="velo"
+          champ="commute_velo_type"
           question="Quel type de vélo ?"
           options={VELO_TYPE_OPTIONS}
           valeur={answers.commute_velo_type}
@@ -104,6 +110,7 @@ export function CommuteExtraStep({
       // mi-chemin) — sur le poste qui décide du poste dominant, donc du plan.
       <PrecisionMode
         key="part"
+        champ="commute_second_mode_share"
         question="Quelle part du trajet fais-tu ainsi ?"
         options={PARTS_DU_SECOND_MODE}
         valeur={answers.commute_second_mode_share}
@@ -111,71 +118,95 @@ export function CommuteExtraStep({
       />,
     ].filter(Boolean);
 
+  // Où mène « Il manque encore … » (`v1-31` §2.5) : la question du second mode, puis « Lequel ? », dont
+  // l'intitulé se marque — le titre, jamais (`seMarque`).
+  const { bloc: blocDeLaQuestion, cible: cibleDeLaQuestion } = useAncreDuChamp('commute_second_mode_used');
+  const iCibleDeLaQuestion = optionCible([
+    answers.commute_second_mode_used === true,
+    answers.commute_second_mode_used === false,
+  ]);
+  const {
+    bloc: blocDeLequel,
+    cible: cibleDeLequel,
+    marque: lequelMarque,
+  } = useAncreDuChamp('commute_second_mode');
+  const modeCible =
+    secondModeChoices[optionCible(secondModeChoices.map((id) => answers.commute_second_mode === id))];
+
   return (
     <View style={styles.container}>
       <View style={styles.block}>
-        <TitreDEtape>{QUESTION_SECOND_MODE}</TitreDEtape>
-        <ThemedText type="small" themeColor="textTertiary">
-          Par exemple vélo puis train.
-        </ThemedText>
-        <GroupeDeChoix question={QUESTION_SECOND_MODE} style={styles.row}>
-          <Chip
-            label="Oui"
-            role="radio"
-            selected={answers.commute_second_mode_used === true}
-            onPress={() => update({ commute_second_mode_used: true })}
-            flex
-            radius={16}
-            selectedStyle="outline"
-          />
-          <Chip
-            label="Non"
-            role="radio"
-            selected={answers.commute_second_mode_used === false}
-            onPress={() => update({ commute_second_mode_used: false, commute_second_mode: null })}
-            flex
-            radius={16}
-            selectedStyle="outline"
-          />
-        </GroupeDeChoix>
+        <View ref={blocDeLaQuestion} style={styles.block}>
+          <TitreDEtape>{QUESTION_SECOND_MODE}</TitreDEtape>
+          <ThemedText type="small" themeColor="textTertiary">
+            Par exemple vélo puis train.
+          </ThemedText>
+          <GroupeDeChoix question={QUESTION_SECOND_MODE} style={styles.row}>
+            <Chip
+              ref={iCibleDeLaQuestion === 0 ? cibleDeLaQuestion : undefined}
+              label="Oui"
+              role="radio"
+              selected={answers.commute_second_mode_used === true}
+              onPress={() => update({ commute_second_mode_used: true })}
+              flex
+              radius={16}
+              selectedStyle="outline"
+            />
+            <Chip
+              ref={iCibleDeLaQuestion === 1 ? cibleDeLaQuestion : undefined}
+              label="Non"
+              role="radio"
+              selected={answers.commute_second_mode_used === false}
+              onPress={() => update({ commute_second_mode_used: false, commute_second_mode: null })}
+              flex
+              radius={16}
+              selectedStyle="outline"
+            />
+          </GroupeDeChoix>
+        </View>
 
         {answers.commute_second_mode_used === true && (
           <Depliage>
-            <ThemedView type="backgroundElement" style={styles.nestedBox}>
-              <ThemedText type="small" themeColor="textTertiary">
-                {QUESTION_LEQUEL}
-              </ThemedText>
-              {/* Chaque précision — motorisation, type, part du trajet — est son propre groupe, posé
-                  dans celui-ci sous le mode qu'elle décrit (`GroupeDeChoix` dit pourquoi). */}
-              <GroupeDeChoix question={QUESTION_LEQUEL} style={styles.familles}>
-                {enFamilles(secondModeChoices, (modeId) => modeId).map((famille) => (
-                  <View key={FAMILLE_DU_MODE[famille[0]]} style={styles.famille}>
-                    {famille.map((modeId) => (
-                      <View key={modeId}>
-                        <ModeListItem
-                          label={TRANSPORT_MODE_LABELS[modeId]}
-                          selected={answers.commute_second_mode === modeId}
-                          // La motorisation et le type de deux-roues sont partagés par les deux
-                          // jambes (cf. types/bilan.ts) : ce qu'un changement de second mode rend
-                          // orphelin est effacé par `normaliserReponses`, pas ici.
-                          onPress={() => update({ commute_second_mode: modeId })}
-                          nestedBackground
-                        />
+            {/* `ThemedView` ne transmet pas de référence : le bloc où mène « le second mode » est une
+                vue ordinaire autour de la boîte. */}
+            <View ref={blocDeLequel}>
+              <ThemedView type="backgroundElement" style={styles.nestedBox}>
+                <IntituleDuChamp type="small" themeColor="textTertiary" marque={lequelMarque}>
+                  {QUESTION_LEQUEL}
+                </IntituleDuChamp>
+                {/* Chaque précision — motorisation, type, part du trajet — est son propre groupe, posé
+                    dans celui-ci sous le mode qu'elle décrit (`GroupeDeChoix` dit pourquoi). */}
+                <GroupeDeChoix question={QUESTION_LEQUEL} style={styles.familles}>
+                  {enFamilles(secondModeChoices, (modeId) => modeId).map((famille) => (
+                    <View key={FAMILLE_DU_MODE[famille[0]]} style={styles.famille}>
+                      {famille.map((modeId) => (
+                        <View key={modeId}>
+                          <ModeListItem
+                            ref={modeId === modeCible ? cibleDeLequel : undefined}
+                            label={TRANSPORT_MODE_LABELS[modeId]}
+                            selected={answers.commute_second_mode === modeId}
+                            // La motorisation et le type de deux-roues sont partagés par les deux
+                            // jambes (cf. types/bilan.ts) : ce qu'un changement de second mode rend
+                            // orphelin est effacé par `normaliserReponses`, pas ici.
+                            onPress={() => update({ commute_second_mode: modeId })}
+                            nestedBackground
+                          />
 
-                        {/* La précision sous l'élément choisi, jamais après la liste (cf.
-                            `precision-mode.tsx`) — **une seule boîte**, qui porte le type du mode
-                            quand il en a un, puis la part du trajet (`v1-31` §2.2). Deux boîtes
-                            feraient partir deux annonces de hauteur dans la même image, sans règle
-                            pour dire laquelle gagne ; le handoff l'avait oublié, le plan l'a relevé. */}
-                        {answers.commute_second_mode === modeId && (
-                          <BoiteDePrecision>{precisionsDuSecondMode(modeId)}</BoiteDePrecision>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                ))}
-              </GroupeDeChoix>
-            </ThemedView>
+                          {/* La précision sous l'élément choisi, jamais après la liste (cf.
+                              `precision-mode.tsx`) — **une seule boîte**, qui porte le type du mode
+                              quand il en a un, puis la part du trajet (`v1-31` §2.2). Deux boîtes
+                              feraient partir deux annonces de hauteur dans la même image, sans règle
+                              pour dire laquelle gagne ; le handoff l'avait oublié, le plan l'a relevé. */}
+                          {answers.commute_second_mode === modeId && (
+                            <BoiteDePrecision>{precisionsDuSecondMode(modeId)}</BoiteDePrecision>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </GroupeDeChoix>
+              </ThemedView>
+            </View>
           </Depliage>
         )}
       </View>

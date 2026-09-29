@@ -1,6 +1,6 @@
 // Tests de la logique pure du wizard bilan (dérivation de navigation + complétude).
 // Volontairement sans dépendance UI/réseau : c'est ici que se joue le comportement du
-// questionnaire (saut d'étapes, activation du bouton "Suivant") — un bug ici casse un
+// questionnaire (saut d'étapes, ce que fait le bouton « Suivant ») — un bug ici casse un
 // flux entier sans qu'aucun typecheck ne le voie.
 import {
   BILAN_STEP_ORDER,
@@ -1055,7 +1055,7 @@ describe('normaliserReponses', () => {
     expect(redescendu.teletravail).toBeNull();
 
     // Et l'étape ne la réclame plus : les trois lecteurs disent la même chose, sinon « Suivant »
-    // resterait inactif pour toujours sous un message nommant une question absente de l'écran.
+    // n'avancerait jamais, et mènerait à une question absente de l'écran.
     expect(teletravailSePose(redescendu)).toBe(false);
     expect(
       manqueDeLEtape(

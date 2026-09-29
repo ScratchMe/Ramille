@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { TitreDEtape } from '@/components/bilan/step-shell';
@@ -9,6 +10,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKm } from '@/lib/format';
 import { decompteDesLongsCourriers, volsCourtsApresTotal, type BilanAnswers } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 // "N+" stocke N — simplification assumée (pas de borne haute en base pour ces champs,
 // cf. v1-05), cohérente avec le traitement déjà appliqué à la taille de covoiturage.
@@ -37,6 +39,9 @@ export function FlightsStep({
   const shortChoices = Array.from({ length: total + 1 }, (_, i) => i);
   const longCount = Math.max(total - (answers.flights_short_per_year ?? 0), 0);
   const questionCourts = `Sur ces ${total}, combien sont courts ?`;
+  // Où mène « Il manque encore la part de vols courts » (`v1-31` §2.5) : le sous-titre se marque.
+  const { bloc, cible, marque } = useAncreDuChamp('flights_short_per_year');
+  const iCible = optionCible(shortChoices.map((n) => answers.flights_short_per_year === n));
 
   return (
     <View style={styles.container}>
@@ -78,17 +83,18 @@ export function FlightsStep({
       {total > 0 && (
         <>
           <View style={[styles.separator, { backgroundColor: theme.border }]} />
-          <View style={styles.block}>
-            <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
+          <View ref={bloc} style={styles.block}>
+            <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={marque}>
               {questionCourts}
-            </ThemedText>
+            </IntituleDuChamp>
             <ThemedText type="small" themeColor="textTertiary">
               Europe, moins de 3 h. Le reste est compté comme long-courrier.
             </ThemedText>
             <GroupeDeChoix question={questionCourts} style={styles.row}>
-              {shortChoices.map((n) => (
+              {shortChoices.map((n, i) => (
                 <Chip
                   key={n}
+                  ref={i === iCible ? cible : undefined}
                   label={String(n)}
                   role="radio"
                   selected={answers.flights_short_per_year === n}

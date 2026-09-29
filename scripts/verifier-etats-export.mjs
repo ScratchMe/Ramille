@@ -1004,9 +1004,9 @@ for (const { quoi, marques, nom } of CASES_A_L_ESPACE) {
 // ── G. Le questionnaire : le focus suit l'étape ────────────────────────────────────────────────
 //
 // « Suivant » laisse le bouton en place et change la question au-dessus de lui : sans rien de plus,
-// le focus reste sur le bouton qu'on vient d'actionner — ou, ici, tombe sur le document, le
-// « Suivant » de l'étape qui arrive étant inactif tant qu'on n'a pas répondu —, et rien de la
-// question qui arrive n'est annoncé (C1.9). `StepShell` le déplace, et **la cible n'est pas la
+// le focus reste sur le bouton qu'on vient d'actionner — ou tombait sur le document tant que le
+// « Suivant » de l'étape qui arrive était désactivé ; il est « en attente » depuis `v1-31`, et agit —,
+// et rien de la question qui arrive n'est annoncé (C1.9). `StepShell` le déplace, et **la cible n'est pas la
 // même selon la plateforme** depuis le 25/09/2026 : le conteneur de l'étape sur web, son titre sur
 // natif, où le conteneur est aplati et ne reçoit rien (le commentaire de
 // `src/components/bilan/step-shell.tsx` dit pourquoi).

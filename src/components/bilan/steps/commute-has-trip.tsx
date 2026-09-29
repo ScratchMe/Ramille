@@ -1,11 +1,13 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import type { BilanAnswers } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 /** Écrite une fois : le titre de l'étape et le nom du « Oui / Non » (`GroupeDeChoix`). */
 const QUESTION_TRAJET = 'As-tu un trajet régulier pour le travail ou les études ?';
@@ -18,16 +20,23 @@ export function CommuteHasTripStep({
   answers: BilanAnswers;
   update: (patch: Partial<BilanAnswers>) => void;
 }) {
+  // Où mène « Il manque encore une réponse » (`v1-31` §2.5) : la question, et « Oui » ou la réponse
+  // déjà donnée.
+  const { bloc, cible } = useAncreDuChamp('commute_has_regular_trip');
+  const reponse = answers.commute_has_regular_trip;
+  const iCible = optionCible([reponse === true, reponse === false]);
   return (
-    <View style={styles.container}>
+    <View ref={bloc} style={styles.container}>
       <TitreDEtape>{QUESTION_TRAJET}</TitreDEtape>
       <GroupeDeChoix question={QUESTION_TRAJET} style={styles.choices}>
         <ChoiceRow
+          ref={iCible === 0 ? cible : undefined}
           label="Oui"
           selected={answers.commute_has_regular_trip === true}
           onPress={() => update({ commute_has_regular_trip: true })}
         />
         <ChoiceRow
+          ref={iCible === 1 ? cible : undefined}
           label="Non"
           selected={answers.commute_has_regular_trip === false}
           // Une seule réponse à poser : `normaliserReponses` efface toute la section 1, et c'est

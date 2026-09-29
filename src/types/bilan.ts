@@ -273,8 +273,9 @@ export const REPONSES_TELETRAVAIL: {
  * `distanceDomicileTravailKm`, partagée entre la complétude de l'étape et l'insert, et pour la même
  * raison : `teletravail` n'est pas une étape mais un **champ** de l'étape « Contexte », donc
  * `isStepVisible` ne le gouverne pas. En oublier un coûte cher, et pas de la même façon (v1-17
- * §7.2) — ne toucher que l'écran laisse « Suivant » inactif pour toujours sous un message qui nomme
- * une question absente ; oublier `normaliserReponses` laisse partir à la soumission une réponse que
+ * §7.2) — ne toucher que l'écran laisse un « Suivant » qui n'avance jamais, et dont la demande mène
+ * à une question absente de l'écran : sa ligne la nommerait, et aucune ancre ne la porterait
+ * (`v1-31` §2.5) ; oublier `normaliserReponses` laisse partir à la soumission une réponse que
  * la personne ne voit plus et ne peut plus corriger, ce qui est le défaut de `v1-16` §4 par une
  * autre porte.
  *
@@ -465,7 +466,7 @@ function enLettres(nombre: number): string {
  */
 export function avancementDeLaReprise(step: BilanStepId, answers: BilanAnswers): string {
   const visibles = visibleSteps(answers);
-  // **Le compte est la position, et c'est exact sur le chemin normal** : « Suivant » est inactif
+  // **Le compte est la position, et c'est exact sur le chemin normal** : « Suivant » n'avance pas
   // tant que l'étape n'est pas complète, donc tout écran derrière celui-ci a bel et bien été rempli.
   //
   // **Compter la complétude serait pire**, et l'essai a été fait (contre-lecture de la vague 6, le

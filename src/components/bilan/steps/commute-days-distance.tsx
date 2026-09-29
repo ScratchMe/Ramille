@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useState, type RefObject } from 'react';
+import { StyleSheet, View, type TextInput } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { ChoiceRow } from '@/components/bilan/choice-row';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
@@ -17,6 +18,7 @@ import {
   type BilanAnswers,
   type DistanceBracket,
 } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7];
 
@@ -49,17 +51,31 @@ export function CommuteDaysDistanceStep({
   // déduire seulement de `commute_distance_bracket !== null`.
   const [unknown, setUnknown] = useState(answers.commute_distance_bracket !== null);
 
+  // Où mène « Il manque encore … » (`v1-31` §2.5). **La distance est un seul champ pour deux
+  // colonnes** (`distance_du_trajet`) : l'étape n'en montre qu'une, en kilomètres ou par tranche, et
+  // c'est elle qu'on enregistre — le champ de saisie, qui reçoit le focus lui-même et ouvre le clavier,
+  // ou le groupe des tranches.
+  const { bloc: blocDesJours, cible: cibleDesJours } = useAncreDuChamp('commute_days_per_week');
+  const iCibleDesJours = optionCible(DAYS.map((day) => answers.commute_days_per_week === day));
+  const {
+    bloc: blocDeLaDistance,
+    cible: cibleDeLaDistance,
+    marque: distanceMarquee,
+  } = useAncreDuChamp<unknown>('distance_du_trajet', { saisie: !unknown });
+  const iCibleDesTranches = optionCible(BRACKETS.map((b) => answers.commute_distance_bracket === b.value));
+
   return (
     <View style={styles.container}>
-      <View style={styles.block}>
+      <View ref={blocDesJours} style={styles.block}>
         <TitreDEtape>{QUESTION_JOURS}</TitreDEtape>
         {/* **Quatre colonnes, donc deux lignes** (24/09/2026, décision n° 7 : une cible de 48). Sur une
             ligne, les sept puces ne mesuraient que 38 à 42 px de large sur un téléphone de 360 à
             390 dp — cf. `GroupeDeChoix`. */}
         <GroupeDeChoix question={QUESTION_JOURS} colonnes={4}>
-          {DAYS.map((day) => (
+          {DAYS.map((day, i) => (
             <Chip
               key={day}
+              ref={i === iCibleDesJours ? cibleDesJours : undefined}
               label={String(day)}
               role="radio"
               selected={answers.commute_days_per_week === day}
@@ -73,10 +89,10 @@ export function CommuteDaysDistanceStep({
       <View style={[styles.separator, { backgroundColor: theme.border }]} />
 
       {unknown ? (
-        <View style={styles.block}>
-          <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
+        <View ref={blocDeLaDistance} style={styles.block}>
+          <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={distanceMarquee}>
             {QUESTION_TRANCHE}
-          </ThemedText>
+          </IntituleDuChamp>
           {/* **« On ajustera la précision plus tard » promettait un mécanisme qui n'existe pas**
               (C3.7, constat A12-22). Rien dans le produit ne revient demander une distance, et la
               phrase laissait attendre une relance. Ce qui existe vraiment, c'est le re-bilan — et
@@ -86,9 +102,10 @@ export function CommuteDaysDistanceStep({
             bilan : tes réponses seront préremplies.
           </ThemedText>
           <GroupeDeChoix question={QUESTION_TRANCHE} style={styles.bracketList}>
-            {BRACKETS.map((bracket) => (
+            {BRACKETS.map((bracket, i) => (
               <ChoiceRow
                 key={bracket.value}
+                ref={i === iCibleDesTranches ? (cibleDeLaDistance as RefObject<View | null>) : undefined}
                 label={bracket.label}
                 selected={answers.commute_distance_bracket === bracket.value}
                 onPress={() => update({ commute_distance_bracket: bracket.value })}
@@ -127,11 +144,12 @@ export function CommuteDaysDistanceStep({
           />
         </View>
       ) : (
-        <View style={styles.block}>
-          <ThemedText type="subtitle" weight={600} style={styles.subtitle}>
+        <View ref={blocDeLaDistance} style={styles.block}>
+          <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={distanceMarquee}>
             Quelle distance pour un aller ?
-          </ThemedText>
+          </IntituleDuChamp>
           <NumericField
+            ref={cibleDeLaDistance as RefObject<TextInput | null>}
             value={answers.commute_distance_km}
             onChange={(value) => update({ commute_distance_km: value })}
             unit="km"

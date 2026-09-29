@@ -1,9 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
-import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
+import type { ChampDuBilan } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 /**
  * La jumelle chiffrée de `PrecisionMode` : mêmes garanties d'accessibilité, posée comme elle dans
@@ -39,25 +41,31 @@ import { Radius, Spacing } from '@/constants/theme';
  * son rôle lui-même —, comme sa jumelle `PrecisionMode` le faisait déjà.
  */
 export function PrecisionChiffres({
+  champ,
   question,
   options,
   valeur,
   onChange,
 }: {
+  /** Le champ qu'elle renseigne : « Il manque encore … » y mène, et en marque l'intitulé (`v1-31`). */
+  champ: ChampDuBilan;
   question: string;
   options: readonly { value: number; label: string; accessibilityLabel?: string }[];
   valeur: number | null;
   onChange: (valeur: number) => void;
 }) {
+  const { bloc, cible, marque } = useAncreDuChamp(champ);
+  const iCible = optionCible(options.map((option) => valeur === option.value));
   return (
-    <View style={styles.precision}>
-      <ThemedText type="small" themeColor="textSecondary">
+    <View ref={bloc} style={styles.precision}>
+      <IntituleDuChamp type="small" themeColor="textSecondary" marque={marque}>
         {question}
-      </ThemedText>
+      </IntituleDuChamp>
       <GroupeDeChoix question={question} colonnes={options.length}>
-        {options.map((option) => (
+        {options.map((option, i) => (
           <Chip
             key={option.value}
+            ref={i === iCible ? cible : undefined}
             label={option.label}
             accessibilityLabel={option.accessibilityLabel}
             role="radio"

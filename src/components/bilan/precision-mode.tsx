@@ -1,9 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { ModeListItem } from '@/components/bilan/mode-list-item';
-import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import type { ChampDuBilan } from '@/types/bilan';
+import { optionCible } from '@/types/demande';
 
 // Question de précision attachée au mode qui la déclenche — motorisation d'une voiture, type de
 // deux-roues, et depuis C4.4 type de train et type de vélo. La liste ne s'écrit pas ici : ce
@@ -18,7 +20,7 @@ import { Spacing } from '@/constants/theme';
 // première raison d'être de ce composant. Elle vivait auparavant après la liste entière : sur
 // un écran de 390 × 844, avec neuf modes, elle tombait à 774 px pour un conteneur de 684 —
 // 242 px hors champ, sous le pied collant. La personne voyait un mode sélectionné, un
-// « Suivant » grisé, et une liste qui semblait complète. Rien n'indiquait qu'il restait
+// « Suivant » gris, et une liste qui semblait complète. Rien n'indiquait qu'il restait
 // quelque chose à faire.
 //
 // Le défilement automatique aurait été un pansement : il ne dit rien au retour sur l'étape,
@@ -50,25 +52,31 @@ import { Spacing } from '@/constants/theme';
 // fraction, parce que c'est ce que le calcul multiplie — traduire une énumération en fraction
 // quelque part entre l'écran et le SQL serait un troisième endroit où se tromper.
 export function PrecisionMode<T extends string | number>({
+  champ,
   question,
   options,
   valeur,
   onChange,
 }: {
+  /** Le champ qu'elle renseigne : « Il manque encore … » y mène, et en marque l'intitulé (`v1-31`). */
+  champ: ChampDuBilan;
   question: string;
   options: readonly { value: T; label: string }[];
   valeur: T | null;
   onChange: (valeur: T) => void;
 }) {
+  const { bloc, cible, marque } = useAncreDuChamp(champ);
+  const iCible = optionCible(options.map((option) => valeur === option.value));
   return (
-    <View style={styles.precision}>
-      <ThemedText type="small" themeColor="textSecondary">
+    <View ref={bloc} style={styles.precision}>
+      <IntituleDuChamp type="small" themeColor="textSecondary" marque={marque}>
         {question}
-      </ThemedText>
+      </IntituleDuChamp>
       <GroupeDeChoix question={question} style={styles.reponses}>
-        {options.map((option) => (
+        {options.map((option, i) => (
           <ModeListItem
             key={option.value}
+            ref={i === iCible ? cible : undefined}
             label={option.label}
             selected={valeur === option.value}
             onPress={() => onChange(option.value)}

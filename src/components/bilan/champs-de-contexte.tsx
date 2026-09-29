@@ -1,16 +1,17 @@
 import { StyleSheet, View } from 'react-native';
 
+import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
-import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
-import { REPONSES_TELETRAVAIL, teletravailSePose, type BilanAnswers } from '@/types/bilan';
+import { REPONSES_TELETRAVAIL, teletravailSePose, type BilanAnswers, type ChampDuBilan } from '@/types/bilan';
 import {
   CHOIX_DE_TC,
   CHOIX_DE_VEHICULES,
   CHOIX_DE_ZONE,
   type ChoixDeContexte,
 } from '@/types/contexte';
+import { optionCible } from '@/types/demande';
 
 /**
  * Les trois questions qui se posent à tout le monde, écrites **une fois** pour leurs deux usages :
@@ -53,62 +54,27 @@ export function ChampsDeContexte({
 
   return (
     <>
-      <View style={styles.field}>
-        <ThemedText type="small" themeColor="textTertiary">
-          {QUESTION_ZONE}
-        </ThemedText>
-        <GroupeDeChoix question={QUESTION_ZONE} style={styles.row}>
-          {CHOIX_DE_ZONE.map((option) => (
-            <Chip
-              key={option.value}
-              label={option.label}
-              role="radio"
-              selected={choix.zone_type === option.value}
-              onPress={() => update({ zone_type: option.value })}
-              flex
-              radius={Radius.chip}
-            />
-          ))}
-        </GroupeDeChoix>
-      </View>
-
-      <View style={styles.field}>
-        <ThemedText type="small" themeColor="textTertiary">
-          {QUESTION_TC}
-        </ThemedText>
-        <GroupeDeChoix question={QUESTION_TC} style={styles.row}>
-          {CHOIX_DE_TC.map((option) => (
-            <Chip
-              key={option.value}
-              label={option.label}
-              role="radio"
-              selected={choix.tc_access === option.value}
-              onPress={() => update({ tc_access: option.value })}
-              flex
-              radius={Radius.chip}
-            />
-          ))}
-        </GroupeDeChoix>
-      </View>
-
-      <View style={styles.field}>
-        <ThemedText type="small" themeColor="textTertiary">
-          {QUESTION_VEHICULES}
-        </ThemedText>
-        <GroupeDeChoix question={QUESTION_VEHICULES} style={styles.row}>
-          {CHOIX_DE_VEHICULES.map((option) => (
-            <Chip
-              key={option.value}
-              label={option.label}
-              role="radio"
-              selected={choix.household_vehicles === option.value}
-              onPress={() => update({ household_vehicles: option.value })}
-              flex
-              radius={Radius.chip}
-            />
-          ))}
-        </GroupeDeChoix>
-      </View>
+      <SerieDuContexte
+        champ="zone_type"
+        question={QUESTION_ZONE}
+        options={CHOIX_DE_ZONE}
+        valeur={choix.zone_type}
+        onChange={(value) => update({ zone_type: value })}
+      />
+      <SerieDuContexte
+        champ="tc_access"
+        question={QUESTION_TC}
+        options={CHOIX_DE_TC}
+        valeur={choix.tc_access}
+        onChange={(value) => update({ tc_access: value })}
+      />
+      <SerieDuContexte
+        champ="household_vehicles"
+        question={QUESTION_VEHICULES}
+        options={CHOIX_DE_VEHICULES}
+        valeur={choix.household_vehicles}
+        onChange={(value) => update({ household_vehicles: value })}
+      />
 
       {/* B4.4 (C3.8, reformulée par C5.4) — la seule question de cette étape qui ne se pose pas à
           tout le monde.
@@ -123,27 +89,60 @@ export function ChampsDeContexte({
           nombre vient de B1.2, et « pourrais-tu » garde la possibilité — ce n'est pas ce qu'on fait
           déjà, qui est dans les jours de trajet déclarés. */}
       {teletravailSePose(trajet) && (
-        <View style={styles.field}>
-          <ThemedText type="small" themeColor="textTertiary">
-            {questionTeletravail}
-          </ThemedText>
-          <GroupeDeChoix question={questionTeletravail} style={styles.row}>
-            {REPONSES_TELETRAVAIL.map((option) => (
-              <Chip
-                key={option.value}
-                label={option.label}
-                accessibilityLabel={option.accessibilityLabel}
-                role="radio"
-                selected={choix.teletravail === option.value}
-                onPress={() => update({ teletravail: option.value })}
-                flex
-                radius={Radius.chip}
-              />
-            ))}
-          </GroupeDeChoix>
-        </View>
+        <SerieDuContexte
+          champ="teletravail"
+          question={questionTeletravail}
+          options={REPONSES_TELETRAVAIL}
+          valeur={choix.teletravail}
+          onChange={(value) => update({ teletravail: value })}
+        />
       )}
     </>
+  );
+}
+
+/**
+ * Une série du contexte : son intitulé, ses puces, et l'ancre où mène « Il manque encore … »
+ * (`v1-31` §2.5) — l'intitulé se marque, le focus va à la puce cochée ou à la première. Écrite une fois
+ * pour les quatre, qui ne différaient que par leurs réponses. **Dans `/contexte`, l'ancre ne fait
+ * rien** : il n'y a pas de `StepShell` autour, et cet écran ne change pas.
+ */
+function SerieDuContexte<T extends string>({
+  champ,
+  question,
+  options,
+  valeur,
+  onChange,
+}: {
+  champ: ChampDuBilan;
+  question: string;
+  options: readonly { value: T; label: string; accessibilityLabel?: string }[];
+  valeur: T | null;
+  onChange: (valeur: T) => void;
+}) {
+  const { bloc, cible, marque } = useAncreDuChamp(champ);
+  const iCible = optionCible(options.map((option) => valeur === option.value));
+  return (
+    <View ref={bloc} style={styles.field}>
+      <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>
+        {question}
+      </IntituleDuChamp>
+      <GroupeDeChoix question={question} style={styles.row}>
+        {options.map((option, i) => (
+          <Chip
+            key={option.value}
+            ref={i === iCible ? cible : undefined}
+            label={option.label}
+            accessibilityLabel={option.accessibilityLabel}
+            role="radio"
+            selected={valeur === option.value}
+            onPress={() => onChange(option.value)}
+            flex
+            radius={Radius.chip}
+          />
+        ))}
+      </GroupeDeChoix>
+    </View>
   );
 }
 
