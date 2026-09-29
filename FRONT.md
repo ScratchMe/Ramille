@@ -495,7 +495,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   (`src/types/typographie.ts`) : un texte les écrit avec une espace ordinaire, et un texte rendu
   hors de `ThemedText` (un `Text` nu, une carte de `api/`) ne les reçoit pas. Les dérivations de
   `src/types/` rendent des espaces ordinaires, et un contrôle d'export qui cherche du texte dans
-  `innerText` doit normaliser les blancs (`\s+` couvre U+00A0).
+  `innerText` doit normaliser les blancs (`\s+` couvre U+00A0). **Une garde qui lit `textContent`
+  aussi** : le 29/09/2026, une sonde du parcours réel cherchait « Quand ? » à l'identique et ne
+  trouvait rien, alors que la source l'écrit avec une espace ordinaire.
 - **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
   par un `onPress`** (rendu en `<div>` par `react-native-web`), et se vérifie dans le HTML statique
   de `dist/` : `EXPO.md` §2.1.
@@ -1069,7 +1071,11 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
 - **Ce qui ne bouge jamais** : l'état pressé (une teinte immédiate, `v1-29` décision n° 6), un
   chiffre (jamais un compteur qui défile — il afficherait des valeurs fausses en chemin), une
   navigation de pile (« standard plateforme »), et le focus, qui part au geste et jamais à la fin
-  d'une animation.
+  d'une animation. **Même quand sa cible entre encore**, découpée ou transparente : sur la liste des
+  pistes, la question reçoit le focus pendant que sa carte grandit. Un délai jusqu'à la fin de
+  l'entrée y a été écrit le 29/09/2026 pour ménager TalkBack, puis retiré le jour même — il
+  retardait l'annonce que la règle protège. Si Android refuse un jour le focus sur un nœud qui
+  entre, la parade touche l'entrée, pas le moment du focus (`v1-13` §11.24).
 - **Tout passe par `src/lib/mouvement.tsx`** — `styleDEntree`, `Apparition`, `Depliage`,
   `HauteurSuivie`, `SansApparitionAuMontage` — et par les jetons `Mouvement` de
   `src/constants/theme.ts`. Une durée écrite en dur dans un écran est un réglage de plus à tenir

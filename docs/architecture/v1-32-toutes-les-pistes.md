@@ -398,6 +398,8 @@ Et l'état d'avancement de §8 se tient à jour pendant le travail, pas après c
 | 4.8 — la recette, `v1-13` §11, le parcours réel | fait (29/09/2026) : bloc 06, 08.6, 01.3, 03.11 ; 11.18 datée, 11.W.2 réécrite, 11.24 ouverte ; trois étapes au parcours réel, éprouvées par trois mutations (en tête du script — la deuxième est d'abord passée, et a fait ajouter « juste assez » à la garde). **Le relevé avait manqué un fichier** : `src/tests/ecrans/plan-pistes.test.tsx`, le test d'écran, qui attendait l'ancienne intro — réécrit, avec quatre câblages neufs |
 | 6 — vérifications, contre-lecture, mesure Vercel | fait (29/09/2026) : `tsc`, lint, Jest (1 224 tests) ; la CI rejouée en local, 31 pas sur 31 ; les planches et le focus au navigateur, à 390 et 360 ; la contre-lecture du diff entier, douze constats traités (§10), dont cinq gardes neuves au parcours réel, chacune cassée ; la mesure hors ligne du déploiement, **4,16 Mio**, identique au relevé du 25/09/2026 |
 | 7 — les trois phrases | fait (29/09/2026) : `produit.md` §3, `v1-13` §14.7, le bandeau de `v1-16` §5 |
+| Livraison | fait (29/09/2026) : [#295](https://github.com/ScratchMe/Ramille/pull/295), fusionnée en squash (`7dce4ae`) sur une CI verte ; la production sert le nouvel écran (un bundle neuf portant `aLaPlace`, absent de tout le code d'avant) ; les trois artefacts de recette republiés, chacun recomparé à son document ligne par ligne (`RECETTE.md` §2.5) |
+| Après la livraison | **le délai du focus retiré** (29/09/2026, PR de documentation de la session) : il enfreignait la règle du mouvement, §10 dit comment il était entré |
 
 ## 9. Écarts au canvas déjà connus
 
@@ -447,8 +449,14 @@ pesaient :
   `ref` de `Button`). Le parcours les voit désormais, chacun éprouvé par sa mutation (en tête du
   script) ;
 - **le focus était demandé au montage, sur une question encore découpée et transparente** : le
-  navigateur l'accepte, Android peut le refuser. Il attend désormais que la carte ait grandi
-  (`ActionCommitment`) ; TalkBack le confirmera au doigt (`v1-13` §11.24).
+  navigateur l'accepte, Android peut le refuser. La correction appliquée ce soir-là le faisait
+  attendre que la carte ait grandi — **et elle était fausse**, retirée après la fusion : la règle
+  du mouvement dit que le focus part au geste, jamais à la fin d'une animation, pour que l'annonce
+  ne soit jamais en retard (`FRONT.md` §2.12, skill `/mouvement`). La contre-lecture ne connaît pas
+  toutes les règles écrites, et sa proposition n'a pas été relue contre elles avant d'être
+  appliquée. Le risque TalkBack reste, et il se juge au doigt (`v1-13` §11.24) ; le parcours lit
+  désormais le focus **tout de suite** après l'ouverture, ce qui garde la règle (mutation PR9, en
+  tête du script).
 
 Le reste : un décompte de mutation faux (M3 fait tomber trois cas, pas deux), un séparateur des
 milliers collé en littéral dans un test, trois phrases périmées dans l'en-tête du test d'écran, la

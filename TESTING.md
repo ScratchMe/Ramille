@@ -53,6 +53,20 @@ redirection emportait la navigation, donc l'attaque n'avait pas lieu et la garde
 « refusée ». Avec la faille grande ouverte, elle restait verte. Le test d'une garde de cette forme
 n'est donc pas « passe-t-elle ? » mais « **tombe-t-elle quand je remets le défaut ?** » — et si
 elle ne tombe pas, c'est la garde qu'on instrumente, pas le produit qu'on déclare sain.
+
+**« Tombe à la bonne étape » n'est pas « tombe sur la bonne assertion ».** Relevé le 29/09/2026 : un
+script de mutation qui ne rapportait que l'étape où le parcours s'arrêtait a dû être rejoué en
+entier — trois mutations visaient la même étape, et seul le message d'échec dit laquelle des
+gardes a parlé. **Chaque passage garde son journal complet**, et le compte écrit dans le fichier de
+test cite le message, pas l'étape.
+
+**Et tant qu'une source est mutée, rien d'autre ne lit l'arbre.** Un script qui mute, exporte puis
+restaure laisse la mutation sur le disque pendant tout l'export : un commit pris à ce moment
+l'embarque, un test lancé à côté éprouve le mutant, un second export le livre. Le même jour, un
+commit a dû exclure le seul fichier encore muté, et une mutation de `plan.ts` a attendu la fin des
+exports d'une autre série. Rejouer les parcours sur des exports déjà construits, lui, ne touche
+plus aux sources.
+
 ### 1.2 Où passe la ligne entre logique pure et entrée-sortie
 
 La ligne passe par **ce qu'un test doit dresser avant de pouvoir affirmer**, et non par le nom

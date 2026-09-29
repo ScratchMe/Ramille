@@ -124,6 +124,15 @@ relais au rendu suivant.
   25/09/2026 : le focus revenait sur la page quittée, l'inertie des pages basculait trois fois. Le
   défilement programmé se tient donc jusqu'à son arrivée, lue à sa position (`enVol`, dans
   `src/app/onboarding/index.tsx`).
+- **Un `scrollTo` lancé pendant qu'un contenu grandit s'arrête à la hauteur de l'instant.** Le
+  navigateur borne la cible à ce qui est défilable **au moment de l'appel** : une carte qui s'ouvre
+  en grandissant n'a pas encore sa hauteur finale, et le défilement s'arrête court — mesuré le
+  29/09/2026, `scrollTop` figé à 883 pendant que la hauteur défilable passait de 1571 à 1920, le
+  bouton visé sous la barre d'onglets. La mesure se prend et le défilement part **une fois le
+  contenu grandi** (la durée de son entrée ; tout de suite sous « réduire les animations », où il
+  arrive entier), et se lit **dans la fenêtre** (`measureInWindow`), l'ancrage du défilement de
+  Chrome déplaçant les positions relatives pendant qu'un voisin se replie. Ramille :
+  `pistes.tsx` et `defilementPourMontrer` (`src/types/mouvement.ts`), `v1-32` §4.4.
 - **Le `Modal` de react-native-web anime tout son contenu d'un bloc, et ignore « réduire les
   animations »** (0.21, keyframes CSS de 250 ms) : avec `animationType="slide"`, le voile d'une
   feuille du bas monte du bas avec elle au lieu d'assombrir l'écran sur place, la fermeture est

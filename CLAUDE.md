@@ -63,7 +63,8 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
   veux. Continue simplement de regarder combien ça doit déployer pour vérifier qu'il n'y ait pas
   une hausse soudaine, il faudrait alors l'expliquer »). Le budget des 150 Mo du 15 au 25/09/2026
   et le relevé à demander avant chaque fusion sont levés ; **la mesure hors ligne avant chaque
-  fusion de code reste**, comparée au relevé précédent (4,16 Mio le 25/09/2026), et **un écart
+  fusion de code reste**, comparée au relevé précédent (4,16 Mio, soit 4 366 425 octets, le
+  29/09/2026), et **un écart
   s'explique dans la PR avant de fusionner** — un saut veut dire qu'une dépendance est entrée dans
   `api/`. La méthode, et ce que la fenêtre des dix jours a appris : `VERCEL.md` §1.2 et §2.3.
 
@@ -77,6 +78,14 @@ GitHub la supprime à la fusion ; la repousser aussitôt ressuscite une branche 
 **Et ça ne se rattrape pas d'ici** : le proxy git de l'environnement distant refuse les suppressions
 de référence — `HTTP 403` sur `git push --delete` comme sur la refspec vide. La suppression se fait
 depuis GitHub. Ce n'est pas passager, donc une boucle de reprise n'y changera rien.
+
+**Et le hook d'arrêt réclame alors un push, qu'il ne faut pas lui donner** (29/09/2026, trois tours
+pour le comprendre). Recréée sur `main`, la branche porte le commit de fusion ; le hook le compte
+« non poussé » tant qu'il compare à `origin/<branche>`, une référence locale **périmée** que la
+suppression côté GitHub n'a pas effacée. Deux commandes, qui n'écrivent rien sur GitHub :
+`git remote prune origin` (la référence périmée part) puis `git branch -u origin/main` (la
+branche suit ce qu'elle contient). Le premier vrai commit se pousse ensuite par
+`git push -u origin <branche>`, qui rétablit son amont.
 
 **Un numéro de PR s'écrit dans un document une fois obtenu, jamais avant.** Le 15/09/2026, `#186`
 puis `#187` ont été écrits dans `v1-13` §10 avant d'ouvrir les PR, en pariant sur la numérotation.
@@ -113,7 +122,12 @@ pourtant testée, deux cartes qu'on croyait s'exclure, quatre écritures d'état
 d'annulation, un commentaire orphelin décrivant un mécanisme supprimé. Ni la CI, ni le linter, ni
 aucun test ne pouvait en voir un seul. **Depuis le 27/09/2026, elle a son sous-agent,
 `contre-lecture`** (`.claude/agents/contre-lecture.md`), qui porte la grille : on le lance sur le
-diff entier, en lui donnant la base, le commit et ce que la vague prétend faire.
+diff entier, en lui donnant la base, le commit et ce que la vague prétend faire. **Ses constats se
+vérifient, et ses corrections se relisent contre les règles écrites avant d'être appliquées** : il
+ne les connaît pas toutes. Le 29/09/2026, sa proposition de retarder un focus jusqu'à la fin d'une
+entrée animée a été appliquée telle quelle, fusionnée, puis retirée le jour même — elle enfreignait
+la règle du mouvement, « le focus part au geste, jamais à la fin d'une animation » (`FRONT.md`
+§2.12), que le skill `/mouvement` porte depuis la veille.
 
 **Et une vague confiée à des sous-agents en worktrees coûte quatre préparations et une surprise**
 (24/09/2026, trois chantiers de `v1-29` en parallèle). Les worktrees vivent sous `.claude/worktrees/`,
@@ -264,7 +278,11 @@ joué sans être installé, et chacun décidé avec la personne qui pilote, comm
   les jetons, la règle de « réduire les animations » et ce qui ne bouge jamais, **à appeler avant
   d'ajouter ou de retoucher une transition**. Il reprend dans nos mots les principes de
   transitions.dev, qui ne s'installe pas — sa licence interdit de republier sa collection
-  (`docs/architecture/v1-30-les-transitions.md` §3.1).
+  (`docs/architecture/v1-30-les-transitions.md` §3.1). **« Par leur nom » veut dire par la
+  personne qui pilote** : les trois portent `disable-model-invocation`, donc l'agent ne peut pas les
+  lancer lui-même (relevé le 29/09/2026). Quand leur moment arrive, l'agent **lit** leur
+  `SKILL.md` avant d'agir — et le relit avant toute retouche de ce qu'il couvre, correction
+  d'une contre-lecture comprise (plus haut).
 
 ## Le produit, en trois règles et un renvoi
 
