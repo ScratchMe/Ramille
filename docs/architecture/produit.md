@@ -56,7 +56,8 @@ l'app depuis `/plan` — c'est le comportement attendu d'une racine à onglets, 
 être « corrigé » par quelqu'un qui le prendrait pour une navigation manquante.
 
 L'increment précédent, `v1-10-connexion-et-rappels.md` (06/09/2026), est livré pour ses
-chantiers A à D, F **et E** ; il ne reste que G (renommage GitHub). Il portait la connexion
+chantiers A à D, F **et E**, et G — le renommage du dépôt en `ScratchMe/Ramille` — l'a été le
+17/09/2026 (`docs/exploitation/depot-public.md`). Il portait la connexion
 par lien sans mot de passe, les rappels par push, et deux correctifs livrés qui les
 conditionnaient — l'étalement du pic d'envoi du lundi, et la purge des sessions anonymes qui
 supprimait sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur l'**inactivité**
@@ -416,8 +417,10 @@ s'annonce enfin coché — c'était le seul défaut critique de l'audit.
   qu'elle a changés ; le reste est daté et chiffré en `v1-29` §5, avec la commande qui le refait :
   des composants absents (40 fichiers sur 67 à la définition qui y est écrite, dont les quatre que
   la livraison a créés), un catalogue d'écrans du handoff V1, des écarts antérieurs relevés en
-  chemin, et une session de design pour le faire. **À faire avant la prochaine session de design**,
-  qui partirait sinon d'un kit faux ;
+  chemin, et une session de design pour le faire. **Fini le 27/09/2026** (`v1-29` §5, lots 1 à 6) :
+  chaque composant a sa fiche, le kit complet est renvoyé vers Claude Design, le catalogue des
+  écrans du handoff est retiré plutôt que tenu, et `scripts/verifier-miroir-du-kit.mjs` fait rougir
+  la CI sur un composant ajouté sans fiche ;
 - **le thème sombre, après le lancement** (n° 8) : sa liste de reprise est en `v1-29` §6.1, build EAS
   compris ;
 - **le paysage**, écart WCAG 1.3.4 **assumé pour la V1** (n° 9), et ce que le lever coûte : `v1-29`
@@ -485,8 +488,8 @@ propriétaire (§5), les quatre jetons de couleur (§6), les accessoires de sais
 s'invoque comme skill (`ramille-design`, `.claude/skills/ramille-design/SKILL.md`). Ce n'est pas une
 source de vérité — en cas d'écart, le code et `CLAUDE.md` gagnent —, mais **ce n'est plus une
 photographie non plus : depuis le 24/09/2026, il se synchronise** (`v1-29` §5). Une PR qui change un
-jeton ou une règle le met à jour ; ce qui reste à rattraper, dont son catalogue qui reprend des
-écrans du handoff V1 qui n'existent plus (mot de passe), est le chantier décrit au §3. Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
+jeton ou une règle le met à jour, et le rattrapage décrit au §3 est fini depuis le 27/09/2026 — son
+catalogue d'écrans du handoff V1, qui montrait encore un mot de passe, en est retiré. Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
 §4 — audit du 04/09/2026, 7 étapes (facteurs d'émission faux → boucle d'engagement cassée → suivi
 dans la durée qui manque) — est entièrement livré. Son §1 corrige deux erreurs de chiffre documentées ailleurs
 comme des choix assumés : l'API Impact CO2 **distingue bien** court/moyen/long-courrier (la
