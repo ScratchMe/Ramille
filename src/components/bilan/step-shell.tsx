@@ -16,6 +16,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { donnerLeFocus } from '@/lib/focus';
 import {
   Apparition,
@@ -31,7 +32,7 @@ import {
   type CeQuiManque,
   type ChampDuBilan,
 } from '@/types/bilan';
-import { decalagePourMontrer } from '@/types/demande';
+import { decalagePourMontrer, suiteSousLePied } from '@/types/demande';
 import type { Sens } from '@/types/mouvement';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
@@ -135,6 +136,7 @@ export function StepShell({
   // sortie s'efface, elle ne se met pas en scène. Sous « réduire les animations », l'étape est posée.
   // La clé fait aussi remonter le contenu d'une étape à l'autre, là où React gardait l'état d'un
   // composant que deux étapes rendaient à la même place.
+  const theme = useTheme();
   const animationsReduites = useReducedMotion();
   const styleDeLEtape = styleDEntree(entree.sens, animationsReduites);
 
@@ -268,6 +270,7 @@ export function StepShell({
   // La zone a changé de hauteur — la ligne vient d'apparaître : le défilement vers ce qui manque part.
   const miseEnPageDeLaZone = (evenement: LayoutChangeEvent) => {
     zone.current.hauteur = evenement.nativeEvent.layout.height;
+    relireLaSuite();
     const enAttente = defilementEnAttente.current;
     defilementEnAttente.current = null;
     // Une demande faite sur une autre étape n'a plus rien à montrer ici.
@@ -280,7 +283,21 @@ export function StepShell({
   // (`scrollContent`), donc une mesure relative à lui se décale d'autant, et c'est à la mesure de rendre
   // des coordonnées de contenu justes. Il porte `collapsable={false}` : sur natif, une vue sans aucune
   // propriété est aplatie, et mesurer relativement à un nœud qui n'existe pas ne rend rien.
-  const zone = useRef({ decalage: 0, hauteur: 0, hautDuContenu: 0 });
+  const zone = useRef({ decalage: 0, hauteur: 0, hautDuContenu: 0, hauteurDuContenu: 0 });
+
+  // **Le filet du pied** (29/09/2026, `v1-31`, décision 3) : le trait de la bande haute, en haut du
+  // pied, quand le contenu continue dessous au-delà de sa marge basse (`suiteSousLePied`). Il ne dit pas
+  // ce qui manque ; il dit qu'il y a une suite. Relu à chaque défilement, à chaque changement de taille
+  // du contenu, et quand la zone change de hauteur — la ligne qui apparaît la rétrécit. Sans animation.
+  const [suite, setSuite] = useState(false);
+  const relireLaSuite = () =>
+    setSuite(
+      suiteSousLePied({
+        decalage: zone.current.decalage,
+        hauteurZone: zone.current.hauteur,
+        hauteurContenu: zone.current.hauteurDuContenu,
+      })
+    );
   /** Le défilement de la plateforme : `scrollTo` ne prend ni durée ni courbe, et sous « réduire les
    *  animations » il se pose. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5). */
   const defiler = (y: number) => defilement.current?.scrollTo({ y, animated: !animationsReduites });
@@ -363,6 +380,11 @@ export function StepShell({
           scrollEventThrottle={16}
           onScroll={(evenement) => {
             zone.current.decalage = evenement.nativeEvent.contentOffset.y;
+            relireLaSuite();
+          }}
+          onContentSizeChange={(_largeur, hauteur) => {
+            zone.current.hauteurDuContenu = hauteur;
+            relireLaSuite();
           }}
           onLayout={miseEnPageDeLaZone}
         >
@@ -392,6 +414,8 @@ export function StepShell({
             s'y rend jamais au montage — la demande part d'un geste —, donc elle entre en fondu. */}
         <SansApparitionAuMontage>
           <View style={styles.footerBlock}>
+            {/* En position absolue : rien ne bouge quand il apparaît. */}
+            {suite && <View style={[styles.filet, { backgroundColor: theme.border }]} />}
             <MessageInline message={message ?? null} />
             {/* Volontairement brut : ce texte est destiné à être recopié, pas lu comme du
                 produit. Ni la voix de Ramille ni un ton rassurant n'ont leur place ici — ce
@@ -441,10 +465,15 @@ const styles = StyleSheet.create({
   headerBlock: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
   notice: { borderRadius: Radius.notice, paddingVertical: 10, paddingHorizontal: Spacing.three },
   motDeRamille: { lineHeight: 20 },
+  // Sa marge basse est celle que le filet ne compte pas comme une suite (`MARGE_BASSE_DU_CONTENU`,
+  // `src/types/demande.ts`) : les deux se retouchent ensemble.
   scrollContent: { padding: Spacing.four, gap: Spacing.five, flexGrow: 1 },
   // Le padding vit sur le bloc, pas sur la rangée : le message doit être aligné sur les
   // boutons et non collé au bord.
   footerBlock: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.four, gap: Spacing.two },
   detail: { lineHeight: 18 },
   footer: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
+  // Le trait de la bande haute des onglets (`bande-haute.tsx`) : un cheveu, couleur `border`, pleine
+  // largeur.
+  filet: { position: 'absolute', top: 0, left: 0, right: 0, height: StyleSheet.hairlineWidth },
 });

@@ -1,4 +1,4 @@
-import { decalagePourMontrer, optionCible } from '@/types/demande';
+import { decalagePourMontrer, optionCible, suiteSousLePied } from '@/types/demande';
 
 // Ce que le « Suivant » en attente fait voir (29/09/2026, `v1-31`). Ce test garde les fonctions, pas
 // leurs appels (`FRONT.md` §1.1) : que `StepShell` y défile vraiment, et que le focus se pose, c'est la
@@ -11,6 +11,10 @@ import { decalagePourMontrer, optionCible } from '@/types/demande';
 //     zone, elle redescend » et « plus haute que la zone… », et eux seuls ;
 //   - l'ouverture sans sa borne (`margeHaut` de la demande) → « une ouverture ne fait jamais passer le
 //     choix au-dessus du bord », et lui seul ;
+//   - le filet sans la marge basse (`MARGE_BASSE_DU_CONTENU` retirée) → « seule la marge basse est
+//     sous le pied » et « un demi-pixel du bas », et eux seuls ;
+//   - le filet toujours posé (`return true`) → les trois moitiés négatives de `suiteSousLePied`, et
+//     elles seules ;
 //   - la cible entière qui défile quand même (le `return null` du bas dans la zone retiré) → « une
 //     cible déjà entière ne fait rien défiler », et lui seul. La première version portait une garde
 //     de plus, « entière → rien », avant les deux autres : la retirer ne faisait rien tomber, parce
@@ -70,5 +74,29 @@ describe('decalagePourMontrer', () => {
 
   it('une ouverture ne fait jamais remonter la page', () => {
     expect(decalagePourMontrer({ ...zone, haut: 60, bas: 900, ouverture: true })).toBeNull();
+  });
+});
+
+describe('suiteSousLePied', () => {
+  // Un contenu de 1000 px, marge basse de 24 comprise, dans une zone de 600.
+  const etape = { hauteurZone: 600, hauteurContenu: 1000 };
+
+  it('le contenu continue sous le pied : il y a une suite', () => {
+    expect(suiteSousLePied({ ...etape, decalage: 0 })).toBe(true);
+    expect(suiteSousLePied({ ...etape, decalage: 370 })).toBe(true);
+  });
+
+  it('seule la marge basse est sous le pied : pas de suite', () => {
+    expect(suiteSousLePied({ ...etape, decalage: 376 })).toBe(false);
+    expect(suiteSousLePied({ ...etape, decalage: 400 })).toBe(false);
+  });
+
+  it('une étape courte n’a pas de suite', () => {
+    expect(suiteSousLePied({ decalage: 0, hauteurZone: 600, hauteurContenu: 400 })).toBe(false);
+  });
+
+  // Un défilement s'arrête à des positions fractionnaires : pas de filet qui clignote au bas.
+  it('un demi-pixel du bas n’est pas une suite', () => {
+    expect(suiteSousLePied({ ...etape, decalage: 375.6 })).toBe(false);
   });
 });

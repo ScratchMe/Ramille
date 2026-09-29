@@ -80,3 +80,28 @@ export function decalagePourMontrer({
   });
   return aDefiler > 0 ? decalage + aDefiler : null;
 }
+
+/** La marge basse du contenu de l'étape (`scrollContent`) : sous le pied, elle seule n'est pas une suite. */
+export const MARGE_BASSE_DU_CONTENU = 24;
+
+/**
+ * **Y a-t-il une suite sous le pied ?** (29/09/2026, `v1-31`, décision 3.) Vrai quand le contenu
+ * continue sous le pied au-delà de sa marge basse de 24 : le filet de la bande haute se pose alors en
+ * haut du pied. Il ne dit pas ce qui manque ; il dit qu'il y a une suite — l'étape des sorties avait
+ * l'air finie, la question de la distance entière sous le pied, et c'était le défaut d'appareil du
+ * 07/09/2026.
+ *
+ * Un demi-pixel de tolérance : un défilement s'arrête à des positions fractionnaires, et le filet ne
+ * doit pas clignoter au bas de la page.
+ */
+export function suiteSousLePied({
+  decalage,
+  hauteurZone,
+  hauteurContenu,
+}: {
+  decalage: number;
+  hauteurZone: number;
+  hauteurContenu: number;
+}): boolean {
+  return decalage + hauteurZone < hauteurContenu - MARGE_BASSE_DU_CONTENU - 0.5;
+}
