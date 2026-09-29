@@ -64,3 +64,31 @@ export function animationDesOnglets(reduit: boolean): 'fade' | 'none' {
 export function dureeSelonLaPreference(duree: number, reduit: boolean): number {
   return reduit ? 0 : duree;
 }
+
+/**
+ * De combien défiler pour montrer un bloc qui vient de s'ouvrir sous le doigt — la carte d'une piste
+ * ouverte sur le choix, dont « C'est noté » est tout en bas (29/09/2026, `v1-32` §4.4, planche B2 du
+ * canvas `v1-30`) : **juste assez** pour que son bas entre dans la fenêtre, et **jamais au point de
+ * faire passer son haut** sous le bord supérieur, c'est-à-dire sous la bande haute — le titre de la
+ * carte dit ce qu'on est en train de choisir.
+ *
+ * Les positions se lisent depuis le haut de la fenêtre de défilement, en pixels ; `marge` se garde
+ * des deux côtés. Zéro quand le bas est déjà visible, et zéro aussi quand le haut est déjà sous le
+ * bord : un geste qui ouvre vers le bas ne fait jamais remonter la page. Quand le bloc est plus haut
+ * que la fenêtre, le haut gagne — on voit le titre et le début du choix, le bas se rejoint au doigt.
+ */
+export function defilementPourMontrer({
+  haut,
+  bas,
+  hauteurFenetre,
+  marge,
+}: {
+  haut: number;
+  bas: number;
+  hauteurFenetre: number;
+  marge: number;
+}): number {
+  // Ce qui dépasse en bas, borné par ce qu'on peut défiler avant que le haut passe sous le bord —
+  // et jamais négatif : les deux bornes peuvent l'être, et aucune ne doit faire remonter la page.
+  return Math.max(0, Math.min(bas + marge - hauteurFenetre, haut - marge));
+}
