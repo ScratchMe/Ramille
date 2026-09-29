@@ -803,7 +803,8 @@ suivre sont celles du handoff.
 | § | Travail | État |
 |---|---|---|
 | — | Ce document | fait, 29/09/2026, et contre-lu le jour même (§13) |
-| 4.4 | Ce qui manque, nommé par son champ | à faire |
+| — | Relevé de §3 et tables de §2.3, refaits contre `main` (7dce4ae) | fait, 29/09/2026 : inchangés. `v1-32`, fusionné entre-temps, n'a touché aucun fichier du questionnaire ; il a donné à `button.tsx` sa prop `ref` (déjà noté en §3) et à `src/types/mouvement.ts` `defilementPourMontrer`, réutilisée en §4.7 |
+| 4.4 | Ce qui manque, nommé par son champ | fait, 29/09/2026 : `ChampDuBilan`, `CHAMPS_DE_L_ETAPE`, `QUESTION_PRINCIPALE`, `seMarque` ; quatre mutations consignées dans `bilan.test.ts` |
 | 4.1 | L'ordre et les familles, section H | à faire |
 | 4.2 | Les rangées de 48 et les écarts | à faire |
 | 4.3 | La boîte de précision | à faire |

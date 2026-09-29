@@ -5,6 +5,7 @@
 import {
   BILAN_STEP_ORDER,
   BROUILLON_ANCIEN_JOURS,
+  CHAMPS_DE_L_ETAPE,
   COMMUTE_DISTANCE_A_RELIRE_KM,
   EMPTY_BILAN_ANSWERS,
   afficherNombreSaisi,
@@ -29,11 +30,15 @@ import {
   nextStep,
   normaliserReponses,
   previousStep,
+  QUESTION_PRINCIPALE,
   saisieVersNombre,
+  seMarque,
   visibleSteps,
   volsCourtsApresTotal,
   REPONSES_TELETRAVAIL,
   type BilanAnswers,
+  type BilanStepId,
+  type ChampDuBilan,
 } from '@/types/bilan';
 import {
   CAR_ENGINE_OPTIONS,
@@ -238,7 +243,7 @@ describe('isStepComplete', () => {
    */
   it('commute_extra : un questionnaire vierge n’a pas répondu, et l’étape le refuse', () => {
     expect(EMPTY_BILAN_ANSWERS.commute_second_mode_used).toBeNull();
-    expect(manqueDeLEtape('commute_extra', EMPTY_BILAN_ANSWERS)).toBe(
+    expect(manqueDeLEtape('commute_extra', EMPTY_BILAN_ANSWERS)?.phrase).toBe(
       'une réponse sur le second mode'
     );
     expect(isStepComplete('commute_extra', answers({ commute_second_mode_used: false }))).toBe(true);
@@ -575,7 +580,7 @@ describe('manqueDeLEtape', () => {
       { leisure_mode: 'velo' as const, leisure_distance_bracket: 'lt_5' as const },
     ],
   ])('%s nomme « %s » tant que la révélation est sans réponse', (etape, manque, patch) => {
-    expect(manqueDeLEtape(etape as Parameters<typeof manqueDeLEtape>[0], answers(patch))).toBe(manque);
+    expect(manqueDeLEtape(etape as Parameters<typeof manqueDeLEtape>[0], answers(patch))?.phrase).toBe(manque);
   });
 
   it('rend null quand l’étape est complète', () => {
@@ -583,7 +588,7 @@ describe('manqueDeLEtape', () => {
   });
 
   it('nomme la motorisation quand une voiture est choisie sans elle', () => {
-    expect(manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture' }))).toBe(
+    expect(manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture' }))?.phrase).toBe(
       'la motorisation'
     );
   });
@@ -592,11 +597,11 @@ describe('manqueDeLEtape', () => {
   // se déplie au-dessus de la tranche de distance, donc on la réclame d'abord — on nomme ce
   // qu'il reste à faire dans l'ordre où on le rencontre en descendant la page.
   it('réclame la distance seulement une fois la motorisation renseignée', () => {
-    expect(manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture' }))).toBe(
+    expect(manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture' }))?.phrase).toBe(
       'la motorisation'
     );
     expect(
-      manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture', leisure_car_engine: 'thermique' }))
+      manqueDeLEtape('leisure_detail', answers({ leisure_mode: 'voiture', leisure_car_engine: 'thermique' }))?.phrase
     ).toBe('la distance habituelle');
     expect(
       manqueDeLEtape(
@@ -611,7 +616,7 @@ describe('manqueDeLEtape', () => {
   });
 
   it('nomme le type de deux-roues', () => {
-    expect(manqueDeLEtape('commute_mode', answers({ commute_mode: 'deux_roues_motorise' }))).toBe(
+    expect(manqueDeLEtape('commute_mode', answers({ commute_mode: 'deux_roues_motorise' }))?.phrase).toBe(
       'le type de deux-roues'
     );
   });
@@ -643,7 +648,7 @@ describe('distance domicile-travail', () => {
       isStepComplete('commute_days_distance', answers({ commute_days_per_week: 5, commute_distance_km: 0 }))
     ).toBe(false);
     expect(
-      manqueDeLEtape('commute_days_distance', answers({ commute_days_per_week: 5, commute_distance_km: 0 }))
+      manqueDeLEtape('commute_days_distance', answers({ commute_days_per_week: 5, commute_distance_km: 0 }))?.phrase
     ).toBe('la distance');
   });
 
@@ -1075,7 +1080,7 @@ describe('normaliserReponses', () => {
       household_vehicles: '1',
     });
     expect(teletravailSePose(a_deux_jours)).toBe(true);
-    expect(manqueDeLEtape('context', a_deux_jours)).toBe('ta réponse sur le télétravail');
+    expect(manqueDeLEtape('context', a_deux_jours)?.phrase).toBe('ta réponse sur le télétravail');
   });
 
   it('la part du second mode ne survit pas au second mode (C3.4)', () => {
@@ -1375,6 +1380,58 @@ describe('avancementDeLaReprise', () => {
   });
 });
 
+// Le générateur et les domaines sont partagés par deux propriétés : celles de `normaliserReponses`
+// ci-dessous, et la fermeture de la table des champs que `manqueDeLEtape` réclame (`v1-31` §2.3).
+// mulberry32 : un générateur à graine, pour que 6 000 tirages soient les mêmes à chaque passage.
+function generateur(graine: number) {
+  let t = graine >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let x = Math.imul(t ^ (t >>> 15), t | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const MODES = Object.keys(TRANSPORT_MODE_LABELS) as BilanAnswers['commute_mode'][];
+const DOMAINES: { [K in keyof BilanAnswers]: readonly BilanAnswers[K][] } = {
+  commute_has_regular_trip: [true, false, null],
+  commute_days_per_week: [null, 1, 2, 3, 5, 7],
+  commute_distance_km: [null, 0.5, 8, 120],
+  commute_distance_bracket: [null, 'lt_5', '5_15', '15_30', '30_50', '50_plus'],
+  commute_mode: [null, ...MODES],
+  commute_is_carpool: [true, false],
+  commute_carpool_size: [null, ...TAILLES_DE_COVOITURAGE.map((t) => t.value)],
+  commute_second_mode_used: [true, false, null],
+  commute_second_mode: [null, ...MODES],
+  commute_second_mode_share: [null, ...PARTS_DU_SECOND_MODE.map((p) => p.value)],
+  commute_car_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
+  commute_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
+  commute_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
+  commute_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
+  leisure_frequency: [null, 'rarely', 'weekly', 'multiple_weekly'],
+  leisure_mode: [null, ...MODES],
+  leisure_distance_bracket: [null, 'lt_5', '5_15', '15_30', '30_plus'],
+  leisure_distance_km: [null, 12, 120],
+  leisure_is_carpool: [true, false],
+  leisure_carpool_size: [null, ...TAILLES_DE_COVOITURAGE.map((t) => t.value)],
+  leisure_car_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
+  leisure_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
+  leisure_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
+  leisure_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
+  flights_total_per_year: [0, 1, 4],
+  flights_short_per_year: [null, 0, 1, 3],
+  train_long_trips_per_year: [0, 2],
+  car_long_trips_per_year: [0, 3],
+  car_long_trips_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
+  car_long_trips_occupancy: [null, ...OCCUPATIONS_LONG_TRAJET],
+  coach_long_trips_per_year: [0, 2],
+  zone_type: [null, 'urbain_dense', 'periurbain', 'rural'],
+  tc_access: [null, 'bon', 'limite', 'inexistant'],
+  household_vehicles: [null, '0', '1', '2_plus'],
+  teletravail: [null, ...REPONSES_TELETRAVAIL.map((r) => r.value)],
+};
+
 /**
  * **Ce que `normaliserReponses` affirme d'elle-même, éprouvé sur des milliers de réponses**
  * (`v1-27` §8, 27/09/2026). Son en-tête dit qu'elle est **idempotente** et que **rien n'y invente
@@ -1403,56 +1460,6 @@ describe('avancementDeLaReprise', () => {
  *     valeur d'effacement.
  */
 describe('normaliserReponses — ce qu’elle affirme d’elle-même', () => {
-  // mulberry32 : un générateur à graine, pour que 6 000 tirages soient les mêmes à chaque passage.
-  function generateur(graine: number) {
-    let t = graine >>> 0;
-    return () => {
-      t = (t + 0x6d2b79f5) >>> 0;
-      let x = Math.imul(t ^ (t >>> 15), t | 1);
-      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
-      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-
-  const MODES = Object.keys(TRANSPORT_MODE_LABELS) as BilanAnswers['commute_mode'][];
-  const DOMAINES: { [K in keyof BilanAnswers]: readonly BilanAnswers[K][] } = {
-    commute_has_regular_trip: [true, false, null],
-    commute_days_per_week: [null, 1, 2, 3, 5, 7],
-    commute_distance_km: [null, 0.5, 8, 120],
-    commute_distance_bracket: [null, 'lt_5', '5_15', '15_30', '30_50', '50_plus'],
-    commute_mode: [null, ...MODES],
-    commute_is_carpool: [true, false],
-    commute_carpool_size: [null, ...TAILLES_DE_COVOITURAGE.map((t) => t.value)],
-    commute_second_mode_used: [true, false, null],
-    commute_second_mode: [null, ...MODES],
-    commute_second_mode_share: [null, ...PARTS_DU_SECOND_MODE.map((p) => p.value)],
-    commute_car_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
-    commute_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
-    commute_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
-    commute_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
-    leisure_frequency: [null, 'rarely', 'weekly', 'multiple_weekly'],
-    leisure_mode: [null, ...MODES],
-    leisure_distance_bracket: [null, 'lt_5', '5_15', '15_30', '30_plus'],
-    leisure_distance_km: [null, 12, 120],
-    leisure_is_carpool: [true, false],
-    leisure_carpool_size: [null, ...TAILLES_DE_COVOITURAGE.map((t) => t.value)],
-    leisure_car_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
-    leisure_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
-    leisure_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
-    leisure_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
-    flights_total_per_year: [0, 1, 4],
-    flights_short_per_year: [null, 0, 1, 3],
-    train_long_trips_per_year: [0, 2],
-    car_long_trips_per_year: [0, 3],
-    car_long_trips_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
-    car_long_trips_occupancy: [null, ...OCCUPATIONS_LONG_TRAJET],
-    coach_long_trips_per_year: [0, 2],
-    zone_type: [null, 'urbain_dense', 'periurbain', 'rural'],
-    tc_access: [null, 'bon', 'limite', 'inexistant'],
-    household_vehicles: [null, '0', '1', '2_plus'],
-    teletravail: [null, ...REPONSES_TELETRAVAIL.map((r) => r.value)],
-  };
-
   // Le domaine couvre tous les champs : un champ ajouté à `BilanAnswers` sans sa ligne ici
   // resterait à sa valeur vide dans tous les tirages, donc hors de portée de ces propriétés.
   it('tire chaque champ de BilanAnswers, et aucun autre', () => {
@@ -1512,5 +1519,185 @@ describe('normaliserReponses — ce qu’elle affirme d’elle-même', () => {
       const apres = normaliserReponses(reponses);
       for (const champ of INTOUCHABLES) expect(apres[champ]).toBe(reponses[champ]);
     }
+  });
+});
+
+/**
+ * `manqueDeLEtape` rend le champ qui manque **et** sa phrase (29/09/2026, `v1-31` §2.3) : la phrase se
+ * dit sous « Il manque encore … », le champ dit où mener — le focus, le défilement, la marque.
+ *
+ * **Éprouvé en le cassant, le 29/09/2026** (TESTING.md §1.1), une mutation à la fois, l'état d'avant
+ * réécrit depuis une copie ; ce qui tombe, sur 133 tests du fichier :
+ *   - `leisure_distance_km` retiré de `CHAMPS_DE_L_ETAPE.leisure_detail` → trois : la fermeture de la
+ *     table, « chaque champ déclaré a sa phrase épinglée » et « chaque champ déclaré est réclamé » ;
+ *   - la distance du trajet réclamée sous le nom de sa colonne (`commute_distance_km`) → trois : sa
+ *     ligne dans la table des phrases, la fermeture, et « chaque champ déclaré est réclamé » ;
+ *   - `seMarque` qui rend vrai pour la question principale (le `champ !== QUESTION_PRINCIPALE[etape]`
+ *     retiré) → deux : « jamais la question de l'étape » et « toute autre question se marque », qui
+ *     exige aussi le faux de la principale ;
+ *   - une phrase retouchée (« la part des vols courts ») → une : sa ligne dans la table des phrases.
+ */
+describe('manqueDeLEtape — le champ et sa phrase', () => {
+  // **Les phrases ne changent pas** (handoff v1-31, écart 15) : chacune est écrite ici telle qu'elle
+  // l'était avant, avec le champ qu'elle nomme. Une ligne par branche de `manqueDeLEtape`, dans
+  // l'ordre de l'écran — c'est aussi l'ordre des réclamations.
+  const voiture = { commute_has_regular_trip: true, commute_days_per_week: 5, commute_distance_km: 20 };
+  const sortie = { leisure_frequency: 'weekly' as const };
+  const PHRASES: [BilanStepId, Partial<BilanAnswers>, ChampDuBilan, string][] = [
+    ['commute_has_trip', {}, 'commute_has_regular_trip', 'une réponse'],
+    ['commute_days_distance', {}, 'commute_days_per_week', 'le nombre de jours par semaine'],
+    ['commute_days_distance', { commute_days_per_week: 3 }, 'distance_du_trajet', 'la distance'],
+    ['commute_mode', voiture, 'commute_mode', 'ton mode de transport'],
+    ['commute_mode', { commute_mode: 'voiture' }, 'commute_car_engine', 'la motorisation'],
+    ['commute_mode', { commute_mode: 'deux_roues_motorise' }, 'commute_two_wheeler_type', 'le type de deux-roues'],
+    ['commute_mode', { commute_mode: 'train' }, 'commute_train_type', 'le type de train'],
+    ['commute_mode', { commute_mode: 'velo' }, 'commute_velo_type', 'le type de vélo'],
+    [
+      'commute_mode',
+      { commute_mode: 'voiture', commute_car_engine: 'hybride', commute_is_carpool: true },
+      'commute_carpool_size',
+      'le nombre de personnes dans la voiture',
+    ],
+    ['commute_extra', {}, 'commute_second_mode_used', 'une réponse sur le second mode'],
+    ['commute_extra', { commute_second_mode_used: true }, 'commute_second_mode', 'le second mode'],
+    [
+      'commute_extra',
+      { commute_second_mode_used: true, commute_second_mode: 'voiture' },
+      'commute_car_engine',
+      'la motorisation',
+    ],
+    [
+      'commute_extra',
+      { commute_second_mode_used: true, commute_second_mode: 'deux_roues_motorise' },
+      'commute_two_wheeler_type',
+      'le type de deux-roues',
+    ],
+    [
+      'commute_extra',
+      { commute_second_mode_used: true, commute_second_mode: 'train' },
+      'commute_train_type',
+      'le type de train',
+    ],
+    [
+      'commute_extra',
+      { commute_second_mode_used: true, commute_second_mode: 'velo' },
+      'commute_velo_type',
+      'le type de vélo',
+    ],
+    [
+      'commute_extra',
+      { commute_second_mode_used: true, commute_second_mode: 'bus' },
+      'commute_second_mode_share',
+      'la part de ce second mode',
+    ],
+    ['leisure_frequency', {}, 'leisure_frequency', 'ta fréquence'],
+    ['leisure_detail', sortie, 'leisure_mode', 'ton mode de transport'],
+    ['leisure_detail', { leisure_mode: 'voiture' }, 'leisure_car_engine', 'la motorisation'],
+    ['leisure_detail', { leisure_mode: 'deux_roues_motorise' }, 'leisure_two_wheeler_type', 'le type de deux-roues'],
+    ['leisure_detail', { leisure_mode: 'train' }, 'leisure_train_type', 'le type de train'],
+    ['leisure_detail', { leisure_mode: 'velo' }, 'leisure_velo_type', 'le type de vélo'],
+    [
+      'leisure_detail',
+      { leisure_mode: 'voiture', leisure_car_engine: 'thermique', leisure_is_carpool: true },
+      'leisure_carpool_size',
+      'le nombre de personnes dans la voiture',
+    ],
+    ['leisure_detail', { leisure_mode: 'bus' }, 'leisure_distance_bracket', 'la distance habituelle'],
+    [
+      'leisure_detail',
+      { leisure_mode: 'bus', leisure_distance_bracket: '30_plus' },
+      'leisure_distance_km',
+      'la distance d’une sortie',
+    ],
+    ['flights', { flights_total_per_year: 2 }, 'flights_short_per_year', 'la part de vols courts'],
+    ['long_trips', { car_long_trips_per_year: 2 }, 'car_long_trips_engine', 'la motorisation'],
+    [
+      'long_trips',
+      { car_long_trips_per_year: 2, car_long_trips_engine: 'thermique' },
+      'car_long_trips_occupancy',
+      'le nombre de personnes dans la voiture',
+    ],
+    ['context', {}, 'zone_type', 'ton type de zone'],
+    ['context', { zone_type: 'rural' }, 'tc_access', 'l’accès aux transports en commun'],
+    ['context', { zone_type: 'rural', tc_access: 'bon' }, 'household_vehicles', 'le nombre de véhicules du foyer'],
+    [
+      'context',
+      { zone_type: 'rural', tc_access: 'bon', household_vehicles: '1', commute_days_per_week: 4 },
+      'teletravail',
+      'ta réponse sur le télétravail',
+    ],
+  ];
+
+  it.each(PHRASES)('%s, avec %j, réclame %s : « %s »', (etape, patch, champ, phrase) => {
+    expect(manqueDeLEtape(etape, answers(patch))).toEqual({ champ, phrase });
+  });
+
+  // Chaque champ de la table est atteint par au moins une ligne de la table des phrases : sans
+  // quoi une branche de `manqueDeLEtape` pourrait changer de phrase sans que rien ne le dise.
+  it('chaque champ déclaré a sa phrase épinglée', () => {
+    for (const etape of BILAN_STEP_ORDER) {
+      const epingles = PHRASES.filter(([e]) => e === etape).map(([, , champ]) => champ);
+      expect([...new Set(epingles)].sort()).toEqual([...CHAMPS_DE_L_ETAPE[etape]].sort());
+    }
+  });
+
+  // **Ce qui rend la table fermée** : sur des milliers de réponses tirées — dans le domaine de chaque
+  // champ, et hors des combinaisons que l'écran produit —, le champ rendu appartient toujours à la
+  // table de son étape. Le jour où `manqueDeLEtape` réclame un champ que personne n'a déclaré, une
+  // étape n'aurait pas où mener, et c'est ici que ça rougit.
+  const tirer = generateur(20260929);
+  const TIRAGES: BilanAnswers[] = Array.from({ length: 6000 }, () => {
+    const reponses = {} as Record<string, unknown>;
+    for (const [champ, valeurs] of Object.entries(DOMAINES)) {
+      reponses[champ] = valeurs[Math.floor(tirer() * valeurs.length)];
+    }
+    return reponses as BilanAnswers;
+  });
+
+  it('le champ réclamé appartient toujours à la table de son étape', () => {
+    for (const reponses of TIRAGES) {
+      for (const etape of BILAN_STEP_ORDER) {
+        const manque = manqueDeLEtape(etape, reponses);
+        if (manque !== null && !CHAMPS_DE_L_ETAPE[etape].includes(manque.champ)) {
+          throw new Error(`${etape} réclame « ${manque.champ} », absent de CHAMPS_DE_L_ETAPE`);
+        }
+      }
+    }
+  });
+
+  // Et l'autre sens : un champ déclaré qu'aucun tirage ne réclame serait une ancre de trop, ou une
+  // branche morte — les deux se lisent mal six mois plus tard.
+  it('chaque champ déclaré est réclamé par au moins un tirage', () => {
+    for (const etape of BILAN_STEP_ORDER) {
+      const reclames = new Set(
+        TIRAGES.map((r) => manqueDeLEtape(etape, r)?.champ).filter((c): c is ChampDuBilan => c !== undefined)
+      );
+      expect([...reclames].sort()).toEqual([...CHAMPS_DE_L_ETAPE[etape]].sort());
+    }
+  });
+});
+
+describe('seMarque', () => {
+  it('jamais la question de l’étape : son titre ne se recolore pas', () => {
+    for (const etape of BILAN_STEP_ORDER) {
+      const principale = QUESTION_PRINCIPALE[etape];
+      if (principale !== null) expect(seMarque(etape, principale)).toBe(false);
+    }
+  });
+
+  it('toute autre question de l’étape se marque', () => {
+    for (const etape of BILAN_STEP_ORDER) {
+      for (const champ of CHAMPS_DE_L_ETAPE[etape]) {
+        expect(seMarque(etape, champ)).toBe(champ !== QUESTION_PRINCIPALE[etape]);
+      }
+    }
+    // Les deux étapes dont le titre ne porte aucun groupe marquent tout ce qu'elles réclament.
+    expect(CHAMPS_DE_L_ETAPE.context.every((champ) => seMarque('context', champ))).toBe(true);
+    expect(CHAMPS_DE_L_ETAPE.long_trips.every((champ) => seMarque('long_trips', champ))).toBe(true);
+  });
+
+  it('un champ d’une autre étape ne se marque pas', () => {
+    expect(seMarque('commute_mode', 'zone_type')).toBe(false);
+    expect(seMarque('leisure_detail', 'commute_car_engine')).toBe(false);
   });
 });

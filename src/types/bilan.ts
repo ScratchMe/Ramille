@@ -788,75 +788,206 @@ export function distanceDomicileTravailARelire(reponses: BilanAnswers): boolean 
   return km !== null && km > COMMUTE_DISTANCE_A_RELIRE_KM;
 }
 
-// Conditionne l'activation du bouton "Suivant" — un pas est complet quand tous les
-// champs qu'il affiche (compte tenu de ses propres sous-conditions internes) sont
-// renseignés.
+/**
+ * Un champ du questionnaire tel qu'une étape peut le réclamer (29/09/2026, `v1-31` §2.3).
+ *
+ * **C'est le nom de la colonne, sauf quand deux colonnes répondent à la même question** : la distance
+ * du trajet se saisit en kilomètres **ou** par tranche, et l'étape n'en montre qu'une — elle devient
+ * `distance_du_trajet`, et l'étape enregistre sous ce nom ce qu'elle affiche. La distance d'une sortie,
+ * elle, n'est pas dans ce cas : la tranche et le champ libre sous « Plus de 30 km » sont deux questions
+ * posées l'une sous l'autre, donc deux champs.
+ *
+ * `flights_total_per_year` n'est jamais réclamé — il vaut zéro par défaut — mais il est la question
+ * principale de son étape, et c'est à ce titre qu'il figure ici (`QUESTION_PRINCIPALE`).
+ */
+export type ChampDuBilan =
+  | 'commute_has_regular_trip'
+  | 'commute_days_per_week'
+  | 'distance_du_trajet'
+  | 'commute_mode'
+  | 'commute_car_engine'
+  | 'commute_two_wheeler_type'
+  | 'commute_train_type'
+  | 'commute_velo_type'
+  | 'commute_carpool_size'
+  | 'commute_second_mode_used'
+  | 'commute_second_mode'
+  | 'commute_second_mode_share'
+  | 'leisure_frequency'
+  | 'leisure_mode'
+  | 'leisure_car_engine'
+  | 'leisure_two_wheeler_type'
+  | 'leisure_train_type'
+  | 'leisure_velo_type'
+  | 'leisure_carpool_size'
+  | 'leisure_distance_bracket'
+  | 'leisure_distance_km'
+  | 'flights_total_per_year'
+  | 'flights_short_per_year'
+  | 'car_long_trips_engine'
+  | 'car_long_trips_occupancy'
+  | 'zone_type'
+  | 'tc_access'
+  | 'household_vehicles'
+  | 'teletravail';
+
+/** Ce qui manque encore à une étape : le champ, pour y mener, et la phrase, pour le dire. */
+export type CeQuiManque = { champ: ChampDuBilan; phrase: string };
+
+/**
+ * Les champs que `manqueDeLEtape` peut réclamer, étape par étape — une table fermée (`v1-31` §2.3).
+ *
+ * Elle dit à chaque étape ce qu'elle doit enregistrer auprès de `StepShell` : un champ qui peut manquer
+ * doit toujours avoir où mener, sinon « Suivant » en attente mènerait à une question absente de
+ * l'écran — la forme neuve du défaut de C5.4 (`teletravailSePose`). Un test de propriétés la ferme :
+ * sur des milliers de réponses tirées, le champ rendu appartient toujours à la table de son étape, et
+ * il rougit le jour où `manqueDeLEtape` réclame un champ que personne n'a déclaré ici.
+ */
+export const CHAMPS_DE_L_ETAPE: Record<BilanStepId, readonly ChampDuBilan[]> = {
+  commute_has_trip: ['commute_has_regular_trip'],
+  commute_days_distance: ['commute_days_per_week', 'distance_du_trajet'],
+  commute_mode: [
+    'commute_mode',
+    'commute_car_engine',
+    'commute_two_wheeler_type',
+    'commute_train_type',
+    'commute_velo_type',
+    'commute_carpool_size',
+  ],
+  commute_extra: [
+    'commute_second_mode_used',
+    'commute_second_mode',
+    'commute_car_engine',
+    'commute_two_wheeler_type',
+    'commute_train_type',
+    'commute_velo_type',
+    'commute_second_mode_share',
+  ],
+  leisure_frequency: ['leisure_frequency'],
+  leisure_detail: [
+    'leisure_mode',
+    'leisure_car_engine',
+    'leisure_two_wheeler_type',
+    'leisure_train_type',
+    'leisure_velo_type',
+    'leisure_carpool_size',
+    'leisure_distance_bracket',
+    'leisure_distance_km',
+  ],
+  flights: ['flights_short_per_year'],
+  long_trips: ['car_long_trips_engine', 'car_long_trips_occupancy'],
+  context: ['zone_type', 'tc_access', 'household_vehicles', 'teletravail'],
+};
+
+/**
+ * La question que pose le titre de chaque étape — celle dont l'intitulé est le titre lui-même, et qui
+ * ne se marque donc jamais (`seMarque`). `null` quand le titre ne porte pas de groupe : les longs
+ * trajets (« Et les trajets de plus de 300 km ? » chapeaute trois séries) et le contexte, dont les
+ * quatre questions ont chacune leur intitulé.
+ */
+export const QUESTION_PRINCIPALE: Record<BilanStepId, ChampDuBilan | null> = {
+  commute_has_trip: 'commute_has_regular_trip',
+  commute_days_distance: 'commute_days_per_week',
+  commute_mode: 'commute_mode',
+  commute_extra: 'commute_second_mode_used',
+  leisure_frequency: 'leisure_frequency',
+  leisure_detail: 'leisure_mode',
+  flights: 'flights_total_per_year',
+  long_trips: null,
+  context: null,
+};
+
+/**
+ * L'intitulé de ce champ passe-t-il en vert quand il est celui qui manque (`v1-31`, décision 1) ?
+ *
+ * **Jamais la question de l'étape** : son titre ne se recolore pas — la question est déjà en titre, et
+ * la marquer d'une couleur de plus ne dirait rien de plus. Tout autre champ de la table de l'étape se
+ * marque. Un champ qui n'est pas de cette étape ne se marque pas : il n'y a rien à marquer ici.
+ *
+ * **L'écran ne tranche jamais cela en ternaire** : `TitreDEtape` reçoit la marque de sa question comme
+ * tout intitulé, et c'est cette dérivation seule qui l'en empêche — un titre qu'on ne brancherait pas
+ * rendrait muette la garde qui vérifie qu'il ne change pas de couleur (`v1-31` §2.3).
+ */
+export function seMarque(etape: BilanStepId, champ: ChampDuBilan): boolean {
+  return champ !== QUESTION_PRINCIPALE[etape] && CHAMPS_DE_L_ETAPE[etape].includes(champ);
+}
+
 /**
  * Ce qui manque encore à une étape, nommé — ou `null` si elle est complète.
  *
  * Existe parce qu'un bouton grisé ne dit pas pourquoi. Sur l'étape loisirs, choisir
  * « Voiture » déplie la question de motorisation, qui repousse la tranche de distance sous la
- * ligne de flottaison : « Suivant » reste inactif, la personne voit une étape qu'elle croit
- * finie, et rien n'indique qu'il reste un champ plus bas (retour d'appareil du 07/09/2026).
- * Le même défaut guette partout où une étape porte plusieurs champs.
+ * ligne de flottaison : la personne voit une étape qu'elle croit finie, et rien n'indique qu'il
+ * reste un champ plus bas (retour d'appareil du 07/09/2026). Le même défaut guette partout où une
+ * étape porte plusieurs champs.
+ *
+ * **Le champ et sa phrase** (29/09/2026, `v1-31` §2.3) : la phrase se dit sous « Il manque encore … »
+ * au toucher du « Suivant » en attente, et le champ dit **où mener** — `StepShell` y fait défiler
+ * l'écran, y pose le focus et en marque l'intitulé. Les phrases et leur ordre n'ont pas changé : c'est
+ * l'ordre de l'écran, de haut en bas, et un test les épingle toutes.
  *
  * **`isStepComplete` en dérive**, et ce n'est pas un raffinement : deux listes de conditions
- * tenues en parallèle finiraient par diverger, et l'écart serait silencieux — un bouton actif
- * sur une étape incomplète, ou un message qui réclame un champ déjà rempli.
+ * tenues en parallèle finiraient par diverger, et l'écart serait silencieux — un « Suivant » qui
+ * avance sur une étape incomplète, ou une ligne qui réclame un champ déjà rempli.
  */
-export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string | null {
+export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): CeQuiManque | null {
+  const manque = (champ: ChampDuBilan, phrase: string): CeQuiManque => ({ champ, phrase });
   switch (step) {
     case 'commute_has_trip':
-      return answers.commute_has_regular_trip === null ? 'une réponse' : null;
+      return answers.commute_has_regular_trip === null
+        ? manque('commute_has_regular_trip', 'une réponse')
+        : null;
     case 'commute_days_distance':
-      if (answers.commute_days_per_week === null) return 'le nombre de jours par semaine';
+      if (answers.commute_days_per_week === null)
+        return manque('commute_days_per_week', 'le nombre de jours par semaine');
       // Un « 0 » n'est pas une réponse — cf. `distanceDomicileTravailKm`.
       if (
         distanceDomicileTravailKm(answers) === null &&
         answers.commute_distance_bracket === null
       )
-        return 'la distance';
+        return manque('distance_du_trajet', 'la distance');
       return null;
     case 'commute_mode':
-      if (answers.commute_mode === null) return 'ton mode de transport';
+      if (answers.commute_mode === null) return manque('commute_mode', 'ton mode de transport');
       if (answers.commute_mode === 'voiture' && answers.commute_car_engine === null)
-        return 'la motorisation';
+        return manque('commute_car_engine', 'la motorisation');
       if (answers.commute_mode === 'deux_roues_motorise' && answers.commute_two_wheeler_type === null)
-        return 'le type de deux-roues';
+        return manque('commute_two_wheeler_type', 'le type de deux-roues');
       // C4.4 : obligatoires dès que leur déclencheur est là, comme la motorisation. Laisser le
       // choix facultatif reviendrait à garder le défaut — le TER — pour tous ceux qui passent
       // sans répondre, c'est-à-dire exactement le défaut que ce chantier corrige.
       if (answers.commute_mode === 'train' && answers.commute_train_type === null)
-        return 'le type de train';
+        return manque('commute_train_type', 'le type de train');
       if (answers.commute_mode === 'velo' && answers.commute_velo_type === null)
-        return 'le type de vélo';
+        return manque('commute_velo_type', 'le type de vélo');
       // La taille du covoiturage vient de l'étape suivante (recette du 14/09/2026, `v1-16` §3) :
       // elle se rend désormais sous « Voiture (covoiturage) », après la motorisation, comme la
       // jumelle des sorties. Elle reste obligatoire pour la raison qui vaut des deux côtés : le
       // calcul ne divise que si elle est renseignée, donc sans elle le choix « covoiturage » ne
       // change **rien** au chiffre.
       if (answers.commute_is_carpool && answers.commute_carpool_size === null)
-        return 'le nombre de personnes dans la voiture';
+        return manque('commute_carpool_size', 'le nombre de personnes dans la voiture');
       return null;
     case 'commute_extra':
       // **En tête, parce que c'est la première chose que l'écran demande** (`v1-16` §4). Sans
       // cette ligne, un questionnaire vierge traversait la question : le défaut répondait
       // « Non », et « Non » sous-estime un trajet intermodal. Un re-bilan prérempli arrive avec
       // une vraie réponse et ne bute pas ici.
-      if (answers.commute_second_mode_used === null) return 'une réponse sur le second mode';
+      if (answers.commute_second_mode_used === null)
+        return manque('commute_second_mode_used', 'une réponse sur le second mode');
       if (answers.commute_second_mode_used && answers.commute_second_mode === null)
-        return 'le second mode';
+        return manque('commute_second_mode', 'le second mode');
       if (answers.commute_second_mode === 'voiture' && answers.commute_car_engine === null)
-        return 'la motorisation';
+        return manque('commute_car_engine', 'la motorisation');
       if (
         answers.commute_second_mode === 'deux_roues_motorise' &&
         answers.commute_two_wheeler_type === null
       )
-        return 'le type de deux-roues';
+        return manque('commute_two_wheeler_type', 'le type de deux-roues');
       if (answers.commute_second_mode === 'train' && answers.commute_train_type === null)
-        return 'le type de train';
+        return manque('commute_train_type', 'le type de train');
       if (answers.commute_second_mode === 'velo' && answers.commute_velo_type === null)
-        return 'le type de vélo';
+        return manque('commute_velo_type', 'le type de vélo');
       // En dernier, et pour la même raison que la distance des loisirs : la part se rend sous
       // la précision du mode, donc on ne la nomme qu'une fois le reste rempli.
       //
@@ -867,60 +998,62 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): string
       // re-bilan prérempli d'avant C3.4 arrive sans la réponse et bute ici : c'est voulu, c'est
       // exactement le bilan dont le chiffre était faux.
       if (answers.commute_second_mode !== null && answers.commute_second_mode_share === null)
-        return 'la part de ce second mode';
+        return manque('commute_second_mode_share', 'la part de ce second mode');
       return null;
     case 'leisure_frequency':
-      return answers.leisure_frequency === null ? 'ta fréquence' : null;
+      return answers.leisure_frequency === null ? manque('leisure_frequency', 'ta fréquence') : null;
     case 'leisure_detail':
-      if (answers.leisure_mode === null) return 'ton mode de transport';
+      if (answers.leisure_mode === null) return manque('leisure_mode', 'ton mode de transport');
       if (answers.leisure_mode === 'voiture' && answers.leisure_car_engine === null)
-        return 'la motorisation';
+        return manque('leisure_car_engine', 'la motorisation');
       if (answers.leisure_mode === 'deux_roues_motorise' && answers.leisure_two_wheeler_type === null)
-        return 'le type de deux-roues';
+        return manque('leisure_two_wheeler_type', 'le type de deux-roues');
       if (answers.leisure_mode === 'train' && answers.leisure_train_type === null)
-        return 'le type de train';
+        return manque('leisure_train_type', 'le type de train');
       if (answers.leisure_mode === 'velo' && answers.leisure_velo_type === null)
-        return 'le type de vélo';
+        return manque('leisure_velo_type', 'le type de vélo');
       // La taille du covoiturage se rend sous « Voiture (covoiturage) », après la motorisation.
       // Elle est obligatoire pour la raison qui vaut déjà côté quotidien : le calcul ne divise
       // que si elle est renseignée, donc sans elle le choix « covoiturage » ne change **rien**
       // au chiffre — une réponse qu'on a prise et qui ne sert à rien.
       if (answers.leisure_is_carpool && answers.leisure_carpool_size === null)
-        return 'le nombre de personnes dans la voiture';
+        return manque('leisure_carpool_size', 'le nombre de personnes dans la voiture');
       // En dernier, et c'est voulu : la distance est plus bas dans la page que la précision
       // du mode, donc on ne l'annonce qu'une fois le reste rempli — on nomme ce qu'il reste
       // à faire, dans l'ordre où on le rencontre.
-      if (answers.leisure_distance_bracket === null) return 'la distance habituelle';
+      if (answers.leisure_distance_bracket === null)
+        return manque('leisure_distance_bracket', 'la distance habituelle');
       // C3.6 : la tranche ouverte est la seule sans borne haute, et c'est celle qui en avait
       // le plus besoin — « Plus de 30 km » valait 40 km, donc une sortie de 120 km comptait
       // pour un tiers d'elle-même. La demander est le chantier ; la laisser facultative
       // reviendrait à garder le défaut pour tous ceux qui passent sans répondre.
       if (answers.leisure_distance_bracket === '30_plus' && distanceSortieKm(answers) === null)
-        return 'la distance d’une sortie';
+        return manque('leisure_distance_km', 'la distance d’une sortie');
       return null;
     case 'flights':
       if (answers.flights_total_per_year > 0 && answers.flights_short_per_year === null)
-        return 'la part de vols courts';
+        return manque('flights_short_per_year', 'la part de vols courts');
       return null;
     case 'long_trips':
       if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_engine === null)
-        return 'la motorisation';
+        return manque('car_long_trips_engine', 'la motorisation');
       // C3.5 : le calcul supposait « seul » sur 700 km, alors que c'est le trajet qu'on partage
       // le plus. Obligatoire comme la motorisation juste au-dessus, et pour la même raison —
       // déclarer des longs trajets en voiture, c'est en déclarer deux choses.
       if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_occupancy === null)
-        return 'le nombre de personnes dans la voiture';
+        return manque('car_long_trips_occupancy', 'le nombre de personnes dans la voiture');
       return null;
     case 'context':
-      if (answers.zone_type === null) return 'ton type de zone';
-      if (answers.tc_access === null) return 'l’accès aux transports en commun';
-      if (answers.household_vehicles === null) return 'le nombre de véhicules du foyer';
+      if (answers.zone_type === null) return manque('zone_type', 'ton type de zone');
+      if (answers.tc_access === null) return manque('tc_access', 'l’accès aux transports en commun');
+      if (answers.household_vehicles === null)
+        return manque('household_vehicles', 'le nombre de véhicules du foyer');
       // C3.8 : demandée, pas supposée. Le calcul du plan écarte les gabarits de télétravail quand
       // la réponse manque — « une condition qu'on ne peut pas évaluer n'est pas remplie » —, donc
       // une étape qu'on pourrait valider sans elle retirerait silencieusement un levier réel à
       // quelqu'un qui l'a.
       if (teletravailSePose(answers) && answers.teletravail === null)
-        return 'ta réponse sur le télétravail';
+        return manque('teletravail', 'ta réponse sur le télétravail');
       return null;
   }
 }

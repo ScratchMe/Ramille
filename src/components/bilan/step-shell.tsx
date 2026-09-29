@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing } from '@/constants/theme';
 import { donnerLeFocus } from '@/lib/focus';
 import { SansApparitionAuMontage, styleDEntree } from '@/lib/mouvement';
+import type { CeQuiManque } from '@/types/bilan';
 import type { Sens } from '@/types/mouvement';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
@@ -84,9 +85,9 @@ export function StepShell({
    *  contrainte Postgres entière, nom de table compris — au terme de cinq minutes de saisie,
    *  en anglais, dans la voix du produit (audit A2-16). Même couple que l'écran de démarrage. */
   detail?: string | null;
-  /** Ce qu'il reste à renseigner sur l'étape, quand « Suivant » est inactif. Texte calme et
-   *  non annoncé comme une alerte : ce n'est pas un échec, juste ce qui manque. */
-  manque?: string | null;
+  /** Ce qu'il reste à renseigner sur l'étape (`manqueDeLEtape`), quand « Suivant » est inactif.
+   *  Texte calme et non annoncé comme une alerte : ce n'est pas un échec, juste ce qui manque. */
+  manque?: CeQuiManque | null;
   /**
    * L'étape qui s'affiche, et le côté d'où elle arrive (27/09/2026, `v1-30` §5.6). À chaque
    * nouvelle `cle`, le contenu entre en fondu depuis `Mouvement.deplacement` pixels de ce côté ;
@@ -210,7 +211,7 @@ export function StepShell({
               rendrait le lecteur d'écran inutilisable. */}
           {manque && (
             <ThemedText type="small" themeColor="textTertiary">
-              Il manque encore {manque}.
+              Il manque encore {manque.phrase}.
             </ThemedText>
           )}
           <View style={styles.footer}>
