@@ -1818,9 +1818,13 @@ contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
 **Et ce que le lot 6 lit, il le lit dans quatre vues, sans définition nouvelle** (29/09/2026,
 `20260929200000_les_vues_de_l_administration.sql`, `docs/exploitation/README.md` §8.5 ter) :
 l'entonnoir et la rétention par cohorte, les états des rappels, les départs par mois. Chaque notion y
-garde sa seule dérivation — `cohorte_de`, `dernier_signe_de_vie`, `regime_de_rappel` sur la boucle
-que rend `boucle_de_la_personne` —, et une vue qui en écrirait une seconde ferait deux échelles qui
-divergent. Deux choses à ne pas « simplifier » : la rétention divise par **toute** la cohorte
+garde sa dérivation — `cohorte_de`, `dernier_signe_de_vie`, `regime_de_rappel` sur la boucle que
+rend `boucle_de_la_personne` —, et une vue qui en écrirait une seconde ferait deux échelles qui
+divergent. **Une exception, nommée des deux côtés** : la rétention lit le signe de vie semaine par
+semaine, ce qu'un `max` ne sait pas faire, donc elle recopie les deux sources de
+`dernier_signe_de_vie` — une source ajoutée à l'une s'ajoute à l'autre. Trois choses à ne pas
+« simplifier » : la boucle retenue est celle qui **tourne encore**, pas celle qui a existé (sans quoi
+qui a arrêté sa boucle reste actif pour toujours) ; la rétention divise par **toute** la cohorte
 d'arrivée, purgés compris (sans eux, la purge fait paraître une cohorte plus fidèle en vieillissant) ;
 et ni l'activation ni un taux de churn ne sont calculés — la première est une décision de produit,
 le second demanderait un effectif passé que le régime ne sait pas reconstruire.

@@ -1327,10 +1327,10 @@ supprimerait pas la cause, ça la rendrait plus rare — donc plus chère à att
 
 > **Fait le 29/09/2026**, dans la direction écrite ci-dessous : `scripts/verifier-migrations-livrees.mjs`
 > en CI, travail `checks`, et le journal d'exceptions `supabase/retouches-de-migrations-livrees.json`.
-> Deux choix que ce paragraphe ne faisait pas : la comparaison part de la **base de fusion** avec
-> `origin/main` et non de sa pointe — sans quoi une migration livrée sur `main` après le départ de la
-> branche se lirait « supprimée » par elle — ; et une exception porte l'**empreinte** du contenu
-> accepté, donc elle décrit une retouche et jamais un fichier. Neuf mutations en tête de son test ;
+> Deux choix que ce paragraphe ne faisait pas : la comparaison part de la **copie de travail** et
+> non de `HEAD` — une retouche au shell pas encore commise se voit aussi en local ; la base de fusion
+> avec `origin/main`, elle, était déjà dans la direction (`<base>...HEAD`) — ; et une exception porte
+> l'**empreinte** du contenu accepté, donc elle décrit une retouche et jamais un fichier. Neuf mutations en tête de son test ;
 > le chemin de l'exception est en `SUPABASE.md` §2.3.
 
 **Relevé en l'écrivant.** `scripts/proteger-les-migrations-livrees.mjs` refuse à Edit et à Write une

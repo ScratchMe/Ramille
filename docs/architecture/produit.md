@@ -350,21 +350,27 @@ surtout pour que les chiffres qui sortiront d'ici se comparent à ceux d'ailleur
 **Et la surface est livrée le 29/09/2026** (`20260929200000_les_vues_de_l_administration.sql`) :
 quatre vues `analytics.*`, une par indicateur décidé — l'entonnoir par cohorte, la rétention par
 cohorte, les états des rappels, les départs par mois —, et les quatre requêtes à enregistrer dans le
-SQL editor, qui ne peuvent pas l'être par une migration. Où les lire, ce qui doit alerter et ce
-qu'elles ne disent pas : `docs/exploitation/README.md` §8.5 ter. Trois choses que la construction a
-fixées, et qu'il faut connaître avant d'en lire un chiffre :
+SQL editor, qui ne peuvent pas l'être par une migration — **elles restent à créer, à la main, par
+la personne qui pilote**. Où les lire, ce qui doit alerter et ce qu'elles ne disent pas :
+`docs/exploitation/README.md` §8.5 ter. Trois choses que la construction a fixées, et qu'il faut
+connaître avant d'en lire un chiffre :
 
-- **chaque notion garde sa seule dérivation** — l'étape et les semaines tenues de `cohorte_de`, le
+- **chaque notion garde sa dérivation** — l'étape et les semaines tenues de `cohorte_de`, le
   signe de vie de `dernier_signe_de_vie`, le régime de `regime_de_rappel` —, si bien qu'un compte
-  vivant et un compte purgé de la même semaine s'additionnent. La seule fonction neuve,
-  `boucle_de_la_personne`, écrit la règle « la boucle hebdomadaire quand elle existe », que deux
-  vues lisent. Elle diffère volontairement des compteurs de la purge, qui retiennent le plus avancé
-  des deux boucles : quelqu'un qui répond chaque semaine et se tait sur la boucle mensuelle est
-  actif pour le churn ;
+  vivant et un compte purgé de la même semaine s'additionnent ; la rétention, qui lit le signe de
+  vie semaine par semaine, en recopie les deux sources, et la fonction et la vue se nomment l'une
+  l'autre. La seule fonction neuve, `boucle_de_la_personne`, écrit la règle « la boucle
+  hebdomadaire quand elle existe » — **qui existe encore**, c'est-à-dire dont un point a été posé
+  ces trois dernières semaines, sinon la mensuelle si elle tourne. Lire « qui a existé » figeait le
+  régime de qui avait arrêté sa boucle (son seul bilan retiré) : compté actif pour toujours
+  (contre-lecture du 29/09/2026). Qui n'a plus de boucle qui tourne n'a plus de régime, et son seul
+  départ lisible est la purge — la décision du 27/09/2026, appliquée ;
 - **la rétention divise par toute la cohorte d'arrivée**, purgés compris, comme le glossaire le
   demande — sans eux, une cohorte paraîtrait plus fidèle en vieillissant, à mesure que la purge en
   retire les sessions muettes. Ce que la purge a effacé de l'activité est signalé semaine par
-  semaine (`borne_basse`) plutôt que deviné ;
+  semaine (`borne_basse`) plutôt que deviné. **Une sortie n'est pas couverte** : un compte supprimé
+  quitte sa cohorte, parce que la suppression ne garde que son mois — la garder par semaine
+  d'arrivée serait une décision sur ce qu'on garde ;
 - **deux indicateurs du glossaire ne sont pas calculés, et c'est une limite et non un oubli.**
   L'**activation** demande un moment « aha » et une fenêtre, qui se trouvent en regardant ce que les
   personnes restées ont fait tôt : c'est une décision de produit, et à nos volumes une corrélation
@@ -431,7 +437,7 @@ premier plan, les actions passent avant le cap, qui dit « par an » ; l'onglet 
 et les contrôles sous le doigt se voient ; les cibles passent à 48 ; et, sur web, un choix coché
 s'annonce enfin coché — c'était le seul défaut critique de l'audit.
 
-**Trois chantiers en sortent, et aucun n'est fini dans cette livraison** :
+**Trois chantiers en sortent, et aucun n'est fini dans cette livraison** (le premier l'a été depuis) :
 
 - **finir de synchroniser le kit** (décision n° 11) — la personne qui pilote a refusé de le réduire,
   et a préféré qu'il reste un miroir du code. La livraison a synchronisé les fiches des composants

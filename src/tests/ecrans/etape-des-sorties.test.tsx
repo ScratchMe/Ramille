@@ -20,8 +20,8 @@
  *     tardif, et eux seuls ;
  *   - la seconde liste ouverte seulement par un état initialisé au montage (l'état d'avant, pour elle
  *     seule) → « un bus prérempli après le montage », seul ;
- *   - un choix fait dans la seconde liste ouverte par la réponse qui ne l'épingle plus → « choisir
- *     un mode de la première liste ne referme pas la seconde », seul ;
+ *   - un choix fait pendant que la seconde liste est ouverte par la réponse, qui ne l'épingle plus
+ *     → « choisir un mode de la première liste ne referme pas la seconde », seul ;
  *   - la rangée cochée lue sur le seul mode, sans le covoiturage → « une voiture partagée » et « le
  *     toucher départage encore les deux voitures » — les deux rangées « Voiture » se cochaient
  *     ensemble.

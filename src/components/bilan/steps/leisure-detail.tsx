@@ -204,8 +204,8 @@ export function LeisureDetailStep({
           label={choice.label}
           selected={selected}
           onPress={() => {
-            // Ouverte par la réponse, la seconde liste le reste une fois qu'on y a choisi : c'est
-            // désormais un geste.
+            // Ouverte par la réponse, la seconde liste le reste après un choix, quel qu'il soit :
+            // choisir « Train » sous un « Bus » prérempli la refermerait sinon sous le doigt.
             if (showMore) setDeplieeParUnGeste(true);
             // La motorisation, le type de deux-roues et la taille du covoiturage
             // rattachés au mode précédent sont effacés par `normaliserReponses`, pas

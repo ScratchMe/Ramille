@@ -11,13 +11,14 @@
 --
 -- **1. Deux bornes, parce qu'il y a deux sortes de vues.** L'entonnoir et la rétention se lisent par
 -- semaine d'arrivée : les comptes fabriqués naissent dans la semaine d'il y a **300 jours**, et les
--- assertions n'en lisent que cette semaine-là (et la suivante, qui n'a que des purgés). Assez récent
--- pour que la purge des `app_open` à douze mois n'y touche pas — sans quoi `borne_basse` vaudrait
--- toujours vrai et ne s'éprouverait pas —, et antérieur au premier compte de la production (le
--- 09/09/2026) **jusqu'en juillet 2027** : rejoué sur le distant après cette date, ce fichier y
--- croiserait de vrais comptes (`TESTING.md` §2.3). En CI, la base est vierge. Les états des rappels
--- et les départs, eux, sont des totaux : ils se lisent **en écart** à un relevé fait avant les
--- fixtures, et tiennent donc sur n'importe quelle base.
+-- assertions n'en lisent que cette semaine-là (et la suivante, W+14, qui n'a que des purgés). Assez
+-- récent pour que la purge des `app_open` à douze mois n'y touche pas — sans quoi `borne_basse`
+-- vaudrait toujours vrai et ne s'éprouverait pas —, et antérieur au premier compte de la production
+-- (le 09/09/2026, relevé sur le distant le 29/09/2026) **jusqu'au 20/06/2027**, où la semaine W+14
+-- atteint celle du 07/09/2026 : rejoué sur le distant après cette date, ce fichier y croiserait de
+-- vrais comptes (`TESTING.md` §2.3). En CI, la base est vierge. Les états des rappels et les départs,
+-- eux, sont des totaux : ils se lisent **en écart** à un relevé fait avant les fixtures, et tiennent
+-- donc sur n'importe quelle base.
 --
 -- **2. `occurred_at` et `submitted_at` sont posés par le serveur** : une fixture insère, puis recule
 -- la date (même règle que `36`).
@@ -31,30 +32,35 @@
 -- base locale, le fichier rejoué ensuite — chaque mutation remise en place avant la suivante. Les
 -- numéros sont ceux des assertions de ce fichier :
 --
---   - l'entonnoir sans les purgés                               → 1 : la 5 ;
---   - la part « a soumis un bilan » non cumulée (sa seule étape) → 1 : la 5 ;
---   - la rétention sur les seuls vivants                        → 2 : la 7 (dénominateur à 6) et la 8
+--   - la boucle « qui a existé » (sans la date du dernier point)  → 3 : la 4, la 11 et la 13 — A8 et
+--     A9, lus sur leur boucle hebdomadaire arrêtée, partent pour toujours ;
+--   - la boucle mensuelle avant l'hebdomadaire                  → 3 : la 4, la 11 et la 13 ;
+--   - le signe de vie daté dans le fuseau de la session          → 1 : la 5 ;
+--   - l'entonnoir sans les purgés                               → 1 : la 6 ;
+--   - la part « a soumis un bilan » non cumulée (sa seule étape) → 1 : la 6 ;
+--   - la semaine en cours incluse                               → 1 : la 7 ;
+--   - la rétention sur les seuls vivants                        → 2 : la 8 (dénominateur à 6) et la 9
 --     (la cohorte toute purgée disparaît) ;
---   - la rétention sur les seuls `app_open`                     → 1 : la 7, A3 n'étant actif que par
+--   - la rétention sur les seuls `app_open`                     → 1 : la 8, A3 n'étant actif que par
 --     ses périodes répondues ;
---   - la semaine en cours incluse                               → 1 : la 6 ;
---   - la borne basse sans son « + 1 »                           → 1 : la 7, à la semaine 4 ;
---   - la borne basse sans la purge des événements à douze mois  → 1 : la 9 ;
---   - « a répondu » lu sur le début de période                  → 1 : la 7 ;
---   - la boucle mensuelle avant l'hebdomadaire                  → 3 : la 4, la 10 et la 12 — A6 part ;
---   - `espace` compté parmi les partis                          → 2 : la 10 et la 11 ;
---   - les départs datés par l'arrivée                           → 1 : la 12 ;
---   - les purges comptées par leurs candidates                  → 1 : la 13 ;
---   - les suppressions oubliées                                 → 1 : la 14 ;
+--   - la rétention comptée en événements (`union all`)          → 1 : la 8, A2 ouvrant deux fois en s. 2 ;
+--   - la borne basse sans son « + 1 »                           → 1 : la 8, à la semaine 4 ;
+--   - « a répondu » lu sur le début de période                  → 1 : la 8 ;
+--   - la borne basse sans la purge des événements à douze mois  → 1 : la 10 ;
+--   - `espace` compté parmi les partis                          → 2 : la 11 et la 12 ;
+--   - les départs datés par l'arrivée                           → 1 : la 13 ;
+--   - les purges comptées par leurs candidates                  → 1 : la 14 ;
+--   - les passages bloqués non comptés                          → 1 : la 14 ;
+--   - les suppressions oubliées                                 → 1 : la 15 ;
 --   - `select` accordé à `authenticated` sur une vue            → 1 : la 1.
 --
--- Deux des quatorze passaient sur la première version des fixtures, et c'est pourquoi A3 tient six
--- semaines et A7 existe : le dernier signe de vie d'A3 tombait dans son mois d'arrivée, et aucune
--- cohorte n'avait plus de douze mois.
+-- Deux des quatorze premières passaient sur la première version des fixtures — d'où A3 qui tient
+-- six semaines et A7 —, et une des quatre ajoutées après la contre-lecture aussi — d'où la troisième
+-- ouverture d'A2.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(15);
 
 -- ── 1. Rien de lisible depuis le client, rien qui désigne quelqu'un ─────────────────────────────
 
@@ -101,35 +107,47 @@ select bag_eq(
 create temp table regimes_avant on commit drop as select * from analytics.regimes_de_rappel;
 create temp table departs_avant on commit drop as select * from analytics.departs_par_mois;
 
--- ── 3. Six comptes vivants et trois purgés, arrivés la même semaine W ───────────────────────────
+-- ── 3. Six comptes vivants et trois purgés arrivés la même semaine W, et trois à côté ────────────
 --
 -- W est le lundi (UTC) d'il y a 300 jours ; chacun arrive le mardi à 10 h. « s. n » est la semaine
--- d'âge n, « W+k » le jour k après le lundi W.
+-- d'âge n, « W+k » le jour k après le lundi W, « L » le lundi courant, « M » le 1er du mois courant.
+-- **Une boucle ne compte que si elle tourne encore** (un point posé depuis L-21, ou M-3 mois pour la
+-- mensuelle) : les boucles qui doivent compter ont donc des points récents, les autres non.
 --
 --   A1  n'a rien fait                                        → a_ouvert, pas de boucle
---   A2  bilan ; ouvre l'app à W+1 (s. 0) et W+15 (s. 2)       → a_soumis_un_bilan, pas de boucle
+--   A2  bilan ; ouvre l'app à W+1 (s. 0), puis W+15 et W+16 (deux fois en s. 2)
+--                                                              → a_soumis_un_bilan, pas de boucle
 --   A3  bilan ; engagé (archive) ; points hebdomadaires répondus pour les périodes W+35 et W+42
---       (répondus à W+43 et W+50) ; puis huit points clos      → a_repondu, commute, silence
---   A4  bilan ; point hebdomadaire répondu pour W+7 (à W+10) ; ouvre l'app à W+8 ; quatre points
---       clos ensuite                                           → a_repondu, commute, espace
---   A5  bilan ; engagé (archive) ; un point MENSUEL clos       → s_est_engagee, extras, normal
---   A6  rattaché ; bilan ; point hebdomadaire répondu pour W+21 (à W+24) ; ouvre l'app à W+36 ;
---       huit points MENSUELS clos après                        → a_repondu, commute, normal
+--       (répondus à W+43 et W+50) ; puis un point clos chaque semaine de W+49 à L-7
+--                                                              → a_repondu, commute, silence
+--   A4  bilan ; point hebdomadaire répondu pour W+7 (à W+10) ; ouvre l'app à L-35 ; quatre points
+--       clos ensuite, jusqu'à L-7                              → a_repondu, commute, espace
+--   A5  bilan ; engagé (archive) ; un point MENSUEL clos à M-1 mois
+--                                                              → s_est_engagee, extras, normal
+--   A6  rattaché ; bilan ; point hebdomadaire répondu pour W+21 (à W+24) ; ouvre l'app à W+36 ; un
+--       point hebdomadaire en attente pour L-7 ; quatre points MENSUELS clos, de M-4 à M-1 mois
+--                                                              → a_repondu, commute, normal
 --   +   trois comptes purgés de la semaine W : deux à « a ouvert » (0 semaine), un à « a soumis
 --       un bilan » (2-3 semaines)
 --   +   un compte purgé de la semaine W+14, seul de sa cohorte (13+ semaines)
 --   A7  arrivé il y a 420 jours, n'a rien fait : une cohorte dont les premières semaines ont plus de
 --       douze mois, donc des `app_open` déjà purgés
+--   A8  arrivé il y a 200 jours ; neuf points hebdomadaires clos il y a plus de quatre mois, puis
+--       plus rien ; un point mensuel clos à M-1 mois          → extras, normal
+--   A9  arrivé il y a 200 jours ; les mêmes neuf points hebdomadaires, et rien d'autre
+--                                                              → pas de boucle
 --
 -- A3 tient six semaines : son dernier signe de vie (W+42) tombe forcément dans un autre mois que
 -- son arrivée, et c'est ce qui distingue un départ daté par la fin de l'usage d'un départ daté par
 -- l'arrivée.
 --
--- A6 éprouve la règle du churn : sa boucle mensuelle est en silence, mais il a une boucle
--- hebdomadaire, et il y répond — il est actif. `cohortes_purgees` l'aurait compté en silence s'il
--- avait été purgé ; c'est la différence voulue, écrite en tête de la migration.
+-- A6 éprouve la priorité : sa boucle mensuelle décroche, mais sa boucle hebdomadaire tourne, et
+-- c'est elle qui compte. A8 et A9 éprouvent que la boucle est celle qui **existe**, pas celle qui a
+-- existé : lus sur leur boucle hebdomadaire arrêtée, ils seraient en silence — partis — pour toujours.
 
 select set_config('c37.w', date_trunc('week', (now() - interval '300 days') at time zone 'UTC')::date::text, true);
+select set_config('c37.l', date_trunc('week', now() at time zone 'UTC')::date::text, true);
+select set_config('c37.m', date_trunc('month', now() at time zone 'UTC')::date::text, true);
 
 create temp table jour on commit drop as
 select k, ((current_setting('c37.w')::date + k)::timestamp + interval '12 hours') at time zone 'UTC' as midi
@@ -142,9 +160,10 @@ select ('c3700000-0000-0000-0000-00000000000' || i)::uuid, '00000000-0000-0000-0
        case when i = 6 then 'x' end,
        i <> 6,
        case when i = 7 then now() - interval '420 days'
+            when i in (8, 9) then now() - interval '200 days'
             else (current_setting('c37.w')::date + interval '1 day 10 hours') at time zone 'UTC' end,
        now()
-from generate_series(1, 7) as g(i);
+from generate_series(1, 9) as g(i);
 
 insert into public.assessments (user_id, status, created_at)
 select ('c3700000-0000-0000-0000-00000000000' || i)::uuid, 'completed',
@@ -157,16 +176,19 @@ where user_id::text like 'c3700000-0000-0000-0000-00000000000%';
 insert into public.usage_events (user_id, name, platform) values
   ('c3700000-0000-0000-0000-000000000002', 'app_open', 'android'),
   ('c3700000-0000-0000-0000-000000000002', 'app_open', 'android'),
+  ('c3700000-0000-0000-0000-000000000002', 'app_open', 'android'),
   ('c3700000-0000-0000-0000-000000000004', 'app_open', 'android'),
   ('c3700000-0000-0000-0000-000000000006', 'app_open', 'android');
 
--- Reculées une à une : les deux ouvertures d'A2 tombent dans deux semaines différentes.
+-- Reculées une à une : les ouvertures d'A2 tombent dans deux semaines, dont deux dans la même — un
+-- compte actif deux fois dans une semaine compte une fois.
 update public.usage_events e set occurred_at = j.midi
 from (select id, row_number() over (order by id) as rang from public.usage_events
       where user_id = 'c3700000-0000-0000-0000-000000000002') a
-join jour j on j.k = case a.rang when 1 then 1 else 15 end
+join jour j on j.k = case a.rang when 1 then 1 when 2 then 15 else 16 end
 where e.id = a.id;
-update public.usage_events set occurred_at = (select midi from jour where k = 8)
+update public.usage_events
+set occurred_at = ((current_setting('c37.l')::date - 35)::timestamp + interval '12 hours') at time zone 'UTC'
 where user_id = 'c3700000-0000-0000-0000-000000000004';
 update public.usage_events set occurred_at = (select midi from jour where k = 36)
 where user_id = 'c3700000-0000-0000-0000-000000000006';
@@ -186,15 +208,33 @@ from (values ('c3700000-0000-0000-0000-000000000003', 35, 43),
              ('c3700000-0000-0000-0000-000000000004', 7, 10),
              ('c3700000-0000-0000-0000-000000000006', 21, 24)) as r(u, periode, reponse);
 
--- Les points clos : huit hebdomadaires pour A3, quatre pour A4, un mensuel pour A5, huit mensuels
--- pour A6 — tous après le dernier signe de vie de leur compte.
+-- Les points clos et en attente : (compte, boucle, poste, statut, première période, dernière, pas).
 insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, poste, status)
-select c.u::uuid, c.boucle, current_setting('c37.w')::date + d.k, 'Période', 'Trajet', c.poste, 'expired'
-from (values ('c3700000-0000-0000-0000-000000000003', 'commute', 'commute', 49, 98, 7),
-             ('c3700000-0000-0000-0000-000000000004', 'commute', 'commute', 14, 35, 7),
-             ('c3700000-0000-0000-0000-000000000005', 'extras', 'travel', 30, 30, 30),
-             ('c3700000-0000-0000-0000-000000000006', 'extras', 'travel', 40, 250, 30)) as c(u, boucle, poste, de, a, pas)
-cross join lateral generate_series(c.de, c.a, c.pas) as d(k);
+select c.u::uuid, c.boucle, d.periode, 'Période', 'Trajet', c.poste, c.statut
+from (values
+  -- A3 : chaque semaine depuis W+49 jusqu'à L-7 — la boucle tourne, et elle se tait.
+  ('c3700000-0000-0000-0000-000000000003', 'commute', 'commute', 'expired',
+   current_setting('c37.w')::date + 49, current_setting('c37.l')::date - 7, interval '7 days'),
+  -- A4 : quatre semaines après son ouverture de L-35.
+  ('c3700000-0000-0000-0000-000000000004', 'commute', 'commute', 'expired',
+   current_setting('c37.l')::date - 28, current_setting('c37.l')::date - 7, interval '7 days'),
+  -- A5 : le mois écoulé.
+  ('c3700000-0000-0000-0000-000000000005', 'extras', 'travel', 'expired',
+   (current_setting('c37.m')::date - interval '1 month')::date, (current_setting('c37.m')::date - interval '1 month')::date, interval '1 month'),
+  -- A6 : la semaine écoulée, en attente — la boucle hebdomadaire tourne —, et quatre mois clos.
+  ('c3700000-0000-0000-0000-000000000006', 'commute', 'commute', 'pending',
+   current_setting('c37.l')::date - 7, current_setting('c37.l')::date - 7, interval '7 days'),
+  ('c3700000-0000-0000-0000-000000000006', 'extras', 'travel', 'expired',
+   (current_setting('c37.m')::date - interval '4 months')::date, (current_setting('c37.m')::date - interval '1 month')::date, interval '1 month'),
+  -- A8 et A9 : neuf semaines closes il y a plus de quatre mois, puis plus rien ; A8 garde sa mensuelle.
+  ('c3700000-0000-0000-0000-000000000008', 'commute', 'commute', 'expired',
+   current_setting('c37.l')::date - 196, current_setting('c37.l')::date - 140, interval '7 days'),
+  ('c3700000-0000-0000-0000-000000000008', 'extras', 'travel', 'expired',
+   (current_setting('c37.m')::date - interval '1 month')::date, (current_setting('c37.m')::date - interval '1 month')::date, interval '1 month'),
+  ('c3700000-0000-0000-0000-000000000009', 'commute', 'commute', 'expired',
+   current_setting('c37.l')::date - 196, current_setting('c37.l')::date - 140, interval '7 days')
+) as c(u, boucle, poste, statut, de, a, pas)
+cross join lateral (select g::date as periode from generate_series(c.de::timestamp, c.a::timestamp, c.pas) as g) as d;
 
 insert into public.purges_par_cohorte (semaine_d_arrivee, etape, semaines_tenues, rappels_au_depart, comptes) values
   (current_setting('c37.w')::date, 'a_ouvert', '0', 'normal', 2),
@@ -202,9 +242,11 @@ insert into public.purges_par_cohorte (semaine_d_arrivee, etape, semaines_tenues
   (current_setting('c37.w')::date + 14, 'a_repondu', '13+', 'silence', 1);
 
 -- Les départs datés par un journal : une purge appliquée — quatre candidates, trois supprimées (un
--- compte a pu partir entre-temps par `delete_my_account`) —, et deux suppressions de compte.
-insert into public.purge_runs (ran_at, status, candidates, deleted)
-values ((select midi from jour where k = 60), 'applied', 4, 3);
+-- compte a pu partir entre-temps par `delete_my_account`) —, une purge bloquée par la garde de
+-- volume une heure plus tard, et deux suppressions de compte.
+insert into public.purge_runs (ran_at, status, candidates, deleted) values
+  ((select midi from jour where k = 60), 'applied', 4, 3),
+  ((select midi + interval '1 hour' from jour where k = 60), 'blocked', 90, 0);
 insert into public.suppressions_de_compte_par_mois (mois, suppressions)
 values (date_trunc('month', current_setting('c37.w')::date + 100)::date, 2)
 on conflict (mois) do update set suppressions = public.suppressions_de_compte_par_mois.suppressions + 2;
@@ -213,10 +255,21 @@ on conflict (mois) do update set suppressions = public.suppressions_de_compte_pa
 
 select results_eq(
   $$ select public.boucle_de_la_personne(('c3700000-0000-0000-0000-00000000000' || i)::uuid)
-     from generate_series(1, 6) as g(i) order by i $$,
-  $$ values (null::text), (null), ('commute'), ('commute'), ('extras'), ('commute') $$,
-  'la boucle hebdomadaire quand elle existe, sinon la mensuelle, sinon aucune — A6 a les deux, et c''est l''hebdomadaire'
+     from unnest(array[1, 2, 3, 4, 5, 6, 8, 9]) as g(i) order by i $$,
+  $$ values (null::text), (null), ('commute'), ('commute'), ('extras'), ('commute'), ('extras'), (null) $$,
+  'la boucle hebdomadaire quand elle tourne, sinon la mensuelle, sinon aucune — A6 a les deux, A8 et A9 une hebdomadaire arrêtée'
 );
+
+-- Le signe de vie d'une période répondue est minuit UTC, quelle que soit la session : sous
+-- `Europe/Paris`, `::timestamptz` le plaçait une heure plus tôt, et un départ daté par un point
+-- commençant un 1er changeait de mois selon qui lisait.
+set local timezone = 'Europe/Paris';
+select is(
+  public.dernier_signe_de_vie('c3700000-0000-0000-0000-000000000003', 'commute'),
+  (current_setting('c37.w')::date + 42)::timestamp at time zone 'UTC',
+  'le dernier signe de vie d''A3 est le début de sa dernière période répondue, à minuit UTC, même sous une session à Paris'
+);
+set local timezone = 'UTC';
 
 -- ── 5. L'entonnoir ──────────────────────────────────────────────────────────────────────────────
 
@@ -289,8 +342,8 @@ select results_eq(
      from analytics.regimes_de_rappel a
      left join regimes_avant b on b.boucle = a.boucle
      order by a.boucle $$,
-  $$ values ('commute'::text, 3, 1, 1, 1), ('extras', 1, 1, 0, 0) $$,
-  'A3 part, A4 décroche, A6 reste actif malgré sa boucle mensuelle muette, A5 est lu sur sa seule boucle'
+  $$ values ('commute'::text, 3, 1, 1, 1), ('extras', 2, 2, 0, 0) $$,
+  'A3 part, A4 décroche, A6 reste actif malgré sa boucle mensuelle qui décroche, A5 et A8 sont lus sur leur mensuelle, A9 nulle part'
 );
 
 select ok(
@@ -304,6 +357,8 @@ create temp table departs_ecart on commit drop as
 select a.mois,
        a.partis_en_silence - coalesce(b.partis_en_silence, 0) as partis,
        a.sessions_purgees - coalesce(b.sessions_purgees, 0) as purgees,
+       a.passages_de_purge - coalesce(b.passages_de_purge, 0) as passages,
+       a.passages_bloques - coalesce(b.passages_bloques, 0) as bloques,
        a.comptes_supprimes - coalesce(b.comptes_supprimes, 0) as supprimes
 from analytics.departs_par_mois a
 left join departs_avant b on b.mois = a.mois;
@@ -311,13 +366,13 @@ left join departs_avant b on b.mois = a.mois;
 select results_eq(
   $$ select mois, partis from departs_ecart where partis <> 0 $$,
   $$ values (date_trunc('month', current_setting('c37.w')::date + 42)::date, 1) $$,
-  'un seul parti de plus, A3, rangé au mois de son dernier signe de vie — le début de sa dernière période répondue'
+  'un seul parti de plus, A3, rangé au mois de son dernier signe de vie — A9, en silence sur une boucle arrêtée, n''en est pas'
 );
 
 select results_eq(
-  $$ select mois, purgees from departs_ecart where purgees <> 0 $$,
-  $$ values (date_trunc('month', current_setting('c37.w')::date + 60)::date, 3) $$,
-  'les sessions purgées au mois de la purge, comptées par ce qu''elle a supprimé et non par ses candidates'
+  $$ select mois, purgees, passages, bloques from departs_ecart where purgees <> 0 or passages <> 0 or bloques <> 0 $$,
+  $$ values (date_trunc('month', current_setting('c37.w')::date + 60)::date, 3, 1, 1) $$,
+  'les sessions purgées au mois de la purge, comptées par ce qu''elle a supprimé, avec ses passages appliqués et bloqués'
 );
 
 select results_eq(
