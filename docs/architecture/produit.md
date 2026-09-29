@@ -458,7 +458,8 @@ fois, et la liste garde l'ordre du rang, l'action engagée marquée à sa place.
 doigt est la ligne 11.24 de `v1-13` ; les écarts au canvas sont au README de son dossier.
 
 **Et l'écran du mode du questionnaire est implémenté depuis le 29/09/2026**
-([`v1-31-l-ecran-du-mode.md`](v1-31-l-ecran-du-mode.md), planifié et livré le même jour). La recette web du 28/09/2026 l'avait jugé
+([`v1-31-l-ecran-du-mode.md`](v1-31-l-ecran-du-mode.md), planifié et livré le même jour, PR
+[#296](https://github.com/ScratchMe/Ramille/pull/296)). La recette web du 28/09/2026 l'avait jugé
 pénible (`v1-13`, ligne 11.19) : la liste ne tient pas, et « ce qui manque » se lit mal. Une session de
 design y a répondu le jour même, avec trois décisions de produit :
 
