@@ -1,5 +1,5 @@
 -- Tests pgTAP des vues de l'administration — lot 6, migration
--- `20260929200000_les_vues_de_l_administration.sql` (décisions du 27/09/2026).
+-- `20260929210541_les_vues_de_l_administration.sql` (décisions du 27/09/2026).
 --
 -- Ce que ce fichier défend : **chaque vue compte ce qu'elle dit compter, avec la définition que le
 -- produit s'est déjà donnée** — l'étape et les semaines tenues de `cohorte_de`, le signe de vie de

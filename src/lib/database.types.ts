@@ -1162,7 +1162,7 @@ export type Database = {
         Args: { p_plan_action_id: string; p_raison: string }
         Returns: undefined
       }
-      // Lot 6 — les vues de l'administration (20260929200000)
+      // Lot 6 — les vues de l'administration (20260929210541)
       boucle_de_la_personne: { Args: { p_user_id: string }; Returns: string }
       // C4.2 — le mot de la veille (20260928075453)
       canal_android: { Args: { p_genre: string }; Returns: string }

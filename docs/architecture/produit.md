@@ -347,7 +347,7 @@ tout : `docs/exploitation/README.md` §8.5 bis.
 20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
 surtout pour que les chiffres qui sortiront d'ici se comparent à ceux d'ailleurs.
 
-**Et la surface est livrée le 29/09/2026** (`20260929200000_les_vues_de_l_administration.sql`) :
+**Et la surface est livrée le 29/09/2026** (`20260929210541_les_vues_de_l_administration.sql`) :
 quatre vues `analytics.*`, une par indicateur décidé — l'entonnoir par cohorte, la rétention par
 cohorte, les états des rappels, les départs par mois —, et les quatre requêtes à enregistrer dans le
 SQL editor, qui ne peuvent pas l'être par une migration — **elles restent à créer, à la main, par

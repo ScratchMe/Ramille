@@ -1816,7 +1816,7 @@ contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
   `check`.
 
 **Et ce que le lot 6 lit, il le lit dans quatre vues, sans définition nouvelle** (29/09/2026,
-`20260929200000_les_vues_de_l_administration.sql`, `docs/exploitation/README.md` §8.5 ter) :
+`20260929210541_les_vues_de_l_administration.sql`, `docs/exploitation/README.md` §8.5 ter) :
 l'entonnoir et la rétention par cohorte, les états des rappels, les départs par mois. Chaque notion y
 garde sa dérivation — `cohorte_de`, `dernier_signe_de_vie`, `regime_de_rappel` sur la boucle que
 rend `boucle_de_la_personne` —, et une vue qui en écrirait une seconde ferait deux échelles qui
