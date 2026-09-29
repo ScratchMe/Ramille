@@ -1,7 +1,8 @@
 La dernière étape du questionnaire, « Quel est ton contexte de mobilité ? » : une introduction, puis les quatre questions de `ChampsDeContexte`. Elle se pose dans `StepShell` (section « Contexte de mobilité »), dont le bouton dit alors « Voir mon bilan ».
 
 ```jsx
-<StepShell section="Contexte de mobilité" step={9} total={9} onBack={back} onNext={submit} nextLabel="Voir mon bilan">
+<StepShell section="Contexte de mobilité" step={9} total={9} entree={{ cle: 'context', sens }}
+  manque={manqueDeLEtape('context', answers)} reponsesDonnees={reponsesDonnees} onBack={back} onNext={submit} nextLabel="Voir mon bilan">
   <ContextStep answers={answers} update={update} />
 </StepShell>
 ```

@@ -19,5 +19,11 @@ export interface ChipProps {
   nestedBackground?: boolean;
   /** Quand le libellé visible est une abréviation ambiguë — deux jours portent l'initiale « M » — le mot entier. */
   accessibilityLabel?: string;
+  /**
+   * La surface de la puce, pour qui doit lui donner le focus : « Il manque encore … » le pose sur l’option cochée d’un
+   * groupe, ou sa première. Une prop comme une autre depuis React 19 ; le kit, rendu sous React 18, retrouve la cible
+   * dans le DOM.
+   */
+  ref?: React.Ref<HTMLElement>;
 }
 export declare function Chip(props: ChipProps): JSX.Element;

@@ -1,7 +1,8 @@
 L'étape qui ouvre la section « Loisirs du week-end » : « À quelle fréquence fais-tu des trajets loisirs le week-end ? », trois rangées dans `StepShell`.
 
 ```jsx
-<StepShell section="Loisirs du week-end" step={5} total={9} onBack={back} onNext={next}>
+<StepShell section="Loisirs du week-end" step={5} total={9} entree={{ cle: 'leisure_frequency', sens }}
+  manque={manqueDeLEtape('leisure_frequency', answers)} reponsesDonnees={reponsesDonnees} onBack={back} onNext={next}>
   <LeisureFrequencyStep answers={answers} update={update} total={9} />
 </StepShell>
 ```

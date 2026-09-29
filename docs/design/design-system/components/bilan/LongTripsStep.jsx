@@ -1,4 +1,5 @@
 import React from 'react';
+import { BoiteDePrecision } from '../forms/BoiteDePrecision.jsx';
 import { Chip } from '../forms/Chip.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { PrecisionMode } from '../forms/PrecisionMode.jsx';
@@ -7,8 +8,9 @@ import { PrecisionChiffres } from './PrecisionChiffres.jsx';
 // Source : src/components/bilan/steps/long-trips.tsx — les trajets de plus de 300 km hors avion, en trois séries
 // identiques (train, autocar, voiture) rendues depuis la même liste. C'est le nom du groupe qui les distingue : il
 // porte la forme complète de l'intitulé (« Trajets longue distance en train »), qui le contient. Seule la voiture
-// ouvre des précisions — motorisation, puis nombre de personnes —, sous ses puces et hors du groupe : elles dépendent
-// d'un compte non nul, pas d'une option. L'autocar n'en a pas : ce n'est pas le véhicule de la personne.
+// ouvre des précisions — motorisation, puis nombre de personnes —, dans une seule `BoiteDePrecision`, 8 sous ses puces
+// et hors du groupe : elles dépendent d'un compte non nul, pas d'une option. L'autocar n'en a pas : ce n'est pas le
+// véhicule de la personne.
 
 // `COUNT_CHOICES` de la source, recopiée : la dernière puce stocke sa valeur nominale et vaut « ce nombre ou plus ».
 const COUNT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -38,7 +40,7 @@ const EN_VOITURE = 'En voiture';
 const nomDeLaSerie = (intitule) => 'Trajets longue distance ' + intitule.toLowerCase();
 
 const COLONNE = { display: 'flex', flexDirection: 'column' };
-// `field` de la source : l'intitulé, sa série et, pour la voiture, ses précisions.
+// `field` de la source : l'intitulé, puis sa série — et, pour la voiture, la série et sa boîte.
 const CHAMP = { ...COLONNE, gap: 10 };
 
 export function LongTripsStep({ answers, update }) {
@@ -72,22 +74,22 @@ export function LongTripsStep({ answers, update }) {
 
       <div style={CHAMP}>
         <ThemedText type="small" themeColor="textTertiary">{EN_VOITURE}</ThemedText>
-        {serie(EN_VOITURE, answers.car_long_trips_per_year, (n) =>
-          update({ car_long_trips_per_year: n, car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null })
-        )}
-        {enVoiture && (
-          <div style={{ marginTop: 4 }}>
-            <PrecisionMode question="Quelle motorisation ?" options={CAR_ENGINE_OPTIONS} valeur={answers.car_long_trips_engine}
-              onChange={(value) => update({ car_long_trips_engine: value })} />
-          </div>
-        )}
-        {/* Même condition que la motorisation : elle décrit la même voiture. */}
-        {enVoiture && (
-          <div style={{ marginTop: 4 }}>
-            <PrecisionChiffres question="Vous êtes combien dans la voiture ?" options={OPTIONS_OCCUPATION} valeur={answers.car_long_trips_occupancy}
-              onChange={(value) => update({ car_long_trips_occupancy: value })} />
-          </div>
-        )}
+        {/* La série et sa boîte, enveloppées ensemble (`ChoixOuvrant` dans le dépôt) : la boîte s'ouvre à 8 sous les puces
+            comme sous un mode, et le haut de la série ne passe pas au-dessus du bord quand l'écran remonte pour la montrer. */}
+        <div style={COLONNE}>
+          {serie(EN_VOITURE, answers.car_long_trips_per_year, (n) =>
+            update({ car_long_trips_per_year: n, car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null })
+          )}
+          {/* Une seule boîte pour les deux : elles décrivent la même voiture. */}
+          {enVoiture && (
+            <BoiteDePrecision>
+              <PrecisionMode champ="car_long_trips_engine" question="Quelle motorisation ?" options={CAR_ENGINE_OPTIONS} valeur={answers.car_long_trips_engine}
+                onChange={(value) => update({ car_long_trips_engine: value })} />
+              <PrecisionChiffres champ="car_long_trips_occupancy" question="Vous êtes combien dans la voiture ?" options={OPTIONS_OCCUPATION} valeur={answers.car_long_trips_occupancy}
+                onChange={(value) => update({ car_long_trips_occupancy: value })} />
+            </BoiteDePrecision>
+          )}
+        </div>
       </div>
 
       <ThemedText type="small" themeColor="textTertiary">Distances moyennes par défaut · 800 km train, 700 km autocar et voiture</ThemedText>

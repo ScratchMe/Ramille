@@ -16,6 +16,18 @@ export interface ButtonProps {
   onPanel?: boolean;
   /** Précision annoncée après le titre sur Android (« Répondre oui pour ton trajet domicile-travail »). Sans effet sur web. */
   accessibilityHint?: string;
+  /**
+   * Le bouton agit, mais l’action qu’il porte attend encore quelque chose : le « Suivant » d’une étape incomplète du
+   * questionnaire, qui mène à ce qui manque au lieu d’avancer. L’apparence du désactivé — fond `backgroundElement`,
+   * texte `textTertiary` — et rien d’autre : ni `disabled`, ni `aria-disabled`, le nom ne change pas. Sous le doigt,
+   * `backgroundPressed` et non `accentPressed`.
+   */
+  enAttente?: boolean;
+  /**
+   * La surface du bouton, pour lui rendre le focus (« Je m’y engage » qui réapparaît sous le doigt après « Annuler »).
+   * Une prop comme une autre depuis React 19 ; le kit, rendu sous React 18, ne la transmet pas.
+   */
+  ref?: React.Ref<HTMLButtonElement>;
   style?: React.CSSProperties;
 }
 export declare function Button(props: ButtonProps): JSX.Element;

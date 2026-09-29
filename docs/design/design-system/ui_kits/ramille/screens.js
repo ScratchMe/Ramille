@@ -30,24 +30,42 @@ function Onboarding({ go }) {
   );
 }
 
+// La branche « commute_mode » de `manqueDeLEtape` (src/types/bilan.ts), phrases comprises.
+function manqueDuMode(a) {
+  if (a.commute_mode === null) return { champ: 'commute_mode', phrase: 'ton mode de transport' };
+  if (a.commute_mode === 'voiture' && a.commute_car_engine === null) return { champ: 'commute_car_engine', phrase: 'la motorisation' };
+  if (a.commute_mode === 'deux_roues_motorise' && a.commute_two_wheeler_type === null) return { champ: 'commute_two_wheeler_type', phrase: 'le type de deux-roues' };
+  if (a.commute_mode === 'train' && a.commute_train_type === null) return { champ: 'commute_train_type', phrase: 'le type de train' };
+  if (a.commute_mode === 'velo' && a.commute_velo_type === null) return { champ: 'commute_velo_type', phrase: 'le type de vélo' };
+  if (a.commute_is_carpool && a.commute_carpool_size === null) return { champ: 'commute_carpool_size', phrase: 'le nombre de personnes dans la voiture' };
+  return null;
+}
+
 function Bilan({ go }) {
-  const [mode, setMode] = useState('voiture');
-  const [moto, setMoto] = useState(null);
-  const modes = [['voiture', 'Voiture (seul)'], ['covoit', 'Voiture (covoiturage)'], ['bus', 'Bus'], ['train', 'Train ou RER'], ['metro', 'Métro ou tram'], ['velo', 'Vélo'], ['marche', 'Marche'], ['deux', 'Deux-roues motorisé'], ['trott', 'Trottinette ou mobilité douce']];
-  const needMoto = mode === 'voiture' || mode === 'covoit';
+  const [answers, setAnswers] = useState({
+    commute_mode: null, commute_is_carpool: false, commute_carpool_size: null, commute_car_engine: null,
+    commute_two_wheeler_type: null, commute_train_type: null, commute_velo_type: null,
+  });
+  const [reponses, setReponses] = useState(0);
+  // Changer de mode efface ce qu'il rend impossible, comme `normaliserReponses` (ici, en plus court).
+  const update = (patch) => {
+    setReponses((n) => n + 1);
+    setAnswers((a) => {
+      const b = { ...a, ...patch };
+      if ('commute_mode' in patch || 'commute_is_carpool' in patch) {
+        if (b.commute_mode !== 'voiture') b.commute_car_engine = null;
+        if (!b.commute_is_carpool) b.commute_carpool_size = null;
+        if (b.commute_mode !== 'deux_roues_motorise') b.commute_two_wheeler_type = null;
+        if (b.commute_mode !== 'train') b.commute_train_type = null;
+        if (b.commute_mode !== 'velo') b.commute_velo_type = null;
+      }
+      return b;
+    });
+  };
   return (
     <Phone>
-      <StepShell section="Domicile-travail" step={3} total={9} onBack={() => go('onboarding')} onNext={() => go('restitution')} nextDisabled={needMoto && !moto} manque={needMoto && !moto ? 'la motorisation' : null}>
-        <ThemedText type="screenTitle" as="h1">Quel est ton mode de transport principal ?</ThemedText>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {modes.map(([v, l]) => (
-            <React.Fragment key={v}>
-              <ModeListItem label={l} selected={mode === v} onPress={() => { setMode(v); setMoto(null); }} />
-              {mode === v && needMoto && <PrecisionMode question="Quelle motorisation ?" options={[{ value: 't', label: 'Thermique' }, { value: 'h', label: 'Hybride' }, { value: 'hr', label: 'Hybride rechargeable' }, { value: 'e', label: 'Électrique' }]} valeur={moto} onChange={setMoto} />}
-            </React.Fragment>
-          ))}
-        </div>
-        <ThemedText type="code" themeColor="textTertiary" style={{ textAlign: 'center' }}>Ton mode n’est pas dans la liste ? Dis-le-nous.</ThemedText>
+      <StepShell section="Domicile-travail" step={3} total={9} onBack={() => go('onboarding')} onNext={() => go('restitution')} manque={manqueDuMode(answers)} entree={{ cle: 'commute_mode', sens: null }} reponsesDonnees={reponses}>
+        <CommuteModeStep answers={answers} update={update} />
       </StepShell>
     </Phone>
   );

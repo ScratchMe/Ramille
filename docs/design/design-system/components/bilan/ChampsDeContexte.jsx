@@ -1,7 +1,7 @@
 import React from 'react';
 import { Chip } from '../forms/Chip.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
-import { ThemedText } from '../core/ThemedText.jsx';
+import { IntituleDuChamp, useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
 // Source : src/components/bilan/champs-de-contexte.tsx — les quatre questions du contexte de mobilité, écrites
 // une fois pour deux écrans : la dernière étape du questionnaire (`ContextStep`) et l'écran autonome `/contexte`,
 // qui les repose sans resoumettre de bilan. Seule l'introduction diffère, et elle reste chez chacun.
@@ -9,6 +9,9 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // Chaque question s'écrit une fois et sert deux fois : le texte au-dessus de la série et le nom de son groupe.
 // La quatrième, le télétravail, ne se pose qu'avec un trajet régulier d'au moins deux jours et nomme ce nombre ;
 // son prédicat n'est réécrit nulle part ailleurs. Un fragment : c'est l'écran hôte qui espace les questions.
+//
+// Chaque série est l'ancre où mène « Il manque encore … » dans le questionnaire : son intitulé passe en `accentText` 600,
+// le focus va à sa puce cochée ou à la première. Dans `/contexte`, sans `StepShell` autour, l'ancre ne fait rien.
 
 // `CHOIX_DE_ZONE`, `CHOIX_DE_TC` et `CHOIX_DE_VEHICULES` (src/types/contexte.ts), recopiées.
 const CHOIX_DE_ZONE = [
@@ -45,19 +48,27 @@ const QUESTION_VEHICULES = 'Véhicules motorisés dans le foyer';
 const CHAMP = { display: 'flex', flexDirection: 'column', gap: 10 };
 const RANGEE = { flexDirection: 'row', gap: 8 };
 
-export function ChampsDeContexte({ choix, trajet, update }) {
-  const questionTeletravail = 'Sur tes ' + trajet.commute_days_per_week + ' jours de trajet, combien pourrais-tu travailler depuis chez toi ?';
-  // Une série de puces équiréparties, rayon `Radius.chip` (14), sous sa question.
-  const serie = (question, options, cle) => (
-    <div style={CHAMP}>
-      <ThemedText type="small" themeColor="textTertiary">{question}</ThemedText>
+// Une série : son intitulé, ses puces équiréparties au rayon `Radius.chip` (14), et son ancre. Un composant et non une
+// fonction qui rend du JSX : l'ancre est un hook.
+const SerieDuContexte = ({ champ, question, options, valeur, onChange }) => {
+  const { bloc, marque } = useAncreDuChamp(champ);
+  return (
+    <div ref={bloc} style={CHAMP}>
+      <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>{question}</IntituleDuChamp>
       <GroupeDeChoix question={question} style={RANGEE}>
         {options.map((option) => (
           <Chip key={option.value} label={option.label} accessibilityLabel={option.accessibilityLabel} role="radio"
-            selected={choix[cle] === option.value} onPress={() => update({ [cle]: option.value })} flex radius={14} />
+            selected={valeur === option.value} onPress={() => onChange(option.value)} flex radius={14} />
         ))}
       </GroupeDeChoix>
     </div>
+  );
+};
+
+export function ChampsDeContexte({ choix, trajet, update }) {
+  const questionTeletravail = 'Sur tes ' + trajet.commute_days_per_week + ' jours de trajet, combien pourrais-tu travailler depuis chez toi ?';
+  const serie = (question, options, cle) => (
+    <SerieDuContexte champ={cle} question={question} options={options} valeur={choix[cle]} onChange={(valeur) => update({ [cle]: valeur })} />
   );
   return (
     <>

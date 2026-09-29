@@ -4,7 +4,7 @@
 (function () {
   var ORDER = [
     'core/ThemedText', 'core/ThemedView', 'core/Button', 'core/TextLink', 'core/MessageInline', 'core/OnboardingDots', 'core/FeuilleDuBas', 'core/TitreDArrivee',
-    'forms/GroupeDeChoix', 'forms/Chip', 'forms/ChoiceRow', 'forms/LigneDeCanal', 'forms/ModeListItem', 'forms/PrecisionMode', 'forms/NumericField', 'forms/TextField', 'forms/GoogleButton',
+    'forms/GroupeDeChoix', 'forms/IntituleDuChamp', 'forms/Chip', 'forms/ChoiceRow', 'forms/LigneDeCanal', 'forms/ModeListItem', 'forms/BoiteDePrecision', 'forms/PrecisionMode', 'forms/NumericField', 'forms/TextField', 'forms/GoogleButton',
     'mascotte/Mascot', 'mascotte/RamilleDit', 'mascotte/CalculEnCours', 'mascotte/EcranLancement',
     'navigation/CompteBouton', 'navigation/BandeHaute', 'navigation/OngletIcone', 'navigation/BarreOnglets', 'navigation/ProgressHeader', 'navigation/StepShell',
     'plan/PastilleEngagee', 'plan/TraitDeTemps', 'plan/CheckinCard', 'plan/ActionCard', 'plan/ActionCommitment', 'plan/CarteDePiste', 'plan/CarteDOuverture', 'plan/FeuilleRappels',

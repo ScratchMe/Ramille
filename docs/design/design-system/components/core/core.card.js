@@ -15,6 +15,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Button title="Revoir mon plan" variant="secondary" />
       <Button title="Créer mon compte" disabled />
       <div style={{display:'flex',gap:16}}><Button title="Retour" variant="secondary" style={{width:'auto'}} /><Button title="Suivant" flex /></div>
+      {/* « Suivant » d'une étape incomplète : l'apparence du désactivé, mais il agit (`enAttente`). */}
+      <div style={{display:'flex',gap:16}}><Button title="Retour" variant="secondary" style={{width:'auto'}} /><Button title="Suivant" flex enAttente /></div>
       <div style={{display:'flex',gap:8,background:'var(--color-background-selected)',borderRadius:18,padding:18}}><Button title="Non" variant="secondary" onPanel flex /><Button title="Oui" variant="secondary" onPanel flex /></div>
       <TextLink label="Faire un nouveau bilan" role="link" type="small" themeColor="textTertiary" style={{textAlign:'center'}} />
       <TextLink label="Utiliser un email à la place" role="link" type="linkPrimary" style={{textAlign:'center'}} />

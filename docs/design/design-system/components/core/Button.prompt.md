@@ -13,3 +13,9 @@ La hauteur est un minimum (24 d'interligne + 2 × 15) : le libellé grandit avec
 Sous le doigt, la surface prend sa teinte appuyée tout de suite, sans animation : `accentPressed` pour le principal, `backgroundPressed` pour le secondaire. Ni ondulation ni opacité.
 
 Désactivé : fond élément + texte tertiaire (jamais grisé par opacité). Pas de variante destructive : la suppression de compte utilise le primaire.
+
+**En attente (`enAttente`) n’est pas désactivé** (29/09/2026) : le « Suivant » d’une étape incomplète garde l’apparence du désactivé, mais c’est un bouton ordinaire — ni `disabled`, ni `aria-disabled`, et le lecteur d’écran ne l’annonce plus « indisponible ». Le toucher mène à ce qui manque (`StepShell`) au lieu d’avancer. Son nom ne change jamais selon ce qui manque : un nom qui suivrait les réponses ferait réannoncer le bouton à chaque choix. Sous le doigt, la teinte d’une surface neutre (`backgroundPressed`), pas le vert foncé de l’accent appuyé. `disabled` reste pour ce qui est vraiment inerte — un envoi en cours, « C’est noté » tant que rien n’est choisi.
+
+```jsx
+<Button title="Suivant" onPress={suivant} enAttente={manque !== null} flex />
+```
