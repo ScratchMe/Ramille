@@ -1549,20 +1549,34 @@ celui de tout le monde.
 
 > **Fait le 30/09/2026, sur décision de la personne qui pilote** — la recommandation retenue : **la
 > question du mois suit l'action engagée** (`20260930150000_la_question_du_mois_suit_l_action.sql`).
-> Engagée sur les sorties ou les voyages, dans le cycle qui couvre le mois interrogé, l'action
-> décide du poste du point ; sans action, rien ne change. La question, la colonne `poste` (donc le
-> troisième choix et la réplique de Ramille) et le libellé suivent ensemble. **Le libellé ne porte
-> un mode que sur le poste le plus lourd**, seul que le bilan fige ; un autre poste se nomme sans
-> mode, et le résiduel des sorties rares n'est jamais repris. **Aucun texte de l'app n'a bougé** : la
-> promesse de la feuille et de la carte du premier plan devient vraie telle quelle. Gardé par le
-> test `40` (cinq profils, dont les deux sens et un témoin sans action) et six mutations en tête de
-> fichier ; la suite entière y a trouvé un cas que ce relevé n'avait pas vu — un résultat sans
-> `extras_poste`, que la colonne admet et qu'aucune ligne de production ne porte, garde son libellé
-> (`is not distinct from`, profil A du test `04`). **Et la dérivation voisine est alignée** :
-> `felicitationDuPlanSansAction` reçoit les boucles, et une boucle connue pour être arrêtée retire
-> sa promesse (`src/types/plan.ts`). **Ce que ce générateur suppose sans le vérifier** : l'ordre de
-> ses deux recherches ne décide jamais parce qu'un cycle n'a qu'une action engagée (index unique
-> partiel). Si cet index tombait, les sorties passeraient devant les voyages sans que rien le dise.
+> Engagée sur les sorties ou les voyages, dans un cycle qui couvre le mois interrogé, l'action
+> décide du poste du point ; si deux cycles se chevauchent et portent chacun une action, la plus
+> récente gagne, comme `action_engagee_de_la_periode` le fait déjà pour un poste. Sans action, rien
+> ne change. La question, la colonne `poste` (donc le troisième choix et la réplique de Ramille) et
+> le libellé suivent ensemble. **Le libellé ne porte un mode que sur le poste le plus lourd**, seul
+> que le bilan fige ; un autre poste se nomme sans mode, le résiduel des sorties rares n'est jamais
+> repris, et un résultat sans `extras_poste` garde son libellé. **La promesse de la feuille et de la
+> carte du premier plan n'a pas bougé** : elle devient vraie, tant que le dernier bilan ouvre une
+> boucle mensuelle — un bilan plus récent qui n'en ouvre plus la laisse sans point, par la règle de
+> §12.21. **La félicitation d'un plan sans action** reçoit les boucles, et sa phrase « Le point reste
+> là… » tombe quand sa boucle est connue pour être arrêtée — la dérivation voisine relevée plus bas,
+> alignée avec la recommandation. Gardé par le test `40` (six profils, huit mutations sur la suite
+> entière) et par le profil B du test `04`, épinglé le même soir.
+>
+> **Et une conséquence tranchée le même soir par la personne qui pilote** (constat de la
+> contre-lecture) : le point pouvant changer de poste d'un mois sur l'autre, **le « deuxième mois de
+> suite » se compte sur un même poste** — `estDeuxiemeFoisDeSuite` et sa jumelle
+> `analytics.checkins_consecutifs`, dans la même migration. Deux « oui » sur deux postes affichaient
+> « Deuxième mois de suite que tu sors autrement » après un mois de voyages. Gardé par Jest et par le
+> fichier `25`.
+>
+> **Une conséquence visible, laissée à la règle existante** : la carte d'un point n'est mise en avant
+> que quand il porte sur le poste dominant (décision du 27/08/2026, « concentre-toi sur ton poste
+> dominant »). Le point qui referme une action du poste le plus léger ne l'est donc pas.
+>
+> **Ce qui n'a pas été joué** : aucun navigateur ni appareil n'a vu un point du mois sur une action
+> du poste le plus léger — le parcours réel ne génère pas de point mensuel. À jouer à la prochaine
+> recette qui s'engage sur une piste de loisirs d'un profil aux voyages lourds.
 
 **Relevé par la contre-lecture de §12.23, raisonné sur le code, et mesuré** : aucun compte de
 production n'est dans ce cas le 30/09/2026 (les trois actions engagées hors trajet sont des actions

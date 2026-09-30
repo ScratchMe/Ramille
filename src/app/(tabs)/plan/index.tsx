@@ -202,7 +202,7 @@ function historiqueParBoucle(
     if (affichesIds.has(checkin.id)) continue;
     const reponse = genreDeReponse(checkin.response_kind);
     if (reponse === null) continue;
-    parBoucle[checkin.loop_type].push({ period_start: checkin.period_start, reponse });
+    parBoucle[checkin.loop_type].push({ period_start: checkin.period_start, poste: checkin.poste, reponse });
   }
 
   return parBoucle;

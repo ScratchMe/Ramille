@@ -752,6 +752,12 @@ connaître :
   tait. `v1-14` §4.6 décrit la dérivation à deux arguments ; il en faut un troisième état pour savoir
   qu'on est à deux et pas à cinq (écart consigné en `v1-14` §10). La phrase est **voix produit et non
   celle de Ramille** — elle constate un fait sur deux périodes, et Ramille ne compte jamais.
+- **Et sur la boucle mensuelle, la série se compte sur un même poste** (décision du 30/09/2026,
+  `v1-27` §12.25). Depuis que la question du mois suit l'action engagée, le point peut changer de
+  poste d'un mois sur l'autre, et la phrase nomme celui du mois : deux « oui » sur deux postes
+  affichaient « Deuxième mois de suite que tu sors autrement » après un mois de voyages. La vue
+  `analytics.checkins_consecutifs` applique la même condition — c'est une moitié de la paire, et
+  les deux se touchent ensemble.
 
 Corollaire sur la lecture du plan : **la requête des points est bornée par une fenêtre**
 (`fenetreDesPoints`, trois périodes mensuelles). Elle ne ramenait que les points `pending`, soit un ou
@@ -2026,13 +2032,14 @@ d'abord faisait reprendre la main à un ancien bilan dès que le nouveau n'en av
 boucles, ce choix et les deux filtres vivent en un seul endroit, `boucles_du_dernier_bilan`**
 (`v1-27` §12.22), que lit aussi l'écran du plan par `mes_boucles_a_venir` — les boucles une par
 une : sans boucle, Ramille ne promet rien, ni la carte d'attente, ni la carte des deux lieux, ni la
-carte d'un point répondu dont la boucle s'est arrêtée — et le suivi, qui les lit aussi, ne parle pas
-de réponses (§12.23). Le plan, lui, porte le même choix écrit autrement
+carte d'un point répondu dont la boucle s'est arrêtée, ni la félicitation d'un plan sans action
+(§12.25) — et le suivi, qui les lit aussi, ne parle pas de réponses (§12.23). Le plan, lui, porte le même choix écrit autrement
 (`generate_plan_cycle_for_user`) — une copie connue, sur laquelle la fonction s'aligne. Les deux écrivent dans la
 même table `engagement_checkins`
-(contrainte `unique(user_id, loop_type, period_start)`), lisent les libellés snapshotés par
-`compute_assessment_results` sur `assessment_results.commute_poste_label` /
-`.extras_poste_label`, et sont plannifiées par `pg_cron` séparément (lundi 6h pour la boucle
+(contrainte `unique(user_id, loop_type, period_start)`), partent des libellés figés par le calcul
+(`recompute_assessment_results`) sur `assessment_results.commute_poste_label` /
+`.extras_poste_label` — que la boucle mensuelle remplace par le nom du poste, sans mode, quand elle
+interroge un autre poste que le plus lourd (sorties rares, action engagée) —, et sont plannifiées par `pg_cron` séparément (lundi 6h pour la boucle
 hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
 `docs/architecture/v1-02-boucle-engagement.md`.
 ### Conventions front notables → `FRONT.md`

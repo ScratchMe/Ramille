@@ -681,8 +681,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   carte ne promet alors rien — ni jour, ni canal, ni porte — là où elle promettait « au début du
   mois prochain » un signe qui ne venait jamais. La règle de la boucle mensuelle n'est pas recopiée
   côté client : elle vit dans `boucles_du_dernier_bilan`, que les générateurs lisent aussi.
-- **Deux autres textes du plan suivent les mêmes boucles, et pour la même raison** (décision du
-  30/09/2026, `v1-27` §12.23). **La carte des deux lieux** ne décrit que ce que le plan porte
+- **D'autres textes du plan suivent les mêmes boucles, et pour la même raison** (décision du
+  30/09/2026, `v1-27` §12.23 ; la félicitation d'un plan sans action depuis §12.25, dont la promesse
+  « Le point reste là » tombe quand sa boucle est connue pour être arrêtée). **La carte des deux lieux** ne décrit que ce que le plan porte
   (`ouvertureDesDeuxLieux`, `src/types/premier-parcours.ts`) : « l'action en cours » et « ton cap »
   s'il a des actions — sinon « ta saison », puisqu'un plan sans action ne chiffre pas son cap et que
   sa carte n'y montre que la saison —, « le point régulier » et « tes réponses » si une boucle
@@ -711,7 +712,8 @@ exactement ce qui avait laissé passer le mauvais caractère.
   fausse jusqu'au 30/09/2026 dans un cas** : une action engagée sur le poste mensuel que la boucle
   n'interrogeait pas (les sorties quand les voyages pèsent plus, ou l'inverse). La boucle suit
   désormais l'action (`v1-27` §12.25), donc la phrase n'a pas bougé — c'est le serveur qui la rend
-  vraie.
+  vraie, tant que le dernier bilan ouvre une boucle mensuelle : un bilan plus récent qui n'en ouvre
+  plus (sorties rares, aucun voyage) la laisse sans point, par la règle de §12.21.
 - **Une phrase qui dit quoi faire donne le moyen de le faire, et la porte se rend sous la ligne qui
   la porte** (13.4, recette web du 16/09/2026). « Rattache un compte pour recevoir le mot par
   email. » était un `ThemedView` nu sur le plan : le seul chemin était l'icône de compte en haut à

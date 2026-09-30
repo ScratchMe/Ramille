@@ -254,7 +254,8 @@ describe('etiquetteDuPosteDominant', () => {
   });
 
   // Le cas symétrique (arbitrage du 27/09/2026, `v1-29` §6.3) : le domicile-travail l'emporte sur
-  // le résiduel, un peu plus lourd. Le marqueur est alors sur le libellé de la boucle mensuelle.
+  // le résiduel, un peu plus lourd. Le marqueur est alors sur le libellé du plus lourd des deux
+  // postes hors trajet (`extras_poste_label`).
   it('nomme le résiduel « tes loisirs occasionnels » quand le domicile-travail l’emporte sur lui', () => {
     const residuel = 'Loisirs du week-end (occasionnels)';
     expect(

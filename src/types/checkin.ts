@@ -582,8 +582,8 @@ export function jourDuMois(jour: number): string {
   return jour === 1 ? '1er' : String(jour);
 }
 
-/** Ce qu'il faut d'un point déjà répondu pour reconstituer une série : sa période et sa réponse. */
-export type PointRepondu = { period_start: string; reponse: ReponseDuPoint };
+/** Ce qu'il faut d'un point déjà répondu pour reconstituer une série : sa période, son poste et sa réponse. */
+export type PointRepondu = { period_start: string; poste: string | null; reponse: ReponseDuPoint };
 
 /**
  * **Le second renforcement, et pourquoi il ne se déclenche qu'une fois** (C2.10, `v1-14` §4.6).
@@ -604,17 +604,29 @@ export type PointRepondu = { period_start: string; reponse: ReponseDuPoint };
  *
  * Un « pas de trajet cette période » ne prolonge pas la série et ne la casse pas non plus : il n'est
  * simplement pas un « oui », donc il n'y a rien à renforcer — et rien à reprocher.
+ *
+ * **Et sur la boucle mensuelle, la série se compte sur un même poste** (décidé le 30/09/2026,
+ * `v1-27` §12.25). Depuis que la question du mois suit l'action engagée, le point peut changer de
+ * poste d'un mois sur l'autre, et la phrase nomme celui du mois : un « oui » sur les voyages suivi
+ * d'un « oui » sur une action de sorties affichait « Deuxième mois de suite que tu sors autrement ».
+ * Deux gestes différents ne font pas une habitude, donc le poste des deux périodes doit être celui du
+ * point courant. La boucle hebdomadaire n'a qu'un poste et n'est pas filtrée. Jumelle SQL : la vue
+ * `analytics.checkins_consecutifs` (`20260930150000`), qui applique la même condition ; un point
+ * mensuel sans poste (d'avant la colonne) n'apparie rien, des deux côtés.
  */
 export function estDeuxiemeFoisDeSuite(
-  courant: Pick<PointInterrogeable, 'loop_type' | 'period_start'> & { reponse: ReponseDuPoint },
+  courant: Pick<PointInterrogeable, 'loop_type' | 'period_start' | 'poste'> & { reponse: ReponseDuPoint },
   historique: PointRepondu[]
 ): boolean {
   if (courant.reponse !== 'oui') return false;
 
   const precedente = periodePrecedente(courant.loop_type, courant.period_start);
   const avant = periodePrecedente(courant.loop_type, precedente);
+  const memePoste = (point: PointRepondu) =>
+    courant.loop_type === 'commute' || (point.poste !== null && point.poste === courant.poste);
   const reponseDe = (iso: string) =>
-    historique.find((point) => point.period_start.slice(0, 10) === iso)?.reponse ?? null;
+    historique.find((point) => point.period_start.slice(0, 10) === iso && memePoste(point))?.reponse ??
+    null;
 
   return reponseDe(precedente) === 'oui' && reponseDe(avant) !== 'oui';
 }
