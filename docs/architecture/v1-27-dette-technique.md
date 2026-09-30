@@ -1447,7 +1447,8 @@ correctif ne le crée ni ne le règle ; relevé par la contre-lecture du 30/09/2
 > boucle ne tourne, Ramille ne promet rien — « Ton plan est là, reviens quand tu veux. », sans jour,
 > sans canal et sans porte (`RAMILLE.attenteSansBoucle`, branche `aucune` de `carteAttente`). **Dans
 > la direction écrite plus bas** : l'écran lit `ma_boucle_a_venir()`
-> (`20260930105923_la_carte_d_attente_sait_si_une_boucle_tourne.sql`), qui lit
+> (`20260930105923_la_carte_d_attente_sait_si_une_boucle_tourne.sql` — remplacée le soir même par
+> `mes_boucles_a_venir()`, §12.23), qui lit
 > `boucles_du_dernier_bilan` — la seule définition de « qui reçoit quelle boucle », désormais lue aussi
 > par les deux générateurs, qui ne portent plus leur propre choix du dernier bilan. Rien n'est recopié
 > en TypeScript. Gardes : pgTAP `39` (six profils, l'accord avec les générateurs, cinq mutations), le
@@ -1476,6 +1477,23 @@ de la recopier en TypeScript, ce qui ferait une paire de plus à tenir d'accord.
 
 ### 12.23 Deux autres phrases promettent une boucle qui ne tourne pas (30/09/2026)
 
+> **Fait le 30/09/2026, sur décision de la personne qui pilote** — les deux recommandations
+> retenues. **La carte des deux lieux dit ce qui y est** (`ouvertureDesDeuxLieux`,
+> `src/types/premier-parcours.ts`) : son corps n'énumère que ce que le plan porte — l'action s'il
+> en a, le point régulier et les réponses si une boucle tourne, le cap toujours — et Ramille dit
+> « Je garde tes bilans dans ton suivi, au fil des saisons. » sans boucle
+> (`RAMILLE.planEtSuiviSansPoint`). L'écart était plus large que relevé plus bas : le **cycliste**,
+> dont le plan n'a aucune action, lisait « l'action en cours » juste au-dessus de « Aucun changement
+> de mode ne te ferait gagner assez » — le parcours réel l'avait rendu à l'écran le matin même.
+> **La carte d'un point répondu ne donne plus rendez-vous** quand sa boucle s'est arrêtée : le pied
+> dit « Répondu lundi. » seul, et la **réplique de Ramille** — que ce relevé n'avait pas vue, et
+> dont plusieurs variantes disent « À lundi. » ou « On se retrouve lundi. » — est choisie parmi
+> celles qui ne promettent rien (`RAMILLE.checkinSansObjetSansSuite` pour « pas de trajet »).
+> Techniquement, le serveur rend les boucles **une par une** (`mes_boucles_a_venir`, qui remplace
+> `ma_boucle_a_venir` : « hebdo » ne disait pas si la mensuelle tournait aussi). En production, le
+> jour de la décision : un compte sur onze sans boucle ni action, un avec boucle sans action, et
+> **aucun point** dont la boucle s'était arrêtée.
+
 **Relevé par la contre-lecture de §12.22**, lu dans le code, pas rejoué à l'écran. La décision du
 30/09/2026 ne vaut que pour la carte d'attente ; deux autres textes supposent encore qu'une boucle
 tourne :
@@ -1492,13 +1510,15 @@ tourne :
 **Ce qui revient à la personne qui pilote** : ce que ces deux textes disent quand aucune boucle ne
 tourne. **Ce qui a changé techniquement** : l'écran du plan connaît désormais la boucle à venir
 (`ma_boucle_a_venir`, §12.22), donc les deux pourraient se dériver du même fait sans nouvelle lecture.
+*Ce dernier point s'est révélé faux à l'implémentation : un résumé en une valeur ne dit pas si la
+boucle d'**un** point tourne. D'où `mes_boucles_a_venir`, qui l'a remplacé.*
 
 ### 12.24 `boucles_du_dernier_bilan` parcourt tous les bilans à chaque ouverture du plan (30/09/2026)
 
 **Relevé par la contre-lecture de §12.22, raisonné, pas mesuré.** La fonction est `security definer`
 avec un `set search_path`, donc Postgres ne l'intègre pas à la requête qui l'appelle ; et son filtre
-`p_user_id is null or d.user_id = p_user_id` empêche alors l'usage de l'index : `ma_boucle_a_venir`,
-appelée à chaque chargement du plan, lit tous les bilans complétés pour n'en garder que ceux d'une
+`p_user_id is null or d.user_id = p_user_id` empêche alors l'usage de l'index : `ma_boucle_a_venir`
+— `mes_boucles_a_venir` depuis le soir même (§12.23) —, appelée à chaque chargement du plan, lit tous les bilans complétés pour n'en garder que ceux d'une
 personne. Le générateur hebdomadaire calcule aussi la branche mensuelle de tout le monde avant de la
 jeter. **Négligeable aux volumes du 30/09/2026** (onze comptes avec un bilan).
 
@@ -1506,6 +1526,6 @@ jeter. **Négligeable aux volumes du 30/09/2026** (onze comptes avec un bilan).
 `search_path`, que les deux appelants rendent inutiles puisqu'ils le sont déjà — permettrait
 l'intégration, mais ajoute un avertissement aux advisors (`function_search_path_mutable`), dont
 l'empreinte est tenue (`docs/exploitation/README.md` §8.7). **Condition de réouverture** : quand
-`assessments` compte plusieurs milliers de lignes, mesurer le temps de `ma_boucle_a_venir` sur le
+`assessments` compte plusieurs milliers de lignes, mesurer le temps de `mes_boucles_a_venir` sur le
 distant ; au-delà de quelques millisecondes, séparer l'appel d'une personne (un filtre sans `or`) de
 celui de tout le monde.

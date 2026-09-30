@@ -2017,8 +2017,9 @@ voyages** (27/09/2026, paragraphe de C2.5 plus haut) (`loop_type = 'extras'`, g�
 avant de filtrer sur le trajet ou la base déclarée** (30/09/2026, `v1-27` §12.21) : filtrer
 d'abord faisait reprendre la main à un ancien bilan dès que le nouveau n'en avait plus. **Pour les
 boucles, ce choix et les deux filtres vivent en un seul endroit, `boucles_du_dernier_bilan`**
-(`v1-27` §12.22), que lit aussi la carte d'attente du plan par `ma_boucle_a_venir` : sans boucle,
-Ramille ne promet rien. Le plan, lui, porte le même choix écrit autrement
+(`v1-27` §12.22), que lit aussi l'écran du plan par `mes_boucles_a_venir` — les boucles une par
+une : sans boucle, Ramille ne promet rien, ni la carte d'attente, ni la carte des deux lieux, ni la
+carte d'un point répondu dont la boucle s'est arrêtée (§12.23). Le plan, lui, porte le même choix écrit autrement
 (`generate_plan_cycle_for_user`) — une copie connue, sur laquelle la fonction s'aligne. Les deux écrivent dans la
 même table `engagement_checkins`
 (contrainte `unique(user_id, loop_type, period_start)`), lisent les libellés snapshotés par

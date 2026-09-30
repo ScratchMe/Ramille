@@ -1275,8 +1275,8 @@ export type Database = {
         Args: { p_maintenant: string }
         Returns: boolean
       }
-      // La carte d'attente sait si une boucle tourne (20260930105923)
-      ma_boucle_a_venir: { Args: never; Returns: string }
+      // Les boucles à venir, une par une (20260930140000) — remplace ma_boucle_a_venir
+      mes_boucles_a_venir: { Args: never; Returns: string[] }
       mettre_a_jour_le_contexte: {
         Args: {
           p_household_vehicles: string

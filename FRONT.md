@@ -675,11 +675,24 @@ exactement ce qui avait laissé passer le mauvais caractère.
   deux, la carte prenant depuis le 30/09/2026 `BoucleAVenir`, qui y ajoute `aucune`** (recette sur
   appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
   le sujet : elle se dérive de la personne (un poste domicile-travail ⟹ un point le lundi). **Depuis
-  le 30/09/2026 c'est le serveur qui le dit** (`ma_boucle_a_venir`, `v1-27` §12.22), et il peut
-  répondre `aucune` : aucun trajet, sorties rares, aucun voyage déclaré. La carte ne promet alors
-  rien — ni jour, ni canal, ni porte — là où elle promettait « au début du mois prochain » un signe
-  qui ne venait jamais. La règle de la boucle mensuelle n'est pas recopiée côté client : elle vit
-  dans `boucles_du_dernier_bilan`, que les générateurs lisent aussi. La
+  le 30/09/2026 c'est le serveur qui le dit** (`mes_boucles_a_venir`, `v1-27` §12.22 et §12.23) : il
+  rend les boucles une par une, `boucleAVenir` en tire la carte — la boucle hebdomadaire passe
+  devant —, et il peut n'en rendre aucune : aucun trajet, sorties rares, aucun voyage déclaré. La
+  carte ne promet alors rien — ni jour, ni canal, ni porte — là où elle promettait « au début du
+  mois prochain » un signe qui ne venait jamais. La règle de la boucle mensuelle n'est pas recopiée
+  côté client : elle vit dans `boucles_du_dernier_bilan`, que les générateurs lisent aussi.
+- **Deux autres textes du plan suivent les mêmes boucles, et pour la même raison** (décision du
+  30/09/2026, `v1-27` §12.23). **La carte des deux lieux** ne décrit que ce que le plan porte
+  (`ouvertureDesDeuxLieux`, `src/types/premier-parcours.ts`) : « l'action en cours » s'il a des
+  actions, « le point régulier » et « tes réponses » si une boucle tourne, « ton cap » toujours — et
+  Ramille dit « Je garde tes bilans » là où il n'y aura pas de réponse à noter. Elle attend que les
+  boucles soient lues, comme la carte d'attente. **La carte d'un point répondu** ne donne plus
+  rendez-vous quand sa boucle s'est arrêtée — un nouveau bilan pendant la période : le pied dit
+  « Répondu lundi. » sans le prochain point, et la réplique de Ramille est choisie parmi celles qui
+  ne promettent rien (`repliqueDuPoint`, `piedDuPointRepondu`, dont `boucleTourne` est
+  **obligatoire** : un défaut laisserait un appel oublié promettre en silence). Sur un échec de
+  lecture, la boucle du point est tenue pour tournante (`laBoucleDuPointTourne`) : la réplique est
+  choisie par période, et la déclarer arrêtée la ferait changer le temps de la panne. La
   feuille ouverte après « C'est noté » promet un contact **sur l'action qu'on vient d'engager**
   (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du **poste de cette
   action**, par `boucleDeLAction` (`src/types/rappels.ts`), miroir de l'appariement que fait la

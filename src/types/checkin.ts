@@ -317,16 +317,27 @@ export function questionDuPoint(point: PointInterrogeable): string {
  *
  * Le « Oui » est le même des deux côtés : avoir tenu son habitude et avoir changé de mode valent
  * tous les deux `checkinOui`.
+ *
+ * **Quand la boucle du point ne tourne plus, aucune réplique ne donne rendez-vous** (décision du
+ * 30/09/2026, `v1-27` §12.23). Un nouveau bilan peut arrêter la boucle pendant que la carte répondue
+ * reste affichée, et plusieurs variantes disent quand Ramille revient — « À lundi. », « Lundi, je te
+ * repose la question », toutes celles de « pas de trajet ». `boucleTourne` est **obligatoire** : un
+ * défaut à `true` laisserait un appel oublié promettre en silence, et c'est l'appel qu'aucun test de
+ * cette fonction ne voit. Le visage ne change pas : c'est la même réponse, sans le rendez-vous.
  */
 export function repliqueDuPoint(
   point: Pick<PointInterrogeable, 'question_kind' | 'mode' | 'poste' | 'loop_type' | 'period_start'>,
-  reponse: ReponseDuPoint
+  reponse: ReponseDuPoint,
+  boucleTourne: boolean
 ): { ligne: string; mood: 'happy' | 'encouraging' | 'calm' } {
   const cadence = point.loop_type === 'commute' ? 'hebdo' : 'mensuel';
 
   if (reponse === 'oui') {
     return {
-      ligne: variantePourLaPeriode(RAMILLE.checkinOui[cadence], point.period_start),
+      // L'originale, en tête de son tableau (gardée par `mascotte.test.ts`), ne promet rien.
+      ligne: boucleTourne
+        ? variantePourLaPeriode(RAMILLE.checkinOui[cadence], point.period_start)
+        : RAMILLE.checkinOui[cadence][0],
       mood: 'happy',
     };
   }
@@ -337,10 +348,9 @@ export function repliqueDuPoint(
   // personne vient justement de dire qu'elle n'a pas eu lieu.
   if (reponse === 'sans_objet') {
     return {
-      ligne: variantePourLaPeriode(
-        RAMILLE.checkinSansObjet[cleDuSansObjet(point)],
-        point.period_start
-      ),
+      ligne: boucleTourne
+        ? variantePourLaPeriode(RAMILLE.checkinSansObjet[cleDuSansObjet(point)], point.period_start)
+        : RAMILLE.checkinSansObjetSansSuite[cleDuSansObjet(point)],
       mood: 'calm',
     };
   }
@@ -350,7 +360,12 @@ export function repliqueDuPoint(
   }
 
   return {
-    ligne: variantePourLaPeriode(RAMILLE.checkinNon[cadence], point.period_start),
+    // « Une semaine sans, ce n'est pas un retour en arrière. » — la dernière variante, la seule qui
+    // ne donne pas rendez-vous. Choisie par sa place, et c'est le test « aucune réplique ne donne
+    // rendez-vous » qui garde la propriété : un tableau réordonné le ferait tomber.
+    ligne: boucleTourne
+      ? variantePourLaPeriode(RAMILLE.checkinNon[cadence], point.period_start)
+      : RAMILLE.checkinNon[cadence][RAMILLE.checkinNon[cadence].length - 1],
     mood: 'encouraging',
   };
 }
@@ -525,9 +540,15 @@ function isoUtc(d: Date): string {
  * consigné en `v1-14` §10.
  *
  * `null` quand l'horodatage manque : une carte répondue sans date vaut mieux qu'une date inventée.
+ *
+ * **Sans boucle qui tourne, le pied ne dit que la réponse** (« Répondu lundi. ») — décision du
+ * 30/09/2026, `v1-27` §12.23 : un nouveau bilan peut arrêter la boucle pendant que la carte reste
+ * affichée, et « Prochain point : lundi 5 octobre » annoncerait un point qui ne viendra pas.
+ * `boucleTourne` est obligatoire, pour la raison de `repliqueDuPoint`.
  */
 export function piedDuPointRepondu(
   point: { loop_type: LoopType; responded_at: string | null | undefined },
+  boucleTourne: boolean,
   maintenant: Date = new Date()
 ): string | null {
   if (!point.responded_at) return null;
@@ -536,6 +557,7 @@ export function piedDuPointRepondu(
 
   if (point.loop_type === 'commute') {
     const jour = JOURS_FRANCAIS[(repondu.getDay() + 6) % 7];
+    if (!boucleTourne) return `Répondu ${jour}.`;
     // Lundi prochain : jamais aujourd'hui, même un lundi — le point du jour est celui qu'on vient
     // de répondre, le suivant est dans sept jours.
     const prochain = new Date(maintenant);
@@ -543,6 +565,7 @@ export function piedDuPointRepondu(
     return `Répondu ${jour}. Prochain point : lundi ${prochain.getDate()} ${MOIS_FRANCAIS[prochain.getMonth()]}.`;
   }
 
+  if (!boucleTourne) return `Répondu le ${jourDuMois(repondu.getDate())}.`;
   const premier = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 1);
   return `Répondu le ${jourDuMois(repondu.getDate())}. Prochain point : ${jourDuMois(1)} ${
     MOIS_FRANCAIS[premier.getMonth()]

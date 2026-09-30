@@ -1,7 +1,8 @@
+import { RAMILLE } from '@/constants/mascotte';
 import {
   etatDuPremierParcours,
+  ouvertureDesDeuxLieux,
   ouvreUnPremierParcours,
-  OUVERTURE_DES_DEUX_LIEUX,
   SORTIE_DES_DEUX_LIEUX,
   type EtapeDuPremierParcours,
 } from '@/types/premier-parcours';
@@ -40,25 +41,94 @@ describe('etatDuPremierParcours', () => {
   });
 });
 
+// Les quatre plans possibles : deux faits indépendants, l'action et la boucle.
+const PLANS = [
+  { actions: true, boucle: true },
+  { actions: false, boucle: true },
+  { actions: true, boucle: false },
+  { actions: false, boucle: false },
+];
+
 describe('la carte des deux lieux', () => {
   // Elle décrit le produit, pas ce plan-ci : un chiffre ou un nom de poste en ferait une seconde
   // description des cartes posées dessous — le défaut que C5.3 vient de retirer de l'intro.
-  it('ne chiffre rien et ne nomme aucun poste', () => {
-    const texte = [
-      OUVERTURE_DES_DEUX_LIEUX.etiquette,
-      OUVERTURE_DES_DEUX_LIEUX.titre,
-      OUVERTURE_DES_DEUX_LIEUX.corps,
-    ].join(' ');
-    expect(texte).not.toMatch(/\d/);
-    expect(texte).not.toMatch(/trajet|voyage|sortie|loisir|domicile/i);
+  it('ne chiffre rien et ne nomme aucun poste, quel que soit le plan', () => {
+    for (const plan of PLANS) {
+      const { ouverture } = ouvertureDesDeuxLieux(plan);
+      const texte = [ouverture.etiquette, ouverture.titre, ouverture.corps].join(' ');
+      expect({ plan, texte }).not.toEqual({ plan, texte: expect.stringMatching(/\d/) });
+      expect({ plan, texte }).not.toEqual({
+        plan,
+        texte: expect.stringMatching(/trajet|voyage|sortie|loisir|domicile/i),
+      });
+    }
   });
 
   // Elle nomme les **deux** lieux et où ils sont : c'est tout son objet, et une reformulation qui
   // perdrait « en bas » perdrait la seule indication de navigation de la carte.
-  it('nomme les deux lieux et où les trouver', () => {
-    expect(OUVERTURE_DES_DEUX_LIEUX.corps).toMatch(/ton plan/i);
-    expect(OUVERTURE_DES_DEUX_LIEUX.corps).toMatch(/ton suivi/i);
-    expect(OUVERTURE_DES_DEUX_LIEUX.corps).toMatch(/en bas/i);
+  it('nomme les deux lieux et où les trouver, quel que soit le plan', () => {
+    for (const plan of PLANS) {
+      const { corps } = ouvertureDesDeuxLieux(plan).ouverture;
+      expect({ plan, corps }).toEqual({ plan, corps: expect.stringMatching(/ton plan/i) });
+      expect({ plan, corps }).toEqual({ plan, corps: expect.stringMatching(/ton suivi/i) });
+      expect({ plan, corps }).toEqual({ plan, corps: expect.stringMatching(/en bas/i) });
+    }
+  });
+
+  // Le plan nominal garde la carte d'origine, au caractère près : la décision du 30/09/2026 retire
+  // ce qui est faux, elle ne réécrit pas ce qui est vrai.
+  it('le plan à actions et à point garde la carte d’origine', () => {
+    expect(ouvertureDesDeuxLieux({ actions: true, boucle: true })).toEqual({
+      ouverture: {
+        etiquette: 'PLAN ET SUIVI',
+        titre: 'Deux endroits, pas plus.',
+        corps:
+          'Ici, ton plan : l’action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.',
+      },
+      ligne: RAMILLE.planEtSuivi,
+    });
+  });
+
+  // **Décision du 30/09/2026** (`v1-27` §12.23) : elle ne décrit que ce que le plan porte. Les deux
+  // textes sont ceux que la personne qui pilote a validés, mot pour mot.
+  it('au cycliste, dont le plan n’a pas d’action, elle ne promet pas d’action', () => {
+    const { ouverture, ligne } = ouvertureDesDeuxLieux({ actions: false, boucle: true });
+    expect(ouverture.corps).toBe(
+      'Ici, ton plan : le point régulier et ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+    );
+    expect(ligne).toBe(RAMILLE.planEtSuivi);
+  });
+
+  it('sans boucle ni action, elle ne promet ni action, ni point, ni réponse', () => {
+    const { ouverture, ligne } = ouvertureDesDeuxLieux({ actions: false, boucle: false });
+    expect(ouverture.corps).toBe('Ici, ton plan : ton cap. En bas, ton suivi : tes bilans, saison après saison.');
+    expect(ligne).toBe(RAMILLE.planEtSuiviSansPoint);
+  });
+
+  // L'invariant, écrit sur les deux faits et non sur les phrases : chaque promesse n'apparaît que si
+  // son fait est là — y compris pour la combinaison qu'on ne rencontre pas (des actions sans boucle).
+  //
+  // Éprouvé en le cassant, le 30/09/2026 (TESTING.md §1.1), une mutation à la fois :
+  //   - « le point régulier » toujours présent → cet invariant et « sans boucle ni action… » ;
+  //   - la ligne de Ramille qui suit les actions au lieu de la boucle → cet invariant et « au
+  //     cycliste… » — et non le plan sans boucle, où les deux faits sont faux ensemble : c'est le
+  //     cycliste qui les sépare ;
+  //   - le suivi qui garde « et tes réponses » sans boucle → cet invariant et « sans boucle ni
+  //     action… ».
+  it('chaque promesse suit son fait, et seulement lui', () => {
+    for (const plan of PLANS) {
+      const { ouverture, ligne } = ouvertureDesDeuxLieux(plan);
+      // Le corps d'une carte d'ouverture peut être nul (celui de la saison) ; celui-ci ne l'est
+      // jamais, et une chaîne vide ferait tomber l'assertion du cap.
+      const corps = ouverture.corps ?? '';
+      expect({ plan, action: /l’action en cours/.test(corps) }).toEqual({ plan, action: plan.actions });
+      expect({ plan, point: /point régulier/.test(corps) }).toEqual({ plan, point: plan.boucle });
+      expect({ plan, reponses: /réponses/.test(`${corps} ${ligne}`) }).toEqual({
+        plan,
+        reponses: plan.boucle,
+      });
+      expect({ plan, cap: /ton cap/.test(corps) }).toEqual({ plan, cap: true });
+    }
   });
 
   it('n’a qu’une sortie, et c’est « Compris »', () => {

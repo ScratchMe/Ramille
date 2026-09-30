@@ -15,7 +15,7 @@ La carte qui ouvre le plan à un moment qui compte — **trois usages, un seul c
 />
 ```
 
-**Ramille est dessous, hors du cadre**, en 44 penchée de − 5 : la carte peut porter deux nombres, et Ramille ne se tient jamais près d'un chiffre qu'on commente. Sa ligne et son visage viennent de l'appelant, jamais d'un défaut — « On repart pour une saison. » n'est pas vraie au premier plan. `happy` pour ce qui commence (saison, premier plan), `calm` pour ce qui s'explique (les deux lieux : « Je note tes réponses dans ton suivi, au fil des saisons. »).
+**Ramille est dessous, hors du cadre**, en 44 penchée de − 5 : la carte peut porter deux nombres, et Ramille ne se tient jamais près d'un chiffre qu'on commente. Sa ligne et son visage viennent de l'appelant, jamais d'un défaut — « On repart pour une saison. » n'est pas vraie au premier plan. `happy` pour ce qui commence (saison, premier plan), `calm` pour ce qui s'explique (les deux lieux : « Je note tes réponses dans ton suivi, au fil des saisons. », ou « Je garde tes bilans dans ton suivi, au fil des saisons. » quand aucune boucle ne tourne — la carte ne décrit que ce que le plan porte, 30/09/2026).
 
 **Le récapitulatif ne dit jamais zéro et ne nomme aucun poste** : sans point répondu, pas de corps ; sans changement, la seconde moitié de la phrase tombe. **Les sorties dépendent du plan** : « Reprendre la même action » et « Choisir une autre » supposent un engagement reconduit ; rien d'engagé → « Choisir une action » ; plan sans action → « Compris ». Le premier plan et les deux lieux n'ont qu'à se refermer : « Compris », en lien.
 

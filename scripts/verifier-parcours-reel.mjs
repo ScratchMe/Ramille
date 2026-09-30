@@ -1875,6 +1875,11 @@ try {
   // Refermée, la carte du premier plan laisse passer celle qui attendait : sa marque n'a pas bougé.
   await page.getByText('Compris', { exact: true }).first().click();
   await attendreTexte('Deux endroits, pas plus.');
+  // Ce plan-ci a des actions et une boucle : la carte d'origine, au caractère près (`v1-27` §12.23 —
+  // elle ne décrit que ce que le plan porte, et ici il porte tout).
+  await attendreTexte(
+    'Ici, ton plan : l’action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+  );
 
   // ── 11. Retirer un bilan, puis le seul qui reste (C4.7, `v1-22`) ─────────────────────────
   //
@@ -2003,8 +2008,8 @@ try {
 
   etape('cycliste — la carte d’attente nomme le lundi, que le serveur a dit');
   // **La carte d'attente nomme le lundi, et c'est le serveur qui le dit** (30/09/2026, `v1-27`
-  // §12.22). Le plan lit la boucle à venir par `ma_boucle_a_venir`, et le client relit ses trois
-  // valeurs (`lireLaBoucleAVenir`) : une valeur renommée d'un seul côté, ou la fonction absente de la
+  // §12.22). Le plan lit les boucles par `mes_boucles_a_venir`, et le client relit leurs valeurs
+  // (`lireLesBouclesAVenir`) : une valeur renommée d'un seul côté, ou la fonction absente de la
   // base, ferait disparaître la carte **sans une erreur** — aucune autre garde ne la rend. Le cycliste
   // a un trajet, donc un point le lundi. **La carte des deux lieux l'occupe d'abord** : le cycliste
   // ne l'a jamais refermée (le premier plan est passé devant, puis ses bilans ont été retirés), et
@@ -2015,6 +2020,13 @@ try {
   await bouton('Voir ce que je peux faire');
   await page.waitForURL(/\/plan/, { timeout: ATTENTE });
   await attendreTexte('Deux endroits, pas plus.');
+  // **Et elle ne promet pas d'action à un plan qui n'en a pas** (décision du 30/09/2026, `v1-27`
+  // §12.23) : le cycliste a un point le lundi, pas d'action. Les deux faits viennent de l'écran —
+  // le nombre d'actions du plan et les boucles lues au serveur —, et c'est ici qu'on voit l'écran
+  // les passer ; la dérivation, elle, est gardée par Jest.
+  await attendreTexte(
+    'Ici, ton plan : le point régulier et ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+  );
   await page.getByText('Compris', { exact: true }).first().click();
   await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
 

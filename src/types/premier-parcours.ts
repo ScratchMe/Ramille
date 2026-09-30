@@ -1,3 +1,4 @@
+import { RAMILLE } from '@/constants/mascotte';
 import { SORTIE_COMPRIS, type ContenuDOuverture, type SortieDouverture } from '@/types/saison';
 
 /**
@@ -81,13 +82,52 @@ export function ouvreUnPremierParcours(
  *
  * Aucun chiffre, aucun poste : comme celle du premier plan, elle décrit le produit et non ce
  * plan-ci — un total ou un nom de poste en ferait une seconde description des cartes posées dessous.
+ *
+ * **Mais elle ne décrit que ce que ce plan porte** (décision du 30/09/2026, `v1-27` §12.23). Elle
+ * disait à tout le monde « l'action en cours, le point régulier, ton cap » et « tes bilans et tes
+ * réponses » : au cycliste, dont le plan n'a aucune action, juste au-dessus de « Aucun changement de
+ * mode ne te ferait gagner assez » ; et à qui n'a ni trajet, ni sorties régulières, ni voyage, trois
+ * promesses sur trois, suivies d'une carte d'attente qui lui dit « reviens quand tu veux ». Le corps
+ * s'énumère donc à partir de deux faits, **indépendants** — le plan a-t-il des actions, une boucle
+ * tourne-t-elle —, et le cap y est toujours : la carte du cap se rend même sans action (C2.8).
+ * La ligne de Ramille suit la boucle, parce qu'elle parle des réponses.
+ *
+ * Aucune combinaison n'est traitée à part, pas même celle qu'on ne rencontre pas — des actions sans
+ * boucle : sans trajet et sans base déclarée, `estimate_action_savings` n'en propose aucune (mesuré
+ * le 30/09/2026 sur un profil sans boucle, et vrai du seul compte de production dans ce cas). La
+ * composition la couvre sans qu'on ait à le croire.
  */
-export const OUVERTURE_DES_DEUX_LIEUX: ContenuDOuverture = {
-  etiquette: 'PLAN ET SUIVI',
-  titre: 'Deux endroits, pas plus.',
-  corps:
-    'Ici, ton plan : l’action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.',
-};
+export function ouvertureDesDeuxLieux({
+  actions,
+  boucle,
+}: {
+  /** Le plan porte au moins une action. */
+  actions: boolean;
+  /** Au moins une boucle de points tourne (`mes_boucles_a_venir`). */
+  boucle: boolean;
+}): { ouverture: ContenuDOuverture; ligne: string } {
+  const dansLePlan = [
+    ...(actions ? ['l’action en cours'] : []),
+    ...(boucle ? ['le point régulier'] : []),
+    'ton cap',
+  ];
+  // Trois éléments se séparent par des virgules, comme la carte d'origine ; deux se lient par « et ».
+  const plan =
+    dansLePlan.length === 3
+      ? dansLePlan.join(', ')
+      : dansLePlan.length === 2
+        ? dansLePlan.join(' et ')
+        : dansLePlan[0];
+  const suivi = boucle ? 'tes bilans et tes réponses' : 'tes bilans';
+  return {
+    ouverture: {
+      etiquette: 'PLAN ET SUIVI',
+      titre: 'Deux endroits, pas plus.',
+      corps: `Ici, ton plan : ${plan}. En bas, ton suivi : ${suivi}, saison après saison.`,
+    },
+    ligne: boucle ? RAMILLE.planEtSuivi : RAMILLE.planEtSuiviSansPoint,
+  };
+}
 
 /** La même sortie que la carte du premier plan : il n'y a qu'à refermer. */
 export const SORTIE_DES_DEUX_LIEUX: SortieDouverture[] = SORTIE_COMPRIS;
