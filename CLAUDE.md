@@ -2015,7 +2015,9 @@ départage que la décision dominante du bilan, **sauf pour qui sort rarement, i
 voyages** (27/09/2026, paragraphe de C2.5 plus haut) (`loop_type = 'extras'`, générée par
 `generate_extras_checkins()`). **Les deux partent du dernier bilan valide — celui du plan —, choisi
 avant de filtrer sur le trajet ou la base déclarée** (30/09/2026, `v1-27` §12.21) : filtrer
-d'abord faisait reprendre la main à un ancien bilan dès que le nouveau n'en avait plus. Les deux écrivent dans la
+d'abord faisait reprendre la main à un ancien bilan dès que le nouveau n'en avait plus. **Ce choix
+et les deux filtres vivent en un seul endroit, `boucles_du_dernier_bilan`** (`v1-27` §12.22), que
+lit aussi la carte d'attente du plan par `ma_boucle_a_venir` : sans boucle, Ramille ne promet rien. Les deux écrivent dans la
 même table `engagement_checkins`
 (contrainte `unique(user_id, loop_type, period_start)`), lisent les libellés snapshotés par
 `compute_assessment_results` sur `assessment_results.commute_poste_label` /

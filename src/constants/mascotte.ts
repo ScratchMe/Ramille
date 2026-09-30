@@ -268,6 +268,13 @@ export const RAMILLE = {
   attenteIciHebdo: 'On se retrouve ici lundi.',
   attenteIciMensuel: 'On se retrouve ici au début du mois prochain.',
 
+  /**
+   * Carte d'attente du plan, quand **aucune boucle ne tourne** — aucun trajet, sorties rares, aucun
+   * voyage déclaré (décision du 30/09/2026, `v1-27` §12.22). Elle ne promet rien : aucun point ne
+   * viendra, donc ni « lundi » ni « au début du mois prochain », et aucun canal à nommer.
+   */
+  attenteSansBoucle: 'Ton plan est là, reviens quand tu veux.',
+
   /** Suppression de compte effectuée : on ne retient pas, on salue. */
   auRevoir: 'Merci du temps passé ici. Si tu reviens, on repart de zéro, tranquillement.',
 

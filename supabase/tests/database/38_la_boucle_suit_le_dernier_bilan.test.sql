@@ -26,6 +26,13 @@
 --   - le tri inversé (`submitted_at asc`) → les deux assertions de J2 et les deux de J1 ;
 --   - le résultat retiré du choix du dernier bilan (la jointure de `dernier`) → les deux assertions
 --     de J4, et elles seules : son bilan sans résultat redevenait le dernier, puis tombait au filtre.
+--
+-- **Rejouées le même jour après l'extraction** (`20260930120000`, `v1-27` §12.22) : le choix du dernier
+-- bilan ne vit plus dans chaque générateur mais dans `boucles_du_dernier_bilan`, que les deux lisent.
+-- Les cinq mutations y ont été posées à nouveau. Trois tombent comme avant — le statut (J3), le tri
+-- (J1 et J2), le résultat (J4). Les deux filtres remontés dans le choix font désormais tomber **les
+-- deux** assertions de J1, et non plus chacun la sienne : le choix est partagé, donc un filtre qui y
+-- remonte écarte le nouveau bilan pour les deux boucles à la fois.
 begin;
 create extension if not exists pgtap with schema extensions;
 

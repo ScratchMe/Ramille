@@ -93,8 +93,9 @@ import {
   boucleDeLAction,
   carteAttente,
   laVeilleSeRepropose,
+  lireLaBoucleAVenir,
   ouvertureDeLaFeuille,
-  type Boucle,
+  type BoucleAVenir,
   type CanalPrefere,
   type OuvertureDeLaFeuille,
   type Permission,
@@ -366,7 +367,7 @@ export default function Plan() {
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
   // `null` tant qu'on ne sait pas : le jour que Ramille nomme vient du libellé du poste
   // domicile-travail, et une valeur par défaut nommerait le mauvais rythme (cf. le chargement).
-  const [boucle, setBoucle] = useState<Boucle | null>(null);
+  const [boucle, setBoucle] = useState<BoucleAVenir | null>(null);
   // Le total du bilan courant, pour la seule phrase du plan qui l'affirme : la félicitation du
   // résiduel des sorties rares dit « sous le repère 2050 » (`felicitationDuPlanSansAction`). Lu dans
   // la requête qui ramenait déjà le libellé du trajet ; `null` tant qu'on ne sait pas, et sur un
@@ -701,8 +702,9 @@ export default function Plan() {
         }
 
         // Quelle boucle concerne cette personne, donc quel jour Ramille peut nommer : le point
-        // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3). C'est le
-        // prochain contact qui compte, pas l'action engagée.
+        // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3), celui du mois
+        // que si une base est déclarée — et sinon aucun, et elle ne promet rien (`v1-27` §12.22).
+        // C'est le prochain contact qui compte, pas l'action engagée.
         //
         // **L'engagement qu'un recalcul a emporté** se lit dans la même fournée (C2.2). Le filtre
         // porte sur la raison : `saison` et `changement` n'ont rien à annoncer — l'une est une
@@ -719,6 +721,7 @@ export default function Plan() {
         // `count` en `head` ne ramène aucune ligne : c'est une existence, pas une donnée.
         const [
           { data: resultat, error: erreurResultat },
+          { data: boucleAVenir, error: erreurBoucle },
           { data: contexte },
           { data: orphelins },
           { count: engagementsArchives },
@@ -727,9 +730,14 @@ export default function Plan() {
         ] = await Promise.all([
             supabase
               .from('assessment_results')
-              .select('commute_poste_label, total_co2_kg_year')
+              .select('total_co2_kg_year')
               .eq('assessment_id', assessment.id)
               .maybeSingle(),
+            // **La boucle vient du serveur** (30/09/2026, `v1-27` §12.22) : elle se déduisait ici du
+            // seul poste domicile-travail, donc la carte d'attente promettait « au début du mois
+            // prochain » à qui n'a aucune boucle. Le serveur la tire de la même définition que les
+            // générateurs de points, sans rien recopier de leur règle.
+            supabase.rpc('ma_boucle_a_venir'),
             // **Dans le lot existant, jamais en plus** (C5.5, `v1-17` §7.4) : l'écran se recharge à
             // chaque retour au premier plan — le chemin nominal de la boucle d'engagement, celui
             // qu'on emprunte en appuyant sur une notification — donc une requête en séquence
@@ -754,14 +762,13 @@ export default function Plan() {
 
         if (cancelled) return;
 
-        // **La boucle ne se devine pas sur un échec de lecture.** C'était la seule des quatre
-        // lectures dont l'`error` restait ignorée, et le repli n'était pas neutre : sans
-        // libellé, `boucle` valait `mensuel`, donc la carte d'attente nommait « le 1er du
-        // mois » à quelqu'un dont le point s'ouvre le lundi. On préfère ne pas la nommer du
-        // tout — `boucle` reste `null`, la carte ne s'affiche pas — plutôt que de remplacer
-        // tout le plan par un écran d'erreur pour une lecture secondaire. La ligne de relecture
-        // dit que l'écran n'est pas tout à fait à jour.
-        if (!erreurResultat) setBoucle(resultat?.commute_poste_label ? 'hebdo' : 'mensuel');
+        // **La boucle ne se devine pas sur un échec de lecture.** Le repli n'est jamais neutre :
+        // `mensuel` nommait « le 1er du mois » à quelqu'un dont le point s'ouvre le lundi, et
+        // `aucune` tairait un point qui viendra. On préfère ne pas la nommer du tout — `boucle`
+        // reste `null`, la carte ne s'affiche pas — plutôt que de remplacer tout le plan par un
+        // écran d'erreur pour une lecture secondaire. La ligne de relecture dit que l'écran n'est
+        // pas tout à fait à jour. Une réponse inconnue se lit de même (`lireLaBoucleAVenir`).
+        if (!erreurBoucle) setBoucle(lireLaBoucleAVenir(boucleAVenir));
         setTotalDuBilan(erreurResultat ? null : (resultat?.total_co2_kg_year ?? null));
         setRappels(prefs);
         setPermission(etatPermission);

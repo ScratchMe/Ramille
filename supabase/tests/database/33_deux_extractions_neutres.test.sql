@@ -186,11 +186,18 @@ select ok(
 -- Les commentaires sont retirés avant la recherche : sans ça, la phrase qui explique la règle dans
 -- le corps d'un appelant ferait passer — ou échouer — le contrôle qu'elle décrit.
 
+-- **Depuis le 30/09/2026, l'appel vit dans `boucles_du_dernier_bilan`**, la seule définition de
+-- « qui reçoit quelle boucle », que la boucle mensuelle et l'écran du plan lisent tous deux
+-- (`20260930120000`, `v1-27` §12.22). L'assertion suit la chaîne : la boucle passe par cette
+-- fonction, et cette fonction demande la base déclarée à `a_des_voyages_declares`.
 select ok(
   regexp_replace(pg_get_functiondef('public.generate_extras_checkins()'::regprocedure),
                  '--[^' || chr(10) || ']*', '', 'g')
+    like '%public.boucles_du_dernier_bilan()%'
+  and regexp_replace(pg_get_functiondef('public.boucles_du_dernier_bilan(uuid)'::regprocedure),
+                 '--[^' || chr(10) || ']*', '', 'g')
     like '%public.a_des_voyages_declares(ans)%',
-  'la boucle mensuelle demande sa base déclarée à a_des_voyages_declares'
+  'la boucle mensuelle demande sa base déclarée à a_des_voyages_declares, par boucles_du_dernier_bilan'
 );
 
 select ok(
