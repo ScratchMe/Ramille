@@ -19,9 +19,10 @@
 -- **`ma_boucle_a_venir()` est supprimée, pas doublée** : plus aucun appel ne l'émet, et une fonction
 -- qu'aucun appel n'émet se lit « morte » et non « réservée » (la leçon de `p_replace`, C2.2). Aucun
 -- build natif ne l'a appelée : elle a vécu quelques heures, et le dernier build EAS date du
--- 14/09/2026 (relevé dans la liste des builds du projet le 30/09/2026). Le web la quitte au déploiement qui suit cette migration, appliquée juste avant la
--- fusion ; jusque-là, et **dans tout onglet resté ouvert sur l'ancien bundle jusqu'à son
--- rechargement**, l'écran retombe sur son repli — pas de carte d'attente, la ligne de relecture.
+-- 14/09/2026 (relevé dans la liste des builds du projet le 30/09/2026). Le web la quitte au
+-- déploiement qui suit cette migration, appliquée juste avant la fusion ; jusque-là, et **dans tout
+-- onglet resté ouvert sur l'ancien bundle jusqu'à son rechargement**, l'écran retombe sur son repli
+-- — pas de carte d'attente, la ligne de relecture.
 -- Rien de faux ne s'affiche, et c'est ce qui a fait préférer la suppression dans la même migration
 -- à une seconde migration plus tard.
 --
