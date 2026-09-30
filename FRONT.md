@@ -672,8 +672,14 @@ exactement ce qui avait laissé passer le mauvais caractère.
   promettre une notification pendant que `push_tokens` porte encore son `disabled_at`, jusqu'au
   prochain démarrage à froid.
 - **La carte d'attente parle de la personne, la feuille parle de l'action — et `Boucle` sert aux
-  deux** (recette sur appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
-  le sujet : elle se dérive de la personne (un poste domicile-travail ⟹ un point le lundi). La
+  deux, la carte prenant depuis le 30/09/2026 `BoucleAVenir`, qui y ajoute `aucune`** (recette sur
+  appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
+  le sujet : elle se dérive de la personne (un poste domicile-travail ⟹ un point le lundi). **Depuis
+  le 30/09/2026 c'est le serveur qui le dit** (`ma_boucle_a_venir`, `v1-27` §12.22), et il peut
+  répondre `aucune` : aucun trajet, sorties rares, aucun voyage déclaré. La carte ne promet alors
+  rien — ni jour, ni canal, ni porte — là où elle promettait « au début du mois prochain » un signe
+  qui ne venait jamais. La règle de la boucle mensuelle n'est pas recopiée côté client : elle vit
+  dans `boucles_du_dernier_bilan`, que les générateurs lisent aussi. La
   feuille ouverte après « C'est noté » promet un contact **sur l'action qu'on vient d'engager**
   (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du **poste de cette
   action**, par `boucleDeLAction` (`src/types/rappels.ts`), miroir de l'appariement que fait la

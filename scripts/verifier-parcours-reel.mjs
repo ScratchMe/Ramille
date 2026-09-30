@@ -350,6 +350,15 @@
 // coup sûr — elle dépend de l'aller-retour du préremplissage —, donc elle n'a pas de mutation ; ce qui la
 // ferme est l'attente d'une réponse cochée, écrite en tête de `jusquAVoirMonBilan`.
 //
+// **Et une le 30/09/2026, sur la carte d'attente** (`v1-27` §12.22) : `lireLaBoucleAVenir` ne
+// reconnaît plus `hebdo` (`'hebdomadaire'` à sa place, marqueur retrouvé dans le bundle, rejeu
+// `parcours` sur un fichier égal au commit sauf elle). Le parcours s'arrête à « cycliste — la carte
+// d'attente nomme le lundi, que le serveur a dit », sur « /^(Je te fais signe|On se retrouve ici)
+// lundi\.$/ » n'est jamais apparu — **et à elle seule** : toutes les étapes d'avant passent, le premier
+// profil compris, donc rien d'autre du parcours ne garde cette lecture. Le témoin, sur le même commit,
+// passe de bout en bout. La **première** version de l'étape, qui oubliait la carte des deux lieux, est
+// tombée au même endroit sans mutation : c'est ce qui l'a corrigée.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -1992,6 +2001,23 @@ try {
     'la barre d’onglets a disparu au bilan qui suit le retrait du seul bilan : le premier parcours a recommencé'
   );
 
+  etape('cycliste — la carte d’attente nomme le lundi, que le serveur a dit');
+  // **La carte d'attente nomme le lundi, et c'est le serveur qui le dit** (30/09/2026, `v1-27`
+  // §12.22). Le plan lit la boucle à venir par `ma_boucle_a_venir`, et le client relit ses trois
+  // valeurs (`lireLaBoucleAVenir`) : une valeur renommée d'un seul côté, ou la fonction absente de la
+  // base, ferait disparaître la carte **sans une erreur** — aucune autre garde ne la rend. Le cycliste
+  // a un trajet, donc un point le lundi. **La carte des deux lieux l'occupe d'abord** : le cycliste
+  // ne l'a jamais refermée (le premier plan est passé devant, puis ses bilans ont été retirés), et
+  // elle remplace la carte d'attente (`cartesDuPlan`). La première version de cette étape l'oubliait
+  // et a échoué au premier rejeu, le 30/09/2026 — c'est donc aussi la preuve que refermer la carte des
+  // deux lieux rend la place à celle qui attendait. La ligne de Ramille dépend du canal (« Je te fais
+  // signe » ou « On se retrouve ici »), pas le jour.
+  await bouton('Voir ce que je peux faire');
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  await attendreTexte('Deux endroits, pas plus.');
+  await page.getByText('Compris', { exact: true }).first().click();
+  await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
+
   await rpc('delete_my_account', sobre.jeton);
 
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
@@ -2001,7 +2027,8 @@ try {
       `canal, compte supprimé — puis le cycliste, ${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, ` +
       `barre d'onglets venue sans « Compris », puis son nouveau bilan en voiture où « Ton premier plan » ` +
       `passe devant la carte des deux lieux, puis ses deux bilans retirés — le plan reparti du précédent, ` +
-      `puis la racine et la marque locale effacée. Chaque choix rendu répond à son groupe nommé.`
+      `puis la racine et la marque locale effacée, et la carte d'attente qui nomme le lundi. Chaque choix ` +
+      `rendu répond à son groupe nommé.`
   );
 } catch (erreur) {
   try {
