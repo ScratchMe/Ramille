@@ -275,6 +275,22 @@
 // P7 n'ont pas été rejouées depuis le 27/09 : ni la barre ni la découpe n'ont changé, mais le détour
 // de P8 s'est inséré devant P6 et P7 dans la même étape, et leurs chutes sont antérieures à lui.
 //
+// **Le 30/09/2026, la garde de P8 est tombée sans défaut**, en CI, sur une PR qui ne touchait que la
+// documentation : « la carte du point passe par 153 px au lieu de 840 ». La référence était fausse,
+// pas le retour — prise dès l'apparition de la question, avant que `HauteurSuivie` ait sa découpe,
+// elle avait remonté jusqu'à l'écran (900 px de fenêtre moins la barre). Elle se prend désormais au
+// repos constaté (`mesurerAuRepos`, `relever-par-image.mjs`). Éprouvé le même jour, un rejeu
+// `parcours` chacun :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | R — la découpe arrive 300 ms après le premier `onLayout` (un runner lent), garde d'avant | « point » : « 153 px au lieu de 840 », le message exact de la CI |
+//   | R, garde corrigée, même export | rien : les trois profils passent |
+//   | P8, garde corrigée | « point » : « 8 px au lieu de 153 », comme le 27/09 |
+//
+// Ce que la fenêtre de repos ne voit pas : une découpe qui arriverait plus de 600 ms après la
+// question serait prise pour le repos, et la garde retomberait de la même façon.
+//
 // ── Ce que la recette web du 28/09/2026 a trouvé (`v1-13` §15) ─────────────────────────────────
 //
 // Trois gardes neuves, pour trois constats qu'aucune suite ne voyait : un « Retour » ouvert sans pile
@@ -397,6 +413,7 @@ import {
   enChemin,
   entre,
   mesurer,
+  mesurerAuRepos,
   ouiNon,
   releverParImage,
   releverPendant,
@@ -1100,9 +1117,12 @@ try {
   // la page a défilé jusqu'au lien des pistes, et l'ancrage du navigateur compense ce qui grandit
   // au-dessus de la fenêtre — une première version de cette garde, sur la position du cap, passait
   // avec le défaut en place.
+  // **La référence se prend au repos, constaté** (30/09/2026) : juste après l'apparition de la
+  // question, `HauteurSuivie` n'a pas encore sa découpe, et la mesure remontait jusqu'à l'écran —
+  // 840 px au lieu de 153, sur un runner lent, et la garde tombait sans défaut (`mesurerAuRepos`).
   const CAP = 'Ton cap pour cette saison'; // la cadence de tous les profils (`season`)
   const LA_CARTE = { role: 'button', nom: 'Oui' };
-  const carteAvantLeDetour = await mesurer(page, 'decoupe', LA_CARTE);
+  const carteAvantLeDetour = await mesurerAuRepos(page, 'decoupe', LA_CARTE);
   const versLesPistes = page.getByText(/^Voir toutes les pistes/).first();
   await versLesPistes.scrollIntoViewIfNeeded();
   await versLesPistes.click();
@@ -1113,7 +1133,7 @@ try {
   const hauteursDuRetour = retourSurLePlan.map((e) => e.carte).filter(Boolean);
   assurer(
     carteAvantLeDetour && hauteursDuRetour.length > 0,
-    'la carte du point est introuvable avant ou après le détour : la mesure ne peut pas conclure'
+    'la carte du point est introuvable avant ou après le détour, ou ne s’est jamais posée avant : la mesure ne peut pas conclure'
   );
   const hauteurQuiBouge = hauteursDuRetour.find((c) => Math.abs(c.hauteur - carteAvantLeDetour.hauteur) > 0.5);
   assurer(
