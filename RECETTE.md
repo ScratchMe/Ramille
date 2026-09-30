@@ -287,7 +287,10 @@ savoir pour la prochaine fois :
   parcours, `["ref", "faire", "attendre"]` dans les deux autres — une comparaison qui n'en lit
   qu'une compte l'autre artefact comme vide. Et une fois les blancs, les balises et les guillemets
   normalisés, il reste des différences qui n'en sont pas : l'italique `*…*` du `.md` devant un `<em>`,
-  un lien Markdown devant un numéro nu. Relire chaque écart restant, ne pas viser zéro ;
+  un lien Markdown devant un numéro nu. Relire chaque écart restant, ne pas viser zéro. **La
+  quatrième feuille, celle du 29/09, a une troisième forme** : ses lignes sont dans un bloc JSON
+  (`<script id="donnees">`, blocs puis lignes `[ref, faire, attendre]`) et sa base est
+  `{meta, lignes}` ; elle ne se compare pas, elle se régénère (plus bas) ;
 - **un artefact se republie depuis sa version en ligne**, lue en entier dans la session qui publie.
   Le fichier sauvé par une session précédente ne compte pas : la publication est refusée, rend la
   version en ligne, et ne passe qu'une fois les modifications posées dessus.
