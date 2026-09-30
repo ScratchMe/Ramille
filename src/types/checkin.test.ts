@@ -764,12 +764,13 @@ describe('estDeuxiemeFoisDeSuite', () => {
   const courant = (reponse: 'oui' | 'non' | 'sans_objet', periodStart = '2026-09-14') => ({
     loop_type: 'commute' as const,
     period_start: periodStart,
+    poste: 'commute',
     reponse,
   });
 
   it('deux « oui » sur deux périodes qui se suivent', () => {
     expect(
-      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', reponse: 'oui' }])
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', poste: 'commute', reponse: 'oui' }])
     ).toBe(true);
   });
 
@@ -783,8 +784,8 @@ describe('estDeuxiemeFoisDeSuite', () => {
   it('une troisième fois de suite ne rallume pas le signal', () => {
     expect(
       estDeuxiemeFoisDeSuite(courant('oui'), [
-        { period_start: '2026-09-07', reponse: 'oui' },
-        { period_start: '2026-08-31', reponse: 'oui' },
+        { period_start: '2026-09-07', poste: 'commute', reponse: 'oui' },
+        { period_start: '2026-08-31', poste: 'commute', reponse: 'oui' },
       ])
     ).toBe(false);
   });
@@ -797,23 +798,23 @@ describe('estDeuxiemeFoisDeSuite', () => {
    */
   it('deux « oui » séparés par un trou ne font pas une série', () => {
     expect(
-      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-08-17', reponse: 'oui' }])
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-08-17', poste: 'commute', reponse: 'oui' }])
     ).toBe(false);
   });
 
   it('un « non » ou un « sans objet » à la période précédente ne prolonge rien', () => {
     expect(
-      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', reponse: 'non' }])
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', poste: 'commute', reponse: 'non' }])
     ).toBe(false);
     expect(
-      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', reponse: 'sans_objet' }])
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', poste: 'commute', reponse: 'sans_objet' }])
     ).toBe(false);
   });
 
   it('la réponse courante doit être un « oui »', () => {
     for (const reponse of ['non', 'sans_objet'] as const) {
       expect(
-        estDeuxiemeFoisDeSuite(courant(reponse), [{ period_start: '2026-09-07', reponse: 'oui' }])
+        estDeuxiemeFoisDeSuite(courant(reponse), [{ period_start: '2026-09-07', poste: 'commute', reponse: 'oui' }])
       ).toBe(false);
     }
   });
@@ -828,14 +829,44 @@ describe('estDeuxiemeFoisDeSuite', () => {
     const mensuel = (periodStart: string) => ({
       loop_type: 'extras' as const,
       period_start: periodStart,
+      poste: 'travel',
       reponse: 'oui' as const,
     });
     expect(
-      estDeuxiemeFoisDeSuite(mensuel('2026-09-01'), [{ period_start: '2026-08-01', reponse: 'oui' }])
+      estDeuxiemeFoisDeSuite(mensuel('2026-09-01'), [{ period_start: '2026-08-01', poste: 'travel', reponse: 'oui' }])
     ).toBe(true);
     expect(
-      estDeuxiemeFoisDeSuite(mensuel('2026-09-01'), [{ period_start: '2026-08-25', reponse: 'oui' }])
+      estDeuxiemeFoisDeSuite(mensuel('2026-09-01'), [{ period_start: '2026-08-25', poste: 'travel', reponse: 'oui' }])
     ).toBe(false);
+  });
+  /**
+   * **Sur la boucle mensuelle, la série se compte sur un même poste** (décidé le 30/09/2026, `v1-27`
+   * §12.25). Le point du mois suit l'action engagée, donc il peut changer de poste d'un mois sur
+   * l'autre, et la phrase nomme celui du mois : « Deuxième mois de suite que tu sors autrement »
+   * après un « oui » sur les voyages serait à moitié faux. Jumelle SQL : `analytics.checkins_consecutifs`.
+   * Éprouvé le même jour : la condition de poste retirée fait tomber ce test, et le trajet traité
+   * comme la boucle mensuelle fait tomber le suivant.
+   */
+  it('deux « oui » voisins sur deux postes différents ne font pas une série', () => {
+    const sorties = { loop_type: 'extras' as const, period_start: '2026-09-01', poste: 'leisure', reponse: 'oui' as const };
+    expect(estDeuxiemeFoisDeSuite(sorties, [{ period_start: '2026-08-01', poste: 'travel', reponse: 'oui' }])).toBe(false);
+    expect(estDeuxiemeFoisDeSuite(sorties, [{ period_start: '2026-08-01', poste: 'leisure', reponse: 'oui' }])).toBe(true);
+    // La série repart au changement de poste : un « oui » deux mois plus tôt sur un autre poste ne
+    // l'empêche pas de se déclencher au deuxième mois sur celui-ci.
+    expect(
+      estDeuxiemeFoisDeSuite(sorties, [
+        { period_start: '2026-08-01', poste: 'leisure', reponse: 'oui' },
+        { period_start: '2026-07-01', poste: 'travel', reponse: 'oui' },
+      ])
+    ).toBe(true);
+    // Un point mensuel sans poste (d'avant la colonne) n'apparie rien, comme dans la vue.
+    expect(estDeuxiemeFoisDeSuite(sorties, [{ period_start: '2026-08-01', poste: null, reponse: 'oui' }])).toBe(false);
+  });
+
+  it('la boucle hebdomadaire n’a qu’un poste, et une ligne sans poste y compte', () => {
+    expect(
+      estDeuxiemeFoisDeSuite(courant('oui'), [{ period_start: '2026-09-07', poste: null, reponse: 'oui' }])
+    ).toBe(true);
   });
 });
 

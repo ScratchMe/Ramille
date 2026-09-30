@@ -20,7 +20,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(13);
 
 select has_function('public', 'periode_precedente', array['text', 'date'],
   'la période précédente se calcule par une fonction, elle ne se lit pas dans l''ordre des lignes');
@@ -61,7 +61,8 @@ select ok(
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
   ('c2a00000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-c210-a@test.local', 'x', now(), now(), now(), false),
-  ('c2a00000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-c210-b@test.local', 'x', now(), now(), now(), false);
+  ('c2a00000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-c210-b@test.local', 'x', now(), now(), now(), false),
+  ('c2a00000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-c210-c@test.local', 'x', now(), now(), now(), false);
 
 select set_config('test.oui_0',
   (select coalesce(sum(oui), 0)::text from analytics.checkins_consecutifs), true);
@@ -115,6 +116,30 @@ select results_eq(
               - current_setting('test.suite_1')::int $$,
   $$ select 1, 0 $$,
   'un « pas de voyage » est une réponse, mais il ne prolonge aucune série'
+);
+
+select set_config('test.oui_2',
+  (select coalesce(sum(oui), 0)::text from analytics.checkins_consecutifs), true);
+select set_config('test.suite_2',
+  (select coalesce(sum(oui_consecutifs), 0)::text from analytics.checkins_consecutifs), true);
+
+-- C : deux « oui » voisins, mais pas sur le même poste — août sur les voyages sans action, septembre
+-- sur une action de sorties. **La série se compte sur un même poste** (décidé le 30/09/2026, quand la
+-- question du mois s'est mise à suivre l'action engagée, `20260930151846`) : la phrase nomme le poste
+-- du mois, et deux gestes différents ne font pas une habitude. Jumelle client :
+-- `estDeuxiemeFoisDeSuite`. Éprouvé le même jour : la condition de poste retirée de la vue fait
+-- tomber cette assertion, et elle seule.
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, poste, status, response_kind, response, responded_at) values
+  ('c2a00000-0000-0000-0000-000000000013', 'extras', '2026-09-01', 'septembre 2026', 'Loisirs du week-end', 'leisure', 'answered', 'oui', true, now()),
+  ('c2a00000-0000-0000-0000-000000000013', 'extras', '2026-08-01', 'août 2026', 'Voyages longue distance', 'travel', 'answered', 'oui', true, now());
+
+select results_eq(
+  $$ select (select coalesce(sum(oui), 0)::int from analytics.checkins_consecutifs)
+              - current_setting('test.oui_2')::int,
+            (select coalesce(sum(oui_consecutifs), 0)::int from analytics.checkins_consecutifs)
+              - current_setting('test.suite_2')::int $$,
+  $$ select 2, 0 $$,
+  'deux « oui » voisins sur deux postes différents ne font pas une série'
 );
 
 select ok(

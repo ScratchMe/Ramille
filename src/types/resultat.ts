@@ -262,10 +262,12 @@ export type PoidsDesPostes = {
   /** Le libellé figé par le serveur : c'est lui qui marque le résiduel des sorties rares. */
   dominant_poste_label: string | null;
   /**
-   * Le libellé de la boucle mensuelle, qui porte le même marqueur quand le résiduel **n'est pas**
-   * dominant. Quand les loisirs sont le poste le plus lourd, c'est forcément eux que cette boucle
-   * porte : ils l'emportent sur les voyages dès 95 % de leur poids (`v_extras_is_leisure`, dans
-   * `recompute_assessment_results`).
+   * Le libellé du plus lourd des deux postes hors trajet, qui porte le même marqueur quand le
+   * résiduel **n'est pas** dominant. Quand les loisirs sont le poste le plus lourd, c'est forcément
+   * eux que ce libellé nomme : ils l'emportent sur les voyages dès 95 % de leur poids
+   * (`v_extras_is_leisure`, dans `recompute_assessment_results`). Ce n'est plus, depuis le
+   * 27/09/2026, forcément le poste de la boucle mensuelle — qui interroge les voyages de qui sort
+   * rarement, et depuis le 30/09/2026 le poste d'une action engagée (`v1-27` §12.25).
    */
   extras_poste_label: string | null;
   commute_co2_kg_year: number;
