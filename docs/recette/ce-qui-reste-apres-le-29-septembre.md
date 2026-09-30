@@ -17,7 +17,8 @@
 >
 > S'y ajoutent ce que `v1-13` §11.W dit encore ouvert (W.7, W.8), l'observation hors feuille n° 2
 > de la séance du 29/09 (la carte d'attente), et, dans un bloc final qui ne se joue pas au
-> navigateur, les lignes de §11 qui attendent un appareil. **Jouée le : ………**
+> navigateur, les lignes de §11 qui attendent un appareil. **Jouée le** 29/09/2026 au soir (blocs 00 à
+> 02, `v1-13` §17) et le 30/09/2026 (bloc 03, §18) ; les blocs 04 et 06 le 1er octobre.
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **sur trois jours** — c'est le
 > calendrier ci-dessous qui décide de l'ordre, pas la numérotation.
@@ -37,8 +38,8 @@
 | 9 | Ce qui attend le build natif — **non joué ici** | `v1-13` §11 |
 
 **Elle ne rejoue pas le reste.** Les 82 lignes conformes du 28/09 (`v1-13` §15) et les 19 du 29/09
-(§16) sont consignées une à une dans les bases de leurs artefacts ; les 49 du premier parcours
-(§14) dans la sienne. Le parcours réel rejoue le chemin nominal à chaque PR, sur deux profils. Le
+(§16) sont consignées une à une dans les bases de leurs artefacts ; les 44 conformes du premier
+parcours (§14, sur 49 consignées) dans la sienne. Le parcours réel rejoue le chemin nominal à chaque PR, sur deux profils. Le
 prix de ce choix est celui de `RECETTE.md` §2.5 : une régression sur un écran ancien que ni la CI
 ni une feuille ne regardent passera.
 
@@ -269,7 +270,7 @@ le lundi 5 (hebdomadaire).
 | 03.4 | L'écart par poste, sous les deux bilans | Trois postes, le plus lourd d'abord sur ce bilan : **Trajet domicile-travail**, **Loisirs occasionnels**, **Voyages longue distance** — chacun avec une barre en contour (le bilan précédent) et une barre pleine (celui-ci), **à la même échelle** : la barre pleine des loisirs (55 kg) fait environ un dixième de celle du trajet (512 kg). Seule celle du trajet est en accent | |
 | 03.5 | La légende, sous les barres | « **Contour : bilan précédent · plein : ce bilan · accent : ton trajet domicile-travail, ton poste principal** ». **Jamais « le poste sur lequel ton plan travaille »** (la ligne 10.9 du 28/09) | |
 | 03.6 | Le plan. Si la carte « **TON PREMIER PLAN** » est en tête — c'est ce que le 10.7 du 28/09 a vu sur ce chemin —, « **Compris** » | Les deux cartes (métro ou tram, − 199 kg ; train, − 165 kg), « **Voir toutes les pistes · 4** ». **Et la carte d'attente : relever mot pour mot ce que dit Ramille** — « On se retrouve ici lundi. » attendu, **alors que le point mensuel de ce compte arrive jeudi 1er octobre**. Noter la phrase et la date, sans interpréter : la suite est au 04.1 | |
-| 03.7 | S'engager sur « **Passer deux trajets sur cinq en métro ou en tram** » depuis le plan : deux jours au choix, « C'est noté » | « **TON ENGAGEMENT** », l'action en tête | |
+| 03.7 | S'engager sur « **Passer deux trajets sur cinq en métro ou en tram** » depuis le plan : deux jours au choix, « C'est noté » | « **TON ENGAGEMENT** », l'action en tête. **La feuille des rappels s'ouvre ensuite** (le compte a une adresse confirmée), « Sans rappel » présélectionné : la refermer **sans rien changer**, puis vérifier en base qu'aucun message n'est en file — c'est là que se joue la précaution sur les rappels, en tête de feuille (`v1-13` §18) | |
 | 03.8 | « Toi » → « **Mon contexte de mobilité** » : lire l'introduction | « Ton plan ne propose que ce qui tient avec ces réponses. **Une seule entre dans le calcul de ton bilan : le nombre de véhicules du foyer, qui sert à estimer tes sorties occasionnelles.** » — l'exception que §11.W.8 (a) attend pour qui sort rarement | |
 | 03.9 | Transports en commun → **Inexistant**, « **Enregistrer** » | On revient sur « **Toi** », d'où l'on venait. Puis le plan : l'encart « **Ton plan a changé avec tes nouvelles réponses de contexte. « Passer deux trajets sur cinq en métro ou en tram » n’y est plus ; elle reste dans ton suivi.** » — **jamais « avec ton nouveau bilan »** (§11.W.8 (b)) —, et **le plan s'est réduit** : deux cartes, « Faire ce trajet à deux au moins un jour sur deux » − 128 kg et « Faire un trajet sur cinq à vélo » − 102 kg, plus de « Voir toutes les pistes ». « Compris » referme l'encart | |
 | 03.10 | Le suivi | Toujours **deux** bilans : corriger son contexte n'est pas refaire un bilan. Le second dit encore 570 kg | |
@@ -308,7 +309,7 @@ le lundi 5 (hebdomadaire).
 
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
-| 06.1 | **Navigateur A** : `…+ramille-p4`, « Toi » → « Supprimer mon compte » → « Supprimer définitivement » | Sous le titre « Toi », « C'est fait. » et « Revenir au début » — ni l'adresse, ni « Me déconnecter de cet appareil », ni les rappels (04.1 du 28 au soir) | |
+| 06.1 | **Navigateur A** : `…+ramille-p4`, « Toi » → « Supprimer mon compte » → « Supprimer définitivement » | Sous le titre « Toi », « C'est fait. » et « Revenir au début » — ni l'adresse, ni « Me déconnecter de cet appareil », ni les rappels (04.1 du 28 au soir). Au réseau, `POST /auth/v1/logout?scope=local` en **403 est attendu** — `auth-js` appelle `/logout` avec le jeton de l'utilisateur effacé et avale la réponse (`v1-13` §16, n° 3) : ce n'est pas un écart | |
 | 06.2 | **Navigateur B** : `…+ramille-p2`, de même | Comme au 06.1 (14.3 du 28/09) | |
 | 06.3 | `/connexion/retrouver` avec `…+ramille-p2`, puis `…+ramille-p3`, puis `…+ramille-p4` (une minute d'écart) | L'écran ne dit rien, et c'est voulu. **Aucun e-mail n'arrive** : les trois comptes n'existent plus (`shouldCreateUser: false`). (04.2 du 28 au soir ; l'agent vérifie aussi `auth.users`) | |
 

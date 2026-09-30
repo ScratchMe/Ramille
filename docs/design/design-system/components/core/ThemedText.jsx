@@ -27,13 +27,34 @@ const TITRES_DECRAN = ['title', 'screenTitle', 'display'];
 const EN_TETES = ['title', 'subtitle', 'screenTitle', 'display'];
 
 // Jumelle de `espacesInsecables` (src/types/typographie.ts) : U+00A0 à la place de l'espace ordinaire
-// avant `?`, `!`, `:`, `;` et `»`, et après `«`. Elle n'ajoute aucune espace, ne touche pas une espace
-// déjà insécable, et ne s'applique qu'aux chaînes : un texte l'écrit avec une espace ordinaire.
-// L'insécable s'écrit par son point de code, jamais collée : collée, elle ne se distingue pas d'une
-// espace ordinaire à la relecture (`FRONT.md` §1).
+// avant `?`, `!`, `:`, `;`, `»` et `%`, après `«`, et après un `+` ou un `−` posé devant un nombre
+// (30/09/2026). Elle n'ajoute aucune espace, ne touche pas une espace déjà insécable, et ne
+// s'applique qu'aux chaînes : un texte l'écrit avec une espace ordinaire. L'insécable s'écrit par
+// son point de code, jamais collée : collée, elle ne se distingue pas d'une espace ordinaire à la
+// relecture (`FRONT.md` §1).
 const INSECABLE = '\u00A0';
-const espacesInsecables = (enfant) =>
-  typeof enfant === 'string' ? enfant.replace(/ (?=[?!:;»])/g, INSECABLE).replace(/« /g, '«' + INSECABLE) : enfant;
+const espacesInsecables = (texte) =>
+  texte
+    .replace(/ (?=[?!:;»%])/g, INSECABLE)
+    .replace(/« /g, '«' + INSECABLE)
+    .replace(/(^|[\s(])([+−]) (?=\d)/g, '$1$2' + INSECABLE);
+// Comme `ThemedText` du dépôt, les chaînes et les nombres voisins sont réunis avant la règle :
+// `− {gain} kg` arrive en trois morceaux, et le signe ne verrait pas son nombre.
+function avecEspacesInsecables(children) {
+  const morceaux = [];
+  let texte = null;
+  for (const enfant of Array.isArray(children) ? children : [children]) {
+    if (typeof enfant === 'string' || typeof enfant === 'number') {
+      texte = (texte === null ? '' : texte) + String(enfant);
+      continue;
+    }
+    if (texte !== null) morceaux.push(espacesInsecables(texte));
+    texte = null;
+    morceaux.push(enfant);
+  }
+  if (texte !== null) morceaux.push(espacesInsecables(texte));
+  return morceaux;
+}
 
 export function ThemedText({ type = 'default', themeColor, weight, headingLevel, accessibilityRole, as, style, children, ...rest }) {
   const base = SIZES[type] || SIZES.default;
@@ -41,7 +62,7 @@ export function ThemedText({ type = 'default', themeColor, weight, headingLevel,
   const niveau = headingLevel || (TITRES_DECRAN.includes(type) ? 1 : 2);
   // `as` n'existe pas dans le dépôt : il reste lisible parce que `ui_kits/ramille/` s'en sert.
   const Tag = as || (enTete ? 'h' + niveau : 'span');
-  const enfants = Array.isArray(children) ? children.map(espacesInsecables) : [espacesInsecables(children)];
+  const enfants = avecEspacesInsecables(children);
   return React.createElement(Tag, {
     ...rest,
     style: { margin: 0, fontFamily: base.fontFamily || 'var(--font-sans)', color: COLORS[themeColor] || base.color || 'var(--color-text)', textWrap: 'pretty', display: 'block', ...base, ...(weight ? { fontWeight: weight } : {}), ...style },

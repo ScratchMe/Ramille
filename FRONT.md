@@ -154,7 +154,12 @@ produit. L'espace qui précède `?`, `!`, `:`, `;` et `%` — ce dernier depuis 
 nombre, et celles qui bordent l'intérieur des guillemets,
 sont insécables, **posées au rendu en un seul endroit** et jamais à la main dans chaque texte : une
 règle que chaque texte doit se rappeler finit oubliée par le suivant. Même mesure que ci-dessus :
-U+00A0 et non l'espace fine, trop étroite dans cette police.
+U+00A0 et non l'espace fine, trop étroite dans cette police. **Et la règle voit le texte entier,
+pas ses morceaux** (30/09/2026) : `− {formatKg(capKg)} kg` rend trois enfants, et appliquée à
+chacun elle ne voyait jamais le nombre qui suit le signe — le « − » du cap et des gains restait
+sécable sur le plan. `ThemedText` réunit donc les chaînes et les nombres voisins avant de
+l'appliquer ; un texte imbriqué coupe la réunion et reçoit la règle pour lui-même
+(`src/components/themed-text.test.tsx`).
 
 **Corollaire pour les tests** : un séparateur s'écrit par son **point de code** (`\u00a0`) et jamais
 collé en littéral. Trois assertions le portaient en clair, et leur échec affichait

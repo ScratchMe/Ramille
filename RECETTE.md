@@ -260,7 +260,7 @@ destination légitime, et elle se note comme telle.
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
 | Ce qui est neuf depuis le 18/09/2026 — le compte, les modes, le design system, le retrait d'un bilan (écrite le 21/09, étendue le 27/09, **jouée le 28/09 par l'agent** — constats en `v1-13` §15 ; ses lignes restantes passées à la feuille du 29/09) | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
 | Ce qui reste après la séance du 28/09/2026 — les correctifs de la soirée revus sur la production, le suivi sur deux jours, les jugements qui reviennent à la personne qui pilote (**blocs 00 et 01 joués le 29/09 par l'agent**, `v1-13` §16 ; ses lignes restantes passées à la feuille du 29/09) | `docs/recette/ce-qui-reste-apres-le-28-septembre.md` | https://claude.ai/artifact/39KtxfEBam38o9HB4rcn53 |
-| **Tout ce qui reste à recetter au 29/09/2026 — la seule feuille ouverte** : l'écran du mode (`v1-31`) et « Toutes les pistes » (`v1-32`) sur la production, `/contexte` (§11.W.8), deux bilans de deux jours, le point du 1er octobre, les jugements, et un bloc final qui attend le build natif | `docs/recette/ce-qui-reste-apres-le-29-septembre.md` | https://claude.ai/artifact/4pWwnbinxhigiR7jJW4puR |
+| **Tout ce qui reste à recetter au 29/09/2026 — la seule feuille ouverte** : l'écran du mode (`v1-31`) et « Toutes les pistes » (`v1-32`) sur la production, `/contexte` (§11.W.8), deux bilans de deux jours, le point du 1er octobre, les jugements, et un bloc final qui attend le build natif (**blocs 00 à 02 joués le 29/09 au soir, bloc 03 le 30/09, par l'agent** — `v1-13` §17 et §18 ; blocs 04 et 06 le 1er octobre) | `docs/recette/ce-qui-reste-apres-le-29-septembre.md` | https://claude.ai/artifact/4pWwnbinxhigiR7jJW4puR |
 
 **L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
 règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
@@ -315,11 +315,13 @@ blocs ne se jouent pas le même jour et que c'est la date qui décide de l'ordre
 dans la même liste que le reste au lieu de vivre seulement dans `v1-13` §11. **Et ses données
 sont extraites du `.md` par un script**, non recopiées : c'est la réponse au décrochage relevé le
 25/09 plus haut, et la comparaison en dix lignes devient inutile tant qu'on régénère plutôt que de
-retoucher la page à la main. Le script n'est pas dans le dépôt, et rien ne se perd avec le
-conteneur : la page publiée se relit en entier (`Artifact`, action `read`), ses données sont un seul
-bloc JSON (`<script type="application/json" id="donnees">`) qu'on remplace, et l'extraction tient en
-soixante lignes — les tableaux, les lignes des blocs, puis `**`, `` ` `` et « » vers leurs balises,
-guillemets imbriqués compris.
+retoucher la page à la main. Le script est `scripts/extraire-une-feuille-de-recette.mjs` — versé
+dans le dépôt le 30/09/2026, parce qu'il vivait dans le dossier de travail d'une session et qu'un
+conteneur qui redémarre l'emporte : la page publiée se relit en entier (`Artifact`, action `read`),
+ses données sont un seul bloc JSON (`<script type="application/json" id="donnees">`), et
+`--page <page.html>` remplace ce bloc et rien d'autre. Ses tableaux se trouvent par leur **ancre**,
+propre à chaque feuille : une ancre absente le fait échouer en la nommant, plutôt que de rendre une
+page à laquelle il manque un tableau.
 
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est

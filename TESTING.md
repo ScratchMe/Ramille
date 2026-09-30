@@ -502,6 +502,23 @@ puis la capture, dont le chemin est imprimé (dossier temporaire). Un parcours l
 dans la stack ; `supabase db reset` remet la base à neuf — seulement si personne d'autre ne s'en
 sert, d'autres copies de travail pouvant la partager. Le rejeu (§2.13), lui, la redémarre sous verrou.
 
+**En CI, la capture reste sur le runner** : rien ne l'envoie en artefact, et l'y envoyer rouvrirait ce
+que le passage en public a vérifié fermé — aucun artefact téléchargeable
+(`docs/exploitation/depot-public.md`). C'est une décision à prendre, pas un oubli à réparer seul
+(`docs/architecture/v1-27-dette-technique.md` §12.21) ; d'ici là, ce qu'on lit d'un échec en CI est le
+journal.
+
+**Un clic se donne à un écran posé, pas à un écran qui charge** (CI du 30/09/2026). L'étape de la
+suppression cliquait « Supprimer mon compte » dès que le lien devenait visible — c'est-à-dire dès le
+HTML statique —, puis `/compte` grandissait de 412 px au-dessus de lui quand le compte et les rappels
+arrivaient. Un clic pris dans ce saut est **perdu sans erreur** : l'appui et le relâchement ne tombent
+pas sur le même élément, et le navigateur ne rend le `click` qu'à leur ancêtre commun. La garde a
+rougi une fois, la confirmation jamais ouverte ; cinq parcours complets et seize clics isolés ne
+l'ont pas reproduit, et c'est en **retenant les deux lectures pendant l'appui** que le mécanisme est
+sorti — deux fois sur deux, contre un témoin qui ouvre la confirmation deux fois sur deux. Un écran
+qui charge après son HTML statique s'attend donc sur ce qui arrive **avec** ses données (ici le
+groupe « Les rappels »), jamais sur ce que le HTML porte déjà.
+
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
 **Le code recopie une contrainte de la base en bien plus d'endroits qu'on ne le croit** — une puce

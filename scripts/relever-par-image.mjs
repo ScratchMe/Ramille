@@ -224,7 +224,7 @@ export async function releverPendant(page, mesures, geste, duree = 800) {
 /** Les échantillons d'un relevé lancé plus tôt — par `depuisLeDebut`, ou avant une navigation. */
 export const echantillons = (page) => page.evaluate(() => window.__releve.echantillons);
 
-/** Une mesure au repos. */
+/** Une mesure à l'instant — pour une référence, `mesurerAuRepos`. */
 export const mesurer = (page, nom, argument) =>
   page.evaluate(([n, a]) => window.__releve.mesurer(n, a), [nom, argument]);
 

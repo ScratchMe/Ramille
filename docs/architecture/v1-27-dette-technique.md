@@ -1381,3 +1381,23 @@ de l'écart 12 de `v1-31` (une donnée arrivée après le montage), sur un autre
 choisi — `selectedKey ?? cleDesReponses(answers)`, et la seconde liste ouverte aussi quand le mode
 répondu y vit —, plutôt que de recopier l'état. Le rejouer d'abord : le parcours réel sait ouvrir
 `/bilan?etape=…` sur un profil qui a un bilan (son étape « un re-bilan ouvert sur l'étape du mode »).
+
+### 12.21 La capture d'un échec du parcours réel ne sort pas de la CI (30/09/2026)
+
+**Relevé sur la CI de [#299](https://github.com/ScratchMe/Ramille/pull/299).** L'étape de la
+suppression du compte a rougi une fois, et le journal disait l'étape, les requêtes refusées et le
+texte visible — pas ce que le clic avait touché. La capture que le script prend sur un échec, dans le
+dossier temporaire, reste sur le runner : rien ne l'envoie
+en artefact. Il a fallu cinq parcours complets, seize clics isolés puis une expérience ciblée pour
+trouver ce qu'elle aurait peut-être montré d'une image — le lien 412 px plus bas que là où le clic
+était parti (`TESTING.md` §2.6).
+
+**Pourquoi ce n'est pas fait** : `ci.yml` promet en tête qu'aucune étape « ne publie quoi que ce
+soit », et le passage en public a vérifié qu'aucun artefact n'est téléchargeable
+(`docs/exploitation/depot-public.md`) — le dépôt est public, ses artefacts le sont aussi. La capture
+ne montrerait qu'une page de test sur une stack locale aux clés de démonstration, mais rouvrir la
+porte des artefacts se décide ; ça ne se glisse pas dans la PR d'une recette.
+
+**La direction, si on y revient** : une étape `actions/upload-artifact` sous `if: failure()` sur le
+seul travail « Parcours réel », une rétention courte, `if-no-files-found: ignore`, et l'en-tête de
+`ci.yml` comme `depot-public.md` corrigés dans le même geste. À décider avec la personne qui pilote.

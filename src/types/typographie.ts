@@ -26,6 +26,13 @@
  * - elle ne s'applique qu'à l'affichage (`ThemedText`) : les dérivations de `src/types/` rendent
  *   des chaînes à espaces ordinaires, que leurs tests comparent telles quelles, et que
  *   `api/partage.ts` recopie sans passer par ici.
+ *
+ * **Elle voit une chaîne, et c'est `ThemedText` qui lui donne le texte entier** (30/09/2026) : les
+ * chaînes et les nombres voisins d'un même texte y sont réunis avant l'appel, sans quoi
+ * `− {gain} kg` lui arrivait en trois morceaux et le signe restait sécable.
+ *
+ * **Sa jumelle vit dans le kit** (`docs/design/design-system/components/core/ThemedText.jsx`), qui
+ * la recopie faute de pouvoir importer `src/` : toucher à ces motifs impose de la suivre.
  */
 const AVANT_LA_PONCTUATION = / (?=[?!:;»%])/g;
 const APRES_LE_GUILLEMET = /« /g;

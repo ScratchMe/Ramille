@@ -1542,6 +1542,14 @@ try {
   // restent : la moitié positive est vérifiée aussi, pour qu'un masquage trop large ne passe pas vert.
   etape('suppression du compte');
   await page.goto(`${base}/compte`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  // **L'écran posé d'abord, le clic ensuite** (CI du 30/09/2026). `/compte` rend « Supprimer mon
+  // compte » dès son HTML statique, puis grandit au-dessus du lien quand le compte et les rappels
+  // arrivent — 412 px. Un clic pris dans ce saut est perdu : l'appui et le relâchement ne tombent
+  // pas sur le même élément, et le navigateur ne rend le `click` qu'à leur ancêtre commun.
+  // Reproduit en retenant ces deux lectures pendant l'appui : le lien passe de 335 à 747 px et la
+  // confirmation ne s'ouvre pas, deux fois sur deux, quand le témoin l'ouvre deux fois sur deux. Le
+  // groupe « Les rappels » arrive avec elles — l'étape de la ligne de canal l'attend déjà.
+  await page.getByRole('radiogroup', { name: 'Les rappels', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
   await bouton('Supprimer mon compte');
   await bouton('Supprimer définitivement');
   await attendreTexte('C’est fait.');
