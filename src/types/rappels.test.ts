@@ -11,6 +11,7 @@ import {
   laVeilleSeRepropose,
   libelleBouton,
   lignesDeReglage,
+  lireLaBoucleAVenir,
   ouvertureDeLaFeuille,
   reponseALaVeilleDe,
   sousTitreDesRappels,
@@ -456,7 +457,7 @@ describe('carteAttente', () => {
     const preferes = ['push', 'email', 'none'] as const;
     const permissions = ['accordee', 'demandable', 'fermee'] as const;
     const plateformes = ['natif', 'web'] as const;
-    const boucles = ['hebdo', 'mensuel'] as const;
+    const boucles = ['hebdo', 'mensuel', 'aucune'] as const;
 
     let avecPorte = 0;
 
@@ -496,6 +497,34 @@ describe('carteAttente', () => {
     expect(avecPorte).toBeGreaterThan(0);
   });
 
+  // **Aucune boucle, aucune promesse** (décision du 30/09/2026, `v1-27` §12.22). Le profil sédentaire
+  // — aucun trajet, sorties rares, aucun voyage déclaré — lisait « Je te fais signe au début du mois
+  // prochain », et le signe ne venait jamais. Balayé sur tous les états des rappels : aucun ne doit
+  // nommer un jour, un canal ou une porte, puisque aucun mot ne partira.
+  //
+  // Éprouvé en le cassant, le 30/09/2026 : la branche `aucune` retirée (la carte retombe alors sur
+  // la mensuelle, l'état d'avant) → ce test seul ; la branche qui garde « Par notification sur ce
+  // téléphone. » quand le canal est `push` → ce test seul, l'invariant de la porte ne regardant que
+  // les états où aucun canal ne peut porter le mot.
+  it('ne promet rien quand aucune boucle ne tourne, quel que soit l’état des rappels', () => {
+    for (const prefere of ['push', 'email', 'none'] as const)
+      for (const jetonActif of [true, false])
+        for (const emailPossible of [true, false])
+          for (const permission of ['accordee', 'demandable', 'fermee'] as const)
+            for (const plateforme of ['natif', 'web'] as const) {
+              const etat = { prefere, jetonActif, emailPossible, permission, plateforme };
+              expect({
+                ...etat,
+                carte: carteAttente({
+                  ...etat,
+                  boucle: 'aucune',
+                  email: emailPossible ? 'camille@exemple.fr' : null,
+                }),
+              }).toEqual({ ...etat, carte: { cle: 'attenteSansBoucle', detail: null, action: null } });
+            }
+    expect(RAMILLE.attenteSansBoucle).not.toMatch(/lundi|mois|signe/i);
+  });
+
   it('ne met jamais de chiffre dans la bouche de Ramille', () => {
     // Le détail (qui peut porter une adresse, donc un chiffre) est **du produit** ; seule la
     // clé désigne ce qu'elle dit, et ces lignes-là sont gardées par le test de mascotte.ts.
@@ -509,6 +538,24 @@ describe('carteAttente', () => {
     });
     expect(carte.cle).not.toMatch(/\d/);
     expect(RAMILLE[carte.cle]).not.toMatch(/\d/);
+  });
+});
+
+// La réponse du serveur, relue (`ma_boucle_a_venir`). Une valeur inconnue ne devient jamais une
+// boucle : l'écran ne montre alors pas la carte, plutôt que de nommer un jour qu'il ne connaît pas.
+// Éprouvé en le cassant, le 30/09/2026 : une valeur inconnue lue comme `mensuel` (l'ancien repli de
+// l'écran) → « ne devine rien d'une valeur inconnue ou absente », seul.
+describe('lireLaBoucleAVenir', () => {
+  it('rend les trois réponses du serveur telles quelles', () => {
+    expect(lireLaBoucleAVenir('hebdo')).toBe('hebdo');
+    expect(lireLaBoucleAVenir('mensuel')).toBe('mensuel');
+    expect(lireLaBoucleAVenir('aucune')).toBe('aucune');
+  });
+
+  it('ne devine rien d’une valeur inconnue ou absente', () => {
+    for (const valeur of [null, undefined, '', 'commute', 'extras', 'Hebdo', 0, true, {}]) {
+      expect({ valeur, lue: lireLaBoucleAVenir(valeur) }).toEqual({ valeur, lue: null });
+    }
   });
 });
 

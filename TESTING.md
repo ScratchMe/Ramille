@@ -526,7 +526,7 @@ sert, d'autres copies de travail pouvant la partager. Le rejeu (§2.13), lui, la
 **En CI, la capture reste sur le runner** : rien ne l'envoie en artefact, et l'y envoyer rouvrirait ce
 que le passage en public a vérifié fermé — aucun artefact téléchargeable
 (`docs/exploitation/depot-public.md`). C'est une décision à prendre, pas un oubli à réparer seul
-(`docs/architecture/v1-27-dette-technique.md` §12.23) ; d'ici là, ce qu'on lit d'un échec en CI est le
+(`docs/architecture/v1-27-dette-technique.md` §12.25) ; d'ici là, ce qu'on lit d'un échec en CI est le
 journal.
 
 **Un clic se donne à un écran posé, pas à un écran qui charge** (CI du 30/09/2026). L'étape de la

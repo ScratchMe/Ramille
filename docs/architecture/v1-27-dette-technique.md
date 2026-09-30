@@ -1443,6 +1443,18 @@ correctif ne le crée ni ne le règle ; relevé par la contre-lecture du 30/09/2
 
 ### 12.22 La carte d'attente promet un signe à qui n'a aucune boucle (30/09/2026)
 
+> **Fait le 30/09/2026, sur décision de la personne qui pilote** (« OK pour ta reco ») : quand aucune
+> boucle ne tourne, Ramille ne promet rien — « Ton plan est là, reviens quand tu veux. », sans jour,
+> sans canal et sans porte (`RAMILLE.attenteSansBoucle`, branche `aucune` de `carteAttente`). **Dans
+> la direction écrite plus bas** : l'écran lit `ma_boucle_a_venir()`
+> (`20260930105923_la_carte_d_attente_sait_si_une_boucle_tourne.sql`), qui lit
+> `boucles_du_dernier_bilan` — la seule définition de « qui reçoit quelle boucle », désormais lue aussi
+> par les deux générateurs, qui ne portent plus leur propre choix du dernier bilan. Rien n'est recopié
+> en TypeScript. Gardes : pgTAP `39` (six profils, l'accord avec les générateurs, cinq mutations), le
+> test `38` rejoué sur la fonction partagée, `rappels.test.ts` (tous les états des rappels, deux
+> mutations) et le parcours réel, où le cycliste lit la ligne du lundi. Appliquée au distant le même
+> jour : **un compte de production sur onze** était dans ce cas (`docs/exploitation/README.md` §7 bis).
+
 **Relevé par la contre-lecture du correctif de §12.21**, raisonné sur le code, pas rejoué à l'écran.
 L'écran du plan décide de la boucle à nommer sur le seul poste domicile-travail
 (`src/app/(tabs)/plan/index.tsx` : `commute_poste_label ? 'hebdo' : 'mensuel'`), donc toute personne
@@ -1462,7 +1474,43 @@ décidé** : lire côté serveur si une boucle tourne pour cette personne — la
 mensuelle vit dans `a_des_voyages_declares` et le filtre de `generate_extras_checkins` —, plutôt que
 de la recopier en TypeScript, ce qui ferait une paire de plus à tenir d'accord.
 
-### 12.23 La capture d'un échec du parcours réel ne sort pas de la CI (30/09/2026)
+### 12.23 Deux autres phrases promettent une boucle qui ne tourne pas (30/09/2026)
+
+**Relevé par la contre-lecture de §12.22**, lu dans le code, pas rejoué à l'écran. La décision du
+30/09/2026 ne vaut que pour la carte d'attente ; deux autres textes supposent encore qu'une boucle
+tourne :
+
+- **la carte des deux lieux** (`OUVERTURE_DES_DEUX_LIEUX`, `src/types/premier-parcours.ts`) — au
+  premier passage du profil sédentaire, un plan à zéro action fait arriver la barre, et c'est elle qui
+  prend la place de la carte d'attente. Elle dit « Ici, ton plan : l'action en cours, le point
+  régulier, ton cap. » et Ramille « Je note tes réponses dans ton suivi, au fil des saisons. »
+  (`RAMILLE.planEtSuivi`) — à quelqu'un qui n'aura ni action, ni point, ni réponse ;
+- **le pied d'un point répondu** (`piedDuPointRepondu`, `src/types/checkin.ts`) — « Prochain point :
+  lundi … » reste affiché le temps de la période, y compris quand un nouveau bilan vient d'arrêter la
+  boucle (§12.21).
+
+**Ce qui revient à la personne qui pilote** : ce que ces deux textes disent quand aucune boucle ne
+tourne. **Ce qui a changé techniquement** : l'écran du plan connaît désormais la boucle à venir
+(`ma_boucle_a_venir`, §12.22), donc les deux pourraient se dériver du même fait sans nouvelle lecture.
+
+### 12.24 `boucles_du_dernier_bilan` parcourt tous les bilans à chaque ouverture du plan (30/09/2026)
+
+**Relevé par la contre-lecture de §12.22, raisonné, pas mesuré.** La fonction est `security definer`
+avec un `set search_path`, donc Postgres ne l'intègre pas à la requête qui l'appelle ; et son filtre
+`p_user_id is null or d.user_id = p_user_id` empêche alors l'usage de l'index : `ma_boucle_a_venir`,
+appelée à chaque chargement du plan, lit tous les bilans complétés pour n'en garder que ceux d'une
+personne. Le générateur hebdomadaire calcule aussi la branche mensuelle de tout le monde avant de la
+jeter. **Négligeable aux volumes du 30/09/2026** (onze comptes avec un bilan).
+
+**Pourquoi ce n'est pas fait** : la voie la plus simple — retirer `security definer` et le
+`search_path`, que les deux appelants rendent inutiles puisqu'ils le sont déjà — permettrait
+l'intégration, mais ajoute un avertissement aux advisors (`function_search_path_mutable`), dont
+l'empreinte est tenue (`docs/exploitation/README.md` §8.7). **Condition de réouverture** : quand
+`assessments` compte plusieurs milliers de lignes, mesurer le temps de `ma_boucle_a_venir` sur le
+distant ; au-delà de quelques millisecondes, séparer l'appel d'une personne (un filtre sans `or`) de
+celui de tout le monde.
+
+### 12.25 La capture d'un échec du parcours réel ne sort pas de la CI (30/09/2026)
 
 **Relevé sur la CI de [#299](https://github.com/ScratchMe/Ramille/pull/299).** L'étape de la
 suppression du compte a rougi une fois, et le journal disait l'étape, les requêtes refusées et le

@@ -199,12 +199,14 @@ export function canalPreselectionne(
 
 /**
  * Quelle boucle nomme le jour que Ramille annonce. Hebdomadaire dès qu'un poste
- * domicile-travail existe (le point du lundi est alors généré), mensuelle sinon.
+ * domicile-travail existe (le point du lundi est alors généré), mensuelle sinon — et, pour la carte
+ * d'attente seulement, **aucune** quand la mensuelle ne tourne pas non plus (`BoucleAVenir`).
  *
  * **Deux questions distinctes s'y répondent, et elles n'ont pas la même source** (relevé en
  * recette le 14/09/2026). La **carte d'attente** annonce le prochain contact, quel qu'en soit le
  * sujet : elle se dérive de la personne — a-t-elle un poste domicile-travail, donc un point le
- * lundi. La **feuille ouverte après « C'est noté »**, elle, promet un contact *sur l'action qu'on
+ * lundi, et sinon une boucle mensuelle qui tourne ; le serveur le dit depuis le 30/09/2026
+ * (`ma_boucle_a_venir`). La **feuille ouverte après « C'est noté »**, elle, promet un contact *sur l'action qu'on
  * vient d'engager* (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du
  * **poste de cette action**, par `boucleDeLAction`.
  *
@@ -215,6 +217,32 @@ export function canalPreselectionne(
  * question générique.
  */
 export type Boucle = 'hebdo' | 'mensuel';
+
+/**
+ * Ce que la **carte d'attente** annonce : une boucle, ou **aucune** (décision du 30/09/2026, `v1-27`
+ * §12.22).
+ *
+ * La carte se dérivait du seul poste domicile-travail : sans trajet, elle annonçait la boucle
+ * mensuelle, y compris quand celle-ci ne tourne pas — aucun trajet, sorties rares, aucun voyage
+ * déclaré, le profil sédentaire de C2.5 —, et Ramille promettait un signe qui ne venait jamais.
+ * La réponse vient donc **du serveur** (`ma_boucle_a_venir`, lue par `lireLaBoucleAVenir`), qui la
+ * tire de la même définition que les deux générateurs de points : la règle de la boucle mensuelle
+ * (`a_des_voyages_declares`) n'est recopiée nulle part ici.
+ *
+ * La feuille ouverte après « C'est noté » n'en a pas besoin : elle parle de l'action qu'on vient
+ * d'engager (`boucleDeLAction`). Un plan sans boucle n'a pas d'action en régime établi — le
+ * profil sédentaire n'en reçoit aucune ; seul un plan dont la génération a échoué garde, jusqu'au
+ * passage du cron, les actions d'un bilan plus ancien, et la feuille peut alors promettre un lundi.
+ */
+export type BoucleAVenir = Boucle | 'aucune';
+
+/**
+ * La réponse de `ma_boucle_a_venir`, relue. Une valeur inconnue rend `null` : l'écran ne montre
+ * alors pas la carte, plutôt que de nommer un jour qu'il ne connaît pas (`FRONT.md` §2.11).
+ */
+export function lireLaBoucleAVenir(valeur: unknown): BoucleAVenir | null {
+  return valeur === 'hebdo' || valeur === 'mensuel' || valeur === 'aucune' ? valeur : null;
+}
 
 /**
  * La boucle qui interrogera une action, d'après le poste de son gabarit.
@@ -304,7 +332,12 @@ const PORTE_VERS_LE_COMPTE: PorteDeLaCarte = { libelle: 'Rattacher un compte', v
 
 export type CarteAttente = {
   /** La ligne de Ramille, toujours issue de `RAMILLE` — jamais écrite dans un écran. */
-  cle: 'attenteSigneHebdo' | 'attenteSigneMensuel' | 'attenteIciHebdo' | 'attenteIciMensuel';
+  cle:
+    | 'attenteSigneHebdo'
+    | 'attenteSigneMensuel'
+    | 'attenteIciHebdo'
+    | 'attenteIciMensuel'
+    | 'attenteSansBoucle';
   /** Ce qui précise le canal. Du produit, pas d'elle : une adresse peut porter un chiffre. */
   detail: string | null;
   /**
@@ -315,7 +348,7 @@ export type CarteAttente = {
    * Aucun canal veut dire qu'aucune adresse ne peut recevoir le mot, donc qu'un compte est
    * précisément ce qui manque ; et ne rien dire (l'enregistrement raté, qui se répare au
    * prochain lancement) veut dire qu'il n'y a rien à réparer à la main. Écrit ainsi, il survit
-   * à une reformulation des six phrases.
+   * à une reformulation des sept phrases.
    */
   action: PorteDeLaCarte | null;
 };
@@ -330,7 +363,8 @@ export type CarteAttente = {
  * Le cas du refus est celui qu'on oublie : avec un compte, l'email prend le relais tout seul
  * et la carte le dit ; sans compte, elle nomme les deux portes **une fois**, sans insister.
  *
- * **Les six lignes du §3 sont ici, et la sixième a manqué longtemps** : préférence `email`
+ * **Les six lignes du §3 sont ici — plus une septième depuis le 30/09/2026, hors de son tableau :
+ * aucune boucle, aucune promesse** (`v1-27` §12.22). **La sixième a manqué longtemps** : préférence `email`
  * sans email possible, c'est-à-dire l'état par défaut de toute session anonyme. La carte
  * disait « On se retrouve ici lundi. » sans détail, donc rien nulle part n'apprenait qu'aucun
  * rappel ne partirait (A4-5). Le canal, lui, était juste des deux côtés : l'écart portait sur
@@ -352,11 +386,19 @@ export function carteAttente({
   plateforme,
   ...etat
 }: EtatDesRappels & {
-  boucle: Boucle;
+  boucle: BoucleAVenir;
   email: string | null;
   permission: Permission;
   plateforme: Plateforme;
 }): CarteAttente {
+  // **Aucune boucle, aucune promesse** (30/09/2026, `v1-27` §12.22) : aucun point ne viendra, donc
+  // ni jour à nommer ni canal à décrire — « par notification » ou « rattache un compte pour le
+  // mot » annonceraient un mot qui ne partira jamais, et une porte vers « Toi » y serait une
+  // promesse de plus.
+  if (boucle === 'aucune') {
+    return { cle: 'attenteSansBoucle', detail: null, action: null };
+  }
+
   const canal = canalEffectif(etat);
   const hebdo = boucle === 'hebdo';
   // **`plateforme` est ce qui empêche d'accuser un navigateur de bureau.** Sur web
