@@ -1992,6 +1992,18 @@ try {
     'la barre d’onglets a disparu au bilan qui suit le retrait du seul bilan : le premier parcours a recommencé'
   );
 
+  // **La carte d'attente nomme le lundi, et c'est le serveur qui le dit** (30/09/2026, `v1-27`
+  // §12.22). Le plan lit la boucle à venir par `ma_boucle_a_venir`, et le client relit ses trois
+  // valeurs (`lireLaBoucleAVenir`) : une valeur renommée d'un seul côté, ou la fonction absente de la
+  // base, ferait disparaître la carte **sans une erreur** — aucune autre garde ne la rend. Le cycliste
+  // a un trajet, donc un point le lundi ; et c'est le seul endroit du parcours où la carte se montre :
+  // à son premier plan, la carte des deux lieux prend sa place, et ici aucune carte d'ouverture n'est
+  // plus due. La ligne de Ramille dépend du canal (« Je te fais signe » ou « On se retrouve ici »),
+  // pas le jour.
+  await bouton('Voir ce que je peux faire');
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
+
   await rpc('delete_my_account', sobre.jeton);
 
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);

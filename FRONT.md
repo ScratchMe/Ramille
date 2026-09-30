@@ -672,7 +672,8 @@ exactement ce qui avait laissé passer le mauvais caractère.
   promettre une notification pendant que `push_tokens` porte encore son `disabled_at`, jusqu'au
   prochain démarrage à froid.
 - **La carte d'attente parle de la personne, la feuille parle de l'action — et `Boucle` sert aux
-  deux** (recette sur appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
+  deux, la carte prenant depuis le 30/09/2026 `BoucleAVenir`, qui y ajoute `aucune`** (recette sur
+  appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
   le sujet : elle se dérive de la personne (un poste domicile-travail ⟹ un point le lundi). **Depuis
   le 30/09/2026 c'est le serveur qui le dit** (`ma_boucle_a_venir`, `v1-27` §12.22), et il peut
   répondre `aucune` : aucun trajet, sorties rares, aucun voyage déclaré. La carte ne promet alors

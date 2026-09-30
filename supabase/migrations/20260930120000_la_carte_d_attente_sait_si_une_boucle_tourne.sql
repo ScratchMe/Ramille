@@ -18,7 +18,10 @@
 --     la fonction n'est appelable que côté serveur ;
 --   * `public.ma_boucle_a_venir()` — ce que l'écran lit : `hebdo` si la boucle hebdomadaire
 --     tourne, `mensuel` si seule la mensuelle tourne, `aucune` sinon. Seul `authenticated`
---     l'appelle, et une session absente rend `aucune` sans jamais interroger tout le monde.
+--     l'appelle, et une session absente rend `aucune` sans jamais interroger tout le monde. **Ses
+--     trois valeurs ont une jumelle côté client, `lireLaBoucleAVenir` (`src/types/rappels.ts`)**,
+--     qui rend `null` sur toute autre : en renommer une ici sans là-bas ferait disparaître la carte
+--     d'attente en silence.
 --
 -- Les deux générateurs sont réécrits depuis leur corps installé (`pg_get_functiondef`, identique à
 -- `20260930092838`) pour lire la fonction à la place de leur sous-requête : **aucun point ne
@@ -212,7 +215,8 @@ $$;
 comment on function public.ma_boucle_a_venir() is
   'La boucle de points qui tourne pour la personne connectée, d''après son dernier bilan valide : '
   'hebdo, mensuel ou aucune. Lue par la carte d''attente du plan, qui ne promet rien quand elle '
-  'vaut aucune (30/09/2026, v1-27 §12.22).';
+  'vaut aucune (30/09/2026, v1-27 §12.22). Jumelle client des trois valeurs : lireLaBoucleAVenir '
+  '(src/types/rappels.ts).';
 
 revoke execute on function public.ma_boucle_a_venir() from public, anon;
 grant execute on function public.ma_boucle_a_venir() to authenticated;

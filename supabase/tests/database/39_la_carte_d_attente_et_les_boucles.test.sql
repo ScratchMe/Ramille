@@ -22,7 +22,8 @@
 --     `null` interroge tout le monde, et rend la boucle de quelqu'un d'autre ;
 --   - le `revoke` de `boucles_du_dernier_bilan` sans `public` → les privilèges, seuls ;
 --   - la base déclarée retirée de `boucles_du_dernier_bilan` (`a_des_voyages_declares` ôté du filtre)
---     → K4, seul ici, et quatre assertions du fichier 20 (les profils G, H et I). **L'accord avec les
+--     → six sur la suite entière : K4, seul ici ; quatre assertions du fichier 20 (les profils G, H
+--     et I) ; et l'assertion de structure du fichier 33, qui cherche l'appel. **L'accord avec les
 --     générateurs ne tombe pas**, et c'est attendu : ils lisent la même fonction, donc ils se
 --     trompent ensemble. Il garde contre une définition recopiée, pas contre une définition fausse ;
 --   - `generate_commute_checkins` remise dans son corps de `20260930092838` → les deux assertions de
@@ -189,8 +190,11 @@ select ok(
   'les deux générateurs lisent boucles_du_dernier_bilan'
 );
 
--- Le choix du dernier bilan s'écrit par un `distinct on` : le 30/09/2026, avant l'extraction, ce
--- balayage rendait exactement les deux générateurs. Une copie écrite demain tombe ici.
+-- **Ce que ce balayage couvre, et ce qu'il ne voit pas.** Il cherche le choix du dernier bilan écrit
+-- par un `distinct on` — la forme que portaient les deux générateurs : le 30/09/2026, avant
+-- l'extraction, il rendait exactement ces deux-là. Il ne voit pas le même choix écrit autrement :
+-- `generate_plan_cycle_for_user` le porte par un `order by submitted_at desc nulls last limit 1`, et
+-- c'est une copie connue, celle du plan, sur laquelle la définition partagée s'aligne.
 select is_empty(
   $$ select n.nspname || '.' || p.proname
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace

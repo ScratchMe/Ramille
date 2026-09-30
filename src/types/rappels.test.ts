@@ -543,6 +543,8 @@ describe('carteAttente', () => {
 
 // La réponse du serveur, relue (`ma_boucle_a_venir`). Une valeur inconnue ne devient jamais une
 // boucle : l'écran ne montre alors pas la carte, plutôt que de nommer un jour qu'il ne connaît pas.
+// Éprouvé en le cassant, le 30/09/2026 : une valeur inconnue lue comme `mensuel` (l'ancien repli de
+// l'écran) → « ne devine rien d'une valeur inconnue ou absente », seul.
 describe('lireLaBoucleAVenir', () => {
   it('rend les trois réponses du serveur telles quelles', () => {
     expect(lireLaBoucleAVenir('hebdo')).toBe('hebdo');

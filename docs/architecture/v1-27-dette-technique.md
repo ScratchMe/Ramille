@@ -1472,3 +1472,39 @@ félicitation d'un plan à zéro action sait déjà ne pas promettre (`felicitat
 décidé** : lire côté serveur si une boucle tourne pour cette personne — la condition de la boucle
 mensuelle vit dans `a_des_voyages_declares` et le filtre de `generate_extras_checkins` —, plutôt que
 de la recopier en TypeScript, ce qui ferait une paire de plus à tenir d'accord.
+
+### 12.23 Deux autres phrases promettent une boucle qui ne tourne pas (30/09/2026)
+
+**Relevé par la contre-lecture de §12.22**, lu dans le code, pas rejoué à l'écran. La décision du
+30/09/2026 ne vaut que pour la carte d'attente ; deux autres textes supposent encore qu'une boucle
+tourne :
+
+- **la carte des deux lieux** (`OUVERTURE_DES_DEUX_LIEUX`, `src/types/premier-parcours.ts`) — au
+  premier passage du profil sédentaire, un plan à zéro action fait arriver la barre, et c'est elle qui
+  prend la place de la carte d'attente. Elle dit « Ici, ton plan : l'action en cours, le point
+  régulier, ton cap. » et Ramille « Je note tes réponses dans ton suivi, au fil des saisons. »
+  (`RAMILLE.planEtSuivi`) — à quelqu'un qui n'aura ni action, ni point, ni réponse ;
+- **le pied d'un point répondu** (`piedDuPointRepondu`, `src/types/checkin.ts`) — « Prochain point :
+  lundi … » reste affiché le temps de la période, y compris quand un nouveau bilan vient d'arrêter la
+  boucle (§12.21).
+
+**Ce qui revient à la personne qui pilote** : ce que ces deux textes disent quand aucune boucle ne
+tourne. **Ce qui a changé techniquement** : l'écran du plan connaît désormais la boucle à venir
+(`ma_boucle_a_venir`, §12.22), donc les deux pourraient se dériver du même fait sans nouvelle lecture.
+
+### 12.24 `boucles_du_dernier_bilan` parcourt tous les bilans à chaque ouverture du plan (30/09/2026)
+
+**Relevé par la contre-lecture de §12.22, raisonné, pas mesuré.** La fonction est `security definer`
+avec un `set search_path`, donc Postgres ne l'intègre pas à la requête qui l'appelle ; et son filtre
+`p_user_id is null or d.user_id = p_user_id` empêche alors l'usage de l'index : `ma_boucle_a_venir`,
+appelée à chaque chargement du plan, lit tous les bilans complétés pour n'en garder que ceux d'une
+personne. Le générateur hebdomadaire calcule aussi la branche mensuelle de tout le monde avant de la
+jeter. **Négligeable aux volumes du 30/09/2026** (onze comptes avec un bilan).
+
+**Pourquoi ce n'est pas fait** : la voie la plus simple — retirer `security definer` et le
+`search_path`, que les deux appelants rendent inutiles puisqu'ils le sont déjà — permettrait
+l'intégration, mais ajoute un avertissement aux advisors (`function_search_path_mutable`), dont
+l'empreinte est tenue (`docs/exploitation/README.md` §8.7). **Condition de réouverture** : quand
+`assessments` compte plusieurs milliers de lignes, mesurer le temps de `ma_boucle_a_venir` sur le
+distant ; au-delà de quelques millisecondes, séparer l'appel d'une personne (un filtre sans `or`) de
+celui de tout le monde.

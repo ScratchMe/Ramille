@@ -230,7 +230,9 @@ export type Boucle = 'hebdo' | 'mensuel';
  * (`a_des_voyages_declares`) n'est recopiée nulle part ici.
  *
  * La feuille ouverte après « C'est noté » n'en a pas besoin : elle parle de l'action qu'on vient
- * d'engager (`boucleDeLAction`), et un plan sans boucle n'a pas d'action.
+ * d'engager (`boucleDeLAction`). Un plan sans boucle n'a pas d'action en régime établi — le
+ * profil sédentaire n'en reçoit aucune ; seul un plan dont la génération a échoué garde, jusqu'au
+ * passage du cron, les actions d'un bilan plus ancien, et la feuille peut alors promettre un lundi.
  */
 export type BoucleAVenir = Boucle | 'aucune';
 
@@ -346,7 +348,7 @@ export type CarteAttente = {
    * Aucun canal veut dire qu'aucune adresse ne peut recevoir le mot, donc qu'un compte est
    * précisément ce qui manque ; et ne rien dire (l'enregistrement raté, qui se répare au
    * prochain lancement) veut dire qu'il n'y a rien à réparer à la main. Écrit ainsi, il survit
-   * à une reformulation des six phrases.
+   * à une reformulation des sept phrases.
    */
   action: PorteDeLaCarte | null;
 };
@@ -361,7 +363,8 @@ export type CarteAttente = {
  * Le cas du refus est celui qu'on oublie : avec un compte, l'email prend le relais tout seul
  * et la carte le dit ; sans compte, elle nomme les deux portes **une fois**, sans insister.
  *
- * **Les six lignes du §3 sont ici, et la sixième a manqué longtemps** : préférence `email`
+ * **Les six lignes du §3 sont ici — plus une septième depuis le 30/09/2026, hors de son tableau :
+ * aucune boucle, aucune promesse** (`v1-27` §12.22). **La sixième a manqué longtemps** : préférence `email`
  * sans email possible, c'est-à-dire l'état par défaut de toute session anonyme. La carte
  * disait « On se retrouve ici lundi. » sans détail, donc rien nulle part n'apprenait qu'aucun
  * rappel ne partirait (A4-5). Le canal, lui, était juste des deux côtés : l'écart portait sur

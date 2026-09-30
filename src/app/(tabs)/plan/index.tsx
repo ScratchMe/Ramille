@@ -365,12 +365,13 @@ export default function Plan() {
   // Les rappels : ce que la carte d'attente affiche, et ce que la feuille présélectionne.
   // `null` tant qu'on ne sait pas — mieux vaut ne rien dire qu'annoncer un canal faux.
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
-  // `null` tant qu'on ne sait pas : le jour que Ramille nomme vient du libellé du poste
-  // domicile-travail, et une valeur par défaut nommerait le mauvais rythme (cf. le chargement).
+  // `null` tant qu'on ne sait pas : le jour que Ramille nomme vient du serveur
+  // (`ma_boucle_a_venir`), et une valeur par défaut nommerait le mauvais rythme — ou promettrait un
+  // point à qui n'a aucune boucle (cf. le chargement).
   const [boucle, setBoucle] = useState<BoucleAVenir | null>(null);
   // Le total du bilan courant, pour la seule phrase du plan qui l'affirme : la félicitation du
   // résiduel des sorties rares dit « sous le repère 2050 » (`felicitationDuPlanSansAction`). Lu dans
-  // la requête qui ramenait déjà le libellé du trajet ; `null` tant qu'on ne sait pas, et sur un
+  // `assessment_results`, dans le lot des lectures du plan ; `null` tant qu'on ne sait pas, et sur un
   // échec de lecture — la phrase retombe alors sur celle qui n'affirme rien.
   const [totalDuBilan, setTotalDuBilan] = useState<number | null>(null);
   const [permission, setPermission] = useState<Permission>('fermee');
@@ -875,9 +876,10 @@ export default function Plan() {
           historique: historiqueParBoucle(points, affiches),
           premierPlan,
         });
-        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si la lecture
-        // secondaire ci-dessus a échoué.
-        setRelectureEnEchec(Boolean(erreurResultat));
+        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des deux
+        // lectures secondaires ci-dessus a échoué — le total, ou la boucle, sans laquelle la carte
+        // d'attente ne se montre pas.
+        setRelectureEnEchec(Boolean(erreurResultat || erreurBoucle));
       } catch {
         // Une promesse rejetée — `loadReminderPrefs` ou `lirePermission`, qui touchent un
         // module natif et ne rendent pas d'erreur mais lèvent — laissait l'écran sur
@@ -1636,7 +1638,7 @@ export default function Plan() {
                       n'offrait aucun moyen de le faire : le seul chemin était l'icône de compte
                       en haut à droite, que rien n'explique.
 
-                      Un lien, et non la carte entière rendue `Pressable` : trois des six
+                      Un lien, et non la carte entière rendue `Pressable` : quatre des sept
                       variantes n'ont rien à offrir — elles deviendraient une cible morte — et un
                       `Pressable` à trois textes impose un `accessibilityLabel` qui les
                       recompose, ce que la règle T11 ne tolère qu'en dernier recours. Ici le
