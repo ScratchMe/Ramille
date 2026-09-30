@@ -1,6 +1,8 @@
 import React from 'react';
 // Source : src/components/bilan/chip.tsx — pilule (padding 18) ou équirépartie (padding 4, flex) ; 48 × 48 au
-// moins ; un choix (`radio` ou `checkbox`) dont l'état passe par `aria-checked`.
+// moins ; un choix (`radio` ou `checkbox`) dont l'état passe par `aria-checked`. Le libellé est centré sur
+// toutes ses lignes, pas seulement sa boîte (30/09/2026, `v1-27` §12.19) — un `<button>` le fait déjà par
+// défaut, la déclaration le rend explicite.
 export function Chip({ label, selected, onPress, role, flex, selectedStyle = 'solid', radius = 22, nestedBackground, accessibilityLabel }) {
   const solid = selected && selectedStyle === 'solid';
   // Posée dans un encart teinté, la puce non choisie prend le fond de la page : sur le même gris que
@@ -14,7 +16,7 @@ export function Chip({ label, selected, onPress, role, flex, selectedStyle = 'so
   const etat = role ? { role, 'aria-checked': !!selected } : { 'aria-pressed': !!selected };
   return (
     <button type="button" onClick={onPress} {...etat} aria-label={accessibilityLabel || label} data-appui="fond"
-      style={{ '--teinte-appuyee': appuye, minHeight: 48, minWidth: 48, padding: flex ? '12px 4px' : '12px 18px', border: '1.5px solid ' + border, borderRadius: radius, background: bg, color: solid ? 'var(--color-on-accent)' : 'var(--color-text)', fontFamily: 'var(--font-sans)', fontSize: 15, lineHeight: '20px', fontWeight: selected ? 600 : 400, flex: flex ? 1 : undefined, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+      style={{ '--teinte-appuyee': appuye, minHeight: 48, minWidth: 48, padding: flex ? '12px 4px' : '12px 18px', border: '1.5px solid ' + border, borderRadius: radius, background: bg, color: solid ? 'var(--color-on-accent)' : 'var(--color-text)', fontFamily: 'var(--font-sans)', fontSize: 15, lineHeight: '20px', fontWeight: selected ? 600 : 400, textAlign: 'center', flex: flex ? 1 : undefined, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
       {label}
     </button>
   );
