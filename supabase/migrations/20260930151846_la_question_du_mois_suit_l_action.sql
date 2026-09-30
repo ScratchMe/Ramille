@@ -46,9 +46,12 @@
 -- et la fonction départage déjà ce cas pour un poste ; un ordre fixe entre les deux postes l'aurait
 -- rompu. Recopier sa jointure ferait tomber le balayage du fichier 33.
 --
--- **Ne rejouer après elle aucune migration qui réécrit ce générateur** — `20260930105923`,
--- `20260930092838`, `20260927210247`, `20260927210200`, `20260927191009` et celles du 12/09/2026 :
--- chacune ramènerait la question du mois sur le poste le plus lourd sans que rien ne le signale.
+-- **Ne rejouer après elle aucune migration qui réécrit ce générateur, ni `20260912210000`** : les
+-- premières ramèneraient la question du mois sur le poste le plus lourd, la seconde recréerait la vue
+-- `analytics.checkins_consecutifs` sans la condition de poste — sans que rien ne le signale. Celles
+-- qui réécrivent le générateur se trouvent par un `grep -il 'function public.generate_extras_checkins'`
+-- sur `supabase/migrations/` (la casse varie d'un fichier à l'autre) : `20260930105923` et
+-- `20260930092838` en dernier.
 --
 -- **Réécrite depuis `pg_get_functiondef` du distant** (SUPABASE.md §1.5), le 30/09/2026, après
 -- `20260930105923` qui l'avait réécrite en dernier.
@@ -87,27 +90,33 @@ begin
   cross join lateral (
     -- L'action engagée décide d'abord (v1-27 §12.25). Si les deux postes en rendent une — deux
     -- cycles qui se chevauchent —, la plus récente gagne, comme la fonction le fait pour un poste.
+    select (
+      select v.poste
+        from (values ('leisure'::text), ('travel'::text)) as v(poste)
+        cross join lateral public.action_engagee_de_la_periode(a.user_id, v.poste, v_period_start) e
+        join public.plan_actions pa on pa.id = e.plan_action_id
+       order by pa.committed_at desc
+       limit 1
+    ) as poste_de_l_action
+  ) act
+  cross join lateral (
+    -- Sans action : qui sort rarement n'a déclaré, hors de son trajet, que ses voyages — c'est sur
+    -- eux que porte la boucle, même quand le résiduel des sorties pèse plus lourd ;
+    -- `boucles_du_dernier_bilan` garantit qu'il en a. Les autres : le poste le plus lourd.
     select coalesce(
-      (select v.poste
-         from (values ('leisure'::text), ('travel'::text)) as v(poste)
-         cross join lateral public.action_engagee_de_la_periode(a.user_id, v.poste, v_period_start) e
-         join public.plan_actions pa on pa.id = e.plan_action_id
-        order by pa.committed_at desc
-        limit 1),
-      -- Sans action : qui sort rarement n'a déclaré, hors de son trajet, que ses voyages — c'est sur
-      -- eux que porte la boucle, même quand le résiduel des sorties pèse plus lourd ;
-      -- `boucles_du_dernier_bilan` garantit qu'il en a. Les autres : le poste le plus lourd.
+      act.poste_de_l_action,
       case when ans.leisure_frequency = 'rarely' then 'travel' else ar.extras_poste end
     ) as poste
   ) p
   cross join lateral (
     -- Le mode ne se dit que sur le poste le plus lourd, seul que le bilan fige — et jamais sur le
     -- résiduel des sorties rares. Un résultat sans `extras_poste` (la colonne l'admet, aucune ligne
-    -- de production ne l'a) garde son libellé, comme avant.
+    -- de production ne l'a) garde son libellé, comme avant — sauf si une action décide du poste :
+    -- le libellé nomme alors ce poste, comme la question. Branche défensive, qu'aucun test n'exerce.
     select
       p.poste,
       case
-        when ar.extras_poste is null then ar.extras_poste_label
+        when ar.extras_poste is null and act.poste_de_l_action is null then ar.extras_poste_label
         when p.poste = ar.extras_poste and not (ans.leisure_frequency = 'rarely' and p.poste = 'leisure')
           then ar.extras_poste_label
         when p.poste = 'leisure' then 'Loisirs du week-end'
@@ -170,6 +179,9 @@ begin
   if has_table_privilege('anon', 'analytics.checkins_consecutifs', 'select')
      or has_table_privilege('authenticated', 'analytics.checkins_consecutifs', 'select') then
     raise exception 'analytics.checkins_consecutifs est lisible par un client : le privilège a bougé';
+  end if;
+  if pg_get_viewdef('analytics.checkins_consecutifs'::regclass) not like '%precedent.poste = p.poste%' then
+    raise exception 'analytics.checkins_consecutifs ne compte pas la série par poste : la vue installée n''est pas celle de cette migration';
   end if;
   if has_function_privilege('anon', 'public.generate_extras_checkins()', 'execute')
      or has_function_privilege('authenticated', 'public.generate_extras_checkins()', 'execute') then

@@ -725,7 +725,7 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
 **Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
 (C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement
 et en §9 comme indicateur de succès, `v1-02` §4 en donnait même la requête, et il n'avait jamais été
-calculé nulle part — la phrase du handoff n'a jamais été affichée à personne. Trois choses à
+calculé nulle part — la phrase du handoff n'a jamais été affichée à personne. Ce qu'il faut en
 connaître :
 
 - **La requête de `v1-02` §4 est périmée, et elle l'est devenue en silence.** Elle prend les **deux
@@ -2039,7 +2039,8 @@ même table `engagement_checkins`
 (contrainte `unique(user_id, loop_type, period_start)`), partent des libellés figés par le calcul
 (`recompute_assessment_results`) sur `assessment_results.commute_poste_label` /
 `.extras_poste_label` — que la boucle mensuelle remplace par le nom du poste, sans mode, quand elle
-interroge un autre poste que le plus lourd (sorties rares, action engagée) —, et sont plannifiées par `pg_cron` séparément (lundi 6h pour la boucle
+interroge un autre poste que le plus lourd (sorties rares, action engagée) ou le résiduel des
+sorties rares —, et sont plannifiées par `pg_cron` séparément (lundi 6h pour la boucle
 hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
 `docs/architecture/v1-02-boucle-engagement.md`.
 ### Conventions front notables → `FRONT.md`

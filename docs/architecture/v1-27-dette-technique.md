@@ -1548,7 +1548,7 @@ celui de tout le monde.
 ### 12.25 Une action engagée sur l'autre poste mensuel n'est jamais interrogée (30/09/2026)
 
 > **Fait le 30/09/2026, sur décision de la personne qui pilote** — la recommandation retenue : **la
-> question du mois suit l'action engagée** (`20260930150000_la_question_du_mois_suit_l_action.sql`).
+> question du mois suit l'action engagée** (`20260930151846_la_question_du_mois_suit_l_action.sql`).
 > Engagée sur les sorties ou les voyages, dans un cycle qui couvre le mois interrogé, l'action
 > décide du poste du point ; si deux cycles se chevauchent et portent chacun une action, la plus
 > récente gagne, comme `action_engagee_de_la_periode` le fait déjà pour un poste. Sans action, rien

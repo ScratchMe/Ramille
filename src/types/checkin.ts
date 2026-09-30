@@ -611,7 +611,7 @@ export type PointRepondu = { period_start: string; poste: string | null; reponse
  * d'un « oui » sur une action de sorties affichait « Deuxième mois de suite que tu sors autrement ».
  * Deux gestes différents ne font pas une habitude, donc le poste des deux périodes doit être celui du
  * point courant. La boucle hebdomadaire n'a qu'un poste et n'est pas filtrée. Jumelle SQL : la vue
- * `analytics.checkins_consecutifs` (`20260930150000`), qui applique la même condition ; un point
+ * `analytics.checkins_consecutifs` (`20260930151846`), qui applique la même condition ; un point
  * mensuel sans poste (d'avant la colonne) n'apparie rien, des deux côtés.
  */
 export function estDeuxiemeFoisDeSuite(

@@ -125,7 +125,7 @@ select set_config('test.suite_2',
 
 -- C : deux « oui » voisins, mais pas sur le même poste — août sur les voyages sans action, septembre
 -- sur une action de sorties. **La série se compte sur un même poste** (décidé le 30/09/2026, quand la
--- question du mois s'est mise à suivre l'action engagée, `20260930150000`) : la phrase nomme le poste
+-- question du mois s'est mise à suivre l'action engagée, `20260930151846`) : la phrase nomme le poste
 -- du mois, et deux gestes différents ne font pas une habitude. Jumelle client :
 -- `estDeuxiemeFoisDeSuite`. Éprouvé le même jour : la condition de poste retirée de la vue fait
 -- tomber cette assertion, et elle seule.

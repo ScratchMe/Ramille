@@ -1,5 +1,5 @@
 -- Tests pgTAP : la question du mois suit l'action engagée (30/09/2026, `v1-27` §12.25, migration
--- `20260930150000_la_question_du_mois_suit_l_action.sql`).
+-- `20260930151846_la_question_du_mois_suit_l_action.sql`).
 --
 -- **Le défaut** : la boucle mensuelle interrogeait le poste le plus lourd des sorties et des
 -- voyages — les voyages pour qui sort rarement — et ne cherchait l'action engagée que sur ce
@@ -36,7 +36,7 @@
 -- fois sur la stack locale, la migration réappliquée après chacune, **la suite pgTAP entière**
 -- rejouée à chaque fois :
 --   - la règle d'avant (le poste le plus lourd, sans regarder l'action) → ici J (poste, action,
---     question), K, N, O et la structure ; rien ailleurs ;
+--     question), K, N et O ; rien ailleurs ;
 --   - un ordre fixe entre les deux postes (les sorties d'abord) → O et la structure, seuls. C'est la
 --     première écriture de cette migration, et la contre-lecture du soir l'a trouvée ;
 --   - l'engagement le plus ancien au lieu du plus récent → O, seul ;
@@ -50,11 +50,17 @@
 --     mois du fichier 38 : c'est le cas courant, et il garde son mode ;
 --   - le cas sans `extras_poste` retiré → les profils A et B du fichier 04, seuls, dont les résultats
 --     écrits à la main n'en ont pas. B y a été épinglé le même soir : sans lui, les sorties rares
---     sans `extras_poste` changeaient de libellé sans que rien ne le voie.
+--     sans `extras_poste` changeaient de libellé sans que rien ne le voie. **Ce que rien n'éprouve** :
+--     que ce cas cède à une action engagée (le libellé suit alors la question). Aucune ligne de
+--     production n'a d'`extras_poste` nul, et une fixture qui l'écrirait avec une action éprouverait
+--     un état que la production ne produit pas.
 -- **Et la fixture de N remise dans son ordre d'avant** (le cycle ramené sur le mois écoulé **avant**
--- le nouveau bilan) fait tomber sa prémisse : la génération ne retrouve plus le cycle de la saison et
--- en crée un second. Les assertions de N passaient alors quand même, pour une autre raison que celle
--- écrite — c'est ce que la prémisse existe pour dire.
+-- le nouveau bilan) fait tomber sa prémisse le 30/09/2026 : la génération ne retrouve plus le cycle
+-- de la saison et en crée un second. Les assertions de N passaient alors quand même, pour une autre
+-- raison que celle écrite — c'est ce que la prémisse existe pour dire. **Ce résultat dépend du mois
+-- où la suite tourne** : la prémisse tombe quand c'est le premier ou le troisième mois d'une saison
+-- (septembre en est un premier) ; au deuxième — octobre, janvier, avril, juillet —, le mois écoulé
+-- ouvre la saison, le recul ne déplace rien, et la prémisse passe dans les deux ordres.
 begin;
 create extension if not exists pgtap with schema extensions;
 
