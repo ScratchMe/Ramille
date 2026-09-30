@@ -1354,6 +1354,16 @@ retouches acceptées, chacune avec sa date et sa raison, sur le modèle des tol�
 
 ### 12.19 Le libellé d'une puce sur deux lignes est aligné à gauche (29/09/2026)
 
+> **Fait le 30/09/2026, sur décision de la personne qui pilote**, prise sur une planche avant /
+> après rendue par l'export web réel (les vrais composants, seule différence : `textAlign: 'center'`
+> sur le libellé). Le relevé de la planche, qui répond à « toutes les puces du produit » : aux tailles
+> de texte par défaut, **deux** puces seulement passent sur deux lignes — « À mon prochain projet de
+> voyage » (l'échéance d'un voyage, à 360 comme à 390) et « Urbain dense » (le contexte, à 360) ; avec
+> le texte du système agrandi à 130 %, « Deux ou plus » (télétravail) s'y ajoute. Les listes de la
+> fréquence des sorties, de la part du trajet et des modes sont des rangées (`ChoiceRow`,
+> `ModeListItem`), pas des puces : elles restent alignées à gauche, et c'est voulu. La fiche du kit
+> (`docs/design/design-system/components/forms/Chip.jsx`) déclare le même alignement.
+
 **Relevé en livrant « Toutes les pistes »** (`v1-32`, hors de son mandat). Le canvas `v1-30` dessine
 le libellé d'une échéance qui passe sur deux lignes — « À mon prochain projet de voyage », à 390 —
 **centré** dans sa puce (planche B1) ; le dépôt l'aligne **à gauche**. `Chip`
