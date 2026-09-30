@@ -153,5 +153,10 @@ const styles = StyleSheet.create({
   // Même famille que le `minWidth: 0` des champs de saisie (cf. CLAUDE.md) : un enfant flex
   // qui ne peut pas contenir son contenu ne le signale pas, il le tronque.
   baseFlex: { paddingHorizontal: 4 },
-  label: { fontSize: 15, lineHeight: 20 },
+  // **Centré, parce que la boîte l'est** (décidé le 30/09/2026 sur une planche avant / après,
+  // `v1-27` §12.19) : `alignItems` centre la boîte du libellé, pas ses lignes. Sur une ligne, la
+  // puce paraissait centrée ; sur deux — « À mon prochain projet de voyage » à 390, « Urbain dense »
+  // à 360 —, ses lignes partaient à gauche à côté de voisines centrées. Le canvas `v1-30` (planche B1)
+  // la dessine centrée.
+  label: { fontSize: 15, lineHeight: 20, textAlign: 'center' },
 });

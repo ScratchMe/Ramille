@@ -1354,6 +1354,16 @@ retouches acceptées, chacune avec sa date et sa raison, sur le modèle des tol�
 
 ### 12.19 Le libellé d'une puce sur deux lignes est aligné à gauche (29/09/2026)
 
+> **Fait le 30/09/2026, sur décision de la personne qui pilote**, prise sur une planche avant /
+> après rendue par l'export web réel (les vrais composants, seule différence : `textAlign: 'center'`
+> sur le libellé). Le relevé de la planche, qui répond à « toutes les puces du produit » : aux tailles
+> de texte par défaut, **deux** puces seulement passent sur deux lignes — « À mon prochain projet de
+> voyage » (l'échéance d'un voyage, à 360 comme à 390) et « Urbain dense » (le contexte, à 360) ; avec
+> le texte du système agrandi à 130 %, « Deux ou plus » (télétravail) s'y ajoute. Les listes de la
+> fréquence des sorties, de la part du trajet et des modes sont des rangées (`ChoiceRow`,
+> `ModeListItem`), pas des puces : elles restent alignées à gauche, et c'est voulu. La fiche du kit
+> (`docs/design/design-system/components/forms/Chip.jsx`) déclare le même alignement.
+
 **Relevé en livrant « Toutes les pistes »** (`v1-32`, hors de son mandat). Le canvas `v1-30` dessine
 le libellé d'une échéance qui passe sur deux lignes — « À mon prochain projet de voyage », à 390 —
 **centré** dans sa puce (planche B1) ; le dépôt l'aligne **à gauche**. `Chip`
@@ -1400,7 +1410,59 @@ choisi — `selectedKey ?? cleDesReponses(answers)`, et la seconde liste ouverte
 répondu y vit —, plutôt que de recopier l'état. Le rejouer d'abord : le parcours réel sait ouvrir
 `/bilan?etape=…` sur un profil qui a un bilan (son étape « un re-bilan ouvert sur l'étape du mode »).
 
-### 12.21 La capture d'un échec du parcours réel ne sort pas de la CI (30/09/2026)
+### 12.21 Les deux boucles retombaient sur un ancien bilan (29/09/2026)
+
+> **Fait le 30/09/2026**, par `20260930092838_la_boucle_suit_le_dernier_bilan.sql`, **rejoué
+> d'abord** : `supabase/tests/database/38_la_boucle_suit_le_dernier_bilan.test.sql` faisait tomber
+> ses deux assertions du profil J1 sur les générateurs d'avant, et elles seules. Cinq mutations en
+> tête du test. **Aucun compte de production n'était concerné le jour du correctif** (mesuré : onze
+> comptes avec un bilan, aucun dont la boucle venait d'un bilan plus ancien que le dernier), donc
+> aucun point en attente à reprendre.
+
+**Relevé en écrivant les vues du lot 6** (hors de leur diff). `generate_commute_checkins` et
+`generate_extras_checkins` filtraient le bilan — « a-t-il un trajet ? » (`commute_poste_label is not
+null`), « a-t-il une base déclarée ? » (`leisure_frequency <> 'rarely'` ou un voyage) — **avant** le
+`distinct on` qui garde le plus récent. Le filtre écartait le nouveau bilan, et le `distinct on`
+retombait sur l'ancien : quelqu'un qui refaisait son bilan sans trajet domicile-travail recevait
+chaque lundi la question d'un trajet qu'il venait de dire ne plus faire, sous un plan bâti sur le
+nouveau bilan qui n'en portait plus aucune action ; même chose chaque mois pour qui passait à
+« sorties rares, aucun voyage ».
+
+**Le correctif** choisit d'abord le dernier bilan valide de chacun, **puis** filtre. « Dernier bilan
+valide » est ce que `generate_plan_cycle_for_user` lit — `completed`, un résultat calculé, le plus
+récent par `submitted_at` —, donc le plan et les deux boucles partent du même bilan. **Deux
+conditions précèdent le tri, et ce sont celles du plan** : le statut — un bilan retiré (C4.7) n'est
+jamais le dernier — et un résultat calculé — un bilan passé en `completed` dont le calcul a échoué
+non plus. Balayé le
+même jour sur le distant : aucune autre fonction ni vue ne filtre avant de choisir le dernier bilan
+(`mettre_a_jour_le_contexte`, `retirer_le_bilan` et `analytics.user_segments` ne trient que sur le
+statut). **Ces trois-là, et l'écran du plan, ne désignent donc pas le même bilan que le plan et les
+boucles dans un seul état** : un dernier bilan `completed` sans résultat, qu'ils prennent quand le
+plan et les boucles le passent. L'état n'est pas nouveau — le plan le traitait déjà ainsi — et ce
+correctif ne le crée ni ne le règle ; relevé par la contre-lecture du 30/09/2026, laissé tel quel.
+
+### 12.22 La carte d'attente promet un signe à qui n'a aucune boucle (30/09/2026)
+
+**Relevé par la contre-lecture du correctif de §12.21**, raisonné sur le code, pas rejoué à l'écran.
+L'écran du plan décide de la boucle à nommer sur le seul poste domicile-travail
+(`src/app/(tabs)/plan/index.tsx` : `commute_poste_label ? 'hebdo' : 'mensuel'`), donc toute personne
+sans trajet se voit promettre « Je te fais signe au début du mois prochain » (ou « On se retrouve ici
+au début du mois prochain », sans rappel) — **y compris quand la boucle mensuelle ne tourne pas** :
+aucun trajet, sorties rares, aucun voyage déclaré. C'est le profil sédentaire de C2.5, que `CLAUDE.md`
+dit être le cas par défaut et pas un cas de bord. Le signe promis n'arrive jamais.
+
+**Ce n'est pas le correctif de §12.21 qui l'a créé** : c'était déjà vrai pour un premier bilan de ce
+profil. Il l'étend à qui refait son bilan dans ce sens — et, avant lui, la promesse ne tenait pour
+ceux-là que parce que l'ancien bilan continuait de poser la question.
+
+**Ce qui revient à la personne qui pilote** : ce que Ramille dit quand aucune boucle ne porte. La
+félicitation d'un plan à zéro action sait déjà ne pas promettre (`felicitationDuPlanSansAction`,
+`promettreLePoint: false`) ; la carte d'attente, non. **La direction technique, une fois le texte
+décidé** : lire côté serveur si une boucle tourne pour cette personne — la condition de la boucle
+mensuelle vit dans `a_des_voyages_declares` et le filtre de `generate_extras_checkins` —, plutôt que
+de la recopier en TypeScript, ce qui ferait une paire de plus à tenir d'accord.
+
+### 12.23 La capture d'un échec du parcours réel ne sort pas de la CI (30/09/2026)
 
 **Relevé sur la CI de [#299](https://github.com/ScratchMe/Ramille/pull/299).** L'étape de la
 suppression du compte a rougi une fois, et le journal disait l'étape, les requêtes refusées et le
