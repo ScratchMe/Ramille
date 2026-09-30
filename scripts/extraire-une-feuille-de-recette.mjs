@@ -30,6 +30,22 @@ const TABLEAUX = {
 
 const echapper = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/**
+ * La longueur du texte qu'on lira, balises posées par ce script exclues : c'est elle qui décide si une
+ * citation peut passer à la ligne. Un compte et non un filtre — le texte est déjà échappé
+ * (`echapper`), donc tout `<` qui reste est une balise d'ici, et rien de ce qui sort n'en dépend.
+ */
+function longueurVisible(html) {
+  let vu = '';
+  let dansUneBalise = false;
+  for (const car of html) {
+    if (car === '<') dansUneBalise = true;
+    else if (car === '>') dansUneBalise = false;
+    else if (!dansUneBalise) vu += car;
+  }
+  return vu.trim().length;
+}
+
 /** `**`, `*`, `` ` ``, les liens et les guillemets — imbriqués compris — vers leurs balises. */
 function enLigne(texte) {
   let t = echapper(texte)
@@ -48,8 +64,7 @@ function enLigne(texte) {
       sortie.push(null);
     } else if (car === '»' && pile.length) {
       const i = pile.pop();
-      const nu = sortie.slice(i + 1).filter(Boolean).join('').replace(/<[^>]+>/g, '').trim();
-      sortie[i] = nu.length > 26 ? '<q class="long">' : '<q>';
+      sortie[i] = longueurVisible(sortie.slice(i + 1).filter(Boolean).join('')) > 26 ? '<q class="long">' : '<q>';
       sortie.push('</q>');
     } else {
       sortie.push(car);
