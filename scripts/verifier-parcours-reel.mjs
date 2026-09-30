@@ -1992,16 +1992,21 @@ try {
     'la barre d’onglets a disparu au bilan qui suit le retrait du seul bilan : le premier parcours a recommencé'
   );
 
+  etape('cycliste — la carte d’attente nomme le lundi, que le serveur a dit');
   // **La carte d'attente nomme le lundi, et c'est le serveur qui le dit** (30/09/2026, `v1-27`
   // §12.22). Le plan lit la boucle à venir par `ma_boucle_a_venir`, et le client relit ses trois
   // valeurs (`lireLaBoucleAVenir`) : une valeur renommée d'un seul côté, ou la fonction absente de la
   // base, ferait disparaître la carte **sans une erreur** — aucune autre garde ne la rend. Le cycliste
-  // a un trajet, donc un point le lundi ; et c'est le seul endroit du parcours où la carte se montre :
-  // à son premier plan, la carte des deux lieux prend sa place, et ici aucune carte d'ouverture n'est
-  // plus due. La ligne de Ramille dépend du canal (« Je te fais signe » ou « On se retrouve ici »),
-  // pas le jour.
+  // a un trajet, donc un point le lundi. **La carte des deux lieux l'occupe d'abord** : le cycliste
+  // ne l'a jamais refermée (le premier plan est passé devant, puis ses bilans ont été retirés), et
+  // elle remplace la carte d'attente (`cartesDuPlan`). La première version de cette étape l'oubliait
+  // et a échoué au premier rejeu, le 30/09/2026 — c'est donc aussi la preuve que refermer la carte des
+  // deux lieux rend la place à celle qui attendait. La ligne de Ramille dépend du canal (« Je te fais
+  // signe » ou « On se retrouve ici »), pas le jour.
   await bouton('Voir ce que je peux faire');
   await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  await attendreTexte('Deux endroits, pas plus.');
+  await page.getByText('Compris', { exact: true }).first().click();
   await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
 
   await rpc('delete_my_account', sobre.jeton);
@@ -2013,7 +2018,8 @@ try {
       `canal, compte supprimé — puis le cycliste, ${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, ` +
       `barre d'onglets venue sans « Compris », puis son nouveau bilan en voiture où « Ton premier plan » ` +
       `passe devant la carte des deux lieux, puis ses deux bilans retirés — le plan reparti du précédent, ` +
-      `puis la racine et la marque locale effacée. Chaque choix rendu répond à son groupe nommé.`
+      `puis la racine et la marque locale effacée, et la carte d'attente qui nomme le lundi. Chaque choix ` +
+      `rendu répond à son groupe nommé.`
   );
 } catch (erreur) {
   try {

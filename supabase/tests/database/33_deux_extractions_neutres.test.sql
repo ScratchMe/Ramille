@@ -188,7 +188,7 @@ select ok(
 
 -- **Depuis le 30/09/2026, l'appel vit dans `boucles_du_dernier_bilan`**, la seule définition de
 -- « qui reçoit quelle boucle », que la boucle mensuelle et l'écran du plan lisent tous deux
--- (`20260930120000`, `v1-27` §12.22). L'assertion suit la chaîne : la boucle passe par cette
+-- (`20260930105923`, `v1-27` §12.22). L'assertion suit la chaîne : la boucle passe par cette
 -- fonction, et cette fonction demande la base déclarée à `a_des_voyages_declares`.
 select ok(
   regexp_replace(pg_get_functiondef('public.generate_extras_checkins()'::regprocedure),

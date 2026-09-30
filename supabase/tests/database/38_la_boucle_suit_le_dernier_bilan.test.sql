@@ -27,7 +27,7 @@
 --   - le résultat retiré du choix du dernier bilan (la jointure de `dernier`) → les deux assertions
 --     de J4, et elles seules : son bilan sans résultat redevenait le dernier, puis tombait au filtre.
 --
--- **Rejouées le même jour après l'extraction** (`20260930120000`, `v1-27` §12.22) : le choix du dernier
+-- **Rejouées le même jour après l'extraction** (`20260930105923`, `v1-27` §12.22) : le choix du dernier
 -- bilan ne vit plus dans chaque générateur mais dans `boucles_du_dernier_bilan`, que les deux lisent.
 -- Les cinq mutations y ont été posées à nouveau. Trois tombent comme avant — le statut (J3), le tri
 -- (J1 et J2), le résultat (J4). Les deux filtres remontés dans le choix font désormais tomber **les

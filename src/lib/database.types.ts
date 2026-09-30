@@ -1164,7 +1164,7 @@ export type Database = {
       }
       // Lot 6 — les vues de l'administration (20260929210541)
       boucle_de_la_personne: { Args: { p_user_id: string }; Returns: string }
-      // La carte d'attente sait si une boucle tourne (20260930120000)
+      // La carte d'attente sait si une boucle tourne (20260930105923)
       boucles_du_dernier_bilan: {
         Args: { p_user_id?: string }
         Returns: { assessment_id: string; loop_type: string; user_id: string }[]
@@ -1275,7 +1275,7 @@ export type Database = {
         Args: { p_maintenant: string }
         Returns: boolean
       }
-      // La carte d'attente sait si une boucle tourne (20260930120000)
+      // La carte d'attente sait si une boucle tourne (20260930105923)
       ma_boucle_a_venir: { Args: never; Returns: string }
       mettre_a_jour_le_contexte: {
         Args: {

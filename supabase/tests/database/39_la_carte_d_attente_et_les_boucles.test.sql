@@ -1,5 +1,5 @@
 -- Tests pgTAP : la carte d'attente sait si une boucle tourne (30/09/2026, `v1-27` §12.22, migration
--- `20260930120000_la_carte_d_attente_sait_si_une_boucle_tourne.sql`).
+-- `20260930105923_la_carte_d_attente_sait_si_une_boucle_tourne.sql`).
 --
 -- **Le défaut** : l'écran du plan décidait de la boucle à nommer sur le seul poste
 -- domicile-travail, donc toute personne sans trajet lisait « Je te fais signe au début du mois

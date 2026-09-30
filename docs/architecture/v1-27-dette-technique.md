@@ -1447,12 +1447,13 @@ correctif ne le crée ni ne le règle ; relevé par la contre-lecture du 30/09/2
 > boucle ne tourne, Ramille ne promet rien — « Ton plan est là, reviens quand tu veux. », sans jour,
 > sans canal et sans porte (`RAMILLE.attenteSansBoucle`, branche `aucune` de `carteAttente`). **Dans
 > la direction écrite plus bas** : l'écran lit `ma_boucle_a_venir()`
-> (`20260930120000_la_carte_d_attente_sait_si_une_boucle_tourne.sql`), qui lit
+> (`20260930105923_la_carte_d_attente_sait_si_une_boucle_tourne.sql`), qui lit
 > `boucles_du_dernier_bilan` — la seule définition de « qui reçoit quelle boucle », désormais lue aussi
 > par les deux générateurs, qui ne portent plus leur propre choix du dernier bilan. Rien n'est recopié
 > en TypeScript. Gardes : pgTAP `39` (six profils, l'accord avec les générateurs, cinq mutations), le
-> test `38` rejoué sur la fonction partagée, et `rappels.test.ts` (tous les états des rappels, deux
-> mutations).
+> test `38` rejoué sur la fonction partagée, `rappels.test.ts` (tous les états des rappels, deux
+> mutations) et le parcours réel, où le cycliste lit la ligne du lundi. Appliquée au distant le même
+> jour : **un compte de production sur onze** était dans ce cas (`docs/exploitation/README.md` §7 bis).
 
 **Relevé par la contre-lecture du correctif de §12.21**, raisonné sur le code, pas rejoué à l'écran.
 L'écran du plan décide de la boucle à nommer sur le seul poste domicile-travail
