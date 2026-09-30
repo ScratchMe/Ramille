@@ -1502,9 +1502,11 @@ de la recopier en TypeScript, ce qui ferait une paire de plus à tenir d'accord.
 > (`carteDuSuiviSansPoint`). **Le parcours réel a gagné un troisième profil, sans aucune boucle**
 > (la contre-lecture avait relevé que les deux premiers en ont chacun une, donc que l'écran qui passe
 > les boucles aux dérivations n'était gardé par rien) : il lit la carte des deux lieux, la carte
-> d'attente et le suivi sans point répondu. **Ce qu'aucun profil ne joue** : la carte d'un point
-> répondu dont la boucle s'est arrêtée — la dérivation et la carte sont gardées par Jest, l'appel de
-> l'écran (`laBoucleDuPointTourne`) par rien.
+> d'attente et le suivi sans point répondu. **Ce qu'aucun profil ne joue**, et qu'aucune autre suite
+> ne garde : la carte d'un point répondu dont la boucle s'est arrêtée (la dérivation et la carte sont
+> gardées par Jest, l'appel de l'écran — `laBoucleDuPointTourne` — par rien) ; la ligne de relecture
+> sur une réponse illisible, dans le plan comme dans le suivi ; et le suivi qui garde la dernière
+> liste lue sur un échec de cette seule lecture (relevé par la seconde contre-lecture, corrigé).
 
 **Relevé par la contre-lecture de §12.22**, lu dans le code, pas rejoué à l'écran. La décision du
 30/09/2026 ne vaut que pour la carte d'attente ; deux autres textes supposent encore qu'une boucle
@@ -1530,7 +1532,8 @@ boucle d'**un** point tourne. D'où `mes_boucles_a_venir`, qui l'a remplacé.*
 **Relevé par la contre-lecture de §12.22, raisonné, pas mesuré.** La fonction est `security definer`
 avec un `set search_path`, donc Postgres ne l'intègre pas à la requête qui l'appelle ; et son filtre
 `p_user_id is null or d.user_id = p_user_id` empêche alors l'usage de l'index : `ma_boucle_a_venir`
-— `mes_boucles_a_venir` depuis le soir même (§12.23) —, appelée à chaque chargement du plan, lit tous les bilans complétés pour n'en garder que ceux d'une
+— `mes_boucles_a_venir` depuis le soir même (§12.23) —, appelée à chaque chargement du plan (et du
+suivi, depuis §12.23), lit tous les bilans complétés pour n'en garder que ceux d'une
 personne. Le générateur hebdomadaire calcule aussi la branche mensuelle de tout le monde avant de la
 jeter. **Négligeable aux volumes du 30/09/2026** (onze comptes avec un bilan).
 
@@ -1548,8 +1551,10 @@ celui de tout le monde.
 production n'est dans ce cas le 30/09/2026 (les trois actions engagées hors trajet sont des actions
 de voyage, et leur boucle mensuelle porte sur les voyages). La boucle mensuelle interroge **un**
 poste — le plus lourd des sorties et des voyages, les voyages pour qui sort rarement — et cherche
-l'action engagée sur ce poste-là seulement (`action_engagee_de_la_periode`, §5). Quelqu'un
-dont les sorties pèsent plus que les voyages et qui s'engage sur un voyage ne sera donc jamais
+l'action engagée sur ce poste-là seulement (`action_engagee_de_la_periode`, §5). Les deux sens
+existent : quelqu'un dont les sorties pèsent plus que les voyages et qui s'engage sur un voyage, et
+— le plus probable — quelqu'un dont les voyages pèsent plus et qui s'engage sur ses sorties, soit
+exactement le profil de la recette web (pistes de loisirs en rangs 7 et 8). Aucun des deux ne sera
 interrogé sur cette action — alors que la feuille ouverte après « C'est noté » lui promet
 « Au début du mois prochain, je reviens te demander si tu l'as faite » (`boucleDeLAction`), et la
 carte du premier plan « un point régulier te demandera si tu l'as faite ».

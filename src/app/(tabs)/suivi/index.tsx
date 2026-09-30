@@ -210,7 +210,7 @@ export default function Suivi() {
 
       // On ne repasse pas par « Chargement… » en revenant : l'écran garde ce qu'il montrait
       // jusqu'à l'arrivée des données.
-      setState(
+      setState((precedent) =>
         bilans.data.length === 0
           ? { status: 'empty' }
           : {
@@ -220,7 +220,14 @@ export default function Suivi() {
               // Lecture secondaire : son échec laisse `null` — donc pas de carte plutôt qu'une carte
               // vide — et se dit dans la ligne de relecture, comme sur le plan.
               decisions: decisions.ok ? decisions.data : null,
-              boucles: boucles.ok ? boucles.data : null,
+              // **Un échec garde la dernière liste lue**, comme le plan : sans quoi un profil sans
+              // boucle relirait « Je note tes réponses ici » le temps d'une panne de cette seule
+              // lecture — l'état d'avant défait sans rien savoir (`carteDuSuiviSansPoint`).
+              boucles: boucles.ok
+                ? boucles.data
+                : precedent.status === 'ok'
+                  ? precedent.boucles
+                  : null,
             }
       );
       setRelectureEnEchec(!decisions.ok || !boucles.ok);

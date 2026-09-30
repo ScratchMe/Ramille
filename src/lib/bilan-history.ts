@@ -128,18 +128,6 @@ export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> 
 }
 
 /**
- * Ce que la personne a décidé, saison après saison (C2.7, point 4).
- *
- * Le suivi ne lisait **jamais** `plan_cycles` ni `plan_actions` : le seul choix personnel que le
- * produit demande — une action, des jours — ne laissait aucune trace passé la saison. Deux sources,
- * parce qu'un engagement peut avoir été relâché : la ligne vivante du cycle, et l'archive de C2.2.
- * `decisionsParSaison` en tire une ligne par cycle.
- *
- * **`plan_cycles!plan_actions_plan_cycle_id_fkey` est obligatoire** : `plan_actions` a deux clés
- * étrangères vers `plan_cycles` depuis C2.2 (`carried_over_from`), donc PostgREST refuse la requête
- * sans le nom de celle qu'on suit — le typecheck est le seul garde qui l'attrape.
- */
-/**
  * Les boucles de points qui tournent pour la personne (`mes_boucles_a_venir`, 30/09/2026) — ce que
  * le suivi lit pour savoir s'il peut parler de réponses (`carteDuSuiviSansPoint`). Une réponse
  * illisible est un échec de lecture, jamais une liste vide : une liste vide dit « aucune boucle »,
@@ -152,6 +140,18 @@ export async function loadBouclesAVenir(): Promise<Lecture<LoopType[]>> {
   return boucles === null ? { ok: false } : { ok: true, data: boucles };
 }
 
+/**
+ * Ce que la personne a décidé, saison après saison (C2.7, point 4).
+ *
+ * Le suivi ne lisait **jamais** `plan_cycles` ni `plan_actions` : le seul choix personnel que le
+ * produit demande — une action, des jours — ne laissait aucune trace passé la saison. Deux sources,
+ * parce qu'un engagement peut avoir été relâché : la ligne vivante du cycle, et l'archive de C2.2.
+ * `decisionsParSaison` en tire une ligne par cycle.
+ *
+ * **`plan_cycles!plan_actions_plan_cycle_id_fkey` est obligatoire** : `plan_actions` a deux clés
+ * étrangères vers `plan_cycles` depuis C2.2 (`carried_over_from`), donc PostgREST refuse la requête
+ * sans le nom de celle qu'on suit — le typecheck est le seul garde qui l'attrape.
+ */
 export async function loadDecisionsEngagees(): Promise<Lecture<DecisionDeSaison[]>> {
   const [vivantes, archivees] = await Promise.all([
     supabase

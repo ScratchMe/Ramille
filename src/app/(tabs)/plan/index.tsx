@@ -769,13 +769,14 @@ export default function Plan() {
 
         // **Les boucles ne se devinent pas sur un échec de lecture.** Le repli n'est jamais neutre :
         // `mensuel` nommait « le 1er du mois » à quelqu'un dont le point s'ouvre le lundi, et
-        // « aucune » tairait un point qui viendra. On préfère ne pas les nommer du tout — `boucles`
-        // reste `null` : ni carte d'attente ni carte des deux lieux, et un point répondu garde son
-        // rendez-vous (`laBoucleDuPointTourne`) — plutôt que de remplacer tout le plan par un écran
-        // d'erreur pour une lecture secondaire. La ligne de relecture dit que l'écran n'est pas tout
-        // à fait à jour. Une réponse inconnue se lit de même (`lireLesBouclesAVenir`).
-        // Une réponse illisible est un échec de lecture comme un autre : elle laisse `null` et
-        // allume la ligne de relecture plus bas, plutôt que de se taire.
+        // « aucune » tairait un point qui viendra. On préfère ne pas les deviner — `boucles` garde la
+        // dernière liste lue, et reste `null` si aucune ne l'a été : ni carte d'attente ni carte des
+        // deux lieux, et un point répondu garde son rendez-vous (`laBoucleDuPointTourne`) —, plutôt
+        // que de remplacer tout le plan par un écran d'erreur pour une lecture secondaire. La ligne
+        // de relecture dit que l'écran n'est pas tout à fait à jour. Une réponse inconnue se lit de
+        // même (`lireLesBouclesAVenir`).
+        // Une réponse illisible est un échec de lecture comme un autre : elle ne remplace pas la
+        // dernière liste lue, et allume la ligne de relecture plus bas, plutôt que de se taire.
         const bouclesLues = erreurBoucle ? null : lireLesBouclesAVenir(bouclesAVenir);
         if (bouclesLues !== null) setBoucles(bouclesLues);
         setTotalDuBilan(erreurResultat ? null : (resultat?.total_co2_kg_year ?? null));

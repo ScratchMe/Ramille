@@ -255,8 +255,8 @@ const BOUCLES_LISIBLES: Record<LoopType, true> = { commute: true, extras: true }
  * **Une liste qui porte une valeur inconnue rend `null` en entier**, et non la liste sans elle :
  * une boucle inconnue serait sinon lue comme arrêtée, et la carte d'un point répondu perdrait sa
  * promesse sans raison. Les écrans traitent `null` **comme un échec de lecture**, ligne de relecture
- * comprise (`FRONT.md` §2.11) : pas de carte d'attente ni de carte des deux lieux, et aucune boucle
- * déclarée arrêtée.
+ * comprise (`FRONT.md` §2.11) : ils gardent la dernière liste lue, et tant qu'aucune ne l'a été, ni
+ * carte d'attente ni carte des deux lieux, et aucune boucle déclarée arrêtée.
  */
 export function lireLesBouclesAVenir(valeur: unknown): LoopType[] | null {
   if (!Array.isArray(valeur)) return null;

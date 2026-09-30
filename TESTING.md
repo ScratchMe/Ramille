@@ -870,7 +870,7 @@ qu'il annonce, et des cases d'option sans groupe.
   impossible — la page ne peut pas défiler sous le choix, le focus n'est pas pris — est un échec : sans
   défilement possible, « rien n'a défilé » ne prouverait rien. La mesure elle-même vit dans
   `scripts/mesurer-un-choix.mjs`, partagée avec le parcours réel.
-- **Le parcours réel vérifie les groupes à chaque étape** — du questionnaire des deux profils, de la
+- **Le parcours réel vérifie les groupes à chaque étape** — du questionnaire de chaque profil, de la
   feuille d'engagement et de « Toi » : toute case d'option a pour groupe **le plus proche** un
   `radiogroup` nommé, toute case à cocher un `group` nommé, et **aucun `radiogroup` ne coche deux
   cases**. Les deux dernières règles viennent de ce qu'une précision vit **dans** le groupe de l'option

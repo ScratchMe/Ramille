@@ -303,7 +303,7 @@ ne pas compter dessus.
 **La seconde feuille, écrite le 21/09/2026, change de principe** : elle ne rejoue pas un parcours,
 elle ne joue que **ce qui est neuf depuis la séance précédente**, en posant qu'il n'y a pas de
 régression sur le reste. Le pari est que les gardes automatiques couvrent le chemin nominal — le
-parcours réel le rejoue à chaque PR sur deux profils — et que le temps humain vaut mieux sur ce qui
+parcours réel le rejoue à chaque PR sur les profils de `TESTING.md` §2.6 — et que le temps humain vaut mieux sur ce qui
 n'a **jamais** été parcouru à la main. Son prix est écrit dans son en-tête : une régression sur un
 écran ancien que ni la CI ni la feuille ne regardent lui échappera.
 

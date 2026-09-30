@@ -2,12 +2,13 @@
 --
 -- `ma_boucle_a_venir()` (`20260930105923`) résumait les boucles d'une personne en une seule valeur —
 -- `hebdo` si la boucle hebdomadaire tourne, `mensuel` si seule la mensuelle tourne, `aucune` sinon —
--- parce que la carte d'attente n'annonce que le prochain contact. Deux autres textes du plan ont
--- besoin de savoir **quelle** boucle tourne, décision de la personne qui pilote le même jour :
+-- parce que la carte d'attente n'annonce que le prochain contact. Trois autres textes ont besoin de
+-- savoir **quelle** boucle tourne, décision de la personne qui pilote le même jour :
 --
 --   * la carte des deux lieux ne nomme « le point régulier » que si une boucle tourne ;
 --   * la carte d'un point répondu ne promet plus de prochain point quand **sa** boucle ne tourne
---     plus — et `hebdo` ne dit pas si la mensuelle tourne aussi.
+--     plus — et `hebdo` ne dit pas si la mensuelle tourne aussi ;
+--   * dans le suivi, la carte « aucun point répondu » ne parle de réponses que si une boucle tourne.
 --
 -- D'où `public.mes_boucles_a_venir()`, qui rend les boucles elles-mêmes, dans le vocabulaire de
 -- `engagement_checkins.loop_type` (`commute`, `extras`) — aucune valeur nouvelle, donc aucune
@@ -17,8 +18,8 @@
 --
 -- **`ma_boucle_a_venir()` est supprimée, pas doublée** : plus aucun appel ne l'émet, et une fonction
 -- qu'aucun appel n'émet se lit « morte » et non « réservée » (la leçon de `p_replace`, C2.2). Aucun
--- build natif ne l'a appelée : elle a vécu une journée, sans build entre-temps (au plus un tous les
--- deux jours). Le web la quitte au déploiement qui suit cette migration, appliquée juste avant la
+-- build natif ne l'a appelée : elle a vécu quelques heures, et le dernier build EAS date du
+-- 14/09/2026 (relevé dans la liste des builds du projet le 30/09/2026). Le web la quitte au déploiement qui suit cette migration, appliquée juste avant la
 -- fusion ; jusque-là, et **dans tout onglet resté ouvert sur l'ancien bundle jusqu'à son
 -- rechargement**, l'écran retombe sur son repli — pas de carte d'attente, la ligne de relecture.
 -- Rien de faux ne s'affiche, et c'est ce qui a fait préférer la suppression dans la même migration

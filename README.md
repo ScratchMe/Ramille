@@ -41,8 +41,9 @@ Trois suites, et la règle plutôt qu'une liste qui se périme au fichier suivan
   le répertoire.
 - **Le parcours réel** — le chemin nominal de bout en bout (questionnaire, restitution, plan,
   engagement, point répondu, suivi, suppression du compte) contre une vraie stack Supabase, la base
-  relue après chaque écriture, sur **deux profils** : celui de la recette, et un cycliste dont le
-  plan ne porte aucune action. C'est ce qui garde les écrans et les requêtes, que les deux autres
+  relue après chaque écriture, sur les profils décrits en `TESTING.md` §2.6 — celui de la recette, un
+  cycliste dont le plan ne porte aucune action, et depuis le 30/09/2026 un profil sans aucune boucle
+  de points. C'est ce qui garde les écrans et les requêtes, que les deux autres
   suites ne voient pas.
 
 Plusieurs de ces tests n'épinglent pas un comportement mais une **décision**, pour qu'elle ne

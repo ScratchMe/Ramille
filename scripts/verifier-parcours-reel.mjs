@@ -30,6 +30,11 @@
 // lien vers les pistes. Il tourne dans un **contexte de navigateur neuf**, parce que « premier » veut
 // dire premier **sur cet appareil** (C5.7) et que les marques vivent dans le stockage.
 //
+// **Et un troisième depuis le 30/09/2026, sans aucune boucle de points** (`v1-27` §12.22 et §12.23) :
+// ni trajet, ni sorties régulières, ni voyage. C'est le seul où ni le plan ni le suivi ne peuvent
+// promettre un point, et le seul qui éprouve l'écran passant des boucles vides aux dérivations —
+// la section 12, plus bas.
+//
 // **Ce qu'il ne fait pas, et ce n'est pas un oubli** : il ne couvre ni les états d'erreur — c'est le
 // travail de `verifier-etats-export.mjs` — ni les exclusions de cartes en général, qui vivent depuis
 // le 27/09/2026 dans `cartesDuPlan` (`src/types/plan.ts`, `v1-27` §4) et y sont épinglées sur
@@ -358,10 +363,10 @@
 // profil compris, donc rien d'autre du parcours ne garde cette lecture. Le témoin, sur le même commit,
 // passe de bout en bout. La **première** version de l'étape, qui oubliait la carte des deux lieux, est
 // tombée au même endroit sans mutation : c'est ce qui l'a corrigée. *(Le soir même, « à elle seule »
-// a cessé d'être vrai : la carte des deux lieux du premier profil dépend désormais de la même
-// lecture, et `lireLaBoucleAVenir` a été remplacée par `lireLesBouclesAVenir`, `v1-27` §12.23.)*
+// a cessé d'être vrai : la carte des deux lieux du second profil — le cycliste, dès son premier
+// plan — dépend désormais de la même lecture, et `lireLaBoucleAVenir` a été remplacée par `lireLesBouclesAVenir`, `v1-27` §12.23.)*
 //
-// **Et trois le soir, sur les appels de l'écran que Jest ne voit pas** (`v1-27` §12.23, relevé par la
+// **Et quatre le soir, sur les appels de l'écran que Jest ne voit pas** (`v1-27` §12.23, relevé par la
 // contre-lecture : les dérivations sont testées, pas ce que l'écran leur passe). Un rejeu `parcours`
 // par mutation, après un témoin passé de bout en bout sur les trois profils :
 //
@@ -370,6 +375,7 @@
 //   | B1 — `ouvertureDesDeuxLieux` reçoit `actions: true` | le cycliste, à la carte des deux lieux de fin : « … le point régulier et ta saison. … » n'apparaît jamais |
 //   | B2 — elle reçoit `boucle: true` | « sans boucle — le plan… » : « Ici, ton plan : ta saison. … » n'apparaît jamais |
 //   | B3 — le suivi passe `null` à `carteDuSuiviSansPoint` | « sans boucle — le suivi… » : « Je garde tes bilans ici, au fil des saisons. » n'apparaît jamais |
+//   | B4 — la carte d'attente reçoit `mensuel` quand la liste est vide (seconde contre-lecture) | « sans boucle — le plan… » : « Ton plan est là, reviens quand tu veux. » n'apparaît jamais — la seule assertion qui voit la branche `aucune` de l'écran |
 //
 // Ce qu'aucune ne peut voir : `laBoucleDuPointTourne` dans l'écran du plan — aucun profil n'a de point
 // répondu dont la boucle s'est arrêtée. La carte qui la reçoit est gardée par
