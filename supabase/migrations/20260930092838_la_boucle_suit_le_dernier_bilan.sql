@@ -10,7 +10,15 @@
 -- Le correctif choisit d'abord le dernier bilan valide de chacun, **puis** filtre. « Dernier bilan
 -- valide » veut dire ce que `generate_plan_cycle_for_user` lit : `completed` — un bilan retiré n'en
 -- est pas un (C4.7) —, un résultat calculé, le plus récent par `submitted_at`. Les deux boucles et le
--- plan partent ainsi du même bilan, et le statut est le seul filtre qui précède le tri.
+-- plan partent ainsi du même bilan : **deux conditions précèdent le tri, et ce sont celles du plan** —
+-- le statut, et un résultat calculé. Un bilan passé en `completed` dont le calcul a échoué n'est donc
+-- pas le dernier, pour les boucles comme pour le plan.
+--
+-- **Ne rejouer après elle aucune migration antérieure qui réécrit ces deux générateurs** — en
+-- particulier `20260927191009`, `20260927210200` et `20260927210247`, que la consigne de la dernière
+-- invite à rejouer ensemble : chacune réinstalle le filtre avant le choix, en silence. Les rejouer,
+-- c'est rejouer ensuite celle-ci. (En-tête précisé après l'application au distant ; les corps des
+-- deux fonctions, eux, sont ceux qui y sont installés.)
 --
 -- Réécrites depuis `pg_get_functiondef` sur le distant (SUPABASE.md §1.5), à ce seul changement près.
 -- Garde : `supabase/tests/database/38_la_boucle_suit_le_dernier_bilan.test.sql`.

@@ -10,11 +10,12 @@
 -- voyage ». Relevé le 29/09/2026 en écrivant les vues du lot 6, corrigé le lendemain.
 --
 -- **Le dernier bilan valide** est celui que `generate_plan_cycle_for_user` retient : `completed`,
--- résultat calculé, le plus récent par `submitted_at`. Un bilan retiré (C4.7) n'en est pas un : le
--- choix se fait sur le statut **avant** le tri, et c'est le seul filtre qui le précède.
+-- résultat calculé, le plus récent par `submitted_at`. **Deux conditions précèdent le tri, et ce sont
+-- celles du plan** : le statut — un bilan retiré (C4.7) n'est jamais le dernier, profil J3 — et un
+-- résultat calculé — un bilan passé en `completed` dont le calcul a échoué non plus, profil J4.
 --
 -- **Éprouvé en le cassant, le 30/09/2026** (TESTING.md §1.1) : rejoué d'abord sur les générateurs
--- d'avant, il faisait tomber les deux assertions du profil J1, et elles seules. Puis quatre
+-- d'avant, il faisait tomber les deux assertions du profil J1, et elles seules. Puis cinq
 -- mutations des générateurs corrigés, retirées ensuite :
 --   - le filtre du trajet remonté dans le choix du dernier bilan (l'état d'avant, boucle
 --     hebdomadaire seule) → « J1 : pas de question sur le trajet », seule ;
@@ -22,14 +23,16 @@
 --     question du mois », seule ;
 --   - le statut retiré du choix du dernier bilan, puis filtré après lui → les deux assertions de J3,
 --     dont le bilan retiré redevenait le dernier ;
---   - le tri inversé (`submitted_at asc`) → les deux assertions de J2 et les deux de J1.
+--   - le tri inversé (`submitted_at asc`) → les deux assertions de J2 et les deux de J1 ;
+--   - le résultat retiré du choix du dernier bilan (la jointure de `dernier`) → les deux assertions
+--     de J4, et elles seules : son bilan sans résultat redevenait le dernier, puis tombait au filtre.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(11);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────────────────
--- Trois profils, deux bilans chacun. L'ancien est reculé de trente jours après l'insertion : une
+-- Quatre profils, deux bilans chacun. L'ancien est reculé de trente jours après l'insertion : une
 -- fixture ne choisit pas `submitted_at` à l'insert (CLAUDE.md, C2.2).
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
@@ -39,7 +42,8 @@ select u, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticate
 from unnest(array[
   'e3800000-0000-0000-0000-000000000001'::uuid,  -- J1 : ne fait plus de trajet, ne sort plus
   'e3800000-0000-0000-0000-000000000002',        -- J2 : témoin — le nouveau bilan a tout
-  'e3800000-0000-0000-0000-000000000003'         -- J3 : le nouveau bilan est retiré
+  'e3800000-0000-0000-0000-000000000003',        -- J3 : le nouveau bilan est retiré
+  'e3800000-0000-0000-0000-000000000004'         -- J4 : le calcul du nouveau bilan a échoué
 ]) u;
 
 insert into public.assessments (id, user_id, status)
@@ -49,37 +53,45 @@ values
   ('e3810000-0000-0000-0000-0000000000b1', 'e3800000-0000-0000-0000-000000000002', 'completed'),
   ('e3810000-0000-0000-0000-0000000000b2', 'e3800000-0000-0000-0000-000000000002', 'completed'),
   ('e3810000-0000-0000-0000-0000000000c1', 'e3800000-0000-0000-0000-000000000003', 'completed'),
-  ('e3810000-0000-0000-0000-0000000000c2', 'e3800000-0000-0000-0000-000000000003', 'completed');
+  ('e3810000-0000-0000-0000-0000000000c2', 'e3800000-0000-0000-0000-000000000003', 'completed'),
+  ('e3810000-0000-0000-0000-0000000000d1', 'e3800000-0000-0000-0000-000000000004', 'completed'),
+  ('e3810000-0000-0000-0000-0000000000d2', 'e3800000-0000-0000-0000-000000000004', 'completed');
 
 update public.assessments set submitted_at = now() - interval '30 days'
 where id in ('e3810000-0000-0000-0000-0000000000a1', 'e3810000-0000-0000-0000-0000000000b1',
-             'e3810000-0000-0000-0000-0000000000c1');
+             'e3810000-0000-0000-0000-0000000000c1', 'e3810000-0000-0000-0000-0000000000d1');
 
 -- Le profil qui reçoit les deux boucles : un trajet en voiture thermique, des sorties chaque
--- semaine en voiture. C'est l'ancien bilan de J1 et de J3, et le nouveau de J2.
+-- semaine en voiture. C'est l'ancien bilan de J1, de J3 et de J4, et le nouveau de J2.
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
   commute_distance_km, commute_mode, commute_car_engine, leisure_frequency, leisure_mode,
   leisure_distance_bracket, leisure_car_engine, household_vehicles, zone_type, tc_access)
 select id, true, 5, 20, 'voiture', 'thermique', 'weekly', 'voiture', '15_30', 'thermique', '1',
        'periurbain', 'bon'
 from unnest(array['e3810000-0000-0000-0000-0000000000a1'::uuid, 'e3810000-0000-0000-0000-0000000000b2',
-                  'e3810000-0000-0000-0000-0000000000c1']) id;
+                  'e3810000-0000-0000-0000-0000000000c1', 'e3810000-0000-0000-0000-0000000000d1']) id;
 
 -- Le profil qui n'en reçoit aucune : aucun trajet régulier, sorties rares, aucun voyage. C'est le
--- nouveau bilan de J1 et de J3, et l'ancien de J2.
+-- nouveau bilan de J1, de J3 et de J4, et l'ancien de J2.
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, leisure_frequency,
   household_vehicles, zone_type, tc_access)
 select id, false, 'rarely', '1', 'urbain_dense', 'bon'
 from unnest(array['e3810000-0000-0000-0000-0000000000a2'::uuid, 'e3810000-0000-0000-0000-0000000000b1',
-                  'e3810000-0000-0000-0000-0000000000c2']) id;
+                  'e3810000-0000-0000-0000-0000000000c2', 'e3810000-0000-0000-0000-0000000000d2']) id;
 
--- Dans l'ordre des dates : chaque recalcul régénère le plan sur le bilan le plus récent calculé.
+-- Dans l'ordre des dates. Le plan de chacun reste bâti sur son **premier** recalcul — `now()` est
+-- figé dans la transaction, donc la garde d'idempotence renvoie au second —, et ce n'est pas ce que
+-- ce fichier éprouve : les générateurs ne lisent le plan qu'à travers une action engagée, et aucune
+-- ne l'est ici.
 select public.recompute_assessment_results('e3810000-0000-0000-0000-0000000000a1');
 select public.recompute_assessment_results('e3810000-0000-0000-0000-0000000000b1');
 select public.recompute_assessment_results('e3810000-0000-0000-0000-0000000000c1');
+select public.recompute_assessment_results('e3810000-0000-0000-0000-0000000000d1');
 select public.recompute_assessment_results('e3810000-0000-0000-0000-0000000000a2');
 select public.recompute_assessment_results('e3810000-0000-0000-0000-0000000000b2');
 select public.recompute_assessment_results('e3810000-0000-0000-0000-0000000000c2');
+-- Le nouveau bilan de J4 n'est pas calculé : c'est l'état que laisse un calcul qui échoue après le
+-- passage en `completed` (CLAUDE.md, « La soumission écrit `in_progress` d'abord »).
 
 -- J3 retire son nouveau bilan, par le seul chemin du produit — sous sa propre session.
 select set_config('role', 'authenticated', true);
@@ -103,6 +115,11 @@ select is(
   (select status from public.assessments where id = 'e3810000-0000-0000-0000-0000000000c2'),
   'withdrawn',
   'prémisse : le nouveau bilan de J3 est retiré'
+);
+
+select ok(
+  not exists (select 1 from public.assessment_results where assessment_id = 'e3810000-0000-0000-0000-0000000000d2'),
+  'prémisse : le nouveau bilan de J4 est complété sans résultat'
 );
 
 select public.generate_commute_checkins();
@@ -159,6 +176,26 @@ select results_eq(
   $$ select ar.extras_poste_label
      from public.assessment_results ar where ar.assessment_id = 'e3810000-0000-0000-0000-0000000000c1' $$,
   'J3 : de même pour la question du mois'
+);
+
+-- ── J4 — un bilan sans résultat n'est pas le dernier : les boucles suivent le plan ────────
+-- Le plan lit le dernier bilan **calculé** ; les boucles aussi, sans quoi elles se tairaient sur un
+-- bilan que le plan ignore.
+
+select results_eq(
+  $$ select trip_label from public.engagement_checkins
+     where user_id = 'e3800000-0000-0000-0000-000000000004' and loop_type = 'commute' $$,
+  $$ select ar.commute_poste_label
+     from public.assessment_results ar where ar.assessment_id = 'e3810000-0000-0000-0000-0000000000d1' $$,
+  'J4 : le bilan sans résultat ne compte pas, la question du trajet vient du bilan calculé'
+);
+
+select results_eq(
+  $$ select trip_label from public.engagement_checkins
+     where user_id = 'e3800000-0000-0000-0000-000000000004' and loop_type = 'extras' $$,
+  $$ select ar.extras_poste_label
+     from public.assessment_results ar where ar.assessment_id = 'e3810000-0000-0000-0000-0000000000d1' $$,
+  'J4 : de même pour la question du mois'
 );
 
 select * from finish();

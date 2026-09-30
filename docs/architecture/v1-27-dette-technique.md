@@ -1414,7 +1414,7 @@ répondu y vit —, plutôt que de recopier l'état. Le rejouer d'abord : le par
 
 > **Fait le 30/09/2026**, par `20260930092838_la_boucle_suit_le_dernier_bilan.sql`, **rejoué
 > d'abord** : `supabase/tests/database/38_la_boucle_suit_le_dernier_bilan.test.sql` faisait tomber
-> ses deux assertions du profil J1 sur les générateurs d'avant, et elles seules. Quatre mutations en
+> ses deux assertions du profil J1 sur les générateurs d'avant, et elles seules. Cinq mutations en
 > tête du test. **Aucun compte de production n'était concerné le jour du correctif** (mesuré : onze
 > comptes avec un bilan, aucun dont la boucle venait d'un bilan plus ancien que le dernier), donc
 > aucun point en attente à reprendre.
@@ -1430,8 +1430,34 @@ nouveau bilan qui n'en portait plus aucune action ; même chose chaque mois pour
 
 **Le correctif** choisit d'abord le dernier bilan valide de chacun, **puis** filtre. « Dernier bilan
 valide » est ce que `generate_plan_cycle_for_user` lit — `completed`, un résultat calculé, le plus
-récent par `submitted_at` —, donc le plan et les deux boucles partent du même bilan, et le statut
-est le seul filtre qui précède le tri : un bilan retiré (C4.7) n'est jamais le dernier. Balayé le
+récent par `submitted_at` —, donc le plan et les deux boucles partent du même bilan. **Deux
+conditions précèdent le tri, et ce sont celles du plan** : le statut — un bilan retiré (C4.7) n'est
+jamais le dernier — et un résultat calculé — un bilan passé en `completed` dont le calcul a échoué
+non plus. Balayé le
 même jour sur le distant : aucune autre fonction ni vue ne filtre avant de choisir le dernier bilan
 (`mettre_a_jour_le_contexte`, `retirer_le_bilan` et `analytics.user_segments` ne trient que sur le
-statut).
+statut). **Ces trois-là, et l'écran du plan, ne désignent donc pas le même bilan que le plan et les
+boucles dans un seul état** : un dernier bilan `completed` sans résultat, qu'ils prennent quand le
+plan et les boucles le passent. L'état n'est pas nouveau — le plan le traitait déjà ainsi — et ce
+correctif ne le crée ni ne le règle ; relevé par la contre-lecture du 30/09/2026, laissé tel quel.
+
+### 12.22 La carte d'attente promet un signe à qui n'a aucune boucle (30/09/2026)
+
+**Relevé par la contre-lecture du correctif de §12.21**, raisonné sur le code, pas rejoué à l'écran.
+L'écran du plan décide de la boucle à nommer sur le seul poste domicile-travail
+(`src/app/(tabs)/plan/index.tsx` : `commute_poste_label ? 'hebdo' : 'mensuel'`), donc toute personne
+sans trajet se voit promettre « Je te fais signe au début du mois prochain » (ou « On se retrouve ici
+au début du mois prochain », sans rappel) — **y compris quand la boucle mensuelle ne tourne pas** :
+aucun trajet, sorties rares, aucun voyage déclaré. C'est le profil sédentaire de C2.5, que `CLAUDE.md`
+dit être le cas par défaut et pas un cas de bord. Le signe promis n'arrive jamais.
+
+**Ce n'est pas le correctif de §12.21 qui l'a créé** : c'était déjà vrai pour un premier bilan de ce
+profil. Il l'étend à qui refait son bilan dans ce sens — et, avant lui, la promesse ne tenait pour
+ceux-là que parce que l'ancien bilan continuait de poser la question.
+
+**Ce qui revient à la personne qui pilote** : ce que Ramille dit quand aucune boucle ne porte. La
+félicitation d'un plan à zéro action sait déjà ne pas promettre (`felicitationDuPlanSansAction`,
+`promettreLePoint: false`) ; la carte d'attente, non. **La direction technique, une fois le texte
+décidé** : lire côté serveur si une boucle tourne pour cette personne — la condition de la boucle
+mensuelle vit dans `a_des_voyages_declares` et le filtre de `generate_extras_checkins` —, plutôt que
+de la recopier en TypeScript, ce qui ferait une paire de plus à tenir d'accord.
