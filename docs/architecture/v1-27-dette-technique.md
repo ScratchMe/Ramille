@@ -1399,3 +1399,29 @@ de l'écart 12 de `v1-31` (une donnée arrivée après le montage), sur un autre
 choisi — `selectedKey ?? cleDesReponses(answers)`, et la seconde liste ouverte aussi quand le mode
 répondu y vit —, plutôt que de recopier l'état. Le rejouer d'abord : le parcours réel sait ouvrir
 `/bilan?etape=…` sur un profil qui a un bilan (son étape « un re-bilan ouvert sur l'étape du mode »).
+
+### 12.21 Les deux boucles retombaient sur un ancien bilan (29/09/2026)
+
+> **Fait le 30/09/2026**, par `20260930092838_la_boucle_suit_le_dernier_bilan.sql`, **rejoué
+> d'abord** : `supabase/tests/database/38_la_boucle_suit_le_dernier_bilan.test.sql` faisait tomber
+> ses deux assertions du profil J1 sur les générateurs d'avant, et elles seules. Quatre mutations en
+> tête du test. **Aucun compte de production n'était concerné le jour du correctif** (mesuré : onze
+> comptes avec un bilan, aucun dont la boucle venait d'un bilan plus ancien que le dernier), donc
+> aucun point en attente à reprendre.
+
+**Relevé en écrivant les vues du lot 6** (hors de leur diff). `generate_commute_checkins` et
+`generate_extras_checkins` filtraient le bilan — « a-t-il un trajet ? » (`commute_poste_label is not
+null`), « a-t-il une base déclarée ? » (`leisure_frequency <> 'rarely'` ou un voyage) — **avant** le
+`distinct on` qui garde le plus récent. Le filtre écartait le nouveau bilan, et le `distinct on`
+retombait sur l'ancien : quelqu'un qui refaisait son bilan sans trajet domicile-travail recevait
+chaque lundi la question d'un trajet qu'il venait de dire ne plus faire, sous un plan bâti sur le
+nouveau bilan qui n'en portait plus aucune action ; même chose chaque mois pour qui passait à
+« sorties rares, aucun voyage ».
+
+**Le correctif** choisit d'abord le dernier bilan valide de chacun, **puis** filtre. « Dernier bilan
+valide » est ce que `generate_plan_cycle_for_user` lit — `completed`, un résultat calculé, le plus
+récent par `submitted_at` —, donc le plan et les deux boucles partent du même bilan, et le statut
+est le seul filtre qui précède le tri : un bilan retiré (C4.7) n'est jamais le dernier. Balayé le
+même jour sur le distant : aucune autre fonction ni vue ne filtre avant de choisir le dernier bilan
+(`mettre_a_jour_le_contexte`, `retirer_le_bilan` et `analytics.user_segments` ne trient que sur le
+statut).
