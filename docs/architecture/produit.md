@@ -56,7 +56,8 @@ l'app depuis `/plan` — c'est le comportement attendu d'une racine à onglets, 
 être « corrigé » par quelqu'un qui le prendrait pour une navigation manquante.
 
 L'increment précédent, `v1-10-connexion-et-rappels.md` (06/09/2026), est livré pour ses
-chantiers A à D, F **et E** ; il ne reste que G (renommage GitHub). Il portait la connexion
+chantiers A à D, F **et E**, et G — le renommage du dépôt en `ScratchMe/Ramille` — l'a été le
+17/09/2026 (`docs/exploitation/depot-public.md`). Il portait la connexion
 par lien sans mot de passe, les rappels par push, et deux correctifs livrés qui les
 conditionnaient — l'étalement du pic d'envoi du lundi, et la purge des sessions anonymes qui
 supprimait sur l'**âge** du compte alors que `v1-04` §3 décrit une purge sur l'**inactivité**
@@ -346,8 +347,35 @@ tout : `docs/exploitation/README.md` §8.5 bis.
 20/09/2026), pour que activation, rétention, cohorte et churn ne soient pas redéfinis maison — et
 surtout pour que les chiffres qui sortiront d'ici se comparent à ceux d'ailleurs.
 
-Rien n'est chiffré ni ordonné ici : ce paragraphe existe pour que la demande ne se perde pas entre
-la fin du lot 5 et le lot 4.
+**Et la surface est livrée le 29/09/2026** (`20260929210541_les_vues_de_l_administration.sql`) :
+quatre vues `analytics.*`, une par indicateur décidé — l'entonnoir par cohorte, la rétention par
+cohorte, les états des rappels, les départs par mois —, et les quatre requêtes à enregistrer dans le
+SQL editor, qui ne peuvent pas l'être par une migration — **elles restent à créer, à la main, par
+la personne qui pilote**. Où les lire, ce qui doit alerter et ce qu'elles ne disent pas :
+`docs/exploitation/README.md` §8.5 ter. Trois choses que la construction a fixées, et qu'il faut
+connaître avant d'en lire un chiffre :
+
+- **chaque notion garde sa dérivation** — l'étape et les semaines tenues de `cohorte_de`, le
+  signe de vie de `dernier_signe_de_vie`, le régime de `regime_de_rappel` —, si bien qu'un compte
+  vivant et un compte purgé de la même semaine s'additionnent ; la rétention, qui lit le signe de
+  vie semaine par semaine, en recopie les deux sources, et la fonction et la vue se nomment l'une
+  l'autre. La seule fonction neuve, `boucle_de_la_personne`, écrit la règle « la boucle
+  hebdomadaire quand elle existe » — **qui existe encore**, c'est-à-dire dont un point a été posé
+  ces trois dernières semaines, sinon la mensuelle si elle tourne. Lire « qui a existé » figeait le
+  régime de qui avait arrêté sa boucle (son seul bilan retiré) : compté actif pour toujours
+  (contre-lecture du 29/09/2026). Qui n'a plus de boucle qui tourne n'a plus de régime, et son seul
+  départ lisible est la purge — la décision du 27/09/2026, appliquée ;
+- **la rétention divise par toute la cohorte d'arrivée**, purgés compris, comme le glossaire le
+  demande — sans eux, une cohorte paraîtrait plus fidèle en vieillissant, à mesure que la purge en
+  retire les sessions muettes. Ce que la purge a effacé de l'activité est signalé semaine par
+  semaine (`borne_basse`) plutôt que deviné. **Une sortie n'est pas couverte** : un compte supprimé
+  quitte sa cohorte, parce que la suppression ne garde que son mois — la garder par semaine
+  d'arrivée serait une décision sur ce qu'on garde ;
+- **deux indicateurs du glossaire ne sont pas calculés, et c'est une limite et non un oubli.**
+  L'**activation** demande un moment « aha » et une fenêtre, qui se trouvent en regardant ce que les
+  personnes restées ont fait tôt : c'est une décision de produit, et à nos volumes une corrélation
+  sur quelques dizaines de comptes. Le **taux** de churn divise par l'effectif au début du mois, que
+  le régime ne sait pas reconstruire à une date passée — les départs sont donc des comptes.
 
 **Et un increment s'est ouvert le 18/09/2026, avant le lot 4 : le rythme des bilans**
 ([`v1-19-rythme-des-bilans.md`](v1-19-rythme-des-bilans.md)). Il naît de la première recette du
@@ -409,15 +437,17 @@ premier plan, les actions passent avant le cap, qui dit « par an » ; l'onglet 
 et les contrôles sous le doigt se voient ; les cibles passent à 48 ; et, sur web, un choix coché
 s'annonce enfin coché — c'était le seul défaut critique de l'audit.
 
-**Trois chantiers en sortent, et aucun n'est fini dans cette livraison** :
+**Trois chantiers en sortent, et aucun n'est fini dans cette livraison** (le premier l'a été depuis) :
 
 - **finir de synchroniser le kit** (décision n° 11) — la personne qui pilote a refusé de le réduire,
   et a préféré qu'il reste un miroir du code. La livraison a synchronisé les fiches des composants
   qu'elle a changés ; le reste est daté et chiffré en `v1-29` §5, avec la commande qui le refait :
   des composants absents (40 fichiers sur 67 à la définition qui y est écrite, dont les quatre que
   la livraison a créés), un catalogue d'écrans du handoff V1, des écarts antérieurs relevés en
-  chemin, et une session de design pour le faire. **À faire avant la prochaine session de design**,
-  qui partirait sinon d'un kit faux ;
+  chemin, et une session de design pour le faire. **Fini le 27/09/2026** (`v1-29` §5, lots 1 à 6) :
+  chaque composant a sa fiche, le kit complet est renvoyé vers Claude Design, le catalogue des
+  écrans du handoff est retiré plutôt que tenu, et `scripts/verifier-miroir-du-kit.mjs` fait rougir
+  la CI sur un composant ajouté sans fiche ;
 - **le thème sombre, après le lancement** (n° 8) : sa liste de reprise est en `v1-29` §6.1, build EAS
   compris ;
 - **le paysage**, écart WCAG 1.3.4 **assumé pour la V1** (n° 9), et ce que le lever coûte : `v1-29`
@@ -485,8 +515,8 @@ propriétaire (§5), les quatre jetons de couleur (§6), les accessoires de sais
 s'invoque comme skill (`ramille-design`, `.claude/skills/ramille-design/SKILL.md`). Ce n'est pas une
 source de vérité — en cas d'écart, le code et `CLAUDE.md` gagnent —, mais **ce n'est plus une
 photographie non plus : depuis le 24/09/2026, il se synchronise** (`v1-29` §5). Une PR qui change un
-jeton ou une règle le met à jour ; ce qui reste à rattraper, dont son catalogue qui reprend des
-écrans du handoff V1 qui n'existent plus (mot de passe), est le chantier décrit au §3. Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
+jeton ou une règle le met à jour, et le rattrapage décrit au §3 est fini depuis le 27/09/2026 — son
+catalogue d'écrans du handoff V1, qui montrait encore un mot de passe, en est retiré. Le plan précédent, `v1-07-audit-facteurs-et-suivi.md`
 §4 — audit du 04/09/2026, 7 étapes (facteurs d'émission faux → boucle d'engagement cassée → suivi
 dans la durée qui manque) — est entièrement livré. Son §1 corrige deux erreurs de chiffre documentées ailleurs
 comme des choix assumés : l'API Impact CO2 **distingue bien** court/moyen/long-courrier (la

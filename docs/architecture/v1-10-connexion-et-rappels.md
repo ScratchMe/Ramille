@@ -1,7 +1,9 @@
 # v1-10 — Connexion par lien, rappels par push
 
-**Date** : 06/09/2026. **Statut** : plan d'increment, **exécuté sauf le chantier G**
-(renommage du dépôt GitHub). Ce document décrit l'increment dans son ensemble tel qu'il a été
+**Date** : 06/09/2026. **Statut** : plan d'increment, **exécuté en entier** — le chantier G
+(renommage du dépôt GitHub) l'a été le 17/09/2026, avec l'ouverture du dépôt au public
+(`docs/exploitation/depot-public.md`) ; ce statut a dit « sauf le chantier G » jusqu'au
+29/09/2026. Ce document décrit l'increment dans son ensemble tel qu'il a été
 pensé le 06/09 ; il n'acte aucune implémentation et n'est pas réécrit après coup. Le chantier
 E (push) a reçu son propre document, `v1-12-rappels.md`, et a été vérifié sur appareil le
 09/09/2026 — c'est là qu'il faut lire ce qui a réellement été construit, pas ici.

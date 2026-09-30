@@ -1325,6 +1325,14 @@ supprimerait pas la cause, ça la rendrait plus rare — donc plus chère à att
 
 ### 12.18 Le hook des migrations livrées ne voit qu'Edit et Write (27/09/2026)
 
+> **Fait le 29/09/2026**, dans la direction écrite ci-dessous : `scripts/verifier-migrations-livrees.mjs`
+> en CI, travail `checks`, et le journal d'exceptions `supabase/retouches-de-migrations-livrees.json`.
+> Deux choix que ce paragraphe ne faisait pas : la comparaison part de la **copie de travail** et
+> non de `HEAD` — une retouche au shell pas encore commise se voit aussi en local ; la base de fusion
+> avec `origin/main`, elle, était déjà dans la direction (`<base>...HEAD`) — ; et une exception porte
+> l'**empreinte** du contenu accepté, donc elle décrit une retouche et jamais un fichier. Neuf mutations en tête de son test ;
+> le chemin de l'exception est en `SUPABASE.md` §2.3.
+
 **Relevé en l'écrivant.** `scripts/proteger-les-migrations-livrees.mjs` refuse à Edit et à Write une
 migration présente dans `origin/main`. Une modification par le shell (`sed -i`, une redirection,
 `git mv`), par un humain ou dans une session qui n'a pas chargé `.claude/settings.json` passe sans
@@ -1361,6 +1369,16 @@ lignes dira si le centre vaut pour toutes. Le correctif, lui, tient en une ligne
 'center'` sur le libellé.
 
 ### 12.20 L'étape des sorties ne relit pas un préremplissage arrivé après son montage (29/09/2026)
+
+> **Fait le 29/09/2026, le même jour**, dans la direction écrite plus bas, et **rejoué d'abord** —
+> mais par un test d'écran et non par le parcours réel (`src/tests/ecrans/etape-des-sorties.test.tsx`) :
+> une réponse arrivée après le montage y est un changement de `answers` qui ne passe pas par
+> `update`, ce que le parcours ne sait provoquer que sur une adresse tapée. Les deux tests du
+> préremplissage tardif tombaient sur le code d'avant. La rangée cochée se lit désormais sur la
+> réponse, mode et covoiturage, comme sur l'étape du trajet ; la seconde liste s'ouvre sur la
+> réponse **ou** sur un geste, et un choix fait pendant qu'elle est ouverte l'y épingle — sans quoi
+> choisir « Train » sous un « Bus » prérempli la refermerait sous le doigt. Quatre mutations en tête
+> du test.
 
 **Relevé par la seconde contre-lecture de l'écran du mode** (`v1-31`, hors de son diff) — **raisonné
 sur le code, pas rejoué**. `src/components/bilan/steps/leisure-detail.tsx` tient deux états locaux,

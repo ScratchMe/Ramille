@@ -350,6 +350,13 @@ nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux
   ses sections 1 à 7 et 9 à 13 ne font que mettre en file, dans la transaction annulée, et se
   valident seules (relevé par la contre-lecture de C4.2, 28/09/2026 — l'en-tête du fichier
   renvoyait ici avant que cette ligne n'existe).
+- `37_vues_de_l_administration`, **mais seulement à partir du 20/06/2027** : ses cohortes
+  fabriquées naissent il y a 300 et 420 jours (et W+14, qui n'a que des purgés), soit avant le premier
+  compte de la production (le 09/09/2026) — jusqu'au jour où ces dates le rattrapent. Ses assertions sur les totaux (états des
+  rappels, départs) se lisent en écart à un relevé fait avant les fixtures et tiennent partout ;
+  celles par semaine d'arrivée croiseraient alors de vrais comptes. Reculer les dates ne suffit pas :
+  au-delà de douze mois, la purge des `app_open` rend toute la cohorte « borne basse », et
+  l'assertion 7 ne garde plus rien.
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.
@@ -1052,3 +1059,27 @@ Les règles, chacune payée pendant l'écriture :
    mesure, immobile sur dix images), et la mutation qu'elle garde tombe comme avant.
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.
+
+### 2.15 Les migrations livrées, comparées à `main` à chaque PR
+
+**Une migration livrée ne se modifie pas, et jusqu'au 29/09/2026 seul un hook de Claude Code le
+rappelait** — à Edit et à Write, et à eux seuls (`v1-27` §12.18). pgTAP ne pouvait rien y voir : il
+reconstruit la base depuis les fichiers, donc un fichier livré réécrit y passe au vert, et c'est le
+jour d'une restauration qu'on découvre que le fichier ne décrit plus ce que la base a vécu.
+
+`scripts/verifier-migrations-livrees.mjs`, dans le travail `checks`, compare la copie de travail à
+la **base de fusion** avec `origin/main` et refuse toute migration qui y existait et qui est
+modifiée, supprimée ou renommée. Trois choses à savoir avant d'y toucher :
+
+- **la base de fusion, pas la pointe** : une migration livrée sur `main` après le départ de la
+  branche se lirait sinon « supprimée » par elle. Sur une PR, `HEAD` est la fusion que GitHub
+  prépare, donc la base de fusion est la pointe de `main` qu'elle fusionne ; sur un push sur `main`,
+  il n'y a rien à comparer, et la sortie le dit ;
+- **`fetch-depth: 0` sur le `checkout` de `checks`**, sans quoi `origin/main` n'existe pas — et la
+  garde sort alors en 1, jamais en 0 : on ne sait plus ce qui est livré ;
+- **l'exception est une retouche, pas un fichier** : `supabase/retouches-de-migrations-livrees.json`
+  porte l'empreinte du contenu accepté, donc la retouche suivante rougit. Le chemin complet, et qui
+  la décide : `SUPABASE.md` §2.3.
+
+Le test (`scripts/verifier-migrations-livrees.test.ts`) joue le script dans de vrais dépôts git
+jetables, commit de fusion d'une PR compris ; neuf mutations datées en tête.

@@ -51,7 +51,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
+      # **`fetch-depth: 0`, pour la garde des migrations livrées plus bas** : elle compare la copie
+      # de travail à la base de fusion avec `origin/main`, que le clone à un commit par défaut ne
+      # porte pas. Sans lui, elle sort en 1 — elle ne sait plus ce qui est livré, donc elle refuse.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -104,6 +109,13 @@ jobs:
       # un fichier que C5.2 avait remplacé par une pile, dans son paragraphe d'orientation.
       # Ni npm ci ni export requis — le script ne lit que le système de fichiers.
       - run: node scripts/verifier-renvois-des-documents.mjs
+      # **Une migration livrée a-t-elle été modifiée, supprimée ou renommée ?** Le hook de Claude Code
+      # (`proteger-les-migrations-livrees.mjs`) ne voit qu'Edit et Write : le shell, un humain ou une
+      # autre session passaient, et pgTAP, qui reconstruit la base depuis les fichiers, passait au
+      # vert sur un fichier livré réécrit (`v1-27` §12.18). Une retouche voulue s'inscrit dans
+      # `supabase/retouches-de-migrations-livrees.json`, avec l'empreinte du contenu accepté —
+      # SUPABASE.md §2.3. Ni npm ci ni export requis : git seulement.
+      - run: node scripts/verifier-migrations-livrees.mjs
       # **Le kit de design porte-t-il encore tous les composants du dépôt ?** Il est un miroir tenu
       # depuis le 24/09/2026 (`v1-29` §5) — la référence d'où partent les sessions de design —, et
       # le relevé à la main du 24/09 avait trouvé 36 composants absents sur 63, accumulés en
