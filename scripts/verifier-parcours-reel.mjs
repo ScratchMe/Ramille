@@ -260,6 +260,12 @@
 //     jusqu'au lien des pistes, et l'ancrage du défilement de Chrome compense ce qui grandit
 //     au-dessus de la fenêtre — le cap ne bougeait pas pendant que la carte regrandissait. La garde
 //     mesure désormais une **hauteur**, celle de la découpe de la carte.
+//   - **et une CI rouge a corrigé P8 à son tour, le 30/09/2026** : la hauteur d'avant le détour,
+//     lue à l'instant où la carte apparaît, valait 840 px — l'écran entier — dans les deux images où
+//     `HauteurSuivie` n'a pas encore posé sa découpe, et la garde a accusé une carte immobile.
+//     Relevé image par image en local (840, 840, puis 153), la mesure attend désormais le repos
+//     (`mesurerAuRepos`) ; P8 rejouée derrière, même chute (« 8 px au lieu de 153 »), puis deux
+//     passages verts.
 //
 // P4, P6 et P7 ont été jouées juste avant ce dernier changement de la mesure de la feuille, qu'elles
 // n'atteignent pas ; P8 sur l'export d'avant la correction, puis deux passages verts sur l'export
@@ -358,6 +364,7 @@ import {
   enChemin,
   entre,
   mesurer,
+  mesurerAuRepos,
   ouiNon,
   releverParImage,
   releverPendant,
@@ -1062,7 +1069,10 @@ try {
   // avec le défaut en place.
   const CAP = 'Ton cap pour cette saison'; // la cadence de tous les profils (`season`)
   const LA_CARTE = { role: 'button', nom: 'Oui' };
-  const carteAvantLeDetour = await mesurer(page, 'decoupe', LA_CARTE);
+  // **Posée, et pas à l'instant** (CI du 30/09/2026) : juste après le rechargement, la carte existe
+  // deux images avant que sa découpe ne soit posée, et la mesure lisait alors l'écran entier
+  // (`mesurerAuRepos`, `relever-par-image.mjs`).
+  const carteAvantLeDetour = await mesurerAuRepos(page, 'decoupe', LA_CARTE);
   const versLesPistes = page.getByText(/^Voir toutes les pistes/).first();
   await versLesPistes.scrollIntoViewIfNeeded();
   await versLesPistes.click();
@@ -1073,7 +1083,8 @@ try {
   const hauteursDuRetour = retourSurLePlan.map((e) => e.carte).filter(Boolean);
   assurer(
     carteAvantLeDetour && hauteursDuRetour.length > 0,
-    'la carte du point est introuvable avant ou après le détour : la mesure ne peut pas conclure'
+    'la carte du point est introuvable avant ou après le détour, ou jamais au repos avant :' +
+      ' la mesure ne peut pas conclure'
   );
   const hauteurQuiBouge = hauteursDuRetour.find((c) => Math.abs(c.hauteur - carteAvantLeDetour.hauteur) > 0.5);
   assurer(

@@ -16,7 +16,8 @@
  *
  * - `window.__releve.demarrer(mesures, duree)` relève chaque mesure nommée à chaque image, jusqu'à
  *   la fin de la durée — `mesures` associe une clé à `[nom, argument]` ;
- * - `window.__releve.mesurer(nom, argument)` en prend une seule, au repos ;
+ * - `window.__releve.mesurer(nom, argument)` en prend une seule, à l'instant ;
+ * - `window.__releve.auRepos(nom, argument, images, delai)` l'attend immobile (`mesurerAuRepos`) ;
  * - `depuisLeDebut` (`{ mesures, duree }`) lance le relevé avant que React ne monte : la seule façon
  *   de voir la première image d'un écran.
  *
@@ -181,6 +182,23 @@ export function releverParImage(depuisLeDebut) {
   window.__releve = {
     echantillons: [],
     mesurer: (nom, argument) => MESURES[nom](argument),
+    // La même mesure, rendue quand elle n'a pas bougé depuis `images` images d'affilée — `null` si
+    // elle bouge encore au bout de `delai` ms.
+    auRepos: (nom, argument, images, delai) =>
+      new Promise((resoudre) => {
+        const debut = performance.now();
+        let derniere = JSON.stringify(MESURES[nom](argument));
+        let pareilles = 0;
+        const image = () => {
+          const valeur = JSON.stringify(MESURES[nom](argument));
+          pareilles = valeur === derniere ? pareilles + 1 : 0;
+          derniere = valeur;
+          if (pareilles >= images) resoudre(JSON.parse(valeur));
+          else if (performance.now() - debut > delai) resoudre(null);
+          else requestAnimationFrame(image);
+        };
+        requestAnimationFrame(image);
+      }),
     demarrer(mesures, duree) {
       const echantillons = [];
       window.__releve.echantillons = echantillons;
@@ -209,6 +227,20 @@ export const echantillons = (page) => page.evaluate(() => window.__releve.echant
 /** Une mesure au repos. */
 export const mesurer = (page, nom, argument) =>
   page.evaluate(([n, a]) => window.__releve.mesurer(n, a), [nom, argument]);
+
+/**
+ * **Une mesure posée**, prise quand elle n'a pas bougé depuis `images` images d'affilée, et `null`
+ * si elle bouge encore au bout de `delai` ms.
+ *
+ * `mesurer` lit l'instant, et l'instant qui suit l'apparition d'un texte n'est pas le repos : la CI
+ * est tombée ainsi le 30/09/2026, sur la carte du point relue juste après le rechargement du plan.
+ * **Relevé image par image en local** : aux deux premières images où la carte existe (≈ 20 ms), sa
+ * « découpe » mesure 840 px — l'écran entier, 900 moins la barre —, parce que `HauteurSuivie` ne
+ * pose la sienne qu'à son premier `onLayout` ; puis 153. La garde avait comparé le retour du détour
+ * à ces 840, et accusé une carte immobile de regrandir.
+ */
+export const mesurerAuRepos = (page, nom, argument, { images = 10, delai = 3_000 } = {}) =>
+  page.evaluate(([n, a, i, d]) => window.__releve.auRepos(n, a, i, d), [nom, argument, images, delai]);
 
 /** Strictement entre deux valeurs, à une marge près (un demi-pixel par défaut) : ni au départ, ni à l'arrivée. */
 export const entre = (valeur, a, b, marge = 0.5) => valeur > Math.min(a, b) + marge && valeur < Math.max(a, b) - marge;

@@ -1009,5 +1009,13 @@ Les règles, chacune payée pendant l'écriture :
    jours et une distance vides eux aussi, le seul à faire tomber celle de la seconde. Le premier essai partait de `?etape=context` sur un questionnaire vierge, et ne prouvait
    rien : l'étape d'avant, les longs trajets, y est complète — c'est la mutation « la demande ne
    retombe pas en changeant d'étape » qui l'a montré, en ne le faisant pas tomber (29/09/2026).
+9. **Le repos ne commence pas à l'apparition : une référence se mesure immobile.** La hauteur que la
+   garde du retour sur le plan compare (point 6) était lue dès que la question du point devenait
+   visible ; la CI du 30/09/2026 l'a lue à 840 px — l'écran entier — et a accusé une carte immobile
+   de regrandir. Relevé image par image en local : pendant les **deux premières images** où la
+   carte existe, `HauteurSuivie` n'a pas encore reçu son premier `onLayout`, donc pas encore de
+   découpe, et `decoupe` remonte jusqu'à l'écran ; puis 153. La course se gagne presque toujours,
+   en CI comme en local. Une référence se prend donc par `mesurerAuRepos` (la même
+   mesure, immobile sur dix images), et la mutation qu'elle garde tombe comme avant.
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.
