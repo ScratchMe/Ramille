@@ -304,9 +304,12 @@ export function laBoucleDuPointTourne(boucles: readonly LoopType[] | null, boucl
  * La boucle qui interrogera une action, d'après le poste de son gabarit.
  *
  * Miroir de l'appariement que fait la génération du point (C2.1) : la boucle hebdomadaire ne
- * retient qu'une action du poste `commute`, la mensuelle celle du poste `extras` du bilan. Un
- * poste absent prend la branche mensuelle, par le même repli que `intentionTimingsForPoste` —
- * mieux vaut la formulation qui n'engage pas un jour précis.
+ * retient qu'une action du poste `commute`, la mensuelle une action des sorties ou des voyages —
+ * **et depuis le 30/09/2026 c'est elle qui se règle sur l'action** : engagée sur l'un des deux, le
+ * point du mois porte sur ce poste-là, même quand l'autre pèse plus lourd (`v1-27` §12.25). C'est ce
+ * qui rend vraie la promesse de la feuille, « Au début du mois prochain, je reviens te demander si
+ * tu l'as faite ». Un poste absent prend la branche mensuelle, par le même repli que
+ * `intentionTimingsForPoste` — mieux vaut la formulation qui n'engage pas un jour précis.
  */
 export function boucleDeLAction(poste: string | null): Boucle {
   return poste === 'commute' ? 'hebdo' : 'mensuel';

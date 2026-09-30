@@ -422,8 +422,10 @@ select is_empty(
 
 -- ── 9. La structure : chaque générateur passe par la fonction, avec SON poste ──────────
 -- Le poste est choisi par l'appelant (`v1-27` §5) : `commute` pour la boucle hebdomadaire, et pour la
--- mensuelle `b.poste` — `travel` chez qui sort rarement, `extras_poste` sinon (`20260927191009`).
--- Repasser `ar.extras_poste` à la fonction referait chercher une action de loisirs à ce profil.
+-- mensuelle `b.poste` — celui de l'action engagée sur les sorties ou les voyages s'il y en a une
+-- (`20260930150000`, fichier 40), sinon `travel` chez qui sort rarement et `extras_poste` pour les
+-- autres (`20260927191009`). Repasser `ar.extras_poste` à la fonction referait chercher une action de
+-- loisirs à qui sort rarement, et manquerait l'action engagée sur l'autre poste.
 
 select ok(
   regexp_replace(pg_get_functiondef('public.generate_commute_checkins()'::regprocedure),

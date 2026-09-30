@@ -1547,6 +1547,23 @@ celui de tout le monde.
 
 ### 12.25 Une action engagée sur l'autre poste mensuel n'est jamais interrogée (30/09/2026)
 
+> **Fait le 30/09/2026, sur décision de la personne qui pilote** — la recommandation retenue : **la
+> question du mois suit l'action engagée** (`20260930150000_la_question_du_mois_suit_l_action.sql`).
+> Engagée sur les sorties ou les voyages, dans le cycle qui couvre le mois interrogé, l'action
+> décide du poste du point ; sans action, rien ne change. La question, la colonne `poste` (donc le
+> troisième choix et la réplique de Ramille) et le libellé suivent ensemble. **Le libellé ne porte
+> un mode que sur le poste le plus lourd**, seul que le bilan fige ; un autre poste se nomme sans
+> mode, et le résiduel des sorties rares n'est jamais repris. **Aucun texte de l'app n'a bougé** : la
+> promesse de la feuille et de la carte du premier plan devient vraie telle quelle. Gardé par le
+> test `40` (cinq profils, dont les deux sens et un témoin sans action) et six mutations en tête de
+> fichier ; la suite entière y a trouvé un cas que ce relevé n'avait pas vu — un résultat sans
+> `extras_poste`, que la colonne admet et qu'aucune ligne de production ne porte, garde son libellé
+> (`is not distinct from`, profil A du test `04`). **Et la dérivation voisine est alignée** :
+> `felicitationDuPlanSansAction` reçoit les boucles, et une boucle connue pour être arrêtée retire
+> sa promesse (`src/types/plan.ts`). **Ce que ce générateur suppose sans le vérifier** : l'ordre de
+> ses deux recherches ne décide jamais parce qu'un cycle n'a qu'une action engagée (index unique
+> partiel). Si cet index tombait, les sorties passeraient devant les voyages sans que rien le dise.
+
 **Relevé par la contre-lecture de §12.23, raisonné sur le code, et mesuré** : aucun compte de
 production n'est dans ce cas le 30/09/2026 (les trois actions engagées hors trajet sont des actions
 de voyage, et leur boucle mensuelle porte sur les voyages). La boucle mensuelle interroge **un**

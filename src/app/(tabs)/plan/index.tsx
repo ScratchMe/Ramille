@@ -1179,8 +1179,9 @@ export default function Plan() {
   });
   // Le titre de la carte d'un plan à zéro action, et s'il peut promettre le point : le cycle porte
   // le poste et le libellé figé par le serveur, le bilan son total — seul le résiduel des sorties
-  // rares le lit, pour dire qu'il est sous le repère 2050 (`felicitationDuPlanSansAction`).
-  const felicitation = felicitationDuPlanSansAction(cycle.poste, cycle.trip_label, totalDuBilan);
+  // rares le lit, pour dire qu'il est sous le repère 2050 —, et les boucles disent si un point
+  // viendra (`felicitationDuPlanSansAction`).
+  const felicitation = felicitationDuPlanSansAction(cycle.poste, cycle.trip_label, totalDuBilan, boucles);
   const baselineKg = cycle.baseline_co2_kg_year;
   // Le cap est une part de la baseline du poste dominant, pas du total : c'est sur ce poste
   // que le plan porte, et annoncer -20 % de l'empreinte entière serait une promesse fausse.

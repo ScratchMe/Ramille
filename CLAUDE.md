@@ -569,7 +569,10 @@ vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à conna�
 - **L'action retenue est celle du cycle qui couvre la période interrogée, appariée par poste** —
   `'commute'` pour la boucle hebdomadaire, le poste de la boucle pour la mensuelle (`travel` pour qui
   sort rarement depuis le 27/09/2026, plus bas). Sans l'appariement, une action engagée sur les
-  loisirs aurait nommé la question du trajet domicile-travail. **La recherche vit en un seul endroit
+  loisirs aurait nommé la question du trajet domicile-travail. **Et depuis le 30/09/2026, c'est la
+  boucle mensuelle qui se règle sur l'action** : engagée sur les sorties ou les voyages, le point du
+  mois porte sur ce poste-là, même quand l'autre pèse plus (`v1-27` §12.25, test `40`) — sans quoi
+  la feuille promettait « je reviens te demander si tu l'as faite » à une action jamais interrogée. **La recherche vit en un seul endroit
   depuis le 27/09/2026**, `public.action_engagee_de_la_periode(user_id, poste, period_start)`, que
   les deux générateurs et, depuis C4.2, `engagement_de_la_veille` appellent : elle **reçoit** le
   poste, elle ne le choisit pas — c'est la boucle qui décide sur quoi elle interroge (`v1-27` §5,
@@ -712,7 +715,8 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   donc `travel` pour « rarement », et **trois choses le suivent ensemble** : la question, la
   colonne `poste` du point (d'où le troisième choix « Pas de voyage en … ») et l'action engagée
   qu'on cherche — une action de voyage engagée referme désormais sa question même quand le
-  résiduel pèse plus. **La bascule vit dans la boucle et non dans `assessment_results`**, et c'est
+  résiduel pèse plus. **Cette règle vaut pour la question générique** : une action engagée passe
+  devant (30/09/2026, plus haut), et le libellé du résiduel n'est jamais repris sur un point. **La bascule vit dans la boucle et non dans `assessment_results`**, et c'est
   la moitié à ne pas « simplifier » : `extras_poste_label` reste le plus lourd des deux, parce que
   l'app y lit le marqueur « (occasionnels) » pour reconnaître le résiduel ; déplacer la règle dans
   le calcul ferait dire « tes loisirs du week-end » à l'étiquette de la restitution. Quatre
@@ -2014,7 +2018,8 @@ dominant sans jamais fermer l'autre) : une hebdomadaire ancrée sur le trajet do
 (`loop_type = 'commute'`, générée par `generate_commute_checkins()`) et une mensuelle ancrée
 sur le poste "extras" — loisirs ou voyages, quel que soit celui qui pèse le plus, même
 départage que la décision dominante du bilan, **sauf pour qui sort rarement, interrogé sur ses
-voyages** (27/09/2026, paragraphe de C2.5 plus haut) (`loop_type = 'extras'`, générée par
+voyages** (27/09/2026, paragraphe de C2.5 plus haut), **et sauf quand une action est engagée sur
+l'un des deux, qui décide alors** (30/09/2026, `v1-27` §12.25) (`loop_type = 'extras'`, générée par
 `generate_extras_checkins()`). **Les deux partent du dernier bilan valide — celui du plan —, choisi
 avant de filtrer sur le trajet ou la base déclarée** (30/09/2026, `v1-27` §12.21) : filtrer
 d'abord faisait reprendre la main à un ancien bilan dès que le nouveau n'en avait plus. **Pour les

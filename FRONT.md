@@ -707,7 +707,11 @@ exactement ce qui avait laissé passer le mauvais caractère.
   promettre le lundi, alors que le point du lundi ne demandera jamais rien sur son vol — vérifié en
   base le même jour, le point hebdomadaire sortant en question générique. Corollaire : la feuille
   ne dépend plus des boucles lues (`boucles`), sans quoi un échec de lecture secondaire empêchait une cérémonie qui
-  ne s'ouvre **qu'une fois par appareil** — donc la perdait pour de bon.
+  ne s'ouvre **qu'une fois par appareil** — donc la perdait pour de bon. **La promesse du mois a été
+  fausse jusqu'au 30/09/2026 dans un cas** : une action engagée sur le poste mensuel que la boucle
+  n'interrogeait pas (les sorties quand les voyages pèsent plus, ou l'inverse). La boucle suit
+  désormais l'action (`v1-27` §12.25), donc la phrase n'a pas bougé — c'est le serveur qui la rend
+  vraie.
 - **Une phrase qui dit quoi faire donne le moyen de le faire, et la porte se rend sous la ligne qui
   la porte** (13.4, recette web du 16/09/2026). « Rattache un compte pour recevoir le mot par
   email. » était un `ThemedView` nu sur le plan : le seul chemin était l'icône de compte en haut à
