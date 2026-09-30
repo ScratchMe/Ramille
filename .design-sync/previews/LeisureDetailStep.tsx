@@ -41,14 +41,15 @@ const Etape = ({ depart }: { depart: Partial<Reponses> }) => {
 };
 
 /**
- * Rien de choisi : quatre modes en avant, « Voir les autres modes » sous le groupe — l'activer
- * envoie le focus au premier mode révélé.
+ * Rien de choisi : quatre modes en avant, par famille — Voiture (seul), Voiture (covoiturage) · Train · Vélo —,
+ * « Voir les autres modes » sous le groupe : l'activer révèle les cinq autres en un bloc, par famille, et envoie
+ * le focus au premier d'entre eux.
  */
 export const ListeCourte = () => <Etape depart={{}} />;
 
 /**
- * Le covoiturage : la motorisation, puis le nombre de personnes, s'ouvrent sous la rangée choisie —
- * les deux décrivent la même voiture.
+ * Le covoiturage : la motorisation, puis le nombre de personnes, s'ouvrent sous la rangée choisie, dans une
+ * seule boîte — les deux décrivent la même voiture.
  */
 export const VoitureEnCovoiturage = () => (
   <Etape

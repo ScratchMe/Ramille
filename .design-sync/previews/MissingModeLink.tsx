@@ -3,34 +3,35 @@ import { GroupeDeChoix, MissingModeLink, ModeListItem, ThemedText } from 'ramill
 
 const QUESTION_MODE = 'Quel est ton mode de transport principal pour ce trajet ?';
 
-// Les libellés de `COMMUTE_MODE_CHOICES` (src/constants/transport-modes.ts), recopiés.
-const MODES = [
-  'Voiture (seul)',
-  'Voiture (covoiturage)',
-  'Bus',
-  'Train',
-  'Métro ou tram',
-  'Vélo',
-  'Marche',
-  'Deux-roues motorisé',
-  'Trottinette ou mobilité douce',
+// Les libellés de `COMMUTE_MODE_CHOICES` (src/constants/transport-modes.ts), recopiés, dans les trois familles de
+// `MODES_PAR_FAMILLE` : motorisés, collectifs, actifs — 4 px dans une famille, 16 entre deux.
+const FAMILLES = [
+  ['Voiture (seul)', 'Voiture (covoiturage)', 'Deux-roues motorisé'],
+  ['Bus', 'Train', 'Métro ou tram'],
+  ['Vélo', 'Marche', 'Trottinette ou mobilité douce'],
 ];
 
 /**
- * À sa place, sous la liste des modes du trajet domicile-travail, à 24 px : une porte de sortie
+ * À sa place, sous la liste des modes du trajet domicile-travail, à 8 px : une porte de sortie
  * discrète, centrée, pour le mode que le référentiel ne connaît pas.
  */
 export const SousLaListeDesModes = () => {
   const [mode, setMode] = React.useState<string | null>(null);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       <ThemedText type="screenTitle">{QUESTION_MODE}</ThemedText>
-      <GroupeDeChoix question={QUESTION_MODE} style={{ gap: 8 }}>
-        {MODES.map((libelle) => (
-          <ModeListItem key={libelle} label={libelle} selected={mode === libelle} onPress={() => setMode(libelle)} />
+      <GroupeDeChoix question={QUESTION_MODE} style={{ gap: 16, marginTop: 16 }}>
+        {FAMILLES.map((famille) => (
+          <div key={famille[0]} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {famille.map((libelle) => (
+              <ModeListItem key={libelle} label={libelle} selected={mode === libelle} onPress={() => setMode(libelle)} />
+            ))}
+          </div>
         ))}
       </GroupeDeChoix>
-      <MissingModeLink context="B1.4 mode domicile-travail" />
+      <div style={{ marginTop: 8 }}>
+        <MissingModeLink context="B1.4 mode domicile-travail" />
+      </div>
     </div>
   );
 };

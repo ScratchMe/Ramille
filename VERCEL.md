@@ -418,7 +418,8 @@ Les règles, à demeure :
    Ce n'est donc **pas** une remesure du coût unitaire — il est connu, il a été mesuré deux fois, et
    le remesurer quinze fois est précisément ce qui a été reproché le même jour. C'est une **garde de
    non-régression** : le chiffre attendu est stable (4,33 Mo de disque le 15/09, 4,16 Mio le
-   21/09 — ≈ 1,5 Mio retenus), donc ce qu'on cherche est l'**écart**, pas la valeur. Un saut veut
+   21/09 — ≈ 1,5 Mio retenus —, puis 4 366 425 octets à l'identique le 29/09, avant `v1-32` comme
+   après `v1-31` et `v1-32`, qui ne touchaient que l'app), donc ce qu'on cherche est l'**écart**, pas la valeur. Un saut veut
    dire qu'une dépendance est entrée dans `api/`, et c'est le seul moment où on peut le voir avant
    de le payer trente jours.
    Deux traces à nettoyer après coup, sans quoi elles partent dans la PR : `.vercel/` (ignoré par

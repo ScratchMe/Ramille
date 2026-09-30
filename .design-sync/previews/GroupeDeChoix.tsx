@@ -1,5 +1,5 @@
 import React from 'react';
-import { GroupeDeChoix, Chip, ModeListItem, PrecisionMode, ThemedText } from 'ramille-design-system';
+import { BoiteDePrecision, GroupeDeChoix, Chip, ModeListItem, PrecisionMode, ThemedText } from 'ramille-design-system';
 
 const Question = ({ children }: { children: string }) => (
   <ThemedText type="small" themeColor="textSecondary">{children}</ThemedText>
@@ -54,21 +54,26 @@ export const PrecisionImbriquee = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <Question>{question}</Question>
-      <GroupeDeChoix question={question} style={{ gap: 8 }}>
-        <ModeListItem label="Voiture (seul)" selected={mode === 'voiture'} onPress={() => setMode('voiture')} />
-        {mode === 'voiture' && (
-          <PrecisionMode
-            question="Quelle motorisation ?"
-            options={[
-              { value: 'thermique', label: 'Thermique' },
-              { value: 'hybride', label: 'Hybride' },
-              { value: 'hybride_rechargeable', label: 'Hybride rechargeable' },
-              { value: 'electrique', label: 'Électrique' },
-            ]}
-            valeur={moteur}
-            onChange={setMoteur}
-          />
-        )}
+      <GroupeDeChoix question={question} style={{ gap: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <ModeListItem label="Voiture (seul)" selected={mode === 'voiture'} onPress={() => setMode('voiture')} />
+          {mode === 'voiture' && (
+            <BoiteDePrecision>
+              <PrecisionMode
+                champ="commute_car_engine"
+                question="Quelle motorisation ?"
+                options={[
+                  { value: 'thermique', label: 'Thermique' },
+                  { value: 'hybride', label: 'Hybride' },
+                  { value: 'hybride_rechargeable', label: 'Hybride rechargeable' },
+                  { value: 'electrique', label: 'Électrique' },
+                ]}
+                valeur={moteur}
+                onChange={setMoteur}
+              />
+            </BoiteDePrecision>
+          )}
+        </div>
         <ModeListItem label="Bus" selected={mode === 'bus'} onPress={() => setMode('bus')} />
         <ModeListItem label="Vélo" selected={mode === 'velo'} onPress={() => setMode('velo')} />
       </GroupeDeChoix>

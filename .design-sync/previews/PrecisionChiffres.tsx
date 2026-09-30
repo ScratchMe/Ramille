@@ -1,5 +1,5 @@
 import React from 'react';
-import { ModeListItem, PrecisionChiffres, PrecisionMode } from 'ramille-design-system';
+import { BoiteDePrecision, ModeListItem, PrecisionChiffres, PrecisionMode } from 'ramille-design-system';
 
 // `TAILLES_DE_COVOITURAGE` (src/types/bilan.ts), recopiée : de 2 à 6, la dernière vaut « ce nombre ou plus ».
 const TAILLES_DE_COVOITURAGE = [2, 3, 4, 5, 6].map((n) => ({
@@ -24,24 +24,27 @@ const MOTORISATIONS = [
 ];
 
 /**
- * La taille du covoiturage, rien de choisi : cinq puces équiréparties sur une ligne, dans un groupe
+ * La taille du covoiturage, rien de choisi : cinq puces sur une ligne dans la boîte, dans un groupe
  * nommé par la question — la dernière s'annonce « 6 personnes ou plus ».
  */
 export const TailleDuCovoiturage = () => {
   const [taille, setTaille] = React.useState<number | null>(null);
   return (
-    <PrecisionChiffres
-      question="Vous êtes combien à partager ce trajet ?"
-      options={TAILLES_DE_COVOITURAGE}
-      valeur={taille}
-      onChange={setTaille}
-    />
+    <BoiteDePrecision>
+      <PrecisionChiffres
+        champ="commute_carpool_size"
+        question="Vous êtes combien à partager ce trajet ?"
+        options={TAILLES_DE_COVOITURAGE}
+        valeur={taille}
+        onChange={setTaille}
+      />
+    </BoiteDePrecision>
   );
 };
 
 /**
  * Sous « Voiture (covoiturage) », après la motorisation : les deux précisions décrivent la même
- * voiture, chacune à 8 px de la précédente et en retrait de 16 sous l'option.
+ * voiture, dans une seule boîte, à 16 px l'une de l'autre — chacune son propre groupe.
  */
 export const SousLeCovoiturage = () => {
   const [moteur, setMoteur] = React.useState<string | null>('thermique');
@@ -49,33 +52,41 @@ export const SousLeCovoiturage = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <ModeListItem label="Voiture (covoiturage)" selected />
-      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column' }}>
-        <PrecisionMode question="Quelle motorisation ?" options={MOTORISATIONS} valeur={moteur} onChange={setMoteur} />
-      </div>
-      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column' }}>
+      <BoiteDePrecision>
+        <PrecisionMode
+          champ="commute_car_engine"
+          question="Quelle motorisation ?"
+          options={MOTORISATIONS}
+          valeur={moteur}
+          onChange={setMoteur}
+        />
         <PrecisionChiffres
+          champ="commute_carpool_size"
           question="Vous êtes combien à partager ce trajet ?"
           options={TAILLES_DE_COVOITURAGE}
           valeur={taille}
           onChange={setTaille}
         />
-      </div>
+      </BoiteDePrecision>
     </div>
   );
 };
 
 /**
- * L'occupation d'un long trajet en voiture : de 1, qui est une réponse, à « 5+ ». Même encart, même
+ * L'occupation d'un long trajet en voiture : de 1, qui est une réponse, à « 5+ ». Même boîte, même
  * groupe nommé — la puce « 1 » s'annonce « 1 personne ».
  */
 export const OccupationDUnLongTrajet = () => {
   const [occupation, setOccupation] = React.useState<number | null>(2);
   return (
-    <PrecisionChiffres
-      question="Vous êtes combien dans la voiture ?"
-      options={OCCUPATIONS}
-      valeur={occupation}
-      onChange={setOccupation}
-    />
+    <BoiteDePrecision>
+      <PrecisionChiffres
+        champ="car_long_trips_occupancy"
+        question="Vous êtes combien dans la voiture ?"
+        options={OCCUPATIONS}
+        valeur={occupation}
+        onChange={setOccupation}
+      />
+    </BoiteDePrecision>
   );
 };

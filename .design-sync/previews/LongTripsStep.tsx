@@ -34,8 +34,8 @@ export const AucunTrajet = () => <Etape depart={{}} />;
 export const TrainEtAutocar = () => <Etape depart={{ train_long_trips_per_year: 4, coach_long_trips_per_year: 1 }} />;
 
 /**
- * Des trajets en voiture : la motorisation puis le nombre de personnes s'ouvrent sous les puces,
- * hors du groupe — ils dépendent d'un compte, pas d'une option.
+ * Des trajets en voiture : la motorisation puis le nombre de personnes s'ouvrent sous les puces, dans une
+ * seule boîte, hors du groupe — ils dépendent d'un compte, pas d'une option.
  */
 export const EnVoiture = () => (
   <Etape depart={{ car_long_trips_per_year: 2, car_long_trips_engine: 'electrique', car_long_trips_occupancy: 3 }} />

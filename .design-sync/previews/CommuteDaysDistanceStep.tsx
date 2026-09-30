@@ -11,10 +11,16 @@ type Reponses = {
 const VIDE: Reponses = { commute_days_per_week: null, commute_distance_km: null, commute_distance_bracket: null };
 
 // L'écran du questionnaire tient les réponses et fusionne chaque fragment que l'étape écrit.
+// Chaque `update` compte une réponse donnée (`reponsesDonnees` de `StepShell`) : une précision qui s'ouvre ne fait
+// défiler l'écran que si elle en suit une, jamais au préremplissage.
 const useReponses = (depart: Reponses) => {
   const [answers, setAnswers] = React.useState<Reponses>(depart);
-  const update = (patch: Partial<Reponses>) => setAnswers((a) => ({ ...a, ...patch }));
-  return [answers, update] as const;
+  const [reponses, setReponses] = React.useState(0);
+  const update = (patch: Partial<Reponses>) => {
+    setReponses((n) => n + 1);
+    setAnswers((a) => ({ ...a, ...patch }));
+  };
+  return [answers, update, reponses] as const;
 };
 
 /** Au premier passage : les jours en grille de quatre colonnes, le champ de distance vide et « Je ne sais pas ». */
@@ -47,24 +53,26 @@ export const ParTranche = () => {
   return <CommuteDaysDistanceStep answers={answers} update={update} />;
 };
 
-/** Dans le questionnaire : deuxième étape, et ce qui manque encore se dit à côté du bouton. */
+/** Dans le questionnaire : deuxième étape ; ce qui manque se dit au toucher du « Suivant » en attente, au-dessus de lui. */
 export const DansLeQuestionnaire = () => {
-  const [answers, update] = useReponses(VIDE);
-  // `manqueDeLEtape` (src/types/bilan.ts) pour cette étape, recopiée : un zéro n'est pas une distance.
+  const [answers, update, reponses] = useReponses(VIDE);
+  // `manqueDeLEtape` (src/types/bilan.ts) pour cette étape, recopiée : un zéro n'est pas une distance, et les
+  // kilomètres et la tranche sont un seul champ, `distance_du_trajet` — l'étape n'en montre qu'un.
   const manque =
     answers.commute_days_per_week === null
-      ? 'le nombre de jours par semaine'
+      ? { champ: 'commute_days_per_week', phrase: 'le nombre de jours par semaine' }
       : !(answers.commute_distance_km !== null && answers.commute_distance_km > 0) && answers.commute_distance_bracket === null
-        ? 'la distance'
+        ? { champ: 'distance_du_trajet', phrase: 'la distance' }
         : null;
   return (
     <StepShell
       section="Domicile-travail"
       step={2}
       total={9}
+      entree={{ cle: 'commute_days_distance', sens: null }}
+      reponsesDonnees={reponses}
       onBack={() => {}}
       onNext={() => {}}
-      nextDisabled={manque !== null}
       manque={manque}
     >
       <CommuteDaysDistanceStep answers={answers} update={update} />

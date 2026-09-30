@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, ThemedText } from 'ramille-design-system';
+import { Button } from 'ramille-design-system';
 
 /** Le bouton principal d'un flux : pleine largeur, accent, pied collant. */
 export const Principal = () => <Button title="Continuer" />;
@@ -8,16 +8,18 @@ export const Principal = () => <Button title="Continuer" />;
 export const Secondaire = () => <Button title="Revoir mon plan" variant="secondary" />;
 
 /**
- * Désactivé = fond élément + texte tertiaire, jamais une opacité. Le libellé reste
- * le même : c'est ce qui manque qu'on dit juste au-dessus, en texte simple — la ligne
- * « Il manque encore … » de `StepShell` —, pas le bouton qu'on renomme.
+ * En attente — le « Suivant » d'une étape incomplète : l'apparence du désactivé (fond élément, texte
+ * tertiaire, jamais une opacité), mais un bouton ordinaire, ni `disabled` ni `aria-disabled`. Il agit :
+ * au toucher, `StepShell` dit ce qui manque au-dessus de lui et y mène. Le libellé ne change jamais.
  */
-export const Desactive = () => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-    <ThemedText type="small" themeColor="textTertiary">Il manque encore la distance.</ThemedText>
-    <Button title="Suivant" disabled />
-  </div>
-);
+export const EnAttente = () => <Button title="Suivant" enAttente />;
+
+/**
+ * Désactivé — ce qui n'agit vraiment pas : le « C’est noté » d'une feuille d'engagement tant que l'intention
+ * n'est pas complète (aucun jour, ou aucune échéance). Même apparence qu'en attente, mais inerte, et annoncé
+ * indisponible.
+ */
+export const Desactive = () => <Button title="C’est noté" disabled />;
 
 /** La rangée du questionnaire : Retour garde sa largeur, Suivant prend le reste. */
 export const RangeeRetourSuivant = () => (

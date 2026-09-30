@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
@@ -9,7 +8,7 @@ import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Mouvement, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import {
@@ -118,32 +117,22 @@ export function ActionCommitment({
    * `TitreDArrivee`). `geste` retient lequel ; l'effet le lit et l'efface, pour qu'un effet rejoué
    * sans que rien n'ait bougé ne reparte pas.
    *
-   * **Et sur la liste, une fois la carte grandie** (contre-lecture du 29/09/2026). Elle y entre dans
-   * un `HauteurSuivie` qui n'a encore que la hauteur de la rangée — découpé — et une `Apparition`
-   * partie de l'opacité nulle (`pistes.tsx`) : au montage, « Quand ? » est sous la découpe, et
-   * transparent. Le focus du navigateur l'ignore ; celui d'Android peut refuser un nœud qu'on ne
-   * voit pas. Il attend donc `Mouvement.entree`, comme le défilement de l'écran, et se pose tout de
-   * suite sous « réduire les animations », où rien ne grandit. Sur le plan, le sélecteur arrive sans
-   * animation : pas d'attente.
+   * **Au geste, même sur la liste, où la carte entre en grandissant** (`FRONT.md` §2.12 : le focus
+   * part au geste, jamais à la fin d'une animation). Au montage, « Quand ? » est encore sous la
+   * découpe d'un `HauteurSuivie` et dans une `Apparition` partie de l'opacité nulle (`pistes.tsx`) ;
+   * le navigateur l'accepte, et qu'Android l'accepte aussi se juge au doigt (`v1-13` §11.24). Une
+   * version du 29/09/2026 faisait attendre le focus `Mouvement.entree` sur la liste, pour ce seul
+   * risque : elle retardait l'annonce que la règle protège, et elle est retirée le jour même.
    */
   const laQuestion = useRef<unknown>(null);
   const leBouton = useRef<View>(null);
   const geste = useRef<'ouvrir' | 'annuler' | null>(surLeChoix ? 'ouvrir' : null);
-  const animationsReduites = useReducedMotion();
   useEffect(() => {
     const vient = geste.current;
     geste.current = null;
+    if (vient === 'ouvrir' && picking) donnerLeFocus(laQuestion.current);
     if (vient === 'annuler' && !picking) donnerLeFocus(leBouton.current);
-    if (vient !== 'ouvrir' || !picking) return;
-    if (!surLeChoix || animationsReduites) {
-      donnerLeFocus(laQuestion.current);
-      return;
-    }
-    const minuterie = setTimeout(() => donnerLeFocus(laQuestion.current), Mouvement.entree);
-    return () => clearTimeout(minuterie);
-    // `surLeChoix` et la préférence ne bougent pas d'une vie de la carte : c'est `picking` qui relance
-    // l'effet, et un passage sans geste ne fait rien.
-  }, [picking, surLeChoix, animationsReduites]);
+  }, [picking]);
 
   const toggleDay = (day: IntentionDay) =>
     setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
