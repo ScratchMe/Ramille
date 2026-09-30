@@ -1,9 +1,11 @@
 // Tests de la logique pure du suivi (v1-07 §3.2). Même critère que
 // `src/types/bilan.test.ts` : on teste ce qui produit un chiffre ou une phrase affichée à
 // l'utilisateur, là où un bug coûte cher — pas les requêtes elles-mêmes.
+import { RAMILLE } from '@/constants/mascotte';
 import { formatTonnes } from '@/lib/format';
 import { saisonDe } from './saison';
 import {
+  carteDuSuiviSansPoint,
   ancienneteEnMots,
   barresDeLHistorique,
   daysSince,
@@ -814,5 +816,34 @@ describe('titreDuRebilan', () => {
 
   it('ne rend rien quand il n’y a rien à proposer', () => {
     expect(titreDuRebilan('aucun', 500)).toBeNull();
+  });
+});
+
+// **Décision du 30/09/2026** (`v1-27` §12.23) : sans boucle, la carte « aucun point répondu » ne
+// parle pas de réponses. Jumelle de la carte des deux lieux, sur l'autre onglet.
+//
+// Éprouvé en le cassant, le 30/09/2026 (TESTING.md §1.1), une mutation à la fois :
+//   - la liste vide traitée comme une boucle (la garde `length === 0` retirée) → « sans boucle… »,
+//     seul ;
+//   - `null` traité comme « aucune boucle » → « sans réponse du serveur… », seul ;
+//   - la note gardée sans boucle → « sans boucle… », seul.
+describe('carteDuSuiviSansPoint', () => {
+  it('avec une boucle, la carte d’avant : elle note les réponses, et dit ce qui ne se voit pas', () => {
+    for (const boucles of [['commute'], ['extras'], ['commute', 'extras']] as const) {
+      const carte = carteDuSuiviSansPoint(boucles);
+      expect({ boucles, ligne: carte.ligne }).toEqual({ boucles, ligne: RAMILLE.suiviSansPoint });
+      expect(carte.note).toMatch(/sans réponse/);
+    }
+  });
+
+  it('sans boucle, elle ne parle pas de réponses : les bilans, et pas de note', () => {
+    const carte = carteDuSuiviSansPoint([]);
+    expect(carte).toEqual({ ligne: RAMILLE.suiviSansPointSansBoucle, note: null });
+    expect(carte.ligne).not.toMatch(/réponse/i);
+  });
+
+  // Une panne ne change pas le texte : seule une absence **connue** de boucle le fait.
+  it('sans réponse du serveur, la carte d’avant', () => {
+    expect(carteDuSuiviSansPoint(null)).toEqual(carteDuSuiviSansPoint(['commute']));
   });
 });

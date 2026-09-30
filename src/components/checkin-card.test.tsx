@@ -33,6 +33,7 @@ import React from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
+import { RAMILLE } from '@/constants/mascotte';
 import { repliqueDuPoint } from '@/types/checkin';
 
 const mockRpc = jest.fn();
@@ -85,11 +86,13 @@ describe('CheckinCard — le focus après une réponse', () => {
   it('porte le focus sur la réplique qui remplace les boutons', async () => {
     mockRpc.mockResolvedValue({ error: null });
     const checkin = point();
-    render(<CheckinCard checkin={checkin} emphasize actionEngagee={checkin.committed_action_text} />);
+    render(
+      <CheckinCard checkin={checkin} emphasize actionEngagee={checkin.committed_action_text} boucleTourne />
+    );
 
     fireEvent.press(screen.getByText('Oui'));
 
-    const attendue = repliqueDuPoint(checkin, 'oui').ligne;
+    const attendue = repliqueDuPoint(checkin, 'oui', true).ligne;
     await waitFor(() => expect(screen.getByText(attendue)).toBeTruthy());
     expect(focus).toHaveBeenCalledTimes(1);
     const [noeud, evenement] = focus.mock.calls[0] as [NoeudDeTest, string];
@@ -105,22 +108,49 @@ describe('CheckinCard — le focus après une réponse', () => {
       <CheckinCard
         checkin={point({ status: 'answered', response_kind: 'oui', responded_at: '2026-09-21T08:00:00Z' })}
         emphasize
+        boucleTourne
       />
     );
 
-    expect(screen.getByText(repliqueDuPoint(point(), 'oui').ligne)).toBeTruthy();
+    expect(screen.getByText(repliqueDuPoint(point(), 'oui', true).ligne)).toBeTruthy();
     expect(focus).not.toHaveBeenCalled();
   });
 
   // Une réponse qui n'est pas partie laisse les boutons : il n'y a rien vers quoi déplacer le focus.
   it('ne déplace rien quand la réponse n’est pas partie', async () => {
     mockRpc.mockResolvedValue({ error: { code: undefined, message: 'réseau' } });
-    render(<CheckinCard checkin={point()} emphasize />);
+    render(<CheckinCard checkin={point()} emphasize boucleTourne />);
 
     fireEvent.press(screen.getByText('Oui'));
 
     await waitFor(() => expect(screen.getByText(/Ta réponse n’est pas partie/)).toBeTruthy());
     expect(screen.getByText('Oui')).toBeTruthy();
     expect(focus).not.toHaveBeenCalled();
+  });
+});
+
+// **Ce que la carte transmet aux deux dérivations** (décision du 30/09/2026, `v1-27` §12.23). Leurs
+// tests gardent `piedDuPointRepondu` et `repliqueDuPoint`, jamais leurs appels : c'est ici qu'on
+// voit la carte leur passer `boucleTourne` à toutes les deux.
+//
+// Éprouvé en le cassant, le 30/09/2026 (TESTING.md §1.1) : la carte qui passe `true` au pied au lieu
+// de la propriété → ce test, seul ; la même chose pour la réplique → ce test, seul.
+describe('CheckinCard — la boucle arrêtée', () => {
+  it('répondue, sa boucle arrêtée, la carte garde la réponse et ne donne aucun rendez-vous', () => {
+    // « pas de trajet » : toutes ses variantes donnent rendez-vous, donc la réplique choisie ici ne
+    // peut venir que de la branche sans boucle.
+    const checkin = point({
+      status: 'answered',
+      response_kind: 'sans_objet',
+      responded_at: '2026-09-21T08:00:00Z',
+    });
+    render(<CheckinCard checkin={checkin} emphasize boucleTourne={false} />);
+
+    expect(screen.getByText(repliqueDuPoint(checkin, 'sans_objet', false).ligne)).toBeTruthy();
+    expect(screen.getByText(/^Répondu /)).toBeTruthy();
+    expect(screen.queryByText(/Prochain point/)).toBeNull();
+    for (const avecRendezVous of RAMILLE.checkinSansObjet.commute) {
+      expect(screen.queryByText(avecRendezVous)).toBeNull();
+    }
   });
 });

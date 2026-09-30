@@ -94,9 +94,17 @@ export function CheckinCard({
   emphasize,
   actionEngagee,
   historique,
+  boucleTourne,
 }: {
   checkin: EngagementCheckin;
   emphasize: boolean;
+  /**
+   * La boucle de ce point tourne-t-elle encore (`laBoucleDuPointTourne`, `src/types/rappels.ts`) ?
+   * Une fois la carte répondue, elle décide si le pied et la réplique ont le droit de donner
+   * rendez-vous (décision du 30/09/2026, `v1-27` §12.23). **Obligatoire** : un défaut ferait promettre
+   * en silence à l'écran qui oublierait de la passer.
+   */
+  boucleTourne: boolean;
   /**
    * Le libellé de l'action **actuellement** engagée, ou `null`. Sert à une seule chose : savoir si
    * la question figée porte sur une action quittée depuis (C2.1). L'écran du plan le connaît déjà,
@@ -148,7 +156,7 @@ export function CheckinCard({
   // avec `estDeLaPeriodeCourante`), et c'est `response_kind` qui la remplit. L'état local garde le
   // dessus le temps d'un aller-retour réseau, pour que la carte bascule à l'instant du geste.
   const reponse = reponseLocale ?? genreDeReponse(checkin.response_kind);
-  const pied = piedDuPointRepondu(checkin);
+  const pied = piedDuPointRepondu(checkin, boucleTourne);
 
   // **Le second renforcement ne se déclenche qu'une fois, et jamais sur un compteur** (C2.10). Il se
   // calcule sur les **périodes** et non sur les dernières lignes répondues : deux « oui » séparés par
@@ -314,7 +322,7 @@ export function CheckinCard({
               à l'ordre de tabulation, et `accessible` en fait un seul nœud sur natif — le visage est
               masqué, la phrase est lue, et le focus natif trouve un nœud à viser. */}
           <View ref={replique} accessible {...FOCALISABLE_PAR_PROGRAMME}>
-            <RamilleDit {...repliqueDuPoint(checkin, reponse)} />
+            <RamilleDit {...repliqueDuPoint(checkin, reponse, boucleTourne)} />
           </View>
           {/* **La phrase du handoff, enfin affichée** (C2.10) : elle est dans la spec §7 comme signal
               d'engagement et en §9 comme indicateur de succès, et n'avait jamais été calculée nulle

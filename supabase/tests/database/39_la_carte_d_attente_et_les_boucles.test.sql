@@ -1,5 +1,7 @@
 -- Tests pgTAP : la carte d'attente sait si une boucle tourne (30/09/2026, `v1-27` §12.22, migration
--- `20260930105923_la_carte_d_attente_sait_si_une_boucle_tourne.sql`).
+-- `20260930105923_la_carte_d_attente_sait_si_une_boucle_tourne.sql`) — et, depuis le même soir, les
+-- deux autres textes du plan qui dépendent des boucles (`v1-27` §12.23, migration
+-- `20260930131841_les_boucles_a_venir_une_par_une.sql`).
 --
 -- **Le défaut** : l'écran du plan décidait de la boucle à nommer sur le seul poste
 -- domicile-travail, donc toute personne sans trajet lisait « Je te fais signe au début du mois
@@ -7,19 +9,18 @@
 -- aucun trajet, sorties rares, aucun voyage déclaré). Le signe promis n'arrivait jamais. Décision de
 -- la personne qui pilote : dans ce cas, Ramille ne promet rien.
 --
--- **Ce que ce fichier défend** : l'écran lit `ma_boucle_a_venir()`, qui lit
+-- **Ce que ce fichier défend** : l'écran lit `mes_boucles_a_venir()` — les boucles une par une ;
+-- elle a remplacé `ma_boucle_a_venir()`, qui les résumait en une valeur —, qui lit
 -- `boucles_du_dernier_bilan`, que lisent aussi les deux générateurs. Une seule définition de « qui
 -- reçoit quelle boucle » ; l'accord entre ce que l'écran annonce et ce que les générateurs
 -- produisent est vérifié sur les mêmes profils, et la structure empêche qu'un générateur
 -- réécrive le choix en ligne.
 --
 -- **Éprouvé en le cassant, le 30/09/2026** (TESTING.md §1.1), une mutation à la fois, retirée
--- ensuite :
---   - le repli de `ma_boucle_a_venir` remis sur `mensuel` (l'état d'avant, vu de l'écran) → K3, K5
---     et K6, les trois profils sans boucle. La session absente ne tombe pas : elle sort par la
---     garde, avant le repli ;
---   - la garde de session retirée de `ma_boucle_a_venir` → la session absente, seule : l'appel à
---     `null` interroge tout le monde, et rend la boucle de quelqu'un d'autre ;
+-- ensuite. D'abord sur `ma_boucle_a_venir`, le matin :
+--   - son repli remis sur `mensuel` (l'état d'avant, vu de l'écran) → K3, K5 et K6, les trois profils
+--     sans boucle ;
+--   - sa garde de session retirée → la session absente, seule ;
 --   - le `revoke` de `boucles_du_dernier_bilan` sans `public` → les privilèges, seuls ;
 --   - la base déclarée retirée de `boucles_du_dernier_bilan` (`a_des_voyages_declares` ôté du filtre)
 --     → six sur la suite entière : K4, seul ici ; quatre assertions du fichier 20 (les profils G, H
@@ -29,10 +30,23 @@
 --   - `generate_commute_checkins` remise dans son corps de `20260930092838` → les deux assertions de
 --     structure, et elles seules — aucun comportement ne change, c'est la définition d'une
 --     extraction neutre.
+--
+-- **Puis sur `mes_boucles_a_venir`, le soir, qui l'a remplacée** — six mutations, chacune fait tomber
+-- une assertion et une seule :
+--   - sa garde de session retirée → « sans session », seule : l'appel à `null` rend les boucles de
+--     tout le monde ;
+--   - son `revoke` sans `public` → son assertion de privilège ;
+--   - le résumé remis — la première boucle seule, `array[min(loop_type)] … having count(*) > 0`,
+--     pour qu'un profil sans boucle rende encore `{}` et non `{NULL}` — → K1, le seul profil qui a
+--     les deux boucles : c'est l'assertion qui garde la raison du remplacement. Sans le `having`,
+--     K3, K5 et K6 tomberaient aussi, et la mutation ne dirait plus laquelle garde quoi ;
+--   - `ma_boucle_a_venir` recréée → `hasnt_function` ;
+--   - rejouées sur la nouvelle forme, la base déclarée retirée → K4, et le `revoke` de
+--     `boucles_du_dernier_bilan` sans `public` → son assertion de privilège.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(13);
 
 -- ── Les privilèges ──────────────────────────────────────────────────────────────────────
 
@@ -43,10 +57,14 @@ select ok(
 );
 
 select ok(
-  has_function_privilege('authenticated', 'public.ma_boucle_a_venir()', 'execute')
-  and not has_function_privilege('anon', 'public.ma_boucle_a_venir()', 'execute'),
-  'ma_boucle_a_venir est appelable par authenticated, et par lui seul'
+  has_function_privilege('authenticated', 'public.mes_boucles_a_venir()', 'execute')
+  and not has_function_privilege('anon', 'public.mes_boucles_a_venir()', 'execute'),
+  'mes_boucles_a_venir est appelable par authenticated, et par lui seul'
 );
+
+-- Remplacée et non doublée : une fonction qu'aucun appel n'émet se lit « morte », pas « réservée ».
+select hasnt_function('public', 'ma_boucle_a_venir', array[]::text[],
+  'ma_boucle_a_venir ne survit pas à son remplacement par mes_boucles_a_venir');
 
 -- ── Fixtures : six profils ──────────────────────────────────────────────────────────────
 
@@ -124,60 +142,60 @@ select set_config('role', 'authenticated', true);
 
 select set_config('request.jwt.claims',
   json_build_object('sub', 'e3900000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
-select is(public.ma_boucle_a_venir(), 'hebdo',
-  'K1 : un trajet — la boucle hebdomadaire passe devant, c''est le prochain contact');
+select is(public.mes_boucles_a_venir(), array['commute', 'extras'],
+  'K1 : un trajet et des sorties — les deux boucles, chacune nommée');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', 'e3900000-0000-0000-0000-000000000002', 'role', 'authenticated')::text, true);
-select is(public.ma_boucle_a_venir(), 'mensuel',
-  'K2 : pas de trajet, des sorties — la boucle mensuelle');
+select is(public.mes_boucles_a_venir(), array['extras'],
+  'K2 : pas de trajet, des sorties — la boucle mensuelle seule');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', 'e3900000-0000-0000-0000-000000000003', 'role', 'authenticated')::text, true);
-select is(public.ma_boucle_a_venir(), 'aucune',
+select is(public.mes_boucles_a_venir(), array[]::text[],
   'K3 : sédentaire — aucune boucle, et la carte ne promet rien');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', 'e3900000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
-select is(public.ma_boucle_a_venir(), 'mensuel',
+select is(public.mes_boucles_a_venir(), array['extras'],
   'K4 : sort rarement mais a déclaré un voyage — la boucle mensuelle tourne');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', 'e3900000-0000-0000-0000-000000000005', 'role', 'authenticated')::text, true);
-select is(public.ma_boucle_a_venir(), 'aucune',
+select is(public.mes_boucles_a_venir(), array[]::text[],
   'K5 : le dernier bilan décide — l''ancien trajet ne fait rien promettre');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', 'e3900000-0000-0000-0000-000000000006', 'role', 'authenticated')::text, true);
-select is(public.ma_boucle_a_venir(), 'aucune',
+select is(public.mes_boucles_a_venir(), array[]::text[],
   'K6 : aucun bilan — aucune boucle');
 
 select set_config('request.jwt.claims', '', true);
-select is(public.ma_boucle_a_venir(), 'aucune',
-  'sans session : aucune — jamais la boucle de quelqu''un d''autre');
+select is(public.mes_boucles_a_venir(), array[]::text[],
+  'sans session : aucune — jamais les boucles de quelqu''un d''autre');
 
 select set_config('role', 'postgres', true);
 
 -- ── Ce que l'écran annonce est ce que les générateurs produisent ─────────────────────────
+--
+-- Boucle par boucle, et plus seulement la première : la carte d'un point répondu lit la sienne.
 
 select results_eq(
   $$ select u.id,
-            case when bool_or(o.loop_type = 'commute') then 'hebdo'
-                 when bool_or(o.loop_type = 'extras') then 'mensuel'
-                 else 'aucune' end
+            coalesce(array_agg(distinct o.loop_type order by o.loop_type)
+                       filter (where o.loop_type is not null), '{}')
      from auth.users u
      left join public.boucles_du_dernier_bilan(u.id) o on true
      where u.id::text like 'e3900000%'
      group by u.id order by u.id $$,
   $$ select u.id,
-            case when bool_or(c.loop_type = 'commute') then 'hebdo'
-                 when bool_or(c.loop_type = 'extras') then 'mensuel'
-                 else 'aucune' end
+            coalesce(array_agg(distinct c.loop_type order by c.loop_type)
+                       filter (where c.loop_type is not null), '{}')
      from auth.users u
      left join public.engagement_checkins c on c.user_id = u.id
      where u.id::text like 'e3900000%'
      group by u.id order by u.id $$,
-  'pour chaque profil, la boucle annoncée est celle dont un point vient d''être généré'
+  'pour chaque profil, les boucles annoncées sont celles dont un point vient d''être généré'
 );
 
 -- ── La structure : les générateurs lisent la définition, et personne ne la recopie ───────

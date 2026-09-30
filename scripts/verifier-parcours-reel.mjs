@@ -30,6 +30,11 @@
 // lien vers les pistes. Il tourne dans un **contexte de navigateur neuf**, parce que « premier » veut
 // dire premier **sur cet appareil** (C5.7) et que les marques vivent dans le stockage.
 //
+// **Et un troisième depuis le 30/09/2026, sans aucune boucle de points** (`v1-27` §12.22 et §12.23) :
+// ni trajet, ni sorties régulières, ni voyage. C'est le seul où ni le plan ni le suivi ne peuvent
+// promettre un point, et le seul qui éprouve l'écran passant des boucles vides aux dérivations —
+// la section 12, plus bas.
+//
 // **Ce qu'il ne fait pas, et ce n'est pas un oubli** : il ne couvre ni les états d'erreur — c'est le
 // travail de `verifier-etats-export.mjs` — ni les exclusions de cartes en général, qui vivent depuis
 // le 27/09/2026 dans `cartesDuPlan` (`src/types/plan.ts`, `v1-27` §4) et y sont épinglées sur
@@ -357,7 +362,24 @@
 // lundi\.$/ » n'est jamais apparu — **et à elle seule** : toutes les étapes d'avant passent, le premier
 // profil compris, donc rien d'autre du parcours ne garde cette lecture. Le témoin, sur le même commit,
 // passe de bout en bout. La **première** version de l'étape, qui oubliait la carte des deux lieux, est
-// tombée au même endroit sans mutation : c'est ce qui l'a corrigée.
+// tombée au même endroit sans mutation : c'est ce qui l'a corrigée. *(Le soir même, « à elle seule »
+// a cessé d'être vrai : la carte des deux lieux du second profil — le cycliste, dès son premier
+// plan — dépend désormais de la même lecture, et `lireLaBoucleAVenir` a été remplacée par `lireLesBouclesAVenir`, `v1-27` §12.23.)*
+//
+// **Et quatre le soir, sur les appels de l'écran que Jest ne voit pas** (`v1-27` §12.23, relevé par la
+// contre-lecture : les dérivations sont testées, pas ce que l'écran leur passe). Un rejeu `parcours`
+// par mutation, après un témoin passé de bout en bout sur les trois profils :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | B1 — `ouvertureDesDeuxLieux` reçoit `actions: true` | le cycliste, à la carte des deux lieux de fin : « … le point régulier et ta saison. … » n'apparaît jamais |
+//   | B2 — elle reçoit `boucle: true` | « sans boucle — le plan… » : « Ici, ton plan : ta saison. … » n'apparaît jamais |
+//   | B3 — le suivi passe `null` à `carteDuSuiviSansPoint` | « sans boucle — le suivi… » : « Je garde tes bilans ici, au fil des saisons. » n'apparaît jamais |
+//   | B4 — la carte d'attente reçoit `mensuel` quand la liste est vide (seconde contre-lecture) | « sans boucle — le plan… » : « Ton plan est là, reviens quand tu veux. » n'apparaît jamais — la seule assertion qui voit la branche `aucune` de l'écran |
+//
+// Ce qu'aucune ne peut voir : `laBoucleDuPointTourne` dans l'écran du plan — aucun profil n'a de point
+// répondu dont la boucle s'est arrêtée. La carte qui la reçoit est gardée par
+// `src/components/checkin-card.test.tsx`, l'appel de l'écran par rien.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1875,6 +1897,11 @@ try {
   // Refermée, la carte du premier plan laisse passer celle qui attendait : sa marque n'a pas bougé.
   await page.getByText('Compris', { exact: true }).first().click();
   await attendreTexte('Deux endroits, pas plus.');
+  // Ce plan-ci a des actions et une boucle : la carte d'origine, au caractère près (`v1-27` §12.23 —
+  // elle ne décrit que ce que le plan porte, et ici il porte tout).
+  await attendreTexte(
+    'Ici, ton plan : l’action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+  );
 
   // ── 11. Retirer un bilan, puis le seul qui reste (C4.7, `v1-22`) ─────────────────────────
   //
@@ -2003,9 +2030,9 @@ try {
 
   etape('cycliste — la carte d’attente nomme le lundi, que le serveur a dit');
   // **La carte d'attente nomme le lundi, et c'est le serveur qui le dit** (30/09/2026, `v1-27`
-  // §12.22). Le plan lit la boucle à venir par `ma_boucle_a_venir`, et le client relit ses trois
-  // valeurs (`lireLaBoucleAVenir`) : une valeur renommée d'un seul côté, ou la fonction absente de la
-  // base, ferait disparaître la carte **sans une erreur** — aucune autre garde ne la rend. Le cycliste
+  // §12.22). Le plan lit les boucles par `mes_boucles_a_venir`, et le client relit leurs valeurs
+  // (`lireLesBouclesAVenir`) : une valeur renommée d'un seul côté, ou la fonction absente de la
+  // base, ferait disparaître la carte **sans une erreur**. Le cycliste
   // a un trajet, donc un point le lundi. **La carte des deux lieux l'occupe d'abord** : le cycliste
   // ne l'a jamais refermée (le premier plan est passé devant, puis ses bilans ont été retirés), et
   // elle remplace la carte d'attente (`cartesDuPlan`). La première version de cette étape l'oubliait
@@ -2015,10 +2042,92 @@ try {
   await bouton('Voir ce que je peux faire');
   await page.waitForURL(/\/plan/, { timeout: ATTENTE });
   await attendreTexte('Deux endroits, pas plus.');
+  // **Et elle ne promet ni action ni cap à un plan qui n'en a pas** (décision du 30/09/2026, `v1-27`
+  // §12.23) : le cycliste a un point le lundi, pas d'action, et sa carte du cap ne montre que la
+  // saison. Des deux faits que l'écran passe à la dérivation, c'est **les actions** qu'on voit ici
+  // varier — la même carte, à l'étape 10, en avait ; **les boucles**, elles, ne sont vues vides que
+  // par le troisième profil, plus bas. La dérivation elle-même est gardée par Jest.
+  await attendreTexte(
+    'Ici, ton plan : le point régulier et ta saison. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+  );
   await page.getByText('Compris', { exact: true }).first().click();
   await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
 
   await rpc('delete_my_account', sobre.jeton);
+
+  // ── 12. Le troisième profil : aucune boucle ne tourne (30/09/2026, `v1-27` §12.22 et §12.23) ──
+  //
+  // **Ni trajet, ni sorties régulières, ni voyage** : aucun point ne viendra jamais, et trois textes
+  // le savent depuis ce jour — la carte des deux lieux, la carte d'attente et la carte du suivi sans
+  // point répondu. Les deux premiers profils ont chacun une boucle, donc le côté « sans boucle » de
+  // ces trois textes n'était gardé que par Jest, sur les dérivations — pas par l'écran qui leur passe
+  // les boucles lues au serveur (`mes_boucles_a_venir`). C'est ce que ce profil éprouve, et rien
+  // d'autre : il ne refait ni le questionnaire en détail, ni la restitution.
+  etape('sans boucle — onboarding et questionnaire');
+  await page.context().close();
+  page = await nouvelOnglet({ reduire: false });
+  await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  await boutonDuPager('Découvrir mon impact', 0);
+  await boutonDuPager('Continuer', 1);
+  await boutonDuPager('Continuer', 2);
+  await boutonDuPager('Commencer', 3);
+  await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
+  await choisir('Non'); // pas de trajet régulier : les étapes du trajet ne se posent pas
+  await suivant();
+  await choisir(/^Rarement/, { exact: false });
+  await suivant();
+  await choisir('0');
+  await suivant();
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
+  await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '0', exact: true }).click();
+  await suivant();
+  // Sans trajet, la question du télétravail ne se pose pas (`teletravailSePose`).
+  await choisir('Urbain dense');
+  await choisir('Bon');
+  await choisir('1');
+  await suivant('Voir mon bilan');
+
+  etape('sans boucle — le plan ne promet ni action, ni point, ni réponse');
+  await page.waitForURL(/\/suivi\/bilan/, { timeout: 45_000 });
+  await bouton('Voir ce que je peux faire');
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  // La prémisse du profil, relue au serveur : sans elle, une assertion d'écran qui passerait ne dirait
+  // pas si c'est l'écran qui est juste ou le profil qui a une boucle.
+  const sansBoucle = await session();
+  const reponseBoucles = await fetch(`${API}/rest/v1/rpc/mes_boucles_a_venir`, {
+    method: 'POST',
+    headers: { apikey: ANON, Authorization: `Bearer ${sansBoucle.jeton}`, 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  assurer(reponseBoucles.ok, `rpc mes_boucles_a_venir : HTTP ${reponseBoucles.status}`);
+  const bouclesSansBoucle = await reponseBoucles.json();
+  assurer(
+    Array.isArray(bouclesSansBoucle) && bouclesSansBoucle.length === 0,
+    `le profil sans trajet, sans sorties régulières ni voyage a des boucles : ${JSON.stringify(bouclesSansBoucle)}`
+  );
+  // Plan à zéro action : la barre arrive, et la carte des deux lieux avec elle.
+  await attendreTexte('Deux endroits, pas plus.');
+  await attendreTexte('Ici, ton plan : ta saison. En bas, ton suivi : tes bilans, saison après saison.');
+  await attendreTexte('Je garde tes bilans dans ton suivi, au fil des saisons.');
+  await page.getByText('Compris', { exact: true }).first().click();
+  await attendreTexte('Ton plan est là, reviens quand tu veux.');
+
+  etape('sans boucle — le suivi ne parle pas de réponses');
+  for (const libelle of await page.getByText('Suivi', { exact: true }).all()) {
+    if (await libelle.isVisible()) {
+      await libelle.click();
+      break;
+    }
+  }
+  await page.waitForURL(/\/suivi$/, { timeout: ATTENTE });
+  await attendreTexte('Je garde tes bilans ici, au fil des saisons.');
+  assurer(
+    !(await page.getByText(/Une période sans réponse ne se voit pas ici/).first().isVisible()),
+    'le suivi sans boucle explique encore les périodes sans réponse'
+  );
+  await rpc('delete_my_account', sansBoucle.jeton);
 
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
   console.log(
@@ -2027,8 +2136,9 @@ try {
       `canal, compte supprimé — puis le cycliste, ${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, ` +
       `barre d'onglets venue sans « Compris », puis son nouveau bilan en voiture où « Ton premier plan » ` +
       `passe devant la carte des deux lieux, puis ses deux bilans retirés — le plan reparti du précédent, ` +
-      `puis la racine et la marque locale effacée, et la carte d'attente qui nomme le lundi. Chaque choix ` +
-      `rendu répond à son groupe nommé.`
+      `puis la racine et la marque locale effacée, et la carte d'attente qui nomme le lundi — puis un ` +
+      `profil sans boucle, à qui ni le plan ni le suivi ne promettent rien. Chaque choix rendu répond à ` +
+      `son groupe nommé.`
   );
 } catch (erreur) {
   try {

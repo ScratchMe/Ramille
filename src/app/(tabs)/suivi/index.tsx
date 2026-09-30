@@ -21,12 +21,14 @@ import { useTrackFocus } from '@/hooks/use-track-focus';
 import {
   loadAnsweredCheckins,
   loadAssessmentHistory,
+  loadBouclesAVenir,
   loadDecisionsEngagees,
 } from '@/lib/bilan-history';
-import { posteDeLHistorique } from '@/constants/postes';
+import { posteDeLHistorique, type LoopType } from '@/constants/postes';
 import { formatIntention } from '@/types/plan';
 import {
   barresDeLHistorique,
+  carteDuSuiviSansPoint,
   daysSince,
   phraseDuRegimeDeRebilan,
   regimeDeRebilan,
@@ -110,6 +112,12 @@ type LoadState =
        * son échec ne remplace pas l'écran, il allume la ligne de relecture.
        */
       decisions: DecisionDeSaison[] | null;
+      /**
+       * Les boucles qui tournent (`mes_boucles_a_venir`), pour la seule carte « aucun point
+       * répondu » : sans boucle, elle ne parle pas de réponses (`carteDuSuiviSansPoint`, 30/09/2026).
+       * **`null` veut dire « pas lu »**, comme `decisions` : la carte garde alors son texte d'avant.
+       */
+      boucles: LoopType[] | null;
     };
 
 export default function Suivi() {
@@ -169,11 +177,13 @@ export default function Suivi() {
       let bilans;
       let points;
       let decisions;
+      let boucles;
       try {
-        [bilans, points, decisions] = await Promise.all([
+        [bilans, points, decisions, boucles] = await Promise.all([
           loadAssessmentHistory(),
           loadAnsweredCheckins(),
           loadDecisionsEngagees(),
+          loadBouclesAVenir(),
         ]);
       } catch (erreur) {
         console.error('Le suivi n’a pas pu être relu :', erreur);
@@ -200,7 +210,7 @@ export default function Suivi() {
 
       // On ne repasse pas par « Chargement… » en revenant : l'écran garde ce qu'il montrait
       // jusqu'à l'arrivée des données.
-      setState(
+      setState((precedent) =>
         bilans.data.length === 0
           ? { status: 'empty' }
           : {
@@ -210,9 +220,17 @@ export default function Suivi() {
               // Lecture secondaire : son échec laisse `null` — donc pas de carte plutôt qu'une carte
               // vide — et se dit dans la ligne de relecture, comme sur le plan.
               decisions: decisions.ok ? decisions.data : null,
+              // **Un échec garde la dernière liste lue**, comme le plan : sans quoi un profil sans
+              // boucle relirait « Je note tes réponses ici » le temps d'une panne de cette seule
+              // lecture — l'état d'avant défait sans rien savoir (`carteDuSuiviSansPoint`).
+              boucles: boucles.ok
+                ? boucles.data
+                : precedent.status === 'ok'
+                  ? precedent.boucles
+                  : null,
             }
       );
-      setRelectureEnEchec(!decisions.ok);
+      setRelectureEnEchec(!decisions.ok || !boucles.ok);
     })();
 
     return () => {
@@ -328,7 +346,9 @@ export default function Suivi() {
     );
   }
 
-  const { history, checkins, decisions } = state;
+  const { history, checkins, decisions, boucles } = state;
+  // La carte « aucun point répondu » : sans boucle, elle ne parle pas de réponses (30/09/2026).
+  const sansPoint = carteDuSuiviSansPoint(boucles);
   const latest = history[history.length - 1];
   const previous = history.length > 1 ? history[history.length - 2] : null;
   const first = history[0];
@@ -547,19 +567,25 @@ export default function Suivi() {
               cadence dépend de la boucle (hebdomadaire pour le domicile-travail, mensuelle pour
               les extras) et une date fausse serait pire que pas de date. C'est ce qui distingue
               cette carte de celle du plan, qui *peut* nommer le jour parce qu'elle sait de
-              quelle boucle il s'agit (v1-12 §6.2). */}
+              quelle boucle il s'agit (v1-12 §6.2).
+
+              **Et sans boucle, elle ne parle pas de réponses** (décision du 30/09/2026, `v1-27`
+              §12.23) : « Je note tes réponses ici » et la note sur les périodes sans réponse
+              s'adressaient, à chaque visite, à qui n'en aura jamais. `carteDuSuiviSansPoint`
+              choisit la ligne et la note ; la carte, elle, reste. */}
           {checkins.length === 0 && (
             <ThemedView type="backgroundElement" style={styles.card}>
               <View style={styles.checkinsHeader}>
                 <Mascot mood="resting" size={40} />
                 <View style={styles.checkinsHeaderText}>
-                  <ThemedText weight={600}>{RAMILLE.suiviSansPoint}</ThemedText>
+                  <ThemedText weight={600}>{sansPoint.ligne}</ThemedText>
                 </View>
               </View>
-              <ThemedText type="small" themeColor="textTertiary">
-                Une période sans réponse ne se voit pas ici : on ne compte que les fois où tu as
-                répondu, jamais celles où tu as laissé passer.
-              </ThemedText>
+              {sansPoint.note && (
+                <ThemedText type="small" themeColor="textTertiary">
+                  {sansPoint.note}
+                </ThemedText>
+              )}
             </ThemedView>
           )}
 

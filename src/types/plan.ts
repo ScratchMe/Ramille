@@ -831,7 +831,11 @@ export function cartesDuPlan({
   return {
     carteDOuverture,
     // Ramille parle déjà sous une carte d'ouverture, et le point, quand il y en a un, dit
-    // lui-même que la boucle tourne : la carte d'attente ne s'ajoute à aucun des deux.
+    // lui-même que la boucle tourne : la carte d'attente ne s'ajoute à aucun des deux. **Sauf un
+    // point répondu dont la boucle s'est arrêtée** (un nouveau bilan pendant la période, `v1-27`
+    // §12.23) : il ne donne plus rendez-vous, et rien n'annonce alors l'autre boucle jusqu'à la fin
+    // de la période. Laissé ainsi par décision de la personne qui pilote (30/09/2026) : c'est un
+    // silence d'au plus une période, pas une fausse promesse, pour un cas jamais vu en production.
     carteDAttente: pointsAffiches === 0 && attenteDisponible && carteDOuverture === null,
     pistesAvantLeCap: premierPlan,
     // Jamais sur un plan à zéro action (il n'a rien à expliquer, et la félicitation serait la
