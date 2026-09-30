@@ -531,7 +531,9 @@ rougi une fois, la confirmation jamais ouverte ; cinq parcours complets et seize
 l'ont pas reproduit, et c'est en **retenant les deux lectures pendant l'appui** que le mécanisme est
 sorti — deux fois sur deux, contre un témoin qui ouvre la confirmation deux fois sur deux. Un écran
 qui charge après son HTML statique s'attend donc sur ce qui arrive **avec** ses données (ici le
-groupe « Les rappels »), jamais sur ce que le HTML porte déjà.
+groupe « Les rappels »), jamais sur ce que le HTML porte déjà. L'écran, lui, n'a pas changé : ce
+qu'il montre pendant qu'il charge se décide
+([#305](https://github.com/ScratchMe/Ramille/issues/305)).
 
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
