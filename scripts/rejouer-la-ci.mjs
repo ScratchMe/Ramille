@@ -218,6 +218,7 @@ function plan(ctx) {
         ...[
           'verifier-hypotheses-calcul',
           'verifier-renvois-des-documents',
+          'verifier-migrations-livrees',
           'verifier-miroir-du-kit',
           'verifier-gabarits-email',
         ].map((s) => ({ nom: s, ci: `node scripts/${s}.mjs`, commande: ['node', `scripts/${s}.mjs`] })),

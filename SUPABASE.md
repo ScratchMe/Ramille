@@ -369,11 +369,24 @@ le shell (`sed -i`, `git mv`), un humain, une session qui ne l'a pas chargé, et
 fichiers insensible à la casse — un chemin écrit dans une autre casse. **La seule retouche d'une
 migration livrée de toute l'histoire du dépôt** (`20260917094500_classement_du_plan.sql`, le
 17/09/2026, pour qu'elle rejoue juste sur une base restaurée) était délibérée, et elle donne la
-forme de l'exception, en trois temps : elle se **décide** avec la personne qui pilote, avant
+forme de l'exception, en quatre temps : elle se **décide** avec la personne qui pilote, avant
 d'écrire ; elle se **fait** par une commande de shell, parce que le hook la refuse à Edit exprès ;
-et la PR **cite** cette commande et la décision qui l'autorise. C'est le seul chemin, et il est
-écrit ici pour qu'il ne se confonde pas avec un contournement : ce qui distingue les deux, c'est la
-décision et la trace. La garde de CI qui verrait aussi le shell est consignée en `v1-27` §12.18.
+elle s'**inscrit** dans `supabase/retouches-de-migrations-livrees.json` — le fichier, le geste
+(`modifiee` ou `supprimee`), l'empreinte du contenu accepté (`git hash-object <fichier>`, que le
+refus de la CI affiche), la date, la décision et la raison ; et la PR **cite** la commande et la
+décision. C'est le seul chemin, et il est écrit ici pour qu'il ne se confonde pas avec un
+contournement : ce qui distingue les deux, c'est la décision et la trace.
+
+**Et depuis le 29/09/2026 la CI voit ce que le hook ne voit pas** (`scripts/verifier-migrations-livrees.mjs`,
+travail `checks`, `TESTING.md` §2.15). Elle compare la copie de travail à la base de fusion avec
+`origin/main` et refuse toute migration qui y existait et qui est modifiée, supprimée ou renommée —
+par Edit, par le shell, par un humain, peu importe : elle regarde le résultat. Deux choses à ne pas
+défaire. **Le journal accepte une retouche, pas un fichier** : l'entrée porte l'empreinte du contenu
+accepté, donc une retouche suivante du même fichier rougit de nouveau. Et **une référence illisible
+refuse** : sans `origin/main` (le `fetch-depth: 0` du `checkout` retiré), la garde ne sait plus ce qui
+est livré, et elle sort en 1 plutôt que de passer. Ce qu'elle ne voit pas : un push direct sur
+`main` sans PR, qu'elle n'a rien à comparer, et une migration appliquée au distant sans être livrée
+dans le dépôt (`v1-27` §9).
 
 
 **Aucune migration de données ne désigne une ligne par un identifiant généré, et celle qui l'a fait

@@ -1,0 +1,4 @@
+{
+  "mode_d_emploi": "Journal des retouches de migrations livrées, acceptées par décision de la personne qui pilote. Une entrée : fichier (depuis la racine du dépôt), geste (modifiee | supprimee), empreinte (git hash-object du contenu accepté, pour une modification), date (JJ/MM/AAAA), decision, raison. Lu par scripts/verifier-migrations-livrees.mjs ; le chemin complet est en SUPABASE.md §2.3. Une entrée ne se retire pas après la fusion : elle est la trace de la décision.",
+  "retouches": []
+}

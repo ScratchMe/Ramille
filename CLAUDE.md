@@ -267,8 +267,9 @@ joué sans être installé, et chacun décidé avec la personne qui pilote, comm
   confirmation ») : les retirer ferait confirmer chaque migration, qui passe déjà par une PR relue.
 - **Un hook refuse de modifier une migration livrée** (`scripts/proteger-les-migrations-livrees.mjs`) :
   « livrée » veut dire présente dans `origin/main`, pas sur le disque, parce qu'une migration en
-  cours s'écrit en plusieurs retouches. Il ne voit ni le shell ni une autre session :
-  `SUPABASE.md` §2.3.
+  cours s'écrit en plusieurs retouches. Il ne voit ni le shell ni une autre session — **la CI, si,
+  depuis le 29/09/2026** (`scripts/verifier-migrations-livrees.mjs`), et une retouche voulue
+  s'inscrit dans un journal avec l'empreinte de son contenu : `SUPABASE.md` §2.3.
 - **Le sous-agent `contre-lecture`** porte la grille de la relecture adversariale (plus haut). Sa
   « lecture seule » est une consigne et non une garde : il a Bash, et la première contre-lecture a
   supprimé `/dev/null` du conteneur par une commande de vérification mal écrite.
@@ -1813,6 +1814,20 @@ contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
   `rappels_au_depart`** : une valeur nouvelle ferait échouer chaque compte, donc perdre chaque
   cohorte. Une assertion du `36` lit les littéraux `return` du corps installé et les compare au
   `check`.
+
+**Et ce que le lot 6 lit, il le lit dans quatre vues, sans définition nouvelle** (29/09/2026,
+`20260929210541_les_vues_de_l_administration.sql`, `docs/exploitation/README.md` §8.5 ter) :
+l'entonnoir et la rétention par cohorte, les états des rappels, les départs par mois. Chaque notion y
+garde sa dérivation — `cohorte_de`, `dernier_signe_de_vie`, `regime_de_rappel` sur la boucle que
+rend `boucle_de_la_personne` —, et une vue qui en écrirait une seconde ferait deux échelles qui
+divergent. **Une exception, nommée des deux côtés** : la rétention lit le signe de vie semaine par
+semaine, ce qu'un `max` ne sait pas faire, donc elle recopie les deux sources de
+`dernier_signe_de_vie` — une source ajoutée à l'une s'ajoute à l'autre. Trois choses à ne pas
+« simplifier » : la boucle retenue est celle qui **tourne encore**, pas celle qui a existé (sans quoi
+qui a arrêté sa boucle reste actif pour toujours) ; la rétention divise par **toute** la cohorte
+d'arrivée, purgés compris (sans eux, la purge fait paraître une cohorte plus fidèle en vieillissant) ;
+et ni l'activation ni un taux de churn ne sont calculés — la première est une décision de produit,
+le second demanderait un effectif passé que le régime ne sait pas reconstruire.
 
 **Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
 Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
