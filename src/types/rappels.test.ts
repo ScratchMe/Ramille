@@ -550,6 +550,8 @@ describe('carteAttente', () => {
 // Éprouvé en le cassant, le 30/09/2026 (TESTING.md §1.1), une mutation à la fois :
 //   - une valeur inconnue sautée au lieu de rejeter la liste (`continue` à la place du `return null`)
 //     → « rejette toute la liste… », seul ;
+//   - le soir même, la table des boucles lue par `in` au lieu de `hasOwnProperty` → le même test,
+//     seul, sur « toString » ;
 //   - `boucleAVenir` sans priorité (la mensuelle testée d'abord) → « la boucle hebdomadaire passe
 //     devant », seul ;
 //   - `laBoucleDuPointTourne` qui rend `false` sur `null` → « sans réponse du serveur… », seul.
@@ -561,7 +563,7 @@ describe('lireLesBouclesAVenir', () => {
   });
 
   it('rejette toute la liste sur une valeur inconnue, plutôt que de la lire comme une boucle arrêtée', () => {
-    for (const valeur of [['commute', 'hebdo'], ['extras', null], ['Commute']]) {
+    for (const valeur of [['commute', 'hebdo'], ['extras', null], ['Commute'], ['toString']]) {
       expect({ valeur, lue: lireLesBouclesAVenir(valeur) }).toEqual({ valeur, lue: null });
     }
   });

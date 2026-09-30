@@ -21,6 +21,7 @@
 --   - son repli remis sur `mensuel` (l'état d'avant, vu de l'écran) → K3, K5 et K6, les trois profils
 --     sans boucle ;
 --   - sa garde de session retirée → la session absente, seule ;
+--   - le `revoke` de `boucles_du_dernier_bilan` sans `public` → les privilèges, seuls ;
 --   - la base déclarée retirée de `boucles_du_dernier_bilan` (`a_des_voyages_declares` ôté du filtre)
 --     → six sur la suite entière : K4, seul ici ; quatre assertions du fichier 20 (les profils G, H
 --     et I) ; et l'assertion de structure du fichier 33, qui cherche l'appel. **L'accord avec les
@@ -35,8 +36,10 @@
 --   - sa garde de session retirée → « sans session », seule : l'appel à `null` rend les boucles de
 --     tout le monde ;
 --   - son `revoke` sans `public` → son assertion de privilège ;
---   - le résumé remis (la première boucle seule, `array[min(loop_type)]`) → K1, le seul profil qui
---     a les deux boucles : c'est l'assertion qui garde la raison du remplacement ;
+--   - le résumé remis — la première boucle seule, `array[min(loop_type)] … having count(*) > 0`,
+--     pour qu'un profil sans boucle rende encore `{}` et non `{NULL}` — → K1, le seul profil qui a
+--     les deux boucles : c'est l'assertion qui garde la raison du remplacement. Sans le `having`,
+--     K3, K5 et K6 tomberaient aussi, et la mutation ne dirait plus laquelle garde quoi ;
 --   - `ma_boucle_a_venir` recréée → `hasnt_function` ;
 --   - rejouées sur la nouvelle forme, la base déclarée retirée → K4, et le `revoke` de
 --     `boucles_du_dernier_bilan` sans `public` → son assertion de privilège.

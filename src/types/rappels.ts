@@ -238,22 +238,37 @@ export type Boucle = 'hebdo' | 'mensuel';
 export type BoucleAVenir = Boucle | 'aucune';
 
 /**
+ * Les boucles que le client sait lire. **Un `Record` sur `LoopType` et non une liste** : une valeur
+ * ajoutée au `check` de `engagement_checkins.loop_type` suit dans `LoopType` (miroir déclaré dans
+ * `MIROIRS`, comparé à la base en CI), et le compilateur refuse alors cette table tant qu'elle ne
+ * la porte pas. Une liste écrite à la main l'aurait laissée dehors en silence — et toute la réponse
+ * du serveur aurait été lue `null`, pour tout le monde.
+ */
+const BOUCLES_LISIBLES: Record<LoopType, true> = { commute: true, extras: true };
+
+/**
  * La réponse de `mes_boucles_a_venir`, relue : les boucles qui tournent, dans le vocabulaire de
  * `engagement_checkins.loop_type` (30/09/2026, `v1-27` §12.23). Elle a remplacé
  * `ma_boucle_a_venir`, qui les résumait en une valeur : la carte d'un point répondu a besoin de
  * savoir si **sa** boucle tourne, et « hebdo » ne disait rien de la mensuelle.
  *
  * **Une liste qui porte une valeur inconnue rend `null` en entier**, et non la liste sans elle :
- * une boucle renommée d'un seul côté serait sinon lue comme arrêtée, et la carte d'un point répondu
- * perdrait sa promesse sans raison. Avec `null`, l'écran se comporte comme sur un échec de lecture
- * (`FRONT.md` §2.11) : pas de carte d'attente, et aucune boucle déclarée arrêtée.
+ * une boucle inconnue serait sinon lue comme arrêtée, et la carte d'un point répondu perdrait sa
+ * promesse sans raison. Les écrans traitent `null` **comme un échec de lecture**, ligne de relecture
+ * comprise (`FRONT.md` §2.11) : pas de carte d'attente ni de carte des deux lieux, et aucune boucle
+ * déclarée arrêtée.
  */
 export function lireLesBouclesAVenir(valeur: unknown): LoopType[] | null {
   if (!Array.isArray(valeur)) return null;
   const boucles: LoopType[] = [];
   for (const boucle of valeur) {
-    if (boucle !== 'commute' && boucle !== 'extras') return null;
-    if (!boucles.includes(boucle)) boucles.push(boucle);
+    // `hasOwnProperty` et non `in` : `in` accepterait « toString ». Et pas `Object.hasOwn`, que rien
+    // d'autre n'emploie ici et dont le support par Hermes n'a pas été vérifié.
+    if (typeof boucle !== 'string' || !Object.prototype.hasOwnProperty.call(BOUCLES_LISIBLES, boucle)) {
+      return null;
+    }
+    const lue = boucle as LoopType;
+    if (!boucles.includes(lue)) boucles.push(lue);
   }
   return boucles;
 }

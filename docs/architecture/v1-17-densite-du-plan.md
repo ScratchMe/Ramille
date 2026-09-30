@@ -539,7 +539,8 @@ document est daté.
 **Et un écart de plus le 30/09/2026, décidé par la personne qui pilote** (`v1-27` §12.23) : la
 carte des deux lieux (planche F3) ne dit plus à tout le monde « l'action en cours, le point
 régulier, ton cap » et « tes bilans et tes réponses ». Son corps n'énumère que ce que le plan porte
-(`ouvertureDesDeuxLieux`), et Ramille dit « Je garde tes bilans dans ton suivi, au fil des
+(`ouvertureDesDeuxLieux`) — « ta saison » et non « ton cap » quand il n'a pas d'action, sa carte du
+cap n'y montrant que la saison —, et Ramille dit « Je garde tes bilans dans ton suivi, au fil des
 saisons. » quand aucune boucle ne tourne. Le plan à actions et à point garde la carte de la
 planche au caractère près.
 

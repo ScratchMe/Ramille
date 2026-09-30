@@ -683,16 +683,22 @@ exactement ce qui avait laissé passer le mauvais caractère.
   côté client : elle vit dans `boucles_du_dernier_bilan`, que les générateurs lisent aussi.
 - **Deux autres textes du plan suivent les mêmes boucles, et pour la même raison** (décision du
   30/09/2026, `v1-27` §12.23). **La carte des deux lieux** ne décrit que ce que le plan porte
-  (`ouvertureDesDeuxLieux`, `src/types/premier-parcours.ts`) : « l'action en cours » s'il a des
-  actions, « le point régulier » et « tes réponses » si une boucle tourne, « ton cap » toujours — et
-  Ramille dit « Je garde tes bilans » là où il n'y aura pas de réponse à noter. Elle attend que les
+  (`ouvertureDesDeuxLieux`, `src/types/premier-parcours.ts`) : « l'action en cours » et « ton cap »
+  s'il a des actions — sinon « ta saison », puisqu'un plan sans action ne chiffre pas son cap et que
+  sa carte n'y montre que la saison —, « le point régulier » et « tes réponses » si une boucle
+  tourne ; et Ramille dit « Je garde tes bilans » là où il n'y aura pas de réponse à noter. Elle attend que les
   boucles soient lues, comme la carte d'attente. **La carte d'un point répondu** ne donne plus
   rendez-vous quand sa boucle s'est arrêtée — un nouveau bilan pendant la période : le pied dit
   « Répondu lundi. » sans le prochain point, et la réplique de Ramille est choisie parmi celles qui
   ne promettent rien (`repliqueDuPoint`, `piedDuPointRepondu`, dont `boucleTourne` est
   **obligatoire** : un défaut laisserait un appel oublié promettre en silence). Sur un échec de
   lecture, la boucle du point est tenue pour tournante (`laBoucleDuPointTourne`) : la réplique est
-  choisie par période, et la déclarer arrêtée la ferait changer le temps de la panne. La
+  choisie par période, et la déclarer arrêtée la ferait changer le temps de la panne. **Et le suivi,
+  sur l'autre onglet**, le même jour et pour la même raison : sa carte « aucun point répondu » dit
+  « Je garde tes bilans ici » sans boucle, et perd sa note sur les périodes sans réponse
+  (`carteDuSuiviSansPoint`, `src/types/suivi.ts`, lue par `loadBouclesAVenir`). La carte reste —
+  un suivi vide sous les bilans se lit comme un manque — et sur un échec de lecture elle garde son
+  texte d'avant. La
   feuille ouverte après « C'est noté » promet un contact **sur l'action qu'on vient d'engager**
   (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du **poste de cette
   action**, par `boucleDeLAction` (`src/types/rappels.ts`), miroir de l'appariement que fait la
@@ -700,7 +706,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   trouvé : quelqu'un qui a un trajet domicile-travail **et** s'engage sur un vol s'entendait
   promettre le lundi, alors que le point du lundi ne demandera jamais rien sur son vol — vérifié en
   base le même jour, le point hebdomadaire sortant en question générique. Corollaire : la feuille
-  ne dépend plus de `boucle`, sans quoi un échec de lecture secondaire empêchait une cérémonie qui
+  ne dépend plus des boucles lues (`boucles`), sans quoi un échec de lecture secondaire empêchait une cérémonie qui
   ne s'ouvre **qu'une fois par appareil** — donc la perdait pour de bon.
 - **Une phrase qui dit quoi faire donne le moyen de le faire, et la porte se rend sous la ligne qui
   la porte** (13.4, recette web du 16/09/2026). « Rattache un compte pour recevoir le mot par
@@ -1035,9 +1041,14 @@ périmerait en silence au prochain passage :
   second échec rend exactement le même écran et le bouton a l'air mort ; dedans, il
   ferait clignoter « Chargement… » à chaque retour au premier plan, donc à chaque arrivée par
   notification, puisque `rafraichir` est aussi le rappel de `useRafraichirAuRetour`. Et une valeur
-  par défaut posée sur un échec de lecture est du même mensonge : le rythme de la boucle (`boucle`)
-  vaut `null` tant qu'on ne l'a pas lu, et la carte d'attente ne s'affiche pas plutôt que de nommer
-  le mauvais jour.
+  par défaut posée sur un échec de lecture est du même mensonge : les boucles (`boucles`) valent
+  `null` tant qu'on ne les a pas lues, et la carte d'attente comme celle des deux lieux ne
+  s'affichent pas plutôt que de nommer le mauvais jour. **Une exception, nommée** (30/09/2026) : la
+  carte d'un point répondu tient alors sa boucle pour tournante (`laBoucleDuPointTourne`) — elle
+  existe déjà, sa réplique est choisie par période, et la déclarer arrêtée ferait changer la phrase
+  de Ramille le temps de la panne ; le suivi garde de même le texte d'avant de sa carte « aucun
+  point répondu » (`carteDuSuiviSansPoint`). Ce n'est pas une valeur par défaut qui affirme : c'est
+  l'état d'avant qu'on ne défait pas sans savoir.
 - **Les tailles, rayons, hauteurs et traits qui se répètent vivent dans `TypeScale`, `Radius`,
   `ControlHeight`, `Rail` et `Stroke`** (`src/constants/theme.ts`), consommés par les types
   `screenTitle`/`salient`/`cardTitle`/`body`/`display` de `ThemedText` ou étalés dans un style

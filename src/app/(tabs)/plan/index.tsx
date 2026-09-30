@@ -424,8 +424,9 @@ export default function Plan() {
   /**
    * Le poste de l'action qu'on vient d'engager, pour la feuille et pour elle seule.
    *
-   * **Il ne se confond pas avec `boucle`** (recette du 14/09/2026) : `boucle` répond à « quel est
-   * le prochain contact, quel qu'en soit le sujet » et se dérive de la personne ; la feuille, elle,
+   * **Il ne se confond pas avec les boucles lues** (`boucles`, recette du 14/09/2026) : elles
+   * répondent à « quel est le prochain contact, quel qu'en soit le sujet » et se dérivent de la
+   * personne ; la feuille, elle,
    * promet un contact *sur cette action-là*. Quelqu'un qui a un trajet domicile-travail et
    * s'engage sur un vol s'entendait promettre le lundi, alors que le point du lundi s'apparie sur
    * le poste `commute` (C2.1) et ne lui demandera jamais rien sur son vol.
@@ -773,7 +774,10 @@ export default function Plan() {
         // rendez-vous (`laBoucleDuPointTourne`) — plutôt que de remplacer tout le plan par un écran
         // d'erreur pour une lecture secondaire. La ligne de relecture dit que l'écran n'est pas tout
         // à fait à jour. Une réponse inconnue se lit de même (`lireLesBouclesAVenir`).
-        if (!erreurBoucle) setBoucles(lireLesBouclesAVenir(bouclesAVenir));
+        // Une réponse illisible est un échec de lecture comme un autre : elle laisse `null` et
+        // allume la ligne de relecture plus bas, plutôt que de se taire.
+        const bouclesLues = erreurBoucle ? null : lireLesBouclesAVenir(bouclesAVenir);
+        if (bouclesLues !== null) setBoucles(bouclesLues);
         setTotalDuBilan(erreurResultat ? null : (resultat?.total_co2_kg_year ?? null));
         setRappels(prefs);
         setPermission(etatPermission);
@@ -881,9 +885,9 @@ export default function Plan() {
           premierPlan,
         });
         // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des deux
-        // lectures secondaires ci-dessus a échoué — le total, ou la boucle, sans laquelle la carte
-        // d'attente ne se montre pas.
-        setRelectureEnEchec(Boolean(erreurResultat || erreurBoucle));
+        // lectures secondaires ci-dessus a échoué — le total, ou les boucles, sans lesquelles ni la
+        // carte d'attente ni celle des deux lieux ne se montrent.
+        setRelectureEnEchec(Boolean(erreurResultat) || bouclesLues === null);
       } catch {
         // Une promesse rejetée — `loadReminderPrefs` ou `lirePermission`, qui touchent un
         // module natif et ne rendent pas d'erreur mais lèvent — laissait l'écran sur

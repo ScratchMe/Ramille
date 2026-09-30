@@ -175,6 +175,11 @@ Consigné ici pour que personne ne « corrige » le code vers le canvas.
     fait le deux tons, et il porte le dessin sur l'écran de lancement, où la mascotte fait 168 px.
     Le pompon occupe alors 56 % de la largeur de la calotte à la plus petite taille, contre 44 %
     avant, et son bord haut affleure le haut du `viewBox` : on ne l'ouvre pas davantage.
+28. **Une carte répondue dont la boucle s'est arrêtée ne donne pas rendez-vous** (30/09/2026) : un
+    nouveau bilan peut arrêter la boucle pendant que la carte reste affichée. Le pied dit « Répondu
+    lundi. » seul, et Ramille prend une réplique sans rendez-vous — l'originale du « Oui », la
+    variante du « Non » qui ne nomme pas de retour, la première phrase seule de « pas de trajet ».
+    Détail en `v1-14` §10, écart 40.
 
 La phrase de durée est tranchée : « Le refaire prend **quelques minutes** », et non « cinq minutes »
 comme l'écrit B1. Le produit promet « environ 5 minutes » pour le **premier** bilan (transition de

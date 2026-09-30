@@ -1453,7 +1453,8 @@ correctif ne le crée ni ne le règle ; relevé par la contre-lecture du 30/09/2
 > par les deux générateurs, qui ne portent plus leur propre choix du dernier bilan. Rien n'est recopié
 > en TypeScript. Gardes : pgTAP `39` (six profils, l'accord avec les générateurs, cinq mutations), le
 > test `38` rejoué sur la fonction partagée, `rappels.test.ts` (tous les états des rappels, deux
-> mutations) et le parcours réel, où le cycliste lit la ligne du lundi. Appliquée au distant le même
+> mutations — dont celle du lecteur `lireLaBoucleAVenir`, remplacé le soir même avec ses tests) et
+> le parcours réel, où le cycliste lit la ligne du lundi. Appliquée au distant le même
 > jour : **un compte de production sur onze** était dans ce cas (`docs/exploitation/README.md` §7 bis).
 
 **Relevé par la contre-lecture du correctif de §12.21**, raisonné sur le code, pas rejoué à l'écran.
@@ -1479,8 +1480,10 @@ de la recopier en TypeScript, ce qui ferait une paire de plus à tenir d'accord.
 
 > **Fait le 30/09/2026, sur décision de la personne qui pilote** — les deux recommandations
 > retenues. **La carte des deux lieux dit ce qui y est** (`ouvertureDesDeuxLieux`,
-> `src/types/premier-parcours.ts`) : son corps n'énumère que ce que le plan porte — l'action s'il
-> en a, le point régulier et les réponses si une boucle tourne, le cap toujours — et Ramille dit
+> `src/types/premier-parcours.ts`) : son corps n'énumère que ce que le plan porte — l'action et le
+> cap s'il a des actions, « ta saison » sinon (un plan sans action ne chiffre pas son cap : le
+> premier texte validé disait « ton cap » partout, corrigé le soir même après la contre-lecture),
+> le point régulier et les réponses si une boucle tourne — et Ramille dit
 > « Je garde tes bilans dans ton suivi, au fil des saisons. » sans boucle
 > (`RAMILLE.planEtSuiviSansPoint`). L'écart était plus large que relevé plus bas : le **cycliste**,
 > dont le plan n'a aucune action, lisait « l'action en cours » juste au-dessus de « Aucun changement
@@ -1492,7 +1495,16 @@ de la recopier en TypeScript, ce qui ferait une paire de plus à tenir d'accord.
 > Techniquement, le serveur rend les boucles **une par une** (`mes_boucles_a_venir`, qui remplace
 > `ma_boucle_a_venir` : « hebdo » ne disait pas si la mensuelle tournait aussi). En production, le
 > jour de la décision : un compte sur onze sans boucle ni action, un avec boucle sans action, et
-> **aucun point** dont la boucle s'était arrêtée.
+> **aucun point** dont la boucle s'était arrêtée. **Et une troisième phrase, trouvée en
+> l'implémentant et décidée le même soir** : dans le suivi, la carte « aucun point répondu » disait à
+> chaque visite « Je note tes réponses ici » et expliquait qu'une période sans réponse ne se voit pas
+> — sans boucle, elle dit « Je garde tes bilans ici, au fil des saisons. » et perd sa note
+> (`carteDuSuiviSansPoint`). **Le parcours réel a gagné un troisième profil, sans aucune boucle**
+> (la contre-lecture avait relevé que les deux premiers en ont chacun une, donc que l'écran qui passe
+> les boucles aux dérivations n'était gardé par rien) : il lit la carte des deux lieux, la carte
+> d'attente et le suivi sans point répondu. **Ce qu'aucun profil ne joue** : la carte d'un point
+> répondu dont la boucle s'est arrêtée — la dérivation et la carte sont gardées par Jest, l'appel de
+> l'écran (`laBoucleDuPointTourne`) par rien.
 
 **Relevé par la contre-lecture de §12.22**, lu dans le code, pas rejoué à l'écran. La décision du
 30/09/2026 ne vaut que pour la carte d'attente ; deux autres textes supposent encore qu'une boucle
@@ -1529,3 +1541,27 @@ l'empreinte est tenue (`docs/exploitation/README.md` §8.7). **Condition de réo
 `assessments` compte plusieurs milliers de lignes, mesurer le temps de `mes_boucles_a_venir` sur le
 distant ; au-delà de quelques millisecondes, séparer l'appel d'une personne (un filtre sans `or`) de
 celui de tout le monde.
+
+### 12.25 Une action engagée sur l'autre poste mensuel n'est jamais interrogée (30/09/2026)
+
+**Relevé par la contre-lecture de §12.23, raisonné sur le code, et mesuré** : aucun compte de
+production n'est dans ce cas le 30/09/2026 (les trois actions engagées hors trajet sont des actions
+de voyage, et leur boucle mensuelle porte sur les voyages). La boucle mensuelle interroge **un**
+poste — le plus lourd des sorties et des voyages, les voyages pour qui sort rarement — et cherche
+l'action engagée sur ce poste-là seulement (`action_engagee_de_la_periode`, §5). Quelqu'un
+dont les sorties pèsent plus que les voyages et qui s'engage sur un voyage ne sera donc jamais
+interrogé sur cette action — alors que la feuille ouverte après « C'est noté » lui promet
+« Au début du mois prochain, je reviens te demander si tu l'as faite » (`boucleDeLAction`), et la
+carte du premier plan « un point régulier te demandera si tu l'as faite ».
+
+**Ce qui revient à la personne qui pilote** : faire suivre la boucle mensuelle à l'action engagée
+(une question qui change de poste selon ce qu'on a choisi), ou taire la promesse quand l'action
+n'est pas sur le poste de la boucle. **Condition de réouverture** : le premier compte dans ce cas,
+que la requête de mesure du 30/09/2026 retrouve (actions engagées de la saison dont le poste n'est
+ni `commute` ni celui de la boucle mensuelle).
+
+**Et une dérivation voisine, de moindre portée** : la félicitation d'un plan sans action promet le
+point (« Le point reste là… ») d'après le poste du **cycle** (`felicitationDuPlanSansAction`), là
+où les autres textes lisent les boucles. Les deux s'accordent en régime normal ; elles divergent
+seulement si le cycle est en retard sur le dernier bilan (génération du plan échouée, rattrapée par
+le cron de la nuit).

@@ -89,8 +89,11 @@ export function ouvreUnPremierParcours(
  * mode ne te ferait gagner assez » ; et à qui n'a ni trajet, ni sorties régulières, ni voyage, trois
  * promesses sur trois, suivies d'une carte d'attente qui lui dit « reviens quand tu veux ». Le corps
  * s'énumère donc à partir de deux faits, **indépendants** — le plan a-t-il des actions, une boucle
- * tourne-t-elle —, et le cap y est toujours : la carte du cap se rend même sans action (C2.8).
- * La ligne de Ramille suit la boucle, parce qu'elle parle des réponses.
+ * tourne-t-elle. **Le dernier élément suit les actions** : un plan sans action ne chiffre pas son
+ * cap (`cadreDuPlan`), et sa carte du cap ne montre que la saison et sa fin — d'où « ta saison »
+ * là où le plan à actions dit « ton cap » (décision du même soir : le premier texte validé disait
+ * « ton cap » partout, sur une prémisse fausse). La ligne de Ramille suit la boucle, parce qu'elle
+ * parle des réponses.
  *
  * Aucune combinaison n'est traitée à part, pas même celle qu'on ne rencontre pas — des actions sans
  * boucle : sans trajet et sans base déclarée, `estimate_action_savings` n'en propose aucune (mesuré
@@ -109,7 +112,7 @@ export function ouvertureDesDeuxLieux({
   const dansLePlan = [
     ...(actions ? ['l’action en cours'] : []),
     ...(boucle ? ['le point régulier'] : []),
-    'ton cap',
+    actions ? 'ton cap' : 'ta saison',
   ];
   // Trois éléments se séparent par des virgules, comme la carte d'origine ; deux se lient par « et ».
   const plan =

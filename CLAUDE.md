@@ -332,10 +332,12 @@ Trois suites : **Jest** (`npm test`, logique pure côté client, `src/**/*.test.
 numérotés, un fichier par sujet, `supabase test db`) et, depuis le 20/09/2026, **le parcours réel**
 (`scripts/verifier-parcours-reel.mjs` : le chemin nominal joué par Playwright contre la stack
 Supabase locale, la base relue après chaque écriture — `TESTING.md` §2.6, qui dit aussi ce qu'il
-laisse volontairement aux deux autres). **Deux profils**, et le second n'est pas un doublon : le
+laisse volontairement aux deux autres). **Trois profils**, et aucun n'est un doublon : le
 cycliste au **plan à zéro action** est le seul chemin où la carte « Ton premier plan » ne se rend
 jamais, donc le seul où la barre d'onglets arrive autrement — et depuis C4.7 il finit par **retirer
-ses deux bilans**, le seul chemin qui efface la marque locale de bilan sans quitter le compte. **Docker tourne dans cet environnement** — `sudo dockerd &`,
+ses deux bilans**, le seul chemin qui efface la marque locale de bilan sans quitter le compte ; le
+troisième, depuis le 30/09/2026, n'a **aucune boucle**, et c'est le seul où ni le plan ni le suivi
+ne peuvent promettre un point. **Docker tourne dans cet environnement** — `sudo dockerd &`,
 mesuré le 20/09/2026 —, donc pgTAP et le parcours s'exécutent ici, et le `BEGIN`/`ROLLBACK` sur le
 projet distant n'est plus la seule validation d'un fichier pgTAP. Les trois tournent en CI sur
 chaque pull request. La
@@ -2019,7 +2021,8 @@ d'abord faisait reprendre la main à un ancien bilan dès que le nouveau n'en av
 boucles, ce choix et les deux filtres vivent en un seul endroit, `boucles_du_dernier_bilan`**
 (`v1-27` §12.22), que lit aussi l'écran du plan par `mes_boucles_a_venir` — les boucles une par
 une : sans boucle, Ramille ne promet rien, ni la carte d'attente, ni la carte des deux lieux, ni la
-carte d'un point répondu dont la boucle s'est arrêtée (§12.23). Le plan, lui, porte le même choix écrit autrement
+carte d'un point répondu dont la boucle s'est arrêtée — et le suivi, qui les lit aussi, ne parle pas
+de réponses (§12.23). Le plan, lui, porte le même choix écrit autrement
 (`generate_plan_cycle_for_user`) — une copie connue, sur laquelle la fonction s'aligne. Les deux écrivent dans la
 même table `engagement_checkins`
 (contrainte `unique(user_id, loop_type, period_start)`), lisent les libellés snapshotés par

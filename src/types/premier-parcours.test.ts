@@ -90,18 +90,19 @@ describe('la carte des deux lieux', () => {
   });
 
   // **Décision du 30/09/2026** (`v1-27` §12.23) : elle ne décrit que ce que le plan porte. Les deux
-  // textes sont ceux que la personne qui pilote a validés, mot pour mot.
-  it('au cycliste, dont le plan n’a pas d’action, elle ne promet pas d’action', () => {
+  // textes sont ceux que la personne qui pilote a validés, mot pour mot — « ta saison » et non
+  // « ton cap » depuis le soir même : un plan sans action n'affiche pas de cap.
+  it('au cycliste, dont le plan n’a pas d’action, elle ne promet ni action ni cap', () => {
     const { ouverture, ligne } = ouvertureDesDeuxLieux({ actions: false, boucle: true });
     expect(ouverture.corps).toBe(
-      'Ici, ton plan : le point régulier et ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+      'Ici, ton plan : le point régulier et ta saison. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
     );
     expect(ligne).toBe(RAMILLE.planEtSuivi);
   });
 
   it('sans boucle ni action, elle ne promet ni action, ni point, ni réponse', () => {
     const { ouverture, ligne } = ouvertureDesDeuxLieux({ actions: false, boucle: false });
-    expect(ouverture.corps).toBe('Ici, ton plan : ton cap. En bas, ton suivi : tes bilans, saison après saison.');
+    expect(ouverture.corps).toBe('Ici, ton plan : ta saison. En bas, ton suivi : tes bilans, saison après saison.');
     expect(ligne).toBe(RAMILLE.planEtSuiviSansPoint);
   });
 
@@ -114,7 +115,9 @@ describe('la carte des deux lieux', () => {
   //     cycliste… » — et non le plan sans boucle, où les deux faits sont faux ensemble : c'est le
   //     cycliste qui les sépare ;
   //   - le suivi qui garde « et tes réponses » sans boucle → cet invariant et « sans boucle ni
-  //     action… ».
+  //     action… » ;
+  //   - et, le soir même, « ton cap » remis sans condition → cet invariant, « au cycliste… » et
+  //     « sans boucle ni action… ».
   it('chaque promesse suit son fait, et seulement lui', () => {
     for (const plan of PLANS) {
       const { ouverture, ligne } = ouvertureDesDeuxLieux(plan);
@@ -127,7 +130,10 @@ describe('la carte des deux lieux', () => {
         plan,
         reponses: plan.boucle,
       });
-      expect({ plan, cap: /ton cap/.test(corps) }).toEqual({ plan, cap: true });
+      // Le cap ne se nomme que là où il s'affiche : un plan sans action ne le chiffre pas
+      // (`cadreDuPlan`), sa carte ne montre que la saison.
+      expect({ plan, cap: /ton cap/.test(corps) }).toEqual({ plan, cap: plan.actions });
+      expect({ plan, saison: /ta saison/.test(corps) }).toEqual({ plan, saison: !plan.actions });
     }
   });
 

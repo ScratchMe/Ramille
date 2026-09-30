@@ -370,7 +370,8 @@ connaître avant d'en lire un chiffre :
   retire les sessions muettes. Ce que la purge a effacé de l'activité est signalé semaine par
   semaine (`borne_basse`) plutôt que deviné. **Une sortie n'est pas couverte** : un compte supprimé
   quitte sa cohorte, parce que la suppression ne garde que son mois — la garder par semaine
-  d'arrivée serait une décision sur ce qu'on garde ;
+  d'arrivée serait une décision sur ce qu'on garde, et elle est prise : **on laisse ainsi**
+  (30/09/2026, la personne qui pilote) ;
 - **deux indicateurs du glossaire ne sont pas calculés, et c'est une limite et non un oubli.**
   L'**activation** demande un moment « aha » et une fenêtre, qui se trouvent en regardant ce que les
   personnes restées ont fait tôt : c'est une décision de produit, et à nos volumes une corrélation
