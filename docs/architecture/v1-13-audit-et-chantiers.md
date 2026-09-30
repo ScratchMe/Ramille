@@ -2720,3 +2720,33 @@ relu en base (archive `changement`). Les deux portes de `/contexte` et son pied 
 | 05.4 | L'écran du mode, jugé sur captures | **Jugement**, muet, avec l'avis de l'agent (« plutôt pas pénible », trois réserves : rien ne dit qu'il reste quelque chose avant le toucher sinon le gris et un filet d'un pixel ; pas d'anneau de focus visible à la souris ; revenir à un mode après en avoir essayé un autre efface ses précisions) | À la personne qui pilote ; §11.19 reste au doigt |
 
 Rien d'autre : aucune ligne en écart. Le bloc 03 se joue le 30/09, le bloc 04 le 1er octobre.
+
+## 18. Ce que la recette web du 30/09/2026 a trouvé
+
+Septième séance, jouée par l'agent seul au navigateur sans interface, sur la production, de **9 h 00
+à 9 h 15** (heure de Paris) : le bloc 03 de la feuille unique
+[`docs/recette/ce-qui-reste-apres-le-29-septembre.md`](../recette/ce-qui-reste-apres-le-29-septembre.md),
+qui demandait **un autre jour** que les bilans du compte `…+ramille-p4` (29/09). **13 lignes
+consignées sur 13, toutes conformes**, aux chiffres mesurés en base avant la séance.
+
+**Deux bilans de deux jours se comparent enfin** — ce qui avait fait tomber trois lignes le 28/09 :
+la restitution met le bilan précédent en contour et dit « 511 kg de plus que ton bilan de
+septembre. Une année n'est pas l'autre. » ; le suivi garde les deux, dit l'écart en kilos avant le
+pourcentage, et l'écart par poste est à échelle commune, avec la légende qui ne lit pas le plan
+(§11.W.7). **`/contexte` fait ce qu'il promet** (§11.W.8, (a) et (b)) : la porte de « Toi », l'exception
+des véhicules nommée pour qui sort rarement, l'encart « avec tes nouvelles réponses de contexte »
+quand l'action engagée disparaît, le plan réduit de quatre pistes à deux puis à une, le total qui
+passe de 570 à 525 kg sans aucune entrée de plus au suivi, et le retour arrière qui rend les quatre
+pistes sans rendre l'engagement.
+
+### Ce que la séance a trouvé, et ce qui en a été fait
+
+| | Constat | Ce que c'est | Suite |
+|---|---|---|---|
+| 03.3 | « 511 kg de plus que ton bilan précédent (+ 875 %). » : à 390 px, le « % » passe seul à la ligne | **Défaut de typographie**, hors de ce que la ligne regardait : l'espace avant « % » était une espace ordinaire | **Corrigé** au seul endroit où le rendu pose les espaces insécables (`espacesInsecables`, `src/types/typographie.ts`) : l'espace avant « % », et celle qui suit un « + » ou un « − » devant un nombre, sans quoi la même phrase aurait laissé « (+ » en fin de ligne. Trois mutations, chacune fait tomber ce qu'elle doit ; `FRONT.md` §1 |
+| 03.6 | La carte d'attente dit « On se retrouve ici lundi. » le mercredi 30/09, pour un compte dont le point mensuel est attendu jeudi 1er octobre | **La moitié de l'observation n° 2** (§16), relevée comme un fait | L'autre moitié au 04.1, le 1er octobre ; la question se pose ensuite |
+| 03.10, 03.11 | Deux lectures perdues | **Pas un constat du produit** : une étape du pilote a échoué sur un clic (le bouton du compte de l'écran resté monté derrière), après avoir enregistré « 0 véhicule » ; son résultat s'est perdu avec l'échec | 03.10 rejouée ; 03.11 vue en base puis à l'écran, et la ligne le dit. La leçon est en `RECETTE.md` §2.6 |
+
+La feuille des rappels s'est ouverte après l'engagement (03.7), le compte ayant une adresse
+confirmée : « Sans rappel » y était présélectionné, et elle a été refermée sans rien changer —
+vérifié en base, aucun message en file.

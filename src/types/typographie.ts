@@ -12,6 +12,12 @@
  * collé au mot. U+00A0 en mesure 357, l'espace ordinaire de la police : la phrase garde l'allure
  * qu'elle avait, seule la coupure disparaît.
  *
+ * **Et « % », et le signe d'un nombre** (30/09/2026, recette `v1-13` §18) : au suivi, « 511 kg de plus
+ * que ton bilan précédent (+ 875 %). » laissait « % » seul en début de ligne à 390 px. L'espace qui
+ * précède « % » ne se coupe pas non plus, ni celle qui suit un « + » ou un « − » posé devant un
+ * nombre — sans elle, la même phrase aurait laissé « (+ » en fin de ligne, le signe séparé de son
+ * chiffre. Un « − » ou un « + » qui n'est pas suivi d'un chiffre n'est pas touché.
+ *
  * Trois choses que la fonction ne fait pas, et c'est voulu :
  * - **elle n'ajoute aucune espace** : « Note: » reste tel quel. Corriger un texte se fait à la
  *   source, pas au rendu ;
@@ -21,8 +27,11 @@
  *   des chaînes à espaces ordinaires, que leurs tests comparent telles quelles, et que
  *   `api/partage.ts` recopie sans passer par ici.
  */
-const AVANT_LA_PONCTUATION = / (?=[?!:;»])/g;
+const AVANT_LA_PONCTUATION = / (?=[?!:;»%])/g;
 const APRES_LE_GUILLEMET = /« /g;
+// Un signe en début de texte, ou après une espace ou une parenthèse, suivi d'un chiffre : le « − »
+// d'un gain, le « + » d'un écart. Le trait d'union « - » n'est pas un signe, et reste hors du motif.
+const APRES_LE_SIGNE = /(^|[\s(])([+−]) (?=\d)/g;
 
 // Écrite par son point de code, jamais collée en littéral (`FRONT.md` §1) : une U+00A0 collée ne
 // se distingue pas d'une espace ordinaire à la relecture, et un éditeur ou un copier-coller la
@@ -32,5 +41,6 @@ export const ESPACE_INSECABLE = '\u00A0';
 export function espacesInsecables(texte: string): string {
   return texte
     .replace(AVANT_LA_PONCTUATION, ESPACE_INSECABLE)
-    .replace(APRES_LE_GUILLEMET, `«${ESPACE_INSECABLE}`);
+    .replace(APRES_LE_GUILLEMET, `«${ESPACE_INSECABLE}`)
+    .replace(APRES_LE_SIGNE, `$1$2${ESPACE_INSECABLE}`);
 }

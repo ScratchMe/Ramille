@@ -350,7 +350,10 @@ La mécanique de §1.9, telle qu'elle a tourné le 28/09/2026. Tout ce qui suit 
   constat.
 - **React Navigation garde les écrans précédents dans le DOM** : un libellé peut exister deux fois,
   dont une cachée (« Rattacher un compte » vit aussi sur le plan, derrière « Toi »). Le pilote clique
-  toujours l'élément **visible**. Et le nom accessible d'une puce n'est pas toujours son libellé :
+  toujours l'élément **visible** — et « visible » au sens de Playwright ne suffit pas (30/09/2026) :
+  l'écran d'onglet resté monté derrière garde une boîte non nulle, et son bouton du compte, visé en
+  premier, est masqué par celui de l'écran au premier plan. On clique l'élément que
+  `document.elementFromPoint` rend au centre de sa boîte. Et le nom accessible d'une puce n'est pas toujours son libellé :
   les réponses du télétravail s'affichent « Aucun », « Un jour », « Deux ou plus », et se nomment
   « Aucun jour », « Un jour par semaine », « Deux jours par semaine ou plus ».
 - **Les adresses** : des alias de la boîte de la personne qui pilote (`…+ramille-p1@gmail.com`,
@@ -371,5 +374,9 @@ La mécanique de §1.9, telle qu'elle a tourné le 28/09/2026. Tout ce qui suit 
   fichier JSON (`file_path`), épinglé par `if_version`. La page réécrit `{meta, lignes}` à chaque
   coche : **un champ ajouté hors de ces deux clés serait perdu** à la coche suivante. Ce que l'agent
   a vu hors feuille va donc dans une clé **de `meta`** (`agent-hors-feuille`, 29/09/2026).
+- **Une étape du pilote qui échoue perd le résultat de tout ce qu'elle a fait avant l'échec**
+  (30/09/2026) : une écriture a pu avoir lieu sans qu'aucune trace n'en revienne. Relire la base
+  avant de rejouer, et noter dans la ligne ce qui a été vu en base plutôt qu'à l'écran ; une ligne
+  dont la lecture s'est perdue se rejoue, elle ne se déduit pas.
 - **Une capture de jugement s'envoie dès qu'elle est prise** : le répertoire temporaire disparaît
   avec le conteneur, et le 29/09 toutes les captures sauf une ont été perdues ainsi.

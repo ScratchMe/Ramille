@@ -149,7 +149,9 @@ du point de code.
 
 **Et la ponctuation double ne se coupe pas de son mot.** Une question finissait par un « ? » seul en
 début de ligne dès que la phrase remplissait la largeur — sur la carte du point, la plus lue du
-produit. L'espace qui précède `?`, `!`, `:` et `;`, et celles qui bordent l'intérieur des guillemets,
+produit. L'espace qui précède `?`, `!`, `:`, `;` et `%` — ce dernier depuis le 30/09/2026, un
+« % » seul en début de ligne relevé à la recette —, celle qui suit un `+` ou un `−` posé devant un
+nombre, et celles qui bordent l'intérieur des guillemets,
 sont insécables, **posées au rendu en un seul endroit** et jamais à la main dans chaque texte : une
 règle que chaque texte doit se rappeler finit oubliée par le suivant. Même mesure que ci-dessus :
 U+00A0 et non l'espace fine, trop étroite dans cette police.

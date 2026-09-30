@@ -7,6 +7,12 @@
  * - `»` retiré de la classe des signes → le test des guillemets tombe, et lui seul ;
  * - le drapeau `g` retiré des deux motifs → « chaque occurrence » tombe, et lui seul : les
  *   guillemets n'y portent qu'une espace de chaque sorte.
+ *
+ * Et le 30/09/2026, pour « % » et le signe d'un nombre (recette `v1-13` §18) :
+ * - `%` retiré de la classe des signes → le test de « % » et celui du signe tombent, et eux seuls
+ *   (le second porte aussi un « % ») ;
+ * - le remplacement `APRES_LE_SIGNE` retiré → le test du signe tombe, et lui seul ;
+ * - `\d` remplacé par `\S` dans son anticipation → le même tombe, sur « Plan − suivi ».
  */
 import { ESPACE_INSECABLE, espacesInsecables } from './typographie';
 
@@ -54,6 +60,23 @@ describe('espacesInsecables', () => {
     // occasion de coupure, ce qui ne laisse jamais le signe seul en début de ligne.
     expect(espacesInsecables('Vraiment  ?')).toBe(`Vraiment ${NBSP}?`);
     expect(espacesInsecables('? en tête')).toBe('? en tête');
+  });
+
+  it("rend insécable l'espace qui précède « % »", () => {
+    expect(espacesInsecables('soit 35 % de ton empreinte')).toBe(`soit 35${NBSP}% de ton empreinte`);
+  });
+
+  it("rend insécable l'espace qui suit le signe d'un nombre, et seulement d'un nombre", () => {
+    // La phrase du suivi relevée à la recette du 30/09/2026 : ni « % » ni « (+ » ne restent seuls.
+    expect(espacesInsecables('bilan précédent (+ 875 %). Une année')).toBe(
+      `bilan précédent (+${NBSP}875${NBSP}%). Une année`,
+    );
+    expect(espacesInsecables('− 1 601 kg CO₂e')).toBe(`−${NBSP}1 601 kg CO₂e`);
+    expect(espacesInsecables('soit − 20 % sur')).toBe(`soit −${NBSP}20${NBSP}% sur`);
+    // Un signe qui ne précède pas un chiffre, et le trait d'union, restent tels quels.
+    expect(espacesInsecables('Plan − suivi')).toBe('Plan − suivi');
+    expect(espacesInsecables('pas - 5')).toBe('pas - 5');
+    expect(espacesInsecables('a+ 5')).toBe('a+ 5');
   });
 
   it('rend une chaîne vide telle quelle', () => {
