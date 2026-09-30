@@ -1275,7 +1275,7 @@ export type Database = {
         Args: { p_maintenant: string }
         Returns: boolean
       }
-      // Les boucles à venir, une par une (20260930140000) — remplace ma_boucle_a_venir
+      // Les boucles à venir, une par une (20260930131841) — remplace ma_boucle_a_venir
       mes_boucles_a_venir: { Args: never; Returns: string[] }
       mettre_a_jour_le_contexte: {
         Args: {
