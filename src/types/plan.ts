@@ -15,9 +15,10 @@
  * **la définition et son commentaire sont là-bas.**
  */
 import { TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
-import { FORME_INSERABLE, estLeResiduelDesSortiesRares, formeInserable } from '@/constants/postes';
+import { FORME_INSERABLE, estLeResiduelDesSortiesRares, formeInserable, type LoopType } from '@/constants/postes';
 import { formatKg } from '@/lib/format';
 import { sousLeRepere2050 } from '@/types/palier';
+import { laBoucleDuPointTourne } from '@/types/rappels';
 
 export { formeInserable };
 
@@ -330,6 +331,13 @@ export function phraseDesPistesSuffisantes({
  * changer ici. Le titre est donc **conditionné au total** par la comparaison même de la
  * restitution (`sousLeRepere2050`), et retombe sur la phrase prudente quand le total est au-dessus
  * ou inconnu — une lecture en échec ne doit pas affirmer un repère.
+ *
+ * **La promesse du point se règle sur les boucles, comme tous les autres textes du plan** (30/09/2026,
+ * `v1-27` §12.25) — le poste vient du cycle, mais c'est `mes_boucles_a_venir` qui sait si un point
+ * viendra. Les deux s'accordent tant que le cycle suit le dernier bilan ; ils divergent quand la
+ * génération du plan a échoué et que le cron de la nuit ne l'a pas encore rattrapée, et c'est alors
+ * la boucle qui dit vrai. Sans réponse du serveur, la promesse reste (`laBoucleDuPointTourne`) :
+ * seule une boucle **connue** pour être arrêtée la retire.
  */
 export type FelicitationDuPlanSansAction = {
   titre: string;
@@ -340,7 +348,8 @@ export type FelicitationDuPlanSansAction = {
 export function felicitationDuPlanSansAction(
   poste: string | null,
   libelleDuCycle: string | null,
-  totalDuBilanKg: number | null
+  totalDuBilanKg: number | null,
+  boucles: readonly LoopType[] | null
 ): FelicitationDuPlanSansAction {
   if (estLeResiduelDesSortiesRares(poste, libelleDuCycle)) {
     const sousLeRepere =
@@ -353,7 +362,7 @@ export function felicitationDuPlanSansAction(
   const forme = poste ? FORME_INSERABLE[poste] : undefined;
   return {
     titre: forme ? `Tu fais déjà l’essentiel sur ${forme}.` : 'Tu fais déjà l’essentiel sur ce poste.',
-    promettreLePoint: true,
+    promettreLePoint: laBoucleDuPointTourne(boucles, poste === 'commute' ? 'commute' : 'extras'),
   };
 }
 

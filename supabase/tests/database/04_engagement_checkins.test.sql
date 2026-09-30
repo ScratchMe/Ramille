@@ -13,7 +13,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(20);
 
 -- ── Fixtures : 3 utilisateurs, résultats insérés directement (comme 02) ─────────────────
 -- A : éligible aux deux boucles. B : pas de trajet domicile-travail régulier (commute_poste_
@@ -111,6 +111,18 @@ select results_eq(
        || ' ' || extract(year from (date_trunc('month', now()) - interval '1 month'))::text,
      'Loisirs du week-end (Voiture)'::text, 'pending'::text $$,
   'boucle extras : mois calendaire écoulé, libellé français et trip_label repris de extras_poste_label'
+);
+
+-- **B sort rarement et son résultat, écrit à la main, n'a pas d'`extras_poste`** : aucune ligne de
+-- production n'est dans ce cas (la colonne l'admet), et son libellé reste celui du bilan. Épinglé le
+-- 30/09/2026, quand la question du mois s'est mise à suivre l'action engagée (fichier 40) : la
+-- première écriture du libellé le faisait tomber sur « Voyages longue distance » sans qu'aucune
+-- assertion le voie (contre-lecture du même jour).
+select is(
+  (select trip_label from public.engagement_checkins
+   where user_id = '71111111-1111-1111-1111-111111111112' and loop_type = 'extras'),
+  'Voyages longue distance (Train)',
+  'boucle extras : un résultat sans extras_poste garde le libellé du bilan, sorties rares comprises'
 );
 
 select is(

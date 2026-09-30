@@ -569,7 +569,10 @@ vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à conna�
 - **L'action retenue est celle du cycle qui couvre la période interrogée, appariée par poste** —
   `'commute'` pour la boucle hebdomadaire, le poste de la boucle pour la mensuelle (`travel` pour qui
   sort rarement depuis le 27/09/2026, plus bas). Sans l'appariement, une action engagée sur les
-  loisirs aurait nommé la question du trajet domicile-travail. **La recherche vit en un seul endroit
+  loisirs aurait nommé la question du trajet domicile-travail. **Et depuis le 30/09/2026, c'est la
+  boucle mensuelle qui se règle sur l'action** : engagée sur les sorties ou les voyages, le point du
+  mois porte sur ce poste-là, même quand l'autre pèse plus (`v1-27` §12.25, test `40`) — sans quoi
+  la feuille promettait « je reviens te demander si tu l'as faite » à une action jamais interrogée. **La recherche vit en un seul endroit
   depuis le 27/09/2026**, `public.action_engagee_de_la_periode(user_id, poste, period_start)`, que
   les deux générateurs et, depuis C4.2, `engagement_de_la_veille` appellent : elle **reçoit** le
   poste, elle ne le choisit pas — c'est la boucle qui décide sur quoi elle interroge (`v1-27` §5,
@@ -712,7 +715,8 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
   donc `travel` pour « rarement », et **trois choses le suivent ensemble** : la question, la
   colonne `poste` du point (d'où le troisième choix « Pas de voyage en … ») et l'action engagée
   qu'on cherche — une action de voyage engagée referme désormais sa question même quand le
-  résiduel pèse plus. **La bascule vit dans la boucle et non dans `assessment_results`**, et c'est
+  résiduel pèse plus. **Cette règle vaut pour la question générique** : une action engagée passe
+  devant (30/09/2026, plus haut), et le libellé du résiduel n'est jamais repris sur un point. **La bascule vit dans la boucle et non dans `assessment_results`**, et c'est
   la moitié à ne pas « simplifier » : `extras_poste_label` reste le plus lourd des deux, parce que
   l'app y lit le marqueur « (occasionnels) » pour reconnaître le résiduel ; déplacer la règle dans
   le calcul ferait dire « tes loisirs du week-end » à l'étiquette de la restitution. Quatre
@@ -721,7 +725,7 @@ depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui
 **Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
 (C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement
 et en §9 comme indicateur de succès, `v1-02` §4 en donnait même la requête, et il n'avait jamais été
-calculé nulle part — la phrase du handoff n'a jamais été affichée à personne. Trois choses à
+calculé nulle part — la phrase du handoff n'a jamais été affichée à personne. Ce qu'il faut en
 connaître :
 
 - **La requête de `v1-02` §4 est périmée, et elle l'est devenue en silence.** Elle prend les **deux
@@ -748,6 +752,12 @@ connaître :
   tait. `v1-14` §4.6 décrit la dérivation à deux arguments ; il en faut un troisième état pour savoir
   qu'on est à deux et pas à cinq (écart consigné en `v1-14` §10). La phrase est **voix produit et non
   celle de Ramille** — elle constate un fait sur deux périodes, et Ramille ne compte jamais.
+- **Et sur la boucle mensuelle, la série se compte sur un même poste** (décision du 30/09/2026,
+  `v1-27` §12.25). Depuis que la question du mois suit l'action engagée, le point peut changer de
+  poste d'un mois sur l'autre, et la phrase nomme celui du mois : deux « oui » sur deux postes
+  affichaient « Deuxième mois de suite que tu sors autrement » après un mois de voyages. La vue
+  `analytics.checkins_consecutifs` applique la même condition — c'est une moitié de la paire, et
+  les deux se touchent ensemble.
 
 Corollaire sur la lecture du plan : **la requête des points est bornée par une fenêtre**
 (`fenetreDesPoints`, trois périodes mensuelles). Elle ne ramenait que les points `pending`, soit un ou
@@ -2014,20 +2024,23 @@ dominant sans jamais fermer l'autre) : une hebdomadaire ancrée sur le trajet do
 (`loop_type = 'commute'`, générée par `generate_commute_checkins()`) et une mensuelle ancrée
 sur le poste "extras" — loisirs ou voyages, quel que soit celui qui pèse le plus, même
 départage que la décision dominante du bilan, **sauf pour qui sort rarement, interrogé sur ses
-voyages** (27/09/2026, paragraphe de C2.5 plus haut) (`loop_type = 'extras'`, générée par
+voyages** (27/09/2026, paragraphe de C2.5 plus haut), **et sauf quand une action est engagée sur
+l'un des deux, qui décide alors** (30/09/2026, `v1-27` §12.25) (`loop_type = 'extras'`, générée par
 `generate_extras_checkins()`). **Les deux partent du dernier bilan valide — celui du plan —, choisi
 avant de filtrer sur le trajet ou la base déclarée** (30/09/2026, `v1-27` §12.21) : filtrer
 d'abord faisait reprendre la main à un ancien bilan dès que le nouveau n'en avait plus. **Pour les
 boucles, ce choix et les deux filtres vivent en un seul endroit, `boucles_du_dernier_bilan`**
 (`v1-27` §12.22), que lit aussi l'écran du plan par `mes_boucles_a_venir` — les boucles une par
 une : sans boucle, Ramille ne promet rien, ni la carte d'attente, ni la carte des deux lieux, ni la
-carte d'un point répondu dont la boucle s'est arrêtée — et le suivi, qui les lit aussi, ne parle pas
-de réponses (§12.23). Le plan, lui, porte le même choix écrit autrement
+carte d'un point répondu dont la boucle s'est arrêtée, ni la félicitation d'un plan sans action
+(§12.25) — et le suivi, qui les lit aussi, ne parle pas de réponses (§12.23). Le plan, lui, porte le même choix écrit autrement
 (`generate_plan_cycle_for_user`) — une copie connue, sur laquelle la fonction s'aligne. Les deux écrivent dans la
 même table `engagement_checkins`
-(contrainte `unique(user_id, loop_type, period_start)`), lisent les libellés snapshotés par
-`compute_assessment_results` sur `assessment_results.commute_poste_label` /
-`.extras_poste_label`, et sont plannifiées par `pg_cron` séparément (lundi 6h pour la boucle
+(contrainte `unique(user_id, loop_type, period_start)`), partent des libellés figés par le calcul
+(`recompute_assessment_results`) sur `assessment_results.commute_poste_label` /
+`.extras_poste_label` — que la boucle mensuelle remplace par le nom du poste, sans mode, quand elle
+interroge un autre poste que le plus lourd (sorties rares, action engagée) ou le résiduel des
+sorties rares —, et sont plannifiées par `pg_cron` séparément (lundi 6h pour la boucle
 hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
 `docs/architecture/v1-02-boucle-engagement.md`.
 ### Conventions front notables → `FRONT.md`

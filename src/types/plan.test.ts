@@ -29,6 +29,7 @@ import {
   type ReponsesDeContexte,
 } from './plan';
 import { TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
+import type { LoopType } from '@/constants/postes';
 
 describe('intentionKindForPoste', () => {
   it('ne propose des jours de la semaine que pour le domicile-travail', () => {
@@ -277,8 +278,10 @@ describe('phraseDesPistesSuffisantes', () => {
  * sorties » ici et dans `postes.test.ts`, et eux seuls.
  */
 describe('felicitationDuPlanSansAction', () => {
+  // Les deux boucles tournent : le cas courant, où seul le poste du cycle décide.
+  const LES_DEUX: LoopType[] = ['commute', 'extras'];
   const titre = (poste: string | null, libelle: string | null = null) =>
-    felicitationDuPlanSansAction(poste, libelle, null).titre;
+    felicitationDuPlanSansAction(poste, libelle, null, LES_DEUX).titre;
 
   it('nomme le poste du cycle', () => {
     expect(titre('commute', 'Trajet domicile-travail (Vélo)')).toBe(
@@ -305,7 +308,7 @@ describe('felicitationDuPlanSansAction', () => {
   // que le parcours réel mesure.
   const RESIDUEL = 'Loisirs du week-end (occasionnels)';
   it('ne nomme ni ne promet le résiduel des sorties rares, et dit pourquoi le plan est vide', () => {
-    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, 11)).toEqual({
+    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, 11, LES_DEUX)).toEqual({
       titre: 'Tu es déjà sous le repère 2050.',
       promettreLePoint: false,
     });
@@ -318,29 +321,48 @@ describe('felicitationDuPlanSansAction', () => {
   it('ne dit « sous le repère 2050 » que si le total l’est, égalité comprise', () => {
     expect(titre('leisure', RESIDUEL)).toBe('Tu fais déjà l’essentiel.');
     const repereKg = TARGET_2050_TRANSPORT_T * 1000;
-    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg).titre).toBe('Tu es déjà sous le repère 2050.');
-    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg + 0.01).titre).toBe('Tu fais déjà l’essentiel.');
-    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg + 1).promettreLePoint).toBe(false);
+    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg, LES_DEUX).titre).toBe('Tu es déjà sous le repère 2050.');
+    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg + 0.01, LES_DEUX).titre).toBe('Tu fais déjà l’essentiel.');
+    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, repereKg + 1, LES_DEUX).promettreLePoint).toBe(false);
   });
 
   // Le repère ne vaut que pour le résiduel : ailleurs le titre nomme le poste, quel que soit le total.
   it('ne parle du repère que pour le résiduel', () => {
-    expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)', 11).titre).toBe(
+    expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)', 11, LES_DEUX).titre).toBe(
       'Tu fais déjà l’essentiel sur ton trajet domicile-travail.'
     );
   });
 
   it('promet le point partout ailleurs', () => {
-    expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)', 11).promettreLePoint).toBe(true);
-    expect(felicitationDuPlanSansAction('leisure', 'Loisirs du week-end (Voiture thermique)', 11).promettreLePoint).toBe(true);
-    expect(felicitationDuPlanSansAction('travel', 'Voyages longue distance (Avion)', 11).promettreLePoint).toBe(true);
-    expect(felicitationDuPlanSansAction(null, null, null).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)', 11, LES_DEUX).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('leisure', 'Loisirs du week-end (Voiture thermique)', 11, LES_DEUX).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('travel', 'Voyages longue distance (Avion)', 11, LES_DEUX).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction(null, null, null, LES_DEUX).promettreLePoint).toBe(true);
   });
 
   // Le marqueur ne vaut que pour les sorties : un libellé d'un autre poste qui le porterait ne
   // ferait pas taire le poste.
   it('ne lit le marqueur que sur les sorties', () => {
     expect(titre('travel', 'Voyages (occasionnels)')).toBe('Tu fais déjà l’essentiel sur tes voyages.');
+  });
+
+  // **La promesse suit les boucles** (30/09/2026, `v1-27` §12.25) : le poste vient du cycle, mais
+  // seul `mes_boucles_a_venir` sait si un point viendra. Ils divergent quand le plan est en retard
+  // sur le dernier bilan — et c'est la boucle qui dit vrai. Éprouvé le 30/09/2026 : la promesse
+  // remise à `true`, puis les deux boucles interverties, font tomber ce test, et lui seul.
+  it('ne promet pas un point dont la boucle est connue pour être arrêtée', () => {
+    const promet = (poste: string | null, libelle: string | null, boucles: LoopType[] | null) =>
+      felicitationDuPlanSansAction(poste, libelle, 11, boucles).promettreLePoint;
+    expect(promet('commute', 'Trajet domicile-travail (Vélo)', ['extras'])).toBe(false);
+    expect(promet('leisure', 'Loisirs du week-end (Voiture thermique)', ['commute'])).toBe(false);
+    expect(promet('travel', 'Voyages longue distance (Avion)', [])).toBe(false);
+    // La boucle du poste suffit, l'autre n'y est pour rien.
+    expect(promet('commute', 'Trajet domicile-travail (Vélo)', ['commute'])).toBe(true);
+    expect(promet('travel', 'Voyages longue distance (Avion)', ['extras'])).toBe(true);
+    // Sans réponse du serveur, la promesse reste : seule une boucle connue arrêtée la retire.
+    expect(promet('commute', 'Trajet domicile-travail (Vélo)', null)).toBe(true);
+    // Et le résiduel ne promet jamais rien, boucle mensuelle ou pas.
+    expect(promet('leisure', RESIDUEL, ['commute', 'extras'])).toBe(false);
   });
 });
 
