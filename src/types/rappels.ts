@@ -19,6 +19,7 @@
  *
  * Et depuis C4.2 (`v1-25`), ce que l'écran dit du **mot de la veille** — en fin de module.
  */
+import type { LoopType } from '@/constants/postes';
 import { finDePeriodeEnMots } from '@/types/saison';
 
 
@@ -206,7 +207,7 @@ export function canalPreselectionne(
  * recette le 14/09/2026). La **carte d'attente** annonce le prochain contact, quel qu'en soit le
  * sujet : elle se dérive de la personne — a-t-elle un poste domicile-travail, donc un point le
  * lundi, et sinon une boucle mensuelle qui tourne ; le serveur le dit depuis le 30/09/2026
- * (`ma_boucle_a_venir`). La **feuille ouverte après « C'est noté »**, elle, promet un contact *sur l'action qu'on
+ * (`mes_boucles_a_venir`, résumée par `boucleAVenir`). La **feuille ouverte après « C'est noté »**, elle, promet un contact *sur l'action qu'on
  * vient d'engager* (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du
  * **poste de cette action**, par `boucleDeLAction`.
  *
@@ -225,9 +226,9 @@ export type Boucle = 'hebdo' | 'mensuel';
  * La carte se dérivait du seul poste domicile-travail : sans trajet, elle annonçait la boucle
  * mensuelle, y compris quand celle-ci ne tourne pas — aucun trajet, sorties rares, aucun voyage
  * déclaré, le profil sédentaire de C2.5 —, et Ramille promettait un signe qui ne venait jamais.
- * La réponse vient donc **du serveur** (`ma_boucle_a_venir`, lue par `lireLaBoucleAVenir`), qui la
- * tire de la même définition que les deux générateurs de points : la règle de la boucle mensuelle
- * (`a_des_voyages_declares`) n'est recopiée nulle part ici.
+ * La réponse vient donc **du serveur** (`mes_boucles_a_venir`, lue par `lireLesBouclesAVenir` et
+ * résumée par `boucleAVenir`), qui la tire de la même définition que les deux générateurs de
+ * points : la règle de la boucle mensuelle (`a_des_voyages_declares`) n'est recopiée nulle part ici.
  *
  * La feuille ouverte après « C'est noté » n'en a pas besoin : elle parle de l'action qu'on vient
  * d'engager (`boucleDeLAction`). Un plan sans boucle n'a pas d'action en régime établi — le
@@ -237,11 +238,66 @@ export type Boucle = 'hebdo' | 'mensuel';
 export type BoucleAVenir = Boucle | 'aucune';
 
 /**
- * La réponse de `ma_boucle_a_venir`, relue. Une valeur inconnue rend `null` : l'écran ne montre
- * alors pas la carte, plutôt que de nommer un jour qu'il ne connaît pas (`FRONT.md` §2.11).
+ * Les boucles que le client sait lire. **Un `Record` sur `LoopType` et non une liste** : une valeur
+ * ajoutée au `check` de `engagement_checkins.loop_type` suit dans `LoopType` (miroir déclaré dans
+ * `MIROIRS`, comparé à la base en CI), et le compilateur refuse alors cette table tant qu'elle ne
+ * la porte pas. Une liste écrite à la main l'aurait laissée dehors en silence — et toute la réponse
+ * du serveur aurait été lue `null`, pour tout le monde.
  */
-export function lireLaBoucleAVenir(valeur: unknown): BoucleAVenir | null {
-  return valeur === 'hebdo' || valeur === 'mensuel' || valeur === 'aucune' ? valeur : null;
+const BOUCLES_LISIBLES: Record<LoopType, true> = { commute: true, extras: true };
+
+/**
+ * La réponse de `mes_boucles_a_venir`, relue : les boucles qui tournent, dans le vocabulaire de
+ * `engagement_checkins.loop_type` (30/09/2026, `v1-27` §12.23). Elle a remplacé
+ * `ma_boucle_a_venir`, qui les résumait en une valeur : la carte d'un point répondu a besoin de
+ * savoir si **sa** boucle tourne, et « hebdo » ne disait rien de la mensuelle.
+ *
+ * **Une liste qui porte une valeur inconnue rend `null` en entier**, et non la liste sans elle :
+ * une boucle inconnue serait sinon lue comme arrêtée, et la carte d'un point répondu perdrait sa
+ * promesse sans raison. Les écrans traitent `null` **comme un échec de lecture**, ligne de relecture
+ * comprise (`FRONT.md` §2.11) : ils gardent la dernière liste lue, et tant qu'aucune ne l'a été, ni
+ * carte d'attente ni carte des deux lieux, et aucune boucle déclarée arrêtée.
+ */
+export function lireLesBouclesAVenir(valeur: unknown): LoopType[] | null {
+  if (!Array.isArray(valeur)) return null;
+  const boucles: LoopType[] = [];
+  for (const boucle of valeur) {
+    // `hasOwnProperty` et non `in` : `in` accepterait « toString ». Et pas `Object.hasOwn`, que rien
+    // d'autre n'emploie ici et dont le support par Hermes n'a pas été vérifié.
+    if (typeof boucle !== 'string' || !Object.prototype.hasOwnProperty.call(BOUCLES_LISIBLES, boucle)) {
+      return null;
+    }
+    const lue = boucle as LoopType;
+    if (!boucles.includes(lue)) boucles.push(lue);
+  }
+  return boucles;
+}
+
+/**
+ * Ce que la carte d'attente annonce, d'après les boucles qui tournent : **la boucle hebdomadaire
+ * passe devant**, parce que c'est le prochain contact — le lundi vient avant le premier du mois.
+ * C'était la règle de `ma_boucle_a_venir` côté serveur ; elle vit ici depuis que le serveur rend
+ * les boucles une par une, et c'est une règle d'affichage, pas de génération.
+ */
+export function boucleAVenir(boucles: readonly LoopType[]): BoucleAVenir {
+  if (boucles.includes('commute')) return 'hebdo';
+  if (boucles.includes('extras')) return 'mensuel';
+  return 'aucune';
+}
+
+/**
+ * La boucle d'un point tourne-t-elle encore ? C'est ce qui décide si sa carte, une fois répondue,
+ * a le droit de promettre un prochain point (décision du 30/09/2026, `v1-27` §12.23).
+ *
+ * **Sans réponse du serveur, oui** — `null` rend `true`. Ce n'est pas l'inverse de la carte
+ * d'attente, qui se tait sur un échec : ici la carte existe déjà et sa réplique est choisie par
+ * période (`variantePourLaPeriode`), donc déclarer la boucle arrêtée sur une lecture ratée ferait
+ * changer la phrase de Ramille le temps de la panne, pour un cas — une boucle arrêtée pendant la
+ * période de son point — qui n'était jamais arrivé en production le jour de la décision. Seule une
+ * boucle **connue** pour être arrêtée retire la promesse.
+ */
+export function laBoucleDuPointTourne(boucles: readonly LoopType[] | null, boucle: LoopType): boolean {
+  return boucles === null || boucles.includes(boucle);
 }
 
 /**

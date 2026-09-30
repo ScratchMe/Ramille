@@ -351,8 +351,8 @@ describe('repliqueDuPoint', () => {
   it('le « Oui » est le même des deux côtés', () => {
     // Avoir tenu son habitude et avoir changé de mode valent tous les deux un « oui » : c'est la
     // **même** réplique, et la question de maintien ne change que le « non ».
-    const generique = repliqueDuPoint(point(), 'oui');
-    const maintien = repliqueDuPoint(point({ question_kind: 'maintien', mode: 'velo' }), 'oui');
+    const generique = repliqueDuPoint(point(), 'oui', true);
+    const maintien = repliqueDuPoint(point({ question_kind: 'maintien', mode: 'velo' }), 'oui', true);
     expect(generique).toEqual(maintien);
     expect(generique.mood).toBe('happy');
     expect(RAMILLE.checkinOui.hebdo).toContain(generique.ligne);
@@ -368,7 +368,7 @@ describe('repliqueDuPoint', () => {
    */
   it('un point de maintien ne reçoit JAMAIS checkinNon', () => {
     for (const mode of ['velo', 'marche', 'trottinette', 'autre-mode', null]) {
-      const { ligne, mood } = repliqueDuPoint(point({ question_kind: 'maintien', mode }), 'non');
+      const { ligne, mood } = repliqueDuPoint(point({ question_kind: 'maintien', mode }), 'non', true);
       expect(ligne).not.toBe(RAMILLE.checkinNon);
       expect(mood).toBe('calm');
       expect(ligne.length).toBeGreaterThan(0);
@@ -377,20 +377,20 @@ describe('repliqueDuPoint', () => {
 
   it('le « Non » de maintien nomme le mode, et retombe sur une phrase neutre sinon', () => {
     const maintien = (mode: string) => point({ question_kind: 'maintien', mode });
-    expect(repliqueDuPoint(maintien('velo'), 'non').ligne).toBe(RAMILLE.maintienNon.velo);
-    expect(repliqueDuPoint(maintien('marche'), 'non').ligne).toBe(RAMILLE.maintienNon.marche);
-    expect(repliqueDuPoint(maintien('trottinette'), 'non').ligne).toBe(
+    expect(repliqueDuPoint(maintien('velo'), 'non', true).ligne).toBe(RAMILLE.maintienNon.velo);
+    expect(repliqueDuPoint(maintien('marche'), 'non', true).ligne).toBe(RAMILLE.maintienNon.marche);
+    expect(repliqueDuPoint(maintien('trottinette'), 'non', true).ligne).toBe(
       RAMILLE.maintienNon.trottinette
     );
-    expect(repliqueDuPoint(maintien('voiture'), 'non').ligne).toBe(RAMILLE.maintienNon.autre);
+    expect(repliqueDuPoint(maintien('voiture'), 'non', true).ligne).toBe(RAMILLE.maintienNon.autre);
   });
 
   it('une question générique garde checkinNon', () => {
-    const { ligne, mood } = repliqueDuPoint(point(), 'non');
+    const { ligne, mood } = repliqueDuPoint(point(), 'non', true);
     expect(RAMILLE.checkinNon.hebdo).toContain(ligne);
     expect(mood).toBe('encouraging');
     expect(RAMILLE.checkinNon.hebdo).toContain(
-      repliqueDuPoint(point({ question_kind: null }), 'non').ligne
+      repliqueDuPoint(point({ question_kind: null }), 'non', true).ligne
     );
   });
 
@@ -403,7 +403,7 @@ describe('repliqueDuPoint', () => {
    * des branches, que cette assertion tient.
    */
   it('« sans objet » ne reçoit ni checkinNon ni maintienNon, même sur un point de maintien', () => {
-    const sur = (p: Partial<PointInterrogeable>) => repliqueDuPoint(point(p), 'sans_objet');
+    const sur = (p: Partial<PointInterrogeable>) => repliqueDuPoint(point(p), 'sans_objet', true);
     const toutesLesSansObjet = Object.values(RAMILLE.checkinSansObjet).flat();
     for (const p of [{}, { question_kind: 'maintien', mode: 'velo' }, { question_kind: null }]) {
       const { ligne, mood } = sur(p);
@@ -418,7 +418,7 @@ describe('repliqueDuPoint', () => {
   // sinon elle dit « Pas de voyage » à qui vient d'appuyer sur « Pas de sortie en septembre ».
   it('« sans objet » suit le poste, et la boucle hebdomadaire gagne sur lui', () => {
     const sansObjet = (p: Partial<PointInterrogeable>) =>
-      repliqueDuPoint(point(p), 'sans_objet').ligne;
+      repliqueDuPoint(point(p), 'sans_objet', true).ligne;
     expect(RAMILLE.checkinSansObjet.commute).toContain(
       sansObjet({ loop_type: 'commute', poste: 'commute' })
     );
@@ -439,6 +439,89 @@ describe('repliqueDuPoint', () => {
   });
 
   /**
+   * **Quand la boucle du point ne tourne plus, aucune réplique ne donne rendez-vous** (décision du
+   * 30/09/2026, `v1-27` §12.23). L'assertion porte sur la **propriété** et non sur les phrases : les
+   * répliques sans rendez-vous du « Oui » et du « Non » sont choisies par leur place dans leur
+   * tableau, et c'est ce balayage qui dit si un tableau réordonné — ou une variante ajoutée — en a
+   * fait choisir une qui promet.
+   *
+   * Le motif est éprouvé dans l'autre sens juste en dessous : avec la boucle qui tourne, il reconnaît
+   * bien des rendez-vous, sans quoi ce balayage serait vert pour toujours.
+   *
+   * Éprouvé en le cassant, le 30/09/2026 (TESTING.md §1.1), une mutation à la fois, sur ce fichier,
+   * celui de la carte et celui de la mascotte :
+   *   - le « Oui » sans garde (la variante de la période même sans boucle) → ce test, seul ;
+   *   - le « Non » qui prend la première variante au lieu de la dernière → ce test, seul ;
+   *   - « pas de trajet » sans garde → ce test, et celui de la carte à la boucle arrêtée ;
+   *   - la dernière variante du « Non » remplacée par « Ça arrive. Lundi, je te repose la question,
+   *     tranquillement. » → ce test, et le contrôle de doublons de `mascotte.test.ts`.
+   */
+  const RENDEZ_VOUS = /lundi|prochain|reviens|repose|retrouve/i;
+  const PERIODES = [
+    '2026-09-07',
+    '2026-09-14',
+    '2026-09-21',
+    '2026-09-28',
+    '2026-10-05',
+    '2026-08-01',
+    '2026-09-01',
+    '2026-10-01',
+    '2026-11-01',
+  ];
+  const POINTS: Partial<PointInterrogeable>[] = [
+    { loop_type: 'commute', poste: 'commute', question_kind: 'generique' },
+    { loop_type: 'commute', poste: 'commute', question_kind: 'engagement' },
+    { loop_type: 'commute', poste: 'commute', question_kind: 'maintien', mode: 'velo' },
+    { loop_type: 'extras', poste: 'leisure', question_kind: 'generique' },
+    { loop_type: 'extras', poste: 'travel', question_kind: 'occasion' },
+    { loop_type: 'extras', poste: null, question_kind: null },
+  ];
+
+  it('sans boucle qui tourne, aucune réplique ne donne rendez-vous', () => {
+    for (const p of POINTS) {
+      for (const period_start of PERIODES) {
+        for (const reponse of ['oui', 'non', 'sans_objet'] as const) {
+          const { ligne } = repliqueDuPoint(point({ ...p, period_start }), reponse, false);
+          expect({ p, period_start, reponse, ligne }).not.toEqual({
+            p,
+            period_start,
+            reponse,
+            ligne: expect.stringMatching(RENDEZ_VOUS),
+          });
+        }
+      }
+    }
+  });
+
+  it('avec la boucle qui tourne, le motif reconnaît bien les rendez-vous', () => {
+    const lignes = PERIODES.flatMap((period_start) =>
+      (['oui', 'non', 'sans_objet'] as const).map(
+        (reponse) => repliqueDuPoint(point({ period_start }), reponse, true).ligne
+      )
+    );
+    expect(lignes.some((ligne) => RENDEZ_VOUS.test(ligne))).toBe(true);
+    for (const ligne of Object.values(RAMILLE.checkinSansObjet).flat()) {
+      expect(ligne).toMatch(RENDEZ_VOUS);
+    }
+  });
+
+  // Le rendez-vous tombe, le reste de la réponse ne bouge pas : même visage, et pour « pas de
+  // trajet », la phrase que disait déjà l'originale avant son rendez-vous.
+  it('le visage ne change pas, et « pas de trajet » garde sa première phrase', () => {
+    for (const p of POINTS) {
+      for (const reponse of ['oui', 'non', 'sans_objet'] as const) {
+        const avec = repliqueDuPoint(point(p), reponse, true);
+        const sans = repliqueDuPoint(point(p), reponse, false);
+        expect({ p, reponse, mood: sans.mood }).toEqual({ p, reponse, mood: avec.mood });
+      }
+    }
+    for (const [poste, ligne] of Object.entries(RAMILLE.checkinSansObjetSansSuite)) {
+      const originale = RAMILLE.checkinSansObjet[poste as keyof typeof RAMILLE.checkinSansObjet][0];
+      expect(originale.startsWith(ligne)).toBe(true);
+    }
+  });
+
+  /**
    * **La boucle décide de la cadence nommée dans la réplique** (C2.12) : « À lundi. » n'a aucun sens
    * sur un point mensuel, et c'est la raison pour laquelle les tableaux sont doublés.
    */
@@ -446,8 +529,8 @@ describe('repliqueDuPoint', () => {
     const mensuel = point({ loop_type: 'extras', poste: 'travel', period_start: '2026-09-01' });
     for (const reponse of ['oui', 'non'] as const) {
       const cle = reponse === 'oui' ? 'checkinOui' : 'checkinNon';
-      expect(RAMILLE[cle].mensuel).toContain(repliqueDuPoint(mensuel, reponse).ligne);
-      expect(RAMILLE[cle].hebdo).toContain(repliqueDuPoint(point(), reponse).ligne);
+      expect(RAMILLE[cle].mensuel).toContain(repliqueDuPoint(mensuel, reponse, true).ligne);
+      expect(RAMILLE[cle].hebdo).toContain(repliqueDuPoint(point(), reponse, true).ligne);
     }
   });
 });
@@ -571,6 +654,7 @@ describe('piedDuPointRepondu', () => {
     expect(
       piedDuPointRepondu(
         { loop_type: 'commute', responded_at: new Date(2026, 8, 14, 9, 0).toISOString() },
+        true,
         new Date(2026, 8, 14, 9, 30)
       )
     ).toBe('Répondu lundi. Prochain point : lundi 21 septembre.');
@@ -580,6 +664,7 @@ describe('piedDuPointRepondu', () => {
   it('un lundi, le prochain point est le lundi d’après et jamais aujourd’hui', () => {
     const pied = piedDuPointRepondu(
       { loop_type: 'commute', responded_at: new Date(2026, 8, 16, 9, 0).toISOString() },
+      true,
       new Date(2026, 8, 16, 9, 30)
     );
     expect(pied).toBe('Répondu mercredi. Prochain point : lundi 21 septembre.');
@@ -589,12 +674,14 @@ describe('piedDuPointRepondu', () => {
     expect(
       piedDuPointRepondu(
         { loop_type: 'extras', responded_at: new Date(2026, 9, 1, 9, 0).toISOString() },
+        true,
         new Date(2026, 9, 1, 9, 30)
       )
     ).toBe('Répondu le 1er. Prochain point : 1er novembre.');
     expect(
       piedDuPointRepondu(
         { loop_type: 'extras', responded_at: new Date(2026, 9, 3, 9, 0).toISOString() },
+        true,
         new Date(2026, 9, 3, 9, 30)
       )
     ).toBe('Répondu le 3. Prochain point : 1er novembre.');
@@ -604,6 +691,7 @@ describe('piedDuPointRepondu', () => {
     expect(
       piedDuPointRepondu(
         { loop_type: 'extras', responded_at: new Date(2026, 11, 2, 9, 0).toISOString() },
+        true,
         new Date(2026, 11, 2, 9, 30)
       )
     ).toBe('Répondu le 2. Prochain point : 1er janvier.');
@@ -611,7 +699,31 @@ describe('piedDuPointRepondu', () => {
 
   // Une carte répondue sans date vaut mieux qu'une date inventée.
   it.each([null, undefined, 'pas-une-date'])('%s ne produit pas de pied', (valeur) => {
-    expect(piedDuPointRepondu({ loop_type: 'commute', responded_at: valeur })).toBeNull();
+    expect(piedDuPointRepondu({ loop_type: 'commute', responded_at: valeur }, true)).toBeNull();
+    expect(piedDuPointRepondu({ loop_type: 'commute', responded_at: valeur }, false)).toBeNull();
+  });
+
+  // **Décision du 30/09/2026** (`v1-27` §12.23) : un nouveau bilan peut arrêter la boucle pendant que
+  // la carte répondue reste affichée. Le pied garde la réponse et perd le rendez-vous.
+  //
+  // Éprouvé en le cassant, le 30/09/2026 (TESTING.md §1.1) : la garde de la boucle hebdomadaire
+  // retirée → ce test, et celui de la carte à la boucle arrêtée (un point du lundi) ; celle de la
+  // mensuelle retirée → ce test, seul.
+  it('sans boucle qui tourne, il dit la réponse et ne promet pas de prochain point', () => {
+    expect(
+      piedDuPointRepondu(
+        { loop_type: 'commute', responded_at: new Date(2026, 8, 14, 9, 0).toISOString() },
+        false,
+        new Date(2026, 8, 14, 9, 30)
+      )
+    ).toBe('Répondu lundi.');
+    expect(
+      piedDuPointRepondu(
+        { loop_type: 'extras', responded_at: new Date(2026, 9, 3, 9, 0).toISOString() },
+        false,
+        new Date(2026, 9, 3, 9, 30)
+      )
+    ).toBe('Répondu le 3.');
   });
 });
 

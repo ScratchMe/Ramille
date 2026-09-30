@@ -405,8 +405,8 @@ en compte 3 307 — n'étaient gardées par rien d'autre que la recette sur appa
 premières suites prouvent la logique pure et la base ; entre les deux — les requêtes, les RPC, ce
 que l'écran montre après une écriture — rien. Un `.eq('status', 'complete')` passait vert.
 
-**`scripts/verifier-parcours-reel.mjs` joue le chemin nominal, et lui seul**, sur **deux profils**
-— décrits plus bas ; celui-ci est le premier, tiré de
+**`scripts/verifier-parcours-reel.mjs` joue le chemin nominal, et lui seul**, sur **trois profils**
+depuis le 30/09/2026 — décrits plus bas ; celui-ci est le premier, tiré de
 `docs/recette/premier-parcours-web.md` : onboarding → questionnaire → soumission → restitution →
 plan, sans écran de compte interposé (arbitrage du 20/09/2026 : la proposition de compte que ce
 paragraphe disait « refusée » n'existe plus sur ce chemin) → engagement → un point généré comme le
@@ -482,6 +482,17 @@ Le second profil tourne dans un **contexte de navigateur neuf**, et c'est struct
 veut dire premier **sur cet appareil** (C5.7), et les marques vivent dans le stockage. Le rejouer
 dans le même contexte éprouverait un appareil qui a déjà tout vu.
 
+**Et un troisième depuis le 30/09/2026, sans aucune boucle** (`v1-27` §12.22 et §12.23) : ni trajet,
+ni sorties régulières, ni voyage — aucun point ne viendra. Trois textes le savent depuis ce jour (la
+carte des deux lieux, la carte d'attente, la carte du suivi sans point répondu), et les deux
+premiers profils ont chacun une boucle : le côté « sans boucle » n'était gardé que par Jest, sur les
+dérivations, pas par l'écran qui leur passe les boucles lues au serveur. Il ne fait que ça — un
+questionnaire minimal, le plan, le suivi —, relit d'abord sa prémisse au serveur
+(`mes_boucles_a_venir` vide), et part lui aussi d'un contexte neuf. **Ce qu'aucun des trois ne
+joue** : la carte d'un point répondu dont la boucle s'est arrêtée, qui demande un point généré puis
+un nouveau bilan dans la même période — la dérivation et la carte sont gardées par Jest, l'appel de
+l'écran ne l'est par rien.
+
 **Deux pièges payés en l'écrivant, tous deux silencieux :**
 
 - **Les `EXPO_PUBLIC_*` sont inlinées à la transformation, et le cache de Metro ne les met pas dans
@@ -526,7 +537,7 @@ sert, d'autres copies de travail pouvant la partager. Le rejeu (§2.13), lui, la
 **En CI, la capture reste sur le runner** : rien ne l'envoie en artefact, et l'y envoyer rouvrirait ce
 que le passage en public a vérifié fermé — aucun artefact téléchargeable
 (`docs/exploitation/depot-public.md`). C'est une décision à prendre, pas un oubli à réparer seul
-(`docs/architecture/v1-27-dette-technique.md` §12.25) ; d'ici là, ce qu'on lit d'un échec en CI est le
+(`docs/architecture/v1-27-dette-technique.md` §12.26) ; d'ici là, ce qu'on lit d'un échec en CI est le
 journal.
 
 **Un clic se donne à un écran posé, pas à un écran qui charge** (CI du 30/09/2026). L'étape de la
@@ -878,7 +889,7 @@ qu'il annonce, et des cases d'option sans groupe.
   impossible — la page ne peut pas défiler sous le choix, le focus n'est pas pris — est un échec : sans
   défilement possible, « rien n'a défilé » ne prouverait rien. La mesure elle-même vit dans
   `scripts/mesurer-un-choix.mjs`, partagée avec le parcours réel.
-- **Le parcours réel vérifie les groupes à chaque étape** — du questionnaire des deux profils, de la
+- **Le parcours réel vérifie les groupes à chaque étape** — du questionnaire de chaque profil, de la
   feuille d'engagement et de « Toi » : toute case d'option a pour groupe **le plus proche** un
   `radiogroup` nommé, toute case à cocher un `group` nommé, et **aucun `radiogroup` ne coche deux
   cases**. Les deux dernières règles viennent de ce qu'une précision vit **dans** le groupe de l'option
@@ -1056,7 +1067,11 @@ Les règles, chacune payée pendant l'écriture :
    carte existe, `HauteurSuivie` n'a pas encore reçu son premier `onLayout`, donc pas encore de
    découpe, et `decoupe` remonte jusqu'à l'écran ; puis 153. La course se gagne presque toujours,
    en CI comme en local. Une référence se prend donc par `mesurerAuRepos` (la même
-   mesure, immobile sur dix images), et la mutation qu'elle garde tombe comme avant.
+   mesure, immobile pendant 600 ms), et la mutation qu'elle garde tombe comme avant. **Le repos se
+   compte en temps, pas en images** : une première version attendait dix images identiques,
+   environ 170 ms, et une découpe posée 300 ms après le premier `onLayout` — un runner lent — lui
+   aurait fait prendre les 840 px pour le repos. La fenêtre dépasse la plus longue durée des jetons
+   de mouvement (320 ms).
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.
 

@@ -15,6 +15,8 @@ L'accent (fond `backgroundSelected`, étiquette `accentText`) désigne le point 
 
 **Une question figée peut nommer une action qu'on ne suit plus** : elle est composée à la génération du point, et changer d'avis ensuite ne la réécrit pas. `actionQuittee` ajoute sous elle « Cette question porte sur l’action que tu suivais alors : … ». Recomposer la question la ferait différer de la notification qu'on vient d'ouvrir.
 
+**Une boucle arrêtée ne donne pas rendez-vous** (30/09/2026) : un nouveau bilan peut arrêter la boucle d'un point pendant que sa carte répondue reste affichée. Le `pied` dit alors « Répondu lundi. » seul, et le `retour` de Ramille est une réplique sans rendez-vous — l'originale pour le « Oui », « Une semaine sans, ce n'est pas un retour en arrière. » pour le « Non » (« Un mois sans… » sur la boucle mensuelle ; un point de maintien garde `maintienNon`, qui ne promet rien), « Pas de trajet, pas de question. » pour la troisième réponse (« Pas de sortie… », « Pas de voyage… » selon le poste). Le visage ne change pas.
+
 **Deux échecs, deux places** : un `refus` (le point est clos) remplace les boutons, qui ne pourraient plus aboutir ; une `erreur` (la réponse n'est pas partie) s'ajoute sous eux, qui restent. La réplique de Ramille prend le focus quand elle remplace les boutons — jamais au chargement.
 
 Dans le texte, c'est **« le point »**, jamais « check-in » : `CheckinCard` est un nom de code. Pas de streak, pas de score. Un point sans réponse expire et n’est jamais relu.

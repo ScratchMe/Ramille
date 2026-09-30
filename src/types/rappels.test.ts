@@ -2,6 +2,7 @@ import app from '../../app.json';
 import { RAMILLE } from '@/constants/mascotte';
 import {
   affichageDeLaVeille,
+  boucleAVenir,
   boucleDeLAction,
   CANAUX_ANDROID,
   canalEffectif,
@@ -10,8 +11,9 @@ import {
   doitProposerLaFeuille,
   laVeilleSeRepropose,
   libelleBouton,
+  laBoucleDuPointTourne,
   lignesDeReglage,
-  lireLaBoucleAVenir,
+  lireLesBouclesAVenir,
   ouvertureDeLaFeuille,
   reponseALaVeilleDe,
   sousTitreDesRappels,
@@ -541,21 +543,64 @@ describe('carteAttente', () => {
   });
 });
 
-// La réponse du serveur, relue (`ma_boucle_a_venir`). Une valeur inconnue ne devient jamais une
-// boucle : l'écran ne montre alors pas la carte, plutôt que de nommer un jour qu'il ne connaît pas.
-// Éprouvé en le cassant, le 30/09/2026 : une valeur inconnue lue comme `mensuel` (l'ancien repli de
-// l'écran) → « ne devine rien d'une valeur inconnue ou absente », seul.
-describe('lireLaBoucleAVenir', () => {
-  it('rend les trois réponses du serveur telles quelles', () => {
-    expect(lireLaBoucleAVenir('hebdo')).toBe('hebdo');
-    expect(lireLaBoucleAVenir('mensuel')).toBe('mensuel');
-    expect(lireLaBoucleAVenir('aucune')).toBe('aucune');
+// La réponse du serveur, relue (`mes_boucles_a_venir`, qui a remplacé `ma_boucle_a_venir` le
+// 30/09/2026). Une valeur inconnue ne devient jamais une boucle, et elle n'en retire aucune : toute
+// la liste est rejetée, et l'écran se comporte comme sur un échec de lecture.
+//
+// Éprouvé en le cassant, le 30/09/2026 (TESTING.md §1.1), une mutation à la fois :
+//   - une valeur inconnue sautée au lieu de rejeter la liste (`continue` à la place du `return null`)
+//     → « rejette toute la liste… », seul ;
+//   - le soir même, la table des boucles lue par `in` au lieu de `hasOwnProperty` → le même test,
+//     seul, sur « toString » ;
+//   - `boucleAVenir` sans priorité (la mensuelle testée d'abord) → « la boucle hebdomadaire passe
+//     devant », seul ;
+//   - `laBoucleDuPointTourne` qui rend `false` sur `null` → « sans réponse du serveur… », seul.
+describe('lireLesBouclesAVenir', () => {
+  it('rend les boucles du serveur telles quelles, vides comprises', () => {
+    expect(lireLesBouclesAVenir(['commute', 'extras'])).toEqual(['commute', 'extras']);
+    expect(lireLesBouclesAVenir(['extras'])).toEqual(['extras']);
+    expect(lireLesBouclesAVenir([])).toEqual([]);
   });
 
-  it('ne devine rien d’une valeur inconnue ou absente', () => {
-    for (const valeur of [null, undefined, '', 'commute', 'extras', 'Hebdo', 0, true, {}]) {
-      expect({ valeur, lue: lireLaBoucleAVenir(valeur) }).toEqual({ valeur, lue: null });
+  it('rejette toute la liste sur une valeur inconnue, plutôt que de la lire comme une boucle arrêtée', () => {
+    for (const valeur of [['commute', 'hebdo'], ['extras', null], ['Commute'], ['toString']]) {
+      expect({ valeur, lue: lireLesBouclesAVenir(valeur) }).toEqual({ valeur, lue: null });
     }
+  });
+
+  it('ne devine rien d’une réponse qui n’est pas une liste', () => {
+    for (const valeur of [null, undefined, '', 'hebdo', 'commute', 0, true, {}]) {
+      expect({ valeur, lue: lireLesBouclesAVenir(valeur) }).toEqual({ valeur, lue: null });
+    }
+  });
+});
+
+describe('boucleAVenir', () => {
+  it('la boucle hebdomadaire passe devant : le lundi vient avant le premier du mois', () => {
+    expect(boucleAVenir(['commute', 'extras'])).toBe('hebdo');
+    expect(boucleAVenir(['extras', 'commute'])).toBe('hebdo');
+    expect(boucleAVenir(['commute'])).toBe('hebdo');
+  });
+
+  it('la boucle mensuelle seule, puis aucune', () => {
+    expect(boucleAVenir(['extras'])).toBe('mensuel');
+    expect(boucleAVenir([])).toBe('aucune');
+  });
+});
+
+describe('laBoucleDuPointTourne', () => {
+  it('suit la boucle du point, pas celle de la personne', () => {
+    expect(laBoucleDuPointTourne(['commute', 'extras'], 'commute')).toBe(true);
+    expect(laBoucleDuPointTourne(['extras'], 'commute')).toBe(false);
+    expect(laBoucleDuPointTourne(['commute'], 'extras')).toBe(false);
+    expect(laBoucleDuPointTourne([], 'extras')).toBe(false);
+  });
+
+  // Seule une boucle **connue** pour être arrêtée retire la promesse : sur un échec de lecture, la
+  // réplique de Ramille changerait le temps de la panne (elle est choisie par période).
+  it('sans réponse du serveur, la boucle est tenue pour tournante', () => {
+    expect(laBoucleDuPointTourne(null, 'commute')).toBe(true);
+    expect(laBoucleDuPointTourne(null, 'extras')).toBe(true);
   });
 });
 

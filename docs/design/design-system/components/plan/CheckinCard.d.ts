@@ -19,11 +19,11 @@ export interface CheckinCardProps {
   refus?: string | null;
   /** La réponse n'est pas partie : la phrase s'ajoute sous les boutons, qui restent. */
   erreur?: string | null;
-  /** Retour de Ramille à afficher une fois répondu ; par défaut celui de la réponse. */
+  /** Retour de Ramille à afficher une fois répondu ; par défaut celui de la réponse. Quand la boucle du point ne tourne plus, une réplique qui ne donne pas rendez-vous (ni « À lundi. », ni « On se retrouve… »). */
   retour?: { mood: 'calm' | 'happy' | 'encouraging'; ligne: string };
   /** Le second renforcement, sous la réplique — voix du produit : « Deuxième semaine de suite que tu fais ce trajet autrement. » Une seule fois. */
   renforcement?: string | null;
-  /** Le pied de la carte répondue, du produit et non de Ramille : « Répondu lundi. Prochain point : lundi 21 septembre. » */
+  /** Le pied de la carte répondue, du produit et non de Ramille : « Répondu lundi. Prochain point : lundi 21 septembre. » — « Répondu lundi. » seul quand la boucle du point ne tourne plus (30/09/2026). */
   pied?: string | null;
 }
 export declare function CheckinCard(props: CheckinCardProps): JSX.Element;

@@ -616,6 +616,13 @@ Consignés aussi dans `docs/design/v1-14-boucle-engagement/README.md`, pour que 
     `viewBox`, et c'est la borne à ne pas franchir en l'ouvrant davantage. Le test de conformité
     porte l'écart comme il porte la translation de la goutte — la valeur du canvas reste écrite, et
     l'ouverture est nommée à côté.
+40. **Quand la boucle d'un point répondu ne tourne plus, sa carte ne donne pas rendez-vous**
+    (30/09/2026, décision de la personne qui pilote, `v1-27` §12.23). Le canvas ne connaît qu'une
+    carte répondue, dont le pied nomme le prochain point et dont plusieurs répliques nomment le
+    retour de Ramille (« À lundi. », « On se retrouve lundi. »). Un nouveau bilan peut arrêter la
+    boucle pendant que la carte reste affichée : le pied dit alors « Répondu lundi. » seul, le « Oui »
+    prend l'originale, le « Non » sa variante sans rendez-vous, et « pas de trajet » la première
+    phrase de son originale (`RAMILLE.checkinSansObjetSansSuite`). Le visage ne change pas.
 
 ## 11. Tests
 

@@ -12,10 +12,11 @@
 //
 // Les calculs purs qui exploitent ces données (écart entre deux bilans, dédoublonnage par
 // jour, ancienneté) vivent dans `src/types/suivi.ts`, sans dépendance au client Supabase.
-import { loisirsSontLeResiduel } from '@/constants/postes';
+import { loisirsSontLeResiduel, type LoopType } from '@/constants/postes';
 import { supabase } from '@/lib/supabase';
 import { type BilanAnswers, STATUT_DE_BILAN } from '@/types/bilan';
 import { genreDeReponse, STATUT_DU_POINT } from '@/types/checkin';
+import { lireLesBouclesAVenir } from '@/types/rappels';
 import {
   decisionsParSaison,
   keepLatestPerDay,
@@ -124,6 +125,19 @@ export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> 
   });
 
   return { ok: true, data: points };
+}
+
+/**
+ * Les boucles de points qui tournent pour la personne (`mes_boucles_a_venir`, 30/09/2026) — ce que
+ * le suivi lit pour savoir s'il peut parler de réponses (`carteDuSuiviSansPoint`). Une réponse
+ * illisible est un échec de lecture, jamais une liste vide : une liste vide dit « aucune boucle »,
+ * et ferait retirer à tort la phrase sur les réponses.
+ */
+export async function loadBouclesAVenir(): Promise<Lecture<LoopType[]>> {
+  const { data, error } = await supabase.rpc('mes_boucles_a_venir');
+  if (error) return { ok: false };
+  const boucles = lireLesBouclesAVenir(data);
+  return boucles === null ? { ok: false } : { ok: true, data: boucles };
 }
 
 /**

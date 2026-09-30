@@ -2,6 +2,7 @@
 // Supabase, donc testables directement, comme `src/types/bilan.ts`. Les requêtes qui les
 // alimentent vivent dans `src/lib/bilan-history.ts`.
 
+import { RAMILLE } from '@/constants/mascotte';
 import { MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
 import { POSTE_EN_PHRASE, POSTES, nomDuPoste, type LoopType, type Poste } from '@/constants/postes';
 import { formatTonnesNu } from '@/lib/format';
@@ -603,4 +604,31 @@ export function libellePeriodeAffiche(
   if (periodLabel.includes(annee)) return periodLabel;
 
   return annee === String(maintenant.getFullYear()) ? periodLabel : `${periodLabel} ${annee}`;
+}
+
+/**
+ * **La carte du suivi quand aucun point n'est répondu** — ce que dit Ramille, et la note dessous.
+ *
+ * Elle promettait à tout le monde de noter des réponses, et expliquait qu'une période sans réponse
+ * ne se voit pas : à qui n'a aucune boucle — aucun trajet, sorties rares, aucun voyage déclaré —,
+ * c'était parler à chaque visite de réponses qui ne viendront jamais. **Décision du 30/09/2026**
+ * (`v1-27` §12.23, la jumelle de la carte des deux lieux) : sans boucle, elle dit ce que le suivi
+ * garde vraiment, et la note disparaît. La carte reste : un suivi sans rien sous les bilans se
+ * lisait comme un manque, et c'est pour ça qu'elle existe.
+ *
+ * **Sans réponse du serveur (`null`), la carte d'avant** : elle ne nomme ni jour ni boucle, et la
+ * changer le temps d'une panne serait une variation sans cause — même choix que
+ * `laBoucleDuPointTourne`. Seule une absence **connue** de boucle la change.
+ */
+export function carteDuSuiviSansPoint(boucles: readonly LoopType[] | null): {
+  ligne: string;
+  note: string | null;
+} {
+  if (boucles !== null && boucles.length === 0) {
+    return { ligne: RAMILLE.suiviSansPointSansBoucle, note: null };
+  }
+  return {
+    ligne: RAMILLE.suiviSansPoint,
+    note: 'Une période sans réponse ne se voit pas ici : on ne compte que les fois où tu as répondu, jamais celles où tu as laissé passer.',
+  };
 }

@@ -85,8 +85,9 @@ Deux règles qui découlent de la table :
   (la boucle du lundi est alors générée pour cette personne), mensuel sinon. Le prochain
   contact est celui qui vient en premier.
   *Remplacé le 30/09/2026 (`v1-27` §12.22) : « mensuel sinon » promettait le début du mois
-  prochain à qui n'a aucune boucle. La boucle vient désormais du serveur (`ma_boucle_a_venir`), qui
-  peut répondre « aucune » — et la carte ne promet alors rien.*
+  prochain à qui n'a aucune boucle. La boucle vient désormais du serveur (`mes_boucles_a_venir`, qui
+  rend les boucles une par une depuis le soir même, §12.23), qui peut n'en rendre aucune — et la
+  carte ne promet alors rien.*
 
 ## 4. La base
 

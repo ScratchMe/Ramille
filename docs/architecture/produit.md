@@ -203,8 +203,9 @@ ne devrait, dans l'ordre où les prendre. Aucun ne bloque le lot 4 : c'est de la
 signatures de fonctions de `database.types.ts` et les **miroirs de `check`** à la base qui vient
 d'être construite, rend les deux fonctions d'`api/` sous Node — et la carte une seconde fois sur un chemin
 relatif, comme Vercel l'envoie à une Function Node.js —, et **joue le parcours réel contre une stack Supabase locale à chaque
-PR** : le chemin nominal sur **deux profils**, celui de la recette et un cycliste dont le plan ne
-porte aucune action, la base relue après chaque écriture (`TESTING.md` §2.6 et §2.7). Le dépôt a
+PR** : le chemin nominal sur les profils de `TESTING.md` §2.6 — celui de la recette, un cycliste dont
+le plan ne porte aucune action et, depuis le 30/09/2026, un profil sans aucune boucle —, la base
+relue après chaque écriture (`TESTING.md` §2.6 et §2.7). Le dépôt a
 désormais trois suites, et la question « qu'est-ce qui pourrait casser sans qu'on s'en rende
 compte ? » a une réponse mesurée plutôt qu'un sentiment : ce qui reste hors garde est nommé en
 §12.5. Trois des neuf lignes de §11 ont été traitées le jour même. **Et la contre-lecture de la
@@ -370,7 +371,8 @@ connaître avant d'en lire un chiffre :
   retire les sessions muettes. Ce que la purge a effacé de l'activité est signalé semaine par
   semaine (`borne_basse`) plutôt que deviné. **Une sortie n'est pas couverte** : un compte supprimé
   quitte sa cohorte, parce que la suppression ne garde que son mois — la garder par semaine
-  d'arrivée serait une décision sur ce qu'on garde ;
+  d'arrivée serait une décision sur ce qu'on garde, et elle est prise : **on laisse ainsi**
+  (30/09/2026, la personne qui pilote) ;
 - **deux indicateurs du glossaire ne sont pas calculés, et c'est une limite et non un oubli.**
   L'**activation** demande un moment « aha » et une fenêtre, qui se trouvent en regardant ce que les
   personnes restées ont fait tôt : c'est une décision de produit, et à nos volumes une corrélation

@@ -38,7 +38,7 @@ import {
   type ReponsesDeContexte,
 } from '@/types/plan';
 import { daysSince, regimeDeRebilan, titreDuRebilan } from '@/types/suivi';
-import { estLeResiduelDesSortiesRares, nomDuPoste } from '@/constants/postes';
+import { estLeResiduelDesSortiesRares, nomDuPoste, type LoopType } from '@/constants/postes';
 import {
   aVuLouvertureDeSaison,
   marquerLouvertureDeSaisonVue,
@@ -46,7 +46,7 @@ import {
 import { aVuLePremierPlan, marquerLePremierPlanVu } from '@/lib/premier-parcours';
 import {
   etatDuPremierParcours,
-  OUVERTURE_DES_DEUX_LIEUX,
+  ouvertureDesDeuxLieux,
   SORTIE_DES_DEUX_LIEUX,
 } from '@/types/premier-parcours';
 import { usePremierParcours } from '@/app/(tabs)/_layout';
@@ -90,12 +90,13 @@ import {
   STATUT_DU_POINT,
 } from '@/types/checkin';
 import {
+  boucleAVenir,
   boucleDeLAction,
   carteAttente,
+  laBoucleDuPointTourne,
   laVeilleSeRepropose,
-  lireLaBoucleAVenir,
+  lireLesBouclesAVenir,
   ouvertureDeLaFeuille,
-  type BoucleAVenir,
   type CanalPrefere,
   type OuvertureDeLaFeuille,
   type Permission,
@@ -365,10 +366,11 @@ export default function Plan() {
   // Les rappels : ce que la carte d'attente affiche, et ce que la feuille présélectionne.
   // `null` tant qu'on ne sait pas — mieux vaut ne rien dire qu'annoncer un canal faux.
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
-  // `null` tant qu'on ne sait pas : le jour que Ramille nomme vient du serveur
-  // (`ma_boucle_a_venir`), et une valeur par défaut nommerait le mauvais rythme — ou promettrait un
-  // point à qui n'a aucune boucle (cf. le chargement).
-  const [boucle, setBoucle] = useState<BoucleAVenir | null>(null);
+  // Les boucles qui tournent, `null` tant qu'on ne sait pas : elles viennent du serveur
+  // (`mes_boucles_a_venir`), et une valeur par défaut nommerait le mauvais rythme — ou promettrait un
+  // point à qui n'a aucune boucle (cf. le chargement). Trois textes en dépendent : la carte
+  // d'attente, la carte des deux lieux et le pied d'un point répondu (`v1-27` §12.22 et §12.23).
+  const [boucles, setBoucles] = useState<LoopType[] | null>(null);
   // Le total du bilan courant, pour la seule phrase du plan qui l'affirme : la félicitation du
   // résiduel des sorties rares dit « sous le repère 2050 » (`felicitationDuPlanSansAction`). Lu dans
   // `assessment_results`, dans le lot des lectures du plan ; `null` tant qu'on ne sait pas, et sur un
@@ -422,8 +424,9 @@ export default function Plan() {
   /**
    * Le poste de l'action qu'on vient d'engager, pour la feuille et pour elle seule.
    *
-   * **Il ne se confond pas avec `boucle`** (recette du 14/09/2026) : `boucle` répond à « quel est
-   * le prochain contact, quel qu'en soit le sujet » et se dérive de la personne ; la feuille, elle,
+   * **Il ne se confond pas avec les boucles lues** (`boucles`, recette du 14/09/2026) : elles
+   * répondent à « quel est le prochain contact, quel qu'en soit le sujet » et se dérivent de la
+   * personne ; la feuille, elle,
    * promet un contact *sur cette action-là*. Quelqu'un qui a un trajet domicile-travail et
    * s'engage sur un vol s'entendait promettre le lundi, alors que le point du lundi s'apparie sur
    * le poste `commute` (C2.1) et ne lui demandera jamais rien sur son vol.
@@ -722,7 +725,7 @@ export default function Plan() {
         // `count` en `head` ne ramène aucune ligne : c'est une existence, pas une donnée.
         const [
           { data: resultat, error: erreurResultat },
-          { data: boucleAVenir, error: erreurBoucle },
+          { data: bouclesAVenir, error: erreurBoucle },
           { data: contexte },
           { data: orphelins },
           { count: engagementsArchives },
@@ -734,11 +737,12 @@ export default function Plan() {
               .select('total_co2_kg_year')
               .eq('assessment_id', assessment.id)
               .maybeSingle(),
-            // **La boucle vient du serveur** (30/09/2026, `v1-27` §12.22) : elle se déduisait ici du
-            // seul poste domicile-travail, donc la carte d'attente promettait « au début du mois
-            // prochain » à qui n'a aucune boucle. Le serveur la tire de la même définition que les
-            // générateurs de points, sans rien recopier de leur règle.
-            supabase.rpc('ma_boucle_a_venir'),
+            // **Les boucles viennent du serveur** (30/09/2026, `v1-27` §12.22) : elles se déduisaient
+            // ici du seul poste domicile-travail, donc la carte d'attente promettait « au début du
+            // mois prochain » à qui n'a aucune boucle. Le serveur les tire de la même définition que
+            // les générateurs de points, sans rien recopier de leur règle — **une par une** depuis le
+            // soir même (§12.23) : la carte d'un point répondu doit savoir si la sienne tourne.
+            supabase.rpc('mes_boucles_a_venir'),
             // **Dans le lot existant, jamais en plus** (C5.5, `v1-17` §7.4) : l'écran se recharge à
             // chaque retour au premier plan — le chemin nominal de la boucle d'engagement, celui
             // qu'on emprunte en appuyant sur une notification — donc une requête en séquence
@@ -763,13 +767,18 @@ export default function Plan() {
 
         if (cancelled) return;
 
-        // **La boucle ne se devine pas sur un échec de lecture.** Le repli n'est jamais neutre :
+        // **Les boucles ne se devinent pas sur un échec de lecture.** Le repli n'est jamais neutre :
         // `mensuel` nommait « le 1er du mois » à quelqu'un dont le point s'ouvre le lundi, et
-        // `aucune` tairait un point qui viendra. On préfère ne pas la nommer du tout — `boucle`
-        // reste `null`, la carte ne s'affiche pas — plutôt que de remplacer tout le plan par un
-        // écran d'erreur pour une lecture secondaire. La ligne de relecture dit que l'écran n'est
-        // pas tout à fait à jour. Une réponse inconnue se lit de même (`lireLaBoucleAVenir`).
-        if (!erreurBoucle) setBoucle(lireLaBoucleAVenir(boucleAVenir));
+        // « aucune » tairait un point qui viendra. On préfère ne pas les deviner — `boucles` garde la
+        // dernière liste lue, et reste `null` si aucune ne l'a été : ni carte d'attente ni carte des
+        // deux lieux, et un point répondu garde son rendez-vous (`laBoucleDuPointTourne`) —, plutôt
+        // que de remplacer tout le plan par un écran d'erreur pour une lecture secondaire. La ligne
+        // de relecture dit que l'écran n'est pas tout à fait à jour. Une réponse inconnue se lit de
+        // même (`lireLesBouclesAVenir`).
+        // Une réponse illisible est un échec de lecture comme un autre : elle ne remplace pas la
+        // dernière liste lue, et allume la ligne de relecture plus bas, plutôt que de se taire.
+        const bouclesLues = erreurBoucle ? null : lireLesBouclesAVenir(bouclesAVenir);
+        if (bouclesLues !== null) setBoucles(bouclesLues);
         setTotalDuBilan(erreurResultat ? null : (resultat?.total_co2_kg_year ?? null));
         setRappels(prefs);
         setPermission(etatPermission);
@@ -877,9 +886,9 @@ export default function Plan() {
           premierPlan,
         });
         // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des deux
-        // lectures secondaires ci-dessus a échoué — le total, ou la boucle, sans laquelle la carte
-        // d'attente ne se montre pas.
-        setRelectureEnEchec(Boolean(erreurResultat || erreurBoucle));
+        // lectures secondaires ci-dessus a échoué — le total, ou les boucles, sans lesquelles ni la
+        // carte d'attente ni celle des deux lieux ne se montrent.
+        setRelectureEnEchec(Boolean(erreurResultat) || bouclesLues === null);
       } catch {
         // Une promesse rejetée — `loadReminderPrefs` ou `lirePermission`, qui touchent un
         // module natif et ne rendent pas d'erreur mais lèvent — laissait l'écran sur
@@ -903,7 +912,15 @@ export default function Plan() {
   // La permission part avec le reste (A4-15) : sans elle, la carte accusait les réglages du
   // téléphone dès qu'un jeton manquait, y compris quand l'enregistrement venait d'échouer pour
   // une autre raison. C'est un fait de l'appareil, déjà lu par le chargement ci-dessus.
-  const attente = rappels && boucle ? carteAttente({ ...rappels, boucle, permission, plateforme: Platform.OS === 'web' ? 'web' : 'natif' }) : null;
+  const attente =
+    rappels && boucles
+      ? carteAttente({
+          ...rappels,
+          boucle: boucleAVenir(boucles),
+          permission,
+          plateforme: Platform.OS === 'web' ? 'web' : 'natif',
+        })
+      : null;
 
   // Sortie en variable, et pas lue depuis `attente` dans le rendu : le rappel du `TextLink`
   // ferme sur elle, et TypeScript ne conserve pas le rétrécissement d'un **accès de propriété**
@@ -1133,10 +1150,18 @@ export default function Plan() {
   // lit. Le reste de l'écran — trait de temps, cap, re-bilan, encarts de faits — garde ses propres
   // dérivations, que `cartesDuPlan` nomme.
   const motsDeContexte = motsDuContexte(state.contexte ?? VIDE_DE_CONTEXTE);
+  // **La carte des deux lieux ne décrit que ce que ce plan porte** (décision du 30/09/2026, `v1-27`
+  // §12.23) : l'action, si le plan en a ; le point régulier, si une boucle tourne. Tant que les
+  // boucles ne sont pas connues, elle ne se rend pas — comme la carte d'attente, et pour la même
+  // raison. Sa marque ne bouge pas : elle se rendra à la relecture suivante.
+  const deuxLieux =
+    boucles !== null
+      ? ouvertureDesDeuxLieux({ actions: actionsCount > 0, boucle: boucles.length > 0 })
+      : null;
   const affichage = cartesDuPlan({
     ouvertureDeSaison: ouverture !== null,
     carteDuPremierPlan: cartePremierPlan !== null,
-    carteDesDeuxLieux,
+    carteDesDeuxLieux: carteDesDeuxLieux && deuxLieux !== null,
     pointsAffiches: checkins.length,
     attenteDisponible: attente !== null,
     premierPlan,
@@ -1558,11 +1583,11 @@ export default function Plan() {
               arrive, et cette carte avec), puis un nouveau bilan dans la même saison qui donne des
               actions : les deux étaient dues le même jour. Relevé le 27/09/2026 en sortant la
               décision du rendu ; le premier plan passe devant, décidé par la personne qui pilote. */
-          affichage.carteDOuverture === 'deuxLieux' ? (
+          affichage.carteDOuverture === 'deuxLieux' && deuxLieux ? (
             <CarteDOuverture
-              ouverture={OUVERTURE_DES_DEUX_LIEUX}
+              ouverture={deuxLieux.ouverture}
               sorties={SORTIE_DES_DEUX_LIEUX}
-              ligne={RAMILLE.planEtSuivi}
+              ligne={deuxLieux.ligne}
               visage="calm"
               onSortie={premierParcours.lesDeuxLieuxSontVus}
             />
@@ -1604,6 +1629,7 @@ export default function Plan() {
                   emphasize={checkin.trip_label === cycle.trip_label}
                   actionEngagee={actionEngageeTexte}
                   historique={historique[checkin.loop_type]}
+                  boucleTourne={laBoucleDuPointTourne(boucles, checkin.loop_type)}
                 />
               ))}
             </View>

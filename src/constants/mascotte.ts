@@ -139,6 +139,25 @@ export const RAMILLE = {
   },
 
   /**
+   * **« Pas de trajet », quand la boucle du point ne tourne plus** (décision du 30/09/2026, `v1-27`
+   * §12.23). Toutes les variantes de `checkinSansObjet` disent quand elle revient — « On se retrouve
+   * lundi », « Je reviens au début du mois prochain » —, et un nouveau bilan peut avoir arrêté la
+   * boucle pendant que la carte répondue reste affichée : la promesse serait fausse. Ce sont les
+   * premières phrases des originales, seules : ce qui est dit reste vrai, seul le rendez-vous tombe.
+   * Une seule phrase par poste, et pas un tableau de variantes : c'est un cas rare, et il ne se
+   * répète pas d'une période à l'autre — la boucle arrêtée ne pose plus de question.
+   *
+   * Les deux autres réponses n'ont pas besoin de ligne neuve : l'originale du « Oui » ne promet rien,
+   * et le « Non » a une variante qui ne promet rien non plus. `repliqueDuPoint` les choisit.
+   */
+  checkinSansObjetSansSuite: {
+    commute: 'Pas de trajet, pas de question.',
+    leisure: 'Pas de sortie, pas de question.',
+    travel: 'Pas de voyage, pas de question.',
+    autre: 'Pas de déplacement, pas de question.',
+  },
+
+  /**
    * **Le « Non » d'une question de maintien, et la raison d'un second tableau** (C2.5, v1-14 §3.1).
    *
    * Quand le trajet se fait déjà à vélo, à pied ou en trottinette, le point ne demande pas si
@@ -201,6 +220,14 @@ export const RAMILLE = {
   suiviSansPoint: 'Je note tes réponses ici, au fil des saisons.',
 
   /**
+   * La même carte du suivi, **quand aucune boucle ne tourne** (décision du 30/09/2026, `v1-27`
+   * §12.23) : il n'y aura pas de réponse à noter. Jumelle de `planEtSuiviSansPoint`, avec la même
+   * déixis que `suiviSansPoint` — elle se dit dans le suivi, donc « ici ». Choisie par
+   * `carteDuSuiviSansPoint` (`src/types/suivi.ts`).
+   */
+  suiviSansPointSansBoucle: 'Je garde tes bilans ici, au fil des saisons.',
+
+  /**
    * **L'ouverture d'une saison** (C2.8, `v1-14` §3.1) — sous la carte qui porte les deux nombres,
    * et hors de son cadre.
    *
@@ -237,6 +264,14 @@ export const RAMILLE = {
    * Visage `calm` et non `happy` : la carte explique où sont les choses, elle ne fête rien.
    */
   planEtSuivi: 'Je note tes réponses dans ton suivi, au fil des saisons.',
+
+  /**
+   * La même carte, **quand aucune boucle ne tourne** (décision du 30/09/2026, `v1-27` §12.23) : aucun
+   * trajet, des sorties rares, aucun voyage déclaré. Il n'y aura pas de réponse à noter, donc elle ne
+   * promet pas d'en noter : elle dit ce que le suivi garde vraiment. Choisie par
+   * `ouvertureDesDeuxLieux` (`src/types/premier-parcours.ts`), jamais par un ternaire dans l'écran.
+   */
+  planEtSuiviSansPoint: 'Je garde tes bilans dans ton suivi, au fil des saisons.',
 
   /**
    * Juste après « C'est noté », sur la feuille : ce qui va se passer, avant de demander quoi

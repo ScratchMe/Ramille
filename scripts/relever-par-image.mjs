@@ -16,8 +16,8 @@
  *
  * - `window.__releve.demarrer(mesures, duree)` relève chaque mesure nommée à chaque image, jusqu'à
  *   la fin de la durée — `mesures` associe une clé à `[nom, argument]` ;
- * - `window.__releve.mesurer(nom, argument)` en prend une seule, à l'instant ;
- * - `window.__releve.auRepos(nom, argument, images, delai)` l'attend immobile (`mesurerAuRepos`) ;
+ * - `window.__releve.mesurer(nom, argument)` en prend une seule, telle quelle — `mesurerAuRepos`,
+ *   plus bas, attend que la page ne bouge plus ;
  * - `depuisLeDebut` (`{ mesures, duree }`) lance le relevé avant que React ne monte : la seule façon
  *   de voir la première image d'un écran.
  *
@@ -182,23 +182,6 @@ export function releverParImage(depuisLeDebut) {
   window.__releve = {
     echantillons: [],
     mesurer: (nom, argument) => MESURES[nom](argument),
-    // La même mesure, rendue quand elle n'a pas bougé depuis `images` images d'affilée — `null` si
-    // elle bouge encore au bout de `delai` ms.
-    auRepos: (nom, argument, images, delai) =>
-      new Promise((resoudre) => {
-        const debut = performance.now();
-        let derniere = JSON.stringify(MESURES[nom](argument));
-        let pareilles = 0;
-        const image = () => {
-          const valeur = JSON.stringify(MESURES[nom](argument));
-          pareilles = valeur === derniere ? pareilles + 1 : 0;
-          derniere = valeur;
-          if (pareilles >= images) resoudre(JSON.parse(valeur));
-          else if (performance.now() - debut > delai) resoudre(null);
-          else requestAnimationFrame(image);
-        };
-        requestAnimationFrame(image);
-      }),
     demarrer(mesures, duree) {
       const echantillons = [];
       window.__releve.echantillons = echantillons;
@@ -224,23 +207,37 @@ export async function releverPendant(page, mesures, geste, duree = 800) {
 /** Les échantillons d'un relevé lancé plus tôt — par `depuisLeDebut`, ou avant une navigation. */
 export const echantillons = (page) => page.evaluate(() => window.__releve.echantillons);
 
-/** Une mesure à l'instant — pour une référence, `mesurerAuRepos`. */
+/** Une mesure, prise telle quelle : c'est à l'appelant de savoir que la page est au repos. */
 export const mesurer = (page, nom, argument) =>
   page.evaluate(([n, a]) => window.__releve.mesurer(n, a), [nom, argument]);
 
 /**
- * **Une mesure posée**, prise quand elle n'a pas bougé depuis `images` images d'affilée, et `null`
- * si elle bouge encore au bout de `delai` ms.
- *
- * `mesurer` lit l'instant, et l'instant qui suit l'apparition d'un texte n'est pas le repos : la CI
- * est tombée ainsi le 30/09/2026, sur la carte du point relue juste après le rechargement du plan.
- * **Relevé image par image en local** : aux deux premières images où la carte existe (≈ 20 ms), sa
- * « découpe » mesure 840 px — l'écran entier, 900 moins la barre —, parce que `HauteurSuivie` ne
- * pose la sienne qu'à son premier `onLayout` ; puis 153. La garde avait comparé le retour du détour
- * à ces 840, et accusé une carte immobile de regrandir.
+ * **Une mesure au repos, constatée et non supposée** (30/09/2026). Un texte visible ne dit pas que
+ * la page a fini de se poser : `HauteurSuivie` n'a sa découpe qu'après son premier `onLayout`, donc
+ * juste après l'apparition de la question, `decoupe` remontait jusqu'à l'écran — 840 px au lieu des
+ * 153 de la carte, relevé en CI sur une PR qui ne touchait que la documentation, et la garde du
+ * retour sur le plan est tombée pour une référence fausse. Le repos se lit comme une valeur qui ne
+ * bouge plus pendant `fenetre` millisecondes — plus que la plus longue durée des jetons de mouvement
+ * (320 ms) —, et rend `null` si l'échéance passe avant : une mesure qui ne se pose pas ne peut pas
+ * servir de référence.
  */
-export const mesurerAuRepos = (page, nom, argument, { images = 10, delai = 3_000 } = {}) =>
-  page.evaluate(([n, a, i, d]) => window.__releve.auRepos(n, a, i, d), [nom, argument, images, delai]);
+export async function mesurerAuRepos(page, nom, argument, { fenetre = 600, pas = 100, echeance = 10_000 } = {}) {
+  const debut = Date.now();
+  let precedente;
+  let depuis = debut;
+  while (Date.now() - debut < echeance) {
+    const valeur = await mesurer(page, nom, argument);
+    const cle = JSON.stringify(valeur);
+    if (valeur !== null && cle === precedente) {
+      if (Date.now() - depuis >= fenetre) return valeur;
+    } else {
+      precedente = cle;
+      depuis = Date.now();
+    }
+    await page.waitForTimeout(pas);
+  }
+  return null;
+}
 
 /** Strictement entre deux valeurs, à une marge près (un demi-pixel par défaut) : ni au départ, ni à l'arrivée. */
 export const entre = (valeur, a, b, marge = 0.5) => valeur > Math.min(a, b) + marge && valeur < Math.max(a, b) - marge;
