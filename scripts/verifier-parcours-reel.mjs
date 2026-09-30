@@ -350,6 +350,15 @@
 // coup sûr — elle dépend de l'aller-retour du préremplissage —, donc elle n'a pas de mutation ; ce qui la
 // ferme est l'attente d'une réponse cochée, écrite en tête de `jusquAVoirMonBilan`.
 //
+// **Et une le 30/09/2026, sur la carte d'attente** (`v1-27` §12.22) : `lireLaBoucleAVenir` ne
+// reconnaît plus `hebdo` (`'hebdomadaire'` à sa place, marqueur retrouvé dans le bundle, rejeu
+// `parcours` sur un fichier égal au commit sauf elle). Le parcours s'arrête à « cycliste — la carte
+// d'attente nomme le lundi, que le serveur a dit », sur « /^(Je te fais signe|On se retrouve ici)
+// lundi\.$/ » n'est jamais apparu — **et à elle seule** : toutes les étapes d'avant passent, le premier
+// profil compris, donc rien d'autre du parcours ne garde cette lecture. Le témoin, sur le même commit,
+// passe de bout en bout. La **première** version de l'étape, qui oubliait la carte des deux lieux, est
+// tombée au même endroit sans mutation : c'est ce qui l'a corrigée.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
