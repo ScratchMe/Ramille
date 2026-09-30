@@ -220,6 +220,14 @@ export const RAMILLE = {
   suiviSansPoint: 'Je note tes réponses ici, au fil des saisons.',
 
   /**
+   * La même carte du suivi, **quand aucune boucle ne tourne** (décision du 30/09/2026, `v1-27`
+   * §12.23) : il n'y aura pas de réponse à noter. Jumelle de `planEtSuiviSansPoint`, avec la même
+   * déixis que `suiviSansPoint` — elle se dit dans le suivi, donc « ici ». Choisie par
+   * `carteDuSuiviSansPoint` (`src/types/suivi.ts`).
+   */
+  suiviSansPointSansBoucle: 'Je garde tes bilans ici, au fil des saisons.',
+
+  /**
    * **L'ouverture d'une saison** (C2.8, `v1-14` §3.1) — sous la carte qui porte les deux nombres,
    * et hors de son cadre.
    *
