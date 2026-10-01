@@ -189,6 +189,13 @@ cette adresse) → **le retour quitte l'app** ; puis « Me déconnecter » et le
 sur un onglet neuf. **Il envoie un e-mail par passage**, sur un plafond local de 30 par heure
 partagé avec `verifier-code-de-connexion.mjs` et tout passage simultané.
 
+**L'étape « plan — l'onglet remonte en haut, et ramène à sa racine »** (01/10/2026, `v1-33` T-14)
+garde l'appel de `toucherDOnglet` dans ses deux sens : la remontée d'un onglet déjà à sa racine —
+**le même plan**, son titre marqué avant le toucher, car un écran remonté de zéro est aussi en haut
+—, et le retour à la racine — « Suivi » depuis le plan quand le questionnaire n'a ouvert sa pile que
+sur la restitution, puis « Plan » depuis le suivi, les pistes laissées ouvertes —, lus dans le DOM :
+la restitution démontée, un seul titre « Ton plan », marqué.
+
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
 **Le code recopie une contrainte de la base en bien plus d'endroits qu'on ne le croit** — une puce
@@ -539,7 +546,12 @@ même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFr
   ouverte au-dessus ; il défile en glissant et **juste assez** — « C'est noté » finit à moins de
   100 px du bas de la fenêtre, et c'est cette moitié qui a fait tomber la mutation du défilement
   mesuré trop tôt, là où « le titre jamais sous la bande » ne la voyait pas ; sous la préférence, il
-  se pose d'un coup. Que le titre ne passe jamais sous la bande est d'abord gardé par les tests de
+  se pose d'un coup) **et le même sur le plan** (01/10/2026, `v1-33` P-2 : précondition, juste
+  assez, titre jamais sous la bande, en glissant ; posé d'un coup chez le cycliste), **la carte
+  engagée amenée dans la fenêtre après « C'est noté »**, touchée au bas d'un écran de 640 px pour que
+  la relecture l'en sorte (`noterSurUnEcranCourt`, précondition comprise : à 900 px la garde passait
+  sans rien éprouver), et **le geste qui ne se défait pas** (P-1 : à chaque image, « C'est noté » ou
+  « Changer d'avis »). Que le titre ne passe jamais sous la bande est d'abord gardé par les tests de
   `defilementPourMontrer`, `src/types/mouvement.test.ts`) — et **le second profil entier sous
   « réduire les animations »**.
 

@@ -35,7 +35,12 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   courbe à régler, et **posé sous la préférence** (`animated: !animationsReduites`) — le défilement
   compte parmi ce qui s'anime. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5),
   et le focus part avant lui, au geste. Les deux défilements du questionnaire et leurs règles :
-  `FRONT-QUESTIONNAIRE.md` §2.6.
+  `FRONT-QUESTIONNAIRE.md` §2.6. **Le plan défile depuis le 01/10/2026** (`v1-33` P-1 et P-2), deux
+  fois, et jamais à chaque retour : à l'ouverture du sélecteur, juste assez pour que « C'est noté »
+  finisse au-dessus de la barre (`defilementPourMontrer`) ; après la relecture d'un engagement pris
+  sur l'écran ou ramené de la liste, jusqu'à la carte engagée, où qu'elle soit
+  (`defilementVersLaCarte`). Le focus va à son bloc avec le rendu qui retire « C'est noté », avant le
+  défilement, qu'il ne fait pas lui-même.
 - **Ce qui ne bouge jamais** : l'état pressé (une teinte immédiate, `v1-29` décision n° 6), un
   chiffre (jamais un compteur qui défile — il afficherait des valeurs fausses en chemin), une
   navigation de pile (« standard plateforme »), et le focus, qui part au geste et jamais à la fin

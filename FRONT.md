@@ -435,8 +435,11 @@ exactement ce qui avait laissé passer le mauvais caractère.
   **ni `disabled`, ni `aria-disabled`**. Il agit (`FRONT-QUESTIONNAIRE.md` §2.6, il demande ce qui manque), donc il ne
   s'annonce pas indisponible ; et sur web, `aria-disabled` réécrit depuis `disabled` pose l'attribut
   natif, qui le rendrait inerte au clic comme au clavier (`EXPO.md` §1.5). `disabled` reste pour ce
-  qui n'agit vraiment pas — le « C'est noté » d'une feuille incomplète, l'« Enregistrer » de
-  `/contexte`. Deux gardes derrière lui, et la seconde est voulue : `StepShell` n'appelle pas
+  qui n'agit vraiment pas — le « C'est noté » d'une feuille incomplète, ou en attente de la relecture
+  qui suit l'engagement, et l'« Enregistrer » d'un `/contexte` inchangé. **Incomplet, l'« Enregistrer »
+  de `/contexte` est en attente depuis le 01/10/2026** (`v1-33` P-13) : il mène à ce qui manque par
+  les ancres de `ChampsDeContexte`, que l'écran fournit lui-même, sous la ligne du questionnaire
+  (« Il manque encore … »). Deux gardes derrière lui, et la seconde est voulue : `StepShell` n'appelle pas
   `onNext` sur une étape incomplète, et `handleNext` le refuse encore (`issueDuSuivant`) — à la
   dernière étape, il vérifie **toutes** les étapes visibles, `?etape=` permettant d'y arriver avec
   un questionnaire vierge.
@@ -651,6 +654,19 @@ exactement ce qui avait laissé passer le mauvais caractère.
   sens contraire. `title`/`subtitle` (48/32) sont les tailles du handoff initial, qu'aucun écran
   n'affiche sans les surcharger. **Le kit recopie ces jetons** (`docs/design/design-system/tokens/`) :
   toucher une valeur ici impose de la recopier là-bas, dans la même PR (`v1-29` §5).
+- **Toucher l'onglet où l'on est remonte en haut de sa page, et un onglet ramène toujours à la
+  racine de sa pile** (01/10/2026, `v1-33` T-14). Le layout retenait le toucher à chaque fois, donc
+  `useScrollToTop` n'agissait jamais ; il ne le retient plus quand l'onglet est déjà à sa racine
+  (`toucherDOnglet`, `src/types/plan.ts`). **La pile se lit sur la route de l'onglet, paramètres
+  compris** (`pileDeLOnglet`) : la restitution que le questionnaire ouvre dans le suivi n'a de `state`
+  qu'à son premier changement. **Et ramener remplace la pile par sa seule racine, sans la nommer**
+  (`pileALaRacine`, posée par `ramenerALaRacine`, la racine gardant sa clé) : `navigate(onglet,
+  { screen: 'index' })` **empile** une seconde racine sous React Navigation 7 — mesuré le
+  01/10/2026, `[index, pistes, index]` et `[bilan, index]`, depuis le 07/09/2026 sans que l'adresse
+  affichée le trahisse. **Un écran d'onglet qui défile s'y abonne par un relais** qui pose la
+  remontée sous « réduire les animations » (`useScrollToTop` appelle `scrollTo({ y: 0, animated:
+  true })` en dur) — le plan et le suivi. Les écrans empilés — les pistes, un bilan — ne le reçoivent
+  jamais (`isFirst`) : le toucher les ramène à la racine.
 - Le wizard du bilan (`src/app/bilan/index.tsx` + `src/components/bilan/steps/*`) dérive
   entièrement sa navigation ("Étape N sur M", saut conditionnel d'étapes) de l'état courant
   des réponses via `isStepVisible`/`nextStep`/`previousStep`/`isStepComplete` dans

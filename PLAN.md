@@ -375,11 +375,14 @@ connaître :
   lecture, un `count` en `head` dans le même `Promise.all` (règle de C5.5). Un `count` **nul** veut
   dire « pas pu lire » et se lit « s'est déjà engagée » : des deux erreurs possibles, celle qui
   montre une carte de trop coûte moins que celle qui **retire** le trait au milieu d'une saison.
-- **Le trait s'écrit `progression !== null && !premierPlan`**, et non la forme du canvas
-  `(engagement || !premierPlan)` : un engagement rend déjà le signal faux par sa deuxième condition,
-  donc la première moitié n'est exerçable par aucun cas. Un test épingle cette implication — le jour
-  où il tombe, c'est que la forme courte est redevenue fausse. La légende disparaît **avec** le
-  trait ; la période et sa fin, elles, restent.
+- **Le trait s'écrit `progression !== null && traitDeTemps`, et la condition vit dans
+  `cartesDuPlan`** (`traitDeTemps: !premierPlan || nombreDActions === 0`, depuis le 01/10/2026,
+  `v1-33` P-5). La forme du canvas `(engagement || !premierPlan)` reste redondante — un engagement
+  rend déjà le signal faux, un test l'épingle ; ce qui s'ajoute est **le plan à zéro action**, qui
+  reste « premier » toute sa saison faute de pouvoir s'engager : la raison de C5.6 — ne pas faire
+  courir le temps sur une action pas encore choisie — n'y vaut pas, il n'y a rien à choisir (HANDOFF
+  `v1-17`, planche C, qui retire aussi l'intro de ce plan : `intro`, même dérivation). La légende
+  disparaît **avec** le trait ; la période et sa fin restent.
 - **Une seule carte pour deux ouvertures** (`CarteDOuverture`, ex-`CarteDeSaison`) : le canvas décrit
   le cadre de la saison et celui du premier plan de la même façon au pixel près, donc en écrire deux
   garantirait qu'ils divergent — la leçon de `CarteDePiste` en C5.2. Ce qui change est du contenu,
