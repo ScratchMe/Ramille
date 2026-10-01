@@ -46,14 +46,14 @@ import { type CanalPrefere, type FenetreDeLaVeille } from '@/types/rappels';
  * écarté** : hors ligne, ou sur une lecture en échec, « Supprimer mon compte » ne s'afficherait pas,
  * et c'est le chemin que Google Play exige.
  *
- * **Mesurée, pas calculée, et sur web** : 412 px de saut pour un compte anonyme, à 390 comme à 420
- * de large, moins l'écart de 16 px que le bloc ajoute en existant — 396, jusqu'au 01/10/2026. **Puis
- * remesurée le même jour, quand le compte et les rappels sont devenus deux sections à 32 l'une de
- * l'autre** (audit T-15) : 412 px de hauteur naturelle du bloc chargé, à 390 comme à 420 — les 16 de
- * l'écart en plus, le reste n'a pas bougé. Ce n'est vrai qu'à ces largeurs, pour ce compte et sur
- * web : à 360, le texte passe sur une ligne de plus et il reste 20 px (432, remesuré le même jour) ;
- * sur un écran large, il en manquait 44 avant l'écart de section, qui s'ajoute à toutes les
- * largeurs ; un compte rattaché ne dit pas la même phrase ; et **sur un téléphone
+ * **Mesurée, pas calculée, et sur web** : la hauteur naturelle du bloc une fois lu, pour un compte
+ * anonyme — **412 px à 390 comme à 420 de large**. Elle valait 396 jusqu'au 01/10/2026 ; ce jour-là
+ * le compte et les rappels sont devenus deux sections à 32 l'une de l'autre au lieu de 16 (audit
+ * T-15), et la remesure sur l'export a rendu les 16 de l'écart en plus, rien d'autre. Ce n'est vrai
+ * qu'à ces largeurs, pour ce compte et sur web — relevé le même jour : à 360 le texte passe sur une
+ * ligne de plus (432, il reste 20 px de saut), à 320 sur deux (474, 62 px) ; plus large, il en
+ * perd (390 à 600 de large, 368 à partir de 1 024) et le lien remonte d'autant ; un compte rattaché
+ * ne dit pas la même phrase ; et **sur un téléphone
  * le réglage des rappels est plus haut** — trois lignes de canal au lieu de deux, la porte des
  * réglages, le mot de la veille —, donc le lien descend encore de la différence (`v1-13` §11.25). Un
  * saut peut donc rester, et c'est le risque accepté avec la décision. Le parcours réel mesure le reste

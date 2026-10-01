@@ -22,8 +22,10 @@ import { useTheme } from '@/hooks/use-theme';
  * dessinait un rectangle dans le champ arrondi, pour le cadre, qu'il suit — exactement ce que le champ
  * du retour, dont l'élément **est** le cadre, montrait déjà. Même anneau que tout autre contrôle du
  * produit sur web (`outline: auto`), rien ne bouge (un contour ne prend pas de place), et l'indicateur
- * reste une forme, au contraste du navigateur (WCAG 2.4.7). Sur natif, rien de tout cela : le clavier
- * ouvert et le curseur disent le focus.
+ * reste une forme, au contraste du navigateur (WCAG 2.4.7) — mesuré sur l'export le 01/10/2026, dans
+ * Chromium : un anneau noir à 21:1 sur la page et 18,5:1 sur le fond du champ (#101010 pour le champ
+ * du retour, 19:1 et 16,8:1). Sur natif, rien de tout cela : le clavier ouvert et le curseur disent le
+ * focus.
  */
 export function cadreDuChamp(
   theme: { accent: string; fieldBorder: string },
