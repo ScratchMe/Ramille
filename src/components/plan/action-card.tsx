@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { formatKg } from '@/lib/format';
@@ -5,6 +6,7 @@ import { PastilleEngagee } from '@/components/plan/pastille-engagee';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
 import { ligneDuGain } from '@/types/plan';
 
 // Carte d'une action du plan — extraite de l'écran (v1-11 lot 1).
@@ -37,6 +39,7 @@ export function ActionCard({
   engagee,
   reconduite,
   estompee,
+  refDuBloc,
   children,
 }: {
   titre: string;
@@ -67,6 +70,13 @@ export function ActionCard({
    * son cadre seulement.
    */
   estompee: boolean;
+  /**
+   * Le bloc accessible de la carte — celui qui annonce « Action engagée : … » —, pour qu'un écran
+   * lui donne le focus (audit P-1, 01/10/2026) : après « C'est noté », la relecture remplace le
+   * sélecteur par la carte engagée, et le focus retombait sur le document. Une prop et non
+   * `forwardRef` : React 19 la passe comme les autres, le motif de `Button`.
+   */
+  refDuBloc?: Ref<View>;
   children: React.ReactNode;
 }) {
   const theme = useTheme();
@@ -116,7 +126,10 @@ export function ActionCard({
         },
       ]}
     >
-      <View accessible accessibilityLabel={annonce} style={styles.bloc}>
+      {/* **Focalisable par programme** sur web (`tabIndex={-1}`, hors de la tabulation) : c'est le bloc
+          que l'écran du plan désigne après un engagement, et une `View` n'y reçoit pas le focus
+          sans lui. Sur natif, `accessible` en fait déjà un seul nœud, que le focus sait viser. */}
+      <View ref={refDuBloc} accessible accessibilityLabel={annonce} style={styles.bloc} {...FOCALISABLE_PAR_PROGRAMME}>
         {engagee && (
           <View style={styles.enTete}>
             <PastilleEngagee />

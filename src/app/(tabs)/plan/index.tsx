@@ -1,6 +1,14 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams, useScrollToTop } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
@@ -14,6 +22,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
+import { donnerLeFocus } from '@/lib/focus';
 import { formatKg, formatTonnes } from '@/lib/format';
 import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
@@ -28,6 +37,7 @@ import { TraitDeTemps } from '@/components/plan/trait-de-temps';
 import {
   cadreDuPlan,
   cartesDuPlan,
+  defilementVersLaCarte,
   felicitationDuPlanSansAction,
   formeInserable,
   motsDuContexte,
@@ -82,6 +92,7 @@ import {
 import { lirePermission } from '@/lib/rappels';
 import { supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
+import { defilementPourMontrer } from '@/types/mouvement';
 import {
   debutDePeriodeInterrogee,
   estDeLaPeriodeCourante,
@@ -295,7 +306,8 @@ type LoadState =
        * même instant que le reste : le mettre à côté en ferait une valeur à tenir en phase avec le
        * cycle affiché. Il pilote **deux** choses qui ne se referment pas ensemble — la carte, qu'un
        * « Compris » suffit à retirer (marque locale), et le trait de temps, qui attend un
-       * engagement parce qu'il n'a rien à mesurer avant.
+       * engagement parce qu'il n'a rien à mesurer avant — sauf sur un plan à zéro action, où il n'y
+       * a rien à choisir (`cartesDuPlan`, `traitDeTemps`).
        */
       premierPlan: boolean;
     };
@@ -327,6 +339,12 @@ const VIDE_DE_CONTEXTE: ReponsesDeContexte = {
   teletravail: null,
 };
 
+/**
+ * Ce qu'on garde des deux côtés d'une carte qu'on amène dans la fenêtre — la valeur de la liste des
+ * pistes, pour que les deux écrans s'arrêtent au même endroit sous la bande et au-dessus de la barre.
+ */
+const MARGE_DE_DEFILEMENT = Spacing.three;
+
 export default function Plan() {
   // **Émis au focus et non au montage** : dans une barre d'onglets, react-navigation garde
   // l'écran monté quand on passe à l'autre. Avec `useTrackView`, l'événement ne partirait
@@ -350,9 +368,9 @@ export default function Plan() {
    * invisible : `commitPisteDuPlan` rend `rechargerLePlan`, la carte appelait `onChanged()` dans la
    * foulée, donc le plan était relu et les cartes remontées — l'état local qui portait la phrase
    * disparaissait au rendu suivant. Personne ne lisait donc jamais pourquoi son choix n'avait pas
-   * été enregistré ; le plan changeait simplement sous ses yeux (relevé le 14/09/2026). Et le
-   * remonter ne suffisait pas à le rendre visible si la carte concernée repassait derrière « Voir
-   * d'autres pistes », replié par défaut : on déplie donc en même temps.
+   * été enregistré ; le plan changeait simplement sous ses yeux (relevé le 14/09/2026). (Ce
+   * commentaire disait encore qu'on dépliait « Voir d'autres pistes » en même temps : le plan n'a
+   * plus que deux cartes depuis C5.2, et rien à déplier.)
    */
   const [refusDeRemplacement, setRefusDeRemplacement] = useState<string | null>(null);
   // Recharge après un engagement : le RPC libère aussi l'action précédente, donc l'état à
@@ -504,6 +522,190 @@ export default function Plan() {
    */
   useReprendreLEngagement(passage.reprendre, rappels !== null, proposerLesRappels);
 
+  // ── Le geste d'engagement, jusqu'au bout (audit P-1 et P-2, 01/10/2026) ───────────────────────
+  //
+  // Trois défauts cumulés au geste le plus important du produit. Le sélecteur se refermait avant la
+  // relecture, donc « Je m'y engage » revenait sous les yeux (corrigé dans `ActionCommitment`, qui
+  // attend la lecture suivante : `lecturesTerminees`). « C'est noté » s'ouvrait sous la barre
+  // d'onglets, sans que l'écran défile, quand la liste, elle, défile (HANDOFF du canvas `v1-30`,
+  // B2). Et la relecture déplaçait la carte engagée hors de la fenêtre — au premier plan, le cap
+  // repasse devant les pistes —, le focus tombant sur le document.
+
+  /**
+   * Les lectures de l'écran **terminées** — réussies ou non, jamais une lecture qu'une plus récente a
+   * remplacée. `ActionCommitment` la lit pour savoir quand refermer un engagement pris ici, l'effet
+   * plus bas pour savoir quand montrer la carte engagée.
+   */
+  const [lecturesTerminees, setLecturesTerminees] = useState(0);
+  /**
+   * **Une relance demandée répond sous le doigt** (audit P-8, 01/10/2026). « Réessayer » de la ligne
+   * de relecture, « Réessayer » de l'état en préparation et « Voir la saison » n'appelaient que
+   * `rafraichir`, qui n'incrémente qu'une clé : rien ne changeait à l'écran pendant la lecture, et
+   * rien après si elle échouait encore ou ne trouvait rien de neuf — le bouton qui a l'air mort que
+   * `reessayerDepuisLErreur` corrige pour l'écran d'erreur. Le contrôle touché reste inactif, et
+   * l'annonce `aria-busy` sur web, jusqu'à la fin de la lecture : le `finally` du chargement le
+   * relâche, quelle que soit l'issue. Sans phrase neuve, et sans repasser par « Chargement… », que
+   * `rafraichir` évite exprès (il ferait clignoter l'écran à chaque retour au premier plan).
+   */
+  const [relectureDemandee, setRelectureDemandee] = useState(false);
+  const relire = useCallback(() => {
+    setRelectureDemandee(true);
+    rafraichir();
+  }, [rafraichir]);
+
+  /**
+   * Le défilement de la plateforme, posé sous « réduire les animations » (`FRONT-MOUVEMENT.md`
+   * §2.12) : `scrollTo` animé ne consulte pas la préférence sur web, où react-native-web le traduit
+   * en `behavior: 'smooth'`. Rien n'attend sa fin, qui ne s'annonce pas sur web, et le focus part
+   * avant lui.
+   */
+  const animationsReduites = useReducedMotion();
+  const defilement = useRef<ScrollView>(null);
+  const position = useRef(0);
+  const surDefilement = useCallback((evenement: NativeSyntheticEvent<NativeScrollEvent>) => {
+    position.current = evenement.nativeEvent.contentOffset.y;
+  }, []);
+
+  /**
+   * **Toucher l'onglet du plan, déjà là, remonte en haut** (audit T-14, 01/10/2026) — le geste de
+   * toute barre d'onglets, sur Android comme sur iOS, et le plan dépasse trois écrans quand un point
+   * attend. `useScrollToTop` ne remonte que si l'onglet est à la racine de sa pile, et seulement si
+   * son toucher n'a pas été retenu : c'est le layout des onglets qui ne le retient plus dans ce cas
+   * (`toucherDOnglet`, `src/types/plan.ts`).
+   *
+   * **Par un relais, et non par la `ScrollView` elle-même** : `useScrollToTop` appelle
+   * `scrollTo({ y: 0, animated: true })` en dur, donc remonterait en glissant sous « réduire les
+   * animations ». Le relais porte la seule méthode qu'il appelle en priorité, `scrollToTop`, et la
+   * pose sous la préférence.
+   */
+  const versLeHaut = useMemo(
+    () => ({
+      current: {
+        scrollToTop: () => defilement.current?.scrollTo({ y: 0, animated: !animationsReduites }),
+      },
+    }),
+    [animationsReduites]
+  );
+  useScrollToTop(versLeHaut);
+
+  /** Les cartes d'action, et le bloc qui annonce chacune, par identifiant de piste. */
+  const cartes = useRef(new Map<string, View>());
+  const blocs = useRef(new Map<string, View>());
+  const inscrireCarte = useCallback((id: string, noeud: View | null) => {
+    if (noeud) cartes.current.set(id, noeud);
+    else cartes.current.delete(id);
+  }, []);
+  const inscrireBloc = useCallback((id: string, noeud: View | null) => {
+    if (noeud) blocs.current.set(id, noeud);
+    else blocs.current.delete(id);
+  }, []);
+
+  /**
+   * Amener une carte dans la fenêtre — **juste assez**, jamais au point de faire passer son titre sous
+   * la bande. Deux cas, deux dérivations testées :
+   *  - **à l'ouverture du sélecteur** (`defilementPourMontrer`, la règle de la liste) : la carte
+   *    grandit vers le bas sous le doigt, on la fait monter jusqu'à « C'est noté », jamais redescendre ;
+   *  - **après la relecture d'un engagement** (`defilementVersLaCarte`) : la carte a changé de place
+   *    sans geste sur elle, on l'amène où qu'elle soit — y compris vers le haut.
+   * Les mesures se prennent dans la fenêtre de défilement, comme sur la liste : l'ancrage du défilement
+   * de Chrome compense ce qui change de taille au-dessus, et une position dans la page bougerait sans
+   * que rien ne bouge à l'œil (`TESTING-GARDES.md` §2.14).
+   */
+  const amenerDansLaFenetre = useCallback(
+    (id: string, cas: 'ouverture' | 'relecture') => {
+      const carte = cartes.current.get(id);
+      // La fenêtre de défilement elle-même — le nœud qui défile, et non l'instance du composant.
+      const ecran = defilement.current?.getNativeScrollRef();
+      if (!carte || !ecran) return;
+      ecran.measureInWindow((_x, hautDeLaFenetre, _largeur, hauteurFenetre) => {
+        carte.measureInWindow((_cx, hautDeLaCarte, _cLargeur, hauteurDeLaCarte) => {
+          const haut = hautDeLaCarte - hautDeLaFenetre;
+          const mesure = { haut, bas: haut + hauteurDeLaCarte, hauteurFenetre, marge: MARGE_DE_DEFILEMENT };
+          const aDefiler = cas === 'ouverture' ? defilementPourMontrer(mesure) : defilementVersLaCarte(mesure);
+          if (aDefiler === 0) return;
+          defilement.current?.scrollTo({
+            y: Math.max(0, position.current + aDefiler),
+            animated: !animationsReduites,
+          });
+        });
+      });
+    },
+    [animationsReduites]
+  );
+
+  /**
+   * **« C'est noté » ne s'ouvre plus sous la barre d'onglets** (audit P-2). Le sélecteur s'ouvre d'un
+   * coup — rien ne grandit ici, à la différence de la liste —, donc la carte a sa hauteur pleine à la
+   * mise en page qui suit le toucher : c'est elle qu'on attend (`onLayout` de son cadre), une fois, pour
+   * la carte qui vient de s'ouvrir. Le focus, lui, est déjà parti au geste, sur la question
+   * (`ActionCommitment`) : `donnerLeFocus` ne défile pas, et laisse le défilement à qui l'a lancé.
+   */
+  const aMontrerALOuverture = useRef<string | null>(null);
+  const carteMiseEnPage = useCallback(
+    (id: string) => {
+      if (aMontrerALOuverture.current !== id) return;
+      aMontrerALOuverture.current = null;
+      amenerDansLaFenetre(id, 'ouverture');
+    },
+    [amenerDansLaFenetre]
+  );
+
+  /**
+   * **La carte engagée se montre après la relecture, une fois** (audit P-1). Trois temps :
+   *  - `engagementAMontrer` est posé **au geste** — « C'est noté » sur cet écran (`surEngagement`),
+   *    ou le retour de la liste après un choix (`passage.aMontrer`, lu au focus sans attendre les
+   *    préférences) ;
+   *  - la lecture qui suit le consomme dans son `finally`, réussie ou non, et seulement si elle a lu
+   *    un plan pose `carteEngageeAMontrer` : un engagement ne déplace l'écran qu'une fois, jamais à
+   *    chaque retour sur le plan, et jamais sur la foi d'une lecture en échec ;
+   *  - l'effet qui suit son rendu amène la carte dans la fenêtre et lui donne le focus.
+   *
+   * **Le focus part avec le rendu qui retire « C'est noté »** — c'est le moment exact. Le geste l'a
+   * laissé sur le bouton, inactif mais focalisé pendant l'aller-retour réseau ; la relecture remplace
+   * le sélecteur par la carte engagée, et sans ceci le focus tombait sur le document. Il ne peut pas
+   * partir plus tôt : avant la relecture, le bloc n'annonce pas encore « Action engagée ». Et il
+   * n'attend aucune animation : il part **avant** le défilement, qu'il ne fait pas lui-même
+   * (`preventScroll`), comme la réplique du point après sa réponse (`CheckinCard`).
+   *
+   * **Il ne vole pas celui de la feuille des rappels** : sur natif, elle peut s'ouvrir juste après le
+   * premier engagement. Ouverte, elle garde le focus ; il revient à la carte quand elle se referme.
+   */
+  const engagementAMontrer = useRef(false);
+  const carteEngageeAMontrer = useRef(false);
+  const focusApresLaFeuille = useRef(false);
+  const surEngagement = useCallback(
+    (poste: string | null) => {
+      engagementAMontrer.current = true;
+      void proposerLesRappels(poste);
+    },
+    [proposerLesRappels]
+  );
+  useFocusEffect(
+    useCallback(() => {
+      if (passage.aMontrer()) engagementAMontrer.current = true;
+    }, [passage])
+  );
+  const idEngage =
+    state.status === 'ok'
+      ? (state.cycle.plan_actions.find((action) => action.committed_at !== null)?.id ?? null)
+      : null;
+  useEffect(() => {
+    if (!carteEngageeAMontrer.current) return;
+    carteEngageeAMontrer.current = false;
+    if (idEngage === null) return;
+    amenerDansLaFenetre(idEngage, 'relecture');
+    if (ouvertureDeFeuille !== null) {
+      focusApresLaFeuille.current = true;
+      return;
+    }
+    donnerLeFocus(blocs.current.get(idEngage));
+  }, [lecturesTerminees, idEngage, ouvertureDeFeuille, amenerDansLaFenetre]);
+  useEffect(() => {
+    if (ouvertureDeFeuille !== null || !focusApresLaFeuille.current) return;
+    focusApresLaFeuille.current = false;
+    if (idEngage !== null) donnerLeFocus(blocs.current.get(idEngage));
+  }, [ouvertureDeFeuille, idEngage]);
+
   // **La confirmation passe par la boîte de réception** : la personne y lit son code, le tape, et
   // arrive ici avec `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la boucle
   // ouverte par l'écran des e-mails ne se refermait nulle part. (C'était un lien à cliquer jusqu'au
@@ -592,18 +794,55 @@ export default function Plan() {
       );
     };
 
+    // Le plan a-t-il été lu ? Seule une lecture qui a rendu un cycle peut montrer une carte engagée
+    // (`carteEngageeAMontrer`, plus haut) — un échec, un « pas de bilan » ou un « en préparation » n'en
+    // ont pas.
+    let planLu = false;
+
     (async () => {
       try {
-        // Le lien "Revenir à mon bilan" pointe vers la restitution du dernier bilan
-        // complété (elle-même donne accès à "Modifier mes réponses") — il faut donc son
-        // id systématiquement, pas seulement dans le cas filet ci-dessous.
-        const { data: assessment, error: erreurBilan } = await supabase
-          .from('assessments')
-          .select('id, submitted_at')
-          .eq('status', STATUT_DE_BILAN.complete)
-          .order('submitted_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // **Les deux premières lectures partent ensemble** (audit P-9, 01/10/2026). Elles partaient
+        // l'une après l'autre sans raison : la seconde ne lit rien de la première — aucun filtre sur
+        // le bilan, la RLS borne déjà à la personne —, et cet aller-retour de trop se payait à
+        // **chaque** retour au premier plan, c'est-à-dire à chaque notification ouverte. Les
+        // décisions, elles, se prennent dans **l'ordre d'avant**, un résultat après l'autre : l'échec
+        // du bilan, puis « pas de bilan » — qui gagne sur un cycle illisible, sans quoi quelqu'un sans
+        // bilan lirait une panne —, puis l'échec du cycle, puis « en préparation ».
+        const [{ data: assessment, error: erreurBilan }, { data: cycles, error: cycleError }] = await Promise.all([
+          // Le lien "Revenir à mon bilan" pointe vers la restitution du dernier bilan
+          // complété (elle-même donne accès à "Modifier mes réponses") — il faut donc son
+          // id systématiquement, pas seulement dans le cas filet ci-dessous.
+          supabase
+            .from('assessments')
+            .select('id, submitted_at')
+            .eq('status', STATUT_DE_BILAN.complete)
+            .order('submitted_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          // **Deux cycles et non un** (C2.8) : le second est la période écoulée, dont la carte
+          // d'ouverture récapitule les points. Ses bornes sont **lues sur sa ligne** plutôt que
+          // recalculées — une cadence `rolling_quarter` n'a pas de saison nommée, donc dériver les
+          // bornes de la saison ferait compter trois mois calendaires qui ne sont pas les siens. Et
+          // son existence est ce qui distingue une bascule d'un premier bilan : « On repart pour une
+          // saison » ne vaut que si l'on a déjà roulé une saison.
+          supabase
+            .from('plan_cycles')
+            .select(
+              // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
+              // type du résultat en analysant ce littéral au niveau des types. Une concaténation
+              // lui rend un `string` opaque et le typage du retour est perdu.
+              //
+              // **`plan_actions!plan_actions_plan_cycle_id_fkey` est obligatoire depuis C2.2**, et
+              // ce n'est pas une précaution de typage : `carried_over_from` est une **seconde** clé
+              // étrangère de `plan_actions` vers `plan_cycles`, donc PostgREST ne sait plus laquelle
+              // suivre et refuse la requête (« more than one relationship was found »). Sans le
+              // nom de la clé, l'écran du plan ne charge plus du tout. Le typecheck l'attrape —
+              // c'est le seul garde qui le fait, la chaîne étant analysée au niveau des types.
+              'id, period_label, period_start, period_end, cadence_type, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, action_template_id, saving_kg_year, saving_share_percent, detail_text, first_step, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
+            )
+            .order('period_start', { ascending: false })
+            .limit(2),
+        ]);
 
         if (cancelled) return;
 
@@ -620,32 +859,6 @@ export default function Plan() {
           setRelectureEnEchec(false);
           return;
         }
-
-        // **Deux cycles et non un** (C2.8) : le second est la période écoulée, dont la carte
-        // d'ouverture récapitule les points. Ses bornes sont **lues sur sa ligne** plutôt que
-        // recalculées — une cadence `rolling_quarter` n'a pas de saison nommée, donc dériver les
-        // bornes de la saison ferait compter trois mois calendaires qui ne sont pas les siens. Et
-        // son existence est ce qui distingue une bascule d'un premier bilan : « On repart pour une
-        // saison » ne vaut que si l'on a déjà roulé une saison.
-        const { data: cycles, error: cycleError } = await supabase
-          .from('plan_cycles')
-          .select(
-            // Chaîne littérale d'un seul tenant, volontairement longue : supabase-js infère le
-            // type du résultat en analysant ce littéral au niveau des types. Une concaténation
-            // lui rend un `string` opaque et le typage du retour est perdu.
-            //
-            // **`plan_actions!plan_actions_plan_cycle_id_fkey` est obligatoire depuis C2.2**, et
-            // ce n'est pas une précaution de typage : `carried_over_from` est une **seconde** clé
-            // étrangère de `plan_actions` vers `plan_cycles`, donc PostgREST ne sait plus laquelle
-            // suivre et refuse la requête (« more than one relationship was found »). Sans le
-            // nom de la clé, l'écran du plan ne charge plus du tout. Le typecheck l'attrape —
-            // c'est le seul garde qui le fait, la chaîne étant analysée au niveau des types.
-            'id, period_label, period_start, period_end, cadence_type, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, action_template_id, saving_kg_year, saving_share_percent, detail_text, first_step, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
-          )
-          .order('period_start', { ascending: false })
-          .limit(2);
-
-        if (cancelled) return;
 
         // **Le cycle manquant et le cycle illisible ne sont plus le même état.** Les deux
         // tombaient sur « Ton plan est en cours de préparation », qui est une affirmation :
@@ -897,6 +1110,7 @@ export default function Plan() {
           historique: historiqueParBoucle(points, affiches),
           premierPlan,
         });
+        planLu = true;
         // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des deux
         // lectures secondaires ci-dessus a échoué — le total, ou les boucles, sans lesquelles ni la
         // carte d'attente ni celle des deux lieux ne se montrent.
@@ -907,6 +1121,18 @@ export default function Plan() {
         // « Chargement de ton plan… » pour toujours : le même mensonge par omission, en plus
         // muet. Même leçon que la racine de l'app (07/09/2026).
         echecDeLecture();
+      } finally {
+        // **La fin d'une lecture, quelle que soit son issue** — jamais celle d'une lecture qu'une
+        // plus récente a remplacée, qui n'écrit rien (« seul le dernier lancé écrit »). Une relance
+        // demandée se relâche ici et nulle part ailleurs (audit P-8) : un `return` anticipé, un
+        // échec ou une exception la laisseraient sinon inactive pour toujours. Et l'engagement pris
+        // juste avant se montre à cette lecture-là, une fois (audit P-1).
+        if (!cancelled) {
+          setRelectureDemandee(false);
+          carteEngageeAMontrer.current = engagementAMontrer.current && planLu;
+          engagementAMontrer.current = false;
+          setLecturesTerminees((lectures) => lectures + 1);
+        }
       }
     })();
 
@@ -975,13 +1201,19 @@ export default function Plan() {
         {relectureEnEchec && (
           <>
             <MessageInline message="Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
-            <TextLink
-              label="Réessayer"
-              onPress={rafraichir}
-              type="small"
-              weight={600}
-              themeColor="accentText"
-            />
+            {/* Inactif, et dit occupé, tant que la relecture qu'il a demandée tourne (audit P-8) : la
+                teinte tertiaire est celle d'un lien qui n'agit pas — un état se dit par le texte,
+                jamais par une opacité (`FRONT.md` §1.4). */}
+            <View aria-busy={relectureDemandee}>
+              <TextLink
+                label="Réessayer"
+                onPress={relire}
+                disabled={relectureDemandee}
+                type="small"
+                weight={600}
+                themeColor={relectureDemandee ? 'textTertiary' : 'accentText'}
+              />
+            </View>
           </>
         )}
       </View>
@@ -1131,7 +1363,12 @@ export default function Plan() {
             <ThemedText themeColor="textSecondary" style={styles.attenteTexte}>
               Ton plan est en cours de préparation, reviens dans un instant.
             </ThemedText>
-            <Button title="Réessayer" onPress={rafraichir} style={styles.attenteBouton} />
+            {/* Le bouton prend l'apparence du désactivé le temps de la relecture qu'il a demandée
+                (audit P-8) — sans quoi un second « en préparation » rendait exactement le même
+                écran, et le bouton avait l'air mort. */}
+            <View aria-busy={relectureDemandee} style={styles.attenteBouton}>
+              <Button title="Réessayer" onPress={relire} disabled={relectureDemandee} />
+            </View>
             <TextLink
               label="Revoir mon bilan"
               onPress={() => router.push({ pathname: '/suivi/bilan', params: { id: state.assessmentId } })}
@@ -1145,7 +1382,8 @@ export default function Plan() {
 
   const { cycle, assessmentId, assessmentDate, checkins, historique, premierPlan } = state;
   const actionsCount = cycle.plan_actions.length;
-  const committedActionId = cycle.plan_actions.find((a) => a.committed_at !== null)?.id ?? null;
+  // Lue avant les retours anticipés (`idEngage`) : l'effet qui montre la carte engagée la lit aussi.
+  const committedActionId = idEngage;
   // Le libellé de l'action engagée, pour que la carte du point sache si sa question figée porte
   // encore sur elle (C2.1). `null` quand rien n'est engagé, ce qui est aussi un « plus la même ».
   const actionEngageeTexte =
@@ -1292,15 +1530,30 @@ export default function Plan() {
   //
   // Elle prenait un second argument, `estompeeParLeRang`, que plus aucun appel ne passait depuis
   // que C5.2 a sorti les rangs de cet écran : une branche morte, retirée le 24/09/2026 (`v1-29`).
+  //
+  // **Dans un cadre qui se mesure** (audit P-1 et P-2, 01/10/2026) : c'est lui qu'on amène dans la
+  // fenêtre, à l'ouverture du sélecteur comme après la relecture d'un engagement. Le cadre et non la
+  // carte, parce que la carte ne porte ni `ref` ni `onLayout` — une `View` de plus, sans style, que le
+  // `gap` des cartes espace comme avant.
   const carteDaction = (action: PisteDuPlan) => (
-    <CarteDePiste
+    <View
       key={action.id}
-      action={action}
-      committedActionId={committedActionId}
-      onEngage={proposerLesRappels}
-      onChanged={() => setRefreshKey((key) => key + 1)}
-      onRefus={(message) => setRefusDeRemplacement(message)}
-    />
+      ref={(noeud) => inscrireCarte(action.id, noeud)}
+      onLayout={() => carteMiseEnPage(action.id)}
+    >
+      <CarteDePiste
+        action={action}
+        committedActionId={committedActionId}
+        onEngage={surEngagement}
+        onChanged={() => setRefreshKey((key) => key + 1)}
+        onRefus={(message) => setRefusDeRemplacement(message)}
+        onOuvert={() => {
+          aMontrerALOuverture.current = action.id;
+        }}
+        lectures={lecturesTerminees}
+        refDuBloc={(noeud) => inscrireBloc(action.id, noeud)}
+      />
+    </View>
   );
 
   // **Ce que le cap dit des pistes, quand c'est vrai** (24/09/2026, `v1-29`) : la même unité des
@@ -1381,12 +1634,13 @@ export default function Plan() {
           c'est-à-dire un compte à rebours, exactement ce que sa légende jure qu'il n'est pas. La
           période et sa fin, elles, restent : elles disent le cadre, pas une avance.
 
-          Le canvas écrit la condition `progression !== null && (engagement || !premierPlan)`. La
-          moitié `engagement ||` est **impliquée par la seconde** — un engagement rend
-          `estPremierPlan` faux par sa deuxième condition, et un test le dit — donc on garde la forme
-          courte plutôt qu'une clause qu'aucun cas ne peut exercer. La légende disparaît **avec** le
-          trait : seule, elle commenterait quelque chose qui n'est pas là. */}
-      {progression !== null && !premierPlan && (
+          **Sauf sur un plan à zéro action** (audit P-5, 01/10/2026, HANDOFF `v1-17` planche C) : il
+          n'y a rien à choisir, et `estPremierPlan` ne s'y refermait jamais — le trait manquait toute
+          la saison. La condition vit dans `cartesDuPlan` (`traitDeTemps`), sur la table de tous les
+          états ; l'écran n'y ajoute que la mesure, une période sans durée n'ayant pas de trait. La
+          légende disparaît **avec** le trait : seule, elle commenterait quelque chose qui n'est pas
+          là. */}
+      {progression !== null && affichage.traitDeTemps && (
         <>
           <TraitDeTemps progression={progression} />
           <ThemedText themeColor="textTertiary" style={styles.capLegende}>
@@ -1398,36 +1652,37 @@ export default function Plan() {
     </ThemedView>
   );
 
-  // Les cartes mises en avant, puis la porte vers « Toutes les pistes ». Un fragment à clé et non
-  // une vue : les deux restent des enfants directs de la liste défilante, donc son `gap` les sépare
-  // comme avant.
-  const lesPistes = (
-    <Fragment key="pistes">
-      {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce
-          moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte
-          déjà le bon ordre — poste dominant d'abord, puis gain décroissant.
+  // Les cartes mises en avant, puis la porte vers « Toutes les pistes » — **un seul bloc** (audit
+  // P-15, 01/10/2026). Le lien vivait dans une vue à lui, sœur des cartes dans la liste défilante
+  // (un fragment à clé les y posait côte à côte), donc à égale distance — l'écart de la liste — de la
+  // seconde carte et de l'encart de contexte : il se lisait comme un bloc à part. Il prolonge les
+  // cartes, il prend donc leur écart, dans leur conteneur. À clé, pour que React le réordonne avec le
+  // cap sans remonter les cartes, qui portent l'engagement.
+  const lesPistes =
+    pistes.enAvant.length > 0 ? (
+      <View key="pistes" style={styles.actions}>
+        {/* L'action engagée passe en tête : c'est la réponse à « qu'est-ce que je fais en ce
+            moment ? », elle n'a pas à être cherchée. Le reste suit le `rank` du serveur, qui porte
+            déjà le bon ordre — poste dominant d'abord, puis gain décroissant.
 
-          **Pas de conteneur vide** (24/09/2026, `v1-29`) : sur un plan à zéro action, la vue se
-          rendait quand même, et le `gap` de la liste défilante lui réservait sa place — un écart
-          fantôme sous le cap, puis au-dessus de lui depuis que le premier plan met les pistes
-          devant. */}
-      {pistes.enAvant.length > 0 && (
-        <View style={styles.actions}>{pistes.enAvant.map((action) => carteDaction(action))}</View>
-      )}
+            **Pas de conteneur vide** (24/09/2026, `v1-29`) : sur un plan à zéro action, la vue se
+            rendait quand même, et le `gap` de la liste défilante lui réservait sa place — un écart
+            fantôme sous le cap, puis au-dessus de lui depuis que le premier plan met les pistes
+            devant. Le lien n'existe pas sans cartes : il demande plus de pistes que les deux. */}
+        {pistes.enAvant.map((action) => carteDaction(action))}
 
-      {/* **Toutes les pistes, sur un écran à elles** (C5.2, écarts 2 à 5). Le plan en montrait
-          deux, puis dépliait jusqu'à onze cartes sous un « Replier » sorti de l'écran :
-          l'insistance et l'exhaustivité tenaient sur la même surface, et l'exhaustivité gagnait.
-          Elles se séparent — deux cartes ici, tout là-bas, groupé par poste.
+        {/* **Toutes les pistes, sur un écran à elles** (C5.2, écarts 2 à 5). Le plan en montrait
+            deux, puis dépliait jusqu'à onze cartes sous un « Replier » sorti de l'écran :
+            l'insistance et l'exhaustivité tenaient sur la même surface, et l'exhaustivité gagnait.
+            Elles se séparent — deux cartes ici, tout là-bas, groupé par poste.
 
-          Le compte reste **dans** le libellé, et c'est le total : un lien qui ne dit pas combien il
-          mène à voir n'aide pas à décider de l'ouvrir. Il ne se rend que s'il y a plus à voir que
-          les deux cartes — sinon il promettrait un écran qui répète celui-ci.
+            Le compte reste **dans** le libellé, et c'est le total : un lien qui ne dit pas combien il
+            mène à voir n'aide pas à décider de l'ouvrir. Il ne se rend que s'il y a plus à voir que
+            les deux cartes — sinon il promettrait un écran qui répète celui-ci.
 
-          **Un lien, et il s'annonce comme tel** (24/09/2026, `v1-29`) : il mène à un autre écran,
-          donc `link` et non `button`, qui promettrait une action sur place. */}
-      {pistes.masquees > 0 && (
-        <View style={styles.pistes}>
+            **Un lien, et il s'annonce comme tel** (24/09/2026, `v1-29`) : il mène à un autre écran,
+            donc `link` et non `button`, qui promettrait une action sur place. */}
+        {pistes.masquees > 0 && (
           <TextLink
             label={`Voir toutes les pistes · ${actionsCount}`}
             onPress={() => router.push('/plan/pistes')}
@@ -1437,10 +1692,9 @@ export default function Plan() {
             themeColor="accentText"
             style={styles.lienPistes}
           />
-        </View>
-      )}
-    </Fragment>
-  );
+        )}
+      </View>
+    ) : null;
 
   return (
     <ThemedView style={styles.container}>
@@ -1464,15 +1718,21 @@ export default function Plan() {
           />
         )}
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={defilement}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          onScroll={surDefilement}
+          scrollEventThrottle={16}
+        >
           {/* Sans cette ligne, une question ouverte depuis et un engagement pris ailleurs
               manqueraient à l'écran sans que rien ne le dise. */}
           {banniereRelecture()}
           {/* Un fait, pas une félicitation : ni mascotte (elle ne commente pas l'état du
               compte), ni exclamation, ni action à faire. */}
           {rattachement !== null && (
-            <ThemedView type="backgroundSelected" style={styles.rattachement}>
-              <ThemedText type="small" themeColor="accentText">
+            <ThemedView type="backgroundElement" style={styles.encartDeFait}>
+              <ThemedText type="small" themeColor="textSecondary">
                 {rattachement
                   ? `Ton compte est rattaché à ${rattachement}. Ton bilan te suit d’un appareil à l’autre.`
                   : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
@@ -1489,16 +1749,23 @@ export default function Plan() {
               bouton écrit la marque locale, qui porte l'identifiant de la ligne — un second
               re-bilan pourra donc le dire à son tour. */}
           {orphelin !== null && (
-            <ThemedView type="backgroundElement" style={styles.orphelin}>
+            <ThemedView type="backgroundElement" style={styles.encartDeFait}>
               <ThemedText type="small" themeColor="textSecondary">
                 {phraseDeLOrphelin(orphelin.released_reason, orphelin.action_text)}
               </ThemedText>
+              {/* **Le même « Compris » que celui des cartes d'ouverture** (audit P-12, 01/10/2026) :
+                  petit, 600, `accentText`. Il était le `TextLink` par défaut — 16 px, `text`, sans
+                  soulignement —, et les deux s'empilaient à 200 px l'un de l'autre sur le même
+                  écran : un même geste, deux apparences. */}
               <TextLink
                 label="Compris"
                 onPress={() => {
                   void marquerEngagementOrphelinVu(orphelin.id);
                   setOrphelin(null);
                 }}
+                type="small"
+                weight={600}
+                themeColor="accentText"
               />
             </ThemedView>
           )}
@@ -1514,18 +1781,21 @@ export default function Plan() {
               trouve rien de plus, et la personne sait pourquoi. Jamais une carte remplacée sous les
               yeux — c'est un lien, pas une bascule automatique. */}
           {cyclePerime && (
-            <ThemedView type="backgroundElement" style={styles.orphelin}>
+            <ThemedView type="backgroundElement" style={styles.encartDeFait}>
               <ThemedText type="small" themeColor="textSecondary">
                 {basculeDeSaison(cycle.cadence_type, aujourdhui)} Ton prochain plan arrive ; en
                 attendant, voici où tu en étais.
               </ThemedText>
-              <TextLink
-                label="Voir la saison"
-                onPress={rafraichir}
-                type="small"
-                weight={600}
-                themeColor="accentText"
-              />
+              <View aria-busy={relectureDemandee}>
+                <TextLink
+                  label="Voir la saison"
+                  onPress={relire}
+                  disabled={relectureDemandee}
+                  type="small"
+                  weight={600}
+                  themeColor={relectureDemandee ? 'textTertiary' : 'accentText'}
+                />
+              </View>
             </ThemedView>
           )}
 
@@ -1622,11 +1892,17 @@ export default function Plan() {
                 décision du cap.
 
                 Le mot de période suit la cadence : un trimestre glissant n'a pas de saison, et
-                « une action par saison » y serait faux. */}
-            <ThemedText type="body" themeColor="textSecondary">
-              Une action par {cadenceDeSaison ? 'saison' : 'période'}, une seule. C’est pas à pas
-              qu’on tient un cap.
-            </ThemedText>
+                « une action par saison » y serait faux.
+
+                **Jamais sur un plan à zéro action** (audit P-5, 01/10/2026, HANDOFF `v1-17` planche
+                C) : « une action, une seule » s'y lisait au-dessus d'aucune action, juste avant
+                « Aucun changement de mode ne te ferait gagner assez… » (`cartesDuPlan`, `intro`). */}
+            {affichage.intro && (
+              <ThemedText type="body" themeColor="textSecondary">
+                Une action par {cadenceDeSaison ? 'saison' : 'période'}, une seule. C’est pas à pas
+                qu’on tient un cap.
+              </ThemedText>
+            )}
           </View>
 
           {/* **Le point de la semaine passe en tête** (v1-11 flux 4) : répondre à un rappel est
@@ -1883,10 +2159,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   intro: { gap: Spacing.two },
-  rattachement: { borderRadius: Radius.field, paddingVertical: 12, paddingHorizontal: Spacing.three },
-  // Les deux encarts de C2.2 : le même gabarit discret, parce qu'ils disent la même sorte de
-  // chose — un fait sur l'état du plan, jamais une injonction.
-  orphelin: {
+  // **Les trois encarts de fait** — l'engagement qu'un recalcul a emporté, la période révolue (C2.2),
+  // et le rattachement du compte depuis le 01/10/2026 (audit P-12) : le même gabarit discret, parce
+  // qu'ils disent la même sorte de chose — un fait sur l'état du plan, jamais une injonction. Le
+  // rattachement était teinté `backgroundSelected` en `accentText`, l'accent que le système réserve au
+  // dominant et à l'actionnable : il se lisait comme un succès.
+  encartDeFait: {
     borderRadius: Radius.field,
     paddingVertical: 12,
     paddingHorizontal: Spacing.three,
@@ -1912,12 +2190,9 @@ const styles = StyleSheet.create({
   // **Chiffres à chasse fixe** (24/09/2026, `v1-29`) : le cap change d'une saison à l'autre, et des
   // chiffres de largeur égale ne font pas bouger la ligne. Spline Sans porte la fonction `tnum`.
   chiffre: { fontVariant: ['tabular-nums'] },
+  // Les deux cartes et le lien vers la liste, au même écart : le lien prolonge les cartes (P-15).
   actions: { gap: Spacing.two + 2 },
-  pistes: { gap: Spacing.two + 2 },
   lienPistes: { textAlign: 'center' },
-  // Les lignes simples : un filet entre elles suffit, elles ne sont pas des cartes. Le `gap`
-  // reste donc à zéro, et l'écart ne se pose qu'aux frontières qui touchent une carte dépliée
-  // (`pisteSeparee`, décidée au rendu — le conteneur ne sait pas lesquelles sont ouvertes).
   contexteCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
   // `alignSelf` pour que la cible tactile du lien ne s'étende pas sur toute la largeur de la
   // carte : une zone tactile plus large que son texte se touche par accident.

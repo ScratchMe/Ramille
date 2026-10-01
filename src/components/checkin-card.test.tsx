@@ -154,3 +154,73 @@ describe('CheckinCard — la boucle arrêtée', () => {
     }
   });
 });
+
+/**
+ * **Le pied daté arrive avec la réponse** (audit P-10, 01/10/2026). Il se composait sur la ligne
+ * seule, dont `responded_at` reste nul jusqu'à la relecture du plan : juste après « Oui », la carte ne
+ * disait pas quand on se retrouve. `piedDuPointRepondu` ne sait pas ce que la carte lui passe, et le
+ * parcours réel ne lisait le pied qu'après un rechargement — il l'attend désormais avec la réponse
+ * (mutation PL10 de son en-tête, le même jour) ; ce fichier garde en plus l'horodatage du serveur qui
+ * prend le relais, que le parcours ne distingue pas de l'instant du geste.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), deux mutations :
+ *   - la carte qui repasse la ligne seule à `piedDuPointRepondu` (l'état d'avant) → les deux tests du
+ *     pied, et eux seuls — le second attend d'abord le pied du geste ;
+ *   - l'instant du geste préféré à l'horodatage du serveur (`reponduA ?? checkin.responded_at`) →
+ *     « garde l'horodatage du serveur… », seul.
+ */
+describe('CheckinCard — le pied daté', () => {
+  // **Seule l'horloge est figée** — un lundi —, pas les minuteries : `waitFor` et les promesses du RPC
+  // doublé en ont besoin. Le geste se date donc à coup sûr, et autrement que la ligne relue plus bas.
+  beforeEach(() => {
+    jest.useFakeTimers({
+      now: new Date('2026-10-05T10:00:00'),
+      doNotFake: [
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+        'setImmediate',
+        'clearImmediate',
+        'nextTick',
+        'queueMicrotask',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'requestIdleCallback',
+        'cancelIdleCallback',
+        'hrtime',
+        'performance',
+      ],
+    });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('date le pied à l’instant du geste, sans attendre la relecture', async () => {
+    mockRpc.mockResolvedValue({ error: null });
+    render(<CheckinCard checkin={point()} emphasize boucleTourne />);
+
+    fireEvent.press(screen.getByText('Oui'));
+
+    await waitFor(() => expect(screen.getByText('Répondu lundi. Prochain point : lundi 12 octobre.')).toBeTruthy());
+  });
+
+  // La ligne relue porte l'horodatage du serveur, et c'est lui qu'on dit : l'instant du geste ne
+  // vaut que le temps de l'aller-retour.
+  it('garde l’horodatage du serveur dès que la ligne relue le porte', async () => {
+    mockRpc.mockResolvedValue({ error: null });
+    const { rerender } = render(<CheckinCard checkin={point()} emphasize boucleTourne />);
+    fireEvent.press(screen.getByText('Oui'));
+    await waitFor(() => expect(screen.getByText(/^Répondu lundi\./)).toBeTruthy());
+
+    rerender(
+      <CheckinCard
+        checkin={point({ status: 'answered', response_kind: 'oui', responded_at: '2026-09-17T08:00:00Z' })}
+        emphasize
+        boucleTourne
+      />
+    );
+    expect(screen.getByText('Répondu jeudi. Prochain point : lundi 12 octobre.')).toBeTruthy();
+  });
+});

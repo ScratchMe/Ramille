@@ -17,6 +17,12 @@ export interface ActionCommitmentProps {
   surLeChoix?: boolean;
   /** « Annuler » rend la main à l'appelant (la liste : la carte redevient sa ligne) — il passe devant `onCancel`. */
   onAnnuler?: () => void;
+  /**
+   * « C’est noté » a abouti, l’écran relit le plan : le sélecteur reste tel quel, « C’est noté » inactif (01/10/2026,
+   * audit P-1). Dans le dépôt, `lectures` — les lectures terminées de l’écran — dit quand il se referme ou redevient
+   * actif.
+   */
+  relecture?: boolean;
   onPick?: () => void;
   onToggleDay?: (jour: number) => void;
   onTiming?: (t: string) => void;

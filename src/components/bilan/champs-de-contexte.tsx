@@ -104,8 +104,10 @@ export function ChampsDeContexte({
 /**
  * Une série du contexte : son intitulé, ses puces, et l'ancre où mène « Il manque encore … »
  * (`v1-31` §2.5) — l'intitulé se marque, le focus va à la puce cochée ou à la première. Écrite une fois
- * pour les quatre, qui ne différaient que par leurs réponses. **Dans `/contexte`, l'ancre ne fait
- * rien** : il n'y a pas de `StepShell` autour, et cet écran ne change pas.
+ * pour les quatre, qui ne différaient que par leurs réponses. **Les deux écrans la lisent** : dans le
+ * questionnaire par `StepShell`, et dans `/contexte` depuis le 01/10/2026 (audit P-13), qui fournit les
+ * ancres lui-même — son « Enregistrer », en attente sur un contexte incomplet, mène à ce qui manque au
+ * lieu de rester désactivé sans dire pourquoi.
  */
 function SerieDuContexte<T extends string>({
   champ,

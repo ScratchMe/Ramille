@@ -10,6 +10,7 @@ import { ControlHeight, FontFamily, Mouvement, Spacing, Stroke } from '@/constan
 import { useTheme } from '@/hooks/use-theme';
 import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-parcours';
 import { animationDesOnglets, barreArrive } from '@/types/mouvement';
+import { pileALaRacine, pileDeLOnglet, toucherDOnglet, type PileDOnglet } from '@/types/plan';
 import { etatDuPremierParcours, type EtapeDuPremierParcours } from '@/types/premier-parcours';
 
 /**
@@ -241,8 +242,11 @@ export default function TabsLayout() {
         // « Toutes les pistes » ferait rouvrir les pistes au prochain toucher sur « Plan ».
         listeners={({ navigation }) => ({
           tabPress: (evenement) => {
+            const pile = pileDeLOnglet(ongletTouche(navigation.getState(), evenement.target));
+            if (toucherDOnglet(pile) === 'laisserFaire') return;
             evenement.preventDefault();
-            navigation.navigate('plan', { screen: 'index' });
+            ramenerALaRacine(navigation, evenement.target, pile);
+            navigation.navigate('plan');
           },
         })}
       />
@@ -258,16 +262,69 @@ export default function TabsLayout() {
         // bilan, toucher « Suivi » rouvrait ce bilan au lieu du suivi (retour d'appareil du
         // 07/09/2026). Un onglet est un lieu, pas un signet — d'autant qu'avec un seul bilan
         // en base, on n'atteignait plus jamais le vrai écran de suivi.
+        //
+        // **Et déjà à sa racine, il laisse faire la barre** (audit T-14, 01/10/2026) : le toucher
+        // était retenu à chaque fois, donc toucher l'onglet où l'on est ne remontait jamais en haut
+        // de la page — `useScrollToTop` ignore un toucher retenu. `toucherDOnglet` décide pour les
+        // deux onglets ; l'écran remonte lui-même, s'il s'y est abonné. **Et ramener remplace la pile
+        // par sa seule racine** (`ramenerALaRacine`) : nommer la racine l'empilait par-dessus.
         listeners={({ navigation }) => ({
           tabPress: (evenement) => {
+            const pile = pileDeLOnglet(ongletTouche(navigation.getState(), evenement.target));
+            if (toucherDOnglet(pile) === 'laisserFaire') return;
             evenement.preventDefault();
-            navigation.navigate('suivi', { screen: 'index' });
+            ramenerALaRacine(navigation, evenement.target, pile);
+            navigation.navigate('suivi');
           },
         })}
       />
     </Tabs>
     </ContexteDuPremierParcours.Provider>
   );
+}
+
+/**
+ * La route de l'onglet touché, lue sur l'état du navigateur d'onglets **au moment du toucher** — et pas
+ * sur la `route` que reçoivent les écouteurs, qui date du dernier rendu de la barre.
+ */
+function ongletTouche(
+  etat: { routes: readonly { key: string; state?: PileDOnglet; params?: object }[] },
+  cle: string | undefined
+) {
+  return etat.routes.find((onglet) => onglet.key === cle);
+}
+
+/**
+ * **Ramener l'onglet touché à sa racine : remplacer sa pile, pas y naviguer** (audit T-14,
+ * 01/10/2026). Le layout appelait `navigate(onglet, { screen: 'index' })`, qui **empile** une seconde
+ * racine sous React Navigation 7 — un plan remonté de zéro par-dessus les pistes, un suivi par-dessus
+ * la restitution (`pileALaRacine`, où c'est mesuré). La pile de l'onglet est donc posée telle quelle
+ * dans l'état du navigateur d'onglets, sa racine gardant sa clé — l'écran reste monté —, puis
+ * l'appelant montre l'onglet.
+ *
+ * **Les paramètres de l'onglet partent avec**, et c'est voulu : ils ne portent que la navigation qui
+ * a ouvert sa pile (`{ screen: 'bilan', params }` pour la restitution), que la pile relirait sinon, et
+ * que l'adresse reprendrait. L'écran de la racine garde les siens, sur sa propre route.
+ */
+function ramenerALaRacine(
+  navigation: {
+    getState: () => { key: string; routes: readonly { key: string; state?: PileDOnglet; params?: object }[] };
+    dispatch: (action: { type: 'RESET'; target: string; payload: object }) => void;
+  },
+  cle: string | undefined,
+  pile: PileDOnglet
+) {
+  const etat = navigation.getState();
+  navigation.dispatch({
+    type: 'RESET',
+    target: etat.key,
+    payload: {
+      ...etat,
+      routes: etat.routes.map((onglet) =>
+        onglet.key === cle ? { ...onglet, params: undefined, state: pileALaRacine(pile) } : onglet
+      ),
+    },
+  });
 }
 
 // `tabBarLabelStyle` ne varie pas selon l'état : pour que l'onglet actif soit en 600, il faut

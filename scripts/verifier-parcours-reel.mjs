@@ -442,6 +442,49 @@
 // l'écran : un second plan s'empilait sur le premier, resté monté et caché, et le premier texte trouvé
 // était le sien. Elle lit désormais le texte **rendu** (`innerText`), et la mutation nomme la pile.
 //
+// ── L'onglet du plan, après l'audit des lois de l'UX (01/10/2026, audit P) ─────────────────────────
+//
+// Six gardes neuves, toutes sur l'écran du plan :
+//   - **à l'ouverture du sélecteur, « C'est noté » finit dans la fenêtre** (P-2) : la garde de la liste,
+//     pour le plan — précondition (le bouton s'ouvrait sous la barre), juste assez, le titre jamais sous
+//     la bande, en glissant ; posé d'un coup chez le cycliste, sous « réduire les animations » ;
+//   - **le geste ne se défait pas** (P-1) : à chaque image après « C'est noté », la carte montre
+//     « C'est noté » ou « Changer d'avis », jamais ni l'un ni l'autre ;
+//   - **la carte engagée est amenée dans la fenêtre, et le focus va à son bloc** (P-1), lus au repos —
+//     sur le premier profil, et chez le cycliste sous la préférence ;
+//   - **le plan à zéro action n'a pas d'intro et a son trait** (P-5), le premier profil gardant l'intro ;
+//   - **le pied daté arrive avec la réponse au point** (P-10) ;
+//   - **l'onglet du plan remonte en haut, et ramène toujours à sa racine** (T-14).
+//
+// **Éprouvé en le cassant, le 01/10/2026** : un témoin vert de bout en bout sur les trois profils, puis
+// un export par mutation (cache de Metro privé, `--clear`, le marqueur ASCII de la mutation retrouvé dans
+// le bundle, la source rendue aussitôt) et le parcours sur chacun, la stack du dernier rejeu réservée
+// par son verrou. Chacune s'arrête où elle doit, et seulement là :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PL1 — `onOuvert` ne pose plus rien (le plan ne défile pas à l'ouverture) | « engagement » : « C'est noté » finit sous la barre (708 px pour une fenêtre de 528) |
+//   | PL2 — `animated: true` en dur dans `amenerDansLaFenetre` | le cycliste, à son engagement : sous « réduire les animations », le plan ne se pose pas d'un coup sur « C'est noté » |
+//   | PL3 — le sélecteur refermé au succès (l'`ActionCommitment` d'avant) | « engagement » : à 77 ms, la carte ne montre ni « C'est noté » ni « Changer d'avis » |
+//   | PL4 — la carte engagée n'est plus amenée après la relecture | « engagement » : la carte engagée n'est pas dans la fenêtre (de 379 à 723 px pour 528) |
+//   | PL5 — pas de focus sur la carte engagée | « engagement » : le focus est sur la racine de la page, pas sur le bloc de la carte |
+//   | PL6 — l'intro sans condition | le cycliste, au plan sans action : « Une action par saison, une seule » encore là |
+//   | PL7 — le trait à la condition d'avant (`!premierPlan`) | le cycliste, au plan sans action : la légende du trait n'apparaît jamais |
+//   | PL8 — le toucher de « Plan » toujours retenu (le layout d'avant) | « l'onglet remonte… » : l'écran remonté de zéro au lieu de sa page (titre « neuf ») |
+//   | PL9 — le toucher de « Plan » jamais retenu | « l'onglet remonte… » : « Plan » depuis le suivi rouvre `/plan/pistes` |
+//   | PL10 — le pied composé sur la ligne seule (la `CheckinCard` d'avant) | « point — … réponse » : « Répondu … Prochain point : lundi … » n'apparaît jamais |
+//   | PL11 — `pileDeLOnglet` sans les paramètres | « l'onglet remonte… » : « Suivi » depuis le plan rouvre `/suivi/bilan` |
+//   | PL12 — « Suivi » nomme sa racine (`navigate('suivi', { screen: 'index' })`, le layout d'avant) | « l'onglet remonte… » : la restitution reste montée sous le suivi |
+//   | PL13 — « Plan » nomme sa racine, de même | « l'onglet remonte… » : un second plan monté (titres « avant, neuf ») |
+//   | PL14 — la seule relecture qui glisse sous « réduire les animations » | le cycliste, à son engagement : l'écran glisse jusqu'à la carte engagée |
+//
+// **Trois corrections que les mutations ont faites à la garde**, et c'est ce qu'elles valaient le
+// premier jour : à 420 × 900, la carte relue finissait dans la fenêtre sans défiler — PL4 ne tombait
+// qu'au retour de la liste —, d'où `noterSurUnEcranCourt` et sa précondition ; le plan remonté de zéro
+// passait pour un plan remonté en haut — PL8 passait —, d'où le titre marqué avant le premier toucher ;
+// et le titre cherché « sous le doigt » ne se trouvait pas au retour d'un plan resté où on l'avait
+// laissé — le témoin tombait —, d'où les titres comptés dans le DOM.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -704,6 +747,236 @@ async function attendreTexte(motif) {
   } catch {
     throw new Ecart(`« ${motif} » n'est jamais apparu à l'écran`);
   }
+}
+
+/**
+ * **« C'est noté » dans la fenêtre à l'ouverture du sélecteur, sur le plan** (audit P-2, 01/10/2026) :
+ * la garde de la liste (`pistes — le défilement…`), pour l'écran du plan, sur les images relevées par
+ * la mesure `defilement` pendant « Je m'y engage ». Le bouton passait sous la barre d'onglets, et
+ * l'écran ne défilait pas. Quatre exigences, et une précondition :
+ *  - **la précondition** : à une image au moins, « C'est noté » était sous le bas de la fenêtre — sans
+ *    quoi rien n'avait à défiler, et le reste passerait pour la mauvaise raison ;
+ *  - il finit **dans** la fenêtre, et **près de son bas** — juste assez, pas plus ;
+ *  - le titre de la carte ne passe **jamais** sous la bande ;
+ *  - l'écran glisse (`glisse`), ou se pose d'un coup sous « réduire les animations ».
+ */
+function verifierLeDefilementALOuverture(vues, { glisse }) {
+  const relevees = vues.filter(Boolean);
+  assurer(
+    relevees.length > 0 && !disparaitApresEtreApparue(vues),
+    'la carte ouverte sur le plan n’a pas été relevée pendant son ouverture, ou a disparu une fois là : la mesure ne peut pas conclure'
+  );
+  const sous = relevees.filter((v) => v.basDuBouton !== null && v.basDuBouton > v.hauteur + 0.5);
+  assurer(
+    sous.length > 0,
+    `« C’est noté » s’ouvrait déjà dans la fenêtre (${relevees.map((v) => Math.round(v.basDuBouton ?? -1)).join(', ')} px, défilement` +
+      ` ${[...new Set(relevees.map((v) => Math.round(v.position)))].join(' → ')}, fenêtre de ${relevees[0].hauteur}) : la garde` +
+      ' ne peut pas conclure — elle demande une carte dont le bouton passerait sous la barre'
+  );
+  const posee = relevees.at(-1);
+  assurer(
+    posee.basDuBouton !== null && posee.basDuBouton <= posee.hauteur + 0.5,
+    `« C’est noté » finit sous la barre d’onglets (${Math.round(posee.basDuBouton ?? -1)} px pour une fenêtre de ${posee.hauteur}) :` +
+      ' le plan devait défiler juste assez pour le montrer (`carteMiseEnPage`, src/app/(tabs)/plan/index.tsx)'
+  );
+  assurer(
+    posee.hauteur - posee.basDuBouton < 100,
+    `le plan défile trop : « C’est noté » finit ${Math.round(posee.hauteur - posee.basDuBouton)} px au-dessus du bas de la fenêtre`
+  );
+  const sousLaBande = relevees.find((v) => v.haut < -0.5);
+  assurer(!sousLaBande, `le titre de la carte passe sous la bande (${Math.round(sousLaBande?.haut ?? 0)} px) : le plan a défilé trop loin`);
+  const positions = relevees.map((v) => v.position);
+  const aDefile = posee.position > Math.min(...positions) + 1;
+  const parEtapes = [...new Set(positions.map(Math.round))].join(' → ');
+  if (glisse) {
+    assurer(aDefile && enChemin(positions, posee.position), `le plan ne défile pas en glissant jusqu’à « C’est noté » (positions ${parEtapes})`);
+  } else {
+    assurer(
+      aDefile && !enChemin(positions, posee.position),
+      `sous « réduire les animations », le plan ne se pose pas d’un coup sur « C’est noté » (positions ${parEtapes}) :` +
+        ' `animated: !animationsReduites`'
+    );
+  }
+}
+
+/**
+ * Le bouton `libelle` de la carte `titre`, amené au bas de la fenêtre de défilement — un état connu d'où
+ * prendre une mesure de défilement (audits P-1 et P-2, 01/10/2026).
+ */
+async function amenerLeBoutonEnBas(titre, libelle) {
+  const place = await page.evaluate(
+    ([t, l]) => {
+      const normaliser = (x) => (x ?? '').replace(/\s+/g, ' ').trim();
+      const titreDeLaCarte = [...document.querySelectorAll('body *')].find(
+        (e) => e.getClientRects().length > 0 && e.children.length === 0 && normaliser(e.innerText) === t
+      );
+      let fenetre = titreDeLaCarte?.parentElement;
+      while (fenetre && !/(auto|scroll)/.test(getComputedStyle(fenetre).overflowY)) fenetre = fenetre.parentElement;
+      const bouton = [...(fenetre?.querySelectorAll('[role="button"]') ?? [])].find(
+        (e) => e.getClientRects().length > 0 && e.getAttribute('aria-label') === l
+      );
+      if (!fenetre || !bouton) return false;
+      fenetre.scrollTop += bouton.getBoundingClientRect().bottom - fenetre.getBoundingClientRect().bottom;
+      return true;
+    },
+    [titre, libelle]
+  );
+  assurer(place, `la carte « ${titre} », son bouton « ${libelle} » ou sa fenêtre de défilement sont introuvables : la mesure ne peut pas se prendre`);
+  await page.waitForTimeout(400);
+}
+
+/**
+ * **« C'est noté » touché au bas d'un écran court, et la relecture relevée à chaque image** (audit P-1,
+ * 01/10/2026). À 420 × 900, la carte relue finissait déjà dans la fenêtre : la mutation qui retirait le
+ * défilement (PL4, en tête) ne tombait qu'au retour de la liste, et la garde du plan passait sans rien
+ * éprouver. À 640 de haut, « C'est noté » touché tout en bas, la relecture remet le cap devant les
+ * pistes et pousse la carte engagée sous la barre : il faut l'y aller chercher. La taille d'avant est
+ * rendue après la lecture au repos.
+ */
+async function noterSurUnEcranCourt(titre, ou, { glisse }) {
+  const taille = page.viewportSize();
+  await page.setViewportSize({ width: taille.width, height: 640 });
+  await amenerLeBoutonEnBas(titre, 'C’est noté');
+  const releve = await releverPendant(
+    page,
+    {
+      note: ['texte', 'C’est noté'],
+      avis: ['texte', 'Changer d’avis'],
+      carte: ['defilement', { titre, bouton: 'Changer d’avis' }],
+    },
+    () => bouton('C’est noté'),
+    4_000
+  );
+  await attendreTexte('Changer d’avis');
+  // Le geste d'abord, la carte ensuite : un sélecteur refermé avant la relecture se dit pour ce qu'il est.
+  const imageSansRien = releve.find((e) => !e.note && !e.avis);
+  assurer(
+    releve.some((e) => e.avis),
+    `${ou}, « Changer d’avis » n’a pas été relevé dans les quatre secondes qui suivent « C’est noté » : la mesure ne peut pas conclure`
+  );
+  assurer(
+    !imageSansRien,
+    `${ou}, à ${imageSansRien?.t} ms, la carte ne montre ni « C’est noté » ni « Changer d’avis » : le sélecteur s’est refermé` +
+      ' avant la relecture (`lectureAttendue`, src/components/plan/action-commitment.tsx)'
+  );
+  await verifierLaCarteEngagee(ou, { vues: releve.map((e) => e.carte), glisse, exigerUnDefilement: true });
+  await page.setViewportSize(taille);
+  await page.waitForTimeout(400);
+}
+
+/**
+ * **« Je m'y engage » sur un écran plus court, et le défilement relevé à chaque image** (audit P-2,
+ * 01/10/2026). À 420 × 900, le premier plan ouvre « C'est noté » dans la fenêtre — mesuré le jour même,
+ * 634 px pour une fenêtre de 788 —, donc rien n'aurait à défiler : la précondition de
+ * `verifierLeDefilementALOuverture` l'a dit au premier essai. À 640 de haut, la fenêtre fait 528 px, et
+ * le bouton s'ouvre en dessous ; la mise en page, elle, ne dépend que de la largeur. La taille d'avant
+ * est rendue aussitôt.
+ */
+async function ouvrirLeSelecteurSurUnEcranCourt(titre, { glisse }) {
+  const taille = page.viewportSize();
+  await page.setViewportSize({ width: taille.width, height: 640 });
+  // **« Je m'y engage » amené au bas de la fenêtre avant de mesurer**, comme la rangée de la liste
+  // (`rangeeEnBasDeLaFenetre`) : un essai sans lui a vu Playwright faire défiler l'écran de 378 px pour
+  // atteindre le bouton, sous la fenêtre, avant de le toucher — « C'est noté » s'ouvrait alors dedans, et
+  // la précondition tombait sans défaut. Une mesure se prend d'un état connu : le bouton touché tout en
+  // bas, la carte qui s'ouvre en dessous. C'est le bouton de la première carte, celle de `titre`.
+  await amenerLeBoutonEnBas(titre, 'Je m’y engage');
+  const ouverture = await releverPendant(
+    page,
+    { carte: ['defilement', { titre, bouton: 'C’est noté' }] },
+    () => bouton('Je m’y engage'),
+    glisse ? 1_500 : 1_000
+  );
+  verifierLeDefilementALOuverture(ouverture.map((e) => e.carte), { glisse });
+  await page.setViewportSize(taille);
+  await page.waitForTimeout(400);
+}
+
+/**
+ * **La carte engagée, une fois l'écran posé : dans la fenêtre, et le focus sur son bloc** (audit P-1,
+ * 01/10/2026). Après « C'est noté », la relecture déplace la carte — au premier plan, le cap repasse
+ * devant les pistes — et elle finissait sous la barre, le focus tombé sur le document. Le bloc est
+ * celui qui annonce « Action engagée : … » (`ActionCard`) ; la fenêtre, son premier ancêtre qui
+ * défile. Lu **au repos** — le défilement de la plateforme glisse, et rien n'annonce sa fin sur web —,
+ * c'est-à-dire une position inchangée pendant 600 ms (la fenêtre de `mesurerAuRepos`).
+ *
+ * `vues` (facultatif) : les images de la mesure `defilement` relevées pendant la relecture. Quand
+ * l'écran a défilé, il doit l'avoir fait en glissant (`glisse`), ou d'un coup sous la préférence.
+ */
+async function verifierLaCarteEngagee(ou, { vues = null, glisse = true, exigerUnDefilement = false } = {}) {
+  const lireLaCarte = () =>
+    page.evaluate(() => {
+      const visible = (e) => e.getClientRects().length > 0 && (e.checkVisibility?.({ visibilityProperty: true }) ?? true);
+      const bloc = [...document.querySelectorAll('[aria-label^="Action engagée"]')].find(visible);
+      let fenetre = bloc?.parentElement;
+      while (fenetre && !/(auto|scroll)/.test(getComputedStyle(fenetre).overflowY)) fenetre = fenetre.parentElement;
+      if (!bloc || !fenetre) return null;
+      const cadre = fenetre.getBoundingClientRect();
+      // La carte entière — le cadre d'`ActionCard`, parent du bloc —, « Changer d'avis » compris.
+      const boite = bloc.parentElement.getBoundingClientRect();
+      const actif = document.activeElement;
+      return {
+        haut: boite.top - cadre.top,
+        bas: boite.bottom - cadre.top,
+        hauteur: fenetre.clientHeight,
+        position: fenetre.scrollTop,
+        focus: actif === bloc,
+        vu: (actif?.getAttribute('aria-label') ?? actif?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 60),
+      };
+    });
+  let carte = null;
+  let depuis = Date.now();
+  const limite = Date.now() + ATTENTE;
+  while (Date.now() < limite) {
+    const lue = await lireLaCarte();
+    if (lue === null || carte === null || Math.abs(lue.position - carte.position) > 0.5) depuis = Date.now();
+    carte = lue;
+    if (carte !== null && Date.now() - depuis >= 600) break;
+    await page.waitForTimeout(100);
+  }
+  assurer(carte !== null, `${ou}, le bloc « Action engagée : … » est introuvable à l’écran : la mesure ne peut pas conclure`);
+  // **Entière dans la fenêtre** — ou, plus haute qu'elle, son titre sous la bande à la marge près : c'est
+  // `defilementVersLaCarte`, la marge de 16 (`MARGE_DE_DEFILEMENT`) gardée des deux côtés.
+  const entiere = carte.haut >= -0.5 && carte.bas <= carte.hauteur + 0.5;
+  const plusHauteQueLaFenetre = carte.bas - carte.haut > carte.hauteur - 32 && carte.haut >= -0.5 && carte.haut <= 16.5;
+  assurer(
+    entiere || plusHauteQueLaFenetre,
+    `${ou}, la carte engagée n’est pas dans la fenêtre (de ${Math.round(carte.haut)} à ${Math.round(carte.bas)} px pour une fenêtre de` +
+      ` ${carte.hauteur}) : l’écran devait l’y amener après la relecture (\`amenerDansLaFenetre\`, src/app/(tabs)/plan/index.tsx)`
+  );
+  assurer(
+    carte.focus,
+    `${ou}, le focus est sur « ${carte.vu} » et non sur le bloc de la carte engagée — il part avec le rendu qui retire « C’est noté »`
+  );
+  if (vues !== null) {
+    const positions = vues.filter(Boolean).map((v) => v.position);
+    const aDefile = positions.length > 0 && Math.abs(carte.position - positions[0]) > 1;
+    // **La précondition, quand l'appelant la demande** : à une image au moins, la carte relue était hors
+    // de la fenêtre — « Changer d'avis » sous son bas, ou son titre sous la bande —, et l'écran a défilé.
+    // Sans elle, une carte restée en place passerait pour une carte amenée.
+    if (exigerUnDefilement) {
+      const dehors = vues.some(
+        (v) => v !== null && ((v.basDuBouton !== null && v.basDuBouton > v.hauteur + 0.5) || v.haut < -0.5)
+      );
+      assurer(
+        dehors && aDefile,
+        `${ou}, la carte engagée n’est jamais sortie de la fenêtre à la relecture, ou l’écran n’a pas défilé : la garde ne` +
+          ' peut pas conclure — elle demande une carte que la relecture pousse hors de la fenêtre'
+      );
+    }
+    const parEtapes = [...new Set(positions.map(Math.round))].join(' → ');
+    if (aDefile && glisse) {
+      assurer(enChemin(positions, carte.position), `${ou}, l’écran saute jusqu’à la carte engagée au lieu de glisser (positions ${parEtapes})`);
+    }
+    if (aDefile && !glisse) {
+      assurer(
+        !enChemin(positions, carte.position),
+        `${ou}, sous « réduire les animations », l’écran glisse jusqu’à la carte engagée (positions ${parEtapes}) : il doit se poser d’un coup`
+      );
+    }
+    return { aDefile };
+  }
+  return { aDefile: null };
 }
 
 /**
@@ -1029,6 +1302,9 @@ try {
   // (619 et 1 601 kg contre 384) : la carte du cap le dit tant que rien n'est engagé (24/09/2026,
   // `v1-29`, `phraseDesPistesSuffisantes`).
   await attendreTexte('Chacune des deux pistes proposées suffit à le franchir.');
+  // L'intro sur un plan qui porte des actions : la moitié qui rend concluante l'absence vérifiée chez
+  // le cycliste (audit P-5, 01/10/2026).
+  await attendreTexte(/^Une action par saison, une seule\./);
   const pistes = await lire(
     'plan_actions?select=rank,saving_kg_year,committed_at,action_templates(action_text)&order=rank',
     jeton
@@ -1077,7 +1353,14 @@ try {
   // donne à la question, « Annuler » le rend au bouton revenu. Les deux disparaissent sous le doigt ;
   // sans ça, le focus tombait sur le document et la tabulation repartait du haut du plan. C'est la
   // moitié web de `donnerLeFocus` — la moitié native, TalkBack, reste au doigt (`v1-13` §11.24).
-  await bouton('Je m’y engage');
+  //
+  // **Et « C'est noté » ne s'ouvre plus sous la barre d'onglets** (audit P-2, 01/10/2026, HANDOFF du
+  // canvas `v1-30` B2) : la carte grandit vers le bas, et le plan défile désormais comme la liste —
+  // juste assez pour que le bouton finisse dans la fenêtre, près de son bas, sans que le titre de la
+  // carte passe jamais sous la bande, et en glissant. La même mesure que la liste (`defilement`, lue
+  // dans la fenêtre de défilement) ; la moitié « posé d'un coup » est jouée par le cycliste, sous
+  // « réduire les animations ».
+  await ouvrirLeSelecteurSurUnEcranCourt(ATTENDU.pistes[0][0], { glisse: true });
   await focusSur('Quels jours ?', 'après « Je m’y engage », sur le plan');
   await bouton('Annuler');
   await focusSur('Je m’y engage', 'après « Annuler », sur le plan');
@@ -1127,15 +1410,147 @@ try {
     'une barre d’espace maintenue n’a pas laissé « mardi » coché : la répétition a basculé la case'
   );
   await choisir('jeudi');
-  await bouton('C’est noté');
-  await page.waitForFunction(
-    () => document.body.innerText.includes('Changer d’avis'),
-    undefined,
-    { timeout: ATTENTE }
-  );
+  // **Le geste ne se défait pas sous les yeux** (audit P-1, 01/10/2026) : jusqu'à la relecture,
+  // « C'est noté » reste là, inactif, puis la carte passe à « Changer d'avis » dans le même rendu.
+  // Relevé à chaque image : jamais ni l'un ni l'autre — c'était « Je m'y engage » revenu le temps de
+  // l'aller-retour, la carte refermée avant d'être relue.
+  //
+  // **Puis la carte engagée est amenée dans la fenêtre, et le focus va à son bloc** (audit P-1) : au
+  // premier plan, la relecture remet le cap devant les pistes, et la carte qu'on venait de toucher
+  // finissait sous la barre, le focus sur le document. Touchée au bas d'un écran court, pour que la
+  // relecture l'en sorte (`noterSurUnEcranCourt`).
+  await noterSurUnEcranCourt(ATTENDU.pistes[0][0], 'après « C’est noté », sur le plan', { glisse: true });
   const [engagee] = await lire('plan_actions?select=rank,committed_at,intention_days&rank=eq.1', jeton);
   assurer(engagee && engagee.committed_at !== null, 'la piste 1 n’est pas engagée en base');
   assurer(JSON.stringify(engagee.intention_days) === '[2,4]', `jours engagés ${JSON.stringify(engagee.intention_days)}, attendu [2,4]`);
+
+  // ── 6 bis. L'onglet du plan : il remonte en haut, et il ramène toujours à sa racine ──────────
+  //
+  // **Toucher l'onglet où l'on est remonte en haut de la page** (audit T-14, 01/10/2026) : le layout
+  // des onglets retenait le toucher à chaque fois, donc `useScrollToTop` n'agissait jamais. Il ne le
+  // retient plus quand l'onglet est déjà à sa racine (`toucherDOnglet`). **Et la règle d'avant tient
+  // toujours** — un onglet est un lieu, pas un signet : la liste des pistes laissée ouverte derrière
+  // « Suivi » ne revient pas au toucher de « Plan ». C'est la moitié que la correction pouvait casser,
+  // et le toucher d'un onglet déjà actif ne la voit pas : la pile s'y dépile d'elle-même.
+  //
+  // **Et « ramener » se lit dans la pile, pas dans l'adresse** : le layout nommait la racine, ce qui
+  // l'**empilait** — un second plan monté par-dessus les pistes, un suivi par-dessus la restitution
+  // (`pileALaRacine`, où c'est mesuré). L'adresse disait `/plan` dans les deux cas. D'où deux lectures
+  // du DOM : la restitution démontée au toucher de « Suivi », et le plan revenu **le même** — son titre
+  // marqué avant de partir, retrouvé seul au retour.
+  etape('plan — l’onglet remonte en haut, et ramène à sa racine');
+  const ongletVisible = async (libelle) => {
+    for (const texte of await page.getByText(libelle, { exact: true }).all()) {
+      if (await texte.isVisible()) return texte;
+    }
+    throw new Ecart(`l’onglet « ${libelle} » est introuvable à l’écran`);
+  };
+  const positionDuPlan = (aller = null) =>
+    page.evaluate((y) => {
+      const titre = [...document.querySelectorAll('h1, [role="heading"]')].find(
+        (h) => h.getClientRects().length > 0 && h.textContent.trim() === 'Ton plan'
+      );
+      let fenetre = titre?.parentElement;
+      while (fenetre && !/(auto|scroll)/.test(getComputedStyle(fenetre).overflowY)) fenetre = fenetre.parentElement;
+      if (!fenetre) return null;
+      if (y !== null) fenetre.scrollTop = y;
+      return fenetre.scrollTop;
+    }, aller);
+  // **Les titres du plan montés dans le DOM, visibles ou non** — comptés, et non cherchés à l'écran : un
+  // plan revenu le même revient où on l'avait laissé, son titre défilé hors de la fenêtre (la première
+  // version de cette garde le cherchait sous le doigt, et tombait sur le témoin du 01/10/2026). Marqués
+  // **avant le premier toucher** : un plan remonté de zéro est lui aussi en haut de sa page, et c'est
+  // ainsi qu'une remontée passait pour faite quand le layout retenait le toucher et reposait la pile
+  // (mutation PL8 ci-dessus) — l'écran se remontait, sa lecture repartait. Un seul titre, marqué, dit
+  // que c'est le même plan ; un plan empilé par-dessus les pistes en ferait deux.
+  const titresDuPlan = () =>
+    [...document.querySelectorAll('h1, [role="heading"]')].filter((h) => h.textContent.trim() === 'Ton plan');
+  const lireLesTitresDuPlan = () =>
+    page.evaluate(`(${titresDuPlan})().map((h) => h.getAttribute('data-parcours-plan') ?? 'neuf')`);
+  const marque = await page.evaluate(
+    `(() => { const t = (${titresDuPlan})(); t.forEach((h) => h.setAttribute('data-parcours-plan', 'avant')); return t.length; })()`
+  );
+  assurer(marque === 1, `${marque} titre(s) « Ton plan » montés avant le toucher, attendu un : la garde du plan ne peut pas conclure`);
+  await positionDuPlan(600);
+  await page.waitForTimeout(300);
+  const avantLeToucher = await positionDuPlan();
+  assurer(avantLeToucher !== null && avantLeToucher > 100, `le plan ne défile pas (${avantLeToucher}) : la garde ne peut pas conclure`);
+  await (await ongletVisible('Plan')).click();
+  try {
+    await page.waitForFunction(
+      () => {
+        const titre = [...document.querySelectorAll('h1, [role="heading"]')].find(
+          (h) => h.getClientRects().length > 0 && h.textContent.trim() === 'Ton plan'
+        );
+        let fenetre = titre?.parentElement;
+        while (fenetre && !/(auto|scroll)/.test(getComputedStyle(fenetre).overflowY)) fenetre = fenetre.parentElement;
+        return fenetre !== null && fenetre !== undefined && fenetre.scrollTop < 1;
+      },
+      undefined,
+      { timeout: 3_000 }
+    );
+  } catch {
+    throw new Ecart(
+      `toucher l’onglet du plan, déjà actif, ne remonte pas en haut (${Math.round((await positionDuPlan()) ?? -1)} px) :` +
+        ' le layout retient-il encore le toucher (`toucherDOnglet`, src/app/(tabs)/_layout.tsx) ?'
+    );
+  }
+  const titresRemontes = await lireLesTitresDuPlan();
+  assurer(
+    titresRemontes.length === 1 && titresRemontes[0] === 'avant',
+    `toucher l’onglet du plan, déjà actif, a remonté l’écran au lieu de remonter sa page (titres : ${titresRemontes.join(', ')}) :` +
+      ' le layout a retenu le toucher et reposé la pile (`toucherDOnglet`, src/app/(tabs)/_layout.tsx)'
+  );
+  // Le lien de partage n'existe que sur la restitution : le compter dans le DOM, visible ou non, dit si
+  // elle est encore montée dans la pile du suivi.
+  const restitutionsMontees = () =>
+    page.evaluate(() => [...document.querySelectorAll('*')].filter((e) => e.textContent === 'Partager mon bilan').length);
+  assurer(
+    (await restitutionsMontees()) > 0,
+    'la restitution n’est pas montée dans la pile du suivi avant le toucher de « Suivi » : la garde ne peut pas conclure'
+  );
+  await page.getByText(/^Voir toutes les pistes/).first().click();
+  await page.waitForURL(/\/plan\/pistes/, { timeout: ATTENTE });
+  // Le titre exact : « Voir toutes les pistes », le lien du plan resté monté dessous, le contient.
+  await attendreTexte(/^Toutes les pistes$/);
+  await (await ongletVisible('Suivi')).click();
+  // La pile du suivi n'a encore jamais bougé : le questionnaire l'a ouverte sur la restitution, par
+  // les paramètres de la navigation, et le navigateur d'onglets ne porte pas encore son `state`.
+  try {
+    await page.waitForURL((url) => url.pathname === '/suivi', { timeout: ATTENTE });
+  } catch {
+    throw new Ecart(
+      `toucher « Suivi » depuis le plan rouvre ${new URL(page.url()).pathname} : une pile ouverte par un lien` +
+        ' se lit sur ses paramètres tant qu’elle n’a pas de `state` (`pileDeLOnglet`, src/types/plan.ts)'
+    );
+  }
+  assurer(new URL(page.url()).search === '', `toucher « Suivi » laisse des paramètres dans l’adresse : ${page.url()}`);
+  try {
+    await page.waitForFunction(
+      () => ![...document.querySelectorAll('*')].some((e) => e.textContent === 'Partager mon bilan'),
+      undefined,
+      { timeout: 3_000 }
+    );
+  } catch {
+    throw new Ecart(
+      `la restitution reste montée sous le suivi (${await restitutionsMontees()}) : ramener l’onglet à sa racine` +
+        ' l’a empilée par-dessus au lieu de remplacer la pile (`ramenerALaRacine`, src/app/(tabs)/_layout.tsx)'
+    );
+  }
+  await (await ongletVisible('Plan')).click();
+  try {
+    await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
+  } catch {
+    throw new Ecart(`toucher « Plan » depuis le suivi rouvre ${new URL(page.url()).pathname} : un onglet ramène à la racine de sa pile`);
+  }
+  assurer(new URL(page.url()).search === '', `toucher « Plan » laisse des paramètres dans l’adresse : ${page.url()}`);
+  await page.waitForFunction(`(${titresDuPlan})().some((h) => h.getClientRects().length > 0)`, undefined, { timeout: ATTENTE });
+  const titresAuRetour = await lireLesTitresDuPlan();
+  assurer(
+    titresAuRetour.length === 1 && titresAuRetour[0] === 'avant',
+    `toucher « Plan » depuis le suivi a monté un second plan (titres : ${titresAuRetour.join(', ')}) : ramener l’onglet à sa` +
+      ' racine l’a empilée au lieu de remplacer la pile (`ramenerALaRacine`, src/app/(tabs)/_layout.tsx)'
+  );
 
   // ── 7. Un point généré comme le cron le ferait, puis répondu ────────────────────────────────
   etape('point — génération (service_role) puis réponse');
@@ -1214,9 +1629,12 @@ try {
     `le cap saute de ${Math.round(avantLaReponse.haut)} à ${Math.round(apresLaReponse.haut)} px quand le point est` +
       ' répondu, sans position intermédiaire — la carte doit changer de hauteur en glissant (`HauteurSuivie`)'
   );
-  // Répondu, la carte range ses deux boutons ; le pied daté vient avec le rafraîchissement suivant,
-  // et ce qui compte se lit en base.
+  // Répondu, la carte range ses deux boutons, et **son pied daté arrive avec la réponse** (audit P-10,
+  // 01/10/2026) : il venait avec le rafraîchissement suivant, la ligne relue portant seule
+  // `responded_at`. Le reste se lit en base.
   await page.getByRole('button', { name: 'Oui', exact: true }).waitFor({ state: 'hidden', timeout: ATTENTE });
+  // Les blancs en `\s` : `ThemedText` pose une espace insécable devant le deux-points (FRONT.md §2.4).
+  await attendreTexte(/^Répondu\s\S+\.\sProchain point\s?:\slundi\s\d+\s\S+\.$/);
   const [repondu] = await lire('engagement_checkins?select=status,response_kind,response', jeton);
   assurer(
     repondu.status === 'answered' && repondu.response_kind === 'oui' && repondu.response === true,
@@ -1589,6 +2007,10 @@ try {
     throw new Ecart('« C’est noté », depuis la liste, n’a pas ramené au plan');
   }
   await attendreTexte('TON ENGAGEMENT');
+  // **Le retour de la liste montre aussi l'action choisie** (audit P-1, 01/10/2026) : elle passe en
+  // tête des cartes, et le plan s'ouvrait où il voulait — elle n'était pas à l'écran. Le passage de la
+  // pile le dit au plan, qui l'amène dans la fenêtre à sa première lecture, et lui donne le focus.
+  await verifierLaCarteEngagee('au retour de la liste, après « C’est noté »');
   const texteDuPlanApresLeChoix = await page.evaluate(() => document.body.innerText);
   assurer(
     texteDuPlanApresLeChoix.indexOf(TITRE_OUVERT_AU_DESSUS) !== -1 &&
@@ -1919,6 +2341,16 @@ try {
     !/−\s?\d+\s?kg/.test(texteDuPlan),
     `le cap du plan à zéro action annonce un chiffre (cadreDuPlan, C5.3) : ${texteDuPlan.slice(0, 400)}`
   );
+  // **La planche C du HANDOFF `v1-17`** (audit P-5, 01/10/2026) : « Ton plan » sans intro — « une
+  // action, une seule » au-dessus d'aucune action —, et la carte du cap **avec** son trait : il n'y a
+  // rien à choisir, donc rien qui interdise au temps de courir (`cartesDuPlan`, `intro` et
+  // `traitDeTemps`). Le premier profil, lui, attend l'intro à son premier plan : sans cette moitié,
+  // une intro disparue pour tout le monde passerait ici.
+  assurer(
+    !/Une action par saison/.test(texteDuPlan),
+    'le plan à zéro action dit encore « Une action par saison, une seule » (`cartesDuPlan`, `intro`)'
+  );
+  await attendreTexte(/^La saison avance\s?; le trait mesure le temps, pas toi\.$/);
 
   // La barre arrive **sans** qu'on ait rien refermé : c'est la moitié de C5.7 que le premier
   // profil ne joue pas, puisque lui passe par « Compris ».
@@ -2098,11 +2530,17 @@ try {
     `la première piste du bilan en voiture porte sur « ${premierePiste?.action_templates?.poste} », attendu ` +
       'le trajet domicile-travail : la feuille demanderait une échéance et non des jours'
   );
-  await bouton('Je m’y engage');
+  // **Les deux moitiés « posé d'un coup » du geste d'engagement sur le plan** (audits P-1 et P-2,
+  // 01/10/2026) : ce profil tourne sous « réduire les animations », et son premier plan met les
+  // pistes devant le cap sous la carte des deux lieux — « C'est noté » s'y ouvre sous la barre.
+  const [{ action_templates: { action_text: titreDeLaPremierePiste } }] = await lire(
+    'plan_actions?select=action_templates(action_text)&rank=eq.1',
+    sobre.jeton
+  );
+  await ouvrirLeSelecteurSurUnEcranCourt(titreDeLaPremierePiste, { glisse: false });
   await choisir('mardi');
   await choisir('jeudi');
-  await bouton('C’est noté');
-  await attendreTexte('Changer d’avis');
+  await noterSurUnEcranCourt(titreDeLaPremierePiste, 'après « C’est noté », chez le cycliste', { glisse: false });
   // **Un second onglet du même appareil, ouvert sur le bilan à vélo pendant qu'il est encore
   // `ancien`** (contre-lecture du 27/09/2026) : la confirmation relit la place au toucher du lien, et
   // rien ne le gardait — chaque retrait de ce parcours partait d'une page fraîchement chargée, où une

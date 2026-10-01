@@ -19,6 +19,8 @@ Une piste du plan : la carte d'action chiffrée et son engagement, rendus d'une 
 />
 ```
 
+**Sur le plan, le geste va jusqu'au bout** (01/10/2026, audits P-1 et P-2) : à l'ouverture du choix, l'écran défile juste assez pour que « C'est noté » finisse au-dessus de la barre d'onglets ; après « C'est noté », la carte garde son sélecteur, bouton inactif (`relecture`), jusqu'à ce que le plan soit relu — puis elle est la carte engagée, l'écran l'amène dans la fenêtre si la relecture l'a déplacée (au premier plan, le cap repasse devant), et le focus va au bloc qui annonce « Action engagée : … ». Une fois, au geste ; jamais à chaque retour sur le plan. Rien de ça ne se dessine : dans le dépôt, ce sont `onOuvert`, `lectures` et `refDuBloc`.
+
 **Le poste décide de l'intention** : des jours de la semaine pour le domicile-travail, une échéance fermée pour les sorties et les voyages — jamais une saisie libre. Le libellé de l'intention vient de la ligne (« le mardi et le jeudi », « à mon prochain projet de voyage »), comme le premier pas et l'étiquette « · RECONDUIT ».
 
 Les libellés d'action sont ceux du référentiel (`action_templates.action_text`) : ne pas en inventer — « Faire un trajet sur cinq à vélo », « Travailler depuis chez toi un jour par semaine », « Remplacer un aller-retour en avion par le train ».

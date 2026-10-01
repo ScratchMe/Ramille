@@ -43,20 +43,25 @@ choix d'écran écrit dans le SQL — qui jetait les autres leviers avant même 
 `estimate_action_savings` rend déjà toutes les actions dont le gain atteint 5 kg/an, triées, et que la
 colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage décide. Quatre points :
 
-- **Trois rangs à l'écran, pas deux** (`pistesDuPlan`, `src/types/plan.ts`) : deux cartes pleines,
-  deux cartes estompées derrière « Voir d'autres pistes · N », puis des lignes simples. Au-delà de
-  quatre cartes pleines ce n'est plus un choix qu'on présente, c'est un catalogue. Le compte est
-  **dans** le libellé du lien : un lien qui ne dit pas combien il cache n'aide pas à décider de
-  l'ouvrir. **Et les trois rangs disent l'insistance, jamais la permission** (recette du 14/09/2026,
-  §12.4, `v1-16` §5) : les lignes simples n'avaient pas de bouton, donc le plan affichait des
-  leviers chiffrés et **inatteignables**, sous une phrase qui demandait à la personne de changer sa
-  vie pour que l'app la réordonne. Elles s'ouvrent désormais en carte au toucher — `carteDaction`
-  étant une fabrique, déplier une ligne c'est l'appeler. Le classement n'a pas bougé, et une garde
-  de **partition** dans `plan.test.ts` épingle ce dont la promesse dépend : un rang qui laisserait
-  tomber une action recréerait ici, en silence, le `limit 2` que ce chantier a retiré du serveur.
-- **`actionsCount` pilote encore le disclaimer et l'état vide**, mais la phrase d'intro compte
-  désormais `enAvant.length` : elle décrit ce qui est devant, et dire « Deux actions » à un plan qui
-  en porte cinq serait faux.
+- **Deux cartes sur le plan, tout sur sa liste** (C5.2, `pistesDuPlan` et `pistesParPoste`,
+  `src/types/plan.ts`). Le plan rend les deux premières pistes en cartes pleines — l'action engagée
+  devant —, puis le lien « Voir toutes les pistes · N » vers `plan/pistes`, qui les présente
+  **toutes**, groupées par poste, dans l'ordre du rang et sans rang affiché ; le lien ne se rend que
+  s'il y a plus que les deux cartes à voir. Le compte est **dans** le libellé, et c'est le total : un
+  lien qui ne dit pas combien il mène à voir n'aide pas à décider de l'ouvrir. Ce texte a décrit
+  jusqu'au 01/10/2026 les « trois rangs » d'avant C5.2 — deux cartes pleines, deux estompées derrière
+  « Voir d'autres pistes · N », puis des lignes simples. **Ce qui en reste est la promesse, pas la
+  forme** (recette du 14/09/2026, §12.4, `v1-16` §5) : **toute piste affichée se choisit**. Les
+  lignes simples d'alors n'avaient pas de bouton, donc le plan affichait des leviers chiffrés et
+  inatteignables ; sur la liste, chaque rangée est désormais la cible qui ouvre la carte sur le choix
+  (`v1-32`). Une garde de **partition** dans `plan.test.ts` épingle ce dont la promesse dépend : un
+  groupement qui laisserait tomber une action recréerait ici, en silence, le `limit 2` que ce
+  chantier a retiré du serveur.
+- **`actionsCount` décide de ce qu'un plan à zéro action tait**, et en un seul endroit,
+  `cartesDuPlan` : la félicitation à la place des cartes, ni encart de contexte ni note technique —
+  et, depuis le 01/10/2026, ni l'intro (audit P-5, HANDOFF `v1-17` planche C). **L'intro ne compte plus rien** : elle comptait `enAvant.length` jusqu'à C5.3, qui l'a
+  remplacée par une ligne fixe qui dit le principe — « Une action par saison, une seule. C'est pas à
+  pas qu'on tient un cap. » —, et ce principe n'a pas de sens au-dessus d'aucune action.
 - **`first_step` est une ligne sans chiffre qui décrit un essai**, figée sur `plan_actions` comme le
   gain, et affichée **seulement une fois l'action engagée** : avant le choix, une consigne pratique se
   lit comme une charge de plus. Elle ne chiffre rien — le gain est juste au-dessus, et

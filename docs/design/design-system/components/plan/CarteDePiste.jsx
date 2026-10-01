@@ -9,6 +9,10 @@ import { ActionCommitment } from './ActionCommitment.jsx';
 // sur la liste** (`surLeChoix`, 29/09/2026, `v1-32`) : ouverte sur le choix, la carte reculerait au moment même où
 // on la regarde. « Une autre est engagée » se lit comme `etatDeLaPiste` (src/types/plan.ts) : jamais vrai d'une
 // ligne engagée elle-même, quel que soit `committedActionId`.
+//
+// `relecture` (01/10/2026, audit P-1) : « C'est noté » a abouti, le plan se relit — le sélecteur reste, son bouton
+// inactif. Dans le dépôt, l'écran du plan amène ensuite la carte engagée dans la fenêtre et lui donne le focus ;
+// rien de ça ne se dessine.
 
 // `formatIntention` (src/types/plan.ts), recopiée : les jours de 1 à 7 avec l'article répété, sinon l'échéance en
 // minuscules. Le kit ne lit rien de `src/`.
@@ -27,7 +31,7 @@ const formatIntention = (jours, echeance) => {
   return ECHEANCES[echeance] || null;
 };
 
-export function CarteDePiste({ action, committedActionId = null, surLeChoix = false, choixOuvert = false, joursChoisis = [], echeanceChoisie = null, onChoisir, onToggleDay, onTiming, onAnnuler, onValider, onLiberer }) {
+export function CarteDePiste({ action, committedActionId = null, surLeChoix = false, relecture = false, choixOuvert = false, joursChoisis = [], echeanceChoisie = null, onChoisir, onToggleDay, onTiming, onAnnuler, onValider, onLiberer }) {
   const engagee = action.committed_at !== null && action.committed_at !== undefined;
   const uneAutreEstEngagee = !engagee && committedActionId !== null && committedActionId !== action.id;
   const poste = action.action_templates ? action.action_templates.poste : null;
@@ -52,6 +56,7 @@ export function CarteDePiste({ action, committedActionId = null, surLeChoix = fa
         days={joursChoisis}
         timing={echeanceChoisie}
         otherActionCommitted={uneAutreEstEngagee}
+        relecture={relecture}
         onPick={onChoisir}
         onToggleDay={onToggleDay}
         onTiming={onTiming}
