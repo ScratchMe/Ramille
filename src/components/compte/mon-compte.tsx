@@ -29,9 +29,10 @@ import { RAMILLE } from '@/constants/mascotte';
 //
 // Trois partis pris de forme :
 //
-//   - **la confirmation est un état de composant, jamais un `Alert`.** Sur web, `Alert.alert`
-//     retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` : la suppression ne
-//     partirait jamais. Même piège que sur les écrans de connexion (cf. CLAUDE.md).
+//   - **la confirmation est un état d'écran, jamais un `Alert`** — tenu par l'écran hôte depuis le
+//     01/10/2026, qui doit savoir qu'elle est ouverte. Sur web, `Alert.alert` retombe sur
+//     `window.alert()`, qui n'invoque pas fiablement `onPress` : la suppression ne partirait
+//     jamais. Même piège que sur les écrans de connexion (cf. CLAUDE.md).
 //   - **aucune tentative de retenir la personne.** Pas de « es-tu sûr de perdre tes 3 bilans ? »,
 //     pas de bouton « Rester » mis en avant. On dit ce qui sera supprimé parce que c'est une
 //     information utile, et on s'arrête là. Un produit qui rend le départ pénible ne mérite pas
@@ -52,11 +53,25 @@ import { RAMILLE } from '@/constants/mascotte';
 // `border`, celui des cartes d'action —, et le bouton retrouve le fond sur lequel il est dessiné
 // partout ailleurs. Une couleur imposée au bouton depuis l'extérieur aurait aussi écrasé celle
 // qu'il prend sous le doigt : `Button` porte seul ses états.
-export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
+export function MonCompte({
+  confirmation,
+  onConfirmation,
+  onSupprime,
+}: {
+  /**
+   * **La confirmation de suppression est-elle ouverte ? — l'écran hôte la tient, et c'est lui qui en a
+   * besoin** (01/10/2026, `v1-33` §6). Tant qu'elle est ouverte, « Toi » porte déjà un principal :
+   * « Supprimer définitivement ». Ce que l'écran affiche ailleurs en principal — « Rattacher un compte »,
+   * « Réessayer » — passe alors en secondaire, et un état de ce composant ne pouvait pas le lui dire.
+   */
+  confirmation: boolean;
+  /** Ouvrir (`true`, « Supprimer mon compte ») ou refermer (`false`, « Annuler », le retour matériel). */
+  onConfirmation: (ouverte: boolean) => void;
+  onSupprime?: () => void;
+}) {
   const theme = useTheme();
   const carte = [styles.card, { borderColor: theme.border }];
 
-  const [confirmation, setConfirmation] = useState(false);
   const [busy, setBusy] = useState<'export' | 'suppression' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   // **La suppression a maintenant un après, et c'est un revirement assumé** (C3.10, point 3,
@@ -104,7 +119,7 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
         ? () => terminerLeFlux('/')
         : confirmation
           ? () => {
-              if (!enAction) setConfirmation(false);
+              if (!enAction) onConfirmation(false);
             }
           : null
   );
@@ -197,7 +212,7 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
             hint="Demande une confirmation avant de supprimer quoi que ce soit"
             onPress={() => {
               ouvertureDemandee.current = true;
-              setConfirmation(true);
+              onConfirmation(true);
             }}
             disabled={busy !== null}
             type="small"
@@ -217,7 +232,7 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
             <View style={styles.confirmationActions}>
               <TextLink
                 label="Annuler"
-                onPress={() => setConfirmation(false)}
+                onPress={() => onConfirmation(false)}
                 disabled={busy !== null}
                 type="small"
                 themeColor="textTertiary"
