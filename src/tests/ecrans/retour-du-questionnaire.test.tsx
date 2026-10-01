@@ -121,6 +121,11 @@ const COMPLET: BilanAnswers = {
   commute_mode: 'bus',
   commute_second_mode_used: false,
   leisure_frequency: 'rarely',
+  // Ni vol ni long trajet : des réponses, depuis que les deux étapes les réclament (01/10/2026, `v1-33` D1).
+  flights_total_per_year: 0,
+  train_long_trips_per_year: 0,
+  coach_long_trips_per_year: 0,
+  car_long_trips_per_year: 0,
   zone_type: 'rural',
   tc_access: 'bon',
   household_vehicles: '1',

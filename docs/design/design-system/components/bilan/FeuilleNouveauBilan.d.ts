@@ -5,13 +5,13 @@ export interface EngagementEnCours {
   /** « le mardi et le jeudi », « ce mois-ci »… ou `null` si la ligne n'en porte pas. */
   intention: string | null;
 }
-/** « Ton plan va être recalculé » — ce qu'un re-bilan fait à l'engagement en cours, dit avant de soumettre. */
+/** « Ton plan va être recalculé » — ce qu'un re-bilan fait à l'engagement en cours, dit avant de commencer. */
 export interface FeuilleNouveauBilanProps {
   engagement: EngagementEnCours;
-  /** Poursuivre la soumission, en sachant ce qu'elle fait. */
-  onSoumettre?: () => void;
-  /** Refermer sans rien soumettre — « Pas maintenant », ou le geste de retour. */
-  onFerme?: () => void;
+  /** Commencer le questionnaire, en sachant ce qu'un nouveau bilan fait : la feuille redescend sur la première étape. */
+  onCommencer?: () => void;
+  /** Ne pas commencer — « Pas maintenant », ou le geste de retour : on ressort vers l'écran d'où l'on vient. */
+  onQuitter?: () => void;
   /** Rendre la feuille dans son voile, vrai par défaut (`FeuilleDuBas`). */
   voile?: boolean;
   style?: React.CSSProperties;

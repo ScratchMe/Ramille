@@ -130,7 +130,12 @@ export function sectionsDeMethode(dateDuBilan: string | null): SectionDeMethode[
         `« Rarement » vaut ${nombre(h.sortiesParSemaine.rarement)} sortie par semaine, « une fois par semaine » ${nombre(h.sortiesParSemaine.hebdomadaire)}, « plusieurs fois » ${nombre(h.sortiesParSemaine.plusieurs)} — sur ${nombre(h.semainesLoisirs)} semaines.`,
         `Sans distance déclarée, une sortie compte ${nombre(h.distanceSortieParDefautKm)} km.`,
         `Un vol compte ${nombre(h.volCourtKm)} km s’il est court ou moyen-courrier, ${nombre(h.volLongKm)} km s’il est long-courrier — un aller, pas un aller-retour.`,
-        `Un trajet en train de plus de 300 km compte ${nombre(h.trainLongKm)} km, un long trajet en autocar ${nombre(h.autocarLongKm)} km, en voiture ${nombre(h.voitureLongKm)} km.`,
+        // **Un aller, comme un vol** (01/10/2026, `v1-33` D2) : `recompute_assessment_results` multiplie
+        // le nombre de trajets par `dist_train_long`, `dist_car_long` et `dist_coach_long` sans le
+        // doubler, là où le trajet domicile-travail et les sorties comptent `× 2` — vérifié dans la
+        // définition de `20260921165612_les_modes_qui_manquent.sql`. L'écran le dit sous sa question
+        // (« Un aller-retour compte pour deux trajets. ») ; la méthode le disait des vols seulement.
+        `Un trajet en train de plus de 300 km compte ${nombre(h.trainLongKm)} km, un long trajet en autocar ${nombre(h.autocarLongKm)} km, en voiture ${nombre(h.voitureLongKm)} km — un aller, pas un aller-retour.`,
         'Aucune de ces valeurs n’est publiée par une source : ce sont des ordres de grandeur choisis pour ce bilan, pas des mesures.',
       ],
     },

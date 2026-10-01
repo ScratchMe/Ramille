@@ -96,10 +96,13 @@ export function CommuteDaysDistanceStep({
           {/* **« On ajustera la précision plus tard » promettait un mécanisme qui n'existe pas**
               (C3.7, constat A12-22). Rien dans le produit ne revient demander une distance, et la
               phrase laissait attendre une relance. Ce qui existe vraiment, c'est le re-bilan — et
-              il est préremplissable, donc peu coûteux : c'est ce qu'on dit à la place. */}
+              il est préremplissable, donc peu coûteux : c'est ce qu'on dit à la place.
+
+              **« dans un nouveau bilan », jamais « en refaisant »** (01/10/2026, `v1-33` D3, et
+              `v1-19` D1) : un bilan ne se refait pas, il s'en ajoute un, qui n'efface rien. */}
           <ThemedText type="small" themeColor="textTertiary">
-            Une estimation suffit. Tu pourras donner un chiffre plus précis en refaisant ton
-            bilan : tes réponses seront préremplies.
+            Une estimation suffit. Tu pourras donner un chiffre plus précis dans un nouveau bilan :
+            tes réponses seront préremplies.
           </ThemedText>
           <GroupeDeChoix question={QUESTION_TRANCHE} style={styles.bracketList}>
             {BRACKETS.map((bracket, i) => (

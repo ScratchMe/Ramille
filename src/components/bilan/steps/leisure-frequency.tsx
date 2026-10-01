@@ -5,9 +5,8 @@ import { ChoiceRow } from '@/components/bilan/choice-row';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { HYPOTHESES } from '@/constants/methodologie';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import type { BilanAnswers, LeisureFrequency } from '@/types/bilan';
 import { optionCible } from '@/types/demande';
 
@@ -20,19 +19,21 @@ const OPTIONS: { value: LeisureFrequency; label: string }[] = [
 /** Écrite une fois : le titre de l'étape et le nom de la série (`GroupeDeChoix`). */
 const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le week-end ?';
 
-// B2.1 — variante "Progression adaptative" quand la section 1 a été sautée (B1.1 =
-// Non) : le paragraphe d'exemples est remplacé par un rappel du nombre d'étapes total,
-// cf. maquette "Progression adaptative — section sautée".
+// B2.1.
+//
+// **Les exemples pour tous, et plus de décompte d'étapes** (01/10/2026, `v1-33` D7). Sans trajet
+// domicile-travail, la maquette « Progression adaptative — section sautée » remplaçait les exemples
+// par un encadré « Sans trajet domicile-travail, ton bilan compte N étapes. » : il répétait l'en-tête
+// (« Étape 2 sur 6 »), changeait de chiffre sous le doigt — « Rarement » retire une étape — et ôtait
+// les exemples au profil qui en a le plus besoin, retraité ou sans emploi, pour qui « trajets
+// loisirs » est la première question du bilan.
 export function LeisureFrequencyStep({
   answers,
   update,
-  total,
 }: {
   answers: BilanAnswers;
   update: (patch: Partial<BilanAnswers>) => void;
-  total: number;
 }) {
-  const commuteSkipped = answers.commute_has_regular_trip === false;
   // Où mène « Il manque encore ta fréquence » (`v1-31` §2.5).
   const { bloc, cible } = useAncreDuChamp('leisure_frequency');
   const iCible = optionCible(OPTIONS.map((option) => answers.leisure_frequency === option.value));
@@ -40,11 +41,9 @@ export function LeisureFrequencyStep({
   return (
     <View ref={bloc} style={styles.container}>
       <TitreDEtape>{QUESTION_FREQUENCE}</TitreDEtape>
-      {!commuteSkipped && (
-        <ThemedText type="small" themeColor="textTertiary">
-          Sport, sorties, visites à la famille.
-        </ThemedText>
-      )}
+      <ThemedText type="small" themeColor="textTertiary">
+        Sport, sorties, visites à la famille.
+      </ThemedText>
       <GroupeDeChoix question={QUESTION_FREQUENCE} style={styles.choices}>
         {OPTIONS.map((option, i) => (
           <View key={option.value} style={styles.choix}>
@@ -82,13 +81,6 @@ export function LeisureFrequencyStep({
           </View>
         ))}
       </GroupeDeChoix>
-      {commuteSkipped && (
-        <ThemedView type="backgroundElement" style={styles.notice}>
-          <ThemedText type="small" style={styles.noticeText}>
-            Sans trajet domicile-travail, ton bilan compte {total} étapes.
-          </ThemedText>
-        </ThemedView>
-      )}
     </View>
   );
 }
@@ -105,6 +97,4 @@ const styles = StyleSheet.create({
   choix: { gap: Spacing.one },
   // La ligne s'aligne sur le texte de la réponse au-dessus, pas sur le bord de l'écran.
   base: { paddingLeft: Spacing.three },
-  notice: { borderRadius: Radius.field, padding: Spacing.three },
-  noticeText: { lineHeight: 21 },
 });

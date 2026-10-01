@@ -27,6 +27,7 @@ import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-dra
 import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
 import { lireLEngagementEnCours } from '@/lib/engagement-en-cours';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
+import { revenirOu } from '@/lib/navigation';
 import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-parcours';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { type EngagementEnCours } from '@/types/rebilan';
@@ -37,6 +38,7 @@ import {
   EMPTY_BILAN_ANSWERS,
   avancementDeLaReprise,
   brouillonEstAncien,
+  compteursApresLaReponse,
   distanceDomicileTravailKm,
   distanceSortieKm,
   issueDuSuivant,
@@ -44,8 +46,10 @@ import {
   memesReponses,
   normaliserReponses,
   previousStep,
+  reponseAuxLongsTrajets,
   type BilanAnswers,
   type BilanStepId,
+  type HorsColonnes,
   visibleSteps,
   STATUT_DE_BILAN,
 } from '@/types/bilan';
@@ -95,6 +99,16 @@ export default function BilanQuestionnaire() {
   // s'affiche, donc quelle étape la personne va réellement voir. C'est ce que l'entonnoir
   // attend, cf. son commentaire plus bas.
   const [repriseResolue, setRepriseResolue] = useState(false);
+
+  // **L'étape d'entrée de la visite** (01/10/2026, `v1-33` D3) : celle que la personne voit en arrivant,
+  // retenue au premier rendu après la lecture du brouillon — qui a posé l'étape où l'on s'était arrêté,
+  // ou celle que demande `?etape=`. Le bandeau du re-bilan ne se rend qu'à elle : répété sur les neuf
+  // étapes, il devenait un bandeau qu'on ne lit plus, et ses 76 px faisaient passer la liste des modes
+  // sous le pied. Ce qu'on accepte en échange : qui reprend un re-bilan au milieu ne le relit pas — il
+  // voit ses réponses cochées. Retenue au rendu et non dans un effet, comme la demande de `StepShell` :
+  // un effet laisserait une image sans bandeau.
+  const [etapeDEntree, setEtapeDEntree] = useState<BilanStepId | null>(null);
+  if (draftLoaded && etapeDEntree === null) setEtapeDEntree(step);
 
   // Deux raisons de tenir ces deux drapeaux hors de l'état : ils décident d'écritures, pas
   // d'affichage, et ils doivent être lus par des effets sans relancer de rendu.
@@ -263,38 +277,49 @@ export default function BilanQuestionnaire() {
   const soumissionEnCours = useRef(false);
 
   /**
-   * L'engagement exposé au recalcul, et la lecture qui le détermine (C6.2, `v1-19` D3).
+   * L'engagement exposé au recalcul, et la feuille qui le dit **avant de commencer** (C6.2, `v1-19`
+   * D3 et D4 ; déplacée le 01/10/2026, `v1-33` §6).
    *
    * **Il n'est pas « menacé », et le nom le disait à tort** : le serveur le repose sur la ligne du
    * nouveau plan qui porte le même gabarit, et ne l'archive que si ce gabarit n'est plus proposé
    * (`src/types/rebilan.ts`). La feuille annonce donc une règle, pas une perte.
    *
-   * **Lue au montage et non à la dernière étape**, parce qu'un re-bilan peut entrer directement sur
-   * `context` : la lecture aurait alors à peine commencé au moment où l'on touche « Voir mon
-   * bilan ». `handleNext` attend la promesse plutôt que de la course, ce qui coûte quelques
-   * millisecondes le jour où quelqu'un est vraiment plus rapide que le réseau.
+   * **Elle s'ouvrait à la soumission, et c'était la fin qui colorait tout l'effort** (Peak-End) : au
+   * terme de neuf étapes, elle disait « ton bilan actuel est toujours juste ». Elle s'ouvre désormais à
+   * l'entrée du questionnaire, dès que la lecture a trouvé un engagement de la période courante — les
+   * mêmes conditions qu'avant (`engagementDeLaPeriodeCourante`), une fois par visite : « Commencer »
+   * la referme et l'on répond, « Pas maintenant » ressort. La soumission ne l'ouvre plus.
+   *
+   * **Lue au montage, sans attendre personne** : le questionnaire s'affiche aussitôt (bloquer le
+   * premier rendu sur une lecture ne résout jamais sur l'export statique, cf. plus bas), et la feuille
+   * monte par-dessus quand la réponse arrive — d'ordinaire avant qu'on ait répondu à quoi que ce soit.
+   * Plus tard, elle dit encore vrai : rien n'est soumis tant qu'on n'a pas fini.
    *
    * **Un échec de lecture laisse passer**, et c'est le bon sens de l'erreur : la feuille *nomme*
-   * l'action et l'intention, donc sans elles elle n'aurait rien à dire — et bloquer une soumission
-   * parce qu'on n'a pas su lire un cycle coûterait plus cher que l'information qu'on manque. Le
-   * produit garde son filet d'après coup, l'encart orphelin du plan (C2.2).
+   * l'action et l'intention, donc sans elles elle n'aurait rien à dire — et bloquer un bilan parce
+   * qu'on n'a pas su lire un cycle coûterait plus cher que l'information qu'on manque. Le produit
+   * garde son filet d'après coup, l'encart orphelin du plan (C2.2).
    */
-  const engagementExpose = useRef<EngagementEnCours | null>(null);
-  const lectureDeLEngagement = useRef<Promise<void> | null>(null);
   const [feuilleDeLEngagement, setFeuilleDeLEngagement] = useState<EngagementEnCours | null>(null);
 
   useEffect(() => {
-    lectureDeLEngagement.current = (async () => {
+    let quitte = false;
+    (async () => {
       try {
         await ensureSession();
         // La même lecture que la confirmation du retrait d'un bilan (C4.7), écrite une fois.
         const lecture = await lireLEngagementEnCours();
-        if (!lecture.ok) return;
-        engagementExpose.current = lecture.data;
+        // Une soumission déjà partie n'a plus rien à commencer (inatteignable en pratique : neuf
+        // étapes ne se traversent pas le temps d'une lecture).
+        if (quitte || !lecture.ok || lecture.data === null || soumissionEnCours.current) return;
+        setFeuilleDeLEngagement(lecture.data);
       } catch {
         // Voir le commentaire ci-dessus : on laisse passer.
       }
     })();
+    return () => {
+      quitte = true;
+    };
   }, []);
 
   // Le bilan `in_progress` de la tentative précédente, gardé pour que la reprise ne crée pas un
@@ -324,6 +349,21 @@ export default function BilanQuestionnaire() {
     setAnswers((prev) => normaliserReponses({ ...prev, ...patch }));
   };
 
+  // **Le « Oui » aux longs trajets que les compteurs ne disent pas** (`HorsColonnes`, 01/10/2026,
+  // `v1-33` D1). « Oui » laisse les trois séries vides, et rien dans les colonnes ne le distingue
+  // alors d'une question pas encore vue : il vit ici, à côté des réponses — `BilanAnswers` ne porte
+  // que des colonnes, sans quoi l'insert qui le diffuse serait refusé —, et passe à `manqueDeLEtape`
+  // comme à l'étape. Il ne survit pas à l'écran, et c'est sans perte : quitté sur « Oui » sans aucun
+  // trajet, le questionnaire rouvre la question, à reposer.
+  const [ouiAuxLongsTrajets, setOuiAuxLongsTrajets] = useState(false);
+  const horsColonnes: HorsColonnes = { ouiAuxLongsTrajets };
+  // Les deux ensemble, et par `update` : c'est une réponse donnée, qui arme le défilement à
+  // l'ouverture des séries (`reponsesDonnees`) et la sauvegarde du brouillon.
+  const repondreAuxLongsTrajets = (oui: boolean) => {
+    setOuiAuxLongsTrajets(oui);
+    update(compteursApresLaReponse(answers, oui));
+  };
+
   const continuerLeBrouillon = () => setMontrerLaReprise(false);
 
   const repartirDuDernierBilan = () => {
@@ -336,6 +376,8 @@ export default function BilanQuestionnaire() {
     // elle se pose (`v1-30` §5.6) — y calculer un sens la ferait entrer par la gauche au montage.
     setSens(null);
     setStep('commute_has_trip');
+    // L'entrée de la visite est désormais celle-ci : c'est là que le bandeau dit le préremplissage.
+    setEtapeDEntree('commute_has_trip');
     setPrefilled(true);
     setMontrerLaReprise(false);
   };
@@ -375,7 +417,9 @@ export default function BilanQuestionnaire() {
   //
   // **Une feuille ouverte** (`FeuilleNouveauBilan`, un `Modal`) n'a pas à être exclue ici : Android
   // livre le retour à la boîte de dialogue du `Modal`, qui le rend à son `onRequestClose` sans que
-  // l'activité — donc `BackHandler` — en entende parler. Ce branchement ne la prive de rien.
+  // l'activité — donc `BackHandler` — en entende parler. Ce branchement ne la prive de rien. Et depuis
+  // qu'elle s'ouvre à l'entrée (01/10/2026), ce retour-là ressort du questionnaire, comme « Pas
+  // maintenant » : la feuille referme sur l'écran d'où l'on vient, jamais sur la première étape.
   //
   // Les étapes visibles se lisent à chaque rendu : `previousStep` saute celles que les réponses
   // excluent (« Non » à B1.1, loisirs « rarement »), comme le bouton.
@@ -396,8 +440,11 @@ export default function BilanQuestionnaire() {
   // soumission — retirer la ligne d'`attendre` ne faisait rien tomber, et soumettait un bilan
   // incomplet depuis n'importe quelle étape. Ici, un cas oublié ne compile pas (éprouvé : le cas
   // `attendre` retiré, `tsc` refuse `{ genre: "attendre" }` sur le `never`).
+  //
+  // **La soumission part sans feuille** (01/10/2026, `v1-33` §6) : ce qu'un nouveau bilan fait à
+  // l'engagement en cours se dit à l'entrée, avant la première étape — plus au terme de la dernière.
   const handleNext = async () => {
-    const issue = issueDuSuivant(step, answers);
+    const issue = issueDuSuivant(step, answers, horsColonnes);
     switch (issue.genre) {
       case 'attendre':
         return;
@@ -411,15 +458,6 @@ export default function BilanQuestionnaire() {
         const genreInconnu: never = issue;
         return genreInconnu;
       }
-    }
-
-    // La lecture du cycle a démarré au montage ; l'attendre ici est ce qui empêche une soumission
-    // plus rapide que le réseau de sauter la feuille.
-    if (lectureDeLEngagement.current !== null) await lectureDeLEngagement.current;
-
-    if (engagementExpose.current !== null) {
-      setFeuilleDeLEngagement(engagementExpose.current);
-      return;
     }
 
     await submit();
@@ -514,8 +552,9 @@ export default function BilanQuestionnaire() {
       // une réponse au questionnaire suffit à l'écrire. Ce que ça demande en échange : **ne jamais
       // mettre dans `BilanAnswers` un champ qui n'est pas une colonne** — PostgREST refuserait
       // l'insert entier, et le parcours réel, qui soumet un bilan à chaque PR, le dirait tout de
-      // suite. Les cinq clés qui suivent ne sont pas des exceptions à la règle : ce sont des
-      // valeurs que la colonne exige et que le questionnaire n'a pas sous cette forme.
+      // suite (une réponse d'écran sans colonne vit à côté : `HorsColonnes`). Les clés qui suivent
+      // ne sont pas des exceptions à la règle : ce sont des valeurs que la colonne exige et que le
+      // questionnaire n'a pas sous cette forme.
       const { error: answersError } = await supabase.from('assessment_answers').upsert(
         {
           ...answers,
@@ -529,6 +568,16 @@ export default function BilanQuestionnaire() {
           commute_second_mode_used: answers.commute_second_mode_used ?? false,
           commute_has_regular_trip: answers.commute_has_regular_trip ?? false,
           leisure_frequency: answers.leisure_frequency ?? 'rarely',
+          // **Le même repli inatteignable pour le nombre de vols** (01/10/2026, `v1-33` D1) : l'étape
+          // est toujours visible et le réclame, donc un bilan soumis en porte un ; la colonne reste
+          // `not null default 0`, et le typecheck exige le repli.
+          flights_total_per_year: answers.flights_total_per_year ?? 0,
+          // **Celui des longs trajets, lui, s'atteint, et il dit vrai** : « Oui » puis deux trajets en
+          // train laisse l'autocar et la voiture sans réponse, ce qui veut dire « aucun » — l'étape
+          // réclame un trajet, pas une réponse par série (`manqueDeLEtape`).
+          train_long_trips_per_year: answers.train_long_trips_per_year ?? 0,
+          car_long_trips_per_year: answers.car_long_trips_per_year ?? 0,
+          coach_long_trips_per_year: answers.coach_long_trips_per_year ?? 0,
           // Même lecture que la complétude des étapes : un « 0 » n'est pas une distance, et les
           // deux colonnes portent `check (… > 0)`.
           commute_distance_km: distanceDomicileTravailKm(answers),
@@ -642,6 +691,26 @@ export default function BilanQuestionnaire() {
   // bouton grisé fait paraître l'app bloquée.
   if (submitting) return <CalculEnCours />;
 
+  // **La feuille du re-bilan se rend par-dessus l'entrée, quelle qu'elle soit** (01/10/2026, `v1-33`
+  // §6) : la première étape, ou l'écran de reprise quand un brouillon de plus de trois semaines l'ouvre.
+  // C'est un `Modal`, donc son rendu ne dépend pas de sa place dans l'arbre, et chaque branche la porte.
+  const feuille =
+    feuilleDeLEngagement !== null ? (
+      <FeuilleNouveauBilan
+        engagement={feuilleDeLEngagement}
+        onCommencer={() => setFeuilleDeLEngagement(null)}
+        // Ressortir vers l'écran d'où l'on vient — la restitution, le suivi, le plan… Plusieurs
+        // portes y mènent, donc le repli d'une adresse ouverte sans pile est la racine, qui route
+        // d'elle-même vers le plan (`FRONT.md` §2.8). La feuille se démonte en même temps : la pile garde
+        // l'écran monté le temps de sa transition, et le `Modal` qu'il porte n'a pas à y survivre — ce
+        // que fait Android d'un `Modal` laissé là ne se lit que sur l'appareil.
+        onQuitter={() => {
+          setFeuilleDeLEngagement(null);
+          revenirOu('/');
+        }}
+      />
+    ) : null;
+
   // **L'écran de reprise du handoff §5.2**, spécifié depuis l'origine et livré par C3.9.
   //
   // Deux chemins y mènent et ils ne se recouvrent pas : la racine qui a trouvé un brouillon — le
@@ -669,6 +738,7 @@ export default function BilanQuestionnaire() {
   if (montrerLaReprise) {
     return (
       <ThemedView style={styles.container}>
+        {feuille}
         <SafeAreaView style={styles.repriseSafeArea}>
           <ProgressHeader section={section} step={stepNumber} total={total} />
           <View style={styles.repriseBloc}>
@@ -713,8 +783,14 @@ export default function BilanQuestionnaire() {
       // un libellé « Enregistrement… », un `disabled` ou un `manque` nul le temps de l'envoi étaient des
       // branches mortes, et c'est le verrou `soumissionEnCours` qui garde la double soumission.
       nextLabel={isLastStep ? 'Voir mon bilan' : 'Suivant'}
-      manque={manqueDeLEtape(step, answers)}
-      notice={prefilled ? 'Tes réponses précédentes sont pré-remplies. Modifie ce qui a changé.' : undefined}
+      manque={manqueDeLEtape(step, answers, horsColonnes)}
+      // À l'étape d'entrée seulement (`etapeDEntree`, plus haut) ; « préremplies » s'écrit d'une seule
+      // façon dans le produit (01/10/2026, `v1-33` D3).
+      notice={
+        prefilled && step === etapeDEntree
+          ? 'Tes réponses précédentes sont préremplies. Modifie ce qui a changé.'
+          : undefined
+      }
       message={message}
       detail={detail}
     >
@@ -722,27 +798,22 @@ export default function BilanQuestionnaire() {
       {step === 'commute_days_distance' && <CommuteDaysDistanceStep answers={answers} update={update} />}
       {step === 'commute_mode' && <CommuteModeStep answers={answers} update={update} />}
       {step === 'commute_extra' && <CommuteExtraStep answers={answers} update={update} />}
-      {step === 'leisure_frequency' && <LeisureFrequencyStep answers={answers} update={update} total={total} />}
+      {step === 'leisure_frequency' && <LeisureFrequencyStep answers={answers} update={update} />}
       {step === 'leisure_detail' && <LeisureDetailStep answers={answers} update={update} />}
       {step === 'flights' && <FlightsStep answers={answers} update={update} />}
-      {step === 'long_trips' && <LongTripsStep answers={answers} update={update} />}
+      {step === 'long_trips' && (
+        <LongTripsStep
+          answers={answers}
+          update={update}
+          reponse={reponseAuxLongsTrajets(answers, horsColonnes)}
+          repondre={repondreAuxLongsTrajets}
+        />
+      )}
       {step === 'context' && <ContextStep answers={answers} update={update} />}
 
       {/* La feuille vit **dans** `StepShell` plutôt qu'à côté : c'est un `Modal`, donc son rendu
           ne dépend pas de sa place dans l'arbre, et l'écran garde un seul élément racine. */}
-      {feuilleDeLEngagement !== null && (
-        <FeuilleNouveauBilan
-          engagement={feuilleDeLEngagement}
-          onSoumettre={() => {
-            // La question est posée une fois : sans ça, un échec de soumission suivi d'un second
-            // essai réafficherait la feuille à quelqu'un qui vient d'y répondre.
-            engagementExpose.current = null;
-            setFeuilleDeLEngagement(null);
-            void submit();
-          }}
-          onFerme={() => setFeuilleDeLEngagement(null)}
-        />
-      )}
+      {feuille}
     </StepShell>
   );
 }

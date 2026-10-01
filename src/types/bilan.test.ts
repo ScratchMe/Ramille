@@ -20,11 +20,15 @@ import {
   distanceDomicileTravailARelire,
   distanceDomicileTravailKm,
   distanceSortieKm,
-  isStepComplete,
+  isStepComplete as isStepCompleteAvecLEcran,
   isStepVisible,
-  issueDuSuivant,
+  issueDuSuivant as issueDuSuivantAvecLEcran,
   lireBrouillonBilan,
-  manqueDeLEtape,
+  manqueDeLEtape as manqueDeLEtapeAvecLEcran,
+  compteursApresLaReponse,
+  reponseAuxLongsTrajets,
+  RIEN_HORS_COLONNES,
+  type HorsColonnes,
   teletravailSePose,
   memesReponses,
   nettoyerSaisieNumerique,
@@ -52,6 +56,17 @@ import {
 function answers(overrides: Partial<BilanAnswers>): BilanAnswers {
   return { ...EMPTY_BILAN_ANSWERS, ...overrides };
 }
+
+// **Ce que l'écran a reçu hors colonnes** (`HorsColonnes`, 01/10/2026) est exigé par les trois
+// dérivations — l'écran ne peut pas l'oublier. Les tests qui ne portent pas sur lui passent « rien » :
+// le « Oui » aux longs trajets que les compteurs ne disent pas est éprouvé là où il compte.
+const UN_OUI_AUX_LONGS_TRAJETS: HorsColonnes = { ouiAuxLongsTrajets: true };
+const manqueDeLEtape = (etape: BilanStepId, r: BilanAnswers, horsColonnes = RIEN_HORS_COLONNES) =>
+  manqueDeLEtapeAvecLEcran(etape, r, horsColonnes);
+const isStepComplete = (etape: BilanStepId, r: BilanAnswers, horsColonnes = RIEN_HORS_COLONNES) =>
+  isStepCompleteAvecLEcran(etape, r, horsColonnes);
+const issueDuSuivant = (etape: BilanStepId, r: BilanAnswers, horsColonnes = RIEN_HORS_COLONNES) =>
+  issueDuSuivantAvecLEcran(etape, r, horsColonnes);
 
 describe('BILAN_STEP_ORDER', () => {
   // **Moitié cliente d'une paire, et la jumelle est en SQL** : `analytics.bilan_funnel` porte ces
@@ -456,6 +471,71 @@ describe('isStepComplete', () => {
     expect(volsCourtsApresTotal({ flights_total_per_year: 4, flights_short_per_year: 3 }, 6)).toBe(3);
     expect(volsCourtsApresTotal({ flights_total_per_year: 4, flights_short_per_year: 3 }, 2)).toBe(2);
     expect(volsCourtsApresTotal({ flights_total_per_year: 4, flights_short_per_year: null }, 2)).toBeNull();
+    // Un total sans réponse (01/10/2026) est un total nul : la première puce touchée ne trouve rien.
+    expect(volsCourtsApresTotal({ flights_total_per_year: null, flights_short_per_year: null }, 4)).toBeNull();
+    expect(volsCourtsApresTotal({ flights_total_per_year: null, flights_short_per_year: null }, 0)).toBe(0);
+  });
+
+  // **Les vols et les longs trajets réclamés (`v1-33` D1), éprouvés en les cassant le 01/10/2026**
+  // (TESTING.md §1.1) — une mutation à la fois dans `src/types/bilan.ts`, ce fichier et les tests
+  // d'écran rejoués :
+  //   - le total remis à 0 dans `EMPTY_BILAN_ANSWERS` → « flights : le nombre de vols est réclamé » et
+  //     la ligne « flights, avec {} » de la table des phrases. Aucun test d'écran : l'arrivée sur l'étape,
+  //     puce cochée ou non, c'est le parcours réel qui la voit ;
+  //   - la ligne qui réclame le nombre de vols retirée → les deux mêmes, plus « chaque champ déclaré est
+  //     réclamé par au moins un tirage » ;
+  //   - le « Oui » de `HorsColonnes` oublié par `reponseAuxLongsTrajets` → « reponseAuxLongsTrajets » et
+  //     « long_trips : une réponse est réclamée… » ;
+  //   - « Oui » qui laisse cochés les zéros de « Non » → « compteursApresLaReponse », seul ;
+  //   - « Oui » qui ne réclame aucun trajet → « long_trips : une réponse est réclamée… », la ligne
+  //     « nombre_de_longs_trajets » de la table et « chaque champ déclaré » ;
+  //   - la question d'entrée qui n'est pas réclamée → « long_trips : une réponse est réclamée… », la ligne
+  //     « fait_des_longs_trajets » et « chaque champ déclaré » ;
+  //   - un mélange de vide et de zéro relu comme « Non » → « reponseAuxLongsTrajets », la ligne
+  //     « nombre_de_longs_trajets » et « chaque champ déclaré ».
+  it('reponseAuxLongsTrajets : se dérive des compteurs, plus le « Oui » qu’ils ne savent pas dire', () => {
+    const compteurs = (train: number | null, autocar: number | null, voiture: number | null) =>
+      answers({
+        train_long_trips_per_year: train,
+        coach_long_trips_per_year: autocar,
+        car_long_trips_per_year: voiture,
+      });
+    // Rien encore : pas de réponse — sauf juste après « Oui », que seul l'écran retient.
+    expect(reponseAuxLongsTrajets(compteurs(null, null, null), RIEN_HORS_COLONNES)).toBeNull();
+    expect(reponseAuxLongsTrajets(compteurs(null, null, null), UN_OUI_AUX_LONGS_TRAJETS)).toBe(true);
+    // Trois zéros : « Non » — ce que « Non » écrit, ce que relit un bilan sans long trajet. Le « Oui »
+    // retenu l'emporte : « Oui », puis « 0 » partout, attend encore son trajet.
+    expect(reponseAuxLongsTrajets(compteurs(0, 0, 0), RIEN_HORS_COLONNES)).toBe(false);
+    expect(reponseAuxLongsTrajets(compteurs(0, 0, 0), UN_OUI_AUX_LONGS_TRAJETS)).toBe(true);
+    // Un mélange de vide et de zéro n'est produit que par « Oui » suivi d'un « 0 » : un brouillon relu,
+    // où le drapeau n'est plus, le rouvre sur « Oui ».
+    expect(reponseAuxLongsTrajets(compteurs(0, null, null), RIEN_HORS_COLONNES)).toBe(true);
+    // Un trajet déclaré, où qu'il soit.
+    expect(reponseAuxLongsTrajets(compteurs(null, 2, null), RIEN_HORS_COLONNES)).toBe(true);
+    expect(reponseAuxLongsTrajets(compteurs(0, 0, 1), RIEN_HORS_COLONNES)).toBe(true);
+  });
+
+  it('compteursApresLaReponse : « Non » écrit trois zéros, « Oui » vide les séries sauf un trajet déjà déclaré', () => {
+    const vides = { train_long_trips_per_year: null, coach_long_trips_per_year: null, car_long_trips_per_year: null };
+    const zeros = { train_long_trips_per_year: 0, coach_long_trips_per_year: 0, car_long_trips_per_year: 0 };
+    expect(compteursApresLaReponse(answers({ ...zeros, train_long_trips_per_year: 2 }), false)).toEqual(zeros);
+    // Après « Non », aucun « 0 » ne doit rester coché sous « Oui » : ce serait répondre à la place.
+    expect(compteursApresLaReponse(answers(zeros), true)).toEqual(vides);
+    expect(compteursApresLaReponse(answers(vides), true)).toEqual(vides);
+    // Déjà « Oui » : la toucher de nouveau n'efface rien.
+    expect(compteursApresLaReponse(answers({ ...zeros, car_long_trips_per_year: 1 }), true)).toEqual({});
+  });
+
+  it('flights : le nombre de vols est réclamé, jamais supposé à zéro (v1-33 D1)', () => {
+    // Le défaut du 01/10/2026 : `EMPTY_BILAN_ANSWERS` portait 0, la puce arrivait cochée et l'étape se
+    // traversait sans un toucher. Un brouillon d'avant ce changement porte 0 : c'est une réponse.
+    expect(EMPTY_BILAN_ANSWERS.flights_total_per_year).toBeNull();
+    expect(isStepComplete('flights', EMPTY_BILAN_ANSWERS)).toBe(false);
+    expect(manqueDeLEtape('flights', EMPTY_BILAN_ANSWERS)).toEqual({
+      champ: 'flights_total_per_year',
+      phrase: 'le nombre de vols',
+    });
+    expect(isStepComplete('flights', answers({ flights_total_per_year: 0 }))).toBe(true);
   });
 
   it('flights : short_per_year requis seulement si au moins un vol déclaré', () => {
@@ -468,8 +548,31 @@ describe('isStepComplete', () => {
     ).toBe(true);
   });
 
-  it('long_trips : complet par défaut (0 trajet), exige moteur et occupation dès qu’un trajet voiture est déclaré', () => {
-    expect(isStepComplete('long_trips', answers({}))).toBe(true);
+  it('long_trips : une réponse est réclamée, « Non » vaut zéro partout, « Oui » réclame un trajet (v1-33 D1)', () => {
+    // Arrivée sur l'étape : la question d'entrée n'a pas de réponse, et l'étape le dit.
+    expect(isStepComplete('long_trips', EMPTY_BILAN_ANSWERS)).toBe(false);
+    expect(manqueDeLEtape('long_trips', EMPTY_BILAN_ANSWERS)).toEqual({
+      champ: 'fait_des_longs_trajets',
+      phrase: 'une réponse',
+    });
+    // « Non » : trois zéros, l'étape est complète — et c'est aussi ce que relit un bilan sans long trajet.
+    const non = answers(compteursApresLaReponse(EMPTY_BILAN_ANSWERS, false));
+    expect(isStepComplete('long_trips', non)).toBe(true);
+    // « Oui » : les trois séries vides, et l'étape réclame un trajet — tant que l'écran se souvient du
+    // « Oui » que les compteurs ne disent pas.
+    const oui = answers(compteursApresLaReponse(non, true));
+    expect(manqueDeLEtape('long_trips', oui, UN_OUI_AUX_LONGS_TRAJETS)).toEqual({
+      champ: 'nombre_de_longs_trajets',
+      phrase: 'le nombre de trajets',
+    });
+    // « Oui », puis un « 0 » dans chaque série : toujours pas de trajet.
+    const ouiAZero = answers({ train_long_trips_per_year: 0, coach_long_trips_per_year: 0, car_long_trips_per_year: 0 });
+    expect(isStepComplete('long_trips', ouiAZero, UN_OUI_AUX_LONGS_TRAJETS)).toBe(false);
+    // Un trajet dans une seule série suffit : les autres, vides, valent zéro.
+    expect(isStepComplete('long_trips', answers({ train_long_trips_per_year: 2 }), UN_OUI_AUX_LONGS_TRAJETS)).toBe(true);
+  });
+
+  it('long_trips : exige moteur et occupation dès qu’un trajet voiture est déclaré', () => {
     expect(isStepComplete('long_trips', answers({ car_long_trips_per_year: 3 }))).toBe(false);
     // C3.5 : la motorisation seule ne suffit plus. Le calcul divisait par une personne sans
     // jamais le demander, sur le trajet qu'on partage le plus.
@@ -1008,6 +1111,11 @@ describe('normaliserReponses', () => {
       normaliserReponses(answers({ car_long_trips_per_year: 2, car_long_trips_engine: 'hybride' }))
         .car_long_trips_engine
     ).toBe('hybride');
+    // Une série vide vaut zéro trajet (01/10/2026) : « Oui » aux longs trajets les vide, et une
+    // motorisation n'y décrit plus aucune voiture.
+    expect(
+      normaliserReponses(answers({ car_long_trips_per_year: null, car_long_trips_engine: 'hybride', car_long_trips_occupancy: 2 }))
+    ).toMatchObject({ car_long_trips_engine: null, car_long_trips_occupancy: null });
   });
 
   it('« Non » à B1.1 emporte aussi la réponse sur le télétravail (C3.8)', () => {
@@ -1267,6 +1375,24 @@ describe('lireBrouillonBilan', () => {
     expect(brouillon!.answers.commute_second_mode_used).toBeNull();
   });
 
+  it('garde les zéros d’un brouillon écrit avant que les vols et les longs trajets ne soient réclamés', () => {
+    // Avant le 01/10/2026, les quatre compteurs partaient de 0 : un brouillon de cette époque les porte,
+    // et rien n'y distingue une réponse d'un défaut. Ils restent des réponses — « 0 vol », « Non » — et
+    // l'étape ne se redemande pas (`v1-33` D1, même coût assumé que `v1-16` §4).
+    const brouillon = lireBrouillonBilan({
+      step: 'flights',
+      answers: {
+        flights_total_per_year: 0,
+        train_long_trips_per_year: 0,
+        car_long_trips_per_year: 0,
+        coach_long_trips_per_year: 0,
+      },
+    });
+    expect(isStepComplete('flights', brouillon!.answers)).toBe(true);
+    expect(isStepComplete('long_trips', brouillon!.answers)).toBe(true);
+    expect(reponseAuxLongsTrajets(brouillon!.answers, RIEN_HORS_COLONNES)).toBe(false);
+  });
+
   it('rejette un brouillon dont l’étape est inconnue', () => {
     // Sans ce garde, aucune des neuf branches de rendu ne s'active : l'écran garde son
     // en-tête et ses boutons, et le corps est vide.
@@ -1420,13 +1546,13 @@ const DOMAINES: { [K in keyof BilanAnswers]: readonly BilanAnswers[K][] } = {
   leisure_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
   leisure_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
   leisure_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
-  flights_total_per_year: [0, 1, 4],
+  flights_total_per_year: [null, 0, 1, 4],
   flights_short_per_year: [null, 0, 1, 3],
-  train_long_trips_per_year: [0, 2],
-  car_long_trips_per_year: [0, 3],
+  train_long_trips_per_year: [null, 0, 2],
+  car_long_trips_per_year: [null, 0, 3],
   car_long_trips_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
   car_long_trips_occupancy: [null, ...OCCUPATIONS_LONG_TRAJET],
-  coach_long_trips_per_year: [0, 2],
+  coach_long_trips_per_year: [null, 0, 2],
   zone_type: [null, 'urbain_dense', 'periurbain', 'rural'],
   tc_access: [null, 'bon', 'limite', 'inexistant'],
   household_vehicles: [null, '0', '1', '2_plus'],
@@ -1614,7 +1740,12 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
       'leisure_distance_km',
       'la distance d’une sortie',
     ],
+    // 01/10/2026, `v1-33` D1 : le nombre de vols, puis la question d'entrée des longs trajets et le
+    // trajet qu'un « Oui » annonce — un « 0 » sous « Oui » laisse les deux autres séries vides.
+    ['flights', {}, 'flights_total_per_year', 'le nombre de vols'],
     ['flights', { flights_total_per_year: 2 }, 'flights_short_per_year', 'la part de vols courts'],
+    ['long_trips', {}, 'fait_des_longs_trajets', 'une réponse'],
+    ['long_trips', { train_long_trips_per_year: 0 }, 'nombre_de_longs_trajets', 'le nombre de trajets'],
     ['long_trips', { car_long_trips_per_year: 2 }, 'car_long_trips_engine', 'la motorisation'],
     [
       'long_trips',
@@ -1659,12 +1790,16 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
     return reponses as BilanAnswers;
   });
 
+  // Sous les deux états de l'écran (`HorsColonnes`, 01/10/2026) : le « Oui » aux longs trajets que les
+  // compteurs ne disent pas change ce que l'étape réclame, donc il fait partie du tirage.
   it('le champ réclamé appartient toujours à la table de son étape', () => {
-    for (const reponses of TIRAGES) {
-      for (const etape of BILAN_STEP_ORDER) {
-        const manque = manqueDeLEtape(etape, reponses);
-        if (manque !== null && !CHAMPS_DE_L_ETAPE[etape].includes(manque.champ)) {
-          throw new Error(`${etape} réclame « ${manque.champ} », absent de CHAMPS_DE_L_ETAPE`);
+    for (const horsColonnes of [RIEN_HORS_COLONNES, UN_OUI_AUX_LONGS_TRAJETS]) {
+      for (const reponses of TIRAGES) {
+        for (const etape of BILAN_STEP_ORDER) {
+          const manque = manqueDeLEtape(etape, reponses, horsColonnes);
+          if (manque !== null && !CHAMPS_DE_L_ETAPE[etape].includes(manque.champ)) {
+            throw new Error(`${etape} réclame « ${manque.champ} », absent de CHAMPS_DE_L_ETAPE`);
+          }
         }
       }
     }
@@ -1687,8 +1822,9 @@ describe('seMarque', () => {
   // `QUESTION_PRINCIPALE` pour éprouver `seMarque`, c'était garder la table par elle-même. Une faute
   // dedans — `commute_mode: 'commute_car_engine'` — passait ce test **et** A6 dans la section K :
   // la marque se posait sur la liste des modes, qui n'a pas d'intitulé, et le titre ne changeait pas
-  // de couleur. Chaque ligne est la question qu'écrit le titre de l'étape ; les longs trajets et le
-  // contexte n'ont que des groupes sous un titre qui n'en porte aucun.
+  // de couleur. Chaque ligne est la question qu'écrit le titre de l'étape ; le contexte n'a que des
+  // groupes sous un titre qui n'en porte aucun. Les longs trajets en ont une depuis le 01/10/2026 : leur
+  // titre pose la question d'entrée (`v1-33` D1).
   const TITRE_DE_L_ETAPE: Record<BilanStepId, ChampDuBilan | null> = {
     commute_has_trip: 'commute_has_regular_trip',
     commute_days_distance: 'commute_days_per_week',
@@ -1697,7 +1833,7 @@ describe('seMarque', () => {
     leisure_frequency: 'leisure_frequency',
     leisure_detail: 'leisure_mode',
     flights: 'flights_total_per_year',
-    long_trips: null,
+    long_trips: 'fait_des_longs_trajets',
     context: null,
   };
 
@@ -1718,9 +1854,11 @@ describe('seMarque', () => {
         expect(seMarque(etape, champ)).toBe(champ !== TITRE_DE_L_ETAPE[etape]);
       }
     }
-    // Les deux étapes dont le titre ne porte aucun groupe marquent tout ce qu'elles réclament.
+    // L'étape dont le titre ne porte aucun groupe marque tout ce qu'elle réclame.
     expect(CHAMPS_DE_L_ETAPE.context.every((champ) => seMarque('context', champ))).toBe(true);
-    expect(CHAMPS_DE_L_ETAPE.long_trips.every((champ) => seMarque('long_trips', champ))).toBe(true);
+    // Les longs trajets, tout sauf la question de leur titre — dont les trois séries que « Oui » ouvre.
+    expect(seMarque('long_trips', 'fait_des_longs_trajets')).toBe(false);
+    expect(seMarque('long_trips', 'nombre_de_longs_trajets')).toBe(true);
   });
 
   it('un champ d’une autre étape ne se marque pas', () => {
@@ -1747,6 +1885,11 @@ describe('issueDuSuivant', () => {
     commute_mode: 'bus',
     commute_second_mode_used: false,
     leisure_frequency: 'rarely',
+    // Ni vol ni long trajet : des réponses, depuis que l'étape les réclame (01/10/2026, `v1-33` D1).
+    flights_total_per_year: 0,
+    train_long_trips_per_year: 0,
+    coach_long_trips_per_year: 0,
+    car_long_trips_per_year: 0,
     zone_type: 'rural',
     tc_access: 'bon',
     household_vehicles: '1',
