@@ -70,10 +70,14 @@ export default function ConnexionProposition() {
   const vientDeCompte = provenance === 'compte';
   const [googleLoading, setGoogleLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Le message de Supabase sur un échec de Google, **à part de la phrase** (01/10/2026, audit T-17) :
+  // voir plus bas.
+  const [detail, setDetail] = useState<string | null>(null);
 
   const onGoogle = async () => {
     setGoogleLoading(true);
     setMessage(null);
+    setDetail(null);
 
     // **Plus rien à poser avant l'appel, et c'est le retrait de l'interstitiel qui l'a libéré**
     // (A6-20). Sur web, `linkIdentity` déclenche une redirection plein écran et rend la main
@@ -113,7 +117,14 @@ export default function ConnexionProposition() {
       // Le message de Supabase est repris tel quel : il est en anglais et technique, mais
       // c'est le seul indice disponible sur ce qui a échoué, et un texte rassurant à la
       // place laisserait la personne sans rien pour comprendre ni pour nous le rapporter.
-      setMessage(`La connexion avec Google n’a pas abouti. ${resultat.error.message}`);
+      //
+      // **Mais plus dans la phrase** (01/10/2026, audit T-17) : collé derrière elle, il la faisait
+      // basculer d'une langue à l'autre au milieu de la ligne, ce qui se lit comme une panne de
+      // l'app. La phrase reste seule dans le message — c'est elle que le lecteur d'écran annonce —,
+      // et le détail se rend dessous en chasse fixe, recopiable, comme l'échec du démarrage
+      // (`src/app/index.tsx`).
+      setMessage('La connexion avec Google n’a pas abouti.');
+      setDetail(resultat.error.message || null);
       return;
     }
 
@@ -166,6 +177,13 @@ export default function ConnexionProposition() {
           <View style={styles.options}>
             <GoogleButton onPress={onGoogle} loading={googleLoading} />
             <MessageInline message={message} />
+            {/* Message technique, volontairement brut : il est fait pour être recopié, pas lu comme
+                du produit (`FRONT.md` §2.4, la chasse fixe des codes techniques). */}
+            {detail && (
+              <ThemedText type="code" themeColor="textTertiary" style={styles.detail} selectable>
+                {detail}
+              </ThemedText>
+            )}
             <TextLink
               label="Utiliser un email à la place"
               // **Aucun paramètre**, et c'est délibéré : `/connexion/email` ne lit ni `id` (plus
@@ -254,6 +272,8 @@ const styles = StyleSheet.create({
   body: { fontSize: 16, lineHeight: 24 },
   options: { gap: Spacing.three },
   emailLink: { textAlign: 'center' },
+  // La taille du détail de l'échec du démarrage (`src/app/index.tsx`), pour la même raison.
+  detail: { fontSize: 12, lineHeight: 18 },
   skip: { marginTop: Spacing.two, alignItems: 'center', gap: 10 },
   skipHint: { textAlign: 'center' },
   legal: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: Spacing.two },
