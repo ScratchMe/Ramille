@@ -131,7 +131,9 @@ export default function Feedback() {
                 role="radio"
                 selected={kind === option.value}
                 onPress={() => setKind(option.value)}
-                radius={16}
+                // Le rayon des champs, lu dans son jeton et plus écrit en dur (01/10/2026, audit
+                // T-20) : la valeur ne change pas, elle ne peut plus dériver de lui.
+                radius={Radius.field}
                 selectedStyle="outline"
               />
             ))}
