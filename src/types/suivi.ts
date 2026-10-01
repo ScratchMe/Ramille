@@ -105,6 +105,60 @@ export function precedentDUnAutreJour<T extends { id: string; submittedAt: strin
 }
 
 /**
+ * Un bilan valide (complété), tel que la restitution le lit : son identifiant, sa date de soumission
+ * et son total. `lireLesBilansValides` (`src/lib/retrait-du-bilan.ts`) les rend **du plus récent au
+ * plus ancien**, et une seule lecture sert deux décisions — la place du bilan, qui commande le lien
+ * du retrait (`placeDuBilan`), et le bilan auquel on le compare (`precedentDeLaRestitution`).
+ *
+ * `submittedAt` et `totalKg` peuvent manquer sans que la ligne soit fausse pour autant : un bilan
+ * complété porte toujours sa date (trigger `stamp_assessment_submitted_at`), mais le type de la
+ * colonne l'ignore, et un bilan dont le calcul aurait échoué n'aurait pas de résultat. La place se
+ * décide sur l'identifiant seul ; la comparaison écarte ce qui ne se compare pas.
+ */
+export type BilanValide = { id: string; submittedAt: string | null; totalKg: number | null };
+
+/** Le bilan qui précède, tel que la restitution d'un re-bilan le compare. */
+export type BilanPrecedent = { submittedAt: string; totalKg: number };
+
+/**
+ * Combien de bilans, parmi les plus récents, la recherche du précédent parcourt.
+ *
+ * **C'était la borne `limit(10)` de la lecture du précédent**, quand elle était une requête à part
+ * (jusqu'au 01/10/2026, audit R-4) : assez pour franchir les corrections d'une même journée, et
+ * au-delà on ne compare rien plutôt que de chercher plus loin — le repli sûr, l'écran se passant très
+ * bien de la comparaison. La lecture est désormais celle de la place du bilan, qui doit être entière
+ * (un bilan ancien relu doit s'y trouver, sans quoi le lien du retrait ne se rend pas) ; la borne
+ * vit donc ici, et la comparaison se comporte exactement comme avant.
+ */
+export const BILANS_PARCOURUS_POUR_LE_PRECEDENT = 10;
+
+/**
+ * Le bilan auquel la restitution compare celui-ci, choisi dans la lecture des bilans valides.
+ *
+ * Trois règles, et aucune n'est neuve — elles étaient celles de la lecture à part :
+ *   - on ne parcourt que les `BILANS_PARCOURUS_POUR_LE_PRECEDENT` plus récents, **avant** d'écarter
+ *     ceux sans date, comme le faisait la borne de la requête ;
+ *   - le choix est celui de `precedentDUnAutreJour` — un autre jour, et le premier de la liste doit
+ *     être le bilan affiché ;
+ *   - un précédent sans total ne se compare pas : `null`, jamais un zéro.
+ *
+ * **Le paramètre est une liste ordonnée du plus récent au plus ancien, et c'est son nom qui porte le
+ * contrat** (`FRONT.md` §1.1) : dans l'autre ordre, le premier ne serait pas le bilan affiché, et la
+ * comparaison se tairait sans rien dire.
+ */
+export function precedentDeLaRestitution(
+  bilansValidesDuPlusRecent: readonly BilanValide[],
+  assessmentId: string
+): BilanPrecedent | null {
+  const parcourus = bilansValidesDuPlusRecent
+    .slice(0, BILANS_PARCOURUS_POUR_LE_PRECEDENT)
+    .flatMap(({ id, submittedAt, totalKg }) => (submittedAt ? [{ id, submittedAt, totalKg }] : []));
+  const precedent = precedentDUnAutreJour(parcourus, assessmentId);
+  if (!precedent || precedent.totalKg === null) return null;
+  return { submittedAt: precedent.submittedAt, totalKg: precedent.totalKg };
+}
+
+/**
  * Le jour **local** d'un horodatage — et c'est ce que `keepLatestPerDay` regroupe (C2.7, point 7).
  *
  * Les dix premiers caractères d'un `timestamptz` sont son jour **UTC**, ce qui n'est pas le jour de

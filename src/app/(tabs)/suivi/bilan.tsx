@@ -38,12 +38,14 @@ import {
   loisirsSontLeResiduel,
   nomDuPoste,
 } from '@/constants/postes';
-import { formatDate, variationDepuisLeBilanPrecedent, moisLocalDe } from '@/types/suivi';
 import {
-  loadBilanPrecedent,
-  loadCycleCouvrant,
+  formatDate,
+  moisLocalDe,
+  precedentDeLaRestitution,
+  variationDepuisLeBilanPrecedent,
   type BilanPrecedent,
-} from '@/lib/bilan-history';
+} from '@/types/suivi';
+import { loadCycleCouvrant, loadCycleCourant, loadFrequenceDesLoisirs } from '@/lib/bilan-history';
 import { track } from '@/lib/analytics';
 import { effacerLaMarqueDeBilan } from '@/lib/marque-de-bilan';
 import { lireLEngagementEnCours } from '@/lib/engagement-en-cours';
@@ -147,6 +149,14 @@ type LoadState =
        * Ce que la confirmation dit se relit au toucher (`ouvrirLaConfirmation`).
        */
       place: PlaceDuBilan | null;
+      /**
+       * La fréquence des loisirs déclarée, pour nommer le résiduel des sorties rares (arbitrage du
+       * 27/09/2026, `v1-29` §6.3). `null` quand elle n'a pas pu être lue : `loisirsSontLeResiduel`
+       * retombe alors sur les libellés figés. **Dans l'état, et plus à côté** (audit R-4) : lue par un
+       * effet à part, elle pouvait renommer « Loisirs du week-end » en « Loisirs occasionnels » sous
+       * les yeux, une fois l'écran rendu.
+       */
+      frequenceDesLoisirs: string | null;
     };
 
 // Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
@@ -261,13 +271,6 @@ export default function BilanResultat() {
   // React Compiler refuse (`react-hooks/set-state-in-effect`).
   const banniere: EtatDeLaBanniere = mode === 'relecture' ? 'autre' : banniereLue;
   const [partage, setPartage] = useState<EtatPartage>({ statut: 'inactif' });
-  // **La fréquence des loisirs, pour nommer le résiduel des sorties rares** (arbitrage du 27/09/2026,
-  // `v1-29` §6.3). Les libellés figés ne le marquent que quand il domine ou porte la boucle
-  // mensuelle ; la barre de répartition le montre aussi quand les voyages pèsent plus — « rarement »
-  // et un vol, le cas courant. Une lecture à part et tolérante, comme les bilans valides que lit le
-  // chargement pour décider du lien du retrait : `null` (pas encore lue, ou pas pu) fait retomber
-  // `loisirsSontLeResiduel` sur les libellés.
-  const [frequenceDesLoisirs, setFrequenceDesLoisirs] = useState<string | null>(null);
   // **Retirer ce bilan** (C4.7, D4 de `v1-22`) : une confirmation dans la page, jamais un `Alert` —
   // sur web il retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` (la forme de
   // « Supprimer mon compte », `MonCompte`). Le verrou vit dans une `ref` et pas dans l'état, qui ne
@@ -294,23 +297,52 @@ export default function BilanResultat() {
     let cancelled = false;
 
     (async () => {
+      // **Toutes les lectures partent ensemble, au montage** (01/10/2026, audit R-4). L'écran
+      // enchaînait le résultat, puis le cycle de plan, rendait, puis relisait la liste des bilans pour
+      // trouver le précédent, puis le cycle d'alors, et rendait une seconde fois : deux allers-retours
+      // avant le premier rendu, quatre avant la comparaison — et la barre « Ton bilan précédent »
+      // s'insérait au-dessus de « Toi » une fois l'écran lu, toutes les barres changeant de longueur.
+      // C'est pourtant « est-ce que ça a bougé ? », la raison même d'un re-bilan. Un seul aller-retour
+      // désormais, puis un second qui ne fait qu'ajouter une phrase.
+      //
       // **Le statut arrive avec le résultat, dans la même lecture** (C4.7). C'est la seule lecture
       // **d'affichage** qui ne filtre pas sur `completed` — elle lit un bilan par son identifiant,
       // c'est-à-dire par l'adresse qui circule — donc la seule à l'écran qui ne devient pas juste
       // toute seule quand un bilan est retiré. (`lireEtatDuCompte` lit aussi tous les statuts, et il
-      // le doit : un bilan retiré reste une donnée à supprimer.) Embarqué plutôt que lu à côté : une lecture de plus pourrait échouer seule, et
-      // l'écran ne saurait plus s'il a le droit de montrer le chiffre.
+      // le doit : un bilan retiré reste une donnée à supprimer.) Embarqué plutôt que lu à côté : une
+      // lecture de plus pourrait échouer seule, et l'écran ne saurait plus s'il a le droit de montrer
+      // le chiffre.
       //
-      // Les bilans valides partent **en parallèle**, jamais en plus : ils ne servent qu'à décider si
-      // le lien du retrait se rend, et leur échec se tolère — le lien ne se rend pas, c'est tout.
-      const [{ data: lu, error }, bilansValides] = await Promise.all([
-        supabase
-          .from('assessment_results')
-          .select('*, assessments(status, submitted_at)')
-          .eq('assessment_id', id)
-          .single(),
-        lireLesBilansValides(),
-      ]);
+      // **Les trois autres sont tolérantes, et le restent en partant ensemble** : leur échec ôte ce
+      // qu'elles portent, jamais l'écran. Les bilans valides décident du lien du retrait et du bilan
+      // précédent — en échec, ni lien ni comparaison ; le cycle courant porte le palier — en échec,
+      // pas de marche ; la fréquence des loisirs nomme le résiduel des sorties rares — en échec, les
+      // libellés figés. Chacune rend son échec sans lever (PostgREST le rend comme une valeur) ; le
+      // `.catch` garde la règle si un jour l'une d'elles levait, sans quoi `Promise.all` la ferait
+      // tomber avec le reste, et l'écran avec elle.
+      let lectures;
+      try {
+        lectures = await Promise.all([
+          supabase
+            .from('assessment_results')
+            .select('*, assessments(status, submitted_at)')
+            .eq('assessment_id', id)
+            .single(),
+          lireLesBilansValides().catch((): { ok: false } => ({ ok: false })),
+          // **Pas de cycle en relecture** : voir plus bas, le palier n'appartient qu'au bilan qu'on
+          // vient de soumettre.
+          mode === 'relecture' ? null : loadCycleCourant().catch(() => null),
+          loadFrequenceDesLoisirs(id).catch(() => null),
+        ]);
+      } catch (erreur) {
+        // Seule la lecture du résultat peut arriver ici : sans elle, rien à montrer — l'écran
+        // d'erreur, et pas « Chargement de ton bilan… » pour toujours.
+        if (cancelled) return;
+        console.error('Le résultat du bilan n’a pas pu être lu :', erreur);
+        setState({ status: 'error' });
+        return;
+      }
+      const [{ data: lu, error }, bilansValides, cycle, frequenceDesLoisirs] = lectures;
 
       if (cancelled) return;
       if (error || !lu) {
@@ -330,7 +362,9 @@ export default function BilanResultat() {
         setState({ status: 'error' });
         return;
       }
-      const place = bilansValides.ok ? placeDuBilan(id, bilansValides.data) : null;
+      const place = bilansValides.ok
+        ? placeDuBilan(id, bilansValides.data.map((valide) => valide.id))
+        : null;
 
       // **Pas de palier en relecture** (A3-3, A13-14). Le cap appartient au cycle de plan
       // **courant** : le retrancher d'un bilan de l'an dernier donne une marche qui n'est pas la
@@ -358,6 +392,7 @@ export default function BilanResultat() {
           precedent: null,
           palierFranchi: false,
           place,
+          frequenceDesLoisirs,
         });
         return;
       }
@@ -365,21 +400,13 @@ export default function BilanResultat() {
       // Le cap de la saison en cours. Le palier n'est pas un nouveau chiffre : c'est celui que
       // `/plan` affiche déjà, figé à la génération du cycle. Son absence n'est pas une erreur —
       // l'écran se contente alors de ne pas proposer de marche.
-      const { data: cycle } = await supabase
-        .from('plan_cycles')
-        // `id` depuis C2.7 : il sert à savoir si le cycle qui couvrait le bilan précédent est
-        // **celui-ci**, auquel cas son cap a été réécrit à la soumission et le palier alors visé
-        // n'est plus connaissable (cf. `palierEstDerriere`).
-        .select('id, baseline_co2_kg_year, target_reduction_pct')
-        .order('period_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (cancelled) return;
-      const capKg =
-        cycle?.baseline_co2_kg_year != null
-          ? (cycle.baseline_co2_kg_year * cycle.target_reduction_pct) / 100
-          : null;
+      const capKg = cycle?.capKg ?? null;
+      // **Le bilan précédent, dans la même lecture que la place** : la liste des bilans valides, du
+      // plus récent au plus ancien, est exactement celle que relisait `loadBilanPrecedent`. Sans elle
+      // (lecture en échec), pas de comparaison — la restitution reste entière sans la barre.
+      const precedent = bilansValides.ok
+        ? precedentDeLaRestitution(bilansValides.data, data.assessment_id)
+        : null;
 
       // La date ne sert qu'en relecture : après le questionnaire, c'est aujourd'hui.
       setState({
@@ -387,66 +414,39 @@ export default function BilanResultat() {
         results: data,
         capKg,
         submittedAt: null,
-        precedent: null,
+        precedent,
         palierFranchi: false,
         place,
+        frequenceDesLoisirs,
       });
 
-      // **La comparaison arrive en second temps, et l'écran ne l'attend pas** (C2.7, point 2). Même
-      // raison que la date en relecture : c'est le chemin le plus fréquent de cet écran, et sur une
-      // connexion qui traîne, attendre deux requêtes de plus laisserait « Chargement de ton bilan… »
-      // alors que le résultat est déjà en main. Les deux lectures sont tolérantes à l'échec — la
-      // restitution reste entière sans la barre du bilan précédent.
-      const lecture = await loadBilanPrecedent(data.assessment_id);
-      if (cancelled || !lecture.ok || lecture.data === null) return;
-      const precedent = lecture.data;
-
+      // **Seul le cycle d'alors arrive en second temps**, et il n'ajoute qu'une phrase : « Le palier
+      // que tu visais est derrière toi. » Il dépend de la date du précédent, donc il ne peut pas
+      // partir avec le reste ; tolérant comme lui — sans cycle d'alors, on ne prétend rien.
+      //
       // Le cycle qui couvrait le bilan précédent, pour savoir quel palier était visé alors. S'il
       // s'agit du cycle courant, la soumission d'aujourd'hui l'a réécrit : le cap affiché à l'époque
       // n'existe plus, et on ne prétend pas le connaître.
+      if (precedent === null) return;
       const cycleAlors = await loadCycleCouvrant(precedent.submittedAt.slice(0, 10));
       if (cancelled) return;
       const capAlorsKg =
-        cycleAlors && cycle && cycleAlors.cycleId !== cycle.id ? cycleAlors.capKg : null;
+        cycleAlors && cycle && cycleAlors.cycleId !== cycle.cycleId ? cycleAlors.capKg : null;
+      const palierFranchi = palierEstDerriere({
+        precedentKg: precedent.totalKg,
+        courantKg: data.total_co2_kg_year,
+        capAlorsKg,
+        target2050Kg: TARGET_2050_TRANSPORT_T * 1000,
+      });
+      if (!palierFranchi) return;
 
-      setState((etat) =>
-        etat.status === 'ok'
-          ? {
-              ...etat,
-              precedent,
-              palierFranchi: palierEstDerriere({
-                precedentKg: precedent.totalKg,
-                courantKg: data.total_co2_kg_year,
-                capAlorsKg,
-                target2050Kg: TARGET_2050_TRANSPORT_T * 1000,
-              }),
-            }
-          : etat
-      );
+      setState((etat) => (etat.status === 'ok' ? { ...etat, palierFranchi } : etat));
     })();
 
     return () => {
       cancelled = true;
     };
   }, [id, mode, tentative]);
-
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from('assessment_answers')
-        .select('leisure_frequency')
-        .eq('assessment_id', id)
-        .maybeSingle();
-      if (cancelled) return;
-      if (error) console.error('La fréquence des loisirs n’a pas pu être lue :', error);
-      setFrequenceDesLoisirs(data?.leisure_frequency ?? null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, tentative]);
 
   useEffect(() => {
     // En relecture, aucune proposition de compte : redemander à chaque consultation de son
@@ -578,7 +578,7 @@ export default function BilanResultat() {
     }
     // Et si le bilan n'est plus parmi les valides (retiré depuis un autre appareil), on relit
     // l'écran, qui montre l'état « retiré » : le chemin `etat_change` de `retirer`, atteint plus tôt.
-    const place = placeDuBilan(id, bilansValides.data);
+    const place = placeDuBilan(id, bilansValides.data.map((valide) => valide.id));
     if (place === null) {
       reessayer();
       return;
@@ -725,7 +725,7 @@ export default function BilanResultat() {
     );
   }
 
-  const { results, capKg, submittedAt, precedent, palierFranchi, place } = state;
+  const { results, capKg, submittedAt, precedent, palierFranchi, place, frequenceDesLoisirs } = state;
   const confirmation =
     confirmationOuverte === null
       ? null
