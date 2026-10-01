@@ -504,6 +504,29 @@
 // et le titre cherché « sous le doigt » ne se trouvait pas au retour d'un plan resté où on l'avait
 // laissé — le témoin tombait —, d'où les titres comptés dans le DOM.
 //
+// **Et la précondition de `noterSurUnEcranCourt` lisait une course** (CI de la PR #314, le soir même,
+// à l'intégration de quatre chantiers). Chez le cycliste, sous « réduire les animations », elle est
+// tombée sur « la carte engagée n'est jamais sortie de la fenêtre à la relecture » sans défaut de l'app :
+// la mise en page était la même au pixel près sur la branche du chantier et sur l'arbre intégré — la
+// relecture pose « Changer d'avis » à 701 px pour une fenêtre de 528, l'écran se pose de 345 à 556 et
+// le ramène à 490 —, et ce qui changeait était l'image peinte. Entre le rendu de la relecture et l'appel
+// de défilement de l'app, 3 à 13 ms : une image tombe dedans ou non. Relevé sur l'arbre intégré, dix
+// passages, dont six sans aucune image où la carte est dehors ; sur la branche, quatre sur quatre avec
+// une image — d'où le vert du chantier et le rouge de l'intégration. Elle se lit désormais aussi à l'appel
+// de défilement (`guetterLesDefilements`), qui ne dépend d'aucune image. Rejoué sur l'arbre intégré le
+// même jour, un export par mutation, tiré d'un instantané, marqueur ASCII retrouvé dans le bundle :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PL4, rejouée | « engagement » : la carte engagée n'est pas dans la fenêtre (de 379 à 723 px pour 528) ; le cycliste joué seul, à son engagement : de 355 à 723 px pour 528 |
+//   | PL14, rejouée | le cycliste, à son engagement : l'écran glisse jusqu'à la carte engagée (345 → 347 → … → 556) |
+//   | PC — le cap ne repasse plus devant les pistes après l'engagement : la carte reste en place | « engagement » : la garde ne peut pas conclure (0 appel de défilement, défilement nul) ; le cycliste joué seul, de même |
+//
+// La troisième garde la précondition elle-même : une carte que la relecture laisse dans la fenêtre ne
+// déclenche aucun appel, et aucune image ne la montre dehors. Le témoin passe sur le même arbre, deux
+// fois de bout en bout, et le cycliste huit fois en tout — dont trois, tracés, sans une seule image où
+// la carte est dehors : l'ancienne précondition y serait tombée.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -849,11 +872,18 @@ async function amenerLeBoutonEnBas(titre, libelle) {
  * éprouver. À 640 de haut, « C'est noté » touché tout en bas, la relecture remet le cap devant les
  * pistes et pousse la carte engagée sous la barre : il faut l'y aller chercher. La taille d'avant est
  * rendue après la lecture au repos.
+ *
+ * **Et la carte relue se lit aussi à l'instant où l'app demande le défilement** (`relecturesAuDefilement`,
+ * CI de la PR #314, 01/10/2026). Sous « réduire les animations », le défilement est posé d'un coup :
+ * selon le moment où la relecture se rend, le navigateur peut peindre une image entre ce rendu et le
+ * défilement, ou aucune — les deux mesurés sur le même arbre, à la même mise en page au pixel près
+ * (en-tête, « lisait une course »). La précondition ne dépend plus de cette course.
  */
 async function noterSurUnEcranCourt(titre, ou, { glisse }) {
   const taille = page.viewportSize();
   await page.setViewportSize({ width: taille.width, height: 640 });
   await amenerLeBoutonEnBas(titre, 'C’est noté');
+  await guetterLesDefilements(titre, 'Changer d’avis');
   const releve = await releverPendant(
     page,
     {
@@ -864,6 +894,7 @@ async function noterSurUnEcranCourt(titre, ou, { glisse }) {
     () => bouton('C’est noté'),
     4_000
   );
+  const appels = await relecturesAuDefilement();
   await attendreTexte('Changer d’avis');
   // Le geste d'abord, la carte ensuite : un sélecteur refermé avant la relecture se dit pour ce qu'il est.
   const imageSansRien = releve.find((e) => !e.note && !e.avis);
@@ -876,9 +907,62 @@ async function noterSurUnEcranCourt(titre, ou, { glisse }) {
     `${ou}, à ${imageSansRien?.t} ms, la carte ne montre ni « C’est noté » ni « Changer d’avis » : le sélecteur s’est refermé` +
       ' avant la relecture (`lectureAttendue`, src/components/plan/action-commitment.tsx)'
   );
-  await verifierLaCarteEngagee(ou, { vues: releve.map((e) => e.carte), glisse, exigerUnDefilement: true });
+  await verifierLaCarteEngagee(ou, { vues: releve.map((e) => e.carte), appels, glisse, exigerUnDefilement: true });
   await page.setViewportSize(taille);
   await page.waitForTimeout(400);
+}
+
+/**
+ * **La carte telle que la relecture l'a laissée, lue à l'instant où l'app demande le défilement** (CI de
+ * la PR #314, 01/10/2026). L'écran amène la carte par `scrollTo` (`amenerDansLaFenetre`), que
+ * react-native-web traduit en `scroll({ top, behavior })` sur le nœud de la fenêtre : on enveloppe ce
+ * seul nœud, le temps du geste, pour prendre la mesure `defilement` juste avant que le défilement
+ * s'applique — c'est la mise en page que l'app vient de mesurer, et elle ne dépend d'aucune image
+ * peinte. Une observation, pas un réglage : l'appel part tel quel, et l'enveloppe se retire à la
+ * lecture (`relecturesAuDefilement`).
+ *
+ * Pourquoi pas une image : sous « réduire les animations », rendu de la relecture et défilement posé
+ * d'un coup peuvent tomber dans la même image, et aucune n'a alors montré la carte hors de la fenêtre —
+ * sur une mise en page pourtant identique au pixel près : six passages sur dix sur l'arbre intégré de la
+ * PR #314 (en-tête). Une précondition lue sur les images seules dépendait de cette course, et ce
+ * qu'elle garde — une carte que la relecture pousse dehors — n'en dépend pas.
+ */
+async function guetterLesDefilements(titre, libelle) {
+  const pose = await page.evaluate(
+    ([t, l]) => {
+      const normaliser = (x) => (x ?? '').replace(/\s+/g, ' ').trim();
+      const titreDeLaCarte = [...document.querySelectorAll('body *')].find(
+        (e) => e.getClientRects().length > 0 && e.children.length === 0 && normaliser(e.innerText) === t
+      );
+      let fenetre = titreDeLaCarte?.parentElement;
+      while (fenetre && !/(auto|scroll)/.test(getComputedStyle(fenetre).overflowY)) fenetre = fenetre.parentElement;
+      if (!fenetre || Object.hasOwn(fenetre, 'scroll')) return false;
+      window.__appelsDeDefilement = [];
+      fenetre.scroll = function (options) {
+        window.__appelsDeDefilement.push({
+          t: Math.round(performance.now()),
+          vers: typeof options === 'object' ? (options?.top ?? null) : null,
+          vue: window.__releve.mesurer('defilement', { titre: t, bouton: l }),
+        });
+        return Element.prototype.scroll.apply(this, arguments);
+      };
+      window.__fenetreGuettee = fenetre;
+      return true;
+    },
+    [titre, libelle]
+  );
+  assurer(pose, `la fenêtre de défilement de la carte « ${titre} » est introuvable (ou déjà guettée) : la mesure ne peut pas se prendre`);
+}
+
+/** Les appels de défilement relevés par `guetterLesDefilements`, et l'enveloppe retirée. */
+async function relecturesAuDefilement() {
+  return page.evaluate(() => {
+    const appels = window.__appelsDeDefilement ?? [];
+    if (window.__fenetreGuettee) delete window.__fenetreGuettee.scroll;
+    delete window.__fenetreGuettee;
+    delete window.__appelsDeDefilement;
+    return appels;
+  });
 }
 
 /**
@@ -919,8 +1003,10 @@ async function ouvrirLeSelecteurSurUnEcranCourt(titre, { glisse }) {
  *
  * `vues` (facultatif) : les images de la mesure `defilement` relevées pendant la relecture. Quand
  * l'écran a défilé, il doit l'avoir fait en glissant (`glisse`), ou d'un coup sous la préférence.
+ * `appels` (facultatif) : la même mesure, prise à chaque appel de défilement de l'app
+ * (`guetterLesDefilements`) — la seconde source de la précondition, qui ne dépend d'aucune image.
  */
-async function verifierLaCarteEngagee(ou, { vues = null, glisse = true, exigerUnDefilement = false } = {}) {
+async function verifierLaCarteEngagee(ou, { vues = null, appels = [], glisse = true, exigerUnDefilement = false } = {}) {
   const lireLaCarte = () =>
     page.evaluate(() => {
       const visible = (e) => e.getClientRects().length > 0 && (e.checkVisibility?.({ visibilityProperty: true }) ?? true);
@@ -968,17 +1054,30 @@ async function verifierLaCarteEngagee(ou, { vues = null, glisse = true, exigerUn
   if (vues !== null) {
     const positions = vues.filter(Boolean).map((v) => v.position);
     const aDefile = positions.length > 0 && Math.abs(carte.position - positions[0]) > 1;
-    // **La précondition, quand l'appelant la demande** : à une image au moins, la carte relue était hors
-    // de la fenêtre — « Changer d'avis » sous son bas, ou son titre sous la bande —, et l'écran a défilé.
-    // Sans elle, une carte restée en place passerait pour une carte amenée.
+    // **La précondition, quand l'appelant la demande** : la carte relue était hors de la fenêtre —
+    // « Changer d'avis » sous son bas, ou son titre sous la bande —, et l'écran a défilé. Sans elle, une
+    // carte restée en place passerait pour une carte amenée.
+    //
+    // **Lue à deux endroits, et l'un suffit** (CI de la PR #314, 01/10/2026) : sur une image peinte, ou à
+    // l'instant où l'app demande le défilement (`appels`, `guetterLesDefilements`). Le second est la
+    // mise en page que l'app vient de mesurer pour décider de défiler ; le premier seul faisait dépendre
+    // la garde d'une course — sous « réduire les animations », le rendu de la relecture et le défilement
+    // posé d'un coup tombent parfois dans la même image, et aucune ne montre alors la carte dehors.
+    // Elle n'en est pas moins exigeante : sans appel de défilement (PL4), la carte reste dehors et
+    // l'assertion du dessus tombe ; une carte restée en place ne déclenche aucun appel, et aucune
+    // image ne la montre dehors.
     if (exigerUnDefilement) {
-      const dehors = vues.some(
-        (v) => v !== null && ((v.basDuBouton !== null && v.basDuBouton > v.hauteur + 0.5) || v.haut < -0.5)
-      );
+      const horsDeLaFenetre = (v) =>
+        v != null && ((v.basDuBouton !== null && v.basDuBouton > v.hauteur + 0.5) || v.haut < -0.5);
+      const dehors = vues.some(horsDeLaFenetre) || appels.some((a) => horsDeLaFenetre(a.vue));
+      const lues = appels
+        .map((a) => (a.vue ? `« Changer d’avis » à ${Math.round(a.vue.basDuBouton ?? -1)} px pour une fenêtre de ${a.vue.hauteur}, titre à ${Math.round(a.vue.haut)}` : 'carte introuvable'))
+        .join(' ; ');
       assurer(
         dehors && aDefile,
         `${ou}, la carte engagée n’est jamais sortie de la fenêtre à la relecture, ou l’écran n’a pas défilé : la garde ne` +
-          ' peut pas conclure — elle demande une carte que la relecture pousse hors de la fenêtre'
+          ' peut pas conclure — elle demande une carte que la relecture pousse hors de la fenêtre' +
+          ` (${appels.length} appel(s) de défilement${lues ? ` : ${lues}` : ''} ; défilement ${aDefile ? 'relevé' : 'nul'})`
       );
     }
     const parEtapes = [...new Set(positions.map(Math.round))].join(' → ');
