@@ -2793,5 +2793,11 @@ l'avis de l'agent et ses captures :
 | 05.3 | Le code à huit chiffres se recopie-t-il sans effort ? | **Conforme** | — |
 | 05.4 | L'écran du mode livré par `v1-31`, est-il encore pénible ? | **Plus pénible**, sur captures | §11.19 reste ouverte pour le doigt (07.1) |
 
+**Et deux décisions sur des constats antérieurs, prises le même jour** : « Toi » garde la place du
+compte et des rappels pendant qu'ils se lisent ([#305](https://github.com/ScratchMe/Ramille/issues/305),
+trouvé par la CI le 30/09) — « Supprimer mon compte » ne bouge plus à 390 ni à 420 de large, il reste
+20 px à 360 et 44 sur grand écran, et le parcours réel le mesure image par image (une mutation) ; et la
+capture d'un échec du parcours réel est publiée en artefact, sept jours (`v1-27` §12.26).
+
 Les correctifs des quatre séances (§16 à §19), leurs gardes et cette documentation sont livrés par
 [#299](https://github.com/ScratchMe/Ramille/pull/299).

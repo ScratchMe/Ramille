@@ -535,11 +535,12 @@ puis la capture, dont le chemin est imprimé (dossier temporaire). Un parcours l
 dans la stack ; `supabase db reset` remet la base à neuf — seulement si personne d'autre ne s'en
 sert, d'autres copies de travail pouvant la partager. Le rejeu (§2.13), lui, la redémarre sous verrou.
 
-**En CI, la capture reste sur le runner** : rien ne l'envoie en artefact, et l'y envoyer rouvrirait ce
-que le passage en public a vérifié fermé — aucun artefact téléchargeable
-(`docs/exploitation/depot-public.md`). C'est une décision à prendre, pas un oubli à réparer seul
-(`docs/architecture/v1-27-dette-technique.md` §12.26) ; d'ici là, ce qu'on lit d'un échec en CI est le
-journal.
+**En CI, la capture d'un échec est publiée en artefact depuis le 01/10/2026** (`parcours-reel-echec`,
+gardé sept jours) : elle restait sur le runner, parce que l'envoyer rouvrait ce que le passage en
+public avait vérifié fermé — aucun artefact téléchargeable (`docs/exploitation/depot-public.md`) —,
+et la personne qui pilote a décidé de rouvrir cette seule porte
+(`docs/architecture/v1-27-dette-technique.md` §12.26). L'ordre de lecture ne change pas : le journal
+d'abord, la capture ensuite.
 
 **Un clic se donne à un écran posé, pas à un écran qui charge** (CI du 30/09/2026). L'étape de la
 suppression cliquait « Supprimer mon compte » dès que le lien devenait visible — c'est-à-dire dès le
@@ -550,9 +551,11 @@ rougi une fois, la confirmation jamais ouverte ; cinq parcours complets et seize
 l'ont pas reproduit, et c'est en **retenant les deux lectures pendant l'appui** que le mécanisme est
 sorti — deux fois sur deux, contre un témoin qui ouvre la confirmation deux fois sur deux. Un écran
 qui charge après son HTML statique s'attend donc sur ce qui arrive **avec** ses données (ici le
-groupe « Les rappels »), jamais sur ce que le HTML porte déjà. L'écran, lui, n'a pas changé : ce
-qu'il montre pendant qu'il charge se décide
-([#305](https://github.com/ScratchMe/Ramille/issues/305)).
+groupe « Les rappels »), jamais sur ce que le HTML porte déjà. **L'écran, lui, garde la place depuis
+le 01/10/2026** (décision de la personne qui pilote,
+[#305](https://github.com/ScratchMe/Ramille/issues/305)) : le lien ne bouge plus à la largeur du
+parcours, et l'étape le mesure image par image depuis le rendu statique, dans un second onglet du
+même appareil. L'attente reste : ailleurs, un reste de saut est accepté.
 
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 

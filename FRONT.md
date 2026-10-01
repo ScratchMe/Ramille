@@ -73,6 +73,14 @@ la fait disparaître une fraction de seconde chez **tout le monde**, à chaque c
 démarrer à « visible » ne coûte qu'un transitoire à ceux qui doivent la voir disparaître.
 **Mesuré plutôt que supposé** : dix à dix-sept millisecondes, une image au plus.
 
+**Et il garde la place de ce qui arrive**, quand ce qui est déjà là se touche. Un écran qui insère
+ses données **au-dessus** d'un lien rendu tout de suite le fait sauter, et un toucher pris dans le
+saut se perd sans erreur — ou tombe sur ce qui a pris sa place. Attendre les données avant de rendre
+le lien n'est pas la parade quand ce lien doit rester atteignable hors ligne : on réserve la hauteur
+attendue, mesurée, et on accepte un reste là où elle varie. Payé chez Ramille sur « Toi », où
+« Supprimer mon compte » descendait de 412 px (décision du 01/10/2026, #305,
+`HAUTEUR_DU_COMPTE_EN_LECTURE`).
+
 ### 1.4 Accessibilité : le libellé annoncé *est* le texte affiché
 
 - **un texte cliquable passe par un composant dédié**, jamais par un `Pressable` enveloppant un

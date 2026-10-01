@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CONTACT_EMAIL } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
 import { revenirOu } from '@/lib/navigation';
@@ -35,11 +36,33 @@ import { type CanalPrefere, type FenetreDeLaVeille } from '@/types/rappels';
 //
 // Cet écran vit **hors du groupe (tabs)** : il s'ouvre par-dessus, sans barre. C'est un
 // détour, pas un troisième lieu.
+
+/**
+ * La place que le compte et les rappels prennent une fois lus, gardée pendant qu'ils se lisent
+ * (décision du 01/10/2026, #305). L'écran rendait d'abord « Mes données » et « Supprimer mon
+ * compte », puis insérait au-dessus le compte et « Les rappels » à leur arrivée : le lien descendait
+ * de **412 px**, en deux temps, et un toucher pris dans ce saut se perdait sans erreur — ou tombait
+ * sur ce qui avait pris sa place. **Attendre les lectures avant de rendre « Mes données » a été
+ * écarté** : hors ligne, ou sur une lecture en échec, « Supprimer mon compte » ne s'afficherait pas,
+ * et c'est le chemin que Google Play exige.
+ *
+ * **Mesurée, pas calculée** : 412 px de saut pour un compte anonyme, à 390 comme à 420 de large, moins
+ * l'écart de 16 px que le bloc ajoute en existant. Ce n'est vrai qu'à ces largeurs et pour ce compte :
+ * à 360, le texte passe sur une ligne de plus et il reste 20 px ; sur un écran large, il en manque 44 ;
+ * un compte rattaché ne dit pas la même phrase. Un petit saut peut donc rester, et c'est le risque
+ * accepté avec la décision. Le parcours réel mesure le reste à chaque PR (« suppression du compte ») :
+ * une phrase allongée ici le fera tomber, et c'est le moment de remesurer.
+ */
+const HAUTEUR_DU_COMPTE_EN_LECTURE = 396;
+
 export default function Compte() {
   useTrackView('compte_view');
 
   const [etat, setEtat] = useState<EtatRattachement | null>(null);
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
+  // Les rappels ont-ils fini d'être lus, en échec compris ? `rappels` ne le dit pas : sur un échec il
+  // reste `null`, et la place réservée ne se rendrait jamais.
+  const [rappelsLus, setRappelsLus] = useState(false);
   // La fenêtre du mot de la veille (C4.2) : `null` tant qu'on ne l'a pas lue, ou sur un échec — le
   // réglage ne dit alors que la règle, et ne propose rien.
   const [fenetre, setFenetre] = useState<FenetreDeLaVeille | null>(null);
@@ -65,7 +88,8 @@ export default function Compte() {
       .catch(() => !annule && setEtat({ kind: 'indisponible' }));
     loadReminderPrefs()
       .then((p) => !annule && setRappels(p))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => !annule && setRappelsLus(true));
     // Sur web, le mot de la veille n'existe pas : rien à lire.
     if (Platform.OS !== 'web') {
       lireLaFenetreDuMotDeLaVeille()
@@ -153,6 +177,12 @@ export default function Compte() {
     setMessageCanal('Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.');
   };
 
+  // **La place est gardée jusqu'à ce que les deux lectures soient revenues** (#305) — sauf quand le
+  // compte n'a pas pu être lu : l'écran ne rend alors pas les rappels, et n'a plus rien à attendre.
+  const enLecture = etat === null || (etat.kind !== 'indisponible' && !rappelsLus);
+  // Muette les 300 premières millisecondes, comme les onglets : la place suffit à tenir l'écran, et
+  // une phrase qui clignote une image ne dit rien.
+  const chargementVisible = useChargementVisible(etat === null, false);
 
   return (
     <ThemedView style={styles.container}>
@@ -172,7 +202,12 @@ export default function Compte() {
             <ThemedText type="screenTitle">Toi</ThemedText>
 
             {!supprime && (
-              <>
+              <View style={[styles.compteEtRappels, enLecture && styles.enLecture]}>
+                {chargementVisible && (
+                  <ThemedText type="small" themeColor="textTertiary">
+                    Chargement de ton compte…
+                  </ThemedText>
+                )}
                 {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et la saisie du
                     code, la ligne porte déjà l'adresse alors que le compte n'est pas rattaché : cet
                     écran proposait alors de « rattacher un compte », comme si la demande n'avait jamais
@@ -297,7 +332,7 @@ export default function Compte() {
                     <MessageInline message={messageCanal} />
                   </>
                 )}
-              </>
+              </View>
             )}
 
             <MonCompte onSupprime={() => setSupprime(true)} />
@@ -366,6 +401,10 @@ const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.three },
   retour: { alignSelf: 'flex-start' },
   bouton: { marginTop: Spacing.one },
+  // Le même écart que la page entre ses blocs : envelopper le compte et les rappels ne doit rien
+  // déplacer une fois l'écran posé.
+  compteEtRappels: { gap: Spacing.three },
+  enLecture: { minHeight: HAUTEUR_DU_COMPTE_EN_LECTURE },
   liens: { gap: Spacing.one, marginTop: Spacing.two },
   contact: { marginTop: Spacing.two },
 });
