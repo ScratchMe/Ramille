@@ -94,6 +94,12 @@ import { supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
 import { defilementPourMontrer } from '@/types/mouvement';
 import {
+  genreDeLEchec,
+  genreDesEchecs,
+  phraseDeLaLectureEnEchec,
+  type GenreDEchec,
+} from '@/types/lecture-en-echec';
+import {
   debutDePeriodeInterrogee,
   estDeLaPeriodeCourante,
   genreDeReponse,
@@ -272,7 +278,11 @@ type LoadState =
   // **Cet état ne s'atteint que depuis `loading`** : les trois autres viennent d'une lecture
   // qui a réussi, et l'écran d'erreur plein écran ne vaut que quand rien n'a jamais pu être lu.
   // La relecture en échec se dit à côté (`relectureEnEchec`), sans rien effacer.
-  | { status: 'erreur_reseau' }
+  //
+  // **Le nom date d'avant D19** (`v1-33`, 01/10/2026) : l'état vaut pour toute lecture qui n'a rien
+  // rendu, réseau coupé ou serveur en échec, et `genre` dit lequel — calculé une fois, dans la lecture,
+  // pour que l'écran ne parle de connexion qu'à qui n'en a pas (`phraseDeLaLectureEnEchec`).
+  | { status: 'erreur_reseau'; genre: GenreDEchec }
   // Bilan complété mais plan_cycles pas encore généré — ne devrait plus arriver en
   // pratique (compute_assessment_results le génère désormais immédiatement, cf.
   // migration 20260824190000), gardé comme filet pour les bilans complétés avant elle
@@ -359,7 +369,10 @@ export default function Plan() {
   // obligeait le repli à écraser les deux autres, qui perdaient alors leurs sorties : « Revoir
   // mon bilan » depuis `pending`, et « Faire mon bilan » depuis `no_assessment` — le
   // questionnaire, lui, se remplit très bien hors ligne (brouillon AsyncStorage).
-  const [relectureEnEchec, setRelectureEnEchec] = useState(false);
+  //
+  // **Le genre de l'échec, ou `null`** (D19, 01/10/2026) : la ligne ne parle de connexion qu'à qui n'a
+  // pas de réseau — une réponse du serveur en échec dit seulement que ce qu'on voit peut avoir changé.
+  const [relectureEnEchec, setRelectureEnEchec] = useState<GenreDEchec | null>(null);
 
   /**
    * Le refus de remplacement (`RM001`), remonté à l'écran plutôt que gardé dans la carte.
@@ -783,14 +796,18 @@ export default function Plan() {
     // seulement plus tout à fait à jour. Ce chargement tourne à chaque retour au premier plan
     // (`useRafraichirAuRetour`), et le plan est la destination du rappel — le remplacer par un
     // écran d'erreur à chaque ouverture hors ligne coûterait plus que la ligne qui le dit.
-    const echecDeLecture = () => {
+    //
+    // **Le genre se calcule ici, une fois** (D19, `FRONT.md` §2.11) : sur le statut de la lecture qui a
+    // échoué — `0` quand elle n'a pas eu de réponse —, et `serveur` quand rien ne le dit, une promesse
+    // qui lève par exemple (`src/types/lecture-en-echec.ts` dit pourquoi ce repli est le bon).
+    const echecDeLecture = (genre: GenreDEchec) => {
       if (cancelled) return;
-      setRelectureEnEchec(true);
+      setRelectureEnEchec(genre);
       // `pending` et `no_assessment` sont dérivés d'une lecture **réussie** au même titre que
       // `ok` : seul `loading` n'a jamais rien su, et c'est le seul que l'écran d'erreur plein
       // écran remplace.
       setState((precedent) =>
-        precedent.status === 'loading' ? { status: 'erreur_reseau' } : precedent
+        precedent.status === 'loading' ? { status: 'erreur_reseau', genre } : precedent
       );
     };
 
@@ -808,7 +825,10 @@ export default function Plan() {
         // décisions, elles, se prennent dans **l'ordre d'avant**, un résultat après l'autre : l'échec
         // du bilan, puis « pas de bilan » — qui gagne sur un cycle illisible, sans quoi quelqu'un sans
         // bilan lirait une panne —, puis l'échec du cycle, puis « en préparation ».
-        const [{ data: assessment, error: erreurBilan }, { data: cycles, error: cycleError }] = await Promise.all([
+        const [
+          { data: assessment, error: erreurBilan, status: statutDuBilan },
+          { data: cycles, error: cycleError, status: statutDuCycle },
+        ] = await Promise.all([
           // Le lien "Revenir à mon bilan" pointe vers la restitution du dernier bilan
           // complété (elle-même donne accès à "Modifier mes réponses") — il faut donc son
           // id systématiquement, pas seulement dans le cas filet ci-dessous.
@@ -847,7 +867,7 @@ export default function Plan() {
         if (cancelled) return;
 
         if (erreurBilan) {
-          echecDeLecture();
+          echecDeLecture(genreDeLEchec(statutDuBilan));
           return;
         }
 
@@ -856,7 +876,7 @@ export default function Plan() {
           // Une lecture qui aboutit efface la ligne de relecture, y compris sur les deux
           // sorties anticipées : sans ça, elle survivrait à l'échec précédent au-dessus d'un
           // écran pourtant à jour.
-          setRelectureEnEchec(false);
+          setRelectureEnEchec(null);
           return;
         }
 
@@ -866,7 +886,7 @@ export default function Plan() {
         // ligne, il n'y a rien à attendre. `pending` reste le filet du cas légitime — un bilan
         // complété avant que le calcul ne génère le plan, que le cron rattrape.
         if (cycleError) {
-          echecDeLecture();
+          echecDeLecture(genreDeLEchec(statutDuCycle));
           return;
         }
 
@@ -875,7 +895,7 @@ export default function Plan() {
 
         if (!cycle) {
           setState({ status: 'pending', assessmentId: assessment.id });
-          setRelectureEnEchec(false);
+          setRelectureEnEchec(null);
           return;
         }
 
@@ -892,7 +912,7 @@ export default function Plan() {
         // Une erreur ici compte autant que les deux autres : sans les points, la carte d'attente
         // prend leur place et Ramille dit qu'il n'y a rien à rattraper le jour où la question
         // est justement ouverte.
-        const { data: checkins, error: erreurCheckins } = await supabase
+        const { data: checkins, error: erreurCheckins, status: statutDesPoints } = await supabase
           .from('engagement_checkins')
           // `committed_question` d'abord : c'est la question **figée** à la génération, celle que
           // le rappel a envoyée (C2.1). La carte l'affiche telle quelle plutôt que de la
@@ -921,7 +941,7 @@ export default function Plan() {
         if (cancelled) return;
 
         if (erreurCheckins) {
-          echecDeLecture();
+          echecDeLecture(genreDeLEchec(statutDesPoints));
           return;
         }
 
@@ -944,8 +964,8 @@ export default function Plan() {
         // de bord non choisi — et la borner à une ligne ne dirait rien de la seconde question. Un
         // `count` en `head` ne ramène aucune ligne : c'est une existence, pas une donnée.
         const [
-          { data: resultat, error: erreurResultat },
-          { data: bouclesAVenir, error: erreurBoucle },
+          { data: resultat, error: erreurResultat, status: statutDuResultat },
+          { data: bouclesAVenir, error: erreurBoucle, status: statutDesBoucles },
           { data: contexte },
           { data: orphelins },
           { count: engagementsArchives },
@@ -1000,7 +1020,12 @@ export default function Plan() {
         const bouclesLues = erreurBoucle ? null : lireLesBouclesAVenir(bouclesAVenir);
         if (bouclesLues !== null) setBoucles(bouclesLues);
         setTotalDuBilan(erreurResultat ? null : (resultat?.total_co2_kg_year ?? null));
-        setRappels(prefs);
+        // **Une lecture des rappels qui n'a rien rendu ne remplace pas la dernière** (relevé par le
+        // chantier B le 01/10/2026, effet de bord de T-6) : `loadReminderPrefs` rend `null` quand il n'a
+        // rien lu, et le poser ici effaçait la dernière lecture réussie — la carte d'attente, qui la
+        // demande, disparaissait sans que la ligne de relecture s'allume. La règle des boucles, juste
+        // au-dessus, et de `FRONT.md` §1.2 : on garde ce qu'on savait, et la ligne dit que l'écran date.
+        if (prefs !== null) setRappels(prefs);
         setPermission(etatPermission);
 
         // **Sauf si l'action est revenue dans le plan, ou si la perte date d'un autre cycle**
@@ -1111,16 +1136,25 @@ export default function Plan() {
           premierPlan,
         });
         planLu = true;
-        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des deux
-        // lectures secondaires ci-dessus a échoué — le total, ou les boucles, sans lesquelles ni la
-        // carte d'attente ni celle des deux lieux ne se montrent.
-        setRelectureEnEchec(Boolean(erreurResultat) || bouclesLues === null);
+        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des trois
+        // lectures secondaires ci-dessus a échoué — le total, les boucles, sans lesquelles ni la
+        // carte d'attente ni celle des deux lieux ne se montrent, ou les rappels, sans lesquels la
+        // carte d'attente ne se montre pas. Le genre suit le statut de chacune ; une réponse illisible
+        // et des rappels qui n'ont rien rendu ne disent pas de statut, et ne sont pas une coupure.
+        setRelectureEnEchec(
+          genreDesEchecs([
+            erreurResultat ? genreDeLEchec(statutDuResultat) : null,
+            erreurBoucle ? genreDeLEchec(statutDesBoucles) : bouclesLues === null ? 'serveur' : null,
+            prefs === null ? 'serveur' : null,
+          ])
+        );
       } catch {
         // Une promesse rejetée — `loadReminderPrefs` ou `lirePermission`, qui touchent un
         // module natif et ne rendent pas d'erreur mais lèvent — laissait l'écran sur
         // « Chargement de ton plan… » pour toujours : le même mensonge par omission, en plus
-        // muet. Même leçon que la racine de l'app (07/09/2026).
-        echecDeLecture();
+        // muet. Même leçon que la racine de l'app (07/09/2026). Rien n'y dit le réseau : le
+        // transport de PostgREST rend ses coupures, il ne les lève pas.
+        echecDeLecture('serveur');
       } finally {
         // **La fin d'une lecture, quelle que soit son issue** — jamais celle d'une lecture qu'une
         // plus récente a remplacée, qui n'écrit rien (« seul le dernier lancé écrit »). Une relance
@@ -1195,12 +1229,13 @@ export default function Plan() {
   // d'une lecture réussie — le plan, « en préparation » et « pas encore de bilan » — et le lien
   // relance la même lecture que le retour sur l'onglet.
   const banniereRelecture = (centree = false) =>
-    relectureEnEchec || refusDeRemplacement ? (
+    relectureEnEchec !== null || refusDeRemplacement ? (
       <View style={[styles.relecture, centree && styles.relectureCentree]}>
         {refusDeRemplacement && <MessageInline message={refusDeRemplacement} />}
-        {relectureEnEchec && (
+        {relectureEnEchec !== null && (
           <>
-            <MessageInline message="Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
+            {/* Le genre décide de la phrase (D19) : la connexion ne se nomme qu'hors ligne. */}
+            <MessageInline message={phraseDeLaLectureEnEchec('relectureDuPlan', relectureEnEchec)} />
             {/* Inactif, et dit occupé, tant que la relecture qu'il a demandée tourne (audit P-8) : la
                 teinte tertiaire est celle d'un lien qui n'agit pas — un état se dit par le texte,
                 jamais par une opacité (`FRONT.md` §1.4). */}
@@ -1326,6 +1361,9 @@ export default function Plan() {
   // L'écran ne sait rien : il le dit, et il ne propose surtout ni de faire un bilan ni
   // d'attendre — les deux replis d'avant affirmaient quelque chose sur les données de la
   // personne. « Réessayer » relance exactement la lecture que le retour sur l'onglet relance.
+  //
+  // **Il ne parle de connexion qu'hors ligne** (D19, 01/10/2026) : sur une réponse 500, « Vérifie ta
+  // connexion » envoyait la personne vérifier ce qui marchait (capture `e-19` de l'audit).
   if (state.status === 'erreur_reseau') {
     return (
       <ThemedView style={styles.container}>
@@ -1333,7 +1371,7 @@ export default function Plan() {
           <BandeHaute />
           <View style={styles.centered}>
             <MessageInline
-              message="Ton plan n’a pas pu être relu. Vérifie ta connexion."
+              message={phraseDeLaLectureEnEchec('plan', state.genre)}
               style={styles.erreurTexte}
             />
             <Button title="Réessayer" onPress={reessayerDepuisLErreur} />

@@ -105,3 +105,34 @@ describe('/contexte — « Enregistrer »', () => {
     expect(inactif()).toBe(true);
   });
 });
+
+describe('/contexte — une lecture en échec (D19)', () => {
+  it('ne parle pas de la connexion quand le serveur a répondu en échec', async () => {
+    mockLire.mockResolvedValue({ etat: 'erreur', genre: 'serveur' });
+    render(<Contexte />);
+    await waitFor(() =>
+      expect(screen.getByText('Tes réponses n’ont pas pu être lues. Réessaie dans un instant.')).toBeTruthy()
+    );
+    expect(screen.queryByText(/connexion/)).toBeNull();
+  });
+
+  it('garde sa phrase hors ligne', async () => {
+    mockLire.mockResolvedValue({ etat: 'erreur', genre: 'horsLigne' });
+    render(<Contexte />);
+    await waitFor(() =>
+      expect(screen.getByText('Tes réponses n’ont pas pu être lues. Vérifie ta connexion et réessaie.')).toBeTruthy()
+    );
+  });
+
+  // « Réessayer » relit : la seconde lecture dit son propre genre, pas celui de la première.
+  it('dit le genre de la relecture après « Réessayer »', async () => {
+    mockLire.mockResolvedValueOnce({ etat: 'erreur', genre: 'horsLigne' });
+    mockLire.mockResolvedValueOnce({ etat: 'erreur', genre: 'serveur' });
+    render(<Contexte />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy());
+    fireEvent.press(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() =>
+      expect(screen.getByText('Tes réponses n’ont pas pu être lues. Réessaie dans un instant.')).toBeTruthy()
+    );
+  });
+});

@@ -5,6 +5,7 @@ import {
   type ChoixDeContexte,
   type ContexteEnregistrable,
 } from '@/types/contexte';
+import { genreDeLEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 
 /**
  * Lire et corriger les quatre réponses de contexte B4, hors questionnaire (C6.4, `v1-19` D5).
@@ -31,10 +32,15 @@ export type LectureDuContexte =
   | { etat: 'ok'; contexte: ContexteCourant }
   /** Aucun bilan complété : il n'y a pas de contexte à corriger, et ce n'est pas une panne. */
   | { etat: 'sans_bilan' }
-  | { etat: 'erreur' };
+  /**
+   * Rien n'a pu être lu, et le **genre** dit pourquoi (D19 de `v1-33`, 01/10/2026) : hors ligne, ou le
+   * serveur en échec. Calculé ici, sur le statut HTTP de la lecture qui a échoué, pour que l'écran ne
+   * parle de connexion qu'à qui n'en a pas (`phraseDeLaLectureEnEchec`).
+   */
+  | { etat: 'erreur'; genre: GenreDEchec };
 
 export async function lireLeContexteCourant(): Promise<LectureDuContexte> {
-  const { data: bilan, error: erreurBilan } = await supabase
+  const { data: bilan, error: erreurBilan, status: statutDuBilan } = await supabase
     .from('assessments')
     .select('id')
     .eq('status', STATUT_DE_BILAN.complete)
@@ -42,10 +48,10 @@ export async function lireLeContexteCourant(): Promise<LectureDuContexte> {
     .limit(1)
     .maybeSingle();
 
-  if (erreurBilan) return { etat: 'erreur' };
+  if (erreurBilan) return { etat: 'erreur', genre: genreDeLEchec(statutDuBilan) };
   if (!bilan) return { etat: 'sans_bilan' };
 
-  const { data: reponses, error: erreurReponses } = await supabase
+  const { data: reponses, error: erreurReponses, status: statutDesReponses } = await supabase
     .from('assessment_answers')
     .select(
       'zone_type, tc_access, household_vehicles, teletravail, leisure_frequency, commute_has_regular_trip, commute_days_per_week'
@@ -53,7 +59,7 @@ export async function lireLeContexteCourant(): Promise<LectureDuContexte> {
     .eq('assessment_id', bilan.id)
     .maybeSingle();
 
-  if (erreurReponses) return { etat: 'erreur' };
+  if (erreurReponses) return { etat: 'erreur', genre: genreDeLEchec(statutDesReponses) };
   // Un bilan `completed` porte toujours ses réponses depuis C1.1 — la soumission écrit
   // `in_progress` d'abord, précisément pour que cet état n'existe plus. Le repli reste, parce
   // qu'une lecture vide n'est pas une lecture en échec et qu'on ne veut pas lever ici.

@@ -27,6 +27,7 @@ import {
 } from '@/lib/bilan-history';
 import { posteDeLHistorique, type LoopType } from '@/constants/postes';
 import { formatIntention } from '@/types/plan';
+import { genreDesEchecs, phraseDeLaLectureEnEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 import {
   barresDeLHistorique,
   carteDuSuiviSansPoint,
@@ -98,8 +99,11 @@ type LoadState =
    *
    * **Cet état ne s'atteint que depuis `loading`** : `ok` comme `empty` viennent d'une lecture
    * qui a réussi, et l'écran d'erreur plein écran ne vaut que quand rien n'a jamais pu être lu.
+   *
+   * **Il porte le genre de l'échec** (D19 de `v1-33`, 01/10/2026) : hors ligne ou serveur en échec,
+   * calculé une fois dans la lecture. La phrase ne parle de connexion qu'au premier.
    */
-  | { status: 'erreur' }
+  | { status: 'erreur'; genre: GenreDEchec }
   | {
       status: 'ok';
       history: AssessmentSnapshot[];
@@ -183,12 +187,12 @@ export default function Suivi() {
     // la promesse qui rejette. Même forme que `plan.tsx`, et pour la même raison — une promesse
     // rejetée laisserait l'écran sur « Chargement de ton suivi… » pour toujours, c'est-à-dire le
     // même mensonge par omission que celui qu'on vient de corriger, en plus muet.
-    const echecDeLecture = () => {
+    const echecDeLecture = (genre: GenreDEchec) => {
       if (cancelled) return;
       setRelectureEnEchec(true);
       // `empty` est dérivé d'une lecture **réussie** au même titre que `ok` : seul `loading`
       // n'a jamais rien su, et c'est le seul que l'écran d'erreur plein écran remplace.
-      setState((precedent) => (precedent.status === 'loading' ? { status: 'erreur' } : precedent));
+      setState((precedent) => (precedent.status === 'loading' ? { status: 'erreur', genre } : precedent));
     };
 
     (async () => {
@@ -205,7 +209,9 @@ export default function Suivi() {
         ]);
       } catch (erreur) {
         console.error('Le suivi n’a pas pu être relu :', erreur);
-        echecDeLecture();
+        // Rien n'y dit le réseau : les lectures rendent leurs coupures, elles ne les lèvent pas
+        // (`src/types/lecture-en-echec.ts`).
+        echecDeLecture('serveur');
         return;
       }
 
@@ -222,7 +228,10 @@ export default function Suivi() {
       // seulement plus tout à fait à jour. Il le dit en une ligne au lieu de tout effacer — le
       // retour au premier plan hors ligne, sinon, balaierait à chaque fois un suivi juste.
       if (!bilans.ok || !points.ok) {
-        echecDeLecture();
+        // Le genre vient des deux lectures, et une coupure gagne (`genreDesEchecs`).
+        echecDeLecture(
+          genreDesEchecs([bilans.ok ? null : bilans.genre, points.ok ? null : points.genre]) ?? 'serveur'
+        );
         return;
       }
 
@@ -278,6 +287,10 @@ export default function Suivi() {
   // Ce qui est affiché reste vrai, mais date. La ligne vaut au-dessus des deux écrans issus
   // d'une lecture réussie — le suivi et l'état vide — et le lien relance la même lecture que le
   // retour sur l'onglet.
+  //
+  // **Elle parle encore de connexion quel que soit l'échec**, et c'est su : D19 (`v1-33`) n'a donné
+  // de phrase du serveur que pour l'écran d'erreur de cet onglet. Celle du plan dit « … ce que tu vois
+  // peut avoir changé depuis. », sans la connexion (`phraseDeLaLectureEnEchec`).
   const banniereRelecture = (centree = false) =>
     relectureEnEchec ? (
       <View style={[styles.relecture, centree && styles.relectureCentree]}>
@@ -320,8 +333,9 @@ export default function Suivi() {
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <BandeHaute />
           <View style={styles.centered}>
+            {/* La connexion ne se nomme qu'hors ligne (D19, `phraseDeLaLectureEnEchec`). */}
             <MessageInline
-              message="Ton suivi n’a pas pu être relu. Vérifie ta connexion."
+              message={phraseDeLaLectureEnEchec('suivi', state.genre)}
               style={styles.erreurTexte}
             />
             <Button title="Réessayer" onPress={reessayerDepuisLErreur} />

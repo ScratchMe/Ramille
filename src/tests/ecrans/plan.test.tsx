@@ -87,14 +87,10 @@ jest.mock('@/lib/saison-prefs', () => ({
 }));
 jest.mock('@/lib/premier-parcours', () => ({ aVuLePremierPlan: async () => true, marquerLePremierPlanVu: async () => {} }));
 jest.mock('@/lib/compte', () => ({ lireEtatDuRattachement: async () => ({ kind: 'local' }) }));
+/** Les réglages de rappel lus — `null` quand rien n'a été lu (`loadReminderPrefs`, T-6). */
+const mockPrefs = jest.fn<Promise<unknown>, []>();
 jest.mock('@/lib/notification-prefs', () => ({
-  loadReminderPrefs: async () => ({
-    prefere: 'none',
-    jetonActif: false,
-    emailPossible: false,
-    email: null,
-    reponseALaVeille: null,
-  }),
+  loadReminderPrefs: () => mockPrefs(),
   aDejaVuLaFeuilleDeRappel: async () => true,
   aDejaProposeLaVeille: async () => true,
   lireLaFenetreDuMotDeLaVeille: async () => null,
@@ -137,10 +133,22 @@ function lectures(surcharge: Record<string, () => Promise<unknown>> = {}) {
   mockLire.mockImplementation((cle) => (base[cle] ?? (async () => ({ data: null, error: null })))());
 }
 
-const panne = async () => ({ data: null, error: { message: 'réseau' } });
+/** Hors ligne : la requête n'a pas eu de réponse HTTP — le `catch` du transport pose `status: 0`. */
+const panne = async () => ({ data: null, error: { message: 'réseau' }, status: 0 });
+/** Le serveur a répondu, en échec. */
+const panneDuServeur = async () => ({ data: null, error: { message: 'Internal Server Error' }, status: 500 });
+
+const PREFS = {
+  prefere: 'none',
+  jetonActif: false,
+  emailPossible: false,
+  email: null,
+  reponseALaVeille: null,
+};
 
 beforeEach(() => {
   mockLire.mockReset();
+  mockPrefs.mockReset().mockResolvedValue(PREFS);
 });
 
 describe('Plan — l’ordre des états, les deux premières lectures parties ensemble', () => {
@@ -193,6 +201,51 @@ describe('Plan — une relance répond sous le doigt', () => {
     // Elle échoue encore — la ligne reste, et le contrôle redevient actif : le `finally` le relâche.
     await act(async () => rendreLeBilan({ data: { id: 'b1', submitted_at: '2026-09-10T10:00:00Z' }, error: null }));
     await waitFor(() => expect(inactif()).toBe(false));
+    expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
+  });
+});
+
+describe('Plan — une erreur du serveur ne parle pas de la connexion (D19)', () => {
+  it('dit la panne du serveur sans nommer la connexion, sur l’écran d’erreur', async () => {
+    lectures({ assessments: panneDuServeur });
+    render(<Plan />);
+    await waitFor(() => expect(screen.getByText('Ton plan n’a pas pu être relu. Réessaie dans un instant.')).toBeTruthy());
+    expect(screen.queryByText(/connexion/)).toBeNull();
+  });
+
+  it('dit la coupure telle qu’elle était, hors ligne', async () => {
+    lectures({ plan_cycles: panne });
+    render(<Plan />);
+    await waitFor(() => expect(screen.getByText('Ton plan n’a pas pu être relu. Vérifie ta connexion.')).toBeTruthy());
+  });
+
+  it('dit la relecture en échec du serveur sans nommer la connexion', async () => {
+    lectures({ 'rpc:mes_boucles_a_venir': panneDuServeur });
+    render(<Plan />);
+    await waitFor(() =>
+      expect(
+        screen.getByText('Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis.')
+      ).toBeTruthy()
+    );
+    expect(screen.queryByText(/connexion/)).toBeNull();
+  });
+});
+
+describe('Plan — des rappels qui n’ont rien rendu ne remplacent pas la dernière lecture', () => {
+  it('garde la carte d’attente, et allume la ligne de relecture', async () => {
+    // Première lecture : tout est lu sauf le total — la ligne s'allume, la carte d'attente est là.
+    lectures({ assessment_results: panneDuServeur });
+    render(<Plan />);
+    await waitFor(() => expect(screen.getByText(/reviens quand tu veux/)).toBeTruthy());
+    expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
+
+    // La relecture lit le total, mais pas les rappels : la carte reste, et la ligne aussi.
+    lectures();
+    mockPrefs.mockResolvedValue(null);
+    fireEvent.press(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(mockPrefs).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Réessayer' }).props.accessibilityState?.disabled).toBe(false));
+    expect(screen.getByText(/reviens quand tu veux/)).toBeTruthy();
     expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
   });
 });

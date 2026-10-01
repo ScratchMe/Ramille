@@ -16,6 +16,7 @@ import { loisirsSontLeResiduel, type LoopType } from '@/constants/postes';
 import { supabase } from '@/lib/supabase';
 import { type BilanAnswers, STATUT_DE_BILAN } from '@/types/bilan';
 import { genreDeReponse, STATUT_DU_POINT } from '@/types/checkin';
+import { genreDeLEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 import { lireLesBouclesAVenir } from '@/types/rappels';
 import {
   decisionsParSaison,
@@ -38,9 +39,27 @@ import {
  */
 export type Lecture<T> = { ok: true; data: T } | { ok: false };
 
+/**
+ * Une lecture qui dit, en échec, **pourquoi** : hors ligne, ou le serveur en échec (D19 de `v1-33`,
+ * 01/10/2026). Ce sont les deux lectures dont l'échec fait l'écran d'erreur du suivi, et la phrase de
+ * cet écran ne parle de connexion qu'à qui n'en a pas (`phraseDeLaLectureEnEchec`). Le genre se
+ * calcule **ici**, sur le statut HTTP que l'appelant ne voit plus, et une seule fois (`FRONT.md` §2.11).
+ * Un succès rend exactement ce qu'il rendait ; l'échec reste un `Lecture<T>` pour qui ne lit pas le
+ * genre.
+ */
+export type LectureQuiDitPourquoi<T> = { ok: true; data: T } | { ok: false; genre: GenreDEchec };
+
+/**
+ * Le genre d'une lecture qui n'a rien rendu : son statut quand elle a une erreur, `serveur` quand elle
+ * n'a ni erreur ni données — une réponse, donc pas une coupure.
+ */
+function genreDeLaLecture(error: unknown, status: number): GenreDEchec {
+  return error ? genreDeLEchec(status) : 'serveur';
+}
+
 /** Bilans complétés, du plus ancien au plus récent — l'ordre dans lequel on lit une évolution. */
-export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapshot[]>> {
-  const { data, error } = await supabase
+export async function loadAssessmentHistory(): Promise<LectureQuiDitPourquoi<AssessmentSnapshot[]>> {
+  const { data, error, status } = await supabase
     .from('assessments')
     // Les trois postes viennent avec le total depuis C2.7 : le suivi ne montrait que le total, où un
     // effort tenu sur le trajet quotidien disparaît derrière un vol. Non nullables en base.
@@ -52,7 +71,7 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
     .eq('status', STATUT_DE_BILAN.complete)
     .order('submitted_at', { ascending: true });
 
-  if (error || !data) return { ok: false };
+  if (error || !data) return { ok: false, genre: genreDeLaLecture(error, status) };
 
   const snapshots = data.flatMap((assessment) => {
     // `assessment_results` est en 1:1 avec `assessments`, mais un bilan complété dont le
@@ -98,14 +117,14 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
  * **rien** trouvé dans son suivi, sans message d'erreur. C'est donc `response_kind` qu'on lit, et
  * l'horodatage qui borne : un point répondu sans horodatage ne sait pas se placer dans le temps.
  */
-export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> {
-  const { data, error } = await supabase
+export async function loadAnsweredCheckins(): Promise<LectureQuiDitPourquoi<CheckinRecord[]>> {
+  const { data, error, status } = await supabase
     .from('engagement_checkins')
     .select('id, loop_type, period_label, period_start, response_kind, responded_at')
     .eq('status', STATUT_DU_POINT.repondu)
     .order('period_start', { ascending: false });
 
-  if (error || !data) return { ok: false };
+  if (error || !data) return { ok: false, genre: genreDeLaLecture(error, status) };
 
   const points = data.flatMap((checkin) => {
     const reponse = genreDeReponse(checkin.response_kind);
