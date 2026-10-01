@@ -144,3 +144,6 @@ voyage est en `FRONT.md` §1.
 - **Une forme par fonction** (`v1-33` Q-12, T-20) : deux séries de nombres prennent la même forme
   (la pilule, pour les vols), et le tableau rayon / style est dans la fiche de `Chip` du kit. Le
   sous-titre d'une question sous le titre d'étape lit `TypeScale.question` (22/28).
+- **Le champ de distance vide ne montre rien dedans** (01/10/2026, `v1-33` D8) : le « 0 » gris se
+  lisait comme une valeur, la seule que le champ refuse. L'intitulé et « km » disent ce qu'on attend,
+  le contour au repos dit qu'il y a un champ. Ne pas remettre de placeholder (`numeric-field.test.tsx`).

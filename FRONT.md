@@ -443,6 +443,15 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `onNext` sur une étape incomplète, et `handleNext` le refuse encore (`issueDuSuivant`) — à la
   dernière étape, il vérifie **toutes** les étapes visibles, `?etape=` permettant d'y arriver avec
   un questionnaire vierge.
+- **« Envoyer » de `/feedback` suit le motif du « Suivant » en attente depuis le 01/10/2026**
+  (`v1-33` D18) : en attente sous trois caractères, ni `disabled` ni `aria-disabled` ; son toucher
+  écrit « Trois caractères au moins pour pouvoir l'envoyer. », y compris à vide, donne le focus au
+  champ et n'envoie rien. `disabled` ne reste que pendant l'envoi.
+- **Un seul bouton principal par état d'écran, y compris sur « Toi » confirmation ouverte**
+  (01/10/2026, `v1-33` §6) : « Rattacher un compte » et « Réessayer » y passent en `secondary` et
+  redeviennent principaux à la fermeture (« Annuler », retour matériel) — c'est pourquoi l'écran tient
+  la confirmation et la passe à `MonCompte` (`confirmation`, `onConfirmation`). Seul
+  `toi-confirmation.test.tsx` le garde : le parcours réel ne lit pas la couleur d'un bouton.
 - **Un groupe de cases d'option n'est qu'un arrêt de tabulation, et se parcourt aux flèches, sur
   web** (25/09/2026, `v1-29` §6.4). Ce sont des `div` à `role="radio"` et non des cases natives :
   react-native-web donnait `tabindex="0"` à chacune et ne faisait rien des flèches — dix modes, dix

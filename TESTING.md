@@ -336,6 +336,10 @@ qu'on prétend garder demande donc sa moitié négative.
   ne rend qu'à la demande. Sa première rédaction restait **verte** quand le retour passait pendant le
   calcul : le recul se cachait derrière `CalculEnCours`, et il a fallu faire échouer le calcul pour
   lire l'étape où le questionnaire revient.
+- **Deux écrans de service** : `feedback.test.tsx` (le toucher d'« Envoyer » à vide demande, ne part
+  pas, donne le focus) et `toi-confirmation.test.tsx` (un seul principal pendant la confirmation,
+  retour matériel compris par un `BackHandler` simulé) ; et un test colocalisé, `numeric-field.test.tsx`,
+  pour l'absence du placeholder. Chaque branche y porte sa moitié négative.
 - **Un client réel sous minuteries fictives ne se débloque pas** (`src/lib/supabase.test.ts`) : la
   chaîne d'attente de la session d'`auth-js` y reste pendante. Temps réels, borne de 1,5 s.
 
