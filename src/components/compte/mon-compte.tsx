@@ -165,8 +165,9 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
     <ThemedView style={carte}>
       {/* Un en-tête de section, parce que c'en est une : les pages légales et `/compte/suppression`
           y envoient en la nommant, et un lecteur d'écran qui parcourt la page par titres doit
-          pouvoir s'y rendre (24/09/2026, `v1-29`). */}
-      <ThemedText weight={600} type="small" accessibilityRole="header">
+          pouvoir s'y rendre (24/09/2026, `v1-29`). **Au style de « Les rappels »** depuis le
+          01/10/2026 (audit T-15) : les deux sections de « Toi » se titraient de deux façons. */}
+      <ThemedText type="cardTitle" accessibilityRole="header">
         Mes données
       </ThemedText>
 
