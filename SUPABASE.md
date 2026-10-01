@@ -215,10 +215,11 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
 
 Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1` — nom
 du dépôt ; le tableau de bord l'affiche `TraceVerte`, et c'est sous ce nom-là qu'on le cherche —
-(via `mcp__Supabase__apply_migration`). **Après toute migration, régénérer
-`src/lib/database.types.ts`** (`mcp__Supabase__generate_typescript_types`) — le fichier n'a
-pas de formateur automatique dans ce repo (pas de prettier installé), donc respecter le
-style existant (guillemets doubles) en le retouchant à la main si besoin.
+(via `mcp__Supabase__apply_migration`). **Après toute migration, `src/lib/database.types.ts` se
+retouche à la main** — on y ajoute ce que la migration a changé plutôt que de le régénérer, et
+`mcp__Supabase__generate_typescript_types` ne sert que de référence à recopier. Le fichier n'a pas
+de formateur automatique dans ce repo (pas de prettier installé), donc respecter le style existant
+(guillemets doubles).
 
 **Et le job `db-tests` compare aussi `src/lib/database.types.ts` à la base qu'il vient de
 construire** (C3.12) : `supabase gen types typescript --local`, puis
@@ -336,7 +337,7 @@ Les deux se sont fait prendre en contre-lisant la vague 4, et aucune ne se voit 
   `delete`.
 
 Deux pièges vérifiés en construisant `usage_events`, tous deux silencieux (le troisième, sur les
-colonnes homonymes de `profiles`, est resté dans `CLAUDE.md` avec la mesure d'usage) :
+colonnes homonymes de `profiles`, est resté dans `CLAUDE.md`, section « Base de données ») :
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
   `security definer`.** `usage_events` n'a aucune policy de lecture ; sans `security definer`, le
   `select` de comptage du garde-fou de volume ne voyait rien depuis `authenticated` et le quota
@@ -484,7 +485,8 @@ quelque chose la réécrit, et il vaut mieux l'apprendre là que sur un écran.
 
 Le modèle lui-même — session anonyme dès l'ouverture, conversion qui garde le `user_id`, pas de
 mot de passe, `/connexion/retrouver` comme seul chemin vers un compte existant — est dans
-`CLAUDE.md`, « Modèle d'authentification ». Ici, ce qui s'est cassé autour.
+`CLAUDE.md`, « Modèle d'authentification », pour ses deux paragraphes fondateurs, et dans
+`COMPTE.md` pour tout le reste. Ici, ce qui s'est cassé autour.
 
 **La non-divulgation se tient à l'écran, jamais au réseau — et c'est une limite de GoTrue, pas un
 oubli** (relevé à la recette web du 28/09/2026, documenté le même jour par décision). Deux appels

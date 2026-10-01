@@ -35,7 +35,7 @@ la copie du sous-agent est partie d'un `main` qui ne l'a pas encore.
 ```markdown
 Tu travailles sur Ramille, une app Expo (React Native et web) de sensibilisation à l'empreinte
 carbone des transports. Tout est en français : code, commentaires, messages, commits. `CLAUDE.md`
-est chargé pour toi ; lis aussi <les fichiers d'outil du chantier> et <le document de chantier>.
+est chargé pour toi ; lis aussi <les fichiers d'outil et de sujet du chantier> et <le document de chantier>.
 Aujourd'hui : <date>.
 
 ## Ton cadre

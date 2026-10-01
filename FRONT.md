@@ -23,7 +23,8 @@ ne voyage pas.
 **Toute dérivation pure affichée à la personne, ou décidant d'une navigation, vit hors du
 composant** — dans un module pur, avec ses tests. C'est la règle qui décide de ce qui est testé
 dans ce dépôt (`TESTING.md` §2.1), et sa conséquence chiffrée est nette : le module pur est à
-99 % de couverture, les écrans à zéro, par décision.
+99 % de couverture, et les écrans n'en ont que par exception — quelques tests d'écran depuis le
+20/09/2026 (`src/tests/ecrans/`), sous le critère de `TESTING.md` §2.10.
 
 Trois choses qu'elle achète, et qui n'ont rien d'évident :
 

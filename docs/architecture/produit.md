@@ -36,10 +36,37 @@ brique par brique : copy et framing travaillés sur 1 et 2, « fonctionnel simpl
 soin sur le **placement et le message** pour 5. La connexion a son écart assumé (`v1-04` §1,
 session anonyme dès l'ouverture) : reprendre l'ordre de la spec ne remet pas son découpage.
 
-## 2. Les increments livrés
+## 2. Où en est le produit, et les increments livrés
 
-**Le dernier increment livré est `v1-11-navigation-et-design-system.md`** (07/09/2026, cinq
-lots) : **barre à deux onglets Plan / Suivi**, le questionnaire et le compte hors de la barre,
+**Au 01/10/2026, les cinq briques sont livrées, et l'audit du 09/09/2026 est soldé.** Ce qui
+précède dans le temps se lit plus bas, increment par increment ; ce paragraphe est l'état, à
+réécrire à chaque livraison plutôt qu'à compléter :
+
+- **l'audit `v1-13`** : les lots 0 à 3 sont livrés du 10 au 14/09/2026, le lot 5 (« le plan : ce
+  qu'il montre et ce qu'il tait ») le 17/09/2026, et chaque chantier du lot 4 est tranché — livré,
+  fermé pour la V1, sorti du lot ou décidé (§3, tableau ; `v1-13` §10 fait foi) ;
+- **le lot 6, l'administration, est livré le 29/09/2026** : quatre vues `analytics.*` lues dans le
+  tableau de bord Supabase, et des compteurs écrits avant la purge (§3) ;
+- **les increments ouverts hors audit sont livrés** : le rythme des bilans (`v1-19`, C6.1 à C6.4),
+  le moment du compte et le code à huit chiffres (`v1-28`), le design system mis à l'épreuve
+  (`v1-29`), la première vague des transitions (`v1-30`), l'écran du mode du questionnaire
+  (`v1-31`) et « Toutes les pistes » (`v1-32`) ;
+- **les derniers correctifs, le 30/09/2026, alignent ce que le produit promet sur ce qui tourne
+  vraiment** : les boucles partent du dernier bilan valide, la carte d'attente et ses voisines ne
+  promettent rien quand aucune boucle ne tourne, et la question du mois suit l'action engagée
+  (`v1-27` §12.21 à §12.25).
+
+**Ce qui reste ouvert** : le moment anniversaire (C6.5), conçu — son canvas est dans
+[`docs/design/v1-20-moment-anniversaire/`](../design/v1-20-moment-anniversaire/) — et pas encore
+construit, avec le reste de C4.8 ; la seconde vague des transitions (`v1-30` §6), après la recette sur appareil ;
+le thème sombre, après le lancement (`v1-29` §6.1) ; les déplacements professionnels, au backlog
+(§5). **Et avant de publier sur Play, ce qui reste n'est pas du code** : les vérifications sur
+appareil de `v1-13` §11 — aucun build EAS n'est parti depuis le 14/09/2026, et le prochain est prévu
+à partir du 1er octobre (`v1-30` §9) —, la feuille web de [`docs/recette/`](../recette/), et la checklist de
+publication de `docs/exploitation/README.md` §4.
+
+**L'increment `v1-11-navigation-et-design-system.md`** (07/09/2026, cinq
+lots) a livré la **barre à deux onglets Plan / Suivi**, le questionnaire et le compte hors de la barre,
 résultat sous le suivi (`/suivi/bilan?id=`, deux entrées dérivées dans `src/types/resultat.ts`,
 `/bilan/resultat` conservée en redirection), action engagée saillante, et les jetons
 `TypeScale`/`Radius`/`ControlHeight` que les écrans consomment au lieu de redéclarer une taille.
@@ -50,7 +77,8 @@ saison — la règle « jamais la mascotte près d'un chiffre lourd » vise l'em
 réduction, mais si le rendu réel la fait paraître commenter le cap, elle descend sous les actions
 (déplacement d'un bloc ; la puce visait la carte de période calme, remplacée par celle-ci en
 `v1-12` §6.3) ; et le **lien de connexion `ramille://`**, repris au §2.3 avec ce qui le distingue
-du lien du rappel.
+du lien du rappel — **exercé depuis, le 14/09/2026** (`v1-13` §11.8), puis remplacé le 20/09/2026
+par un code à huit chiffres (`v1-28`) : des trois, il ne reste donc que les deux premières.
 Le **retour matériel Android** n'est plus à vérifier : vérifié le 09/09/2026, il quitte bien
 l'app depuis `/plan` — c'est le comportement attendu d'une racine à onglets, et il ne doit pas
 être « corrigé » par quelqu'un qui le prendrait pour une navigation manquante.
@@ -75,9 +103,11 @@ lien du rappel ouvrant l'app et non le navigateur, réponse refermant le point (
 confondre ferait croire qu'un chemin a été éprouvé alors qu'il ne l'a pas été. Le lien du
 rappel pointe `https://www.ramille.fr/plan` et s'ouvre dans l'app par `assetlinks.json`. Le lien
 de connexion, lui, arrive en `ramille://` depuis une messagerie, remonte par `Linking.useURL()`
-dans `_layout.tsx`, et doit aboutir sur le plan barre comprise : **ce chemin n'a jamais été
+dans `_layout.tsx`, et doit aboutir sur le plan barre comprise : **ce chemin n'avait jamais été
 exercé sur appareil** (`v1-11` §8, dernière puce), alors que c'est le seul accès à un compte
-existant depuis un téléphone neuf.
+existant depuis un téléphone neuf. **Il l'a été le 14/09/2026, deux fois** (`v1-13` §11.8), sur un
+téléphone remis à neuf où tout est revenu ; et depuis le 20/09/2026, les e-mails du compte ne
+portent plus de lien mais un code (§3, le moment du compte).
 
 ## 3. La feuille de route courante
 
@@ -120,7 +150,7 @@ La suite est la vague 8 (lot 4), dont chaque chantier commence par **une page de
 expérience**, sans une ligne de code (elle a écarté l'hypothèse qui justifiait le chantier, et la
 condition de réouverture est écrite en `v1-13` §7), et **C4.5 livré le 15/09/2026** — sa page de
 décision `v1-15-hors-ligne.md` écrite puis exécutée le même jour ; les sept règles qui en sortent
-sont dans `CLAUDE.md`, section Architecture.
+sont dans `COMPTE.md` §3.
 
 **La première recette sur appareil a eu lieu le 14/09/2026, et elle verse cinq constats dans cette
 vague-là** (`v1-13` §12, une issue chacun, tous repris dans le tableau de §2.3 — c'est là qu'on les
@@ -134,12 +164,12 @@ qu'ils concernent :
   brouillon — or le brouillon est effacé à la soumission, donc toute personne ayant déjà soumis un
   bilan avait une app inutilisable au démarrage sans réseau, questionnaire compris, et tout le soin
   décrit dans `CLAUDE.md` sur les écrans hors ligne vivait **derrière** ce mur sans jamais être
-  atteint à froid. Ce qui l'a refermé y est décrit aussi, au paragraphe C4.5 ; le raisonnement de C1.4 n'a
+  atteint à froid. Ce qui l'a refermé est décrit en `COMPTE.md` §3 ; le raisonnement de C1.4 n'a
   **pas** été défait au passage — aucun écran ne s'est mis à dire « tu n'as rien ».
 - **Le bouton « Se désabonner » de Gmail n'apparaît pas** (§12.6) — **et c'était `C4.9`, fermé le
   15/09/2026 par son expérience.** Un message avec les deux en-têtes n'a pas fait apparaître le
   bouton : l'en-tête manquant n'était pas la cause, donc il n'y avait rien à construire. Détail et
-  condition de réouverture en `v1-13` §7, et la règle d'en-tête `List-Unsubscribe` dans `CLAUDE.md`.
+  condition de réouverture en `v1-13` §7, et la règle d'en-tête `List-Unsubscribe` en `BOUCLE.md` §3.
 
 Les trois autres étaient des décisions d'écran, **livrées le 15/09/2026** et tranchées dans
 `v1-16-trois-decisions-decran.md` : le placement de la taille du covoiturage du trajet quotidien
@@ -173,8 +203,8 @@ entier**. Les écarts au canvas sont consignés en `v1-17` §9, qui est à ce do
 §10 est au sien. Ce qui reste à éprouver ne l'est pas par du code : le premier parcours de bout en
 bout demande un appareil neuf, et c'est une ligne de la §11 de `v1-13`.
 
-**Le lot 4 n'a pas bougé et reste après** : ses six chantiers ouverts commencent chacun par une page
-de décision, et `v1-17` §5.1 en donne l'ordre proposé avec sa raison. Ce que C4.5 a reporté, les
+**Le lot 4 n'avait pas bougé et restait après** (au 17/09/2026 — le tableau plus bas dit ce que chacun est
+devenu) : ses six chantiers ouverts commençaient chacun par une page de décision, et `v1-17` §5.1 en donne l'ordre proposé avec sa raison. Ce que C4.5 a reporté, les
 vérifications sur appareil de §11, l'exploitation et les restes assumés y sont aussi — rien de ce
 qui était ouvert n'a disparu du plan.
 
@@ -213,13 +243,13 @@ journée a été contre-lue à son tour** (§12.6) : elle portait elle-même des
 qu'elle corrigeait, dont une garde qui affirmait un point qu'aucune entrée ne pouvait faire
 tomber. Le comparateur des miroirs y a gagné quatre entrées, passant de 17 à 21.
 
-**Un lot 6 est demandé et n'est pas instruit : l'administration** (demande du 17/09/2026, après la
-livraison du lot 5). Il n'appartient pas à l'audit du 09/09/2026 — c'est un besoin neuf, et il vit
+**Un lot 6 a été demandé le 17/09/2026 : l'administration — et il est livré le 29/09/2026** (plus
+bas). Ce qui suit raconte la demande, puis son instruction, dans l'ordre où elles se sont faites. Il n'appartient pas à l'audit du 09/09/2026 — c'est un besoin neuf, et il vit
 donc ici et non dans `v1-13`. Ce qui est demandé, mot pour mot : **exploiter tout ce que le produit
 enregistre déjà pour savoir où en est son utilisation**, et **suivre sa croissance** par quelques
 métriques que la personne qui pilote puisse ressortir ailleurs qu'ici.
 
-Quatre choses à savoir avant de l'instruire, parce qu'elles décident de la taille du lot :
+Quatre choses qu'il fallait savoir avant de l'instruire, parce qu'elles décidaient de la taille du lot :
 
 - **La matière existe déjà et n'a jamais été regardée.** `usage_events` et son référentiel
   `usage_event_types` (increment 8), les vues `analytics.*` (`engagement_by_segment`,
@@ -230,15 +260,16 @@ Quatre choses à savoir avant de l'instruire, parce qu'elles décident de la tai
 - **Les axes de segmentation sont en base**, et c'est ce qui avait écarté PostHog : `zone_type`,
   `tc_access`, poste dominant, cadence. Un lot d'administration qui rebrancherait un outil tiers
   referait ce choix à l'envers.
-- **La croissance n'a aujourd'hui aucune définition écrite.** Ni cohorte, ni rétention, ni
-  activation : `app_open` porte `origine` (`demarrage` / `retour`) depuis le 11/09/2026, ce qui est
-  la brique d'une rétention, mais rien ne la calcule. Ce qui compte comme « un utilisateur actif »
-  est une **décision produit**, pas une requête.
+- **La croissance n'avait, au 17/09/2026, aucune définition écrite.** Ni cohorte, ni rétention, ni
+  activation : `app_open` portait `origine` (`demarrage` / `retour`) depuis le 11/09/2026, ce qui est
+  la brique d'une rétention, mais rien ne la calculait. Ce qui compte comme « un utilisateur actif »
+  est une **décision produit**, pas une requête — rendue le 27/09/2026 pour le churn, et la
+  rétention par cohorte est calculée depuis le 29/09/2026 (plus bas).
 - **Ce lot fabrique une surface qui n'est pas le produit**, et c'est sa question la plus lourde :
   pour une seule personne, où vit-elle, qui y accède, et qu'est-ce qui garantit qu'elle ne
   ressemble jamais à un écran de Ramille ? Un écran d'administration livré dans l'app aurait à
-  répondre à Play ; hors de l'app, il a à répondre de son authentification. **Rien ne s'écrit avant
-  cet arbitrage.**
+  répondre à Play ; hors de l'app, il a à répondre de son authentification. **Rien ne s'est écrit avant
+  cet arbitrage**, rendu le 27/09/2026 (plus bas).
 
 **Et une cinquième, demandée le 20/09/2026 : le churn a déjà une forme, et la purge en efface la
 preuve.** Ce qui est demandé, mot pour mot : *« des utilisateurs peuvent venir, ne pas rattacher de
@@ -529,9 +560,9 @@ liste les défauts vérifiés (T1-T13) auxquels les autres documents renvoient.
 ## 5. Backlog — identifié, non planifié
 
 **Backlog / idées identifiées mais non planifiées** : pas de fichier ROADMAP dédié — suivi via
-les GitHub Issues de ce repo (ex. #27-30 : synchronisation automatique des facteurs ADEME,
-trajectoire 2050 sur l'écran de restitution, canal de feedback utilisateur, tracking
-d'usage/segmentation). Le jeu "pas = monnaie" évoqué le 04/09/2026 est explicitement hors
+les GitHub Issues ouvertes de ce repo, qui font foi. Les quatre premières idées qu'on y a notées
+(#27 à #30 : la synchronisation des facteurs ADEME, la trajectoire 2050 sur la restitution, le canal
+de retour, la mesure d'usage) sont toutes **livrées** depuis — `v1-07` §4 et `v1-08`. Le jeu "pas = monnaie" évoqué le 04/09/2026 est explicitement hors
 roadmap de ce repo (projet à part, voir `v1-06-partage-social.md` §1).
 
 **Un increment identifié et non planifié : les déplacements professionnels** (sorti du lot 4 le

@@ -23,9 +23,9 @@ permissions:
 # 20/09/2026. Ce jour-là `ubuntu-latest` valait l'image `ubuntu-24.04` (`20260907.300.1`, relevé
 # dans le journal du travail Jest), donc écrire `ubuntu-24.04` ne change rien au passage courant.
 #
-# Pour monter : passer les quatre `runs-on` ci-dessous en `ubuntu-26.04`, et laisser la CI de la PR
+# Pour monter : passer les cinq `runs-on` ci-dessous en `ubuntu-26.04`, et laisser la CI de la PR
 # le prouver — Playwright (`install --with-deps`) et Docker sont les deux étapes qui dépendent de
-# l'image. Puis `sauvegarde.yml`, qui porte le cinquième et dépend du dépôt pgdg : voir son propre
+# l'image. Puis `sauvegarde.yml`, qui porte le sixième et dépend du dépôt pgdg : voir son propre
 # commentaire. Registre : docs/exploitation/README.md §8.9.
 jobs:
   # **Chaque travail porte un plafond, et il a été payé le 21/09/2026.** Deux travaux de la même

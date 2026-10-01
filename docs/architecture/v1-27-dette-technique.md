@@ -430,7 +430,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
 
 | Ce qui a été comparé | Résultat |
 |---|---|
-| Les 31 fonctions `security definer` de `public` et leur `search_path` | **toutes en `search_path=public`**, sauf la procédure `envoyer_rappels`, qui n'en porte pas **exprès** (`CLAUDE.md` : `set search_path` rend le contexte atomique et fait échouer son `commit`) — l'avis de sécurité Supabase la signalera à chaque passe, et il ne faut pas la « corriger » |
+| Les 31 fonctions `security definer` de `public` et leur `search_path` | **toutes en `search_path=public`**, sauf la procédure `envoyer_rappels`, qui n'en porte pas **exprès** (`BOUCLE.md` §3 : `set search_path` rend le contexte atomique et fait échouer son `commit`) — l'avis de sécurité Supabase la signalera à chaque passe, et il ne faut pas la « corriger » |
 | Les 20 tables de `public` | **RLS active partout** ; cinq sans policy ni privilège client (`emission_factor_sync_runs`, `notification_outbox`, `purge_runs`, `reminder_send_runs`, `usage_event_types`), toutes serveur-only — l'avis `rls_enabled_no_policy` les nomme, et c'est l'état voulu |
 | Les 23 policies | **toutes en `(select auth.uid())`**, aucune en appel direct |
 | La matrice de privilèges | **identique à `20260910110000_grants_explicites.sql`**, ses trois privilèges inertes compris (la §5 de cette migration dit pourquoi ils existent) |
@@ -576,7 +576,7 @@ le jour venu.
   la note ajoutée en tête de `docs/recette/premier-parcours-web.md` le 20/09 : la note est du
   contexte, pas une ligne à cocher, donc l'artefact n'est pas faux — mais §1.1 de `RECETTE.md` dit
   que le `.md` est la source et que l'artefact se régénère depuis lui, et cette règle ne souffre pas
-  d'exception « pour une phrase ». À faire avant la prochaine séance.
+  d'exception « pour une phrase ». À faire avant la prochaine séance — **fait le soir même** (§12.2).
 - **Ce que le parcours réel ne garde pas**, pour que personne ne le lui prête : les exclusions de
   cartes (§4 — le chantier D, à instruire), les états d'erreur au-delà de ceux de
   `verifier-etats-export.mjs`, tout ce qui est natif (notifications, jeton d'appareil, retour au
@@ -883,7 +883,7 @@ la liste des Redirect URLs (`docs/exploitation/redirect-urls.md` §3.1 bis — r
 condition tombée, geste refusé par le garde-fou de permissions de l'environnement), l'entrée
 `localhost:8081` (question ouverte depuis le 10/09, et c'est une décision qui se prend, pas une
 règle qui s'applique), le passage en `flowType: 'pkce'` (qui change ce que la personne peut faire :
-un lien ne s'ouvrirait plus que sur l'appareil qui l'a demandé), le pré-détournement d'adresse par
+un lien ne s'ouvrirait plus que sur l'appareil qui l'a demandé — **fait le même jour**, §12.10), le pré-détournement d'adresse par
 `/connexion/email`, et la CSP en `Report-Only` sans collecteur (§12.3, dont ce moment **est** la
 condition de réouverture).
 
@@ -1462,7 +1462,7 @@ L'écran du plan décide de la boucle à nommer sur le seul poste domicile-trava
 (`src/app/(tabs)/plan/index.tsx` : `commute_poste_label ? 'hebdo' : 'mensuel'`), donc toute personne
 sans trajet se voit promettre « Je te fais signe au début du mois prochain » (ou « On se retrouve ici
 au début du mois prochain », sans rappel) — **y compris quand la boucle mensuelle ne tourne pas** :
-aucun trajet, sorties rares, aucun voyage déclaré. C'est le profil sédentaire de C2.5, que `CLAUDE.md`
+aucun trajet, sorties rares, aucun voyage déclaré. C'est le profil sédentaire de C2.5, que `BOUCLE.md` §1
 dit être le cas par défaut et pas un cas de bord. Le signe promis n'arrive jamais.
 
 **Ce n'est pas le correctif de §12.21 qui l'a créé** : c'était déjà vrai pour un premier bilan de ce

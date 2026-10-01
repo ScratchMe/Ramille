@@ -6,8 +6,9 @@ les chiffres, les routes et les décisions de Ramille, et ne voyage pas. Chaque 
 elle vient ; l'histoire complète est dans `CLAUDE.md` (mécaniques) et dans les documents
 `docs/architecture/v1-0N-*.md` qu'elle cite.
 
-> **Quand lire ce fichier** : avant toute fusion sur `main` (chaque fusion est un déploiement,
-> et un déploiement se paie trente jours) · avant de toucher `vercel.json`, `api/`, le script
+> **Quand lire ce fichier** : avant toute fusion sur `main` (chaque fusion de code est un
+> déploiement, et un déploiement se paie trente jours ; une fusion de documentation seule est
+> sautée, §1.3) · avant de toucher `vercel.json`, `api/`, le script
 > `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · avant d'ajouter une route à l'app ·
 > avant d'affirmer quoi que ce soit sur un compteur ou une facture Vercel · pour mesurer le
 > poids d'un déploiement.
@@ -384,7 +385,7 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 > `api/`. Le reste de cette section décrit la fenêtre du 15 au 25/09/2026 ; il est gardé pour
 > ce qu'il a appris (le facteur cinq, la marge prêtée), pas comme une règle en vigueur.
 
-Chaque fusion sur `main` coûte **≈ 1,8 Mo** pendant trente jours (1,76 mesuré, §2.1). Entre le 15 et le 25/09/2026,
+Chaque fusion de code sur `main` coûte **≈ 1,8 Mo** pendant trente jours (1,76 mesuré, §2.1). Entre le 15 et le 25/09/2026,
 **150 Mo sont tout ce qui reste au compte entier**, partagés avec un projet dont une fusion en
 vaut trente de Ramille — et une limite atteinte, c'est un correctif qui ne part plus, sur les
 deux projets.
@@ -394,10 +395,10 @@ réelle sur le compte (§2.1). À 1,76 Mo la fusion, c'est **une soixantaine de 
 contrainte s'est desserrée, et il faut savoir **pourquoi** avant d'en profiter : l'autre projet ne
 déploie plus, donc de vieux déploiements à lui sortent de la fenêtre et compensent les nôtres. Ce
 n'est pas une marge acquise, c'est une marge prêtée : elle se referme au premier déploiement qu'il
-reprend. Les quatre règles ci-dessous restent donc à demeure, et la 3 garde son plafond — ce qui a
-changé est la tension, pas la discipline.
+reprend. Les règles ci-dessous restaient donc à demeure **jusqu'au 25/09/2026**, et la 3 gardait son
+plafond — ce qui avait changé était la tension, pas la discipline.
 
-Les règles, à demeure :
+Les règles de la fenêtre — l'encadré en tête de cette section dit lesquelles tiennent encore :
 
 1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
    (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le

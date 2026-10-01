@@ -51,8 +51,9 @@ tête de ton rapport :
   ce que le diff ne montre pas.
 - Avant le diff, ouvre les fichiers d'outil que la table de `CLAUDE.md` désigne pour ce qu'il
   touche : `FRONT.md` pour un écran ou une phrase, `SUPABASE.md` pour une migration, `TESTING.md`
-  pour une garde, `EXPO.md`, `VERCEL.md`, `RECETTE.md`. Ce sont les règles contre lesquelles tu
-  relis.
+  pour une garde, `EXPO.md`, `VERCEL.md`, `RECETTE.md` — et les fichiers de sujet pour la brique
+  touchée : `BILAN.md`, `PLAN.md`, `BOUCLE.md`, `COMPTE.md`, `MESURE.md`. Ce sont les règles contre
+  lesquelles tu relis.
 
 ## Ce que tu cherches
 

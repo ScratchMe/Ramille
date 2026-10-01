@@ -1,6 +1,7 @@
 # Recette web — le premier parcours
 
-> **Écrit le 17/09/2026**, le jour de la livraison du lot 5. **Jouée le : ………**
+> **Écrit le 17/09/2026**, le jour de la livraison du lot 5. **Jouée le 18/09/2026** — ce qu'elle a
+> trouvé est en `v1-13` §14.
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`. Aucun build EAS n'est disponible
 > avant le 1er octobre (quota du plan gratuit, registre d'exploitation §3.3), et ce parcours-là
@@ -13,7 +14,7 @@
 > aussi**, depuis le même jour : un second profil, le cycliste, y joue le plan à zéro action, la
 > barre d'onglets qui arrive sans « Compris », et le cap qui ne chiffre pas.
 >
-> Ce que cette séance regarde encore, et que les deux profils ne voient pas : le **visuel**, Ramille,
+> Ce que cette séance regarde encore, et que les profils du parcours réel ne voient pas : le **visuel**, Ramille,
 > les libellés exacts de la barre quand elle se nomme, le bloc 10 (le re-bilan), et tout ce qui se
 > joue sur l'appareil. Une ligne qui tombe ici n'est donc pas forcément une régression neuve — c'est
 > peut-être quelque chose que rien n'avait jamais regardé.

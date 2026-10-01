@@ -121,6 +121,32 @@ code sans rien affirmer. Relever la couverture sur le périmètre qui est *cens�
 logique pure), sans y lister ce qui n'est pas testé par décision (les écrans, à 0 %, noieraient
 la carte).
 
+### 1.7 pgTAP : cinq pièges d'une transaction
+
+- **`now()` est l'horodatage de début de transaction.** Deux lignes écrites par le même appel
+  portent le même `created_at`, et `order by created_at limit 1` retombe sur l'ordre du tas : une
+  assertion juste peut tirer *l'autre* ligne et réussir là où elle attend un refus. Capturer
+  l'identifiant dans un `set_config`, ou ordonner sur une colonne réellement distincte.
+- **La place d'une assertion fait partie de l'assertion.** Posée après une section qui écrit une
+  ligne à la main, elle lit un état que nulle mise en file n'a produit — et valider l'assertion
+  seule, avec ses propres fixtures, ne reproduit pas cet état. Elle vit juste après ce qui produit
+  ce qu'elle lit, avec un commentaire qui dit pourquoi elle ne doit pas bouger.
+- **Rejouer la séquence entière du fichier**, bascules de rôle (`request.jwt.claims`) comprises :
+  un scénario extrait de son contexte ne reproduit pas le rôle sous lequel il tournera.
+- **Une assertion de refus peut passer sans rien éprouver de deux façons** : un trigger `before`
+  qui refuse avant les `check` (même SQLSTATE `23514`), ou la RLS depuis la session d'un tiers
+  (`42501`). L'ordre des assertions et le rôle courant décident de ce qui est éprouvé. Même chose
+  pour un privilège : « permission denied » et « violates row-level security » portent tous deux
+  `42501`, donc un test qui n'assure qu'un refus reste vert après un `revoke`.
+- **Une fixture ne peut pas écrire un état que la production ne peut pas produire** (une ligne
+  « répondue » sans réponse, un horodatage choisi que le serveur pose lui-même) : quand une
+  contrainte ou un trigger arrive, les fixtures qui le faisaient tombent, et c'est une bonne
+  chose — elles éprouvaient une fiction.
+
+Et une base **vierge** n'est pas la base **distante** : une assertion qui lit `min()` sur toute
+une table, ou qui attend un envoi *sauté* faute de secret, passe sur l'une et échoue sur l'autre.
+Les connaître évite de « corriger » un test qui n'a rien (§2.3).
+
 ### 1.8 Un `describe` vide passe au vert, et Jest ne le dit pas
 
 Relevé le 21/09/2026 en relisant un fichier dont un chantier avait retiré des tests : deux
@@ -157,41 +183,16 @@ asserter ce que le champ a **gardé**, pas seulement ce que l'écran fait ensuit
 valeur retenue nomme le nombre de chiffres perdus, là où une assertion d'aval ne dit qu'un délai
 expiré.
 
-### 1.7 pgTAP : cinq pièges d'une transaction
-
-- **`now()` est l'horodatage de début de transaction.** Deux lignes écrites par le même appel
-  portent le même `created_at`, et `order by created_at limit 1` retombe sur l'ordre du tas : une
-  assertion juste peut tirer *l'autre* ligne et réussir là où elle attend un refus. Capturer
-  l'identifiant dans un `set_config`, ou ordonner sur une colonne réellement distincte.
-- **La place d'une assertion fait partie de l'assertion.** Posée après une section qui écrit une
-  ligne à la main, elle lit un état que nulle mise en file n'a produit — et valider l'assertion
-  seule, avec ses propres fixtures, ne reproduit pas cet état. Elle vit juste après ce qui produit
-  ce qu'elle lit, avec un commentaire qui dit pourquoi elle ne doit pas bouger.
-- **Rejouer la séquence entière du fichier**, bascules de rôle (`request.jwt.claims`) comprises :
-  un scénario extrait de son contexte ne reproduit pas le rôle sous lequel il tournera.
-- **Une assertion de refus peut passer sans rien éprouver de deux façons** : un trigger `before`
-  qui refuse avant les `check` (même SQLSTATE `23514`), ou la RLS depuis la session d'un tiers
-  (`42501`). L'ordre des assertions et le rôle courant décident de ce qui est éprouvé. Même chose
-  pour un privilège : « permission denied » et « violates row-level security » portent tous deux
-  `42501`, donc un test qui n'assure qu'un refus reste vert après un `revoke`.
-- **Une fixture ne peut pas écrire un état que la production ne peut pas produire** (une ligne
-  « répondue » sans réponse, un horodatage choisi que le serveur pose lui-même) : quand une
-  contrainte ou un trigger arrive, les fixtures qui le faisaient tombent, et c'est une bonne
-  chose — elles éprouvaient une fiction.
-
-Et une base **vierge** n'est pas la base **distante** : une assertion qui lit `min()` sur toute
-une table, ou qui attend un envoi *sauté* faute de secret, passe sur l'une et échoue sur l'autre.
-Les connaître évite de « corriger » un test qui n'a rien (§2.3).
-
 ---
 
 ## 2. Propre à Ramille
 
 ### 2.1 Les suites, et où passe la ligne
 
-Deux suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
-(chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
-bout-en-bout (écrans, flux de connexion) :
+Trois suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
+(chiffre affiché à l'utilisateur, navigation du wizard) — les deux premières ci-dessous, la
+troisième, le parcours réel, en §2.6 ; le flux de connexion a en plus son propre jeu de bout en
+bout (§2.9), et quelques écrans leur test (§2.10) :
 
 - **Jest** (`npm test`, qui force `TZ=Europe/Paris` — voir plus bas pourquoi) sur la logique pure
   côté client. La règle, plutôt qu'une liste qui se
@@ -254,10 +255,12 @@ bout-en-bout (écrans, flux de connexion) :
   la seule à se lire « 590 tests verts ». La raison vit ici et non à côté du réglage parce que
   `package.json` est du JSON : une clé de commentaire y fait émettre à Jest un `Validation Warning`
   à chaque passage.
-  Deux modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
-  (et importé par `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la
-  suite qui en dépend, par un lien que rien n'affiche), et `bilan-draft.ts`, dont le test double
-  AsyncStorage parce que c'est l'entrée-sortie elle-même qu'il éprouve.
+  Des modules de `src/lib` sont testés en place — la liste se lit en listant `src/lib/*.test.ts` —,
+  et deux conditions les y gardent : `format.ts` reste pur (il est importé par
+  `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la suite qui en
+  dépend, par un lien que rien n'affiche), et ceux dont c'est l'entrée-sortie qu'on éprouve
+  (`bilan-draft.ts` et les autres préférences locales) doublent AsyncStorage, jamais
+  `@/lib/supabase`.
 - **pgTAP** (`supabase/tests/database/*.sql`, numérotés, un fichier par sujet — l'inventaire se
   lit dans le répertoire) sur les fonctions SQL de calcul, sur les policies RLS (isolation
   stricte par utilisateur en lecture/écriture, verrouillage des tables à écriture serveur-only,
@@ -268,9 +271,10 @@ bout-en-bout (écrans, flux de connexion) :
   sur `plan_actions` et `engagement_checkins`. Tourne via `supabase test db`, qui démarre une
   stack Postgres locale (Docker) à partir de `supabase/config.toml` + `supabase/migrations/` —
   indépendante du projet Supabase distant `TraceVerte-v1` utilisé pour le développement applicatif
-  courant. Nécessite le CLI Supabase (`npx supabase@latest`) et Docker ; non exécutable dans
-  cet environnement (pas de daemon Docker) — validé à la place via des transactions
-  `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
+  courant. Nécessite Docker et le CLI Supabase **à la version que la CI épingle**
+  (`npx supabase@2.117.0`, jamais `@latest` — `ci.yml` dit pourquoi). Docker tourne dans
+  l'environnement d'agent depuis le 20/09/2026 (§2.6) ; avant, un fichier se validait par des
+  transactions `BEGIN`/`ROLLBACK` sur le projet distant, ce que la §2.3 borne.
 
 Les trois suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request — la
 troisième, le parcours réel, a sa §2.6.
@@ -288,8 +292,9 @@ décorative mais le seul endroit où l'on enregistre quel endpoint a été inter
 seule ne distingue pas un facteur ACV d'un facteur d'usage, les deux endpoints renvoyant des
 nombres également plausibles.
 
-**Le corollaire sur les valeurs :** Une quinzaine d'assertions chiffrées sont
-réparties dans `01`, `05`, `06` et `08`, et beaucoup dérivent d'un facteur sans le nommer.
+**Le corollaire sur les valeurs :** des dizaines d'assertions chiffrées sont réparties
+dans une dizaine de fichiers — la commande ci-dessous les liste, et c'est elle qui fait foi, pas
+un compte écrit ici —, et beaucoup dérivent d'un facteur sans le nommer.
 Chercher l'ancienne valeur littérale dans les fichiers ne suffit donc pas — c'est ainsi que
 la CI est tombée deux fois (PR #34, puis PR #41). La méthode qui marche : lister toutes les
 assertions (`grep -n '::numeric,' supabase/tests/database/`), recalculer chacune **par une
@@ -386,7 +391,7 @@ séquence entière est précisément celui qu'on ne peut pas rejouer en entier s
 
 Le contexte : `feedback` est la seule table où un client écrit du texte libre, gardée par le
 trigger `enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et des bornes de longueur
-(`CLAUDE.md`, « Canal de retour »).
+(`MESURE.md` §3).
 
 **Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
 passer sans rien éprouver de **deux** façons, et les deux se sont produites. Après la
@@ -634,7 +639,10 @@ vu en une seconde — mais personne ne le lance.
   nous est arrivé.
 - **Les documents datés sont hors périmètre**, volontairement : `docs/audit/` et les `v1-0N` sont
   des instantanés d'un jour. Un renvoi périmé y est **exact** — il dit où la chose était alors.
-  Seuls `produit.md` et `v1-27` y entrent, parce que le dépôt les tient à jour. **Le kit de design
+  Seuls `produit.md` et `v1-27` y entrent, parce que le dépôt les tient à jour. **Les cinq fichiers
+  de sujet sortis de `CLAUDE.md` le 01/10/2026** (`BILAN.md`, `PLAN.md`, `BOUCLE.md`, `COMPTE.md`,
+  `MESURE.md`) y sont inscrits un par un : la liste est déclarée, et un fichier qu'on oublierait d'y
+  ajouter perdrait sa garde sans que rien ne rougisse — mesuré en l'en retirant. **Le kit de design
   y entre depuis le 26/09/2026, sous-dossiers compris** (`docs/design/design-system/`, un miroir
   tenu), et les extensions de documents, de feuilles et d'images avec lui : son index citait deux
   fichiers `.md` qui n'existaient nulle part, qu'un contrôle limité au code ne pouvait pas voir.
@@ -676,7 +684,8 @@ jour touchait ses trois branches d'un coup.
 
 `scripts/verifier-code-de-connexion.mjs` — il portait le mot « lien » dans son nom jusqu'au passage
 au code, le 20/09/2026, et a été renommé avec son sujet — demande un code **par l'écran**, lit l'e-mail réellement reçu, et
-éprouve **cinq** choses dont deux seulement sont des chemins heureux :
+éprouve ce qui suit — et la plupart de ces assertions gardent un refus, pas un chemin heureux. La
+liste fait foi dans l'en-tête du script ; elle est recopiée ici pour être lue :
 
 1. le code rattache une adresse — jusqu'à une session non anonyme, et la base relue derrière ;
 2. il rouvre un compte depuis un **navigateur neuf**, c'est-à-dire le cas que le lien ne pouvait
@@ -687,7 +696,10 @@ au code, le 20/09/2026, et a été renommé avec son sujet — demande un code *
    plutôt que subie : sans cette assertion, le défaut se manifestait par un timeout) et aucun des
    deux e-mails ne porte de lien ;
 5. une URL portant des jetons valides ne fait pas basculer de compte (celle-là garde PKCE, pas le
-   code).
+   code) ;
+6. les deux branches de `/connexion/email` — adresse libre, adresse déjà prise — sont
+   **indistinguables à l'écran** (21/09/2026, `v1-28` §7.1), et la branche « prise » ramène bien
+   au compte existant.
 
 **Ce qu'aucune assertion ne peut prétendre** : que le code referme la confirmation d'une adresse
 tierce. Il est un **porteur** — mesuré, un `POST /auth/v1/verify` sans aucune session confirme et
@@ -884,8 +896,7 @@ qu'il annonce, et des cases d'option sans groupe.
   vague »), trouvée par la seule mutation qui visait la paire manquante. Le premier profil touche
   « Oui » au second mode pour ouvrir « Lequel ? » — sans quoi aucun profil ne rend cette liste —, puis
   répond « Non » comme avant : les chiffres attendus ne bougent pas.
-- **Le parcours réel joue le clavier là où il faut une session** : les jours de l'engagement, seule case
-  à cocher du produit — Espace coche sans faire défiler, Entrée décoche (une seule activation), une
+- **Le parcours réel joue le clavier là où il faut une session** : les jours de l'engagement — Espace coche sans faire défiler, Entrée décoche (une seule activation), une
   barre maintenue coche une fois (la répétition) — et « Toi », seul écran de ce parcours où une ligne
   de canal se rend (la feuille des rappels ne s'ouvre sur web qu'avec une adresse rattachée) : la
   ligne « Par email » hors d'atteinte est désactivée, jamais cochée, **sans opacité**, son titre en

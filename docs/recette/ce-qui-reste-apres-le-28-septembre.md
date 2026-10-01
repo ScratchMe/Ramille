@@ -136,10 +136,12 @@ unités, pas doubler, et les rangs ne bougent pas.
 
 - **Le retour hors ligne après le retrait du seul bilan** (ligne 09.10 du 28/09) : au web, recharger
   réseau coupé rend la page d'erreur du navigateur. C'est `v1-13` §11.23, sur appareil.
-- **L'écran du mode** (ligne 02.10) : jugé pénible le 28/09, il part en brief de design
+- **L'écran du mode** (ligne 02.10) : jugé pénible le 28/09, il est parti en brief de design
   ([#289](https://github.com/ScratchMe/Ramille/issues/289),
-  [`v1-31`](../design/v1-31-l-ecran-du-mode/BRIEF.md)) ; le jugement au doigt (§11.19) se rendra sur
-  ce qui en sortira.
+  [`v1-31`](../design/v1-31-l-ecran-du-mode/BRIEF.md)) et il est **implémenté depuis le 29/09/2026**
+  ([`v1-31-l-ecran-du-mode.md`](../architecture/v1-31-l-ecran-du-mode.md), PR
+  [#296](https://github.com/ScratchMe/Ramille/pull/296)) ; le jugement au doigt (§11.19) se rend sur le
+  build qui le portera.
 - **Le mot de la veille, les notifications, TalkBack** : `v1-13` §11, après le build du 1er octobre.
 - **L'oracle d'adresse au réseau** : un 422 dans la console sur une adresse prise, c'est **attendu**
   et documenté (`v1-28` §7.1) — pas un écart.

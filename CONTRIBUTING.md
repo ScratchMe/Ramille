@@ -33,9 +33,10 @@ intégrer — elles ne se devinent pas :
 
 - **tout est en français** — interface, messages d'erreur, commentaires, contenu ;
 - **[`CLAUDE.md`](CLAUDE.md) est la carte du projet.** Les fichiers d'outil à la racine
-  (`FRONT.md`, `SUPABASE.md`, `EXPO.md`, `TESTING.md`, `VERCEL.md`, `RECETTE.md`) portent les
-  pièges de chaque sujet et s'ouvrent **sur déclencheur** : la table en tête de `CLAUDE.md` dit
-  lequel. C'est par là qu'on commence, pas par le code ;
+  (`SUPABASE.md`, `EXPO.md`, `TESTING.md`, `VERCEL.md`, `RECETTE.md`) portent les pièges de chaque
+  outil, et les fichiers de sujet (`FRONT.md`, `BILAN.md`, `PLAN.md`, `BOUCLE.md`, `COMPTE.md`,
+  `MESURE.md`) les règles de chaque brique du produit ; tous s'ouvrent **sur déclencheur** : la
+  table en tête de `CLAUDE.md` dit lequel. C'est par là qu'on commence, pas par le code ;
 - **les décisions sont datées et ne se réécrivent pas** (`docs/architecture/v1-0N-*.md`). Plusieurs
   tests n'épinglent pas un comportement mais une décision, précisément pour qu'elle ne soit pas
   « corrigée » par réflexe — l'ordre ACV des motorisations en est l'exemple le plus
@@ -54,7 +55,7 @@ npm install
 npm run web             # ou: npm run android
 ```
 
-Les vérifications, les mêmes que la CI :
+Les vérifications les plus rapides de la CI :
 
 ```bash
 npx tsc --noEmit    # typecheck
@@ -62,11 +63,16 @@ npm run lint
 npm test            # Jest — logique pure
 ```
 
-Les tests de base de données demandent Docker : `npx supabase@latest db start` puis
-`npx supabase@latest test db`.
+La CI en fait bien davantage — l'export web et ses gardes, les fonctions d'`api/` rendues sous
+Node, pgTAP, le parcours réel. **`node scripts/rejouer-la-ci.mjs` les rejoue toutes en local**,
+dans l'ordre de la CI, ou seulement celles qu'on nomme (`TESTING.md` §2.13).
+
+Les tests de base de données demandent Docker et le CLI Supabase **à la version que la CI
+épingle** : `npx supabase@2.117.0 db start` puis `npx supabase@2.117.0 test db` — jamais
+`@latest`, qui change sous les pieds à chaque sortie du CLI.
 
 Le parcours réel — le chemin nominal joué par Playwright contre la stack locale complète, la base
-relue après chaque écriture — demande `npx supabase@latest start` et un export branché dessus :
+relue après chaque écriture — demande `npx supabase@2.117.0 start` et un export branché dessus :
 `TESTING.md` §2.6 donne les commandes exactes, et ce que ce garde-fou laisse aux deux autres suites.
 
 ## Si une pull request arrive quand même

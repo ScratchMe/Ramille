@@ -8,9 +8,10 @@ que chaque paragraphe cite. Ce qui relève de l'hébergement de l'export (`clean
 déploiements) est dans `VERCEL.md`.
 
 > **Quand lire ce fichier** : avant d'ajouter une route ou un fichier dans `public/` · avant de
-> toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · devant un écran
-> blanc sur web · avant d'ajouter une dépendance native ou de lancer un build EAS · quand
-> `expo-doctor` rougit en CI.
+> toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · avant de toucher à
+> une mise en page — marge, hauteur, barre d'onglets · avant de faire bouger quelque chose sur web ·
+> devant un écran blanc sur web · avant d'ajouter une dépendance native ou de lancer un build EAS ·
+> quand `expo-doctor` rougit en CI.
 
 ---
 
@@ -353,14 +354,16 @@ pas ce qui s'affiche.
 **Espace coche les choix depuis le 25/09/2026, et c'est la livraison de la veille qui l'avait
 cassé** : tant que les puces s'annonçaient en boutons, react-native-web les activait à la barre
 d'espace ; devenues des `radio` et des `checkbox`, elles ne répondaient plus qu'à Entrée (§1.5).
-`activableALaBarreDEspace` (`src/lib/barre-d-espace.ts`) est décomposé par les quatre composants de
-choix — `Chip`, `ChoiceRow`, `ModeListItem`, `LigneDeCanal` — et rend des props vides sur natif.
-Deux gardes le voient, parce qu'il ne se voit que dans un navigateur : la section F de
-`verifier-etats-export.mjs` presse Espace sur une rangée, une puce et un item de mode du
-questionnaire et mesure que la case est cochée **et que rien n'a défilé** ; le parcours réel joue
-Espace, Entrée et une touche maintenue sur les jours de l'engagement, la seule case à cocher du
-produit, puis Espace sur la ligne de canal de « Toi ». Ce qui reste hors de portée : les flèches
-pour passer d'une option à l'autre d'un groupe, que rien ne gère (`v1-29` §6.4).
+`activableALaBarreDEspace` (`src/lib/barre-d-espace.ts`) est décomposé par les composants de
+choix — `Chip`, `ChoiceRow`, `ModeListItem`, `LigneDeCanal` et, depuis C4.2, la case du mot de la
+veille (`choix-de-rappel.tsx`) — et rend des props vides sur natif. Deux gardes le voient, parce
+qu'il ne se voit que dans un navigateur : la section F de `verifier-etats-export.mjs` presse Espace
+sur une rangée, une puce et un item de mode du questionnaire et mesure que la case est cochée **et
+que rien n'a défilé** ; le parcours réel joue Espace, Entrée et une touche maintenue sur les jours
+de l'engagement, puis Espace sur la ligne de canal de « Toi ». **Les flèches parcourent un groupe
+d'options depuis le même jour** (`src/lib/groupe-au-clavier.ts`, branché par `GroupeDeChoix`,
+`v1-29` §6.4) : un seul arrêt de tabulation par groupe, et la flèche passe à la voisine en la
+cochant — `FRONT.md` §2.4 pour la règle, la section I de `verifier-etats-export.mjs` pour la garde.
 
 **La barre d'onglets est épinglée en `tabBarLabelPosition: 'below-icon'`, et c'est le web qui
 l'imposait** (13.7, recette web du 16/09/2026). `OngletIcone` dessine une pastille de 56 × 30 dans
