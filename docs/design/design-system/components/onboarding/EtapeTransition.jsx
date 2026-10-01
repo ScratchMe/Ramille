@@ -7,14 +7,17 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // les quatre sections, et une ligne sur ce qui vient APRÈS le bilan — une action à son rythme, un point de temps en
 // temps. Une ligne et non un cinquième écran, et sans rythme chiffré : « de temps en temps » est vrai pour les deux
 // boucles. Le lien vers ce qu'on enregistre revient ici, juste avant la première écriture.
-const SECTIONS = ['1 — Trajet domicile-travail', '2 — Loisirs du week-end', '3 — Voyages longue distance', '4 — Ton contexte de mobilité'];
+// Les libellés de `BILAN_SECTION_LABEL` (src/types/bilan.ts), recopiés faute de pouvoir importer `src/` : le dépôt
+// les lit à la source, et ce sont ceux de l'en-tête du questionnaire (01/10/2026, `v1-33`, Q-15) — « Domicile-travail »
+// et « Contexte de mobilité », non plus « Trajet domicile-travail » et « Ton contexte de mobilité ».
+const SECTIONS = ['1 — Domicile-travail', '2 — Loisirs du week-end', '3 — Voyages longue distance', '4 — Contexte de mobilité'];
 export function EtapeTransition({ onCommencer, onPrecedent, onConfidentialite, style }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 24, background: 'var(--color-background)', minHeight: 760, boxSizing: 'border-box', ...style }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
         <ThemedText type="display">On passe à ton bilan</ThemedText>
         <ThemedText weight={400} themeColor="textSecondary" style={{ fontSize: 16, lineHeight: '24px' }}>Quelques questions sur tes déplacements habituels. Tu peux t’arrêter et reprendre plus tard, tes réponses sont conservées.</ThemedText>
-        <div style={{ background: 'var(--color-background-element)', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ background: 'var(--color-background-element)', borderRadius: 'var(--radius-card)', padding: 24, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <ThemedText type="small" themeColor="textTertiary">Temps estimé</ThemedText>
           <ThemedText weight={600} style={{ fontSize: 24, lineHeight: '30px' }}>environ 5 minutes</ThemedText>
         </div>

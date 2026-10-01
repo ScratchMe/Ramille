@@ -7,19 +7,25 @@ import { OnboardingDots } from '@/components/onboarding-dots';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
 import { type TitreFocalisable } from '@/lib/focus';
+import { BILAN_SECTION_LABEL, BILAN_STEP_ORDER } from '@/types/bilan';
 
 // Les mêmes libellés qu'en tête du questionnaire et que dans la restitution (C2.6) : l'annonce
 // et ce qu'on trouve ensuite doivent porter le même nom, sans quoi la personne croit avoir
 // changé de sujet.
-const SECTIONS = [
-  '1 — Trajet domicile-travail',
-  '2 — Loisirs du week-end',
-  '3 — Voyages longue distance',
-  '4 — Ton contexte de mobilité',
-];
+//
+// **Ils sont lus à la source, plus recopiés** (01/10/2026, `v1-33`, Q-15). Le commentaire ci-dessus
+// l'affirmait déjà, et c'était faux pour deux sections sur quatre : « Trajet domicile-travail » et
+// « Ton contexte de mobilité » là où l'en-tête dit « Domicile-travail » et « Contexte de mobilité ».
+// `BILAN_SECTION_LABEL` donne un libellé par **étape** ; les sections sont ses valeurs distinctes,
+// dans l'ordre du questionnaire — l'ordre d'insertion d'un `Set` —, et le numéro est celui de la
+// section dans cette suite. Une section renommée ou ajoutée dans le questionnaire change l'annonce sans
+// qu'on y touche.
+const SECTIONS = [...new Set(BILAN_STEP_ORDER.map((etape) => BILAN_SECTION_LABEL[etape]))].map(
+  (libelle, i) => `${i + 1} — ${libelle}`
+);
 
 // Étape 4/4 de l'onboarding, rendue par le pager de `src/app/onboarding/index.tsx`.
 //
@@ -128,7 +134,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
   content: { flex: 1, justifyContent: 'center', gap: Spacing.three },
   body: { fontSize: 16, lineHeight: 24 },
-  durationBlock: { borderRadius: 20, padding: Spacing.four, gap: 2 },
+  durationBlock: { borderRadius: Radius.card, padding: Spacing.four, gap: 2 },
   duration: { fontSize: 24, lineHeight: 30 },
   sections: { gap: 10 },
   suite: { lineHeight: 20 },
