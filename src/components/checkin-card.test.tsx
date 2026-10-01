@@ -158,8 +158,10 @@ describe('CheckinCard — la boucle arrêtée', () => {
 /**
  * **Le pied daté arrive avec la réponse** (audit P-10, 01/10/2026). Il se composait sur la ligne
  * seule, dont `responded_at` reste nul jusqu'à la relecture du plan : juste après « Oui », la carte ne
- * disait pas quand on se retrouve. Ni `piedDuPointRepondu` (qui ne sait pas ce que la carte lui passe)
- * ni le parcours réel (qui ne lit le pied qu'après un rechargement) ne le voyaient.
+ * disait pas quand on se retrouve. `piedDuPointRepondu` ne sait pas ce que la carte lui passe, et le
+ * parcours réel ne lisait le pied qu'après un rechargement — il l'attend désormais avec la réponse
+ * (mutation PL10 de son en-tête, le même jour) ; ce fichier garde en plus l'horodatage du serveur qui
+ * prend le relais, que le parcours ne distingue pas de l'instant du geste.
  *
  * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), deux mutations :
  *   - la carte qui repasse la ligne seule à `piedDuPointRepondu` (l'état d'avant) → les deux tests du
