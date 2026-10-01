@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
@@ -11,6 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteMyAccount, exportMyData } from '@/lib/compte';
+import { terminerLeFlux } from '@/lib/navigation';
 import { APP_NAME } from '@/constants/produit';
 import { RAMILLE } from '@/constants/mascotte';
 
@@ -108,7 +108,9 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
           été supprimés définitivement.
         </ThemedText>
         <RamilleDit ligne={RAMILLE.auRevoir} mood="calm" size={44} tilt={-7} />
-        <Button title="Revenir au début" onPress={() => router.replace('/')} />
+        {/* La pile se vide d'abord (01/10/2026, audit T-1, `terminerLeFlux`) : un `replace` seul
+            laissait le plan du compte supprimé sous la racine, et le retour y ramenait. */}
+        <Button title="Revenir au début" onPress={() => terminerLeFlux('/')} />
       </ThemedView>
     );
   }

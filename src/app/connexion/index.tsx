@@ -15,7 +15,7 @@ import { useTrackView } from '@/hooks/use-track-view';
 import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
-import { revenirOu } from '@/lib/navigation';
+import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import { sourceConnexion } from '@/types/analytics';
 import { PHRASE_SANS_COMPTE_SOUS_LA_SORTIE } from '@/types/compte';
 import { identiteDejaRattachee, introDeLaConnexion } from '@/types/connexion';
@@ -133,7 +133,10 @@ export default function ConnexionProposition() {
     if (etat?.kind === 'rattache') {
       track('connexion_success', { method: 'google' });
     }
-    router.replace('/plan');
+    // **Le flux est fini, et la pile se vide derrière lui** (01/10/2026, audit T-1) : un `replace`
+    // seul laissait « Toi » et cet écran sous le plan, et le retour reproposait de rattacher le
+    // compte qu'on venait de rattacher (`terminerLeFlux`).
+    terminerLeFlux('/plan');
   };
 
   return (

@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { demanderLaConnexion } from '@/lib/auth';
 import { effacerLesMarquesLocales, lireEtatDuCompte } from '@/lib/compte';
 import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
-import { revenirOu } from '@/lib/navigation';
+import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   adresseSemblePlausible,
   messageDeLaDemande,
@@ -245,8 +245,10 @@ export default function RetrouverMonCompte() {
               // relevé par le canvas v1-21 (`v1-27` §12.12) —, le chemin par code le fait.
               await effacerLesMarquesLocales();
               // La racine route vers le plan si le compte retrouvé porte un bilan complété, vers
-              // l'onboarding sinon.
-              router.replace('/');
+              // l'onboarding sinon — **la pile vidée d'abord** (01/10/2026, audit T-1) : depuis
+              // l'accueil de l'onboarding, un `replace` seul y laissait l'onboarding, que le retour
+              // depuis le plan rejouait (`terminerLeFlux`).
+              terminerLeFlux('/');
             }}
             onAutreAdresse={() => {
               setMessage(null);

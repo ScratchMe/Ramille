@@ -15,7 +15,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
-import { revenirOu } from '@/lib/navigation';
+import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   lireLaFenetreDuMotDeLaVeille,
   loadReminderPrefs,
@@ -148,10 +148,12 @@ export default function Compte() {
     setCle((n) => n + 1);
   };
 
-  // **`replace('/')` et non `back()`** : la racine décide où aller selon qu'un bilan complété
+  // **Vers la racine, et pas en arrière** : la racine décide où aller selon qu'un bilan complété
   // existe, et après une déconnexion il n'en existe plus pour cette session — elle route donc vers
   // l'onboarding. Revenir en arrière aurait ramené sur le plan d'un compte qu'on vient de quitter,
-  // avec des données encore en mémoire d'écran.
+  // avec des données encore en mémoire d'écran. **Et la pile se vide avant** (01/10/2026, audit
+  // T-1) : un `replace('/')` seul ne remplaçait que « Toi », et le plan quitté restait dessous —
+  // le premier retour depuis l'onboarding y ramenait (`terminerLeFlux`).
   const seDeconnecter = async () => {
     if (deconnexionEnCours) return;
     setDeconnexionEnCours(true);
@@ -165,7 +167,7 @@ export default function Compte() {
       return;
     }
 
-    router.replace('/');
+    terminerLeFlux('/');
   };
 
   // Optimiste puis corrigé : le réglage doit répondre au doigt, et une écriture qui échoue

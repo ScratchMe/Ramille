@@ -14,7 +14,7 @@ import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
 import { demanderLaConnexion, demanderLeRattachement } from '@/lib/auth';
 import { effacerLesMarquesLocales } from '@/lib/compte';
-import { revenirOu } from '@/lib/navigation';
+import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   lireAdresseDuLien,
   lireFluxDuCode,
@@ -193,9 +193,10 @@ export default function ConnexionEmail() {
       // raison : les marques locales décrivent celui qu'on quitte — annonce de rattachement, étape
       // du premier parcours (qui décide de la barre d'onglets), brouillon, et l'adresse mémorisée
       // elle-même. La racine route ensuite vers le plan si le compte retrouvé porte un bilan
-      // complété, vers l'onboarding sinon.
+      // complété, vers l'onboarding sinon. **Et la pile se vide derrière le flux** (01/10/2026,
+      // audit T-1, `terminerLeFlux`) : le retour ne ramène plus dans un flux terminé.
       await effacerLesMarquesLocales();
-      router.replace('/');
+      terminerLeFlux('/');
       return;
     }
     // **On ne relit rien ici, et c'est un correctif.** Cette fonction attendait un
@@ -203,7 +204,11 @@ export default function ConnexionEmail() {
     // le dernier chiffre et le plan, pendant lequel la personne regardait l'écran de code d'un
     // rattachement déjà réussi. `verifyOtp` a mis la session à jour en local, et c'est le plan qui
     // lit l'état, annonce le rattachement et compte le succès — lui seul en a besoin.
-    router.replace('/plan');
+    //
+    // **Sans rien laisser derrière** (01/10/2026, audit T-1) : un `replace` seul gardait « Toi » et
+    // « Ton bilan, d'un appareil à l'autre » sous le plan, et le premier retour reproposait de
+    // rattacher le compte qu'on venait de rattacher (`terminerLeFlux`).
+    terminerLeFlux('/plan');
   };
 
   if (phase.kind === 'code') {
