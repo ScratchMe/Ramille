@@ -47,6 +47,19 @@ voyage est en `FRONT.md` §1.
   `if a.commute_second_mode_used and a.commute_second_mode is not null`, où `null` se comporte
   **exactement comme `false`**. D'où un `?? false` à l'insert, inatteignable par construction et
   écrit quand même, le typecheck étant le seul garde qui voie cette dérive.
+- **Les vols et les longs trajets ont suivi le 01/10/2026** (`v1-33` D1) : ils arrivaient répondus
+  « 0 », en vert plein, et le profil pressé traversait le poste souvent le plus lourd sans un toucher.
+  Le total des vols est `number | null` côté client, `null` au départ, et `manqueDeLEtape` le réclame
+  (« le nombre de vols », question du titre, jamais marquée) ; la colonne reste `not null default 0`,
+  d'où un `?? 0` inatteignable à l'insert. Les longs trajets s'ouvrent par « Hors avion, fais-tu des
+  trajets de plus de 300 km sur une année type ? » : « Non » écrit trois zéros, « Oui » ouvre les
+  trois séries sans puce cochée et réclame **un** trajet ; une série laissée vide vaut zéro, d'où un
+  `?? 0` **atteignable** cette fois. La réponse se dérive des compteurs (`reponseAuxLongsTrajets`)
+  **plus** le « Oui » qu'ils ne savent pas dire, tenu par l'écran hors de `BilanAnswers`
+  (`HorsColonnes` — un champ de plus ferait refuser l'insert) et passé à `manqueDeLEtape`, qui
+  l'exige au typecheck : un écran qui n'a rien hors des colonnes passe `RIEN_HORS_COLONNES`. Il n'est
+  pas dans le brouillon : un questionnaire quitté sur « Oui » sans trajet rouvre la question. Un
+  brouillon d'avant ce changement porte des `0` : ce sont des réponses.
 - **Une précision s'ouvre sous l'option qu'elle décrit, et la dernière exception est tombée**
   (`v1-16` §3). La taille du covoiturage du trajet quotidien vivait en tête de l'écran **suivant**,
   alors que ses deux jumelles de C3.5 (sorties, longs trajets) s'ouvrent sous l'option choisie :
@@ -104,6 +117,11 @@ voyage est en `FRONT.md` §1.
     ni le préremplissage d'un re-bilan ni un brouillon relu n'y passent — une précision qu'ils font
     apparaître ne fait rien défiler. « Voir les autres modes » ne défile pas : ce qu'il révèle est
     sous le doigt.
+  **Et le défilement de la plateforme est borné au contenu au moment où il part**, alors qu'un dépli
+  part de zéro : sur une étape qui tenait dans la zone (« Oui » de B1.6, « Oui » des longs trajets),
+  la zone ne remontait pas, la cible calculée étant pourtant juste (01/10/2026). `StepShell` réserve
+  la hauteur finale (`minHeight`, depuis la hauteur **naturelle** : `flexGrow` étire le contenu à la
+  zone) le temps de l'ouverture ; garde B6 bis, section K de `verifier-etats-export.mjs`.
 - **Un filet en haut du pied dit qu'il y a une suite** (`suiteSousLePied`, `v1-31`, décision 3) :
   le trait de la bande haute (`border`, un filet), quand le contenu continue dessous au-delà de sa
   marge basse de 24. Il ne dit pas ce qui manque. Relu au défilement, à la taille du contenu et à

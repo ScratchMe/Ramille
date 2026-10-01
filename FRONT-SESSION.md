@@ -248,6 +248,14 @@ périmerait en silence au prochain passage :
   régulier n'a que six étapes. Il ne dit jamais zéro écran rempli, et l'écran ne dit jamais le délai
   écoulé — interdit du handoff §5.2, parce que « tu as commencé il y a trois semaines » est un
   reproche déguisé en information.
+- **Le bandeau « Tes réponses précédentes sont préremplies. Modifie ce qui a changé. » ne se dit
+  qu'à l'étape d'entrée de la visite** (01/10/2026, `v1-33` D3) — la première, celle d'un brouillon
+  repris, celle de `?etape=`. Ce qu'on accepte : qui reprend au milieu ne le relit pas, il voit ses
+  réponses cochées. **Et la feuille « Ton plan va être recalculé » se dit à l'entrée** (`v1-33` §6,
+  qui déplace `v1-19` D4) : elle arrivait au terme de neuf étapes pour dire « ton bilan actuel est
+  toujours juste ». Mêmes conditions (`engagementDeLaPeriodeCourante`) ; « Commencer » la referme,
+  « Pas maintenant » et le retour ressortent (`revenirOu('/')`). Sur web, le focus est posé sur
+  « Commencer » : le `Modal` de react-native-web ne le fait pas lui-même.
 - **Ramille parle à l'entrée de chaque section du questionnaire — quatre, pas neuf** (C3.9,
   `RAMILLE.entreeDeSection`). Le questionnaire demande des ordres de grandeur et ne le disait qu'une
   fois, dans l'onboarding, cinq écrans plus tôt ; au troisième champ, la précision qu'on croit

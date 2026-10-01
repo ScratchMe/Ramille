@@ -93,7 +93,7 @@ export function StepShell({
   /** Le nom du bouton, qui ne change jamais selon ce qui manque : « Suivant », ou « Voir mon bilan » à
    *  la dernière étape. Un nom qui suivrait les réponses ferait réannoncer le bouton à chaque choix. */
   nextLabel?: string;
-  /** Bandeau discret sous l'en-tête (ex. « réponses pré-remplies » lors d'un re-bilan). */
+  /** Bandeau discret sous l'en-tête (ex. « réponses préremplies » lors d'un re-bilan). */
   notice?: string;
   /**
    * Un mot de Ramille à l'entrée d'une section (C3.9). **Rendu sans `RamilleDit`, et c'est

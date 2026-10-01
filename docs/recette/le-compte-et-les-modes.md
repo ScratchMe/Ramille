@@ -111,6 +111,7 @@ les chiffres ci-dessous ne sont comparables à rien.
 | Mode des sorties | **Voiture (seul)** → « Quelle motorisation ? » → **Thermique** |
 | Distance d'une sortie | **15 à 30 km** |
 | Vols | **2** au total, dont **1** court (donc **un long-courrier**) |
+| Trajets de plus de 300 km, hors avion ? | **Oui** (depuis le 01/10/2026 : la question s'ouvre ainsi, `v1-33` D1) |
 | Longs trajets en train | **0** |
 | Longs trajets en autocar | **2** |
 | Longs trajets en voiture | **2** → **Thermique** → « Vous êtes combien dans la voiture ? » → **2** |
@@ -168,7 +169,8 @@ parlait de sorties qu'il n'a pas déclarées.
 | Mode | **Vélo** → « Quel type de vélo ? » → **Mécanique** |
 | Second mode ? | **Non** |
 | Sorties | **Rarement — une fois par mois ou moins** |
-| Vols | **0** |
+| Vols | **0** — à toucher : rien n'est coché d'avance depuis le 01/10/2026 |
+| Trajets de plus de 300 km, hors avion ? | **Oui** |
 | Longs trajets en train | **1** |
 | Longs trajets en autocar | **0** |
 | Longs trajets en voiture | **0** |
@@ -245,7 +247,7 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 | 02.6 | **Les vols**, avant de saisir ceux du profil : choisir **0**, puis **2** | La question « **Sur ces 2, combien sont courts ?** » arrive **sans réponse choisie**, et « Suivant » n'avance pas tant qu'on n'a rien choisi : il est gris, et le toucher fait apparaître « **Il manque encore la part de vols courts.** » (depuis `v1-31`, 29/09/2026 — il restait inactif le 28/09). Avant le 27/09, elle arrivait déjà réglée sur « 0 », donc **deux long-courriers** comptés sans que personne ne l'ait dit — l'erreur la plus lourde possible sur le poste le plus lourd | |
 | 02.7 | Choisir **2** courts | Sous la question : **« Aucun vol long-courrier ne sera compté. »** — le zéro dit en mots, et non « 0 vol long-courrier sera compté. » | |
 | 02.8 | Choisir **1** court (la réponse du profil) | **« 1 vol long-courrier sera compté. »** | |
-| 02.9 | À l'étape des longs trajets | **Trois** compteurs et non deux : « En train », « **En autocar** », « En voiture ». Sous l'autocar, **aucune** question de motorisation ni de remplissage — on ne choisit pas le véhicule d'un autocar | |
+| 02.9 | À l'étape des longs trajets, après « **Oui** » | **Trois** compteurs et non deux : « En train », « **En autocar** », « En voiture ». Sous l'autocar, **aucune** question de motorisation ni de remplissage — on ne choisit pas le véhicule d'un autocar | |
 | 02.10 | **L'écran du mode : est-ce devenu pénible ?** Y revenir par « Retour » et le remplir une seconde fois, délibérément | **Ce n'est pas une conformité, c'est un jugement à rendre** (`v1-13` §11.19). Cinq des neuf entrées ouvrent désormais une sous-question — « Voiture (seul) », « Voiture (covoiturage) » qui en ouvre deux, « Deux-roues motorisé », « Train », « Vélo ». **L'écran a changé le 29/09/2026 (`v1-31`)**, et c'est lui qu'on juge désormais : les modes en trois familles (motorisés, collectifs, actifs), la précision dans une boîte sous son mode, l'écran qui remonte juste assez pour la montrer quand elle s'ouvrirait sous le bouton, un filet en haut du pied quand la suite est dessous, et, au toucher du « Suivant » gris, « Il manque encore … » au-dessus de lui, la question en vert et l'écran qui y défile s'il le faut. Trois choses à regarder : (a) l'encart reste-t-il dans le champ de vision après la sélection, sans le chercher ; (b) comprend-on qu'il reste quelque chose à faire quand « Suivant » est gris — et le toucher mène-t-il à ce qui manque sans chercher ; (c) changer d'avis sur le mode donne-t-il l'impression de tout recommencer. **Répondre même si tout est conforme** — une ligne muette se lira « non joué ». Si c'est pénible, la suite est un **brief de design**, pas un correctif | |
 | 02.11 | Finir le questionnaire et soumettre | — | |
 
@@ -322,11 +324,11 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
-| 08.1 | « **Revoir mon bilan** » en bas du plan (ou le bilan depuis le suivi), puis « **Faire un nouveau bilan** », et avancer **jusqu'à la dernière étape**, puis « Voir mon bilan » | Une feuille : « **Ton plan va être recalculé** », puis la phrase de l'engagement en cours — une échéance ayant été choisie au 03.12 : « **L'action que tu suis — Faire une sortie sur trois à vélo à assistance électrique — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.** » —, puis en petit : « Rien ne presse : une habitude met du temps à prendre. Si tes trajets n'ont pas changé, ton bilan actuel est toujours juste. » Deux sorties : « **Soumettre mon bilan** » et « **Pas maintenant** » | |
+| 08.1 | « **Revoir mon bilan** » en bas du plan (ou le bilan depuis le suivi), puis « **Faire un nouveau bilan** », **avant la première étape** (depuis le 01/10/2026, `v1-33` §6 : la feuille s'ouvre à l'entrée, plus à la soumission) | Une feuille : « **Ton plan va être recalculé** », puis la phrase de l'engagement en cours — une échéance ayant été choisie au 03.12 : « **L'action que tu suis — Faire une sortie sur trois à vélo à assistance électrique — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.** » —, puis en petit : « Rien ne presse : une habitude met du temps à prendre. Si tes trajets n'ont pas changé, ton bilan actuel est toujours juste. » Deux sorties : « **Commencer** » et « **Pas maintenant** » — et « Pas maintenant » ressort du questionnaire | |
 | 08.2 | Le plan et le suivi, en cherchant une proposition de re-bilan | **Aucune carte de re-bilan**, ni sur le plan ni sur le suivi : le bilan a moins d'une saison, et la proposition ne vient qu'à la bascule (C6.3). Une carte qui dirait « Ton dernier bilan a moins d'un mois » est un écart | |
 | 08.3 | « Pas maintenant ». Puis, dans le **navigateur B** (fermer la fenêtre du bloc 06 d'abord), une fenêtre privée sur `https://www.ramille.fr/compte` — une session anonyme, sans bilan, suffit | La page dit ce qu'un compte apporte **et ce que son absence coûte** : « Ton bilan reste sur cet appareil. Un compte le fait te suivre ailleurs — si tu changes de téléphone ou si tu ne reviens pas pendant **trois mois**, ce bilan ne te suivra pas. » | |
 | 08.4 | Le gain de la piste de rang 1, sur le plan du profil 1 | **« 1 601 kg »** avec un vrai espace entre le 1 et le 6 — jamais « 1601 kg ». **C'est le seul gain à quatre chiffres du parcours** | |
-| 08.5 | Revenir sur le compte du profil 1 (**navigateur A**, la fenêtre du bloc 04) et **soumettre pour de bon un second bilan**, identique au premier sauf **2 vols courts sur 2** (donc aucun long-courrier) | La feuille du 08.1 s'ouvre de nouveau, avec la même phrase de l'engagement ; « Soumettre mon bilan ». **Le suivi n'en montre qu'un** : il ne garde que le dernier bilan de chaque jour, un bilan refait le même jour étant une correction (`keepLatestPerDay`) — et depuis le 28/09/2026 la restitution ne le compare plus au premier. La base en porte bien deux, c'est ce qu'il faut au bloc 09. *(Cette ligne attendait deux bilans au suivi : faux joué dans la journée, relevé à la séance du 28/09.)* | |
+| 08.5 | Revenir sur le compte du profil 1 (**navigateur A**, la fenêtre du bloc 04) et **soumettre pour de bon un second bilan**, identique au premier sauf **2 vols courts sur 2** (donc aucun long-courrier) | La feuille du 08.1 s'ouvre de nouveau **à l'entrée**, avec la même phrase de l'engagement ; « Commencer », puis les étapes jusqu'à « Voir mon bilan » — la soumission ne la rouvre pas. **Le suivi n'en montre qu'un** : il ne garde que le dernier bilan de chaque jour, un bilan refait le même jour étant une correction (`keepLatestPerDay`) — et depuis le 28/09/2026 la restitution ne le compare plus au premier. La base en porte bien deux, c'est ce qu'il faut au bloc 09. *(Cette ligne attendait deux bilans au suivi : faux joué dans la journée, relevé à la séance du 28/09.)* | |
 
 ## Bloc 09 — Retirer un bilan
 

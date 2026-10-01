@@ -29,7 +29,7 @@ export const Couleurs = () => (
     <ThemedText themeColor="text">Ton bilan du 8 septembre</ThemedText>
     <ThemedText themeColor="textSecondary">Tes voyages pèsent le plus dans ton empreinte.</ThemedText>
     <ThemedText themeColor="textTertiary">Bilan précédent · 11 juin</ThemedText>
-    <ThemedText themeColor="accentText" weight={600}>Tes réponses du dernier bilan sont pré-remplies.</ThemedText>
+    <ThemedText themeColor="accentText" weight={600}>Tes réponses du dernier bilan sont préremplies.</ThemedText>
   </Colonne>
 );
 

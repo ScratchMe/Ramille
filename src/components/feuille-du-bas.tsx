@@ -90,8 +90,9 @@ export function FeuilleDuBas({
   const voile = useSharedValue(animationsReduites ? 1 : 0);
   const feuille = useSharedValue(animationsReduites ? 1 : 0);
   const sortieLancee = useRef(false);
-  // Pendant la sortie, la feuille ne prend plus aucun toucher : « Pas maintenant » puis « Soumettre
-  // mon bilan » dans les 200 ms soumettait le bilan.
+  // Pendant la sortie, la feuille ne prend plus aucun toucher : « Pas maintenant » puis le bouton
+  // plein de la feuille du re-bilan (« Soumettre mon bilan » jusqu'au 01/10/2026, « Commencer »
+  // depuis) dans les 200 ms faisait les deux.
   const [enSortie, setEnSortie] = useState(false);
   // Ce que la fin de la sortie appelle. **Un `fermer(apres)` arrivé pendant la sortie le remplace**,
   // au lieu d'être ignoré : le retour lance la sortie, puis le choix de la feuille des rappels finit

@@ -82,7 +82,8 @@ ces chiffres, et une ligne de plus ou de moins dans le plan.
 | Second mode | **Non** |
 | Sorties du week-end | **Une fois par semaine**, en **voiture** thermique, tranche **15 à 30 km**, sans covoiturage |
 | Vols | **2** dans l'année, dont **1** court → l'écran doit écrire « 1 vol long-courrier sera compté. » |
-| Longs trajets en autocar | **0** par an — le compteur existe depuis C4.4, et il faut le laisser à zéro pour retrouver ces chiffres |
+| Trajets de plus de 300 km, hors avion ? | **Oui** — la question ouvre l'étape depuis le 01/10/2026 (`v1-33` D1) |
+| Longs trajets en autocar | **0** par an — le compteur existe depuis C4.4 : toucher 0 ou laisser la série vide (elle vaut zéro) pour retrouver ces chiffres |
 | Longs trajets en voiture | **2** par an, thermique, **2** personnes à bord |
 | Contexte | **Périurbain**, transports en commun **Limité**, **1** véhicule |
 | Télétravail | **Un jour** |

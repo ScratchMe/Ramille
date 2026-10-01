@@ -35,6 +35,10 @@ insert sans transformation.
 là** — laisser le choix facultatif reviendrait à garder le défaut pour tous ceux qui passent sans
 répondre, ce que chacun des trois chantiers corrige. Cinq points à connaître :
 
+- **Un trajet de plus de 300 km est un aller, comme un vol** : le calcul multiplie leur nombre par
+  800 et 700 km, sans × 2 ; l'écran le dit (« Un aller-retour compte pour deux trajets. ») et la
+  méthode aussi (`v1-33` D2). Les quatre compteurs de voyage sont `null` côté client tant qu'on n'a
+  pas répondu ; les colonnes restent `not null default 0` (`?? 0` à l'insert, `v1-33` D1).
 - **`commute_second_mode_share` est une fraction, pas une énumération** : c'est ce que le SQL
   multiplie, et traduire trois libellés en trois nombres quelque part entre l'écran et le calcul
   serait un troisième endroit où se tromper. Le calcul attribuait exactement la moitié des

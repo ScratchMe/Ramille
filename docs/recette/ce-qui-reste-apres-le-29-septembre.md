@@ -106,6 +106,7 @@ saisir **à la lettre** :
 | Mode des sorties | **Voiture (seul)** → « Quelle motorisation ? » → **Thermique** |
 | Distance d'une sortie | **15 à 30 km** |
 | Vols | **2** au total, dont **1** court (donc **un long-courrier**) |
+| Trajets de plus de 300 km, hors avion ? | **Oui** (depuis le 01/10/2026, `v1-33` D1) |
 | Longs trajets en train | **0** |
 | Longs trajets en autocar | **2** |
 | Longs trajets en voiture | **2** → **Thermique** → « Vous êtes combien dans la voiture ? » → **2** |
@@ -147,7 +148,8 @@ premier parcours ne pouvait pas montrer, son profil s'engageant sur le rang 1.
 | Mode | **Vélo** → « Quel type de vélo ? » → **Mécanique** |
 | Second mode ? | **Non** |
 | Sorties | **Rarement — une fois par mois ou moins** |
-| Vols | **0** |
+| Vols | **0** — à toucher : rien n'est coché d'avance depuis le 01/10/2026 |
+| Trajets de plus de 300 km, hors avion ? | **Oui** |
 | Longs trajets en train | **1** |
 | Longs trajets en autocar | **0** |
 | Longs trajets en voiture | **0** |

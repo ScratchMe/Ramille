@@ -13,7 +13,7 @@ export interface StepShellProps {
   onNext?: () => void;
   /** Le nom du bouton, qui ne change jamais selon ce qui manque : « Suivant », ou « Voir mon bilan » à la dernière étape. */
   nextLabel?: string;
-  /** Bandeau teinté sous l'en-tête (réponses pré-remplies). */
+  /** Bandeau teinté sous l'en-tête (réponses préremplies). */
   notice?: string;
   /** Un mot de Ramille à l'entrée d'une section (quatre étapes sur neuf), sous l'en-tête, sans second visage. */
   motDeRamille?: string | null;

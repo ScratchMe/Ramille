@@ -189,6 +189,14 @@ cette adresse) → **le retour quitte l'app** ; puis « Me déconnecter » et le
 sur un onglet neuf. **Il envoie un e-mail par passage**, sur un plafond local de 30 par heure
 partagé avec `verifier-code-de-connexion.mjs` et tout passage simultané.
 
+**Depuis le 01/10/2026, le parcours répond aussi aux vols et aux longs trajets** (`v1-33` D1) —
+profil 1 : ses deux vols, puis « Oui » ; cycliste et profil sans boucle : « 0 », puis « Non » — et
+garde l'arrivée sur les vols (aucune puce cochée, « Suivant » qui demande le nombre de vols), et la
+feuille du re-bilan **à l'entrée**, atteinte depuis la restitution par « Faire un nouveau bilan » :
+ouverture, focus sur « Commencer », Échap qui ressort sans écrire. **Une mesure introuvable y
+échoue, elle ne se saute jamais** — la première version d'une garde du jour sautait une mesure sans
+bruit, un titre cherché sans normaliser les insécables que `ThemedText` pose.
+
 **L'étape « plan — l'onglet remonte en haut, et ramène à sa racine »** (01/10/2026, `v1-33` T-14)
 garde l'appel de `toucherDOnglet` dans ses deux sens : la remontée d'un onglet déjà à sa racine —
 **le même plan**, son titre marqué avant le toucher, car un écran remonté de zéro est aussi en haut
