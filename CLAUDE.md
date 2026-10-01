@@ -92,6 +92,11 @@ désormais dans l'un d'eux : cette table dit lequel.
   29/09/2026), et **un écart
   s'explique dans la PR avant de fusionner** — un saut veut dire qu'une dépendance est entrée dans
   `api/`. La méthode, et ce que la fenêtre des dix jours a appris : `VERCEL.md` §1.2 et §2.3.
+- **L'agent relit et fusionne ses propres PR** (01/10/2026 : « C'est toi qui en charge de relire
+  tes PR et de merger »). Une PR ne s'arrête pas sur « en attente de ta relecture » : contre-lue
+  (plus bas), verte sur sa tête, sans fil ouvert et sans conflit, elle se marque prête et se
+  fusionne en squash, comme ses devancières. Ce qui se pose à la personne qui pilote reste ce qui
+  touche au produit, et ça se pose avant d'écrire, pas au moment de fusionner.
 
 ### La branche de travail
 
