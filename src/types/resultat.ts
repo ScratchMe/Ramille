@@ -450,9 +450,19 @@ export function comparisonNote(results: ResultatBilan): string {
 }
 
 /**
- * La phrase qui accompagne le palier. Elle nomme la marche et situe 2050 comme un horizon,
- * jamais comme une mesure de l'écart : c'est précisément ce que la barre faisait, et ce que la
- * spec §4 demande d'éviter (« le registre anxiogène tend à paralyser plutôt qu'à mobiliser »).
+ * La phrase qui accompagne le palier. Elle nomme le cap de la saison et situe 2050 comme un
+ * horizon, jamais comme une mesure de l'écart : c'est précisément ce que la barre faisait, et ce
+ * que la spec §4 demande d'éviter (« le registre anxiogène tend à paralyser plutôt qu'à mobiliser »).
+ *
+ * **Les deux branches où la réduction est le cap de la saison disent « Ton cap pour cette saison »**
+ * (décision D12 du 01/10/2026, `v1-33` §5), le mot dont le plan qui suit titre la même quantité.
+ * Elles disaient « Une marche à… », si bien que 384 kg s'appelait « une marche » ici, « Ton prochain
+ * palier » sur la barre juste au-dessus et « Ton cap pour cette saison » sur l'écran suivant : la
+ * mémoire de travail garde un mot d'un écran à l'autre, pas un nombre, et le pont entre les deux
+ * écrans ne tenait que par le chiffre. **La barre garde « Ton prochain palier »** : elle montre une
+ * cible de total, la phrase dit un écart sur un poste, et ce sont deux grandeurs. Les deux autres
+ * branches ne changent pas, parce qu'elles ne mesurent pas le cap : « déjà sous le repère » est
+ * une marge, et « le repère 2050 est à ta portée » une distance au repère, sur le total.
  *
  * Aucune formulation d'échec : on ne dit pas combien de paliers restent. « Il t'en reste 15 »
  * est une autre façon d'écrire le gouffre.
@@ -475,7 +485,7 @@ export function comparisonNote(results: ResultatBilan): string {
  * Seule la branche « déjà sous le repère » le lit, et c'est la seule que ce profil atteint : pour
  * que le résiduel l'emporte, le trajet et les voyages pèsent moins que lui, qui ne dépasse pas une
  * soixantaine de kilos — le total reste loin des 600 kg du repère. Un poste neuf qui romprait cette
- * borne (C4.3) rendrait les deux autres branches atteignables avec une marche nommée : c'est là
+ * borne (C4.3) rendrait les deux autres branches atteignables avec un cap nommé : c'est là
  * qu'il faudrait revenir.
  */
 export function palierNote(
@@ -485,13 +495,13 @@ export function palierNote(
   posteSuppose: boolean
 ): string {
   const reduction = formatTonnes(palier.reductionKg);
-  // **La marche se dit sur le poste dominant, et c'est la moitié de C3.11.** Le cap de la saison
-  // vaut 20 % de `baseline_co2_kg_year`, qui est le poste **dominant** (décision `v1-07` §3.3,
-  // prise pour le plan) — pas 20 % du total. Ne pas le nommer laissait lire « une marche à 300 kg
-  // de moins » comme une marche sur l'empreinte entière, c'est-à-dire une exigence d'autant plus
-  // dure que le profil est diversifié : −18 % du total pour qui a un poste à 90 %, −6,8 % pour qui
-  // est à 34 %. Le poste nommé rend la phrase vraie **et** plus facile : c'est là que les actions
-  // du plan savent aller chercher le gain.
+  // **Le cap se dit sur le poste dominant, et c'est la moitié de C3.11.** Il vaut 20 % de
+  // `baseline_co2_kg_year`, qui est le poste **dominant** (décision `v1-07` §3.3, prise pour le
+  // plan) — pas 20 % du total. Ne pas le nommer laissait lire la phrase d'alors (« une marche à
+  // 300 kg de moins ») comme une réduction de l'empreinte entière, c'est-à-dire une exigence
+  // d'autant plus dure que le profil est diversifié : −18 % du total pour qui a un poste à 90 %,
+  // −6,8 % pour qui est à 34 %. Le poste nommé rend la phrase vraie **et** plus facile : c'est là
+  // que les actions du plan savent aller chercher le gain.
   const surLePoste = ` sur ${poste}`;
 
   // Déjà sous le repère. Le registre bascule : ce n'est plus une marche à franchir mais une
@@ -516,10 +526,10 @@ export function palierNote(
   }
 
   if (repereVisible) {
-    // Le repère est déjà sur l'écran : la phrase n'a pas à le rappeler, elle nomme la marche.
-    return `Une marche à ${reduction} de moins sur l’année${surLePoste}. Le plan qui suit propose de quoi la franchir.`;
+    // Le repère est déjà sur l'écran : la phrase n'a pas à le rappeler, elle nomme le cap.
+    return `Ton cap pour cette saison : ${reduction} de moins sur l’année${surLePoste}. Le plan qui suit propose de quoi le franchir.`;
   }
-  return `Une marche à ${reduction} de moins sur l’année${surLePoste}. Le plan qui suit propose de quoi la franchir ; 2050 se joue palier après palier.`;
+  return `Ton cap pour cette saison : ${reduction} de moins sur l’année${surLePoste}. Le plan qui suit propose de quoi le franchir ; 2050 se joue palier après palier.`;
 }
 
 /**

@@ -438,24 +438,57 @@ describe('palierNote', () => {
     expect(note).toBe('Le repère 2050 est à ta portée : 40 kg CO₂e de moins sur l’année, et tu y es.');
   });
 
-  it('nomme la marche, le poste qui la porte, et le plan qui suit', () => {
+  it('nomme le cap de la saison, le poste qui le porte, et le plan qui suit', () => {
     expect(palierNote(palier(), true, POSTE, false)).toBe(
-      'Une marche à 800 kg CO₂e de moins sur l’année sur ton trajet domicile-travail. ' +
-        'Le plan qui suit propose de quoi la franchir.'
+      'Ton cap pour cette saison : 800 kg CO₂e de moins sur l’année sur ton trajet domicile-travail. ' +
+        'Le plan qui suit propose de quoi le franchir.'
     );
   });
 
   it('situe 2050 quand le repère n’est pas à l’écran', () => {
-    expect(palierNote(palier({ reductionKg: 1200 }), false, POSTE, false)).toMatch(
-      /2050 se joue palier après palier\.$/
+    expect(palierNote(palier({ reductionKg: 1200 }), false, POSTE, false)).toBe(
+      'Ton cap pour cette saison : 1,2 t CO₂e de moins sur l’année sur ton trajet domicile-travail. ' +
+        'Le plan qui suit propose de quoi le franchir ; 2050 se joue palier après palier.'
     );
   });
 
-  // **Le poste est nommé partout où la marche vaut le cap, et nulle part ailleurs** (C3.11). Le
-  // cap est 20 % du poste **dominant** : sans le nommer, « une marche à 800 kg » se lit comme une
-  // marche sur l'empreinte entière, c'est-à-dire une exigence d'autant plus dure que le profil est
-  // diversifié. La branche `isTarget2050` fait exception et doit la faire : la réduction n'y est
-  // plus le cap mais ce qui sépare du repère 2050, donc une distance sur le **total**.
+  // **Un même chiffre, un seul nom d'un écran à l'autre** (décision D12 du 01/10/2026, audit R-6).
+  // 384 kg était « une marche » dans cette phrase, « Ton prochain palier » sur la barre, puis « Ton
+  // cap pour cette saison » sur le plan : la mémoire de travail garde un mot, pas un nombre, et le
+  // pont entre les deux écrans ne tenait que par le chiffre. Le mot du plan est le titre de sa carte
+  // du cap (`plan/index.tsx`) ; il est recopié ici, et c'est ce test qui dit qu'on l'a fait.
+  //
+  // **Les quatre branches, et la paire d'exclusions** : « cap » ne se dit que là où la réduction EST
+  // le cap de la saison. « Déjà sous le repère » est une marge, et « le repère 2050 est à ta portée »
+  // une distance au repère sur le total — leur dire « cap » ferait lire une exigence à qui n'en a
+  // aucune. Le mot que D12 retire ne revient dans aucune des quatre.
+  //
+  // **Éprouvé en le cassant, le 01/10/2026**, une mutation à la fois, la source remise en place depuis
+  // une copie (`diff` vide) : « Une marche à… » remis dans la branche « repère visible » → ce test et
+  // la phrase exacte de cette branche ; remis dans la branche « repère invisible » → ce test et la
+  // phrase exacte de celle-là ; « Ton cap pour cette saison » dit par la branche « à ta portée » →
+  // ce test et la phrase exacte de cette branche ; dit par « déjà sous le repère » → ce test, et les
+  // deux phrases exactes de cette branche.
+  it('dit « Ton cap pour cette saison » là où la réduction est le cap, et nulle part ailleurs', () => {
+    const CAP = 'Ton cap pour cette saison';
+    for (const repereVisible of [true, false]) {
+      expect(palierNote(palier(), repereVisible, POSTE, false)).toMatch(new RegExp(`^${CAP} : `));
+      for (const autre of [palier({ isTarget2050: true }), palier({ beyondTarget2050: true })]) {
+        expect(palierNote(autre, repereVisible, POSTE, false)).not.toMatch(/\bcap\b/i);
+      }
+    }
+    for (const variante of [palier(), palier({ isTarget2050: true }), palier({ beyondTarget2050: true })]) {
+      for (const repereVisible of [true, false]) {
+        expect(palierNote(variante, repereVisible, POSTE, false)).not.toMatch(/marche à|une marche/i);
+      }
+    }
+  });
+
+  // **Le poste est nommé partout où la réduction vaut le cap, et nulle part ailleurs** (C3.11). Le
+  // cap est 20 % du poste **dominant** : sans le nommer, « 800 kg de moins sur l'année » se lit
+  // comme une réduction de l'empreinte entière, c'est-à-dire une exigence d'autant plus dure que le
+  // profil est diversifié. La branche `isTarget2050` fait exception et doit la faire : la réduction
+  // n'y est plus le cap mais ce qui sépare du repère 2050, donc une distance sur le **total**.
   it('ne nomme aucun poste quand la marche s’arrête au repère 2050', () => {
     for (const repereVisible of [true, false]) {
       expect(palierNote(palier({ isTarget2050: true }), repereVisible, POSTE, false)).not.toContain(POSTE);

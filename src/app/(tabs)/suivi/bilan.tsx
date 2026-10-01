@@ -157,6 +157,14 @@ type LoadState =
        * les yeux, une fois l'écran rendu.
        */
       frequenceDesLoisirs: string | null;
+      /**
+       * Ce que la bannière de compte dit de la session, **lue avec le résultat** (01/10/2026). Elle
+       * était lue par un effet à part, une fois l'écran prêt : la ligne s'insérait alors au-dessus du
+       * total, qu'elle décalait de sa hauteur (92 px, une image après le premier rendu prêt) — au
+       * moment même où D9 vient de le remonter pour qu'on le voie. `'autre'` en relecture, où elle ne se
+       * rend jamais, et `'inconnu'` quand la session n'a pas pu être lue : la ligne ne se rend pas.
+       */
+      banniere: EtatDeLaBanniere;
     };
 
 // Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
@@ -202,6 +210,46 @@ async function copierDansLePressePapier(
     // Permission refusée, geste hors fenêtre d'activation : celui-là peut aboutir au coup
     // suivant, donc c'est le seul cas où l'écran invite à réessayer.
     return 'echec';
+  }
+}
+
+/**
+ * Ce que la bannière de compte dit de la session — lu dans le cache local, sans aller-retour.
+ *
+ * **Le repli ne dit rien plutôt que d'affirmer.** `inconnu` ne rend pas la bannière : une lecture qui
+ * lève ou qui ne trouve pas de session laisse la ligne absente, ce qui coûte une invitation, jamais
+ * une phrase fausse. C'est l'inverse du défaut d'A3-20, où un booléen optimiste sautait la
+ * proposition ; et le bouton, lui, ne dépend plus de cette lecture du tout, puisqu'il va au plan dans
+ * tous les cas. La seule sortie de l'écran ne peut donc pas se fermer.
+ *
+ * `new_email` est posé par `updateUser({ email })` et retiré à la vérification du code : il dit « le
+ * geste est commencé » sans aucun appel réseau de plus. Lui reproposer le départ du chemin qu'elle
+ * vient de prendre se lirait comme un échec.
+ *
+ * **Elle part au montage avec les autres lectures, et non plus après le bilan.** L'effet qu'elle
+ * remplace disait la raison de l'attente : un bilan lu veut dire une session lisible (la ligne est
+ * protégée par une policy owner-scoped), et lancée au montage la lecture pouvait tomber sur une
+ * session pas encore écrite et laisser `inconnu` collé — donc le bouton désactivé. Les deux
+ * prémisses ont changé : le bouton ne dépend plus de cette lecture (20/09/2026), et `inconnu` ne
+ * coûte plus qu'une ligne absente ; et une session pas encore écrite n'a de toute façon aucun bilan
+ * à lire, donc l'écran n'arrive pas à `ok` — « Réessayer » relit alors les deux ensemble.
+ *
+ * Ne lève jamais : elle part dans le même `Promise.all` que les lectures dont l'écran dépend, et une
+ * exception y ferait tomber l'écran avec elle.
+ */
+async function lireLaBanniere(): Promise<EtatDeLaBanniere> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return 'inconnu';
+    return etatDeLaBanniere({
+      estAnonyme: session.user.is_anonymous === true,
+      adresseAConfirmer: Boolean(session.user.new_email),
+    });
+  } catch (erreur) {
+    console.error('L’état de la session n’a pas pu être lu :', erreur);
+    return 'inconnu';
   }
 }
 
@@ -258,18 +306,6 @@ export default function BilanResultat() {
     setState({ status: 'loading' });
     setTentative((n) => n + 1);
   };
-  // **Un état à quatre valeurs, pas un booléen optimiste** (A3-20). `proposalSeen` démarrait à
-  // `true` et n'était corrigé qu'après un aller-retour réseau (`getUser()`) suivi d'une lecture
-  // AsyncStorage : quelqu'un qui appuie vite sur le bouton, ou dont le réseau traîne, passait
-  // droit au plan — et comme la même variable pilotait la bannière de repli, il ne voyait ni
-  // l'interstitiel **ni** la bannière, c'est-à-dire plus aucune occasion de garder son bilan.
-  // `getSession()` suffit et supprime l'aller-retour : c'est le cache local, et la seule chose
-  // qu'on lui demande est `is_anonymous` (cf. `src/lib/analytics.ts`, même lecture).
-  const [banniereLue, setBanniereLue] = useState<EtatDeLaBanniere>('inconnu');
-  // La relecture n'est pas un état à tenir à jour, c'est une propriété de l'entrée dans l'écran :
-  // elle se dérive du rendu, là où l'écrire depuis l'effet serait un `setState` synchrone que le
-  // React Compiler refuse (`react-hooks/set-state-in-effect`).
-  const banniere: EtatDeLaBanniere = mode === 'relecture' ? 'autre' : banniereLue;
   const [partage, setPartage] = useState<EtatPartage>({ statut: 'inactif' });
   // **Retirer ce bilan** (C4.7, D4 de `v1-22`) : une confirmation dans la page, jamais un `Alert` —
   // sur web il retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` (la forme de
@@ -313,13 +349,19 @@ export default function BilanResultat() {
       // lecture de plus pourrait échouer seule, et l'écran ne saurait plus s'il a le droit de montrer
       // le chiffre.
       //
-      // **Les trois autres sont tolérantes, et le restent en partant ensemble** : leur échec ôte ce
+      // **Trois d'entre elles sont tolérantes, et le restent en partant ensemble** : leur échec ôte ce
       // qu'elles portent, jamais l'écran. Les bilans valides décident du lien du retrait et du bilan
       // précédent — en échec, ni lien ni comparaison ; le cycle courant porte le palier — en échec,
       // pas de marche ; la fréquence des loisirs nomme le résiduel des sorties rares — en échec, les
       // libellés figés. Chacune rend son échec sans lever (PostgREST le rend comme une valeur) ; le
       // `.catch` garde la règle si un jour l'une d'elles levait, sans quoi `Promise.all` la ferait
       // tomber avec le reste, et l'écran avec elle.
+      //
+      // **La session de la bannière de compte est la quatrième** (01/10/2026) : lue après l'écran
+      // prêt, elle posait sa ligne au-dessus du total une image après le premier rendu et le décalait
+      // de 92 px — le même défaut que la barre d'avant, au-dessus d'un chiffre que D9 vient de
+      // remonter pour qu'on le voie. Elle ne lève jamais (`lireLaBanniere`), et n'est pas lue en
+      // relecture, où la ligne ne se rend pas.
       let lectures;
       try {
         lectures = await Promise.all([
@@ -333,6 +375,10 @@ export default function BilanResultat() {
           // vient de soumettre.
           mode === 'relecture' ? null : loadCycleCourant().catch(() => null),
           loadFrequenceDesLoisirs(id).catch(() => null),
+          // **La bannière de compte part avec elles** : voir `banniere` dans l'état. En relecture
+          // aucune proposition de compte — redemander à chaque consultation de son historique serait du
+          // harcèlement, pas une invitation —, donc rien à lire.
+          mode === 'relecture' ? ('autre' as const) : lireLaBanniere(),
         ]);
       } catch (erreur) {
         // Seule la lecture du résultat peut arriver ici : sans elle, rien à montrer — l'écran
@@ -342,7 +388,7 @@ export default function BilanResultat() {
         setState({ status: 'error' });
         return;
       }
-      const [{ data: lu, error }, bilansValides, cycle, frequenceDesLoisirs] = lectures;
+      const [{ data: lu, error }, bilansValides, cycle, frequenceDesLoisirs, banniere] = lectures;
 
       if (cancelled) return;
       if (error || !lu) {
@@ -393,6 +439,7 @@ export default function BilanResultat() {
           palierFranchi: false,
           place,
           frequenceDesLoisirs,
+          banniere,
         });
         return;
       }
@@ -418,6 +465,7 @@ export default function BilanResultat() {
         palierFranchi: false,
         place,
         frequenceDesLoisirs,
+        banniere,
       });
 
       // **Seul le cycle d'alors arrive en second temps**, et il n'ajoute qu'une phrase : « Le palier
@@ -447,48 +495,6 @@ export default function BilanResultat() {
       cancelled = true;
     };
   }, [id, mode, tentative]);
-
-  useEffect(() => {
-    // En relecture, aucune proposition de compte : redemander à chaque consultation de son
-    // historique serait du harcèlement, pas une invitation. Rien à écrire, la dérivation du
-    // rendu s'en charge.
-    //
-    // **Après le bilan, pas avant.** Le bouton n'est rendu qu'à `ok`, donc rien n'est gagné à
-    // lire plus tôt — et surtout, un bilan lu veut dire une session lisible (la ligne est
-    // protégée par une policy owner-scoped) : lancée au montage, la lecture pouvait tomber sur
-    // une session pas encore écrite et laisser `inconnu` collé, donc le bouton désactivé.
-    if (mode === 'relecture' || state.status !== 'ok') return;
-    let annule = false;
-    (async () => {
-      // **Le repli ne dit rien plutôt que d'affirmer.** `inconnu` ne rend pas la bannière, et cet
-      // effet ne dépend que de `[mode, state.status]` : rien ne le relance. Une lecture qui lève
-      // laisse donc la ligne absente — ce qui coûte une invitation, jamais une phrase fausse.
-      // C'est l'inverse du défaut d'A3-20, où le booléen optimiste sautait la proposition ; et le
-      // bouton, lui, ne dépend plus de cette lecture du tout, puisqu'il va au plan dans tous les
-      // cas. La seule sortie de l'écran ne peut donc plus se fermer.
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (annule) return;
-        if (!session) return;
-        // `new_email` est posé par `updateUser({ email })` et retiré à la vérification du code :
-        // il dit « le geste est commencé » sans aucun appel réseau de plus. Lui reproposer le
-        // départ du chemin qu'elle vient de prendre se lirait comme un échec.
-        setBanniereLue(
-          etatDeLaBanniere({
-            estAnonyme: session.user.is_anonymous === true,
-            adresseAConfirmer: Boolean(session.user.new_email),
-          })
-        );
-      } catch (erreur) {
-        console.error('L’état de la session n’a pas pu être lu :', erreur);
-      }
-    })();
-    return () => {
-      annule = true;
-    };
-  }, [mode, state.status]);
 
   // **Le plan, toujours.** C'est tout ce que ce bouton fait depuis le 20/09/2026, et c'est
   // l'arbitrage : la prise de conscience du chiffre est ce que l'app existe pour produire, et la
@@ -725,7 +731,7 @@ export default function BilanResultat() {
     );
   }
 
-  const { results, capKg, submittedAt, precedent, palierFranchi, place, frequenceDesLoisirs } = state;
+  const { results, capKg, submittedAt, precedent, palierFranchi, place, frequenceDesLoisirs, banniere } = state;
   const confirmation =
     confirmationOuverte === null
       ? null
@@ -872,8 +878,12 @@ export default function BilanResultat() {
               // de `dominantHeadline` du tout.
               //
               // La phrase est à elle (A3-13) : elle vivait ici, à la deuxième personne, donc
-              // hors du test qui garde sa voix. Aucun chiffre n'est affiché dans cette branche,
-              // donc la mascotte n'est jamais à côté d'un chiffre lourd.
+              // hors du test qui garde sa voix. Aucun chiffre n'est affiché dans cette branche de
+              // la carte, donc la mascotte n'est jamais à côté d'un chiffre lourd. **Depuis D9 le
+              // total est juste dessous**, et la règle tient quand même : cette branche n'existe que
+              // pour un total de zéro (`bilanSansEmissions`, `<= 0`), donc son voisin dit « 0 kg
+              // CO₂e » — le contraire d'un chiffre lourd. Si la borne s'élargissait à « presque
+              // rien », la règle serait à relire.
               <>
                 <ThemedText type="small" weight={600} themeColor="accentText">
                   Ton bilan
@@ -882,6 +892,150 @@ export default function BilanResultat() {
               </>
             )}
           </ThemedView>
+
+          {/* **Le total vient juste après la carte dominante** (décision D9 du 01/10/2026, audit R-1).
+              La répartition par poste s'était glissée entre les deux, sans qu'aucun document ne l'ait
+              décidé : le handoff donne l'ordre « carte dominante, total *après la carte*, Où tu te
+              situes » (`docs/design/README.md`, Restitution), et la planche E du canvas de `v1-14` pose
+              le total sous la carte. Mesuré à 390 × 844 à la sortie du questionnaire (session anonyme,
+              bannière de compte en tête) : le chiffre se rendait à 766–802 px, **sous le pied collant,
+              qui commence à 758** — au premier regard, une phrase de compte, une étiquette, un titre,
+              puis trois barres, et le seul chiffre saillant de l'écran hors champ ; la personne prenait
+              la part d'un poste pour son résultat. Il se rend à 526–562, au-dessus du pied, sans qu'un
+              mot ait changé. **Ce que l'ordre coûte, et c'est décidé** : la lecture « les postes, puis
+              leur somme » — une addition qu'on voit se faire — disparaît, et la répartition passe sous
+              le pli. Le bloc porte aussi la méthode et la contestation (ci-dessous) : il grandit
+              d'environ cent pixels, tous sous le chiffre. */}
+          <View style={styles.totalBlock}>
+            <ThemedText type="small" themeColor="textTertiary">
+              Estimation annuelle, tous déplacements
+            </ThemedText>
+            {/* **Le jeton, pas une recopie** (A3-22). Le chiffre le plus important du produit
+                redéclarait 26 / 32 à la main, c'est-à-dire exactement `TypeScale.screen` — le
+                jeton des *titres d'écran*. `salient` est celui des chiffres saillants (ce total, le
+                cap de la saison sur le plan) : il vaut 30, et la hiérarchie tient puisque la
+                décision dominante reste au-dessus, à 32. L'écart entre deux bilans, que
+                `theme.ts` range encore parmi eux, se dit ici dans une phrase en `body`, sous les
+                barres (`v1-14` §5) — aucun écran ne l'écrit en `salient`. */}
+            <ThemedText type="salient" style={styles.chiffres}>
+              {formatTonnes(results.total_co2_kg_year)}
+            </ThemedText>
+            {/* **La question « d'où vient ce chiffre ? » se pose ici et nulle part ailleurs**
+                (C3.2). Sous le total, replié, parce que c'est le moment où elle naît — et parce
+                que ce total ne se compare à aucun autre simulateur sans savoir qu'il compte la
+                fabrication. La date passée est celle de **soumission** : c'est elle qui fige les
+                facteurs (`emission_factor(mode, date)`), donc elle qui date la méthode. */}
+            <BlocMethode dateDuBilan={submittedAt} />
+            {/* **Le seul endroit où un chiffre se conteste** (C3.9, constat A6-9). La restitution
+                affiche une empreinte calculée à partir de moyennes nationales et de réponses
+                approchées : quelqu'un qui connaît son trajet mieux que nous doit pouvoir le dire
+                là où il lit le résultat, pas dans un écran de retour qu'il faudrait aller
+                chercher. La catégorie est **préremplie et modifiable** — c'est la personne qui
+                sait si c'est un chiffre, un mode manquant ou autre chose. Le contexte part avec :
+                sans l'identifiant du bilan, un retour sur un chiffre n'est pas exploitable.
+
+                **Sous le total, après sa méthode, depuis le 01/10/2026** (décision D11, audit R-3). Ce
+                lien et celui du retrait fermaient la page, à ≈ 650 px du chiffre qu'ils contestent :
+                à cette distance « Un chiffre me semble faux » se rapportait à la pile de liens et non
+                au total, et les deux derniers liens lus avant le pas suivant étaient deux façons de
+                désavouer son bilan. La fin de la page est désormais la phrase du cap, le partage et un
+                nouveau bilan. **Ce que ça coûte, et c'est décidé** : posée sous le chiffre, la
+                contestation peut se lire comme une invitation à douter au moment même où il apparaît.
+                L'ordre en tient compte : la méthode d'abord, qui répond à « d'où vient ce chiffre ? »,
+                puis ces deux liens pour qui n'est pas convaincu. Alignés à gauche comme la méthode, et
+                aucun libellé n'a changé. */}
+            <TextLink
+              label="Un chiffre me semble faux"
+              onPress={() =>
+                router.push({
+                  pathname: '/feedback',
+                  // **Le nom de l'écran, pas l'identifiant du bilan** (corrigé le 14/09/2026). Le
+                  // commentaire de `/feedback`, la phrase qu'il affiche et la politique de
+                  // confidentialité disent tous les trois « le contexte est le nom de l'écran
+                  // d'origine, rien de plus » : y glisser un uuid rendait les trois faux d'un coup,
+                  // pour une information qui ne manque pas — le bilan d'une personne se retrouve par
+                  // son compte et la date de son retour.
+                  params: { kind: 'chiffre', context: 'restitution du bilan' },
+                })
+              }
+              role="link"
+              type="small"
+              themeColor="textTertiary"
+              containerStyle={styles.lienDuTotal}
+            />
+            {/* **Le geste de retrait vit ici, sur la restitution du bilan concerné** (C4.7, D4 de
+                `v1-22`) : c'est le seul écran où l'on voit le chiffre qui choque, donc le seul où le
+                geste a un sens — et pas dans l'historique, où il serait à portée de pouce sans rien
+                à côté. Juste après « Un chiffre me semble faux », son voisin : l'un conteste le
+                calcul, l'autre retire la réponse. Les deux ont suivi le total ensemble (D11).
+
+                La confirmation reprend la forme de « Supprimer mon compte » (`MonCompte`) : le lien
+                s'efface, un encart dit ce qui va se passer, « Annuler » et le bouton plein. Ce qu'il
+                dit dépend de la place du bilan (`confirmationDuRetrait`), relue au toucher ; quand
+                elle n'a pas pu être lue au chargement, le lien ne se rend pas du tout.
+
+                **Le lien n'ajoute aucun décalage en arrivant, et c'est ce qui permet de le loger sous le
+                total.** `place` arrive dans l'état `ok`, avec le résultat et dans le même aller-retour :
+                le lien existe dès le premier rendu prêt ou n'existera pas, jamais après. Un lien qui
+                se rendrait une fois une lecture finie, sous un chiffre déjà lu, déplacerait tout ce
+                qui le suit ; celui-ci ne déplace rien, et ce qui s'ouvre au toucher (l'encart, ou le
+                message d'échec) s'ouvre à la place du lien, sous le doigt qui l'a demandé. */}
+            {place !== null &&
+              (confirmation !== null ? (
+                <ThemedView type="backgroundElement" style={styles.confirmation}>
+                  {/* Le lien pressé vient de disparaître : le focus va à ce qui le remplace (`FRONT.md`
+                      §2.4), et le lecteur d'écran lit la question avant ses deux réponses. */}
+                  <TitreDArrivee>
+                    <ThemedText type="small" weight={600}>
+                      {confirmation.titre}
+                    </ThemedText>
+                  </TitreDArrivee>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {confirmation.corps}
+                  </ThemedText>
+                  {confirmation.engagement !== null && (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {confirmation.engagement}
+                    </ThemedText>
+                  )}
+                  <View style={styles.confirmationActions}>
+                    <TextLink
+                      label={confirmation.annuler}
+                      onPress={() => {
+                        setConfirmationOuverte(null);
+                        setMessageDuRetrait(null);
+                      }}
+                      disabled={retraitEnCours}
+                      type="small"
+                      themeColor="textTertiary"
+                      style={styles.lienSouligne}
+                    />
+                    <Button
+                      title={retraitEnCours ? confirmation.enCours : confirmation.confirmer}
+                      onPress={() => void retirer()}
+                      disabled={retraitEnCours}
+                      flex
+                    />
+                  </View>
+                  <MessageInline message={messageDuRetrait} />
+                </ThemedView>
+              ) : (
+                <>
+                  <TextLink
+                    label={LIEN_DU_RETRAIT}
+                    hint={INDICE_DU_RETRAIT}
+                    onPress={() => void ouvrirLaConfirmation()}
+                    disabled={lectureDeLaConfirmation}
+                    type="small"
+                    themeColor="textTertiary"
+                    containerStyle={styles.lienDuTotal}
+                  />
+                  {/* La relecture au toucher a échoué : la confirmation ne s'ouvre pas, et on le dit
+                      ici, sous le lien, puisque l'encart qui porte d'ordinaire ce message n'existe pas. */}
+                  <MessageInline message={messageDuRetrait} />
+                </>
+              ))}
+          </View>
 
           <ThemedView type="backgroundElement" style={styles.compareCard}>
             <ThemedText weight={600} type="small">
@@ -907,28 +1061,6 @@ export default function BilanResultat() {
               })}
             </View>
           </ThemedView>
-
-          <View style={styles.totalBlock}>
-            <ThemedText type="small" themeColor="textTertiary">
-              Estimation annuelle, tous déplacements
-            </ThemedText>
-            {/* **Le jeton, pas une recopie** (A3-22). Le chiffre le plus important du produit
-                redéclarait 26 / 32 à la main, c'est-à-dire exactement `TypeScale.screen` — le
-                jeton des *titres d'écran*. `salient` est celui des chiffres saillants (ce total, le
-                cap de la saison sur le plan) : il vaut 30, et la hiérarchie tient puisque la
-                décision dominante reste au-dessus, à 32. L'écart entre deux bilans, que
-                `theme.ts` range encore parmi eux, se dit ici dans une phrase en `body`, sous les
-                barres (`v1-14` §5) — aucun écran ne l'écrit en `salient`. */}
-            <ThemedText type="salient" style={styles.chiffres}>
-              {formatTonnes(results.total_co2_kg_year)}
-            </ThemedText>
-            {/* **La question « d'où vient ce chiffre ? » se pose ici et nulle part ailleurs**
-                (C3.2). Sous le total, replié, parce que c'est le moment où elle naît — et parce
-                que ce total ne se compare à aucun autre simulateur sans savoir qu'il compte la
-                fabrication. La date passée est celle de **soumission** : c'est elle qui fige les
-                facteurs (`emission_factor(mode, date)`), donc elle qui date la méthode. */}
-            <BlocMethode dateDuBilan={submittedAt} />
-          </View>
 
           <ThemedView type="backgroundElement" style={styles.compareCard}>
             <ThemedText weight={600} type="small">
@@ -1080,7 +1212,11 @@ export default function BilanResultat() {
           {/* Actions secondaires dans le flux, et non collées en bas — retour d'appareil du
               07/09/2026. Trois éléments empilés dans un pied fixe occupaient ~170 px sur
               844 : un cinquième de l'écran retiré à la restitution, et une cassure franche
-              au milieu du contenu. Ce qui reste collé, c'est le seul pas suivant. */}
+              au milieu du contenu. Ce qui reste collé, c'est le seul pas suivant.
+
+              **Ce bloc ne porte plus les liens de contestation** (D11, 01/10/2026) : ils sont sous le
+              total, là où le chiffre se lit. Restent le partage et le nouveau bilan — et, en
+              relecture, le retour au suivi. */}
           <View style={styles.actionsSecondaires}>
             <TextLink
               label="Partager mon bilan"
@@ -1133,97 +1269,6 @@ export default function BilanResultat() {
               themeColor="textTertiary"
               style={styles.editLink}
             />
-            {/* **Le seul endroit où un chiffre se conteste** (C3.9, constat A6-9). La restitution
-                affiche une empreinte calculée à partir de moyennes nationales et de réponses
-                approchées : quelqu'un qui connaît son trajet mieux que nous doit pouvoir le dire
-                là où il lit le résultat, pas dans un écran de retour qu'il faudrait aller
-                chercher. La catégorie est **préremplie et modifiable** — c'est la personne qui
-                sait si c'est un chiffre, un mode manquant ou autre chose. Le contexte part avec :
-                sans l'identifiant du bilan, un retour sur un chiffre n'est pas exploitable. */}
-            <TextLink
-              label="Un chiffre me semble faux"
-              onPress={() =>
-                router.push({
-                  pathname: '/feedback',
-                  // **Le nom de l'écran, pas l'identifiant du bilan** (corrigé le 14/09/2026). Le
-                  // commentaire de `/feedback`, la phrase qu'il affiche et la politique de
-                  // confidentialité disent tous les trois « le contexte est le nom de l'écran
-                  // d'origine, rien de plus » : y glisser un uuid rendait les trois faux d'un coup,
-                  // pour une information qui ne manque pas — le bilan d'une personne se retrouve par
-                  // son compte et la date de son retour.
-                  params: { kind: 'chiffre', context: 'restitution du bilan' },
-                })
-              }
-              role="link"
-              type="small"
-              themeColor="textTertiary"
-              style={styles.editLink}
-            />
-            {/* **Le geste de retrait vit ici, sur la restitution du bilan concerné** (C4.7, D4 de
-                `v1-22`) : c'est le seul écran où l'on voit le chiffre qui choque, donc le seul où le
-                geste a un sens — et pas dans l'historique, où il serait à portée de pouce sans rien
-                à côté. Juste après « Un chiffre me semble faux », son voisin : l'un conteste le
-                calcul, l'autre retire la réponse.
-
-                La confirmation reprend la forme de « Supprimer mon compte » (`MonCompte`) : le lien
-                s'efface, un encart dit ce qui va se passer, « Annuler » et le bouton plein. Ce qu'il
-                dit dépend de la place du bilan (`confirmationDuRetrait`), relue au toucher ; quand
-                elle n'a pas pu être lue au chargement, le lien ne se rend pas du tout. */}
-            {place !== null &&
-              (confirmation !== null ? (
-                <ThemedView type="backgroundElement" style={styles.confirmation}>
-                  {/* Le lien pressé vient de disparaître : le focus va à ce qui le remplace (`FRONT.md`
-                      §2.4), et le lecteur d'écran lit la question avant ses deux réponses. */}
-                  <TitreDArrivee>
-                    <ThemedText type="small" weight={600}>
-                      {confirmation.titre}
-                    </ThemedText>
-                  </TitreDArrivee>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {confirmation.corps}
-                  </ThemedText>
-                  {confirmation.engagement !== null && (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {confirmation.engagement}
-                    </ThemedText>
-                  )}
-                  <View style={styles.confirmationActions}>
-                    <TextLink
-                      label={confirmation.annuler}
-                      onPress={() => {
-                        setConfirmationOuverte(null);
-                        setMessageDuRetrait(null);
-                      }}
-                      disabled={retraitEnCours}
-                      type="small"
-                      themeColor="textTertiary"
-                      style={styles.lienSouligne}
-                    />
-                    <Button
-                      title={retraitEnCours ? confirmation.enCours : confirmation.confirmer}
-                      onPress={() => void retirer()}
-                      disabled={retraitEnCours}
-                      flex
-                    />
-                  </View>
-                  <MessageInline message={messageDuRetrait} />
-                </ThemedView>
-              ) : (
-                <>
-                  <TextLink
-                    label={LIEN_DU_RETRAIT}
-                    hint={INDICE_DU_RETRAIT}
-                    onPress={() => void ouvrirLaConfirmation()}
-                    disabled={lectureDeLaConfirmation}
-                    type="small"
-                    themeColor="textTertiary"
-                    style={styles.editLink}
-                  />
-                  {/* La relecture au toucher a échoué : la confirmation ne s'ouvre pas, et on le dit
-                      ici, sous le lien, puisque l'encart qui porte d'ordinaire ce message n'existe pas. */}
-                  <MessageInline message={messageDuRetrait} />
-                </>
-              ))}
             {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
                 plan à un onglet de là — donc rien de collé en bas non plus. */}
             {mode !== 'nouveau' && (
@@ -1359,6 +1404,9 @@ const styles = StyleSheet.create({
   dominantCard: { borderRadius: 24, padding: 22, gap: 10 },
   dominantBody: { fontSize: 16, lineHeight: 24 },
   totalBlock: { gap: 4 },
+  // Les liens de contestation rejoignent le total : alignés à gauche comme « Comment ce chiffre est
+  // calculé » (`BlocMethode.cible`), et la cible ne s'étire pas sur la largeur d'un écran de 800 px.
+  lienDuTotal: { alignItems: 'flex-start' },
   // **Chiffres tabulaires** (24/09/2026, `v1-29`) : le total, et la colonne de valeurs des barres
   // qui s'alignent à droite d'une ligne à l'autre. Spline Sans porte la fonction `tnum`.
   chiffres: { fontVariant: ['tabular-nums'] },

@@ -326,13 +326,19 @@ export function regimeDeRebilan(
  * **La raison de la ré-insistance est écrite, pas seulement son ton.** Une insistance qui ne dit pas
  * pourquoi n'est qu'un rappel de plus, et la spec §7 les interdit. Ici la raison ne dépend pas de la
  * personne : le référentiel a bougé sous son bilan, et son bilan garde celui de sa date.
+ *
+ * **« Un nouveau bilan », jamais « refaire »** (`v1-19` D1, appliqué ici le 01/10/2026, audit de
+ * `v1-33`) : un bilan s'**ajoute** à celui qu'on regarde, il ne l'écrase pas, et le bouton de la même
+ * carte le dit ainsi (« Faire un nouveau bilan »). La phrase gardait « en refaire un », antérieur à
+ * la décision et jamais relu. Et « préremplies » s'écrit sans trait d'union, d'une seule façon
+ * (`v1-33` §5, D3).
  */
 export function phraseDuRegimeDeRebilan(regime: RegimeDeRebilan): string | null {
   if (regime === 'aucun') return null;
   if (regime === 'proposer') {
-    return 'En faire un nouveau prend moins de temps que la première fois : tes réponses sont pré-remplies, tu ne modifies que ce qui a changé.';
+    return 'En faire un nouveau prend moins de temps que la première fois : tes réponses sont préremplies, tu ne modifies que ce qui a changé.';
   }
-  return 'Plusieurs saisons ont passé depuis. Les facteurs d’émission se mettent à jour chaque trimestre et ton bilan garde ceux de sa date : en refaire un le recalcule avec les valeurs d’aujourd’hui, même si tes trajets n’ont pas changé.';
+  return 'Plusieurs saisons ont passé depuis. Les facteurs d’émission se mettent à jour chaque trimestre et ton bilan garde ceux de sa date : un nouveau bilan prend les valeurs d’aujourd’hui, même si tes trajets n’ont pas changé.';
 }
 
 /**
