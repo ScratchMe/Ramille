@@ -20,14 +20,15 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 // Chargé après le double : `bilan-history.ts` lit `@/lib/supabase` à l'import.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { loadLastSubmittedAnswers } = require('./bilan-history') as typeof import('./bilan-history');
+const { loadCycleCourant, loadFrequenceDesLoisirs, loadLastSubmittedAnswers } =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('./bilan-history') as typeof import('./bilan-history');
 
 /** Une requête PostgREST qui rend `data` au bout de sa chaîne, quels que soient les filtres. */
-function requete(data: unknown) {
+function requete(data: unknown, error: unknown = null) {
   const chaine: Record<string, unknown> = {};
-  for (const methode of ['select', 'eq', 'order', 'limit']) chaine[methode] = () => chaine;
-  chaine.maybeSingle = async () => ({ data, error: null });
+  for (const methode of ['select', 'eq', 'order', 'limit', 'lte']) chaine[methode] = () => chaine;
+  chaine.maybeSingle = async () => ({ data, error });
   return chaine;
 }
 
@@ -50,5 +51,50 @@ describe('loadLastSubmittedAnswers', () => {
 
     await expect(loadLastSubmittedAnswers()).resolves.toBeNull();
     expect(mockFrom).toHaveBeenCalledWith('assessments');
+  });
+});
+
+/**
+ * Les deux lectures tolérantes de la restitution qui sont sorties de l'écran le 01/10/2026 (audit
+ * R-4) pour partir avec le résultat. Ce qu'elles gardent : **un échec ne lève pas**, et rend ce que
+ * rendrait une absence — pas de cycle, donc pas de marche ; pas de fréquence, donc les libellés
+ * figés. Et le cap se calcule comme il se calculait dans l'écran, à la virgule près.
+ *
+ * **Éprouvé en le cassant, le 01/10/2026** (TESTING.md §1.1) :
+ *   - le `/ 100` du cap retiré → « le cap du cycle courant… », seul ;
+ *   - `error` levé par la lecture de la fréquence (`if (error) throw error`) → « une fréquence
+ *     illisible… », seul.
+ */
+describe('loadCycleCourant', () => {
+  it('le cap du cycle courant est la part visée de la baseline, et sans baseline il n’y en a pas', async () => {
+    mockFrom.mockImplementation(() =>
+      requete({ id: 'cycle-1', baseline_co2_kg_year: 1920, target_reduction_pct: 20 })
+    );
+    await expect(loadCycleCourant()).resolves.toEqual({ cycleId: 'cycle-1', capKg: 384 });
+    expect(mockFrom).toHaveBeenCalledWith('plan_cycles');
+
+    mockFrom.mockImplementation(() =>
+      requete({ id: 'cycle-2', baseline_co2_kg_year: null, target_reduction_pct: 20 })
+    );
+    await expect(loadCycleCourant()).resolves.toEqual({ cycleId: 'cycle-2', capKg: null });
+  });
+
+  it('une lecture en échec ne lève pas : pas de cycle, donc pas de marche', async () => {
+    mockFrom.mockImplementation(() => requete(null, { message: 'TypeError: Network request failed' }));
+    await expect(loadCycleCourant()).resolves.toBeNull();
+  });
+});
+
+describe('loadFrequenceDesLoisirs', () => {
+  it('une fréquence illisible ne lève pas : `null`, et les libellés figés reprennent la main', async () => {
+    const console_ = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockFrom.mockImplementation(() => requete(null, { message: 'TypeError: Network request failed' }));
+    await expect(loadFrequenceDesLoisirs('b1')).resolves.toBeNull();
+    expect(console_).toHaveBeenCalled();
+    console_.mockRestore();
+
+    mockFrom.mockImplementation(() => requete({ leisure_frequency: 'rarement' }));
+    await expect(loadFrequenceDesLoisirs('b1')).resolves.toBe('rarement');
+    expect(mockFrom).toHaveBeenCalledWith('assessment_answers');
   });
 });

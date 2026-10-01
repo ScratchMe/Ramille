@@ -14,8 +14,11 @@ import {
   estStable,
   estUneBaisse,
   pointsParSaison,
+  precedentDeLaRestitution,
   precedentDUnAutreJour,
   variationDepuisLeBilanPrecedent,
+  BILANS_PARCOURUS_POUR_LE_PRECEDENT,
+  type BilanValide,
   formatDate,
   keepLatestPerDay,
   legendeDeLEcart,
@@ -192,6 +195,79 @@ describe('precedentDUnAutreJour', () => {
   });
 });
 
+/**
+ * Le précédent choisi dans la lecture des bilans valides (01/10/2026, audit R-4).
+ *
+ * La restitution lisait deux fois la même liste : les identifiants pour la place du bilan, puis — après
+ * l'affichage — dix lignes avec leur date et leur total pour le précédent. Une seule lecture sert
+ * désormais les deux, entière parce que la place l'exige ; la borne de dix, la date manquante et le
+ * total manquant, qui vivaient dans la requête et son traitement (`loadBilanPrecedent`), vivent ici.
+ * Le choix du jour reste celui de `precedentDUnAutreJour`, éprouvé plus haut.
+ *
+ * **Éprouvé en le cassant, le 01/10/2026** (TESTING.md §1.1) :
+ *   - le `.slice(0, BILANS_PARCOURUS_POUR_LE_PRECEDENT)` retiré (la liste entière parcourue) →
+ *     « au-delà des dix plus récents, on ne compare rien », seul ;
+ *   - le filtre des dates retiré avant la recherche (`submittedAt ?? ''`) → « un bilan sans date
+ *     ne se compare pas », seul ;
+ *   - `precedent.totalKg ?? 0` au lieu de `null` → « un précédent sans total ne se compare pas », seul.
+ */
+describe('precedentDeLaRestitution', () => {
+  const v = (id: string, submittedAt: string | null, totalKg: number | null = 2400): BilanValide => ({
+    id,
+    submittedAt,
+    totalKg,
+  });
+
+  it('rend la date et le total du bilan d’un autre jour, et rien d’autre', () => {
+    const bilans = [v('b2', '2026-10-05T09:00:00Z', 1800), v('b1', '2026-06-02T08:00:00Z', 2400)];
+    expect(precedentDeLaRestitution(bilans, 'b2')).toEqual({
+      submittedAt: '2026-06-02T08:00:00Z',
+      totalKg: 2400,
+    });
+  });
+
+  it('au-delà des dix plus récents, on ne compare rien : le repli sûr de la borne', () => {
+    // Le bilan affiché et neuf corrections du même jour remplissent la fenêtre ; le onzième, d'un
+    // autre jour, est hors d'elle — la requête bornée ne l'aurait pas lu.
+    const memeJour = Array.from({ length: BILANS_PARCOURUS_POUR_LE_PRECEDENT }, (_, i) =>
+      v(`c${i}`, `2026-09-28T20:${String(59 - i).padStart(2, '0')}:00Z`)
+    );
+    const saisonPassee = v('saison-passee', '2026-06-02T08:00:00Z');
+    expect(precedentDeLaRestitution([...memeJour, saisonPassee], 'c0')).toBeNull();
+    // Un rang de moins le fait entrer dans la fenêtre : c'est la borne qui décide, pas le jour.
+    expect(precedentDeLaRestitution([...memeJour.slice(1), saisonPassee], 'c1')).toEqual({
+      submittedAt: '2026-06-02T08:00:00Z',
+      totalKg: 2400,
+    });
+  });
+
+  it('un bilan sans date ne se compare pas, et ne prend pas la place du bilan affiché', () => {
+    const bilans = [
+      v('b2', '2026-10-05T09:00:00Z'),
+      v('sans-date', null),
+      v('b1', '2026-06-02T08:00:00Z', 2100),
+    ];
+    expect(precedentDeLaRestitution(bilans, 'b2')).toEqual({
+      submittedAt: '2026-06-02T08:00:00Z',
+      totalKg: 2100,
+    });
+  });
+
+  it('un précédent sans total ne se compare pas : rien, jamais un zéro', () => {
+    const bilans = [v('b2', '2026-10-05T09:00:00Z'), v('b1', '2026-06-02T08:00:00Z', null)];
+    expect(precedentDeLaRestitution(bilans, 'b2')).toBeNull();
+  });
+
+  it('si le bilan affiché n’est pas le plus récent, on ne compare rien', () => {
+    const bilans = [
+      v('plus-recent', '2026-10-05T09:00:00Z'),
+      v('affiche', '2026-06-02T08:00:00Z'),
+      v('b0', '2026-03-01T08:00:00Z'),
+    ];
+    expect(precedentDeLaRestitution(bilans, 'affiche')).toBeNull();
+  });
+});
+
 describe('daysSince', () => {
   it('compte les jours écoulés depuis une date', () => {
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
@@ -210,8 +286,22 @@ describe('formatDate', () => {
     expect(formatDate('2026-03-12T12:00:00Z')).toBe('12 mars 2026');
   });
 
-  it('garde le jour sur deux chiffres', () => {
-    expect(formatDate('2026-09-01T12:00:00Z')).toBe('01 septembre 2026');
+  // **Ce test épinglait « 01 septembre 2026 » jusqu'au 01/10/2026** (audit R-11), sous le titre
+  // « garde le jour sur deux chiffres » et sans autre raison que la sortie de l'ancien
+  // `toLocaleDateString`, conservée au caractère près quand `MOIS_FRANCAIS` l'a remplacé. La raison
+  // nouvelle est double : un jour écrit devant un mois en lettres ne prend pas de zéro en français,
+  // et le premier du mois s'écrit « 1er » ; et le produit n'a qu'une forme de date — le plan écrit
+  // « jusqu'au 1er décembre » par `jourDuMois`, le suivi doit écrire « 1er septembre » par la même.
+  //
+  // Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1) :
+  //   - le `padStart(2, '0')` d'avant remis → les deux cas ci-dessous, eux seuls ;
+  //   - `String(date.getDate())` au lieu de `jourDuMois` → « le premier du mois », seul.
+  it('écrit « 1er » le premier du mois, comme le plan', () => {
+    expect(formatDate('2026-09-01T12:00:00Z')).toBe('1er septembre 2026');
+  });
+
+  it('ne met pas de zéro devant un jour à un chiffre', () => {
+    expect(formatDate('2026-10-05T12:00:00Z')).toBe('5 octobre 2026');
   });
 });
 

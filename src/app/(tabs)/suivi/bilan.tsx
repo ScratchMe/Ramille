@@ -38,12 +38,14 @@ import {
   loisirsSontLeResiduel,
   nomDuPoste,
 } from '@/constants/postes';
-import { formatDate, variationDepuisLeBilanPrecedent, moisLocalDe } from '@/types/suivi';
 import {
-  loadBilanPrecedent,
-  loadCycleCouvrant,
+  formatDate,
+  moisLocalDe,
+  precedentDeLaRestitution,
+  variationDepuisLeBilanPrecedent,
   type BilanPrecedent,
-} from '@/lib/bilan-history';
+} from '@/types/suivi';
+import { loadCycleCouvrant, loadCycleCourant, loadFrequenceDesLoisirs } from '@/lib/bilan-history';
 import { track } from '@/lib/analytics';
 import { effacerLaMarqueDeBilan } from '@/lib/marque-de-bilan';
 import { lireLEngagementEnCours } from '@/lib/engagement-en-cours';
@@ -147,6 +149,14 @@ type LoadState =
        * Ce que la confirmation dit se relit au toucher (`ouvrirLaConfirmation`).
        */
       place: PlaceDuBilan | null;
+      /**
+       * La fréquence des loisirs déclarée, pour nommer le résiduel des sorties rares (arbitrage du
+       * 27/09/2026, `v1-29` §6.3). `null` quand elle n'a pas pu être lue : `loisirsSontLeResiduel`
+       * retombe alors sur les libellés figés. **Dans l'état, et plus à côté** (audit R-4) : lue par un
+       * effet à part, elle pouvait renommer « Loisirs du week-end » en « Loisirs occasionnels » sous
+       * les yeux, une fois l'écran rendu.
+       */
+      frequenceDesLoisirs: string | null;
     };
 
 // Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
@@ -261,13 +271,6 @@ export default function BilanResultat() {
   // React Compiler refuse (`react-hooks/set-state-in-effect`).
   const banniere: EtatDeLaBanniere = mode === 'relecture' ? 'autre' : banniereLue;
   const [partage, setPartage] = useState<EtatPartage>({ statut: 'inactif' });
-  // **La fréquence des loisirs, pour nommer le résiduel des sorties rares** (arbitrage du 27/09/2026,
-  // `v1-29` §6.3). Les libellés figés ne le marquent que quand il domine ou porte la boucle
-  // mensuelle ; la barre de répartition le montre aussi quand les voyages pèsent plus — « rarement »
-  // et un vol, le cas courant. Une lecture à part et tolérante, comme les bilans valides que lit le
-  // chargement pour décider du lien du retrait : `null` (pas encore lue, ou pas pu) fait retomber
-  // `loisirsSontLeResiduel` sur les libellés.
-  const [frequenceDesLoisirs, setFrequenceDesLoisirs] = useState<string | null>(null);
   // **Retirer ce bilan** (C4.7, D4 de `v1-22`) : une confirmation dans la page, jamais un `Alert` —
   // sur web il retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` (la forme de
   // « Supprimer mon compte », `MonCompte`). Le verrou vit dans une `ref` et pas dans l'état, qui ne
@@ -294,23 +297,52 @@ export default function BilanResultat() {
     let cancelled = false;
 
     (async () => {
+      // **Toutes les lectures partent ensemble, au montage** (01/10/2026, audit R-4). L'écran
+      // enchaînait le résultat, puis le cycle de plan, rendait, puis relisait la liste des bilans pour
+      // trouver le précédent, puis le cycle d'alors, et rendait une seconde fois : deux allers-retours
+      // avant le premier rendu, quatre avant la comparaison — et la barre « Ton bilan précédent »
+      // s'insérait au-dessus de « Toi » une fois l'écran lu, toutes les barres changeant de longueur.
+      // C'est pourtant « est-ce que ça a bougé ? », la raison même d'un re-bilan. Un seul aller-retour
+      // désormais, puis un second qui ne fait qu'ajouter une phrase.
+      //
       // **Le statut arrive avec le résultat, dans la même lecture** (C4.7). C'est la seule lecture
       // **d'affichage** qui ne filtre pas sur `completed` — elle lit un bilan par son identifiant,
       // c'est-à-dire par l'adresse qui circule — donc la seule à l'écran qui ne devient pas juste
       // toute seule quand un bilan est retiré. (`lireEtatDuCompte` lit aussi tous les statuts, et il
-      // le doit : un bilan retiré reste une donnée à supprimer.) Embarqué plutôt que lu à côté : une lecture de plus pourrait échouer seule, et
-      // l'écran ne saurait plus s'il a le droit de montrer le chiffre.
+      // le doit : un bilan retiré reste une donnée à supprimer.) Embarqué plutôt que lu à côté : une
+      // lecture de plus pourrait échouer seule, et l'écran ne saurait plus s'il a le droit de montrer
+      // le chiffre.
       //
-      // Les bilans valides partent **en parallèle**, jamais en plus : ils ne servent qu'à décider si
-      // le lien du retrait se rend, et leur échec se tolère — le lien ne se rend pas, c'est tout.
-      const [{ data: lu, error }, bilansValides] = await Promise.all([
-        supabase
-          .from('assessment_results')
-          .select('*, assessments(status, submitted_at)')
-          .eq('assessment_id', id)
-          .single(),
-        lireLesBilansValides(),
-      ]);
+      // **Les trois autres sont tolérantes, et le restent en partant ensemble** : leur échec ôte ce
+      // qu'elles portent, jamais l'écran. Les bilans valides décident du lien du retrait et du bilan
+      // précédent — en échec, ni lien ni comparaison ; le cycle courant porte le palier — en échec,
+      // pas de marche ; la fréquence des loisirs nomme le résiduel des sorties rares — en échec, les
+      // libellés figés. Chacune rend son échec sans lever (PostgREST le rend comme une valeur) ; le
+      // `.catch` garde la règle si un jour l'une d'elles levait, sans quoi `Promise.all` la ferait
+      // tomber avec le reste, et l'écran avec elle.
+      let lectures;
+      try {
+        lectures = await Promise.all([
+          supabase
+            .from('assessment_results')
+            .select('*, assessments(status, submitted_at)')
+            .eq('assessment_id', id)
+            .single(),
+          lireLesBilansValides().catch((): { ok: false } => ({ ok: false })),
+          // **Pas de cycle en relecture** : voir plus bas, le palier n'appartient qu'au bilan qu'on
+          // vient de soumettre.
+          mode === 'relecture' ? null : loadCycleCourant().catch(() => null),
+          loadFrequenceDesLoisirs(id).catch(() => null),
+        ]);
+      } catch (erreur) {
+        // Seule la lecture du résultat peut arriver ici : sans elle, rien à montrer — l'écran
+        // d'erreur, et pas « Chargement de ton bilan… » pour toujours.
+        if (cancelled) return;
+        console.error('Le résultat du bilan n’a pas pu être lu :', erreur);
+        setState({ status: 'error' });
+        return;
+      }
+      const [{ data: lu, error }, bilansValides, cycle, frequenceDesLoisirs] = lectures;
 
       if (cancelled) return;
       if (error || !lu) {
@@ -330,7 +362,9 @@ export default function BilanResultat() {
         setState({ status: 'error' });
         return;
       }
-      const place = bilansValides.ok ? placeDuBilan(id, bilansValides.data) : null;
+      const place = bilansValides.ok
+        ? placeDuBilan(id, bilansValides.data.map((valide) => valide.id))
+        : null;
 
       // **Pas de palier en relecture** (A3-3, A13-14). Le cap appartient au cycle de plan
       // **courant** : le retrancher d'un bilan de l'an dernier donne une marche qui n'est pas la
@@ -358,6 +392,7 @@ export default function BilanResultat() {
           precedent: null,
           palierFranchi: false,
           place,
+          frequenceDesLoisirs,
         });
         return;
       }
@@ -365,21 +400,13 @@ export default function BilanResultat() {
       // Le cap de la saison en cours. Le palier n'est pas un nouveau chiffre : c'est celui que
       // `/plan` affiche déjà, figé à la génération du cycle. Son absence n'est pas une erreur —
       // l'écran se contente alors de ne pas proposer de marche.
-      const { data: cycle } = await supabase
-        .from('plan_cycles')
-        // `id` depuis C2.7 : il sert à savoir si le cycle qui couvrait le bilan précédent est
-        // **celui-ci**, auquel cas son cap a été réécrit à la soumission et le palier alors visé
-        // n'est plus connaissable (cf. `palierEstDerriere`).
-        .select('id, baseline_co2_kg_year, target_reduction_pct')
-        .order('period_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (cancelled) return;
-      const capKg =
-        cycle?.baseline_co2_kg_year != null
-          ? (cycle.baseline_co2_kg_year * cycle.target_reduction_pct) / 100
-          : null;
+      const capKg = cycle?.capKg ?? null;
+      // **Le bilan précédent, dans la même lecture que la place** : la liste des bilans valides, du
+      // plus récent au plus ancien, est exactement celle que relisait `loadBilanPrecedent`. Sans elle
+      // (lecture en échec), pas de comparaison — la restitution reste entière sans la barre.
+      const precedent = bilansValides.ok
+        ? precedentDeLaRestitution(bilansValides.data, data.assessment_id)
+        : null;
 
       // La date ne sert qu'en relecture : après le questionnaire, c'est aujourd'hui.
       setState({
@@ -387,66 +414,39 @@ export default function BilanResultat() {
         results: data,
         capKg,
         submittedAt: null,
-        precedent: null,
+        precedent,
         palierFranchi: false,
         place,
+        frequenceDesLoisirs,
       });
 
-      // **La comparaison arrive en second temps, et l'écran ne l'attend pas** (C2.7, point 2). Même
-      // raison que la date en relecture : c'est le chemin le plus fréquent de cet écran, et sur une
-      // connexion qui traîne, attendre deux requêtes de plus laisserait « Chargement de ton bilan… »
-      // alors que le résultat est déjà en main. Les deux lectures sont tolérantes à l'échec — la
-      // restitution reste entière sans la barre du bilan précédent.
-      const lecture = await loadBilanPrecedent(data.assessment_id);
-      if (cancelled || !lecture.ok || lecture.data === null) return;
-      const precedent = lecture.data;
-
+      // **Seul le cycle d'alors arrive en second temps**, et il n'ajoute qu'une phrase : « Le palier
+      // que tu visais est derrière toi. » Il dépend de la date du précédent, donc il ne peut pas
+      // partir avec le reste ; tolérant comme lui — sans cycle d'alors, on ne prétend rien.
+      //
       // Le cycle qui couvrait le bilan précédent, pour savoir quel palier était visé alors. S'il
       // s'agit du cycle courant, la soumission d'aujourd'hui l'a réécrit : le cap affiché à l'époque
       // n'existe plus, et on ne prétend pas le connaître.
+      if (precedent === null) return;
       const cycleAlors = await loadCycleCouvrant(precedent.submittedAt.slice(0, 10));
       if (cancelled) return;
       const capAlorsKg =
-        cycleAlors && cycle && cycleAlors.cycleId !== cycle.id ? cycleAlors.capKg : null;
+        cycleAlors && cycle && cycleAlors.cycleId !== cycle.cycleId ? cycleAlors.capKg : null;
+      const palierFranchi = palierEstDerriere({
+        precedentKg: precedent.totalKg,
+        courantKg: data.total_co2_kg_year,
+        capAlorsKg,
+        target2050Kg: TARGET_2050_TRANSPORT_T * 1000,
+      });
+      if (!palierFranchi) return;
 
-      setState((etat) =>
-        etat.status === 'ok'
-          ? {
-              ...etat,
-              precedent,
-              palierFranchi: palierEstDerriere({
-                precedentKg: precedent.totalKg,
-                courantKg: data.total_co2_kg_year,
-                capAlorsKg,
-                target2050Kg: TARGET_2050_TRANSPORT_T * 1000,
-              }),
-            }
-          : etat
-      );
+      setState((etat) => (etat.status === 'ok' ? { ...etat, palierFranchi } : etat));
     })();
 
     return () => {
       cancelled = true;
     };
   }, [id, mode, tentative]);
-
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from('assessment_answers')
-        .select('leisure_frequency')
-        .eq('assessment_id', id)
-        .maybeSingle();
-      if (cancelled) return;
-      if (error) console.error('La fréquence des loisirs n’a pas pu être lue :', error);
-      setFrequenceDesLoisirs(data?.leisure_frequency ?? null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, tentative]);
 
   useEffect(() => {
     // En relecture, aucune proposition de compte : redemander à chaque consultation de son
@@ -578,7 +578,7 @@ export default function BilanResultat() {
     }
     // Et si le bilan n'est plus parmi les valides (retiré depuis un autre appareil), on relit
     // l'écran, qui montre l'état « retiré » : le chemin `etat_change` de `retirer`, atteint plus tôt.
-    const place = placeDuBilan(id, bilansValides.data);
+    const place = placeDuBilan(id, bilansValides.data.map((valide) => valide.id));
     if (place === null) {
       reessayer();
       return;
@@ -628,14 +628,26 @@ export default function BilanResultat() {
     setState({ status: 'retire', submittedAt, vientDeRetirer: true });
   };
 
+  // **Le chargement et l'erreur gardent le cadre de l'écran prêt** (01/10/2026, audit R-9) : la même
+  // `SafeAreaView` sans bord bas, la bande haute, puis une zone centrée — la forme de
+  // `suivi/index.tsx`. Ils n'avaient qu'un texte centré : la bande arrivait avec le contenu, d'un
+  // saut de 52 px, et la ligne se posait plus haut que celle du suivi. À la sortie du questionnaire,
+  // trois mises en page se suivaient pour une seule arrivée.
+  //
+  // **La ligne reste immédiate** : cet écran n'attend pas le délai de `useChargementVisible`, et
+  // c'est décidé (`v1-30` §5.8) — le HTML statique la porte, et la garde D de
+  // `verifier-etats-export.mjs` la lit.
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centered}>
-          {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
-              lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
-              écran ne fait que le relire, y compris juste après le questionnaire (A3-16). */}
-          <ThemedText themeColor="textSecondary">Chargement de ton bilan…</ThemedText>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
+                lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
+                écran ne fait que le relire, y compris juste après le questionnaire (A3-16). */}
+            <ThemedText themeColor="textSecondary">Chargement de ton bilan…</ThemedText>
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -650,16 +662,19 @@ export default function BilanResultat() {
   if (state.status === 'error') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centered}>
-          <ThemedText themeColor="textSecondary" style={styles.erreurTexte}>
-            Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
-          </ThemedText>
-          <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
-          <TextLink
-            label="Revenir à mon suivi"
-            onPress={() => router.replace('/suivi')}
-            role="link"
-          />
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            <ThemedText themeColor="textSecondary" style={styles.erreurTexte}>
+              Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
+            </ThemedText>
+            <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
+            <TextLink
+              label="Revenir à mon suivi"
+              onPress={() => router.replace('/suivi')}
+              role="link"
+            />
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -710,7 +725,7 @@ export default function BilanResultat() {
     );
   }
 
-  const { results, capKg, submittedAt, precedent, palierFranchi, place } = state;
+  const { results, capKg, submittedAt, precedent, palierFranchi, place, frequenceDesLoisirs } = state;
   const confirmation =
     confirmationOuverte === null
       ? null
@@ -899,9 +914,11 @@ export default function BilanResultat() {
             </ThemedText>
             {/* **Le jeton, pas une recopie** (A3-22). Le chiffre le plus important du produit
                 redéclarait 26 / 32 à la main, c'est-à-dire exactement `TypeScale.screen` — le
-                jeton des *titres d'écran*. `salient` est celui des chiffres saillants (le cap de
-                la saison, l'écart entre deux bilans) : il vaut 30, et la hiérarchie tient
-                puisque la décision dominante reste au-dessus, à 32. */}
+                jeton des *titres d'écran*. `salient` est celui des chiffres saillants (ce total, le
+                cap de la saison sur le plan) : il vaut 30, et la hiérarchie tient puisque la
+                décision dominante reste au-dessus, à 32. L'écart entre deux bilans, que
+                `theme.ts` range encore parmi eux, se dit ici dans une phrase en `body`, sous les
+                barres (`v1-14` §5) — aucun écran ne l'écrit en `salient`. */}
             <ThemedText type="salient" style={styles.chiffres}>
               {formatTonnes(results.total_co2_kg_year)}
             </ThemedText>
@@ -965,6 +982,12 @@ export default function BilanResultat() {
                   28/09/2026, constat 10.2, décidé le même jour). La phrase ne proposait plus rien
                   depuis le 25/09, et la barre montrait encore « Ton prochain palier — 47 kg » : 20 %
                   d'un poste que le calcul suppose et que la personne n'a pas déclaré. */}
+              {/* **Le remplissage des repères, et plus `accentText`** (01/10/2026, audit R-8). La barre
+                  du palier était la plus foncée de la carte, plus que « Toi » (1,42:1 entre les deux
+                  verts, sur des longueurs voisines) : ce qui ressortait était la marche, pas la
+                  personne. Le kit ne connaît que deux remplissages — l'accent pour ce qui est à soi,
+                  `accentMuted` pour le contexte —, et aucun document ne demande au palier de ressortir
+                  par la couleur : sa place juste sous « Toi » et son libellé le distinguent. */}
               {palier && !posteSuppose && (
                 <CompareRow
                   label={palier.isTarget2050 ? 'Repère transport 2050' : 'Ton prochain palier'}
@@ -977,7 +1000,7 @@ export default function BilanResultat() {
                       : formatTonnesShort(palier.targetKg / 1000)
                   }
                   percent={barPercent(palier.targetKg / 1000)}
-                  accentColor={theme.accentText}
+                  accentColor={theme.accentMuted}
                 />
               )}
               {montreMoyenne && (
@@ -1007,9 +1030,14 @@ export default function BilanResultat() {
                 recalcule depuis le cap qui était en vigueur à l'époque, et ce cap est perdu quand les
                 deux bilans tombent dans la même période (le cycle est réécrit à chaque soumission).
                 On ne dit alors rien plutôt que de l'affirmer avec le cap d'aujourd'hui, qui est plus
-                petit et rendrait la phrase trop facile. */}
+                petit et rendrait la phrase trop facile.
+
+                **En `body`, pas en `small`** (01/10/2026, audit R-10) : c'est ce que la planche E du
+                canvas validé demande (`v1-14` §5, « la phrase de variation sous les barres en
+                `body` »), et c'est le pic d'un re-bilan — elle était la ligne la moins saillante de
+                la carte, au rang de la source. Les autres phrases de la carte restent en `small`. */}
             {precedent && (
-              <ThemedText type="small" themeColor="textSecondary">
+              <ThemedText type="body" themeColor="textSecondary">
                 {variationDepuisLeBilanPrecedent(precedent, results.total_co2_kg_year)}
                 {palierFranchi ? ' Le palier que tu visais est derrière toi.' : ''}
               </ThemedText>

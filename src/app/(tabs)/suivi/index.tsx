@@ -1,6 +1,7 @@
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useScrollToTop } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeHaute } from '@/components/bande-haute';
@@ -149,6 +150,23 @@ export default function Suivi() {
   // fois que son effet de focus se réabonne, donc un rappel recréé à chaque rendu ferait
   // tourner chargement et rendu l'un dans l'autre sans fin.
   const rafraichir = useCallback(() => setCle((precedente) => precedente + 1), []);
+
+  // **Toucher l'onglet où l'on est ramène en haut de la page** (01/10/2026, audit T-14) — le geste
+  // que la plateforme apprend partout, sur Android comme ailleurs. `useScrollToTop` écoute la barre,
+  // et n'agit que sur l'écran racine de la pile, au focus, et si l'écouteur de l'onglet n'a pas
+  // empêché l'appui (`(tabs)/_layout.tsx`, qui ramène à la racine un onglet qui n'y est pas).
+  //
+  // **Par `scrollToTop`, et pas en lui passant le `ScrollView`** : il appellerait alors
+  // `scrollTo({ y: 0, animated: true })`, sans lire la préférence. Un défilement est celui de la
+  // plateforme, posé sous « réduire les animations » (`FRONT-MOUVEMENT.md` §2.12) ; la préférence
+  // n'est lue qu'au démarrage, donc la valeur capturée ici ne périme pas. Hors de l'état `ok`, il
+  // n'y a pas de défilement : l'appel ne fait rien.
+  const defilement = useRef<ScrollView>(null);
+  const animationsReduites = useReducedMotion();
+  const remonterEnHaut = useRef({
+    scrollToTop: () => defilement.current?.scrollTo({ y: 0, animated: !animationsReduites }),
+  });
+  useScrollToTop(remonterEnHaut);
 
   // Les saisons dépliées, par libellé — local à l'écran, comme `pistesDepliees` le sera sur le plan.
   // Rien à persister : c'est un geste de lecture, pas une préférence.
@@ -401,7 +419,11 @@ export default function Suivi() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         {/* Hors du ScrollView : la bande ne défile pas (cf. bande-haute.tsx). */}
         <BandeHaute />
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={defilement}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Le dire coûte une ligne, et c'est la seule façon de ne pas laisser croire qu'un
               « Oui » donné à l'instant a été enregistré ici. */}
           {banniereRelecture()}
@@ -409,9 +431,13 @@ export default function Suivi() {
             <ThemedText type="screenTitle">
               Ton suivi
             </ThemedText>
+            {/* **« Fais un nouveau bilan », et plus « Refais ton bilan »** (01/10/2026, audit R-7) :
+                l'application de `v1-19` D1 à une phrase qu'elle n'avait pas relue — elle venait du
+                canvas `v1-17`, antérieur. « Refaire » laisse croire qu'on efface celui qu'on
+                regarde, sur l'écran même qui montre qu'un bilan s'ajoute. */}
             <ThemedText type="body" themeColor="textSecondary">
               {history.length === 1
-                ? 'Ton point de départ. Refais ton bilan quand tes habitudes changent : tu verras l’écart ici.'
+                ? 'Ton point de départ. Fais un nouveau bilan quand tes habitudes changent : tu verras l’écart ici.'
                 : `${history.length} bilans depuis le ${formatDate(first.submittedAt)}.`}
             </ThemedText>
           </View>
