@@ -10,13 +10,19 @@ S’insère en enfant d’ActionCard. L’intention est obligatoire : jours ou �
 
 Aucune notion d’échec : « Changer d’avis » libère sans rien compter. Ses liens (« Changer d’avis », « Annuler ») sont soulignés au repos.
 
-**Ouvert sur la question** (`surLeChoix`, `v1-32`, 29/09/2026) : sur « Toutes les pistes », le sélecteur est là d'emblée — la pastille « Choisir » a déjà dit « Je m’y engage ». Son contenu ne change pas : rien de coché, « C’est noté » inactif tant que rien n’est choisi. « Annuler » y appelle `onAnnuler` et rend la carte à sa ligne. Le plan ne passe ni l’un ni l’autre.
+**Ouvert sur la question** (`surLeChoix`, `v1-32`, 29/09/2026) : sur « Toutes les pistes », le sélecteur est là d'emblée — la pastille « Choisir » a déjà dit « Je m’y engage ». Son contenu ne change pas : rien de coché, « C’est noté » en attente tant que rien n’est choisi. « Annuler » y appelle `onAnnuler` et rend la carte à sa ligne. Le plan ne passe ni l’un ni l’autre.
 
 ```jsx
 <ActionCard titre="Renoncer à un vol long-courrier cette année" gainKg={1601}><ActionCommitment kind="timing" poste="travel" surLeChoix /></ActionCard>
 ```
 
 **Le focus suit le geste** (dans le dépôt, rien ne se dessine) : à la question quand le sélecteur s’ouvre, au bouton revenu quand « Annuler » le referme sur le plan.
+
+**« C’est noté » en attente, qui dit ce qui manque** (01/10/2026, D13 de `v1-33`) : tant que l’intention est incomplète, il a l’apparence du désactivé — fond `backgroundElement`, texte `textTertiary` — **et il agit** (`Button.enAttente`, le « Suivant » du questionnaire). Son toucher fait apparaître sous les choix, en `small` `accentText` 600 — le style de « Il manque encore … », jamais une alerte —, « **Choisis au moins un jour.** » ou « **Choisis une échéance.** », et porte le focus sur le premier choix du groupe (`demande`). La ligne retombe dès que l’intention est complète ; rien ne part incomplet. Il était `disabled` : un texte gris sur le gris du sélecteur, puis un bouton vert plein dès un choix, et le toucher d’avant ne faisait rien.
+
+```jsx
+<ActionCard titre="Passer deux trajets sur cinq en train" gainKg={619}><ActionCommitment kind="days" state="picking" demande /></ActionCard>
+```
 
 **« C’est noté » ne se défait pas sous les yeux** (01/10/2026, audit P-1) : au succès, le sélecteur reste tel quel, « C’est noté » inactif (`relecture`), jusqu’à ce que l’écran ait relu le plan — la carte passe alors à « Changer d’avis » dans le même rendu ; si la relecture échoue, il redevient actif, sa sélection gardée. Il se refermait avant la relecture, et « Je m’y engage » revenait le temps de l’aller-retour. Dans le dépôt, c’est `lectures` (les lectures terminées de l’écran) qui dit quand ; sur la liste, qui part vers le plan, il reste inactif jusqu’au départ.
 

@@ -23,6 +23,12 @@ export interface ActionCommitmentProps {
    * actif.
    */
   relecture?: boolean;
+  /**
+   * « C’est noté » a été touché sur une intention incomplète (01/10/2026, D13 de `v1-33`) : il est **en attente**, pas
+   * inactif, et sous les choix apparaît ce qui manque — « Choisis au moins un jour. » ou « Choisis une échéance. ». Dans
+   * le dépôt, c'est l'état de la demande, posé au toucher, retombé dès que l'intention est complète.
+   */
+  demande?: boolean;
   onPick?: () => void;
   onToggleDay?: (jour: number) => void;
   onTiming?: (t: string) => void;

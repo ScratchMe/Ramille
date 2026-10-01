@@ -90,8 +90,8 @@ export function intentionKindForPoste(poste: string | null): 'days' | 'timing' {
  *
  * Le repli est celui des sorties : un poste inconnu (un gabarit à venir, une ligne relue d'une
  * version antérieure) reçoit les trois échéances générales plutôt qu'aucune, sans quoi la feuille
- * d'engagement s'ouvrirait sur une liste vide et « C'est noté » resterait inactif sans dire
- * pourquoi.
+ * d'engagement s'ouvrirait sur une liste vide, et « C'est noté » réclamerait une échéance qu'on ne
+ * peut pas choisir (`ceQuiManqueALIntention`).
  */
 export function intentionTimingsForPoste(
   poste: string | null
@@ -170,6 +170,26 @@ export function isIntentionComplete(
   timing: IntentionTiming | null
 ): boolean {
   return kind === 'days' ? days.length > 0 : timing !== null;
+}
+
+/**
+ * **Ce qui manque à une intention**, dit sous les choix au toucher de « C'est noté » en attente — ou
+ * `null` quand elle est complète (D13 de `v1-33`, décidé le 01/10/2026).
+ *
+ * « C'est noté » inactif était un texte gris sur le gris du sélecteur, puis un bouton vert plein dès un
+ * choix ; le toucher avant ne faisait rien, ni bruit ni phrase (audit P-4). Le questionnaire avait
+ * résolu le même cas par l'attente qui demande (`Button.enAttente`, `v1-31`) : « C'est noté » agit, et
+ * son toucher dit ce qui manque. **La phrase se dérive de la complétude elle-même**, et non d'un
+ * second prédicat : `isIntentionComplete` reste ce qui garde l'appel, et une intention qu'il dit
+ * complète n'a rien à réclamer. Mot pour mot, les deux phrases de la décision.
+ */
+export function ceQuiManqueALIntention(
+  kind: 'days' | 'timing',
+  days: IntentionDay[],
+  timing: IntentionTiming | null
+): string | null {
+  if (isIntentionComplete(kind, days, timing)) return null;
+  return kind === 'days' ? 'Choisis au moins un jour.' : 'Choisis une échéance.';
 }
 
 // ── Ce que le plan annonce, et ce que son cap mesure (C3.8 §3) ─────────────────────────────
