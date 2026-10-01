@@ -137,7 +137,13 @@ export function CommuteExtraStep({
   return (
     <View ref={blocDeLaQuestion} style={styles.block}>
       <TitreDEtape>{QUESTION_SECOND_MODE}</TitreDEtape>
+      {/* **La question dit en complément de quoi** (01/10/2026, `v1-33` D6) : le mode principal a été
+          donné à l'écran d'avant, et « Lequel ? » le retire de sa liste sans le dire — la réponse
+          dépendait d'une chose qu'il fallait garder en tête. Le libellé est celui de la table, sans
+          accord à écrire ; un mode principal absent (une adresse `?etape=` tapée sur un brouillon
+          incomplet) laisse l'exemple seul plutôt qu'un « En plus de : » sans rien derrière. */}
       <ThemedText type="small" themeColor="textTertiary">
+        {answers.commute_mode !== null ? `En plus de : ${TRANSPORT_MODE_LABELS[answers.commute_mode]}. ` : ''}
         Par exemple vélo puis train.
       </ThemedText>
       {/* Le « Oui » et ce qu'il ouvre, enveloppés ensemble : le haut du groupe est la borne que

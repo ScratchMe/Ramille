@@ -1,4 +1,4 @@
-La quatrième étape du questionnaire (B1.6 / B1.7) : un second mode en complément du premier — « Par exemple vélo puis train. » —, et si oui lequel, avec la part du trajet qu’il couvre. L’étape rend son contenu ; l’écran du questionnaire la pose dans `StepShell`.
+La quatrième étape du questionnaire (B1.6 / B1.7) : un second mode en complément du premier, et si oui lequel, avec la part du trajet qu’il couvre. Sous la question, en tertiaire, **le mode principal rappelé, puis l’exemple** : « En plus de : Voiture. Par exemple vélo puis train. » (01/10/2026, `v1-33` D6) — la question dépend d’une réponse donnée à l’écran d’avant, et « Lequel ? » retire ce mode de sa liste : on ne le laisse pas en mémoire. Le libellé est celui de la table des modes, sans accord à écrire. L’étape rend son contenu ; l’écran du questionnaire la pose dans `StepShell`.
 
 ```jsx
 <StepShell section="Domicile-travail" step={4} total={9} entree={{ cle: 'commute_extra', sens }}

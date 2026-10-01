@@ -8,8 +8,8 @@ import { PrecisionMode } from '../forms/PrecisionMode.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 import { ThemedView } from '../core/ThemedView.jsx';
 import { MissingModeLink } from './MissingModeLink.jsx';
-// Source : src/components/bilan/steps/commute-extra.tsx — B1.6 / B1.7 : le titre de l'étape, un exemple en
-// tertiaire, le « Oui / Non » en deux puces équiréparties (contour, `Radius.field` = 16), puis, sur « Oui », l'encart
+// Source : src/components/bilan/steps/commute-extra.tsx — B1.6 / B1.7 : le titre de l'étape, le mode principal
+// rappelé puis un exemple, en tertiaire (« En plus de : Voiture. Par exemple vélo puis train. »), le « Oui / Non » en deux puces équiréparties (contour, `Radius.field` = 16), puis, sur « Oui », l'encart
 // « Lequel ? » (fond élément, `Radius.field`, padding 16, gap 8) : les modes sans celui du trajet principal, en
 // `ModeListItem` sur fond de page, rangés par famille comme la liste du mode principal (4 dans une famille, 16 entre
 // deux). **Le lien du mode manquant ne se rend que sur « Oui », sous l'encart, à 8** (01/10/2026, `v1-33`, Q-8) : il
@@ -123,7 +123,10 @@ export function CommuteExtraStep({ answers, update }) {
   return (
     <div ref={blocDeLaQuestion} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <ThemedText type="screenTitle">{QUESTION_SECOND_MODE}</ThemedText>
-      <ThemedText type="small" themeColor="textTertiary">Par exemple vélo puis train.</ThemedText>
+      {/* Le mode principal rappelé avant l'exemple (01/10/2026, `v1-33` D6) : le libellé de la table, sans accord. */}
+      <ThemedText type="small" themeColor="textTertiary">
+        {answers.commute_mode !== null ? 'En plus de : ' + LIBELLES_DES_MODES[answers.commute_mode] + '. ' : ''}Par exemple vélo puis train.
+      </ThemedText>
       <GroupeDeChoix question={QUESTION_SECOND_MODE} style={{ flexDirection: 'row', gap: 8 }}>
         <Chip
           label="Oui"
