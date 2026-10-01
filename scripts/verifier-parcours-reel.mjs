@@ -297,6 +297,24 @@
 // première version du repos attendait dix images identiques, environ 170 ms : R l'aurait trompée
 // (raisonné, pas rejoué), et c'est la fenêtre de 600 ms qui est restée à la fusion.
 //
+// ── Le questionnaire de la vague produit du 01/10/2026 (`v1-33` D1 et §6) ─────────────────────
+//
+// **Les vols arrivent sans réponse** (« questionnaire — vols, à l'arrivée ») et **la feuille du
+// re-bilan se dit à l'entrée** (8 ter, réécrite : on y entre depuis la restitution). **Éprouvé en le
+// cassant le 01/10/2026**, derrière un témoin vert, un rejeu `parcours` par mutation (export à neuf,
+// cache Metro isolé), chaque fichier rendu au commit entre deux :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | Q1 — le total des vols repart de 0 dans `EMPTY_BILAN_ANSWERS` | « questionnaire — vols, à l'arrivée » : « 1 puce(s) cochée(s) » |
+//   | Q2 — le geste de retour de la feuille referme sans ressortir (`onFerme={onCommencer}`) | « re-bilan — la feuille… » : Échap l'a refermée « sans ressortir vers la restitution (/bilan) » |
+//   | Q3 — un lien posé avant « Commencer » dans la feuille | la même étape : le focus est sur ce lien, pas sur « Commencer » |
+//   | Q4 — la feuille qui ne s'ouvre plus à l'entrée (la lecture de l'engagement ignorée) | la même étape : « ne s'est pas ouverte à l'entrée du re-bilan » |
+//   | P2 rejouée — la feuille se démonte sans sortie | la même étape, à Échap : elle « disparaît d'un coup » — l'étape réécrite garde ce que l'ancienne gardait |
+//
+// Ce que ces étapes ne voient pas : « Pas maintenant » (Jest le touche, `entree-du-re-bilan.test.tsx`),
+// et le retour matériel d'Android, que le `Modal` prend à `BackHandler` — c'est l'appareil qui le dit.
+//
 // ── Ce que la recette web du 28/09/2026 a trouvé (`v1-13` §15) ─────────────────────────────────
 //
 // Trois gardes neuves, pour trois constats qu'aucune suite ne voyait : un « Retour » ouvert sans pile
