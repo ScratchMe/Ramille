@@ -722,7 +722,7 @@ export default function BilanQuestionnaire() {
       {step === 'commute_days_distance' && <CommuteDaysDistanceStep answers={answers} update={update} />}
       {step === 'commute_mode' && <CommuteModeStep answers={answers} update={update} />}
       {step === 'commute_extra' && <CommuteExtraStep answers={answers} update={update} />}
-      {step === 'leisure_frequency' && <LeisureFrequencyStep answers={answers} update={update} total={total} />}
+      {step === 'leisure_frequency' && <LeisureFrequencyStep answers={answers} update={update} />}
       {step === 'leisure_detail' && <LeisureDetailStep answers={answers} update={update} />}
       {step === 'flights' && <FlightsStep answers={answers} update={update} />}
       {step === 'long_trips' && <LongTripsStep answers={answers} update={update} />}
