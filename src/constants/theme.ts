@@ -183,6 +183,15 @@ export const TypeScale = {
    */
   display: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
   /**
+   * La question d'un bloc **sous** le titre de l'étape : la distance du trajet, celle d'une sortie, la
+   * part des vols courts — les écrans qui posent deux questions donnent à la seconde un sous-titre plus
+   * petit que le titre d'écran (`screen`, 26). Écrit trois fois à la main, dans trois étapes, jusqu'au
+   * 01/10/2026 (`v1-33`, Q-12) ; **les valeurs sont celles des trois recopies**, rien ne bouge à l'écran.
+   * Il se lit en `style` d'un `ThemedText` `subtitle` à la graisse 600, dont il remplace taille,
+   * interligne et approche.
+   */
+  question: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
+  /**
    * Étiquette en capitales d'une carte (« TON PREMIER PLAN », « PREMIER PAS »). `v1-11` écrivait
    * le 07/09/2026 qu'une échelle à 13 px « n'existe nulle part » : c'était vrai ce jour-là, et
    * trois recopies à la main sont arrivées depuis (`v1-29` §3).

@@ -48,8 +48,13 @@ const distanceDomicileTravailARelire = (answers) => {
   return km !== null && km > COMMUTE_DISTANCE_A_RELIRE_KM;
 };
 
-// Le sous-titre d'un bloc : `subtitle` ramené à 22/28, graisse 600.
-const SOUS_TITRE = { fontSize: 22, lineHeight: '28px', letterSpacing: '-0.22px' };
+// Le sous-titre d'une question sous le titre de l'étape : `TypeScale.question` (src/constants/theme.ts), jeton du kit
+// `--type-question-*` — `subtitle` ramené à 22/28, graisse 600 (01/10/2026, `v1-33`, Q-12).
+const SOUS_TITRE = {
+  fontSize: 'var(--type-question-size)',
+  lineHeight: 'var(--type-question-line)',
+  letterSpacing: 'var(--type-question-tracking)',
+};
 
 export function CommuteDaysDistanceStep({ answers, update }) {
   const [inconnue, setInconnue] = React.useState(answers.commute_distance_bracket !== null);
