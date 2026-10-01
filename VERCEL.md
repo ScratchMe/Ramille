@@ -41,7 +41,7 @@ vérifiées par Antoine auprès de Vercel :
 - **Le compteur est celui du compte, pas du projet.** Un tableau de bord qui affiche 9,85 Go sur
   10 additionne tous les projets du compte ; le chiffre par projet est ailleurs sur la même page.
   Lire l'un sans l'autre, c'est raisonner sur le mauvais dénominateur — Ramille a passé une heure
-  à chercher un facteur cinq qui était un autre projet (§2.1). Demander les deux chiffres.
+  à chercher un facteur cinq qui était un autre projet (15/09/2026). Demander les deux chiffres.
 
 **Vercel compte le poids d'un bundle une fois par ROUTE, pas une fois par bundle physique.** Un
 bundle de 4 Mo partagé par 92 routes est facturé ~368 Mo. Avant de choisir où optimiser, compter
@@ -241,7 +241,8 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
   pas dans les sources — sinon un futur import réintroduit les octets sans bruit.
 - Chez Ramille : le rendu d'image de partage porte **un binaire WASM de 2,5 Mo** (`@resvg`), soit
   57 % du poids, et il est irréductible tant que l'image se rend côté serveur. Le levier n'est
-  donc pas le bundle, c'est la cadence (§2.3).
+  donc pas le bundle, c'est la cadence (§1.1) — et depuis que le budget est levé, il n'y a plus
+  de levier à tirer, seulement un écart à surveiller (§2.3).
 
 ### 1.8 Ce que l'outillage d'une session agent ne voit pas
 
@@ -261,83 +262,20 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
 
 *Cette section ne voyage pas — ce sont nos chiffres, à un instant donné.*
 
-### 2.1 Chiffres de référence (15/09/2026, mesure hors ligne §1.2)
+### 2.1 Ce que pèse un déploiement
 
 | | Valeur |
 |---|---|
-| Fonctions physiques par déploiement | 2 — `api/share-card` (Node.js, 63 fichiers) et `api/partage` (Edge) |
-| Poids de `share-card` sur disque | 3,95 Mo + 0,38 Mo de `hb.wasm` via `includeFiles` = 4,33 Mo |
+| Fonctions physiques par déploiement | 2 — `api/share-card` (Node.js, 63 fichiers) et `api/partage` (Edge), une route chacune : pas d'amplification (§1.1) |
+| Poids de `share-card` sur disque | 3,95 Mo + 0,38 Mo de `hb.wasm` via `includeFiles` = 4,33 Mo (15/09/2026) |
 | Poids de `share-card` **retenu par Vercel** | **1 595 453 octets ≈ 1,6 Mo** (export du tableau de bord, 15/09/2026 — l'archive compressée, 37 % du disque) |
 | Poids de `partage` | 0,03 Mo sur disque ; l'export du tableau de bord ne lui donne aucune taille (Edge) |
-| **Poids par déploiement, mesuré sur le compteur** | **1,76 Mo**, deux fois (16/09/2026, voir ci-dessous) — et c'est un **plancher** |
-| Fusions sur `main`, 16/08 → 15/09 | 82, dont **13 doc seule** (16 %) |
-| Fusions du seul 15/09 | 5 (PR #186 à #190), dont **3 doc seule** (#188, #189, #190) |
-| **Compteur Functions Storage du compte** | **9,85 Go sur 10 Go le 15/09/2026** (relevé par Antoine sur *Usage*), tous projets confondus — pas de baisse avant au moins dix jours. **Relevé suivant : 9,88 Go le 21/09/2026**, voir le bloc daté plus bas |
-| **Part de Ramille** | **437,53 Mo** le 15/09/2026, soit ≈ 273 déploiements à 1,6 Mo en dix jours de vie du projet (82 fusions de production et ~190 prévisualisations, une par push jusqu'au 15/09 à midi). **472,8 Mo le 21/09/2026** |
-| Budget fixé par Antoine | **≤ 150 Mo ajoutés entre le 15/09 et le 25/09/2026** — c'est tout ce qui reste avant la limite. **35,3 Mo consommés au 21/09**, dont ≈ 115 à 125 Mo de marge réelle sur le compte. **Levé le 25/09/2026** : compteur remis à zéro plus tôt que prévu (§2.3) |
+| **Coût d'un déploiement sur le compteur** | **1,76 Mo**, mesuré deux fois le 16/09/2026 sur des intervalles qui n'en contenaient qu'un (PR #191 et #201) — et c'est un **plancher** (§1.1). Deux fusions « doc seule » entre les deux n'ont **rien** ajouté : l'Ignored Build Step mesuré sur le compteur lui-même |
+| **Mesure hors ligne de référence** (§1.2, §2.3 règle de mesure) | **4 366 425 octets (4,16 Mio)** le 29/09/2026, à l'identique du 21/09 |
 
-> **Réconcilié le 15/09/2026, en deux temps.** Le premier relevé — « 9,85 Go sur 10 » — ne se
-> déduisait ni de 1,6 Mo × 82 fusions (131 Mo) ni de 4,4 Mo × (fusions + prévisualisations) : il
-> manquait un facteur cinq, cherché une heure dans le nombre de déploiements et dans ce que Vercel
-> compte. Il était dans le **dénominateur** : 9,85 Go est le compteur du **compte**, et Ramille
-> n'en représente que 437,53 Mo — le reste est Tour de Growth, dont chaque déploiement pèse
-> ~47 Mo. 437,53 Mo ÷ 1,6 Mo ≈ 273 déploiements en dix jours, ce que l'historique rend plausible
-> (82 fusions de production, 158 commits atteignables hors branches écrasées, une prévisualisation
-> par push jusqu'au 15/09 à midi). **Le chiffre par déploiement de l'export est donc le bon.**
-
-> **Corrigé le 16/09/2026 : le compteur dit 1,76 Mo, pas 1,6.** Deux intervalles ne contenant
-> **qu'un seul déploiement** ont été relevés, et les deux donnent exactement le même écart :
-> 437,53 → 439,29 Mo (la fusion de la PR #191, arrivée au compteur pendant la nuit) et
-> 439,29 → 441,05 Mo (la fusion de la PR #201). Entre les deux, deux fusions « doc seule » (#192
-> et #200) n'ont **rien** ajouté — c'est la mesure de l'Ignored Build Step sur le compteur
-> lui-même, et non sur le journal de déploiements.
->
-> **L'écart avec l'export n'est pas expliqué, et on ne l'explique pas à la place de la mesure.**
-> 1 595 453 octets valent 1,5955 Mo décimaux ou 1,5216 Mio : ni l'un ni l'autre ne fait 1,76, et
-> `partage` n'a aucune taille dans l'export. Les deux pistes plausibles — l'export ne compte pas
-> tout ce que le compteur retient, ou l'affichage arrondit autrement — n'ont pas été départagées.
-> Ce qui est mesuré, c'est l'écart du compteur, et **c'est lui qu'on budgète**.
->
-> **Et c'est un plancher, pas une valeur exacte** : le compteur est une somme **glissante**, donc
-> un intervalle d'un jour peut aussi voir sortir un déploiement vieux de trente jours. Un tel
-> retrait **diminue** l'écart observé, jamais l'inverse.
->
-> Corollaire sur la réconciliation du 15/09 ci-dessus : elle divisait un écart **net** d'une
-> journée par un nombre de fusions, donc elle mélangeait les ajouts et les retraits de la fenêtre.
-> Un écart mesuré sur **un** déploiement ne fait pas ce mélange — c'est la seule forme de mesure à
-> laquelle se fier ici, et la règle portable est en §1.1.
-
-> **Relevé du 21/09/2026 : 9,88 Go sur 10 pour le compte, 472,8 Mo pour Ramille** (Antoine, six
-> jours après le précédent). Ce que ça dit, et ce que ça ne dit pas :
->
-> - **Ramille a ajouté 35,3 Mo, et c'est un ajout PUR** — pas un net. Le projet Vercel a été créé
->   vers le 05/09, donc à la date du relevé **aucun de ses déploiements n'est encore sorti** de la
->   fenêtre de trente jours. C'est la seule situation où un intervalle de plusieurs jours se lit
->   sans le mélange que §1.1 interdit, et elle prendra fin le 05/10.
-> - **Le compte, lui, n'a monté que de 30 Mo** (9,85 → 9,88) pendant que Ramille en ajoutait 35,3.
->   L'écart est du **retrait** : de vieux déploiements de l'autre projet sortent de la fenêtre.
->   C'est cohérent avec « Ramille est le seul projet qui déploie en ce moment » (Antoine).
-> - **Ce qui reste avant la limite : ≈ 120 Mo**, et la précision de l'affichage compte — « 9,88 »
->   est arrondi au centième, donc la vraie valeur est entre 9,875 et 9,885, soit **115 à 125 Mo**.
->   L'incertitude vaut à elle seule trois fusions : on budgète sur la borne basse.
-> - À 1,76 Mo la fusion, 115 Mo valent **≈ 65 fusions**. La convention de deux fusions de code par
->   jour (§2.3) en consomme une dizaine d'ici au 25/09, soit ~18 Mo. **La contrainte n'est plus
->   serrée** — et elle ne l'est plus parce que l'autre projet s'est arrêté, pas parce qu'on a été
->   économe. Elle se resserrerait au premier déploiement qu'il reprendrait.
->
-> **Et une prédiction, parce qu'elle change la façon de lire le compteur en octobre.** Les 472,8 Mo
-> de Ramille sont dominés par la **salve initiale** — ≈ 273 déploiements entre le 05 et le 15/09,
-> dont ~190 prévisualisations, une par push, jusqu'à ce que `git.deploymentEnabled` les coupe
-> (§2.2). Cette salve sort de la fenêtre **entre le 05 et le 15/10**, donc la part de Ramille doit
-> **chuter de ~400 Mo** sur cette période, pour se stabiliser autour de (cadence × 30 jours ×
-> 1,76 Mo) — soit ≈ 106 Mo à deux fusions par jour, et moitié moins à une. Le compteur de Ramille
-> n'est pas monotone : il plafonne. **Si la chute n'a pas lieu à ces dates, c'est le modèle qui est
-> faux**, et il faudra reprendre la mesure avant d'en tirer une règle de cadence.
-
-Ce que le budget vaut en déploiements de Ramille : ≈ 94 — **si l'autre projet ne fusionne pas** ;
-trois de ses fusions suffisent à consommer les 150 Mo. Un déploiement de Ramille est bon marché,
-mais le compte est à 98 % : rien ne déploie sans nécessité (§2.3). Première estimation, avant les
-relevés : 4,4 Mo par déploiement d'après le disque ; l'export l'a divisée par 2,7 (§1.2).
+**L'écart entre l'export (1,6 Mo) et le compteur (1,76 Mo) n'est pas expliqué, et on ne l'explique
+pas à la place de la mesure** : ni 1,5955 Mo décimaux ni 1,5216 Mio ne font 1,76, et `partage`
+n'a aucune taille dans l'export. Ce qui est mesuré, c'est l'écart du compteur.
 
 Répartition du poids de `share-card` : `@resvg/resvg-wasm` 2,48 Mo (57 %), `hb.wasm` 0,38,
 `@shuding/opentype.js` 0,37, `satori` 0,36, `fflate` 0,17, `linebreak` 0,14, les deux polices
@@ -347,6 +285,12 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 > mesurés) ; chez Ramille le rapport est de 37 %. Les deux sont vrais : un bundle Next.js est du
 > JavaScript déjà minifié qui se compresse peu, le nôtre est un WASM de 2,5 Mo qui se compresse
 > bien. **Le tableau de bord a raison**, et la mesure hors ligne sert au classement (§1.2).
+
+Les relevés du compteur du compte (9,85 Go sur 10 le 15/09/2026), le budget de 150 Mo fixé pour
+le 15 au 25/09 et sa consommation jour par jour vivaient ici ; ils sont partis le 01/10/2026, le
+budget étant levé depuis le 25/09 (§2.3). Ce qu'ils ont appris de portable — le compteur est celui
+du **compte**, un coût se mesure sur un intervalle qui ne contient qu'un déploiement, le compteur
+retarde d'une nuit — est en §1.1.
 
 ### 2.2 Décisions prises, à ne pas rouvrir sans raison
 
@@ -370,78 +314,45 @@ Spline Sans 0,11, `harfbuzzjs` (JS) 0,08, `react` 0,06 ; le reste sous 0,05.
 - **`framework: null`** — l'export d'Expo est statique, la commande de build est
   `npm run vercel-build` et la sortie `dist/`.
 
-### 2.3 Convention de cadence, et le budget des dix jours
+### 2.3 La convention de fusion : on fusionne quand on veut, on mesure chaque déploiement
 
-> **Le budget est levé depuis le 25/09/2026 — la mesure hors ligne reste.** Le compteur a été
-> remis à zéro plus tôt que prévu, et la consigne d'Antoine est mot pour mot : *« Plus besoin de
-> s'inquiéter pour Vercel, ça a été reset plus tôt que prévu, tu peux merger quand tu veux.
-> Continue simplement de regarder combien ça doit déployer pour vérifier qu'il n'y ait pas une
-> hausse soudaine, il faudrait alors l'expliquer. »* Ce qui en découle pour les règles ci-dessous :
-> la **1** (demander le relevé avant la première fusion) et la **3** (deux fusions de code par
-> jour) tombent ; la **2** devient une bonne pratique et non plus une contrainte ; la **4** reste,
-> parce qu'elle est gratuite ; et la **5 reste entière, et c'est désormais la seule garde** :
-> mesurer avant chaque fusion de code, comparer au relevé précédent, et **expliquer tout écart**
-> dans la PR avant de fusionner — un saut veut toujours dire qu'une dépendance est entrée dans
-> `api/`. Le reste de cette section décrit la fenêtre du 15 au 25/09/2026 ; il est gardé pour
-> ce qu'il a appris (le facteur cinq, la marge prêtée), pas comme une règle en vigueur.
+**Depuis le 25/09/2026, il n'y a plus de budget.** Le compteur a été remis à zéro plus tôt que
+prévu, et la consigne d'Antoine est mot pour mot : *« Plus besoin de s'inquiéter pour Vercel, ça a
+été reset plus tôt que prévu, tu peux merger quand tu veux. Continue simplement de regarder combien
+ça doit déployer pour vérifier qu'il n'y ait pas une hausse soudaine, il faudrait alors
+l'expliquer. »* Ce qui reste :
 
-Chaque fusion de code sur `main` coûte **≈ 1,8 Mo** pendant trente jours (1,76 mesuré, §2.1). Entre le 15 et le 25/09/2026,
-**150 Mo sont tout ce qui reste au compte entier**, partagés avec un projet dont une fusion en
-vaut trente de Ramille — et une limite atteinte, c'est un correctif qui ne part plus, sur les
-deux projets.
+1. **Avant chaque fusion de code, mesurer ce que le déploiement va ajouter** — `vercel build`, puis
+   la somme des `.func` selon la recette de §1.2 — et **le comparer au relevé précédent** (§2.1).
+   Demandé le 21/09/2026, et la demande dit exactement à quoi ça sert : *« juste pour vérifier que
+   tu n'as pas fait de bêtise et que le chiffre n'augmente pas soudainement sans qu'on s'en rende
+   compte »*. Ce n'est donc **pas** une remesure du coût unitaire — il est connu, il a été mesuré
+   deux fois, et le remesurer quinze fois est précisément ce qui a été reproché le même jour. C'est
+   une **garde de non-régression** : le chiffre attendu est stable (4,33 Mo de disque le 15/09,
+   4,16 Mio le 21/09 — ≈ 1,5 Mio retenus —, puis 4 366 425 octets à l'identique le 29/09), donc ce
+   qu'on cherche est l'**écart**, pas la valeur. **Un écart s'explique dans la PR avant de
+   fusionner** : un saut veut dire qu'une dépendance est entrée dans `api/`, et c'est le seul moment
+   où on peut le voir avant de le payer trente jours. Deux traces à nettoyer après coup, sans quoi
+   elles partent dans la PR : `.vercel/` (ignoré par git, mais présent) et `api/package-lock.json`,
+   que `vercel build` écrit et que le dépôt ne veut pas (§1.2). Un `git status` après la mesure, à
+   chaque fois.
+2. **Une fusion de documentation part seule et doit être sautée** (§1.3) : elle ne coûte rien, et
+   chacune vérifie que le script fait ce qu'il dit. Elle ne demande pas de mesure.
+3. **Une PR par vague plutôt qu'une par chantier** reste une bonne pratique — une vérification
+   complète, un push, une fusion —, mais n'est plus une contrainte.
 
-**Où en est ce budget, au 21/09/2026** : 35,3 Mo consommés sur les 150, et ≈ 115 à 125 Mo de marge
-réelle sur le compte (§2.1). À 1,76 Mo la fusion, c'est **une soixantaine de fusions** — la
-contrainte s'est desserrée, et il faut savoir **pourquoi** avant d'en profiter : l'autre projet ne
-déploie plus, donc de vieux déploiements à lui sortent de la fenêtre et compensent les nôtres. Ce
-n'est pas une marge acquise, c'est une marge prêtée : elle se referme au premier déploiement qu'il
-reprend. Les règles ci-dessous restaient donc à demeure **jusqu'au 25/09/2026**, et la 3 gardait son
-plafond — ce qui avait changé était la tension, pas la discipline.
-
-Les règles de la fenêtre — l'encadré en tête de cette section dit lesquelles tiennent encore :
-
-1. **Avant la première fusion d'une session, demander à Antoine le relevé du tableau de bord**
-   (*Usage → Functions Storage*), en déduire ce qui reste, et s'y tenir. L'agent ne peut pas le
-   lire (§1.8).
-2. **Une PR par vague, pas une par chantier.** Une vérification complète, un push, une fusion.
-   Une correction de documentation qui suit une fusion de code attend la fusion de code
-   suivante — ou part seule, puisqu'elle ne déploie plus.
-3. **Deux fusions de code par jour au plus** pendant la fenêtre des dix jours, et **seule une
-   correction nécessaire déploie** tant que le compte est à 98 % ; ce qui peut attendre le 25/09
-   attend, sur une branche. Le coût unitaire est faible, c'est la marge qui ne l'est pas, et elle
-   n'est pas qu'à nous.
-4. **Une fusion de documentation part seule et doit être sautée** (§1.3) : c'est gratuit, et
-   chacune vérifie que le script fait ce qu'il dit.
-5. **Avant chaque fusion de code, mesurer ce que le déploiement va ajouter** — `vercel build`, puis
-   la somme des `.func` selon la recette de §1.2 — et **le comparer au relevé précédent**. Demandé
-   le 21/09/2026, et la demande dit exactement à quoi ça sert : *« juste pour vérifier que tu n'as
-   pas fait de bêtise et que le chiffre n'augmente pas soudainement sans qu'on s'en rende compte »*.
-   Ce n'est donc **pas** une remesure du coût unitaire — il est connu, il a été mesuré deux fois, et
-   le remesurer quinze fois est précisément ce qui a été reproché le même jour. C'est une **garde de
-   non-régression** : le chiffre attendu est stable (4,33 Mo de disque le 15/09, 4,16 Mio le
-   21/09 — ≈ 1,5 Mio retenus —, puis 4 366 425 octets à l'identique le 29/09, avant `v1-32` comme
-   après `v1-31` et `v1-32`, qui ne touchaient que l'app), donc ce qu'on cherche est l'**écart**, pas la valeur. Un saut veut
-   dire qu'une dépendance est entrée dans `api/`, et c'est le seul moment où on peut le voir avant
-   de le payer trente jours.
-   Deux traces à nettoyer après coup, sans quoi elles partent dans la PR : `.vercel/` (ignoré par
-   git, mais présent) et `api/package-lock.json`, que `vercel build` écrit et que le dépôt ne veut
-   pas (§1.2). Un `git status` après la mesure, à chaque fois.
-
-Ce que cette convention corrige : le 15/09/2026, cinq fusions dans la journée, dont trois qui ne
-touchaient que de la documentation — le motif exact contre lequel Tour de Growth avait écrit sa
-règle, et que j'ai reproduit avant de la lire.
+**Ce que la fenêtre du 15 au 25/09/2026 a appris**, et qui reste vrai le jour où un budget
+reviendrait : le 15/09, cinq fusions dans la journée, dont trois qui ne touchaient que de la
+documentation — le motif exact contre lequel Tour de Growth avait écrit sa règle, et que j'ai
+reproduit avant de la lire ; et une marge qui s'élargit parce qu'un **autre** projet du compte
+cesse de déployer n'est pas acquise, elle est prêtée — elle se referme à son premier déploiement.
+Pendant la fenêtre, la règle était aussi de demander le relevé du tableau de bord avant la première
+fusion d'une session (l'agent ne peut pas le lire, §1.8) et de s'en tenir à deux fusions de code par
+jour ; les deux sont tombées le 25/09/2026.
 
 ### 2.4 Ce qu'il reste à vérifier sur le tableau de bord
 
-- ~~**La première fusion « doc seule » après celle-ci** doit apparaître comme sautée par l'Ignored
-  Build Step~~ — **vérifié le 16/09/2026, deux fois et sur le compteur** : les fusions des PR #192
-  (fichiers d'outil) et #200 (recette web) n'ont pas fait bouger la part de Ramille, restée à
-  439,29 Mo. C'est la preuve que le journal de déploiements ne donnait qu'à moitié.
 - **`VERCEL_GIT_PREVIOUS_SHA` est-il exposé ?** Le script écrit « repli sur HEAD^ » quand il ne
   l'est pas. Si cette ligne apparaît à chaque fois, le trou du build échoué (§1.3) est ouvert et
-  il faut le savoir.
-- ~~**La part de Ramille après la fusion de la PR #192**~~ — **relevée le 16/09/2026** : 439,29 Mo
-  avant et après, donc sautée. (Le total du compte, lui, bouge dès que l'autre projet fusionne :
-  c'est pourquoi on demande toujours **les deux** chiffres.)
-- **Le compteur retarde d'une nuit** : l'écart d'une fusion ne se lit pas dix minutes après, il se
-  lit le lendemain. Les deux mesures de 1,76 Mo l'ont chacune confirmé.
+  il faut le savoir. (L'autre vérification de cette liste — qu'une fusion « doc seule » soit
+  sautée sur le compteur et pas seulement dans le journal — est faite depuis le 16/09/2026, §2.1.)

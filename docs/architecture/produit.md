@@ -70,15 +70,15 @@ lots) a livré la **barre à deux onglets Plan / Suivi**, le questionnaire et le
 résultat sous le suivi (`/suivi/bilan?id=`, deux entrées dérivées dans `src/types/resultat.ts`,
 `/bilan/resultat` conservée en redirection), action engagée saillante, et les jetons
 `TypeScale`/`Radius`/`ControlHeight` que les écrans consomment au lieu de redéclarer une taille.
-Son canvas est `docs/design/v1-11-navigation/`, ses écarts d'implémentation sa §7. **Trois des
+Son canvas est `docs/design/v1-11-navigation/`, ses écarts d'implémentation sa §7. **Deux des
 quatre puces de sa §8 restent à vérifier sur appareil** : l'annonce TalkBack « Plan, onglet,
 sélectionné » ; le placement de la **carte d'attente** du plan, posée au-dessus du cap de la
 saison — la règle « jamais la mascotte près d'un chiffre lourd » vise l'empreinte et non une
 réduction, mais si le rendu réel la fait paraître commenter le cap, elle descend sous les actions
 (déplacement d'un bloc ; la puce visait la carte de période calme, remplacée par celle-ci en
-`v1-12` §6.3) ; et le **lien de connexion `ramille://`**, repris au §2.3 avec ce qui le distingue
-du lien du rappel — **exercé depuis, le 14/09/2026** (`v1-13` §11.8), puis remplacé le 20/09/2026
-par un code à huit chiffres (`v1-28`) : des trois, il ne reste donc que les deux premières.
+`v1-12` §6.3). La troisième, le **lien de connexion `ramille://`**, a été exercée le 14/09/2026
+sur un téléphone remis à neuf, où tout est revenu (`v1-13` §11.8) — puis ce lien a disparu le
+20/09/2026, les e-mails du compte ne portant plus qu'un code à huit chiffres (`v1-28`).
 Le **retour matériel Android** n'est plus à vérifier : vérifié le 09/09/2026, il quitte bien
 l'app depuis `/plan` — c'est le comportement attendu d'une racine à onglets, et il ne doit pas
 être « corrigé » par quelqu'un qui le prendrait pour une navigation manquante.
@@ -98,16 +98,6 @@ jeton d'appareil suit la personne par RPC ; la feuille des rappels s'ouvre **une
 appareil** après « C'est noté », et la carte d'attente du plan a remplacé « Rien à rattraper ».
 Les trois branches ont été parcourues en conditions réelles — notification reçue, email reçu,
 lien du rappel ouvrant l'app et non le navigateur, réponse refermant le point (§8.1).
-
-**Ce qui a été vérifié là, c'est le lien du rappel, pas celui de la connexion**, et les
-confondre ferait croire qu'un chemin a été éprouvé alors qu'il ne l'a pas été. Le lien du
-rappel pointe `https://www.ramille.fr/plan` et s'ouvre dans l'app par `assetlinks.json`. Le lien
-de connexion, lui, arrive en `ramille://` depuis une messagerie, remonte par `Linking.useURL()`
-dans `_layout.tsx`, et doit aboutir sur le plan barre comprise : **ce chemin n'avait jamais été
-exercé sur appareil** (`v1-11` §8, dernière puce), alors que c'est le seul accès à un compte
-existant depuis un téléphone neuf. **Il l'a été le 14/09/2026, deux fois** (`v1-13` §11.8), sur un
-téléphone remis à neuf où tout est revenu ; et depuis le 20/09/2026, les e-mails du compte ne
-portent plus de lien mais un code (§3, le moment du compte).
 
 ## 3. La feuille de route courante
 
