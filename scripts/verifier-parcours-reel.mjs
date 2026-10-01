@@ -2918,7 +2918,7 @@ try {
       `l'ordre attendu, engagement (les jours au clavier), point répondu, suivi, « Toi » et sa ligne de ` +
       `canal, compte supprimé — puis le cycliste, ${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, ` +
       `barre d'onglets venue sans « Compris », puis son nouveau bilan en voiture où « Ton premier plan » ` +
-      `passe devant la carte des deux lieux, puis ses deux bilans retirés — le plan reparti du précédent, ` +
+      `se rend sans que la carte des deux lieux, vue une fois, revienne, puis ses deux bilans retirés — le plan reparti du précédent, ` +
       `puis la racine et la marque locale effacée, et la carte d'attente qui nomme le lundi — puis un ` +
       `profil sans boucle, à qui ni le plan ni le suivi ne promettent rien, et qui rattache son compte ` +
       `par code — Entrée envoie, le focus suit, et le retour ne rouvre ni le flux fini ni la session ` +
