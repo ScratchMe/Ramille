@@ -553,7 +553,7 @@ describe('carteAttente', () => {
 //   - le soir même, la table des boucles lue par `in` au lieu de `hasOwnProperty` → le même test,
 //     seul, sur « toString » ;
 //   - `boucleAVenir` sans priorité (la mensuelle testée d'abord) → « la boucle hebdomadaire passe
-//     devant », seul ;
+//     devant », seul — test réécrit le 01/10/2026, quand la règle est devenue « le plus proche » ;
 //   - `laBoucleDuPointTourne` qui rend `false` sur `null` → « sans réponse du serveur… », seul.
 describe('lireLesBouclesAVenir', () => {
   it('rend les boucles du serveur telles quelles, vides comprises', () => {
@@ -575,16 +575,43 @@ describe('lireLesBouclesAVenir', () => {
   });
 });
 
+// **Le rendez-vous le plus proche, quelle que soit sa boucle** (décision du 01/10/2026, #304). Les
+// dates sont celles de la recette : le mercredi 30/09/2026, la carte disait « lundi » et le point
+// mensuel est arrivé le jeudi 1er octobre.
+//
+// Éprouvé en le cassant le 01/10/2026 (TESTING.md §1.1), deux mutations, ce test seul tombant à
+// chaque fois : la comparaison retirée (la règle d'avant, l'hebdomadaire toujours devant) → « les
+// jours où le 1er vient avant le lundi » ; puis `<` changé en `<=` → « un 1er qui tombe un lundi ».
 describe('boucleAVenir', () => {
-  it('la boucle hebdomadaire passe devant : le lundi vient avant le premier du mois', () => {
-    expect(boucleAVenir(['commute', 'extras'])).toBe('hebdo');
-    expect(boucleAVenir(['extras', 'commute'])).toBe('hebdo');
-    expect(boucleAVenir(['commute'])).toBe('hebdo');
+  const jour = (annee: number, mois: number, j: number, heure = 12) => new Date(annee, mois - 1, j, heure);
+
+  it('les jours où le 1er vient avant le lundi, la carte nomme le point du mois', () => {
+    // Lundi 28/09 (après le point du jour), mercredi 30/09 : le jeudi 1er octobre vient avant le 5.
+    for (const date of [jour(2026, 9, 28), jour(2026, 9, 30), jour(2026, 9, 30, 23)]) {
+      expect({ date, boucle: boucleAVenir(['commute', 'extras'], date) }).toEqual({ date, boucle: 'mensuel' });
+    }
+    expect(boucleAVenir(['extras', 'commute'], jour(2026, 9, 30))).toBe('mensuel');
   });
 
-  it('la boucle mensuelle seule, puis aucune', () => {
-    expect(boucleAVenir(['extras'])).toBe('mensuel');
-    expect(boucleAVenir([])).toBe('aucune');
+  it('les autres jours, le lundi', () => {
+    // Le 1er lui-même : le point du mois est là, le prochain est en novembre. Le dimanche 27/09 : le
+    // lundi 28 vient avant.
+    for (const date of [jour(2026, 10, 1), jour(2026, 10, 15), jour(2026, 9, 27, 23)]) {
+      expect({ date, boucle: boucleAVenir(['commute', 'extras'], date) }).toEqual({ date, boucle: 'hebdo' });
+    }
+  });
+
+  it('un 1er qui tombe un lundi : les deux points arrivent ce jour-là, et « lundi » est vrai', () => {
+    // Le lundi 1er juin 2026, vu du vendredi 29 mai.
+    expect(boucleAVenir(['commute', 'extras'], jour(2026, 5, 29))).toBe('hebdo');
+  });
+
+  it('une seule boucle se nomme elle-même, quel que soit le jour ; aucune, rien', () => {
+    for (const date of [jour(2026, 9, 30), jour(2026, 10, 15)]) {
+      expect(boucleAVenir(['commute'], date)).toBe('hebdo');
+      expect(boucleAVenir(['extras'], date)).toBe('mensuel');
+      expect(boucleAVenir([], date)).toBe('aucune');
+    }
   });
 });
 

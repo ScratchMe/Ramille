@@ -1626,3 +1626,12 @@ porte des artefacts se décide ; ça ne se glisse pas dans la PR d'une recette.
 **La direction, si on y revient** : une étape `actions/upload-artifact` sous `if: failure()` sur le
 seul travail « Parcours réel », une rétention courte, `if-no-files-found: ignore`, et l'en-tête de
 `ci.yml` comme `depot-public.md` corrigés dans le même geste. À décider avec la personne qui pilote.
+
+**Décidé et fait le 01/10/2026** : la personne qui pilote a choisi de la publier, sur échec, sept
+jours. L'étape est dans `ci.yml`, sous `if: failure()`, et l'en-tête du fichier comme
+`docs/exploitation/depot-public.md` le disent. Un écart à la direction ci-dessus :
+`if-no-files-found: warn` et non `ignore` — un chemin devenu faux doit se lire dans le journal, pas
+se taire. Le chemin est relevé dans le journal de l'échec du 30/09 (« Capture :
+/tmp/ramille-parcours-reel-echec.png »). **Ce qui ne s'éprouve qu'à la prochaine CI rouge** : le
+dépôt de l'artefact lui-même. Une PR verte ne dépose rien, et rougir la CI exprès pour le voir serait
+une mutation sur la CI de tout le monde.

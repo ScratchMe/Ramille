@@ -274,15 +274,46 @@ export function lireLesBouclesAVenir(valeur: unknown): LoopType[] | null {
 }
 
 /**
- * Ce que la carte d'attente annonce, d'après les boucles qui tournent : **la boucle hebdomadaire
- * passe devant**, parce que c'est le prochain contact — le lundi vient avant le premier du mois.
- * C'était la règle de `ma_boucle_a_venir` côté serveur ; elle vit ici depuis que le serveur rend
- * les boucles une par une, et c'est une règle d'affichage, pas de génération.
+ * Ce que la carte d'attente annonce, d'après les boucles qui tournent : **le rendez-vous le plus
+ * proche**, quelle que soit sa boucle (décision du 01/10/2026, #304).
+ *
+ * La règle était « la boucle hebdomadaire passe devant, parce que le lundi vient avant le premier
+ * du mois » — vrai la plupart des jours, faux jusqu'à six jours par mois : ceux où le 1er tombe avant
+ * le lundi qui vient. Vu sur la production : le mercredi 30/09, « On se retrouve ici lundi. », et le
+ * point mensuel est arrivé le jeudi 1er (recette du 01/10/2026, `v1-13` §19). Ces jours-là, la carte
+ * dit sa phrase mensuelle, « au début du mois prochain », qui existe déjà.
+ *
+ * Les deux rendez-vous se comptent **après aujourd'hui** : un lundi ou un 1er qui est aujourd'hui a
+ * déjà son point, généré à 6 h UTC, et la carte d'attente ne se rend pas sur un point en attente. Le
+ * 1er qui tombe un lundi rend `hebdo` — les deux points arrivent ce jour-là, et « lundi » est vrai. Les
+ * dates sont **locales**, comme le pied d'un point répondu : c'est un jour qu'une personne lit.
+ *
+ * C'est une règle d'affichage, pas de génération : les boucles viennent du serveur
+ * (`mes_boucles_a_venir`), le jour de la carte vient d'ici.
  */
-export function boucleAVenir(boucles: readonly LoopType[]): BoucleAVenir {
-  if (boucles.includes('commute')) return 'hebdo';
-  if (boucles.includes('extras')) return 'mensuel';
+export function boucleAVenir(boucles: readonly LoopType[], maintenant: Date = new Date()): BoucleAVenir {
+  const hebdo = boucles.includes('commute');
+  const mensuel = boucles.includes('extras');
+  if (hebdo && mensuel) return joursAvantLePremier(maintenant) < joursAvantLundi(maintenant) ? 'mensuel' : 'hebdo';
+  if (hebdo) return 'hebdo';
+  if (mensuel) return 'mensuel';
   return 'aucune';
+}
+
+/** Jours jusqu'au lundi qui vient, jamais aujourd'hui : de 1 (un dimanche) à 7 (un lundi). */
+function joursAvantLundi(maintenant: Date): number {
+  return 7 - ((maintenant.getDay() + 6) % 7);
+}
+
+/**
+ * Jours jusqu'au 1er du mois qui vient, jamais aujourd'hui. Compté sur les jours du calendrier et pas
+ * en millisecondes : un changement d'heure entre les deux ferait perdre ou gagner une heure, et un
+ * arrondi par défaut, un jour.
+ */
+function joursAvantLePremier(maintenant: Date): number {
+  const aujourdHui = Date.UTC(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
+  const premier = Date.UTC(maintenant.getFullYear(), maintenant.getMonth() + 1, 1);
+  return Math.round((premier - aujourdHui) / 86_400_000);
 }
 
 /**

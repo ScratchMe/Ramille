@@ -670,7 +670,7 @@ export function phraseDeLOrphelin(raison: string, actionText: string): string {
 
 /**
  * L'engagement emporté que le plan peut encore annoncer — ou rien, **quand l'action est revenue
- * dans le plan** (recette du 01/10/2026, `v1-13` §19).
+ * dans le plan, ou quand la perte date d'un autre cycle** (recette du 01/10/2026, `v1-13` §19).
  *
  * L'encart dit « « … » n’y est plus » : c'est sa prémisse, et rien ne la vérifiait. Corriger son
  * contexte puis le remettre comme avant rend l'action au plan — sans l'engagement, que la
@@ -683,18 +683,24 @@ export function phraseDeLOrphelin(raison: string, actionText: string): string {
  *
  * L'appariement se fait sur le **gabarit**, jamais sur le libellé : l'archive fige `action_text`
  * (C2.2), et un gabarit reformulé depuis (C3.8) ne se reconnaîtrait plus à son texte — l'encart
- * redirait faux, en silence. On tait plutôt qu'on ne réécrit : la phrase fausse part, et en écrire
- * une autre — dire que l'engagement est parti et que l'action est revenue sans lui — serait décider
- * de ce que le plan montre. La question est posée à la personne qui pilote (#312), avec celle de la
- * borne dans le temps : un encart tu ici n'est pas marqué « vu », donc si l'action quitte de nouveau
- * le plan sans nouvelle libération annonçable, l'ancienne ligne reparaît avec son ancienne cause.
+ * redirait faux, en silence. **On tait, et on ne réécrit pas** — décision de la personne qui pilote,
+ * 01/10/2026 (#312) : l'encart a déjà parlé sur l'appareil où le contexte a changé, puisque
+ * l'enregistrement ramène au plan, et le redire sur chaque appareil répéterait un événement annoncé.
+ *
+ * **Et seulement pour une perte du cycle affiché** (même décision). Sans borne, l'encart annonçait la
+ * dernière perte quelle que soit sa date — un engagement emporté par un bilan de mars s'annonçait en
+ * décembre sur un téléphone neuf, « avec ton nouveau bilan » —, et un encart tu ici, jamais marqué
+ * « vu », reparaissait avec son ancienne cause dès que l'action quittait de nouveau le plan sans
+ * nouvelle perte annonçable. Les deux raisons annoncées archivent le cycle **courant**, qu'un re-bilan
+ * ou un contexte corrigé reconstruit sans en créer un autre (`generate_plan_cycle_for_user`) ; une
+ * ligne sans cycle, d'avant la colonne, se tait.
  */
-export function orphelinAAnnoncer<O extends { action_template_id: string }>(
-  orphelin: O | null,
-  gabaritsDuPlan: readonly string[]
-): O | null {
+export function orphelinAAnnoncer<
+  O extends { action_template_id: string; plan_cycle_id: string | null },
+>(orphelin: O | null, plan: { cycle: string; gabarits: readonly string[] }): O | null {
   if (orphelin === null) return null;
-  return gabaritsDuPlan.includes(orphelin.action_template_id) ? null : orphelin;
+  if (orphelin.plan_cycle_id !== plan.cycle) return null;
+  return plan.gabarits.includes(orphelin.action_template_id) ? null : orphelin;
 }
 
 // ── L'encart de contexte du plan (C5.5, écarts 9 et 10) ────────────────────────────────────────

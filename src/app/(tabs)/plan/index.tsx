@@ -139,6 +139,7 @@ type PlanCycle = {
 type EngagementOrphelin = {
   id: string;
   action_template_id: string;
+  plan_cycle_id: string | null;
   action_text: string;
   released_reason: string;
 };
@@ -760,7 +761,7 @@ export default function Plan() {
               .maybeSingle(),
             supabase
               .from('plan_action_commitments_archive')
-              .select('id, action_template_id, action_text, released_reason')
+              .select('id, action_template_id, plan_cycle_id, action_text, released_reason')
               .in('released_reason', RAISONS_ANNONCABLES)
               .order('released_at', { ascending: false })
               .limit(1),
@@ -789,12 +790,12 @@ export default function Plan() {
         setRappels(prefs);
         setPermission(etatPermission);
 
-        // **Sauf si l'action est revenue dans le plan** (recette du 01/10/2026) : « n’y est plus »
-        // serait faux juste au-dessus d'elle — `orphelinAAnnoncer`, apparié sur le gabarit.
-        const orphelin = orphelinAAnnoncer(
-          orphelins?.[0] ?? null,
-          cycle.plan_actions.map((action) => action.action_template_id)
-        );
+        // **Sauf si l'action est revenue dans le plan, ou si la perte date d'un autre cycle**
+        // (recette du 01/10/2026, décisions #312) — `orphelinAAnnoncer`, apparié sur le gabarit.
+        const orphelin = orphelinAAnnoncer(orphelins?.[0] ?? null, {
+          cycle: cycle.id,
+          gabarits: cycle.plan_actions.map((action) => action.action_template_id),
+        });
 
         const points = (checkins as EngagementCheckin[] | null) ?? [];
         const affiches = keepLatestPerLoop(points);

@@ -5,8 +5,10 @@ on:
   push:
     branches: [main]
 
-# Le jeton de ces travaux ne sert qu'au `checkout` : aucune étape n'écrit dans le dépôt, ne commente
-# une PR ni ne publie quoi que ce soit. Déclarer le minimum à la racine l'applique aux quatre.
+# Le jeton de ces travaux ne sert qu'au `checkout` : aucune étape n'écrit dans le dépôt ni ne commente
+# une PR, et **une seule publie quelque chose** — la capture d'un échec du parcours réel, gardée sept
+# jours (décision du 01/10/2026, plus bas). Déclarer le minimum à la racine l'applique aux quatre ;
+# l'artefact passe par le jeton d'exécution du runner, pas par celui-ci.
 #
 # **Et ce n'est pas redondant avec le réglage du dépôt**, qui est pourtant déjà en lecture seule
 # (phase 5 du passage en public, `docs/exploitation/depot-public.md` §7). Le bloc dit trois choses
@@ -330,6 +332,22 @@ jobs:
       # qu'il laisse volontairement aux autres gardes. Sur un échec, il imprime l'étape, le texte
       # visible et les requêtes refusées — c'est ce qu'on lit avant le code.
       - run: node scripts/verifier-parcours-reel.mjs
+      # **La capture d'un échec sort de la CI, et elle seule** (décision de la personne qui pilote,
+      # 01/10/2026, `v1-27` §12.26). Le 30/09, l'étape de la suppression du compte a rougi, et il a
+      # fallu cinq parcours complets pour trouver ce qu'une image aurait peut-être montré d'un coup —
+      # le lien 412 px plus bas que le clic. Le dépôt est public, donc l'artefact l'est aussi : il ne
+      # montre qu'une page de test sur une stack locale aux clés de démonstration, et il disparaît
+      # après sept jours. Le chemin est relevé, pas supposé : le journal de l'échec du 30/09 imprime
+      # « Capture : /tmp/ramille-parcours-reel-echec.png ». `warn` et non `ignore`, pour qu'un chemin
+      # devenu faux se lise dans le journal au lieu de se taire.
+      # Le rejeu local n'a rien à rejouer ici : la capture y reste dans le dossier temporaire.
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: parcours-reel-echec
+          path: /tmp/ramille-parcours-reel-echec.png
+          retention-days: 7
+          if-no-files-found: warn
       # Le chemin du compte, de bout en bout : le collecteur d'e-mails local (`[local_smtp]`,
       # allumé le 20/09/2026) rend testable le rattachement comme la reconnexion. Peu d'assertions,
       # dont deux seulement sont des chemins heureux — leur nombre ne s'écrit pas ici, il s'est

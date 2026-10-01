@@ -825,6 +825,10 @@ passage croit la dérive attrapée. La garde a été écrite plutôt que la phra
    aucun clic ne doit plus rien confirmer — et il n'était éprouvé que dans le seul travail exigeant
    Docker.
 
+**Et une quatrième depuis le 01/10/2026**, pour le seul rattachement : « Si ce n'est pas toi, ne fais
+rien » vient **avant** le code (jugement 05.2, `v1-13` §19). Un ordre ne se voit pas dans une égalité
+de textes : la phrase remise en bas des deux côtés passe l'assertion 1, et la mutation l'a montré.
+
 **Ce qui lui échappe**, et c'est structurel : `GABARITS` est une liste **déclarée**, comme `MIROIRS`,
 donc un gabarit que personne n'y déclare lui reste invisible — aucune garde déclarative ne s'annonce
 exhaustive. *Confirm signup* et *Reset Password* sont traduits dans le document et ne vivent **que**

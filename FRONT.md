@@ -683,8 +683,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
   le sujet : elle se dérive de la personne (un poste domicile-travail ⟹ un point le lundi). **Depuis
   le 30/09/2026 c'est le serveur qui le dit** (`mes_boucles_a_venir`, `v1-27` §12.22 et §12.23) : il
-  rend les boucles une par une, `boucleAVenir` en tire la carte — la boucle hebdomadaire passe
-  devant —, et il peut n'en rendre aucune : aucun trajet, sorties rares, aucun voyage déclaré. La
+  rend les boucles une par une, `boucleAVenir` en tire la carte — **le rendez-vous le plus proche**
+  depuis le 01/10/2026 (#304) : « au début du mois prochain » les jours où le 1er tombe avant le
+  lundi qui vient, quand la règle d'avant disait toujours « lundi » —, et il peut n'en rendre aucune : aucun trajet, sorties rares, aucun voyage déclaré. La
   carte ne promet alors rien — ni jour, ni canal, ni porte — là où elle promettait « au début du
   mois prochain » un signe qui ne venait jamais. La règle de la boucle mensuelle n'est pas recopiée
   côté client : elle vit dans `boucles_du_dernier_bilan`, que les générateurs lisent aussi.

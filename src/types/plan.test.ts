@@ -825,22 +825,37 @@ describe('l’encart orphelin', () => {
   // test seul tombant à chaque fois : `orphelin` rendu sans condition (« Expected: null », sur la
   // première assertion) ; puis l'appariement sur `action_text` au lieu du gabarit (la même). L'appel
   // de l'écran est gardé par le parcours réel, étape « contexte — retiré puis remis ».
+  const orphelin = {
+    id: 'archive-1',
+    action_template_id: 'gabarit-metro',
+    plan_cycle_id: 'cycle-automne',
+    action_text: 'Passer deux trajets sur cinq en métro ou en tram',
+    released_reason: 'contexte',
+  };
+  const plan = (gabarits: string[], cycle = 'cycle-automne') => ({ cycle, gabarits });
+
   it('se tait quand l’action qu’il dit partie est revenue dans le plan', () => {
-    const orphelin = {
-      id: 'archive-1',
-      action_template_id: 'gabarit-metro',
-      action_text: 'Passer deux trajets sur cinq en métro ou en tram',
-      released_reason: 'contexte',
-    };
-    expect(orphelinAAnnoncer(orphelin, ['gabarit-metro', 'gabarit-train'])).toBeNull();
-    expect(orphelinAAnnoncer(orphelin, ['gabarit-covoiturage', 'gabarit-velo'])).toBe(orphelin);
+    expect(orphelinAAnnoncer(orphelin, plan(['gabarit-metro', 'gabarit-train']))).toBeNull();
+    expect(orphelinAAnnoncer(orphelin, plan(['gabarit-covoiturage', 'gabarit-velo']))).toBe(orphelin);
     // Un gabarit reformulé depuis l'archive (C3.8) : même gabarit, autre libellé — revenu quand même.
     expect(
-      orphelinAAnnoncer({ ...orphelin, action_text: 'Faire deux trajets sur cinq en métro' }, ['gabarit-metro'])
+      orphelinAAnnoncer({ ...orphelin, action_text: 'Faire deux trajets sur cinq en métro' }, plan(['gabarit-metro']))
     ).toBeNull();
     // Un plan à zéro action ne peut rien avoir repris.
-    expect(orphelinAAnnoncer(orphelin, [])).toBe(orphelin);
-    expect(orphelinAAnnoncer(null, ['gabarit-metro'])).toBeNull();
+    expect(orphelinAAnnoncer(orphelin, plan([]))).toBe(orphelin);
+    expect(orphelinAAnnoncer(null, plan(['gabarit-metro']))).toBeNull();
+  });
+
+  // **Borné à la saison affichée** (décision du 01/10/2026, #312) : une perte d'un autre cycle ne
+  // s'annonce plus — ni un bilan de mars sur un téléphone neuf en décembre, ni un encart tu qui
+  // reviendrait avec son ancienne cause. Une ligne sans cycle, d'avant la colonne, se tait aussi.
+  //
+  // **Éprouvé en le cassant le 01/10/2026** : la condition sur le cycle retirée, ce test seul tombe,
+  // sur sa première assertion (« Expected: null »).
+  it('ne parle que d’une perte du cycle affiché', () => {
+    expect(orphelinAAnnoncer(orphelin, plan(['gabarit-velo'], 'cycle-hiver'))).toBeNull();
+    expect(orphelinAAnnoncer({ ...orphelin, plan_cycle_id: null }, plan(['gabarit-velo']))).toBeNull();
+    expect(orphelinAAnnoncer(orphelin, plan(['gabarit-velo']))).toBe(orphelin);
   });
 });
 

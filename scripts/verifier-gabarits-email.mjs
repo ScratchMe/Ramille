@@ -33,11 +33,21 @@
  *      éprouvé de bout en bout, mais dans le seul job qui demande Docker — ici il tombe en une
  *      seconde, sans stack.
  *
+ * ET UNE QUATRIÈME DEPUIS LE 01/10/2026, pour le seul rattachement : « Si ce n'est pas toi, ne fais
+ * rien » vient **avant** le code. C'est le jugement 05.2 de la recette (`v1-13` §19), rendu en écart
+ * par la personne qui pilote : lu en deux secondes par quelqu'un qui n'a rien demandé, le message
+ * montrait le code en gros, et la phrase qui dit qu'il n'y a rien à faire n'arrivait qu'après. Un
+ * ordre ne se voit pas dans une égalité de textes : remettre la phrase en bas, des deux côtés à la
+ * fois, passerait l'assertion 1.
+ *
  * MUTATIONS JOUÉES LE 21/09/2026 (`TESTING.md` §1.1) :
  *   - une espace ajoutée dans un `<p>` du document → l'assertion 1 tombe, en nommant la ligne ;
  *   - `content_path` retiré de `supabase/config.toml` → l'assertion 2 tombe ;
  *   - `{{ .Token }}` remplacé par `{{ .ConfirmationURL }}` dans le fichier → l'assertion 3 tombe,
  *     et l'assertion 1 avec elle (le document, lui, n'a pas bougé).
+ *
+ * MUTATION JOUÉE LE 01/10/2026 : la phrase remise après le code, dans le document **et** le fichier
+ * → l'assertion 4 tombe, seule — l'assertion 1, elle, reste verte, et c'est ce qui la justifie.
  *
  * Ne lit que le système de fichiers : ni npm ci, ni export, ni Docker.
  */
@@ -68,6 +78,8 @@ const GABARITS = [
     // Le rattachement d'une adresse à une session anonyme (`updateUser({ email })`), et le gabarit
     // dont le lien ÉTAIT la faille du 19/09/2026.
     cle: 'email_change',
+    // Ce que lit d'abord quelqu'un qui n'a rien demandé (jugement 05.2, 01/10/2026).
+    avantLeCode: "Si ce n'est pas toi, ne fais rien",
   },
 ];
 
@@ -149,6 +161,14 @@ for (const gabarit of GABARITS) {
     fichier.includes('{{ .Token }}'),
     `${gabarit.fichier} ne porte pas \`{{ .Token }}\` — l'e-mail partirait sans code, et rien dans le corps ne le dirait`
   );
+
+  if (gabarit.avantLeCode) {
+    const phrase = fichier.indexOf(gabarit.avantLeCode);
+    verifier(
+      phrase !== -1 && phrase < fichier.indexOf('{{ .Token }}'),
+      `${gabarit.fichier} : « ${gabarit.avantLeCode} » doit venir avant le code — lu en deux secondes par quelqu'un qui n'a rien demandé, le message montre d'abord le code (jugement 05.2, \`v1-13\` §19)`
+    );
+  }
 
   for (const forme of FORMES_DE_LIEN) {
     verifier(
