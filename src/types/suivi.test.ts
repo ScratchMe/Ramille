@@ -210,8 +210,22 @@ describe('formatDate', () => {
     expect(formatDate('2026-03-12T12:00:00Z')).toBe('12 mars 2026');
   });
 
-  it('garde le jour sur deux chiffres', () => {
-    expect(formatDate('2026-09-01T12:00:00Z')).toBe('01 septembre 2026');
+  // **Ce test épinglait « 01 septembre 2026 » jusqu'au 01/10/2026** (audit R-11), sous le titre
+  // « garde le jour sur deux chiffres » et sans autre raison que la sortie de l'ancien
+  // `toLocaleDateString`, conservée au caractère près quand `MOIS_FRANCAIS` l'a remplacé. La raison
+  // nouvelle est double : un jour écrit devant un mois en lettres ne prend pas de zéro en français,
+  // et le premier du mois s'écrit « 1er » ; et le produit n'a qu'une forme de date — le plan écrit
+  // « jusqu'au 1er décembre » par `jourDuMois`, le suivi doit écrire « 1er septembre » par la même.
+  //
+  // Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1) :
+  //   - le `padStart(2, '0')` d'avant remis → les deux cas ci-dessous, eux seuls ;
+  //   - `String(date.getDate())` au lieu de `jourDuMois` → « le premier du mois », seul.
+  it('écrit « 1er » le premier du mois, comme le plan', () => {
+    expect(formatDate('2026-09-01T12:00:00Z')).toBe('1er septembre 2026');
+  });
+
+  it('ne met pas de zéro devant un jour à un chiffre', () => {
+    expect(formatDate('2026-10-05T12:00:00Z')).toBe('5 octobre 2026');
   });
 });
 

@@ -3,7 +3,7 @@
 // alimentent vivent dans `src/lib/bilan-history.ts`.
 
 import { RAMILLE } from '@/constants/mascotte';
-import { MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
+import { jourDuMois, MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
 import { POSTE_EN_PHRASE, POSTES, nomDuPoste, type LoopType, type Poste } from '@/constants/postes';
 import { formatTonnesNu } from '@/lib/format';
 import { saisonDuJour, saisonsEcouleesDepuis } from '@/types/saison';
@@ -203,10 +203,15 @@ export function formatDate(iso: string): string {
   const date = new Date(iso);
   // **Le jour LOCAL, et c'est la même règle que `jourLocalDe`** : quand on date ce qu'une personne
   // a fait, c'est son calendrier qui décide. `getDate`/`getMonth`/`getFullYear` lisent le local,
-  // exactement comme le faisait `toLocaleDateString` — la sortie ne change pas d'un caractère là
-  // où l'ICU est complet.
-  const jour = String(date.getDate()).padStart(2, '0');
-  return `${jour} ${MOIS_FRANCAIS[date.getMonth()]} ${date.getFullYear()}`;
+  // exactement comme le faisait `toLocaleDateString`.
+  //
+  // **« 1er octobre 2026 », et plus « 01 octobre 2026 »** (01/10/2026, audit R-11). Le zéro devant
+  // le jour était la sortie de l'ancien `toLocaleDateString`, gardée au caractère près quand la
+  // liste des mois l'a remplacé — pas une décision. Un jour écrit devant un mois en lettres ne prend
+  // pas de zéro en français, et le premier du mois s'écrit « 1er » : c'est ce que le plan écrit déjà
+  // (« jusqu'au 1er décembre », « Répondu le 1er. »), par la même `jourDuMois`. Une seule forme de
+  // date dans le produit, donc une seule fonction pour l'irrégularité.
+  return `${jourDuMois(date.getDate())} ${MOIS_FRANCAIS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 /**
