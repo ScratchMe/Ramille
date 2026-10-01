@@ -17,7 +17,8 @@
  *   - `router.back()` à la place du `dismissAll` → « avec une pile derrière, la vide… » **et** « ne
  *     dépile jamais… ».
  * La pile elle-même — ce que le retour fait **après** le flux — ne se voit pas ici : c'est le
- * parcours réel qui la joue (`scripts/verifier-parcours-reel.mjs`, « rattachement »).
+ * parcours réel qui la joue (`scripts/verifier-parcours-reel.mjs`, « le compte rattaché par code, et
+ * rien derrière » : le retour après un rattachement, puis après « Me déconnecter »).
  */
 import { router } from 'expo-router';
 

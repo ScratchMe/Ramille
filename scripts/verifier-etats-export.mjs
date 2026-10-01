@@ -2164,8 +2164,12 @@ if (Object.values(COULEUR).some((c) => c === null)) {
 // vole à personne. Les deux moitiés se gardent ici, parce qu'elles se jouent sans réseau : la reprise
 // depuis « Toi » (le code ouvert d'emblée, depuis deux marques locales), « Utiliser une autre
 // adresse », la première phase de `/connexion/retrouver`, et la confirmation de « Supprimer mon
-// compte » sur « Toi ». Ce qui demande un envoi réel — l'adresse puis le code, « C'est fait. » — se
-// garde au parcours réel (`verifier-parcours-reel.mjs`, « compte »).
+// compte » sur « Toi ». Ce qui demande un envoi réel se garde au parcours réel
+// (`verifier-parcours-reel.mjs`) : « Regarde tes emails » après l'adresse de `/connexion/email`, à
+// l'étape « le compte rattaché par code, et rien derrière », et « C'est fait. » de « Toi », à l'étape
+// « suppression du compte ». **Rien ne garde les autres** — les phases de `/compte/suppression`, le
+// code de `/connexion/retrouver` et le retour à sa collision : chacune demande un envoi, et
+// `verifier-code-de-connexion.mjs`, qui traverse le code de `/connexion/retrouver`, ne lit pas le focus.
 //
 // **Éprouvée en la cassant le 01/10/2026**, une mutation à la fois, un export chacune (cache Metro
 // privé, `--clear`), le script entier rejoué. Ce qui tombe, dans tout le script :
