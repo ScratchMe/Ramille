@@ -128,7 +128,9 @@ describe('ActionCommitment — jusqu’à la relecture', () => {
  *   - la garde de `submit` retirée (l'appel part incomplet) → les trois, la ligne absente et l'appel
  *     parti ;
  *   - le focus jamais donné (`donnerLeFocus` retiré de `demander`) → « agit en attente… », seul ;
- *   - la demande qui ne retombe plus (`setDemande(false)` retiré) → « la ligne retombe… », seul.
+ *   - la demande qui ne retombe plus (`setDemande(false)` retiré) → « la ligne retombe… », seul ;
+ *   - la demande gardée par « Annuler » (le `setDemande(false)` de son gestionnaire retiré) → « la
+ *     ligne retombe… », seul, sur le sélecteur rouvert.
  */
 describe('ActionCommitment — « C’est noté » en attente', () => {
   let focus: jest.SpyInstance;
@@ -177,6 +179,14 @@ describe('ActionCommitment — « C’est noté » en attente', () => {
 
     // Décoché, rien ne se redit d'office : il faut toucher de nouveau.
     fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    expect(screen.queryByText('Choisis au moins un jour.')).toBeNull();
+
+    // Refermé par « Annuler » puis rouvert, le sélecteur ne redit rien d'office : la demande était la
+    // sienne.
+    fireEvent.press(screen.getByText('C’est noté'));
+    expect(screen.getByText('Choisis au moins un jour.')).toBeTruthy();
+    fireEvent.press(screen.getByText('Annuler'));
+    fireEvent.press(screen.getByText('Je m’y engage'));
     expect(screen.queryByText('Choisis au moins un jour.')).toBeNull();
 
     // Complète, l'intention part.

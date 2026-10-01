@@ -381,6 +381,8 @@ export function ActionCommitment({
               return;
             }
             geste.current = 'annuler';
+            // La demande appartient au sélecteur qu'on referme : rouvert, il ne redit rien d'office.
+            setDemande(false);
             setPicking(false);
           }}
           disabled={busy}
