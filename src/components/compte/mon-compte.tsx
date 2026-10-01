@@ -1,3 +1,4 @@
+import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
@@ -9,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { Radius, Spacing, Stroke } from '@/constants/theme';
+import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteMyAccount, exportMyData } from '@/lib/compte';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
@@ -83,6 +85,29 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
     ouvertureDemandee.current = false;
     donnerLeFocus(phraseDeConfirmation.current);
   }, [confirmation]);
+
+  /**
+   * **Le retour matériel fait ce que fait l'action à l'écran** (01/10/2026, audit T-8) : sur Android,
+   * il quittait « Toi » confirmation ouverte. Confirmation ouverte, il l'annule (« Annuler ») ; pendant
+   * un envoi, où « Annuler » est désactivé, il ne fait rien plutôt que de quitter l'écran au milieu
+   * d'une suppression ; compte supprimé, il fait « Revenir au début », la seule sortie que l'écran
+   * laisse — revenir au plan d'un compte qui n'existe plus n'en est pas une. Sinon, il passe à la
+   * navigation. Seulement quand « Toi » est au premier plan : couvert par un autre écran, il
+   * garderait son écoute, et elle parlerait avant celle de l'écran du dessus.
+   */
+  const auPremierPlan = useIsFocused();
+  const enAction = busy !== null;
+  useRetourVersLaPhasePrecedente(
+    !auPremierPlan
+      ? null
+      : supprime
+        ? () => terminerLeFlux('/')
+        : confirmation
+          ? () => {
+              if (!enAction) setConfirmation(false);
+            }
+          : null
+  );
 
   const exporter = async () => {
     setBusy('export');

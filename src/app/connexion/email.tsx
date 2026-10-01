@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { Spacing } from '@/constants/theme';
+import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { track } from '@/lib/analytics';
 import { demanderLaConnexion, demanderLeRattachement } from '@/lib/auth';
 import { effacerLesMarquesLocales } from '@/lib/compte';
@@ -242,6 +243,21 @@ export default function ConnexionEmail() {
     terminerLeFlux('/plan');
   };
 
+  /** « Utiliser une autre adresse » — et le retour matériel depuis la saisie du code. */
+  const revenirALAdresse = () => {
+    setMessage(null);
+    setPhase({ kind: 'saisie', apresUnGeste: true });
+  };
+
+  // **Le retour matériel recule d'une phase** (01/10/2026, audit T-8) : sur Android, il quittait la
+  // route depuis n'importe quelle phase. Il fait désormais ce que fait l'action déjà à l'écran pour
+  // revenir en arrière — rien de nouveau —, et passe à la navigation quand il n'y a rien derrière.
+  // **Seulement au premier plan** : un écran couvert par un autre garde son écoute, et l'écoute la plus
+  // récente parle la première — sans cette garde, le retour pris sur l'écran du dessus reculerait
+  // une phase de celui-ci, caché.
+  const auPremierPlan = useIsFocused();
+  useRetourVersLaPhasePrecedente(auPremierPlan && phase.kind === 'code' ? revenirALAdresse : null);
+
   if (phase.kind === 'code') {
     return (
       <Cadre key="code">
@@ -260,10 +276,7 @@ export default function ConnexionEmail() {
           // conditionnelle — et le moins cher des deux.
           libelleBouton="Valider mon code"
           onOuverte={() => codeAccepte(phase.flux)}
-          onAutreAdresse={() => {
-            setMessage(null);
-            setPhase({ kind: 'saisie', apresUnGeste: true });
-          }}
+          onAutreAdresse={revenirALAdresse}
           renvoyer={phase.flux === 'connexion' ? demanderLaConnexion : demanderLeRattachement}
         />
       </Cadre>
