@@ -481,6 +481,8 @@
 //   | PL16 — la garde de `submit` retirée : le toucher en attente envoie (D13) | la même étape : « C'est noté », touché sans échéance, a écrit — un appel à `commit_plan_action` |
 //   | PL17 — la demande jamais posée (`setDemande(true)` retiré, D13) | la même étape : « Choisis une échéance. » n'apparaît jamais |
 //   | PL18 — la carte des deux lieux notée vue au seul « Compris » (`onRendue` ne note rien, l'écran d'avant) | « cycliste — un nouveau bilan en voiture » : la carte des deux lieux revient sans « Compris » |
+//   | PL19 — la visite ignorée (`etatDuPremierParcours(etape)` seul) : notée vue, la carte part dans la foulée | « plan — Compris fait venir la barre » : « Ici, ton plan : l’action en cours… » n'apparaît jamais |
+//   | PC1 — la relecture ne déplace plus la carte engagée (`pistesAvantLeCap` toujours vrai) | « engagement » : la carte engagée n'est jamais sortie de la fenêtre — la précondition, réécrite le même jour, mord encore |
 //
 // **Trois corrections que les mutations ont faites à la garde**, et c'est ce qu'elles valaient le
 // premier jour : à 420 × 900, la carte relue finissait dans la fenêtre sans défiler — PL4 ne tombait
@@ -496,7 +498,16 @@
 // nouveau bilan. La paire reste épinglée sur toutes les combinaisons par les tests de `cartesDuPlan`,
 // et l'assertion « s'empile » reste, sans mutation qui la fasse tomber ici. La carte d'origine, au
 // caractère près, se lit désormais au « Compris » du premier profil, à sa seule visite ; et celle du
-// cycliste — la phrase que **B1** garde — à son premier plan, où B1 tombe donc désormais.
+// cycliste — la phrase que **B1** garde — à son premier plan, où B1, rejouée ce jour-là, tombe donc
+// désormais (« cycliste — restitution, puis le plan sans action », sur la même phrase). PL19 ne fait pas
+// parler l'assertion « elle ne disparaît pas sous les yeux » du cycliste : l'attente du premier profil,
+// qui la cherche juste après « Compris », tombe la première — la carte n'y vit qu'une image.
+//
+// **Et la précondition de `verifierLaCarteEngagee` a été réécrite le même jour** : sous « réduire les
+// animations », elle tombait sans défaut une fois sur deux sur l'arbre d'avant ce chantier (mesuré :
+// deux échecs sur quatre à 7f73f57), le défilement posé d'un coup arrivant dans l'image même de la
+// relecture. Elle rapporte désormais la carte relue à la position d'avant le défilement ; quatre
+// témoins verts d'affilée ensuite, et PC1 dit qu'une carte restée en place ne la satisfait toujours pas.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -964,12 +975,27 @@ async function verifierLaCarteEngagee(ou, { vues = null, glisse = true, exigerUn
   if (vues !== null) {
     const positions = vues.filter(Boolean).map((v) => v.position);
     const aDefile = positions.length > 0 && Math.abs(carte.position - positions[0]) > 1;
-    // **La précondition, quand l'appelant la demande** : à une image au moins, la carte relue était hors
-    // de la fenêtre — « Changer d'avis » sous son bas, ou son titre sous la bande —, et l'écran a défilé.
-    // Sans elle, une carte restée en place passerait pour une carte amenée.
+    // **La précondition, quand l'appelant la demande** : la carte relue était hors de la fenêtre —
+    // « Changer d'avis » sous son bas, ou son titre sous la bande —, et l'écran a défilé. Sans elle, une
+    // carte restée en place passerait pour une carte amenée.
+    //
+    // **Hors de la fenêtre d'avant le défilement, et pas seulement à une image** (01/10/2026, chantier G).
+    // Sous « réduire les animations », le défilement est posé d'un coup, et il part dans l'effet qui suit
+    // le rendu de la relecture : il arrive que les deux tombent dans la même image, et aucune n'a alors
+    // montré la carte dehors. Mesuré sur l'arbre d'avant ce chantier (7f73f57), le cycliste tombait ici
+    // deux fois sur quatre, « la garde ne peut pas conclure » — relevé image par image : 195 px de
+    // défilement, puis 406 d'un coup, la carte déjà dans la fenêtre. La carte relue se rapporte donc
+    // aussi à la position d'avant : en coordonnées du contenu, son bouton finissait sous le bas de la
+    // fenêtre qu'on regardait.
     if (exigerUnDefilement) {
+      const avant = vues.find(Boolean)?.position ?? 0;
       const dehors = vues.some(
-        (v) => v !== null && ((v.basDuBouton !== null && v.basDuBouton > v.hauteur + 0.5) || v.haut < -0.5)
+        (v) =>
+          v !== null &&
+          ((v.basDuBouton !== null && v.basDuBouton > v.hauteur + 0.5) ||
+            v.haut < -0.5 ||
+            (v.basDuBouton !== null && v.position + v.basDuBouton > avant + v.hauteur + 0.5) ||
+            v.position + v.haut < avant - 0.5)
       );
       assurer(
         dehors && aDefile,
