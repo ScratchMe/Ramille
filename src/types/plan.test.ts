@@ -11,6 +11,8 @@ import {
   cartesDuPlan,
   defilementVersLaCarte,
   felicitationDuPlanSansAction,
+  pileALaRacine,
+  pileDeLOnglet,
   toucherDOnglet,
   formatIntention,
   formatIntentionDays,
@@ -888,9 +890,10 @@ describe('l’encart orphelin', () => {
  *     ne tombait pas** tant que l'énumération ne prenait que zéro et trois actions.
  *
  * **Et deux de plus le 01/10/2026, sur l'intro et le trait** (audit P-5) :
- *   - l'intro sans condition (`intro: true`) → « ne dit le principe… », seul ;
- *   - le trait rendu à la forme d'avant (`traitDeTemps: !premierPlan`) → « rend le trait… » et le cas
- *     nommé du premier plan à zéro action, seuls.
+ *   - l'intro sans condition (`intro: true`) → « ne dit le principe… » et le cas nommé du premier plan
+ *     à zéro action, seuls ;
+ *   - le trait rendu à la forme d'avant (`traitDeTemps: !premierPlan`) → « rend le trait… » et le même
+ *     cas nommé, seuls.
  */
 describe('cartesDuPlan', () => {
   type Etat = Parameters<typeof cartesDuPlan>[0];
@@ -1074,9 +1077,10 @@ describe('defilementVersLaCarte', () => {
  * 01/10/2026).
  *
  * Éprouvé en le cassant, le 01/10/2026 : toujours `ramenerALaRacine` (l'état d'avant) → « laisse
- * faire… », seul ; la racine reconnue sur `index === 0` sans son nom → « ramène une pile ouverte par un
- * lien… », seul ; l'écran de devant lu à `routes[0]` sans l'index → « ramène depuis un écran empilé… »,
- * seul.
+ * faire… », et « ramène une pile que `toucherDOnglet` laisse ensuite faire » de `pileALaRacine`, qui
+ * l'appelle ; la racine reconnue sur `index === 0` sans son nom → « ramène une pile ouverte par un
+ * lien… », et « lit l'écran nommé… » de `pileDeLOnglet`, qui l'appelle ; l'écran de devant lu à
+ * `routes[0]` sans l'index → « ramène depuis un écran empilé… », seul.
  */
 describe('toucherDOnglet', () => {
   it('laisse faire la barre sur un onglet déjà à sa racine, ou dont la pile n’a jamais bougé', () => {
@@ -1094,5 +1098,72 @@ describe('toucherDOnglet', () => {
   // la racine. La laisser faire garderait la liste au toucher de « Plan ».
   it('ramène une pile ouverte par un lien sur un écran qui n’est pas sa racine', () => {
     expect(toucherDOnglet({ index: 0, routes: [{ name: 'pistes' }] })).toBe('ramenerALaRacine');
+  });
+});
+
+/**
+ * **La pile d'un onglet, avant qu'elle ait bougé : l'écran que nomment ses paramètres** (audit T-14,
+ * 01/10/2026). Le navigateur d'onglets ne porte le `state` d'une pile qu'à son premier changement ; une
+ * pile ouverte sur un écran nommé — la restitution, que le questionnaire ouvre dans la pile du suivi —
+ * n'a que ses paramètres. Relevé par le parcours réel : la lire « absente » laissait « Suivi » rouvrir la
+ * restitution.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : les paramètres ignorés (`return onglet.state`) → « lit l'écran
+ * nommé… », seul ; les paramètres préférés au `state` → « préfère la pile… », seul.
+ */
+describe('pileDeLOnglet', () => {
+  it('lit l’écran nommé à l’ouverture quand la pile n’a pas encore de `state`', () => {
+    const onglet = { params: { screen: 'bilan', params: { id: 'b1', nouveau: '1' } } };
+    expect(pileDeLOnglet(onglet)).toEqual({ index: 0, routes: [{ name: 'bilan' }] });
+    expect(toucherDOnglet(pileDeLOnglet(onglet))).toBe('ramenerALaRacine');
+  });
+
+  it('préfère la pile qui a bougé aux paramètres qui l’ont ouverte', () => {
+    const pile = { index: 0, routes: [{ name: 'index' }] };
+    expect(pileDeLOnglet({ state: pile, params: { screen: 'bilan' } })).toBe(pile);
+  });
+
+  it('ne sait rien d’un onglet sans `state` ni écran nommé', () => {
+    expect(pileDeLOnglet({ params: {} })).toBeUndefined();
+    expect(pileDeLOnglet(undefined)).toBeUndefined();
+  });
+});
+
+/**
+ * **Ramener un onglet à sa racine, c'est poser sa seule racine — la même, si elle y était** (audit
+ * T-14, 01/10/2026). Le layout nommait la racine, ce qui l'empilait sous React Navigation 7 ; il pose
+ * désormais cette pile dans l'état des onglets. La clé gardée est ce qui laisse l'écran du plan monté,
+ * sans relecture, quand on revient des pistes.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : la racine toujours neuve (`[{ name: racine }]`) → « garde la
+ * route… », seul ; la pile gardée telle quelle (`routes: [...pile.routes]`) → « garde la route… » et
+ * « pose la racine sous une pile… », seuls.
+ */
+describe('pileALaRacine', () => {
+  // Les pistes laissées ouvertes sur le plan : le plan revient, le même, et rien dessus.
+  it('garde la route de la racine, clé comprise, et rien d’autre', () => {
+    const pile = {
+      index: 1,
+      routes: [
+        { name: 'index', key: 'index-1' },
+        { name: 'pistes', key: 'pistes-2' },
+      ],
+    };
+    expect(pileALaRacine(pile)).toEqual({ index: 0, routes: [{ name: 'index', key: 'index-1' }] });
+  });
+
+  // La restitution que le questionnaire ouvre seule dans la pile du suivi : la racine n'y est pas,
+  // elle se pose neuve.
+  it('pose la racine sous une pile qui ne la porte pas', () => {
+    expect(pileALaRacine({ index: 0, routes: [{ name: 'bilan', key: 'bilan-1' }] })).toEqual({
+      index: 0,
+      routes: [{ name: 'index' }],
+    });
+    expect(pileALaRacine(undefined)).toEqual({ index: 0, routes: [{ name: 'index' }] });
+  });
+
+  it('ramène une pile que `toucherDOnglet` laisse ensuite faire', () => {
+    const pile = { routes: [{ name: 'index', key: 'index-1' }, { name: 'bilan', key: 'bilan-2' }] };
+    expect(toucherDOnglet(pileALaRacine(pile))).toBe('laisserFaire');
   });
 });

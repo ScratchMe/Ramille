@@ -957,11 +957,27 @@ export function defilementVersLaCarte({
 }
 
 /**
- * La pile d'un onglet, telle que le navigateur d'onglets la porte sur sa route : partielle quand elle
- * vient d'un lien (sans `index`, l'écran de devant est alors le dernier), absente tant qu'elle n'a
- * jamais bougé.
+ * La pile d'un onglet : partielle quand elle vient d'un lien (sans `index`, l'écran de devant est
+ * alors le dernier), absente quand on ne sait rien d'elle.
  */
-export type PileDOnglet = { index?: number; routes: readonly { name: string }[] } | undefined;
+export type PileDOnglet = { index?: number; routes: readonly { name: string; key?: string }[] } | undefined;
+
+/**
+ * **La pile d'un onglet, lue sur la route que le navigateur d'onglets porte pour lui** (audit T-14,
+ * 01/10/2026) : son `state` dès qu'elle a bougé — **et, avant, les paramètres qui l'ont ouverte**.
+ *
+ * Une pile ouverte par une navigation qui nomme son écran (`{ screen: 'bilan', params }`) se construit
+ * depuis ces paramètres, et le navigateur d'onglets ne porte son `state` qu'au premier changement.
+ * C'est le chemin de la restitution : le questionnaire l'ouvre dans la pile du suivi, qui n'y a que
+ * `bilan`, sans `state` sur la route — la lire « absente », donc à sa racine, laissait la barre rouvrir
+ * la restitution au toucher de « Suivi ». Relevé par le parcours réel en écrivant cette garde.
+ */
+export function pileDeLOnglet(onglet: { state?: PileDOnglet; params?: object } | undefined): PileDOnglet {
+  if (onglet === undefined) return undefined;
+  if (onglet.state !== undefined) return onglet.state;
+  const ecran = (onglet.params as { screen?: unknown } | undefined)?.screen;
+  return typeof ecran === 'string' ? { index: 0, routes: [{ name: ecran }] } : undefined;
+}
 
 /**
  * **Ce que fait un toucher sur un onglet** (audit T-14, 01/10/2026) : le ramener à la racine de sa
@@ -978,11 +994,34 @@ export type PileDOnglet = { index?: number; routes: readonly { name: string }[] 
  * « À sa racine » veut dire **la racine devant, et rien dessous** : une pile ouverte par un lien sur
  * `/plan/pistes` ne porte que les pistes (aucun `initialRouteName` n'y remet le plan), et une pile
  * où la racine serait revenue par-dessus d'autres écrans n'est pas à sa racine non plus — la laisser
- * faire la ferait dépiler jusqu'à son premier écran, qui n'est pas la racine. Une pile absente n'a
- * jamais bougé : elle est à sa racine.
+ * faire la ferait dépiler jusqu'à son premier écran, qui n'est pas la racine. Une pile dont on ne sait
+ * rien — ni `state`, ni écran nommé à l'ouverture (`pileDeLOnglet`) — n'a jamais quitté sa route
+ * initiale, la racine : elle y est.
  */
 export function toucherDOnglet(pile: PileDOnglet, racine = 'index'): 'ramenerALaRacine' | 'laisserFaire' {
   if (pile === undefined || pile.routes.length === 0) return 'laisserFaire';
   const devant = pile.index ?? pile.routes.length - 1;
   return devant === 0 && pile.routes[0].name === racine ? 'laisserFaire' : 'ramenerALaRacine';
+}
+
+/**
+ * **La pile d'un onglet ramené à sa racine** (audit T-14, 01/10/2026) : sa seule racine — la même route
+ * si elle y était déjà, clé comprise, pour que son écran reste monté et ne relise rien. Le layout des
+ * onglets la pose quand `toucherDOnglet` dit de ramener.
+ *
+ * **Nommer la racine (`navigate(onglet, { screen: 'index' })`), ce que le layout faisait depuis le
+ * 07/09/2026, ne la ramène pas : il l'empile.** Le routeur de piles d'Expo Router suit React Navigation
+ * 7, où `navigate` ne revient plus à un écran déjà dans la pile. Mesuré le 01/10/2026 sur le routeur
+ * réel (`renderRouter`, une sonde jetée après usage) : « Plan » touché depuis le suivi, les pistes
+ * laissées ouvertes, faisait `[index, pistes, index]` — un second plan monté par-dessus, relu de zéro,
+ * les pistes dessous —, et le premier « Suivi » après un bilan, `[bilan, index]`. Le retour d'Android
+ * redescendait ces piles, et l'onglet n'était plus jamais à sa racine au sens de `toucherDOnglet`,
+ * donc ne remontait plus jamais en haut.
+ */
+export function pileALaRacine(
+  pile: PileDOnglet,
+  racine = 'index'
+): { index: 0; routes: { name: string; key?: string }[] } {
+  const deja = pile?.routes.find((route) => route.name === racine);
+  return { index: 0, routes: [deja ?? { name: racine }] };
 }
