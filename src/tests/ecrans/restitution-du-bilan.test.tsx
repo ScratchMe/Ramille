@@ -33,6 +33,14 @@
  *
  * **Ce qu'il coûte, mesuré le même jour** : 3 tests, 4 modules doublés, ≈ 0,15 s de tests sur
  * ≈ 2,5 s pour le fichier (le chargement de l'écran et de ses dépendances fait le reste).
+ *
+ * **Un quatrième test garde l'ordre de la page** (01/10/2026, décisions D9 et D11 de `v1-33` §5) : le
+ * total juste sous la carte dominante, les deux liens de contestation juste sous le total, la fin de
+ * page réduite au partage et au nouveau bilan. C'est une décision de produit, prise sur une mesure
+ * (le chiffre était sous le pied collant), et rien d'autre ne la tient : aucune dérivation de
+ * `src/types` ne voit un bloc déplacé, et le parcours réel attend des textes, jamais leur rang. Il
+ * lit l'ordre du **texte** rendu, pas des pixels — ce que la page mesure à l'écran reste à la recette.
+ *   **Éprouvé en le cassant, le 01/10/2026** : trois mutations, relevées sur le test lui-même.
  */
 import { act, render, screen } from '@testing-library/react-native';
 import React from 'react';
@@ -112,6 +120,14 @@ const BILANS_VALIDES = [
 ];
 
 const tablesEnAttente = () => mockEnAttente.map((r) => r.table).sort();
+
+/** Les textes de l'arbre rendu, **dans l'ordre où la page les porte** — de haut en bas. */
+function textesDansLOrdre(noeud: unknown): string[] {
+  if (noeud === null || noeud === undefined) return [];
+  if (typeof noeud === 'string') return [noeud];
+  if (Array.isArray(noeud)) return noeud.flatMap(textesDansLOrdre);
+  return textesDansLOrdre((noeud as { children?: unknown }).children);
+}
 
 /** Libère la requête en attente sur `table` (la première), avec sa réponse ou son exception. */
 function liberer(table: string, issue: { reponse: unknown } | { exception: unknown }) {
@@ -223,5 +239,63 @@ describe('la restitution d’un re-bilan', () => {
     expect(screen.queryByText(/Ton bilan précédent/)).toBeNull();
     expect(screen.getByText('Ce bilan ne me ressemble pas')).toBeTruthy();
     expect(tablesEnAttente()).toEqual([]);
+  });
+
+  // **L'ordre de la page** (D9 et D11 du 01/10/2026). À 390 × 844, à la sortie du questionnaire, le
+  // total se rendait sous le pied collant : la répartition par poste s'était glissée entre la carte
+  // dominante et lui, et deux liens de contestation fermaient la page, à ≈ 650 px du chiffre qu'ils
+  // contestent. La décision : le total juste sous la carte dominante, « Un chiffre me semble faux » et
+  // le retrait sous « Comment ce chiffre est calculé », et en fin de page le partage et le nouveau
+  // bilan seulement. Le lien du retrait est dans la séquence : sa place arrive avec le résultat, dans
+  // le même aller-retour (c'est ce que garde le premier test), donc il est là dès le premier rendu
+  // prêt et ne décale pas le total en arrivant après lui.
+  //
+  // Les deux moitiés comptent : la séquence entière est croissante (le total n'est pas remonté sans
+  // que la contestation le suive), **et** la fin de page ne conteste plus rien — la séquence ne lit
+  // que la première occurrence d'un texte, donc un lien recopié en fin de page lui échapperait.
+  //
+  // **Éprouvé en le cassant, le 01/10/2026**, sur un fichier égal au commit, le témoin sans mutation
+  // vert ; chaque mutation remise en place depuis une copie, et `diff` vide ensuite :
+  //   - la répartition par poste remise entre la carte dominante et le total (l'état d'avant D9) → la
+  //     séquence, seule : « Répartition par poste » devant « Estimation annuelle… » ;
+  //   - les deux liens de contestation remis dans le bloc de fin de page (l'état d'avant D11) → la
+  //     séquence, seule : les deux liens passent après « Faire un nouveau bilan » ;
+  //   - un lien de contestation **recopié** en fin de page, le total gardé (la séquence reste
+  //     croissante) → la fin de page, seule : « Un chiffre me semble faux » après « Où tu te situes ».
+  it('le total suit la carte dominante, la contestation suit le total, la fin de page ne conteste plus rien', async () => {
+    mockParams = { id: 'b2', nouveau: '1' };
+    render(<BilanResultat />);
+    await act(async () => {});
+    await act(async () => {
+      liberer('assessment_results', resultatLu('2026-10-01T09:00:00Z'));
+      liberer('assessments', ok(BILANS_VALIDES));
+      liberer('plan_cycles', ok({ id: 'cycle-oct', baseline_co2_kg_year: 1920, target_reduction_pct: 20 }));
+      liberer('assessment_answers', ok({ leisure_frequency: 'souvent' }));
+    });
+
+    const textes = textesDansLOrdre(screen.toJSON());
+    const sequence = [
+      'Ton bilan transport',
+      'Ton trajet domicile-travail en voiture thermique',
+      'Estimation annuelle, tous déplacements',
+      'Comment ce chiffre est calculé',
+      'Un chiffre me semble faux',
+      'Ce bilan ne me ressemble pas',
+      'Répartition par poste',
+      'Où tu te situes',
+      'Partager mon bilan',
+      'Faire un nouveau bilan',
+    ];
+    const rangs = sequence.map((texte) => ({ texte, rang: textes.indexOf(texte) }));
+    // Chaque texte est là : sans cette moitié, un rang à -1 passerait pour « avant tout le reste ».
+    expect(rangs.filter(({ rang }) => rang < 0)).toEqual([]);
+    expect(rangs.map(({ texte }) => texte)).toEqual(
+      [...rangs].sort((a, b) => a.rang - b.rang).map(({ texte }) => texte)
+    );
+
+    // La fin de page : après « Où tu te situes », le partage et le nouveau bilan, et rien qui conteste.
+    const apres = textes.slice(textes.indexOf('Où tu te situes'));
+    expect(apres).not.toContain('Un chiffre me semble faux');
+    expect(apres).not.toContain('Ce bilan ne me ressemble pas');
   });
 });
