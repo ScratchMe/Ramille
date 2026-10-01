@@ -40,6 +40,7 @@ function monter(
     <SaisieDuCode
       contexte={contexte}
       voix={contexte === 'rattachement' ? 'parti' : 'peut_etre'}
+      apresUnGeste={false}
       adresse="camille@example.org"
       libelleBouton="Valider mon code"
       onOuverte={jest.fn()}

@@ -15,7 +15,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
-import { revenirOu } from '@/lib/navigation';
+import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   lireLaFenetreDuMotDeLaVeille,
   loadReminderPrefs,
@@ -46,17 +46,21 @@ import { type CanalPrefere, type FenetreDeLaVeille } from '@/types/rappels';
  * écarté** : hors ligne, ou sur une lecture en échec, « Supprimer mon compte » ne s'afficherait pas,
  * et c'est le chemin que Google Play exige.
  *
- * **Mesurée, pas calculée, et sur web** : 412 px de saut pour un compte anonyme, à 390 comme à 420
- * de large, moins l'écart de 16 px que le bloc ajoute en existant. Ce n'est vrai qu'à ces largeurs,
- * pour ce compte et sur web : à 360, le texte passe sur une ligne de plus et il reste 20 px ; sur un
- * écran large, il en manque 44 ; un compte rattaché ne dit pas la même phrase ; et **sur un téléphone
+ * **Mesurée, pas calculée, et sur web** : la hauteur naturelle du bloc une fois lu, pour un compte
+ * anonyme — **412 px à 390 comme à 420 de large**. Elle valait 396 jusqu'au 01/10/2026 ; ce jour-là
+ * le compte et les rappels sont devenus deux sections à 32 l'une de l'autre au lieu de 16 (audit
+ * T-15), et la remesure sur l'export a rendu les 16 de l'écart en plus, rien d'autre. Ce n'est vrai
+ * qu'à ces largeurs, pour ce compte et sur web — relevé le même jour : à 360 le texte passe sur une
+ * ligne de plus (432, il reste 20 px de saut), à 320 sur deux (474, 62 px) ; plus large, il en
+ * perd (390 à 600 de large, 368 à partir de 1 024) et le lien remonte d'autant ; un compte rattaché
+ * ne dit pas la même phrase ; et **sur un téléphone
  * le réglage des rappels est plus haut** — trois lignes de canal au lieu de deux, la porte des
  * réglages, le mot de la veille —, donc le lien descend encore de la différence (`v1-13` §11.25). Un
  * saut peut donc rester, et c'est le risque accepté avec la décision. Le parcours réel mesure le reste
  * à chaque PR (« suppression du compte ») : une phrase allongée ici le fera tomber, et c'est le moment
  * de remesurer.
  */
-const HAUTEUR_DU_COMPTE_EN_LECTURE = 396;
+const HAUTEUR_DU_COMPTE_EN_LECTURE = 412;
 
 export default function Compte() {
   useTrackView('compte_view');
@@ -82,11 +86,15 @@ export default function Compte() {
 
   // **Les lectures arrivent ensemble, ou pas du tout** (#305, contre-lecture du 01/10/2026). Chacune
   // posait son état à son arrivée : l'écran grandissait en deux ou trois temps au-dessus de « Supprimer
-  // mon compte », la place gardée ne pouvait couvrir que la première lecture, et des rappels lus **sans
-  // session** — `loadReminderPrefs` rend alors ses valeurs par défaut, sans le dire — pouvaient
-  // s'afficher le temps que la lecture suivante arrive (`FRONT.md` §1.2). Le compte, les rappels et,
-  // sur natif, la fenêtre du mot de la veille sont donc posés ensemble ; les rappels ne le sont que si
-  // le compte a pu être lu, puisque l'écran ne les montre pas sinon.
+  // mon compte », et la place gardée ne pouvait couvrir que la première lecture. Le compte, les rappels
+  // et, sur natif, la fenêtre du mot de la veille sont donc posés ensemble ; les rappels ne le sont que
+  // si le compte a pu être lu, puisque l'écran ne les montre pas sinon.
+  //
+  // **Et des rappels illisibles rendent l'écran « indisponible »** (01/10/2026, audit T-6, `FRONT.md`
+  // §1.2). `loadReminderPrefs` posait « Par email » sur un profil illisible, et l'écran l'affichait
+  // coché comme un réglage lu ; elle rend désormais `null`. L'état `indisponible` dit déjà les deux
+  // échecs dans sa phrase — « ni relire tes réglages de rappel » — et porte « Réessayer » : rien de
+  // neuf à écrire, et aucune ligne de canal ne s'affiche sur une lecture qui n'a pas eu lieu.
   //
   // `etat` n'est remis à `null` que par « Réessayer » : le rappel de `SIGNED_IN`, plus bas, revient à
   // chaque retour sur l'onglet (`_onVisibilityChanged` d'auth-js), et vider l'écran à chaque fois le
@@ -103,10 +111,12 @@ export default function Compte() {
       // **Jamais `local` sur un échec** (A6-8) : c'est l'état le plus affirmatif, celui qui dit
       // « tu n'as pas de compte » et propose d'en créer un. `lireEtatDuRattachement` rend
       // désormais `indisponible` sans lever, et ce repli couvre le cas où elle lève quand même.
-      const compte: EtatRattachement = lu.status === 'fulfilled' ? lu.value : { kind: 'indisponible' };
+      const rappelsLus = prefs.status === 'fulfilled' ? prefs.value : null;
+      const compte: EtatRattachement =
+        lu.status === 'fulfilled' && rappelsLus !== null ? lu.value : { kind: 'indisponible' };
       setEtat(compte);
       setRelance(false);
-      if (prefs.status === 'fulfilled' && compte.kind !== 'indisponible') setRappels(prefs.value);
+      if (compte.kind !== 'indisponible') setRappels(rappelsLus);
       if (fenetreLue.status === 'fulfilled') setFenetre(fenetreLue.value);
     });
     return () => {
@@ -142,10 +152,12 @@ export default function Compte() {
     setCle((n) => n + 1);
   };
 
-  // **`replace('/')` et non `back()`** : la racine décide où aller selon qu'un bilan complété
+  // **Vers la racine, et pas en arrière** : la racine décide où aller selon qu'un bilan complété
   // existe, et après une déconnexion il n'en existe plus pour cette session — elle route donc vers
   // l'onboarding. Revenir en arrière aurait ramené sur le plan d'un compte qu'on vient de quitter,
-  // avec des données encore en mémoire d'écran.
+  // avec des données encore en mémoire d'écran. **Et la pile se vide avant** (01/10/2026, audit
+  // T-1) : un `replace('/')` seul ne remplaçait que « Toi », et le plan quitté restait dessous —
+  // le premier retour depuis l'onboarding y ramenait (`terminerLeFlux`).
   const seDeconnecter = async () => {
     if (deconnexionEnCours) return;
     setDeconnexionEnCours(true);
@@ -159,7 +171,7 @@ export default function Compte() {
       return;
     }
 
-    router.replace('/');
+    terminerLeFlux('/');
   };
 
   // Optimiste puis corrigé : le réglage doit répondre au doigt, et une écriture qui échoue
@@ -223,121 +235,128 @@ export default function Compte() {
                     Chargement de ton compte…
                   </ThemedText>
                 )}
-                {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et la saisie du
-                    code, la ligne porte déjà l'adresse alors que le compte n'est pas rattaché : cet
-                    écran proposait alors de « rattacher un compte », comme si la demande n'avait jamais
-                    eu lieu — et la boucle ouverte par l'écran des e-mails ne se refermait nulle part.
-                    (C'était un clic de confirmation jusqu'au 20/09/2026 ; c'est un code depuis, et cet
-                    état porte désormais la porte qui ramène à la saisie.) `etatDuRattachement` nomme cet
-                    entre-deux, là où `etatDuCompte` a raison de le confondre avec l'anonymat.
+                {/* **Trois sections, et un écart qui les sépare** (01/10/2026, audit T-15) : le compte, les
+                    rappels, puis « Mes données ». Tout était espacé de 16, sections comprises — à l'œil,
+                    « Rattacher un compte » et « Les rappels » étaient aussi proches que deux lignes de canal.
+                    32 entre les sections, 16 dedans. */}
+                {etat !== null && (
+                  <View style={styles.section}>
+                  {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et la saisie du
+                      code, la ligne porte déjà l'adresse alors que le compte n'est pas rattaché : cet
+                      écran proposait alors de « rattacher un compte », comme si la demande n'avait jamais
+                      eu lieu — et la boucle ouverte par l'écran des e-mails ne se refermait nulle part.
+                      (C'était un clic de confirmation jusqu'au 20/09/2026 ; c'est un code depuis, et cet
+                      état porte désormais la porte qui ramène à la saisie.) `etatDuRattachement` nomme cet
+                      entre-deux, là où `etatDuCompte` a raison de le confondre avec l'anonymat.
 
-                    Registre : un fait, jamais une relance. Pas de « pense à confirmer », pas de
-                    bouton pour renvoyer l'email — la personne a déjà ce qu'il lui faut dans sa
-                    messagerie, et rien ici ne doit se lire comme un reproche. */}
-                {etat?.kind === 'rattache' && (
-                  <ThemedText type="body" themeColor="textSecondary">
-                    {etat.email
-                      ? `Ton compte est rattaché à ${etat.email}. Ton bilan te suit d’un appareil à l’autre.`
-                      : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
-                  </ThemedText>
-                )}
-
-                {/* **Une sortie, et elle n'existait pas** (C2.11, arbitrage D17). Le seul `signOut` du
-                    produit était celui de la suppression de compte : quelqu'un qui prête son téléphone
-                    n'avait le choix qu'entre laisser sa session ouverte et supprimer son compte. La
-                    phrase est là pour dire ce qui ne part pas — sans elle, « me déconnecter » se lit
-                    comme une perte.
-
-                    Proposé au seul compte **rattaché** : déconnecter une session anonyme la rendrait
-                    inatteignable pour toujours, puisque rien ne permet d'y revenir. */}
-                {etat?.kind === 'rattache' && (
-                  <>
-                    <Button
-                      title={deconnexionEnCours ? 'Déconnexion…' : 'Me déconnecter de cet appareil'}
-                      variant="secondary"
-                      disabled={deconnexionEnCours}
-                      onPress={seDeconnecter}
-                      style={styles.bouton}
-                    />
-                    <ThemedText type="small" themeColor="textTertiary">
-                      Tes données restent sur ton compte.
-                    </ThemedText>
-                    <MessageInline message={erreurDeconnexion} />
-                  </>
-                )}
-
-                {etat?.kind === 'a_confirmer' && (
-                  <>
+                      Registre : un fait, jamais une relance. Pas de « pense à confirmer », pas de
+                      bouton pour renvoyer l'email — la personne a déjà ce qu'il lui faut dans sa
+                      messagerie, et rien ici ne doit se lire comme un reproche. */}
+                  {etat?.kind === 'rattache' && (
                     <ThemedText type="body" themeColor="textSecondary">
-                      Adresse à confirmer : {etat.email}. Un code est parti par email ; une fois tapé,
-                      ton bilan te suivra d’un appareil à l’autre.
+                      {etat.email
+                        ? `Ton compte est rattaché à ${etat.email}. Ton bilan te suit d’un appareil à l’autre.`
+                        : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
                     </ThemedText>
-                    {/* **Cette porte rend vraie une phrase écrite ailleurs.** L'écran de code dit « si tu
-                        quittes cet écran, tu retrouves la saisie du code depuis “Toi” » — c'était faux
-                        tant que cet écran ne portait qu'un constat, et le cas n'est pas rare : sur web,
-                        aller chercher le code dans sa messagerie peut emporter l'onglet. L'écran de
-                        rattachement relit l'adresse en local et s'ouvre directement sur la saisie, sans
-                        renvoyer de code — celui qui est déjà dans la boîte vaut encore, et « Renvoyer un
-                        code » est là pour l'autre cas.
+                  )}
 
-                        Un fait et une porte, pas une relance : ni « pense à », ni bouton de renvoi ici. */}
-                    <TextLink
-                      label="Saisir le code"
-                      onPress={() => router.push({ pathname: '/connexion/email', params: { reprise: '1' } })}
-                      role="link"
-                      type="small"
-                      weight={600}
-                      themeColor="accentText"
-                    />
-                  </>
-                )}
+                  {/* **Une sortie, et elle n'existait pas** (C2.11, arbitrage D17). Le seul `signOut` du
+                      produit était celui de la suppression de compte : quelqu'un qui prête son téléphone
+                      n'avait le choix qu'entre laisser sa session ouverte et supprimer son compte. La
+                      phrase est là pour dire ce qui ne part pas — sans elle, « me déconnecter » se lit
+                      comme une perte.
 
-                {etat?.kind === 'local' && (
-                  <>
-                    {/* **L'échéance, et pas seulement l'avantage** (arbitré le 21/09/2026,
-                        `v1-28` §7.2). Cet écran disait ce qu'un compte apporte et jamais ce que son
-                        absence coûte, donc le délai de la purge n'était lu que par ceux qui avaient
-                        déjà ouvert `/connexion` — c'est-à-dire pas par la personne que la purge
-                        efface. La clause et le délai sont partagés avec cet écran-là, à un seul
-                        endroit. */}
-                    <ThemedText type="body" themeColor="textSecondary">
-                      {PHRASE_SANS_COMPTE_SUR_TOI}
-                    </ThemedText>
-                    <Button
-                      title="Rattacher un compte"
-                      onPress={() => router.push({ pathname: '/connexion', params: { source: 'compte' } })}
-                      style={styles.bouton}
-                    />
-                  </>
-                )}
+                      Proposé au seul compte **rattaché** : déconnecter une session anonyme la rendrait
+                      inatteignable pour toujours, puisque rien ne permet d'y revenir. */}
+                  {etat?.kind === 'rattache' && (
+                    <>
+                      <Button
+                        title={deconnexionEnCours ? 'Déconnexion…' : 'Me déconnecter de cet appareil'}
+                        variant="secondary"
+                        disabled={deconnexionEnCours}
+                        onPress={seDeconnecter}
+                        style={styles.bouton}
+                      />
+                      <ThemedText type="small" themeColor="textTertiary">
+                        Tes données restent sur ton compte.
+                      </ThemedText>
+                      <MessageInline message={erreurDeconnexion} />
+                    </>
+                  )}
 
-                {/* **Le quatrième état, et le seul qui n'affirme rien** (A6-8). `getUser()` est un
-                    aller-retour réseau : hors ligne, cet écran disait à une personne rattachée
-                    depuis des mois qu'elle n'a pas de compte, et lui proposait d'en créer un. Pas
-                    de bouton de rattachement ici — proposer un compte à quelqu'un qui en a
-                    peut-être un est exactement le mensonge qu'on corrige. */}
-                {etat?.kind === 'indisponible' && (
-                  <>
-                    <ThemedText type="body" themeColor="textSecondary">
-                      On n’a pas pu vérifier ton compte à l’instant, ni relire tes réglages de
-                      rappel. Rien n’a changé de ton côté.
-                    </ThemedText>
-                    <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
-                  </>
+                  {etat?.kind === 'a_confirmer' && (
+                    <>
+                      <ThemedText type="body" themeColor="textSecondary">
+                        Adresse à confirmer : {etat.email}. Un code est parti par email ; une fois tapé,
+                        ton bilan te suivra d’un appareil à l’autre.
+                      </ThemedText>
+                      {/* **Cette porte rend vraie une phrase écrite ailleurs.** L'écran de code dit « si tu
+                          quittes cet écran, tu retrouves la saisie du code depuis “Toi” » — c'était faux
+                          tant que cet écran ne portait qu'un constat, et le cas n'est pas rare : sur web,
+                          aller chercher le code dans sa messagerie peut emporter l'onglet. L'écran de
+                          rattachement relit l'adresse en local et s'ouvre directement sur la saisie, sans
+                          renvoyer de code — celui qui est déjà dans la boîte vaut encore, et « Renvoyer un
+                          code » est là pour l'autre cas.
+
+                          Un fait et une porte, pas une relance : ni « pense à », ni bouton de renvoi ici. */}
+                      <TextLink
+                        label="Saisir le code"
+                        onPress={() => router.push({ pathname: '/connexion/email', params: { reprise: '1' } })}
+                        role="link"
+                        type="small"
+                        weight={600}
+                        themeColor="accentText"
+                      />
+                    </>
+                  )}
+
+                  {etat?.kind === 'local' && (
+                    <>
+                      {/* **L'échéance, et pas seulement l'avantage** (arbitré le 21/09/2026,
+                          `v1-28` §7.2). Cet écran disait ce qu'un compte apporte et jamais ce que son
+                          absence coûte, donc le délai de la purge n'était lu que par ceux qui avaient
+                          déjà ouvert `/connexion` — c'est-à-dire pas par la personne que la purge
+                          efface. La clause et le délai sont partagés avec cet écran-là, à un seul
+                          endroit. */}
+                      <ThemedText type="body" themeColor="textSecondary">
+                        {PHRASE_SANS_COMPTE_SUR_TOI}
+                      </ThemedText>
+                      <Button
+                        title="Rattacher un compte"
+                        onPress={() => router.push({ pathname: '/connexion', params: { source: 'compte' } })}
+                        style={styles.bouton}
+                      />
+                    </>
+                  )}
+
+                  {/* **Le quatrième état, et le seul qui n'affirme rien** (A6-8). `getUser()` est un
+                      aller-retour réseau : hors ligne, cet écran disait à une personne rattachée
+                      depuis des mois qu'elle n'a pas de compte, et lui proposait d'en créer un. Pas
+                      de bouton de rattachement ici — proposer un compte à quelqu'un qui en a
+                      peut-être un est exactement le mensonge qu'on corrige. */}
+                  {etat?.kind === 'indisponible' && (
+                    <>
+                      <ThemedText type="body" themeColor="textSecondary">
+                        On n’a pas pu vérifier ton compte à l’instant, ni relire tes réglages de
+                        rappel. Rien n’a changé de ton côté.
+                      </ThemedText>
+                      <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
+                    </>
+                  )}
+                  </View>
                 )}
 
                 {/* Le réglage s'affiche pour tout le monde, y compris une session anonyme : le
                     push n'a besoin que d'un jeton d'appareil (v1-12 §2.5). C'était l'inverse
                     avant, l'interrupteur email n'apparaissant qu'avec un compte rattaché.
 
-                    **Sauf quand la lecture du compte a échoué** : `loadReminderPrefs` ne distingue
-                    pas un échec de « pas de session » et rend alors ses valeurs par défaut — canal
-                    « aucun », pas de jeton, pas d'email. La liste afficherait donc un choix que
-                    personne n'a fait, à côté d'un message qui dit qu'on n'a rien pu lire. On attend
-                    donc de savoir : les deux lectures partent ensemble, et `etat` vaut toujours
-                    quelque chose à l'arrivée, échec compris. */}
+                    **Sauf quand une lecture a échoué** — le compte, ou les rappels eux-mêmes, que
+                    `loadReminderPrefs` rend `null` depuis le 01/10/2026 au lieu d'un canal par
+                    défaut : l'écran est alors `indisponible`, et sa phrase dit les deux. On attend
+                    donc de savoir : les lectures partent ensemble, et `etat` vaut toujours quelque
+                    chose à l'arrivée, échec compris. */}
                 {rappels && etat !== null && etat.kind !== 'indisponible' && (
-                  <>
+                  <View style={styles.section}>
                     <ChoixDeRappel
                       prefs={rappels}
                       fenetre={fenetre}
@@ -345,7 +364,7 @@ export default function Compte() {
                       onChoisirLaVeille={choisirLaVeille}
                     />
                     <MessageInline message={messageCanal} />
-                  </>
+                  </View>
                 )}
               </View>
             )}
@@ -416,9 +435,12 @@ const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.three },
   retour: { alignSelf: 'flex-start' },
   bouton: { marginTop: Spacing.one },
-  // Le même écart que la page entre ses blocs : envelopper le compte et les rappels ne doit rien
-  // déplacer une fois l'écran posé.
-  compteEtRappels: { gap: Spacing.three },
+  // **32 entre les sections, 16 dedans** (01/10/2026, audit T-15) : le compte et les rappels sont
+  // deux sections, et « Mes données » la troisième — d'où la marge du bas, qui s'ajoute à l'écart de
+  // la page (`EXPO.md` §1.6 : en Yoga, les marges ne fusionnent pas) et qui part avec le bloc après
+  // une suppression, où « C'est fait. » suit le titre.
+  compteEtRappels: { gap: Spacing.five, marginBottom: Spacing.three },
+  section: { gap: Spacing.three },
   enLecture: { minHeight: HAUTEUR_DU_COMPTE_EN_LECTURE },
   liens: { gap: Spacing.one, marginTop: Spacing.two },
   contact: { marginTop: Spacing.two },

@@ -1,14 +1,17 @@
 // Les marques locales des rappels : « la feuille a déjà été proposée », « la question du mot de la
-// veille a déjà été posée » et « le jeton de **cet** appareil ».
+// veille a déjà été posée » et « le jeton de **cet** appareil » — et, depuis le 01/10/2026, la
+// lecture des réglages elle-même (`loadReminderPrefs`).
 //
 // **Ce module importe `@/lib/supabase`, et il est quand même testé ici** — ce qui demande de dire
 // où passe vraiment la ligne. Elle ne passe pas par le nom d'un import : depuis que le client est un
 // mandataire, l'importer ne lève plus au chargement, donc il ne fait plus tomber une suite entière.
 // Elle passe par ce qu'un test doit **dresser** avant de pouvoir affirmer : une suite de logique
 // pure (`src/types/*`) n'installe aucun double, une suite d'entrée-sortie (`src/lib/*`) double
-// exactement ce qu'elle éprouve. Ici on double AsyncStorage et on n'éprouve que les fonctions qui ne
-// touchent qu'à lui — les autres passent par le réseau et appartiennent à un test
-// d'intégration que ce dépôt n'a pas encore.
+// exactement ce qu'elle éprouve. Ici on double AsyncStorage pour les marques, et **le client, pour
+// la seule lecture des réglages** : la session, la ligne du profil et celle du jeton de cet appareil
+// — exactement ce que `loadReminderPrefs` lit, et rien de ce que les écritures touchent. Ce qui
+// est éprouvé, c'est la règle de `FRONT.md` §1.2 sur cette lecture : un échec rend `null`, jamais
+// un canal par défaut. Ce que la base répond vraiment reste au parcours réel.
 //
 // La conséquence à connaître si cette suite tombe un jour avec une erreur de configuration : ce
 // n'est pas ce fichier qui aura changé, c'est une de ces fonctions qui aura commencé à toucher le
@@ -17,10 +20,43 @@ import {
   aDejaProposeLaVeille,
   aDejaVuLaFeuilleDeRappel,
   lireLeJetonDeCetAppareil,
+  loadReminderPrefs,
   marquerFeuilleDeRappelVue,
   marquerLaVeilleProposee,
   memoriserLeJetonDeCetAppareil,
 } from '@/lib/notification-prefs';
+
+/** Ce que rend chaque lecture du double : la session, puis une ligne par table. */
+type ReponseDouble = { data: unknown; error: unknown };
+const mockLectures: {
+  utilisateur: unknown;
+  profiles: ReponseDouble;
+  push_tokens: ReponseDouble;
+} = {
+  utilisateur: null,
+  profiles: { data: null, error: null },
+  push_tokens: { data: null, error: null },
+};
+
+jest.mock('@/lib/supabase', () => {
+  // Une chaîne de requête PostgREST qui ne retient rien : chaque maillon rend la même chaîne, et la
+  // fin (`maybeSingle`) rend la réponse posée pour la table.
+  const chaine = (table: 'profiles' | 'push_tokens') => {
+    const maillon = {
+      select: () => maillon,
+      eq: () => maillon,
+      is: () => maillon,
+      maybeSingle: async () => mockLectures[table],
+    };
+    return maillon;
+  };
+  return {
+    supabase: {
+      auth: { getUser: async () => ({ data: { user: mockLectures.utilisateur }, error: null }) },
+      from: (table: 'profiles' | 'push_tokens') => chaine(table),
+    },
+  };
+});
 
 const mockStock = new Map<string, string>();
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -111,5 +147,67 @@ describe('jeton de cet appareil', () => {
     } finally {
       lecture.mockRestore();
     }
+  });
+});
+
+/**
+ * **Une lecture en échec rend `null`, jamais un canal par défaut** (01/10/2026, audit T-6,
+ * `FRONT.md` §1.2). Le profil se lisait sans regarder son erreur, et « Toi » affichait « Par email »
+ * coché à qui avait choisi la notification ou « Sans rappel ».
+ *
+ * Éprouvé en le cassant le 01/10/2026 (TESTING.md §1.1), une mutation à la fois, le module recopié
+ * depuis sa sauvegarde entre deux :
+ *   - l'erreur du profil ignorée et le canal retombé sur `email` (l'état d'avant) → « un profil
+ *     illisible… », seul ;
+ *   - les valeurs par défaut rendues sans session (l'état d'avant) → « sans session… », seul ;
+ *   - l'erreur de la lecture du jeton ignorée → « un jeton illisible… », seul ;
+ *   - le canal lu remplacé par `email` → « une lecture réussie… » et « sans jeton mémorisé… »,
+ *     les deux seules qui lisent le canal d'une lecture réussie.
+ */
+describe('loadReminderPrefs', () => {
+  const PERSONNE = {
+    id: 'u1',
+    is_anonymous: false,
+    email: 'camille@exemple.fr',
+    email_confirmed_at: '2026-09-20T10:00:00Z',
+  };
+
+  beforeEach(() => {
+    mockLectures.utilisateur = PERSONNE;
+    mockLectures.profiles = { data: { reminder_channel: 'push', mot_de_la_veille: 'oui' }, error: null };
+    mockLectures.push_tokens = { data: { token: 'ExponentPushToken[abc]' }, error: null };
+  });
+
+  it('une lecture réussie rend le choix de la personne, et le jeton de cet appareil', async () => {
+    await memoriserLeJetonDeCetAppareil('ExponentPushToken[abc]');
+    expect(await loadReminderPrefs()).toEqual({
+      prefere: 'push',
+      jetonActif: true,
+      emailPossible: true,
+      email: 'camille@exemple.fr',
+      reponseALaVeille: 'oui',
+    });
+  });
+
+  it('un profil illisible rend `null`, et pas « Par email »', async () => {
+    mockLectures.profiles = { data: null, error: { code: 'PGRST301', message: 'JWT expired' } };
+    expect(await loadReminderPrefs()).toBeNull();
+  });
+
+  it('sans session, rien n’est lu : `null`, et pas un canal « aucun » que personne n’a choisi', async () => {
+    mockLectures.utilisateur = null;
+    expect(await loadReminderPrefs()).toBeNull();
+  });
+
+  it('un jeton illisible rend `null` : « pas actif sur ce téléphone » serait un constat inventé', async () => {
+    await memoriserLeJetonDeCetAppareil('ExponentPushToken[abc]');
+    mockLectures.push_tokens = { data: null, error: { code: '08006', message: 'connexion perdue' } };
+    expect(await loadReminderPrefs()).toBeNull();
+  });
+
+  it('sans jeton mémorisé sur cet appareil, la réponse est « non », et elle est lue', async () => {
+    // Ce n'est pas un échec : l'appareil n'a rien enregistré, et la base n'est même pas interrogée.
+    mockLectures.push_tokens = { data: null, error: { code: '08006', message: 'jamais lu' } };
+    expect(await loadReminderPrefs()).toMatchObject({ prefere: 'push', jetonActif: false });
   });
 });

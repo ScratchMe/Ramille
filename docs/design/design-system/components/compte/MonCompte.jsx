@@ -27,7 +27,7 @@ export function MonCompte({ confirmation = false, occupe = null, supprime = fals
   const inactif = occupe !== null;
   return (
     <div style={carte}>
-      <ThemedText type="small" weight={600} accessibilityRole="header">Mes données</ThemedText>
+      <ThemedText type="cardTitle" accessibilityRole="header">Mes données</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">Tu peux récupérer l’intégralité de ce que Ramille sait de toi, dans un fichier JSON, ou tout supprimer définitivement.</ThemedText>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
         <Button title={occupe === 'export' ? 'Génération…' : 'Télécharger mes données'} variant="secondary" onPress={onExporter} disabled={inactif} />

@@ -13,5 +13,7 @@ export interface TextFieldProps {
   placeholder?: string;
   /** Message de validation, ton neutre : ce qui est attendu. */
   helperText?: string;
+  /** L'envoi de l'écran sur la touche d'action du clavier (« Envoyer ») et sur Entrée ; le champ garde le focus. */
+  onSubmitEditing?: () => void;
 }
 export declare function TextField(props: TextFieldProps): JSX.Element;

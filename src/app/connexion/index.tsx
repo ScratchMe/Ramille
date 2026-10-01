@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
@@ -15,7 +15,7 @@ import { useTrackView } from '@/hooks/use-track-view';
 import { track } from '@/lib/analytics';
 import { linkGoogleIdentity } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
-import { revenirOu } from '@/lib/navigation';
+import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import { sourceConnexion } from '@/types/analytics';
 import { PHRASE_SANS_COMPTE_SOUS_LA_SORTIE } from '@/types/compte';
 import { identiteDejaRattachee, introDeLaConnexion } from '@/types/connexion';
@@ -70,10 +70,14 @@ export default function ConnexionProposition() {
   const vientDeCompte = provenance === 'compte';
   const [googleLoading, setGoogleLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Le message de Supabase sur un échec de Google, **à part de la phrase** (01/10/2026, audit T-17) :
+  // voir plus bas.
+  const [detail, setDetail] = useState<string | null>(null);
 
   const onGoogle = async () => {
     setGoogleLoading(true);
     setMessage(null);
+    setDetail(null);
 
     // **Plus rien à poser avant l'appel, et c'est le retrait de l'interstitiel qui l'a libéré**
     // (A6-20). Sur web, `linkIdentity` déclenche une redirection plein écran et rend la main
@@ -113,7 +117,14 @@ export default function ConnexionProposition() {
       // Le message de Supabase est repris tel quel : il est en anglais et technique, mais
       // c'est le seul indice disponible sur ce qui a échoué, et un texte rassurant à la
       // place laisserait la personne sans rien pour comprendre ni pour nous le rapporter.
-      setMessage(`La connexion avec Google n’a pas abouti. ${resultat.error.message}`);
+      //
+      // **Mais plus dans la phrase** (01/10/2026, audit T-17) : collé derrière elle, il la faisait
+      // basculer d'une langue à l'autre au milieu de la ligne, ce qui se lit comme une panne de
+      // l'app. La phrase reste seule dans le message — c'est elle que le lecteur d'écran annonce —,
+      // et le détail se rend dessous en chasse fixe, recopiable, comme l'échec du démarrage
+      // (`src/app/index.tsx`).
+      setMessage('La connexion avec Google n’a pas abouti.');
+      setDetail(resultat.error.message || null);
       return;
     }
 
@@ -133,13 +144,20 @@ export default function ConnexionProposition() {
     if (etat?.kind === 'rattache') {
       track('connexion_success', { method: 'google' });
     }
-    router.replace('/plan');
+    // **Le flux est fini, et la pile se vide derrière lui** (01/10/2026, audit T-1) : un `replace`
+    // seul laissait « Toi » et cet écran sous le plan, et le retour reproposait de rattacher le
+    // compte qu'on venait de rattacher (`terminerLeFlux`).
+    terminerLeFlux('/plan');
   };
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
+        {/* **L'écran défile quand il déborde** (01/10/2026, audit T-2) : centré dans une boîte fixe, il
+            débordait des deux côtés à 320 × 568 — la mascotte au-dessus du haut, les pages légales
+            sous le bas, ni l'une ni les autres atteignables. `flexGrow` et non `flex` : à la taille
+            courante, le contenu remplit l'écran et se centre exactement comme avant (`EXPO.md` §1.6). */}
+        <ScrollView contentContainerStyle={styles.content}>
           {/* Marque visible avant le bouton Google : un utilisateur qui vient d'arriver sur
               son bilan doit reconnaître que c'est bien Ramille qui lui propose de se
               connecter, pas un tiers — le bouton Google lui-même reste non personnalisé
@@ -163,6 +181,13 @@ export default function ConnexionProposition() {
           <View style={styles.options}>
             <GoogleButton onPress={onGoogle} loading={googleLoading} />
             <MessageInline message={message} />
+            {/* Message technique, volontairement brut : il est fait pour être recopié, pas lu comme
+                du produit (`FRONT.md` §2.4, la chasse fixe des codes techniques). */}
+            {detail && (
+              <ThemedText type="code" themeColor="textTertiary" style={styles.detail} selectable>
+                {detail}
+              </ThemedText>
+            )}
             <TextLink
               label="Utiliser un email à la place"
               // **Aucun paramètre**, et c'est délibéré : `/connexion/email` ne lit ni `id` (plus
@@ -235,7 +260,7 @@ export default function ConnexionProposition() {
               themeColor="textTertiary"
             />
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -244,13 +269,15 @@ export default function ConnexionProposition() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  content: { flex: 1, justifyContent: 'center', padding: Spacing.four, gap: Spacing.four },
+  content: { flexGrow: 1, justifyContent: 'center', padding: Spacing.four, gap: Spacing.four },
   logo: { marginBottom: Spacing.one },
   textBlock: { gap: Spacing.two },
   title: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   body: { fontSize: 16, lineHeight: 24 },
   options: { gap: Spacing.three },
   emailLink: { textAlign: 'center' },
+  // La taille du détail de l'échec du démarrage (`src/app/index.tsx`), pour la même raison.
+  detail: { fontSize: 12, lineHeight: 18 },
   skip: { marginTop: Spacing.two, alignItems: 'center', gap: 10 },
   skipHint: { textAlign: 'center' },
   legal: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: Spacing.two },

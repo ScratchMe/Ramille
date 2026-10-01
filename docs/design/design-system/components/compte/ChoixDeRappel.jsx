@@ -64,7 +64,7 @@ export function ChoixDeRappel({ lignes, canal, permission = 'demandable', onChoi
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <ThemedText type="cardTitle">{TITRE}</ThemedText>
+        <ThemedText type="cardTitle" accessibilityRole="header">{TITRE}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{sousTitre(canal, veille)}</ThemedText>
       </div>
       {/* Le groupe ne porte que les lignes, nommé par l'en-tête ; la ligne est `LigneDeCanal`, la même que dans

@@ -19,3 +19,5 @@ Une ligne hors d'atteinte garde son fond, passe son titre en texte tertiaire et 
 ```
 
 **Le sous-titre est un plafond** : « Un mot à chaque point de suivi, et la veille de tes jours de trajet — jamais plus. » pour qui a dit oui, « Un mot à chaque point de suivi, jamais plus. » sinon. Il promet ce que la personne a demandé, pas ce qui part ce soir.
+
+**« Les rappels » est un en-tête de section** (01/10/2026), de niveau 2, au même style que « Mes données » (`cardTitle`) : une page parcourue titre par titre le sautait. Sur « Toi », les sections sont séparées de 32, et leurs éléments de 16.

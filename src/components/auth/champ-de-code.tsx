@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
+import { cadreDuChamp, SANS_ANNEAU_DE_L_INPUT } from '@/components/auth/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -12,12 +14,14 @@ import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
  * focus à la frappe et au collé, et n'apporteraient rien qu'un champ centré ne rende. Le kit
  * écrit d'ailleurs de `TextField` qu'il est « en pratique le seul champ texte du produit » : il y
  * en a deux à partir d'aujourd'hui, et celui-ci reprend sa boîte — hauteur, rayon, fond, bordure
- * d'accent dès qu'un chiffre est là — pour que ce soit visiblement la même famille. Le contour au
+ * d'accent dès qu'un chiffre est là ou que le champ a le focus (`cadreDuChamp`) — pour que ce soit
+ * visiblement la même famille. Le contour au
  * repos aussi : `fieldBorder` depuis le 24/09/2026, là où le champ vide ne tranchait qu'à 1,14:1
  * (cf. `TextField`).
  *
  * **La normalisation n'est pas ici mais dans `chiffresDuCode`** (module pur, testé) : une espace
- * collée avec le code est retirée et non refusée, et un collé trop long garde ses chiffres utiles.
+ * collée avec le code est retirée et non refusée, un collé trop long garde ses chiffres utiles, et
+ * un collé qui porte d'autres chiffres garde la suite de huit — pas les huit premiers (01/10/2026).
  * Faire ce travail dans le composant le rendrait invérifiable par la suite Jest.
  *
  * La taille des chiffres (24/30, interlettrage 6) est hors échelle typographique et reste en dur
@@ -42,6 +46,8 @@ export function ChampDeCode({
   helperText?: string;
 }) {
   const theme = useTheme();
+  // Le focus passe la bordure à l'accent, et l'anneau du navigateur suit le cadre (`cadreDuChamp`).
+  const [focus, setFocus] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -51,10 +57,8 @@ export function ChampDeCode({
       <View
         style={[
           styles.box,
-          {
-            backgroundColor: theme.backgroundElement,
-            borderColor: value.length > 0 ? theme.accent : theme.fieldBorder,
-          },
+          { backgroundColor: theme.backgroundElement },
+          cadreDuChamp(theme, { rempli: value.length > 0, focus }),
         ]}
       >
         <TextInput
@@ -78,7 +82,9 @@ export function ChampDeCode({
           // e-mail. Ils ne coûtent rien et servent le jour où l'une le fera.
           autoComplete="one-time-code"
           textContentType="oneTimeCode"
-          style={[styles.input, { color: theme.text }]}
+          onFocus={() => setFocus(true)}
+          onBlur={() => setFocus(false)}
+          style={[styles.input, { color: theme.text }, SANS_ANNEAU_DE_L_INPUT]}
         />
       </View>
       <ThemedText type="small" themeColor="textSecondary">

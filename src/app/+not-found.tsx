@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -24,16 +24,22 @@ export default function NotFound() {
     <ThemedView style={styles.container}>
       <TitreDePage titre={NOT_FOUND_PAGE_TITLE} />
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <ThemedText type="display">Cette page n’existe pas</ThemedText>
-          <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
-            Le lien est peut-être incomplet, ou la page a changé d’adresse.
-          </ThemedText>
-          <RamilleDit ligne={RAMILLE.introuvable} mood="calm" size={44} tilt={-7} />
-        </View>
-        <View style={styles.footer}>
-          <Button title="Revenir à l’accueil" onPress={() => router.replace('/')} />
-        </View>
+        {/* **L'écran défile quand il déborde** (01/10/2026, audit T-2) : à petite taille ou à grande
+            police, le titre en `display` et la réplique poussaient « Revenir à l'accueil » hors de
+            l'écran — la seule sortie d'une page qu'on atteint sans l'avoir voulu. `flexGrow` et non
+            `flex` : à la taille courante, tout est en place comme avant (`EXPO.md` §1.6). */}
+        <ScrollView contentContainerStyle={styles.page}>
+          <View style={styles.content}>
+            <ThemedText type="display">Cette page n’existe pas</ThemedText>
+            <ThemedText weight={400} themeColor="textSecondary" style={styles.body}>
+              Le lien est peut-être incomplet, ou la page a changé d’adresse.
+            </ThemedText>
+            <RamilleDit ligne={RAMILLE.introuvable} mood="calm" size={44} tilt={-7} />
+          </View>
+          <View style={styles.footer}>
+            <Button title="Revenir à l’accueil" onPress={() => router.replace('/')} />
+          </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -41,8 +47,9 @@ export default function NotFound() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
-  content: { flex: 1, justifyContent: 'center', gap: Spacing.three },
+  safeArea: { flex: 1 },
+  page: { flexGrow: 1, padding: Spacing.four, justifyContent: 'space-between' },
+  content: { flexGrow: 1, justifyContent: 'center', gap: Spacing.three },
   body: { fontSize: 16, lineHeight: 24 },
   footer: { gap: Spacing.five },
 });

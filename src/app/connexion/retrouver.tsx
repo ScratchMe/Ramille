@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useIsFocused, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -9,12 +9,14 @@ import { TextLink } from '@/components/text-link';
 import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { SaisieDuCode } from '@/components/auth/saisie-du-code';
 import { Radius, Spacing } from '@/constants/theme';
+import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { demanderLaConnexion } from '@/lib/auth';
 import { effacerLesMarquesLocales, lireEtatDuCompte } from '@/lib/compte';
 import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
-import { revenirOu } from '@/lib/navigation';
+import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   adresseSemblePlausible,
   messageDeLaDemande,
@@ -78,6 +80,28 @@ type Phase = 'chargement' | 'collision' | 'saisie' | 'code';
  */
 const revenirOuRacine = () => revenirOu('/');
 
+/**
+ * Le cadre des trois phases : **il défile quand il déborde** (01/10/2026, audit T-2). Sans
+ * défilement, « Retour » tombait sous le bas à 320 × 568, et « Utiliser une autre adresse » à
+ * 360 × 640 — sur le seul chemin vers un compte existant. `flexGrow` et non `flex` : à la taille
+ * courante, le contenu remplit l'écran, le pied reste en bas, exactement comme avant (`EXPO.md`
+ * §1.6). Remonté à chaque phase par sa clé, pour que chacune s'ouvre en haut.
+ */
+function Cadre({ children }: { children: ReactNode }) {
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur un bouton ne
+            servait qu'à le fermer — le défaut de React Native (`never`) —, et « Recevoir un code »
+            avait l'air de ne pas avoir pris le geste. */}
+        <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+          {children}
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
 export default function RetrouverMonCompte() {
   // `email` prérempli quand on arrive de /connexion/email après un `email_exists`. `source`
   // dit par quelle porte on est entré — l'accueil de l'onboarding ou l'écran email — et c'est
@@ -95,11 +119,43 @@ export default function RetrouverMonCompte() {
   // qu'il se garde d'une phase à l'autre jusqu'à la tentative suivante, qui l'efface.
   const motif = motifRetourLien(params.motif);
   const [phase, setPhase] = useState<Phase>('chargement');
+  // **La phase est-elle arrivée sous le doigt ?** (01/10/2026, audit T-4) Le bouton touché disparaît
+  // avec la phase qui le portait, et le focus retombait sur le document : la phase qui arrive après
+  // un geste prend donc le focus sur son titre (`FRONT.md` §2.4). La première, posée par la lecture
+  // de l'état du compte, n'en prend pas — personne n'a encore rien touché.
+  const [sousLeDoigt, setSousLeDoigt] = useState(false);
+  /** Changer de phase **à la suite d'un geste** — le seul chemin, après la première lecture. */
+  const allerA = (suivante: Phase) => {
+    setSousLeDoigt(true);
+    setPhase(suivante);
+  };
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(
     motif ? messageDuRetourDeLien(motif) : null
   );
+
+  // L'adresse a-t-elle été ouverte depuis l'écran de collision ? C'est alors lui que le retour
+  // matériel retrouve, et non la sortie de l'écran.
+  const [vientDeLaCollision, setVientDeLaCollision] = useState(false);
+  /** « Utiliser une autre adresse » — et le retour matériel depuis la saisie du code. */
+  const revenirALAdresse = () => {
+    setMessage(null);
+    allerA('saisie');
+  };
+
+  // **Le retour matériel recule d'une phase** (01/10/2026, audit T-8) : sur Android, il quittait la
+  // route depuis n'importe quelle phase. Le code ramène désormais à l'adresse — ce que fait déjà
+  // « Utiliser une autre adresse » —, et l'adresse ouverte depuis la collision ramène à la collision,
+  // la phase vue juste avant ; aucun contrôle neuf à l'écran. Ailleurs, rien derrière : le retour
+  // passe à la navigation.
+  // **Seulement au premier plan** : un écran couvert par un autre garde son écoute, et l'écoute la plus
+  // récente parle la première — sans cette garde, le retour pris sur l'écran du dessus reculerait
+  // une phase de celui-ci, caché.
+  const auPremierPlan = useIsFocused();
+  const phasePrecedente =
+    phase === 'code' ? revenirALAdresse : phase === 'saisie' && vientDeLaCollision ? () => allerA('collision') : null;
+  useRetourVersLaPhasePrecedente(auPremierPlan ? phasePrecedente : null);
 
   useEffect(() => {
     let annule = false;
@@ -147,6 +203,9 @@ export default function RetrouverMonCompte() {
   }, []);
 
   const envoyerLeLien = async () => {
+    // Entrée part du champ, que le bouton désactivé ne garde pas : un second appui pendant l'envoi
+    // ferait partir une seconde demande (01/10/2026, audit T-3).
+    if (busy) return;
     setMessage(null);
     // **Cette phrase n'était jamais dite** (relevé le 24/09/2026) : le bouton était désactivé tant que
     // l'adresse ne semblait pas plausible, donc cette branche était inatteignable — l'écran restait
@@ -177,150 +236,155 @@ export default function RetrouverMonCompte() {
       setMessage(messageDeLaDemande(error));
       return;
     }
-    setPhase('code');
+    allerA('code');
   };
 
   if (phase === 'chargement') {
     return <ThemedView style={styles.container} />;
   }
 
+  const titreDeLaCollision = <ThemedText type="screenTitle">Cet appareil porte déjà un bilan</ThemedText>;
+
   if (phase === 'collision') {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.content}>
-            <View style={styles.textBlock}>
-              <ThemedText type="screenTitle">
-                Cet appareil porte déjà un bilan
-              </ThemedText>
-              <ThemedText type="body" themeColor="textSecondary">
-                Tu as répondu au questionnaire ici, sans compte. En retrouvant le tien, c’est
-                son historique qui s’ouvre — ce bilan-ci ne le rejoindra pas.
-              </ThemedText>
-              <ThemedText type="body" themeColor="textSecondary">
-                On peut le refaire ensemble après, ça va vite.
-              </ThemedText>
-              {/* **Le motif s'affiche ici aussi, et c'est le cas le plus fréquent.** Un appareil
-                  qui a demandé un code porte presque toujours un bilan anonyme : `collision` est
-                  donc aussi l'écran que voit la personne dont un lien parti avant le 20/09/2026
-                  revient mort — et sans
-                  cette ligne rien ne lui disait pourquoi l'app s'était ouverte là — exactement le
-                  silence que le paramètre existe pour supprimer. */}
-              <MessageInline message={message} />
-            </View>
-          </View>
-          <View style={styles.footer}>
-            <Button title="Retrouver mon compte" onPress={() => setPhase('saisie')} />
-            <Button
-              title="Garder ce bilan sur cet appareil"
-              variant="secondary"
-              onPress={revenirOuRacine}
-            />
-            <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
-              Garder ce bilan te laisse sans compte : il restera sur cet appareil, et là seulement.
+      <Cadre key="collision">
+        <View style={styles.content}>
+          <View style={styles.textBlock}>
+            {/* Le titre prend le focus quand la collision revient sous le doigt — par le retour
+                matériel depuis l'adresse —, jamais à la première lecture (T-4). */}
+            {sousLeDoigt ? <TitreDArrivee>{titreDeLaCollision}</TitreDArrivee> : titreDeLaCollision}
+            <ThemedText type="body" themeColor="textSecondary">
+              Tu as répondu au questionnaire ici, sans compte. En retrouvant le tien, c’est
+              son historique qui s’ouvre — ce bilan-ci ne le rejoindra pas.
             </ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              On peut le refaire ensemble après, ça va vite.
+            </ThemedText>
+            {/* **Le motif s'affiche ici aussi, et c'est le cas le plus fréquent.** Un appareil
+                qui a demandé un code porte presque toujours un bilan anonyme : `collision` est
+                donc aussi l'écran que voit la personne dont un lien parti avant le 20/09/2026
+                revient mort — et sans
+                cette ligne rien ne lui disait pourquoi l'app s'était ouverte là — exactement le
+                silence que le paramètre existe pour supprimer. */}
+            <MessageInline message={message} />
           </View>
-        </SafeAreaView>
-      </ThemedView>
+        </View>
+        <View style={styles.footer}>
+          <Button
+            title="Retrouver mon compte"
+            onPress={() => {
+              setVientDeLaCollision(true);
+              allerA('saisie');
+            }}
+          />
+          <Button
+            title="Garder ce bilan sur cet appareil"
+            variant="secondary"
+            onPress={revenirOuRacine}
+          />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
+            Garder ce bilan te laisse sans compte : il restera sur cet appareil, et là seulement.
+          </ThemedText>
+        </View>
+      </Cadre>
     );
   }
 
   if (phase === 'code') {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <SaisieDuCode
-            contexte="connexion"
-            // Cet écran ne peut PAS affirmer qu'un code est parti — `shouldCreateUser: false`
-            // fait qu'une adresse inconnue ne reçoit rien, et le dire divulguerait qui a un
-            // compte. La voix porte ce « si », là où `/connexion/email` peut l'affirmer dans ses
-            // deux branches (`src/types/connexion.ts`, `VoixDeLaSaisie`).
-            voix="peut_etre"
-            adresse={email.trim()}
-            libelleBouton="Retrouver mon compte"
-            onOuverte={async () => {
-              // **On change d'utilisateur ici**, et les marques locales décrivent celui qu'on
-              // quitte : annonce de rattachement, étape du premier parcours (qui décide de la
-              // barre d'onglets), brouillon. Le retour de lien ne les balayait pas — le défaut
-              // relevé par le canvas v1-21 (`v1-27` §12.12) —, le chemin par code le fait.
-              await effacerLesMarquesLocales();
-              // La racine route vers le plan si le compte retrouvé porte un bilan complété, vers
-              // l'onboarding sinon.
-              router.replace('/');
-            }}
-            onAutreAdresse={() => {
-              setMessage(null);
-              setPhase('saisie');
-            }}
-            renvoyer={demanderLaConnexion}
-          />
-        </SafeAreaView>
-      </ThemedView>
+      <Cadre key="code">
+        <SaisieDuCode
+          contexte="connexion"
+          // Cet écran ne peut PAS affirmer qu'un code est parti — `shouldCreateUser: false`
+          // fait qu'une adresse inconnue ne reçoit rien, et le dire divulguerait qui a un
+          // compte. La voix porte ce « si », là où `/connexion/email` peut l'affirmer dans ses
+          // deux branches (`src/types/connexion.ts`, `VoixDeLaSaisie`).
+          voix="peut_etre"
+          // Toujours après « Recevoir un code » : cet écran ne s'ouvre jamais directement sur le code.
+          apresUnGeste
+          adresse={email.trim()}
+          libelleBouton="Retrouver mon compte"
+          onOuverte={async () => {
+            // **On change d'utilisateur ici**, et les marques locales décrivent celui qu'on
+            // quitte : annonce de rattachement, étape du premier parcours (qui décide de la
+            // barre d'onglets), brouillon. Le retour de lien ne les balayait pas — le défaut
+            // relevé par le canvas v1-21 (`v1-27` §12.12) —, le chemin par code le fait.
+            await effacerLesMarquesLocales();
+            // La racine route vers le plan si le compte retrouvé porte un bilan complété, vers
+            // l'onboarding sinon — **la pile vidée d'abord** (01/10/2026, audit T-1) : depuis
+            // l'accueil de l'onboarding, un `replace` seul y laissait l'onboarding, que le retour
+            // depuis le plan rejouait (`terminerLeFlux`).
+            terminerLeFlux('/');
+          }}
+          onAutreAdresse={revenirALAdresse}
+          renvoyer={demanderLaConnexion}
+        />
+      </Cadre>
     );
   }
 
+  const titre = <ThemedText type="screenTitle">Retrouver mon compte</ThemedText>;
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.textBlock}>
-            <ThemedText type="screenTitle">
-              Retrouver mon compte
-            </ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              Indique l’adresse de ton compte : un code à taper ici te reconnecte, avec tes
-              bilans et ton plan.
-            </ThemedText>
-          </View>
-          <View style={styles.fields}>
-            <TextField
-              label="Adresse email du compte"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              placeholder="toi@exemple.fr"
-            />
-            <MessageInline message={message} />
-            <Button
-              title={busy ? 'Envoi…' : 'Recevoir un code'}
-              onPress={envoyerLeLien}
-              disabled={busy}
-            />
-          </View>
-          {/* Pas décorative : le mécanisme marche pour un compte Google, mais quelqu'un qui
-              n'a jamais tapé de mot de passe ne pensera pas à chercher une « adresse email ».
-              Sans cette carte, la moitié des gens concernés se croient exclus. */}
-          <ThemedView type="backgroundSelected" style={styles.card}>
-            <ThemedText type="small" weight={600}>
-              Ton compte est un compte Google ?
-            </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              C’est la même adresse — celle de ton compte Google. Pas besoin de mot de passe :
-              le code suffit.
-            </ThemedText>
-          </ThemedView>
-        </View>
-        <View style={styles.footer}>
-          <ThemedText type="small" themeColor="textTertiary" style={styles.hint}>
-            Tu n’as jamais créé de compte ? Reviens en arrière : tout est accessible sans.
+    <Cadre key="saisie">
+      <View style={styles.content}>
+        <View style={styles.textBlock}>
+          {sousLeDoigt ? <TitreDArrivee>{titre}</TitreDArrivee> : titre}
+          <ThemedText type="body" themeColor="textSecondary">
+            Indique l’adresse de ton compte : un code à taper ici te reconnecte, avec tes
+            bilans et ton plan.
           </ThemedText>
-          <TextLink
-            label="Retour"
-            onPress={revenirOuRacine}
-            role="link"
-            type="small"
-            themeColor="textTertiary"
-            style={styles.hint}
+        </View>
+        <View style={styles.fields}>
+          <TextField
+            label="Adresse email du compte"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            placeholder="toi@exemple.fr"
+            onSubmitEditing={() => void envoyerLeLien()}
+          />
+          <MessageInline message={message} />
+          <Button
+            title={busy ? 'Envoi…' : 'Recevoir un code'}
+            onPress={envoyerLeLien}
+            disabled={busy}
           />
         </View>
-      </SafeAreaView>
-    </ThemedView>
+        {/* Pas décorative : le mécanisme marche pour un compte Google, mais quelqu'un qui
+            n'a jamais tapé de mot de passe ne pensera pas à chercher une « adresse email ».
+            Sans cette carte, la moitié des gens concernés se croient exclus. */}
+        <ThemedView type="backgroundSelected" style={styles.card}>
+          <ThemedText type="small" weight={600}>
+            Ton compte est un compte Google ?
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            C’est la même adresse — celle de ton compte Google. Pas besoin de mot de passe :
+            le code suffit.
+          </ThemedText>
+        </ThemedView>
+      </View>
+      <View style={styles.footer}>
+        <ThemedText type="small" themeColor="textTertiary" style={styles.hint}>
+          Tu n’as jamais créé de compte ? Reviens en arrière : tout est accessible sans.
+        </ThemedText>
+        <TextLink
+          label="Retour"
+          onPress={revenirOuRacine}
+          role="link"
+          type="small"
+          themeColor="textTertiary"
+          style={styles.hint}
+        />
+      </View>
+    </Cadre>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
+  safeArea: { flex: 1 },
+  page: { flexGrow: 1, padding: Spacing.four, justifyContent: 'space-between' },
   content: { gap: Spacing.four, marginTop: Spacing.two },
   textBlock: { gap: 10 },
   fields: { gap: Spacing.three },

@@ -33,7 +33,8 @@
 // **Et un troisième depuis le 30/09/2026, sans aucune boucle de points** (`v1-27` §12.22 et §12.23) :
 // ni trajet, ni sorties régulières, ni voyage. C'est le seul où ni le plan ni le suivi ne peuvent
 // promettre un point, et le seul qui éprouve l'écran passant des boucles vides aux dérivations —
-// la section 12, plus bas.
+// la section 12, plus bas. **Il finit, depuis le 01/10/2026, par rattacher son compte par code, puis
+// par se déconnecter** (section 12 bis) : le seul passage du parcours par un vrai e-mail.
 //
 // **Ce qu'il ne fait pas, et ce n'est pas un oubli** : il ne couvre ni les états d'erreur — c'est le
 // travail de `verifier-etats-export.mjs` — ni les exclusions de cartes en général, qui vivent depuis
@@ -419,6 +420,27 @@
 // après la contre-lecture du même jour**, qui a fait poser les trois lectures de l'écran ensemble et
 // démarrer le relevé sur l'onglet du parcours : même chute, en un seul saut (365 → 761), et l'échec
 // capturé sur `/compte` — il l'était sur le plan, l'écran d'un autre onglet.
+//
+// **Et six le 01/10/2026, sur les gardes du compte** (audit T-1, T-3, T-4) : l'étape « le compte
+// rattaché par code, et rien derrière » du troisième profil, et le focus de « C'est fait. » à l'étape
+// « suppression du compte ». Un export chacune (cache Metro privé, `--clear`), tiré d'un instantané de
+// l'arbre et jamais de l'arbre lui-même ; les cinq premières jouées sur le troisième profil seul, la
+// dernière sur le parcours entier. Le témoin passe sur le même arbre. Chacune s'arrête à l'étape
+// attendue, sur le message attendu, et sur lui seul :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | `terminerLeFlux` réduit à `router.replace` (l'état d'avant, aux six sorties) | « le compte rattaché… » : le retour ramène dans le flux (`/connexion?source=compte`) |
+//   | la sortie de `/connexion/email` vers le plan seule remise en `router.replace` | « le compte rattaché… » : la même phrase, en nommant `/connexion?source=compte` |
+//   | « Me déconnecter » seul remis en `router.replace` | « le compte rattaché… », passé le rattachement : le retour rouvre l'app sur `/plan` |
+//   | la saisie du code posée sans `apresUnGeste` après l'envoi | « le compte rattaché… » : le focus n'est pas sur « Regarde tes emails » |
+//   | `TextField` sans `onSubmitEditing` (Entrée n'envoie rien) | « le compte rattaché… » : Entrée n'a pas ouvert la saisie du code |
+//   | « C'est fait. » de `MonCompte` sans `TitreDArrivee` | « suppression du compte », toutes les étapes d'avant passées : le focus est sur la page et non sur « C'est fait. » |
+//
+// **La première version de l'étape attendait le plan par `getByText(…).first()`**, et sous la
+// première mutation elle tombait sur « « Ton plan est là… » n'est jamais apparu » — faux, il était à
+// l'écran : un second plan s'empilait sur le premier, resté monté et caché, et le premier texte trouvé
+// était le sien. Elle lit désormais le texte **rendu** (`innerText`), et la mutation nomme la pile.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1718,6 +1740,11 @@ try {
   await bouton('Supprimer mon compte');
   await bouton('Supprimer définitivement');
   await attendreTexte('C’est fait.');
+  // **Et le focus vient sur « C'est fait. »** (01/10/2026, audit T-4) : « Supprimer définitivement »
+  // disparaît avec la carte qui le portait, et le focus retombait sur le document — rien n'annonçait
+  // la suppression. Le seul état de « Toi » qui demande un vrai compte supprimé, donc gardé ici et pas
+  // par `verifier-etats-export.mjs` (section L, qui garde la confirmation).
+  await focusSur('C’est fait.', '« Toi », après « Supprimer définitivement »');
   for (const reste of ['Les rappels', 'Rattacher un compte', 'Me déconnecter de cet appareil', 'Mon contexte de mobilité']) {
     assurer(
       (await page.getByText(reste, { exact: true }).count()) === 0,
@@ -2265,6 +2292,129 @@ try {
     !(await page.getByText(/Une période sans réponse ne se voit pas ici/).first().isVisible()),
     'le suivi sans boucle explique encore les périodes sans réponse'
   );
+
+  // ── 12 bis. Le compte rattaché par code depuis « Toi », et rien derrière (01/10/2026, audit T-1) ──
+  //
+  // **Un flux de compte terminé ne se rejoue pas par le retour.** `router.replace` seul ne remplaçait
+  // que le sommet de la pile : après un rattachement par code, le retour ramenait à « Ton bilan, d'un
+  // appareil à l'autre » — la proposition de rattacher le compte qu'on venait de rattacher —, puis à
+  // « Toi » ; après « Me déconnecter », au plan de la session quittée. `terminerLeFlux` vide la pile
+  // avant de remplacer (`src/lib/navigation.ts`), et `navigation.test.ts` garde la fonction — **pas ses
+  // appels**, ni ce que le retour fait vraiment derrière : c'est ce que cette étape joue, sur deux des
+  // six sorties, avec un vrai code et un vrai e-mail.
+  //
+  // Sur un **onglet neuf du même appareil** : son historique ne porte que ce que l'étape y met, donc le
+  // retour qui « quitte le plan » se lit sans ambiguïté — l'équivalent web du retour d'Android, qui
+  // quitte l'app depuis le plan (`v1-11` §8). Le profil, sa session et ses marques sont ceux de
+  // l'onglet d'avant, qui est fermé : un échec se capture sur l'écran qui a échoué.
+  //
+  // Deux gardes du même jour passent sur ce chemin et n'avaient que lui : **Entrée envoie l'adresse**
+  // (T-3 — sans elle, zéro requête) et **le focus vient sur « Regarde tes emails »** quand la saisie
+  // du code remplace l'adresse sous le doigt (T-4 — il retombait sur le document).
+  etape('sans boucle — le compte rattaché par code, et rien derrière');
+  const ongletDuSuivi = page;
+  page = await nouvelOnglet({ contexte: ongletDuSuivi.context() });
+  await ongletDuSuivi.close();
+  await page.goto(`${base}/plan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await attendreTexte('Ton plan est là, reviens quand tu veux.');
+  for (const icone of await page.getByRole('button', { name: 'Ton compte', exact: true }).all()) {
+    if (await icone.isVisible()) {
+      await icone.click();
+      break;
+    }
+  }
+  await page.waitForURL(/\/compte/, { timeout: ATTENTE });
+  await bouton('Rattacher un compte');
+  await attendreTexte('Ton bilan, d’un appareil à l’autre');
+  await page.getByRole('link', { name: 'Utiliser un email à la place', exact: true }).click();
+  await page.waitForURL(/\/connexion\/email/, { timeout: ATTENTE });
+  const adresseRattachee = `parcours-sans-boucle-${Date.now()}@exemple.fr`;
+  const champDAdresse = page.getByRole('textbox', { name: 'Email', exact: true });
+  await champDAdresse.fill(adresseRattachee);
+  await champDAdresse.press('Enter');
+  try {
+    await page.getByText('Regarde tes emails').first().waitFor({ state: 'visible', timeout: ATTENTE });
+  } catch {
+    throw new Ecart('Entrée dans le champ d’adresse n’a pas ouvert la saisie du code : la touche d’action doit envoyer (`TextField`, `onSubmitEditing`)');
+  }
+  await focusSur('Regarde tes emails', 'quand la saisie du code remplace l’adresse sous le doigt');
+
+  // Le code, lu dans la boîte du collecteur local comme le fait `verifier-code-de-connexion.mjs` —
+  // l'API de Mailpit, et le paragraphe à interlettrage 6 du gabarit, avec le même repli.
+  const BOITE = process.env.SUPABASE_INBUCKET_URL ?? 'http://127.0.0.1:54324';
+  let codeRecu = null;
+  for (let essai = 0; essai < 60 && !codeRecu; essai += 1) {
+    const recus = await fetch(`${BOITE}/api/v1/search?query=${encodeURIComponent(`to:${adresseRattachee}`)}`)
+      .then((r) => (r.ok ? r.json() : { messages: [] }))
+      .catch(() => ({ messages: [] }));
+    if ((recus.messages ?? []).length > 0) {
+      const message = await fetch(`${BOITE}/api/v1/message/${recus.messages[0].ID}`).then((r) => r.json());
+      const corps = `${message.HTML ?? ''}${message.Text ?? ''}`;
+      codeRecu = corps.match(/letter-spacing:6px[^>]*>\s*(\d{4,10})\s*</)?.[1] ?? corps.match(/\b(\d{8})\b/)?.[1] ?? null;
+      assurer(codeRecu, `l’e-mail de rattachement ne porte pas de code : ${corps.slice(0, 200)}`);
+    } else {
+      await page.waitForTimeout(500);
+    }
+  }
+  assurer(codeRecu, `aucun e-mail de rattachement reçu pour ${adresseRattachee} après 30 s`);
+  await page.getByLabel(/Code reçu par email/).fill(codeRecu);
+  await page.waitForURL(/\/plan/, { timeout: ATTENTE });
+  // La base, relue comme la personne : le même utilisateur, plus anonyme, à cette adresse.
+  const rattache = await session();
+  const utilisateurRattache = await fetch(`${API}/auth/v1/user`, {
+    headers: { apikey: ANON, Authorization: `Bearer ${rattache.jeton}` },
+  }).then((r) => r.json());
+  assurer(
+    utilisateurRattache.id === sansBoucle.userId &&
+      utilisateurRattache.is_anonymous === false &&
+      utilisateurRattache.email === adresseRattachee,
+    `le rattachement n’a pas abouti en base : ${JSON.stringify({ id: utilisateurRattache.id, anonyme: utilisateurRattache.is_anonymous, email: utilisateurRattache.email })}`
+  );
+  // Par le texte **rendu** (`innerText`) et pas par `getByText(…).first()` : sous le défaut, un second
+  // plan s'empile sur le premier, resté monté et caché, et le premier texte trouvé serait le sien —
+  // l'étape tomberait sur « jamais apparu » au lieu de nommer la pile (relevé en jouant la mutation).
+  await page
+    .waitForFunction((t) => document.body.innerText.includes(t), 'Ton plan est là, reviens quand tu veux.', { timeout: ATTENTE })
+    .catch(() => {
+      throw new Ecart('le plan ne s’affiche pas après le rattachement par code');
+    });
+  await page.goBack({ timeout: ATTENTE }).catch(() => {});
+  await page.waitForTimeout(1_500);
+  const apresLeRattachement = page.url().replace(base, '');
+  assurer(
+    !/^\/(connexion|compte)/.test(apresLeRattachement) &&
+      !(await page.getByText('Ton bilan, d’un appareil à l’autre').first().isVisible().catch(() => false)),
+    `le retour, juste après le rattachement, ramène dans le flux qu’il vient de finir (${apresLeRattachement}) :` +
+      ' la pile n’a pas été vidée — `terminerLeFlux`, src/app/connexion/email.tsx'
+  );
+  assurer(
+    !apresLeRattachement.startsWith('/'),
+    `le retour, juste après le rattachement, reste dans l’app (${apresLeRattachement}) : depuis un plan ouvert ` +
+      'par son adresse, il doit la quitter, comme le retour d’Android quitte l’app depuis le plan'
+  );
+
+  // Puis la déconnexion, sur le même onglet : l'onboarding, et le retour ne rouvre pas le plan quitté.
+  // « Toi » s'ouvre **depuis le plan**, par son icône : ouvert par son adresse, il serait seul dans la
+  // pile, et un `replace` seul n'y laisserait rien — l'assertion passerait sans rien garder.
+  await page.goto(`${base}/plan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await attendreTexte('Ton plan est là, reviens quand tu veux.');
+  for (const icone of await page.getByRole('button', { name: 'Ton compte', exact: true }).all()) {
+    if (await icone.isVisible()) {
+      await icone.click();
+      break;
+    }
+  }
+  await page.waitForURL(/\/compte/, { timeout: ATTENTE });
+  await bouton('Me déconnecter de cet appareil');
+  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  await page.goBack({ timeout: ATTENTE }).catch(() => {});
+  await page.waitForTimeout(1_500);
+  const apresLaDeconnexion = page.url().replace(base, '');
+  assurer(
+    !apresLaDeconnexion.startsWith('/'),
+    `le retour, juste après « Me déconnecter », rouvre l’app (${apresLaDeconnexion}) — sur ce qu’a laissé la` +
+      ' session quittée : la pile n’a pas été vidée — `terminerLeFlux`, src/app/compte/index.tsx'
+  );
   await rpc('delete_my_account', sansBoucle.jeton);
 
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
@@ -2275,7 +2425,9 @@ try {
       `barre d'onglets venue sans « Compris », puis son nouveau bilan en voiture où « Ton premier plan » ` +
       `passe devant la carte des deux lieux, puis ses deux bilans retirés — le plan reparti du précédent, ` +
       `puis la racine et la marque locale effacée, et la carte d'attente qui nomme le lundi — puis un ` +
-      `profil sans boucle, à qui ni le plan ni le suivi ne promettent rien. Chaque choix rendu répond à ` +
+      `profil sans boucle, à qui ni le plan ni le suivi ne promettent rien, et qui rattache son compte ` +
+      `par code — Entrée envoie, le focus suit, et le retour ne rouvre ni le flux fini ni la session ` +
+      `quittée. Chaque choix rendu répond à ` +
       `son groupe nommé.`
   );
 } catch (erreur) {

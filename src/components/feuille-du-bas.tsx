@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react';
-import { Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -47,7 +47,14 @@ import { reglage } from '@/lib/mouvement';
  * pourrait laisser une feuille ouverte. Le `Modal` de react-native-web ne lisant pas la préférence, sa
  * feuille glissait même sous elle : ce défaut part avec son animation.
  *
- * **Qui ferme en animant** : le geste de retour et Échap (`onRequestClose`), et l'appelant par
+ * **Toucher le voile ferme aussi** (01/10/2026, audit T-7) : c'est le geste d'Android pour une
+ * feuille modale, et le toucher ne faisait rien — « l'app n'a pas pris mon geste ». Il appelle la même
+ * `fermer()` que le retour, donc la même sortie et le même `onFerme` : la feuille des rappels se marque
+ * vue comme sur un retour. Le voile n'est ni un arrêt de tabulation ni un nœud du lecteur d'écran — le
+ * retour et Échap y suffisent —, et la zone au-dessus de la feuille laisse passer le toucher jusqu'à
+ * lui. **La poignée, elle, ne se tire pas encore** : un glissé se juge au doigt, sur appareil.
+ *
+ * **Qui ferme en animant** : le geste de retour et Échap (`onRequestClose`), toucher le voile, et l'appelant par
  * `fermer` (la poignée passée en `ref`) — « Pas maintenant », un choix validé. Un bouton qui
  * **navigue** appelle son rappel directement : sur natif, une route poussée sous un `Modal` encore
  * ouvert reste dessous, donc il ne doit pas attendre une sortie. Une seconde fermeture pendant la
@@ -149,7 +156,17 @@ export function FeuilleDuBas({
 
   return (
     <Modal visible animationType="none" transparent onRequestClose={() => fermer()} aria-label={titre}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.scrim }, styleDuVoile]} />
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.scrim }, styleDuVoile]}>
+        <Pressable
+          testID="voile-de-la-feuille"
+          onPress={() => fermer()}
+          style={StyleSheet.absoluteFill}
+          accessible={false}
+          focusable={false}
+          importantForAccessibility="no"
+          aria-hidden
+        />
+      </Animated.View>
       <Animated.View style={[styles.place, styleDeLaFeuille, enSortie && styles.sansToucher]}>
         <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
           <View style={[styles.poignee, { backgroundColor: theme.border }]} />
@@ -166,7 +183,8 @@ export function FeuilleDuBas({
 }
 
 const styles = StyleSheet.create({
-  place: { flex: 1, justifyContent: 'flex-end' },
+  // `box-none` : la zone au-dessus de la feuille laisse passer le toucher jusqu'au voile, qui ferme.
+  place: { flex: 1, justifyContent: 'flex-end', pointerEvents: 'box-none' },
   sansToucher: { pointerEvents: 'none' },
   feuille: {
     borderTopLeftRadius: Radius.card,

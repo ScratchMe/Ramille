@@ -7,6 +7,7 @@ import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { APP_NAME } from '@/constants/produit';
 import { Radius, Spacing } from '@/constants/theme';
 import { verifierLeCode } from '@/lib/auth';
@@ -52,6 +53,7 @@ import {
 export function SaisieDuCode({
   contexte,
   voix,
+  apresUnGeste,
   adresse,
   libelleBouton,
   onOuverte,
@@ -61,6 +63,18 @@ export function SaisieDuCode({
   contexte: ContexteDuCode;
   /** Ce que l'écran a le droit d'affirmer — propriété de l'hôte, jamais de la branche. */
   voix: VoixDeLaSaisie;
+  /**
+   * La saisie arrive **sous le doigt** — « Recevoir un code » vient d'être touché, et l'adresse a
+   * disparu avec son bouton — et prend donc le focus sur son titre (01/10/2026, audit T-4,
+   * `FRONT.md` §2.4). Faux quand l'écran s'ouvre directement sur elle sans geste — la reprise depuis
+   * « Toi » —, où un focus déplacé arracherait le lecteur d'écran à ce qu'il lisait.
+   *
+   * **Obligatoire, sans valeur par défaut** : un hôte qui l'oublierait volerait le focus, ou n'en
+   * donnerait jamais, sans que rien ne le dise. C'est le titre qui le reçoit, et non le champ : le
+   * champ ouvrirait le clavier tout de suite, mais ferait sauter la phrase qui dit où le code est
+   * parti — ce choix-là se tranche sur appareil.
+   */
+  apresUnGeste: boolean;
   adresse: string;
   libelleBouton: string;
   onOuverte: () => void | Promise<void>;
@@ -164,10 +178,12 @@ export function SaisieDuCode({
     setMessage(suite === 'message' ? messageDeLaDemande(error) : messageDuRenvoi(voix));
   };
 
+  const titre = <ThemedText type="screenTitle">Regarde tes emails</ThemedText>;
+
   return (
     <View style={styles.contenu}>
       <View style={styles.bloc}>
-        <ThemedText type="screenTitle">Regarde tes emails</ThemedText>
+        {apresUnGeste ? <TitreDArrivee>{titre}</TitreDArrivee> : titre}
         <ThemedText type="body" themeColor="textSecondary">
           {corpsDeLaSaisie(voix, adresse, APP_NAME)}
         </ThemedText>

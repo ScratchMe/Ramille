@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -10,11 +10,13 @@ import { TextLink } from '@/components/text-link';
 import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { Spacing } from '@/constants/theme';
+import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { track } from '@/lib/analytics';
 import { demanderLaConnexion, demanderLeRattachement } from '@/lib/auth';
 import { effacerLesMarquesLocales } from '@/lib/compte';
-import { revenirOu } from '@/lib/navigation';
+import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   lireAdresseDuLien,
   lireFluxDuCode,
@@ -37,6 +39,30 @@ import {
  * rien.
  */
 const revenirOuRacine = () => revenirOu('/');
+
+/**
+ * Le cadre des deux phases : **il défile quand il déborde** (01/10/2026, audit T-2). Sans
+ * défilement, à 360 × 640 le pied de la saisie du code sortait de l'écran sans qu'on puisse
+ * l'atteindre. `flexGrow` et non `flex` : à la taille courante, le contenu remplit l'écran, le pied
+ * reste en bas, exactement comme avant (`EXPO.md` §1.6).
+ *
+ * Remonté à chaque phase par sa clé : un défilement gardé d'une phase à l'autre ouvrirait la saisie
+ * du code au décalage où l'on avait touché « Recevoir un code », son titre hors de l'écran.
+ */
+function Cadre({ children }: { children: ReactNode }) {
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur un bouton ne
+            servait qu'à le fermer — le défaut de React Native (`never`) —, et « Recevoir un code »
+            avait l'air de ne pas avoir pris le geste. */}
+        <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+          {children}
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
 
 /**
  * « Rattacher mon adresse » — une adresse, puis un code.
@@ -92,9 +118,15 @@ export default function ConnexionEmail() {
   // de **connexion** et arrive sur la même saisie, mot pour mot, que l'adresse libre. Le flux ne
   // sert donc plus qu'à deux choses invisibles — le `type` vérifié, et ce qu'on fait de la session
   // ouverte — et jamais à un mot de l'écran, sinon l'oracle se rouvrirait par le texte.
+  //
+  // **Et elle dit si elle arrive sous le doigt** (`apresUnGeste`, 01/10/2026, audit T-4) : « Recevoir
+  // un code » et « Utiliser une autre adresse » disparaissent avec la phase qui les portait, et le
+  // focus retombait sur le document — le lecteur d'écran repartait du haut sans rien annoncer. La
+  // phase qui arrive après un geste prend donc le focus sur son titre (`FRONT.md` §2.4) ; celle qui
+  // s'ouvre sans geste — l'arrivée sur l'écran, la reprise depuis « Toi » — ne le vole à personne.
   const [phase, setPhase] = useState<
-    { kind: 'saisie' } | { kind: 'code'; flux: ContexteDuCode }
-  >({ kind: 'saisie' });
+    { kind: 'saisie'; apresUnGeste: boolean } | { kind: 'code'; flux: ContexteDuCode; apresUnGeste: boolean }
+  >({ kind: 'saisie', apresUnGeste: false });
 
   // Deux raisons de relire l'adresse tapée sur cet appareil, et aucune ne passe par l'URL (une
   // adresse dans la barre d'adresse entre dans l'historique du navigateur et son autocomplétion) :
@@ -110,7 +142,7 @@ export default function ConnexionEmail() {
       // Pas de nouvel envoi : rien n'a échoué, on rouvre une saisie interrompue. **Le flux se relit
       // avec l'adresse** : depuis que cet écran peut envoyer l'un ou l'autre, rouvrir au hasard
       // ferait vérifier un code de connexion contre `email_change`, donc refuser un code valide.
-      if (reprise && !motif) setPhase({ kind: 'code', flux });
+      if (reprise && !motif) setPhase({ kind: 'code', flux, apresUnGeste: false });
     });
     return () => {
       annule = true;
@@ -167,7 +199,7 @@ export default function ConnexionEmail() {
       await memoriserFluxDuCode('connexion');
       setEnvoi(false);
       track('connexion_demande');
-      setPhase({ kind: 'code', flux: 'connexion' });
+      setPhase({ kind: 'code', flux: 'connexion', apresUnGeste: true });
       return;
     }
 
@@ -179,7 +211,7 @@ export default function ConnexionEmail() {
     // mesure demandée le 20/09/2026, et elle ne tient que si ces deux émetteurs restent ce qu'ils
     // sont : retirer celui du plan ferait lire zéro succès par email.
     track('connexion_demande');
-    setPhase({ kind: 'code', flux: 'rattachement' });
+    setPhase({ kind: 'code', flux: 'rattachement', apresUnGeste: true });
   };
 
   /**
@@ -193,9 +225,10 @@ export default function ConnexionEmail() {
       // raison : les marques locales décrivent celui qu'on quitte — annonce de rattachement, étape
       // du premier parcours (qui décide de la barre d'onglets), brouillon, et l'adresse mémorisée
       // elle-même. La racine route ensuite vers le plan si le compte retrouvé porte un bilan
-      // complété, vers l'onboarding sinon.
+      // complété, vers l'onboarding sinon. **Et la pile se vide derrière le flux** (01/10/2026,
+      // audit T-1, `terminerLeFlux`) : le retour ne ramène plus dans un flux terminé.
       await effacerLesMarquesLocales();
-      router.replace('/');
+      terminerLeFlux('/');
       return;
     }
     // **On ne relit rien ici, et c'est un correctif.** Cette fonction attendait un
@@ -203,91 +236,108 @@ export default function ConnexionEmail() {
     // le dernier chiffre et le plan, pendant lequel la personne regardait l'écran de code d'un
     // rattachement déjà réussi. `verifyOtp` a mis la session à jour en local, et c'est le plan qui
     // lit l'état, annonce le rattachement et compte le succès — lui seul en a besoin.
-    router.replace('/plan');
+    //
+    // **Sans rien laisser derrière** (01/10/2026, audit T-1) : un `replace` seul gardait « Toi » et
+    // « Ton bilan, d'un appareil à l'autre » sous le plan, et le premier retour reproposait de
+    // rattacher le compte qu'on venait de rattacher (`terminerLeFlux`).
+    terminerLeFlux('/plan');
   };
+
+  /** « Utiliser une autre adresse » — et le retour matériel depuis la saisie du code. */
+  const revenirALAdresse = () => {
+    setMessage(null);
+    setPhase({ kind: 'saisie', apresUnGeste: true });
+  };
+
+  // **Le retour matériel recule d'une phase** (01/10/2026, audit T-8) : sur Android, il quittait la
+  // route depuis n'importe quelle phase. Il fait désormais ce que fait l'action déjà à l'écran pour
+  // revenir en arrière — rien de nouveau —, et passe à la navigation quand il n'y a rien derrière.
+  // **Seulement au premier plan** : un écran couvert par un autre garde son écoute, et l'écoute la plus
+  // récente parle la première — sans cette garde, le retour pris sur l'écran du dessus reculerait
+  // une phase de celui-ci, caché.
+  const auPremierPlan = useIsFocused();
+  useRetourVersLaPhasePrecedente(auPremierPlan && phase.kind === 'code' ? revenirALAdresse : null);
 
   if (phase.kind === 'code') {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <SaisieDuCode
-            // Le flux décide le `type` vérifié et l'envoi du renvoi. Rien d'autre : ni un mot, ni un
-            // libellé, ni une carte — c'est `voix` qui gouverne tout ce qui se lit, et elle vaut
-            // « parti » dans les deux branches parce qu'un code est bel et bien parti dans les deux.
-            contexte={phase.flux}
-            voix="parti"
-            adresse={email.trim()}
-            // **Un seul libellé pour les deux branches, et il a dû perdre son verbe.** Il disait
-            // « Rattacher mon adresse », ce qui est faux quand l'adresse est déjà prise : rien n'est
-            // rattaché, on rejoint un compte. En mettre un par branche aurait rouvert l'oracle sur
-            // le bouton lui-même. C'est le second prix de l'arbitrage, après la phrase
-            // conditionnelle — et le moins cher des deux.
-            libelleBouton="Valider mon code"
-            onOuverte={() => codeAccepte(phase.flux)}
-            onAutreAdresse={() => {
-              setMessage(null);
-              setPhase({ kind: 'saisie' });
-            }}
-            renvoyer={phase.flux === 'connexion' ? demanderLaConnexion : demanderLeRattachement}
-          />
-        </SafeAreaView>
-      </ThemedView>
+      <Cadre key="code">
+        <SaisieDuCode
+          // Le flux décide le `type` vérifié et l'envoi du renvoi. Rien d'autre : ni un mot, ni un
+          // libellé, ni une carte — c'est `voix` qui gouverne tout ce qui se lit, et elle vaut
+          // « parti » dans les deux branches parce qu'un code est bel et bien parti dans les deux.
+          contexte={phase.flux}
+          voix="parti"
+          apresUnGeste={phase.apresUnGeste}
+          adresse={email.trim()}
+          // **Un seul libellé pour les deux branches, et il a dû perdre son verbe.** Il disait
+          // « Rattacher mon adresse », ce qui est faux quand l'adresse est déjà prise : rien n'est
+          // rattaché, on rejoint un compte. En mettre un par branche aurait rouvert l'oracle sur
+          // le bouton lui-même. C'est le second prix de l'arbitrage, après la phrase
+          // conditionnelle — et le moins cher des deux.
+          libelleBouton="Valider mon code"
+          onOuverte={() => codeAccepte(phase.flux)}
+          onAutreAdresse={revenirALAdresse}
+          renvoyer={phase.flux === 'connexion' ? demanderLaConnexion : demanderLeRattachement}
+        />
+      </Cadre>
     );
   }
 
+  const titre = <ThemedText type="screenTitle">Rattacher mon adresse</ThemedText>;
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.textBlock}>
-            <ThemedText type="screenTitle">Rattacher mon adresse</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              Une adresse, puis un code reçu par email — pas de mot de passe. Ton bilan reste le
-              tien.
-            </ThemedText>
-          </View>
-
-          <View style={styles.fields}>
-            <TextField
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              placeholder="camille@exemple.fr"
-            />
-            <MessageInline message={message} />
-            <TextLink
-              label="J’ai déjà un compte"
-              onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'email' } })}
-              role="link"
-              type="linkPrimary"
-            />
-          </View>
+    <Cadre key="saisie">
+      <View style={styles.content}>
+        <View style={styles.textBlock}>
+          {phase.apresUnGeste ? <TitreDArrivee>{titre}</TitreDArrivee> : titre}
+          <ThemedText type="body" themeColor="textSecondary">
+            Une adresse, puis un code reçu par email — pas de mot de passe. Ton bilan reste le
+            tien.
+          </ThemedText>
         </View>
 
-        <View style={styles.footer}>
-          <Button
-            title={envoi ? 'Envoi…' : 'Recevoir un code'}
-            onPress={() => void demander()}
-            disabled={envoi}
+        <View style={styles.fields}>
+          <TextField
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            placeholder="camille@exemple.fr"
+            onSubmitEditing={() => void demander()}
           />
+          <MessageInline message={message} />
           <TextLink
-            label="Revenir aux autres options"
-            onPress={revenirOuRacine}
+            label="J’ai déjà un compte"
+            onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'email' } })}
             role="link"
-            type="small"
-            themeColor="textTertiary"
-            style={styles.backLink}
+            type="linkPrimary"
           />
         </View>
-      </SafeAreaView>
-    </ThemedView>
+      </View>
+
+      <View style={styles.footer}>
+        <Button
+          title={envoi ? 'Envoi…' : 'Recevoir un code'}
+          onPress={() => void demander()}
+          disabled={envoi}
+        />
+        <TextLink
+          label="Revenir aux autres options"
+          onPress={revenirOuRacine}
+          role="link"
+          type="small"
+          themeColor="textTertiary"
+          style={styles.backLink}
+        />
+      </View>
+    </Cadre>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
+  safeArea: { flex: 1 },
+  page: { flexGrow: 1, padding: Spacing.four, justifyContent: 'space-between' },
   content: { gap: Spacing.four, marginTop: Spacing.two },
   textBlock: { gap: 10 },
   fields: { gap: Spacing.four },

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -161,22 +161,28 @@ export default function Index() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <View style={styles.bloc}>
-            <ThemedText type="screenTitle">
-              Le démarrage a échoué
-            </ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              Vérifie ta connexion et réessaie. Si ça se reproduit, cette précision aidera à
-              comprendre :
-            </ThemedText>
-            {/* Message technique, volontairement brut : il est destiné à être recopié, pas
-                lu comme du produit. Ni la voix de Ramille ni un ton rassurant n'ont leur
-                place ici — ce qu'il faut, c'est la cause exacte. */}
-            <ThemedText type="code" themeColor="textTertiary" style={styles.detail}>
-              {echec}
-            </ThemedText>
-            <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
-          </View>
+          {/* **Défilable, pour la raison d'`ErreurInattendue`** (01/10/2026, audit T-2) : le détail
+              technique n'a pas de hauteur prévisible (`decrireErreur`), et sans défilement un détail
+              long poussait « Réessayer » hors de l'écran — le seul écran par lequel tout le monde
+              passe. `flexGrow` + `justifyContent` gardent le centrage quand il est court. */}
+          <ScrollView contentContainerStyle={styles.contenu}>
+            <View style={styles.bloc}>
+              <ThemedText type="screenTitle">
+                Le démarrage a échoué
+              </ThemedText>
+              <ThemedText type="body" themeColor="textSecondary">
+                Vérifie ta connexion et réessaie. Si ça se reproduit, cette précision aidera à
+                comprendre :
+              </ThemedText>
+              {/* Message technique, volontairement brut : il est destiné à être recopié, pas
+                  lu comme du produit. Ni la voix de Ramille ni un ton rassurant n'ont leur
+                  place ici — ce qu'il faut, c'est la cause exacte. */}
+              <ThemedText type="code" themeColor="textTertiary" style={styles.detail}>
+                {echec}
+              </ThemedText>
+              <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
+            </View>
+          </ScrollView>
         </SafeAreaView>
       </ThemedView>
     );
@@ -187,7 +193,8 @@ export default function Index() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1, justifyContent: 'center', padding: 24 },
+  safeArea: { flex: 1 },
+  contenu: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   bloc: { gap: 16 },
   detail: { fontSize: 12, lineHeight: 18 },
   bouton: { marginTop: 8 },

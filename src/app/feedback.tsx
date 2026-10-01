@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { cadreDuChamp } from '@/components/auth/text-field';
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
@@ -55,6 +56,8 @@ export default function Feedback() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  // Le focus passe la bordure à l'accent, comme les trois autres champs (`cadreDuChamp`, 01/10/2026).
+  const [focusDuChamp, setFocusDuChamp] = useState(false);
 
   const trimmed = message.trim();
   const canSend = trimmed.length >= 3 && !sending;
@@ -103,7 +106,15 @@ export default function Feedback() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Envoyer » ne
+            servait qu'à le fermer — le défaut de React Native —, et l'envoi avait l'air ignoré. La
+            touche d'action du clavier, elle, reste un retour à la ligne : le champ est multiligne,
+            et lui faire envoyer le message interdirait d'écrire un second paragraphe. */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.intro}>
             <ThemedText type="screenTitle">
               Un retour à nous faire ?
@@ -131,7 +142,9 @@ export default function Feedback() {
                 role="radio"
                 selected={kind === option.value}
                 onPress={() => setKind(option.value)}
-                radius={16}
+                // Le rayon des champs, lu dans son jeton et plus écrit en dur (01/10/2026, audit
+                // T-20) : la valeur ne change pas, elle ne peut plus dériver de lui.
+                radius={Radius.field}
                 selectedStyle="outline"
               />
             ))}
@@ -155,14 +168,14 @@ export default function Feedback() {
               accessibilityHint={`${FEEDBACK_MAX_LENGTH} caractères au maximum.`}
               // Le contour au repos est `fieldBorder` (24/09/2026, `v1-29`) : `border` n'y tenait que
               // 1,33:1, on ne voyait pas le seul champ de texte libre du produit. L'accent une fois
-              // qu'il y a un texte, comme `TextField`.
+              // qu'il y a un texte ou au focus, comme `TextField` (`cadreDuChamp`) — l'élément est ici
+              // le cadre lui-même, et l'anneau du navigateur le suivait déjà.
+              onFocus={() => setFocusDuChamp(true)}
+              onBlur={() => setFocusDuChamp(false)}
               style={[
                 styles.input,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  color: theme.text,
-                  borderColor: message.length > 0 ? theme.accent : theme.fieldBorder,
-                },
+                { backgroundColor: theme.backgroundElement, color: theme.text },
+                cadreDuChamp(theme, { rempli: message.length > 0, focus: focusDuChamp }),
               ]}
             />
             {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10, qui la réserve aux
