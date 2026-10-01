@@ -8,6 +8,8 @@ Saisie d’un nombre avec unité (B1.3 distance aller).
 
 Le chiffre est en Spline Sans 28/600, à chiffres tabulaires : il ne se tasse ni ne s'élargit à chaque frappe. L'unité à droite, en 17/24 tertiaire.
 
+**Vide, le champ ne montre rien dedans** (01/10/2026, `v1-33` D8) : il portait un « 0 » gris, à la taille et à la graisse d'un nombre saisi, et « 0 km » se lisait comme une valeur — la seule que le champ refuse, une distance de 0 n'étant pas une réponse. L'intitulé de la question et l'unité « km » disent ce qu'on attend ; le contour au repos (`fieldBorder`, 3,45:1) dit qu'il y a un champ ; le focus y met le curseur. Pas de placeholder, et ce n'est pas un oubli à réparer.
+
 Sous le champ, un TextLink « Je ne sais pas » ouvre le repli par tranche.
 
 La virgule est un séparateur décimal : « 3,5 » vaut 3,5 et jamais 35. Ne jamais filtrer la
