@@ -45,6 +45,7 @@ import React from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 import Plan from '@/app/(tabs)/plan/index';
+import { Colors } from '@/constants/theme';
 
 // ── Les doublures ─────────────────────────────────────────────────────────────────────────────
 
@@ -347,5 +348,86 @@ describe('Plan — la carte de saison, « Choisir une action »', () => {
     render(<Plan />);
     fireEvent.press(await screen.findByRole('button', { name: 'Choisir une autre' }));
     expect(router.push).toHaveBeenCalledWith('/plan/pistes');
+  });
+});
+
+/**
+ * **L'accent de la carte du point, quand deux points sont ouverts, va à la question de l'engagement**
+ * (`v1-33` §6, tranché le 01/10/2026). `accentDesPoints` a ses tests ; ce qui ne se voit qu'ici est
+ * l'**appel** — que l'écran passe la liste affichée, le libellé du cycle et l'action engagée relue —, et
+ * le parcours réel n'ouvre jamais deux points à la fois.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : l'écran qui garde la règle d'avant
+ * (`emphasize={checkin.trip_label === cycle.trip_label}`) fait tomber ce test, et lui seul.
+ */
+describe('Plan — l’accent des deux points ouverts', () => {
+  const VOL = 'Renoncer à un vol long-courrier cette année';
+  const point = (surcharge: Record<string, unknown>) => ({
+    loop_type: 'commute',
+    period_label: 'Semaine du 22 septembre',
+    trip_label: CYCLE.trip_label,
+    poste: 'commute',
+    period_start: '2026-09-22',
+    question_kind: 'generique',
+    mode: null,
+    committed_question: 'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?',
+    committed_action_text: null,
+    status: 'pending',
+    response_kind: null,
+    responded_at: null,
+    ...surcharge,
+  });
+
+  it('va au point du mois qui referme l’engagement, et non au poste dominant', async () => {
+    lectures({
+      plan_cycles: async () => ({
+        data: [
+          {
+            ...CYCLE,
+            plan_actions: [
+              {
+                id: 'a1',
+                action_template_id: 'g1',
+                saving_kg_year: 1601,
+                saving_share_percent: 30,
+                detail_text: null,
+                first_step: null,
+                rank: 1,
+                committed_at: '2026-09-02T10:00:00Z',
+                intention_days: null,
+                intention_timing: 'au_prochain_voyage',
+                carried_over_from: null,
+                action_templates: { action_text: VOL, poste: 'travel' },
+              },
+            ],
+          },
+        ],
+        error: null,
+      }),
+      engagement_checkins: async () => ({
+        data: [
+          point({ id: 'p1' }),
+          point({
+            id: 'p2',
+            loop_type: 'extras',
+            period_label: 'Septembre 2026',
+            trip_label: 'Voyages longue distance (Avion)',
+            poste: 'travel',
+            period_start: '2026-09-01',
+            question_kind: 'occasion',
+            committed_question: 'En septembre, as-tu renoncé à un vol long-courrier ?',
+            committed_action_text: VOL,
+          }),
+        ],
+        error: null,
+      }),
+    });
+    render(<Plan />);
+    const couleur = async (texte: string) => {
+      const etiquette = await screen.findByText(texte);
+      return [etiquette.props.style].flat(Infinity).reduce((c, st) => (st && st.color ? st.color : c), null);
+    };
+    expect(await couleur('Septembre 2026')).toBe(Colors.light.accentText);
+    expect(await couleur('Semaine du 22 septembre')).toBe(Colors.light.textTertiary);
   });
 });
