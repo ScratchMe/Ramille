@@ -17,7 +17,8 @@ const REPONSES = {
   commute_has_regular_trip: null,
   commute_days_per_week: 5,
   leisure_frequency: null,
-  flights_total_per_year: 0,
+  // `null` et non `0` depuis le 01/10/2026 (`v1-33` D1) : aucune puce n'arrive cochée, et l'étape le réclame.
+  flights_total_per_year: null,
   flights_short_per_year: null,
   zone_type: null,
   tc_access: null,
@@ -34,7 +35,9 @@ const MANQUE = {
   commute_has_trip: (a) => (a.commute_has_regular_trip === null ? manque('commute_has_regular_trip', 'une réponse') : null),
   leisure_frequency: (a) => (a.leisure_frequency === null ? manque('leisure_frequency', 'ta fréquence') : null),
   flights: (a) =>
-    a.flights_total_per_year > 0 && a.flights_short_per_year === null ? manque('flights_short_per_year', 'la part de vols courts') : null,
+    a.flights_total_per_year === null ? manque('flights_total_per_year', 'le nombre de vols')
+    : a.flights_total_per_year > 0 && a.flights_short_per_year === null ? manque('flights_short_per_year', 'la part de vols courts')
+    : null,
   context: (a) =>
     a.zone_type === null ? manque('zone_type', 'ton type de zone')
     : a.tc_access === null ? manque('tc_access', 'l’accès aux transports en commun')
@@ -72,7 +75,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         rendre={(a, u) => <CommuteHasTripStep answers={a} update={u} />} />
       <Etape etape="leisure_frequency" section="Loisirs du week-end" step={5} depart={{ commute_has_regular_trip: true }}
         mot="Pense à une semaine ordinaire, pas à la meilleure ni à la pire."
-        rendre={(a, u) => <LeisureFrequencyStep answers={a} update={u} total={nombreDEtapes(a)} />} />
+        rendre={(a, u) => <LeisureFrequencyStep answers={a} update={u} />} />
       <Etape etape="flights" section="Voyages longue distance" step={7} depart={{ commute_has_regular_trip: true }}
         mot="De mémoire, sans aller chercher. C’est l’ordre de grandeur qui compte."
         rendre={(a, u) => <FlightsStep answers={a} update={u} />} />

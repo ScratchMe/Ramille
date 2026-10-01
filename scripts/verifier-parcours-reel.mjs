@@ -634,9 +634,7 @@ async function saisirLeCycliste() {
   await suivant();
   await choisir('0'); // aucun vol — et à zéro, la question « combien sont courts ? » ne se pose pas
   await suivant();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '0', exact: true }).click();
+  await choisir('Non'); // aucun long trajet : « Non » met les trois compteurs à zéro (`v1-33` D1)
   await suivant();
   await choisir('Urbain dense');
   await choisir('Bon');
@@ -912,16 +910,37 @@ try {
   await choisir('15 à 30 km');
   await suivant();
 
+  // **Les vols arrivent sans réponse, et « Suivant » la demande** (01/10/2026, `v1-33` D1). Le total
+  // partait de 0 (`EMPTY_BILAN_ANSWERS`) : la puce « 0 » arrivait cochée, « Suivant » avançait, et un
+  // profil traversait le poste le plus lourd du bilan sans un toucher. La garde lit l'arrivée et le
+  // premier toucher, avant la réponse du profil — c'est le seul endroit où l'écran entier les rend :
+  // Jest garde `manqueDeLEtape`, pas la valeur de départ que l'écran passe aux puces.
+  etape('questionnaire — vols, à l’arrivée');
+  const QUESTION_DES_VOLS = 'Combien de vols prends-tu dans une année type ?';
+  await attendreTexte(QUESTION_DES_VOLS);
+  const volsCoches = await page
+    .getByRole('radiogroup', { name: QUESTION_DES_VOLS })
+    .locator('[role="radio"][aria-checked="true"]')
+    .count();
+  assurer(volsCoches === 0, `${volsCoches} puce(s) cochée(s) à l’arrivée sur les vols : le nombre de vols ne vaut pas « 0 » d’office`);
+  await bouton('Suivant');
+  await attendreTexte('Il manque encore le nombre de vols.');
+  await attendreTexte(QUESTION_DES_VOLS);
+
   etape('questionnaire — vols');
   await choisir('2'); // le total : 2 vols dans l'année
   await choisir('1', { dernier: true }); // dont 1 court — la seconde série, rendue après le total
   await attendreTexte('1 vol long-courrier sera compté.');
   await suivant();
 
+  // **Une question d'entrée depuis le 01/10/2026** (`v1-33` D1) : « Oui » ouvre les trois séries, sans
+  // aucune puce cochée. Le profil déclare deux trajets en voiture, et répond « 0 » aux deux autres.
   etape('questionnaire — longs trajets');
+  await choisir('Oui');
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
-  // C4.4 : la troisième série, cliquée à zéro. Elle vaut déjà zéro par défaut, donc ce clic
-  // n'existe que pour qu'un compteur qui disparaîtrait de l'écran fasse échouer le parcours.
+  // C4.4 : la troisième série, cliquée à zéro. Laissée vide, elle vaudrait zéro aussi (une série sans
+  // réponse sous « Oui »), donc ce clic n'existe que pour qu'un compteur qui disparaîtrait de l'écran
+  // fasse échouer le parcours.
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '2', exact: true }).click();
   await choisir('Thermique');
@@ -2263,11 +2282,9 @@ try {
   await suivant();
   await choisir(/^Rarement/, { exact: false });
   await suivant();
-  await choisir('0');
+  await choisir('0'); // aucun vol : une réponse, depuis que l'étape la réclame (`v1-33` D1)
   await suivant();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en train' }).getByRole('radio', { name: '0', exact: true }).click();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en autocar' }).getByRole('radio', { name: '0', exact: true }).click();
-  await page.getByRole('radiogroup', { name: 'Trajets longue distance en voiture' }).getByRole('radio', { name: '0', exact: true }).click();
+  await choisir('Non'); // aucun long trajet
   await suivant();
   // Sans trajet, la question du télétravail ne se pose pas (`teletravailSePose`).
   await choisir('Urbain dense');

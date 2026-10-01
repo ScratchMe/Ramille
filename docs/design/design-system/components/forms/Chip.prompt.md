@@ -21,10 +21,10 @@ Puce de sélection du questionnaire et du choix de l'intention. `solid` pour un 
 
 | Ce qu'on choisit | Rayon | Sélection | Largeur |
 |---|---|---|---|
-| un nombre de vols — le total **et** les courts, sur le même écran — et les tranches de distance des sorties | pilule, 22 (le défaut) | `solid` | naturelle |
-| les jours (1 à 7 du trajet ; ceux de l'engagement, en `checkbox`), les compteurs de longs trajets (0 à 10), la taille du covoiturage, les quatre réponses du contexte | `Radius.chip`, 14 | `solid` | naturelle, ou `flex` pour une précision et le contexte |
+| un nombre de vols — le total **et** les courts, sur le même écran —, les compteurs de longs trajets (0 à 10, les trois séries) et les tranches de distance des sorties | pilule, 22 (le défaut) | `solid` | naturelle |
+| les jours (1 à 7 du trajet ; ceux de l'engagement, en `checkbox`), la taille du covoiturage, les quatre réponses du contexte | `Radius.chip`, 14 | `solid` | naturelle, ou `flex` pour une précision et le contexte |
 | un Oui/Non, une échéance, un type de retour | `Radius.field`, 16 — le rayon des champs et des encarts | `outline` | `flex` côte à côte, ou en colonne |
 
-Les trois couples se reconnaissent d'un coup d'œil : plein et rond pour compter, plein et carré arrondi pour un jour ou une précision, cerné pour décider. **16 n'est plus écrit en dur** : c'est `Radius.field`, que les Oui/Non, les échéances et les types de retour lisent par son nom. **Un écart reste, et il est su** : les compteurs de longs trajets sont des nombres à `Radius.chip`, là où les nombres de vols sont en pilule — deux formes pour une fonction, d'un écran à l'autre, que l'étape des longs trajets n'a pas encore suivie.
+Les trois couples se reconnaissent d'un coup d'œil : plein et rond pour compter, plein et carré arrondi pour un jour ou une précision, cerné pour décider. **16 n'est plus écrit en dur** : c'est `Radius.field`, que les Oui/Non, les échéances et les types de retour lisent par son nom. **L'écart des longs trajets est fermé** (01/10/2026, `v1-33` D1) : leurs compteurs étaient des nombres à `Radius.chip`, là où les nombres de vols sont en pilule — deux formes pour une fonction, d'un écran à l'autre. Ils sont en pilule, et leur question d'entrée, un Oui / Non cerné à `Radius.field`, ouvre les trois séries comme le « Oui » du second mode ouvre « Lequel ? ».
 
 Sous le doigt, la puce prend sa teinte appuyée tout de suite : `accentPressed` sous une puce pleine, `backgroundSelectedPressed` sous une puce choisie en contour, `backgroundPressed` ailleurs.

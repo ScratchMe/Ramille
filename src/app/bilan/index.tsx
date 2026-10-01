@@ -38,6 +38,7 @@ import {
   EMPTY_BILAN_ANSWERS,
   avancementDeLaReprise,
   brouillonEstAncien,
+  compteursApresLaReponse,
   distanceDomicileTravailKm,
   distanceSortieKm,
   issueDuSuivant,
@@ -45,8 +46,10 @@ import {
   memesReponses,
   normaliserReponses,
   previousStep,
+  reponseAuxLongsTrajets,
   type BilanAnswers,
   type BilanStepId,
+  type HorsColonnes,
   visibleSteps,
   STATUT_DE_BILAN,
 } from '@/types/bilan';
@@ -346,6 +349,21 @@ export default function BilanQuestionnaire() {
     setAnswers((prev) => normaliserReponses({ ...prev, ...patch }));
   };
 
+  // **Le « Oui » aux longs trajets que les compteurs ne disent pas** (`HorsColonnes`, 01/10/2026,
+  // `v1-33` D1). « Oui » laisse les trois séries vides, et rien dans les colonnes ne le distingue
+  // alors d'une question pas encore vue : il vit ici, à côté des réponses — `BilanAnswers` ne porte
+  // que des colonnes, sans quoi l'insert qui le diffuse serait refusé —, et passe à `manqueDeLEtape`
+  // comme à l'étape. Il ne survit pas à l'écran, et c'est sans perte : quitté sur « Oui » sans aucun
+  // trajet, le questionnaire rouvre la question, à reposer.
+  const [ouiAuxLongsTrajets, setOuiAuxLongsTrajets] = useState(false);
+  const horsColonnes: HorsColonnes = { ouiAuxLongsTrajets };
+  // Les deux ensemble, et par `update` : c'est une réponse donnée, qui arme le défilement à
+  // l'ouverture des séries (`reponsesDonnees`) et la sauvegarde du brouillon.
+  const repondreAuxLongsTrajets = (oui: boolean) => {
+    setOuiAuxLongsTrajets(oui);
+    update(compteursApresLaReponse(answers, oui));
+  };
+
   const continuerLeBrouillon = () => setMontrerLaReprise(false);
 
   const repartirDuDernierBilan = () => {
@@ -426,7 +444,7 @@ export default function BilanQuestionnaire() {
   // **La soumission part sans feuille** (01/10/2026, `v1-33` §6) : ce qu'un nouveau bilan fait à
   // l'engagement en cours se dit à l'entrée, avant la première étape — plus au terme de la dernière.
   const handleNext = async () => {
-    const issue = issueDuSuivant(step, answers);
+    const issue = issueDuSuivant(step, answers, horsColonnes);
     switch (issue.genre) {
       case 'attendre':
         return;
@@ -534,8 +552,9 @@ export default function BilanQuestionnaire() {
       // une réponse au questionnaire suffit à l'écrire. Ce que ça demande en échange : **ne jamais
       // mettre dans `BilanAnswers` un champ qui n'est pas une colonne** — PostgREST refuserait
       // l'insert entier, et le parcours réel, qui soumet un bilan à chaque PR, le dirait tout de
-      // suite. Les cinq clés qui suivent ne sont pas des exceptions à la règle : ce sont des
-      // valeurs que la colonne exige et que le questionnaire n'a pas sous cette forme.
+      // suite (une réponse d'écran sans colonne vit à côté : `HorsColonnes`). Les clés qui suivent
+      // ne sont pas des exceptions à la règle : ce sont des valeurs que la colonne exige et que le
+      // questionnaire n'a pas sous cette forme.
       const { error: answersError } = await supabase.from('assessment_answers').upsert(
         {
           ...answers,
@@ -549,6 +568,16 @@ export default function BilanQuestionnaire() {
           commute_second_mode_used: answers.commute_second_mode_used ?? false,
           commute_has_regular_trip: answers.commute_has_regular_trip ?? false,
           leisure_frequency: answers.leisure_frequency ?? 'rarely',
+          // **Le même repli inatteignable pour le nombre de vols** (01/10/2026, `v1-33` D1) : l'étape
+          // est toujours visible et le réclame, donc un bilan soumis en porte un ; la colonne reste
+          // `not null default 0`, et le typecheck exige le repli.
+          flights_total_per_year: answers.flights_total_per_year ?? 0,
+          // **Celui des longs trajets, lui, s'atteint, et il dit vrai** : « Oui » puis deux trajets en
+          // train laisse l'autocar et la voiture sans réponse, ce qui veut dire « aucun » — l'étape
+          // réclame un trajet, pas une réponse par série (`manqueDeLEtape`).
+          train_long_trips_per_year: answers.train_long_trips_per_year ?? 0,
+          car_long_trips_per_year: answers.car_long_trips_per_year ?? 0,
+          coach_long_trips_per_year: answers.coach_long_trips_per_year ?? 0,
           // Même lecture que la complétude des étapes : un « 0 » n'est pas une distance, et les
           // deux colonnes portent `check (… > 0)`.
           commute_distance_km: distanceDomicileTravailKm(answers),
@@ -754,7 +783,7 @@ export default function BilanQuestionnaire() {
       // un libellé « Enregistrement… », un `disabled` ou un `manque` nul le temps de l'envoi étaient des
       // branches mortes, et c'est le verrou `soumissionEnCours` qui garde la double soumission.
       nextLabel={isLastStep ? 'Voir mon bilan' : 'Suivant'}
-      manque={manqueDeLEtape(step, answers)}
+      manque={manqueDeLEtape(step, answers, horsColonnes)}
       // À l'étape d'entrée seulement (`etapeDEntree`, plus haut) ; « préremplies » s'écrit d'une seule
       // façon dans le produit (01/10/2026, `v1-33` D3).
       notice={
@@ -772,7 +801,14 @@ export default function BilanQuestionnaire() {
       {step === 'leisure_frequency' && <LeisureFrequencyStep answers={answers} update={update} />}
       {step === 'leisure_detail' && <LeisureDetailStep answers={answers} update={update} />}
       {step === 'flights' && <FlightsStep answers={answers} update={update} />}
-      {step === 'long_trips' && <LongTripsStep answers={answers} update={update} />}
+      {step === 'long_trips' && (
+        <LongTripsStep
+          answers={answers}
+          update={update}
+          reponse={reponseAuxLongsTrajets(answers, horsColonnes)}
+          repondre={repondreAuxLongsTrajets}
+        />
+      )}
       {step === 'context' && <ContextStep answers={answers} update={update} />}
 
       {/* La feuille vit **dans** `StepShell` plutôt qu'à côté : c'est un `Modal`, donc son rendu
