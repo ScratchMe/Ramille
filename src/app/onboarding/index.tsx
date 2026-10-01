@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  BackHandler,
   Dimensions,
-  Platform,
   ScrollView,
   StyleSheet,
   type LayoutChangeEvent,
@@ -16,6 +14,7 @@ import { EtapeContexte } from '@/components/onboarding/etape-contexte';
 import { EtapeReassurance } from '@/components/onboarding/etape-reassurance';
 import { EtapeTransition } from '@/components/onboarding/etape-transition';
 import { ThemedView } from '@/components/themed-view';
+import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { track } from '@/lib/analytics';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
 
@@ -77,11 +76,9 @@ export default function Onboarding() {
   // travers ; tant qu'il vaut 0, l'enveloppe s'étire comme avant.
   const [hauteur, setHauteur] = useState(0);
   const [index, setIndex] = useState(0);
-  const indexRef = useRef(0);
   const vues = useRef(new Set<string>());
 
   useEffect(() => {
-    indexRef.current = index;
     const etape = ETAPES[index];
     if (!etape || vues.current.has(etape)) return;
     vues.current.add(etape);
@@ -158,18 +155,12 @@ export default function Onboarding() {
   // Quatre routes empilées donnaient le retour matériel pour rien : une page en arrière.
   // Un seul écran doit le rendre lui-même, sinon le retour quitte l'onboarding depuis
   // n'importe quelle étape — et l'app, au premier lancement, puisque la pile est vide.
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    const abonnement = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (indexRef.current === 0) return false;
-      allerA(indexRef.current - 1);
-      return true;
-    });
-    return () => abonnement.remove();
-    // `allerA` ne dépend que de `width`, et `indexRef` porte l'index courant : l'abonnement
-    // n'a pas besoin de suivre l'état.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [width]);
+  //
+  // **Le crochet est celui du questionnaire** (01/10/2026, `v1-33`, T-8) : l'abonnement que cet écran
+  // écrivait à la main en était le modèle, et il n'y a plus qu'une façon de le faire dans le dépôt. La
+  // page 1 donne `null`, donc le retour passe à la navigation — c'est ce qui quitte l'app au premier
+  // lancement, et ce que la règle de `v1-11` §8 demande.
+  useRetourVersLaPhasePrecedente(index > 0 ? () => allerA(index - 1) : null);
 
   // `onScroll` et non `onMomentumScrollEnd` : ce dernier n'existe pas sur web, où le geste
   // s'appuie sur le scroll-snap du navigateur. On arrondit à la page la plus proche ; React

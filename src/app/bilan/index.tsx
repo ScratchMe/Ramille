@@ -21,6 +21,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
+import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { track } from '@/lib/analytics';
 import { clearBilanDraft, loadBilanDraft, saveBilanDraft } from '@/lib/bilan-draft';
 import { loadLastSubmittedAnswers } from '@/lib/bilan-history';
@@ -51,6 +52,9 @@ import {
 import { decrireErreur } from '@/types/erreur';
 import { sensDuPassage, type Sens } from '@/types/mouvement';
 import { ouvreUnPremierParcours } from '@/types/premier-parcours';
+
+/** Le retour matériel pendant le calcul : l'appui est pris et rien ne se passe (`retourMateriel`, plus bas). */
+const consommerLAppui = () => {};
 
 // Questionnaire du bilan (9 pas maximum, branchements B1.1/B2.1) — état local pour
 // toute la traversée, un seul aller-retour serveur à la soumission (cf. commentaire
@@ -350,6 +354,37 @@ export default function BilanQuestionnaire() {
       router.back();
     }
   };
+
+  // **Le retour matériel d'Android recule d'une étape, comme le bouton « Retour »** (01/10/2026,
+  // `v1-33`, Q-4). Le questionnaire est un parcours par étapes dont l'état change sans changer de
+  // route : sans ce branchement, le retour quittait la route depuis n'importe quelle étape — et l'app
+  // au premier parcours, où la pile ne contient que `/bilan` (`dismissAll()` puis `replace`). Le
+  // brouillon survivait, mais la personne avait sous les yeux un « Retour » qui reculait d'une étape
+  // et un geste système qui faisait autre chose.
+  //
+  // Trois cas, et le crochet les lit à l'appui (`use-retour-vers-la-phase-precedente.ts`) :
+  //   - **une étape visible derrière** : `handleBack`, la même action que le bouton ;
+  //   - **première étape, ou écran de reprise** : `null`, et le retour passe à la navigation. C'est ce
+  //     qui quitte l'app au premier parcours et renvoie à l'écran d'origine pour un re-bilan — l'écran
+  //     de reprise n'a rien derrière lui, ses deux boutons mènent à un questionnaire ;
+  //   - **le calcul en cours** : l'appui est **consommé sans rien faire**. Laisser passer le retour
+  //     reculerait la pile pendant que la soumission continue, et le `router.replace` du succès
+  //     tomberait alors sur un autre écran que celui qu'on vient de quitter ; le faire reculer d'une
+  //     étape changerait l'étape sous un calcul qui l'a déjà lue, et un échec rendrait la personne à
+  //     une autre étape que celle qu'elle a soumise.
+  //
+  // **Une feuille ouverte** (`FeuilleNouveauBilan`, un `Modal`) n'a pas à être exclue ici : Android
+  // livre le retour à la boîte de dialogue du `Modal`, qui le rend à son `onRequestClose` sans que
+  // l'activité — donc `BackHandler` — en entende parler. Ce branchement ne la prive de rien.
+  //
+  // Les étapes visibles se lisent à chaque rendu : `previousStep` saute celles que les réponses
+  // excluent (« Non » à B1.1, loisirs « rarement »), comme le bouton.
+  const retourMateriel = submitting
+    ? consommerLAppui
+    : !montrerLaReprise && previousStep(step, answers) !== null
+      ? handleBack
+      : null;
+  useRetourVersLaPhasePrecedente(retourMateriel);
 
   // **Ce que fait « Suivant » se décide dans `issueDuSuivant`, pas ici** (29/09/2026, `v1-31` §2.4) :
   // `StepShell` n'appelle déjà pas `onNext` sur une étape incomplète, mais son « Suivant » n'est plus
