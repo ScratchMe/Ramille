@@ -28,14 +28,32 @@ export type ReminderPrefs = EtatDesRappels & {
   reponseALaVeille: ReponseALaVeille | null;
 };
 
-export async function loadReminderPrefs(): Promise<ReminderPrefs> {
+/**
+ * Les réglages de rappel de la personne, ou **`null` quand on ne les a pas lus** — pas de session,
+ * le profil ou le jeton de cet appareil illisibles.
+ *
+ * **Plus aucune valeur par défaut sur un échec** (01/10/2026, audit T-6, `FRONT.md` §1.2). Le
+ * profil se lisait sans regarder son erreur, et le canal retombait sur « Par email » : « Toi »
+ * l'affichait coché comme s'il était lu, à quelqu'un qui avait choisi la notification ou « Sans
+ * rappel » — et en le « corrigeant », la personne écrivait un choix qu'elle croyait rétablir.
+ * L'absence de session rendait de même un canal « aucun » que personne n'a choisi, et un jeton
+ * illisible un « pas actif sur ce téléphone » que rien n'a constaté.
+ *
+ * **`null` et non une levée ni `{ ok }`, à cause des deux appelants** : « Toi » et le plan rangent
+ * déjà ce qu'ils lisent ici dans un état `ReminderPrefs | null` où `null` veut dire « on ne sait
+ * pas » — rien ne s'affiche, et la feuille des rappels ne s'ouvre pas. Une levée ferait tomber le
+ * plan sur son écran d'erreur plein écran pour une lecture secondaire ; et c'est déjà la forme de
+ * `lireLaFenetreDuMotDeLaVeille`, juste en dessous.
+ *
+ * La colonne `reminder_channel` est `not null` (défaut `email` en base) : une ligne lue porte
+ * toujours le choix de la personne, et l'écran n'a plus de repli à inventer.
+ */
+export async function loadReminderPrefs(): Promise<ReminderPrefs | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { prefere: 'none', jetonActif: false, emailPossible: false, email: null, reponseALaVeille: null };
-  }
+  if (!user) return null;
 
   // Un compte rattaché **et** confirmé : les deux, jamais l'un sans l'autre — on n'écrit
   // jamais à une adresse seulement déclarée (v1-07 §3.1).
@@ -46,12 +64,16 @@ export async function loadReminderPrefs(): Promise<ReminderPrefs> {
     leJetonDeCetAppareilEstActif(),
   ]);
 
+  // Le profil existe dès l'inscription (`handle_new_user`) : une lecture qui ne le rend pas est un
+  // échec au même titre qu'une erreur — une session dont le compte n'existe plus, par exemple.
+  if (profil.error || !profil.data || jetonActif === null) return null;
+
   return {
-    prefere: (profil.data?.reminder_channel as CanalPrefere) ?? 'email',
+    prefere: profil.data.reminder_channel as CanalPrefere,
     jetonActif,
     emailPossible,
     email: emailPossible ? (user.email ?? null) : null,
-    reponseALaVeille: reponseALaVeilleDe(profil.data?.mot_de_la_veille),
+    reponseALaVeille: reponseALaVeilleDe(profil.data.mot_de_la_veille),
   };
 }
 
@@ -90,19 +112,21 @@ export async function lireLaFenetreDuMotDeLaVeille(): Promise<FenetreDeLaVeille 
  * n'avait rien autorisé ici (A9-19).
  *
  * Sans jeton mémorisé, la réponse est « non » : l'appareil n'a rien enregistré, ou l'a fait
- * avant que cette marque n'existe — et le prochain lancement la posera.
+ * avant que cette marque n'existe — et le prochain lancement la posera. **Une lecture en échec, elle,
+ * rend `null`** (01/10/2026) : « pas actif sur ce téléphone » serait un constat que rien n'a fait.
  */
-async function leJetonDeCetAppareilEstActif(): Promise<boolean> {
+async function leJetonDeCetAppareilEstActif(): Promise<boolean | null> {
   const jeton = await lireLeJetonDeCetAppareil();
   if (!jeton) return false;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('push_tokens')
     .select('token')
     .eq('token', jeton)
     .is('disabled_at', null)
     .maybeSingle();
 
+  if (error) return null;
   return !!data;
 }
 

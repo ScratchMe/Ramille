@@ -82,11 +82,15 @@ export default function Compte() {
 
   // **Les lectures arrivent ensemble, ou pas du tout** (#305, contre-lecture du 01/10/2026). Chacune
   // posait son état à son arrivée : l'écran grandissait en deux ou trois temps au-dessus de « Supprimer
-  // mon compte », la place gardée ne pouvait couvrir que la première lecture, et des rappels lus **sans
-  // session** — `loadReminderPrefs` rend alors ses valeurs par défaut, sans le dire — pouvaient
-  // s'afficher le temps que la lecture suivante arrive (`FRONT.md` §1.2). Le compte, les rappels et,
-  // sur natif, la fenêtre du mot de la veille sont donc posés ensemble ; les rappels ne le sont que si
-  // le compte a pu être lu, puisque l'écran ne les montre pas sinon.
+  // mon compte », et la place gardée ne pouvait couvrir que la première lecture. Le compte, les rappels
+  // et, sur natif, la fenêtre du mot de la veille sont donc posés ensemble ; les rappels ne le sont que
+  // si le compte a pu être lu, puisque l'écran ne les montre pas sinon.
+  //
+  // **Et des rappels illisibles rendent l'écran « indisponible »** (01/10/2026, audit T-6, `FRONT.md`
+  // §1.2). `loadReminderPrefs` posait « Par email » sur un profil illisible, et l'écran l'affichait
+  // coché comme un réglage lu ; elle rend désormais `null`. L'état `indisponible` dit déjà les deux
+  // échecs dans sa phrase — « ni relire tes réglages de rappel » — et porte « Réessayer » : rien de
+  // neuf à écrire, et aucune ligne de canal ne s'affiche sur une lecture qui n'a pas eu lieu.
   //
   // `etat` n'est remis à `null` que par « Réessayer » : le rappel de `SIGNED_IN`, plus bas, revient à
   // chaque retour sur l'onglet (`_onVisibilityChanged` d'auth-js), et vider l'écran à chaque fois le
@@ -103,10 +107,12 @@ export default function Compte() {
       // **Jamais `local` sur un échec** (A6-8) : c'est l'état le plus affirmatif, celui qui dit
       // « tu n'as pas de compte » et propose d'en créer un. `lireEtatDuRattachement` rend
       // désormais `indisponible` sans lever, et ce repli couvre le cas où elle lève quand même.
-      const compte: EtatRattachement = lu.status === 'fulfilled' ? lu.value : { kind: 'indisponible' };
+      const rappelsLus = prefs.status === 'fulfilled' ? prefs.value : null;
+      const compte: EtatRattachement =
+        lu.status === 'fulfilled' && rappelsLus !== null ? lu.value : { kind: 'indisponible' };
       setEtat(compte);
       setRelance(false);
-      if (prefs.status === 'fulfilled' && compte.kind !== 'indisponible') setRappels(prefs.value);
+      if (compte.kind !== 'indisponible') setRappels(rappelsLus);
       if (fenetreLue.status === 'fulfilled') setFenetre(fenetreLue.value);
     });
     return () => {
@@ -330,12 +336,11 @@ export default function Compte() {
                     push n'a besoin que d'un jeton d'appareil (v1-12 §2.5). C'était l'inverse
                     avant, l'interrupteur email n'apparaissant qu'avec un compte rattaché.
 
-                    **Sauf quand la lecture du compte a échoué** : `loadReminderPrefs` ne distingue
-                    pas un échec de « pas de session » et rend alors ses valeurs par défaut — canal
-                    « aucun », pas de jeton, pas d'email. La liste afficherait donc un choix que
-                    personne n'a fait, à côté d'un message qui dit qu'on n'a rien pu lire. On attend
-                    donc de savoir : les deux lectures partent ensemble, et `etat` vaut toujours
-                    quelque chose à l'arrivée, échec compris. */}
+                    **Sauf quand une lecture a échoué** — le compte, ou les rappels eux-mêmes, que
+                    `loadReminderPrefs` rend `null` depuis le 01/10/2026 au lieu d'un canal par
+                    défaut : l'écran est alors `indisponible`, et sa phrase dit les deux. On attend
+                    donc de savoir : les lectures partent ensemble, et `etat` vaut toujours quelque
+                    chose à l'arrivée, échec compris. */}
                 {rappels && etat !== null && etat.kind !== 'indisponible' && (
                   <>
                     <ChoixDeRappel
