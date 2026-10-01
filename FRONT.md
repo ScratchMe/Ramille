@@ -77,9 +77,11 @@ démarrer à « visible » ne coûte qu'un transitoire à ceux qui doivent la vo
 ses données **au-dessus** d'un lien rendu tout de suite le fait sauter, et un toucher pris dans le
 saut se perd sans erreur — ou tombe sur ce qui a pris sa place. Attendre les données avant de rendre
 le lien n'est pas la parade quand ce lien doit rester atteignable hors ligne : on réserve la hauteur
-attendue, mesurée, et on accepte un reste là où elle varie. Payé chez Ramille sur « Toi », où
-« Supprimer mon compte » descendait de 412 px (décision du 01/10/2026, #305,
-`HAUTEUR_DU_COMPTE_EN_LECTURE`).
+attendue, mesurée, et on accepte un reste là où elle varie. **Et les lectures se posent ensemble** :
+une hauteur réservée ne couvre que ce qui n'est pas encore là, donc des données qui arrivent en trois
+temps la feraient tomber au premier. Payé chez Ramille sur « Toi », où « Supprimer mon compte »
+descendait de 412 px sur web (décision du 01/10/2026, #305, `HAUTEUR_DU_COMPTE_EN_LECTURE` ; mesurée
+sur web, le natif est en `v1-13` §11.25).
 
 ### 1.4 Accessibilité : le libellé annoncé *est* le texte affiché
 

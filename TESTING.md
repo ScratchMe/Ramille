@@ -554,8 +554,9 @@ qui charge après son HTML statique s'attend donc sur ce qui arrive **avec** ses
 groupe « Les rappels »), jamais sur ce que le HTML porte déjà. **L'écran, lui, garde la place depuis
 le 01/10/2026** (décision de la personne qui pilote,
 [#305](https://github.com/ScratchMe/Ramille/issues/305)) : le lien ne bouge plus à la largeur du
-parcours, et l'étape le mesure image par image depuis le rendu statique, dans un second onglet du
-même appareil. L'attente reste : ailleurs, un reste de saut est accepté.
+parcours, sur web, et l'étape le mesure image par image depuis le rendu statique — un relevé démarré
+avant le premier script de la page, sur l'onglet du parcours, pour qu'un échec s'y capture. L'attente
+reste : ailleurs, un reste de saut est accepté.
 
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 

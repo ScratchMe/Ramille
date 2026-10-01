@@ -1698,8 +1698,8 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   affichait « n'y est plus » au-dessus d'elle. L'appariement est sur le gabarit, jamais sur le
   libellé que l'archive fige. **Taire, et seulement pour une perte de la saison affichée** — décidé
   le 01/10/2026 par la personne qui pilote : l'encart a déjà parlé sur l'appareil du changement, et
-  sans borne il annonçait une perte de n'importe quelle date, un encart tu reparaissant avec son
-  ancienne cause.
+  sans borne il annonçait une perte de n'importe quelle date, un encart tu reparaissant d'une saison
+  à l'autre avec son ancienne cause. Le reste, dans une même saison, est nommé dans la dérivation.
 - **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
   du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
   n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle

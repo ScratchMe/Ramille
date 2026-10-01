@@ -583,7 +583,8 @@ describe('lireLesBouclesAVenir', () => {
 // chaque fois : la comparaison retirée (la règle d'avant, l'hebdomadaire toujours devant) → « les
 // jours où le 1er vient avant le lundi » ; puis `<` changé en `<=` → « un 1er qui tombe un lundi ».
 describe('boucleAVenir', () => {
-  const jour = (annee: number, mois: number, j: number, heure = 12) => new Date(annee, mois - 1, j, heure);
+  const jour = (annee: number, mois: number, j: number, heure = 12, minute = 0) =>
+    new Date(annee, mois - 1, j, heure, minute);
 
   it('les jours où le 1er vient avant le lundi, la carte nomme le point du mois', () => {
     // Lundi 28/09 (après le point du jour), mercredi 30/09 : le jeudi 1er octobre vient avant le 5.
@@ -599,6 +600,14 @@ describe('boucleAVenir', () => {
     for (const date of [jour(2026, 10, 1), jour(2026, 10, 15), jour(2026, 9, 27, 23)]) {
       expect({ date, boucle: boucleAVenir(['commute', 'extras'], date) }).toEqual({ date, boucle: 'hebdo' });
     }
+  });
+
+  // **Un lundi avant 6 h UTC, le point du jour reste à venir** (contre-lecture du 01/10/2026) : le
+  // lundi 28/09 à 7 h à Paris, il est 5 h UTC — le point du lundi arrive dans l'heure, avant le 1er.
+  // Mutation jouée le même jour : l'exception retirée → ce test seul tombe.
+  it('un lundi avant la génération, le point du jour est le plus proche', () => {
+    expect(boucleAVenir(['commute', 'extras'], jour(2026, 9, 28, 7))).toBe('hebdo');
+    expect(boucleAVenir(['commute', 'extras'], jour(2026, 9, 28, 8, 1))).toBe('mensuel');
   });
 
   it('un 1er qui tombe un lundi : les deux points arrivent ce jour-là, et « lundi » est vrai', () => {

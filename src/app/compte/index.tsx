@@ -46,12 +46,15 @@ import { type CanalPrefere, type FenetreDeLaVeille } from '@/types/rappels';
  * écarté** : hors ligne, ou sur une lecture en échec, « Supprimer mon compte » ne s'afficherait pas,
  * et c'est le chemin que Google Play exige.
  *
- * **Mesurée, pas calculée** : 412 px de saut pour un compte anonyme, à 390 comme à 420 de large, moins
- * l'écart de 16 px que le bloc ajoute en existant. Ce n'est vrai qu'à ces largeurs et pour ce compte :
- * à 360, le texte passe sur une ligne de plus et il reste 20 px ; sur un écran large, il en manque 44 ;
- * un compte rattaché ne dit pas la même phrase. Un petit saut peut donc rester, et c'est le risque
- * accepté avec la décision. Le parcours réel mesure le reste à chaque PR (« suppression du compte ») :
- * une phrase allongée ici le fera tomber, et c'est le moment de remesurer.
+ * **Mesurée, pas calculée, et sur web** : 412 px de saut pour un compte anonyme, à 390 comme à 420
+ * de large, moins l'écart de 16 px que le bloc ajoute en existant. Ce n'est vrai qu'à ces largeurs,
+ * pour ce compte et sur web : à 360, le texte passe sur une ligne de plus et il reste 20 px ; sur un
+ * écran large, il en manque 44 ; un compte rattaché ne dit pas la même phrase ; et **sur un téléphone
+ * le réglage des rappels est plus haut** — trois lignes de canal au lieu de deux, la porte des
+ * réglages, le mot de la veille —, donc le lien descend encore de la différence (`v1-13` §11.25). Un
+ * saut peut donc rester, et c'est le risque accepté avec la décision. Le parcours réel mesure le reste
+ * à chaque PR (« suppression du compte ») : une phrase allongée ici le fera tomber, et c'est le moment
+ * de remesurer.
  */
 const HAUTEUR_DU_COMPTE_EN_LECTURE = 396;
 
@@ -60,14 +63,13 @@ export default function Compte() {
 
   const [etat, setEtat] = useState<EtatRattachement | null>(null);
   const [rappels, setRappels] = useState<ReminderPrefs | null>(null);
-  // Les rappels ont-ils fini d'être lus, en échec compris ? `rappels` ne le dit pas : sur un échec il
-  // reste `null`, et la place réservée ne se rendrait jamais.
-  const [rappelsLus, setRappelsLus] = useState(false);
   // La fenêtre du mot de la veille (C4.2) : `null` tant qu'on ne l'a pas lue, ou sur un échec — le
   // réglage ne dit alors que la règle, et ne propose rien.
   const [fenetre, setFenetre] = useState<FenetreDeLaVeille | null>(null);
   const [messageCanal, setMessageCanal] = useState<string | null>(null);
   const [cle, setCle] = useState(0);
+  // Un « Réessayer » : sa ligne de chargement se dit tout de suite (`useChargementVisible`).
+  const [relance, setRelance] = useState(false);
   const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
   const [erreurDeconnexion, setErreurDeconnexion] = useState<string | null>(null);
   // **Après la suppression, l'écran ne montre plus que sa confirmation** (recette du 28/09/2026,
@@ -78,24 +80,35 @@ export default function Compte() {
   // pages légales et l'adresse de contact, elles, restent en bas de l'écran.
   const [supprime, setSupprime] = useState(false);
 
+  // **Les lectures arrivent ensemble, ou pas du tout** (#305, contre-lecture du 01/10/2026). Chacune
+  // posait son état à son arrivée : l'écran grandissait en deux ou trois temps au-dessus de « Supprimer
+  // mon compte », la place gardée ne pouvait couvrir que la première lecture, et des rappels lus **sans
+  // session** — `loadReminderPrefs` rend alors ses valeurs par défaut, sans le dire — pouvaient
+  // s'afficher le temps que la lecture suivante arrive (`FRONT.md` §1.2). Le compte, les rappels et,
+  // sur natif, la fenêtre du mot de la veille sont donc posés ensemble ; les rappels ne le sont que si
+  // le compte a pu être lu, puisque l'écran ne les montre pas sinon.
+  //
+  // `etat` n'est remis à `null` que par « Réessayer » : le rappel de `SIGNED_IN`, plus bas, revient à
+  // chaque retour sur l'onglet (`_onVisibilityChanged` d'auth-js), et vider l'écran à chaque fois le
+  // ferait clignoter. Une relecture garde donc l'écran tel qu'il était jusqu'à ce qu'elle revienne.
   useEffect(() => {
     let annule = false;
-    lireEtatDuRattachement()
-      .then((e) => !annule && setEtat(e))
+    void Promise.allSettled([
+      lireEtatDuRattachement(),
+      loadReminderPrefs(),
+      // Sur web, le mot de la veille n'existe pas : rien à lire.
+      Platform.OS === 'web' ? Promise.resolve(null) : lireLaFenetreDuMotDeLaVeille(),
+    ]).then(([lu, prefs, fenetreLue]) => {
+      if (annule) return;
       // **Jamais `local` sur un échec** (A6-8) : c'est l'état le plus affirmatif, celui qui dit
       // « tu n'as pas de compte » et propose d'en créer un. `lireEtatDuRattachement` rend
       // désormais `indisponible` sans lever, et ce repli couvre le cas où elle lève quand même.
-      .catch(() => !annule && setEtat({ kind: 'indisponible' }));
-    loadReminderPrefs()
-      .then((p) => !annule && setRappels(p))
-      .catch(() => undefined)
-      .finally(() => !annule && setRappelsLus(true));
-    // Sur web, le mot de la veille n'existe pas : rien à lire.
-    if (Platform.OS !== 'web') {
-      lireLaFenetreDuMotDeLaVeille()
-        .then((f) => !annule && setFenetre(f))
-        .catch(() => undefined);
-    }
+      const compte: EtatRattachement = lu.status === 'fulfilled' ? lu.value : { kind: 'indisponible' };
+      setEtat(compte);
+      setRelance(false);
+      if (prefs.status === 'fulfilled' && compte.kind !== 'indisponible') setRappels(prefs.value);
+      if (fenetreLue.status === 'fulfilled') setFenetre(fenetreLue.value);
+    });
     return () => {
       annule = true;
     };
@@ -125,6 +138,7 @@ export default function Compte() {
   // second échec rend exactement le même écran et le bouton a l'air mort.
   const reessayer = () => {
     setEtat(null);
+    setRelance(true);
     setCle((n) => n + 1);
   };
 
@@ -177,12 +191,13 @@ export default function Compte() {
     setMessageCanal('Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.');
   };
 
-  // **La place est gardée jusqu'à ce que les deux lectures soient revenues** (#305) — sauf quand le
-  // compte n'a pas pu être lu : l'écran ne rend alors pas les rappels, et n'a plus rien à attendre.
-  const enLecture = etat === null || (etat.kind !== 'indisponible' && !rappelsLus);
-  // Muette les 300 premières millisecondes, comme les onglets : la place suffit à tenir l'écran, et
-  // une phrase qui clignote une image ne dit rien.
-  const chargementVisible = useChargementVisible(etat === null, false);
+  // **La place est gardée tant que les lectures ne sont pas revenues** (#305) : elles arrivent
+  // ensemble, donc `etat` suffit à le dire.
+  const enLecture = etat === null;
+  // Muette les 300 premières millisecondes, comme les onglets — la place suffit à tenir l'écran, et une
+  // phrase qui clignote une image ne dit rien —, sauf après « Réessayer » : hors ligne, l'échec revient
+  // bien sous ce délai, et sans la ligne le bouton aurait l'air mort (`FRONT.md` §1.2).
+  const chargementVisible = useChargementVisible(enLecture, relance);
 
   return (
     <ThemedView style={styles.container}>

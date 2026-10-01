@@ -823,8 +823,9 @@ describe('l’encart orphelin', () => {
   //
   // **Éprouvé en le cassant le 01/10/2026** (`TESTING.md` §1.1), deux mutations de la dérivation, ce
   // test seul tombant à chaque fois : `orphelin` rendu sans condition (« Expected: null », sur la
-  // première assertion) ; puis l'appariement sur `action_text` au lieu du gabarit (la même). L'appel
-  // de l'écran est gardé par le parcours réel, étape « contexte — retiré puis remis ».
+  // première assertion) ; puis l'appariement sur `action_text` au lieu du gabarit (la même). Depuis la
+  // borne au cycle, ajoutée le même jour, la première fait aussi tomber le test suivant. L'appel de
+  // l'écran est gardé par le parcours réel, étape « contexte — retiré puis remis ».
   const orphelin = {
     id: 'archive-1',
     action_template_id: 'gabarit-metro',
@@ -848,7 +849,8 @@ describe('l’encart orphelin', () => {
 
   // **Borné à la saison affichée** (décision du 01/10/2026, #312) : une perte d'un autre cycle ne
   // s'annonce plus — ni un bilan de mars sur un téléphone neuf en décembre, ni un encart tu qui
-  // reviendrait avec son ancienne cause. Une ligne sans cycle, d'avant la colonne, se tait aussi.
+  // reviendrait avec son ancienne cause. Une ligne dont le cycle a disparu (`on delete set null`) se
+  // tait aussi.
   //
   // **Éprouvé en le cassant le 01/10/2026** : la condition sur le cycle retirée, ce test seul tombe,
   // sur sa première assertion (« Expected: null »).

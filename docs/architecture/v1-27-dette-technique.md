@@ -1609,6 +1609,9 @@ le cron de la nuit).
 
 ### 12.26 La capture d'un échec du parcours réel ne sort pas de la CI (30/09/2026)
 
+> **Fait le 01/10/2026, sur décision de la personne qui pilote** : la capture d'un échec est publiée
+> en artefact, sept jours — détail en fin de section.
+
 **Relevé sur la CI de [#299](https://github.com/ScratchMe/Ramille/pull/299).** L'étape de la
 suppression du compte a rougi une fois, et le journal disait l'étape, les requêtes refusées et le
 texte visible — pas ce que le clic avait touché. La capture que le script prend sur un échec, dans le
@@ -1634,4 +1637,6 @@ jours. L'étape est dans `ci.yml`, sous `if: failure()`, et l'en-tête du fichie
 se taire. Le chemin est relevé dans le journal de l'échec du 30/09 (« Capture :
 /tmp/ramille-parcours-reel-echec.png »). **Ce qui ne s'éprouve qu'à la prochaine CI rouge** : le
 dépôt de l'artefact lui-même. Une PR verte ne dépose rien, et rougir la CI exprès pour le voir serait
-une mutation sur la CI de tout le monde.
+une mutation sur la CI de tout le monde. **La référence `actions/upload-artifact@v7`, elle, est
+éprouvée** : une action se télécharge à la préparation du travail, que son étape tourne ou non, et le
+travail « Parcours réel » est passé vert sur `0899229`, le premier commit qui la porte.

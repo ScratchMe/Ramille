@@ -7,7 +7,7 @@ on:
 
 # Le jeton de ces travaux ne sert qu'au `checkout` : aucune étape n'écrit dans le dépôt ni ne commente
 # une PR, et **une seule publie quelque chose** — la capture d'un échec du parcours réel, gardée sept
-# jours (décision du 01/10/2026, plus bas). Déclarer le minimum à la racine l'applique aux quatre ;
+# jours (décision du 01/10/2026, plus bas). Déclarer le minimum à la racine l'applique à tous les travaux ;
 # l'artefact passe par le jeton d'exécution du runner, pas par celui-ci.
 #
 # **Et ce n'est pas redondant avec le réglage du dépôt**, qui est pourtant déjà en lecture seule

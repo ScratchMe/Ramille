@@ -415,7 +415,10 @@
 // **Et une le même jour, sur « Toi »** (#305) : l'étape « suppression du compte » suit « Supprimer mon
 // compte » image par image depuis le rendu statique. La place réservée mise à zéro
 // (`HAUTEUR_DU_COMPTE_EN_LECTURE = 0`) : le parcours s'arrête à cette étape, sur « bouge de 396 px
-// (365 → 527 → 761) », et à elle seule. Le témoin, sur le même arbre, passe de bout en bout.
+// (365 → 527 → 761) », et à elle seule. Le témoin, sur le même arbre, passe de bout en bout. **Rejouée
+// après la contre-lecture du même jour**, qui a fait poser les trois lectures de l'écran ensemble et
+// démarrer le relevé sur l'onglet du parcours : même chute, en un seul saut (365 → 761), et l'échec
+// capturé sur `/compte` — il l'était sur le plan, l'écran d'un autre onglet.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1673,32 +1676,22 @@ try {
   etape('suppression du compte');
   // **Et « Supprimer mon compte » ne bouge plus pendant que « Toi » se lit** (décision du 01/10/2026,
   // #305) : l'écran garde la place du compte et des rappels (`HAUTEUR_DU_COMPTE_EN_LECTURE`,
-  // `src/app/compte/index.tsx`). Un second onglet du même appareil, au relevé posé avant le premier
-  // script : c'est la seule façon de voir la première image, celle du rendu statique, où le lien
-  // était à 335 px avant de descendre à 747. Ce profil est anonyme, à 420 de large — la largeur et le
-  // compte pour lesquels la place a été mesurée, donc il ne doit rester **rien** ; à 360, ou pour un
-  // compte rattaché, un reste de quelques dizaines de pixels est le risque accepté avec la décision.
-  {
-    const ongletDeToi = await nouvelOnglet({ contexte: page.context() });
-    await ongletDeToi.addInitScript(releverParImage, {
-      mesures: { lien: ['texte', 'Supprimer mon compte'] },
-      duree: 15_000,
-    });
-    await ongletDeToi.goto(`${base}/compte`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await ongletDeToi.getByRole('radiogroup', { name: 'Les rappels', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
-    await ongletDeToi.waitForTimeout(600);
-    const positions = (await echantillons(ongletDeToi)).map((e) => e.lien?.haut).filter((h) => typeof h === 'number');
-    await ongletDeToi.close();
-    assurer(positions.length > 0, '« Supprimer mon compte » introuvable pendant la lecture de « Toi » : la mesure ne peut pas conclure');
-    const finale = positions[positions.length - 1];
-    const saut = Math.max(...positions.map((h) => Math.abs(h - finale)));
-    assurer(
-      saut <= 8,
-      `« Supprimer mon compte » bouge de ${Math.round(saut)} px pendant que « Toi » se lit ` +
-        `(${[...new Set(positions.map(Math.round))].join(' → ')}) : la place du compte et des rappels n'est plus ` +
-        'gardée — `HAUTEUR_DU_COMPTE_EN_LECTURE`, src/app/compte/index.tsx, à remesurer si une phrase a changé'
-    );
-  }
+  // `src/app/compte/index.tsx`). Le relevé image par image démarre **avant le premier script** de la
+  // page qui suit — la seule façon de voir la première image, celle du rendu statique, où le lien était
+  // à 335 px avant de descendre à 747. Il passe par le relevé que le contexte pose déjà dans chaque
+  // document, et ne le démarre qu'une fois celui-ci là : l'ordre des scripts d'initialisation d'un
+  // contexte et d'une page n'est pas garanti (contre-lecture du 01/10/2026), et tous ont tourné avant le
+  // premier `setTimeout`. Sur l'onglet du parcours, et pas sur un second : un échec se capture sur
+  // l'écran qui a échoué. Ce profil est anonyme, à 420 de large, sur web — la largeur, le compte et la
+  // plateforme où la place a été mesurée, donc il ne doit rester **rien** ; ailleurs, un reste est le
+  // risque accepté avec la décision.
+  await page.addInitScript(
+    ({ mesures, duree }) => {
+      const demarrer = () => (window.__releve ? window.__releve.demarrer(mesures, duree) : setTimeout(demarrer, 0));
+      demarrer();
+    },
+    { mesures: { lien: ['texte', 'Supprimer mon compte'] }, duree: 15_000 }
+  );
   await page.goto(`${base}/compte`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   // **L'écran posé d'abord, le clic ensuite** (CI du 30/09/2026). `/compte` rend « Supprimer mon
   // compte » dès son HTML statique, puis grandit au-dessus du lien quand le compte et les rappels
@@ -1710,6 +1703,17 @@ try {
   // 01/10/2026, l'écran garde la place** et le lien ne bouge plus à cette largeur (gardé juste
   // au-dessus) ; l'attente reste, parce qu'ailleurs un reste de saut est accepté.
   await page.getByRole('radiogroup', { name: 'Les rappels', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+  await page.waitForTimeout(600);
+  const positionsDuLien = ((await echantillons(page)) ?? []).map((e) => e.lien?.haut).filter((h) => typeof h === 'number');
+  assurer(positionsDuLien.length > 0, '« Supprimer mon compte » introuvable pendant la lecture de « Toi » : la mesure ne peut pas conclure');
+  const finale = positionsDuLien[positionsDuLien.length - 1];
+  const saut = Math.max(...positionsDuLien.map((h) => Math.abs(h - finale)));
+  assurer(
+    saut <= 8,
+    `« Supprimer mon compte » bouge de ${Math.round(saut)} px pendant que « Toi » se lit ` +
+      `(${[...new Set(positionsDuLien.map(Math.round))].join(' → ')}) : la place du compte et des rappels n'est plus ` +
+      'gardée — `HAUTEUR_DU_COMPTE_EN_LECTURE`, src/app/compte/index.tsx, à remesurer si une phrase a changé'
+  );
   await bouton('Supprimer mon compte');
   await bouton('Supprimer définitivement');
   await attendreTexte('C’est fait.');
