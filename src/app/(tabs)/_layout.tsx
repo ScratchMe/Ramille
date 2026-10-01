@@ -10,6 +10,7 @@ import { ControlHeight, FontFamily, Mouvement, Spacing, Stroke } from '@/constan
 import { useTheme } from '@/hooks/use-theme';
 import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-parcours';
 import { animationDesOnglets, barreArrive } from '@/types/mouvement';
+import { toucherDOnglet, type PileDOnglet } from '@/types/plan';
 import { etatDuPremierParcours, type EtapeDuPremierParcours } from '@/types/premier-parcours';
 
 /**
@@ -241,6 +242,7 @@ export default function TabsLayout() {
         // « Toutes les pistes » ferait rouvrir les pistes au prochain toucher sur « Plan ».
         listeners={({ navigation }) => ({
           tabPress: (evenement) => {
+            if (toucherDOnglet(pileDeLOnglet(navigation.getState(), evenement.target)) === 'laisserFaire') return;
             evenement.preventDefault();
             navigation.navigate('plan', { screen: 'index' });
           },
@@ -258,8 +260,14 @@ export default function TabsLayout() {
         // bilan, toucher « Suivi » rouvrait ce bilan au lieu du suivi (retour d'appareil du
         // 07/09/2026). Un onglet est un lieu, pas un signet — d'autant qu'avec un seul bilan
         // en base, on n'atteignait plus jamais le vrai écran de suivi.
+        //
+        // **Et déjà à sa racine, il laisse faire la barre** (audit T-14, 01/10/2026) : le toucher
+        // était retenu à chaque fois, donc toucher l'onglet où l'on est ne remontait jamais en haut
+        // de la page — `useScrollToTop` ignore un toucher retenu. `toucherDOnglet` décide pour les
+        // deux onglets ; l'écran remonte lui-même, s'il s'y est abonné.
         listeners={({ navigation }) => ({
           tabPress: (evenement) => {
+            if (toucherDOnglet(pileDeLOnglet(navigation.getState(), evenement.target)) === 'laisserFaire') return;
             evenement.preventDefault();
             navigation.navigate('suivi', { screen: 'index' });
           },
@@ -268,6 +276,17 @@ export default function TabsLayout() {
     </Tabs>
     </ContexteDuPremierParcours.Provider>
   );
+}
+
+/**
+ * La pile de l'onglet touché, lue sur l'état du navigateur d'onglets **au moment du toucher** — et
+ * pas sur la `route` que reçoivent les écouteurs, qui date du dernier rendu de la barre.
+ */
+function pileDeLOnglet(
+  etat: { routes: readonly { key: string; state?: PileDOnglet }[] },
+  cle: string | undefined
+): PileDOnglet {
+  return etat.routes.find((onglet) => onglet.key === cle)?.state;
 }
 
 // `tabBarLabelStyle` ne varie pas selon l'état : pour que l'onglet actif soit en 600, il faut
