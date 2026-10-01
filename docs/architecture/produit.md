@@ -38,7 +38,8 @@ session anonyme dès l'ouverture) : reprendre l'ordre de la spec ne remet pas so
 
 ## 2. Où en est le produit, et les increments livrés
 
-**Au 01/10/2026, les cinq briques sont livrées, et l'audit du 09/09/2026 est soldé.** Ce qui
+**Au 01/10/2026, les cinq briques sont livrées, et chaque chantier de l'audit du 09/09/2026 est
+tranché.** Ce qui
 précède dans le temps se lit plus bas, increment par increment ; ce paragraphe est l'état, à
 réécrire à chaque livraison plutôt qu'à compléter :
 
@@ -61,8 +62,8 @@ réécrire à chaque livraison plutôt qu'à compléter :
 construit, avec le reste de C4.8 ; la seconde vague des transitions (`v1-30` §6), après la recette sur appareil ;
 le thème sombre, après le lancement (`v1-29` §6.1) ; les déplacements professionnels, au backlog
 (§5). **Et avant de publier sur Play, ce qui reste n'est pas du code** : les vérifications sur
-appareil de `v1-13` §11 — aucun build EAS n'est parti depuis le 14/09/2026, et le prochain est prévu
-à partir du 1er octobre (`v1-30` §9) —, la feuille web de [`docs/recette/`](../recette/), et la checklist de
+appareil de `v1-13` §11 — aucun build EAS n'est parti depuis le 14/09/2026, et le prochain se demande à
+la personne qui pilote, pas avant le 1er octobre (`v1-30` §9) —, la feuille web de [`docs/recette/`](../recette/), et la checklist de
 publication de `docs/exploitation/README.md` §4.
 
 **L'increment `v1-11-navigation-et-design-system.md`** (07/09/2026, cinq

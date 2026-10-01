@@ -18,8 +18,8 @@ propre à Ramille : les leçons qui voyagent vivent dans les fichiers d'outil (`
 
 **Les deux paragraphes qui fondent ce modèle sont restés dans `CLAUDE.md`** — une session anonyme
 dès l'ouverture, une connexion qui la convertit en gardant le même `user_id` —, parce qu'ils se
-cassent sans qu'on ait ouvert ce fichier. Tout ce qui suit en découle. Les pièges propres à Supabase
-Auth, qui voyagent, sont dans `SUPABASE.md` §1.1 et §2.4.
+cassent sans qu'on ait ouvert ce fichier. Tout ce qui suit en découle. Les pièges de Supabase Auth
+sont dans `SUPABASE.md` : §1.1 pour ceux qui voyagent, §2.4 pour ceux de Ramille.
 
 ---
 
@@ -27,7 +27,7 @@ Auth, qui voyagent, sont dans `SUPABASE.md` §1.1 et §2.4.
 
 **Il n'y a pas de mot de passe** (`v1-10` §2.D, 07/09/2026) : il n'a jamais servi — aucun
 `signInWithPassword` dans le produit, zéro compte n'en portait — et la confirmation d'email
-faisait déjà tout le travail. Le seul chemin vers un compte **existant** (nouvel appareil) est
+faisait déjà tout le travail. Le seul chemin **délibéré** vers un compte existant (nouvel appareil) est
 `demanderLaConnexion` (`signInWithOtp` avec `shouldCreateUser: false` — elle s'appelait
 `sendAccountAccessLink` tant qu'elle envoyait un lien), écran
 `/connexion/retrouver`, atteignable depuis l'accueil de l'onboarding (« J'ai déjà un compte »)
@@ -65,10 +65,10 @@ lisible dans la console et par un appel direct, et rien dans GoTrue ne la masque
   l'adresse a été prise entre les deux envois. Le message y reste le générique, qui ne nomme pas
   l'état de l'adresse, et l'atteindre demande une course que seul celui qui a pris l'adresse peut
   provoquer. Sur
-natif, un lien parti **avant le 20/09/2026** arrivait hors de l'app (messagerie) et remontait par
-`Linking.useURL()` dans `_layout.tsx` ; ce chemin reste comme filet, avec le retour OAuth de Google,
-et c'est pour eux que le scheme `ramille://` figure encore dans les Redirect URLs Supabase — qui ne
-servent plus qu'à Google (plus bas).
+natif, un lien de connexion arrivait hors de l'app (messagerie) et remontait par `Linking.useURL()`
+dans `_layout.tsx` ; depuis le 20/09/2026 il n'y a plus de lien, et ce chemin ne sert plus qu'au
+retour OAuth de Google sur natif — c'est pour lui que le scheme `ramille://` figure encore dans les
+Redirect URLs Supabase, qui ne servent plus qu'à Google (plus bas).
 
 **Le flux est en PKCE depuis le 20/09/2026, et le lien ne s'ouvre plus que là où il a été
 demandé.** Le défaut d'`auth-js` est `implicit` : tout lien livrait alors `access_token` **et**
@@ -144,8 +144,9 @@ rattachement rattachait son adresse au compte d'un inconnu d'un seul clic. Sept 
   `supabase stop && start` ne fait rien — et la garde reste verte pour la mauvaise raison.
 - **Les Redirect URLs ne servent plus qu'à Google.** `emailRedirectTo` a disparu des deux appels :
   il ne remplissait que `{{ .ConfirmationURL }}`, que plus aucun gabarit n'emprunte. Le chemin de
-  lien profond (`Linking.useURL()`, le scheme `ramille://`, `createSessionFromUrl`) reste comme
-  **filet** pour un lien parti avant le changement, et pour le retour OAuth sur natif.
+  lien profond (`Linking.useURL()`, le scheme `ramille://`, `createSessionFromUrl`) est resté le
+  20/09/2026 comme **filet** pour un lien parti avant le changement — expiré depuis, la validité
+  étant d'une heure — et sert désormais au seul retour OAuth sur natif.
 
 **`estPanneDeTransport` couvre les 5xx, et c'est assumé** — `auth-js` lève
 `AuthRetryableFetchError` pour chacun d'eux : `SUPABASE.md` §2.4.
@@ -185,7 +186,7 @@ retire : `SUPABASE.md` §1.2 et §2.5.
 
 ## 2. Retrouver un compte existant
 
-`/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis **huit**
+`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant, s'atteint depuis **huit**
 endroits, et `SOURCES_RETROUVER` les énumère — le compte ne s'écrit ici que parce que la liste est
 la source, pas ce paragraphe. Quatre sont d'origine : l'accueil de l'onboarding (« J'ai déjà un
 compte »), le lien délibéré « J'ai déjà un compte » du formulaire de `/connexion/email` — **et
@@ -277,7 +278,7 @@ Et le piège central, dérivé dans `src/types/compte-suppression.ts` : **une se
 vide n'est pas un compte à supprimer.** Sans le test « porte-t-elle au moins un bilan ? », la
 page effacerait la session créée par sa propre ouverture et annoncerait une suppression qui
 n'a rien supprimé. Le test épingle aussi qu'une session anonyme portant déjà une adresse non
-confirmée (entre `updateUser({ email })` et le clic de confirmation) n'est **pas** un compte
+confirmée (entre `updateUser({ email })` et la saisie du code — le clic d'un lien jusqu'au 20/09/2026) n'est **pas** un compte
 rattaché. **La suppression
 efface une seule ligne, `auth.users`, et laisse la cascade faire le reste** : une fonction qui
 énumérerait les tables deviendrait fausse à la prochaine migration, en silence. **Parcourue une fois

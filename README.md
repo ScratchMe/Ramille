@@ -73,12 +73,12 @@ construire (`SUPABASE.md` §2.1).
   cassent sans qu'on ait rien décidé, l'architecture en bref, et **une table qui dit quel fichier
   ouvrir avant de toucher à quoi**. C'est par là qu'on commence.
 - **Les fichiers d'outil**, à la racine — [`SUPABASE.md`](SUPABASE.md), [`EXPO.md`](EXPO.md),
-  [`VERCEL.md`](VERCEL.md), [`TESTING.md`](TESTING.md), [`RECETTE.md`](RECETTE.md) — portent les
-  pièges de chaque outil, coupés entre ce qui vaut partout et ce qui est propre à Ramille.
-- **Les fichiers de sujet**, à la racine aussi — [`FRONT.md`](FRONT.md) (l'écran et ce qu'il
-  affiche), [`BILAN.md`](BILAN.md), [`PLAN.md`](PLAN.md), [`BOUCLE.md`](BOUCLE.md),
-  [`COMPTE.md`](COMPTE.md), [`MESURE.md`](MESURE.md) — portent les règles de chaque brique du
-  produit.
+  [`VERCEL.md`](VERCEL.md), [`TESTING.md`](TESTING.md), [`RECETTE.md`](RECETTE.md), et
+  [`FRONT.md`](FRONT.md) pour l'écran et ce qu'il affiche — portent les pièges de chaque outil,
+  coupés entre ce qui vaut partout et ce qui est propre à Ramille.
+- **Les fichiers de sujet**, à la racine aussi — [`BILAN.md`](BILAN.md), [`PLAN.md`](PLAN.md),
+  [`BOUCLE.md`](BOUCLE.md), [`COMPTE.md`](COMPTE.md), [`MESURE.md`](MESURE.md) — portent les
+  règles de chaque brique du produit, toutes propres à Ramille.
 - **`docs/architecture/`** : [`produit.md`](docs/architecture/produit.md), document vivant (ce qui
   est livré, la feuille de route), et les décisions datées `v1-NN-*.md`, qui ne se réécrivent pas —
   dont [`v1-13`](docs/architecture/v1-13-audit-et-chantiers.md), l'audit et ses chantiers, et

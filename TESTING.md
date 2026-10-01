@@ -221,8 +221,8 @@ bout (§2.9), et quelques écrans leur test (§2.10) :
   **La couverture est relevée en CI sans seuil** (`npm test -- --coverage`, périmètre
   `src/types` · `src/lib` · `src/constants` dans `collectCoverageFrom`) : un seuil transforme une
   carte en obstacle et se contourne en écrivant des tests qui touchent du code sans rien affirmer.
-  Les écrans n'y sont pas — ils ne sont pas testés, par décision, et les lister à 0 % à chaque
-  passage noierait la carte. 79 % des lignes au 14/09/2026.
+  Les écrans n'y sont pas — hors du périmètre de couverture, testés seulement par exception sous le
+  critère de §2.10 —, et les lister à 0 % à chaque passage noierait la carte. 79 % des lignes au 14/09/2026.
   **Doubler `react-native` en entier passe au vert en salissant la sortie** : le `setup.js` de
   jest-expo est privé de ce qu'il installe, et l'étaler avec `requireActual` **lit** chaque
   propriété du module, donc déclenche les avertissements de dépréciation posés sur ses exports
@@ -258,9 +258,8 @@ bout (§2.9), et quelques écrans leur test (§2.10) :
   Des modules de `src/lib` sont testés en place — la liste se lit en listant `src/lib/*.test.ts` —,
   et deux conditions les y gardent : `format.ts` reste pur (il est importé par
   `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la suite qui en
-  dépend, par un lien que rien n'affiche), et ceux dont c'est l'entrée-sortie qu'on éprouve
-  (`bilan-draft.ts` et les autres préférences locales) doublent AsyncStorage, jamais
-  `@/lib/supabase`.
+  dépend, par un lien que rien n'affiche), et les autres doublent exactement ce qu'ils éprouvent —
+  AsyncStorage pour `bilan-draft.ts` et les préférences locales, le client pour `auth.test.ts`.
 - **pgTAP** (`supabase/tests/database/*.sql`, numérotés, un fichier par sujet — l'inventaire se
   lit dans le répertoire) sur les fonctions SQL de calcul, sur les policies RLS (isolation
   stricte par utilisateur en lecture/écriture, verrouillage des tables à écriture serveur-only,
@@ -684,8 +683,8 @@ jour touchait ses trois branches d'un coup.
 
 `scripts/verifier-code-de-connexion.mjs` — il portait le mot « lien » dans son nom jusqu'au passage
 au code, le 20/09/2026, et a été renommé avec son sujet — demande un code **par l'écran**, lit l'e-mail réellement reçu, et
-éprouve ce qui suit — et la plupart de ces assertions gardent un refus, pas un chemin heureux. La
-liste fait foi dans l'en-tête du script ; elle est recopiée ici pour être lue :
+éprouve ce qui suit — les deux premières assertions sont des chemins heureux, les autres gardent
+un refus, une absence ou une indistinction. La liste fait foi dans l'en-tête du script ; elle est recopiée ici pour être lue :
 
 1. le code rattache une adresse — jusqu'à une session non anonyme, et la base relue derrière ;
 2. il rouvre un compte depuis un **navigateur neuf**, c'est-à-dire le cas que le lien ne pouvait

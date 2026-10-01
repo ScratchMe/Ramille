@@ -115,7 +115,7 @@ function verifier(condition, message) {
   if (!condition) ecarts.push(`[${etape}] ${message}`);
 }
 
-/** Un compte existant, adresse confirmée — `sendAccountAccessLink` refuse d'en créer un. */
+/** Un compte existant, adresse confirmée — `demanderLaConnexion` refuse d'en créer un. */
 async function creerUnCompte(adresse) {
   const reponse = await fetch(`${API}/auth/v1/admin/users`, {
     method: 'POST',

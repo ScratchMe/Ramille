@@ -33,9 +33,9 @@ intégrer — elles ne se devinent pas :
 
 - **tout est en français** — interface, messages d'erreur, commentaires, contenu ;
 - **[`CLAUDE.md`](CLAUDE.md) est la carte du projet.** Les fichiers d'outil à la racine
-  (`SUPABASE.md`, `EXPO.md`, `TESTING.md`, `VERCEL.md`, `RECETTE.md`) portent les pièges de chaque
-  outil, et les fichiers de sujet (`FRONT.md`, `BILAN.md`, `PLAN.md`, `BOUCLE.md`, `COMPTE.md`,
-  `MESURE.md`) les règles de chaque brique du produit ; tous s'ouvrent **sur déclencheur** : la
+  (`SUPABASE.md`, `EXPO.md`, `TESTING.md`, `VERCEL.md`, `RECETTE.md`, et `FRONT.md` pour l'écran)
+  portent les pièges de chaque outil, et les fichiers de sujet (`BILAN.md`, `PLAN.md`, `BOUCLE.md`,
+  `COMPTE.md`, `MESURE.md`) les règles de chaque brique du produit ; tous s'ouvrent **sur déclencheur** : la
   table en tête de `CLAUDE.md` dit lequel. C'est par là qu'on commence, pas par le code ;
 - **les décisions sont datées et ne se réécrivent pas** (`docs/architecture/v1-0N-*.md`). Plusieurs
   tests n'épinglent pas un comportement mais une décision, précisément pour qu'elle ne soit pas

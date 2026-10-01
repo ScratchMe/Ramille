@@ -448,7 +448,8 @@ Le parcours : `/` route sur `/plan` si un bilan complété existe, sinon `/onboa
 `/suivi/bilan?id=…&nouveau=1`, d'où l'on rejoint le plan. `/connexion` s'atteint depuis la
 restitution — transition imposée (`resultat_transition`) et bouton délibéré (`resultat_cta`),
 deux provenances que la mesure distingue — et depuis `/compte` (`compte`).
-`/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis les provenances
+`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant — la branche « adresse
+prise » de `/connexion/email` y ramène aussi, sans le dire, depuis le 21/09/2026 —, s'atteint depuis les provenances
 que `SOURCES_RETROUVER` (`src/types/analytics.ts`) énumère — la liste est la source, et
 `COMPTE.md` §2 dit d'où vient chacune et pourquoi quatre d'entre elles ont longtemps été muettes. Le
 compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
@@ -598,15 +599,19 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
   spécialisé rappelé en direct ;
 - les facteurs sont l'**ACV complète** (endpoint `ecv`), jamais la seule phase d'usage, et un mode
   ajouté au produit impose sa ligne dans `emission_factor_sources` ;
-- `assessment_results` fige le bilan : on ne recalcule jamais les kilomètres ailleurs ;
-- la soumission écrit `in_progress` d'abord ; un bilan se **retire** (`withdrawn`, par
-  `retirer_le_bilan`), il ne se supprime jamais.
+- `assessment_results` fige le bilan au moment de la soumission : jamais recalculé côté client ;
+- ajouter un mode de la catégorie vélo-marche, ou une réponse de voyage, touche aussi la boucle —
+  un complément de maintien, une ligne dans `a_des_voyages_declares` (`BOUCLE.md` §1) ; et la
+  question du télétravail se gouverne par `teletravailSePose` (`PLAN.md` §1) ;
+- la soumission écrit `in_progress` d'abord ; la personne **retire** un bilan (`withdrawn`, par
+  `retirer_le_bilan`), elle ne le supprime pas — seules la suppression du compte et la purge l'effacent.
 
 **`PLAN.md`** — les actions, l'engagement, la saison et le premier parcours :
 - `plan_actions` ne s'écrit que par RPC (`commit_plan_action`…), jamais par une policy : **la RLS
   filtre des lignes, jamais des colonnes** — la même raison ferme `engagement_checkins` (`BOUCLE.md`) ;
 - aucune action sous 5 kg/an, et une condition de contexte qu'on ne peut pas évaluer n'est pas
-  remplie ;
+  remplie ; l'estimateur lit l'instantané figé du bilan, et on ne recalcule jamais les kilomètres
+  ailleurs ;
 - `plan_actions` a deux clés étrangères vers `plan_cycles` : une lecture imbriquée nomme la sienne ;
 - aucun chemin ne détruit un engagement sans l'archiver (`archiver_engagement`) ;
 - `cadence_type = 'rolling_quarter'` est dormant, pas mort.
@@ -622,13 +627,16 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
 - les deux boucles partent du dernier bilan valide, par `boucles_du_dernier_bilan`.
 
 **`COMPTE.md`** — la connexion, la session, le hors-ligne et la suppression :
-- pas de mot de passe : rattachement et reconnexion passent par un code à **huit** chiffres, et son
-  `type` (`email_change` / `email`) n'est pas interchangeable ;
+- pas de mot de passe : par e-mail, le rattachement et la reconnexion passent par un code à
+  **huit** chiffres, dont le `type` (`email_change` / `email`) n'est pas interchangeable ; Google
+  passe par `linkIdentity` ;
 - aucun écran ne dit si une adresse a un compte ;
 - le flux est en PKCE, et une erreur d'auth se reconnaît à son **code**, jamais à son message ;
 - hors ligne se reconnaît à `status === 0`, et la marque locale de bilan n'est lue qu'en repli ;
 - la suppression efface une ligne d'`auth.users` et laisse la cascade faire le reste — jamais une
-  table rattachée à `profiles` autrement qu'en `on delete cascade`.
+  table rattachée à `profiles` autrement qu'en `on delete cascade` ;
+- sur Android, ce que l'app capture tient au `pathPrefix` `/plan` d'`app.json`, un préfixe de
+  **chaîne** : une future route `/planning` ou `/plan-b` serait capturée sans que rien ne le dise.
 
 **`MESURE.md`** — l'usage, les cohortes et le canal de retour :
 - on n'instrumente jamais ce que le schéma enregistre déjà ;
@@ -641,7 +649,7 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
 
 **Cette section vit désormais dans [`FRONT.md`](FRONT.md)**, sorti d'ici le 17/09/2026 où il pesait
 545 lignes sur 1 911 — 29 % du seul fichier qu'une session charge à chaque fois. Même motif que les
-quatre autres fichiers d'outil : ce qui est propre à **un sujet** s'ouvre sur déclencheur, et la
+autres fichiers d'outil : ce qui est propre à **un sujet** s'ouvre sur déclencheur, et la
 table en tête de ce fichier dit lesquels.
 
 Ce qui y est : les repères chiffrés et leurs trois formateurs, le palier, le vocabulaire des postes

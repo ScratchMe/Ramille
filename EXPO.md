@@ -379,11 +379,17 @@ libellé ensemble** : ce serait casser le motif sur la cible réelle, qui est un
 ### 2.3 Android : App Links et build natif
 
 **Le lien du rappel ouvre l'app grâce à un fichier servi par le site, pas par l'app.**
-`public/.well-known/assetlinks.json` (recopié tel quel dans l'export) autorise nommément
-`fr.ramille.app` à revendiquer `https://www.ramille.fr/plan`, déclaré en `intentFilters`
-`autoVerify` dans `app.json`. **La revendication est volontairement étroite** : réclamer tout
-le domaine ouvrirait aussi `/compte/suppression` et les pages légales dans l'app, alors que
-Google Play exige précisément qu'elles restent atteignables **sans** elle. Deux façons de
+`public/.well-known/assetlinks.json` (recopié tel quel dans l'export) délègue à `fr.ramille.app`
+**tout** `www.ramille.fr` — `delegate_permission/common.handle_all_urls` est la seule relation
+qu'Android accepte pour un App Link —, et c'est l'`intentFilter` `autoVerify` d'`app.json`, par son
+`pathPrefix` `/plan` **et lui seul**, qui borne ce que l'app revendique (`COMPTE.md` §1 ; ce fichier
+attribuait ce périmètre à `assetlinks.json` jusqu'au 01/10/2026). **La revendication est
+volontairement étroite** : réclamer tout le domaine ouvrirait aussi `/compte/suppression` et les
+pages légales dans l'app, alors que Google Play exige précisément qu'elles restent atteignables
+**sans** elle. Deux pièges à connaître avant d'ajouter une route ou un filtre : `pathPrefix` est un
+préfixe de **chaîne** et non de segment, donc une future route `/planning` ou `/plan-b` serait
+capturée par l'app ; et un second `intentFilter` n'aurait aucun garde-fou du côté
+d'`assetlinks.json`. Deux façons de
 casser ça en silence — le fichier qui disparaît de l'export, et l'empreinte de signature qui
 change : **Google Play resigne l'AAB avec sa propre clé**, donc l'empreinte de production
 différera de celle du keystore EAS et devra être **ajoutée** au tableau (qui en accepte

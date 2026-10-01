@@ -56,7 +56,7 @@ pas dans un chiffre** (11/09/2026) :
   fenêtre de 90 jours.
 - **`connexion_demande` est l'intention, `connexion_success` le fait constaté.** L'écran email
   émettait `connexion_success` juste après `updateUser({ email })`, que `etatDuRattachement`
-  classe pourtant en `a_confirmer` : `is_anonymous` ne bascule qu'au clic du lien reçu. Le chemin
+  classe pourtant en `a_confirmer` : `is_anonymous` ne bascule qu'au clic du lien reçu — à la saisie du code depuis le 20/09/2026. Le chemin
   Google, lui, n'émettait qu'après une identité liée — les deux branches ne mesuraient pas le même
   fait, et leur comparaison était faussée du taux d'emails jamais confirmés, c'est-à-dire du
   chiffre qu'on voulait lire. L'écart entre les deux **est** ce taux.

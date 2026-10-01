@@ -111,7 +111,18 @@ pas défaire :
   autocar — ce n'est pas son véhicule, donc il n'y a rien à lui demander de plus. Son chiffre
   surprend et c'est le sujet — 0,03756, soit **plus qu'un TER** et douze fois un TGV.
 
+**Deux réponses de ce questionnaire sont gouvernées ailleurs, et un oubli y est silencieux** :
+ajouter une réponse de voyage impose sa ligne dans `public.a_des_voyages_declares`, sans quoi le
+voyage ne déclenche jamais la boucle mensuelle (`BOUCLE.md` §1 — c'est le défaut de l'autocar, en
+C4.4) ; et la question du télétravail (B4.4) s'affiche, se réclame et s'efface par une seule
+dérivation, `teletravailSePose`, dont la règle est en `PLAN.md` §1 (paragraphe de C3.8).
+
 ## 2. Les modes et les facteurs d'émission
+
+**Ajouter un mode touche aussi la boucle, et ce fichier ne le dit pas ailleurs** : un mode de la
+catégorie `velo_marche` impose son complément dans `public.complement_de_maintien` **et** dans sa
+jumelle de `src/types/checkin.ts`, sans quoi il reçoit « autrement » des deux côtés en silence
+(`BOUCLE.md` §1, paragraphe de C2.5).
 
 **Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine,
 two_wheeler, train, velo)`**, qui compose **quatre** résolveurs spécialisés depuis C4.4

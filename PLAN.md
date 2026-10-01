@@ -17,8 +17,8 @@ l'un d'eux dit « `CLAUDE.md` a écrit… », c'est là que l'erreur avait été
 propre à Ramille : les leçons qui voyagent vivent dans les fichiers d'outil (`SUPABASE.md`,
 `TESTING.md`, `EXPO.md`, `VERCEL.md`) et dans `FRONT.md` §1.
 
-Le point de suivi qui referme une action engagée est dans `BOUCLE.md` ; ce que l'écran du plan
-affiche et tait, ligne par ligne, est dans `FRONT.md` §2.11.
+Le point de suivi qui referme une action engagée est dans `BOUCLE.md` ; ce que les écrans d'onglet
+font de leurs états et de leur mise en page est dans `FRONT.md` §2.11, et la carte d'attente en §2.7.
 
 ---
 

@@ -52,7 +52,7 @@ Aujourd'hui : <date>.
 - Tu peux créer : <les modules partagés autorisés>. Aucun autre fichier partagé : si tu en as
   besoin, dis-le dans ton rapport.
 - Tu ne touches pas à : <les fichiers réservés à l'intégration — CLAUDE.md, produit.md, le document
-  de chantier>.
+  de chantier, et les fichiers de sujet ou d'outil qu'un autre chantier de la vague touche aussi>.
 - Contrôles : `npx tsc --noEmit`, `npm run lint`, `npm test` (jamais `npx jest`). Un export et ses
   contrôles : `node scripts/rejouer-la-ci.mjs export`, qui donne à l'export son propre cache de
   Metro — à la main, `--clear` ne protège pas d'une autre copie qui exporte en même temps. Pour la
