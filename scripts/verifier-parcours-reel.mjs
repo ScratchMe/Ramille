@@ -312,6 +312,16 @@
 //   | Q3 — un lien posé avant « Commencer » dans la feuille | la même étape : le focus est sur ce lien, pas sur « Commencer » |
 //   | Q4 — la feuille qui ne s'ouvre plus à l'entrée (la lecture de l'engagement ignorée) | la même étape : « ne s'est pas ouverte à l'entrée du re-bilan » |
 //   | P2 rejouée — la feuille se démonte sans sortie | la même étape, à Échap : elle « disparaît d'un coup » — l'étape réécrite garde ce que l'ancienne gardait |
+//   | Q5 — le voile de la feuille redevenu un `Pressable` (01/10/2026, l'arbre intégré de `7032f1c`) | la même étape : « la feuille ouverte n'a pas le focus sur « Commencer » : {"nom":"DIV","dansLaFeuille":true} » |
+//
+// **Q5 n'a pas été choisie : la CI de la PR #314 l'a trouvée** (01/10/2026). Le chantier du compte avait
+// fait du voile un `Pressable` pour que son toucher ferme la feuille (T-7) ; sur web, il a pris un
+// `tabindex="0"` malgré `focusable={false}`, et c'est lui que le piège du `Modal` a focalisé — mesuré
+// en journalisant chaque `.focus()` du rejeu : 6 ms après l'insertion du dialogue, depuis
+// `ModalFocusTrap`, sans geste dans la feuille. Rejouée sur le commit de la correction, le voile seul
+// rendu à son état fautif, puis une seconde fois avec `tabIndex={-1}` en plus : la garde tombe les
+// deux fois, sur le même message — retirer l'arrêt de tabulation ne suffit pas, `.focus()` prend
+// encore (`FeuilleDuBas`).
 //
 // Ce que ces étapes ne voient pas : « Pas maintenant » (Jest le touche, `entree-du-re-bilan.test.tsx`),
 // et le retour matériel d'Android, que le `Modal` prend à `BackHandler` — c'est l'appareil qui le dit.
@@ -1821,10 +1831,12 @@ try {
   const feuillePosee = await mesurer(page, 'feuille', FEUILLE);
   assurer(feuillePosee?.voile && feuillePosee.haut !== null, `la feuille « ${FEUILLE} » est introuvable une fois ouverte`);
   // **Le focus est dans la feuille, sur « Commencer »** (relevé le 01/10/2026). Ouverte à l'entrée
-  // d'un écran, elle n'a pas de geste à suivre : le `Modal` de react-native-web ne déplace pas le
-  // focus à l'ouverture (il piège le suivant, et rend l'ancien à la fermeture), donc ce qui le pose
-  // là ne se lit pas dans le composant — d'où la garde. Sans elle, un clavier ou un lecteur d'écran
-  // resterait sous le voile, sur une étape qu'on ne peut pas encore atteindre.
+  // d'un écran, elle n'a pas de geste à suivre : c'est le `Modal` de react-native-web qui pose le focus
+  // à l'ouverture — son piège essaie `.focus()` sur chaque descendant dans l'ordre du DOM et garde le
+  // premier qui le prend, puis rend l'ancien à la fermeture (mesuré le 01/10/2026, Q5 en tête). Ce qui
+  // le met sur « Commencer » est donc l'ordre des focalisables de la fenêtre, voile compris, et rien ne
+  // le pose dans un composant — d'où la garde. Sans elle, un clavier ou un lecteur d'écran resterait
+  // sous le voile, sur une étape qu'on ne peut pas encore atteindre.
   const focusALOuverture = await page.evaluate((titre) => {
     const actif = document.activeElement;
     const dialogue = [...document.querySelectorAll('[aria-modal="true"]')].find((d) => d.getAttribute('aria-label') === titre);
