@@ -120,14 +120,15 @@ describe('ActionCommitment — jusqu’à la relecture', () => {
  * le joue sur la liste, pour une échéance ; ce fichier voit la forme en jours, sur le plan, que le
  * parcours ne touche pas incomplète — et le focus, qu'il lit là-bas sur une case d'option.
  *
- * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), chacune faisant tomber la sienne :
- *   - « C'est noté » remis `disabled` sur une intention incomplète (l'état d'avant) → « agit en
- *     attente… », par sa première assertion ;
- *   - la demande jamais posée (`setDemande(true)` retiré) → « agit en attente… », sur la ligne ;
- *   - le focus jamais donné (`donnerLeFocus` retiré de `demander`) → « agit en attente… », sur le
- *     focus ;
- *   - la garde de `submit` retirée (l'appel part incomplet) → « agit en attente… », sur l'appel ;
- *   - la demande qui ne retombe plus (`setDemande(false)` retiré) → « la ligne retombe… ».
+ * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), cinq mutations jouées une à une, rien hors
+ * de ce bloc ne tombant :
+ *   - « C'est noté » remis `disabled` sur une intention incomplète (l'état d'avant) → les trois tests
+ *     du bloc, le toucher ne faisant plus rien ;
+ *   - la demande jamais posée (`setDemande(true)` retiré) → les trois, sur la ligne ;
+ *   - la garde de `submit` retirée (l'appel part incomplet) → les trois, la ligne absente et l'appel
+ *     parti ;
+ *   - le focus jamais donné (`donnerLeFocus` retiré de `demander`) → « agit en attente… », seul ;
+ *   - la demande qui ne retombe plus (`setDemande(false)` retiré) → « la ligne retombe… », seul.
  */
 describe('ActionCommitment — « C’est noté » en attente', () => {
   let focus: jest.SpyInstance;
