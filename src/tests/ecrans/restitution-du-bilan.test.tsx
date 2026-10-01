@@ -32,7 +32,9 @@
  *   - le cycle lu aussi en relecture → « en relecture, le cycle n'est pas lu… », seul.
  *
  * **Ce qu'il coûte, mesuré le même jour** : 3 tests, 4 modules doublés, ≈ 0,15 s de tests sur
- * ≈ 2,5 s pour le fichier (le chargement de l'écran et de ses dépendances fait le reste).
+ * ≈ 2,5 s pour le fichier (le chargement de l'écran et de ses dépendances fait le reste). Avec les
+ * cinq tests ajoutés plus bas (01/10/2026, la page et la bannière) : 8 tests, ≈ 0,28 s de tests sur
+ * ≈ 2,8 s pour le fichier.
  *
  * **Un quatrième test garde l'ordre de la page** (01/10/2026, décisions D9 et D11 de `v1-33` §5) : le
  * total juste sous la carte dominante, les deux liens de contestation juste sous le total, la fin de
