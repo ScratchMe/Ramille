@@ -1,6 +1,7 @@
 import { useState, type Ref } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
+import { cadreDuChamp, SANS_ANNEAU_DE_L_INPUT } from '@/components/auth/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, FontFamily, Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -9,7 +10,8 @@ import { afficherNombreSaisi, nettoyerSaisieNumerique, saisieVersNombre } from '
 // Champ numérique encadré (B1.2/B1.3 "Quelle distance pour un aller ?").
 //
 // **La maquette lui donnait une bordure accent permanente, et il suit désormais la règle des deux
-// autres champs** (24/09/2026, `v1-29`) : `fieldBorder` au repos, l'accent une fois un nombre saisi.
+// autres champs** (24/09/2026, `v1-29`) : `fieldBorder` au repos, l'accent une fois un nombre saisi
+// — et au focus depuis le 01/10/2026 (`cadreDuChamp`).
 // L'accent marque ce qui est choisi ou rempli ; sur un champ vide, il disait « rempli » d'un champ
 // qui ne l'était pas, et c'était le seul champ du produit à le faire. Le contour au repos reste
 // visible — 3,45:1 sur le blanc —, ce qui est tout ce que l'accent permanent achetait.
@@ -44,6 +46,9 @@ export function NumericField({
   // état sur un changement de prop : la comparaison se fait au rendu, pas dans un effet, donc
   // le champ n'affiche jamais une valeur périmée le temps d'un aller-retour.
   const [valeurConnue, setValeurConnue] = useState(value);
+  // Le focus passe la bordure à l'accent, et l'anneau du navigateur suit le cadre au lieu d'y dessiner
+  // un rectangle (01/10/2026, audit Q-12, `cadreDuChamp`).
+  const [focus, setFocus] = useState(false);
   if (value !== valeurConnue) {
     setValeurConnue(value);
     setSaisie(afficherNombreSaisi(value));
@@ -53,7 +58,8 @@ export function NumericField({
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.backgroundElement, borderColor: saisie.length > 0 ? theme.accent : theme.fieldBorder },
+        { backgroundColor: theme.backgroundElement },
+        cadreDuChamp(theme, { rempli: saisie.length > 0, focus }),
       ]}
     >
       <TextInput
@@ -72,7 +78,9 @@ export function NumericField({
         accessibilityLabel={`${label}, en ${unit}`}
         placeholder="0"
         placeholderTextColor={theme.textTertiary}
-        style={[styles.input, { color: theme.text }]}
+        onFocus={() => setFocus(true)}
+        onBlur={() => setFocus(false)}
+        style={[styles.input, { color: theme.text }, SANS_ANNEAU_DE_L_INPUT]}
       />
       <ThemedText themeColor="textTertiary" style={styles.unit}>
         {unit}

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { cadreDuChamp } from '@/components/auth/text-field';
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
@@ -55,6 +56,8 @@ export default function Feedback() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  // Le focus passe la bordure à l'accent, comme les trois autres champs (`cadreDuChamp`, 01/10/2026).
+  const [focusDuChamp, setFocusDuChamp] = useState(false);
 
   const trimmed = message.trim();
   const canSend = trimmed.length >= 3 && !sending;
@@ -165,14 +168,14 @@ export default function Feedback() {
               accessibilityHint={`${FEEDBACK_MAX_LENGTH} caractères au maximum.`}
               // Le contour au repos est `fieldBorder` (24/09/2026, `v1-29`) : `border` n'y tenait que
               // 1,33:1, on ne voyait pas le seul champ de texte libre du produit. L'accent une fois
-              // qu'il y a un texte, comme `TextField`.
+              // qu'il y a un texte ou au focus, comme `TextField` (`cadreDuChamp`) — l'élément est ici
+              // le cadre lui-même, et l'anneau du navigateur le suivait déjà.
+              onFocus={() => setFocusDuChamp(true)}
+              onBlur={() => setFocusDuChamp(false)}
               style={[
                 styles.input,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  color: theme.text,
-                  borderColor: message.length > 0 ? theme.accent : theme.fieldBorder,
-                },
+                { backgroundColor: theme.backgroundElement, color: theme.text },
+                cadreDuChamp(theme, { rempli: message.length > 0, focus: focusDuChamp }),
               ]}
             />
             {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10, qui la réserve aux

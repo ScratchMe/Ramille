@@ -14,13 +14,17 @@ const chiffresDuCode = (saisie) => {
   return saisie.replace(/\D/g, '').slice(0, LONGUEUR_DU_CODE);
 };
 export function ChampDeCode({ value = '', onChangeText, label = 'Code reçu par email', helperText = LONGUEUR_DU_CODE + ' chiffres, sans espace. Il est vérifié dès le dernier chiffre.' }) {
+  // Au focus, la bordure passe à l'accent et l'anneau du navigateur suit le cadre (`cadreDuChamp`, 01/10/2026).
+  const [focus, setFocus] = React.useState(false);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <ThemedText type="small" themeColor="textTertiary">{label}</ThemedText>
-      <div style={{ display: 'flex', justifyContent: 'center', height: 56, borderRadius: 16, border: 'var(--stroke-field) solid ' + (value.length > 0 ? 'var(--color-accent)' : 'var(--color-field-border)'), background: 'var(--color-background-element)', padding: '0 18px', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', height: 56, borderRadius: 16, border: 'var(--stroke-field) solid ' + (value.length > 0 || focus ? 'var(--color-accent)' : 'var(--color-field-border)'), outline: focus ? 'auto' : 'none', background: 'var(--color-background-element)', padding: '0 18px', boxSizing: 'border-box' }}>
         <input
           value={value}
           onChange={(e) => onChangeText && onChangeText(chiffresDuCode(e.target.value))}
+          onFocus={() => setFocus(true)}
+          onBlur={() => setFocus(false)}
           aria-label={label + ', ' + LONGUEUR_DU_CODE + ' chiffres'}
           aria-description={helperText}
           inputMode="numeric"
