@@ -54,6 +54,16 @@ import { reglage } from '@/lib/mouvement';
  * retour et Échap y suffisent —, et la zone au-dessus de la feuille laisse passer le toucher jusqu'à
  * lui. **La poignée, elle, ne se tire pas encore** : un glissé se juge au doigt, sur appareil.
  *
+ * **Sur web, ce toucher n'arrivait jamais au voile** (mesuré le 01/10/2026 par `elementFromPoint` et un
+ * clic au-dessus de la feuille, dans le parcours réel) : la place, qui couvre tout l'écran, était la
+ * vue animée, et reanimated pose sur web les styles d'une vue animée **en ligne** — où `box-none`
+ * n'est pas une valeur CSS, donc ignorée. La place prenait le clic, `pointer-events: auto`, et la
+ * feuille restait ouverte. Elle est désormais une vue ordinaire, dont react-native-web compile le
+ * `box-none` en classe (`pointer-events: none` sur elle, `auto` sur ses enfants), et seule la
+ * feuille, à l'intérieur, s'anime. `sansToucher` reste sur la vue animée : `none`, lui, est une valeur
+ * CSS. Le test natif ne le voyait pas (il lit la valeur du style, pas ce que le navigateur en fait) :
+ * c'est l'étape « un toucher sur le voile » du parcours réel qui le garde.
+ *
  * **Le voile n'est pas un `Pressable`, et ne doit pas le redevenir** (01/10/2026, CI de la PR #314).
  * Sur web, c'est le `Modal` de react-native-web qui pose le focus à l'ouverture : son piège, dès qu'il
  * est actif, essaie `.focus()` sur chaque descendant **dans l'ordre du DOM** et garde le premier qui le
@@ -184,23 +194,28 @@ export function FeuilleDuBas({
           aria-hidden
         />
       </Animated.View>
-      <Animated.View style={[styles.place, styleDeLaFeuille, enSortie && styles.sansToucher]}>
-        <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
-          <View style={[styles.poignee, { backgroundColor: theme.border }]} />
-          {enTete && (
-            <ThemedText type="cardTitle" accessibilityRole="header">
-              {titre}
-            </ThemedText>
-          )}
-          {children}
-        </ThemedView>
-      </Animated.View>
+      {/* La place est une vue ordinaire, et seule la feuille s'anime : voir « Toucher le voile ». */}
+      <View style={styles.place}>
+        <Animated.View style={[styleDeLaFeuille, enSortie && styles.sansToucher]}>
+          <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
+            <View style={[styles.poignee, { backgroundColor: theme.border }]} />
+            {enTete && (
+              <ThemedText type="cardTitle" accessibilityRole="header">
+                {titre}
+              </ThemedText>
+            )}
+            {children}
+          </ThemedView>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   // `box-none` : la zone au-dessus de la feuille laisse passer le toucher jusqu'au voile, qui ferme.
+  // Sur une vue ordinaire, et pas sur une vue animée — sur web, reanimated pose ses styles en ligne, où
+  // `box-none` n'est pas une valeur CSS : la place prenait le toucher (mesuré le 01/10/2026).
   place: { flex: 1, justifyContent: 'flex-end', pointerEvents: 'box-none' },
   sansToucher: { pointerEvents: 'none' },
   feuille: {

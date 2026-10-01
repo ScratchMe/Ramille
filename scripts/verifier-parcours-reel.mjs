@@ -1902,6 +1902,38 @@ try {
   );
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
+  // **Un toucher sur le voile, au-dessus de la feuille, la referme comme Échap** (01/10/2026, `v1-33`
+  // T-7). Jest ne le voyait pas : le test natif lit la valeur `box-none` du style de la place, et le
+  // test web clique le voile lui-même — aucun ne demande au navigateur ce qui est sous le doigt. Or
+  // sur web, la place animée gardait ses styles en ligne, où `box-none` n'est pas du CSS : elle prenait
+  // le clic, et la feuille restait ouverte (mesuré le jour même, `FeuilleDuBas`). D'où les deux
+  // lectures : ce que le navigateur trouve sous le point, puis ce que le clic y fait. Rien n'est écrit.
+  etape('re-bilan — un toucher sur le voile, au-dessus de la feuille, la referme');
+  entreeDuReBilan = await depuisLaRestitution();
+  await entreeDuReBilan.click();
+  const ouverteAuToucher = await mesurerAuRepos(page, 'feuille', FEUILLE);
+  assurer(ouverteAuToucher?.haut != null, `la feuille « ${FEUILLE} » ne s’est pas posée à sa seconde ouverture`);
+  const auDessus = { x: Math.round((page.viewportSize()?.width ?? 420) / 2), y: Math.round(ouverteAuToucher.haut / 2) };
+  const sousLeDoigt = await page.evaluate(({ x, y }) => {
+    const e = document.elementFromPoint(x, y);
+    return e?.getAttribute('data-testid') ?? `${e?.tagName} « ${e?.getAttribute('aria-label') ?? e?.className} »`;
+  }, auDessus);
+  assurer(
+    sousLeDoigt === 'voile-de-la-feuille',
+    `au-dessus de la feuille (${auDessus.x}, ${auDessus.y}), le toucher tombe sur ${sousLeDoigt} et pas sur le voile :` +
+      ' la place doit le laisser passer (`box-none` sur une vue ordinaire, `FeuilleDuBas`)'
+  );
+  await page.mouse.click(auDessus.x, auDessus.y);
+  try {
+    await page.waitForURL((url) => url.pathname === '/suivi/bilan', { timeout: ATTENTE });
+  } catch {
+    throw new Ecart(
+      `le toucher sur le voile n’a pas refermé la feuille (${new URL(page.url()).pathname}) :` +
+        ' il ressort comme Échap vers la restitution (`fermer`, `onQuitter`)'
+    );
+  }
+  assurer((await mesurer(page, 'feuille', FEUILLE)) === null, 'la feuille est encore là après le toucher sur le voile');
+
   // **Un « Retour » sans pile derrière** (recette du 28/09/2026, constat H1). Ouvert par son adresse
   // — un rechargement, un favori —, l'écran des pistes n'a rien derrière lui, et « Retour au plan »,
   // un `router.back()` nu, ne faisait rien. Les autres « Retour » qui avaient le même défaut passent
