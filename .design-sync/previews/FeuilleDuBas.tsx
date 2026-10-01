@@ -13,7 +13,7 @@ export const AvecTitre = () => (
     <ThemedText type="small" themeColor="textTertiary">
       Rien ne presse : une habitude met du temps à prendre. Si tes trajets n’ont pas changé, ton bilan actuel est toujours juste.
     </ThemedText>
-    <Button title="Soumettre mon bilan" />
+    <Button title="Commencer" />
     <TextLink label="Pas maintenant" type="small" weight={600} themeColor="accentText" style={{ textAlign: 'center' }} />
   </FeuilleDuBas>
 );

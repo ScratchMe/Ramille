@@ -7,8 +7,8 @@
 // « Rarement » une. Tant que l'étape est incomplète, « Suivant » est en attente — gris, mais il agit : rien ne dit ce
 // qui manque avant qu'on le touche ; au toucher, « Il manque encore … » apparaît au-dessus des boutons, le focus va à
 // la question et, sur une question secondaire (la part de vols courts, une question du contexte), l'intitulé passe en
-// `accentText`. La demande retombe dès que l'étape est complète. Puis la feuille du re-bilan, qui ne s'ouvre qu'à la
-// soumission quand une action est engagée.
+// `accentText`. La demande retombe dès que l'étape est complète. Puis la feuille du re-bilan, qui s'ouvre à l'entrée du
+// questionnaire, avant la première étape, quand une action est engagée (01/10/2026, `v1-33` §6).
 
 const { StepShell, CommuteHasTripStep, LeisureFrequencyStep, FlightsStep, ContextStep, FeuilleNouveauBilan } = NS;
 const cadre = { border: '1px solid var(--color-border)', borderRadius: 12, overflow: 'hidden', height: 820, display: 'flex' };

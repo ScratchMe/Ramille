@@ -224,8 +224,9 @@
 //   - **la réponse au point** : la carte change de hauteur, et ce qui est dessous suit au lieu de
 //     sauter (`HauteurSuivie`) ;
 //   - **la feuille « Ton plan va être recalculé »**, la seule qui s'ouvre sur web sans adresse
-//     rattachée — par un re-bilan, puisqu'elle demande une action engagée : le voile se fond sans
-//     bouger pendant que la feuille monte, et Échap la fait redescendre au lieu de l'effacer ;
+//     rattachée — à l'entrée d'un re-bilan, puisqu'elle demande une action engagée : le voile se fond
+//     sans bouger pendant que la feuille monte, et Échap la fait redescendre au lieu de l'effacer,
+//     puis ressort vers la restitution d'où l'on venait (01/10/2026, `v1-33` §6) ;
 //   - puis **la même feuille sous « réduire les animations »** (préférence émulée, page rechargée :
 //     elle n'est lue qu'au démarrage), posée dès la première image et partie d'un coup — et **tout
 //     le second profil sous la préférence**, où la barre arrive posée. Le second profil y gagne une
@@ -1294,32 +1295,70 @@ try {
   // **Le voile se fond sur place, la feuille monte, Échap la fait redescendre** (27/09/2026, `v1-30`
   // §5.4). Le `Modal` animait tout d'un bloc : le voile gris montait du bas avec la feuille, la
   // fermeture était instantanée sur web, et la feuille glissait même sous la préférence. C'est la
-  // seule feuille qui s'ouvre sur web sans adresse rattachée, et elle demande une action engagée :
-  // on y arrive par un re-bilan, sans le soumettre — Échap la referme, et rien n'est écrit.
-  etape('re-bilan — la feuille « Ton plan va être recalculé »');
+  // seule feuille qui s'ouvre sur web sans adresse rattachée, et elle demande une action engagée.
+  //
+  // **Elle s'ouvre à l'entrée du questionnaire, et plus à sa soumission** (01/10/2026, `v1-33` §6) :
+  // on y entre comme le produit y mène, depuis la restitution, par « Faire un nouveau bilan ». C'est
+  // une navigation de la pile, donc le relevé image par image survit au passage — un `goto` le
+  // remettrait à zéro avec la page —, et la feuille monte quand la lecture de l'engagement revient,
+  // d'où un relevé plus long que les 800 ms d'un geste. **Échap ressort vers la restitution** : la
+  // feuille dit ce qu'un nouveau bilan ferait, et refuser de commencer, c'est revenir d'où l'on vient
+  // (`onQuitter`). Le geste de retour n'a que ce garde-ci : Jest touche « Pas maintenant », pas le
+  // `onRequestClose` du `Modal`. Rien n'est écrit.
+  etape('re-bilan — la feuille « Ton plan va être recalculé », à l’entrée du questionnaire');
   const FEUILLE = 'Ton plan va être recalculé';
-  const jusquAVoirMonBilan = async () => {
-    await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    // **Le questionnaire est prérempli après son montage**, par un aller-retour réseau. Tant que le
-    // « Suivant » d'une étape vide était désactivé, le clic l'attendait sans que rien ne l'écrive ;
-    // depuis `v1-31`, il est en attente et agit, donc il faut attendre la réponse cochée — sans quoi
-    // le premier « Suivant » demanderait « une réponse » à une étape que le bilan précédent remplit
-    // (contre-lecture du 29/09/2026). Une réponse cochée, et non le bandeau : un brouillon rouvert
-    // préremplit lui aussi, sans bandeau.
-    await page.locator('[role="radio"][aria-checked="true"]').first().waitFor({ state: 'visible', timeout: ATTENTE });
-    const fin = page.getByRole('button', { name: 'Voir mon bilan', exact: true });
-    // Le même contrôle que `suivant()` (`v1-31` §4.5) : une étape du re-bilan qui n'avancerait pas
-    // arrête le parcours en citant ce qui manque, au lieu d'expirer sur une attente muette.
-    for (let i = 0; i < 12 && !(await fin.isVisible().catch(() => false)); i++) await avancer('Suivant');
-    assurer(await fin.isVisible(), '« Voir mon bilan » n’est jamais apparu au bout du re-bilan');
-    return fin;
+  const [bilanDuReBilan] = await lire('assessments?select=id&status=eq.completed&order=submitted_at.desc&limit=1', jeton);
+  assurer(bilanDuReBilan?.id, 'aucun bilan complété à rouvrir : la feuille du re-bilan ne peut pas se jouer');
+  const ADRESSE_DE_LA_RESTITUTION = `/suivi/bilan?id=${bilanDuReBilan.id}`;
+  const depuisLaRestitution = async () => {
+    await page.goto(`${base}${ADRESSE_DE_LA_RESTITUTION}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    const lien = page.getByRole('link', { name: 'Faire un nouveau bilan', exact: true }).first();
+    await lien.waitFor({ state: 'visible', timeout: ATTENTE });
+    return lien;
+  };
+  /** Échap, relevé ; puis la feuille partie et la restitution retrouvée. */
+  const echapEtRetour = async (sousLaPreference) => {
+    const fermeture = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => page.keyboard.press('Escape'));
+    const suffixe = sousLaPreference ? ', sous la préférence' : '';
+    assurer((await mesurer(page, 'feuille', FEUILLE)) === null, `Échap ne referme pas la feuille${suffixe}`);
+    try {
+      await page.waitForURL((url) => url.pathname === '/suivi/bilan', { timeout: ATTENTE });
+    } catch {
+      throw new Ecart(
+        `Échap a refermé la feuille sans ressortir vers la restitution${suffixe} (${new URL(page.url()).pathname}) :` +
+          ' « pas maintenant » revient d’où l’on vient (`onQuitter`, `FeuilleNouveauBilan`)'
+      );
+    }
+    return fermeture;
   };
 
-  let voirMonBilan = await jusquAVoirMonBilan();
-  const ouverture = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => voirMonBilan.click());
+  let entreeDuReBilan = await depuisLaRestitution();
+  const ouverture = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => entreeDuReBilan.click(), 2_500);
+  assurer(new URL(page.url()).pathname === '/bilan', `« Faire un nouveau bilan » n’a pas ouvert le questionnaire : ${page.url()}`);
+  const vuesALOuverture = ouverture.map((e) => e.feuille).filter((f) => f?.voile && f.haut !== null);
+  assurer(
+    vuesALOuverture.length > 0,
+    `la feuille « ${FEUILLE} » ne s’est pas ouverte à l’entrée du re-bilan — une action est engagée dans la période :` +
+      ' elle se dit avant la première étape (`v1-33` §6)'
+  );
   const feuillePosee = await mesurer(page, 'feuille', FEUILLE);
   assurer(feuillePosee?.voile && feuillePosee.haut !== null, `la feuille « ${FEUILLE} » est introuvable une fois ouverte`);
-  const vuesALOuverture = ouverture.map((e) => e.feuille).filter((f) => f?.voile && f.haut !== null);
+  // **Le focus est dans la feuille, sur « Commencer »** (relevé le 01/10/2026). Ouverte à l'entrée
+  // d'un écran, elle n'a pas de geste à suivre : le `Modal` de react-native-web ne déplace pas le
+  // focus à l'ouverture (il piège le suivant, et rend l'ancien à la fermeture), donc ce qui le pose
+  // là ne se lit pas dans le composant — d'où la garde. Sans elle, un clavier ou un lecteur d'écran
+  // resterait sous le voile, sur une étape qu'on ne peut pas encore atteindre.
+  const focusALOuverture = await page.evaluate((titre) => {
+    const actif = document.activeElement;
+    const dialogue = [...document.querySelectorAll('[aria-modal="true"]')].find((d) => d.getAttribute('aria-label') === titre);
+    return { nom: actif?.getAttribute('aria-label') ?? actif?.tagName ?? null, dansLaFeuille: Boolean(dialogue?.contains(actif)) };
+  }, FEUILLE);
+  assurer(
+    focusALOuverture.dansLaFeuille && focusALOuverture.nom === 'Commencer',
+    `la feuille ouverte n'a pas le focus sur « Commencer » : ${JSON.stringify(focusALOuverture)}`
+  );
+  // La première étape est dessous, et personne n'y a encore répondu qu'au préremplissage.
+  await attendreTexte('As-tu un trajet régulier pour le travail ou les études ?');
   const voileQuiBouge = vuesALOuverture.find((f) => Math.abs(f.voile.haut) > 0.5);
   assurer(
     !voileQuiBouge,
@@ -1332,17 +1371,27 @@ try {
     voileEnFondu && feuilleEnChemin,
     `la feuille s’ouvre d’un coup — voile en fondu ${ouiNon(voileEnFondu)}, feuille en chemin ${ouiNon(feuilleEnChemin)}`
   );
-  const fermeture = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => page.keyboard.press('Escape'));
-  assurer((await mesurer(page, 'feuille', FEUILLE)) === null, 'Échap ne referme pas la feuille');
+  const fermeture = await echapEtRetour(false);
   assurer(
     enChemin(fermeture.map((e) => e.feuille?.haut).filter((h) => h != null), feuillePosee.haut),
     'la feuille disparaît d’un coup à Échap : elle doit redescendre avant de se démonter (`fermer`, `FeuilleDuBas`)'
   );
+  // Rien n'est parti : la restitution rouverte est celle du même bilan, toujours le dernier.
+  const [toujoursLeDernier] = await lire('assessments?select=id&order=submitted_at.desc&limit=1', jeton);
+  assurer(
+    toujoursLeDernier?.id === bilanDuReBilan.id,
+    `un bilan a été créé en refusant de commencer : ${JSON.stringify(toujoursLeDernier)} au lieu de ${bilanDuReBilan.id}`
+  );
 
   etape('re-bilan — la même feuille sous « réduire les animations »');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  voirMonBilan = await jusquAVoirMonBilan();
-  const ouvertureReduite = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => voirMonBilan.click());
+  entreeDuReBilan = await depuisLaRestitution();
+  const ouvertureReduite = await releverPendant(
+    page,
+    { feuille: ['feuille', FEUILLE] },
+    () => entreeDuReBilan.click(),
+    2_500
+  );
   const posee = await mesurer(page, 'feuille', FEUILLE);
   assurer(posee?.voile && posee.haut !== null, `la feuille « ${FEUILLE} » est introuvable une fois ouverte, sous la préférence`);
   const bouge = (f) => f?.haut != null && (Math.abs(f.haut - posee.haut) > 0.5 || (f.voile && f.voile.opacite < 0.99));
@@ -1357,8 +1406,7 @@ try {
     !ouvertureReduite.some((e) => bouge(e.feuille)),
     'sous « réduire les animations », la feuille s’ouvre en bougeant : elle doit être posée dès la première image'
   );
-  const fermetureReduite = await releverPendant(page, { feuille: ['feuille', FEUILLE] }, () => page.keyboard.press('Escape'));
-  assurer((await mesurer(page, 'feuille', FEUILLE)) === null, 'Échap ne referme pas la feuille, sous la préférence');
+  const fermetureReduite = await echapEtRetour(true);
   assurer(
     !fermetureReduite.some((e) => bouge(e.feuille)),
     'sous « réduire les animations », la feuille redescend à Échap : elle doit partir d’un coup'
