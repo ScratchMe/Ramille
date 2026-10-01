@@ -15,6 +15,14 @@ import { afficherNombreSaisi, nettoyerSaisieNumerique, saisieVersNombre } from '
 // L'accent marque ce qui est choisi ou rempli ; sur un champ vide, il disait « rempli » d'un champ
 // qui ne l'était pas, et c'était le seul champ du produit à le faire. Le contour au repos reste
 // visible — 3,45:1 sur le blanc —, ce qui est tout ce que l'accent permanent achetait.
+//
+// **Et le champ vide ne montre rien dedans** (01/10/2026, `v1-33` D8, audit Q-14). Il portait un « 0 »
+// gris en 28/600, la taille et la graisse d'un nombre saisi : « 0 km » se lisait comme une valeur —
+// et c'est la seule que le champ refuse, une distance de 0 n'étant pas une réponse
+// (`distanceDomicileTravailKm`, `distanceSortieKm`). L'intitulé de la question et l'unité « km » à droite
+// disent ce qu'on attend ; le contour au repos dit qu'il y a un champ. **Ce qu'on risque, et c'est
+// décidé** : un champ vide peut paraître inerte sur Android — le contour le signale déjà, et le focus
+// y met le curseur. Le « 0 » n'était pas une prop : aucun appelant ne pouvait en dépendre.
 export function NumericField({
   value,
   onChange,
@@ -76,8 +84,6 @@ export function NumericField({
         // qu'on accepte désormais, sinon la virgule reste hors de portée sur mobile.
         keyboardType="decimal-pad"
         accessibilityLabel={`${label}, en ${unit}`}
-        placeholder="0"
-        placeholderTextColor={theme.textTertiary}
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
         style={[styles.input, { color: theme.text }, SANS_ANNEAU_DE_L_INPUT]}

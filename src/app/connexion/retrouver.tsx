@@ -257,8 +257,11 @@ export default function RetrouverMonCompte() {
               Tu as répondu au questionnaire ici, sans compte. En retrouvant le tien, c’est
               son historique qui s’ouvre — ce bilan-ci ne le rejoindra pas.
             </ThemedText>
+            {/* **« En faire un nouveau », jamais « le refaire »** (01/10/2026, `v1-19` D1 : le mot « refaire »
+                a été retiré partout). Un bilan n'est pas défait ni recommencé : ce bilan-ci reste sur cet
+                appareil, et un autre s'ajoute. */}
             <ThemedText type="body" themeColor="textSecondary">
-              On peut le refaire ensemble après, ça va vite.
+              On pourra en faire un nouveau ensemble après, ça va vite.
             </ThemedText>
             {/* **Le motif s'affiche ici aussi, et c'est le cas le plus fréquent.** Un appareil
                 qui a demandé un code porte presque toujours un bilan anonyme : `collision` est

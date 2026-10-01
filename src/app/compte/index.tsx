@@ -76,6 +76,9 @@ export default function Compte() {
   const [relance, setRelance] = useState(false);
   const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
   const [erreurDeconnexion, setErreurDeconnexion] = useState<string | null>(null);
+  // **La confirmation de « Supprimer mon compte » est ouverte** — l'écran la tient, `MonCompte` la lit et
+  // l'écrit. Il lui faut cet état pour une raison de dessin : voir `variantePrincipale`.
+  const [confirmationOuverte, setConfirmationOuverte] = useState(false);
   // **Après la suppression, l'écran ne montre plus que sa confirmation** (recette du 28/09/2026,
   // constat H5). La carte « Mes données » se remplaçait seule par « C'est fait. », et tout le reste
   // de l'écran continuait de décrire le compte supprimé : son adresse, « Me déconnecter de cet
@@ -206,6 +209,15 @@ export default function Compte() {
   // **La place est gardée tant que les lectures ne sont pas revenues** (#305) : elles arrivent
   // ensemble, donc `etat` suffit à le dire.
   const enLecture = etat === null;
+  // **Un seul bouton principal par état d'écran, « Toi » en confirmation comprise** (01/10/2026, `v1-33`
+  // §6, Von Restorff). Confirmation ouverte, « Supprimer définitivement » est le principal — la règle du
+  // kit, qui ne connaît pas de variante destructive —, et « Rattacher un compte » portait le même vert
+  // plein à quelques centimètres : deux principaux, mesurés. Tant qu'elle est ouverte, ce que cet écran
+  // pose en principal passe en secondaire, et redevient principal à sa fermeture — « Annuler », le retour
+  // matériel. Même chose pour « Réessayer », l'autre principal de cet écran, que le constat n'avait pas
+  // relevé : il est porté par l'état `indisponible`, qui coexiste avec la confirmation de la même façon.
+  // Aucun texte ne change, et la hauteur non plus : la variante secondaire n'a pas de filet ici.
+  const variantePrincipale = confirmationOuverte ? 'secondary' : 'primary';
   // Muette les 300 premières millisecondes, comme les onglets — la place suffit à tenir l'écran, et une
   // phrase qui clignote une image ne dit rien —, sauf après « Réessayer » : hors ligne, l'échec revient
   // bien sous ce délai, et sans la ligne le bouton aurait l'air mort (`FRONT.md` §1.2).
@@ -323,6 +335,7 @@ export default function Compte() {
                       </ThemedText>
                       <Button
                         title="Rattacher un compte"
+                        variant={variantePrincipale}
                         onPress={() => router.push({ pathname: '/connexion', params: { source: 'compte' } })}
                         style={styles.bouton}
                       />
@@ -340,7 +353,7 @@ export default function Compte() {
                         On n’a pas pu vérifier ton compte à l’instant, ni relire tes réglages de
                         rappel. Rien n’a changé de ton côté.
                       </ThemedText>
-                      <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
+                      <Button title="Réessayer" variant={variantePrincipale} onPress={reessayer} style={styles.bouton} />
                     </>
                   )}
                   </View>
@@ -369,7 +382,11 @@ export default function Compte() {
               </View>
             )}
 
-            <MonCompte onSupprime={() => setSupprime(true)} />
+            <MonCompte
+              confirmation={confirmationOuverte}
+              onConfirmation={setConfirmationOuverte}
+              onSupprime={() => setSupprime(true)}
+            />
 
             <View style={styles.liens}>
               {/* Après la suppression, les deux liens qui supposent un compte partent avec lui ;
