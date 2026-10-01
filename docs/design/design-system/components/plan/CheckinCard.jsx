@@ -41,7 +41,8 @@ export function CheckinCard({ periodLabel, question, emphasize = true, answered 
                 <Button title="Non" variant="secondary" onPanel flex onPress={() => onAnswer && onAnswer('non')} />
                 <Button title="Oui" variant="secondary" onPanel flex onPress={() => onAnswer && onAnswer('oui')} />
               </div>
-              <TextLink label={sansObjet} onPress={() => onAnswer && onAnswer('sans_objet')} type="small" themeColor="textTertiary" containerStyle={{ alignItems: 'center' }} />
+              {/* Souligné au repos, comme « Annuler » et « Changer d'avis » (01/10/2026, audit P-7). */}
+              <TextLink label={sansObjet} onPress={() => onAnswer && onAnswer('sans_objet')} type="small" themeColor="textTertiary" containerStyle={{ alignItems: 'center' }} style={{ textDecoration: 'underline' }} />
               {/* Une panne, pas un refus : les boutons restent, il n'y a qu'à recommencer. */}
               <MessageInline message={erreur} />
             </>
