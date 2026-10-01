@@ -872,6 +872,27 @@ describe('phraseDuRegimeDeRebilan', () => {
     expect(phraseDuRegimeDeRebilan('proposer')).not.toMatch(/\d/);
     expect(phraseDuRegimeDeRebilan('insister')).not.toMatch(/\d/);
   });
+
+  // **Un bilan s'ajoute, il n'en remplace pas un** (`v1-19` D1, appliqué à ces deux phrases le
+  // 01/10/2026). Le bouton de la même carte dit « Faire un nouveau bilan » ; les phrases disaient
+  // « en refaire un », antérieur à la décision et jamais relu. Le texte est épinglé mot pour mot : c'est
+  // la phrase décidée, et « préremplies » s'y écrit sans trait d'union (D3 de `v1-33`).
+  //
+  // **Éprouvé en le cassant, le 01/10/2026**, une mutation à la fois, la source remise en place depuis
+  // une copie (`diff` vide) : « pré-remplies » avec son trait d'union dans la phrase « proposer », « en
+  // refaire un » dans la phrase « insister », puis « Refaire son bilan » en tête de « proposer » → ce
+  // test, et lui seul, les trois fois.
+  it('dit « un nouveau bilan », jamais « refaire », et « préremplies » sans trait d’union', () => {
+    expect(phraseDuRegimeDeRebilan('proposer')).toBe(
+      'En faire un nouveau prend moins de temps que la première fois : tes réponses sont préremplies, tu ne modifies que ce qui a changé.'
+    );
+    expect(phraseDuRegimeDeRebilan('insister')).toBe(
+      'Plusieurs saisons ont passé depuis. Les facteurs d’émission se mettent à jour chaque trimestre et ton bilan garde ceux de sa date : un nouveau bilan prend les valeurs d’aujourd’hui, même si tes trajets n’ont pas changé.'
+    );
+    for (const regime of ['proposer', 'insister'] as const) {
+      expect(phraseDuRegimeDeRebilan(regime)).not.toMatch(/refai|pré-rempli/i);
+    }
+  });
 });
 
 describe('titreDuRebilan', () => {
