@@ -2554,15 +2554,19 @@ try {
   );
   // Refermée, la carte du premier plan laisse la place à la carte d'attente, qui nomme le lundi — et
   // **pas** à la carte des deux lieux : elle a été vue au premier plan de ce profil. C'est la garde de
-  // la décision du 01/10/2026, « elle ne revient pas sans Compris » : on attend ce qui la remplace, puis
-  // on lit son absence.
+  // la décision du 01/10/2026, « elle ne revient pas sans Compris ». Son absence se lit **avant**
+  // d'attendre le lundi, une fois la carte du premier plan partie : ce qui prend sa place se rend dans
+  // le même rendu, et une carte des deux lieux revenue ferait sinon tomber l'attente du lundi, sur un
+  // délai qui ne dit pas pourquoi.
   await page.getByText('Compris', { exact: true }).first().click();
-  await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
+  await page.getByText('TON PREMIER PLAN').first().waitFor({ state: 'hidden', timeout: ATTENTE });
+  await page.waitForTimeout(600);
   assurer(
     !(await page.getByText('Deux endroits, pas plus.').first().isVisible().catch(() => false)),
     'la carte des deux lieux revient sans « Compris » : vue au premier plan du cycliste, elle ne doit plus se rendre' +
       ' (`lesDeuxLieuxSontVus` au rendu, `CarteDesDeuxLieux`, décision du 01/10/2026)'
   );
+  await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
 
   // ── 11. Retirer un bilan, puis le seul qui reste (C4.7, `v1-22`) ─────────────────────────
   //
