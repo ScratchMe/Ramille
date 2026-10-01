@@ -1,8 +1,16 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ContexteDesAncres, type AncreDuChamp, type AncresDeLEtape } from '@/components/bilan/ancre-du-champ';
 import { Button } from '@/components/button';
 import { ChampsDeContexte } from '@/components/bilan/champs-de-contexte';
 import { MessageInline } from '@/components/message-inline';
@@ -10,20 +18,22 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useChargementVisible } from '@/hooks/use-apres-un-delai';
+import { donnerLeFocus } from '@/lib/focus';
 import { revenirOu } from '@/lib/navigation';
 import {
   enregistrerLeContexte,
   lireLeContexteCourant,
   type ContexteCourant,
 } from '@/lib/contexte';
-import { teletravailSePose } from '@/types/bilan';
+import { EMPTY_BILAN_ANSWERS, manqueDeLEtape, teletravailSePose, type ChampDuBilan } from '@/types/bilan';
 import {
   contexteAChange,
   contexteEstComplet,
   phraseDuCalculDuContexte,
   type ChoixDeContexte,
 } from '@/types/contexte';
+import { decalagePourMontrer } from '@/types/demande';
 
 /**
  * Corriger son contexte de mobilité sans refaire de bilan (C6.4, #232, `v1-19` D5).
@@ -52,13 +62,13 @@ import {
  */
 
 type Etat =
-  | { statut: 'chargement' }
+  // `relance` : ce chargement est un « Réessayer » de la personne, et il se dit tout de suite.
+  | { statut: 'chargement'; relance?: true }
   | { statut: 'erreur' }
   | { statut: 'sans_bilan' }
   | { statut: 'pret'; depart: ContexteCourant };
 
 export default function Contexte() {
-  const theme = useTheme();
   const [etat, setEtat] = useState<Etat>({ statut: 'chargement' });
   const [choix, setChoix] = useState<ChoixDeContexte | null>(null);
   const [enregistrement, setEnregistrement] = useState(false);
@@ -92,11 +102,67 @@ export default function Contexte() {
     setChoix((courant) => (courant === null ? courant : { ...courant, ...patch }));
   }, []);
 
+  /**
+   * **« Chargement… » comme sur les onglets, et un « Retour » atteignable pendant** (audit P-13,
+   * 01/10/2026). L'écran rendait une roue seule, tout de suite, sans un mot ni une sortie : hors
+   * ligne, quelques secondes muettes et rien à toucher. La phrase attend `DELAI_AVANT_CHARGEMENT`
+   * pour ne pas clignoter avant un contenu rapide — sauf après « Réessayer », où elle est la seule
+   * preuve que le geste a été pris (`useChargementVisible`, `FRONT.md` §1.2) ; le « Retour », lui,
+   * est là d'emblée.
+   */
+  const chargementVisible = useChargementVisible(
+    etat.statut === 'chargement',
+    etat.statut === 'chargement' && etat.relance === true
+  );
+
+  /**
+   * **Les ancres des quatre questions, que l'écran fournit lui-même** (audit P-13) — celles que
+   * `ChampsDeContexte` enregistrait déjà, et que rien ne lisait hors du questionnaire. « Enregistrer »
+   * sur un contexte incomplet y mène, comme le « Suivant » en attente d'une étape (`StepShell`).
+   */
+  const ancres = useRef(new Map<ChampDuBilan, AncreDuChamp>());
+  const enregistrerLAncre = useCallback((champ: ChampDuBilan, ancre: AncreDuChamp) => {
+    ancres.current.set(champ, ancre);
+    return () => {
+      if (ancres.current.get(champ) === ancre) ancres.current.delete(champ);
+    };
+  }, []);
+  /**
+   * La demande de ce qui manque, posée au toucher d'« Enregistrer » sur un contexte incomplet. Elle
+   * marque l'intitulé et dit la ligne tant qu'il manque quelque chose, et retombe **au rendu** dès que
+   * le contexte est complet — la règle de la demande de `StepShell`.
+   */
+  const [demande, setDemande] = useState(false);
+
+  /** Le défilement de la zone, suivi pour mener à ce qui manque — celui de la plateforme. */
+  const animationsReduites = useReducedMotion();
+  const defilement = useRef<ScrollView>(null);
+  const zone = useRef({ decalage: 0, hauteur: 0 });
+  const surDefilement = useCallback((evenement: NativeSyntheticEvent<NativeScrollEvent>) => {
+    zone.current.decalage = evenement.nativeEvent.contentOffset.y;
+  }, []);
+
   if (etat.statut === 'chargement') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centre}>
-          <ActivityIndicator color={theme.accent} />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.vide}>
+            {chargementVisible && (
+              <ThemedText type="body" themeColor="textSecondary">
+                Chargement de ton contexte…
+              </ThemedText>
+            )}
+            {/* Le « Retour » de l'écran d'échec, à la même place : la lecture ne dit encore rien du
+                bilan, donc le repli sans pile est la racine, comme là-bas. */}
+            <TextLink
+              label="Retour"
+              onPress={() => revenirOu('/')}
+              role="link"
+              type="small"
+              weight={600}
+              themeColor="accentText"
+            />
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -121,7 +187,7 @@ export default function Contexte() {
               title={panne ? 'Réessayer' : 'Faire mon bilan'}
               onPress={() => {
                 if (panne) {
-                  setEtat({ statut: 'chargement' });
+                  setEtat({ statut: 'chargement', relance: true });
                   void lireLeContexteCourant().then((lecture) => {
                     if (lecture.etat === 'ok') {
                       setEtat({ statut: 'pret', depart: lecture.contexte });
@@ -158,6 +224,48 @@ export default function Contexte() {
   const complet = contexteEstComplet(courant, sePose);
   const aChange = contexteAChange(etat.depart.choix, courant);
 
+  // Ce qui manque, nommé par la phrase que l'étape « Contexte » du questionnaire dit déjà — les
+  // mêmes quatre questions, le même ordre (`manqueDeLEtape`). Le télétravail s'y gouverne par les
+  // mêmes deux colonnes de trajet que `contexteEstComplet` : le prédicat ne se recopie pas.
+  const manque = complet
+    ? null
+    : manqueDeLEtape('context', { ...EMPTY_BILAN_ANSWERS, ...etat.depart.trajet, ...courant });
+  if (demande && manque === null) setDemande(false);
+  const contexteDesAncres: AncresDeLEtape = {
+    enregistrer: enregistrerLAncre,
+    marque: demande && manque !== null ? manque.champ : null,
+    // Le titre de cet écran n'est pas l'une des quatre questions : aucune ne s'y confond.
+    principale: null,
+  };
+
+  /**
+   * **Mener à ce qui manque** — au toucher d'« Enregistrer » en attente, ou de la ligne qui le dit.
+   * Le focus part **au geste**, sur la réponse cochée de la question ou sa première (`optionCible`),
+   * puis la zone défile juste assez, si elle le doit (`decalagePourMontrer`) : le défilement de la
+   * plateforme, posé sous « réduire les animations », que rien n'attend.
+   */
+  const mener = () => {
+    if (manque === null) return;
+    setDemande(true);
+    const ancre = ancres.current.get(manque.champ);
+    donnerLeFocus(ancre?.cible.current ?? null);
+    const bloc = ancre?.bloc.current ?? null;
+    const ecran = defilement.current?.getNativeScrollRef();
+    if (!bloc || !ecran) return;
+    ecran.measureInWindow((_x, hautDeLaZone) => {
+      bloc.measureInWindow((_bx, hautDuBloc, _largeur, hauteurDuBloc) => {
+        const haut = hautDuBloc - hautDeLaZone + zone.current.decalage;
+        const y = decalagePourMontrer({
+          decalage: zone.current.decalage,
+          hauteurZone: zone.current.hauteur,
+          haut,
+          bas: haut + hauteurDuBloc,
+        });
+        if (y !== null) defilement.current?.scrollTo({ y, animated: !animationsReduites });
+      });
+    });
+  };
+
   const enregistrer = async () => {
     if (enCours.current || !complet || !aChange) return;
     enCours.current = true;
@@ -180,8 +288,14 @@ export default function Contexte() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
+          ref={defilement}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          onScroll={surDefilement}
+          scrollEventThrottle={16}
+          onLayout={(evenement) => {
+            zone.current.hauteur = evenement.nativeEvent.layout.height;
+          }}
         >
           <View style={styles.intro}>
             <ThemedText type="screenTitle">Ton contexte de mobilité</ThemedText>
@@ -191,7 +305,9 @@ export default function Contexte() {
             </ThemedText>
           </View>
 
-          <ChampsDeContexte choix={courant} trajet={etat.depart.trajet} update={modifier} />
+          <ContexteDesAncres.Provider value={contexteDesAncres}>
+            <ChampsDeContexte choix={courant} trajet={etat.depart.trajet} update={modifier} />
+          </ContexteDesAncres.Provider>
 
           {/* **Elle dit les deux effets, et le second est celui qui coûte.** Le premier rassure —
               on ne refait pas un bilan, le suivi ne gagne pas d'entrée — et le second prévient que
@@ -209,10 +325,30 @@ export default function Contexte() {
 
           <MessageInline message={message} />
 
+          {/* **La ligne du questionnaire, mot pour mot** (audit P-13) : « Il manque encore » et la
+              phrase de la question, celles que l'étape « Contexte » dit déjà. Elle ne s'écrit qu'au
+              toucher, jamais d'office — la question est déjà à l'écran —, et c'est un lien : elle mène
+              là où le bouton vient de mener. */}
+          {demande && manque !== null && (
+            <TextLink
+              label={`Il manque encore ${manque.phrase}.`}
+              onPress={mener}
+              type="small"
+              weight={600}
+              themeColor="accentText"
+            />
+          )}
+
+          {/* **Incomplet, il est en attente ; inchangé, il est inactif** (audit P-13, 01/10/2026). Il
+              était `disabled` dans les deux cas, sans dire pourquoi — le commentaire de
+              `contexteEstComplet` dit éviter exactement cela. Incomplet, il agit : il mène à ce qui
+              manque (`enAttente`, `FRONT.md` §2.4) ; un contexte complet qui n'a pas bougé n'a, lui,
+              rien à enregistrer. `complet` garde l'appel au RPC, ici et dans `enregistrer`. */}
           <Button
             title={enregistrement ? 'Enregistrement…' : 'Enregistrer'}
-            onPress={() => void enregistrer()}
-            disabled={!complet || !aChange || enregistrement}
+            onPress={() => (complet ? void enregistrer() : mener())}
+            enAttente={!complet}
+            disabled={(complet && !aChange) || enregistrement}
           />
 
           <TextLink
@@ -233,7 +369,6 @@ export default function Contexte() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { padding: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.four },
   intro: { gap: Spacing.two },
   vide: { flex: 1, justifyContent: 'center', padding: Spacing.four, gap: Spacing.three },
