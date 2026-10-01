@@ -222,7 +222,11 @@ function unique<T>(valeur: T | T[] | null): T | null {
 /** Le cycle de plan qui couvrait un jour donné, avec le cap qu'il portait. */
 export type CycleDeCePour = { cycleId: string; capKg: number | null };
 
-/** Le cap d'une ligne de `plan_cycles` : 20 % — `target_reduction_pct` — de la baseline du poste. */
+/**
+ * Le cap d'une ligne de `plan_cycles` : `target_reduction_pct` pour cent de la baseline du poste
+ * dominant — le calcul que la restitution faisait sur le cycle courant et cette lecture sur le cycle
+ * d'alors, écrit une fois pour les deux.
+ */
 function versCycle(
   ligne: { id: string; baseline_co2_kg_year: number | null; target_reduction_pct: number } | null
 ): CycleDeCePour | null {

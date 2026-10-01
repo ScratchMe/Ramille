@@ -432,8 +432,8 @@ export default function Suivi() {
               Ton suivi
             </ThemedText>
             {/* **« Fais un nouveau bilan », et plus « Refais ton bilan »** (01/10/2026, audit R-7) :
-                l'application de `v1-19` D1 à la seule phrase qu'elle n'avait pas relue — elle venait
-                du canvas `v1-17`, antérieur. « Refaire » laisse croire qu'on efface celui qu'on
+                l'application de `v1-19` D1 à une phrase qu'elle n'avait pas relue — elle venait du
+                canvas `v1-17`, antérieur. « Refaire » laisse croire qu'on efface celui qu'on
                 regarde, sur l'écran même qui montre qu'un bilan s'ajoute. */}
             <ThemedText type="body" themeColor="textSecondary">
               {history.length === 1
