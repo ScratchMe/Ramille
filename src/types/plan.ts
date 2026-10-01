@@ -668,6 +668,32 @@ export function phraseDeLOrphelin(raison: string, actionText: string): string {
   return `Ton plan a changé ${cause}. « ${actionText} » n’y est plus ; elle reste dans ton suivi.`;
 }
 
+/**
+ * L'engagement emporté que le plan peut encore annoncer — ou rien, **quand l'action est revenue
+ * dans le plan** (recette du 01/10/2026, `v1-13` §19).
+ *
+ * L'encart dit « « … » n’y est plus » : c'est sa prémisse, et rien ne la vérifiait. Corriger son
+ * contexte puis le remettre comme avant rend l'action au plan — sans l'engagement, que la
+ * personne n'a pas repris —, et l'archive garde la ligne `contexte`. La marque « vu » étant locale,
+ * l'appareil où l'encart avait été refermé se taisait, mais **un appareil neuf** l'affichait
+ * au-dessus de l'action même qu'il disait partie, première carte du plan (vu sur la production :
+ * « Passer deux trajets sur cinq en métro ou en tram », ligne d'archive et action au rang 1 du même
+ * cycle) — comme le ferait le premier appareil tant que personne n'y a touché « Compris ». Un
+ * re-bilan qui rend une action qu'un précédent avait emportée tombe dans le même cas.
+ *
+ * L'appariement se fait sur le **gabarit**, jamais sur le libellé : l'archive fige `action_text`
+ * (C2.2), et un gabarit reformulé depuis (C3.8) ne se reconnaîtrait plus à son texte — l'encart
+ * redirait faux, en silence. On tait plutôt qu'on ne réécrit : il n'y a pas d'autre phrase vraie à
+ * dire d'une action qui est là, et la personne la voit.
+ */
+export function orphelinAAnnoncer<O extends { action_template_id: string }>(
+  orphelin: O | null,
+  gabaritsDuPlan: readonly string[]
+): O | null {
+  if (orphelin === null) return null;
+  return gabaritsDuPlan.includes(orphelin.action_template_id) ? null : orphelin;
+}
+
 // ── L'encart de contexte du plan (C5.5, écarts 9 et 10) ────────────────────────────────────────
 
 /**

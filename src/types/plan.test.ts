@@ -18,6 +18,7 @@ import {
   isIntentionComplete,
   ligneDuGain,
   motsDuContexte,
+  orphelinAAnnoncer,
   phraseDeLOrphelin,
   phraseDesPistesSuffisantes,
   RAISONS_ANNONCABLES,
@@ -813,6 +814,28 @@ describe('l’encart orphelin', () => {
       expect(phrase).toContain('« Faire un trajet sur cinq à vélo. »');
       expect(phrase).toContain('elle reste dans ton suivi');
     }
+  });
+
+  // **« n’y est plus » est la prémisse de l'encart, et elle peut devenir fausse** (recette du
+  // 01/10/2026, `v1-13` §19) : le contexte remis comme avant rend l'action au plan, et un appareil
+  // neuf affichait l'encart au-dessus d'elle. L'appariement se fait sur le gabarit et non sur le
+  // libellé, que l'archive fige (la troisième assertion).
+  it('se tait quand l’action qu’il dit partie est revenue dans le plan', () => {
+    const orphelin = {
+      id: 'archive-1',
+      action_template_id: 'gabarit-metro',
+      action_text: 'Passer deux trajets sur cinq en métro ou en tram',
+      released_reason: 'contexte',
+    };
+    expect(orphelinAAnnoncer(orphelin, ['gabarit-metro', 'gabarit-train'])).toBeNull();
+    expect(orphelinAAnnoncer(orphelin, ['gabarit-covoiturage', 'gabarit-velo'])).toBe(orphelin);
+    // Un gabarit reformulé depuis l'archive (C3.8) : même gabarit, autre libellé — revenu quand même.
+    expect(
+      orphelinAAnnoncer({ ...orphelin, action_text: 'Faire deux trajets sur cinq en métro' }, ['gabarit-metro'])
+    ).toBeNull();
+    // Un plan à zéro action ne peut rien avoir repris.
+    expect(orphelinAAnnoncer(orphelin, [])).toBe(orphelin);
+    expect(orphelinAAnnoncer(null, ['gabarit-metro'])).toBeNull();
   });
 });
 

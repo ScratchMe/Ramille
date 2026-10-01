@@ -1692,7 +1692,11 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   disait « Ton plan a changé avec ton nouveau bilan », ce qui est faux quand il n'y a pas eu de
   bilan. `saison` et `changement` restent tues, pour les raisons de C2.2. **Et `retrait` depuis
   C4.7, tue elle aussi** : retirer un bilan est un geste choisi, et la confirmation a dit
-  *avant* ce qu'il emportait — réutiliser `rebilan` aurait rallumé l'encart.
+  *avant* ce qu'il emportait — réutiliser `rebilan` aurait rallumé l'encart. **Et il se tait quand
+  l'action est revenue dans le plan** (`orphelinAAnnoncer`, recette du 01/10/2026) : remettre le
+  contexte comme avant la rend sans l'engagement, et l'archive garde sa ligne — un appareil neuf
+  affichait « n'y est plus » au-dessus d'elle. L'appariement est sur le gabarit, jamais sur le
+  libellé que l'archive fige.
 - **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
   du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
   n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle

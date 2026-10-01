@@ -1592,6 +1592,48 @@ try {
     `« ${TITRE_OUVERT_AU_DESSUS} », engagée, se touche encore : sa rangée ne doit pas être un bouton`
   );
 
+  // ── 8 ter. Le contexte retiré puis remis : l'encart orphelin se tait au-dessus de l'action revenue
+  //
+  // **Trouvé sur la production, à la recette du 01/10/2026** (`v1-13` §19) : corriger son contexte
+  // emporte l'action engagée qu'il rend impossible, l'encart le dit — « « … » n’y est plus » —, et
+  // remettre le contexte comme avant rend l'action au plan **sans** l'engagement. L'archive garde sa
+  // ligne `contexte`, donc l'encart restait, au-dessus de l'action même qu'il disait partie, tant que
+  // personne n'avait touché « Compris » sur l'appareil — et sur tout appareil neuf. On ne le touche
+  // pas ici : c'est l'état de cet appareil neuf. `orphelinAAnnoncer` a son test ; ce qui se garde ici
+  // est son **appel**, avec les gabarits du plan — la famille « le test garde la fonction, jamais ses
+  // appels ».
+  etape('contexte — retiré puis remis, l’encart se tait au-dessus de l’action revenue');
+  // L'engagement repasse sur le train, la seule piste de ce profil que le contexte peut retirer.
+  await ouvrirLesPistes();
+  await rangee(ATTENDU.pistes[0][0]).click();
+  await attendreTexte('Quels jours ?');
+  await choisir('mardi');
+  await bouton('C’est noté');
+  await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
+  await attendreTexte('TON ENGAGEMENT');
+  const enregistrerLeContexte = async (acces) => {
+    await page.goto(`${base}/contexte`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.getByRole('radio', { name: acces, exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+    await choisir(acces);
+    await bouton('Enregistrer');
+    await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
+  };
+  const ENCART = 'Ton plan a changé avec tes nouvelles réponses de contexte.';
+  await enregistrerLeContexte('Inexistant');
+  await attendreTexte(ENCART);
+  await enregistrerLeContexte('Limité');
+  await attendreTexte(ATTENDU.pistes[0][0]);
+  const archivesDuContexte = await lire('plan_action_commitments_archive?select=action_text&released_reason=eq.contexte', jeton);
+  assurer(
+    archivesDuContexte.length === 1 && archivesDuContexte[0].action_text === ATTENDU.pistes[0][0],
+    `le train n’a pas été archivé une fois en « contexte » — l’encart n’aurait rien à taire : ${JSON.stringify(archivesDuContexte)}`
+  );
+  assurer(
+    !(await page.evaluate(() => document.body.innerText)).includes(ENCART),
+    `l’encart « ${ENCART} … n’y est plus » se rend alors que « ${ATTENDU.pistes[0][0]} » est revenue dans le plan` +
+      ' (`orphelinAAnnoncer`, appelé avec les gabarits du plan)'
+  );
+
   // ── 9. La suppression du compte, par l'écran, et rien derrière ─────────────────────────────
   //
   // **Par « Toi », et plus par le RPC** (28/09/2026). C'est le chemin que Google Play exige, et aucun

@@ -236,7 +236,7 @@ export default function PistesScreen() {
             // **`plan_actions!plan_actions_plan_cycle_id_fkey` est obligatoire** — `carried_over_from`
             // est une seconde clé étrangère vers `plan_cycles`, donc sans le nom PostgREST refuse la
             // requête et l'écran ne charge plus du tout (C2.2).
-            'id, plan_actions!plan_actions_plan_cycle_id_fkey(id, saving_kg_year, saving_share_percent, detail_text, first_step, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
+            'id, plan_actions!plan_actions_plan_cycle_id_fkey(id, action_template_id, saving_kg_year, saving_share_percent, detail_text, first_step, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
           )
           .order('period_start', { ascending: false })
           .limit(1);

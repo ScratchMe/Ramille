@@ -18,7 +18,7 @@
 > S'y ajoutent ce que `v1-13` §11.W dit encore ouvert (W.7, W.8), l'observation hors feuille n° 2
 > de la séance du 29/09 (la carte d'attente), et, dans un bloc final qui ne se joue pas au
 > navigateur, les lignes de §11 qui attendent un appareil. **Jouée le** 29/09/2026 au soir (blocs 00 à
-> 02, `v1-13` §17) et le 30/09/2026 (bloc 03, §18) ; les blocs 04 et 06 le 1er octobre.
+> 02, `v1-13` §17), le 30/09/2026 (bloc 03, §18) et le 1er octobre (blocs 04 et 06, §19).
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **sur trois jours** — c'est le
 > calendrier ci-dessous qui décide de l'ordre, pas la numérotation.

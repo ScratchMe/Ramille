@@ -31,6 +31,7 @@ import {
   felicitationDuPlanSansAction,
   formeInserable,
   motsDuContexte,
+  orphelinAAnnoncer,
   phraseDeLOrphelin,
   phraseDesPistesSuffisantes,
   pistesDuPlan,
@@ -135,7 +136,12 @@ type PlanCycle = {
  * AsyncStorage et porte l'identifiant de la ligne, pour qu'un second re-bilan puisse le dire à
  * son tour.
  */
-type EngagementOrphelin = { id: string; action_text: string; released_reason: string };
+type EngagementOrphelin = {
+  id: string;
+  action_template_id: string;
+  action_text: string;
+  released_reason: string;
+};
 
 // Une seule carte par boucle, la plus récente. La requête est déjà triée par `period_start`
 // décroissant, donc le premier vu de chaque `loop_type` est le bon.
@@ -633,7 +639,7 @@ export default function Plan() {
             // suivre et refuse la requête (« more than one relationship was found »). Sans le
             // nom de la clé, l'écran du plan ne charge plus du tout. Le typecheck l'attrape —
             // c'est le seul garde qui le fait, la chaîne étant analysée au niveau des types.
-            'id, period_label, period_start, period_end, cadence_type, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, saving_kg_year, saving_share_percent, detail_text, first_step, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
+            'id, period_label, period_start, period_end, cadence_type, trip_label, poste, baseline_co2_kg_year, target_reduction_pct, plan_actions!plan_actions_plan_cycle_id_fkey(id, action_template_id, saving_kg_year, saving_share_percent, detail_text, first_step, rank, committed_at, intention_days, intention_timing, carried_over_from, action_templates(action_text, poste))'
           )
           .order('period_start', { ascending: false })
           .limit(2);
@@ -754,7 +760,7 @@ export default function Plan() {
               .maybeSingle(),
             supabase
               .from('plan_action_commitments_archive')
-              .select('id, action_text, released_reason')
+              .select('id, action_template_id, action_text, released_reason')
               .in('released_reason', RAISONS_ANNONCABLES)
               .order('released_at', { ascending: false })
               .limit(1),
@@ -783,7 +789,12 @@ export default function Plan() {
         setRappels(prefs);
         setPermission(etatPermission);
 
-        const orphelin = orphelins?.[0] ?? null;
+        // **Sauf si l'action est revenue dans le plan** (recette du 01/10/2026) : « n’y est plus »
+        // serait faux juste au-dessus d'elle — `orphelinAAnnoncer`, apparié sur le gabarit.
+        const orphelin = orphelinAAnnoncer(
+          orphelins?.[0] ?? null,
+          cycle.plan_actions.map((action) => action.action_template_id)
+        );
 
         const points = (checkins as EngagementCheckin[] | null) ?? [];
         const affiches = keepLatestPerLoop(points);
