@@ -82,7 +82,7 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   relationship was found ») et l'écran ne charge plus du tout. Seul le typecheck sur la chaîne
   du `select` l'attrape.
 - **Un `42501` vient soit du privilège, soit de la RLS**, et on ne le sait pas de l'extérieur —
-  ce qui rend les tests de refus faciles à écrire pour rien (`TESTING.md` §1.7).
+  ce qui rend les tests de refus faciles à écrire pour rien (`TESTING-PGTAP.md` §1.7).
 
 ### 1.4 Privilèges, policies et RPC
 
@@ -226,10 +226,11 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
 
 Migrations dans `supabase/migrations/`, appliquées sur le projet Supabase `TraceVerte-v1` — nom
 du dépôt ; le tableau de bord l'affiche `TraceVerte`, et c'est sous ce nom-là qu'on le cherche —
-(via `mcp__Supabase__apply_migration`). **Après toute migration, régénérer
-`src/lib/database.types.ts`** (`mcp__Supabase__generate_typescript_types`) — le fichier n'a
-pas de formateur automatique dans ce repo (pas de prettier installé), donc respecter le
-style existant (guillemets doubles) en le retouchant à la main si besoin.
+(via `mcp__Supabase__apply_migration`). **Après toute migration, `src/lib/database.types.ts` se
+retouche à la main** — on y ajoute ce que la migration a changé plutôt que de le régénérer, et
+`mcp__Supabase__generate_typescript_types` ne sert que de référence à recopier. Le fichier n'a pas
+de formateur automatique dans ce repo (pas de prettier installé), donc respecter le style existant
+(guillemets doubles).
 
 **Et le job `db-tests` compare aussi `src/lib/database.types.ts` à la base qu'il vient de
 construire** (C3.12) : `supabase gen types typescript --local`, puis
@@ -264,7 +265,7 @@ depuis TypeScript ne peut lire ce que la colonne accepte. Le contrôle lit `pg_c
 les migrations viennent de construire — jamais les fichiers de migration, qui mentent dès qu'une
 contrainte a été remplacée ou qu'une colonne homonyme a vécu ailleurs (`zone_type` sur `profiles`).
 **Corollaire pour qui écrit une migration** : changer un `check` sans suivre côté TypeScript rend ce
-contrôle rouge, et c'est le but — le miroir se corrige, jamais la base. `TESTING.md` §2.7 dit les
+contrôle rouge, et c'est le but — le miroir se corrige, jamais la base. `TESTING-GARDES.md` §2.7 dit les
 trois genres de comparaison, et pourquoi une union de littéraux se lit dans le source quand tout le
 reste s'importe.
 
@@ -347,7 +348,7 @@ Les deux se sont fait prendre en contre-lisant la vague 4, et aucune ne se voit 
   `delete`.
 
 Deux pièges vérifiés en construisant `usage_events`, tous deux silencieux (le troisième, sur les
-colonnes homonymes de `profiles`, est resté dans `CLAUDE.md` avec la mesure d'usage) :
+colonnes homonymes de `profiles`, est resté dans `CLAUDE.md`, section « Base de données ») :
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
   `security definer`.** `usage_events` n'a aucune policy de lecture ; sans `security definer`, le
   `select` de comptage du garde-fou de volume ne voyait rien depuis `authenticated` et le quota
@@ -389,7 +390,7 @@ décision. C'est le seul chemin, et il est écrit ici pour qu'il ne se confonde 
 contournement : ce qui distingue les deux, c'est la décision et la trace.
 
 **Et depuis le 29/09/2026 la CI voit ce que le hook ne voit pas** (`scripts/verifier-migrations-livrees.mjs`,
-travail `checks`, `TESTING.md` §2.15). Elle compare la copie de travail à la base de fusion avec
+travail `checks`, `TESTING-GARDES.md` §2.15). Elle compare la copie de travail à la base de fusion avec
 `origin/main` et refuse toute migration qui y existait et qui est modifiée, supprimée ou renommée —
 par Edit, par le shell, par un humain, peu importe : elle regarde le résultat. Deux choses à ne pas
 défaire. **Le journal accepte une retouche, pas un fichier** : l'entrée porte l'empreinte du contenu
@@ -494,8 +495,9 @@ quelque chose la réécrit, et il vaut mieux l'apprendre là que sur un écran.
 ### 2.4 Sessions : pannes, refus et doublons
 
 Le modèle lui-même — session anonyme dès l'ouverture, conversion qui garde le `user_id`, pas de
-mot de passe, `/connexion/retrouver` comme seul chemin vers un compte existant — est dans
-`CLAUDE.md`, « Modèle d'authentification ». Ici, ce qui s'est cassé autour.
+mot de passe, `/connexion/retrouver` comme seul chemin délibéré vers un compte existant — est dans
+`CLAUDE.md`, « Modèle d'authentification », pour ses deux paragraphes fondateurs, et dans
+`COMPTE.md` pour tout le reste. Ici, ce qui s'est cassé autour.
 
 **La non-divulgation se tient à l'écran, jamais au réseau — et c'est une limite de GoTrue, pas un
 oubli** (relevé à la recette web du 28/09/2026, documenté le même jour par décision). Deux appels

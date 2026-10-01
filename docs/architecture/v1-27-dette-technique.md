@@ -430,7 +430,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
 
 | Ce qui a été comparé | Résultat |
 |---|---|
-| Les 31 fonctions `security definer` de `public` et leur `search_path` | **toutes en `search_path=public`**, sauf la procédure `envoyer_rappels`, qui n'en porte pas **exprès** (`CLAUDE.md` : `set search_path` rend le contexte atomique et fait échouer son `commit`) — l'avis de sécurité Supabase la signalera à chaque passe, et il ne faut pas la « corriger » |
+| Les 31 fonctions `security definer` de `public` et leur `search_path` | **toutes en `search_path=public`**, sauf la procédure `envoyer_rappels`, qui n'en porte pas **exprès** (`BOUCLE.md` §3 : `set search_path` rend le contexte atomique et fait échouer son `commit`) — l'avis de sécurité Supabase la signalera à chaque passe, et il ne faut pas la « corriger » |
 | Les 20 tables de `public` | **RLS active partout** ; cinq sans policy ni privilège client (`emission_factor_sync_runs`, `notification_outbox`, `purge_runs`, `reminder_send_runs`, `usage_event_types`), toutes serveur-only — l'avis `rls_enabled_no_policy` les nomme, et c'est l'état voulu |
 | Les 23 policies | **toutes en `(select auth.uid())`**, aucune en appel direct |
 | La matrice de privilèges | **identique à `20260910110000_grants_explicites.sql`**, ses trois privilèges inertes compris (la §5 de cette migration dit pourquoi ils existent) |
@@ -473,7 +473,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   nombre.) `scripts/verifier-parcours-reel.mjs` joue le chemin nominal contre la stack
   Supabase locale à chaque PR, sur **deux profils** — celui de la recette et un cycliste au plan
   à zéro action —, la base relue après chaque écriture
-  (`TESTING.md` §2.6). Deux constats de plus au passage : **Docker tourne dans l'environnement
+  (`TESTING-GARDES.md` §2.6). Deux constats de plus au passage : **Docker tourne dans l'environnement
   d'agent** (`sudo dockerd &`), donc pgTAP et ce parcours s'y exécutent — ce dépôt avait écrit le
   contraire ; et les `EXPO_PUBLIC_*` sont mises en cache par Metro hors de sa clé, donc un export qui
   change de configuration exige `--clear`.
@@ -483,7 +483,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   trois**, et la dérive était déjà arrivée une fois en silence (`tc_access` a dit `aucun` avant de
   dire `inexistant`). Le compte exact ne s'écrit pas ici — le script l'imprime à chaque passage, et
   il grossit au prochain miroir déclaré. `scripts/verifier-miroirs-de-check.mjs` lit `pg_constraint` sur la base que les
-  migrations viennent de construire, dans le travail `db-tests`, et compare — `TESTING.md` §2.7,
+  migrations viennent de construire, dans le travail `db-tests`, et compare — `TESTING-GARDES.md` §2.7,
   douze mutations datées en tête du script. Trois choses valent d'être notées, parce qu'elles ont
   changé la forme prévue :
   - **le relevé se trompait de source.** Il proposait de relire le dernier `check (col in (…))` des
@@ -514,7 +514,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   aucune n'était jouée : la félicitation à la place des cartes, le cap qui ne chiffre pas, et
   l'absence de l'encart de contexte comme du lien vers les pistes. Le second profil tourne dans un
   contexte de navigateur **neuf**, parce que « premier » veut dire premier sur cet appareil.
-  `TESTING.md` §2.6.
+  `TESTING-GARDES.md` §2.6.
 
 ### 12.3 Ce qui revient à la personne qui pilote
 
@@ -576,7 +576,7 @@ le jour venu.
   la note ajoutée en tête de `docs/recette/premier-parcours-web.md` le 20/09 : la note est du
   contexte, pas une ligne à cocher, donc l'artefact n'est pas faux — mais §1.1 de `RECETTE.md` dit
   que le `.md` est la source et que l'artefact se régénère depuis lui, et cette règle ne souffre pas
-  d'exception « pour une phrase ». À faire avant la prochaine séance.
+  d'exception « pour une phrase ». À faire avant la prochaine séance — **fait le soir même** (§12.2).
 - **Ce que le parcours réel ne garde pas**, pour que personne ne le lui prête : les exclusions de
   cartes (§4 — le chantier D, à instruire), les états d'erreur au-delà de ceux de
   `verifier-etats-export.mjs`, tout ce qui est natif (notifications, jeton d'appareil, retour au
@@ -619,7 +619,7 @@ Ce que la relecture du diff a trouvé, et qui a été corrigé :
   même que **toute** recopie l'était : `CanalPrefere` (la préférence de canal de rappel),
   `IntentionTiming`, `LoopType` et `POSTES`. Déclarés et éprouvés — le comparateur passe de 17 à
   **21** miroirs. La promesse d'exhaustivité est remplacée par ce qui est vrai : une liste
-  **déclarée**, plus les deux formes qui lui échappent structurellement (`TESTING.md` §2.7).
+  **déclarée**, plus les deux formes qui lui échappent structurellement (`TESTING-GARDES.md` §2.7).
 - **Le geste qui rendait `LoopType` utile manquait.** Le type était nommé depuis
   `src/constants/postes.ts`, mais six endroits réécrivaient `'commute' | 'extras'` à la main : le
   déclarer n'aurait donc gardé personne. Les six l'importent désormais.
@@ -631,7 +631,7 @@ Ce que la relecture du diff a trouvé, et qui a été corrigé :
   faisait avant » : 15 143 lignes au lieu de 15 147 dans l'en-tête du parcours ; le seuil kg/t
   annoncé dans `src/types/resultat.ts` alors qu'il vit dans `src/lib/format.ts` ; deux lignes de
   dette traitées annoncées dans `produit.md` là où le tableau en marque trois ; le profil du
-  parcours au singulier dans `v1-27` §12.2 et `TESTING.md` §2.6 après l'arrivée du second ; et
+  parcours au singulier dans `v1-27` §12.2 et `TESTING-GARDES.md` §2.6 après l'arrivée du second ; et
   « sept mutations » pour le comparateur, qui en documentait huit.
 - **`VERCEL.md` comptait mal ce qu'il garde.** « Tout sauf le deuxième point s'éprouve » en oubliait
   un cinquième : `maxDuration` n'est chronométré par rien. Les points gardés sont nommés un par un,
@@ -888,7 +888,7 @@ la liste des Redirect URLs (`docs/exploitation/redirect-urls.md` §3.1 bis — r
 condition tombée, geste refusé par le garde-fou de permissions de l'environnement), l'entrée
 `localhost:8081` (question ouverte depuis le 10/09, et c'est une décision qui se prend, pas une
 règle qui s'applique), le passage en `flowType: 'pkce'` (qui change ce que la personne peut faire :
-un lien ne s'ouvrirait plus que sur l'appareil qui l'a demandé), le pré-détournement d'adresse par
+un lien ne s'ouvrirait plus que sur l'appareil qui l'a demandé — **fait le même jour**, §12.10), le pré-détournement d'adresse par
 `/connexion/email`, et la CSP en `Report-Only` sans collecteur (§12.3, dont ce moment **est** la
 condition de réouverture).
 
@@ -924,7 +924,7 @@ le cran du dessus :
    fasse tomber ce qu'elle est censée faire tomber, et en instrumentant quand ce n'est pas le
    cas.*
 
-**La règle qui en sort, et elle est portable** (écrite en `TESTING.md` §1.1 et §2.9) : *une garde
+**La règle qui en sort, et elle est portable** (écrite en `TESTING.md` §1.1 et `TESTING-GARDES.md` §2.9) : *une garde
 dont le succès est une **absence** doit laisser à ce qu'elle interdit le temps **et** les
 conditions de réussir.* Sinon elle mesure son propre empressement. Et corollaire de mécanique :
 **une mutation se défait en réécrivant l'état d'avant, jamais par un second remplacement
@@ -1225,7 +1225,7 @@ qui a vécu, elle attrape une ligne légitime plus vieille que cinq minutes et r
 la production.
 
 Ce n'est pas un faux positif inoffensif : une garde qui rougit pour la mauvaise raison finit
-« corrigée » de travers ou ignorée, et c'est exactement le défaut contre lequel `TESTING.md` §2.3
+« corrigée » de travers ou ignorée, et c'est exactement le défaut contre lequel `TESTING-PGTAP.md` §2.3
 met en garde. **Et elle n'était pas voisine de cette §2.3 : elle EN faisait partie** — c'est l'une
 des trois assertions qu'elle listait comme supposant une base vierge, et la seule des trois qu'on
 peut fermer sans rien perdre. Les deux autres (`17_rappels_canal` 15 et 16) n'échouent pas sur un
@@ -1236,7 +1236,7 @@ Vérifié en désarmant le trigger `usage_events_stamp_time` : la version borné
 qu'elle garde. Et mesuré plutôt que supposé pour le distant : zéro ligne portant l'uuid du fixture,
 contre 254 lignes réelles.
 
-`TESTING.md` §2.3 a été corrigée du même geste, et elle portait **deux** phrases devenues fausses :
+`TESTING-PGTAP.md` §2.3 a été corrigée du même geste, et elle portait **deux** phrases devenues fausses :
 la liste de trois, et surtout la parade qu'elle prescrivait — `supabase db reset` avant chaque suite
 locale. Le réflexe de faire porter à l'appelant une manipulation que l'assertion aurait dû éviter
 est le vrai enseignement de cette ligne.
@@ -1467,7 +1467,7 @@ L'écran du plan décide de la boucle à nommer sur le seul poste domicile-trava
 (`src/app/(tabs)/plan/index.tsx` : `commute_poste_label ? 'hebdo' : 'mensuel'`), donc toute personne
 sans trajet se voit promettre « Je te fais signe au début du mois prochain » (ou « On se retrouve ici
 au début du mois prochain », sans rappel) — **y compris quand la boucle mensuelle ne tourne pas** :
-aucun trajet, sorties rares, aucun voyage déclaré. C'est le profil sédentaire de C2.5, que `CLAUDE.md`
+aucun trajet, sorties rares, aucun voyage déclaré. C'est le profil sédentaire de C2.5, que `BOUCLE.md` §1
 dit être le cas par défaut et pas un cas de bord. Le signe promis n'arrive jamais.
 
 **Ce n'est pas le correctif de §12.21 qui l'a créé** : c'était déjà vrai pour un premier bilan de ce
@@ -1618,7 +1618,7 @@ texte visible — pas ce que le clic avait touché. La capture que le script pre
 dossier temporaire, reste sur le runner : rien ne l'envoie
 en artefact. Il a fallu cinq parcours complets, seize clics isolés puis une expérience ciblée pour
 trouver ce qu'elle aurait peut-être montré d'une image — le lien 412 px plus bas que là où le clic
-était parti (`TESTING.md` §2.6).
+était parti (`TESTING-GARDES.md` §2.6).
 
 **Pourquoi ce n'est pas fait** : `ci.yml` promet en tête qu'aucune étape « ne publie quoi que ce
 soit », et le passage en public a vérifié qu'aucun artefact n'est téléchargeable

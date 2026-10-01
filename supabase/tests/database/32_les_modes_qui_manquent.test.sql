@@ -14,7 +14,7 @@
 --      de sa soumission.
 --
 -- **Les valeurs attendues sont dérivées de `public.emission_factor(...)` et jamais écrites en
--- clair** (`TESTING.md` §2.2) : la synchronisation trimestrielle fait bouger le référentiel, donc
+-- clair** (`TESTING-PGTAP.md` §2.2) : la synchronisation trimestrielle fait bouger le référentiel, donc
 -- un nombre figé ici rougirait pour la mauvaise raison. Ce que les assertions tiennent est le
 -- **rapport** entre deux profils jumeaux, ou l'égalité entre un total et le produit qui devrait le
 -- rendre — ce qui reste vrai quelle que soit la valeur du jour.

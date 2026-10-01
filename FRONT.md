@@ -2,9 +2,12 @@
 
 > **Quand ouvrir ce fichier.** Toucher un écran, un composant ou une dérivation lue par un écran ·
 > écrire une phrase que quelqu'un lira · afficher un chiffre, un repère, un poste, une saison ·
-> faire parler Ramille · rendre quelque chose cliquable · toucher un état de chargement, un état
-> vide ou un écran d'erreur · ajouter une route · toucher au questionnaire, au plan ou au suivi ·
-> faire bouger quelque chose — une transition, une animation, une hauteur qui change (§2.12).
+> rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur
+> · ajouter une route · toucher au plan ou à un écran d'onglet. Et, selon ce qu'on touche, l'un des
+> cinq fichiers de la famille : `FRONT-MASCOTTE.md` pour faire parler Ramille,
+> `FRONT-QUESTIONNAIRE.md` pour le questionnaire, `FRONT-SESSION.md` pour la session, les rappels,
+> le code et le démarrage, `FRONT-SUIVI.md` pour le suivi et la restitution, `FRONT-MOUVEMENT.md`
+> pour faire bouger quelque chose.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
 > quand venir ici ; une règle sortie sans dire *quand* aller la chercher est une règle enterrée.
@@ -16,6 +19,29 @@ seul fichier chargé à chaque session. Même motif que `VERCEL.md`, `SUPABASE.m
 La §1 vaut sur n'importe quelle app qui affiche des chiffres à quelqu'un ; la §2 est Ramille, et
 ne voyage pas.
 
+**Découpé à son tour le 01/10/2026**, où il pesait 102 Ko : ce fichier garde la §1, et de la §2 ce
+qui vaut pour tout écran — les chiffres et le vocabulaire (§2.1), les pages légales (§2.2), ce qui
+se touche et s'annonce (§2.4), la frontière avec la plateforme (§2.5), les pièges web et natif
+(§2.8), les écrans d'onglet (§2.11). Les autres sections sont parties **telles quelles — à leurs renvois près — et sous leur
+numéro**, qui reste unique dans la famille — un renvoi « `FRONT.md` §2.x » écrit avant cette date
+se retrouve donc par cette table :
+
+| Section | Vit dans |
+|---|---|
+| §2.3, la mascotte | `FRONT-MASCOTTE.md` |
+| §2.6, le questionnaire | `FRONT-QUESTIONNAIRE.md` |
+| §2.7, §2.7 bis, §2.9 — la session, les rappels, le code, le démarrage | `FRONT-SESSION.md` |
+| §2.10, le suivi | `FRONT-SUIVI.md` |
+| §2.12, le mouvement | `FRONT-MOUVEMENT.md` |
+| tout le reste | ici |
+
+**Trois règles vivent dans un morceau mais valent pour tout écran**, et c'est ici qu'on les croise :
+**la mascotte n'apparaît jamais à côté d'un chiffre lourd** (`FRONT-MASCOTTE.md` §2.3) ; **une
+découpe permanente** (`overflow: hidden` qui ne s'en va pas) **coupe l'anneau de focus** d'un
+contrôle posé au bord (`FRONT-MOUVEMENT.md` §2.12) ; et **« trois mois » sans compte ne s'écrit pas
+sans relire la purge des sessions anonymes**, qui ferme après trois mois d'inactivité
+(`FRONT-SESSION.md` §2.9).
+
 ## 1. Ce qui vaut sur n'importe quelle app
 
 ### 1.1 Une dérivation affichée sort de l'écran
@@ -23,7 +49,8 @@ ne voyage pas.
 **Toute dérivation pure affichée à la personne, ou décidant d'une navigation, vit hors du
 composant** — dans un module pur, avec ses tests. C'est la règle qui décide de ce qui est testé
 dans ce dépôt (`TESTING.md` §2.1), et sa conséquence chiffrée est nette : le module pur est à
-99 % de couverture, les écrans à zéro, par décision.
+99 % de couverture, et les écrans n'en ont que par exception — quelques tests d'écran depuis le
+20/09/2026 (`src/tests/ecrans/`), sous le critère de `TESTING.md` §2.10.
 
 Trois choses qu'elle achète, et qui n'ont rien d'évident :
 
@@ -56,7 +83,7 @@ Quatre règles qui en découlent, et qui se sont toutes payées :
   la fonction de rafraîchissement : sans ce passage, un second échec rend le même écran et le
   bouton a l'air mort ; dedans, il fait clignoter l'écran à chaque retour au premier plan. **Et il
   marque ce chargement comme demandé** (`relance`) depuis que la ligne « Chargement… » attend
-  300 ms (§2.12) : hors ligne, l'échec revient bien avant, et l'écran d'erreur disparaissait puis
+  300 ms (`FRONT-MOUVEMENT.md` §2.12) : hors ligne, l'échec revient bien avant, et l'écran d'erreur disparaissait puis
   revenait sans un mot — le même bouton mort, par une autre porte (`useChargementVisible`) ;
 - **une valeur par défaut posée sur un échec est du même mensonge.** Ce qu'on ne sait pas vaut
   `null`, et l'élément ne s'affiche pas — plutôt que de nommer le mauvais jour, le mauvais canal
@@ -175,6 +202,8 @@ l'appliquer ; un texte imbriqué coupe la réunion et reçoit la règle pour lui
 collé en littéral. Trois assertions le portaient en clair, et leur échec affichait
 `Expected: "1 600"` / `Received: "1 600"` — deux chaînes rigoureusement identiques à l'œil. C'est
 exactement ce qui avait laissé passer le mauvais caractère.
+
+---
 
 ## 2. Propre à Ramille
 
@@ -304,6 +333,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   retire est la **barre**, c'est-à-dire un score avec un mauvais côté ; la phrase du suivi ne se rend
   qu'en **dessous** de la moyenne, donc du seul côté qui soit favorable, et la taire cacherait à ce
   profil la seule comparaison qui joue pour lui.
+
 ### 2.2 Les pages légales, et le régime juridique qui les explique
 
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
@@ -316,90 +346,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   responsable de traitement, regroupés dans `src/constants/editeur.ts` — un seul endroit à
   remplir, jamais de mention en dur dans un écran. Ce régime tomberait si le projet devenait
   une activité professionnelle.
-### 2.3 La mascotte : sa géométrie, ses saisons, et tout ce qu'elle dit
 
-- **La mascotte ne se redimensionne pas proportionnellement : sa géométrie est calculée**
-  (`src/types/mascot.ts`, `mascotFaceGeometry`), et `src/components/mascot.tsx` ne fait que
-  dessiner ce qu'elle rend. Le visage vit dans un `viewBox` 0 0 100 100, donc une unité vaut
-  `size / 100` pixels : au trait nominal de 3,2 unités, la bouche mesurait **0,70 px** à
-  `size={22}` dans l'en-tête du questionnaire et l'antialiasing n'en laissait qu'une tache
-  grise — la mascotte y coûtait sa place sans rien rendre. La compensation optique épaissit
-  donc les traits à mesure que `size` diminue (les positions ne suivent qu'à 20 %, sinon
-  l'œil sort de la feuille), et sous `MASCOT_MIN_FACE_SIZE` le composant rend la feuille
-  seule plutôt qu'un visage illisible. Ne jamais réintroduire de chemin SVG figé dans le
-  composant, et ne jamais passer un `size` inférieur à cette constante. Deux pièges vérifiés :
-  le point de contrôle d'une quadratique est à **2×** la flèche voulue (s'y tromper double la
-  courbure des yeux, ce que ni le typecheck ni les assertions de lisibilité ne voient — seul
-  un rendu visuel l'a montré, d'où le test de conformité aux chemins d'origine), et arrondir
-  `50 ± offset` casse la symétrie d'un centième, d'où l'arrondi sur l'écart et non sur la
-  coordonnée. Les joues affleurent le bord de la silhouette dès la taille nominale : le
-  visage est découpé par un `clipPath`, sans quoi elles flottent hors du vert.
-  **Elle porte la saison** (C2.13) : un bonnet en hiver, un bourgeon au printemps, une goutte de
-  rosée en été, des joues chaudes en automne. La saison par défaut est celle du jour (`saisonDe`),
-  donc **aucun écran ne la passe** et le 1er décembre elle change partout sans mise à jour de l'app
-  — jamais dérivée de `plan_cycles` ni de la cadence, un trimestre glissant n'ayant pas de saison
-  nommée. Quatre points à connaître avant d'y toucher. L'automne n'est **pas** un accessoire : il
-  reprend les joues du visage (rayon × 1,18, opacité + 0,25, ton chaud), donc il vit dans
-  `mascotFaceGeometry` et `mascotSeasonGeometry('automne', …)` rend une liste vide — deux couches de
-  joues, l'une découpée et l'autre non, se verraient au bord de la feuille. Les trois autres ne sont
-  **pas découpés** par le `clipPath`, à la différence du visage : le clip existe parce que des joues
-  hors du vert se lisent comme un bug, pas pour empêcher un chapeau de se porter sur la tête, et
-  découper rognerait le pompon en lentille. Ce qu'il garantissait, un test le garantit autrement —
-  chaque élément reste dans le `viewBox`. Les positions sont **fixes** et seules les épaisseurs et
-  les rayons suivent `k`, comme les traits du visage. Et les quatre jetons (`mascotInk`,
-  `mascotVein`, `mascotAccessory`, `mascotWarm`) existent dans les deux thèmes mais ne sont **lus
-  qu'en clair** : le composant lit `Colors.light` comme avant, dormance assumée et commentée sur
-  place — le jour où un thème sombre est livré, c'est cette table qui dit ce qui bascule (la
-  feuille, les joues et le ton chaud) et ce qui ne bascule pas (l'encre). `mascotWarm` porte bien deux valeurs : ranger tous les accessoires du côté « ne bascule pas » était faux. **Ce qui se voit au rendu ne se
-  voit pas à la lecture d'un chemin** : deux des trois écarts au canvas viennent d'une capture des
-  cinq expressions × cinq tailles × cinq saisons, et les deux assertions qui en sortent — la
-  distance **réelle** entre accessoire et visage, et la lisibilité de chaque élément — valent mieux
-  que la capture. **Le quatrième écart vient du même genre de relevé, poussé d'un cran**
-  (14/09/2026) : le rayon extérieur du pompon passe de 5,6 à **7,1**, parce qu'à 5,6 le cerne clair
-  qui le sépare de la calotte mesurait 0,71 px de 28 à 40 — sous le plancher de 1,3 px, franchi
-  seulement au-dessus de 76, c'est-à-dire sur le seul écran de lancement. Un rendu rastérisé à la
-  vraie taille puis agrandi sans lissage montre qu'aux tailles courantes il ne se lit **pas du
-  tout** : le pompon devient un point chaud sur une calotte chaude. Deux choses à ne pas défaire —
-  c'est le rayon **extérieur** qu'on ouvre et jamais le cœur qu'on rétrécit (le cœur fait le deux
-  tons, et il porte le dessin à 168 px), et 7,1 plutôt que 7,0 parce que l'arrondi au centième
-  ramènerait le cerne à 1,2997 px à `size` 41, soit sous le seuil de trois dix-millièmes. Le pompon
-  vaut alors 56 % de la largeur de la calotte à `k` maximal et son bord haut tombe à y = 1,35 : c'est
-  la borne du `viewBox`, donc on ne l'ouvre pas davantage. Exclus, et ils doivent le rester : la carte de partage (`api/share-card.ts`), le
-  favicon, `mascot-mark.svg`.
-  **Elle parle, et tout ce qu'elle dit vit dans `src/constants/mascotte.ts`** (`RAMILLE`),
-  rendu par `RamilleDit` — jamais une phrase écrite dans un écran. Trois règles, gardées par
-  un test : première personne et tutoiement ; **jamais un nombre dans sa bouche** (les
-  chiffres restent au produit, c'est ce qui garantit qu'elle ne commente jamais une
-  empreinte) ; jamais « tu devrais » ni « il faut ». Les rappels par email sont un mot
-  d'elle, signé (`enqueue_checkin_reminders`). Les répliques de check-in **d'origine** viennent
-  des maquettes validées et ne se réécrivent pas ; **la période calme fait exception** — « Rien à
-  rattraper. » a été retirée le 07/09/2026 sur un retour d'usage (elle se lisait comme une
-  attente déçue), remplacée par des phrases qui *disent* l'attente et nomment le jour. Elle
-  peut le faire sans jamais compter, le rythme étant fixe.
-  **Des variantes s'ajoutent depuis la décision D12 du 10/09/2026** (C2.12) : l'originale reste en
-  **première position** de son tableau et n'est pas modifiée, et `variantePourLaPeriode`
-  (`src/types/checkin.ts`) en choisit une par **période**. Jamais un tirage au hasard :
-  `useRafraichirAuRetour` relit l'écran du plan à chaque retour au premier plan, donc la phrase
-  changerait plusieurs fois dans la même période et différerait d'un appareil à l'autre. Le hachage
-  est un FNV-1a 32 bits avec un `>>> 0` à chaque tour — sans lui la multiplication sort de l'entier
-  exact des `number` et Hermes et V8 ne rendraient pas la même phrase pour la même semaine ; et deux
-  périodes voisines ne diffèrent que de sept jours ou d'un mois, donc une somme de codes de
-  caractères donnerait des indices corrélés. **Les tableaux sont doublés par boucle** (« À lundi. »
-  n'a aucun sens sur un point mensuel) et `checkinSansObjet` l'est par **poste**, ce qui est l'écart
-  de C2.4. L'usure que ces variantes traitent n'est **pas mesurable** — `checkin_answer` est interdit
-  comme événement d'usage — c'est un choix de ton, assumé comme tel.
-  Depuis C2.5 certaines répliques sont **groupées** (`maintienNon` par mode, les tableaux de C2.12) :
-  le test aplatit `RAMILLE` avant de l'éprouver, et il le fait parce qu'une valeur non-textuelle
-  traverse `expect.stringMatching` **sans jamais matcher** — les trois règles de voix passeraient en
-  silence sur une réplique groupée. Deux gardes s'ajoutent à C2.12 : l'originale en tête de chaque
-  tableau, et **aucun doublon** — un copier-coller qui laisse deux entrées identiques réduit la
-  variété sans que rien ne le signale, c'est-à-dire défait le chantier en silence.
-  Cinq expressions, **aucune négative et il ne faut pas en ajouter** : `calm`, `happy`,
-  `encouraging`, `thinking` (attente du calcul — seule asymétrie assumée, le regard est décalé
-  d'une unité) et `resting` (périodes calmes de `/suivi`). Un second registre s'obtient sans
-  redessiner, par la prop `tilt` : une feuille penchée regarde, une feuille droite accompagne.
-  **La mascotte n'apparaît jamais à côté d'un chiffre lourd** — ni près du total, ni près d'une
-  empreinte élevée : y mettre un visage serait commenter, et le produit ne commente pas.
 ### 2.4 Ce qui se touche, et ce qui s'annonce
 
 - **Un texte cliquable passe par `TextLink`, jamais par un `Pressable` enveloppant un
@@ -466,7 +413,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
 - **Le « Suivant » d'une étape incomplète n'est pas désactivé : il est en attente**
   (`Button.enAttente`, `v1-31`). Il a l'apparence du désactivé — fond `backgroundElement`, texte
   `textTertiary`, et `backgroundPressed` sous le doigt plutôt que `accentPressed` — et rien d'autre :
-  **ni `disabled`, ni `aria-disabled`**. Il agit (§2.6, il demande ce qui manque), donc il ne
+  **ni `disabled`, ni `aria-disabled`**. Il agit (`FRONT-QUESTIONNAIRE.md` §2.6, il demande ce qui manque), donc il ne
   s'annonce pas indisponible ; et sur web, `aria-disabled` réécrit depuis `disabled` pose l'attribut
   natif, qui le rendrait inerte au clic comme au clavier (`EXPO.md` §1.5). `disabled` reste pour ce
   qui n'agit vraiment pas — le « C'est noté » d'une feuille incomplète, l'« Enregistrer » de
@@ -518,6 +465,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
 - **Un lien qui doit compter pour un moteur de recherche passe par `Link` d'Expo Router, jamais
   par un `onPress`** (rendu en `<div>` par `react-native-web`), et se vérifie dans le HTML statique
   de `dist/` : `EXPO.md` §2.1.
+
 ### 2.5 La frontière avec la plateforme : `api/`, l'environnement, l'hydratation
 
 - **Ce que `api/` duplique de `src/` doit être tenu des deux côtés, et la liste est courte.**
@@ -545,301 +493,6 @@ exactement ce qui avait laissé passer le mauvais caractère.
 - **Un état qui diffère entre le serveur et le client doit démarrer à la valeur du serveur et
   changer après hydratation** (`useSyncExternalStore`, jamais `useWindowDimensions` — le pager
   d'onboarding l'a appris, v1-11 §9.10) : `EXPO.md` §2.2.
-### 2.6 Le questionnaire : ce qu'une réponse efface, et comment on saisit
-
-- **Une réponse rendue impossible par une autre réponse s'efface dans `normaliserReponses`, et
-  nulle part ailleurs** (`src/types/bilan.ts`, appliquée après chaque `update` du questionnaire et
-  à la relecture d'un brouillon). Trois écrans tenaient trois listes de remises à zéro, qui
-  divergeaient déjà : changer le mode principal effaçait la motorisation sans regarder si le
-  **second** mode était encore une voiture ; « Non » à B1.1 oubliait le type de deux-roues ; et
-  choisir comme mode principal celui déjà pris en second laissait les deux jambes sur « voiture »,
-  la ligne n'apparaissant plus nulle part et la moitié du trajet étant facturée au tarif solo.
-  Deux règles : la fonction est **idempotente** (elle s'applique aussi à un brouillon écrit avant
-  ces règles), et ce qui décide d'effacer un champ est **ce que le calcul lit encore**, pas ce que
-  l'écran affiche — la branche « rarement » des loisirs en est l'exemple, commentée sur place.
-  **Et depuis `v1-16` §4, elle écrit `false` ou `null` selon ce qu'elle veut dire** : `false` quand
-  la question ne s'applique plus (pas de trajet régulier), `null` quand elle est **à reposer** — un
-  retour en arrière qui rend le second mode identique au mode principal répondait « Non » à la
-  place de la personne. Les confondre, c'est refaire le défaut de §12.3 par une autre porte.
-- **Une question à laquelle personne n'a répondu ne vaut pas « Non »** (recette du 14/09/2026,
-  `v1-16` §4). `commute_second_mode_used` est `boolean | null` côté client, `null` valant « pas
-  encore répondu », et `manqueDeLEtape` le refuse : le défaut était `false`, donc « Non » arrivait
-  coché sur un questionnaire vierge et l'étape se traversait sans qu'on décide — or « Non »
-  **sous-estime** un trajet intermodal, sur le poste qui décide du poste dominant donc du plan.
-  C'est la quatrième occurrence du motif de C3.4 / C3.5 / C3.6, restée en place parce qu'elle
-  préexistait à la règle. **La colonne, elle, reste `not null`, et ce n'est pas un raccourci** :
-  `null` décrit un questionnaire en cours, jamais un bilan soumis, et la rendre nullable
-  réimporterait l'ambiguïté en base — la branche du calcul est
-  `if a.commute_second_mode_used and a.commute_second_mode is not null`, où `null` se comporte
-  **exactement comme `false`**. D'où un `?? false` à l'insert, inatteignable par construction et
-  écrit quand même, le typecheck étant le seul garde qui voie cette dérive.
-- **Une précision s'ouvre sous l'option qu'elle décrit, et la dernière exception est tombée**
-  (`v1-16` §3). La taille du covoiturage du trajet quotidien vivait en tête de l'écran **suivant**,
-  alors que ses deux jumelles de C3.5 (sorties, longs trajets) s'ouvrent sous l'option choisie :
-  trois fois la même question, deux motifs. Elle est désormais sous « Voiture (covoiturage) » de
-  B1.4, par `PrecisionChiffres`, après la motorisation — les deux précisions décrivent la même
-  voiture. Le seul écart qui reste est la distance ouverte des loisirs, et sa raison est écrite sur
-  place : une rangée de puces n'a pas d'élément sous lequel se glisser.
-- **Ce qui manque se dit au toucher du « Suivant », jamais d'office** (29/09/2026, `v1-31`,
-  décision 1). Rien ne s'écrit à l'arrivée : la question est déjà en titre, et rien ne change sous le
-  doigt pendant qu'on répond. Le « Suivant » d'une étape incomplète est gris et **demande** (§2.4) :
-  la ligne « Il manque encore … » apparaît au-dessus de lui — un lien, `accentText` 600, jamais une
-  alerte —, l'intitulé de ce qui manque passe en `accentText` 600, le focus s'y pose (l'option cochée
-  du groupe, ou sa première : `optionCible`) et l'écran y défile s'il le faut. La demande tient
-  jusqu'à ce que l'étape soit complète, retombe alors et en changeant d'étape ; tant qu'elle court,
-  la ligne et la marque **suivent ce qui manque maintenant** (`v1-31` §2.9). Quatre choses à ne pas
-  défaire :
-  - **`manqueDeLEtape` rend un champ et sa phrase** (`{ champ, phrase }`), et le champ est ce qui
-    mène : chaque étape enregistre une ancre par champ qu'elle pose (`useAncreDuChamp`,
-    `src/components/bilan/ancre-du-champ.tsx`). Ajouter un champ à une étape en demande donc
-    **trois** : sa ligne dans `CHAMPS_DE_L_ETAPE`, sa branche et sa phrase dans `manqueDeLEtape`, son
-    ancre à l'écran. Les deux premières sont gardées par `bilan.test.ts` ; la troisième ne l'est que
-    par un avertissement de développement — un champ réclamé sans ancre ne se tait pas, la ligne
-    s'affiche et le focus retombe sur l'étape, et c'est la forme neuve du défaut de C5.4 (une
-    question absente, mais réclamée) ;
-  - **la question principale ne se marque jamais** (`seMarque`) : elle est en titre, et le titre qui
-    changerait de couleur ne dirait rien de plus. Le titre lit pourtant la marque comme tout
-    intitulé, pour qu'une `seMarque` fautive se voie ;
-  - **une étape à deux champs de saisie en même place** (la distance du trajet, en kilomètres ou en
-    tranche) n'a qu'**un** champ logique, `distance_du_trajet` : la phrase ne peut pas dire lequel
-    des deux, et l'ancre suit celui qui est à l'écran ;
-  - **la demande ne coche rien, même à Entrée maintenue** : §2.4.
-- **Les modes se rangent en trois familles**, motorisés, collectifs, actifs (`MODES_PAR_FAMILLE`,
-  `enFamilles`, `src/constants/transport-modes.ts`), séparées de 16, des rangées de 48 à 4 d'écart.
-  L'ordre vit dans cette liste, **jamais dans les clés de `TRANSPORT_MODE_LABELS`**, dont l'ordre est
-  un accident d'écriture. « Lequel ? » l'itère ; les listes de B1.4 et B2.2 restent **littérales**,
-  tenues d'accord avec elle par `transport-modes.test.ts` — et elles doivent le rester : la section H
-  de `verifier-etats-export.mjs` lit dans la source le premier libellé de `LEISURE_MODE_CHOICES_MORE`,
-  le premier mode que « Voir les autres modes » révèle. Le changer ne demande donc rien à la garde ; en
-  faire une liste dérivée la ferait tomber sur « motif introuvable ».
-- **Une précision vit dans une boîte, et la boîte dans le groupe de son mode**
-  (`BoiteDePrecision`, `v1-31` §2.2) : une boîte par choix, qui porte toutes ses précisions — la
-  motorisation **et** le nombre de personnes d'une même voiture, « Lequel ? » **et** sa part —, et
-  chaque précision y reste **un `radiogroup` nommé à elle**, à l'intérieur de celui des modes.
-  `PrecisionMode` et `PrecisionChiffres` ne dessinent plus de boîte : deux façons d'en dessiner une
-  divergent, et le défilement doit savoir qui annonce l'ouverture.
-- **Deux défilements, et aucun autre** (`decalagePourMontrer`, `src/types/demande.ts`) :
-  - **vers ce qui manque**, au toucher : le minimum pour que la question soit entière, 16 au-dessus
-    du pied ; une question sortie par le haut redescend jusqu'à 24 sous l'en-tête. La ligne qui
-    apparaît rétrécit la zone : le défilement attend la mise en page suivante, où la hauteur du pied
-    est **mesurée** — une police agrandie la change ;
-  - **à l'ouverture** de ce qui s'ouvre sous un choix — une précision, « Lequel ? », la distance
-    d'une sortie —, le minimum pour qu'elle finisse 16 au-dessus du pied, **jamais au point de faire
-    passer le choix qui l'a ouverte à moins de 8 du bord** (`ChoixOuvrant` porte cette borne), et
-    jamais vers le haut. Seulement après une **réponse donnée sur l'étape** : `update` les compte, et
-    ni le préremplissage d'un re-bilan ni un brouillon relu n'y passent — une précision qu'ils font
-    apparaître ne fait rien défiler. « Voir les autres modes » ne défile pas : ce qu'il révèle est
-    sous le doigt.
-- **Un filet en haut du pied dit qu'il y a une suite** (`suiteSousLePied`, `v1-31`, décision 3) :
-  le trait de la bande haute (`border`, un filet), quand le contenu continue dessous au-delà de sa
-  marge basse de 24. Il ne dit pas ce qui manque. Relu au défilement, à la taille du contenu et à
-  celle de la zone ; sans animation. La marge basse du contenu et `MARGE_BASSE_DU_CONTENU` se
-  retouchent ensemble.
-- **Deux précisions de plus depuis C4.4, et une asymétrie d'effacement qui n'est pas évidente.**
-  « Train » ouvre TER / RER ou Transilien / Intercités, « Vélo » ouvre mécanique / à assistance,
-  sur les trois écrans qui posent un mode — on ne prend pas le même train pour aller travailler et
-  pour partir en week-end. Un champ par **poste** et non par jambe, comme la motorisation, parce
-  que B1.7 exclut le mode déjà choisi en B1.4. Ce qu'il ne faut pas uniformiser :
-  `normaliserReponses` efface ces deux réponses sur des loisirs « rarement », **là où la
-  motorisation reste** — une motorisation décrit le véhicule qu'on possède encore et rend le
-  résiduel plus juste, un type de train décrit un trajet qu'on ne déclare plus. Et ce n'est pas
-  théorique : le résiduel de « rarement » vaut `train` quand le foyer n'a pas de voiture, donc un
-  type survivant y serait lu et un bilan resoumis à l'identique changerait de total. La
-  trottinette, elle, ne reçoit **aucune** question — une question dont une seule réponse existe
-  n'en est pas une.
-- **La virgule est un séparateur décimal, et la traiter comme un caractère à jeter coûtait un
-  facteur dix.** Le champ de distance filtrait tout ce qui n'était pas un chiffre : « 3,5 » ne
-  donnait ni erreur ni refus, il donnait **35**. Le clavier numérique d'Android propose une
-  virgule, et l'erreur porte sur le poste le plus lourd de la majorité des bilans, multiplié par
-  deux fois le nombre de jours et par quarante-cinq semaines. D'où `nettoyerSaisieNumerique` /
-  `saisieVersNombre` / `afficherNombreSaisi` (`src/types/bilan.ts`) : la virgule est **conservée
-  telle quelle** sous les doigts de la personne, la conversion se fait à part, et un second
-  séparateur est ignoré sans jeter ses chiffres. Et un « 0 » saisi n'est pas une distance — la
-  colonne porte `check (commute_distance_km > 0)`, donc la complétude de l'étape et l'insert
-  lisent la **même** définition, `distanceDomicileTravailKm`.
-### 2.7 La session, le jeton d'appareil, et les rappels
-
-- **`ensureSession()` est enveloppée dans `uneSeuleFois` (`src/types/une-seule-fois.ts`), et ce
-  n'est pas du confort : sans elle, deux comptes anonymes** — six des treize comptes de la base
-  l'étaient : `SUPABASE.md` §2.4.
-- **Le jeton d'appareil se réenregistre à chaque changement d'utilisateur, pas seulement au
-  démarrage.** `register_push_token` *reprend* le jeton à son propriétaire précédent, et il n'y
-  avait aucun appel ailleurs qu'au lancement : le lien de `/connexion/retrouver` ouvre la session
-  d'un utilisateur **différent** de la session anonyme qui venait d'enregistrer le jeton, si bien
-  que l'appareil restait inscrit au nom de celui qu'on vient de quitter — et recevait ses rappels
-  jusqu'au prochain démarrage à froid. Le garde vit hors du composant (`onAuthStateChange` émet à
-  chaque rafraîchissement de jeton, soit toutes les heures) et **ne se valide qu'après le succès**
-  de l'appel, sinon un échec réseau le referme sur l'état qu'il devait corriger.
-- **`enregistrerLeJeton()` rend un booléen, et c'est la seule chose qui peut faire passer
-  `jetonActif` à vrai** (`src/lib/rappels.ts`) — une permission accordée dont l'enregistrement a
-  échoué (pas d'identifiants FCM, pas de réseau, simulateur) faisait promettre au plan une
-  notification que le serveur ne voyait pas. Hors du chemin `push`, `jetonActif` n'est pas touché :
-  la préférence et le jeton sont deux faits distincts, et la feuille rend `prefs.jetonActif`
-  inchangé quand on la referme sans rien choisir. Le booléen ne distingue pas encore « permission
-  non accordée » d'un échec réseau ; le garde d'`_layout.tsx` ne rend donc le jeton à son
-  propriétaire précédent que sur une exception.
-- **Une absence de jeton n'accuse personne : c'est la permission qui le dit.** L'absence recouvre
-  quatre situations — jamais demandée, refusée, enregistrement échoué, simulateur — qui n'appellent
-  pas la même phrase. `lignesDeReglage` **et** `carteAttente` (`src/types/rappels.ts`) reçoivent
-  donc la `Permission`, et « coupées dans les réglages du téléphone » ne se dit que là où quelqu'un
-  les a vraiment fermées. Le corollaire est le lien « Ouvrir les réglages du téléphone » : il
-  n'existe que dans l'état `fermee`, il se rend **sous la ligne qui le porte** et non après le
-  groupe (détaché, il se lit comme appartenant au dernier choix), et **le retour doit réparer, pas
-  seulement changer le texte** — relire la permission sans réinscrire le jeton laisse la ligne
-  promettre une notification pendant que `push_tokens` porte encore son `disabled_at`, jusqu'au
-  prochain démarrage à froid.
-- **La carte d'attente parle de la personne, la feuille parle de l'action — et `Boucle` sert aux
-  deux, la carte prenant depuis le 30/09/2026 `BoucleAVenir`, qui y ajoute `aucune`** (recette sur
-  appareil du 14/09/2026). La carte annonce le prochain contact quel qu'en soit
-  le sujet : elle se dérive de la personne (un poste domicile-travail ⟹ un point le lundi). **Depuis
-  le 30/09/2026 c'est le serveur qui le dit** (`mes_boucles_a_venir`, `v1-27` §12.22 et §12.23) : il
-  rend les boucles une par une, `boucleAVenir` en tire la carte — **le rendez-vous le plus proche**
-  depuis le 01/10/2026 (#304) : « au début du mois prochain » les jours où le 1er tombe avant le
-  lundi qui vient, quand la règle d'avant disait toujours « lundi » —, et il peut n'en rendre aucune : aucun trajet, sorties rares, aucun voyage déclaré. La
-  carte ne promet alors rien — ni jour, ni canal, ni porte — là où elle promettait « au début du
-  mois prochain » un signe qui ne venait jamais. La règle de la boucle mensuelle n'est pas recopiée
-  côté client : elle vit dans `boucles_du_dernier_bilan`, que les générateurs lisent aussi.
-- **D'autres textes du plan suivent les mêmes boucles, et pour la même raison** (décision du
-  30/09/2026, `v1-27` §12.23 ; la félicitation d'un plan sans action depuis §12.25, dont la promesse
-  « Le point reste là » tombe quand sa boucle est connue pour être arrêtée). **La carte des deux lieux** ne décrit que ce que le plan porte
-  (`ouvertureDesDeuxLieux`, `src/types/premier-parcours.ts`) : « l'action en cours » et « ton cap »
-  s'il a des actions — sinon « ta saison », puisqu'un plan sans action ne chiffre pas son cap et que
-  sa carte n'y montre que la saison —, « le point régulier » et « tes réponses » si une boucle
-  tourne ; et Ramille dit « Je garde tes bilans » là où il n'y aura pas de réponse à noter. Elle attend que les
-  boucles soient lues, comme la carte d'attente. **La carte d'un point répondu** ne donne plus
-  rendez-vous quand sa boucle s'est arrêtée — un nouveau bilan pendant la période : le pied dit
-  « Répondu lundi. » sans le prochain point, et la réplique de Ramille est choisie parmi celles qui
-  ne promettent rien (`repliqueDuPoint`, `piedDuPointRepondu`, dont `boucleTourne` est
-  **obligatoire** : un défaut laisserait un appel oublié promettre en silence). Sur un échec de
-  lecture, la boucle du point est tenue pour tournante (`laBoucleDuPointTourne`) : la réplique est
-  choisie par période, et la déclarer arrêtée la ferait changer le temps de la panne. **Et le suivi,
-  sur l'autre onglet**, le même jour et pour la même raison : sa carte « aucun point répondu » dit
-  « Je garde tes bilans ici » sans boucle, et perd sa note sur les périodes sans réponse
-  (`carteDuSuiviSansPoint`, `src/types/suivi.ts`, lue par `loadBouclesAVenir`). La carte reste —
-  un suivi vide sous les bilans se lit comme un manque — et sur un échec de lecture elle garde son
-  texte d'avant. La
-  feuille ouverte après « C'est noté » promet un contact **sur l'action qu'on vient d'engager**
-  (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du **poste de cette
-  action**, par `boucleDeLAction` (`src/types/rappels.ts`), miroir de l'appariement que fait la
-  génération du point (C2.1). Les confondre affiche une promesse fausse, et c'est ce qui a été
-  trouvé : quelqu'un qui a un trajet domicile-travail **et** s'engage sur un vol s'entendait
-  promettre le lundi, alors que le point du lundi ne demandera jamais rien sur son vol — vérifié en
-  base le même jour, le point hebdomadaire sortant en question générique. Corollaire : la feuille
-  ne dépend plus des boucles lues (`boucles`), sans quoi un échec de lecture secondaire empêchait une cérémonie qui
-  ne s'ouvre **qu'une fois par appareil** — donc la perdait pour de bon. **La promesse du mois a été
-  fausse jusqu'au 30/09/2026 dans un cas** : une action engagée sur le poste mensuel que la boucle
-  n'interrogeait pas (les sorties quand les voyages pèsent plus, ou l'inverse). La boucle suit
-  désormais l'action (`v1-27` §12.25), donc la phrase n'a pas bougé — c'est le serveur qui la rend
-  vraie, tant que le dernier bilan ouvre une boucle mensuelle : un bilan plus récent qui n'en ouvre
-  plus (sorties rares, aucun voyage) la laisse sans point, par la règle de §12.21.
-- **Une phrase qui dit quoi faire donne le moyen de le faire, et la porte se rend sous la ligne qui
-  la porte** (13.4, recette web du 16/09/2026). « Rattache un compte pour recevoir le mot par
-  email. » était un `ThemedView` nu sur le plan : le seul chemin était l'icône de compte en haut à
-  droite, que rien n'explique — alors que le commentaire de `lignesDeReglage` écrivait déjà la
-  doctrine (« une porte, pas un mur »), vraie sur « Toi » où l'on est déjà, fausse sur le plan.
-  `carteAttente` rend donc une `action` à côté de son `detail`, de la même forme que le lien
-  « Ouvrir les réglages du téléphone » : elle n'existe **que dans l'état qui la réclame**.
-  L'invariant est écrit sur le sens et non sur les six phrases — **la porte se rend exactement là
-  où le canal effectif est `aucun` et où la carte dit quelque chose** : aucun canal veut dire
-  qu'aucune adresse ne peut recevoir le mot, donc qu'un compte est ce qui manque ; ne rien dire
-  (l'enregistrement raté, qui se répare au prochain lancement) veut dire qu'il n'y a rien à
-  réparer à la main. La destination est **« Toi » et jamais `/connexion`**, qui imposerait une
-  provenance neuve à `SOURCES_CONNEXION`. Et pas la carte entière rendue `Pressable` : trois des
-  six variantes n'ont rien à offrir, elles deviendraient une cible morte.
-- **Le mot de la veille ne se propose qu'à qui peut le recevoir, et le réglage dit la pause plutôt
-  que de se taire** (C4.2, `v1-25`, `affichageDeLaVeille` dans `src/types/rappels.ts`). La
-  proposition exige tout ce qui le fait partir : natif, `canalEffectif` push **sur ce téléphone**,
-  une action de trajet engagée et une fenêtre ouverte **lue sur le RPC**
-  (`fenetre_du_mot_de_la_veille`), jamais recalculée — l'écran ne peut pas annoncer une date que
-  l'envoi ne tiendrait pas. Une fois répondue, la ligne de réglage suit ce qui se passe vraiment :
-  la date quand la fenêtre court, « En pause sur ce téléphone » sans jeton (D3), « En pause : … »
-  fenêtre close — et la règle seule, sans « en pause », quand la lecture a échoué, parce qu'on ne
-  sait pas. Trois choses à ne pas défaire :
-  - **la feuille se rouvre une fois, sur la seule question de la veille** (`ouvertureDeLaFeuille`,
-    arbitrage du 27/09/2026), au premier engagement de trajet **où elle peut être posée**, chez qui
-    l'a vue sans cette question — pas forcément le premier engagement de trajet : qui a vu la feuille
-    sur un trajet sans recevoir de notification la voit venir au suivant, une fois les notifications
-    rouvertes ;
-    « une fois » est une marque d'appareil (`veilleDejaProposee`) posée **dès que la question
-    s'affiche**, parce que refermer sans répondre ne répond rien — la question reste dans « Toi »,
-    mais ne revient pas en travers du plan ;
-  - **le sous-titre de « Toi » est un plafond dérivé** (`sousTitreDesRappels`) : il promet ce que la
-    personne a demandé, pas ce qui part ce soir, donc il reste vrai les soirs sans mot — et il ne
-    dépend pas de la plateforme, le téléphone recevant le mot même quand « Toi » se lit au
-    navigateur ;
-  - **les deux canaux Android sont une paire SQL/TypeScript** (`CANAUX_ANDROID` et
-    `public.canal_android`) : un `channelId` que l'appareil n'a pas créé ne fait pas échouer
-    l'envoi, il fait tomber la notification ailleurs, sans bruit. D'où leur création **à chaque
-    lancement** (`preparerLesCanauxAndroid`) et non au moment du oui.
-- **Le jeton de cet appareil est mémorisé en AsyncStorage** (`traceverte.jeton_appareil.v1`),
-  parce que rien en base ne permet de le reconnaître : `push_tokens` est owner-scoped et une
-  lecture rend les jetons de tous les appareils de la personne. C'est ce qui rend vraies les deux
-  phrases « sur ce téléphone » et « on ne désactive que le sien ». Sans marque locale, on ne
-  désactive rien — fenêtre de transition assumée et commentée dans `src/lib/rappels.ts`, sans
-  conséquence tant que `push_tokens` est vide.
-### 2.7 bis Le champ de code, et pourquoi il n'y a pas huit cases
-
-Depuis le 20/09/2026, les deux e-mails du produit portent un **code à huit chiffres** et plus aucun
-lien (`v1-28`). Trois écrans demandent une adresse et attendent ce code — rattacher, retrouver,
-supprimer —, et ils partagent **un** composant (`SaisieDuCode`) qui en porte un second
-(`ChampDeCode`). En écrire trois garantirait qu'ils divergent : c'est la leçon de `CarteDePiste`
-en C5.2, et elle vaut ici encore plus, parce que ce qui doit rester identique entre les trois est la
-**règle de non-divulgation**.
-
-Les points à connaître, dans l'ordre où ils se cassent — sans les compter, un compte écrit ici se
-périmerait en silence au prochain passage :
-
-- **Un seul champ, jamais huit cases.** Huit cases coûtent huit champs à un lecteur d'écran, un
-  composant qui gère le focus à la frappe et au collé, et n'apportent rien qu'un champ centré ne
-  rende. Le kit écrit de `TextField` qu'il est « en pratique le seul champ texte du produit » : il en
-  existe deux depuis ce jour, et celui-ci reprend sa boîte — hauteur, rayon, fond, bordure d'accent
-  dès qu'un chiffre est là — pour que ce soit visiblement la même famille. Les chiffres en 24/30,
-  interlettrage 6, centrés : une taille hors échelle, en dur là où elle sert.
-- **La normalisation est dans la dérivation, pas dans le composant** (`chiffresDuCode`, testé) : une
-  espace collée avec le code est **retirée et non refusée** — les messageries en insèrent, et refuser
-  un collé qui contient le bon code ferait chercher une faute qui n'existe pas. Un collé trop long
-  garde ses chiffres utiles.
-- **Au dernier chiffre, la vérification part d'elle-même**, et le bouton reste — pour qui colle,
-  corrige, ou lit l'écran avec un lecteur d'écran. **Et l'écran le dit avant** (arbitrage du
-  27/09/2026, WCAG 3.2.2) : le texte d'aide du champ ajoute « Il est vérifié dès le dernier
-  chiffre. », et comme il est aussi l'`accessibilityHint`, le lecteur d'écran l'annonce en entrant
-  dans le champ. Le verrou vit dans une `ref` et pas dans l'état
-  d'affichage, qui ne vaut `true` qu'au rendu suivant : sans lui, un collé suivi d'un toucher enverrait
-  deux appels, dont le second sur un code déjà consommé — c'est-à-dire « ce code ne marche pas » juste
-  après qu'il a marché. Même raison que le verrou de soumission du questionnaire.
-- **Le champ garde ses chiffres sur un refus, et ne se vide qu'au renvoi.** Sur un refus, la personne
-  compare avec son e-mail ; au renvoi, l'ancien code vient d'être invalidé (mesuré), donc garder ses
-  chiffres ferait réessayer un code mort.
-- **Le corps de l'écran suit la VOIX, et la voix n'est pas le contexte** (arbitrage du 21/09/2026,
-  `v1-28` §7.1). Ce fichier a écrit jusqu'à ce jour que « le corps change avec le contexte, et la
-  différence EST la non-divulgation » : c'est devenu faux, et faux dans le sens qui **dicte une
-  régression** — l'appliquer rouvrirait l'oracle. Deux notions distinctes :
-  - **`ContexteDuCode` décide le `type` envoyé à l'API** (`email_change` ou `email`) et **suit la
-    branche** — une adresse libre est rattachée, une adresse prise rouvre son compte. Il le doit :
-    les deux flux ne se croisent pas, un code présenté au mauvais rend `403 otp_expired`.
-  - **`VoixDeLaSaisie` (`parti` | `peut_etre`) décide ce que l'écran a le droit d'AFFIRMER**, et
-    c'est une propriété de l'**hôte** : elle ne bouge pas d'une branche à l'autre.
-  `/connexion/email` est en voix `parti` **dans ses deux branches**, parce qu'un code part
-  réellement dans les deux et que la personne vient de taper l'adresse ; `/connexion/retrouver` et
-  `/compte/suppression` sont en `peut_etre`, où `shouldCreateUser: false` fait qu'une adresse
-  inconnue ne reçoit rien, d'où le « si ». Faire suivre la voix au contexte rendrait le mécanisme
-  juste et la fuite intacte : n'importe qui lirait dans la phrase si l'adresse a un compte. Recopier
-  la phrase de `parti` dans `peut_etre` serait la même fuite par l'autre bout. Un test unitaire
-  garde la porte d'entrée (le flux n'entre dans aucune des trois dérivations), et l'assertion 6 de
-  `scripts/verifier-code-de-connexion.mjs` compare les deux branches réellement rendues.
-- **Une phrase conditionnelle est le prix de cet arbitrage, et elle ne se rend qu'en voix `parti`**
-  (`consequenceDeLaSaisie`) : « S'il existait déjà un compte Ramille à cette adresse, ce code t'y
-  ramène — et le bilan de cet appareil ne l'y rejoindra pas. » Au conditionnel, donc vraie dans les
-  deux branches, donc montrable aux deux ; et **avant** que le code soit tapé, ce qui laisse la
-  sortie. L'écrire à l'indicatif la rendrait l'oracle que l'écran de collision était. En
-  `peut_etre`, elle est nulle : un code n'est peut-être jamais parti, et il n'y a pas de bilan de
-  cet appareil à laisser derrière soi.
-- **Le libellé du bouton est un seul pour les deux branches, et il a dû perdre son verbe.** Il
-  disait « Rattacher mon adresse », faux quand l'adresse est déjà prise — rien n'est rattaché, on
-  rejoint un compte. En mettre un par branche aurait rouvert l'oracle sur le bouton lui-même, d'où
-  « Valider mon code ».
-- **Le libellé annoncé dit la longueur** (« Code reçu par email, huit chiffres »), parce que c'est ce
-  qu'on ne peut pas voir — règle §1.4.
 
 ### 2.8 Web et natif : les pièges déjà payés
 
@@ -857,9 +510,9 @@ périmerait en silence au prochain passage :
 - **Une API de module natif appelée pendant le rendu emporte toute l'app sur web** — page blanche
   sur toutes les routes, HTML servi en 200 ; d'où `RetourDeNotification` monté sous
   `{estNatif && …}` et `scripts/verifier-rendu-export.mjs` : `EXPO.md` §2.2.
-- **Le lien du rappel ouvre l'app grâce à `public/.well-known/assetlinks.json`, pas grâce à
-  l'app** — revendication volontairement étroite (`/plan` seul), et l'empreinte de Play
-  s'**ajoute** à la publication : `EXPO.md` §2.3.
+- **Le lien du rappel ouvre l'app grâce à `public/.well-known/assetlinks.json`**, qui autorise le
+  paquet pour tout le domaine ; c'est le `pathPrefix` `/plan` d'`app.json` qui rend la revendication
+  volontairement étroite, et l'empreinte de Play s'**ajoute** à la publication : `EXPO.md` §2.3.
 - **Une dépendance native nouvelle impose un build**, et rien dans le code ne le dit :
   `EXPO.md` §2.3.
 - **Un « Retour » ne s'écrit jamais en `router.back()` nu : il passe par `revenirOu(repli)`**
@@ -874,142 +527,7 @@ périmerait en silence au prochain passage :
   `canGoBack()` est vrai. Et un écran qui dépose quelque chose pour l'écran d'arrivée doit supposer
   que celui-ci se monte **à neuf** : c'est ce qu'a oublié le premier correctif, et le plan perdait la
   feuille des rappels (`useReprendreLEngagement`).
-### 2.9 Le démarrage : marques locales, brouillon, reprise, et ce qu'on promet sans compte
 
-- Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
-  connexion", jeton d'appareil, ouverture de saison vue, marque « cet appareil a vu un bilan ») via
-  AsyncStorage — explicitement device-local, pas de sync multi-device tant que le compte n'est pas
-  rattaché. Voir `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`,
-  `src/lib/notification-prefs.ts`, `src/lib/saison-prefs.ts`, `src/lib/marque-de-bilan.ts`. Toutes
-  ces clés portent le
-  préfixe historique `traceverte.` (le renommer effacerait les brouillons), et c'est par ce
-  **préfixe** que `src/lib/compte.ts` les balaie à la suppression de compte. **Ne jamais
-  dénombrer les clés `traceverte.*` dans un commentaire.** Le balayage se fait par préfixe
-  précisément pour que le nombre n'ait pas à être juste : trois commentaires en portaient un, tous
-  faux dès que le jeton d'appareil s'est ajouté. Une phrase qui compte devient fausse à la clé
-  suivante, en silence — et nommer ici les occurrences fautives rendrait cette ligne-ci fausse le
-  jour où on les corrige.
-- **Un brouillon de bilan détourne le démarrage, et l'écran de reprise a deux déclencheurs**
-  (C3.9). La racine lit `loadBilanDraft()` en parallèle de sa requête, et route sur
-  `/bilan?reprise=1` **quand il n'y a pas de bilan complété** — qui en a un a le plan pour maison,
-  et un re-bilan commencé ne doit pas s'emparer de l'ouverture de l'app. Avant, quelqu'un qui avait
-  interrompu son questionnaire rejouait les quatre écrans d'onboarding et « Commencer mon bilan »
-  pour atterrir sans un mot à l'étape 5. L'écran de reprise s'affiche sur ce paramètre **ou** sur un
-  brouillon de plus de trois semaines (C1.3, audit A2-6) : les deux ne couvrent pas les mêmes
-  arrivées, et le second survit. **« L'écran s'affiche » et « il y a un repli » sont deux faits
-  distincts** — le bouton « Repartir de mon dernier bilan » ne se rend que s'il y a un bilan vers
-  quoi repartir, et les confondre réservait la reprise à ceux qui avaient déjà soumis un bilan,
-  c'est-à-dire à personne au premier questionnaire interrompu. Le décompte de l'écran
-  (`avancementDeLaReprise`) se **dérive** de `visibleSteps`, jamais de neuf : un profil sans trajet
-  régulier n'a que six étapes. Il ne dit jamais zéro écran rempli, et l'écran ne dit jamais le délai
-  écoulé — interdit du handoff §5.2, parce que « tu as commencé il y a trois semaines » est un
-  reproche déguisé en information.
-- **Ramille parle à l'entrée de chaque section du questionnaire — quatre, pas neuf** (C3.9,
-  `RAMILLE.entreeDeSection`). Le questionnaire demande des ordres de grandeur et ne le disait qu'une
-  fois, dans l'onboarding, cinq écrans plus tôt ; au troisième champ, la précision qu'on croit
-  devoir donner est ce qui fait abandonner. À chaque étape ce serait du papier peint — même usure
-  que les variantes de C2.12 traitent ailleurs. **Rendu sans `RamilleDit`** : son visage est déjà
-  dans l'en-tête, trois centimètres plus haut, et un second `Mascot` ferait deux Ramille sur le même
-  écran. La règle que cette exception ne touche pas est la vraie — la phrase vit dans `RAMILLE`.
-- **Ce que le produit promet sans compte, et ce qu'on y perd, se dit là où la personne renonce**
-  (C3.9). L'onboarding n'écrivait nulle part qu'on peut commencer sans compte — le seul mot
-  « compte » était « J'ai déjà un compte », qui se lit à l'envers. Et la proposition de compte
-  promettait « un historique de points **mensuels** », texte du handoff antérieur à la boucle
-  hebdomadaire : elle nomme désormais ce qui suit le compte (les bilans, les réponses, le plan) sans
-  promettre de cadence. Sous « Continuer sans compte », les deux faits qui n'étaient dits que dans
-  les pages légales : changer de téléphone perd tout, et la purge des sessions anonymes ferme le
-  compte après trois mois d'**inactivité** (`purge_stale_anonymous_accounts`, fenêtre de 90 jours) —
-  donc ne pas écrire « trois mois » ailleurs sans vérifier cette fonction.
-- Le questionnaire se préremplit dans cet ordre : **brouillon local > dernier bilan complété >
-  vide** (`src/lib/bilan-history.ts`). Le brouillon prime car il est plus récent par
-  construction. Un re-bilan prérempli est ce qui rend le suivi dans la durée praticable — sans
-  lui, comparer deux bilans demandait de retaper les neuf étapes.
-- La logique **pure** du suivi (écart entre deux bilans, dédoublonnage par jour, ancienneté)
-  vit dans `src/types/suivi.ts`, séparée des requêtes de `src/lib/bilan-history.ts` : ce module
-  tire AsyncStorage et `react-native`, qui n'ont rien à faire dans une suite de logique pure
-  (cf. §Tests, où le motif est expliqué en entier). Même découpage que `src/types/bilan.ts`.
-### 2.10 Le suivi
-
-- **L'écran `/suivi` n'a aucune mécanique d'échec** : ni streak, ni série cassée, ni score. Une
-  période sans réponse n'y apparaît pas du tout (les check-ins non répondus sont clos en
-  `expired` côté serveur et jamais relus). On compte les fois où la personne a répondu, jamais
-  celles où elle a laissé passer — et une hausse d'empreinte est toujours présentée comme un
-  fait, jamais comme une faute. **Une baisse, en revanche, est désormais reconnue** (C2.7) :
-  « Ce que tu as changé se voit ici. », et le mot de Ramille `suiviDifference` en bas de l'écran —
-  mais **seulement sur une baisse réelle** (`estUneBaisse`), jamais au-dessus d'une hausse ni d'un
-  écart qui tient dans l'imprécision des facteurs. Le seuil de stabilité est `estStable`, une seule
-  fois pour les trois endroits qui le lisent.
-- **Le suivi lit enfin `plan_cycles`, et une décision n'a pas de statut** (C2.7). « Ce que tu as
-  décidé, saison après saison » est une liste de **décisions**, jamais un bulletin : le produit ne
-  sait pas si l'action a été menée, seulement ce que la personne a répondu aux points — qui vivent
-  dans leur propre carte. Une ligne par cycle, et `decisionsParSaison` fait gagner l'engagement
-  **vivant** sur l'archive du même cycle, puis la dernière libérée. `decisions === null` veut dire
-  « pas lu » et la carte ne s'affiche pas : un tableau vide affirmerait que rien n'a jamais été
-  engagé, la faute de A5-2 sur une carte de moins.
-- **Les trois réponses du suivi ont des libellés de fait, au même niveau typographique** (C2.7) :
-  « Changement fait » / « Pas cette fois » / « Pas de trajet ». « Oui » et « Non » étaient les
-  libellés du *bouton* — relus six mois plus tard, hors de la question, ils ne disent plus à quoi
-  ils répondaient. Et un « Changement fait » en accent au-dessus d'un « Pas cette fois » en
-  tertiaire classait les réponses, alors que ni la deuxième ni la troisième n'est un échec : la
-  reconnaissance vit dans le compteur et dans le mot de Ramille, pas dans la couleur d'une ligne.
-  La liste est **groupée par saison**, chaque groupe portant son vrai total — elle était tronquée à
-  huit **en silence** sous un compteur global qui en annonçait davantage.
-- **`keepLatestPerDay` regroupe sur le jour LOCAL** (C2.7). Les dix premiers caractères d'un
-  `timestamptz` sont son jour **UTC** : un bilan soumis le 10 mars à 23 h 00 UTC et sa correction le
-  11 à 00 h 30 UTC sont le même 11 mars à Paris, et l'ancien regroupement en faisait deux barres
-  avec deux valeurs différentes — le doublon exact que cette fonction existe pour empêcher.
-- **La restitution se compare au dernier bilan d'un AUTRE JOUR, avec la règle du jour du suivi**
-  (recette web du 28/09/2026, constat H4, arbitrage du même jour : « la correction gagne »).
-  `keepLatestPerDay` garde un bilan par jour local, donc un bilan refait le même jour **remplace**
-  le précédent dans le suivi — c'est une correction. La restitution, elle, le comparait au bilan
-  qu'elle venait de remplacer (« 1,3 t de moins que ton bilan de septembre »), c'est-à-dire à une
-  entrée que le suivi ne montre plus : le même geste se lisait correction sur un écran et progrès
-  sur l'autre. `precedentDUnAutreJour` (`src/types/suivi.ts`) applique donc à la comparaison le
-  `jourLocalDe` du suivi, et **il est testé** là où ce paragraphe disait le contraire — minuit à
-  Paris compris. Deux règles d'avant C2.7 tiennent toujours : le prédécesseur se choisit sur
-  `submitted_at` et jamais dans l'historique dédoublonné, et si le bilan affiché n'est pas le plus
-  récent (une restitution rouverte depuis le suivi) on ne compare rien plutôt que de comparer à un
-  bilan postérieur. `loadBilanPrecedent` lit **dix** lignes, pour trouver un autre jour derrière
-  quelques corrections du jour ; au-delà, on ne compare rien, ce qui est le repli sûr.
-- **« Le palier que tu visais est derrière toi. » n'est dit que s'il est prouvable** (C2.7,
-  `palierEstDerriere`). Le palier visé se recalcule depuis le cap **d'alors**, et ce cap est perdu
-  quand les deux bilans tombent dans la même période : `generate_plan_cycle_for_user` réécrit le
-  cycle courant à chaque soumission. Avec le cap d'aujourd'hui — plus petit, la baseline du poste
-  dominant ayant baissé — le palier recalculé serait plus proche et la phrase s'afficherait plus
-  souvent qu'elle ne le devrait. On passe `null` et on ne dit rien.
-- **Un bilan se retire depuis sa restitution, et son adresse dit ensuite qu'il l'a été** (C4.7,
-  `v1-22`, `src/types/retrait-du-bilan.ts`). Trois points à ne pas défaire :
-  - **la restitution est la seule lecture d'affichage qui ne filtre pas sur `completed`** — elle lit
-    un bilan par son identifiant, c'est-à-dire par l'adresse qui circule. Les autres lectures
-    d'affichage deviennent justes sans qu'on y touche. **« D'affichage » porte une exception** :
-    `lireEtatDuCompte` (`src/lib/compte.ts`) lit tous les statuts, et il le doit — un bilan retiré
-    reste une donnée à supprimer ; le filtrer ferait dire « rien à supprimer » à une session anonyme
-    qui ne porte qu'un bilan retiré. La restitution, elle, embarque le statut dans sa lecture
-    (`assessments(status, submitted_at)`) et ne montre jamais le chiffre d'un bilan retiré.
-    Embarqué et non lu à côté : une seconde lecture pourrait échouer seule, et l'écran ne saurait
-    plus s'il a le droit de montrer le chiffre ;
-  - **la confirmation dépend de la place du bilan** (`seul`, `dernier`, `ancien` — `placeDuBilan`),
-    parce que le retrait ne fait pas la même chose au plan dans les trois cas : « ton plan repartira
-    de ton bilan précédent » serait faux d'un bilan qui ne porte pas le plan, et parler de plan à qui
-    retire son seul bilan le serait aussi. Quand la place n'a pas pu être lue, **le lien ne se rend
-    pas** : une confirmation dont on ne sait pas quelle phrase est vraie ne se propose pas. **Et ce
-    que la confirmation dit se relit au toucher du lien**, place et action engagée (contre-lecture
-    du 27/09/2026) : la restitution reste montée dans la pile du suivi, donc une lecture du
-    chargement serait périmée par un nouveau bilan ou un changement d'action faits entre-temps ;
-  - **retirer son seul bilan efface la marque locale `traceverte.a_un_bilan.v1`, et elle seule**
-    (`effacerLaMarqueDeBilan`) — sans quoi une réouverture hors ligne enverrait au plan (C4.5). Le
-    balayage par préfixe de `src/lib/compte.ts` serait de trop : le compte n'est pas quitté. **Le
-    premier parcours ne recommence pas pour autant** (décision du 27/09/2026) : le bilan suivant ne
-    note l'étape `questionnaire` que sur un appareil qui n'a vu **ni** bilan **ni** parcours
-    (`ouvreUnPremierParcours`), sans quoi la barre d'onglets disparaîtrait et la carte « Deux
-    endroits, pas plus. » reviendrait devant quelqu'un qui connaît les deux lieux.
-- **`EcartParPoste` compare poste à poste, et l'accent suit le dominant du serveur** (C2.7). Le
-  poste dominant peut changer d'un bilan à l'autre, et c'est le plus souvent une réussite :
-  comparer « dominant d'avant » à « dominant d'aujourd'hui » ferait passer ce succès pour une
-  hausse. `dominant_poste` vient d'`assessment_results` et n'est pas un maximum recalculé — le
-  départage du serveur n'en est pas un (les loisirs l'emportent sur les voyages à 5 % près). Et
-  l'échelle est **commune aux six barres** : une échelle par poste rendrait un poste de 40 kg aussi
-  long qu'un poste de 2 t.
 ### 2.11 Les écrans d'onglet : navigation, concurrence, états et mise en page
 
 - **La barre d'onglets ne porte que deux destinations, et le reste n'est pas un lieu.** Le
@@ -1061,7 +579,7 @@ périmerait en silence au prochain passage :
   mon bilan » et « Faire mon bilan » — la seule entrée du questionnaire, qui se remplit pourtant
   très bien hors ligne (brouillon AsyncStorage). Deux corollaires : le « Réessayer » d'un écran
   d'erreur repasse par `loading` **dans son propre gestionnaire**, marqué `relance` pour que sa
-  ligne se montre sans attendre le délai de §2.12, jamais dans `rafraichir` — sans ce passage, un
+  ligne se montre sans attendre le délai de `FRONT-MOUVEMENT.md` §2.12, jamais dans `rafraichir` — sans ce passage, un
   second échec rend exactement le même écran et le bouton a l'air mort ; dedans, il
   ferait clignoter « Chargement… » à chaque retour au premier plan, donc à chaque arrivée par
   notification, puisque `rafraichir` est aussi le rappel de `useRafraichirAuRetour`. Et une valeur
@@ -1106,73 +624,3 @@ périmerait en silence au prochain passage :
   nomme ce fichier. C'est un **fil-piège**, pas une comparaison — il ne dit pas que
   `MODE_PREPOSITION` est juste, il dit qu'il faut venir la relire, ce qui est exactement ce qui
   manquait. C4.4 y a ajouté cinq modes du même geste que dans sa migration.
-
-### 2.12 Le mouvement
-
-Décidé le 27/09/2026 (`docs/architecture/v1-30-les-transitions.md`, qui dit aussi ce qui reste à
-faire) ; le skill `/mouvement` en porte les règles de travail, et c'est lui qu'on appelle avant de
-toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
-
-- **Ce qui bouge** : les feuilles du bas (le voile se fond sur place, la feuille monte et redescend),
-  la barre d'onglets qui arrive au sortir du premier parcours, l'étape du questionnaire et son rail,
-  ce qui s'ouvre sous un choix, ce qui change de hauteur, le passage d'un onglet à l'autre. Et ce
-  qui bougeait déjà : la mascotte, l'écran de lancement, l'entrée d'une carte d'ouverture.
-- **Un défilement est celui de la plateforme** (`scrollTo({ animated })`, `v1-31`) : ni durée ni
-  courbe à régler, et **posé sous la préférence** (`animated: !animationsReduites`) — le défilement
-  compte parmi ce qui s'anime. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5),
-  et le focus part avant lui, au geste. Les deux défilements du questionnaire et leurs règles :
-  §2.6.
-- **Ce qui ne bouge jamais** : l'état pressé (une teinte immédiate, `v1-29` décision n° 6), un
-  chiffre (jamais un compteur qui défile — il afficherait des valeurs fausses en chemin), une
-  navigation de pile (« standard plateforme »), et le focus, qui part au geste et jamais à la fin
-  d'une animation. **Même quand sa cible entre encore**, découpée ou transparente : sur la liste des
-  pistes, la question reçoit le focus pendant que sa carte grandit. Un délai jusqu'à la fin de
-  l'entrée y a été écrit le 29/09/2026 pour ménager TalkBack, puis retiré le jour même — il
-  retardait l'annonce que la règle protège. Si Android refuse un jour le focus sur un nœud qui
-  entre, la parade touche l'entrée, pas le moment du focus (`v1-13` §11.24).
-- **Tout passe par `src/lib/mouvement.tsx`** — `styleDEntree`, `Apparition`, `Depliage`,
-  `HauteurSuivie`, `SansApparitionAuMontage` — et par les jetons `Mouvement` de
-  `src/constants/theme.ts`. Une durée écrite en dur dans un écran est un réglage de plus à tenir
-  d'accord ; ce qui décide d'une animation (un sens, une arrivée) est une dérivation de
-  `src/types/mouvement.ts`, testée.
-- **Jamais `entering`, `exiting` ni `LinearTransition` de reanimated** : sur web, le premier masque
-  l'élément une image et lui fait perdre le focus, le deuxième le recopie hors du défilement, le
-  troisième étire un bloc qui change de taille au lieu de le déplacer (`EXPO.md` §1.5, mesures en
-  `v1-30` §3.2). Ce qui entre passe par une CSS animation de reanimated ; ce qui change de taille,
-  par `Depliage` ou `HauteurSuivie`, qui suivent la vraie mise en page.
-- **« Réduire les animations » pose tout, dès la première image — en ne lançant rien.**
-  `Animated`, les CSS animations et transitions de reanimated et le `Modal` de react-native-web
-  l'ignorent ; `withTiming` la lit, mais ce n'est pas une défense : laissé jouer sous la préférence,
-  `Depliage` ne s'ouvre pas du tout (`v1-30` §4.2). Chaque usage dit donc ce qu'il devient sous
-  elle, et le décide **au rendu** : un état posé remis en place dans un effet arrive parfois après
-  la première image (la barre d'onglets, relevée par le parcours réel). La préférence n'est lue
-  qu'au démarrage.
-- **Ce qui est déjà là quand l'écran arrive ne s'ouvre pas sous les yeux** : un contenu enveloppé
-  dans `SansApparitionAuMontage` est posé au montage, et seul ce qui monte ensuite s'anime — une
-  précision rouverte par un brouillon, un point déjà répondu. **Hors de ce fournisseur, rien ne
-  s'anime** : on ne sait pas si l'écran vient de monter. De même, une étape du questionnaire qui
-  arrive d'un autre écran (« Repartir de mon dernier bilan », le retour après un échec) se pose :
-  le sens ne se calcule que d'une étape à l'autre.
-- **Une hauteur nulle n'est pas un contenu vide** : sur web, la pile masque l'écran recouvert
-  (`display: none`), où `onLayout` rend zéro. `HauteurSuivie` l'ignore ; tenue, elle faisait
-  regrandir la carte du point sous les yeux à chaque retour sur le plan. Toute mesure prise dans
-  `onLayout` pour animer pose la même question.
-- **Une feuille qui redescend peut encore recevoir un choix** : la fermeture part au geste de
-  retour, et un choix validé après un `await` arrive pendant la sortie — ou juste après. `fermer(apres)`
-  remplace alors le rappel en attente, ou l'appelle aussitôt si la sortie est finie — ignoré, le
-  choix partait en base sans que l'écran le reçoive.
-- **« Chargement… » attend 300 ms avant de se dire** (`useChargementVisible`), pour ne plus
-  clignoter une image avant un contenu rapide — **sauf** après « Réessayer », où c'est la seule
-  preuve que le geste a été pris (§1.2).
-- **Un `gap` que le parent donnait à ses enfants se reprend** quand `HauteurSuivie` les enveloppe
-  (`styleDuContenu`) : ils sont désormais les enfants de ce bloc, et l'écart disparaissait sans bruit
-  sur la carte du point.
-- **Tenir une hauteur, c'est découper ce qui dépasse — et l'anneau de focus dépasse.** Le navigateur
-  le dessine hors de l'élément ; `HauteurSuivie` découpe donc quatre pixels plus large que son
-  contenu (`MARGE_DE_DECOUPE`, rendus à la mise en page par une marge négative). Toute nouvelle
-  découpe permanente (`overflow: hidden` qui ne s'en va pas à la fin d'une animation) pose la même
-  question : un contrôle au bord de la zone découpée perd son anneau, en silence.
-- **Une animation se juge image par image** — les deux gardes (`verifier-etats-export.mjs`, section
-  J, et `verifier-parcours-reel.mjs`) relèvent chaque image par `scripts/relever-par-image.mjs`,
-  avec et sans la préférence (`TESTING.md` §2.14) — **et sur l'appareil** : sur Android, seul lui
-  dit si c'est fluide.

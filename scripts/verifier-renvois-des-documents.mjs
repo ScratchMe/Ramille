@@ -39,7 +39,7 @@
 //   - le kit retiré du périmètre, le chemin inexistant en place → **vert**, 706 renvois dans 18
 //     documents : l'écart n'est plus vu. (Mesuré une première fois avec une tolérance du kit, qui
 //     tombait alors morte ; elle est partie, le `readme.md` du kit citant désormais sans accents graves
-//     le fichier supprimé qu'elle couvrait — TESTING.md §2.8, un nom révolu ne s'écrit pas comme un
+//     le fichier supprimé qu'elle couvrait — TESTING-GARDES.md §2.8, un nom révolu ne s'écrit pas comme un
 //     chemin — et la mutation a été rejouée.)
 //   - une tolérance qu'aucun document n'emprunte → la seconde branche, qui la nomme.
 // **Et une panne vue en CI le jour même** (26/09/2026, PR #269) : vert en local, rouge en CI, sur
@@ -69,6 +69,17 @@
 //   - le même, avec l'ancienne règle → l'écart n'est **pas** vu, mais le contrôle rougit quand
 //     même : ses quatre tolérances neuves n'ont plus d'emprunteur. Revenir à l'ancienne règle ne
 //     passerait donc pas inaperçu.
+// **Et le 01/10/2026, quand les cinq fichiers de sujet sont sortis de `CLAUDE.md`** — deux mutations,
+// l'état d'avant réécrit après chacune :
+//   - `src/types/checkin.ts` → `src/types/checkinz.ts` dans `BOUCLE.md` → 1 écart, sur cette ligne ;
+//   - le même, `BOUCLE.md` retiré de `DOCUMENTS` → **vert**, 1 099 renvois dans 99 documents au lieu
+//     de 1 136 dans 100 : c'est la liste qui fait voir l'écart, et un fichier de sujet qu'on
+//     oublierait d'y inscrire perdrait sa garde sans que rien ne rougisse.
+// **Et le même jour, quand `FRONT.md` et `TESTING.md` ont été découpés à leur tour** (`FRONT-*`,
+// `TESTING-*`) — les deux mêmes mutations, sur `FRONT-SESSION.md` :
+//   - `src/types/une-seule-fois.ts` → `une-seule-foiz.ts` → 1 écart, sur cette ligne ;
+//   - le même, le fichier retiré de `DOCUMENTS` → **vert**, 1 247 renvois dans 106 documents au lieu
+//     de 1 280 dans 107.
 // Et un passage qui doit rester **vert** : les renvois tolérés ci-dessous, dont beaucoup
 // désignent des fichiers qui n'ont jamais eu à exister dans le dépôt. Leur nombre ne s'écrit
 // pas — il s'est périmé le 21/09/2026, à la tolérance suivante.
@@ -85,11 +96,27 @@ const RACINE = path.join(import.meta.dirname, '..');
  *
  * `docs/architecture/v1-0N-*.md` n'y est pas : ce sont des décisions datées. `produit.md` et
  * `v1-27` y sont, parce que ce dépôt les tient à jour et s'y fie pour savoir où il en est.
+ *
+ * Les cinq fichiers de sujet sont sortis de `CLAUDE.md` le 01/10/2026 : leurs renvois étaient
+ * vérifiés quand ils y vivaient, et les oublier ici aurait retiré la garde à 130 Ko de règles
+ * sans qu'aucun passage ne rougisse — le compte de renvois baisse, rien d'autre ne le dit.
  */
 const DOCUMENTS = [
   'CLAUDE.md',
+  'BILAN.md',
+  'PLAN.md',
+  'BOUCLE.md',
+  'COMPTE.md',
+  'MESURE.md',
   'FRONT.md',
+  'FRONT-MASCOTTE.md',
+  'FRONT-QUESTIONNAIRE.md',
+  'FRONT-SESSION.md',
+  'FRONT-SUIVI.md',
+  'FRONT-MOUVEMENT.md',
   'TESTING.md',
+  'TESTING-PGTAP.md',
+  'TESTING-GARDES.md',
   'SUPABASE.md',
   'VERCEL.md',
   'EXPO.md',

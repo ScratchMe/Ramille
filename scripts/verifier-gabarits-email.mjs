@@ -17,7 +17,7 @@
  *
  * CE QU'ELLE COUVRE, ET CE QUI LUI ÉCHAPPE. `GABARITS` est une liste **déclarée**, donc un gabarit
  * que personne n'y déclare lui reste invisible : c'est la même limite que `MIROIRS`, et on ne
- * prétend pas à l'exhaustivité (`TESTING.md` §2.7). Les deux gabarits couverts sont les deux seuls
+ * prétend pas à l'exhaustivité (`TESTING-GARDES.md` §2.7). Les deux gabarits couverts sont les deux seuls
  * que le produit emprunte. *Confirm signup* et *Reset Password* sont traduits dans le document et
  * ne vivent **que** dans le tableau de bord : aucun fichier du dépôt ne les porte, donc rien ici ne
  * peut les voir. Et le tableau de bord lui-même reste hors de portée de toute garde du dépôt —

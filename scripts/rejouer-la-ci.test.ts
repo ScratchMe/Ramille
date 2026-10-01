@@ -277,7 +277,7 @@ describe('le rejeu local suit ci.yml', () => {
 
   test('chaque export porte --clear et son propre cache de Metro', () => {
     // Le cache de Metro est rangé dans le répertoire temporaire du système, donc partagé entre copies
-    // de travail, et n'a pas les `EXPO_PUBLIC_*` dans sa clé (EXPO.md §1.1, TESTING.md §2.6).
+    // de travail, et n'a pas les `EXPO_PUBLIC_*` dans sa clé (EXPO.md §1.1, TESTING-GARDES.md §2.6).
     const exports = plan.etapes.flatMap((e) => e.pas).filter((p) => p.commande.includes('expo export'));
     expect(exports.map((p) => p.nom)).toEqual(['export factice', 'export branché sur la stack']);
     expect(exports.filter((p) => !p.commande.split(' ').includes('--clear'))).toEqual([]);

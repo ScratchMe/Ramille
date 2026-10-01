@@ -1677,7 +1677,7 @@ for (const reduire of [false, true]) {
 // en haut du pied dit qu'il y a une suite. Tout se voit sans réseau, depuis un brouillon, comme en F, H
 // et J.
 //
-// **Chaque moitié positive porte sur ce que le HTML statique ne dit pas** (`TESTING.md` §2.12) : une
+// **Chaque moitié positive porte sur ce que le HTML statique ne dit pas** (`TESTING-GARDES.md` §2.12) : une
 // ligne, une couleur, un focus, une position de défilement n'existent qu'une fois l'app montée et le
 // geste joué. Les couleurs se lisent dans `theme.ts`, jamais recopiées. Les défilements se lisent au
 // pixel près sur la règle du handoff — 16 au-dessus du pied, 24 sous l'en-tête —, et image par image
@@ -1693,7 +1693,7 @@ for (const reduire of [false, true]) {
 //   |---|---|
 //   | la demande vraie au montage (« d'office ») | A3 (la ligne et la marque à l'arrivée), « Train » après la complétude, et les deux « Retour » — une ligne à chaque arrivée |
 //   | la demande qui ne retombe pas à la complétude | « Train » choisi après la complétude — seulement. Le « 2 » choisi que nommait le plan ne peut pas la montrer : la ligne se dit de ce qui manque **maintenant** (`v1-31` §2.9), et il ne manque plus rien |
-//   | la demande qui ne retombe pas en changeant d'étape (`demande === entree.cle` retiré) | « Retour » vers des jours et une distance vides — seulement. « A4, Retour, Suivant » reste vert : il revient sur une étape complète, où la demande retombe par la complétude (`TESTING.md` §2.14, règle 8) |
+//   | la demande qui ne retombe pas en changeant d'étape (`demande === entree.cle` retiré) | « Retour » vers des jours et une distance vides — seulement. « A4, Retour, Suivant » reste vert : il revient sur une étape complète, où la demande retombe par la complétude (`TESTING-GARDES.md` §2.14, règle 8) |
 //   | le focus qui ne part pas (`donnerLeFocus(cible)` retiré) | A4, A6, D2 avec et sans la préférence, la ligne touchée à 390 × 600, l'Entrée maintenu — le focus reste sur « Suivant » ou sur la ligne |
 //   | `seMarque` vraie pour la question principale | A6 : le titre recoloré — seulement. Et deux tests de `bilan.test.ts` |
 //   | la demande partie à l'appui (`onPressIn` sur le « Suivant » en attente) | **pas l'Entrée maintenu** : la demande part déjà à l'appui (`v1-31` §9, écart 14), et c'est la capture de la répétition qui le tient. Tombent les clics — A4, A6, D2 avec et sans la préférence, la ligne touchée, « Retour » vers une étape vide : sous cette mutation, un clic de Playwright ne fait pas partir la demande (non élucidé) |

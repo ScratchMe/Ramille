@@ -23,14 +23,39 @@ le fichier avant d'agir, pas après. La forme vient d'un autre projet, où une r
 écrite dans le fichier chargé n'a pas été suivie pour autant : sortir une règle sans dire *quand*
 aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 
+**Les fichiers `TESTING-*` et `FRONT-*` sont des morceaux de `TESTING.md` et `FRONT.md`**, sortis le
+01/10/2026 comme les fichiers de sujet ci-dessous, et pour la même raison : ils gardent les numéros de section d'origine, et la table en tête de
+chaque fichier de base dit où vit chacun — un ancien renvoi « `FRONT.md` §2.12 » se retrouve ainsi.
+
+**Les cinq dernières lignes sont des fichiers de sujet, pas d'outil** (01/10/2026) : ce que la
+section Architecture disait de chaque brique du produit — le bilan, le plan, la boucle, le compte,
+la mesure. `CLAUDE.md` pesait alors 177 Ko, dont 144 pour l'architecture, chargés à chaque session
+pour des briques qu'on ne touche qu'une à la fois ; ils sont sortis pour la raison de `FRONT.md`, et
+tout y est propre à Ramille, sans moitié portable. Ce qu'il faut en savoir **sans** les ouvrir est
+résumé en fin de section Architecture, une ligne par règle. **Les renvois « (CLAUDE.md) » écrits
+avant cette date** — commentaires du code, documents datés — visent souvent un paragraphe qui vit
+désormais dans l'un d'eux : cette table dit lequel.
+
 | Fichier | Déclencheur — ouvrir AVANT d'agir |
 |---|---|
 | **`VERCEL.md`** | Toute fusion sur `main` · toucher `vercel.json`, `api/`, `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · ajouter une route · affirmer quoi que ce soit sur un compteur ou une facture Vercel · mesurer le poids d'un déploiement |
 | **`SUPABASE.md`** | Écrire, rejouer ou réécrire une migration · toucher à un privilège, une policy, un trigger ou un RPC · toucher à l'auth (session, lien de connexion, Redirect URLs) · un `401`, `403` ou `42501` inexpliqué · retoucher `database.types.ts` · rejouer un test pgTAP sur le distant |
 | **`EXPO.md`** | Ajouter une route ou un fichier dans `public/` · toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · **toucher à une mise en page — marge, hauteur, barre d'onglets** · **faire bouger quelque chose sur web** · un écran blanc sur web · une dépendance native, un build EAS, un `expo-doctor` rouge |
-| **`TESTING.md`** | Écrire un test censé protéger une correction · **annoncer que quelque chose est vérifié** · une suite qui rougit ou verdit de façon inattendue · rejouer un fichier pgTAP sur le distant · toucher au référentiel des facteurs |
-| **`FRONT.md`** | Toucher un écran, un composant ou une dérivation lue par un écran · **écrire une phrase que quelqu'un lira** · faire bouger quelque chose — une transition, une animation (§2.12, et le skill `/mouvement`) · afficher un chiffre, un repère, un poste, une saison · faire parler Ramille · rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur · toucher au questionnaire, au plan ou au suivi |
+| **`TESTING.md`** | Écrire un test censé protéger une correction · **annoncer que quelque chose est vérifié** · une suite qui rougit ou verdit de façon inattendue · rejouer la CI en local |
+| **`TESTING-PGTAP.md`** | Écrire, corriger ou rejouer un test pgTAP — en CI, en local ou sur le distant · toucher au référentiel des facteurs · une assertion chiffrée qui rougit |
+| **`TESTING-GARDES.md`** | Toucher à une garde de la CI (`scripts/verifier-*.mjs`) ou en voir une rougir · jouer, étendre ou corriger le parcours réel · ajouter une constante qui recopie un `check` · les gabarits d'e-mail, le chemin du compte, ce que le lecteur d'écran reçoit dans l'export, la garde d'une animation |
+| **`FRONT.md`** | Toucher un écran, un composant ou une dérivation lue par un écran · **écrire une phrase que quelqu'un lira** · afficher un chiffre, un repère, un poste, une saison · rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur · toucher au plan ou à un écran d'onglet |
+| **`FRONT-MASCOTTE.md`** | Faire parler Ramille · toucher à la mascotte : son dessin, ses saisons, son visage, ses répliques · placer la mascotte sur un écran, surtout près d'un chiffre |
+| **`FRONT-QUESTIONNAIRE.md`** | Toucher à un écran ou à une étape du questionnaire : ce qu'une réponse efface ou réclame, la saisie, le « Suivant » |
+| **`FRONT-SESSION.md`** | Côté écran : la session, le jeton d'appareil, la feuille des rappels, le mot de la veille, la carte d'attente ou un texte qui promet un point, le champ de code, le démarrage, le brouillon, la reprise, une marque locale · le préremplissage du questionnaire et la voix de Ramille à l'entrée de ses sections · une durée promise à qui reste sans compte |
+| **`FRONT-SUIVI.md`** | Toucher au suivi ou à la restitution d'un bilan |
+| **`FRONT-MOUVEMENT.md`** | **Faire bouger quelque chose** — une transition, une animation, une hauteur qui change (avec le skill `/mouvement`) · « réduire les animations » · un focus près d'une entrée animée · une découpe permanente (`overflow: hidden`) |
 | **`RECETTE.md`** | **Préparer une séance de recette, sur appareil ou au navigateur** · écrire ou retoucher un document de `docs/recette/` · fabriquer ou mettre à jour l'artefact web d'une recette · consigner ce qu'une séance a trouvé · prescrire un profil de test |
+| **`BILAN.md`** | Toucher au questionnaire côté base (une réponse, une colonne d'`assessment_answers`, `normaliserReponses`) · toucher au calcul, à un mode de transport, un résolveur ou un facteur d'émission · la synchronisation ADEME · la soumission ou le retrait d'un bilan · affirmer d'où vient un chiffre du bilan |
+| **`PLAN.md`** | Toucher aux actions du plan (gabarits, filtres de contexte, `estimate_action_savings`) · à l'engagement (`commit_plan_action`, archive, reconduction) · à la génération du plan, sa cadence ou `p_cause` · au contexte (`/contexte`) · à l'écran du plan : saison, cap, premier plan, barre d'onglets du premier parcours |
+| **`BOUCLE.md`** | Toucher aux points de suivi (`engagement_checkins`, les générateurs, la question, la réponse, la carte du point) · à une paire SQL/TypeScript de la boucle · décider qui reçoit quelle boucle · toucher aux rappels : canal, `notification_outbox`, envoi, mot de la veille, espacement, désinscription, jeton d'appareil |
+| **`COMPTE.md`** | Toucher à la connexion, au rattachement, au code reçu par e-mail ou à `/connexion/*` · à la session (`ensureSession`, PKCE, lien profond, jeton refusé) · ajouter une provenance vers `/connexion/retrouver` · toucher au démarrage hors ligne ou à une marque locale · à la suppression de compte ou à l'export |
+| **`MESURE.md`** | Ajouter, émettre ou lire un événement d'usage ou une valeur de propriété · toucher à la purge des sessions anonymes, aux cohortes ou aux vues `analytics.*` · toucher au canal de retour (`feedback`) |
 
 ### Ce que la personne qui pilote a demandé
 
@@ -67,6 +92,11 @@ aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
   29/09/2026), et **un écart
   s'explique dans la PR avant de fusionner** — un saut veut dire qu'une dépendance est entrée dans
   `api/`. La méthode, et ce que la fenêtre des dix jours a appris : `VERCEL.md` §1.2 et §2.3.
+- **L'agent relit et fusionne ses propres PR** (01/10/2026 : « C'est toi qui en charge de relire
+  tes PR et de merger »). Une PR ne s'arrête pas sur « en attente de ta relecture » : contre-lue
+  (plus bas), verte sur sa tête, sans fil ouvert et sans conflit, elle se marque prête et se
+  fusionne en squash, comme ses devancières. Ce qui se pose à la personne qui pilote reste ce qui
+  touche au produit, et ça se pose avant d'écrire, pas au moment de fusionner.
 
 ### La branche de travail
 
@@ -103,7 +133,7 @@ a trouvé ; et **le relevé de fichiers, à refaire à chaque fois** — la colo
 §2.3 est une intention, pas un relevé. Elle s'est trompée **quatre fois** : la vague 2, annoncée
 disjointe, partageait six fichiers ; la vague 3, annoncée « enchaînée », avait deux chantiers
 réellement parallélisables et trois fichiers revendiqués par plusieurs, dont un par trois. Le
-relevé du 15/09/2026 est le **premier** à l'avoir confirmée (`v1-16` §2), ce qui ne change rien à
+relevé du 15/09/2026 l'a confirmée (`v1-16` §2) — seule la vague 5 l'avait déjà vue juste —, ce qui ne change rien à
 la règle : il coûte dix minutes et évite qu'un chantier en écrase un autre en silence.
 
 **Et un relevé est un instantané, donc un chantier qui CRÉE un fichier ou une fixture invalide le
@@ -126,7 +156,7 @@ diff entier, en lui donnant la base, le commit et ce que la vague prétend faire
 vérifient, et ses corrections se relisent contre les règles écrites avant d'être appliquées** : il
 ne les connaît pas toutes. Le 29/09/2026, sa proposition de retarder un focus jusqu'à la fin d'une
 entrée animée a été appliquée telle quelle, fusionnée, puis retirée le jour même — elle enfreignait
-la règle du mouvement, « le focus part au geste, jamais à la fin d'une animation » (`FRONT.md`
+la règle du mouvement, « le focus part au geste, jamais à la fin d'une animation » (`FRONT-MOUVEMENT.md`
 §2.12), que le skill `/mouvement` porte depuis la veille.
 
 **Et une vague confiée à des sous-agents en worktrees coûte quatre préparations et une surprise**
@@ -199,9 +229,10 @@ Les réglages des comptes tiers ne vivent pas ici mais dans `docs/exploitation/`
 qui les rend vérifiables — rien dans le code ni dans la CI ne les voit. Deux d'entre eux pèsent sur
 le **rythme de travail** et méritent d'être connus avant de planifier quoi que ce soit : le quota de
 builds EAS (§3.3) et les budgets d'API GitHub (§3.8 — GraphQL et REST sont deux compteurs
-distincts, donc `issue_write` peut être refusé pendant que tout le reste passe). Le troisième est
-le compteur Functions Storage de Vercel (§3.2), dont la règle vit dans `VERCEL.md` parce qu'elle
-est portable : c'est le seul des trois que le dépôt peut alléger lui-même, par l'Ignored Build Step.
+distincts, donc `issue_write` peut être refusé pendant que tout le reste passe). Le compteur
+Functions Storage de Vercel (§3.2) en était un troisième jusqu'au 25/09/2026, date à laquelle son
+budget a été levé : il ne reste qu'une mesure avant chaque fusion de code, et sa règle vit dans
+`VERCEL.md` parce qu'elle est portable.
 
 ### Les plug-ins s'installent à la main, dans le dépôt
 
@@ -331,7 +362,7 @@ Trois suites : **Jest** (`npm test`, logique pure côté client, `src/**/*.test.
 `TZ=Europe/Paris` forcé et ce n'est pas cosmétique), **pgTAP** (`supabase/tests/database/*.sql`,
 numérotés, un fichier par sujet, `supabase test db`) et, depuis le 20/09/2026, **le parcours réel**
 (`scripts/verifier-parcours-reel.mjs` : le chemin nominal joué par Playwright contre la stack
-Supabase locale, la base relue après chaque écriture — `TESTING.md` §2.6, qui dit aussi ce qu'il
+Supabase locale, la base relue après chaque écriture — `TESTING-GARDES.md` §2.6, qui dit aussi ce qu'il
 laisse volontairement aux deux autres). **Trois profils**, et aucun n'est un doublon : le
 cycliste au **plan à zéro action** est le seul chemin où la carte « Ton premier plan » ne se rend
 jamais, donc le seul où la barre d'onglets arrive autrement — et depuis C4.7 il finit par **retirer
@@ -344,7 +375,7 @@ chaque pull request. La
 règle qui décide de ce qui se teste (**toute dérivation pure affichée à la personne ou décidant
 d'une navigation**), où passe la ligne entre logique pure (`src/types`) et entrée-sortie
 (`src/lib`), les tests de **jugement** à connaître avant de « corriger » ce qu'ils épinglent, et
-les quatre pièges de la suite Jest (doubles, fuseau, résolveurs, couverture) : `TESTING.md` §2.1 —
+les pièges de la suite Jest (doubles, fuseau, résolveurs, couverture, `describe` vide) : `TESTING.md` §2.1 —
 et sa §1 pour ce qui vaut sur n'importe quel projet.
 
 **Le job `db-tests` compare aussi `src/lib/database.types.ts` à la base qu'il vient de
@@ -358,34 +389,27 @@ dérive : `SUPABASE.md` §2.1.
 là où chacune était jusque-là épinglée par un test portant les **mêmes valeurs recopiées une
 seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui compte, que la
 base ait changé d'avis. **Toucher à un `check` impose donc de suivre côté TypeScript**, et le
-contrôle dit lequel : `TESTING.md` §2.7.
+contrôle dit lequel : `TESTING-GARDES.md` §2.7.
 
 **Et écrire une constante qui recopie un `check` impose d'ajouter sa ligne à `MIROIRS`** : c'est une
 liste déclarée, donc un miroir que personne n'y déclare lui reste invisible, et rien ne balaie le
-dépôt pour le trouver. Ce fichier a d'abord écrit l'inverse — que **toute** recopie y figurait —,
-et c'était faux le jour même : la contre-lecture du soir en a trouvé quatre non déclarés, dont la
-préférence de canal de rappel. **Puis C4.4 en a trouvé deux familles de plus le 21/09/2026** — la
-motorisation et le type de deux-roues, épinglées jusque-là par des tests Jest portant les mêmes
-valeurs recopiées une seconde fois, c'est-à-dire par le code contre lui-même. La leçon n'est pas
-le compte, c'est qu'**une garde déclarative ne s'annonce jamais exhaustive** : on dit ce qu'elle
-couvre et ce qui lui échappe, et `TESTING.md` §2.7 nomme les deux formes qui lui échappent
-structurellement. Corollaire de la même vague : une constante s'y déclare **une fois par colonne
-qu'elle sert**, trois portant le `check` de la motorisation sans que rien n'oblige une migration à
-les faire bouger ensemble.
+dépôt pour le trouver — **une garde déclarative ne s'annonce jamais exhaustive**. Ce qu'elle a déjà
+manqué, les deux formes qui lui échappent structurellement, et pourquoi une constante s'y déclare
+une fois par colonne qu'elle sert : `TESTING-GARDES.md` §2.7.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
 y compris celles qui ne nomment pas le facteur touché — et « toucher » inclut en ajouter un.**
 Trois CI rouges pour l'apprendre (PR #34, #41, #48) ; la méthode qui marche, recalculer chaque
-assertion par une requête et jamais à la main : `TESTING.md` §2.2.
+assertion par une requête et jamais à la main : `TESTING-PGTAP.md` §2.2.
 
 **Des assertions de la suite échouent sur le projet distant et passent en CI, parce qu'elles
 supposent une base vierge** — et des fichiers y feraient partir de vrais messages, emails comme
-notifications (`09`, et depuis C4.2 la section 8 de `35`) : `TESTING.md` §2.3, qui les nomme, à
+notifications (`09`, et depuis C4.2 la section 8 de `35`) : `TESTING-PGTAP.md` §2.3, qui les nomme, à
 lire avant de « corriger » un test qui n'a rien, et avant de rejouer un fichier sur le distant. (Ce paragraphe les comptait ;
 le compte s'est périmé le 21/09/2026, quand l'une d'elles a été fermée.)
 
 **Dans une transaction pgTAP, `created_at` ne désigne aucune ligne, et la place d'une assertion
-fait partie de l'assertion** : `TESTING.md` §2.4.
+fait partie de l'assertion** : `TESTING-PGTAP.md` §2.4.
 
 ## Architecture
 
@@ -399,7 +423,7 @@ local est parfait — `VERCEL.md` §1.5. **Il ne se déploie plus de prévisuali
 trois pièges dont `"**"` et jamais `"*"` — §1.4), la vérification visuelle du web se fait localement
 par `expo export --platform web` puis Playwright sur `dist/`. **Et chaque fusion sur `main` est un
 déploiement qui coûte ≈ 1,8 Mo de Functions Storage pendant trente jours** — §1.1, §2.1 et la
-convention de cadence en §2.3 ; les fusions qui ne touchent que la documentation sont sautées par
+convention de fusion en §2.3 ; les fusions qui ne touchent que la documentation sont sautées par
 `scripts/vercel-ignorer-le-build.sh` (§1.3), dont la liste blanche dit ce que le build ne lit pas.
 
 **`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
@@ -441,22 +465,12 @@ Le parcours : `/` route sur `/plan` si un bilan complété existe, sinon `/onboa
 `/suivi/bilan?id=…&nouveau=1`, d'où l'on rejoint le plan. `/connexion` s'atteint depuis la
 restitution — transition imposée (`resultat_transition`) et bouton délibéré (`resultat_cta`),
 deux provenances que la mesure distingue — et depuis `/compte` (`compte`).
-`/connexion/retrouver`, seul chemin vers un compte **existant**, s'atteint depuis **huit**
-endroits, et `SOURCES_RETROUVER` les énumère — le compte ne s'écrit ici que parce que la liste est
-la source, pas ce paragraphe. Quatre sont d'origine : l'accueil de l'onboarding (« J'ai déjà un
-compte »), le lien délibéré « J'ai déjà un compte » du formulaire de `/connexion/email` — **et
-non plus l'adresse déjà prise, qui depuis le 21/09/2026 reçoit un code au lieu d'un écran**,
-`v1-28` §7.1 —, `/connexion` sur une collision
-Google, et un lien de connexion arrivé en **échec** (expiré, déjà utilisé), que le layout racine
-route ici avec son motif (`src/app/_layout.tsx`) — un lien valide, lui, ouvre la session et ne
-passe pas par cet écran. **Les quatre autres étaient muettes jusqu'au 20/09/2026** : les deux
-états vides du plan et celui du suivi (ouverts par C2.11) et l'écran de session refusée ne
-passaient aucune provenance, donc le repli les comptait toutes comme l'accueil de l'onboarding.
-La plus coûteuse était `rappel` — le rappel e-mail ouvert sur un appareil sans session,
-c'est-à-dire le chiffre même que C2.11 existe pour produire. **Et le garde qui les ramenait aux
-valeurs déclarées vivait dans l'écran, avec une seconde liste écrite à la main** ; il est
-désormais `sourceRetrouver` dans `src/types/analytics.ts`, dérivé de la liste et testé comme sa
-jumelle `sourceConnexion` — la règle du dépôt, qu'il ne suivait pas. Le compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
+`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant — depuis le 21/09/2026,
+un code demandé sur `/connexion/email` pour une adresse déjà prise rouvre aussi ce compte, sans que
+l'écran dise quelle branche est partie —, s'atteint depuis les provenances
+que `SOURCES_RETROUVER` (`src/types/analytics.ts`) énumère — la liste est la source, et
+`COMPTE.md` §2 dit d'où vient chacune et pourquoi quatre d'entre elles ont longtemps été muettes. Le
+compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
 
 **`/bilan/resultat` existe toujours, et c'est exprès** : un `<Redirect>` de quinze lignes vers
 `/suivi/bilan`, parce que l'adresse est citée dans `page-titles.ts`, dans l'en-tête
@@ -490,465 +504,6 @@ serveur doit l'utiliser**, et il écoute deux retours parce qu'il en faut deux �
 et le retour de l'app au premier plan que la navigation ne voit pas. Un `useEffect` de montage, là,
 rend un écran plausible et périmé.
 
-**Le point interroge la période ÉCOULÉE, pas celle qui commence** (C2.3, 11/09/2026) :
-`generate_commute_checkins()` pose `period_start` au lundi **précédent**, `generate_extras_checkins()`
-au mois précédent, et la question s'ouvre sur la période — « La semaine dernière, as-tu changé de
-mode de transport pour ton trajet domicile-travail ? », « En septembre, … » (le mois écoulé est
-**nommé**, il ne se dit pas « le mois dernier »). **Le moment d'envoi, lui, n'a pas bougé** : cron
-le lundi 6 h et le 1er à 6 h, étalement du `send_after` inchangé (v1-12 §2.8) — c'est la période
-interrogée qui recule, et confondre les deux ferait « corriger » le générateur dans le mauvais
-sens. Avant, le push partait quand la semaine avait quelques heures : la seule réponse honnête
-était « Non », suivie de la consolation d'échec.
-Le nom du mois vit dans `public.mois_francais(date)`, appelée par le libellé de période **et** par
-la question — deux copies d'une liste de douze chaînes divergent par une faute de frappe que
-personne ne relit. Sa jumelle client est `MOIS_FRANCAIS` (`src/types/checkin.ts`), épinglée par un
-test : `toLocaleDateString('fr-FR', { month: 'long' })` aurait évité la copie, mais Hermes peut
-être construit sans ICU complet et rend alors un mois en anglais — invisible en CI, visible sur
-l'appareil, dans la seule phrase qui doit correspondre mot pour mot à la notification qu'on vient
-d'ouvrir. Elle lit les **caractères** de `period_start` et jamais un `Date` : `new Date('2026-09-01')`
-est minuit UTC, donc août à l'ouest de Greenwich.
-
-**Tout ce que la carte d'un point affiche nomme la période INTERROGÉE, bouton compris** (contre-lecture
-de la vague 5, 13/09/2026). C'est le corollaire de C2.3 qu'il est le plus facile de manquer, parce que
-les textes ne sont pas écrits au même endroit : deux d'entre eux nommaient encore la semaine **qui
-commence**, celle dont le point ne demande rien.
-- **Le troisième choix disait « Pas de trajet cette semaine »** sous une question qui ouvre par « La
-  semaine dernière ». C'est la copie du canvas, rédigée avant que la période interrogée ne recule — et
-  sa moitié mensuelle nommait déjà le mois **écoulé** (« Pas de voyage en septembre »), donc les deux
-  moitiés d'une même ligne ne désignaient pas la même chose. Écart consigné en `v1-14` §10.
-- **Le repli de `{jours}`** (un gabarit d'engagement sans jours figés) disait « Cette semaine » dans
-  `checkin_question` **et** dans `composerQuestionDuPoint`, à quatorze lignes de l'ouverture correcte
-  que la même fonction venait de calculer. Le correctif n'écrit pas la bonne chaîne : il fait **lire
-  la variable déjà calculée**, pour qu'il n'y ait plus deux littéraux à tenir d'accord. La branche est
-  défensive aujourd'hui (`commit_plan_action` exige des jours sur le poste domicile-travail, et les
-  gabarits mensuels ne portent pas `{jours}`), et c'est justement pour ça qu'elle valait d'être
-  corrigée : une phrase fausse que rien n'exerce attend la troisième forme d'intention qui la rendra
-  atteignable.
-Les deux gardes qui restent sont écrites sur l'**invariant** et non sur la phrase — le repli et le
-générique ouvrent sur la même période, et le bouton nomme la période de la question — donc elles
-survivent à une reformulation.
-
-**Le gabarit de question n'arrive jamais jusqu'à la carte, et c'est structurel** : `question_template`
-vit sur `action_templates`, pas sur le point, donc aucune requête de l'app ne peut le remplir. La
-branche à gabarit de `composerQuestionDuPoint` est inatteignable côté client et n'existe que pour
-rendre la composition **éprouvable** face à sa jumelle SQL. Corollaire : le seul chemin client qui
-compose est celui d'un point d'avant C2.1, qui retombe donc toujours sur la question générique — ce
-qui est exactement le libellé sous lequel ce point-là est parti. `committed_intention_days` n'est pour
-cette raison **pas** rapatrié par l'écran du plan : il ne remplirait que cette branche.
-
-**La question du point a une seule source côté client, `src/types/checkin.ts`** (C2.5, 11/09/2026),
-et c'est la moitié d'une paire avec `enqueue_checkin_reminders` — le rappel part sans le client, la
-carte repose la question avec lui. `checkin-card.tsx` l'écrivait lui-même, au présent et avec le
-libellé snapshoté : la notification disait « La semaine dernière, as-tu changé de mode de transport
-pour ton trajet domicile-travail ? » et l'écran « As-tu changé de mode de transport au moins une
-fois cette semaine pour Trajet domicile-travail (Voiture thermique) ? ». Sur un produit dont la
-boucle consiste à appuyer sur la notification pour répondre, ce n'est pas une variante de
-formulation : c'est la même question qui ne se reconnaît pas d'un écran à l'autre. C2.1 a étendu ces
-deux endroits plutôt que d'en ouvrir un troisième, et C2.4 fera de même pour la troisième réponse.
-
-**Quand une action est engagée, la question la nomme — et elle est figée à la génération** (C2.1,
-`20260912190000_point_connait_laction.sql`). « As-tu changé de mode de transport ? » posée à
-quelqu'un qui s'est engagé à « faire un trajet sur cinq à vélo le mardi et le jeudi » ne referme
-pas le « si-alors » qu'il a écrit : elle lui demande un résumé de sa semaine. La phrase vient
-désormais du gabarit, `action_templates.question_template` (« {jours}, as-tu fait ce trajet à
-vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à connaître :
-
-- **`engagement_checkins.committed_question` est la question elle-même, figée**, comme `trip_label`
-  fige le libellé. Elle est posée une fois, au moment de la génération, et `enqueue_checkin_reminders`
-  comme la carte la lisent telle quelle — c'est la seule façon qu'elles ne puissent pas différer
-  d'un caractère. Corollaire voulu : **changer d'action après la génération ne réécrit pas la
-  question déjà posée**, et la carte le dit (« Cette question porte sur l'action que tu suivais
-  alors : … »), plutôt que d'afficher une phrase qui ne correspond plus à rien. Recomposer à
-  l'affichage rendrait le point incohérent avec la notification qu'on vient d'ouvrir.
-- **Les quatre genres sont `engagement` | `generique` | `maintien` | `occasion`** — l'ancien
-  `changement` a été renommé `generique`, parce qu'il ne décrit plus le cas général mais le
-  **repli** : un gabarit sans `question_template` y retombe, jamais sur une phrase à trous. Le
-  genre et le mode restent deux colonnes pour la raison de C2.5, et **`maintien` gagne sur
-  `engagement`** : en pratique un cycliste a un plan à zéro action (effet de bord de C2.5), mais la
-  priorité est explicite et testée plutôt que dépendante de ce hasard.
-- **L'action retenue est celle du cycle qui couvre la période interrogée, appariée par poste** —
-  `'commute'` pour la boucle hebdomadaire, le poste de la boucle pour la mensuelle (`travel` pour qui
-  sort rarement depuis le 27/09/2026, plus bas). Sans l'appariement, une action engagée sur les
-  loisirs aurait nommé la question du trajet domicile-travail. **Et depuis le 30/09/2026, c'est la
-  boucle mensuelle qui se règle sur l'action** : engagée sur les sorties ou les voyages, le point du
-  mois porte sur ce poste-là, même quand l'autre pèse plus (`v1-27` §12.25, test `40`) — sans quoi
-  la feuille promettait « je reviens te demander si tu l'as faite » à une action jamais interrogée. **La recherche vit en un seul endroit
-  depuis le 27/09/2026**, `public.action_engagee_de_la_periode(user_id, poste, period_start)`, que
-  les deux générateurs et, depuis C4.2, `engagement_de_la_veille` appellent : elle **reçoit** le
-  poste, elle ne le choisit pas — c'est la boucle qui décide sur quoi elle interroge (`v1-27` §5,
-  test `33`). Elle rend aussi `plan_action_id` depuis C4.2, en dernière colonne : le mot de la veille
-  a besoin de la ligne retenue (son cycle, sa reconduction), et la première version qui recopiait la
-  jointure pour l'obtenir est tombée au balayage de `33`.
-- **`public.jours_francais(smallint[])` est la jumelle SQL de `JOURS_FRANCAIS` / `joursDeLaQuestion`**
-  (`src/types/checkin.ts`), **donc à toucher ensemble**, exactement pour la raison de `mois_francais`
-  au paragraphe précédent. Elle joint par « ou » et non par « et » (l'intention est un choix de
-  jours, pas un cumul), ne capitalise que la première lettre — `initcap` sur la liste jointe
-  donnerait « Mardi Ou Jeudi » — et rend « Tous les jours » à sept jours plutôt que de les énumérer.
-- **La notification ne préfixe le poste que si la question ne le nomme pas déjà.** La question
-  générique finit par « … pour ton trajet domicile-travail ? » : y coller l'étiquette répétait le
-  poste dans la même notification. Le `push_body` teste donc `position(etiquette in question)`.
-- **La composition n'est appelable que côté serveur** : `checkin_question` et `jours_francais` sont
-  révoquées de `public, anon, authenticated`. Le client ne compose que pour les points générés
-  **avant** C2.1, dont `committed_question` est nul — d'où `questionDuPoint`, qui préfère toujours la
-  question figée.
-
-**Un point se répond par « oui », « non » ou « sans objet », et `response_kind` est la vérité**
-(C2.4, `20260912200000_troisieme_reponse_du_point.sql`). Une semaine de congés ou un mois sans voyage
-n'ont pas de réponse honnête entre oui et non : « Non » déclenche la consolation d'échec et s'inscrit
-en « Non » dans le suivi, ne rien répondre laisse le point expirer — ce qui compte pour une occasion
-manquée **et** fait s'espacer les rappels (C2.9). Pour un profil « deux vols par an », dix mois sur
-douze devenaient une suite de « Non ». Six points à connaître :
-
-- **Le piège n'était pas la valeur nulle, c'était le filtre qui la lisait.** `response boolean`
-  reste, **dérivée** (`true` / `false` / `null`), et `loadAnsweredCheckins` écartait les lignes dont
-  elle est nulle : la troisième réponse aurait été donnée puis perdue, sans message d'erreur et sans
-  rien afficher dans le suivi. Tout ce qui compte « les points répondus » filtre donc
-  `status = 'answered'` et lit `response_kind` — **jamais `response is not null`**. C'était déjà le
-  cas de `recapDeSaison` (C2.14, qui l'avait anticipé) et de `regime_de_rappel` (C2.9, où un
-  « sans objet » est un **signe de vie** : l'assertion est dans `24`, et sans elle quelqu'un qui
-  répond honnêtement quatre fois verrait ses rappels s'espacer comme s'il avait disparu).
-- **La dérivation est une contrainte, pas une convention**
-  (`engagement_checkins_reponse_coherente`), et elle porte **deux** invariants : répondu ⟺ genre
-  renseigné, et la correspondance genre/booléen. Le premier est la forme structurelle du défaut :
-  une ligne `answered` sans genre est une réponse que la lecture écarte. Aucun chemin de production
-  ne peut la produire — le RPC est le seul écrivain — et c'est pourquoi l'écrire coûte zéro et garde
-  le jour où C4.1 ajoutera une forme de réponse. Corollaire pour les tests : **une fixture ne peut
-  plus écrire `status = 'answered'` sans genre** (cinq fichiers corrigés), ce qui est une bonne
-  chose — une fixture qui écrit un état que la production ne peut pas produire éprouve une fiction.
-- **Le backfill passe sous le trigger, pas à travers.** `prevent_answered_checkin_update` lève sur
-  toute mise à jour d'une ligne déjà répondue (C1.12) : le rattrapage des points historiques le
-  désactive le temps de l'écriture et le réarme ensuite, et la contrainte n'est posée **qu'après** —
-  l'ordre inverse ferait échouer l'`alter` sur les lignes pas encore rattrapées. Un contrôle de la
-  migration vérifie que le trigger est bien réarmé : l'oublier défairait C1.12 en silence.
-- **La signature du RPC change, elle ne s'ajoute pas** : `repondre_au_checkin(uuid, text)`, et la
-  version booléenne est **supprimée**. Deux surcharges que PostgREST départage sur le type d'un
-  champ JSON coûteraient plus que la migration, et une surcharge qu'aucun appel n'émet se lit
-  « morte » et non « réservée » (la leçon de `p_replace` en C2.2). Ce raisonnement tient **parce que
-  l'app n'est pas encore publiée sur Play** ; le jour où un client installé appelle l'ancienne forme,
-  il faudra une seconde fonction nommée.
-- **`analytics.engagement_by_segment` gagne `answered_sans_objet`**, et ce n'est pas du confort :
-  `answered` compte les trois réponses et `answered_yes` les seuls « oui », donc l'écart entre les
-  deux se lisait « non » et vient d'accueillir les « sans objet ». Sans le troisième compteur, le
-  taux de réussite de la boucle baissait à chaque fois que quelqu'un répond honnêtement. Une
-  assertion de `24` nomme l'égalité.
-- **La carte répondue reste le temps de la période, et la borne se calcule en UTC.** Le
-  renforcement vivait dans un `useState` : répondre, changer d'onglet, revenir, et il n'y avait plus
-  rien — la requête du plan ne lisait que les points `pending`. Elle lit maintenant `pending` **et**
-  `answered`, et `estDeLaPeriodeCourante` (`src/types/checkin.ts`) borne l'affichage, sans quoi un
-  compte dont la boucle a cessé d'être générée garderait pour toujours un « Répondu lundi » et la
-  promesse d'un point qui ne viendra pas. `debutDePeriodeInterrogee` est la **jumelle du `date_trunc`
-  des deux générateurs**, donc elle lit l'UTC — à l'inverse de `saisonDe`, qui nomme une saison pour
-  un humain et suit son calendrier local. Aligner l'une sur l'autre ferait disparaître la carte d'un
-  point courant entre minuit et 6 h UTC le lundi. Le pied (« Répondu lundi. Prochain point : lundi
-  21 septembre. ») est **du produit et non de Ramille** : il porte deux dates, et elle ne dit jamais
-  de nombre.
-
-`RAMILLE.checkinSansObjet` a **quatre** variantes indexées sur le **poste** et non deux sur la
-boucle, écart consigné en `v1-14` §10 : la boucle mensuelle couvre les voyages *et* les sorties
-depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui vient d'appuyer sur
-« Pas de sortie en septembre » serait la fausseté lisible que ce chantier-là a retirée ailleurs.
-
-**Le cycliste, le piéton et les loisirs rares ne reçoivent pas la même boucle** (C2.5, arbitrage D5,
-`20260912140000_qui_recoit_quelle_boucle.sql`). Quatre choses à connaître avant d'y toucher :
-
-- **C'est la catégorie du mode qui décide de la question de maintien, jamais le CO₂.** Le chantier
-  proposait `commute_main_leg_co2_kg_year = 0` ; ce critère est faux depuis les facteurs ACV —
-  `marche` vaut 0 mais `velo` 0,00017 et `trottinette` 0,0249 — donc il n'attraperait que les
-  piétons et laisserait les cyclistes recevoir chaque lundi une question dont la seule réponse
-  honnête est « Non ». `engagement_checkins.question_kind` (`changement` | `maintien`) et `.mode`
-  sont **deux** colonnes parce que ce sont deux faits : le genre, que C2.1 fera grossir, et le mode
-  qui remplit le texte. La catégorie `velo_marche` compte `velo`, `marche`, `trottinette` et,
-  depuis C4.4, `velo_electrique` : en ajouter un impose un complément dans
-  `public.complement_de_maintien` **et** dans sa jumelle `src/types/checkin.ts`, sinon il reçoit
-  « autrement » en silence des deux côtés. Un test pgTAP épingle la liste, **et c'est lui qui a
-  rattrapé C4.4** — le compte ne s'écrit plus ici, il se lit en base. La réplique du « Non » se
-  choisit, elle, par `varianteDeMaintien` : le vélo à assistance partage l'identité du vélo
-  (« Le vélo reste ton trajet »), là où la question garde son complément exact.
-- **Le « Non » d'un maintien ne reçoit jamais `checkinNon`** : cette réplique console d'un échec, et
-  répondre « non » à « ton trajet s'est-il fait à vélo ? » n'en est pas un. D'où `maintienNon`, en
-  visage `calm`. Le choix vit dans `repliqueDuPoint`, avec son test — jamais en ternaire dans la
-  carte.
-- **Le mode par défaut des loisirs « rarement » est un résiduel de calcul, et il ne nomme plus
-  rien.** Le calcul reste (D5, spec §5 : 15 km, 0,25 fois par semaine) mais ses conséquences
-  partent : `extras_poste_label` **et** `dominant_poste_label` disent « Loisirs du week-end
-  (occasionnels) », `dominant_poste_mode` est nul (sans quoi la restitution écrivait « Tes loisirs
-  du week-end **en voiture** »), et `estimate_action_savings` refuse les gabarits `leisure` — une
-  action « faire une sortie sur trois à vélo » sur des sorties jamais déclarées. Les deux libellés
-  partagent le mot parce que leur condition est **le même test** (`v_leisure_co2 >= v_travel_co2 ×
-  0,95`), donc ils ne peuvent pas se contredire. Conséquence à connaître : **tout cycliste et tout
-  profil sédentaire a désormais un plan à zéro action** — l'écran le félicite, ce qui est juste,
-  en nommant le poste **sauf** quand c'est ce résiduel, que la personne n'a pas déclaré et sur
-  lequel aucune boucle ne porte (`felicitationDuPlanSansAction`, `v1-29`) ; la carte du cap
-  s'affichait encore au-dessus, relevé pour C3.8. Et si `household_vehicles = '0'`, le résiduel passe en **train** et non en bus :
-  à 0,1224 kg/km le bus ne vaut que 14 % de moins qu'une thermique en ACV, la correction aurait été
-  un non-événement (A7-13).
-- **La boucle mensuelle demande une base déclarée**, sinon elle n'est pas générée :
-  `extras_poste_label` est calculé sans condition, donc sans ce filtre un profil qui a répondu sortir
-  rarement et n'avoir pris ni vol ni long trajet recevait chaque mois une question sur des
-  déplacements qui n'existent que dans le résiduel. `generate_extras_checkins` joint donc
-  `assessment_answers` — en production un bilan `completed` les porte toujours
-  (`recompute_assessment_results` lève sans elles), ce sont les **fixtures de test** qui s'en
-  passaient. Et un bilan à zéro nomme le poste où quelque chose est déclaré : plus de
-  « Trajet domicile-travail () ».
-  **Ce filtre énumère les compteurs de voyages, et depuis le 27/09/2026 il ne les énumère plus
-  qu'à un endroit : `public.a_des_voyages_declares(assessment_answers)`**, que lit aussi le cas
-  du bilan à zéro de `recompute_assessment_results` (`v1-27` §5). Ajouter une réponse de voyage au
-  questionnaire impose donc d'y ajouter sa ligne — pour la question « a-t-il déclaré un voyage ? »,
-  et nulle part ailleurs pour celle-là ; son terme de CO₂, lui, reste à écrire dans le calcul, comme
-  la colonne et l'écran. La liste avait déjà coûté
-  un défaut — relevé en contre-lisant C4.4, qui avait livré l'autocar sans : un profil dont les
-  seuls longs trajets sont en car avait un poste réel, un plan portant « Remplacer un de tes longs
-  trajets en autocar par le train », et **aucun point mensuel**, donc jamais la question que cette
-  action existe pour refermer. Ce qui l'a trouvé n'est pas une relecture du diff mais le fait de
-  **jouer les deux crons de 6 h** sur un profil neuf. Ce qui garde un cinquième compteur oublié est
-  le balayage de `33_deux_extractions_neutres.test.sql`, qui prend chaque colonne `_per_year` sans
-  la nommer — un compteur nommé autrement lui échapperait ; l'assertion de `20` ne garde que le
-  chemin de l'autocar. C'est la même forme que le
-  défaut de la soumission du bilan trouvé le même jour : une liste de réponses écrite à la main, qui
-  se périme en silence.
-- **Et une fois ce filtre passé, qui sort rarement est interrogé sur ses VOYAGES, jamais sur le
-  résiduel** (arbitrage du 27/09/2026, `20260927191009_la_boucle_mensuelle_de_qui_sort_rarement.sql`).
-  Le filtre laissait passer dès qu'un voyage était déclaré, et le poste retenu était
-  `extras_poste`, le plus lourd des deux : un long trajet en train par an (2,3 kg) contre un résiduel de
-  55,5 kg, donc chaque mois « … pour tes sorties du week-end ? » à quelqu'un qui a dit ne presque
-  jamais sortir, et jamais une question sur le voyage qu'il a déclaré. Le poste de la boucle vaut
-  donc `travel` pour « rarement », et **trois choses le suivent ensemble** : la question, la
-  colonne `poste` du point (d'où le troisième choix « Pas de voyage en … ») et l'action engagée
-  qu'on cherche — une action de voyage engagée referme désormais sa question même quand le
-  résiduel pèse plus. **Cette règle vaut pour la question générique** : une action engagée passe
-  devant (30/09/2026, plus haut), et le libellé du résiduel n'est jamais repris sur un point. **La bascule vit dans la boucle et non dans `assessment_results`**, et c'est
-  la moitié à ne pas « simplifier » : `extras_poste_label` reste le plus lourd des deux, parce que
-  l'app y lit le marqueur « (occasionnels) » pour reconnaître le résiduel ; déplacer la règle dans
-  le calcul ferait dire « tes loisirs du week-end » à l'étiquette de la restitution. Quatre
-  mutations en tête de `20` disent laquelle de ces moitiés chaque assertion garde.
-
-**Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
-(C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement
-et en §9 comme indicateur de succès, `v1-02` §4 en donnait même la requête, et il n'avait jamais été
-calculé nulle part — la phrase du handoff n'a jamais été affichée à personne. Ce qu'il faut en
-connaître :
-
-- **La requête de `v1-02` §4 est périmée, et elle l'est devenue en silence.** Elle prend les **deux
-  dernières lignes** de la boucle et vérifie qu'elles sont répondues ; c'était juste avant que
-  `20260904180000` ne close les périodes révolues en `expired` **et les garde en base**. Depuis,
-  « les deux dernières lignes » peut recouvrir deux périodes séparées de trois mois de silence. D'où
-  `public.periode_precedente(loop_type, period_start)` : la période se **calcule**. Un `lag()` sur
-  les lignes aurait le même défaut en moins visible — vérifié sur la fixture du test `25`, qui compte
-  2 par `lag()` et 1 par période.
-- **C'est une paire SQL/TypeScript de plus** (`periodePrecedente`, `src/types/checkin.ts`), à
-  toucher avec sa jumelle comme `mois_francais`, `jours_francais`, `poste_inserable`,
-  `reminder_channel_for` et — depuis C3.12 — `analytics.bilan_funnel` / `BILAN_STEP_ORDER`, dont
-  les deux moitiés s'épinglent l'une l'autre et se nomment mutuellement en commentaire : la vue
-  `analytics.checkins_consecutifs` compte côté serveur, la carte affiche côté client. Le nombre de
-  ces paires ne s'écrit nulle part, et surtout pas ici — il deviendrait faux à la suivante, en
-  silence. Les deux
-  cadences n'ont pas la même forme et c'est voulu — sept jours avant un lundi est un lundi, tandis que
-  le mois est **ramené au premier** plutôt que décalé, sans quoi les deux moitiés divergeraient sur les
-  fins de mois (PostgreSQL ramène le 31 mars au 28 février, `Date.UTC` le pousse au 3 mars).
-- **« Jamais au-delà de deux » veut dire que le signal ne se rallume pas.** `estDeuxiemeFoisDeSuite`
-  exige que la période précédente soit un « oui » **et que celle d'avant n'en soit pas un** : la phrase
-  dit « Deuxième semaine de suite », donc à la cinquième elle serait fausse, et la recevoir chaque
-  semaine en ferait du papier peint. Le signal marque le passage d'un geste à une habitude, puis se
-  tait. `v1-14` §4.6 décrit la dérivation à deux arguments ; il en faut un troisième état pour savoir
-  qu'on est à deux et pas à cinq (écart consigné en `v1-14` §10). La phrase est **voix produit et non
-  celle de Ramille** — elle constate un fait sur deux périodes, et Ramille ne compte jamais.
-- **Et sur la boucle mensuelle, la série se compte sur un même poste** (décision du 30/09/2026,
-  `v1-27` §12.25). Depuis que la question du mois suit l'action engagée, le point peut changer de
-  poste d'un mois sur l'autre, et la phrase nomme celui du mois : deux « oui » sur deux postes
-  affichaient « Deuxième mois de suite que tu sors autrement » après un mois de voyages. La vue
-  `analytics.checkins_consecutifs` applique la même condition — c'est une moitié de la paire, et
-  les deux se touchent ensemble.
-
-Corollaire sur la lecture du plan : **la requête des points est bornée par une fenêtre**
-(`fenetreDesPoints`, trois périodes mensuelles). Elle ne ramenait que les points `pending`, soit un ou
-deux ; depuis qu'elle prend aussi les répondus (C2.4), sans borne elle ramènerait une ligne par semaine
-indéfiniment. **Et depuis C2.8 elle prend aussi le début du cycle précédent, contre une coïncidence
-qui aurait tenu longtemps** : le récapitulatif de la carte d'ouverture compte les points de la saison
-écoulée, et trois périodes mensuelles en arrière depuis le 1er d'un mois est le 1er du mois trois mois
-plus tôt — c'est-à-dire exactement le premier jour de la saison précédente. Les deux bornes tombaient
-au même jour, donc l'oubli ne se serait pas vu jusqu'au jour où l'une des deux dérivations bouge (une
-cadence `rolling_quarter`, elle, n'est pas alignée sur les mois et sortait déjà de la fenêtre). On
-prend le minimum des deux.
-
-**La saison a une fin et un début, et les deux se disent sur l'écran du plan** (C2.8,
-`src/types/saison.ts`). `plan_cycles.period_end` et `.cadence_type` existaient depuis l'increment 3 et
-n'étaient lus par **aucun** écran : le cap était annoncé sans échéance, et l'effet « nouveau départ »
-était perdu quatre fois par an. Sept points à connaître, dont deux qui sont des règles :
-
-- **La carte d'ouverture ne prend jamais la place d'un point en attente.** Le canvas la pose « à la
-  place du point » ; le lien du rappel pointe `/plan`, donc masquer la question y fait ouvrir une
-  notification sur un écran qui ne la porte pas — le défaut exact trouvé sur appareil le 09/09/2026
-  (v1-12 §8.1), et jusqu'à deux semaines de points perdus pour qui ne touche pas ses boutons. Elle
-  remplace la **carte d'attente**, Ramille parlant déjà sous elle.
-- **Le récapitulatif ne dit jamais zéro et ne nomme aucun poste.** Sans point répondu la phrase
-  disparaît (« 0 point répondu » nommerait les manqués, ce que `/suivi` refuse) ; sans changement, sa
-  seconde moitié tombe. Et le décompte porte sur les **deux** boucles, donc « … sur ton trajet »
-  serait faux pour quelqu'un dont les changements sont des voyages — même fausseté lisible que C2.6.
-- **Le trait de temps mesure la saison, pas la personne** : `accentMuted` et jamais `accent`, avec sa
-  légende. Il n'est pas plein le dernier jour — `period_end` étant inclus, la saison dure 91 jours et
-  non 90, et il n'atteint le bout qu'une fois la période révolue, au moment où le bandeau de bascule
-  prend le relais. Remplacer ce « + 1 » par un écart entre bornes afficherait « plein » un jour trop
-  tôt.
-- **L'écran lit deux cycles** (`limit(2)`). L'existence du précédent est ce qui distingue une bascule
-  d'un premier bilan, et ses bornes sont **lues sur sa ligne** plutôt que recalculées : une cadence
-  `rolling_quarter` n'a pas de saison, donc dériver les bornes d'une saison ferait compter trois mois
-  calendaires qui ne sont pas les siens.
-- **La carte de re-bilan disait le fait et jamais la saison, et C6.3 a inversé la prémisse.** Son
-  titre était « Une nouvelle saison a commencé », ce qui pouvait être faux : elle se déclenchait sur
-  182 jours d'ancienneté du bilan, pas sur une bascule, et pouvait coexister avec la puce
-  « Cadence : Été 2026 » — disparue depuis. **Depuis C6.3, le déclencheur EST la bascule**
-  (`regimeDeRebilan` / `saisonsEcouleesDepuis`), donc c'est l'âge qui est devenu la chose qui peut
-  être fausse : un bilan soumis le 30 novembre se propose le 1er décembre, sous un titre qui disait
-  « Ton dernier bilan a moins d'un mois ». Le titre vient donc de `titreDuRebilan`
-  (`src/types/suivi.ts`), **partagé par les deux écrans**, et il donne à chaque régime ce qu'il peut
-  dire de vrai : `proposer` dit la saison — vraie par construction —, `insister` dit l'âge par
-  `ancienneteEnMots`, où deux bascules garantissent au moins trois mois. Le défaut a vécu une
-  journée, et la leçon est qu'**un changement de déclencheur oblige à relire les phrases qui en
-  dépendaient**, pas seulement le code qui l'appelle.
-- **La puce « Cadence : … » a disparu du plan** : la période se nomme dans la carte du cap, à côté de
-  sa fin, et cette carte se rend donc **même sans cap** (`baseline_co2_kg_year` peut valoir zéro).
-  Nommer la période à deux endroits de l'écran était le plus sûr moyen de les voir un jour se
-  contredire.
-- **Les boutons de la carte sortent de `sortiesDeLouverture`**, pas d'un ternaire : le canvas suppose
-  une action engagée et reconduite, alors que rien n'est engagé dans deux cas de production — dont le
-  plan à zéro action de tout cycliste depuis C2.5, où proposer d'en choisir une promettrait une liste
-  vide.
-
-**Le tout premier plan dit la règle du jeu, et le trait de temps attend qu'il y ait quelque chose à
-mesurer** (C5.6, `estPremierPlan` / `ouvertureDuPremierPlan` dans `src/types/saison.ts`). On arrivait
-de la restitution devant deux cartes chiffrées, un cap et un trait qui avance, sans qu'un mot dise
-qu'on en choisit **une** et que tout le reste du produit tient en un point régulier. Quatre points à
-connaître :
-
-- **Le signal a trois conditions, et c'est la troisième qui compte** : un seul cycle, aucune action
-  engagée, et **aucune ligne dans `plan_action_commitments_archive`, quelle qu'en soit la raison**.
-  Les deux premières décrivent un plan neuf ; l'archive est la seule trace de quelqu'un qui s'est
-  **déjà** engagé puis a repris — « Changer d'avis » (raison `changement`) ou un re-bilan dans la
-  même période (raison `rebilan`), qui remettent tous deux `committed_at` à `null` sans créer de
-  second cycle. Sans elle, la carte réexplique la règle du jeu à quelqu'un qui la connaît.
-- **La lecture de l'archive que l'écran faisait déjà ne peut pas servir**, et c'est le piège que le
-  relevé de `v1-17` §2 a évité : celle de l'encart orphelin (C2.2) filtre sur les raisons
-  annonçables (`rebilan`, et `contexte` depuis C6.4) parce qu'elle annonce un effet de bord non choisi, et elle est bornée
-  à une ligne. Élargir ce filtre casserait l'encart. Le premier plan demande donc sa **propre**
-  lecture, un `count` en `head` dans le même `Promise.all` (règle de C5.5). Un `count` **nul** veut
-  dire « pas pu lire » et se lit « s'est déjà engagée » : des deux erreurs possibles, celle qui
-  montre une carte de trop coûte moins que celle qui **retire** le trait au milieu d'une saison.
-- **Le trait s'écrit `progression !== null && !premierPlan`**, et non la forme du canvas
-  `(engagement || !premierPlan)` : un engagement rend déjà le signal faux par sa deuxième condition,
-  donc la première moitié n'est exerçable par aucun cas. Un test épingle cette implication — le jour
-  où il tombe, c'est que la forme courte est redevenue fausse. La légende disparaît **avec** le
-  trait ; la période et sa fin, elles, restent.
-- **Une seule carte pour deux ouvertures** (`CarteDOuverture`, ex-`CarteDeSaison`) : le canvas décrit
-  le cadre de la saison et celui du premier plan de la même façon au pixel près, donc en écrire deux
-  garantirait qu'ils divergent — la leçon de `CarteDePiste` en C5.2. Ce qui change est du contenu,
-  dérivé dans `src/types/saison.ts`, **y compris la ligne de Ramille**, passée sans valeur par
-  défaut : un repli sur « On repart pour une saison. » dirait au premier plan la seule phrase qui ne
-  peut pas y être vraie. Les deux cartes ne peuvent pas coexister (l'une exige un cycle précédent,
-  l'autre exige qu'il n'y en ait pas) et **remplacent toutes deux la carte d'attente, jamais un point
-  en attente** — C2.8 dit pourquoi. **La troisième carte d'ouverture, celle des deux lieux (C5.7),
-  ne dépend d'aucun cycle et croisait les deux autres** : la saison (relevé au lot 5) puis le premier
-  plan (27/09/2026, un premier plan à zéro action suivi d'un nouveau bilan qui en donne). Qui passe
-  devant se décide en un seul endroit, `cartesDuPlan` (`src/types/plan.ts`) — saison, premier plan,
-  deux lieux —, dont le type rend l'empilement inexprimable, et que l'écran rend en une seule
-  expression pour la même raison. La marque locale (`traceverte.premier_plan_vu.v1`,
-  `src/lib/premier-parcours.ts`) est **booléenne** là où celle de la saison porte un identifiant de
-  cycle : le premier plan n'arrive qu'une fois, et elle est nécessaire parce que le signal, lui, ne
-  se referme que sur un engagement.
-
-**La barre d'onglets attend que les deux lieux aient quelque chose à montrer** (C5.7,
-`src/types/premier-parcours.ts`). Le produit proposait Plan et Suivi dès la dernière page du
-questionnaire, c'est-à-dire avant qu'il y ait quoi que ce soit à suivre. La barre est masquée de la
-soumission du **premier** questionnaire à la fermeture de la carte « Ton premier plan », puis elle
-arrive et se nomme, une fois. Cinq points :
-
-- **Une valeur à trois états (`questionnaire` → `barre` → `fait`), jamais deux marques booléennes.**
-  Le canvas décrit une marque « effacée » à la fin du parcours, plus une seconde pour la carte des
-  deux lieux ; effacée, la première ne dit plus rien, et la question que pose la carte est « la barre
-  vient-elle d'arriver **sur cet appareil** ? ». Deux booléens ne distinguent pas « le parcours vient
-  de finir ici » de « il n'y en a jamais eu ici », donc la carte se serait rendue à **tout le
-  monde** — chaque installation existante, chaque appareil neuf d'un compte existant. Écart consigné
-  en `v1-17` §9.
-- **Sans marque, la barre est là**, et c'est le cas à ne pas rater : appareil neuf d'un compte
-  existant, session retrouvée par lien, installation d'avant le chantier. La marque autorise une
-  absence, elle ne la présume jamais — et `null` recouvre aussi « pas encore lue », donc l'état de
-  départ du layout ne fait disparaître la barre de personne (la règle d'hydratation d'`EXPO.md`
-  §2.2 : sur web, le rendu statique ne connaît aucun stockage). Une **valeur inconnue** se lit de
-  même : c'est le seul moyen, depuis ce stockage, de retirer à quelqu'un la moitié du produit.
-- **« Premier » veut dire premier sur cet appareil**, et la question se pose à la soumission, **avant**
-  de poser la marque de bilan de C4.5 — c'est elle qui répond, **avec l'étape déjà notée** depuis
-  C4.7 (`ouvreUnPremierParcours`) : retirer son seul bilan efface la marque de bilan, et sans l'étape
-  le bilan suivant ferait recommencer le parcours. Quatre situations retombent alors du bon côté sans
-  garde à écrire : un re-bilan, un appareil neuf d'un compte existant, une installation d'avant le
-  chantier, et un bilan soumis après le retrait du seul.
-- **L'étape vit dans le layout des onglets**, qui la partage par contexte (`usePremierParcours`) :
-  c'est lui qui rend la barre, donc un écran qui réécrirait la marque dans son coin la ferait
-  arriver au prochain montage et non au geste. Le questionnaire, lui, est **hors** du groupe et
-  écrit directement la marque — le bon ordre, puisque le layout est monté après. Quatre chemins
-  referment le premier plan et font venir la barre : « Compris » (immédiat, dans son gestionnaire),
-  le premier engagement, un plan à zéro action, et une carte déjà refermée ici — les trois derniers
-  passent par le chargement de l'écran, qui les ramène au même appel.
-- **`tabBarStyle: { display: 'none' }` ne laisse pas de bande vide**, mesuré et non raisonné
-  (`EXPO.md` §1.7) ; **et l'entrée glissée de 320 ms du canvas est rendue depuis le 27/09/2026**
-  (`v1-30` §5.5) : ce fichier a écrit jusque-là qu'elle ne l'était pas, faute de pouvoir envelopper
-  `BottomTabBar` sans dépendre de `@react-navigation/bottom-tabs`, et la raison ne tenait pas —
-  `tabBarStyle` accepte une valeur `Animated`. Elle ne glisse **qu'en arrivant** (`barreArrive`),
-  jamais à l'ouverture de l'app, et sous « réduire les animations » la barre ne lit pas la valeur
-  animée du tout : remise en place dans un effet, elle passait parfois une image transparente
-  (`EXPO.md` §1.7). L'écart de `v1-17` §9 est levé, par une ligne datée sous son tableau.
-
-**Un rappel par email ne part pas à l'instant où il est mis en file** : `send_after` porte un
-décalage de 0 à 4 jours dérivé du hachage de l'identifiant (étalement du pic du lundi,
-`v1-10` §2.B). Le push, lui, part à `now()`. Pour provoquer un rappel de test, passer par
-`generate_commute_checkins()` puis `send_pending_reminders()` — le chemin du cron entier —
-plutôt que d'insérer un point à la main.
-
-**Hors ligne, la racine route au lieu de lever, et c'est une marque locale qui l'y autorise** (C4.5,
-15/09/2026, `v1-15-hors-ligne.md`). La moitié « session expirée » du chantier était **déjà livrée**
-par C2.11, et **l'instantané local du plan est resté hors périmètre** — il serait un troisième
-endroit où vivent les chiffres de la personne, ce que ce dépôt refuse partout ailleurs ; `v1-15` §7
-dit à quelles conditions le rouvrir. Sept points à connaître :
-
-- **La coupure de transport se reconnaît à `status === 0`, jamais à l'absence de `code`**
-  (`lireLeBilan`, `src/types/demarrage.ts`). C'est le critère que l'audit proposait, et il est faux :
-  le `catch` du transport de `@supabase/postgrest-js` rend bien une erreur sans `code`, mais **trois
-  autres chemins** du même paquet en rendent une sans `code` avec un statut réel — un corps non-JSON
-  sur une réponse 2xx, un corps d'erreur illisible, un 404 au corps vide. Les classer « pas de
-  connexion » ferait taire un serveur qui a parfaitement répondu. Le mauvais critère est rendu
-  **inexprimable** — la fonction ne reçoit pas de `code` du tout — et une assertion dit pourquoi.
-- **La marque `traceverte.a_un_bilan.v1` n'est pas un cache : c'est ce qui autorise une phrase.**
-  Sans elle, aucun écran ne peut dire « ton plan t'attend » sans affirmer ce qu'il ne sait pas — tout
-  le raisonnement de C1.4. Le préfixe historique n'est pas négociable : c'est par lui que
-  `src/lib/compte.ts` balaie les marques locales depuis ses **deux** sorties, suppression de compte
-  **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse au seul appareil
-  restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut).
-  **Et un troisième effacement depuis C4.7, qui n'est pas une sortie** : retirer son seul bilan
-  efface **cette marque-là et elle seule** (`effacerLaMarqueDeBilan`) — le compte n'est pas quitté,
-  donc le balayage par préfixe serait de trop. Il ne vaut que pour l'appareil du geste : un autre
-  appareil du compte garde sa marque, que le repli ne lit qu'hors ligne — le risque connu de C4.5.
-- **Elle n'est consultée qu'en repli, jamais quand le serveur a répondu**, et c'est ce qui la rend
-  sûre : une marque fausse ne peut pas contredire une vérité. Un test l'épingle, et le jour où il
-  tombe, c'est que quelqu'un en a fait une seconde source de vérité.
-- **Elle s'écrit à deux endroits** : sur une lecture réussie à la racine, et à la soumission du
-  questionnaire. Le second n'est pas du confort — le questionnaire mène à la restitution puis au plan
-  sans repasser par la racine, donc sans lui, quelqu'un qui soumet son premier bilan puis rouvre
-  l'app sans réseau retomberait sur l'onboarding. Elle se pose juste après `clearBilanDraft()`, qui
-  est exactement ce qui la rend nécessaire : le brouillon était jusque-là la preuve locale.
-- **Hors ligne, le brouillon passe devant la marque**, à l'inverse de la règle en ligne où un bilan
-  complété gagne sur un questionnaire commencé (C3.9) : le questionnaire se remplit sans réseau, le
-  plan non. Le repli sans marque est `/onboarding`, qui n'affirme rien, marche hors ligne et porte
-  « J'ai déjà un compte » — ce qui rend le questionnaire atteignable sans remettre « Faire mon
-  bilan » sur un écran d'erreur, que C1.4 en avait délibérément retiré.
-- **Aucun drapeau `horsLigne` ne descend de la racine vers le plan, et aucun bandeau n'a été écrit.**
-  L'écran `erreur_reseau` de `/plan` existe depuis C1.4 et dit déjà la chose, en français, avec un
-  « Réessayer » et la barre d'onglets intacte. Un drapeau serait la seule chose à devoir rester juste
-  entre deux écrans, pour une information que l'onglet relit lui-même à chaque retour.
-- **Un `ensureSession()` qui échoue par coupure ne fait pas interroger la base.** La racine note la
-  coupure et s'arrête là : sans session, la requête partirait en `anon`, qui n'a aucun privilège sur
-  `assessments`, et le `42501` se lirait « erreur serveur » alors que c'est le réseau — le défaut que
-  ce chantier ferme, atteint par un autre chemin. C'est la famille d'erreurs d'`auth-js`, donc
-  `estPanneDeTransport` (`src/types/connexion.ts`) et non `lireLeBilan` : les deux se côtoient dans
-  la racine et les confondre ferait passer l'une pour l'autre.
-
 **Ce qui fait marcher Ramille sans vivre dans le dépôt a un registre : `docs/exploitation/`**
 (lot 0 du plan v1-13, livré le 10/09/2026). Son `README.md` nomme les comptes tiers — Supabase,
 Vercel, EAS/Expo, Google Play, Google Cloud et le projet Firebase d'où viennent
@@ -958,8 +513,8 @@ et la question de continuité (tout tient à une seule personne, elle n'est pas 
 est la porte d'entrée des journaux : `analytics.rappels_par_jour`, `analytics.rappels_bloques`,
 `analytics.synchronisations_facteurs`, `public.reminder_send_runs`, `public.purge_runs`, chacun
 avec sa requête et ce qui doit alerter — et, depuis le lot 6, `analytics.cohortes_purgees` et
-`public.suppressions_de_compte_par_mois` (§8.5 bis). À côté : `redirect-urls.md` (la liste réelle des URL de
-redirection Supabase, relevée entrée par entrée, avec ce qui doit en être retiré),
+`public.suppressions_de_compte_par_mois` (§8.5 bis), puis les quatre vues de l'administration
+(§8.5 ter). À côté : `redirect-urls.md` (la liste réelle des URL de redirection Supabase, relevée entrée par entrée, avec ce qui doit en être retiré),
 `sauvegarde.md` (le régime de sauvegarde et la procédure de restauration) et
 `remontee-erreurs.md`. **Rien dans le code ni dans la CI ne voit ces réglages, et aucun de ces
 journaux n'émet d'alerte** : c'est ce dossier qui les rend vérifiables, et un journal qu'on ne
@@ -985,162 +540,11 @@ la session anonyme en session permanente en conservant le même `user_id`** — 
 `signInWithOAuth`/`signUp`, qui créeraient un utilisateur distinct et perdraient le
 rattachement du bilan déjà stocké. Voir `src/lib/auth.ts`. Sur natif, le flux OAuth suit le
 pattern Expo documenté par Supabase : `makeRedirectUri()` + `WebBrowser.openAuthSessionAsync`
-(`skipBrowserRedirect`) + `QueryParams.getQueryParams()` + `supabase.auth.setSession(...)`.
+(`skipBrowserRedirect`) + `createSessionFromUrl`, qui échange le `code` PKCE du retour par
+`exchangeCodeForSession` — `COMPTE.md` §1 dit pourquoi la forme « jetons » est refusée.
 
-**Il n'y a pas de mot de passe** (`v1-10` §2.D, 07/09/2026) : il n'a jamais servi — aucun
-`signInWithPassword` dans le produit, zéro compte n'en portait — et la confirmation d'email
-faisait déjà tout le travail. Le seul chemin vers un compte **existant** (nouvel appareil) est
-`sendAccountAccessLink` (`signInWithOtp` avec `shouldCreateUser: false`), écran
-`/connexion/retrouver`, atteignable depuis l'accueil de l'onboarding (« J'ai déjà un compte »)
-et depuis le lien du même nom sur le formulaire de `/connexion/email`. Trois règles gardées par
-`src/types/connexion.ts` : une adresse inconnue
-(`422 otp_disabled`) mène au **même** écran qu'un envoi réussi, sinon l'écran dit qui utilise
-Ramille ; la limite d'envoi se reconnaît au **code** `over_email_send_rate_limit`, jamais au
-message ; et un appareil qui porte déjà un bilan anonyme voit l'écran de collision avant le
-formulaire — Supabase ne fusionne pas deux utilisateurs, on le dit et on laisse choisir. **Cet
-écran-là n'est pas l'oracle fermé le 21/09/2026 et ne se « corrige » pas par symétrie** : il ne se
-rend que sur `/connexion/retrouver`, où la personne vient chercher un compte **existant** et où il
-n'y a donc rien à taire ; ce qui a disparu est l'écran homonyme de `/connexion/email`, qui, lui,
-répondait « cette adresse a-t-elle un compte ? » à qui n'avait rien demandé.
-
-**`/connexion/email` envoie désormais un code dans les deux cas, et l'écran ne dit pas lequel**
-(arbitrage du 21/09/2026, `v1-28` §7.1). Une adresse libre reçoit un code de **rattachement**, une
-adresse prise un code de **connexion** — et les deux atterrissent sur le **même** écran de code.
-L'oracle qu'on ferme là était mesuré, pas supposé : une seule session anonyme a sondé vingt fois de
-suite la même adresse prise, vingt refus, aucun plafond. **Et il n'est fermé qu'à l'écran** (recette
-web du 28/09/2026, documenté par décision le même jour) : la réponse du serveur reste `422` ou `200`,
-lisible dans la console et par un appel direct, et rien dans GoTrue ne la masque — `SUPABASE.md`
-§2.4, et la condition de réouverture en `v1-28` §7.1. Trois choses à ne pas reconfondre :
-
-- **Le contexte suit la branche, la voix suit l'écran hôte.** `ContexteDuCode` décide le `type`
-  envoyé à l'API (`email_change` / `email`) et **doit** suivre la branche, les deux flux ne se
-  croisant pas. `VoixDeLaSaisie` (`parti` | `peut_etre`) décide ce que l'écran a le droit
-  d'**affirmer**, et c'est une propriété de l'hôte : `/connexion/email` est en `parti` dans ses
-  **deux** branches. Les confondre rouvrirait par le texte l'oracle fermé par le mécanisme — le
-  mécanisme serait juste et la fuite intacte. Détail et gardes en `FRONT.md` §2.7 bis.
-- **La phrase conditionnelle est le prix de l'arbitrage**, et son « si » n'est pas du style : « S'il
-  existait déjà un compte Ramille à cette adresse, ce code t'y ramène — et le bilan de cet appareil
-  ne l'y rejoindra pas. » Vraie dans les deux branches, donc montrable aux deux ; et posée **avant**
-  la saisie du code, ce qui laisse la sortie. À l'indicatif, elle redeviendrait l'oracle.
-- **Ce que ça ne ferme pas** : le renvoi depuis la branche de rattachement peut encore échouer si
-  l'adresse a été prise entre les deux envois. Le message y reste le générique, qui ne nomme pas
-  l'état de l'adresse, et l'atteindre demande une course que seul celui qui a pris l'adresse peut
-  provoquer. Sur
-natif, le lien arrive hors de l'app (messagerie) et remonte par `Linking.useURL()` dans
-`_layout.tsx` ; le scheme `ramille://` doit donc figurer dans les Redirect URLs Supabase.
-
-**Le flux est en PKCE depuis le 20/09/2026, et le lien ne s'ouvre plus que là où il a été
-demandé.** Le défaut d'`auth-js` est `implicit` : tout lien livrait alors `access_token` **et**
-`refresh_token` en clair dans le fragment de l'adresse d'arrivée, donc la liste des Redirect URLs
-Supabase était le **seul** contrôle existant sur un compte — et quatre entrées trop larges y ont
-été trouvées le jour même. En PKCE, le lien ne porte qu'un `code`, qui ne vaut rien sans le
-vérifieur resté dans le stockage du client demandeur. Cinq points à connaître :
-
-- **L'injection de session par lien profond est fermée du même geste** : `auth-js` refuse un
-  fragment implicite quand le client est en PKCE. Le scheme `ramille` est BROWSABLE, donc
-  n'importe quelle page web du téléphone pouvait ouvrir `ramille://x#access_token=<les siens>` et
-  faire basculer l'app sur le compte de quelqu'un d'autre. **Mesuré avant et après** : en
-  implicite la session de la victime devenait celle de l'attaquant, en PKCE elle ne bouge pas.
-- **`createSessionFromUrl` échange un code, et refuse la forme « jetons » nommément.** C'est
-  exactement la forme qu'un lien injecté porte — un attaquant ne peut pas fabriquer un `code`
-  échangeable —, donc la distinguer permet de la refuser avec une phrase vraie plutôt que de la
-  laisser échouer sur un message technique.
-- **Le piège du chantier est un silence, pas une erreur** : `_isPKCECallback` rend **faux** quand
-  le vérifieur manque, donc sur web le SDK ne tente rien et ne lève rien. Sans la branche `code`
-  du layout racine, la personne atterrissait sur l'accueil, déconnectée, sans un mot, son lien
-  encore valable dans la barre d'adresse. La branche tranche après `getSession()`, qui attend
-  l'initialisation du SDK — donc sans course —, et le signal est le `code` **toujours présent**
-  dans l'URL, qu'`auth-js` retire quand il réussit.
-- **Un troisième motif de retour existe, `lien_ouvert_ailleurs`**, et c'est le seul des trois qui
-  décrit un lien **encore valable** : lui donner le message de l'expiration ferait redemander un
-  lien à l'infini, chacun échouant pareil. Le vérifieur manquant se reconnaît au **code**
-  (`pkce_code_verifier_not_found`), jamais au message — celui d'`auth-js` est anglais et parle de
-  Next.js.
-- **Le flux entier est joué à chaque PR** (`scripts/verifier-code-de-connexion.mjs`, `TESTING.md`
-  §2.9), contre une vraie stack et un vrai e-mail : c'est ce qui a rendu ce chantier vérifiable
-  au lieu de plausible, et c'est lui qui a trouvé deux défauts de plus — dont une interversion de
-  messages qu'aucun test unitaire ne voyait.
-
-**Et le lien a disparu des deux e-mails le même jour, au profit d'un code à huit chiffres** — c'est
-le correctif de sécurité du 20/09/2026, et PKCE n'en dispensait pas : **il protège la session, pas
-la confirmation de l'adresse**. Le défaut mesuré la veille : un `GET /auth/v1/verify` confirme
-l'adresse côté serveur **avant** toute redirection, donc n'importe qui recevant l'e-mail de
-rattachement rattachait son adresse au compte d'un inconnu d'un seul clic. Sept points à connaître :
-
-- **Le code n'est PAS un jumeau du vérifieur PKCE : c'est un porteur.** Mesuré — un
-  `POST /auth/v1/verify` avec le jeton et **aucune session** confirme l'adresse et rend une session
-  complète sur le compte du demandeur. Le code ne referme donc pas la porte, il en **relève le
-  prix** : un clic devient huit chiffres à recopier dans une app qu'il faut trouver et ouvrir. Ce
-  qui reste ouvert, et qu'il ne faut pas prétendre fermé : un tiers qui taperait le code confirme
-  l'adresse sur le compte de l'attaquant **et sa propre app bascule sur cette session**. La parade
-  est le texte de l'e-mail ; la dette et sa condition de réouverture sont en `v1-27` §12.12.
-- **Huit chiffres, pas six, et c'est une valeur de sécurité.** `mailer_otp_length = 8` sur le
-  distant ; `supabase/config.toml` portait `6` et la session de design a conclu « six » en le
-  lisant. Avec `rate_limit_verify = 30` par tranche de cinq minutes et par adresse IP et une
-  validité d'une heure, six chiffres laissent une chance sur trois à un attaquant disposant d'un
-  millier d'adresses IP — et le chemin de reconnexion (`shouldCreateUser: false`) fait de cette
-  différence une prise de compte. La constante vit dans `src/types/connexion.ts`
-  (`LONGUEUR_DU_CODE`) et **y toucher impose de toucher les deux configurations**, ce que rien ne
-  vérifie.
-- **Le `type` sépare les deux flux et n'est pas interchangeable** : `email_change` confirme un
-  rattachement, `email` rouvre un compte existant. Mesuré dans les deux sens — un code émis pour
-  l'un et présenté à l'autre rend `403 otp_expired`. C'est ce qui rend sûr de montrer le **même**
-  écran de code dans les deux contextes, donc de ne rien divulguer sur l'adresse. Le choix se fait
-  en un seul endroit (`verifierLeCode`), et la garde de bout en bout tombe si on l'uniformise.
-- **Un code faux et un code expiré rendent la même erreur** (`403 otp_expired`, « Token has
-  expired or is invalid »). Les distinguer à l'écran serait inventer une information qu'on n'a
-  pas : un seul message, qui nomme les deux causes et donne le même geste.
-- **Un renvoi invalide le code précédent** (mesuré), donc « ce n'est pas le plus récent » est vrai
-  dans le message de refus ; et le champ ne se vide **qu'au renvoi**, jamais sur un refus — la
-  personne compare ses chiffres avec l'e-mail.
-- **Les deux gabarits vivent dans le dépôt** (`supabase/templates/`, déclarés dans
-  `supabase/config.toml`) pour que la stack locale rejoue le texte de la production. Leur
-  référence vivante reste `docs/exploitation/gabarits-email.md`, et **l'égalité entre les deux est
-  comparée à chaque PR** depuis le 21/09/2026 (`scripts/verifier-gabarits-email.mjs`, `TESTING.md`
-  §2.11), avec l'assertion qu'aucun ne porte de lien de confirmation — ce document affirmait cette
-  comparaison avant qu'elle n'existe. **Un gabarit n'est pas relu à
-  chaud** : GoTrue l'inline au démarrage du conteneur, donc une mutation de gabarit sans
-  `supabase stop && start` ne fait rien — et la garde reste verte pour la mauvaise raison.
-- **Les Redirect URLs ne servent plus qu'à Google.** `emailRedirectTo` a disparu des deux appels :
-  il ne remplissait que `{{ .ConfirmationURL }}`, que plus aucun gabarit n'emprunte. Le chemin de
-  lien profond (`Linking.useURL()`, le scheme `ramille://`, `createSessionFromUrl`) reste comme
-  **filet** pour un lien parti avant le changement, et pour le retour OAuth sur natif.
-
-**`estPanneDeTransport` couvre les 5xx, et c'est assumé** — `auth-js` lève
-`AuthRetryableFetchError` pour chacun d'eux : `SUPABASE.md` §2.4.
-
-**« Pas de session » recouvre trois situations, et une seule appelle une création** (C2.11,
-`src/types/session.ts`) — un jeton refusé n'en est pas une, sans quoi on donne un compte vide à
-quelqu'un qui en a un : `SUPABASE.md` §2.4.
-
-**Le lien du rappel porte `?rappel=1`, et le chemin ne doit pas bouger** (C2.11). L'email ne portait
-que `/plan` : ouvert sur un ordinateur ou un téléphone neuf, il tombait sur la session anonyme que
-l'app venait de créer, et le plan répondait « Ton bilan n'est pas encore fait » avec pour seul bouton
-« Faire mon bilan » — et la consigne de désinscription du même email réglait la préférence d'une
-session qui n'est personne. Le paramètre ne sert que là, et **seulement sans bilan local**. Une
-nouvelle route à la place du paramètre aurait fait ouvrir le lien dans le navigateur sur Android :
-le périmètre Android ne revendique nommément que `/plan`, et il est voulu étroit (Play exige que les
-pages légales et `/compte/suppression` restent atteignables **sans** l'app). Une chaîne de requête ne
-fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux moitiés de
-la règle.
-
-**Ce périmètre tient au `pathPrefix` d'`app.json`, et à lui seul** — ce fichier a écrit jusqu'au
-20/09/2026 qu'`assetlinks.json` le portait, et c'est faux : il déclare
-`delegate_permission/common.handle_all_urls`, seule relation qu'Android accepte pour un App Link,
-donc il délègue **tout** `www.ramille.fr`. Deux conséquences à connaître avant d'y toucher : un
-second `intentFilter` ajouté plus tard n'aurait aucun garde-fou du côté d'`assetlinks.json`, et
-`pathPrefix` est un préfixe de **chaîne** et non de segment — une future route publique nommée
-`/planning` ou `/plan-b` serait capturée par l'app sans que rien ne le dise.
-
-**Un jeton refusé parce qu'il est TROP NEUF n'est pas un refus, c'est une attente** (`PGRST303`
-« JWT issued at future », `fetchAvecSecondeChance` dans `src/types/postgrest.ts`) — cinq choses à
-savoir avant de chercher ailleurs, dont le fait que ce code couvre aussi l'expiration :
-`SUPABASE.md` §2.4, et la recette pour trancher « écart d'horloge ou vrai défaut » en
-`docs/exploitation/README.md` §8.6.
-
-**La liste des Redirect URLs Supabase est une frontière de sécurité, pas une commodité de
-configuration** — jamais de joker sur un domaine qu'on ne possède pas, et une entrée morte se
-retire : `SUPABASE.md` §1.2 et §2.5.
+Le reste — pas de mot de passe, le code à huit chiffres, PKCE, ce qu'on ne divulgue pas, les trois
+sens de « pas de session », le lien du rappel — est dans `COMPTE.md`.
 
 ### Base de données
 
@@ -1172,155 +576,6 @@ catalogue.
 **Une policy appelle `auth.uid()` dans un sous-select, et une clé étrangère neuve veut son
 index** — aucun des deux ne se voit à la lecture : `SUPABASE.md` §2.2.
 
-**La soumission écrit `in_progress` d'abord, et c'est ce qui empêche le bilan fantôme**
-(11/09/2026, `20260911120000_soumission_bilan.sql`). L'ancienne séquence insérait `assessments` en
-`completed` avec son `submitted_at`, **puis** les réponses, **puis** appelait le calcul : ce qui
-s'arrêtait entre les deux premières laissait un bilan complété sans réponses ni résultat, et cet
-état n'est pas inerte — la racine route sur `status = 'completed'`, donc elle envoyait au plan, qui
-affichait « Ton plan est en cours de préparation » sans bouton et pour toujours (le cron nocturne
-boucle lui aussi sur les `completed`, mais il a besoin des réponses), le préremplissage du
-re-bilan ne trouvait rien, et l'entonnoir comptait un bilan soumis là où il y avait eu une panne.
-`in_progress` est l'état que rien ne lit. Trois règles qui en découlent : **le passage en
-`completed` précède le RPC** (`generate_plan_cycle_for_user` sélectionne les `completed`) ; la
-reprise **réutilise** le bilan `in_progress` qui traîne au lieu de le supprimer — ce qui couvre
-aussi l'app tuée entre deux écritures, où aucun nettoyage ne tournerait, et n'oblige pas à
-accorder un `delete` sur `assessments` ; et les réponses passent donc par un `upsert`, leur clé
-primaire étant `assessment_id`. Le verrou anti-double-soumission vit dans une `useRef`, pas dans
-l'état d'affichage, qui ne vaut `true` qu'au rendu suivant. Côté SQL, la génération du plan est
-enveloppée dans un `begin … exception … end` : les deux fonctions partagent la transaction du RPC,
-donc sans cette sous-transaction un plan qui échoue emportait le résultat que le calcul venait
-d'écrire.
-
-**Un bilan se retire, et ne se supprime pas** (C4.7, `v1-22`,
-`20260927230411_retirer_un_bilan.sql`). Une distance saisie en mètres ou un questionnaire rempli
-« pour voir » restaient pour toujours dans le suivi et devenaient la base de comparaison du suivant.
-Six points à connaître :
-
-- **`status = 'withdrawn'`, et la ligne reste.** Toutes les lectures de `completed` deviennent justes
-  sans qu'on y touche — c'est ce qui a écarté une colonne `withdrawn_at`, qui aurait demandé un
-  `and withdrawn_at is null` partout, donc un oubli silencieux quelque part. **Deux lectures ne le
-  devenaient pas seules** : la restitution, qui lit un bilan **par son identifiant** — l'adresse qui
-  circule — et embarque désormais le statut pour ne jamais montrer le chiffre d'un bilan retiré ; et
-  `analytics.user_segments`, qui prenait le dernier bilan par `submitted_at is not null` (un bilan
-  retiré garde sa date) et filtre maintenant sur le statut.
-- **`retirer_le_bilan(uuid)` est le seul chemin**, et jamais une policy `DELETE` : il vérifie la
-  propriété, refuse un bilan en cours ou déjà retiré (`RM006`, que l'écran reconnaît au code), et
-  rend le nombre de bilans valides restants. **Un client qui écrirait `withdrawn` par un `update`
-  direct est refusé par un trigger (`RM007`)**, parce que le privilège de colonne sur `status` doit
-  rester à la soumission : le trigger distingue le RPC du client par `current_user` (`SUPABASE.md`
-  §1.4), et un bilan retiré ne revient jamais (`RM005` étendu). **« Seul chemin » vaut pour le
-  client** : sous `postgres` — `execute_sql` sur la production — un `update` traverse le trigger sans
-  rien reconstruire. Côté serveur, on appelle donc le RPC sous le rôle de la personne (`SUPABASE.md`
-  §1.4), jamais une recopie de son corps.
-- **Le plan n'est reconstruit que si le bilan retiré le portait**, sur le bilan valide précédent,
-  cause `retrait` (qui saute la garde d'idempotence — sans quoi le cron ne rebâtirait jamais) ;
-  l'engagement est reposé si le nouveau plan le propose encore, archivé en `retrait` sinon, **et rien
-  ne l'annonce après coup** (D2). C'est la confirmation qui le dit **avant**, au conditionnel, avec la
-  phrase du re-bilan (`phraseDeLEngagementRecalcule`, lue par `lireLEngagementEnCours`) — et, pour le
-  seul bilan, sans conditionnel, puisque l'action y est archivée à coup sûr (`phraseDeLActionQuiPart`).
-- **La confirmation dépend de la place du bilan** (`placeDuBilan` : `seul`, `dernier`, `ancien`,
-  `src/types/retrait-du-bilan.ts`) : « ton plan repartira de ton bilan précédent » serait faux d'un
-  bilan qui ne porte pas le plan. Quand la place n'a pas pu être lue, le lien ne se rend pas.
-- **Retirer son seul bilan laisse le cycle en place comme historique, mais pas son engagement**
-  (décision du 27/09/2026) : l'action engagée est archivée en `retrait` et désengagée. Le cycle n'est
-  pas inerte — `lireLEngagementEnCours` et la reconduction de saison le lisent sans regarder s'il
-  reste un bilan —, et c'est pourquoi l'action devait partir : sinon la feuille « Nouveau bilan » la
-  nommait, et la saison suivante la reconduisait devant quelqu'un qui repartait de zéro. Le retrait
-  **annule aussi les rappels en attente** (sans quoi un e-mail étalé partirait vers `/plan?rappel=1`,
-  qui proposerait de retrouver un compte) et efface la marque locale ; la racine route alors vers
-  l'onboarding. **Le premier parcours, lui, ne recommence pas** (`ouvreUnPremierParcours`, même
-  décision) : la personne connaît déjà les deux lieux.
-- **L'export rend le bilan retiré avec son statut, et l'entonnoir ne décrémente pas** : ce qui est
-  soumis a été soumis. La page de confidentialité dit qu'un bilan retiré reste conservé, pour que
-  « retirer » ne se lise pas « effacer ».
-
-Le bilan (`assessment_answers`) est modélisé à plat, un champ par question B1.1→B4.3 — pas
-une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par poste
-(domicile-travail, loisirs, voyages), jamais plusieurs trajets du même type. Le mapping
-`BilanAnswers` (`src/types/bilan.ts`) est un miroir direct des colonnes de la table, pour un
-insert sans transformation.
-
-**Le questionnaire demande désormais ce que le calcul supposait** (C3.4 + C3.5 + C3.6,
-`20260914123432`). Quatre réponses s'ajoutent, toutes **obligatoires dès que leur déclencheur est
-là** — laisser le choix facultatif reviendrait à garder le défaut pour tous ceux qui passent sans
-répondre, ce que chacun des trois chantiers corrige. Cinq points à connaître :
-
-- **`commute_second_mode_share` est une fraction, pas une énumération** : c'est ce que le SQL
-  multiplie, et traduire trois libellés en trois nombres quelque part entre l'écran et le calcul
-  serait un troisième endroit où se tromper. Le calcul attribuait exactement la moitié des
-  kilomètres à chaque jambe — vélo + train sous-estimé de 44 %, parc-relais surestimé de 51 %, sur
-  le poste qui décide du poste dominant donc du plan. La moitié reste le **repli** d'un bilan qui
-  n'a pas répondu (`second_leg_share_default`), et c'est à ce titre que le bloc « Comment ce chiffre
-  est calculé » la cite encore.
-- **Le CO₂ de la seconde jambe est persisté** (`commute_second_leg_co2_kg_year`). Il était calculé,
-  entrait dans le total, et n'était écrit nulle part : tout ce qui lit `assessment_results` — le
-  plan en premier — ne voyait que la jambe principale, donc « Travailler depuis chez toi un jour »
-  valait 128 kg au lieu de 205 sur un trajet à deux modes.
-- **`normaliserReponses` porte une règle qui diverge de celle du dessus, et il ne faut pas
-  l'uniformiser** : sur des loisirs « rarement », le covoiturage part là où la motorisation reste.
-  Le calcul lit encore les deux, mais la motorisation décrit le **véhicule** de la personne et rend
-  le résiduel plus juste, tandis que le covoiturage décrit un **trajet** qui n'est plus déclaré — et
-  le garder diviserait ce résiduel, donc changerait le total d'un bilan resoumis à l'identique.
-  Ce que cette règle ne garde **pas**, c'est la promesse que les bilans déjà en base rendent le même
-  total : celle-là tient au défaut de la colonne (`leisure_is_carpool` n'existait pas), et
-  `normaliserReponses` ne touche jamais une ligne déjà écrite.
-- **Une empreinte par personne veut un facteur par personne, et la branche voyages ne l'avait pas**
-  (relevé en contre-lisant la vague 7, `20260914141729`). `estimate_action_savings` chiffre une
-  substitution comme `base × (1 − facteur_substitut / facteur_courant)` : pour le trajet
-  domicile-travail et pour les sorties, le facteur courant est **dérivé de la paire persistée**
-  (`co2 / km`), donc il hérite de la division par le covoiturage sans qu'on ait rien à écrire. Les
-  voyages n'ont pas de paire à diviser — il n'existe pas de `travel_car_km_year` — donc cette
-  branche lisait le référentiel, c'est-à-dire le facteur du **véhicule**, sous une base devenue
-  celle d'**une personne** depuis C3.5 : « Faire un de tes longs trajets en train » annonçait 4,4 %
-  de trop à trois. Le test 10 l'épingle par un **rapport** entre deux profils jumeaux et non par une
-  valeur — partager divise la base par trois dans les deux cas, et ce qui sépare le juste du faux
-  est que partager rend aussi le train moins intéressant.
-- **`PARTS_DU_SECOND_MODE`, `TAILLES_DE_COVOITURAGE` et `OCCUPATIONS_LONG_TRAJET`
-  (`src/types/bilan.ts`) sont des miroirs des `check` du schéma** : rien ne peut lire ces bornes
-  depuis TypeScript, et une valeur hors bornes ne serait refusée qu'à la soumission, en anglais,
-  neuf étapes trop tard. Depuis le 20/09/2026 elles ne sont plus épinglées par des valeurs
-  recopiées mais **comparées à la base en CI**, bornes comprises — le plafond `6` du covoiturage
-  est vérifié en constatant que `7` est refusé (`TESTING.md` §2.7).
-- **`distanceSortieKm` est la jumelle de `distanceDomicileTravailKm`**, et pour le même piège : la
-  colonne porte `check (leisure_distance_km > 0)`, donc un « 0 » saisi n'est pas une distance.
-  `leisure_distance_km` ne survit qu'à la tranche ouverte, parce que le calcul la préfère à
-  **toute** tranche (`coalesce`) : sans cette règle, quelqu'un qui saisit 120 km puis redescend sur
-  « 5 à 15 km » repartirait avec 120, et la tranche affichée ne dirait plus ce que le calcul fait.
-
-Le mode "voiture" ne distingue jamais la motorisation dans les listes de sélection
-(B1.4/B1.7/B2.2 restent "Voiture (seul)"/"Voiture (covoiturage)", jamais une entrée par
-motorisation) — une question de suivi ("Quelle motorisation ?") s'affiche en nested reveal dès
-que "voiture" est choisi, dans 3 champs indépendants (`commute_car_engine`,
-`leisure_car_engine`, `car_long_trips_engine`). **Quatre réponses au même niveau** — thermique,
-hybride, hybride rechargeable, électrique — et surtout pas un second niveau « rechargeable ou
-non ? » : la profondeur coûte plus cher en abandon qu'une puce de plus.
-**Le deux-roues motorisé suit exactement la même mécanique** (`commute_two_wheeler_type`,
-`leisure_two_wheeler_type`, quatre réponses au même niveau : scooter thermique, scooter
-électrique, moto petite cylindrée, moto grosse cylindrée), et pour une raison plus forte encore :
-**une grosse moto émet 0,2147 kg/km, soit une fois et demie une voiture thermique** et 2,8 fois
-un scooter. Les quatre étaient comptés au tarif du scooter, ce qui sous-estimait de 64 %
-l'empreinte d'un motard — dans le sens qui fait passer le deux-roues pour vertueux. Un test
-pgTAP épingle ce classement pour qu'il ne soit pas « corrigé » par réflexe. Piège de relevé :
-l'API nomme `moto-petite` et `moto` **toutes les deux** « Moto thermique », seul le slug les
-distingue. Pas de champ pour les trajets longue distance, B3.4 ne proposant pas de deux-roues.
-
-**Et depuis C4.4 le train et le vélo ont la leur** (`commute_train_type` / `leisure_train_type` :
-TER, RER ou Transilien, Intercités ; `commute_velo_type` / `leisure_velo_type` : mécanique ou à
-assistance). Deux champs par poste et non par jambe, comme la motorisation — B1.7 exclut le mode
-déjà choisi en B1.4, donc au plus une jambe porte le train à un instant donné. Trois choses à ne
-pas défaire :
-
-- **la trottinette ne reçoit pas de question** : elle est déjà à 0,0249 et n'a pas de variante
-  mécanique crédible — une question dont une seule réponse existe n'est pas une question ;
-- **`normaliserReponses` efface ces deux réponses sur des loisirs « rarement », là où la
-  motorisation reste** — l'asymétrie est celle du covoiturage, et elle a une conséquence
-  mesurable : le résiduel de « rarement » vaut `train` quand le foyer n'a pas de voiture, donc un
-  type survivant y serait lu et un bilan resoumis à l'identique changerait de total ;
-- **B3.4 gagne un troisième compteur, l'autocar** (`coach_long_trips_per_year`), et il n'a **pas**
-  de question de suivi : la personne ne choisit ni la motorisation ni le remplissage d'un
-  autocar — ce n'est pas son véhicule, donc il n'y a rien à lui demander de plus. Son chiffre
-  surprend et c'est le sujet — 0,03756, soit **plus qu'un TER** et douze fois un TGV.
-
 **Six règles de migration apprises sur le distant, et aucune ne se voit en CI** : une migration de
 données ne désigne jamais une ligne par un identifiant généré (`action_text` est la clé naturelle
 des gabarits) ; elle se rejoue telle quelle (`add constraint` n'est pas idempotent) ; une
@@ -1329,455 +584,9 @@ porte les corps de fonction sans les commentaires du dépôt, donc une ancre n'e
 rejouer un fichier ancien peut défaire une migration plus récente ; et réécrire une fonction part
 de `pg_get_functiondef`, jamais du fichier qui l'a créée — `SUPABASE.md` §2.3.
 
-**Le calcul n'a qu'un seul point de résolution : `public.resolve_mode(mode_id, engine,
-two_wheeler, train, velo)`**, qui compose **quatre** résolveurs spécialisés depuis C4.4
-(`resolve_car_mode`, `resolve_two_wheeler_mode`, `resolve_train_mode`, `resolve_velo_mode`). Ne
-jamais les rappeler en imbriqué dans `recompute_assessment_results` ou
-`estimate_action_savings` : un oubli serait silencieux — le mode générique existe, son facteur
-existe, le calcul rendrait un nombre. Une réponse non renseignée **ou inconnue** retombe sur le
-générique, jamais sur `null`, qui ferait lever `emission_factor` et emporterait le bilan entier.
-La signature a **remplacé** l'ancienne à trois arguments au lieu de la doubler, et un test pgTAP
-épingle que l'ancienne ne survit pas.
+**Et depuis le 20/09/2026, les chemins que les documents citent sont vérifiés à chaque PR** (`scripts/verifier-renvois-des-documents.mjs`, `TESTING-GARDES.md` §2.8) : un fichier renommé ou déplacé fait rougir la CI plutôt que d'attendre une relecture. Ce contrôle voit le **renommage**, pas le mensonge — un document peut nommer le bon fichier et raconter n'importe quoi de son contenu.
 
-**La règle qui décide de ce qui reçoit un mode propre est écrite en tête de la migration de C4.4** :
-le générique est le repli des bilans d'avant la question, et une réponse reçoit un mode à elle
-quand elle change le facteur **ou les mots**. `train_ter` existe pour la seconde raison — « Train »
-ne peut pas être le libellé d'une réponse qui dit TER, exactement comme `voiture_thermique` vit à
-côté de `voiture` avec le même slug et la même valeur ; `velo_mecanique` n'existe pas, parce que
-« Vélo » et « à vélo » sont déjà les mots exacts du vélo mécanique.
-
-**Le compte d'appels qui figurait ici (« six endroits ») était faux, et il n'est pas remplacé** :
-relevé le 19/09/2026, il y en a quatre. C'est la règle que ce fichier s'est déjà donnée ailleurs —
-un compte écrit dans un document se périme en silence à la vague suivante, donc on écrit
-l'invariant et pas le nombre. **Le relevé avait trouvé deux entorses** — `recompute_assessment_results` et
-`estimate_action_savings` appelaient chacune `resolve_car_mode('voiture', car_long_trips_engine)`
-en direct pour les voyages longue distance —, et **elles sont fermées depuis C4.4**, qui réécrivait
-déjà ces deux fonctions : c'était le moment que ce fichier avait prévu. Une assertion pgTAP interdit
-désormais qu'un résolveur spécialisé soit rappelé en direct depuis le calcul, en **retirant les
-commentaires** du corps avant de chercher — sans quoi la phrase qui explique la règle ferait échouer
-le contrôle qu'elle décrit. Voir
-`supabase/migrations/20260904090000_car_engine.sql`, `20260905140000_motorisation_hybride.sql`
-puis `20260905200000_cylindree_deux_roues.sql`.
-
-**Et depuis le 20/09/2026, les chemins que les documents citent sont vérifiés à chaque PR** (`scripts/verifier-renvois-des-documents.mjs`, `TESTING.md` §2.8) : un fichier renommé ou déplacé fait rougir la CI plutôt que d'attendre une relecture. Ce contrôle voit le **renommage**, pas le mensonge — un document peut nommer le bon fichier et raconter n'importe quoi de son contenu.
-
-**L'ordre des motorisations en ACV n'est pas celui qu'on attend, et un test pgTAP l'épingle
-pour qu'on ne le « corrige » pas** : hybride (0,146579) > thermique (0,142253) > hybride
-rechargeable (0,133900) > électrique (0,067365). La thermique de référence de l'ADEME est une
-compacte diesel, sobre à l'usage, tandis que l'hybride non rechargeable ajoute une batterie à
-fabriquer sans jamais la recharger sur le réseau. Ranger « hybride » du côté de l'électrique
-par réflexe se trompe de 10 %, et dans le mauvais sens.
-
-**Tout lookup de facteur d'émission passe par `public.emission_factor(mode_id, date)`** —
-jamais un `select ... order by valid_from desc limit 1` écrit à la main. La fonction borne le
-facteur à la **date du bilan** (un bilan reste reproductible après une mise à jour ADEME, cf.
-`v1-01` §3), retombe sur la version la plus ancienne si le mode a été ajouté au référentiel
-après le bilan, et lève une erreur explicite si le mode n'a aucun facteur — un `NULL` ici
-contaminerait tout le total. Voir
-`supabase/migrations/20260904140000_fix_flight_and_long_distance_train_factors.sql`.
-
-Cette migration porte aussi deux corrections de chiffre à connaître : le facteur **avion**
-dépend du segment (court / moyen / long-courrier), relevé aux distances de référence du calcul
-— `dist_flight_short` = 1500 km, donc un *moyen*-courrier au sens ADEME, et `dist_flight_long`
-= 9000 km ; et le poste **voyages en train** (B3.3, « > 300 km ») utilise
-`train_longue_distance` (TGV) et non le mode générique `train`, qui est depuis C4.4 le **repli**
-du trajet quotidien B1.4 — les trois réponses réelles (`train_ter`, `train_rer`,
-`train_intercites`) ont chacune leur mode, et le RER vaut 2,83 fois moins qu'un TER. `train_longue_distance` n'est jamais sélectionnable dans le
-questionnaire — il n'apparaît donc pas dans `src/constants/transport-modes.ts`, mais bien dans
-`MODE_PREPOSITION` (`src/types/resultat.ts`) puisqu'il peut être le `dominant_poste_mode`.
-
-**Tous les facteurs portent l'ACV complète — usage + fabrication — jamais la seule phase
-d'usage.** C'est la distinction la plus coûteuse du produit et elle n'est pas visible dans les
-valeurs elles-mêmes : l'endpoint `/api/v1/transport` de l'API Impact CO2 renvoie des chiffres
-parfaitement corrects, mais qui n'incluent pas la fabrication. Le seul endpoint à utiliser est
-`/api/v1/thematiques/ecv/transport`, champ `ecv`. Un facteur d'usage seul sous-estime de 29 %
-une voiture thermique, de **457 % une voiture électrique** (la batterie), et affiche le vélo à
-zéro ; et il rend incomparable le total au repère national de `carbon-reference.ts`, qui est
-une empreinte ACV. Deux tests pgTAP épinglent la **source** de chaque facteur et le fait que
-le vélo soit non nul — le garde-fou des ±50 % ne peut rien voir ici, puisque l'erreur porte sur
-l'endpoint interrogé et non sur la valeur renvoyée. Historique complet en `v1-07` §1.5.
-
-**Les facteurs se resynchronisent seuls** : `sync_emission_factors()` (SQL pur via l'extension
-`http`, pas d'Edge Function — même modèle que les autres crons)
-interroge cet endpoint chaque trimestre et **insère une nouvelle version** dans
-`emission_factors`, sans jamais écraser.
-
-**Et elle s'authentifie depuis le 21/09/2026, ce qui ne change aucun chiffre** — ce paragraphe a
-écrit « pas de secret à gérer » jusqu'à cette date, et c'est devenu faux. La clé de l'ADEME vit au
-Vault (`impactco2_api_key`, même modèle que `resend_api_key`), et **mesurer avant d'écrire a changé
-l'urgence du sujet** : la réponse authentifiée est identique champ pour champ sur les 47 entrées,
-seul un `warning` disparaît — celui qui annonce que l'ADEME se réserve le droit de couper l'accès
-anonyme. Ce n'est donc pas un correctif mais une assurance. Trois points à connaître :
-
-- **Le secret absent retombe sur l'appel anonyme plutôt que d'échouer** : la CI et la stack locale
-  n'ont pas de Vault garni, et échouer dur ferait rougir la synchronisation partout où le secret
-  n'existe pas, pour un chemin qui marche encore. Un secret **blanc** ne compte pas comme une clé
-  (`btrim`), sans quoi on enverrait un porteur vide en annonçant le contraire.
-- **Ce repli est silencieux par nature, d'où `emission_factor_sync_runs.authentifie`** : sans cette
-  colonne, un secret qui disparaît du Vault ferait basculer la synchronisation en anonyme sans que
-  rien ne le dise — c'est-à-dire le risque même que ce chantier ferme.
-- **Ce qu'aucune suite ne peut voir**, et qu'il ne faut pas prétendre gardé : que l'en-tête parte
-  vraiment et que l'ADEME l'accepte. La CI n'a pas de secret, et rejouer sur le distant consomme un
-  appel réel. Mesuré à la main le 21/09/2026 des deux côtés, et vérifié sur le distant après la
-  migration : `authentifie = true`, `status = success`, zéro mode mis à jour — les valeurs n'ayant
-  pas bougé, aucune version de bruit n'est écrite.
-
-Le mapping vers les **slugs** Impact CO2 vit dans
-`emission_factor_sources`, pas en dur dans la fonction : **ajouter un mode au produit impose
-d'y ajouter une ligne**, sinon il reste figé à sa valeur de seed en silence (un test pgTAP
-garde ce point). Pour l'avion, le slug retenu doit rester cohérent avec les distances codées
-dans `recompute_assessment_results` (`avion-moyencourrier` pour 1500 km,
-`avion-longcourrier` pour 9000). Un écart de plus de
-50 % n'est jamais appliqué automatiquement — il est signalé dans `emission_factor_sync_runs`
-pour relecture. Ce journal est la seule façon de voir que la synchronisation tourne
-vraiment : le mécanisme prévu dès `v1-01` §2 n'avait jamais été construit et rien ne le disait.
-
-Le calcul du bilan est séparé en deux fonctions : `recompute_assessment_results(assessment_id)`
-porte le calcul (interne, revoked de anon/authenticated, appelable côté serveur), et
-`compute_assessment_results(assessment_id)` est le RPC client qui vérifie la propriété du bilan
-puis délègue. Toute reprise de calcul en masse (correction de facteur, migration) passe par la
-première — la seconde exige un `auth.uid()` et ne peut pas tourner hors session client.
-
-**Les actions du plan sont des opérations, pas des phrases.** `action_templates` porte un
-`poste`, un `segment`, une `operation` (`substitute` / `share_vehicle` / `remove_trip` /
-`remove_day`) et sa quantité ; `estimate_action_savings(assessment_id)` les applique à un bilan
-et rend les gains en kg/an, triés. Deux règles non négociables : **aucune action au gain
-inférieur à 5 kg/an n'est proposée** (aux facteurs ACV, substituer une voiture par un bus urbain
-ne gagne que 14 %, contre 33× pour le métro — c'est invisible sans le calcul, d'où l'absence de
-tout template proposant le bus), et le **contexte B4** (`zone_type`, `tc_access`,
-`household_vehicles`) filtre l'impossible : pas de transports en commun là où la personne a
-répondu qu'il n'y en a pas. L'estimateur lit l'instantané par segment figé sur
-`assessment_results` (`commute_main_leg_km_year`, `travel_flight_long_co2_kg_year`…) — **ne
-jamais recalculer les km ailleurs**, les deux implémentations divergeraient. Les gains sont
-ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
-
-**La réponse à un point de suivi passe par `repondre_au_checkin`, et `engagement_checkins` n'a
-plus aucune écriture client** (11/09/2026, `20260911100000_reponse_checkin_rpc.sql`) : ni policy
-d'écriture, ni privilège `update`. Le raisonnement est mot pour mot celui de `plan_actions`
-ci-dessous — **la RLS filtre des lignes, jamais des colonnes** — et ce qu'une policy UPDATE
-owner-scoped ouvrait ici n'était pas anodin : `trip_label` et `period_label`, les libellés
-snapshotés qui existent précisément pour qu'un re-bilan ne réécrive pas un point déjà généré ;
-`period_start`, la clé d'idempotence de la génération (`unique(user_id, loop_type, period_start)`
-+ `on conflict do nothing`), dont la réécriture bloque ou duplique la période suivante ; `status`,
-qui accepte `expired` — un point en attente pouvait disparaître de la carte du plan sans avoir été
-répondu ; et `responded_at`, qui venait de l'horloge du téléphone. Le RPC pose les trois seules
-colonnes d'une réponse, avec `now()` du serveur, et refuse un point déjà répondu ou clos. C'est
-aussi le seul endroit où la forme d'une réponse change. **C'est arrivé dès le lendemain** : la
-troisième réponse (« pas de trajet cette période ») est livrée depuis C2.4, et `p_reponse boolean`
-ne pouvant pas porter un troisième état, ce fut bien une migration et non un paramètre de plus —
-la signature est `repondre_au_checkin(uuid, text)`, la version booléenne **supprimée**, et le
-raisonnement complet est au paragraphe de C2.4 ci-dessous.
-
-**Aucun chemin du produit ne détruit un engagement sans en laisser une trace** (C2.2, 11/09/2026,
-`20260912150000_engagement_qui_survit.sql`). Il y en avait quatre, et ils se ressemblent assez pour
-qu'on en oublie un : le re-bilan dans la même période (le plus fréquent — on corrige une réponse
-juste après l'avoir soumise), le changement de saison, « Changer d'avis », et **« Choisir une autre
-action », dont la libération est une ligne interne de `commit_plan_action`** que rien n'affiche. Ce
-qui partait : `committed_at`, `intention_days`, `intention_timing` — le seul choix personnel que le
-produit demande, annulé par le second geste le plus encouragé. Quatre points à connaître :
-
-- **`plan_action_commitments_archive` n'a qu'une seule écriture, `public.archiver_engagement`**, et
-  elle prend des **valeurs** et non un `plan_action_id`. Ce n'est pas du confort : au re-bilan la
-  ligne est déjà supprimée au moment où l'on sait que son gabarit n'a pas survécu, donc une fonction
-  qui relirait la ligne n'archiverait **rien**, en silence, dans le cas principal du chantier. Les
-  deux chemins clients passent par `archiver_engagement_de_laction`, qui délègue. `action_text` y est
-  **figé** : C3.8 reformule plusieurs gabarits, et relire le libellé courant réécrirait ce que la
-  personne a lu en choisissant.
-- **Le re-bilan reprend l'engagement, le changement de saison le reconduit.** Les deux situations
-  s'excluent dans `generate_plan_cycle_for_user` (le cycle existe déjà / il est neuf), et la capture
-  précède l'upsert parce que le `delete` est irréversible. Une reconduction pose
-  `plan_actions.carried_over_from` sur le cycle d'**origine** — jamais sur la ligne `plan_actions`
-  précédente, qui est supprimée à chaque reconstruction et emporterait l'étiquette
-  « · RECONDUIT » avec elle. La ligne de l'ancien cycle garde son propre engagement : c'est de
-  l'historique, et l'index unique est **par cycle**. **Seul le cycle immédiatement précédent se
-  reconduit** (corrigé le 27/09/2026, trouvé en écrivant C4.7) : la requête prenait la dernière
-  action engagée de **n'importe quel** cycle antérieur, donc une saison passée sans engagement —
-  « Changer d'avis », un retrait — faisait revenir l'action d'il y a deux saisons. Le scénario E de
-  `21_engagement_qui_survit.test.sql` l'épingle.
-- **`plan_actions` a désormais deux clés étrangères vers `plan_cycles`**, donc toute lecture
-  imbriquée doit nommer la sienne : `plan_actions!plan_actions_plan_cycle_id_fkey(…)`. Sans le nom,
-  PostgREST refuse la requête (« more than one relationship was found ») et l'écran du plan ne
-  charge plus **du tout**. Le typecheck l'attrape — la chaîne du `select` est analysée au niveau
-  des types —, et depuis le 20/09/2026 le parcours réel aussi, qui charge cet écran contre une
-  vraie stack et s'arrêterait à l'étape « plan ».
-- **`assessments.submitted_at` vient du serveur** (trigger `stamp_assessment_submitted_at`, posé au
-  seul passage en `completed`, **et privilège de colonne depuis le 20/09/2026**). Le trigger seul ne
-  suffisait pas, et cette phrase a été fausse un temps : il ne pose la date qu'à la **transition**,
-  donc un `update` ne touchant que cette colonne sur un bilan déjà complet passait au travers, et la
-  policy owner-scoped l'autorisait — la garde d'idempotence du plan croyait comparer deux
-  horodatages serveur. `authenticated` ne porte plus l'`update` que sur `status`, la seule colonne
-  que la soumission écrit. Il venait du téléphone, et la garde d'idempotence du plan le
-  comparait à un horodatage serveur : un téléphone en avance faisait reconstruire le plan à chaque
-  passage du cron — donc, avant cette migration, effacer l'engagement chaque nuit. Corollaire pour
-  les tests : **une fixture ne peut plus choisir `submitted_at` à l'insert**, elle insère puis met la
-  date à jour (`old.status` et `new.status` valant tous deux `completed`, le trigger ne réécrit
-  rien) ; et dans une transaction pgTAP où `now()` est figé, un re-bilan **rapproche** les dates au
-  lieu de les écarter, donc il faut reculer explicitement l'ancien bilan **et** le `created_at` du
-  cycle, sans quoi les deux gardes renvoient et les assertions passent sans rien éprouver.
-
-**Le plan fige TOUTES les actions au gain suffisant, et c'est l'écran qui en montre deux** (C4.6,
-`20260913110000_pistes_et_premier_pas.sql`). `generate_plan_cycle_for_user` portait un `limit 2` — un
-choix d'écran écrit dans le SQL — qui jetait les autres leviers avant même de les écrire, alors que
-`estimate_action_savings` rend déjà toutes les actions dont le gain atteint 5 kg/an, triées, et que la
-colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage décide. Quatre points :
-
-- **Trois rangs à l'écran, pas deux** (`pistesDuPlan`, `src/types/plan.ts`) : deux cartes pleines,
-  deux cartes estompées derrière « Voir d'autres pistes · N », puis des lignes simples. Au-delà de
-  quatre cartes pleines ce n'est plus un choix qu'on présente, c'est un catalogue. Le compte est
-  **dans** le libellé du lien : un lien qui ne dit pas combien il cache n'aide pas à décider de
-  l'ouvrir. **Et les trois rangs disent l'insistance, jamais la permission** (recette du 14/09/2026,
-  §12.4, `v1-16` §5) : les lignes simples n'avaient pas de bouton, donc le plan affichait des
-  leviers chiffrés et **inatteignables**, sous une phrase qui demandait à la personne de changer sa
-  vie pour que l'app la réordonne. Elles s'ouvrent désormais en carte au toucher — `carteDaction`
-  étant une fabrique, déplier une ligne c'est l'appeler. Le classement n'a pas bougé, et une garde
-  de **partition** dans `plan.test.ts` épingle ce dont la promesse dépend : un rang qui laisserait
-  tomber une action recréerait ici, en silence, le `limit 2` que ce chantier a retiré du serveur.
-- **`actionsCount` pilote encore le disclaimer et l'état vide**, mais la phrase d'intro compte
-  désormais `enAvant.length` : elle décrit ce qui est devant, et dire « Deux actions » à un plan qui
-  en porte cinq serait faux.
-- **`first_step` est une ligne sans chiffre qui décrit un essai**, figée sur `plan_actions` comme le
-  gain, et affichée **seulement une fois l'action engagée** : avant le choix, une consigne pratique se
-  lit comme une charge de plus. Elle ne chiffre rien — le gain est juste au-dessus, et
-  `/conditions` affirme que le produit ne fournit pas de prestation de conseil en mobilité. Deux
-  balayages de la table l'épinglent (aucun gabarit sans premier pas, aucun chiffre dedans) plutôt que
-  de nommer les gabarits un par un : celui qu'on ajoutera demain traverserait une liste. Le compte
-  qui figurait ici s'est périmé à la vague suivante, où C3.8 en a ajouté quatre — c'est exactement
-  la raison pour laquelle il ne s'écrit plus.
-- **`commit_plan_action` prend `p_replace`, et son défaut refuse.** La fonction libérait et archivait
-  l'engagement précédent **sans condition** (C2.2) : le geste le plus irréversible du produit partait
-  en silence depuis n'importe quel appel. `p_replace = false` lève `RM001` — un SQLSTATE de la classe
-  réservée aux conditions utilisateur, que le client reconnaît par son **code** et jamais par le
-  message —, et l'écran relit alors le plan plutôt que de parler de réseau : ce refus veut presque
-  toujours dire que l'état a changé depuis l'affichage. La signature **remplace** l'ancienne au lieu
-  de la doubler, comme `repondre_au_checkin` en C2.4.
-
-**Le plan ne propose plus l'impossible, et la règle qui l'en empêche vaut pour les filtres à
-venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur sur trois —
-`requires_tc` n'écartait les transports en commun que sur `tc_access = 'inexistant'` —, donc
-« Passer deux trajets sur cinq en métro ou en tram » arrivait **en tête** du plan d'un profil rural
-à desserte limitée : le gain était juste, l'action impossible. Six points :
-
-- **Une condition qu'on ne peut pas évaluer n'est pas remplie** : sans réponse, on ne propose pas.
-  C'est l'inverse du choix de C3.1 (`mobility_constrained` nul **montre** la barre de la moyenne
-  française), et l'asymétrie est le raisonnement — là-bas ne pas savoir faisait **cacher** un
-  repère, ici cela ferait **proposer** une action implausible.
-- **`action_templates.zones_admissibles` et `.teletravail_admissible` sont des listes de valeurs
-  admissibles**, `null` valant « pas de condition ». Pour le télétravail ce n'est pas du style : il
-  y a **deux seuils**, un jour se tenant avec « un jour » et deux jours demandant « deux ou plus ».
-  Un tableau **vide** n'est pas un tableau absent — `= any('{}')` est faux pour toute valeur, donc il
-  écarte tout le monde là où `null` n'écarte personne ; un test l'interdit.
-- **Le métro et le tram sont bornés à `urbain_dense`, le train et le RER ne le sont pas**, et c'est
-  la moitié qu'il ne faut pas « uniformiser » : un TER dessert des communes rurales, et lui coller
-  la même zone retirerait à ce profil la seule alternative qui lui reste.
-- **Le télétravail se demande** (B4.4, `assessment_answers.teletravail`), et l'action s'appelle
-  « Travailler depuis chez toi un jour par semaine » — « garder » supposait qu'on en avait. Le
-  libellé seul ne suffisait pas : sans la question, l'action reste en tête chez les gros rouleurs
-  sans alternative. La garde du `remove_day` se dérive du gabarit (`commute_days_per_week <=
-  t.trips`) au lieu d'un 2 écrit en dur : retirer deux jours à qui en fait deux supprimerait 100 %
-  du trajet, et le gain annoncé serait celui de ne plus travailler.
-- **La question demande un nombre de jours, et « Parfois » n'existe plus** (C5.4,
-  `20260917103000_teletravail_en_jours.sql`). « Peux-tu travailler depuis chez toi ? oui / parfois /
-  non » posait une **possibilité** là où le produit lisait un **nombre de jours** : « Parfois » était
-  un seuil déguisé en hésitation, et y répondre coûtait l'action à deux jours sans que rien ne le
-  dise. Les valeurs sont `aucun` / `un_jour` / `deux_ou_plus`, la question nomme le nombre de jours
-  déclaré (« Sur tes 5 jours de trajet, combien pourrais-tu travailler depuis chez toi ? »), et sa
-  traduction préserve le comportement — la migration le **prouve** par une table de vérité case par
-  case, et `src/lib/database.types.ts` ne bouge pas (la colonne reste `text`, la base n'a aucun
-  `enum`). Deux points à ne pas défaire :
-  - **la question disparaît en dessous de deux jours de trajet**, parce qu'à un seul jour l'action
-    supprimerait 100 % du trajet et que la garde du `remove_day` l'écarte déjà — la réponse ne
-    pourrait rien changer ;
-  - et **ce qui décide de l'afficher décide aussi de l'effacer et de la réclamer** :
-    `teletravailSePose` (`src/types/bilan.ts`) est lue par l'écran, par `manqueDeLEtape` et par
-    `normaliserReponses`, parce que B4.4 n'est pas une étape mais un **champ** de l'étape
-    « Contexte », donc `isStepVisible` ne la gouverne pas. En oublier un ne coûte pas la même chose
-    (`v1-17` §7.2) : ne toucher que l'écran laisse l'étape incomplète **pour toujours** — depuis
-    `v1-31`, le « Suivant » en attente y mène à une question absente, sous une ligne qui la nomme,
-    et le focus retombe sur l'étape (`FRONT.md` §2.6) ; oublier `normaliserReponses` laisse partir à la
-    soumission une réponse que la personne ne voit plus et ne peut plus corriger — le défaut de
-    `v1-16` §4 par une autre porte.
-- **Les échéances dépendent du poste** (`intentionTimingsForPoste`, `src/types/plan.ts`) : « Ce
-  mois-ci » n'est pas une échéance pour un vol. Les voyages ont les leurs, les trois anciennes
-  restent et sont celles des sorties. Le repli d'un poste inconnu est la liste des sorties, sans
-  quoi la feuille s'ouvrirait sur rien et « C'est noté » resterait inactif sans dire pourquoi.
-- **`cadreDuPlan` décide de ce que le cap a le droit de chiffrer, et de rien d'autre depuis C5.3.**
-  Un plan à **zéro action** ne chiffre pas son cap — ce n'était un cas de bord qu'avant C2.5, et
-  depuis, tout cycliste et tout profil sédentaire y tombe ; la carte se rend quand même, elle est
-  depuis C2.8 l'endroit où la période se nomme. Le cap reste celui du poste dominant : le
-  recalculer sur le total côté client ferait deux définitions d'un même chiffre.
-  **Deux champs en sont partis, et ce n'est pas un allègement** : `intro` décrivait les deux cartes
-  posées dessous (« Deux actions pour ton trajet domicile-travail ») en taisant les neuf autres,
-  remplacée par une ligne fixe qui dit le **principe** — une action à la fois, la seule question
-  qu'on se pose devant deux cartes. Et `noteDuCap` énonçait une **règle que rien n'applique** : le
-  cap est une quantité à atteindre, aucun endroit du produit ne vérifie d'où vient la réduction.
-  Elle était rare tant que le poste dominant remplissait les deux premières cartes ; **le
-  classement de C5.1 l'aurait réveillée sur la plupart des plans**, les meilleurs leviers venant
-  souvent d'ailleurs. La dérivation reste malgré son unique booléen parce que l'écran
-  ne doit pas trancher ça en ternaire — et **non** parce qu'elle porterait deux causes. Ce fichier
-  l'a écrit jusqu'au 20/09/2026 (« deux causes qu'un `||` rendrait à moitié inéprouvables ») : c'était
-  l'état d'avant C5.3, et la phrase **dictait une régression** — appliquer ce `||` ôterait son cap à
-  un plan à cinq actions dont aucune n'est en avant. Une seule cause vaut : zéro action. Un test
-  compare désormais les deux formes à nombre d'actions égal, et il tombe sur cette fusion.
-
-**`action_text` est la clé naturelle du référentiel d'actions, et elle porte enfin un index
-unique.** Tout le dépôt apparie les gabarits par elle — `action_templates.id` vaut
-`gen_random_uuid()`, donc les identifiants diffèrent d'une base à l'autre — et rien ne le
-garantissait ; c'est aussi ce qui rend l'insert de C3.8 rejouable (`on conflict do nothing`). Deux
-pièges de la même famille : **`transport_mode_category` n'existe plus** sur cette table (supprimée
-par `20260905130000` une fois la reprise de données faite), donc un insert recopié depuis ce
-fichier-là échoue ; et un gabarit ajouté doit porter `question_template` **et** `first_step`, que
-deux balayages épinglent sans nommer personne.
-
-**L'engagement sur une action passe par un RPC, jamais par une policy UPDATE.**
-`plan_actions` porte des chiffres figés à la génération, et **deux gardes indépendantes les
-protègent depuis le 10/09/2026** : aucune policy d'écriture — en ajouter une ouvrirait toutes les
-colonnes, la RLS filtrant des lignes et jamais des colonnes — et aucun privilège d'écriture au
-niveau table, `grant select` seul (`20260910110000_grants_explicites.sql`). Un ordre direct est
-donc refusé par le privilège (42501) avant même d'atteindre la RLS ; jusqu'à cette date le
-privilège `UPDATE` était accordé par défaut et seule l'absence de policy le rendait inoffensif.
-D'où `commit_plan_action` / `clear_plan_action_commitment` (`security definer`, propriété
-vérifiée à l'intérieur), et deux tests pgTAP qui épinglent le refus. Une seule action engagée par cycle
-(index unique partiel), intention obligatoire, en jours de la semaine pour le poste
-domicile-travail et en échéance fermée pour les autres — jamais de saisie libre.
-
-Deux mécanismes de génération server-side qu'il faut garder synchronisés si on les touche :
-- `generate_plan_cycle_for_user(p_user_id, p_cause)` (security definer, revoked de
-  public/anon/authenticated) génère le plan de réduction d'un utilisateur. Appelée à la fois par le
-  cron nightly `generate_plan_cycles()` (boucle sur tous les utilisateurs) et **à la fin de
-  `recompute_assessment_results()`** — et non de `compute_assessment_results()`, que ce fichier
-  nommait à tort : relevé dans `pg_get_functiondef` le 19/09/2026, la ligne est dans la fonction
-  interne, donc toute reprise de calcul en masse régénère aussi les plans. L'appel y est enveloppé
-  dans un `begin … exception` : le bilan aboutit même si le plan échoue, et le cron rattrape.
-- Cadence du plan de réduction : saisons **météorologiques** (blocs calendaires de 3 mois,
-  pas astronomiques) par défaut, ou trimestre glissant ancré sur la date du bilan si
-  `profiles.cadence_type = 'rolling_quarter'`.
-
-**Le contexte se corrige sans resoumettre de bilan, et `p_cause` est ce qui le rend possible**
-(C6.4, `20260919230000_le_contexte_sort_du_questionnaire.sql`). « Modifier ces réponses » rouvrait
-le questionnaire à l'étape « Contexte », et en sortir soumettait un bilan entier — alors que
-corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses trajets. Six points :
-
-- **`mettre_a_jour_le_contexte(zone, tc, vehicules, teletravail)` est le seul écrivain de ces
-  quatre colonnes hors questionnaire**, et ce n'est **pas** une question de permission :
-  `assessment_answers` porte déjà une policy `UPDATE` owner-scoped. Ce sont l'**atomicité** (écrire,
-  recalculer et régénérer doivent réussir ensemble) et le **bornage des colonnes** — la RLS filtre
-  des lignes, jamais des colonnes, donc un `update` client sur cette table atteint les distances et
-  les modes, donc le chiffre. Le dire évite qu'un prochain passage retire le RPC en simplifiant.
-  **Et jusqu'au 20/09/2026 le RPC ne bornait rien** : la policy qu'il est censé remplacer n'avait
-  aucun prédicat de statut, donc les réponses d'un bilan **complété** se réécrivaient en direct —
-  `assessment_results` restant figé, puis le premier recalcul serveur faisait bondir le total sans
-  qu'aucune ligne ne soit ajoutée à `assessments`. La policy est désormais bornée à
-  `status = 'in_progress'`, et le RPC passe parce qu'il est `security definer` sur une table sans
-  `force row level security`.
-- **Un seul paramètre porte la cause, et les deux conséquences s'en dérivent.** La première forme
-  écrite était `p_forcer boolean`, qui obligeait à poser ailleurs la raison d'archivage — donc à
-  tenir d'accord deux paramètres disant la même chose. `p_cause` (`'bilan'` par défaut,
-  `'contexte'`, et depuis C4.7 `'retrait'`) fait sauter la garde d'idempotence **et** nomme la raison de libération : il n'y a
-  pas de façon de forcer sans dire pourquoi. Une valeur inconnue lève `RM004` — un code à elle,
-  parce que c'est un invariant de serveur qu'aucun client ne peut atteindre, là où les
-  préconditions de `mettre_a_jour_le_contexte` (`RM003`) remontent jusqu'à un écran.
-- **La garde d'idempotence devait sauter, et surtout pas `submitted_at` bouger.** Cette date est
-  l'âge du bilan, lu par le régime de re-bilan, le suivi et le moment anniversaire ; la déplacer
-  pour déclencher une régénération aurait menti sur quand le bilan a été fait.
-- **Le recalcul est inconditionnel, parce que TROIS réponses sur quatre entrent dans le résultat.**
-  L'issue #232 posait `household_vehicles` comme la seule ; `tc_access` et `zone_type` décident
-  aussi de `mobility_constrained`, figé sur `assessment_results` et lu par la restitution (C3.1).
-  Une condition étroite l'aurait laissé périmé. C'est sans risque parce que
-  `recompute_assessment_results` est idempotent : mêmes réponses de trajet, facteurs bornés à la
-  date du bilan, mêmes totaux. **Recalculer n'est pas resoumettre** — aucune ligne n'est ajoutée à
-  `assessments`, et un test pgTAP l'épingle.
-- **`plan_action_commitments_archive.released_reason` gagne `contexte`**, et
-  l'encart orphelin du plan filtre désormais sur `RAISONS_ANNONCABLES` — les **deux** libérations
-  que la personne n'a pas choisies. Sa phrase se dérive de la raison (`phraseDeLOrphelin`) : elle
-  disait « Ton plan a changé avec ton nouveau bilan », ce qui est faux quand il n'y a pas eu de
-  bilan. `saison` et `changement` restent tues, pour les raisons de C2.2. **Et `retrait` depuis
-  C4.7, tue elle aussi** : retirer un bilan est un geste choisi, et la confirmation a dit
-  *avant* ce qu'il emportait — réutiliser `rebilan` aurait rallumé l'encart. **Et il se tait quand
-  l'action est revenue dans le plan** (`orphelinAAnnoncer`, recette du 01/10/2026) : remettre le
-  contexte comme avant la rend sans l'engagement, et l'archive garde sa ligne — un appareil neuf
-  affichait « n'y est plus » au-dessus d'elle. L'appariement est sur le gabarit, jamais sur le
-  libellé que l'archive fige. **Taire, et seulement pour une perte de la saison affichée** — décidé
-  le 01/10/2026 par la personne qui pilote : l'encart a déjà parlé sur l'appareil du changement, et
-  sans borne il annonçait une perte de n'importe quelle date, un encart tu reparaissant d'une saison
-  à l'autre avec son ancienne cause. Le reste, dans une même saison, est nommé dans la dérivation.
-- **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
-  du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
-  n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle
-  était déjà fausse avant ce chantier pour qui sort rarement, profil où le basculement vaut
-  **10,88 → 55,56 kg**, soit 411 % de son total.
-
-**`cadence_type = 'rolling_quarter'` est un mécanisme dormant, et il faut le savoir avant de le
-prendre pour du code mort.** Toute la chaîne serveur existe et est testée — `rolling_quarter_bounds`,
-le branchement de `generate_plan_cycle_for_user`, le snapshot `plan_cycles.cadence_type`, quatre
-assertions du test 00 et le scénario B du test 02 — mais **aucun écran ne l'écrit ni ne la lit** :
-tous les profils de la base valent `season`, la valeur par défaut — vérifié le 11/09/2026 puis le
-19/09/2026, où ils étaient passés de 19 à 65 sans qu'aucun ne change de cadence. Le nombre ne
-s'écrit plus : c'est le fait qui compte, et lui seul se vérifie d'une fois sur l'autre.
-`v1-01` la décrivait comme un « paramètre réservé pour la brique 3, stocké dès maintenant pour ne
-pas migrer le profil plus tard » ; la brique 3 est livrée depuis `v1-03` et rien ne disait pourquoi
-le réglage n'a jamais été ouvert. La réponse est qu'il ne l'a pas encore été, pas qu'il a été
-écarté : le handoff design le prévoit (`docs/design/README.md`, puce « Cadence : saison — été »),
-donc l'ouvrir dans « Toi » serait une décision produit et non une invention. La dormance est
-consignée en base sur le commentaire de la colonne (`20260912110000_detail_kind_et_cadence.sql`).
-**L'ouvrir impose de relire le retrait d'un bilan (C4.7)** : les bornes du cycle reconstruit s'y
-calculent sur la date du bilan **précédent**, donc le cycle du bilan retiré garderait la date de
-début la plus récente, et c'est lui que le plan lirait. Raisonné, pas rejoué (`v1-22` §7).
-
-Même famille, côté plan : `action_templates.detail_kind` ne vaut plus que pour les postes
-domicile-travail et loisirs. La branche `travel` d'`estimate_action_savings` construit son détail
-elle-même avec `format(...)` avant d'atteindre le `case`, qui est gardé par `if v_detail is null` —
-les trois valeurs de voyages étaient donc **inatteignables et masquantes** (un template de voyages
-avec un `detail_kind` neuf aurait reçu le détail générique du segment, en silence). Elles ont été
-retirées de la contrainte et le champ mis à `null` sur les trois templates concernés, plutôt que
-branchées : les faire passer par le `case` l'obligerait à lire `v_count`, une variable locale de la
-branche, et en ferait un troisième endroit où se lit la logique de segment.
-
-`assessment_results` fige le résultat calculé au moment du bilan (jamais recalculé à la
-volée côté client) — même logique pour `engagement_checkins.trip_label`, snapshotté pour ne
-pas changer rétroactivement le wording d'un check-in déjà généré si l'utilisateur refait un
-bilan plus tard.
-
-**Mesure d'usage** (`usage_events`, issue #30, cf. `v1-08-mesure-usage.md`) : **on n'instrumente
-jamais ce que le schéma enregistre déjà.** Pas d'événement `bilan_submit` (c'est
-`assessments.submitted_at`), `checkin_answer` (c'est `engagement_checkins.response`) ni
-`feedback_submit` — dupliquer un fait garantit deux chiffres divergents le jour où l'un des
-chemins échoue, et un test pgTAP interdit de les réintroduire. Les axes de segmentation
-(`zone_type`, `tc_access`, poste dominant, cadence) sont **déjà en base** : c'est ce qui a écarté
-PostHog. La liste des événements vit dans `public.usage_event_types` avec une clé étrangère
-depuis `usage_events` — **ajouter un événement impose une ligne par migration ET une entrée dans
-`src/types/analytics.ts`**, sinon l'insert est rejeté et l'événement perdu en silence (même
-mécanique que `emission_factor_sources`). Un événement déclaré mais qu'aucun code n'émet doit
-être retiré : il ne se lit pas « pas encore instrumenté », il se lit **zéro**.
-
-**La même règle vaut pour une valeur de propriété, et elle est plus discrète** : la base ne valide
-pas les valeurs de `props` — `check_usage_event_props` ne compte que des clés et des longueurs —
-donc rien n'arrête la dérive. `connexion_view` déclarait cinq provenances dont deux qu'aucun écran
-n'émettait plus, et une sixième (`compte`) que l'écran de connexion réécrivait en
-`resultat_transition` faute de la reconnaître : la provenance la plus intéressante à mesurer
-gonflait exactement le chiffre auquel on voulait la comparer. D'où `SOURCES_CONNEXION`
-(`src/types/analytics.ts`) — **une seule liste**, qui donne le type *et* le garde
-d'appartenance — et le fait que les valeurs attendues soient écrites dans la description du
-référentiel, seul endroit où la base peut les porter.
-
-**Deux mesures valent d'être connues, parce qu'elles étaient fausses d'une façon qui ne se voit
-pas dans un chiffre** (11/09/2026) :
-- **`app_open` part après la résolution d'`ensureSession()`, jamais au montage du layout**, et
-  porte `props.origine` (`demarrage` / `retour`). `track()` renonce quand aucune session n'existe
-  encore : émis au rendu, l'événement était perdu précisément sur les premiers lancements — ceux
-  où la session se crée — soit un biais systématique contre les nouveaux venus, une ligne en base
-  pour six vues d'étape d'onboarding. Et le second chemin n'existait pas du tout : le layout n'est
-  monté qu'une fois par chargement du bundle, or le chemin nominal de la boucle d'engagement est
-  une app en arrière-plan que la notification ramène devant. `retour` n'existe que sur natif.
-  C'est aussi ce qui rend vraie la phrase sur laquelle `purge_stale_anonymous_accounts()` fonde sa
-  fenêtre de 90 jours.
-- **`connexion_demande` est l'intention, `connexion_success` le fait constaté.** L'écran email
-  émettait `connexion_success` juste après `updateUser({ email })`, que `etatDuRattachement`
-  classe pourtant en `a_confirmer` : `is_anonymous` ne bascule qu'au clic du lien reçu. Le chemin
-  Google, lui, n'émettait qu'après une identité liée — les deux branches ne mesuraient pas le même
-  fait, et leur comparaison était faussée du taux d'emails jamais confirmés, c'est-à-dire du
-  chiffre qu'on voulait lire. L'écart entre les deux **est** ce taux.
-
-Trois pièges vérifiés en construisant cette table, tous silencieux — les deux premiers sont des
+Trois pièges vérifiés en construisant `usage_events` (`MESURE.md`), tous silencieux — les deux premiers sont des
 pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
 - **Un trigger qui compte des lignes que l'appelant n'a pas le droit de lire doit être
   `security definer`**, sinon le quota ne se déclenche jamais — `SUPABASE.md` §2.2.
@@ -1797,270 +606,75 @@ pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
   toutes nulles en base et parfaitement vivantes. Ce qui qualifie une colonne morte, c'est
   qu'aucun code ne l'écrit.
 
-**Ce que la purge et la suppression laissent derrière elles : des compteurs, rien d'autre** (lot 6,
-livré avec C4.7, `20260927230611_les_cohortes_avant_la_purge.sql`). La cascade efface tout ce qu'une
-personne a fait, donc toute mesure de forme cohorte doit être écrite **avant** : la purge incrémente
-`public.purges_par_cohorte` (semaine d'arrivée, étape la plus loin, tranche de semaines tenues, état
-des rappels au départ) **dans sa propre transaction, après sa garde de volume et avant son
-`delete`** ; `delete_my_account` incrémente `suppressions_de_compte_par_mois` après son `delete`,
-seulement si une ligne est partie. **Un compteur qui échoue n'arrête jamais une suppression** : il
-vit dans une sous-transaction, et son échec se consigne (`purge_runs.detail`, un avertissement pour
-`delete_my_account`) pendant que la suppression passe — la page de confidentialité promet
-l'effacement, et une écriture d'analyse ne doit pas pouvoir le suspendre. La première version
-faisait l'inverse (« si le compteur échoue, rien n'est supprimé »), et c'était la suspendre pour
-toujours, sans alerte, dès qu'une valeur nouvelle de `regime_de_rappel` sortait du `check` —
-contre-lecture du 27/09/2026. Cinq choses à ne pas défaire :
+### Ce que les fichiers de sujet portent, en une ligne par règle
 
-- **aucun identifiant et aucun segment**, par décision (27/09/2026) : à nos volumes, une ligne
-  découpée par zone ou par poste décrirait une personne que la page de confidentialité promet
-  d'effacer. Le fichier `36` balaie les colonnes par type et n'admet que `date`, `integer` et un
-  `text` fermé par un `check`. À nos volumes, une ligne peut ne compter qu'une personne : elle n'en
-  porte rien qui la désigne, et c'est ce que la page promet — pas davantage ;
-- **ces tables n'ont aucune clé étrangère**, et c'est ce qui les fait survivre : c'est la
-  contrepartie exacte de la règle « jamais rattacher une table à `profiles` autrement qu'en
-  cascade », qui vaut pour les données d'une personne et jamais pour un agrégat ;
-- **`cohorte_de(uuid)` est la seule dérivation**, et l'étape est « la plus loin **dans l'ordre** »
-  (a ouvert < bilan soumis < engagée < a répondu), pas le plus long préfixe : on peut répondre au
-  point générique sans s'être engagé. « A soumis un bilan » s'écrit `status <> 'in_progress'`, pour
-  qu'un bilan retiré (C4.7) compte comme soumis ;
-- **le signe de vie des rappels a une seule définition, `dernier_signe_de_vie`**, que
-  `regime_de_rappel` appelle depuis C4.2 et que les cohortes lisent — celui de la purge reste le
-  sien, plus large (tous les événements, les bilans, les retours). Une assertion du `36` exige que
-  le corps installé du régime **appelle** la fonction — elle acceptait aussi l'expression recopiée
-  tant que la factorisation n'était pas faite. Ce qu'elle ne voit toujours pas, et qu'il ne faut pas
-  croire gardé : une retouche de `v_depuis` **après** l'appel. C'est une inclusion, pas une égalité ;
-- **les valeurs que rend `regime_de_rappel` doivent toutes figurer dans le `check` de
-  `rappels_au_depart`** : une valeur nouvelle ferait échouer chaque compte, donc perdre chaque
-  cohorte. Une assertion du `36` lit les littéraux `return` du corps installé et les compare au
-  `check`.
+Ce qui suit n'est pas la règle mais **son renvoi** : de quoi savoir qu'elle existe, et où la lire
+avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'être écrite.
 
-**Et ce que le lot 6 lit, il le lit dans quatre vues, sans définition nouvelle** (29/09/2026,
-`20260929210541_les_vues_de_l_administration.sql`, `docs/exploitation/README.md` §8.5 ter) :
-l'entonnoir et la rétention par cohorte, les états des rappels, les départs par mois. Chaque notion y
-garde sa dérivation — `cohorte_de`, `dernier_signe_de_vie`, `regime_de_rappel` sur la boucle que
-rend `boucle_de_la_personne` —, et une vue qui en écrirait une seconde ferait deux échelles qui
-divergent. **Une exception, nommée des deux côtés** : la rétention lit le signe de vie semaine par
-semaine, ce qu'un `max` ne sait pas faire, donc elle recopie les deux sources de
-`dernier_signe_de_vie` — une source ajoutée à l'une s'ajoute à l'autre. Trois choses à ne pas
-« simplifier » : la boucle retenue est celle qui **tourne encore**, pas celle qui a existé (sans quoi
-qui a arrêté sa boucle reste actif pour toujours) ; la rétention divise par **toute** la cohorte
-d'arrivée, purgés compris (sans eux, la purge fait paraître une cohorte plus fidèle en vieillissant) ;
-et ni l'activation ni un taux de churn ne sont calculés — la première est une décision de produit,
-le second demanderait un effectif passé que le régime ne sait pas reconstruire.
+**`BILAN.md`** — le questionnaire, le calcul, les modes et les facteurs :
+- tout facteur se lit par `public.emission_factor(mode_id, date)` et tout mode se résout par
+  `public.resolve_mode(…)` — jamais un `select … limit 1` écrit à la main, jamais un résolveur
+  spécialisé rappelé en direct ;
+- les facteurs sont l'**ACV complète** (endpoint `ecv`), jamais la seule phase d'usage, et un mode
+  ajouté au produit impose sa ligne dans `emission_factor_sources` ;
+- `assessment_results` est figé côté serveur, jamais recalculé côté client ;
+- ajouter un mode de la catégorie vélo-marche, ou une réponse de voyage, touche aussi la boucle —
+  un complément de maintien, une ligne dans `a_des_voyages_declares` (`BOUCLE.md` §1) ; et la
+  question du télétravail se gouverne par `teletravailSePose` (`PLAN.md` §1) ;
+- la soumission écrit `in_progress` d'abord ; la personne **retire** un bilan (`withdrawn`, par
+  `retirer_le_bilan`), elle ne le supprime pas — seules la suppression du compte et la purge l'effacent.
 
-**Suppression de compte et export** (`delete_my_account`, `export_my_data`) : bloqueur Google
-Play — toute app permettant de créer un compte doit offrir un chemin de suppression **dans**
-l'app, et Ramille en crée un dès l'ouverture, session anonyme comprise. Play exige **en plus**
-une URL web atteignable sans l'app : `/compte/suppression`.
+**`PLAN.md`** — les actions, l'engagement, la saison et le premier parcours :
+- `plan_actions` ne s'écrit que par RPC (`commit_plan_action`…), jamais par une policy : **la RLS
+  filtre des lignes, jamais des colonnes** — la même raison ferme `engagement_checkins` (`BOUCLE.md`) ;
+- aucune action sous 5 kg/an, et une condition de contexte qu'on ne peut pas évaluer n'est pas
+  remplie ; l'estimateur lit l'instantané figé du bilan, et on ne recalcule jamais les kilomètres
+  ailleurs ;
+- `plan_actions` a deux clés étrangères vers `plan_cycles` : une lecture imbriquée nomme la sienne ;
+- aucun chemin ne détruit un engagement sans l'archiver (`archiver_engagement`) ;
+- `cadence_type = 'rolling_quarter'` est dormant, pas mort.
 
-Cette page a imposé la seule fonction du produit qui **connecte à un compte existant** au lieu
-d'en rattacher un (`sendAccountAccessLink`, lien à usage unique par email). Tout le reste de
-`src/lib/auth.ts` lie une identité à la session anonyme courante — ce qui ne peut pas aider
-quelqu'un qui a désinstallé l'app et arrive dans un navigateur neuf, où `ensureSession` vient
-de lui créer une session anonyme **vide qui n'est pas son compte**. Deux garde-fous non
-négociables : `shouldCreateUser: false` (une page de suppression qui fabrique des comptes
-serait le contraire de ce qu'elle affiche), et **aucune réponse différenciée à l'écran** selon que
-l'adresse a un compte ou non — une adresse inconnue renvoie un 422 `otp_disabled` qu'il faut
-traiter comme un succès, sinon la page devient un moyen de savoir qui utilise Ramille. (Le 422
-lui-même reste lisible au réseau, et la limite d'envoi ne frappe qu'une adresse connue : deux limites
-assumées, `SUPABASE.md` §2.4.) La
-limite d'envoi, elle, se reconnaît au **code** `over_email_send_rate_limit` : le message de
-Supabase ne contient pas le mot « rate ».
+**`BOUCLE.md`** — les points de suivi, leurs réponses et leurs rappels :
+- le point interroge la période **écoulée**, et sa question est figée à la génération
+  (`committed_question`) ;
+- `response_kind` est la vérité d'une réponse : on filtre `status = 'answered'`, jamais
+  `response is not null` ;
+- les paires SQL/TypeScript (le mois, les jours, la période précédente, le canal de rappel…) se
+  touchent ensemble, et leur nombre ne s'écrit nulle part ;
+- un point, un message (`unique(checkin_id)`) ; ce qui s'espace est le message, jamais le point ;
+- les deux boucles partent du dernier bilan valide, par `boucles_du_dernier_bilan`.
 
-Et le piège central, dérivé dans `src/types/compte-suppression.ts` : **une session anonyme
-vide n'est pas un compte à supprimer.** Sans le test « porte-t-elle au moins un bilan ? », la
-page effacerait la session créée par sa propre ouverture et annoncerait une suppression qui
-n'a rien supprimé. Le test épingle aussi qu'une session anonyme portant déjà une adresse non
-confirmée (entre `updateUser({ email })` et le clic de confirmation) n'est **pas** un compte
-rattaché. **La suppression
-efface une seule ligne, `auth.users`, et laisse la cascade faire le reste** : une fonction qui
-énumérerait les tables deviendrait fausse à la prochaine migration, en silence. **Parcourue une fois
-pour de bon le 14/09/2026**, en clôture de la recette sur appareil : un compte réel supprimé depuis
-`/compte/suppression`, puis neuf tables relevées pour son identifiant — zéro ligne partout,
-`auth.users` comprise. Ne jamais
-rattacher une table à `profiles` avec autre chose que `on delete cascade` — un test pgTAP
-vérifie la chaîne niveau par niveau. L'export est `security definer` pour une autre raison :
-`usage_events` n'ayant aucune policy de lecture, une fonction en `security invoker` rendrait un
-export silencieusement incomplet.
+**`COMPTE.md`** — la connexion, la session, le hors-ligne et la suppression :
+- pas de mot de passe : par e-mail, le rattachement et la reconnexion passent par un code à
+  **huit** chiffres, dont le `type` (`email_change` / `email`) n'est pas interchangeable ; Google
+  passe par `linkIdentity` ;
+- aucun écran ne dit si une adresse a un compte ;
+- le flux est en PKCE, et une erreur d'auth se reconnaît à son **code**, jamais à son message ;
+- hors ligne se reconnaît à `status === 0`, et la marque locale de bilan n'est lue qu'en repli ;
+- la suppression efface une ligne d'`auth.users` et laisse la cascade faire le reste — jamais une
+  table rattachée à `profiles` autrement qu'en `on delete cascade` ;
+- sur Android, ce que l'app capture tient au `pathPrefix` `/plan` d'`app.json`, un préfixe de
+  **chaîne** : une future route `/planning` ou `/plan-b` serait capturée sans que rien ne le dise.
 
-**Canal de retour** (`feedback`, issue #29) : la seule table où un client écrit du texte
-libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à
-`authenticated` revient à l'ouvrir à quiconque sait appeler l'API — d'où le trigger
-`enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et les bornes de longueur.
-**Et la table est insert-only côté client, ce que le schéma ne disait pas encore le 20/09/2026** :
-une policy `DELETE` owner-scoped traînait, sans justification dans sa migration et sans qu'aucun
-écran l'emprunte, alors que le trigger compte les lignes **vivantes** — dix retours, on efface, on
-recommence. Elle est partie ; l'effacement reste garanti là où il est promis, par la cascade de la
-suppression de compte et par la purge à 90 jours.
-**Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
-passer sans rien éprouver de **deux** façons, et les deux se sont produites — `TESTING.md` §2.5,
-qui dit aussi pourquoi un fichier pgTAP se rejoue en séquence entière.
+**`MESURE.md`** — l'usage, les cohortes et le canal de retour :
+- on n'instrumente jamais ce que le schéma enregistre déjà ;
+- ajouter un événement impose une ligne par migration **et** une entrée dans
+  `src/types/analytics.ts` ; une provenance se déclare dans sa liste `SOURCES_*` ;
+- toute mesure de forme cohorte s'écrit **avant** la purge, sans identifiant ni segment, et un
+  compteur qui échoue n'arrête jamais une suppression.
 
-**Rappel par email** : `enqueue_checkin_reminders()` remplit `notification_outbox` à chaque
-génération de check-in, `send_pending_reminders()` (cron quotidien 7h UTC) l'envoie via
-l'extension `http`. **La garantie anti-relance de la spec §7 est structurelle** :
-`unique(checkin_id)` sur la boîte d'envoi — un check-in, un message, jamais deux, quel que
-soit le canal et le nombre de passages du cron ; le repli push → email est une **mise à jour de
-la même ligne**, jamais une seconde. **Le mot de la veille (C4.2, `v1-25`) passe à côté** : une
-ligne à `checkin_id` nul et `genre = 'veille'`, que `unique(checkin_id)` ne voit pas — sa garantie
-est `notification_outbox_une_veille_par_jour`, un mot par personne et par jour visé. La branche push
-vit dans `envoyer_les_notifications(genre)`, partagée par le passage de 7 h (les points) et celui du
-soir (cron `mot-de-la-veille`, 16 h 30 **et** 17 h 30 UTC, pour que l'un des deux tombe à 18 h 30 à
-Paris en toute saison) ; le journal porte le genre du passage. **Toute lecture de la boîte d'envoi
-qui joint `engagement_checkins` perd le mot en silence** — trois le faisaient : `rappels_bloques`
-et l'export sont passés en jointure externe, et la caducité, qui ne voyait que les points (à raison,
-elle lit leur période), a gagné une instruction à part pour le mot. **Et le cron du soir ne met en
-file qu'à partir de 18 h 30 à Paris** (`le_soir_du_mot_est_venu`) : la caducité du mot ne relit pas
-l'engagement, donc un mot écrit une heure trop tôt partait sur une action abandonnée entre-temps. Le
-canal effectif se résout en un seul endroit,
-`reminder_channel_for()` (v1-12 §3), dont la table de vérité est **écrite deux fois** — SQL
-pour ce qui part, `src/types/rappels.ts` pour ce que l'app affiche — et épinglée des deux côtés
-(`17_rappels_canal.test.sql`, `rappels.test.ts`) : toucher à l'une sans l'autre est le défaut
-que cette paire existe pour attraper. La préférence vit dans `profiles.reminder_channel`
-(`push` / `email` / `none`, réglable depuis « Toi », **sessions anonymes comprises** — le push
-n'a besoin que d'un jeton d'appareil), et elle **ne se dégrade jamais d'elle-même** : un `push`
-sans jeton actif part par email sans que rien ne soit réécrit, pour que rouvrir les
-notifications dans les réglages du téléphone suffise à le faire repartir. **L'envoi est inactif tant que
-les secrets Vault `resend_api_key` et `reminder_from_address` n'existent pas** — la fonction
-sort sans rien toucher, les rappels restent en attente, et depuis le 10/09/2026 elle le **dit** :
-`public.reminder_send_runs` reçoit **une ligne par canal à chaque passage**, y compris une nuit où
-rien n'attend et y compris quand un secret manque. Zéro ligne veut donc dire « le passage n'a pas
-eu lieu » — cron désinscrit, job en erreur — et jamais « il n'y avait rien à envoyer » : remettre
-l'un de ces `insert` sous une garde « seulement s'il y a du travail » détruirait la seule question
-que ce journal existe pour trancher. Deux corollaires : le cron appelle désormais une **procédure**
-qui committe entre les passes, à laquelle il ne faut ajouter ni `security definer` ni clause
-`set search_path` — les deux rendent le contexte atomique et font échouer le `commit` ; et la ligne
-est marquée `sent` **avant** l'appel HTTP, pour qu'un message remis au fournisseur ne reparte
-jamais. Voir `v1-07` §3.1 pour la mise en
-service.
-
-**Les rappels s'espacent d'eux-mêmes, et ce qui s'espace est le message — jamais le point**
-(C2.9, `20260912170000_rappels_qui_s_espacent.sql`). `public.regime_de_rappel(user_id, loop_type)`
-rend `normal` / `espace` / `silence` en comptant les points clos `expired` **depuis le dernier signe
-de vie** — le plus récent d'une réponse et d'un `app_open` —, et `enqueue_checkin_reminders()` s'en
-sert dans sa clause `where`. Quatre points sans réponse font passer à **au plus un message par mois
-calendaire**, tous canaux et toutes boucles confondus ; huit font taire. Ce qu'il ne faut pas
-« corriger » :
-- **le point continue d'être généré** — l'app doit pouvoir montrer la question à qui revient après
-  six mois, et supprimer la génération effacerait l'historique de la boucle ;
-- **deux seuils et non un** : sans le second, « espace » serait un **état terminal** pour la boucle
-  mensuelle, qui est déjà à ce rythme ;
-- le plafond du régime espacé compte sur `created_at` de la boîte d'envoi et non sur `sent_at`,
-  sinon la décroissance ne s'appliquerait **pas du tout** tant que l'expéditeur n'est pas
-  configuré ;
-- **le plafond est une clause de la mise en file, pas de la table** : il ne s'applique qu'aux lignes
-  qu'`enqueue_checkin_reminders` insère. Un message qui n'y passe pas doit appeler
-  `regime_de_rappel` lui-même — le mot de la veille (C4.2) ne part qu'en régime `normal`, jamais en
-  espacé (arbitrage du 27/09/2026 : le seul message du mois doit rester la question). Et l'inverse
-  est automatique : le `not exists` du plafond ne filtre pas sur `checkin_id`, donc un mot parti
-  compte dans le plafond des points. **Cas connu et laissé tel quel** (contre-lecture du 28/09/2026) :
-  un mot parti en début de mois, puis une bascule en régime espacé dans le même mois, et la question
-  de ce mois ne part pas — la même chose arrivait déjà avant C4.2 avec les rappels hebdomadaires du
-  début de mois ;
-- `regime_de_rappel` est `security definer` pour une raison non décorative : `usage_events` n'a
-  aucune policy de lecture, donc le comptage des `app_open` ne verrait rien depuis `authenticated`
-  — même piège que le garde-fou de volume de cette table, et un compteur qui ne compte rien ne
-  déclenche jamais ;
-- **quelqu'un qui ouvre l'app chaque semaine sans jamais répondre ne se fait jamais taire**, et
-  c'est voulu : `app_open` est un signe de vie, et le chantier visait le compte **désinstallé**, pas
-  le lecteur silencieux. Avec la période écoulée de C2.3, le point ouvert lundi porte un
-  `period_start` d'une semaine plus tôt, donc une ouverture du lundi est toujours postérieure et le
-  point ne compte pas. Corollaire rassurant : ouvrir le lien de l'email **sur un appareil où l'on
-  n'est pas connecté** émet l'`app_open` de la session anonyme de cet appareil, jamais celui du
-  compte — le compteur du compte n'est donc pas remis à zéro par quelqu'un qui n'y est pas entré ;
-- et la mise en file est appelée **une fois par point** : le plafond mensuel est un `not exists`,
-  donc deux points du même compte insérés par un seul `insert` ne se verraient pas l'un l'autre.
-  Le cas n'existe pas en production (le générateur clôt la période précédente avant d'insérer, et
-  les deux boucles sont mises en file par deux appels), et un test qui le fabriquerait
-  n'éprouverait rien.
-
-**La sortie ne passe pas par l'app, parce que celle-ci a justement pu être désinstallée**
-(`desinscrire_des_rappels(uuid)`, page `/rappels/stop?jeton=…`). L'ancienne consigne de l'email
-renvoyait à « Toi » : inutilisable sans l'app, et **pire** sur un appareil neuf, où elle réglait la
-préférence de la session anonyme vide que l'ouverture venait de créer. Le jeton vit sur la ligne
-d'outbox, ne sert qu'une fois, et ne peut rien d'autre que couper les rappels du compte qui a reçu
-ce message-là. C'est **le seul RPC qui écrit et que `anon` peut appeler** — les autres fonctions
-accessibles à ce rôle n'ont jamais été révoquées du `PUBLIC` de leur création, et sont toutes pures
-(`emission_factor`, `resolve_*`, `season_bounds`, les deux `check_*`) ; ici le `grant` est explicite
-et le jeton *est* l'autorisation. Trois pièges :
-- **le jeton est écrit explicitement dans l'`insert`** de la mise en file. Laissé au `default` de la
-  colonne, il aurait tiré un second uuid, différent de celui que le corps du message venait
-  d'afficher : un lien mort au premier clic, sans qu'aucune des deux moitiés ait l'air fausse ;
-- la réponse **ne distingue jamais** un jeton inconnu d'un jeton déjà utilisé (même non-divulgation
-  que `/connexion/retrouver`), et la page vérifie la **forme uuid** avant d'appeler — sans quoi un
-  lien tronqué par une messagerie recevrait un `22P02`, c'est-à-dire l'écran de panne et une
-  invitation à réessayer un lien qui ne marchera jamais (`src/types/desinscription.ts`) ;
-- **c'est une écriture sans session et sans limite de débit, et c'est le bon compromis.** Le
-  `feedback` a son `enforce_feedback_rate_limit` parce qu'il stocke du texte libre ; ici il n'y a
-  rien à stocker, rien à lire en retour, et la réponse ne distingue aucun échec — marteler l'endpoint
-  avec des uuid au hasard ne rend qu'une recherche d'index et `false` (122 bits à deviner). Brider une
-  désinscription coûterait plus que l'abus qu'on éviterait : quelqu'un qui veut arrêter de recevoir
-  doit réussir du premier coup. Ne pas « corriger » cette asymétrie avec `feedback`.
-- **`List-Unsubscribe-Post` n'est pas envoyé, et son absence est épinglée par un contrôle de la
-  migration.** L'annoncer engage l'URL à accepter un POST sans confirmation ; `/rappels/stop` est
-  une page de l'export statique, qui ne peut pas y répondre — l'ajouter par symétrie ferait échouer
-  le geste **en silence**, là où l'en-tête seul fait ouvrir le lien dans un navigateur (RFC 8058).
-  Corollaire : la branche email de `send_pending_reminders` n'évalue son corps que si les secrets
-  Vault existent, donc **aucune suite ne l'exerce** — ni la CI, où ils manquent, ni le distant, où
-  les rejouer ferait partir un vrai email. L'en-tête a été éprouvé en évaluant la même expression à
-  la main sur une vraie ligne d'outbox.
-  **Et cette décision est désormais éprouvée, pas seulement raisonnée** (15/09/2026, `v1-13` §7, C4.9).
-  La recette avait constaté que Gmail n'affiche **aucun** bouton « Se désabonner » au-dessus du rappel ;
-  l'expérience qui devait trancher a été faite — un message avec les **deux** en-têtes, même expéditeur
-  de production, même boîte que le témoin de la veille, seule la paire d'en-têtes changeant — et il n'y
-  a **toujours** pas de bouton. Donc l'en-tête manquant n'était pas la cause, et une fonction `api/`
-  qui répondrait au POST n'aurait rien produit : le chantier s'est fermé sans une ligne de code. La
-  cause la plus probable est la classification de Gmail en courrier de masse, qui dépend du volume — ce
-  qui donne la **condition de réouverture** : si le domaine se met à envoyer pour de vrai, la paire
-  d'en-têtes peut redevenir la contrainte restante, et le chantier se rouvre tel qu'il est écrit en §7.
-  D'ici là, la sortie que le produit contrôle est le lien imprimé dans le corps, et elle marche —
-  vérifiée sur appareil : navigateur, refus calme au second clic, préférence sur « Aucun ».
-
-**Les reprises de jeton d'appareil laissent une trace** (`push_tokens.reprises`,
-`derniere_reprise_le`, `proprietaire_precedent`). La reprise reste **inconditionnelle** — décision
-de `v1-10` §3.4, inchangée : sans elle, les rappels partiraient au nom d'un utilisateur fantôme au
-moment où une session anonyme devient un compte. Ce qui manquait était de pouvoir le *constater* :
-un jeton repris deux cents fois dirait un appareil partagé ou une boucle, et c'est la seule question
-que ces trois colonnes servent à trancher. Dans le `on conflict do update`, `push_tokens.user_id`
-désigne la ligne **existante** et `excluded` la ligne proposée — s'y tromper lirait la nouvelle
-valeur, donc ne compterait jamais rien.
-
-La boucle mensuelle (brique 4) est en réalité **deux boucles indépendantes**, toutes deux
-proposées à tout utilisateur concerné (l'UI recommande de se concentrer sur le poste
-dominant sans jamais fermer l'autre) : une hebdomadaire ancrée sur le trajet domicile-travail
-(`loop_type = 'commute'`, générée par `generate_commute_checkins()`) et une mensuelle ancrée
-sur le poste "extras" — loisirs ou voyages, quel que soit celui qui pèse le plus, même
-départage que la décision dominante du bilan, **sauf pour qui sort rarement, interrogé sur ses
-voyages** (27/09/2026, paragraphe de C2.5 plus haut), **et sauf quand une action est engagée sur
-l'un des deux, qui décide alors** (30/09/2026, `v1-27` §12.25) (`loop_type = 'extras'`, générée par
-`generate_extras_checkins()`). **Les deux partent du dernier bilan valide — celui du plan —, choisi
-avant de filtrer sur le trajet ou la base déclarée** (30/09/2026, `v1-27` §12.21) : filtrer
-d'abord faisait reprendre la main à un ancien bilan dès que le nouveau n'en avait plus. **Pour les
-boucles, ce choix et les deux filtres vivent en un seul endroit, `boucles_du_dernier_bilan`**
-(`v1-27` §12.22), que lit aussi l'écran du plan par `mes_boucles_a_venir` — les boucles une par
-une : sans boucle, Ramille ne promet rien, ni la carte d'attente, ni la carte des deux lieux, ni la
-carte d'un point répondu dont la boucle s'est arrêtée, ni la félicitation d'un plan sans action
-(§12.25) — et le suivi, qui les lit aussi, ne parle pas de réponses (§12.23). Le plan, lui, porte le même choix écrit autrement
-(`generate_plan_cycle_for_user`) — une copie connue, sur laquelle la fonction s'aligne. Les deux écrivent dans la
-même table `engagement_checkins`
-(contrainte `unique(user_id, loop_type, period_start)`), partent des libellés figés par le calcul
-(`recompute_assessment_results`) sur `assessment_results.commute_poste_label` /
-`.extras_poste_label` — que la boucle mensuelle remplace par le nom du poste, sans mode, quand elle
-interroge un autre poste que le plus lourd (sorties rares, action engagée) ou le résiduel des
-sorties rares —, et sont plannifiées par `pg_cron` séparément (lundi 6h pour la boucle
-hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
-`docs/architecture/v1-02-boucle-engagement.md`.
 ### Conventions front notables → `FRONT.md`
 
 **Cette section vit désormais dans [`FRONT.md`](FRONT.md)**, sorti d'ici le 17/09/2026 où il pesait
 545 lignes sur 1 911 — 29 % du seul fichier qu'une session charge à chaque fois. Même motif que les
-quatre autres fichiers d'outil : ce qui est propre à **un sujet** s'ouvre sur déclencheur, et la
+autres fichiers d'outil : ce qui est propre à **un sujet** s'ouvre sur déclencheur, et la
 table en tête de ce fichier dit lesquels.
 
 Ce qui y est : les repères chiffrés et leurs trois formateurs, le palier, le vocabulaire des postes
-et ses quatre registres, la saison côté client, la mascotte — sa géométrie, ses saisons et tout ce
-qu'elle dit —, l'accessibilité, les deux onglets et leurs états de chargement, le questionnaire, le
-suivi, la persistance locale, et ce que `api/` duplique de `src/`.
+et ses quatre registres, la saison côté client, l'accessibilité, les deux onglets et leurs états de
+chargement, et ce que `api/` duplique de `src/`. **Et depuis le 01/10/2026, la famille `FRONT-*`**
+porte le reste — la mascotte, le questionnaire, la session et le démarrage, le suivi, le mouvement —,
+ouverte sur ses propres déclencheurs.
 
 **Deux règles restent ici parce qu'elles se cassent sans qu'on ait ouvert un écran** :
 

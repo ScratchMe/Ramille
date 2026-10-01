@@ -116,7 +116,7 @@ vue transparente une image sous la préférence (`EXPO.md` §1.7).
   `scripts/verifier-etats-export.mjs` (section J) pour ce qui se voit sans réseau,
   `scripts/verifier-parcours-reel.mjs` pour le reste. Deux moitiés, avec et sans la préférence ;
   « en chemin » se lit sur une valeur strictement intermédiaire, jamais sur une durée
-  (`TESTING.md` §2.14).
+  (`TESTING-GARDES.md` §2.14).
 - **Sur Android, seul l'appareil le dit** : dans les deux états de « Supprimer les animations », app
   relancée à chaque fois (`RECETTE.md`).
 

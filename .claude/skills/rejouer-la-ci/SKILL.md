@@ -14,7 +14,7 @@ servir.
 
 1. **Docker d'abord, si `base` ou `parcours` sont joués.** `docker info` doit répondre. Dans
    l'environnement d'agent, le démon ne démarre pas seul : lance `sudo dockerd > /tmp/dockerd.log
-   2>&1` en arrière-plan (`TESTING.md` §2.6). Le premier démarrage de la stack tire les images, ce
+   2>&1` en arrière-plan (`TESTING-GARDES.md` §2.6). Le premier démarrage de la stack tire les images, ce
    qui prend quelques minutes.
 2. **Lance le rejeu en arrière-plan** : un passage complet dure plus que le délai d'une commande.
    Redirige la sortie vers un fichier, sans tube, car un tube masquerait le code de sortie
