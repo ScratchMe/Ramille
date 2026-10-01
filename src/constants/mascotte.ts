@@ -192,9 +192,15 @@ export const RAMILLE = {
    * et le seul endroit où elle a quelque chose à ajouter au texte.
    *
    * La phrase vivait dans l'écran, à la deuxième personne et hors de portée du test (A3-13) :
-   * « Tes déplacements n'émettent quasiment rien. » Elle est dans sa voix maintenant. Aucun
-   * chiffre n'est affiché dans cette branche de la carte, donc la règle « jamais à côté d'un
-   * chiffre lourd » est tenue sans condition.
+   * « Tes déplacements n'émettent quasiment rien. » Elle est dans sa voix maintenant.
+   *
+   * **La règle « jamais à côté d'un chiffre lourd » y est tenue, mais plus sans condition**
+   * (`FRONT-MASCOTTE.md` §2.3). Aucun chiffre ne se rend *dans* cette branche de la carte, mais
+   * depuis le 01/10/2026 (`v1-33` D9) le total suit la carte dominante : il en est le voisin
+   * immédiat. Il ne dit pourtant jamais rien de lourd, parce que la branche n'existe que pour un total
+   * nul (`bilanSansEmissions`, `<= 0`) : son voisin dit « 0 kg CO₂e », le contraire d'un chiffre
+   * lourd. **Si cette borne s'élargissait un jour à « presque rien »**, le voisin ne serait plus
+   * zéro et la règle serait à relire — c'est la seule condition dont elle dépend désormais.
    */
   bilanQuasiNul: 'Je ne vois presque rien à compter chez toi — c’est rare.',
 
@@ -318,9 +324,17 @@ export const RAMILLE = {
    *
    * **Elle ne redit pas que la page n'existe pas** (C3.9, constat A2-24) : le titre de l'écran
    * le dit déjà, deux lignes plus haut, et Ramille le répétait mot pour mot. Elle ne porte que
-   * la sortie — ce qui est toujours là, et le fait qu'on y retourne.
+   * la sortie.
+   *
+   * **Et elle n'affirme rien sur les données de la personne** (01/10/2026, `v1-33` D17, constat
+   * T-18). Elle disait « Ton bilan et ton plan, eux, sont toujours là » : vrai pour qui en a un,
+   * faux pour qui arrive par un lien tronqué sans en avoir jamais fait — le cas le plus
+   * courant d'une page qu'on n'a pas voulue —, et que « Revenir à l'accueil » envoie alors à
+   * l'onboarding, juste après lui avoir promis un bilan. « Rien n'a changé de ton côté » est vrai
+   * dans tous les cas, sans nombre et sans « il faut ». **Ce que la phrase perd, et c'est décidé** :
+   * elle rassure moins qui a un bilan, le cas que C3.9 visait.
    */
-  introuvable: 'Ton bilan et ton plan, eux, sont toujours là — je te ramène.',
+  introuvable: 'Rien n’a changé de ton côté — je te ramène.',
 
   /**
    * **Un mot à l'entrée de chaque section du questionnaire** — quatre, pas neuf (C3.9, constat
