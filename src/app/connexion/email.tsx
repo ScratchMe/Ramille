@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -37,6 +37,25 @@ import {
  * rien.
  */
 const revenirOuRacine = () => revenirOu('/');
+
+/**
+ * Le cadre des deux phases : **il défile quand il déborde** (01/10/2026, audit T-2). Sans
+ * défilement, à 360 × 640 le pied de la saisie du code sortait de l'écran sans qu'on puisse
+ * l'atteindre. `flexGrow` et non `flex` : à la taille courante, le contenu remplit l'écran, le pied
+ * reste en bas, exactement comme avant (`EXPO.md` §1.6).
+ *
+ * Remonté à chaque phase par sa clé : un défilement gardé d'une phase à l'autre ouvrirait la saisie
+ * du code au décalage où l'on avait touché « Recevoir un code », son titre hors de l'écran.
+ */
+function Cadre({ children }: { children: ReactNode }) {
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.page}>{children}</ScrollView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
 
 /**
  * « Rattacher mon adresse » — une adresse, puis un code.
@@ -213,86 +232,83 @@ export default function ConnexionEmail() {
 
   if (phase.kind === 'code') {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <SaisieDuCode
-            // Le flux décide le `type` vérifié et l'envoi du renvoi. Rien d'autre : ni un mot, ni un
-            // libellé, ni une carte — c'est `voix` qui gouverne tout ce qui se lit, et elle vaut
-            // « parti » dans les deux branches parce qu'un code est bel et bien parti dans les deux.
-            contexte={phase.flux}
-            voix="parti"
-            adresse={email.trim()}
-            // **Un seul libellé pour les deux branches, et il a dû perdre son verbe.** Il disait
-            // « Rattacher mon adresse », ce qui est faux quand l'adresse est déjà prise : rien n'est
-            // rattaché, on rejoint un compte. En mettre un par branche aurait rouvert l'oracle sur
-            // le bouton lui-même. C'est le second prix de l'arbitrage, après la phrase
-            // conditionnelle — et le moins cher des deux.
-            libelleBouton="Valider mon code"
-            onOuverte={() => codeAccepte(phase.flux)}
-            onAutreAdresse={() => {
-              setMessage(null);
-              setPhase({ kind: 'saisie' });
-            }}
-            renvoyer={phase.flux === 'connexion' ? demanderLaConnexion : demanderLeRattachement}
-          />
-        </SafeAreaView>
-      </ThemedView>
+      <Cadre key="code">
+        <SaisieDuCode
+          // Le flux décide le `type` vérifié et l'envoi du renvoi. Rien d'autre : ni un mot, ni un
+          // libellé, ni une carte — c'est `voix` qui gouverne tout ce qui se lit, et elle vaut
+          // « parti » dans les deux branches parce qu'un code est bel et bien parti dans les deux.
+          contexte={phase.flux}
+          voix="parti"
+          adresse={email.trim()}
+          // **Un seul libellé pour les deux branches, et il a dû perdre son verbe.** Il disait
+          // « Rattacher mon adresse », ce qui est faux quand l'adresse est déjà prise : rien n'est
+          // rattaché, on rejoint un compte. En mettre un par branche aurait rouvert l'oracle sur
+          // le bouton lui-même. C'est le second prix de l'arbitrage, après la phrase
+          // conditionnelle — et le moins cher des deux.
+          libelleBouton="Valider mon code"
+          onOuverte={() => codeAccepte(phase.flux)}
+          onAutreAdresse={() => {
+            setMessage(null);
+            setPhase({ kind: 'saisie' });
+          }}
+          renvoyer={phase.flux === 'connexion' ? demanderLaConnexion : demanderLeRattachement}
+        />
+      </Cadre>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.textBlock}>
-            <ThemedText type="screenTitle">Rattacher mon adresse</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              Une adresse, puis un code reçu par email — pas de mot de passe. Ton bilan reste le
-              tien.
-            </ThemedText>
-          </View>
-
-          <View style={styles.fields}>
-            <TextField
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              placeholder="camille@exemple.fr"
-            />
-            <MessageInline message={message} />
-            <TextLink
-              label="J’ai déjà un compte"
-              onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'email' } })}
-              role="link"
-              type="linkPrimary"
-            />
-          </View>
+    <Cadre key="saisie">
+      <View style={styles.content}>
+        <View style={styles.textBlock}>
+          <ThemedText type="screenTitle">Rattacher mon adresse</ThemedText>
+          <ThemedText type="body" themeColor="textSecondary">
+            Une adresse, puis un code reçu par email — pas de mot de passe. Ton bilan reste le
+            tien.
+          </ThemedText>
         </View>
 
-        <View style={styles.footer}>
-          <Button
-            title={envoi ? 'Envoi…' : 'Recevoir un code'}
-            onPress={() => void demander()}
-            disabled={envoi}
+        <View style={styles.fields}>
+          <TextField
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            placeholder="camille@exemple.fr"
           />
+          <MessageInline message={message} />
           <TextLink
-            label="Revenir aux autres options"
-            onPress={revenirOuRacine}
+            label="J’ai déjà un compte"
+            onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'email' } })}
             role="link"
-            type="small"
-            themeColor="textTertiary"
-            style={styles.backLink}
+            type="linkPrimary"
           />
         </View>
-      </SafeAreaView>
-    </ThemedView>
+      </View>
+
+      <View style={styles.footer}>
+        <Button
+          title={envoi ? 'Envoi…' : 'Recevoir un code'}
+          onPress={() => void demander()}
+          disabled={envoi}
+        />
+        <TextLink
+          label="Revenir aux autres options"
+          onPress={revenirOuRacine}
+          role="link"
+          type="small"
+          themeColor="textTertiary"
+          style={styles.backLink}
+        />
+      </View>
+    </Cadre>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1, padding: Spacing.four, justifyContent: 'space-between' },
+  safeArea: { flex: 1 },
+  page: { flexGrow: 1, padding: Spacing.four, justifyContent: 'space-between' },
   content: { gap: Spacing.four, marginTop: Spacing.two },
   textBlock: { gap: 10 },
   fields: { gap: Spacing.four },

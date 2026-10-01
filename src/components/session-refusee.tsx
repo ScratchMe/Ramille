@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { Mascot } from '@/components/mascot';
@@ -40,18 +41,24 @@ export function SessionRefusee({
 }) {
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.contenu}>
-        <Mascot mood="calm" size={72} tilt={-6} />
-        <ThemedText type="screenTitle">Reconnecte-toi pour retrouver ton bilan</ThemedText>
-        <ThemedText themeColor="textSecondary" style={styles.corps}>
-          Ton bilan, ton plan et tes points sont rattachés à ton compte, pas à cet appareil.
-        </ThemedText>
-        <Button title="J’ai déjà un compte" onPress={onRetrouver} style={styles.bouton} />
-        {/* Le second chemin reste ouvert : quelqu'un peut préférer repartir d'un bilan neuf sur cet
-            appareil plutôt que de retrouver un compte dont il n'a plus l'adresse. Un écran qui ne
-            laisserait que la reconnexion serait une impasse. */}
-        <TextLink label="Commencer un bilan sur cet appareil" onPress={onCommencer} />
-      </View>
+      {/* **Dans la zone sûre, et défilable** (01/10/2026, audit T-2). Posée par-dessus tout l'écran,
+          la surcouche ignorait la barre d'état et l'encoche ; et centrée dans une boîte fixe, elle
+          débordait des deux côtés à petite taille ou à grande police, ses deux sorties comprises.
+          `flexGrow` et non `flex` : à la taille courante, le contenu se centre comme avant. */}
+      <SafeAreaView style={styles.zoneSure}>
+        <ScrollView contentContainerStyle={styles.contenu}>
+          <Mascot mood="calm" size={72} tilt={-6} />
+          <ThemedText type="screenTitle">Reconnecte-toi pour retrouver ton bilan</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.corps}>
+            Ton bilan, ton plan et tes points sont rattachés à ton compte, pas à cet appareil.
+          </ThemedText>
+          <Button title="J’ai déjà un compte" onPress={onRetrouver} style={styles.bouton} />
+          {/* Le second chemin reste ouvert : quelqu'un peut préférer repartir d'un bilan neuf sur cet
+              appareil plutôt que de retrouver un compte dont il n'a plus l'adresse. Un écran qui ne
+              laisserait que la reconnexion serait une impasse. */}
+          <TextLink label="Commencer un bilan sur cet appareil" onPress={onCommencer} />
+        </ScrollView>
+      </SafeAreaView>
     </ThemedView>
   );
 }
@@ -59,8 +66,9 @@ export function SessionRefusee({
 const styles = StyleSheet.create({
   // Positionnement absolu et non `flex: 1` : l'écran couvre le navigateur resté monté dessous.
   container: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  zoneSure: { flex: 1 },
   contenu: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.four,

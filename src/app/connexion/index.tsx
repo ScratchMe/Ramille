@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
@@ -153,7 +153,11 @@ export default function ConnexionProposition() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
+        {/* **L'écran défile quand il déborde** (01/10/2026, audit T-2) : centré dans une boîte fixe, il
+            débordait des deux côtés à 320 × 568 — la mascotte au-dessus du haut, les pages légales
+            sous le bas, ni l'une ni les autres atteignables. `flexGrow` et non `flex` : à la taille
+            courante, le contenu remplit l'écran et se centre exactement comme avant (`EXPO.md` §1.6). */}
+        <ScrollView contentContainerStyle={styles.content}>
           {/* Marque visible avant le bouton Google : un utilisateur qui vient d'arriver sur
               son bilan doit reconnaître que c'est bien Ramille qui lui propose de se
               connecter, pas un tiers — le bouton Google lui-même reste non personnalisé
@@ -256,7 +260,7 @@ export default function ConnexionProposition() {
               themeColor="textTertiary"
             />
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -265,7 +269,7 @@ export default function ConnexionProposition() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  content: { flex: 1, justifyContent: 'center', padding: Spacing.four, gap: Spacing.four },
+  content: { flexGrow: 1, justifyContent: 'center', padding: Spacing.four, gap: Spacing.four },
   logo: { marginBottom: Spacing.one },
   textBlock: { gap: Spacing.two },
   title: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
