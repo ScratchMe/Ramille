@@ -1709,6 +1709,20 @@ for (const reduire of [false, true]) {
 //   | la capture de la répétition d'Entrée retirée (`barre-d-espace.ts`) | l'Entrée maintenu, sur ses deux constats — seulement |
 //   | le focus volé par un brouillon relu (`entree.sens === null` retiré de l'effet) | A3 : à l'arrivée du brouillon, le focus est sur l'étape — seulement (`v1-31` §9, écart 13) |
 //
+// **B6 bis, éprouvé le 01/10/2026** de la même façon (un export chacune, cache Metro isolé, `--clear`,
+// le script entier rejoué) :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | la réserve de l'ouverture retirée — l'état d'avant, où le défilement part sur le contenu d'avant le dépli | B6 bis, les deux « Oui » sans la préférence : le dépli finit sous le pied (20 et 34 px), défilement 0, aucune position en chemin — seulement. Sous la préférence rien ne grandit, et ces cas passaient déjà |
+//   | la réserve qui ne tombe jamais | B6 bis sans la préférence, après « Non » : 44 et 130 px sous la zone — seulement. Ouvert, le dépli dépasse déjà la réserve : c'est en se refermant qu'elle se voit |
+//   | la réserve comptée sur la hauteur du contenu, que `flexGrow` étire à la zone, et non sur sa hauteur naturelle | B6 bis sans la préférence : 456 et 368 px de trop une fois le dépli ouvert — seulement. C'était la première version de la correction |
+//
+// La première version de B6 bis cherchait le titre sans normaliser les blancs : les insécables que pose
+// `ThemedText` (« 300 km », « ? ») le rendaient introuvable, et la mesure de la réserve était **sautée
+// sans bruit** — c'est le rejeu de la troisième mutation qui l'a montré. Une mesure introuvable échoue
+// désormais.
+//
 // La garde de l'étape courante retirée de `handleNext` n'a pas de cas ici : `StepShell` n'appelle
 // déjà pas `onNext` sur une étape incomplète, donc c'est par construction une seconde garde. Elle est
 // portée par `issueDuSuivant`, testée dans `bilan.test.ts` (deux mutations consignées), et son
@@ -2095,6 +2109,112 @@ if (Object.values(COULEUR).some((c) => c === null)) {
       kEchec(ou, String(erreur).slice(0, 180));
     } finally {
       await page.close();
+    }
+  }
+
+  // **B6 bis — une ouverture sur une étape qui tenait dans la zone** (01/10/2026). Le défilement de la
+  // plateforme est borné à la longueur du contenu au moment où il part, et un dépli part de zéro : sur le
+  // « Oui » du second mode (B1.6) et sur celui des longs trajets (`v1-33` D1), il n'y avait encore rien à
+  // défiler — `scrollTo` visait 36 px et la zone restait à 0. B6 y échappait : la liste des modes dépasse
+  // déjà de la zone à 360. `StepShell` réserve désormais la hauteur finale le temps de l'ouverture. Ici,
+  // à 390 × 844 : la zone remonte jusqu'à ce que le dépli finisse 16 au-dessus du pied, en chemin, le
+  // focus reste sur « Oui » ; sous la préférence, posé dès la première image ; et la réserve tombe — le
+  // contenu revient à sa hauteur, sans blanc sous le dernier élément.
+  const OUVERTURES_SUR_UNE_ETAPE_COURTE = [
+    {
+      nom: '« Oui » du second mode (B1.6)',
+      brouillon: brouillonDe('commute_extra', { ...TRAJET_DECLARE, commute_mode: 'voiture', commute_car_engine: 'thermique' }),
+      titre: 'Utilises-tu un second mode en complément ?',
+      // Le dernier élément du dépli : le lien du mode manquant, sous la boîte « Lequel ? ».
+      dernier: () => {
+        const n = [...document.querySelectorAll('[role="link"], a, [role="button"]')].find((e) =>
+          /^Ton mode n.est pas dans la liste/.test((e.getAttribute('aria-label') ?? e.innerText ?? '').trim())
+        );
+        return n ? n.getBoundingClientRect().bottom : null;
+      },
+    },
+    {
+      nom: '« Oui » des longs trajets',
+      brouillon: brouillonDe('long_trips', {
+        ...TRAJET_DECLARE,
+        commute_mode: 'voiture',
+        commute_car_engine: 'thermique',
+        commute_second_mode_used: false,
+        leisure_frequency: 'rarely',
+        flights_total_per_year: 0,
+        flights_short_per_year: 0,
+      }),
+      titre: 'Hors avion, fais-tu des trajets de plus de 300 km sur une année type ?',
+      // Le dernier élément du dépli : la série de la voiture, sans précision tant qu'elle est vide.
+      dernier: () => {
+        const g = [...document.querySelectorAll('[role="radiogroup"]')].find(
+          (x) => x.getAttribute('aria-label') === 'Trajets longue distance en voiture'
+        );
+        return g ? g.getBoundingClientRect().bottom : null;
+      },
+    },
+  ];
+  for (const cas of OUVERTURES_SUR_UNE_ETAPE_COURTE) {
+    for (const reduire of [false, true]) {
+      const ou = `/bilan, ${cas.nom} touché à 390 × 844 (B6 bis)${reduire ? ' sous « réduire les animations »' : ''}`;
+      const page = await ouvrir('/bilan', { [BROUILLON]: cas.brouillon }, { reduire, releve: true });
+      try {
+        const oui = page.getByRole('radio', { name: 'Oui', exact: true });
+        await oui.waitFor({ state: 'visible', timeout: ATTENTE });
+        await page.waitForTimeout(REPOS);
+        const avant = await lireK(page);
+        if (!avant.zone || avant.zone.decalage !== 0) kEchec(ou, 'la zone a défilé avant le geste — la garde ne peut pas conclure.');
+        const releve = await releverPendant(
+          page,
+          { zone: ['defilement', { titre: cas.titre, bouton: 'Suivant' }] },
+          () => oui.click(),
+          1_200
+        );
+        await page.waitForTimeout(REPOS);
+        const lu = await lireK(page);
+        const bas = await page.evaluate(cas.dernier);
+        // Le titre se cherche blancs normalisés : `ThemedText` pose des insécables (« 300 km », « ? »).
+        const contenu = await page.evaluate((titre) => {
+          const n = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+          const h = [...document.querySelectorAll('h1')].find((e) => e.getClientRects().length > 0 && n(e.innerText) === titre);
+          let z = h?.parentElement;
+          while (z && !/(auto|scroll)/.test(getComputedStyle(z).overflowY)) z = z.parentElement;
+          // Le contenu, et ce qu'il porterait sans réserve : sa première vue, plus les deux marges de 24.
+          return z ? { hauteur: z.scrollHeight, naturelle: z.firstElementChild.firstElementChild.getBoundingClientRect().height + 48 } : null;
+        }, cas.titre);
+        if (bas === null || !lu.zone) kEchec(ou, 'le dépli est introuvable — la garde ne peut pas conclure.');
+        else if (!auPixel(bas, lu.zone.bas - 16)) {
+          kEchec(ou, `le dépli finit à ${Math.round(lu.zone.bas - bas)} px au-dessus du pied — attendu 16 (défilement ${Math.round(lu.zone.decalage)}) : le défilement à l'ouverture est borné au contenu d'avant le dépli.`);
+        }
+        if (lu.focus !== 'Oui') kEchec(ou, `le focus est sur « ${lu.focus} » — il reste sur « Oui ».`);
+        if (!contenu) kEchec(ou, 'la zone est introuvable une fois le dépli ouvert — la garde ne peut pas conclure.');
+        else if (contenu.hauteur > Math.max(contenu.naturelle, lu.zone ? lu.zone.bas - lu.zone.haut : 0) + 1) {
+          kEchec(ou, `le contenu garde ${Math.round(contenu.hauteur - contenu.naturelle)} px de trop une fois le dépli ouvert : la réserve n'est pas tombée.`);
+        }
+        const positions = releve.map((e) => e.zone?.position).filter((p) => p != null);
+        const bouge = enChemin(positions, lu.zone?.decalage ?? 0);
+        if (!reduire && !bouge) kEchec(ou, `le défilement saute (${positions.join(', ')}) — la plateforme l'anime.`);
+        if (reduire && bouge) kEchec(ou, 'le défilement passe par des positions intermédiaires — sous la préférence, il se pose.');
+        // « Non » referme le dépli : l'étape tient de nouveau dans la zone. Une réserve qui ne tomberait
+        // pas ne se voit qu'ici — une fois le dépli ouvert, sa hauteur naturelle la dépasse déjà.
+        await page.getByRole('radio', { name: 'Non', exact: true }).click();
+        await page.waitForTimeout(REPOS);
+        const apresNon = await page.evaluate((titre) => {
+          const n = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+          const h = [...document.querySelectorAll('h1')].find((e) => e.getClientRects().length > 0 && n(e.innerText) === titre);
+          let z = h?.parentElement;
+          while (z && !/(auto|scroll)/.test(getComputedStyle(z).overflowY)) z = z.parentElement;
+          return z ? { contenu: z.scrollHeight, zone: z.clientHeight } : null;
+        }, cas.titre);
+        if (!apresNon) kEchec(ou, 'la zone est introuvable après « Non ».');
+        else if (apresNon.contenu > apresNon.zone + 1) {
+          kEchec(ou, `après « Non », le contenu garde ${apresNon.contenu - apresNon.zone} px sous la zone : la réserve de l'ouverture n'est pas tombée.`);
+        }
+      } catch (erreur) {
+        kEchec(ou, String(erreur).slice(0, 180));
+      } finally {
+        await page.close();
+      }
     }
   }
 

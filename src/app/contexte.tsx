@@ -26,7 +26,13 @@ import {
   lireLeContexteCourant,
   type ContexteCourant,
 } from '@/lib/contexte';
-import { EMPTY_BILAN_ANSWERS, manqueDeLEtape, teletravailSePose, type ChampDuBilan } from '@/types/bilan';
+import {
+  EMPTY_BILAN_ANSWERS,
+  manqueDeLEtape,
+  RIEN_HORS_COLONNES,
+  teletravailSePose,
+  type ChampDuBilan,
+} from '@/types/bilan';
 import {
   contexteAChange,
   contexteEstComplet,
@@ -229,7 +235,8 @@ export default function Contexte() {
   // mêmes deux colonnes de trajet que `contexteEstComplet` : le prédicat ne se recopie pas.
   const manque = complet
     ? null
-    : manqueDeLEtape('context', { ...EMPTY_BILAN_ANSWERS, ...etat.depart.trajet, ...courant });
+    : // L'étape du contexte ne lit pas les longs trajets : rien hors des colonnes ne la concerne.
+      manqueDeLEtape('context', { ...EMPTY_BILAN_ANSWERS, ...etat.depart.trajet, ...courant }, RIEN_HORS_COLONNES);
   if (demande && manque === null) setDemande(false);
   const contexteDesAncres: AncresDeLEtape = {
     enregistrer: enregistrerLAncre,
