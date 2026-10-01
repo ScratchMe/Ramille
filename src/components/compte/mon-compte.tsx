@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -7,9 +7,11 @@ import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteMyAccount, exportMyData } from '@/lib/compte';
+import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { terminerLeFlux } from '@/lib/navigation';
 import { APP_NAME } from '@/constants/produit';
 import { RAMILLE } from '@/constants/mascotte';
@@ -68,6 +70,20 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
   // d'asymétrie que ce dépôt traque ailleurs.
   const [supprime, setSupprime] = useState(false);
 
+  /**
+   * **« Supprimer mon compte » disparaît sous le doigt qui le touche** : le focus va à la phrase de la
+   * confirmation qui le remplace (01/10/2026, audit T-4, `FRONT.md` §2.4), sans quoi il retombait sur
+   * le document. Au geste seulement — la carte qu'on retrouve en revenant sur « Toi » ne vole rien.
+   * « Annuler » ne rend pas encore le focus au lien : `TextLink` ne prête pas sa surface.
+   */
+  const ouvertureDemandee = useRef(false);
+  const phraseDeConfirmation = useRef<unknown>(null);
+  useEffect(() => {
+    if (!confirmation || !ouvertureDemandee.current) return;
+    ouvertureDemandee.current = false;
+    donnerLeFocus(phraseDeConfirmation.current);
+  }, [confirmation]);
+
   const exporter = async () => {
     setBusy('export');
     setMessage(null);
@@ -100,9 +116,14 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
   if (supprime) {
     return (
       <ThemedView style={carte}>
-        <ThemedText weight={600} type="small">
-          C’est fait.
-        </ThemedText>
+        {/* **Le focus vient ici** (01/10/2026, audit T-4) : cet état remplace la carte sous le doigt,
+            « Supprimer définitivement » disparaît avec elle, et rien n'annonçait la suppression. Il
+            n'existe qu'après ce geste, donc son montage **est** la réponse (`TitreDArrivee`). */}
+        <TitreDArrivee>
+          <ThemedText weight={600} type="small">
+            C’est fait.
+          </ThemedText>
+        </TitreDArrivee>
         <ThemedText type="small" themeColor="textSecondary">
           Ton compte et tout ce qui s’y rattachait — bilans, plan, points de suivi, retours — ont
           été supprimés définitivement.
@@ -148,7 +169,10 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
           <TextLink
             label="Supprimer mon compte"
             hint="Demande une confirmation avant de supprimer quoi que ce soit"
-            onPress={() => setConfirmation(true)}
+            onPress={() => {
+              ouvertureDemandee.current = true;
+              setConfirmation(true);
+            }}
             disabled={busy !== null}
             type="small"
             themeColor="textTertiary"
@@ -156,7 +180,11 @@ export function MonCompte({ onSupprime }: { onSupprime?: () => void } = {}) {
           />
         ) : (
           <View style={styles.confirmation}>
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText
+              type="small"
+              themeColor="textSecondary"
+              {...({ ref: phraseDeConfirmation, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+            >
               Tes bilans, ton plan, tes points de suivi et tes retours seront supprimés
               définitivement. Cette action est irréversible.
             </ThemedText>

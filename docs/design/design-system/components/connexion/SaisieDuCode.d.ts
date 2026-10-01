@@ -8,6 +8,11 @@ export interface SaisieDuCodeProps {
    * rattacher une adresse) ou `peut_etre` (il ne l'est que si un compte existe : retrouver un compte, page de suppression).
    */
   voix: 'parti' | 'peut_etre';
+  /**
+   * L'écran arrive sous le doigt (« Recevoir un code » vient d'être touché) : son titre prend le focus. Faux quand
+   * l'hôte s'ouvre directement sur le code, sans geste — la reprise depuis « Toi ». Le kit ne déplace pas le focus.
+   */
+  apresUnGeste?: boolean;
   /** L'adresse saisie à l'étape précédente. */
   adresse: string;
   /** « Valider mon code », « Retrouver mon compte », « Ouvrir ma session ». */

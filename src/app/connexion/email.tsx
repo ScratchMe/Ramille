@@ -10,6 +10,7 @@ import { TextLink } from '@/components/text-link';
 import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { Spacing } from '@/constants/theme';
 import { track } from '@/lib/analytics';
 import { demanderLaConnexion, demanderLeRattachement } from '@/lib/auth';
@@ -116,9 +117,15 @@ export default function ConnexionEmail() {
   // de **connexion** et arrive sur la même saisie, mot pour mot, que l'adresse libre. Le flux ne
   // sert donc plus qu'à deux choses invisibles — le `type` vérifié, et ce qu'on fait de la session
   // ouverte — et jamais à un mot de l'écran, sinon l'oracle se rouvrirait par le texte.
+  //
+  // **Et elle dit si elle arrive sous le doigt** (`apresUnGeste`, 01/10/2026, audit T-4) : « Recevoir
+  // un code » et « Utiliser une autre adresse » disparaissent avec la phase qui les portait, et le
+  // focus retombait sur le document — le lecteur d'écran repartait du haut sans rien annoncer. La
+  // phase qui arrive après un geste prend donc le focus sur son titre (`FRONT.md` §2.4) ; celle qui
+  // s'ouvre sans geste — l'arrivée sur l'écran, la reprise depuis « Toi » — ne le vole à personne.
   const [phase, setPhase] = useState<
-    { kind: 'saisie' } | { kind: 'code'; flux: ContexteDuCode }
-  >({ kind: 'saisie' });
+    { kind: 'saisie'; apresUnGeste: boolean } | { kind: 'code'; flux: ContexteDuCode; apresUnGeste: boolean }
+  >({ kind: 'saisie', apresUnGeste: false });
 
   // Deux raisons de relire l'adresse tapée sur cet appareil, et aucune ne passe par l'URL (une
   // adresse dans la barre d'adresse entre dans l'historique du navigateur et son autocomplétion) :
@@ -134,7 +141,7 @@ export default function ConnexionEmail() {
       // Pas de nouvel envoi : rien n'a échoué, on rouvre une saisie interrompue. **Le flux se relit
       // avec l'adresse** : depuis que cet écran peut envoyer l'un ou l'autre, rouvrir au hasard
       // ferait vérifier un code de connexion contre `email_change`, donc refuser un code valide.
-      if (reprise && !motif) setPhase({ kind: 'code', flux });
+      if (reprise && !motif) setPhase({ kind: 'code', flux, apresUnGeste: false });
     });
     return () => {
       annule = true;
@@ -191,7 +198,7 @@ export default function ConnexionEmail() {
       await memoriserFluxDuCode('connexion');
       setEnvoi(false);
       track('connexion_demande');
-      setPhase({ kind: 'code', flux: 'connexion' });
+      setPhase({ kind: 'code', flux: 'connexion', apresUnGeste: true });
       return;
     }
 
@@ -203,7 +210,7 @@ export default function ConnexionEmail() {
     // mesure demandée le 20/09/2026, et elle ne tient que si ces deux émetteurs restent ce qu'ils
     // sont : retirer celui du plan ferait lire zéro succès par email.
     track('connexion_demande');
-    setPhase({ kind: 'code', flux: 'rattachement' });
+    setPhase({ kind: 'code', flux: 'rattachement', apresUnGeste: true });
   };
 
   /**
@@ -244,6 +251,7 @@ export default function ConnexionEmail() {
           // « parti » dans les deux branches parce qu'un code est bel et bien parti dans les deux.
           contexte={phase.flux}
           voix="parti"
+          apresUnGeste={phase.apresUnGeste}
           adresse={email.trim()}
           // **Un seul libellé pour les deux branches, et il a dû perdre son verbe.** Il disait
           // « Rattacher mon adresse », ce qui est faux quand l'adresse est déjà prise : rien n'est
@@ -254,7 +262,7 @@ export default function ConnexionEmail() {
           onOuverte={() => codeAccepte(phase.flux)}
           onAutreAdresse={() => {
             setMessage(null);
-            setPhase({ kind: 'saisie' });
+            setPhase({ kind: 'saisie', apresUnGeste: true });
           }}
           renvoyer={phase.flux === 'connexion' ? demanderLaConnexion : demanderLeRattachement}
         />
@@ -262,11 +270,13 @@ export default function ConnexionEmail() {
     );
   }
 
+  const titre = <ThemedText type="screenTitle">Rattacher mon adresse</ThemedText>;
+
   return (
     <Cadre key="saisie">
       <View style={styles.content}>
         <View style={styles.textBlock}>
-          <ThemedText type="screenTitle">Rattacher mon adresse</ThemedText>
+          {phase.apresUnGeste ? <TitreDArrivee>{titre}</TitreDArrivee> : titre}
           <ThemedText type="body" themeColor="textSecondary">
             Une adresse, puis un code reçu par email — pas de mot de passe. Ton bilan reste le
             tien.

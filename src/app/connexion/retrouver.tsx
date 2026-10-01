@@ -9,6 +9,7 @@ import { TextLink } from '@/components/text-link';
 import { MessageInline } from '@/components/message-inline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { SaisieDuCode } from '@/components/auth/saisie-du-code';
 import { Radius, Spacing } from '@/constants/theme';
 import { demanderLaConnexion } from '@/lib/auth';
@@ -117,6 +118,16 @@ export default function RetrouverMonCompte() {
   // qu'il se garde d'une phase à l'autre jusqu'à la tentative suivante, qui l'efface.
   const motif = motifRetourLien(params.motif);
   const [phase, setPhase] = useState<Phase>('chargement');
+  // **La phase est-elle arrivée sous le doigt ?** (01/10/2026, audit T-4) Le bouton touché disparaît
+  // avec la phase qui le portait, et le focus retombait sur le document : la phase qui arrive après
+  // un geste prend donc le focus sur son titre (`FRONT.md` §2.4). La première, posée par la lecture
+  // de l'état du compte, n'en prend pas — personne n'a encore rien touché.
+  const [sousLeDoigt, setSousLeDoigt] = useState(false);
+  /** Changer de phase **à la suite d'un geste** — le seul chemin, après la première lecture. */
+  const allerA = (suivante: Phase) => {
+    setSousLeDoigt(true);
+    setPhase(suivante);
+  };
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(
@@ -202,7 +213,7 @@ export default function RetrouverMonCompte() {
       setMessage(messageDeLaDemande(error));
       return;
     }
-    setPhase('code');
+    allerA('code');
   };
 
   if (phase === 'chargement') {
@@ -234,7 +245,7 @@ export default function RetrouverMonCompte() {
           </View>
         </View>
         <View style={styles.footer}>
-          <Button title="Retrouver mon compte" onPress={() => setPhase('saisie')} />
+          <Button title="Retrouver mon compte" onPress={() => allerA('saisie')} />
           <Button
             title="Garder ce bilan sur cet appareil"
             variant="secondary"
@@ -258,6 +269,8 @@ export default function RetrouverMonCompte() {
           // compte. La voix porte ce « si », là où `/connexion/email` peut l'affirmer dans ses
           // deux branches (`src/types/connexion.ts`, `VoixDeLaSaisie`).
           voix="peut_etre"
+          // Toujours après « Recevoir un code » : cet écran ne s'ouvre jamais directement sur le code.
+          apresUnGeste
           adresse={email.trim()}
           libelleBouton="Retrouver mon compte"
           onOuverte={async () => {
@@ -274,7 +287,7 @@ export default function RetrouverMonCompte() {
           }}
           onAutreAdresse={() => {
             setMessage(null);
-            setPhase('saisie');
+            allerA('saisie');
           }}
           renvoyer={demanderLaConnexion}
         />
@@ -282,13 +295,13 @@ export default function RetrouverMonCompte() {
     );
   }
 
+  const titre = <ThemedText type="screenTitle">Retrouver mon compte</ThemedText>;
+
   return (
     <Cadre key="saisie">
       <View style={styles.content}>
         <View style={styles.textBlock}>
-          <ThemedText type="screenTitle">
-            Retrouver mon compte
-          </ThemedText>
+          {sousLeDoigt ? <TitreDArrivee>{titre}</TitreDArrivee> : titre}
           <ThemedText type="body" themeColor="textSecondary">
             Indique l’adresse de ton compte : un code à taper ici te reconnecte, avec tes
             bilans et ton plan.

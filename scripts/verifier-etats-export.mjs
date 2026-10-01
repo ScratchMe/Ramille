@@ -2155,6 +2155,122 @@ if (Object.values(COULEUR).some((c) => c === null)) {
   }
 }
 
+// ── L. Les écrans de compte : le focus suit le geste, et seulement lui (01/10/2026, audit T-4) ───
+//
+// Un écran de compte change de phase sans changer de route — l'adresse puis le code, la confirmation
+// d'une suppression —, et le bouton touché disparaît avec la phase qui le portait : le focus
+// retombait sur le document (mesuré, `BODY`), et rien n'annonçait ce qui arrivait. La phase qui
+// arrive **sous le doigt** prend donc le focus (`FRONT.md` §2.4) ; celle qui s'ouvre sans geste ne le
+// vole à personne. Les deux moitiés se gardent ici, parce qu'elles se jouent sans réseau : la reprise
+// depuis « Toi » (le code ouvert d'emblée, depuis deux marques locales), « Utiliser une autre
+// adresse », la première phase de `/connexion/retrouver`, et la confirmation de « Supprimer mon
+// compte » sur « Toi ». Ce qui demande un envoi réel — l'adresse puis le code, « C'est fait. » — se
+// garde au parcours réel (`verifier-parcours-reel.mjs`, « compte »).
+//
+// **Éprouvée en la cassant le 01/10/2026**, une mutation à la fois, un export chacune (cache Metro
+// privé, `--clear`), le script entier rejoué. Ce qui tombe, dans tout le script :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | la reprise ouverte « sous le doigt » (`apresUnGeste: true`) | L1, la reprise — seulement |
+//   | « Rattacher mon adresse » sans `TitreDArrivee` | L2, « Utiliser une autre adresse » — seulement |
+//   | la première phase de `/connexion/retrouver` posée « sous le doigt » | L3 — seulement |
+//   | le focus de la confirmation retiré (`donnerLeFocus` de `MonCompte`) | L4 — seulement |
+const ADRESSE_DU_CODE = 'traceverte.derniere_adresse_lien.v1';
+const FLUX_DU_CODE = 'traceverte.dernier_flux_de_code.v1';
+
+/** Où est le focus : le document, ou le texte normalisé de l'élément qui l'a. */
+function lireLeFocus() {
+  const actif = document.activeElement;
+  return {
+    corps: actif === null || actif === document.body,
+    texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+  };
+}
+
+async function attendreLeTexte(page, texte) {
+  await page.waitForFunction((t) => document.body.innerText.replace(/\s+/g, ' ').includes(t), texte, {
+    timeout: ATTENTE,
+  });
+}
+
+{
+  const ou = '/connexion/email?reprise=1';
+  const page = await ouvrir(ou, { [ADRESSE_DU_CODE]: 'camille@exemple.fr', [FLUX_DU_CODE]: 'rattachement' });
+  try {
+    await attendreLeTexte(page, 'Regarde tes emails');
+    const surLaReprise = await page.evaluate(lireLeFocus);
+    if (!surLaReprise.corps) {
+      echecs.push(
+        `${ou} (L1) : la saisie du code s'ouvre sans geste — la reprise depuis « Toi » — et prend pourtant` +
+          ` le focus (« ${surLaReprise.texte} ») : un écran ouvert sans geste ne le vole à personne` +
+          ' (`SaisieDuCode`, `apresUnGeste`).'
+      );
+    }
+    await page.getByRole('button', { name: 'Utiliser une autre adresse', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await attendreLeTexte(page, 'Rattacher mon adresse');
+    await page.waitForTimeout(REPOS);
+    const apresLeGeste = await page.evaluate(lireLeFocus);
+    if (apresLeGeste.corps || !apresLeGeste.texte.startsWith('Rattacher mon adresse')) {
+      echecs.push(
+        `${ou} (L2) : après « Utiliser une autre adresse » au clavier, le focus est sur` +
+          ` ${apresLeGeste.corps ? 'le document' : `« ${apresLeGeste.texte} »`} — il doit être sur le titre` +
+          ' qui arrive, « Rattacher mon adresse » (`TitreDArrivee`).'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`${ou}, focus des phases : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+{
+  // Sans réseau, la lecture de l'état du compte n'aboutit pas : l'écran pose sa phase d'adresse, sans
+  // que personne ait rien touché.
+  const ou = '/connexion/retrouver';
+  const page = await ouvrir(ou);
+  try {
+    await attendreLeTexte(page, 'Retrouver mon compte');
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(lireLeFocus);
+    if (!focus.corps) {
+      echecs.push(
+        `${ou} (L3) : la première phase arrive sans geste et prend pourtant le focus (« ${focus.texte} »)` +
+          ' — seule une phase arrivée sous le doigt le prend.'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`${ou}, focus de la première phase : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+{
+  const ou = '/compte, « Supprimer mon compte »';
+  const page = await ouvrir('/compte');
+  try {
+    await page.getByRole('button', { name: 'Supprimer mon compte', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await attendreLeTexte(page, 'Cette action est irréversible.');
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(lireLeFocus);
+    if (focus.corps || !focus.texte.startsWith('Tes bilans, ton plan')) {
+      echecs.push(
+        `${ou} (L4) : le lien disparaît sous le doigt, et le focus est sur` +
+          ` ${focus.corps ? 'le document' : `« ${focus.texte} »`} — il doit être sur la confirmation qui` +
+          ' le remplace (`MonCompte`).'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`${ou}, focus de la confirmation : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 await navigateur.close();
 fermer();
 
@@ -2181,5 +2297,6 @@ console.log(
     ' pose sur le premier mode révélé ; un arrêt de tabulation par groupe d’options, et les flèches' +
     ' y cochent sans en sortir ; la barre posée au démarrage, l’étape, son rail, une précision et les' +
     ' onglets en mouvement — et posés sous « réduire les animations » ; au « Suivant » en attente, ce' +
-    ' qui manque se dit, y mène et y fait défiler, une ouverture remonte l’écran, et le filet dit la suite.'
+    ' qui manque se dit, y mène et y fait défiler, une ouverture remonte l’écran, et le filet dit la suite ;' +
+    ' sur les écrans de compte, le focus suit le geste qui change la phase, et seulement lui.'
 );
