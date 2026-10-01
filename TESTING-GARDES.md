@@ -558,7 +558,8 @@ même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFr
   assez, titre jamais sous la bande, en glissant ; posé d'un coup chez le cycliste), **la carte
   engagée amenée dans la fenêtre après « C'est noté »**, touchée au bas d'un écran de 640 px pour que
   la relecture l'en sorte (`noterSurUnEcranCourt`, précondition comprise : à 900 px la garde passait
-  sans rien éprouver), et **le geste qui ne se défait pas** (P-1 : à chaque image, « C'est noté » ou
+  sans rien éprouver — et cette précondition se lit aussi à l'appel de défilement de l'app, pas
+  seulement sur une image peinte, règle 10), et **le geste qui ne se défait pas** (P-1 : à chaque image, « C'est noté » ou
   « Changer d'avis »). Que le titre ne passe jamais sous la bande est d'abord gardé par les tests de
   `defilementPourMontrer`, `src/types/mouvement.test.ts`) — et **le second profil entier sous
   « réduire les animations »**.
@@ -628,6 +629,20 @@ Les règles, chacune payée pendant l'écriture :
    environ 170 ms, et une découpe posée 300 ms après le premier `onLayout` — un runner lent — lui
    aurait fait prendre les 840 px pour le repos. La fenêtre dépasse la plus longue durée des jetons
    de mouvement (320 ms).
+10. **Ce qui se pose d'un coup ne laisse pas forcément d'image entre deux états : une précondition ne
+   se lit pas sur les seules images peintes.** CI de la PR #314, 01/10/2026 : chez le cycliste, sous
+   « réduire les animations », la relecture d'un engagement et le défilement qui ramène la carte
+   engagée se posent sans transition, et entre le rendu de la relecture et l'appel de défilement de
+   l'app il s'écoule 3 à 13 ms — une image tombe dedans ou non. La garde exigeait qu'une image
+   montre la carte hors de la fenêtre : verte sur la branche du chantier (quatre passages sur quatre
+   avec une image), rouge sur l'arbre intégré (six passages sur dix sans), **à mise en page identique
+   au pixel près** — on a d'abord soupçonné les retours à la ligne et la carte d'attente, et la mesure
+   les a écartés. Elle lit désormais aussi la carte à l'instant où l'app demande le défilement
+   (`guetterLesDefilements` : le nœud de la fenêtre enveloppé le temps du geste, la mesure prise
+   avant que l'appel ne s'applique, l'appel transmis tel quel). Ce qui reste lu sur les images, c'est
+   le mouvement (règle 1). La précondition n'en est pas affaiblie : la mutation PC — la carte laissée
+   en place par la relecture — la fait toujours tomber, sans appel ni image, et PL4 comme PL14
+   tombent comme avant.
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.
 
