@@ -22,7 +22,7 @@ ne voyage pas.
 **Découpé à son tour le 01/10/2026**, où il pesait 102 Ko : ce fichier garde la §1, et de la §2 ce
 qui vaut pour tout écran — les chiffres et le vocabulaire (§2.1), les pages légales (§2.2), ce qui
 se touche et s'annonce (§2.4), la frontière avec la plateforme (§2.5), les pièges web et natif
-(§2.8), les écrans d'onglet (§2.11). Les autres sections sont parties **telles quelles et sous leur
+(§2.8), les écrans d'onglet (§2.11). Les autres sections sont parties **telles quelles — à leurs renvois près — et sous leur
 numéro**, qui reste unique dans la famille — un renvoi « `FRONT.md` §2.x » écrit avant cette date
 se retrouve donc par cette table :
 
@@ -34,6 +34,13 @@ se retrouve donc par cette table :
 | §2.10, le suivi | `FRONT-SUIVI.md` |
 | §2.12, le mouvement | `FRONT-MOUVEMENT.md` |
 | tout le reste | ici |
+
+**Trois règles vivent dans un morceau mais valent pour tout écran**, et c'est ici qu'on les croise :
+**la mascotte n'apparaît jamais à côté d'un chiffre lourd** (`FRONT-MASCOTTE.md` §2.3) ; **une
+découpe permanente** (`overflow: hidden` qui ne s'en va pas) **coupe l'anneau de focus** d'un
+contrôle posé au bord (`FRONT-MOUVEMENT.md` §2.12) ; et **« trois mois » sans compte ne s'écrit pas
+sans relire la purge des sessions anonymes**, qui ferme après trois mois d'inactivité
+(`FRONT-SESSION.md` §2.9).
 
 ## 1. Ce qui vaut sur n'importe quelle app
 

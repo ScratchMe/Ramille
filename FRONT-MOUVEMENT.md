@@ -3,14 +3,15 @@
 > **Quand ouvrir ce fichier.** Faire bouger quelque chose — une transition, une animation, une
 > hauteur qui change, un fondu — et lire avec lui le skill `/mouvement`
 > (`.claude/skills/mouvement/SKILL.md`) · toucher à « réduire les animations » · poser un focus près
-> d'une entrée animée.
+> d'une entrée animée · poser une découpe permanente (`overflow: hidden`), qui peut couper l'anneau
+> de focus.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
 > quand venir ici ; une règle sortie sans dire *quand* aller la chercher est une règle enterrée.
 
 Ce fichier a été sorti de `FRONT.md` le 01/10/2026, qui pesait 102 Ko — avec `FRONT-MASCOTTE.md`,
 `FRONT-QUESTIONNAIRE.md`, `FRONT-SESSION.md` et `FRONT-SUIVI.md`. Ses sections y sont venues
-**telles quelles**, et **gardent leur numéro** : il reste unique dans la famille, donc un renvoi «
+**telles quelles**, à leurs renvois près,, et **gardent leur numéro** : il reste unique dans la famille, donc un renvoi «
 `FRONT.md` §2.x » écrit avant cette date — dans un commentaire du code, un document daté — se
 retrouve ici, et la table en tête de `FRONT.md` dit où vit chaque numéro. Tout ici est propre à
 Ramille ; ce qui voyage est en `FRONT.md` §1, et la garde image par image en `TESTING-GARDES.md`

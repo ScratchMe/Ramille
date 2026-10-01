@@ -12,13 +12,13 @@
 Ce fichier est l'un des cinq fichiers de sujet sortis de la section Architecture de `CLAUDE.md` le
 01/10/2026 — `BILAN.md`, `PLAN.md`, `BOUCLE.md`, `COMPTE.md`, `MESURE.md`. `CLAUDE.md` pesait alors
 177 Ko, dont 144 pour l'architecture, chargés à chaque session pour des briques qu'on ne touche
-qu'une à la fois. Les paragraphes sont venus **tels quels**, regroupés par thème ; quand
+qu'une à la fois. Les paragraphes sont venus **tels quels**, à leurs renvois et à quelques faits périmés près, regroupés par thème ; quand
 l'un d'eux dit « `CLAUDE.md` a écrit… », c'est là que l'erreur avait été écrite. Tout ici est
 propre à Ramille : les leçons qui voyagent vivent dans les fichiers d'outil (`SUPABASE.md`,
 `TESTING.md`, `EXPO.md`, `VERCEL.md`) et dans `FRONT.md` §1.
 
 Le point de suivi qui referme une action engagée est dans `BOUCLE.md` ; ce que les écrans d'onglet
-font de leurs états et de leur mise en page est dans `FRONT.md` §2.11, et la carte d'attente en §2.7.
+font de leurs états et de leur mise en page est dans `FRONT.md` §2.11, et la carte d'attente en `FRONT-SESSION.md` §2.7.
 
 ---
 

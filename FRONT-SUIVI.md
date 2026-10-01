@@ -2,14 +2,15 @@
 
 > **Quand ouvrir ce fichier.** Toucher à l'écran du suivi ou à la restitution d'un bilan —
 > l'historique, l'écart par poste, la comparaison au bilan précédent, le retrait d'un bilan depuis
-> sa restitution.
+> sa restitution. La logique pure du suivi et le préremplissage d'un re-bilan sont en
+> `FRONT-SESSION.md` §2.9.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
 > quand venir ici ; une règle sortie sans dire *quand* aller la chercher est une règle enterrée.
 
 Ce fichier a été sorti de `FRONT.md` le 01/10/2026, qui pesait 102 Ko — avec `FRONT-MASCOTTE.md`,
 `FRONT-QUESTIONNAIRE.md`, `FRONT-SESSION.md` et `FRONT-MOUVEMENT.md`. Ses sections y sont venues
-**telles quelles**, et **gardent leur numéro** : il reste unique dans la famille, donc un renvoi «
+**telles quelles**, à leurs renvois près,, et **gardent leur numéro** : il reste unique dans la famille, donc un renvoi «
 `FRONT.md` §2.x » écrit avant cette date — dans un commentaire du code, un document daté — se
 retrouve ici, et la table en tête de `FRONT.md` dit où vit chaque numéro. Tout ici est propre à
 Ramille ; ce qui voyage est en `FRONT.md` §1.

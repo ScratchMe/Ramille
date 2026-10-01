@@ -10,7 +10,7 @@
 > quand venir ici ; une règle sortie sans dire *quand* aller la chercher est une règle enterrée.
 
 Ce fichier a été sorti de `TESTING.md` le 01/10/2026, qui pesait 84 Ko — avec `TESTING-PGTAP.md`.
-Ses sections y sont venues **telles quelles**, et **gardent leur numéro** : il reste unique dans la
+Ses sections y sont venues **telles quelles**, à leurs renvois près,, et **gardent leur numéro** : il reste unique dans la
 famille, donc un renvoi « `TESTING.md` §2.x » écrit avant cette date — dans un commentaire du code,
 un document daté — se retrouve ici, et la table en tête de `TESTING.md` dit où vit chaque numéro.
 Tout ici est propre à Ramille : la méthode qui voyage — une garde se vérifie en la cassant — est en

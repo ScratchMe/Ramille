@@ -2,14 +2,14 @@
 
 > **Quand ouvrir ce fichier.** Faire parler Ramille — une réplique, une carte où elle parle ·
 > toucher à la mascotte : son dessin, ses accessoires de saison, son visage · décider si une phrase
-> est la sienne ou celle du produit.
+> est la sienne ou celle du produit · placer la mascotte sur un écran, surtout près d'un chiffre.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
 > quand venir ici ; une règle sortie sans dire *quand* aller la chercher est une règle enterrée.
 
 Ce fichier a été sorti de `FRONT.md` le 01/10/2026, qui pesait 102 Ko — avec
 `FRONT-QUESTIONNAIRE.md`, `FRONT-SESSION.md`, `FRONT-SUIVI.md` et `FRONT-MOUVEMENT.md`. Ses sections
-y sont venues **telles quelles**, et **gardent leur numéro** : il reste unique dans la famille, donc
+y sont venues **telles quelles**, à leurs renvois près,, et **gardent leur numéro** : il reste unique dans la famille, donc
 un renvoi « `FRONT.md` §2.x » écrit avant cette date — dans un commentaire du code, un document daté
 — se retrouve ici, et la table en tête de `FRONT.md` dit où vit chaque numéro. Tout ici est propre à
 Ramille ; ce qui voyage est en `FRONT.md` §1, et le design system se lit par le skill

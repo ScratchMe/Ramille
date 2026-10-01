@@ -13,7 +13,7 @@ et dans les documents `docs/architecture/v1-0N-*.md` que chaque paragraphe cite.
 
 **Découpé le 01/10/2026**, où il pesait 84 Ko : ce fichier garde la méthode (§1), les suites et la
 ligne qui les sépare (§2.1), le test d'écran (§2.10) et le rejeu de la CI (§2.13). Les autres
-sections sont parties **telles quelles et sous leur numéro**, qui reste unique dans la famille — un
+sections sont parties **telles quelles — à leurs renvois près — et sous leur numéro**, qui reste unique dans la famille — un
 renvoi « `TESTING.md` §2.x » écrit avant cette date, dans un commentaire du code ou un document
 daté, se retrouve donc par cette table :
 
@@ -79,6 +79,13 @@ l'embarque, un test lancé à côté éprouve le mutant, un second export le liv
 commit a dû exclure le seul fichier encore muté, et une mutation de `plan.ts` a attendu la fin des
 exports d'une autre série. Rejouer les parcours sur des exports déjà construits, lui, ne touche
 plus aux sources.
+
+**Et une mesure qui ne trouve pas sa cible est un échec, jamais un succès** : « aucune image
+translucide » est vrai d'un titre introuvable, « rien n'a défilé » d'une page qui ne peut pas
+défiler. De même, **une mutation doit atteindre ce que la garde lit** : quand la garde lit un
+artefact construit — un bundle, un export —, une mutation de la source sans nouvel artefact ne mute
+rien, et la garde reste verte pour la mauvaise raison. Les formes que ces deux règles ont prises
+ici sont dans `TESTING-GARDES.md` (§2.12 et §2.14).
 
 ### 1.2 Où passe la ligne entre logique pure et entrée-sortie
 
@@ -179,7 +186,7 @@ expiré.
 Trois suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
 (chiffre affiché à l'utilisateur, navigation du wizard) — les deux premières ci-dessous, la
 troisième, le parcours réel, en `TESTING-GARDES.md` §2.6 ; le flux de connexion a en plus son propre jeu de bout en
-bout (`TESTING-GARDES.md` §2.9), et quelques écrans leur test (§2.10) :
+bout (`TESTING-GARDES.md` §2.9), et quelques écrans leur test (§2.10, ci-dessous) :
 
 - **Jest** (`npm test`, qui force `TZ=Europe/Paris` — voir plus bas pourquoi) sur la logique pure
   côté client. La règle, plutôt qu'une liste qui se

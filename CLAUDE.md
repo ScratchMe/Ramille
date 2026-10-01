@@ -24,7 +24,7 @@ le fichier avant d'agir, pas après. La forme vient d'un autre projet, où une r
 aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 
 **Les fichiers `TESTING-*` et `FRONT-*` sont des morceaux de `TESTING.md` et `FRONT.md`**, sortis le
-même jour pour la même raison : ils gardent les numéros de section d'origine, et la table en tête de
+01/10/2026 comme les fichiers de sujet ci-dessous, et pour la même raison : ils gardent les numéros de section d'origine, et la table en tête de
 chaque fichier de base dit où vit chacun — un ancien renvoi « `FRONT.md` §2.12 » se retrouve ainsi.
 
 **Les cinq dernières lignes sont des fichiers de sujet, pas d'outil** (01/10/2026) : ce que la
@@ -45,11 +45,11 @@ désormais dans l'un d'eux : cette table dit lequel.
 | **`TESTING-PGTAP.md`** | Écrire, corriger ou rejouer un test pgTAP — en CI, en local ou sur le distant · toucher au référentiel des facteurs · une assertion chiffrée qui rougit |
 | **`TESTING-GARDES.md`** | Toucher à une garde de la CI (`scripts/verifier-*.mjs`) ou en voir une rougir · jouer, étendre ou corriger le parcours réel · ajouter une constante qui recopie un `check` · les gabarits d'e-mail, le chemin du compte, ce que le lecteur d'écran reçoit dans l'export, la garde d'une animation |
 | **`FRONT.md`** | Toucher un écran, un composant ou une dérivation lue par un écran · **écrire une phrase que quelqu'un lira** · afficher un chiffre, un repère, un poste, une saison · rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur · toucher au plan ou à un écran d'onglet |
-| **`FRONT-MASCOTTE.md`** | Faire parler Ramille · toucher à la mascotte : son dessin, ses saisons, son visage, ses répliques |
+| **`FRONT-MASCOTTE.md`** | Faire parler Ramille · toucher à la mascotte : son dessin, ses saisons, son visage, ses répliques · placer la mascotte sur un écran, surtout près d'un chiffre |
 | **`FRONT-QUESTIONNAIRE.md`** | Toucher à un écran ou à une étape du questionnaire : ce qu'une réponse efface ou réclame, la saisie, le « Suivant » |
-| **`FRONT-SESSION.md`** | Côté écran : la session, le jeton d'appareil, la feuille des rappels, le mot de la veille, la carte d'attente ou un texte qui promet un point, le champ de code, le démarrage, le brouillon, la reprise, une marque locale |
+| **`FRONT-SESSION.md`** | Côté écran : la session, le jeton d'appareil, la feuille des rappels, le mot de la veille, la carte d'attente ou un texte qui promet un point, le champ de code, le démarrage, le brouillon, la reprise, une marque locale · le préremplissage du questionnaire et la voix de Ramille à l'entrée de ses sections · une durée promise à qui reste sans compte |
 | **`FRONT-SUIVI.md`** | Toucher au suivi ou à la restitution d'un bilan |
-| **`FRONT-MOUVEMENT.md`** | **Faire bouger quelque chose** — une transition, une animation, une hauteur qui change (avec le skill `/mouvement`) · « réduire les animations » · un focus près d'une entrée animée |
+| **`FRONT-MOUVEMENT.md`** | **Faire bouger quelque chose** — une transition, une animation, une hauteur qui change (avec le skill `/mouvement`) · « réduire les animations » · un focus près d'une entrée animée · une découpe permanente (`overflow: hidden`) |
 | **`RECETTE.md`** | **Préparer une séance de recette, sur appareil ou au navigateur** · écrire ou retoucher un document de `docs/recette/` · fabriquer ou mettre à jour l'artefact web d'une recette · consigner ce qu'une séance a trouvé · prescrire un profil de test |
 | **`BILAN.md`** | Toucher au questionnaire côté base (une réponse, une colonne d'`assessment_answers`, `normaliserReponses`) · toucher au calcul, à un mode de transport, un résolveur ou un facteur d'émission · la synchronisation ADEME · la soumission ou le retrait d'un bilan · affirmer d'où vient un chiffre du bilan |
 | **`PLAN.md`** | Toucher aux actions du plan (gabarits, filtres de contexte, `estimate_action_savings`) · à l'engagement (`commit_plan_action`, archive, reconduction) · à la génération du plan, sa cadence ou `p_cause` · au contexte (`/contexte`) · à l'écran du plan : saison, cap, premier plan, barre d'onglets du premier parcours |

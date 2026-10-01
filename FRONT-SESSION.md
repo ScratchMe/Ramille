@@ -3,14 +3,16 @@
 > **Quand ouvrir ce fichier.** Toucher à la session ou au jeton d'appareil côté écran · à la feuille
 > des rappels, au mot de la veille, à la carte d'attente du plan ou à un texte qui promet un point ·
 > au champ de code · au démarrage, au brouillon, à la reprise, à une marque locale · à ce que le
-> produit promet sans compte. Ce que le serveur en fait est dans `COMPTE.md` et `BOUCLE.md`.
+> produit promet sans compte · la voix de Ramille à l'entrée des sections du questionnaire · le
+> préremplissage du questionnaire · une durée promise à qui reste sans compte (« trois mois »). Ce
+> que le serveur en fait est dans `COMPTE.md` et `BOUCLE.md`.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
 > quand venir ici ; une règle sortie sans dire *quand* aller la chercher est une règle enterrée.
 
 Ce fichier a été sorti de `FRONT.md` le 01/10/2026, qui pesait 102 Ko — avec `FRONT-MASCOTTE.md`,
 `FRONT-QUESTIONNAIRE.md`, `FRONT-SUIVI.md` et `FRONT-MOUVEMENT.md`. Ses sections y sont venues
-**telles quelles**, et **gardent leur numéro** : il reste unique dans la famille, donc un renvoi «
+**telles quelles**, à leurs renvois près,, et **gardent leur numéro** : il reste unique dans la famille, donc un renvoi «
 `FRONT.md` §2.x » écrit avant cette date — dans un commentaire du code, un document daté — se
 retrouve ici, et la table en tête de `FRONT.md` dit où vit chaque numéro. Tout ici est propre à
 Ramille ; ce qui voyage est en `FRONT.md` §1.
@@ -256,4 +258,4 @@ périmerait en silence au prochain passage :
 - La logique **pure** du suivi (écart entre deux bilans, dédoublonnage par jour, ancienneté)
   vit dans `src/types/suivi.ts`, séparée des requêtes de `src/lib/bilan-history.ts` : ce module
   tire AsyncStorage et `react-native`, qui n'ont rien à faire dans une suite de logique pure
-  (cf. §Tests, où le motif est expliqué en entier). Même découpage que `src/types/bilan.ts`.
+  (cf. `TESTING.md` §1.2, où le motif est expliqué en entier). Même découpage que `src/types/bilan.ts`.

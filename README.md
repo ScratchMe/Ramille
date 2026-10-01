@@ -77,8 +77,8 @@ construire (`SUPABASE.md` §2.1).
   [`FRONT.md`](FRONT.md) pour l'écran et ce qu'il affiche — portent les pièges de chaque outil,
   avec leurs morceaux ouverts sur leur propre déclencheur (`TESTING-PGTAP.md`, `TESTING-GARDES.md`,
   `FRONT-MASCOTTE.md`, `FRONT-QUESTIONNAIRE.md`, `FRONT-SESSION.md`, `FRONT-SUIVI.md`,
-  `FRONT-MOUVEMENT.md`),
-  coupés entre ce qui vaut partout et ce qui est propre à Ramille.
+  `FRONT-MOUVEMENT.md`). Chaque fichier de base est coupé entre ce qui vaut partout et ce qui est
+  propre à Ramille ; ses morceaux sont presque tous propres à Ramille.
 - **Les fichiers de sujet**, à la racine aussi — [`BILAN.md`](BILAN.md), [`PLAN.md`](PLAN.md),
   [`BOUCLE.md`](BOUCLE.md), [`COMPTE.md`](COMPTE.md), [`MESURE.md`](MESURE.md) — portent les
   règles de chaque brique du produit, toutes propres à Ramille.

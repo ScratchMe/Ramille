@@ -1,7 +1,8 @@
 # FRONT-QUESTIONNAIRE.md — l'écran du questionnaire : ce qu'une réponse efface, et comment on saisit
 
 > **Quand ouvrir ce fichier.** Toucher à un écran ou à une étape du questionnaire · ce qu'une
-> réponse efface ou réclame · une saisie, une puce, un « Suivant » · la navigation entre étapes. Ce
+> réponse efface ou réclame · une saisie, une puce, un « Suivant » · la navigation entre étapes. Le
+> préremplissage et la voix de Ramille à l'entrée des sections sont en `FRONT-SESSION.md` §2.9. Ce
 > que la base fait de ces réponses est dans `BILAN.md`.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
@@ -9,7 +10,7 @@
 
 Ce fichier a été sorti de `FRONT.md` le 01/10/2026, qui pesait 102 Ko — avec `FRONT-MASCOTTE.md`,
 `FRONT-SESSION.md`, `FRONT-SUIVI.md` et `FRONT-MOUVEMENT.md`. Ses sections y sont venues **telles
-quelles**, et **gardent leur numéro** : il reste unique dans la famille, donc un renvoi « `FRONT.md`
+quelles**, à leurs renvois près,, et **gardent leur numéro** : il reste unique dans la famille, donc un renvoi « `FRONT.md`
 §2.x » écrit avant cette date — dans un commentaire du code, un document daté — se retrouve ici, et
 la table en tête de `FRONT.md` dit où vit chaque numéro. Tout ici est propre à Ramille ; ce qui
 voyage est en `FRONT.md` §1.
