@@ -87,8 +87,10 @@ const REFUS_DU_RPC: Record<string, string | undefined> = {
 // notification insistante ni répétée (une seule question par période, générée côté serveur
 // par generate_commute_checkins/generate_extras_checkins, jamais par le client).
 //
-// `emphasize` matérialise la recommandation "concentre-toi sur ton poste dominant" (décision
-// produit du 27/08/2026, les deux boucles restent proposées) sans jamais masquer l'autre.
+// `emphasize` désigne le point à regarder d'abord, sans jamais masquer l'autre : la question de
+// l'action engagée quand deux points sont ouverts (`v1-33` §6, tranché le 01/10/2026), le poste
+// dominant sinon — la recommandation du 27/08/2026, les deux boucles restant proposées. La carte ne
+// le décide pas : l'écran le lit dans `accentDesPoints` (`src/types/checkin.ts`).
 export function CheckinCard({
   checkin,
   emphasize,
@@ -218,8 +220,8 @@ export function CheckinCard({
   };
 
   return (
-    // **L'accent tombe une fois répondu** (v1-14 §4.1) : il sert à désigner la question du poste
-    // dominant parmi plusieurs cartes, et une question déjà refermée n'a plus rien à désigner.
+    // **L'accent tombe une fois répondu** (v1-14 §4.1) : il sert à désigner la question à regarder
+    // d'abord parmi plusieurs cartes, et une question déjà refermée n'a plus rien à désigner.
     <ThemedView
       type={emphasize && reponse === null ? 'backgroundSelected' : 'backgroundElement'}
       style={styles.card}

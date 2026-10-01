@@ -100,6 +100,7 @@ import {
   type GenreDEchec,
 } from '@/types/lecture-en-echec';
 import {
+  accentDesPoints,
   debutDePeriodeInterrogee,
   estDeLaPeriodeCourante,
   genreDeReponse,
@@ -1445,6 +1446,8 @@ export default function Plan() {
   // encore sur elle (C2.1). `null` quand rien n'est engagé, ce qui est aussi un « plus la même ».
   const actionEngageeTexte =
     cycle.plan_actions.find((a) => a.committed_at !== null)?.action_templates?.action_text ?? null;
+  // L'accent des points ouverts : la question de l'engagement d'abord, le poste dominant sinon.
+  const accents = accentDesPoints(checkins, { libelleDuCycle: cycle.trip_label, actionEngagee: actionEngageeTexte });
   // **Deux cartes, et le compte de ce qui attend ailleurs** (C5.2). Le `limit 2` du serveur avait
   // disparu en C4.6 — l'estimateur rendait déjà toutes les actions au gain ≥ 5 kg/an, et le plan en
   // jetait le reste avant même de l'écrire (constat A13-18) — mais l'exhaustivité était revenue
@@ -1976,14 +1979,18 @@ export default function Plan() {
           {/* **Le point de la semaine passe en tête** (v1-11 flux 4) : répondre à un rappel est
               la raison de revenir la plus fréquente, et la question vivait sous les actions,
               après le cap — il fallait faire défiler pour la trouver. Une question qu'on ne
-              voit pas est une question à laquelle on ne répond pas. */}
+              voit pas est une question à laquelle on ne répond pas.
+
+              **L'accent, quand deux points sont ouverts, va à la question de l'engagement**
+              (`v1-33` §6, tranché le 01/10/2026) — sinon au poste dominant, la règle d'avant
+              (`accentDesPoints`). */}
           {checkins.length > 0 && (
             <View style={styles.checkins}>
-              {checkins.map((checkin) => (
+              {checkins.map((checkin, rang) => (
                 <CheckinCard
                   key={checkin.id}
                   checkin={checkin}
-                  emphasize={checkin.trip_label === cycle.trip_label}
+                  emphasize={accents[rang]}
                   actionEngagee={actionEngageeTexte}
                   historique={historique[checkin.loop_type]}
                   boucleTourne={laBoucleDuPointTourne(boucles, checkin.loop_type)}

@@ -14,7 +14,8 @@ const RETOURS = {
 export function CheckinCard({ periodLabel, question, emphasize = true, answered = null, onAnswer, sansObjet = 'Pas de trajet la semaine dernière', actionQuittee = null, refus = null, erreur = null, retour, renforcement = null, pied }) {
   // `true` / `false` : la forme d'avant la troisième réponse, que `ui_kits/ramille/` passe encore.
   const reponse = answered === true ? 'oui' : answered === false ? 'non' : answered;
-  // L'accent désigne la question du poste dominant ; une question refermée n'a plus rien à désigner.
+  // L'accent désigne la question à regarder d'abord — celle de l'engagement quand deux points sont ouverts, celle du
+  // poste dominant sinon (`accentDesPoints`, décidé par l'écran) ; une question refermée n'a plus rien à désigner.
   const accent = emphasize && reponse === null;
   const mot = retour || RETOURS[reponse] || RETOURS.oui;
   // La réplique prend le focus quand elle remplace les boutons — sur une réponse donnée ici, jamais au montage :
