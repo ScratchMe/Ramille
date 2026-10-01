@@ -142,3 +142,34 @@ describe('/contexte — une lecture en échec (D19)', () => {
     );
   });
 });
+
+/**
+ * **Le contexte pose des questions** (D4 de `v1-33`, 01/10/2026) : chaque série est nommée par sa
+ * question — le texte affiché et le nom du groupe sont une seule chaîne —, et la zone porte sa ligne
+ * d'aide. Les deux écrans partagent `ChampsDeContexte` ; celui-ci se monte sans `StepShell`.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : la ligne d'aide retirée de la zone fait tomber ce test, et
+ * lui seul ; le groupe de la zone nommé par l'ancien intitulé (`question` → `'Type de zone'` dans
+ * `GroupeDeChoix`) aussi.
+ */
+describe('/contexte — les questions du contexte', () => {
+  it('nomme chaque groupe par sa question, et dit sous la zone ce que veut dire chaque réponse', async () => {
+    mockLire.mockResolvedValue(CONTEXTE_COMPLET);
+    render(<Contexte />);
+    for (const question of [
+      'Dans quel type de zone vis-tu ?',
+      'Comment sont les transports en commun près de chez toi ?',
+      'Combien de véhicules motorisés dans ton foyer ?',
+    ]) {
+      // Le groupe porte son nom par `aria-label` (`GroupeDeChoix`) : la requête par rôle de la
+      // bibliothèque ne voit pas une `View` qui n'est pas elle-même un élément accessible.
+      const groupe = await screen.findByLabelText(question);
+      expect(groupe.props.role).toBe('radiogroup');
+    }
+    expect(
+      screen.getByText(
+        'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une petite ville. Rural : un village, la campagne.'
+      )
+    ).toBeTruthy();
+  });
+});
