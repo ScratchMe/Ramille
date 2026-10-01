@@ -485,6 +485,29 @@
 // et le titre cherché « sous le doigt » ne se trouvait pas au retour d'un plan resté où on l'avait
 // laissé — le témoin tombait —, d'où les titres comptés dans le DOM.
 //
+// **Et la précondition de `noterSurUnEcranCourt` lisait une course** (CI de la PR #314, le soir même,
+// à l'intégration de quatre chantiers). Chez le cycliste, sous « réduire les animations », elle est
+// tombée sur « la carte engagée n'est jamais sortie de la fenêtre à la relecture » sans défaut de l'app :
+// la mise en page était la même au pixel près sur la branche du chantier et sur l'arbre intégré — la
+// relecture pose « Changer d'avis » à 701 px pour une fenêtre de 528, l'écran se pose de 345 à 556 et
+// le ramène à 490 —, et ce qui changeait était l'image peinte. Entre le rendu de la relecture et l'appel
+// de défilement de l'app, 3 à 13 ms : une image tombe dedans ou non. Relevé sur l'arbre intégré, dix
+// passages, dont six sans aucune image où la carte est dehors ; sur la branche, quatre sur quatre avec
+// une image — d'où le vert du chantier et le rouge de l'intégration. Elle se lit désormais aussi à l'appel
+// de défilement (`guetterLesDefilements`), qui ne dépend d'aucune image. Rejoué sur l'arbre intégré le
+// même jour, un export par mutation, tiré d'un instantané, marqueur ASCII retrouvé dans le bundle :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PL4, rejouée | « engagement » : la carte engagée n'est pas dans la fenêtre (de 379 à 723 px pour 528) ; le cycliste joué seul, à son engagement : de 355 à 723 px pour 528 |
+//   | PL14, rejouée | le cycliste, à son engagement : l'écran glisse jusqu'à la carte engagée (345 → 347 → … → 556) |
+//   | PC — le cap ne repasse plus devant les pistes après l'engagement : la carte reste en place | « engagement » : la garde ne peut pas conclure (0 appel de défilement, défilement nul) ; le cycliste joué seul, de même |
+//
+// La troisième garde la précondition elle-même : une carte que la relecture laisse dans la fenêtre ne
+// déclenche aucun appel, et aucune image ne la montre dehors. Le témoin passe sur le même arbre, deux
+// fois de bout en bout, et le cycliste huit fois en tout — dont trois, tracés, sans une seule image où
+// la carte est dehors : l'ancienne précondition y serait tombée.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -836,8 +859,8 @@ async function amenerLeBoutonEnBas(titre, libelle) {
  * **Et la carte relue se lit aussi à l'instant où l'app demande le défilement** (`relecturesAuDefilement`,
  * CI de la PR #314, 01/10/2026). Sous « réduire les animations », le défilement est posé d'un coup :
  * selon le moment où la relecture se rend, le navigateur peut peindre une image entre ce rendu et le
- * défilement, ou aucune — mesuré sur la même mise en page au pixel près, une image à 205 ms sur la
- * branche du chantier, aucune sur l'arbre intégré. La précondition ne dépend plus de cette course.
+ * défilement, ou aucune — les deux mesurés sur le même arbre, à la même mise en page au pixel près
+ * (en-tête, « lisait une course »). La précondition ne dépend plus de cette course.
  */
 async function noterSurUnEcranCourt(titre, ou, { glisse }) {
   const taille = page.viewportSize();
@@ -883,9 +906,9 @@ async function noterSurUnEcranCourt(titre, ou, { glisse }) {
  *
  * Pourquoi pas une image : sous « réduire les animations », rendu de la relecture et défilement posé
  * d'un coup peuvent tomber dans la même image, et aucune n'a alors montré la carte hors de la fenêtre —
- * sur une mise en page pourtant identique au pixel près (mesuré sur l'arbre intégré, 0 image, contre 1
- * à 205 ms sur la branche du chantier du plan). Une précondition lue sur les images seules dépendait de
- * cette course, et ce qu'elle garde — une carte que la relecture pousse dehors — n'en dépend pas.
+ * sur une mise en page pourtant identique au pixel près : six passages sur dix sur l'arbre intégré de la
+ * PR #314 (en-tête). Une précondition lue sur les images seules dépendait de cette course, et ce
+ * qu'elle garde — une carte que la relecture pousse dehors — n'en dépend pas.
  */
 async function guetterLesDefilements(titre, libelle) {
   const pose = await page.evaluate(
