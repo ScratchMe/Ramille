@@ -71,7 +71,7 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   relationship was found ») et l'écran ne charge plus du tout. Seul le typecheck sur la chaîne
   du `select` l'attrape.
 - **Un `42501` vient soit du privilège, soit de la RLS**, et on ne le sait pas de l'extérieur —
-  ce qui rend les tests de refus faciles à écrire pour rien (`TESTING.md` §1.7).
+  ce qui rend les tests de refus faciles à écrire pour rien (`TESTING-PGTAP.md` §1.7).
 
 ### 1.4 Privilèges, policies et RPC
 
@@ -254,7 +254,7 @@ depuis TypeScript ne peut lire ce que la colonne accepte. Le contrôle lit `pg_c
 les migrations viennent de construire — jamais les fichiers de migration, qui mentent dès qu'une
 contrainte a été remplacée ou qu'une colonne homonyme a vécu ailleurs (`zone_type` sur `profiles`).
 **Corollaire pour qui écrit une migration** : changer un `check` sans suivre côté TypeScript rend ce
-contrôle rouge, et c'est le but — le miroir se corrige, jamais la base. `TESTING.md` §2.7 dit les
+contrôle rouge, et c'est le but — le miroir se corrige, jamais la base. `TESTING-GARDES.md` §2.7 dit les
 trois genres de comparaison, et pourquoi une union de littéraux se lit dans le source quand tout le
 reste s'importe.
 
@@ -379,7 +379,7 @@ décision. C'est le seul chemin, et il est écrit ici pour qu'il ne se confonde 
 contournement : ce qui distingue les deux, c'est la décision et la trace.
 
 **Et depuis le 29/09/2026 la CI voit ce que le hook ne voit pas** (`scripts/verifier-migrations-livrees.mjs`,
-travail `checks`, `TESTING.md` §2.15). Elle compare la copie de travail à la base de fusion avec
+travail `checks`, `TESTING-GARDES.md` §2.15). Elle compare la copie de travail à la base de fusion avec
 `origin/main` et refuse toute migration qui y existait et qui est modifiée, supprimée ou renommée —
 par Edit, par le shell, par un humain, peu importe : elle regarde le résultat. Deux choses à ne pas
 défaire. **Le journal accepte une retouche, pas un fichier** : l'entrée porte l'empreinte du contenu

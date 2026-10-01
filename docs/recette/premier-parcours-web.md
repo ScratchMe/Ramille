@@ -9,7 +9,7 @@
 > trois cartes sont du rendu.
 
 > **Depuis le 20/09/2026, la CI joue ce profil à chaque PR** (`scripts/verifier-parcours-reel.mjs`,
-> `TESTING.md` §2.6) : les mêmes réponses, les mêmes 4 231 kg, les dix pistes dans cet ordre,
+> `TESTING-GARDES.md` §2.6) : les mêmes réponses, les mêmes 4 231 kg, les dix pistes dans cet ordre,
 > l'engagement, un point répondu, le suivi — la base relue derrière chaque écran. **Et le bloc 09
 > aussi**, depuis le même jour : un second profil, le cycliste, y joue le plan à zéro action, la
 > barre d'onglets qui arrive sans « Compris », et le cap qui ne chiffre pas.

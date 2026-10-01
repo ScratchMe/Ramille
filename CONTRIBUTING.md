@@ -33,8 +33,8 @@ intégrer — elles ne se devinent pas :
 
 - **tout est en français** — interface, messages d'erreur, commentaires, contenu ;
 - **[`CLAUDE.md`](CLAUDE.md) est la carte du projet.** Les fichiers d'outil à la racine
-  (`SUPABASE.md`, `EXPO.md`, `TESTING.md`, `VERCEL.md`, `RECETTE.md`, et `FRONT.md` pour l'écran)
-  portent les pièges de chaque outil, et les fichiers de sujet (`BILAN.md`, `PLAN.md`, `BOUCLE.md`,
+  (`SUPABASE.md`, `EXPO.md`, `TESTING.md`, `VERCEL.md`, `RECETTE.md`, et `FRONT.md` pour l'écran,
+  avec leurs morceaux `TESTING-*` et `FRONT-*`) portent les pièges de chaque outil, et les fichiers de sujet (`BILAN.md`, `PLAN.md`, `BOUCLE.md`,
   `COMPTE.md`, `MESURE.md`) les règles de chaque brique du produit ; tous s'ouvrent **sur déclencheur** : la
   table en tête de `CLAUDE.md` dit lequel. C'est par là qu'on commence, pas par le code ;
 - **les décisions sont datées et ne se réécrivent pas** (`docs/architecture/v1-0N-*.md`). Plusieurs
@@ -73,7 +73,7 @@ Les tests de base de données demandent Docker et le CLI Supabase **à la versio
 
 Le parcours réel — le chemin nominal joué par Playwright contre la stack locale complète, la base
 relue après chaque écriture — demande `npx supabase@2.117.0 start` et un export branché dessus :
-`TESTING.md` §2.6 donne les commandes exactes, et ce que ce garde-fou laisse aux deux autres suites.
+`TESTING-GARDES.md` §2.6 donne les commandes exactes, et ce que ce garde-fou laisse aux deux autres suites.
 
 ## Si une pull request arrive quand même
 

@@ -224,9 +224,9 @@ ne devrait, dans l'ordre où les prendre. Aucun ne bloque le lot 4 : c'est de la
 signatures de fonctions de `database.types.ts` et les **miroirs de `check`** à la base qui vient
 d'être construite, rend les deux fonctions d'`api/` sous Node — et la carte une seconde fois sur un chemin
 relatif, comme Vercel l'envoie à une Function Node.js —, et **joue le parcours réel contre une stack Supabase locale à chaque
-PR** : le chemin nominal sur les profils de `TESTING.md` §2.6 — celui de la recette, un cycliste dont
+PR** : le chemin nominal sur les profils de `TESTING-GARDES.md` §2.6 — celui de la recette, un cycliste dont
 le plan ne porte aucune action et, depuis le 30/09/2026, un profil sans aucune boucle —, la base
-relue après chaque écriture (`TESTING.md` §2.6 et §2.7). Le dépôt a
+relue après chaque écriture (`TESTING-GARDES.md` §2.6 et §2.7). Le dépôt a
 désormais trois suites, et la question « qu'est-ce qui pourrait casser sans qu'on s'en rende
 compte ? » a une réponse mesurée plutôt qu'un sentiment : ce qui reste hors garde est nommé en
 §12.5. Trois des neuf lignes de §11 ont été traitées le jour même. **Et la contre-lecture de la

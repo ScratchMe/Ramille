@@ -56,7 +56,7 @@ lisible dans la console et par un appel direct, et rien dans GoTrue ne la masque
   croisant pas. `VoixDeLaSaisie` (`parti` | `peut_etre`) décide ce que l'écran a le droit
   d'**affirmer**, et c'est une propriété de l'hôte : `/connexion/email` est en `parti` dans ses
   **deux** branches. Les confondre rouvrirait par le texte l'oracle fermé par le mécanisme — le
-  mécanisme serait juste et la fuite intacte. Détail et gardes en `FRONT.md` §2.7 bis.
+  mécanisme serait juste et la fuite intacte. Détail et gardes en `FRONT-SESSION.md` §2.7 bis.
 - **La phrase conditionnelle est le prix de l'arbitrage**, et son « si » n'est pas du style : « S'il
   existait déjà un compte Ramille à cette adresse, ce code t'y ramène — et le bilan de cet appareil
   ne l'y rejoindra pas. » Vraie dans les deux branches, donc montrable aux deux ; et posée **avant**
@@ -99,7 +99,7 @@ vérifieur resté dans le stockage du client demandeur. Cinq points à connaîtr
   lien à l'infini, chacun échouant pareil. Le vérifieur manquant se reconnaît au **code**
   (`pkce_code_verifier_not_found`), jamais au message — celui d'`auth-js` est anglais et parle de
   Next.js.
-- **Le flux entier est joué à chaque PR** (`scripts/verifier-code-de-connexion.mjs`, `TESTING.md`
+- **Le flux entier est joué à chaque PR** (`scripts/verifier-code-de-connexion.mjs`, `TESTING-GARDES.md`
   §2.9), contre une vraie stack et un vrai e-mail : c'est ce qui a rendu ce chantier vérifiable
   au lieu de plausible, et c'est lui qui a trouvé deux défauts de plus — dont une interversion de
   messages qu'aucun test unitaire ne voyait.
@@ -139,7 +139,7 @@ rattachement rattachait son adresse au compte d'un inconnu d'un seul clic. Sept 
 - **Les deux gabarits vivent dans le dépôt** (`supabase/templates/`, déclarés dans
   `supabase/config.toml`) pour que la stack locale rejoue le texte de la production. Leur
   référence vivante reste `docs/exploitation/gabarits-email.md`, et **l'égalité entre les deux est
-  comparée à chaque PR** depuis le 21/09/2026 (`scripts/verifier-gabarits-email.mjs`, `TESTING.md`
+  comparée à chaque PR** depuis le 21/09/2026 (`scripts/verifier-gabarits-email.mjs`, `TESTING-GARDES.md`
   §2.11), avec l'assertion qu'aucun ne porte de lien de confirmation — `CLAUDE.md` affirmait cette
   comparaison avant qu'elle n'existe. **Un gabarit n'est pas relu à
   chaud** : GoTrue l'inline au démarrage du conteneur, donc une mutation de gabarit sans

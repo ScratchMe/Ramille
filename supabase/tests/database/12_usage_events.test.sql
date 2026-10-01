@@ -108,7 +108,7 @@ select set_config('role', 'postgres', true);
 -- locale après un passage de `verifier-parcours-reel.mjs`, par exemple) elle attrape une ligne
 -- légitime plus vieille que cinq minutes et rougit pour une raison étrangère à ce qu'elle garde.
 -- Relevé le 21/09/2026. Ce n'est pas une quatrième de la famille : c'est **exactement** l'une des
--- trois que `TESTING.md` §2.3 documente comme supposant une base vierge, et la seule des trois
+-- trois que `TESTING-PGTAP.md` §2.3 documente comme supposant une base vierge, et la seule des trois
 -- qu'on peut fermer sans rien perdre — le fixture porte un identifiant que la production ne
 -- produit pas (mesuré : zéro ligne pour cet uuid sur le distant, contre 254 lignes réelles). Les
 -- deux autres sont dans `17_rappels_canal` et tiennent aux secrets Vault, donc elles restent.

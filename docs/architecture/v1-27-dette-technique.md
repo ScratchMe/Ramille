@@ -473,7 +473,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   nombre.) `scripts/verifier-parcours-reel.mjs` joue le chemin nominal contre la stack
   Supabase locale à chaque PR, sur **deux profils** — celui de la recette et un cycliste au plan
   à zéro action —, la base relue après chaque écriture
-  (`TESTING.md` §2.6). Deux constats de plus au passage : **Docker tourne dans l'environnement
+  (`TESTING-GARDES.md` §2.6). Deux constats de plus au passage : **Docker tourne dans l'environnement
   d'agent** (`sudo dockerd &`), donc pgTAP et ce parcours s'y exécutent — ce dépôt avait écrit le
   contraire ; et les `EXPO_PUBLIC_*` sont mises en cache par Metro hors de sa clé, donc un export qui
   change de configuration exige `--clear`.
@@ -483,7 +483,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   trois**, et la dérive était déjà arrivée une fois en silence (`tc_access` a dit `aucun` avant de
   dire `inexistant`). Le compte exact ne s'écrit pas ici — le script l'imprime à chaque passage, et
   il grossit au prochain miroir déclaré. `scripts/verifier-miroirs-de-check.mjs` lit `pg_constraint` sur la base que les
-  migrations viennent de construire, dans le travail `db-tests`, et compare — `TESTING.md` §2.7,
+  migrations viennent de construire, dans le travail `db-tests`, et compare — `TESTING-GARDES.md` §2.7,
   douze mutations datées en tête du script. Trois choses valent d'être notées, parce qu'elles ont
   changé la forme prévue :
   - **le relevé se trompait de source.** Il proposait de relire le dernier `check (col in (…))` des
@@ -514,7 +514,7 @@ plus coûteux à changer à certains endroits qu'à d'autres.
   aucune n'était jouée : la félicitation à la place des cartes, le cap qui ne chiffre pas, et
   l'absence de l'encart de contexte comme du lien vers les pistes. Le second profil tourne dans un
   contexte de navigateur **neuf**, parce que « premier » veut dire premier sur cet appareil.
-  `TESTING.md` §2.6.
+  `TESTING-GARDES.md` §2.6.
 
 ### 12.3 Ce qui revient à la personne qui pilote
 
@@ -614,7 +614,7 @@ Ce que la relecture du diff a trouvé, et qui a été corrigé :
   même que **toute** recopie l'était : `CanalPrefere` (la préférence de canal de rappel),
   `IntentionTiming`, `LoopType` et `POSTES`. Déclarés et éprouvés — le comparateur passe de 17 à
   **21** miroirs. La promesse d'exhaustivité est remplacée par ce qui est vrai : une liste
-  **déclarée**, plus les deux formes qui lui échappent structurellement (`TESTING.md` §2.7).
+  **déclarée**, plus les deux formes qui lui échappent structurellement (`TESTING-GARDES.md` §2.7).
 - **Le geste qui rendait `LoopType` utile manquait.** Le type était nommé depuis
   `src/constants/postes.ts`, mais six endroits réécrivaient `'commute' | 'extras'` à la main : le
   déclarer n'aurait donc gardé personne. Les six l'importent désormais.
@@ -626,7 +626,7 @@ Ce que la relecture du diff a trouvé, et qui a été corrigé :
   faisait avant » : 15 143 lignes au lieu de 15 147 dans l'en-tête du parcours ; le seuil kg/t
   annoncé dans `src/types/resultat.ts` alors qu'il vit dans `src/lib/format.ts` ; deux lignes de
   dette traitées annoncées dans `produit.md` là où le tableau en marque trois ; le profil du
-  parcours au singulier dans `v1-27` §12.2 et `TESTING.md` §2.6 après l'arrivée du second ; et
+  parcours au singulier dans `v1-27` §12.2 et `TESTING-GARDES.md` §2.6 après l'arrivée du second ; et
   « sept mutations » pour le comparateur, qui en documentait huit.
 - **`VERCEL.md` comptait mal ce qu'il garde.** « Tout sauf le deuxième point s'éprouve » en oubliait
   un cinquième : `maxDuration` n'est chronométré par rien. Les points gardés sont nommés un par un,
@@ -919,7 +919,7 @@ le cran du dessus :
    fasse tomber ce qu'elle est censée faire tomber, et en instrumentant quand ce n'est pas le
    cas.*
 
-**La règle qui en sort, et elle est portable** (écrite en `TESTING.md` §1.1 et §2.9) : *une garde
+**La règle qui en sort, et elle est portable** (écrite en `TESTING.md` §1.1 et `TESTING-GARDES.md` §2.9) : *une garde
 dont le succès est une **absence** doit laisser à ce qu'elle interdit le temps **et** les
 conditions de réussir.* Sinon elle mesure son propre empressement. Et corollaire de mécanique :
 **une mutation se défait en réécrivant l'état d'avant, jamais par un second remplacement
@@ -1220,7 +1220,7 @@ qui a vécu, elle attrape une ligne légitime plus vieille que cinq minutes et r
 la production.
 
 Ce n'est pas un faux positif inoffensif : une garde qui rougit pour la mauvaise raison finit
-« corrigée » de travers ou ignorée, et c'est exactement le défaut contre lequel `TESTING.md` §2.3
+« corrigée » de travers ou ignorée, et c'est exactement le défaut contre lequel `TESTING-PGTAP.md` §2.3
 met en garde. **Et elle n'était pas voisine de cette §2.3 : elle EN faisait partie** — c'est l'une
 des trois assertions qu'elle listait comme supposant une base vierge, et la seule des trois qu'on
 peut fermer sans rien perdre. Les deux autres (`17_rappels_canal` 15 et 16) n'échouent pas sur un
@@ -1231,7 +1231,7 @@ Vérifié en désarmant le trigger `usage_events_stamp_time` : la version borné
 qu'elle garde. Et mesuré plutôt que supposé pour le distant : zéro ligne portant l'uuid du fixture,
 contre 254 lignes réelles.
 
-`TESTING.md` §2.3 a été corrigée du même geste, et elle portait **deux** phrases devenues fausses :
+`TESTING-PGTAP.md` §2.3 a été corrigée du même geste, et elle portait **deux** phrases devenues fausses :
 la liste de trois, et surtout la parade qu'elle prescrivait — `supabase db reset` avant chaque suite
 locale. Le réflexe de faire porter à l'appelant une manipulation que l'assertion aurait dû éviter
 est le vrai enseignement de cette ligne.

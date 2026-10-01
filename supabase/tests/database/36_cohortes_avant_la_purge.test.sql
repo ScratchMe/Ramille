@@ -16,7 +16,7 @@
 --
 -- **2. `occurred_at` et `submitted_at` sont posés par le serveur** (`stamp_usage_event_time`,
 -- `stamp_assessment_submitted_at`) : une fixture ne peut pas les choisir à l'insert. Elle insère,
--- puis recule la date par un `update` — ce qu'aucun trigger n'interdit au propriétaire (TESTING.md
+-- puis recule la date par un `update` — ce qu'aucun trigger n'interdit au propriétaire (TESTING-PGTAP.md
 -- §1.7, « une fixture ne peut pas écrire un état que la production ne peut pas produire » : une
 -- session muette depuis huit ans en est un que la production produit, par le simple passage du
 -- temps).

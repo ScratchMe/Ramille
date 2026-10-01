@@ -321,7 +321,7 @@ jobs:
       # Un second export, branché sur la stack locale — celui du travail « Export web » porte une
       # configuration factice, exprès. `--clear` parce que les `EXPO_PUBLIC_*` sont inlinées à la
       # transformation et que le cache de Metro ne les met pas dans sa clé : sans lui, un export qui
-      # suit un autre garde l'URL de l'autre (mesuré le 20/09/2026, TESTING.md §2.6). Sur un runner
+      # suit un autre garde l'URL de l'autre (mesuré le 20/09/2026, TESTING-GARDES.md §2.6). Sur un runner
       # neuf le cache est vide, et l'option est là pour que la commande soit la même qu'en local.
       - run: npx expo export --platform web --clear
       - run: npx playwright install --with-deps chromium

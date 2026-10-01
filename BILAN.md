@@ -18,7 +18,7 @@ propre à Ramille : les leçons qui voyagent vivent dans les fichiers d'outil (`
 `TESTING.md`, `EXPO.md`, `VERCEL.md`) et dans `FRONT.md` §1.
 
 Ce que l'écran du questionnaire fait de ces réponses — ce qu'une réponse efface, comment on saisit —
-est dans `FRONT.md` §2.6 ; ce qu'un bilan devient dans le plan est dans `PLAN.md`.
+est dans `FRONT-QUESTIONNAIRE.md` §2.6 ; ce qu'un bilan devient dans le plan est dans `PLAN.md`.
 
 ---
 
@@ -70,7 +70,7 @@ répondre, ce que chacun des trois chantiers corrige. Cinq points à connaître 
   depuis TypeScript, et une valeur hors bornes ne serait refusée qu'à la soumission, en anglais,
   neuf étapes trop tard. Depuis le 20/09/2026 elles ne sont plus épinglées par des valeurs
   recopiées mais **comparées à la base en CI**, bornes comprises — le plafond `6` du covoiturage
-  est vérifié en constatant que `7` est refusé (`TESTING.md` §2.7).
+  est vérifié en constatant que `7` est refusé (`TESTING-GARDES.md` §2.7).
 - **`distanceSortieKm` est la jumelle de `distanceDomicileTravailKm`**, et pour le même piège : la
   colonne porte `check (leisure_distance_km > 0)`, donc un « 0 » saisi n'est pas une distance.
   `leisure_distance_km` ne survit qu'à la tranche ouverte, parce que le calcul la préfère à

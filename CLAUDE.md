@@ -23,6 +23,10 @@ le fichier avant d'agir, pas après. La forme vient d'un autre projet, où une r
 écrite dans le fichier chargé n'a pas été suivie pour autant : sortir une règle sans dire *quand*
 aller la chercher, c'est l'enterrer, et le déclencheur est la moitié utile.
 
+**Les fichiers `TESTING-*` et `FRONT-*` sont des morceaux de `TESTING.md` et `FRONT.md`**, sortis le
+même jour pour la même raison : ils gardent les numéros de section d'origine, et la table en tête de
+chaque fichier de base dit où vit chacun — un ancien renvoi « `FRONT.md` §2.12 » se retrouve ainsi.
+
 **Les cinq dernières lignes sont des fichiers de sujet, pas d'outil** (01/10/2026) : ce que la
 section Architecture disait de chaque brique du produit — le bilan, le plan, la boucle, le compte,
 la mesure. `CLAUDE.md` pesait alors 177 Ko, dont 144 pour l'architecture, chargés à chaque session
@@ -37,8 +41,15 @@ désormais dans l'un d'eux : cette table dit lequel.
 | **`VERCEL.md`** | Toute fusion sur `main` · toucher `vercel.json`, `api/`, `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · ajouter une route · affirmer quoi que ce soit sur un compteur ou une facture Vercel · mesurer le poids d'un déploiement |
 | **`SUPABASE.md`** | Écrire, rejouer ou réécrire une migration · toucher à un privilège, une policy, un trigger ou un RPC · toucher à l'auth (session, lien de connexion, Redirect URLs) · un `401`, `403` ou `42501` inexpliqué · retoucher `database.types.ts` · rejouer un test pgTAP sur le distant |
 | **`EXPO.md`** | Ajouter une route ou un fichier dans `public/` · toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · **toucher à une mise en page — marge, hauteur, barre d'onglets** · **faire bouger quelque chose sur web** · un écran blanc sur web · une dépendance native, un build EAS, un `expo-doctor` rouge |
-| **`TESTING.md`** | Écrire un test censé protéger une correction · **annoncer que quelque chose est vérifié** · une suite qui rougit ou verdit de façon inattendue · rejouer un fichier pgTAP sur le distant · toucher au référentiel des facteurs |
-| **`FRONT.md`** | Toucher un écran, un composant ou une dérivation lue par un écran · **écrire une phrase que quelqu'un lira** · faire bouger quelque chose — une transition, une animation (§2.12, et le skill `/mouvement`) · afficher un chiffre, un repère, un poste, une saison · faire parler Ramille · rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur · toucher au questionnaire, au plan ou au suivi |
+| **`TESTING.md`** | Écrire un test censé protéger une correction · **annoncer que quelque chose est vérifié** · une suite qui rougit ou verdit de façon inattendue · rejouer la CI en local |
+| **`TESTING-PGTAP.md`** | Écrire, corriger ou rejouer un test pgTAP — en CI, en local ou sur le distant · toucher au référentiel des facteurs · une assertion chiffrée qui rougit |
+| **`TESTING-GARDES.md`** | Toucher à une garde de la CI (`scripts/verifier-*.mjs`) ou en voir une rougir · jouer, étendre ou corriger le parcours réel · ajouter une constante qui recopie un `check` · les gabarits d'e-mail, le chemin du compte, ce que le lecteur d'écran reçoit dans l'export, la garde d'une animation |
+| **`FRONT.md`** | Toucher un écran, un composant ou une dérivation lue par un écran · **écrire une phrase que quelqu'un lira** · afficher un chiffre, un repère, un poste, une saison · rendre quelque chose cliquable · toucher un état de chargement, un état vide ou un écran d'erreur · toucher au plan ou à un écran d'onglet |
+| **`FRONT-MASCOTTE.md`** | Faire parler Ramille · toucher à la mascotte : son dessin, ses saisons, son visage, ses répliques |
+| **`FRONT-QUESTIONNAIRE.md`** | Toucher à un écran ou à une étape du questionnaire : ce qu'une réponse efface ou réclame, la saisie, le « Suivant » |
+| **`FRONT-SESSION.md`** | Côté écran : la session, le jeton d'appareil, la feuille des rappels, le mot de la veille, la carte d'attente ou un texte qui promet un point, le champ de code, le démarrage, le brouillon, la reprise, une marque locale |
+| **`FRONT-SUIVI.md`** | Toucher au suivi ou à la restitution d'un bilan |
+| **`FRONT-MOUVEMENT.md`** | **Faire bouger quelque chose** — une transition, une animation, une hauteur qui change (avec le skill `/mouvement`) · « réduire les animations » · un focus près d'une entrée animée |
 | **`RECETTE.md`** | **Préparer une séance de recette, sur appareil ou au navigateur** · écrire ou retoucher un document de `docs/recette/` · fabriquer ou mettre à jour l'artefact web d'une recette · consigner ce qu'une séance a trouvé · prescrire un profil de test |
 | **`BILAN.md`** | Toucher au questionnaire côté base (une réponse, une colonne d'`assessment_answers`, `normaliserReponses`) · toucher au calcul, à un mode de transport, un résolveur ou un facteur d'émission · la synchronisation ADEME · la soumission ou le retrait d'un bilan · affirmer d'où vient un chiffre du bilan |
 | **`PLAN.md`** | Toucher aux actions du plan (gabarits, filtres de contexte, `estimate_action_savings`) · à l'engagement (`commit_plan_action`, archive, reconduction) · à la génération du plan, sa cadence ou `p_cause` · au contexte (`/contexte`) · à l'écran du plan : saison, cap, premier plan, barre d'onglets du premier parcours |
@@ -140,7 +151,7 @@ diff entier, en lui donnant la base, le commit et ce que la vague prétend faire
 vérifient, et ses corrections se relisent contre les règles écrites avant d'être appliquées** : il
 ne les connaît pas toutes. Le 29/09/2026, sa proposition de retarder un focus jusqu'à la fin d'une
 entrée animée a été appliquée telle quelle, fusionnée, puis retirée le jour même — elle enfreignait
-la règle du mouvement, « le focus part au geste, jamais à la fin d'une animation » (`FRONT.md`
+la règle du mouvement, « le focus part au geste, jamais à la fin d'une animation » (`FRONT-MOUVEMENT.md`
 §2.12), que le skill `/mouvement` porte depuis la veille.
 
 **Et une vague confiée à des sous-agents en worktrees coûte quatre préparations et une surprise**
@@ -346,7 +357,7 @@ Trois suites : **Jest** (`npm test`, logique pure côté client, `src/**/*.test.
 `TZ=Europe/Paris` forcé et ce n'est pas cosmétique), **pgTAP** (`supabase/tests/database/*.sql`,
 numérotés, un fichier par sujet, `supabase test db`) et, depuis le 20/09/2026, **le parcours réel**
 (`scripts/verifier-parcours-reel.mjs` : le chemin nominal joué par Playwright contre la stack
-Supabase locale, la base relue après chaque écriture — `TESTING.md` §2.6, qui dit aussi ce qu'il
+Supabase locale, la base relue après chaque écriture — `TESTING-GARDES.md` §2.6, qui dit aussi ce qu'il
 laisse volontairement aux deux autres). **Trois profils**, et aucun n'est un doublon : le
 cycliste au **plan à zéro action** est le seul chemin où la carte « Ton premier plan » ne se rend
 jamais, donc le seul où la barre d'onglets arrive autrement — et depuis C4.7 il finit par **retirer
@@ -373,27 +384,27 @@ dérive : `SUPABASE.md` §2.1.
 là où chacune était jusque-là épinglée par un test portant les **mêmes valeurs recopiées une
 seconde fois** — une garde du code contre lui-même, aveugle à la seule chose qui compte, que la
 base ait changé d'avis. **Toucher à un `check` impose donc de suivre côté TypeScript**, et le
-contrôle dit lequel : `TESTING.md` §2.7.
+contrôle dit lequel : `TESTING-GARDES.md` §2.7.
 
 **Et écrire une constante qui recopie un `check` impose d'ajouter sa ligne à `MIROIRS`** : c'est une
 liste déclarée, donc un miroir que personne n'y déclare lui reste invisible, et rien ne balaie le
 dépôt pour le trouver — **une garde déclarative ne s'annonce jamais exhaustive**. Ce qu'elle a déjà
 manqué, les deux formes qui lui échappent structurellement, et pourquoi une constante s'y déclare
-une fois par colonne qu'elle sert : `TESTING.md` §2.7.
+une fois par colonne qu'elle sert : `TESTING-GARDES.md` §2.7.
 
 **Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
 y compris celles qui ne nomment pas le facteur touché — et « toucher » inclut en ajouter un.**
 Trois CI rouges pour l'apprendre (PR #34, #41, #48) ; la méthode qui marche, recalculer chaque
-assertion par une requête et jamais à la main : `TESTING.md` §2.2.
+assertion par une requête et jamais à la main : `TESTING-PGTAP.md` §2.2.
 
 **Des assertions de la suite échouent sur le projet distant et passent en CI, parce qu'elles
 supposent une base vierge** — et des fichiers y feraient partir de vrais messages, emails comme
-notifications (`09`, et depuis C4.2 la section 8 de `35`) : `TESTING.md` §2.3, qui les nomme, à
+notifications (`09`, et depuis C4.2 la section 8 de `35`) : `TESTING-PGTAP.md` §2.3, qui les nomme, à
 lire avant de « corriger » un test qui n'a rien, et avant de rejouer un fichier sur le distant. (Ce paragraphe les comptait ;
 le compte s'est périmé le 21/09/2026, quand l'une d'elles a été fermée.)
 
 **Dans une transaction pgTAP, `created_at` ne désigne aucune ligne, et la place d'une assertion
-fait partie de l'assertion** : `TESTING.md` §2.4.
+fait partie de l'assertion** : `TESTING-PGTAP.md` §2.4.
 
 ## Architecture
 
@@ -568,7 +579,7 @@ porte les corps de fonction sans les commentaires du dépôt, donc une ancre n'e
 rejouer un fichier ancien peut défaire une migration plus récente ; et réécrire une fonction part
 de `pg_get_functiondef`, jamais du fichier qui l'a créée — `SUPABASE.md` §2.3.
 
-**Et depuis le 20/09/2026, les chemins que les documents citent sont vérifiés à chaque PR** (`scripts/verifier-renvois-des-documents.mjs`, `TESTING.md` §2.8) : un fichier renommé ou déplacé fait rougir la CI plutôt que d'attendre une relecture. Ce contrôle voit le **renommage**, pas le mensonge — un document peut nommer le bon fichier et raconter n'importe quoi de son contenu.
+**Et depuis le 20/09/2026, les chemins que les documents citent sont vérifiés à chaque PR** (`scripts/verifier-renvois-des-documents.mjs`, `TESTING-GARDES.md` §2.8) : un fichier renommé ou déplacé fait rougir la CI plutôt que d'attendre une relecture. Ce contrôle voit le **renommage**, pas le mensonge — un document peut nommer le bon fichier et raconter n'importe quoi de son contenu.
 
 Trois pièges vérifiés en construisant `usage_events` (`MESURE.md`), tous silencieux — les deux premiers sont des
 pièges Postgres, détaillés en `SUPABASE.md` §2.2 :
@@ -655,9 +666,10 @@ autres fichiers d'outil : ce qui est propre à **un sujet** s'ouvre sur déclenc
 table en tête de ce fichier dit lesquels.
 
 Ce qui y est : les repères chiffrés et leurs trois formateurs, le palier, le vocabulaire des postes
-et ses quatre registres, la saison côté client, la mascotte — sa géométrie, ses saisons et tout ce
-qu'elle dit —, l'accessibilité, les deux onglets et leurs états de chargement, le questionnaire, le
-suivi, la persistance locale, et ce que `api/` duplique de `src/`.
+et ses quatre registres, la saison côté client, l'accessibilité, les deux onglets et leurs états de
+chargement, et ce que `api/` duplique de `src/`. **Et depuis le 01/10/2026, la famille `FRONT-*`**
+porte le reste — la mascotte, le questionnaire, la session et le démarrage, le suivi, le mouvement —,
+ouverte sur ses propres déclencheurs.
 
 **Deux règles restent ici parce qu'elles se cassent sans qu'on ait ouvert un écran** :
 

@@ -39,7 +39,7 @@
 //   - le kit retiré du périmètre, le chemin inexistant en place → **vert**, 706 renvois dans 18
 //     documents : l'écart n'est plus vu. (Mesuré une première fois avec une tolérance du kit, qui
 //     tombait alors morte ; elle est partie, le `readme.md` du kit citant désormais sans accents graves
-//     le fichier supprimé qu'elle couvrait — TESTING.md §2.8, un nom révolu ne s'écrit pas comme un
+//     le fichier supprimé qu'elle couvrait — TESTING-GARDES.md §2.8, un nom révolu ne s'écrit pas comme un
 //     chemin — et la mutation a été rejouée.)
 //   - une tolérance qu'aucun document n'emprunte → la seconde branche, qui la nomme.
 // **Et une panne vue en CI le jour même** (26/09/2026, PR #269) : vert en local, rouge en CI, sur
@@ -75,6 +75,11 @@
 //   - le même, `BOUCLE.md` retiré de `DOCUMENTS` → **vert**, 1 099 renvois dans 99 documents au lieu
 //     de 1 136 dans 100 : c'est la liste qui fait voir l'écart, et un fichier de sujet qu'on
 //     oublierait d'y inscrire perdrait sa garde sans que rien ne rougisse.
+// **Et le même jour, quand `FRONT.md` et `TESTING.md` ont été découpés à leur tour** (`FRONT-*`,
+// `TESTING-*`) — les deux mêmes mutations, sur `FRONT-SESSION.md` :
+//   - `src/types/une-seule-fois.ts` → `une-seule-foiz.ts` → 1 écart, sur cette ligne ;
+//   - le même, le fichier retiré de `DOCUMENTS` → **vert**, 1 247 renvois dans 106 documents au lieu
+//     de 1 280 dans 107.
 // Et un passage qui doit rester **vert** : les renvois tolérés ci-dessous, dont beaucoup
 // désignent des fichiers qui n'ont jamais eu à exister dans le dépôt. Leur nombre ne s'écrit
 // pas — il s'est périmé le 21/09/2026, à la tolérance suivante.
@@ -104,7 +109,14 @@ const DOCUMENTS = [
   'COMPTE.md',
   'MESURE.md',
   'FRONT.md',
+  'FRONT-MASCOTTE.md',
+  'FRONT-QUESTIONNAIRE.md',
+  'FRONT-SESSION.md',
+  'FRONT-SUIVI.md',
+  'FRONT-MOUVEMENT.md',
   'TESTING.md',
+  'TESTING-PGTAP.md',
+  'TESTING-GARDES.md',
   'SUPABASE.md',
   'VERCEL.md',
   'EXPO.md',

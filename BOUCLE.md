@@ -19,7 +19,7 @@ propre à Ramille : les leçons qui voyagent vivent dans les fichiers d'outil (`
 `TESTING.md`, `EXPO.md`, `VERCEL.md`) et dans `FRONT.md` §1.
 
 L'action qu'un point referme est dans `PLAN.md` ; ce que l'écran fait de la session, du jeton
-d'appareil et de la feuille des rappels est dans `FRONT.md` §2.7.
+d'appareil et de la feuille des rappels est dans `FRONT-SESSION.md` §2.7.
 
 ---
 

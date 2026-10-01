@@ -115,7 +115,7 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
     « Contexte », donc `isStepVisible` ne la gouverne pas. En oublier un ne coûte pas la même chose
     (`v1-17` §7.2) : ne toucher que l'écran laisse l'étape incomplète **pour toujours** — depuis
     `v1-31`, le « Suivant » en attente y mène à une question absente, sous une ligne qui la nomme,
-    et le focus retombe sur l'étape (`FRONT.md` §2.6) ; oublier `normaliserReponses` laisse partir à la
+    et le focus retombe sur l'étape (`FRONT-QUESTIONNAIRE.md` §2.6) ; oublier `normaliserReponses` laisse partir à la
     soumission une réponse que la personne ne voit plus et ne peut plus corriger — le défaut de
     `v1-16` §4 par une autre porte.
 - **Les échéances dépendent du poste** (`intentionTimingsForPoste`, `src/types/plan.ts`) : « Ce

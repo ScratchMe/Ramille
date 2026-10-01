@@ -51,14 +51,14 @@ Trois suites, et la règle plutôt qu'une liste qui se périme au fichier suivan
   privilèges, crons, référentiels. `npx supabase@2.117.0 db start`, puis
   `npx supabase@2.117.0 test db` ;
 - **le parcours réel** — le chemin nominal joué par Playwright contre une vraie stack Supabase
-  locale, la base relue après chaque écriture, sur plusieurs profils (`TESTING.md` §2.6, qui donne
+  locale, la base relue après chaque écriture, sur plusieurs profils (`TESTING-GARDES.md` §2.6, qui donne
   aussi les commandes) : ce qui garde les écrans et les requêtes, que les deux autres suites ne
   voient pas.
 
 Plusieurs de ces tests n'épinglent pas un comportement mais une **décision**, pour qu'elle ne soit
 pas « corrigée » par réflexe : l'ordre ACV des motorisations (une hybride émet plus qu'une
 thermique, et c'est juste), la source des facteurs, la moyenne française de référence, la table de
-vérité du canal de rappel. Le détail des suites et de leurs pièges : `TESTING.md`.
+vérité du canal de rappel. Le détail des suites et de leurs pièges : `TESTING.md`, `TESTING-PGTAP.md` et `TESTING-GARDES.md`.
 
 ## Base de données
 
@@ -75,6 +75,9 @@ construire (`SUPABASE.md` §2.1).
 - **Les fichiers d'outil**, à la racine — [`SUPABASE.md`](SUPABASE.md), [`EXPO.md`](EXPO.md),
   [`VERCEL.md`](VERCEL.md), [`TESTING.md`](TESTING.md), [`RECETTE.md`](RECETTE.md), et
   [`FRONT.md`](FRONT.md) pour l'écran et ce qu'il affiche — portent les pièges de chaque outil,
+  avec leurs morceaux ouverts sur leur propre déclencheur (`TESTING-PGTAP.md`, `TESTING-GARDES.md`,
+  `FRONT-MASCOTTE.md`, `FRONT-QUESTIONNAIRE.md`, `FRONT-SESSION.md`, `FRONT-SUIVI.md`,
+  `FRONT-MOUVEMENT.md`),
   coupés entre ce qui vaut partout et ce qui est propre à Ramille.
 - **Les fichiers de sujet**, à la racine aussi — [`BILAN.md`](BILAN.md), [`PLAN.md`](PLAN.md),
   [`BOUCLE.md`](BOUCLE.md), [`COMPTE.md`](COMPTE.md), [`MESURE.md`](MESURE.md) — portent les

@@ -22,7 +22,7 @@
 --
 -- **3. La section 8 ne se rejoue pas sur le distant** : une passe d'envoi y prendrait les vrais
 -- mots et les vrais points en attente, et `send_pending_reminders` y enverrait de vrais emails
--- (`TESTING.md` §2.3). Le reste est borné à ses propres comptes ; la seule assertion qui compte sur
+-- (`TESTING-PGTAP.md` §2.3). Le reste est borné à ses propres comptes ; la seule assertion qui compte sur
 -- toute la base (17 : la seconde mise en file rend zéro) y reste vraie, la première ayant tout pris.
 --
 -- ## Éprouvé en le cassant (TESTING.md §1.1), le 27/09/2026 puis le 28/09/2026

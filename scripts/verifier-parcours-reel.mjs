@@ -48,7 +48,7 @@
 // Il lui faut une stack locale complète (`supabase start`, pas seulement `db start` : la session
 // anonyme vient de GoTrue, les lectures de PostgREST), un export web construit **avec l'URL et la
 // clé de cette stack**, et les trois variables ci-dessous — `supabase status -o env` les donne.
-// En CI : le travail « Parcours réel » de ci.yml. En local : TESTING.md §2.6.
+// En CI : le travail « Parcours réel » de ci.yml. En local : TESTING-GARDES.md §2.6.
 //
 //   EXPO_PUBLIC_SUPABASE_URL       l'API de la stack (http://127.0.0.1:54321)
 //   EXPO_PUBLIC_SUPABASE_ANON_KEY  sa clé anon — celle que l'app embarque
@@ -343,7 +343,7 @@
 //
 // **Et une sixième le lendemain de la contre-lecture**, qui avait fait attendre le focus de la liste
 // la fin de l'entrée de la carte — contre la règle du mouvement, « le focus part au geste, jamais à
-// la fin d'une animation » (`FRONT.md` §2.12). Le délai retiré, la lecture du focus se fait tout de
+// la fin d'une animation » (`FRONT-MOUVEMENT.md` §2.12). Le délai retiré, la lecture du focus se fait tout de
 // suite, et c'est elle qui le garde :
 //
 //   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
@@ -1363,7 +1363,7 @@ try {
   // assez pour le montrer — **sans que son titre passe jamais sous la bande**. Le cas qui mérite la
   // garde est celui d'une carte **déjà ouverte au-dessus**, qui se replie pendant que l'autre s'ouvre :
   // mesurée trop tôt, la nouvelle serait trop basse de ce que le repli rend, et l'écran défilerait
-  // trop. L'ancrage du défilement de Chrome s'en mêle (TESTING.md §2.14), d'où des positions lues
+  // trop. L'ancrage du défilement de Chrome s'en mêle (TESTING-GARDES.md §2.14), d'où des positions lues
   // **dans la fenêtre**. Deux moitiés, comme toute garde d'animation : ça défile en glissant ; sous
   // « réduire les animations », ça se pose d'un coup.
   const TITRE_OUVERT_AU_DESSUS = 'Renoncer à un vol long-courrier cette année';
@@ -1482,7 +1482,7 @@ try {
   );
   await aLaPlace.click();
   await attendreTexte('Quand ?');
-  // **Au geste, lu tout de suite** (`FRONT.md` §2.12) : la carte grandit encore, et le focus doit déjà
+  // **Au geste, lu tout de suite** (`FRONT-MOUVEMENT.md` §2.12) : la carte grandit encore, et le focus doit déjà
   // être sur la question. Un focus qui attendrait la fin de l'entrée serait en retard sur l'annonce.
   const focusSurLaQuestion = await page.evaluate(() => (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim());
   assurer(

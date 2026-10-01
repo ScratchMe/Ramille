@@ -126,5 +126,5 @@ une policy `DELETE` owner-scoped traînait, sans justification dans sa migration
 recommence. Elle est partie ; l'effacement reste garanti là où il est promis, par la cascade de la
 suppression de compte et par la purge à 90 jours.
 **Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
-passer sans rien éprouver de **deux** façons, et les deux se sont produites — `TESTING.md` §2.5,
+passer sans rien éprouver de **deux** façons, et les deux se sont produites — `TESTING-PGTAP.md` §2.5,
 qui dit aussi pourquoi un fichier pgTAP se rejoue en séquence entière.

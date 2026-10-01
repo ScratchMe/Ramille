@@ -104,7 +104,7 @@ const PORT = 3000;
 if (!API || !ANON || !SERVICE) {
   console.error(
     'Il manque EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY ou SUPABASE_SERVICE_ROLE_KEY.\n' +
-      '`supabase status -o env` les donne ; TESTING.md §2.6 décrit la mise en route.',
+      '`supabase status -o env` les donne ; TESTING-GARDES.md §2.6 décrit la mise en route.',
   );
   process.exit(1);
 }

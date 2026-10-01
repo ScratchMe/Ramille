@@ -21,7 +21,7 @@
 ## Pourquoi cette séance, et ce qu'elle ne fait pas
 
 **Elle ne rejoue pas le premier parcours.** La séance du 18/09/2026 l'a joué (`v1-13` §14), et
-depuis le 20/09 la CI le rejoue à chaque PR, sur les profils de `TESTING.md` §2.6
+depuis le 20/09 la CI le rejoue à chaque PR, sur les profils de `TESTING-GARDES.md` §2.6
 (`scripts/verifier-parcours-reel.mjs`). **On part donc du principe qu'il n'y a pas de régression**,
 et on ne regarde que **ce qui a été livré depuis le 18/09/2026**.
 
