@@ -39,7 +39,8 @@
 
 **Elle ne rejoue pas le reste.** Les 82 lignes conformes du 28/09 (`v1-13` §15) et les 19 du 29/09
 (§16) sont consignées une à une dans les bases de leurs artefacts ; les 44 conformes du premier
-parcours (§14, sur 49 consignées) dans la sienne. Le parcours réel rejoue le chemin nominal à chaque PR, sur deux profils. Le
+parcours (§14, sur 49 consignées) dans la sienne. Le parcours réel rejoue le chemin nominal à chaque PR, sur deux profils (trois depuis le 30/09,
+[#308](https://github.com/ScratchMe/Ramille/pull/308)). Le
 prix de ce choix est celui de `RECETTE.md` §2.5 : une régression sur un écran ancien que ni la CI
 ni une feuille ne regardent passera.
 

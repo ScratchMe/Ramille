@@ -18,8 +18,8 @@ import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/re
  * forme vraie dans les deux cas — cf. `src/types/rebilan.ts` pour le code SQL relu.
  *
  * **Elle informe, elle ne refuse pas.** Le produit annonce déjà la perte *après coup* — l'encart
- * orphelin du plan lit `plan_action_commitments_archive` filtrée sur `released_reason = 'rebilan'`
- * (C2.2). Ce qui manquait était de le dire **avant**, au moment où la personne peut encore décider.
+ * orphelin du plan lit `plan_action_commitments_archive` filtrée sur les raisons annonçables, dont
+ * `rebilan` (C2.2, `RAISONS_ANNONCABLES`). Ce qui manquait était de le dire **avant**, au moment où la personne peut encore décider.
  * Le chemin reste donc entier : le bouton plein soumet, la sortie referme, et rien n'est interdit.
  *
  * **Sans Ramille, et c'est délibéré.** Elle est la voix de l'encouragement, pas celle d'un écran

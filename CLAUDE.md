@@ -827,8 +827,8 @@ connaître :
   même période (raison `rebilan`), qui remettent tous deux `committed_at` à `null` sans créer de
   second cycle. Sans elle, la carte réexplique la règle du jeu à quelqu'un qui la connaît.
 - **La lecture de l'archive que l'écran faisait déjà ne peut pas servir**, et c'est le piège que le
-  relevé de `v1-17` §2 a évité : celle de l'encart orphelin (C2.2) filtre sur
-  `released_reason = 'rebilan'` parce qu'elle annonce un effet de bord non choisi, et elle est bornée
+  relevé de `v1-17` §2 a évité : celle de l'encart orphelin (C2.2) filtre sur les raisons
+  annonçables (`rebilan`, et `contexte` depuis C6.4) parce qu'elle annonce un effet de bord non choisi, et elle est bornée
   à une ligne. Élargir ce filtre casserait l'encart. Le premier plan demande donc sa **propre**
   lecture, un `count` en `head` dans le même `Promise.all` (règle de C5.5). Un `count` **nul** veut
   dire « pas pu lire » et se lit « s'est déjà engagée » : des deux erreurs possibles, celle qui
@@ -1696,7 +1696,8 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   l'action est revenue dans le plan** (`orphelinAAnnoncer`, recette du 01/10/2026) : remettre le
   contexte comme avant la rend sans l'engagement, et l'archive garde sa ligne — un appareil neuf
   affichait « n'y est plus » au-dessus d'elle. L'appariement est sur le gabarit, jamais sur le
-  libellé que l'archive fige.
+  libellé que l'archive fige. Dire autre chose à la place — que l'engagement est parti sans revenir —
+  serait une décision de produit, ouverte dans l'issue de ce constat (#312).
 - **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
   du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
   n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle

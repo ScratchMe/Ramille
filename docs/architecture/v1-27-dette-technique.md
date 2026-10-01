@@ -594,6 +594,11 @@ le jour venu.
   cycliste refait le sien en voiture —, mais ni la reconduction d'une saison, ni l'encart orphelin
   (le cycliste n'a rien engagé), ni le contexte corrigé depuis `/contexte`.
 
+  *Note du 01/10/2026* : deux de ces trois-là sont désormais joués, par une étape du premier profil
+  (« contexte — retiré puis remis », `v1-13` §19) : le contexte corrigé depuis `/contexte`, aller et
+  retour, et l'encart orphelin de raison `contexte`, qui doit se taire au-dessus de l'action revenue.
+  Restent la reconduction d'une saison et l'encart de raison `rebilan`.
+
 ### 12.6 La contre-lecture de la contre-lecture (20/09/2026, le soir)
 
 La contre-lecture de la journée avait corrigé six affirmations fausses. **Relue à son tour, elle en

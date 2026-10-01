@@ -407,7 +407,10 @@
 // L'écran muté passe un plan vide au lieu de ses gabarits — l'encart d'avant la correction — : le
 // parcours s'arrête à cette étape, sur « l'encart … se rend alors que « Passer deux trajets sur cinq
 // en train » est revenue dans le plan », et à elle seule — toutes les étapes d'avant passent. Le
-// témoin, sur le même commit, passe de bout en bout sur les trois profils.
+// témoin, sur le même commit, passe de bout en bout sur les trois profils. **Rejoués tous deux après
+// la contre-lecture du même jour**, qui a fait relire la base et attendre le titre exact de la carte
+// avant l'assertion (l'encart cite le libellé, donc une sous-chaîne pouvait se satisfaire de lui) :
+// même témoin vert, même chute, les deux préconditions passées sous la mutation.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1599,7 +1602,7 @@ try {
     `« ${TITRE_OUVERT_AU_DESSUS} », engagée, se touche encore : sa rangée ne doit pas être un bouton`
   );
 
-  // ── 8 ter. Le contexte retiré puis remis : l'encart orphelin se tait au-dessus de l'action revenue
+  // ── 8 quinquies. Le contexte retiré puis remis : l'encart orphelin se tait au-dessus de l'action revenue
   //
   // **Trouvé sur la production, à la recette du 01/10/2026** (`v1-13` §19) : corriger son contexte
   // emporte l'action engagée qu'il rend impossible, l'encart le dit — « « … » n’y est plus » —, et
@@ -1610,7 +1613,7 @@ try {
   // est son **appel**, avec les gabarits du plan — la famille « le test garde la fonction, jamais ses
   // appels ».
   etape('contexte — retiré puis remis, l’encart se tait au-dessus de l’action revenue');
-  // L'engagement repasse sur le train, la seule piste de ce profil que le contexte peut retirer.
+  // L'engagement repasse sur le train, la seule piste de ce profil que l'accès aux transports retire.
   await ouvrirLesPistes();
   await rangee(ATTENDU.pistes[0][0]).click();
   await attendreTexte('Quels jours ?');
@@ -1629,7 +1632,20 @@ try {
   await enregistrerLeContexte('Inexistant');
   await attendreTexte(ENCART);
   await enregistrerLeContexte('Limité');
-  await attendreTexte(ATTENDU.pistes[0][0]);
+  // **Le titre de la carte, au mot près, et pas une sous-chaîne** (contre-lecture du 01/10/2026) :
+  // l'encart cite lui-même le libellé du train, donc `attendreTexte` pouvait se satisfaire de l'encart
+  // d'un écran pas encore relu — et l'assertion d'en dessous aurait accusé `orphelinAAnnoncer` d'un
+  // train qui ne serait jamais revenu. La base le dit d'abord, l'écran ensuite.
+  const lesPistesRevenues = await lire('plan_actions?select=action_templates(action_text)', jeton);
+  assurer(
+    lesPistesRevenues.some((piste) => piste.action_templates?.action_text === ATTENDU.pistes[0][0]),
+    `« ${ATTENDU.pistes[0][0]} » n’est pas revenue dans le plan avec l’accès « Limité » : l’étape ne peut pas conclure`
+  );
+  try {
+    await page.getByText(ATTENDU.pistes[0][0], { exact: true }).first().waitFor({ state: 'visible', timeout: ATTENTE });
+  } catch {
+    throw new Ecart(`la carte « ${ATTENDU.pistes[0][0]} » n’est pas revenue à l’écran du plan, alors que la base la porte`);
+  }
   const archivesDuContexte = await lire('plan_action_commitments_archive?select=action_text&released_reason=eq.contexte', jeton);
   assurer(
     archivesDuContexte.length === 1 && archivesDuContexte[0].action_text === ATTENDU.pistes[0][0],

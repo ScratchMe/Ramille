@@ -414,7 +414,8 @@ cron le ferait (`generate_commute_checkins()`, appelé en `service_role`) et ré
 « Toi » et sa ligne de canal (25/09/2026, §2.12) → l'écran des pistes, où l'on choisit une action
 « à la place » depuis la liste (29/09/2026, `v1-32` : le seul chemin qui passe le remplacement depuis
 cet écran), puis où l'ordre n'a pas bougé — le seul moment où ça se voit, l'action engagée n'étant
-plus au rang 1 → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
+plus au rang 1 → le contexte retiré puis remis depuis `/contexte`, où l'encart orphelin doit se taire
+au-dessus de l'action revenue (01/10/2026, `v1-13` §19) → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
 (PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, les
 pistes d'`ATTENDU`, toutes, dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
 la base construite depuis `supabase/migrations/`, ces chiffres ne dépendent d'aucune

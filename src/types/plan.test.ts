@@ -820,6 +820,11 @@ describe('l’encart orphelin', () => {
   // 01/10/2026, `v1-13` §19) : le contexte remis comme avant rend l'action au plan, et un appareil
   // neuf affichait l'encart au-dessus d'elle. L'appariement se fait sur le gabarit et non sur le
   // libellé, que l'archive fige (la troisième assertion).
+  //
+  // **Éprouvé en le cassant le 01/10/2026** (`TESTING.md` §1.1), deux mutations de la dérivation, ce
+  // test seul tombant à chaque fois : `orphelin` rendu sans condition (« Expected: null », sur la
+  // première assertion) ; puis l'appariement sur `action_text` au lieu du gabarit (la même). L'appel
+  // de l'écran est gardé par le parcours réel, étape « contexte — retiré puis remis ».
   it('se tait quand l’action qu’il dit partie est revenue dans le plan', () => {
     const orphelin = {
       id: 'archive-1',

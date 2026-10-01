@@ -683,8 +683,11 @@ export function phraseDeLOrphelin(raison: string, actionText: string): string {
  *
  * L'appariement se fait sur le **gabarit**, jamais sur le libellé : l'archive fige `action_text`
  * (C2.2), et un gabarit reformulé depuis (C3.8) ne se reconnaîtrait plus à son texte — l'encart
- * redirait faux, en silence. On tait plutôt qu'on ne réécrit : il n'y a pas d'autre phrase vraie à
- * dire d'une action qui est là, et la personne la voit.
+ * redirait faux, en silence. On tait plutôt qu'on ne réécrit : la phrase fausse part, et en écrire
+ * une autre — dire que l'engagement est parti et que l'action est revenue sans lui — serait décider
+ * de ce que le plan montre. La question est posée à la personne qui pilote (#312), avec celle de la
+ * borne dans le temps : un encart tu ici n'est pas marqué « vu », donc si l'action quitte de nouveau
+ * le plan sans nouvelle libération annonçable, l'ancienne ligne reparaît avec son ancienne cause.
  */
 export function orphelinAAnnoncer<O extends { action_template_id: string }>(
   orphelin: O | null,

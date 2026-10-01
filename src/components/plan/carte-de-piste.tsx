@@ -11,8 +11,6 @@ import { etatDeLaPiste, formatIntention } from '@/types/plan';
  */
 export type PisteDuPlan = {
   id: string;
-  /** Le gabarit de l'action : ce qui la reconnaît d'un cycle à l'autre, son libellé pouvant changer. */
-  action_template_id: string;
   saving_kg_year: number | null;
   saving_share_percent: number | null;
   detail_text: string | null;
