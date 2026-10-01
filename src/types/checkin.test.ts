@@ -994,7 +994,8 @@ describe('STATUT_DU_POINT', () => {
  * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), une mutation à la fois :
  *   - la règle d'avant seule (`return auPosteDominant` en tête) → « deux points ouverts : l'accent va à
  *     la question de l'engagement » et « deux questions composées… l'action suivie » ;
- *   - `occasion` oublié des genres de l'engagement → « deux points ouverts… » (le cas du mois) ;
+ *   - `occasion` oublié des genres de l'engagement → les deux mêmes : le point du mois ne porte plus
+ *     la question de l'engagement ;
  *   - un point répondu compté parmi les ouverts (le filtre `status` retiré) → « un seul point ouvert :
  *     la règle d'avant » ;
  *   - le départage par l'action suivie retiré (deux candidats → la règle d'avant) → « deux questions
