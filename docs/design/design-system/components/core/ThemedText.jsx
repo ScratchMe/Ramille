@@ -27,17 +27,25 @@ const TITRES_DECRAN = ['title', 'screenTitle', 'display'];
 const EN_TETES = ['title', 'subtitle', 'screenTitle', 'display'];
 
 // Jumelle de `espacesInsecables` (src/types/typographie.ts) : U+00A0 à la place de l'espace ordinaire
-// avant `?`, `!`, `:`, `;`, `»` et `%`, après `«`, et après un `+` ou un `−` posé devant un nombre
-// (30/09/2026). Elle n'ajoute aucune espace, ne touche pas une espace déjà insécable, et ne
-// s'applique qu'aux chaînes : un texte l'écrit avec une espace ordinaire. L'insécable s'écrit par
-// son point de code, jamais collée : collée, elle ne se distingue pas d'une espace ordinaire à la
-// relecture (`FRONT.md` §1).
+// avant `?`, `!`, `:`, `;`, `»` et `%`, après `«`, après un `+` ou un `−` posé devant un nombre
+// (30/09/2026), et entre un nombre et son unité — `km`, `kg`, `t`, `tonne(s)`, `h`, `min`, `minute(s)` —,
+// puis entre cette unité de masse et « CO₂e » (01/10/2026). Une unité qui n'en est pas une, suivie d'une
+// lettre (« 2 trajets », « 5 hôtes »), laisse le nombre sécable. Elle n'ajoute aucune espace, ne touche
+// pas une espace déjà insécable, et ne s'applique qu'aux chaînes : un texte l'écrit avec une espace
+// ordinaire. L'insécable s'écrit par son point de code, jamais collée : collée, elle ne se distingue pas
+// d'une espace ordinaire à la relecture (`FRONT.md` §1).
 const INSECABLE = '\u00A0';
+const NOMBRE_ET_SON_UNITE = new RegExp(
+  '(\\d) (?=(?:km|kg|tonnes?|min(?:utes?)?|t|h)(?![A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u024F]))',
+  'g'
+);
 const espacesInsecables = (texte) =>
   texte
     .replace(/ (?=[?!:;»%])/g, INSECABLE)
     .replace(/« /g, '«' + INSECABLE)
-    .replace(/(^|[\s(])([+−]) (?=\d)/g, '$1$2' + INSECABLE);
+    .replace(/(^|[\s(])([+−]) (?=\d)/g, '$1$2' + INSECABLE)
+    .replace(NOMBRE_ET_SON_UNITE, '$1' + INSECABLE)
+    .replace(/(\d\u00A0(?:kg|t|tonnes?)) (?=CO₂)/g, '$1' + INSECABLE);
 // Comme `ThemedText` du dépôt, les chaînes et les nombres voisins sont réunis avant la règle :
 // `− {gain} kg` arrive en trois morceaux, et le signe ne verrait pas son nombre.
 function avecEspacesInsecables(children) {

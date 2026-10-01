@@ -13,7 +13,7 @@ export interface ChipProps {
   flex?: boolean;
   /** solid = accent plein + onAccent (nombres, tranches, jours) ; outline = teinte + bordure accent (Oui/Non, échéances). */
   selectedStyle?: 'solid' | 'outline';
-  /** 22 par défaut, la pilule (total des vols, tranches des sorties) ; `Radius.chip` = 14 pour les autres séries de chiffres et les jours ; 16 pour les Oui/Non et les échéances. */
+  /** 22 par défaut, la pilule (les nombres de vols, total et courts, et les tranches des sorties) ; `Radius.chip` = 14 pour les jours, les compteurs de longs trajets et les précisions ; `Radius.field` = 16 pour les Oui/Non, les échéances et les types de retour, en `outline`. */
   radius?: number;
   /** Posée dans un encart teinté (`backgroundElement`) : le fond non choisi reprend celui de la page. */
   nestedBackground?: boolean;

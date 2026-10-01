@@ -21,6 +21,9 @@ import { PrecisionChiffres } from './PrecisionChiffres.jsx';
 // précision s'ouvre sous le mode qui la déclenche, dans le groupe, dans une seule `BoiteDePrecision` — sous le
 // covoiturage, la motorisation puis combien vous êtes. « Plus de 30 km » ouvre un champ après les puces.
 //
+// **Le lien du mode manquant suit la liste des modes — et « Voir les autres modes » —, à 8, avant la question de la
+// distance** (01/10/2026, `v1-33`, Q-8) : posé après les tranches, il se lisait comme portant sur elles.
+//
 // Ce qui manque : « ton mode de transport » mène à la liste (le titre ne se marque pas) ; « la distance habituelle »
 // au sous-titre de la distance, qui se marque ; « la distance d’une sortie » au champ de saisie lui-même.
 
@@ -103,6 +106,14 @@ const QUESTION_DISTANCE = 'Quelle distance aller, en général ?';
 
 const COLONNE = { display: 'flex', flexDirection: 'column' };
 
+// Le sous-titre d'une question sous le titre de l'étape : `TypeScale.question` (src/constants/theme.ts), jeton du kit
+// `--type-question-*` — `subtitle` ramené à 22/28, graisse 600 (01/10/2026, `v1-33`, Q-12).
+const SOUS_TITRE = {
+  fontSize: 'var(--type-question-size)',
+  lineHeight: 'var(--type-question-line)',
+  letterSpacing: 'var(--type-question-tracking)',
+};
+
 export function LeisureDetailStep({ answers, update }) {
   const [showMore, setShowMore] = React.useState(() =>
     LEISURE_MODE_CHOICES_MORE.some((choice) => choice.modeId === answers.leisure_mode)
@@ -176,30 +187,33 @@ export function LeisureDetailStep({ answers, update }) {
 
   return (
     <div style={{ ...COLONNE, gap: 32 }}>
-      <div ref={blocDuMode} style={{ ...COLONNE, gap: 16 }}>
-        <ThemedText type="screenTitle">{QUESTION_MODE}</ThemedText>
-        {/* Le groupe ne porte que les modes et leurs précisions ; « Voir les autres modes » le suit sans y entrer :
-            c'est une commande, pas une option. */}
-        <div style={{ ...COLONNE, gap: 8 }}>
-          <GroupeDeChoix question={QUESTION_MODE} style={{ gap: 16 }}>
-            {blocsDeFamilles(LEISURE_MODE_CHOICES_PRIMARY)}
-            {/* Les cinq autres, en un bloc sous les quatre premiers — jamais intercalés dans la première liste. */}
-            {showMore && <div style={{ ...COLONNE, gap: 16 }}>{blocsDeFamilles(LEISURE_MODE_CHOICES_MORE)}</div>}
-          </GroupeDeChoix>
-          {!showMore && (
-            <TextLink label="Voir les autres modes" type="linkPrimary"
-              onPress={() => {
-                vientDeDeplier.current = true;
-                setShowMore(true);
-              }} />
-          )}
+      <div style={{ ...COLONNE, gap: 8 }}>
+        <div ref={blocDuMode} style={{ ...COLONNE, gap: 16 }}>
+          <ThemedText type="screenTitle">{QUESTION_MODE}</ThemedText>
+          {/* Le groupe ne porte que les modes et leurs précisions ; « Voir les autres modes » le suit sans y entrer :
+              c'est une commande, pas une option. */}
+          <div style={{ ...COLONNE, gap: 8 }}>
+            <GroupeDeChoix question={QUESTION_MODE} style={{ gap: 16 }}>
+              {blocsDeFamilles(LEISURE_MODE_CHOICES_PRIMARY)}
+              {/* Les cinq autres, en un bloc sous les quatre premiers — jamais intercalés dans la première liste. */}
+              {showMore && <div style={{ ...COLONNE, gap: 16 }}>{blocsDeFamilles(LEISURE_MODE_CHOICES_MORE)}</div>}
+            </GroupeDeChoix>
+            {!showMore && (
+              <TextLink label="Voir les autres modes" type="linkPrimary"
+                onPress={() => {
+                  vientDeDeplier.current = true;
+                  setShowMore(true);
+                }} />
+            )}
+          </div>
         </div>
+        <MissingModeLink context="B2.2 mode loisirs" />
       </div>
 
       <div style={{ height: 1, background: 'var(--color-border)' }} />
 
       <div ref={blocDeLaTranche} style={{ ...COLONNE, gap: 16 }}>
-        <IntituleDuChamp type="subtitle" weight={600} style={{ fontSize: 22, lineHeight: '28px', letterSpacing: '-0.22px' }} marque={trancheMarquee}>
+        <IntituleDuChamp type="subtitle" weight={600} style={SOUS_TITRE} marque={trancheMarquee}>
           {QUESTION_DISTANCE}
         </IntituleDuChamp>
         <GroupeDeChoix question={QUESTION_DISTANCE} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -217,7 +231,6 @@ export function LeisureDetailStep({ answers, update }) {
           </div>
         )}
       </div>
-      <MissingModeLink context="B2.2 mode loisirs" />
     </div>
   );
 }

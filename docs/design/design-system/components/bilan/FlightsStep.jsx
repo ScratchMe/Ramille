@@ -9,6 +9,8 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // au total choisi ; changer le total ramène les courts sous lui. La dernière puce affiche « 10+ », et le lecteur
 // d'écran l'entend « 10 vols ou plus ». Les distances supposées s'affichent en bas, interpolées depuis les hypothèses du calcul.
 // « Il manque encore la part de vols courts » mène à la seconde question, dont le sous-titre passe en `accentText`.
+// **Les deux séries de nombres prennent la même forme, la pilule** (22, le défaut de `Chip` ; 01/10/2026, `v1-33`,
+// Q-12) : la série des courts était à `Radius.chip`, des carrés arrondis sous des ronds, pour une même fonction.
 
 // `TOTAL_CHOICES` de la source, recopiée : « N+ » stocke N.
 const TOTAL_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -35,6 +37,14 @@ const volsCourtsApresTotal = (avant, nouveauTotal) => {
   if (nouveauTotal === 0) return 0;
   if (avant.flights_total_per_year === 0 || avant.flights_short_per_year === null) return null;
   return Math.min(avant.flights_short_per_year, nouveauTotal);
+};
+
+// Le sous-titre d'une question sous le titre de l'étape : `TypeScale.question` (src/constants/theme.ts), jeton du kit
+// `--type-question-*` — `subtitle` ramené à 22/28, graisse 600 (01/10/2026, `v1-33`, Q-12).
+const SOUS_TITRE = {
+  fontSize: 'var(--type-question-size)',
+  lineHeight: 'var(--type-question-line)',
+  letterSpacing: 'var(--type-question-tracking)',
 };
 
 export function FlightsStep({ answers, update }) {
@@ -66,11 +76,11 @@ export function FlightsStep({ answers, update }) {
         <>
           <div style={{ height: 1, background: 'var(--color-border)' }} />
           <div ref={bloc} style={{ ...COLONNE, gap: 16 }}>
-            <IntituleDuChamp type="subtitle" weight={600} style={{ fontSize: 22, lineHeight: '28px', letterSpacing: '-0.22px' }} marque={marque}>{questionCourts}</IntituleDuChamp>
+            <IntituleDuChamp type="subtitle" weight={600} style={SOUS_TITRE} marque={marque}>{questionCourts}</IntituleDuChamp>
             <ThemedText type="small" themeColor="textTertiary">Europe, moins de 3 h. Le reste est compté comme long-courrier.</ThemedText>
             <GroupeDeChoix question={questionCourts} style={PUCES}>
               {shortChoices.map((n) => (
-                <Chip key={n} label={String(n)} role="radio" selected={courts === n} onPress={() => update({ flights_short_per_year: n })} radius={14} />
+                <Chip key={n} label={String(n)} role="radio" selected={courts === n} onPress={() => update({ flights_short_per_year: n })} />
               ))}
             </GroupeDeChoix>
             {courts !== null && (

@@ -13,7 +13,7 @@ import { PrecisionChiffres } from '@/components/bilan/precision-chiffres';
 import { PrecisionMode } from '@/components/bilan/precision-mode';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
-import { Spacing } from '@/constants/theme';
+import { Spacing, TypeScale } from '@/constants/theme';
 import {
   CAR_ENGINE_OPTIONS,
   enFamilles,
@@ -224,54 +224,62 @@ export function LeisureDetailStep({
 
   return (
     <View style={styles.container}>
-      <View ref={blocDuMode} style={styles.block}>
-        <TitreDEtape>{QUESTION_MODE}</TitreDEtape>
-        {/* Le groupe ne porte que les modes et leurs précisions — chacune son propre groupe, posé
-            dedans sous le mode qu'elle décrit (`GroupeDeChoix`). « Voir les autres modes » le suit
-            sans y entrer : c'est une commande, pas une option, et il ne se rattache à aucune
-            ligne. Le premier mode révélé arrive à sa place, **8 px plus bas** : le lien suit la liste à
-            8, le bloc révélé à 16, l'écart entre deux familles (handoff `v1-31`, D4 — mesuré sur
-            l'export, 398 pour le lien, 406 pour « Deux-roues motorisé »). */}
-        <View style={styles.list}>
-          {/* **Trois familles, sans intertitre** (29/09/2026, `v1-31`, décision 2), comme la liste du
-              trajet : 4 px dans une famille, 16 entre deux. */}
-          <GroupeDeChoix question={QUESTION_MODE} style={styles.familles}>
-            {enFamilles(LEISURE_MODE_CHOICES_PRIMARY, (choice) => choice.modeId).map((famille) => (
-              <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
-                {famille.map(rendreLeMode)}
-              </View>
-            ))}
-            {/* « Voir les autres modes » ajoute ses cinq modes **en un bloc sous les quatre premiers**,
-                rangé par famille lui aussi, et ne les intercale pas dans la première liste : le
-                premier révélé reste à la place du lien, et reçoit le focus. Le bloc s'ouvre ; ce qui est
-                là à l'arrivée de l'étape, non (`SansApparitionAuMontage`, posé par `StepShell`). */}
-            {showMore && (
-              <Depliage style={styles.familles}>
-                {enFamilles(LEISURE_MODE_CHOICES_MORE, (choice) => choice.modeId).map((famille) => (
-                  <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
-                    {famille.map(rendreLeMode)}
-                  </View>
-                ))}
-              </Depliage>
+      {/* **Le lien de secours suit la liste des modes, avant la question de la distance** (01/10/2026, `v1-33`,
+          Q-8). Il était posé tout en bas, après les tranches, séparé des modes par un filet et un second
+          titre : il se lisait comme portant sur la distance. À 8 sous « Voir les autres modes » — ou sous le
+          dernier mode, une fois la liste ouverte —, comme sous la liste de B1.4 ; **hors** du bloc où mène
+          « Il manque encore … », qui ne doit montrer que la question. */}
+      <View style={styles.modes}>
+        <View ref={blocDuMode} style={styles.block}>
+          <TitreDEtape>{QUESTION_MODE}</TitreDEtape>
+          {/* Le groupe ne porte que les modes et leurs précisions — chacune son propre groupe, posé
+              dedans sous le mode qu'elle décrit (`GroupeDeChoix`). « Voir les autres modes » le suit
+              sans y entrer : c'est une commande, pas une option, et il ne se rattache à aucune
+              ligne. Le premier mode révélé arrive à sa place, **8 px plus bas** : le lien suit la liste à
+              8, le bloc révélé à 16, l'écart entre deux familles (handoff `v1-31`, D4 — mesuré sur
+              l'export, 398 pour le lien, 406 pour « Deux-roues motorisé »). */}
+          <View style={styles.list}>
+            {/* **Trois familles, sans intertitre** (29/09/2026, `v1-31`, décision 2), comme la liste du
+                trajet : 4 px dans une famille, 16 entre deux. */}
+            <GroupeDeChoix question={QUESTION_MODE} style={styles.familles}>
+              {enFamilles(LEISURE_MODE_CHOICES_PRIMARY, (choice) => choice.modeId).map((famille) => (
+                <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
+                  {famille.map(rendreLeMode)}
+                </View>
+              ))}
+              {/* « Voir les autres modes » ajoute ses cinq modes **en un bloc sous les quatre premiers**,
+                  rangé par famille lui aussi, et ne les intercale pas dans la première liste : le
+                  premier révélé reste à la place du lien, et reçoit le focus. Le bloc s'ouvre ; ce qui est
+                  là à l'arrivée de l'étape, non (`SansApparitionAuMontage`, posé par `StepShell`). */}
+              {showMore && (
+                <Depliage style={styles.familles}>
+                  {enFamilles(LEISURE_MODE_CHOICES_MORE, (choice) => choice.modeId).map((famille) => (
+                    <View key={FAMILLE_DU_MODE[famille[0].modeId]} style={styles.famille}>
+                      {famille.map(rendreLeMode)}
+                    </View>
+                  ))}
+                </Depliage>
+              )}
+            </GroupeDeChoix>
+            {!showMore && (
+              <TextLink
+                label="Voir les autres modes"
+                onPress={() => {
+                  vientDeDeplier.current = true;
+                  setDeplieeParUnGeste(true);
+                }}
+                type="linkPrimary"
+              />
             )}
-          </GroupeDeChoix>
-          {!showMore && (
-            <TextLink
-              label="Voir les autres modes"
-              onPress={() => {
-                vientDeDeplier.current = true;
-                setDeplieeParUnGeste(true);
-              }}
-              type="linkPrimary"
-            />
-          )}
+          </View>
         </View>
+        <MissingModeLink context="B2.2 mode loisirs" />
       </View>
 
       <View style={[styles.separator, { backgroundColor: theme.border }]} />
 
       <View ref={blocDeLaTranche} style={styles.block}>
-        <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={trancheMarquee}>
+        <IntituleDuChamp type="subtitle" weight={600} style={TypeScale.question} marque={trancheMarquee}>
           {QUESTION_DISTANCE}
         </IntituleDuChamp>
         {/* Les tranches et la distance qu'ouvre « Plus de 30 km », enveloppées ensemble : le haut de
@@ -317,7 +325,6 @@ export function LeisureDetailStep({
           )}
         </ChoixOuvrant>
       </View>
-      <MissingModeLink context="B2.2 mode loisirs" />
     </View>
   );
 }
@@ -325,7 +332,8 @@ export function LeisureDetailStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
+  // Les modes et le lien qui les complète : 8 entre les deux, comme sous la liste de B1.4.
+  modes: { gap: Spacing.two },
   list: { gap: Spacing.two },
   familles: { gap: Spacing.three },
   famille: { gap: Spacing.one },

@@ -135,91 +135,96 @@ export function CommuteExtraStep({
     secondModeChoices[optionCible(secondModeChoices.map((id) => answers.commute_second_mode === id))];
 
   return (
-    <View style={styles.container}>
-      <View ref={blocDeLaQuestion} style={styles.block}>
-        <TitreDEtape>{QUESTION_SECOND_MODE}</TitreDEtape>
-        <ThemedText type="small" themeColor="textTertiary">
-          Par exemple vélo puis train.
-        </ThemedText>
-        {/* Le « Oui » et ce qu'il ouvre, enveloppés ensemble : le haut du groupe est la borne que
-            l'écran ne fait pas passer au-dessus du bord en remontant pour montrer « Lequel ? ». */}
-        <ChoixOuvrant style={styles.block}>
-          <GroupeDeChoix question={QUESTION_SECOND_MODE} style={styles.row}>
-            <Chip
-              ref={iCibleDeLaQuestion === 0 ? cibleDeLaQuestion : undefined}
-              label="Oui"
-              role="radio"
-              selected={answers.commute_second_mode_used === true}
-              onPress={() => update({ commute_second_mode_used: true })}
-              flex
-              radius={16}
-              selectedStyle="outline"
-            />
-            <Chip
-              ref={iCibleDeLaQuestion === 1 ? cibleDeLaQuestion : undefined}
-              label="Non"
-              role="radio"
-              selected={answers.commute_second_mode_used === false}
-              onPress={() => update({ commute_second_mode_used: false, commute_second_mode: null })}
-              flex
-              radius={16}
-              selectedStyle="outline"
-            />
-          </GroupeDeChoix>
-          {answers.commute_second_mode_used === true && (
-            <Depliage suivieALOuverture>
-              {/* `ThemedView` ne transmet pas de référence : le bloc où mène « le second mode » est une
-                  vue ordinaire autour de la boîte. */}
-              <View ref={blocDeLequel}>
-                <ThemedView type="backgroundElement" style={styles.nestedBox}>
-                  <IntituleDuChamp type="small" themeColor="textTertiary" marque={lequelMarque}>
-                    {QUESTION_LEQUEL}
-                  </IntituleDuChamp>
-                  {/* Chaque précision — motorisation, type, part du trajet — est son propre groupe, posé
-                      dans celui-ci sous le mode qu'elle décrit (`GroupeDeChoix` dit pourquoi). */}
-                  <GroupeDeChoix question={QUESTION_LEQUEL} style={styles.familles}>
-                    {enFamilles(secondModeChoices, (modeId) => modeId).map((famille) => (
-                      <View key={FAMILLE_DU_MODE[famille[0]]} style={styles.famille}>
-                        {famille.map((modeId) => (
-                          <ChoixOuvrant key={modeId}>
-                            <ModeListItem
-                              ref={modeId === modeCible ? cibleDeLequel : undefined}
-                              label={TRANSPORT_MODE_LABELS[modeId]}
-                              selected={answers.commute_second_mode === modeId}
-                              // La motorisation et le type de deux-roues sont partagés par les deux
-                              // jambes (cf. types/bilan.ts) : ce qu'un changement de second mode rend
-                              // orphelin est effacé par `normaliserReponses`, pas ici.
-                              onPress={() => update({ commute_second_mode: modeId })}
-                              nestedBackground
-                            />
-                            {/* La précision sous l'élément choisi, jamais après la liste (cf.
-                                `precision-mode.tsx`) — **une seule boîte**, qui porte le type du mode
-                                quand il en a un, puis la part du trajet (`v1-31` §2.2). Deux boîtes
-                                feraient partir deux annonces de hauteur dans la même image, sans règle
-                                pour dire laquelle gagne ; le handoff l'avait oublié, le plan l'a relevé. */}
-                            {answers.commute_second_mode === modeId && (
-                              <BoiteDePrecision>{precisionsDuSecondMode(modeId)}</BoiteDePrecision>
-                            )}
-                          </ChoixOuvrant>
-                        ))}
-                      </View>
-                    ))}
-                  </GroupeDeChoix>
-                </ThemedView>
-              </View>
-            </Depliage>
-          )}
-        </ChoixOuvrant>
-      </View>
-      <MissingModeLink context="B1.7 second mode domicile-travail" />
+    <View ref={blocDeLaQuestion} style={styles.block}>
+      <TitreDEtape>{QUESTION_SECOND_MODE}</TitreDEtape>
+      <ThemedText type="small" themeColor="textTertiary">
+        Par exemple vélo puis train.
+      </ThemedText>
+      {/* Le « Oui » et ce qu'il ouvre, enveloppés ensemble : le haut du groupe est la borne que
+          l'écran ne fait pas passer au-dessus du bord en remontant pour montrer « Lequel ? ». */}
+      <ChoixOuvrant style={styles.block}>
+        <GroupeDeChoix question={QUESTION_SECOND_MODE} style={styles.row}>
+          <Chip
+            ref={iCibleDeLaQuestion === 0 ? cibleDeLaQuestion : undefined}
+            label="Oui"
+            role="radio"
+            selected={answers.commute_second_mode_used === true}
+            onPress={() => update({ commute_second_mode_used: true })}
+            flex
+            radius={Radius.field}
+            selectedStyle="outline"
+          />
+          <Chip
+            ref={iCibleDeLaQuestion === 1 ? cibleDeLaQuestion : undefined}
+            label="Non"
+            role="radio"
+            selected={answers.commute_second_mode_used === false}
+            onPress={() => update({ commute_second_mode_used: false, commute_second_mode: null })}
+            flex
+            radius={Radius.field}
+            selectedStyle="outline"
+          />
+        </GroupeDeChoix>
+        {answers.commute_second_mode_used === true && (
+          <Depliage suivieALOuverture style={styles.lequel}>
+            {/* `ThemedView` ne transmet pas de référence : le bloc où mène « le second mode » est une
+                vue ordinaire autour de la boîte. */}
+            <View ref={blocDeLequel}>
+              <ThemedView type="backgroundElement" style={styles.nestedBox}>
+                <IntituleDuChamp type="small" themeColor="textTertiary" marque={lequelMarque}>
+                  {QUESTION_LEQUEL}
+                </IntituleDuChamp>
+                {/* Chaque précision — motorisation, type, part du trajet — est son propre groupe, posé
+                    dans celui-ci sous le mode qu'elle décrit (`GroupeDeChoix` dit pourquoi). */}
+                <GroupeDeChoix question={QUESTION_LEQUEL} style={styles.familles}>
+                  {enFamilles(secondModeChoices, (modeId) => modeId).map((famille) => (
+                    <View key={FAMILLE_DU_MODE[famille[0]]} style={styles.famille}>
+                      {famille.map((modeId) => (
+                        <ChoixOuvrant key={modeId}>
+                          <ModeListItem
+                            ref={modeId === modeCible ? cibleDeLequel : undefined}
+                            label={TRANSPORT_MODE_LABELS[modeId]}
+                            selected={answers.commute_second_mode === modeId}
+                            // La motorisation et le type de deux-roues sont partagés par les deux
+                            // jambes (cf. types/bilan.ts) : ce qu'un changement de second mode rend
+                            // orphelin est effacé par `normaliserReponses`, pas ici.
+                            onPress={() => update({ commute_second_mode: modeId })}
+                            nestedBackground
+                          />
+                          {/* La précision sous l'élément choisi, jamais après la liste (cf.
+                              `precision-mode.tsx`) — **une seule boîte**, qui porte le type du mode
+                              quand il en a un, puis la part du trajet (`v1-31` §2.2). Deux boîtes
+                              feraient partir deux annonces de hauteur dans la même image, sans règle
+                              pour dire laquelle gagne ; le handoff l'avait oublié, le plan l'a relevé. */}
+                          {answers.commute_second_mode === modeId && (
+                            <BoiteDePrecision>{precisionsDuSecondMode(modeId)}</BoiteDePrecision>
+                          )}
+                        </ChoixOuvrant>
+                      ))}
+                    </View>
+                  ))}
+                </GroupeDeChoix>
+              </ThemedView>
+            </View>
+            {/* **Le lien de secours se rend sous la liste qu'il complète, et nulle part ailleurs**
+                (01/10/2026, `v1-33`, Q-8). Il était posé au pied de l'écran « en toutes circonstances » :
+                à l'arrivée comme après « Non », il parlait d'une liste qui n'est pas à l'écran. Ici il
+                s'ouvre avec elle, à 8 sous la boîte comme sous la liste de B1.4 — et il est **hors** du
+                bloc où mène « Il manque encore … », qui ne doit montrer que la question. Un mode qui
+                manque en second suppose un second mode : sans « Oui », il n'y a rien à compléter. */}
+            <MissingModeLink context="B1.7 second mode domicile-travail" />
+          </Depliage>
+        )}
+      </ChoixOuvrant>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: Spacing.five },
   block: { gap: Spacing.three },
   row: { flexDirection: 'row', gap: Spacing.two },
+  // La boîte « Lequel ? » et le lien qui la complète : 8 entre les deux, comme sous la liste de B1.4.
+  lequel: { gap: Spacing.two },
   nestedBox: { borderRadius: Radius.field, padding: Spacing.three, gap: Spacing.two },
   familles: { gap: Spacing.three },
   famille: { gap: Spacing.one },

@@ -28,6 +28,25 @@ export function CommuteHasTripStep({
   return (
     <View ref={bloc} style={styles.container}>
       <TitreDEtape>{QUESTION_TRAJET}</TitreDEtape>
+      {/* **Cette indication se lit avant les réponses, entre le titre et les choix** (01/10/2026, `v1-33`,
+          Q-10), comme sur toutes les autres étapes : elle dit comment répondre (« réponds Non »), et
+          posée sous le Oui / Non, à 32, elle se lisait après avoir répondu — si elle se lisait.
+
+          **La seconde phrase est la limite du produit, et elle a mis neuf jours à arriver** (D7,
+          décidé le 10/09/2026, livré le 19/09 par la contre-lecture qui a constaté son absence en
+          écrivant `v1-24`). Elle est explicitement « une ligne, sans arbitrage » — ce qui l'a fait
+          vivre dans une case du tableau des arbitrages, et une case n'est pas une tâche.
+
+          Ce qu'elle dit et ce qu'elle ne dit pas : le bilan couvre le trajet **vers** le travail et
+          non les kilomètres faits **pendant**. Pour un commercial, une infirmière en visites ou un
+          livreur, c'est l'essentiel de leur route — et le produit leur répondait que leur empreinte
+          était celle de leur trajet du matin, sans jamais dire pourquoi. Elle n'ouvre rien : ni
+          question, ni promesse, ni « bientôt ». Le poste lui-même est un increment à part
+          (`v1-24`). */}
+      <ThemedText type="small" themeColor="textTertiary" style={styles.helper}>
+        Télétravail total, sans emploi, retraité ou autre situation : réponds Non, on passe
+        directement à la suite. On ne compte pas ici les déplacements faits pendant ton travail.
+      </ThemedText>
       <GroupeDeChoix question={QUESTION_TRAJET} style={styles.choices}>
         <ChoiceRow
           ref={iCible === 0 ? cible : undefined}
@@ -46,27 +65,13 @@ export function CommuteHasTripStep({
           onPress={() => update({ commute_has_regular_trip: false })}
         />
       </GroupeDeChoix>
-      {/* **La seconde phrase est la limite du produit, et elle a mis neuf jours à arriver** (D7,
-          décidé le 10/09/2026, livré le 19/09 par la contre-lecture qui a constaté son absence en
-          écrivant `v1-24`). Elle est explicitement « une ligne, sans arbitrage » — ce qui l'a fait
-          vivre dans une case du tableau des arbitrages, et une case n'est pas une tâche.
-
-          Ce qu'elle dit et ce qu'elle ne dit pas : le bilan couvre le trajet **vers** le travail et
-          non les kilomètres faits **pendant**. Pour un commercial, une infirmière en visites ou un
-          livreur, c'est l'essentiel de leur route — et le produit leur répondait que leur empreinte
-          était celle de leur trajet du matin, sans jamais dire pourquoi. Elle n'ouvre rien : ni
-          question, ni promesse, ni « bientôt ». Le poste lui-même est un increment à part
-          (`v1-24`). */}
-      <ThemedText type="small" themeColor="textTertiary" style={styles.helper}>
-        Télétravail total, sans emploi, retraité ou autre situation : réponds Non, on passe
-        directement à la suite. On ne compte pas ici les déplacements faits pendant ton travail.
-      </ThemedText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: Spacing.five },
+  // 16 entre le titre, l'indication et les choix : l'écart des autres étapes.
+  container: { gap: Spacing.three },
   choices: { gap: Spacing.two + 2 },
   helper: { lineHeight: 21 },
 });

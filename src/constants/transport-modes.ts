@@ -125,18 +125,9 @@ export const LEISURE_MODE_CHOICES_MORE: CommuteModeChoice[] = [
   { key: 'trottinette', modeId: 'trottinette', carpool: false, label: 'Trottinette ou mobilité douce' },
 ];
 
-// Question de suivi affichée dès que "voiture" est choisi (B1.4/B1.7/B2.2/B3.4) — jamais
-// une entrée de plus dans les listes ci-dessus, cf. types/bilan.ts CarEngine.
-// Quatre motorisations, au même niveau — pas de second « rechargeable ou non ? » imbriqué :
-// la profondeur coûte plus cher en abandon qu'une puce de plus, et les deux hybrides sont
-// assez éloignées (9,5 %) pour mériter d'être distinguées.
-//
-// Ordre volontaire, du plus émetteur au moins émetteur en ACV complète — et il n'est pas
-// celui qu'on attend : l'hybride non rechargeable (0,146579) émet **plus** que la thermique
-// de référence (0,142253), qui est une compacte diesel sobre à l'usage. Cf. migration
-// 20260905140000_motorisation_hybride.sql.
-// Quatre réponses au même niveau, comme la motorisation voiture — surtout pas un premier
-// niveau « scooter ou moto ? » suivi d'un second sur la cylindrée. La frontière ADEME est à
+// Question de suivi affichée dès que « deux-roues motorisé » est choisi (B1.4/B1.7/B2.2) — même
+// forme que la motorisation voiture ci-dessous : quatre réponses au même niveau, surtout pas un
+// premier niveau « scooter ou moto ? » suivi d'un second sur la cylindrée. La frontière ADEME est à
 // 250 cm³ ; le libellé garde le vocabulaire courant, la correspondance exacte vit dans
 // `emission_factor_sources`.
 export const TWO_WHEELER_TYPE_OPTIONS: {
@@ -149,6 +140,23 @@ export const TWO_WHEELER_TYPE_OPTIONS: {
   { value: 'moto_grosse', label: 'Moto, grosse cylindrée' },
 ];
 
+// Question de suivi affichée dès que "voiture" est choisi (B1.4/B1.7/B2.2/B3.4) — jamais
+// une entrée de plus dans les listes ci-dessus, cf. types/bilan.ts CarEngine.
+// Quatre motorisations, au même niveau — pas de second « rechargeable ou non ? » imbriqué :
+// la profondeur coûte plus cher en abandon qu'une puce de plus, et les deux hybrides sont
+// assez éloignées (9,5 %) pour mériter d'être distinguées.
+//
+// **L'ordre n'est pas un classement par émission, et il ne s'y « corrige » pas** (01/10/2026,
+// `v1-33`, Q-16 : ce paragraphe disait « du plus émetteur au moins émetteur », ce qui était faux dès
+// le premier rang). Thermique en tête, puis l'ordre de la page ADEME dont ces quatre réponses sont
+// tirées (thermique, hybride, hybride rechargeable, électrique) — celle d’une électrification
+// croissante, du moteur thermique à l’électrique. Les facteurs en ACV complète, eux, ne la suivent
+// pas : thermique 0,142253, hybride 0,146579, hybride rechargeable 0,133900, électrique 0,067365. Le
+// seul écart à l'ordre d'émission est en tête : l'hybride non rechargeable émet **plus** que la
+// thermique de référence, qui est une compacte diesel sobre à l'usage (cf. migration
+// 20260905140000_motorisation_hybride.sql). Reclasser les réponses sur les facteurs mettrait
+// « Hybride » devant la motorisation de référence, et la liste cesserait de se lire comme une
+// progression.
 export const CAR_ENGINE_OPTIONS: {
   value: 'thermique' | 'hybride' | 'hybride_rechargeable' | 'electrique';
   label: string;

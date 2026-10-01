@@ -9,7 +9,7 @@ import { NumericField } from '@/components/bilan/numeric-field';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   afficherNombreSaisi,
@@ -90,7 +90,7 @@ export function CommuteDaysDistanceStep({
 
       {unknown ? (
         <View ref={blocDeLaDistance} style={styles.block}>
-          <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={distanceMarquee}>
+          <IntituleDuChamp type="subtitle" weight={600} style={TypeScale.question} marque={distanceMarquee}>
             {QUESTION_TRANCHE}
           </IntituleDuChamp>
           {/* **« On ajustera la précision plus tard » promettait un mécanisme qui n'existe pas**
@@ -145,7 +145,7 @@ export function CommuteDaysDistanceStep({
         </View>
       ) : (
         <View ref={blocDeLaDistance} style={styles.block}>
-          <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={distanceMarquee}>
+          <IntituleDuChamp type="subtitle" weight={600} style={TypeScale.question} marque={distanceMarquee}>
             Quelle distance pour un aller ?
           </IntituleDuChamp>
           <NumericField
@@ -183,7 +183,6 @@ export function CommuteDaysDistanceStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   separator: { height: 1 },
   bracketList: { gap: Spacing.two + 2 },
 });

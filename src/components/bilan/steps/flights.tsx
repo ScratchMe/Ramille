@@ -6,7 +6,7 @@ import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKm } from '@/lib/format';
 import { decompteDesLongsCourriers, volsCourtsApresTotal, type BilanAnswers } from '@/types/bilan';
@@ -84,12 +84,16 @@ export function FlightsStep({
         <>
           <View style={[styles.separator, { backgroundColor: theme.border }]} />
           <View ref={bloc} style={styles.block}>
-            <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={marque}>
+            <IntituleDuChamp type="subtitle" weight={600} style={TypeScale.question} marque={marque}>
               {questionCourts}
             </IntituleDuChamp>
             <ThemedText type="small" themeColor="textTertiary">
               Europe, moins de 3 h. Le reste est compté comme long-courrier.
             </ThemedText>
+            {/* **La même forme que le total, juste au-dessus** (01/10/2026, `v1-33`, Q-12) : deux séries de
+                nombres sur un même écran répondent à la même fonction — choisir un nombre —, donc elles
+                prennent le même rayon, la pilule du défaut de `Chip`. Celle-ci était à `Radius.chip` : des
+                ronds au-dessus, des carrés arrondis dessous, pour rien qui se dise. */}
             <GroupeDeChoix question={questionCourts} style={styles.row}>
               {shortChoices.map((n, i) => (
                 <Chip
@@ -99,7 +103,6 @@ export function FlightsStep({
                   role="radio"
                   selected={answers.flights_short_per_year === n}
                   onPress={() => update({ flights_short_per_year: n })}
-                  radius={Radius.chip}
                 />
               ))}
             </GroupeDeChoix>
@@ -130,7 +133,6 @@ export function FlightsStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   separator: { height: 1 },

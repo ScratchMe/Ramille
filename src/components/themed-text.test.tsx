@@ -19,7 +19,9 @@ import React from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 
-const INSECABLE = ' ';
+// Écrite par son point de code, jamais collée en littéral (`FRONT.md` §1) : collée, elle ne se distingue pas
+// d'une espace ordinaire à la relecture — c'était le cas ici jusqu'au 01/10/2026.
+const INSECABLE = '\u00a0';
 
 /** Les enfants du premier nœud de texte rendu, tels qu'ils arrivent à l'hôte. */
 function enfantsRendus(element: React.ReactElement): unknown[] {
@@ -40,7 +42,8 @@ describe('ThemedText — les espaces insécables d’un texte en morceaux', () =
     const gain = '406';
     const enfants = enfantsRendus(<ThemedText>− {gain} kg CO₂e</ThemedText>);
 
-    expect(enfants.join('')).toBe(`−${INSECABLE}406 kg CO₂e`);
+    // Depuis le 01/10/2026, le nombre garde aussi son unité, et l'unité son gaz (`v1-33`, Q-7).
+    expect(enfants.join('')).toBe(`−${INSECABLE}406${INSECABLE}kg${INSECABLE}CO₂e`);
   });
 
   it('laisse un texte imbriqué à sa place, et traite les chaînes de part et d’autre', () => {

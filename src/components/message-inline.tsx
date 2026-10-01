@@ -35,6 +35,16 @@ import { ThemedText } from '@/components/themed-text';
 // élément vide — donc un `gap` de plus — sous l'action de chaque écran qui l'emploie. Leur nombre
 // ne s'écrit pas ici : il deviendrait faux au prochain appelant, en silence.
 //
+// **Il se lit à l'encre du texte, pas à celle de l'aide** (01/10/2026, `v1-33`, T-11). Il avait la
+// taille, la graisse et la couleur exactes du texte d'aide posé juste au-dessus de lui — sur l'écran du
+// code refusé, « 8 chiffres, sans espace… » et « Ce code ne marche pas : … » étaient deux paragraphes
+// gris de même corps à 16 px l'un de l'autre. Ce qui change sous le geste doit se distinguer de ce qui
+// était déjà là, sinon on ne le voit pas. Il passe donc à `text` (l'aide est en `textSecondary`, les
+// mentions en `textTertiary`), graisse 500 écrite en toutes lettres, corps `small` inchangé.
+// **Rien d'un verdict** : pas de rouge, pas d'icône — le produit ne juge pas, et l'encre n'est pas une
+// couleur d'alerte. Le succès y passe aussi (l'export des données, `mon-compte.tsx` ; le lien copié) et
+// prend la même encre : c'est une nouvelle dite au même endroit, de la même façon.
+//
 // Trois écrans disaient déjà l'échec ainsi, chacun avec son propre bout de JSX
 // (`/connexion/email`, `/connexion/retrouver`, `/compte/suppression`) : ils passent par ce
 // composant, pour qu'il n'existe qu'une façon de dire qu'une action n'a pas abouti — et un
@@ -57,7 +67,8 @@ export function MessageInline({
   return (
     <ThemedText
       type="small"
-      themeColor="textSecondary"
+      themeColor="text"
+      weight={500}
       role="alert"
       // Web seulement : `aria-live` accompagne le rôle `alert` pour les changements de texte. Sur
       // natif, l'annonce est demandée ci-dessus, et une région vivante la doublerait.

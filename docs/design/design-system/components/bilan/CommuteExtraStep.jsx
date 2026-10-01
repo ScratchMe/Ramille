@@ -9,10 +9,11 @@ import { ThemedText } from '../core/ThemedText.jsx';
 import { ThemedView } from '../core/ThemedView.jsx';
 import { MissingModeLink } from './MissingModeLink.jsx';
 // Source : src/components/bilan/steps/commute-extra.tsx — B1.6 / B1.7 : le titre de l'étape, un exemple en
-// tertiaire, le « Oui / Non » en deux puces équiréparties (contour, rayon 16), puis, sur « Oui », l'encart
-// « Lequel ? » (fond élément, rayon 16, padding 16, gap 8) : les modes sans celui du trajet principal, en
+// tertiaire, le « Oui / Non » en deux puces équiréparties (contour, `Radius.field` = 16), puis, sur « Oui », l'encart
+// « Lequel ? » (fond élément, `Radius.field`, padding 16, gap 8) : les modes sans celui du trajet principal, en
 // `ModeListItem` sur fond de page, rangés par famille comme la liste du mode principal (4 dans une famille, 16 entre
-// deux). Gap 32 entre le bloc et le lien du mode manquant, 16 dans le bloc.
+// deux). **Le lien du mode manquant ne se rend que sur « Oui », sous l'encart, à 8** (01/10/2026, `v1-33`, Q-8) : il
+// n'était plus au pied de l'écran en toutes circonstances, où il parlait d'une liste absente. 16 dans le bloc.
 //
 // Sous le mode choisi, dans la liste, une seule `BoiteDePrecision` : sa précision (motorisation, type de deux-roues,
 // de train, de vélo) s'il en a une, puis, pour tout mode, la part du trajet qu'il couvre — demandée, jamais supposée.
@@ -120,32 +121,32 @@ export function CommuteExtraStep({ answers, update }) {
   const { bloc: blocDeLequel, marque: lequelMarque } = useAncreDuChamp('commute_second_mode');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-      <div ref={blocDeLaQuestion} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <ThemedText type="screenTitle">{QUESTION_SECOND_MODE}</ThemedText>
-        <ThemedText type="small" themeColor="textTertiary">Par exemple vélo puis train.</ThemedText>
-        <GroupeDeChoix question={QUESTION_SECOND_MODE} style={{ flexDirection: 'row', gap: 8 }}>
-          <Chip
-            label="Oui"
-            role="radio"
-            selected={answers.commute_second_mode_used === true}
-            onPress={() => update({ commute_second_mode_used: true })}
-            flex
-            radius={16}
-            selectedStyle="outline"
-          />
-          <Chip
-            label="Non"
-            role="radio"
-            selected={answers.commute_second_mode_used === false}
-            onPress={() => update({ commute_second_mode_used: false, commute_second_mode: null })}
-            flex
-            radius={16}
-            selectedStyle="outline"
-          />
-        </GroupeDeChoix>
+    <div ref={blocDeLaQuestion} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <ThemedText type="screenTitle">{QUESTION_SECOND_MODE}</ThemedText>
+      <ThemedText type="small" themeColor="textTertiary">Par exemple vélo puis train.</ThemedText>
+      <GroupeDeChoix question={QUESTION_SECOND_MODE} style={{ flexDirection: 'row', gap: 8 }}>
+        <Chip
+          label="Oui"
+          role="radio"
+          selected={answers.commute_second_mode_used === true}
+          onPress={() => update({ commute_second_mode_used: true })}
+          flex
+          radius={16}
+          selectedStyle="outline"
+        />
+        <Chip
+          label="Non"
+          role="radio"
+          selected={answers.commute_second_mode_used === false}
+          onPress={() => update({ commute_second_mode_used: false, commute_second_mode: null })}
+          flex
+          radius={16}
+          selectedStyle="outline"
+        />
+      </GroupeDeChoix>
 
-        {answers.commute_second_mode_used === true && (
+      {answers.commute_second_mode_used === true && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div ref={blocDeLequel} style={{ display: 'flex', flexDirection: 'column' }}>
             <ThemedView type="backgroundElement" style={{ borderRadius: 16, padding: 16, gap: 8 }}>
               <IntituleDuChamp type="small" themeColor="textTertiary" marque={lequelMarque}>{QUESTION_LEQUEL}</IntituleDuChamp>
@@ -170,9 +171,9 @@ export function CommuteExtraStep({ answers, update }) {
               </GroupeDeChoix>
             </ThemedView>
           </div>
-        )}
-      </div>
-      <MissingModeLink context="B1.7 second mode domicile-travail" />
+          <MissingModeLink context="B1.7 second mode domicile-travail" />
+        </div>
+      )}
     </div>
   );
 }
