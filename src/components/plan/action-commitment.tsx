@@ -47,6 +47,8 @@ export function ActionCommitment({
   onRefus,
   surLeChoix = false,
   onAnnuler,
+  onOuvert,
+  lectures,
 }: {
   actionId: string;
   poste: string | null;
@@ -88,6 +90,20 @@ export function ActionCommitment({
    * liste, il n'y en a pas : la carte redevient sa ligne. Sans lui, le comportement du plan.
    */
   onAnnuler?: () => void;
+  /**
+   * Le sélecteur vient de s'ouvrir sous le doigt (« Je m'y engage », « Choisir celle-ci à la
+   * place ») : l'écran du plan y fait défiler juste assez pour que « C'est noté » finisse au-dessus
+   * de la barre d'onglets (audit P-2, 01/10/2026). Jamais au montage — la liste, qui s'ouvre sur le
+   * choix, défile elle-même.
+   */
+  onOuvert?: () => void;
+  /**
+   * Le nombre de lectures de l'écran **terminées** (audit P-1, 01/10/2026). Un engagement pris ici
+   * garde le sélecteur tel quel, « C'est noté » inactif, jusqu'à la lecture qui suit : la carte s'y
+   * relit engagée, ou, si elle échoue, le sélecteur redevient actif. Sans lui — la liste, qui part
+   * vers le plan —, le sélecteur reste inactif jusqu'au départ.
+   */
+  lectures?: number;
 }) {
   const kind = intentionKindForPoste(poste);
 
@@ -96,6 +112,32 @@ export function ActionCommitment({
   const [timing, setTiming] = useState<IntentionTiming | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * La lecture qu'un engagement réussi attend pour se refermer (audit P-1, 01/10/2026) : le nombre
+   * de lectures terminées au moment du succès, ou `null`.
+   *
+   * **Le sélecteur ne se referme plus au succès, et c'est ce qui défaisait le geste sous les yeux.**
+   * Refermé avant la relecture, il rendait « Je m'y engage » le temps que l'écran relise le plan, puis
+   * seulement la carte engagée : la personne voyait son engagement annulé, et pouvait le reprendre.
+   * Il reste donc tel quel, « C'est noté » inactif (`busy`), jusqu'à la lecture qui suit : la carte
+   * s'y relit engagée et passe à « Changer d'avis » dans le même rendu — ou la lecture échoue, et le
+   * sélecteur redevient actif, sa sélection gardée, sous la ligne de relecture de l'écran.
+   *
+   * Ajusté **au rendu**, jamais dans un effet : un effet partirait après l'image où la carte est
+   * déjà relue (la règle de la demande de `StepShell`).
+   */
+  const [lectureAttendue, setLectureAttendue] = useState<number | null>(null);
+  if (lectureAttendue !== null && committed) {
+    setLectureAttendue(null);
+    setBusy(false);
+    setPicking(false);
+    setDays([]);
+    setTiming(null);
+  } else if (lectureAttendue !== null && lectures !== undefined && lectures > lectureAttendue) {
+    setLectureAttendue(null);
+    setBusy(false);
+  }
 
   // La question écrite une fois pour ses deux usages : le texte au-dessus des puces et le nom de
   // leur groupe (`GroupeDeChoix`).
@@ -168,17 +210,13 @@ export function ActionCommitment({
       setError(result.message);
       return;
     }
-    // **Sur la liste, le sélecteur reste tel quel, « C'est noté » inactif**, jusqu'à ce que l'écran
-    // parte vers le plan (`onEngage`). Refermé ici, il montrait « Je m'y engage » ou « Choisir
-    // celle-ci à la place » pendant le retour de la pile, sur natif — un bouton que la liste n'a
-    // plus —, et un `busy` rendu faux laissait « C'est noté » se retoucher une seconde fois. La
-    // relecture qui suit rend de toute façon la ligne engagée, qui n'est plus une carte.
-    if (!surLeChoix) {
-      setBusy(false);
-      setPicking(false);
-      setDays([]);
-      setTiming(null);
-    }
+    // **Le sélecteur reste tel quel, « C'est noté » inactif, sur le plan comme sur la liste.** Sur la
+    // liste, jusqu'à ce que l'écran parte vers le plan (`onEngage`) : refermé ici, il montrait « Je
+    // m'y engage » ou « Choisir celle-ci à la place » pendant le retour de la pile, sur natif — un
+    // bouton que la liste n'a plus —, et un `busy` rendu faux laissait « C'est noté » se retoucher une
+    // seconde fois ; la relecture qui suit rend de toute façon la ligne engagée, qui n'est plus une
+    // carte. Sur le plan, jusqu'à la lecture qui suit (`lectureAttendue`, audit P-1).
+    if (lectures !== undefined) setLectureAttendue(lectures);
     onChanged();
     onEngage?.(poste);
   };
@@ -226,6 +264,7 @@ export function ActionCommitment({
           onPress={() => {
             geste.current = 'ouvrir';
             setPicking(true);
+            onOuvert?.();
           }}
         />
       </View>
@@ -277,7 +316,9 @@ export function ActionCommitment({
               role="radio"
               selected={timing === option.value}
               onPress={() => setTiming(option.value)}
-              radius={16}
+              // Le rayon des champs, nommé (T-20, 01/10/2026) : il était écrit `16` en dur, hors de
+              // tout jeton, comme dans trois autres appelants de `Chip`.
+              radius={Radius.field}
               selectedStyle="outline"
               nestedBackground
             />

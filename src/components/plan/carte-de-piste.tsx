@@ -1,3 +1,6 @@
+import type { Ref } from 'react';
+import type { View } from 'react-native';
+
 import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
 import { etatDeLaPiste, formatIntention } from '@/types/plan';
@@ -49,6 +52,21 @@ type Props = {
   surLeChoix?: boolean;
   /** « Annuler » rend la carte à sa ligne — l'écran des pistes. Sans lui, le plan. */
   onAnnuler?: () => void;
+  /**
+   * Le sélecteur vient de s'ouvrir sous le doigt — le plan y fait défiler juste assez pour montrer
+   * « C'est noté » (audit P-2, 01/10/2026). La liste ne le passe pas : elle s'ouvre sur le choix.
+   */
+  onOuvert?: () => void;
+  /**
+   * Les lectures terminées de l'écran : un engagement pris ici attend la suivante pour se refermer
+   * (audit P-1, `ActionCommitment`). Le plan le passe ; la liste part vers le plan.
+   */
+  lectures?: number;
+  /**
+   * Le bloc qui annonce la carte — « Action engagée : … » une fois engagée —, pour que l'écran lui
+   * rende le focus après la relecture d'un engagement (audit P-1, `ActionCard`).
+   */
+  refDuBloc?: Ref<View>;
 };
 
 /**
@@ -67,6 +85,9 @@ export function CarteDePiste({
   onRefus,
   surLeChoix = false,
   onAnnuler,
+  onOuvert,
+  lectures,
+  refDuBloc,
 }: Props) {
   // **Une seule source pour « une autre est engagée »** (`etatDeLaPiste`, `v1-32` §4.1) : c'est ce
   // que la pastille de la liste dit (« Choisir à la place ») et ce qu'on demande au serveur
@@ -88,6 +109,7 @@ export function CarteDePiste({
       // liste, ouverte sur le choix, il ferait reculer la carte au moment même où on la regarde —
       // donc jamais là (HANDOFF du canvas `v1-30`, planche B3).
       estompee={uneAutreEstEngagee && !surLeChoix}
+      refDuBloc={refDuBloc}
     >
       {/* Étape 6b : choisir une action et y attacher une intention. Une seule à la fois par
           cycle — s'engager sur les deux revient à ne s'engager sur aucune, et la base le
@@ -104,6 +126,8 @@ export function CarteDePiste({
         onRefus={onRefus}
         surLeChoix={surLeChoix}
         onAnnuler={onAnnuler}
+        onOuvert={onOuvert}
+        lectures={lectures}
       />
     </ActionCard>
   );

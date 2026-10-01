@@ -5,6 +5,8 @@ import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { TextLink } from '../core/TextLink.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/plan/action-commitment.tsx — trois états : bouton « Je m'y engage », sélecteur d'intention, lien « Changer d'avis ».
+// `relecture` (01/10/2026, audit P-1) : « C'est noté » a abouti et l'écran relit le plan — le sélecteur reste, son
+// bouton inactif, jusqu'à la carte engagée ; dans le dépôt, c'est `lectures` qui le dit.
 // `surLeChoix` (29/09/2026, `v1-32`) ouvre d'emblée le sélecteur — sur « Toutes les pistes », où « Choisir » vient de
 // le dire —, et `onAnnuler` rend alors la main à l'appelant. Dans le dépôt, le focus va à la question quand le
 // sélecteur s'ouvre, et revient au bouton quand « Annuler » le referme sur le plan : rien de ça ne se dessine.
@@ -17,7 +19,7 @@ const DAYS = [[1, 'L', 'lundi'], [2, 'M', 'mardi'], [3, 'M', 'mercredi'], [4, 'J
 const TIMINGS_LOISIRS = [['ce_mois', 'Ce mois-ci'], ['le_mois_prochain', 'Le mois prochain'], ['prochaine_occasion', 'À ma prochaine occasion']];
 const TIMINGS_VOYAGES = [['au_prochain_voyage', 'À mon prochain projet de voyage'], ['avant_le_prochain_bilan', 'Avant mon prochain bilan']];
 const SOULIGNE = { textDecoration: 'underline' };
-export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etatDemande = 'idle', days = [], timing = null, otherActionCommitted, surLeChoix = false, onAnnuler, onEngage, onPick, onToggleDay, onTiming, onCancel, onSubmit, onRelease }) {
+export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etatDemande = 'idle', days = [], timing = null, otherActionCommitted, surLeChoix = false, onAnnuler, relecture = false, onEngage, onPick, onToggleDay, onTiming, onCancel, onSubmit, onRelease }) {
   const state = surLeChoix && etatDemande === 'idle' ? 'picking' : etatDemande;
   if (state === 'committed') return <div style={{ marginTop: 16 }}><TextLink label="Changer d’avis" hint="Libère cette action ; tu pourras en choisir une autre" onPress={onRelease} type="small" themeColor="textTertiary" style={SOULIGNE} /></div>;
   if (state === 'idle') return <div style={{ marginTop: 16 }}><Button title={otherActionCommitted ? 'Choisir celle-ci à la place' : 'Je m’y engage'} variant="secondary" onPress={onPick || onEngage} /></div>;
@@ -35,11 +37,11 @@ export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etat
             {DAYS.map(([v, s, l]) => <Chip key={v} label={s} accessibilityLabel={l} role="checkbox" selected={days.includes(v)} onPress={() => onToggleDay && onToggleDay(v)} radius={14} nestedBackground />)}
           </GroupeDeChoix>
         : <GroupeDeChoix question={question} style={{ gap: 8 }}>
-            {timings.map(([v, l]) => <Chip key={v} label={l} role="radio" selected={timing === v} onPress={() => onTiming && onTiming(v)} radius={16} selectedStyle="outline" nestedBackground />)}
+            {timings.map(([v, l]) => <Chip key={v} label={l} role="radio" selected={timing === v} onPress={() => onTiming && onTiming(v)} radius={16 /* Radius.field */} selectedStyle="outline" nestedBackground />)}
           </GroupeDeChoix>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
         <TextLink label="Annuler" onPress={onAnnuler || onCancel} type="small" themeColor="textTertiary" style={SOULIGNE} />
-        <Button title="C’est noté" onPress={onSubmit} disabled={!complete} flex />
+        <Button title="C’est noté" onPress={onSubmit} disabled={!complete || relecture} flex />
       </div>
     </div>
   );

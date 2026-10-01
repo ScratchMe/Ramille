@@ -17,6 +17,7 @@
 import { TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
 import { FORME_INSERABLE, estLeResiduelDesSortiesRares, formeInserable, type LoopType } from '@/constants/postes';
 import { formatKg } from '@/lib/format';
+import { defilementPourMontrer } from '@/types/mouvement';
 import { sousLeRepere2050 } from '@/types/palier';
 import { laBoucleDuPointTourne } from '@/types/rappels';
 
@@ -803,6 +804,16 @@ export type CartesDuPlan = {
   felicitation: boolean;
   /** « Estimations sur la base des facteurs ADEME… », sous les actions. */
   estimation: boolean;
+  /**
+   * « Une action par saison, une seule. C'est pas à pas qu'on tient un cap. », sous « Ton plan »
+   * (C5.3) — **jamais sur un plan à zéro action** (HANDOFF `v1-17`, A1 et planche C, 01/10/2026).
+   */
+  intro: boolean;
+  /**
+   * Le trait de temps a quelque chose à mesurer (C5.6) — l'écran le rend avec sa légende quand la
+   * période est mesurable (`progression !== null`), et seulement alors.
+   */
+  traitDeTemps: boolean;
 };
 
 /**
@@ -832,12 +843,20 @@ export type CartesDuPlan = {
  *
  * **Ce que la dérivation ne décide pas, et pourquoi** : le contenu de chaque carte (dérivé
  * ailleurs) ; l'encart orphelin, la période révolue et le rattachement — trois faits qui ne
- * s'excluent avec rien et ne se remplacent pas ; le trait de temps (`progression !== null &&
- * !premierPlan`), la carte de re-bilan (`titreDuRebilan`), ce que le cap chiffre (`cadreDuPlan`) et
- * dit (`phraseDesPistesSuffisantes`), et le lien vers les pistes — chacun a sa propre dérivation et
- * n'exclut aucune carte ; et le point lui-même, qui se rend **toujours** quand il y en a un : aucune
- * carte ne prend sa place, c'est la règle de C2.8 (le lien du rappel pointe `/plan`, masquer la
- * question y ouvrirait une notification sur un écran qui ne la porte pas).
+ * s'excluent avec rien et ne se remplacent pas ; la carte de re-bilan (`titreDuRebilan`), ce que le
+ * cap chiffre (`cadreDuPlan`) et dit (`phraseDesPistesSuffisantes`), et le lien vers les pistes —
+ * chacun a sa propre dérivation et n'exclut aucune carte ; et le point lui-même, qui se rend
+ * **toujours** quand il y en a un : aucune carte ne prend sa place, c'est la règle de C2.8 (le lien
+ * du rappel pointe `/plan`, masquer la question y ouvrirait une notification sur un écran qui ne la
+ * porte pas).
+ *
+ * **L'intro et le trait de temps y sont entrés le 01/10/2026** (audit P-5) : ils lisent les deux
+ * mêmes faits que le reste — le nombre d'actions et le premier plan —, et le plan à zéro action ne
+ * suivait pas sa planche (HANDOFF `v1-17`, C : « Ton plan » sans intro, la carte du cap avec le
+ * trait et sa légende). L'intro y annonçait « une action, une seule » au-dessus d'aucune action, et
+ * le trait y manquait toute la saison : `estPremierPlan` ne se referme que sur un engagement,
+ * impossible sans action. La raison de C5.6 — ne pas faire courir le temps sur une action pas encore
+ * choisie — ne vaut pas quand il n'y a rien à choisir.
  */
 export function cartesDuPlan({
   ouvertureDeSaison,
@@ -895,5 +914,75 @@ export function cartesDuPlan({
     encartDeContexte: avecActions && nombreDeMotsDuContexte > 0,
     felicitation: !avecActions,
     estimation: avecActions,
+    // Le principe d'un choix ne se dit qu'au-dessus de quelque chose à choisir — la même condition
+    // que l'encart et la note technique.
+    intro: avecActions,
+    // **Le canvas écrit `engagement || !premierPlan`, et la moitié `engagement` reste impliquée** : un
+    // engagement rend `estPremierPlan` faux (`saison.test.ts` l'épingle). Ce qui s'ajoute est le plan à
+    // zéro action, qui reste « premier » toute sa saison sans rien à choisir.
+    traitDeTemps: !premierPlan || !avecActions,
   };
+}
+
+/**
+ * **De combien défiler pour amener une carte du plan dans la fenêtre — dans les deux sens** (audit
+ * P-1, 01/10/2026). Positif pour descendre, négatif pour remonter, zéro quand elle y est déjà.
+ *
+ * Après « C'est noté », la carte engagée **change de place** à la relecture : au premier plan, le cap
+ * repasse devant les pistes (`pistesAvantLeCap`), et la carte qu'on venait de toucher finissait sous
+ * la barre d'onglets ; revenu de la liste après un choix, l'action choisie passe en tête des cartes,
+ * au-dessus de là où l'on avait laissé l'écran. On l'amène donc **où qu'elle soit** :
+ *
+ * - **son haut est passé sous la bande** — le bord supérieur de la fenêtre : on remonte jusqu'à lui,
+ *   la marge gardée. C'est la moitié que `defilementPourMontrer` refuse à dessein, pour un bloc qui
+ *   s'ouvre vers le bas sous le doigt ; ici la carte s'est déplacée sans geste sur elle ;
+ * - **sinon**, `defilementPourMontrer` : juste assez pour que son bas entre, sans que son haut passe
+ *   sous la bande — sur une carte plus haute que la fenêtre, c'est le haut qui gagne.
+ *
+ * Les positions se lisent depuis le haut de la fenêtre de défilement, en pixels.
+ */
+export function defilementVersLaCarte({
+  haut,
+  bas,
+  hauteurFenetre,
+  marge,
+}: {
+  haut: number;
+  bas: number;
+  hauteurFenetre: number;
+  marge: number;
+}): number {
+  if (haut < 0) return haut - marge;
+  return defilementPourMontrer({ haut, bas, hauteurFenetre, marge });
+}
+
+/**
+ * La pile d'un onglet, telle que le navigateur d'onglets la porte sur sa route : partielle quand elle
+ * vient d'un lien (sans `index`, l'écran de devant est alors le dernier), absente tant qu'elle n'a
+ * jamais bougé.
+ */
+export type PileDOnglet = { index?: number; routes: readonly { name: string }[] } | undefined;
+
+/**
+ * **Ce que fait un toucher sur un onglet** (audit T-14, 01/10/2026) : le ramener à la racine de sa
+ * pile, ou laisser faire la barre. Écrite ici parce que l'onglet du plan est le premier à la lire ;
+ * celui du suivi la lit aussi, par le même layout.
+ *
+ * **La règle du produit ne bouge pas : un onglet est un lieu, pas un signet** (retour d'appareil du
+ * 07/09/2026). Toucher « Suivi » depuis un bilan ouvert ramène au suivi, toucher « Plan » depuis la
+ * liste des pistes ramène au plan — le layout retient alors le toucher et navigue vers la racine.
+ * **Mais il le retenait toujours**, y compris sur un onglet déjà à sa racine, et c'est ce qui
+ * empêchait le geste de toute barre d'onglets : toucher l'onglet où l'on est remonte en haut de sa
+ * page. `useScrollToTop` ne remonte que sur un toucher que personne n'a retenu.
+ *
+ * « À sa racine » veut dire **la racine devant, et rien dessous** : une pile ouverte par un lien sur
+ * `/plan/pistes` ne porte que les pistes (aucun `initialRouteName` n'y remet le plan), et une pile
+ * où la racine serait revenue par-dessus d'autres écrans n'est pas à sa racine non plus — la laisser
+ * faire la ferait dépiler jusqu'à son premier écran, qui n'est pas la racine. Une pile absente n'a
+ * jamais bougé : elle est à sa racine.
+ */
+export function toucherDOnglet(pile: PileDOnglet, racine = 'index'): 'ramenerALaRacine' | 'laisserFaire' {
+  if (pile === undefined || pile.routes.length === 0) return 'laisserFaire';
+  const devant = pile.index ?? pile.routes.length - 1;
+  return devant === 0 && pile.routes[0].name === racine ? 'laisserFaire' : 'ramenerALaRacine';
 }

@@ -11,4 +11,6 @@ Une action chiffrée. Engagée : bordure accent 2 px, fond tinted, étiquette av
 
 **Le premier pas n'apparaît qu'une fois l'action engagée** (`premierPas`, « PREMIER PAS » en étiquette tertiaire, dans un creux au fond `background`) : une ligne sans chiffre qui décrit un essai, pour abaisser le coût de la première fois. Avant le choix, sur une carte qu'on compare à une autre, elle se lirait comme une charge de plus ; sur une action reconduite, elle arriverait une saison trop tard. Elle ne chiffre jamais rien — le gain est juste au-dessus.
 
+**Le bloc qui annonce la carte reçoit le focus après un engagement** (01/10/2026, audit P-1) : « Action engagée : … », le titre, le gain, l'intention et le détail, en un seul nœud. Sur le plan, la relecture remplace le sélecteur par la carte engagée, et le focus tombait sur le document ; l'écran le pose désormais sur ce bloc (`refDuBloc`, focalisable par programme sur web, hors de la tabulation). Rien ne se dessine.
+
 Jamais la mascotte dedans : la carte porte des kilos.

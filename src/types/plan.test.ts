@@ -9,7 +9,9 @@ import {
   introDesPistes,
   libelleDuChoix,
   cartesDuPlan,
+  defilementVersLaCarte,
   felicitationDuPlanSansAction,
+  toucherDOnglet,
   formatIntention,
   formatIntentionDays,
   formatIntentionTiming,
@@ -884,6 +886,11 @@ describe('l’encart orphelin', () => {
  *     et la partition, qui interdit l'encart sous la félicitation ;
  *   - la félicitation écrite `nombreDActions <= 1` → la partition félicitation / estimation — **elle
  *     ne tombait pas** tant que l'énumération ne prenait que zéro et trois actions.
+ *
+ * **Et deux de plus le 01/10/2026, sur l'intro et le trait** (audit P-5) :
+ *   - l'intro sans condition (`intro: true`) → « ne dit le principe… », seul ;
+ *   - le trait rendu à la forme d'avant (`traitDeTemps: !premierPlan`) → « rend le trait… » et le cas
+ *     nommé du premier plan à zéro action, seuls.
  */
 describe('cartesDuPlan', () => {
   type Etat = Parameters<typeof cartesDuPlan>[0];
@@ -986,5 +993,106 @@ describe('cartesDuPlan', () => {
     for (const etat of tousLesEtats) {
       expect(cartesDuPlan(etat).pistesAvantLeCap).toBe(etat.premierPlan);
     }
+  });
+
+  // **La planche C du HANDOFF `v1-17`, enfin suivie** (audit P-5, 01/10/2026) : « Ton plan » sans
+  // intro, et la carte du cap avec son trait. L'intro dit qu'on choisit une action, une seule — au-dessus
+  // d'aucune action, elle contredisait la félicitation juste dessous.
+  it('ne dit le principe d’une action par saison que sur un plan qui en porte', () => {
+    for (const etat of tousLesEtats) {
+      const { intro, felicitation } = cartesDuPlan(etat);
+      expect(intro).toBe(etat.nombreDActions > 0);
+      // Les deux ne se croisent jamais : « une action, une seule » au-dessus de « aucun changement
+      // de mode ne te ferait gagner assez » était exactement le défaut.
+      expect(intro && felicitation).toBe(false);
+    }
+  });
+
+  it('rend le trait hors du premier plan, et au premier plan d’un plan à zéro action', () => {
+    for (const etat of tousLesEtats) {
+      expect(cartesDuPlan(etat).traitDeTemps).toBe(!etat.premierPlan || etat.nombreDActions === 0);
+    }
+  });
+
+  // Nommément, les deux cas que la règle de C5.6 sépare : un premier plan à choisir n'a pas de temps
+  // qui court, un premier plan sans rien à choisir en a un — c'est celui de tout cycliste.
+  it.each([
+    ['un premier plan à deux pistes : l’intro, sans trait', 2, false],
+    ['un premier plan à zéro action : le trait, sans intro', 0, true],
+  ])('%s', (_cas, nombreDActions, attendu) => {
+    const cartes = cartesDuPlan({
+      ouvertureDeSaison: false,
+      carteDuPremierPlan: false,
+      carteDesDeuxLieux: false,
+      pointsAffiches: 0,
+      attenteDisponible: true,
+      premierPlan: true,
+      nombreDActions,
+      motsDuContexte: 2,
+    });
+    expect(cartes.traitDeTemps).toBe(attendu);
+    expect(cartes.intro).toBe(!attendu);
+  });
+});
+
+/**
+ * **La carte engagée, amenée dans la fenêtre après la relecture — dans les deux sens** (audit P-1,
+ * 01/10/2026). Une fenêtre de 788 px (900 de l'écran du parcours, moins la bande et la barre), une
+ * marge de 16.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : la remontée retirée (`defilementPourMontrer` seul) → « remonte
+ * jusqu'à une carte passée sous la bande », seul ; la marge oubliée en remontant (`return haut`) → la
+ * même, seule.
+ */
+describe('defilementVersLaCarte', () => {
+  const fenetre = { hauteurFenetre: 788, marge: 16 };
+
+  it('ne bouge pas pour une carte déjà entière dans la fenêtre', () => {
+    expect(defilementVersLaCarte({ haut: 120, bas: 500, ...fenetre })).toBe(0);
+  });
+
+  // Au premier plan, la relecture remet le cap devant les pistes : la carte qu'on vient d'engager
+  // descend sous la barre d'onglets. Juste assez pour son bas, comme la liste.
+  it('descend juste assez pour une carte passée sous la barre', () => {
+    expect(defilementVersLaCarte({ haut: 700, bas: 1060, ...fenetre })).toBe(1060 + 16 - 788);
+  });
+
+  // Plus haute que la fenêtre : son titre gagne, il ne passe jamais sous la bande.
+  it('garde le titre sous la bande quand la carte est plus haute que la fenêtre', () => {
+    expect(defilementVersLaCarte({ haut: 300, bas: 1300, ...fenetre })).toBe(300 - 16);
+  });
+
+  // Revenu de la liste après un choix, l'action choisie passe en tête des cartes — au-dessus de
+  // l'écran qu'on avait laissé défilé jusqu'au lien des pistes.
+  it('remonte jusqu’à une carte passée sous la bande, la marge gardée', () => {
+    expect(defilementVersLaCarte({ haut: -240, bas: 120, ...fenetre })).toBe(-240 - 16);
+  });
+});
+
+/**
+ * **Un onglet ramène à sa racine — et, déjà là, laisse la barre remonter la page** (audit T-14,
+ * 01/10/2026).
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : toujours `ramenerALaRacine` (l'état d'avant) → « laisse
+ * faire… », seul ; la racine reconnue sur `index === 0` sans son nom → « ramène une pile ouverte par un
+ * lien… », seul ; l'écran de devant lu à `routes[0]` sans l'index → « ramène depuis un écran empilé… »,
+ * seul.
+ */
+describe('toucherDOnglet', () => {
+  it('laisse faire la barre sur un onglet déjà à sa racine, ou dont la pile n’a jamais bougé', () => {
+    expect(toucherDOnglet({ index: 0, routes: [{ name: 'index' }] })).toBe('laisserFaire');
+    expect(toucherDOnglet(undefined)).toBe('laisserFaire');
+  });
+
+  it('ramène depuis un écran empilé sur la racine', () => {
+    expect(toucherDOnglet({ index: 1, routes: [{ name: 'index' }, { name: 'pistes' }] })).toBe('ramenerALaRacine');
+    // Une pile partielle — d'un lien — n'a pas d'index : l'écran de devant est le dernier.
+    expect(toucherDOnglet({ routes: [{ name: 'index' }, { name: 'bilan' }] })).toBe('ramenerALaRacine');
+  });
+
+  // Ouverte sur `/plan/pistes`, la pile ne porte que les pistes : l'index vaut zéro, et ce n'est pas
+  // la racine. La laisser faire garderait la liste au toucher de « Plan ».
+  it('ramène une pile ouverte par un lien sur un écran qui n’est pas sa racine', () => {
+    expect(toucherDOnglet({ index: 0, routes: [{ name: 'pistes' }] })).toBe('ramenerALaRacine');
   });
 });
