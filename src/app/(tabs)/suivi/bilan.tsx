@@ -914,9 +914,11 @@ export default function BilanResultat() {
             </ThemedText>
             {/* **Le jeton, pas une recopie** (A3-22). Le chiffre le plus important du produit
                 redéclarait 26 / 32 à la main, c'est-à-dire exactement `TypeScale.screen` — le
-                jeton des *titres d'écran*. `salient` est celui des chiffres saillants (le cap de
-                la saison, l'écart entre deux bilans) : il vaut 30, et la hiérarchie tient
-                puisque la décision dominante reste au-dessus, à 32. */}
+                jeton des *titres d'écran*. `salient` est celui des chiffres saillants (ce total, le
+                cap de la saison sur le plan) : il vaut 30, et la hiérarchie tient puisque la
+                décision dominante reste au-dessus, à 32. L'écart entre deux bilans, que
+                `theme.ts` range encore parmi eux, se dit ici dans une phrase en `body`, sous les
+                barres (`v1-14` §5) — aucun écran ne l'écrit en `salient`. */}
             <ThemedText type="salient" style={styles.chiffres}>
               {formatTonnes(results.total_co2_kg_year)}
             </ThemedText>
