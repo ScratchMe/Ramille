@@ -357,11 +357,11 @@ export default function BilanResultat() {
       // `.catch` garde la règle si un jour l'une d'elles levait, sans quoi `Promise.all` la ferait
       // tomber avec le reste, et l'écran avec elle.
       //
-      // **La session de la bannière de compte est la quatrième, et c'est la dernière insertion qu'on
-      // retire** (01/10/2026) : lue après l'écran prêt, elle posait sa ligne au-dessus du total une
-      // image après le premier rendu et le décalait de 92 px — le même défaut que la barre d'avant,
-      // au-dessus d'un chiffre que D9 vient de remonter pour qu'on le voie. Elle ne lève jamais
-      // (`lireLaBanniere`), et n'est pas lue en relecture, où la ligne ne se rend pas.
+      // **La session de la bannière de compte est la quatrième** (01/10/2026) : lue après l'écran
+      // prêt, elle posait sa ligne au-dessus du total une image après le premier rendu et le décalait
+      // de 92 px — le même défaut que la barre d'avant, au-dessus d'un chiffre que D9 vient de
+      // remonter pour qu'on le voie. Elle ne lève jamais (`lireLaBanniere`), et n'est pas lue en
+      // relecture, où la ligne ne se rend pas.
       let lectures;
       try {
         lectures = await Promise.all([
