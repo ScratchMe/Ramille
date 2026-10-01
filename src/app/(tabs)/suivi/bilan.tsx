@@ -157,6 +157,14 @@ type LoadState =
        * les yeux, une fois l'écran rendu.
        */
       frequenceDesLoisirs: string | null;
+      /**
+       * Ce que la bannière de compte dit de la session, **lue avec le résultat** (01/10/2026). Elle
+       * était lue par un effet à part, une fois l'écran prêt : la ligne s'insérait alors au-dessus du
+       * total, qu'elle décalait de sa hauteur (92 px, une image après le premier rendu prêt) — au
+       * moment même où D9 vient de le remonter pour qu'on le voie. `'autre'` en relecture, où elle ne se
+       * rend jamais, et `'inconnu'` quand la session n'a pas pu être lue : la ligne ne se rend pas.
+       */
+      banniere: EtatDeLaBanniere;
     };
 
 // Ce que le partage a donné, quand il y a quelque chose à en dire. Le chemin système ne dit
@@ -202,6 +210,46 @@ async function copierDansLePressePapier(
     // Permission refusée, geste hors fenêtre d'activation : celui-là peut aboutir au coup
     // suivant, donc c'est le seul cas où l'écran invite à réessayer.
     return 'echec';
+  }
+}
+
+/**
+ * Ce que la bannière de compte dit de la session — lu dans le cache local, sans aller-retour.
+ *
+ * **Le repli ne dit rien plutôt que d'affirmer.** `inconnu` ne rend pas la bannière : une lecture qui
+ * lève ou qui ne trouve pas de session laisse la ligne absente, ce qui coûte une invitation, jamais
+ * une phrase fausse. C'est l'inverse du défaut d'A3-20, où un booléen optimiste sautait la
+ * proposition ; et le bouton, lui, ne dépend plus de cette lecture du tout, puisqu'il va au plan dans
+ * tous les cas. La seule sortie de l'écran ne peut donc pas se fermer.
+ *
+ * `new_email` est posé par `updateUser({ email })` et retiré à la vérification du code : il dit « le
+ * geste est commencé » sans aucun appel réseau de plus. Lui reproposer le départ du chemin qu'elle
+ * vient de prendre se lirait comme un échec.
+ *
+ * **Elle part au montage avec les autres lectures, et non plus après le bilan.** L'effet qu'elle
+ * remplace disait la raison de l'attente : un bilan lu veut dire une session lisible (la ligne est
+ * protégée par une policy owner-scoped), et lancée au montage la lecture pouvait tomber sur une
+ * session pas encore écrite et laisser `inconnu` collé — donc le bouton désactivé. Les deux
+ * prémisses ont changé : le bouton ne dépend plus de cette lecture (20/09/2026), et `inconnu` ne
+ * coûte plus qu'une ligne absente ; et une session pas encore écrite n'a de toute façon aucun bilan
+ * à lire, donc l'écran n'arrive pas à `ok` — « Réessayer » relit alors les deux ensemble.
+ *
+ * Ne lève jamais : elle part dans le même `Promise.all` que les lectures dont l'écran dépend, et une
+ * exception y ferait tomber l'écran avec elle.
+ */
+async function lireLaBanniere(): Promise<EtatDeLaBanniere> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return 'inconnu';
+    return etatDeLaBanniere({
+      estAnonyme: session.user.is_anonymous === true,
+      adresseAConfirmer: Boolean(session.user.new_email),
+    });
+  } catch (erreur) {
+    console.error('L’état de la session n’a pas pu être lu :', erreur);
+    return 'inconnu';
   }
 }
 
@@ -258,18 +306,6 @@ export default function BilanResultat() {
     setState({ status: 'loading' });
     setTentative((n) => n + 1);
   };
-  // **Un état à quatre valeurs, pas un booléen optimiste** (A3-20). `proposalSeen` démarrait à
-  // `true` et n'était corrigé qu'après un aller-retour réseau (`getUser()`) suivi d'une lecture
-  // AsyncStorage : quelqu'un qui appuie vite sur le bouton, ou dont le réseau traîne, passait
-  // droit au plan — et comme la même variable pilotait la bannière de repli, il ne voyait ni
-  // l'interstitiel **ni** la bannière, c'est-à-dire plus aucune occasion de garder son bilan.
-  // `getSession()` suffit et supprime l'aller-retour : c'est le cache local, et la seule chose
-  // qu'on lui demande est `is_anonymous` (cf. `src/lib/analytics.ts`, même lecture).
-  const [banniereLue, setBanniereLue] = useState<EtatDeLaBanniere>('inconnu');
-  // La relecture n'est pas un état à tenir à jour, c'est une propriété de l'entrée dans l'écran :
-  // elle se dérive du rendu, là où l'écrire depuis l'effet serait un `setState` synchrone que le
-  // React Compiler refuse (`react-hooks/set-state-in-effect`).
-  const banniere: EtatDeLaBanniere = mode === 'relecture' ? 'autre' : banniereLue;
   const [partage, setPartage] = useState<EtatPartage>({ statut: 'inactif' });
   // **Retirer ce bilan** (C4.7, D4 de `v1-22`) : une confirmation dans la page, jamais un `Alert` —
   // sur web il retombe sur `window.alert()`, qui n'invoque pas fiablement `onPress` (la forme de
@@ -313,13 +349,19 @@ export default function BilanResultat() {
       // lecture de plus pourrait échouer seule, et l'écran ne saurait plus s'il a le droit de montrer
       // le chiffre.
       //
-      // **Les trois autres sont tolérantes, et le restent en partant ensemble** : leur échec ôte ce
+      // **Trois d'entre elles sont tolérantes, et le restent en partant ensemble** : leur échec ôte ce
       // qu'elles portent, jamais l'écran. Les bilans valides décident du lien du retrait et du bilan
       // précédent — en échec, ni lien ni comparaison ; le cycle courant porte le palier — en échec,
       // pas de marche ; la fréquence des loisirs nomme le résiduel des sorties rares — en échec, les
       // libellés figés. Chacune rend son échec sans lever (PostgREST le rend comme une valeur) ; le
       // `.catch` garde la règle si un jour l'une d'elles levait, sans quoi `Promise.all` la ferait
       // tomber avec le reste, et l'écran avec elle.
+      //
+      // **La session de la bannière de compte est la quatrième, et c'est la dernière insertion qu'on
+      // retire** (01/10/2026) : lue après l'écran prêt, elle posait sa ligne au-dessus du total une
+      // image après le premier rendu et le décalait de 92 px — le même défaut que la barre d'avant,
+      // au-dessus d'un chiffre que D9 vient de remonter pour qu'on le voie. Elle ne lève jamais
+      // (`lireLaBanniere`), et n'est pas lue en relecture, où la ligne ne se rend pas.
       let lectures;
       try {
         lectures = await Promise.all([
@@ -333,6 +375,10 @@ export default function BilanResultat() {
           // vient de soumettre.
           mode === 'relecture' ? null : loadCycleCourant().catch(() => null),
           loadFrequenceDesLoisirs(id).catch(() => null),
+          // **La bannière de compte part avec elles** : voir `banniere` dans l'état. En relecture
+          // aucune proposition de compte — redemander à chaque consultation de son historique serait du
+          // harcèlement, pas une invitation —, donc rien à lire.
+          mode === 'relecture' ? ('autre' as const) : lireLaBanniere(),
         ]);
       } catch (erreur) {
         // Seule la lecture du résultat peut arriver ici : sans elle, rien à montrer — l'écran
@@ -342,7 +388,7 @@ export default function BilanResultat() {
         setState({ status: 'error' });
         return;
       }
-      const [{ data: lu, error }, bilansValides, cycle, frequenceDesLoisirs] = lectures;
+      const [{ data: lu, error }, bilansValides, cycle, frequenceDesLoisirs, banniere] = lectures;
 
       if (cancelled) return;
       if (error || !lu) {
@@ -393,6 +439,7 @@ export default function BilanResultat() {
           palierFranchi: false,
           place,
           frequenceDesLoisirs,
+          banniere,
         });
         return;
       }
@@ -418,6 +465,7 @@ export default function BilanResultat() {
         palierFranchi: false,
         place,
         frequenceDesLoisirs,
+        banniere,
       });
 
       // **Seul le cycle d'alors arrive en second temps**, et il n'ajoute qu'une phrase : « Le palier
@@ -447,48 +495,6 @@ export default function BilanResultat() {
       cancelled = true;
     };
   }, [id, mode, tentative]);
-
-  useEffect(() => {
-    // En relecture, aucune proposition de compte : redemander à chaque consultation de son
-    // historique serait du harcèlement, pas une invitation. Rien à écrire, la dérivation du
-    // rendu s'en charge.
-    //
-    // **Après le bilan, pas avant.** Le bouton n'est rendu qu'à `ok`, donc rien n'est gagné à
-    // lire plus tôt — et surtout, un bilan lu veut dire une session lisible (la ligne est
-    // protégée par une policy owner-scoped) : lancée au montage, la lecture pouvait tomber sur
-    // une session pas encore écrite et laisser `inconnu` collé, donc le bouton désactivé.
-    if (mode === 'relecture' || state.status !== 'ok') return;
-    let annule = false;
-    (async () => {
-      // **Le repli ne dit rien plutôt que d'affirmer.** `inconnu` ne rend pas la bannière, et cet
-      // effet ne dépend que de `[mode, state.status]` : rien ne le relance. Une lecture qui lève
-      // laisse donc la ligne absente — ce qui coûte une invitation, jamais une phrase fausse.
-      // C'est l'inverse du défaut d'A3-20, où le booléen optimiste sautait la proposition ; et le
-      // bouton, lui, ne dépend plus de cette lecture du tout, puisqu'il va au plan dans tous les
-      // cas. La seule sortie de l'écran ne peut donc plus se fermer.
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (annule) return;
-        if (!session) return;
-        // `new_email` est posé par `updateUser({ email })` et retiré à la vérification du code :
-        // il dit « le geste est commencé » sans aucun appel réseau de plus. Lui reproposer le
-        // départ du chemin qu'elle vient de prendre se lirait comme un échec.
-        setBanniereLue(
-          etatDeLaBanniere({
-            estAnonyme: session.user.is_anonymous === true,
-            adresseAConfirmer: Boolean(session.user.new_email),
-          })
-        );
-      } catch (erreur) {
-        console.error('L’état de la session n’a pas pu être lu :', erreur);
-      }
-    })();
-    return () => {
-      annule = true;
-    };
-  }, [mode, state.status]);
 
   // **Le plan, toujours.** C'est tout ce que ce bouton fait depuis le 20/09/2026, et c'est
   // l'arbitrage : la prise de conscience du chiffre est ce que l'app existe pour produire, et la
@@ -725,7 +731,7 @@ export default function BilanResultat() {
     );
   }
 
-  const { results, capKg, submittedAt, precedent, palierFranchi, place, frequenceDesLoisirs } = state;
+  const { results, capKg, submittedAt, precedent, palierFranchi, place, frequenceDesLoisirs, banniere } = state;
   const confirmation =
     confirmationOuverte === null
       ? null
