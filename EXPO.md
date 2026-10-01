@@ -8,9 +8,10 @@ que chaque paragraphe cite. Ce qui relève de l'hébergement de l'export (`clean
 déploiements) est dans `VERCEL.md`.
 
 > **Quand lire ce fichier** : avant d'ajouter une route ou un fichier dans `public/` · avant de
-> toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · devant un écran
-> blanc sur web · avant d'ajouter une dépendance native ou de lancer un build EAS · quand
-> `expo-doctor` rougit en CI.
+> toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · avant de toucher à
+> une mise en page — marge, hauteur, barre d'onglets · avant de faire bouger quelque chose sur web ·
+> devant un écran blanc sur web · avant d'ajouter une dépendance native ou de lancer un build EAS ·
+> quand `expo-doctor` rougit en CI.
 
 ---
 
@@ -353,14 +354,16 @@ pas ce qui s'affiche.
 **Espace coche les choix depuis le 25/09/2026, et c'est la livraison de la veille qui l'avait
 cassé** : tant que les puces s'annonçaient en boutons, react-native-web les activait à la barre
 d'espace ; devenues des `radio` et des `checkbox`, elles ne répondaient plus qu'à Entrée (§1.5).
-`activableALaBarreDEspace` (`src/lib/barre-d-espace.ts`) est décomposé par les quatre composants de
-choix — `Chip`, `ChoiceRow`, `ModeListItem`, `LigneDeCanal` — et rend des props vides sur natif.
-Deux gardes le voient, parce qu'il ne se voit que dans un navigateur : la section F de
-`verifier-etats-export.mjs` presse Espace sur une rangée, une puce et un item de mode du
-questionnaire et mesure que la case est cochée **et que rien n'a défilé** ; le parcours réel joue
-Espace, Entrée et une touche maintenue sur les jours de l'engagement, la seule case à cocher du
-produit, puis Espace sur la ligne de canal de « Toi ». Ce qui reste hors de portée : les flèches
-pour passer d'une option à l'autre d'un groupe, que rien ne gère (`v1-29` §6.4).
+`activableALaBarreDEspace` (`src/lib/barre-d-espace.ts`) est décomposé par les composants de
+choix — `Chip`, `ChoiceRow`, `ModeListItem`, `LigneDeCanal` et, depuis C4.2, la case du mot de la
+veille (`choix-de-rappel.tsx`) — et rend des props vides sur natif. Deux gardes le voient, parce
+qu'il ne se voit que dans un navigateur : la section F de `verifier-etats-export.mjs` presse Espace
+sur une rangée, une puce et un item de mode du questionnaire et mesure que la case est cochée **et
+que rien n'a défilé** ; le parcours réel joue Espace, Entrée et une touche maintenue sur les jours
+de l'engagement, puis Espace sur la ligne de canal de « Toi ». **Les flèches parcourent un groupe
+d'options depuis le même jour** (`src/lib/groupe-au-clavier.ts`, branché par `GroupeDeChoix`,
+`v1-29` §6.4) : un seul arrêt de tabulation par groupe, et la flèche passe à la voisine en la
+cochant — `FRONT.md` §2.4 pour la règle, la section I de `verifier-etats-export.mjs` pour la garde.
 
 **La barre d'onglets est épinglée en `tabBarLabelPosition: 'below-icon'`, et c'est le web qui
 l'imposait** (13.7, recette web du 16/09/2026). `OngletIcone` dessine une pastille de 56 × 30 dans
@@ -375,12 +378,18 @@ libellé ensemble** : ce serait casser le motif sur la cible réelle, qui est un
 
 ### 2.3 Android : App Links et build natif
 
-**Le lien du rappel ouvre l'app grâce à un fichier servi par le site, pas par l'app.**
-`public/.well-known/assetlinks.json` (recopié tel quel dans l'export) autorise nommément
-`fr.ramille.app` à revendiquer `https://www.ramille.fr/plan`, déclaré en `intentFilters`
-`autoVerify` dans `app.json`. **La revendication est volontairement étroite** : réclamer tout
-le domaine ouvrirait aussi `/compte/suppression` et les pages légales dans l'app, alors que
-Google Play exige précisément qu'elles restent atteignables **sans** elle. Deux façons de
+**Le lien du rappel ouvre l'app quand deux moitiés s'accordent : un fichier servi par le site, et
+l'`intentFilter` de l'app.** `public/.well-known/assetlinks.json` (recopié tel quel dans l'export) délègue à `fr.ramille.app`
+**tout** `www.ramille.fr` — `delegate_permission/common.handle_all_urls` est la seule relation
+qu'Android accepte pour un App Link —, et c'est l'`intentFilter` `autoVerify` d'`app.json`, par son
+`pathPrefix` `/plan` **et lui seul**, qui borne ce que l'app revendique (`COMPTE.md` §1 ; ce fichier
+attribuait ce périmètre à `assetlinks.json` jusqu'au 01/10/2026). **La revendication est
+volontairement étroite** : réclamer tout le domaine ouvrirait aussi `/compte/suppression` et les
+pages légales dans l'app, alors que Google Play exige précisément qu'elles restent atteignables
+**sans** elle. Deux pièges à connaître avant d'ajouter une route ou un filtre : `pathPrefix` est un
+préfixe de **chaîne** et non de segment, donc une future route `/planning` ou `/plan-b` serait
+capturée par l'app ; et un second `intentFilter` n'aurait aucun garde-fou du côté
+d'`assetlinks.json`. Deux façons de
 casser ça en silence — le fichier qui disparaît de l'export, et l'empreinte de signature qui
 change : **Google Play resigne l'AAB avec sa propre clé**, donc l'empreinte de production
 différera de celle du keystore EAS et devra être **ajoutée** au tableau (qui en accepte

@@ -7,8 +7,21 @@ et dans les documents `docs/architecture/v1-0N-*.md` que chaque paragraphe cite.
 
 > **Quand lire ce fichier** : avant d'écrire un test censé protéger une correction · avant
 > d'**annoncer que quelque chose est vérifié** · quand une suite rougit ou verdit de façon
-> inattendue · avant de rejouer un fichier pgTAP sur le projet distant · avant de toucher au
-> référentiel des facteurs.
+> inattendue · avant de rejouer la CI en local. Pour pgTAP, le projet distant et le référentiel
+> des facteurs : `TESTING-PGTAP.md` ; pour une garde de la CI, le parcours réel compris :
+> `TESTING-GARDES.md`.
+
+**Découpé le 01/10/2026**, où il pesait 84 Ko : ce fichier garde la méthode (§1), les suites et la
+ligne qui les sépare (§2.1), le test d'écran (§2.10) et le rejeu de la CI (§2.13). Les autres
+sections sont parties **telles quelles — à leurs renvois près — et sous leur numéro**, qui reste unique dans la famille — un
+renvoi « `TESTING.md` §2.x » écrit avant cette date, dans un commentaire du code ou un document
+daté, se retrouve donc par cette table :
+
+| Sections | Vivent dans |
+|---|---|
+| §1.7 (pgTAP, cinq pièges), §2.2 à §2.5 | `TESTING-PGTAP.md` |
+| §2.6 à §2.9, §2.11, §2.12, §2.14, §2.15 | `TESTING-GARDES.md` |
+| tout le reste | ici |
 
 ---
 
@@ -36,7 +49,7 @@ garder quelque chose ; avec, on sait laquelle. Deux règles qui en découlent :
 
 Corollaire pour une valeur attendue : **une hypothèse sur les données se mesure, jamais au
 raisonnement**. Une assertion chiffrée se recalcule par une requête sur la base, et n'écrit que ce
-qui a été ainsi vérifié (§2.2).
+qui a été ainsi vérifié (`TESTING-PGTAP.md` §2.2).
 
 
 **Une mutation se défait en réécrivant l'état d'avant, jamais par un second remplacement
@@ -66,6 +79,13 @@ l'embarque, un test lancé à côté éprouve le mutant, un second export le liv
 commit a dû exclure le seul fichier encore muté, et une mutation de `plan.ts` a attendu la fin des
 exports d'une autre série. Rejouer les parcours sur des exports déjà construits, lui, ne touche
 plus aux sources.
+
+**Et une mesure qui ne trouve pas sa cible est un échec, jamais un succès** : « aucune image
+translucide » est vrai d'un titre introuvable, « rien n'a défilé » d'une page qui ne peut pas
+défiler. De même, **une mutation doit atteindre ce que la garde lit** : quand la garde lit un
+artefact construit — un bundle, un export —, une mutation de la source sans nouvel artefact ne mute
+rien, et la garde reste verte pour la mauvaise raison. Les formes que ces deux règles ont prises
+ici sont dans `TESTING-GARDES.md` (§2.12 et §2.14).
 
 ### 1.2 Où passe la ligne entre logique pure et entrée-sortie
 
@@ -157,41 +177,16 @@ asserter ce que le champ a **gardé**, pas seulement ce que l'écran fait ensuit
 valeur retenue nomme le nombre de chiffres perdus, là où une assertion d'aval ne dit qu'un délai
 expiré.
 
-### 1.7 pgTAP : cinq pièges d'une transaction
-
-- **`now()` est l'horodatage de début de transaction.** Deux lignes écrites par le même appel
-  portent le même `created_at`, et `order by created_at limit 1` retombe sur l'ordre du tas : une
-  assertion juste peut tirer *l'autre* ligne et réussir là où elle attend un refus. Capturer
-  l'identifiant dans un `set_config`, ou ordonner sur une colonne réellement distincte.
-- **La place d'une assertion fait partie de l'assertion.** Posée après une section qui écrit une
-  ligne à la main, elle lit un état que nulle mise en file n'a produit — et valider l'assertion
-  seule, avec ses propres fixtures, ne reproduit pas cet état. Elle vit juste après ce qui produit
-  ce qu'elle lit, avec un commentaire qui dit pourquoi elle ne doit pas bouger.
-- **Rejouer la séquence entière du fichier**, bascules de rôle (`request.jwt.claims`) comprises :
-  un scénario extrait de son contexte ne reproduit pas le rôle sous lequel il tournera.
-- **Une assertion de refus peut passer sans rien éprouver de deux façons** : un trigger `before`
-  qui refuse avant les `check` (même SQLSTATE `23514`), ou la RLS depuis la session d'un tiers
-  (`42501`). L'ordre des assertions et le rôle courant décident de ce qui est éprouvé. Même chose
-  pour un privilège : « permission denied » et « violates row-level security » portent tous deux
-  `42501`, donc un test qui n'assure qu'un refus reste vert après un `revoke`.
-- **Une fixture ne peut pas écrire un état que la production ne peut pas produire** (une ligne
-  « répondue » sans réponse, un horodatage choisi que le serveur pose lui-même) : quand une
-  contrainte ou un trigger arrive, les fixtures qui le faisaient tombent, et c'est une bonne
-  chose — elles éprouvaient une fiction.
-
-Et une base **vierge** n'est pas la base **distante** : une assertion qui lit `min()` sur toute
-une table, ou qui attend un envoi *sauté* faute de secret, passe sur l'une et échoue sur l'autre.
-Les connaître évite de « corriger » un test qui n'a rien (§2.3).
-
 ---
 
 ## 2. Propre à Ramille
 
 ### 2.1 Les suites, et où passe la ligne
 
-Deux suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
-(chiffre affiché à l'utilisateur, navigation du wizard) — pas encore de tests d'intégration
-bout-en-bout (écrans, flux de connexion) :
+Trois suites de tests automatisés, ciblées sur la logique où un bug est le plus coûteux
+(chiffre affiché à l'utilisateur, navigation du wizard) — les deux premières ci-dessous, la
+troisième, le parcours réel, en `TESTING-GARDES.md` §2.6 ; le flux de connexion a en plus son propre jeu de bout en
+bout (`TESTING-GARDES.md` §2.9), et quelques écrans leur test (§2.10, ci-dessous) :
 
 - **Jest** (`npm test`, qui force `TZ=Europe/Paris` — voir plus bas pourquoi) sur la logique pure
   côté client. La règle, plutôt qu'une liste qui se
@@ -220,8 +215,8 @@ bout-en-bout (écrans, flux de connexion) :
   **La couverture est relevée en CI sans seuil** (`npm test -- --coverage`, périmètre
   `src/types` · `src/lib` · `src/constants` dans `collectCoverageFrom`) : un seuil transforme une
   carte en obstacle et se contourne en écrivant des tests qui touchent du code sans rien affirmer.
-  Les écrans n'y sont pas — ils ne sont pas testés, par décision, et les lister à 0 % à chaque
-  passage noierait la carte. 79 % des lignes au 14/09/2026.
+  Les écrans n'y sont pas — hors du périmètre de couverture, testés seulement par exception sous le
+  critère de §2.10 —, et les lister à 0 % à chaque passage noierait la carte. 79 % des lignes au 14/09/2026.
   **Doubler `react-native` en entier passe au vert en salissant la sortie** : le `setup.js` de
   jest-expo est privé de ce qu'il installe, et l'étaler avec `requireActual` **lit** chaque
   propriété du module, donc déclenche les avertissements de dépréciation posés sur ses exports
@@ -254,10 +249,11 @@ bout-en-bout (écrans, flux de connexion) :
   la seule à se lire « 590 tests verts ». La raison vit ici et non à côté du réglage parce que
   `package.json` est du JSON : une clé de commentaire y fait émettre à Jest un `Validation Warning`
   à chaque passage.
-  Deux modules de `src/lib` sont testés en place et le restent à cette condition : `format.ts`, pur
-  (et importé par `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la
-  suite qui en dépend, par un lien que rien n'affiche), et `bilan-draft.ts`, dont le test double
-  AsyncStorage parce que c'est l'entrée-sortie elle-même qu'il éprouve.
+  Des modules de `src/lib` sont testés en place — la liste se lit en listant `src/lib/*.test.ts` —,
+  et deux conditions les y gardent : `format.ts` reste pur (il est importé par
+  `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la suite qui en
+  dépend, par un lien que rien n'affiche), et les autres doublent exactement ce qu'ils éprouvent,
+  selon la règle écrite plus haut — leurs `jest.mock` en font la liste, qui ne se recopie pas ici.
 - **pgTAP** (`supabase/tests/database/*.sql`, numérotés, un fichier par sujet — l'inventaire se
   lit dans le répertoire) sur les fonctions SQL de calcul, sur les policies RLS (isolation
   stricte par utilisateur en lecture/écriture, verrouillage des tables à écriture serveur-only,
@@ -268,463 +264,13 @@ bout-en-bout (écrans, flux de connexion) :
   sur `plan_actions` et `engagement_checkins`. Tourne via `supabase test db`, qui démarre une
   stack Postgres locale (Docker) à partir de `supabase/config.toml` + `supabase/migrations/` —
   indépendante du projet Supabase distant `TraceVerte-v1` utilisé pour le développement applicatif
-  courant. Nécessite le CLI Supabase (`npx supabase@latest`) et Docker ; non exécutable dans
-  cet environnement (pas de daemon Docker) — validé à la place via des transactions
-  `BEGIN`/`ROLLBACK` sur le projet distant avant d'être figé dans ces fichiers.
+  courant. Nécessite Docker et le CLI Supabase **à la version que la CI épingle**
+  (`npx supabase@2.117.0`, jamais `@latest` — `ci.yml` dit pourquoi). Docker tourne dans
+  l'environnement d'agent depuis le 20/09/2026 (`TESTING-GARDES.md` §2.6) ; avant, un fichier se validait par des
+  transactions `BEGIN`/`ROLLBACK` sur le projet distant, ce que `TESTING-PGTAP.md` §2.3 borne.
 
 Les trois suites tournent en CI (`.github/workflows/ci.yml`) sur chaque pull request — la
-troisième, le parcours réel, a sa §2.6.
-
-### 2.2 Le référentiel des facteurs et les assertions chiffrées
-
-**Toucher au référentiel des facteurs invalide TOUTES les valeurs attendues de la suite pgTAP,
-pas seulement celles qui citent le facteur touché — et « toucher » inclut en AJOUTER un.**
-Le fichier `07` porte trois gardes qui balaient les tables entières (tout mode a une source,
-toute source a un facteur, tout facteur porte l'ACV complète) : quatre modes ajoutés les
-traversent sans être nommés nulle part. C'est ainsi que la CI est tombée une troisième fois
-(PR #48). En particulier, `emission_factors.source` doit valoir **exactement**
-`'ADEME Base Empreinte — ACV complète (via API Impact CO2)'` : ce n'est pas une étiquette
-décorative mais le seul endroit où l'on enregistre quel endpoint a été interrogé — la valeur
-seule ne distingue pas un facteur ACV d'un facteur d'usage, les deux endpoints renvoyant des
-nombres également plausibles.
-
-**Le corollaire sur les valeurs :** Une quinzaine d'assertions chiffrées sont
-réparties dans `01`, `05`, `06` et `08`, et beaucoup dérivent d'un facteur sans le nommer.
-Chercher l'ancienne valeur littérale dans les fichiers ne suffit donc pas — c'est ainsi que
-la CI est tombée deux fois (PR #34, puis PR #41). La méthode qui marche : lister toutes les
-assertions (`grep -n '::numeric,' supabase/tests/database/`), recalculer chacune **par une
-requête sur la base** plutôt qu'à la main, et n'écrire dans le test que des valeurs ainsi
-vérifiées. Le piège se referme d'autant plus facilement que la validation sur le projet
-distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des tests.
-
-### 2.3 Ce que le projet distant ne prouve pas
-
-**Ce piège avait un symétrique LOCAL, et il est fermé depuis le 21/09/2026.** Relevé le
-20/09/2026 : la suite pgTAP ne passait pas sur une stack locale qui avait déjà servi les gardes de
-bout en bout. Le parcours réel et le chemin du compte émettent de **vrais** `usage_events` — et
-l'assertion 9 de `12_usage_events` lisait `min(occurred_at)` sur **toute** la table. Cinq minutes
-plus tard, elle échouait, avec le message exact d'un défaut d'horodatage côté serveur alors que
-rien n'était cassé.
-
-La parade prescrite ici était `supabase db reset` avant `supabase test db`. **Ce n'était pas la
-bonne**, et ce paragraphe a mis un jour à s'en apercevoir : le défaut n'était pas dans
-l'environnement mais dans l'assertion, qui balayait la table entière là où elle ne parle que de la
-ligne qu'elle vient d'écrire. Elle est bornée au fixture, dont l'identifiant ne peut pas venir de
-la production — ce qui ferme du même geste le cas local **et** le cas distant plus bas. Vérifié en
-désarmant `usage_events_stamp_time` : la version bornée tombe toujours sur ce qu'elle garde.
-
-La leçon vaut au-delà de cette ligne : **une garde qui rougit pour une raison étrangère à ce
-qu'elle garde n'est pas un désagrément d'environnement, c'est un défaut de la garde** — elle finit
-« corrigée » de travers, ou ignorée, ce qui revient au même. Le réflexe de prescrire une
-manipulation à l'appelant est le mauvais ; on borne l'assertion.
-
-**Et le piège a un symétrique, relevé le 11/09/2026 : des assertions de la suite échouent sur le
-projet distant et passent en CI, parce qu'elles supposent une base vierge.** Les connaître évite de
-« corriger » un test qui n'a rien. La liste ci-dessous en garde une fermée, pour mémoire ; **le
-nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux fois, la seconde le
-27/09/2026 quand les fichiers de la purge l'ont rejointe.
-- ~~`12_usage_events` assertion 9~~ — **fermée le 21/09/2026**, elle est bornée au fixture et passe
-  désormais des deux côtés (mesuré : zéro ligne pour cet uuid sur le distant, contre 254 réelles).
-  Elle reste listée parce qu'une exception retirée d'une liste se réinvente : la prochaine
-  assertion qui balaiera une table entière aura ce précédent-ci en face d'elle.
-- `17_rappels_canal` assertions 15 et 16 attendent un envoi **sauté** faute de secrets Vault. Sur
-  le distant, `resend_api_key` et `reminder_from_address` existent : la fonction envoie vraiment, et
-  la ligne passe en `sent` / le passage en `success`.
-- `09_checkin_email_reminders` pour la même raison — et avec un **effet de bord** : ses trois appels
-  à `send_pending_reminders()` feraient partir de vrais emails vers des adresses `@test.local`, donc
-  un rebond qui coûte de la délivrabilité au domaine. Ce fichier ne se rejoue pas en entier sur le
-  distant ; ce qui s'y valide se valide en sautant ces appels (ils ne touchent pas au corps du
-  message, seulement au statut).
-- `16_purge_anonyme_inactivite` et `36_cohortes_avant_la_purge` (son assertion 18) fabriquent soixante sessions
-  muettes pour déclencher la garde de volume de la purge, dont le seuil vaut `max(50, 20 %)` des
-  comptes anonymes. **Au-delà de 240 comptes anonymes en base, soixante ne suffisent plus**, et le
-  passage supprime au lieu de bloquer. Le compte qui décide est celui de la base, pas du fichier
-  (relevé par la contre-lecture du lot 6, 27/09/2026).
-- `35_mot_de_la_veille`, **sa section 8, et c'est le plus dangereux de la liste** : ses passes
-  d'envoi (`send_pending_reminders()`, `envoyer_les_notifications('veille')`) prennent **toute la
-  file réelle** due, pas seulement ses fixtures. Sur le distant, de vrais emails partiraient par
-  Resend et de vraies notifications par Expo — et le `rollback` remettant ces lignes en attente, le
-  cron suivant les renverrait : des doublons chez de vraies personnes. Et après 18 h 30 à Paris, elle
-  enverrait aussi les mots de vrais comptes que la section 6 vient de mettre en file, puisqu'elle ne
-  repousse que ceux de ses fixtures. **Ce fichier ne se rejoue jamais en entier sur le distant** ;
-  ses sections 1 à 7 et 9 à 13 ne font que mettre en file, dans la transaction annulée, et se
-  valident seules (relevé par la contre-lecture de C4.2, 28/09/2026 — l'en-tête du fichier
-  renvoyait ici avant que cette ligne n'existe).
-- `37_vues_de_l_administration`, **mais seulement à partir du 20/06/2027** : ses cohortes
-  fabriquées naissent il y a 300 et 420 jours (et W+14, qui n'a que des purgés), soit avant le premier
-  compte de la production (le 09/09/2026) — jusqu'au jour où ces dates le rattrapent. Ses assertions sur les totaux (états des
-  rappels, départs) se lisent en écart à un relevé fait avant les fixtures et tiennent partout ;
-  celles par semaine d'arrivée croiseraient alors de vrais comptes. Reculer les dates ne suffit pas :
-  au-delà de douze mois, la purge des `app_open` rend toute la cohorte « borne basse », et
-  l'assertion 7 ne garde plus rien.
-Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
-fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
-`request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.
-
-### 2.4 Deux pièges de rédaction pgTAP
-
-**`created_at` ne désigne aucune ligne dans une transaction pgTAP, et un `order by` dessus rend un
-ordre arbitraire.** `now()` est l'horodatage de **début de transaction** : deux lignes écrites par le
-même appel le portent à l'identique, et `order by created_at limit 1` retombe sur l'ordre du tas.
-Relevé le 11/09/2026 dans le fichier `22` (C2.9), où le « second clic » sur un lien de désinscription
-pouvait tirer l'**autre** message et donc réussir là où l'assertion attend un refus — l'assertion
-était juste, c'est la désignation de la ligne qui ne l'était pas, et elle passait en CI comme au
-premier rejeu. Capturer l'identifiant ou le jeton une fois dans un `set_config`, ou ordonner sur une
-colonne réellement distincte.
-
-**La place d'une assertion dans un fichier pgTAP fait partie de l'assertion, et valider l'assertion
-seule ne vaut rien.** Relevé le 11/09/2026 : les deux assertions C2.11 du fichier `09` avaient été
-posées en **fin** de fichier, après la section du journal qui écrit une ligne d'outbox **à la main**
-— donc un corps que nulle mise en file n'a produit. La première échouait, la seconde passait sans
-rien éprouver, et la validation sur le distant n'avait porté que sur elles deux avec leurs propres
-fixtures, ce qui ne reproduisait pas cet état. Elles vivent maintenant juste après la mise en file
-qui produit la ligne qu'elles lisent, avec un commentaire qui dit pourquoi elles ne doivent pas
-bouger. La conjonction est le vrai piège : le fichier dont on a le plus besoin de rejouer la
-séquence entière est précisément celui qu'on ne peut pas rejouer en entier sur le distant.
-
-### 2.5 Le canal de retour : deux façons de passer sans rien éprouver
-
-Le contexte : `feedback` est la seule table où un client écrit du texte libre, gardée par le
-trigger `enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et des bornes de longueur
-(`CLAUDE.md`, « Canal de retour »).
-
-**Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
-passer sans rien éprouver de **deux** façons, et les deux se sont produites. Après la
-saturation du quota, c'est le trigger `before insert` qui refuse — il s'exécute avant
-l'évaluation des CHECK et lève lui aussi un `23514`. Et depuis la session d'un tiers, c'est la
-RLS (`42501`). Elle doit donc venir avant le remplissage du quota **et** sous la session du
-propriétaire. Plus généralement, pour valider un test pgTAP en base, rejouer la **séquence
-entière** du fichier, bascules de `request.jwt.claims` comprises — un scénario extrait de son
-contexte ne reproduit pas le rôle sous lequel il tournera.
-
-### 2.6 Le parcours réel, contre une vraie stack — et ce que Docker change ici
-
-**Le trou, mesuré le 20/09/2026** : 15 147 lignes d'écrans, de composants et de hooks, et 1 485 lignes
-d'entrée-sortie — **les fichiers de `src/lib` qui importent le client**, et non `src/lib` entier, qui
-en compte 3 307 — n'étaient gardées par rien d'autre que la recette sur appareil. Les deux
-premières suites prouvent la logique pure et la base ; entre les deux — les requêtes, les RPC, ce
-que l'écran montre après une écriture — rien. Un `.eq('status', 'complete')` passait vert.
-
-**`scripts/verifier-parcours-reel.mjs` joue le chemin nominal, et lui seul**, sur **trois profils**
-depuis le 30/09/2026 — décrits plus bas ; celui-ci est le premier, tiré de
-`docs/recette/premier-parcours-web.md` : onboarding → questionnaire → soumission → restitution →
-plan, sans écran de compte interposé (arbitrage du 20/09/2026 : la proposition de compte que ce
-paragraphe disait « refusée » n'existe plus sur ce chemin) → engagement → un point généré comme le
-cron le ferait (`generate_commute_checkins()`, appelé en `service_role`) et répondu → suivi →
-« Toi » et sa ligne de canal (25/09/2026, §2.12) → l'écran des pistes, où l'on choisit une action
-« à la place » depuis la liste (29/09/2026, `v1-32` : le seul chemin qui passe le remplacement depuis
-cet écran), puis où l'ordre n'a pas bougé — le seul moment où ça se voit, l'action engagée n'étant
-plus au rang 1 → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
-(PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, les
-pistes d'`ATTENDU`, toutes, dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
-la base construite depuis `supabase/migrations/`, ces chiffres ne dépendent d'aucune
-synchronisation de facteurs. Ce qu'il ne fait **pas**, et ce n'est pas un oubli : les exclusions
-de cartes et les états d'erreur restent aux dérivations de `src/types` et à
-`verifier-etats-export.mjs` — un parcours qui voudrait tout voir serait fragile, et un garde-fou
-fragile finit ignoré.
-
-**En CI**, c'est le travail « Parcours réel (stack locale) » de `ci.yml` : `supabase start` — et
-pas `db start` comme pour pgTAP, parce que la session anonyme vient de GoTrue et les lectures de
-PostgREST —, un second export branché sur cette stack, Playwright, le script.
-
-**En local, et dans l'environnement d'agent aussi** — contrairement à ce que ce dépôt a cru jusqu'au
-20/09/2026, Docker y tourne : le démon ne démarre pas seul, mais `sudo dockerd > /tmp/dockerd.log
-2>&1 &` suffit (mesuré, l'agent y est `root`). Ensuite :
-
-```bash
-npx supabase@2.117.0 start                      # ~3 min la première fois : les images
-npx supabase@2.117.0 status -o env              # ANON_KEY, SERVICE_ROLE_KEY, API_URL
-EXPO_NO_DOTENV=1 EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 EXPO_PUBLIC_SUPABASE_ANON_KEY=… \
-  npx expo export --platform web --clear
-EXPO_PUBLIC_SUPABASE_URL=… EXPO_PUBLIC_SUPABASE_ANON_KEY=… SUPABASE_SERVICE_ROLE_KEY=… \
-  CHROMIUM_PATH=/opt/pw-browsers/chromium node scripts/verifier-parcours-reel.mjs
-```
-
-Et c'est aussi ce qui rend **pgTAP exécutable ici** (`npx supabase@2.117.0 test db`, ou
-`node scripts/rejouer-la-ci.mjs base`, §2.13) : le `BEGIN`/`ROLLBACK` sur le projet distant n'est
-plus la seule validation d'un fichier pgTAP, et ce n'est pas la meilleure — le distant porte des
-données que certaines assertions ne supportent pas (§2.3). Cette phrase prescrivait un `db reset`
-« si des parcours ont laissé des comptes » : c'est la parade que la §2.3 a écartée le 21/09/2026,
-une base qui a servi ne devant pas faire rougir pgTAP. Le rejeu reconstruit bien la base, mais pour
-une autre raison — qu'elle soit celle des migrations de l'arbre.
-
-**Deux profils, et le second n'est pas un doublon** (20/09/2026). Le premier est celui de la
-recette — voiture, vols, dix pistes depuis C4.4 (le compte est dans le script, pas ici : il a déjà
-bougé une fois). Le second est un **cycliste dont le plan ne porte aucune
-action**, et ce n'est pas un cas de bord : depuis C2.5, tout cycliste et tout profil sédentaire y
-tombe. C'est surtout le seul chemin où la carte « Ton premier plan » ne se rend **jamais** (elle
-demande une action), donc le seul où la barre d'onglets doit arriver autrement — au premier
-affichage du plan, avec la carte « Plan et Suivi ». Le premier profil, lui, passe par « Compris ».
-Trois branches d'écran basculent d'un profil à l'autre, et aucune n'était jouée : la félicitation à
-la place des cartes, le cap qui **ne chiffre pas** (`cadreDuPlan`, C5.3), et l'absence de l'encart de
-contexte comme du lien vers les pistes.
-
-**Puis il refait un bilan en voiture** (27/09/2026, `v1-27` §4). Sa carte « Plan et Suivi » n'est
-pas refermée, et le nouveau bilan donne au même cycle ses premières actions : « Ton premier plan »
-est due le même jour — la seule paire de cartes d'ouverture que l'écran empilait. Les exclusions
-elles-mêmes sont épinglées dans Jest sur toutes les combinaisons d'états (`cartesDuPlan`) ; cette
-étape garde une partie de ce que Jest ne voit pas — **deux** des huit arguments que l'écran lui passe,
-`carteDuPremierPlan` et `carteDesDeuxLieux`. L'en-tête du script nomme les six autres, que rien ici ne
-garde.
-
-**Et il finit par retirer ses deux bilans** (27/09/2026, C4.7, `v1-22`). Le bilan en voiture
-d'abord : c'est lui qui porte le plan, et le profil **s'y engage avant** — sans quoi rien ne gardait
-l'argument `engagement` de l'appel, et la confirmation pouvait taire l'action sans qu'un test rougisse.
-La confirmation dit donc que le plan repart du précédent **et** nomme l'action suivie ; la base relit
-le statut `withdrawn`, un plan revenu à zéro action et l'action archivée en `retrait` ; et l'adresse dit « Ce bilan a été
-retiré. » **après un rechargement** — c'est là que parle la lecture par identifiant, et plus l'état
-posé par le geste. Puis le seul qui reste : la confirmation ne parle plus de plan, l'écran rejoint
-l'onboarding, et la marque `traceverte.a_un_bilan.v1` est **lue posée avant**, effacée après — sans la
-première moitié, une clé mal nommée rendrait la seconde vraie par accident. Le troisième cas (retirer
-un bilan qui ne porte pas le plan) n'est pas joué ici : `34_retirer_un_bilan.test.sql` le tient.
-
-Le second profil tourne dans un **contexte de navigateur neuf**, et c'est structurel : « premier »
-veut dire premier **sur cet appareil** (C5.7), et les marques vivent dans le stockage. Le rejouer
-dans le même contexte éprouverait un appareil qui a déjà tout vu.
-
-**Et un troisième depuis le 30/09/2026, sans aucune boucle** (`v1-27` §12.22 et §12.23) : ni trajet,
-ni sorties régulières, ni voyage — aucun point ne viendra. Trois textes le savent depuis ce jour (la
-carte des deux lieux, la carte d'attente, la carte du suivi sans point répondu), et les deux
-premiers profils ont chacun une boucle : le côté « sans boucle » n'était gardé que par Jest, sur les
-dérivations, pas par l'écran qui leur passe les boucles lues au serveur. Il ne fait que ça — un
-questionnaire minimal, le plan, le suivi —, relit d'abord sa prémisse au serveur
-(`mes_boucles_a_venir` vide), et part lui aussi d'un contexte neuf. **Ce qu'aucun des trois ne
-joue** : la carte d'un point répondu dont la boucle s'est arrêtée, qui demande un point généré puis
-un nouveau bilan dans la même période — la dérivation et la carte sont gardées par Jest, l'appel de
-l'écran ne l'est par rien.
-
-**Deux pièges payés en l'écrivant, tous deux silencieux :**
-
-- **Les `EXPO_PUBLIC_*` sont inlinées à la transformation, et le cache de Metro ne les met pas dans
-  sa clé.** Un export qui en suit un autre garde l'URL de l'autre — l'app a appelé
-  `exemple.supabase.co` pendant deux passes avec la bonne variable dans l'environnement, et
-  `EXPO_NO_DOTENV=1` n'y changeait rien. `--clear` à chaque changement de configuration, et le
-  `grep` de l'URL dans `dist/_expo/static/js/web/*.js` est ce qui a tranché.
-- **Les pages hors champ du pager sont `inert` et `aria-hidden`, mais l'état qui les cache suit
-  l'animation, pas le clic.** Deux « Continuer » cliqués trop vite touchent deux fois la même page —
-  la première passe est passée, la seconde a tourné en rond. Le script attend que le défilement soit
-  posé sur la page attendue, puis clique le bouton **dans la fenêtre**, pas le premier que l'arbre
-  d'accessibilité rend. Même famille : la barre d'onglets masquée reste dans le DOM
-  (`display: 'none'`), donc « la barre est absente » se mesure sur la visibilité, jamais sur le
-  compte des libellés.
-
-**Éprouvé en le cassant, le 20/09/2026**, sept mutations sur l'arbre de travail, chacune suivie d'un
-export — puisque le code est dans le bundle — et remise en place par l'opération inverse. Trois sur
-le premier profil : un filtre écrit de mémoire (`'complete'`), un RPC au mauvais nom
-(`commit_plan_actions`), la réponse au point vers un RPC au mauvais nom ; le parcours s'arrête
-respectivement au plan, à l'engagement et au point, en nommant l'étape et la requête refusée. Trois
-sur le second : la carte du premier plan rendue malgré un plan à zéro action, le cap qui chiffre
-quand même, la félicitation reformulée. **La septième est arrivée après coup**, l'assertion des
-kilos ayant été ajoutée sans elle — ce que §1.1 interdit, et que seule une relecture du diff a vu :
-le seuil de `valeurEtUnite` passé de `kilos < 1000` à `kilos < 10` fait tomber « 11 kg CO₂e » et
-rien d'autre, le premier profil restant en tonnes à 4 231 kg.
-
-**Et l'une d'elles a changé le script plutôt que de le confirmer.** Rendre la carte du premier plan
-sur un plan à zéro action empêche aussi la barre d'onglets d'arriver — fermer la carte est ce qui la
-fait venir —, donc tant que l'attente de la barre venait avant les assertions de texte, l'échec se
-lisait « Timeout 20000ms exceeded » sans nommer la cause. Les assertions passent devant. Même
-famille, trouvée par la troisième : `attendreTexte` rendait un délai dépassé anonyme, elle nomme
-désormais le texte attendu — pour tous ses appels, pas seulement celui-là. Le compte détaillé est en
-tête du script.
-
-**Sur un échec, lire dans cet ordre** : l'étape nommée, les requêtes refusées (le script journalise
-tout `4xx`/`5xx` avec le corps — un `PGRST303` « JWT issued at future » sur la première requête
-d'une session est **attendu**, l'app le rejoue, cf. `src/types/postgrest.ts`), le texte visible,
-puis la capture, dont le chemin est imprimé (dossier temporaire). Un parcours local qui s'arrête laisse son compte anonyme
-dans la stack ; `supabase db reset` remet la base à neuf — seulement si personne d'autre ne s'en
-sert, d'autres copies de travail pouvant la partager. Le rejeu (§2.13), lui, la redémarre sous verrou.
-
-### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
-
-**Le code recopie une contrainte de la base en bien plus d'endroits qu'on ne le croit** — une puce
-du questionnaire, un `.eq('status', …)`, une union de littéraux. Rien, depuis TypeScript, ne peut
-lire ce que la colonne accepte : la convention était donc d'épingler chaque miroir par un test Jest portant les mêmes
-valeurs **recopiées une seconde fois**. C'est une garde du code contre lui-même, et elle ne peut
-pas voir la seule chose qui compte ici : que la base ait changé d'avis. Un `check` élargi laisse le
-test vert et la liste courte ; un `check` resserré laisse le test vert et la puce refusée à la
-soumission, en anglais, neuf étapes trop tard. C'est arrivé une fois, en silence — `tc_access`
-disait `aucun` avant de dire `inexistant`.
-
-`scripts/verifier-miroirs-de-check.mjs` (travail `db-tests`, 20/09/2026) lit `pg_constraint` sur la
-base que `supabase/migrations/` vient de construire. Quatre choses à savoir avant d'y toucher :
-
-- **Il lit la base, jamais les migrations.** Relire le dernier `check (col in (…))` des fichiers est
-  faux dès qu'une migration fait `drop constraint` puis `add constraint` — il y en a —, et dès
-  qu'une colonne homonyme a vécu sur deux tables avec deux vocabulaires (`zone_type` sur `profiles`).
-- **Il importe les constantes au lieu de les analyser.** Un analyseur d'`as const` par expression
-  régulière est exactement là où la fragilité vit : la valeur comparée est celle que l'app utilise
-  (Node retire les types, `scripts/resolveur-alias.mjs` résout `@/`). L'exception est structurelle :
-  une **union de littéraux** est un type, donc effacée à l'exécution, et se lit dans le source par
-  une expression régulière qui ne couvre qu'une forme — `export type X = 'a' | 'b';`. C'est aussi la
-  famille que rien d'autre ne peut garder : un test Jest ne sait pas énumérer un type.
-- **Trois genres, parce que trois contraintes.** `valeurs` et `type` font une **égalité
-  d'ensembles**, dans les deux sens — une valeur que la base accepte et que personne ne propose est
-  un écart autant que l'inverse, et c'est ainsi qu'on voit qu'une migration a ouvert une réponse que
-  l'écran ne montre pas. `domaine` s'applique aux bornes numériques (`between 2 and 6`), où il n'y a
-  rien à énumérer : chaque valeur proposée est **évaluée par Postgres** contre l'expression réelle
-  de la contrainte, et quand la liste est un intervalle d'entiers, les deux valeurs qui l'encadrent
-  doivent être **refusées** — sans quoi un plafond déplacé en base passerait inaperçu alors que la
-  puce « 6+ » promet qu'il n'y a rien au-dessus.
-- **Une colonne peut porter plusieurs `check`, et un seul énumère.** `engagement_checkins.response_kind`
-  en a deux : celle du domaine, et celle de cohérence avec `response`, qui nomme les mêmes trois
-  valeurs sans les énumérer. Seule la forme `colonne = ANY (ARRAY[…])` est lue — et deux contraintes
-  énumérantes sur la même colonne font échouer le contrôle plutôt que d'en choisir une.
-
-Ajouter un miroir, c'est ajouter **une ligne** au tableau `MIROIRS` ; le reste se lit dans la base
-et dans le module. **Éprouvé en le cassant** (§1.1), douze mutations datées en tête du script —
-dont la huitième est venue d'une contre-lecture du diff plutôt que d'une idée de départ : une
-colonne peut porter **deux** contraintes bornantes, et n'en lire qu'une ferait affirmer au contrôle
-le contraire de ce que la base applique.
-
-**Et c'est une liste déclarée, jamais un inventaire prouvé complet.** Rien ne balaie le dépôt à la
-recherche d'un miroir que personne n'a déclaré : la parade est l'habitude d'ajouter sa ligne en
-écrivant la constante. `CLAUDE.md` a d'abord promis l'inverse, et la contre-lecture du soir même a
-trouvé **quatre** miroirs non déclarés — `CanalPrefere` (la préférence de canal de rappel),
-`IntentionTiming`, `LoopType` et `POSTES` —, tous ajoutés et éprouvés depuis. **Puis C4.4 en a
-trouvé deux familles de plus le 21/09/2026**, en venant déclarer les siennes : `CarEngine` et
-`TwoWheelerType`, avec les tableaux d'options qui les accompagnent. Elles étaient épinglées, mais
-par des tests Jest portant les mêmes valeurs recopiées une seconde fois — précisément la garde que
-cette section existe pour remplacer. Le motif se répète assez pour être nommé : **ce sont les
-miroirs les plus anciens qui manquent**, écrits avant la règle, et rien ne les rappelle à personne.
-
-Depuis la même vague, une constante s'y déclare **une fois par colonne qu'elle sert** : trois
-colonnes portent le `check` de la motorisation, et rien n'oblige une migration à les faire bouger
-ensemble — une déclaration unique les jugerait toutes les trois sur une. Le contrôle rend alors un
-écart par colonne, ce qui dit aussi **laquelle** a dérivé.
-
-Deux formes lui échappent **structurellement**, et il vaut mieux les connaître que de croire la
-liste close :
-
-- **une union recopiée en ligne** plutôt qu'importée depuis son `export type` — la lecture ne
-  connaît qu'une forme, `export type X = 'a' | 'b';`. `loop_type` l'a été jusqu'au 20/09/2026 :
-  `LoopType` existait déjà, et six endroits réécrivaient `'commute' | 'extras'` à la main, si bien
-  que déclarer le miroir n'aurait gardé personne. Les six l'importent désormais — **la correction
-  d'une recopie en ligne est de la rapprocher du type nommé**, le contrôle ne pouvant pas aller la
-  chercher ;
-- **une borne que la base confie à une fonction** plutôt qu'à une expression. `IntentionDay` (1…7)
-  fait face à `check (public.check_intention_days(intention_days))` : ni littéral à énumérer, ni
-  expression nommant la colonne seule, donc aucun des trois genres ne s'y applique.
-
-### 2.8 Les renvois des documents, vérifiés à chaque PR
-
-**La famille de défaut la plus fréquente de ce dépôt n'est pas dans le calcul : c'est une phrase
-qui décrit ce que le code faisait avant.** Les quatre relectures du 20/09/2026 ont trouvé
-trente-cinq affirmations fausses et **aucune** erreur de calcul, aucun mauvais argument, aucune
-écriture d'état après garde. Une bonne part d'entre elles étaient des **renvois** : un seuil
-annoncé dans un fichier où il ne vit pas, un test cité sous un nom qu'il n'a plus, un écran
-désigné par un chemin qu'un chantier a déplacé.
-
-`scripts/verifier-renvois-des-documents.mjs` compare les chemins cités entre accents graves dans
-les **documents vivants** aux fichiers réellement présents. Il tourne dans le travail
-« Typecheck & lint », sans `npm ci` ni export : il ne lit que le système de fichiers.
-
-Celui qui l'a motivé : `CLAUDE.md` présentait le groupe d'onglets comme portant « plan.tsx … et
-la pile suivi/ », alors que C5.2 avait fait du plan **une pile aussi**. (Le nom révolu est écrit
-ici **sans accents graves**, et c'est une discipline que ce contrôle impose d'elle-même : un
-chemin entre accents graves annonce un fichier qui existe. Citer un nom mort comme s'il était
-vivant, c'est exactement ce qu'on cherche à empêcher — la garde a d'ailleurs rougi sur ce
-paragraphe-ci en premier.) Le paragraphe
-d'orientation le plus lu du dépôt se trompait deux fois, depuis des jours, et un `grep` l'aurait
-vu en une seconde — mais personne ne le lance.
-
-**Quatre choses à connaître avant d'y toucher :**
-
-- **Il voit le renommage, pas le mensonge.** Un document peut nommer le bon fichier et raconter
-  n'importe quoi de son contenu ; ça, seule une relecture le voit. C'est déjà la moitié de ce qui
-  nous est arrivé.
-- **Les documents datés sont hors périmètre**, volontairement : `docs/audit/` et les `v1-0N` sont
-  des instantanés d'un jour. Un renvoi périmé y est **exact** — il dit où la chose était alors.
-  Seuls `produit.md` et `v1-27` y entrent, parce que le dépôt les tient à jour. **Le kit de design
-  y entre depuis le 26/09/2026, sous-dossiers compris** (`docs/design/design-system/`, un miroir
-  tenu), et les extensions de documents, de feuilles et d'images avec lui : son index citait deux
-  fichiers `.md` qui n'existaient nulle part, qu'un contrôle limité au code ne pouvait pas voir.
-  Un répertoire cité seul lui échappe encore — sans extension, rien ne distingue un chemin d'un
-  mot. **Les consignes Claude écrites pour Ramille y entrent le 27/09/2026** : les sous-agents de
-  `.claude/agents/`, et les skills qu'aucun plug-in importé ne revendique. Le partage se lit dans
-  l'`installation.json` de chaque plug-in, donc un skill neuf de Ramille est lu sans qu'on l'ajoute,
-  et un plug-in neuf est écarté sans qu'on l'y retire — ses skills citent leurs propres chemins. Et
-  **le soir même, les chemins commençant par un point ont cessé d'être sautés** : aucun renvoi vers
-  `.claude/` ni `.github/` n'était vérifié, y compris vers ces consignes-là. Seul un chemin relatif
-  au document (`./`, `../`) l'est encore.
-- **La comparaison se fait sur un suffixe de segment**, pas sur le nom de base : `plan/index.tsx`
-  doit pouvoir se distinguer de `suivi/index.tsx`, sans quoi un déplacement de dossier passerait.
-  Deux formes s'y ajoutent, chacune avec sa raison en tête du script : le chemin **servi**
-  (`/.well-known/assetlinks.json`, dont le fichier vit sous `public/`) et le nom **lisible** d'une
-  migration, sans son horodatage généré — cette dernière est bornée à `supabase/migrations/`.
-- **Il compare à ce que git suit, jamais au disque** (26/09/2026). Il parcourait le système de
-  fichiers, donc un dossier de build ignoré par git mais présent sur le poste (`ds-bundle/`) faisait
-  résoudre en local un renvoi que la CI refusait : vert chez soi, rouge en CI. La liste vient
-  désormais de `git ls-files` (suivis, plus les fichiers neufs pas encore ajoutés), et un fichier
-  généré qu'un document cite — `expo-env.d.ts` — se déclare en tolérance, avec sa raison.
-- **Une tolérance qui ne couvre plus rien fait rougir le contrôle**, et c'est la seconde moitié du
-  script. Une liste d'exceptions est exactement ce qui pourrit : celle qui a perdu son objet
-  attend qu'un vrai écart porte le même nom pour le couvrir à son tour. Chaque entrée porte donc
-  sa raison, et le passage vert les compte.
-
-**Éprouvé en le cassant** (§1.1), une mutation par branche : un chemin déplacé dans `CLAUDE.md`,
-et une tolérance qu'aucun document n'emprunte — puis six de plus le 26/09/2026 pour le kit et les
-extensions, dont deux qui doivent rester **vertes** et le restent : sans l'extension `md`, ou sans
-le kit dans le périmètre, l'écart qu'on y a posé n'est plus vu. Le détail est en tête du script.
-
-### 2.9 Le chemin du compte, joué de bout en bout
-
-**Le seul chemin du produit vers un compte existant n'était gardé par rien** jusqu'au 20/09/2026.
-Jest ne voit pas partir un e-mail, pgTAP ne voit pas GoTrue, et le parcours réel ne joue que la
-session anonyme. Quelqu'un qui change d'appareil, qui réinstalle, ou qui arrive sur
-`/compte/suppression` depuis un navigateur neuf n'a que ce chemin — et le passage en PKCE du même
-jour touchait ses trois branches d'un coup.
-
-`scripts/verifier-code-de-connexion.mjs` — il portait le mot « lien » dans son nom jusqu'au passage
-au code, le 20/09/2026, et a été renommé avec son sujet — demande un code **par l'écran**, lit l'e-mail réellement reçu, et
-éprouve **cinq** choses dont deux seulement sont des chemins heureux :
-
-1. le code rattache une adresse — jusqu'à une session non anonyme, et la base relue derrière ;
-2. il rouvre un compte depuis un **navigateur neuf**, c'est-à-dire le cas que le lien ne pouvait
-   pas faire (en PKCE il ne valait que là où il avait été demandé) ;
-3. un code d'un flux **ne vaut pas** dans l'autre — c'est ce qui rend sûr de montrer le même écran
-   de code dans les deux contextes ;
-4. une adresse **sans compte** ouvre quand même la saisie du code (la non-divulgation, nommée
-   plutôt que subie : sans cette assertion, le défaut se manifestait par un timeout) et aucun des
-   deux e-mails ne porte de lien ;
-5. une URL portant des jetons valides ne fait pas basculer de compte (celle-là garde PKCE, pas le
-   code).
-
-**Ce qu'aucune assertion ne peut prétendre** : que le code referme la confirmation d'une adresse
-tierce. Il est un **porteur** — mesuré, un `POST /auth/v1/verify` sans aucune session confirme et
-rend une session sur le compte du demandeur. Le code relève le prix du mauvais geste, il ne le
-supprime pas, et l'en-tête du script le dit pour que personne ne lise l'inverse dans le vert.
-
-**Et une mutation de gabarit exige un redémarrage de la stack** : GoTrue inline les gabarits au
-démarrage du conteneur, donc modifier `supabase/templates/` sans `supabase stop && start` ne change
-rien à l'e-mail envoyé — la garde reste verte, et on croit avoir éprouvé l'assertion 4. Relevé le
-20/09/2026 en jouant justement cette mutation.
-
-**Deux prérequis à connaître avant de s'étonner qu'il ne tourne pas** :
-
-- **`[local_smtp]` doit être activé** dans `supabase/config.toml`. Il l'est depuis le 20/09/2026,
-  et c'est ce qui rend ce script possible. Le collecteur est **Mailpit** et non Inbucket : le CLI
-  a changé d'outil, les routes diffèrent (`/api/v1/search` contre `/api/v1/mailbox/<nom>`), et
-  `supabase status -o env` publie encore la variable sous les **deux** noms — la première version
-  du script prenait des 404 pour une boîte vide.
-- **Il sert l'export sur le port 3000, et ce n'est pas négociable.** L'app calcule son
-  `redirectTo` depuis `window.location.origin`, et GoTrue n'accepte que les origines de sa liste,
-  dont `site_url = http://127.0.0.1:3000`. Sur un port au hasard, le lien retomberait sur la Site
-  URL **sans rien dire**, et le script éprouverait autre chose que ce qu'il annonce.
-
-**Et la leçon qui vaut pour n'importe quelle garde de bout en bout, payée deux fois ici.** Les
-deux assertions dont le succès est une **absence** — « la session n'a pas basculé », « le lien
-n'a pas ouvert de compte » — passaient toutes les deux pour la mauvaise raison :
-
-1. elles relisaient « une » session au lieu d'attendre un **changement**, donc ramenaient
-   l'ancienne avant que le SDK n'ait fini ;
-2. et l'injection était lancée **pendant que l'app se routait encore** — la racine redirige côté
-   client, et cette redirection emporte la navigation lancée en même temps, fragment compris.
-   L'attaque n'avait donc pas lieu, et le script disait « refusée ».
-
-Avec le flux implicite remis — c'est-à-dire la faille grande ouverte —, il restait **vert**. Une
-garde dont le succès est une absence doit laisser à ce qu'elle interdit le **temps** et les
-**conditions** de réussir ; sinon elle mesure son propre empressement. `TRACE_LIEN=1` imprime les
-identifiants et l'URL finale, et c'est ce qui l'a montré.
+troisième, le parcours réel, a la sienne en `TESTING-GARDES.md` §2.6.
 
 ### 2.10 Tester un écran — le critère, et ce que ça coûte
 
@@ -765,7 +311,7 @@ et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
    (`setupFiles` de `package.json`), qui pose les doubles officiels de `react-native-worklets` et de
    reanimated et leur ajoute ce que le second ne porte pas — `css`, `cubicBezier`,
    `useReducedMotion`. Un test d'écran n'éprouve donc **aucune** animation : elles se jugent image
-   par image dans un navigateur (§2.14). **Sauf ce qui se passe à leur fin** : un test qui doit
+   par image dans un navigateur (`TESTING-GARDES.md` §2.14). **Sauf ce qui se passe à leur fin** : un test qui doit
    placer un geste pendant une sortie retient les fins de `withTiming` dans son propre double — un
    `jest.mock` de fichier **remplace** celui du `setupFiles` au lieu de s'y ajouter, donc il recopie
    le reste —, et les joue dans un `await act(async …)`, parce que `scheduleOnRN` repasse côté React
@@ -776,134 +322,13 @@ et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
 au-dessus des pistes, par exemple, ne fait bouger aucune assertion de présence. Chaque branche
 qu'on prétend garder demande donc sa moitié négative.
 
-### 2.11 Les gabarits d'e-mail, comparés à leur référence
-
-`scripts/verifier-gabarits-email.mjs`, dans le travail `Typecheck & lint` à côté de `§2.8` : ni npm
-ci, ni export, ni Docker — il ne lit que des fichiers, et tombe en une seconde.
-
-**Pourquoi il existe.** Les deux gabarits que le produit emprunte vivent à **deux endroits** :
-`supabase/templates/`, la copie que GoTrue inline au démarrage de la stack locale, et
-`docs/exploitation/gabarits-email.md`, la référence relisable — celle qu'on ouvre pour savoir ce que
-la production envoie. Deux copies d'un même texte divergent par une faute de frappe que personne ne
-relit : c'est le raisonnement de `mois_francais` et de sa jumelle `MOIS_FRANCAIS`, et celui du
-tableau `MIROIRS` de §2.7.
-
-**Et le document affirmait que cette égalité était déjà relue**, en désignant
-`scripts/verifier-code-de-connexion.mjs` (§2.9) — qui rend un vrai e-mail contre la stack locale et
-vérifie qu'il porte un code et aucun lien, mais **ne compare jamais le document aux fichiers**.
-Relevé le 21/09/2026. Une garde promise et absente est pire qu'un commentaire périmé : le prochain
-passage croit la dérive attrapée. La garde a été écrite plutôt que la phrase affaiblie.
-
-**Trois familles d'assertion, et la troisième touche à la sécurité** :
-
-1. le bloc ```` ```html ```` du document et le fichier disent exactement la même chose — la
-   divergence est signalée avec la **ligne** et les deux versions ;
-2. `supabase/config.toml` déclare chaque fichier. Sans son `content_path`, GoTrue retombe **en
-   silence** sur son gabarit anglais par défaut, et §2.9 resterait verte pour la mauvaise raison ;
-3. chaque gabarit porte `{{ .Token }}` et **aucune** forme de lien de confirmation
-   (`{{ .ConfirmationURL }}`, `{{ .TokenHash }}`). C'est l'invariant du correctif du 20/09/2026 —
-   aucun clic ne doit plus rien confirmer — et il n'était éprouvé que dans le seul travail exigeant
-   Docker.
-
-**Ce qui lui échappe**, et c'est structurel : `GABARITS` est une liste **déclarée**, comme `MIROIRS`,
-donc un gabarit que personne n'y déclare lui reste invisible — aucune garde déclarative ne s'annonce
-exhaustive. *Confirm signup* et *Reset Password* sont traduits dans le document et ne vivent **que**
-dans le tableau de bord : aucun fichier du dépôt ne les porte. Et le tableau de bord lui-même reste
-hors de portée de toute garde du dépôt, c'est le rôle de `docs/exploitation/`.
-
-Mutations jouées le 21/09/2026 : une espace ajoutée dans le document → famille 1 tombe en nommant la
-ligne ; `content_path` retiré → famille 2 ; `{{ .Token }}` remplacé par `{{ .ConfirmationURL }}` dans
-le fichier → famille 3, et la 1 avec elle, le document n'ayant pas bougé.
-
-### 2.12 Ce que le lecteur d'écran reçoit vraiment, vérifié dans l'export
-
-Deux gardes d'export ont grandi le 24/09/2026 (`docs/architecture/v1-29-challenge-du-design-system.md`),
-et pour la même raison : **ce que react-native-web transmet au lecteur d'écran ne se voit que dans
-le DOM rendu** — ni le typecheck, ni Jest, ni un test d'écran ne le voient, puisqu'ils lisent les
-props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
-
-- **`scripts/verifier-rendu-export.mjs` vérifie que chaque choix annonce son état** : tout élément
-  de rôle `radio`, `checkbox` ou `switch` rendu porte `aria-checked`, et `/feedback` — où « Une
-  idée » est choisie d'emblée — rend un `radio` **coché**. La seconde moitié n'est pas du zèle : sans
-  elle, la garde passerait sur une page qui ne rend aucun choix, ou qui les rend tous
-  `aria-checked="false"` écrit en dur. Le défaut qu'elle garde était le seul **critique** de l'audit :
-  react-native-web 0.21 ignore l'objet `accessibilityState`, et chaque choix coché s'annonçait
-  « non coché ».
-- **`scripts/verifier-etats-export.mjs` gagne trois sections** : **C**, la barre d'onglets —
-  chaque onglet fait au moins `ControlHeight.target`, **lu dans `theme.ts`** plutôt que recopié, et
-  l'actif porte une forme pleine à 3:1 au moins quand l'inactif n'en porte aucune ; **D**, les routes
-  à paramètre hydratent sans écart — une erreur d'hydratation y est **bloquante**, là où le contrôle
-  de rendu la classe en avertissement par conception, et le HTML statique ne doit rien affirmer
-  (`/rappels/stop` ne dit plus « plus valable », `/suivi/bilan` plus « pas pu être affiché ») ;
-  **E**, le focus de l'onboarding suit la page, avec et sans « réduire les animations ».
-- **Le 25/09/2026, trois de ces gardes ne prouvaient rien, et une quatrième manquait.** La moitié
-  positive de `/suivi/bilan?id=` attendait « bilan », un mot que porte aussi le HTML statique
-  (« Chargement de ton bilan… ») : elle passait avant comme après la correction. Elle attend
-  désormais que l'écran **quitte** « Chargement » — sans nommer l'issue, qui est une copie d'erreur
-  sans serveur — et qu'il ait **demandé** le bilan que l'adresse désigne. `/rappels/stop?jeton=`
-  avait le même trou, son titre étant lui aussi dans le HTML : même réponse. La section E ne lisait
-  le focus qu'au repos, et restait verte pendant qu'il revenait sur la page qu'on quitte : un
-  journal posé avant le chargement relève désormais chaque `focusin` et chaque bascule d'`inert`
-  **pendant** la transition. Et **G** tient le focus d'étape du questionnaire sur web, qu'aucune
-  garde ne vérifiait. La leçon est celle de §1.1, sous une forme de plus : **une moitié positive
-  doit porter sur ce que le HTML statique ne dit pas**, sans quoi elle garde le statique.
-
-Les mutations qui les éprouvent sont datées en tête de chaque script, une par ligne, **chacune avec
-son propre export** : le code est dans le bundle, donc une mutation sans export ne mute rien. Et un
-export fait pendant qu'un autre tourne peut produire le bundle d'un autre arbre (`EXPO.md` §1.1) —
-d'où `--clear`, et un marqueur du code courant à retrouver dans le bundle avant de conclure.
-
-**Ce qui leur échappe, et qu'il ne faut pas prétendre gardé** : tout ce qui se passe sur natif.
-`aria-checked` est mappé par React Native vers TalkBack, `announceForAccessibility` et
-`sendAccessibilityEvent` n'ont d'effet que sur un appareil, et aucune de ces suites ne tourne sous
-TalkBack. C'est la recette sur appareil qui les éprouve (`v1-29` §6.5).
-
-**Et le lendemain, trois gardes de plus, parce qu'une contre-lecture de la livraison a trouvé ce que
-les deux premières ne pouvaient pas voir** (25/09/2026) : un rôle juste qui ne répondait plus au geste
-qu'il annonce, et des cases d'option sans groupe.
-
-- **`verifier-etats-export.mjs`, section F — Espace coche une case d'option.** react-native-web n'active
-  par Espace qu'un bouton ; depuis que les puces sont des `radio`, Espace ne cochait plus rien et
-  faisait défiler la page (`src/lib/barre-d-espace.ts`). La section presse Espace sur une rangée, une
-  puce et un item de mode du questionnaire, rempli hors ligne depuis un brouillon posé dans le
-  stockage, et mesure **deux** choses : la case est cochée, **et rien n'a défilé**. Une mesure
-  impossible — la page ne peut pas défiler sous le choix, le focus n'est pas pris — est un échec : sans
-  défilement possible, « rien n'a défilé » ne prouverait rien. La mesure elle-même vit dans
-  `scripts/mesurer-un-choix.mjs`, partagée avec le parcours réel.
-- **Le parcours réel vérifie les groupes à chaque étape** — du questionnaire de chaque profil, de la
-  feuille d'engagement et de « Toi » : toute case d'option a pour groupe **le plus proche** un
-  `radiogroup` nommé, toute case à cocher un `group` nommé, et **aucun `radiogroup` ne coche deux
-  cases**. Les deux dernières règles viennent de ce qu'une précision vit **dans** le groupe de l'option
-  qu'elle précise (`GroupeDeChoix`) : « le plus proche » attrape un groupe imbriqué qui aurait perdu son
-  nom, que « un ancêtre » laisserait passer sur celui du mode ; et une précision privée de son propre
-  groupe tombe dans celui du mode, **qui est bien nommé** — seule l'exclusivité la voit, le mode et la
-  motorisation y étant cochés ensemble. **La première version de la garde n'avait pas cette règle, et
-  son commentaire affirmait que « le plus proche » suffisait** : la mutation l'a démenti, la
-  motorisation privée de son groupe n'étant vue qu'aux longs trajets, où elle n'est pas imbriquée.
-  C'est une exclusion affirmée et vérifiée sur une paire de moins (`CLAUDE.md`, « Avant de lancer une
-  vague »), trouvée par la seule mutation qui visait la paire manquante. Le premier profil touche
-  « Oui » au second mode pour ouvrir « Lequel ? » — sans quoi aucun profil ne rend cette liste —, puis
-  répond « Non » comme avant : les chiffres attendus ne bougent pas.
-- **Le parcours réel joue le clavier là où il faut une session** : les jours de l'engagement, seule case
-  à cocher du produit — Espace coche sans faire défiler, Entrée décoche (une seule activation), une
-  barre maintenue coche une fois (la répétition) — et « Toi », seul écran de ce parcours où une ligne
-  de canal se rend (la feuille des rappels ne s'ouvre sur web qu'avec une adresse rattachée) : la
-  ligne « Par email » hors d'atteinte est désactivée, jamais cochée, **sans opacité**, son titre en
-  texte tertiaire (lu dans `theme.ts`) et son détail à 4,5:1 au moins ; Espace choisit « Sans rappel »,
-  et la base relue le confirme.
-
-Les mutations sont datées en tête de chaque script. Deux choses restent hors de portée : **ce que
-TalkBack annonce d'un groupe imbriqué**, et la position dans la série (« 2 sur 9 ») que Chromium
-calcule mais que son protocole de débogage n'expose pas — la garde lit le groupe le plus proche dans
-le DOM, et l'arbre d'accessibilité l'a confirmé une fois à la main, pas plus.
-
 ### 2.13 Rejouer la CI en local, et ce que le rejeu garde de lui-même
 
 `node scripts/rejouer-la-ci.mjs` rejoue les travaux de `ci.yml` dans l'ordre — `verifications`,
 `jest`, `export`, `base`, `parcours` —, ou ceux qu'on nomme (27/09/2026). On l'appelle aussi par le
 skill `/rejouer-la-ci`. La CI avait été rejouée cinq fois à la main la semaine du 21 au 25/09/2026,
 et deux pièges y revenaient à chaque fois : `npx jest` sans le fuseau (§1.4), et un export qui rend
-le bundle d'un autre arbre (`EXPO.md` §1.1) ou d'une autre configuration (§2.6). Le script les
+le bundle d'un autre arbre (`EXPO.md` §1.1) ou d'une autre configuration (`TESTING-GARDES.md` §2.6). Le script les
 porte, et il lit chaque code de sortie sur le processus lui-même, jamais à travers un tube.
 
 **Sa sortie vaut 0 si, et seulement si, chaque pas choisi a été joué ET a réussi.** Un pas « non
@@ -918,10 +343,10 @@ ces écarts méritent d'être connus avant de lire un résultat :
 - **La stack est redémarrée à neuf** (`supabase stop --no-backup`, puis `supabase start`) avant
   pgTAP et le parcours, comme la CI en démarre une neuve. Deux raisons, dont la seconde ne se voit
   pas : une stack déjà démarrée porte les migrations de l'arbre qui l'a démarrée, et GoTrue ne relit
-  ses gabarits et `supabase/config.toml` qu'à son démarrage (§2.11) — une stack qui tourne vérifierait
+  ses gabarits et `supabase/config.toml` qu'à son démarrage (`TESTING-GARDES.md` §2.11) — une stack qui tourne vérifierait
   le code de connexion d'une autre copie. La première version se contentait d'un `db reset`, qui
   refait la base et laisse GoTrue tel quel (contre-lecture du 27/09/2026). Ce n'est pas la parade
-  écartée en §2.3 : une base qui a servi ne doit toujours pas faire rougir une assertion.
+  écartée en `TESTING-PGTAP.md` §2.3 : une base qui a servi ne doit toujours pas faire rougir une assertion.
 - **Chaque export a son propre cache de Metro**, un `TMPDIR` dans le dossier des journaux. Le cache
   vit par défaut dans le répertoire temporaire du système, donc partagé entre copies de travail, et
   `--clear` ne protège pas d'un voisin qui écrit pendant qu'on lit (`EXPO.md` §1.1). Un cache privé
@@ -960,110 +385,3 @@ d'un rejeu tué, et un seul de deux rejeux lancés ensemble l'obtient. **La cour
 gardée** : un `mkdir` suivi de l'écriture du propriétaire, à la place du renommage, passe trois fois
 sur trois, la fenêtre qu'il ouvre étant trop courte pour qu'un test y tombe. C'est dit en tête du
 module, pour que le renommage ne soit pas « simplifié ».
-
-### 2.14 Une animation se garde image par image, avec et sans la préférence
-
-Écrit le 27/09/2026 avec les transitions (`docs/architecture/v1-30-les-transitions.md`). Une
-animation ne se juge pas au repos : une étape qui entre et une étape posée d'emblée finissent au
-même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFrame`), avec un outil
-écrit une fois pour les deux, `scripts/relever-par-image.mjs` :
-
-- `scripts/verifier-etats-export.mjs`, **section J**, sans réseau : la barre d'onglets au démarrage,
-  l'étape du questionnaire et son rail, une précision qui s'ouvre, le fondu des onglets ;
-- le même script, **section K** (29/09/2026, `v1-31`), sans réseau lui aussi : **les deux défilements
-  de l'écran du mode**, lus par la mesure `defilement` — vers ce qui manque au toucher du « Suivant »
-  en attente (les tranches des sorties finissent 16 au-dessus du pied) et à l'ouverture d'une
-  précision (la boîte du vélo, à 360 × 800), chacun en chemin puis posé sous la préférence ; et
-  autour d'eux ce qui ne s'anime pas mais ne se voit qu'une fois l'app montée : la ligne « Il manque
-  encore … », la couleur de l'intitulé lue dans `theme.ts`, le focus, le filet du pied, l'Entrée
-  maintenu qui ne coche rien, le brouillon rouvert qui ne défile pas ;
-- `scripts/verifier-parcours-reel.mjs`, ce qui demande des données : la barre au « Compris », la
-  carte du point qui change de hauteur et qui garde la sienne au retour sur le plan, la feuille du
-  re-bilan, **le défilement jusqu'à « C'est noté » sur l'écran des pistes** (depuis le 29/09/2026,
-  `v1-32` : lu **dans la fenêtre** de défilement par la mesure `defilement`, avec une carte déjà
-  ouverte au-dessus ; il défile en glissant et **juste assez** — « C'est noté » finit à moins de
-  100 px du bas de la fenêtre, et c'est cette moitié qui a fait tomber la mutation du défilement
-  mesuré trop tôt, là où « le titre jamais sous la bande » ne la voyait pas ; sous la préférence, il
-  se pose d'un coup. Que le titre ne passe jamais sous la bande est d'abord gardé par les tests de
-  `defilementPourMontrer`, `src/types/mouvement.test.ts`) — et **le second profil entier sous
-  « réduire les animations »**.
-
-Les règles, chacune payée pendant l'écriture :
-
-1. **« En chemin » se lit sur une valeur strictement intermédiaire, jamais sur une durée.** Un runner
-   lent perd des images, il n'en invente pas : « au moins une image entre le départ et l'arrivée »
-   tient sur une machine chargée, « à 100 ms elle est à mi-chemin » non.
-2. **Chaque garde a deux moitiés**, et la seconde n'est pas la première à l'envers : l'une prouve que
-   ça bouge, l'autre que rien ne bouge sous la préférence. Celle-ci s'émule **avant** le chargement
-   (`page.emulateMedia` puis rechargement, ou `reducedMotion` du contexte) : l'app ne la lit qu'au
-   démarrage.
-3. **Une mesure qui ne trouve pas sa cible est un échec, pas un succès** — la règle de la section A,
-   reprise : « aucune image translucide » est vrai d'un titre introuvable. **Et une cible trouvée
-   une fois ne suffit pas** : une moitié « rien ne bouge » ne regarde que les images où la cible
-   est là, donc elle exige aussi qu'elle ne disparaisse plus une fois apparue
-   (`disparaitApresEtreApparue`) : un clignotement passerait sinon pour « rien ne bouge ». Ce
-   contrôle ne voit **pas** `entering`, qui masque la cible avant de la montrer — mesuré : ce
-   sont le sens, le fondu et le focus qui l'attrapent. Et une mesure qui trouve sa cible par un
-   nom accessible filtre la visibilité : un `aria-label` survit à `visibility: hidden`.
-4. **Une garde d'animation peut trouver un défaut intermittent, et il faut la croire.** La barre du
-   cycliste, sous la préférence, a été vue transparente pendant une image au premier passage et pas
-   au second : c'était un vrai défaut (`EXPO.md` §1.7, « un effet n'est pas la première image »),
-   corrigé à la source, puis trois passages verts d'affilée. Relancer jusqu'au vert l'aurait
-   enterré.
-
-5. **Une garde d'animation se corrige aussi par ses mutations, et par sa CI.** Le premier soir :
-   une barre qui surgissait sans glisser passait (« en chemin » voulait dire « ailleurs qu'à
-   l'arrivée », et une seule image au point de départ suffisait : c'est un saut) ; une feuille qui
-   glissait tombait en disant « s'ouvre d'un coup » (react-native-web ne pose `role="dialog"` qu'à
-   la fin de son animation, et la mesure cherchait le rôle) ; une précision laissée jouer sous la
-   préférence restait à hauteur nulle, un cas que la garde ne savait pas nommer (J12) ; une garde
-   de position passait à travers l'ancrage du défilement (point 6) ; et la mesure corrigée de la
-   feuille a rougi la CI, sur une image que le `Modal` rend à opacité nulle au montage. Chaque fois,
-   **imprimer les échantillons** a tranché — une fois contre l'hypothèse qu'on venait d'écrire. Et une mutation
-   se joue **sur un fichier égal au commit** : un lot interrompu en avait laissé une dans la copie,
-   sous deux résultats qu'il a fallu rejouer.
-6. **Une position se lit à travers l'ancrage du défilement : mesurer une hauteur.** Chrome compense
-   ce qui grandit **au-dessus** de la fenêtre en défilant d'autant, donc un bloc qui regrandit
-   au-dessus de ce qu'on regarde ne déplace rien à l'écran. La garde du retour sur le plan lisait la
-   position du cap et passait avec le défaut en place ; elle lit maintenant la hauteur de la carte
-   (`decoupe`), et la mutation tombe (8 px au lieu de 153).
-7. **Un défilement se provoque et se lit par `scrollTop`, jamais par la méthode `scrollTo` du nœud.**
-   react-native-web la remplace sur le nœud de sa `ScrollView` par la sienne, qui prend les arguments
-   de React Native : `el.scrollTo(0, 99999)` y demande `y = 0`, et ne fait rien. Relevé le
-   29/09/2026, en provoquant la question sortie par le haut de la section K — le diagnostic a
-   d'abord conclu que la zone ne défilait pas.
-8. **Une demande qui retombe pour deux raisons ne se garde pas par un seul cas.** La demande du
-   « Suivant » retombe à la complétude **et** en changeant d'étape ; « Retour » depuis l'étape du
-   mode arrive sur une étape déjà complète, donc la demande y retombe par la première raison, et
-   une mutation de la seconde passait — mesuré : « A4, Retour, Suivant » reste vert sous elle. La
-   section K porte donc deux cas de plus : un nouveau manque après la complétude, qui est le seul à
-   faire tomber la mutation de la première raison, et « Retour » depuis l'étape du mode vers des
-   jours et une distance vides eux aussi, le seul à faire tomber celle de la seconde. Le premier essai partait de `?etape=context` sur un questionnaire vierge, et ne prouvait
-   rien : l'étape d'avant, les longs trajets, y est complète — c'est la mutation « la demande ne
-   retombe pas en changeant d'étape » qui l'a montré, en ne le faisant pas tomber (29/09/2026).
-
-Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.
-
-### 2.15 Les migrations livrées, comparées à `main` à chaque PR
-
-**Une migration livrée ne se modifie pas, et jusqu'au 29/09/2026 seul un hook de Claude Code le
-rappelait** — à Edit et à Write, et à eux seuls (`v1-27` §12.18). pgTAP ne pouvait rien y voir : il
-reconstruit la base depuis les fichiers, donc un fichier livré réécrit y passe au vert, et c'est le
-jour d'une restauration qu'on découvre que le fichier ne décrit plus ce que la base a vécu.
-
-`scripts/verifier-migrations-livrees.mjs`, dans le travail `checks`, compare la copie de travail à
-la **base de fusion** avec `origin/main` et refuse toute migration qui y existait et qui est
-modifiée, supprimée ou renommée. Trois choses à savoir avant d'y toucher :
-
-- **la base de fusion, pas la pointe** : une migration livrée sur `main` après le départ de la
-  branche se lirait sinon « supprimée » par elle. Sur une PR, `HEAD` est la fusion que GitHub
-  prépare, donc la base de fusion est la pointe de `main` qu'elle fusionne ; sur un push sur `main`,
-  il n'y a rien à comparer, et la sortie le dit ;
-- **`fetch-depth: 0` sur le `checkout` de `checks`**, sans quoi `origin/main` n'existe pas — et la
-  garde sort alors en 1, jamais en 0 : on ne sait plus ce qui est livré ;
-- **l'exception est une retouche, pas un fichier** : `supabase/retouches-de-migrations-livrees.json`
-  porte l'empreinte du contenu accepté, donc la retouche suivante rougit. Le chemin complet, et qui
-  la décide : `SUPABASE.md` §2.3.
-
-Le test (`scripts/verifier-migrations-livrees.test.ts`) joue le script dans de vrais dépôts git
-jetables, commit de fusion d'une PR compris ; neuf mutations datées en tête.

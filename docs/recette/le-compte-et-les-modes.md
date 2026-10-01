@@ -21,7 +21,7 @@
 ## Pourquoi cette séance, et ce qu'elle ne fait pas
 
 **Elle ne rejoue pas le premier parcours.** La séance du 18/09/2026 l'a joué (`v1-13` §14), et
-depuis le 20/09 la CI le rejoue à chaque PR sur deux profils
+depuis le 20/09 la CI le rejoue à chaque PR, sur les profils de `TESTING-GARDES.md` §2.6
 (`scripts/verifier-parcours-reel.mjs`). **On part donc du principe qu'il n'y a pas de régression**,
 et on ne regarde que **ce qui a été livré depuis le 18/09/2026**.
 
@@ -297,7 +297,7 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 |---|---|---|---|
 | 06.1 | Fermer la fenêtre privée du bloc 05, en ouvrir une dans le **navigateur B**, puis depuis l'accueil de l'onboarding : « **J'ai déjà un compte** » | On arrive sur `/connexion/retrouver` | |
 | 06.2 | Saisir une adresse **inconnue** | **Le même écran** qu'un envoi réussi. Si l'écran dit que l'adresse est inconnue, c'est un moyen de savoir qui utilise Ramille — **écart** | |
-| 06.3 | Saisir l'adresse du bloc 04, puis le code reçu | Le compte revient **entier** : le bilan, le plan, l'action engagée au 03.12. C'est le seul chemin vers un compte existant depuis un appareil neuf | |
+| 06.3 | Saisir l'adresse du bloc 04, puis le code reçu | Le compte revient **entier** : le bilan, le plan, l'action engagée au 03.12. C'est le seul chemin délibéré vers un compte existant depuis un appareil neuf | |
 
 ## Bloc 07 — `/contexte` : corriger sans resoumettre
 

@@ -3,7 +3,7 @@
  * Garde de `vercel.json` et de son Ignored Build Step (`scripts/vercel-ignorer-le-build.sh`).
  *
  * Deux choses sont éprouvées, et la première est la plus importante : **un `vercel.json`
- * invalide fait échouer TOUS les déploiements, production comprise** (VERCEL.md §1.6). Le fichier
+ * invalide fait échouer TOUS les déploiements, production comprise** (VERCEL.md §1.3). Le fichier
  * est donc parsé ici, et la production doit rester du côté « construire » — `git.deploymentEnabled`
  * nomme `main`, et l'`ignoreCommand` pointe sur un script qui existe.
  *

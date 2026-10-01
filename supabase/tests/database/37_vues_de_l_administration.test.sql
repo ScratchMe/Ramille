@@ -16,7 +16,7 @@
 -- vaudrait toujours vrai et ne s'éprouverait pas —, et antérieur au premier compte de la production
 -- (le 09/09/2026, relevé sur le distant le 29/09/2026) **jusqu'au 20/06/2027**, où la semaine W+14
 -- atteint celle du 07/09/2026 : rejoué sur le distant après cette date, ce fichier y croiserait de
--- vrais comptes (`TESTING.md` §2.3). En CI, la base est vierge. Les états des rappels et les départs,
+-- vrais comptes (`TESTING-PGTAP.md` §2.3). En CI, la base est vierge. Les états des rappels et les départs,
 -- eux, sont des totaux : ils se lisent **en écart** à un relevé fait avant les fixtures, et tiennent
 -- donc sur n'importe quelle base.
 --

@@ -12,7 +12,7 @@
 // **Pourquoi un script, et pas la liste de commandes.** La CI a été rejouée cinq fois à la main la
 // semaine du 21 au 25/09/2026, et deux pièges s'y sont présentés chaque fois : `npx jest` sans le
 // fuseau, où des tests de dates tombent (`npm test` force `TZ=Europe/Paris`, TESTING.md §1.4), et un
-// export qui rend le bundle d'un autre arbre ou d'une autre configuration (EXPO.md §1.1, TESTING.md
+// export qui rend le bundle d'un autre arbre ou d'une autre configuration (EXPO.md §1.1, TESTING-GARDES.md
 // §2.6). Une boucle écrite au shell avec un tube pour garder la sortie lisible lit en plus le code du
 // tube, pas celui de la commande (CLAUDE.md, « Un tube masque le code de sortie ») : ici chaque
 // commande écrit dans son propre journal, et son code se lit sur le processus lui-même.
@@ -34,8 +34,8 @@
 //   pgTAP et le parcours, comme la CI qui en démarre une neuve à chaque travail. Deux raisons, et la
 //   seconde ne se voit pas : une stack déjà démarrée porte les migrations de l'arbre qui l'a
 //   démarrée, et GoTrue ne relit ses gabarits et `supabase/config.toml` qu'à son démarrage — une
-//   stack qui tourne vérifierait le code de connexion d'une autre copie (CLAUDE.md, TESTING.md
-//   §2.11). Ce n'est pas la parade que TESTING.md §2.3 écarte : une base qui a servi ne doit toujours
+//   stack qui tourne vérifierait le code de connexion d'une autre copie (CLAUDE.md, TESTING-GARDES.md
+//   §2.11). Ce n'est pas la parade que TESTING-PGTAP.md §2.3 écarte : une base qui a servi ne doit toujours
 //   pas faire rougir une assertion. **Et l'étape `base` démarre la stack entière**, là où la CI n'y
 //   démarre que Postgres (`db start`) : c'est un sur-ensemble, qui laisse le parcours la suivre.
 // - **La stack est réservée** le temps des étapes `base` et `parcours`, par un verrou rangé dans le
@@ -174,7 +174,7 @@ const DOCKER = {
   ci: null,
   raison: 'la CI a Docker d’office ; ici le démon peut être éteint',
   commande: ['docker', 'info'],
-  conseil: 'Docker ne répond pas. Dans l’environnement d’agent : `sudo dockerd > /tmp/dockerd.log 2>&1 &` (TESTING.md §2.6), puis relance.',
+  conseil: 'Docker ne répond pas. Dans l’environnement d’agent : `sudo dockerd > /tmp/dockerd.log 2>&1 &` (TESTING-GARDES.md §2.6), puis relance.',
 };
 const VERROU = {
   nom: 'stack réservée',
